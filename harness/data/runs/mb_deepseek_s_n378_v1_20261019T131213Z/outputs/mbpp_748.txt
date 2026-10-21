@@ -1,0 +1,34 @@
+```python
+def capital_words_spaces(text: str) -> str:
+    """
+    Insert spaces between words starting with capital letters.
+    The first word should not have a leading space.
+    
+    Args:
+        text: Input string with concatenated capitalized words.
+    
+    Returns:
+        String with spaces inserted before each capital letter except the first.
+    """
+    if not text:
+        return text
+    
+    result = [text[0]]  # Start with first character
+    
+    for char in text[1:]:
+        if char.isupper():
+            result.append(' ')
+        result.append(char)
+    
+    return ''.join(result)
+
+# Test the function with the assertion from the problem
+assert capital_words_spaces("Python") == 'Python'
+assert capital_words_spaces("PythonIsFun") == 'Python Is Fun'
+assert capital_words_spaces("ALLCAPS") == 'A L L C A P S'  # each capital separated
+assert capital_words_spaces("") == ''
+assert capital_words_spaces("helloWorld") == 'hello World'
+
+# For demonstration
+print(capital_words_spaces("PythonIsFun"))  # Output: Python Is Fun
+```

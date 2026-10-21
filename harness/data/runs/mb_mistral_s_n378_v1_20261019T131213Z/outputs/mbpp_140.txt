@@ -1,0 +1,34 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def extract_singly(list_of_lists):
+    """
+    Flattens a list of lists (or tuples) into a single set of numbers.
+
+    Args:
+        list_of_lists: A list containing lists or tuples of numbers.
+
+    Returns:
+        A set containing all the numbers from the input lists.
+    """
+    flattened = []
+    for item in list_of_lists:
+        if isinstance(item, (list, tuple)):
+            flattened.extend(item)
+        else:
+            flattened.append(item)
+    return set(flattened)
+
+# Test the function
+assert set(extract_singly([(3, 4, 5), (4, 5, 7), (1, 4)])) == set([3, 4, 5, 7, 1])
+print("Test passed!")
+```
+
+This script:
+1. Defines a function `extract_singly` that takes a list of lists (or tuples) as input
+2. Flattens the nested structure by iterating through each item and extending the result list
+3. Converts the flattened list to a set to remove duplicates
+4. Includes the test case from the problem statement
+5. Prints a confirmation message if the test passes
+
+The function handles both lists and tuples as input elements, and the test verifies that the output matches the expected set of numbers.

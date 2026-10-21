@@ -1,0 +1,21 @@
+```python
+import math
+
+def count_binary_seq(n: int) -> float:
+    """
+    Finds the count of all binary sequences of length 2n such that 
+    the sum of the first n bits is the same as the sum of the last n bits.
+    """
+    # The number of ways to choose k bits to be 1s out of n bits is C(n, k).
+    # For the sum of the first n bits to equal the sum of the last n bits, 
+    # both halves must have exactly k 1s. 
+    # The number of such sequences for a given k is C(n, k) * C(n, k).
+    # We sum this over all possible values of k (from 0 to n).
+    # This is mathematically equivalent to C(2n, n).
+    return float(math.comb(2 * n, n))
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert math.isclose(count_binary_seq(1), 2.0, rel_tol=0.001)
+    print("Assertion passed successfully.")
+```

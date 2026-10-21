@@ -1,0 +1,43 @@
+```python
+#!/usr/bin/env python3
+"""
+Find the common elements in given nested lists.
+
+Example:
+common_in_nested_lists([
+    [12, 18, 23, 25, 45],
+    [7, 12, 18, 24, 28],
+    [1, 5, 8, 12, 15, 16, 18]
+]) -> [18, 12]  # order is not guaranteed
+"""
+
+def common_in_nested_lists(nested_lists):
+    """
+    Return a list of elements that appear in every sublist of nested_lists.
+
+    Args:
+        nested_lists (list[list]): A list containing multiple lists.
+
+    Returns:
+        list: Common elements present in all nested lists.
+    """
+    if not nested_lists:
+        return []
+
+    common_elements = set(nested_lists[0])
+
+    for sublist in nested_lists[1:]:
+        common_elements &= set(sublist)
+
+    return list(common_elements)
+
+
+if __name__ == "__main__":
+    assert set(common_in_nested_lists([
+        [12, 18, 23, 25, 45],
+        [7, 12, 18, 24, 28],
+        [1, 5, 8, 12, 15, 16, 18]
+    ])) == set([18, 12])
+
+    print("All tests passed.")
+```

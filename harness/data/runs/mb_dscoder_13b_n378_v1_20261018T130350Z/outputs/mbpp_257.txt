@@ -1,0 +1,9 @@
+```python
+def swap_numbers(num1, num2):
+    return (num2, num1)
+
+# Test cases
+assert swap_numbers(10,20)==(20,10)
+assert swap_numbers(30,40)==(40,30)
+assert swap_numbers(50,60)==(60,50)
+```

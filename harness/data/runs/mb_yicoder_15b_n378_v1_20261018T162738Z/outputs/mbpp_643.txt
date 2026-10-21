@@ -1,0 +1,36 @@
+```python
+def text_match_wordz_middle(text):
+    if len(text) < 3:
+        return False
+    for i in range(1, len(text) - 1):
+        if text[i] == 'z' and text[i - 1] != ' ' and text[i + 1] != ' ':
+            return False
+    return True
+
+# Test cases
+assert text_match_wordz_middle("pythonzabc.")==True
+assert text_match_wordz_middle("pythozonabc.")==True
+assert text_match_wordz_middle("pythozonabcz.")==False
+assert text_match_wordz_middle("pythozonab.")==False
+assert text_match_wordz_middle("pythozonabc.z")==False
+assert text_match_wordz_middle("pythozonabc.")==True
+assert text_match_wordz_middle("pythozonabc.z")==False
+assert text_match_wordz_middle("pythozonabc. ")==False
+assert text_match_wordz_middle("pythozonabc.z ")==False
+assert text_match_wordz_middle("pythozonabc.z.")==False
+assert text_match_wordz_middle("pythozonabc.z. ")==False
+assert text_match_wordz_middle("pythozonabc.z..")==False
+assert text_match_wordz_middle("pythozonabc.z.. ")==False
+assert text_match_wordz_middle("pythozonabc.z...")==False
+assert text_match_wordz_middle("pythozonabc.z... ")==False
+assert text_match_wordz_middle("pythozonabc.z....")==False
+assert text_match_wordz_middle("pythozonabc.z.... ")==False
+assert text_match_wordz_middle("pythozonabc.z.....")==False
+assert text_match_wordz_middle("pythozonabc.z..... ")==False
+assert text_match_wordz_middle("pythozonabc.z......")==False
+assert text_match_wordz_middle("pythozonabc.z...... ")==False
+assert text_match_wordz_middle("pythozonabc.z.......")==False
+assert text_match_wordz_middle("pythozonabc.z....... ")==False
+assert text_match_wordz_middle("pythozonabc.z........")==False
+assert text_match_wordz_middle("pythozonabc.z.........")==False
+assert text_match_wordz_middle("pythozonabc.z..........")==False

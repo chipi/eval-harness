@@ -1,0 +1,25 @@
+```python
+from typing import List, Any
+
+def replace_list(list1: List[Any], list2: List[Any]) -> List[Any]:
+    """
+    Replaces the last element of the first list with the elements of the second list.
+    
+    Args:
+        list1: The first list whose last element will be replaced.
+        list2: The list whose elements will replace the last element of list1.
+    
+    Returns:
+        A new list formed by concatenating the first list (minus its last element)
+        with the second list.
+    """
+    # Take all elements except the last one from list1, then append all elements from list2
+    return list1[:-1] + list2
+
+# Example test case
+if __name__ == "__main__":
+    result = replace_list([1, 3, 5, 7, 9, 10], [2, 4, 6, 8])
+    print(result)  # Output: [1, 3, 5, 7, 9, 2, 4, 6, 8]
+    assert result == [1, 3, 5, 7, 9, 2, 4, 6, 8], "Test case failed"
+    print("Test passed.")
+```

@@ -1,0 +1,40 @@
+```python
+def max_Abs_Diff(arr):
+    """
+    Find the maximum difference between any two elements in a given array.
+    
+    Args:
+        arr: A tuple or list of numbers
+        
+    Returns:
+        The maximum difference between any two elements
+        
+    Example:
+        >>> max_Abs_Diff((2,1,5,3))
+        4
+    """
+    if len(arr) < 2:
+        return 0
+    
+    min_val = min(arr)
+    max_val = max(arr)
+    
+    return max_val - min_val
+
+
+# Test cases
+assert max_Abs_Diff((2, 1, 5, 3)) == 4
+assert max_Abs_Diff((1, 2, 3, 4, 5)) == 4
+assert max_Abs_Diff((5, 5, 5, 5)) == 0
+assert max_Abs_Diff((10, 1)) == 9
+assert max_Abs_Diff((-5, -1, 0, 3)) == 8
+
+print("All test cases passed!")
+```
+
+The solution works by:
+1. Finding the minimum value in the array
+2. Finding the maximum value in the array
+3. Returning the difference between them
+
+This approach is optimal with O(n) time complexity and O(1) space complexity, as we only need to iterate through the array once to find both the minimum and maximum values.

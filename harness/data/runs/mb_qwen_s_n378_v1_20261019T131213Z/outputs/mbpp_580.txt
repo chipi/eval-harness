@@ -1,0 +1,28 @@
+```python
+def extract_even(t):
+    """
+    Recursively remove odd elements from a nested mixed tuple.
+    
+    Args:
+        t: A tuple that may contain integers and nested tuples
+        
+    Returns:
+        A new tuple with all odd integers removed, preserving the structure of even integers and nested tuples
+    """
+    result = []
+    for item in t:
+        if isinstance(item, tuple):
+            # Recursively process nested tuples
+            processed = extract_even(item)
+            # Only include the nested tuple if it's not empty after processing
+            if processed:
+                result.append(processed)
+        elif isinstance(item, int):
+            # Keep only even integers
+            if item % 2 == 0:
+                result.append(item)
+        else:
+            # For other types, keep them as is (though problem states mixed tuple with ints and tuples)
+            result.append(item)
+    return tuple(result)
+```

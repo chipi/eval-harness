@@ -1,0 +1,89 @@
+Here's a self-contained Python script that solves the problem of merging three sorted lists into a single sorted list:
+
+```python
+def merge_sorted_list(list1, list2, list3):
+    """
+    Merge three sorted lists into a single sorted list.
+
+    Args:
+        list1: First sorted list
+        list2: Second sorted list
+        list3: Third sorted list
+
+    Returns:
+        A single sorted list containing all elements from the input lists
+    """
+    merged = []
+    i = j = k = 0
+
+    # Merge the three lists
+    while i < len(list1) and j < len(list2) and k < len(list3):
+        if list1[i] <= list2[j] and list1[i] <= list3[k]:
+            merged.append(list1[i])
+            i += 1
+        elif list2[j] <= list1[i] and list2[j] <= list3[k]:
+            merged.append(list2[j])
+            j += 1
+        else:
+            merged.append(list3[k])
+            k += 1
+
+    # Handle remaining elements in list1 and list2
+    while i < len(list1) and j < len(list2):
+        if list1[i] <= list2[j]:
+            merged.append(list1[i])
+            i += 1
+        else:
+            merged.append(list2[j])
+            j += 1
+
+    # Handle remaining elements in list1 and list3
+    while i < len(list1) and k < len(list3):
+        if list1[i] <= list3[k]:
+            merged.append(list1[i])
+            i += 1
+        else:
+            merged.append(list3[k])
+            k += 1
+
+    # Handle remaining elements in list2 and list3
+    while j < len(list2) and k < len(list3):
+        if list2[j] <= list3[k]:
+            merged.append(list2[j])
+            j += 1
+        else:
+            merged.append(list3[k])
+            k += 1
+
+    # Add any remaining elements from list1
+    while i < len(list1):
+        merged.append(list1[i])
+        i += 1
+
+    # Add any remaining elements from list2
+    while j < len(list2):
+        merged.append(list2[j])
+        j += 1
+
+    # Add any remaining elements from list3
+    while k < len(list3):
+        merged.append(list3[k])
+        k += 1
+
+    return merged
+
+# Test the function
+assert merge_sorted_list([25, 24, 15, 4, 5, 29, 110],
+                         [19, 20, 11, 56, 25, 233, 154],
+                         [24, 26, 54, 48]) == [4, 5, 11, 15, 19, 20, 24, 24, 25, 25, 26, 29, 48, 54, 56, 110, 154, 233]
+print("Test passed!")
+```
+
+This script:
+1. Defines a function `merge_sorted_list` that takes three sorted lists as input
+2. Implements a three-way merge algorithm similar to the merge step in merge sort
+3. Handles all possible cases where elements might remain in any of the lists
+4. Includes the test case from the problem statement
+5. Prints a confirmation message if the test passes
+
+The algorithm has a time complexity of O(n) where n is the total number of elements across all three lists, which is optimal for this problem.

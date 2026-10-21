@@ -1,0 +1,28 @@
+```python
+def get_coordinates(coord: tuple) -> list:
+    """
+    Extract all the adjacent coordinates of the given coordinate tuple.
+    
+    This includes the coordinate itself and all 8 surrounding neighbors in a 3x3 grid
+    centered at the given coordinate.
+    
+    Args:
+        coord: A tuple (x, y) representing the center coordinate.
+        
+    Returns:
+        A list of lists, each containing [x, y] for all adjacent coordinates including
+        the center, ordered from top-left to bottom-right.
+    """
+    x, y = coord
+    result = []
+    for dx in range(-1, 2):
+        for dy in range(-1, 2):
+            result.append([x + dx, y + dy])
+    return result
+
+
+if __name__ == "__main__":
+    # Test case
+    assert get_coordinates((3, 4)) == [[2, 3], [2, 4], [2, 5], [3, 3], [3, 4], [3, 5], [4, 3], [4, 4], [4, 5]]
+    print("All tests passed!")
+```

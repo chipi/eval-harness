@@ -1,0 +1,28 @@
+```python
+def add_tuple(lst, tpl):
+    """
+    Adds the elements of a given tuple to a given list.
+    
+    Args:
+        lst (list): The original list.
+        tpl (tuple): The tuple containing elements to add.
+        
+    Returns:
+        list: The updated list containing elements from both.
+    """
+    # We use extend() to add elements of the tuple to the list in-place,
+    # or we can return a new list by concatenating them.
+    # To match the assertion style, we return the modified list.
+    lst.extend(tpl)
+    return lst
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    assert add_tuple([5, 6, 7], (9, 10)) == [5, 6, 7, 9, 10]
+    
+    # Additional test cases
+    assert add_tuple([], (1, 2)) == [1, 2]
+    assert add_tuple([1], ()) == [1]
+    
+    print("All tests passed!")
+```

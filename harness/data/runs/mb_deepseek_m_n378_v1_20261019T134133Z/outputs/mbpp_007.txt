@@ -1,0 +1,42 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+import re
+
+def find_char_long(text):
+    """
+    Find all words which are at least 4 characters long in a string.
+    
+    Args:
+        text (str): The input string to search for long words.
+    
+    Returns:
+        list: A list of words that are at least 4 characters long.
+    """
+    # Use regex to find all words (sequences of word characters)
+    words = re.findall(r'\b\w+\b', text)
+    # Filter words that are at least 4 characters long
+    return [word for word in words if len(word) >= 4]
+
+
+# Test the function
+if __name__ == "__main__":
+    result = find_char_long('Please move back to stream')
+    print(result)
+    assert set(result) == set(['Please', 'move', 'back', 'stream'])
+    print("Test passed!")
+```
+
+**Explanation:**
+
+1. **`re.findall(r'\b\w+\b', text)`** — This uses a regular expression to extract all words from the string. `\b` matches word boundaries, and `\w+` matches one or more word characters (letters, digits, underscores).
+
+2. **List comprehension** — Filters the extracted words, keeping only those with a length of 4 or more characters.
+
+3. **Test** — The assertion verifies that the function returns the expected set of words: `{'Please', 'move', 'back', 'stream'}`. Note that `'to'` is excluded because it's only 2 characters long.
+
+**Output:**
+```
+['Please', 'move', 'back', 'stream']
+Test passed!
+```

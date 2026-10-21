@@ -1,0 +1,29 @@
+```python
+def toggle_middle_bits(n):
+  """
+  Toggles the bits of a number except the first and last bit.
+
+  Args:
+    n: The integer whose bits need to be toggled.
+
+  Returns:
+    The integer with the middle bits toggled.
+  """
+  if n < 2:
+    return n
+
+  msb = 1
+  while msb <= n:
+    msb <<= 1
+  msb >>= 1
+
+  last_bit = n & 1
+  first_bit = (n & msb) >> (msb).bit_length() - 1
+
+  middle_bits_mask = msb - 1
+  toggled_middle_bits = n ^ middle_bits_mask
+
+  return (first_bit << (msb).bit_length() - 1) | toggled_middle_bits | last_bit
+
+assert toggle_middle_bits(9) == 15
+```

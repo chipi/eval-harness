@@ -1,0 +1,9 @@
+```python
+from itertools import combinations
+
+def combinations_colors(color_list, n):
+    return [tuple(comb) for comb in combinations(color_list, n)]
+
+# Testing the function
+assert combinations_colors( ["Red","Green","Blue"],1)==[('Red',), ('Green',), ('Blue',)]
+```

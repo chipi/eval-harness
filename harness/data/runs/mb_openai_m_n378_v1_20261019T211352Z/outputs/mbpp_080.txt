@@ -1,0 +1,23 @@
+```python
+#!/usr/bin/env python3
+"""
+Find the nth tetrahedral number.
+
+A tetrahedral number is the sum of the first n triangular numbers:
+T_n = n * (n + 1) * (n + 2) // 6
+"""
+
+def tetrahedral_number(n: int) -> int:
+    """Return the nth tetrahedral number."""
+    if n < 0:
+        raise ValueError("n must be non-negative")
+    return n * (n + 1) * (n + 2) // 6
+
+
+if __name__ == "__main__":
+    assert tetrahedral_number(5) == 35
+    assert tetrahedral_number(0) == 0
+    assert tetrahedral_number(1) == 1
+    assert tetrahedral_number(2) == 4
+    print("All tests passed.")
+```

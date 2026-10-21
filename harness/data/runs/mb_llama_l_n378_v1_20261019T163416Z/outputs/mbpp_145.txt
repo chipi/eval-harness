@@ -1,0 +1,29 @@
+```python
+def max_Abs_Diff(arr):
+    """
+    This function calculates the maximum absolute difference between any two elements in a given array.
+
+    Parameters:
+    arr (tuple): A tuple of integers.
+
+    Returns:
+    int: The maximum absolute difference between any two elements in the array.
+    """
+    # Convert the tuple to a list for easier manipulation
+    arr = list(arr)
+    
+    # Check if the array has less than 2 elements
+    if len(arr) < 2:
+        return 0
+    
+    # Find the minimum and maximum elements in the array
+    min_element = min(arr)
+    max_element = max(arr)
+    
+    # The maximum absolute difference is the difference between the maximum and minimum elements
+    return abs(max_element - min_element)
+
+# Test the function
+assert max_Abs_Diff((2,1,5,3)) == 4
+print("All tests passed.")
+```

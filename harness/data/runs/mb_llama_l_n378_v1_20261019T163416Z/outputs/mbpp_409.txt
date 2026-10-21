@@ -1,0 +1,11 @@
+```python
+def min_product_tuple(tuple_list):
+    return min(a * b for a, b in tuple_list)
+
+def main():
+    tuple_list = [(2, 7), (2, 6), (1, 8), (4, 9)]
+    print(min_product_tuple(tuple_list))  # Output: 8
+
+if __name__ == "__main__":
+    main()
+```

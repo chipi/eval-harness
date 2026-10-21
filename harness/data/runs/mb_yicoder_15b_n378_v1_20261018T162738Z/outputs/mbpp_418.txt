@@ -1,0 +1,16 @@
+```python
+def find_max_length(lst):
+    max_length = 0
+    max_element = []
+    for element in lst:
+        if len(element) > max_length:
+            max_length = len(element)
+            max_element = element
+    return max_element
+
+# Test cases
+assert find_max_length([['A'],['A','B'],['A','B','C']]) == ['A','B','C']
+assert find_max_length([['A','B','C','D','E'],['A','B'],['A']]) == ['A','B','C','D','E']
+assert find_max_length([['A','B','C'],['A','B'],['A'],['A','B','C','D','E']]) == ['A','B','C','D','E']
+assert find_max_length([['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'],['A','B'],['A']]) == ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z']
+```

@@ -1,0 +1,53 @@
+```python
+def is_Monotonic(arr):
+    """
+    Checks whether the given array is monotonic.
+
+    An array is monotonic if it is either entirely non-increasing or non-decreasing.
+
+    Args:
+        arr: A list of numbers.
+
+    Returns:
+        True if the array is monotonic, False otherwise.
+    """
+    # An empty array or an array with a single element is trivially monotonic.
+    if len(arr) <= 1:
+        return True
+
+    # Initialize flags to track the direction of the array.
+    # We assume it could be both non-decreasing and non-increasing at the start.
+    is_non_decreasing = True
+    is_non_increasing = True
+
+    # Iterate through the array starting from the second element.
+    for i in range(1, len(arr)):
+        # If the current element is greater than the previous one,
+        # the array cannot be non-increasing.
+        if arr[i] > arr[i - 1]:
+            is_non_increasing = False
+        
+        # If the current element is less than the previous one,
+        # the array cannot be non-decreasing.
+        if arr[i] < arr[i - 1]:
+            is_non_decreasing = False
+
+        # Optimization: If we have determined the array is neither
+        # non-decreasing nor non-increasing, we can exit early.
+        if not is_non_decreasing and not is_non_increasing:
+            return False
+
+    # The array is monotonic if it is either non-decreasing OR non-increasing.
+    return is_non_decreasing or is_non_increasing
+
+# Example usage and assertions:
+assert is_Monotonic([6, 5, 4, 4]) == True
+assert is_Monotonic([1, 2, 3, 4, 5]) == True
+assert is_Monotonic([5, 4, 3, 2, 1]) == True
+assert is_Monotonic([1, 1, 1, 1]) == True
+assert is_Monotonic([1, 3, 2, 4]) == False
+assert is_Monotonic([1]) == True
+assert is_Monotonic([]) == True
+
+print("All assertions passed!")
+```

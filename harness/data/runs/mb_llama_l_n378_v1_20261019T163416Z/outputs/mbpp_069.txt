@@ -1,0 +1,28 @@
+```python
+def is_sublist(lst, sublst):
+    """
+    Checks whether a list contains the given sublist or not.
+
+    Args:
+        lst (list): The main list to be checked.
+        sublst (list): The sublist to be searched in the main list.
+
+    Returns:
+        bool: True if the sublist is found in the main list, False otherwise.
+    """
+    # Get the length of the sublist
+    sublst_len = len(sublst)
+    
+    # Iterate over the main list with a sliding window of size equal to the sublist length
+    for i in range(len(lst) - sublst_len + 1):
+        # Check if the current window is equal to the sublist
+        if lst[i:i+sublst_len] == sublst:
+            # If it is, return True
+            return True
+    
+    # If the sublist is not found after checking all windows, return False
+    return False
+
+# Test the function
+assert not is_sublist([2,4,3,5,7],[3,7])
+```

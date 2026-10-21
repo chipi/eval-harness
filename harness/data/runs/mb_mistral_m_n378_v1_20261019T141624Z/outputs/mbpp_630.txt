@@ -1,0 +1,22 @@
+```python
+def get_coordinates(coord):
+    """
+    Extract all adjacent coordinates (including the given coordinate itself)
+    for a given coordinate tuple (x, y).
+
+    Args:
+        coord (tuple): A tuple representing the (x, y) coordinate.
+
+    Returns:
+        list: A list of adjacent coordinates as lists [x, y].
+    """
+    x, y = coord
+    adjacent_coords = []
+    for dx in [-1, 0, 1]:
+        for dy in [-1, 0, 1]:
+            adjacent_coords.append([x + dx, y + dy])
+    return adjacent_coords
+
+# Test the function
+assert get_coordinates((3, 4)) == [[2, 3], [2, 4], [2, 5], [3, 3], [3, 4], [3, 5], [4, 3], [4, 4], [4, 5]]
+```

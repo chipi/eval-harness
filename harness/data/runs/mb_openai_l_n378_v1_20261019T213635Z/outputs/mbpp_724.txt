@@ -1,0 +1,8 @@
+```python
+def power_base_sum(base, power):
+    """Return the sum of the digits of base raised to power."""
+    return sum(int(digit) for digit in str(abs(base ** power)))
+
+
+assert power_base_sum(2, 100) == 115
+```

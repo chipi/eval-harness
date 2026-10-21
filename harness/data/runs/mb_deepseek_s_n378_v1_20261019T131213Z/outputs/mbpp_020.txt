@@ -1,0 +1,23 @@
+```python
+def is_woodall(n: int) -> bool:
+    """
+    Returns True if n is a Woodall number, otherwise False.
+    A Woodall number is of the form k * 2^k - 1 for some integer k >= 1.
+    """
+    if n < 1:
+        return False
+    
+    k = 1
+    while True:
+        woodall = k * (2 ** k) - 1
+        if woodall == n:
+            return True
+        if woodall > n:
+            return False
+        k += 1
+
+# Test the assertion
+if __name__ == "__main__":
+    assert is_woodall(383) == True
+    print("Test passed: 383 is a Woodall number.")
+```

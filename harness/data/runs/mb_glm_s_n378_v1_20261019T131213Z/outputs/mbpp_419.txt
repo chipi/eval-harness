@@ -1,0 +1,41 @@
+```python
+def round_and_sum(numbers):
+    """
+    Rounds every number in the given list, calculates the total sum of the
+    rounded numbers, and returns the sum multiplied by the length of the list.
+
+    Args:
+        numbers: A list of numbers (integers or floats).
+
+    Returns:
+        The sum of the rounded numbers multiplied by the length of the list.
+    """
+    # Use a list comprehension to round each number to the nearest integer.
+    # The built-in round() function handles this.
+    rounded_numbers = [round(num) for num in numbers]
+    
+    # Calculate the sum of the rounded numbers.
+    total_sum = sum(rounded_numbers)
+    
+    # Get the length of the original list.
+    list_length = len(numbers)
+    
+    # Return the total sum multiplied by the list length.
+    return total_sum * list_length
+
+# Example usage with the provided test case:
+# The list of numbers from the problem description
+input_list = [22.4, 4.0, -16.22, -9.10, 11.00, -12.22, 14.20, -5.20, 17.50]
+
+# Call the function and store the result
+result = round_and_sum(input_list)
+
+# Print the final result
+print(f"The input list is: {input_list}")
+print(f"The result of (sum of rounded numbers) * (list length) is: {result}")
+
+# Assertion to verify the result against the expected value
+assert result == 243
+
+print("\nAssertion passed: The result is correct.")
+```

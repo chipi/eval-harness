@@ -1,0 +1,27 @@
+```python
+"""
+Write a function to create a new tuple from the given string and list.
+
+Example:
+assert new_tuple(["WEB", "is"], "best") == ('WEB', 'is', 'best')
+"""
+
+def new_tuple(lst, string):
+    """
+    Create a new tuple by combining the elements of a list with a string.
+
+    Args:
+        lst (list): The list of elements.
+        string (str): The string to append.
+
+    Returns:
+        tuple: A tuple containing all list elements followed by the string.
+    """
+    return tuple(lst) + (string,)
+
+
+# Test case
+assert new_tuple(["WEB", "is"], "best") == ('WEB', 'is', 'best')
+
+print("All tests passed.")
+```

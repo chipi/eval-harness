@@ -1,0 +1,63 @@
+```python
+import math
+
+def sumofFactors(n):
+    """
+    Finds the sum of even factors of a given number n.
+    
+    An even factor of n must be a multiple of 2. Therefore, it can be written as 2 * k, 
+    where k is an integer. For 2 * k to be a factor of n, k must be a factor of n // 2.
+    Thus, the sum of even factors of n is simply 2 times the sum of all factors of n // 2.
+    
+    Args:
+        n (int): A positive integer.
+        
+    Returns:
+        int: The sum of all even factors of n. Returns 0 if n has no even factors (i.e., n is odd).
+    """
+    if n % 2 != 0:
+        return 0
+        
+    # Divide n by 2 to find the base for the remaining factors
+    m = n // 2
+    
+    # Calculate the sum of divisors of m
+    res = 1
+    temp = m
+    
+    # Check for factor 2
+    if temp % 2 == 0:
+        count = 0
+        while temp % 2 == 0:
+            count += 1
+            temp //= 2
+        res *= (2**(count + 1) - 1)
+        
+    # Check for odd factors
+    i = 3
+    while i <= math.isqrt(temp):
+        if temp % i == 0:
+            count = 0
+            while temp % i == 0:
+                count += 1
+                temp //= i
+            res *= (i**(count + 1) - 1) // (i - 1)
+        i += 2
+        
+    # If temp is still greater than 1, then it is a prime factor
+    if temp > 1:
+        res *= (1 + temp)
+        
+    # The sum of even factors of n is 2 * sum_of_divisors(m)
+    return 2 * res
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert sumofFactors(18) == 26
+    print("Assertion passed: sumofFactors(18) == 26")
+    
+    # Additional test cases
+    print(f"sumofFactors(9) = {sumofFactors(9)}")   # Odd number, expected 0
+    print(f"sumofFactors(12) = {sumofFactors(12)}") # Even factors: 2, 4, 6, 12, expected 24
+    print(f"sumofFactors(2) = {sumofFactors(2)}")   # Even factors: 2, expected 2
+```

@@ -1,0 +1,33 @@
+```python
+def catalan_number(n):
+    """
+    Calculate the nth Catalan number.
+
+    The Catalan numbers are a sequence of natural numbers that occur in various counting problems,
+    often involving recursively defined objects. The nth Catalan number gives the number of
+    binary trees with n internal nodes.
+
+    :param n: The index of the Catalan number to calculate.
+    :return: The nth Catalan number.
+    """
+    # Initialize a list to store the Catalan numbers
+    catalans = [0 for _ in range(n + 1)]
+
+    # The first two Catalan numbers are 1 and 1
+    catalans[0] = 1
+    if n > 0:
+        catalans[1] = 1
+
+    # Calculate the remaining Catalan numbers
+    for i in range(2, n + 1):
+        catalans[i] = 0
+        for j in range(i):
+            catalans[i] += catalans[j] * catalans[i - j - 1]
+
+    return catalans[n]
+
+
+# Example usage:
+if __name__ == "__main__":
+    print(catalan_number(10))  # Output: 16796
+```

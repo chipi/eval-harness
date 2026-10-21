@@ -1,0 +1,20 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def count_first_elements(tup):
+    """
+    Returns the number of elements that occur before the first tuple element in the given tuple.
+    """
+    count = 0
+    for item in tup:
+        if isinstance(item, tuple):
+            return count
+        count += 1
+    return count  # In case there is no tuple element
+
+# Test
+assert count_first_elements((1, 5, 7, (4, 6), 10)) == 3
+print("Test passed!")
+```
+
+This function iterates through the tuple, counting elements until it encounters a tuple element, at which point it returns the count. If no tuple is found, it returns the total count of elements.

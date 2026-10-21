@@ -1,0 +1,35 @@
+```python
+def occurance_substring(text: str, substring: str) -> tuple | None:
+    """
+    Find the first occurrence of a substring within a string.
+    
+    Args:
+        text: The string to search in.
+        substring: The substring to search for.
+    
+    Returns:
+        A tuple containing (substring, start_index, end_index) if found, None otherwise.
+    """
+    index = text.find(substring)
+    if index == -1:
+        return None
+    return (substring, index, index + len(substring))
+
+
+if __name__ == "__main__":
+    result = occurance_substring('python programming, python language', 'python')
+    print(result)
+    assert result == ('python', 0, 6)
+    
+    # Test case where substring is not found
+    result2 = occurance_substring('hello world', 'xyz')
+    print(result2)
+    assert result2 is None
+    
+    # Test case with substring appearing later
+    result3 = occurance_substring('hello world hello', 'world')
+    print(result3)
+    assert result3 == ('world', 6, 11)
+    
+    print("All tests passed!")
+```

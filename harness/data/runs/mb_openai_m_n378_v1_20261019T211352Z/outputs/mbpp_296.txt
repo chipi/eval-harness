@@ -1,0 +1,59 @@
+```python
+"""
+Count inversions in an array.
+
+An inversion is a pair (i, j) such that:
+    i < j and arr[i] > arr[j]
+
+Example:
+    [1, 20, 6, 4, 5] has 5 inversions:
+    (20, 6), (20, 4), (20, 5), (6, 4), (6, 5)
+"""
+
+def get_Inv_Count(arr):
+    """
+    Return the number of inversions in the given array.
+
+    This uses a merge-sort based approach with O(n log n) time complexity.
+    """
+
+    def merge_sort_and_count(nums):
+        if len(nums) <= 1:
+            return nums, 0
+
+        mid = len(nums) // 2
+        left, left_count = merge_sort_and_count(nums[:mid])
+        right, right_count = merge_sort_and_count(nums[mid:])
+
+        merged = []
+        i = j = 0
+        split_count = 0
+
+        while i < len(left) and j < len(right):
+            if left[i] <= right[j]:
+                merged.append(left[i])
+                i += 1
+            else:
+                merged.append(right[j])
+                split_count += len(left) - i
+                j += 1
+
+        merged.extend(left[i:])
+        merged.extend(right[j:])
+
+        return merged, left_count + right_count + split_count
+
+    _, count = merge_sort_and_count(arr)
+    return count
+
+
+if __name__ == "__main__":
+    assert get_Inv_Count([1, 20, 6, 4, 5]) == 5
+    assert get_Inv_Count([]) == 0
+    assert get_Inv_Count([1]) == 0
+    assert get_Inv_Count([1, 2, 3, 4]) == 0
+    assert get_Inv_Count([4, 3, 2, 1]) == 6
+    assert get_Inv_Count([2, 3, 8, 6, 1]) == 5
+
+    print("All tests passed.")
+```

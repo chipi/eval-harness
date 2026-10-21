@@ -1,0 +1,34 @@
+```python
+def digit_distance_nums(num1, num2):
+    """
+    This function calculates the sum of the per-digit difference between two integers.
+    
+    Args:
+        num1 (int): The first integer.
+        num2 (int): The second integer.
+    
+    Returns:
+        int: The sum of the per-digit difference between the two integers.
+    """
+    # Convert the integers to strings to easily access each digit
+    str_num1 = str(num1)
+    str_num2 = str(num2)
+    
+    # Make the strings the same length by padding with zeros
+    max_len = max(len(str_num1), len(str_num2))
+    str_num1 = str_num1.zfill(max_len)
+    str_num2 = str_num2.zfill(max_len)
+    
+    # Initialize the sum of the per-digit difference
+    digit_distance = 0
+    
+    # Iterate over each digit in the strings
+    for i in range(max_len):
+        # Calculate the absolute difference between the current digits
+        digit_distance += abs(int(str_num1[i]) - int(str_num2[i]))
+    
+    return digit_distance
+
+# Test the function
+print(digit_distance_nums(1, 2))  # Output: 1
+```

@@ -1,0 +1,12 @@
+```python
+def heap_queue_largest(lst, n):
+    import heapq
+    return heapq.nlargest(n, lst)
+
+# Test cases
+assert heap_queue_largest([25, 35, 22, 85, 14, 65, 75, 22, 58], 3) == [85, 75, 65]
+assert heap_queue_largest([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 5) == [10, 9, 8, 7, 6]
+assert heap_queue_largest([10, 20, 30, 40, 50, 60, 70, 80, 90, 100], 2) == [90, 80]
+assert heap_queue_largest([1, 1, 1, 1, 1, 1, 1, 1, 1, 1], 2) == [1, 1]
+assert heap_queue_largest([], 5) == []
+```

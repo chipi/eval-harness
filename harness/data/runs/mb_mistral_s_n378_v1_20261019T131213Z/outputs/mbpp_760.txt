@@ -1,0 +1,36 @@
+Here's a self-contained Python script that solves the problem in a markdown code block:
+
+```python
+def unique_element(lst):
+    """Check if a list contains only one distinct element.
+
+    Args:
+        lst: List of numbers to check.
+
+    Returns:
+        bool: True if all elements are the same, False otherwise.
+    """
+    if not lst:  # Handle empty list case
+        return True
+    first = lst[0]
+    return all(x == first for x in lst)
+
+# Test cases
+assert unique_element([1, 1, 1]) == True
+assert unique_element([1, 2, 1]) == False
+assert unique_element([]) == True
+assert unique_element([5]) == True
+assert unique_element([0, 0, 0, 0]) == True
+assert unique_element([-1, -1, -1]) == True
+
+print("All tests passed!")
+```
+
+This script:
+1. Defines a function `unique_element` that checks if all elements in a list are the same
+2. Handles edge cases (empty list and single-element list)
+3. Includes test cases that verify the function works correctly
+4. Uses a generator expression with `all()` for efficient checking
+5. Provides clear docstring documentation
+
+The function returns `True` if all elements are identical, and `False` otherwise. The test cases cover various scenarios including the example from your problem statement.

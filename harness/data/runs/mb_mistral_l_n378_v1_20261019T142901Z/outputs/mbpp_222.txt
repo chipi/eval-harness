@@ -1,0 +1,31 @@
+Here's a self-contained Python script that solves the problem by checking if all elements in a tuple have the same data type:
+
+```python
+def check_type(input_tuple):
+    """
+    Check if all elements in the tuple have the same data type.
+
+    Args:
+        input_tuple (tuple): The tuple to check.
+
+    Returns:
+        bool: True if all elements have the same type, False otherwise.
+    """
+    if not input_tuple:  # Handle empty tuple case
+        return True
+
+    first_type = type(input_tuple[0])
+    return all(type(element) == first_type for element in input_tuple)
+
+# Test case
+assert check_type((5, 6, 7, 3, 5, 6)) == True
+```
+
+This script:
+1. Defines a function `check_type` that takes a tuple as input
+2. Handles the edge case of an empty tuple (returns True since there are no elements to compare)
+3. Gets the type of the first element
+4. Uses the `all()` function with a generator expression to check if all elements have the same type as the first element
+5. Includes the provided test case as an assertion
+
+The function will return `True` if all elements have the same type, and `False` otherwise.

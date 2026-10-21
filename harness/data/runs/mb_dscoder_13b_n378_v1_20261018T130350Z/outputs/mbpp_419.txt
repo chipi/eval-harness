@@ -1,0 +1,17 @@
+```python
+def round_and_sum(numbers):
+    # Round each number in the list
+    rounded_numbers = [round(n) for n in numbers]
+
+    # Calculate the sum of the rounded numbers
+    total = sum(rounded_numbers)
+
+    # Multiply the total by the length of the list
+    result = total * len(numbers)
+
+    # Print the result
+    print(result)
+
+# Test the function with the provided test case
+round_and_sum([22.4, 4.0, -16.22, -9.10, 11.00, -12.22, 14.20, -5.20, 17.50])
+```

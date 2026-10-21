@@ -1,0 +1,31 @@
+Here's a self-contained Python script that solves the problem of finding the nth tetrahedral number:
+
+```python
+def tetrahedral_number(n):
+    """
+    Calculate the nth tetrahedral number.
+
+    The nth tetrahedral number is given by the formula:
+    T(n) = n(n+1)(n+2)/6
+
+    Args:
+        n (int): The index of the tetrahedral number to compute
+
+    Returns:
+        int: The nth tetrahedral number
+    """
+    return n * (n + 1) * (n + 2) // 6
+
+# Test the function
+assert tetrahedral_number(5) == 35
+print("Test passed! The 5th tetrahedral number is indeed 35.")
+```
+
+This script:
+1. Defines a function `tetrahedral_number` that implements the mathematical formula for tetrahedral numbers
+2. Includes a docstring explaining the formula and function parameters
+3. Uses integer division (`//`) to ensure the result is an integer
+4. Includes the required assertion test case
+5. Prints a confirmation message if the test passes
+
+The formula used is the standard mathematical formula for tetrahedral numbers, which is derived from the sum of the first n triangular numbers.

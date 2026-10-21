@@ -1,0 +1,25 @@
+```python
+def heap_queue_largest(numbers, n):
+    """
+    Return the n largest integers from the given list in descending order.
+
+    Examples:
+    >>> heap_queue_largest([25, 35, 22, 85, 14, 65, 75, 22, 58], 3)
+    [85, 75, 65]
+    """
+    if n <= 0:
+        return []
+    return sorted(numbers, reverse=True)[:n]
+
+
+if __name__ == "__main__":
+    assert heap_queue_largest([25, 35, 22, 85, 14, 65, 75, 22, 58], 3) == [85, 75, 65]
+
+    # Additional simple checks
+    assert heap_queue_largest([1, 2, 3], 2) == [3, 2]
+    assert heap_queue_largest([5, 5, 4], 2) == [5, 5]
+    assert heap_queue_largest([10, -1, 7], 0) == []
+    assert heap_queue_largest([], 3) == []
+
+    print("All tests passed.")
+```

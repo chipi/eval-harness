@@ -1,0 +1,24 @@
+```python
+def concatenate_tuple(tup, delimiter='-'):
+    """
+    Concatenate each element of tuple by the delimiter.
+    
+    Args:
+        tup: A tuple containing elements to concatenate
+        delimiter: The delimiter to use between elements (default: '-')
+    
+    Returns:
+        A string with tuple elements joined by the delimiter
+    """
+    return delimiter.join(str(element) for element in tup)
+
+
+# Test cases
+assert concatenate_tuple(("ID", "is", 4, "UTS")) == 'ID-is-4-UTS'
+assert concatenate_tuple(("hello", "world")) == 'hello-world'
+assert concatenate_tuple(("a", "b", "c", "d")) == 'a-b-c-d'
+assert concatenate_tuple(("1", "2", "3"), delimiter='_') == '1_2_3'
+
+print("All tests passed!")
+print(f"Example: {concatenate_tuple(('ID', 'is', 4, 'UTS'))}")
+```

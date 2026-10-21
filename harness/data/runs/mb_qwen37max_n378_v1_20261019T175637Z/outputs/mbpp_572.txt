@@ -1,0 +1,17 @@
+```python
+def two_unique_nums(lst):
+    """
+    Remove duplicate numbers from a given list.
+    Returns only the numbers that appear exactly once in the list.
+    
+    >>> two_unique_nums([1,2,3,2,3,4,5])
+    [1, 4, 5]
+    """
+    from collections import Counter
+    counts = Counter(lst)
+    return [num for num in lst if counts[num] == 1]
+
+
+# Test
+assert two_unique_nums([1, 2, 3, 2, 3, 4, 5]) == [1, 4, 5]
+```

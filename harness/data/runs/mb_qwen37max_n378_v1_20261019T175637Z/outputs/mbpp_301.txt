@@ -1,0 +1,9 @@
+```python
+def dict_depth(d):
+    if not isinstance(d, dict) or not d:
+        return 0
+    return 1 + max(dict_depth(v) for v in d.values())
+
+
+assert dict_depth({'a': 1, 'b': {'c': {'d': {}}}}) == 4
+```

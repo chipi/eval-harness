@@ -1,0 +1,16 @@
+```python
+def remove_kth_element(lst, k):
+    """
+    Takes a list and returns a list with the same elements, but the k'th element removed.
+    
+    Parameters:
+    lst (list): The input list
+    k (int): The 1-based index of the element to remove
+    
+    Returns:
+    list: A new list with the k'th element removed
+    """
+    if k < 1 or k > len(lst):
+        raise IndexError("k is out of range")
+    return lst[:k-1] + lst[k:]
+```

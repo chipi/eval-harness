@@ -1,0 +1,44 @@
+```python
+import math
+
+def sum_Of_product(n):
+    """
+    Calculates the sum of the product of consecutive binomial coefficients.
+    The formula for the sum of (nCr * nC(r+1)) from r=0 to n-1 is:
+    Sum = (nC0 * nC1) + (nC1 * nC2) + ... + (nC(n-1) * nCn)
+    
+    Mathematically, this is equivalent to (n choose n) * (2n choose n-1) / (n+1) 
+    or more simply, the coefficient of x^n in (1+x)^n * (1+x)^n = (1+x)^(2n),
+    which is (2n choose n), but we subtract the middle term or use the identity:
+    Sum = (2n choose n-1) = (2n choose n+1).
+    
+    Alternatively, we can calculate it iteratively for small n.
+    """
+    # Calculate binomial coefficients for n
+    coeffs = []
+    for r in range(n + 1):
+        coeffs.append(math.comb(n, r))
+    
+    # Sum the product of consecutive coefficients
+    total_sum = 0
+    for i in range(n):
+        total_sum += coeffs[i] * coeffs[i+1]
+        
+    return total_sum
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    result = sum_Of_product(3)
+    print(f"sum_Of_product(3) = {result}")
+    assert result == 15, f"Expected 15, but got {result}"
+    
+    # Additional test cases
+    # n=1: (1C0 * 1C1) = 1 * 1 = 1
+    assert sum_Of_product(1) == 1
+    # n=2: (2C0 * 2C1) + (2C1 * 2C2) = (1 * 2) + (2 * 1) = 4
+    assert sum_Of_product(2) == 4
+    # n=4: (1*4) + (4*6) + (6*4) + (4*1) = 4 + 24 + 24 + 4 = 56
+    assert sum_Of_product(4) == 56
+    
+    print("All tests passed!")
+```

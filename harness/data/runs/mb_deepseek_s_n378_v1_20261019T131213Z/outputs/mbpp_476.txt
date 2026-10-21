@@ -1,0 +1,24 @@
+```python
+def big_sum(arr):
+    """
+    Returns the sum of the largest and smallest value in a given array.
+    
+    Parameters:
+    arr (list): A list of numbers.
+    
+    Returns:
+    int/float: Sum of the maximum and minimum elements.
+    """
+    if not arr:
+        return 0  # or raise an exception, depending on requirements
+    return min(arr) + max(arr)
+
+# Test the function with the provided assertion
+assert big_sum([1,2,3]) == 4
+print("Test passed: big_sum([1,2,3]) =", big_sum([1,2,3]))
+
+# Additional test cases
+print(big_sum([10, 20, 30]))  # 10 + 30 = 40
+print(big_sum([-5, 0, 5]))    # -5 + 5 = 0
+print(big_sum([7]))           # 7 + 7 = 14
+```

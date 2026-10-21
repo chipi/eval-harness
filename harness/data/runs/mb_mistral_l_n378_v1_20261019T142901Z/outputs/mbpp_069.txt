@@ -1,0 +1,38 @@
+Here's a self-contained Python script that solves the problem of checking whether a list contains a given sublist. The function `is_sublist` checks if the sublist appears consecutively in the main list:
+
+```python
+def is_sublist(main_list, sub_list):
+    """
+    Check if the sub_list appears consecutively in the main_list.
+
+    Args:
+        main_list (list): The main list to search in.
+        sub_list (list): The sublist to search for.
+
+    Returns:
+        bool: True if sub_list is found consecutively in main_list, False otherwise.
+    """
+    len_main = len(main_list)
+    len_sub = len(sub_list)
+
+    if len_sub == 0:
+        return True  # Empty list is always a sublist
+    if len_main < len_sub:
+        return False
+
+    for i in range(len_main - len_sub + 1):
+        if main_list[i:i + len_sub] == sub_list:
+            return True
+    return False
+
+# Test case
+assert is_sublist([2, 4, 3, 5, 7], [3, 7]) == False
+```
+
+### Explanation:
+1. The function `is_sublist` takes two arguments: `main_list` (the list to search in) and `sub_list` (the sublist to search for).
+2. It first checks edge cases:
+   - If `sub_list` is empty, it returns `True` (an empty list is trivially a sublist of any list).
+   - If the length of `main_list` is less than the length of `sub_list`, it returns `False` (the sublist cannot fit).
+3. It then iterates through `main_list` to check if any consecutive slice of length `len(sub_list)` matches `sub_list`.
+4. The test case `assert is_sublist([2, 4, 3, 5, 7], [3, 7]) == False` passes because `[3, 7]` does not appear consecutively in `[2, 4, 3, 5, 7]`. The elements `3` and `7` are present but not consecutively.

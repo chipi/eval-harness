@@ -1,0 +1,10 @@
+```python
+def tetrahedral_number(n: int) -> int:
+    """Return the nth tetrahedral number."""
+    if n < 0:
+        raise ValueError("n must be non-negative")
+    return n * (n + 1) * (n + 2) // 6
+
+
+assert tetrahedral_number(5) == 35
+```

@@ -1,0 +1,50 @@
+### Problem: Check if Two Numbers Differ at One Bit Position
+
+#### Description
+
+The goal is to write a Python function that checks whether two given numbers differ at exactly one bit position.
+
+#### Solution
+
+```python
+def differ_At_One_Bit_Pos(a: int, b: int) -> bool:
+    """
+    Checks if two numbers differ at exactly one bit position.
+
+    Args:
+    a (int): The first number.
+    b (int): The second number.
+
+    Returns:
+    bool: True if the numbers differ at exactly one bit position, False otherwise.
+    """
+    # Calculate the XOR of a and b
+    xor_result = a ^ b
+    
+    # If the XOR result is 0, the numbers are the same
+    if xor_result == 0:
+        return False
+    
+    # Count the number of bits set in the XOR result
+    bit_count = 0
+    while xor_result:
+        bit_count += xor_result & 1
+        xor_result >>= 1
+    
+    # Return True if exactly one bit is set, False otherwise
+    return bit_count == 1
+
+# Example usage:
+print(differ_At_One_Bit_Pos(13, 9))  # Output: True
+```
+
+#### Explanation
+
+The provided Python function `differ_At_One_Bit_Pos` checks if two numbers `a` and `b` differ at exactly one bit position.
+
+1.  It calculates the XOR (`^`) of `a` and `b`. The XOR operation sets a bit to 1 if the corresponding bits in `a` and `b` are different.
+2.  If the XOR result is 0, it means `a` and `b` are the same, so the function returns `False`.
+3.  It counts the number of bits set in the XOR result. This is done by repeatedly shifting the XOR result to the right (`>>=`) and adding the least significant bit (`xor_result & 1`) to `bit_count`.
+4.  Finally, the function returns `True` if exactly one bit is set in the XOR result (i.e., `bit_count == 1`) and `False` otherwise.
+
+This approach efficiently checks if two numbers differ at exactly one bit position.

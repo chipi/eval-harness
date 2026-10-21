@@ -1,0 +1,26 @@
+```python
+import math
+
+def sum_Of_product(n):
+    """
+    This function calculates the sum of the product of consecutive binomial coefficients.
+    
+    Parameters:
+    n (int): The number of terms in the sum.
+    
+    Returns:
+    int: The sum of the product of consecutive binomial coefficients.
+    """
+    total_sum = 0
+    for i in range(n):
+        # Calculate the binomial coefficient using the math.comb function
+        binom_coeff = math.comb(n, i)
+        # Calculate the next binomial coefficient
+        next_binom_coeff = math.comb(n, i + 1) if i < n else 0
+        # Add the product of the two binomial coefficients to the total sum
+        total_sum += binom_coeff * next_binom_coeff
+    return total_sum
+
+# Test the function
+print(sum_Of_product(3))  # Output: 15
+```

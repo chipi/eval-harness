@@ -1,0 +1,9 @@
+```python
+def drop_empty(d):
+    return {key: value for key, value in d.items() if value is not None}
+
+
+if __name__ == "__main__":
+    assert drop_empty({'c1': 'Red', 'c2': 'Green', 'c3': None}) == {'c1': 'Red', 'c2': 'Green'}
+    print("All tests passed.")
+```

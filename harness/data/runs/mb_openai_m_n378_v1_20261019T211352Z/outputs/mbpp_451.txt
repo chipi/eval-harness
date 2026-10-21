@@ -1,0 +1,17 @@
+```python
+#!/usr/bin/env python3
+
+def remove_whitespaces(s: str) -> str:
+    """
+    Remove all whitespace characters from the given string.
+    """
+    return "".join(s.split())
+
+
+if __name__ == "__main__":
+    assert remove_whitespaces(" Google    Flutter ") == "GoogleFlutter"
+    assert remove_whitespaces("a b\tc\nd") == "abcd"
+    assert remove_whitespaces("") == ""
+
+    print("All tests passed.")
+```

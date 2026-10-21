@@ -1,0 +1,29 @@
+```python
+def unique_Element(lst):
+    """
+    Checks whether a list of numbers contains only one distinct element.
+
+    Args:
+        lst: A list of numbers.
+
+    Returns:
+        True if the list contains only one distinct element, False otherwise.
+    """
+    # An empty list or a list with a single element is considered to have only one distinct element.
+    if len(lst) <= 1:
+        return True
+    
+    # Convert the list to a set. A set automatically removes duplicates.
+    # If the length of the set is 1, it means all elements in the original list were the same.
+    return len(set(lst)) == 1
+
+# Example usage and assertions:
+assert unique_Element([1, 1, 1]) == True
+assert unique_Element([1, 2, 1]) == False
+assert unique_Element([5]) == True
+assert unique_Element([]) == True
+assert unique_Element(['a', 'a', 'a']) == True # Works for other hashable types too
+assert unique_Element([1.0, 1, 1.0]) == True # Works with mixed numeric types that are equal
+
+print("All assertions passed!")
+```

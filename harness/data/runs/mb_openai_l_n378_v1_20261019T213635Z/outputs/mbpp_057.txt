@@ -1,0 +1,10 @@
+```python
+def find_Max_Num(digits):
+    """Return the largest number formed by arranging the given digits."""
+    if not digits:
+        return 0
+    return int("".join(str(digit) for digit in sorted(digits, reverse=True)))
+
+
+assert find_Max_Num([1, 2, 3]) == 321
+```

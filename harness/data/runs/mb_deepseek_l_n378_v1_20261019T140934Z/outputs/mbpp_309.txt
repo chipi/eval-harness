@@ -1,0 +1,30 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def maximum(a, b):
+    """
+    Find the maximum of two numbers.
+    
+    Args:
+        a: First number
+        b: Second number
+    
+    Returns:
+        The larger of the two numbers
+    """
+    if a >= b:
+        return a
+    else:
+        return b
+
+# Test the function
+assert maximum(5, 10) == 10
+assert maximum(10, 5) == 10
+assert maximum(5, 5) == 5
+assert maximum(-1, 1) == 1
+assert maximum(0, -5) == 0
+
+print("All tests passed!")
+```
+
+This script defines the `maximum` function that compares two numbers and returns the larger one. It includes the required assertion test as well as additional test cases to verify the function works correctly for different scenarios.

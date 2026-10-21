@@ -1,0 +1,33 @@
+```python
+def smallest_num(numbers):
+    """
+    This function finds the smallest number in a given list.
+
+    Args:
+        numbers (list): A list of numbers.
+
+    Returns:
+        The smallest number in the list.
+
+    Raises:
+        ValueError: If the input list is empty.
+    """
+    if not numbers:
+        raise ValueError("Input list is empty")
+
+    return min(numbers)
+
+
+# Example usage:
+def main():
+    numbers = [10, 20, 1, 45, 99]
+    try:
+        smallest = smallest_num(numbers)
+        print(f"The smallest number in the list is: {smallest}")
+    except ValueError as e:
+        print(e)
+
+
+if __name__ == "__main__":
+    main()
+```

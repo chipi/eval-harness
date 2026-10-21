@@ -1,0 +1,30 @@
+```python
+def bell_Number(n: int) -> int:
+    """
+    Return the nth Bell number.
+
+    Bell numbers count the number of ways to partition a set of size n.
+    By convention:
+        B(0) = 1
+        B(1) = 1
+        B(2) = 2
+    """
+    if n < 0:
+        raise ValueError("n must be non-negative")
+
+    # Build Bell's triangle
+    triangle = [[0] * (n + 1) for _ in range(n + 1)]
+    triangle[0][0] = 1
+
+    for i in range(1, n + 1):
+        triangle[i][0] = triangle[i - 1][i - 1]
+        for j in range(1, i + 1):
+            triangle[i][j] = triangle[i - 1][j - 1] + triangle[i][j - 1]
+
+    return triangle[n][0]
+
+
+if __name__ == "__main__":
+    assert bell_Number(2) == 2
+    print("All tests passed.")
+```

@@ -1,0 +1,59 @@
+Here's a self-contained Python script that solves the problem of finding the size of the largest subset where every pair is divisible:
+
+```python
+def largest_subset(nums):
+    """
+    Find the size of the largest subset of numbers where every pair is divisible.
+    
+    A pair (a, b) is divisible if a % b == 0 or b % a == 0.
+    This means for any two elements in the subset, one must divide the other.
+    
+    Approach: Sort the numbers, then use dynamic programming.
+    For each number, find the longest chain of divisors ending at that number.
+    """
+    if not nums:
+        return 0
+    
+    # Sort the numbers in ascending order
+    nums = sorted(nums)
+    n = len(nums)
+    
+    # dp[i] = size of largest valid subset ending with nums[i]
+    dp = [1] * n
+    
+    for i in range(n):
+        for j in range(i):
+            # Check if nums[j] divides nums[i]
+            if nums[i] % nums[j] == 0:
+                dp[i] = max(dp[i], dp[j] + 1)
+    
+    return max(dp)
+
+
+# Test the function
+if __name__ == "__main__":
+    assert largest_subset([1, 3, 6, 13, 17, 18]) == 4
+    print("Test passed!")
+    
+    # Additional tests
+    print(largest_subset([1, 3, 6, 13, 17, 18]))  # Expected: 4
+    print(largest_subset([2, 4, 8, 16]))           # Expected: 4
+    print(largest_subset([1, 2, 3, 4, 5]))         # Expected: 3 (1,2,4 or 1,3,5... actually 1,2,4)
+    print(largest_subset([5, 7, 11, 13]))          # Expected: 1 (no divisibility)
+    print(largest_subset([]))                       # Expected: 0
+```
+
+**Explanation:**
+
+1. **Sorting**: We sort the numbers in ascending order. This ensures that when we check `nums[i] % nums[j] == 0`, we're checking if the smaller number divides the larger one.
+
+2. **Dynamic Programming**: 
+   - `dp[i]` represents the size of the largest valid subset ending with `nums[i]`.
+   - For each element `i`, we check all previous elements `j`. If `nums[j]` divides `nums[i]`, we can extend the subset ending at `j` by adding `nums[i]`.
+   - We take the maximum over all such extensions.
+
+3. **Why this works**: If we have a chain where each element divides the next, then every pair in the chain is divisible (since divisibility is transitive: if a|b and b|c, then a|c). The DP finds the longest such chain.
+
+4. **Result**: The answer is the maximum value in the `dp` array.
+
+For the test case `[1, 3, 6, 13, 17, 18]`, the largest subset is `{1, 3, 6, 18}` (size 4), where 1|3, 1|6, 1|18, 3|6, 3|18, 6|18.

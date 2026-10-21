@@ -1,0 +1,39 @@
+Here's a self-contained Python script that solves the problem by counting the number of prime numbers less than a given non-negative number:
+
+```python
+def count_Primes_nums(n):
+    """
+    Count the number of prime numbers less than a given non-negative number n.
+
+    Args:
+        n (int): A non-negative number.
+
+    Returns:
+        int: The number of prime numbers less than n.
+    """
+    if n <= 2:
+        return 0
+
+    # Initialize a list to track prime status of numbers
+    is_prime = [True] * n
+    is_prime[0] = is_prime[1] = False  # 0 and 1 are not primes
+
+    for current in range(2, int(n ** 0.5) + 1):
+        if is_prime[current]:
+            # Mark multiples of current as non-prime
+            for multiple in range(current * current, n, current):
+                is_prime[multiple] = False
+
+    # Count the number of primes
+    return sum(is_prime)
+
+# Test the function
+assert count_Primes_nums(5) == 2
+```
+
+### Explanation:
+1. **Edge Case Handling**: If `n` is 0, 1, or 2, there are no primes less than `n`, so return 0.
+2. **Sieve of Eratosthenes**: This algorithm efficiently finds all primes less than `n` by iteratively marking the multiples of each prime starting from 2.
+3. **Prime Counting**: After marking non-primes, the function counts the remaining `True` values in the `is_prime` list, which represent primes.
+
+The script includes the required assertion to verify the function works correctly for the given example.

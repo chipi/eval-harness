@@ -1,0 +1,10 @@
+```python
+def remove_lowercase(s):
+    return ''.join(c for c in s if c.isupper())
+
+# Test cases
+assert remove_lowercase("PYTHon")==('PYTH')
+assert remove_lowercase("Hello")==('')
+assert remove_lowercase("HELLO")==('HELLO')
+assert remove_lowercase("")==('')
+```

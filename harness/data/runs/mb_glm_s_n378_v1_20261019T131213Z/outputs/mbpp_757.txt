@@ -1,0 +1,51 @@
+```python
+def count_reverse_pairs(string_list: list[str]) -> int:
+    """
+    Counts the number of pairs of reverse strings in a given list.
+
+    A pair (s1, s2) is considered a reverse pair if s1 is the reverse of s2.
+    Each string can only be part of one pair. For example, in the list
+    ["julia", "best", "tseb", "for", "ailuj"], the pairs are ("julia", "ailuj")
+    and ("best", "tseb"), resulting in a count of 2.
+
+    Args:
+        string_list: A list of strings.
+
+    Returns:
+        The total count of unique reverse string pairs.
+    """
+    # Use a set for O(1) average time complexity for lookups and to avoid duplicates.
+    seen_strings = set()
+    pair_count = 0
+
+    for s in string_list:
+        # The reverse of the current string
+        reversed_s = s[::-1]
+
+        # If the reversed string has been seen before, it forms a pair.
+        if reversed_s in seen_strings:
+            # Increment the count and remove the reversed string from the set
+            # to ensure it's not paired again.
+            pair_count += 1
+            seen_strings.remove(reversed_s)
+        else:
+            # If the reversed string has not been seen, add the current string
+            # to the set to be found later.
+            seen_strings.add(s)
+
+    return pair_count
+
+# Example usage and assertions from the problem description
+assert count_reverse_pairs(["julia", "best", "tseb", "for", "ailuj"]) == 2
+
+# Additional test cases
+assert count_reverse_pairs(["abc", "def", "cba"]) == 1
+assert count_reverse_pairs(["hello", "world", "olleh"]) == 1
+assert count_reverse_pairs(["a", "b", "c"]) == 0
+assert count_reverse_pairs(["", "", ""]) == 1 # Pair of empty strings
+assert count_reverse_pairs(["", "a", ""]) == 1 # Pair of empty strings
+assert count_reverse_pairs(["abc", "def", "fed", "cba"]) == 2
+assert count_reverse_pairs(["abc", "def", "fed", "cba", "xyz"]) == 2
+
+print("All assertions passed.")
+```

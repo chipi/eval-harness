@@ -1,0 +1,16 @@
+```python
+import re
+
+def text_starta_endb(txt):
+    """
+    Matches a string that has an 'a' followed by anything, ending in 'b'.
+    
+    Args:
+        txt (str): The input string to check.
+        
+    Returns:
+        bool: True if the string starts with 'a' and ends with 'b', False otherwise.
+    """
+    pattern = r'^a.*b$'
+    return bool(re.match(pattern, txt))
+```

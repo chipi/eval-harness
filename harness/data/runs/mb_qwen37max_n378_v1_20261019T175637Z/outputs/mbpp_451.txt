@@ -1,0 +1,8 @@
+```python
+def remove_whitespaces(s: str) -> str:
+    """Remove all whitespaces from the given string."""
+    return s.replace(" ", "")
+
+
+assert remove_whitespaces(' Google    Flutter ') == 'GoogleFlutter'
+```

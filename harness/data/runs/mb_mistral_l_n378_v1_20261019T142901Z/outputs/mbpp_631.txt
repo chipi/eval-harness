@@ -1,0 +1,42 @@
+Here's a self-contained Python script that solves the problem, including the assertion test:
+
+```python
+def replace_spaces(s: str) -> str:
+    """
+    Replace whitespaces with underscores and vice versa in a given string.
+
+    Args:
+        s: Input string to process
+
+    Returns:
+        String with whitespaces and underscores swapped
+    """
+    result = []
+    for char in s:
+        if char == ' ':
+            result.append('_')
+        elif char == '_':
+            result.append(' ')
+        else:
+            result.append(char)
+    return ''.join(result)
+
+# Test case
+assert replace_spaces('Jumanji The Jungle') == 'Jumanji_The_Jungle'
+assert replace_spaces('Hello_World') == 'Hello World'
+assert replace_spaces('NoChange') == 'NoChange'
+assert replace_spaces(' ') == '_'
+assert replace_spaces('_') == ' '
+```
+
+The function works by:
+1. Iterating through each character in the input string
+2. Replacing spaces with underscores and underscores with spaces
+3. Leaving all other characters unchanged
+4. Joining the processed characters back into a string
+
+The test cases verify that:
+- Spaces are properly replaced with underscores
+- Underscores are properly replaced with spaces
+- Strings without either character remain unchanged
+- Edge cases with single space or underscore work correctly

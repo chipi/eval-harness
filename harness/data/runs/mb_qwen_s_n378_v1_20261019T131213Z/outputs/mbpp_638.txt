@@ -1,0 +1,36 @@
+```python
+def wind_chill(wind_velocity, temperature):
+    """
+    Calculate the wind chill index rounded to the next integer.
+    
+    The wind chill formula (used in Canada and UK) is:
+    W = 35.74 + 0.6215*T - 35.75*(V**0.16) + 0.4275*T*(V**0.16)
+    
+    Where:
+    - W is the wind chill index
+    - T is the air temperature in Celsius
+    - V is the wind speed in km/h
+    
+    Note: This formula is valid for temperatures <= 10°C and wind speeds >= 4.8 km/h.
+    For other conditions, we still apply the formula as per the problem statement.
+    
+    Args:
+        wind_velocity (float): Wind velocity in km/h
+        temperature (float): Temperature in Celsius
+    
+    Returns:
+        int: Wind chill index rounded to the nearest integer
+    """
+    import math
+    
+    # Calculate wind chill using the standard formula
+    v_pow_016 = wind_velocity ** 0.16
+    wind_chill_value = 35.74 + 0.6215 * temperature - 35.75 * v_pow_016 + 0.4275 * temperature * v_pow_016
+    
+    # Round to the nearest integer
+    return round(wind_chill_value)
+
+
+# Test case from the problem
+assert wind_chill(120, 35) == 40
+```

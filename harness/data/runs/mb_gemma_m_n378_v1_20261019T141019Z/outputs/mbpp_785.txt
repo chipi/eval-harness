@@ -1,0 +1,29 @@
+```python
+import ast
+
+def tuple_str_int(tuple_string: str) -> tuple:
+    """
+    Converts a string representation of a tuple into a tuple of integers.
+    
+    Args:
+        tuple_string (str): A string like "(7, 8, 9)"
+        
+    Returns:
+        tuple: A tuple containing integers.
+    """
+    # ast.literal_eval safely evaluates a string containing a Python literal
+    # (strings, numbers, tuples, lists, dicts, booleans, and None)
+    result = ast.literal_eval(tuple_string)
+    
+    # Ensure the result is a tuple and convert all elements to integers
+    # to handle cases where the string might contain floats or strings
+    return tuple(int(x) for x in result)
+
+if __name__ == "__main__":
+    # Test cases
+    assert tuple_str_int("(7, 8, 9)") == (7, 8, 9)
+    assert tuple_str_int("(1, 2)") == (1, 2)
+    assert tuple_str_int("(100,)") == (100,)
+    
+    print("All assertions passed!")
+```

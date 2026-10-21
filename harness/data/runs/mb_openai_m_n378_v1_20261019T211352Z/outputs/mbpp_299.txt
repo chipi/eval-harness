@@ -1,0 +1,36 @@
+```python
+from collections import defaultdict
+
+def max_aggregate(records):
+    """
+    Calculate the maximum aggregate score from a list of (name, score) tuples.
+
+    Args:
+        records: A list of tuples, where each tuple contains a name and a numeric score.
+
+    Returns:
+        A tuple (name, total_score) for the person with the highest aggregate score.
+        If the input list is empty, returns None.
+    """
+    if not records:
+        return None
+
+    totals = defaultdict(int)
+
+    for name, score in records:
+        totals[name] += score
+
+    return max(totals.items(), key=lambda item: item[1])
+
+
+if __name__ == "__main__":
+    assert max_aggregate([
+        ('Juan Whelan', 90),
+        ('Sabah Colley', 88),
+        ('Peter Nichols', 7),
+        ('Juan Whelan', 122),
+        ('Sabah Colley', 84)
+    ]) == ('Juan Whelan', 212)
+
+    print("All tests passed.")
+```

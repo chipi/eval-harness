@@ -1,0 +1,58 @@
+```python
+"""
+Write a function to locate the left insertion point for a specified value in sorted order. https://www.w3resource.com/python-exercises/data-structures-and-algorithms/python-data-structure-exercise-24.php
+assert left_insertion([1,2,4,5],6)==4
+"""
+
+def left_insertion(arr, x):
+    """
+    Locates the left insertion point for a specified value in a sorted array.
+
+    The left insertion point is the index of the first element in the sorted
+    array that is greater than or equal to the specified value. If all elements
+    in the array are less than the specified value, the insertion point is the
+    length of the array.
+
+    Args:
+        arr (list): A sorted list of elements.
+        x: The value to find the insertion point for.
+
+    Returns:
+        int: The index of the left insertion point.
+    """
+    low = 0
+    high = len(arr)
+
+    # The search space is [low, high). The loop continues as long as there is
+    # a search space to consider.
+    while low < high:
+        # Find the middle index of the current search space.
+        # Using low + (high - low) // 2 is a common practice to avoid potential
+        # integer overflow in other languages, though not strictly necessary in Python.
+        mid = (low + high) // 2
+
+        # If the middle element is less than the target value, the insertion point
+        # must be to the right of the middle element.
+        if arr[mid] < x:
+            low = mid + 1
+        # Otherwise, the middle element is greater than or equal to the target.
+        # The insertion point is at mid or to its left, so we set high to mid
+        # to narrow the search space to the left half.
+        else:
+            high = mid
+            
+    # When the loop terminates, 'low' is the index of the first element
+    # greater than or equal to 'x', which is the left insertion point.
+    return low
+
+# Example usage and assertions from the problem description
+assert left_insertion([1, 2, 4, 5], 6) == 4
+assert left_insertion([1, 2, 4, 5], 3) == 2
+assert left_insertion([1, 2, 4, 5], 0) == 0
+assert left_insertion([1, 2, 4, 5], 5) == 3
+assert left_insertion([1, 2, 4, 5], 1) == 0
+assert left_insertion([], 10) == 0
+assert left_insertion([5, 5, 5, 5], 5) == 0
+
+print("All assertions passed.")
+```

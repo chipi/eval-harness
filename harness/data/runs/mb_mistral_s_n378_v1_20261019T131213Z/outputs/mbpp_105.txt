@@ -1,0 +1,19 @@
+Here's a self-contained Python script that solves the problem in a markdown code block:
+
+```python
+def count_true_booleans(lst):
+    """Count the number of True booleans in the given list."""
+    return sum(lst)
+
+# Test the function
+assert count_true_booleans([True, False, True]) == 2
+print("All tests passed!")
+```
+
+This script:
+1. Defines a function `count_true_booleans` that takes a list as input
+2. Uses Python's built-in `sum()` function to count True values (since `True` is 1 and `False` is 0 in Python)
+3. Includes the required assertion test case
+4. Prints a confirmation message if the test passes
+
+The function works because in Python, `True` is treated as 1 and `False` as 0 when used in arithmetic operations, so summing the list directly gives the count of True values.

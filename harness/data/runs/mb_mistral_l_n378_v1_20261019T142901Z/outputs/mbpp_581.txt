@@ -1,0 +1,45 @@
+Here's a self-contained Python script that solves the problem, including the function to calculate the surface area of a square pyramid and the assertion test:
+
+```python
+"""
+Calculate the surface area of a square pyramid given its base edge and height.
+
+The surface area of a square pyramid is the sum of the base area and the four triangular faces.
+Formula: Surface Area = base_area + 4 * (triangular_face_area)
+Where:
+- base_area = base_edge^2
+- triangular_face_area = (base_edge * slant_height) / 2
+- slant_height can be found using Pythagorean theorem: sqrt((base_edge/2)^2 + height^2)
+"""
+
+import math
+
+def surface_Area(base_edge, height):
+    """
+    Calculate the surface area of a square pyramid.
+
+    Args:
+        base_edge (float): Length of the base edge of the pyramid.
+        height (float): Height of the pyramid (perpendicular from base to apex).
+
+    Returns:
+        float: Total surface area of the square pyramid.
+    """
+    base_area = base_edge ** 2
+    slant_height = math.sqrt((base_edge / 2) ** 2 + height ** 2)
+    triangular_face_area = (base_edge * slant_height) / 2
+    total_surface_area = base_area + 4 * triangular_face_area
+    return total_surface_area
+
+# Test the function with the provided assertion
+assert surface_Area(3, 4) == 33, f"Expected 33, got {surface_Area(3, 4)}"
+print("Test passed! surface_Area(3, 4) =", surface_Area(3, 4))
+```
+
+This script:
+1. Imports the math module for the square root function
+2. Defines the `surface_Area` function that calculates the surface area using the given formula
+3. Includes the assertion test to verify the function works correctly
+4. Prints a success message if the test passes
+
+The function first calculates the base area, then finds the slant height using the Pythagorean theorem, calculates the area of one triangular face, and finally sums all areas to get the total surface area.

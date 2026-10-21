@@ -1,0 +1,34 @@
+```python
+def unique_product(numbers):
+    """
+    Calculate the product of the unique numbers in a given list.
+    
+    Args:
+        numbers: A list of numbers
+        
+    Returns:
+        The product of all unique numbers in the list
+    """
+    unique_numbers = set(numbers)
+    product = 1
+    for num in unique_numbers:
+        product *= num
+    return product
+
+
+# Test case
+assert unique_product([10, 20, 30, 40, 20, 50, 60, 40]) == 720000000
+print("Test passed!")
+print(f"Result: {unique_product([10, 20, 30, 40, 20, 50, 60, 40])}")
+```
+
+**Explanation:**
+1. The function `unique_product()` takes a list of numbers as input
+2. It converts the list to a `set` to get only unique numbers (duplicates are automatically removed)
+3. It initializes a `product` variable to 1
+4. It iterates through each unique number and multiplies it to the product
+5. Returns the final product
+
+For the test case `[10, 20, 30, 40, 20, 50, 60, 40]`:
+- Unique numbers: `{10, 20, 30, 40, 50, 60}`
+- Product: `10 × 20 × 30 × 40 × 50 × 60 = 720,000,000`

@@ -1,0 +1,22 @@
+```python
+def sort_numeric_strings(num_str_list):
+    """
+    Sorts a list of numeric strings in ascending numerical order.
+
+    Args:
+        num_str_list (list): A list of numeric strings.
+
+    Returns:
+        list: A list of integers sorted in ascending order.
+    """
+    # Convert the numeric strings to integers and sort them
+    return sorted(map(int, num_str_list))
+
+def main():
+    # Test the function
+    num_str_list = ['4','12','45','7','0','100','200','-12','-500']
+    print(sort_numeric_strings(num_str_list))  # Output: [-500, -12, 0, 4, 7, 12, 45, 100, 200]
+
+if __name__ == "__main__":
+    main()
+```

@@ -1,0 +1,64 @@
+```python
+def get_ludic(n):
+    """
+    Generates a list of all Ludic numbers smaller than or equal to a given integer n.
+    
+    Ludic numbers are obtained by a sieve process similar to the Sieve of Eratosthenes 
+    for prime numbers, but with a different elimination rule.
+    
+    Args:
+        n (int): The upper limit (inclusive) for generating Ludic numbers.
+        
+    Returns:
+        list: A list of Ludic numbers <= n.
+    """
+    if n < 1:
+        return []
+    
+    # Start with a list of integers from 1 to n
+    ludics = list(range(1, n + 1))
+    
+    # The first Ludic number is 1. 
+    # The second Ludic number is 2, which starts the sieving process.
+    # We use an index 'i' to track the current Ludic number used for sieving.
+    # i = 1 corresponds to the value 2 (at index 1 in the list).
+    i = 1
+    
+    while i < len(ludics):
+        # The current Ludic number determines the step size for removal
+        step = ludics[i]
+        
+        # We need to remove every step-th number from the remaining list.
+        # The first number to remove is at index (step + i).
+        # Note: We use 1-based counting for "every step-th", so if step is 2,
+        # we remove the 2nd, 4th, 6th... items remaining after the current Ludic number.
+        
+        # Calculate the index of the first item to be removed.
+        # If the step size is larger than the remaining elements, we stop.
+        if step + i >= len(ludics):
+            break
+            
+        # Iterate backwards through the indices to be removed.
+        # This is crucial because removing elements shifts subsequent indices.
+        # By going backwards, the indices of earlier elements remain valid.
+        # We stop before index i because we only remove items after the current Ludic number.
+        
+        # Start from the last valid index, stepping by -step
+        current_idx = len(ludics) - 1
+        while current_idx > i:
+            # Check if this position is a multiple of the step offset from i
+            # The sequence of removed indices relative to i is: i+step, i+2*step, ...
+            # So we check if (current_idx - i) is divisible by step.
+            if (current_idx - i) % step == 0:
+                ludics.pop(current_idx)
+            current_idx -= 1
+            
+        # Move to the next Ludic number in the list for the next iteration
+        i += 1
+        
+    return ludics
+
+# Test the function with the provided assertion
+assert get_ludic(10) == [1, 2, 3, 5, 7]
+print("Assertion passed: get_ludic(10) == [1, 2, 3, 5, 7]")
+```

@@ -1,0 +1,12 @@
+```python
+def tuple_to_dict(t):
+    """
+    Converts a tuple to a key-value dictionary using adjacent elements.
+    If the tuple has an odd number of elements, the last element is ignored.
+    """
+    return {t[i]: t[i+1] for i in range(0, len(t) - 1, 2)}
+
+# Test the function with the provided assertion
+assert tuple_to_dict((1, 5, 7, 10, 13, 5)) == {1: 5, 7: 10, 13: 5}
+print("Test passed successfully!")
+```

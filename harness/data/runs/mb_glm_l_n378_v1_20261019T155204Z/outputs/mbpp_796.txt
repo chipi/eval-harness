@@ -1,0 +1,18 @@
+```python
+def return_sum(d):
+    """
+    Finds the sum of all items (values) in the given dictionary.
+    
+    Args:
+        d (dict): The input dictionary with numeric values.
+        
+    Returns:
+        int: The sum of all the values in the dictionary.
+    """
+    return sum(d.values())
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert return_sum({'a': 100, 'b':200, 'c':300}) == 600
+    print("Assertion passed successfully!")
+```

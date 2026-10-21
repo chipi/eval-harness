@@ -1,0 +1,46 @@
+Here's a self-contained Python script that solves the problem by finding the maximum absolute product between numbers in pairs of tuples within a given list:
+
+```python
+def max_product_tuple(tuples_list):
+    """
+    Find the maximum absolute product between numbers in pairs of tuples within a given list.
+
+    Args:
+        tuples_list: List of tuples, where each tuple contains two numbers.
+
+    Returns:
+        The maximum absolute product found between any two numbers in the tuples.
+    """
+    max_product = 0
+    # Iterate through all possible pairs of numbers in the tuples
+    for i in range(len(tuples_list)):
+        for j in range(i + 1, len(tuples_list)):
+            # Get the two tuples
+            t1 = tuples_list[i]
+            t2 = tuples_list[j]
+            # Calculate all possible products between numbers in the two tuples
+            products = [
+                t1[0] * t2[0],
+                t1[0] * t2[1],
+                t1[1] * t2[0],
+                t1[1] * t2[1]
+            ]
+            # Update max_product if any of the products is larger in absolute value
+            for product in products:
+                if abs(product) > abs(max_product):
+                    max_product = product
+    return max_product
+
+# Test the function
+assert max_product_tuple([(2, 7), (2, 6), (1, 8), (4, 9)]) == 36
+```
+
+### Explanation:
+1. The function `max_product_tuple` takes a list of tuples as input.
+2. It initializes `max_product` to 0.
+3. It iterates through all possible pairs of tuples in the list (without repetition).
+4. For each pair of tuples, it calculates all possible products between the numbers in the two tuples (4 products per pair).
+5. It updates `max_product` if any of the calculated products has a larger absolute value than the current `max_product`.
+6. Finally, it returns the `max_product` found.
+
+The test case `assert max_product_tuple([(2, 7), (2, 6), (1, 8), (4, 9)]) == 36` passes because the maximum absolute product is `4 * 9 = 36`.

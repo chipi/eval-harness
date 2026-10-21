@@ -1,0 +1,19 @@
+```python
+def minimum(a, b):
+    """
+    Returns the minimum of two numbers.
+    """
+    if a < b:
+        return a
+    else:
+        return b
+
+if __name__ == "__main__":
+    # Test cases
+    assert minimum(1, 2) == 1
+    assert minimum(10, 5) == 5
+    assert minimum(-1, -5) == -5
+    assert minimum(0, 0) == 0
+    
+    print("All assertions passed successfully!")
+```

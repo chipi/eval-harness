@@ -1,0 +1,11 @@
+```python
+def move_zero(lst):
+    non_zeros = [x for x in lst if x != 0]
+    zeros = [x for x in lst if x == 0]
+    return non_zeros + zeros
+
+
+if __name__ == "__main__":
+    assert move_zero([1, 0, 2, 0, 3, 4]) == [1, 2, 3, 4, 0, 0]
+    print(move_zero([1, 0, 2, 0, 3, 4]))
+```

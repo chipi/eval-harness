@@ -1,0 +1,44 @@
+```python
+"""
+Determine whether a given element is the majority element in a sorted array.
+
+A majority element occurs more than n/2 times.
+
+Example:
+assert is_majority([1, 2, 3, 3, 3, 3, 10], 7, 3) == True
+"""
+
+from bisect import bisect_left, bisect_right
+
+
+def is_majority(arr, n, element):
+    """
+    Return True if element appears more than n/2 times in the sorted array arr.
+
+    Parameters:
+        arr (list): Sorted list of elements.
+        n (int): Length of arr.
+        element: Element to check.
+
+    Returns:
+        bool: True if element is the majority element, otherwise False.
+    """
+    if n == 0:
+        return False
+
+    left = bisect_left(arr, element, 0, n)
+    right = bisect_right(arr, element, 0, n)
+
+    count = right - left
+    return count > n // 2
+
+
+if __name__ == "__main__":
+    assert is_majority([1, 2, 3, 3, 3, 3, 10], 7, 3) == True
+    assert is_majority([1, 1, 2, 2, 2], 5, 2) == True
+    assert is_majority([1, 1, 2, 2, 3], 5, 2) == False
+    assert is_majority([4, 4, 4, 4], 4, 4) == True
+    assert is_majority([], 0, 1) == False
+
+    print("All tests passed.")
+```

@@ -1,0 +1,33 @@
+```python
+def get_Inv_Count(arr):
+    """Return the number of pairs (i, j) where i < j and arr[i] > arr[j]."""
+    def sort_and_count(items):
+        if len(items) < 2:
+            return items, 0
+
+        mid = len(items) // 2
+        left, left_count = sort_and_count(items[:mid])
+        right, right_count = sort_and_count(items[mid:])
+
+        merged = []
+        i = j = 0
+        count = left_count + right_count
+
+        while i < len(left) and j < len(right):
+            if left[i] <= right[j]:
+                merged.append(left[i])
+                i += 1
+            else:
+                merged.append(right[j])
+                count += len(left) - i
+                j += 1
+
+        merged.extend(left[i:])
+        merged.extend(right[j:])
+        return merged, count
+
+    return sort_and_count(arr)[1]
+
+
+assert get_Inv_Count([1, 20, 6, 4, 5]) == 5
+```

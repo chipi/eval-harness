@@ -1,0 +1,72 @@
+Here's a self-contained Python script that checks if a given number is a Woodall number:
+
+```python
+"""
+Write a function to check if the given number is woodball or not.
+assert is_woodall(383) == True
+"""
+
+def is_woodall(n):
+    """
+    Check if a number is a Woodall number.
+    
+    A Woodall number is of the form: n * 2^n - 1
+    where n is a positive integer.
+    
+    Args:
+        n (int): The number to check
+        
+    Returns:
+        bool: True if n is a Woodall number, False otherwise
+    """
+    if n < 1:
+        return False
+    
+    # Check for each possible value of k starting from 1
+    k = 1
+    while True:
+        woodall = k * (2 ** k) - 1
+        
+        if woodall == n:
+            return True
+        elif woodall > n:
+            return False
+        
+        k += 1
+
+
+# Test cases
+if __name__ == "__main__":
+    # Test the given assertion
+    assert is_woodall(383) == True
+    
+    # Additional test cases
+    # Woodall numbers: 1, 7, 23, 63, 159, 383, 895, 2047, 4607, ...
+    assert is_woodall(1) == True    # 1 * 2^1 - 1 = 1
+    assert is_woodall(7) == True    # 2 * 2^2 - 1 = 7
+    assert is_woodall(23) == True   # 3 * 2^3 - 1 = 23
+    assert is_woodall(63) == True   # 4 * 2^4 - 1 = 63
+    assert is_woodall(159) == True  # 5 * 2^5 - 1 = 159
+    assert is_woodall(383) == True  # 6 * 2^6 - 1 = 383
+    assert is_woodall(895) == True  # 7 * 2^7 - 1 = 895
+    assert is_woodall(2047) == True # 8 * 2^8 - 1 = 2047
+    
+    # Non-Woodall numbers
+    assert is_woodall(2) == False
+    assert is_woodall(10) == False
+    assert is_woodall(100) == False
+    assert is_woodall(384) == False
+    assert is_woodall(0) == False
+    assert is_woodall(-5) == False
+    
+    print("All tests passed!")
+```
+
+This script defines the `is_woodall` function which:
+
+1. **Checks if the input is valid**: Returns `False` for numbers less than 1
+2. **Iterates through possible values**: Starting from k=1, it calculates `k * 2^k - 1` for each k
+3. **Compares with target**: If the calculated Woodall number equals the input, returns `True`; if it exceeds the input, returns `False` (since Woodall numbers increase monotonically)
+4. **Includes comprehensive tests**: Verifies the given assertion and additional test cases for both Woodall and non-Woodall numbers
+
+The function correctly identifies 383 as a Woodall number since 6 × 2⁶ - 1 = 6 × 64 - 1 = 384 - 1 = 383.

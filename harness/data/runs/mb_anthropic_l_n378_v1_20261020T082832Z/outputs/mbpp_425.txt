@@ -1,0 +1,56 @@
+Looking at this problem, I need to count how many sublists contain a given element.
+
+```python
+"""
+Write a function to count the number of sublists containing a particular element.
+assert count_element_in_list([[1, 3], [5, 7], [1, 11], [1, 15, 7]],1)==3
+"""
+
+
+def count_element_in_list(list1, x):
+    """
+    Count the number of sublists that contain the element x.
+
+    Args:
+        list1: A list of sublists.
+        x: The element to search for.
+
+    Returns:
+        The number of sublists containing x.
+    """
+    count = 0
+    for sublist in list1:
+        if x in sublist:
+            count += 1
+    return count
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert count_element_in_list([[1, 3], [5, 7], [1, 11], [1, 15, 7]], 1) == 3
+
+    # Additional test cases
+    assert count_element_in_list([[1, 2], [2, 3], [3, 4], [4, 5]], 4) == 2
+    assert count_element_in_list([["A", "B"], ["A", "C"], ["A", "D", "E"]], "A") == 3
+    assert count_element_in_list([[1, 3], [5, 7], [1, 11]], 9) == 0
+    assert count_element_in_list([], 1) == 0
+
+    print("All tests passed!")
+    print(count_element_in_list([[1, 3], [5, 7], [1, 11], [1, 15, 7]], 1))
+```
+
+**How it works:**
+
+1. Initialize a counter `count` to 0.
+2. Iterate through each `sublist` in the outer list.
+3. Use Python's `in` operator to check membership of `x` in the sublist — if found, increment the counter.
+4. Return the final count.
+
+For the example `[[1, 3], [5, 7], [1, 11], [1, 15, 7]]` with element `1`: sublists `[1, 3]`, `[1, 11]`, and `[1, 15, 7]` contain `1`, so the result is `3`.
+
+A more concise one-liner alternative:
+
+```python
+def count_element_in_list(list1, x):
+    return sum(1 for sublist in list1 if x in sublist)
+```

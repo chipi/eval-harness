@@ -1,0 +1,59 @@
+```python
+def divisible_by_digits(startnum, endnum):
+    """
+    Find numbers within a given range where every number is divisible by every digit it contains.
+    
+    Args:
+        startnum: The start of the range (inclusive)
+        endnum: The end of the range (inclusive)
+    
+    Returns:
+        A list of numbers where each number is divisible by all of its digits
+    """
+    result = []
+    
+    for num in range(startnum, endnum + 1):
+        # Convert number to string to get individual digits
+        digits = str(num)
+        
+        # Check if the number is divisible by all its digits
+        is_divisible = True
+        for digit_char in digits:
+            digit = int(digit_char)
+            
+            # Skip if digit is 0 (can't divide by 0)
+            if digit == 0:
+                is_divisible = False
+                break
+            
+            # Check if number is divisible by this digit
+            if num % digit != 0:
+                is_divisible = False
+                break
+        
+        if is_divisible:
+            result.append(num)
+    
+    return result
+
+
+# Test the function
+if __name__ == "__main__":
+    assert divisible_by_digits(1, 22) == [1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 15, 22]
+    print("Test passed!")
+    print(f"divisible_by_digits(1, 22) = {divisible_by_digits(1, 22)}")
+```
+
+The function works as follows:
+
+1. **Iterate through the range**: Loop through all numbers from `startnum` to `endnum` (inclusive)
+2. **Extract digits**: Convert each number to a string to easily access individual digits
+3. **Check divisibility**: For each digit in the number:
+   - Skip numbers containing 0 (since division by 0 is undefined)
+   - Check if the number is divisible by the digit (using modulo operator `%`)
+4. **Collect results**: Add numbers that are divisible by all their digits to the result list
+
+For example:
+- `12`: digits are 1 and 2. 12 % 1 = 0 ✓ and 12 % 2 = 0 ✓ → included
+- `13`: digits are 1 and 3. 13 % 1 = 0 ✓ but 13 % 3 = 1 ✗ → excluded
+- `22`: digits are 2 and 2. 22 % 2 = 0 ✓ → included

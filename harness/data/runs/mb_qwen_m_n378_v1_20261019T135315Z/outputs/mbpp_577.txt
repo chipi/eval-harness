@@ -1,0 +1,52 @@
+```python
+def last_Digit_Factorial(n: int) -> int:
+    """
+    Find the last digit in the factorial of a given number.
+    
+    For n >= 5, the factorial will always end in 0 because it includes
+    both 2 and 5 as factors (producing a factor of 10).
+    For smaller values, we compute directly.
+    
+    Args:
+        n: A non-negative integer
+        
+    Returns:
+        The last digit of n!
+        
+    Examples:
+        >>> last_Digit_Factorial(4)
+        4
+        >>> last_Digit_Factorial(5)
+        0
+        >>> last_Digit_Factorial(0)
+        1
+    """
+    if n < 0:
+        raise ValueError("Factorial is not defined for negative numbers")
+    
+    # For n >= 5, n! always ends in 0
+    if n >= 5:
+        return 0
+    
+    # Compute factorial directly for small values
+    factorial = 1
+    for i in range(1, n + 1):
+        factorial *= i
+    
+    return factorial % 10
+
+
+if __name__ == "__main__":
+    # Test the assertion from the problem
+    assert last_Digit_Factorial(4) == 4
+    
+    # Additional tests
+    assert last_Digit_Factorial(0) == 1
+    assert last_Digit_Factorial(1) == 1
+    assert last_Digit_Factorial(2) == 2
+    assert last_Digit_Factorial(3) == 6
+    assert last_Digit_Factorial(5) == 0
+    assert last_Digit_Factorial(10) == 0
+    
+    print("All tests passed!")
+```

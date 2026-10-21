@@ -1,0 +1,23 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def merge(lists):
+    """
+    Takes a list of lists where each sublist has two elements and returns a list of two lists.
+    The first list contains the first element of each sublist, and the second contains the second.
+
+    Args:
+        lists: List of lists, each with two elements.
+
+    Returns:
+        List of two lists: first elements and second elements respectively.
+    """
+    first_elements = [sublist[0] for sublist in lists]
+    second_elements = [sublist[1] for sublist in lists]
+    return [first_elements, second_elements]
+
+# Test the function
+assert merge([['x', 'y'], ['a', 'b'], ['m', 'n']]) == [['x', 'a', 'm'], ['y', 'b', 'n']]
+```
+
+This script defines the `merge` function that uses list comprehensions to extract the first and second elements from each sublist, then returns them as a list of two lists. The assertion at the end verifies that the function works as expected.

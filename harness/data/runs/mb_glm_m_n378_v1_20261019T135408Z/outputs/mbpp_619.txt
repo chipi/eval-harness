@@ -1,0 +1,34 @@
+Here's a self-contained Python script that solves the problem of moving all numbers to the end of a given string:
+
+```python
+def move_num(s):
+    letters = []
+    numbers = []
+    for char in s:
+        if char.isdigit():
+            numbers.append(char)
+        else:
+            letters.append(char)
+    return ''.join(letters + numbers)
+
+# Test cases
+assert move_num('I1love143you55three3000thousand') == 'Iloveyouthreethousand1143553000'
+assert move_num('abc123def456') == 'abcdef123456'
+assert move_num('123abc') == 'abc123'
+assert move_num('abc') == 'abc'
+assert move_num('123') == '123'
+assert move_num('') == ''
+assert move_num('a1b2c3') == 'abc123'
+
+print("All test cases passed!")
+```
+
+### Explanation:
+1. The function `move_num` takes a string `s` as input.
+2. It initializes two empty lists: `letters` to store non-digit characters and `numbers` to store digit characters.
+3. It iterates over each character in the string:
+   - If the character is a digit (checked using `char.isdigit()`), it is added to the `numbers` list.
+   - Otherwise, it is added to the `letters` list.
+4. Finally, it concatenates the `letters` and `numbers` lists and returns the resulting string.
+
+The test cases verify that the function works correctly for various scenarios, including strings with only letters, only numbers, a mix of both, and an empty string. The `assert` statements will raise an error if any test case fails, otherwise, the script will print "All test cases passed!".

@@ -1,0 +1,9 @@
+```python
+def new_tuple(list1, string1):
+  """
+  Write a function to create a new tuple from the given string and list.
+  assert new_tuple(["WEB", "is"], "best") == ('WEB', 'is', 'best')
+  """
+  new_tuple1 = tuple(list1) + (string1,)
+  return new_tuple1
+```

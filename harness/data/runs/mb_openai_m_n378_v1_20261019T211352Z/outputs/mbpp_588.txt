@@ -1,0 +1,30 @@
+```python
+"""
+Write a Python function to find the difference between the largest and
+smallest value in a given list.
+
+Example:
+assert big_diff([1, 2, 3, 4]) == 3
+"""
+
+def big_diff(nums):
+    """
+    Return the difference between the largest and smallest values in nums.
+
+    Args:
+        nums (list): A non-empty list of numbers.
+
+    Returns:
+        int or float: The difference between max(nums) and min(nums).
+    """
+    return max(nums) - min(nums)
+
+
+if __name__ == "__main__":
+    assert big_diff([1, 2, 3, 4]) == 3
+    assert big_diff([10, 3, 5, 6]) == 7
+    assert big_diff([-1, -5, 0, 10]) == 15
+    assert big_diff([7]) == 0
+
+    print("All tests passed.")
+```

@@ -1,0 +1,23 @@
+```python
+#!/usr/bin/env python3
+"""
+Find the nth nonagonal number.
+
+A nonagonal number is a 9-sided polygonal number. The nth nonagonal number is:
+
+    P(9, n) = n * ((9 - 2) * n - (9 - 4)) / 2
+            = n * (7n - 5) / 2
+
+Example:
+    is_nonagonal(10) = 10 * (7 * 10 - 5) / 2 = 325
+"""
+
+def is_nonagonal(n: int) -> int:
+    """Return the nth nonagonal number."""
+    return n * (7 * n - 5) // 2
+
+
+if __name__ == "__main__":
+    assert is_nonagonal(10) == 325
+    print(is_nonagonal(10))
+```

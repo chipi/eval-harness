@@ -1,0 +1,20 @@
+```python
+"""
+Write a function to subtract two lists element-wise.
+
+Example:
+assert sub_list([1, 2, 3], [4, 5, 6]) == [-3, -3, -3]
+"""
+
+def sub_list(list1, list2):
+    """
+    Return a new list where each element is the difference between
+    the corresponding elements of list1 and list2.
+    """
+    return [a - b for a, b in zip(list1, list2)]
+
+
+if __name__ == "__main__":
+    assert sub_list([1, 2, 3], [4, 5, 6]) == [-3, -3, -3]
+    print("All tests passed.")
+```

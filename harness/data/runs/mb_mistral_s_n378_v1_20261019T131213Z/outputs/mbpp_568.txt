@@ -1,0 +1,26 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def empty_list(N):
+    """Create a list of N empty dictionaries.
+
+    Args:
+        N (int): The number of empty dictionaries to create.
+
+    Returns:
+        list: A list containing N empty dictionaries.
+    """
+    return [{} for _ in range(N)]
+
+# Test the function
+assert empty_list(5) == [{} for _ in range(5)]
+print("Test passed!")
+```
+
+This script:
+1. Defines a function `empty_list` that takes an integer `N` as input
+2. Uses a list comprehension to create a list of `N` empty dictionaries
+3. Includes an assertion to verify the function works as expected
+4. Prints a confirmation message if the test passes
+
+The function will return a list of `N` empty dictionaries, and the assertion checks that it matches the expected output `[{}, {}, {}, {}, {}]` when `N=5`.

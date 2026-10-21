@@ -1,0 +1,30 @@
+```python
+def neg_nos(lst: list) -> list:
+    """
+    Return a list of negative numbers from the input list.
+    
+    Args:
+        lst: A list of numbers
+        
+    Returns:
+        A list containing only the negative numbers from the input list
+        
+    Example:
+        >>> neg_nos([-1, 4, 5, -6])
+        [-1, -6]
+    """
+    return [num for num in lst if num < 0]
+
+
+if __name__ == "__main__":
+    # Test the function with the provided assertion
+    assert neg_nos([-1, 4, 5, -6]) == [-1, -6], f"Expected [-1, -6], got {neg_nos([-1, 4, 5, -6])}"
+    
+    # Additional test cases
+    assert neg_nos([1, 2, 3]) == [], "Should return empty list when no negatives"
+    assert neg_nos([-1, -2, -3]) == [-1, -2, -3], "Should return all negatives"
+    assert neg_nos([]) == [], "Should return empty list for empty input"
+    assert neg_nos([0, -1, 1]) == [-1], "Zero is not negative"
+    
+    print("All tests passed!")
+```

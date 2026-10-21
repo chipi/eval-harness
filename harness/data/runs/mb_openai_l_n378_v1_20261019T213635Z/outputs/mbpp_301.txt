@@ -1,0 +1,10 @@
+```python
+def dict_depth(value):
+    """Return the maximum number of nested dictionary levels."""
+    if not isinstance(value, dict):
+        return 0
+    return 1 + max((dict_depth(item) for item in value.values()), default=0)
+
+
+assert dict_depth({'a': 1, 'b': {'c': {'d': {}}}}) == 4
+```

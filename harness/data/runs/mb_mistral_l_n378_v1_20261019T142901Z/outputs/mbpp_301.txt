@@ -1,0 +1,36 @@
+Here's a self-contained Python script that solves the problem of finding the depth of a dictionary:
+
+```python
+def dict_depth(d):
+    """
+    Calculate the maximum depth of a nested dictionary.
+
+    Args:
+        d: The dictionary to calculate depth for
+
+    Returns:
+        int: The maximum depth of the dictionary
+    """
+    if not isinstance(d, dict) or not d:
+        return 1
+
+    max_depth = 0
+    for key in d:
+        current_depth = dict_depth(d[key])
+        if current_depth > max_depth:
+            max_depth = current_depth
+
+    return max_depth + 1
+
+# Test case
+assert dict_depth({'a':1, 'b': {'c': {'d': {}}}}) == 4
+```
+
+This solution:
+1. Handles the base case where the input is not a dictionary or is an empty dictionary (depth = 1)
+2. Recursively checks each value in the dictionary
+3. Keeps track of the maximum depth found
+4. Returns the maximum depth + 1 (to account for the current level)
+5. Includes the provided test case to verify the function works correctly
+
+The function will work for any nested dictionary structure, returning the maximum depth found.

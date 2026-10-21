@@ -1,0 +1,7 @@
+```python
+def index_multiplication(t1, t2):
+    return tuple(t1[i] * t2[i] for i in range(len(t1)))
+
+# Test cases
+print(index_multiplication(((1, 3), (4, 5), (2, 9), (1, 10)),((6, 7), (3, 9), (1, 1), (7, 3)))) # should print ((6, 21), (12, 45), (2, 9), (7, 30))
+```

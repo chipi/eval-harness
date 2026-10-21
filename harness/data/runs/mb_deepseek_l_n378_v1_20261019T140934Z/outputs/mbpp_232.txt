@@ -1,0 +1,38 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def larg_nnum(lst, n):
+    """
+    Returns a list containing the n largest items from the input list.
+    
+    Args:
+        lst: List of numbers
+        n: Number of largest items to return
+    
+    Returns:
+        List of n largest items
+    """
+    # Sort the list in descending order and take the first n elements
+    sorted_list = sorted(lst, reverse=True)
+    return sorted_list[:n]
+
+
+# Test the function
+if __name__ == "__main__":
+    result = larg_nnum([10, 20, 50, 70, 90, 20, 50, 40, 60, 80, 100], 2)
+    print(f"Result: {result}")
+    print(f"Test passed: {set(result) == set([100, 90])}")
+```
+
+**Output:**
+```
+Result: [100, 90]
+Test passed: True
+```
+
+The function works by:
+1. Sorting the input list in descending order using `sorted(lst, reverse=True)`
+2. Taking the first `n` elements from the sorted list
+3. Returning those n largest items
+
+The test assertion uses `set()` comparison, which means the order of the returned items doesn't matter — only that the correct largest values are present.

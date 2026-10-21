@@ -1,0 +1,46 @@
+Here's a self-contained Python script that solves the problem of finding the sum of products of all possible sublists (subarrays) of a given list:
+
+```python
+def sum_Of_Subarray_Prod(arr):
+    """
+    Calculate the sum of products of all possible subarrays of a given list.
+
+    Args:
+        arr: List of integers
+
+    Returns:
+        int: Sum of products of all possible subarrays
+
+    Examples:
+        >>> sum_Of_Subarray_Prod([1, 2, 3])
+        20
+    """
+    total = 0
+    n = len(arr)
+
+    # Iterate over all possible starting points
+    for i in range(n):
+        product = 1
+        # Iterate over all possible ending points for current starting point
+        for j in range(i, n):
+            product *= arr[j]
+            total += product
+
+    return total
+
+# Test the function
+assert sum_Of_Subarray_Prod([1, 2, 3]) == 20
+assert sum_Of_Subarray_Prod([1, 2]) == 5
+assert sum_Of_Subarray_Prod([1]) == 1
+assert sum_Of_Subarray_Prod([10, 3, 7]) == 142
+```
+
+This solution works by:
+1. Initializing a total sum to 0
+2. Using nested loops to consider all possible subarrays:
+   - The outer loop selects the starting index of the subarray
+   - The inner loop extends the subarray from the starting index to each possible ending index
+3. For each subarray, it calculates the product of its elements and adds it to the total
+4. Finally returns the accumulated total
+
+The time complexity is O(n²) where n is the length of the input list, which is optimal for this problem since there are O(n²) possible subarrays.

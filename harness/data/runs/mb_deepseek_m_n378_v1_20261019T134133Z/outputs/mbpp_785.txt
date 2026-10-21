@@ -1,0 +1,44 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def tuple_str_int(s: str) -> tuple:
+    """
+    Convert a string representation of a tuple of integers into an actual tuple of integers.
+    
+    Args:
+        s: A string like "(7, 8, 9)" representing a tuple of integers.
+    
+    Returns:
+        A tuple of integers, e.g., (7, 8, 9).
+    """
+    # Strip whitespace and remove the surrounding parentheses
+    s = s.strip()
+    if s.startswith("(") and s.endswith(")"):
+        s = s[1:-1]
+    
+    # Handle empty tuple case
+    if not s.strip():
+        return ()
+    
+    # Split by comma and convert each element to int
+    return tuple(int(x.strip()) for x in s.split(","))
+
+
+# Test the function
+assert tuple_str_int("(7, 8, 9)") == (7, 8, 9)
+assert tuple_str_int("(1, 2, 3, 4, 5)") == (1, 2, 3, 4, 5)
+assert tuple_str_int("(42,)") == (42,)
+assert tuple_str_int("()") == ()
+assert tuple_str_int("( -1 , 0 , 1 )") == (-1, 0, 1)
+
+print("All tests passed!")
+```
+
+**How it works:**
+
+1. **Strip whitespace** from the input string.
+2. **Remove parentheses** if they exist at the start and end.
+3. **Handle the empty tuple** case by returning `()`.
+4. **Split by comma** and convert each stripped element to an integer using a generator expression wrapped in `tuple()`.
+
+The function handles edge cases like single-element tuples, empty tuples, and extra whitespace around numbers.

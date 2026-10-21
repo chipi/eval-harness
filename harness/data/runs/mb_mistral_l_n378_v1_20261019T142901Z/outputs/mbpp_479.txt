@@ -1,0 +1,36 @@
+Here's a self-contained Python script that solves the problem by defining a function to find the first digit of a given number:
+
+```python
+def first_digit(n):
+    """
+    Returns the first digit of a given integer.
+
+    Args:
+        n (int): The input number.
+
+    Returns:
+        int: The first digit of the number.
+    """
+    # Handle negative numbers by taking absolute value
+    n = abs(n)
+    # Convert to string and get the first character, then convert back to int
+    return int(str(n)[0])
+
+# Test the function
+assert first_digit(123) == 1
+assert first_digit(-456) == 4
+assert first_digit(0) == 0
+assert first_digit(7) == 7
+assert first_digit(987654321) == 9
+
+print("All tests passed!")
+```
+
+This script:
+1. Defines the `first_digit` function that works for both positive and negative numbers
+2. Uses absolute value to handle negative numbers
+3. Converts the number to a string to easily access the first digit
+4. Includes test cases that verify the function works correctly
+5. Prints a success message if all assertions pass
+
+The function will work for all integers, including single-digit numbers and zero.

@@ -1,0 +1,32 @@
+Here's a self-contained Python script that solves the problem using regular expressions to match a word containing 'z':
+
+```python
+import re
+
+def text_match_wordz(text):
+    """
+    Check if the input text contains a word with the letter 'z'.
+
+    Args:
+        text (str): The input string to check.
+
+    Returns:
+        bool: True if a word containing 'z' is found, False otherwise.
+    """
+    # Use regular expression to find a word containing 'z'
+    # \w* matches zero or more word characters, z matches the letter z
+    pattern = r'\w*z\w*'
+    return bool(re.search(pattern, text))
+
+# Test case
+assert text_match_wordz("pythonz.") == True
+```
+
+This script:
+1. Imports the `re` module for regular expressions
+2. Defines the `text_match_wordz` function that checks for words containing 'z'
+3. Uses the pattern `\w*z\w*` which matches:
+   - `\w*` - zero or more word characters (letters, digits, or underscores)
+   - `z` - the letter z
+   - `\w*` - zero or more word characters
+4. Includes the required test case that asserts the function returns True for "pythonz."

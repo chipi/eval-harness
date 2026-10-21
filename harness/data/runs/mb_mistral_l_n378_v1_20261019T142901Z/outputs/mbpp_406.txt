@@ -1,0 +1,36 @@
+Here's a self-contained Python script that solves the problem of determining whether the parity of a given number is odd:
+
+```python
+def find_Parity(num):
+    """
+    Determine if the parity of a given number is odd.
+
+    The parity of a number refers to whether the number of set bits (1s) in its binary
+    representation is odd (True) or even (False).
+
+    Args:
+        num (int): The number to check for parity.
+
+    Returns:
+        bool: True if the number of set bits is odd, False otherwise.
+    """
+    parity = False
+    while num:
+        parity = not parity
+        num = num & (num - 1)  # This operation removes the rightmost set bit
+    return parity
+
+# Test case
+assert find_Parity(12) == False
+```
+
+### Explanation:
+1. The function `find_Parity` takes an integer `num` as input.
+2. It initializes a boolean `parity` to `False` (assuming even parity initially).
+3. The loop continues as long as `num` is not zero:
+   - `parity` is toggled (if it was `False`, it becomes `True`, and vice versa).
+   - `num = num & (num - 1)` removes the rightmost set bit (1) from `num`. This is a common bit manipulation trick to count set bits efficiently.
+4. The loop exits when `num` becomes zero, and the final value of `parity` is returned.
+5. The test case `assert find_Parity(12) == False` verifies that the function works correctly for the input `12` (binary `1100`, which has 2 set bits, so parity is even).
+
+The function returns `True` if the number of set bits is odd and `False` otherwise.

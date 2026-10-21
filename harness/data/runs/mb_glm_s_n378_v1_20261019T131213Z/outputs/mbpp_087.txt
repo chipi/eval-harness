@@ -1,0 +1,43 @@
+```python
+def merge_dictionaries_three(dict1, dict2, dict3):
+  """
+  Merges three dictionaries into a single dictionary.
+
+  If a key exists in more than one dictionary, the value from the last
+  dictionary (in the order dict3, then dict2, then dict1) will be used.
+
+  Args:
+    dict1: The first dictionary.
+    dict2: The second dictionary.
+    dict3: The third dictionary.
+
+  Returns:
+    A new dictionary containing the merged key-value pairs.
+  """
+  # The update() method modifies a dictionary in place with the key/value pairs
+  # from another dictionary. We can use this to merge the dictionaries.
+  # We start with a copy of the first dictionary to avoid modifying the original.
+  merged_dict = dict1.copy()
+  
+  # Update with the second dictionary. Keys from dict2 will overwrite keys from dict1.
+  merged_dict.update(dict2)
+  
+  # Update with the third dictionary. Keys from dict3 will overwrite keys from dict1 and dict2.
+  merged_dict.update(dict3)
+  
+  return merged_dict
+
+# Example usage and assertion from the problem description
+if __name__ == "__main__":
+    dict_a = { "R": "Red", "B": "Black", "P": "Pink" }
+    dict_b = { "G": "Green", "W": "White" }
+    dict_c = { "O": "Orange", "W": "White", "B": "Black" }
+    
+    expected_result = {'B': 'Black', 'R': 'Red', 'P': 'Pink', 'G': 'Green', 'W': 'White', 'O': 'Orange'}
+    
+    # Call the function and assert that the result matches the expected output
+    assert merge_dictionaries_three(dict_a, dict_b, dict_c) == expected_result
+    
+    # Print a success message if the assertion passes
+    print("Assertion passed: The function correctly merges the dictionaries.")
+```

@@ -1,0 +1,40 @@
+```python
+def max_subarray_product(nums):
+    """
+    Find the maximum product subarray of the given array.
+    
+    Args:
+        nums: A list of integers
+        
+    Returns:
+        The maximum product of any contiguous subarray
+    """
+    if not nums:
+        return 0
+    
+    # Initialize with the first element
+    max_prod = nums[0]
+    min_prod = nums[0]
+    result = nums[0]
+    
+    for i in range(1, len(nums)):
+        num = nums[i]
+        
+        # If current number is negative, swapping max and min will help
+        # because a negative * negative = positive
+        if num < 0:
+            max_prod, min_prod = min_prod, max_prod
+        
+        # Update max_prod and min_prod
+        max_prod = max(num, max_prod * num)
+        min_prod = min(num, min_prod * num)
+        
+        # Update result
+        result = max(result, max_prod)
+    
+    return result
+
+
+# Test case
+assert max_subarray_product([1, -2, -3, 0, 7, -8, -2]) == 112
+```

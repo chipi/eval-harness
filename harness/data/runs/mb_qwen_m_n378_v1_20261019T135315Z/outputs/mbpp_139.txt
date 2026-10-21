@@ -1,0 +1,21 @@
+```python
+import math
+
+def circle_circumference(radius: float) -> float:
+    """
+    Calculate the circumference of a circle given its radius.
+    
+    Args:
+        radius: The radius of the circle.
+        
+    Returns:
+        The circumference of the circle (2 * pi * radius).
+    """
+    return 2 * math.pi * radius
+
+
+if __name__ == "__main__":
+    # Test the function with the provided assertion
+    assert math.isclose(circle_circumference(10), 62.830000000000005, rel_tol=0.001)
+    print("All tests passed!")
+```

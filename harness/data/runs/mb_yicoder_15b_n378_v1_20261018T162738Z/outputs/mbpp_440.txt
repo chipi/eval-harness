@@ -1,0 +1,14 @@
+```python
+def find_adverb_position(sentence):
+    adverbs = ['clearly', 'finally', 'lastly', 'obviously', 'totally', 'unfortunately', 'worst', 'worst-case', 'worst-case scenario', 'worst-case scenario', 'worst-case situations', 'worst-case situations', 'worst-case scenario', 'worst-case scenarios', 'worst-case scenarios']
+    for i, word in enumerate(sentence.split()):
+        if word in adverbs:
+            return i, i+len(word)-1, word
+    return None
+
+# Test cases
+print(find_adverb_position("clearly!! we can see the sky")) # Expected output: (0, 7, 'clearly')
+print(find_adverb_position("I am so happy that I can't believe it's not butter")) # Expected output: (1, 18, "so")
+print(find_adverb_position("I am so happy that I can't believe it's not butter")) # Expected output: (1, 18, "so")
+print(find_adverb_position("I am so happy that I can't believe it's not butter")) # Expected output: (1, 18, "so")
+```

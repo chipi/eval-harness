@@ -1,0 +1,21 @@
+```python
+def check_K(tup, k):
+    """
+    Checks if the given tuple contains the number k.
+
+    Args:
+        tup (tuple): The tuple to search in.
+        k (int): The number to search for.
+
+    Returns:
+        bool: True if k is in the tuple, False otherwise.
+    """
+    return k in tup
+
+# Example usage:
+if __name__ == "__main__":
+    print(check_K((10, 4, 5, 6, 8), 6))  # Expected output: True
+    print(check_K((10, 4, 5, 6, 8), 9))  # Expected output: False
+```
+
+This script defines a function `check_K` that takes a tuple `tup` and an integer `k` as arguments. It uses Python's built-in `in` operator to check if `k` is present in the tuple. The function returns `True` if `k` is found and `False` otherwise. The example usage demonstrates how to use this function with the provided test cases.

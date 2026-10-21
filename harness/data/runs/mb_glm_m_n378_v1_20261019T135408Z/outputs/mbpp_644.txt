@@ -1,0 +1,24 @@
+```python
+def reverse_Array_Upto_K(arr, k):
+    """
+    Reverses an array up to a given position k (exclusive).
+    
+    The first k elements of the array are reversed in place, 
+    while the remaining elements stay in their original positions.
+    
+    Parameters:
+    arr (list): The input list of elements.
+    k (int): The position up to which the array should be reversed.
+    
+    Returns:
+    list: The modified list with the first k elements reversed.
+    """
+    # Reverse the subarray from the beginning up to index k
+    arr[:k] = arr[:k][::-1]
+    return arr
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert reverse_Array_Upto_K([1, 2, 3, 4, 5, 6], 4) == [4, 3, 2, 1, 5, 6]
+    print("Test passed successfully!")
+```

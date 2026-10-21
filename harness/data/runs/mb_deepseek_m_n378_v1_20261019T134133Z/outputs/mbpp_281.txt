@@ -1,0 +1,44 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def all_unique(lst):
+    """
+    Check if all elements in a list are unique.
+    
+    Args:
+        lst: A list of elements to check.
+    
+    Returns:
+        True if all elements are unique, False otherwise.
+    """
+    return len(lst) == len(set(lst))
+
+
+# Test cases
+if __name__ == "__main__":
+    assert all_unique([1, 2, 3]) == True
+    assert all_unique([1, 2, 2, 3]) == False
+    assert all_unique([]) == True
+    assert all_unique([1]) == True
+    assert all_unique(['a', 'b', 'c']) == True
+    assert all_unique(['a', 'b', 'a']) == False
+    print("All tests passed!")
+```
+
+**How it works:**
+
+- The function converts the list to a `set`, which automatically removes duplicates.
+- If the length of the original list equals the length of the set, then all elements were unique.
+- This approach works for hashable elements (numbers, strings, tuples, etc.) and runs in O(n) average time.
+
+**Note:** If the list contains unhashable elements (like nested lists or dicts), you'd need a different approach, such as using a loop with a seen list:
+
+```python
+def all_unique(lst):
+    seen = []
+    for item in lst:
+        if item in seen:
+            return False
+        seen.append(item)
+    return True
+```

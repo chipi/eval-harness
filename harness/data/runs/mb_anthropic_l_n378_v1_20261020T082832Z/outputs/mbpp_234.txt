@@ -1,0 +1,50 @@
+Looking at this problem, I need to write a function that calculates the volume of a cube given its side length. The volume of a cube is simply the side length raised to the third power.
+
+```python
+"""
+Write a function to find the volume of a cube given its side length.
+assert volume_cube(3)==27
+"""
+
+
+def volume_cube(side_length):
+    """
+    Calculate the volume of a cube given its side length.
+
+    The volume of a cube is found by cubing the length of one of its sides,
+    since all edges of a cube are equal:
+        volume = side_length ** 3
+
+    Parameters
+    ----------
+    side_length : int or float
+        The length of one edge of the cube.
+
+    Returns
+    -------
+    int or float
+        The volume of the cube.
+    """
+    return side_length ** 3
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert volume_cube(3) == 27
+
+    # A few additional sanity checks
+    assert volume_cube(1) == 1
+    assert volume_cube(2) == 8
+    assert volume_cube(5) == 125
+    assert volume_cube(0) == 0
+    assert volume_cube(2.5) == 15.625
+
+    print("All tests passed!")
+    print("volume_cube(3) =", volume_cube(3))
+```
+
+**Explanation:**
+
+- A cube has all sides of equal length, so its volume is `side × side × side`, which is `side_length ** 3`.
+- For `side_length = 3`: `3 ** 3 = 27`, which satisfies the given assertion.
+- The function works with both integers and floats (e.g., `volume_cube(2.5)` returns `15.625`).

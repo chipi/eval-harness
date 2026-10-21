@@ -1,0 +1,28 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def long_words(n, text):
+    """
+    Find words that are longer than n characters from a given string.
+    
+    Args:
+        n: Minimum length threshold (words must be strictly longer than n)
+        text: Input string containing words separated by spaces
+    
+    Returns:
+        List of words longer than n characters
+    """
+    # Split the text into words and filter those longer than n
+    words = text.split()
+    return [word for word in words if len(word) > n]
+
+
+# Test the function
+if __name__ == "__main__":
+    # Test case from the problem statement
+    result = long_words(3, "python is a programming language")
+    expected = ['python', 'programming', 'language']
+    assert result == expected, f"Expected {expected}, but got {result}"
+    print("Test passed!")
+    print(f"Result: {result}")
+```

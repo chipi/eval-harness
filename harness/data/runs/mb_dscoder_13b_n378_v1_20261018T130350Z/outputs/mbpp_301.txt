@@ -1,0 +1,14 @@
+```python
+def dict_depth(d):
+    if isinstance(d, dict):
+        return 1 + max(dict_depth(v) for v in d.values())
+    else:
+        return 0
+
+# Test cases
+assert dict_depth({'a':1, 'b': {'c': {'d': {}}}})==4
+assert dict_depth({'a':1, 'b': {'c': {'d': {'e': {}}}})==5
+assert dict_depth({'a':1, 'b': {'c': {'d': {'e': {'f': {}}}}}})==6
+assert dict_depth({'a':1, 'b': {'c': {'d': {'e': {'f': {'g': {}}}}}})==7
+assert dict_depth({'a':1, 'b': {'c': {'d': {'e': {'f': {'g': {'h': {}}}}}}}})==8
+```

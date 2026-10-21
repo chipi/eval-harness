@@ -1,0 +1,38 @@
+Here's a self-contained Python script that solves the problem in a markdown code block:
+
+```python
+def find_max_length_element(lst):
+    """
+    Find the element of a list having maximum length.
+
+    Args:
+        lst: A list of elements (can be lists, strings, etc.)
+
+    Returns:
+        The element with the maximum length. If multiple elements have the same
+        maximum length, returns the first one encountered.
+    """
+    if not lst:
+        return None
+
+    max_element = lst[0]
+    for element in lst[1:]:
+        if len(element) > len(max_element):
+            max_element = element
+    return max_element
+
+# Test case
+assert find_max_length_element([['A'], ['A', 'B'], ['A', 'B', 'C']]) == ['A', 'B', 'C']
+print("Test passed!")
+```
+
+This script:
+1. Defines a function `find_max_length_element` that takes a list as input
+2. Handles the edge case of an empty list
+3. Initializes the max element with the first element of the list
+4. Iterates through the remaining elements to find the one with maximum length
+5. Returns the first element encountered with the maximum length
+6. Includes the test case from the problem statement
+7. Prints a confirmation message if the test passes
+
+The function works with any list elements that have a length (like lists, strings, etc.) and returns the first element with the maximum length if there are ties.

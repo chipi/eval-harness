@@ -1,0 +1,54 @@
+```python
+#!/usr/bin/env python3
+"""
+Write a function to convert more than one list to a nested dictionary.
+
+Example:
+convert_list_dictionary(
+    ["S001", "S002", "S003", "S004"],
+    ["Adina Park", "Leyton Marsh", "Duncan Boyle", "Saim Richards"],
+    [85, 98, 89, 92]
+)
+
+Returns:
+[
+    {'S001': {'Adina Park': 85}},
+    {'S002': {'Leyton Marsh': 98}},
+    {'S003': {'Duncan Boyle': 89}},
+    {'S004': {'Saim Richards': 92}}
+]
+"""
+
+
+def convert_list_dictionary(ids, names, scores):
+    """
+    Convert three lists into a list of nested dictionaries.
+
+    Each result item has the form:
+        {id: {name: score}}
+
+    Args:
+        ids (list): List of student IDs.
+        names (list): List of student names.
+        scores (list): List of student scores.
+
+    Returns:
+        list: A list of nested dictionaries.
+    """
+    return [{student_id: {name: score}} for student_id, name, score in zip(ids, names, scores)]
+
+
+if __name__ == "__main__":
+    assert convert_list_dictionary(
+        ["S001", "S002", "S003", "S004"],
+        ["Adina Park", "Leyton Marsh", "Duncan Boyle", "Saim Richards"],
+        [85, 98, 89, 92],
+    ) == [
+        {"S001": {"Adina Park": 85}},
+        {"S002": {"Leyton Marsh": 98}},
+        {"S003": {"Duncan Boyle": 89}},
+        {"S004": {"Saim Richards": 92}},
+    ]
+
+    print("All tests passed.")
+```

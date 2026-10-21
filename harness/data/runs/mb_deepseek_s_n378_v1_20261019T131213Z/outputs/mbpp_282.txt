@@ -1,0 +1,22 @@
+Here’s a self-contained Python script that defines the function and includes the test case:
+
+```python
+def sub_list(list1, list2):
+    """
+    Subtract two lists element-wise.
+    
+    Args:
+        list1: First list of numbers.
+        list2: Second list of numbers.
+    
+    Returns:
+        A list where each element is the difference of the corresponding elements.
+    """
+    return [a - b for a, b in zip(list1, list2)]
+
+# Test case
+assert sub_list([1, 2, 3], [4, 5, 6]) == [-3, -3, -3]
+
+# Optional: print result for verification
+print(sub_list([1, 2, 3], [4, 5, 6]))
+```

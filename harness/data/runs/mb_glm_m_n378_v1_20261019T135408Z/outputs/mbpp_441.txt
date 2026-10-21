@@ -1,0 +1,37 @@
+Here's a self-contained Python script that solves the problem of finding the surface area of a cube:
+
+```python
+def surfacearea_cube(side_length):
+    """
+    Calculate the surface area of a cube given the length of its side.
+    
+    The surface area of a cube is calculated by the formula:
+    Surface Area = 6 * side_length^2
+    
+    Args:
+        side_length (float or int): The length of one side of the cube.
+        
+    Returns:
+        float or int: The surface area of the cube.
+    """
+    return 6 * side_length ** 2
+
+# Test the function with the provided assertion
+assert surfacearea_cube(5) == 150, "Test case failed: surfacearea_cube(5) should be 150"
+
+# Additional test cases to verify the function
+assert surfacearea_cube(1) == 6, "Test case failed: surfacearea_cube(1) should be 6"
+assert surfacearea_cube(0) == 0, "Test case failed: surfacearea_cube(0) should be 0"
+assert surfacearea_cube(2.5) == 37.5, "Test case failed: surfacearea_cube(2.5) should be 37.5"
+
+print("All test cases passed successfully!")
+```
+
+### Explanation:
+1. **Function Definition**: The function `surfacearea_cube` takes one parameter, `side_length`, which represents the length of a side of the cube.
+2. **Surface Area Calculation**: The surface area of a cube is calculated using the formula \(6 \times \text{side\_length}^2\). This is because a cube has 6 faces, and each face has an area of \(\text{side\_length}^2\).
+3. **Assertion Test**: The provided assertion `assert surfacearea_cube(5) == 150` is included to verify that the function works correctly for the given example.
+4. **Additional Tests**: More test cases are added to ensure the function handles edge cases (like side length 0) and non-integer values correctly.
+5. **Output**: If all assertions pass, the script prints a success message.
+
+This script is self-contained and can be run directly to verify the correctness of the `surfacearea_cube` function.

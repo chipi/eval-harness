@@ -1,0 +1,29 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def square_Sum(n):
+    """
+    Returns the sum of the squares of the first n odd natural numbers.
+    
+    Parameters:
+    n (int): The number of odd natural numbers to consider.
+    
+    Returns:
+    int: The sum of squares of the first n odd natural numbers.
+    """
+    total = 0
+    odd_number = 1
+    for _ in range(n):
+        total += odd_number ** 2
+        odd_number += 2
+    return total
+
+# Test the function
+assert square_Sum(2) == 10
+print(square_Sum(2))  # Output: 10
+```
+
+**Explanation:**
+- The first `n` odd natural numbers are `1, 3, 5, 7, ...`
+- For `n = 2`, the odd numbers are `1` and `3`, and their squares sum to `1² + 3² = 1 + 9 = 10`.
+- The function iterates `n` times, each time adding the square of the current odd number to the total, then incrementing the odd number by 2.

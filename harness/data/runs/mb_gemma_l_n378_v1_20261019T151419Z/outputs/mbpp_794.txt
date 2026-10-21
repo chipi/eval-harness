@@ -1,0 +1,35 @@
+```python
+import re
+
+def text_starta_endb(text):
+    """
+    Matches a string that has an 'a' followed by anything, ending in 'b'.
+    
+    The regular expression explanation:
+    ^     : Start of the string
+    a     : Matches the character 'a'
+    .*    : Matches any character (except newline) zero or more times
+    b     : Matches the character 'b'
+    $     : End of the string
+    """
+    # We use re.search to see if the pattern exists. 
+    # The pattern ensures it starts with 'a' and ends with 'b'.
+    pattern = r'^a.*b$'
+    return bool(re.search(pattern, text))
+
+# Test cases
+if __name__ == "__main__":
+    # Provided test case
+    assert text_starta_endb("aabbbb") == True
+    
+    # Additional test cases
+    assert text_starta_endb("ab") == True          # Minimum case
+    assert text_starta_endb("a123b") == True      # With numbers/symbols
+    assert text_starta_endb("a b") == True        # With spaces
+    assert text_starta_endb("ba") == False        # Wrong order
+    assert text_starta_endb("abc") == False       # Doesn't end in b
+    assert text_starta_endb("bbc") == False       # Doesn't start with a
+    assert text_starta_endb("a") == False          # Too short
+    
+    print("All tests passed!")
+```

@@ -1,0 +1,30 @@
+```python
+def opposite_Signs(a, b):
+    """
+    Checks if two integers have opposite signs.
+
+    Args:
+        a (int): The first integer.
+        b (int): The second integer.
+
+    Returns:
+        bool: True if the integers have opposite signs, False otherwise.
+    """
+    # The XOR (^) operator returns True if the bits of its operands are different.
+    # For integers, the sign bit is the most significant bit.
+    # If two numbers have opposite signs, their sign bits will be different.
+    # Therefore, a ^ b will be negative if they have opposite signs.
+    # We check if the result is negative.
+    return (a ^ b) < 0
+
+# Example usage and assertions:
+assert opposite_Signs(1, -2) == True
+assert opposite_Signs(-1, 2) == True
+assert opposite_Signs(1, 2) == False
+assert opposite_Signs(-1, -2) == False
+assert opposite_Signs(0, 5) == False
+assert opposite_Signs(0, -5) == False
+assert opposite_Signs(0, 0) == False
+
+print("All assertions passed!")
+```

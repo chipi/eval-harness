@@ -1,0 +1,9 @@
+```python
+def find(a, b):
+    return a // b
+
+assert find(10, 3) == 3
+
+if __name__ == "__main__":
+    print(find(10, 3))
+```

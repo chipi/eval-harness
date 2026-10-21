@@ -1,0 +1,39 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def get_coordinates(coord):
+    """
+    Extract all adjacent coordinates (including the given coordinate itself)
+    for a given coordinate tuple.
+    
+    Args:
+        coord: A tuple of (x, y) coordinates.
+    
+    Returns:
+        A list of lists, where each inner list is an adjacent coordinate [x, y].
+    """
+    x, y = coord
+    result = []
+    for dx in (-1, 0, 1):
+        for dy in (-1, 0, 1):
+            result.append([x + dx, y + dy])
+    return result
+
+
+# Test the function
+assert get_coordinates((3, 4)) == [
+    [2, 3], [2, 4], [2, 5],
+    [3, 3], [3, 4], [3, 5],
+    [4, 3], [4, 4], [4, 5]
+]
+
+print("All tests passed!")
+print(get_coordinates((3, 4)))
+```
+
+**Explanation:**
+
+1. The function `get_coordinates` takes a tuple `(x, y)` as input.
+2. It iterates over offsets `dx` and `dy` in `{-1, 0, 1}`, which covers all 9 positions in a 3×3 grid centered on the given coordinate.
+3. For each combination, it appends `[x + dx, y + dy]` to the result list.
+4. The order of iteration (outer loop over `dx`, inner loop over `dy`) produces the exact ordering required by the assertion: rows from `x-1` to `x+1`, and within each row, columns from `y-1` to `y+1`.

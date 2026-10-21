@@ -1,0 +1,37 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+"""
+Write a function to drop empty items from a given dictionary.
+assert drop_empty({'c1': 'Red', 'c2': 'Green', 'c3':None})=={'c1': 'Red', 'c2': 'Green'}
+"""
+
+
+def drop_empty(d):
+    """
+    Remove items with empty values (None, '', 0, False, [], {}, etc.) from a dictionary.
+
+    Args:
+        d (dict): The input dictionary.
+
+    Returns:
+        dict: A new dictionary with empty items removed.
+    """
+    return {key: value for key, value in d.items() if value}
+
+
+# Test the function
+if __name__ == "__main__":
+    assert drop_empty({'c1': 'Red', 'c2': 'Green', 'c3': None}) == {'c1': 'Red', 'c2': 'Green'}
+    assert drop_empty({'a': 1, 'b': '', 'c': 0, 'd': [], 'e': 'Hello'}) == {'a': 1, 'e': 'Hello'}
+    assert drop_empty({}) == {}
+    assert drop_empty({'x': None, 'y': None}) == {}
+    print("All tests passed!")
+```
+
+**Explanation:**
+
+- The function uses a dictionary comprehension to iterate over the input dictionary's items.
+- The condition `if value` filters out any values that are considered "falsy" in Python, which includes `None`, `''`, `0`, `False`, `[]`, `{}`, `()`, and `set()`.
+- It returns a new dictionary containing only the key-value pairs with truthy values.
+- The `assert` statements verify the expected behavior, including the example from the problem statement.

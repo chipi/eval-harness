@@ -1,0 +1,28 @@
+```python
+def unique_product(numbers):
+    """
+    Calculates the product of the unique numbers in a given list.
+    """
+    # Convert the list to a set to extract unique elements
+    unique_elements = set(numbers)
+    
+    # If the list is empty or contains no unique elements, return 0 or 1 
+    # based on mathematical convention. Here we handle empty sets.
+    if not unique_elements:
+        return 0
+    
+    product = 1
+    for num in unique_elements:
+        product *= num
+        
+    return product
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    test_list = [10, 20, 30, 40, 20, 50, 60, 40]
+    result = unique_product(test_list)
+    print(f"The product of unique numbers in {test_list} is: {result}")
+    
+    assert result == 720000000
+    print("Assertion passed!")
+```

@@ -1,0 +1,58 @@
+```python
+def get_median(arr1, arr2, n):
+    """
+    Finds the median of two sorted lists of the same size.
+    
+    This function uses a divide-and-conquer approach to find the median
+    in O(log(n)) time complexity by comparing the medians of the two
+    arrays and discarding halves of the arrays that cannot contain the
+    overall median.
+
+    Args:
+        arr1 (list): The first sorted list.
+        arr2 (list): The second sorted list.
+        n (int): The size of the lists.
+
+    Returns:
+        float: The median of the combined elements.
+    """
+    # Base cases
+    if n == 0:
+        return 0.0
+    if n == 1:
+        return (arr1[0] + arr2[0]) / 2.0
+    if n == 2:
+        # When 2 elements are left in each array, the median is the average 
+        # of the maximum of the first elements and the minimum of the second elements.
+        return (max(arr1[0], arr2[0]) + min(arr1[1], arr2[1])) / 2.0
+
+    # Find the medians of the current arrays
+    # If n is even, we take the average of the two middle elements
+    if n % 2 == 0:
+        m1 = (arr1[n // 2 - 1] + arr1[n // 2]) / 2.0
+        m2 = (arr2[n // 2 - 1] + arr2[n // 2]) / 2.0
+    else:
+        m1 = arr1[n // 2]
+        m2 = arr2[n // 2]
+
+    # Compare medians and discard the respective halves
+    if m1 > m2:
+        if n % 2 == 0:
+            # For even n, we keep the right half of arr2 and the left half of arr1
+            return get_median(arr1[:n // 2 + 1], arr2[n // 2 - 1:], n // 2 + 1)
+        else:
+            # For odd n, we keep the right half of arr2 and the left half of arr1
+            return get_median(arr1[:n // 2 + 1], arr2[n // 2:], n // 2 + 1)
+    else:
+        if n % 2 == 0:
+            # For even n, we keep the right half of arr1 and the left half of arr2
+            return get_median(arr1[n // 2 - 1:], arr2[:n // 2 + 1], n // 2 + 1)
+        else:
+            # For odd n, we keep the right half of arr1 and the left half of arr2
+            return get_median(arr1[n // 2:], arr2[:n // 2 + 1], n // 2 + 1)
+
+if __name__ == "__main__":
+    # Test the function with the provided assertion
+    assert get_median([1, 12, 15, 26, 38], [2, 13, 17, 30, 45], 5) == 16.0
+    print("Test passed successfully!")
+```

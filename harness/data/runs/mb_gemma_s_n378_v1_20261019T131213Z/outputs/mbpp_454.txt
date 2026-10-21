@@ -1,0 +1,26 @@
+```python
+import re
+
+def text_match_wordz(text):
+  """
+  Matches a word containing 'z'.
+  assert text_match_wordz("pythonz.")==True
+  """
+  pattern = r'\w*z\w*'
+  if re.search(pattern, text):
+    return True
+  else:
+    return False
+
+# Example usage and assertion
+assert text_match_wordz("pythonz.")==True
+assert text_match_wordz("amazing") == True
+assert text_match_wordz("hello") == False
+assert text_match_wordz("zebra") == True
+assert text_match_wordz("z") == True
+assert text_match_wordz("123z456") == True
+assert text_match_wordz("z123") == True
+assert text_match_wordz("123z") == True
+
+print("All test cases passed!")
+```

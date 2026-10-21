@@ -1,0 +1,26 @@
+Here's a self-contained Python script that solves the problem by removing all lowercase substrings from a given string:
+
+```python
+def remove_lowercase(s: str) -> str:
+    """
+    Removes all lowercase substrings from the given string.
+
+    Args:
+        s: Input string to process
+
+    Returns:
+        String with all lowercase characters removed
+    """
+    return ''.join([char for char in s if not char.islower()])
+
+# Test case
+assert remove_lowercase("PYTHon") == 'PYTH'
+```
+
+This solution:
+1. Uses a list comprehension to iterate through each character in the string
+2. Checks if the character is not lowercase using `char.islower()`
+3. Joins the remaining characters back into a string
+4. Includes the required test case with the assertion
+
+The function will return only the uppercase characters from the input string, effectively removing all lowercase substrings.

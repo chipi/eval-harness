@@ -1,0 +1,28 @@
+```python
+def next_smallest_palindrome(n):
+    """
+    This function finds the next smallest palindrome of a specified integer.
+
+    Args:
+        n (int): The specified integer.
+
+    Returns:
+        int: The next smallest palindrome.
+
+    """
+    def is_palindrome(num):
+        # Helper function to check if a number is a palindrome
+        return str(num) == str(num)[::-1]
+
+    n += 1  # Start checking from the next number
+    while not is_palindrome(n):
+        # Keep incrementing until we find a palindrome
+        n += 1
+    return n
+
+# Test the function
+assert next_smallest_palindrome(99) == 101
+print(next_smallest_palindrome(99))  # Output: 101
+```
+
+This script defines a function `next_smallest_palindrome` that takes an integer `n` as input and returns the next smallest palindrome. It uses a helper function `is_palindrome` to check if a number is a palindrome. The function increments the input number until it finds a palindrome, which is then returned. The test case `assert next_smallest_palindrome(99) == 101` is included to verify the function's correctness.

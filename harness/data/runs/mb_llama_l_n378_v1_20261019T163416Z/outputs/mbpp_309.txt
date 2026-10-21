@@ -1,0 +1,10 @@
+```python
+def maximum(a, b):
+    return max(a, b)
+
+def main():
+    print(maximum(5, 10))  # Expected output: 10
+
+if __name__ == "__main__":
+    main()
+```

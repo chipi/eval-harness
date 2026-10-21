@@ -1,0 +1,22 @@
+```python
+def div_list(list1, list2):
+    """
+    Divide two lists element-wise.
+    
+    Args:
+        list1: List of numbers (dividends)
+        list2: List of numbers (divisors)
+    
+    Returns:
+        List of quotients as floats
+    """
+    # Using list comprehension with zip to pair elements
+    return [a / b for a, b in zip(list1, list2)]
+
+# Test the function with the given assertion
+if __name__ == "__main__":
+    result = div_list([4, 5, 6], [1, 2, 3])
+    print(f"Result: {result}")
+    assert result == [4.0, 2.5, 2.0], f"Expected [4.0, 2.5, 2.0] but got {result}"
+    print("Assertion passed!")
+```

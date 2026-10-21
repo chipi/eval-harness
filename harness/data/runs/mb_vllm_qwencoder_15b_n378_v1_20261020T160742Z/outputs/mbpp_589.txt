@@ -1,0 +1,17 @@
+```python
+def perfect_squares(start, end):
+    # Initialize an empty list to store perfect squares
+    squares = []
+    
+    # Loop through all numbers from start to end
+    for num in range(start, end + 1):
+        # Check if the number is a perfect square
+        if int(num**0.5)**2 == num:
+            # If it is, add it to the list of squares
+            squares.append(num)
+    
+    return squares
+
+# Test the function with the provided test case
+assert perfect_squares(1,30) == [1, 4, 9, 16, 25]
+```

@@ -1,0 +1,45 @@
+```python
+def check_expression(expression: str) -> bool:
+    """
+    Checks if the given expression containing parentheses (), 
+    square brackets [], and curly braces {} is balanced.
+    """
+    # Stack to keep track of opening brackets
+    stack = []
+    
+    # Map of closing brackets to their corresponding opening brackets
+    bracket_map = {')': '(', ']': '[', '}': '{'}
+    
+    for char in expression:
+        # If the character is an opening bracket, push it onto the stack
+        if char in bracket_map.values():
+            stack.append(char)
+        # If the character is a closing bracket
+        elif char in bracket_map.keys():
+            # If the stack is empty or the top of the stack doesn't match, it's unbalanced
+            if not stack or stack.pop() != bracket_map[char]:
+                return False
+                
+    # If the stack is empty, all brackets were matched correctly
+    return len(stack) == 0
+
+if __name__ == "__main__":
+    # Test cases
+    test_cases = [
+        ("{()}[{}]", True),
+        ("{[(())]}", True),
+        ("{[(])}", False),
+        ("((()))", True),
+        ("(()", False),
+        (")", False),
+        ("", True),
+    ]
+
+    for expr, expected in test_cases:
+        result = check_expression(expr)
+        print(f"Expression: {expr:12} | Expected: {expected:5} | Result: {result:5} | {'Pass' if result == expected else 'Fail'}")
+
+    # Specific assertion from the prompt
+    assert check_expression("{()}[{}]") == True
+    print("\nAssertion passed successfully!")
+```

@@ -1,0 +1,51 @@
+Here's a self-contained Python script that solves the problem of toggling the middle bits of a number except the first and last bits:
+
+```python
+def toggle_middle_bits(n):
+    """
+    Toggle the bits of the number except the first and the last bit.
+    
+    Args:
+        n (int): The input number.
+        
+    Returns:
+        int: The number after toggling the middle bits.
+    """
+    if n < 2:
+        return n
+    
+    # Find the position of the most significant bit (MSB)
+    msb_pos = n.bit_length() - 1
+    
+    # Create a mask with all bits set except the first and last
+    mask = (1 << msb_pos) - 1  # This sets all bits below MSB
+    mask ^= 1  # Unset the last bit (LSB)
+    
+    # Toggle the middle bits by XORing with the mask
+    return n ^ mask
+
+# Test cases
+assert toggle_middle_bits(9) == 15, "Test case 1 failed"
+assert toggle_middle_bits(10) == 12, "Test case 2 failed"
+assert toggle_middle_bits(15) == 9, "Test case 3 failed"
+assert toggle_middle_bits(8) == 15, "Test case 4 failed"
+assert toggle_middle_bits(1) == 1, "Test case 5 failed"
+assert toggle_middle_bits(0) == 0, "Test case 6 failed"
+
+print("All test cases passed!")
+```
+
+### Explanation:
+1. **Finding the MSB Position**: The `bit_length()` method returns the number of bits required to represent the number in binary, excluding the sign bit. Subtracting 1 gives the position of the most significant bit (MSB).
+2. **Creating the Mask**: 
+   - `(1 << msb_pos) - 1` creates a mask with all bits set below the MSB. For example, if `msb_pos` is 3 (number 8), this gives `0b111` (7).
+   - `mask ^= 1` unsets the least significant bit (LSB) by XORing with 1. For `0b111`, this becomes `0b110` (6).
+3. **Toggling Middle Bits**: XORing the original number with the mask toggles the middle bits while leaving the first and last bits unchanged.
+
+### Example:
+- For `n = 9` (binary `1001`):
+  - `msb_pos = 3` (since `9.bit_length() - 1 = 4 - 1 = 3`).
+  - `mask = (1 << 3) - 1 = 7` (`0b111`), then `mask ^= 1` gives `6` (`0b110`).
+  - `9 ^ 6 = 15` (`0b1001 ^ 0b110 = 0b1111`), which is the expected result.
+
+The script includes test cases to verify the correctness of the function.

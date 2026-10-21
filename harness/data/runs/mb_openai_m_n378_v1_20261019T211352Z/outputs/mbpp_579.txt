@@ -1,0 +1,42 @@
+```python
+"""
+Write a function to find the dissimilar elements in the given two tuples.
+
+The dissimilar elements are the elements that appear in one tuple but not the other.
+The result is returned as a tuple.
+
+Example:
+assert find_dissimilar((3, 4, 5, 6), (5, 7, 4, 10)) == (3, 6, 7, 10)
+"""
+
+def find_dissimilar(tuple1, tuple2):
+    """
+    Return elements that are present in only one of the two tuples.
+
+    The output preserves the order:
+    - first, elements from tuple1 that are not in tuple2
+    - then, elements from tuple2 that are not in tuple1
+    """
+    result = []
+
+    for item in tuple1:
+        if item not in tuple2:
+            result.append(item)
+
+    for item in tuple2:
+        if item not in tuple1:
+            result.append(item)
+
+    return tuple(result)
+
+
+# Tests
+assert find_dissimilar((3, 4, 5, 6), (5, 7, 4, 10)) == (3, 6, 7, 10)
+assert find_dissimilar((1, 2, 3), (3, 4, 5)) == (1, 2, 4, 5)
+assert find_dissimilar((1, 2), (1, 2)) == ()
+assert find_dissimilar((), (1, 2)) == (1, 2)
+assert find_dissimilar((1, 2), ()) == (1, 2)
+
+if __name__ == "__main__":
+    print("All tests passed.")
+```

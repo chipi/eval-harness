@@ -1,0 +1,25 @@
+```python
+def drop_empty(input_dict):
+    """
+    Drops key-value pairs from a dictionary where the value is None.
+
+    Args:
+        input_dict: The dictionary to process.
+
+    Returns:
+        A new dictionary with empty (None) items removed.
+    """
+    # Use a dictionary comprehension to create a new dictionary
+    # including only key-value pairs where the value is not None.
+    return {key: value for key, value in input_dict.items() if value is not None}
+
+# Example usage and assertion from the problem description
+assert drop_empty({'c1': 'Red', 'c2': 'Green', 'c3': None}) == {'c1': 'Red', 'c2': 'Green'}
+
+# Additional test cases
+assert drop_empty({}) == {}
+assert drop_empty({'a': 1, 'b': 0, 'c': -1}) == {'a': 1, 'b': 0, 'c': -1}
+assert drop_empty({'name': 'Alice', 'age': None, 'city': 'New York'}) == {'name': 'Alice', 'city': 'New York'}
+
+print("All assertions passed!")
+```

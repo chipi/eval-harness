@@ -1,0 +1,28 @@
+```python
+"""
+Write a function to divide two lists element wise.
+
+Example:
+assert div_list([4, 5, 6], [1, 2, 3]) == [4.0, 2.5, 2.0]
+"""
+
+def div_list(list1, list2):
+    """
+    Divide two lists element-wise and return the result as a list.
+
+    Args:
+        list1: A list of numbers.
+        list2: A list of numbers.
+
+    Returns:
+        A list containing the result of element-wise division.
+    """
+    return [a / b for a, b in zip(list1, list2)]
+
+
+# Test cases
+assert div_list([4, 5, 6], [1, 2, 3]) == [4.0, 2.5, 2.0]
+assert div_list([10, 20, 30], [2, 4, 5]) == [5.0, 5.0, 6.0]
+
+print("All tests passed!")
+```

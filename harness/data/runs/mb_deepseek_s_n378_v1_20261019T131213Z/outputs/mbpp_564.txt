@@ -1,0 +1,32 @@
+```python
+def count_Pairs(nums, n):
+    """
+    Counts the number of unordered pairs (i, j) with i < j such that
+    nums[i] != nums[j].
+
+    Parameters:
+    nums (list of int): The input list of integers.
+    n (int): The length of the list (provided for compatibility with the assertion).
+
+    Returns:
+    int: The number of valid unordered pairs.
+    """
+    # Total number of unordered pairs
+    total_pairs = n * (n - 1) // 2
+    
+    # Count frequency of each element
+    freq = {}
+    for num in nums:
+        freq[num] = freq.get(num, 0) + 1
+    
+    # Subtract pairs where elements are equal
+    equal_pairs = 0
+    for count in freq.values():
+        equal_pairs += count * (count - 1) // 2
+    
+    return total_pairs - equal_pairs
+
+# Example test
+if __name__ == "__main__":
+    print(count_Pairs([1, 2, 1], 3))  # Expected output: 2
+```

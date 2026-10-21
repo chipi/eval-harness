@@ -1,0 +1,15 @@
+```python
+def split_Arr(arr, n):
+    """
+    Split the list at the nth element and move the first part to the end.
+
+    Example:
+        split_Arr([12,10,5,6,52,36], 2) -> [5,6,52,36,12,10]
+    """
+    return arr[n:] + arr[:n]
+
+
+if __name__ == "__main__":
+    assert split_Arr([12, 10, 5, 6, 52, 36], 2) == [5, 6, 52, 36, 12, 10]
+    print("All tests passed.")
+```

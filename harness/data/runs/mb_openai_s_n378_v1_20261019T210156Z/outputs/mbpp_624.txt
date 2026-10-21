@@ -1,0 +1,9 @@
+```python
+def is_upper(s: str) -> str:
+    return s.upper()
+
+
+if __name__ == "__main__":
+    assert is_upper("person") == "PERSON"
+    print("All tests passed.")
+```

@@ -1,0 +1,84 @@
+```python
+def is_majority(arr, n, x):
+    """
+    Checks if an element x is the majority element in a sorted array arr.
+
+    The majority element is defined as an element that appears more than n/2 times.
+
+    Args:
+        arr: A sorted list of elements.
+        n: The length of the array.
+        x: The element to check for majority.
+
+    Returns:
+        True if x is the majority element, False otherwise.
+    """
+    # An element cannot be a majority if the array is empty.
+    if n == 0:
+        return False
+
+    # Since the array is sorted, all occurrences of x will be consecutive.
+    # We can use binary search to find the first and last occurrence of x.
+    # The number of occurrences is (last_index - first_index + 1).
+
+    # Helper function to find the first occurrence of x
+    def find_first_occurrence():
+        low, high = 0, n - 1
+        first_occurrence = -1
+        while low <= high:
+            mid = low + (high - low) // 2
+            if arr[mid] == x:
+                first_occurrence = mid
+                high = mid - 1  # Look for x in the left half
+            elif arr[mid] < x:
+                low = mid + 1
+            else:
+                high = mid - 1
+        return first_occurrence
+
+    # Helper function to find the last occurrence of x
+    def find_last_occurrence():
+        low, high = 0, n - 1
+        last_occurrence = -1
+        while low <= high:
+            mid = low + (high - low) // 2
+            if arr[mid] == x:
+                last_occurrence = mid
+                low = mid + 1  # Look for x in the right half
+            elif arr[mid] < x:
+                low = mid + 1
+            else:
+                high = mid - 1
+        return last_occurrence
+
+    # Find the first and last occurrence of x
+    first_index = find_first_occurrence()
+    
+    # If x is not in the array, first_index will be -1.
+    if first_index == -1:
+        return False
+
+    last_index = find_last_occurrence()
+
+    # Calculate the total count of x
+    count = last_index - first_index + 1
+
+    # Check if the count is more than n/2
+    return count > n / 2
+
+# Example usage and assertions:
+assert is_majority([1, 2, 3, 3, 3, 3, 10], 7, 3) == True
+assert is_majority([1, 1, 2, 2, 2, 2, 2], 7, 2) == True
+assert is_majority([1, 1, 1, 2, 2, 2, 2], 7, 2) == True
+assert is_majority([1, 1, 1, 1, 2, 2, 2], 7, 1) == True
+assert is_majority([1, 2, 3, 4, 5], 5, 3) == False
+assert is_majority([3, 3, 3, 3, 3], 5, 3) == True
+assert is_majority([1, 2, 3], 3, 1) == False
+assert is_majority([1, 1, 2, 2], 4, 1) == False
+assert is_majority([], 0, 1) == False
+assert is_majority([5], 1, 5) == True
+assert is_majority([5, 5, 5, 5, 5, 5], 6, 5) == True
+assert is_majority([5, 5, 5, 5, 5, 5], 6, 1) == False
+
+print("All assertions passed.")
+```

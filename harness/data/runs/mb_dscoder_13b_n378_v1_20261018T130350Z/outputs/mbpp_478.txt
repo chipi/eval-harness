@@ -1,0 +1,10 @@
+```python
+def remove_lowercase(s):
+    return ''.join([i for i in s if i not in 'abcdefghijklmnopqrstuvwxyz'])
+
+# Test cases
+assert remove_lowercase("PYTHon")=='PYTH'
+assert remove_lowercase("Hello World")=='Hello World'
+assert remove_lowercase("ABCDEFGHIJKLMNOPQRSTUVWXYZ")==''
+assert remove_lowercase("abcdefghijklmnopqrstuvwxyz")==''
+```

@@ -1,0 +1,24 @@
+```python
+def tuple_modulo(t1, t2):
+    """
+    This function performs element-wise modulo operation on two tuples of the same length.
+
+    Args:
+        t1 (tuple): The first tuple.
+        t2 (tuple): The second tuple.
+
+    Returns:
+        tuple: A new tuple with the result of the element-wise modulo operation.
+
+    Raises:
+        ValueError: If the tuples are not of the same length.
+    """
+    if len(t1) != len(t2):
+        raise ValueError("Tuples must be of the same length")
+
+    return tuple(a % b for a, b in zip(t1, t2))
+
+
+# Example usage:
+print(tuple_modulo((10, 4, 5, 6), (5, 6, 7, 5)))  # Output: (0, 4, 5, 1)
+```

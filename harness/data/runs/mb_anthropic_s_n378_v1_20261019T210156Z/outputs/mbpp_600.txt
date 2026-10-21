@@ -1,0 +1,25 @@
+```python
+def is_Even(n):
+    """
+    Check whether the given number is even or not.
+    
+    Args:
+        n: An integer to check
+        
+    Returns:
+        True if the number is even, False otherwise
+    """
+    return n % 2 == 0
+
+
+# Test cases
+assert is_Even(1) == False
+assert is_Even(2) == True
+assert is_Even(0) == True
+assert is_Even(-4) == True
+assert is_Even(-3) == False
+
+print("All assertions passed!")
+```
+
+The function `is_Even()` uses the modulo operator (`%`) to check if a number is even. If `n % 2 == 0`, the number is even (returns `True`), otherwise it's odd (returns `False`).

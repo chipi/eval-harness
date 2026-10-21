@@ -1,0 +1,11 @@
+```python
+def count(bool_list):
+    return bool_list.count(True)
+
+def main():
+    bool_list = [True, False, True]
+    print(count(bool_list))  # Output: 2
+
+if __name__ == "__main__":
+    main()
+```

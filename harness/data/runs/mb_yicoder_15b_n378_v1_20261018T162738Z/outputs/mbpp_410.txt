@@ -1,0 +1,15 @@
+```python
+def min_val(lst):
+    try:
+        return min(lst)
+    except TypeError:
+        return None
+
+# Test cases
+assert min_val(['Python', 3, 2, 4, 5, 'version'])==2
+assert min_val([1, 2, 3, 4, 5])==1
+assert min_val([5, 4, 3, 2, 1])==1
+assert min_val([1])==1
+assert min_val([])==None
+assert min_val([1, 'two', 3, 'four', 5])==1
+```

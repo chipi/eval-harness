@@ -1,0 +1,31 @@
+```python
+def count_X(tup, element):
+  """
+  Counts the occurrences of an element in a tuple.
+
+  Args:
+    tup: The input tuple.
+    element: The element to count.
+
+  Returns:
+    The number of times the element appears in the tuple.
+  """
+  return tup.count(element)
+
+# Example usage and assertion from the problem description
+if __name__ == "__main__":
+    # Define the input tuple and element
+    my_tuple = (10, 8, 5, 2, 10, 15, 10, 8, 5, 8, 8, 2)
+    my_element = 4
+
+    # Call the function and print the result
+    count = count_X(my_tuple, my_element)
+    print(f"The tuple is: {my_tuple}")
+    print(f"The element to count is: {my_element}")
+    print(f"The count is: {count}")
+
+    # Assert the result as per the problem description
+    assert count_X((10, 8, 5, 2, 10, 15, 10, 8, 5, 8, 8, 2), 4) == 0
+
+    print("\nAssertion passed: The count is correct.")
+```

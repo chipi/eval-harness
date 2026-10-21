@@ -1,0 +1,36 @@
+```python
+def is_prime(n):
+    """Check if a number is prime."""
+    if n < 2:
+        return False
+    for i in range(2, int(n**0.5) + 1):
+        if n % i == 0:
+            return False
+    return True
+
+def newman_prime(n):
+    """
+    Find the nth Newman–Shanks–Williams prime number.
+
+    Newman–Shanks–Williams primes are a sequence of prime numbers that can be 
+    represented in a certain form related to the Fibonacci sequence.
+    """
+    count = 0
+    i = 0
+    while True:
+        # Calculate the NSW number using the formula: (2^(2^i) + 1) / (2^i + 1)
+        # However, this is not a correct formula. NSW primes are defined by the recurrence relation:
+        # S(0) = 1, S(1) = 1, S(n) = 2*S(n-1) + S(n-2)
+        # We will use this recurrence relation to generate NSW numbers.
+        s = [1, 1]
+        for j in range(2, i+1):
+            s.append(2*s[j-1] + s[j-2])
+        if is_prime(s[i]):
+            count += 1
+            if count == n:
+                return s[i]
+        i += 1
+
+# Test the function
+assert newman_prime(3) == 7
+```

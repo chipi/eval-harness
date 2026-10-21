@@ -1,0 +1,60 @@
+To solve this problem efficiently, we can use a **Binary Search** approach. Since the array is sorted, we can achieve a time complexity of $O(\log n)$.
+
+The logic relies on the observation that for any element appearing in pairs, the first occurrence of the pair will be at an even index, and the second occurrence will be at an odd index. When the "single" element is introduced, this pattern shifts for all subsequent elements.
+
+Here is the complete, self-contained script:
+
+```python
+def search(nums):
+    """
+    Finds the element that appears only once in a sorted array.
+    Uses Binary Search to achieve O(log n) time complexity.
+    """
+    low = 0
+    high = len(nums) - 1
+
+    # Edge case: array has only one element
+    if not nums:
+        return None
+    if len(nums) == 1:
+        return nums[0]
+
+    # Edge case: first element is the unique one
+    if nums[0] != nums[1]:
+        return nums[0]
+    
+    # Edge case: last element is the unique one
+    if nums[-1] != nums[-2]:
+        return nums[-1]
+
+    while low <= high:
+        mid = (low + high) // 2
+
+        # Check if mid is the unique element
+        # (We already handled boundaries, so we check neighbors safely)
+        if nums[mid] != nums[mid - 1] and nums[mid] != nums[mid + 1]:
+            return nums[mid]
+
+        # Determine which side to search:
+        # In a normal sequence of pairs, the first element of a pair 
+        # is at an even index and the second is at an odd index.
+        # If this pattern holds, the unique element is to the right.
+        if (mid % 2 == 0 and nums[mid] == nums[mid + 1]) or \
+           (mid % 2 == 1 and nums[mid] == nums[mid - 1]):
+            low = mid + 1
+        else:
+            high = mid - 1
+
+    return None
+
+if __name__ == "__main__":
+    # Test cases
+    assert search([1, 1, 2, 2, 3]) == 3
+    assert search([1, 2, 2, 3, 3]) == 1
+    assert search([1, 1, 2, 3, 3]) == 2
+    assert search([1, 1, 2, 2, 4, 4, 5]) == 5
+    assert search([0, 1, 1]) == 0
+    assert search([1, 1, 2]) == 2
+    
+    print("All assertions passed!")
+```

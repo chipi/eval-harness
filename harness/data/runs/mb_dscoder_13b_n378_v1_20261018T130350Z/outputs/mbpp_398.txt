@@ -1,0 +1,10 @@
+```python
+def sum_of_digits(lst):
+    return sum(sum(map(int, str(num))) for num in lst)
+
+# Test cases
+assert sum_of_digits([10,2,56])==14
+assert sum_of_digits([123,45,678])==26
+assert sum_of_digits([9,8,7,6,5,4,3,2,1,0])==15
+assert sum_of_digits([1234567890,9876543210,1234567890])==30
+```

@@ -1,0 +1,9 @@
+```python
+def drop_empty(d):
+    """Drop empty items (None values) from a given dictionary."""
+    return {k: v for k, v in d.items() if v is not None}
+
+
+# Test
+assert drop_empty({'c1': 'Red', 'c2': 'Green', 'c3': None}) == {'c1': 'Red', 'c2': 'Green'}
+```

@@ -1,0 +1,18 @@
+```python
+def remove_lowercase(s: str) -> str:
+    """
+    Removes lowercase characters from a given string.
+    
+    Args:
+        s (str): The input string.
+        
+    Returns:
+        str: The string with all lowercase characters removed.
+    """
+    return ''.join(char for char in s if not char.islower())
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert remove_lowercase("PYTHon") == ('PYTH')
+    print("Test passed successfully!")
+```

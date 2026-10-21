@@ -1,0 +1,8 @@
+```python
+def ascii_value(char):
+    """Return the ASCII value of a given character."""
+    return ord(char)
+
+# Test the function
+assert ascii_value('A') == 65
+```

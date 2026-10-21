@@ -1,0 +1,11 @@
+```python
+def rear_extract(tuples):
+    return [t[-1] for t in tuples]
+
+def main():
+    tuples = [(1, 'Rash', 21), (2, 'Varsha', 20), (3, 'Kil', 19)]
+    print(rear_extract(tuples))  # Output: [21, 20, 19]
+
+if __name__ == "__main__":
+    main()
+```

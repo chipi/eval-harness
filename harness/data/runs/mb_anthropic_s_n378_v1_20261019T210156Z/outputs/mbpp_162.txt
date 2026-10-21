@@ -1,0 +1,33 @@
+```python
+def sum_series(n):
+    """
+    Calculate the sum (n - 2*i) from i=0 to n // 2.
+    For example: n + (n-2) + (n-4) + ... (until n-x <= 0)
+    
+    Args:
+        n: A non-negative integer
+        
+    Returns:
+        The sum of the series
+        
+    Examples:
+        sum_series(6) = 6 + 4 + 2 = 12
+        sum_series(5) = 5 + 3 + 1 = 9
+    """
+    total = 0
+    i = 0
+    while n - 2 * i > 0:
+        total += n - 2 * i
+        i += 1
+    return total
+
+
+# Test cases
+if __name__ == "__main__":
+    assert sum_series(6) == 12, f"Expected 12, got {sum_series(6)}"
+    assert sum_series(5) == 9, f"Expected 9, got {sum_series(5)}"
+    assert sum_series(0) == 0, f"Expected 0, got {sum_series(0)}"
+    assert sum_series(1) == 1, f"Expected 1, got {sum_series(1)}"
+    assert sum_series(10) == 30, f"Expected 30, got {sum_series(10)}"
+    print("All tests passed!")
+```

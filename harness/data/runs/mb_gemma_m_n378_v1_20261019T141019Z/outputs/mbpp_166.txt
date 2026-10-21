@@ -1,0 +1,44 @@
+```python
+def find_even_pair(nums):
+    """
+    Counts the number of pairs of integers (i, j) where i < j 
+    such that nums[i] ^ nums[j] is an even number.
+    
+    Logic:
+    The XOR of two integers is even if and only if both integers 
+    have the same parity (both even or both odd).
+    - Even ^ Even = Even
+    - Odd ^ Odd = Even
+    - Even ^ Odd = Odd
+    """
+    evens = 0
+    odds = 0
+    
+    for num in nums:
+        if num % 2 == 0:
+            evens += 1
+        else:
+            odds += 1
+            
+    # The number of ways to choose 2 items from n is nC2 = n * (n - 1) / 2
+    even_pairs = (evens * (evens - 1)) // 2
+    odd_pairs = (odds * (odds - 1)) // 2
+    
+    return even_pairs + odd_pairs
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    # [5, 4, 7, 2, 1]
+    # Odds: 5, 7, 1 (3 total) -> 3C2 = 3 pairs
+    # Evens: 4, 2 (2 total) -> 2C2 = 1 pair
+    # Total: 3 + 1 = 4
+    assert find_even_pair([5, 4, 7, 2, 1]) == 4
+    
+    # Additional test cases
+    assert find_even_pair([1, 3, 5]) == 3  # All odd: 3C2 = 3
+    assert find_even_pair([2, 4, 6, 8]) == 6  # All even: 4C2 = 6
+    assert find_even_pair([1, 2, 3, 4]) == 2  # (1,3) and (2,4)
+    assert find_even_pair([1]) == 0  # Not enough elements for a pair
+    
+    print("All tests passed!")
+```

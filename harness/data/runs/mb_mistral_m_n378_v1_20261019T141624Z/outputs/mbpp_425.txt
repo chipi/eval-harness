@@ -1,0 +1,21 @@
+```python
+def count_element_in_list(lst, element):
+    """
+    Count the number of sublists in a list that contain a particular element.
+
+    Args:
+        lst: A list of sublists.
+        element: The element to search for in the sublists.
+
+    Returns:
+        The count of sublists that contain the element.
+    """
+    count = 0
+    for sublist in lst:
+        if element in sublist:
+            count += 1
+    return count
+
+# Test case
+assert count_element_in_list([[1, 3], [5, 7], [1, 11], [1, 15, 7]], 1) == 3
+```

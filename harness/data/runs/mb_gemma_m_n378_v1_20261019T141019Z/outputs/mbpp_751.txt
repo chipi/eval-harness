@@ -1,0 +1,42 @@
+```python
+def check_min_heap(arr):
+    """
+    Checks if a given array represents a min-heap.
+    In a min-heap, for every node at index i, its children at 
+    indices 2*i + 1 and 2*i + 2 must be greater than or equal to arr[i].
+    
+    Args:
+        arr (list): The array representing the binary heap.
+        
+    Returns:
+        bool: True if it is a min-heap, False otherwise.
+    """
+    n = len(arr)
+    
+    # We only need to check internal nodes. 
+    # The last internal node is at index (n // 2) - 1.
+    for i in range(n // 2):
+        left_child = 2 * i + 1
+        right_child = 2 * i + 2
+        
+        # Check if left child exists and violates min-heap property
+        if left_child < n and arr[i] > arr[left_child]:
+            return False
+            
+        # Check if right child exists and violates min-heap property
+        if right_child < n and arr[i] > arr[right_child]:
+            return False
+            
+    return True
+
+if __name__ == "__main__":
+    # Test cases
+    assert check_min_heap([1, 2, 3, 4, 5, 6]) == True
+    assert check_min_heap([10, 20, 30, 25, 22, 35]) == True
+    assert check_min_heap([10, 20, 30, 5, 22, 35]) == False
+    assert check_min_heap([1, 2, 3, 4, 5, 0]) == False
+    assert check_min_heap([5]) == True
+    assert check_min_heap([]) == True
+    
+    print("All test cases passed!")
+```

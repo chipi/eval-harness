@@ -1,0 +1,27 @@
+Here's a self-contained Python script that solves the problem, provided in a markdown code block:
+
+```python
+def replace_spaces(input_string):
+    """
+    Replaces all spaces in the given string with '%20'.
+
+    Args:
+        input_string (str): The string to process.
+
+    Returns:
+        str: The string with spaces replaced by '%20'.
+    """
+    return input_string.replace(' ', '%20')
+
+# Test the function
+assert replace_spaces("My Name is Dawood") == 'My%20Name%20is%20Dawood'
+print("Test passed!")
+```
+
+This script:
+1. Defines a function `replace_spaces` that uses Python's built-in string `replace()` method
+2. Includes a docstring explaining the function's purpose
+3. Contains the required assertion test
+4. Prints a success message if the test passes
+
+The function will work for any input string, replacing all space characters with '%20'.

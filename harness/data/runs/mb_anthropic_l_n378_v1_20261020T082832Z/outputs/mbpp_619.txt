@@ -1,0 +1,25 @@
+```python
+"""
+Write a function to move all the numbers to the end of the given string.
+assert move_num('I1love143you55three3000thousand') == 'Iloveyouthreethousand1143553000'
+"""
+
+
+def move_num(test_str):
+    """Move all digits in the given string to the end, preserving order."""
+    non_digits = []
+    digits = []
+    for ch in test_str:
+        if ch.isdigit():
+            digits.append(ch)
+        else:
+            non_digits.append(ch)
+    return ''.join(non_digits) + ''.join(digits)
+
+
+if __name__ == '__main__':
+    assert move_num('I1love143you55three3000thousand') == 'Iloveyouthreethousand1143553000'
+    assert move_num('Avengers124Assemble') == 'AvengersAssemble124'
+    assert move_num('Its11our12path13to14see15things16do17things') == 'Itsourpathtoseethingsdothings11121314151617'
+    print("All tests passed!")
+```

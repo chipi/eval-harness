@@ -1,0 +1,27 @@
+```python
+#!/usr/bin/env python3
+"""
+Find the maximum numeric value in a heterogeneous list.
+
+Example:
+    max_val(['Python', 3, 2, 4, 5, 'version']) == 5
+"""
+
+def max_val(items):
+    """
+    Return the maximum numeric value from a heterogeneous list.
+
+    Non-numeric values are ignored. Raises ValueError if no numeric values exist.
+    """
+    numbers = [item for item in items if isinstance(item, (int, float)) and not isinstance(item, bool)]
+
+    if not numbers:
+        raise ValueError("The list contains no numeric values.")
+
+    return max(numbers)
+
+
+if __name__ == "__main__":
+    assert max_val(['Python', 3, 2, 4, 5, 'version']) == 5
+    print("All tests passed.")
+```

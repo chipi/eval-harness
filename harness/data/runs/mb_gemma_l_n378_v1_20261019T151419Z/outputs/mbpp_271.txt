@@ -1,0 +1,22 @@
+```python
+def even_Power_Sum(n):
+    """
+    Calculates the sum of the first n even natural numbers raised to the fifth power.
+    The first n even natural numbers are 2, 4, 6, ..., 2n.
+    """
+    total_sum = 0
+    for i in range(1, n + 1):
+        # The i-th even natural number is 2 * i
+        even_number = 2 * i
+        total_sum += even_number ** 5
+    return total_sum
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    # First 2 even numbers are 2 and 4.
+    # 2^5 + 4^5 = 32 + 1024 = 1056
+    result = even_Power_Sum(2)
+    print(f"even_Power_Sum(2) = {result}")
+    assert result == 1056, f"Expected 1056, but got {result}"
+    print("Assertion passed!")
+```

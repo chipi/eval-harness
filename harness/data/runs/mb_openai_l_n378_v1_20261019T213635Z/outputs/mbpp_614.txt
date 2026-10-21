@@ -1,0 +1,7 @@
+```python
+def cummulative_sum(tuple_list):
+    return sum(value for group in tuple_list for value in group)
+
+
+assert cummulative_sum([(1, 3), (5, 6, 7), (2, 6)]) == 30
+```

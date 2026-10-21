@@ -1,0 +1,19 @@
+Here's a self-contained Python script that solves the problem of finding the minimum of three numbers:
+
+```python
+def min_of_three(a, b, c):
+    """Return the minimum of three numbers."""
+    return min(a, b, c)
+
+# Test the function
+assert min_of_three(10, 20, 0) == 0
+print("All tests passed!")
+```
+
+This script:
+1. Defines a function `min_of_three` that takes three arguments
+2. Uses Python's built-in `min()` function to find the smallest value
+3. Includes an assertion to verify the function works correctly
+4. Prints a success message if the test passes
+
+The function will work for any three numbers (integers, floats, etc.) and return the smallest one.

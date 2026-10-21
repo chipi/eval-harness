@@ -1,0 +1,13 @@
+```python
+def differ_At_One_Bit_Pos(a, b):
+    xor_result = a ^ b
+    if xor_result == 0:
+        return False
+    while xor_result & 1 == 0:
+        xor_result >>= 1
+    return xor_result == 1
+
+assert differ_At_One_Bit_Pos(13,9) == True
+assert differ_At_One_Bit_Pos(13,10) == False
+assert differ_At_One_Bit_Pos(13,11) == False
+```

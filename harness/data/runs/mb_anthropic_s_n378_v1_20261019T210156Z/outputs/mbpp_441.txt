@@ -1,0 +1,27 @@
+```python
+def surfacearea_cube(side_length):
+    """
+    Calculate the surface area of a cube given its side length.
+    
+    A cube has 6 faces, each with area = side_length²
+    Total surface area = 6 × side_length²
+    
+    Args:
+        side_length: The length of one side of the cube
+        
+    Returns:
+        The surface area of the cube
+    """
+    return 6 * side_length ** 2
+
+
+# Test cases
+assert surfacearea_cube(5) == 150
+assert surfacearea_cube(1) == 6
+assert surfacearea_cube(2) == 24
+assert surfacearea_cube(3) == 54
+assert surfacearea_cube(10) == 600
+
+print("All tests passed!")
+print(f"Surface area of cube with side 5: {surfacearea_cube(5)}")
+```

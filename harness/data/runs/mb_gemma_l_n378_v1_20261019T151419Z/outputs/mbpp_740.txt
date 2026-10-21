@@ -1,0 +1,23 @@
+```python
+def tuple_to_dict(tup):
+    """
+    Converts a tuple to a dictionary using adjacent elements.
+    The element at index i becomes the key, and the element at index i+1 becomes the value.
+    """
+    # We iterate through the tuple with a step of 2
+    # range(0, len(tup), 2) gives indices 0, 2, 4...
+    return {tup[i]: tup[i + 1] for i in range(0, len(tup), 2)}
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    input_tuple = (1, 5, 7, 10, 13, 5)
+    expected_output = {1: 5, 7: 10, 13: 5}
+    
+    result = tuple_to_dict(input_tuple)
+    
+    print(f"Input: {input_tuple}")
+    print(f"Result: {result}")
+    
+    assert result == expected_output, f"Expected {expected_output}, but got {result}"
+    print("Assertion passed successfully!")
+```

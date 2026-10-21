@@ -1,0 +1,37 @@
+```python
+def check_distinct(t):
+    """
+    Check if a given tuple contains no duplicates.
+    
+    Args:
+        t: A tuple to check for duplicates
+        
+    Returns:
+        True if all elements are distinct (no duplicates), False otherwise
+    """
+    return len(t) == len(set(t))
+
+
+# Test cases
+assert check_distinct((1, 4, 5, 6, 1, 4)) == False
+assert check_distinct((1, 2, 3, 4, 5)) == True
+assert check_distinct(()) == True
+assert check_distinct((1,)) == True
+assert check_distinct((1, 1)) == False
+assert check_distinct(('a', 'b', 'c')) == True
+assert check_distinct(('a', 'b', 'a')) == False
+
+print("All tests passed!")
+```
+
+**Explanation:**
+
+The function `check_distinct()` works by:
+1. Converting the tuple to a set using `set(t)` - sets automatically remove duplicates
+2. Comparing the length of the original tuple with the length of the set
+3. If the lengths are equal, all elements were distinct (no duplicates), so return `True`
+4. If the lengths differ, there were duplicates, so return `False`
+
+For example:
+- `(1, 4, 5, 6, 1, 4)` has length 6, but `set()` gives `{1, 4, 5, 6}` with length 4, so it returns `False`
+- `(1, 2, 3, 4, 5)` has length 5, and `set()` also gives length 5, so it returns `True`

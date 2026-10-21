@@ -1,0 +1,46 @@
+```python
+def divisor(n):
+    """
+    Find the number of divisors of a given integer.
+    
+    Args:
+        n: An integer
+        
+    Returns:
+        The count of divisors of n
+        
+    Examples:
+        >>> divisor(15)
+        4
+        >>> divisor(12)
+        6
+        >>> divisor(1)
+        1
+    """
+    count = 0
+    # Check all numbers from 1 to n
+    for i in range(1, n + 1):
+        if n % i == 0:
+            count += 1
+    return count
+
+
+# Test cases
+if __name__ == "__main__":
+    assert divisor(15) == 4, f"Expected 4, got {divisor(15)}"
+    assert divisor(12) == 6, f"Expected 6, got {divisor(12)}"
+    assert divisor(1) == 1, f"Expected 1, got {divisor(1)}"
+    assert divisor(10) == 4, f"Expected 4, got {divisor(10)}"
+    print("All tests passed!")
+```
+
+**Explanation:**
+
+The function `divisor(n)` counts how many divisors a given integer `n` has by:
+1. Iterating through all numbers from 1 to n
+2. Checking if each number divides n evenly (remainder is 0)
+3. Counting each divisor found
+
+For example, `divisor(15)` returns 4 because 15 has 4 divisors: 1, 3, 5, and 15.
+
+**Note:** For better performance with large numbers, you could optimize this to only check up to √n, but the simple approach above is clear and works well for most cases.

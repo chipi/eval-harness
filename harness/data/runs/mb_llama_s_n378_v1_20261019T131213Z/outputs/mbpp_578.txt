@@ -1,0 +1,52 @@
+```python
+def interleave_lists(list1, list2, list3):
+    """
+    This function takes three lists of the same length as input and returns a single flat list.
+    The output list is created by interleaving the input lists.
+
+    Args:
+        list1 (list): The first list.
+        list2 (list): The second list.
+        list3 (list): The third list.
+
+    Returns:
+        list: A single flat list created by interleaving the input lists.
+
+    Raises:
+        ValueError: If the input lists are not of the same length.
+    """
+    if not (len(list1) == len(list2) == len(list3)):
+        raise ValueError("Input lists must be of the same length")
+
+    # Use zip to transpose the lists and then flatten the result
+    return [item for triplet in zip(list1, list2, list3) for item in triplet]
+
+
+# Example usage:
+list1 = [1, 2, 3, 4, 5, 6, 7]
+list2 = [10, 20, 30, 40, 50, 60, 70]
+list3 = [100, 200, 300, 400, 500, 600, 700]
+
+print(interleave_lists(list1, list2, list3))
+# Output: [1, 10, 100, 2, 20, 200, 3, 30, 300, 4, 40, 400, 5, 50, 500, 6, 60, 600, 7, 70, 700]
+```
+
+You can also use the `itertools.chain` and `zip` functions in combination with a list comprehension to achieve the same result:
+
+```python
+import itertools
+
+def interleave_lists(list1, list2, list3):
+    if not (len(list1) == len(list2) == len(list3)):
+        raise ValueError("Input lists must be of the same length")
+
+    return list(itertools.chain(*zip(list1, list2, list3)))
+
+# Example usage:
+list1 = [1, 2, 3, 4, 5, 6, 7]
+list2 = [10, 20, 30, 40, 50, 60, 70]
+list3 = [100, 200, 300, 400, 500, 600, 700]
+
+print(interleave_lists(list1, list2, list3))
+# Output: [1, 10, 100, 2, 20, 200, 3, 30, 300, 4, 40, 400, 5, 50, 500, 6, 60, 600, 7, 70, 700]
+```

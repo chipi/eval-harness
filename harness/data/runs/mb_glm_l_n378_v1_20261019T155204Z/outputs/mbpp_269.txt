@@ -1,0 +1,23 @@
+```python
+def ascii_value(char):
+    """
+    Finds the ASCII value of a character.
+    
+    Args:
+        char (str): A single character.
+        
+    Returns:
+        int: The ASCII value of the character.
+    """
+    return ord(char)
+
+# Asserting the test case provided in the problem description
+assert ascii_value('A') == 65
+
+# Additional test cases to verify functionality
+assert ascii_value('a') == 97
+assert ascii_value('0') == 48
+assert ascii_value(' ') == 32
+
+print("All assertions passed successfully.")
+```

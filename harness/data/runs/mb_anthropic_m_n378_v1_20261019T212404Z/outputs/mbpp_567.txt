@@ -1,0 +1,11 @@
+```python
+def issort_list(lst):
+    return all(lst[i] <= lst[i+1] for i in range(len(lst)-1))
+
+
+assert issort_list([1,2,4,6,8,10,12,14,16,17]) == True
+
+if __name__ == "__main__":
+    print(issort_list([1,2,4,6,8,10,12,14,16,17]))
+    print(issort_list([1,3,2]))
+```

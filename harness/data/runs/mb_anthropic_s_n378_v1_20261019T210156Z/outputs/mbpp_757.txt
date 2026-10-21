@@ -1,0 +1,67 @@
+```python
+def count_reverse_pairs(strings):
+    """
+    Count the pairs of reverse strings in the given string list.
+    
+    A pair of reverse strings means two strings where one is the reverse of the other.
+    For example, "julia" and "ailuj" are reverse pairs.
+    
+    Args:
+        strings: A list of strings
+        
+    Returns:
+        The count of reverse string pairs
+    """
+    count = 0
+    seen = set()
+    
+    for string in strings:
+        reverse_string = string[::-1]
+        
+        # If the reverse of current string is already seen, we found a pair
+        if reverse_string in seen:
+            count += 1
+        
+        # Add current string to seen set
+        seen.add(string)
+    
+    return count
+
+
+# Test cases
+if __name__ == "__main__":
+    assert count_reverse_pairs(["julia", "best", "tseb", "for", "ailuj"]) == 2
+    print("Test passed!")
+    
+    # Additional test cases
+    assert count_reverse_pairs(["abc", "cba", "def", "fed"]) == 2
+    print("Additional test 1 passed!")
+    
+    assert count_reverse_pairs(["hello", "world"]) == 0
+    print("Additional test 2 passed!")
+    
+    assert count_reverse_pairs(["a", "a"]) == 0
+    print("Additional test 3 passed!")
+    
+    assert count_reverse_pairs(["ab", "ba", "cd", "dc", "ef", "fe"]) == 3
+    print("Additional test 4 passed!")
+    
+    print("All tests passed!")
+```
+
+**Explanation:**
+
+The solution uses a set-based approach to efficiently count reverse string pairs:
+
+1. **Algorithm**: We iterate through each string in the list and check if its reverse has already been seen.
+2. **Time Complexity**: O(n*m) where n is the number of strings and m is the average length of strings (for reversing).
+3. **Space Complexity**: O(n) for the set to store seen strings.
+
+**How it works with the example:**
+- `["julia", "best", "tseb", "for", "ailuj"]`
+- Process "julia": reverse is "ailuj", not in seen yet. Add "julia" to seen.
+- Process "best": reverse is "tseb", not in seen yet. Add "best" to seen.
+- Process "tseb": reverse is "best", **found in seen!** count = 1. Add "tseb" to seen.
+- Process "for": reverse is "rof", not in seen yet. Add "for" to seen.
+- Process "ailuj": reverse is "julia", **found in seen!** count = 2. Add "ailuj" to seen.
+- Result: 2 pairs ✓

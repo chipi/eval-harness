@@ -1,0 +1,20 @@
+```python
+import re
+
+def text_match_wordz(text: str) -> bool:
+    """
+    Return True if the given text contains a word that includes the letter 'z'.
+
+    A "word" is treated as a sequence of letters, digits, or underscores.
+    """
+    pattern = r"\b\w*z\w*\b"
+    return re.search(pattern, text) is not None
+
+
+if __name__ == "__main__":
+    assert text_match_wordz("pythonz.") == True
+    assert text_match_wordz("hello world") == False
+    assert text_match_wordz("zebra") == True
+    assert text_match_wordz("buzz word") == True
+    print("All tests passed.")
+```

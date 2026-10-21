@@ -1,0 +1,12 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def all_unique(lst):
+    """Check if all elements in the list are unique."""
+    return len(lst) == len(set(lst))
+
+# Test case
+assert all_unique([1, 2, 3]) == True
+```
+
+This solution works by comparing the length of the original list with the length of a set created from the list. Since sets automatically remove duplicate elements, if the lengths are equal, it means all elements in the original list were unique. The function returns `True` in this case, and `False` otherwise.

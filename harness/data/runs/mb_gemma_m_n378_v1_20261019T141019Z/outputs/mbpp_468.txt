@@ -1,0 +1,54 @@
+To solve this problem, we can use a dynamic programming approach similar to the "Longest Increasing Subsequence" (LIS) algorithm. Instead of tracking the length of the subsequence, we track the maximum product possible ending at each index.
+
+Here is the self-contained Python script:
+
+```python
+def max_product(nums):
+    """
+    Finds the maximum product formed by multiplying numbers of an 
+    increasing subsequence of the given array.
+    """
+    if not nums:
+        return 0
+    
+    n = len(nums)
+    # dp[i] will store the maximum product of an increasing subsequence ending at index i
+    dp = [0.0] * n
+    
+    for i in range(n):
+        # Initialize dp[i] with the value of the element itself
+        # (A single element is technically an increasing subsequence)
+        dp[i] = float(nums[i])
+        
+        for j in range(i):
+            # If it's an increasing subsequence
+            if nums[j] < nums[i]:
+                # Update dp[i] if multiplying the current element with 
+                # the best product found at index j yields a higher value
+                dp[i] = max(dp[i], dp[j] * nums[i])
+                
+    # The answer is the maximum value found in our dp table
+    return int(max(dp))
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    result = max_product([3, 100, 4, 5, 150, 6])
+    print(f"Result: {result}")
+    assert result == 3000, f"Expected 3000, but got {result}"
+
+    # Additional test cases
+    assert max_product([1, 2, 3]) == 6        # 1 * 2 * 3
+    assert max_product([10, 5, 2]) == 10      # Single element max
+    assert max_product([1, 5, 2, 6]) == 30    # 1 * 5 * 6
+    
+    print("All tests passed!")
+```
+
+### Explanation:
+1.  **Initialization**: We create a list `dp` of the same length as `nums`. `dp[i]` represents the maximum product of an increasing subsequence that ends exactly at index `i`.
+2.  **Base Case**: Every single number is an increasing subsequence of length 1, so we initialize `dp[i]` with `nums[i]`.
+3.  **Transitions**: For every index `i`, we look at all previous indices `j` (where `j < i`). If `nums[j] < nums[i]`, it means we can append `nums[i]` to the increasing subsequence ending at `j`. We then check if `dp[j] * nums[i]` is greater than our current `dp[i]`.
+4.  **Complexity**: 
+    *   **Time Complexity**: $O(n^2)$, where $n$ is the length of the array, due to the nested loops.
+    *   **Space Complexity**: $O(n)$ to store the `dp` array.
+5.  **Edge Cases**: The script handles single-element arrays and arrays where the maximum product is just a single large number (e.g., a strictly decreasing array).

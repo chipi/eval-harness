@@ -1,0 +1,44 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def large_product(nums1, nums2, N):
+    """
+    Find the N largest products from two lists, selecting one factor from each list.
+    
+    Args:
+        nums1: First list of numbers
+        nums2: Second list of numbers
+        N: Number of largest products to return
+    
+    Returns:
+        A list of the N largest products in descending order
+    """
+    products = []
+    for a in nums1:
+        for b in nums2:
+            products.append(a * b)
+    products.sort(reverse=True)
+    return products[:N]
+
+
+# Test the function
+if __name__ == "__main__":
+    result = large_product([1, 2, 3, 4, 5, 6], [3, 6, 8, 9, 10, 6], 3)
+    print(result)
+    assert result == [60, 54, 50]
+    print("Test passed!")
+```
+
+**How it works:**
+
+1. **Nested loops**: Iterate through every combination of one element from `nums1` and one from `nums2`, computing their product.
+2. **Collect products**: Store all products in a list.
+3. **Sort descending**: Sort the list in reverse order so the largest values come first.
+4. **Slice**: Return the first `N` elements.
+
+**Verification with the example:**
+- The maximum product is `6 × 10 = 60`
+- The next is `6 × 9 = 54`
+- The next is `5 × 10 = 50`
+
+So the output is `[60, 54, 50]`, matching the expected result.

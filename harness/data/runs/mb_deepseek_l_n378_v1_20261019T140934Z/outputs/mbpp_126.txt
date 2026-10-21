@@ -1,0 +1,38 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def sum(n1, n2):
+    """
+    Find the sum of common divisors of two given numbers.
+    
+    Args:
+        n1: First number
+        n2: Second number
+    
+    Returns:
+        Sum of all common divisors of n1 and n2
+    """
+    # Find the minimum of the two numbers to limit our search
+    min_num = min(n1, n2)
+    
+    # Initialize sum of common divisors
+    total = 0
+    
+    # Check each number from 1 to min_num
+    for i in range(1, min_num + 1):
+        # If i divides both numbers, it's a common divisor
+        if n1 % i == 0 and n2 % i == 0:
+            total += i
+    
+    return total
+
+# Test the function
+assert sum(10, 15) == 6
+print("Test passed! sum(10, 15) =", sum(10, 15))
+```
+
+**Explanation:**
+- Common divisors of 10 and 15 are 1 and 5
+- Sum = 1 + 5 = 6
+
+The function works by iterating through all numbers from 1 to the smaller of the two input numbers, checking if each number divides both inputs evenly, and summing those that do.

@@ -1,0 +1,44 @@
+```python
+def sum_Of_Subarray_Prod(arr):
+    """
+    Calculates the sum of products of all possible contiguous subarrays of a given list.
+    
+    The logic:
+    Let S(i) be the sum of products of all subarrays ending at index i.
+    S(i) = (product of subarray [i]) + (product of subarray [i-1, i]) + ...
+    S(i) = arr[i] + (arr[i-1] * arr[i]) + (arr[i-2] * arr[i-1] * arr[i]) + ...
+    S(i) = arr[i] * (1 + S(i-1))
+    
+    The total sum is the sum of S(i) for all i from 0 to n-1.
+    """
+    total_sum = 0
+    current_subarray_sum = 0
+    
+    for x in arr:
+        # The sum of products of subarrays ending at the current element
+        # is the current element multiplied by (1 + the sum of products 
+        # of subarrays ending at the previous element).
+        current_subarray_sum = x * (1 + current_subarray_sum)
+        total_sum += current_subarray_sum
+        
+    return total_sum
+
+if __name__ == "__main__":
+    # Test case from the prompt
+    test_list = [1, 2, 3]
+    result = sum_Of_Subarray_Prod(test_list)
+    print(f"Sum of products of all subarrays of {test_list}: {result}")
+    
+    # Verification:
+    # Subarrays of [1, 2, 3]:
+    # [1]          -> product = 1
+    # [2]          -> product = 2
+    # [3]          -> product = 3
+    # [1, 2]       -> product = 2
+    # [2, 3]       -> product = 6
+    # [1, 2, 3]    -> product = 6
+    # Total sum = 1 + 2 + 3 + 2 + 6 + 6 = 20
+    
+    assert result == 20, f"Expected 20, but got {result}"
+    print("Assertion passed!")
+```

@@ -1,0 +1,44 @@
+```python
+import bisect
+
+def right_insertion(sorted_list, value):
+    """
+    Locates the right insertion point for a specified value in a sorted list.
+
+    The right insertion point is the index at which the value should be inserted
+    to maintain sorted order, such that any existing entries with the same value
+    will be to the left of the insertion point.
+
+    Args:
+        sorted_list: A list of elements sorted in ascending order.
+        value: The value to find the insertion point for.
+
+    Returns:
+        The index of the right insertion point.
+    """
+    # bisect.bisect_right returns the insertion point which comes after (to the right of)
+    # any existing entries of the value in the list.
+    return bisect.bisect_right(sorted_list, value)
+
+# Example usage and assertion from the problem description
+if __name__ == "__main__":
+    # Test case 1: Value is greater than all elements
+    assert right_insertion([1, 2, 4, 5], 6) == 4
+
+    # Test case 2: Value is less than all elements
+    assert right_insertion([1, 2, 4, 5], 0) == 0
+
+    # Test case 3: Value is in the middle
+    assert right_insertion([1, 2, 4, 5], 3) == 2
+
+    # Test case 4: Value is equal to an existing element (right insertion)
+    assert right_insertion([1, 2, 4, 5], 4) == 3
+
+    # Test case 5: Value is equal to the last element
+    assert right_insertion([1, 2, 4, 5], 5) == 4
+
+    # Test case 6: Empty list
+    assert right_insertion([], 10) == 0
+
+    print("All assertions passed.")
+```

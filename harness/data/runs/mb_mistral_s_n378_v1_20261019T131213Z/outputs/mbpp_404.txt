@@ -1,0 +1,24 @@
+Here's a self-contained Python script that solves the problem in a markdown code block:
+
+```python
+"""
+Write a python function to find the minimum of two numbers.
+assert minimum(1,2) == 1
+"""
+
+def minimum(a, b):
+    """Return the minimum of two numbers."""
+    return a if a < b else b
+
+# Test the function
+assert minimum(1, 2) == 1
+print("All tests passed!")
+```
+
+This script:
+1. Defines a `minimum()` function that takes two arguments
+2. Returns the smaller of the two numbers using a conditional expression
+3. Includes the required assertion test
+4. Prints a success message if the test passes
+
+The function works by comparing the two numbers and returning the one that's smaller. The assertion verifies that the function works correctly for the given test case.

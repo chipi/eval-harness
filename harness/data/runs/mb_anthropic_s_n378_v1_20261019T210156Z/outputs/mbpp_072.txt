@@ -1,0 +1,53 @@
+```python
+def dif_Square(n):
+    """
+    Check whether the given number can be represented as the difference of two squares.
+    
+    A number n can be represented as a difference of two squares if:
+    n = a² - b² = (a+b)(a-b)
+    
+    Mathematical insight:
+    - If n is odd, it can always be represented as difference of two squares
+      (n = ((n+1)/2)² - ((n-1)/2)²)
+    - If n is divisible by 4, it can be represented as difference of two squares
+    - If n ≡ 2 (mod 4), it cannot be represented as difference of two squares
+    
+    Args:
+        n: A positive integer
+        
+    Returns:
+        True if n can be represented as difference of two squares, False otherwise
+    """
+    # A number can be represented as difference of two squares
+    # if and only if it is NOT of the form 4k + 2
+    # In other words, n % 4 should not be 2
+    
+    return n % 4 != 2
+
+
+# Test cases
+assert dif_Square(5) == True      # 5 = 3² - 2² = 9 - 4
+assert dif_Square(1) == True      # 1 = 1² - 0² = 1 - 0
+assert dif_Square(3) == True      # 3 = 2² - 1² = 4 - 1
+assert dif_Square(4) == True      # 4 = 2² - 0² = 4 - 0
+assert dif_Square(8) == True      # 8 = 3² - 1² = 9 - 1
+assert dif_Square(2) == False     # Cannot be represented
+assert dif_Square(6) == False     # Cannot be represented
+assert dif_Square(10) == False    # Cannot be represented
+assert dif_Square(14) == False    # Cannot be represented
+
+print("All test cases passed!")
+```
+
+**Explanation:**
+
+The key insight is based on number theory:
+- A number `n` can be represented as a difference of two squares (`n = a² - b²`) if and only if `n % 4 ≠ 2`
+
+**Why this works:**
+- `a² - b² = (a+b)(a-b)`
+- If `n` is **odd**: Always representable (e.g., `5 = 3² - 2²`)
+- If `n ≡ 0 (mod 4)`: Always representable (e.g., `8 = 3² - 1²`)
+- If `n ≡ 2 (mod 4)`: Never representable (e.g., `2, 6, 10, 14...`)
+
+The solution is O(1) time and space complexity.

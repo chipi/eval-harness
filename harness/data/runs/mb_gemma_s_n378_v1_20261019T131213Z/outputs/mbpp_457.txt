@@ -1,0 +1,12 @@
+```python
+def Find_Min(list1):
+  """
+  Write a python function to find the sublist having minimum length.
+  assert Find_Min([[1],[1,2],[1,2,3]]) == [1]
+  """
+  min_list = list1[0]
+  for sublist in list1:
+    if len(sublist) < len(min_list):
+      min_list = sublist
+  return min_list
+```

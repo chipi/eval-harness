@@ -1,0 +1,20 @@
+```python
+def remove_uppercase(s: str) -> str:
+    """
+    Removes all uppercase characters from the given string.
+    
+    Args:
+        s: Input string
+    
+    Returns:
+        String with only lowercase characters preserved
+    """
+    return ''.join(char for char in s if not char.isupper())
+
+# Test the function with the given assertion
+if __name__ == "__main__":
+    result = remove_uppercase('cAstyoUrFavoRitETVshoWs')
+    print(f"Result: '{result}'")
+    assert result == 'cstyoravoitshos', f"Expected 'cstyoravoitshos', got '{result}'"
+    print("Assertion passed!")
+```

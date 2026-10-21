@@ -1,0 +1,42 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def is_nonagonal(n):
+    """
+    Calculate the nth nonagonal number.
+    
+    A nonagonal number is a figurate number that extends the concept of 
+    triangular and square numbers to the nonagon (9-sided polygon).
+    
+    Formula: N(n) = n * (7*n - 5) / 2
+    
+    Args:
+        n (int): The position in the sequence (1-indexed)
+    
+    Returns:
+        int: The nth nonagonal number
+    """
+    return n * (7 * n - 5) // 2
+
+
+# Test the function
+assert is_nonagonal(10) == 325
+print("Test passed!")
+print(f"is_nonagonal(10) = {is_nonagonal(10)}")
+
+# Additional tests
+print(f"First 10 nonagonal numbers: {[is_nonagonal(i) for i in range(1, 11)]}")
+```
+
+**Explanation:**
+
+The nth nonagonal number is calculated using the formula:
+
+$$N(n) = \frac{n(7n - 5)}{2}$$
+
+For n = 10:
+- $N(10) = \frac{10 \times (7 \times 10 - 5)}{2} = \frac{10 \times 65}{2} = \frac{650}{2} = 325$ ✓
+
+The first few nonagonal numbers are: 1, 9, 24, 46, 75, 111, 154, 204, 261, 325, ...
+
+I used integer division (`//`) to ensure the result is an integer, since the formula always produces an integer for positive integer values of n.

@@ -1,0 +1,9 @@
+```python
+def remove_whitespaces(s):
+    return s.replace(" ", "")
+
+assert remove_whitespaces(' Google    Flutter ') == 'GoogleFlutter'
+assert remove_whitespaces('Python  is  a  great  language') == 'Pythonisagreatlanguage'
+assert remove_whitespaces('   Multiple   spaces   ') == 'Multipespaces'
+assert remove_whitespaces('No   spaces   here') == 'Nospaceshere'
+```

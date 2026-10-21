@@ -1,0 +1,40 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def pos_count(numbers):
+    """
+    Count the number of positive numbers in a list.
+    
+    Args:
+        numbers: A list of numbers (int or float)
+    
+    Returns:
+        The count of positive numbers in the list
+    """
+    count = 0
+    for num in numbers:
+        if num > 0:
+            count += 1
+    return count
+
+
+# Test the function
+assert pos_count([1, -2, 3, -4]) == 2
+assert pos_count([0, 0, 0]) == 0
+assert pos_count([1, 2, 3, 4]) == 4
+assert pos_count([-1, -2, -3]) == 0
+assert pos_count([]) == 0
+assert pos_count([1.5, -2.5, 3.7]) == 2
+
+print("All tests passed!")
+```
+
+**Explanation:**
+
+- The function `pos_count` iterates through each element in the input list.
+- For each element, it checks if the number is strictly greater than `0` (positive).
+- If so, it increments the `count` variable.
+- Finally, it returns the total count.
+- Note that `0` is not considered positive, so it's excluded from the count.
+
+The script includes several test cases to verify correctness, including the one from the problem statement.

@@ -1,0 +1,25 @@
+```python
+import re
+
+def text_match_wordz_middle(text):
+    """
+    Checks if a string contains 'z' except at the start and end of the word.
+
+    Args:
+        text (str): The input string.
+
+    Returns:
+        bool: True if 'z' is found in the middle of the word, False otherwise.
+    """
+    # Use regular expression to find 'z' that is not at the start or end of the word
+    pattern = r'\Bz\B'
+    return bool(re.search(pattern, text))
+
+# Test the function
+print(text_match_wordz_middle("pythonzabc."))  # Expected output: True
+print(text_match_wordz_middle("zpythonabc."))  # Expected output: False
+print(text_match_wordz_middle("pythonabc.z"))  # Expected output: False
+print(text_match_wordz_middle("pythonabcz"))   # Expected output: False
+```
+
+In this script, we define a function `text_match_wordz_middle` that uses a regular expression to search for 'z' that is not at the start or end of the word. The `\B` in the regular expression is a word boundary that matches if the current position is not at the start or end of a word. The `re.search` function returns a match object if the pattern is found, and `None` otherwise. We convert this to a boolean value (`True` if a match is found, `False` otherwise) and return it.

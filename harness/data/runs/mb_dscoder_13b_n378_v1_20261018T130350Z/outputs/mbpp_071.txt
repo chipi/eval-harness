@@ -1,0 +1,18 @@
+```python
+def comb_sort(lst):
+    gap = len(lst)
+    swapped = True
+    while gap > 1 or swapped == True:
+        gap = gap // 2
+        swapped = False
+        i = 0
+        while i < len(lst) - gap:
+            if lst[i] > lst[i + gap]:
+                lst[i], lst[i + gap] = lst[i + gap], lst[i]
+                swapped = True
+            i += 1
+    return lst
+
+# Test cases
+assert comb_sort([5, 15, 37, 25, 79]) == [5, 15, 25, 37, 79]
+```

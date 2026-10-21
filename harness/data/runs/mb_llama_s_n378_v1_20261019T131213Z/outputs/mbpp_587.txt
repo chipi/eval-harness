@@ -1,0 +1,28 @@
+```python
+def list_tuple(lst):
+    """
+    This function takes a list as input and returns a tuple.
+    
+    Args:
+        lst (list): The input list to be converted.
+    
+    Returns:
+        tuple: A tuple containing all elements from the input list.
+    """
+    return tuple(lst)
+
+# Test the function
+assert list_tuple([5, 10, 7, 4, 15, 3])==(5, 10, 7, 4, 15, 3)
+```
+
+You can also use the following main function for example usage:
+
+```python
+def main():
+    lst = [5, 10, 7, 4, 15, 3]
+    print(f"Input List: {lst}")
+    print(f"Output Tuple: {list_tuple(lst)}")
+
+if __name__ == "__main__":
+    main()
+```

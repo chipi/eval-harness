@@ -1,0 +1,44 @@
+Here's a self-contained Python script that solves the problem by checking if two numbers differ at exactly one bit position:
+
+```python
+def differ_At_One_Bit_Pos(a: int, b: int) -> bool:
+    """
+    Check if two numbers differ at exactly one bit position.
+
+    Args:
+        a: First integer
+        b: Second integer
+
+    Returns:
+        bool: True if the numbers differ at exactly one bit position, False otherwise
+    """
+    # XOR the two numbers to find differing bits
+    xor = a ^ b
+
+    # If the result is 0, they are identical (0 differing bits)
+    if xor == 0:
+        return False
+
+    # Check if the result is a power of 2 (only one bit set)
+    # A number is a power of 2 if (n & (n - 1)) == 0
+    return (xor & (xor - 1)) == 0
+
+# Test case
+assert differ_At_One_Bit_Pos(13, 9) == True
+
+# Additional test cases
+assert differ_At_One_Bit_Pos(0, 0) == False
+assert differ_At_One_Bit_Pos(1, 0) == True
+assert differ_At_One_Bit_Pos(15, 7) == False
+assert differ_At_One_Bit_Pos(25, 19) == True
+print("All test cases passed!")
+```
+
+### Explanation:
+1. The function first computes the XOR of the two numbers. XOR will have bits set to 1 where the two numbers differ.
+2. If the XOR result is 0, the numbers are identical (no differing bits), so we return False.
+3. If the XOR result is a power of 2, it means exactly one bit differs (since powers of 2 have exactly one bit set in binary). We check this using the bitwise operation `(xor & (xor - 1)) == 0`, which is true only for powers of 2.
+4. The test case `differ_At_One_Bit_Pos(13, 9)` returns True because:
+   - 13 in binary: 1101
+   - 9 in binary:  1001
+   - XOR:          0100 (which is 4, a power of 2)

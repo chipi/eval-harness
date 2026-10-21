@@ -1,0 +1,82 @@
+```python
+def get_Inv_Count(arr):
+    """
+    Count the number of inversions in an array.
+    An inversion is a pair of indices (i, j) where i < j but arr[i] > arr[j].
+    
+    Args:
+        arr: List of integers
+        
+    Returns:
+        Integer count of inversions
+    """
+    def merge_count_inversions(arr):
+        """
+        Helper function that merges two sorted subarrays and counts inversions.
+        Uses merge sort approach for O(n log n) time complexity.
+        """
+        if len(arr) <= 1:
+            return arr, 0
+        
+        mid = len(arr) // 2
+        left, left_inv = merge_count_inversions(arr[:mid])
+        right, right_inv = merge_count_inversions(arr[mid:])
+        
+        merged = []
+        inv_count = left_inv + right_inv
+        i = j = 0
+        
+        # Merge while counting inversions
+        while i < len(left) and j < len(right):
+            if left[i] <= right[j]:
+                merged.append(left[i])
+                i += 1
+            else:
+                # If left[i] > right[j], all remaining elements in left
+                # form inversions with right[j]
+                merged.append(right[j])
+                inv_count += len(left) - i
+                j += 1
+        
+        merged.extend(left[i:])
+        merged.extend(right[j:])
+        
+        return merged, inv_count
+    
+    _, inversion_count = merge_count_inversions(arr)
+    return inversion_count
+
+
+# Test cases
+assert get_Inv_Count([1, 20, 6, 4, 5]) == 5
+print("Test passed: get_Inv_Count([1, 20, 6, 4, 5]) == 5")
+
+# Additional test cases
+assert get_Inv_Count([1, 2, 3, 4, 5]) == 0
+print("Test passed: get_Inv_Count([1, 2, 3, 4, 5]) == 0")
+
+assert get_Inv_Count([5, 4, 3, 2, 1]) == 10
+print("Test passed: get_Inv_Count([5, 4, 3, 2, 1]) == 10")
+
+assert get_Inv_Count([2, 1]) == 1
+print("Test passed: get_Inv_Count([2, 1]) == 1")
+
+print("\nAll tests passed!")
+```
+
+**Explanation:**
+
+The solution uses a **merge sort-based approach** to count inversions efficiently in O(n log n) time:
+
+1. **Base case**: Arrays with 1 or fewer elements have 0 inversions.
+
+2. **Divide**: Split the array into left and right halves.
+
+3. **Conquer**: Recursively count inversions in both halves.
+
+4. **Merge**: While merging the sorted subarrays:
+   - If `left[i] <= right[j]`, no new inversions are created
+   - If `left[i] > right[j]`, then `left[i]` and all remaining elements in the left subarray form inversions with `right[j]` (since both subarrays are sorted)
+
+For the example `[1, 20, 6, 4, 5]`:
+- Inversions are: (20,6), (20,4), (20,5), (6,4), (4,5) = **5 inversions**

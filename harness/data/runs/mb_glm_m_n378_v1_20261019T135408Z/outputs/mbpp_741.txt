@@ -1,0 +1,40 @@
+Here's a self-contained Python script that solves the problem. The function `all_Characters_Same` checks whether all characters in a given string are the same or not:
+
+```python
+def all_Characters_Same(s):
+    """
+    Check whether all characters in the string are the same.
+    
+    Args:
+        s (str): The input string to check.
+    
+    Returns:
+        bool: True if all characters are the same, False otherwise.
+    """
+    if not s:  # Handle empty string case
+        return True
+    first_char = s[0]
+    for char in s:
+        if char != first_char:
+            return False
+    return True
+
+# Test cases
+assert all_Characters_Same("python") == False
+assert all_Characters_Same("aaaa") == True
+assert all_Characters_Same("a") == True
+assert all_Characters_Same("") == True  # Empty string is considered as all characters same
+assert all_Characters_Same("111111") == True
+assert all_Characters_Same("112") == False
+
+print("All test cases passed!")
+```
+
+### Explanation:
+1. **Function Definition**: The function `all_Characters_Same` takes a string `s` as input.
+2. **Edge Case Handling**: If the string is empty, it returns `True` because there are no differing characters.
+3. **Character Comparison**: The function checks each character in the string against the first character. If any character differs, it returns `False`.
+4. **Return True**: If all characters match the first character, it returns `True`.
+5. **Test Cases**: The script includes several test cases to verify the function's correctness, including the provided example.
+
+This script is self-contained and can be run directly to test the function.

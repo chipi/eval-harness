@@ -1,0 +1,10 @@
+```python
+def len_log(lst):
+    return max(len(word) for word in lst)
+
+def main():
+    print(len_log(["python","PHP","bigdata"]))  # Expected output: 7
+
+if __name__ == "__main__":
+    main()
+```

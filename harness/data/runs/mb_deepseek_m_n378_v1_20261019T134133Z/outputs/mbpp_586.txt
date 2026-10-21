@@ -1,0 +1,32 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def split_Arr(arr, n):
+    """
+    Splits the list at the nth element and adds the first part to the end.
+    
+    Args:
+        arr: The input list to be split and rotated.
+        n: The index at which to split the list.
+    
+    Returns:
+        A new list with the first part moved to the end.
+    """
+    return arr[n:] + arr[:n]
+
+
+# Test the function
+assert split_Arr([12, 10, 5, 6, 52, 36], 2) == [5, 6, 52, 36, 12, 10]
+print("Test passed!")
+```
+
+**How it works:**
+
+- `arr[n:]` extracts the elements from index `n` to the end of the list (the "second part").
+- `arr[:n]` extracts the elements from the start up to (but not including) index `n` (the "first part").
+- Concatenating them with `+` places the second part first and the first part at the end, effectively rotating the list left by `n` positions.
+
+For the example `split_Arr([12, 10, 5, 6, 52, 36], 2)`:
+- `arr[2:]` → `[5, 6, 52, 36]`
+- `arr[:2]` → `[12, 10]`
+- Result → `[5, 6, 52, 36, 12, 10]` ✓

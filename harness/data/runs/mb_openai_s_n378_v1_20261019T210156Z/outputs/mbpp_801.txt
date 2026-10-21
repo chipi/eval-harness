@@ -1,0 +1,21 @@
+```python
+def test_three_equal(a, b, c):
+    """
+    Count how many of the three given integers are equal.
+    
+    Returns:
+        3 if all three are equal
+        2 if exactly two are equal
+        0 if all are different
+    """
+    if a == b == c:
+        return 3
+    elif a == b or a == c or b == c:
+        return 2
+    else:
+        return 0
+
+
+# Example assertion
+assert test_three_equal(1, 1, 1) == 3
+```

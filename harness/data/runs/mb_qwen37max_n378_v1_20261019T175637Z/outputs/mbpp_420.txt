@@ -1,0 +1,13 @@
+```python
+def cube_Sum(n):
+    """
+    Find the cube sum of first n even natural numbers.
+    First n even natural numbers are: 2, 4, 6, ..., 2n
+    Sum of cubes = 2^3 + 4^3 + 6^3 + ... + (2n)^3
+    """
+    total = 0
+    for i in range(1, n + 1):
+        even_num = 2 * i
+        total += even_num ** 3
+    return total
+```

@@ -1,0 +1,20 @@
+```python
+def sum_list(list1, list2):
+  """
+  Takes two lists of numbers and returns a new list containing the element-wise sum.
+
+  Args:
+    list1: The first list of numbers.
+    list2: The second list of numbers.
+
+  Returns:
+    A new list containing the element-wise sum of list1 and list2.
+  """
+  if len(list1) != len(list2):
+    raise ValueError("Lists must have the same length")
+
+  return [x + y for x, y in zip(list1, list2)]
+
+# Example usage and assertion
+assert sum_list([10, 20, 30], [15, 25, 35]) == [25, 45, 65]
+```

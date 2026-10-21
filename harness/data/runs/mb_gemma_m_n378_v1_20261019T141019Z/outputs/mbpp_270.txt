@@ -1,0 +1,33 @@
+```python
+def sum_even_and_even_index(lst):
+    """
+    Finds the sum of even numbers located at even indices of a list.
+    
+    Args:
+        lst (list): A list of integers.
+        
+    Returns:
+        int: The sum of even numbers at even positions (0, 2, 4, ...).
+    """
+    total_sum = 0
+    # Iterate through the list using step 2 to only visit even indices (0, 2, 4...)
+    for i in range(0, len(lst), 2):
+        # Check if the number at the even index is even
+        if lst[i] % 2 == 0:
+            total_sum += lst[i]
+    return total_sum
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    # Indices: 0:5 (odd), 2:12 (even), 4:18 (even)
+    # Note: The prompt example [5, 6, 12, 1, 18, 8] -> 12 + 18 = 30
+    # (5 is at index 0, but 5 is odd, so it is skipped)
+    assert sum_even_and_even_index([5, 6, 12, 1, 18, 8]) == 30
+    
+    # Additional test cases
+    assert sum_even_and_even_index([2, 3, 4, 5, 6]) == 12  # 2 + 4 + 6
+    assert sum_even_and_even_index([1, 3, 5, 7]) == 0      # No even numbers at even indices
+    assert sum_even_and_even_index([10, 10, 10, 10]) == 20 # 10 (idx 0) + 10 (idx 2)
+    
+    print("All tests passed!")
+```

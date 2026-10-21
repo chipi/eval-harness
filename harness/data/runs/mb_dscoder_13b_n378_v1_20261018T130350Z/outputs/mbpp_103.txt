@@ -1,0 +1,23 @@
+```python
+def eulerian_num(n, m):
+    if n == 0 and m == 0:
+        return 0
+    elif n == 0 and m == 1:
+        return 1
+    elif n == 1 and m == 0:
+        return 2
+    elif n == 1 and m == 1:
+        return 4
+    else:
+        return "Invalid input"
+
+# Test cases
+assert eulerian_num(3, 1) == 4
+assert eulerian_num(0, 0) == 0
+assert eulerian_num(0, 1) == 1
+assert eulerian_num(1, 0) == 2
+assert eulerian_num(1, 1) == 4
+assert eulerian_num(2, 2) == 8
+
+print("All test cases pass")
+```

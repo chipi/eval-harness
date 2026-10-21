@@ -1,0 +1,49 @@
+```python
+def median_numbers(a, b, c):
+    """
+    This function finds the median of three numbers.
+
+    Args:
+        a (int or float): The first number.
+        b (int or float): The second number.
+        c (int or float): The third number.
+
+    Returns:
+        float: The median of the three numbers.
+    """
+    # Create a list of the three numbers
+    numbers = [a, b, c]
+    
+    # Sort the list in ascending order
+    numbers.sort()
+    
+    # The median is the middle number, which is the second number in the sorted list
+    median = numbers[1]
+    
+    return median
+
+# Test the function
+assert median_numbers(25, 55, 65) == 55.0
+```
+
+However, a more concise and Pythonic way to solve this problem would be:
+
+```python
+def median_numbers(a, b, c):
+    """
+    This function finds the median of three numbers.
+
+    Args:
+        a (int or float): The first number.
+        b (int or float): The second number.
+        c (int or float): The third number.
+
+    Returns:
+        float: The median of the three numbers.
+    """
+    # Return the middle value of the sorted tuple
+    return sorted([a, b, c])[1]
+
+# Test the function
+assert median_numbers(25, 55, 65) == 55.0
+```

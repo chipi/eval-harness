@@ -1,0 +1,19 @@
+Here's a self-contained Python script that solves the problem of finding even numbers from a list:
+
+```python
+def find_even_numbers(numbers):
+    """Return a list of even numbers from the input list."""
+    return [num for num in numbers if num % 2 == 0]
+
+# Test the function
+assert find_even_numbers([1, 2, 3, 4, 5]) == [2, 4]
+print("Test passed!")
+```
+
+This script:
+1. Defines a function `find_even_numbers` that takes a list of numbers as input
+2. Uses a list comprehension to filter and return only the even numbers (where `num % 2 == 0`)
+3. Includes an assertion to verify the function works as expected
+4. Prints a confirmation message if the test passes
+
+You can run this script directly, and it will output "Test passed!" if the function works correctly.

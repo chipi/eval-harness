@@ -1,0 +1,13 @@
+```python
+def even_position(lst):
+    """
+    Return True if every element at an even index (0, 2, 4, ...)
+    is an even number; otherwise return False.
+    """
+    return all(lst[i] % 2 == 0 for i in range(0, len(lst), 2))
+
+
+if __name__ == "__main__":
+    assert even_position([3, 2, 1]) == False
+    print("All tests passed.")
+```

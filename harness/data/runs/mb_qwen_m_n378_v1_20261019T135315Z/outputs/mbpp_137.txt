@@ -1,0 +1,33 @@
+```python
+import math
+
+
+def zero_count(arr: list[int]) -> float:
+    """
+    Find the ratio of zeroes to non-zeroes in an array of integers.
+    
+    Args:
+        arr: A list of integers
+        
+    Returns:
+        The ratio of zero elements to non-zero elements
+    """
+    if not arr:
+        return 0.0
+    
+    zero_count = sum(1 for x in arr if x == 0)
+    non_zero_count = sum(1 for x in arr if x != 0)
+    
+    if non_zero_count == 0:
+        # If all elements are zero, we can't compute a meaningful ratio
+        # Return infinity or handle as needed; but based on the test case, this shouldn't happen
+        return float('inf')
+    
+    return zero_count / non_zero_count
+
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert math.isclose(zero_count([0, 1, 2, -1, -5, 6, 0, -3, -2, 3, 4, 6, 8]), 0.181818, rel_tol=0.001)
+    print("All tests passed!")
+```

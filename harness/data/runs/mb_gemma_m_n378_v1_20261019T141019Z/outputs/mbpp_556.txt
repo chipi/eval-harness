@@ -1,0 +1,49 @@
+To solve this problem, we need to understand the property of the XOR operation regarding parity (even/odd).
+
+**Logic:**
+1.  The XOR of two numbers is **odd** if and only if one number is **even** and the other is **odd**.
+    *   `Even ^ Even = Even`
+    *   `Odd ^ Odd = Even`
+    *   `Even ^ Odd = Odd`
+2.  To find the total number of pairs with an odd XOR value, we simply need to count how many even numbers are in the list and how many odd numbers are in the list.
+3.  The number of such pairs is the product of the count of even numbers and the count of odd numbers ($Count_{even} \times Count_{odd}$).
+
+Here is the self-contained Python script:
+
+```python
+def find_Odd_Pair(arr, n):
+    """
+    Counts the number of pairs (i, j) such that arr[i] ^ arr[j] is odd.
+    A XOR result is odd if and only if one operand is even and the other is odd.
+    
+    Args:
+        arr (list): List of integers.
+        n (int): The number of elements in the list.
+        
+    Returns:
+        int: The count of pairs with an odd XOR value.
+    """
+    evens = 0
+    odds = 0
+    
+    for num in arr:
+        if num % 2 == 0:
+            evens += 1
+        else:
+            odds += 1
+            
+    # Every even number paired with every odd number results in an odd XOR
+    return evens * odds
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    # arr = [5, 4, 7, 2, 1]
+    # Odds: 5, 7, 1 (Count = 3)
+    # Evens: 4, 2 (Count = 2)
+    # Pairs: (5,4), (5,2), (7,4), (7,2), (1,4), (1,2) -> Total = 6
+    result = find_Odd_Pair([5, 4, 7, 2, 1], 5)
+    print(f"Result: {result}")
+    
+    assert result == 6
+    print("Assertion passed!")
+```

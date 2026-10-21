@@ -1,0 +1,34 @@
+```python
+def convert_list_dictionary(keys, values, scores):
+    """
+    Converts multiple lists into a nested dictionary.
+
+    Args:
+        keys (list): List of keys.
+        values (list): List of values.
+        scores (list): List of scores.
+
+    Returns:
+        list: A list of dictionaries, where each dictionary has a key from the keys list,
+              and a nested dictionary containing a value from the values list as a key
+              and a score from the scores list as its value.
+    """
+    result = []
+    for i in range(len(keys)):
+        nested_dict = {keys[i]: {values[i]: scores[i]}}
+        result.append(nested_dict)
+    return result
+
+# Example usage and assertion
+if __name__ == '__main__':
+    keys = ["S001", "S002", "S003", "S004"]
+    values = ["Adina Park", "Leyton Marsh", "Duncan Boyle", "Saim Richards"]
+    scores = [85, 98, 89, 92]
+    
+    expected_output = [{'S001': {'Adina Park': 85}}, {'S002': {'Leyton Marsh': 98}}, {'S003': {'Duncan Boyle': 89}}, {'S004': {'Saim Richards': 92}}]
+    
+    actual_output = convert_list_dictionary(keys, values, scores)
+    
+    assert actual_output == expected_output
+    print("Assertion passed!")
+```

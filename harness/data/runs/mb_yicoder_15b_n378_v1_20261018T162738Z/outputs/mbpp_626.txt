@@ -1,0 +1,14 @@
+```python
+import math
+
+def triangle_area(radius):
+    if radius < 0:
+        return None
+    else:
+        return (radius**2 * math.sqrt(3)) / 2
+
+# Test cases
+assert triangle_area(1) == 0.75
+assert triangle_area(2) == 2.6666666666666665
+assert triangle_area(-1) == None
+```

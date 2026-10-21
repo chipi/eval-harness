@@ -1,0 +1,12 @@
+```python
+def count_occurrence(tup, lst):
+    """
+    Write a python function to count the occurence of all elements of list in a tuple.
+    assert count_occurrence(('a', 'a', 'c', 'b', 'd'),['a', 'b'] ) == 3
+    """
+    count = 0
+    for element in tup:
+        if element in lst:
+            count += 1
+    return count
+```

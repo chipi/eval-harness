@@ -1,0 +1,32 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def add_string(lst, format_string):
+    """
+    Apply a given format string to all of the elements in a list.
+    
+    Args:
+        lst: List of elements to format
+        format_string: Format string with {0} placeholder
+        
+    Returns:
+        List of formatted strings
+    """
+    return [format_string.format(item) for item in lst]
+
+
+# Test the function
+if __name__ == "__main__":
+    # Test case from the problem
+    result = add_string([1, 2, 3, 4], 'temp{0}')
+    expected = ['temp1', 'temp2', 'temp3', 'temp4']
+    assert result == expected, f"Expected {expected}, but got {result}"
+    print("Test passed!")
+    
+    # Additional test cases
+    print(add_string([1, 2, 3, 4], 'temp{0}'))  # ['temp1', 'temp2', 'temp3', 'temp4']
+    print(add_string(['a', 'b', 'c'], 'item_{0}'))  # ['item_a', 'item_b', 'item_c']
+    print(add_string([10, 20, 30], 'number{0}'))  # ['number10', 'number20', 'number30']
+```
+
+The function uses a list comprehension with the `format()` method to apply the format string to each element in the input list. The `{0}` placeholder in the format string gets replaced by each element from the list.

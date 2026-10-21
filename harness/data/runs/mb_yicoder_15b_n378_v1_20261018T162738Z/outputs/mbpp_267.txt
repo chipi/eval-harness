@@ -1,0 +1,12 @@
+```python
+def square_Sum(n):
+    sum = 0
+    for i in range(1, 2*n, 2):
+        sum += i**2
+    return sum
+
+# Test cases
+assert square_Sum(2) == 10
+assert square_Sum(3) == 30
+assert square_Sum(4) == 90
+```

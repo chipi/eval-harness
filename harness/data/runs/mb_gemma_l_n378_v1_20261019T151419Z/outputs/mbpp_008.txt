@@ -1,0 +1,16 @@
+```python
+def square_nums(nums):
+    """
+    Returns a list containing the squares of each element in the input list.
+    """
+    return [x**2 for x in nums]
+
+if __name__ == "__main__":
+    # Test case provided in the problem description
+    input_list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    expected_output = [1, 4, 9, 16, 25, 36, 49, 64, 81, 100]
+    
+    # Assertion to verify the function works correctly
+    assert square_nums(input_list) == expected_output
+    print("Test passed!")
+```

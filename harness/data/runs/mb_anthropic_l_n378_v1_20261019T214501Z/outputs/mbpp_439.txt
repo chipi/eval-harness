@@ -1,0 +1,50 @@
+Looking at this problem, I need to concatenate the digits of multiple integers into one single integer.
+
+```python
+"""
+Write a function to join a list of multiple integers into a single integer.
+assert multiple_to_single([11, 33, 50])==113350
+"""
+
+
+def multiple_to_single(L):
+    """
+    Join a list of multiple integers into a single integer.
+
+    Each integer in the list is converted to its string representation,
+    the strings are concatenated in order, and the result is converted
+    back to an integer.
+
+    Args:
+        L: list of integers
+
+    Returns:
+        int: the single integer formed by joining all the integers
+
+    Example:
+        >>> multiple_to_single([11, 33, 50])
+        113350
+    """
+    x = int("".join(map(str, L)))
+    return x
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert multiple_to_single([11, 33, 50]) == 113350
+
+    # Additional test cases
+    assert multiple_to_single([-1, 2, 3, 4, 5, 6]) == -123456
+    assert multiple_to_single([10, 15, 20, 25]) == 10152025
+    assert multiple_to_single([1, 2, 3]) == 123
+    assert multiple_to_single([7]) == 7
+
+    print("All tests passed!")
+    print(multiple_to_single([11, 33, 50]))
+```
+
+**How it works:**
+
+1. `map(str, L)` converts each integer in the list to a string (e.g., `[11, 33, 50]` → `['11', '33', '50']`).
+2. `"".join(...)` concatenates those strings with no separator (`'113350'`).
+3. `int(...)` converts the concatenated string back into a single integer (`113350`).

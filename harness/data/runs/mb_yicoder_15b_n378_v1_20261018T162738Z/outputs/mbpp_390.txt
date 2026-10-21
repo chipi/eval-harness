@@ -1,0 +1,9 @@
+```python
+def add_string(lst, format_string):
+    return [format_string.format(i) for i in lst]
+
+# Test cases
+assert add_string([1,2,3,4],'temp{0}')==['temp1', 'temp2', 'temp3', 'temp4']
+assert add_string(['a','b','c','d'],'temp{0}')==['tempa', 'tempb', 'tempc', 'tempd']
+assert add_string([10,20,30,40],'temp{0}')==['temp10', 'temp20', 'temp30', 'temp40']
+```

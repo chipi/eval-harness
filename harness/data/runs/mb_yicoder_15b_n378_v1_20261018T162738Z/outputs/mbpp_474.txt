@@ -1,0 +1,10 @@
+```python
+def replace_char(string, old_char, new_char):
+    return string.replace(old_char, new_char)
+
+# Test cases
+assert replace_char("polygon",'y','l')==("pollgon")
+assert replace_char("hello world",'o','a')==("hella warld")
+assert replace_char("python",'t','k')==("python")
+assert replace_char("",'a','b')==("")
+```

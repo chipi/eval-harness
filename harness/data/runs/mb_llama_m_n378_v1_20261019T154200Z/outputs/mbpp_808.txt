@@ -1,0 +1,18 @@
+```python
+def check_K(tup, k):
+    """
+    This function checks if the given tuple contains the element k.
+
+    Args:
+        tup (tuple): The input tuple to be checked.
+        k (any): The element to be searched in the tuple.
+
+    Returns:
+        bool: True if the tuple contains the element k, False otherwise.
+    """
+    return k in tup
+
+# Example usage:
+print(check_K((10, 4, 5, 6, 8), 6))  # Output: True
+print(check_K((10, 4, 5, 6, 8), 7))  # Output: False
+```

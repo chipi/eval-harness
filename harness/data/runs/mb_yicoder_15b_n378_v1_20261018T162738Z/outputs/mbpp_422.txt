@@ -1,0 +1,13 @@
+```python
+def find_Average_Of_Cube(n):
+    sum = 0
+    for i in range(1, n+1):
+        sum += i ** 3
+    return sum / n
+
+# Test cases
+assert find_Average_Of_Cube(2) == 4.5
+assert find_Average_Of_Cube(3) == 10.833333333333334
+assert find_Average_Of_Cube(4) == 25.952380952380953
+assert find_Average_Of_Cube(5) == 54.99999999999999
+```

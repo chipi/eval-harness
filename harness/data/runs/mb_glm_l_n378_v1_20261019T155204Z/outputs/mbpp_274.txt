@@ -1,0 +1,19 @@
+```python
+def even_binomial_Coeff_Sum(n):
+    """
+    Finds the sum of even index binomial coefficients for a given positive integer n.
+    
+    The sum of the even-indexed binomial coefficients (C(n, 0) + C(n, 2) + ...) 
+    is mathematically equivalent to 2^(n-1).
+    """
+    if n <= 0:
+        return 0
+    return 1 << (n - 1)  # Equivalent to 2**(n-1) but faster
+
+if __name__ == "__main__":
+    assert even_binomial_Coeff_Sum(4) == 8
+    assert even_binomial_Coeff_Sum(5) == 16
+    assert even_binomial_Coeff_Sum(1) == 1
+    assert even_binomial_Coeff_Sum(7) == 64
+    print("All assertions passed.")
+```

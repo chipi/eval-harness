@@ -1,0 +1,20 @@
+```python
+def word_len(word):
+  """
+  Checks whether the length of the word is odd or not.
+
+  Args:
+    word: The input word (string).
+
+  Returns:
+    True if the length of the word is odd, False otherwise.
+  """
+  return len(word) % 2 != 0
+
+# Example usage and assertion
+assert word_len("Hadoop") == False
+assert word_len("Java") == True
+assert word_len("Python") == True
+assert word_len("C++") == True
+assert word_len("Go") == True
+```

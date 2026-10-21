@@ -1,0 +1,44 @@
+```python
+import re
+
+def extract_values(text):
+    """
+    Extracts values between quotation marks from a string.
+    
+    Args:
+    text (str): The input string containing quoted values.
+    
+    Returns:
+    list: A list of strings extracted from between the quotation marks.
+    """
+    # The regex pattern matches either single or double quotes 
+    # and captures the content inside them.
+    return re.findall(r'"([^"]*)"|\'([^\']*)\'', text)
+
+# For the specific test case provided, the double quotes capture group is populated.
+# To handle both single and double quotes seamlessly and return a flat list,
+# we can slightly adjust the extraction logic:
+def extract_values_robust(text):
+    """
+    Extracts values between single or double quotation marks from a string.
+    """
+    # Find all matches for either single or double quotes
+    matches = re.findall(r'"([^"]*)"|\'([^\']*)\'', text)
+    # re.findall returns a list of tuples for multiple groups. 
+    # We filter out the empty string caused by the non-matching group.
+    return [m[0] if m[0] else m[1] for m in matches]
+
+# Re-assigning to the requested function name to pass the assert statement cleanly
+extract_values = extract_values_robust
+
+if __name__ == "__main__":
+    # Test the provided assertion
+    assert extract_values('"Python", "PHP", "Java"') == ['Python', 'PHP', 'Java']
+    
+    # Additional tests
+    assert extract_values("Single 'quotes' also work") == ['quotes']
+    assert extract_values('Mix of "double" and \'single\'') == ['double', 'single']
+    assert extract_values('No quotes here') == []
+    
+    print("All tests passed!")
+```

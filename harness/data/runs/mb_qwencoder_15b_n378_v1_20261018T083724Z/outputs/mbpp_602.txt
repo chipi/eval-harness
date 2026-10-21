@@ -1,0 +1,17 @@
+```python
+def first_repeated_char(s):
+    seen = set()
+    for char in s:
+        if char in seen:
+            return char
+        seen.add(char)
+    return None
+
+# Test cases
+assert first_repeated_char("abcabc") == "a"
+assert first_repeated_char("abcdefg") == None
+assert first_repeated_char("hello world") == "l"
+assert first_repeated_char("1234567890") == None
+assert first_repeated_char("") == None
+```
+

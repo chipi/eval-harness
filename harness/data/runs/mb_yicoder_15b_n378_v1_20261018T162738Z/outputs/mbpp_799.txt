@@ -1,0 +1,10 @@
+```python
+def left_rotate(n, d):
+    return (n << d)|(n >> (32 - d))
+
+assert left_rotate(16,2) == 64
+assert left_rotate(64,3) == 224
+assert left_rotate(255,8) == 1023
+assert left_rotate(1,1) == 1
+assert left_rotate(0,1) == 0
+```

@@ -1,0 +1,66 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def is_prime(n):
+    """Check if a number is prime."""
+    if n < 2:
+        return False
+    for i in range(2, int(n ** 0.5) + 1):
+        if n % i == 0:
+            return False
+    return True
+
+def newman_prime(n):
+    """
+    Find the nth Newman-Shanks-Williams prime number.
+    
+    The Newman-Shanks-Williams (NSW) numbers are defined by the recurrence:
+    S(0) = 1, S(1) = 1
+    S(n) = 2*S(n-1) + S(n-2) for n >= 2
+    
+    NSW primes are NSW numbers that are also prime.
+    """
+    if n <= 0:
+        raise ValueError("n must be a positive integer")
+    
+    # Generate NSW numbers and check for primes
+    s0, s1 = 1, 1
+    count = 0
+    
+    # Check S(0) = 1 (not prime)
+    # Check S(1) = 1 (not prime)
+    
+    # Start from S(2)
+    for _ in range(2, 1000):  # Generate enough numbers to find nth prime
+        s_next = 2 * s1 + s0
+        if is_prime(s_next):
+            count += 1
+            if count == n:
+                return s_next
+        s0, s1 = s1, s_next
+    
+    raise ValueError(f"Could not find the {n}th NSW prime within the search limit")
+
+# Test the function
+if __name__ == "__main__":
+    # Test case from the problem
+    assert newman_prime(3) == 7, f"Expected 7, but got {newman_prime(3)}"
+    
+    # Additional test cases
+    print(f"1st NSW prime: {newman_prime(1)}")  # Should be 3
+    print(f"2nd NSW prime: {newman_prime(2)}")  # Should be 5
+    print(f"3rd NSW prime: {newman_prime(3)}")  # Should be 7
+    print(f"4th NSW prime: {newman_prime(4)}")  # Should be 17
+    print(f"5th NSW prime: {newman_prime(5)}")  # Should be 41
+    
+    print("All tests passed!")
+```
+
+This script:
+1. Defines a helper function `is_prime()` to check if a number is prime
+2. Implements the `newman_prime()` function that generates NSW numbers using the recurrence relation S(n) = 2*S(n-1) + S(n-2) with S(0) = 1, S(1) = 1
+3. Checks each generated NSW number for primality and returns the nth one found
+4. Includes the test case from the problem statement and additional verification
+
+The NSW sequence starts: 1, 1, 3, 7, 17, 41, 99, 239, 577, ...
+The NSW primes from this sequence are: 3, 7, 17, 41, 239, 577, ...

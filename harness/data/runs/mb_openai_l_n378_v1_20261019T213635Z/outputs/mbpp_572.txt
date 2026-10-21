@@ -1,0 +1,12 @@
+```python
+from collections import Counter
+
+
+def two_unique_nums(nums):
+    """Return numbers that occur exactly once, preserving their original order."""
+    counts = Counter(nums)
+    return [num for num in nums if counts[num] == 1]
+
+
+assert two_unique_nums([1, 2, 3, 2, 3, 4, 5]) == [1, 4, 5]
+```

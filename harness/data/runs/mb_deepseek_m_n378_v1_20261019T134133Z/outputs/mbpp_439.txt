@@ -1,0 +1,32 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def multiple_to_single(numbers):
+    """
+    Join a list of multiple integers into a single integer.
+    
+    Args:
+        numbers: A list of integers to be joined.
+    
+    Returns:
+        A single integer formed by concatenating the string representations
+        of the input integers.
+    """
+    return int("".join(str(num) for num in numbers))
+
+
+# Test the function
+assert multiple_to_single([11, 33, 50]) == 113350
+print("Test passed!")
+print(multiple_to_single([11, 33, 50]))  # Output: 113350
+```
+
+**How it works:**
+
+1. **`str(num) for num in numbers`** — Converts each integer in the list to its string representation (e.g., `11` → `"11"`, `33` → `"33"`, `50` → `"50"`).
+
+2. **`"".join(...)`** — Concatenates all the string representations together into one string (e.g., `"113350"`).
+
+3. **`int(...)`** — Converts the resulting string back into an integer (e.g., `"113350"` → `113350`).
+
+This approach works for any list of non-negative integers. If you need to handle negative numbers, you'd need additional logic since the minus sign would appear in the middle of the concatenated string.

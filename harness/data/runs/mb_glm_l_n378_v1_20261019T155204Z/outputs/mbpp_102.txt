@@ -1,0 +1,37 @@
+```python
+def snake_to_camel(snake_str):
+    """
+    Converts a snake_case string to a CamelCase string.
+    
+    The function splits the string by underscores, capitalizes the first
+    letter of each word, and joins them together. It handles leading/trailing
+    underscores and consecutive underscores by treating them as separators
+    for empty parts, which are ignored (similar to str.title() behavior).
+    
+    Args:
+        snake_str (str): The snake_case string to convert.
+        
+    Returns:
+        str: The converted CamelCase string.
+        
+    Asserts:
+        snake_to_camel('python_program') == 'PythonProgram'
+    """
+    # Split the string by underscore
+    components = snake_str.split('_')
+    
+    # Capitalize the first letter of each component and join them.
+    # We filter out empty strings to handle cases like 'python__program' or '_python'
+    # resulting in clean CamelCase output.
+    return ''.join(x.title() for x in components if x)
+
+# Assertions to verify the solution
+if __name__ == "__main__":
+    assert snake_to_camel('python_program') == 'PythonProgram'
+    assert snake_to_camel('snake_case_string') == 'SnakeCaseString'
+    assert snake_to_camel('single') == 'Single'
+    assert snake_to_camel('_leading_underscore') == 'LeadingUnderscore'
+    assert snake_to_camel('trailing_underscore_') == 'TrailingUnderscore'
+    
+    print("All assertions passed!")
+```

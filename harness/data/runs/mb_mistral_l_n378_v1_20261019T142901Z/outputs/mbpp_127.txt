@@ -1,0 +1,22 @@
+Here's a self-contained Python script that solves the problem, including the assertion:
+
+```python
+"""
+Function to multiply two integers.
+"""
+
+def multiply_int(a: int, b: int) -> int:
+    """Multiply two integers and return the result."""
+    return a * b
+
+# Test the function
+assert multiply_int(10, 20) == 200
+```
+
+This script:
+1. Defines a function `multiply_int` that takes two integer parameters and returns their product
+2. Includes a docstring explaining the function's purpose
+3. Contains the required assertion to verify the function works correctly
+4. Is self-contained and can be run directly
+
+The function will pass the assertion test since 10 × 20 = 200.

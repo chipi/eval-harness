@@ -1,0 +1,21 @@
+```python
+def is_polite(n):
+    """
+    Find the nth polite number.
+    A polite number is a number that can be expressed as the sum of two or more
+    consecutive positive integers. Equivalently, every positive integer except
+    powers of 2 is polite. The nth polite number is found by taking n, adding 1,
+    and clearing the highest set bit... but simplest: polite numbers are all
+    positive integers except powers of two, in order.
+    """
+    n = n + 1
+    # clear the most significant bit of n
+    msb_pos = n.bit_length() - 1
+    result = n - (1 << msb_pos)
+    return result
+
+
+if __name__ == "__main__":
+    assert is_polite(7) == 11
+    print("All tests passed.")
+```

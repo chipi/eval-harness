@@ -1,0 +1,54 @@
+```python
+def split_Arr(arr, n):
+    """
+    Splits a list at the nth element and adds the first part to the end.
+
+    Args:
+        arr (list): The input list of elements.
+        n (int): The index at which to split the list. The element at this index
+                 will be the first element of the new list.
+
+    Returns:
+        list: A new list with the first part (from start to index n-1)
+              moved to the end.
+
+    Example:
+        >>> split_Arr([12,10,5,6,52,36], 2)
+        [5, 6, 52, 36, 12, 10]
+    """
+    # Handle edge cases where n is out of bounds or the list is empty.
+    # If n is 0 or greater than or equal to the list length, the list remains unchanged.
+    if not arr or n <= 0 or n >= len(arr):
+        return arr
+
+    # Slicing is the most efficient and Pythonic way to achieve this.
+    # arr[n:] takes the slice from the nth element to the end of the list.
+    # arr[:n] takes the slice from the beginning of the list up to (but not including) the nth element.
+    # Concatenating these two slices with the first part moved to the end gives the desired result.
+    return arr[n:] + arr[:n]
+
+# Example usage and assertion from the problem description
+if __name__ == "__main__":
+    input_list = [12, 10, 5, 6, 52, 36]
+    split_index = 2
+    expected_output = [5, 6, 52, 36, 12, 10]
+
+    result = split_Arr(input_list, split_index)
+
+    print(f"Input list: {input_list}")
+    print(f"Splitting at index: {split_index}")
+    print(f"Result: {result}")
+    print(f"Expected: {expected_output}")
+
+    # The assert statement will raise an error if the result is not as expected.
+    assert result == expected_output
+
+    # Additional test cases
+    assert split_Arr([1, 2, 3, 4, 5], 0) == [1, 2, 3, 4, 5]  # Split at beginning
+    assert split_Arr([1, 2, 3, 4, 5], 4) == [1, 2, 3, 4, 5]  # Split at end
+    assert split_Arr([1, 2, 3, 4, 5], 5) == [1, 2, 3, 4, 5]  # Split out of bounds
+    assert split_Arr([], 2) == []  # Empty list
+    assert split_Arr([1], 0) == [1] # Single element list
+
+    print("\nAll assertions passed successfully!")
+```

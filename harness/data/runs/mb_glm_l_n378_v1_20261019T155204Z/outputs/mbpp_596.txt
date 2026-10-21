@@ -1,0 +1,24 @@
+```python
+import sys
+
+def tuple_size(tup):
+    """
+    Finds the size in bytes of the given tuple.
+    
+    Args:
+        tup (tuple): The tuple whose size is to be calculated.
+        
+    Returns:
+        int: The size of the tuple in bytes.
+    """
+    return sys.getsizeof(tup)
+
+# Assert statement to verify the function works as expected
+assert tuple_size(("A", 1, "B", 2, "C", 3)) == sys.getsizeof(("A", 1, "B", 2, "C", 3))
+
+# Example usage (optional)
+if __name__ == "__main__":
+    sample_tuple = ("A", 1, "B", 2, "C", 3)
+    print(f"Tuple: {sample_tuple}")
+    print(f"Size: {tuple_size(sample_tuple)} bytes")
+```

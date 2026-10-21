@@ -1,0 +1,42 @@
+```python
+def maxAverageOfPath(matrix):
+    """
+    Find the path from top-left to bottom-right (moving only right or down)
+    that maximizes the average value of cells visited.
+    
+    Key insight: All paths from (0,0) to (N-1,N-1) in an N×N grid visit exactly
+    2*N - 1 cells. Since the denominator is constant for all paths, maximizing
+    the average is equivalent to maximizing the total sum. So we just need to
+    find the maximum sum path using standard DP.
+    """
+    n = len(matrix)
+    if n == 0:
+        return 0.0
+    
+    # dp[i][j] = maximum sum to reach cell (i, j)
+    dp = [[0] * n for _ in range(n)]
+    dp[0][0] = matrix[0][0]
+    
+    # Fill first row
+    for j in range(1, n):
+        dp[0][j] = dp[0][j-1] + matrix[0][j]
+    
+    # Fill first column
+    for i in range(1, n):
+        dp[i][0] = dp[i-1][0] + matrix[i][0]
+    
+    # Fill rest
+    for i in range(1, n):
+        for j in range(1, n):
+            dp[i][j] = max(dp[i-1][j], dp[i][j-1]) + matrix[i][j]
+    
+    max_sum = dp[n-1][n-1]
+    num_cells = 2 * n - 1
+    
+    return max_sum / num_cells
+
+
+# Test
+assert maxAverageOfPath([[1, 2, 3], [6, 5, 4], [7, 3, 9]]) == 5.2
+print("All tests passed!")
+```

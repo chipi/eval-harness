@@ -1,0 +1,85 @@
+```python
+def max_product(nums):
+    """
+    This function finds the maximum product formed by multiplying numbers of an increasing subsequence of the given array.
+
+    Args:
+    nums (list): A list of integers.
+
+    Returns:
+    int: The maximum product formed by multiplying numbers of an increasing subsequence.
+
+    """
+    if not nums:
+        return 0
+
+    # Initialize lists to store the maximum and minimum product up to each position
+    max_dp = [num for num in nums]
+    min_dp = [num for num in nums]
+
+    # Initialize the maximum product
+    max_product = max(nums)
+
+    # Iterate over the list to fill up the dp tables
+    for i in range(1, len(nums)):
+        for j in range(i):
+            # If current number is greater than the previous number, we can extend the increasing subsequence
+            if nums[i] > nums[j]:
+                # Update the maximum product
+                max_dp[i] = max(max_dp[i], max_dp[j] * nums[i])
+                # Update the minimum product
+                min_dp[i] = min(min_dp[i], min_dp[j] * nums[i])
+
+        # Update the maximum product
+        max_product = max(max_product, max_dp[i])
+
+    return max_product
+
+
+# Test the function
+assert max_product([3, 100, 4, 5, 150, 6]) == 3000
+```
+
+However, the solution above can be optimized. We only need to keep track of the maximum and minimum product up to the previous position. 
+
+Here is the optimized solution:
+
+```python
+def max_product(nums):
+    """
+    This function finds the maximum product formed by multiplying numbers of an increasing subsequence of the given array.
+
+    Args:
+    nums (list): A list of integers.
+
+    Returns:
+    int: The maximum product formed by multiplying numbers of an increasing subsequence.
+
+    """
+    if not nums:
+        return 0
+
+    # Initialize variables to store the maximum and minimum product
+    max_dp = nums[0]
+    min_dp = nums[0]
+    max_product = nums[0]
+
+    # Iterate over the list to fill up the dp variables
+    for i in range(1, len(nums)):
+        # If current number is greater than 0, we can start a new increasing subsequence
+        if nums[i] > 0:
+            max_dp = max(nums[i], max_dp * nums[i])
+            min_dp = min(nums[i], min_dp * nums[i])
+        # If current number is less than or equal to 0, we cannot extend the increasing subsequence
+        else:
+            max_dp, min_dp = max(nums[i], min_dp * nums[i]), min(nums[i], max_dp * nums[i])
+
+        # Update the maximum product
+        max_product = max(max_product, max_dp)
+
+    return max_product
+
+
+# Test the function
+assert max_product([3, 100, 4, 5, 150, 6]) == 3000
+```

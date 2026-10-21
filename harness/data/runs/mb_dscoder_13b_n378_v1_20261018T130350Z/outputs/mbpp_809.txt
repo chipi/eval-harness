@@ -1,0 +1,20 @@
+```python
+def check_smaller(t1, t2):
+    # Check if both tuples have the same length
+    if len(t1) != len(t2):
+        return False
+
+    # Check if each element of the second tuple is smaller than its corresponding element in the first tuple
+    for i in range(len(t1)):
+        if t2[i] >= t1[i]:
+            return False
+
+    # If all elements pass the check, return True
+    return True
+
+# Test cases
+print(check_smaller((1, 2, 3), (2, 3, 4)))  # Expected output: False
+print(check_smaller((1, 2, 3), (1, 2, 3)))  # Expected output: True
+print(check_smaller((1, 2, 3), (3, 2, 1)))  # Expected output: False
+print(check_smaller((1, 2, 3), (4, 5, 6)))  # Expected output: False
+```

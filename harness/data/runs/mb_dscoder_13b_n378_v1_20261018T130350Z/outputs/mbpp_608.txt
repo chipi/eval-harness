@@ -1,0 +1,23 @@
+```python
+def bell_number(n):
+    if n < 0:
+        raise ValueError("n must be a non-negative integer")
+    elif n == 0 or n == 1:
+        return 1
+    else:
+        bell = [0 for _ in range(n+1)]
+        bell[0] = 1
+        bell[1] = 1
+
+        for i in range(2, n+1):
+            for j in range(i):
+                bell[i] += bell[j]
+
+        return bell[n]
+
+# Test cases
+assert bell_number(2) == 2
+assert bell_number(3) == 5
+assert bell_number(4) == 14
+assert bell_number(5) == 42
+```

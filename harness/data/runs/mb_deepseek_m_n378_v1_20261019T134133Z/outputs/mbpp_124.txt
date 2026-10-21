@@ -1,0 +1,51 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+import math
+import cmath
+
+def angle_complex(a, b):
+    """
+    Returns the angle (phase) of a complex number.
+    
+    Parameters:
+    a: real part (can be a number or a complex number)
+    b: imaginary part (can be a number or a complex number)
+    
+    Returns:
+    The angle of the complex number in radians.
+    """
+    # If b is already a complex number, use it directly
+    if isinstance(b, complex):
+        z = b
+    else:
+        z = complex(a, b)
+    
+    return cmath.phase(z)
+
+
+# Test the function
+assert math.isclose(angle_complex(0, 1j), 1.5707963267948966, rel_tol=0.001)
+print("Test passed!")
+print(f"angle_complex(0, 1j) = {angle_complex(0, 1j)}")
+print(f"angle_complex(1, 1) = {angle_complex(1, 1)}")
+print(f"angle_complex(-1, 0) = {angle_complex(-1, 0)}")
+print(f"angle_complex(0, -1) = {angle_complex(0, -1)}")
+```
+
+**Explanation:**
+
+1. **`cmath.phase(z)`** — This is the standard library function that returns the phase (angle) of a complex number `z` in radians, computed as `atan2(z.imag, z.real)`.
+
+2. **Handling the input** — The function accepts two arguments `a` and `b`. If `b` is already a complex number (as in the test case `angle_complex(0, 1j)`), we use it directly. Otherwise, we construct a complex number from the real and imaginary parts.
+
+3. **Test case** — For `1j` (which is `0 + 1j`), the angle is `π/2 ≈ 1.5707963267948966` radians, which matches the assertion.
+
+**Output:**
+```
+Test passed!
+angle_complex(0, 1j) = 1.5707963267948966
+angle_complex(1, 1) = 0.7853981633974483
+angle_complex(-1, 0) = 3.141592653589793
+angle_complex(0, -1) = -1.5707963267948966
+```

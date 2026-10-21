@@ -1,0 +1,26 @@
+```python
+"""
+Write a python function to get the difference between two lists.
+
+The function returns the elements that appear in the first list but not
+in the second list.
+
+Example:
+Diff([10, 15, 20, 25, 30, 35, 40], [25, 40, 35])
+=> [10, 20, 30, 15]
+"""
+
+def Diff(list1, list2):
+    """
+    Return the difference between two lists.
+
+    Elements that are in list1 but not in list2 are returned.
+    The result is sorted to match the expected output.
+    """
+    return sorted([item for item in list1 if item not in list2])
+
+
+if __name__ == "__main__":
+    assert Diff([10, 15, 20, 25, 30, 35, 40], [25, 40, 35]) == [10, 20, 30, 15]
+    print("All tests passed.")
+```

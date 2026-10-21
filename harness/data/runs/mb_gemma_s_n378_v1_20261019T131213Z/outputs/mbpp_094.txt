@@ -1,0 +1,16 @@
+```python
+def index_minimum(list_of_tuples):
+  """
+  Given a list of tuples, write a function that returns the first value of the tuple with the smallest second value.
+  assert index_minimum([('Rash', 143), ('Manjeet', 200), ('Varsha', 100)]) == 'Varsha'
+  """
+  if not list_of_tuples:
+    return None
+
+  min_tuple = list_of_tuples[0]
+  for tup in list_of_tuples:
+    if tup[1] < min_tuple[1]:
+      min_tuple = tup
+
+  return min_tuple[0]
+```

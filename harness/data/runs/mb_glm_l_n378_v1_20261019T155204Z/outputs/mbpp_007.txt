@@ -1,0 +1,36 @@
+```python
+def find_char_long(text):
+    """
+    Finds all words in a string that are at least 4 characters long.
+
+    Args:
+        text (str): The input string.
+
+    Returns:
+        list: A list of words with length >= 4.
+    """
+    # Split the string into words based on whitespace
+    words = text.split()
+    
+    # Filter words that have a length greater than or equal to 4
+    result = [word for word in words if len(word) >= 4]
+    
+    return result
+
+# Verification
+if __name__ == "__main__":
+    # Test case from the problem description
+    input_str = 'Please move back to stream'
+    expected_set = set(['Please', 'move', 'back', 'stream'])
+    
+    # Get the result
+    result = find_char_long(input_str)
+    
+    # Verify using the assertion logic provided
+    # We convert result to set because order isn't guaranteed/required, though split usually preserves it.
+    assert set(result) == expected_set
+    
+    print(f"Input: '{input_str}'")
+    print(f"Output: {result}")
+    print("Test passed successfully.")
+```

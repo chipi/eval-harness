@@ -1,0 +1,11 @@
+```python
+def find_quotient(num1, num2):
+    return num1 // num2
+
+# Test cases
+assert find_quotient(10, 3) == 3
+assert find_quotient(7, 2) == 3
+assert find_quotient(15, 4) == 3
+assert find_quotient(20, 5) == 4
+assert find_quotient(30, 6) == 5
+```

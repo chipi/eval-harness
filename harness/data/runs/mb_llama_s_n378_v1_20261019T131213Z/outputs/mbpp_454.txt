@@ -1,0 +1,31 @@
+```python
+import re
+
+def text_match_wordz(text):
+    """
+    This function checks if a given text contains a word with 'z'.
+
+    Args:
+        text (str): The input text to be checked.
+
+    Returns:
+        bool: True if the text contains a word with 'z', False otherwise.
+    """
+    # Use regular expression to find a word containing 'z'
+    pattern = r'\b\w*z\w*\b'
+    return bool(re.search(pattern, text))
+
+# Test the function
+print(text_match_wordz("pythonz."))  # Expected output: True
+print(text_match_wordz("python."))   # Expected output: False
+```
+
+In this script, we define a function `text_match_wordz` that takes a string `text` as input. It uses a regular expression to search for a word containing 'z'. The regular expression `\b\w*z\w*\b` breaks down as follows:
+
+- `\b`: A word boundary, ensuring we match a whole word.
+- `\w*`: Any word character (equivalent to `[a-zA-Z0-9_]`) between zero and unlimited times.
+- `z`: The character 'z'.
+- `\w*`: Any word character (equivalent to `[a-zA-Z0-9_]`) between zero and unlimited times.
+- `\b`: A word boundary, ensuring we match a whole word.
+
+The `re.search` function returns a match object if it finds the pattern in the text, or `None` otherwise. We convert this to a boolean value (`True` if a match is found, `False` otherwise) using the `bool` function.

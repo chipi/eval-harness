@@ -1,0 +1,35 @@
+```python
+def find_first_occurrence(arr, target):
+    """
+    Find the index of the first occurrence of a given number in a sorted array.
+
+    Args:
+        arr (list): A sorted list of integers.
+        target (int): The number to find.
+
+    Returns:
+        int: The index of the first occurrence of the target number. Returns -1 if the target is not found.
+    """
+    left, right = 0, len(arr) - 1
+    result = -1
+
+    while left <= right:
+        mid = (left + right) // 2
+        if arr[mid] == target:
+            # If we find the target, update the result and move the right pointer to the left
+            result = mid
+            right = mid - 1
+        elif arr[mid] < target:
+            # If the middle element is less than the target, move the left pointer to the right
+            left = mid + 1
+        else:
+            # If the middle element is greater than the target, move the right pointer to the left
+            right = mid - 1
+
+    return result
+
+# Example usage:
+arr = [2, 5, 5, 5, 6, 6, 8, 9, 9, 9]
+target = 5
+print(find_first_occurrence(arr, target))  # Output: 1
+```

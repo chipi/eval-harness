@@ -1,0 +1,39 @@
+A Woodall number is a natural number of the form $W_n = n \cdot 2^n - 1$ for some positive integer $n$.
+
+Here is the self-contained Python script to solve this problem:
+
+```python
+def is_woodall(num):
+    """
+    Checks if a given number is a Woodall number.
+    A Woodall number is of the form W_n = n * 2^n - 1.
+    """
+    if num < 1:
+        return False
+    
+    # We iterate through n starting from 1.
+    # Since n * 2^n grows exponentially, the loop will terminate quickly.
+    n = 1
+    while True:
+        woodall_n = n * (2**n) - 1
+        if woodall_n == num:
+            return True
+        if woodall_n > num:
+            return False
+        n += 1
+
+# Test cases
+if __name__ == "__main__":
+    # The specific test case provided in the prompt
+    assert is_woodall(383) == True  # 6 * 2^6 - 1 = 6 * 64 - 1 = 383
+    
+    # Additional test cases
+    assert is_woodall(1) == True    # 1 * 2^1 - 1 = 1
+    assert is_woodall(7) == True    # 2 * 2^2 - 1 = 7
+    assert is_woodall(23) == True    # 3 * 2^3 - 1 = 23
+    assert is_woodall(63) == True    # 4 * 2^4 - 1 = 63
+    assert is_woodall(127) == False  # Not a Woodall number
+    assert is_woodall(10) == False   # Not a Woodall number
+    
+    print("All tests passed!")
+```

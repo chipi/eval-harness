@@ -1,0 +1,19 @@
+```python
+def last_Digit(n):
+    """
+    Return the last digit of a given integer.
+    
+    Examples:
+        last_Digit(123) -> 3
+        last_Digit(0)   -> 0
+        last_Digit(-45) -> 5
+    """
+    return abs(n) % 10
+
+
+if __name__ == "__main__":
+    assert last_Digit(123) == 3
+    assert last_Digit(0) == 0
+    assert last_Digit(-45) == 5
+    print("All tests passed.")
+```

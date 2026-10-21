@@ -1,0 +1,49 @@
+Here's a self-contained Python script that solves the problem of finding the sum of the per-digit differences between two integers:
+
+```python
+def digit_distance_nums(num1, num2):
+    """
+    Calculate the sum of the per-digit differences between two integers.
+    
+    Args:
+        num1 (int): The first integer.
+        num2 (int): The second integer.
+    
+    Returns:
+        int: The sum of the absolute differences between corresponding digits.
+    """
+    # Convert both numbers to strings to process digits
+    str1 = str(abs(num1))
+    str2 = str(abs(num2))
+    
+    # Pad the shorter string with leading zeros to make lengths equal
+    max_len = max(len(str1), len(str2))
+    str1 = str1.zfill(max_len)
+    str2 = str2.zfill(max_len)
+    
+    # Calculate the sum of absolute differences between corresponding digits
+    total_distance = 0
+    for d1, d2 in zip(str1, str2):
+        total_distance += abs(int(d1) - int(d2))
+    
+    return total_distance
+
+# Test cases
+assert digit_distance_nums(1, 2) == 1
+assert digit_distance_nums(123, 321) == 4  # |1-3| + |2-2| + |3-1| = 2 + 0 + 2 = 4
+assert digit_distance_nums(10, 20) == 1    # |1-2| + |0-0| = 1 + 0 = 1
+assert digit_distance_nums(100, 200) == 1  # |1-2| + |0-0| + |0-0| = 1 + 0 + 0 = 1
+assert digit_distance_nums(123, 456) == 9  # |1-4| + |2-5| + |3-6| = 3 + 3 + 3 = 9
+assert digit_distance_nums(0, 0) == 0
+assert digit_distance_nums(-123, 321) == 4  # Absolute values are considered
+
+print("All test cases passed!")
+```
+
+### Explanation:
+1. **Convert to Strings**: The numbers are converted to strings to process each digit individually.
+2. **Handle Different Lengths**: The shorter string is padded with leading zeros to ensure both strings have the same length. This allows us to compare corresponding digits properly.
+3. **Calculate Digit Differences**: For each pair of corresponding digits, the absolute difference is computed and added to the total sum.
+4. **Test Cases**: The function is tested with various cases, including numbers of different lengths, zeros, and negative numbers (where absolute values are considered).
+
+The script is self-contained and includes test cases to verify the correctness of the solution.

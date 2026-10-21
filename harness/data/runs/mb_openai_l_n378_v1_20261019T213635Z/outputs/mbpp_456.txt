@@ -1,0 +1,9 @@
+```python
+def reverse_string_list(strings):
+    return [string[::-1] for string in strings]
+
+
+assert reverse_string_list(
+    ['Red', 'Green', 'Blue', 'White', 'Black']
+) == ['deR', 'neerG', 'eulB', 'etihW', 'kcalB']
+```

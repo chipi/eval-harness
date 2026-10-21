@@ -1,0 +1,31 @@
+Here's a self-contained Python script that solves the problem of removing leading zeroes from an IP address:
+
+```python
+def removezero_ip(ip_address):
+    """
+    Removes leading zeroes from each octet in an IP address.
+
+    Args:
+        ip_address (str): The IP address as a string (e.g., "216.08.094.196")
+
+    Returns:
+        str: The IP address with leading zeroes removed (e.g., "216.8.94.196")
+    """
+    octets = ip_address.split('.')
+    cleaned_octets = [octet.lstrip('0') or '0' for octet in octets]
+    return '.'.join(cleaned_octets)
+
+# Test the function
+assert removezero_ip("216.08.094.196") == "216.8.94.196"
+print("Test passed!")
+```
+
+This script:
+1. Defines a function `removezero_ip` that takes an IP address string as input
+2. Splits the IP address into its four octets
+3. Processes each octet to remove leading zeroes (using `lstrip('0')`)
+4. Handles the special case where an octet becomes empty after stripping (e.g., "000" becomes "0")
+5. Joins the cleaned octets back together with dots
+6. Includes a test case that matches the provided assertion
+
+The function will work with any valid IP address format, including those with one, two, or three leading zeroes in any octet.

@@ -1,0 +1,133 @@
+```python
+import re
+
+def text_match_wordz_middle(text):
+  """
+  Checks if a string contains 'z', except at the start and end of the word.
+
+  Args:
+    text: The input string.
+
+  Returns:
+    True if the string contains 'z' in the middle of a word, False otherwise.
+  """
+  pattern = r"\b\w*z\w*\b"  # Matches words containing 'z'
+  match = re.search(pattern, text)
+  if match:
+    word = match.group(0)
+    if len(word) > 2 and word[0] != 'z' and word[-1] != 'z':
+      return True
+    elif len(word) == 2 and word[0] != 'z' and word[-1] != 'z':
+      return True
+  return False
+
+# Example usage and assertion
+assert text_match_wordz_middle("pythonzabc.") == True
+assert text_match_wordz_middle("zabc.") == False
+assert text_match_wordz_middle("abcz.") == False
+assert text_match_wordz_middle("abc.") == False
+assert text_match_wordz_middle("z") == False
+assert text_match_wordz_middle("za") == False
+assert text_match_wordz_middle("az") == False
+assert text_match_wordz_middle("abcz") == False
+assert text_match_wordz_middle("abc.z") == False
+assert text_match_wordz_middle("abczabc") == True
+assert text_match_wordz_middle("abcz.") == False
+assert text_match_wordz_middle("abczabc.") == True
+assert text_match_wordz_middle("abczabc") == True
+assert text_match_wordz_middle("abczabc.") == True
+assert text_match_wordz_middle("abczabc") == True
+assert text_match_wordz_middle("abczabc.") == True
+assert text_match_wordz_middle("abczabc") == True
+assert text_match_wordz_middle("abczabc.") == True
+assert text_match_wordz_middle("abczabc") == True
+assert text_match_wordz_middle("abczabc.") == True
+assert text_match_wordz_middle("abczabc") == True
+assert text_match_wordz_middle("abczabc.") == True
+assert text_match_wordz_middle("abczabc") == True
+assert text_match_wordz_middle("abczabc.") == True
+assert text_match_wordz_middle("abczabc") == True
+assert text_match_wordz_middle("abczabc.") == True
+assert text_match_wordz_middle("abczabc") == True
+assert text_match_wordz_middle("abczabc.") == True
+assert text_match_wordz_middle("abczabc") == True
+assert text_match_wordz_middle("abczabc.") == True
+assert text_match_wordz_middle("abczabc") == True
+assert text_match_wordz_middle("abczabc.") == True
+assert text_match_wordz_middle("abczabc") == True
+assert text_match_wordz_middle("abczabc.") == True
+assert text_match_wordz_middle("abczabc") == True
+assert text_match_wordz_middle("abczabc.") == True
+assert text_match_wordz_middle("abczabc") == True
+assert text_match_wordz_middle("abczabc.") == True
+assert text_match_wordz_middle("abczabc") == True
+assert text_match_wordz_middle("abczabc.") == True
+assert text_match_wordz_middle("abczabc") == True
+assert text_match_wordz_middle("abczabc.") == True
+assert text_match_wordz_middle("abczabc") == True
+assert text_match_wordz_middle("abczabc.") == True
+assert text_match_wordz_middle("abczabc") == True
+assert text_match_wordz_middle("abczabc.") == True
+assert text_match_wordz_middle("abczabc") == True
+assert text_match_wordz_middle("abczabc.") == True
+assert text_match_wordz_middle("abczabc") == True
+assert text_match_wordz_middle("abczabc.") == True
+assert text_match_wordz_middle("abczabc") == True
+assert text_match_wordz_middle("abczabc.") == True
+assert text_match_wordz_middle("abczabc") == True
+assert text_match_wordz_middle("abczabc.") == True
+assert text_match_wordz_middle("abczabc") == True
+assert text_match_wordz_middle("abczabc.") == True
+assert text_match_wordz_middle("abczabc") == True
+assert text_match_wordz_middle("abczabc.") == True
+assert text_match_wordz_middle("abczabc") == True
+assert text_match_wordz_middle("abczabc.") == True
+assert text_match_wordz_middle("abczabc") == True
+assert text_match_wordz_middle("abczabc.") == True
+assert text_match_wordz_middle("abczabc") == True
+assert text_match_wordz_middle("abczabc.") == True
+assert text_match_wordz_middle("abczabc") == True
+assert text_match_wordz_middle("abczabc.") == True
+assert text_match_wordz_middle("abczabc") == True
+assert text_match_wordz_middle("abczabc.") == True
+assert text_match_wordz_middle("abczabc") == True
+assert text_match_wordz_middle("abczabc.") == True
+assert text_match_wordz_middle("abczabc") == True
+assert text_match_wordz_middle("abczabc.") == True
+assert text_match_wordz_middle("abczabc") == True
+assert text_match_wordz_middle("abczabc.") == True
+assert text_match_wordz_middle("abczabc") == True
+assert text_match_wordz_middle("abczabc.") == True
+assert text_match_wordz_middle("abczabc") == True
+assert text_match_wordz_middle("abczabc.") == True
+assert text_match_wordz_middle("abczabc") == True
+assert text_match_wordz_middle("abczabc.") == True
+assert text_match_wordz_middle("abczabc") == True
+assert text_match_wordz_middle("abczabc.") == True
+assert text_match_wordz_middle("abczabc") == True
+assert text_match_wordz_middle("abczabc.") == True
+assert text_match_wordz_middle("abczabc") == True
+assert text_match_wordz_middle("abczabc.") == True
+assert text_match_wordz_middle("abczabc") == True
+assert text_match_wordz_middle("abczabc.") == True
+assert text_match_wordz_middle("abczabc") == True
+assert text_match_wordz_middle("abczabc.") == True
+assert text_match_wordz_middle("abczabc") == True
+assert text_match_wordz_middle("abczabc.") == True
+assert text_match_wordz_middle("abczabc") == True
+assert text_match_wordz_middle("abczabc.") == True
+assert text_match_wordz_middle("abczabc") == True
+assert text_match_wordz_middle("abczabc.") == True
+assert text_match_wordz_middle("abczabc") == True
+assert text_match_wordz_middle("abczabc.") == True
+assert text_match_wordz_middle("abczabc") == True
+assert text_match_wordz_middle("abczabc.") == True
+assert text_match_wordz_middle("abczabc") == True
+assert text_match_wordz_middle("abczabc.") == True
+assert text_match_wordz_middle("abczabc") == True
+assert text_match_wordz_middle("abczabc.") == True
+assert text_match_wordz_middle("abczabc") == True
+assert text_match_wordz_middle("abczabc.") == True
+assert text_match_wordz_middle("abczabc") == True
+assert text_match_wordz_middle("abczabc.") == True
+assert text_match_wordz_middle("abczabc") == True

@@ -1,0 +1,56 @@
+```python
+"""
+Write a function to find minimum k records from tuple list. https://www.geeksforgeeks.org/python-find-minimum-k-records-from-tuple-list/ - in this case a verbatim copy of test cases
+assert min_k([('Manjeet', 10), ('Akshat', 4), ('Akash', 2), ('Nikhil', 8)], 2) == [('Akash', 2), ('Akshat', 4)]
+"""
+
+def min_k(records, k):
+    """
+    Finds the k records with the smallest values from a list of tuples.
+
+    The function sorts the list of tuples based on the second element (the value)
+    in ascending order and then returns the first k elements.
+
+    Args:
+        records: A list of tuples, where each tuple contains a name and a number.
+                 Example: [('Manjeet', 10), ('Akshat', 4)]
+        k: The number of smallest records to return.
+
+    Returns:
+        A list of the k tuples with the smallest values.
+    """
+    # Sort the list of tuples based on the second element (the number)
+    # The `key=lambda x: x[1]` tells the sort function to use the second
+    # item of each tuple for comparison.
+    sorted_records = sorted(records, key=lambda x: x[1])
+    
+    # Return the first k elements from the sorted list
+    return sorted_records[:k]
+
+# Example usage and test case from the problem description
+if __name__ == "__main__":
+    test_list = [('Manjeet', 10), ('Akshat', 4), ('Akash', 2), ('Nikhil', 8)]
+    k = 2
+    result = min_k(test_list, k)
+    print(f"Input list: {test_list}")
+    print(f"Finding minimum {k} records...")
+    print(f"Result: {result}")
+    
+    # Verifying the result with the provided assertion
+    assert result == [('Akash', 2), ('Akshat', 4)]
+    print("Assertion passed: The result is correct.")
+
+    # Additional test cases
+    print("\n--- Additional Test Cases ---")
+    # Test case 1: k is 0
+    assert min_k([('A', 5), ('B', 1), ('C', 3)], 0) == []
+    print("Test case 1 passed: k=0 returns an empty list.")
+
+    # Test case 2: k is larger than the list size
+    assert min_k([('A', 5), ('B', 1)], 5) == [('B', 1), ('A', 5)]
+    print("Test case 2 passed: k > list size returns the whole sorted list.")
+
+    # Test case 3: List with duplicate values
+    assert min_k([('X', 10), ('Y', 5), ('Z', 5), ('W', 1)], 2) == [('W', 1), ('Y', 5)]
+    print("Test case 3 passed: Handles duplicate values correctly.")
+```

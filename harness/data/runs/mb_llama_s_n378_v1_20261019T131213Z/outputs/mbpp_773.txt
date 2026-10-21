@@ -1,0 +1,53 @@
+```python
+def occurance_substring(string, substring):
+    """
+    This function finds the occurrence and position of the substrings within a string.
+    
+    Args:
+        string (str): The main string to search in.
+        substring (str): The substring to search for.
+    
+    Returns:
+        tuple: A tuple containing the substring, its position, and the length of the substring. 
+               Returns None if there is no match.
+    """
+    try:
+        # Find the position of the substring in the string
+        position = string.index(substring)
+        
+        # Return a tuple containing the substring, its position, and the length of the substring
+        return (substring, position, len(substring))
+    
+    except ValueError:
+        # Return None if the substring is not found in the string
+        return None
+
+# Test the function
+print(occurance_substring('python programming, python language','python'))
+```
+
+You can also use `str.find()` method which returns the index of the first occurrence of the substring. If the substring is not found, it returns `-1`.
+
+```python
+def occurance_substring(string, substring):
+    """
+    This function finds the occurrence and position of the substrings within a string.
+    
+    Args:
+        string (str): The main string to search in.
+        substring (str): The substring to search for.
+    
+    Returns:
+        tuple: A tuple containing the substring, its position, and the length of the substring. 
+               Returns None if there is no match.
+    """
+    position = string.find(substring)
+    
+    if position != -1:
+        return (substring, position, len(substring))
+    else:
+        return None
+
+# Test the function
+print(occurance_substring('python programming, python language','python'))
+```

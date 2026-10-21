@@ -1,0 +1,50 @@
+Here's a self-contained Python script that solves the problem by counting all binary sequences of length `2n` where the sum of the first `n` bits equals the sum of the last `n` bits:
+
+```python
+import math
+from functools import lru_cache
+
+def count_binary_seq(n: int) -> float:
+    """
+    Count the number of binary sequences of length 2n where the sum of the first n bits
+    is equal to the sum of the last n bits.
+
+    Args:
+        n: Half the length of the binary sequence.
+
+    Returns:
+        The count of such binary sequences.
+    """
+    @lru_cache(maxsize=None)
+    def comb(a: int, b: int) -> int:
+        """Compute the binomial coefficient C(a, b)."""
+        if b == 0 or b == a:
+            return 1
+        return comb(a - 1, b - 1) + comb(a - 1, b)
+
+    total = 0
+    for k in range(n + 1):
+        # Number of ways to have k 1's in the first n bits: C(n, k)
+        # Number of ways to have k 1's in the last n bits: C(n, k)
+        total += comb(n, k) ** 2
+    return total
+
+# Test the function
+assert math.isclose(count_binary_seq(1), 2.0, rel_tol=0.001)
+```
+
+### Explanation:
+1. **Problem Analysis**:
+   - We need to count binary sequences of length `2n` where the sum of the first `n` bits equals the sum of the last `n` bits.
+   - For example, when `n = 1`, the valid sequences are `00` and `11` (sum of first and last bits are equal), so the count is `2`.
+
+2. **Approach**:
+   - For each possible sum `k` (from `0` to `n`), the number of ways to have `k` 1's in the first `n` bits is `C(n, k)` (binomial coefficient).
+   - Similarly, the number of ways to have `k` 1's in the last `n` bits is also `C(n, k)`.
+   - The total count is the sum of `C(n, k)^2` for all `k` from `0` to `n`.
+
+3. **Optimization**:
+   - The `comb` function uses memoization (`lru_cache`) to efficiently compute binomial coefficients.
+
+4. **Test Case**:
+   - The assertion checks that `count_binary_seq(1)` returns `2.0`, which is correct.

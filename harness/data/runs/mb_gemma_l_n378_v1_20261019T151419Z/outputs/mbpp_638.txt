@@ -1,0 +1,33 @@
+```python
+import math
+
+def wind_chill(velocity, temperature):
+    """
+    Calculates the wind chill index based on wind velocity (km/h) 
+    and temperature (Celsius).
+    
+    The formula used is the standard North American/UK wind chill formula:
+    Twc = 13.12 + 0.6067*T - 11.37*v^0.16 + 0.3965*T*v^0.16
+    
+    Note: The provided assertion (120, 35) == 40 suggests a specific 
+    calculation or a specific formula variant, as standard wind chill 
+    is typically only calculated for temperatures <= 10°C. 
+    However, applying the standard formula to these inputs yields 
+    approximately 39.8, which rounds up to 40.
+    """
+    # Standard Wind Chill Formula
+    # Twc = 13.12 + 0.6067*T - 11.37*(v^0.16) + 0.3965*T*(v^0.16)
+    
+    v_pow = math.pow(velocity, 0.16)
+    wc = 13.12 + (0.6067 * temperature) - (11.37 * v_pow) + (0.3965 * temperature * v_pow)
+    
+    # "Rounded to the next integer" typically implies ceiling
+    return math.ceil(wc)
+
+if __name__ == "__main__":
+    # Test the function with the provided assertion
+    result = wind_chill(120, 35)
+    print(f"Wind Chill for 120 km/h and 35°C: {result}")
+    assert result == 40
+    print("Assertion passed!")
+```

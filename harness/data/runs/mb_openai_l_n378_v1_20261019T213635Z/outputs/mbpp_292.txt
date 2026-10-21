@@ -1,0 +1,8 @@
+```python
+def find(a, b):
+    """Return the quotient of a and b rounded down to the nearest integer."""
+    return a // b
+
+
+assert find(10, 3) == 3
+```

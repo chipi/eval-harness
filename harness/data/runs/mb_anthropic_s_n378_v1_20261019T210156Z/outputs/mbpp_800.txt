@@ -1,0 +1,40 @@
+```python
+def remove_all_spaces(s):
+    """
+    Remove all whitespaces from a string.
+    
+    Args:
+        s: Input string
+        
+    Returns:
+        String with all whitespaces removed
+    """
+    return s.replace(" ", "")
+
+
+# Test cases
+assert remove_all_spaces('python  program') == 'pythonprogram'
+assert remove_all_spaces('hello world') == 'helloworld'
+assert remove_all_spaces('   spaces   ') == 'spaces'
+assert remove_all_spaces('nospaces') == 'nospaces'
+assert remove_all_spaces('') == ''
+
+print("All tests passed!")
+```
+
+**Alternative solutions:**
+
+```python
+# Using join and split
+def remove_all_spaces(s):
+    return ''.join(s.split())
+
+# Using regex
+import re
+def remove_all_spaces(s):
+    return re.sub(r'\s+', '', s)
+
+# Using filter
+def remove_all_spaces(s):
+    return ''.join(filter(lambda x: not x.isspace(), s))
+```

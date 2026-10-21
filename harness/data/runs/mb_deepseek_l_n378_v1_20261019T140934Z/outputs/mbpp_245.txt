@@ -1,0 +1,42 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def max_sum(arr):
+    """
+    Returns the maximum sum of a bitonic subsequence in the given array.
+    A bitonic subsequence is one that first increases and then decreases.
+    """
+    n = len(arr)
+    if n == 0:
+        return 0
+
+    # Maximum sum of increasing subsequence ending at i
+    inc = arr[:]
+    for i in range(n):
+        for j in range(i):
+            if arr[j] < arr[i]:
+                inc[i] = max(inc[i], inc[j] + arr[i])
+
+    # Maximum sum of decreasing subsequence starting at i
+    dec = arr[:]
+    for i in range(n - 1, -1, -1):
+        for j in range(i + 1, n):
+            if arr[j] < arr[i]:
+                dec[i] = max(dec[i], dec[j] + arr[i])
+
+    # Maximum bitonic sum
+    max_bitonic = 0
+    for i in range(n):
+        max_bitonic = max(max_bitonic, inc[i] + dec[i] - arr[i])
+
+    return max_bitonic
+
+
+# Test the function
+if __name__ == "__main__":
+    test_array = [1, 15, 51, 45, 33, 100, 12, 18, 9]
+    result = max_sum(test_array)
+    print(f"Maximum sum of bitonic subsequence: {result}")
+    assert result == 194, f"Test failed: expected 194, got {result}"
+    print("Test passed!")
+```

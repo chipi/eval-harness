@@ -1,0 +1,21 @@
+```python
+def comb_sort(items):
+    result = items.copy()
+    gap = len(result)
+    shrink = 1.3
+    swapped = True
+
+    while gap > 1 or swapped:
+        gap = max(1, int(gap / shrink))
+        swapped = False
+
+        for i in range(len(result) - gap):
+            if result[i] > result[i + gap]:
+                result[i], result[i + gap] = result[i + gap], result[i]
+                swapped = True
+
+    return result
+
+
+assert comb_sort([5, 15, 37, 25, 79]) == [5, 15, 25, 37, 79]
+```

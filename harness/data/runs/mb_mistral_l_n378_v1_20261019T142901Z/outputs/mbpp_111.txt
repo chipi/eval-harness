@@ -1,0 +1,46 @@
+Here's a self-contained Python script that solves the problem of finding common elements in nested lists:
+
+```python
+def common_in_nested_lists(nested_lists):
+    """
+    Find common elements in given nested lists.
+
+    Args:
+        nested_lists: A list of lists containing elements to compare
+
+    Returns:
+        A list of elements that are common to all input lists
+    """
+    if not nested_lists:
+        return []
+
+    # Start with the first list as the initial set of common elements
+    common_elements = set(nested_lists[0])
+
+    # Iterate through the remaining lists and find intersection
+    for lst in nested_lists[1:]:
+        common_elements.intersection_update(lst)
+
+    return list(common_elements)
+
+# Test the function
+if __name__ == "__main__":
+    # Test case from the problem
+    test_lists = [[12, 18, 23, 25, 45], [7, 12, 18, 24, 28], [1, 5, 8, 12, 15, 16, 18]]
+    result = common_in_nested_lists(test_lists)
+    assert set(result) == set([18, 12]), f"Expected {{18, 12}}, got {set(result)}"
+    print(f"Test passed! Common elements: {result}")
+
+    # Additional test cases
+    print(f"Test 1: {common_in_nested_lists([[1, 2, 3], [2, 3, 4], [2, 3, 5]])}")  # [2, 3]
+    print(f"Test 2: {common_in_nested_lists([[1, 2], [3, 4], [5, 6]])}")  # []
+    print(f"Test 3: {common_in_nested_lists([[1, 1, 2], [1, 2, 2], [1, 2]])}")  # [1, 2]
+    print(f"Test 4: {common_in_nested_lists([[]])}")  # []
+```
+
+The function works by:
+1. Starting with the first list converted to a set
+2. Iteratively finding the intersection with each subsequent list using `intersection_update()`
+3. Returning the final set of common elements as a list
+
+The solution handles edge cases like empty input lists and maintains the original requirement of returning the common elements in any order (as a set comparison is used in the assertion).

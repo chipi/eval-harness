@@ -1,0 +1,24 @@
+```python
+def issort_list(lst):
+    """
+    Return True if the given list is sorted in non-decreasing order,
+    otherwise return False.
+
+    Examples:
+    issort_list([1, 2, 4, 6]) -> True
+    issort_list([1, 3, 2, 4]) -> False
+    """
+    return all(lst[i] <= lst[i + 1] for i in range(len(lst) - 1))
+
+
+# Test case from the prompt
+assert issort_list([1, 2, 4, 6, 8, 10, 12, 14, 16, 17]) == True
+
+# Additional simple tests
+assert issort_list([]) == True
+assert issort_list([5]) == True
+assert issort_list([1, 1, 2, 3]) == True
+assert issort_list([3, 2, 1]) == False
+
+print("All tests passed.")
+```

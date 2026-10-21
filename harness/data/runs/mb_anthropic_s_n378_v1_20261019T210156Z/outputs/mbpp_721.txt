@@ -1,0 +1,84 @@
+```python
+def maxAverageOfPath(matrix):
+    """
+    Find the path from top-left to bottom-right with maximum average cost.
+    Can only move right or down.
+    Average = total cost / number of cells visited
+    """
+    n = len(matrix)
+    
+    # dp[i][j] will store a list of (total_cost, num_cells) tuples
+    # representing all possible paths to reach cell (i, j)
+    dp = [[[] for _ in range(n)] for _ in range(n)]
+    
+    # Initialize starting cell
+    dp[0][0] = [(matrix[0][0], 1)]
+    
+    # Fill the DP table
+    for i in range(n):
+        for j in range(n):
+            if i == 0 and j == 0:
+                continue
+            
+            candidates = []
+            
+            # From top cell
+            if i > 0:
+                for total_cost, num_cells in dp[i-1][j]:
+                    candidates.append((total_cost + matrix[i][j], num_cells + 1))
+            
+            # From left cell
+            if j > 0:
+                for total_cost, num_cells in dp[i][j-1]:
+                    candidates.append((total_cost + matrix[i][j], num_cells + 1))
+            
+            # Keep only the best candidates to avoid exponential growth
+            # We keep candidates that could potentially lead to max average
+            candidates.sort(key=lambda x: x[0] / x[1], reverse=True)
+            
+            # Prune: keep only non-dominated candidates
+            # A candidate (c1, n1) dominates (c2, n2) if c1/n1 >= c2/n2 and c1 >= c2
+            pruned = []
+            for cost, cells in candidates:
+                avg = cost / cells
+                is_dominated = False
+                for existing_cost, existing_cells in pruned:
+                    existing_avg = existing_cost / existing_cells
+                    # If existing is better or equal in average and has more total cost
+                    if existing_avg >= avg and existing_cost >= cost:
+                        is_dominated = True
+                        break
+                if not is_dominated:
+                    # Remove any candidates that this one dominates
+                    pruned = [(c, n) for c, n in pruned 
+                             if not (avg >= c/n and cost >= c)]
+                    pruned.append((cost, cells))
+            
+            dp[i][j] = pruned
+    
+    # Find maximum average at bottom-right cell
+    max_avg = 0
+    for total_cost, num_cells in dp[n-1][n-1]:
+        avg = total_cost / num_cells
+        max_avg = max(max_avg, avg)
+    
+    return round(max_avg, 1)
+
+
+# Test
+assert maxAverageOfPath([[1, 2, 3], [6, 5, 4], [7, 3, 9]]) == 5.2
+print("Test passed!")
+print(f"Result: {maxAverageOfPath([[1, 2, 3], [6, 5, 4], [7, 3, 9]])}")
+```
+
+**Explanation:**
+
+1. **Dynamic Programming Approach**: We use `dp[i][j]` to store a list of `(total_cost, num_cells)` tuples representing different paths that reach cell `(i, j)`.
+
+2. **Path Construction**: For each cell, we consider paths coming from the top cell `(i-1, j)` and left cell `(i, j-1)`, extending them by adding the current cell's cost and incrementing the cell count.
+
+3. **Pruning Strategy**: To avoid exponential growth of candidates, we keep only non-dominated paths. A path is dominated if another path has both a better average AND a higher total cost.
+
+4. **Result**: At the bottom-right cell `(n-1, n-1)`, we find the path with the maximum average.
+
+5. **Test Case**: For the given matrix `[[1, 2, 3], [6, 5, 4], [7, 3, 9]]`, the optimal path is `1 → 6 → 7 → 3 → 9` with average `(1+6+7+3+9)/5 = 26/5 = 5.2`.

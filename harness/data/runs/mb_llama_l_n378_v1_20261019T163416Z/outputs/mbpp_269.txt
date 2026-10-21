@@ -1,0 +1,7 @@
+```python
+def ascii_value(char):
+    return ord(char)
+
+# Test the function
+print(ascii_value('A'))  # Output: 65
+```

@@ -1,0 +1,26 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def number_ctr(s):
+    """
+    Count the number of digits in a given string.
+    
+    Args:
+        s (str): Input string to count digits from
+        
+    Returns:
+        int: Number of digits found in the string
+    """
+    count = 0
+    for char in s:
+        if char.isdigit():
+            count += 1
+    return count
+
+# Test the function
+if __name__ == "__main__":
+    assert number_ctr('program2bedone') == 1
+    print("Test passed!")
+```
+
+The function `number_ctr` iterates through each character in the input string and uses the `isdigit()` method to check if the character is a digit (0-9). It counts all such occurrences and returns the total count. The assertion test confirms that the string 'program2bedone' contains exactly one digit (the '2').

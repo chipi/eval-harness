@@ -1,0 +1,12 @@
+```python
+def extract_nth_element(tuples_list, n):
+    # Extracting the nth element from each tuple in the list
+    result = [t[n] for t in tuples_list]
+    return result
+
+# Test cases to verify the correctness of the function
+assert extract_nth_element([('Greyson Fulton', 98, 99), ('Brady Kent', 97, 96), ('Wyatt Knott', 91, 94), ('Beau Turnbull', 94, 98)], 0) == ['Greyson Fulton', 'Brady Kent', 'Wyatt Knott', 'Beau Turnbull']
+assert extract_nth_element([('John Doe', 85, 88), ('Jane Smith', 92, 93), ('Mike Johnson', 89, 91)], 1) == [85, 92, 89]
+assert extract_nth_element([('Alice Brown', 90, 92), ('Bob Green', 88, 90), ('Charlie White', 91, 93)], 2) == [92, 90, 93]
+```
+

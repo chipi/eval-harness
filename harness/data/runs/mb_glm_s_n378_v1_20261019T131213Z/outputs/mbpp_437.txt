@@ -1,0 +1,30 @@
+```python
+def remove_odd(s: str) -> str:
+    """
+    Removes characters at odd indices (0-based) from a string.
+
+    Args:
+        s: The input string.
+
+    Returns:
+        A new string containing only the characters from even indices.
+
+    Example:
+        >>> remove_odd("python")
+        'yhn'
+    """
+    # Use slicing with a step of 2 to select characters at even indices (0, 2, 4, ...)
+    return s[::2]
+
+# Example usage and assertion from the problem description
+assert remove_odd("python") == "yhn"
+
+# Additional test cases
+assert remove_odd("hello") == "hlo"
+assert remove_odd("123456789") == "13579"
+assert remove_odd("") == ""
+assert remove_odd("a") == "a"
+assert remove_odd("ab") == "a"
+
+print("All tests passed!")
+```

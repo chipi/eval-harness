@@ -1,0 +1,30 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def sort_counter(d):
+    """
+    Sort a dictionary by value in descending order.
+    
+    Args:
+        d: A dictionary with comparable values
+        
+    Returns:
+        A list of tuples sorted by value in descending order
+    """
+    return sorted(d.items(), key=lambda x: x[1], reverse=True)
+
+
+# Test the function
+if __name__ == "__main__":
+    result = sort_counter({'Math': 81, 'Physics': 83, 'Chemistry': 87})
+    expected = [('Chemistry', 87), ('Physics', 83), ('Math', 81)]
+    assert result == expected, f"Expected {expected}, but got {result}"
+    print("Test passed!")
+    print(f"Sorted result: {result}")
+```
+
+This solution:
+- Uses the `sorted()` function with `d.items()` to get key-value pairs
+- Sorts by the second element of each tuple (the value) using `key=lambda x: x[1]`
+- Uses `reverse=True` to sort in descending order (highest value first)
+- Returns a list of tuples as required by the assertion

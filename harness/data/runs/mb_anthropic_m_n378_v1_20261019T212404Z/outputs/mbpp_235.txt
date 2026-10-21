@@ -1,0 +1,19 @@
+```python
+def even_bit_set_number(n):
+    """
+    Set all even bits of a given number.
+    Even bits are considered from the right, starting at position 1 (0-indexed positions 1, 3, 5, ...).
+    """
+    # Create a mask with all even bits set (positions 1,3,5,... i.e., 0-indexed)
+    # 0xAAAAAAAA in binary is ...10101010 which has bits set at positions 1,3,5,...
+    even_bit_mask = 0xAAAAAAAA
+    return n | even_bit_mask
+
+
+# Test cases
+assert even_bit_set_number(10) == 10
+assert even_bit_set_number(20) == 30
+assert even_bit_set_number(30) == 30
+
+print("All test cases passed!")
+```

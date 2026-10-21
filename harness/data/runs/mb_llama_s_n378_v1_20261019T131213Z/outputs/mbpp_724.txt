@@ -1,0 +1,49 @@
+```python
+def power_base_sum(base: int, power: int) -> int:
+    """
+    Calculate the sum of all digits of the base to the specified power.
+
+    Args:
+        base (int): The base number.
+        power (int): The power to which the base is raised.
+
+    Returns:
+        int: The sum of all digits of the base to the specified power.
+    """
+    # Calculate base to the power
+    result = base ** power
+    
+    # Convert the result to a string to easily iterate over its digits
+    str_result = str(result)
+    
+    # Initialize a variable to store the sum of digits
+    sum_of_digits = 0
+    
+    # Iterate over each character (digit) in the string
+    for digit in str_result:
+        # Convert the character back to an integer and add it to the sum
+        sum_of_digits += int(digit)
+    
+    # Return the sum of digits
+    return sum_of_digits
+
+# Alternatively, you can use a more Pythonic approach
+def power_base_sum_pythonic(base: int, power: int) -> int:
+    """
+    Calculate the sum of all digits of the base to the specified power.
+
+    Args:
+        base (int): The base number.
+        power (int): The power to which the base is raised.
+
+    Returns:
+        int: The sum of all digits of the base to the specified power.
+    """
+    # Calculate base to the power and sum its digits
+    return sum(int(digit) for digit in str(base ** power))
+
+# Test the functions
+if __name__ == "__main__":
+    print(power_base_sum(2, 100))  # Output: 115
+    print(power_base_sum_pythonic(2, 100))  # Output: 115
+```

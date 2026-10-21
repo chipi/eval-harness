@@ -1,0 +1,75 @@
+```python
+def search(nums):
+    """
+    This function finds the element that appears only once in a sorted array.
+
+    Args:
+        nums (list): A sorted list of integers.
+
+    Returns:
+        int: The element that appears only once in the list.
+
+    Raises:
+        ValueError: If the input list is empty or does not contain exactly one unique element.
+    """
+    if not nums:
+        raise ValueError("Input list is empty")
+
+    count_dict = {}
+    for num in nums:
+        if num in count_dict:
+            count_dict[num] += 1
+        else:
+            count_dict[num] = 1
+
+    for num, count in count_dict.items():
+        if count == 1:
+            return num
+
+    raise ValueError("No unique element found")
+
+
+# Example usage:
+if __name__ == "__main__":
+    print(search([1,1,2,2,3]))  # Output: 3
+```
+
+However, we can optimize this solution to take advantage of the fact that the input list is sorted. Here's an optimized solution:
+
+```python
+def search(nums):
+    """
+    This function finds the element that appears only once in a sorted array.
+
+    Args:
+        nums (list): A sorted list of integers.
+
+    Returns:
+        int: The element that appears only once in the list.
+
+    Raises:
+        ValueError: If the input list is empty or does not contain exactly one unique element.
+    """
+    if not nums:
+        raise ValueError("Input list is empty")
+
+    left, right = 0, len(nums) - 1
+    while left < right:
+        mid = left + (right - left) // 2
+        if mid % 2 == 1:
+            mid -= 1
+        if nums[mid] == nums[mid + 1]:
+            left = mid + 2
+        else:
+            right = mid
+
+    if left == len(nums) or nums[left] != nums[left - 1]:
+        return nums[left]
+    else:
+        raise ValueError("No unique element found")
+
+
+# Example usage:
+if __name__ == "__main__":
+    print(search([1,1,2,2,3]))  # Output: 3
+```

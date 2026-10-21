@@ -1,0 +1,41 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def big_sum(arr):
+    """
+    Returns the sum of the largest and smallest value in a given array.
+    
+    Args:
+        arr (list): A list of numbers.
+        
+    Returns:
+        int or float: The sum of the maximum and minimum values in the array.
+        
+    Raises:
+        ValueError: If the input array is empty.
+    """
+    if not arr:
+        raise ValueError("Input array cannot be empty")
+    
+    min_val = min(arr)
+    max_val = max(arr)
+    return min_val + max_val
+
+# Test cases
+assert big_sum([1, 2, 3]) == 4
+assert big_sum([5, 1, 9, -2]) == 7  # -2 + 9 = 7
+assert big_sum([0]) == 0  # 0 + 0 = 0
+assert big_sum([-1, -5, -3]) == -6  # -5 + -1 = -6
+
+print("All test cases passed!")
+```
+
+This script:
+1. Defines the `big_sum` function that takes an array as input
+2. Handles the edge case of an empty array by raising a ValueError
+3. Uses Python's built-in `min()` and `max()` functions to find the smallest and largest values
+4. Returns their sum
+5. Includes test cases to verify the function works correctly, including the one from the problem statement
+6. Prints a success message if all tests pass
+
+The function works for both positive and negative numbers, and handles single-element arrays correctly (where the min and max are the same value).

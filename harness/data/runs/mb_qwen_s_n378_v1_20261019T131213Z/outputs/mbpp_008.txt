@@ -1,0 +1,13 @@
+```python
+def square_nums(nums):
+    """
+    Find squares of individual elements in a list.
+    
+    Args:
+        nums: A list of numbers
+        
+    Returns:
+        A list containing the squares of each element in the input list
+    """
+    return [x ** 2 for x in nums]
+```

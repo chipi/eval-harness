@@ -1,0 +1,14 @@
+```python
+def next_smallest_palindrome(n):
+    """Find the next smallest palindrome greater than n."""
+    candidate = n + 1
+    while True:
+        s = str(candidate)
+        if s == s[::-1]:
+            return candidate
+        candidate += 1
+
+
+# Test
+assert next_smallest_palindrome(99) == 101
+```

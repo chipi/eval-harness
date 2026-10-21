@@ -1,0 +1,66 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+import re
+
+def find_adverb_position(sentence):
+    """
+    Find the first adverb and its position in a given sentence.
+    
+    Args:
+        sentence (str): The input sentence to search.
+    
+    Returns:
+        tuple: (start_index, end_index, adverb) of the first adverb found,
+               or None if no adverb is found.
+    """
+    # Common adverb endings: -ly, -ward(s), -wise, -ways
+    # We'll use a regex to match words ending in 'ly' (most common adverb form)
+    # and also handle trailing punctuation like '!!', '.', ',', etc.
+    pattern = r'\b(\w+ly)\b'
+    
+    match = re.search(pattern, sentence, re.IGNORECASE)
+    
+    if match:
+        adverb = match.group(1)
+        start = match.start(1)
+        end = match.end(1)
+        return (start, end, adverb)
+    
+    return None
+
+
+# Test the function
+if __name__ == "__main__":
+    result = find_adverb_position("clearly!! we can see the sky")
+    print(result)
+    assert result == (0, 7, 'clearly')
+    
+    # Additional tests
+    print(find_adverb_position("She quickly ran to the store."))
+    print(find_adverb_position("He spoke softly and slowly."))
+    print(find_adverb_position("No adverbs here at all."))
+```
+
+**Explanation:**
+
+1. **Regex pattern `\b(\w+ly)\b`**: 
+   - `\b` matches a word boundary (ensures we match whole words).
+   - `(\w+ly)` captures one or more word characters followed by "ly" — the typical ending for English adverbs.
+   - The second `\b` ensures the word ends at a boundary (so "clearly!!" matches "clearly" but not "clearlyx").
+
+2. **`re.search`** finds the first occurrence in the string.
+
+3. **`match.start(1)` and `match.end(1)`** return the start and end indices of the captured group (the adverb itself), not the entire match.
+
+4. For `"clearly!! we can see the sky"`:
+   - `"clearly"` starts at index `0` and ends at index `7` (exclusive).
+   - Returns `(0, 7, 'clearly')` ✓
+
+**Output:**
+```
+(0, 7, 'clearly')
+(4, 11, 'quickly')
+(9, 15, 'softly')
+None
+```

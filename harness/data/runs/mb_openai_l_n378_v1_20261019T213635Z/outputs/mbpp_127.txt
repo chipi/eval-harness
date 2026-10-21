@@ -1,0 +1,7 @@
+```python
+def multiply_int(a: int, b: int) -> int:
+    return a * b
+
+
+assert multiply_int(10, 20) == 200
+```

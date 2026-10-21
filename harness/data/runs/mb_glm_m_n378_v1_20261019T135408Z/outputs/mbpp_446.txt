@@ -1,0 +1,22 @@
+```python
+def count_Occurrence(tup, lst):
+    """
+    Counts the total occurrences of all elements from a list within a tuple.
+    
+    Args:
+        tup (tuple): The tuple to search within.
+        lst (list): The list of elements to count in the tuple.
+        
+    Returns:
+        int: The total count of occurrences of list elements in the tuple.
+    """
+    count = 0
+    for item in lst:
+        count += tup.count(item)
+    return count
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert count_Occurrence(('a', 'a', 'c', 'b', 'd'), ['a', 'b']) == 3
+    print("Test passed successfully!")
+```

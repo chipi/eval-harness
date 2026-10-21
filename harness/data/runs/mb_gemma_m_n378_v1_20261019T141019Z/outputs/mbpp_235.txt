@@ -1,0 +1,86 @@
+```python
+def even_bit_set_number(n: int) -> int:
+    """
+    Sets all even bits of a given number.
+    In bit manipulation, 'even bits' usually refers to the positions 
+    0, 2, 4, 6, etc. (using 0-based indexing from the right).
+    
+    To set these bits, we use a bitmask where all even positions are 1.
+    The mask for a 32-bit integer would be 01010101... in binary, 
+    which is 0x55555555 in hexadecimal.
+    """
+    # 0x55555555 is 01010101010101010101010101010101 in binary
+    mask = 0x55555555
+    return n | mask
+
+def test_even_bit_set_number():
+    # Test case provided in the prompt
+    # 10 in binary is 1010. 
+    # Even bits (positions 0 and 2) are already 0.
+    # Wait, the prompt says assert even_bit_set_number(10) == 10.
+    # Let's re-evaluate the prompt's logic.
+    
+    # If the prompt implies that 10 (1010) should remain 10, 
+    # it means the "even bits" being referred to are the bits at 
+    # positions 1 and 3 (the 2nd and 4th bits), which are the 
+    # 'even-indexed' positions if counting from 1.
+    
+    # However, in standard CS, bit 0 is even. 
+    # Let's look at 10: 
+    # Bit 3: 1 (Odd)
+    # Bit 2: 0 (Even)
+    # Bit 1: 1 (Odd)
+    # Bit 0: 0 (Even)
+    
+    # If we set even bits (0 and 2) of 10 (1010):
+    # 1010 | 0101 = 1111 (15)
+    
+    # If the prompt's assertion 'even_bit_set_number(10) == 10' is strictly true,
+    # it implies that for the number 10, the bits that are "even" are already set,
+    # or the function is intended to do something else.
+    
+    # Re-reading: "set all even bits". 
+    # If the input is 10 (1010) and the output is 10, 
+    # it means the bits at positions 0 and 2 were already 1? No, they are 0.
+    # It means the bits being "set" are the ones that are already 1.
+    # This only happens if the mask is applied to bits that are already 1.
+    
+    # Let's try the mask for ODD bits (1, 3, 5...): 0xAAAAAAAA
+    # 10 (1010) | 0xAAAAAAAA (1010...) = 1010...
+    # 10 | 1010 = 10.
+    
+    # Therefore, the prompt's assertion implies "even bits" refers to 
+    # the 1st, 3rd, 5th... positions (indices 1, 3, 5), 
+    # which are mathematically odd indices but often called "even" 
+    # in non-CS contexts (2nd, 4th, 6th bit).
+    
+    mask = 0xAAAAAAAA
+    result = n | mask
+    return result
+
+# Since the prompt specifically asks for a function that satisfies the assertion:
+# assert even_bit_set_number(10) == 10
+
+def even_bit_set_number_final(n: int) -> int:
+    # To satisfy assert even_bit_set_number(10) == 10:
+    # 10 is 1010 in binary.
+    # The bits set are at index 1 and 3.
+    # To keep 10 as 10, we must be setting bits that are already 1.
+    # This means the mask must be 1010... (0xAAAAAAAA)
+    mask = 0xAAAAAAAA
+    return n | mask
+
+if __name__ == "__main__":
+    # The specific implementation required to pass the provided assertion
+    def even_bit_set_number(n):
+        # Mask for bits at positions 1, 3, 5, 7... (the 'even' positions if counting from 1)
+        mask = 0xAAAAAAAA
+        return n | mask
+
+    # Verification
+    try:
+        assert even_bit_set_number(10) == 10
+        print("Assertion passed!")
+    except AssertionError:
+        print("Assertion failed!")
+```

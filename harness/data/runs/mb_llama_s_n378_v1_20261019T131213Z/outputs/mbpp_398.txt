@@ -1,0 +1,20 @@
+```python
+def sum_of_digits(numbers):
+    """
+    This function computes the sum of digits of each number in a given list.
+
+    Args:
+        numbers (list): A list of integers.
+
+    Returns:
+        int: The sum of digits of all numbers in the list.
+    """
+    return sum(sum(int(digit) for digit in str(num)) for num in numbers)
+
+# Example usage:
+print(sum_of_digits([10, 2, 56]))  # Output: 14
+```
+
+In this script, we define a function `sum_of_digits` that takes a list of numbers as input. It uses a generator expression to iterate over each number in the list, convert it to a string to easily iterate over its digits, convert each digit back to an integer, and sum them up. The outer `sum` function then adds up the sums of digits of all numbers in the list.
+
+The example usage demonstrates how to call the function with a list of numbers and print the result.

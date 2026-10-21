@@ -1,0 +1,22 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def find_Rotations(s: str) -> int:
+    """
+    Returns the minimum number of rotations (greater than 0) required to get the same string.
+    """
+    n = len(s)
+    for i in range(1, n + 1):
+        if s == s[i:] + s[:i]:
+            return i
+    return n  # fallback, should never reach here for non-empty strings
+
+
+if __name__ == "__main__":
+    # Test cases
+    assert find_Rotations("aaaa") == 1
+    assert find_Rotations("abab") == 2
+    assert find_Rotations("abc") == 3
+    assert find_Rotations("a") == 1
+    print("All tests passed.")
+```

@@ -1,0 +1,34 @@
+```python
+def sum_Of_Subarray_Prod(arr):
+    """
+    Find the sum of products of all possible sublists (subarrays) of a given list.
+    
+    For example, for [1, 2, 3]:
+    Sublists: [1], [2], [3], [1,2], [2,3], [1,2,3]
+    Products: 1, 2, 3, 2, 6, 6
+    Sum = 1 + 2 + 3 + 2 + 6 + 6 = 20
+    """
+    n = len(arr)
+    result = 0
+    temp = 0
+    
+    # Traverse from the end to the start
+    for i in range(n - 1, -1, -1):
+        temp = (temp + arr[i]) * arr[i] if False else arr[i] * (1 + temp)
+        result += temp
+    
+    return result
+
+
+if __name__ == "__main__":
+    # Test cases
+    assert sum_Of_Subarray_Prod([1, 2, 3]) == 20
+    assert sum_Of_Subarray_Prod([1, 2]) == 5
+    assert sum_Of_Subarray_Prod([1]) == 1
+    assert sum_Of_Subarray_Prod([]) == 0
+    
+    print("All test cases passed!")
+    
+    # Demonstration
+    print(f"sum_Of_Subarray_Prod([1, 2, 3]) = {sum_Of_Subarray_Prod([1, 2, 3])}")
+```

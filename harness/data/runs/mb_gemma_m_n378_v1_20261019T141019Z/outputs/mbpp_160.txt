@@ -1,0 +1,67 @@
+To solve the equation $ax + by = n$ for integers $x$ and $y$, we use the **Extended Euclidean Algorithm**. 
+
+A solution exists if and only if $n$ is divisible by the greatest common divisor (GCD) of $a$ and $b$. If a solution exists, the Extended Euclidean Algorithm provides a way to find $x_0$ and $y_0$ such that $ax_0 + by_0 = \text{gcd}(a, b)$. We then scale these values by $n / \text{gcd}(a, b)$ to satisfy the original equation.
+
+Here is the self-contained script:
+
+```python
+def extended_gcd(a, b):
+    """
+    Returns (gcd, x, y) such that ax + by = gcd(a, b).
+    """
+    if a == 0:
+        return b, 0, 1
+    else:
+        gcd, x1, y1 = extended_gcd(b % a, a)
+        x = y1 - (b // a) * x1
+        y = x1
+        return gcd, x, y
+
+def find_solution(a, b, n):
+    """
+    Returns integers x and y that satisfy ax + by = n as a tuple,
+    or return None if no solution exists.
+    """
+    # Handle case where both a and b are zero
+    if a == 0 and b == 0:
+        return (0, 0) if n == 0 else None
+    
+    gcd, x0, y0 = extended_gcd(abs(a), abs(b))
+    
+    # A solution exists if and only if n is divisible by gcd(a, b)
+    if n % gcd != 0:
+        return None
+    
+    # Scale the solution to match n
+    factor = n // gcd
+    x = x0 * factor
+    y = y0 * factor
+    
+    # Adjust signs because extended_gcd was called with abs(a), abs(b)
+    if a < 0: x = -x
+    if b < 0: y = -y
+        
+    return (x, y)
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    # 2(2) + 3(1) = 4 + 3 = 7
+    result = find_solution(2, 3, 7)
+    print(f"find_solution(2, 3, 7) -> {result}")
+    assert result == (2, 1)
+
+    # Additional Test Cases
+    # Case: No solution (gcd(4, 6) = 2, 7 is not divisible by 2)
+    assert find_solution(4, 6, 7) is None
+    
+    # Case: Negative coefficients
+    # -2(x) + 3(y) = 7 -> -2(-2) + 3(1) = 4 + 3 = 7
+    assert find_solution(-2, 3, 7) == (-2, 1)
+    
+    # Case: Large numbers
+    # 10x + 15y = 5 -> 10(-1) + 15(1) = 5
+    res = find_solution(10, 15, 5)
+    assert res is not None and (10 * res[0] + 15 * res[1] == 5)
+
+    print("All tests passed!")
+```

@@ -1,0 +1,33 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def count_divisors(n):
+    """
+    Returns True if the number of divisors of n is even, False otherwise.
+    """
+    if n <= 0:
+        raise ValueError("Input must be a positive integer")
+    
+    count = 0
+    for i in range(1, int(n**0.5) + 1):
+        if n % i == 0:
+            # If divisors are different, count both
+            if i != n // i:
+                count += 2
+            else:
+                count += 1
+    return count % 2 == 0
+
+# Test the function
+if __name__ == "__main__":
+    # Test cases
+    test_cases = [10, 1, 2, 4, 6, 12, 16, 25, 36]
+    
+    for num in test_cases:
+        result = count_divisors(num)
+        print(f"Number of divisors of {num} is even: {result}")
+    
+    # Assertion from the problem statement
+    assert count_divisors(10) == True
+    print("\nAll tests passed!")
+```

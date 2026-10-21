@@ -1,0 +1,15 @@
+```python
+import math
+
+def next_Perfect_Square(n):
+    root = math.isqrt(n)
+    if root * root <= n:
+        root += 1
+    return root * root
+
+# Test
+assert next_Perfect_Square(35) == 36
+
+if __name__ == "__main__":
+    print(next_Perfect_Square(35))
+```

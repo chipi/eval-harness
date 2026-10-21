@@ -1,0 +1,10 @@
+```python
+import re
+
+def find_char_long(s):
+    return re.findall(r'\b\w{4,}\b', s)
+
+# Test
+assert set(find_char_long('Please move back to stream')) == set(['Please', 'move', 'back', 'stream'])
+print("All tests passed!")
+```

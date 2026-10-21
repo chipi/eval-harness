@@ -1,0 +1,27 @@
+```python
+import re
+
+def text_match_wordz(text):
+    """
+    Matches a word containing the letter 'z'.
+    In regex, \w matches alphanumeric characters and underscores.
+    The pattern searches for a sequence of word characters that includes 'z'.
+    """
+    # Pattern explanation:
+    # \w*z\w* matches any sequence of word characters containing at least one 'z'
+    # We use re.search to find if this pattern exists anywhere in the string
+    if re.search(r'\w*z\w*', text):
+        return True
+    else:
+        return False
+
+if __name__ == "__main__":
+    # Test cases
+    assert text_match_wordz("pythonz.") == True
+    assert text_match_wordz("zebra") == True
+    assert text_match_wordz("apple") == False
+    assert text_match_wordz("z") == True
+    assert text_match_wordz("123z456") == True
+    
+    print("All tests passed!")
+```

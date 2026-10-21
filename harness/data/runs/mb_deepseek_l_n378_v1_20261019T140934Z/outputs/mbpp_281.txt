@@ -1,0 +1,26 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def all_unique(lst):
+    """
+    Check if all elements in the given list are unique.
+    
+    Args:
+        lst: A list of elements to check for uniqueness.
+    
+    Returns:
+        bool: True if all elements are unique, False otherwise.
+    """
+    return len(lst) == len(set(lst))
+
+# Test the function
+assert all_unique([1,2,3]) == True
+assert all_unique([1,2,2]) == False
+assert all_unique([]) == True
+assert all_unique(['a','b','c']) == True
+assert all_unique(['a','b','b']) == False
+
+print("All tests passed!")
+```
+
+The function works by comparing the length of the original list with the length of a set created from that list. Since sets automatically remove duplicates, if the lengths are equal, all elements must be unique. If the set is shorter, there were duplicates in the original list.

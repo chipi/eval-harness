@@ -1,0 +1,43 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def square_Sum(n):
+    """
+    Calculate the sum of squares of the first n odd natural numbers.
+    
+    Args:
+        n (int): Number of odd natural numbers to consider
+        
+    Returns:
+        int: Sum of squares of the first n odd natural numbers
+    """
+    total = 0
+    odd_number = 1
+    
+    for i in range(n):
+        total += odd_number ** 2
+        odd_number += 2
+    
+    return total
+
+
+# Test the function
+if __name__ == "__main__":
+    assert square_Sum(2) == 10, f"Expected 10, but got {square_Sum(2)}"
+    print("Test passed!")
+    
+    # Additional test cases
+    print(f"square_Sum(1) = {square_Sum(1)}")  # Should be 1 (1²)
+    print(f"square_Sum(2) = {square_Sum(2)}")  # Should be 10 (1² + 3²)
+    print(f"square_Sum(3) = {square_Sum(3)}")  # Should be 35 (1² + 3² + 5²)
+    print(f"square_Sum(4) = {square_Sum(4)}")  # Should be 84 (1² + 3² + 5² + 7²)
+```
+
+The function works by:
+1. Starting with the first odd number (1)
+2. Iterating `n` times
+3. Adding the square of the current odd number to the total
+4. Incrementing by 2 to get the next odd number
+5. Returning the final sum
+
+The first `n` odd natural numbers are: 1, 3, 5, 7, 9, ... (2n-1)

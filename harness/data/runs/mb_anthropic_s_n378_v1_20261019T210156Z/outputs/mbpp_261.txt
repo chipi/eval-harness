@@ -1,0 +1,37 @@
+```python
+def division_elements(tuple1, tuple2):
+    """
+    Performs element-wise division of two tuples.
+    
+    Args:
+        tuple1: First tuple containing dividend values
+        tuple2: Second tuple containing divisor values
+    
+    Returns:
+        A tuple containing the element-wise division results (integer division)
+    
+    Raises:
+        ValueError: If tuples have different lengths
+        ZeroDivisionError: If any element in tuple2 is zero
+    """
+    if len(tuple1) != len(tuple2):
+        raise ValueError("Tuples must have the same length")
+    
+    result = tuple(a // b for a, b in zip(tuple1, tuple2))
+    return result
+
+
+# Test cases
+if __name__ == "__main__":
+    assert division_elements((10, 4, 6, 9), (5, 2, 3, 3)) == (2, 2, 2, 3)
+    print("✓ Test passed: division_elements((10, 4, 6, 9), (5, 2, 3, 3)) == (2, 2, 2, 3)")
+    
+    # Additional test cases
+    assert division_elements((20, 15, 12), (4, 3, 2)) == (5, 5, 6)
+    print("✓ Test passed: division_elements((20, 15, 12), (4, 3, 2)) == (5, 5, 6)")
+    
+    assert division_elements((100,), (10,)) == (10,)
+    print("✓ Test passed: division_elements((100,), (10,)) == (10,)")
+    
+    print("\nAll tests passed!")
+```

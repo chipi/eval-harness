@@ -1,0 +1,13 @@
+```python
+def noprofit_noloss(current_amount, initial_amount):
+    if current_amount == initial_amount:
+        return True
+    else:
+        return False
+
+# Test cases
+print(noprofit_noloss(1500,1200)) # Should print: False
+print(noprofit_noloss(1200,1200)) # Should print: True
+print(noprofit_noloss(1000,2000)) # Should print: False
+print(noprofit_noloss(2000,1000)) # Should print: True
+```

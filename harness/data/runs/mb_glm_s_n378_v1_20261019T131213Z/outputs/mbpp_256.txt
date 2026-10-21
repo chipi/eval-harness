@@ -1,0 +1,64 @@
+```python
+"""
+Write a python function that takes in a non-negative number and returns the number of prime numbers less than the given non-negative number.
+assert count_Primes_nums(5) == 2
+"""
+
+def count_Primes_nums(n: int) -> int:
+    """
+    Counts the number of prime numbers less than a given non-negative number.
+
+    This function uses the Sieve of Eratosthenes algorithm for efficiency,
+    especially for larger values of n.
+
+    Args:
+        n: A non-negative integer.
+
+    Returns:
+        The number of prime numbers that are strictly less than n.
+        Returns 0 if n is 0 or 1, as there are no primes less than them.
+    """
+    # Handle edge cases: there are no primes less than 2.
+    if n <= 2:
+        return 0
+
+    # Create a boolean list "is_prime" to mark numbers as prime or not.
+    # is_prime[i] will be true if i is a prime number, and false otherwise.
+    # Initialize all entries to True. A value in is_prime[i] will
+    # finally be false if i is Not a prime, else true.
+    is_prime = [True] * n
+    is_prime[0] = False  # 0 is not a prime number
+    is_prime[1] = False  # 1 is not a prime number
+
+    # The Sieve of Eratosthenes algorithm
+    # Start with the first prime number, 2.
+    # We only need to check up to the square root of n.
+    for p in range(2, int(n**0.5) + 1):
+        # If is_prime[p] is still true, then p is a prime.
+        if is_prime[p]:
+            # Mark all multiples of p as not prime.
+            # Start marking from p*p, as smaller multiples would have
+            # already been marked by smaller primes.
+            # For example, for p=5, multiples like 10 (2*5), 15 (3*5)
+            # would have been marked when p was 2 and 3.
+            for multiple in range(p * p, n, p):
+                is_prime[multiple] = False
+
+    # The number of primes is the count of True values in the is_prime list.
+    return sum(is_prime)
+
+# Example usage and assertions to verify the function
+if __name__ == "__main__":
+    # Test case from the problem description
+    assert count_Primes_nums(5) == 2, f"Test failed for n=5. Expected 2, got {count_Primes_nums(5)}"
+
+    # Additional test cases
+    assert count_Primes_nums(0) == 0, f"Test failed for n=0. Expected 0, got {count_Primes_nums(0)}"
+    assert count_Primes_nums(1) == 0, f"Test failed for n=1. Expected 0, got {count_Primes_nums(1)}"
+    assert count_Primes_nums(2) == 0, f"Test failed for n=2. Expected 0, got {count_Primes_nums(2)}"
+    assert count_Primes_nums(10) == 4, f"Test failed for n=10. Expected 4, got {count_Primes_nums(10)}" # Primes: 2, 3, 5, 7
+    assert count_Primes_nums(20) == 8, f"Test failed for n=20. Expected 8, got {count_Primes_nums(20)}" # Primes: 2, 3, 5, 7, 11, 13, 17, 19
+    assert count_Primes_nums(100) == 25, f"Test failed for n=100. Expected 25, got {count_Primes_nums(100)}"
+
+    print("All tests passed successfully!")
+```

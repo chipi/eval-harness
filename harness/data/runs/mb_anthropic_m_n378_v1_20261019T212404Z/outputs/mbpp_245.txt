@@ -1,0 +1,29 @@
+```python
+def max_sum(arr):
+    n = len(arr)
+    if n == 0:
+        return 0
+
+    # inc[i] = max sum of increasing subsequence ending at i
+    inc = arr[:]
+    for i in range(n):
+        for j in range(i):
+            if arr[j] < arr[i]:
+                inc[i] = max(inc[i], inc[j] + arr[i])
+
+    # dec[i] = max sum of decreasing subsequence starting at i
+    dec = arr[:]
+    for i in range(n - 1, -1, -1):
+        for j in range(n - 1, i, -1):
+            if arr[j] < arr[i]:
+                dec[i] = max(dec[i], dec[j] + arr[i])
+
+    # combine: bitonic sum at i = inc[i] + dec[i] - arr[i]
+    result = max(inc[i] + dec[i] - arr[i] for i in range(n))
+    return result
+
+
+if __name__ == "__main__":
+    assert max_sum([1, 15, 51, 45, 33, 100, 12, 18, 9]) == 194
+    print("All tests passed.")
+```

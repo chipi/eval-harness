@@ -1,0 +1,12 @@
+```python
+def nth_nums(numbers, n):
+  """
+  Compute the n-th power of each number in a list.
+  For example:
+  nth_nums([1, 2, 3, 4, 5, 6, 7, 8, 9, 10],2)==[1, 4, 9, 16, 25, 36, 49, 64, 81, 100]
+  """
+  powered_numbers = []
+  for number in numbers:
+    powered_numbers.append(number**n)
+  return powered_numbers
+```

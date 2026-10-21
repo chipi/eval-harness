@@ -1,0 +1,18 @@
+Here’s a self-contained Python script that solves your problem:
+
+```python
+def word_len(word):
+    """
+    Returns True if the length of the word is odd, False otherwise.
+    """
+    return len(word) % 2 != 0
+
+# Test cases
+if __name__ == "__main__":
+    # Example from the problem
+    assert word_len("Hadoop") == False
+    assert word_len("Python") == True
+    assert word_len("AI") == False
+    assert word_len("Hello") == True
+    print("All tests passed.")
+```

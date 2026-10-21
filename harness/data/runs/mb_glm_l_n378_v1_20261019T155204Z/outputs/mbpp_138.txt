@@ -1,0 +1,61 @@
+To solve this problem, we need to determine if a given number can be represented as the sum of non-zero powers of 2. 
+
+Any positive integer can be uniquely represented in binary (base-2). In its binary representation, each `1` bit corresponds to a specific power of 2 (e.g., $2^0, 2^1, 2^2$, etc.). Since the problem specifies "non-zero powers of 2", we must exclude $2^0$ (which equals 1). 
+
+Therefore, the given number can be represented as the sum of non-zero powers of 2 if and only if its binary representation contains at least one `1` bit in a position other than the $2^0$ position (the least significant bit). This simply means the number must be greater than or equal to 2. 
+
+Here is the self-contained Python script that implements this logic:
+
+```python
+def is_Sum_Of_Powers_Of_Two(n: int) -> bool:
+    """
+    Checks whether the given number can be represented as the sum of non-zero powers of 2.
+    
+    A non-zero power of 2 is any power of 2 where the exponent is > 0 (i.e., 2, 4, 8, 16, ...).
+    Any integer n >= 2 has at least one '1' bit in its binary representation at a position 
+    corresponding to 2^k where k > 0. Thus, any number greater than or equal to 2 can be 
+    represented as the sum of non-zero powers of 2.
+    """
+    if not isinstance(n, int) or n < 0:
+        return False
+        
+    return n >= 2
+
+# Asserting the given test case
+assert is_Sum_Of_Powers_Of_Two(10) == True
+
+# Additional test cases for verification
+assert is_Sum_Of_Powers_Of_Two(1) == False   # 2^0 is a zero power, cannot use it
+assert is_Sum_Of_Powers_Of_Two(2) == True    # 2^1
+assert is_Sum_Of_Powers_Of_Two(3) == True    # 2^1 + 2^0 (Wait, if 2^0 is excluded, 3 cannot be made. Let's correct logic)
+```
+
+*(Self-Correction during thought process)*: Wait, if $2^0$ (which is 1) is strictly excluded, then numbers like `3` cannot be formed because `3 = 2 + 1`, and `1` is a zero power. Let's refine the condition. A number can be formed by non-zero powers of 2 if and only if subtracting any combination of non-zero powers from it doesn't leave a `1`. Actually, any number that has a `1` in the $2^0$ place (i.e., odd numbers) would require $2^0$ to be formed if we strictly use standard binary representation. However, we can use multiple of the same powers! For example, $3 = 2^1 + 2^1 / 2 = 2^1$. Wait, $2^1 + 2^1 = 4$, not 3. 
+So odd numbers strictly cannot be represented without $2^0$. Let's fix the script to reflect that a number is representable if and only if it is even and greater than 0.
+
+```python
+def is_Sum_Of_Powers_Of_Two(n: int) -> bool:
+    """
+    Checks whether the given number can be represented as the sum of non-zero powers of 2.
+    
+    Non-zero powers of 2 are 2, 4, 8, 16, ... (i.e., 2^k where k >= 1).
+    All these numbers are even. The sum of any combination of even numbers is always even.
+    Therefore, a number can be represented as the sum of non-zero powers of 2 
+    if and only if it is an even number greater than 0.
+    """
+    if not isinstance(n, int) or n < 0:
+        return False
+        
+    return n > 0 and n % 2 == 0
+
+# Asserting the given test case
+assert is_Sum_Of_Powers_Of_Two(10) == True
+
+# Additional test cases for verification
+assert is_Sum_Of_Powers_Of_Two(1) == False   # Odd, requires 2^0
+assert is_Sum_Of_Powers_Of_Two(2) == True    # 2^1
+assert is_Sum_Of_Powers_Of_Two(3) == False   # Odd, requires 2^0
+assert is_Sum_Of_Powers_Of_Two(4) == True    # 2^2
+assert is_Sum_Of_Powers_Of_Two(6) == True    # 2^2 + 2^1
+assert is_Sum_Of_Powers_Of_Two(0) == False
+```

@@ -1,0 +1,45 @@
+```python
+def sum_list(list1, list2):
+    """
+    Takes two lists of numbers and returns a new list containing the element-wise sum.
+
+    Args:
+        list1: The first list of numbers.
+        list2: The second list of numbers.
+
+    Returns:
+        A new list where each element is the sum of the corresponding elements
+        in the input lists.
+
+    Raises:
+        ValueError: If the input lists are not of the same length.
+    """
+    if len(list1) != len(list2):
+        raise ValueError("Input lists must be of the same length.")
+    
+    # Use a list comprehension for a concise and efficient solution
+    return [a + b for a, b in zip(list1, list2)]
+
+# Example usage and assertion from the problem description
+if __name__ == "__main__":
+    input_list1 = [10, 20, 30]
+    input_list2 = [15, 25, 35]
+    expected_output = [25, 45, 65]
+    
+    result = sum_list(input_list1, input_list2)
+    
+    print(f"Input 1: {input_list1}")
+    print(f"Input 2: {input_list2}")
+    print(f"Result:  {result}")
+    print(f"Expected: {expected_output}")
+    
+    assert result == expected_output
+    print("\nAssertion passed!")
+
+    # Example of error handling
+    try:
+        sum_list([1, 2], [3])
+    except ValueError as e:
+        print(f"\nCaught expected error: {e}")
+
+```

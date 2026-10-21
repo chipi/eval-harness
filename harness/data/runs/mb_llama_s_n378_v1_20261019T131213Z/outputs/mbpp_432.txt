@@ -1,0 +1,46 @@
+```python
+def median_trapezium(a, b, c):
+    """
+    The median of a trapezium is the average of its non-parallel sides.
+    
+    Parameters:
+    a (int): The length of the first non-parallel side.
+    b (int): The length of the second non-parallel side.
+    
+    Returns:
+    int: The median length of the trapezium.
+    """
+    # Calculate the median length
+    median_length = (a + b) / 2
+    
+    # Return the median length as an integer
+    return int(median_length)
+
+# Test the function
+assert median_trapezium(15, 25, 35) == 20
+```
+
+However, upon reviewing the original prompt, it seems like the function is supposed to take three parameters but only use two. In that case, a more accurate implementation would be:
+
+```python
+def median_trapezium(a, b, c):
+    """
+    The median of a trapezium is the average of its non-parallel sides.
+    
+    Parameters:
+    a (int): The length of the first non-parallel side.
+    b (int): The length of the second non-parallel side.
+    c (int): This parameter is not used in the calculation.
+    
+    Returns:
+    int: The median length of the trapezium.
+    """
+    # Calculate the median length
+    median_length = (a + b) / 2
+    
+    # Return the median length as an integer
+    return int(median_length)
+
+# Test the function
+assert median_trapezium(15, 25, 35) == 20
+```

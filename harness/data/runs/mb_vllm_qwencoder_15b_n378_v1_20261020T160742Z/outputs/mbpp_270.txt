@@ -1,0 +1,17 @@
+```python
+def sum_even_and_even_index(lst):
+    # Initialize sum to zero
+    total_sum = 0
+    
+    # Iterate over the list using enumerate to get both index and value
+    for index, value in enumerate(lst):
+        # Check if the index is even and the value is even
+        if index % 2 == 0 and value % 2 == 0:
+            # Add the value to the total sum
+            total_sum += value
+            
+    return total_sum
+
+# Test the function with the provided test case
+assert sum_even_and_even_index([5, 6, 12, 1, 18, 8]) == 30
+```

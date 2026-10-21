@@ -1,0 +1,93 @@
+```python
+def get_median(arr1, arr2, n):
+    """
+    Finds the median of two sorted lists of the same size.
+    
+    The median of two sorted arrays of size n is the average of the 
+    two middle elements of the combined sorted array of size 2n.
+    
+    Algorithm: Binary Search (Divide and Conquer)
+    Time Complexity: O(log n)
+    Space Complexity: O(1)
+    """
+    
+    def get_median_recursive(a1, a2, n):
+        # Base cases
+        if n <= 0:
+            return -1
+        if n == 1:
+            return (a1[0] + a2[0]) / 2
+        if n == 2:
+            return (max(a1[0], a2[0]) + min(a1[1], a2[1])) / 2
+
+        # Calculate medians of current subarrays
+        # For even length, we take the average of the two middle elements
+        # For simplicity in recursion, we handle indices carefully
+        m1_idx = (n - 1) // 2
+        m2_idx = (n - 1) // 2
+        
+        m1 = a1[m1_idx]
+        m2 = a2[m2_idx]
+
+        if m1 == m2:
+            return m1
+
+        # If m1 < m2, median must exist in a1[m1_idx:] and a2[:m2_idx+1]
+        if m1 < m2:
+            if n % 2 == 0:
+                return get_median_recursive(a1[m1_idx + 1:], a2[:m2_idx + 1], n // 2)
+            else:
+                return get_median_recursive(a1[m1_idx + 1:], a2[:m2_idx + 1], n // 2 + 1)
+        
+        # If m1 > m2, median must exist in a1[:m2_idx+1] and a2[m2_idx:]
+        else:
+            if n % 2 == 0:
+                return get_median_recursive(a1[:m1_idx + 1], a2[m1_idx + 1:], n // 2)
+            else:
+                return get_median_recursive(a1[:m1_idx + 1], a2[m1_idx + 1:], n // 2 + 1)
+
+    # A more robust approach for all edge cases is to use the combined sorted logic
+    # or a standard binary search on the partition.
+    # Let's implement the partition method which is the standard O(log n) solution.
+    
+    low = 0
+    high = n
+    
+    while low <= high:
+        partition_x = (low + high) // 2
+        partition_y = n - partition_x
+        
+        # If partition_x is 0, there is no element on the left side of arr1
+        max_left_x = float('-inf') if partition_x == 0 else arr1[partition_x - 1]
+        # If partition_x is n, there is no element on the right side of arr1
+        min_right_x = float('inf') if partition_x == n else arr1[partition_x]
+        
+        max_left_y = float('-inf') if partition_y == 0 else arr2[partition_y - 1]
+        min_right_y = float('inf') if partition_y == n else arr2[partition_y]
+        
+        if max_left_x <= min_right_y and max_left_y <= min_right_x:
+            # We found the correct partition
+            return (max(max_left_x, max_left_y) + min(min_right_x, min_right_y)) / 2.0
+        elif max_left_x > min_right_y:
+            # We are too far right in arr1
+            high = partition_x - 1
+        else:
+            # We are too far left in arr1
+            low = partition_x + 1
+
+    return 0.0
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    result = get_median([1, 12, 15, 26, 38], [2, 13, 17, 30, 45], 5)
+    print(f"Result: {result}")
+    assert result == 16.0
+    
+    # Additional test cases
+    assert get_median([1, 12, 15, 26, 38], [2, 13, 17, 30, 45], 5) == 16.0
+    assert get_median([1, 2], [3, 4], 2) == 2.5
+    assert get_median([1, 3], [2, 4], 2) == 2.5
+    assert get_median([10], [20], 1) == 15.0
+    
+    print("All tests passed!")
+```

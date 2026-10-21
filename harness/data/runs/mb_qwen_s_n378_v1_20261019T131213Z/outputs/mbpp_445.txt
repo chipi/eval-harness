@@ -1,0 +1,19 @@
+```python
+def index_multiplication(tuple1, tuple2):
+    """
+    Perform index wise multiplication of tuple elements in the given two tuples.
+    
+    Args:
+        tuple1: A tuple of tuples containing numeric values.
+        tuple2: A tuple of tuples containing numeric values.
+        
+    Returns:
+        A tuple of tuples where each element is the product of corresponding 
+        elements from tuple1 and tuple2 at the same index.
+    """
+    result = []
+    for t1, t2 in zip(tuple1, tuple2):
+        multiplied = tuple(a * b for a, b in zip(t1, t2))
+        result.append(multiplied)
+    return tuple(result)
+```

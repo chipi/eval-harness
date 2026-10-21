@@ -1,0 +1,32 @@
+Here's a self-contained Python script that solves the problem using a min-heap approach to efficiently find the n largest integers:
+
+```python
+import heapq
+
+def heap_queue_largest(numbers, n):
+    if n <= 0:
+        return []
+    # Use a min-heap to keep track of the n largest elements
+    heap = []
+    for num in numbers:
+        if len(heap) < n:
+            heapq.heappush(heap, num)
+        else:
+            if num > heap[0]:
+                heapq.heappop(heap)
+                heapq.heappush(heap, num)
+    # Return the elements in descending order
+    return sorted(heap, reverse=True)
+
+# Test case
+assert heap_queue_largest([25, 35, 22, 85, 14, 65, 75, 22, 58], 3) == [85, 75, 65]
+```
+
+This solution:
+1. Uses a min-heap to efficiently keep track of the n largest elements
+2. For each number, if the heap has fewer than n elements, it's added
+3. If the heap is full, we compare with the smallest element in the heap (heap[0])
+4. If the new number is larger, we replace the smallest element
+5. Finally, we sort the heap in descending order for the output
+
+The time complexity is O(m log n) where m is the number of elements in the input list, which is more efficient than sorting the entire list when n is much smaller than m.

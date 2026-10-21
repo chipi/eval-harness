@@ -1,0 +1,59 @@
+Here’s a self-contained Python script that solves the problem as described:
+
+```python
+def is_samepatterns(colors, patterns):
+    """
+    Check if the colors list follows the same pattern as the patterns list.
+    
+    Args:
+        colors (list): List of color strings.
+        patterns (list): List of pattern symbols (e.g., 'a', 'b').
+    
+    Returns:
+        bool: True if the pattern matches, False otherwise.
+    """
+    if len(colors) != len(patterns):
+        return False
+    
+    color_to_pattern = {}
+    pattern_to_color = {}
+    
+    for color, pattern in zip(colors, patterns):
+        # If color is seen before, it must map to the same pattern
+        if color in color_to_pattern:
+            if color_to_pattern[color] != pattern:
+                return False
+        else:
+            color_to_pattern[color] = pattern
+        
+        # If pattern is seen before, it must map to the same color
+        if pattern in pattern_to_color:
+            if pattern_to_color[pattern] != color:
+                return False
+        else:
+            pattern_to_color[pattern] = color
+    
+    return True
+
+
+# Test cases
+if __name__ == "__main__":
+    # Provided example
+    assert is_samepatterns(["red", "green", "green"], ["a", "b", "b"]) == True
+    print("Test 1 passed")
+    
+    # Additional tests
+    assert is_samepatterns(["red", "green", "blue"], ["a", "b", "c"]) == True
+    print("Test 2 passed")
+    
+    assert is_samepatterns(["red", "green", "red"], ["a", "b", "a"]) == True
+    print("Test 3 passed")
+    
+    assert is_samepatterns(["red", "green", "blue"], ["a", "b", "a"]) == False
+    print("Test 4 passed")
+    
+    assert is_samepatterns(["red", "red", "green"], ["a", "b", "b"]) == False
+    print("Test 5 passed")
+    
+    print("All tests passed!")
+```

@@ -1,0 +1,64 @@
+Here's a self-contained Python script that solves the problem using dynamic programming with binary search on the average value:
+
+```python
+def maxAverageOfPath(matrix):
+    """
+    Returns the maximum average cost path from top-left to bottom-right
+    moving only right or down.
+    """
+    n = len(matrix)
+    if n == 0:
+        return 0.0
+
+    # Binary search on the possible average value
+    low = min(min(row) for row in matrix)
+    high = max(max(row) for row in matrix)
+    
+    # Precision for floating point comparison
+    eps = 1e-6
+    
+    while high - low > eps:
+        mid = (low + high) / 2.0
+        
+        # Check if there exists a path with average >= mid
+        # Transform: cost - mid >= 0 for each cell
+        # Use DP to find max sum of (cost - mid) along any path
+        
+        dp = [[0.0] * n for _ in range(n)]
+        dp[0][0] = matrix[0][0] - mid
+        
+        for i in range(n):
+            for j in range(n):
+                if i == 0 and j == 0:
+                    continue
+                from_top = dp[i-1][j] if i > 0 else float('-inf')
+                from_left = dp[i][j-1] if j > 0 else float('-inf')
+                dp[i][j] = max(from_top, from_left) + (matrix[i][j] - mid)
+        
+        if dp[n-1][n-1] >= 0:
+            low = mid
+        else:
+            high = mid
+    
+    # Round to 1 decimal place for the expected output format
+    return round(low, 1)
+
+
+# Test with the given example
+if __name__ == "__main__":
+    test_matrix = [[1, 2, 3], [6, 5, 4], [7, 3, 9]]
+    result = maxAverageOfPath(test_matrix)
+    print(f"Result: {result}")
+    assert abs(result - 5.2) < 0.01, f"Expected 5.2 but got {result}"
+    print("Test passed!")
+```
+
+This script works by:
+
+1. **Binary search** on the possible average value between the minimum and maximum cell values
+2. **Transforming the problem**: Instead of maximizing average directly, we check if there exists a path with average ≥ `mid` by subtracting `mid` from each cell cost and checking if the maximum sum along any path is ≥ 0
+3. **Dynamic programming** to find the maximum sum of transformed costs along any valid path
+4. **Precision control** with a small epsilon value for the binary search convergence
+5. **Rounding** to one decimal place to match the expected output format
+
+The algorithm runs in O(N² log(range/ε)) time, where range is the difference between max and min values in the matrix.

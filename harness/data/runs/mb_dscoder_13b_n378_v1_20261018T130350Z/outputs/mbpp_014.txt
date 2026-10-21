@@ -1,0 +1,12 @@
+```python
+def find_Volume(a, b, c):
+    import math
+    # calculate the semi-perimeter
+    s = (a + b + c) / 2
+    # calculate the volume
+    volume = math.sqrt(s * (s - a) * (s - b) * (s - c))
+    return volume
+
+# test the function
+assert find_Volume(10,8,6) == 240
+```

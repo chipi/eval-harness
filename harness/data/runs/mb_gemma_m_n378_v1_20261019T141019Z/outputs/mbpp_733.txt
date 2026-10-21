@@ -1,0 +1,43 @@
+```python
+def find_first_occurrence(arr, target):
+    """
+    Finds the index of the first occurrence of a target number in a sorted array
+    using a binary search approach to ensure O(log n) time complexity.
+    
+    Args:
+        arr (list): A sorted list of numbers.
+        target (int/float): The number to search for.
+        
+    Returns:
+        int: The index of the first occurrence of target, or -1 if not found.
+    """
+    low = 0
+    high = len(arr) - 1
+    result = -1
+
+    while low <= high:
+        mid = (low + high) // 2
+        
+        if arr[mid] == target:
+            result = mid      # Record the index
+            high = mid - 1    # Keep searching to the left to find the *first* occurrence
+        elif arr[mid] < target:
+            low = mid + 1
+        else:
+            high = mid - 1
+            
+    return result
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    assert find_first_occurrence([2, 5, 5, 5, 6, 6, 8, 9, 9, 9], 5) == 1
+    
+    # Additional test cases
+    assert find_first_occurrence([1, 2, 3, 4, 5], 1) == 0      # First element
+    assert find_first_occurrence([1, 2, 3, 4, 5], 5) == 4      # Last element
+    assert find_first_occurrence([1, 2, 2, 2, 3], 2) == 1      # Multiple occurrences
+    assert find_first_occurrence([1, 2, 3, 4, 5], 6) == -1     # Not in list
+    assert find_first_occurrence([], 5) == -1                  # Empty list
+    
+    print("All tests passed!")
+```

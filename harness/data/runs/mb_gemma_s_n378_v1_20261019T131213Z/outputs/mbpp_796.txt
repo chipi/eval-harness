@@ -1,0 +1,11 @@
+```python
+def return_sum(my_dict):
+  """
+  Write function to find the sum of all items in the given dictionary.
+  assert return_sum({'a': 100, 'b':200, 'c':300}) == 600
+  """
+  sum_of_items = 0
+  for item in my_dict.values():
+    sum_of_items += item
+  return sum_of_items
+```

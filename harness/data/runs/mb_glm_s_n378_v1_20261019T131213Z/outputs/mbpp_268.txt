@@ -1,0 +1,45 @@
+```python
+"""
+Write a function to find the n'th star number.
+assert find_star_num(3) == 37
+"""
+
+def find_star_num(n: int) -> int:
+    """
+    Calculates the n'th star number.
+
+    A star number is a centered figurate number that represents a six-pointed star.
+    The formula for the n'th star number is S_n = 6 * n * (n - 1) + 1.
+
+    Args:
+        n: A positive integer representing the position of the star number (1-indexed).
+
+    Returns:
+        The n'th star number as an integer.
+
+    Raises:
+        ValueError: If n is not a positive integer.
+    """
+    if not isinstance(n, int) or n < 1:
+        raise ValueError("Input 'n' must be a positive integer.")
+    
+    # The formula for the n'th star number is 6 * n * (n - 1) + 1
+    return 6 * n * (n - 1) + 1
+
+# Example usage and assertion from the problem description
+if __name__ == "__main__":
+    # Test the function with the provided example
+    n = 3
+    star_number = find_star_num(n)
+    print(f"The {n}'th star number is: {star_number}")
+    
+    # Assertion to verify the result
+    assert find_star_num(3) == 37
+    
+    # Additional test cases
+    assert find_star_num(1) == 1
+    assert find_star_num(2) == 13
+    assert find_star_num(4) == 73
+    
+    print("All assertions passed successfully!")
+```

@@ -1,0 +1,27 @@
+Here's a self-contained Python script that solves the problem of removing consecutive duplicates from a list:
+
+```python
+def consecutive_duplicates(lst):
+    if not lst:
+        return []
+
+    result = [lst[0]]
+    for item in lst[1:]:
+        if item != result[-1]:
+            result.append(item)
+    return result
+
+# Test the function
+assert consecutive_duplicates([0, 0, 1, 2, 3, 4, 4, 5, 6, 6, 6, 7, 8, 9, 4, 4]) == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 4]
+print("Test passed!")
+```
+
+This script:
+1. Defines a function `consecutive_duplicates` that takes a list as input
+2. Handles the empty list case
+3. Initializes the result with the first element
+4. Iterates through the remaining elements, adding them to the result only if they're different from the last element in the result
+5. Includes the test case from the problem statement
+6. Prints a confirmation message if the test passes
+
+The function works by maintaining a running list of unique consecutive elements, which is exactly what the problem requires.

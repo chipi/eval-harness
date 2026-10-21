@@ -1,0 +1,20 @@
+```python
+import math
+
+def radian_degree(degrees):
+    """
+    Converts degrees to radians.
+    Formula: radians = degrees * (pi / 180)
+    """
+    return degrees * (math.pi / 180)
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    try:
+        assert radian_degree(90) == 1.5707963267948966
+        print("Assertion passed!")
+    except AssertionError:
+        print("Assertion failed!")
+        print(f"Expected: 1.5707963267948966")
+        print(f"Got:      {radian_degree(90)}")
+```

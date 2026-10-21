@@ -1,0 +1,21 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def find_even_pair(nums):
+    """
+    Counts the number of pairs of integers in a list that XOR to an even number.
+    """
+    count = 0
+    n = len(nums)
+    for i in range(n):
+        for j in range(i + 1, n):
+            if (nums[i] ^ nums[j]) % 2 == 0:
+                count += 1
+    return count
+
+
+# Test the function
+if __name__ == "__main__":
+    assert find_even_pair([5, 4, 7, 2, 1]) == 4
+    print("Test passed!")
+```

@@ -1,0 +1,33 @@
+```python
+"""
+Write a function to check if the given tuple has any none value or not.
+assert check_none((10, 4, 5, 6, None)) == True
+"""
+
+
+def check_none(test_tup):
+    """
+    Check if the given tuple contains any None value.
+
+    Args:
+        test_tup (tuple): The tuple to inspect.
+
+    Returns:
+        bool: True if at least one element is None, False otherwise.
+    """
+    return any(ele is None for ele in test_tup)
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert check_none((10, 4, 5, 6, None)) == True
+
+    # Additional test cases
+    assert check_none((7, 8, 9, 11, 14)) == False
+    assert check_none((1, 2, 3, 4, None)) == True
+    assert check_none((None,)) == True
+    assert check_none(()) == False
+    assert check_none((0, False, "", [])) == False  # falsy but not None
+
+    print("All tests passed!")
+```

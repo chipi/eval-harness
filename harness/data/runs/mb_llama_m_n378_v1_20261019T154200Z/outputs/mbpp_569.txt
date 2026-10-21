@@ -1,0 +1,17 @@
+```python
+def sort_sublists(list_of_lists):
+    """
+    Sorts each sublist of strings in a given list of lists.
+
+    Args:
+        list_of_lists (list): A list containing sublists of strings.
+
+    Returns:
+        list: The input list with each sublist sorted.
+    """
+    return [sorted(sublist) for sublist in list_of_lists]
+
+# Example usage:
+print(sort_sublists([['green', 'orange'], ['black', 'white'], ['white', 'black', 'orange']]))
+# Output: [['green', 'orange'], ['black', 'white'], ['black', 'orange', 'white']]
+```

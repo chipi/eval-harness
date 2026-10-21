@@ -1,0 +1,22 @@
+```python
+def sum_average(n: int) -> tuple:
+    """
+    Returns the sum and average of the first n natural numbers.
+    For n given, returns (sum, average) where sum is int and average is float.
+    """
+    if n <= 0:
+        raise ValueError("n must be a positive integer")
+    
+    total = n * (n + 1) // 2  # sum formula
+    average = total / n        # average formula
+    
+    return (total, average)
+
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    result = sum_average(10)
+    assert result == (55, 5.5), f"Expected (55, 5.5) but got {result}"
+    print(f"sum_average(10) = {result}")
+    print("Test passed. The function works correctly.")
+```

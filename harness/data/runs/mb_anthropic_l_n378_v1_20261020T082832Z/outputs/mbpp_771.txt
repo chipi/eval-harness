@@ -1,0 +1,75 @@
+Looking at this problem, I need to write a function that checks whether brackets in an expression are balanced — meaning every opening bracket has a matching closing bracket of the same type, in the correct order.
+
+The standard approach uses a **stack**:
+- Push opening brackets onto the stack.
+- When a closing bracket appears, check that the stack's top is the matching opening bracket; if so, pop it, otherwise the expression is unbalanced.
+- At the end, the stack must be empty.
+
+```python
+"""
+Write a function to check if the given expression is balanced or not.
+https://www.geeksforgeeks.org/check-for-balanced-parentheses-in-an-expression/
+assert check_expression("{()}[{}]") == True
+"""
+
+from collections import deque
+
+
+def check_expression(exp):
+    """
+    Return True if the brackets in `exp` are balanced, False otherwise.
+
+    Brackets considered: (), [], {}
+    """
+    # An expression with an odd number of characters can never be balanced
+    if len(exp) % 2 != 0:
+        return False
+
+    stack = deque()
+    pairs = {')': '(', ']': '[', '}': '{'}
+    openers = set(pairs.values())
+
+    for ch in exp:
+        if ch in openers:
+            stack.append(ch)
+        elif ch in pairs:
+            # Closing bracket: must match the most recent opener
+            if not stack or stack.pop() != pairs[ch]:
+                return False
+        # Any other character is ignored
+
+    return not stack
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert check_expression("{()}[{}]") == True
+
+    # Additional test cases
+    assert check_expression("{()}[{]") == False
+    assert check_expression("{()}[{}][]({})") == True
+    assert check_expression("") == True
+    assert check_expression("(") == False
+    assert check_expression(")(") == False
+    assert check_expression("([)]") == False
+    assert check_expression("{[()]}") == True
+
+    print("All test cases passed!")
+```
+
+**How it works on `"{()}[{}]"`:**
+
+| Char | Action | Stack |
+|------|--------|-------|
+| `{`  | push | `{` |
+| `(`  | push | `{ (` |
+| `)`  | pop `(` — matches | `{` |
+| `}`  | pop `{` — matches | *(empty)* |
+| `[`  | push | `[` |
+| `{`  | push | `[ {` |
+| `}`  | pop `{` — matches | `[` |
+| `]`  | pop `[` — matches | *(empty)* |
+
+Stack is empty at the end → returns `True`. 
+
+Time complexity: **O(n)**, Space complexity: **O(n)**.

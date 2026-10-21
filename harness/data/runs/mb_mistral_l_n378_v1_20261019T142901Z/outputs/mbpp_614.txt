@@ -1,0 +1,31 @@
+Here's a self-contained Python script that solves the problem by calculating the cumulative sum of all values in a tuple list:
+
+```python
+def cumulative_sum(tuple_list):
+    """
+    Calculate the cumulative sum of all values present in the given tuple list.
+
+    Args:
+        tuple_list: A list of tuples containing numbers.
+
+    Returns:
+        The sum of all numbers in all tuples.
+    """
+    total = 0
+    for t in tuple_list:
+        total += sum(t)
+    return total
+
+# Test the function
+assert cumulative_sum([(1, 3), (5, 6, 7), (2, 6)]) == 30
+```
+
+This script:
+1. Defines a function `cumulative_sum` that takes a list of tuples as input
+2. Initializes a total sum variable to 0
+3. Iterates through each tuple in the list
+4. Adds the sum of each tuple to the total
+5. Returns the final total
+6. Includes the assertion test from the problem statement
+
+The function works by summing all elements in each tuple and then summing those sums together to get the final cumulative total.

@@ -1,0 +1,9 @@
+```python
+def tuple_to_dict(test_tuple):
+    return dict(zip(test_tuple[::2], test_tuple[1::2]))
+
+
+if __name__ == "__main__":
+    assert tuple_to_dict((1, 5, 7, 10, 13, 5)) == {1: 5, 7: 10, 13: 5}
+    print("All test cases passed.")
+```

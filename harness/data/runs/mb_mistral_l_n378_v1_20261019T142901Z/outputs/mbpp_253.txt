@@ -1,0 +1,43 @@
+Here's a self-contained Python script that solves the problem, including the requested markdown code block:
+
+```python
+"""
+Python function to count integer elements in a list.
+"""
+
+def count_integer(lst):
+    """
+    Counts the number of integer elements in a given list.
+
+    Args:
+        lst: List of elements to check
+
+    Returns:
+        int: Count of integer elements in the list
+    """
+    count = 0
+    for element in lst:
+        # Check if the element is an integer but not a boolean (since bool is a subclass of int)
+        if isinstance(element, int) and not isinstance(element, bool):
+            count += 1
+    return count
+
+# Test case
+assert count_integer([1, 2, 'abc', 1.2]) == 2
+
+# Additional test cases
+assert count_integer([1, 2, 3, 4, 5]) == 5
+assert count_integer(['a', 'b', 'c']) == 0
+assert count_integer([1.0, 2.0, 3.0]) == 0  # floats are not integers
+assert count_integer([True, False, 1, 0]) == 2  # booleans are not counted as integers
+assert count_integer([]) == 0  # empty list
+```
+
+The function works by:
+1. Initializing a counter to 0
+2. Iterating through each element in the list
+3. Checking if the element is an instance of int but not an instance of bool (since in Python, booleans are a subclass of integers)
+4. Incrementing the counter for each valid integer found
+5. Returning the final count
+
+The test cases verify that the function correctly counts integers while ignoring other types.

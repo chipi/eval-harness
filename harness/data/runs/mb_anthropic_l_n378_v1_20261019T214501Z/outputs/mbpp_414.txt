@@ -1,0 +1,48 @@
+Looking at this problem, I need to write a function that checks whether **any** value from one sequence exists in another sequence (i.e., whether the two sequences overlap/share at least one common element).
+
+```python
+"""
+Write a python function to check whether any value in a sequence exists in a sequence or not.
+assert overlapping([1,2,3,4,5],[6,7,8,9]) == False
+"""
+
+
+def overlapping(list1, list2):
+    """
+    Check whether any value in list1 exists in list2.
+
+    Returns True if at least one element is shared between the
+    two sequences, otherwise False.
+    """
+    for value in list1:
+        for other in list2:
+            if value == other:
+                return True
+    return False
+
+
+# --- Tests ---------------------------------------------------------------
+if __name__ == "__main__":
+    assert overlapping([1, 2, 3, 4, 5], [6, 7, 8, 9]) == False
+    assert overlapping([1, 2, 3], [4, 5, 6]) == False
+    assert overlapping([1, 4, 5], [1, 4, 5]) == True
+    assert overlapping([1, 2, 3], [3, 4, 5]) == True
+    assert overlapping([], [1, 2, 3]) == False
+    assert overlapping("abc", "cde") == True
+    assert overlapping("abc", "xyz") == False
+
+    print("All tests passed!")
+```
+
+**How it works:**
+
+- The function iterates over every element of the first sequence and compares it against every element of the second sequence.
+- As soon as a match is found, it returns `True` (early exit — no need to keep checking).
+- If the loops complete without finding any match, it returns `False`.
+
+**A more efficient alternative** (O(n + m) instead of O(n × m)) using sets, which works when the elements are hashable:
+
+```python
+def overlapping(list1, list2):
+    return not set(list1).isdisjoint(list2)
+```

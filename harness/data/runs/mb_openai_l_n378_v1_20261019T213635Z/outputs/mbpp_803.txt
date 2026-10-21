@@ -1,0 +1,16 @@
+```python
+from math import isqrt
+
+
+def is_perfect_square(number: int) -> bool:
+    """Return whether number is a perfect square."""
+    if number < 0:
+        return False
+    root = isqrt(number)
+    return root * root == number
+
+
+assert not is_perfect_square(10)
+assert is_perfect_square(0)
+assert is_perfect_square(16)
+```

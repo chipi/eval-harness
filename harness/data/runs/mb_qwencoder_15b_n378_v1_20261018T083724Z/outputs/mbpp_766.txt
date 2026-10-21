@@ -1,0 +1,23 @@
+```python
+def pair_wise(lst):
+    """
+    Return a list of all pairs of consecutive items in a given list.
+
+    :param lst: List of elements
+    :return: List of tuples containing consecutive pairs
+    """
+    # Initialize an empty list to store the result
+    result = []
+    
+    # Iterate over the list using range(len(lst) - 1)
+    for i in range(len(lst) - 1):
+        # Append each pair of consecutive elements as a tuple to the result list
+        result.append((lst[i], lst[i + 1]))
+    
+    # Return the final result list
+    return result
+
+# Test the function with the provided test case
+assert pair_wise([1,1,2,3,3,4,4,5]) == [(1, 1), (1, 2), (2, 3), (3, 3), (3, 4), (4, 4), (4, 5)]
+```
+

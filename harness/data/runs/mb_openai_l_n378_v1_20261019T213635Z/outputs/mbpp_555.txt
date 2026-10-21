@@ -1,0 +1,9 @@
+```python
+def difference(n):
+    """Return the sum of the first n cubes minus the sum of the first n numbers."""
+    total = n * (n + 1) // 2
+    return total**2 - total
+
+
+assert difference(3) == 30
+```

@@ -1,0 +1,40 @@
+```python
+def jacobsthal_num(n):
+    """
+    Finds the nth Jacobsthal number.
+    The Jacobsthal numbers are defined by the recurrence relation:
+    J(n) = J(n-1) + 2*J(n-2)
+    with initial values J(0) = 0 and J(1) = 1.
+    
+    Sequence: 0, 1, 1, 3, 5, 11, 21, 43, 85, 171, 341, 683, 1365, 2731, ...
+    """
+    if n == 0:
+        return 0
+    if n == 1:
+        return 1
+    
+    # Using dynamic programming to build up the solution iteratively
+    prev2 = 0  # J(0)
+    prev1 = 1  # J(1)
+    
+    for _ in range(2, n + 1):
+        current = prev1 + 2 * prev2
+        prev2, prev1 = prev1, current
+        
+    return prev1
+
+if __name__ == "__main__":
+    # Test case from the problem description
+    assert jacobsthal_num(5) == 11
+    
+    # Additional test cases to verify correctness
+    assert jacobsthal_num(0) == 0
+    assert jacobsthal_num(1) == 1
+    assert jacobsthal_num(2) == 1
+    assert jacobsthal_num(3) == 3
+    assert jacobsthal_num(4) == 5
+    assert jacobsthal_num(6) == 21
+    assert jacobsthal_num(10) == 341
+    
+    print("All tests passed!")
+```

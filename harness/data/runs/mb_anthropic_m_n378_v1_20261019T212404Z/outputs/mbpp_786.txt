@@ -1,0 +1,9 @@
+```python
+import bisect
+
+def right_insertion(sorted_list, value):
+    return bisect.bisect_right(sorted_list, value)
+
+# Test
+assert right_insertion([1,2,4,5],6)==4
+```

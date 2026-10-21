@@ -1,0 +1,20 @@
+```python
+def maximize_elements(first, second):
+    """Return the element-wise maximum of two tuples of tuples."""
+    if len(first) != len(second) or any(
+        len(left) != len(right) for left, right in zip(first, second)
+    ):
+        raise ValueError("The tuples must have matching shapes")
+
+    return tuple(
+        tuple(max(a, b) for a, b in zip(left, right))
+        for left, right in zip(first, second)
+    )
+
+
+if __name__ == "__main__":
+    assert maximize_elements(
+        ((1, 3), (4, 5), (2, 9), (1, 10)),
+        ((6, 7), (3, 9), (1, 1), (7, 3)),
+    ) == ((6, 7), (4, 9), (2, 9), (7, 10))
+```

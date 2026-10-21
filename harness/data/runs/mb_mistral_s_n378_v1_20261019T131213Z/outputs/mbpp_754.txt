@@ -1,0 +1,23 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def extract_index_list(l1, l2, l3):
+    common_elements = []
+    for i in range(min(len(l1), len(l2), len(l3))):
+        if l1[i] == l2[i] == l3[i]:
+            common_elements.append(l1[i])
+    return common_elements
+
+# Test case
+assert extract_index_list([1, 1, 3, 4, 5, 6, 7],
+                          [0, 1, 2, 3, 4, 5, 7],
+                          [0, 1, 2, 3, 4, 5, 7]) == [1, 7]
+```
+
+This script defines a function `extract_index_list` that:
+1. Iterates through the indices of the three lists up to the length of the shortest list
+2. Checks if the elements at the current index in all three lists are equal
+3. If they are equal, adds the element to the result list
+4. Returns the list of common elements
+
+The test case at the bottom verifies that the function works as expected with the provided example.

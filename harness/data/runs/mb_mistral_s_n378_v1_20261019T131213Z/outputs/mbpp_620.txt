@@ -1,0 +1,43 @@
+Here's a self-contained Python script that solves the problem of finding the size of the largest subset of a list of numbers where every pair is divisible (i.e., for any two numbers in the subset, one divides the other):
+
+```python
+"""
+Write a function to find the size of the largest subset of a list of numbers so that every pair is divisible.
+assert largest_subset([ 1, 3, 6, 13, 17, 18 ]) == 4
+"""
+
+def largest_subset(nums):
+    if not nums:
+        return 0
+
+    # Sort the list to process numbers in order
+    nums_sorted = sorted(nums)
+    n = len(nums_sorted)
+
+    # Initialize a list to store the size of the largest subset ending at each index
+    dp = [1] * n
+
+    for i in range(1, n):
+        for j in range(i):
+            # Check if nums_sorted[i] is divisible by nums_sorted[j]
+            if nums_sorted[i] % nums_sorted[j] == 0:
+                dp[i] = max(dp[i], dp[j] + 1)
+
+    return max(dp)
+
+# Test the function
+assert largest_subset([1, 3, 6, 13, 17, 18]) == 4
+print("Test passed!")
+```
+
+### Explanation:
+1. **Sorting**: The input list is sorted to ensure that we can efficiently check divisibility in order.
+2. **Dynamic Programming (DP) Approach**:
+   - We use a DP array where `dp[i]` represents the size of the largest subset ending with `nums_sorted[i]`.
+   - For each number `nums_sorted[i]`, we check all previous numbers `nums_sorted[j]` (where `j < i`). If `nums_sorted[i]` is divisible by `nums_sorted[j]`, we update `dp[i]` to be the maximum of its current value or `dp[j] + 1`.
+3. **Result**: The maximum value in the DP array gives the size of the largest subset where every pair is divisible.
+
+### Example:
+For the input `[1, 3, 6, 13, 17, 18]`, the sorted list is `[1, 3, 6, 13, 17, 18]`. The largest subset where every pair is divisible is `[1, 3, 6, 18]`, so the function returns `4`.
+
+The test case passes, and the script prints "Test passed!" if the assertion holds.

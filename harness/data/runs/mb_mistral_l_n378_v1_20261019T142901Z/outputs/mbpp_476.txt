@@ -1,0 +1,27 @@
+Here's a self-contained Python script that solves the problem, including the assertion test:
+
+```python
+def big_sum(arr):
+    """
+    Find the sum of the largest and smallest value in a given array.
+
+    Args:
+        arr (list): List of numbers
+
+    Returns:
+        int: Sum of the largest and smallest values in the array
+    """
+    if not arr:  # Handle empty array case
+        return 0
+    return min(arr) + max(arr)
+
+# Test case
+assert big_sum([1, 2, 3]) == 4
+```
+
+This solution:
+1. Defines the `big_sum` function that takes an array as input
+2. Handles the edge case of an empty array (returns 0)
+3. Uses Python's built-in `min()` and `max()` functions to find the smallest and largest values
+4. Returns the sum of these values
+5. Includes the provided assertion test to verify the function works correctly

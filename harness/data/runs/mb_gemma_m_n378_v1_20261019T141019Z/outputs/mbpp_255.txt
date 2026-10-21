@@ -1,0 +1,45 @@
+To solve this problem, we can use the `itertools.combinations_with_replacement` function from Python's standard library, which is specifically designed to generate combinations with repetition.
+
+Here is the self-contained script:
+
+```python
+import itertools
+
+def combinations_colors(elements, n):
+    """
+    Generates all combinations (with repetition) of the elements of the list
+    of length n and returns a list of tuples.
+    
+    Args:
+        elements (list): The list of elements to combine.
+        n (int): The length of each combination.
+        
+    Returns:
+        list: A list of tuples representing the combinations.
+    """
+    # itertools.combinations_with_replacement returns an iterator of tuples
+    # We convert it to a list to meet the function requirements.
+    return list(itertools.combinations_with_replacement(elements, n))
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    test_list = ["Red", "Green", "Blue"]
+    test_n = 1
+    expected = [('Red',), ('Green',), ('Blue',)]
+    
+    result = combinations_colors(test_list, test_n)
+    
+    # Assertion to verify correctness
+    assert result == expected, f"Expected {expected}, but got {result}"
+    
+    # Additional test case: n=2 to demonstrate repetition
+    # Combinations of ["A", "B"] with n=2 should be: (A,A), (A,B), (B,B)
+    test_list_2 = ["A", "B"]
+    test_n_2 = 2
+    expected_2 = [('A', 'A'), ('A', 'B'), ('B', 'B')]
+    result_2 = combinations_colors(test_list_2, test_n_2)
+    
+    assert result_2 == expected_2, f"Expected {expected_2}, but got {result_2}"
+
+    print("All tests passed successfully!")
+```

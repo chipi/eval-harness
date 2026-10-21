@@ -1,0 +1,53 @@
+```python
+def maxAverageOfPath(matrix):
+    """
+    Finds the path from top-left to bottom-right moving only right or down
+    that maximizes the average cost of the cells visited.
+    
+    In a square matrix of size N*N, any path from (0,0) to (N-1, N-1) 
+    moving only right or down will always visit exactly (2N - 1) cells.
+    
+    Since the number of cells (the denominator) is constant for all valid paths,
+    maximizing the average is equivalent to maximizing the total sum of the path.
+    """
+    N = len(matrix)
+    if N == 0:
+        return 0
+    
+    # dp[i][j] will store the maximum sum to reach cell (i, j)
+    dp = [[0] * N for _ in range(N)]
+    
+    # Initialize starting point
+    dp[0][0] = matrix[0][0]
+    
+    # Initialize first row (can only come from the left)
+    for j in range(1, N):
+        dp[0][j] = dp[0][j-1] + matrix[0][j]
+        
+    # Initialize first column (can only come from above)
+    for i in range(1, N):
+        dp[i][0] = dp[i-1][0] + matrix[i][0]
+        
+    # Fill the rest of the DP table
+    for i in range(1, N):
+        for j in range(1, N):
+            dp[i][j] = max(dp[i-1][j], dp[i][j-1]) + matrix[i][j]
+            
+    # The total number of cells in any path from (0,0) to (N-1, N-1) is 2N - 1
+    total_cells = 2 * N - 1
+    max_sum = dp[N-1][N-1]
+    
+    return max_sum / total_cells
+
+if __name__ == "__main__":
+    # Test case
+    matrix = [[1, 2, 3], 
+              [6, 5, 4], 
+              [7, 3, 9]]
+    
+    # Path with max sum: 1 -> 6 -> 7 -> 3 -> 9 = 26
+    # Average: 26 / 5 = 5.2
+    result = maxAverageOfPath(matrix)
+    print(f"Max Average: {result}")
+    assert result == 5.2
+```

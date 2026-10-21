@@ -1,0 +1,38 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def _sum(arr):
+    """
+    Calculate the sum of all elements in an array.
+    
+    Args:
+        arr: A list of numbers (int or float)
+    
+    Returns:
+        The sum of all elements in the array
+    """
+    total = 0
+    for num in arr:
+        total += num
+    return total
+
+
+# Test cases
+if __name__ == "__main__":
+    assert _sum([1, 2, 3]) == 6
+    assert _sum([]) == 0
+    assert _sum([5]) == 5
+    assert _sum([-1, 1, -2, 2]) == 0
+    assert _sum([1.5, 2.5, 3.0]) == 7.0
+    print("All tests passed!")
+```
+
+**Explanation:**
+
+- The `_sum` function takes a list `arr` as input.
+- It initializes a variable `total` to `0`.
+- It iterates through each element in the array, adding it to `total`.
+- Finally, it returns the accumulated sum.
+- The `if __name__ == "__main__":` block runs several assertions to verify correctness, including the required `assert _sum([1, 2, 3]) == 6`.
+
+**Note:** While Python has a built-in `sum()` function, this implementation shows the manual approach. If you wanted a one-liner, you could simply use `return sum(arr)`.

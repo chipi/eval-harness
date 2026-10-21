@@ -1,0 +1,43 @@
+```python
+import math
+
+def zero_count(arr):
+    """
+    Find the ratio of zeroes to non-zeroes in an array of integers.
+    
+    Args:
+        arr: List of integers
+        
+    Returns:
+        Float representing the ratio of zeroes to non-zeroes
+    """
+    if len(arr) == 0:
+        return 0
+    
+    num_zeroes = arr.count(0)
+    num_non_zeroes = len(arr) - num_zeroes
+    
+    # Avoid division by zero
+    if num_non_zeroes == 0:
+        return 0
+    
+    return num_zeroes / num_non_zeroes
+
+
+# Test
+assert math.isclose(zero_count([0, 1, 2, -1, -5, 6, 0, -3, -2, 3, 4, 6, 8]), 0.181818, rel_tol=0.001)
+print("Test passed!")
+```
+
+**Explanation:**
+
+The function `zero_count()` calculates the ratio of zeroes to non-zeroes by:
+
+1. Counting the number of zeroes using `arr.count(0)`
+2. Calculating the number of non-zeroes as `len(arr) - num_zeroes`
+3. Returning the ratio `num_zeroes / num_non_zeroes`
+
+For the test case `[0, 1, 2, -1, -5, 6, 0, -3, -2, 3, 4, 6, 8]`:
+- There are 2 zeroes
+- There are 11 non-zeroes
+- Ratio = 2/11 ≈ 0.181818 ✓

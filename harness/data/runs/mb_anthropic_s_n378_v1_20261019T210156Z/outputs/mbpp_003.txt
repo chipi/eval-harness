@@ -1,0 +1,40 @@
+```python
+def is_not_prime(n):
+    """
+    Identify non-prime numbers.
+    Returns True if n is not prime, False if n is prime.
+    
+    Args:
+        n: An integer to check
+        
+    Returns:
+        True if n is not prime, False if n is prime
+    """
+    if n < 2:
+        return True
+    
+    if n == 2:
+        return False
+    
+    if n % 2 == 0:
+        return True
+    
+    for i in range(3, int(n**0.5) + 1, 2):
+        if n % i == 0:
+            return True
+    
+    return False
+
+
+# Test cases
+assert is_not_prime(2) == False
+assert is_not_prime(3) == False
+assert is_not_prime(4) == True
+assert is_not_prime(1) == True
+assert is_not_prime(0) == True
+assert is_not_prime(17) == False
+assert is_not_prime(18) == True
+assert is_not_prime(97) == False
+
+print("All tests passed!")
+```

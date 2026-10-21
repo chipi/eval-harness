@@ -1,0 +1,43 @@
+```python
+import re
+
+def text_match_two_three(text):
+    """
+    Checks whether a string contains the 'a' character followed by two or three 'b' characters.
+
+    Args:
+        text (str): The string to check.
+
+    Returns:
+        bool: True if the pattern is found, False otherwise.
+    """
+    # The regular expression 'abb?' matches:
+    # 'a' followed by exactly two 'b's (abb)
+    # OR
+    # 'a' followed by exactly three 'b's (abbb)
+    # The '?' makes the preceding 'b' (the second one) optional, but we need to
+    # ensure the total count is 2 or 3. A more precise way is to use a quantifier.
+    # The pattern 'ab{2,3}' matches 'a' followed by 2 or 3 'b's.
+    pattern = r'ab{2,3}'
+    
+    # re.search() finds the first location in the string where the pattern produces a match.
+    # It returns a match object if found, otherwise None.
+    # We convert the result to a boolean: True if a match is found, False otherwise.
+    return bool(re.search(pattern, text))
+
+# Example usage and assertions as provided in the problem description
+assert text_match_two_three("ac") == (False)
+
+# Additional test cases to demonstrate the function's behavior
+assert text_match_two_three("abb") == True
+assert text_match_two_three("abbb") == True
+assert text_match_two_three("ab") == False
+assert text_match_two_three("abbbb") == False
+assert text_match_two_three("aabb") == True # The pattern is found within the string
+assert text_match_two_three("cabb") == True # The pattern is found within the string
+assert text_match_two_three("acb") == False # The 'b' is not immediately after 'a'
+assert text_match_two_three("a") == False
+assert text_match_two_three("") == False
+
+print("All assertions passed.")
+```

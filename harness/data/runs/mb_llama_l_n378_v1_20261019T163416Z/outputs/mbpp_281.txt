@@ -1,0 +1,11 @@
+```python
+def all_unique(lst):
+    return len(lst) == len(set(lst))
+
+def main():
+    print(all_unique([1, 2, 3]))  # True
+    print(all_unique([1, 2, 2]))  # False
+
+if __name__ == "__main__":
+    main()
+```

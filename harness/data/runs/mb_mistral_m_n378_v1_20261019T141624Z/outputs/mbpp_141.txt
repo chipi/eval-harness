@@ -1,0 +1,40 @@
+Here's a self-contained Python script that implements the pancake sorting algorithm to solve the given problem:
+
+```python
+def pancake_sort(arr):
+    """
+    Sorts a list of elements using the pancake sorting algorithm.
+    The algorithm works by repeatedly flipping portions of the list to move the largest unsorted element to its correct position.
+    """
+    # Make a copy of the original list to avoid modifying it directly
+    arr = arr.copy()
+    n = len(arr)
+
+    for current_size in range(n, 1, -1):
+        # Find the index of the maximum element in the current unsorted portion
+        max_index = arr.index(max(arr[:current_size]))
+
+        # If the max element is not at the end, flip it to the front and then to its correct position
+        if max_index != current_size - 1:
+            # Flip the max element to the front (if it's not already there)
+            if max_index != 0:
+                arr[:max_index + 1] = reversed(arr[:max_index + 1])
+
+            # Flip the max element to its correct position
+            arr[:current_size] = reversed(arr[:current_size])
+
+    return arr
+
+# Test the function with the provided assertion
+assert pancake_sort([15, 79, 25, 38, 69]) == [15, 25, 38, 69, 79]
+```
+
+This script:
+1. Implements the pancake sort algorithm which works by:
+   - Finding the maximum element in the unsorted portion of the list
+   - Flipping it to the front (if it's not already there)
+   - Then flipping it to its correct position at the end of the unsorted portion
+2. Includes the required assertion test case
+3. Returns a new sorted list without modifying the original input list
+
+The algorithm has a time complexity of O(n²) in the worst case, which is typical for pancake sorting.

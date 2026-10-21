@@ -1,0 +1,52 @@
+We need to count sequences of length `n` where:
+
+- Each element is a positive integer.
+- Each element is at least twice the previous element.
+- Each element is at most `m`.
+
+---
+
+### Step-by-step reasoning
+
+Let’s define a function `count_sequences(m, n)`:
+
+- If `n == 1`, any integer from 1 to `m` is valid, so there are `m` sequences.
+- For `n > 1`, we can think recursively:
+  - Let `dp[length][value]` = number of sequences of given `length` ending with `value`.
+  - Base case: `dp[1][v] = 1` for all `1 <= v <= m`.
+  - Transition: For length `l > 1`, `dp[l][v] = sum(dp[l-1][u])` for all `u` such that `2*u <= v` (since `v >= 2*u`).
+  - Answer = sum over all `v` of `dp[n][v]`.
+
+We can optimize by precomputing prefix sums.
+
+---
+
+### Implementation
+
+```python
+def get_total_number_of_sequences(m, n):
+    # dp[v] = number of sequences of current length ending with value v
+    dp = [1] * (m + 1)  # length 1: each value 1..m is valid
+    dp[0] = 0  # 0 is not used
+    
+    for length in range(2, n + 1):
+        new_dp = [0] * (m + 1)
+        # prefix sums to quickly get sum of dp[1..v//2]
+        prefix = [0] * (m + 1)
+        for i in range(1, m + 1):
+            prefix[i] = prefix[i - 1] + dp[i]
+        
+        for v in range(1, m + 1):
+            max_prev = v // 2
+            if max_prev >= 1:
+                new_dp[v] = prefix[max_prev]
+            else:
+                new_dp[v] = 0
+        dp = new_dp
+    
+    return sum(dp[1:])
+
+# Test
+assert get_total_number_of_sequences(10, 4) == 4
+print(get_total_number_of_sequences(10, 4))  # should print 4
+```

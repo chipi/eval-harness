@@ -1,0 +1,31 @@
+Here's a self-contained Python script that solves the problem of finding the minimum `k` records from a list of tuples based on the second element of each tuple:
+
+```python
+def min_k(tuples_list, k):
+    """
+    Returns the k records with the smallest second element from a list of tuples.
+
+    Args:
+        tuples_list: List of tuples where each tuple is of the form (name, value)
+        k: Number of minimum records to return
+
+    Returns:
+        List of k tuples with the smallest values
+    """
+    # Sort the list of tuples based on the second element
+    sorted_list = sorted(tuples_list, key=lambda x: x[1])
+    # Return the first k elements
+    return sorted_list[:k]
+
+# Test case
+assert min_k([('Manjeet', 10), ('Akshat', 4), ('Akash', 2), ('Nikhil', 8)], 2) == [('Akash', 2), ('Akshat', 4)]
+print("Test passed!")
+```
+
+This script:
+1. Defines a function `min_k` that takes a list of tuples and an integer `k`
+2. Sorts the list of tuples based on the second element of each tuple
+3. Returns the first `k` elements from the sorted list
+4. Includes the test case from the problem statement to verify correctness
+
+The function will work for any list of tuples where the second element is comparable (like numbers), and will return the `k` tuples with the smallest values in ascending order.

@@ -1,0 +1,21 @@
+```python
+def number_ctr(s):
+    """
+    This function counts the number of digits in a given string.
+
+    Args:
+        s (str): The input string.
+
+    Returns:
+        int: The number of digits in the string.
+    """
+    return sum(c.isdigit() for c in s)
+
+# Test the function
+assert number_ctr('program2bedone') == 1
+print("All tests passed.")
+```
+
+In this script, we define a function `number_ctr` that takes a string `s` as input. It uses a generator expression to iterate over each character `c` in the string, and the `isdigit` method to check if the character is a digit. The `sum` function then adds up all the `True` values (which are equivalent to 1) to give the total count of digits.
+
+You can run this script to test the function. If the assertion passes, it will print "All tests passed."

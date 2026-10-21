@@ -1,0 +1,17 @@
+```python
+def unique_Element(lst):
+    """
+    Checks whether a list of numbers contains only one distinct element.
+
+    Args:
+        lst (list): A list of numbers.
+
+    Returns:
+        bool: True if the list contains only one distinct element, False otherwise.
+    """
+    return len(set(lst)) == 1
+
+# Example usage:
+print(unique_Element([1,1,1]))  # Output: True
+print(unique_Element([1,2,1]))  # Output: False
+```

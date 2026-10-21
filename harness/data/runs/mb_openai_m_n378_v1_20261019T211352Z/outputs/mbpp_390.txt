@@ -1,0 +1,26 @@
+```python
+"""
+Write a function to apply a given format string to all of the elements in a list.
+
+Example:
+assert add_string([1, 2, 3, 4], 'temp{0}') == ['temp1', 'temp2', 'temp3', 'temp4']
+"""
+
+def add_string(items, format_string):
+    """
+    Apply the given format string to every element in the list.
+
+    Args:
+        items: A list of elements.
+        format_string: A format string containing '{0}' as a placeholder.
+
+    Returns:
+        A list of formatted strings.
+    """
+    return [format_string.format(item) for item in items]
+
+
+if __name__ == "__main__":
+    assert add_string([1, 2, 3, 4], 'temp{0}') == ['temp1', 'temp2', 'temp3', 'temp4']
+    print("All tests passed.")
+```

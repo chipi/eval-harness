@@ -1,0 +1,20 @@
+```python
+def maxAverageOfPath(matrix):
+    def dfs(i, j, path_sum, count):
+        nonlocal max_avg
+        if i == j == len(matrix) - 1:
+            max_avg = max(max_avg, path_sum / count)
+            return
+        for x, y in [(i + 1, j), (i, j + 1)]:
+            if 0 <= x < len(matrix) and 0 <= y < len(matrix):
+                dfs(x, y, path_sum + matrix[x][y], count + 1)
+
+    max_avg = float('-inf')
+    dfs(0, 0, matrix[0][0], 1)
+    return max_avg
+
+# Test cases
+assert maxAverageOfPath([[1, 2, 3], [6, 5, 4], [7, 3, 9]]) == 5.2
+assert maxAverageOfPath([[1, 1, 1], [1, 1, 1], [1, 1, 1]]) == 1.0
+assert maxAverageOfPath([[1, 2, 3], [4, 5, 6], [7, 8, 9]]) == 5.0
+```

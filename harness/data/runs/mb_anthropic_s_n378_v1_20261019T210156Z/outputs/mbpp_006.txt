@@ -1,0 +1,62 @@
+```python
+def differ_At_One_Bit_Pos(num1, num2):
+    """
+    Check whether two numbers differ at one bit position only.
+    
+    Args:
+        num1: First number
+        num2: Second number
+    
+    Returns:
+        True if the numbers differ at exactly one bit position, False otherwise
+    
+    Approach:
+        1. XOR the two numbers - this will give 1s only at positions where bits differ
+        2. Check if the result is a power of 2 (has exactly one bit set)
+        3. A number is a power of 2 if: n > 0 and (n & (n-1)) == 0
+    """
+    # XOR the two numbers
+    xor_result = num1 ^ num2
+    
+    # Check if xor_result is a power of 2 (exactly one bit set)
+    # A power of 2 has only one bit set, so n & (n-1) == 0
+    return xor_result > 0 and (xor_result & (xor_result - 1)) == 0
+
+
+# Test cases
+if __name__ == "__main__":
+    assert differ_At_One_Bit_Pos(13, 9) == True
+    print("Test 1 passed: differ_At_One_Bit_Pos(13, 9) == True")
+    
+    # Additional test cases
+    assert differ_At_One_Bit_Pos(1, 3) == True  # 01 vs 11 (differ at 1 position)
+    print("Test 2 passed: differ_At_One_Bit_Pos(1, 3) == True")
+    
+    assert differ_At_One_Bit_Pos(5, 7) == True  # 101 vs 111 (differ at 1 position)
+    print("Test 3 passed: differ_At_One_Bit_Pos(5, 7) == True")
+    
+    assert differ_At_One_Bit_Pos(1, 5) == False  # 001 vs 101 (differ at 2 positions)
+    print("Test 4 passed: differ_At_One_Bit_Pos(1, 5) == False")
+    
+    assert differ_At_One_Bit_Pos(4, 4) == False  # Same numbers (differ at 0 positions)
+    print("Test 5 passed: differ_At_One_Bit_Pos(4, 4) == False")
+    
+    print("\nAll tests passed!")
+```
+
+**Explanation:**
+
+The solution uses the XOR (exclusive OR) operation combined with a power-of-2 check:
+
+1. **XOR Operation**: `num1 ^ num2` produces a result where each bit is 1 if the corresponding bits in num1 and num2 differ, and 0 if they're the same.
+
+2. **Power of 2 Check**: If exactly one bit differs, the XOR result will be a power of 2 (e.g., 1, 2, 4, 8, 16...). We check this using the formula: `n > 0 and (n & (n-1)) == 0`
+   - A power of 2 in binary has exactly one bit set
+   - When we subtract 1 from a power of 2, all bits after the single set bit become 1, and the set bit becomes 0
+   - ANDing these two numbers gives 0
+
+**Example with 13 and 9:**
+- 13 = 1101 (binary)
+- 9 = 1001 (binary)
+- XOR = 0100 (binary) = 4 (decimal)
+- 4 is a power of 2, so return True ✓

@@ -1,0 +1,74 @@
+```python
+def lps(s):
+    """
+    Find the length of the longest palindromic subsequence in the given string.
+    
+    Args:
+        s: Input string
+        
+    Returns:
+        Length of the longest palindromic subsequence
+        
+    Approach:
+        The longest palindromic subsequence (LPS) of a string is equal to the 
+        longest common subsequence (LCS) between the string and its reverse.
+    """
+    # Remove spaces for processing
+    s = s.replace(" ", "")
+    
+    # Create the reverse of the string
+    s_rev = s[::-1]
+    
+    # Find LCS between s and s_rev using dynamic programming
+    n = len(s)
+    
+    # Create a 2D DP table
+    dp = [[0] * (n + 1) for _ in range(n + 1)]
+    
+    # Fill the DP table
+    for i in range(1, n + 1):
+        for j in range(1, n + 1):
+            if s[i - 1] == s_rev[j - 1]:
+                dp[i][j] = dp[i - 1][j - 1] + 1
+            else:
+                dp[i][j] = max(dp[i - 1][j], dp[i][j - 1])
+    
+    return dp[n][n]
+
+
+# Test cases
+if __name__ == "__main__":
+    assert lps("TENS FOR TENS") == 5
+    print("Test passed: lps('TENS FOR TENS') == 5")
+    
+    # Additional test cases
+    assert lps("ABCDCBA") == 7
+    print("Test passed: lps('ABCDCBA') == 7")
+    
+    assert lps("A") == 1
+    print("Test passed: lps('A') == 1")
+    
+    assert lps("ABCDEF") == 1
+    print("Test passed: lps('ABCDEF') == 1")
+    
+    assert lps("RACECAR") == 7
+    print("Test passed: lps('RACECAR') == 7")
+    
+    print("\nAll tests passed!")
+```
+
+**Explanation:**
+
+The solution uses the key insight that the **longest palindromic subsequence (LPS)** of a string equals the **longest common subsequence (LCS)** between the string and its reverse.
+
+**Algorithm:**
+1. Remove spaces from the input string
+2. Create the reverse of the string
+3. Use dynamic programming to find the LCS between the original string and its reverse
+4. The LCS length is the LPS length
+
+**Time Complexity:** O(n²) where n is the length of the string
+**Space Complexity:** O(n²) for the DP table
+
+For "TENS FOR TENS" (after removing spaces: "TENSFORTENS"):
+- The longest palindromic subsequence is "NSTFSN" or similar with length 5

@@ -1,0 +1,43 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def change_date_format(date_str):
+    """
+    Convert a date from yyyy-mm-dd format to dd-mm-yyyy format.
+    
+    Args:
+        date_str (str): A date string in yyyy-mm-dd format.
+    
+    Returns:
+        str: The date string in dd-mm-yyyy format.
+    """
+    year, month, day = date_str.split('-')
+    return f"{day}-{month}-{year}"
+
+
+# Test the function
+assert change_date_format("2026-01-02") == '02-01-2026'
+print("Test passed!")
+print(change_date_format("2026-01-02"))
+```
+
+**How it works:**
+
+1. The function `change_date_format` takes a date string in `yyyy-mm-dd` format.
+2. It uses `split('-')` to break the string into three parts: year, month, and day.
+3. It then reassembles them in the order `day-month-year` using an f-string.
+4. The assertion verifies that `"2026-01-02"` correctly converts to `"02-01-2026"`.
+
+**Alternative using `datetime` (more robust for validation):**
+
+```python
+from datetime import datetime
+
+def change_date_format(date_str):
+    return datetime.strptime(date_str, "%Y-%m-%d").strftime("%d-%m-%Y")
+
+assert change_date_format("2026-01-02") == '02-01-2026'
+print("Test passed!")
+```
+
+The first version is simpler and sufficient for the given requirement, while the second version additionally validates that the input is a real calendar date.

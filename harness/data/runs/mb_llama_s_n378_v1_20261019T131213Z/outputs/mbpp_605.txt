@@ -1,0 +1,40 @@
+### Prime Number Checker Function
+#### Overview
+The following Python function checks if a given integer is a prime number.
+
+#### Code
+```python
+def prime_num(n):
+    """
+    Checks if the given integer is a prime number.
+
+    Args:
+        n (int): The number to check.
+
+    Returns:
+        bool: True if the number is prime, False otherwise.
+    """
+    if n <= 1:
+        return False
+    if n == 2:
+        return True
+    if n % 2 == 0:
+        return False
+    max_divisor = int(n**0.5) + 1
+    for d in range(3, max_divisor, 2):
+        if n % d == 0:
+            return False
+    return True
+
+# Example usage:
+if __name__ == "__main__":
+    print(prime_num(13))  # Expected output: True
+    print(prime_num(14))  # Expected output: False
+```
+
+#### Explanation
+
+*   The function `prime_num(n)` takes an integer `n` as input and returns a boolean value indicating whether it's prime or not.
+*   It first handles edge cases: numbers less than or equal to 1 are not prime, and 2 is the only even prime number.
+*   It then checks divisibility up to the square root of `n`, as any factor larger than that would have a corresponding factor smaller than the square root.
+*   If `n` is divisible by any number in this range, it's not a prime number. Otherwise, it is prime.

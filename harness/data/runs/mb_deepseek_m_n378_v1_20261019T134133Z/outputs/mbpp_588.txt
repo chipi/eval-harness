@@ -1,0 +1,37 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def big_diff(nums):
+    """
+    Find the difference between the largest and smallest value in a given list.
+    
+    Args:
+        nums: A list of numbers
+    
+    Returns:
+        The difference between the maximum and minimum values in the list
+    """
+    if not nums:
+        return 0
+    return max(nums) - min(nums)
+
+
+# Test cases
+assert big_diff([1, 2, 3, 4]) == 3
+assert big_diff([10, 3, 5, 6]) == 7
+assert big_diff([7, 2, 10, 9]) == 8
+assert big_diff([2, 10, 7, 2]) == 8
+assert big_diff([5]) == 0
+
+print("All tests passed!")
+```
+
+**How it works:**
+
+1. The function `big_diff` takes a list of numbers as input.
+2. It first checks if the list is empty — if so, it returns `0` to avoid errors from calling `max()`/`min()` on an empty sequence.
+3. It uses Python's built-in `max()` and `min()` functions to find the largest and smallest values, then subtracts the smallest from the largest.
+4. The `assert` statements verify the function against several test cases, including the one provided in the problem.
+
+**Example:**
+- For `[1, 2, 3, 4]`: `max = 4`, `min = 1`, so `4 - 1 = 3` ✓

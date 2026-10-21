@@ -1,0 +1,48 @@
+Here's a self-contained Python script that solves the problem by converting multiple lists into a nested dictionary structure as specified:
+
+```python
+def convert_list_dictionary(keys, names, values):
+    """
+    Converts multiple lists into a list of nested dictionaries.
+
+    Args:
+        keys: List of keys for the outer dictionary
+        names: List of names for the inner dictionary
+        values: List of values for the inner dictionary
+
+    Returns:
+        A list of dictionaries where each dictionary has one key from 'keys'
+        and its value is another dictionary with one key from 'names' and
+        one value from 'values'
+    """
+    return [{k: {n: v}} for k, n, v in zip(keys, names, values)]
+
+# Test the function
+assert convert_list_dictionary(
+    ["S001", "S002", "S003", "S004"],
+    ["Adina Park", "Leyton Marsh", "Duncan Boyle", "Saim Richards"],
+    [85, 98, 89, 92]
+) == [
+    {'S001': {'Adina Park': 85}},
+    {'S002': {'Leyton Marsh': 98}},
+    {'S003': {'Duncan Boyle': 89}},
+    {'S004': {'Saim Richards': 92}}
+]
+
+# Example usage
+if __name__ == "__main__":
+    result = convert_list_dictionary(
+        ["S001", "S002", "S003", "S004"],
+        ["Adina Park", "Leyton Marsh", "Duncan Boyle", "Saim Richards"],
+        [85, 98, 89, 92]
+    )
+    print(result)
+```
+
+This script:
+1. Defines the `convert_list_dictionary` function that takes three lists as input
+2. Uses a list comprehension with `zip()` to combine the three lists into the desired nested dictionary structure
+3. Includes the assertion test from the problem statement
+4. Has an example usage block that demonstrates the function when run directly
+
+The function creates a list where each element is a dictionary with one key from the first list, and its value is another dictionary with one key from the second list and one value from the third list.

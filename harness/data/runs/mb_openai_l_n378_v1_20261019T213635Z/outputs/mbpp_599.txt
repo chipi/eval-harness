@@ -1,0 +1,12 @@
+```python
+def sum_average(n):
+    """Return the sum and average of the first n natural numbers."""
+    if n <= 0:
+        raise ValueError("n must be a positive integer")
+
+    total = n * (n + 1) // 2
+    return total, total / n
+
+
+assert sum_average(10) == (55, 5.5)
+```

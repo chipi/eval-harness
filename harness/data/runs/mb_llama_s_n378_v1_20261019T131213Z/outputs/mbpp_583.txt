@@ -1,0 +1,34 @@
+### Catalan Number Calculation
+#### Problem Statement
+Write a function which returns the nth Catalan number.
+
+#### Solution
+
+```python
+import math
+
+def catalan_number(n):
+    """
+    Calculate the nth Catalan number.
+
+    Args:
+    n (int): The index of the Catalan number to calculate.
+
+    Returns:
+    int: The nth Catalan number.
+    """
+    return math.comb(2 * n, n) // (n + 1)
+
+# Example usage:
+if __name__ == "__main__":
+    assert catalan_number(10) == 16796
+    print("All tests passed.")
+```
+
+#### Explanation
+
+*   The `math.comb` function is used to calculate the binomial coefficient, which is the number of ways to choose `n` items from a set of `2n` items without regard to order.
+*   The formula for the nth Catalan number is `C(n) = (2n)! / ((n+1)! * n!)`, which can be rewritten as `C(n) = comb(2n, n) / (n + 1)`. This is the formula used in the `catalan_number` function.
+*   The `//` operator is used for integer division to ensure that the result is an integer.
+
+This script defines a function `catalan_number` that calculates the nth Catalan number and includes an example usage in the `if __name__ == "__main__":` block.

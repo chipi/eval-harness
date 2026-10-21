@@ -1,0 +1,22 @@
+```python
+def check_distinct(test_tup):
+    """
+    Check if a given tuple contains no duplicates.
+    
+    Args:
+    test_tup (tuple): The input tuple to check for duplicates.
+    
+    Returns:
+    bool: True if all elements are distinct, False otherwise.
+    """
+    return len(test_tup) == len(set(test_tup))
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert check_distinct((1, 4, 5, 6, 1, 4)) == False
+    assert check_distinct((1, 2, 3, 4, 5)) == True
+    assert check_distinct(()) == True
+    assert check_distinct((1,)) == True
+    assert check_distinct((1, 1)) == False
+    print("All tests passed!")
+```

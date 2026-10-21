@@ -1,0 +1,65 @@
+```python
+def max_product(arr):
+    """
+    Find the maximum product formed by multiplying numbers of an increasing subsequence.
+    
+    Args:
+        arr: List of integers
+        
+    Returns:
+        The maximum product of any increasing subsequence
+    """
+    if not arr:
+        return 0
+    
+    n = len(arr)
+    # dp[i] stores the maximum product of increasing subsequence ending at index i
+    dp = arr[:]
+    
+    for i in range(n):
+        for j in range(i):
+            # If arr[j] < arr[i], we can extend the subsequence ending at j
+            if arr[j] < arr[i]:
+                dp[i] = max(dp[i], dp[j] * arr[i])
+    
+    return max(dp)
+
+
+# Test cases
+if __name__ == "__main__":
+    assert max_product([3, 100, 4, 5, 150, 6]) == 3000
+    print("Test 1 passed: max_product([3, 100, 4, 5, 150, 6]) == 3000")
+    
+    assert max_product([1, 2, 3, 4, 5]) == 120
+    print("Test 2 passed: max_product([1, 2, 3, 4, 5]) == 120")
+    
+    assert max_product([5, 4, 3, 2, 1]) == 5
+    print("Test 3 passed: max_product([5, 4, 3, 2, 1]) == 5")
+    
+    assert max_product([1]) == 1
+    print("Test 4 passed: max_product([1]) == 1")
+    
+    assert max_product([2, 5, 3, 7]) == 70
+    print("Test 5 passed: max_product([2, 5, 3, 7]) == 70")
+    
+    print("\nAll tests passed!")
+```
+
+**Explanation:**
+
+The solution uses dynamic programming to solve this problem:
+
+1. **dp[i]**: Stores the maximum product of an increasing subsequence ending at index i
+2. **Initialization**: Each element starts as its own product (subsequence of length 1)
+3. **Recurrence**: For each position i, we check all previous positions j:
+   - If `arr[j] < arr[i]` (strictly increasing), we can extend the subsequence ending at j by multiplying it with `arr[i]`
+   - We take the maximum of either starting fresh at i or extending from j
+4. **Result**: Return the maximum value in the dp array
+
+**Time Complexity**: O(n²)
+**Space Complexity**: O(n)
+
+For the example `[3, 100, 4, 5, 150, 6]`:
+- The increasing subsequence `[3, 100, 150]` gives product 3000
+- The increasing subsequence `[4, 5, 150]` gives product 3000
+- Both are optimal solutions

@@ -1,0 +1,22 @@
+```python
+def larg_nnum(lst, n):
+    """
+    Takes in a list and an integer n and returns a list containing 
+    the n largest items from the list.
+    """
+    # Sort the list in descending order and take the first n elements
+    return sorted(lst, reverse=True)[:n]
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    test_list = [10, 20, 50, 70, 90, 20, 50, 40, 60, 80, 100]
+    n = 2
+    result = larg_nnum(test_list, n)
+    
+    # Assertion check
+    assert set(result) == set([100, 90])
+    
+    print(f"Input list: {test_list}")
+    print(f"Requested top {n}: {result}")
+    print("Assertion passed successfully!")
+```

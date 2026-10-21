@@ -1,0 +1,71 @@
+Here's a self-contained Python script that calculates the nth Jacobsthal number using both a recursive approach (with memoization for efficiency) and an iterative approach:
+
+```python
+def jacobsthal_num(n, memo=None):
+    """
+    Calculate the nth Jacobsthal number using recursion with memoization.
+
+    The Jacobsthal numbers follow the recurrence relation:
+    J(n) = J(n-1) + 2*J(n-2) for n > 1
+    with base cases J(0) = 0 and J(1) = 1.
+
+    Args:
+        n (int): The index of the Jacobsthal number to compute.
+        memo (dict): Dictionary for memoization (used internally).
+
+    Returns:
+        int: The nth Jacobsthal number.
+    """
+    if memo is None:
+        memo = {0: 0, 1: 1}
+
+    if n not in memo:
+        memo[n] = jacobsthal_num(n-1, memo) + 2 * jacobsthal_num(n-2, memo)
+    return memo[n]
+
+def jacobsthal_num_iterative(n):
+    """
+    Calculate the nth Jacobsthal number using an iterative approach.
+
+    Args:
+        n (int): The index of the Jacobsthal number to compute.
+
+    Returns:
+        int: The nth Jacobsthal number.
+    """
+    if n == 0:
+        return 0
+    elif n == 1:
+        return 1
+
+    a, b = 0, 1
+    for _ in range(2, n+1):
+        a, b = b, b + 2 * a
+    return b
+
+# Test the function
+assert jacobsthal_num(5) == 11
+assert jacobsthal_num_iterative(5) == 11
+
+# Example usage
+if __name__ == "__main__":
+    n = 10
+    print(f"The {n}th Jacobsthal number (recursive) is: {jacobsthal_num(n)}")
+    print(f"The {n}th Jacobsthal number (iterative) is: {jacobsthal_num_iterative(n)}")
+```
+
+### Explanation:
+1. **Recursive Approach with Memoization**:
+   - The function `jacobsthal_num` uses memoization to store previously computed values to avoid redundant calculations.
+   - The base cases are `J(0) = 0` and `J(1) = 1`.
+   - For `n > 1`, the function uses the recurrence relation `J(n) = J(n-1) + 2*J(n-2)`.
+
+2. **Iterative Approach**:
+   - The function `jacobsthal_num_iterative` computes the Jacobsthal number iteratively, which is more efficient for large `n` as it avoids the overhead of recursive calls.
+   - It uses a loop to build up the result from the base cases.
+
+3. **Testing**:
+   - The script includes an assertion to verify that the function works correctly for `n = 5` (which should return `11`).
+   - The example usage at the bottom demonstrates how to call the functions and print the result for `n = 10`.
+
+Both approaches will correctly compute the Jacobsthal numbers, but the iterative approach is generally preferred for larger values of `n` due to its better performance.

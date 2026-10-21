@@ -1,0 +1,39 @@
+```python
+import math
+
+def perfect_squares(start, end):
+    """
+    Find all perfect squares between two given numbers (inclusive).
+    
+    Args:
+        start (int): The starting number of the range.
+        end (int): The ending number of the range.
+        
+    Returns:
+        list: A list of perfect squares within the given range.
+    """
+    if start > end:
+        return []
+        
+    # Find the smallest integer whose square is >= start
+    first_root = math.ceil(math.sqrt(start))
+    
+    # Find the largest integer whose square is <= end
+    last_root = math.floor(math.sqrt(end))
+    
+    # Generate the perfect squares
+    return [i * i for i in range(first_root, last_root + 1)]
+
+if __name__ == "__main__":
+    # Test the function with the provided assertion
+    assert perfect_squares(1, 30) == [1, 4, 9, 16, 25], "Test case failed!"
+    
+    # Additional test cases
+    assert perfect_squares(10, 50) == [16, 25, 36, 49]
+    assert perfect_squares(16, 16) == [16]
+    assert perfect_squares(17, 24) == [25] # Wait, 25 is > 24, so it should be []
+    assert perfect_squares(17, 24) == []
+    assert perfect_squares(50, 20) == []
+    
+    print("All test cases passed!")
+```

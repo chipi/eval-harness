@@ -1,0 +1,22 @@
+```python
+from heapq import nlargest
+
+def large_product(list1, list2, k):
+    """
+    Return the k largest products formed by picking one element from list1
+    and one element from list2.
+
+    The result is sorted in descending order.
+    """
+    if k <= 0 or not list1 or not list2:
+        return []
+
+    # Generate all pairwise products and take the k largest
+    products = (a * b for a in list1 for b in list2)
+    return nlargest(k, products)
+
+
+if __name__ == "__main__":
+    assert large_product([1, 2, 3, 4, 5, 6], [3, 6, 8, 9, 10, 6], 3) == [60, 54, 50]
+    print("All tests passed.")
+```

@@ -1,0 +1,11 @@
+```python
+def change_date_format(date_str):
+    year, month, day = date_str.split('-')
+    return f'{day}-{month}-{year}'
+
+def main():
+    print(change_date_format("2026-01-02"))  # Outputs: '02-01-2026'
+
+if __name__ == "__main__":
+    main()
+```

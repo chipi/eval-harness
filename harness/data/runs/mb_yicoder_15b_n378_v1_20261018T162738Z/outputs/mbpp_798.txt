@@ -1,0 +1,9 @@
+```python
+def _sum(arr):
+    return sum(arr)
+
+assert _sum([1, 2, 3]) == 6
+assert _sum([5, 10, 15]) == 30
+assert _sum([-1, -2, -3]) == -6
+assert _sum([]) == 0
+```

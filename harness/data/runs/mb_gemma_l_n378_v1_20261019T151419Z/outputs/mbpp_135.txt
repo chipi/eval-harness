@@ -1,0 +1,22 @@
+```python
+def hexagonal_num(n):
+    """
+    Calculates the nth hexagonal number.
+    The formula for the nth hexagonal number is Hn = n(2n - 1).
+    """
+    return n * (2 * n - 1)
+
+if __name__ == "__main__":
+    # Test the function with the provided assertion
+    try:
+        assert hexagonal_num(10) == 190
+        print("Test passed: hexagonal_num(10) == 190")
+    except AssertionError:
+        print("Test failed: hexagonal_num(10) does not equal 190")
+
+    # Additional test cases
+    test_cases = {1: 1, 2: 6, 3: 15, 4: 28, 5: 45}
+    for n, expected in test_cases.items():
+        result = hexagonal_num(n)
+        print(f"n={n}: expected {expected}, got {result} - {'Pass' if result == expected else 'Fail'}")
+```

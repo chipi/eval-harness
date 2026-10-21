@@ -1,0 +1,31 @@
+```python
+def occurrence_substring(string, substring):
+    """
+    This function finds the occurrence and position of a substring within a string.
+    
+    Args:
+        string (str): The main string to search in.
+        substring (str): The substring to search for.
+    
+    Returns:
+        tuple or None: A tuple containing the substring, its start position, and its end position. 
+                       Returns None if the substring is not found.
+    """
+    try:
+        # Find the index of the substring
+        index = string.index(substring)
+        
+        # Calculate the end position
+        end = index + len(substring)
+        
+        # Return the substring, start position, and end position
+        return (substring, index, end)
+    
+    except ValueError:
+        # If the substring is not found, return None
+        return None
+
+# Test the function
+print(occurrence_substring('python programming, python language','python'))  # ('python', 0, 6)
+print(occurrence_substring('hello world', 'java'))  # None
+```

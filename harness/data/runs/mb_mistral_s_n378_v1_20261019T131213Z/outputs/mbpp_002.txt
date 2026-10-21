@@ -1,0 +1,28 @@
+Here's a self-contained Python script that solves the problem of finding shared elements between two lists:
+
+```python
+def similar_elements(list1, list2):
+    """
+    Returns a set of elements that are present in both input lists.
+
+    Args:
+        list1: First input list
+        list2: Second input list
+
+    Returns:
+        A set containing elements common to both lists
+    """
+    return set(list1) & set(list2)
+
+# Test case
+assert set(similar_elements((3, 4, 5, 6), (5, 7, 4, 10))) == set((4, 5))
+print("Test passed!")
+```
+
+This script:
+1. Defines a function `similar_elements` that takes two lists as input
+2. Converts both lists to sets and uses the set intersection operator `&` to find common elements
+3. Includes the provided test case to verify the function works correctly
+4. Prints a confirmation message if the test passes
+
+The function works with any iterable (not just tuples) and returns the shared elements as a set, which matches the expected output format in the test case.

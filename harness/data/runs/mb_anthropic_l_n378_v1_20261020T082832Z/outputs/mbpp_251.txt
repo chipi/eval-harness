@@ -1,0 +1,37 @@
+```python
+"""
+Write a function that takes in a list and an element and inserts the element before each element in the list, and returns the resulting list.
+assert insert_element(['Red', 'Green', 'Black'] ,'c')==['c', 'Red', 'c', 'Green', 'c', 'Black']
+"""
+
+
+def insert_element(lst, element):
+    """
+    Insert `element` before each item of `lst`.
+
+    Args:
+        lst: The input list.
+        element: The element to insert before every item of `lst`.
+
+    Returns:
+        A new list where `element` precedes each original item.
+    """
+    result = []
+    for item in lst:
+        result.append(element)
+        result.append(item)
+    return result
+
+
+if __name__ == "__main__":
+    assert insert_element(['Red', 'Green', 'Black'], 'c') == \
+        ['c', 'Red', 'c', 'Green', 'c', 'Black']
+    assert insert_element(['python', 'java'], 'program') == \
+        ['program', 'python', 'program', 'java']
+    assert insert_element(['happy', 'sad'], 'laugh') == \
+        ['laugh', 'happy', 'laugh', 'sad']
+    assert insert_element([], 'x') == []
+
+    print(insert_element(['Red', 'Green', 'Black'], 'c'))
+    print("All tests passed!")
+```

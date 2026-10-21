@@ -1,0 +1,18 @@
+```python
+def second_smallest(lst):
+    """Find the second smallest number in a list."""
+    if len(lst) < 2:
+        raise ValueError("List must contain at least 2 elements")
+    
+    # Get unique sorted values
+    unique_sorted = sorted(set(lst))
+    
+    if len(unique_sorted) < 2:
+        raise ValueError("List must contain at least 2 distinct values")
+    
+    return unique_sorted[1]
+
+
+# Test
+assert second_smallest([1, 2, -8, -2, 0, -2]) == -2
+```

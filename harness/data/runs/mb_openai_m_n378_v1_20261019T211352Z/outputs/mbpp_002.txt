@@ -1,0 +1,22 @@
+```python
+#!/usr/bin/env python3
+"""
+Write a function to find the shared elements from the given two lists/tuples.
+
+Example:
+assert set(similar_elements((3, 4, 5, 6), (5, 7, 4, 10))) == set((4, 5))
+"""
+
+def similar_elements(list1, list2):
+    """
+    Return the elements that appear in both input iterables.
+
+    The result is returned as a list. Duplicate shared values are included only once.
+    """
+    return list(set(list1) & set(list2))
+
+
+if __name__ == "__main__":
+    assert set(similar_elements((3, 4, 5, 6), (5, 7, 4, 10))) == set((4, 5))
+    print("All tests passed.")
+```

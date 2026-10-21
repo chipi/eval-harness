@@ -1,0 +1,32 @@
+```python
+def empty_list(N):
+    """
+    Creates a list of N empty dictionaries.
+    
+    Args:
+        N (int): The number of empty dictionaries to create.
+        
+    Returns:
+        list: A list containing N distinct empty dictionary objects.
+    """
+    # We use a list comprehension to ensure that each dictionary 
+    # is a unique object in memory. Using [{}]*N would create 
+    # a list of N references to the same single dictionary.
+    return [{} for _ in range(N)]
+
+if __name__ == "__main__":
+    # Test the function with the provided assertion
+    try:
+        assert empty_list(5) == [{}, {}, {}, {}, {}]
+        print("Test passed!")
+    except AssertionError:
+        print("Test failed!")
+
+    # Additional check to ensure dictionaries are distinct objects
+    result = empty_list(2)
+    result[0]['key'] = 'value'
+    if result[1] == {}:
+        print("Verification successful: Dictionaries are independent objects.")
+    else:
+        print("Verification failed: Dictionaries are referencing the same object.")
+```

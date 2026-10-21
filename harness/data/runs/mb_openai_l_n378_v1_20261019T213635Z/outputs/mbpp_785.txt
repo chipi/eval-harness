@@ -1,0 +1,16 @@
+```python
+import ast
+
+
+def tuple_str_int(value: str) -> tuple[int, ...]:
+    """Convert a string such as '(7, 8, 9)' to a tuple of integers."""
+    result = ast.literal_eval(value)
+    if not isinstance(result, tuple) or any(
+        type(item) is not int for item in result
+    ):
+        raise ValueError("Expected a tuple of integers")
+    return result
+
+
+assert tuple_str_int("(7, 8, 9)") == (7, 8, 9)
+```

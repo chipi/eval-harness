@@ -1,0 +1,40 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def snake_to_camel(snake_str):
+    """
+    Convert a snake case string to camel case string.
+    
+    Args:
+        snake_str: A string in snake_case format
+        
+    Returns:
+        A string in CamelCase format
+    """
+    # Split the string by underscores
+    words = snake_str.split('_')
+    
+    # Capitalize the first letter of each word and join them
+    camel_case = ''.join(word.capitalize() for word in words)
+    
+    return camel_case
+
+# Test the function
+if __name__ == "__main__":
+    # Test case from the problem
+    assert snake_to_camel('python_program') == 'PythonProgram'
+    
+    # Additional test cases
+    assert snake_to_camel('hello_world') == 'HelloWorld'
+    assert snake_to_camel('this_is_a_test') == 'ThisIsATest'
+    assert snake_to_camel('single') == 'Single'
+    assert snake_to_camel('') == ''
+    
+    print("All tests passed!")
+```
+
+This solution:
+1. Splits the snake_case string by underscores
+2. Capitalizes the first letter of each word using `str.capitalize()`
+3. Joins all the words together without any separators
+4. Includes the required test case and additional test cases to verify the function works correctly

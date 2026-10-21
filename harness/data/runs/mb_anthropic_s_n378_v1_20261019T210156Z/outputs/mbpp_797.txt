@@ -1,0 +1,50 @@
+```python
+def sum_in_range(l, r):
+    """
+    Find the sum of all odd natural numbers within the range l and r (inclusive).
+    
+    Args:
+        l: Left boundary of the range
+        r: Right boundary of the range
+    
+    Returns:
+        Sum of all odd natural numbers in the range [l, r]
+    
+    Examples:
+        >>> sum_in_range(2, 5)
+        8
+        >>> sum_in_range(1, 10)
+        25
+    """
+    total = 0
+    for num in range(l, r + 1):
+        if num % 2 == 1:  # Check if the number is odd
+            total += num
+    return total
+
+
+# Test cases
+if __name__ == "__main__":
+    assert sum_in_range(2, 5) == 8, "Test case 1 failed"
+    print("Test case 1 passed: sum_in_range(2, 5) =", sum_in_range(2, 5))
+    
+    assert sum_in_range(1, 10) == 25, "Test case 2 failed"
+    print("Test case 2 passed: sum_in_range(1, 10) =", sum_in_range(1, 10))
+    
+    assert sum_in_range(1, 1) == 1, "Test case 3 failed"
+    print("Test case 3 passed: sum_in_range(1, 1) =", sum_in_range(1, 1))
+    
+    assert sum_in_range(2, 2) == 0, "Test case 4 failed"
+    print("Test case 4 passed: sum_in_range(2, 2) =", sum_in_range(2, 2))
+    
+    print("\nAll tests passed!")
+```
+
+**Explanation:**
+
+The function `sum_in_range(l, r)` iterates through all numbers in the range `[l, r]` (inclusive) and sums up only the odd numbers.
+
+For the example `sum_in_range(2, 5)`:
+- Range: 2, 3, 4, 5
+- Odd numbers: 3, 5
+- Sum: 3 + 5 = 8 ✓

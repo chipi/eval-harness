@@ -1,0 +1,67 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+"""
+Write a python function to find nth bell number.
+assert bell_Number(2) == 2
+"""
+
+def bell_Number(n):
+    """
+    Find the nth Bell number using the Bell triangle (Aitken's triangle).
+    
+    Bell numbers count the number of ways to partition a set of n elements.
+    Bell(0) = 1, Bell(1) = 1, Bell(2) = 2, Bell(3) = 5, Bell(4) = 15, ...
+    
+    The Bell triangle is constructed as follows:
+    - The first row starts with 1.
+    - The first element of each row equals the last element of the previous row.
+    - Every other element equals the sum of the element to its left 
+      and the element above-left (diagonally).
+    - The first element of row n is the nth Bell number.
+    """
+    if n < 0:
+        raise ValueError("n must be a non-negative integer")
+    
+    # Create the Bell triangle
+    triangle = [[1]]  # Row 0 corresponds to Bell(0) = 1
+    
+    for i in range(1, n + 1):
+        prev_row = triangle[i - 1]
+        new_row = [prev_row[-1]]  # First element = last element of previous row
+        
+        for j in range(1, i + 1):
+            new_row.append(new_row[j - 1] + prev_row[j - 1])
+        
+        triangle.append(new_row)
+    
+    # The first element of row n is the nth Bell number
+    return triangle[n][0]
+
+
+# Test cases
+if __name__ == "__main__":
+    assert bell_Number(2) == 2
+    assert bell_Number(0) == 1
+    assert bell_Number(1) == 1
+    assert bell_Number(3) == 5
+    assert bell_Number(4) == 15
+    assert bell_Number(5) == 52
+    assert bell_Number(6) == 203
+    print("All tests passed!")
+    
+    # Demonstrate the sequence
+    print("Bell numbers (n=0 to 10):")
+    print([bell_Number(i) for i in range(11)])
+```
+
+**How it works:**
+
+The Bell triangle (also called Aitken's array) is a triangular array used to compute Bell numbers efficiently:
+
+1. **Row 0**: `[1]`
+2. **Row 1**: First element = last of previous row = `1`. Then add: `1 + 1 = 2`. → `[1, 2]`
+3. **Row 2**: First element = last of previous row = `2`. Then add: `2 + 1 = 3`, `3 + 2 = 5`. → `[2, 3, 5]`
+4. **Row 3**: First element = last of previous row = `5`. Then add: `5 + 2 = 7`, `7 + 3 = 10`, `10 + 5 = 15`. → `[5, 7, 10, 15]`
+
+The **first element** of row `n` is `Bell(n)`. The time complexity is **O(n²)** and space complexity is **O(n²)** (can be optimized to O(n) using a single array if needed).

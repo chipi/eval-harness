@@ -1,0 +1,28 @@
+```python
+def find_solution(a, b, n):
+    """
+    This function returns integers x and y that satisfy ax + by = n as a tuple, 
+    or return None if no solution exists.
+
+    Args:
+        a (int): The coefficient of x.
+        b (int): The coefficient of y.
+        n (int): The target sum.
+
+    Returns:
+        tuple: A tuple containing the values of x and y, or None if no solution exists.
+    """
+    # Iterate over all possible values of x
+    for x in range(n + 1):
+        # Calculate the corresponding value of y
+        y = (n - a * x) / b
+        # Check if y is an integer
+        if y == int(y) and y >= 0:
+            # Return the solution as a tuple
+            return (x, int(y))
+    # If no solution is found, return None
+    return None
+
+# Test the function
+print(find_solution(2, 3, 7))  # Output: (2, 1)
+```

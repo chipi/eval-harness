@@ -1,0 +1,29 @@
+```python
+import math
+
+def next_Perfect_Square(n):
+    """
+    Finds the next perfect square greater than a given number n.
+    """
+    if n < 0:
+        return 0
+    
+    # Find the square root of n
+    root = math.isqrt(n)
+    
+    # The next perfect square will be the square of (root + 1)
+    return (root + 1) ** 2
+
+# Test cases
+if __name__ == "__main__":
+    # Provided assertion
+    assert next_Perfect_Square(35) == 36
+    
+    # Additional test cases
+    assert next_Perfect_Square(0) == 1
+    assert next_Perfect_Square(1) == 4
+    assert next_Perfect_Square(16) == 25  # Must be GREATER than n
+    assert next_Perfect_Square(10) == 16
+    
+    print("All tests passed!")
+```

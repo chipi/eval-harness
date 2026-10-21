@@ -1,0 +1,27 @@
+```python
+def extract_singly(list_of_lists):
+    """
+    Flattens a list of lists (or tuples) into a single set of numbers.
+    
+    Args:
+        list_of_lists (list): A list containing iterable collections of numbers.
+        
+    Returns:
+        set: A set containing all unique numbers found in the input collections.
+    """
+    # Use a set comprehension to iterate through each sub-collection 
+    # and each item within those collections.
+    return {item for sublist in list_of_lists for item in sublist}
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    input_data = [(3, 4, 5), (4, 5, 7), (1, 4)]
+    expected_output = set([3, 4, 5, 7, 1])
+    
+    result = extract_singly(input_data)
+    
+    assert set(result) == expected_output
+    print(f"Input: {input_data}")
+    print(f"Result: {result}")
+    print("Assertion passed successfully!")
+```

@@ -1,0 +1,28 @@
+```python
+def sum_in_range(l, r):
+    def sum_odd_upto(n):
+        count = (n + 1) // 2
+        return count * count
+
+    return sum_odd_upto(r) - sum_odd_upto(l - 1)
+
+
+# Test cases
+assert sum_in_range(2, 5) == 8
+print(sum_in_range(2, 5))
+```
+
+**Explanation:**
+
+The function uses the mathematical fact that the sum of the first `k` odd numbers is `k²`.
+
+- `sum_odd_upto(n)` calculates the sum of all odd numbers from 1 up to `n`.
+  - The count of odd numbers from 1 to `n` is `(n + 1) // 2`.
+  - The sum of the first `count` odd numbers is `count * count`.
+- To get the sum of odd numbers in the range `[l, r]`, we compute `sum_odd_upto(r) - sum_odd_upto(l - 1)`.
+
+**Verification with the example:**
+- For `l=2, r=5`: odd numbers in range are 3 and 5, sum = 8.
+- `sum_odd_upto(5)` = count of odd numbers up to 5 = 3 (1,3,5) → 3² = 9
+- `sum_odd_upto(1)` = count of odd numbers up to 1 = 1 (1) → 1² = 1
+- Result: 9 - 1 = 8 ✓

@@ -1,0 +1,61 @@
+Looking at this problem, I need to compute the surface area of a sphere using the formula **A = 4πr²**.
+
+Let me verify with the test case: `4 × π × 10² = 400π ≈ 1256.6370614359173` ✓
+
+```python
+"""
+Write a function to find the surface area of a sphere.
+assert math.isclose(surfacearea_sphere(10), 1256.6370614359173, rel_tol=0.001)
+"""
+
+import math
+
+
+def surfacearea_sphere(r):
+    """
+    Calculate the surface area of a sphere given its radius.
+
+    The surface area of a sphere is given by the formula:
+        A = 4 * pi * r^2
+
+    Parameters
+    ----------
+    r : int or float
+        The radius of the sphere (must be non-negative).
+
+    Returns
+    -------
+    float
+        The surface area of the sphere.
+    """
+    if r < 0:
+        raise ValueError("Radius cannot be negative.")
+    return 4 * math.pi * r * r
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert math.isclose(surfacearea_sphere(10), 1256.6370614359173, rel_tol=0.001)
+
+    # Additional test cases
+    assert math.isclose(surfacearea_sphere(15), 2827.4333882308138, rel_tol=0.001)
+    assert math.isclose(surfacearea_sphere(20), 5026.548245743669, rel_tol=0.001)
+    assert math.isclose(surfacearea_sphere(0), 0.0, rel_tol=0.001)
+    assert math.isclose(surfacearea_sphere(1), 12.566370614359172, rel_tol=0.001)
+
+    # Demonstration
+    for radius in (1, 5, 10, 2.5):
+        print(f"Radius: {radius:>5} -> Surface Area: {surfacearea_sphere(radius):.6f}")
+
+    print("\nAll tests passed!")
+```
+
+**Output:**
+```
+Radius:     1 -> Surface Area: 12.566371
+Radius:     5 -> Surface Area: 314.159265
+Radius:    10 -> Surface Area: 1256.637061
+Radius:   2.5 -> Surface Area: 78.539816
+
+All tests passed!
+```

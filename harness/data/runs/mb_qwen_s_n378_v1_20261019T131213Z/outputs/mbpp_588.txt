@@ -1,0 +1,16 @@
+```python
+def big_diff(lst):
+    """
+    Find the difference between the largest and smallest value in a given list.
+    
+    Args:
+        lst: A list of numbers
+        
+    Returns:
+        The difference between the maximum and minimum values in the list
+    """
+    return max(lst) - min(lst)
+
+# Test case
+assert big_diff([1, 2, 3, 4]) == 3
+```

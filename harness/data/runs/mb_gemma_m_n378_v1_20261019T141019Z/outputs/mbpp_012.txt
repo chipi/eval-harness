@@ -1,0 +1,29 @@
+```python
+def sort_matrix(matrix):
+    """
+    Sorts a given matrix in ascending order according to the sum of its rows.
+    
+    Args:
+        matrix (list of list of int/float): The input matrix.
+        
+    Returns:
+        list of list of int/float: The sorted matrix.
+    """
+    # The sorted function takes a key argument. 
+    # We provide a lambda function that calculates the sum of each row (x).
+    return sorted(matrix, key=lambda x: sum(x))
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    input_matrix = [[1, 2, 3], [2, 4, 5], [1, 1, 1]]
+    expected_output = [[1, 1, 1], [1, 2, 3], [2, 4, 5]]
+    
+    result = sort_matrix(input_matrix)
+    
+    # Assertion to verify correctness
+    assert result == expected_output, f"Expected {expected_output}, but got {result}"
+    
+    print("Test passed successfully!")
+    print(f"Input:    {input_matrix}")
+    print(f"Output:   {result}")
+```

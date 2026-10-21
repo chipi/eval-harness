@@ -1,0 +1,20 @@
+```python
+def all_unique(lst):
+    """
+    Checks if all elements in a given list are unique.
+
+    Args:
+        lst (list): The list to check.
+
+    Returns:
+        bool: True if all elements are unique, False otherwise.
+    """
+    return len(lst) == len(set(lst))
+
+# Example usage:
+if __name__ == "__main__":
+    print(all_unique([1, 2, 3]))  # Expected output: True
+    print(all_unique([1, 2, 2]))  # Expected output: False
+```
+
+This script defines a function `all_unique` that checks if all elements in a given list are unique by comparing the length of the list to the length of a set created from the list. A set in Python is an unordered collection of unique elements, so if there are any duplicate elements in the list, the set will be smaller than the list. The function returns `True` if all elements are unique and `False` otherwise. The example usage demonstrates how to use the function.

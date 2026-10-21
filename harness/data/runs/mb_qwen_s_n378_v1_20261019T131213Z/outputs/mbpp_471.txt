@@ -1,0 +1,17 @@
+```python
+def find_remainder(arr, n):
+    """
+    Find the product of the array elements modulo n.
+    
+    Args:
+        arr: List of integers
+        n: Modulus value
+    
+    Returns:
+        The product of all elements in arr modulo n
+    """
+    product = 1
+    for num in arr:
+        product = (product * num) % n
+    return product
+```

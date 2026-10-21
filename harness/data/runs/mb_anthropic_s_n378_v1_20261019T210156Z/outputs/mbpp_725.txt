@@ -1,0 +1,48 @@
+```python
+import re
+
+def extract_quotation(text):
+    """
+    Extract values between quotation marks from the given string.
+    
+    Args:
+        text: A string containing quoted values
+        
+    Returns:
+        A list of strings that were enclosed in quotation marks
+    """
+    return re.findall(r'"([^"]*)"', text)
+
+
+# Test cases
+if __name__ == "__main__":
+    # Test case from the problem
+    result = extract_quotation('Cortex "A53" Based "multi" tasking "Processor"')
+    assert result == ['A53', 'multi', 'Processor'], f"Expected ['A53', 'multi', 'Processor'], got {result}"
+    print(f"✓ Test passed: {result}")
+    
+    # Additional test cases
+    result2 = extract_quotation('No quotes here')
+    assert result2 == [], f"Expected [], got {result2}"
+    print(f"✓ Test passed: {result2}")
+    
+    result3 = extract_quotation('"single"')
+    assert result3 == ['single'], f"Expected ['single'], got {result3}"
+    print(f"✓ Test passed: {result3}")
+    
+    result4 = extract_quotation('Text "with" "multiple" "quotes"')
+    assert result4 == ['with', 'multiple', 'quotes'], f"Expected ['with', 'multiple', 'quotes'], got {result4}"
+    print(f"✓ Test passed: {result4}")
+    
+    print("\nAll tests passed!")
+```
+
+**Explanation:**
+
+The solution uses Python's `re.findall()` function with a regular expression pattern:
+- `r'"([^"]*)"'` - This pattern matches:
+  - `"` - A literal quotation mark
+  - `([^"]*)` - A capturing group that matches any character except quotation marks (zero or more times)
+  - `"` - A closing quotation mark
+
+The `findall()` function returns a list of all captured groups (the text between the quotes), which is exactly what we need.

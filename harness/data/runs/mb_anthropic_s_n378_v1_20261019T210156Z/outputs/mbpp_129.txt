@@ -1,0 +1,48 @@
+```python
+def magic_square_test(matrix):
+    """
+    Calculate whether the matrix is a magic square.
+    
+    A magic square is a square matrix where the sum of each row,
+    each column, and both diagonals are equal.
+    
+    Args:
+        matrix: A list of lists representing a square matrix
+        
+    Returns:
+        True if the matrix is a magic square, False otherwise
+    """
+    n = len(matrix)
+    
+    # Check if matrix is square
+    if not all(len(row) == n for row in matrix):
+        return False
+    
+    # Calculate the target sum (sum of first row)
+    target_sum = sum(matrix[0])
+    
+    # Check all rows
+    for row in matrix:
+        if sum(row) != target_sum:
+            return False
+    
+    # Check all columns
+    for col in range(n):
+        if sum(matrix[row][col] for row in range(n)) != target_sum:
+            return False
+    
+    # Check main diagonal (top-left to bottom-right)
+    if sum(matrix[i][i] for i in range(n)) != target_sum:
+        return False
+    
+    # Check anti-diagonal (top-right to bottom-left)
+    if sum(matrix[i][n - 1 - i] for i in range(n)) != target_sum:
+        return False
+    
+    return True
+
+
+# Test
+assert magic_square_test([[7, 12, 1, 14], [2, 13, 8, 11], [16, 3, 10, 5], [9, 6, 15, 4]]) == True
+print("Test passed! The matrix is a magic square.")
+```

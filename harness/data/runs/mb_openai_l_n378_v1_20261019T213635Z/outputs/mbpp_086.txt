@@ -1,0 +1,10 @@
+```python
+def centered_hexagonal_number(n: int) -> int:
+    """Return the nth centered hexagonal number (starting with n=1)."""
+    if n < 1:
+        raise ValueError("n must be a positive integer")
+    return 3 * n * (n - 1) + 1
+
+
+assert centered_hexagonal_number(10) == 271
+```

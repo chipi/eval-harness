@@ -1,0 +1,50 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def remove_Occ(string, char):
+    """
+    Remove first and last occurrence of a given character from the string.
+    
+    Args:
+        string (str): The input string
+        char (str): The character to remove (first and last occurrence)
+    
+    Returns:
+        str: The modified string with first and last occurrence of char removed
+    """
+    # Find the first occurrence
+    first_index = string.find(char)
+    
+    # Find the last occurrence
+    last_index = string.rfind(char)
+    
+    # If character doesn't exist or only appears once, handle accordingly
+    if first_index == -1:
+        return string  # Character not found
+    elif first_index == last_index:
+        # Only one occurrence, remove it
+        return string[:first_index] + string[first_index + 1:]
+    
+    # Remove first and last occurrence
+    # Note: Remove last occurrence first to avoid index issues
+    result = string[:last_index] + string[last_index + 1:]
+    result = result[:first_index] + result[first_index + 1:]
+    
+    return result
+
+
+# Test the function
+if __name__ == "__main__":
+    assert remove_Occ("hello", "l") == "heo", "Test failed!"
+    print("Test passed!")
+    print(f'remove_Occ("hello", "l") = "{remove_Occ("hello", "l")}"')
+```
+
+The function works by:
+1. Finding the first occurrence of the character using `find()`
+2. Finding the last occurrence using `rfind()`
+3. Removing the last occurrence first (to preserve the index of the first occurrence)
+4. Then removing the first occurrence
+5. Handling edge cases where the character may not exist or may only appear once
+
+The script includes the assertion test from the problem statement to verify correctness.

@@ -1,0 +1,8 @@
+```python
+def start_withp(lst):
+    words = ' '.join(lst).split()
+    p_words = [word for word in words if word.lower().startswith('p')]
+    return tuple(p_words[:2])
+
+assert start_withp(["Python PHP", "Java JavaScript", "c c++"]) == ('Python', 'PHP')
+```

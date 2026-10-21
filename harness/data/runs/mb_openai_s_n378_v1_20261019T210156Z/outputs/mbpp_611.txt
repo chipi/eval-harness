@@ -1,0 +1,28 @@
+```python
+def max_of_nth(matrix, n):
+    """
+    Return the maximum value in the nth column of a matrix represented
+    as a list of lists.
+
+    Parameters:
+        matrix (list[list[number]]): The matrix.
+        n (int): Zero-based column index.
+
+    Returns:
+        number: Maximum value in the nth column.
+
+    Raises:
+        IndexError: If n is out of range for any row.
+        ValueError: If matrix is empty.
+    """
+    if not matrix:
+        raise ValueError("matrix must not be empty")
+
+    return max(row[n] for row in matrix)
+
+
+# Example usage / test
+if __name__ == "__main__":
+    assert max_of_nth([[5, 6, 7], [1, 3, 5], [8, 9, 19]], 2) == 19
+    print("All tests passed.")
+```

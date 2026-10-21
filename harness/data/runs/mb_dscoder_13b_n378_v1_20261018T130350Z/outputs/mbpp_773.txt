@@ -1,0 +1,10 @@
+```python
+def occurance_substring(text, substring):
+    if text.count(substring) == 0:
+        return None
+    else:
+        return substring, text.index(substring), len(substring)
+
+# Testing the function
+print(occurance_substring('python programming, python language','python'))
+```

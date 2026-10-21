@@ -1,0 +1,41 @@
+Here's a self-contained Python script that solves the problem of summing all amicable numbers from 1 to a specified number:
+
+```python
+def sum_proper_divisors(n):
+    """Calculate the sum of proper divisors of a number n (excluding n itself)."""
+    if n == 1:
+        return 0
+    total = 1  # 1 is a proper divisor for all n > 1
+    sqrt_n = int(n**0.5)
+    for i in range(2, sqrt_n + 1):
+        if n % i == 0:
+            total += i
+            other = n // i
+            if other != i:
+                total += other
+    return total
+
+def amicable_numbers_sum(limit):
+    """Calculate the sum of all amicable numbers up to a specified limit."""
+    amicable_sum = 0
+    for a in range(2, limit + 1):
+        b = sum_proper_divisors(a)
+        if b != a and sum_proper_divisors(b) == a:
+            # Ensure we don't count the pair twice (a, b) and (b, a)
+            if a < b:
+                amicable_sum += a + b
+    return amicable_sum
+
+# Test the function
+assert amicable_numbers_sum(999) == 504
+print("Test passed! The sum of amicable numbers up to 999 is 504.")
+```
+
+### Explanation:
+1. **sum_proper_divisors(n)**: This helper function calculates the sum of all proper divisors of a number `n` (excluding `n` itself). It efficiently checks divisors up to the square root of `n` to optimize the calculation.
+
+2. **amicable_numbers_sum(limit)**: This function finds all amicable numbers up to the specified `limit` and returns their sum. Two numbers `a` and `b` are amicable if the sum of proper divisors of `a` equals `b`, and vice versa. The function ensures each pair is only counted once by checking `a < b`.
+
+3. **Test Case**: The script includes an assertion to verify that the function works correctly for the given test case (sum of amicable numbers up to 999 is 504). If the test passes, it prints a success message.
+
+You can run this script directly, and it will confirm that the function works as expected.

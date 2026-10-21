@@ -1,0 +1,48 @@
+```python
+def reverse_vowels(s: str) -> str:
+    """
+    Reverse only the vowels in a given string.
+    
+    Args:
+        s: Input string
+        
+    Returns:
+        String with vowels reversed
+    """
+    vowels = set('aeiouAEIOU')
+    s_list = list(s)
+    
+    # Find all vowel positions
+    vowel_positions = [i for i, char in enumerate(s_list) if char in vowels]
+    
+    # Reverse the vowels at those positions
+    for i in range(len(vowel_positions) // 2):
+        left = vowel_positions[i]
+        right = vowel_positions[-(i + 1)]
+        s_list[left], s_list[right] = s_list[right], s_list[left]
+    
+    return ''.join(s_list)
+
+
+# Test cases
+assert reverse_vowels("Python") == "Python"
+assert reverse_vowels("hello") == "holle"
+assert reverse_vowels("aA") == "Aa"
+assert reverse_vowels("race car") == "reca car"
+assert reverse_vowels("a.b.c") == "a.b.c"
+
+print("All test cases passed!")
+```
+
+The solution works as follows:
+
+1. **Define vowels**: Create a set of all vowels (both lowercase and uppercase), excluding 'y'
+2. **Convert to list**: Convert the string to a list for easier manipulation
+3. **Find vowel positions**: Identify all indices where vowels occur
+4. **Reverse vowels**: Swap vowels from the start and end of the vowel positions list, moving towards the middle
+5. **Return result**: Join the list back into a string
+
+For example, with "hello":
+- Vowels are at positions: [1('e'), 4('o')]
+- After reversing: [1('o'), 4('e')]
+- Result: "holle"

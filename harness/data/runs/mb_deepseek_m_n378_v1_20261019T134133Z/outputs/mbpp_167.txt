@@ -1,0 +1,75 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def next_power_of_2(n):
+    """
+    Find the smallest power of 2 greater than or equal to n.
+    
+    Args:
+        n: An integer (can be 0 or positive)
+    
+    Returns:
+        The smallest power of 2 >= n
+    """
+    if n <= 1:
+        return 1
+    
+    # If n is already a power of 2, return it
+    if n & (n - 1) == 0:
+        return n
+    
+    # Find the next power of 2 by repeatedly shifting
+    power = 1
+    while power < n:
+        power <<= 1
+    
+    return power
+
+
+# Alternative implementation using bit_length
+def next_power_of_2_alt(n):
+    """
+    Alternative implementation using bit_length.
+    """
+    if n <= 1:
+        return 1
+    return 1 << (n - 1).bit_length()
+
+
+# Test cases
+if __name__ == "__main__":
+    assert next_power_of_2(0) == 1
+    assert next_power_of_2(1) == 1
+    assert next_power_of_2(2) == 2
+    assert next_power_of_2(3) == 4
+    assert next_power_of_2(4) == 4
+    assert next_power_of_2(5) == 8
+    assert next_power_of_2(6) == 8
+    assert next_power_of_2(7) == 8
+    assert next_power_of_2(8) == 8
+    assert next_power_of_2(9) == 16
+    assert next_power_of_2(100) == 128
+    assert next_power_of_2(1024) == 1024
+    assert next_power_of_2(1025) == 2048
+    
+    # Test the alternative implementation too
+    assert next_power_of_2_alt(0) == 1
+    assert next_power_of_2_alt(3) == 4
+    assert next_power_of_2_alt(100) == 128
+    
+    print("All tests passed!")
+```
+
+**How it works:**
+
+1. **Base case**: If `n <= 1`, return `1` (since 2^0 = 1 is the smallest power of 2).
+
+2. **Power of 2 check**: The expression `n & (n - 1) == 0` is a classic bit trick to check if `n` is a power of 2. If it is, we return `n` directly.
+
+3. **Finding next power**: We start with `power = 1` and keep left-shifting (`power <<= 1`, which multiplies by 2) until `power >= n`.
+
+**Alternative approach** using `bit_length()`:
+- `(n - 1).bit_length()` gives the number of bits needed to represent `n - 1`.
+- Shifting `1` left by that many bits gives the next power of 2.
+
+Both implementations run in O(log n) time and O(1) space.

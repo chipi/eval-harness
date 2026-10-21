@@ -1,0 +1,10 @@
+```python
+import re
+
+def text_match_wordz(text):
+    return bool(re.search(r'\w*z\w*', text))
+
+# Test cases
+assert text_match_wordz("pythonz.") == True
+print("All tests passed!")
+```

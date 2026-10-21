@@ -1,0 +1,41 @@
+Looking at this problem, I need to count all pairs of elements (by index) whose sum equals the target.
+
+For `[1,1,1,1]` with sum `2`: every pair of two 1's sums to 2, and there are C(4,2) = 6 such pairs. ✓
+
+```python
+"""
+Write a python function to count the number of pairs whose sum is equal to 'sum'. The funtion gets as input a list of numbers and the sum,
+assert get_pairs_count([1,1,1,1],2) == 6
+"""
+
+
+def get_pairs_count(arr, sum):
+    """
+    Count the number of pairs (i, j) with i < j such that arr[i] + arr[j] == sum.
+
+    Uses a hash map of value -> frequency seen so far, giving O(n) time.
+    """
+    count = 0
+    seen = {}
+    for num in arr:
+        complement = sum - num
+        count += seen.get(complement, 0)
+        seen[num] = seen.get(num, 0) + 1
+    return count
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert get_pairs_count([1, 1, 1, 1], 2) == 6
+
+    # Additional test cases
+    assert get_pairs_count([1, 5, 7, -1, 5], 6) == 3
+    assert get_pairs_count([1, 5, 7, -1], 6) == 2
+    assert get_pairs_count([10, 12, 10, 15, -1, 7, 6, 5, 4, 2, 1, 1, 1], 11) == 4
+    assert get_pairs_count([], 0) == 0
+    assert get_pairs_count([3], 6) == 0
+    assert get_pairs_count([0, 0, 0], 0) == 3
+
+    print("All tests passed!")
+    print(get_pairs_count([1, 1, 1, 1], 2))  # 6
+```

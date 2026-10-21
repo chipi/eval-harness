@@ -1,0 +1,22 @@
+```python
+def digit_distance_nums(a, b):
+    """
+    Return the sum of the absolute per-digit differences between two integers.
+
+    Example:
+        1 and 2 -> |1 - 2| = 1
+    """
+    sa = str(abs(a))
+    sb = str(abs(b))
+
+    # Pad the shorter number with leading zeros
+    max_len = max(len(sa), len(sb))
+    sa = sa.zfill(max_len)
+    sb = sb.zfill(max_len)
+
+    return sum(abs(int(x) - int(y)) for x, y in zip(sa, sb))
+
+
+# Example assertion
+assert digit_distance_nums(1, 2) == 1
+```

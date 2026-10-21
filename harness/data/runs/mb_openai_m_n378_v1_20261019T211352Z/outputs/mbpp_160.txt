@@ -1,0 +1,82 @@
+```python
+#!/usr/bin/env python3
+"""
+Find integers x and y satisfying:
+
+    a*x + b*y = n
+
+Return (x, y) if a solution exists, otherwise return None.
+
+Example:
+    find_solution(2, 3, 7) == (2, 1)
+"""
+
+from math import gcd
+
+
+def extended_gcd(a, b):
+    """
+    Return (g, x, y) such that:
+        a*x + b*y = g
+    where g = gcd(a, b).
+    """
+    old_r, r = a, b
+    old_x, x = 1, 0
+    old_y, y = 0, 1
+
+    while r != 0:
+        q = old_r // r
+
+        old_r, r = r, old_r - q * r
+        old_x, x = x, old_x - q * x
+        old_y, y = y, old_y - q * y
+
+    return old_r, old_x, old_y
+
+
+def find_solution(a, b, n):
+    """
+    Return integers (x, y) satisfying a*x + b*y = n,
+    or None if no solution exists.
+    """
+    # Special case: 0*x + 0*y = n
+    if a == 0 and b == 0:
+        return (0, 0) if n == 0 else None
+
+    g = gcd(a, b)
+
+    # A solution exists iff gcd(a, b) divides n.
+    if n % g != 0:
+        return None
+
+    eg, x, y = extended_gcd(a, b)
+
+    # Normalize in case extended_gcd returned a negative gcd.
+    if eg < 0:
+        eg = -eg
+        x = -x
+        y = -y
+
+    multiplier = n // eg
+    return x * multiplier, y * multiplier
+
+
+if __name__ == "__main__":
+    assert find_solution(2, 3, 7) == (2, 1)
+
+    x, y = find_solution(2, 3, 7)
+    assert 2 * x + 3 * y == 7
+
+    assert find_solution(4, 6, 8) is not None
+    x, y = find_solution(4, 6, 8)
+    assert 4 * x + 6 * y == 8
+
+    assert find_solution(4, 6, 7) is None
+
+    assert find_solution(0, 5, 10) == (0, 2)
+    assert find_solution(5, 0, 10) == (2, 0)
+    assert find_solution(0, 0, 0) == (0, 0)
+    assert find_solution(0, 0, 1) is None
+
+    print("All tests passed.")
+```

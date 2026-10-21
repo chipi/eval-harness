@@ -1,0 +1,22 @@
+```python
+def count_Substrings(s):
+    # Initialize variables
+    n = len(s)
+    count = 0
+    
+    # Iterate through all possible substrings
+    for i in range(n):
+        for j in range(i + 1, n + 1):
+            # Calculate the sum of digits in the substring
+            digit_sum = sum(int(digit) for digit in s[i:j])
+            
+            # Check if the sum of digits equals the length of the substring
+            if digit_sum == j - i:
+                count += 1
+                
+    return count
+
+# Test cases
+assert count_Substrings('112112') == 6
+```
+

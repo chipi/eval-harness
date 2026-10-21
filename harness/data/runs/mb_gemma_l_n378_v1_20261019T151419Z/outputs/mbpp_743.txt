@@ -1,0 +1,34 @@
+```python
+def rotate_right(lst, n):
+    """
+    Rotates the list to the right by n positions.
+    
+    Args:
+        lst (list): The list to be rotated.
+        n (int): The number of positions to rotate to the right.
+        
+    Returns:
+        list: The rotated list.
+    """
+    if not lst:
+        return lst
+    
+    # Handle cases where n is greater than the length of the list
+    n = n % len(lst)
+    
+    # Slicing: take the last n elements and put them at the front,
+    # followed by the elements from the start up to the last n.
+    return lst[-n:] + lst[:-n]
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    test_list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    shift = 3
+    expected = [8, 9, 10, 1, 2, 3, 4, 5, 6, 7]
+    
+    result = rotate_right(test_list, shift)
+    assert result == expected, f"Expected {expected}, but got {result}"
+    
+    print("Test passed!")
+    print(f"Input: {test_list}, Shift: {shift} -> Result: {result}")
+```

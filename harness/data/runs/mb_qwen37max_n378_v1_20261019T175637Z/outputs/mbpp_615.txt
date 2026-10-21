@@ -1,0 +1,24 @@
+```python
+def average_tuple(tuples):
+    """
+    Takes a tuple of tuples and returns the average value for each inner tuple as a list.
+    
+    Note: Based on the expected output, this computes column-wise averages
+    (i.e., the average of elements at each index position across all inner tuples).
+    """
+    if not tuples:
+        return []
+    
+    num_cols = len(tuples[0])
+    result = []
+    for col in range(num_cols):
+        col_sum = sum(t[col] for t in tuples)
+        result.append(col_sum / len(tuples))
+    
+    return result
+
+
+# Verify with the provided assertion
+assert average_tuple(((10, 10, 10, 12), (30, 45, 56, 45), (81, 80, 39, 32), (1, 2, 3, 4))) == [30.5, 34.25, 27.0, 23.25]
+print("All assertions passed!")
+```

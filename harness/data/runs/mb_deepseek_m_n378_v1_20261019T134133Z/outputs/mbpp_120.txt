@@ -1,0 +1,46 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def max_product_tuple(tuples_list):
+    """
+    Find the maximum absolute product between numbers in pairs of tuples within a given list.
+    
+    Args:
+        tuples_list: A list of tuples, where each tuple contains two numbers.
+    
+    Returns:
+        The maximum absolute product found among all tuples.
+    """
+    if not tuples_list:
+        return None
+    
+    max_product = 0
+    for tup in tuples_list:
+        product = abs(tup[0] * tup[1])
+        if product > max_product:
+            max_product = product
+    
+    return max_product
+
+
+# Test the function
+assert max_product_tuple([(2, 7), (2, 6), (1, 8), (4, 9)]) == 36
+print("Test passed!")
+print(f"Result: {max_product_tuple([(2, 7), (2, 6), (1, 8), (4, 9)])}")
+```
+
+**Explanation:**
+
+1. The function `max_product_tuple` takes a list of tuples as input.
+2. It initializes `max_product` to 0.
+3. For each tuple in the list, it computes the absolute value of the product of the two numbers using `abs(tup[0] * tup[1])`.
+4. If the computed product is greater than the current `max_product`, it updates `max_product`.
+5. Finally, it returns the maximum absolute product.
+
+**Verification with the given example:**
+- `(2, 7)` → |2 × 7| = 14
+- `(2, 6)` → |2 × 6| = 12
+- `(1, 8)` → |1 × 8| = 8
+- `(4, 9)` → |4 × 9| = **36** ← maximum
+
+The result is 36, which matches the expected output.

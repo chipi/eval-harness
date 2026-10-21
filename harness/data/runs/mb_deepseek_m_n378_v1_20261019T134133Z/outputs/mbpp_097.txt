@@ -1,0 +1,54 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def frequency_lists(list_of_lists):
+    """
+    Find the frequency of each element in a flattened list of lists.
+    
+    Args:
+        list_of_lists: A list containing sublists of elements
+        
+    Returns:
+        A dictionary with elements as keys and their frequencies as values
+    """
+    frequency = {}
+    
+    for sublist in list_of_lists:
+        for element in sublist:
+            if element in frequency:
+                frequency[element] += 1
+            else:
+                frequency[element] = 1
+    
+    return frequency
+
+
+# Test the function
+if __name__ == "__main__":
+    result = frequency_lists([[1, 2, 3, 2], [4, 5, 6, 2], [7, 8, 9, 5]])
+    expected = {1: 1, 2: 3, 3: 1, 4: 1, 5: 2, 6: 1, 7: 1, 8: 1, 9: 1}
+    
+    print("Result:", result)
+    print("Expected:", expected)
+    assert result == expected, "Test failed!"
+    print("Test passed!")
+```
+
+**How it works:**
+
+1. **Initialize an empty dictionary** `frequency` to store element counts.
+2. **Iterate through each sublist** in the input `list_of_lists`.
+3. **Iterate through each element** in the current sublist.
+4. **Update the count**: If the element already exists in the dictionary, increment its count; otherwise, add it with a count of 1.
+5. **Return the dictionary** containing all element frequencies.
+
+**Alternative one-liner using `collections.Counter`:**
+
+```python
+from collections import Counter
+
+def frequency_lists(list_of_lists):
+    return dict(Counter(item for sublist in list_of_lists for item in sublist))
+```
+
+Both approaches produce the same result: `{1: 1, 2: 3, 3: 1, 4: 1, 5: 2, 6: 1, 7: 1, 8: 1, 9: 1}`.

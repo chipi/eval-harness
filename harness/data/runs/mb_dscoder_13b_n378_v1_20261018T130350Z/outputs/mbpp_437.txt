@@ -1,0 +1,11 @@
+```python
+def remove_odd(s):
+    return ''.join(c for c in s if c.is_uppercase() or c.is_lowercase())
+
+# Test cases
+assert remove_odd("python")=="pytn"
+assert remove_odd("Java")=="J"
+assert remove_odd("Programming")=="Prgrmn"
+assert remove_odd("")==""
+assert remove_odd("abcdefghijklmnopqrstuvwxyz")=="abcdefghijklmnopqrstuvwxyz"
+```

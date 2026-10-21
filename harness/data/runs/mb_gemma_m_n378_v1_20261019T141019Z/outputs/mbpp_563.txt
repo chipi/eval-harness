@@ -1,0 +1,34 @@
+```python
+import re
+
+def extract_values(text: str) -> list:
+    """
+    Extracts values contained within quotation marks from a given string.
+    
+    Args:
+        text (str): The input string containing quoted values.
+        
+    Returns:
+        list: A list of strings found between quotation marks.
+    """
+    # The regex pattern r'"([^"]*)"' looks for a double quote, 
+    # captures everything that is NOT a double quote, 
+    # and ends with a double quote.
+    return re.findall(r'"([^"]*)"', text)
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    test_input = '"Python", "PHP", "Java"'
+    expected_output = ['Python', 'PHP', 'Java']
+    result = extract_values(test_input)
+    
+    # Assertion to verify correctness
+    assert result == expected_output, f"Expected {expected_output}, but got {result}"
+    
+    # Additional test cases
+    assert extract_values('No quotes here') == []
+    assert extract_values('"Single"') == ['Single']
+    assert extract_values('""') == ['']  # Empty quotes
+    
+    print("All tests passed successfully!")
+```

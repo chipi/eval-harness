@@ -1,0 +1,11 @@
+```python
+def assert_and_tuples(tup1, tup2):
+    # Extracting elements and tuples from the input tuples
+    result = tuple(x - y for x, y in zip(tup1, tup2))
+    return result
+
+# Test cases to verify the correctness of the solution
+assert assert_and_tuples((10, 4, 6, 9), (5, 2, 3, 3)) == (0, 0, 2, 1)
+print("All test cases passed!")
+```
+

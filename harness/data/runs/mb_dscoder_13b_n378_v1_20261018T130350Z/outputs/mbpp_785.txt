@@ -1,0 +1,10 @@
+```python
+def tuple_str_int(tuple_str):
+    # Remove the parentheses and split the string into a list of strings
+    str_list = tuple_str[1:-1].split(',')
+    # Convert each string in the list to an integer and return as a tuple
+    return tuple(int(i) for i in str_list)
+
+# Test the function
+assert tuple_str_int("(7, 8, 9)") == (7, 8, 9)
+```

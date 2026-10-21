@@ -1,0 +1,11 @@
+```python
+def string_to_tuple(s):
+    return tuple(s)
+
+# Test cases
+assert string_to_tuple("python 3.0")==('p', 'y', 't', 'h', 'o', 'n', '3', '.', '0')
+assert string_to_tuple("")==()
+assert string_to_tuple(" ")==(' ',)
+assert string_to_tuple("a")==('a',)
+assert string_to_tuple("123")==('1', '2', '3')
+```

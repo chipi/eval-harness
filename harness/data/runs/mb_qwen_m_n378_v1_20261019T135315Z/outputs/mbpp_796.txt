@@ -1,0 +1,29 @@
+```python
+def return_sum(d: dict) -> int:
+    """
+    Find the sum of all values in the given dictionary.
+    
+    Args:
+        d: A dictionary with numeric values
+        
+    Returns:
+        The sum of all values in the dictionary
+        
+    Example:
+        >>> return_sum({'a': 100, 'b': 200, 'c': 300})
+        600
+    """
+    return sum(d.values())
+
+
+if __name__ == "__main__":
+    # Test case from the problem statement
+    assert return_sum({'a': 100, 'b': 200, 'c': 300}) == 600
+    
+    # Additional test cases
+    assert return_sum({}) == 0
+    assert return_sum({'x': 1}) == 1
+    assert return_sum({'a': -10, 'b': 10}) == 0
+    
+    print("All tests passed!")
+```

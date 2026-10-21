@@ -1,0 +1,37 @@
+```python
+def search(arr):
+    """
+    Find the element that appears only once in a sorted array,
+    where every other element appears exactly twice.
+    
+    Uses binary search for O(log n) time complexity.
+    """
+    low, high = 0, len(arr) - 1
+    
+    while low < high:
+        mid = low + (high - low) // 2
+        
+        # Ensure mid is even for consistent pairing logic
+        if mid % 2 == 1:
+            mid -= 1
+        
+        if arr[mid] == arr[mid + 1]:
+            # The single element is in the right half
+            low = mid + 2
+        else:
+            # The single element is in the left half (or at mid)
+            high = mid
+    
+    return arr[low]
+
+
+# Test cases
+if __name__ == "__main__":
+    assert search([1, 1, 2, 2, 3]) == 3
+    assert search([1, 1, 2, 3, 3, 4, 4, 8, 8]) == 2
+    assert search([1, 1, 2, 2, 3, 3, 4, 4, 5]) == 5
+    assert search([3, 3, 7, 7, 10, 11, 11]) == 10
+    assert search([1]) == 1
+    
+    print("All test cases passed!")
+```

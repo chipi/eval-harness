@@ -1,0 +1,21 @@
+```python
+def string_to_list(input_string):
+    """
+    Converts a string to a list of strings split on the space character.
+    
+    Args:
+        input_string (str): The string to be split.
+        
+    Returns:
+        list: A list of strings.
+    """
+    # The split() method splits a string into a list using a specified separator.
+    # By default, if no separator is specified, it splits on whitespace.
+    # We specify ' ' to split explicitly on the space character as requested.
+    return input_string.split(' ')
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert string_to_list("python programming") == ['python', 'programming']
+    print("Assertion passed successfully.")
+```

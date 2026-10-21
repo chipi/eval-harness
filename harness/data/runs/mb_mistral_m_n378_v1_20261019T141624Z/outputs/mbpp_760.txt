@@ -1,0 +1,28 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def unique_Element(lst):
+    """Check if a list contains only one distinct element."""
+    if not lst:  # Handle empty list case
+        return False
+    first_element = lst[0]
+    return all(x == first_element for x in lst)
+
+# Test cases
+assert unique_Element([1,1,1]) == True
+assert unique_Element([1,2,1]) == False
+assert unique_Element([5]) == True
+assert unique_Element([]) == False
+assert unique_Element([3,3,3,3]) == True
+assert unique_Element([0,0,0,1]) == False
+
+print("All test cases passed!")
+```
+
+This solution:
+1. Defines a function `unique_Element` that takes a list as input
+2. First checks if the list is empty (returns False in this case)
+3. Takes the first element as reference
+4. Uses `all()` to check if every element in the list matches the first element
+5. Returns True if all elements are the same, False otherwise
+6. Includes test cases that verify the function works correctly for various scenarios

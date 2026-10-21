@@ -1,0 +1,55 @@
+```python
+def bell_Number(n):
+    """
+    This function calculates the nth Bell number.
+    
+    The Bell numbers are a sequence of numbers that arise in combinatorial mathematics, 
+    beginning with B0 = 1, then using the recurrence relation to find subsequent numbers.
+    
+    :param n: The position of the Bell number to be calculated.
+    :return: The nth Bell number.
+    """
+    # Create a list to store Bell numbers
+    bell = [0 for _ in range(n + 1)]
+    
+    # Initialize the first Bell number
+    bell[0] = 1
+    
+    # Fill entries so that they sum up to bell(i)
+    for i in range(1, n + 1):
+        # Fill so that they sum up to bell(i)
+        for j in range(i):
+            bell[i] += bell[j] * combination(i - 1, j)
+    
+    return bell[n]
+
+
+def combination(n, r):
+    """
+    This function calculates the number of combinations of n items taken r at a time.
+    
+    :param n: The total number of items.
+    :param r: The number of items to choose.
+    :return: The number of combinations.
+    """
+    if r > n - r:  # Take advantage of symmetry property, C(n, r) = C(n, n-r)
+        r = n - r
+    if r == 0:  # Base case
+        return 1
+    if r == 1:  # Base case
+        return n
+    
+    # Calculate the combination using the formula C(n, r) = n * C(n-1, r-1) / r
+    result = 1
+    for i in range(r):
+        result = result * (n - i) // (i + 1)
+    
+    return result
+
+
+# Test the function
+assert bell_Number(2) == 2
+print("Test passed.")
+```
+
+This script defines a function `bell_Number(n)` to calculate the nth Bell number using dynamic programming. The `combination(n, r)` function is used to calculate the number of combinations of n items taken r at a time, which is used in the calculation of Bell numbers. The script also includes a test case to verify the correctness of the `bell_Number(n)` function.

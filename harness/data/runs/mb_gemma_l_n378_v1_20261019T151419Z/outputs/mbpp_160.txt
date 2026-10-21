@@ -1,0 +1,58 @@
+To solve the equation $ax + by = n$, we can use the **Extended Euclidean Algorithm**. 
+
+According to Bézout's identity, the equation $ax + by = \gcd(a, b)$ always has integer solutions. If $n$ is a multiple of $\gcd(a, b)$, then a solution for $ax + by = n$ exists. We can find the solution for the GCD and then scale it by the factor $n / \gcd(a, b)$.
+
+Here is the complete self-contained script:
+
+```python
+def extended_gcd(a, b):
+    """
+    Returns a tuple (gcd, x, y) such that ax + by = gcd.
+    """
+    if a == 0:
+        return b, 0, 1
+    else:
+        gcd, x1, y1 = extended_gcd(b % a, a)
+        # Update x and y using results of recursive call
+        x = y1 - (b // a) * x1
+        y = x1
+        return gcd, x, y
+
+def find_solution(a, b, n):
+    """
+    Returns integers x and y that satisfy ax + by = n as a tuple, 
+    or return None if no solution exists.
+    """
+    # Handle cases where a or b might be 0 to avoid division by zero
+    if a == 0 and b == 0:
+        return (0, 0) if n == 0 else None
+    
+    gcd, x0, y0 = extended_gcd(abs(a), abs(b))
+    
+    # A solution exists if and only if n is divisible by gcd(a, b)
+    if n % gcd != 0:
+        return None
+    
+    # Scale the base solution (x0, y0) to reach n
+    factor = n // gcd
+    x = x0 * factor
+    y = y0 * factor
+    
+    # Adjust signs based on original a and b
+    if a < 0: x = -x
+    if b < 0: y = -y
+    
+    return (x, y)
+
+# Testing the function
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    result = find_solution(2, 3, 7)
+    print(f"find_solution(2, 3, 7) -> {result}")
+    assert result == (2, 1) or (2*result[0] + 3*result[1] == 7)
+    
+    # Additional test cases
+    print(f"find_solution(10, 15, 5) -> {find_solution(10, 15, 5)}") # Should work (gcd=5)
+    print(f"find_solution(10, 15, 7) -> {find_solution(10, 15, 7)}") # Should be None (7 not div by 5)
+    print(f"find_solution(1, 1, 2) -> {find_solution(1, 1, 2)}")     # Should work
+```

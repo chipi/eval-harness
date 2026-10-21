@@ -1,0 +1,15 @@
+```python
+def get_pairs_count(nums, sum):
+    count = 0
+    for i in range(len(nums)):
+        for j in range(i+1, len(nums)):
+            if nums[i] + nums[j] == sum:
+                count += 1
+    return count
+
+# Test cases
+print(get_pairs_count([1,1,1,1],2))  # Output: 6
+print(get_pairs_count([1,2,3,4],5))  # Output: 4
+print(get_pairs_count([-1,-1,-1,-1],-2))  # Output: 6
+print(get_pairs_count([],0))  # Output: 0
+```

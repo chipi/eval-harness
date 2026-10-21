@@ -1,0 +1,15 @@
+```python
+def large_product(list1, list2, n):
+    products = [x * y for x in list1 for y in list2]
+    products.sort(reverse=True)
+    return products[:n]
+
+def main():
+    list1 = [1, 2, 3, 4, 5, 6]
+    list2 = [3, 6, 8, 9, 10, 6]
+    n = 3
+    print(large_product(list1, list2, n))  # Output: [60, 54, 50]
+
+if __name__ == "__main__":
+    main()
+```

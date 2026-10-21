@@ -1,0 +1,28 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def perimeter_pentagon(side_length):
+    """
+    Calculate the perimeter of a regular pentagon given the length of its sides.
+    
+    Args:
+        side_length (int or float): The length of one side of the pentagon.
+    
+    Returns:
+        int or float: The perimeter of the pentagon (5 * side_length).
+    """
+    return 5 * side_length
+
+
+# Test the function
+assert perimeter_pentagon(5) == 25
+print("Test passed!")
+```
+
+**Explanation:**
+
+A regular pentagon has 5 equal sides. To find its perimeter, we simply multiply the length of one side by 5.
+
+- `perimeter_pentagon(5)` → `5 * 5 = 25` ✓
+
+The function works with both integers and floats, so `perimeter_pentagon(3.5)` would return `17.5`.

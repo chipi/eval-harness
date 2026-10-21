@@ -1,0 +1,27 @@
+```python
+def drop_empty(d):
+    """
+    Removes items from a dictionary where the value is None.
+    
+    Args:
+        d (dict): The input dictionary.
+        
+    Returns:
+        dict: A new dictionary containing only non-None values.
+    """
+    return {k: v for k, v in d.items() if v is not None}
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    test_input = {'c1': 'Red', 'c2': 'Green', 'c3': None}
+    expected_output = {'c1': 'Red', 'c2': 'Green'}
+    
+    result = drop_empty(test_input)
+    
+    # Assertion to verify correctness
+    assert result == expected_output, f"Expected {expected_output}, but got {result}"
+    
+    print("Test passed successfully!")
+    print(f"Input:  {test_input}")
+    print(f"Output: {result}")
+```

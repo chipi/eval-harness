@@ -1,0 +1,53 @@
+```python
+def find_even_pair(lst):
+    """
+    Counts the number of pairs of integers in a list that xor to an even number.
+    
+    Two numbers XOR to an even number if and only if they have the same parity
+    (both even or both odd), because XOR of two numbers with the same parity
+    always results in an even number.
+    
+    Args:
+        lst: A list of integers
+        
+    Returns:
+        The count of pairs that XOR to an even number
+    """
+    count = 0
+    n = len(lst)
+    
+    # Check all pairs (i, j) where i < j
+    for i in range(n):
+        for j in range(i + 1, n):
+            if (lst[i] ^ lst[j]) % 2 == 0:
+                count += 1
+    
+    return count
+
+
+# Test
+assert find_even_pair([5, 4, 7, 2, 1]) == 4
+print("Test passed!")
+
+# Let's verify the logic:
+# [5, 4, 7, 2, 1]
+# 5 (odd) ^ 4 (even) = 1 (odd) ✗
+# 5 (odd) ^ 7 (odd) = 2 (even) ✓
+# 5 (odd) ^ 2 (even) = 7 (odd) ✗
+# 5 (odd) ^ 1 (odd) = 4 (even) ✓
+# 4 (even) ^ 7 (odd) = 3 (odd) ✗
+# 4 (even) ^ 2 (even) = 6 (even) ✓
+# 4 (even) ^ 1 (odd) = 5 (odd) ✗
+# 7 (odd) ^ 2 (even) = 5 (odd) ✗
+# 7 (odd) ^ 1 (odd) = 6 (even) ✓
+# 2 (even) ^ 1 (odd) = 3 (odd) ✗
+# Total: 4 pairs ✓
+```
+
+The solution works by checking all pairs of integers in the list and counting how many pairs XOR to an even number. 
+
+**Key insight:** Two numbers XOR to an even number if and only if they have the same parity (both even or both odd). This is because:
+- Even XOR Even = Even
+- Odd XOR Odd = Even
+- Even XOR Odd = Odd
+- Odd XOR Even = Odd

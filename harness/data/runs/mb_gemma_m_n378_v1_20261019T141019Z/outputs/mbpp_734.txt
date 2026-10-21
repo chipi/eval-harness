@@ -1,0 +1,3 @@
+To solve this problem efficiently, we can use a mathematical approach rather than generating all possible sublists (which would take $O(n^2)$ or $O(n^3)$ time).
+
+The sum of products of all subarrays can be calculated in $

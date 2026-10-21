@@ -1,0 +1,22 @@
+```python
+def frequency(list1, num):
+  """
+  Counts the number of occurrences of a number in a given list.
+
+  Args:
+    list1: The list to search in.
+    num: The number to count.
+
+  Returns:
+    The number of times the number appears in the list.
+  """
+  count = 0
+  for element in list1:
+    if element == num:
+      count += 1
+  return count
+
+assert frequency([1,2,3], 4) == 0
+assert frequency([1,2,2,3,2], 2) == 3
+assert frequency([1,1,1,1], 1) == 4
+```

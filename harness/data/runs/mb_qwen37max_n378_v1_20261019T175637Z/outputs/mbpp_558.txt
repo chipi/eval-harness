@@ -1,0 +1,26 @@
+```python
+def digit_distance_nums(n1, n2):
+    """
+    Find the sum of the per-digit difference between two integers.
+    
+    The digit distance is computed by comparing digits from right to left,
+    padding the shorter number with leading zeros as needed.
+    """
+    s1 = str(abs(n1))
+    s2 = str(abs(n2))
+    
+    # Pad the shorter string with leading zeros
+    max_len = max(len(s1), len(s2))
+    s1 = s1.zfill(max_len)
+    s2 = s2.zfill(max_len)
+    
+    total = 0
+    for d1, d2 in zip(s1, s2):
+        total += abs(int(d1) - int(d2))
+    
+    return total
+
+
+# Test
+assert digit_distance_nums(1, 2) == 1
+```

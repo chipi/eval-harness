@@ -1,0 +1,22 @@
+```python
+def div_list(list1, list2):
+    """
+    Divide two lists element wise.
+    
+    Args:
+        list1: The numerator list.
+        list2: The denominator list.
+        
+    Returns:
+        A new list containing the element-wise division of list1 by list2.
+    """
+    if len(list1) != len(list2):
+        raise ValueError("Both lists must have the same length.")
+    
+    return [a / b for a, b in zip(list1, list2)]
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert div_list([4, 5, 6], [1, 2, 3]) == [4.0, 2.5, 2.0]
+    print("Test passed successfully!")
+```

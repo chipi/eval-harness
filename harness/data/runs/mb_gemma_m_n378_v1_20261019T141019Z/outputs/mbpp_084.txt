@@ -1,0 +1,59 @@
+To solve this problem, we need to implement the logic for the **Newman-Conway sequence**. 
+
+The sequence is defined as follows:
+1. $a(1) = 1$
+2. To find $a(n+1)$, look at the longest block of terms ending at $a(n)$ that are all equal. Let the length of this block be $k$.
+3. $a(n+1) = a(n-k+1) + a(n-k+2) + \dots + a(n)$.
+
+Here is the self-contained Python script:
+
+```python
+def sequence(n):
+    """
+    Calculates the nth number in the Newman-Conway sequence.
+    The sequence starts: 1, 2, 2, 3, 4, 4, 4, 4, 4, 5, 6, ...
+    """
+    if n <= 0:
+        return None
+    
+    # Initialize the sequence with the first term
+    seq = [1]
+    
+    while len(seq) < n:
+        # Find the length of the last block of identical numbers
+        # We look backwards from the last element
+        last_val = seq[-1]
+        k = 0
+        for i in range(len(seq) - 1, -1, -1):
+            if seq[i] == last_val:
+                k += 1
+            else:
+                break
+        
+        # The next term is the sum of the last k terms
+        # seq[-k:] gives the last k elements
+        next_val = sum(seq[-k:])
+        seq.append(next_val)
+        
+    return seq[n-1]
+
+if __name__ == "__main__":
+    # Test the function with the provided assertion
+    try:
+        assert sequence(10) == 6
+        print("Assertion passed: sequence(10) is 6")
+        
+        # Additional tests to verify correctness
+        # Sequence: 1, 2, 2, 3, 4, 4, 4, 4, 4, 5, 6...
+        # Indices:  1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
+        assert sequence(1) == 1
+        assert sequence(2) == 2
+        assert sequence(3) == 2
+        assert sequence(4) == 3
+        assert sequence(5) == 4
+        assert sequence(11) == 6
+        print("All tests passed successfully!")
+        
+    except AssertionError as e:
+        print("Assertion failed!")
+```

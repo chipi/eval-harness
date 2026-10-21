@@ -1,0 +1,10 @@
+```python
+def kth_element(arr, k):
+    """Return the kth element of arr using 1-based indexing."""
+    if not 1 <= k <= len(arr):
+        raise IndexError("k is out of range")
+    return arr[k - 1]
+
+
+assert kth_element([12, 3, 5, 7, 19], 2) == 3
+```

@@ -1,0 +1,26 @@
+```python
+def get_max_sum(n: int) -> int:
+    """
+    Compute the maximum sum possible using the recurrence:
+    f(n) = max( f(n//2) + f(n//3) + f(n//4) + f(n//5), n )
+    with f(0) = 0.
+    """
+    # Use memoization to avoid recomputation
+    memo = {0: 0}
+    
+    def helper(x: int) -> int:
+        if x in memo:
+            return memo[x]
+        # Compute the sum of the four recursive calls
+        total = helper(x // 2) + helper(x // 3) + helper(x // 4) + helper(x // 5)
+        # Take the maximum with x itself
+        result = max(total, x)
+        memo[x] = result
+        return result
+    
+    return helper(n)
+
+# Test the assertion
+if __name__ == "__main__":
+    print(get_max_sum(60))  # Expected output: 106
+```

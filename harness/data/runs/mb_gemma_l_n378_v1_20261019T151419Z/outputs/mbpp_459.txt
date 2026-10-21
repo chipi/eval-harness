@@ -1,0 +1,23 @@
+```python
+def remove_uppercase(text):
+    """
+    Removes all uppercase characters from a given string.
+    
+    Args:
+        text (str): The input string containing mixed case characters.
+        
+    Returns:
+        str: The string with all uppercase characters removed.
+    """
+    # Use a list comprehension to keep only characters that are not uppercase
+    return "".join([char for char in text if not char.isupper()])
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    input_str = 'cAstyoUrFavoRitETVshoWs'
+    expected_output = 'cstyoravoitshos'
+    result = remove_uppercase(input_str)
+    
+    assert result == expected_output, f"Expected {expected_output}, but got {result}"
+    print(f"Success! Input: {input_str} -> Output: {result}")
+```

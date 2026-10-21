@@ -1,0 +1,32 @@
+Here's a self-contained Python script that solves the problem by merging three dictionaries into a single dictionary, with later dictionaries overwriting earlier ones for duplicate keys:
+
+```python
+def merge_dictionaries_three(dict1, dict2, dict3):
+    """
+    Merge three dictionaries into a single dictionary.
+    Later dictionaries overwrite earlier ones for duplicate keys.
+    """
+    merged = {}
+    merged.update(dict1)
+    merged.update(dict2)
+    merged.update(dict3)
+    return merged
+
+# Test case
+assert merge_dictionaries_three(
+    { "R": "Red", "B": "Black", "P": "Pink" },
+    { "G": "Green", "W": "White" },
+    { "O": "Orange", "W": "White", "B": "Black" }
+) == {'B': 'Black', 'R': 'Red', 'P': 'Pink', 'G': 'Green', 'W': 'White', 'O': 'Orange'}
+
+print("Test passed!")
+```
+
+This solution:
+1. Creates an empty dictionary
+2. Updates it with the first dictionary
+3. Updates it with the second dictionary (overwriting any duplicate keys)
+4. Updates it with the third dictionary (overwriting any duplicate keys)
+5. Returns the merged result
+
+The test case verifies that the function works as expected, with the final dictionary containing all keys from all three input dictionaries, with values from the last dictionary taking precedence for duplicate keys.

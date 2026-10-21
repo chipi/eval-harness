@@ -1,0 +1,8 @@
+```python
+def tuple_to_int(t):
+    """Convert a tuple of positive integers into a single integer by concatenating their digits."""
+    return int(''.join(str(x) for x in t))
+
+# Test
+assert tuple_to_int((1, 2, 3)) == 123
+```

@@ -1,0 +1,24 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def lateralsurface_cube(side_length):
+    """
+    Calculate the lateral surface area of a cube given its side length.
+    
+    The lateral surface area of a cube is the sum of the areas of its four vertical faces.
+    Formula: 4 * side_length^2
+    
+    Args:
+        side_length (float or int): The length of one side of the cube
+    
+    Returns:
+        float or int: The lateral surface area of the cube
+    """
+    return 4 * side_length ** 2
+
+# Test the function
+assert lateralsurface_cube(5) == 100
+print("Test passed! The lateral surface area of a cube with side length 5 is:", lateralsurface_cube(5))
+```
+
+This script defines the `lateralsurface_cube` function that calculates the lateral surface area of a cube using the formula `4 * side_length²`. The lateral surface area consists of the four vertical faces of the cube (excluding the top and bottom faces). The assertion confirms that a cube with side length 5 has a lateral surface area of 100 square units.

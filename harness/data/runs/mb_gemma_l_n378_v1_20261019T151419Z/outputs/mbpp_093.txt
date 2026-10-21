@@ -1,0 +1,16 @@
+```python
+def power(a, b):
+    """
+    Calculates the value of 'a' to the power 'b'.
+    """
+    return a ** b
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    result = power(3, 4)
+    print(f"power(3, 4) = {result}")
+    
+    # Assertion to verify correctness
+    assert power(3, 4) == 81
+    print("Assertion passed!")
+```

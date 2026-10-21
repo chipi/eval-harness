@@ -1,0 +1,12 @@
+```python
+def check(number):
+    """Return whether number is one less than twice its digit reversal."""
+    if number < 0:
+        return False
+
+    reversed_number = int(str(number)[::-1])
+    return number == 2 * reversed_number - 1
+
+
+assert check(70) is False
+```

@@ -1,0 +1,33 @@
+```python
+import re
+
+def is_decimal(s):
+    """
+    Checks whether a given string is a decimal number with a precision of 2.
+
+    Args:
+        s (str): The input string to be checked.
+
+    Returns:
+        bool: True if the string is a decimal number with a precision of 2, False otherwise.
+    """
+    pattern = r'^\d+(\.\d{2})?$'
+    return bool(re.match(pattern, s))
+
+# Test the function
+assert is_decimal('123.11')
+assert not is_decimal('123.1')
+assert not is_decimal('123.111')
+assert not is_decimal('123')
+assert not is_decimal('abc')
+```
+
+### Explanation
+
+*   The function `is_decimal` checks if a given string `s` matches the pattern of a decimal number with a precision of 2.
+*   The regular expression `r'^\d+(\.\d{2})?$'` is used to match this pattern. Here's how it works:
+    *   `^` asserts the start of the line.
+    *   `\d+` matches one or more digits.
+    *   `(\.\d{2})?` optionally matches a period followed by exactly two digits. The `?` quantifier makes this group optional.
+    *   `$` asserts the end of the line.
+*   The `re.match` function returns a match object if the string matches the pattern, or `None` otherwise. We convert this to a boolean value (`True` if the string matches, `False` otherwise) using the `bool` function.

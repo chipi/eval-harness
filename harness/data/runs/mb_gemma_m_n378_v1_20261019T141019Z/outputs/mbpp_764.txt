@@ -1,0 +1,27 @@
+```python
+def number_ctr(s: str) -> int:
+    """
+    Counts the number of digits in a given string.
+    
+    Args:
+        s (str): The input string to check.
+        
+    Returns:
+        int: The count of numeric digits (0-9) found in the string.
+    """
+    count = 0
+    for char in s:
+        if char.isdigit():
+            count += 1
+    return count
+
+if __name__ == "__main__":
+    # Test cases
+    assert number_ctr('program2bedone') == 1
+    assert number_ctr('12345') == 5
+    assert number_ctr('hello world') == 0
+    assert number_ctr('abc1def2ghi3') == 3
+    assert number_ctr('') == 0
+    
+    print("All tests passed!")
+```

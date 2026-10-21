@@ -1,0 +1,26 @@
+```python
+from itertools import chain, combinations
+
+def combinations_list(input_list):
+    """
+    This function generates all possible combinations of the elements of a given list.
+    
+    Args:
+        input_list (list): The input list of elements.
+    
+    Returns:
+        list: A list of lists, where each sublist is a combination of the input list elements.
+    """
+    # Generate all possible combinations of the input list
+    all_combinations = list(chain(*map(lambda x: combinations(input_list, x), range(0, len(input_list) + 1))))
+    
+    # Convert the combinations to lists (because combinations returns tuples)
+    all_combinations = [list(combination) for combination in all_combinations]
+    
+    return all_combinations
+
+# Test the function
+print(combinations_list(['orange', 'red', 'green', 'blue']))
+```
+
+This script uses the `itertools` module to generate all possible combinations of the input list. The `combinations` function generates combinations of a certain length, and the `chain` function is used to concatenate the combinations of all lengths. The result is a list of lists, where each sublist is a combination of the input list elements.

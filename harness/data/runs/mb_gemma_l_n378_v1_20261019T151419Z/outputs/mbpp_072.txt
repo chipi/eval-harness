@@ -1,0 +1,37 @@
+```python
+def dif_Square(n):
+    """
+    Checks whether a given integer n can be represented as the difference of two squares.
+    
+    Mathematical logic:
+    n = x^2 - y^2 = (x - y)(x + y)
+    Let a = x - y and b = x + y.
+    Then n = a * b.
+    Solving for x and y:
+    x = (a + b) / 2
+    y = (b - a) / 2
+    
+    For x and y to be integers, (a + b) and (b - a) must be even.
+    This happens if a and b are both even or both odd.
+    
+    1. If n is odd, we can always pick a = 1 and b = n. Since both are odd, it works.
+    2. If n is even, n must be divisible by 4. If n = 4k, we can pick a = 2 and b = 2k.
+       Since both are even, it works.
+    3. If n is even but not divisible by 4 (n ≡ 2 mod 4), it cannot be represented as 
+       the difference of two squares because one factor would be even and the other odd.
+    """
+    # A number can be represented as the difference of two squares if and only if
+    # it is NOT of the form 4k + 2.
+    if n % 4 == 2:
+        return False
+    return True
+
+# Test cases
+if __name__ == "__main__":
+    assert dif_Square(5) == True   # 3^2 - 2^2 = 9 - 4 = 5
+    assert dif_Square(8) == True   # 3^2 - 1^2 = 9 - 1 = 8
+    assert dif_Square(6) == False  # No integer solution
+    assert dif_Square(12) == True  # 4^2 - 2^2 = 16 - 4 = 12
+    assert dif_Square(10) == False # No integer solution
+    print("All tests passed!")
+```

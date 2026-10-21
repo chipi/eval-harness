@@ -1,0 +1,23 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def multiply_int(a, b):
+    """
+    Multiply two integers and return the result.
+    
+    Args:
+        a: First integer
+        b: Second integer
+    
+    Returns:
+        The product of a and b
+    """
+    return a * b
+
+# Test the function
+if __name__ == "__main__":
+    assert multiply_int(10, 20) == 200
+    print("Test passed! multiply_int(10, 20) =", multiply_int(10, 20))
+```
+
+This script defines the `multiply_int` function that takes two integers as input and returns their product. The assertion test verifies that `multiply_int(10, 20)` equals `200`, which confirms the function works correctly.

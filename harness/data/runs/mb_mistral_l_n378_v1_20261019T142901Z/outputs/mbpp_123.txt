@@ -1,0 +1,43 @@
+Here's a self-contained Python script that solves the problem of summing all amicable numbers up to a specified number. The script includes the function `amicable_numbers_sum` and the provided assertion:
+
+```python
+"""
+A function to sum all amicable numbers from 1 to a specified number.
+An amicable number pair is defined as two different numbers where the sum of the proper divisors
+of each is equal to the other number. For example, 220 and 284 are amicable numbers because:
+- Proper divisors of 220: 1, 2, 4, 5, 10, 11, 20, 22, 44, 55, 110; sum = 284
+- Proper divisors of 284: 1, 2, 4, 71, 142; sum = 220
+"""
+
+def sum_proper_divisors(n):
+    """Return the sum of proper divisors of n (numbers less than n that divide n evenly)."""
+    if n == 1:
+        return 0
+    total = 1  # 1 is a proper divisor for any n > 1
+    sqrt_n = int(n ** 0.5)
+    for i in range(2, sqrt_n + 1):
+        if n % i == 0:
+            total += i
+            counterpart = n // i
+            if counterpart != i:
+                total += counterpart
+    return total
+
+def amicable_numbers_sum(limit):
+    """Return the sum of all amicable numbers from 1 to limit."""
+    amicable_sum = 0
+    for a in range(1, limit + 1):
+        b = sum_proper_divisors(a)
+        if b > a and b <= limit:  # Avoid duplicates and numbers beyond limit
+            if sum_proper_divisors(b) == a:
+                amicable_sum += a + b
+    return amicable_sum
+
+# Test the function with the provided assertion
+assert amicable_numbers_sum(999) == 504
+```
+
+### Explanation:
+1. **sum_proper_divisors(n)**: This helper function calculates the sum of all proper divisors of `n` (excluding `n` itself). It efficiently checks divisors up to the square root of `n` to avoid redundant checks.
+2. **amicable_numbers_sum(limit)**: This function iterates through all numbers from 1 to `limit`, checks if a number `a` and its proper divisor sum `b` form an amicable pair (i.e., `sum_proper_divisors(b) == a` and `a != b`), and sums all such numbers. The condition `b > a` ensures each pair is only counted once.
+3. The assertion verifies that the function works correctly for the given test case (`limit = 999`). The expected sum is `504`.

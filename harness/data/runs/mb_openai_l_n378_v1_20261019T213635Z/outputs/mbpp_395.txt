@@ -1,0 +1,15 @@
+```python
+from collections import Counter
+
+
+def first_non_repeating_character(text):
+    counts = Counter(text)
+    for char in text:
+        if counts[char] == 1:
+            return char
+    return None
+
+
+assert first_non_repeating_character("abcabc") is None
+assert first_non_repeating_character("swiss") == "w"
+```

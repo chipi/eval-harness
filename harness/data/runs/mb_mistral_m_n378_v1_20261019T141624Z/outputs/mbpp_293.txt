@@ -1,0 +1,14 @@
+```python
+import math
+
+def otherside_rightangle(a, b):
+    """
+    Calculate the third side of a right-angled triangle given two sides.
+    The function assumes the given sides are the two legs (a and b) and returns the hypotenuse.
+    If one of the sides is the hypotenuse, the function will still work as it uses the Pythagorean theorem.
+    """
+    return math.sqrt(a**2 + b**2)
+
+# Test case
+assert otherside_rightangle(7, 8) == 10.63014581273465
+```

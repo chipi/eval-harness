@@ -1,0 +1,8 @@
+```python
+def tuple_to_int(numbers):
+    """Convert a tuple of positive integers into one integer."""
+    return int("".join(map(str, numbers)))
+
+
+assert tuple_to_int((1, 2, 3)) == 123
+```

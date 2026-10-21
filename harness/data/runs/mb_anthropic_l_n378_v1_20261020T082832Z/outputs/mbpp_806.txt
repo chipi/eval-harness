@@ -1,0 +1,48 @@
+Looking at this problem, I need to find the longest consecutive run of uppercase characters in a string.
+
+Let me verify with the test case `'GeMKSForGERksISBESt'`:
+- `G` → run of 1
+- `e` → lowercase, reset
+- `MKS` → run of 3
+- `F` → run starts... wait, let me re-scan: `G`, `e`, `M`, `K`, `S`, `F`, `o`, `r`, `G`, `E`, `R`, `k`, `s`, `I`, `S`, `B`, `E`, `S`, `t`
+- Runs: `G`(1), `MKSF`(4), `GER`(3), `ISBES`(5) → maximum is **5** ✓
+
+```python
+"""
+Write a function to find maximum run of uppercase characters in the given string.
+assert max_run_uppercase('GeMKSForGERksISBESt') == 5
+"""
+
+
+def max_run_uppercase(test_str):
+    """
+    Return the length of the longest run of consecutive uppercase
+    characters in `test_str`.
+    """
+    max_run = 0
+    current_run = 0
+
+    for ch in test_str:
+        if ch.isupper():
+            current_run += 1
+            if current_run > max_run:
+                max_run = current_run
+        else:
+            current_run = 0
+
+    return max_run
+
+
+if __name__ == '__main__':
+    # Provided test case
+    assert max_run_uppercase('GeMKSForGERksISBESt') == 5
+
+    # A few extra sanity checks
+    assert max_run_uppercase('GooGLEFluTTER') == 4   # 'TTER'
+    assert max_run_uppercase('abcdefg') == 0
+    assert max_run_uppercase('ABCDEFG') == 7
+    assert max_run_uppercase('') == 0
+
+    print("All tests passed!")
+    print(max_run_uppercase('GeMKSForGERksISBESt'))  # -> 5
+```

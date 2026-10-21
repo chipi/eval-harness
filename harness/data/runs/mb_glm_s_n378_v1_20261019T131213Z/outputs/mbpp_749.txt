@@ -1,0 +1,44 @@
+```python
+"""
+Write a function to sort a given list of strings of numbers numerically. https://www.geeksforgeeks.org/python-sort-numeric-strings-in-a-list/
+assert sort_numeric_strings( ['4','12','45','7','0','100','200','-12','-500'])==[-500, -12, 0, 4, 7, 12, 45, 100, 200]
+"""
+
+def sort_numeric_strings(string_list: list[str]) -> list[int]:
+    """
+    Sorts a list of strings representing numbers numerically.
+
+    This function takes a list of strings, where each string can be an integer
+    (positive or negative), and returns a new list containing the sorted
+    integer values.
+
+    Args:
+        string_list: A list of strings, e.g., ['4', '-12', '0'].
+
+    Returns:
+        A new list of integers sorted in ascending numerical order.
+    """
+    # The key is to convert each string to an integer before comparing them.
+    # The sorted() function takes a 'key' argument, which is a function to be
+    # called on each element of the list prior to making comparisons.
+    # By using int as the key, we ensure the sorting is done numerically.
+    return sorted(string_list, key=int)
+
+# Example usage and assertion from the problem description
+if __name__ == "__main__":
+    input_list = ['4', '12', '45', '7', '0', '100', '200', '-12', '-500']
+    expected_output = [-500, -12, 0, 4, 7, 12, 45, 100, 200]
+    
+    # Call the function to get the sorted result
+    sorted_list = sort_numeric_strings(input_list)
+    
+    # Print the results for verification
+    print(f"Input list: {input_list}")
+    print(f"Sorted list: {sorted_list}")
+    print(f"Expected output: {expected_output}")
+    
+    # Assert that the output matches the expected result
+    assert sorted_list == expected_output
+    
+    print("\nAssertion passed! The function works correctly.")
+```

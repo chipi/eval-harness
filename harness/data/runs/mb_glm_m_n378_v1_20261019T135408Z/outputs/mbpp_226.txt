@@ -1,0 +1,34 @@
+Here's a self-contained Python script that solves the problem by removing characters at odd index values from a given string:
+
+```python
+def odd_values_string(s):
+    """
+    Remove characters at odd index values from the input string.
+    
+    Args:
+        s (str): The input string.
+        
+    Returns:
+        str: A new string with characters at odd indices removed.
+    """
+    # Using list comprehension to select characters at even indices (0, 2, 4, ...)
+    return ''.join([s[i] for i in range(len(s)) if i % 2 == 0])
+
+# Test cases
+assert odd_values_string('abcdef') == 'ace', "Test case 1 failed"
+assert odd_values_string('hello') == 'hlo', "Test case 2 failed"
+assert odd_values_string('') == '', "Test case 3 failed"
+assert odd_values_string('a') == 'a', "Test case 4 failed"
+assert odd_values_string('ab') == 'a', "Test case 5 failed"
+
+print("All test cases passed!")
+```
+
+### Explanation:
+1. The function `odd_values_string` takes a string `s` as input.
+2. It uses a list comprehension to iterate over each index `i` in the range of the string's length.
+3. For each index, it checks if the index is even (`i % 2 == 0`). If so, it includes the character at that index in the new string.
+4. The selected characters are then joined into a new string using `''.join()`.
+5. The test cases verify that the function works correctly for various scenarios, including empty strings, single-character strings, and strings of different lengths.
+
+This approach efficiently filters out characters at odd indices while preserving the order of the remaining characters.

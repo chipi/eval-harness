@@ -1,0 +1,41 @@
+```python
+"""
+Write a python function to count the number of set bits (binary digits with value 1) in a given number.
+assert count_Set_Bits(2) == 1
+"""
+
+def count_Set_Bits(n: int) -> int:
+    """
+    Count the number of 1-bits in the binary representation of a given integer.
+    
+    This function uses Brian Kernighan's algorithm, which repeatedly flips the
+    least significant set bit to 0, counting each iteration.
+    
+    Args:
+        n: A non-negative integer.
+    
+    Returns:
+        The number of set bits (ones) in the binary representation of n.
+    """
+    count = 0
+    while n:
+        n &= (n - 1)   # Clear the least significant set bit
+        count += 1
+    return count
+
+
+# Example usage and test
+if __name__ == "__main__":
+    # Test the provided assertion
+    assert count_Set_Bits(2) == 1, "Test failed: count_Set_Bits(2) should be 1"
+    
+    # Additional tests
+    assert count_Set_Bits(0) == 0
+    assert count_Set_Bits(1) == 1
+    assert count_Set_Bits(3) == 2   # binary 11
+    assert count_Set_Bits(7) == 3   # binary 111
+    assert count_Set_Bits(255) == 8 # binary 11111111
+    assert count_Set_Bits(1023) == 10 # binary 1111111111
+    
+    print("All tests passed!")
+```

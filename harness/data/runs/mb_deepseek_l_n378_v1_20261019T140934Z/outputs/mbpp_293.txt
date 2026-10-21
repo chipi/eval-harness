@@ -1,0 +1,19 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+import math
+
+def otherside_rightangle(a, b):
+    """
+    Given two sides of a right-angled triangle, find the third side.
+    Assumes the given sides are the two shorter sides (legs) and
+    returns the hypotenuse.
+    """
+    return math.sqrt(a**2 + b**2)
+
+# Test the function
+if __name__ == "__main__":
+    result = otherside_rightangle(7, 8)
+    print(result)
+    assert result == 10.63014581273465
+```

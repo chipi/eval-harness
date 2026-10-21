@@ -1,0 +1,7 @@
+```python
+def replace_blank(text: str, character: str) -> str:
+    return text.replace(" ", character)
+
+
+assert replace_blank("hello people", "@") == "hello@people"
+```

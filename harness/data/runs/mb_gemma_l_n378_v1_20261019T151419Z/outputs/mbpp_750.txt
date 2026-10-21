@@ -1,0 +1,23 @@
+```python
+def add_tuple(lst, tpl):
+    """
+    Adds the elements of the given tuple to the end of the given list.
+    
+    Args:
+        lst (list): The initial list.
+        tpl (tuple): The tuple containing elements to be added.
+        
+    Returns:
+        list: The updated list containing all elements.
+    """
+    # We use the extend() method which appends all elements of an iterable 
+    # (like a tuple) to the end of the list.
+    lst.extend(tpl)
+    return lst
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    result = add_tuple([5, 6, 7], (9, 10))
+    assert result == [5, 6, 7, 9, 10]
+    print(f"Test passed! Result: {result}")
+```

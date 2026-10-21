@@ -1,0 +1,42 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def centered_hexagonal_number(n):
+    """
+    Find the nth centered hexagonal number.
+    
+    A centered hexagonal number is a centered figurate number that represents 
+    a hexagon with a dot in the center and all other dots surrounding the 
+    center dot in a hexagonal lattice.
+    
+    Formula: 3n(n-1) + 1
+    
+    Args:
+        n: A positive integer representing the position in the sequence
+        
+    Returns:
+        The nth centered hexagonal number
+    """
+    if n <= 0:
+        raise ValueError("n must be a positive integer")
+    
+    return 3 * n * (n - 1) + 1
+
+
+# Test the function
+if __name__ == "__main__":
+    # Test with the given example
+    assert centered_hexagonal_number(10) == 271, f"Expected 271, got {centered_hexagonal_number(10)}"
+    
+    # Additional test cases
+    assert centered_hexagonal_number(1) == 1
+    assert centered_hexagonal_number(2) == 7
+    assert centered_hexagonal_number(3) == 19
+    assert centered_hexagonal_number(4) == 37
+    assert centered_hexagonal_number(5) == 61
+    
+    print("All tests passed!")
+    print(f"10th centered hexagonal number: {centered_hexagonal_number(10)}")
+```
+
+The centered hexagonal number sequence follows the formula: **3n(n-1) + 1**, where n is the position in the sequence. The first few numbers are: 1, 7, 19, 37, 61, 91, 127, 169, 217, 271, ...

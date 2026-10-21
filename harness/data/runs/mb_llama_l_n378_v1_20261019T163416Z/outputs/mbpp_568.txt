@@ -1,0 +1,10 @@
+```python
+def empty_list(n):
+    return [{} for _ in range(n)]
+
+def main():
+    print(empty_list(5))  # prints: [{}, {}, {}, {}, {}]
+
+if __name__ == "__main__":
+    main()
+```

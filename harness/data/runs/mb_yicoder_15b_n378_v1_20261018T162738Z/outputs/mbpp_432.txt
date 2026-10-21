@@ -1,0 +1,18 @@
+```python
+def median_trapezium(base1, base2, height):
+    """
+    This function calculates the median length of a trapezium.
+    """
+    # Calculate the area of the trapezium
+    area = ((base1 + base2) / 2) * height
+    
+    # Calculate the median length of the trapezium
+    median_length = area ** 0.5
+    
+    return median_length
+
+# Test cases
+assert median_trapezium(15,25,35)==20
+assert median_trapezium(10,20,15)==16.666666666666668
+assert median_trapezium(5,10,15)==12.5
+```

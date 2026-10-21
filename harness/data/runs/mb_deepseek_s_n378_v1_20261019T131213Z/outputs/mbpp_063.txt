@@ -1,0 +1,25 @@
+```python
+def max_difference(tuple_list):
+    """
+    Returns the maximum absolute difference between any two numbers
+    that are part of different tuples in the given list of tuples.
+    
+    The difference is computed as |a - b| where a is from one tuple
+    and b is from another tuple (a and b can be from any position
+    in their respective tuples).
+    """
+    if not tuple_list or len(tuple_list) < 2:
+        return 0  # Not enough tuples to form a pair
+    
+    # Flatten all numbers into a single list
+    all_numbers = []
+    for tup in tuple_list:
+        all_numbers.extend(tup)
+    
+    # The maximum difference is simply max - min
+    return max(all_numbers) - min(all_numbers)
+
+# Test the function with the given assertion
+assert max_difference([(3, 5), (1, 7), (10, 3), (1, 2)]) == 7
+print("Test passed.")
+```

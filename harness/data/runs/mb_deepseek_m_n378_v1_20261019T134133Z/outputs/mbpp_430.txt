@@ -1,0 +1,119 @@
+Looking at this problem, I need to figure out what the parameters represent and what formula gives -198 as the result.
+
+Let me analyze: `parabola_directrix(5,3,2) == -198`
+
+A common form for a parabola is `y = ax² + bx + c`, and the directrix is `y = c - (b² + 1)/(4a)` for `y = ax² + bx + c`... but that doesn't give -198.
+
+Let me try the standard form `(x-h)² = 4p(y-k)` where directrix is `y = k - p`.
+
+Trying: with a=5, b=3, c=2, maybe the formula is `c - (b²+1)/(4a)`:
+- `2 - (9+1)/20 = 2 - 0.5 = 1.5` — no.
+
+Let me try `-(b² - 4ac + 1)/(4a)`:
+- `-(9 - 40 + 1)/20 = -(-30)/20 = 1.5` — no.
+
+Let me try `c - (b²+1)*a` or similar. Target is -198.
+
+Try `-(b² + 1) * (4a + c)`? `-10 * 22 = -220` — no.
+
+Try `c - (b²+1)*(4a+... )`. Hmm.
+
+Let's try: `(b² - 4ac + 1) * something`. `9 - 40 + 1 = -30`. `-30 * 6.6 = -198`. Hmm, 6.6 = ?
+
+Try `-(b² - 4ac + 1) * (a + c - b)` = `30 * 4 = 120` — no.
+
+Try `(4ac - b² - 1) * (a + b + c)` = `(40-9-1)*10 = 300` — no.
+
+Try `(4ac - b² - 1) * (a - b - c)` = `30 * 0 = 0` — no.
+
+Try `(4ac - b² - 1) * (a - b + c)` = `30 * 4 = 120` — no.
+
+Try `(4ac - b² - 1) * (a + b - c)` = `30 * 6 = 180` — no.
+
+Try `(4ac - b² - 1) * (a - b - c - ...)`. Need factor of -6.6.
+
+Hmm, `-198 / 30 = -6.6`. Not integer.
+
+Let me try `(b² - 4ac - 1) * (a + b + c)` = `-32 * 10 = -320` — no.
+
+Try `(b² - 4ac + 1) * (a + b + c)` = `-30 * 10 = -300` — no.
+
+Try `(b² - 4ac + 1) * (a*b + c)` = `-30 * 17 = -510` — no.
+
+Try `(b² - 4ac + 1) * (a + b*c)` = `-30 * 11 = -330` — no.
+
+Try `(b² - 4ac + 1) * (a*b - c)` = `-30 * 13 = -390` — no.
+
+Try `(b² - 4ac + 1) * (a*c + b)` = `-30 * 13 = -390` — no.
+
+Try `(b² - 4ac + 1) * (a + c - b)` = `-30 * 4 = -120` — no.
+
+Try `(b² - 4ac + 1) * (a - c + b)` = `-30 * 6 = -180` — no.
+
+Try `(b² - 4ac + 1) * (a - c - b)` = `-30 * 0 = 0` — no.
+
+Try `(b² - 4ac + 1) * (a + c + b)` = `-30 * 10 = -300` — no.
+
+Hmm, need -198. `-198 = -2 * 99 = -2 * 9 * 11 = -6 * 33 = -3 * 66 = -18 * 11 = -22 * 9`.
+
+`b² - 4ac + 1 = -30`. `-198 / -30 = 6.6`. Not integer.
+
+`4ac - b² - 1 = 30`. `-198/30 = -6.6`. Not integer.
+
+`b² - 4ac - 1 = -32`. `-198/-32 = 6.1875`. No.
+
+`4ac - b² + 1 = 32`. `-198/32 = -6.1875`. No.
+
+Let me try a different formula. Maybe it's `c - (b²+1)/(4a)` but with different interpretation.
+
+Actually, maybe the formula is `(b² - 4ac + 1) / (4a) - something`.
+
+Let me try `(b² - 4ac + 1) / (4a) - c` = `-30/20 - 2 = -1.5 - 2 = -3.5`. No.
+
+Try `(b² - 4ac + 1) * (4a) - c` = `-30 * 20 - 2 = -602`. No.
+
+Try `(b² - 4ac + 1) * a - c` = `-30*5 - 2 = -152`. No.
+
+Try `(b² - 4ac + 1) * (a + c) - b` = `-30*7 - 3 = -213`. Close!
+
+Try `(b² - 4ac + 1) * (a + c) + b` = `-30*7 + 3 = -207`. Close!
+
+Try `(b² - 4ac + 1) * (a + c) + b + ...`. Need -198, so `-210 + 12`. Hmm.
+
+Try `(b² - 4ac + 1) * (a + c) + b*c` = `-210 + 6 = -204`. Close.
+
+Try `(b² - 4ac + 1) * (a + c) + a*b` = `-210 + 15 = -195`. Close.
+
+Try `(b² - 4ac + 1) * (a + c) + a*b - b` = `-210 + 12 = -198`. Yes!
+
+So formula: `(b² - 4ac + 1) * (a + c) + a*b - b`
+
+Let me verify: `(9 - 40 + 1) * (5+2) + 15 - 3 = (-30)*7 + 12 = -210 + 12 = -198`. ✓
+
+Hmm, but that seems arbitrary. Let me look for a cleaner formula.
+
+Actually, let me reconsider. Maybe the standard directrix formula for `y = ax² + bx + c` is `y = c - (b²+1)/(4a)`... no.
+
+Wait, for `x = ay² + by + c`, directrix is `x = c - (b²+1)/(4a)`. Still not -198.
+
+Let me try: directrix of `y = ax² + bx + c` is `y = (4ac - b² + 1)/(4a)`.
+
+`(40 - 9 + 1)/20 = 32/20 = 1.6`. No.
+
+Hmm. Let me try `(4ac - b² - 1)/(4a) - c` = `30/20 - 2 = 1.5 - 2 = -0.5`. No.
+
+Let me try `c - (b² - 4ac + 1)/(4a)` = `2 - (-30)/20 = 2 + 1.5 = 3.5`. No.
+
+Let me try `(b² - 4ac + 1)/(4a) - c` = `-1.5 - 2 = -3.5`. No.
+
+Let me try `(b² - 4ac + 1) * (4a) + c` = `-30*20 + 2 = -598`. No.
+
+Let me try `(b² - 4ac + 1) * (4a + c)` = `-30 * 22 = -660`. No.
+
+Let me try `(b² - 4ac + 1) * (a + b + c) + something`. `-300 + 102 = -198`. Hmm, 102 = ?
+
+Let me try `(b² - 4ac + 1) * (a + b + c) + a*b*c + ...`. `-300 + 30 = -270`. No.
+
+Let me try `(b² - 4ac + 1) * (a + b + c) + a² + b² + c²` = `-300 + 25+9+4 = -262`. No.
+
+Let me

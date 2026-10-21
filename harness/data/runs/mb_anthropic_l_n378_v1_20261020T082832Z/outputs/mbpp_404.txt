@@ -1,0 +1,50 @@
+Looking at this problem, I need to write a function that returns the smaller of two numbers.
+
+```python
+"""
+Write a python function to find the minimum of two numbers.
+assert minimum(1,2) == 1
+"""
+
+
+def minimum(a, b):
+    """
+    Return the minimum of two numbers.
+
+    Args:
+        a: First number.
+        b: Second number.
+
+    Returns:
+        The smaller of the two numbers (returns `a` when they are equal).
+    """
+    if a <= b:
+        return a
+    return b
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert minimum(1, 2) == 1
+
+    # Additional test cases
+    assert minimum(2, 1) == 1
+    assert minimum(5, 5) == 5
+    assert minimum(-3, 2) == -3
+    assert minimum(-10, -20) == -20
+    assert minimum(0, 7) == 0
+    assert minimum(1.5, 1.25) == 1.25
+    assert minimum(100, 99) == 99
+
+    print("All tests passed!")
+    print("minimum(1, 2)  =", minimum(1, 2))
+    print("minimum(-3, 2) =", minimum(-3, 2))
+```
+
+**How it works:**
+
+1. The function `minimum(a, b)` compares the two inputs with `a <= b`.
+2. If `a` is less than or equal to `b`, it returns `a`; otherwise it returns `b`.
+3. This works for integers, floats, and any mixed numeric types since Python supports comparison across numeric types.
+
+The `if __name__ == "__main__":` block runs the assertions to verify correctness when the script is executed directly.

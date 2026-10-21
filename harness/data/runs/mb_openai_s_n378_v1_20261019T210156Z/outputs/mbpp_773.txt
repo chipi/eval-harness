@@ -1,0 +1,20 @@
+```python
+def occurrence_substring(text, substring):
+    """
+    Find the first occurrence of `substring` in `text`.
+
+    Returns:
+        (matched_substring, start_index, end_index) if found
+        None if not found
+    """
+    start = text.find(substring)
+    if start == -1:
+        return None
+    end = start + len(substring)
+    return (substring, start, end)
+
+
+if __name__ == "__main__":
+    assert occurrence_substring('python programming, python language', 'python') == ('python', 0, 6)
+    print("All tests passed.")
+```

@@ -1,0 +1,36 @@
+```python
+"""
+Write a python function to find smallest number in a list.
+assert smallest_num([10, 20, 1, 45, 99]) == 1
+"""
+
+def smallest_num(lst):
+    """
+    Returns the smallest number in a list.
+    
+    Args:
+        lst: A list of numbers.
+    
+    Returns:
+        The smallest number in the list.
+    """
+    if not lst:
+        return None  # or raise an exception, depending on requirements
+    
+    smallest = lst[0]
+    for num in lst[1:]:
+        if num < smallest:
+            smallest = num
+    return smallest
+
+
+# Test the function
+if __name__ == "__main__":
+    test_list = [10, 20, 1, 45, 99]
+    result = smallest_num(test_list)
+    print(f"The smallest number in {test_list} is: {result}")
+    
+    # Verify the assertion
+    assert smallest_num([10, 20, 1, 45, 99]) == 1
+    print("Assertion passed!")
+```

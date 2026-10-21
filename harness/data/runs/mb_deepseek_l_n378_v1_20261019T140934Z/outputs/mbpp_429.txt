@@ -1,0 +1,17 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def and_tuples(t1, t2):
+    """
+    Extract the elementwise bitwise AND from the given two tuples.
+    """
+    return tuple(a & b for a, b in zip(t1, t2))
+
+
+# Test the function
+if __name__ == "__main__":
+    result = and_tuples((10, 4, 6, 9), (5, 2, 3, 3))
+    print(result)  # Expected: (0, 0, 2, 1)
+    assert result == (0, 0, 2, 1), f"Test failed: got {result}"
+    print("Test passed!")
+```

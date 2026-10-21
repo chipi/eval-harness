@@ -1,0 +1,17 @@
+```python
+def odd_position(lst):
+    """
+    Checks whether every odd index contains odd numbers in a given list.
+
+    Args:
+        lst (list): The input list to check.
+
+    Returns:
+        bool: True if every odd index contains an odd number, False otherwise.
+    """
+    return all(lst[i] % 2!= 0 for i in range(1, len(lst), 2))
+
+# Example usage:
+print(odd_position([2,1,4,3,6,7,6,3]))  # Output: True
+print(odd_position([2,2,4,3,6,7,6,3]))  # Output: False
+```

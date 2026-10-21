@@ -1,0 +1,31 @@
+```python
+import re
+
+def text_match_two_three(text):
+    """
+    Checks whether a string contains the 'a' character followed by 
+    exactly two or three 'b' characters.
+    
+    The regex 'ab{2,3}' matches 'a' followed by 2 or 3 'b's.
+    """
+    # re.search looks for the pattern anywhere in the string
+    # 'ab{2,3}' means 'a' followed by 'b' repeated 2 to 3 times
+    if re.search(r'ab{2,3}', text):
+        return True
+    return False
+
+# Test cases
+if __name__ == "__main__":
+    # Provided test case
+    assert text_match_two_three("ac") == False
+    
+    # Additional test cases to verify correctness
+    assert text_match_two_three("abb") == True    # Exactly 2 'b's
+    assert text_match_two_three("abbb") == True   # Exactly 3 'b's
+    assert text_match_two_three("ab") == False    # Only 1 'b'
+    assert text_match_two_three("abbbb") == True   # Contains 'abbb' (3 'b's)
+    assert text_match_two_three("cab b") == False # Space breaks the sequence
+    assert text_match_two_three("xyzabbz") == True # Pattern inside other text
+    
+    print("All tests passed!")
+```

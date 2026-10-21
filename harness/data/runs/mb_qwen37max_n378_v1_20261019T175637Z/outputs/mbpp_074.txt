@@ -1,0 +1,31 @@
+```python
+def is_samepatterns(colors, patterns):
+    """
+    Check whether the colors list follows the same pattern as the patterns list.
+    Two lists follow the same pattern if there is a bijection between their elements.
+    """
+    if len(colors) != len(patterns):
+        return False
+    
+    color_to_pattern = {}
+    pattern_to_color = {}
+    
+    for c, p in zip(colors, patterns):
+        if c in color_to_pattern:
+            if color_to_pattern[c] != p:
+                return False
+        else:
+            color_to_pattern[c] = p
+        
+        if p in pattern_to_color:
+            if pattern_to_color[p] != c:
+                return False
+        else:
+            pattern_to_color[p] = c
+    
+    return True
+
+
+# Test
+assert is_samepatterns(["red", "green", "green"], ["a", "b", "b"]) == True
+```

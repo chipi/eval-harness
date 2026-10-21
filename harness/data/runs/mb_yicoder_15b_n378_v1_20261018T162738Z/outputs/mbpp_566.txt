@@ -1,0 +1,9 @@
+```python
+def sum_digits(n):
+    return sum(int(digit) for digit in str(n))
+
+assert sum_digits(345)==12
+assert sum_digits(0)==0
+assert sum_digits(12345)==15
+assert sum_digits(99999)==45
+```

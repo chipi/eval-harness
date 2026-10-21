@@ -1,0 +1,49 @@
+```python
+def check_Consecutive(lst):
+    """
+    Check whether the given list contains consecutive numbers or not.
+    
+    Args:
+        lst: A list of numbers
+        
+    Returns:
+        True if the list contains consecutive numbers, False otherwise
+    """
+    # Handle empty or single element lists
+    if len(lst) <= 1:
+        return True
+    
+    # Sort the list to check for consecutive numbers
+    sorted_lst = sorted(lst)
+    
+    # Check if each element is exactly 1 more than the previous
+    for i in range(1, len(sorted_lst)):
+        if sorted_lst[i] != sorted_lst[i-1] + 1:
+            return False
+    
+    return True
+
+
+# Test cases
+assert check_Consecutive([1, 2, 3, 4, 5]) == True
+assert check_Consecutive([1, 2, 4, 5]) == False
+assert check_Consecutive([5, 4, 3, 2, 1]) == True
+assert check_Consecutive([1]) == True
+assert check_Consecutive([]) == True
+assert check_Consecutive([10, 11, 12]) == True
+assert check_Consecutive([1, 3, 5, 7]) == False
+
+print("All test cases passed!")
+```
+
+The solution works as follows:
+
+1. **Handle edge cases**: Lists with 0 or 1 elements are considered consecutive by default.
+
+2. **Sort the list**: Convert the input list to a sorted version to handle unsorted inputs like `[5, 4, 3, 2, 1]`.
+
+3. **Check consecutive property**: Iterate through the sorted list and verify that each element is exactly 1 more than the previous element.
+
+4. **Return result**: If all adjacent elements have a difference of 1, the list contains consecutive numbers.
+
+The time complexity is O(n log n) due to sorting, and space complexity is O(n) for the sorted list.

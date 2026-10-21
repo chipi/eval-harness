@@ -1,0 +1,32 @@
+Here's a self-contained Python script that solves the problem in a markdown code block:
+
+```python
+"""
+Write a function to find the area of a rectangle.
+assert rectangle_area(10,20)==200
+"""
+
+def rectangle_area(length, width):
+    """Calculate the area of a rectangle.
+
+    Args:
+        length: The length of the rectangle
+        width: The width of the rectangle
+
+    Returns:
+        The area of the rectangle (length * width)
+    """
+    return length * width
+
+# Test the function
+assert rectangle_area(10, 20) == 200
+print("All tests passed!")
+```
+
+This script:
+1. Defines a function `rectangle_area` that takes length and width as parameters
+2. Returns the product of length and width (the area of the rectangle)
+3. Includes a test case that matches the provided assertion
+4. Prints a confirmation message if the test passes
+
+You can run this script directly, and it will verify that the function works correctly.

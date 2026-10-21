@@ -1,0 +1,19 @@
+```python
+def highest_Power_of_2(n):
+    """
+    Return the highest power of 2 less than or equal to n.
+    Assumes n is a positive integer.
+    """
+    if n < 1:
+        raise ValueError("n must be a positive integer")
+
+    power = 1
+    while power * 2 <= n:
+        power *= 2
+    return power
+
+
+if __name__ == "__main__":
+    assert highest_Power_of_2(10) == 8
+    print("All tests passed.")
+```

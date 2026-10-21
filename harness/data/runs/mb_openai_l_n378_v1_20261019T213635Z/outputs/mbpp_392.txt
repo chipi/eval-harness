@@ -1,0 +1,20 @@
+```python
+from functools import lru_cache
+
+
+@lru_cache(maxsize=None)
+def get_max_sum(n: int) -> int:
+    """Return the maximum value obtainable by exchanging n recursively."""
+    if n < 0:
+        raise ValueError("n must be non-negative")
+    if n == 0:
+        return 0
+
+    exchanged = sum(get_max_sum(n // divisor) for divisor in (2, 3, 4, 5))
+    return max(n, exchanged)
+
+
+if __name__ == "__main__":
+    assert get_max_sum(60) == 106
+    print(get_max_sum(60))
+```

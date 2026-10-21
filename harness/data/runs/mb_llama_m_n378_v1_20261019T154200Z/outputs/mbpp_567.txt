@@ -1,0 +1,17 @@
+```python
+def issort_list(lst):
+    """
+    Checks whether a specified list is sorted or not.
+
+    Args:
+        lst (list): The list to be checked.
+
+    Returns:
+        bool: True if the list is sorted, False otherwise.
+    """
+    return lst == sorted(lst)
+
+# Test the function
+print(issort_list([1,2,4,6,8,10,12,14,16,17]))  # Expected output: True
+print(issort_list([1,2,4,6,8,10,12,14,16,15]))  # Expected output: False
+```

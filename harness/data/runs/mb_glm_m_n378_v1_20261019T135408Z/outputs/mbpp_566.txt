@@ -1,0 +1,51 @@
+Here's a self-contained Python script that solves the problem with the given assertion:
+
+```python
+def sum_digits(n):
+    """
+    Returns the sum of the digits of a non-negative integer n.
+    
+    Args:
+        n (int): A non-negative integer.
+    
+    Returns:
+        int: The sum of the digits of n.
+    
+    Raises:
+        ValueError: If n is negative.
+    """
+    if n < 0:
+        raise ValueError("Input must be a non-negative integer")
+    
+    total = 0
+    while n > 0:
+        total += n % 10
+        n = n // 10
+    return total
+
+# Test the function with the provided assertion
+assert sum_digits(345) == 12, "Test case failed: sum_digits(345) should be 12"
+
+# Additional test cases
+assert sum_digits(0) == 0, "Test case failed: sum_digits(0) should be 0"
+assert sum_digits(123456789) == 45, "Test case failed: sum_digits(123456789) should be 45"
+assert sum_digits(999) == 27, "Test case failed: sum_digits(999) should be 27"
+
+print("All test cases passed!")
+```
+
+### Explanation:
+1. **Function `sum_digits(n)`**:
+   - Takes a non-negative integer `n` as input.
+   - Raises a `ValueError` if `n` is negative.
+   - Initializes `total` to 0 to accumulate the sum of digits.
+   - Uses a `while` loop to extract each digit (using `n % 10`) and add it to `total`.
+   - Removes the last digit from `n` (using `n // 10`) until `n` becomes 0.
+   - Returns the accumulated `total`.
+
+2. **Test Cases**:
+   - The provided assertion `sum_digits(345) == 12` is checked.
+   - Additional test cases are included to verify edge cases (like `0`) and larger numbers.
+
+3. **Output**:
+   - If all assertions pass, it prints "All test cases passed!". Otherwise, an assertion error will be raised.

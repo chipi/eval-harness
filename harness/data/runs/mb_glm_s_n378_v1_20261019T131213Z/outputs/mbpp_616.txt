@@ -1,0 +1,45 @@
+```python
+def tuple_modulo(tup1, tup2):
+    """
+    Performs element-wise modulo operation on two tuples of the same length.
+
+    Args:
+        tup1: The first tuple of numbers.
+        tup2: The second tuple of numbers, must be the same length as tup1.
+
+    Returns:
+        A new tuple containing the result of tup1[i] % tup2[i] for each element.
+
+    Raises:
+        ValueError: If the input tuples are not of the same length.
+    """
+    if len(tup1) != len(tup2):
+        raise ValueError("Input tuples must be of the same length.")
+    
+    # Use a generator expression with zip to perform the operation element-wise
+    # and convert the result to a tuple.
+    return tuple(a % b for a, b in zip(tup1, tup2))
+
+# Example usage and assertion from the problem description
+if __name__ == "__main__":
+    input_tuple1 = (10, 4, 5, 6)
+    input_tuple2 = (5, 6, 7, 5)
+    expected_result = (0, 4, 5, 1)
+    
+    result = tuple_modulo(input_tuple1, input_tuple2)
+    
+    print(f"Input 1: {input_tuple1}")
+    print(f"Input 2: {input_tuple2}")
+    print(f"Result:  {result}")
+    print(f"Expected: {expected_result}")
+    
+    assert result == expected_result
+    print("\nAssertion passed!")
+
+    # Example with different length tuples to show error handling
+    try:
+        tuple_modulo((1, 2), (3,))
+    except ValueError as e:
+        print(f"\nCaught expected error: {e}")
+
+```

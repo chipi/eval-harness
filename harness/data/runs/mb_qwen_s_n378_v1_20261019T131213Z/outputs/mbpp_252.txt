@@ -1,0 +1,20 @@
+```python
+import cmath
+
+def convert(z):
+    """
+    Convert a complex number to polar coordinates.
+    
+    Args:
+        z: A complex number (or real number)
+        
+    Returns:
+        A tuple (r, theta) where r is the magnitude and theta is the phase angle in radians.
+    """
+    # Ensure input is treated as a complex number
+    if not isinstance(z, complex):
+        z = complex(z)
+    
+    r, theta = cmath.polar(z)
+    return (r, theta)
+```

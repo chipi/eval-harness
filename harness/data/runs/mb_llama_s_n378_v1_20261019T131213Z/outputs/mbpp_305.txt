@@ -1,0 +1,40 @@
+```python
+def start_withp(words):
+    """
+    This function takes a list of words as input and returns two words 
+    that start with the letter 'p'.
+
+    Args:
+        words (list): A list of strings.
+
+    Returns:
+        tuple: A tuple containing two words that start with 'p'.
+    """
+    # Initialize an empty list to store words starting with 'p'
+    p_words = []
+
+    # Iterate over each word in the input list
+    for word in words:
+        # Split the word into individual words (in case of multiple words in a string)
+        individual_words = word.split()
+        
+        # Iterate over each individual word
+        for w in individual_words:
+            # Check if the word starts with 'p' (ignoring case)
+            if w.lower().startswith('p'):
+                # Add the word to the list
+                p_words.append(w)
+
+    # Check if we have at least two words starting with 'p'
+    if len(p_words) >= 2:
+        # Return the first two words starting with 'p'
+        return (p_words[0], p_words[1])
+    else:
+        # Return a message if less than two words start with 'p'
+        return "Not enough words start with 'p'"
+
+# Test the function
+print(start_withp(["Python PHP", "Java JavaScript", "c c++"]))  # Expected output: ('Python', 'PHP')
+```
+
+This script defines a function `start_withp` that takes a list of strings as input. It iterates over each string in the list, splits it into individual words, and checks if each word starts with the letter 'p' (ignoring case). The function returns a tuple containing the first two words that start with 'p'. If less than two words start with 'p', it returns a message indicating this. The script then tests the function with a sample list of strings.

@@ -1,0 +1,18 @@
+```python
+import re
+
+def text_match_wordz(text):
+    """
+    Matches a word containing 'z'.
+    
+    Args:
+        text (str): The input string to check.
+        
+    Returns:
+        bool: True if there is at least one word containing 'z', False otherwise.
+    """
+    # Pattern to match a word that contains the letter 'z'
+    # \b ensures we are matching whole words, and [a-zA-Z]*z[a-zA-Z]* matches any word with a 'z' in it
+    pattern = r'\b\w*z\w*\b'
+    return bool(re.search(pattern, text))
+```

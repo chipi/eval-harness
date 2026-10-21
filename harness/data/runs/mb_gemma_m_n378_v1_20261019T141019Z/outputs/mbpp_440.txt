@@ -1,0 +1,73 @@
+To solve this problem, we can use the `nltk` (Natural Language Toolkit) library, which is the industry standard for Part-of-Speech (POS) tagging in Python.
+
+The script below includes a function that tokenizes the sentence, identifies the POS tags, finds the first word tagged as an adverb (`RB`), and returns its starting index, ending index, and the word itself.
+
+```python
+import nltk
+
+# Ensure necessary NLTK resources are downloaded
+try:
+    nltk.data.find('tokenizers/punkt')
+    nltk.data.find('taggers/averaged_perceptron_tagger')
+except LookupError:
+    nltk.download('punkt')
+    nltk.download('averaged_perceptron_tagger')
+
+def find_adverb_position(sentence: str):
+    """
+    Finds the first adverb and its character start and end positions.
+    
+    Args:
+        sentence (str): The input sentence.
+        
+    Returns:
+        tuple: (start_index, end_index, word) or None if no adverb is found.
+    """
+    # Tokenize the sentence into words
+    tokens = nltk.word_tokenize(sentence)
+    # Perform Part-of-Speech tagging
+    tagged = nltk.pos_tag(tokens)
+
+    for word, tag in tagged:
+        # 'RB' is the Penn Treebank tag for Adverbs
+        # 'RBR' is Adverb, comparative; 'RBS' is Adverb, superlative
+        if tag in ('RB', 'RBR', 'RBS'):
+            # Find the character position in the original string
+            # We use find() to locate the word to handle punctuation/spacing correctly
+            start_idx = sentence.find(word)
+            if start_idx != -1:
+                end_idx = start_idx + len(word)
+                return (start_idx, end_idx, word)
+    
+    return None
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    test_sentence = "clearly!! we can see the sky"
+    result = find_adverb_position(test_sentence)
+    
+    print(f"Sentence: '{test_sentence}'")
+    print(f"Result: {result}")
+    
+    # Assertion check
+    assert result == (0, 7, 'clearly'), f"Expected (0, 7, 'clearly'), but got {result}"
+    print("Assertion passed!")
+
+    # Additional test case
+    test_sentence_2 = "He runs very quickly."
+    result_2 = find_adverb_position(test_sentence_2)
+    print(f"\nSentence: '{test_sentence_2}'")
+    print(f"Result: {result_2}") # Should find 'very' or 'quickly'
+```
+
+### Requirements
+To run this script, you will need to install the `nltk` library via pip:
+```bash
+pip install nltk
+```
+
+### How it works:
+1.  **Tokenization**: It breaks the sentence into individual components (words and punctuation).
+2.  **POS Tagging**: It uses the `averaged_perceptron_tagger` to assign grammatical roles to each token.
+3.  **Tag Filtering**: It looks for tags starting with `RB` (the standard code for adverbs).
+4.  **Index Calculation**: Once the first adverb is identified, it uses the `.find()` method on the original string to determine the exact character offsets required by your assertion.

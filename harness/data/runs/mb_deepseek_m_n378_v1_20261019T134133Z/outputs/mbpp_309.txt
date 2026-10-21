@@ -1,0 +1,45 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def maximum(a, b):
+    """
+    Returns the maximum of two numbers.
+    
+    Parameters:
+    a (int or float): The first number.
+    b (int or float): The second number.
+    
+    Returns:
+    int or float: The larger of the two numbers.
+    """
+    if a > b:
+        return a
+    else:
+        return b
+
+
+# Test the function
+assert maximum(5, 10) == 10
+assert maximum(10, 5) == 10
+assert maximum(-3, -7) == -3
+assert maximum(0, 0) == 0
+assert maximum(3.5, 2.1) == 3.5
+
+print("All tests passed!")
+```
+
+**Explanation:**
+
+- The `maximum` function takes two arguments, `a` and `b`.
+- It compares them using an `if-else` statement and returns the larger value.
+- The `assert` statements verify that the function works correctly for various cases, including positive numbers, negative numbers, equal values, and floats.
+- If all assertions pass, the script prints `"All tests passed!"`.
+
+Alternatively, you could simplify the function body to a single line using Python's built-in `max()`:
+
+```python
+def maximum(a, b):
+    return max(a, b)
+```
+
+But the explicit `if-else` version demonstrates the logic more clearly.

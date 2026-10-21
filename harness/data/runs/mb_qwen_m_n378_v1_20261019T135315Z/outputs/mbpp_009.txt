@@ -1,0 +1,35 @@
+```python
+def find_Rotations(s: str) -> int:
+    """
+    Find the minimum number of rotations (greater than 0) required to get the same string.
+    
+    A rotation means moving the first character to the end. For example, rotating "abcd" once gives "bcda".
+    
+    Args:
+        s: The input string
+        
+    Returns:
+        The minimum number of rotations (> 0) needed to obtain the original string again.
+        
+    Examples:
+        >>> find_Rotations("aaaa")
+        1
+        >>> find_Rotations("abab")
+        2
+        >>> find_Rotations("abcd")
+        4
+    """
+    if not s:
+        return 0
+    
+    n = len(s)
+    
+    # Try each possible rotation from 1 to n
+    for i in range(1, n + 1):
+        # Rotate the string i times: take first i characters and move them to the end
+        rotated = s[i:] + s[:i]
+        if rotated == s:
+            return i
+    
+    return n
+```

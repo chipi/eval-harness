@@ -1,0 +1,42 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def consecutive_duplicates(lst):
+    """
+    Remove consecutive duplicates from a list.
+    
+    Args:
+        lst: Input list that may contain consecutive duplicates.
+    
+    Returns:
+        A new list with consecutive duplicates removed.
+    """
+    if not lst:
+        return []
+    
+    result = [lst[0]]
+    for i in range(1, len(lst)):
+        if lst[i] != lst[i - 1]:
+            result.append(lst[i])
+    
+    return result
+
+
+# Test the function
+assert consecutive_duplicates([0, 0, 1, 2, 3, 4, 4, 5, 6, 6, 6, 7, 8, 9, 4, 4]) == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 4]
+print("All tests passed!")
+```
+
+**How it works:**
+
+1. **Handle empty list**: If the input list is empty, return an empty list immediately.
+
+2. **Initialize result**: Start the result list with the first element of the input list (since the first element can never be a duplicate of a previous element).
+
+3. **Iterate through the list**: Starting from index 1, compare each element with the previous element:
+   - If they are **different**, append the current element to the result.
+   - If they are **the same**, skip it (it's a consecutive duplicate).
+
+4. **Return the result**: The final list contains no consecutive duplicates.
+
+**Key insight**: The last two `4`s in the input `[..., 9, 4, 4]` are consecutive duplicates of each other, so they collapse to a single `4`. However, this `4` is *not* removed even though a `4` appeared earlier in the list, because the problem only asks to remove **consecutive** duplicates, not all duplicates.

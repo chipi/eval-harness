@@ -1,0 +1,30 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def create_tuple_from_string_and_list(lst, string):
+    """Create a new tuple from the given list and string.
+
+    Args:
+        lst: A list of strings
+        string: A string to be added to the tuple
+
+    Returns:
+        A tuple containing all elements from the list followed by the string
+    """
+    return tuple(lst) + (string,)
+
+# Test the function
+assert create_tuple_from_string_and_list(["WEB", "is"], "best") == ('WEB', 'is', 'best')
+print("Test passed!")
+```
+
+This script:
+1. Defines a function `create_tuple_from_string_and_list` that takes a list and a string as input
+2. Converts the list to a tuple and concatenates it with a single-element tuple containing the string
+3. Includes the required assertion test case
+4. Prints a confirmation message if the test passes
+
+The function works by:
+- First converting the list to a tuple using `tuple(lst)`
+- Then adding the string as a single-element tuple using `(string,)`
+- Combining them with the `+` operator which concatenates tuples

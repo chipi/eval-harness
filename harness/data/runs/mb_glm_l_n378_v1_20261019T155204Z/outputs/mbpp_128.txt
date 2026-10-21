@@ -1,0 +1,24 @@
+```python
+def long_words(n, sentence):
+    """
+    Finds words that are longer than n characters from a given string.
+    
+    Args:
+        n (int): The minimum length threshold (exclusive).
+        sentence (str): The string containing the words.
+        
+    Returns:
+        list: A list of words longer than n characters.
+    """
+    # Split the sentence into individual words based on whitespace
+    words = sentence.split()
+    
+    # Filter words where the length is strictly greater than n
+    result = [word for word in words if len(word) > n]
+    
+    return result
+
+# Test the function with the provided assertion
+assert long_words(3, "python is a programming language") == ['python', 'programming', 'language']
+print("Assertion passed successfully.")
+```

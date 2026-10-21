@@ -1,0 +1,20 @@
+```python
+def big_sum(arr):
+    """
+    Return the sum of the largest and smallest values in a given array.
+
+    Example:
+        big_sum([1, 2, 3]) -> 4
+    """
+    if not arr:
+        raise ValueError("Input array must not be empty")
+
+    return max(arr) + min(arr)
+
+
+# Example test
+assert big_sum([1, 2, 3]) == 4
+
+if __name__ == "__main__":
+    print(big_sum([1, 2, 3]))
+```

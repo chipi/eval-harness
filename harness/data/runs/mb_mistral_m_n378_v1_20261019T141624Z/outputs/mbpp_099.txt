@@ -1,0 +1,13 @@
+```python
+def decimal_to_binary(decimal):
+    if decimal == 0:
+        return '0'
+    binary = []
+    while decimal > 0:
+        binary.append(str(decimal % 2))
+        decimal = decimal // 2
+    return ''.join(reversed(binary))
+
+# Test the function
+assert decimal_to_binary(8) == '1000'
+```

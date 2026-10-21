@@ -1,0 +1,47 @@
+Looking at this problem, I need to check if two integers have opposite signs.
+
+**Key insight:** Using the XOR operator on two integers, the sign bit of the result will be `1` (making the result negative) only if the sign bits of the operands differ. So `(x ^ y) < 0` is `True` exactly when `x` and `y` have opposite signs.
+
+```python
+"""
+Write a python function to check whether the given two integers have opposite sign or not.
+assert opposite_Signs(1,-2) == True
+"""
+
+
+def opposite_Signs(x, y):
+    """
+    Return True if the two integers x and y have opposite signs, else False.
+
+    Uses the XOR trick: the sign bit of x ^ y is set (result is negative)
+    only when the sign bits of x and y differ.
+    """
+    return (x ^ y) < 0
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert opposite_Signs(1, -2) == True
+
+    # Additional test cases
+    assert opposite_Signs(3, 2) == False
+    assert opposite_Signs(-10, -10) == False
+    assert opposite_Signs(-2, 2) == True
+    assert opposite_Signs(-1, 1) == True
+    assert opposite_Signs(100, -200) == True
+    assert opposite_Signs(0, 5) == False     # zero is treated as non-negative
+    assert opposite_Signs(0, -5) == True     # zero vs negative -> opposite
+
+    print("All tests passed!")
+```
+
+**How it works:**
+
+| x | y | x ^ y | (x ^ y) < 0 | Result |
+|---|---|-------|-------------|--------|
+| 1 | -2 | -1 | True | opposite signs |
+| 3 | 2 | 1 | False | same signs |
+| -10 | -10 | 0 | False | same signs |
+| -2 | 2 | -4 | True | opposite signs |
+
+An equivalent (more explicit) implementation would be `return (x < 0) != (y < 0)`.

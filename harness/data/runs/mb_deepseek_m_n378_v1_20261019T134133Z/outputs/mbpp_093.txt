@@ -1,0 +1,41 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def power(a, b):
+    """
+    Calculate the value of 'a' to the power 'b'.
+    
+    Args:
+        a: The base number
+        b: The exponent (non-negative integer)
+    
+    Returns:
+        The result of a raised to the power b
+    """
+    result = 1
+    for _ in range(b):
+        result *= a
+    return result
+
+
+# Test the function
+assert power(3, 4) == 81
+print("Test passed!")
+print(f"power(3, 4) = {power(3, 4)}")
+print(f"power(2, 10) = {power(2, 10)}")
+print(f"power(5, 0) = {power(5, 0)}")
+```
+
+**Explanation:**
+
+The `power` function calculates `a^b` by:
+1. Initializing `result` to 1 (since any number to the power of 0 is 1)
+2. Multiplying `result` by `a` exactly `b` times using a loop
+3. Returning the final result
+
+This implementation works for non-negative integer exponents. For example:
+- `power(3, 4)` = 3 × 3 × 3 × 3 = 81 ✓
+- `power(2, 10)` = 1024
+- `power(5, 0)` = 1 (any number to the power of 0 is 1)
+
+**Note:** If you need to handle negative exponents or floating-point values, you could use Python's built-in `**` operator or `math.pow()` instead. But for the given test case with non-negative integer exponents, this loop-based approach works perfectly.

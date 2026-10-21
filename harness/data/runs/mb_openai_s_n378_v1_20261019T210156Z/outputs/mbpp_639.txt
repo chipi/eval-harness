@@ -1,0 +1,13 @@
+```python
+def sample_nam(names):
+    """
+    Return the sum of the lengths of the names that do not start with a lowercase letter.
+    """
+    return sum(len(name) for name in names if not name[0].islower())
+
+
+if __name__ == "__main__":
+    # Example test
+    assert sample_nam(['sally', 'Dylan', 'rebecca', 'Diana', 'Joanne', 'keith']) == 16
+    print("All tests passed.")
+```

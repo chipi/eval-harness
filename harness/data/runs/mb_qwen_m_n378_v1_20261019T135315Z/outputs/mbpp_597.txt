@@ -1,0 +1,60 @@
+```python
+def find_kth(arr1: list, arr2: list, k: int) -> int:
+    """
+    Find the kth smallest element from two sorted arrays.
+    
+    Args:
+        arr1: First sorted array
+        arr2: Second sorted array
+        k: The position (1-indexed) of the element to find
+    
+    Returns:
+        The kth smallest element in the merged array
+    """
+    # Ensure arr1 is the smaller array for efficiency
+    if len(arr1) > len(arr2):
+        arr1, arr2 = arr2, arr1
+    
+    m, n = len(arr1), len(arr2)
+    
+    # Binary search on the smaller array
+    low, high = 0, m
+    
+    while low <= high:
+        # Partition arr1 at index i (take first i elements from arr1)
+        i = (low + high) // 2
+        # Partition arr2 such that total elements on left side is k
+        j = k - i
+        
+        # Handle boundary cases
+        # arr1_left_max: max of left part of arr1
+        # arr1_right_min: min of right part of arr1
+        # arr2_left_max: max of left part of arr2
+        # arr2_right_min: min of right part of arr2
+        
+        arr1_left_max = float('-inf') if i == 0 else arr1[i - 1]
+        arr1_right_min = float('inf') if i == m else arr1[i]
+        
+        arr2_left_max = float('-inf') if j == 0 else arr2[j - 1]
+        arr2_right_min = float('inf') if j == n else arr2[j]
+        
+        # Check if we have found the correct partition
+        if arr1_left_max <= arr2_right_min and arr2_left_max <= arr1_right_min:
+            # The kth element is the max of the left parts
+            return max(arr1_left_max, arr2_left_max)
+        elif arr1_left_max > arr2_right_min:
+            # We need to move left in arr1
+            high = i - 1
+        else:
+            # We need to move right in arr1
+            low = i + 1
+    
+    # This should not be reached if inputs are valid
+    raise ValueError("Invalid input or k out of range")
+
+
+if __name__ == "__main__":
+    result = find_kth([2, 3, 6, 7, 9], [1, 4, 8, 10], 5)
+    assert result == 6, f"Expected 6, got {result}"
+    print(f"Test passed: find_kth([2, 3, 6, 7, 9], [1, 4, 8, 10], 5) == {result}")
+```

@@ -1,0 +1,14 @@
+```python
+def max_val(lst):
+    """
+    Find the maximum value in a given heterogeneous list.
+    Only numeric values are considered for comparison.
+    """
+    numeric_values = [x for x in lst if isinstance(x, (int, float)) and not isinstance(x, bool)]
+    return max(numeric_values)
+
+
+# Test
+assert max_val(['Python', 3, 2, 4, 5, 'version']) == 5
+print("All tests passed!")
+```

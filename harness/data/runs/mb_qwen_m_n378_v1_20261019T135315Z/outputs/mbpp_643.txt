@@ -1,0 +1,45 @@
+```python
+import re
+
+
+def text_match_wordz_middle(text: str) -> bool:
+    """
+    Check if a string contains 'z' except at the start and end of the word.
+    
+    A "word" is considered as a sequence of alphanumeric characters (and possibly underscores).
+    We need to find a 'z' that is not at the beginning or end of any word in the string.
+    
+    Args:
+        text: The input string to check.
+        
+    Returns:
+        True if there's a 'z' that appears somewhere in the middle of a word 
+        (not at the start or end), False otherwise.
+    """
+    # Find all words in the text
+    words = re.findall(r'\b\w+\b', text)
+    
+    for word in words:
+        if len(word) >= 3:
+            # Check if 'z' appears in the middle (not first or last character)
+            middle_part = word[1:-1]
+            if 'z' in middle_part:
+                return True
+    
+    return False
+
+
+if __name__ == "__main__":
+    # Test cases
+    assert text_match_wordz_middle("pythonzabc.") == True, "Test 1 failed"
+    assert text_match_wordz_middle("zabc") == False, "Test 2 failed: z at start"
+    assert text_match_wordz_middle("abcz") == False, "Test 3 failed: z at end"
+    assert text_match_wordz_middle("azb") == True, "Test 4 failed: z in middle"
+    assert text_match_wordz_middle("hello") == False, "Test 5 failed: no z"
+    assert text_match_wordz_middle("z") == False, "Test 6 failed: single z"
+    assert text_match_wordz_middle("zz") == False, "Test 7 failed: two z's, both at start/end"
+    assert text_match_wordz_middle("azzzb") == True, "Test 8 failed: z in middle"
+    assert text_match_wordz_middle("") == False, "Test 9 failed: empty string"
+    
+    print("All tests passed!")
+```

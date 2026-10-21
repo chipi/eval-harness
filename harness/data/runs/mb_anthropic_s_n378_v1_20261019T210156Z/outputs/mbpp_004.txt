@@ -1,0 +1,50 @@
+```python
+import heapq
+
+def heap_queue_largest(numbers, n):
+    """
+    Find the n largest integers from a given list of numbers, 
+    returned in descending order.
+    
+    Args:
+        numbers: List of integers
+        n: Number of largest elements to find
+    
+    Returns:
+        List of n largest elements in descending order
+    """
+    # Use nlargest from heapq to get n largest elements
+    # nlargest returns them in descending order by default
+    return heapq.nlargest(n, numbers)
+
+
+# Test cases
+if __name__ == "__main__":
+    # Test case from the problem
+    result = heap_queue_largest([25, 35, 22, 85, 14, 65, 75, 22, 58], 3)
+    print(f"Result: {result}")
+    assert result == [85, 75, 65], f"Expected [85, 75, 65], got {result}"
+    print("✓ Test passed!")
+    
+    # Additional test cases
+    assert heap_queue_largest([1, 2, 3, 4, 5], 2) == [5, 4]
+    print("✓ Test 2 passed!")
+    
+    assert heap_queue_largest([10, 20, 30], 3) == [30, 20, 10]
+    print("✓ Test 3 passed!")
+    
+    assert heap_queue_largest([5, 5, 5, 5], 2) == [5, 5]
+    print("✓ Test 4 passed!")
+    
+    print("\nAll tests passed!")
+```
+
+**Explanation:**
+
+The solution uses Python's `heapq.nlargest()` function, which efficiently finds the n largest elements from an iterable:
+
+- **`heapq.nlargest(n, iterable)`**: Returns a list of the n largest elements from the dataset, in descending order
+- Time complexity: O(n log k) where k is the size of the heap, which is efficient for finding a small number of largest elements
+- The function automatically returns results in descending order as required
+
+The script includes the main test case from the problem statement plus additional test cases to verify correctness.

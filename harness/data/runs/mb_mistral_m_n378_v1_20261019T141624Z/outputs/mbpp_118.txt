@@ -1,0 +1,8 @@
+```python
+def string_to_list(input_string):
+    """Convert a string to a list of strings split on the space character."""
+    return input_string.split()
+
+# Test the function
+assert string_to_list("python programming") == ['python', 'programming']
+```

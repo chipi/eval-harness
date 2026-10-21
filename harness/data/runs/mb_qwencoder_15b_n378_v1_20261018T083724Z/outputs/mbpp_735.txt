@@ -1,0 +1,16 @@
+```python
+def toggle_middle_bits(n):
+    # Remove the first and last bits using bitwise operations
+    n = (n >> 1) ^ (n << 1)
+    return n
+
+# Test cases to verify the correctness of the solution
+assert toggle_middle_bits(9) == 15
+assert toggle_middle_bits(8) == 7
+assert toggle_middle_bits(0) == 0
+assert toggle_middle_bits(1) == 2
+assert toggle_middle_bits(2) == 3
+assert toggle_middle_bits(4) == 6
+assert toggle_middle_bits(15) == 14
+```
+

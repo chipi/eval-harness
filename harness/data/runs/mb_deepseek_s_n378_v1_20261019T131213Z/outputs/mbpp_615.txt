@@ -1,0 +1,38 @@
+```python
+def average_tuple(tuples):
+    """
+    Takes a tuple of tuples and returns the average value for each position as a list.
+    
+    Args:
+        tuples: A tuple of tuples, where each inner tuple has the same length.
+    
+    Returns:
+        A list of floats, where each element is the average of the values at that position
+        across all inner tuples.
+    """
+    if not tuples:
+        return []
+    
+    # Determine the length of the inner tuples (assume all have same length)
+    num_elements = len(tuples[0])
+    
+    # Initialize sums for each position
+    sums = [0] * num_elements
+    
+    # Sum up values for each position
+    for tup in tuples:
+        for i, value in enumerate(tup):
+            sums[i] += value
+    
+    # Compute averages
+    num_tuples = len(tuples)
+    averages = [s / num_tuples for s in sums]
+    
+    return averages
+
+# Test the function with the provided example
+if __name__ == "__main__":
+    result = average_tuple(((10, 10, 10, 12), (30, 45, 56, 45), (81, 80, 39, 32), (1, 2, 3, 4)))
+    print(result)
+    assert result == [30.5, 34.25, 27.0, 23.25]
+```

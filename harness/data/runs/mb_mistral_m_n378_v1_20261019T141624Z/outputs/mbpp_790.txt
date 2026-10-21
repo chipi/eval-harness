@@ -1,0 +1,19 @@
+```python
+def even_position(lst):
+    """
+    Check whether every even index in the list contains an even number.
+
+    Args:
+        lst (list): The input list to check.
+
+    Returns:
+        bool: True if all even indices have even numbers, False otherwise.
+    """
+    for index in range(0, len(lst), 2):
+        if lst[index] % 2 != 0:
+            return False
+    return True
+
+# Test case
+assert even_position([3, 2, 1]) == False
+```

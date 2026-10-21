@@ -1,0 +1,21 @@
+```python
+def power(a, b):
+    """
+    Calculate the value of 'a' to the power 'b'.
+
+    Args:
+        a (int or float): The base number.
+        b (int): The exponent.
+
+    Returns:
+        int or float: The result of 'a' to the power 'b'.
+    """
+    return a ** b
+
+# Example usage:
+if __name__ == "__main__":
+    assert power(3, 4) == 81
+    print("All tests passed.")
+```
+
+You can run this script to test the `power` function. The `**` operator in Python is used for exponentiation. The function takes two arguments, `a` and `b`, and returns the result of `a` to the power `b`. The example usage demonstrates how to use the function and verify its correctness with an assertion.

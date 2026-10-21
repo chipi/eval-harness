@@ -1,0 +1,25 @@
+```python
+def minimum(a, b):
+  """
+  Finds the minimum of two numbers.
+
+  Args:
+    a: The first number.
+    b: The second number.
+
+  Returns:
+    The smaller of the two numbers.
+  """
+  if a < b:
+    return a
+  else:
+    return b
+
+# Example usage and assertion
+assert minimum(1, 2) == 1
+assert minimum(-5, 5) == -5
+assert minimum(10, 10) == 10
+assert minimum(0, -1) == -1
+
+print("All assertions passed!")
+```

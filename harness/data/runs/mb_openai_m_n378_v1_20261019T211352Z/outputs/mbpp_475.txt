@@ -1,0 +1,22 @@
+```python
+def sort_counter(dictionary):
+    """
+    Sort a dictionary by its values in descending order.
+
+    Args:
+        dictionary (dict): A dictionary with comparable values.
+
+    Returns:
+        list: A list of (key, value) tuples sorted by value descending.
+    """
+    return sorted(dictionary.items(), key=lambda item: item[1], reverse=True)
+
+
+if __name__ == "__main__":
+    assert sort_counter({'Math': 81, 'Physics': 83, 'Chemistry': 87}) == [
+        ('Chemistry', 87),
+        ('Physics', 83),
+        ('Math', 81)
+    ]
+    print("All tests passed.")
+```

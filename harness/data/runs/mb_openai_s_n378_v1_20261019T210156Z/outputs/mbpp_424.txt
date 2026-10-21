@@ -1,0 +1,12 @@
+```python
+def extract_rear(strings):
+    """
+    Return a list containing the last character of each string in the input tuple.
+    """
+    return [s[-1] for s in strings]
+
+
+if __name__ == "__main__":
+    assert extract_rear(('Mers', 'for', 'Vers')) == ['s', 'r', 's']
+    print("All tests passed.")
+```

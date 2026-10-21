@@ -1,0 +1,54 @@
+```python
+def merge_sorted_list(list1, list2, list3):
+    """
+    Merge three sorted lists into a single sorted list.
+
+    Args:
+        list1 (list): The first sorted list.
+        list2 (list): The second sorted list.
+        list3 (list): The third sorted list.
+
+    Returns:
+        list: A single sorted list containing all elements from the input lists.
+    """
+    # Combine all three lists into one
+    combined_list = list1 + list2 + list3
+    
+    # Sort the combined list in ascending order
+    combined_list.sort()
+    
+    return combined_list
+
+# Test the function
+assert merge_sorted_list([25, 24, 15, 4, 5, 29, 110],[19, 20, 11, 56, 25, 233, 154],[24, 26, 54, 48])==[4, 5, 11, 15, 19, 20, 24, 24, 25, 25, 26, 29, 48, 54, 56, 110, 154, 233]
+```
+
+However, the above approach is not efficient for large lists as it has a time complexity of O(n log n) due to the sort operation.
+
+We can achieve a more efficient solution using a heap data structure, which can merge the lists in O(n log k) time complexity, where n is the total number of elements and k is the number of lists.
+
+Here's an implementation using the `heapq` module in Python:
+
+```python
+import heapq
+
+def merge_sorted_list(list1, list2, list3):
+    """
+    Merge three sorted lists into a single sorted list.
+
+    Args:
+        list1 (list): The first sorted list.
+        list2 (list): The second sorted list.
+        list3 (list): The third sorted list.
+
+    Returns:
+        list: A single sorted list containing all elements from the input lists.
+    """
+    # Use heapq.merge to merge the sorted lists
+    return list(heapq.merge(list1, list2, list3))
+
+# Test the function
+assert merge_sorted_list([25, 24, 15, 4, 5, 29, 110],[19, 20, 11, 56, 25, 233, 154],[24, 26, 54, 48])==[4, 5, 11, 15, 19, 20, 24, 24, 25, 25, 26, 29, 48, 54, 56, 110, 154, 233]
+```
+
+This version of the function has a time complexity of O(n log k), where n is the total number of elements and k is the number of lists (in this case, 3). This makes it more efficient for large lists.

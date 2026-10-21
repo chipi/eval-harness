@@ -1,0 +1,22 @@
+```python
+def multiply_elements(t):
+  """
+  Takes a tuple of numbers and returns a tuple where the i-th element is the product of t_i and t_{i+1}.
+
+  Args:
+    t: A tuple of numbers.
+
+  Returns:
+    A tuple of length N where the i-th element is t_i * t_{i+1}.
+  """
+  if len(t) < 2:
+    return ()  # Return an empty tuple if the input tuple has fewer than 2 elements
+
+  result = tuple(t[i] * t[i+1] for i in range(len(t) - 1))
+  return result
+
+assert multiply_elements((1, 5, 7, 8, 10)) == (5, 35, 56, 80)
+assert multiply_elements((2,3)) == (6,)
+assert multiply_elements((2,)) == ()
+assert multiply_elements(()) == ()
+```

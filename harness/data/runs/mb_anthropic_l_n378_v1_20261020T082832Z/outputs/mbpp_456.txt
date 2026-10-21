@@ -1,0 +1,29 @@
+```python
+"""
+Write a function to reverse each string in a given list of string values.
+assert reverse_string_list(['Red', 'Green', 'Blue', 'White', 'Black'])==['deR', 'neerG', 'eulB', 'etihW', 'kcalB']
+"""
+
+
+def reverse_string_list(stringlist):
+    """
+    Reverse each string in the given list of strings.
+
+    Args:
+        stringlist (list): A list of string values.
+
+    Returns:
+        list: A new list where each string from the input list is reversed.
+    """
+    return [s[::-1] for s in stringlist]
+
+
+if __name__ == '__main__':
+    assert reverse_string_list(['Red', 'Green', 'Blue', 'White', 'Black']) == \
+        ['deR', 'neerG', 'eulB', 'etihW', 'kcalB']
+    assert reverse_string_list(['john', 'amal', 'joel', 'george']) == \
+        ['nhoj', 'lama', 'leoj', 'egroeg']
+    assert reverse_string_list(['jack', 'john', 'mary']) == \
+        ['kcaj', 'nhoj', 'yram']
+    print("All tests passed!")
+```

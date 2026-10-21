@@ -1,0 +1,16 @@
+```python
+def extract_string(strings, size):
+    """
+    Return a list of strings from `strings` whose length is exactly `size`.
+
+    Example:
+        extract_string(['Python', 'list', 'exercises', 'practice', 'solution'], 8)
+        -> ['practice', 'solution']
+    """
+    return [s for s in strings if len(s) == size]
+
+
+if __name__ == "__main__":
+    assert extract_string(['Python', 'list', 'exercises', 'practice', 'solution'], 8) == ['practice', 'solution']
+    print("All tests passed.")
+```

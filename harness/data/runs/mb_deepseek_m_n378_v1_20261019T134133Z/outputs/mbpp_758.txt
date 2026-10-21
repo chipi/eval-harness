@@ -1,0 +1,40 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def unique_sublists(lst):
+    """
+    Counts lists within a list and returns a dictionary where each list is
+    converted to a tuple, and the value is the number of its occurrences.
+    """
+    result = {}
+    for item in lst:
+        if isinstance(item, list):
+            key = tuple(item)
+            result[key] = result.get(key, 0) + 1
+    return result
+
+
+# Test the function
+assert unique_sublists([[1, 3], [5, 7], [1, 3], [13, 15, 17], [5, 7], [9, 11]]) == {
+    (1, 3): 2,
+    (5, 7): 2,
+    (13, 15, 17): 1,
+    (9, 11): 1
+}
+
+print("All tests passed!")
+```
+
+**How it works:**
+
+1. **Initialize an empty dictionary** `result` to store the counts.
+2. **Iterate through each item** in the input list.
+3. **Check if the item is a list** using `isinstance(item, list)` — this ensures we only process sublists (skipping any non-list elements).
+4. **Convert the list to a tuple** since lists are unhashable and can't be used as dictionary keys, but tuples can.
+5. **Update the count** using `result.get(key, 0) + 1`, which returns 0 if the key doesn't exist yet, then increments it.
+6. **Return the dictionary** with tuple keys and occurrence counts.
+
+**Example output:**
+```
+{(1, 3): 2, (5, 7): 2, (13, 15, 17): 1, (9, 11): 1}
+```

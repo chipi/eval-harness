@@ -1,0 +1,39 @@
+```python
+def sum_digits(n: int) -> int:
+    """
+    Get the sum of the digits of a non-negative integer.
+    
+    Args:
+        n: A non-negative integer
+        
+    Returns:
+        The sum of all digits in n
+        
+    Examples:
+        >>> sum_digits(345)
+        12
+        >>> sum_digits(0)
+        0
+        >>> sum_digits(999)
+        27
+    """
+    if n < 0:
+        raise ValueError("Input must be a non-negative integer")
+    
+    total = 0
+    while n > 0:
+        total += n % 10
+        n //= 10
+    
+    return total
+
+
+if __name__ == "__main__":
+    # Test cases
+    assert sum_digits(345) == 12
+    assert sum_digits(0) == 0
+    assert sum_digits(999) == 27
+    assert sum_digits(100) == 1
+    assert sum_digits(123456789) == 45
+    print("All tests passed!")
+```

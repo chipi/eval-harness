@@ -1,0 +1,24 @@
+```python
+from itertools import combinations
+
+def find_combinations(tuple_list):
+    """
+    Return all pairwise element-wise sums of 2-tuples from the input list,
+    preserving the order of combinations.
+
+    Example:
+        [(2, 4), (6, 7), (5, 1), (6, 10)]
+        -> [(8, 11), (7, 5), (8, 14), (11, 8), (12, 17), (11, 11)]
+    """
+    result = []
+    for a, b in combinations(tuple_list, 2):
+        result.append((a[0] + b[0], a[1] + b[1]))
+    return result
+
+
+if __name__ == "__main__":
+    assert find_combinations([(2, 4), (6, 7), (5, 1), (6, 10)]) == [
+        (8, 11), (7, 5), (8, 14), (11, 8), (12, 17), (11, 11)
+    ]
+    print("All tests passed.")
+```

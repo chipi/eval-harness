@@ -1,0 +1,14 @@
+```python
+def cal_sum(n):
+    """Return the sum of the first n Perrin numbers."""
+    if n <= 0:
+        return 0
+
+    perrin = [3, 0, 2]  # P(0), P(1), P(2)
+    for i in range(3, n):
+        perrin.append(perrin[i - 2] + perrin[i - 3])
+    return sum(perrin[:n])
+
+
+assert cal_sum(9) == 49
+```

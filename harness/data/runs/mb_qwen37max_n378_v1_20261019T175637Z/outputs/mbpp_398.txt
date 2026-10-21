@@ -1,0 +1,22 @@
+```python
+def sum_of_digits(lst):
+    """
+    Compute the sum of digits of each number in a given list,
+    then return the total sum of all those digit sums.
+    """
+    total = 0
+    for num in lst:
+        # Handle negative numbers by taking absolute value
+        n = abs(num)
+        digit_sum = 0
+        while n > 0:
+            digit_sum += n % 10
+            n //= 10
+        total += digit_sum
+    return total
+
+
+# Test
+assert sum_of_digits([10, 2, 56]) == 14
+print("All tests passed!")
+```

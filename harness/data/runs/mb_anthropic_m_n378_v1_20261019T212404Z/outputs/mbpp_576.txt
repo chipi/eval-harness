@@ -1,0 +1,33 @@
+```python
+def is_Sub_Array(arr, sub_arr):
+    """
+    Check whether sub_arr is a sublist (contiguous sequence) of arr.
+    """
+    n = len(arr)
+    m = len(sub_arr)
+    
+    if m == 0:
+        return True
+    if m > n:
+        return False
+    
+    for i in range(n - m + 1):
+        if arr[i:i + m] == sub_arr:
+            return True
+    return False
+
+
+if __name__ == "__main__":
+    # Given test case
+    assert is_Sub_Array([1, 4, 3, 5], [1, 2]) == False
+
+    # Additional tests
+    assert is_Sub_Array([1, 4, 3, 5], [4, 3]) == True
+    assert is_Sub_Array([1, 2, 3, 4, 5], [3, 4, 5]) == True
+    assert is_Sub_Array([1, 2, 3, 4, 5], [5, 4]) == False
+    assert is_Sub_Array([1, 2, 3], []) == True
+    assert is_Sub_Array([], [1]) == False
+    assert is_Sub_Array([], []) == True
+
+    print("All test cases passed!")
+```

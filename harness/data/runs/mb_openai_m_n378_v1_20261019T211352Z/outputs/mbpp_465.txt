@@ -1,0 +1,24 @@
+```python
+"""
+Write a function to drop empty items from a given dictionary.
+
+An "empty" item here is treated as an item whose value is None,
+as shown in the example.
+"""
+
+def drop_empty(input_dict):
+    """
+    Return a new dictionary with all key-value pairs removed
+    where the value is None.
+    """
+    return {key: value for key, value in input_dict.items() if value is not None}
+
+
+# Example test
+assert drop_empty({'c1': 'Red', 'c2': 'Green', 'c3': None}) == {
+    'c1': 'Red',
+    'c2': 'Green'
+}
+
+print("All tests passed.")
+```

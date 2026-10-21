@@ -1,0 +1,14 @@
+```python
+def sort_matrix(matrix):
+    # Calculate the sum of each row and store it in a list of tuples
+    row_sums = [(sum(row), row) for row in matrix]
+    
+    # Sort the list of tuples based on the first element of each tuple (i.e., the sum of the row)
+    row_sums.sort()
+    
+    # Return the sorted matrix
+    return [row for _, row in row_sums]
+
+# Test the function
+assert sort_matrix([[1, 2, 3], [2, 4, 5], [1, 1, 1]]) == [[1, 1, 1], [1, 2, 3], [2, 4, 5]]
+```

@@ -1,0 +1,25 @@
+```python
+def second_smallest(numbers):
+    """
+    Find the second smallest number in a list.
+    
+    Args:
+        numbers: A list of numbers
+        
+    Returns:
+        The second smallest unique number in the list
+        
+    Raises:
+        ValueError: If there are fewer than 2 distinct values in the list
+    """
+    if not numbers:
+        raise ValueError("List is empty")
+    
+    # Get sorted unique values
+    unique_sorted = sorted(set(numbers))
+    
+    if len(unique_sorted) < 2:
+        raise ValueError("Need at least two distinct values")
+    
+    return unique_sorted[1]
+```

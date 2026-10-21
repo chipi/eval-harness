@@ -1,0 +1,29 @@
+Here's a self-contained Python script that checks if a given integer is a prime number:
+
+```python
+def prime_num(n):
+    """Check if a number is prime."""
+    if n <= 1:
+        return False
+    if n == 2:
+        return True
+    if n % 2 == 0:
+        return False
+    for i in range(3, int(n**0.5) + 1, 2):
+        if n % i == 0:
+            return False
+    return True
+
+# Test the function
+assert prime_num(13) == True
+print("All tests passed!")
+```
+
+This script:
+1. Defines a function `prime_num` that checks for primality
+2. Handles edge cases (numbers ≤ 1, even numbers)
+3. Checks divisibility up to the square root of the number (optimization)
+4. Only checks odd divisors (another optimization)
+5. Includes the required test case and a success message
+
+The function returns `True` if the number is prime and `False` otherwise.

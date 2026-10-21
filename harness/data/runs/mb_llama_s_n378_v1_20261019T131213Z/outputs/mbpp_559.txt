@@ -1,0 +1,35 @@
+```python
+def max_sub_array_sum(arr, k):
+    """
+    Find the sum of the largest contiguous sublist in the given list.
+
+    Args:
+        arr (list): The input list of integers.
+        k (int): The size of the sublist.
+
+    Returns:
+        int: The sum of the largest contiguous sublist.
+
+    Raises:
+        ValueError: If k is larger than the length of the array.
+    """
+    if k > len(arr):
+        raise ValueError("k cannot be larger than the length of the array")
+
+    # Initialize the maximum sum and the current sum
+    max_sum = current_sum = sum(arr[:k])
+
+    # Slide the window to the right
+    for i in range(k, len(arr)):
+        # Update the current sum by subtracting the leftmost element and adding the new element
+        current_sum = current_sum - arr[i - k] + arr[i]
+        # Update the maximum sum
+        max_sum = max(max_sum, current_sum)
+
+    return max_sum
+
+# Test the function
+assert max_sub_array_sum([-2, -3, 4, -1, -2, 1, 5, -3], 8) == 7
+```
+
+This script defines a function `max_sub_array_sum` that takes a list `arr` and an integer `k` as input, and returns the sum of the largest contiguous sublist of size `k`. The function uses a sliding window approach to efficiently calculate the sum of the sublists. If `k` is larger than the length of the array, the function raises a `ValueError`. The script also includes a test case to verify the function's correctness.

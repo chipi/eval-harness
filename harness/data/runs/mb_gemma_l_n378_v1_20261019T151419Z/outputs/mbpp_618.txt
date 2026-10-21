@@ -1,0 +1,24 @@
+```python
+def div_list(list1, list2):
+    """
+    Divides two lists element-wise.
+    
+    Args:
+        list1 (list): The list of numerators.
+        list2 (list): The list of denominators.
+        
+    Returns:
+        list: A list containing the result of the element-wise division.
+    """
+    # Use a list comprehension to divide elements at the same index
+    # zip() pairs elements from both lists together
+    return [float(a) / b for a, b in zip(list1, list2)]
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    result = div_list([4, 5, 6], [1, 2, 3])
+    expected = [4.0, 2.5, 2.0]
+    
+    assert result == expected, f"Expected {expected}, but got {result}"
+    print("Test passed!")
+```

@@ -1,0 +1,39 @@
+```python
+from datetime import datetime
+
+def change_date_format(date_str):
+    """
+    This function converts a date string from yyyy-mm-dd format to dd-mm-yyyy format.
+
+    Args:
+        date_str (str): The date string in yyyy-mm-dd format.
+
+    Returns:
+        str: The date string in dd-mm-yyyy format.
+    """
+    try:
+        # Parse the date string into a datetime object
+        date_obj = datetime.strptime(date_str, '%Y-%m-%d')
+        
+        # Format the datetime object into the desired output format
+        formatted_date = date_obj.strftime('%d-%m-%Y')
+        
+        return formatted_date
+    
+    except ValueError:
+        # Handle invalid date strings
+        return "Invalid date format. Please use yyyy-mm-dd."
+
+# Example usage:
+if __name__ == "__main__":
+    print(change_date_format("2026-01-02"))  # Output: '02-01-2026'
+    print(change_date_format("2026-13-02"))  # Output: 'Invalid date format. Please use yyyy-mm-dd.'
+```
+
+In this code:
+
+*   We define a function `change_date_format` that takes a date string as input and returns the date in the desired format.
+*   Inside the function, we use `datetime.strptime` to parse the input date string into a `datetime` object.
+*   Then, we use `datetime.strftime` to format the `datetime` object into the desired output format (`dd-mm-yyyy`).
+*   The function includes error handling to catch `ValueError` exceptions that may occur if the input date string is invalid.
+*   In the example usage section, we demonstrate how to use the `change_date_format` function with a valid and an invalid date string.

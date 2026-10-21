@@ -1,0 +1,40 @@
+Here's a self-contained Python script that checks whether a given list contains consecutive numbers:
+
+```python
+def check_Consecutive(lst):
+    """
+    Check if the given list contains consecutive numbers.
+
+    Args:
+        lst (list): List of integers to check
+
+    Returns:
+        bool: True if numbers are consecutive, False otherwise
+    """
+    if not lst:  # Handle empty list case
+        return False
+
+    min_val = min(lst)
+    max_val = max(lst)
+
+    # The list should contain all numbers from min to max without duplicates
+    return len(lst) == (max_val - min_val + 1) and len(set(lst)) == len(lst)
+
+# Test case
+assert check_Consecutive([1, 2, 3, 4, 5]) == True
+
+# Additional test cases
+assert check_Consecutive([5, 4, 3, 2, 1]) == True  # Reverse order
+assert check_Consecutive([1, 3, 4, 5]) == False    # Missing 2
+assert check_Consecutive([1, 2, 2, 3]) == False    # Duplicate 2
+assert check_Consecutive([]) == False              # Empty list
+assert check_Consecutive([7]) == True              # Single element
+assert check_Consecutive([10, 11, 12, 14]) == False  # Missing 13
+```
+
+The function works by:
+1. Finding the minimum and maximum values in the list
+2. Checking if the length of the list equals (max - min + 1) - this ensures all numbers between min and max are present
+3. Checking that there are no duplicates by comparing the length of the list with the length of its set version
+
+The function handles edge cases like empty lists, single-element lists, and lists with duplicates.

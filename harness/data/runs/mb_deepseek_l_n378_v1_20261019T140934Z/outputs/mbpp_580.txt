@@ -1,0 +1,55 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def extract_even(tup):
+    """
+    Remove uneven (odd) elements from a nested mixed tuple.
+    
+    Args:
+        tup: A tuple that may contain integers and nested tuples
+        
+    Returns:
+        A tuple with all odd elements removed, preserving the nested structure
+    """
+    result = []
+    for item in tup:
+        if isinstance(item, tuple):
+            # Recursively process nested tuples
+            nested_result = extract_even(item)
+            # Only add non-empty nested tuples
+            if nested_result:
+                result.append(nested_result)
+        elif isinstance(item, int) and item % 2 == 0:
+            # Keep even numbers
+            result.append(item)
+        # Odd numbers are skipped (not added to result)
+    
+    return tuple(result)
+
+
+# Test the function
+if __name__ == "__main__":
+    # Test case from the problem
+    test_input = (4, 5, (7, 6, (2, 4)), 6, 8)
+    expected_output = (4, (6, (2, 4)), 6, 8)
+    result = extract_even(test_input)
+    
+    print(f"Input: {test_input}")
+    print(f"Output: {result}")
+    print(f"Expected: {expected_output}")
+    print(f"Test passed: {result == expected_output}")
+    
+    # Additional test cases
+    assert extract_even((1, 2, 3, 4)) == (2, 4)
+    assert extract_even((1, 3, 5)) == ()
+    assert extract_even((2, 4, 6)) == (2, 4, 6)
+    assert extract_even((1, (2, 3), (4, (5, 6)))) == ((2,), (4, (6,)))
+    print("All tests passed!")
+```
+
+The function works by:
+1. Iterating through each element in the input tuple
+2. If an element is a tuple, it recursively processes it and only keeps non-empty results
+3. If an element is an even integer, it's kept in the result
+4. If an element is an odd integer, it's skipped (removed)
+5. The result is returned as a new tuple, preserving the nested structure

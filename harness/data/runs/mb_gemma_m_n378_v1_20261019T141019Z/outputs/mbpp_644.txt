@@ -1,0 +1,36 @@
+```python
+def reverse_Array_Upto_K(arr, k):
+    """
+    Reverses the elements of the array from index 0 up to index k-1.
+    
+    Args:
+        arr (list): The input list of elements.
+        k (int): The number of elements from the start to reverse.
+        
+    Returns:
+        list: A new list with the first k elements reversed.
+    """
+    # If k is greater than the length of the array, cap it at the array length
+    # If k is 0 or negative, no reversal is needed
+    if k <= 1:
+        return arr[:]
+    
+    # Slice the array into two parts: 
+    # 1. The first k elements (reversed)
+    # 2. The remaining elements (unchanged)
+    return arr[:k][::-1] + arr[k:]
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    result = reverse_Array_Upto_K([1, 2, 3, 4, 5, 6], 4)
+    print(f"Result: {result}")
+    assert result == [4, 3, 2, 1, 5, 6]
+
+    # Additional test cases
+    assert reverse_Array_Upto_K([1, 2, 3], 1) == [1, 2, 3]
+    assert reverse_Array_Upto_K([1, 2, 3], 3) == [3, 2, 1]
+    assert reverse_Array_Upto_K([1, 2, 3], 0) == [1, 2, 3]
+    assert reverse_Array_Upto_K([1, 2, 3], 10) == [3, 2, 1]
+    
+    print("All assertions passed!")
+```

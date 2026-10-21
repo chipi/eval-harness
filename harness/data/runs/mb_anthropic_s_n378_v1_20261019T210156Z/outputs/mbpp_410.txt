@@ -1,0 +1,30 @@
+```python
+def min_val(lst):
+    """
+    Find the minimum value in a heterogeneous list.
+    Only compares numeric values and ignores non-numeric types.
+    
+    Args:
+        lst: A heterogeneous list containing mixed types
+        
+    Returns:
+        The minimum numeric value in the list
+    """
+    numeric_values = [x for x in lst if isinstance(x, (int, float)) and not isinstance(x, bool)]
+    return min(numeric_values) if numeric_values else None
+
+
+# Test cases
+assert min_val(['Python', 3, 2, 4, 5, 'version']) == 2
+assert min_val([10, 'hello', 5, 'world', 1]) == 1
+assert min_val(['a', 'b', 100, 50]) == 50
+
+print("All assertions passed!")
+```
+
+The function works by:
+1. Filtering the input list to extract only numeric values (int and float), excluding booleans
+2. Using Python's built-in `min()` function on the filtered numeric values
+3. Returning the minimum value found
+
+This approach handles heterogeneous lists by ignoring non-numeric types like strings while finding the minimum among the numeric elements.

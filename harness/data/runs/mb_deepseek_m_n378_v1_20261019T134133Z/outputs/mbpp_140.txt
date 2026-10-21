@@ -1,0 +1,48 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def extract_singly(list_of_tuples):
+    """
+    Flatten a list of tuples into a single set of numbers.
+    
+    Args:
+        list_of_tuples: A list containing tuples of numbers
+        
+    Returns:
+        A set containing all unique numbers from the input tuples
+    """
+    result = set()
+    for tup in list_of_tuples:
+        result.update(tup)
+    return result
+
+
+# Test the function
+if __name__ == "__main__":
+    assert set(extract_singly([(3, 4, 5), (4, 5, 7), (1, 4)])) == set([3, 4, 5, 7, 1])
+    print("Test passed!")
+    
+    # Additional test cases
+    print(extract_singly([(3, 4, 5), (4, 5, 7), (1, 4)]))  # {1, 3, 4, 5, 7}
+    print(extract_singly([(1, 2), (3, 4), (5, 6)]))        # {1, 2, 3, 4, 5, 6}
+    print(extract_singly([]))                               # set()
+```
+
+**Explanation:**
+
+1. **`extract_singly` function**: Takes a list of tuples as input and returns a set of all unique numbers.
+
+2. **Using `set.update()`**: The `update()` method adds all elements from an iterable (in this case, each tuple) to the set. This automatically handles duplicates since sets only store unique values.
+
+3. **Why a set is returned**: The problem's assertion wraps the result in `set()`, but since we're already returning a set, this is redundant (though harmless). Returning a set directly is more efficient.
+
+4. **Test case**: The assertion verifies that flattening `[(3, 4, 5), (4, 5, 7), (1, 4)]` produces `{1, 3, 4, 5, 7}` — note that duplicate values (4 and 5) appear only once.
+
+**Alternative one-liner** (if you prefer a more concise version):
+
+```python
+def extract_singly(list_of_tuples):
+    return {num for tup in list_of_tuples for num in tup}
+```
+
+Both versions produce identical results.

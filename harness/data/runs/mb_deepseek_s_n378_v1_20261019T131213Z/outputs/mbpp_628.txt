@@ -1,0 +1,20 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def replace_spaces(s: str) -> str:
+    """
+    Replaces all spaces in the given string with '%20'.
+    
+    Args:
+        s: Input string.
+    
+    Returns:
+        String with spaces replaced by '%20'.
+    """
+    return s.replace(" ", "%20")
+
+
+# Test the function
+assert replace_spaces("My Name is Dawood") == 'My%20Name%20is%20Dawood'
+print("Test passed!")
+```

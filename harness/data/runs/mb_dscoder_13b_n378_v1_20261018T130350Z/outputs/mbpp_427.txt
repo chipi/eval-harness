@@ -1,0 +1,16 @@
+```python
+def change_date_format(date):
+    """
+    Write a function to convert a date of yyyy-mm-dd format to dd-mm-yyyy format.
+    """
+    # Split the date into year, month, and day
+    year, month, day = map(int, date.split('-'))
+
+    # Reverse the order of the day and month to get the desired format
+    return f'{day}-{month}-{year}'
+
+# Test cases
+assert change_date_format("2026-01-02") == '02-01-2026'
+assert change_date_format("2020-02-15") == '15-02-2020'
+assert change_date_format("2019-11-30") == '30-11-2019'
+```

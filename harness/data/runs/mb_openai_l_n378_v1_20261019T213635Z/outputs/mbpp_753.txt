@@ -1,0 +1,10 @@
+```python
+def min_k(records, k):
+    """Return the k records with the smallest values in position 1."""
+    return sorted(records, key=lambda record: record[1])[:k]
+
+
+assert min_k(
+    [('Manjeet', 10), ('Akshat', 4), ('Akash', 2), ('Nikhil', 8)], 2
+) == [('Akash', 2), ('Akshat', 4)]
+```

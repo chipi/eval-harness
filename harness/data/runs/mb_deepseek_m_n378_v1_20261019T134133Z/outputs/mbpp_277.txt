@@ -1,0 +1,24 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def dict_filter(d, n):
+    """
+    Filters a dictionary to only include entries with values greater than or equal to n.
+    
+    Args:
+        d (dict): The input dictionary
+        n (int): The threshold value
+    
+    Returns:
+        dict: A new dictionary containing only entries with values >= n
+    """
+    return {key: value for key, value in d.items() if value >= n}
+
+
+# Test the function
+assert dict_filter({'Cierra Vega': 175, 'Alden Cantrell': 180, 'Kierra Gentry': 165, 'Pierre Cox': 190}, 170) == {'Cierra Vega': 175, 'Alden Cantrell': 180, 'Pierre Cox': 190}
+
+print("All tests passed!")
+```
+
+The `dict_filter` function uses a dictionary comprehension to iterate through all key-value pairs in the input dictionary and includes only those where the value is greater than or equal to the threshold `n`. The function returns a new dictionary without modifying the original one.

@@ -1,0 +1,47 @@
+```python
+def next_Perfect_Square(n):
+    """
+    Find the next perfect square greater than a given number.
+    
+    Args:
+        n: An integer
+        
+    Returns:
+        The next perfect square greater than n
+    """
+    import math
+    
+    # Find the square root of n
+    sqrt_n = math.sqrt(n)
+    
+    # If n is already a perfect square, we need the next one
+    # Otherwise, we round up to get the next integer
+    next_sqrt = math.ceil(sqrt_n)
+    
+    # If n is a perfect square, we need to go to the next one
+    if next_sqrt * next_sqrt == n:
+        next_sqrt += 1
+    
+    return next_sqrt * next_sqrt
+
+
+# Test cases
+assert next_Perfect_Square(35) == 36
+assert next_Perfect_Square(36) == 49
+assert next_Perfect_Square(1) == 4
+assert next_Perfect_Square(0) == 1
+assert next_Perfect_Square(100) == 121
+
+print("All test cases passed!")
+```
+
+The solution works as follows:
+
+1. **Calculate the square root** of the given number `n`
+2. **Round up** using `math.ceil()` to get the next integer
+3. **Check if n is already a perfect square**: If `next_sqrt * next_sqrt == n`, then we need to increment `next_sqrt` to get the *next* perfect square
+4. **Return the square** of the resulting integer
+
+For example:
+- `next_Perfect_Square(35)`: √35 ≈ 5.92 → ceil = 6 → 6² = 36 ✓
+- `next_Perfect_Square(36)`: √36 = 6 → ceil = 6 → 6² = 36 (is perfect square) → increment to 7 → 7² = 49 ✓

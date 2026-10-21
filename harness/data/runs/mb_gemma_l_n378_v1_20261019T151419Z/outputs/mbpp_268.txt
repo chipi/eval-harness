@@ -1,0 +1,20 @@
+```python
+def find_star_num(n):
+    """
+    Calculates the n'th star number.
+    A star number is a centered figurate number that represents a 
+    six-pointed star. The formula for the n'th star number is:
+    S_n = 6n(n - 1) + 1
+    """
+    if n < 1:
+        raise ValueError("n must be a positive integer.")
+    
+    return 6 * n * (n - 1) + 1
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    result = find_star_num(3)
+    print(f"The 3rd star number is: {result}")
+    assert result == 37
+    print("Assertion passed!")
+```

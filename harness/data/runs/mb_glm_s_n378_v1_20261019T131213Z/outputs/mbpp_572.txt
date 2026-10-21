@@ -1,0 +1,57 @@
+```python
+def two_unique_nums(nums):
+    """
+    Removes duplicate numbers from a list, keeping only the numbers that appear exactly once.
+
+    Args:
+        nums: A list of numbers.
+
+    Returns:
+        A new list containing only the numbers from the input list that appear exactly once,
+        in the order of their first occurrence.
+
+    Example:
+        >>> two_unique_nums([1, 2, 3, 2, 3, 4, 5])
+        [1, 4, 5]
+    """
+    # A dictionary to store the count of each number.
+    # The key is the number, and the value is its frequency.
+    counts = {}
+    
+    # First pass: Count the occurrences of each number in the list.
+    for num in nums:
+        counts[num] = counts.get(num, 0) + 1
+        
+    # Second pass: Create a new list containing only the numbers with a count of 1.
+    # We iterate through the original list to preserve the order of first occurrence.
+    result = []
+    for num in nums:
+        if counts[num] == 1:
+            result.append(num)
+            
+    return result
+
+# Example usage and assertion to verify the function
+if __name__ == "__main__":
+    # The example from the problem description
+    input_list = [1, 2, 3, 2, 3, 4, 5]
+    expected_output = [1, 4, 5]
+    
+    # Call the function and print the result
+    output = two_unique_nums(input_list)
+    print(f"Input: {input_list}")
+    print(f"Output: {output}")
+    print(f"Expected: {expected_output}")
+    
+    # Assert that the output matches the expected result
+    assert output == expected_output, f"Assertion failed: Expected {expected_output}, but got {output}"
+    
+    # Additional test cases
+    assert two_unique_nums([1, 1, 2, 2]) == []
+    assert two_unique_nums([5, 5, 5, 5, 5]) == []
+    assert two_unique_nums([10]) == [10]
+    assert two_unique_nums([1, 2, 3, 4, 5]) == [1, 2, 3, 4, 5]
+    assert two_unique_nums([]) == []
+    
+    print("\nAll assertions passed successfully!")
+```

@@ -1,0 +1,64 @@
+```python
+"""
+Write a function to find the nth number in the newman conway sequence.
+assert sequence(10) == 6
+"""
+
+def sequence(n: int) -> int:
+    """
+    Calculates the nth number in the Newman-Conway sequence.
+
+    The Newman-Conway sequence is defined by the recurrence relation:
+    P(1) = 1
+    P(2) = 1
+    P(n) = P(P(n-1)) + P(n - P(n-1)) for n > 2
+
+    This function uses dynamic programming to build the sequence up to the
+    requested number n, which is more efficient than a naive recursive approach.
+
+    Args:
+        n: A positive integer representing the position in the sequence.
+
+    Returns:
+        The nth number in the Newman-Conway sequence.
+
+    Raises:
+        ValueError: If n is not a positive integer.
+    """
+    if not isinstance(n, int) or n <= 0:
+        raise ValueError("Input must be a positive integer.")
+
+    # Base cases for the sequence
+    if n == 1 or n == 2:
+        return 1
+
+    # Initialize a list to store the sequence values (dynamic programming table)
+    # We use 1-based indexing, so the list size is n + 1.
+    p = [0] * (n + 1)
+    p[1] = 1
+    p[2] = 1
+
+    # Iterate from 3 up to n, calculating each value based on the recurrence relation.
+    for i in range(3, n + 1):
+        p[i] = p[p[i - 1]] + p[i - p[i - 1]]
+
+    return p[n]
+
+# Example usage and assertion from the problem description
+if __name__ == "__main__":
+    # The problem asks for the 10th number, which should be 6.
+    # The sequence starts with P(1), so n=10 refers to the 10th element.
+    # P(1)=1, P(2)=1, P(3)=2, P(4)=2, P(5)=3, P(6)=4, P(7)=4, P(8)=5, P(9)=6, P(10)=6
+    assert sequence(10) == 6
+
+    # Additional test cases
+    assert sequence(1) == 1
+    assert sequence(2) == 1
+    assert sequence(3) == 2
+    assert sequence(5) == 3
+    assert sequence(7) == 4
+    assert sequence(9) == 6
+    assert sequence(20) == 8
+
+    print("All assertions passed.")
+```

@@ -1,0 +1,43 @@
+```python
+def occurance_substring(text, substring):
+    """
+    Finds the occurrence and position of the substrings within a string.
+    Returns a tuple containing (substring, first_index, last_index) 
+    if matches are found, otherwise returns None.
+    """
+    # Find the first occurrence
+    first_index = text.find(substring)
+    
+    # If find returns -1, the substring does not exist
+    if first_index == -1:
+        return None
+    
+    # Find the last occurrence
+    last_index = text.rfind(substring)
+    
+    # The problem description implies returning the substring, 
+    # the start index, and the end index (exclusive or inclusive based on the assert).
+    # Looking at the assert: 'python' at index 0 and 6.
+    # In 'python programming, python language', 
+    # 'python' starts at 0 and the second 'python' starts at 19.
+    # However, the assert shows (substring, 0, 6). 
+    # This indicates the function is likely looking for the FIRST occurrence 
+    # and returning (substring, start_index, end_index_of_first_match).
+    
+    end_index = first_index + len(substring)
+    
+    return (substring, first_index, end_index)
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    result = occurance_substring('python programming, python language', 'python')
+    print(f"Result: {result}")
+    assert result == ('python', 0, 6)
+
+    # Additional test cases
+    assert occurance_substring('hello world', 'hello') == ('hello', 0, 5)
+    assert occurance_substring('abc abc abc', 'abc') == ('abc', 0, 3)
+    assert occurance_substring('testing', 'notfound') is None
+    
+    print("All tests passed!")
+```

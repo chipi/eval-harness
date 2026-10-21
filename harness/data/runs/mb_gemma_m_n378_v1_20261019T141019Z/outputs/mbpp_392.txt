@@ -1,0 +1,60 @@
+To solve this problem efficiently, we use **memoization** (caching). Since the function $f(n)$ calls itself with smaller values of $n$, many sub-problems will overlap. Storing the results of previously calculated values prevents redundant computations and allows the script to handle larger inputs quickly.
+
+Here is the complete, self-contained Python script:
+
+```python
+def get_max_sum(n: int) -> int:
+    """
+    Calculates the maximum sum possible using the recursive formula:
+    f(n) = max(f(n/2) + f(n/3) + f(n/4) + f(n/5), n)
+    
+    Uses a dictionary for memoization to ensure O(log n) complexity 
+    for sub-problem lookups.
+    """
+    memo = {}
+
+    def f(val: int) -> int:
+        # Base case: if val is 0, the sum is 0
+        if val <= 0:
+            return 0
+        
+        # Check if value is already computed
+        if val in memo:
+            return memo[val]
+        
+        # Recursive step: calculate the sum of the parts
+        # We use integer division // to ensure we pass integers to the next call
+        recursive_sum = f(val // 2) + f(val // 3) + f(val // 4) + f(val // 5)
+        
+        # The result is the maximum of the recursive sum or the value itself
+        res = max(recursive_sum, val)
+        
+        # Store in memo and return
+        memo[val] = res
+        return res
+
+    return f(n)
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    test_val = 60
+    expected = 106
+    result = get_max_sum(test_val)
+    
+    print(f"Input: {test_val}")
+    print(f"Expected: {expected}")
+    print(f"Result: {result}")
+    
+    assert result == expected, f"Test failed! Expected {expected}, got {result}"
+    print("Assertion passed successfully!")
+
+    # Additional test to demonstrate efficiency
+    large_val = 10**9
+    print(f"\nTesting large value: {large_val}")
+    print(f"Result: {get_max_sum(large_val)}")
+```
+
+### Explanation:
+1.  **Memoization (`memo` dictionary):** Without this, the function would have exponential time complexity because it would recalculate the same values (like `f(1)`) millions of times. With memoization, each unique value of $n$ is calculated only once.
+2.  **Integer Division (`//`):** The problem implies $n$ is divided into parts. In Python, using `//` ensures we stay within the realm of integers, which is necessary for the dictionary keys and matches the logic of discrete sub-problems.
+3.  **Complexity:** The number of unique states visited is relatively small (logarithmic relative to $n$ in terms of depth, though more complex due to the multiple branches), making it extremely fast even for $n = 1,000,000,000$.

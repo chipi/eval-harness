@@ -1,0 +1,25 @@
+```python
+def merge(pairs):
+    """
+    Takes a list of two-element lists and returns a list containing:
+    1. A list of the first elements
+    2. A list of the second elements
+
+    Example:
+    >>> merge([['x', 'y'], ['a', 'b'], ['m', 'n']])
+    [['x', 'a', 'm'], ['y', 'b', 'n']]
+    """
+    first_elements = []
+    second_elements = []
+
+    for pair in pairs:
+        first_elements.append(pair[0])
+        second_elements.append(pair[1])
+
+    return [first_elements, second_elements]
+
+
+if __name__ == "__main__":
+    assert merge([['x', 'y'], ['a', 'b'], ['m', 'n']]) == [['x', 'a', 'm'], ['y', 'b', 'n']]
+    print("All tests passed.")
+```

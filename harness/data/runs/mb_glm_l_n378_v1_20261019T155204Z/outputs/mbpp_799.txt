@@ -1,0 +1,33 @@
+```python
+def left_rotate(n, d):
+    """
+    Rotates the bits of a 32-bit number n to the left by d bits.
+    
+    Args:
+        n (int): The number to rotate.
+        d (int): The number of bits to rotate by.
+        
+    Returns:
+        int: The result of the left rotation.
+    """
+    # In Python, integers have arbitrary precision, so we must manually
+    # handle the 32-bit wrapping.
+    # A 32-bit mask is (1 << 32) - 1, which is 0xFFFFFFFF.
+    
+    INT_BITS = 32
+    
+    # We use modulo to handle cases where d >= 32
+    d = d % INT_BITS
+    
+    # Left shift n by d bits. 
+    # We use (n << d) to get the shifted bits.
+    # We use (n >> (INT_BITS - d)) to get the bits that wrapped around from the left to the right.
+    # We OR them together to combine the result.
+    # Finally, we apply a bitwise AND with 0xFFFFFFFF to ensure the result is treated as a 32-bit unsigned integer.
+    
+    return ((n << d) | (n >> (INT_BITS - d))) & 0xFFFFFFFF
+
+# Test the function with the provided assertion
+assert left_rotate(16, 2) == 64
+print("Assertion passed: left_rotate(16, 2) == 64")
+```

@@ -1,0 +1,50 @@
+Looking at this problem, I need to check if a string contains 'z' somewhere other than the first or last character.
+
+```python
+"""
+Write a function that checks if a strings contains 'z', except at the start and end of the word.
+assert text_match_wordz_middle("pythonzabc.")==True
+"""
+
+import re
+
+
+def text_match_wordz_middle(text):
+    """
+    Checks whether the given text contains the letter 'z' somewhere other than
+    at the very beginning or the very end of the string.
+
+    Args:
+        text (str): The string to examine.
+
+    Returns:
+        bool: True if a 'z' occurs in the "middle" of the text, False otherwise.
+    """
+    patterns = r'\Bz\B'
+    if re.search(patterns, text):
+        return True
+    else:
+        return False
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert text_match_wordz_middle("pythonzabc.") == True
+
+    # Additional checks
+    assert text_match_wordz_middle("zxyabc.") == False      # 'z' at the start
+    assert text_match_wordz_middle("  lang  .") == False     # no 'z' at all
+    assert text_match_wordz_middle("xyzabc") == True         # 'z' in the middle
+    assert text_match_wordz_middle("abcz") == False          # 'z' at the end
+
+    print(text_match_wordz_middle("pythonzabc."))  # True
+    print(text_match_wordz_middle("zxyabc."))      # False
+    print(text_match_wordz_middle("  lang  ."))    # False
+    print("All tests passed!")
+```
+
+**How it works:**
+
+- `re.search(r'\Bz\B', text)` looks for a `'z'` that is **not** at a word boundary on either side.
+- `\B` is the "non-word-boundary" assertion, so a `'z'` that begins or ends a word (e.g., the first or last character of `"zabc"` / `"abcz"`) won't match.
+- If such a middle `'z'` is found, the function returns `True`; otherwise it returns `False`.

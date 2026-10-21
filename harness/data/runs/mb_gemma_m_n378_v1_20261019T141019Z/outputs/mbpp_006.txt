@@ -1,0 +1,45 @@
+To solve this problem, we can use bitwise operations. Two numbers differ at exactly one bit position if and only if their bitwise XOR result is a power of two. 
+
+A number $x$ is a power of two if $x > 0$ and $x \ \& \ (x - 1) == 0$.
+
+Here is the self-contained Python script:
+
+```python
+def differ_At_One_Bit_Pos(a: int, b: int) -> bool:
+    """
+    Checks whether two numbers differ at exactly one bit position.
+    
+    Logic:
+    1. XOR the two numbers (a ^ b). The resulting number will have a '1' 
+       at every bit position where a and b differ.
+    2. If they differ at exactly one position, the XOR result will be 
+       a power of two (e.g., 1, 2, 4, 8...).
+    3. A number 'n' is a power of two if (n > 0) and (n & (n - 1) == 0).
+    """
+    xor_result = a ^ b
+    
+    # Check if xor_result is a power of two
+    return xor_result > 0 and (xor_result & (xor_result - 1)) == 0
+
+if __name__ == "__main__":
+    # Test cases
+    # 13 is 1101 in binary
+    # 9  is 1001 in binary
+    # They differ only at the 2nd bit (from the right, index 2)
+    assert differ_At_One_Bit_Pos(13, 9) == True
+    
+    # 13 is 1101
+    # 8  is 1000
+    # They differ at two positions (the 1st and 3rd bits)
+    assert differ_At_One_Bit_Pos(13, 8) == False
+    
+    # 7 is 0111
+    # 6 is 0110
+    # They differ at exactly one position
+    assert differ_At_One_Bit_Pos(7, 6) == True
+    
+    # Same numbers differ at zero positions
+    assert differ_At_One_Bit_Pos(10, 10) == False
+
+    print("All assertions passed!")
+```

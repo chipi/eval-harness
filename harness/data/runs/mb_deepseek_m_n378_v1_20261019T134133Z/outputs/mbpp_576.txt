@@ -1,0 +1,51 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def is_Sub_Array(lst, sub):
+    """
+    Check whether `sub` is a sublist (contiguous subsequence) of `lst`.
+    
+    Returns True if `sub` appears as a contiguous sequence within `lst`,
+    otherwise returns False.
+    """
+    n = len(lst)
+    m = len(sub)
+    
+    # An empty sublist is trivially a sublist of any list
+    if m == 0:
+        return True
+    
+    # If sub is longer than lst, it can't be a sublist
+    if m > n:
+        return False
+    
+    # Slide a window of size m over lst and compare
+    for i in range(n - m + 1):
+        if lst[i:i + m] == sub:
+            return True
+    
+    return False
+
+
+# Test cases
+assert is_Sub_Array([1, 4, 3, 5], [1, 2]) == False
+assert is_Sub_Array([1, 2, 3, 4, 5], [2, 3, 4]) == True
+assert is_Sub_Array([1, 2, 3], [1, 2, 3]) == True
+assert is_Sub_Array([1, 2, 3], []) == True
+assert is_Sub_Array([1, 2, 3], [4]) == False
+assert is_Sub_Array([1, 2, 3, 4], [2, 4]) == False
+
+print("All tests passed!")
+```
+
+**How it works:**
+
+1. **Edge cases first:** An empty `sub` is always a sublist (returns `True`), and if `sub` is longer than `lst`, it can't possibly be a sublist (returns `False`).
+
+2. **Sliding window:** We iterate over every possible starting index `i` in `lst` where a window of length `len(sub)` would still fit (`range(n - m + 1)`).
+
+3. **Comparison:** At each position, we slice `lst[i:i+m]` and compare it directly to `sub`. If they match, we return `True`.
+
+4. **Fallback:** If no window matches, we return `False`.
+
+This runs in **O(n·m)** time in the worst case, which is fine for typical inputs.

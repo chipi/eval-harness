@@ -1,0 +1,39 @@
+Here's a self-contained Python script that solves the problem of checking whether two integers have opposite signs:
+
+```python
+def opposite_Signs(x, y):
+    """
+    Check whether two integers have opposite signs.
+    
+    Args:
+        x (int): First integer
+        y (int): Second integer
+    
+    Returns:
+        bool: True if the integers have opposite signs, False otherwise
+    """
+    # Handle the case where one of the numbers is zero
+    if x == 0 or y == 0:
+        return False
+    
+    # Check if the product is negative (opposite signs)
+    return (x * y) < 0
+
+# Test cases
+assert opposite_Signs(1, -2) == True
+assert opposite_Signs(-1, 2) == True
+assert opposite_Signs(1, 2) == False
+assert opposite_Signs(-1, -2) == False
+assert opposite_Signs(0, 1) == False
+assert opposite_Signs(1, 0) == False
+assert opposite_Signs(0, 0) == False
+
+print("All test cases passed!")
+```
+
+### Explanation:
+1. The function `opposite_Signs` takes two integers `x` and `y` as input.
+2. It first checks if either of the numbers is zero. If so, it returns `False` because zero doesn't have a sign.
+3. If neither number is zero, it checks if the product of the two numbers is negative. If the product is negative, it means the numbers have opposite signs (since a positive times a negative is negative).
+4. The function returns `True` if the product is negative, indicating opposite signs, and `False` otherwise.
+5. The script includes several test cases to verify the function works correctly, including the example provided in the problem statement.

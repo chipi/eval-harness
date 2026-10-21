@@ -1,0 +1,45 @@
+```python
+def square_Sum(n: int) -> int:
+    """
+    Calculates the sum of squares of the first n even natural numbers.
+
+    The first n even natural numbers are 2, 4, 6, ..., 2n.
+    The function computes the sum: 2^2 + 4^2 + 6^2 + ... + (2n)^2.
+
+    Args:
+        n: A non-negative integer representing the count of even numbers.
+
+    Returns:
+        The sum of the squares of the first n even natural numbers.
+
+    Examples:
+        >>> square_Sum(2)
+        20
+        >>> square_Sum(3)
+        56
+        >>> square_Sum(0)
+        0
+    """
+    if n < 0:
+        raise ValueError("Input 'n' must be a non-negative integer.")
+    
+    # The k-th even number is 2k. We need to sum (2k)^2 for k from 1 to n.
+    # This is equivalent to summing 4 * k^2 for k from 1 to n.
+    # The sum of squares of first n natural numbers is n(n+1)(2n+1)/6.
+    # Therefore, the sum of squares of first n even numbers is 4 * [n(n+1)(2n+1)/6].
+    # This simplifies to 2 * n * (n + 1) * (2 * n + 1) / 3.
+    
+    return (2 * n * (n + 1) * (2 * n + 1)) // 3
+
+# Example usage and assertions from the problem description
+if __name__ == "__main__":
+    print(f"square_Sum(2) = {square_Sum(2)}")
+    assert square_Sum(2) == 20
+
+    # Additional test cases
+    assert square_Sum(3) == 56  # 2^2 + 4^2 + 6^2 = 4 + 16 + 36 = 56
+    assert square_Sum(0) == 0   # Sum of zero numbers is 0
+    assert square_Sum(1) == 4   # 2^2 = 4
+    
+    print("All assertions passed.")
+```

@@ -1,0 +1,14 @@
+```python
+def is_undulating(n):
+    str_n = str(n)
+    for i in range(len(str_n) - 2):
+        if str_n[i] == str_n[i+1] == str_n[i+2]:
+            return True
+    return False
+
+# Test cases
+assert is_undulating(1212121) == True
+assert is_undulating(12344321) == True
+assert is_undulating(11112234) == False
+assert is_undulating(11111111) == False
+```

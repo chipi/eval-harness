@@ -1,0 +1,13 @@
+```python
+def is_undulating(number):
+    """Return whether the digits alternate between two distinct values."""
+    digits = str(number)
+    return (
+        len(digits) >= 3
+        and digits[0] != digits[1]
+        and all(digits[i] == digits[i - 2] for i in range(2, len(digits)))
+    )
+
+
+assert is_undulating(1212121) is True
+```

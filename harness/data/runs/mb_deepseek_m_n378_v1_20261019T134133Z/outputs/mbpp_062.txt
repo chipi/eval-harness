@@ -1,0 +1,56 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+"""
+Write a python function to find smallest number in a list.
+assert smallest_num([10, 20, 1, 45, 99]) == 1
+"""
+
+def smallest_num(numbers):
+    """
+    Find the smallest number in a list.
+    
+    Args:
+        numbers: A list of numbers (int or float)
+    
+    Returns:
+        The smallest number in the list
+    
+    Raises:
+        ValueError: If the list is empty
+    """
+    if not numbers:
+        raise ValueError("Cannot find smallest number in an empty list")
+    
+    smallest = numbers[0]
+    for num in numbers[1:]:
+        if num < smallest:
+            smallest = num
+    return smallest
+
+
+# Test the function
+if __name__ == "__main__":
+    assert smallest_num([10, 20, 1, 45, 99]) == 1
+    assert smallest_num([-5, -10, -3, -1]) == -10
+    assert smallest_num([42]) == 42
+    assert smallest_num([3.14, 2.71, 1.41]) == 1.41
+    print("All tests passed!")
+```
+
+**Explanation:**
+
+1. **Function `smallest_num(numbers)`**: Takes a list of numbers as input.
+
+2. **Empty list check**: Raises a `ValueError` if the list is empty, since there's no smallest number to find.
+
+3. **Algorithm**: 
+   - Initialize `smallest` with the first element of the list.
+   - Iterate through the remaining elements.
+   - If any element is smaller than the current `smallest`, update it.
+   - Return the final `smallest` value.
+
+4. **Time complexity**: O(n) — we only traverse the list once.
+5. **Space complexity**: O(1) — we only use a single variable to track the minimum.
+
+6. **Test cases**: The script includes the required assertion plus a few extra edge cases (negative numbers, single-element list, floats) to verify correctness.

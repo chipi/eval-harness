@@ -1,0 +1,13 @@
+```python
+def sum_average(n):
+    total_sum = n * (n + 1) // 2
+    total_avg = n
+    return total_sum, total_avg
+
+# Test cases
+assert sum_average(10)==(55, 5.5)
+assert sum_average(20)==(1200, 120.0)
+assert sum_average(30)==(3600, 360.0)
+assert sum_average(40)==(72000, 7200.0)
+assert sum_average(50)==(1515000, 15150.0)
+```

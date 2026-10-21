@@ -1,0 +1,42 @@
+Here's a self-contained Python script that solves the problem of sorting a list of numeric strings numerically:
+
+```python
+def sort_numeric_strings(strings):
+    """
+    Sorts a list of numeric strings numerically.
+
+    Args:
+        strings: List of strings representing numbers (can be integers or floats)
+
+    Returns:
+        List of strings sorted numerically
+    """
+    # Convert each string to a float (handles both integers and negative numbers)
+    numeric_values = [float(s) for s in strings]
+    # Sort the numeric values
+    sorted_values = sorted(numeric_values)
+    # Convert back to strings and return
+    return [str(int(v)) if v.is_integer() else str(v) for v in sorted_values]
+
+# Test the function
+assert sort_numeric_strings(['4','12','45','7','0','100','200','-12','-500']) == ['-500', '-12', '0', '4', '7', '12', '45', '100', '200']
+
+# Example usage
+if __name__ == "__main__":
+    input_list = ['4','12','45','7','0','100','200','-12','-500']
+    print("Original list:", input_list)
+    print("Sorted list:", sort_numeric_strings(input_list))
+```
+
+This script:
+1. Defines a function `sort_numeric_strings` that takes a list of numeric strings
+2. Converts each string to a float (to properly handle negative numbers and maintain numeric sorting)
+3. Sorts the numeric values
+4. Converts them back to strings (converting to integers if they're whole numbers for cleaner output)
+5. Includes the required assertion test case
+6. Has a main block for demonstration
+
+The solution handles:
+- Positive and negative numbers
+- Integer and floating-point numbers (though the example only has integers)
+- Maintains the original string format in the output (converting back to integers when appropriate)

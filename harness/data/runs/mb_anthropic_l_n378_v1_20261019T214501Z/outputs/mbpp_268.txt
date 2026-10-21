@@ -1,0 +1,64 @@
+Looking at this problem, I need to find the n'th star number. Star numbers are centered hexagram (six-pointed star) figurate numbers, given by the formula:
+
+**S(n) = 6n(n-1) + 1**
+
+Let me verify with the test case: S(3) = 6×3×2 + 1 = 36 + 1 = 37 ✓
+
+```python
+"""
+Write a function to find the n'th star number.
+assert find_star_num(3) == 37
+"""
+
+
+def find_star_num(n):
+    """
+    Return the n'th star number.
+
+    A star number is a centered figurate number that represents a
+    centered hexagram (six-pointed star), such as the one on the
+    Chinese checkers board.
+
+    The formula for the n'th star number is:
+        S(n) = 6 * n * (n - 1) + 1
+
+    Parameters
+    ----------
+    n : int
+        The index (1-based) of the star number to compute.
+
+    Returns
+    -------
+    int
+        The n'th star number.
+    """
+    return 6 * n * (n - 1) + 1
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert find_star_num(3) == 37
+
+    # A few additional sanity checks
+    assert find_star_num(1) == 1
+    assert find_star_num(2) == 13
+    assert find_star_num(4) == 73
+    assert find_star_num(5) == 121
+    assert find_star_num(6) == 181
+
+    # Show the first ten star numbers
+    print("First 10 star numbers:")
+    print([find_star_num(i) for i in range(1, 11)])
+
+    print("\nAll tests passed!")
+```
+
+**Output:**
+```
+First 10 star numbers:
+[1, 13, 37, 73, 121, 181, 253, 337, 433, 541]
+
+All tests passed!
+```
+
+The sequence 1, 13, 37, 73, 121, ... matches OEIS A003154 (star numbers). Each successive star number adds a ring of 12 more dots than the previous ring (differences: 12, 24, 36, 48, ...).

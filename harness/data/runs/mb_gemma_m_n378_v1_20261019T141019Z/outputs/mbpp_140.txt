@@ -1,0 +1,31 @@
+```python
+def extract_singly(list_of_tuples):
+    """
+    Flattens a list of tuples (or lists) into a single set of numbers.
+    
+    Args:
+        list_of_tuples (iterable): A collection of iterables containing numbers.
+        
+    Returns:
+        set: A set containing all unique numbers found in the input.
+    """
+    result_set = set()
+    for item in list_of_tuples:
+        # Update the set with the elements of the current tuple/list
+        result_set.update(item)
+    return result_set
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    test_input = [(3, 4, 5), (4, 5, 7), (1, 4)]
+    expected_output = {3, 4, 5, 7, 1}
+    
+    result = extract_singly(test_input)
+    
+    # Assertion to verify correctness
+    assert set(result) == expected_output
+    
+    print(f"Input: {test_input}")
+    print(f"Result: {result}")
+    print("Assertion passed successfully!")
+```

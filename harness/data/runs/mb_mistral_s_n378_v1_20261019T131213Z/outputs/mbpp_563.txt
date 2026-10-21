@@ -1,0 +1,35 @@
+Here's a self-contained Python script that solves the problem using regular expressions to extract values between quotation marks:
+
+```python
+import re
+
+def extract_values(input_string):
+    """
+    Extracts values between quotation marks from a string.
+
+    Args:
+        input_string (str): The string to search for quoted values.
+
+    Returns:
+        list: A list of strings found between quotation marks.
+    """
+    # Use regular expression to find all quoted strings
+    return re.findall(r'"(.*?)"', input_string)
+
+# Test the function
+assert extract_values('"Python", "PHP", "Java"') == ['Python', 'PHP', 'Java']
+print("All tests passed!")
+```
+
+This script:
+1. Imports the `re` module for regular expression operations
+2. Defines the `extract_values` function that uses `re.findall()` with the pattern `r'"(.*?)"'` to find all text between double quotes
+3. Includes the test case from the problem statement
+4. Prints a confirmation message if the test passes
+
+The regular expression pattern `r'"(.*?)"'` works as follows:
+- `"` matches a literal double quote
+- `(.*?)` captures any character (except newline) between the quotes, using non-greedy matching
+- `"` matches the closing double quote
+
+The function will return all quoted strings found in the input, regardless of whether they're separated by commas or other characters.

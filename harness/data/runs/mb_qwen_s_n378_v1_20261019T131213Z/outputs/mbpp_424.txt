@@ -1,0 +1,13 @@
+```python
+def extract_rear(tup):
+    """
+    Extract only the rear index element (last character) of each string in the given tuple.
+    
+    Args:
+        tup: A tuple of strings
+        
+    Returns:
+        A list containing the last character of each string in the tuple
+    """
+    return [s[-1] for s in tup]
+```

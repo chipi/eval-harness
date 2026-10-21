@@ -1,0 +1,7 @@
+```python
+import math
+
+def volume_cylinder(radius, height):
+    """Calculate the volume of a cylinder given its radius and height."""
+    return math.pi * radius ** 2 * height
+```

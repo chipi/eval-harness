@@ -1,0 +1,33 @@
+Here's a self-contained Python script that solves the problem of finding the difference between two lists, where the difference is defined as elements in the first list that are not present in the second list, while preserving the order of the first list:
+
+```python
+def Diff(list1, list2):
+    """
+    Returns the difference between two lists, which is elements in list1 not present in list2,
+    while preserving the order of list1.
+
+    Args:
+        list1: The first list (reference list)
+        list2: The second list (elements to exclude)
+
+    Returns:
+        A list containing elements from list1 that are not in list2, in original order
+    """
+    # Convert list2 to a set for O(1) lookups
+    set2 = set(list2)
+    # Use list comprehension to filter elements from list1 not in set2
+    return [x for x in list1 if x not in set2]
+
+# Test the function
+assert Diff([10, 15, 20, 25, 30, 35, 40], [25, 40, 35]) == [10, 20, 30, 15]
+print("Test passed!")
+```
+
+This script:
+1. Defines a `Diff` function that takes two lists as input
+2. Converts the second list to a set for efficient membership testing
+3. Uses a list comprehension to filter elements from the first list that aren't in the second list
+4. Includes the test case from your example
+5. Prints a confirmation message if the test passes
+
+The function preserves the order of elements from the first list while removing any elements that appear in the second list.

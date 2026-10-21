@@ -1,0 +1,32 @@
+```python
+def find_Rotations(s: str) -> int:
+    """
+    Return the minimum number of left rotations greater than 0
+    required to obtain the same string again.
+
+    Examples:
+    - "aaaa" -> 1
+    - "abab" -> 2
+    - "abcd" -> 4
+    """
+    n = len(s)
+
+    if n == 0:
+        return 0
+
+    for k in range(1, n + 1):
+        if s[k:] + s[:k] == s:
+            return k
+
+    return n
+
+
+if __name__ == "__main__":
+    assert find_Rotations("aaaa") == 1
+    assert find_Rotations("abab") == 2
+    assert find_Rotations("abcd") == 4
+    assert find_Rotations("abcabc") == 3
+    assert find_Rotations("a") == 1
+
+    print("All tests passed.")
+```

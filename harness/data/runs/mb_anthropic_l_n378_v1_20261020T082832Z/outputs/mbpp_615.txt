@@ -1,0 +1,41 @@
+Looking at this problem, I need to understand what's being averaged. Let me check the expected output:
+
+- Input tuples: `(10, 10, 10, 12)`, `(30, 45, 56, 45)`, `(81, 80, 39, 32)`, `(1, 2, 3, 4)`
+- Expected: `[30.5, 34.25, 27.0, 23.25]`
+
+Averaging the first tuple row-wise gives `10.5`, not `30.5`. But averaging **column-wise**: `(10+30+81+1)/4 = 122/4 = 30.5` ✓, `(10+45+80+2)/4 = 137/4 = 34.25` ✓, `(10+56+39+3)/4 = 108/4 = 27.0` ✓, `(12+45+32+4)/4 = 93/4 = 23.25` ✓
+
+So the averages are taken across the tuples (column-wise), which is what `zip(*tuples)` accomplishes.
+
+```python
+"""
+Write a function which takes a tuple of tuples and returns the average value for each tuple as a list.
+assert average_tuple(((10, 10, 10, 12), (30, 45, 56, 45), (81, 80, 39, 32), (1, 2, 3, 4)))==[30.5, 34.25, 27.0, 23.25]
+"""
+
+
+def average_tuple(nums):
+    """
+    Given a tuple of tuples, compute the average of the values at each position
+    across the inner tuples (i.e. column-wise averages) and return them as a list.
+    """
+    return [sum(group) / len(group) for group in zip(*nums)]
+
+
+if __name__ == "__main__":
+    assert average_tuple(((10, 10, 10, 12), (30, 45, 56, 45),
+                          (81, 80, 39, 32), (1, 2, 3, 4))) == [30.5, 34.25, 27.0, 23.25]
+    assert average_tuple(((1, 1, -5), (30, -15, 56), (81, -60, -39), (-10, 2, 3))) == \
+        [25.5, -18.0, 3.75]
+    assert average_tuple(((100, 100, 100, 120), (300, 450, 560, 450),
+                          (810, 800, 390, 320), (10, 20, 30, 40))) == \
+        [305.0, 342.5, 270.0, 232.5]
+
+    print(average_tuple(((10, 10, 10, 12), (30, 45, 56, 45), (81, 80, 39, 32), (1, 2, 3, 4))))
+    print("All tests passed!")
+```
+
+**How it works:**
+1. `zip(*nums)` unpacks the outer tuple and groups together elements at the same index — turning `((10,10,10,12), (30,45,56,45), ...)` into `(10,30,81,1), (10,45,80,2), ...`.
+2. For each group, `sum(group) / len(group)` computes the average.
+3. The list comprehension collects all averages into a list.

@@ -1,0 +1,95 @@
+```python
+"""
+Write a python function to find the sum of even factors of a number.
+assert sumofFactors(18) == 26
+"""
+
+def sumofFactors(n: int) -> int:
+    """
+    Calculates the sum of all even factors of a given positive integer.
+
+    Args:
+        n: A positive integer.
+
+    Returns:
+        The sum of all even factors of n.
+        Returns 0 if n is 0 or has no even factors (e.g., if n is odd).
+
+    Examples:
+        >>> sumofFactors(18)
+        26
+        >>> sumofFactors(10)
+        12  # Factors: 1, 2, 5, 10. Even factors: 2, 10. Sum: 12.
+        >>> sumofFactors(7)
+        0   # Factors: 1, 7. No even factors.
+        >>> sumofFactors(0)
+        0
+    """
+    # Handle edge cases: non-positive numbers or odd numbers with no even factors.
+    if n <= 0 or n % 2 != 0:
+        return 0
+
+    # If n is even, we can simplify the problem.
+    # Let n = 2^k * m, where m is an odd number.
+    # The even factors of n are of the form 2^i * d, where 1 <= i <= k
+    # and d is a factor of m.
+    # The sum of even factors is: (2^1 + 2^2 + ... + 2^k) * (sum of factors of m)
+
+    # First, find the largest power of 2 that divides n.
+    # This is equivalent to finding the number of trailing 0s in the binary representation.
+    power_of_2 = 0
+    temp_n = n
+    while temp_n % 2 == 0:
+        power_of_2 += 1
+        temp_n //= 2
+
+    # Now, temp_n is the odd part of n (m).
+    # We need to find the sum of factors of this odd part.
+    # A helper function is used for clarity.
+    sum_of_odd_factors = _sum_of_factors(temp_n)
+
+    # The sum of the powers of 2 (2^1 + 2^2 + ... + 2^k) is a geometric series.
+    # The sum is 2 * (2^k - 1) / (2 - 1) = 2^(k+1) - 2.
+    sum_of_powers_of_2 = (1 << (power_of_2 + 1)) - 2
+
+    # The total sum of even factors is the product of these two sums.
+    return sum_of_powers_of_2 * sum_of_odd_factors
+
+def _sum_of_factors(m: int) -> int:
+    """
+    Helper function to calculate the sum of all factors of a positive integer.
+    This is done efficiently by iterating up to the square root of m.
+    """
+    if m == 1:
+        return 1
+
+    total_sum = 1  # 1 is a factor of every number
+    sqrt_m = int(m**0.5)
+
+    for i in range(2, sqrt_m + 1):
+        if m % i == 0:
+            # If i is a factor, so is m // i
+            if i * i == m:  # Perfect square
+                total_sum += i
+            else:
+                total_sum += i + (m // i)
+                
+    return total_sum
+
+# Example Usage and Assertion
+if __name__ == "__main__":
+    # Test case from the problem description
+    number = 18
+    result = sumofFactors(number)
+    print(f"The sum of even factors of {number} is: {result}")
+    assert result == 26, f"AssertionError: Expected 26, but got {result}"
+
+    # Additional test cases
+    assert sumofFactors(10) == 12, f"AssertionError for 10: Expected 12, but got {sumofFactors(10)}"
+    assert sumofFactors(7) == 0, f"AssertionError for 7: Expected 0, but got {sumofFactors(7)}"
+    assert sumofFactors(1) == 0, f"AssertionError for 1: Expected 0, but got {sumofFactors(1)}"
+    assert sumofFactors(0) == 0, f"AssertionError for 0: Expected 0, but got {sumofFactors(0)}"
+    assert sumofFactors(100) == 217, f"AssertionError for 100: Expected 217, but got {sumofFactors(100)}" # Factors: 2, 4, 10, 20, 50, 100. Sum: 217.
+
+    print("All assertions passed successfully!")
+```

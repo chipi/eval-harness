@@ -1,0 +1,8 @@
+```python
+def split_two_parts(lst, L):
+    # Splitting the list into two parts based on the value of L
+    return lst[:L], lst[L:]
+
+# Testing the function with provided data points
+assert split_two_parts([1,1,2,3,4,4,5,1],3) == ([1, 1, 2], [3, 4, 4, 5, 1])
+```

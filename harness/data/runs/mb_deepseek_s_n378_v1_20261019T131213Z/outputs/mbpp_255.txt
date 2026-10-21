@@ -1,0 +1,24 @@
+Here’s a self-contained Python script that solves your problem:  
+
+```python
+from itertools import product
+
+def combinations_colors(colors, n):
+    """
+    Generates all combinations (with repetition) of the given list of elements,
+    taken n at a time.
+    
+    Args:
+        colors (list): List of elements to combine.
+        n (int): Length of each combination.
+    
+    Returns:
+        list: List of tuples, each representing a combination.
+    """
+    return list(product(colors, repeat=n))
+
+# Example test case
+if __name__ == "__main__":
+    assert combinations_colors(["Red", "Green", "Blue"], 1) == [('Red',), ('Green',), ('Blue',)]
+    print("Test passed!")
+```

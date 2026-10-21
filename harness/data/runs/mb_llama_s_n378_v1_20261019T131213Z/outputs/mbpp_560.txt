@@ -1,0 +1,26 @@
+```python
+def union_elements(t1, t2):
+    """
+    This function finds the union of the elements of two given tuples and outputs them in sorted order.
+
+    Args:
+        t1 (tuple): The first tuple.
+        t2 (tuple): The second tuple.
+
+    Returns:
+        tuple: A tuple containing the union of the elements of t1 and t2 in sorted order.
+    """
+    # Combine the two tuples into a set to remove duplicates
+    combined_set = set(t1 + t2)
+    
+    # Convert the set back to a tuple and sort it
+    union_tuple = tuple(sorted(combined_set))
+    
+    return union_tuple
+
+# Test the function
+assert union_elements((3, 4, 5, 6),(5, 7, 4, 10) ) == (3, 4, 5, 6, 7, 10)
+print(union_elements((3, 4, 5, 6),(5, 7, 4, 10) ))  # Output: (3, 4, 5, 6, 7, 10)
+```
+
+This script defines a function `union_elements` that takes two tuples `t1` and `t2` as input, combines them into a set to remove duplicates, and then converts the set back to a tuple and sorts it. The function returns the resulting tuple. The script also includes a test case to verify that the function works correctly.

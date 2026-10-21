@@ -1,0 +1,65 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+"""
+Write a function that takes in a list and length n, and generates all combinations
+(with repetition) of the elements of the list and returns a list with a tuple for each combination.
+assert combinations_colors( ["Red","Green","Blue"],1)==[('Red',), ('Green',), ('Blue',)]
+"""
+
+from itertools import product
+
+
+def combinations_colors(colors, n):
+    """
+    Generate all combinations with repetition of the given list elements.
+
+    Args:
+        colors (list): The list of elements to combine.
+        n (int): The length of each combination.
+
+    Returns:
+        list: A list of tuples, each representing a combination.
+    """
+    return list(product(colors, repeat=n))
+
+
+# Test cases
+if __name__ == "__main__":
+    assert combinations_colors(["Red", "Green", "Blue"], 1) == [
+        ("Red",),
+        ("Green",),
+        ("Blue",),
+    ]
+
+    assert combinations_colors(["Red", "Green", "Blue"], 2) == [
+        ("Red", "Red"),
+        ("Red", "Green"),
+        ("Red", "Blue"),
+        ("Green", "Red"),
+        ("Green", "Green"),
+        ("Green", "Blue"),
+        ("Blue", "Red"),
+        ("Blue", "Green"),
+        ("Blue", "Blue"),
+    ]
+
+    assert combinations_colors([1, 2], 3) == [
+        (1, 1, 1),
+        (1, 1, 2),
+        (1, 2, 1),
+        (1, 2, 2),
+        (2, 1, 1),
+        (2, 1, 2),
+        (2, 2, 1),
+        (2, 2, 2),
+    ]
+
+    print("All tests passed!")
+```
+
+**How it works:**
+
+- `itertools.product(colors, repeat=n)` generates the Cartesian product of the input list with itself `n` times, which is exactly what "combinations with repetition" means (also known as *n*-tuples or *n*-fold Cartesian power).
+- The result is converted to a list of tuples, matching the expected output format.
+- The `assert` statements verify the behavior against the provided example and additional cases.

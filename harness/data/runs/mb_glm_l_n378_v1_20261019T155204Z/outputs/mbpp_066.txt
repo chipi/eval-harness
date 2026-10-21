@@ -1,0 +1,20 @@
+```python
+def pos_count(list1):
+    """
+    Counts the number of positive numbers in a list.
+
+    Args:
+        list1 (list): A list of numbers.
+
+    Returns:
+        int: The count of positive numbers.
+    """
+    count = 0
+    for num in list1:
+        if num > 0:
+            count += 1
+    return count
+
+# Assert statement to verify the function
+assert pos_count([1, -2, 3, -4]) == 2
+```

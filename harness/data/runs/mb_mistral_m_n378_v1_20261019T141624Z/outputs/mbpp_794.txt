@@ -1,0 +1,32 @@
+Here's a self-contained Python script that solves the problem using regular expressions:
+
+```python
+import re
+
+def text_starta_endb(text):
+    """
+    Check if the string starts with 'a' and ends with 'b'.
+    The pattern 'a.*b$' means:
+    - 'a' at the start
+    - '.*' matches any character (except newline) zero or more times
+    - 'b$' ensures the string ends with 'b'
+    """
+    pattern = r'a.*b$'
+    return bool(re.fullmatch(pattern, text))
+
+# Test case
+assert text_starta_endb("aabbbb")
+```
+
+This script:
+1. Imports the `re` module for regular expression operations
+2. Defines the function `text_starta_endb` that checks if a string starts with 'a' and ends with 'b'
+3. Uses `re.fullmatch()` to ensure the entire string matches the pattern
+4. Includes the required test case with `assert`
+
+The regular expression `a.*b$` will match:
+- `a` at the beginning
+- any characters (including none) in between
+- `b` at the end
+
+The function returns `True` if the pattern matches, `False` otherwise.

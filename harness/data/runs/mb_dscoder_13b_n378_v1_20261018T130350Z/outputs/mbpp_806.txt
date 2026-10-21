@@ -1,0 +1,21 @@
+```python
+def max_run_uppercase(s):
+    max_run = 0
+    current_run = 1
+    for i in range(1, len(s)):
+        if s[i].isupper() and s[i-1].islower():
+            current_run += 1
+            max_run = max(max_run, current_run)
+        else:
+            current_run = 1
+    return max_run
+
+# Test cases
+assert max_run_uppercase('GeMKSForGERksISBESt') == 5
+assert max_run_uppercase('aBcDeFgHiJkLmNopQrStUvWxyZ') == 1
+assert max_run_uppercase('ABCDEFGHIJKLMNOPQRSTUVWXYZ') == 1
+assert max_run_uppercase('abcdefghijklmnopqrstuvwxyz') == 1
+assert max_run_uppercase('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz') == 1
+assert max_run_uppercase('1234567890') == 0
+assert max_run_uppercase('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890') == 1
+```

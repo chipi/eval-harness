@@ -1,0 +1,9 @@
+```python
+def multiple_to_single(lst):
+    """Join a list of multiple integers into a single integer."""
+    return int(''.join(str(x) for x in lst))
+
+
+# Test
+assert multiple_to_single([11, 33, 50]) == 113350
+```

@@ -1,0 +1,16 @@
+```python
+def ascii_value(char):
+    """
+    Returns the ASCII value of a given character.
+    """
+    return ord(char)
+
+if __name__ == "__main__":
+    # Test the function with the provided assertion
+    assert ascii_value('A') == 65
+    print("Test passed: ascii_value('A') is 65")
+    
+    # Additional test cases
+    print(f"The ASCII value of 'a' is {ascii_value('a')}") # Expected: 97
+    print(f"The ASCII value of '0' is {ascii_value('0')}") # Expected: 48
+```

@@ -1,0 +1,43 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def check_smaller(tup1, tup2):
+    """
+    Check if each element of the second tuple is smaller than its 
+    corresponding element in the first tuple.
+    
+    Args:
+        tup1: First tuple
+        tup2: Second tuple
+        
+    Returns:
+        bool: True if all elements in tup2 are smaller than corresponding 
+              elements in tup1, False otherwise
+    """
+    # Check if tuples have the same length
+    if len(tup1) != len(tup2):
+        return False
+    
+    # Compare each pair of elements
+    for a, b in zip(tup1, tup2):
+        if b >= a:
+            return False
+    
+    return True
+
+
+# Test the function
+if __name__ == "__main__":
+    # Test case from the problem
+    assert check_smaller((1, 2, 3), (2, 3, 4)) == False
+    
+    # Additional test cases
+    assert check_smaller((5, 6, 7), (1, 2, 3)) == True
+    assert check_smaller((1, 2, 3), (0, 1, 2)) == True
+    assert check_smaller((1, 2, 3), (1, 2, 3)) == False
+    assert check_smaller((10, 20), (5, 15)) == True
+    
+    print("All tests passed!")
+```
+
+The function `check_smaller` iterates through both tuples simultaneously using `zip()` and returns `False` as soon as it finds an element in the second tuple that is not smaller than its corresponding element in the first tuple. If all comparisons pass, it returns `True`.

@@ -1,0 +1,71 @@
+```python
+def max_sum_list(list_of_lists):
+    """
+    Finds the sublist with the highest sum of elements.
+
+    This function iterates through a list of lists, calculates the sum of
+    each inner list, and returns the first sublist that has the maximum sum.
+
+    Args:
+        list_of_lists: A list containing other lists of numbers.
+
+    Returns:
+        The sublist with the highest sum of its elements. If the input list
+        is empty, it returns an empty list.
+    """
+    # Handle the edge case of an empty input list to avoid errors.
+    if not list_of_lists:
+        return []
+
+    # Use the max() function with a custom key.
+    # The `key` argument specifies a function to be called on each list
+    # element prior to making comparisons. Here, we use the built-in `sum`
+    # function to find the sum of each sublist.
+    # The `max` function will then return the sublist for which `sum(sublist)`
+    # is the greatest.
+    return max(list_of_lists, key=sum)
+
+# --- Verification with the provided example ---
+# The list of lists from the problem description.
+input_data = [[1, 2, 3], [4, 5, 6], [10, 11, 12], [7, 8, 9]]
+
+# Call the function to get the result.
+result = max_sum_list(input_data)
+
+# Print the result to verify.
+print(f"The input list is: {input_data}")
+print(f"The list with the highest sum is: {result}")
+
+# The assert statement from the problem description to confirm correctness.
+# This will raise an AssertionError if the result is not as expected.
+assert result == [10, 11, 12]
+
+# --- Additional test cases ---
+print("\n--- Running additional test cases ---")
+
+# Test case 1: Empty list
+test_case_1 = []
+result_1 = max_sum_list(test_case_1)
+print(f"Test Case 1 (Empty list): {test_case_1} -> Result: {result_1}")
+assert result_1 == []
+
+# Test case 2: Lists with negative numbers
+test_case_2 = [[-5, -2], [-10, -1], [-3, -4]]
+result_2 = max_sum_list(test_case_2)
+print(f"Test Case 2 (Negative numbers): {test_case_2} -> Result: {result_2}")
+assert result_2 == [-3, -4] # Sum is -7, which is the highest
+
+# Test case 3: Lists with different lengths
+test_case_3 = [[100], [1, 2, 3, 4, 5], [50, 50]]
+result_3 = max_sum_list(test_case_3)
+print(f"Test Case 3 (Different lengths): {test_case_3} -> Result: {result_3}")
+assert result_3 == [1, 2, 3, 4, 5] # Sum is 15
+
+# Test case 4: Multiple lists with the same max sum (returns the first one)
+test_case_4 = [[10, 10], [5, 15], [20, 0]]
+result_4 = max_sum_list(test_case_4)
+print(f"Test Case 4 (Tie for max sum): {test_case_4} -> Result: {result_4}")
+assert result_4 == [10, 10] # First list with sum 20
+
+print("\nAll tests passed successfully!")
+```

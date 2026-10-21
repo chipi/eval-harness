@@ -1,0 +1,40 @@
+```python
+def highest_Power_of_2(n: int) -> int:
+    """
+    Find the highest power of 2 that is less than or equal to n.
+    
+    Args:
+        n: A positive integer
+        
+    Returns:
+        The highest power of 2 that is <= n
+        
+    Examples:
+        >>> highest_Power_of_2(10)
+        8
+        >>> highest_Power_of_2(1)
+        1
+        >>> highest_Power_of_2(16)
+        16
+    """
+    if n < 1:
+        return 0
+    
+    # Start with power of 2 = 1 (2^0)
+    power = 1
+    while power * 2 <= n:
+        power *= 2
+    
+    return power
+
+
+if __name__ == "__main__":
+    # Test cases
+    assert highest_Power_of_2(10) == 8
+    assert highest_Power_of_2(1) == 1
+    assert highest_Power_of_2(16) == 16
+    assert highest_Power_of_2(7) == 4
+    assert highest_Power_of_2(32) == 32
+    assert highest_Power_of_2(33) == 32
+    print("All tests passed!")
+```

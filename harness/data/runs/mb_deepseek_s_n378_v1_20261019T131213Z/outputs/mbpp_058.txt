@@ -1,0 +1,18 @@
+```python
+def opposite_Signs(x: int, y: int) -> bool:
+    """
+    Returns True if x and y have opposite signs, False otherwise.
+    Zero is considered to have no sign, so (0, any) returns False.
+    """
+    return (x > 0 and y < 0) or (x < 0 and y > 0)
+
+# Test the assertion
+if __name__ == "__main__":
+    assert opposite_Signs(1, -2) == True
+    assert opposite_Signs(-1, 2) == True
+    assert opposite_Signs(1, 2) == False
+    assert opposite_Signs(-1, -2) == False
+    assert opposite_Signs(0, 5) == False
+    assert opposite_Signs(0, -5) == False
+    print("All tests passed.")
+```

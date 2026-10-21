@@ -1,0 +1,30 @@
+```python
+def find_kth(arr1, arr2, k):
+    # Initialize pointers for both arrays
+    i = j = 0
+    
+    # Traverse both arrays until we reach the k-th element
+    while i < len(arr1) and j < len(arr2):
+        if arr1[i] <= arr2[j]:
+            k -= 1
+            if k == 0:
+                return arr1[i]
+            i += 1
+        else:
+            k -= 1
+            if k == 0:
+                return arr2[j]
+            j += 1
+    
+    # If one array is exhausted, return the remaining elements of the other array
+    if i < len(arr1):
+        return arr1[i]
+    else:
+        return arr2[j]
+
+# Test cases to verify the correctness of the solution
+assert find_kth([2, 3, 6, 7, 9], [1, 4, 8, 10], 5) == 6
+assert find_kth([1, 2, 3], [4, 5, 6], 4) == 4
+assert find_kth([-1, -2, -3], [-4, -5, -6], 3) == -3
+```
+

@@ -1,0 +1,72 @@
+```python
+"""
+Write a python function to find the sum of xor of all pairs of numbers in the given list.
+assert pair_xor_Sum([5,9,7,6],4) == 47
+"""
+
+def pair_xor_Sum(nums, n):
+    """
+    Calculates the sum of XOR for all unique pairs of numbers in a list.
+
+    The function uses a bitwise approach to efficiently compute the sum without
+    explicitly checking every pair, which would be O(n^2). Instead, it iterates
+    through each bit position (e.g., 1, 2, 4, 8, ...) and calculates the
+    contribution of that bit to the total sum.
+
+    Args:
+        nums (list): A list of integers.
+        n (int): The number of elements in the list. This argument is included
+                 to match the problem's function signature but is not strictly
+                 necessary as the length can be derived from the list itself.
+
+    Returns:
+        int: The sum of XOR for all unique pairs of numbers in the list.
+    """
+    total_sum = 0
+    # The maximum number of bits needed to represent the largest number in the list.
+    # We can use a fixed large number like 32 or 64 bits, or find the max.
+    # Using 32 bits is a safe assumption for standard integers.
+    num_bits = 32
+
+    for i in range(num_bits):
+        # Create a mask to check the i-th bit (0-indexed from the right)
+        mask = 1 << i
+        
+        # Count how many numbers have the i-th bit set (1)
+        count_set_bits = 0
+        for num in nums:
+            # If the bitwise AND of the number and the mask is non-zero,
+            # the i-th bit is set in that number.
+            if num & mask:
+                count_set_bits += 1
+        
+        # The number of numbers with the i-th bit unset (0)
+        count_unset_bits = n - count_set_bits
+        
+        # The number of pairs where one number has the bit set and the other has it unset.
+        # This is the count of pairs that will result in a 1 at this bit position.
+        # The order doesn't matter for XOR, so we don't double count.
+        pairs_with_bit_set = count_set_bits * count_unset_bits
+        
+        # The contribution to the total sum is the number of such pairs multiplied
+        # by the value of the bit position (e.g., 1, 2, 4, 8, ...).
+        total_sum += pairs_with_bit_set * mask
+        
+    return total_sum
+
+# Example usage and assertion from the problem description
+if __name__ == "__main__":
+    input_list = [5, 9, 7, 6]
+    list_length = 4
+    expected_output = 47
+    
+    result = pair_xor_Sum(input_list, list_length)
+    
+    print(f"Input list: {input_list}")
+    print(f"Calculated sum of XOR for all pairs: {result}")
+    print(f"Expected output: {expected_output}")
+    
+    assert result == expected_output, f"AssertionError: Expected {expected_output}, but got {result}"
+    print("Assertion passed successfully!")
+
+```

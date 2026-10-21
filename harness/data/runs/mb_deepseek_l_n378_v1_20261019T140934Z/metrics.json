@@ -1,0 +1,148 @@
+{
+  "adapter": "examples/code-mbpp-plus/adapter.py",
+  "build": {
+    "dirty": true,
+    "ref": "79f02239d03edfc6faa0c7c1e3ed6d58d764682d",
+    "source": "git"
+  },
+  "config_id": "mb_deepseek_l_n378_v1",
+  "created_at": "2026-10-19T14:47:14Z",
+  "dataset_id": "mbppplus_378",
+  "fingerprint": {
+    "arm": {
+      "config_id": "mb_deepseek_l_n378_v1",
+      "params": {
+        "family": "deepseek",
+        "max_tokens": 2048,
+        "model": "eval-deepseek-pro",
+        "price_tier": "large",
+        "prompt_file": "prompt.txt",
+        "provider": "litellm",
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0,
+        "usd_per_mtok_in": 0.28,
+        "usd_per_mtok_out": 1.1
+      }
+    },
+    "data": {
+      "dataset_id": "mbppplus_378",
+      "items_sha256": "bdc8a93cb44edbfc172656c31d5d1fe6407e78e469861fe83177ccf40f5902ef",
+      "n_items": 378,
+      "reference_id": "gold/mbppplus_378",
+      "reference_tier": "gold",
+      "references_sha256": "28cb6d415d57f58fbfdb7d6618714ef489dba65dba08ea51c65de680ad8c37ec"
+    },
+    "hash": "717c091ffc71638f833e18a28c2b083a816a07fd4b548971d290dafca9874104",
+    "host": {
+      "cpu_count": 32,
+      "label": "mac-dev",
+      "platform": "Linux/x86_64",
+      "processor": null,
+      "python": "3.11.16",
+      "release": "7.2.5-3-omarchy"
+    },
+    "instrument": {
+      "adapter": {
+        "id": "examples/code-mbpp-plus/adapter.py",
+        "sha256": "2a8b00dd296d2f485e042ea2b9b1c94826dd44ee7ba801327a40f34753d666c6"
+      },
+      "harness": {
+        "commit": "79f02239d03e",
+        "dirty": true
+      }
+    },
+    "system_under_test": {
+      "libraries": {
+        "numpy": "1.26.4",
+        "openai": "3.31.0",
+        "torch": "2.14.1",
+        "transformers": "4.55.4"
+      },
+      "model": {
+        "alias": "eval-deepseek-pro",
+        "endpoint": "http://homelab:4001",
+        "id": "openrouter/deepseek/deepseek-v4-pro",
+        "id_source": "proxy-model-info",
+        "identity_declared": true,
+        "prompt_sha256": "65e89c87d749ee294ce4069d771f97c1fe99a6def34a59035b25a12fdcd33cdf",
+        "provider_routing": null,
+        "python": "3.11.16",
+        "reasoning": {
+          "enabled": false
+        },
+        "revision": null,
+        "revision_source": "api-model-string",
+        "sandbox": "linux-namespaces",
+        "sandbox_probe": {
+          "catches_wrong_code": "fail",
+          "fork": "pass",
+          "network": "error",
+          "runs_code": "pass",
+          "timeout": "timeout",
+          "write_home": "error"
+        },
+        "scorer_sha256": "4b639a9170d3c2a8819305375680b58f87bc2e0941b66101312b1f270a158444",
+        "temperature": 0.0
+      }
+    },
+    "version": 3
+  },
+  "metric_kinds": {
+    "code_found": "descriptive",
+    "pass_base": "quality",
+    "pass_plus": "quality",
+    "reasoning_tokens": "descriptive",
+    "resumed": "descriptive",
+    "syntax_ok": "descriptive",
+    "timeout": "descriptive",
+    "truncated": "descriptive"
+  },
+  "n_items": 378,
+  "params": {
+    "family": "deepseek",
+    "max_tokens": 2048,
+    "model": "eval-deepseek-pro",
+    "price_tier": "large",
+    "prompt_file": "prompt.txt",
+    "provider": "litellm",
+    "reasoning": {
+      "enabled": false
+    },
+    "temperature": 0.0,
+    "usd_per_mtok_in": 0.28,
+    "usd_per_mtok_out": 1.1
+  },
+  "primary_metric": "pass_plus",
+  "providers_seen": {
+    "Alibaba": 2,
+    "Azure": 5,
+    "Baidu": 221,
+    "DigitalOcean": 29,
+    "Novita": 1,
+    "Reka": 23,
+    "Relace": 93,
+    "StreamLake": 4
+  },
+  "reference_tier": "gold",
+  "run_id": "mb_deepseek_l_n378_v1_20261019T140934Z",
+  "scores": {
+    "code_found": 1.0,
+    "cost_usd": 0.000409,
+    "latency_ms": 4828.713079,
+    "pass_base": 0.92328,
+    "pass_plus": 0.793651,
+    "reasoning_tokens": 0.0,
+    "resumed": 0.0,
+    "syntax_ok": 1.0,
+    "timeout": 0.010582,
+    "tokens_in": 74.507937,
+    "tokens_out": 289.955026,
+    "total_cost_usd": 0.15473437,
+    "total_tokens_in": 28164.0,
+    "total_tokens_out": 109603.0,
+    "truncated": 0.0
+  },
+  "warmup_ms": 4962.606
+}

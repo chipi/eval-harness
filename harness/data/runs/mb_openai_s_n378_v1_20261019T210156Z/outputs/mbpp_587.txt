@@ -1,0 +1,8 @@
+```python
+def list_tuple(lst):
+    return tuple(lst)
+
+if __name__ == "__main__":
+    assert list_tuple([5, 10, 7, 4, 15, 3]) == (5, 10, 7, 4, 15, 3)
+    print("All tests passed.")
+```

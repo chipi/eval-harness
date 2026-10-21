@@ -1,0 +1,8 @@
+```python
+def pos_count(lst):
+    """Count the number of positive numbers in a list."""
+    return sum(1 for x in lst if x > 0)
+
+# Test
+assert pos_count([1, -2, 3, -4]) == 2
+```

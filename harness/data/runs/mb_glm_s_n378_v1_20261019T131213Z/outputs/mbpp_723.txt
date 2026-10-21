@@ -1,0 +1,58 @@
+```python
+def count_same_pair(list1, list2):
+    """
+    Counts the number of indices where two lists have the same values.
+
+    Args:
+        list1 (list): The first list of elements.
+        list2 (list): The second list of elements. Must be the same length as list1.
+
+    Returns:
+        int: The count of indices where the corresponding elements in list1 and list2 are equal.
+    """
+    # Check if the lists are of the same length, as per the problem definition.
+    if len(list1) != len(list2):
+        raise ValueError("Input lists must be of the same length.")
+
+    # Initialize a counter to keep track of the number of matching indices.
+    count = 0
+
+    # Iterate through the lists using their indices.
+    for i in range(len(list1)):
+        # Compare the elements at the current index in both lists.
+        if list1[i] == list2[i]:
+            # If they are the same, increment the counter.
+            count += 1
+            
+    return count
+
+# Example usage with the provided assert statement:
+if __name__ == "__main__":
+    # Define the input lists
+    list_a = [1, 2, 3, 4, 5, 6, 7, 8]
+    list_b = [2, 2, 3, 1, 2, 6, 7, 9]
+
+    # Call the function and store the result
+    result = count_same_pair(list_a, list_b)
+
+    # Print the result to verify
+    print(f"List 1: {list_a}")
+    print(f"List 2: {list_b}")
+    print(f"Number of matching indices: {result}")
+
+    # Assert that the result is as expected
+    assert result == 4, f"Assertion failed: Expected 4, but got {result}"
+    print("\nAssertion passed successfully!")
+
+    # Example with no matches
+    list_c = [1, 2, 3]
+    list_d = [4, 5, 6]
+    assert count_same_pair(list_c, list_d) == 0
+    print("Assertion for no matches passed successfully!")
+
+    # Example with all matches
+    list_e = [10, 20, 30]
+    list_f = [10, 20, 30]
+    assert count_same_pair(list_e, list_f) == 3
+    print("Assertion for all matches passed successfully!")
+```

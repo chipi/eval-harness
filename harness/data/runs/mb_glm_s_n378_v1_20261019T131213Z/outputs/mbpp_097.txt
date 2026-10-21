@@ -1,0 +1,59 @@
+```python
+from collections import Counter
+from typing import List, Dict, Any
+
+def frequency_lists(list_of_lists: List[List[Any]]) -> Dict[Any, int]:
+    """
+    Finds the frequency of each element in a flattened list of lists.
+
+    This function takes a list containing sublists, flattens it into a single
+    list of elements, and then counts the occurrences of each unique element.
+    The result is returned as a dictionary where keys are the elements and
+    values are their respective counts.
+
+    Args:
+        list_of_lists: A list of lists, where the inner lists can contain
+                       elements of any hashable type.
+
+    Returns:
+        A dictionary with elements as keys and their frequencies as values.
+
+    Example:
+        >>> frequency_lists([[1, 2, 3, 2], [4, 5, 6, 2], [7, 8, 9, 5]])
+        {1: 1, 2: 3, 3: 1, 4: 1, 5: 2, 6: 1, 7: 1, 8: 1, 9: 1}
+    """
+    # Flatten the list of lists into a single list.
+    # A list comprehension is a concise and efficient way to do this.
+    flattened_list = [item for sublist in list_of_lists for item in sublist]
+
+    # Use collections.Counter to count the frequencies of items in the
+    # flattened list. Counter is a specialized dictionary subclass for
+    # counting hashable objects.
+    frequency_counter = Counter(flattened_list)
+
+    # The Counter object is already a dictionary-like object, so we can
+    # return it directly. For clarity, we can explicitly convert it to a
+    # standard dictionary, though it's often not necessary.
+    return dict(frequency_counter)
+
+# Example usage and assertion to verify the function's correctness.
+if __name__ == "__main__":
+    # Define the input list of lists.
+    input_data = [[1, 2, 3, 2], [4, 5, 6, 2], [7, 8, 9, 5]]
+
+    # Define the expected output dictionary.
+    expected_output = {1: 1, 2: 3, 3: 1, 4: 1, 5: 2, 6: 1, 7: 1, 8: 1, 9: 1}
+
+    # Call the function with the input data.
+    result = frequency_lists(input_data)
+
+    # Assert that the result matches the expected output.
+    # This will raise an AssertionError if the function is not working correctly.
+    assert result == expected_output
+
+    # If the assertion passes, print a success message.
+    print("Assertion passed! The function works correctly.")
+    print(f"Input: {input_data}")
+    print(f"Output: {result}")
+
+```

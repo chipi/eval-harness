@@ -1,0 +1,49 @@
+```python
+def flatten_list(nested_list):
+    """
+    Flatten a given nested list structure.
+    
+    Args:
+        nested_list: A list that may contain nested lists
+        
+    Returns:
+        A flattened list with all elements at a single level
+    """
+    result = []
+    
+    for item in nested_list:
+        if isinstance(item, list):
+            # Recursively flatten nested lists
+            result.extend(flatten_list(item))
+        else:
+            # Add non-list items directly
+            result.append(item)
+    
+    return result
+
+
+# Test the function
+if __name__ == "__main__":
+    test_input = [0, 10, [20, 30], 40, 50, [60, 70, 80], [90, 100, 110, 120]]
+    expected_output = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120]
+    
+    result = flatten_list(test_input)
+    
+    print(f"Input: {test_input}")
+    print(f"Output: {result}")
+    print(f"Expected: {expected_output}")
+    print(f"Test passed: {result == expected_output}")
+    
+    assert result == expected_output, f"Expected {expected_output}, but got {result}"
+    print("✓ Assertion passed!")
+```
+
+This script provides a recursive solution that:
+
+1. **Iterates through each item** in the input list
+2. **Checks if the item is a list** using `isinstance(item, list)`
+3. **Recursively flattens** nested lists by calling `flatten_list()` again
+4. **Extends the result** with flattened sublists or appends individual items
+5. **Returns the flattened list**
+
+The solution handles arbitrary levels of nesting and works with the provided test case.

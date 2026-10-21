@@ -1,0 +1,31 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def len_log(words):
+    """
+    Find the length of the longest word in a list of words.
+    
+    Args:
+        words: A list of strings
+    
+    Returns:
+        The length of the longest word
+    """
+    if not words:
+        return 0
+    
+    max_length = 0
+    for word in words:
+        if len(word) > max_length:
+            max_length = len(word)
+    
+    return max_length
+
+
+# Test the function
+if __name__ == "__main__":
+    assert len_log(["python", "PHP", "bigdata"]) == 7
+    print("Test passed!")
+```
+
+The function `len_log` iterates through the list of words, keeping track of the maximum length found. It returns 0 for an empty list, and otherwise returns the length of the longest word. The test case verifies that `len_log(["python", "PHP", "bigdata"])` returns 7, since "bigdata" has 7 characters.

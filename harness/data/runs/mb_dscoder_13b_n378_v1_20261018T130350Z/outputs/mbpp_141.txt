@@ -1,0 +1,14 @@
+```python
+def pancake_sort(lst):
+    def flip(lst, k):
+        for i in range(k//2):
+            lst[i], lst[k-i-1] = lst[k-i-1], lst[i]
+    for i in range(len(lst)-1, 0, -1):
+        k = lst.index(max(lst[:i+1]))
+        flip(lst, k)
+        flip(lst, i)
+    return lst
+
+# Test cases
+assert pancake_sort([15, 79, 25, 38, 69]) == [15, 25, 38, 69, 79]
+```

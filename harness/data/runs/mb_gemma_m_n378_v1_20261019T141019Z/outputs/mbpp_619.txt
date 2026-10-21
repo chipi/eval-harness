@@ -1,0 +1,31 @@
+```python
+def move_num(s: str) -> str:
+    """
+    Moves all numeric characters to the end of the string while 
+    preserving the relative order of both letters and numbers.
+    """
+    letters = []
+    numbers = []
+    
+    for char in s:
+        if char.isdigit():
+            numbers.append(char)
+        else:
+            letters.append(char)
+            
+    return "".join(letters) + "".join(numbers)
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    input_str = 'I1love143you55three3000thousand'
+    expected_output = 'Iloveyouthreethousand1143553000'
+    
+    result = move_num(input_str)
+    
+    print(f"Input:    {input_str}")
+    print(f"Expected: {expected_output}")
+    print(f"Result:   {result}")
+    
+    assert result == expected_output
+    print("\nAssertion passed successfully!")
+```

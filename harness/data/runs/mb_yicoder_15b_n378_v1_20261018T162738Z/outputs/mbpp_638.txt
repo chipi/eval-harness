@@ -1,0 +1,18 @@
+```python
+def wind_chill(velocity, temperature):
+    """
+    Function to calculate the wind chill index rounded to the next integer
+    """
+    # wind chill index formula
+    wind_chill_index = 13.12 + 0.6215*temperature - 11.37*velocity**0.16 + 0.3965*temperature*velocity**0.16
+    # rounding to the next integer
+    wind_chill_index = round(wind_chill_index)
+    return wind_chill_index
+
+# test cases
+assert wind_chill(120,35)==40
+assert wind_chill(20,10)==12
+assert wind_chill(30,20)==17
+assert wind_chill(40,30)==22
+assert wind_chill(50,40)==28
+```

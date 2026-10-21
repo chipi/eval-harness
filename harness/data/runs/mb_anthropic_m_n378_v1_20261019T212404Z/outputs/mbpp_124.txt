@@ -1,0 +1,15 @@
+```python
+import math
+import cmath
+
+def angle_complex(a, b):
+    """
+    Compute the angle (in radians) of the complex number formed by a + b.
+    """
+    z = a + b
+    return cmath.phase(z)
+
+# Test
+assert math.isclose(angle_complex(0, 1j), 1.5707963267948966, rel_tol=0.001)
+print("All tests passed!")
+```

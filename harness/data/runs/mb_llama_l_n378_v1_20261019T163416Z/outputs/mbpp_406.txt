@@ -1,0 +1,30 @@
+```python
+def find_Parity(n):
+    """
+    This function determines whether the parity of a given number is odd.
+
+    The parity of a number is the count of 1s in its binary representation.
+    A number has odd parity if the count of 1s is odd.
+
+    Args:
+        n (int): The input number.
+
+    Returns:
+        bool: True if the parity is odd, False otherwise.
+    """
+    # Convert the number to binary and remove the '0b' prefix
+    binary = bin(n)[2:]
+    
+    # Count the number of 1s in the binary representation
+    count = binary.count('1')
+    
+    # Return True if the count is odd, False otherwise
+    return count % 2 != 0
+
+def main():
+    # Test the function
+    print(find_Parity(12))  # Should print: False
+
+if __name__ == "__main__":
+    main()
+```

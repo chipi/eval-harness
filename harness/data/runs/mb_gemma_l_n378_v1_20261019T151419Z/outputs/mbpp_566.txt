@@ -1,0 +1,26 @@
+```python
+def sum_digits(n):
+    """
+    Calculates the sum of the digits of a non-negative integer.
+    
+    Args:
+        n (int): A non-negative integer.
+        
+    Returns:
+        int: The sum of the digits.
+    """
+    # Convert the integer to a string to iterate over each digit
+    # Convert each character back to an integer and sum them
+    return sum(int(digit) for digit in str(n))
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    assert sum_digits(345) == 12
+    
+    # Additional test cases
+    assert sum_digits(0) == 0
+    assert sum_digits(123) == 6
+    assert sum_digits(999) == 27
+    
+    print("All tests passed!")
+```

@@ -1,0 +1,28 @@
+```python
+import math
+
+def triangle_area(radius):
+    """
+    Finds the area of the largest triangle that can be inscribed in a semicircle.
+    
+    The largest triangle inscribed in a semicircle has its base as the diameter 
+    of the semicircle and its height as the radius of the semicircle.
+    Area = (1/2) * base * height = (1/2) * (2 * radius) * radius = radius^2.
+    """
+    # If radius is negative or zero, a triangle cannot be formed.
+    if radius <= 0:
+        return None
+    
+    # The maximum area is radius squared
+    return float(radius ** 2)
+
+if __name__ == "__main__":
+    # Test cases
+    assert triangle_area(-1) == None
+    assert triangle_area(0) == None
+    assert triangle_area(1) == 1.0
+    assert triangle_area(2) == 4.0
+    assert triangle_area(5) == 25.0
+    
+    print("All tests passed!")
+```

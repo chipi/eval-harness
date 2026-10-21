@@ -1,0 +1,15 @@
+```python
+def get_max_sum(n):
+    if n == 1:
+        return 1
+    else:
+        return max(n, get_max_sum(n/2) + get_max_sum(n/3) + get_max_sum(n/4) + get_max_sum(n/5))
+
+# Test cases
+assert get_max_sum(60) == 106
+assert get_max_sum(100) == 125
+assert get_max_sum(200) == 165
+assert get_max_sum(300) == 225
+assert get_max_sum(400) == 285
+assert get_max_sum(500) == 365
+```

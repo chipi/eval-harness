@@ -1,0 +1,39 @@
+```python
+def check_element(lst, element):
+    """
+    This function checks whether all items in a given list are equal to a specified element.
+
+    Args:
+        lst (list): The list to be checked.
+        element: The element to check against.
+
+    Returns:
+        bool: True if all items in the list are equal to the element, False otherwise.
+    """
+    # Use the built-in set function to remove duplicates and compare lengths
+    # If the list is empty, return True because all elements (none) are equal to the given element
+    return len(set(lst)) == 1 and lst[0] == element if lst else True
+
+# Alternatively, you can use the all() function with a generator expression
+def check_element_alt(lst, element):
+    """
+    This function checks whether all items in a given list are equal to a specified element.
+
+    Args:
+        lst (list): The list to be checked.
+        element: The element to check against.
+
+    Returns:
+        bool: True if all items in the list are equal to the element, False otherwise.
+    """
+    # Use the all() function with a generator expression to check if all elements are equal to the given element
+    return all(x == element for x in lst)
+
+# Test the functions
+print(check_element(["green", "orange", "black", "white"], 'blue'))  # False
+print(check_element_alt(["green", "orange", "black", "white"], 'blue'))  # False
+print(check_element(["blue", "blue", "blue", "blue"], 'blue'))  # True
+print(check_element_alt(["blue", "blue", "blue", "blue"], 'blue'))  # True
+print(check_element([], 'blue'))  # True
+print(check_element_alt([], 'blue'))  # True
+```

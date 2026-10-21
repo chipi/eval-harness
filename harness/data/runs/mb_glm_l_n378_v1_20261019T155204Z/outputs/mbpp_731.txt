@@ -1,0 +1,30 @@
+```python
+import math
+
+def lateralsurface_cone(r, h):
+    """
+    Calculates the lateral surface area of a cone given its radius and height.
+    
+    Formula: pi * r * sqrt(r^2 + h^2)
+    
+    Args:
+        r (float): Radius of the base of the cone.
+        h (float): Height of the cone.
+        
+    Returns:
+        float: Lateral surface area of the cone.
+    """
+    # Calculate the slant height (l) using Pythagoras theorem: l = sqrt(r^2 + h^2)
+    slant_height = math.sqrt(r**2 + h**2)
+    
+    # Calculate lateral surface area: pi * r * l
+    area = math.pi * r * slant_height
+    return area
+
+# Test assertion
+if __name__ == "__main__":
+    # The expected value 204.20352248333654 corresponds to pi * 5 * 13
+    # which assumes sqrt(5^2 + 12^2) = 13.
+    assert lateralsurface_cone(5, 12) == 204.20352248333654
+    print("Assertion passed. Function works correctly.")
+```

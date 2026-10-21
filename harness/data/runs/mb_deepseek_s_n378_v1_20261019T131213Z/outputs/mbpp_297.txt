@@ -1,0 +1,33 @@
+```python
+from collections.abc import Iterable
+
+def flatten_list(nested_list):
+    """
+    Flatten a nested list structure into a single flat list.
+    
+    Args:
+        nested_list: A list that may contain nested lists (any depth).
+    
+    Returns:
+        A flat list containing all elements in order.
+    """
+    result = []
+    
+    def flatten(item):
+        # If the item is a list (or any iterable except strings/bytes), recurse
+        if isinstance(item, Iterable) and not isinstance(item, (str, bytes)):
+            for sub_item in item:
+                flatten(sub_item)
+        else:
+            result.append(item)
+    
+    flatten(nested_list)
+    return result
+
+# Test the function with the provided example
+if __name__ == "__main__":
+    test_input = [0, 10, [20, 30], 40, 50, [60, 70, 80], [90, 100, 110, 120]]
+    expected_output = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120]
+    assert flatten_list(test_input) == expected_output
+    print("Test passed!")
+```

@@ -1,0 +1,22 @@
+```python
+"""
+Remove all words with length k from a given string.
+
+Example:
+remove_length('The person is most value tet', 3) -> 'person is most value'
+"""
+
+def remove_length(text, k):
+    """
+    Return a string with all words of length k removed.
+
+    Words are separated by whitespace, and the result is joined with
+    a single space between remaining words.
+    """
+    return " ".join(word for word in text.split() if len(word) != k)
+
+
+if __name__ == "__main__":
+    assert remove_length('The person is most value tet', 3) == 'person is most value'
+    print("All tests passed.")
+```

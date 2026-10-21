@@ -1,0 +1,23 @@
+```python
+def toggle_middle_bits(n):
+    if n < 4:
+        return n
+
+    # Find number of bits
+    num_bits = n.bit_length()
+
+    # Create mask with all bits set to 1 for num_bits length
+    all_ones = (1 << num_bits) - 1
+
+    # Mask to exclude the first (MSB) and last (LSB) bits
+    middle_mask = all_ones ^ 1  # unset last bit
+    middle_mask &= ~(1 << (num_bits - 1))  # unset first bit (MSB)
+
+    return n ^ middle_mask
+
+
+if __name__ == "__main__":
+    assert toggle_middle_bits(9) == 15
+    print("All tests passed.")
+    print(toggle_middle_bits(9))  # Example output
+```

@@ -1,0 +1,45 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def count_X(tup, element):
+    """
+    Counts the occurrences of a given element in a tuple.
+    
+    Args:
+        tup: A tuple containing elements to search through.
+        element: The element to count occurrences of.
+    
+    Returns:
+        The number of times the element appears in the tuple.
+    """
+    count = 0
+    for item in tup:
+        if item == element:
+            count += 1
+    return count
+
+
+# Test cases
+if __name__ == "__main__":
+    assert count_X((10, 8, 5, 2, 10, 15, 10, 8, 5, 8, 8, 2), 4) == 0
+    assert count_X((10, 8, 5, 2, 10, 15, 10, 8, 5, 8, 8, 2), 10) == 3
+    assert count_X((10, 8, 5, 2, 10, 15, 10, 8, 5, 8, 8, 2), 8) == 4
+    assert count_X((), 1) == 0
+    print("All tests passed!")
+```
+
+**Explanation:**
+
+- The function `count_X` takes two parameters: `tup` (the tuple to search) and `element` (the value to count).
+- It initializes a counter `count` to 0.
+- It iterates through each item in the tuple and increments the counter whenever the item matches the target element.
+- Finally, it returns the total count.
+
+**Alternative one-liner** using the built-in `tuple.count()` method:
+
+```python
+def count_X(tup, element):
+    return tup.count(element)
+```
+
+Both implementations produce the same result. The first version is more explicit and educational, while the second leverages Python's built-in functionality.

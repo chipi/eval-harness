@@ -1,0 +1,47 @@
+```python
+def next_smallest_palindrome(num: int) -> int:
+    """
+    Find the next smallest palindrome greater than the given integer.
+    
+    Args:
+        num: A positive integer
+        
+    Returns:
+        The smallest palindrome integer that is greater than num
+    """
+    if num < 0:
+        raise ValueError("Input must be a non-negative integer")
+    
+    # Start checking from num + 1
+    candidate = num + 1
+    
+    while True:
+        if is_palindrome(candidate):
+            return candidate
+        candidate += 1
+
+
+def is_palindrome(n: int) -> bool:
+    """
+    Check if an integer is a palindrome.
+    
+    Args:
+        n: A non-negative integer
+        
+    Returns:
+        True if n is a palindrome, False otherwise
+    """
+    s = str(n)
+    return s == s[::-1]
+
+
+if __name__ == "__main__":
+    # Test cases
+    assert next_smallest_palindrome(99) == 101
+    assert next_smallest_palindrome(123) == 131
+    assert next_smallest_palindrome(1) == 2
+    assert next_smallest_palindrome(0) == 1
+    assert next_smallest_palindrome(121) == 131
+    assert next_smallest_palindrome(999) == 1001
+    print("All tests passed!")
+```

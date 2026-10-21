@@ -1,0 +1,23 @@
+```python
+def frequency(lst, num):
+    """
+    Count the number of occurrences of a number in a given list.
+    
+    Parameters:
+    lst (list): The list of numbers to search through.
+    num (int/float): The number to count occurrences of.
+    
+    Returns:
+    int: The number of times `num` appears in `lst`.
+    """
+    return lst.count(num)
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert frequency([1, 2, 3], 4) == 0
+    # Additional test cases
+    assert frequency([1, 2, 2, 3, 2], 2) == 3
+    assert frequency([], 5) == 0
+    assert frequency([7, 7, 7], 7) == 3
+    print("All tests passed.")
+```

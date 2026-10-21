@@ -1,0 +1,22 @@
+```python
+def replace_blank(s, char):
+    """
+    Replaces blank spaces in the string with the given character.
+
+    Parameters:
+    s (str): The input string.
+    char (str): The character to replace spaces with.
+
+    Returns:
+    str: The modified string with spaces replaced by char.
+    """
+    return s.replace(" ", char)
+
+
+# Test case
+assert replace_blank("hello people", '@') == "hello@people"
+
+if __name__ == "__main__":
+    # Additional demonstration
+    print(replace_blank("hello people", '@'))
+```

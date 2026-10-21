@@ -1,0 +1,50 @@
+```python
+def is_product_even(numbers: list[int]) -> bool:
+    """
+    Checks whether the product of numbers in a list is even.
+
+    A product is even if at least one of the numbers in the list is even.
+    This is because any number multiplied by an even number results in an even product.
+
+    Args:
+        numbers: A list of integers.
+
+    Returns:
+        True if the product of the numbers is even, False otherwise.
+        Returns False for an empty list, as the product of an empty list is 1 (by convention),
+        which is an odd number.
+
+    Examples:
+        >>> is_product_even([1, 2, 3])
+        True
+        >>> is_product_even([1, 3, 5])
+        False
+        >>> is_product_even([2, 4, 6])
+        True
+        >>> is_product_even([])
+        False
+    """
+    # An empty list has a product of 1 (the multiplicative identity), which is odd.
+    if not numbers:
+        return False
+
+    # Iterate through the numbers. If we find any even number, we can immediately
+    # return True, as the final product will be even.
+    for num in numbers:
+        # A number is even if it is perfectly divisible by 2 (i.e., its remainder is 0).
+        if num % 2 == 0:
+            return True
+
+    # If the loop completes without finding any even numbers, it means all numbers
+    # were odd. The product of odd numbers is always odd.
+    return False
+
+# Example usage and assertions as requested in the problem description
+assert is_product_even([1, 2, 3]) == True
+assert is_product_even([1, 3, 5]) == False
+assert is_product_even([2]) == True
+assert is_product_even([1]) == False
+assert is_product_even([]) == False
+
+print("All assertions passed!")
+```

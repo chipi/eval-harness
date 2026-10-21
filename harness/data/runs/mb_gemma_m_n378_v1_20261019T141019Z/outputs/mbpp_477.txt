@@ -1,0 +1,24 @@
+```python
+def is_lower(input_string: str) -> str:
+    """
+    Converts the given string to lower case.
+    
+    Args:
+        input_string (str): The string to be converted.
+        
+    Returns:
+        str: The lowercased version of the input string.
+    """
+    return input_string.lower()
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    assert is_lower("InValid") == "invalid"
+    
+    # Additional test cases
+    assert is_lower("HELLO") == "hello"
+    assert is_lower("123!@#") == "123!@#"
+    assert is_lower("") == ""
+    
+    print("All tests passed!")
+```

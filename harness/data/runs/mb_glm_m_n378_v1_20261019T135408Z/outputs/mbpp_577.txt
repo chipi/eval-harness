@@ -1,0 +1,58 @@
+Here's a self-contained Python script that solves the problem of finding the last digit of the factorial of a given number:
+
+```python
+def last_Digit_Factorial(n):
+    """
+    Returns the last digit of the factorial of a given number n.
+    
+    The last digit of n! (factorial of n) can be determined as follows:
+    - For n = 0 or 1, the factorial is 1, so the last digit is 1.
+    - For n = 2, the factorial is 2, so the last digit is 2.
+    - For n = 3, the factorial is 6, so the last digit is 6.
+    - For n >= 4, the factorial will always end with 0 because it includes the factors 2 and 5.
+    
+    Args:
+        n (int): The number whose factorial's last digit is to be found.
+        
+    Returns:
+        int: The last digit of n!.
+    """
+    if n < 0:
+        raise ValueError("Factorial is not defined for negative numbers")
+    if n == 0 or n == 1:
+        return 1
+    elif n == 2:
+        return 2
+    elif n == 3:
+        return 6
+    else:
+        return 0
+
+# Test cases
+assert last_Digit_Factorial(4) == 4, "Test case 1 failed"
+assert last_Digit_Factorial(0) == 1, "Test case 2 failed"
+assert last_Digit_Factorial(1) == 1, "Test case 3 failed"
+assert last_Digit_Factorial(2) == 2, "Test case 4 failed"
+assert last_Digit_Factorial(3) == 6, "Test case 5 failed"
+assert last_Digit_Factorial(5) == 0, "Test case 6 failed"
+assert last_Digit_Factorial(10) == 0, "Test case 7 failed"
+
+print("All test cases passed!")
+```
+
+### Explanation:
+1. **Special Cases Handling**:
+   - For `n = 0` or `n = 1`, the factorial is `1`, so the last digit is `1`.
+   - For `n = 2`, the factorial is `2`, so the last digit is `2`.
+   - For `n = 3`, the factorial is `6`, so the last digit is `6`.
+   
+2. **General Case (n >= 4)**:
+   - For `n >= 4`, the factorial will always include the factors `2` and `5`, which multiply to `10`. Thus, the factorial will end with `0`, making the last digit `0`.
+
+3. **Error Handling**:
+   - The function raises a `ValueError` if `n` is negative since factorial is not defined for negative numbers.
+
+4. **Test Cases**:
+   - The script includes test cases to verify the correctness of the function for various inputs, including edge cases and the general case.
+
+This approach efficiently computes the last digit of the factorial without explicitly calculating the factorial, which is optimal for large numbers.

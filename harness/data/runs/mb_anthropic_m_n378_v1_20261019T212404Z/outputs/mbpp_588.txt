@@ -1,0 +1,6 @@
+```python
+def big_diff(nums):
+    return max(nums) - min(nums)
+
+assert big_diff([1,2,3,4]) == 3
+```

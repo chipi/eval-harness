@@ -1,0 +1,12 @@
+```python
+def is_Sum_Of_Powers_Of_Two(n):
+    """
+    Check if a number can be represented as the sum of non-zero powers of 2.
+    This is equivalent to checking if the number is positive (since any positive integer
+    can be represented as a sum of distinct powers of 2, which is its binary representation).
+    """
+    return n > 0
+
+# Test case
+assert is_Sum_Of_Powers_Of_Two(10) == True
+```

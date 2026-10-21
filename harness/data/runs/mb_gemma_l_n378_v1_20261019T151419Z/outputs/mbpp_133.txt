@@ -1,0 +1,16 @@
+```python
+def sum_negativenum(numbers):
+    """
+    Calculates the sum of all negative numbers in a given list.
+    """
+    return sum(num for num in numbers if num < 0)
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    test_list = [2, 4, -6, -9, 11, -12, 14, -5, 17]
+    expected_result = -32
+    result = sum_negativenum(test_list)
+    
+    assert result == expected_result, f"Expected {expected_result}, but got {result}"
+    print(f"Success! The sum of negative numbers in {test_list} is {result}.")
+```

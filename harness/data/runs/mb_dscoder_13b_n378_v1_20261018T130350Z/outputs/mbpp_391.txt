@@ -1,0 +1,12 @@
+```python
+def convert_list_dictionary(student_ids, names, grades):
+    result = []
+    for i in range(len(student_ids)):
+        temp_dict = {}
+        temp_dict[student_ids[i]] = {names[i]: grades[i]}
+        result.append(temp_dict)
+    return result
+
+# Test cases
+print(convert_list_dictionary(["S001", "S002", "S003", "S004"],["Adina Park", "Leyton Marsh", "Duncan Boyle", "Saim Richards"],[85, 98, 89, 92]))
+```

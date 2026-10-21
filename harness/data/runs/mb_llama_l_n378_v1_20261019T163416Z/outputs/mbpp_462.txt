@@ -1,0 +1,13 @@
+```python
+def combinations_list(lst):
+    result = [[]]
+    for elem in lst:
+        result.extend([curr + [elem] for curr in result])
+    return result
+
+def main():
+    print(combinations_list(['orange', 'red', 'green', 'blue']))
+
+if __name__ == "__main__":
+    main()
+```

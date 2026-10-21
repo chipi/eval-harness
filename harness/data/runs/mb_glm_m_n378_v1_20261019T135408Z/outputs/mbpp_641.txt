@@ -1,0 +1,26 @@
+```python
+def is_nonagonal(n):
+    """
+    Calculate the nth nonagonal number.
+    
+    A nonagonal number (or 9-gonal number) is given by the formula:
+    N(n) = n(7n - 5) / 2
+    
+    Args:
+        n (int): The term number (must be a positive integer).
+    
+    Returns:
+        int: The nth nonagonal number.
+    
+    Raises:
+        ValueError: If n is not a positive integer.
+    """
+    if not isinstance(n, int) or n <= 0:
+        raise ValueError("n must be a positive integer")
+    
+    return n * (7 * n - 5) // 2
+
+# Test the function
+assert is_nonagonal(10) == 325
+print("Test passed! is_nonagonal(10) =", is_nonagonal(10))
+```

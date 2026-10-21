@@ -1,0 +1,18 @@
+```python
+def sum_series(n):
+    """
+    Calculate the sum (n - 2*i) from i=0 to n // 2.
+    This produces the series: n + (n-2) + (n-4) + ... until the term <= 0.
+    """
+    total = 0
+    for i in range(n // 2 + 1):
+        term = n - 2 * i
+        if term <= 0:
+            break
+        total += term
+    return total
+
+
+# Verify with the provided assertion
+assert sum_series(6) == 12
+```

@@ -1,0 +1,29 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def string_to_list(s):
+    """
+    Convert a string to a list of strings split on the space character.
+    
+    Args:
+        s (str): The input string to be split
+        
+    Returns:
+        list: A list of strings split on spaces
+    """
+    return s.split(" ")
+
+
+# Test the function
+if __name__ == "__main__":
+    # Test case from the problem
+    assert string_to_list("python programming") == ['python', 'programming']
+    
+    # Additional test cases
+    assert string_to_list("hello world") == ['hello', 'world']
+    assert string_to_list("a b c") == ['a', 'b', 'c']
+    assert string_to_list("single") == ['single']
+    assert string_to_list("") == ['']
+    
+    print("All tests passed!")
+```

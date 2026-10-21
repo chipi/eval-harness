@@ -1,0 +1,24 @@
+```python
+def extract_singly(lst):
+    """
+    Flatten a list of lists (or tuples) into a single set of numbers.
+    
+    Args:
+        lst: A list of iterables containing numbers.
+        
+    Returns:
+        A set containing all unique numbers from the nested iterables.
+    """
+    result = set()
+    for sublist in lst:
+        for item in sublist:
+            result.add(item)
+    return result
+
+# Test the function
+if __name__ == "__main__":
+    test_input = [(3, 4, 5), (4, 5, 7), (1, 4)]
+    expected_output = {3, 4, 5, 7, 1}
+    assert set(extract_singly(test_input)) == expected_output
+    print("Test passed!")
+```

@@ -1,0 +1,45 @@
+Looking at this problem, I need to count how many elements appear before the first tuple element in a given tuple.
+
+```python
+"""
+Write a function to find the number of elements that occurs before the tuple element in the given tuple.
+assert count_first_elements((1, 5, 7, (4, 6), 10) ) == 3
+"""
+
+
+def count_first_elements(test_tup):
+    """
+    Return the number of elements that occur before the first tuple element
+    in the given tuple.
+
+    If no element of the tuple is itself a tuple, the length of the whole
+    tuple is returned.
+    """
+    for count, ele in enumerate(test_tup):
+        if isinstance(ele, tuple):
+            break
+    else:
+        # No tuple element found; all elements come "before" one.
+        return len(test_tup)
+    return count
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert count_first_elements((1, 5, 7, (4, 6), 10)) == 3
+
+    # Additional test cases
+    assert count_first_elements((2, 9, (5, 7), 11)) == 2
+    assert count_first_elements((11, 15, 5, 8, (2, 3), 8)) == 4
+    assert count_first_elements(((1, 2), 3, 4)) == 0
+    assert count_first_elements((1, 2, 3)) == 3
+
+    print("All tests passed!")
+    print(count_first_elements((1, 5, 7, (4, 6), 10)))
+```
+
+**How it works:**
+
+1. `enumerate` walks through the tuple, giving both the index (`count`) and the value (`ele`).
+2. As soon as an element is itself a `tuple`, we `break` — at that moment `count` equals the number of elements seen before it.
+3. The `for ... else` clause handles the edge case where there is no nested tuple at all: then every element precedes nothing, so we return the full length.

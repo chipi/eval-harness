@@ -1,0 +1,14 @@
+```python
+def list_tuple(lst):
+    """
+    Convert a list to a tuple.
+    """
+    return tuple(lst)
+
+
+# Test case
+assert list_tuple([5, 10, 7, 4, 15, 3]) == (5, 10, 7, 4, 15, 3)
+
+if __name__ == "__main__":
+    print(list_tuple([5, 10, 7, 4, 15, 3]))
+```

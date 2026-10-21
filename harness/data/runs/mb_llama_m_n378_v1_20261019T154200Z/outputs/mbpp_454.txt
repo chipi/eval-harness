@@ -1,0 +1,27 @@
+```python
+import re
+
+def text_match_wordz(text):
+    """
+    This function checks if a given text contains a word with 'z' in it.
+    
+    Parameters:
+    text (str): The input text to be checked.
+    
+    Returns:
+    bool: True if the text contains a word with 'z', False otherwise.
+    """
+    # Split the text into words
+    words = re.findall(r'\b\w+\b', text)
+    
+    # Check each word for 'z'
+    for word in words:
+        if 'z' in word.lower():
+            return True
+    
+    # If no word with 'z' is found, return False
+    return False
+
+# Test the function
+print(text_match_wordz("pythonz."))  # Expected output: True
+```

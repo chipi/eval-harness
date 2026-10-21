@@ -1,0 +1,46 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+"""
+Write a function to find the second smallest number in a list.
+assert second_smallest([1, 2, -8, -2, 0, -2])==-2
+"""
+
+
+def second_smallest(numbers):
+    """
+    Return the second smallest number in the given list.
+
+    The list must contain at least two distinct values for a second
+    smallest to exist.
+    """
+    smallest = float('inf')
+    second = float('inf')
+
+    for num in numbers:
+        if num < smallest:
+            second = smallest
+            smallest = num
+        elif smallest < num < second:
+            second = num
+
+    return second
+
+
+# Tests
+if __name__ == "__main__":
+    assert second_smallest([1, 2, -8, -2, 0, -2]) == -2
+    assert second_smallest([5, 3, 8, 1, 4]) == 3
+    assert second_smallest([10, 10, 20, 30]) == 20
+    assert second_smallest([-1, -1, -2, -3]) == -2
+    print("All tests passed!")
+```
+
+**How it works:**
+
+- The function tracks the smallest and second-smallest values seen so far.
+- On each iteration:
+  - If a new value is smaller than the current `smallest`, the old `smallest` becomes `second`, and the new value becomes `smallest`.
+  - Otherwise, if the value is strictly between `smallest` and `second`, it replaces `second`.
+- Using strict inequality (`smallest < num`) avoids treating duplicates of the smallest value as the second smallest, so `[1, 2, -8, -2, 0, -2]` correctly returns `-2`.
+- This runs in **O(n)** time with **O(1)** extra space, and makes only a single pass over the list.

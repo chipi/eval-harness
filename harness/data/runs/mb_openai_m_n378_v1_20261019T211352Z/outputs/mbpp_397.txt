@@ -1,0 +1,23 @@
+```python
+#!/usr/bin/env python3
+"""
+Write a function to find the median of three numbers.
+
+Example:
+assert median_numbers(25, 55, 65) == 55.0
+"""
+
+def median_numbers(a, b, c):
+    """Return the median of three numbers as a float."""
+    nums = [a, b, c]
+    nums.sort()
+    return float(nums[1])
+
+
+if __name__ == "__main__":
+    assert median_numbers(25, 55, 65) == 55.0
+    assert median_numbers(65, 25, 55) == 55.0
+    assert median_numbers(1, 1, 2) == 1.0
+    assert median_numbers(3, 2, 3) == 3.0
+    print("All tests passed.")
+```

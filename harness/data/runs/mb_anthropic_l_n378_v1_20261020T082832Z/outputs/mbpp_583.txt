@@ -1,0 +1,63 @@
+Looking at this problem, I need to write a function that returns the nth Catalan number.
+
+The Catalan numbers follow the sequence: C₀ = 1, C₁ = 1, C₂ = 2, C₃ = 5, C₄ = 14, ... and `catalan_number(10)` should return 16796, which is C₁₀.
+
+```python
+"""
+Write a function which returns nth catalan number.
+assert catalan_number(10)==16796
+"""
+
+
+def catalan_number(num):
+    """
+    Return the nth Catalan number.
+
+    The Catalan numbers satisfy the recurrence:
+        C(0) = 1
+        C(n+1) = sum(C(i) * C(n-i) for i in range(n+1))
+
+    Equivalently, C(n) = (2n)! / ((n+1)! * n!)
+    """
+    if num <= 1:
+        return 1
+
+    # Dynamic programming (bottom-up) to avoid exponential recursion
+    catalan = [0] * (num + 1)
+    catalan[0] = 1
+    catalan[1] = 1
+
+    for i in range(2, num + 1):
+        total = 0
+        for j in range(i):
+            total += catalan[j] * catalan[i - 1 - j]
+        catalan[i] = total
+
+    return catalan[num]
+
+
+if __name__ == "__main__":
+    assert catalan_number(10) == 16796
+    assert catalan_number(0) == 1
+    assert catalan_number(1) == 1
+    assert catalan_number(2) == 2
+    assert catalan_number(3) == 5
+    assert catalan_number(4) == 14
+    assert catalan_number(5) == 42
+    assert catalan_number(9) == 4862
+
+    print("All tests passed!")
+    print("First 11 Catalan numbers:", [catalan_number(n) for n in range(11)])
+```
+
+**How it works:**
+
+1. **Base cases:** C₀ = C₁ = 1.
+2. **Dynamic programming:** Build up an array where each `catalan[i]` is computed using the recurrence `C(n) = Σ C(j)·C(n-1-j)` for `j` from `0` to `n-1`. This avoids the exponential blowup of naive recursion.
+3. **Complexity:** O(n²) time, O(n) space.
+
+**Output:**
+```
+All tests passed!
+First 11 Catalan numbers: [1, 1, 2, 5, 14, 42, 132, 429, 1430, 4862, 16796]
+```

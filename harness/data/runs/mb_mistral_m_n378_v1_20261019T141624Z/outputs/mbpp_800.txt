@@ -1,0 +1,19 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def remove_all_spaces(input_string):
+    """Remove all whitespace characters from a string."""
+    return input_string.replace(" ", "")
+
+# Test the function
+assert remove_all_spaces('python  program') == 'pythonprogram'
+print("Test passed!")
+```
+
+This script:
+1. Defines a function `remove_all_spaces` that takes a string as input
+2. Uses the `replace()` method to remove all space characters
+3. Includes the required assertion test
+4. Prints a confirmation message if the test passes
+
+The function will work for any string input, removing all space characters (including multiple consecutive spaces).

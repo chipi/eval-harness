@@ -1,0 +1,36 @@
+```python
+def toggle_middle_bits(n):
+    """
+    This function takes an integer as input, and returns the integer with all bits toggled 
+    except the first and the last bits.
+
+    Args:
+        n (int): The input integer.
+
+    Returns:
+        int: The integer with all bits toggled except the first and the last bits.
+    """
+    
+    # Calculate the number of bits in n
+    num_bits = n.bit_length()
+    
+    # Create a mask with all bits set to 1 except the first and last bits
+    # This is done by creating a mask with all bits set to 1 and then subtracting 
+    # the bits corresponding to the first and last bits
+    mask = ((1 << (num_bits - 1)) - 1) ^ ((1 << num_bits) - 1)
+    
+    # Toggle the bits of n using XOR operation with the mask
+    # XOR with 1 toggles the bit, and XOR with 0 keeps the bit same
+    return n ^ mask
+
+
+# Test the function
+assert toggle_middle_bits(9) == 15
+print("All tests passed")
+```
+
+In this code:
+
+*   We first calculate the number of bits in the input integer `n` using the `bit_length` method.
+*   Then, we create a mask with all bits set to 1 except the first and last bits. This is done by creating a mask with all bits set to 1 and then subtracting the bits corresponding to the first and last bits.
+*   Finally, we toggle the bits of `n` using the XOR operation with the mask. The XOR operation with 1 toggles the bit, and XOR with 0 keeps the bit the same.

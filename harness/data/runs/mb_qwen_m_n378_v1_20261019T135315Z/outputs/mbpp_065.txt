@@ -1,0 +1,32 @@
+```python
+def recursive_list_sum(lst):
+    """
+    Recursively flatten a nested list and sum all of its elements.
+    
+    Args:
+        lst: A potentially nested list of numbers
+        
+    Returns:
+        The sum of all numeric elements in the flattened list
+    """
+    total = 0
+    for item in lst:
+        if isinstance(item, list):
+            total += recursive_list_sum(item)
+        else:
+            total += item
+    return total
+
+
+if __name__ == "__main__":
+    # Test case from the problem statement
+    assert recursive_list_sum([1, 2, [3, 4], [5, 6]]) == 21
+    
+    # Additional test cases
+    assert recursive_list_sum([]) == 0
+    assert recursive_list_sum([1, 2, 3]) == 6
+    assert recursive_list_sum([[1, 2], [3, [4, 5]]]) == 15
+    assert recursive_list_sum([[[1]], [[2]], [[3]]]) == 6
+    
+    print("All tests passed!")
+```

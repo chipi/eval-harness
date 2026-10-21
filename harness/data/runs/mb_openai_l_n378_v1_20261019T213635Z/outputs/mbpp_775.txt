@@ -1,0 +1,8 @@
+```python
+def odd_position(numbers):
+    """Return True if every element at an odd index is odd."""
+    return all(numbers[i] % 2 == 1 for i in range(1, len(numbers), 2))
+
+
+assert odd_position([2, 1, 4, 3, 6, 7, 6, 3]) is True
+```

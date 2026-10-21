@@ -1,0 +1,27 @@
+```python
+def find_substring(string_list, target):
+    """
+    Checks if a given target string is present as a substring in any of the strings in the provided list.
+
+    Args:
+        string_list (list): A list of strings to be searched.
+        target (str): The target substring to be found.
+
+    Returns:
+        bool: True if the target is found as a substring in any string in the list, False otherwise.
+    """
+    for string in string_list:
+        if target in string:
+            return True
+    return False
+
+# Example usage:
+def main():
+    string_list = ["red", "black", "white", "green", "orange"]
+    target = "ack"
+    result = find_substring(string_list, target)
+    print(f"Target '{target}' found in the list: {result}")
+
+if __name__ == "__main__":
+    main()
+```

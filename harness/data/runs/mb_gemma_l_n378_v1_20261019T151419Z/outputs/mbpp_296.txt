@@ -1,0 +1,108 @@
+```python
+def get_Inv_Count(arr):
+    """
+    Counts the number of inversions in an array.
+    An inversion is a pair (i, j) such that i < j and arr[i] > arr[j].
+    This implementation uses a Merge Sort based approach with O(n log n) complexity.
+    """
+    def merge_and_count(temp_arr, left, mid, right):
+        i = left    # Starting index for left subarray
+        j = mid + 1 # Starting index for right subarray
+        k = left    # Starting index to be sorted
+        inv_count = 0
+
+        # While there are elements in the left and right subarrays
+        while i <= mid and j <= right:
+            if temp_arr[i] <= temp_arr[j]:
+                # No inversion: element from left is smaller or equal
+                arr[k] = temp_arr[i]
+                i += 1
+            else:
+                # Inversion: element from right is smaller than element from left
+                # Since left subarray is sorted, all elements from i to mid 
+                # are greater than temp_arr[j]
+                arr[k] = temp_arr[j]
+                inv_count += (mid - i + 1)
+                j += 1
+            k += 1
+
+        # Copy remaining elements of left subarray, if any
+        while i <= mid:
+            arr[k] = temp_arr[i]
+            i += 1
+            k += 1
+
+        # Copy remaining elements of right subarray, if any
+        while j <= right:
+            arr[k] = temp_arr[j]
+            j += 1
+            k += 1
+            
+        # Update the temporary array with the sorted elements for the next merge step
+        for loop_var in range(left, right + 1):
+            temp_arr[loop_var] = arr[loop_var]
+            
+        return inv_count
+
+    def merge_sort_and_count(temp_arr, left, right):
+        inv_count = 0
+        if left < right:
+            mid = (left + right) // 2
+
+            # Count inversions in left half
+            inv_count += merge_sort_and_count(temp_arr, left, mid)
+            # Count inversions in right half
+            inv_count += merge_sort_and_count(temp_arr, mid + 1, right)
+            # Count split inversions during merge
+            inv_count += merge_and_count(temp_arr, left, mid, right)
+
+        return inv_count
+
+    # Create a copy of the array to use as a workspace for sorting
+    n = len(arr)
+    temp_arr = list(arr)
+    # We use a copy of the original array to avoid mutating the input if desired,
+    # but the logic requires a working array to sort.
+    # To keep the original array intact, we work on a copy.
+    working_arr = list(arr)
+    
+    # We redefine the internal logic to use working_arr instead of the global arr
+    # to ensure the function is self-contained and doesn't mutate the input.
+    def solve_recursive(data):
+        n = len(data)
+        if n <= 1:
+            return 0, data
+        
+        mid = n // 2
+        left_count, left_sorted = solve_recursive(data[:mid])
+        right_count, right_sorted = solve_recursive(data[mid:])
+        
+        merged = []
+        split_count = 0
+        i = j = 0
+        
+        while i < len(left_sorted) and j < len(right_sorted):
+            if left_sorted[i] <= right_sorted[j]:
+                merged.append(left_sorted[i])
+                i += 1
+            else:
+                merged.append(right_sorted[j])
+                split_count += (len(left_sorted) - i)
+                j += 1
+        
+        merged.extend(left_sorted[i:])
+        merged.extend(right_sorted[j:])
+        
+        return left_count + right_count + split_count, merged
+
+    total_inversions, _ = solve_recursive(arr)
+    return total_inversions
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    test_arr = [1, 20, 6, 4, 5]
+    result = get_Inv_Count(test_arr)
+    print(f"Inversions in {test_arr}: {result}")
+    assert result == 5
+    print("Assertion passed!")
+```

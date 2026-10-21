@@ -1,0 +1,30 @@
+```python
+def big_diff(numbers):
+    """
+    Finds the difference between the largest and smallest value in a given list.
+    
+    Args:
+        numbers (list): A list of numerical values.
+        
+    Returns:
+        int/float: The difference between the max and min values. 
+                   Returns 0 if the list is empty.
+    """
+    if not numbers:
+        return 0
+    
+    return max(numbers) - min(numbers)
+
+# Test cases
+if __name__ == "__main__":
+    # Provided assertion
+    assert big_diff([1, 2, 3, 4]) == 3
+    
+    # Additional test cases
+    assert big_diff([10, 5, 1, 20]) == 19
+    assert big_diff([7, 7, 7, 7]) == 0
+    assert big_diff([-5, 0, 5]) == 10
+    assert big_diff([1.5, 2.5, 5.5]) == 4.0
+    
+    print("All tests passed!")
+```

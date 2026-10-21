@@ -1,0 +1,34 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def snake_to_camel(snake_str):
+    """
+    Convert a snake case string to camel case string.
+    
+    Args:
+        snake_str (str): The snake case string to convert.
+    
+    Returns:
+        str: The camel case string.
+    """
+    # Split the string by underscores
+    words = snake_str.split('_')
+    
+    # Capitalize the first letter of each word and join them
+    camel_str = ''.join(word.capitalize() for word in words)
+    
+    return camel_str
+
+
+# Test the function
+assert snake_to_camel('python_program') == 'PythonProgram'
+print("Test passed!")
+print(snake_to_camel('python_program'))
+```
+
+This script defines a `snake_to_camel` function that:
+1. Splits the input snake case string by underscores (`_`)
+2. Capitalizes the first letter of each word using `capitalize()`
+3. Joins all the words together without any separators
+
+The `assert` statement verifies that `snake_to_camel('python_program')` returns `'PythonProgram'` as expected.

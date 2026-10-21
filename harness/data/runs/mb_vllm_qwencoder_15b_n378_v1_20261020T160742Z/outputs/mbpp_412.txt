@@ -1,0 +1,19 @@
+```python
+def remove_odd(numbers):
+    """
+    Write a python function to remove odd numbers from a given list.
+    
+    Parameters:
+    numbers (list): A list of integers.
+    
+    Returns:
+    list: A new list containing only even numbers from the original list.
+    """
+    return [num for num in numbers if num % 2 == 0]
+
+# Test cases
+assert remove_odd([1,2,3]) == [2]
+assert remove_odd([4,5,6,7,8]) == [4,6,8]
+assert remove_odd([11,13,15,17]) == []
+assert remove_odd([]) == []
+```

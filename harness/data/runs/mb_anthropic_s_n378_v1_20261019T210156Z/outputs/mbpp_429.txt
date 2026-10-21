@@ -1,0 +1,46 @@
+```python
+def and_tuples(tuple1, tuple2):
+    """
+    Extract the elementwise AND of tuples from the given two tuples.
+    
+    Args:
+        tuple1: First tuple of integers
+        tuple2: Second tuple of integers
+    
+    Returns:
+        A tuple containing the elementwise AND results
+    
+    Example:
+        >>> and_tuples((10, 4, 6, 9), (5, 2, 3, 3))
+        (0, 0, 2, 1)
+    """
+    return tuple(a & b for a, b in zip(tuple1, tuple2))
+
+
+# Test cases
+if __name__ == "__main__":
+    # Test case from the problem
+    result = and_tuples((10, 4, 6, 9), (5, 2, 3, 3))
+    print(f"and_tuples((10, 4, 6, 9), (5, 2, 3, 3)) = {result}")
+    assert result == (0, 0, 2, 1), f"Expected (0, 0, 2, 1), got {result}"
+    
+    # Additional test cases
+    print(f"and_tuples((1, 2, 3), (1, 2, 3)) = {and_tuples((1, 2, 3), (1, 2, 3))}")
+    assert and_tuples((1, 2, 3), (1, 2, 3)) == (1, 2, 3)
+    
+    print(f"and_tuples((15, 15), (7, 7)) = {and_tuples((15, 15), (7, 7))}")
+    assert and_tuples((15, 15), (7, 7)) == (7, 7)
+    
+    print("\nAll tests passed!")
+```
+
+**Explanation:**
+
+The function `and_tuples` performs a bitwise AND operation on corresponding elements from two tuples:
+
+- `10 & 5 = 0b1010 & 0b0101 = 0b0000 = 0`
+- `4 & 2 = 0b0100 & 0b0010 = 0b0000 = 0`
+- `6 & 3 = 0b0110 & 0b0011 = 0b0010 = 2`
+- `9 & 3 = 0b1001 & 0b0011 = 0b0001 = 1`
+
+The function uses `zip()` to pair elements from both tuples and applies the bitwise AND operator (`&`) to each pair, returning the results as a new tuple.

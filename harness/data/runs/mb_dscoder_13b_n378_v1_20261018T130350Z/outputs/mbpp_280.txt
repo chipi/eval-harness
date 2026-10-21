@@ -1,0 +1,11 @@
+```python
+def sequential_search(arr, element):
+    if element in arr:
+        return (True, arr.index(element))
+    else:
+        return (False, -1)
+
+# Test cases
+print(sequential_search([11,23,58,31,56,77,43,12,65,19],31)) # Expected output: (True, 3)
+print(sequential_search([11,23,58,31,56,77,43,12,65,19],100)) # Expected output: (False, -1)
+```

@@ -1,0 +1,54 @@
+```python
+import re
+
+def is_decimal(s: str) -> bool:
+    """
+    Check whether a given string is a decimal number with a precision of 2.
+    
+    A valid decimal number must have:
+    - An optional sign (+ or -) at the beginning.
+    - One or more digits before the decimal point.
+    - Exactly one decimal point.
+    - Exactly two digits after the decimal point.
+    
+    Args:
+        s (str): The input string to check.
+        
+    Returns:
+        bool: True if the string is a decimal with precision 2, False otherwise.
+    """
+    # Regular expression breakdown:
+    # ^          - Start of the string
+    # [+-]?      - Optional + or - sign
+    # \d+        - One or more digits (integer part)
+    # \.         - A literal decimal point
+    # \d{2}      - Exactly two digits (fractional part)
+    # $          - End of the string
+    pattern = r'^[+-]?\d+\.\d{2}$'
+    
+    return bool(re.match(pattern, s))
+
+# Test cases
+if __name__ == "__main__":
+    # Provided assertion
+    assert is_decimal('123.11') == True
+    
+    # Additional test cases to cover edge cases
+    assert is_decimal('0.00') == True
+    assert is_decimal('-45.99') == True
+    assert is_decimal('+100.50') == True
+    assert is_decimal('1.23') == True
+    
+    # Invalid cases
+    assert is_decimal('123.1') == False      # Precision of 1
+    assert is_decimal('123.111') == False     # Precision of 3
+    assert is_decimal('.12') == False         # Missing integer part
+    assert is_decimal('12.') == False         # Missing fractional part
+    assert is_decimal('12') == False          # Missing decimal point
+    assert is_decimal('abc.12') == False      # Non-numeric characters
+    assert is_decimal('12.1a') == False       # Non-numeric fractional part
+    assert is_decimal(' 12.12') == False      # Leading whitespace
+    assert is_decimal('12.12 ') == False      # Trailing whitespace
+    
+    print("All test cases passed!")
+```

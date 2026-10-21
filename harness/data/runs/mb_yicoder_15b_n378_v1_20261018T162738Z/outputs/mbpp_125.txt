@@ -1,0 +1,26 @@
+```python
+def find_length(binary_string):
+    max_diff = 0
+    current_diff = 0
+    current_zeroes = 0
+    current_ones = 0
+
+    for bit in binary_string:
+        if bit == '0':
+            current_zeroes += 1
+            current_ones = 0
+        else:
+            current_ones += 1
+            current_zeroes = 0
+
+        current_diff = current_zeroes - current_ones
+        max_diff = max(max_diff, current_diff)
+
+    return max_diff
+
+# Test cases
+assert find_length("11000010001") == 6
+assert find_length("111100001111") == 0
+assert find_length("000011110000") == 4
+assert find_length("1111000011110000") == 0
+```

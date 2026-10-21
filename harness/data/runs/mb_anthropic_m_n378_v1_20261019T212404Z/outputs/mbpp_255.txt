@@ -1,0 +1,10 @@
+```python
+from itertools import combinations_with_replacement
+
+def combinations_colors(colors, n):
+    return list(combinations_with_replacement(colors, n))
+
+if __name__ == "__main__":
+    assert combinations_colors(["Red", "Green", "Blue"], 1) == [('Red',), ('Green',), ('Blue',)]
+    print(combinations_colors(["Red", "Green", "Blue"], 2))
+```

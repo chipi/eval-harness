@@ -1,0 +1,11 @@
+```python
+def sort_counter(dictionary):
+    return sorted(dictionary.items(), key=lambda item: item[1], reverse=True)
+
+
+assert sort_counter({'Math': 81, 'Physics': 83, 'Chemistry': 87}) == [
+    ('Chemistry', 87),
+    ('Physics', 83),
+    ('Math', 81),
+]
+```

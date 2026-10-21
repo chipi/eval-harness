@@ -1,0 +1,56 @@
+```python
+def odd_Equivalent(binary_string: str, rotations: int) -> int:
+    """
+    Calculates the number of distinct numbers with an odd value that can be
+    obtained by rotating a binary string a given number of times.
+
+    A number is odd if its least significant bit (the last character of the
+    string) is '1'. Rotating the string moves the last character to the front.
+
+    Args:
+        binary_string: The input string of '0's and '1's.
+        rotations: The number of times to rotate the string.
+
+    Returns:
+        The count of distinct odd numbers formed by the rotations.
+
+    Example:
+        >>> odd_Equivalent("011001", 6)
+        3
+    """
+    if not binary_string:
+        return 0
+
+    n = len(binary_string)
+    # The number of unique rotations is determined by the string's length
+    # and its periodicity. We only need to check up to n rotations.
+    effective_rotations = min(rotations, n)
+
+    odd_numbers = set()
+
+    # Iterate through each of the effective rotations
+    for i in range(effective_rotations):
+        # A number is odd if its last bit is '1'.
+        # After i rotations, the last character of the new string is
+        # the character at position (n - 1 - i) of the original string.
+        if binary_string[n - 1 - i] == '1':
+            # If the last bit is '1', the number is odd.
+            # We add the entire rotated string to a set to ensure we only
+            # count distinct numbers.
+            rotated_string = binary_string[i:] + binary_string[:i]
+            odd_numbers.add(rotated_string)
+
+    # The result is the size of the set, which contains only distinct odd numbers.
+    return len(odd_numbers)
+
+# Example usage and assertion from the problem description
+if __name__ == '__main__':
+    assert odd_Equivalent("011001", 6) == 3
+    assert odd_Equivalent("1010", 4) == 2
+    assert odd_Equivalent("0000", 10) == 0
+    assert odd_Equivalent("1", 5) == 1
+    assert odd_Equivalent("111", 100) == 1
+    assert odd_Equivalent("110", 3) == 2
+    assert odd_Equivalent("", 5) == 0
+    print("All assertions passed.")
+```

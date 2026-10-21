@@ -1,0 +1,40 @@
+Here's a self-contained Python script that solves the problem of counting the number of set bits (1s) in a given number:
+
+```python
+def count_set_bits(n):
+    """
+    Count the number of set bits (1s) in the binary representation of a number.
+
+    Args:
+        n (int): The number to count set bits in.
+
+    Returns:
+        int: The count of set bits in the binary representation of n.
+    """
+    count = 0
+    while n:
+        count += n & 1
+        n >>= 1
+    return count
+
+# Test the function
+assert count_set_bits(2) == 1
+assert count_set_bits(0) == 0
+assert count_set_bits(7) == 3  # 111 in binary
+assert count_set_bits(15) == 4  # 1111 in binary
+assert count_set_bits(1) == 1  # 1 in binary
+
+print("All tests passed!")
+```
+
+This script:
+1. Defines a function `count_set_bits` that counts the number of 1s in the binary representation of a number
+2. Uses bitwise operations to efficiently count the bits
+3. Includes test cases to verify the function works correctly
+4. The function works by:
+   - Using a loop that continues while the number is not zero
+   - Using bitwise AND with 1 to check the least significant bit
+   - Right-shifting the number to examine the next bit
+   - Counting each 1 encountered
+
+The test cases verify that the function works with various inputs including edge cases.

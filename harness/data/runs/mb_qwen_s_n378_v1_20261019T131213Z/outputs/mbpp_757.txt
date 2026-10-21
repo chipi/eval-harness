@@ -1,0 +1,42 @@
+```python
+def count_reverse_pairs(str_list):
+    """
+    Count the pairs of reverse strings in the given string list.
+    
+    A pair is counted when two distinct elements in the list are reverses of each other.
+    Each pair is counted only once (i.e., if "abc" and "cba" are both present, that's one pair).
+    
+    Args:
+        str_list: List of strings
+        
+    Returns:
+        Number of reverse string pairs
+    """
+    seen = set()
+    count = 0
+    
+    for s in str_list:
+        reversed_s = s[::-1]
+        # If the reversed string has been seen before, we found a new pair
+        if reversed_s in seen:
+            count += 1
+        else:
+            seen.add(s)
+    
+    return count
+
+
+# Test cases
+assert count_reverse_pairs(["julia", "best", "tseb", "for", "ailuj"]) == 2
+assert count_reverse_pairs([]) == 0
+assert count_reverse_pairs(["a", "b", "c"]) == 0
+assert count_reverse_pairs(["ab", "ba"]) == 1
+assert count_reverse_pairs(["ab", "ba", "cd", "dc"]) == 2
+assert count_reverse_pairs(["aa", "aa"]) == 0  # Same string, not a reverse pair with itself unless different indices? 
+# Actually, let's think: ["aa", "aa"] - first "aa" added to seen. Second "aa": reversed is "aa", which is in seen, so count=1.
+# But typically we want distinct pairs. Let me reconsider.
+# The problem says "pairs of reverse strings". If we have two identical palindromic strings, they are reverses of each other.
+# So ["aa", "aa"] should give 1 pair.
+assert count_reverse_pairs(["aa", "aa"]) == 1
+assert count_reverse_pairs(["hello", "olleh", "world", "dlrow"]) == 2
+```

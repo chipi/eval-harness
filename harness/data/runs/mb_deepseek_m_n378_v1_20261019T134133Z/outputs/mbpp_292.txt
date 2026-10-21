@@ -1,0 +1,34 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def find(a, b):
+    """
+    Returns the quotient of two numbers, rounded down to the nearest integer.
+    
+    Args:
+        a (int or float): The dividend.
+        b (int or float): The divisor.
+    
+    Returns:
+        int: The floor of a divided by b.
+    """
+    return a // b
+
+
+# Test cases
+assert find(10, 3) == 3
+assert find(20, 4) == 5
+assert find(7, 2) == 3
+assert find(-10, 3) == -4  # floor division rounds toward negative infinity
+assert find(9, 3) == 3
+
+print("All tests passed!")
+```
+
+**Explanation:**
+
+- The `//` operator in Python performs **floor division**, which divides two numbers and rounds the result down to the nearest integer (toward negative infinity).
+- For example, `10 // 3` returns `3` because `10 / 3 = 3.333...` and flooring gives `3`.
+- For negative numbers, `-10 // 3` returns `-4` because `-10 / 3 = -3.333...` and flooring toward negative infinity gives `-4`.
+
+If you specifically want truncation toward zero instead (like C-style integer division), you would use `int(a / b)` instead. But based on the problem statement ("rounded down"), `//` is the correct choice.

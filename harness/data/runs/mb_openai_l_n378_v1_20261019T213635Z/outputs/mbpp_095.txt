@@ -1,0 +1,7 @@
+```python
+def Find_Min_Length(lists):
+    return min(map(len, lists))
+
+
+assert Find_Min_Length([[1], [1, 2]]) == 1
+```

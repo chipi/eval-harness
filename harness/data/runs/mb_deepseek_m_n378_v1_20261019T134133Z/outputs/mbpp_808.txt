@@ -1,0 +1,43 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+"""
+Write a function to check if the given tuples contain the k or not.
+assert check_K((10, 4, 5, 6, 8), 6) == True
+"""
+
+def check_K(tup, k):
+    """
+    Check if the given tuple contains the value k.
+    
+    Args:
+        tup: A tuple of elements to search through.
+        k: The value to search for.
+    
+    Returns:
+        True if k is found in tup, False otherwise.
+    """
+    return k in tup
+
+
+# Test cases
+if __name__ == "__main__":
+    assert check_K((10, 4, 5, 6, 8), 6) == True
+    assert check_K((10, 4, 5, 6, 8), 7) == False
+    assert check_K((), 1) == False
+    assert check_K((1, 2, 3), 1) == True
+    assert check_K(("a", "b", "c"), "b") == True
+    assert check_K(("a", "b", "c"), "d") == False
+    print("All tests passed!")
+```
+
+**How it works:**
+
+- The `check_K` function uses Python's `in` operator, which checks membership within an iterable (including tuples).
+- It returns `True` if `k` is present in `tup`, and `False` otherwise.
+- The `if __name__ == "__main__":` block runs the assertions from the problem statement plus a few extra edge cases (empty tuple, string elements, missing element) to verify correctness.
+
+**Output:**
+```
+All tests passed!
+```

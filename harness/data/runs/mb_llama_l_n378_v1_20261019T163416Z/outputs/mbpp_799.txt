@@ -1,0 +1,22 @@
+```python
+def left_rotate(n, d):
+    """
+    Rotate left bits by d bits a given 32-bit number.
+
+    Args:
+        n (int): The number to be rotated.
+        d (int): The number of bits to rotate.
+
+    Returns:
+        int: The result of rotating n left by d bits.
+    """
+    # Since the number is 32 bits, we use the modulus operator to ensure d is within the range 0-31
+    d = d % 32
+    
+    # Perform the left rotation by shifting the bits to the left and then shifting the overflow to the right
+    return (n << d) | (n >> (32 - d))
+
+# Test the function
+assert left_rotate(16, 2) == 64
+print("Test passed.")
+```

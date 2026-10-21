@@ -1,0 +1,10 @@
+```python
+def multiple_to_single(lst):
+    return int(''.join(map(str, lst)))
+
+# Test cases
+assert multiple_to_single([11, 33, 50])==113350
+assert multiple_to_single([9, 9, 9])==999
+assert multiple_to_single([1, 2, 3])==123
+assert multiple_to_single([0, 0, 0])==0
+```

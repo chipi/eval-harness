@@ -1,0 +1,14 @@
+```python
+def get_equal(tuples_list):
+    """
+    Write a function to find whether all the given tuples have equal length or not.
+    assert get_equal([(11, 22, 33), (44, 55, 66)]) == True
+    """
+    if not tuples_list:
+        return True
+    length = len(tuples_list[0])
+    for tup in tuples_list:
+        if len(tup) != length:
+            return False
+    return True
+```

@@ -1,0 +1,21 @@
+```python
+def issort_list(lst: list) -> bool:
+    """
+    Check whether a specified list is sorted in non-decreasing order.
+    
+    Args:
+        lst: A list of comparable elements
+        
+    Returns:
+        True if the list is sorted in non-decreasing order, False otherwise
+    """
+    for i in range(len(lst) - 1):
+        if lst[i] > lst[i + 1]:
+            return False
+    return True
+
+
+if __name__ == "__main__":
+    assert issort_list([1, 2, 4, 6, 8, 10, 12, 14, 16, 17]) == True
+    print("All tests passed!")
+```

@@ -1,0 +1,16 @@
+```python
+def subject_marks(tuples_list):
+    """
+    Sorts a list of tuples based on the second value of each tuple.
+
+    Args:
+        tuples_list: List of tuples where each tuple contains at least two elements.
+
+    Returns:
+        List of tuples sorted by the second element in ascending order.
+    """
+    return sorted(tuples_list, key=lambda x: x[1])
+
+# Test case
+assert subject_marks([('English', 88), ('Science', 90), ('Maths', 97), ('Social sciences', 82)]) == [('Social sciences', 82), ('English', 88), ('Science', 90), ('Maths', 97)]
+```

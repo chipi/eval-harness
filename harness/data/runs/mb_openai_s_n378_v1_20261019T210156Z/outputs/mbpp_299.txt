@@ -1,0 +1,22 @@
+```python
+def max_aggregate(tuples_list):
+    totals = {}
+    for name, value in tuples_list:
+        totals[name] = totals.get(name, 0) + value
+    
+    # Return the name with the maximum total.
+    # If there is a tie, max() will pick the first encountered in iteration order.
+    return max(totals.items(), key=lambda item: item[1])
+
+
+if __name__ == "__main__":
+    assert max_aggregate([
+        ('Juan Whelan', 90),
+        ('Sabah Colley', 88),
+        ('Peter Nichols', 7),
+        ('Juan Whelan', 122),
+        ('Sabah Colley', 84)
+    ]) == ('Juan Whelan', 212)
+
+    print("All tests passed.")
+```

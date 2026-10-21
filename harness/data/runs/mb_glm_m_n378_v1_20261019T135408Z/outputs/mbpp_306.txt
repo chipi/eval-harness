@@ -1,0 +1,48 @@
+To solve this problem, we need to find the maximum sum of an increasing subsequence that starts from the beginning of the array (prefix), ends at the `i`-th index, and strictly includes the `k`-th element (where `k > i`). 
+
+Since the subsequence must include the `k`-th element, any element chosen before `k` must be strictly less than the value at the `k`-th index. Therefore, the problem reduces to finding the maximum sum of an increasing subsequence from the prefix up to the `i`-th index, with the constraint that all chosen elements (including the one at `i`) must be strictly less than the value at the `k`-th index.
+
+We can efficiently solve this using Dynamic Programming (DP):
+1. Create a `dp` array where `dp[j]` represents the maximum sum of an increasing subsequence ending at index `j` such that all elements in the subsequence are strictly less than `arr[k]`.
+2. Iterate through the array from index `0` to `i`. For each index `j`, if `arr[j]` is strictly less than `arr[k]`, we can potentially include it. We look at all previous indices `m` (from `0` to `j-1`) where `arr[m] < arr[j]` and update `dp[j] = max(dp[j], dp[m] + arr[j])`.
+3. The answer will be the maximum value found in the `dp` array up to the `i`-th index.
+
+Here is the self-contained Python script:
+
+```python
+def max_sum_increasing_subseq(arr, n, i, k):
+    """
+    Finds the maximum sum of increasing subsequence from prefix until ith index 
+    and also including a given kth element which is after i (k > i).
+    
+    Since the subsequence must include the kth element, any element chosen before k 
+    must be strictly less than arr[k]. Thus, we find the max sum of an increasing 
+    subsequence up to index i, constrained to elements strictly less than arr[k].
+    """
+    # If i is out of bounds or k is not strictly greater than i, return 0
+    if i < 0 or i >= n or k <= i or k >= n:
+        return 0
+        
+    k_val = arr[k]
+    
+    # dp[j] will store the max sum of an increasing subsequence ending at index j
+    # such that all elements in the subsequence are strictly less than k_val
+    dp = [0] * n
+    
+    for j in range(i + 1):
+        # The current element must be strictly less than the kth element
+        if arr[j] < k_val:
+            dp[j] = arr[j]
+            # Check all previous elements to build the increasing subsequence
+            for m in range(j):
+                if arr[m] < arr[j] and dp[m] > 0:
+                    dp[j] = max(dp[j], dp[m] + arr[j])
+                    
+    # The result is the maximum sum achievable up to the ith index
+    return max(dp[:i + 1])
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert max_sum_increasing_subseq([1, 101, 2, 3, 100, 4, 5], 7, 4, 6) == 11
+    print("Assertion passed successfully!")
+```

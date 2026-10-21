@@ -1,0 +1,46 @@
+```python
+#!/usr/bin/env python3
+"""
+Find combinations of sums with tuples in a given tuple list.
+
+For every pair of tuples in the input list, add their corresponding elements.
+
+Example:
+[(2, 4), (6, 7)] -> (2 + 6, 4 + 7) -> (8, 11)
+
+Expected:
+find_combinations([(2, 4), (6, 7), (5, 1), (6, 10)])
+=> [(8, 11), (7, 5), (8, 14), (11, 8), (12, 17), (11, 11)]
+"""
+
+from itertools import combinations
+
+
+def find_combinations(tuple_list):
+    """
+    Return a list containing pairwise sums of all 2-tuple combinations.
+
+    Args:
+        tuple_list: A list of tuples, where each tuple contains two numbers.
+
+    Returns:
+        A list of tuples containing the element-wise sums of each pair.
+    """
+    return [
+        (a[0] + b[0], a[1] + b[1])
+        for a, b in combinations(tuple_list, 2)
+    ]
+
+
+if __name__ == "__main__":
+    assert find_combinations([(2, 4), (6, 7), (5, 1), (6, 10)]) == [
+        (8, 11),
+        (7, 5),
+        (8, 14),
+        (11, 8),
+        (12, 17),
+        (11, 11),
+    ]
+
+    print("All tests passed.")
+```

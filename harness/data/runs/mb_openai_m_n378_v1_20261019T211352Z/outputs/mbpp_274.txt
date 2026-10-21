@@ -1,0 +1,33 @@
+```python
+#!/usr/bin/env python3
+"""
+Write a python function that takes in a positive integer n and finds the sum
+of even index binomial coefficients.
+
+For a given n, the even-index binomial coefficients are:
+C(n, 0), C(n, 2), C(n, 4), ...
+
+Their sum is 2^(n-1) for n >= 1.
+
+Example:
+n = 4
+C(4,0) + C(4,2) + C(4,4) = 1 + 6 + 1 = 8
+"""
+
+def even_binomial_Coeff_Sum(n):
+    """
+    Return the sum of even-index binomial coefficients for a positive integer n.
+    """
+    if not isinstance(n, int) or n <= 0:
+        raise ValueError("n must be a positive integer")
+
+    return 2 ** (n - 1)
+
+
+# Example test
+assert even_binomial_Coeff_Sum(4) == 8
+
+if __name__ == "__main__":
+    n = 4
+    print(even_binomial_Coeff_Sum(n))
+```

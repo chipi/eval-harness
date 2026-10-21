@@ -1,0 +1,46 @@
+Here's a self-contained Python script that solves the problem of finding the maximum run of uppercase characters in a given string:
+
+```python
+def max_run_uppercase(s):
+    """
+    Find the maximum run of consecutive uppercase characters in the given string.
+    
+    Args:
+        s (str): The input string to check.
+        
+    Returns:
+        int: The length of the longest consecutive uppercase character run.
+    """
+    max_run = 0
+    current_run = 0
+    
+    for char in s:
+        if char.isupper():
+            current_run += 1
+            if current_run > max_run:
+                max_run = current_run
+        else:
+            current_run = 0
+    
+    return max_run
+
+# Test cases
+assert max_run_uppercase('GeMKSForGERksISBESt') == 5
+assert max_run_uppercase('ABCdefGHI') == 3
+assert max_run_uppercase('abc') == 0
+assert max_run_uppercase('') == 0
+assert max_run_uppercase('ALLUPPER') == 8
+assert max_run_uppercase('lowerUPPERlower') == 5
+
+print("All test cases passed!")
+```
+
+### Explanation:
+1. **Initialization**: We initialize `max_run` to keep track of the longest run found so far and `current_run` to count the current run of uppercase characters.
+2. **Iteration**: For each character in the string:
+   - If the character is uppercase (`char.isupper()`), we increment `current_run` and update `max_run` if `current_run` exceeds it.
+   - If the character is not uppercase, we reset `current_run` to 0.
+3. **Return**: After processing all characters, `max_run` holds the length of the longest consecutive uppercase run.
+4. **Test Cases**: The script includes several test cases to verify the function's correctness, including the provided example and edge cases like empty strings or all-lowercase strings.
+
+This approach efficiently processes the string in a single pass, making it optimal with O(n) time complexity where n is the length of the string.

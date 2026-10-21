@@ -1,0 +1,61 @@
+```python
+def find_Odd_Pair(arr, n):
+    """
+    Count the number of pairs whose XOR value is odd.
+    
+    XOR of two numbers is odd if and only if one number is even and the other is odd.
+    This is because:
+    - even XOR even = even
+    - odd XOR odd = even
+    - even XOR odd = odd
+    - odd XOR even = odd
+    
+    Args:
+        arr: List of integers
+        n: Length of the array
+    
+    Returns:
+        Number of pairs whose XOR is odd
+    """
+    count_even = 0
+    count_odd = 0
+    
+    # Count even and odd numbers in the array
+    for num in arr:
+        if num % 2 == 0:
+            count_even += 1
+        else:
+            count_odd += 1
+    
+    # Number of pairs with one even and one odd number
+    # = count_even * count_odd
+    return count_even * count_odd
+
+
+# Test cases
+assert find_Odd_Pair([5, 4, 7, 2, 1], 5) == 6
+print("Test passed!")
+
+# Verification:
+# Array: [5, 4, 7, 2, 1]
+# Odd numbers: [5, 7, 1] (count = 3)
+# Even numbers: [4, 2] (count = 2)
+# Pairs with odd XOR: 3 * 2 = 6
+# Pairs: (5,4), (5,2), (4,7), (7,2), (4,1), (7,1)
+print("Number of pairs with odd XOR:", find_Odd_Pair([5, 4, 7, 2, 1], 5))
+```
+
+**Explanation:**
+
+The key insight is that XOR of two numbers is odd if and only if **one number is even and the other is odd**:
+- even ⊕ even = even (last bit: 0 ⊕ 0 = 0)
+- odd ⊕ odd = even (last bit: 1 ⊕ 1 = 0)
+- even ⊕ odd = odd (last bit: 0 ⊕ 1 = 1)
+- odd ⊕ even = odd (last bit: 1 ⊕ 0 = 1)
+
+Therefore, the number of pairs with odd XOR equals the product of the count of even numbers and the count of odd numbers in the array.
+
+For the example `[5, 4, 7, 2, 1]`:
+- Odd numbers: 5, 7, 1 (count = 3)
+- Even numbers: 4, 2 (count = 2)
+- Pairs with odd XOR: 3 × 2 = 6

@@ -1,0 +1,32 @@
+```python
+from itertools import combinations_with_replacement
+
+def combinations_colors(colors, n):
+    """
+    Generate all combinations with repetition of elements from a list.
+    
+    Args:
+        colors: A list of elements
+        n: The length of each combination
+    
+    Returns:
+        A list of tuples, where each tuple is a combination with repetition
+    """
+    return list(combinations_with_replacement(colors, n))
+
+
+# Test cases
+assert combinations_colors(["Red", "Green", "Blue"], 1) == [('Red',), ('Green',), ('Blue',)]
+assert combinations_colors(["Red", "Green"], 2) == [('Red', 'Red'), ('Red', 'Green'), ('Green', 'Green')]
+assert combinations_colors(["A", "B"], 3) == [('A', 'A', 'A'), ('A', 'A', 'B'), ('A', 'B', 'B'), ('B', 'B', 'B')]
+
+print("All tests passed!")
+```
+
+The solution uses Python's built-in `itertools.combinations_with_replacement()` function, which:
+- Takes an iterable (the list of colors) and a length parameter (n)
+- Returns an iterator of tuples representing all combinations with repetition
+- Maintains sorted order (combinations are emitted in lexicographic sort order)
+- Allows elements to be repeated in combinations
+
+The function converts the iterator to a list and returns it, matching the expected output format.

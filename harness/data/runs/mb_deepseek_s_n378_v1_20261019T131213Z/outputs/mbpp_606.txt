@@ -1,0 +1,22 @@
+```python
+import math
+
+def radian_degree(degrees: float) -> float:
+    """
+    Convert an angle from degrees to radians.
+
+    Args:
+        degrees: Angle in degrees.
+
+    Returns:
+        The angle in radians.
+    """
+    return degrees * (math.pi / 180.0)
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    result = radian_degree(90)
+    print(f"radian_degree(90) = {result}")
+    assert result == 1.5707963267948966, f"Expected 1.5707963267948966, got {result}"
+    print("Assertion passed.")
+```

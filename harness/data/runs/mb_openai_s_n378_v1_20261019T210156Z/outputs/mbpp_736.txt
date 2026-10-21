@@ -1,0 +1,26 @@
+```python
+from bisect import bisect_left
+
+def left_insertion(sorted_list, value):
+    """
+    Return the leftmost insertion point for `value` in `sorted_list`.
+
+    This matches the behavior of bisect_left:
+    - If `value` is already present, returns the index of its first occurrence.
+    - If `value` is not present, returns the index where it should be inserted
+      to keep the list sorted.
+
+    Parameters:
+        sorted_list (list): A list sorted in non-decreasing order.
+        value: The value to insert.
+
+    Returns:
+        int: The left insertion index.
+    """
+    return bisect_left(sorted_list, value)
+
+
+if __name__ == "__main__":
+    assert left_insertion([1, 2, 4, 5], 6) == 4
+    print("All tests passed.")
+```

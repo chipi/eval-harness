@@ -1,0 +1,38 @@
+<thinking>
+The task: write a function `text_starta_endb` that matches a string that has an 'a' followed by anything, ending in 'b'. Classic regex: `a.*b$`. Typically the solution uses re.search and returns 'Found a match!' or 'Not matched!'. But the assert requires truthy return. So return True/match object.
+
+Let me write with re.search(r'a.*b$', text) returning bool-ish. assert text_starta_endb("aabbbb") should be truthy.
+</thinking>
+
+```python
+"""
+Write a function that matches a string that has an 'a' followed by anything, ending in 'b'.
+assert text_starta_endb("aabbbb")
+"""
+
+import re
+
+
+def text_starta_endb(text):
+    """
+    Return a match object (truthy) if `text` contains an 'a' followed by
+    anything (including nothing) and ending in 'b'; otherwise return None.
+    """
+    pattern = r'a.*?b$'
+    return re.search(pattern, text)
+
+
+if __name__ == "__main__":
+    # Provided test
+    assert text_starta_endb("aabbbb")
+
+    # A few extra sanity checks
+    assert text_starta_endb("ab")
+    assert text_starta_endb("accddbbjjjb")
+    assert not text_starta_endb("aabAbbbc")
+    assert not text_starta_endb("bbbb")
+    assert not text_starta_endb("ba")
+
+    print("All tests passed!")
+    print(text_starta_endb("aabbbb"))  # show the match object
+```

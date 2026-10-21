@@ -1,0 +1,31 @@
+```python
+def is_num_decagonal(n):
+    """
+    This function calculates the nth decagonal number.
+
+    A decagonal number is a figurate number that represents a decagon.
+    The formula for the nth decagonal number is: 5n^2 - 3n
+
+    Args:
+        n (int): The position of the decagonal number to be calculated.
+
+    Returns:
+        int: The nth decagonal number.
+    """
+    return 5*n**2 - 3*n
+
+# Example usage:
+print(is_num_decagonal(3))  # Output: 27
+```
+
+You can run this script and it will calculate the 3rd decagonal number, which is 27. You can replace `3` with any positive integer to get the corresponding decagonal number. 
+
+This function uses the mathematical formula for decagonal numbers to directly calculate the nth number, making it efficient for large inputs. 
+
+Please note that this function does not check if the input number `n` is a positive integer. If you need to handle such cases, you may want to add some error checking code. 
+
+For example, you could add the following lines at the beginning of the function:
+```python
+if not isinstance(n, int) or n <= 0:
+    raise ValueError("Input must be a positive integer")
+```

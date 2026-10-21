@@ -1,0 +1,28 @@
+```python
+def next_smallest_palindrome(n):
+    """
+    Finds the next smallest palindrome integer greater than the given integer n.
+    """
+    # Start searching from the next integer
+    num = n + 1
+    
+    while True:
+        # Convert number to string to check for palindrome property
+        s = str(num)
+        # A palindrome reads the same forwards and backwards
+        if s == s[::-1]:
+            return num
+        num += 1
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    assert next_smallest_palindrome(99) == 101
+    
+    # Additional test cases
+    assert next_smallest_palindrome(1) == 2
+    assert next_smallest_palindrome(11) == 22
+    assert next_smallest_palindrome(121) == 131
+    assert next_smallest_palindrome(199) == 202
+    
+    print("All tests passed!")
+```

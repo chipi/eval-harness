@@ -1,0 +1,20 @@
+```python
+import math
+
+def radian_degree(degrees):
+    """
+    Convert degrees to radians.
+    
+    Args:
+        degrees: An angle in degrees
+        
+    Returns:
+        The angle converted to radians
+    """
+    return degrees * math.pi / 180
+
+# Test
+assert radian_degree(90) == 1.5707963267948966
+print("Test passed!")
+print(f"90 degrees = {radian_degree(90)} radians")
+```

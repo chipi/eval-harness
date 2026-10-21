@@ -1,0 +1,30 @@
+```python
+import bisect
+
+def is_majority(arr, n, x):
+    """
+    Returns True if x is the majority element in the sorted array arr
+    (i.e., x occurs more than n/2 times), otherwise False.
+    """
+    # Find the leftmost index of x
+    left = bisect.bisect_left(arr, x)
+    
+    # If x is not in the array at all
+    if left == n or arr[left] != x:
+        return False
+    
+    # Check if x occurs more than n/2 times starting from 'left'
+    if left + n // 2 < n and arr[left + n // 2] == x:
+        return True
+    
+    return False
+
+
+if __name__ == "__main__":
+    assert is_majority([1, 2, 3, 3, 3, 3, 10], 7, 3) == True
+    assert is_majority([1, 1, 2, 4, 4, 4, 6, 6], 8, 4) == False
+    assert is_majority([1, 1, 1, 2, 2], 5, 1) == True
+    assert is_majority([1, 1, 1, 1, 1], 5, 1) == True
+    assert is_majority([1, 2, 3], 3, 4) == False
+    print("All test cases passed!")
+```

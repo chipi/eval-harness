@@ -1,0 +1,28 @@
+```python
+def search(nums):
+    """
+    This function finds the element that appears only once in a sorted array.
+    
+    Args:
+    nums (list): A sorted list of integers where every element appears twice except one.
+    
+    Returns:
+    int: The element that appears only once in the list.
+    """
+    low, high = 0, len(nums) - 1
+    while low < high:
+        mid = low + (high - low) // 2
+        # If mid is even and the element at mid is the same as the next one,
+        # or if mid is odd and the element at mid is the same as the previous one,
+        # then the single element must be on the right half.
+        if (mid % 2 == 0 and nums[mid] == nums[mid + 1]) or (mid % 2 == 1 and nums[mid] == nums[mid - 1]):
+            low = mid + 1
+        # Otherwise, the single element must be on the left half.
+        else:
+            high = mid
+    return nums[low]
+
+# Test the function
+assert search([1,1,2,2,3]) == 3
+print("All tests passed.")
+```

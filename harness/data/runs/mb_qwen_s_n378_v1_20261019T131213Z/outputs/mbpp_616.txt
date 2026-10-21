@@ -1,0 +1,14 @@
+```python
+def tuple_modulo(t1, t2):
+    """
+    Takes two tuples of the same length and performs element-wise modulo.
+    
+    Args:
+        t1: First tuple
+        t2: Second tuple
+    
+    Returns:
+        A tuple containing the element-wise modulo results (t1[i] % t2[i])
+    """
+    return tuple(a % b for a, b in zip(t1, t2))
+```

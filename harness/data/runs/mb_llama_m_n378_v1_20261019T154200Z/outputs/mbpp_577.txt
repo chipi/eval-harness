@@ -1,0 +1,24 @@
+```python
+def last_Digit_Factorial(n):
+    """
+    This function calculates the last digit of the factorial of a given number.
+    
+    Args:
+        n (int): The input number.
+    
+    Returns:
+        int: The last digit of the factorial of the input number.
+    """
+    # Initialize result
+    result = 1
+    
+    # Calculate factorial
+    for i in range(1, n + 1):
+        result = (result * i) % 10
+    
+    return result
+
+# Test the function
+assert last_Digit_Factorial(4) == 4
+print("All tests passed.")
+```

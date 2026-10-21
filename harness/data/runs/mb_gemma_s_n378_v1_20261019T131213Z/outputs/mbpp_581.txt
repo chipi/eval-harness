@@ -1,0 +1,22 @@
+```python
+import math
+
+def surface_Area(base_edge, height):
+    """
+    Calculate the surface area of a square pyramid.
+
+    Args:
+        base_edge (float): The length of one side of the square base.
+        height (float): The height of the pyramid.
+
+    Returns:
+        float: The surface area of the square pyramid.
+    """
+    base_area = base_edge * base_edge
+    slant_height = math.sqrt((base_edge / 2) ** 2 + height ** 2)
+    lateral_area = 2 * base_edge * slant_height
+    surface_area = base_area + lateral_area
+    return surface_area
+
+#assert surface_Area(3,4) == 33
+```

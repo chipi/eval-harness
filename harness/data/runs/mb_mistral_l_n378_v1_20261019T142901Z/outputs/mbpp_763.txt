@@ -1,0 +1,80 @@
+Here's a self-contained Python script that solves the problem of finding the minimum difference between any two elements in a given array:
+
+```python
+"""
+Python function to find the minimum difference between any two elements in a given array.
+
+The approach involves:
+1. Sorting the array to bring close elements together
+2. Iterating through the sorted array to find the minimum difference between consecutive elements
+3. Returning the smallest difference found
+
+Time Complexity: O(n log n) due to sorting
+Space Complexity: O(1) or O(n) depending on sorting implementation
+"""
+
+def find_min_diff(arr, n):
+    """
+    Find the minimum difference between any two elements in the array.
+
+    Args:
+        arr: Input array (tuple or list) of integers
+        n: Length of the array (unused in this implementation but kept for interface consistency)
+
+    Returns:
+        int: Minimum difference between any two elements in the array
+
+    Raises:
+        ValueError: If the array has less than 2 elements
+    """
+    # Convert to list if input is a tuple
+    arr_list = list(arr)
+
+    # Edge case: array must have at least 2 elements
+    if len(arr_list) < 2:
+        raise ValueError("Array must contain at least 2 elements")
+
+    # Sort the array to bring close elements together
+    arr_list.sort()
+
+    # Initialize minimum difference with a large value
+    min_diff = float('inf')
+
+    # Iterate through the sorted array and find minimum difference between consecutive elements
+    for i in range(1, len(arr_list)):
+        current_diff = arr_list[i] - arr_list[i-1]
+        if current_diff < min_diff:
+            min_diff = current_diff
+
+    return min_diff
+
+# Test the function with the provided example
+if __name__ == "__main__":
+    # Test case from the problem
+    result = find_min_diff((1, 5, 3, 19, 18, 25), 6)
+    print(f"find_min_diff((1,5,3,19,18,25),6) = {result}")
+    assert result == 1, f"Expected 1, got {result}"
+
+    # Additional test cases
+    assert find_min_diff([10, 20, 30, 40], 4) == 10
+    assert find_min_diff([1, 2, 3, 4, 5], 5) == 1
+    assert find_min_diff([5, 1, 3, 7, 9], 5) == 2
+    assert find_min_diff([100, 10, 1, 50], 4) == 9
+
+    print("All tests passed!")
+```
+
+The script includes:
+
+1. **Main function** `find_min_diff()` that:
+   - Converts the input to a list (handling both tuples and lists)
+   - Validates that the array has at least 2 elements
+   - Sorts the array to bring close elements together
+   - Iterates through the sorted array to find the minimum difference between consecutive elements
+
+2. **Time complexity**: O(n log n) due to the sorting step
+3. **Space complexity**: O(n) for the sorted array (or O(1) if sorting in-place)
+4. **Edge case handling**: Raises ValueError for arrays with less than 2 elements
+5. **Test cases**: Includes the provided example and additional test cases to verify correctness
+
+The algorithm works by recognizing that the minimum difference between any two elements in an unsorted array will always be between two consecutive elements in the sorted array. This approach is efficient and optimal for this problem.

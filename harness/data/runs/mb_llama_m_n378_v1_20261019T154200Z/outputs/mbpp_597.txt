@@ -1,0 +1,27 @@
+```python
+def find_kth(arr1, arr2, k):
+    """
+    Find the kth element from two sorted arrays.
+
+    Args:
+        arr1 (list): The first sorted array.
+        arr2 (list): The second sorted array.
+        k (int): The index of the element to find (1-indexed).
+
+    Returns:
+        int: The kth element from the combined sorted array.
+    """
+    # Combine the two arrays into one
+    combined = arr1 + arr2
+    
+    # Sort the combined array
+    combined.sort()
+    
+    # Return the kth element (adjusting for 0-indexing)
+    return combined[k - 1]
+
+# Example usage:
+print(find_kth([2, 3, 6, 7, 9], [1, 4, 8, 10], 5))  # Output: 6
+```
+
+This script defines a function `find_kth` that takes two sorted arrays and an index `k` as input, combines the arrays, sorts the combined array, and returns the element at index `k - 1` (since Python uses 0-based indexing). The example usage demonstrates how to use this function to find the 5th element from the given two sorted arrays.

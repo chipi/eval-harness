@@ -1,0 +1,34 @@
+Here's a self-contained Python script that solves the problem in a markdown code block:
+
+```python
+def number_ctr(s):
+    """Count the number of digits in a given string.
+
+    Args:
+        s (str): The input string to count digits in.
+
+    Returns:
+        int: The count of digits in the string.
+    """
+    count = 0
+    for char in s:
+        if char.isdigit():
+            count += 1
+    return count
+
+# Test the function
+assert number_ctr('program2bedone') == 1
+print("All tests passed!")
+```
+
+This script:
+1. Defines a function `number_ctr` that takes a string as input
+2. Initializes a counter to zero
+3. Iterates through each character in the string
+4. Checks if the character is a digit using `isdigit()`
+5. Increments the counter if it is a digit
+6. Returns the final count
+7. Includes the test case from the problem statement
+8. Prints a success message if the test passes
+
+The function will correctly return 1 for the input 'program2bedone' as there is only one digit ('2') in that string.

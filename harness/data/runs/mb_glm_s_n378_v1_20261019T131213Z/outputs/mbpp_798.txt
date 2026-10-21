@@ -1,0 +1,24 @@
+```python
+def _sum(arr):
+    """
+    Calculate the sum of all elements in a list.
+
+    Args:
+        arr: A list of numbers (integers or floats).
+
+    Returns:
+        The sum of all elements in the list.
+    """
+    total = 0
+    for num in arr:
+        total += num
+    return total
+
+# Example usage and assertion to verify the function
+assert _sum([1, 2, 3]) == 6
+assert _sum([-1, 0, 1]) == 0
+assert _sum([10]) == 10
+assert _sum([]) == 0
+
+print("All assertions passed!")
+```

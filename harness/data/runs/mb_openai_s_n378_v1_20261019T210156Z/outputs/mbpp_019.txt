@@ -1,0 +1,11 @@
+```python
+def test_duplicate(arr):
+    """
+    Return True if the array contains any duplicate element, otherwise False.
+    """
+    return len(arr) != len(set(arr))
+
+
+# Example test
+assert test_duplicate([1, 2, 3, 4, 5]) == False
+```

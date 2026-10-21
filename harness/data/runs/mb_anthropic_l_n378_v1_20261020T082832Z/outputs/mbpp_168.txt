@@ -1,0 +1,56 @@
+Looking at this problem, I need to write a function that counts how many times a given number appears in a list.
+
+```python
+"""
+Write a function to count the number of occurrences of a number in a given list.
+assert frequency([1,2,3], 4) == 0
+"""
+
+
+def frequency(a, x):
+    """
+    Count the number of occurrences of the number `x` in the list `a`.
+
+    Parameters
+    ----------
+    a : list
+        The list in which to search.
+    x : any
+        The value whose occurrences should be counted.
+
+    Returns
+    -------
+    int
+        How many times `x` appears in `a`.
+    """
+    count = 0
+    for item in a:
+        if item == x:
+            count += 1
+    return count
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert frequency([1, 2, 3], 4) == 0
+
+    # Additional test cases
+    assert frequency([1, 2, 3], 1) == 1
+    assert frequency([1, 2, 2, 3, 3, 3, 4], 3) == 3
+    assert frequency([], 5) == 0
+    assert frequency([5, 5, 5, 5], 5) == 4
+    assert frequency([1, 2, 3, 4, 5, 2, 2], 2) == 3
+
+    print("All tests passed!")
+```
+
+**How it works:**
+
+1. Initialize a counter `count` to `0`.
+2. Iterate over every element in the list `a`.
+3. Each time an element equals the target `x`, increment the counter.
+4. Return the final count.
+
+For `frequency([1, 2, 3], 4)`, none of the elements equal `4`, so the function returns `0` as expected.
+
+*Note:* This could also be written as a one-liner using Python's built-in list method: `return a.count(x)`, but the explicit loop shows the underlying logic.

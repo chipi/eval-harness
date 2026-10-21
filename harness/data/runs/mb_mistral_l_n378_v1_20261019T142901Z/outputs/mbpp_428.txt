@@ -1,0 +1,51 @@
+Here's a self-contained Python script that implements the Shell Sort algorithm to solve the given problem:
+
+```python
+def shell_sort(arr):
+    """
+    Sorts an array in ascending order using Shell Sort algorithm.
+
+    Args:
+        arr (list): The list to be sorted
+
+    Returns:
+        list: The sorted list
+    """
+    n = len(arr)
+    # Start with a large gap, then reduce the gap
+    gap = n // 2
+
+    while gap > 0:
+        # Do a gapped insertion sort for this gap size
+        for i in range(gap, n):
+            # Save the current element and make a hole at position i
+            temp = arr[i]
+            j = i
+            # Shift earlier gap-sorted elements until the correct location for arr[i] is found
+            while j >= gap and arr[j - gap] > temp:
+                arr[j] = arr[j - gap]
+                j -= gap
+            # Put temp (the original arr[i]) in its correct location
+            arr[j] = temp
+        gap //= 2
+
+    return arr
+
+# Test the function
+assert shell_sort([12, 23, 4, 5, 3, 2, 12, 81, 56, 95]) == [2, 3, 4, 5, 12, 12, 23, 56, 81, 95]
+
+# Example usage
+if __name__ == "__main__":
+    test_array = [12, 23, 4, 5, 3, 2, 12, 81, 56, 95]
+    print("Original array:", test_array)
+    sorted_array = shell_sort(test_array)
+    print("Sorted array:", sorted_array)
+```
+
+This script:
+1. Implements the Shell Sort algorithm with a gap sequence that starts at n/2 and halves each time
+2. Includes the required assertion test
+3. Has a main block for example usage
+4. Is properly documented with a docstring explaining the function
+
+The algorithm works by first sorting elements that are far apart and progressively reducing the gap between elements to be compared, which makes the final insertion sort more efficient.

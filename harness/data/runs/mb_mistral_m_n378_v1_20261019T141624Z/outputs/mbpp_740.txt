@@ -1,0 +1,18 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def tuple_to_dict(input_tuple):
+    """
+    Convert a tuple to a dictionary using adjacent elements as key-value pairs.
+
+    Args:
+        input_tuple: A tuple with an even number of elements
+
+    Returns:
+        A dictionary where each key is an element at even index and value is the next element
+    """
+    return {input_tuple[i]: input_tuple[i+1] for i in range(0, len(input_tuple), 2)}
+
+# Test case
+assert tuple_to_dict((1, 5, 7, 10, 13, 5)) == {1: 5, 7: 10, 13: 5}
+```

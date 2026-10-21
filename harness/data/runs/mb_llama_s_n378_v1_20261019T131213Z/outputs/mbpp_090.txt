@@ -1,0 +1,25 @@
+```python
+def len_log(lst):
+    """
+    This function finds the length of the longest word in a given list.
+
+    Args:
+        lst (list): A list of strings.
+
+    Returns:
+        int: The length of the longest word.
+
+    """
+    return max(len(word) for word in lst)
+
+# Test the function
+assert len_log(["python","PHP","bigdata"]) == 7
+```
+
+In this code:
+
+*   We define a function `len_log` that takes a list `lst` as an argument.
+*   Inside the function, we use the built-in `max` function with a generator expression to find the maximum length of the words in the list.
+*   The `len` function is used to get the length of each word.
+*   The function returns the length of the longest word.
+*   Finally, we test the function with an assertion statement.

@@ -1,0 +1,31 @@
+```python
+from collections import Counter
+
+def two_unique_nums(lst):
+    """
+    This function takes a list of numbers as input, 
+    and returns a list of numbers that appear only once in the input list.
+
+    Args:
+        lst (list): A list of numbers.
+
+    Returns:
+        list: A list of numbers that appear only once in the input list.
+    """
+    # Count the occurrence of each number in the list
+    count = Counter(lst)
+    
+    # Filter out numbers that appear only once
+    unique_nums = [num for num, freq in count.items() if freq == 1]
+    
+    return unique_nums
+
+# Test the function
+assert two_unique_nums([1,2,3,2,3,4,5]) == [1, 4, 5]
+```
+
+You can run this script, and it will execute the function `two_unique_nums` with the provided test case. If the output matches the expected output, it will not raise an `AssertionError`. 
+
+This function works by using the `Counter` class from the `collections` module to count the occurrence of each number in the list. It then uses a list comprehension to filter out numbers that appear only once. The result is a list of numbers that appear only once in the input list. 
+
+The time complexity of this function is O(n), where n is the length of the input list, because it needs to iterate over the list once to count the occurrence of each number, and then iterate over the count dictionary to filter out numbers that appear only once. The space complexity is also O(n), because in the worst case, the count dictionary and the result list can be as large as the input list.

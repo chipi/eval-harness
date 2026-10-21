@@ -1,0 +1,11 @@
+```python
+def volume_cube(side_length):
+    return side_length ** 3
+
+def main():
+    assert volume_cube(3) == 27
+    print("All test cases pass")
+
+if __name__ == "__main__":
+    main()
+```

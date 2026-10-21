@@ -1,0 +1,36 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+from itertools import combinations_with_replacement
+
+def combinations_colors(colors, n):
+    """
+    Generate all combinations (with repetition) of the elements from the input list.
+    
+    Args:
+        colors: A list of elements
+        n: The length of each combination
+        
+    Returns:
+        A list of tuples, where each tuple is a combination of length n
+    """
+    return list(combinations_with_replacement(colors, n))
+
+# Test the function
+if __name__ == "__main__":
+    # Test case from the problem
+    result = combinations_colors(["Red", "Green", "Blue"], 1)
+    expected = [('Red',), ('Green',), ('Blue',)]
+    assert result == expected, f"Expected {expected}, but got {result}"
+    print("Test passed!")
+    
+    # Additional test cases
+    print(combinations_colors(["Red", "Green", "Blue"], 2))
+    # Output: [('Red', 'Red'), ('Red', 'Green'), ('Red', 'Blue'), 
+    #          ('Green', 'Green'), ('Green', 'Blue'), ('Blue', 'Blue')]
+    
+    print(combinations_colors(["A", "B"], 3))
+    # Output: [('A', 'A', 'A'), ('A', 'A', 'B'), ('A', 'B', 'B'), ('B', 'B', 'B')]
+```
+
+This solution uses Python's built-in `itertools.combinations_with_replacement` function, which generates all possible combinations of a specified length from the input iterable, allowing elements to be repeated. The function returns a list of tuples as required by the problem specification.

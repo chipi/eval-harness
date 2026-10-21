@@ -1,0 +1,7 @@
+```python
+def check_monthnumb_number(monthnum):
+    return monthnum in (1, 3, 5, 7, 8, 10, 12)
+
+
+assert check_monthnumb_number(5) == True
+```

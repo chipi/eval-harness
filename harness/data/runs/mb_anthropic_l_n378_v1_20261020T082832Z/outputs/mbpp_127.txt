@@ -1,0 +1,37 @@
+Looking at this problem, I need to write a function that multiplies two integers.
+
+```python
+"""
+Write a function to multiply two integers.
+assert multiply_int(10,20)==200
+"""
+
+
+def multiply_int(x, y):
+    """
+    Multiply two integers and return the product.
+
+    Args:
+        x: First integer
+        y: Second integer
+
+    Returns:
+        The product of x and y
+    """
+    return x * y
+
+
+# Test cases
+if __name__ == "__main__":
+    assert multiply_int(10, 20) == 200
+    assert multiply_int(5, 10) == 50
+    assert multiply_int(4, 8) == 32
+    assert multiply_int(0, 100) == 0
+    assert multiply_int(-3, 7) == -21
+    assert multiply_int(-6, -6) == 36
+
+    print("All test cases passed!")
+    print(f"multiply_int(10, 20) = {multiply_int(10, 20)}")
+```
+
+The function is straightforward — it takes two integer parameters and returns their product using Python's `*` operator. The test cases verify it works correctly with positive numbers, zero, and negative numbers (including the sign rules: negative × positive = negative, negative × negative = positive).

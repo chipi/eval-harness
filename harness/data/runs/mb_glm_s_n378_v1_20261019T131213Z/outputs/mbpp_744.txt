@@ -1,0 +1,26 @@
+```python
+def check_none(input_tuple):
+    """
+    Checks if the given tuple contains any None values.
+
+    Args:
+        input_tuple: The tuple to be checked.
+
+    Returns:
+        True if the tuple contains at least one None value, False otherwise.
+    """
+    # The 'in' operator is a concise and Pythonic way to check for membership
+    # in a sequence like a tuple. It returns True as soon as it finds the
+    # first occurrence of None.
+    return None in input_tuple
+
+# Example usage and assertions to verify the function's correctness
+assert check_none((10, 4, 5, 6, None)) == True
+assert check_none((1, 2, 3, 4)) == False
+assert check_none(()) == False
+assert check_none((None, "hello", 100)) == True
+assert check_none((True, False, None)) == True
+
+# You can uncomment the line below to see the function in action
+# print(f"Does (10, 4, 5, 6, None) have a None? {check_none((10, 4, 5, 6, None))}")
+```

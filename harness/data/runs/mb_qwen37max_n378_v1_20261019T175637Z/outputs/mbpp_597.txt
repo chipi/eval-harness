@@ -1,0 +1,44 @@
+```python
+def find_kth(arr1, arr2, k):
+    """
+    Find the kth smallest element from two sorted arrays.
+    k is 1-indexed.
+    """
+    # Merge approach with O(k) time, or binary search O(log(min(m,n)))
+    # Using a clean binary search approach on the smaller array
+    
+    # Ensure arr1 is the smaller array for binary search
+    if len(arr1) > len(arr2):
+        arr1, arr2 = arr2, arr1
+    
+    m, n = len(arr1), len(arr2)
+    
+    # Binary search on arr1 to find how many elements to take from arr1
+    lo, hi = max(0, k - n), min(k, m)
+    
+    while lo <= hi:
+        i = (lo + hi) // 2  # number of elements taken from arr1
+        j = k - i            # number of elements taken from arr2
+        
+        # Check boundary conditions
+        arr1_left = arr1[i - 1] if i > 0 else float('-inf')
+        arr1_right = arr1[i] if i < m else float('inf')
+        arr2_left = arr2[j - 1] if j > 0 else float('-inf')
+        arr2_right = arr2[j] if j < n else float('inf')
+        
+        if arr1_left <= arr2_right and arr2_left <= arr1_right:
+            # Found correct partition
+            return max(arr1_left, arr2_left)
+        elif arr1_left > arr2_right:
+            hi = i - 1
+        else:
+            lo = i + 1
+    
+    # Should not reach here for valid inputs
+    raise ValueError("Invalid input")
+
+
+# Test
+assert find_kth([2, 3, 6, 7, 9], [1, 4, 8, 10], 5) == 6
+print("All tests passed!")
+```

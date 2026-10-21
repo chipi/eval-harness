@@ -1,0 +1,31 @@
+```python
+def max_run_uppercase(s):
+    """
+    Find the maximum run of consecutive uppercase characters in the given string.
+    
+    Args:
+        s: Input string
+        
+    Returns:
+        Length of the longest consecutive run of uppercase characters
+    """
+    if not s:
+        return 0
+    
+    max_run = 0
+    current_run = 0
+    
+    for ch in s:
+        if ch.isupper():
+            current_run += 1
+            max_run = max(max_run, current_run)
+        else:
+            current_run = 0
+    
+    return max_run
+
+
+# Test
+assert max_run_uppercase('GeMKSForGERksISBESt') == 5
+print("All tests passed!")
+```

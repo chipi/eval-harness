@@ -1,0 +1,28 @@
+Here's a self-contained Python script that solves the problem by calculating the third side of a right-angled triangle using the Pythagorean theorem:
+
+```python
+"""
+Function to find the third side of a right-angled triangle given the other two sides.
+Uses the Pythagorean theorem: c = sqrt(a² + b²)
+"""
+
+import math
+
+def otherside_rightangle(a, b):
+    """
+    Calculate the hypotenuse (third side) of a right-angled triangle.
+
+    Args:
+        a (float): Length of first side
+        b (float): Length of second side
+
+    Returns:
+        float: Length of the hypotenuse (third side)
+    """
+    return math.sqrt(a**2 + b**2)
+
+# Test case
+assert otherside_rightangle(7, 8) == 10.63014581273465
+```
+
+The function uses the `math.sqrt()` function to calculate the square root of the sum of squares of the two given sides, which is the standard Pythagorean theorem formula for finding the hypotenuse of a right-angled triangle. The test case verifies that the function works correctly.

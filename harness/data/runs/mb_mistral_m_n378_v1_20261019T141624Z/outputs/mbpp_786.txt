@@ -1,0 +1,35 @@
+Here's a self-contained Python script that solves the problem using binary search to find the right insertion point for a specified value in a sorted list:
+
+```python
+def right_insertion(arr, val):
+    """
+    Locate the right insertion point for a specified value in sorted order.
+    The insertion point is the index where the value would be inserted to maintain order.
+
+    Args:
+        arr: A sorted list of elements
+        val: The value to find the insertion point for
+
+    Returns:
+        The index where the value should be inserted
+    """
+    low, high = 0, len(arr)
+    while low < high:
+        mid = (low + high) // 2
+        if arr[mid] < val:
+            low = mid + 1
+        else:
+            high = mid
+    return low
+
+# Test case
+assert right_insertion([1, 2, 4, 5], 6) == 4
+```
+
+This implementation:
+1. Uses binary search for O(log n) time complexity
+2. Returns the first index where the value would be greater than the target
+3. Handles edge cases (empty list, value smaller than all elements, etc.)
+4. Includes the required test case which passes successfully
+
+The function works by maintaining a search range [low, high) and narrowing it down until it finds the correct insertion point. For the test case [1,2,4,5] with value 6, it correctly returns 4 since 6 would be inserted at the end of the list.

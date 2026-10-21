@@ -1,0 +1,64 @@
+Looking at this problem, I need to find the **first occurrence** of a target value in a sorted array. Since the array is sorted, binary search is the optimal approach — when I find a match, I keep searching to the left for an earlier occurrence.
+
+```python
+"""
+Write a function to find the index of the first occurrence of a given number in a sorted array.
+assert find_first_occurrence([2, 5, 5, 5, 6, 6, 8, 9, 9, 9], 5) == 1
+"""
+
+
+def find_first_occurrence(arr, target):
+    """
+    Return the index of the first occurrence of `target` in the sorted list `arr`.
+
+    Uses a modified binary search: whenever the target is found, the result is
+    recorded and the search continues in the left half to look for an earlier
+    occurrence.
+
+    Returns -1 if `target` is not present.
+
+    Time complexity:  O(log n)
+    Space complexity: O(1)
+    """
+    low, high = 0, len(arr) - 1
+    result = -1
+
+    while low <= high:
+        mid = low + (high - low) // 2
+
+        if arr[mid] == target:
+            result = mid        # candidate answer
+            high = mid - 1      # keep looking to the left
+        elif arr[mid] < target:
+            low = mid + 1
+        else:
+            high = mid - 1
+
+    return result
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert find_first_occurrence([2, 5, 5, 5, 6, 6, 8, 9, 9, 9], 5) == 1
+
+    # Additional test cases
+    assert find_first_occurrence([2, 3, 5, 5, 6, 6, 8, 9, 9, 9], 5) == 2
+    assert find_first_occurrence([2, 4, 1, 5, 6, 6, 8, 9, 9, 9], 6) == 4
+    assert find_first_occurrence([2, 5, 5, 5, 6, 6, 8, 9, 9, 9], 2) == 0
+    assert find_first_occurrence([2, 5, 5, 5, 6, 6, 8, 9, 9, 9], 9) == 7
+    assert find_first_occurrence([2, 5, 5, 5, 6, 6, 8, 9, 9, 9], 7) == -1
+    assert find_first_occurrence([], 5) == -1
+    assert find_first_occurrence([5], 5) == 0
+    assert find_first_occurrence([5, 5, 5, 5, 5], 5) == 0
+
+    print("All tests passed!")
+```
+
+**How it works on the example:**
+
+| Step | low | high | mid | arr[mid] | Action |
+|------|-----|------|-----|----------|--------|
+| 1 | 0 | 9 | 4 | 6 | `6 > 5` → search left, `high = 3` |
+| 2 | 0 | 3 | 1 | 5 | match! `result = 1`, `high = 0` |
+| 3 | 0 | 0 | 0 | 2 | `2 < 5` → search right, `low = 1` |
+| — | 1 | 0 | — | — | loop ends, return `result = 1` ✅ |

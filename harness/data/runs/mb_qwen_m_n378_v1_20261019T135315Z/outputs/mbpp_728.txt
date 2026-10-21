@@ -1,0 +1,24 @@
+```python
+def sum_list(a: list, b: list) -> list:
+    """
+    Takes two lists [a_1,...,a_n], [b_1,...,b_n] and returns [a_1+b_1,...,a_n+b_n].
+    
+    Args:
+        a: First list of numbers
+        b: Second list of numbers (same length as a)
+    
+    Returns:
+        List containing element-wise sums of the two input lists
+    
+    Example:
+        >>> sum_list([10, 20, 30], [15, 25, 35])
+        [25, 45, 65]
+    """
+    return [x + y for x, y in zip(a, b)]
+
+
+# Test case
+if __name__ == "__main__":
+    assert sum_list([10, 20, 30], [15, 25, 35]) == [25, 45, 65]
+    print("All tests passed!")
+```

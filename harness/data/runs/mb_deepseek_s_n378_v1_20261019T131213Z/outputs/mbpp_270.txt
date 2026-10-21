@@ -1,0 +1,22 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def sum_even_and_even_index(numbers):
+    """
+    Returns the sum of numbers that are even and located at even indices (0-based).
+    
+    Example:
+    >>> sum_even_and_even_index([5, 6, 12, 1, 18, 8])
+    30
+    """
+    total = 0
+    for index, value in enumerate(numbers):
+        if index % 2 == 0 and value % 2 == 0:
+            total += value
+    return total
+
+# Test the function with the given assertion
+if __name__ == "__main__":
+    assert sum_even_and_even_index([5, 6, 12, 1, 18, 8]) == 30
+    print("Test passed!")
+```

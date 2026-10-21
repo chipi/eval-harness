@@ -1,0 +1,26 @@
+```python
+def div_list(list1, list2):
+    """
+    Divides two lists element-wise.
+    
+    Args:
+        list1 (list): The dividend list.
+        list2 (list): The divisor list.
+        
+    Returns:
+        list: A list containing the results of the division.
+    """
+    # Using a list comprehension to iterate through both lists simultaneously
+    # zip() pairs elements from list1 and list2 by index
+    return [a / b for a, b in zip(list1, list2)]
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    assert div_list([4, 5, 6], [1, 2, 3]) == [4.0, 2.5, 2.0]
+    
+    # Additional test cases
+    assert div_list([10, 20, 30], [5, 5, 5]) == [2.0, 4.0, 6.0]
+    assert div_list([1, 1, 1], [10, 10, 10]) == [0.1, 0.1, 0.1]
+    
+    print("All tests passed!")
+```

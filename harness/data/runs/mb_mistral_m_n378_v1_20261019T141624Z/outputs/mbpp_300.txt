@@ -1,0 +1,37 @@
+```python
+import math
+
+def count_binary_seq(n):
+    """
+    Count the number of binary sequences of length 2n where the sum of the first n bits
+    equals the sum of the last n bits.
+
+    Args:
+        n (int): Half the length of the binary sequence.
+
+    Returns:
+        float: The count of valid binary sequences.
+    """
+    total = 0
+    # Iterate over all possible sums for the first n bits (from 0 to n)
+    for k in range(n + 1):
+        # Number of ways to have k 1's in the first n bits
+        ways_first = math.comb(n, k)
+        # Number of ways to have k 1's in the last n bits
+        ways_second = math.comb(n, k)
+        # Total sequences for this sum is the product of the two
+        total += ways_first * ways_second
+    return total
+
+# Test case
+assert math.isclose(count_binary_seq(1), 2.0, rel_tol=0.001)
+```
+
+### Explanation:
+1. **Problem Understanding**: We need to count all binary sequences of length `2n` where the sum of the first `n` bits equals the sum of the last `n` bits.
+2. **Approach**:
+   - For each possible sum `k` (from `0` to `n`), calculate the number of ways to have `k` 1's in the first `n` bits (using combinations `C(n, k)`).
+   - Similarly, calculate the number of ways to have `k` 1's in the last `n` bits (also `C(n, k)`).
+   - The total valid sequences for sum `k` is the product of these two values.
+   - Sum over all possible `k` to get the total count.
+3. **Test Case**: For `n = 1`, the valid sequences are `00` and `11`, so the count is `2`, which matches the assertion.

@@ -1,0 +1,32 @@
+```python
+def catalan_number(n):
+    """
+    Returns the nth Catalan number.
+    
+    The Catalan numbers are defined by the formula:
+    C(n) = (2n)! / ((n + 1)! * n!)
+    
+    Alternatively, they can be computed using dynamic programming or recursion.
+    Here we use a direct combinatorial approach with integer arithmetic to avoid floating point issues.
+    """
+    if n < 0:
+        raise ValueError("n must be non-negative")
+    
+    # Compute binomial coefficient C(2n, n) and then divide by (n+1)
+    # C(2n, n) = (2n)! / (n! * n!)
+    # Catalan(n) = C(2n, n) / (n + 1)
+    
+    # We compute this iteratively to avoid large factorials directly
+    # Using the property: C(2n, n) = product_{i=1}^{n} (n+i)/i
+    
+    result = 1
+    for i in range(1, n + 1):
+        result = result * (n + i) // i
+    
+    # Now divide by (n + 1) to get the Catalan number
+    return result // (n + 1)
+
+
+if __name__ == "__main__":
+    assert catalan_number(10) == 16796
+```

@@ -1,0 +1,43 @@
+```python
+def get_max_sum(n: int) -> int:
+    """
+    Find the maximum sum possible using the equation:
+    f(n) = max(n, f(n//2) + f(n//3) + f(n//4) + f(n//5))
+    
+    Uses memoization to avoid redundant calculations.
+    
+    Args:
+        n: A non-negative integer
+        
+    Returns:
+        The maximum value obtainable by either keeping n or breaking it down
+    """
+    memo = {}
+    
+    def helper(x: int) -> int:
+        if x in memo:
+            return memo[x]
+        
+        # Base case: for small values, just return x itself
+        # since splitting won't help
+        if x == 0:
+            memo[x] = 0
+            return 0
+        
+        # Calculate the sum of recursive calls
+        split_sum = helper(x // 2) + helper(x // 3) + helper(x // 4) + helper(x // 5)
+        
+        # Take the maximum of keeping x as-is or splitting it
+        result = max(x, split_sum)
+        memo[x] = result
+        return result
+    
+    return helper(n)
+
+
+if __name__ == "__main__":
+    # Test the given assertion
+    assert get_max_sum(60) == 106, f"Expected 106, got {get_max_sum(60)}"
+    print("All tests passed!")
+    print(f"get_max_sum(60) = {get_max_sum(60)}")
+```

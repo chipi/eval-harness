@@ -1,0 +1,15 @@
+```python
+def pair_xor_Sum(numbers, n):
+    """Return the sum of XORs of all distinct pairs among the first n numbers."""
+    if n < 0 or n > len(numbers):
+        raise ValueError("n must be between 0 and the length of numbers")
+
+    total = 0
+    for i in range(n):
+        for j in range(i + 1, n):
+            total += numbers[i] ^ numbers[j]
+    return total
+
+
+assert pair_xor_Sum([5, 9, 7, 6], 4) == 47
+```

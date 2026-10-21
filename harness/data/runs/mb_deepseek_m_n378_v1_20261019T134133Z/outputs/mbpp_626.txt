@@ -1,0 +1,44 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+"""
+Write a python function to find the area of the largest triangle that can be inscribed in a semicircle with a given radius.
+assert triangle_area(-1) == None
+"""
+
+import math
+
+
+def triangle_area(radius):
+    """
+    Returns the area of the largest triangle that can be inscribed in a semicircle
+    with the given radius.
+
+    The largest triangle inscribed in a semicircle is an isosceles triangle whose
+    base is the diameter of the semicircle (2 * radius) and whose height equals
+    the radius. Its area is therefore:
+        area = (1/2) * base * height = (1/2) * (2 * radius) * radius = radius^2
+
+    Returns None for non-positive radii.
+    """
+    if radius is None or radius <= 0:
+        return None
+    return radius ** 2
+
+
+# Tests
+assert triangle_area(-1) is None
+assert triangle_area(0) is None
+assert triangle_area(1) == 1
+assert triangle_area(2) == 4
+assert triangle_area(5) == 25
+assert triangle_area(3.5) == 12.25
+
+print("All tests passed.")
+```
+
+**Explanation:**
+
+- The largest triangle that can be inscribed in a semicircle has its base along the diameter (length `2r`) and its apex at the top of the arc (height `r`).
+- Its area is `(1/2) * (2r) * r = r²`.
+- The function returns `None` for non-positive radii (including `-1`), satisfying the assertion.

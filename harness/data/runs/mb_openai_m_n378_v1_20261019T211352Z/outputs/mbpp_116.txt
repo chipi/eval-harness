@@ -1,0 +1,24 @@
+```python
+"""
+Convert a given tuple of positive integers into a single integer.
+
+Example:
+    tuple_to_int((1, 2, 3)) == 123
+"""
+
+def tuple_to_int(values):
+    """
+    Convert a tuple of positive integers into a single integer by concatenating
+    their decimal representations.
+    """
+    return int("".join(map(str, values)))
+
+
+# Tests
+assert tuple_to_int((1, 2, 3)) == 123
+assert tuple_to_int((4, 5, 6)) == 456
+assert tuple_to_int((10, 20, 30)) == 102030
+
+if __name__ == "__main__":
+    print(tuple_to_int((1, 2, 3)))
+```

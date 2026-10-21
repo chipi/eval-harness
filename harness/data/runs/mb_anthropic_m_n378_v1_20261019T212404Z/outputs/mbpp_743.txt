@@ -1,0 +1,11 @@
+```python
+def rotate_right(lst, n):
+    if not lst:
+        return lst
+    n = n % len(lst)
+    return lst[-n:] + lst[:-n] if n != 0 else lst[:]
+
+if __name__ == "__main__":
+    assert rotate_right([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 3) == [8, 9, 10, 1, 2, 3, 4, 5, 6, 7]
+    print(rotate_right([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 3))
+```

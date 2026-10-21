@@ -1,0 +1,22 @@
+```python
+import math
+
+def otherside_rightangle(a, b):
+    """
+    Finds the third side of a right angled triangle.
+    Assuming the two provided sides are the legs (a and b), 
+    it calculates the hypotenuse (c) using the Pythagorean theorem: c = sqrt(a^2 + b^2).
+    """
+    return math.sqrt(a**2 + b**2)
+
+if __name__ == "__main__":
+    # Test the function with the provided assertion
+    result = otherside_rightangle(7, 8)
+    expected = 10.63014581273465
+    
+    # Using math.isclose for floating point comparison
+    assert math.isclose(result, expected, rel_tol=1e-12), f"Expected {expected}, but got {result}"
+    
+    print(f"Result: {result}")
+    print("Assertion passed!")
+```

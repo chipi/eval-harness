@@ -1,0 +1,17 @@
+```python
+def empty_list(n):
+    """
+    Creates a list of n empty dictionaries.
+
+    Args:
+        n (int): The number of empty dictionaries to create.
+
+    Returns:
+        list: A list of n empty dictionaries.
+    """
+    return [{} for _ in range(n)]
+
+# Test the function
+assert empty_list(5) == [{}, {}, {}, {}, {}]
+print(empty_list(5))
+```

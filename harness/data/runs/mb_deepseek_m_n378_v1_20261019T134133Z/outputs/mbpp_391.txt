@@ -1,0 +1,52 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def convert_list_dictionary(lst1, lst2, lst3):
+    """
+    Convert three lists into a list of nested dictionaries.
+    
+    Args:
+        lst1: List of keys for the outer dictionary (e.g., student IDs)
+        lst2: List of keys for the inner dictionary (e.g., student names)
+        lst3: List of values for the inner dictionary (e.g., scores)
+    
+    Returns:
+        List of nested dictionaries in the form [{outer_key: {inner_key: value}}, ...]
+    """
+    result = []
+    for key1, key2, value in zip(lst1, lst2, lst3):
+        result.append({key1: {key2: value}})
+    return result
+
+
+# Test the function
+assert convert_list_dictionary(
+    ["S001", "S002", "S003", "S004"],
+    ["Adina Park", "Leyton Marsh", "Duncan Boyle", "Saim Richards"],
+    [85, 98, 89, 92]
+) == [
+    {'S001': {'Adina Park': 85}},
+    {'S002': {'Leyton Marsh': 98}},
+    {'S003': {'Duncan Boyle': 89}},
+    {'S004': {'Saim Richards': 92}}
+]
+
+print("All tests passed!")
+print(convert_list_dictionary(
+    ["S001", "S002", "S003", "S004"],
+    ["Adina Park", "Leyton Marsh", "Duncan Boyle", "Saim Richards"],
+    [85, 98, 89, 92]
+))
+```
+
+**Explanation:**
+
+1. **`zip(lst1, lst2, lst3)`** — This built-in function pairs elements from all three lists together. For example, it yields tuples like `("S001", "Adina Park", 85)`, `("S002", "Leyton Marsh", 98)`, etc.
+
+2. **Iterating through the zipped tuples** — For each tuple, we unpack it into `key1`, `key2`, and `value`.
+
+3. **Building the nested dictionary** — We create a dictionary where `key1` maps to another dictionary containing `{key2: value}`. This produces the required nested structure.
+
+4. **Appending to the result list** — Each nested dictionary is appended to `result`, forming the final list of nested dictionaries.
+
+The `zip` function automatically stops at the shortest list, which ensures correctness even if the lists have unequal lengths (though in this problem they're expected to be equal).

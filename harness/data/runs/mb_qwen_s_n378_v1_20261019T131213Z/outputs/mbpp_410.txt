@@ -1,0 +1,17 @@
+```python
+def min_val(lst):
+    """
+    Find the minimum value in a given heterogeneous list.
+    Only numeric values are considered for finding the minimum.
+    
+    Args:
+        lst: A heterogeneous list containing various types of elements.
+        
+    Returns:
+        The minimum numeric value in the list, or None if no numeric values exist.
+    """
+    numeric_values = [x for x in lst if isinstance(x, (int, float))]
+    if not numeric_values:
+        return None
+    return min(numeric_values)
+```

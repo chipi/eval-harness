@@ -1,0 +1,42 @@
+```python
+def count_charac(s):
+    """
+    This function counts the total number of characters in a string.
+
+    Args:
+        s (str): The input string.
+
+    Returns:
+        int: The total number of characters in the string.
+    """
+    return len(s)
+
+# Test the function
+assert count_charac("python programming") == 18
+print("All tests passed.")
+```
+
+You can save this script to a file (e.g., `character_counter.py`) and run it using Python (e.g., `python character_counter.py`). If all tests pass, it will print "All tests passed." 
+
+Alternatively, you can also write a main function to get user input:
+
+```python
+def count_charac(s):
+    """
+    This function counts the total number of characters in a string.
+
+    Args:
+        s (str): The input string.
+
+    Returns:
+        int: The total number of characters in the string.
+    """
+    return len(s)
+
+def main():
+    s = input("Enter a string: ")
+    print(f"The total number of characters in the string is: {count_charac(s)}")
+
+if __name__ == "__main__":
+    main()
+```

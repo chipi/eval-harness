@@ -1,0 +1,19 @@
+```python
+def count_charac(s: str) -> int:
+    """
+    Count the total number of characters in a string.
+    
+    Args:
+        s: The input string.
+        
+    Returns:
+        The total number of characters in the string, including spaces and punctuation.
+    """
+    return len(s)
+
+# Test cases
+assert count_charac("python programming") == 18
+assert count_charac("") == 0
+assert count_charac("hello") == 5
+assert count_charac("a b c") == 5
+```

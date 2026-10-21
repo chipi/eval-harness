@@ -1,0 +1,45 @@
+Here's a self-contained Python script that solves the problem by setting the leftmost unset bit in a given number:
+
+```python
+def set_left_most_unset_bit(n):
+    """
+    Sets the leftmost unset bit in the binary representation of n.
+
+    Args:
+        n (int): The input number
+
+    Returns:
+        int: The number with the leftmost unset bit set to 1
+
+    Example:
+        >>> set_left_most_unset_bit(10)
+        14
+    """
+    if n == 0:
+        return 1
+
+    # Find the position of the leftmost unset bit
+    m = 1
+    while m <= n:
+        m <<= 1
+
+    # Set the leftmost unset bit
+    return n | m
+
+# Test case
+assert set_left_most_unset_bit(10) == 14
+
+# Explanation:
+# Binary of 10 is 1010
+# The leftmost unset bit is at position 3 (0-based from right)
+# Setting it gives 1110 which is 14 in decimal
+```
+
+The function works by:
+1. Finding the first power of 2 that's greater than the input number (this identifies the leftmost unset bit position)
+2. Using bitwise OR to set that bit in the original number
+
+For the example with 10 (binary 1010):
+- The first power of 2 greater than 10 is 16 (10000)
+- We shift it right until it's just larger than 10 (which gives 8 or 1000)
+- Then we OR it with 10 (1010 | 1000 = 1110 which is 14)

@@ -1,0 +1,8 @@
+```python
+def len_log(words):
+    """Return the length of the longest word, or 0 if the list is empty."""
+    return max((len(word) for word in words), default=0)
+
+
+assert len_log(["python", "PHP", "bigdata"]) == 7
+```

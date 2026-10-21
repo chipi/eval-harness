@@ -1,0 +1,26 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+import math
+
+def find_Index(n: int) -> int:
+    """
+    Returns the index of the smallest triangular number with n digits.
+    A triangular number T_k = k * (k + 1) / 2.
+    We need the smallest k such that T_k >= 10^(n-1).
+    """
+    if n <= 0:
+        raise ValueError("n must be a positive integer")
+    # Solve k*(k+1)/2 >= 10^(n-1)
+    # => k^2 + k - 2*10^(n-1) >= 0
+    # Using quadratic formula: k = ceil((-1 + sqrt(1 + 8*10^(n-1))) / 2)
+    min_value = 10 ** (n - 1)
+    discriminant = 1 + 8 * min_value
+    k = math.ceil((-1 + math.sqrt(discriminant)) / 2)
+    return k
+
+# Test the function
+if __name__ == "__main__":
+    assert find_Index(2) == 4
+    print("Test passed!")
+```

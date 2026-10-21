@@ -1,0 +1,16 @@
+```python
+import math
+
+def volume_cylinder(radius, height):
+    """
+    Calculate the volume of a cylinder given its radius and height.
+    
+    Args:
+        radius (float): The radius of the cylinder's base.
+        height (float): The height of the cylinder.
+    
+    Returns:
+        float: The volume of the cylinder.
+    """
+    return math.pi * radius ** 2 * height
+```

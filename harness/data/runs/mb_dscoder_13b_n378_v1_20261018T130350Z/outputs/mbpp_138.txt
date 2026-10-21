@@ -1,0 +1,20 @@
+```python
+def is_Sum_Of_Powers_Of_Two(n):
+    if n == 0:
+        return False
+    while n != 1:
+        if n % 2 == 0:
+            n = n // 2
+        elif n == 3 or n % 3 == 0:
+            n = n // 3
+        else:
+            return False
+    return True
+
+# Test cases
+assert is_Sum_Of_Powers_Of_Two(10) == True
+assert is_Sum_Of_Powers_Of_Two(7) == True
+assert is_Sum_Of_Powers_Of_Two(8) == False
+assert is_Sum_Of_Powers_Of_Two(1) == True
+assert is_Sum_Of_Powers_Of_Two(0) == False
+```

@@ -1,0 +1,22 @@
+# A replacement for qwen_l, NOT the same arm. qwen_l's model (qwen/qwen3-max) was retired
+# by OpenRouter on 2026-10-09; the MBPP+ run of arm_qwen_l_n378 failed at warm-up (404) on
+# 2026-10-19 and billed nothing. This is the stand-in SummEval uses
+# (examples/summeval-judging/configs/arm_qwen37max_n100.yaml): qwen/qwen3.7-max, the
+# previous flagship, which accepts reasoning off. Its own config_id keeps it from ever
+# being read as the qwen_l of the other experiments. Prompt, max_tokens and settings are
+# otherwise the qwen_l arm's on MBPP+.
+config_id: mb_qwen37max_n378_v1
+dataset_id: mbppplus_378
+adapter: ../adapter.py
+params:
+  provider: litellm
+  model: eval-qwen-37max
+  family: qwen
+  price_tier: large
+  temperature: 0.0
+  reasoning:
+    enabled: false
+  usd_per_mtok_in: 1.475
+  usd_per_mtok_out: 4.425
+  prompt_file: prompt.txt
+  max_tokens: 2048

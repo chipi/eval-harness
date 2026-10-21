@@ -1,0 +1,55 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def is_decimal(s: str) -> bool:
+    """
+    Check whether a given string is a decimal number with a precision of 2.
+    
+    A valid decimal with precision 2:
+    - May have an optional sign (+ or -)
+    - Contains digits before the decimal point
+    - Contains exactly two digits after the decimal point
+    - No extra characters (spaces, letters, etc.)
+    """
+    # Strip optional sign
+    if s.startswith(('+', '-')):
+        s = s[1:]
+    
+    # Must contain exactly one decimal point
+    if s.count('.') != 1:
+        return False
+    
+    # Split into integer and fractional parts
+    int_part, frac_part = s.split('.')
+    
+    # Integer part must be non-empty and consist only of digits
+    if not int_part or not int_part.isdigit():
+        return False
+    
+    # Fractional part must be exactly 2 digits
+    if len(frac_part) != 2 or not frac_part.isdigit():
+        return False
+    
+    return True
+
+
+# Test cases
+if __name__ == "__main__":
+    # Provided test
+    assert is_decimal('123.11') == True
+    
+    # Additional tests
+    assert is_decimal('-123.45') == True
+    assert is_decimal('+0.99') == True
+    assert is_decimal('0.00') == True
+    assert is_decimal('123.1') == False
+    assert is_decimal('123.111') == False
+    assert is_decimal('123') == False
+    assert is_decimal('12.3a') == False
+    assert is_decimal('12..34') == False
+    assert is_decimal('') == False
+    assert is_decimal('.12') == False
+    assert is_decimal('12.') == False
+    
+    print("All tests passed.")
+```

@@ -1,0 +1,15 @@
+```python
+def left_insertion(lst, value):
+    """
+    Locate the left insertion point for a specified value in sorted order.
+    
+    Args:
+        lst: A list of sorted elements.
+        value: The value to find the insertion point for.
+        
+    Returns:
+        The index where the value should be inserted to maintain sorted order.
+    """
+    import bisect
+    return bisect.bisect_left(lst, value)
+```

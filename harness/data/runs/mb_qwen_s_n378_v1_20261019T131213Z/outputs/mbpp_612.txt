@@ -1,0 +1,25 @@
+```python
+def merge(lst):
+    """
+    Takes a list of lists, where each sublist has two elements, and returns a list of two lists:
+    the first containing all the first elements, and the second containing all the second elements.
+    
+    Example:
+        merge([['x', 'y'], ['a', 'b'], ['m', 'n']]) == [['x', 'a', 'm'], ['y', 'b', 'n']]
+    """
+    if not lst:
+        return [[], []]
+    
+    first_elements = [sublist[0] for sublist in lst]
+    second_elements = [sublist[1] for sublist in lst]
+    
+    return [first_elements, second_elements]
+
+
+# Test cases
+assert merge([['x', 'y'], ['a', 'b'], ['m', 'n']]) == [['x', 'a', 'm'], ['y', 'b', 'n']]
+assert merge([]) == [[], []]
+assert merge([['1', '2']]) == [['1'], ['2']]
+assert merge([['a', 'b'], ['c', 'd'], ['e', 'f'], ['g', 'h']]) == [['a', 'c', 'e', 'g'], ['b', 'd', 'f', 'h']]
+print("All tests passed!")
+```

@@ -1,0 +1,61 @@
+```python
+import math
+
+def area_tetrahedron(edge_length: float) -> float:
+    """
+    Calculates the total surface area of a regular tetrahedron.
+
+    A regular tetrahedron is a pyramid with a triangular base, where all four
+    faces are equilateral triangles of the same size.
+
+    The formula for the area of one equilateral triangle is (sqrt(3) / 4) * a^2.
+    Since a tetrahedron has four such faces, the total surface area is:
+    4 * (sqrt(3) / 4) * a^2, which simplifies to sqrt(3) * a^2.
+
+    Args:
+        edge_length: The length of any edge of the regular tetrahedron.
+
+    Returns:
+        The total surface area of the tetrahedron.
+        
+    Raises:
+        ValueError: If the edge_length is not a positive number.
+    """
+    if not isinstance(edge_length, (int, float)) or edge_length <= 0:
+        raise ValueError("Edge length must be a positive number.")
+    
+    # Calculate the area of one equilateral triangular face
+    # area_triangle = (math.sqrt(3) / 4) * edge_length**2
+    
+    # Calculate the total surface area by multiplying by 4
+    # total_area = 4 * area_triangle
+    
+    # The formula simplifies to:
+    total_area = math.sqrt(3) * edge_length**2
+    
+    return total_area
+
+# Example usage and assertion from the problem description
+if __name__ == "__main__":
+    # The expected value is an approximation of sqrt(3) * 3^2
+    # sqrt(3) * 9 = 9 * 1.7320508075688772... = 15.588457268119894...
+    expected_area = 15.588457268119894
+    calculated_area = area_tetrahedron(3)
+    
+    print(f"Calculating area for a tetrahedron with edge length 3...")
+    print(f"Expected area: {expected_area}")
+    print(f"Calculated area: {calculated_area}")
+    
+    # The assert statement will pass if the calculated area is very close
+    # to the expected area, which is the case due to floating-point precision.
+    assert math.isclose(calculated_area, expected_area)
+    
+    print("\nAssertion passed successfully!")
+    
+    # Example with invalid input
+    try:
+        area_tetrahedron(-1)
+    except ValueError as e:
+        print(f"\nSuccessfully caught expected error for invalid input: {e}")
+
+```

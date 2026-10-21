@@ -1,0 +1,10 @@
+```python
+import re
+
+def check_str(s):
+    """Check whether the given string starts with a vowel using regex."""
+    return bool(re.match(r'^[aeiouAEIOU]', s))
+
+# Test
+assert check_str("annie")
+```

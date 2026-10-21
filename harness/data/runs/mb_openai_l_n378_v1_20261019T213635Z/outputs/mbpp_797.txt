@@ -1,0 +1,8 @@
+```python
+def sum_in_range(l, r):
+    """Return the sum of odd natural numbers from l to r, inclusive."""
+    return sum(n for n in range(max(1, l), r + 1) if n % 2 == 1)
+
+
+assert sum_in_range(2, 5) == 8
+```

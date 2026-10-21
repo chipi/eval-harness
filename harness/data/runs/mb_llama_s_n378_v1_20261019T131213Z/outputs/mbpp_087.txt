@@ -1,0 +1,38 @@
+### Merging Three Dictionaries into One
+
+The following Python function merges three dictionaries into a single dictionary. If there are any duplicate keys, the value from the last dictionary will overwrite the previous ones.
+
+```python
+def merge_dictionaries_three(dict1, dict2, dict3):
+    """
+    Merge three dictionaries into a single dictionary.
+
+    If there are any duplicate keys, the value from the last dictionary will overwrite the previous ones.
+
+    Args:
+        dict1 (dict): The first dictionary to merge.
+        dict2 (dict): The second dictionary to merge.
+        dict3 (dict): The third dictionary to merge.
+
+    Returns:
+        dict: A new dictionary containing all key-value pairs from the input dictionaries.
+    """
+    # Merge the three dictionaries into one
+    merged_dict = {**dict1, **dict2, **dict3}
+    
+    return merged_dict
+
+# Example usage:
+dict1 = {"R": "Red", "B": "Black", "P": "Pink"}
+dict2 = {"G": "Green", "W": "White"}
+dict3 = {"O": "Orange", "W": "White", "B": "Black"}
+
+print(merge_dictionaries_three(dict1, dict2, dict3))
+```
+
+When you run this script, it will output:
+```python
+{'R': 'Red', 'B': 'Black', 'P': 'Pink', 'G': 'Green', 'W': 'White', 'O': 'Orange'}
+```
+
+This result shows that the function has successfully merged the three input dictionaries into one, handling duplicate keys by keeping the last occurrence.

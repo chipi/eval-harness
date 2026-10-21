@@ -1,0 +1,67 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def is_majority(arr, n, element):
+    """
+    Check if the given element is the majority element in a sorted array.
+
+    Args:
+        arr: A sorted list of elements.
+        n: The length of the array.
+        element: The element to check for majority.
+
+    Returns:
+        bool: True if the element is the majority element, False otherwise.
+    """
+    if n == 0:
+        return False
+
+    # Find the first occurrence of the element
+    left = 0
+    right = n - 1
+    first_pos = -1
+
+    while left <= right:
+        mid = (left + right) // 2
+        if arr[mid] == element:
+            first_pos = mid
+            right = mid - 1
+        elif arr[mid] < element:
+            left = mid + 1
+        else:
+            right = mid - 1
+
+    if first_pos == -1:
+        return False
+
+    # Find the last occurrence of the element
+    left = 0
+    right = n - 1
+    last_pos = -1
+
+    while left <= right:
+        mid = (left + right) // 2
+        if arr[mid] == element:
+            last_pos = mid
+            left = mid + 1
+        elif arr[mid] < element:
+            left = mid + 1
+        else:
+            right = mid - 1
+
+    # Calculate the count of the element
+    count = last_pos - first_pos + 1
+
+    # Check if it's a majority
+    return count > n // 2
+
+# Test case
+assert is_majority([1, 2, 3, 3, 3, 3, 10], 7, 3) == True
+```
+
+### Explanation:
+1. **Finding First and Last Occurrence**: The function uses binary search to find the first and last occurrence of the given element in the sorted array. This allows us to efficiently determine the count of the element without scanning the entire array.
+2. **Count Calculation**: The count of the element is calculated as `last_pos - first_pos + 1`.
+3. **Majority Check**: The function checks if the count is greater than `n // 2` (where `n` is the length of the array) to determine if the element is the majority.
+
+This approach efficiently checks for the majority element in O(log n) time, which is optimal for a sorted array.

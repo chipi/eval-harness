@@ -1,0 +1,60 @@
+To solve this problem, we need to ensure a **bijective mapping** (a one-to-one correspondence) between the elements of the first list and the elements of the second list. This means:
+1. Every element in `pattern` must map to exactly one element in `str_list`.
+2. No two different elements in `pattern` can map to the same element in `str_list`.
+
+Here is the self-contained Python script:
+
+```python
+def is_samepatterns(pattern, str_list):
+    """
+    Checks whether the two lists follow the same pattern.
+    A pattern is the same if there is a one-to-one mapping between 
+    elements of pattern and elements of str_list.
+    """
+    # If lengths are different, they cannot follow the same pattern
+    if len(pattern) != len(str_list):
+        return False
+
+    # Dictionaries to store the mappings in both directions
+    map_p_to_s = {}
+    map_s_to_p = {}
+
+    for p_val, s_val in zip(pattern, str_list):
+        # Check if p_val is already mapped to something else
+        if p_val in map_p_to_s:
+            if map_p_to_s[p_val] != s_val:
+                return False
+        else:
+            map_p_to_s[p_val] = s_val
+
+        # Check if s_val is already mapped to something else (ensures bijection)
+        if s_val in map_s_to_p:
+            if map_s_to_p[s_val] != p_val:
+                return False
+        else:
+            map_s_to_p[s_val] = p_val
+
+    return True
+
+if __name__ == "__main__":
+    # Test cases
+    # Provided test case
+    assert is_samepatterns(["red", "green", "green"], ["a", "b", "b"]) == True
+    
+    # Test case: Different patterns
+    assert is_samepatterns(["a", "b", "c"], ["a", "b", "b"]) == False
+    
+    # Test case: Different lengths
+    assert is_samepatterns(["a", "b"], ["a", "b", "c"]) == False
+    
+    # Test case: One-to-many mapping (invalid)
+    assert is_samepatterns(["a", "a"], ["b", "c"]) == False
+    
+    # Test case: Many-to-one mapping (invalid)
+    assert is_samepatterns(["a", "b"], ["c", "c"]) == False
+
+    # Test case: Complex valid pattern
+    assert is_samepatterns(["apple", "banana", "apple", "cherry"], ["1", "2", "1", "3"]) == True
+
+    print("All test cases passed!")
+```

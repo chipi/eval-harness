@@ -1,0 +1,37 @@
+```python
+def is_samepatterns(colors, patterns):
+    if len(colors) != len(patterns):
+        return False
+
+    color_to_pattern = {}
+    pattern_to_color = {}
+
+    for color, pattern in zip(colors, patterns):
+        if color in color_to_pattern:
+            if color_to_pattern[color] != pattern:
+                return False
+        else:
+            color_to_pattern[color] = pattern
+
+        if pattern in pattern_to_color:
+            if pattern_to_color[pattern] != color:
+                return False
+        else:
+            pattern_to_color[pattern] = color
+
+    return True
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert is_samepatterns(["red", "green", "green"], ["a", "b", "b"]) == True
+
+    # Additional test cases
+    assert is_samepatterns(["red", "green", "green"], ["a", "b", "a"]) == False
+    assert is_samepatterns(["a", "b", "c", "a", "b", "c"], ["t", "s", "u", "t", "s", "u"]) == True
+    assert is_samepatterns(["a", "b", "c", "a", "b", "c"], ["t", "s", "u", "s", "t", "u"]) == False
+    assert is_samepatterns([], []) == True
+    assert is_samepatterns(["a"], ["x", "y"]) == False
+
+    print("All test cases passed!")
+```

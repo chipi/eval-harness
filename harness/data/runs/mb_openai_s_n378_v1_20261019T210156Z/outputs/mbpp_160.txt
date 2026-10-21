@@ -1,0 +1,58 @@
+```python
+#!/usr/bin/env python3
+"""
+Find integers x and y such that:
+
+    a*x + b*y = n
+
+Return (x, y) if a solution exists, otherwise return None.
+
+Example:
+    assert find_solution(2, 3, 7) == (2, 1)
+"""
+
+from math import gcd
+
+
+def extended_gcd(a: int, b: int):
+    """
+    Return (g, x, y) such that:
+        g = gcd(a, b)
+        a*x + b*y = g
+    """
+    if b == 0:
+        return abs(a), 1 if a >= 0 else -1, 0
+    g, x1, y1 = extended_gcd(b, a % b)
+    x = y1
+    y = x1 - (a // b) * y1
+    return g, x, y
+
+
+def find_solution(a: int, b: int, n: int):
+    """
+    Return one integer solution (x, y) to a*x + b*y = n, or None if impossible.
+    """
+    # Handle the degenerate case
+    if a == 0 and b == 0:
+        return (0, 0) if n == 0 else None
+
+    g, x0, y0 = extended_gcd(a, b)
+    if n % g != 0:
+        return None
+
+    factor = n // g
+    return (x0 * factor, y0 * factor)
+
+
+if __name__ == "__main__":
+    assert find_solution(2, 3, 7) == (2, 1)
+    print(find_solution(2, 3, 7))  # (2, 1)
+
+    # A few extra checks
+    assert find_solution(4, 6, 8) is not None
+    assert find_solution(4, 6, 7) is None
+    assert find_solution(0, 5, 10) == (0, 2)
+    assert find_solution(0, 5, 7) is None
+
+    print("All tests passed.")
+```

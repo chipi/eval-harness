@@ -1,0 +1,39 @@
+Here's a self-contained Python script that solves the problem of finding the item with maximum frequency in a given list:
+
+```python
+from collections import Counter
+
+def max_occurrences(lst):
+    """
+    Find the item with maximum frequency in a given list.
+
+    Args:
+        lst: List of items (can be of any type that supports hashing)
+
+    Returns:
+        The item that appears most frequently in the list.
+        If multiple items have the same maximum frequency, returns the first one encountered.
+    """
+    if not lst:
+        raise ValueError("Input list cannot be empty")
+
+    # Count occurrences of each item
+    counts = Counter(lst)
+
+    # Find the item with the maximum count
+    max_item = max(counts.items(), key=lambda x: x[1])[0]
+
+    return max_item
+
+# Test case
+assert max_occurrences([2,3,8,4,7,9,8,2,6,5,1,6,1,2,3,2,4,6,9,1,2]) == 2
+print("Test passed!")
+```
+
+This script:
+1. Uses Python's `Counter` from the `collections` module to efficiently count occurrences
+2. Handles the case where the input list is empty by raising a ValueError
+3. Returns the first item encountered if there's a tie in maximum frequency
+4. Includes the provided test case and prints a confirmation message if it passes
+
+The function works with any hashable items in the list (numbers, strings, etc.) and has O(n) time complexity.

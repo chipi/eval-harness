@@ -1,0 +1,11 @@
+```python
+def union_elements(tuple1, tuple2):
+    # Convert tuples to sets to remove duplicates and then combine them
+    combined_set = set(tuple1) | set(tuple2)
+    # Convert the set back to a list and sort it before returning
+    return sorted(list(combined_set))
+
+# Test the function with provided data points
+assert union_elements((3, 4, 5, 6), (5, 7, 4, 10)) == (3, 4, 5, 6, 7, 10)
+```
+

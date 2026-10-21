@@ -1,0 +1,36 @@
+```python
+import math
+
+def is_polite(n):
+    """
+    Finds the nth polite number.
+    
+    A polite number is a positive integer that can be written as the sum of 
+    two or more consecutive positive integers. The only numbers that are not 
+    polite are powers of 2.
+    
+    The nth polite number can be found by taking the nth positive integer 
+    and adding the number of trailing zeros in its binary representation 
+    (which effectively skips the powers of 2).
+    
+    Reference: https://www.geeksforgeeks.org/n-th-polite-number/
+    """
+    # The number of trailing zeros in the binary representation of n
+    # is equivalent to the exponent of the largest power of 2 that divides n.
+    trailing_zeros = (n & -n).bit_length() - 1
+    
+    # The nth polite number is n plus its number of trailing zeros
+    return n + trailing_zeros
+
+if __name__ == "__main__":
+    # Test the provided assertion
+    assert is_polite(7) == 11
+    
+    # Additional tests to verify correctness
+    # The first 10 polite numbers are: 3, 5, 6, 7, 9, 10, 11, 12, 13, 14
+    expected_polite = [3, 5, 6, 7, 9, 10, 11, 12, 13, 14]
+    for i, expected in enumerate(expected_polite, start=1):
+        assert is_polite(i) == expected, f"Failed for n={i}"
+        
+    print("All tests passed!")
+```

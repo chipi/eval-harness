@@ -1,0 +1,12 @@
+```python
+def second_smallest(nums):
+    # Remove duplicates
+    nums = list(set(nums))
+    # Sort the list
+    nums.sort()
+    # Return the second element in the sorted list
+    return nums[1]
+
+# Test the function
+assert second_smallest([1, 2, -8, -2, 0, -2]) == -2
+```

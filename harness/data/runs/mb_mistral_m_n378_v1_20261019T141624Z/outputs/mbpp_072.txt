@@ -1,0 +1,26 @@
+Here's a self-contained Python script that checks whether a given number can be represented as the difference of two squares:
+
+```python
+def dif_Square(n):
+    """
+    Check if a number can be represented as the difference of two squares.
+
+    A number n can be expressed as the difference of two squares if and only if:
+    - n is odd, or
+    - n is divisible by 4
+
+    This is because:
+    a² - b² = (a - b)(a + b)
+    Let x = a - b and y = a + b, then n = x * y
+    For a and b to be integers, x and y must be both even or both odd.
+    This implies that n must be either odd or divisible by 4.
+    """
+    if n < 0:
+        return False  # Negative numbers can't be expressed as difference of squares
+    return n % 2 == 1 or n % 4 == 0
+
+# Test case
+assert dif_Square(5) == True
+```
+
+The function works based on the mathematical property that a number can be expressed as the difference of two squares if and only if it is odd or divisible by 4. The test case `dif_Square(5)` returns `True` because 5 is odd (3² - 2² = 9 - 4 = 5).

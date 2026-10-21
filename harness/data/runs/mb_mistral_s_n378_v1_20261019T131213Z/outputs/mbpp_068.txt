@@ -1,0 +1,47 @@
+Here's a self-contained Python script that checks if a given array is monotonic (either entirely non-increasing or non-decreasing):
+
+```python
+def is_monotonic(arr):
+    """
+    Check if the given array is monotonic (either entirely non-increasing or non-decreasing).
+
+    Args:
+        arr (list): The input array to check.
+
+    Returns:
+        bool: True if the array is monotonic, False otherwise.
+    """
+    if len(arr) <= 1:
+        return True
+
+    increasing = True
+    decreasing = True
+
+    for i in range(len(arr) - 1):
+        if arr[i] > arr[i + 1]:
+            increasing = False
+        if arr[i] < arr[i + 1]:
+            decreasing = False
+
+    return increasing or decreasing
+
+# Test cases
+assert is_monotonic([6, 5, 4, 4]) == True
+assert is_monotonic([1, 2, 3, 4]) == True
+assert is_monotonic([4, 3, 2, 1]) == True
+assert is_monotonic([1, 3, 2, 4]) == False
+assert is_monotonic([1, 1, 2, 3, 3, 2, 2, 1, 1]) == False
+assert is_monotonic([1]) == True
+assert is_monotonic([]) == True
+
+print("All test cases passed!")
+```
+
+This script:
+1. Defines a function `is_monotonic` that checks if an array is monotonic
+2. Handles edge cases (empty array or single-element array)
+3. Uses two boolean flags to track if the sequence is increasing or decreasing
+4. Includes test cases that verify the function works correctly
+5. Prints a confirmation message if all tests pass
+
+The function returns True if the array is either entirely non-increasing or non-decreasing, and False otherwise.

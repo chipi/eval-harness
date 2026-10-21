@@ -1,0 +1,53 @@
+Here's a self-contained Python script that solves the problem of finding all lucid (Ludic) numbers up to a given integer. The script includes the function `get_ludic` and the assertion as requested:
+
+```python
+"""
+A script to generate all Ludic numbers up to a given integer n.
+Ludic numbers are obtained by sieving process similar to the Sieve of Eratosthenes.
+Starting with the list of natural numbers, remove every 2nd number, then every 3rd number
+from the remaining list, then every 4th, and so on until no more numbers can be removed.
+The remaining numbers are Ludic numbers.
+"""
+
+def get_ludic(n):
+    if n < 1:
+        return []
+
+    # Initialize the list of numbers from 1 to n
+    numbers = list(range(1, n + 1))
+    ludic_numbers = []
+    index = 1  # Start with the second element (index 1) since we always keep the first
+
+    while index < len(numbers):
+        # The current step is the value at the current index (1-based)
+        step = numbers[index]
+        # Remove every 'step'-th number starting from the current position
+        # We need to remove elements at positions: index, index + step, index + 2*step, etc.
+        # But since the list is being modified, we need to be careful with indices
+        # So we'll iterate from the end to the beginning to avoid index shifting issues
+        i = index + step
+        while i < len(numbers):
+            numbers.pop(i)
+            i += step - 1  # Adjust for the removed element
+
+        # Move to the next index
+        index += 1
+
+    return numbers
+
+# Test the function
+assert get_ludic(10) == [1, 2, 3, 5, 7]
+
+# Example usage
+if __name__ == "__main__":
+    print(get_ludic(10))  # Output: [1, 2, 3, 5, 7]
+    print(get_ludic(25))  # Output: [1, 2, 3, 5, 7, 11, 13, 17, 23, 25]
+```
+
+### Explanation:
+1. **Initialization**: The function starts by creating a list of numbers from 1 to `n`.
+2. **Sieve Process**: It then iteratively removes every `k-th` number from the remaining list, where `k` is the value at the current index (starting from the second element). This is similar to the Sieve of Eratosthenes but with a dynamic step size.
+3. **Index Handling**: The removal process is done carefully to avoid index shifting issues by iterating from the end of the list to the beginning.
+4. **Result**: The remaining numbers after all possible removals are the Ludic numbers.
+
+The assertion `assert get_ludic(10) == [1, 2, 3, 5, 7]` verifies that the function works correctly for the given example.

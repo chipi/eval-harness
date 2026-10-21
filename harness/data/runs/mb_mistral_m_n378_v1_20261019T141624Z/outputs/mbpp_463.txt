@@ -1,0 +1,22 @@
+Here's a self-contained Python script that solves the problem of finding the maximum product subarray:
+
+```python
+def max_subarray_product(nums):
+    if not nums:
+        return 0
+
+    max_product = min_product = result = nums[0]
+
+    for num in nums[1:]:
+        candidates = (num, max_product * num, min_product * num)
+        max_product = max(candidates)
+        min_product = min(candidates)
+        result = max(result, max_product)
+
+    return result
+
+# Test case
+assert max_subarray_product([1, -2, -3, 0, 7, -8, -2]) == 112
+```
+
+This solution uses a dynamic programming approach that keeps track of both the maximum and minimum products at each position, since a negative number can turn a minimum product into a maximum product when multiplied by another negative number. The algorithm runs in O(n) time with O(1) space complexity.

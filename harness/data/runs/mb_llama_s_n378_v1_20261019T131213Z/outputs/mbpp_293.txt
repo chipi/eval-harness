@@ -1,0 +1,45 @@
+```python
+import math
+
+def otherside_rightangle(a, b):
+    """
+    This function calculates the third side of a right-angled triangle.
+
+    Parameters:
+    a (float): The length of one side of the right-angled triangle.
+    b (float): The length of the other side of the right-angled triangle.
+
+    Returns:
+    float: The length of the third side of the right-angled triangle.
+    """
+    # Using Pythagorean theorem: c^2 = a^2 + b^2
+    c = math.sqrt(a**2 + b**2)
+    return c
+
+# Test the function
+print(otherside_rightangle(7, 8))
+```
+
+You can also use `math.hypot` function which is more efficient and accurate:
+
+```python
+import math
+
+def otherside_rightangle(a, b):
+    """
+    This function calculates the third side of a right-angled triangle.
+
+    Parameters:
+    a (float): The length of one side of the right-angled triangle.
+    b (float): The length of the other side of the right-angled triangle.
+
+    Returns:
+    float: The length of the third side of the right-angled triangle.
+    """
+    # Using math.hypot function
+    c = math.hypot(a, b)
+    return c
+
+# Test the function
+print(otherside_rightangle(7, 8))
+```

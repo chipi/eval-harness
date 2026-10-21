@@ -1,0 +1,16 @@
+```python
+import re
+
+
+def find_literals(text: str, pattern: str):
+    """Return (matching substring, start index, end index), or None if absent."""
+    match = re.search(pattern, text)
+    if match is None:
+        return None
+    return match.group(), match.start(), match.end()
+
+
+assert find_literals(
+    "The quick brown fox jumps over the lazy dog.", "fox"
+) == ("fox", 16, 19)
+```

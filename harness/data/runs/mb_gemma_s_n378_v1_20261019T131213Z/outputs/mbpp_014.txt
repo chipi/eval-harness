@@ -1,0 +1,19 @@
+```python
+def find_Volume(length, width, height):
+  """
+  Calculates the volume of a triangular prism.
+
+  Args:
+    length: The length of the triangle's base.
+    width: The width of the triangle's base (height of the triangle).
+    height: The height of the prism.
+
+  Returns:
+    The volume of the triangular prism.
+  """
+  base_area = 0.5 * length * width
+  volume = base_area * height
+  return volume
+
+assert find_Volume(10,8,6) == 240
+```

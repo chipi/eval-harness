@@ -1,0 +1,25 @@
+```python
+"""
+Find the median length of a trapezium.
+
+The median (mid-segment) of a trapezium is the average of the two parallel
+base lengths:
+
+    median = (base1 + base2) / 2
+
+The third argument is accepted to match the given function call, but it is
+not needed for calculating the median.
+"""
+
+def median_trapezium(base1, base2, side=None):
+    """Return the median length of a trapezium."""
+    median = (base1 + base2) / 2
+    return int(median) if median.is_integer() else median
+
+
+# Example test
+assert median_trapezium(15, 25, 35) == 20
+
+if __name__ == "__main__":
+    print(median_trapezium(15, 25, 35))
+```

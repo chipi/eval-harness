@@ -1,0 +1,19 @@
+```python
+def and_tuples(t1, t2):
+    """
+    Extract the elementwise bitwise AND from the given two tuples.
+    
+    Args:
+        t1 (tuple): The first tuple of integers.
+        t2 (tuple): The second tuple of integers.
+        
+    Returns:
+        tuple: A new tuple containing the elementwise bitwise AND of the two input tuples.
+    """
+    return tuple(a & b for a, b in zip(t1, t2))
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert and_tuples((10, 4, 6, 9), (5, 2, 3, 3)) == (0, 0, 2, 1)
+    print("Test passed successfully!")
+```

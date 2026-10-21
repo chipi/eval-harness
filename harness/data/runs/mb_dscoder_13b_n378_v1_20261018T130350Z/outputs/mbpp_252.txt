@@ -1,0 +1,15 @@
+```python
+import math
+
+def convert(c):
+    r = abs(c)
+    theta = math.atan2(c.imag, c.real)
+    return (r, theta)
+
+# Test cases
+assert convert(1+1j) == (math.sqrt(2), math.pi/4)
+assert convert(2+3j) == (math.sqrt(2*2 + 3*3), math.pi/2)
+assert convert(3+4j) == (math.sqrt(3*3 + 4*4), math.pi)
+assert convert(4+5j) == (math.sqrt(4*4 + 5*5), math.pi*3/2)
+assert convert(5+6j) == (math.sqrt(5*5 + 6*6), math.pi*5/2)
+```

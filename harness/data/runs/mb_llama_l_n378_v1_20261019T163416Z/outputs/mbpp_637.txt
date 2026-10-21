@@ -1,0 +1,11 @@
+```python
+def noprofit_noloss(selling_price, cost_price):
+    return selling_price == cost_price
+
+def main():
+    print(noprofit_noloss(1500, 1200))  # False
+    print(noprofit_noloss(1000, 1000))  # True
+
+if __name__ == "__main__":
+    main()
+```

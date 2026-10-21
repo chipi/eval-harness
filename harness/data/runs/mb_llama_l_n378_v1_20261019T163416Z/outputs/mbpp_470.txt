@@ -1,0 +1,10 @@
+```python
+def add_pairwise(tup):
+    return tuple(a + b for a, b in zip(tup, tup[1:]))
+
+def main():
+    print(add_pairwise((1, 5, 7, 8, 10)))  # Expected output: (6, 15, 18)
+
+if __name__ == "__main__":
+    main()
+```

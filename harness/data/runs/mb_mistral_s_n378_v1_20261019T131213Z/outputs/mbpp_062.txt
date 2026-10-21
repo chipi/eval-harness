@@ -1,0 +1,22 @@
+Here's a self-contained Python script that solves the problem of finding the smallest number in a list:
+
+```python
+def smallest_num(numbers):
+    """Return the smallest number in a list of numbers."""
+    if not numbers:
+        raise ValueError("List cannot be empty")
+    return min(numbers)
+
+# Test the function
+assert smallest_num([10, 20, 1, 45, 99]) == 1
+print("All tests passed!")
+```
+
+This script:
+1. Defines a function `smallest_num` that takes a list of numbers as input
+2. Includes a check for empty lists (raises a ValueError if the list is empty)
+3. Uses Python's built-in `min()` function to find the smallest number
+4. Includes the test case from your example
+5. Prints a success message if the test passes
+
+The function will work with any list of numbers (integers or floats) and will raise an appropriate error if the input list is empty.

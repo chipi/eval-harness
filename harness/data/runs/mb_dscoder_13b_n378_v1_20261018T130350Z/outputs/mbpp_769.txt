@@ -1,0 +1,7 @@
+```python
+def Diff(list1, list2):
+    return [a - b for a, b in zip(list1, list2)]
+
+# Testing the function
+assert Diff([10, 15, 20, 25, 30, 35, 40], [25, 40, 35]) == [10, 20, 30, 15]
+```

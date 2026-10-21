@@ -1,0 +1,14 @@
+```python
+def count_X(tup, element):
+    """
+    Takes in a tuple and an element and counts the occurrences of the element in the tuple.
+    """
+    return tup.count(element)
+
+# Assert statement to verify the function with the provided test case
+assert count_X((10, 8, 5, 2, 10, 15, 10, 8, 5, 8, 8, 2), 4) == 0
+
+# Additional test cases to demonstrate functionality
+assert count_X((10, 8, 5, 2, 10, 15, 10, 8, 5, 8, 8, 2), 10) == 3
+assert count_X((10, 8, 5, 2, 10, 15, 10, 8, 5, 8, 8, 2), 8) == 4
+```

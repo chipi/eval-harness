@@ -1,0 +1,16 @@
+```python
+def find_star_num(n):
+    """
+    Write a function to find the n'th star number.
+    """
+    # Calculate the nth star number
+    star_num = n * (n + 1) * (n + 2) // 6
+    return star_num
+
+# Test cases
+assert find_star_num(3) == 37
+assert find_star_num(4) == 45
+assert find_star_num(5) == 60
+assert find_star_num(6) == 75
+assert find_star_num(7) == 90
+```

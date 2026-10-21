@@ -1,0 +1,24 @@
+```python
+def power(a, b):
+    """
+    Calculate the value of 'a' to the power 'b'.
+    
+    Args:
+        a: The base number
+        b: The exponent
+    
+    Returns:
+        The result of a raised to the power of b
+    """
+    return a ** b
+
+
+# Test cases
+assert power(3, 4) == 81
+assert power(2, 5) == 32
+assert power(5, 0) == 1
+assert power(10, 2) == 100
+assert power(2, 10) == 1024
+
+print("All tests passed!")
+```

@@ -1,0 +1,47 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def dict_depth(d):
+    """
+    Find the depth of a dictionary.
+    
+    Args:
+        d: A dictionary to find the depth of
+        
+    Returns:
+        int: The maximum depth of the dictionary
+    """
+    if not isinstance(d, dict) or not d:
+        return 1 if isinstance(d, dict) else 0
+    
+    # Recursively find the maximum depth of nested dictionaries
+    max_depth = 1
+    for value in d.values():
+        if isinstance(value, dict):
+            depth = 1 + dict_depth(value)
+            max_depth = max(max_depth, depth)
+    
+    return max_depth
+
+
+# Test the function
+if __name__ == "__main__":
+    # Test case from the problem
+    assert dict_depth({'a':1, 'b': {'c': {'d': {}}}}) == 4
+    
+    # Additional test cases
+    assert dict_depth({}) == 1
+    assert dict_depth({'a': 1, 'b': 2}) == 1
+    assert dict_depth({'a': {'b': 1}}) == 2
+    assert dict_depth({'a': {'b': {'c': 1}}}) == 3
+    assert dict_depth({'a': {'b': {'c': {'d': {'e': 1}}}}}) == 5
+    
+    print("All tests passed!")
+```
+
+This solution:
+1. Handles the base case where the input is not a dictionary or is empty
+2. Recursively traverses all values in the dictionary
+3. For each nested dictionary, calculates its depth and keeps track of the maximum
+4. Returns the maximum depth found
+5. Includes the required test case and additional test cases to verify correctness

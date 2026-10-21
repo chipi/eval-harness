@@ -1,0 +1,52 @@
+```python
+import re
+
+def text_match_three(text):
+    """
+    Checks if the string contains an 'a' followed by exactly three 'b's.
+
+    Args:
+        text: The input string to check.
+
+    Returns:
+        True if the string contains an 'a' followed by exactly three 'b's,
+        False otherwise.
+    """
+    # The regular expression pattern:
+    # 'a'      - matches the literal character 'a'
+    # 'bbb'    - matches the literal characters 'bbb'
+    # $        - asserts the position at the end of the string
+    pattern = r'abbb$'
+    
+    # re.search() looks for the pattern anywhere in the string.
+    # If the pattern is found, it returns a match object (which is truthy).
+    # If not, it returns None (which is falsy).
+    if re.search(pattern, text):
+        return True
+    else:
+        return False
+
+# --- Example Usage ---
+
+# This should return True because the string ends with 'abbb'
+print(f"Testing 'abbb': {text_match_three('abbb')}")
+
+# This should return True because the string contains 'abbb' at the end
+print(f"Testing 'cabbb': {text_match_three('cabbb')}")
+
+# This should return False because it has only two 'b's after 'a'
+print(f"Testing 'abb': {text_match_three('abb')}")
+
+# This should return False because it has four 'b's after 'a'
+print(f"Testing 'abbbb': {text_match_three('abbbb')}")
+
+# This should return False because 'a' is not followed by 'b's
+print(f"Testing 'ac': {text_match_three('ac')}")
+
+# This should return False because the pattern is not at the end
+print(f"Testing 'abbbc': {text_match_three('abbbc')}")
+
+# --- Assertion from the problem ---
+assert not text_match_three("ac")
+print("Assertion 'assert not text_match_three(\"ac\")' passed.")
+```

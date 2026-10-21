@@ -1,0 +1,38 @@
+```python
+def max_sum(arr):
+    """
+    Return the maximum sum of any bitonic subsequence in arr.
+
+    A bitonic subsequence is one that first strictly increases and then
+    strictly decreases. Either part may be empty, so a purely increasing or
+    purely decreasing subsequence is also considered bitonic.
+    """
+    n = len(arr)
+    if n == 0:
+        return 0
+
+    # inc[i] = maximum sum of a strictly increasing subsequence ending at i
+    inc = arr[:]
+
+    for i in range(n):
+        for j in range(i):
+            if arr[j] < arr[i]:
+                inc[i] = max(inc[i], inc[j] + arr[i])
+
+    # dec[i] = maximum sum of a strictly decreasing subsequence starting at i
+    dec = arr[:]
+
+    for i in range(n - 1, -1, -1):
+        for j in range(i + 1, n):
+            if arr[j] < arr[i]:
+                dec[i] = max(dec[i], dec[j] + arr[i])
+
+    # Combine increasing part ending at i and decreasing part starting at i.
+    # arr[i] is counted in both, so subtract it once.
+    return max(inc[i] + dec[i] - arr[i] for i in range(n))
+
+
+if __name__ == "__main__":
+    assert max_sum([1, 15, 51, 45, 33, 100, 12, 18, 9]) == 194
+    print("All tests passed.")
+```

@@ -1,0 +1,47 @@
+```python
+def check_integer(s: str) -> bool:
+    """
+    Checks if a given string represents a valid integer.
+    
+    Returns True if the string is a valid integer (optionally with leading
+    + or - sign), otherwise returns False.
+    """
+    if not s:
+        return False
+    
+    # Strip leading/trailing whitespace
+    s = s.strip()
+    if not s:
+        return False
+    
+    # Allow optional sign at the beginning
+    start = 0
+    if s[0] in ('+', '-'):
+        start = 1
+    
+    # If only a sign was provided, it's not an integer
+    if start == len(s):
+        return False
+    
+    # Check that all remaining characters are digits
+    for ch in s[start:]:
+        if not ch.isdigit():
+            return False
+    
+    return True
+
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert check_integer("python") == False
+    # Additional sanity checks
+    assert check_integer("123") == True
+    assert check_integer("-45") == True
+    assert check_integer("+0") == True
+    assert check_integer("") == False
+    assert check_integer("12a") == False
+    assert check_integer("   ") == False
+    assert check_integer("+") == False
+    assert check_integer("-") == False
+    print("All tests passed.")
+```

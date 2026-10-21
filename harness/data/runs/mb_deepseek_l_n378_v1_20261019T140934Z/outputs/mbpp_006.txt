@@ -1,0 +1,46 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def differ_At_One_Bit_Pos(a, b):
+    """
+    Check whether two numbers differ at exactly one bit position.
+    
+    Args:
+        a: First integer
+        b: Second integer
+    
+    Returns:
+        bool: True if the numbers differ at exactly one bit position, False otherwise
+    """
+    # XOR the two numbers - this will have 1s where bits differ
+    xor_result = a ^ b
+    
+    # If numbers are identical, XOR is 0, so they differ at 0 positions
+    if xor_result == 0:
+        return False
+    
+    # Check if XOR result is a power of 2 (has exactly one 1 bit)
+    # A number is a power of 2 if (n & (n-1)) == 0
+    return (xor_result & (xor_result - 1)) == 0
+
+
+# Test the function
+if __name__ == "__main__":
+    # Test case from the problem
+    assert differ_At_One_Bit_Pos(13, 9) == True
+    
+    # Additional test cases
+    assert differ_At_One_Bit_Pos(1, 3) == True   # 01 and 11 differ at one bit
+    assert differ_At_One_Bit_Pos(7, 6) == True   # 111 and 110 differ at one bit
+    assert differ_At_One_Bit_Pos(5, 5) == False  # Same numbers
+    assert differ_At_One_Bit_Pos(0, 3) == False  # 00 and 11 differ at two bits
+    assert differ_At_One_Bit_Pos(15, 0) == False # 1111 and 0000 differ at four bits
+    
+    print("All tests passed!")
+```
+
+**Explanation:**
+- The function uses XOR (`^`) to find positions where the bits differ
+- If the XOR result is a power of 2 (has exactly one `1` bit), then the numbers differ at exactly one bit position
+- The check `(xor_result & (xor_result - 1)) == 0` efficiently determines if a number is a power of 2
+- For the example: 13 (1101) and 9 (1001) differ only at the second bit position, so XOR is 4 (0100), which is a power of 2

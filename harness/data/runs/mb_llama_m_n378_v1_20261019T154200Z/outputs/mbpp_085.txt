@@ -1,0 +1,20 @@
+```python
+import math
+
+def surfacearea_sphere(radius):
+    """
+    Calculate the surface area of a sphere.
+
+    Args:
+        radius (float): The radius of the sphere.
+
+    Returns:
+        float: The surface area of the sphere.
+    """
+    if radius < 0:
+        raise ValueError("Radius cannot be negative")
+    return 4 * math.pi * (radius ** 2)
+
+# Test the function
+print(surfacearea_sphere(10))
+```

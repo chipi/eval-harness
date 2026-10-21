@@ -1,0 +1,37 @@
+```python
+import re
+
+def check_str(string):
+    """
+    Check whether the given string is starting with a vowel or not using regex.
+    
+    Args:
+        string: The input string to check
+        
+    Returns:
+        True if the string starts with a vowel, False otherwise
+    """
+    pattern = r'^[aeiouAEIOU]'
+    return bool(re.match(pattern, string))
+
+
+# Test cases
+assert check_str("annie") == True
+assert check_str("Apple") == True
+assert check_str("banana") == False
+assert check_str("Elephant") == True
+assert check_str("dog") == False
+assert check_str("orange") == True
+
+print("All assertions passed!")
+```
+
+**Explanation:**
+
+- The function `check_str()` uses the `re.match()` function to check if a string starts with a vowel
+- The regex pattern `^[aeiouAEIOU]` means:
+  - `^` - Start of the string
+  - `[aeiouAEIOU]` - Match any single character that is a vowel (lowercase or uppercase)
+- `re.match()` returns a match object if the pattern matches at the beginning of the string, or `None` if it doesn't
+- `bool()` converts the match object to `True` (if match found) or `False` (if no match)
+- The test cases verify that the function correctly identifies strings starting with vowels

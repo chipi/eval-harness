@@ -1,0 +1,47 @@
+Here's a self-contained Python script that checks if a given expression has balanced parentheses (including `()`, `{}`, and `[]`):
+
+```python
+def check_expression(expression):
+    """
+    Check if the given expression has balanced parentheses.
+    
+    Args:
+        expression (str): The string to check for balanced parentheses.
+        
+    Returns:
+        bool: True if the expression is balanced, False otherwise.
+    """
+    stack = []
+    opening_brackets = {'(', '{', '['}
+    closing_brackets = {')', '}', ']'}
+    matching_pairs = {')': '(', '}': '{', ']': '['}
+    
+    for char in expression:
+        if char in opening_brackets:
+            stack.append(char)
+        elif char in closing_brackets:
+            if not stack or stack[-1] != matching_pairs[char]:
+                return False
+            stack.pop()
+    
+    return not stack
+
+# Test cases
+assert check_expression("{()}[{}]") == True
+assert check_expression("{()}[{}") == False
+assert check_expression("({[)]}") == False
+assert check_expression("(){}[]") == True
+assert check_expression("") == True
+assert check_expression("{[()]}") == True
+assert check_expression("{[()]}]") == False
+
+print("All test cases passed!")
+```
+
+### Explanation:
+1. **Stack Data Structure**: We use a stack to keep track of the opening brackets as we encounter them in the expression.
+2. **Opening Brackets**: When an opening bracket (`(`, `{`, `[`) is encountered, it is pushed onto the stack.
+3. **Closing Brackets**: When a closing bracket (`)`, `}`, `]`) is encountered, we check if the top of the stack contains the corresponding opening bracket. If not, the expression is unbalanced.
+4. **Final Check**: After processing all characters, if the stack is empty, all opening brackets had corresponding closing brackets, so the expression is balanced. Otherwise, it's unbalanced.
+
+The script includes several test cases to verify the correctness of the function. The `assert` statements will raise an error if any test fails, and the final print statement confirms all tests passed.

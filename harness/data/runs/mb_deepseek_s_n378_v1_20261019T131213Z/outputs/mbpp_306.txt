@@ -1,0 +1,88 @@
+```python
+def max_sum_increasing_subseq(arr, n, i, k):
+    """
+    Find the maximum sum of an increasing subsequence that:
+    - Starts from the prefix up to index i (inclusive)
+    - Ends at index k (k > i)
+    - Is strictly increasing
+
+    Parameters:
+    arr (list): The input array
+    n (int): Length of the array (not strictly needed but kept for compatibility)
+    i (int): The prefix index (0-based)
+    k (int): The ending index (0-based, k > i)
+
+    Returns:
+    int: Maximum sum of such increasing subsequence
+    """
+    # dp[j] will store the maximum sum of an increasing subsequence ending at index j
+    dp = [0] * (k + 1)
+    
+    # Initialize dp for all positions up to k
+    for j in range(k + 1):
+        dp[j] = arr[j]
+        # Look for previous element that can come before arr[j]
+        for prev in range(j):
+            if arr[prev] < arr[j]:
+                dp[j] = max(dp[j], dp[prev] + arr[j])
+    
+    # Now we need the maximum sum of a subsequence that:
+    # - Ends at index k
+    # - Has its last element before k at some index <= i
+    # (since we must include prefix up to i)
+    
+    # The subsequence must include arr[k] and some element from prefix [0..i]
+    # So we look for the best dp value ending at some index <= i, then add arr[k]
+    # But we must ensure the sequence is increasing: arr[last] < arr[k]
+    
+    best_prefix_sum = 0
+    for j in range(i + 1):
+        if arr[j] < arr[k]:
+            best_prefix_sum = max(best_prefix_sum, dp[j])
+    
+    # If no valid prefix element found, we can still start at k itself
+    # (but the problem says "including a given kth element which is after i",
+    #  so we must include arr[k] and at least one element from prefix? 
+    #  The example suggests we can start at i and go to k directly if increasing)
+    
+    # Actually, the subsequence must include arr[k] and be increasing from prefix.
+    # The simplest valid subsequence is just [arr[i], arr[k]] if arr[i] < arr[k].
+    # But we can also include more elements from before i.
+    
+    # So the answer is best_prefix_sum + arr[k] if best_prefix_sum > 0,
+    # otherwise if arr[i] < arr[k] we can take just those two,
+    # otherwise we might need to check if any element before i works.
+    
+    if best_prefix_sum > 0:
+        return best_prefix_sum + arr[k]
+    elif arr[i] < arr[k]:
+        return arr[i] + arr[k]
+    else:
+        # Check if any element in prefix [0..i] is less than arr[k]
+        for j in range(i + 1):
+            if arr[j] < arr[k]:
+                return arr[j] + arr[k]
+        # If none, the subsequence would just be [arr[k]] but problem says include kth element
+        # and it's after i, so we must include something from prefix. 
+        # In that case, no valid subsequence exists, return 0 or handle accordingly.
+        return 0
+
+
+# Test with the given assertion
+assert max_sum_increasing_subseq([1, 101, 2, 3, 100, 4, 5], 7, 4, 6) == 11
+print("Test passed!")
+
+# Additional explanation:
+# arr = [1, 101, 2, 3, 100, 4, 5], i=4 (value 100), k=6 (value 5)
+# The increasing subsequence from prefix [0..4] ending at index 6:
+# We need arr[j] < arr[6]=5 from indices 0..4.
+# Candidates: 1 (idx0), 2 (idx2), 3 (idx3), 4 (idx5 but idx5 > i? No, idx5=4 is after i=4)
+# Wait, idx5=4 is after i=4, so we can only use indices 0..4.
+# From indices 0..4: values less than 5 are 1,2,3,4? No, 4 is at index 5 which is > i.
+# So from prefix [0..4]: 1,2,3,100 (100 > 5 so no).
+# Best increasing subsequence ending at index 4 (value 100) with sum = 1+2+3+100 = 106? No, that's not increasing to 5.
+# Actually we need subsequence ending at k=6 (value 5).
+# The best is: [1,2,3,5] sum=11 (indices 0,2,3,6) or [1,2,4,5] but 4 is at index 5 > i.
+# So [1,2,3,5] works: indices 0,2,3,6 all increasing, prefix up to i=4 includes indices 0,2,3.
+# Sum = 1+2+3+5 = 11. Correct!
+```

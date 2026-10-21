@@ -1,0 +1,11 @@
+```python
+import cmath
+
+
+def convert(number):
+    """Return a complex number's polar coordinates as (magnitude, angle)."""
+    return cmath.polar(number)
+
+
+assert convert(1) == (1.0, 0.0)
+```

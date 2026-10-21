@@ -1,0 +1,11 @@
+```python
+def swap_List(items):
+    """Return a list with its first and last elements swapped."""
+    result = items.copy()
+    if len(result) >= 2:
+        result[0], result[-1] = result[-1], result[0]
+    return result
+
+
+assert swap_List([12, 35, 9, 56, 24]) == [24, 35, 9, 56, 12]
+```

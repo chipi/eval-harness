@@ -1,0 +1,71 @@
+Looking at this problem, I need to reverse only the vowels in a string while keeping all other characters in their original positions.
+
+```python
+"""
+Write a python function to reverse only the vowels of a given string (where y is not a vowel).
+assert reverse_vowels("Python") == "Python"
+"""
+
+
+def reverse_vowels(string):
+    """
+    Reverse only the vowels of a given string.
+
+    Vowels are 'a', 'e', 'i', 'o', 'u' (both lowercase and uppercase).
+    The letter 'y' is NOT considered a vowel.
+
+    All non-vowel characters remain in their original positions, while
+    the vowels are reversed in order among themselves.
+
+    :param string: the input string
+    :return: a new string with its vowels reversed
+    """
+    vowels = set("aeiouAEIOU")
+    chars = list(string)
+    left, right = 0, len(chars) - 1
+
+    while left < right:
+        if chars[left] not in vowels:
+            left += 1
+        elif chars[right] not in vowels:
+            right -= 1
+        else:
+            chars[left], chars[right] = chars[right], chars[left]
+            left += 1
+            right -= 1
+
+    return "".join(chars)
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert reverse_vowels("Python") == "Python"
+
+    # Additional test cases
+    assert reverse_vowels("USA") == "ASU"
+    assert reverse_vowels("ab") == "ab"
+    assert reverse_vowels("") == ""
+    assert reverse_vowels("hello") == "holle"
+    assert reverse_vowels("leetcode") == "leotcede"
+    assert reverse_vowels("aA") == "Aa"
+    assert reverse_vowels("yay") == "yay"
+    assert reverse_vowels("rhythm") == "rhythm"
+    assert reverse_vowels("programming") == "prigrammong"
+
+    print("All tests passed!")
+    print(reverse_vowels("Python"))      # Python
+    print(reverse_vowels("hello"))       # holle
+    print(reverse_vowels("leetcode"))    # leotcede
+```
+
+**How it works:**
+
+1. Define the set of vowels (`aeiou` in both cases) — note that `y` is excluded.
+2. Convert the string to a list of characters so it can be modified in place.
+3. Use a two-pointer approach: `left` starts at the beginning and `right` at the end.
+   - If the character at `left` isn't a vowel, advance `left`.
+   - If the character at `right` isn't a vowel, decrement `right`.
+   - If both are vowels, swap them and move both pointers inward.
+4. Join the list back into a string.
+
+For `"Python"`, the only vowel is `'o'`, so there's nothing to swap and the result is `"Python"`. Time complexity is O(n) and space complexity is O(n).

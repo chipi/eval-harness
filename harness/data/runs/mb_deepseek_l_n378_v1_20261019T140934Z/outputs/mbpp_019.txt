@@ -1,0 +1,33 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def test_duplicate(arr):
+    """
+    Check if a given array of integers contains any duplicate element.
+    
+    Args:
+        arr: List of integers
+    
+    Returns:
+        bool: True if duplicates exist, False otherwise
+    """
+    # Convert to set and compare lengths
+    # If lengths differ, there are duplicates
+    return len(arr) != len(set(arr))
+
+
+# Test the function
+if __name__ == "__main__":
+    # Test case from the problem statement
+    assert test_duplicate([1, 2, 3, 4, 5]) == False
+    
+    # Additional test cases
+    assert test_duplicate([1, 2, 3, 4, 5, 1]) == True
+    assert test_duplicate([1, 1, 1, 1]) == True
+    assert test_duplicate([]) == False
+    assert test_duplicate([42]) == False
+    
+    print("All tests passed!")
+```
+
+The function works by comparing the length of the original array with the length of a set created from that array. Since sets cannot contain duplicate elements, if the lengths differ, it means there were duplicates in the original array.

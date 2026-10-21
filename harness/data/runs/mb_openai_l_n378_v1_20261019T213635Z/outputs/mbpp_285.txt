@@ -1,0 +1,14 @@
+```python
+import re
+
+
+def text_match_two_three(text):
+    """Return True if text contains 'a' followed by exactly two or three 'b's."""
+    return re.search(r"ab{2,3}(?!b)", text) is not None
+
+
+assert text_match_two_three("ac") is False
+assert text_match_two_three("abb") is True
+assert text_match_two_three("abbb") is True
+assert text_match_two_three("abbbb") is False
+```

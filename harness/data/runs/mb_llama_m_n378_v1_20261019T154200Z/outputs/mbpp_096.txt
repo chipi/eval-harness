@@ -1,0 +1,24 @@
+```python
+def divisor(n):
+    """
+    This function calculates the number of divisors of a given integer.
+
+    Args:
+        n (int): The input integer.
+
+    Returns:
+        int: The number of divisors of the input integer.
+    """
+    count = 0
+    for i in range(1, n + 1):
+        if n % i == 0:
+            count += 1
+    return count
+
+# Example usage:
+print(divisor(15))  # Output: 4
+```
+
+This script defines a function `divisor(n)` that takes an integer `n` as input and returns the number of divisors of `n`. The function iterates over all numbers from 1 to `n` (inclusive) and checks if each number is a divisor of `n` by using the modulo operator (`%`). If the remainder of `n` divided by the current number is 0, it means the current number is a divisor of `n`, and the function increments the count. Finally, the function returns the total count of divisors.
+
+You can save this script to a file (e.g., `divisor.py`) and run it using Python (e.g., `python divisor.py`) to test the `divisor` function.

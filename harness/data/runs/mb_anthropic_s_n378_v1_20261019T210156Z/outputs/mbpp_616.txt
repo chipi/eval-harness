@@ -1,0 +1,20 @@
+```python
+def tuple_modulo(tuple1, tuple2):
+    """
+    Takes two tuples of the same length and performs element-wise modulo.
+    
+    Args:
+        tuple1: First tuple of numbers
+        tuple2: Second tuple of numbers (divisors)
+    
+    Returns:
+        A tuple containing the element-wise modulo results
+    """
+    return tuple(a % b for a, b in zip(tuple1, tuple2))
+
+
+# Test cases
+assert tuple_modulo((10, 4, 5, 6), (5, 6, 7, 5)) == (0, 4, 5, 1)
+print("All tests passed!")
+print(f"tuple_modulo((10, 4, 5, 6), (5, 6, 7, 5)) = {tuple_modulo((10, 4, 5, 6), (5, 6, 7, 5))}")
+```

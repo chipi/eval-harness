@@ -1,0 +1,37 @@
+Here's a self-contained Python script that solves the problem of finding the sum of even factors of a number:
+
+```python
+def sumofFactors(n):
+    """
+    Calculate the sum of even factors of a given number.
+
+    Args:
+        n (int): The number to find the sum of even factors for.
+
+    Returns:
+        int: The sum of all even factors of the number.
+    """
+    if n == 0:
+        return 0
+
+    total = 0
+    for i in range(1, n + 1):
+        if n % i == 0 and i % 2 == 0:
+            total += i
+    return total
+
+# Test the function
+assert sumofFactors(18) == 26
+print("Test passed!")
+```
+
+This script:
+1. Defines a function `sumofFactors` that takes an integer `n` as input
+2. Initializes a total sum variable to 0
+3. Iterates through all numbers from 1 to n
+4. Checks if the number is a factor of n (using modulo operation) and if it's even
+5. Adds even factors to the total sum
+6. Returns the total sum
+7. Includes a test case to verify the function works correctly (sum of even factors of 18 is 2 + 4 + 6 + 12 = 26)
+
+The script is self-contained and can be run directly to verify the solution.

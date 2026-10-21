@@ -1,0 +1,8 @@
+```python
+def max_difference(pairs):
+    """Return the largest absolute difference between values in a pair."""
+    return max(abs(a - b) for a, b in pairs)
+
+
+assert max_difference([(3, 5), (1, 7), (10, 3), (1, 2)]) == 7
+```

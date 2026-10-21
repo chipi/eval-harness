@@ -1,0 +1,19 @@
+```python
+def occurance_substring(string, substring):
+    """
+    Find the occurrence and position of the substrings within a string.
+    Return None if there is no match.
+    
+    Args:
+        string: The main string to search in.
+        substring: The substring to find.
+        
+    Returns:
+        A tuple (substring, start_index, end_index) if found, None otherwise.
+    """
+    index = string.find(substring)
+    if index == -1:
+        return None
+    end_index = index + len(substring)
+    return (substring, index, end_index)
+```

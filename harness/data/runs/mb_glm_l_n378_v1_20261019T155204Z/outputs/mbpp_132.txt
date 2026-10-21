@@ -1,0 +1,18 @@
+```python
+def tup_string(tup):
+    """
+    Converts a tuple of characters into a single string.
+    
+    Args:
+        tup (tuple): A tuple containing characters.
+        
+    Returns:
+        str: A string formed by joining the characters in the tuple.
+    """
+    # We use the join() method with an empty string separator to concatenate the characters.
+    return "".join(tup)
+
+# Assert statement to verify the function works as expected
+assert tup_string(('e', 'x', 'e', 'r', 'c', 'i', 's', 'e', 's')) == "exercises"
+print("Test passed successfully.")
+```

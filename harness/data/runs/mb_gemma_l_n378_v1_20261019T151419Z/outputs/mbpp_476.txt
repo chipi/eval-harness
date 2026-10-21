@@ -1,0 +1,22 @@
+```python
+def big_sum(arr):
+    """
+    Finds the sum of the largest and smallest value in a given array.
+    """
+    if not arr:
+        return None  # Handle empty array case
+    
+    return max(arr) + min(arr)
+
+# Test cases
+if __name__ == "__main__":
+    # Provided test case
+    assert big_sum([1, 2, 3]) == 4
+    
+    # Additional test cases
+    assert big_sum([10, 20, 30, 40]) == 50
+    assert big_sum([-10, 0, 10]) == 0
+    assert big_sum([5]) == 10  # Smallest and largest are the same element
+    
+    print("All tests passed!")
+```

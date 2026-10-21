@@ -1,0 +1,17 @@
+```python
+def left_rotate(n, d):
+  """
+  Rotates the bits of a 32-bit number to the left by d bits.
+
+  Args:
+    n: The integer to rotate.
+    d: The number of bits to rotate by.
+
+  Returns:
+    The rotated integer.
+  """
+  d = d % 32  # Handle rotations larger than 32
+  return (n << d) | (n >> (32 - d))
+
+assert left_rotate(16,2) == 64
+```

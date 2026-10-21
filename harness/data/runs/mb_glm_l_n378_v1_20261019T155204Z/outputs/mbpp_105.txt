@@ -1,0 +1,20 @@
+```python
+def count_true(booleans):
+    """
+    Counts the number of True boolean values in a given list.
+    
+    Args:
+        booleans (list): A list of boolean values.
+        
+    Returns:
+        int: The count of True values.
+    """
+    # The built-in sum() function treats True as 1 and False as 0.
+    # Alternatively, one could use booleans.count(True)
+    return sum(booleans)
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert count_true([True, False, True]) == 2
+    print("Test passed successfully!")
+```

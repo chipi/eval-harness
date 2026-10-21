@@ -1,0 +1,21 @@
+```python
+def get_pairs_count(arr, target_sum):
+    """
+    Count the number of pairs in the list whose sum is equal to 'target_sum'.
+    A pair is defined by the indices of the elements, so different indices with the same value count as distinct pairs.
+    """
+    count = 0
+    n = len(arr)
+    
+    # Iterate through all possible pairs (i, j) where i < j
+    for i in range(n):
+        for j in range(i + 1, n):
+            if arr[i] + arr[j] == target_sum:
+                count += 1
+                
+    return count
+
+# Assert to verify the solution
+assert get_pairs_count([1, 1, 1, 1], 2) == 6
+print("Test passed successfully!")
+```

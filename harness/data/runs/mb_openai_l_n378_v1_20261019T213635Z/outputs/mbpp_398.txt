@@ -1,0 +1,7 @@
+```python
+def sum_of_digits(numbers):
+    return sum(int(digit) for number in numbers for digit in str(abs(number)))
+
+
+assert sum_of_digits([10, 2, 56]) == 14
+```

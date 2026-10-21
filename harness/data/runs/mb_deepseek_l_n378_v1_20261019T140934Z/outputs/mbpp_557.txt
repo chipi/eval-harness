@@ -1,0 +1,23 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def toggle_string(s):
+    """
+    Toggle the case of all characters in a string.
+    
+    Args:
+        s (str): Input string
+        
+    Returns:
+        str: String with toggled case
+    """
+    return s.swapcase()
+
+
+# Test the function
+if __name__ == "__main__":
+    assert toggle_string("Python") == "pYTHON"
+    print("Test passed!")
+```
+
+The solution uses Python's built-in `swapcase()` method, which converts uppercase characters to lowercase and lowercase characters to uppercase. The assertion test confirms that `toggle_string("Python")` returns `"pYTHON"` as expected.

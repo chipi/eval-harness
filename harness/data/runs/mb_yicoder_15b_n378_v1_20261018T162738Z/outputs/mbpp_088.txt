@@ -1,0 +1,16 @@
+```python
+def freq_count(lst):
+    freq_dict = {}
+    for i in lst:
+        if i in freq_dict:
+            freq_dict[i] += 1
+        else:
+            freq_dict[i] = 1
+    return freq_dict
+
+# Test cases
+assert freq_count([10,10,10,10,20,20,20,20,40,40,50,50,30])==({10: 4, 20: 4, 40: 2, 50: 2, 30: 1})
+assert freq_count([1,1,1,1,2,2,2,2,3,3,3,3])==({1: 4, 2: 4, 3: 4})
+assert freq_count([1,2,3,4,5,6,7,8,9,10])==({1: 1, 2: 1, 3: 1, 4: 1, 5: 1, 6: 1, 7: 1, 8: 1, 9: 1, 10: 1})
+assert freq_count([])==({})
+```

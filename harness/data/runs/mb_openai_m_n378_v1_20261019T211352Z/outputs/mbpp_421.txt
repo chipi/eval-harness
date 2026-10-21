@@ -1,0 +1,21 @@
+```python
+"""
+Write a function to concatenate each element of a tuple by the delimiter.
+
+Example:
+assert concatenate_tuple(("ID", "is", 4, "UTS")) == "ID-is-4-UTS"
+"""
+
+def concatenate_tuple(items, delimiter="-"):
+    """
+    Concatenate each element of a tuple using the given delimiter.
+
+    Non-string elements are converted to strings before joining.
+    """
+    return delimiter.join(map(str, items))
+
+
+if __name__ == "__main__":
+    assert concatenate_tuple(("ID", "is", 4, "UTS")) == "ID-is-4-UTS"
+    print("All tests passed.")
+```

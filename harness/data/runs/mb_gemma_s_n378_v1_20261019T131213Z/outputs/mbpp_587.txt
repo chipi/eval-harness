@@ -1,0 +1,16 @@
+```python
+def list_tuple(lst):
+  """
+  Converts a list to a tuple.
+
+  Args:
+    lst: The input list.
+
+  Returns:
+    A tuple containing the same elements as the input list.
+  """
+  return tuple(lst)
+
+# Example usage and assertion
+assert list_tuple([5, 10, 7, 4, 15, 3]) == (5, 10, 7, 4, 15, 3)
+```

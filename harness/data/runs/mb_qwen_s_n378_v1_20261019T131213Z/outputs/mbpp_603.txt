@@ -1,0 +1,100 @@
+```python
+def get_ludic(n):
+    """
+    Get all lucid numbers smaller than or equal to a given integer n.
+    
+    Lucid numbers are defined as follows:
+    1 is the first lucid number.
+    For each subsequent lucid number, we remove every (k+1)-th element from the remaining list,
+    where k is the index of the current lucid number in the sequence (starting from 1).
+    
+    More precisely, the algorithm works like this:
+    - Start with a list of integers from 2 to n.
+    - The first lucid number is 1.
+    - Then, for i = 1, 2, 3, ...:
+        - The next lucid number is the first element of the remaining list.
+        - Remove every (i+1)-th element from the remaining list (where i starts at 1).
+    
+    Actually, let me re-derive the correct definition based on known sequences.
+    
+    From OEIS A005282: Ludic numbers.
+    Definition: 
+    1 is the first ludic number.
+    To generate the rest:
+    - Start with the list [2, 3, 4, ..., n].
+    - The first ludic number after 1 is 2 (the first element).
+    - Remove every 2nd element from the remaining list (so remove 4, 6, 8, ...).
+    - The next ludic number is 3 (now the first element of the remaining list).
+    - Remove every 3rd element from the remaining list.
+    - Continue this process.
+    
+    So the algorithm:
+    1. Initialize result with [1].
+    2. Create a list L = [2, 3, 4, ..., n].
+    3. While L is not empty:
+       a. Take the first element of L, add it to result.
+       b. Let k be the position/index of this element in the sequence of ludic numbers (starting from 1 for the first one after 1, i.e., 2 has k=1, 3 has k=2, etc.)
+          Actually, looking at the pattern: when we pick 2 (which is the 1st ludic number > 1), we remove every 2nd element.
+          When we pick 3 (which is the 2nd ludic number > 1), we remove every 3rd element.
+          So if we've picked m ludic numbers so far (including 1), then the next removal step uses (m+1) as the stride? 
+          
+          Let's trace:
+          Start: result = [1], L = [2, 3, 4, 5, 6, 7, 8, 9, 10]
+          Step 1: Pick 2 (first element of L). This is the 2nd ludic number overall. We remove every 2nd element from L.
+                  After removing every 2nd element from [2,3,4,5,6,7,8,9,10]:
+                  Keep indices 0, 2, 4, 6, 8 -> values 2, 4, 6, 8, 10? No wait, we remove every 2nd element starting from the second one.
+                  Original L: [2, 3, 4, 5, 6, 7, 8, 9, 10]
+                  Remove elements at positions 1, 3, 5, 7 (0-indexed): remove 3, 5, 7, 9.
+                  Remaining L: [2, 4, 6, 8, 10]
+                  
+          Step 2: Pick 4? But 4 is not a ludic number according to the example. The example says ludic numbers <= 10 are [1, 2, 3, 5, 7].
+          
+          Hmm, I think my understanding of "remove every k-th element" might be off. Let me reconsider.
+          
+          Actually, upon closer inspection of standard definitions:
+          - Start with natural numbers >= 2.
+          - First ludic number is 2. Remove every 2nd number from the remaining list.
+            List: [2, 3, 4, 5, 6, 7, 8, 9, 10]
+            Remove every 2nd: keep 2, remove 3, keep 4, remove 5, keep 6, remove 7, keep 8, remove 9, keep 10
+            Wait, that doesn't match either.
+            
+          Let me look up the precise algorithm again mentally:
+          According to Wikipedia/OEIS:
+          1. Begin with the list of positive integers greater than 1: [2, 3, 4, 5, 6, 7, 8, 9, 10, ...]
+          2. The first number in the list is a ludic number. Remove it and every second number from the list.
+             So take 2, then remove every 2nd number from the remaining [3, 4, 5, 6, 7, 8, 9, 10, ...]
+             Removing every 2nd from [3,4,5,6,7,8,9,10,...]: remove 4, 6, 8, 10, ...
+             Remaining: [3, 5, 7, 9, 11, ...]
+          3. The first number in the new list is a ludic number. Remove it and every third number from the list.
+             Take 3, then remove every 3rd from [5, 7, 9, 11, 13, 15, ...]
+             Positions: 5(1st), 7(2nd), 9(3rd->remove), 11(4th), 13(5th), 15(6th->remove)...
+             Remaining: [5, 7, 11, 13, 17, 19, ...]
+          4. The first number is a ludic number. Remove it and every fourth number.
+             Take 5, remove every 4th from [7, 11, 13, 17, 19, 23, 25, 29, ...]
+             7(1), 11(2), 13(3), 17(4->remove), 19(5), 23(6), 25(7), 29(8->remove)...
+             Remaining: [7, 11, 13, 19, 23, 25, ...]
+          5. Take 7, remove every 5th...
+             
+          So the ludic numbers found so far: 1, 2, 3, 5, 7... which matches the example!
+          
+          Algorithm summary:
+          - result = [1]
+          - L = list(range(2, n+1))
+          - k = 2  # the stride for removal, starts at 2 because after picking the first non-1 ludic number, we remove every 2nd
+          - while L:
+              - first = L[0]
+              - result.append(first)
+              - L = L[1:]  # remove the first element
+              - Now remove every k-th element from L. That means keep elements at indices 0, 1, ..., but remove those at indices k-1, 2k-1, 3k-1, ... (0-indexed)
+               Actually, "remove every k-th number" typically means remove the 2nd, 4th, 6th... if k=2? Or remove the k-th, 2k-th, etc.?
+               
+               In our trace above with k=2:
+               L was [3, 4, 5, 6, 7, 8, 9, 10]
+               We removed 4, 6, 8, 10 which are at positions 1, 3, 5, 7 (0-indexed). These are every 2nd element starting from the second one.
+               So we keep elements at even indices (0, 2, 4, ...) and remove odd indices (1, 3, 5, ...)? 
+               Wait no: index 0=3 kept, index 1=4 removed, index 2=5 kept, index 3=6 removed...
+               Yes, so for stride s=k, we remove elements at indices s-1, 2s-1, 3s-1, ... (0-indexed).
+               
+               With k=2: remove indices 1, 3, 5, ... ✓
+               With k=3: L=[5,7,9,11,13,15,17,19,21,23,25...]
+                         remove indices 2, 5, 8, ... -> remove 9,

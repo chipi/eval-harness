@@ -1,0 +1,49 @@
+```python
+#!/usr/bin/env python3
+"""
+Count the number of substrings whose sum of digits equals their length.
+
+For a substring s[i:j], we need:
+    sum(digits in s[i:j]) == (j - i)
+
+This is equivalent to:
+    sum((digit - 1) for each digit in s[i:j]) == 0
+
+So the problem becomes counting subarrays with sum 0 in the transformed
+array where each character digit d becomes int(d) - 1.
+"""
+
+from collections import defaultdict
+
+
+def count_Substrings(s: str) -> int:
+    """
+    Return the number of substrings with digit sum equal to substring length.
+
+    Example:
+        '112112' has 6 such substrings.
+    """
+    prefix_sum = 0
+    seen = defaultdict(int)
+    seen[0] = 1
+    count = 0
+
+    for ch in s:
+        prefix_sum += int(ch) - 1
+        count += seen[prefix_sum]
+        seen[prefix_sum] += 1
+
+    return count
+
+
+if __name__ == "__main__":
+    assert count_Substrings("112112") == 6
+
+    # Additional quick checks
+    assert count_Substrings("") == 0
+    assert count_Substrings("1") == 1
+    assert count_Substrings("2") == 0
+    assert count_Substrings("11") == 3
+
+    print("All tests passed.")
+```

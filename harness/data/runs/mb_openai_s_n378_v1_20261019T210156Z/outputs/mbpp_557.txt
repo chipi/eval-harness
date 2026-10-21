@@ -1,0 +1,9 @@
+```python
+def toggle_string(s: str) -> str:
+    return "".join(ch.lower() if ch.isupper() else ch.upper() for ch in s)
+
+
+if __name__ == "__main__":
+    assert toggle_string("Python") == "pYTHON"
+    print(toggle_string("Python"))
+```

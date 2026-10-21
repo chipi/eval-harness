@@ -1,0 +1,16 @@
+```python
+def last_Digit(number):
+    """
+    Returns the last digit of a given number.
+
+    Args:
+        number (int): The input number.
+
+    Returns:
+        int: The last digit of the number.
+    """
+    return abs(number) % 10
+
+# Test case
+assert last_Digit(123) == 3
+```

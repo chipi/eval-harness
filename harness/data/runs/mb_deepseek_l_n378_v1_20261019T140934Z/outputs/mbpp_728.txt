@@ -1,0 +1,27 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def sum_list(list1, list2):
+    """
+    Takes two lists as input and returns a new list containing the element-wise sum.
+    
+    Args:
+        list1: First list of numbers [a_1,...,a_n]
+        list2: Second list of numbers [b_1,...,b_n]
+    
+    Returns:
+        A new list [a_1+b_1,...,a_n+b_n]
+    """
+    return [a + b for a, b in zip(list1, list2)]
+
+# Test the function with the provided assertion
+assert sum_list([10, 20, 30], [15, 25, 35]) == [25, 45, 65]
+print("Test passed!")
+
+# Additional test cases
+print(sum_list([1, 2, 3], [4, 5, 6]))  # Output: [5, 7, 9]
+print(sum_list([0, 0, 0], [1, 2, 3]))  # Output: [1, 2, 3]
+print(sum_list([-1, -2, -3], [1, 2, 3]))  # Output: [0, 0, 0]
+```
+
+The function uses a list comprehension with `zip()` to iterate through both lists simultaneously and add corresponding elements. This creates a new list with the element-wise sums as required.

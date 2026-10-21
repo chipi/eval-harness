@@ -1,0 +1,21 @@
+```python
+def insert_element(lst, element):
+    """
+    Inserts an element before each element in a list.
+
+    Args:
+        lst (list): The input list.
+        element: The element to be inserted.
+
+    Returns:
+        list: The resulting list with the element inserted before each element.
+    """
+    result = []
+    for elem in lst:
+        result.append(element)
+        result.append(elem)
+    return result
+
+# Example usage:
+print(insert_element(['Red', 'Green', 'Black'], 'c'))  # Output: ['c', 'Red', 'c', 'Green', 'c', 'Black']
+```

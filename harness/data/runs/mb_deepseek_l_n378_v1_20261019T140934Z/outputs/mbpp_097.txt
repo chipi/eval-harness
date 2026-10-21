@@ -1,0 +1,28 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+from collections.abc import Iterable
+
+def frequency_lists(lst: list[list]) -> dict:
+    """
+    Find frequency of each element in a flattened list of lists.
+    
+    Args:
+        lst: A list of lists containing elements to count.
+    
+    Returns:
+        A dictionary with elements as keys and their frequencies as values.
+    """
+    freq = {}
+    for sublist in lst:
+        for item in sublist:
+            freq[item] = freq.get(item, 0) + 1
+    return freq
+
+# Test the function
+if __name__ == "__main__":
+    result = frequency_lists([[1, 2, 3, 2], [4, 5, 6, 2], [7, 8, 9, 5]])
+    expected = {1: 1, 2: 3, 3: 1, 4: 1, 5: 2, 6: 1, 7: 1, 8: 1, 9: 1}
+    assert result == expected, f"Test failed: {result} != {expected}"
+    print("Test passed!")
+```

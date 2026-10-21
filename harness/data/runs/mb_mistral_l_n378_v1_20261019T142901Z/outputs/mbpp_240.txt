@@ -1,0 +1,33 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def replace_list(list1, list2):
+    """
+    Replaces the last element of the first list with the elements of the second list.
+
+    Args:
+        list1: The first list (will be modified)
+        list2: The second list whose elements will replace the last element of list1
+
+    Returns:
+        The modified first list with the last element replaced by elements of list2
+    """
+    if not list1:  # if list1 is empty
+        return list2.copy()
+    return list1[:-1] + list2
+
+# Test case
+assert replace_list([1, 3, 5, 7, 9, 10], [2, 4, 6, 8]) == [1, 3, 5, 7, 9, 2, 4, 6, 8]
+
+# Additional test cases
+assert replace_list([], [1, 2, 3]) == [1, 2, 3]
+assert replace_list([1], [2, 3]) == [2, 3]
+assert replace_list([1, 2], []) == [1]
+```
+
+The function works by:
+1. Taking the first list (excluding its last element) with `list1[:-1]`
+2. Concatenating it with the second list using `+ list2`
+3. Handling the edge case where the first list is empty by returning a copy of the second list
+
+The solution is efficient and handles all edge cases properly.

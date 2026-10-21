@@ -1,0 +1,28 @@
+```python
+def validate(n):
+    """
+    Check whether the frequency of each digit in the integer is less than or equal to the digit itself.
+    
+    For each digit d that appears in the number, count(d) <= d must hold.
+    Note: if digit 0 appears, its frequency must be <= 0, meaning 0 cannot appear at all.
+    """
+    n = abs(n)  # handle negative numbers
+    s = str(n)
+    
+    # Count frequency of each digit
+    freq = {}
+    for ch in s:
+        d = int(ch)
+        freq[d] = freq.get(d, 0) + 1
+    
+    # Check that for each digit present, frequency <= digit value
+    for digit, count in freq.items():
+        if count > digit:
+            return False
+    
+    return True
+
+
+# Test
+assert validate(1234) == True
+```

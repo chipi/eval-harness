@@ -1,0 +1,28 @@
+Here’s a self-contained Python script that solves the problem:  
+
+```python
+def armstrong_number(n):
+    """
+    Check whether the given number is an Armstrong number.
+    An Armstrong number (also called narcissistic number) is a number
+    that equals the sum of its own digits each raised to the power of
+    the number of digits.
+    """
+    # Convert number to string to easily iterate over digits
+    digits = str(n)
+    num_digits = len(digits)
+    
+    # Calculate sum of digits each raised to the power of num_digits
+    sum_of_powers = sum(int(digit) ** num_digits for digit in digits)
+    
+    # Return True if the sum equals the original number
+    return sum_of_powers == n
+
+
+# Test the function with the given assertion
+if __name__ == "__main__":
+    assert armstrong_number(153) == True
+    assert armstrong_number(9474) == True
+    assert armstrong_number(123) == False
+    print("All tests passed.")
+```

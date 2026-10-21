@@ -1,0 +1,64 @@
+```python
+def check_consecutive(lst):
+    """
+    Checks whether the given list contains consecutive numbers or not.
+
+    Args:
+        lst (list): A list of integers.
+
+    Returns:
+        bool: True if the list contains consecutive numbers, False otherwise.
+    """
+    # Check if the list is empty
+    if len(lst) == 0:
+        return False
+
+    # Sort the list in ascending order
+    lst.sort()
+
+    # Check if the list contains consecutive numbers
+    return lst == list(range(min(lst), max(lst) + 1))
+
+
+# Test the function
+assert check_consecutive([1, 2, 3, 4, 5])
+assert not check_consecutive([1, 2, 3, 5])
+assert check_consecutive([-3, -2, -1, 0, 1])
+assert not check_consecutive([-3, -2, 0, 1])
+assert check_consecutive([1])
+assert not check_consecutive([])
+```
+
+Alternatively, you can also solve this problem without sorting the list:
+
+```python
+def check_consecutive(lst):
+    """
+    Checks whether the given list contains consecutive numbers or not.
+
+    Args:
+        lst (list): A list of integers.
+
+    Returns:
+        bool: True if the list contains consecutive numbers, False otherwise.
+    """
+    # Check if the list is empty
+    if len(lst) == 0:
+        return False
+
+    # Check if all elements are unique
+    if len(lst) != len(set(lst)):
+        return False
+
+    # Check if the list contains consecutive numbers
+    return max(lst) - min(lst) == len(lst) - 1
+
+
+# Test the function
+assert check_consecutive([1, 2, 3, 4, 5])
+assert not check_consecutive([1, 2, 3, 5])
+assert check_consecutive([-3, -2, -1, 0, 1])
+assert not check_consecutive([-3, -2, 0, 1])
+assert check_consecutive([1])
+assert not check_consecutive([])
+```

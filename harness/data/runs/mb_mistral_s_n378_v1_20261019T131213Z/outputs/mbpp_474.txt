@@ -1,0 +1,38 @@
+Here's a self-contained Python script that solves the problem in a markdown code block:
+
+```python
+"""
+Write a function to replace characters in a string.
+assert replace_char("polygon",'y','l')==("pollgon")
+"""
+
+def replace_char(s, old_char, new_char):
+    """
+    Replace all occurrences of old_char with new_char in the string s.
+
+    Args:
+        s (str): The original string
+        old_char (str): The character to be replaced (must be length 1)
+        new_char (str): The character to replace with (must be length 1)
+
+    Returns:
+        str: The modified string with replacements
+    """
+    if len(old_char) != 1 or len(new_char) != 1:
+        raise ValueError("Both old_char and new_char must be single characters")
+
+    return s.replace(old_char, new_char)
+
+# Test the function
+assert replace_char("polygon", 'y', 'l') == "pollgon"
+print("Test passed!")
+```
+
+This script:
+1. Defines a function `replace_char` that takes a string and two single-character strings
+2. Performs the replacement using Python's built-in `str.replace()` method
+3. Includes input validation to ensure both old and new characters are single characters
+4. Includes the test case from the problem statement
+5. Prints a confirmation message if the test passes
+
+The function will replace all occurrences of the old character with the new character in the input string.

@@ -1,0 +1,26 @@
+```python
+def find_even_pair(nums):
+    """
+    Count the number of unordered pairs (i, j) with i < j such that nums[i] ^ nums[j] is even.
+
+    Key observation:
+    - The XOR of two integers is even iff their least significant bits are the same.
+    - So we just count pairs among even numbers and pairs among odd numbers.
+
+    Returns:
+        int: number of such pairs
+    """
+    evens = sum(1 for x in nums if x % 2 == 0)
+    odds = len(nums) - evens
+
+    # Number of pairs among evens + number of pairs among odds
+    return evens * (evens - 1) // 2 + odds * (odds - 1) // 2
+
+
+# Example assertion from the prompt
+assert find_even_pair([5, 4, 7, 2, 1]) == 4
+
+# Optional: quick sanity checks
+if __name__ == "__main__":
+    print(find_even_pair([5, 4, 7, 2, 1]))  # 4
+```

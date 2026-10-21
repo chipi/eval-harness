@@ -1,0 +1,23 @@
+```python
+def Diff(list1, list2):
+  """
+  Finds the difference between two lists.
+
+  Args:
+    list1: The first list.
+    list2: The second list.
+
+  Returns:
+    A new list containing elements that are present in list1 but not in list2.
+    The order of elements in the returned list is preserved from list1.
+  """
+  return [x for x in list1 if x not in list2]
+
+# Example usage and assertion
+if __name__ == '__main__':
+  list1 = [10, 15, 20, 25, 30, 35, 40]
+  list2 = [25, 40, 35]
+  result = Diff(list1, list2)
+  assert (result == [10, 15, 20, 30])
+  print(result)
+```

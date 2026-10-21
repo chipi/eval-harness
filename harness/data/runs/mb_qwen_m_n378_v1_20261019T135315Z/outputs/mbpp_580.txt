@@ -1,0 +1,38 @@
+```python
+def extract_even(t):
+    """
+    Recursively process a nested tuple, removing odd numbers.
+    For nested tuples, recursively apply the same logic.
+    Return a new tuple with only even numbers (and processed nested tuples).
+    If a nested tuple becomes empty after filtering, it should be removed.
+    """
+    result = []
+    for item in t:
+        if isinstance(item, tuple):
+            # Recursively process the nested tuple
+            processed = extract_even(item)
+            # Only include the processed tuple if it's not empty
+            if processed:  # non-empty tuple
+                result.append(processed)
+        elif isinstance(item, int):
+            if item % 2 == 0:
+                result.append(item)
+        else:
+            # For other types, just include them as-is
+            result.append(item)
+    return tuple(result)
+
+
+if __name__ == "__main__":
+    # Test case from the problem statement
+    assert extract_even((4, 5, (7, 6, (2, 4)), 6, 8)) == (4, (6, (2, 4)), 6, 8)
+    
+    # Additional test cases
+    assert extract_even((1, 3, 5)) == ()
+    assert extract_even((2, 4, 6)) == (2, 4, 6)
+    assert extract_even(()) == ()
+    assert extract_even((1, (3, 5), 7)) == ()
+    assert extract_even((2, (4, 6), 8)) == (2, (4, 6), 8)
+    
+    print("All tests passed!")
+```

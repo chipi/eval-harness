@@ -1,0 +1,30 @@
+```python
+def subject_marks(marks_list):
+    """
+    Sorts a list of tuples based on the second element of each tuple.
+    
+    Args:
+        marks_list (list of tuples): A list where each tuple contains a 
+                                    string and an integer/float.
+                                    
+    Returns:
+        list of tuples: The sorted list.
+    """
+    # The sorted() function takes a 'key' argument. 
+    # lambda x: x[1] tells Python to use the element at index 1 for comparison.
+    return sorted(marks_list, key=lambda x: x[1])
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    input_data = [('English', 88), ('Science', 90), ('Maths', 97), ('Social sciences', 82)]
+    expected_output = [('Social sciences', 82), ('English', 88), ('Science', 90), ('Maths', 97)]
+    
+    result = subject_marks(input_data)
+    
+    # Assertion to verify correctness
+    assert result == expected_output
+    
+    print("Test passed!")
+    print(f"Input:  {input_data}")
+    print(f"Output: {result}")
+```

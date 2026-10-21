@@ -1,0 +1,19 @@
+```python
+def is_not_prime(n):
+    if n <= 1:
+        return True
+    for i in range(2, int(n**0.5) + 1):
+        if n % i == 0:
+            return True
+    return False
+
+def main():
+    assert is_not_prime(2) == False
+    assert is_not_prime(4) == True
+    assert is_not_prime(5) == False
+    assert is_not_prime(6) == True
+    print("All test cases pass")
+
+if __name__ == "__main__":
+    main()
+```

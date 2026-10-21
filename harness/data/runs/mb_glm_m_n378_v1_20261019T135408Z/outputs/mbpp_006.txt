@@ -1,0 +1,42 @@
+Here's a self-contained Python script that solves the problem of checking whether two numbers differ at exactly one bit position:
+
+```python
+def differ_At_One_Bit_Pos(a, b):
+    """
+    Check whether two numbers differ at exactly one bit position.
+    
+    Args:
+        a (int): First number
+        b (int): Second number
+    
+    Returns:
+        bool: True if the numbers differ at exactly one bit position, False otherwise
+    """
+    # XOR the numbers to find differing bits
+    xor_result = a ^ b
+    
+    # Check if exactly one bit is set in the XOR result
+    # This is true if xor_result is a power of 2 (i.e., has exactly one '1' bit)
+    return xor_result != 0 and (xor_result & (xor_result - 1)) == 0
+
+# Test cases
+assert differ_At_One_Bit_Pos(13, 9) == True  # 13 (1101) and 9 (1001) differ at bit position 2
+assert differ_At_One_Bit_Pos(8, 9) == True    # 8 (1000) and 9 (1001) differ at bit position 0
+assert differ_At_One_Bit_Pos(15, 7) == False  # 15 (1111) and 7 (0111) differ at 3 bits
+assert differ_At_One_Bit_Pos(0, 0) == False   # Same numbers don't differ at any bit
+assert differ_At_One_Bit_Pos(1, 2) == True    # 1 (0001) and 2 (0010) differ at bit position 1
+assert differ_At_One_Bit_Pos(5, 7) == True    # 5 (0101) and 7 (0111) differ at bit position 1
+
+print("All test cases passed!")
+```
+
+### Explanation:
+1. **XOR Operation**: The XOR (`^`) of two numbers will have bits set to `1` where the corresponding bits of the original numbers differ. For example, `13 ^ 9` (binary `1101 ^ 1001`) results in `0100` (4 in decimal), which has exactly one bit set.
+
+2. **Check for Single Bit**: To determine if the XOR result has exactly one bit set, we use the property that a number with exactly one bit set is a power of two. This can be checked by verifying that `xor_result & (xor_result - 1) == 0`. For example:
+   - `4 & 3` (binary `0100 & 0011`) is `0`, so 4 is a power of two.
+   - `5 & 4` (binary `0101 & 0100`) is `4` (not `0`), so 5 is not a power of two.
+
+3. **Edge Cases**: The function also handles edge cases where the numbers are the same (returns `False`) or where the XOR result is `0` (no differing bits).
+
+The script includes test cases to verify the correctness of the function. All assertions should pass if the function is implemented correctly.

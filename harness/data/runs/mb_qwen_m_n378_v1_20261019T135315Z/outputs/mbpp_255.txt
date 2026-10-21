@@ -1,0 +1,32 @@
+```python
+from itertools import combinations_with_replacement
+
+
+def combinations_colors(colors: list, n: int) -> list:
+    """
+    Generate all combinations (with repetition) of the elements of the list.
+    
+    Args:
+        colors: A list of elements to combine.
+        n: The length of each combination.
+    
+    Returns:
+        A list of tuples, each representing a combination with repetition.
+    """
+    return list(combinations_with_replacement(colors, n))
+
+
+if __name__ == "__main__":
+    # Test case from the problem statement
+    result = combinations_colors(["Red", "Green", "Blue"], 1)
+    assert result == [('Red',), ('Green',), ('Blue',)], f"Expected [('Red',), ('Green',), ('Blue',)], got {result}"
+    
+    # Additional test cases
+    result2 = combinations_colors(["Red", "Green", "Blue"], 2)
+    print("Combinations of 2:", result2)
+    
+    result3 = combinations_colors(["Red", "Green", "Blue"], 3)
+    print("Combinations of 3:", result3)
+    
+    print("All tests passed!")
+```

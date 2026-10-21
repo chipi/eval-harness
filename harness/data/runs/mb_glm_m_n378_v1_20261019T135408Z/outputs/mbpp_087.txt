@@ -1,0 +1,28 @@
+```python
+def merge_dictionaries_three(dict1, dict2, dict3):
+    """
+    Merge three dictionaries into a single dictionary.
+    
+    If there are overlapping keys, the values from the later dictionaries 
+    will overwrite those from the earlier ones (though in the provided test 
+    case, overlapping keys have identical values).
+    
+    Args:
+        dict1 (dict): The first dictionary.
+        dict2 (dict): The second dictionary.
+        dict3 (dict): The third dictionary.
+        
+    Returns:
+        dict: A single merged dictionary.
+    """
+    return {**dict1, **dict2, **dict3}
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert merge_dictionaries_three(
+        {"R": "Red", "B": "Black", "P": "Pink"}, 
+        {"G": "Green", "W": "White"},
+        {"O": "Orange", "W": "White", "B": "Black"}
+    ) == {'B': 'Black', 'R': 'Red', 'P': 'Pink', 'G': 'Green', 'W': 'White', 'O': 'Orange'}
+    print("Test passed successfully!")
+```

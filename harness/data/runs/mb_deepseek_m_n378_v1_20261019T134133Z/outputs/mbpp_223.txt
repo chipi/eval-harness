@@ -1,0 +1,79 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def is_majority(arr, n, element):
+    """
+    Determines if the given element is the majority element in a sorted array.
+    
+    Args:
+        arr: A sorted list of elements
+        n: The length of the array
+        element: The element to check for majority
+    
+    Returns:
+        True if element occurs more than n/2 times, False otherwise
+    """
+    # Find the first occurrence of the element using binary search
+    left, right = 0, n - 1
+    first_occurrence = -1
+    
+    while left <= right:
+        mid = (left + right) // 2
+        if arr[mid] == element:
+            first_occurrence = mid
+            right = mid - 1  # Keep searching left for earlier occurrence
+        elif arr[mid] < element:
+            left = mid + 1
+        else:
+            right = mid - 1
+    
+    # If element not found, it can't be the majority
+    if first_occurrence == -1:
+        return False
+    
+    # Find the last occurrence of the element using binary search
+    left, right = 0, n - 1
+    last_occurrence = -1
+    
+    while left <= right:
+        mid = (left + right) // 2
+        if arr[mid] == element:
+            last_occurrence = mid
+            left = mid + 1  # Keep searching right for later occurrence
+        elif arr[mid] < element:
+            left = mid + 1
+        else:
+            right = mid - 1
+    
+    # Count of element = last_occurrence - first_occurrence + 1
+    count = last_occurrence - first_occurrence + 1
+    
+    # Check if count > n/2
+    return count > n / 2
+
+
+# Test the function
+assert is_majority([1, 2, 3, 3, 3, 3, 10], 7, 3) == True
+print("Test passed!")
+
+# Additional test cases
+assert is_majority([1, 2, 3, 3, 3, 3, 10], 7, 2) == False
+assert is_majority([1, 1, 1, 2, 3], 5, 1) == True
+assert is_majority([1, 2, 3, 4, 5], 5, 3) == False
+assert is_majority([5, 5, 5, 5, 5], 5, 5) == True
+print("All tests passed!")
+```
+
+**How it works:**
+
+1. **Binary search for first occurrence**: Since the array is sorted, we can use binary search to find the leftmost position of the target element in O(log n) time.
+
+2. **Binary search for last occurrence**: Similarly, we find the rightmost position of the target element.
+
+3. **Count calculation**: The number of occurrences is `last_occurrence - first_occurrence + 1`.
+
+4. **Majority check**: If the count is greater than `n/2`, the element is the majority element.
+
+**Time Complexity**: O(log n) — much better than the naive O(n) approach of counting all occurrences.
+
+**Space Complexity**: O(1) — only using a few variables.

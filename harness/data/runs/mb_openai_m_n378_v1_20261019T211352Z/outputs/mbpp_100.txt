@@ -1,0 +1,55 @@
+```python
+#!/usr/bin/env python3
+"""
+Find the next smallest palindrome greater than a specified integer.
+
+Example:
+    next_smallest_palindrome(99) == 101
+"""
+
+def next_smallest_palindrome(n: int) -> int:
+    """
+    Return the smallest palindrome integer strictly greater than n.
+    """
+    if n < 0:
+        raise ValueError("Input must be a non-negative integer")
+
+    s = str(n)
+    length = len(s)
+
+    def make_palindrome(left_part: str, total_length: int) -> int:
+        """Build a palindrome from the left half."""
+        if total_length % 2 == 0:
+            return int(left_part + left_part[::-1])
+        else:
+            return int(left_part + left_part[-2::-1])
+
+    left_len = (length + 1) // 2
+    left = s[:left_len]
+
+    candidate = make_palindrome(left, length)
+
+    if candidate > n:
+        return candidate
+
+    # Increase the left half and mirror again
+    incremented_left = str(int(left) + 1)
+
+    # If increasing the left half increases digit count, the next palindrome is 100...001
+    if len(incremented_left) > left_len:
+        return int("1" + "0" * (length - 1) + "1")
+
+    return make_palindrome(incremented_left, length)
+
+
+if __name__ == "__main__":
+    assert next_smallest_palindrome(99) == 101
+    assert next_smallest_palindrome(123) == 131
+    assert next_smallest_palindrome(121) == 131
+    assert next_smallest_palindrome(9) == 11
+    assert next_smallest_palindrome(999) == 1001
+    assert next_smallest_palindrome(808) == 818
+    assert next_smallest_palindrome(10) == 11
+
+    print("All tests passed.")
+```

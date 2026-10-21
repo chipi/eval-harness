@@ -1,0 +1,28 @@
+```python
+"""
+Write a function to extract specified size of strings from a given list of string values.
+assert extract_string(['Python', 'list', 'exercises', 'practice', 'solution'] ,8)==['practice', 'solution']
+"""
+
+from typing import List
+
+def extract_string(strings: List[str], size: int) -> List[str]:
+    """
+    Extract strings from the list that have exactly the specified length.
+    
+    Args:
+        strings: List of string values
+        size: The exact length to filter by
+    
+    Returns:
+        List of strings that have length equal to size
+    """
+    return [s for s in strings if len(s) == size]
+
+# Test the function with the given assertion
+if __name__ == "__main__":
+    result = extract_string(['Python', 'list', 'exercises', 'practice', 'solution'], 8)
+    print(f"Result: {result}")
+    assert result == ['practice', 'solution'], f"Expected ['practice', 'solution'], but got {result}"
+    print("Assertion passed!")
+```

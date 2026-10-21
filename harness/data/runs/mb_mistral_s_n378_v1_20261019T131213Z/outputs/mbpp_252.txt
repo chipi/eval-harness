@@ -1,0 +1,52 @@
+Here's a self-contained Python script that converts complex numbers to polar coordinates, including the provided assertion test:
+
+```python
+import math
+
+def convert(complex_num):
+    """
+    Convert a complex number to polar coordinates (magnitude, phase in radians).
+
+    Args:
+        complex_num: A complex number (can be a real number, which is treated as a complex number with 0 imaginary part)
+
+    Returns:
+        A tuple (magnitude, phase) where:
+        - magnitude is the distance from origin (float)
+        - phase is the angle in radians (float)
+    """
+    # Handle real numbers by treating them as complex numbers with 0 imaginary part
+    if isinstance(complex_num, (int, float)):
+        real = complex_num
+        imag = 0.0
+    else:
+        real = complex_num.real
+        imag = complex_num.imag
+
+    # Calculate magnitude (r)
+    magnitude = math.sqrt(real**2 + imag**2)
+
+    # Calculate phase (θ) in radians
+    if real == 0 and imag == 0:
+        phase = 0.0  # at origin, phase is undefined but we return 0
+    else:
+        phase = math.atan2(imag, real)
+
+    return (magnitude, phase)
+
+# Test case
+assert convert(1) == (1.0, 0.0)
+```
+
+This script:
+1. Defines a function `convert` that takes a complex number (or real number) as input
+2. Handles both real numbers (treating them as complex numbers with 0 imaginary part) and proper complex numbers
+3. Calculates the magnitude (r) using the Pythagorean theorem
+4. Calculates the phase (θ) using `math.atan2` which properly handles all quadrants
+5. Includes the provided assertion test case
+6. Returns a tuple of (magnitude, phase) in radians
+
+The function will work with:
+- Real numbers (e.g., 1, 2.5)
+- Complex numbers (e.g., 1+2j, 3-4j)
+- The origin (0+0j)

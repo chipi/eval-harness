@@ -1,0 +1,17 @@
+```python
+def frequency(lst, num):
+    """
+    This function counts the number of occurrences of a number in a given list.
+
+    Args:
+        lst (list): The list to search in.
+        num (int): The number to search for.
+
+    Returns:
+        int: The number of occurrences of num in lst.
+    """
+    return lst.count(num)
+
+# Example usage:
+print(frequency([1,2,3], 4))  # Output: 0
+```

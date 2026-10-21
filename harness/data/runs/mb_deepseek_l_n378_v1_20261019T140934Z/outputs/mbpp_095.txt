@@ -1,0 +1,15 @@
+Here’s a self-contained Python script with the function and a test case:  
+
+```python
+def Find_Min_Length(list_of_lists):
+    """
+    Returns the length of the smallest list in a list of lists.
+    """
+    if not list_of_lists:
+        return 0
+    return min(len(lst) for lst in list_of_lists)
+
+
+# Test assertion
+assert Find_Min_Length([[1], [1, 2]]) == 1
+```

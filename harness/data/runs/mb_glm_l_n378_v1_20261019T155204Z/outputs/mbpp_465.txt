@@ -1,0 +1,14 @@
+```python
+def drop_empty(d):
+    """
+    Drop empty items from a given dictionary.
+    An item is considered empty if its value is None, an empty string, 
+    an empty list, an empty dictionary, or an empty tuple.
+    """
+    return {k: v for k, v in d.items() if v is not None and v != '' and v != [] and v != {} and v != ()}
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert drop_empty({'c1': 'Red', 'c2': 'Green', 'c3':None}) == {'c1': 'Red', 'c2': 'Green'}
+    print("Test passed!")
+```

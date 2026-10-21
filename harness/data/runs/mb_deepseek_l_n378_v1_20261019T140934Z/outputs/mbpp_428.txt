@@ -1,0 +1,60 @@
+Here's a self-contained Python script that implements shell sort:
+
+```python
+def shell_sort(arr):
+    """
+    Sort the given array using shell sort algorithm.
+    
+    Args:
+        arr: List of comparable elements to be sorted
+        
+    Returns:
+        Sorted list in ascending order
+    """
+    n = len(arr)
+    gap = n // 2
+    
+    # Start with a big gap, then reduce the gap
+    while gap > 0:
+        # Do a gapped insertion sort for this gap size
+        for i in range(gap, n):
+            # Save arr[i] in temp and make a hole at position i
+            temp = arr[i]
+            
+            # Shift earlier gap-sorted elements up until the correct location for arr[i] is found
+            j = i
+            while j >= gap and arr[j - gap] > temp:
+                arr[j] = arr[j - gap]
+                j -= gap
+            
+            # Put temp (the original arr[i]) in its correct location
+            arr[j] = temp
+        
+        gap //= 2
+    
+    return arr
+
+
+# Test the function
+if __name__ == "__main__":
+    # Test case from the problem
+    test_array = [12, 23, 4, 5, 3, 2, 12, 81, 56, 95]
+    result = shell_sort(test_array)
+    expected = [2, 3, 4, 5, 12, 12, 23, 56, 81, 95]
+    
+    print(f"Original array: {[12, 23, 4, 5, 3, 2, 12, 81, 56, 95]}")
+    print(f"Sorted array:   {result}")
+    print(f"Expected:       {expected}")
+    print(f"Test passed: {result == expected}")
+    
+    # Verify with assertion
+    assert shell_sort([12, 23, 4, 5, 3, 2, 12, 81, 56, 95]) == [2, 3, 4, 5, 12, 12, 23, 56, 81, 95]
+    print("Assertion test passed!")
+```
+
+This implementation:
+- Uses the shell sort algorithm with a gap sequence that starts at `n//2` and halves each iteration
+- Performs insertion sort on elements separated by the gap distance
+- Gradually reduces the gap until it becomes 1 (standard insertion sort)
+- Returns the sorted array
+- Includes the test case from the problem with both print output and assertion verification

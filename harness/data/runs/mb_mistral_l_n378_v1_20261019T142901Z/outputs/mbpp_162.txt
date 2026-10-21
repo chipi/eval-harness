@@ -1,0 +1,36 @@
+Here's a self-contained Python script that solves the problem as described:
+
+```python
+def sum_series(n):
+    """
+    Calculate the sum (n - 2*i) from i=0 to n // 2.
+
+    This is equivalent to the series: n + (n-2) + (n-4) + ... until the term is <= 0.
+
+    Args:
+        n (int): The starting number of the series.
+
+    Returns:
+        int: The sum of the series.
+    """
+    total = 0
+    for i in range(n // 2 + 1):
+        term = n - 2 * i
+        if term <= 0:
+            break
+        total += term
+    return total
+
+# Test case
+assert sum_series(6) == 12
+```
+
+The function works by:
+1. Initializing a total sum to 0
+2. Iterating from i=0 to n//2 (inclusive)
+3. Calculating each term as (n - 2*i)
+4. Breaking the loop if the term becomes <= 0
+5. Adding each valid term to the total
+6. Returning the total sum
+
+The test case `assert sum_series(6) == 12` verifies that for n=6, the series 6 + 4 + 2 = 12 is correctly calculated.

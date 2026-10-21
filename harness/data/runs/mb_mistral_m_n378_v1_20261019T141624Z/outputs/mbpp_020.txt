@@ -1,0 +1,35 @@
+To solve this problem, we need to determine if a given number is a Woodall number. A Woodall number is defined as a number of the form \( n \times 2^n - 1 \) where \( n \) is a positive integer.
+
+### Approach
+1. **Understanding Woodall Numbers**: A Woodall number for a given \( n \) is calculated as \( n \times 2^n - 1 \). For example, when \( n = 1 \), the Woodall number is \( 1 \times 2^1 - 1 = 1 \). For \( n = 2 \), it's \( 2 \times 2^2 - 1 = 7 \), and so on.
+2. **Check for Woodall Number**: For a given number \( x \), we need to check if there exists an integer \( n \) such that \( x = n \times 2^n - 1 \). This involves iterating through possible values of \( n \) and checking if the equation holds true for any \( n \).
+
+### Solution Code
+```python
+def is_woodall(x):
+    if x < 1:
+        return False
+    n = 1
+    while True:
+        woodall = n * (2 ** n) - 1
+        if woodall == x:
+            return True
+        if woodall > x:
+            return False
+        n += 1
+        # Prevent infinite loop for very large x (though in practice, Woodall numbers grow rapidly)
+        if n > 100:  # Arbitrary large limit to prevent excessive computation
+            return False
+
+# Test case
+assert is_woodall(383) == True
+```
+
+### Explanation
+1. **Function Definition**: The function `is_woodall` takes an integer \( x \) as input and checks if it is a Woodall number.
+2. **Initial Check**: If \( x \) is less than 1, it immediately returns `False` since Woodall numbers start from 1.
+3. **Loop Through Possible \( n \) Values**: The loop starts with \( n = 1 \) and computes the Woodall number for each \( n \) using the formula \( n \times 2^n - 1 \).
+4. **Comparison**: For each computed Woodall number, it checks if it matches \( x \). If it does, the function returns `True`. If the computed Woodall number exceeds \( x \), the loop breaks, and the function returns `False` because Woodall numbers are strictly increasing with \( n \).
+5. **Safety Limit**: The loop includes a safety limit (arbitrarily set to \( n = 100 \)) to prevent excessive computation for very large \( x \), though in practice, Woodall numbers grow so rapidly that this limit is rarely reached for reasonable inputs.
+
+This approach efficiently checks if the given number \( x \) is a Woodall number by leveraging the mathematical definition and iterating through possible values of \( n \) until a match is found or the Woodall numbers exceed \( x \).

@@ -1,0 +1,11 @@
+```python
+def all_unique(lst):
+    """
+    Return True if all elements in the list are unique, otherwise False.
+    """
+    return len(lst) == len(set(lst))
+
+
+# Example check
+assert all_unique([1, 2, 3]) == True
+```

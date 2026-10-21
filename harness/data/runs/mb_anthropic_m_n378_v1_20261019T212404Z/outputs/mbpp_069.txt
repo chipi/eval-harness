@@ -1,0 +1,23 @@
+```python
+def is_sublist(lst, sublist):
+    n = len(lst)
+    m = len(sublist)
+    if m == 0:
+        return True
+    if m > n:
+        return False
+    for i in range(n - m + 1):
+        if lst[i:i+m] == sublist:
+            return True
+    return False
+
+
+# Test cases
+if __name__ == "__main__":
+    assert is_sublist([2,4,3,5,7],[3,7]) == False
+    assert is_sublist([2,4,3,5,7],[4,3]) == True
+    assert is_sublist([2,4,3,5,7],[1,6]) == False
+    assert is_sublist([1,2,3,4,5],[3,4]) == True
+    assert is_sublist([1,2,3],[]) == True
+    print("All test cases passed!")
+```

@@ -1,0 +1,12 @@
+```python
+from bisect import bisect_right
+
+
+def right_insertion(values, value):
+    """Return the index after any existing occurrences of value."""
+    return bisect_right(values, value)
+
+
+assert right_insertion([1, 2, 4, 5], 6) == 4
+assert right_insertion([1, 2, 2, 4], 2) == 3
+```

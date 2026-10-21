@@ -1,0 +1,11 @@
+```python
+def even_binomial_Coeff_Sum(n):
+    """
+    Returns the sum of binomial coefficients at even indices for a given positive integer n.
+    
+    The sum of C(n,0) + C(n,2) + C(n,4) + ... equals 2^(n-1) for n >= 1.
+    """
+    if n <= 0:
+        return 0
+    return 2 ** (n - 1)
+```

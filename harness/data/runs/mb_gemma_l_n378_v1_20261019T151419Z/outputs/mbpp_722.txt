@@ -1,0 +1,36 @@
+```python
+def filter_data(students, min_height, min_weight):
+    """
+    Filters a dictionary of students based on minimum height and weight.
+    
+    Args:
+        students (dict): A dictionary where keys are names and values are tuples (height, weight).
+        min_height (float): The minimum height threshold.
+        min_weight (float): The minimum weight threshold.
+        
+    Returns:
+        dict: A dictionary containing only students who meet or exceed both thresholds.
+    """
+    # Use a dictionary comprehension to filter the students
+    # We check if height >= min_height AND weight >= min_weight
+    return {name: (height, weight) for name, (height, weight) in students.items() 
+            if height >= min_height and weight >= min_weight}
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    input_data = {
+        'Cierra Vega': (6.2, 70), 
+        'Alden Cantrell': (5.9, 65), 
+        'Kierra Gentry': (6.0, 68), 
+        'Pierre Cox': (5.8, 66)
+    }
+    min_h = 6.0
+    min_w = 70
+    
+    result = filter_data(input_data, min_h, min_w)
+    expected = {'Cierra Vega': (6.2, 70)}
+    
+    assert result == expected
+    print("Test passed!")
+    print(f"Filtered Data: {result}")
+```

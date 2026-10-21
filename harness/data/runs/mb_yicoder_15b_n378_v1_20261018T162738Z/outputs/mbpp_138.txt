@@ -1,0 +1,28 @@
+```python
+def is_Sum_Of_Powers_Of_Two(n):
+    if n == 0:
+        return False
+    while n % 2 == 0:
+        n /= 2
+    return n == 1
+
+# Test cases
+assert is_Sum_Of_Powers_Of_Two(10) == True
+assert is_Sum_Of_Powers_Of_Two(15) == False
+assert is_Sum_Of_Powers_Of_Two(0) == False
+assert is_Sum_Of_Powers_Of_Two(1) == True
+assert is_Sum_Of_Powers_Of_Two(2) == True
+assert is_Sum_Of_Powers_Of_Two(3) == False
+assert is_Sum_Of_Powers_Of_Two(4) == True
+assert is_Sum_Of_Powers_Of_Two(5) == False
+assert is_Sum_Of_Powers_Of_Two(6) == True
+assert is_Sum_Of_Powers_Of_Two(7) == False
+assert is_Sum_Of_Powers_Of_Two(8) == True
+assert is_Sum_Of_Powers_Of_Two(9) == False
+assert is_Sum_Of_Powers_Of_Two(10) == True
+assert is_Sum_Of_Powers_Of_Two(11) == False
+assert is_Sum_Of_Powers_Of_Two(12) == True
+assert is_Sum_Of_Powers_Of_Two(13) == False
+assert is_Sum_Of_Powers_Of_Two(14) == True
+assert is_Sum_Of_Powers_Of_Two(15) == False
+```

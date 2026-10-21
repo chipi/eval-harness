@@ -1,0 +1,26 @@
+```python
+def get_coordinates(coord):
+    """
+    Returns a list of all adjacent coordinates (including the given coordinate itself)
+    for a given (row, col) tuple. Adjacent includes all 8 directions plus the center.
+    
+    Args:
+        coord (tuple): A tuple (row, col) representing the coordinate.
+    
+    Returns:
+        list: A list of lists, each containing [row, col] for adjacent positions.
+    """
+    row, col = coord
+    neighbors = []
+    for dr in [-1, 0, 1]:
+        for dc in [-1, 0, 1]:
+            neighbors.append([row + dr, col + dc])
+    return neighbors
+
+# Example usage
+if __name__ == "__main__":
+    result = get_coordinates((3, 4))
+    print(result)
+    # Expected output:
+    # [[2, 3], [2, 4], [2, 5], [3, 3], [3, 4], [3, 5], [4, 3], [4, 4], [4, 5]]
+```

@@ -1,0 +1,13 @@
+```python
+def union_elements(t1, t2):
+    """
+    Return the sorted union of elements from two tuples as a tuple.
+    """
+    return tuple(sorted(set(t1).union(t2)))
+
+
+if __name__ == "__main__":
+    # Example test
+    assert union_elements((3, 4, 5, 6), (5, 7, 4, 10)) == (3, 4, 5, 6, 7, 10)
+    print(union_elements((3, 4, 5, 6), (5, 7, 4, 10)))
+```

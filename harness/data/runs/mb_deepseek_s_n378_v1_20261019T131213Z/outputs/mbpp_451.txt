@@ -1,0 +1,19 @@
+```python
+def remove_whitespaces(s: str) -> str:
+    """
+    Removes all whitespace characters from the given string.
+    
+    Args:
+        s: Input string possibly containing whitespace.
+    
+    Returns:
+        String with all whitespace removed.
+    """
+    # Using join with split to remove all whitespace (spaces, tabs, newlines, etc.)
+    return ''.join(s.split())
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert remove_whitespaces(' Google    Flutter ') == 'GoogleFlutter'
+    print("Test passed.")
+```

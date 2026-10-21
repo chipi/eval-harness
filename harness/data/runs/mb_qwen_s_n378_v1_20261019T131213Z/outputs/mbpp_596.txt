@@ -1,0 +1,15 @@
+```python
+import sys
+
+def tuple_size(t):
+    """
+    Find the size in bytes of the given tuple.
+    
+    Args:
+        t: A tuple
+        
+    Returns:
+        The size of the tuple in bytes
+    """
+    return sys.getsizeof(t)
+```

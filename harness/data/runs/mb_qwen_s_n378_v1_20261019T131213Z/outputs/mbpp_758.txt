@@ -1,0 +1,19 @@
+```python
+def unique_sublists(lst):
+    """
+    Count lists within a list. The function returns a dictionary where every list is converted to a tuple 
+    and the value of such tuple is the number of its occurrences in the original list.
+    
+    Args:
+        lst: A list containing sublists (and possibly other elements).
+        
+    Returns:
+        A dictionary with tuples as keys (converted from sublists) and their counts as values.
+    """
+    count_dict = {}
+    for item in lst:
+        if isinstance(item, list):
+            key = tuple(item)
+            count_dict[key] = count_dict.get(key, 0) + 1
+    return count_dict
+```

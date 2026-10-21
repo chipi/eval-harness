@@ -1,0 +1,28 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def sum_negativenum(numbers):
+    """
+    Calculate the sum of the negative numbers in a given list of numbers.
+
+    Args:
+        numbers: List of integers
+
+    Returns:
+        Sum of all negative numbers in the list
+    """
+    return sum(num for num in numbers if num < 0)
+
+# Test the function
+assert sum_negativenum([2, 4, -6, -9, 11, -12, 14, -5, 17]) == -32
+print("Test passed!")
+```
+
+This script:
+1. Defines a function `sum_negativenum` that takes a list of numbers
+2. Uses a generator expression to filter only negative numbers (num < 0)
+3. Sums those negative numbers using Python's built-in `sum()` function
+4. Includes the test case from the problem statement
+5. Prints a confirmation message if the test passes
+
+The function will return 0 if there are no negative numbers in the list.

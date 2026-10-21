@@ -1,0 +1,11 @@
+```python
+def first_Digit(n):
+  """
+  Write a python function to find the first digit of a given number.
+  assert first_Digit(123) == 1
+  """
+  n = abs(n)
+  while n >= 10:
+    n //= 10
+  return n
+```

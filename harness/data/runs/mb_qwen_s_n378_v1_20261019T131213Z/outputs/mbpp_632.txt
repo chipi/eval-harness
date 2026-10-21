@@ -1,0 +1,19 @@
+```python
+def move_zero(lst):
+    """
+    Move all zeroes to the end of the given list.
+    
+    Args:
+        lst: A list of integers
+        
+    Returns:
+        A new list with all non-zero elements first, followed by all zeros.
+        
+    Examples:
+        >>> move_zero([1,0,2,0,3,4])
+        [1, 2, 3, 4, 0, 0]
+    """
+    non_zeros = [x for x in lst if x != 0]
+    zeros = [0] * (len(lst) - len(non_zeros))
+    return non_zeros + zeros
+```

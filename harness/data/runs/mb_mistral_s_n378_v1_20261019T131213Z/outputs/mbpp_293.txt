@@ -1,0 +1,34 @@
+Here's a self-contained Python script that solves the problem of finding the third side of a right-angled triangle:
+
+```python
+import math
+
+def otherside_rightangle(a, b):
+    """
+    Calculate the third side of a right-angled triangle given the other two sides.
+
+    Args:
+        a (float): Length of one side
+        b (float): Length of the other side
+
+    Returns:
+        float: Length of the hypotenuse (if a and b are legs) or the other leg
+    """
+    # Determine which sides are given (assuming a and b are the legs)
+    # The hypotenuse is the side opposite the right angle
+    hypotenuse = math.sqrt(a**2 + b**2)
+    return hypotenuse
+
+# Test the function
+assert otherside_rightangle(7, 8) == 10.63014581273465
+print("Test passed!")
+```
+
+This script:
+1. Imports the math module for the square root function
+2. Defines a function `otherside_rightangle` that takes two sides of a right-angled triangle
+3. Calculates the hypotenuse using the Pythagorean theorem (c = √(a² + b²))
+4. Includes the test case from the problem statement
+5. Prints a confirmation message if the test passes
+
+The function assumes that the two given sides are the legs of the right-angled triangle (not one leg and the hypotenuse). If you need to handle cases where one of the given sides might be the hypotenuse, the function would need to be modified to include that logic.

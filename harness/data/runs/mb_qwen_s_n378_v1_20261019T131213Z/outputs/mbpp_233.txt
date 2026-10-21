@@ -1,0 +1,19 @@
+```python
+import math
+
+def lateralsuface_cylinder(radius, height):
+    """
+    Calculate the lateral surface area of a cylinder.
+    
+    The formula for the lateral surface area of a cylinder is:
+    LSA = 2 * π * radius * height
+    
+    Parameters:
+    radius (float): The radius of the cylinder's base.
+    height (float): The height of the cylinder.
+    
+    Returns:
+    float: The lateral surface area of the cylinder.
+    """
+    return 2 * math.pi * radius * height
+```

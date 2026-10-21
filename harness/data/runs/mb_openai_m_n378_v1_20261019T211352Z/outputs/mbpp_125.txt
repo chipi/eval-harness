@@ -1,0 +1,45 @@
+```python
+#!/usr/bin/env python3
+"""
+Find the maximum difference between the number of 0s and number of 1s
+in any substring of a given binary string.
+
+Idea:
+- Treat each '0' as +1
+- Treat each '1' as -1
+Then the problem becomes finding the maximum subarray sum.
+
+Example:
+"11000010001" -> maximum difference is 6
+"""
+
+
+def find_length(binary_string: str) -> int:
+    """
+    Return the maximum value of:
+        count('0') - count('1')
+    over all non-empty substrings of binary_string.
+
+    If no substring has more 0s than 1s, returns 0.
+    """
+    max_diff = 0
+    current_sum = 0
+
+    for ch in binary_string:
+        value = 1 if ch == "0" else -1
+
+        current_sum = max(value, current_sum + value)
+        max_diff = max(max_diff, current_sum)
+
+    return max_diff
+
+
+if __name__ == "__main__":
+    assert find_length("11000010001") == 6
+    assert find_length("1111") == 0
+    assert find_length("0000") == 4
+    assert find_length("101010") == 1
+    assert find_length("") == 0
+
+    print("All tests passed.")
+```

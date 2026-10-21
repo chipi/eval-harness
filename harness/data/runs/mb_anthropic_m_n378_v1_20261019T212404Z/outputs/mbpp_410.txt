@@ -1,0 +1,17 @@
+```python
+def min_val(lst):
+    """
+    Find the minimum value among integer/float elements in a heterogeneous list.
+    Non-numeric elements (e.g., strings) are ignored.
+    """
+    nums = [x for x in lst if isinstance(x, (int, float))]
+    return min(nums)
+
+
+# Test cases
+if __name__ == "__main__":
+    assert min_val(['Python', 3, 2, 4, 5, 'version']) == 2
+    assert min_val([5, 'a', 'b', 1, 2]) == 1
+    assert min_val(['x', 10, 'y', -5, 3]) == -5
+    print("All test cases passed!")
+```

@@ -1,0 +1,30 @@
+Here's a self-contained Python script that solves the problem by calculating the product of array elements modulo `n`:
+
+```python
+def find_remainder(arr, n):
+    """
+    Calculate the product of all elements in the array modulo n.
+
+    Args:
+        arr: List of integers
+        n: Modulo value
+
+    Returns:
+        The product of all elements modulo n
+    """
+    product = 1
+    for num in arr:
+        product = (product * num) % n
+    return product
+
+# Test case
+assert find_remainder([100, 10, 5, 25, 35, 14], 11) == 9
+```
+
+The function works by:
+1. Initializing a product variable to 1
+2. Iterating through each number in the array
+3. Multiplying the current product by the number and taking modulo n at each step
+4. Returning the final result
+
+This approach is efficient because it keeps the intermediate results small by applying the modulo operation at each multiplication step, preventing potential integer overflow issues.

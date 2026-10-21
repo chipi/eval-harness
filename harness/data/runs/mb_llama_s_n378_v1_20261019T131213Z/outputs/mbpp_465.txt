@@ -1,0 +1,27 @@
+```python
+def drop_empty(input_dict):
+    """
+    This function takes a dictionary as input, removes any items that are empty (i.e., None or empty string),
+    and returns the resulting dictionary.
+
+    Args:
+        input_dict (dict): The dictionary to be processed.
+
+    Returns:
+        dict: A new dictionary with empty items removed.
+    """
+    return {key: value for key, value in input_dict.items() if value not in [None, ""]}
+
+
+# Test the function
+assert drop_empty({'c1': 'Red', 'c2': 'Green', 'c3': None}) == {'c1': 'Red', 'c2': 'Green'}
+print("All tests passed.")
+```
+
+You can run this script to test the `drop_empty` function. The `assert` statement checks if the output of the function matches the expected output. If the function works correctly, it will print "All tests passed." 
+
+Note that this function considers an empty string as an empty item. If you only want to consider `None` as an empty item, you can modify the condition in the dictionary comprehension to `if value is not None`. 
+
+Also, the function creates a new dictionary and leaves the original dictionary unchanged. If you want to modify the original dictionary, you can assign the result back to `input_dict` like this: `input_dict = drop_empty(input_dict)`. 
+
+The function uses dictionary comprehension to create a new dictionary that includes only the items from the original dictionary where the value is not `None` or an empty string. This approach is concise and efficient, with a time complexity of O(n), where n is the number of items in the dictionary.

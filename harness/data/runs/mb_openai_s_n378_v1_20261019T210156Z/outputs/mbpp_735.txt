@@ -1,0 +1,32 @@
+```python
+def toggle_middle_bits(n: int) -> int:
+    """
+    Toggle all bits of n except the first (most significant) and last (least significant) bit.
+
+    Example:
+        n = 9  -> binary 1001
+        middle bits are 00, toggled to 11
+        result = 1111 -> 15
+    """
+    if n < 0:
+        raise ValueError("This function expects a non-negative integer.")
+
+    # For numbers with 0, 1, or 2 bits, there are no middle bits to toggle.
+    if n < 4:
+        return n
+
+    # Determine the bit-length of n.
+    bit_len = n.bit_length()
+
+    # Create a mask with 1s in the middle positions only.
+    # Example for 1001 (bit_len=4): mask = 0110
+    middle_mask = ((1 << (bit_len - 2)) - 1) << 1
+
+    # Toggle only the middle bits.
+    return n ^ middle_mask
+
+
+if __name__ == "__main__":
+    assert toggle_middle_bits(9) == 15  # 1001 -> 1111
+    print("All tests passed.")
+```

@@ -1,0 +1,23 @@
+```python
+def max_val(heterogeneous_list):
+    """
+    Returns the maximum numeric value from a heterogeneous list.
+    Non-numeric elements are ignored.
+    """
+    # Filter only numeric values (int and float)
+    numeric_values = [item for item in heterogeneous_list if isinstance(item, (int, float))]
+    
+    # If there are no numeric values, return None (or raise an exception)
+    if not numeric_values:
+        return None
+    
+    return max(numeric_values)
+
+# Test the function with the given assertion
+assert max_val(['Python', 3, 2, 4, 5, 'version']) == 5
+
+# Additional test cases (optional)
+print(max_val(['Python', 3, 2, 4, 5, 'version']))  # Output: 5
+print(max_val([1.5, 'a', 2.7, 'b', 3]))           # Output: 3
+print(max_val(['hello', 'world']))                 # Output: None
+```

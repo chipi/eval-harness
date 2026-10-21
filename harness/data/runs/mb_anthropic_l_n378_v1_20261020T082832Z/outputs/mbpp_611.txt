@@ -1,0 +1,28 @@
+```python
+"""
+Write a function which given a matrix represented as a list of lists returns the max of the n'th column.
+assert max_of_nth([[5, 6, 7], [1, 3, 5], [8, 9, 19]], 2) == 19
+"""
+
+
+def max_of_nth(matrix, n):
+    """
+    Return the maximum value found in the n'th column (0-indexed) of a matrix.
+
+    :param matrix: list of lists representing the matrix (each inner list is a row)
+    :param n: index of the column whose maximum should be returned
+    :return: maximum value in column n
+    """
+    if not matrix:
+        raise ValueError("matrix must contain at least one row")
+
+    column = [row[n] for row in matrix]
+    return max(column)
+
+
+if __name__ == "__main__":
+    assert max_of_nth([[5, 6, 7], [1, 3, 5], [8, 9, 19]], 2) == 19
+    assert max_of_nth([[0, 1, 2], [3, 4, 5], [6, 7, 8]], 0) == 6
+    assert max_of_nth([[1]], 0) == 1
+    print("All tests passed!")
+```

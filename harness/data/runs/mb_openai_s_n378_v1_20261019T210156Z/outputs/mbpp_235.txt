@@ -1,0 +1,27 @@
+```python
+def even_bit_set_number(n: int) -> int:
+    """
+    Set all even-numbered bit positions (0, 2, 4, ...) of n to 1.
+
+    Example:
+        n = 10 (binary 1010)
+        setting even bits => 1010 (already has bits 1 and 3 set)
+        result = 10
+    """
+    if n < 0:
+        raise ValueError("n must be non-negative")
+
+    # Determine how many bits are needed to cover n, then create a mask with
+    # all even positions set: 1 + 4 + 16 + ...
+    bit_length = max(1, n.bit_length())
+    mask = 0
+    for i in range(0, bit_length + 1, 2):
+        mask |= (1 << i)
+
+    return n | mask
+
+
+if __name__ == "__main__":
+    assert even_bit_set_number(10) == 10
+    print("All tests passed.")
+```

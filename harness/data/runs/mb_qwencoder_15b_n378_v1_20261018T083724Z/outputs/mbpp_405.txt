@@ -1,0 +1,12 @@
+```python
+def check_tuplex(tup, x):
+    return x in tup
+
+# Test cases
+assert check_tuplex(("w", 3, "r", "e", "s", "o", "u", "r", "c", "e"), 'r') == True
+assert check_tuplex(('a', 'b', 'c'), 'd') == False
+assert check_tuplex((10, 20, 30), 25) == False
+assert check_tuplex(('x', 'y', 'z'), 'x') == True
+assert check_tuplex(('apple', 'banana', 'cherry'), 'date') == False
+```
+

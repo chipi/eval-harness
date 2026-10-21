@@ -1,0 +1,46 @@
+```python
+def check_min_heap(arr):
+    """
+    Checks if the given array represents a min heap.
+    In a min heap, for every node at index i, the children at 
+    indices 2*i + 1 and 2*i + 2 must be greater than or equal to the node.
+    """
+    n = len(arr)
+    
+    # We only need to check internal nodes. 
+    # Leaf nodes (from n//2 to n-1) don't have children to compare.
+    for i in range(n // 2):
+        # Check left child
+        left_child = 2 * i + 1
+        if left_child < n:
+            if arr[i] > arr[left_child]:
+                return False
+        
+        # Check right child
+        right_child = 2 * i + 2
+        if right_child < n:
+            if arr[i] > arr[right_child]:
+                return False
+                
+    return True
+
+if __name__ == "__main__":
+    # Test cases
+    test_cases = [
+        ([1, 2, 3, 4, 5, 6], True),
+        ([10, 15, 30, 40, 50, 100, 40], True),
+        ([10, 15, 30, 8, 50, 100, 40], False), # 8 is smaller than parent 10
+        ([1, 2, 3, 4, 5, 2], False),          # 2 is smaller than parent 3
+        ([], True),                           # Empty array is technically a heap
+        ([1], True),                          # Single element is a heap
+    ]
+
+    for arr, expected in test_cases:
+        result = check_min_heap(arr)
+        print(f"Array: {arr} | Expected: {expected} | Result: {result}")
+        assert result == expected
+
+    # Specific assertion from the prompt
+    assert check_min_heap([1, 2, 3, 4, 5, 6]) == True
+    print("\nAll tests passed!")
+```

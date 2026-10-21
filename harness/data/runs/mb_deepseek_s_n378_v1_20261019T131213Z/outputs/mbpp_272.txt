@@ -1,0 +1,20 @@
+```python
+def rear_extract(tuple_list):
+    """
+    Extracts the last element from each tuple in the list.
+    
+    Args:
+        tuple_list: A list of tuples.
+    
+    Returns:
+        A list containing the last element of each tuple.
+    """
+    return [t[-1] for t in tuple_list]
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    result = rear_extract([(1, 'Rash', 21), (2, 'Varsha', 20), (3, 'Kil', 19)])
+    print(result)  # Output: [21, 20, 19]
+    assert result == [21, 20, 19], "Test failed!"
+    print("Test passed.")
+```

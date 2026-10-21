@@ -1,0 +1,30 @@
+```python
+def digit_distance_nums(num1, num2):
+    """
+    Calculates the sum of the absolute differences between corresponding 
+    digits of two integers.
+    """
+    # Convert numbers to strings to iterate through digits
+    s1 = str(num1)
+    s2 = str(num2)
+    
+    # Pad the shorter string with leading zeros to ensure they are the same length
+    max_len = max(len(s1), len(s2))
+    s1 = s1.zfill(max_len)
+    s2 = s2.zfill(max_len)
+    
+    total_distance = 0
+    for d1, d2 in zip(s1, s2):
+        total_distance += abs(int(d1) - int(d2))
+        
+    return total_distance
+
+if __name__ == "__main__":
+    # Test cases
+    assert digit_distance_nums(1, 2) == 1
+    assert digit_distance_nums(10, 20) == 1
+    assert digit_distance_nums(123, 456) == 9  # |1-4| + |2-5| + |3-6| = 3 + 3 + 3 = 9
+    assert digit_distance_nums(1, 10) == 2     # |0-1| + |1-0| = 1 + 1 = 2
+    
+    print("All tests passed!")
+```

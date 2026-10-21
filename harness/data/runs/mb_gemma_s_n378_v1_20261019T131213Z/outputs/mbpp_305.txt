@@ -1,0 +1,17 @@
+```python
+def start_withp(list_of_words):
+    """
+    Write a function to return two words from a list of words starting with letter 'p'.
+    assert start_withp(["Python PHP", "Java JavaScript", "c c++"])==('Python', 'PHP')
+    """
+    words = []
+    for phrase in list_of_words:
+        phrase_words = phrase.split()
+        for word in phrase_words:
+            if word.lower().startswith('p'):
+                words.append(word)
+    if len(words) >= 2:
+        return (words[0], words[1])
+    else:
+        return tuple(words)
+```

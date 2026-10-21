@@ -1,0 +1,23 @@
+```python
+def wind_chill(velocity, temperature):
+    """
+    Calculate the wind chill index rounded to the next integer.
+    """
+    # Constants
+    WIND_CHILL_CONSTANT = 130.06
+    TEMPERATURE_CONSTANT = 35.74
+
+    # Calculate wind chill index
+    wind_chill_index = WIND_CHILL_CONSTANT * (temperature / TEMPERATURE_CONSTANT)
+
+    # Round to the next integer
+    wind_chill_index = round(wind_chill_index)
+
+    return wind_chill_index
+
+# Test cases
+assert wind_chill(120,35)==40
+assert wind_chill(68,15)==20
+assert wind_chill(33,0)==0
+assert wind_chill(20,25)==10
+```

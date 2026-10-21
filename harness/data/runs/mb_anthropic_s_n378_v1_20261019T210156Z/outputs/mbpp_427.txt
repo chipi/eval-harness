@@ -1,0 +1,28 @@
+```python
+def change_date_format(date_str):
+    """
+    Convert a date from yyyy-mm-dd format to dd-mm-yyyy format.
+    
+    Args:
+        date_str: A date string in yyyy-mm-dd format
+        
+    Returns:
+        A date string in dd-mm-yyyy format
+    """
+    year, month, day = date_str.split('-')
+    return f"{day}-{month}-{year}"
+
+
+# Test the function
+assert change_date_format("2026-01-02") == '02-01-2026'
+print("✓ Test passed: change_date_format('2026-01-02') == '02-01-2026'")
+
+# Additional test cases
+assert change_date_format("2023-12-25") == '25-12-2023'
+print("✓ Test passed: change_date_format('2023-12-25') == '25-12-2023'")
+
+assert change_date_format("2000-01-01") == '01-01-2000'
+print("✓ Test passed: change_date_format('2000-01-01') == '01-01-2000'")
+
+print("\nAll tests passed!")
+```

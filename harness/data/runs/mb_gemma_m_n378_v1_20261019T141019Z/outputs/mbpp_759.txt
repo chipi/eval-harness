@@ -1,0 +1,47 @@
+```python
+def is_decimal(s: str) -> bool:
+    """
+    Checks whether a given string is a decimal number with a precision of exactly 2 decimal places.
+    
+    Args:
+        s (str): The string to validate.
+        
+    Returns:
+        bool: True if the string represents a number with exactly 2 decimal places, False otherwise.
+    """
+    try:
+        # Check if the string can be converted to a float
+        val = float(s)
+        
+        # Check if there is a decimal point and exactly two digits after it
+        if '.' not in s:
+            return False
+        
+        parts = s.split('.')
+        
+        # Ensure there is exactly one decimal point and exactly two digits after it
+        if len(parts)!= 2 or len(parts[1])!= 2:
+            return False
+        
+        # Ensure the part before the decimal is a valid integer/number
+        # (Handles cases like '.11' or '-.11' depending on requirements, 
+        # but standard float conversion handles the sign)
+        float(parts[0] if parts[0] else "0")
+        
+        return True
+    except ValueError:
+        return False
+
+if __name__ == "__main__":
+    # Test cases
+    assert is_decimal('123.11') == True
+    assert is_decimal('123.1') == False
+    assert is_decimal('123.111') == False
+    assert is_decimal('123') == False
+    assert is_decimal('abc.de') == False
+    assert is_decimal('12.50') == True
+    assert is_decimal('-5.22') == True
+    assert is_decimal('.55') == True
+    
+    print("All tests passed!")
+```

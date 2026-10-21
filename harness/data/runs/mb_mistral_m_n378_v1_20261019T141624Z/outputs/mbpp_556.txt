@@ -1,0 +1,29 @@
+```python
+def find_Odd_Pair(arr, n):
+    """
+    Count the number of pairs in the array whose XOR value is odd.
+
+    Args:
+        arr: List of integers
+        n: Length of the array
+
+    Returns:
+        int: Number of pairs with odd XOR value
+    """
+    # Count the number of odd and even numbers in the array
+    odd_count = 0
+    even_count = 0
+
+    for num in arr:
+        if num % 2 == 1:
+            odd_count += 1
+        else:
+            even_count += 1
+
+    # The XOR of two numbers is odd if one is odd and the other is even
+    # So the total number of such pairs is odd_count * even_count
+    return odd_count * even_count
+
+# Test case
+assert find_Odd_Pair([5,4,7,2,1], 5) == 6
+```

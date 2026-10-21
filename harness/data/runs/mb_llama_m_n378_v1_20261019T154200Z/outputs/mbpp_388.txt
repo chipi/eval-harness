@@ -1,0 +1,68 @@
+```python
+def highest_Power_of_2(n):
+    """
+    This function finds the highest power of 2 that is less than or equal to n.
+
+    Args:
+        n (int): The input number.
+
+    Returns:
+        int: The highest power of 2 that is less than or equal to n.
+    """
+    i = 1
+    while i <= n:
+        i *= 2
+    return i // 2
+
+# Test the function
+assert highest_Power_of_2(10) == 8
+print(highest_Power_of_2(10))  # Output: 8
+```
+
+Alternatively, you can use bitwise operations to solve this problem more efficiently:
+
+```python
+def highest_Power_of_2(n):
+    """
+    This function finds the highest power of 2 that is less than or equal to n.
+
+    Args:
+        n (int): The input number.
+
+    Returns:
+        int: The highest power of 2 that is less than or equal to n.
+    """
+    i = n
+    i = i | (i >> 1)
+    i = i | (i >> 2)
+    i = i | (i >> 4)
+    i = i | (i >> 8)
+    i = i | (i >> 16)
+    return i - (i >> 1)
+
+# Test the function
+assert highest_Power_of_2(10) == 8
+print(highest_Power_of_2(10))  # Output: 8
+```
+
+Or, you can use the `math` library to solve this problem:
+
+```python
+import math
+
+def highest_Power_of_2(n):
+    """
+    This function finds the highest power of 2 that is less than or equal to n.
+
+    Args:
+        n (int): The input number.
+
+    Returns:
+        int: The highest power of 2 that is less than or equal to n.
+    """
+    return 2 ** math.floor(math.log2(n))
+
+# Test the function
+assert highest_Power_of_2(10) == 8
+print(highest_Power_of_2(10))  # Output: 8
+```

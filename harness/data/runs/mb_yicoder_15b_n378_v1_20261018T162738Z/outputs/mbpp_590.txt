@@ -1,0 +1,19 @@
+```python
+def polar_rect(r, theta):
+    """
+    Function to convert polar coordinates to rectangular coordinates.
+    """
+    x = r * math.cos(theta)
+    y = r * math.sin(theta)
+    return (x, y)
+
+import math
+import unittest
+
+class TestPolarRect(unittest.TestCase):
+    def test_polar_rect(self):
+        self.assertEqual(polar_rect(3,4), ((5.0, 0.9272952180016122), (-2+2.4492935982947064e-16j)))
+
+if __name__ == "__main__":
+    unittest.main()
+```

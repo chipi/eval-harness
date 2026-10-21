@@ -1,0 +1,43 @@
+Here's a self-contained Python script that solves the problem in a markdown code block:
+
+```python
+"""
+Function to divide two lists element-wise.
+
+Args:
+    numerator: List of numbers to be divided
+    denominator: List of numbers to divide by
+
+Returns:
+    List of results from element-wise division
+
+Raises:
+    ValueError: If lists have different lengths or if division by zero would occur
+"""
+
+def div_list(numerator, denominator):
+    if len(numerator) != len(denominator):
+        raise ValueError("Lists must have the same length")
+
+    result = []
+    for num, den in zip(numerator, denominator):
+        if den == 0:
+            raise ValueError("Cannot divide by zero")
+        result.append(num / den)
+
+    return result
+
+# Test case
+assert div_list([4, 5, 6], [1, 2, 3]) == [4.0, 2.5, 2.0]
+
+# Example usage
+if __name__ == "__main__":
+    print(div_list([4, 5, 6], [1, 2, 3]))  # Output: [4.0, 2.5, 2.0]
+```
+
+This script:
+1. Defines the `div_list` function that performs element-wise division
+2. Includes input validation for list lengths and division by zero
+3. Contains the required test case with assert
+4. Has an example usage block that demonstrates the function
+5. Is properly documented with docstring explaining the function's purpose and behavior

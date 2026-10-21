@@ -1,0 +1,24 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def check_K(tup, k):
+    """
+    Check if the given tuple contains the value k.
+    
+    Args:
+        tup: A tuple of elements
+        k: The value to search for in the tuple
+    
+    Returns:
+        bool: True if k is in the tuple, False otherwise
+    """
+    return k in tup
+
+# Test the function
+if __name__ == "__main__":
+    assert check_K((10, 4, 5, 6, 8), 6) == True
+    assert check_K((10, 4, 5, 6, 8), 7) == False
+    assert check_K((), 1) == False
+    assert check_K((1, 2, 3), 1) == True
+    print("All tests passed!")
+```

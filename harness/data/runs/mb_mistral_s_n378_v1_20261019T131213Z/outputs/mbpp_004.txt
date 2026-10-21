@@ -1,0 +1,38 @@
+Here's a self-contained Python script that solves the problem using a min-heap approach for efficiency:
+
+```python
+import heapq
+
+def heap_queue_largest(numbers, n):
+    if n <= 0:
+        return []
+
+    # Use a min-heap to keep track of the n largest elements
+    heap = []
+    for num in numbers:
+        if len(heap) < n:
+            heapq.heappush(heap, num)
+        else:
+            if num > heap[0]:
+                heapq.heappop(heap)
+                heapq.heappush(heap, num)
+
+    # The heap contains the n largest elements in ascending order
+    # We need to return them in descending order
+    return sorted(heap, reverse=True)
+
+# Test the function
+assert heap_queue_largest([25, 35, 22, 85, 14, 65, 75, 22, 58], 3) == [85, 75, 65]
+print("Test passed!")
+```
+
+This solution:
+1. Uses a min-heap to efficiently track the n largest elements
+2. Has O(m log n) time complexity where m is the number of elements in the input list
+3. Returns the elements in descending order as required
+4. Includes the test case from the problem statement
+
+The function works by:
+- Maintaining a heap of size n
+- For each number, if it's larger than the smallest number in the heap (the root of the min-heap), it replaces that number
+- After processing all numbers, the heap contains the n largest elements, which we then sort in descending order

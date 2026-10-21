@@ -1,0 +1,14 @@
+```python
+def diff_even_odd(nums):
+    first_even = next((num for num in nums if num % 2 == 0), None)
+    first_odd = next((num for num in nums if num % 2 != 0), None)
+    if first_even is None or first_odd is None:
+        return None
+    return abs(first_even - first_odd)
+
+def main():
+    print(diff_even_odd([1,3,5,7,4,1,6,8]))  # Output: 3
+
+if __name__ == "__main__":
+    main()
+```

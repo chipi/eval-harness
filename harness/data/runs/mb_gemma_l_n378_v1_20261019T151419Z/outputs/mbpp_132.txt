@@ -1,0 +1,19 @@
+```python
+def tup_string(tup):
+    """
+    Converts a tuple of characters into a single string.
+    """
+    return "".join(tup)
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    input_tuple = ('e', 'x', 'e', 'r', 'c', 'i', 's', 'e', 's')
+    expected_output = "exercises"
+    
+    result = tup_string(input_tuple)
+    
+    # Assertion to verify the function works as expected
+    assert result == expected_output, f"Expected {expected_output}, but got {result}"
+    
+    print(f"Success! Tuple {input_tuple} converted to string: '{result}'")
+```

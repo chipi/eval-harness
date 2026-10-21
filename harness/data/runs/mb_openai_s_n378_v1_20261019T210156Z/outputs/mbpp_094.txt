@@ -1,0 +1,20 @@
+```python
+def index_minimum(items):
+    """
+    Return the first value of the tuple with the smallest second value.
+
+    Example:
+        [('Rash', 143), ('Manjeet', 200), ('Varsha', 100)] -> 'Varsha'
+    """
+    if not items:
+        raise ValueError("The input list must not be empty.")
+
+    # min() returns the tuple with the smallest second element
+    smallest_tuple = min(items, key=lambda x: x[1])
+    return smallest_tuple[0]
+
+
+if __name__ == "__main__":
+    assert index_minimum([('Rash', 143), ('Manjeet', 200), ('Varsha', 100)]) == 'Varsha'
+    print("All tests passed.")
+```

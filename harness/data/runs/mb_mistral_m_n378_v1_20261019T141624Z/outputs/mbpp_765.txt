@@ -1,0 +1,32 @@
+```python
+def is_polite(n):
+    """
+    Check if a number is a polite number.
+    A polite number is a positive integer that can be expressed as the sum of two or more consecutive positive integers.
+    """
+    if n == 1:
+        return False
+    # A number is polite if it's not a power of 2
+    # Because powers of 2 cannot be expressed as sum of consecutive positive integers
+    return (n & (n - 1)) != 0
+
+def nth_polite_number(n):
+    """
+    Find the nth polite number.
+    Polite numbers are all positive integers except powers of 2.
+    So the sequence is: 3, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15, 17, ...
+    """
+    if n < 1:
+        return None
+    count = 0
+    num = 3  # First polite number
+    while True:
+        if is_polite(num):
+            count += 1
+            if count == n:
+                return num
+        num += 1
+
+# Test case
+assert nth_polite_number(7) == 11
+```

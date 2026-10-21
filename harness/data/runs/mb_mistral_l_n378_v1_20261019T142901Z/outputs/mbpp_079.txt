@@ -1,0 +1,21 @@
+Here's a self-contained Python script that solves the problem, including the function and the assertion test:
+
+```python
+"""
+Function to check whether the length of a word is odd or not.
+Returns True if the length is odd, False otherwise.
+"""
+
+def word_len(word: str) -> bool:
+    """Check if the length of the given word is odd."""
+    return len(word) % 2 != 0
+
+# Test case
+assert word_len("Hadoop") == False
+```
+
+This script:
+1. Defines a function `word_len` that takes a string parameter
+2. Returns `True` if the word length is odd (using modulo operator)
+3. Returns `False` if the word length is even
+4. Includes the assertion test case that checks "Hadoop" (which has 6 letters, an even number) should return `False`

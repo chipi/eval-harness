@@ -1,0 +1,27 @@
+```python
+def largest_subset(nums):
+    """
+    Find the size of the largest subset where every pair (a, b) satisfies a % b == 0 or b % a == 0.
+    
+    This is equivalent to finding the longest chain where each element divides the next.
+    We sort the array and use dynamic programming: dp[i] = length of longest divisible
+    subset ending at index i.
+    """
+    if not nums:
+        return 0
+    
+    nums.sort()
+    n = len(nums)
+    dp = [1] * n
+    
+    for i in range(1, n):
+        for j in range(i):
+            if nums[i] % nums[j] == 0:
+                dp[i] = max(dp[i], dp[j] + 1)
+    
+    return max(dp)
+
+
+# Test
+assert largest_subset([1, 3, 6, 13, 17, 18]) == 4
+```

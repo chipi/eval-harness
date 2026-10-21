@@ -1,0 +1,41 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def merge(lists):
+    """Takes a list of lists with two elements each and returns a list of two lists.
+
+    The first list contains all first elements, and the second list contains all second elements.
+
+    Args:
+        lists: A list of lists, where each sublist has exactly two elements.
+
+    Returns:
+        A list of two lists, where the first contains all first elements and the second contains all second elements.
+
+    Example:
+        >>> merge([['x', 'y'], ['a', 'b'], ['m', 'n']])
+        [['x', 'a', 'm'], ['y', 'b', 'n']]
+    """
+    if not lists:
+        return [[], []]
+
+    # Using zip to transpose the list of lists
+    transposed = list(zip(*lists))
+
+    # Convert tuples to lists
+    return [list(transposed[0]), list(transposed[1])]
+
+# Test the function
+assert merge([['x', 'y'], ['a', 'b'], ['m', 'n']]) == [['x', 'a', 'm'], ['y', 'b', 'n']]
+print("Test passed!")
+```
+
+This script:
+1. Defines a function `merge` that takes a list of lists as input
+2. Handles the edge case of an empty input list
+3. Uses `zip(*lists)` to transpose the list of lists (swapping rows and columns)
+4. Converts the resulting tuples back to lists
+5. Includes the required assertion test case
+6. Prints a confirmation message if the test passes
+
+The solution is efficient (O(n) time complexity) and handles the problem in a clean, Pythonic way.

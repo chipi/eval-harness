@@ -1,0 +1,33 @@
+```python
+def min_k(tuple_list, k):
+    """
+    Finds the minimum k records from a list of tuples.
+    The comparison is based on the second element of each tuple (the integer value).
+    
+    Args:
+        tuple_list (list of tuples): The input list containing tuples.
+        k (int): The number of minimum records to return.
+        
+    Returns:
+        list of tuples: The k tuples with the smallest second elements, 
+                        sorted in ascending order.
+    """
+    # Sort the list based on the second element of each tuple (index 1)
+    # and then take the first k elements.
+    return sorted(tuple_list, key=lambda x: x[1])[:k]
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    test_input = [('Manjeet', 10), ('Akshat', 4), ('Akash', 2), ('Nikhil', 8)]
+    k_val = 2
+    expected_output = [('Akash', 2), ('Akshat', 4)]
+    
+    result = min_k(test_input, k_val)
+    
+    # Assertion to verify correctness
+    assert result == expected_output, f"Expected {expected_output}, but got {result}"
+    
+    print("Test passed successfully!")
+    print(f"Input: {test_input}, k: {k_val}")
+    print(f"Result: {result}")
+```

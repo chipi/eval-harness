@@ -1,0 +1,38 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def pair_wise(lst):
+    """
+    Return a list of all pairs of consecutive items in a given list.
+    
+    Args:
+        lst: Input list of items
+        
+    Returns:
+        List of tuples, where each tuple contains two consecutive items
+    """
+    return [(lst[i], lst[i + 1]) for i in range(len(lst) - 1)]
+
+
+# Test the function
+if __name__ == "__main__":
+    assert pair_wise([1, 1, 2, 3, 3, 4, 4, 5]) == [
+        (1, 1), (1, 2), (2, 3), (3, 3), (3, 4), (4, 4), (4, 5)
+    ]
+    print("All tests passed!")
+```
+
+**How it works:**
+
+1. The function uses a list comprehension to iterate through indices `0` to `len(lst) - 2`.
+2. For each index `i`, it creates a tuple `(lst[i], lst[i + 1])` containing the current element and the next element.
+3. The result is a list of all consecutive pairs.
+
+**Alternative implementation using `zip`:**
+
+```python
+def pair_wise(lst):
+    return list(zip(lst, lst[1:]))
+```
+
+This version uses `zip` to pair the original list with a sliced version of itself (starting from index 1), which is more Pythonic and concise. Both implementations produce the same result.

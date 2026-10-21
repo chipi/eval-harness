@@ -1,0 +1,53 @@
+```python
+def get_total_number_of_sequences(m, n):
+    """
+    Finds the number of possible sequences of length n, such that each element is a 
+    positive integer and is greater than or equal to twice the previous element 
+    but less than or equal to m.
+    
+    Args:
+        m (int): The maximum value allowed for elements in the sequence.
+        n (int): The length of the sequence.
+        
+    Returns:
+        int: The total number of valid sequences.
+    """
+    # We use dynamic programming to solve this problem.
+    # dp[i][j] will store the number of valid sequences of length i ending with the integer j.
+    # The constraints on memory are reasonable given the problem scope.
+    # We initialize a 2D array with dimensions (n + 1) x (m + 1).
+    
+    # Initialize table with 0s
+    dp = [[0] * (m + 1) for _ in range(n + 1)]
+
+    # Base case: For sequences of length 1, there is exactly 1 sequence ending 
+    # with integer j (where 1 <= j <= m). That sequence is just [j].
+    for j in range(1, m + 1):
+        dp[1][j] = 1
+
+    # Fill the DP table iteratively.
+    # i represents the current length of the sequence (from 2 to n).
+    for i in range(2, n + 1):
+        # j represents the last element of the current sequence.
+        # It must be at least 1. Also, for a sequence of length i to exist,
+        # the last element j must be at least 2^(i-1) derived from geometric progression 
+        # starting at 1, but we can just iterate and let the inner loops handle bounds.
+        # The actual lower bound for valid counts is j >= 2^(i-1).
+        for j in range(1, m + 1):
+            # To form a sequence of length i ending with j, the previous element k
+            # must satisfy: 1 <= k <= j // 2.
+            # We sum up all valid sequences of length i-1 that ended with such a k.
+            for k in range(1, j // 2 + 1):
+                dp[i][j] += dp[i - 1][k]
+
+    # The total number of sequences of length n is the sum of all sequences
+    # ending with any valid integer j (from 1 to m).
+    total_sequences = sum(dp[n][j] for j in range(1, m + 1))
+    
+    return total_sequences
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert get_total_number_of_sequences(10, 4) == 4
+    print("Assertion passed: get_total_number_of_sequences(10, 4) == 4")
+```

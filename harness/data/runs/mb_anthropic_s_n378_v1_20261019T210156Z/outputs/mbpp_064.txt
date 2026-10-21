@@ -1,0 +1,25 @@
+```python
+def subject_marks(marks_list):
+    """
+    Sort a list of tuples using the second value of each tuple.
+    
+    Args:
+        marks_list: A list of tuples where each tuple contains (subject, marks)
+    
+    Returns:
+        A list of tuples sorted by marks (second value) in ascending order
+    """
+    return sorted(marks_list, key=lambda x: x[1])
+
+
+# Test the function
+if __name__ == "__main__":
+    result = subject_marks([('English', 88), ('Science', 90), ('Maths', 97), ('Social sciences', 82)])
+    expected = [('Social sciences', 82), ('English', 88), ('Science', 90), ('Maths', 97)]
+    
+    assert result == expected, f"Expected {expected}, but got {result}"
+    print("✓ Test passed!")
+    print(f"Result: {result}")
+```
+
+The solution uses Python's `sorted()` function with a `key` parameter that specifies sorting by the second element of each tuple (index 1). The `lambda x: x[1]` function extracts the marks value from each tuple for comparison, resulting in the list being sorted in ascending order by marks.

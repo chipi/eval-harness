@@ -1,0 +1,11 @@
+```python
+def sort_counter(counter):
+    return sorted(counter.items(), key=lambda x: x[1], reverse=True)
+
+def main():
+    counter = {'Math':81, 'Physics':83, 'Chemistry':87}
+    print(sort_counter(counter))  # Output: [('Chemistry', 87), ('Physics', 83), ('Math', 81)]
+
+if __name__ == "__main__":
+    main()
+```

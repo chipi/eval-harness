@@ -1,0 +1,7 @@
+```python
+def remove_lowercase(text):
+    return "".join(char for char in text if not ("a" <= char <= "z"))
+
+
+assert remove_lowercase("PYTHon") == "PYTH"
+```

@@ -1,0 +1,10 @@
+```python
+def create_tuple(str_list, str_tuple):
+    return tuple(str_list), tuple(str_tuple)
+
+# Test cases
+assert create_tuple(["WEB", "is"], "best") == (('WEB', 'is'), 'best')
+assert create_tuple(["WEB", "is"], ("best", "for", "web")) == (('WEB', 'is'), ('best', 'for', 'web'))
+assert create_tuple(["WEB", "is"], ("best", "for")) == (('WEB', 'is'), ('best', 'for'))
+assert create_tuple(["WEB", "is"], "best") == (('WEB', 'is'), 'best')
+```

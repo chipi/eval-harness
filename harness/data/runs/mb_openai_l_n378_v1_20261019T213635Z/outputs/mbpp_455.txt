@@ -1,0 +1,8 @@
+```python
+def check_monthnumb_number(month):
+    """Return True if the month number corresponds to a 31-day month."""
+    return month in {1, 3, 5, 7, 8, 10, 12}
+
+
+assert check_monthnumb_number(5) is True
+```

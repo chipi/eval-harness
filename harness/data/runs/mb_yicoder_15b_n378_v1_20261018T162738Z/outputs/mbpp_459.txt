@@ -1,0 +1,10 @@
+```python
+def remove_uppercase(s):
+    return ''.join(c for c in s if c.islower())
+
+# Test cases
+assert remove_uppercase('cAstyoUrFavoRitETVshoWs') == 'cstyoravoitshos'
+assert remove_uppercase('abcDEFghIJklMNOPqrSTuvWxyz') == 'abcdefghijklmnopqrstuvwxyz'
+assert remove_uppercase('ABCDEFGHIJKLMNOPQRSTUVWXYZ') == ''
+assert remove_uppercase('') == ''
+```

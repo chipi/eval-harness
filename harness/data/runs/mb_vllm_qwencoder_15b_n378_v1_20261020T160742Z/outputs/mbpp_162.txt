@@ -1,0 +1,21 @@
+```python
+def sum_series(n):
+    """
+    Calculate the sum of (n - 2*i) from i=0 to n // 2.
+    
+    Args:
+    n (int): The upper limit of the series.
+    
+    Returns:
+    int: The calculated sum.
+    """
+    total_sum = 0
+    for i in range(n // 2 + 1):
+        total_sum += (n - 2 * i)
+    return total_sum
+
+# Test cases to verify the correctness of the solution
+assert sum_series(6) == 12
+assert sum_series(8) == 32
+assert sum_series(10) == 56
+```

@@ -1,0 +1,16 @@
+```python
+def remove_all_spaces(input_string):
+  """
+  Removes all whitespace characters from a string.
+
+  Args:
+    input_string: The string to remove whitespace from.
+
+  Returns:
+    The string with all whitespace removed.
+  """
+  return input_string.replace(" ", "")
+
+# Example usage and assertion
+assert remove_all_spaces('python  program') == 'pythonprogram'
+```

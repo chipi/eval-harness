@@ -1,0 +1,12 @@
+```python
+def big_sum(arr):
+    return max(arr) + min(arr)
+
+def main():
+    # Test the function
+    assert big_sum([1,2,3]) == 4
+    print("All test cases pass")
+
+if __name__ == "__main__":
+    main()
+```

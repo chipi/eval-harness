@@ -1,0 +1,53 @@
+## Analysis
+
+The task is to find the first even number and the first odd number in a list, then return their product.
+
+For the example `[1,3,5,7,4,1,6,8]`:
+- First even number: `4` (at index 4)
+- First odd number: `1` (at index 0)
+- Product: `4 * 1 = 4` ✓
+
+I'll use `next()` with a generator expression and a default value of `-1` in case no even or odd number exists.
+
+```python
+"""
+Write a function to find the product of first even and odd number of a given list.
+assert mul_even_odd([1,3,5,7,4,1,6,8])==4
+"""
+
+
+def mul_even_odd(list1):
+    """
+    Return the product of the first even number and the first odd number
+    found in the given list.
+
+    If the list contains no even number or no odd number, the missing
+    value defaults to -1.
+    """
+    first_even = next((el for el in list1 if el % 2 == 0), -1)
+    first_odd = next((el for el in list1 if el % 2 != 0), -1)
+    return first_even * first_odd
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert mul_even_odd([1, 3, 5, 7, 4, 1, 6, 8]) == 4
+
+    # Additional test cases
+    assert mul_even_odd([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) == 2
+    assert mul_even_odd([1, 5, 7, 9, 10]) == 10
+    assert mul_even_odd([2, 4, 6, 8]) == -2      # no odd number
+    assert mul_even_odd([1, 3, 5, 7]) == -1      # no even number
+    assert mul_even_odd([]) == 1                 # neither present: (-1) * (-1)
+
+    print("All tests passed!")
+    print(mul_even_odd([1, 3, 5, 7, 4, 1, 6, 8]))
+```
+
+**How it works:**
+
+1. `next((el for el in list1 if el % 2 == 0), -1)` scans the list left-to-right and returns the first element divisible by 2; if none is found it returns the default `-1`.
+2. The same pattern with `el % 2 != 0` finds the first odd element.
+3. The two values are multiplied and returned.
+
+This runs in O(n) time and O(1) extra space since generators are lazily evaluated and stop as soon as a match is found.

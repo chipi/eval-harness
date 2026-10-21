@@ -1,0 +1,31 @@
+Here's a self-contained Python script that solves the problem of removing odd numbers from a given list:
+
+```python
+def remove_odd(numbers):
+    """
+    Remove odd numbers from a given list.
+    
+    Args:
+        numbers (list): A list of integers.
+        
+    Returns:
+        list: A new list containing only the even numbers from the input list.
+    """
+    return [num for num in numbers if num % 2 == 0]
+
+# Test cases
+assert remove_odd([1, 2, 3]) == [2], "Test case 1 failed"
+assert remove_odd([1, 3, 5, 7]) == [], "Test case 2 failed"
+assert remove_odd([2, 4, 6, 8]) == [2, 4, 6, 8], "Test case 3 failed"
+assert remove_odd([0, 1, 2, 3, 4, 5]) == [0, 2, 4], "Test case 4 failed"
+assert remove_odd([]) == [], "Test case 5 failed"
+
+print("All test cases passed!")
+```
+
+### Explanation:
+1. The function `remove_odd` takes a list of integers as input.
+2. It uses a list comprehension to filter out odd numbers. The condition `num % 2 == 0` checks if a number is even.
+3. The function returns a new list containing only the even numbers from the input list.
+4. The script includes several test cases to verify the correctness of the function, including the one provided in the problem statement.
+5. If all test cases pass, it prints "All test cases passed!". If any test case fails, an assertion error will be raised with a descriptive message.

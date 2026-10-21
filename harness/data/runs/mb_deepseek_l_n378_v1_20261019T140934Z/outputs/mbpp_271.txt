@@ -1,0 +1,34 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def even_Power_Sum(n):
+    """
+    Takes an integer n and returns the sum of the first n even natural numbers
+    raised to the fifth power.
+    
+    Args:
+        n: An integer representing how many even natural numbers to include
+        
+    Returns:
+        The sum of the first n even natural numbers raised to the fifth power
+    """
+    total = 0
+    for i in range(1, n + 1):
+        even_number = 2 * i
+        total += even_number ** 5
+    return total
+
+# Test the function with the provided assertion
+assert even_Power_Sum(2) == 1056, f"Expected 1056 but got {even_Power_Sum(2)}"
+print("Test passed!")
+
+# Additional verification
+print(f"even_Power_Sum(2) = {even_Power_Sum(2)}")
+print(f"even_Power_Sum(3) = {even_Power_Sum(3)}")
+print(f"even_Power_Sum(5) = {even_Power_Sum(5)}")
+```
+
+**Explanation:**
+- The first `n` even natural numbers are: 2, 4, 6, ..., 2n
+- For `n=2`: 2⁵ + 4⁵ = 32 + 1024 = 1056 ✓
+- The function iterates from 1 to n, calculates each even number (2*i), raises it to the 5th power, and accumulates the sum

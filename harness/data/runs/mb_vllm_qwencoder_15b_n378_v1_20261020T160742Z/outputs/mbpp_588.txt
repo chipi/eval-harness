@@ -1,0 +1,11 @@
+```python
+def big_diff(nums):
+    return max(nums) - min(nums)
+
+# Test cases
+assert big_diff([1,2,3,4]) == 3
+assert big_diff([-10, 20, 30, 40]) == 50
+assert big_diff([100, 200, 300, 400]) == 300
+assert big_diff([-5, -10, -15, -20]) == 5
+assert big_diff([0, 0, 0, 0]) == 0
+```

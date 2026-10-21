@@ -1,0 +1,44 @@
+```python
+def mul_even_odd(nums):
+    """
+    This function finds the product of the first even and odd number in a given list.
+
+    Args:
+        nums (list): A list of integers.
+
+    Returns:
+        int: The product of the first even and odd number in the list.
+             If no even or odd number is found, returns None.
+    """
+    even_num = None
+    odd_num = None
+
+    # Iterate through the list to find the first even and odd numbers
+    for num in nums:
+        if num % 2 == 0 and even_num is None:
+            even_num = num
+        elif num % 2 != 0 and odd_num is None:
+            odd_num = num
+
+        # If both even and odd numbers are found, break the loop
+        if even_num is not None and odd_num is not None:
+            break
+
+    # Check if both even and odd numbers are found
+    if even_num is not None and odd_num is not None:
+        return even_num * odd_num
+    else:
+        return None
+
+
+# Example usage:
+print(mul_even_odd([1, 3, 5, 7, 4, 1, 6, 8]))  # Output: 4
+```
+
+In this code:
+
+*   We define a function `mul_even_odd` that takes a list of integers `nums` as input.
+*   We initialize `even_num` and `odd_num` to `None` to store the first even and odd numbers encountered in the list.
+*   We iterate through the list, checking each number to see if it's even or odd. If it's even and `even_num` is still `None`, we assign it to `even_num`. If it's odd and `odd_num` is still `None`, we assign it to `odd_num`.
+*   Once we've found both an even and an odd number, we break out of the loop.
+*   Finally, we return the product of `even_num` and `odd_num` if both are found; otherwise, we return `None`.

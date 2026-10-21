@@ -1,0 +1,35 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def last_Digit_Factorial(n):
+    """
+    Returns the last digit of n! (factorial of n).
+    """
+    if n < 0:
+        raise ValueError("Factorial is not defined for negative numbers")
+    
+    # Factorials of 0 and 1 end with 1
+    if n == 0 or n == 1:
+        return 1
+    
+    # For n >= 5, the factorial ends with 0
+    if n >= 5:
+        return 0
+    
+    # For n = 2, 3, 4, compute directly
+    fact = 1
+    for i in range(2, n + 1):
+        fact *= i
+    return fact % 10
+
+# Test cases
+if __name__ == "__main__":
+    assert last_Digit_Factorial(4) == 4
+    assert last_Digit_Factorial(0) == 1
+    assert last_Digit_Factorial(1) == 1
+    assert last_Digit_Factorial(2) == 2
+    assert last_Digit_Factorial(3) == 6
+    assert last_Digit_Factorial(5) == 0
+    assert last_Digit_Factorial(10) == 0
+    print("All tests passed.")
+```

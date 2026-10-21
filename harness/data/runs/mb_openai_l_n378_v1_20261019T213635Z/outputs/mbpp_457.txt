@@ -1,0 +1,8 @@
+```python
+def Find_Min(lists):
+    """Return the shortest sublist, or None if the input is empty."""
+    return min(lists, key=len, default=None)
+
+
+assert Find_Min([[1], [1, 2], [1, 2, 3]]) == [1]
+```

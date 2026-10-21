@@ -1,0 +1,24 @@
+```python
+def max_sub_array_sum_repeated(arr, k, n):
+    """
+    Finds the largest sum of a contiguous array in the modified array which is formed by repeating the given array k times.
+
+    Args:
+        arr (list): The input array.
+        k (int): The number of times to repeat the array.
+        n (int): The length of the modified array.
+
+    Returns:
+        int: The largest sum of a contiguous array in the modified array.
+    """
+    modified_arr = arr * k
+    max_so_far = float('-inf')
+    current_max = 0
+    for i in range(n):
+        current_max += modified_arr[i]
+        if current_max > max_so_far:
+            max_so_far = current_max
+        if current_max < 0:
+            current_max = 0
+    return max_so_far
+```

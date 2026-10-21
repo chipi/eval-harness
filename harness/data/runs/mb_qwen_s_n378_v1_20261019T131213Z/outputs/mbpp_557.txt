@@ -1,0 +1,30 @@
+```python
+def toggle_string(s: str) -> str:
+    """
+    Toggle the case of all characters in a string.
+    
+    Args:
+        s: The input string
+        
+    Returns:
+        A new string with each character's case toggled (uppercase becomes lowercase and vice versa)
+        
+    Examples:
+        >>> toggle_string("Python")
+        'pYTHON'
+        >>> toggle_string("Hello World")
+        'hELLO wORLD'
+    """
+    return ''.join(c.lower() if c.isupper() else c.upper() for c in s)
+
+
+# Test cases
+if __name__ == "__main__":
+    assert toggle_string("Python") == "pYTHON"
+    assert toggle_string("Hello World") == "hELLO wORLD"
+    assert toggle_string("ABC") == "abc"
+    assert toggle_string("abc") == "ABC"
+    assert toggle_string("") == ""
+    assert toggle_string("123!@#") == "123!@#"  # Non-alphabetic characters remain unchanged
+    print("All tests passed!")
+```

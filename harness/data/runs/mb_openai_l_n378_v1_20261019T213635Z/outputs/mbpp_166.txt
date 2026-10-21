@@ -1,0 +1,10 @@
+```python
+def find_even_pair(numbers):
+    """Count pairs of elements whose XOR is even."""
+    even = sum(number % 2 == 0 for number in numbers)
+    odd = len(numbers) - even
+    return even * (even - 1) // 2 + odd * (odd - 1) // 2
+
+
+assert find_even_pair([5, 4, 7, 2, 1]) == 4
+```

@@ -1,0 +1,12 @@
+```python
+import re
+
+def extract_values(s):
+    return re.findall(r'"([^"]*)"', s)
+
+def main():
+    print(extract_values('"Python", "PHP", "Java"'))  # Output: ['Python', 'PHP', 'Java']
+
+if __name__ == "__main__":
+    main()
+```

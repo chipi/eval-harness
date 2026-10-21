@@ -1,0 +1,25 @@
+```python
+def add_pairwise(t):
+    """
+    This function takes a tuple of numbers as input and returns a new tuple.
+    The new tuple contains the pairwise addition of the neighboring elements of the input tuple.
+
+    Args:
+        t (tuple): A tuple of numbers.
+
+    Returns:
+        tuple: A new tuple with pairwise addition of neighboring elements.
+
+    Example:
+        >>> add_pairwise((1, 5, 7, 8, 10))
+        (6, 12, 15, 18)
+    """
+    return tuple(t[i] + t[i+1] for i in range(len(t) - 1))
+
+# Test the function
+print(add_pairwise((1, 5, 7, 8, 10)))  # Expected output: (6, 12, 15, 18)
+```
+
+This Python function uses a generator expression to iterate over the indices of the input tuple `t`, adding each element and its successor. The `range(len(t) - 1)` ensures that `i+1` is always a valid index. The `tuple` function is then used to convert the generator expression into a tuple, which is returned by the function. 
+
+The time complexity of this function is O(n), where n is the number of elements in the tuple, because it makes a single pass over the tuple. The space complexity is also O(n) because it creates a new tuple of the same length as the input tuple.

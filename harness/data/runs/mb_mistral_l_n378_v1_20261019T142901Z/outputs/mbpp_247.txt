@@ -1,0 +1,55 @@
+Here's a self-contained Python script that solves the problem of finding the length of the longest palindromic subsequence (LPS) in a given string. The solution uses dynamic programming to efficiently compute the LPS length.
+
+```python
+def lps(s):
+    """
+    Find the length of the longest palindromic subsequence in the given string.
+
+    Args:
+        s (str): Input string
+
+    Returns:
+        int: Length of the longest palindromic subsequence
+    """
+    n = len(s)
+    # Create a DP table to store lengths of longest palindromic subsequences
+    dp = [[0] * n for _ in range(n)]
+
+    # Every single character is a palindrome of length 1
+    for i in range(n):
+        dp[i][i] = 1
+
+    # Check for substrings of length 2 to n
+    for cl in range(2, n + 1):
+        for i in range(n - cl + 1):
+            j = i + cl - 1
+            if s[i] == s[j] and cl == 2:
+                dp[i][j] = 2
+            elif s[i] == s[j]:
+                dp[i][j] = dp[i + 1][j - 1] + 2
+            else:
+                dp[i][j] = max(dp[i][j - 1], dp[i + 1][j])
+
+    return dp[0][n - 1]
+
+# Test the function
+assert lps("TENS FOR TENS") == 5
+print("Test passed!")
+```
+
+### Explanation:
+1. **Dynamic Programming Table (`dp`)**:
+   - `dp[i][j]` represents the length of the longest palindromic subsequence in the substring `s[i..j]`.
+
+2. **Base Case**:
+   - Every single character is a palindrome of length 1, so `dp[i][i] = 1` for all `i`.
+
+3. **Filling the DP Table**:
+   - For substrings of length 2 to `n`:
+     - If the characters at positions `i` and `j` are the same, then `dp[i][j] = dp[i + 1][j - 1] + 2`.
+     - If they are different, then `dp[i][j] = max(dp[i][j - 1], dp[i + 1][j])`.
+
+4. **Result**:
+   - The value `dp[0][n - 1]` gives the length of the longest palindromic subsequence for the entire string.
+
+The test case `assert lps("TENS FOR TENS") == 5` passes because the longest palindromic subsequence is "TENS" (or "TENS" reversed), which has a length of 5. The spaces are ignored in the subsequence.

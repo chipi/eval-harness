@@ -1,0 +1,28 @@
+```python
+def sort_counter(d):
+  """
+  Sorts a dictionary by its values in descending order.
+
+  Args:
+    d: A dictionary with keys of any hashable type and values that are comparable.
+
+  Returns:
+    A list of tuples, where each tuple is a (key, value) pair from the
+    dictionary, sorted by value in descending order.
+  """
+  # The sorted() function can take a dictionary. By default, it sorts by keys.
+  # To sort by values, we use the `key` argument and provide a lambda function
+  # that extracts the value (the second element of the item, i.e., x[1]).
+  # The `reverse=True` argument ensures the sort is in descending order.
+  return sorted(d.items(), key=lambda item: item[1], reverse=True)
+
+# Example usage and assertion from the problem description
+assert sort_counter({'Math':81, 'Physics':83, 'Chemistry':87})==[('Chemistry', 87), ('Physics', 83), ('Math', 81)]
+
+# Additional test cases
+assert sort_counter({'a': 1, 'b': 3, 'c': 2}) == [('b', 3), ('c', 2), ('a', 1)]
+assert sort_counter({'zebra': 5, 'apple': 5, 'banana': 5}) == [('zebra', 5), ('apple', 5), ('banana', 5)] # Stable sort, order of keys with equal values is preserved
+assert sort_counter({}) == []
+
+print("All assertions passed!")
+```

@@ -1,0 +1,67 @@
+```python
+def max_aggregate(scores):
+    """
+    Calculates the maximum aggregate score from a list of (name, score) tuples.
+
+    This function iterates through the list of tuples, sums the scores for each
+    unique name, and then returns the name with the highest total score.
+
+    Args:
+        scores: A list of tuples, where each tuple contains a name (string)
+                and a score (integer).
+
+    Returns:
+        A tuple containing the name (string) with the highest aggregate score
+        and the total score (integer). If the input list is empty, it returns (None, 0).
+    """
+    # A dictionary to store the cumulative score for each name.
+    # The key will be the name, and the value will be the sum of scores.
+    aggregates = {}
+
+    # Iterate through each (name, score) tuple in the input list.
+    for name, score in scores:
+        # If the name is already in the dictionary, add the new score to the existing total.
+        # If the name is not in the dictionary, this line will add it with the current score.
+        aggregates[name] = aggregates.get(name, 0) + score
+
+    # Initialize variables to keep track of the maximum score and the corresponding name.
+    max_name = None
+    max_score = 0
+
+    # Iterate through the aggregated scores to find the maximum.
+    for name, total_score in aggregates.items():
+        if total_score > max_score:
+            max_score = total_score
+            max_name = name
+        # If there's a tie, the first name encountered with the max score is kept.
+        # The problem's example does not specify tie-breaking behavior,
+        # so this simple approach is sufficient.
+
+    return (max_name, max_score)
+
+# Example usage and assertion from the problem description
+if __name__ == "__main__":
+    test_scores = [('Juan Whelan',90),('Sabah Colley',88),('Peter Nichols',7),('Juan Whelan',122),('Sabah Colley',84)]
+    expected_result = ('Juan Whelan', 212)
+    
+    # Calculate the result using the function
+    result = max_aggregate(test_scores)
+    
+    # Print the result for verification
+    print(f"Input: {test_scores}")
+    print(f"Calculated Result: {result}")
+    print(f"Expected Result:  {expected_result}")
+    
+    # Assert that the calculated result matches the expected result
+    assert result == expected_result
+    
+    print("\nAssertion passed successfully!")
+
+    # Additional test case with a tie
+    tie_scores = [('Alice', 100), ('Bob', 100), ('Alice', 50), ('Bob', 50)]
+    tie_result = max_aggregate(tie_scores)
+    print(f"\nInput (tie): {tie_scores}")
+    print(f"Result (tie): {tie_result}") # Expected: ('Alice', 150) or ('Bob', 150)
+    assert tie_result in [('Alice', 150), ('Bob', 150)]
+    print("Tie case assertion passed!")
+```

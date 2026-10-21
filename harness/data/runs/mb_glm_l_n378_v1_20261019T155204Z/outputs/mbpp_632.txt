@@ -1,0 +1,21 @@
+```python
+def move_zero(lst):
+    """
+    Moves all zeroes to the end of the given list while maintaining the relative order of non-zero elements.
+    
+    Args:
+        lst (list): The input list containing numbers.
+        
+    Returns:
+        list: A new list with all zeroes moved to the end.
+    """
+    # Separate non-zero elements and zero elements
+    non_zero = [x for x in lst if x != 0]
+    zeros = [x for x in lst if x == 0]
+    # Combine them with zeros at the end
+    return non_zero + zeros
+
+# Test the function
+assert move_zero([1, 0, 2, 0, 3, 4]) == [1, 2, 3, 4, 0, 0]
+print("Test passed!")
+```

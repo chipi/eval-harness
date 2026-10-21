@@ -1,0 +1,32 @@
+```python
+def tuple_to_dict(tup):
+    """
+    Converts a tuple to a dictionary where every two adjacent elements 
+    form a key-value pair.
+    
+    Args:
+        tup (tuple): The input tuple containing elements to be paired.
+        
+    Returns:
+        dict: A dictionary where elements at even indices are keys 
+              and elements at odd indices are values.
+    """
+    # We iterate through the tuple with a step of 2.
+    # zip(tup[0::2], tup[1::2]) creates pairs of (element_at_0, element_at_1), 
+    # (element_at_2, element_at_3), etc.
+    return dict(zip(tup[0::2], tup[1::2]))
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    input_tuple = (1, 5, 7, 10, 13, 5)
+    expected_output = {1: 5, 7: 10, 13: 5}
+    
+    result = tuple_to_dict(input_tuple)
+    
+    # Assertion to verify correctness
+    assert result == expected_output, f"Expected {expected_output}, but got {result}"
+    
+    print("Test passed!")
+    print(f"Input: {input_tuple}")
+    print(f"Output: {result}")
+```

@@ -1,0 +1,28 @@
+```python
+import re
+
+def extract_quotation(s: str) -> list:
+    """
+    Extracts all substrings that are enclosed in double quotation marks.
+    
+    Args:
+        s: Input string containing quoted text.
+    
+    Returns:
+        A list of strings found between quotation marks.
+    """
+    # Use regex to find all text between double quotes
+    # The pattern "([^"]*)" matches a quote, then captures any characters
+    # that are not a quote (zero or more), then a closing quote.
+    return re.findall(r'"([^"]*)"', s)
+
+# Example usage and test
+if __name__ == "__main__":
+    test_string = 'Cortex "A53" Based "multi" tasking "Processor"'
+    result = extract_quotation(test_string)
+    print(result)  # Output: ['A53', 'multi', 'Processor']
+    
+    # Assert the expected output
+    assert result == ['A53', 'multi', 'Processor'], f"Expected ['A53', 'multi', 'Processor'], got {result}"
+    print("Test passed!")
+```

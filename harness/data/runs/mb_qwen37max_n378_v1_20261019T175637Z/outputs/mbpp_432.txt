@@ -1,0 +1,19 @@
+```python
+def median_trapezium(a, b, c=None):
+    """
+    Find the median length of a trapezium.
+    
+    The median (midline) of a trapezium is the average of the two parallel sides.
+    If three arguments are given, the function uses the first two as the parallel sides.
+    If two arguments are given, it uses both as the parallel sides.
+    
+    Based on the assertion: median_trapezium(15, 25, 35) == 20
+    This means (15 + 25) / 2 = 20, so the third argument is ignored
+    (or represents a non-parallel side).
+    """
+    return (a + b) / 2
+
+
+# Test
+assert median_trapezium(15, 25, 35) == 20
+```

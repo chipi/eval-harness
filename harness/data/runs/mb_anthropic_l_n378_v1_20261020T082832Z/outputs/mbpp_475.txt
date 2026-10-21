@@ -1,0 +1,31 @@
+```python
+from collections import Counter
+
+
+def sort_counter(dict1):
+    """
+    Sort a dictionary by value in descending order.
+
+    Args:
+        dict1 (dict): The dictionary to sort.
+
+    Returns:
+        list: A list of (key, value) tuples sorted by value, highest first.
+    """
+    x = Counter(dict1)
+    sorted_counter = x.most_common()
+    return sorted_counter
+
+
+if __name__ == "__main__":
+    assert sort_counter({'Math': 81, 'Physics': 83, 'Chemistry': 87}) == [
+        ('Chemistry', 87), ('Physics', 83), ('Math', 81)
+    ]
+    assert sort_counter({'Math': 400, 'Physics': 300, 'Chemistry': 250}) == [
+        ('Math', 400), ('Physics', 300), ('Chemistry', 250)
+    ]
+    assert sort_counter({'Math': 900, 'Physics': 1000, 'Chemistry': 1250}) == [
+        ('Chemistry', 1250), ('Physics', 1000), ('Math', 900)
+    ]
+    print("All tests passed!")
+```

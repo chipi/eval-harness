@@ -1,0 +1,23 @@
+```python
+def find_length(s):
+    """
+    Finds the maximum difference between the number of 0s and number of 1s in any sub-string of the given binary string.
+
+    Args:
+        s: The binary string.
+
+    Returns:
+        The maximum difference between the number of 0s and number of 1s in any sub-string.
+    """
+    max_diff = 0
+    current_diff = 0
+    for char in s:
+        if char == '0':
+            current_diff += 1
+        else:
+            current_diff -= 1
+        max_diff = max(max_diff, current_diff)
+        if current_diff < 0:
+            current_diff = 0
+    return max_diff
+```

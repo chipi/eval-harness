@@ -1,0 +1,27 @@
+```python
+def change_date_format(date_str: str) -> str:
+    """
+    Converts a date string from yyyy-mm-dd format to dd-mm-yyyy format.
+    
+    Args:
+        date_str (str): The date string in 'yyyy-mm-dd' format.
+        
+    Returns:
+        str: The date string in 'dd-mm-yyyy' format.
+    """
+    # Split the string by the hyphen separator
+    year, month, day = date_str.split('-')
+    
+    # Reassemble in the new order
+    return f"{day}-{month}-{year}"
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    assert change_date_format("2026-01-02") == '02-01-2026'
+    
+    # Additional test cases
+    assert change_date_format("1999-12-31") == '31-12-1999'
+    assert change_date_format("2000-02-29") == '29-02-2000'
+    
+    print("All tests passed!")
+```

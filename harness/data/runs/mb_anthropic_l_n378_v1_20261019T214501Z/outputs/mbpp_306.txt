@@ -1,0 +1,46 @@
+Looking at this problem, I need to find the maximum sum of an increasing subsequence from the prefix ending at index `i`, plus a given element at index `k` (where `k > i`), such that the whole thing remains increasing.
+
+**Approach:**
+1. Compute `dp[j]` = maximum sum of an increasing subsequence ending at index `j`, for all `j` from `0` to `i`.
+2. Then, the answer is `max(dp[j] + arr[k])` over all `j ≤ i` where `arr[j] < arr[k]` — and we also consider just `arr[k]` alone if no such `j` exists.
+
+**Verification with the example:**
+- `arr = [1, 101, 2, 3, 100, 4, 5]`, `n = 7`, `i = 4`, `k = 6`
+- `arr[k] = arr[6] = 5`
+- `dp` values up to index 4: `dp[0]=1`, `dp[1]=102`, `dp[2]=3`, `dp[3]=6`, `dp[4]=106`
+- Candidates where `arr[j] < 5`: `j=0` (1 → 1+5=6), `j=2` (2 → 3+5=8), `j=3` (3 → 6+5=11)
+- Maximum = **11** ✓
+
+```python
+"""
+Write a function to find the maximum sum of increasing subsequence from prefix until ith index
+and also including a given kth element which is after i, i.e., k > i .
+assert max_sum_increasing_subseq([1, 101, 2, 3, 100, 4, 5 ], 7, 4, 6) == 11
+"""
+
+
+def max_sum_increasing_subseq(a, n, index, k):
+    # dp[j] = maximum sum of an increasing subsequence of a[0..j] that ends with a[j]
+    dp = [0] * n
+
+    for j in range(index + 1):
+        dp[j] = a[j]
+        for p in range(j):
+            if a[p] < a[j] and dp[p] + a[j] > dp[j]:
+                dp[j] = dp[p] + a[j]
+
+    # Now append a[k] to the best valid subsequence ending at some j <= index
+    result = a[k]  # case: a[k] alone (no smaller element found in prefix)
+    for j in range(index + 1):
+        if a[j] < a[k] and dp[j] + a[k] > result:
+            result = dp[j] + a[k]
+
+    return result
+
+
+if __name__ == "__main__":
+    assert max_sum_increasing_subseq([1, 101, 2, 3, 100, 4, 5], 7, 4, 6) == 11
+    assert max_sum_increasing_subseq([1, 101, 2, 3, 100, 4, 5], 7, 2, 5) == 7
+    assert max_sum_increasing_subseq([11, 15, 19, 21, 26, 28, 31], 7, 2, 4) == 71
+    print("All tests passed!")
+```

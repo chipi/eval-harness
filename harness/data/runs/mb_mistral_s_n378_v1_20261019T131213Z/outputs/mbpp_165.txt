@@ -1,0 +1,49 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def count_char_position(s):
+    """
+    Count the number of characters in a string that occur at the same position in the string as in the English alphabet (case insensitive).
+
+    Args:
+        s (str): The input string to analyze.
+
+    Returns:
+        int: The count of characters that meet the criteria.
+
+    Examples:
+        >>> count_char_position("xbcefg")
+        2
+    """
+    count = 0
+    for i, char in enumerate(s):
+        # Convert to lowercase for case insensitivity
+        lower_char = char.lower()
+        # Check if the character is a letter and its position matches its alphabetical position
+        if lower_char.isalpha():
+            # 'a' is at position 0, 'b' at 1, etc.
+            if i == ord(lower_char) - ord('a'):
+                count += 1
+    return count
+
+# Test the function
+assert count_char_position("xbcefg") == 2
+print("All tests passed!")
+```
+
+This script:
+1. Defines a function `count_char_position` that takes a string as input
+2. Iterates through each character in the string
+3. For each character, checks if:
+   - It's an alphabetic character (case insensitive)
+   - Its position in the string matches its position in the alphabet (0 for 'a', 1 for 'b', etc.)
+4. Returns the count of such characters
+5. Includes the test case from the problem statement
+
+The function handles case insensitivity by converting all characters to lowercase before comparison. The test case "xbcefg" returns 2 because:
+- 'b' is at position 1 (0-based) and is the 2nd letter in the alphabet (1-based)
+- 'c' is at position 2 and is the 3rd letter in the alphabet (doesn't match)
+- 'e' is at position 3 and is the 5th letter in the alphabet (doesn't match)
+- 'f' is at position 4 and is the 6th letter in the alphabet (doesn't match)
+- 'g' is at position 5 and is the 7th letter in the alphabet (doesn't match)
+- 'x' is at position 0 and is the 24th letter in the alphabet (doesn't match)

@@ -1,0 +1,36 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def check_K(tup, k):
+    """
+    Check if the given tuple contains the element k or not.
+    
+    Args:
+        tup: A tuple of elements.
+        k: The element to check for in the tuple.
+        
+    Returns:
+        bool: True if k is in the tuple, False otherwise.
+    """
+    return k in tup
+
+# Test cases
+assert check_K((10, 4, 5, 6, 8), 6) == True
+assert check_K((1, 2, 3, 4, 5), 6) == False
+assert check_K(('a', 'b', 'c'), 'b') == True
+assert check_K(('x', 'y', 'z'), 'a') == False
+assert check_K((), 1) == False
+
+print("All test cases passed!")
+```
+
+This script defines a function `check_K` that takes a tuple and an element `k`, and returns `True` if `k` is present in the tuple, `False` otherwise. The solution uses Python's `in` operator which is the most straightforward way to check for membership in a tuple.
+
+The script includes several test cases to verify the function works correctly:
+1. The original test case from the problem statement
+2. A case where the element is not present
+3. A case with string elements
+4. A case with string elements where the element is not present
+5. A case with an empty tuple
+
+All test cases should pass, confirming the function works as expected.

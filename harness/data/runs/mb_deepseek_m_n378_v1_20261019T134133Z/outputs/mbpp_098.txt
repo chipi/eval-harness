@@ -1,0 +1,29 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+import math
+
+def multiply_num(numbers):
+    """
+    Multiply all numbers in the list and divide by the length of the list.
+    """
+    if not numbers:
+        raise ValueError("List cannot be empty")
+    
+    product = 1
+    for num in numbers:
+        product *= num
+    
+    return product / len(numbers)
+
+# Test the function
+assert math.isclose(multiply_num((8, 2, 3, -1, 7)), -67.2, rel_tol=0.001)
+print("Test passed!")
+```
+
+**Explanation:**
+- The function `multiply_num` takes a sequence of numbers
+- It initializes `product` to 1 and multiplies each number in the sequence
+- Then divides the product by the length of the sequence
+- For `(8, 2, 3, -1, 7)`: product = 8 × 2 × 3 × (-1) × 7 = -336, length = 5, result = -336/5 = -67.2
+- The assertion uses `math.isclose` with `rel_tol=0.001` to account for floating-point precision

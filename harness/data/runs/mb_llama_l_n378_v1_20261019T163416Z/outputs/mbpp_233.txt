@@ -1,0 +1,12 @@
+```python
+import math
+
+def lateralsuface_cylinder(height, radius):
+    return 2 * math.pi * radius * height
+
+def main():
+    print(lateralsuface_cylinder(10, 5))
+
+if __name__ == "__main__":
+    main()
+```

@@ -1,0 +1,28 @@
+```python
+import re
+
+def text_starta_endb(text):
+  """
+  Matches a string that has an 'a' followed by anything, ending in 'b'.
+
+  Args:
+    text: The input string.
+
+  Returns:
+    True if the string matches the pattern, False otherwise.
+  """
+  pattern = r"^a.*b$"
+  if re.search(pattern, text):
+    return True
+  else:
+    return False
+
+# Example usage and assertion
+assert text_starta_endb("aabbbb") == True
+assert text_starta_endb("acccb") == True
+assert text_starta_endb("ab") == True
+assert text_starta_endb("a") == False
+assert text_starta_endb("b") == False
+assert text_starta_endb("aabb") == False
+assert text_starta_endb("ba") == False
+```

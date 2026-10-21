@@ -1,0 +1,53 @@
+```python
+def amicable_numbers_sum(limit: int) -> int:
+    """
+    Sum all amicable numbers from 1 to the specified limit.
+    
+    Amicable numbers are two different numbers where the sum of proper divisors
+    of each equals the other number. For example, 220 and 284 are amicable because:
+    - Proper divisors of 220: 1, 2, 4, 5, 10, 11, 20, 22, 44, 55, 110 → sum = 284
+    - Proper divisors of 284: 1, 2, 4, 71, 142 → sum = 220
+    
+    We need to find all such numbers up to `limit` and sum them.
+    Each amicable number should only be counted once in the sum.
+    """
+    
+    def sum_of_proper_divisors(n: int) -> int:
+        """Calculate the sum of proper divisors of n (excluding n itself)."""
+        if n <= 1:
+            return 0
+        total = 1  # 1 is always a proper divisor for n > 1
+        i = 2
+        while i * i <= n:
+            if n % i == 0:
+                total += i
+                if i != n // i:
+                    total += n // i
+            i += 1
+        return total
+    
+    # Precompute sum of proper divisors for all numbers up to limit
+    divisor_sums = {}
+    for i in range(1, limit + 1):
+        divisor_sums[i] = sum_of_proper_divisors(i)
+    
+    # Find all amicable numbers
+    amicable_set = set()
+    for a in range(1, limit + 1):
+        b = divisor_sums.get(a, 0)
+        # Check if b is within range and forms an amicable pair with a
+        if b > a and b <= limit:  # b > a to avoid duplicates and self-pairs
+            if divisor_sums.get(b, 0) == a:
+                amicable_set.add(a)
+                amicable_set.add(b)
+    
+    return sum(amicable_set)
+
+
+if __name__ == "__main__":
+    # Test case
+    result = amicable_numbers_sum(999)
+    print(f"amicable_numbers_sum(999) = {result}")
+    assert result == 504, f"Expected 504, got {result}"
+    print("Test passed!")
+```

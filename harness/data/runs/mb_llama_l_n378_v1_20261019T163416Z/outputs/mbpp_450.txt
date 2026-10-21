@@ -1,0 +1,12 @@
+```python
+def extract_string(string_list, size):
+    return [string for string in string_list if len(string) == size]
+
+def main():
+    string_list = ['Python', 'list', 'exercises', 'practice', 'solution']
+    size = 8
+    print(extract_string(string_list, size))  # Output: ['practice', 'solution']
+
+if __name__ == "__main__":
+    main()
+```

@@ -1,0 +1,38 @@
+```python
+def multiple_to_single(nums: list[int]) -> int:
+    """
+    Join a list of multiple integers into a single integer.
+    
+    Args:
+        nums: A list of integers to join.
+        
+    Returns:
+        A single integer formed by concatenating the string representations
+        of all integers in the list.
+        
+    Example:
+        >>> multiple_to_single([11, 33, 50])
+        113350
+    """
+    if not nums:
+        return 0
+    
+    # Convert each integer to its string representation and concatenate
+    concatenated = ''.join(str(num) for num in nums)
+    
+    # Convert the concatenated string back to an integer
+    return int(concatenated)
+
+
+if __name__ == "__main__":
+    # Test the function with the provided assertion
+    assert multiple_to_single([11, 33, 50]) == 113350
+    
+    # Additional test cases
+    assert multiple_to_single([1, 2, 3]) == 123
+    assert multiple_to_single([0, 0, 1]) == 1  # Leading zeros are dropped when converted to int
+    assert multiple_to_single([100]) == 100
+    assert multiple_to_single([]) == 0
+    
+    print("All tests passed!")
+```

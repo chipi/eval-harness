@@ -1,0 +1,11 @@
+```python
+def tuple_to_int(tup):
+    return int(''.join(map(str, tup)))
+
+# Test cases
+assert tuple_to_int((1,2,3))==123
+assert tuple_to_int((9,8,7,6,5,4,3,2,1))==987654321
+assert tuple_to_int((1,))==1
+assert tuple_to_int((0,))==0
+assert tuple_to_int((10,20,30,40,50))==1020304050
+```

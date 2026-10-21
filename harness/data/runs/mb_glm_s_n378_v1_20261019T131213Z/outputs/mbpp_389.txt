@@ -1,0 +1,57 @@
+```python
+def find_lucas(n):
+    """
+    Calculates the n'th Lucas number.
+
+    The Lucas numbers are defined similarly to the Fibonacci sequence, but with different starting values:
+    L(0) = 2
+    L(1) = 1
+    L(n) = L(n-1) + L(n-2) for n > 1
+
+    Args:
+        n (int): The index of the Lucas number to find (a non-negative integer).
+
+    Returns:
+        int: The n'th Lucas number.
+    
+    Raises:
+        ValueError: If n is a negative integer.
+    """
+    if not isinstance(n, int) or n < 0:
+        raise ValueError("Input must be a non-negative integer.")
+
+    # Base cases for the sequence
+    if n == 0:
+        return 2
+    elif n == 1:
+        return 1
+
+    # Initialize the first two Lucas numbers
+    a, b = 2, 1
+
+    # Iterate from 2 up to n to find the n'th number
+    # We need to perform n-1 iterations to get from the 1st to the n'th number.
+    for _ in range(2, n + 1):
+        # The next number is the sum of the previous two
+        # The new 'a' becomes the old 'b'
+        # The new 'b' becomes the sum of the old 'a' and 'b'
+        a, b = b, a + b
+
+    return b
+
+# Example usage and assertion from the problem description
+if __name__ == "__main__":
+    # Verify the function with the provided example
+    assert find_lucas(9) == 76
+    
+    # Additional test cases
+    assert find_lucas(0) == 2
+    assert find_lucas(1) == 1
+    assert find_lucas(2) == 3
+    assert find_lucas(3) == 4
+    assert find_lucas(5) == 11
+    
+    print("All assertions passed successfully!")
+    print(f"The 9th Lucas number is: {find_lucas(9)}")
+    print(f"The 10th Lucas number is: {find_lucas(10)}")
+```

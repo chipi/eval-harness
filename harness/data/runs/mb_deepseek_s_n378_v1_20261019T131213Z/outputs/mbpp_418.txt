@@ -1,0 +1,31 @@
+```python
+def Find_Max(lst):
+    """
+    Returns the element (sublist) from the given list that has the maximum length.
+    If there are multiple sublists with the same maximum length, the first one encountered is returned.
+    
+    Parameters:
+    lst (list of list): A list containing sublists.
+    
+    Returns:
+    list: The sublist with the maximum length.
+    """
+    if not lst:  # Handle empty list case
+        return []
+    
+    max_sublist = lst[0]
+    max_length = len(lst[0])
+    
+    for sublist in lst[1:]:
+        current_length = len(sublist)
+        if current_length > max_length:
+            max_length = current_length
+            max_sublist = sublist
+    
+    return max_sublist
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert Find_Max([['A'],['A','B'],['A','B','C']]) == ['A','B','C']
+    print("Test passed.")
+```

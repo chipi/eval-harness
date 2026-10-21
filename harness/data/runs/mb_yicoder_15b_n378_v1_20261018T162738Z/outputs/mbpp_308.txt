@@ -1,0 +1,12 @@
+```python
+def large_product(list1, list2, num):
+    # Combine the two lists
+    combined = [(list1[i], list2[i]) for i in range(min(len(list1), len(list2)))]
+    # Sort the combined list in descending order
+    combined.sort(key=lambda x: x[0]*x[1], reverse=True)
+    # Return the top num products
+    return [x[0]*x[1] for x in combined[:num]]
+
+# Test the function
+print(large_product([1, 2, 3, 4, 5, 6],[3, 6, 8, 9, 10, 6],3)) # Output: [60, 54, 50]
+```

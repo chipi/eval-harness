@@ -1,0 +1,34 @@
+Here's a self-contained Python script that solves the problem of calculating the volume of a cylinder:
+
+```python
+import math
+
+def volume_cylinder(radius, height):
+    """
+    Calculate the volume of a cylinder given its radius and height.
+
+    Parameters:
+    radius (float): The radius of the cylinder's base
+    height (float): The height of the cylinder
+
+    Returns:
+    float: The volume of the cylinder
+    """
+    return math.pi * (radius ** 2) * height
+
+# Test the function
+assert math.isclose(volume_cylinder(10, 5), 1570.7500000000002, rel_tol=0.001)
+print("All tests passed!")
+```
+
+This script:
+1. Imports the math module to access the value of π
+2. Defines a function `volume_cylinder` that takes radius and height as parameters
+3. Calculates the volume using the formula V = πr²h
+4. Includes the provided assertion test to verify the function works correctly
+5. Prints a success message if the test passes
+
+The formula used is the standard formula for the volume of a cylinder, where:
+- π (pi) is approximately 3.141592653589793
+- r is the radius of the base
+- h is the height of the cylinder

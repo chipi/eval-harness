@@ -1,0 +1,12 @@
+```python
+def neg_nos(numbers):
+    """
+    Returns a list of negative numbers from the provided list.
+    """
+    return [num for num in numbers if num < 0]
+
+if __name__ == "__main__":
+    # Test the function with the provided assertion
+    assert neg_nos([-1, 4, 5, -6]) == [-1, -6]
+    print("Test passed!")
+```

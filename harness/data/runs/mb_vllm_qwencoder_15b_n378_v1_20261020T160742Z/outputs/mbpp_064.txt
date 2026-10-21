@@ -1,0 +1,9 @@
+```python
+def subject_marks(subject_marks):
+    # Sort the list of tuples based on the second element (marks)
+    sorted_subject_marks = sorted(subject_marks, key=lambda x: x[1])
+    return sorted_subject_marks
+
+# Test the function
+assert subject_marks([('English', 88), ('Science', 90), ('Maths', 97), ('Social sciences', 82)]) == [('Social sciences', 82), ('English', 88), ('Science', 90), ('Maths', 97)]
+```

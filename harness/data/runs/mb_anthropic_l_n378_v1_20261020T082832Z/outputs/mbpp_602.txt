@@ -1,0 +1,55 @@
+Looking at this problem, I need to find the character that repeats **first** — meaning the character whose second occurrence appears earliest in the string.
+
+Let me think through the example: `"abcabc"` — scanning left to right, 'a', 'b', 'c' are all new; then at index 3 we hit 'a' again, which we've seen before. So 'a' is the answer.
+
+The approach: iterate through the string, keeping a set of characters already seen. The first character we encounter that's already in the set is our answer. This correctly finds the earliest *second* occurrence, since we return at the first moment a repeat is detected.
+
+```python
+"""
+Write a python function to find the first repeated character in a given string.
+assert first_repeated_char("abcabc") == "a"
+"""
+
+
+def first_repeated_char(s):
+    """
+    Return the first repeated character in the string s.
+
+    Scans the string left to right, tracking characters already seen.
+    The first character encountered that has been seen before is returned.
+    Returns None if every character is unique.
+    """
+    seen = set()
+    for ch in s:
+        if ch in seen:
+            return ch
+        seen.add(ch)
+    return None
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert first_repeated_char("abcabc") == "a"
+
+    # Additional test cases
+    assert first_repeated_char("abc") is None          # no repeats
+    assert first_repeated_char("123123") == "1"        # digits
+    assert first_repeated_char("") is None             # empty string
+    assert first_repeated_char("a") is None            # single character
+    assert first_repeated_char("aa") == "a"            # immediate repeat
+    assert first_repeated_char("abcbd") == "b"         # repeat not the first char
+    assert first_repeated_char("abcadb") == "a"        # earliest second occurrence
+    assert first_repeated_char("xyzzy") == "z"         # adjacent pair wins over outer
+    assert first_repeated_char("aA") is None           # case sensitive
+
+    print("All tests passed!")
+    print(first_repeated_char("abcabc"))  # -> a
+```
+
+**How it works**
+
+- `seen` is a set of characters encountered so far; membership checks are O(1) on average.
+- We return as soon as we find a character already in `seen`, which guarantees it's the repeat whose second occurrence comes earliest.
+- Time complexity: **O(n)**; space complexity: **O(k)** where k is the number of distinct characters.
+
+A note on the `"xyzzy"` case: 'z' is returned rather than 'y', because 'z' completes its pair at index 3 while 'y' doesn't complete until index 4 — 'z' repeats first.

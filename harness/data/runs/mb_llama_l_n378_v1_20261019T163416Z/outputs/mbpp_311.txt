@@ -1,0 +1,12 @@
+```python
+def set_left_most_unset_bit(n):
+    # Find the leftmost unset bit
+    left_most_unset_bit = 1
+    while (n & left_most_unset_bit) != 0:
+        left_most_unset_bit <<= 1
+    
+    # Set the leftmost unset bit
+    return n | left_most_unset_bit
+
+assert set_left_most_unset_bit(10) == 14
+```

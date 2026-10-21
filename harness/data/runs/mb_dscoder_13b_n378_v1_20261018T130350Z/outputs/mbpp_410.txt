@@ -1,0 +1,7 @@
+```python
+def min_val(lst):
+    return min(lst)
+
+# Testing the function
+assert min_val(['Python', 3, 2, 4, 5, 'version']) == 2
+```

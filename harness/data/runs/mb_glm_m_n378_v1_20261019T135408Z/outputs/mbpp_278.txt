@@ -1,0 +1,21 @@
+```python
+def count_first_elements(test_tup):
+    """
+    Finds the number of elements that occur before the first tuple element in the given tuple.
+    
+    Args:
+    test_tup (tuple): A tuple containing various elements, potentially including nested tuples.
+    
+    Returns:
+    int: The count of elements before the first nested tuple.
+    """
+    for i, element in enumerate(test_tup):
+        if isinstance(element, tuple):
+            return i
+    return len(test_tup)
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert count_first_elements((1, 5, 7, (4, 6), 10)) == 3
+    print("Test passed successfully!")
+```

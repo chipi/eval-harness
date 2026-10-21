@@ -1,0 +1,11 @@
+```python
+def lateralsurface_cube(side_length):
+    return 4 * (side_length ** 2)
+
+def main():
+    assert lateralsurface_cube(5) == 100
+    print("All test cases pass")
+
+if __name__ == "__main__":
+    main()
+```

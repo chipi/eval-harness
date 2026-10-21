@@ -1,0 +1,48 @@
+```python
+import math
+
+def find_Volume(base, height, length):
+  """
+  Calculates the volume of a triangular prism.
+
+  The formula for the volume of a triangular prism is:
+  Volume = (Area of the triangular base) * (length of the prism)
+
+  The area of the triangular base is calculated using Heron's formula:
+  Area = sqrt(s * (s - a) * (s - b) * (s - c))
+  where s is the semi-perimeter (s = (a+b+c)/2) and a, b, c are the side lengths.
+
+  Args:
+    base (float): The length of the base of the triangle.
+    height (float): The height of the triangle.
+    length (float): The length of the prism.
+
+  Returns:
+    float: The volume of the triangular prism.
+  """
+  # Calculate the area of the triangular base using the standard formula: (1/2) * base * height
+  base_area = 0.5 * base * height
+  
+  # Calculate the volume of the prism
+  volume = base_area * length
+  
+  return volume
+
+# Example usage and assertion from the problem description
+if __name__ == "__main__":
+  # The problem statement implies a right-angled triangle where 'base' and 'height'
+  # are the two perpendicular sides. The provided example (10, 8, 6) is ambiguous
+  # as it could be interpreted as three sides of a triangle or base/height/length.
+  # Assuming the most direct interpretation for a right-angled prism:
+  # base = 10, height = 8, length = 6
+  # Volume = (0.5 * 10 * 8) * 6 = 40 * 6 = 240
+  assert find_Volume(10, 8, 6) == 240
+  
+  # Another example with a right-angled triangle
+  assert find_Volume(5, 4, 10) == 100
+  
+  # Example with non-integer values
+  assert find_Volume(2.5, 3.0, 4.0) == 15.0
+  
+  print("All assertions passed.")
+```

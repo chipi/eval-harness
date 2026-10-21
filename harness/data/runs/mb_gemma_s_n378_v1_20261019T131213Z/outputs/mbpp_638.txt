@@ -1,0 +1,19 @@
+```python
+def wind_chill(wind_speed_kmh, temperature_celsius):
+  """
+  Calculates the wind chill index rounded to the next integer.
+
+  Args:
+    wind_speed_kmh: The wind speed in kilometers per hour.
+    temperature_celsius: The temperature in Celsius.
+
+  Returns:
+    The wind chill index rounded to the next integer.
+  """
+  wind_speed_mps = wind_speed_kmh / 3.6
+  wind_chill_index = 13.12 + 0.6215 * temperature_celsius - 11.37 * wind_speed_mps + 0.3965 * temperature_celsius * wind_speed_mps
+  return int(wind_chill_index + 0.9999)  # Round to the next integer
+
+# Example usage and assertion
+assert wind_chill(120, 35) == 40
+```

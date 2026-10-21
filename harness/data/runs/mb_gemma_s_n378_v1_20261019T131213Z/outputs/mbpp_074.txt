@@ -1,0 +1,28 @@
+```python
+def is_samepatterns(patterns, chars):
+    """
+    Write a function to check whether it follows the sequence given in the patterns array.
+    assert is_samepatterns(["red","green","green"], ["a", "b", "b"])==True
+    """
+    if len(patterns) != len(chars):
+        return False
+
+    pattern_map = {}
+    char_map = {}
+
+    for i in range(len(patterns)):
+        pattern = patterns[i]
+        char = chars[i]
+
+        if pattern not in pattern_map:
+            pattern_map[pattern] = char
+        elif pattern_map[pattern] != char:
+            return False
+
+        if char not in char_map:
+            char_map[char] = pattern
+        elif char_map[char] != pattern:
+            return False
+
+    return True
+```

@@ -1,0 +1,15 @@
+```python
+def count_Occurrence(tup, lst):
+    """
+    Count how many elements in the tuple appear in the list.
+    
+    Example:
+    count_Occurrence(('a', 'a', 'c', 'b', 'd'), ['a', 'b']) -> 3
+    """
+    return sum(1 for item in tup if item in lst)
+
+
+if __name__ == "__main__":
+    assert count_Occurrence(('a', 'a', 'c', 'b', 'd'), ['a', 'b']) == 3
+    print("All tests passed.")
+```

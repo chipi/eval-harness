@@ -1,0 +1,11 @@
+```python
+import math
+
+def lateralsurface_cylinder(radius, height):
+    return 2 * math.pi * radius * height
+
+# Test cases
+assert math.isclose(lateralsurface_cylinder(10,5), 314.15000000000003, rel_tol=0.001)
+assert math.isclose(lateralsurface_cylinder(2,3), 62.832000000000006, rel_tol=0.001)
+assert math.isclose(lateralsurface_cylinder(1,1), 6.283185307179586, rel_tol=0.001)
+```

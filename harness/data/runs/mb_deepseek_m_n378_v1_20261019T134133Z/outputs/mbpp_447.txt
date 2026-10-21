@@ -1,0 +1,27 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def cube_nums(nums):
+    """
+    Returns a new list containing the cubes of each element in the input list.
+    
+    Args:
+        nums (list): A list of numbers.
+    
+    Returns:
+        list: A list of cubes of the input numbers.
+    """
+    return [n ** 3 for n in nums]
+
+
+# Test the function
+assert cube_nums([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) == [1, 8, 27, 64, 125, 216, 343, 512, 729, 1000]
+print("All tests passed!")
+```
+
+**Explanation:**
+
+- The function `cube_nums` uses a list comprehension to iterate over each element `n` in the input list `nums`.
+- For each element, it computes `n ** 3` (n cubed) and collects the results into a new list.
+- The `assert` statement verifies that the function produces the expected output for the given test case.
+- If the assertion passes, the script prints `"All tests passed!"`.

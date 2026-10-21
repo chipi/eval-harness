@@ -1,0 +1,39 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def big_sum(arr):
+    """
+    Find the sum of the largest and smallest value in a given array.
+    
+    Args:
+        arr: A list of numbers (non-empty)
+    
+    Returns:
+        The sum of the maximum and minimum values in the array
+    """
+    if not arr:
+        raise ValueError("Array must not be empty")
+    
+    return max(arr) + min(arr)
+
+
+# Test cases
+if __name__ == "__main__":
+    assert big_sum([1, 2, 3]) == 4
+    assert big_sum([5, 5, 5]) == 10
+    assert big_sum([-1, 0, 1]) == 0
+    assert big_sum([10]) == 20
+    assert big_sum([3, 1, 4, 1, 5, 9, 2, 6]) == 10
+    print("All tests passed!")
+```
+
+**How it works:**
+
+1. The function `big_sum` takes a list `arr` as input.
+2. It uses Python's built-in `max()` and `min()` functions to find the largest and smallest values in the array.
+3. It returns their sum.
+4. An empty array check is included to prevent errors (since `max()`/`min()` would raise a `ValueError` on an empty sequence).
+
+**Example:**
+- For `[1, 2, 3]`: `max = 3`, `min = 1`, so the result is `3 + 1 = 4` ✓
+- For `[3, 1, 4, 1, 5, 9, 2, 6]`: `max = 9`, `min = 1`, so the result is `9 + 1 = 10` ✓

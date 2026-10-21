@@ -1,0 +1,26 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def sort_tuples_by_second_element(tuples_list):
+    """Sort a list of tuples based on the second element of each tuple."""
+    return sorted(tuples_list, key=lambda x: x[1])
+
+# Test the function
+subject_marks = [('English', 88), ('Science', 90), ('Maths', 97), ('Social sciences', 82)]
+sorted_marks = sort_tuples_by_second_element(subject_marks)
+
+# Assertion to verify the function works correctly
+assert sorted_marks == [('Social sciences', 82), ('English', 88), ('Science', 90), ('Maths', 97)]
+
+# Print the result
+print("Original list:", subject_marks)
+print("Sorted list:", sorted_marks)
+```
+
+This script:
+1. Defines a function `sort_tuples_by_second_element` that takes a list of tuples
+2. Uses Python's built-in `sorted()` function with a lambda function as the key to sort by the second element of each tuple
+3. Includes the test case from the problem statement
+4. Prints both the original and sorted lists for verification
+
+The assertion will pass if the function works correctly, and the output will show both the original and sorted lists.

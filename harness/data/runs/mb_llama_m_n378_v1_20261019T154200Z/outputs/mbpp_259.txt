@@ -1,0 +1,24 @@
+```python
+def maximize_elements(tuple1, tuple2):
+    """
+    This function takes two tuples of tuples as input and returns a new tuple of tuples.
+    The new tuple of tuples is created by comparing corresponding elements from the input tuples.
+    For each pair of corresponding elements, the maximum value is chosen.
+
+    Args:
+        tuple1 (tuple): The first tuple of tuples.
+        tuple2 (tuple): The second tuple of tuples.
+
+    Returns:
+        tuple: A new tuple of tuples with maximum values.
+    """
+    # Use the zip function to iterate over corresponding elements from both tuples
+    # Use a list comprehension to create a new list of tuples with maximum values
+    # The max function is used with a custom key to compare the tuples
+    result = tuple(max((x, y), key=lambda pair: (pair[0], pair[1])) for x, y in zip(tuple1, tuple2))
+    
+    return result
+
+# Test the function
+print(maximize_elements(((1, 3), (4, 5), (2, 9), (1, 10)), ((6, 7), (3, 9), (1, 1), (7, 3))))
+```

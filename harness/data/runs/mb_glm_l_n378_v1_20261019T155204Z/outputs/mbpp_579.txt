@@ -1,0 +1,22 @@
+Here is the self-contained Python script that solves the problem:
+
+```python
+def find_dissimilar(t1, t2):
+    """
+    Finds the dissimilar elements in the given two tuples.
+    An element is considered dissimilar if it appears in one tuple but not the other.
+    """
+    set1 = set(t1)
+    set2 = set(t2)
+    
+    # Symmetric difference gives elements in either set1 or set2 but not in both
+    dissimilar_set = set1.symmetric_difference(set2)
+    
+    # Return as a tuple
+    return tuple(dissimilar_set)
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert find_dissimilar((3, 4, 5, 6), (5, 7, 4, 10)) == (3, 6, 7, 10)
+    print("Test passed successfully!")
+```

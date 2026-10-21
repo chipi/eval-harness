@@ -1,0 +1,35 @@
+```python
+"""
+Find the area of the largest triangle that can be inscribed in a semicircle
+with a given radius.
+
+For a semicircle of radius r, the largest possible inscribed triangle uses the
+diameter as its base and has its third vertex at the top of the semicircle.
+
+Area = (1/2) * base * height
+     = (1/2) * (2r) * r
+     = r^2
+"""
+
+def triangle_area(radius):
+    """
+    Return the area of the largest triangle inscribed in a semicircle.
+
+    If radius is negative, return None.
+    """
+    if radius < 0:
+        return None
+    return radius * radius
+
+
+# Basic tests
+assert triangle_area(-1) == None
+assert triangle_area(0) == 0
+assert triangle_area(1) == 1
+assert triangle_area(2) == 4
+assert triangle_area(3.5) == 12.25
+
+if __name__ == "__main__":
+    r = 5
+    print(f"The largest triangle area for radius {r} is {triangle_area(r)}")
+```

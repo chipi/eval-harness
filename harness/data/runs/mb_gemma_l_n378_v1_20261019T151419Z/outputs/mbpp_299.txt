@@ -1,0 +1,41 @@
+```python
+def max_aggregate(data):
+    """
+    Calculates the maximum aggregate sum for a person from a list of tuples.
+    
+    Args:
+        data (list): A list of tuples containing (name, value).
+        
+    Returns:
+        tuple: A tuple containing the name with the highest aggregate and their total sum.
+    """
+    # Dictionary to store the running total for each person
+    aggregates = {}
+    
+    for name, value in data:
+        # If name exists, add value; otherwise, initialize with value
+        aggregates[name] = aggregates.get(name, 0) + value
+    
+    # Find the key with the maximum value in the dictionary
+    # max() with a key function allows us to find the name based on the summed value
+    best_person = max(aggregates, key=aggregates.get)
+    
+    return (best_person, aggregates[best_person])
+
+# Test the function
+if __name__ == "__main__":
+    test_data = [
+        ('Juan Whelan', 90), 
+        ('Sabah Colley', 88), 
+        ('Peter Nichols', 7), 
+        ('Juan Whelan', 122), 
+        ('Sabah Colley', 84)
+    ]
+    
+    result = max_aggregate(test_data)
+    print(f"Result: {result}")
+    
+    # Assertion check
+    assert result == ('Juan Whelan', 212)
+    print("Assertion passed!")
+```

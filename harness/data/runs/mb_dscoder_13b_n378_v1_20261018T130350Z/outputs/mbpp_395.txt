@@ -1,0 +1,15 @@
+```python
+def first_non_repeating_character(s):
+    for char in s:
+        if s.count(char) == 1:
+            return char
+    return None
+
+# Test cases
+assert first_non_repeating_character("abcabc") == None
+assert first_non_repeating_character("aabbcc") == "a"
+assert first_non_repeating_character("aabbccd") == "d"
+assert first_non_repeating_character("abcdef") == "a"
+assert first_non_repeating_character("abcdefg") == "g"
+assert first_non_repeating_character("abcdefgh") == None
+```

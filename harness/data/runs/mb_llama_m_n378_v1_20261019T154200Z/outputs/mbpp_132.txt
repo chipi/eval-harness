@@ -1,0 +1,17 @@
+```python
+def tup_string(tup):
+    """
+    This function converts a tuple of characters into a string.
+
+    Args:
+        tup (tuple): A tuple of characters.
+
+    Returns:
+        str: A string representation of the input tuple.
+    """
+    return ''.join(tup)
+
+# Test the function
+assert tup_string(('e', 'x', 'e', 'r', 'c', 'i', 's', 'e', 's')) == "exercises"
+print(tup_string(('e', 'x', 'e', 'r', 'c', 'i', 's', 'e', 's')))
+```

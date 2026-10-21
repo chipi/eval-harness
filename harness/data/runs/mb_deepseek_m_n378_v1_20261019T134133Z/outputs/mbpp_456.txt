@@ -1,0 +1,39 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def reverse_string_list(string_list):
+    """
+    Reverse each string in a given list of string values.
+    
+    Args:
+        string_list (list): A list of strings to be reversed.
+    
+    Returns:
+        list: A new list with each string reversed.
+    """
+    return [s[::-1] for s in string_list]
+
+
+# Test the function
+if __name__ == "__main__":
+    result = reverse_string_list(['Red', 'Green', 'Blue', 'White', 'Black'])
+    expected = ['deR', 'neerG', 'eulB', 'etihW', 'kcalB']
+    
+    print("Result:  ", result)
+    print("Expected:", expected)
+    assert result == expected, "Test failed!"
+    print("Test passed!")
+```
+
+**How it works:**
+
+- The function uses a list comprehension to iterate over each string in the input list.
+- For each string `s`, the slice `s[::-1]` creates a reversed copy of the string (Python's slicing with a step of `-1` reverses the sequence).
+- The result is a new list containing all the reversed strings, leaving the original list unchanged.
+
+**Example output:**
+```
+Result:   ['deR', 'neerG', 'eulB', 'etihW', 'kcalB']
+Expected: ['deR', 'neerG', 'eulB', 'etihW', 'kcalB']
+Test passed!
+```

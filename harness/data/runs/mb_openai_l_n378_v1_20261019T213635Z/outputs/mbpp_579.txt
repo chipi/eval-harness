@@ -1,0 +1,9 @@
+```python
+def find_dissimilar(tuple1, tuple2):
+    """Return elements that appear in exactly one of the two tuples."""
+    return tuple(sorted(set(tuple1) ^ set(tuple2)))
+
+
+if __name__ == "__main__":
+    assert find_dissimilar((3, 4, 5, 6), (5, 7, 4, 10)) == (3, 6, 7, 10)
+```

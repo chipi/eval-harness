@@ -1,0 +1,31 @@
+```python
+#!/usr/bin/env python3
+"""
+Remove the characters that have odd index values from a given string.
+
+Example:
+    odd_values_string('abcdef') -> 'ace'
+"""
+
+def odd_values_string(s: str) -> str:
+    """
+    Return a new string containing only the characters at even indexes.
+
+    Indexes:
+        0 1 2 3 4 5
+        a b c d e f
+        ^   ^   ^
+        kept characters -> 'ace'
+    """
+    return s[::2]
+
+
+if __name__ == "__main__":
+    assert odd_values_string("abcdef") == "ace"
+    assert odd_values_string("") == ""
+    assert odd_values_string("a") == "a"
+    assert odd_values_string("ab") == "a"
+    assert odd_values_string("hello") == "hlo"
+
+    print("All tests passed.")
+```

@@ -1,0 +1,43 @@
+```python
+def is_undulating(n):
+    """
+    A number is undulating if it consists of alternating digits.
+    Example: 1212121 is undulating, 121221 is not.
+    """
+    s = str(n)
+    
+    # A number with less than 3 digits is technically undulating 
+    # as long as the first two digits are different.
+    if len(s) < 2:
+        return True
+    
+    # The two alternating digits
+    digit1 = s[0]
+    digit2 = s[1]
+    
+    # Undulating numbers must have different alternating digits
+    if digit1 == digit2:
+        return False
+    
+    # Check if every character matches the expected alternating pattern
+    for i in range(len(s)):
+        if i % 2 == 0:
+            if s[i] != digit1:
+                return False
+        else:
+            if s[i] != digit2:
+                return False
+                
+    return True
+
+if __name__ == "__main__":
+    # Test cases
+    assert is_undulating(1212121) == True
+    assert is_undulating(121212) == True
+    assert is_undulating(123123) == False
+    assert is_undulating(111) == False
+    assert is_undulating(4545) == True
+    assert is_undulating(4546) == False
+    
+    print("All tests passed!")
+```

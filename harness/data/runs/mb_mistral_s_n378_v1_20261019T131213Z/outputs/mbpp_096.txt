@@ -1,0 +1,29 @@
+Here's a self-contained Python script that solves the problem of finding the number of divisors of a given integer:
+
+```python
+def divisor(n):
+    """Return the number of divisors of a given integer n."""
+    if n == 0:
+        return 0
+    count = 0
+    for i in range(1, int(n**0.5) + 1):
+        if n % i == 0:
+            if i == n // i:
+                count += 1
+            else:
+                count += 2
+    return count
+
+# Test the function
+assert divisor(15) == 4
+print("All tests passed!")
+```
+
+### Explanation:
+1. The function `divisor(n)` calculates the number of divisors of `n`.
+2. It handles the edge case where `n` is 0 by returning 0 (since 0 has an infinite number of divisors, but we return 0 for simplicity).
+3. For positive integers, it iterates from 1 to the square root of `n` (inclusive) to find divisors efficiently.
+4. For each `i` that divides `n`, it checks if `i` and `n//i` are the same (perfect square case) or different (pair of divisors), and increments the count accordingly.
+5. The test case `assert divisor(15) == 4` verifies that the function works correctly (the divisors of 15 are 1, 3, 5, 15, so there are 4 divisors).
+
+You can run this script directly, and it will print "All tests passed!" if the function works as expected.

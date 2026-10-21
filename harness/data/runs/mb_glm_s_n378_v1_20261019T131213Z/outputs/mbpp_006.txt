@@ -1,0 +1,59 @@
+```python
+def differ_At_One_Bit_Pos(n1: int, n2: int) -> bool:
+    """
+    Checks if two integers differ at exactly one bit position.
+
+    This function uses bitwise operations to determine if the binary
+    representations of the two numbers have a Hamming distance of 1.
+
+    Args:
+        n1: The first integer.
+        n2: The second integer.
+
+    Returns:
+        True if the numbers differ at exactly one bit position, False otherwise.
+        
+    Examples:
+        >>> differ_At_One_Bit_Pos(13, 9)
+        True
+        >>> differ_At_One_Bit_Pos(7, 8)
+        True
+        >>> differ_At_One_Bit_Pos(7, 9)
+        False
+        >>> differ_At_One_Bit_Pos(0, 1)
+        True
+        >>> differ_At_One_Bit_Pos(0, 0)
+        False
+    """
+    # 1. Calculate the XOR of the two numbers. The result will have a '1' in
+    #    every position where the bits of n1 and n2 are different.
+    xor_result = n1 ^ n2
+
+    # 2. A number that has exactly one '1' bit in its binary representation is
+    #    a power of two (e.g., 1 (0b1), 2 (0b10), 4 (0b100), 8 (0b1000)).
+    #    So, we need to check if the XOR result is a power of two.
+    
+    # 3. A number `x` is a power of two if `x & (x - 1)` is 0.
+    #    Example: Let x = 8 (0b1000). Then x-1 = 7 (0b0111).
+    #    The bitwise AND of 8 and 7 is 0b1000 & 0b0111 = 0b0000.
+    #    This works because subtracting 1 from a power of two flips all the
+    #    bits after the single '1' bit, ensuring no overlapping '1's.
+    
+    # 4. The final check: `xor_result != 0` ensures that the numbers are not
+    #    identical (which would result in an XOR of 0). If they are identical,
+    #    they don't differ at *any* bit position, so the answer is False.
+    return xor_result != 0 and (xor_result & (xor_result - 1)) == 0
+
+# Example usage and assertions from the problem description
+assert differ_At_One_Bit_Pos(13, 9) == True
+
+# Additional test cases to demonstrate the function's correctness
+assert differ_At_One_Bit_Pos(7, 8) == True   # 0b0111 vs 0b1000
+assert differ_At_One_Bit_Pos(7, 9) == False  # 0b0111 vs 0b1001 (two bits differ)
+assert differ_At_One_Bit_Pos(0, 1) == True   # 0b0000 vs 0b0001
+assert differ_At_One_Bit_Pos(0, 0) == False  # Identical numbers
+assert differ_At_One_Bit_Pos(31, 30) == True # 0b11111 vs 0b11110
+assert differ_At_One_Bit_Pos(31, 29) == False # 0b11111 vs 0b11101 (two bits differ)
+
+print("All assertions passed.")
+```

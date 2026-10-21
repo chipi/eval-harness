@@ -1,0 +1,57 @@
+Looking at this problem, I need to find the last digit of n!.
+
+Key observations:
+- 0! = 1 → last digit 1
+- 1! = 1 → last digit 1
+- 2! = 2 → last digit 2
+- 3! = 6 → last digit 6
+- 4! = 24 → last digit 4
+- For n ≥ 5, n! contains both 2 and 5 as factors, so it's divisible by 10 → last digit 0
+
+```python
+"""
+Write a python function to find the last digit in factorial of a given number.
+assert last_Digit_Factorial(4) == 4
+"""
+
+
+def last_Digit_Factorial(n):
+    """
+    Return the last digit of n! (factorial of n).
+
+    For n >= 5, n! is divisible by 10 (it contains factors 2 and 5),
+    so the last digit is always 0.
+    """
+    if n == 0:
+        return 1
+    elif n == 1:
+        return 1
+    elif n == 2:
+        return 2
+    elif n == 3:
+        return 6
+    elif n == 4:
+        return 4
+    else:
+        return 0
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert last_Digit_Factorial(4) == 4
+
+    # Additional test cases
+    assert last_Digit_Factorial(0) == 1
+    assert last_Digit_Factorial(1) == 1
+    assert last_Digit_Factorial(2) == 2
+    assert last_Digit_Factorial(3) == 6
+    assert last_Digit_Factorial(5) == 0
+    assert last_Digit_Factorial(10) == 0
+    assert last_Digit_Factorial(21) == 0
+
+    print("All tests passed!")
+
+    # Demonstration
+    for i in range(11):
+        print(f"last digit of {i}! = {last_Digit_Factorial(i)}")
+```

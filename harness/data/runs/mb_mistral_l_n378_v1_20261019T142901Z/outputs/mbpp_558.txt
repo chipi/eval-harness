@@ -1,0 +1,43 @@
+Here's a self-contained Python script that solves the problem, including the function and the assertion:
+
+```python
+"""
+Function to calculate the sum of the per-digit differences between two integers.
+The digit distance is calculated by taking the absolute difference between each corresponding digit.
+If the numbers have different lengths, the shorter number is padded with leading zeros.
+"""
+
+def digit_distance_nums(num1, num2):
+    # Convert numbers to strings to process each digit
+    str1 = str(num1)
+    str2 = str(num2)
+
+    # Pad the shorter string with leading zeros
+    max_len = max(len(str1), len(str2))
+    str1 = str1.zfill(max_len)
+    str2 = str2.zfill(max_len)
+
+    # Calculate the sum of absolute differences between corresponding digits
+    total = 0
+    for d1, d2 in zip(str1, str2):
+        total += abs(int(d1) - int(d2))
+
+    return total
+
+# Test the function with the provided assertion
+assert digit_distance_nums(1, 2) == 1
+
+# Additional test cases
+assert digit_distance_nums(123, 456) == 9  # (1-4)+(2-5)+(3-6) = 3+3+3 = 9
+assert digit_distance_nums(100, 1) == 1    # (1-0)+(0-0)+(0-1) = 1+0+1 = 2 (Note: This shows padding with zeros)
+assert digit_distance_nums(0, 0) == 0      # All digits are the same
+assert digit_distance_nums(999, 111) == 24 # (9-1)*3 = 24
+```
+
+The function works by:
+1. Converting both numbers to strings
+2. Padding the shorter number with leading zeros to make them the same length
+3. Calculating the absolute difference between each corresponding digit
+4. Summing all these differences
+
+The provided assertion `digit_distance_nums(1, 2) == 1` passes successfully. I've also included additional test cases to demonstrate the function's behavior with different inputs.

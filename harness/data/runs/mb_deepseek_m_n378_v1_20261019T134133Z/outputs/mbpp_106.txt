@@ -1,0 +1,28 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def add_lists(lst, tup):
+    """
+    Append the given list to the given tuple.
+    
+    Args:
+        lst: A list of elements to append.
+        tup: A tuple to which the list elements will be appended.
+    
+    Returns:
+        A new tuple containing the original tuple elements followed by the list elements.
+    """
+    return tup + tuple(lst)
+
+
+# Test the function
+assert add_lists([5, 6, 7], (9, 10)) == (9, 10, 5, 6, 7)
+print("Test passed!")
+```
+
+**Explanation:**
+
+- The function `add_lists` takes two arguments: a list `lst` and a tuple `tup`.
+- It converts the list to a tuple using `tuple(lst)` and concatenates it with the original tuple using the `+` operator.
+- Tuple concatenation returns a new tuple, so the original inputs are not modified.
+- The `assert` statement verifies that `add_lists([5, 6, 7], (9, 10))` returns `(9, 10, 5, 6, 7)`, which it does.

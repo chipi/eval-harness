@@ -1,0 +1,15 @@
+```python
+def capital_words_spaces(s):
+    result = s[0]
+    for char in s[1:]:
+        if char.isupper():
+            result += ' ' + char
+        else:
+            result += char
+    return result
+
+# Test the function
+print(capital_words_spaces("Python"))  # 'Python'
+print(capital_words_spaces("HelloWorld"))  # 'Hello World'
+print(capital_words_spaces("ThisIsATest"))  # 'This Is A Test'
+```

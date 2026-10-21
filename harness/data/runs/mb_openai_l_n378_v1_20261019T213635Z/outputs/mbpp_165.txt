@@ -1,0 +1,11 @@
+```python
+def count_char_position(text):
+    """Count letters whose 1-based position matches their alphabet position."""
+    return sum(
+        char.isascii() and char.isalpha() and ord(char.lower()) - ord("a") == index
+        for index, char in enumerate(text)
+    )
+
+
+assert count_char_position("xbcefg") == 2
+```

@@ -1,0 +1,23 @@
+```python
+def get_max_sum(n, memo=None):
+    if memo is None:
+        memo = {}
+    if n in memo:
+        return memo[n]
+    if n == 0:
+        return 0
+    # Calculate the sum of f(n/2) + f(n/3) + f(n/4) + f(n/5)
+    sum_parts = (
+        get_max_sum(n // 2, memo) +
+        get_max_sum(n // 3, memo) +
+        get_max_sum(n // 4, memo) +
+        get_max_sum(n // 5, memo)
+    )
+    # The result is the max between the sum and n itself
+    result = max(sum_parts, n)
+    memo[n] = result
+    return result
+
+# Test the function
+assert get_max_sum(60) == 106
+```

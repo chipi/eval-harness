@@ -1,0 +1,44 @@
+Here's a self-contained Python script that solves the problem of finding the sum of the product of consecutive binomial coefficients:
+
+```python
+import math
+
+def sum_Of_product(n):
+    """
+    Calculate the sum of the product of consecutive binomial coefficients for a given n.
+    
+    The binomial coefficients for a given n are C(n, 0), C(n, 1), ..., C(n, n).
+    The function computes the sum of C(n, k) * C(n, k+1) for k from 0 to n-1.
+    
+    Args:
+        n (int): A non-negative integer.
+        
+    Returns:
+        int: The sum of the product of consecutive binomial coefficients.
+    """
+    total = 0
+    for k in range(n):
+        binom1 = math.comb(n, k)
+        binom2 = math.comb(n, k + 1)
+        total += binom1 * binom2
+    return total
+
+# Test the function
+assert sum_Of_product(3) == 15
+assert sum_Of_product(0) == 0
+assert sum_Of_product(1) == 1
+assert sum_Of_product(2) == 4
+assert sum_Of_product(4) == 56
+
+print("All test cases passed!")
+```
+
+### Explanation:
+1. **Binomial Coefficients**: The binomial coefficient \( C(n, k) \) is calculated using `math.comb(n, k)`, which is available in Python 3.10 and later. For earlier versions, you can use `math.factorial(n) // (math.factorial(k) * math.factorial(n - k))`.
+2. **Sum of Products**: The function iterates over all consecutive pairs of binomial coefficients \( C(n, k) \) and \( C(n, k+1) \), multiplies them, and adds the product to the total sum.
+3. **Test Cases**: The function is tested with several values of `n` to ensure correctness. The test case `sum_Of_product(3) == 15` is included as specified in the problem statement.
+
+### Mathematical Insight:
+The sum of the product of consecutive binomial coefficients can also be expressed using the identity:
+\[ \sum_{k=0}^{n-1} C(n, k) \cdot C(n, k+1) = C(2n, n-1) \]
+This identity can be used to optimize the calculation for very large `n`, but the straightforward approach above is sufficient for the given problem constraints.

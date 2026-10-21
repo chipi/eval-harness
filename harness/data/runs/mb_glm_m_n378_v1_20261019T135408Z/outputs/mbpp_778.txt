@@ -1,0 +1,48 @@
+Here's a self-contained Python script that solves the problem of packing consecutive duplicates into sublists:
+
+```python
+def pack_consecutive_duplicates(lst):
+    """
+    Pack consecutive duplicates of a given list elements into sublists.
+    
+    Args:
+        lst: A list of elements.
+    
+    Returns:
+        A list of sublists where each sublist contains consecutive duplicates.
+    """
+    if not lst:
+        return []
+    
+    result = []
+    current_sublist = [lst[0]]
+    
+    for element in lst[1:]:
+        if element == current_sublist[-1]:
+            current_sublist.append(element)
+        else:
+            result.append(current_sublist)
+            current_sublist = [element]
+    
+    result.append(current_sublist)
+    return result
+
+# Test the function
+assert pack_consecutive_duplicates([0, 0, 1, 2, 3, 4, 4, 5, 6, 6, 6, 7, 8, 9, 4, 4]) == [[0, 0], [1], [2], [3], [4, 4], [5], [6, 6, 6], [7], [8], [9], [4, 4]]
+print("All tests passed!")
+```
+
+### Explanation:
+1. **Function Definition**: The function `pack_consecutive_duplicates` takes a list `lst` as input.
+2. **Edge Case Handling**: If the input list is empty, it returns an empty list.
+3. **Initialization**: 
+   - `result` will store the final list of sublists.
+   - `current_sublist` starts with the first element of the input list.
+4. **Iteration**: 
+   - For each subsequent element in the list, it checks if the element is the same as the last element in `current_sublist`.
+   - If yes, it appends the element to `current_sublist`.
+   - If no, it appends `current_sublist` to `result` and starts a new `current_sublist` with the current element.
+5. **Final Append**: After the loop, the last `current_sublist` is appended to `result`.
+6. **Testing**: The function is tested with the provided example to ensure correctness.
+
+This approach efficiently groups consecutive duplicates into sublists with a time complexity of O(n), where n is the length of the input list.

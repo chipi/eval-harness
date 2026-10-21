@@ -1,0 +1,23 @@
+```python
+def extract_singly(list_of_lists):
+    """
+    Flatten a list of lists (or tuples) into a single set of numbers.
+    
+    Args:
+        list_of_lists: A list containing sublists or tuples of numbers.
+        
+    Returns:
+        A set containing all unique numbers from the nested structure.
+    """
+    result = set()
+    for sublist in list_of_lists:
+        for item in sublist:
+            result.add(item)
+    return result
+
+
+if __name__ == "__main__":
+    # Test case
+    assert set(extract_singly([(3, 4, 5), (4, 5, 7), (1, 4)])) == set([3, 4, 5, 7, 1])
+    print("All tests passed!")
+```

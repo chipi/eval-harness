@@ -1,0 +1,32 @@
+```python
+def max_sum_increasing_subseq(arr, n, k, x):
+    # Initialize the list with 1's
+    lis = [1]*n
+    
+    # Compute optimized LIS values in bottom up manner
+    for i in range (1 , n):
+        for j in range(0 , i):
+            if arr[i] > arr[j] and lis[i]< lis[j] + 1 :
+                lis[i] = lis[j]+1
+    
+    # Initialize maximum to 0 to get the maximum of all LIS
+    maximum = 0
+    
+    # Get the maximum of all LIS values
+    for i in range(len(lis)):
+        maximum = max(maximum , lis[i])
+    
+    # If maximum is less than k, return -1
+    if maximum < k:
+        return -1
+    
+    # If maximum is equal to k, return maximum
+    if maximum == k:
+        return maximum
+    
+    # If maximum is greater than k, return maximum - k + 1
+    return maximum - k + 1
+
+# Test the function
+print(max_sum_increasing_subseq([1, 101, 2, 3, 100, 4, 5 ], 7, 4, 6))
+```

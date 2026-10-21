@@ -1,0 +1,69 @@
+```python
+import math
+
+def is_not_prime(n):
+    """
+    Identifies if a number is not prime (i.e., is composite or 1).
+
+    A prime number is a natural number greater than 1 that has no positive
+    divisors other than 1 and itself. This function returns True for any
+    number that does not meet this definition.
+
+    Args:
+        n (int): The integer to check.
+
+    Returns:
+        bool: True if the number is not prime, False otherwise.
+    
+    Examples:
+        >>> is_not_prime(1)
+        True
+        >>> is_not_prime(2)
+        False
+        >>> is_not_prime(4)
+        True
+        >>> is_not_prime(13)
+        False
+        >>> is_not_prime(15)
+        True
+    """
+    # Prime numbers must be greater than 1.
+    if n <= 1:
+        return True
+
+    # Check for divisors from 2 up to the square root of n.
+    # If a divisor is found, the number is not prime.
+    # We only need to check up to the square root because if a number n has a
+    # divisor larger than its square root, it must also have a divisor
+    # smaller than its square root.
+    for i in range(2, int(math.sqrt(n)) + 1):
+        if n % i == 0:
+            return True
+            
+    # If no divisors were found, the number is prime.
+    return False
+
+# Example usage and assertions to verify the function
+if __name__ == "__main__":
+    # The assertion from the problem description
+    assert is_not_prime(2) == False
+
+    # Additional assertions for comprehensive testing
+    assert is_not_prime(1) == True
+    assert is_not_prime(0) == True
+    assert is_not_prime(-5) == True
+    
+    assert is_not_prime(3) == False
+    assert is_not_prime(5) == False
+    assert is_not_prime(7) == False
+    assert is_not_prime(11) == False
+    
+    assert is_not_prime(4) == True
+    assert is_not_prime(6) == True
+    assert is_not_prime(8) == True
+    assert is_not_prime(9) == True
+    assert is_not_prime(10) == True
+    assert is_not_prime(12) == True
+    
+    print("All assertions passed successfully!")
+```

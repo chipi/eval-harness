@@ -1,0 +1,26 @@
+```python
+def larg_nnum(lst: list, n: int) -> list:
+    """
+    Returns a list containing the n largest items from the input list.
+    
+    Args:
+        lst: A list of comparable items (e.g., numbers).
+        n: An integer specifying how many largest items to return.
+    
+    Returns:
+        A list of the n largest items from the input list.
+    """
+    if not lst or n <= 0:
+        return []
+    
+    # Sort the list in descending order and take the first n elements
+    sorted_lst = sorted(lst, reverse=True)
+    return sorted_lst[:n]
+
+
+if __name__ == "__main__":
+    # Test case from the problem statement
+    result = larg_nnum([10, 20, 50, 70, 90, 20, 50, 40, 60, 80, 100], 2)
+    assert set(result) == set([100, 90]), f"Expected {{100, 90}}, got {set(result)}"
+    print("All tests passed!")
+```

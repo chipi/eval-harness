@@ -1,0 +1,44 @@
+Here's a self-contained Python script that solves the problem as described:
+
+```python
+"""
+Function to sum corresponding elements of two lists of equal length.
+"""
+
+def sum_list(list_a, list_b):
+    """
+    Takes two lists of numbers and returns a new list with element-wise sums.
+
+    Args:
+        list_a: First list of numbers
+        list_b: Second list of numbers (must be same length as list_a)
+
+    Returns:
+        List containing element-wise sums of list_a and list_b
+
+    Raises:
+        ValueError: If input lists have different lengths
+    """
+    if len(list_a) != len(list_b):
+        raise ValueError("Input lists must have the same length")
+
+    return [a + b for a, b in zip(list_a, list_b)]
+
+# Test case
+assert sum_list([10, 20, 30], [15, 25, 35]) == [25, 45, 65]
+
+# Additional test cases
+assert sum_list([1, 2, 3], [4, 5, 6]) == [5, 7, 9]
+assert sum_list([0, 0, 0], [0, 0, 0]) == [0, 0, 0]
+assert sum_list([-1, -2, -3], [1, 2, 3]) == [0, 0, 0]
+
+print("All tests passed!")
+```
+
+This script:
+1. Defines the `sum_list` function that takes two lists as input
+2. Includes input validation to ensure the lists are of equal length
+3. Uses a list comprehension with `zip()` to efficiently sum corresponding elements
+4. Includes the required test case from the problem statement
+5. Adds several additional test cases to verify the function works correctly
+6. Prints a success message if all tests pass

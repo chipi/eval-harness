@@ -1,0 +1,15 @@
+```python
+from math import comb
+
+def sum_Of_product(n):
+    """
+    Find the sum of the product of consecutive binomial coefficients.
+    
+    This computes sum(C(n, k) * C(n, k+1)) for k = 0 to n-1,
+    which equals C(2n, n-1).
+    """
+    total = 0
+    for k in range(n):
+        total += comb(n, k) * comb(n, k + 1)
+    return total
+```

@@ -1,0 +1,39 @@
+```python
+def armstrong_number(number):
+    """
+    Checks whether the given number is an Armstrong number or not.
+    
+    An Armstrong number (also known as a narcissistic number) is a number 
+    that is the sum of its own digits each raised to the power of the number of digits.
+    
+    Args:
+        number (int): The integer to check.
+        
+    Returns:
+        bool: True if the number is an Armstrong number, False otherwise.
+    """
+    if number < 0:
+        return False
+    
+    # Convert the number to a string to iterate over digits and find the length
+    num_str = str(number)
+    num_digits = len(num_str)
+    
+    # Calculate the sum of digits raised to the power of the number of digits
+    sum_of_powers = sum(int(digit) ** num_digits for digit in num_str)
+    
+    return sum_of_powers == number
+
+# Asserting the test case provided in the prompt
+assert armstrong_number(153) == True
+
+# Additional test cases to ensure correctness
+assert armstrong_number(370) == True  # 3^3 + 7^3 + 0^3 = 370
+assert armstrong_number(371) == True  # 3^3 + 7^3 + 1^3 = 371
+assert armstrong_number(9474) == True # 4 digits: 9^4 + 4^4 + 7^4 + 4^4 = 9474
+assert armstrong_number(123) == False # Not an Armstrong number
+assert armstrong_number(0) == True    # 0 is an Armstrong number
+assert armstrong_number(1) == True    # 1 is an Armstrong number
+
+print("All test cases passed successfully!")
+```

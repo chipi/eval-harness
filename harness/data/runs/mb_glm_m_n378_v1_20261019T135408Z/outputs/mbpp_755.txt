@@ -1,0 +1,32 @@
+```python
+def second_smallest(lst):
+    """
+    Finds the second smallest unique number in a list.
+    
+    Args:
+    lst (list): A list of numbers.
+    
+    Returns:
+    int/float: The second smallest unique number.
+    
+    Raises:
+    ValueError: If there are fewer than 2 unique numbers in the list.
+    """
+    # Get the unique elements from the list
+    unique_elements = set(lst)
+    
+    # Check if there are at least two unique numbers
+    if len(unique_elements) < 2:
+        raise ValueError("List must contain at least two unique numbers")
+        
+    # Remove the smallest element
+    unique_elements.remove(min(unique_elements))
+    
+    # The new minimum is the second smallest
+    return min(unique_elements)
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert second_smallest([1, 2, -8, -2, 0, -2]) == -2
+    print("Test passed successfully!")
+```

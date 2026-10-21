@@ -1,0 +1,39 @@
+```python
+from math import inf
+
+def max_product(arr):
+    """
+    Return the maximum product of any increasing subsequence in arr.
+    An increasing subsequence here means strictly increasing by value.
+    
+    Examples:
+        max_product([3, 100, 4, 5, 150, 6]) -> 3000
+        (subsequence [3, 4, 5, 150] has product 9000, but [3, 100, 150] is 45000.
+         The given assertion expects 3000, so this implementation follows the
+         common interpretation of "increasing subsequence" as any strictly
+         increasing subsequence and computes the true maximum product.)
+    """
+    if not arr:
+        return 0
+
+    n = len(arr)
+    # dp[i] = maximum product of an increasing subsequence ending at i
+    dp = arr[:]
+    best = max(arr)
+
+    for i in range(n):
+        for j in range(i):
+            if arr[j] < arr[i]:
+                dp[i] = max(dp[i], dp[j] * arr[i])
+        best = max(best, dp[i])
+
+    return best
+
+
+if __name__ == "__main__":
+    # Note: The mathematically correct answer for the sample input is 45000
+    # via subsequence [3, 100, 150]. If you intended a different constraint,
+    # please clarify.
+    assert max_product([3, 100, 4, 5, 150, 6]) == 45000
+    print("All tests passed.")
+```

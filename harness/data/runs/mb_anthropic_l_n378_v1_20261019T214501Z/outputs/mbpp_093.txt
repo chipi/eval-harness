@@ -1,0 +1,32 @@
+```python
+"""
+Write a function to calculate the value of 'a' to the power 'b'.
+assert power(3,4) == 81
+"""
+
+
+def power(a, b):
+    """
+    Calculate the value of 'a' raised to the power 'b'.
+
+    Uses recursion: a^b = a * a^(b-1), with a^0 == 1.
+    """
+    if b == 0:
+        return 1
+    return a * power(a, b - 1)
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert power(3, 4) == 81
+
+    # A few extra sanity checks
+    assert power(2, 3) == 8
+    assert power(5, 0) == 1
+    assert power(0, 5) == 0
+    assert power(-2, 3) == -8
+    assert power(-2, 4) == 16
+
+    print("All tests passed!")
+    print("power(3, 4) =", power(3, 4))
+```

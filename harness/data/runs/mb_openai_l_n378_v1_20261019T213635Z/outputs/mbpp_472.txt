@@ -1,0 +1,11 @@
+```python
+def check_Consecutive(numbers):
+    """Return True if the list contains consecutive integers in any order."""
+    return (
+        len(set(numbers)) == len(numbers)
+        and max(numbers, default=0) - min(numbers, default=0) == len(numbers) - 1
+    )
+
+
+assert check_Consecutive([1, 2, 3, 4, 5]) is True
+```

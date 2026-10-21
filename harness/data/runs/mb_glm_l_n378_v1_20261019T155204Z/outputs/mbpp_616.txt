@@ -1,0 +1,27 @@
+```python
+def tuple_modulo(tuple1, tuple2):
+    """
+    Takes two tuples of the same length and performs element wise modulo.
+    
+    Args:
+        tuple1 (tuple): The dividend tuple.
+        tuple2 (tuple): The divisor tuple.
+        
+    Returns:
+        tuple: A new tuple containing the modulo results.
+        
+    Raises:
+        ValueError: If the input tuples have different lengths.
+    """
+    # Check if tuples are of the same length
+    if len(tuple1) != len(tuple2):
+        raise ValueError("Input tuples must have the same length")
+    
+    # Perform element-wise modulo using a generator expression inside tuple()
+    result = tuple(a % b for a, b in zip(tuple1, tuple2))
+    return result
+
+# Assert statement to verify the solution
+assert tuple_modulo((10, 4, 5, 6), (5, 6, 7, 5)) == (0, 4, 5, 1)
+print("Test passed successfully.")
+```

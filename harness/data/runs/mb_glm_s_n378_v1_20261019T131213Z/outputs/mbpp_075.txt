@@ -1,0 +1,32 @@
+```python
+def find_tuples(lst, k):
+    """
+    Finds tuples in a list where all elements are divisible by a given integer k.
+
+    Args:
+        lst: A list of tuples of integers.
+        k: The integer divisor.
+
+    Returns:
+        A list of tuples from the input list where every element is divisible by k.
+    """
+    # Use a list comprehension to iterate through each tuple in the list.
+    # For each tuple, use the built-in `all()` function with a generator expression.
+    # The generator expression `(x % k == 0 for x in tup)` yields True for each
+    # element `x` in the tuple `tup` if `x` is divisible by `k`.
+    # `all()` returns True only if all elements from the generator are True.
+    return [tup for tup in lst if all(x % k == 0 for x in tup)]
+
+# Example usage:
+# The provided assertion from the problem description.
+assert find_tuples([(6, 24, 12), (7, 9, 6), (12, 18, 21)], 6) == [(6, 24, 12)]
+
+# Additional test cases to verify the function's correctness
+assert find_tuples([(10, 20), (3, 6), (15, 25)], 5) == [(10, 20)]
+assert find_tuples([(1, 2, 3), (4, 5, 6)], 1) == [(1, 2, 3), (4, 5, 6)] # All numbers are divisible by 1
+assert find_tuples([(2, 4, 6), (8, 10, 12)], 3) == [] # No tuples have all elements divisible by 3
+assert find_tuples([], 10) == [] # Edge case: empty list input
+assert find_tuples([(100, 200, 300)], 50) == [(100, 200, 300)]
+
+print("All assertions passed.")
+```

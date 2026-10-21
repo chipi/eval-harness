@@ -1,0 +1,13 @@
+```python
+import re
+
+def text_match_two_three(text):
+    pattern = r'ab{2,3}'
+    return bool(re.search(pattern, text))
+
+# Test the function
+print(text_match_two_three("ac"))  # Should return False
+print(text_match_two_three("abb"))  # Should return True
+print(text_match_two_three("abbb"))  # Should return True
+print(text_match_two_three("abbbb"))  # Should return False
+```

@@ -1,0 +1,14 @@
+```python
+def check_occurences(pairs):
+    """Count pairs, treating (a, b) and (b, a) as the same pair."""
+    counts = {}
+    for pair in pairs:
+        key = tuple(sorted(pair))
+        counts[key] = counts.get(key, 0) + 1
+    return counts
+
+
+assert check_occurences(
+    [(3, 1), (1, 3), (2, 5), (5, 2), (6, 3)]
+) == {(1, 3): 2, (2, 5): 2, (3, 6): 1}
+```

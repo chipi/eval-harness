@@ -1,0 +1,55 @@
+Here's a self-contained Python script that implements the `pancake_sort` function to sort a list of elements:
+
+```python
+def pancake_sort(arr):
+    """
+    Sorts a list of elements using a pancake sorting algorithm.
+    This implementation uses a simple approach of repeatedly finding the maximum element
+    and flipping the sublist up to that element, then flipping the entire list to place
+    the maximum element in its correct position.
+
+    Args:
+        arr (list): The list to be sorted.
+
+    Returns:
+        list: The sorted list in ascending order.
+    """
+    arr = arr.copy()  # Work on a copy to avoid modifying the original list
+    n = len(arr)
+
+    for size in range(n, 1, -1):
+        # Find the index of the maximum element in the unsorted part
+        max_index = 0
+        for i in range(1, size):
+            if arr[i] > arr[max_index]:
+                max_index = i
+
+        # If the maximum element is not already in the correct position
+        if max_index != size - 1:
+            # Flip the sublist up to the maximum element
+            arr = arr[:max_index + 1][::-1] + arr[max_index + 1:]
+
+            # Flip the entire list to place the maximum element at the end
+            arr = arr[::-1]
+
+    return arr
+
+# Test the function
+assert pancake_sort([15, 79, 25, 38, 69]) == [15, 25, 38, 69, 79]
+print("Test passed!")
+```
+
+### Explanation:
+1. **Function `pancake_sort`**:
+   - The function takes a list `arr` as input and returns a sorted copy of the list.
+   - It works by iteratively finding the maximum element in the unsorted portion of the list, flipping the sublist up to that element, and then flipping the entire list to place the maximum element in its correct position at the end.
+
+2. **Steps**:
+   - For each iteration, the maximum element in the unsorted part of the list is found.
+   - If the maximum element is not already in the correct position, the sublist up to that element is flipped, and then the entire list is flipped to place the maximum element at the end.
+   - This process is repeated until the entire list is sorted.
+
+3. **Test**:
+   - The function is tested with the provided example, and an assertion ensures the output is correct.
+
+This implementation is a simple demonstration of the pancake sorting algorithm, which is not the most efficient sorting method but serves as a good example of the problem-solving approach.

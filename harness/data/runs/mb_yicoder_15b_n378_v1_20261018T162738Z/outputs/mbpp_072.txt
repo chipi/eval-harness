@@ -1,0 +1,23 @@
+```python
+def dif_Square(n):
+    if n < 0 or n % 2 != 0:
+        return False
+    for x in range(n):
+        y = n - x**2
+        if y < 0:
+            break
+        if y**0.5 == int(y**0.5):
+            return True
+    return False
+
+# Test cases
+assert dif_Square(5) == True
+assert dif_Square(10) == False
+assert dif_Square(16) == True
+assert dif_Square(25) == True
+assert dif_Square(36) == True
+assert dif_Square(49) == True
+assert dif_Square(64) == True
+assert dif_Square(81) == True
+assert dif_Square(90) == False
+```

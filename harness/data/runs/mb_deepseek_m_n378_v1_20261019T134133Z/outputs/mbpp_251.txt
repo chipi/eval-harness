@@ -1,0 +1,39 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def insert_element(lst, element):
+    """
+    Inserts the given element before each element in the list.
+    
+    Args:
+        lst: The input list.
+        element: The element to insert before each item.
+    
+    Returns:
+        A new list with the element inserted before each original element.
+    """
+    result = []
+    for item in lst:
+        result.append(element)
+        result.append(item)
+    return result
+
+
+# Test the function
+assert insert_element(['Red', 'Green', 'Black'], 'c') == ['c', 'Red', 'c', 'Green', 'c', 'Black']
+print("Test passed!")
+```
+
+**How it works:**
+
+1. We create an empty list `result` to store the output.
+2. We iterate through each item in the input list `lst`.
+3. For each item, we first append the `element` (to insert it before), then append the original `item`.
+4. Finally, we return the `result` list.
+
+**Example trace** with `['Red', 'Green', 'Black']` and `'c'`:
+- Iteration 1: append `'c'`, then `'Red'` → `['c', 'Red']`
+- Iteration 2: append `'c'`, then `'Green'` → `['c', 'Red', 'c', 'Green']`
+- Iteration 3: append `'c'`, then `'Black'` → `['c', 'Red', 'c', 'Green', 'c', 'Black']`
+
+The assertion passes, confirming the function works as expected.

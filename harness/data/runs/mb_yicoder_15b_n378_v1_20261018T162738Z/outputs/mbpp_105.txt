@@ -1,0 +1,13 @@
+```python
+def count(lst):
+    return lst.count(True)
+
+# Test cases
+assert count([True, False, True]) == 2
+assert count([False, False, False]) == 0
+assert count([True, False, True, True, False]) == 3
+assert count([False, False, True, True, False]) == 2
+assert count([True]) == 1
+assert count([False]) == 0
+assert count([]) == 0
+```

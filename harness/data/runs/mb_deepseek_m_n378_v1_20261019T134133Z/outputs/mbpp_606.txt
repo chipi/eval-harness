@@ -1,0 +1,38 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+import math
+
+def radian_degree(degree):
+    """
+    Convert degrees to radians.
+    
+    Args:
+        degree: Angle in degrees
+        
+    Returns:
+        Angle in radians
+    """
+    return degree * (math.pi / 180)
+
+# Test the function
+assert radian_degree(90) == 1.5707963267948966
+print("Test passed!")
+print(f"90 degrees = {radian_degree(90)} radians")
+print(f"180 degrees = {radian_degree(180)} radians")
+print(f"360 degrees = {radian_degree(360)} radians")
+```
+
+**Explanation:**
+
+The conversion from degrees to radians uses the formula:
+- `radians = degrees × (π / 180)`
+
+Since a full circle is 360° or 2π radians, we have:
+- 180° = π radians
+- 1° = π/180 radians
+
+**Key points:**
+- `math.pi` provides the value of π with high precision
+- The function returns a float, which matches the expected assertion value `1.5707963267948966` (which is π/2)
+- The assertion verifies that 90° correctly converts to π/2 radians

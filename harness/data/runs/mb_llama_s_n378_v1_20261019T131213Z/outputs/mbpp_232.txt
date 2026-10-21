@@ -1,0 +1,46 @@
+```python
+def larg_nnum(lst, n):
+    """
+    Returns a list containing the n largest items from the input list.
+
+    Args:
+        lst (list): The input list of numbers.
+        n (int): The number of largest items to return.
+
+    Returns:
+        list: A list of the n largest items from the input list.
+    """
+    # First, we sort the list in descending order
+    sorted_lst = sorted(lst, reverse=True)
+    
+    # Then, we return the first n items from the sorted list
+    return sorted_lst[:n]
+
+# Test the function
+print(set(larg_nnum([10, 20, 50, 70, 90, 20, 50, 40, 60, 80, 100], 2)))  # Should print: {100, 90}
+```
+
+Alternatively, you can use the `heapq` module in Python, which provides an implementation of the heap queue algorithm, also known as the priority queue algorithm.
+
+```python
+import heapq
+
+def larg_nnum(lst, n):
+    """
+    Returns a list containing the n largest items from the input list.
+
+    Args:
+        lst (list): The input list of numbers.
+        n (int): The number of largest items to return.
+
+    Returns:
+        list: A list of the n largest items from the input list.
+    """
+    # Use heapq.nlargest to get the n largest items from the list
+    return heapq.nlargest(n, lst)
+
+# Test the function
+print(set(larg_nnum([10, 20, 50, 70, 90, 20, 50, 40, 60, 80, 100], 2)))  # Should print: {100, 90}
+```
+
+The `heapq.nlargest` function is more efficient than sorting the entire list when `n` is much smaller than the length of the list, because it uses a heap data structure to keep track of the `n` largest items. This approach has a time complexity of O(m log n), where `m` is the length of the list, whereas sorting the entire list has a time complexity of O(m log m).

@@ -1,0 +1,34 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def replace_list(list1, list2):
+    """
+    Replaces the last element of list1 with the elements of list2.
+    
+    Args:
+        list1: The first list whose last element will be replaced.
+        list2: The list whose elements will replace the last element of list1.
+    
+    Returns:
+        A new list with the last element of list1 replaced by all elements of list2.
+    """
+    return list1[:-1] + list2
+
+
+# Test the function
+assert replace_list([1, 3, 5, 7, 9, 10], [2, 4, 6, 8]) == [1, 3, 5, 7, 9, 2, 4, 6, 8]
+print("Test passed!")
+print(replace_list([1, 3, 5, 7, 9, 10], [2, 4, 6, 8]))
+```
+
+**Explanation:**
+
+- `list1[:-1]` creates a slice of `list1` containing all elements except the last one.
+- `+ list2` concatenates the sliced list with all elements of `list2`.
+- The result is a new list where the last element of `list1` has been replaced by the entire contents of `list2`.
+
+**Output:**
+```
+Test passed!
+[1, 3, 5, 7, 9, 2, 4, 6, 8]
+```

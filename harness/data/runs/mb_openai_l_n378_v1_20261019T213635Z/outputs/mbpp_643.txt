@@ -1,0 +1,12 @@
+```python
+def text_match_wordz_middle(text: str) -> bool:
+    """Return True if any word contains 'z' after its first and before its last character."""
+    import re
+
+    return any("z" in word[1:-1] for word in re.findall(r"\w+", text))
+
+
+assert text_match_wordz_middle("pythonzabc.") is True
+assert text_match_wordz_middle("zabc") is False
+assert text_match_wordz_middle("abcz") is False
+```

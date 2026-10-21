@@ -1,0 +1,24 @@
+```python
+def sum_series(n):
+    """
+    Calculates the sum of the series (n - 2*i) from i=0 to n // 2.
+    Example for n=6: 6 + 4 + 2 = 12.
+    """
+    # The upper bound is n // 2 because n // 2 gives the number of steps 
+    # of size 2 that fit into n. 
+    # Note: range(stop) excludes the stop value, so we need n // 2 + 1 
+    # to include the term where i = n // 2.
+    upper_bound = n // 2 + 1
+    
+    total_sum = 0
+    for i in range(upper_bound):
+        term = n - 2 * i
+        total_sum += term
+        
+    return total_sum
+
+# Test the function with the provided assertion
+assert sum_series(6) == 12
+assert sum_series(5) == 9  # 5 + 3 + 1
+assert sum_series(0) == 0
+```

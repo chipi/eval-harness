@@ -1,0 +1,10 @@
+```python
+def big_sum(arr):
+    return max(arr) + min(arr)
+
+# Test cases
+assert big_sum([1,2,3]) == 4
+assert big_sum([5,10,15]) == 30
+assert big_sum([-1,-2,-3]) == -4
+assert big_sum([100,200,300]) == 600
+```

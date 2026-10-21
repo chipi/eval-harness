@@ -1,0 +1,18 @@
+```python
+def recursive_list_sum(lst):
+    """
+    Recursively flatten a nested list and return the sum of all numeric elements.
+    """
+    total = 0
+    for item in lst:
+        if isinstance(item, list):
+            total += recursive_list_sum(item)
+        else:
+            total += item
+    return total
+
+
+if __name__ == "__main__":
+    assert recursive_list_sum([1, 2, [3, 4], [5, 6]]) == 21
+    print("All tests passed.")
+```

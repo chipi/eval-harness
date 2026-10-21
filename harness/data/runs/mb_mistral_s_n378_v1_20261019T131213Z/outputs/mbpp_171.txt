@@ -1,0 +1,32 @@
+Here's a self-contained Python script that solves the problem in a markdown code block:
+
+```python
+"""
+Write a function to find the perimeter of a regular pentagon from the length of its sides.
+assert perimeter_pentagon(5) == 25
+"""
+
+def perimeter_pentagon(side_length):
+    """
+    Calculate the perimeter of a regular pentagon given the length of one side.
+
+    Args:
+        side_length (float or int): Length of one side of the pentagon
+
+    Returns:
+        float or int: Perimeter of the pentagon (5 * side_length)
+    """
+    return 5 * side_length
+
+# Test the function
+assert perimeter_pentagon(5) == 25
+print("Test passed! The perimeter of a regular pentagon with side length 5 is 25.")
+```
+
+This script:
+1. Defines a function `perimeter_pentagon` that takes a side length as input
+2. Returns the perimeter by multiplying the side length by 5 (since a regular pentagon has 5 equal sides)
+3. Includes the required assertion test case
+4. Prints a confirmation message if the test passes
+
+The function works for both integer and floating-point side lengths.

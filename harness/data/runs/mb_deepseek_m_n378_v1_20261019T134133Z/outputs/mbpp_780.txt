@@ -1,0 +1,55 @@
+Looking at the problem, I need to find combinations of sums with tuples in the given tuple list. Since the expected output shows pairs, this means we're taking combinations of 2 tuples at a time and summing their corresponding elements.
+
+Let me analyze the expected output with input `[(2, 4), (6, 7), (5, 1), (6, 10)]`:
+
+- (2,4) + (6,7) = (8,11)
+- (2,4) + (5,1) = (7,5)
+- (2,4) + (6,10) = (8,14)
+- (6,7) + (5,1) = (11,8)
+- (6,7) + (6,10) = (12,17)
+- (5,1) + (6,10) = (11,11)
+
+This confirms it's combinations of 2 tuples with element-wise addition.
+
+```python
+from itertools import combinations
+
+def find_combinations(tuple_list):
+    """
+    Find combinations of sums with tuples in the given tuple list.
+    Takes combinations of 2 tuples and sums their corresponding elements.
+    
+    Args:
+        tuple_list: List of tuples to find combinations from
+        
+    Returns:
+        List of tuples containing the sums of combinations
+    """
+    result = []
+    
+    # Get all combinations of 2 tuples
+    for combo in combinations(tuple_list, 2):
+        # Sum corresponding elements of the two tuples
+        summed_tuple = tuple(a + b for a, b in zip(combo[0], combo[1]))
+        result.append(summed_tuple)
+    
+    return result
+
+# Test the function
+assert find_combinations([(2, 4), (6, 7), (5, 1), (6, 10)]) == [(8, 11), (7, 5), (8, 14), (11, 8), (12, 17), (11, 11)]
+print("Test passed!")
+
+# Additional test cases
+print(find_combinations([(1, 2), (3, 4), (5, 6)]))
+# Expected: [(4, 6), (6, 8), (8, 10)]
+
+print(find_combinations([(1, 2, 3), (4, 5, 6)]))
+# Expected: [(5, 7, 9)]
+```
+
+The function works as follows:
+1. Uses `itertools.combinations` to generate all possible combinations of 2 tuples from the input list
+2. For each combination, uses `zip` to pair up corresponding elements and adds them together
+3. Returns a list of all the summed tuples
+
+This produces the expected output where each tuple in the result is the element-wise sum of two tuples from the original list.

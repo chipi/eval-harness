@@ -1,0 +1,34 @@
+Here’s a self-contained Python script that solves the problem:  
+
+```python
+def max_subarray_product(arr):
+    """
+    Returns the maximum product of any contiguous subarray within the given array.
+    Handles negative numbers and zeros correctly.
+    """
+    if not arr:
+        return 0
+
+    # Initialize with the first element
+    max_prod = min_prod = result = arr[0]
+
+    for num in arr[1:]:
+        # If num is negative, swapping max and min helps because
+        # multiplying a negative by a negative gives a positive.
+        if num < 0:
+            max_prod, min_prod = min_prod, max_prod
+
+        # Update max and min product ending at current position
+        max_prod = max(num, max_prod * num)
+        min_prod = min(num, min_prod * num)
+
+        # Update global result
+        result = max(result, max_prod)
+
+    return result
+
+
+# Test case
+assert max_subarray_product([1, -2, -3, 0, 7, -8, -2]) == 112
+print("Test passed.")
+```

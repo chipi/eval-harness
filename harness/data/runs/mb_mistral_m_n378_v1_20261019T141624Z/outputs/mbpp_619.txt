@@ -1,0 +1,14 @@
+```python
+def move_num(s):
+    letters = []
+    numbers = []
+    for char in s:
+        if char.isdigit():
+            numbers.append(char)
+        else:
+            letters.append(char)
+    return ''.join(letters + numbers)
+
+# Test the function
+assert move_num('I1love143you55three3000thousand') == 'Iloveyouthreethousand1143553000'
+```

@@ -1,0 +1,9 @@
+```python
+def check(n):
+    rev = int(str(n)[::-1])
+    return n == (2 * rev) - 1
+
+if __name__ == "__main__":
+    assert check(70) == False
+    print(check(70))
+```

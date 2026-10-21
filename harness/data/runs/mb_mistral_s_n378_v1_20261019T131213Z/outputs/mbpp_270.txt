@@ -1,0 +1,40 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def sum_even_and_even_index(numbers):
+    """
+    Calculate the sum of even numbers at even indices in a list.
+
+    Args:
+        numbers: List of integers to process
+
+    Returns:
+        Sum of even numbers at even indices
+    """
+    total = 0
+    for index, num in enumerate(numbers):
+        if index % 2 == 0 and num % 2 == 0:  # Check if index and number are even
+            total += num
+    return total
+
+# Test case
+assert sum_even_and_even_index([5, 6, 12, 1, 18, 8]) == 30
+print("Test passed!")
+```
+
+This script:
+1. Defines a function `sum_even_and_even_index` that takes a list of numbers
+2. Uses `enumerate` to get both the index and value of each element
+3. Checks if both the index and the number are even
+4. Sums all numbers that meet both conditions
+5. Includes the test case from the problem statement
+6. Prints a confirmation message if the test passes
+
+The function will return 30 for the given test case because:
+- At index 0 (even): 5 (odd) → not included
+- At index 1 (odd): 6 (even) → not included
+- At index 2 (even): 12 (even) → included (12)
+- At index 3 (odd): 1 (odd) → not included
+- At index 4 (even): 18 (even) → included (18)
+- At index 5 (odd): 8 (even) → not included
+Total = 12 + 18 = 30

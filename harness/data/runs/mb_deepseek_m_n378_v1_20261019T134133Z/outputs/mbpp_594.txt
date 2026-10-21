@@ -1,0 +1,47 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def diff_even_odd(numbers):
+    """
+    Find the difference between the first even and first odd number in a list.
+    Returns the absolute difference between the first even and first odd number.
+    """
+    first_even = None
+    first_odd = None
+    
+    for num in numbers:
+        if num % 2 == 0 and first_even is None:
+            first_even = num
+        elif num % 2 != 0 and first_odd is None:
+            first_odd = num
+        
+        # Break early if we've found both
+        if first_even is not None and first_odd is not None:
+            break
+    
+    # Handle cases where either even or odd number is missing
+    if first_even is None or first_odd is None:
+        return None
+    
+    return abs(first_even - first_odd)
+
+
+# Test the function
+assert diff_even_odd([1, 3, 5, 7, 4, 1, 6, 8]) == 3
+print("Test passed!")
+print(f"Result: {diff_even_odd([1, 3, 5, 7, 4, 1, 6, 8])}")
+```
+
+**Explanation:**
+
+1. The function `diff_even_odd` iterates through the list to find:
+   - The **first even number** (first number divisible by 2)
+   - The **first odd number** (first number not divisible by 2)
+
+2. For the input `[1, 3, 5, 7, 4, 1, 6, 8]`:
+   - First odd number: `1` (at index 0)
+   - First even number: `4` (at index 4)
+
+3. The difference is calculated as `abs(4 - 1) = 3`, which matches the expected output.
+
+4. The function also handles edge cases where either an even or odd number might be missing from the list, returning `None` in such cases.

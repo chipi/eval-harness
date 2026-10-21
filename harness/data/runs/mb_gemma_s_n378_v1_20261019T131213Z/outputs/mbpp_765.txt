@@ -1,0 +1,54 @@
+```python
+def is_polite(n):
+    """
+    A number is called polite if it can be expressed as the sum of two or more consecutive positive integers.
+    For example:
+    7 = 1 + 2 + 3 + 1
+    7 = 3 + 4
+    So, 7 is a polite number.
+    """
+    if n <= 2:
+        return n + 1
+    
+    count = 0
+    i = 1
+    while i * i <= n:
+        if n % i == 0:
+            if i % 2 != 0:
+                count += 1
+            if i * i != n and (n // i) % 2 != 0:
+                count += 1
+        i += 1
+    
+    if count == 2:
+        return n + 1
+    else:
+        return n
+
+def find_nth_polite_number(n):
+    """
+    Finds the nth polite number.
+    """
+    polite_numbers = []
+    num = 1
+    while len(polite_numbers) < n:
+        if is_polite(num) != num:
+            polite_numbers.append(num)
+        num += 1
+    return polite_numbers[-1]
+
+if __name__ == '__main__':
+    assert find_nth_polite_number(1) == 1
+    assert find_nth_polite_number(2) == 3
+    assert find_nth_polite_number(3) == 5
+    assert find_nth_polite_number(4) == 7
+    assert find_nth_polite_number(5) == 9
+    assert find_nth_polite_number(6) == 11
+    assert find_nth_polite_number(7) == 13
+    assert find_nth_polite_number(8) == 15
+    assert find_nth_polite_number(9) == 17
+    assert find_nth_polite_number(10) == 19
+    
+    # Example usage:
+    print(f"The 7th polite number is: {find_nth_polite_number(7)}")
+```

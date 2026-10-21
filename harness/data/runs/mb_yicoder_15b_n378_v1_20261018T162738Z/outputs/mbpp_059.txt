@@ -1,0 +1,11 @@
+```python
+def is_octagonal(n):
+    i = 1
+    count = 0
+    while count < n:
+        i += 3
+        count += 1
+    return i
+
+assert is_octagonal(5) == 65
+```

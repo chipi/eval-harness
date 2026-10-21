@@ -1,0 +1,38 @@
+```python
+import math
+
+def lateralsuface_cylinder(radius, height):
+    """
+    Calculate the lateral surface area of a cylinder.
+    
+    The lateral surface area of a cylinder is the area of the curved surface,
+    excluding the top and bottom circles.
+    
+    Formula: Lateral Surface Area = 2 * π * r * h
+    
+    Args:
+        radius: The radius of the cylinder
+        height: The height of the cylinder
+    
+    Returns:
+        The lateral surface area of the cylinder
+    """
+    lateral_surface_area = 2 * math.pi * radius * height
+    return lateral_surface_area
+
+
+# Test the function
+if __name__ == "__main__":
+    result = lateralsuface_cylinder(10, 5)
+    expected = 314.15000000000003
+    assert math.isclose(result, expected, rel_tol=0.001)
+    print(f"✓ Test passed!")
+    print(f"Lateral surface area of cylinder with radius=10, height=5: {result}")
+```
+
+The function calculates the lateral surface area of a cylinder using the formula **2πrh**, where:
+- `r` is the radius of the cylinder
+- `h` is the height of the cylinder
+
+For the test case with radius=10 and height=5:
+- Lateral Surface Area = 2 × π × 10 × 5 = 100π ≈ 314.159

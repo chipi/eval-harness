@@ -1,0 +1,19 @@
+```python
+def replace_char(s, old, new):
+    """
+    Replace all occurrences of a character in a string.
+
+    Args:
+        s (str): The input string.
+        old (str): The character to replace.
+        new (str): The character to replace with.
+
+    Returns:
+        str: The modified string.
+    """
+    return s.replace(old, new)
+
+# Test the function
+assert replace_char("polygon", 'y', 'l') == "pollgon"
+print(replace_char("polygon", 'y', 'l'))  # Output: pollgon
+```

@@ -1,0 +1,67 @@
+```python
+#!/usr/bin/env python3
+"""
+Find the n-th polite number.
+
+A polite number is a positive integer that can be expressed as the sum of
+two or more consecutive positive integers.
+
+Example:
+    7 -> 11
+
+Known fact:
+    The n-th polite number is:
+        2^n - 1 - (number of powers of 2 up to n)
+    But a much simpler characterization is:
+    A number is polite iff it is NOT a power of 2.
+    The n-th polite number is the n-th positive integer that is not a power of 2.
+
+So the sequence is:
+    1, 2, 4 are NOT polite
+    3, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15, ...
+
+We can compute the n-th polite number directly by skipping powers of 2.
+"""
+
+
+def is_power_of_two(x: int) -> bool:
+    return x > 0 and (x & (x - 1)) == 0
+
+
+def is_polite(x: int) -> bool:
+    """Return True if x is a polite number."""
+    return x > 0 and not is_power_of_two(x)
+
+
+def nth_polite_number(n: int) -> int:
+    """
+    Return the n-th polite number (1-indexed).
+
+    Example:
+        nth_polite_number(1) == 3
+        nth_polite_number(7) == 11
+    """
+    if n <= 0:
+        raise ValueError("n must be a positive integer")
+
+    count = 0
+    x = 0
+    while count < n:
+        x += 1
+        if is_polite(x):
+            count += 1
+    return x
+
+
+if __name__ == "__main__":
+    # Basic checks
+    assert is_polite(7) is True
+    assert nth_polite_number(1) == 3
+    assert nth_polite_number(2) == 5
+    assert nth_polite_number(3) == 6
+    assert nth_polite_number(4) == 7
+    assert nth_polite_number(7) == 11
+
+    print("All tests passed.")
+    print("7th polite number:", nth_polite_number(7))
+```

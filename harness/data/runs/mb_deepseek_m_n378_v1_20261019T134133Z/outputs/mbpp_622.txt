@@ -1,0 +1,79 @@
+Here's a self-contained Python script that solves the problem of finding the median of two sorted lists of the same size:
+
+```python
+def get_median(arr1, arr2, n):
+    """
+    Find the median of two sorted arrays of the same size.
+    
+    Args:
+        arr1: First sorted array
+        arr2: Second sorted array
+        n: Size of both arrays
+    
+    Returns:
+        The median of the combined arrays as a float
+    """
+    # Merge the two sorted arrays
+    merged = []
+    i, j = 0, 0
+    
+    # Merge elements in sorted order
+    while i < n and j < n:
+        if arr1[i] <= arr2[j]:
+            merged.append(arr1[i])
+            i += 1
+        else:
+            merged.append(arr2[j])
+            j += 1
+    
+    # Add remaining elements from arr1
+    while i < n:
+        merged.append(arr1[i])
+        i += 1
+    
+    # Add remaining elements from arr2
+    while j < n:
+        merged.append(arr2[j])
+        j += 1
+    
+    # Find median of the merged array (size 2n)
+    total_size = 2 * n
+    if total_size % 2 == 0:
+        # Even number of elements - average of two middle elements
+        mid1 = merged[total_size // 2 - 1]
+        mid2 = merged[total_size // 2]
+        return (mid1 + mid2) / 2.0
+    else:
+        # Odd number of elements - middle element
+        return float(merged[total_size // 2])
+
+
+# Test the function
+if __name__ == "__main__":
+    assert get_median([1, 12, 15, 26, 38], [2, 13, 17, 30, 45], 5) == 16.0
+    print("Test passed!")
+    
+    # Additional test cases
+    print(get_median([1, 2, 3], [4, 5, 6], 3))  # Should be 3.5
+    print(get_median([1, 3, 5], [2, 4, 6], 3))  # Should be 3.5
+    print(get_median([1, 2], [3, 4], 2))        # Should be 2.5
+```
+
+**Explanation:**
+
+1. **Merge approach**: The function merges the two sorted arrays into a single sorted array using a standard two-pointer technique.
+
+2. **Merging process**:
+   - Compare elements from both arrays and add the smaller one to the merged list
+   - Continue until one array is exhausted
+   - Append any remaining elements from either array
+
+3. **Finding the median**:
+   - Since both arrays have size `n`, the merged array has size `2n`
+   - If `2n` is even (which it always is when both arrays have the same size), the median is the average of the two middle elements at indices `n-1` and `n`
+   - The formula `(merged[n-1] + merged[n]) / 2.0` gives the correct median
+
+4. **Time complexity**: O(n) where n is the size of each array
+5. **Space complexity**: O(n) for the merged array
+
+For the test case: merging `[1, 12, 15, 26, 38]` and `[2, 13, 17, 30, 45]` gives `[1, 2, 12, 13, 15, 17, 26, 30, 38, 45]`. The two middle elements are 15 and 17, so the median is `(15 + 17) / 2 = 16.0`.

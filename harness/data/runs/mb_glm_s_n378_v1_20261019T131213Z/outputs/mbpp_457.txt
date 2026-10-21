@@ -1,0 +1,43 @@
+```python
+def Find_Min(sublists):
+    """
+    Finds the sublist with the minimum length from a list of sublists.
+
+    Args:
+        sublists: A list of lists (sublists).
+
+    Returns:
+        The first sublist encountered with the minimum length.
+        Returns an empty list if the input list is empty.
+    """
+    # Handle the edge case of an empty input list.
+    if not sublists:
+        return []
+
+    # Initialize the minimum length with the length of the first sublist.
+    min_length = len(sublists[0])
+    
+    # Initialize the result with the first sublist itself.
+    result = sublists[0]
+
+    # Iterate through the sublists starting from the second one.
+    for sublist in sublists[1:]:
+        # If a shorter sublist is found, update the minimum length and the result.
+        if len(sublist) < min_length:
+            min_length = len(sublist)
+            result = sublist
+            
+    return result
+
+# Example usage and assertion from the problem description:
+assert Find_Min([[1],[1,2],[1,2,3]]) == [1]
+
+# Additional test cases
+assert Find_Min([[1, 2, 3], [4, 5], [6]]) == [4, 5]
+assert Find_Min([['a', 'b', 'c'], ['d'], ['e', 'f']]) == ['d']
+assert Find_Min([[1, 2], [3, 4], [5, 6]]) == [1, 2] # Multiple sublists with the same min length
+assert Find_Min([]) == [] # Edge case: empty input list
+assert Find_Min([[100]]) == [100] # Edge case: single sublist
+
+print("All assertions passed.")
+```

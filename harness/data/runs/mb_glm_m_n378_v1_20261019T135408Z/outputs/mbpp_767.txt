@@ -1,0 +1,37 @@
+```python
+def get_pairs_count(arr, target_sum):
+    """
+    Counts the number of pairs whose sum is equal to target_sum.
+    
+    This function counts all index pairs (i, j) such that i < j 
+    and arr[i] + arr[j] == target_sum.
+    
+    Args:
+        arr (list): A list of numbers.
+        target_sum (int/float): The target sum for the pairs.
+        
+    Returns:
+        int: The total count of valid pairs.
+    """
+    from collections import defaultdict
+    
+    freq = defaultdict(int)
+    pair_count = 0
+    
+    for num in arr:
+        complement = target_sum - num
+        # The number of times the complement has appeared so far
+        # is exactly the number of new valid pairs we can form with the current number.
+        pair_count += freq[complement]
+        freq[num] += 1
+        
+    return pair_count
+
+# Assertions to verify the correctness of the function
+if __name__ == "__main__":
+    assert get_pairs_count([1, 1, 1, 1], 2) == 6
+    assert get_pairs_count([1, 5, 7, -1, 5], 6) == 3
+    assert get_pairs_count([1, 2, 3, 4, 5], 10) == 0
+    assert get_pairs_count([10, 12, 10, 15, -1, 7, 6, 5, 4, 2, 1, 1, 1], 11) == 9
+    print("All tests passed!")
+```

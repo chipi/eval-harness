@@ -1,0 +1,23 @@
+```python
+def extract_index_list(l1, l2, l3):
+    """
+    Find elements that are common across three lists at the same index.
+    
+    An element is considered common if it appears in all three lists under the same index.
+    
+    Args:
+        l1: First list
+        l2: Second list
+        l3: Third list
+    
+    Returns:
+        A list of elements that appear at the same index in all three lists.
+    """
+    result = []
+    # Iterate through indices up to the minimum length of the three lists
+    min_len = min(len(l1), len(l2), len(l3))
+    for i in range(min_len):
+        if l1[i] == l2[i] and l2[i] == l3[i]:
+            result.append(l1[i])
+    return result
+```

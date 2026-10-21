@@ -1,0 +1,42 @@
+```python
+def lateralsurface_cube(side_length):
+    """
+    This function calculates the lateral surface area of a cube given its side length.
+
+    The lateral surface area of a cube is the area of all its faces excluding the top and bottom faces.
+    Since a cube has 4 lateral faces, each with an area of side_length^2, 
+    the total lateral surface area is 4 * side_length^2.
+
+    Args:
+        side_length (int or float): The length of the side of the cube.
+
+    Returns:
+        int or float: The lateral surface area of the cube.
+    """
+    # Calculate the lateral surface area
+    lateral_surface_area = 4 * (side_length ** 2)
+    
+    return lateral_surface_area
+
+# Test the function
+print(lateralsurface_cube(5))  # Output: 100
+```
+
+You can also use a more concise version:
+
+```python
+def lateralsurface_cube(side_length):
+    """
+    This function calculates the lateral surface area of a cube given its side length.
+
+    Args:
+        side_length (int or float): The length of the side of the cube.
+
+    Returns:
+        int or float: The lateral surface area of the cube.
+    """
+    return 4 * (side_length ** 2)
+
+# Test the function
+print(lateralsurface_cube(5))  # Output: 100
+```

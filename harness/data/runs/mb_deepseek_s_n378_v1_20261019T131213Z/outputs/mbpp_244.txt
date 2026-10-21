@@ -1,0 +1,24 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def next_Perfect_Square(n):
+    """
+    Returns the next perfect square greater than the given number.
+    If the number itself is a perfect square, returns the next one.
+    """
+    root = int(n ** 0.5)
+    # If n is a perfect square, move to the next integer
+    if root * root == n:
+        root += 1
+    else:
+        root += 1
+    return root * root
+
+# Test cases
+if __name__ == "__main__":
+    assert next_Perfect_Square(35) == 36
+    assert next_Perfect_Square(36) == 49
+    assert next_Perfect_Square(1) == 4
+    assert next_Perfect_Square(0) == 1
+    print("All tests passed.")
+```

@@ -1,0 +1,39 @@
+Looking at this problem, I need to find the difference between two lists — elements that are in one list but not the other (symmetric difference), based on the assertion.
+
+Let me verify with the test case:
+- List1 = `[10, 15, 20, 25, 30, 35, 40]`, List2 = `[25, 40, 35]`
+- Elements in List1 not in List2: `[10, 15, 20, 30]`
+- Elements in List2 not in List1: `[]`
+- Expected output: `[10, 20, 30, 15]` — same elements, different order, so set-based comparison works.
+
+```python
+"""
+Write a python function to get the difference between two lists.
+assert (Diff([10, 15, 20, 25, 30, 35, 40], [25, 40, 35])) == [10, 20, 30, 15]
+"""
+
+
+def Diff(li1, li2):
+    """
+    Return the symmetric difference between two lists:
+    elements present in one list but not in the other.
+    """
+    return list(set(li1) - set(li2)) + list(set(li2) - set(li1))
+
+
+if __name__ == "__main__":
+    # Sorting both sides makes the comparison order-independent,
+    # since set operations do not preserve insertion order.
+    assert sorted(Diff([10, 15, 20, 25, 30, 35, 40], [25, 40, 35])) == sorted(
+        [10, 20, 30, 15]
+    )
+    assert sorted(Diff([1, 2, 3, 4, 5], [6, 7, 1])) == sorted([2, 3, 4, 5, 6, 7])
+    assert sorted(Diff([1, 2, 3], [6, 7, 1])) == sorted([2, 3, 6, 7])
+
+    print(Diff([10, 15, 20, 25, 30, 35, 40], [25, 40, 35]))
+    print(Diff([1, 2, 3, 4, 5], [6, 7, 1]))
+    print(Diff([1, 2, 3], [6, 7, 1]))
+    print("All tests passed!")
+```
+
+**Note:** The exact ordering `[10, 20, 30, 15]` in the original assertion comes from CPython's internal hash ordering of small integers in a set, which is an implementation detail. The script above compares sorted results so it's robust, while still producing the same set of elements.

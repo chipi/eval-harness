@@ -1,0 +1,59 @@
+Looking at this problem, I need to find all perfect squares in the range `[a, b]` inclusive.
+
+```python
+"""
+Write a function to find perfect squares between two given numbers.
+assert perfect_squares(1,30)==[1, 4, 9, 16, 25]
+"""
+
+import math
+
+
+def perfect_squares(a, b):
+    """
+    Return a sorted list of all perfect squares in the inclusive range [a, b].
+
+    Works even if the arguments are given in reverse order (a > b) and
+    handles negative bounds gracefully (negative numbers are never
+    perfect squares, except that 0 is included when in range).
+    """
+    # Allow the bounds to be supplied in either order
+    if a > b:
+        a, b = b, a
+
+    # Perfect squares are non-negative, so clamp the lower bound
+    low = max(a, 0)
+
+    if b < low:
+        return []
+
+    # Smallest integer whose square is >= low
+    start = math.isqrt(low)
+    if start * start < low:
+        start += 1
+
+    # Largest integer whose square is <= b
+    end = math.isqrt(b)
+
+    return [n * n for n in range(start, end + 1)]
+
+
+if __name__ == "__main__":
+    assert perfect_squares(1, 30) == [1, 4, 9, 16, 25]
+    assert perfect_squares(50, 100) == [64, 81, 100]
+    assert perfect_squares(100, 200) == [100, 121, 144, 169, 196]
+    assert perfect_squares(30, 1) == [1, 4, 9, 16, 25]   # reversed bounds
+    assert perfect_squares(-10, 5) == [0, 1, 4]          # negative lower bound
+    assert perfect_squares(5, 8) == []                   # none in range
+    print("All tests passed!")
+    print(perfect_squares(1, 30))
+```
+
+**How it works:**
+
+1. **Normalize bounds** – swap `a` and `b` if they're out of order.
+2. **Clamp to non-negative** – no negative number can be a perfect square.
+3. **Find the integer range** – instead of testing every number in `[a, b]`, compute the smallest integer `start` with `start² ≥ a` and the largest integer `end` with `end² ≤ b` using `math.isqrt` (exact integer square root, no floating-point errors).
+4. **Generate the squares** – list-comprehend `n*n` for `n` in `[start, end]`.
+
+This runs in O(√b) time rather than O(b − a), which matters for large ranges.

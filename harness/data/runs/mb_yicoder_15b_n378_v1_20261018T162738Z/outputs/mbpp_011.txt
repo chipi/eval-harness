@@ -1,0 +1,14 @@
+```python
+def remove_Occ(s, c):
+    if s.startswith(c):
+        s = s[1:]
+    if s.endswith(c):
+        s = s[:-1]
+    return s
+
+assert remove_Occ("hello","l") == "heo"
+assert remove_Occ("python","o") == "pyth"
+assert remove_Occ("java","a") == "jav"
+assert remove_Occ("coding","n") == "codig"
+assert remove_Occ("programming","g") == "progra"
+```

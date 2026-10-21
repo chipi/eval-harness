@@ -1,0 +1,16 @@
+```python
+def add_lists(lst, tup):
+  """
+  Appends the given list to the given tuple.
+
+  Args:
+    lst: The list to append.
+    tup: The tuple to append to.
+
+  Returns:
+    A new tuple with the list appended to the tuple.
+  """
+  return tup + tuple(lst)
+
+#assert add_lists([5, 6, 7], (9, 10)) == (9, 10, 5, 6, 7)
+```

@@ -1,0 +1,23 @@
+```python
+def extract_index_list(l1, l2, l3):
+    """
+    Finds elements that are common to all three lists at the same index.
+    
+    Args:
+        l1 (list): The first list.
+        l2 (list): The second list.
+        l3 (list): The third list.
+        
+    Returns:
+        list: A list of elements that appear in all three lists at the same index.
+    """
+    # We use zip to iterate over the lists in parallel.
+    # zip(l1, l2, l3) yields tuples (a, b, c) where a, b, c are elements
+    # at the current index from l1, l2, and l3 respectively.
+    return [a for a, b, c in zip(l1, l2, l3) if a == b == c]
+
+# Asserting the test case provided in the problem description
+if __name__ == "__main__":
+    assert extract_index_list([1, 1, 3, 4, 5, 6, 7], [0, 1, 2, 3, 4, 5, 7], [0, 1, 2, 3, 4, 5, 7]) == [1, 7]
+    print("Test passed successfully.")
+```

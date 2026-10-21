@@ -1,0 +1,31 @@
+Here's a self-contained Python script that solves the problem of finding the n most expensive items in a given dataset:
+
+```python
+def expensive_items(items, n):
+    """
+    Returns the n most expensive items from a list of dictionaries containing 'name' and 'price' keys.
+
+    Args:
+        items: List of dictionaries with 'name' and 'price' keys
+        n: Number of most expensive items to return
+
+    Returns:
+        List of dictionaries sorted by price in descending order, limited to n items
+    """
+    # Sort the items by price in descending order
+    sorted_items = sorted(items, key=lambda x: x['price'], reverse=True)
+    # Return the first n items
+    return sorted_items[:n]
+
+# Test case
+assert expensive_items([{'name': 'Item-1', 'price': 101.1}, {'name': 'Item-2', 'price': 555.22}], 1) == [{'name': 'Item-2', 'price': 555.22}]
+print("Test passed!")
+```
+
+This script:
+1. Defines a function `expensive_items` that takes a list of items and an integer n
+2. Sorts the items by price in descending order using Python's built-in `sorted` function
+3. Returns the first n items from the sorted list
+4. Includes the test case from the problem statement to verify the function works correctly
+
+The function handles edge cases like when n is larger than the number of items or when there are items with the same price.

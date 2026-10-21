@@ -1,0 +1,29 @@
+```python
+def text_match_wordz_middle(text: str) -> bool:
+    """
+    Checks if a string contains the character 'z', 
+    excluding the very first and very last characters of the string.
+    """
+    # If the string is too short to have a middle (length < 3), 
+    # it cannot contain a 'z' that isn't at the start or end.
+    if len(text) < 3:
+        return False
+    
+    # Slice the string to exclude the first and last characters
+    middle_part = text[1:-1]
+    
+    # Check if 'z' exists in the remaining substring
+    return 'z' in middle_part
+
+if __name__ == "__main__":
+    # Test cases
+    assert text_match_wordz_middle("pythonzabc.") == True
+    assert text_match_wordz_middle("zabc") == False        # 'z' is at the start
+    assert text_match_wordz_middle("abc z") == False       # 'z' is at the end
+    assert text_match_wordz_middle("abzcd") == True       # 'z' is in the middle
+    assert text_match_wordz_middle("z") == False           # Too short
+    assert text_match_wordz_middle("abc") == False         # No 'z'
+    assert text_match_wordz_middle("azb") == True          # 'z' is in the middle
+    
+    print("All tests passed!")
+```

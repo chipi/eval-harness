@@ -1,0 +1,38 @@
+Here's a self-contained Python script that solves the problem using regular expressions to match strings that start with 'a' followed by anything and end with 'b':
+
+```python
+import re
+
+def text_starta_endb(text):
+    """
+    Check if the input string starts with 'a' followed by anything and ends with 'b'.
+
+    Args:
+        text (str): The input string to check.
+
+    Returns:
+        bool: True if the string matches the pattern, False otherwise.
+    """
+    pattern = r'^a.*b$'
+    return bool(re.fullmatch(pattern, text))
+
+# Test the function
+assert text_starta_endb("aabbbb") == True
+assert text_starta_endb("a123b") == True
+assert text_starta_endb("ab") == True
+assert text_starta_endb("abcb") == True
+assert text_starta_endb("a") == False
+assert text_starta_endb("b") == False
+assert text_starta_endb("aa") == False
+assert text_starta_endb("abb") == True
+assert text_starta_endb("aB") == False  # case-sensitive
+```
+
+### Explanation:
+1. The regular expression pattern `^a.*b$` breaks down as:
+   - `^a`: The string must start with 'a'.
+   - `.*`: Followed by zero or more of any character (except newline).
+   - `b$`: The string must end with 'b'.
+2. `re.fullmatch()` ensures the entire string matches the pattern (not just a substring).
+3. The function returns `True` if the pattern matches, `False` otherwise.
+4. The test cases verify the function works as expected.

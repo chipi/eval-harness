@@ -1,0 +1,39 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def tuple_to_dict(tup):
+    """
+    Convert a tuple to a dictionary using adjacent elements as key-value pairs.
+    
+    Args:
+        tup: A tuple with an even number of elements.
+    
+    Returns:
+        A dictionary where each pair of adjacent elements forms a key-value pair.
+    """
+    result = {}
+    for i in range(0, len(tup), 2):
+        result[tup[i]] = tup[i + 1]
+    return result
+
+
+# Test the function
+assert tuple_to_dict((1, 5, 7, 10, 13, 5)) == {1: 5, 7: 10, 13: 5}
+print("Test passed!")
+print(tuple_to_dict((1, 5, 7, 10, 13, 5)))
+```
+
+**How it works:**
+
+1. The function iterates over the tuple using `range(0, len(tup), 2)`, which yields indices `0, 2, 4, ...` (every other index).
+2. For each index `i`, it uses `tup[i]` as the key and `tup[i + 1]` as the value.
+3. This pairs up adjacent elements: `(tup[0], tup[1])`, `(tup[2], tup[3])`, etc.
+4. The result is a dictionary with these key-value pairs.
+
+**Output:**
+```
+Test passed!
+{1: 5, 7: 10, 13: 5}
+```
+
+**Note:** This assumes the tuple has an even number of elements. If the tuple has an odd length, the last element would be ignored (or you could add a check to raise an error).

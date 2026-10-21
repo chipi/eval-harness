@@ -1,0 +1,27 @@
+```python
+def count_Occurrence(tup, lst):
+    """
+    Counts the total occurrences of all elements from lst in the given tuple.
+    
+    Parameters:
+    tup (tuple): The tuple to search within.
+    lst (list): The list of elements whose occurrences are to be counted.
+    
+    Returns:
+    int: Total count of occurrences of all elements from lst in tup.
+    """
+    # Convert list to set for O(1) lookups (optional, but efficient)
+    elements_to_count = set(lst)
+    
+    # Count occurrences of elements that are in the set
+    total_count = sum(1 for item in tup if item in elements_to_count)
+    
+    return total_count
+
+# Example test case
+if __name__ == "__main__":
+    result = count_Occurrence(('a', 'a', 'c', 'b', 'd'), ['a', 'b'])
+    print(f"Count: {result}")  # Expected output: 3
+    assert result == 3, f"Expected 3 but got {result}"
+    print("Test passed.")
+```

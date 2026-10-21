@@ -1,0 +1,12 @@
+```python
+def count_char_position(s):
+    """
+    Write a function to count the number of characters in a string that occur at the same position in the string as in the English alphabet (case insensitive).
+    assert count_char_position("xbcefg") == 2
+    """
+    count = 0
+    for i, char in enumerate(s):
+        if char.lower() == chr(ord('a') + i):
+            count += 1
+    return count
+```

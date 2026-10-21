@@ -1,0 +1,55 @@
+Looking at this problem, I need to check whether a list of colors follows the same pattern structure as a list of pattern symbols (a bijective mapping between colors and patterns).
+
+```python
+"""
+Write a function to check whether it follows the sequence given in the patterns array.
+assert is_samepatterns(["red","green","green"], ["a", "b", "b"])==True
+"""
+
+
+def is_samepatterns(colors, patterns):
+    """
+    Check whether the `colors` list follows the sequence described by `patterns`.
+
+    There must be a one-to-one (bijective) correspondence between the distinct
+    colors and the distinct pattern symbols, preserving positions.
+    """
+    # Lengths must match, otherwise no correspondence is possible
+    if len(colors) != len(patterns):
+        return False
+
+    color_to_pattern = {}
+    pattern_to_color = {}
+
+    for color, pattern in zip(colors, patterns):
+        # Check forward mapping color -> pattern
+        if color in color_to_pattern:
+            if color_to_pattern[color] != pattern:
+                return False
+        else:
+            color_to_pattern[color] = pattern
+
+        # Check backward mapping pattern -> color
+        if pattern in pattern_to_color:
+            if pattern_to_color[pattern] != color:
+                return False
+        else:
+            pattern_to_color[pattern] = color
+
+    return True
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert is_samepatterns(["red", "green", "green"], ["a", "b", "b"]) == True
+
+    # Additional test cases
+    assert is_samepatterns(["red", "green", "greenn"], ["a", "b", "b"]) == False
+    assert is_samepatterns(["red", "green", "greenn"], ["a", "b"]) == False
+    assert is_samepatterns(["red", "red", "red"], ["a", "a", "a"]) == True
+    assert is_samepatterns(["red", "green", "blue"], ["a", "b", "c"]) == True
+    assert is_samepatterns(["red", "green", "blue"], ["a", "a", "b"]) == False
+    assert is_samepatterns([], []) == True
+
+    print("All tests passed!")
+```

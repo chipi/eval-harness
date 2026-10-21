@@ -1,0 +1,40 @@
+Here's a self-contained Python script that solves the problem, including the function and the assertion test:
+
+```python
+"""
+Function to check if every element at an even index in a list is an even number.
+Indices are considered starting from 0 (so 0, 2, 4, ... are even indices).
+"""
+
+def even_position(lst):
+    """
+    Check if all elements at even indices in the list are even numbers.
+
+    Args:
+        lst (list): The input list to check.
+
+    Returns:
+        bool: True if all even-indexed elements are even, False otherwise.
+    """
+    for index in range(0, len(lst), 2):  # Step through even indices (0, 2, 4, ...)
+        if lst[index] % 2 != 0:  # Check if the element is odd
+            return False
+    return True
+
+# Test the function with the provided assertion
+assert even_position([3, 2, 1]) == False, "Test case failed: [3, 2, 1] should return False"
+
+# Additional test cases for verification
+assert even_position([2, 3, 4]) == True, "Test case failed: [2, 3, 4] should return True"
+assert even_position([0, 1, 2, 3, 4]) == True, "Test case failed: [0, 1, 2, 3, 4] should return True"
+assert even_position([1, 2, 3, 4]) == False, "Test case failed: [1, 2, 3, 4] should return False"
+assert even_position([]) == True, "Test case failed: Empty list should return True"
+
+print("All test cases passed!")
+```
+
+### Explanation:
+1. The function `even_position` iterates over the list using a step of 2 (to check even indices: 0, 2, 4, etc.).
+2. For each element at an even index, it checks if the number is even (`num % 2 == 0`). If any element fails this check, the function returns `False`.
+3. If all even-indexed elements are even, the function returns `True`.
+4. The provided assertion (`assert even_position([3, 2, 1]) == False`) is included, along with additional test cases for verification.

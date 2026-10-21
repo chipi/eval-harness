@@ -1,0 +1,10 @@
+```python
+def sample_nam(names):
+    filtered = [name for name in names if not name[0].islower()]
+    return sum(len(name) for name in filtered)
+
+
+if __name__ == "__main__":
+    assert sample_nam(['sally', 'Dylan', 'rebecca', 'Diana', 'Joanne', 'keith']) == 16
+    print("All tests passed.")
+```

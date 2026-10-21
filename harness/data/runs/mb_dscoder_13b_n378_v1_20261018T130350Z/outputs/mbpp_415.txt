@@ -1,0 +1,22 @@
+```python
+def max_Product(arr):
+    if len(arr) < 2:
+        return None
+    max_product = arr[0] * arr[1]
+    min_product = arr[0] * arr[1]
+    max_num = arr[0]
+    min_num = arr[1]
+    for i in range(2, len(arr)):
+        if arr[i] < 0:
+            max_product, min_product = min_product, max_product
+
+        max_product = max(arr[i], max_product * arr[i])
+        min_product = min(arr[i], min_product * arr[i])
+
+        max_num = max(max_num, max_product)
+        min_num = min(min_num, min_product)
+
+    return max_num, min_num
+
+print(max_Product([1,2,3,4,7,0,8,4]))  # Output: (7, 8)
+```

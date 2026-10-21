@@ -1,0 +1,70 @@
+Looking at this problem, I need to write a function that checks whether a given number is a perfect square.
+
+```python
+"""
+Write a function to check whether the given number is a perfect square or not.
+https://www.geeksforgeeks.org/check-if-given-number-is-perfect-square-in-cpp/
+assert not is_perfect_square(10)
+"""
+
+import math
+
+
+def is_perfect_square(n):
+    """
+    Check whether the given number is a perfect square.
+
+    A perfect square is an integer that is the square of some integer,
+    e.g. 0, 1, 4, 9, 16, 25, ...
+
+    Args:
+        n: The number to test.
+
+    Returns:
+        True if n is a perfect square, False otherwise.
+    """
+    # Negative numbers can never be perfect squares
+    if n < 0:
+        return False
+
+    # Use integer square root to avoid floating point precision issues
+    root = math.isqrt(int(n))
+    return root * root == n
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert not is_perfect_square(10)
+
+    # Additional test cases
+    assert is_perfect_square(0)
+    assert is_perfect_square(1)
+    assert is_perfect_square(4)
+    assert is_perfect_square(9)
+    assert is_perfect_square(16)
+    assert is_perfect_square(25)
+    assert is_perfect_square(100)
+    assert is_perfect_square(10000)
+
+    assert not is_perfect_square(2)
+    assert not is_perfect_square(3)
+    assert not is_perfect_square(5)
+    assert not is_perfect_square(26)
+    assert not is_perfect_square(125)
+    assert not is_perfect_square(-4)
+
+    # Very large values (where float-based sqrt would fail)
+    big = 10**30
+    assert is_perfect_square(big * big)
+    assert not is_perfect_square(big * big + 1)
+
+    print("All tests passed!")
+```
+
+**How it works:**
+
+1. **Negative check** — any negative number cannot be a perfect square, so return `False` immediately.
+2. **Integer square root** — `math.isqrt(n)` returns the floor of the exact square root using integer arithmetic (no floating-point rounding errors, which matter for very large numbers like `10**60`).
+3. **Verification** — square the root back and compare with `n`. If they match, `n` is a perfect square.
+
+The time complexity is effectively O(log n) bit operations, which is far better than the naive loop approach of trying every integer up to √n.

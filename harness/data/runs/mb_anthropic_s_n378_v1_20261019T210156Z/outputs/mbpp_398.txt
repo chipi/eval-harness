@@ -1,0 +1,52 @@
+```python
+def sum_of_digits(numbers):
+    """
+    Compute the sum of digits of each number in a given list.
+    
+    Args:
+        numbers: A list of integers
+        
+    Returns:
+        The total sum of all digits from all numbers in the list
+    """
+    total = 0
+    for num in numbers:
+        # Convert to string to iterate through digits, handle negative numbers
+        for digit in str(abs(num)):
+            total += int(digit)
+    return total
+
+
+# Test cases
+assert sum_of_digits([10, 2, 56]) == 14
+print("Test passed: sum_of_digits([10, 2, 56]) == 14")
+
+# Additional test cases
+assert sum_of_digits([1, 2, 3]) == 6
+print("Test passed: sum_of_digits([1, 2, 3]) == 6")
+
+assert sum_of_digits([100]) == 1
+print("Test passed: sum_of_digits([100]) == 1")
+
+assert sum_of_digits([]) == 0
+print("Test passed: sum_of_digits([]) == 0")
+
+print("\nAll tests passed!")
+```
+
+**Explanation:**
+
+The function `sum_of_digits()` works as follows:
+
+1. Initialize a `total` variable to 0
+2. Iterate through each number in the input list
+3. Convert each number to a string (using `abs()` to handle negative numbers)
+4. Iterate through each character (digit) in the string
+5. Convert each digit back to an integer and add it to the total
+6. Return the total sum
+
+For the example `[10, 2, 56]`:
+- 10 → digits: 1 + 0 = 1
+- 2 → digits: 2 = 2
+- 56 → digits: 5 + 6 = 11
+- Total: 1 + 2 + 11 = **14** ✓

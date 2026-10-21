@@ -1,0 +1,32 @@
+```python
+def find_Odd_Pair(data, n):
+    """
+    Counts the number of pairs whose XOR value is odd.
+    
+    The XOR of two numbers is odd if and only if one number is odd and the other is even.
+    Therefore, the total number of such pairs is (count_odd * count_even).
+    
+    Args:
+        data (list): A list of integers.
+        n (int): The number of elements in the list (unused in the logic but kept for signature compatibility).
+        
+    Returns:
+        int: The count of pairs with odd XOR value.
+    """
+    # Count the number of odd and even numbers in the list
+    count_odd = 0
+    count_even = 0
+    
+    for num in data:
+        if num % 2 != 0:
+            count_odd += 1
+        else:
+            count_even += 1
+            
+    # A pair has an odd XOR if one element is odd and the other is even.
+    # The number of such pairs is the product of the counts of odd and even numbers.
+    return count_odd * count_even
+
+# Assert statement to verify the solution
+assert find_Odd_Pair([5, 4, 7, 2, 1], 5) == 6
+```

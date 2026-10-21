@@ -1,0 +1,57 @@
+Looking at this problem, I need to find the index where a value should be inserted into a sorted list to maintain order, using the **rightmost** valid position (i.e., after any existing equal entries).
+
+```python
+"""
+Write a function to locate the right insertion point for a specified value in sorted order.
+assert right_insertion([1,2,4,5],6)==4
+"""
+
+import bisect
+
+
+def right_insertion(a, x):
+    """
+    Locate the right insertion point for value `x` in the sorted list `a`.
+
+    Returns the index where `x` should be inserted to keep `a` sorted.
+    If `x` is already present, the returned index is to the right of
+    any existing entries equal to `x`.
+    """
+    return bisect.bisect_right(a, x)
+
+
+# Equivalent manual implementation (binary search), for reference:
+def right_insertion_manual(a, x):
+    lo, hi = 0, len(a)
+    while lo < hi:
+        mid = (lo + hi) // 2
+        if x < a[mid]:
+            hi = mid
+        else:
+            lo = mid + 1
+    return lo
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert right_insertion([1, 2, 4, 5], 6) == 4
+
+    # Additional test cases
+    assert right_insertion([1, 2, 4, 5], 3) == 2
+    assert right_insertion([1, 2, 4, 5], 7) == 4
+    assert right_insertion([1, 2, 4, 5], 0) == 0
+    assert right_insertion([1, 2, 2, 2, 5], 2) == 4
+    assert right_insertion([], 10) == 0
+
+    # Make sure the manual version agrees
+    assert right_insertion_manual([1, 2, 4, 5], 6) == 4
+    assert right_insertion_manual([1, 2, 2, 2, 5], 2) == 4
+
+    print("All tests passed!")
+```
+
+**How it works:**
+
+- `bisect.bisect_right(a, x)` performs a binary search over the sorted list `a` and returns the insertion index such that all elements to the left are `<= x` and all elements to the right are `> x`.
+- For `[1, 2, 4, 5]` and `x = 6`, every element is less than 6, so the insertion point is at the end: index `4`. ✅
+- Time complexity: **O(log n)**; Space complexity: **O(1)**.

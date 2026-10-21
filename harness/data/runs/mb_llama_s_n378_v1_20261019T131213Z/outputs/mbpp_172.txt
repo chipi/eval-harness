@@ -1,0 +1,22 @@
+```python
+def count_occurance(s: str) -> int:
+    """
+    This function counts the number of occurrences of the string 'std' in a given string.
+
+    Args:
+        s (str): The input string.
+
+    Returns:
+        int: The number of occurrences of 'std' in the string.
+    """
+    return s.count('std')
+
+# Example usage:
+def main():
+    print(count_occurance("letstdlenstdporstd"))  # Output: 3
+
+if __name__ == "__main__":
+    main()
+```
+
+You can run this script to test the `count_occurance` function. The `main` function provides an example usage of the `count_occurance` function. The `count` method of Python strings is used here, which returns the number of occurrences of its argument in the string.

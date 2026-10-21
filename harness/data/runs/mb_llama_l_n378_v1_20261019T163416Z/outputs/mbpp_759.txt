@@ -1,0 +1,15 @@
+```python
+def is_decimal(s):
+    try:
+        num = float(s)
+        return len(s.split('.')[1]) == 2 if '.' in s else True
+    except ValueError:
+        return False
+
+# Test cases
+print(is_decimal('123.11'))  # True
+print(is_decimal('123'))  # True
+print(is_decimal('123.1'))  # False
+print(is_decimal('123.111'))  # False
+print(is_decimal('abc'))  # False
+```

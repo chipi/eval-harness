@@ -1,0 +1,41 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def max_val(lst):
+    """
+    Find the maximum value in a given heterogeneous list.
+    
+    Args:
+        lst: A list containing mixed types (strings, integers, etc.)
+    
+    Returns:
+        The maximum numeric value found in the list.
+    """
+    # Filter out only numeric values (integers and floats)
+    numeric_values = [x for x in lst if isinstance(x, (int, float))]
+    
+    # Return the maximum value if there are numeric values, otherwise None
+    if numeric_values:
+        return max(numeric_values)
+    return None
+
+# Test the function
+if __name__ == "__main__":
+    # Test case from the problem
+    assert max_val(['Python', 3, 2, 4, 5, 'version']) == 5
+    
+    # Additional test cases
+    assert max_val([1, 2, 3, 4, 5]) == 5
+    assert max_val(['a', 'b', 'c']) is None
+    assert max_val([1.5, 2.7, 3.2, 'text']) == 3.2
+    assert max_val([-5, -2, -10, 'hello']) == -2
+    assert max_val([]) is None
+    
+    print("All tests passed!")
+```
+
+This solution:
+1. Filters the heterogeneous list to keep only numeric values (integers and floats)
+2. Returns the maximum value from the filtered numeric values
+3. Returns `None` if there are no numeric values in the list
+4. Handles the test case from the problem where it correctly identifies 5 as the maximum value among the numbers [3, 2, 4, 5] while ignoring the strings 'Python' and 'version'

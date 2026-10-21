@@ -1,0 +1,36 @@
+Here's a self-contained Python script that implements the `sequential_search` function as described in the problem:
+
+```python
+def sequential_search(arr, element):
+    """
+    Perform a sequential search for the given element in the array.
+    
+    Args:
+        arr (list): The list to search through.
+        element: The element to search for.
+        
+    Returns:
+        tuple: A tuple containing a boolean indicating if the element was found,
+               and the index of the element (or -1 if not found).
+    """
+    for index, value in enumerate(arr):
+        if value == element:
+            return (True, index)
+    return (False, -1)
+
+# Test cases
+assert sequential_search([11, 23, 58, 31, 56, 77, 43, 12, 65, 19], 31) == (True, 3)
+assert sequential_search([11, 23, 58, 31, 56, 77, 43, 12, 65, 19], 99) == (False, -1)
+assert sequential_search([], 1) == (False, -1)
+assert sequential_search([1, 2, 3], 1) == (True, 0)
+assert sequential_search([1, 2, 3], 3) == (True, 2)
+
+print("All test cases passed!")
+```
+
+This script defines the `sequential_search` function which:
+1. Iterates through the array using `enumerate` to get both the index and value
+2. Returns `(True, index)` as soon as the element is found
+3. Returns `(False, -1)` if the element isn't found after checking all elements
+
+The script also includes several test cases to verify the function works correctly, including the one from the problem statement. When run, it will print "All test cases passed!" if everything works as expected.

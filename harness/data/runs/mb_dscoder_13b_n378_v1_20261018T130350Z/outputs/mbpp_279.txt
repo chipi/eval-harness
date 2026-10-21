@@ -1,0 +1,13 @@
+```python
+def is_num_decagonal(n):
+    """
+    Write a function to find the nth decagonal number.
+    """
+    return n * (7 * n - 5) // 2
+
+# Test cases
+assert is_num_decagonal(3) == 27
+assert is_num_decagonal(4) == 73
+assert is_num_decagonal(5) == 129
+assert is_num_decagonal(6) == 197
+```

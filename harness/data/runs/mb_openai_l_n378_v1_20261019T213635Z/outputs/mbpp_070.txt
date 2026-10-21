@@ -1,0 +1,9 @@
+```python
+def get_equal(tuples):
+    """Return True if all tuples have the same length."""
+    return len({len(item) for item in tuples}) <= 1
+
+
+assert get_equal([(11, 22, 33), (44, 55, 66)]) is True
+assert get_equal([(1, 2), (3,)]) is False
+```

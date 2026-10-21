@@ -1,0 +1,46 @@
+```python
+def expensive_items(data, n):
+    """
+    Finds the n most expensive items in a given dataset.
+    
+    Args:
+        data (list of dict): A list of dictionaries where each dictionary 
+                             contains a 'price' key.
+        n (int): The number of top items to return.
+        
+    Returns:
+        list of dict: A list containing the n most expensive items.
+    """
+    # Sort the list in descending order based on the 'price' key
+    # and take the first n elements.
+    return sorted(data, key=lambda x: x['price'], reverse=True)[:n]
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    assert expensive_items(
+        [{'name': 'Item-1', 'price': 101.1}, {'name': 'Item-2', 'price': 555.22}], 
+        1
+    ) == [{'name': 'Item-2', 'price': 555.22}]
+
+    # Additional test cases
+    test_data = [
+        {'name': 'A', 'price': 10.0},
+        {'name': 'B', 'price': 50.0},
+        {'name': 'C', 'price': 30.0},
+        {'name': 'D', 'price': 40.0}
+    ]
+    
+    # Test top 2
+    assert expensive_items(test_data, 2) == [
+        {'name': 'B', 'price': 50.0}, 
+        {'name': 'D', 'price': 40.0}
+    ]
+    
+    # Test top 0
+    assert expensive_items(test_data, 0) == []
+    
+    # Test top 10 (more than available)
+    assert len(expensive_items(test_data, 10)) == 4
+
+    print("All tests passed!")
+```

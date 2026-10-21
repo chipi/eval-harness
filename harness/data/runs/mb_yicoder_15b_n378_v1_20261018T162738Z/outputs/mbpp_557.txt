@@ -1,0 +1,8 @@
+```python
+def toggle_string(s):
+    return ''.join(c.upper() if c.islower() else c.lower() for c in s)
+
+assert toggle_string("Python")=="pYTHON"
+assert toggle_string("javaScript")=="jAVASCRIPT"
+assert toggle_string("aBcDeFgHiJkLmNoPqRsTuVwXyZ")=="AbCdEfGhIjKlMnNoPqRSTuVwXyZ"
+```

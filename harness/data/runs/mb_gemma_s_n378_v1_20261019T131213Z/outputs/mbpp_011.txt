@@ -1,0 +1,27 @@
+```python
+def remove_Occ(string, char):
+  """
+  Removes the first and last occurrence of a given character from the string.
+
+  Args:
+    string: The input string.
+    char: The character to remove.
+
+  Returns:
+    The string with the first and last occurrence of the character removed.
+    If the character appears less than twice, returns the original string.
+  """
+  first_occurrence = string.find(char)
+  last_occurrence = string.rfind(char)
+
+  if first_occurrence == -1 or first_occurrence == last_occurrence:
+    return string
+  else:
+    return string[:first_occurrence] + string[first_occurrence+1:last_occurrence] + string[last_occurrence+1:]
+
+# Example usage and assertion
+assert remove_Occ("hello","l") == "heo"
+assert remove_Occ("helloo","o") == "hell"
+assert remove_Occ("hello","x") == "hello"
+assert remove_Occ("aaaa","a") == "aa"
+```

@@ -1,0 +1,10 @@
+```python
+def tup_string(t):
+    return ''.join(t)
+
+# Test cases
+assert tup_string(('e', 'x', 'e', 'r', 'c', 'i', 's', 'e', 's'))=='exercises'
+assert tup_string(('a', 'b', 'c', 'd', 'e'))=='abcde'
+assert tup_string(('1', '2', '3', '4', '5'))=='12345'
+assert tup_string(('!', '@', '#', '$', '%'))=='!@#$%'
+```

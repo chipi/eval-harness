@@ -1,0 +1,43 @@
+```python
+def odd_length_sum(arr):
+    """
+    Calculates the sum of all odd length subarrays.
+    
+    Given an array of positive integers, this function calculates the sum of all 
+    possible subarrays which have an odd length.
+    
+    Formula derivation:
+    An element at index i (0-based) appears in all subarrays where the start index <= i 
+    and end index >= i.
+    The number of possible starting indices is (i + 1).
+    The number of possible ending indices is (n - i).
+    Total subarrays containing element i is (i + 1) * (n - i).
+    Approximately half of these subarrays have odd length.
+    If the total count is even, exactly half are odd.
+    If the total count is odd, there is one more odd length subarray than even.
+    Therefore, the contribution of arr[i] to the total sum is arr[i] * ceil(count / 2),
+    which is equivalent to arr[i] * ((count + 1) // 2).
+    
+    Args:
+        arr (list): A list of integers.
+        
+    Returns:
+        int: The sum of all odd length subarrays.
+    """
+    n = len(arr)
+    total_sum = 0
+    
+    for i in range(n):
+        # Calculate the total number of subarrays containing the element at index i
+        count = (i + 1) * (n - i)
+        
+        # Add the contribution of the current element to the sum
+        # We need the number of odd length subarrays, which is ceil(count / 2)
+        total_sum += arr[i] * ((count + 1) // 2)
+        
+    return total_sum
+
+# Test the function with the provided assertion
+assert odd_length_sum([1, 2, 4]) == 14
+print("Assertion passed: odd_length_sum([1, 2, 4]) == 14")
+```

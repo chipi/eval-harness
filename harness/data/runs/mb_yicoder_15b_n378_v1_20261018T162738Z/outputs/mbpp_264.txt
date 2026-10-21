@@ -1,0 +1,10 @@
+```python
+def dog_age(age):
+    return age * 7
+
+# Test cases
+assert dog_age(12)==61
+assert dog_age(5)==35
+assert dog_age(15)==91
+assert dog_age(2)==14
+```

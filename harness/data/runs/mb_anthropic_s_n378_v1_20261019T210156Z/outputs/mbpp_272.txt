@@ -1,0 +1,22 @@
+```python
+def rear_extract(tuples_list):
+    """
+    Takes a list of tuples and returns a list containing the rear (last) element of each tuple.
+    
+    Args:
+        tuples_list: A list of tuples
+        
+    Returns:
+        A list containing the last element of each tuple
+    """
+    return [tup[-1] for tup in tuples_list]
+
+
+# Test cases
+assert rear_extract([(1, 'Rash', 21), (2, 'Varsha', 20), (3, 'Kil', 19)]) == [21, 20, 19]
+assert rear_extract([(10, 20), (30, 40), (50, 60)]) == [20, 40, 60]
+assert rear_extract([('a',), ('b',), ('c',)]) == ['a', 'b', 'c']
+assert rear_extract([]) == []
+
+print("All tests passed!")
+```

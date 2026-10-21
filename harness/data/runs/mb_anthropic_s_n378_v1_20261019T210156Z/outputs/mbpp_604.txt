@@ -1,0 +1,37 @@
+```python
+def reverse_words(s):
+    """
+    Reverse words separated by spaces in a given string.
+    
+    Args:
+        s: A string with words separated by spaces
+        
+    Returns:
+        A string with words in reversed order
+    """
+    words = s.split()
+    reversed_words = words[::-1]
+    return " ".join(reversed_words)
+
+
+# Test cases
+assert reverse_words("python program") == "program python"
+assert reverse_words("hello world foo bar") == "bar foo world hello"
+assert reverse_words("single") == "single"
+assert reverse_words("a b c d e") == "e d c b a"
+
+print("All tests passed!")
+print(f"reverse_words('python program') = '{reverse_words('python program')}'")
+print(f"reverse_words('hello world foo bar') = '{reverse_words('hello world foo bar')}'")
+```
+
+The solution works as follows:
+
+1. **`split()`**: Splits the string by spaces into a list of words
+2. **`[::-1]`**: Reverses the list of words
+3. **`" ".join()`**: Joins the reversed words back together with spaces
+
+For example, with input `"python program"`:
+- Split: `["python", "program"]`
+- Reverse: `["program", "python"]`
+- Join: `"program python"`

@@ -1,0 +1,28 @@
+```python
+def highest_Power_of_2(n):
+    """
+    This function finds the highest power of 2 that is less than or equal to n.
+
+    Args:
+        n (int): The input number.
+
+    Returns:
+        int: The highest power of 2 that is less than or equal to n.
+    """
+    # Handle edge case where n is 0
+    if n == 0:
+        return 0
+    
+    # Initialize the result variable to 1 (since 2^0 = 1)
+    result = 1
+    
+    # Keep shifting the bits of result to the left until it is less than or equal to n
+    while (result << 1) <= n:
+        result <<= 1
+    
+    return result
+
+# Test the function
+assert highest_Power_of_2(10) == 8
+print("All test cases pass")
+```

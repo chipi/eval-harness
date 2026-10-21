@@ -1,0 +1,30 @@
+```python
+def find_Rotations(s):
+    """
+    This function calculates the minimum number of rotations required to get the same string.
+
+    Args:
+    s (str): The input string.
+
+    Returns:
+    int: The minimum number of rotations required.
+    """
+    # Concatenate the string with itself to check for rotations
+    double_s = s + s
+    
+    # Initialize the rotation count to 1 (since we need at least one rotation)
+    rotations = 1
+    
+    # Check for the first occurrence of the string in the concatenated string (excluding the original string)
+    index = double_s.find(s, 1)
+    
+    # If the string is found, return the index (which represents the number of rotations)
+    if index != -1:
+        return index
+    
+    # If the string is not found, it means the string cannot be obtained by rotation, so return the length of the string
+    return len(s)
+
+# Test the function
+print(find_Rotations("aaaa"))  # Output: 1
+```

@@ -1,0 +1,51 @@
+Looking at this problem, I need to remove the **first** and **last** occurrence of a given character from a string.
+
+Let me trace through the example: `"hello"` with `"l"` → occurrences of `"l"` are at indices 2 and 3. Removing both gives `"heo"`. ✓
+
+```python
+"""
+Write a python function to remove first and last occurrence of a given character from the string.
+assert remove_Occ("hello","l") == "heo"
+"""
+
+
+def remove_Occ(s, ch):
+    """
+    Remove the first and last occurrence of character `ch` from string `s`.
+
+    If `ch` occurs only once, that single occurrence is removed.
+    If `ch` does not occur, the original string is returned unchanged.
+    """
+    # Remove the first occurrence (scanning left to right)
+    for i in range(len(s)):
+        if s[i] == ch:
+            s = s[:i] + s[i + 1:]
+            break
+
+    # Remove the last occurrence (scanning right to left)
+    for i in range(len(s) - 1, -1, -1):
+        if s[i] == ch:
+            s = s[:i] + s[i + 1:]
+            break
+
+    return s
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert remove_Occ("hello", "l") == "heo"
+
+    # A few extra sanity checks
+    assert remove_Occ("abcda", "a") == "bcd"
+    assert remove_Occ("PHP", "P") == "H"
+    assert remove_Occ("hello", "z") == "hello"
+    assert remove_Occ("hello", "e") == "hllo"
+
+    print("All tests passed!")
+    print(remove_Occ("hello", "l"))  # heo
+```
+
+**How it works:**
+1. The first loop scans left-to-right, finds the first index where the character matches, splices it out, and stops.
+2. The second loop scans right-to-left on the *updated* string, finds the last matching index, splices it out, and stops.
+3. Edge cases are handled naturally — if the character appears once, the first loop removes it and the second loop finds nothing; if it never appears, the string is returned unchanged.

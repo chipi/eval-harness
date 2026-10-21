@@ -1,0 +1,48 @@
+Here's a self-contained Python script that solves the problem of converting a tuple into a key-value dictionary using adjacent elements:
+
+```python
+def tuple_to_dict(tup):
+    """
+    Convert a tuple into a dictionary where adjacent elements form key-value pairs.
+    
+    Args:
+        tup: A tuple with an even number of elements.
+        
+    Returns:
+        A dictionary where each pair of adjacent elements in the tuple forms a key-value pair.
+        
+    Example:
+        >>> tuple_to_dict((1, 5, 7, 10, 13, 5))
+        {1: 5, 7: 10, 13: 5}
+    """
+    if len(tup) % 2 != 0:
+        raise ValueError("Tuple must have an even number of elements to form key-value pairs.")
+    
+    # Create dictionary by iterating over the tuple in steps of 2
+    return {tup[i]: tup[i+1] for i in range(0, len(tup), 2)}
+
+# Test cases
+def test_tuple_to_dict():
+    assert tuple_to_dict((1, 5, 7, 10, 13, 5)) == {1: 5, 7: 10, 13: 5}
+    assert tuple_to_dict(('a', 1, 'b', 2, 'c', 3)) == {'a': 1, 'b': 2, 'c': 3}
+    assert tuple_to_dict((0, 0, 1, 1, 2, 2)) == {0: 0, 1: 1, 2: 2}
+    print("All test cases passed!")
+
+if __name__ == "__main__":
+    test_tuple_to_dict()
+```
+
+### Explanation:
+1. **Function `tuple_to_dict`**:
+   - Takes a tuple `tup` as input.
+   - Checks if the tuple has an even number of elements (required to form key-value pairs). If not, raises a `ValueError`.
+   - Uses a dictionary comprehension to iterate over the tuple in steps of 2, pairing each element with the next one (e.g., `tup[0]` with `tup[1]`, `tup[2]` with `tup[3]`, etc.).
+
+2. **Test Cases**:
+   - The `test_tuple_to_dict` function includes assertions to verify the correctness of the `tuple_to_dict` function with different inputs.
+   - If all assertions pass, it prints "All test cases passed!".
+
+3. **Main Block**:
+   - The script runs the test cases when executed directly.
+
+This solution efficiently converts the tuple into a dictionary with adjacent key-value pairs and includes error handling for invalid inputs.

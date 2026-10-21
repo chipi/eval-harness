@@ -1,0 +1,11 @@
+```python
+import re
+
+def text_match_wordz(text):
+    pattern = r'\b\w*z\w*\b'
+    return bool(re.search(pattern, text))
+
+# Test the function
+print(text_match_wordz("pythonz."))  # True
+print(text_match_wordz("python."))   # False
+```

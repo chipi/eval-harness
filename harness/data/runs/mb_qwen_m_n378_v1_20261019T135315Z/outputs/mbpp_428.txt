@@ -1,0 +1,61 @@
+```python
+def shell_sort(arr: list) -> list:
+    """
+    Sort the given array using shell sort algorithm.
+    
+    Shell sort is a generalization of insertion sort that allows the exchange
+    of items that are far apart. The idea is to arrange the list of elements
+    so that, starting anywhere, taking every hth element produces a sorted list.
+    
+    Args:
+        arr: A list of comparable elements to be sorted.
+        
+    Returns:
+        A new sorted list in ascending order.
+    """
+    if not arr:
+        return []
+    
+    # Create a copy to avoid modifying the original
+    result = arr.copy()
+    n = len(result)
+    
+    # Start with a big gap, then reduce the gap
+    gap = n // 2
+    
+    while gap > 0:
+        # Do a gapped insertion sort for this gap size
+        for i in range(gap, n):
+            # Save the current element
+            temp = result[i]
+            
+            # Shift earlier gap-sorted elements up until the correct location
+            # for result[i] is found
+            j = i
+            while j >= gap and result[j - gap] > temp:
+                result[j] = result[j - gap]
+                j -= gap
+            
+            # Put temp (the original result[i]) in its correct location
+            result[j] = temp
+        
+        # Reduce the gap
+        gap //= 2
+    
+    return result
+
+
+if __name__ == "__main__":
+    # Test case from the problem statement
+    assert shell_sort([12, 23, 4, 5, 3, 2, 12, 81, 56, 95]) == [2, 3, 4, 5, 12, 12, 23, 56, 81, 95]
+    
+    # Additional test cases
+    assert shell_sort([]) == []
+    assert shell_sort([1]) == [1]
+    assert shell_sort([2, 1]) == [1, 2]
+    assert shell_sort([5, 3, 8, 1, 2]) == [1, 2, 3, 5, 8]
+    assert shell_sort([1, 2, 3, 4, 5]) == [1, 2, 3, 4, 5]
+    assert shell_sort([5, 4, 3, 2, 1]) == [1, 2, 3, 4, 5]
+    
+    print("All tests passed!")
+```

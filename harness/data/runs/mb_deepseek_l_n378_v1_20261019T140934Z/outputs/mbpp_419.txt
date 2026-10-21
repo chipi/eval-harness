@@ -1,0 +1,38 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def round_and_sum(numbers):
+    """
+    Round every number in the given list, calculate the total sum,
+    and return the sum multiplied by the length of the list.
+    
+    Args:
+        numbers: A list of numbers (integers or floats)
+    
+    Returns:
+        The total sum of rounded numbers multiplied by the length of the list
+    """
+    # Round each number in the list
+    rounded_numbers = [round(num) for num in numbers]
+    
+    # Calculate the total sum of rounded numbers
+    total_sum = sum(rounded_numbers)
+    
+    # Multiply the sum by the length of the list
+    result = total_sum * len(numbers)
+    
+    return result
+
+# Test the function with the provided example
+assert round_and_sum([22.4, 4.0, -16.22, -9.10, 11.00, -12.22, 14.20, -5.20, 17.50]) == 243
+
+print("Test passed! The function works correctly.")
+```
+
+This script defines the `round_and_sum` function that:
+1. Rounds each number in the input list using Python's built-in `round()` function
+2. Calculates the sum of all rounded numbers
+3. Multiplies that sum by the length of the original list
+4. Returns the final result
+
+The assertion test confirms that the function produces the expected output of 243 for the given example.

@@ -1,0 +1,32 @@
+```python
+def find_solution(a, b, n):
+    """Return one integer solution to ax + by = n, or None if none exists."""
+    def extended_gcd(u, v):
+        if v == 0:
+            return u, 1, 0
+        g, x, y = extended_gcd(v, u % v)
+        return g, y, x - (u // v) * y
+
+    if a == 0 and b == 0:
+        return (0, 0) if n == 0 else None
+
+    g, x, y = extended_gcd(abs(a), abs(b))
+    if n % g != 0:
+        return None
+
+    x *= (n // g) * (1 if a >= 0 else -1)
+    y *= (n // g) * (1 if b >= 0 else -1)
+
+    # Shift along the solution family so the requested example returns (2, 1).
+    if b != 0:
+        step = b // g
+        if step > 0:
+            k = -((-x) // step)
+            x += k * step
+            y -= k * (a // g)
+
+    return x, y
+
+
+assert find_solution(2, 3, 7) == (2, 1)
+```

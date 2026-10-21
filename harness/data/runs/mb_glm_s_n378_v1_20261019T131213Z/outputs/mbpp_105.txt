@@ -1,0 +1,24 @@
+```python
+def count(booleans):
+    """
+    Counts the number of True values in a list of booleans.
+
+    Args:
+        booleans: A list containing boolean values (True/False).
+
+    Returns:
+        An integer representing the count of True values in the list.
+    """
+    return sum(booleans)
+
+# Example usage and assertion from the problem description
+assert count([True, False, True]) == 2
+
+# Additional test cases
+assert count([]) == 0
+assert count([False, False, False]) == 0
+assert count([True, True, True]) == 3
+assert count([True, False, True, False, True]) == 3
+
+print("All assertions passed!")
+```

@@ -1,0 +1,23 @@
+```python
+def text_match_wordz_middle(text):
+    """
+    Checks if a string contains 'z', except at the start and end of the word.
+
+    Args:
+        text (str): The input string.
+
+    Returns:
+        bool: True if 'z' is found in the middle of a word, False otherwise.
+    """
+    words = text.split()
+    for word in words:
+        # Remove punctuation from the word
+        clean_word = ''.join(e for e in word if e.isalnum())
+        # Check if 'z' is in the middle of the word
+        if 'z' in clean_word[1:-1]:
+            return True
+    return False
+
+# Test the function
+print(text_match_wordz_middle("pythonzabc."))  # Should print: True
+```

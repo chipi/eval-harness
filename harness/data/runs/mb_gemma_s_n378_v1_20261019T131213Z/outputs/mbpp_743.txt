@@ -1,0 +1,18 @@
+```python
+def rotate_right(arr, n):
+  """
+  Rotates a given list by specified number of items to the right direction.
+
+  Args:
+    arr: The list to be rotated.
+    n: The number of positions to rotate the list to the right.
+
+  Returns:
+    The rotated list.
+  """
+  n = n % len(arr)  # Handle cases where n is larger than the list length
+  return arr[-n:] + arr[:-n]
+
+# Example usage and assertion
+assert rotate_right([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 3) == [8, 9, 10, 1, 2, 3, 4, 5, 6, 7]
+```

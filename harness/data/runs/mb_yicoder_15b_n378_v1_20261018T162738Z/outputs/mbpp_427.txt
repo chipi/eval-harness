@@ -1,0 +1,10 @@
+```python
+def change_date_format(date):
+    year, month, day = map(int, date.split('-'))
+    return '{}-{}-{}'.format(day, month, year)
+
+# Test cases
+assert change_date_format("2026-01-02") == '02-01-2026'
+assert change_date_format("2022-11-28") == '28-11-2022'
+assert change_date_format("2000-01-01") == '01-01-2000'
+```

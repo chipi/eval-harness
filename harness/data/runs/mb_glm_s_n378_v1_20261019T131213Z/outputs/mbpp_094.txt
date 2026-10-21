@@ -1,0 +1,31 @@
+```python
+def index_minimum(tuples_list):
+    """
+    Given a list of tuples, returns the first value of the tuple with the smallest second value.
+
+    Args:
+        tuples_list: A list of tuples, where each tuple contains at least two elements.
+
+    Returns:
+        The first element of the tuple with the minimum second element.
+        
+    Example:
+        >>> index_minimum([('Rash', 143), ('Manjeet', 200), ('Varsha', 100)])
+        'Varsha'
+    """
+    # Use the min() function with a custom key.
+    # The `key` argument specifies a function to be called on each list element
+    # prior to making comparisons. Here, we use a lambda function to select
+    # the second item (index 1) of each tuple for comparison.
+    min_tuple = min(tuples_list, key=lambda x: x[1])
+    
+    # Return the first item (index 0) of the identified tuple.
+    return min_tuple[0]
+
+# Example usage and assertion to verify the function
+if __name__ == "__main__":
+    assert index_minimum([('Rash', 143), ('Manjeet', 200), ('Varsha', 100)]) == 'Varsha'
+    assert index_minimum([('a', 10), ('b', 5), ('c', 20)]) == 'b'
+    assert index_minimum([('single', 1)]) == 'single'
+    print("All assertions passed.")
+```

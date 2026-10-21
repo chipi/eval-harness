@@ -1,0 +1,37 @@
+Here's a self-contained Python script that solves the problem with the specified function and includes the assertion test:
+
+```python
+def split_Arr(arr, n):
+    """
+    Split a list at the nth element and add the first part to the end.
+    
+    Args:
+        arr (list): The input list to be split and rearranged.
+        n (int): The index at which to split the list.
+        
+    Returns:
+        list: The rearranged list where the first part (up to index n) is moved to the end.
+    """
+    if n <= 0 or n >= len(arr):
+        return arr  # Return original list if n is out of valid range
+    return arr[n:] + arr[:n]
+
+# Test the function with the provided assertion
+assert split_Arr([12, 10, 5, 6, 52, 36], 2) == [5, 6, 52, 36, 12, 10]
+
+# Additional test cases to verify the function
+assert split_Arr([1, 2, 3, 4, 5], 3) == [4, 5, 1, 2, 3]
+assert split_Arr([1, 2, 3], 0) == [1, 2, 3]  # n is 0, return original
+assert split_Arr([1, 2, 3], 3) == [1, 2, 3]  # n is equal to length, return original
+assert split_Arr([], 1) == []  # empty list case
+
+print("All test cases passed!")
+```
+
+### Explanation:
+1. The function `split_Arr` takes a list `arr` and an integer `n` as input.
+2. It checks if `n` is out of the valid range (i.e., `n <= 0` or `n >= len(arr)`). If so, it returns the original list.
+3. Otherwise, it splits the list into two parts: `arr[n:]` (elements from index `n` to the end) and `arr[:n]` (elements from the start up to index `n`).
+4. It concatenates these two parts with the second part (`arr[:n]`) moved to the end.
+5. The assertion test verifies that the function works as expected for the given example.
+6. Additional test cases are included to ensure the function handles edge cases correctly (e.g., `n` is 0, `n` is equal to the list length, or the list is empty).

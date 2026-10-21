@@ -1,0 +1,17 @@
+```python
+def odd_values_string(s):
+    """
+    This function removes the characters which have odd index values of a given string.
+    
+    Parameters:
+    s (str): The input string.
+    
+    Returns:
+    str: The string with characters at odd index values removed.
+    """
+    return ''.join([s[i] for i in range(len(s)) if i % 2 == 0])
+
+# Test the function
+assert odd_values_string('abcdef') == 'ace'
+print(odd_values_string('abcdef'))  # Output: ace
+```

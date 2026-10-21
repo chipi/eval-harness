@@ -1,0 +1,28 @@
+```python
+def replace_spaces(s: str) -> str:
+    """
+    Replaces all spaces in the given string with '%20'.
+
+    Args:
+        s: The input string.
+
+    Returns:
+        A new string with all spaces replaced by '%20'.
+    """
+    return s.replace(' ', '%20')
+
+# Example usage and assertion
+if __name__ == "__main__":
+    input_string = "My Name is Dawood"
+    expected_output = 'My%20Name%20is%20Dawood'
+    
+    # Call the function and print the result
+    result = replace_spaces(input_string)
+    print(f"Input: '{input_string}'")
+    print(f"Output: '{result}'")
+    
+    # Assert that the output matches the expected result
+    assert result == expected_output, f"Assertion failed: Expected '{expected_output}', but got '{result}'"
+    
+    print("\nAssertion passed successfully!")
+```

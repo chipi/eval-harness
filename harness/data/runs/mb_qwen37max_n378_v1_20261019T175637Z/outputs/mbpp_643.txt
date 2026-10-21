@@ -1,0 +1,13 @@
+```python
+import re
+
+def text_match_wordz_middle(text):
+    """
+    Check if a string contains 'z' that is not at the start or end of a word.
+    Returns True if such a 'z' exists, False otherwise.
+    """
+    # Match a 'z' that has a word character before it and after it
+    # This ensures 'z' is in the middle of a word (not at start or end)
+    pattern = r'\wz\w'
+    return bool(re.search(pattern, text))
+```

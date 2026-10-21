@@ -1,0 +1,39 @@
+Here's a self-contained Python script that calculates the nth Catalan number using dynamic programming, along with the requested assertion:
+
+```python
+"""
+Calculate the nth Catalan number using dynamic programming.
+
+Catalan numbers follow the recurrence relation:
+C(n) = sum(C(i) * C(n-1-i) for i in range(n)) for n >= 1
+with C(0) = 1
+"""
+
+def catalan_number(n):
+    if n <= 1:
+        return 1
+
+    # Initialize a list to store catalan numbers
+    catalan = [0] * (n + 1)
+    catalan[0] = catalan[1] = 1
+
+    for i in range(2, n + 1):
+        catalan[i] = 0
+        for j in range(i):
+            catalan[i] += catalan[j] * catalan[i - 1 - j]
+
+    return catalan[n]
+
+# Test the function
+assert catalan_number(10) == 16796
+print("Test passed! Catalan number for n=10 is", catalan_number(10))
+```
+
+This script:
+1. Implements the Catalan number calculation using dynamic programming
+2. Handles the base cases (n=0 and n=1)
+3. Uses nested loops to build up the solution from smaller subproblems
+4. Includes the requested assertion test
+5. Prints a confirmation message when the test passes
+
+The time complexity is O(n²) and space complexity is O(n), which is efficient for reasonable values of n.

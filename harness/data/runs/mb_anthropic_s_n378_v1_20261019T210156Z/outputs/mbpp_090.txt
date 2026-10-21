@@ -1,0 +1,31 @@
+```python
+def len_log(words):
+    """
+    Find the length of the longest word in a list of words.
+    
+    Args:
+        words: A list of strings (words)
+    
+    Returns:
+        The length of the longest word
+    """
+    if not words:
+        return 0
+    return max(len(word) for word in words)
+
+
+# Test cases
+assert len_log(["python", "PHP", "bigdata"]) == 7
+assert len_log(["a", "bb", "ccc"]) == 3
+assert len_log(["hello"]) == 5
+assert len_log([]) == 0
+
+print("All assertions passed!")
+print(f"Length of longest word in ['python', 'PHP', 'bigdata']: {len_log(['python', 'PHP', 'bigdata'])}")
+```
+
+The script defines a `len_log()` function that:
+1. Takes a list of words as input
+2. Returns 0 if the list is empty
+3. Uses Python's `max()` function with a generator expression to find the length of the longest word
+4. Includes the required assertion and additional test cases to verify correctness

@@ -1,0 +1,19 @@
+```python
+def left_rotate(n: int, d: int) -> int:
+    """
+    Rotate the 32-bit integer n to the left by d bits.
+    """
+    # Ensure d is within 0-31 to avoid unnecessary full rotations
+    d = d % 32
+    # Mask to ensure we only work with 32 bits
+    mask = 0xFFFFFFFF
+    # Left shift and mask to keep only 32 bits
+    left_part = (n << d) & mask
+    # Right shift to get the bits that wrap around
+    right_part = (n >> (32 - d)) & mask
+    # Combine the two parts
+    return (left_part | right_part) & mask
+
+# Test case
+assert left_rotate(16, 2) == 64
+```

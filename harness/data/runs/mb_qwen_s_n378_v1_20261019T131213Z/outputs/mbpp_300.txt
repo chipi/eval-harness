@@ -1,0 +1,23 @@
+```python
+import math
+
+def count_binary_seq(n):
+    """
+    Find the count of all binary sequences of length 2n such that sum of first n bits 
+    is same as sum of last n bits.
+    
+    For a binary sequence of length 2n, we split it into two halves of length n each.
+    Let k be the number of 1s in the first half (0 <= k <= n).
+    The number of ways to have exactly k ones in the first half is C(n, k).
+    Similarly, the number of ways to have exactly k ones in the second half is C(n, k).
+    So for a fixed k, the number of valid sequences is C(n, k) * C(n, k) = C(n, k)^2.
+    Total count = sum_{k=0}^{n} C(n, k)^2 = C(2n, n) by Vandermonde's identity.
+    
+    So the answer is simply C(2n, n).
+    """
+    if n < 0:
+        return 0
+    # Calculate C(2n, n)
+    from math import comb
+    return float(comb(2 * n, n))
+```

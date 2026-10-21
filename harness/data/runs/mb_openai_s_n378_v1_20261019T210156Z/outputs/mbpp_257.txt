@@ -1,0 +1,9 @@
+```python
+def swap_numbers(a, b):
+    return (b, a)
+
+
+if __name__ == "__main__":
+    assert swap_numbers(10, 20) == (20, 10)
+    print("All tests passed.")
+```

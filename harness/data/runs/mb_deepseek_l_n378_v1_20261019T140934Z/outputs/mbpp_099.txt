@@ -1,0 +1,35 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def decimal_to_binary(n):
+    """
+    Convert a decimal number to its binary equivalent as a string with no leading zeros.
+    
+    Args:
+        n: A non-negative integer
+        
+    Returns:
+        String representation of the binary number
+    """
+    # Handle the special case of 0
+    if n == 0:
+        return '0'
+    
+    # Build binary string by repeatedly dividing by 2
+    binary = ''
+    while n > 0:
+        binary = str(n % 2) + binary
+        n //= 2
+    
+    return binary
+
+# Test the function
+assert decimal_to_binary(8) == '1000'
+assert decimal_to_binary(0) == '0'
+assert decimal_to_binary(1) == '1'
+assert decimal_to_binary(2) == '10'
+assert decimal_to_binary(15) == '1111'
+assert decimal_to_binary(42) == '101010'
+
+print("All tests passed!")
+```

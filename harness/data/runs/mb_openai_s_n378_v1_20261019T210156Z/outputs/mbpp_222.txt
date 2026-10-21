@@ -1,0 +1,17 @@
+```python
+def check_type(t):
+    """
+    Return True if all elements in tuple t have the same data type, otherwise False.
+    An empty tuple is considered True.
+    """
+    if not t:
+        return True
+
+    first_type = type(t[0])
+    return all(type(item) == first_type for item in t)
+
+
+if __name__ == "__main__":
+    assert check_type((5, 6, 7, 3, 5, 6)) == True
+    print("All tests passed.")
+```

@@ -1,0 +1,18 @@
+```python
+from collections import Counter
+
+def find_sum(nums):
+    """
+    Return the sum of elements that appear exactly once in the list.
+    
+    Example:
+        [1,2,3,1,1,4,5,6] -> 2 + 3 + 4 + 5 + 6 = 20
+    """
+    counts = Counter(nums)
+    return sum(x for x in nums if counts[x] == 1)
+
+
+if __name__ == "__main__":
+    assert find_sum([1, 2, 3, 1, 1, 4, 5, 6]) == 20
+    print("All tests passed.")
+```

@@ -1,0 +1,42 @@
+```python
+from typing import List, Any
+
+def max_occurrences(lst: List[Any]) -> Any:
+    """
+    Finds the item with the maximum frequency in a given list.
+    If there are multiple items with the same maximum frequency, 
+    the item that appears first in the list is returned.
+    
+    :param lst: A list of items
+    :return: The item with the maximum frequency
+    """
+    if not lst:
+        return None
+        
+    frequency = {}
+    for item in lst:
+        frequency[item] = frequency.get(item, 0) + 1
+        
+    max_freq = -1
+    max_item = None
+    
+    for item in lst:
+        if frequency[item] > max_freq:
+            max_freq = frequency[item]
+            max_item = item
+            
+    return max_item
+
+if __name__ == "__main__":
+    # Test case from the problem description
+    assert max_occurrences([2,3,8,4,7,9,8,2,6,5,1,6,1,2,3,2,4,6,9,1,2]) == 2
+    
+    # Additional test cases
+    assert max_occurrences([1, 2, 2, 3, 3, 3, 4]) == 3
+    assert max_occurrences(['a', 'b', 'a', 'c', 'b', 'a']) == 'a'
+    
+    # Tie-breaking: returns the first element that reaches the max frequency
+    assert max_occurrences([5, 5, 6, 6]) == 5
+    
+    print("All tests passed!")
+```

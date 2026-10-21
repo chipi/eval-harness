@@ -1,0 +1,31 @@
+```python
+def move_num(s):
+    """
+    Moves all numeric digits to the end of the string while 
+    preserving the relative order of non-numeric characters 
+    and the relative order of the digits.
+    """
+    non_digits = []
+    digits = []
+    
+    for char in s:
+        if char.isdigit():
+            digits.append(char)
+        else:
+            non_digits.append(char)
+            
+    return "".join(non_digits) + "".join(digits)
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    input_str = 'I1love143you55three3000thousand'
+    expected_output = 'Iloveyouthreethousand1143553000'
+    result = move_num(input_str)
+    
+    print(f"Input:    {input_str}")
+    print(f"Result:   {result}")
+    print(f"Expected: {expected_output}")
+    
+    assert result == expected_output, "The function did not produce the expected output."
+    print("\nAssertion passed successfully!")
+```

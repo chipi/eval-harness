@@ -1,0 +1,14 @@
+```python
+def extract_string(string_list, size):
+    """
+    Extract strings of specified size from a given list of string values.
+    
+    Args:
+        string_list: A list of strings.
+        size: The desired length of strings to extract.
+        
+    Returns:
+        A list of strings that have the specified length.
+    """
+    return [s for s in string_list if len(s) == size]
+```

@@ -1,0 +1,25 @@
+```python
+def find_Rotations(s: str) -> int:
+    """
+    Returns the minimum number of rotations (greater than 0) required to get the same string.
+    For example, "aaaa" returns 1 because rotating by 1 gives "aaaa" again.
+    """
+    n = len(s)
+    # Try all possible rotation lengths from 1 to n-1
+    for rotation in range(1, n):
+        # Check if rotating by 'rotation' gives the original string
+        if s == s[rotation:] + s[:rotation]:
+            return rotation
+    # If no rotation less than n works, the string is not periodic with a smaller period,
+    # so the only rotation that gives the same string is the full length n.
+    # But the problem says "greater than 0", so we return n.
+    return n
+
+# Test the assertion
+assert find_Rotations("aaaa") == 1
+assert find_Rotations("abab") == 2
+assert find_Rotations("abcabc") == 3
+assert find_Rotations("abcde") == 5  # no smaller rotation works
+
+print("All tests passed.")
+```

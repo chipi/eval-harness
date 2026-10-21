@@ -1,0 +1,50 @@
+Here's a self-contained Python script that solves this problem:
+
+```python
+"""
+Write a function to return two words from a list of words starting with letter 'p'.
+assert start_withp(["Python PHP", "Java JavaScript", "c c++"])==('Python', 'PHP')
+"""
+
+def start_withp(words):
+    """
+    Takes a list of strings where each string contains two words.
+    Returns a tuple of the first two words that start with 'p' or 'P'.
+    """
+    result = []
+    for phrase in words:
+        for word in phrase.split():
+            if word.lower().startswith('p'):
+                result.append(word)
+                if len(result) == 2:
+                    return tuple(result)
+    return tuple(result)
+
+
+# Test the function
+assert start_withp(["Python PHP", "Java JavaScript", "c c++"]) == ('Python', 'PHP')
+
+# Additional test cases
+print(start_withp(["Python PHP", "Java JavaScript", "c c++"]))  # ('Python', 'PHP')
+print(start_withp(["apple banana", "pear peach", "plum grape"]))  # ('pear', 'peach')
+print(start_withp(["cat dog", "rat bat", "fish bird"]))  # ()
+
+print("All tests passed!")
+```
+
+**Explanation:**
+
+1. **Function `start_withp(words)`**:
+   - Iterates over each string in the input list.
+   - Splits each string into individual words using `.split()`.
+   - Checks if a word starts with the letter `'p'` (case-insensitive via `.lower().startswith('p')`).
+   - Collects matching words in the `result` list.
+   - Once two words are collected, returns them immediately as a tuple.
+   - If fewer than two matches are found, returns whatever matches exist (as a tuple).
+
+2. **Test case**: `["Python PHP", "Java JavaScript", "c c++"]`
+   - "Python" starts with 'P' ✅
+   - "PHP" starts with 'P' ✅
+   - Returns `('Python', 'PHP')` as expected.
+
+3. The `.lower()` call ensures case-insensitivity, so words starting with either `'p'` or `'P'` will match, which is consistent with the expected output `('Python', 'PHP')` where `P` is uppercase.

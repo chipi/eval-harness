@@ -1,0 +1,68 @@
+Looking at this problem, I need to implement **Comb Sort** — an improvement over Bubble Sort that uses a shrinking gap (shrink factor ≈ 1.3) to eliminate "turtles" (small values near the end of the list) early.
+
+```python
+"""
+Write a function to sort a list of elements.
+assert comb_sort([5, 15, 37, 25, 79]) == [5, 15, 25, 37, 79]
+"""
+
+
+def comb_sort(nums):
+    """
+    Sort a list of elements using the Comb Sort algorithm.
+
+    Comb Sort improves on Bubble Sort by comparing elements that are
+    a certain 'gap' apart, shrinking the gap by a factor of 1.3 on each
+    pass until the gap is 1 and no swaps are needed.
+
+    Args:
+        nums: list of comparable elements (numbers, strings, etc.)
+
+    Returns:
+        A new list containing the elements sorted in ascending order.
+    """
+    arr = list(nums)                 # work on a copy (don't mutate the input)
+    n = len(arr)
+    gap = n
+    shrink = 1.3
+    swapped = True
+
+    while gap > 1 or swapped:
+        # Shrink the gap, but never below 1
+        gap = int(gap / shrink)
+        if gap < 1:
+            gap = 1
+
+        swapped = False
+        for i in range(n - gap):
+            if arr[i] > arr[i + gap]:
+                arr[i], arr[i + gap] = arr[i + gap], arr[i]
+                swapped = True
+
+    return arr
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert comb_sort([5, 15, 37, 25, 79]) == [5, 15, 25, 37, 79]
+
+    # Additional test cases
+    assert comb_sort([41, 32, 15, 18, 57, 23]) == [15, 18, 23, 32, 41, 57]
+    assert comb_sort([99, 15, 13, 47]) == [13, 15, 47, 99]
+    assert comb_sort([]) == []
+    assert comb_sort([1]) == [1]
+    assert comb_sort([3, 3, 2, 1, 2]) == [1, 2, 2, 3, 3]
+    assert comb_sort([-5, 0, -10, 7]) == [-10, -5, 0, 7]
+    assert comb_sort(["pear", "apple", "mango"]) == ["apple", "mango", "pear"]
+
+    print("All tests passed!")
+    print(comb_sort([5, 15, 37, 25, 79]))
+```
+
+**How it works:**
+
+1. Start with `gap = len(arr)` and repeatedly divide it by the shrink factor `1.3`.
+2. On each pass, compare and swap elements separated by `gap`.
+3. Continue until `gap == 1` **and** a full pass completes with no swaps (at that point the list is sorted, behaving like a final bubble sort pass).
+
+**Complexity:** Average time ≈ O(n²/2ᵖ) (much faster than bubble sort in practice), worst case O(n²), space O(n) for the copy (O(1) if sorted in place).

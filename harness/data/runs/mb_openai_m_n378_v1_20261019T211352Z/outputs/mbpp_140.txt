@@ -1,0 +1,29 @@
+```python
+"""
+Write a function to flatten the list of lists into a single set of numbers.
+
+Example:
+assert set(extract_singly([(3, 4, 5), (4, 5, 7), (1, 4)])) == set([3, 4, 5, 7, 1])
+"""
+
+def extract_singly(list_of_lists):
+    """
+    Flatten an iterable of iterables into a single set of numbers.
+
+    Args:
+        list_of_lists: An iterable containing lists/tuples/sets of numbers.
+
+    Returns:
+        A set containing all unique numbers from the nested iterables.
+    """
+    result = set()
+    for sublist in list_of_lists:
+        for number in sublist:
+            result.add(number)
+    return result
+
+
+if __name__ == "__main__":
+    assert set(extract_singly([(3, 4, 5), (4, 5, 7), (1, 4)])) == set([3, 4, 5, 7, 1])
+    print("All tests passed.")
+```

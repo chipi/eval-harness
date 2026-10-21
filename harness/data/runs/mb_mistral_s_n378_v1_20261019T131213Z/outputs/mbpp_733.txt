@@ -1,0 +1,40 @@
+Here's a self-contained Python script that solves the problem using binary search to efficiently find the first occurrence of a given number in a sorted array:
+
+```python
+def find_first_occurrence(arr, target):
+    """
+    Find the index of the first occurrence of a target number in a sorted array.
+
+    Args:
+        arr: A sorted list of numbers.
+        target: The number to search for.
+
+    Returns:
+        The index of the first occurrence of the target, or -1 if not found.
+    """
+    left, right = 0, len(arr) - 1
+    result = -1
+
+    while left <= right:
+        mid = left + (right - left) // 2
+        if arr[mid] == target:
+            result = mid
+            right = mid - 1  # Continue searching to the left
+        elif arr[mid] < target:
+            left = mid + 1
+        else:
+            right = mid - 1
+
+    return result
+
+# Test case
+assert find_first_occurrence([2, 5, 5, 5, 6, 6, 8, 9, 9, 9], 5) == 1
+print("Test passed!")
+```
+
+### Explanation:
+1. **Binary Search Approach**: The function uses binary search to efficiently locate the target number in O(log n) time.
+2. **Tracking First Occurrence**: When the target is found at `mid`, the search continues to the left half to check for earlier occurrences, updating the result each time.
+3. **Edge Cases**: If the target is not found, the function returns `-1`.
+
+The test case verifies that the function correctly returns the index of the first occurrence of `5` in the given array.

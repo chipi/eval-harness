@@ -1,0 +1,50 @@
+```python
+"""
+Check whether a list of words follows the same pattern as a list of pattern symbols.
+
+A match requires a one-to-one mapping:
+- each pattern symbol maps to exactly one word
+- each word maps back to exactly one pattern symbol
+
+Example:
+["red", "green", "green"] and ["a", "b", "b"] match because:
+a -> red
+b -> green
+"""
+
+def is_samepatterns(words, patterns):
+    """
+    Return True if words follow the sequence given by patterns, otherwise False.
+    """
+    if len(words) != len(patterns):
+        return False
+
+    pattern_to_word = {}
+    word_to_pattern = {}
+
+    for word, pattern in zip(words, patterns):
+        if pattern in pattern_to_word:
+            if pattern_to_word[pattern] != word:
+                return False
+        else:
+            pattern_to_word[pattern] = word
+
+        if word in word_to_pattern:
+            if word_to_pattern[word] != pattern:
+                return False
+        else:
+            word_to_pattern[word] = pattern
+
+    return True
+
+
+# Tests
+assert is_samepatterns(["red", "green", "green"], ["a", "b", "b"]) == True
+assert is_samepatterns(["red", "green", "red"], ["a", "b", "a"]) == True
+assert is_samepatterns(["red", "green", "blue"], ["a", "b", "b"]) == False
+assert is_samepatterns(["red", "red"], ["a", "b"]) == False
+assert is_samepatterns([], []) == True
+assert is_samepatterns(["red"], ["a"]) == True
+
+print("All tests passed.")
+```

@@ -1,0 +1,41 @@
+```python
+def max_sum(arr):
+    """
+    Returns the maximum sum of a bitonic subsequence in the given array.
+    A bitonic subsequence first increases (strictly) and then decreases (strictly).
+    """
+    n = len(arr)
+    if n == 0:
+        return 0
+
+    # inc[i] = maximum sum of increasing subsequence ending at i
+    inc = [0] * n
+    for i in range(n):
+        inc[i] = arr[i]
+        for j in range(i):
+            if arr[j] < arr[i]:
+                inc[i] = max(inc[i], inc[j] + arr[i])
+
+    # dec[i] = maximum sum of decreasing subsequence starting at i
+    dec = [0] * n
+    for i in range(n - 1, -1, -1):
+        dec[i] = arr[i]
+        for j in range(i + 1, n):
+            if arr[j] < arr[i]:
+                dec[i] = max(dec[i], dec[j] + arr[i])
+
+    # Combine: bitonic sum ending at i = inc[i] + dec[i] - arr[i]
+    max_bitonic = 0
+    for i in range(n):
+        max_bitonic = max(max_bitonic, inc[i] + dec[i] - arr[i])
+
+    return max_bitonic
+
+
+# Test the given assertion
+if __name__ == "__main__":
+    result = max_sum([1, 15, 51, 45, 33, 100, 12, 18, 9])
+    print(result)
+    assert result == 194, f"Expected 194 but got {result}"
+    print("Test passed.")
+```

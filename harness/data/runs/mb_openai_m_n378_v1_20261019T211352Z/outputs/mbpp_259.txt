@@ -1,0 +1,42 @@
+```python
+"""
+Write a function to maximize the given two tuples.
+
+Given two tuples containing pairs of numbers, return a new tuple where each
+corresponding pair contains the maximum of the corresponding elements.
+
+Example:
+maximize_elements(
+    ((1, 3), (4, 5), (2, 9), (1, 10)),
+    ((6, 7), (3, 9), (1, 1), (7, 3))
+)
+returns:
+((6, 7), (4, 9), (2, 9), (7, 10))
+"""
+
+def maximize_elements(tuple1, tuple2):
+    """
+    Return a tuple of tuples containing the element-wise maximum values
+    from two tuples of equal structure.
+
+    Args:
+        tuple1: A tuple of tuples containing numeric values.
+        tuple2: A tuple of tuples containing numeric values.
+
+    Returns:
+        A tuple of tuples with element-wise maximum values.
+    """
+    return tuple(
+        tuple(max(a, b) for a, b in zip(inner1, inner2))
+        for inner1, inner2 in zip(tuple1, tuple2)
+    )
+
+
+if __name__ == "__main__":
+    assert maximize_elements(
+        ((1, 3), (4, 5), (2, 9), (1, 10)),
+        ((6, 7), (3, 9), (1, 1), (7, 3))
+    ) == ((6, 7), (4, 9), (2, 9), (7, 10))
+
+    print("All tests passed.")
+```

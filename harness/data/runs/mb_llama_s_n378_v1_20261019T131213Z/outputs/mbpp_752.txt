@@ -1,0 +1,50 @@
+```python
+def jacobsthal_num(n: int) -> int:
+    """
+    This function calculates the nth Jacobsthal number.
+
+    The Jacobsthal numbers are a sequence of integers that starts with 0 and 1, 
+    and each subsequent number is the sum of the previous number and twice the number before that.
+
+    Args:
+        n (int): The position of the Jacobsthal number to be calculated.
+
+    Returns:
+        int: The nth Jacobsthal number.
+
+    Raises:
+        ValueError: If n is a negative integer.
+
+    Examples:
+        >>> jacobsthal_num(5)
+        11
+    """
+
+    # Check if n is a non-negative integer
+    if not isinstance(n, int) or n < 0:
+        raise ValueError("n must be a non-negative integer")
+
+    # Base cases
+    if n == 0:
+        return 0
+    elif n == 1:
+        return 1
+
+    # Initialize variables to store the previous two Jacobsthal numbers
+    a, b = 0, 1
+
+    # Calculate the nth Jacobsthal number
+    for _ in range(2, n + 1):
+        # The next Jacobsthal number is the sum of the previous number and twice the number before that
+        a, b = b, a + 2 * b
+
+    return b
+
+
+# Test the function
+if __name__ == "__main__":
+    assert jacobsthal_num(5) == 11
+    print("All tests passed.")
+```
+
+The provided Python script defines a function `jacobsthal_num` to calculate the nth Jacobsthal number. It starts with base cases for `n == 0` and `n == 1`, then iteratively calculates the nth Jacobsthal number using a loop. The function includes input validation and documentation. The test case `assert jacobsthal_num(5) == 11` is also included to verify the function's correctness.

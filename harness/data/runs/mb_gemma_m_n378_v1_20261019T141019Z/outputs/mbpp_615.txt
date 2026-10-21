@@ -1,0 +1,27 @@
+```python
+def average_tuple(tuple_of_tuples):
+    """
+    Takes a tuple of tuples and returns the average value for each 
+    inner tuple as a list.
+    """
+    averages = []
+    for t in tuple_of_tuples:
+        # Calculate the sum of elements in the tuple divided by the count
+        avg = sum(t) / len(t)
+        averages.append(avg)
+    return averages
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    input_data = ((10, 10, 10, 12), (30, 45, 56, 45), (81, 80, 39, 32), (1, 2, 3, 4))
+    expected_output = [30.5, 34.25, 27.0, 23.25]
+    
+    result = average_tuple(input_data)
+    
+    # Assertion to verify correctness
+    assert result == expected_output, f"Expected {expected_output}, but got {result}"
+    
+    print("Assertion passed!")
+    print(f"Input: {input_data}")
+    print(f"Output: {result}")
+```

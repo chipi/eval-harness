@@ -1,0 +1,30 @@
+```python
+"""
+Write a Python function to check whether a list of numbers contains only
+one distinct element or not.
+
+Example:
+assert unique_Element([1, 1, 1]) == True
+"""
+
+def unique_Element(nums):
+    """
+    Return True if the list contains only one distinct element, otherwise False.
+
+    An empty list is treated as False because it contains no element.
+    """
+    if not nums:
+        return False
+
+    return len(set(nums)) == 1
+
+
+# Tests
+assert unique_Element([1, 1, 1]) == True
+assert unique_Element([1, 2, 1]) == False
+assert unique_Element([5]) == True
+assert unique_Element([]) == False
+assert unique_Element([0, 0, 0, 0]) == True
+
+print("All tests passed.")
+```

@@ -1,0 +1,28 @@
+```python
+def remove_uppercase(input_string: str) -> str:
+    """
+    Removes all uppercase characters from a given string.
+
+    Args:
+        input_string: The string from which to remove uppercase characters.
+
+    Returns:
+        A new string containing only the lowercase characters from the input.
+    """
+    # Use a generator expression within the join() method for efficiency.
+    # This iterates through each character in the input string and includes
+    # it in the new string only if it is not an uppercase letter.
+    return "".join(char for char in input_string if not char.isupper())
+
+# Example usage and assertion from the problem description
+assert remove_uppercase('cAstyoUrFavoRitETVshoWs') == 'cstyoravoitshos'
+
+# Additional test cases
+assert remove_uppercase('HELLO') == ''
+assert remove_uppercase('hello') == 'hello'
+assert remove_uppercase('HeLlO') == 'eo'
+assert remove_uppercase('123!@#ABC') == '123!@#'
+assert remove_uppercase('') == ''
+
+print("All assertions passed.")
+```

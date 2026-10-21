@@ -1,0 +1,23 @@
+```python
+def kth_element(arr, k):
+    """
+    Find the kth element in the given array using 1-based indexing.
+
+    Args:
+        arr: List of elements
+        k: 1-based index of the element to find
+
+    Returns:
+        The kth element in the array
+
+    Example:
+        >>> kth_element([12,3,5,7,19], 2)
+        3
+    """
+    if k < 1 or k > len(arr):
+        raise IndexError("Index out of bounds")
+    return arr[k - 1]
+
+# Test the function
+assert kth_element([12,3,5,7,19], 2) == 3
+```

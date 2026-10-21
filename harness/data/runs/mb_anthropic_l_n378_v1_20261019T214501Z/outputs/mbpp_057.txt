@@ -1,0 +1,61 @@
+Looking at this problem, I need to form the largest possible number from a list of digits. The strategy is to sort the digits in descending order and concatenate them.
+
+```python
+"""
+Write a python function to find the largest number that can be formed with the given list of digits.
+assert find_Max_Num([1,2,3]) == 321
+"""
+
+
+def find_Max_Num(arr):
+    """
+    Find the largest number that can be formed with the given list of digits.
+
+    The approach is simple: sort the digits in descending order and
+    concatenate them to build the maximum possible number.
+
+    Args:
+        arr: list of single digits (ints)
+
+    Returns:
+        int: the largest number formable from those digits
+    """
+    if not arr:
+        return 0
+
+    # Sort digits from largest to smallest
+    digits = sorted(arr, reverse=True)
+
+    # Concatenate into one number
+    num = 0
+    for d in digits:
+        num = num * 10 + d
+
+    return num
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert find_Max_Num([1, 2, 3]) == 321
+
+    # Additional test cases
+    assert find_Max_Num([4, 5, 6, 1]) == 6541
+    assert find_Max_Num([1, 2, 3, 9]) == 9321
+    assert find_Max_Num([0, 0, 1]) == 100
+    assert find_Max_Num([7]) == 7
+    assert find_Max_Num([9, 9, 9]) == 999
+    assert find_Max_Num([]) == 0
+
+    print("All tests passed!")
+    print(find_Max_Num([1, 2, 3]))        # 321
+    print(find_Max_Num([4, 5, 6, 1]))     # 6541
+    print(find_Max_Num([1, 2, 3, 9]))     # 9321
+```
+
+**How it works:**
+
+1. **Sort descending** — placing the biggest digits in the most significant positions maximizes the value (e.g., `[1,2,3]` → `[3,2,1]`).
+2. **Build the number** — iterate through the sorted digits, multiplying the running total by 10 and adding each digit (`3` → `32` → `321`).
+3. **Edge case** — an empty list returns `0`.
+
+**Complexity:** O(n log n) time for the sort, O(n) space.

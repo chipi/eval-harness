@@ -1,0 +1,17 @@
+```python
+def list_tuple(lst):
+    """
+    Convert a list to a tuple.
+
+    Args:
+    lst (list): The input list to be converted.
+
+    Returns:
+    tuple: The converted tuple.
+    """
+    return tuple(lst)
+
+# Test cases to verify the correctness of the solution
+assert list_tuple([5, 10, 7, 4, 15, 3]) == (5, 10, 7, 4, 15, 3)
+```
+

@@ -1,0 +1,18 @@
+```python
+def removezero_ip(ip):
+    """
+    This function removes leading zeroes from an IP address.
+
+    Args:
+        ip (str): The IP address to be processed.
+
+    Returns:
+        str: The IP address with leading zeroes removed.
+    """
+    return '.'.join(str(int(part)) for part in ip.split('.'))
+
+# Test the function
+assert removezero_ip("216.08.094.196") == '216.8.94.196'
+```
+
+In this script, we define a function `removezero_ip` that takes an IP address as a string, splits it into parts using the dot as a separator, converts each part to an integer (which removes leading zeroes), and then joins the parts back together with dots in between. The `assert` statement at the end tests the function with the provided example.

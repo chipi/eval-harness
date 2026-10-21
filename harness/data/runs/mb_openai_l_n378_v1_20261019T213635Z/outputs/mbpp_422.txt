@@ -1,0 +1,10 @@
+```python
+def find_Average_Of_Cube(n):
+    """Return the average of the cubes of the first n natural numbers."""
+    if n <= 0:
+        raise ValueError("n must be a positive integer")
+    return n * (n + 1) ** 2 / 4
+
+
+assert find_Average_Of_Cube(2) == 4.5
+```

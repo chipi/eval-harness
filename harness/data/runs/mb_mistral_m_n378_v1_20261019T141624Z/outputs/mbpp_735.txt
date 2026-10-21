@@ -1,0 +1,32 @@
+Here's a self-contained Python script that solves the problem of toggling all bits of a number except the first and last bits:
+
+```python
+def toggle_middle_bits(n):
+    if n == 0:
+        return 0
+
+    # Find the position of the most significant set bit
+    msb_pos = n.bit_length() - 1
+
+    if msb_pos < 1:
+        return n  # No middle bits to toggle
+
+    # Create a mask with all bits set except first and last
+    mask = (1 << msb_pos) | 1  # Mask for first and last bits
+    mask = ~mask  # Invert to get mask for middle bits
+
+    # Toggle the middle bits
+    return n ^ mask
+
+# Test case
+assert toggle_middle_bits(9) == 15
+```
+
+Explanation:
+1. The function first checks for edge cases (n=0 or numbers with less than 2 bits)
+2. It finds the position of the most significant bit (MSB)
+3. Creates a mask that has 1s in all positions except the first and last bits
+4. Uses XOR operation to toggle the middle bits (since XOR with 1 toggles a bit)
+5. The test case verifies that for input 9 (binary 1001), the output is 15 (binary 1111) as expected
+
+The mask creation is the key part - we first create a mask with 1s in the first and last positions, then invert it to get 1s in all middle positions. XORing with this mask toggles all middle bits while leaving the first and last bits unchanged.

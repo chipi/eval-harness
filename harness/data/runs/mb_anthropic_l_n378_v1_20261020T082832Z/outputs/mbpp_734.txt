@@ -1,0 +1,84 @@
+Looking at this problem, I need to find the sum of products of all possible contiguous sublists (subarrays).
+
+For `[1,2,3]`:
+- `[1]` → 1, `[2]` → 2, `[3]` → 3
+- `[1,2]` → 2, `[2,3]` → 6
+- `[1,2,3]` → 6
+- Total = 1+2+3+2+6+6 = **20** ✓
+
+**Approach:** There's a neat recurrence. Let `f(n)` be the sum of products of all subarrays ending at index `n-1` (using 1-based count of elements). Then:
+
+```
+f(n) = arr[n-1] * (1 + f(n-1))
+```
+
+Because every subarray ending at position `n-1` is either just `arr[n-1]` alone, or an extension of a subarray ending at `n-2`.
+
+The answer is the sum of all `f(i)` for `i = 1..n`. This gives an O(n) solution.
+
+```python
+"""
+Write a python function to find sum of products of all possible sublists of a given list.
+https://www.geeksforgeeks.org/sum-of-products-of-all-possible-subarrays/
+assert sum_Of_Subarray_Prod([1,2,3]) == 20
+"""
+
+
+def sum_Of_Subarray_Prod(arr):
+    """
+    Return the sum of the products of all possible contiguous sublists
+    (subarrays) of `arr`.
+
+    Uses the recurrence:
+        ending[i] = arr[i] * (1 + ending[i-1])
+    where ending[i] is the sum of products of all subarrays ending at index i.
+    The answer is sum(ending[i] for all i).
+
+    Runs in O(n) time and O(1) extra space.
+    """
+    total = 0        # running answer
+    ending = 0       # sum of products of subarrays ending at the current index
+    for x in arr:
+        ending = x * (1 + ending)
+        total += ending
+    return total
+
+
+# ---------------------------------------------------------------- brute force
+def _brute_force(arr):
+    """Straightforward O(n^2) reference implementation (for verification)."""
+    total = 0
+    n = len(arr)
+    for i in range(n):
+        prod = 1
+        for j in range(i, n):
+            prod *= arr[j]
+            total += prod
+    return total
+
+
+if __name__ == "__main__":
+    # Required assertion
+    assert sum_Of_Subarray_Prod([1, 2, 3]) == 20
+
+    # A few more checks
+    assert sum_Of_Subarray_Prod([1, 2]) == 5          # 1 + 2 + 2
+    assert sum_Of_Subarray_Prod([1, 2, 3, 4]) == 84
+    assert sum_Of_Subarray_Prod([]) == 0
+    assert sum_Of_Subarray_Prod([5]) == 5
+
+    # Cross-check the fast version against the brute force version
+    import random
+    for _ in range(200):
+        test = [random.randint(-5, 5) for _ in range(random.randint(0, 8))]
+        assert sum_Of_Subarray_Prod(test) == _brute_force(test), test
+
+    print("All tests passed!")
+    print("sum_Of_Subarray_Prod([1, 2, 3]) =", sum_Of_Subarray_Prod([1, 2, 3]))
+```
+
+**Output:**
+```
+All tests passed!
+sum_Of_Subarray_Prod([1, 2, 3]) = 20
+```

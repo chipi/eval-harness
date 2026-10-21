@@ -1,0 +1,23 @@
+```python
+import math
+
+def volume_sphere(radius):
+    """
+    Calculates the volume of a sphere given its radius.
+    Formula: V = (4/3) * pi * r^3
+    """
+    return (4/3) * math.pi * (radius ** 3)
+
+if __name__ == "__main__":
+    # Test the function with the provided assertion
+    radius = 10
+    expected_volume = 4188.790204786391
+    result = volume_sphere(radius)
+    
+    # Using math.isclose to handle floating point precision
+    assert math.isclose(result, expected_volume, rel_tol=0.001)
+    
+    print(f"Radius: {radius}")
+    print(f"Calculated Volume: {result}")
+    print("Assertion passed!")
+```

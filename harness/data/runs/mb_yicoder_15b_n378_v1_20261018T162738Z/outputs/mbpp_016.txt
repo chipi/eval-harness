@@ -1,0 +1,16 @@
+```python
+def text_lowercase_underscore(s):
+    import re
+    pattern = r'[a-z]+_[a-z]+'
+    if re.search(pattern, s):
+        return True
+    else:
+        return False
+
+# Test cases
+assert text_lowercase_underscore("aab_cbbbc")==(True)
+assert text_lowercase_underscore("AbC_dEfG")==(False)
+assert text_lowercase_underscore("123_abc")==(False)
+assert text_lowercase_underscore("aab_cbbbC")==(False)
+assert text_lowercase_underscore("aab_cbbbc_def")==(True)
+```

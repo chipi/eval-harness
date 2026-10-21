@@ -1,0 +1,40 @@
+```python
+#!/usr/bin/env python3
+"""
+Find the maximum sum possible using:
+
+    f(n) = max(f(n//2) + f(n//3) + f(n//4) + f(n//5), n)
+
+Integer division is used because n represents an integer value.
+
+Example:
+    get_max_sum(60) == 106
+"""
+
+from functools import lru_cache
+
+
+@lru_cache(maxsize=None)
+def get_max_sum(n: int) -> int:
+    """
+    Return the maximum sum obtainable from n by either keeping n as-is
+    or replacing it with the sum of recursively processed parts:
+    n//2, n//3, n//4, and n//5.
+    """
+    if n <= 0:
+        return 0
+
+    split_sum = (
+        get_max_sum(n // 2)
+        + get_max_sum(n // 3)
+        + get_max_sum(n // 4)
+        + get_max_sum(n // 5)
+    )
+
+    return max(split_sum, n)
+
+
+if __name__ == "__main__":
+    assert get_max_sum(60) == 106
+    print(get_max_sum(60))
+```

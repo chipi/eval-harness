@@ -1,0 +1,39 @@
+```python
+def comb_sort(list_):
+    """
+    Sorts a list of elements using the Comb Sort algorithm.
+
+    Args:
+        list_: The list to be sorted.
+
+    Returns:
+        The sorted list.
+    """
+    n = len(list_)
+    gap = n
+    shrink = 1.3
+    sorted_ = False
+
+    while not sorted_:
+        gap = int(gap / shrink)
+        if gap < 1:
+            gap = 1
+        i = 0
+        while i + gap < n:
+            if list_[i] > list_[i + gap]:
+                list_[i], list_[i + gap] = list_[i + gap], list_[i]
+                sorted_ = False
+            i += 1
+        if gap == 1:
+            sorted_ = True
+
+    return list_
+
+if __name__ == '__main__':
+    assert comb_sort([5, 15, 37, 25, 79]) == [5, 15, 25, 37, 79]
+    assert comb_sort([1, 4, 2, 5, 3]) == [1, 2, 3, 4, 5]
+    assert comb_sort([5, 4, 3, 2, 1]) == [1, 2, 3, 4, 5]
+    assert comb_sort([1]) == [1]
+    assert comb_sort([]) == []
+    print("All test cases passed!")
+```

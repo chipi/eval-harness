@@ -1,0 +1,14 @@
+```python
+def move_num(s):
+    nums = ''.join(i for i in s if i.isdigit())
+    chars = ''.join(i for i in s if not i.isdigit())
+    return chars + nums
+
+# Test cases
+assert move_num('I1love143you55three3000thousand') == 'Iloveyouthreethousand1143553000'
+assert move_num('123abc456def789') == 'abcdefgh123456789'
+assert move_num('abc123def456') == 'abcdefgh123456'
+assert move_num('123') == '123'
+assert move_num('abc') == 'abc'
+assert move_num('') == ''
+```

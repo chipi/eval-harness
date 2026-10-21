@@ -1,0 +1,29 @@
+Here's a self-contained Python script that solves the problem of checking if a number is divisible by 11, along with the provided assertion:
+
+```python
+def is_divisible_by_11(n):
+    """
+    Check if a number is divisible by 11.
+
+    Args:
+        n (int): The number to check.
+
+    Returns:
+        bool: True if the number is divisible by 11, False otherwise.
+    """
+    return n % 11 == 0
+
+# Test the function with the provided assertion
+assert is_divisible_by_11(12345) == False
+
+# Additional test cases
+print(is_divisible_by_11(121))    # True (121 ÷ 11 = 11)
+print(is_divisible_by_11(123456)) # False
+print(is_divisible_by_11(0))      # True (0 is divisible by any number)
+```
+
+### Explanation:
+1. The function `is_divisible_by_11` takes an integer `n` as input.
+2. It checks if `n` is divisible by 11 using the modulus operator (`%`). If the remainder is 0, the number is divisible by 11.
+3. The provided assertion `assert is_divisible_by_11(12345) == False` verifies that 12345 is not divisible by 11 (which is correct, since 12345 ÷ 11 ≈ 1122.2727).
+4. Additional test cases are included to demonstrate the function's correctness.

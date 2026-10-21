@@ -1,0 +1,19 @@
+```python
+def check_integer(s):
+    """
+    Write a function to check if a string represents an integer or not.
+    assert check_integer("python")==False
+    """
+    try:
+        int(s)
+        return True
+    except ValueError:
+        return False
+
+# Example usage and assertion
+assert check_integer("python") == False
+assert check_integer("123") == True
+assert check_integer("-456") == True
+assert check_integer("0") == True
+assert check_integer("12.34") == False
+```

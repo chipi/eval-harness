@@ -1,0 +1,32 @@
+```python
+def largest_subset(numbers):
+    """Return the largest size of a subset in which one number divides the other
+    for every pair."""
+    if not numbers:
+        return 0
+
+    # Zero cannot be used as a divisor, so handle it separately.
+    nonzero = sorted((n for n in numbers if n != 0), key=lambda n: abs(n))
+    zeros = len(numbers) - len(nonzero)
+
+    # Equal absolute values are compatible, including opposite signs.
+    groups = []
+    for n in nonzero:
+        if groups and abs(groups[-1][0]) == abs(n):
+            groups[-1][1] += 1
+        else:
+            groups.append([n, 1])
+
+    dp = [0] * len(groups)
+    for i, (value, count) in enumerate(groups):
+        dp[i] = count
+        for j in range(i):
+            if value % groups[j][0] == 0:
+                dp[i] = max(dp[i], dp[j] + count)
+
+    # Every nonzero number divides zero, so all zeros can join a valid subset.
+    return zeros + max(dp, default=0)
+
+
+assert largest_subset([1, 3, 6, 13, 17, 18]) == 4
+```

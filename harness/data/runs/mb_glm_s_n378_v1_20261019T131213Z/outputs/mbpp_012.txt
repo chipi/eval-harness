@@ -1,0 +1,52 @@
+```python
+import numpy as np
+
+def sort_matrix(matrix: list[list[int]]) -> list[list[int]]:
+    """
+    Sorts a given matrix in ascending order according to the sum of its rows.
+
+    This function takes a 2D list (matrix) and returns a new matrix where the
+    rows are sorted based on the sum of their elements in ascending order.
+    The original matrix is not modified.
+
+    Args:
+        matrix: A list of lists of integers, representing the matrix to be sorted.
+
+    Returns:
+        A new list of lists of integers, with rows sorted by their sum.
+        
+    Example:
+        >>> sort_matrix([[1, 2, 3], [2, 4, 5], [1, 1, 1]])
+        [[1, 1, 1], [1, 2, 3], [2, 4, 5]]
+    """
+    # The key for sorting is the sum of each row. We use a lambda function
+    # to specify that the sum of a row 'row' should be used as the sorting key.
+    # The `sorted()` function returns a new list, leaving the original matrix unchanged.
+    sorted_matrix = sorted(matrix, key=lambda row: sum(row))
+    
+    return sorted_matrix
+
+# Example usage and assertion to verify the function
+if __name__ == "__main__":
+    # Define the input matrix
+    input_matrix = [[1, 2, 3], [2, 4, 5], [1, 1, 1]]
+    
+    # Define the expected output
+    expected_output = [[1, 1, 1], [1, 2, 3], [2, 4, 5]]
+    
+    # Call the function to get the result
+    result = sort_matrix(input_matrix)
+    
+    # Print the results for clarity
+    print(f"Input Matrix: {input_matrix}")
+    print(f"Sorted Matrix: {result}")
+    print(f"Expected Output: {expected_output}")
+    
+    # Assert that the result matches the expected output
+    assert result == expected_output
+    
+    # An additional assertion to check with a different matrix
+    assert sort_matrix([[10, 20], [1, 2], [5, 5]]) == [[1, 2], [5, 5], [10, 20]]
+    
+    print("\nAll assertions passed successfully!")
+```

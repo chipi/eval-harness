@@ -1,0 +1,11 @@
+```python
+def is_Sum_Of_Powers_Of_Two(n):
+    """Return whether n is a sum of distinct positive powers of 2."""
+    if n < 0:
+        return False
+    # Distinct positive powers of 2 are 2, 4, 8, ...
+    return n % 2 == 0
+
+
+assert is_Sum_Of_Powers_Of_Two(10) is True  # 10 = 2 + 8
+```

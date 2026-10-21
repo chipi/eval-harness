@@ -1,0 +1,18 @@
+```python
+def division_elements(tuple1, tuple2):
+    """
+    Takes in two tuples and performs mathematical division operation element-wise across the given tuples.
+    
+    Args:
+        tuple1: First tuple containing numerators
+        tuple2: Second tuple containing denominators
+    
+    Returns:
+        A tuple with element-wise division results (integer division)
+    """
+    return tuple(a // b for a, b in zip(tuple1, tuple2))
+
+
+# Test case
+assert division_elements((10, 4, 6, 9), (5, 2, 3, 3)) == (2, 2, 2, 3)
+```

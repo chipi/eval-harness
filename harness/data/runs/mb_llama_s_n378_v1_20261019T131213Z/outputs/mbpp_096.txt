@@ -1,0 +1,89 @@
+```python
+def divisor(n: int) -> int:
+    """
+    This function calculates the number of divisors of a given integer.
+
+    Args:
+        n (int): The input integer.
+
+    Returns:
+        int: The number of divisors of the input integer.
+    """
+    count = 0
+    for i in range(1, n + 1):
+        if n % i == 0:
+            count += 1
+    return count
+
+assert divisor(15) == 4
+```
+
+However, the above solution has a time complexity of O(n). We can optimize it to O(sqrt(n)) by iterating up to the square root of the number.
+
+```python
+import math
+
+def divisor(n: int) -> int:
+    """
+    This function calculates the number of divisors of a given integer.
+
+    Args:
+        n (int): The input integer.
+
+    Returns:
+        int: The number of divisors of the input integer.
+    """
+    count = 0
+    for i in range(1, int(math.sqrt(n)) + 1):
+        if n % i == 0:
+            if n // i == i:
+                count += 1
+            else:
+                count += 2
+    return count
+
+assert divisor(15) == 4
+```
+
+You can also use a more pythonic way to write this function:
+
+```python
+import math
+
+def divisor(n: int) -> int:
+    """
+    This function calculates the number of divisors of a given integer.
+
+    Args:
+        n (int): The input integer.
+
+    Returns:
+        int: The number of divisors of the input integer.
+    """
+    return sum(1 for i in range(1, int(math.sqrt(n)) + 1) if n % i == 0)
+
+# But this will not give correct results, 
+# because it counts square root twice, 
+# and does not count the corresponding divisor.
+
+def divisor_correct(n: int) -> int:
+    """
+    This function calculates the number of divisors of a given integer.
+
+    Args:
+        n (int): The input integer.
+
+    Returns:
+        int: The number of divisors of the input integer.
+    """
+    count = 0
+    for i in range(1, int(math.sqrt(n)) + 1):
+        if n % i == 0:
+            if n // i == i:
+                count += 1
+            else:
+                count += 2
+    return count
+
+assert divisor_correct(15) == 4
+```

@@ -1,0 +1,24 @@
+Here's a self-contained Python script that solves the problem in a markdown code block:
+
+```python
+"""
+Write a python function to find the maximum of two numbers.
+assert maximum(5,10) == 10
+"""
+
+def maximum(a, b):
+    """Return the maximum of two numbers."""
+    return a if a > b else b
+
+# Test the function
+assert maximum(5, 10) == 10
+print("Test passed!")
+```
+
+This script:
+1. Defines a function `maximum` that takes two numbers and returns the larger one
+2. Includes a docstring explaining the function's purpose
+3. Contains the required assertion test case
+4. Prints a success message if the test passes
+
+The function uses a simple conditional expression to return the maximum of the two numbers. The assertion verifies that the function works correctly for the given test case.

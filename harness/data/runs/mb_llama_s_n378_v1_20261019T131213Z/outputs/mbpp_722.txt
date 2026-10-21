@@ -1,0 +1,62 @@
+```python
+def filter_data(students, min_height, min_weight):
+    """
+    This function filters students based on their height and weight.
+
+    Args:
+        students (dict): A dictionary with student names as keys and tuples of float (student_height, student_weight) as values.
+        min_height (float): The minimum height requirement.
+        min_weight (float): The minimum weight requirement.
+
+    Returns:
+        dict: A dictionary with students who have height and weight above the minimum.
+    """
+    # Initialize an empty dictionary to store the filtered students
+    filtered_students = {}
+
+    # Iterate over each student in the input dictionary
+    for student, (height, weight) in students.items():
+        # Check if the student's height and weight are above the minimum requirements
+        if height >= min_height and weight >= min_weight:
+            # If the student meets the requirements, add them to the filtered dictionary
+            filtered_students[student] = (height, weight)
+
+    # Return the filtered dictionary
+    return filtered_students
+
+
+# Example usage:
+students = {'Cierra Vega': (6.2, 70), 'Alden Cantrell': (5.9, 65), 'Kierra Gentry': (6.0, 68), 'Pierre Cox': (5.8, 66)}
+min_height = 6.0
+min_weight = 70
+
+filtered_students = filter_data(students, min_height, min_weight)
+print(filtered_students)  # Output: {'Cierra Vega': (6.2, 70)}
+```
+
+Alternatively, you can use a dictionary comprehension to make the function more concise:
+
+```python
+def filter_data(students, min_height, min_weight):
+    """
+    This function filters students based on their height and weight.
+
+    Args:
+        students (dict): A dictionary with student names as keys and tuples of float (student_height, student_weight) as values.
+        min_height (float): The minimum height requirement.
+        min_weight (float): The minimum weight requirement.
+
+    Returns:
+        dict: A dictionary with students who have height and weight above the minimum.
+    """
+    return {student: (height, weight) for student, (height, weight) in students.items() if height >= min_height and weight >= min_weight}
+
+
+# Example usage:
+students = {'Cierra Vega': (6.2, 70), 'Alden Cantrell': (5.9, 65), 'Kierra Gentry': (6.0, 68), 'Pierre Cox': (5.8, 66)}
+min_height = 6.0
+min_weight = 70
+
+filtered_students = filter_data(students, min_height, min_weight)
+print(filtered_students)  # Output: {'Cierra Vega': (6.2, 70)}
+```

@@ -1,0 +1,78 @@
+Here's a self-contained Python script that calculates the Eulerian number \( A(n, m) \) (also known as the Eulerian number of the first kind) using a recursive approach with memoization for efficiency:
+
+```python
+def eulerian_num(n: int, m: int) -> int:
+    """
+    Compute the Eulerian number A(n, m), which counts the number of permutations of
+    n elements where exactly m elements are greater than their original position.
+
+    Args:
+        n: The total number of elements (must be >= 0).
+        m: The number of elements greater than their original position (must be 0 <= m <= n-1).
+
+    Returns:
+        The Eulerian number A(n, m).
+
+    Raises:
+        ValueError: If n < 0 or m < 0 or m > n-1.
+    """
+    if n < 0 or m < 0 or m > n - 1:
+        raise ValueError("Invalid arguments: n must be >= 0 and 0 <= m <= n-1")
+
+    # Base cases
+    if n == 0:
+        return 0
+    if m == 0:
+        return 1
+    if m == n - 1:
+        return 1
+
+    # Recursive formula: A(n, m) = (n - m) * A(n - 1, m - 1) + (m + 1) * A(n - 1, m)
+    return (n - m) * eulerian_num(n - 1, m - 1) + (m + 1) * eulerian_num(n - 1, m)
+
+# Test the function
+assert eulerian_num(3, 1) == 4
+print("Test passed!")
+```
+
+### Explanation:
+1. **Base Cases**:
+   - \( A(0, m) = 0 \) for any \( m \) (no elements to permute).
+   - \( A(n, 0) = 1 \) (the identity permutation has no elements out of place).
+   - \( A(n, n-1) = 1 \) (only one permutation where all elements are out of place, the reverse permutation).
+
+2. **Recursive Formula**:
+   The Eulerian number \( A(n, m) \) can be computed using the recurrence relation:
+   \[
+   A(n, m) = (n - m) \cdot A(n - 1, m - 1) + (m + 1) \cdot A(n - 1, m)
+   \]
+   This formula counts the number of permutations where exactly \( m \) elements are greater than their original position.
+
+3. **Test Case**:
+   The test `assert eulerian_num(3, 1) == 4` checks that the function correctly computes \( A(3, 1) = 4 \), which is the number of permutations of 3 elements where exactly 1 element is greater than its original position.
+
+### Note:
+For larger values of \( n \), this recursive implementation may be inefficient due to repeated calculations. A dynamic programming approach or memoization would be more efficient for larger inputs. Here's an optimized version with memoization:
+
+```python
+from functools import lru_cache
+
+@lru_cache(maxsize=None)
+def eulerian_num(n: int, m: int) -> int:
+    if n < 0 or m < 0 or m > n - 1:
+        raise ValueError("Invalid arguments: n must be >= 0 and 0 <= m <= n-1")
+
+    if n == 0:
+        return 0
+    if m == 0:
+        return 1
+    if m == n - 1:
+        return 1
+
+    return (n - m) * eulerian_num(n - 1, m - 1) + (m + 1) * eulerian_num(n - 1, m)
+
+assert eulerian_num(3, 1) == 4
+print("Test passed!")
+```
+
+This version uses `lru_cache` to memoize the results of previously computed values, significantly improving performance for larger inputs.

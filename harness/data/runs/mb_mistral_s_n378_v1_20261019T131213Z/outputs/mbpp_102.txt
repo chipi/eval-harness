@@ -1,0 +1,27 @@
+Here's a self-contained Python script that converts a snake case string to camel case:
+
+```python
+def snake_to_camel(snake_str):
+    components = snake_str.split('_')
+    # Handle empty string case
+    if not components:
+        return snake_str
+    # Capitalize the first letter of each component except the first one
+    return components[0] + ''.join(x.title() for x in components[1:])
+
+# Test case
+assert snake_to_camel('python_program') == 'PythonProgram'
+print("Test passed!")
+```
+
+This script:
+1. Defines a function `snake_to_camel` that takes a snake_case string as input
+2. Splits the string by underscores to get individual components
+3. Joins them back together with the first component in lowercase and subsequent components capitalized
+4. Includes the test case from your example
+5. Prints a confirmation message if the test passes
+
+The function handles edge cases like:
+- Empty strings (returns the empty string)
+- Single word strings (returns them unchanged)
+- Multiple underscores (treats them as empty components)

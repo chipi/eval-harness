@@ -1,0 +1,47 @@
+Here's a Python script that solves the problem of setting the leftmost unset bit in a given integer:
+
+```python
+def set_left_most_unset_bit(n):
+    """
+    Set the leftmost unset bit in the binary representation of n.
+    
+    Args:
+        n (int): The input integer.
+    
+    Returns:
+        int: The integer after setting the leftmost unset bit.
+    """
+    if n == 0:
+        return 1  # All bits are unset, set the leftmost (which is the first bit)
+    
+    # Find the position of the leftmost unset bit
+    mask = 1 << (n.bit_length() - 1)  # Start with the leftmost set bit
+    while mask > 0:
+        if (n & mask) == 0:
+            n |= mask  # Set the bit
+            break
+        mask >>= 1
+    
+    return n
+
+# Test cases
+assert set_left_most_unset_bit(10) == 14, "Test case 1 failed"
+assert set_left_most_unset_bit(0) == 1, "Test case 2 failed"
+assert set_left_most_unset_bit(1) == 3, "Test case 3 failed"
+assert set_left_most_unset_bit(7) == 15, "Test case 4 failed"
+assert set_left_most_unset_bit(8) == 12, "Test case 5 failed"
+
+print("All test cases passed!")
+```
+
+### Explanation:
+1. **Function `set_left_most_unset_bit(n)`**:
+   - If `n` is 0, all bits are unset, so setting the leftmost unset bit (which is the first bit) returns 1.
+   - For other values, we start from the leftmost set bit (using `n.bit_length() - 1` to find its position) and check each bit to the right until we find the first unset bit.
+   - Once found, we set that bit using a bitwise OR operation (`n |= mask`) and return the result.
+
+2. **Test Cases**:
+   - `10` in binary is `1010`. The leftmost unset bit is the third bit from the right (0-based index 2), so setting it gives `1110` (14 in decimal).
+   - Other test cases cover edge cases like `0`, `1`, `7`, and `8` to ensure the function works correctly.
+
+The script is self-contained and includes assertions to verify the correctness of the solution.

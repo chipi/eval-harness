@@ -1,0 +1,28 @@
+```python
+def remove_elements(main_list, elements_to_remove):
+    """
+    This function removes all elements from the main_list that are present in elements_to_remove.
+
+    Args:
+        main_list (list): The list from which elements will be removed.
+        elements_to_remove (list): The list containing elements to be removed.
+
+    Returns:
+        list: The updated list with elements removed.
+    """
+    # Convert elements_to_remove to a set for efficient lookups
+    elements_to_remove_set = set(elements_to_remove)
+    
+    # Use list comprehension to filter out elements present in elements_to_remove
+    updated_list = [element for element in main_list if element not in elements_to_remove_set]
+    
+    return updated_list
+
+# Example usage:
+if __name__ == "__main__":
+    main_list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    elements_to_remove = [2, 4, 6, 8]
+    print(remove_elements(main_list, elements_to_remove))  # Output: [1, 3, 5, 7, 9, 10]
+```
+
+This Python function uses a set for efficient lookups to remove elements from the main list that are present in the list of elements to remove. The function utilizes list comprehension for a concise and readable implementation. The example usage demonstrates how to call the function with sample lists.

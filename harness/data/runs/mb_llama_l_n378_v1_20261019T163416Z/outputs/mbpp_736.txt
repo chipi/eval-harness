@@ -1,0 +1,25 @@
+```python
+from bisect import bisect_left
+
+def left_insertion(nums, target):
+    """
+    Locate the left insertion point for a specified value in sorted order.
+
+    Args:
+    - nums (list): A sorted list of numbers.
+    - target (int): The target value to be inserted.
+
+    Returns:
+    - int: The index where the target value should be inserted to maintain sorted order.
+    """
+    return bisect_left(nums, target)
+
+def main():
+    # Test the function
+    nums = [1, 2, 4, 5]
+    target = 6
+    print(left_insertion(nums, target))  # Expected output: 4
+
+if __name__ == "__main__":
+    main()
+```

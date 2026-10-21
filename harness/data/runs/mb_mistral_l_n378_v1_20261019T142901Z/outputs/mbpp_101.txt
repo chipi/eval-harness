@@ -1,0 +1,45 @@
+Here's a self-contained Python script that solves the problem, including the assertion:
+
+```python
+"""
+Function to find the kth element in an array using 1-based indexing.
+
+Args:
+    arr: List of elements
+    k: 1-based index of the element to find
+
+Returns:
+    The kth element in the array
+
+Example:
+    >>> kth_element([12, 3, 5, 7, 19], 2)
+    3
+"""
+
+def kth_element(arr, k):
+    """
+    Returns the kth element in the array using 1-based indexing.
+    """
+    if k < 1 or k > len(arr):
+        raise IndexError("Index out of bounds")
+    return arr[k - 1]
+
+# Test case
+assert kth_element([12, 3, 5, 7, 19], 2) == 3
+
+# Additional test cases
+assert kth_element([1, 2, 3, 4, 5], 1) == 1
+assert kth_element([10, 20, 30], 3) == 30
+try:
+    kth_element([1, 2, 3], 0)
+    assert False, "Should have raised IndexError"
+except IndexError:
+    pass
+try:
+    kth_element([1, 2, 3], 4)
+    assert False, "Should have raised IndexError"
+except IndexError:
+    pass
+
+print("All tests passed!")
+```

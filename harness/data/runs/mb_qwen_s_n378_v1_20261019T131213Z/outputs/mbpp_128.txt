@@ -1,0 +1,15 @@
+```python
+def long_words(n, str):
+    """
+    Find words that are longer than n characters from a given string.
+    
+    Args:
+        n (int): The minimum length threshold (exclusive). Words with length > n are returned.
+        str (str): A string containing space-separated words.
+    
+    Returns:
+        list: A list of words that are longer than n characters.
+    """
+    words = str.split()
+    return [word for word in words if len(word) > n]
+```

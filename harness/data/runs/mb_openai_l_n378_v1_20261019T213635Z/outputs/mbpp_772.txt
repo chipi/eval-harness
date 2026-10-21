@@ -1,0 +1,8 @@
+```python
+def remove_length(text, k):
+    """Remove words whose length is k."""
+    return " ".join(word for word in text.split() if len(word) != k)
+
+
+assert remove_length("The person is most value tet", 3) == "person is most value"
+```

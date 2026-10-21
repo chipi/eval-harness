@@ -1,0 +1,41 @@
+```python
+def get_total_number_of_sequences(m, n):
+    """
+    This function calculates the number of possible sequences of length n, 
+    such that each element is a positive integer and is greater than or equal 
+    to twice the previous element but less than or equal to m.
+
+    Args:
+        m (int): The upper limit for the sequence elements.
+        n (int): The length of the sequence.
+
+    Returns:
+        int: The total number of possible sequences.
+    """
+    # Initialize a list to store the number of sequences ending at each number
+    dp = [0] * (m + 1)
+    
+    # There is one sequence of length 1 ending at each number from 1 to m
+    for i in range(1, m + 1):
+        dp[i] = 1
+    
+    # For each subsequent element in the sequence
+    for _ in range(n - 1):
+        # Initialize a new list to store the number of sequences ending at each number for the next element
+        new_dp = [0] * (m + 1)
+        
+        # For each number from 1 to m
+        for i in range(1, m + 1):
+            # The number of sequences ending at i is the sum of the number of sequences ending at j, 
+            # where j is less than or equal to i // 2
+            new_dp[i] = sum(dp[j] for j in range(1, i // 2 + 1))
+        
+        # Update dp for the next iteration
+        dp = new_dp
+    
+    # The total number of sequences is the sum of the number of sequences ending at each number
+    return sum(dp)
+
+# Test the function
+assert get_total_number_of_sequences(10, 4) == 4
+```

@@ -1,0 +1,30 @@
+Here’s a self-contained Python script that solves the problem as described:  
+
+```python
+from typing import List, Union
+
+def sum_list(a: List[Union[int, float]], b: List[Union[int, float]]) -> List[Union[int, float]]:
+    """
+    Takes two lists of numbers and returns a list where each element is the sum
+    of the corresponding elements from the input lists.
+
+    Args:
+        a: First list of numbers.
+        b: Second list of numbers.
+
+    Returns:
+        List of sums, element-wise.
+
+    Raises:
+        ValueError: If the input lists have different lengths.
+    """
+    if len(a) != len(b):
+        raise ValueError("Both lists must have the same length")
+    return [x + y for x, y in zip(a, b)]
+
+# Example usage and test
+if __name__ == "__main__":
+    result = sum_list([10, 20, 30], [15, 25, 35])
+    print(result)  # Output: [25, 45, 65]
+    assert result == [25, 45, 65]
+```

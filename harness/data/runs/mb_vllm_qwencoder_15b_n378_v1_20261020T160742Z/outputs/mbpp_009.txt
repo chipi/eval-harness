@@ -1,0 +1,24 @@
+```python
+def find_Rotations(s):
+    # Check if the input string is empty or has only one character
+    if len(s) <= 1:
+        return 0
+    
+    # Concatenate the string with itself
+    doubled_string = s + s
+    
+    # Find the index where the original string appears in the doubled string
+    rotation_index = doubled_string.find(s)
+    
+    # Calculate the number of rotations needed
+    rotations_needed = rotation_index // len(s)
+    
+    return rotations_needed
+
+# Test cases
+assert find_Rotations("aaaa") == 1
+assert find_Rotations("abcd") == 2
+assert find_Rotations("hello") == 4
+assert find_Rotations("") == 0
+assert find_Rotations("a") == 0
+```

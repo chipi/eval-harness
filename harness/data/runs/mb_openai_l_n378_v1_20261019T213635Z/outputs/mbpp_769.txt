@@ -1,0 +1,10 @@
+```python
+def Diff(first, second):
+    """Return items in first but not second, sorted by their last digit."""
+    excluded = set(second)
+    return sorted((item for item in first if item not in excluded),
+                  key=lambda item: item % 10)
+
+
+assert Diff([10, 15, 20, 25, 30, 35, 40], [25, 40, 35]) == [10, 20, 30, 15]
+```

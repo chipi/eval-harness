@@ -1,0 +1,29 @@
+```python
+def text_match_wordz(text: str) -> bool:
+    """
+    Return True if the text contains a word that includes the letter 'z'.
+
+    A "word" is treated as a sequence of alphabetic characters.
+    """
+    word = ""
+    for ch in text:
+        if ch.isalpha():
+            word += ch
+        else:
+            if "z" in word.lower():
+                return True
+            word = ""
+
+    return "z" in word.lower()
+
+
+# Example assertion from the prompt
+assert text_match_wordz("pythonz.") == True
+
+# Optional additional checks
+assert text_match_wordz("python.") == False
+assert text_match_wordz("zebra") == True
+assert text_match_wordz("abc def") == False
+
+print("All tests passed.")
+```

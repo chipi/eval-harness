@@ -1,0 +1,35 @@
+Here's a self-contained Python script that solves the problem, including the requested assertion:
+
+```python
+"""
+Function to check if a given month number (1-12) has 30 days.
+Months with 30 days are April (4), June (6), September (9), and November (11).
+"""
+
+def check_monthnumber_number(month):
+    """
+    Check if the given month number has 30 days.
+
+    Args:
+        month (int): Month number (1-12)
+
+    Returns:
+        bool: True if the month has 30 days, False otherwise
+    """
+    # List of month numbers that have 30 days
+    thirty_day_months = {4, 6, 9, 11}
+    return month in thirty_day_months
+
+# Test the function with the provided assertion
+assert check_monthnumber_number(6) == True
+
+# Additional test cases for verification
+assert check_monthnumber_number(4) == True
+assert check_monthnumber_number(9) == True
+assert check_monthnumber_number(11) == True
+assert check_monthnumber_number(2) == False
+assert check_monthnumber_number(1) == False
+assert check_monthnumber_number(12) == False
+
+print("All tests passed!")
+```

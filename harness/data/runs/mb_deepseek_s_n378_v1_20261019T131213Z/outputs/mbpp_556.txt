@@ -1,0 +1,27 @@
+```python
+def find_Odd_Pair(arr, n):
+    """
+    Count the number of pairs (i, j) with i < j such that arr[i] ^ arr[j] is odd.
+    
+    XOR of two numbers is odd if and only if one number is even and the other is odd.
+    So we just need to count how many even and odd numbers are in the array.
+    Then the number of pairs with odd XOR = (count_even * count_odd)
+    """
+    count_even = 0
+    count_odd = 0
+    
+    for num in arr:
+        if num % 2 == 0:
+            count_even += 1
+        else:
+            count_odd += 1
+    
+    return count_even * count_odd
+
+# Test with the given example
+if __name__ == "__main__":
+    result = find_Odd_Pair([5, 4, 7, 2, 1], 5)
+    print(result)  # Expected output: 6
+    assert result == 6, f"Expected 6 but got {result}"
+    print("Test passed!")
+```

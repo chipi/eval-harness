@@ -1,0 +1,32 @@
+```python
+"""
+Write a function that takes in two tuples and performs mathematical division operation element-wise across the given tuples.
+assert division_elements((10, 4, 6, 9),(5, 2, 3, 3)) == (2, 2, 2, 3)
+"""
+
+def division_elements(tup1, tup2):
+    """
+    Takes in two tuples and performs mathematical division operation element-wise.
+    
+    Args:
+        tup1 (tuple): The tuple containing dividends.
+        tup2 (tuple): The tuple containing divisors.
+        
+    Returns:
+        tuple: A new tuple containing the result of element-wise division.
+    """
+    # Zip combines the two tuples into an iterator of tuples (element_from_tup1, element_from_tup2)
+    # We iterate through these pairs, perform division, and convert the result to a tuple
+    return tuple(a // b for a, b in zip(tup1, tup2))
+
+# Test cases to verify the function
+if __name__ == "__main__":
+    # Provided assertion test case
+    assert division_elements((10, 4, 6, 9), (5, 2, 3, 3)) == (2, 2, 2, 3)
+    
+    # Additional test cases
+    assert division_elements((20, 10), (5, 2)) == (4, 5)
+    assert division_elements((100, 50, 20), (10, 5, 4)) == (10, 10, 5)
+    
+    print("All tests passed successfully.")
+```

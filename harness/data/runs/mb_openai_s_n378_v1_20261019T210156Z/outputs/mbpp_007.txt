@@ -1,0 +1,14 @@
+```python
+def find_char_long(text):
+    """
+    Return a list of words that are at least 4 characters long.
+
+    Words are assumed to be separated by whitespace.
+    """
+    return [word for word in text.split() if len(word) >= 4]
+
+
+if __name__ == "__main__":
+    assert set(find_char_long('Please move back to stream')) == set(['Please', 'move', 'back', 'stream'])
+    print("All tests passed.")
+```

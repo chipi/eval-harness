@@ -1,0 +1,55 @@
+Looking at this problem, I need to write a function that recursively computes the nesting depth of a dictionary.
+
+**Analyzing the example:**
+- `{'a':1, 'b': {'c': {'d': {}}}}` — outer dict (1) → `{'c': ...}` (2) → `{'d': {}}` (3) → `{}` (4) ⇒ depth 4
+
+So each dictionary level counts as 1, including empty dictionaries at the deepest level. Non-dict values (like `1`) contribute nothing beyond their containing dict.
+
+**Approach:**
+- If the input isn't a dict, its depth is `0`.
+- Otherwise, depth is `1 + max(depth of values)`, where the max over an empty collection of dict-values is `0`.
+
+```python
+"""
+Write a function to find the depth of a dictionary.
+assert dict_depth({'a':1, 'b': {'c': {'d': {}}}})==4
+"""
+
+
+def dict_depth(d):
+    """
+    Return the nesting depth of a dictionary.
+
+    A non-dictionary object has depth 0.
+    A dictionary has depth 1 + the maximum depth of its values
+    (an empty dictionary therefore has depth 1).
+    """
+    if not isinstance(d, dict):
+        return 0
+    if not d:
+        return 1
+    return 1 + max(dict_depth(value) for value in d.values())
+
+
+if __name__ == '__main__':
+    # Provided test case
+    assert dict_depth({'a': 1, 'b': {'c': {'d': {}}}}) == 4
+
+    # Additional sanity checks
+    assert dict_depth({}) == 1
+    assert dict_depth({'a': 1, 'b': 2}) == 2
+    assert dict_depth({'a': {'b': {'c': {'d': {'e': 1}}}}}) == 5
+    assert dict_depth({'a': {'b': 1}, 'c': {'d': {'e': {'f': 2}}}}) == 4
+    assert dict_depth(5) == 0
+
+    print("All tests passed!")
+```
+
+**How it works on the example:**
+
+| Call | Result |
+|---|---|
+| `dict_depth({})` | `1` (empty dict) |
+| `dict_depth({'d': {}})` | `1 + 1 = 2` |
+| `dict_depth({'c': {'d': {}}})` | `1 + 2 = 3` |
+| `dict_depth({'a':1, 'b': {...}})` | `1 + max(0, 3) = 4` ✓ |

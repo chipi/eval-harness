@@ -1,0 +1,60 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def extract_quotation(text):
+    """
+    Extract values between quotation marks from the given string.
+    
+    Args:
+        text (str): Input string containing quoted values
+        
+    Returns:
+        list: List of strings found between quotation marks
+    """
+    result = []
+    in_quotes = False
+    current_word = ""
+    
+    for char in text:
+        if char == '"':
+            if in_quotes:
+                # End of quoted text
+                result.append(current_word)
+                current_word = ""
+                in_quotes = False
+            else:
+                # Start of quoted text
+                in_quotes = True
+        elif in_quotes:
+            current_word += char
+    
+    return result
+
+
+# Test the function
+if __name__ == "__main__":
+    # Test case from the problem
+    test_string = 'Cortex "A53" Based "multi" tasking "Processor"'
+    result = extract_quotation(test_string)
+    print(f"Input: {test_string}")
+    print(f"Output: {result}")
+    
+    # Assertion to verify correctness
+    assert extract_quotation('Cortex "A53" Based "multi" tasking "Processor"') == ['A53', 'multi', 'Processor']
+    print("Test passed!")
+    
+    # Additional test cases
+    assert extract_quotation('"Hello" World') == ['Hello']
+    assert extract_quotation('No quotes here') == []
+    assert extract_quotation('""') == ['']
+    assert extract_quotation('"First" and "Second"') == ['First', 'Second']
+    print("All tests passed!")
+```
+
+This solution uses a simple state machine approach:
+- It tracks whether we're currently inside quotation marks using the `in_quotes` flag
+- When we encounter a `"` character, we toggle the state
+- When inside quotes, we collect characters into `current_word`
+- When we exit quotes, we add the collected word to the result list
+
+The function handles edge cases like empty quotes, no quotes, and multiple quoted sections.

@@ -1,0 +1,28 @@
+```python
+def find_Rotations(s: str) -> int:
+    """
+    Finds the minimum number of rotations (greater than 0) required 
+    to get the same string.
+    """
+    if not s:
+        return 0
+    
+    # Concatenate the string with itself
+    # The first occurrence of s in (s + s) starting from index 1
+    # will be the minimum number of rotations to return to the original string.
+    temp = s + s
+    # find() returns the lowest index where the substring is found
+    index = temp.find(s, 1)
+    
+    return index
+
+if __name__ == "__main__":
+    # Test cases
+    assert find_Rotations("aaaa") == 1
+    assert find_Rotations("abab") == 2
+    assert find_Rotations("abc") == 3
+    assert find_Rotations("abcabc") == 3
+    assert find_Rotations("aaaaa") == 1
+    
+    print("All test cases passed!")
+```

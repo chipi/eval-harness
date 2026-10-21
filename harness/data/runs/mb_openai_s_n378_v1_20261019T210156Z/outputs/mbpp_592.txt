@@ -1,0 +1,30 @@
+```python
+def sum_Of_product(n: int) -> int:
+    """
+    Return the sum of the products of consecutive binomial coefficients in row n.
+
+    For row n of Pascal's triangle, the binomial coefficients are:
+        C(n, 0), C(n, 1), ..., C(n, n)
+
+    The function computes:
+        C(n, 0)*C(n, 1) + C(n, 1)*C(n, 2) + ... + C(n, n-1)*C(n, n)
+
+    Example:
+        sum_Of_product(3) = 1*3 + 3*3 + 3*1 = 15
+    """
+    if n < 0:
+        raise ValueError("n must be non-negative")
+
+    # Compute binomial coefficients for row n efficiently
+    coeffs = [1] * (n + 1)
+    for k in range(1, n + 1):
+        coeffs[k] = coeffs[k - 1] * (n - k + 1) // k
+
+    # Sum products of consecutive coefficients
+    return sum(coeffs[i] * coeffs[i + 1] for i in range(n))
+
+
+if __name__ == "__main__":
+    assert sum_Of_product(3) == 15
+    print("All tests passed.")
+```

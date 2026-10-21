@@ -1,0 +1,13 @@
+```python
+import re
+
+
+def replace_specialchar(text):
+    """Replace every space, comma, or dot with a colon."""
+    return re.sub(r"[ ,.]", ":", text)
+
+
+assert replace_specialchar(
+    "Python language, Programming language."
+) == "Python:language::Programming:language:"
+```

@@ -1,0 +1,60 @@
+Looking at this problem, I need to write a function that swaps the first and last elements of a list.
+
+```python
+"""
+Write a python function to interchange the first and last elements in a list.
+assert swap_List([12, 35, 9, 56, 24]) == [24, 35, 9, 56, 12]
+"""
+
+
+def swap_List(newList):
+    """
+    Interchange the first and last elements in a list.
+
+    Args:
+        newList: The list whose first and last elements will be swapped.
+
+    Returns:
+        The list with its first and last elements interchanged.
+    """
+    if not newList:
+        return newList
+
+    size = len(newList)
+    temp = newList[0]
+    newList[0] = newList[size - 1]
+    newList[size - 1] = temp
+
+    return newList
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert swap_List([12, 35, 9, 56, 24]) == [24, 35, 9, 56, 12]
+
+    # Additional test cases
+    assert swap_List([1, 2, 3]) == [3, 2, 1]
+    assert swap_List([4, 5, 6]) == [6, 5, 4]
+    assert swap_List([1, 2]) == [2, 1]
+    assert swap_List([7]) == [7]
+    assert swap_List([]) == []
+
+    print("All tests passed!")
+```
+
+**How it works:**
+
+1. **Empty list check** — if the list is empty, there is nothing to swap, so return it as-is.
+2. **Swap** — store the first element in `temp`, assign the last element to index `0`, then assign `temp` to the last index.
+3. **Return** — return the modified list.
+
+For a single-element list, the element is simply swapped with itself, which leaves the list unchanged — exactly the desired behavior.
+
+A more Pythonic one-liner alternative would be:
+
+```python
+def swap_List(newList):
+    if newList:
+        newList[0], newList[-1] = newList[-1], newList[0]
+    return newList
+```

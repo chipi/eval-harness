@@ -1,0 +1,22 @@
+```python
+def opposite_Signs(x, y):
+    """
+    Checks whether the given two integers have opposite signs.
+    
+    Two numbers have opposite signs if one is positive and the other is negative.
+    In mathematical terms, their product will be less than zero.
+    Note: This implementation treats 0 as having no sign (neither positive nor negative).
+    """
+    return (x > 0 and y < 0) or (x < 0 and y > 0)
+
+if __name__ == "__main__":
+    # Test cases
+    assert opposite_Signs(1, -2) == True
+    assert opposite_Signs(-1, 2) == True
+    assert opposite_Signs(1, 2) == False
+    assert opposite_Signs(-1, -2) == False
+    assert opposite_Signs(0, -1) == False  # 0 is not positive
+    assert opposite_Signs(0, 1) == False   # 0 is not negative
+    
+    print("All assertions passed!")
+```

@@ -1,0 +1,42 @@
+```python
+"""
+Write a python function to find the difference between largest and smallest value in a given list.
+assert big_diff([1,2,3,4]) == 3
+"""
+
+
+def big_diff(nums):
+    """
+    Return the difference between the largest and smallest value in a list.
+
+    Args:
+        nums: A non-empty iterable of comparable numbers.
+
+    Returns:
+        The difference max(nums) - min(nums).
+
+    Raises:
+        ValueError: If the input sequence is empty.
+    """
+    nums = list(nums)
+    if not nums:
+        raise ValueError("big_diff() requires a non-empty sequence")
+
+    largest = smallest = nums[0]
+    for value in nums[1:]:
+        if value > largest:
+            largest = value
+        elif value < smallest:
+            smallest = value
+
+    return largest - smallest
+
+
+if __name__ == "__main__":
+    assert big_diff([1, 2, 3, 4]) == 3
+    assert big_diff([4, 5, 12]) == 8
+    assert big_diff([9, 2, 3]) == 7
+    assert big_diff([7]) == 0
+    assert big_diff([-5, 0, 5]) == 10
+    print("All tests passed!")
+```

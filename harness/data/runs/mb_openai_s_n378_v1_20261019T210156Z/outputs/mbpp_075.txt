@@ -1,0 +1,12 @@
+```python
+def find_tuples(tuples_list, k):
+    """
+    Return a list of tuples where every element is divisible by k.
+    """
+    return [t for t in tuples_list if all(x % k == 0 for x in t)]
+
+
+if __name__ == "__main__":
+    assert find_tuples([(6, 24, 12), (7, 9, 6), (12, 18, 21)], 6) == [(6, 24, 12)]
+    print("All tests passed.")
+```

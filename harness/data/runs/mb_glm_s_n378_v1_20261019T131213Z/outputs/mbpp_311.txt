@@ -1,0 +1,42 @@
+```python
+def set_left_most_unset_bit(n: int) -> int:
+    """
+    Sets the leftmost unset bit (least significant unset bit) in the binary representation of a number.
+
+    Args:
+        n: An integer.
+
+    Returns:
+        The integer with the leftmost unset bit set.
+
+    Example:
+        >>> set_left_most_unset_bit(10)
+        14
+        Explanation:
+        10 in binary is '1010'. The leftmost unset bit is the third bit from the right (0-indexed).
+        Setting this bit results in '1110', which is 14 in decimal.
+    """
+    # A number with all bits set to 1 up to the most significant set bit of n.
+    # For example, if n is 10 (1010), mask will be 1111 (15).
+    mask = (1 << (n.bit_length())) - 1
+
+    # The bitwise OR of n and mask will set all the unset bits to the right
+    # of the most significant set bit. However, we only want to set the leftmost unset bit.
+    # The leftmost unset bit is the first 0 when scanning from the left.
+    # We can find it by taking the bitwise OR of n and (mask >> 1).
+    # For n=10 (1010), mask>>1 is 0111 (7). 10 | 7 = 14 (1110).
+    return n | (mask >> 1)
+
+# Example usage and assertion
+if __name__ == "__main__":
+    assert set_left_most_unset_bit(10) == 14
+    assert set_left_most_unset_bit(0) == 1  # 0 -> 1
+    assert set_left_most_unset_bit(1) == 3  # 01 -> 11
+    assert set_left_most_unset_bit(3) == 3  # 11 -> 11 (no unset bits)
+    assert set_left_most_unset_bit(7) == 7  # 0111 -> 0111 (no unset bits)
+    assert set_left_most_unset_bit(8) == 15 # 1000 -> 1111
+    assert set_left_most_unset_bit(14) == 14 # 1110 -> 1110 (no unset bits)
+    assert set_left_most_unset_bit(15) == 15 # 1111 -> 1111 (no unset bits)
+    assert set_left_most_unset_bit(16) == 31 # 10000 -> 11111
+    print("All assertions passed.")
+```

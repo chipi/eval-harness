@@ -1,0 +1,47 @@
+```python
+def large_product(list1, list2, n):
+    """
+    Find the n largest products from two given lists, selecting one factor from each list.
+    
+    Args:
+        list1: First list of numbers
+        list2: Second list of numbers
+        n: Number of largest products to return
+    
+    Returns:
+        A list of the n largest products in descending order
+    """
+    # Generate all possible products by taking one element from each list
+    products = []
+    for num1 in list1:
+        for num2 in list2:
+            products.append(num1 * num2)
+    
+    # Sort products in descending order and get the top n
+    products.sort(reverse=True)
+    return products[:n]
+
+
+# Test with the provided assertion
+assert large_product([1, 2, 3, 4, 5, 6], [3, 6, 8, 9, 10, 6], 3) == [60, 54, 50]
+print("Test passed!")
+print(large_product([1, 2, 3, 4, 5, 6], [3, 6, 8, 9, 10, 6], 3))
+```
+
+**Explanation:**
+
+1. The function `large_product` takes three parameters:
+   - `list1`: First list of numbers
+   - `list2`: Second list of numbers
+   - `n`: Number of largest products to find
+
+2. It generates all possible products by iterating through each element in `list1` and multiplying it with each element in `list2`.
+
+3. All products are stored in a list, which is then sorted in descending order.
+
+4. The function returns the first `n` elements from the sorted list (the n largest products).
+
+5. For the example: `[1, 2, 3, 4, 5, 6]` and `[3, 6, 8, 9, 10, 6]`
+   - The largest product is `6 × 10 = 60`
+   - The second largest is `6 × 9 = 54`
+   - The third largest is `5 × 10 = 50`

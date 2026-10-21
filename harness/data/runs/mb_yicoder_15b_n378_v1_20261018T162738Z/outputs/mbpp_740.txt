@@ -1,0 +1,11 @@
+```python
+def tuple_to_dict(t):
+    return {t[i]: t[i+1] for i in range(0, len(t), 2)}
+
+# Test cases
+assert tuple_to_dict((1, 5, 7, 10, 13, 5)) == {1: 5, 7: 10, 13: 5}
+assert tuple_to_dict((1, 2, 3, 4)) == {1: 2, 3: 4}
+assert tuple_to_dict((1, 2)) == {1: 2}
+assert tuple_to_dict((1)) == {}
+assert tuple_to_dict(() )== {}
+```

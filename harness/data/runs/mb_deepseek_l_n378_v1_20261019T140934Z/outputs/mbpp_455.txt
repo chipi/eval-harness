@@ -1,0 +1,33 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def check_monthnumb_number(month):
+    """
+    Check whether the given month number contains 31 days or not.
+    
+    Args:
+        month (int): Month number (1-12)
+    
+    Returns:
+        bool: True if the month has 31 days, False otherwise
+    """
+    # Months with 31 days: January(1), March(3), May(5), July(7), 
+    # August(8), October(10), December(12)
+    months_with_31_days = {1, 3, 5, 7, 8, 10, 12}
+    
+    return month in months_with_31_days
+
+# Test the function
+assert check_monthnumb_number(5) == True
+print("Test passed! Month 5 (May) has 31 days.")
+
+# Additional test cases
+assert check_monthnumb_number(1) == True   # January
+assert check_monthnumb_number(2) == False  # February
+assert check_monthnumb_number(4) == False  # April
+assert check_monthnumb_number(7) == True   # July
+assert check_monthnumb_number(11) == False # November
+print("All tests passed!")
+```
+
+The function checks if a given month number (1-12) has 31 days by using a set of month numbers that have 31 days. The months with 31 days are January (1), March (3), May (5), July (7), August (8), October (10), and December (12).

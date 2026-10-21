@@ -1,0 +1,80 @@
+```python
+def max_sum_increasing_subseq(arr, n, i, k):
+    """
+    Find the maximum sum of an increasing subsequence from prefix until ith index 
+    and also including a given kth element which is after i (k > i).
+    
+    The subsequence must:
+    1. Be strictly increasing
+    2. Include elements only from indices 0 to i (prefix) AND the element at index k
+    3. The element at index k must be included in the subsequence
+    4. All elements before k in the subsequence come from indices 0..i
+    
+    Args:
+        arr: List of integers
+        n: Length of array (not directly used but part of signature)
+        i: Index up to which we consider prefix elements
+        k: Index of the required element that must be included (k > i)
+    
+    Returns:
+        Maximum sum of such an increasing subsequence
+    """
+    # We need to find the maximum sum increasing subsequence that:
+    # - Uses elements from arr[0..i] and arr[k]
+    # - Is strictly increasing
+    # - Includes arr[k]
+    
+    # Since arr[k] must be included, we look for the best increasing subsequence
+    # ending with some value < arr[k] from arr[0..i], then add arr[k].
+    
+    # If no valid subsequence exists (e.g., all elements in prefix are >= arr[k]),
+    # we might just have arr[k] alone if it's considered valid. But typically,
+    # the subsequence can start fresh. Let's think about this more carefully.
+    
+    # The problem says "increasing subsequence from prefix until ith index and also 
+    # including a given kth element". This means we pick a subset of indices from 
+    # {0, 1, ..., i} plus the index k, such that the values form a strictly increasing 
+    # sequence, and we want to maximize the sum.
+    
+    # Approach: For each possible last element before k (from indices 0..i), we compute
+    # the maximum sum increasing subsequence ending at that element, provided that 
+    # element's value < arr[k]. Then we add arr[k] to get the total sum.
+    
+    # Also, we could have just arr[k] alone (sum = arr[k]) if no prefix element works.
+    
+    # Step 1: Compute dp[j] = maximum sum of increasing subsequence ending at index j
+    # for j in range(0, i+1)
+    
+    if i < 0 or k <= i or k >= len(arr):
+        return 0
+    
+    # dp[j] represents the max sum of an increasing subsequence ending at index j
+    # considering only indices 0..j
+    dp = [0] * (i + 1)
+    
+    for j in range(i + 1):
+        dp[j] = arr[j]  # At minimum, the subsequence is just arr[j] itself
+        for m in range(j):
+            if arr[m] < arr[j]:
+                dp[j] = max(dp[j], dp[m] + arr[j])
+    
+    # Now, find the maximum dp[j] where arr[j] < arr[k], then add arr[k]
+    max_sum_before_k = 0
+    found_valid = False
+    
+    for j in range(i + 1):
+        if arr[j] < arr[k]:
+            if not found_valid or dp[j] > max_sum_before_k:
+                max_sum_before_k = dp[j]
+                found_valid = True
+    
+    if found_valid:
+        return max_sum_before_k + arr[k]
+    else:
+        # No element in prefix is less than arr[k], so the subsequence is just arr[k]
+        return arr[k]
+
+
+# Test
+assert max_sum_increasing_subseq([1, 101, 2, 3, 100, 4, 5], 7, 4, 6) == 11
+```

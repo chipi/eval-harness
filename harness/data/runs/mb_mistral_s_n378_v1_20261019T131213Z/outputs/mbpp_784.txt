@@ -1,0 +1,47 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def mul_even_odd(numbers):
+    """
+    Find the product of the first even and first odd number in a given list.
+
+    Args:
+        numbers: List of integers
+
+    Returns:
+        Product of first even and first odd number, or None if either is not found
+    """
+    first_even = None
+    first_odd = None
+
+    for num in numbers:
+        if num % 2 == 0 and first_even is None:
+            first_even = num
+        elif num % 2 != 0 and first_odd is None:
+            first_odd = num
+
+        # Early exit if both found
+        if first_even is not None and first_odd is not None:
+            break
+
+    if first_even is not None and first_odd is not None:
+        return first_even * first_odd
+    else:
+        return None
+
+# Test case
+assert mul_even_odd([1, 3, 5, 7, 4, 1, 6, 8]) == 4
+print("Test passed!")
+```
+
+This script:
+1. Defines a function `mul_even_odd` that takes a list of numbers
+2. Iterates through the list to find the first even and first odd numbers
+3. Returns their product if both are found, otherwise returns None
+4. Includes the test case from the problem statement
+5. Prints a confirmation message if the test passes
+
+The function will return 4 for the given test case because:
+- First even number is 4
+- First odd number is 1
+- 4 * 1 = 4

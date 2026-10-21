@@ -1,0 +1,25 @@
+```python
+import re
+
+def capital_words_spaces(text: str) -> str:
+    """
+    Inserts a space before every capital letter in a string, 
+    except for the very first character of the string.
+    """
+    # We use a regular expression to find capital letters.
+    # The lookbehind (?<=[a-z]) ensures we only insert a space if 
+    # the capital letter is preceded by a lowercase letter.
+    # If you want to split "ABC" into "A B C", use (?<=.) instead.
+    # Based on standard "CamelCase" to "Camel Case" logic:
+    return re.sub(r'(?<=[a-z])([A-Z])', r' \1', text)
+
+if __name__ == "__main__":
+    # Test cases
+    assert capital_words_spaces("Python") == 'Python'
+    assert capital_words_spaces("CamelCase") == 'Camel Case'
+    assert capital_words_spaces("thisIsATest") == 'this Is A Test'
+    assert capital_words_spaces("Simple") == 'Simple'
+    assert capital_words_spaces("already Spaced") == 'already Spaced'
+    
+    print("All tests passed!")
+```

@@ -1,0 +1,24 @@
+```python
+def get_median(a, b, n):
+    """Return the median of two sorted lists, each containing n values."""
+    if n <= 0 or len(a) != n or len(b) != n:
+        raise ValueError("Both lists must have the specified positive size")
+
+    i = j = 0
+    previous = current = 0
+
+    # After n + 1 steps, previous and current are the two middle values.
+    for _ in range(n + 1):
+        previous = current
+        if i < n and (j >= n or a[i] <= b[j]):
+            current = a[i]
+            i += 1
+        else:
+            current = b[j]
+            j += 1
+
+    return (previous + current) / 2.0
+
+
+assert get_median([1, 12, 15, 26, 38], [2, 13, 17, 30, 45], 5) == 16.0
+```

@@ -1,0 +1,27 @@
+Here's a self-contained Python script that solves the problem in a markdown code block:
+
+```python
+def remove_all_spaces(input_string):
+    """
+    Removes all whitespace characters from a string.
+
+    Args:
+        input_string (str): The string to process
+
+    Returns:
+        str: The input string with all whitespace removed
+    """
+    return ''.join(input_string.split())
+
+# Test the function
+assert remove_all_spaces('python  program') == 'pythonprogram'
+print("All tests passed!")
+```
+
+This script:
+1. Defines a function `remove_all_spaces` that takes a string as input
+2. Uses the `split()` method (which splits on any whitespace by default) followed by `join()` to remove all whitespace
+3. Includes a test case that matches the provided assertion
+4. Prints a confirmation message if the test passes
+
+The function will remove all types of whitespace (spaces, tabs, newlines, etc.) from the input string.

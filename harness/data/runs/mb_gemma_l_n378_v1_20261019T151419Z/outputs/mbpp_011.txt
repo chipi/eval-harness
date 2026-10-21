@@ -1,0 +1,39 @@
+```python
+def remove_Occ(text, char):
+    """
+    Removes the first and last occurrence of a given character from the string.
+    If the character appears only once, that single occurrence is removed.
+    If the character does not appear, the original string is returned.
+    """
+    # Find the index of the first occurrence
+    first_idx = text.find(char)
+    
+    # If the character is not found, return the original string
+    if first_idx == -1:
+        return text
+    
+    # Find the index of the last occurrence
+    last_idx = text.rfind(char)
+    
+    # If there is only one occurrence, first_idx and last_idx will be the same
+    if first_idx == last_idx:
+        return text[:first_idx] + text[first_idx + 1:]
+    
+    # Remove the character at first_idx and last_idx
+    # We slice the string to exclude these two specific positions
+    return text[:first_idx] + text[first_idx + 1 : last_idx] + text[last_idx + 1:]
+
+# Test cases
+if __name__ == "__main__":
+    # Provided test case
+    assert remove_Occ("hello", "l") == "heo"
+    
+    # Additional test cases
+    assert remove_Occ("banana", "a") == "bnn"    # First 'a' at index 1, last 'a' at index 5
+    assert remove_Occ("apple", "p") == "ale"     # First 'p' at index 1, last 'p' at index 2
+    assert remove_Occ("test", "t") == "es"       # First 't' at index 0, last 't' at index 3
+    assert remove_Occ("single", "s") == "ingle"  # Only one occurrence
+    assert remove_Occ("none", "z") == "none"     # Character not present
+    
+    print("All tests passed!")
+```

@@ -1,0 +1,29 @@
+```python
+def is_undulating(n):
+    """
+    Check whether the given number is undulating or not.
+    An undulating number is a number whose adjacent digits alternate between increasing and decreasing.
+    For example:
+    1212121 is undulating
+    12345 is not undulating
+    121 is undulating
+    12 is undulating
+    1 is undulating
+    """
+    s = str(n)
+    if len(s) <= 1:
+        return True
+
+    increasing = s[1] > s[0]
+
+    for i in range(1, len(s)):
+        if increasing:
+            if s[i] <= s[i-1]:
+                return False
+        else:
+            if s[i] >= s[i-1]:
+                return False
+        increasing = not increasing
+
+    return True
+```

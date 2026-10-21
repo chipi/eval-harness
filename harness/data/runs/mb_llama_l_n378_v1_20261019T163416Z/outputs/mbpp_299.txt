@@ -1,0 +1,17 @@
+```python
+def max_aggregate(lst):
+    aggregate_dict = {}
+    for name, score in lst:
+        if name in aggregate_dict:
+            aggregate_dict[name] += score
+        else:
+            aggregate_dict[name] = score
+    return max(aggregate_dict.items(), key=lambda x: x[1])
+
+def main():
+    lst = [('Juan Whelan',90),('Sabah Colley',88),('Peter Nichols',7),('Juan Whelan',122),('Sabah Colley',84)]
+    print(max_aggregate(lst))  # Expected output: ('Juan Whelan', 212)
+
+if __name__ == "__main__":
+    main()
+```

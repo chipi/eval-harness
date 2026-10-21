@@ -1,0 +1,57 @@
+```python
+"""
+Write a function to find the number of ways to partition a set of Bell numbers.
+assert bell_number(2)==2
+"""
+
+def bell_number(n: int) -> int:
+    """
+    Calculate the n-th Bell number, which represents the number of ways 
+    to partition a set of n elements.
+    
+    Uses dynamic programming with Stirling numbers of the second kind.
+    
+    Args:
+        n: A non-negative integer
+        
+    Returns:
+        The n-th Bell number
+    """
+    if n < 0:
+        raise ValueError("Input must be a non-negative integer")
+    if n == 0:
+        return 1
+    
+    # Stirling numbers of the second kind S(n, k)
+    # S(n, k) = number of ways to partition n elements into k non-empty subsets
+    # Bell number B(n) = sum of S(n, k) for k = 0 to n
+    
+    # Initialize S(0, 0) = 1
+    stirling = [[0] * (n + 1) for _ in range(n + 1)]
+    stirling[0][0] = 1
+    
+    # Fill the Stirling numbers table
+    for i in range(1, n + 1):
+        for j in range(1, i + 1):
+            # Recurrence: S(n, k) = k * S(n-1, k) + S(n-1, k-1)
+            stirling[i][j] = j * stirling[i-1][j] + stirling[i-1][j-1]
+    
+    # Bell number is the sum of Stirling numbers for all k
+    return sum(stirling[n][k] for k in range(n + 1))
+
+
+# Test the function
+if __name__ == "__main__":
+    # Test the given assertion
+    assert bell_number(2) == 2, f"Expected 2 but got {bell_number(2)}"
+    
+    # Additional tests
+    assert bell_number(0) == 1
+    assert bell_number(1) == 1
+    assert bell_number(3) == 5
+    assert bell_number(4) == 15
+    assert bell_number(5) == 52
+    
+    print("All tests passed!")
+    print(f"Bell number for n=2: {bell_number(2)}")
+```

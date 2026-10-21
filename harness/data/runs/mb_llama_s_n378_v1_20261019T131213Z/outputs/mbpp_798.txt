@@ -1,0 +1,23 @@
+```python
+def _sum(arr):
+    """
+    This function calculates the sum of all elements in an array.
+
+    Args:
+        arr (list): A list of numbers.
+
+    Returns:
+        int: The sum of all elements in the array.
+    """
+    return sum(arr)
+
+
+def main():
+    # Test the function
+    assert _sum([1, 2, 3]) == 6
+    print("All tests passed.")
+
+
+if __name__ == "__main__":
+    main()
+```

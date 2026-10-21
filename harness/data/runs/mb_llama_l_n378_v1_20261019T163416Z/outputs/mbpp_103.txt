@@ -1,0 +1,21 @@
+```python
+def eulerian_num(n, m):
+    if m == 0 or m == n - 1:
+        return 1
+    else:
+        return (n - m) * eulerian_num(n - 1, m - 1) + (m + 1) * eulerian_num(n - 1, m)
+
+def eulerian_num_memo(n, m, memo = {}):
+    key = (n, m)
+    if key in memo:
+        return memo[key]
+    if m == 0 or m == n - 1:
+        return 1
+    else:
+        result = (n - m) * eulerian_num_memo(n - 1, m - 1, memo) + (m + 1) * eulerian_num_memo(n - 1, m, memo)
+        memo[key] = result
+        return result
+
+# Test the function
+print(eulerian_num_memo(3, 1))  # Output: 4
+```

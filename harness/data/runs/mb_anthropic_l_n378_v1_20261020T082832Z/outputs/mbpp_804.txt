@@ -1,0 +1,56 @@
+Looking at this problem, I need to write a function that checks whether the product of all numbers in a list is even.
+
+**Key insight:** A product is even if and only if at least one factor is even. There's no need to compute the full product (which could be huge) — just check if any number is even.
+
+```python
+"""
+Write a function to check whether the product of numbers in a list is even or not.
+assert is_product_even([1,2,3])
+"""
+
+
+def is_product_even(arr):
+    """
+    Check whether the product of the numbers in `arr` is even.
+
+    The product of a list of integers is even if and only if at least one
+    element is even, so we simply look for an even number instead of
+    computing the (potentially huge) product.
+
+    Note: an empty list has an empty product of 1, which is odd.
+
+    :param arr: iterable of integers
+    :return: True if the product is even, False otherwise
+    """
+    return any(num % 2 == 0 for num in arr)
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert is_product_even([1, 2, 3])
+
+    # Additional test cases
+    assert is_product_even([1, 2, 1, 4])
+    assert is_product_even([2, 4, 6])
+    assert not is_product_even([1, 3, 5])
+    assert not is_product_even([7])
+    assert is_product_even([0, 1, 3])          # 0 is even
+    assert is_product_even([-2, 3, 5])         # negative even number
+    assert not is_product_even([-1, -3])       # all odd
+    assert not is_product_even([])             # empty product == 1 (odd)
+
+    print("All tests passed!")
+
+    # Simple demonstration
+    for sample in ([1, 2, 3], [1, 3, 5], [0], [9, 11, 13, 14]):
+        print(f"is_product_even({sample}) -> {is_product_even(sample)}")
+```
+
+**Output:**
+```
+All tests passed!
+is_product_even([1, 2, 3]) -> True
+is_product_even([1, 3, 5]) -> False
+is_product_even([0]) -> True
+is_product_even([9, 11, 13, 14]) -> True
+```

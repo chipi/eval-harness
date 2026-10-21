@@ -1,0 +1,17 @@
+```python
+def sum_Of_Subarray_Prod(nums):
+    """Return the sum of the products of all non-empty contiguous sublists."""
+    total = 0
+    ending_here = 0
+
+    for num in nums:
+        # Either start a new sublist or extend each sublist ending
+        # at the previous element.
+        ending_here = num * (1 + ending_here)
+        total += ending_here
+
+    return total
+
+
+assert sum_Of_Subarray_Prod([1, 2, 3]) == 20
+```

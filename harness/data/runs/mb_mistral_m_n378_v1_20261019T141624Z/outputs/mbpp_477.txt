@@ -1,0 +1,16 @@
+```python
+def is_lower(input_string):
+    """
+    Convert the given string to lower case.
+
+    Args:
+        input_string (str): The string to be converted to lower case.
+
+    Returns:
+        str: The input string converted to lower case.
+    """
+    return input_string.lower()
+
+# Test the function
+assert is_lower("InValid") == "invalid"
+```

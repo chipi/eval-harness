@@ -1,0 +1,42 @@
+```python
+"""
+Find the index of the smallest triangular number with n digits.
+
+The k-th triangular number is:
+    T_k = k * (k + 1) // 2
+
+We need the smallest k such that T_k has at least n digits, i.e.
+    T_k >= 10^(n-1)
+
+Example:
+    n = 2
+    smallest 2-digit triangular number is 10
+    T_4 = 4 * 5 // 2 = 10
+    so the answer is 4
+"""
+
+import math
+
+
+def find_Index(n: int) -> int:
+    """
+    Return the index of the smallest triangular number with n digits.
+    """
+    if n <= 0:
+        raise ValueError("n must be a positive integer")
+
+    smallest_n_digit_number = 10 ** (n - 1)
+
+    # Solve k(k + 1) / 2 >= smallest_n_digit_number
+    # k^2 + k - 2 * smallest_n_digit_number >= 0
+    k = math.ceil((-1 + math.sqrt(1 + 8 * smallest_n_digit_number)) / 2)
+
+    return k
+
+
+if __name__ == "__main__":
+    assert find_Index(1) == 1
+    assert find_Index(2) == 4
+    assert find_Index(3) == 14
+    print("All tests passed.")
+```

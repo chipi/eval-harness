@@ -1,0 +1,29 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+import heapq
+
+def heap_queue_largest(numbers, n):
+    """
+    Find the n largest integers from a given list of numbers, returned in descending order.
+    
+    Args:
+        numbers: List of numbers
+        n: Number of largest integers to find
+    
+    Returns:
+        List of n largest integers in descending order
+    """
+    # Use heapq.nlargest to find the n largest elements
+    # nlargest returns them in descending order by default
+    return heapq.nlargest(n, numbers)
+
+# Test the function
+if __name__ == "__main__":
+    result = heap_queue_largest([25, 35, 22, 85, 14, 65, 75, 22, 58], 3)
+    print(f"Result: {result}")
+    assert result == [85, 75, 65]
+    print("Test passed!")
+```
+
+This script uses Python's built-in `heapq.nlargest()` function, which efficiently finds the n largest elements from an iterable. The function returns the elements in descending order, which matches the requirement. The script includes a test case that verifies the function works correctly with the provided example.

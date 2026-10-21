@@ -1,0 +1,37 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def remove_dirty_chars(string1, string2):
+    """
+    Remove characters from the first string which are present in the second string.
+    
+    Args:
+        string1: The string from which characters will be removed
+        string2: The string containing characters to be removed
+    
+    Returns:
+        A new string with characters from string2 removed from string1
+    """
+    # Create a set of characters to remove for O(1) lookup
+    chars_to_remove = set(string2)
+    
+    # Build the result string by keeping only characters not in the set
+    result = ''.join(char for char in string1 if char not in chars_to_remove)
+    
+    return result
+
+# Test the function with the provided assertion
+assert remove_dirty_chars("probasscurve", "pros") == 'bacuve'
+print("Test passed!")
+
+# Additional test cases
+print(remove_dirty_chars("hello world", "ol"))  # Should output: 'he wrd'
+print(remove_dirty_chars("programming", "grm"))  # Should output: 'poain'
+print(remove_dirty_chars("abcdef", "xyz"))  # Should output: 'abcdef'
+```
+
+This solution:
+1. Converts the second string to a set for efficient O(1) character lookup
+2. Uses a generator expression with `join()` to build the result string
+3. Only keeps characters from the first string that are not present in the second string
+4. Passes the provided assertion test case

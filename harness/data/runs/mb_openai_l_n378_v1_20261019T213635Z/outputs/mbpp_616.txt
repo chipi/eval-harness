@@ -1,0 +1,10 @@
+```python
+def tuple_modulo(first, second):
+    """Return the element-wise modulo of two tuples of equal length."""
+    if len(first) != len(second):
+        raise ValueError("Tuples must have the same length")
+    return tuple(a % b for a, b in zip(first, second))
+
+
+assert tuple_modulo((10, 4, 5, 6), (5, 6, 7, 5)) == (0, 4, 5, 1)
+```

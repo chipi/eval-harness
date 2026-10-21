@@ -1,0 +1,36 @@
+```python
+def check_expression(expression: str) -> bool:
+    """
+    Checks if the given expression is balanced or not.
+
+    Args:
+    expression (str): The input expression to check.
+
+    Returns:
+    bool: True if the expression is balanced, False otherwise.
+    """
+    stack = []
+    bracket_map = {')': '(', '}': '{', ']': '['}
+
+    for char in expression:
+        if char in bracket_map.values():
+            # If the character is an opening bracket, push it to the stack
+            stack.append(char)
+        elif char in bracket_map.keys():
+            # If the character is a closing bracket
+            if not stack or stack.pop() != bracket_map[char]:
+                # If the stack is empty or the top of the stack does not match with the current closing bracket
+                return False
+
+    # If the stack is empty after processing the entire expression, it is balanced
+    return not stack
+
+
+# Example usage:
+if __name__ == "__main__":
+    print(check_expression("{()}[{}]"))  # Expected output: True
+    print(check_expression("{[()]}"))    # Expected output: True
+    print(check_expression("{[()]"))     # Expected output: False
+```
+
+In this script, we define a function `check_expression` that takes an expression as input and returns a boolean indicating whether the expression is balanced or not. The function uses a stack to keep track of the opening brackets encountered so far. It iterates over each character in the expression, pushing opening brackets onto the stack and popping them off when it encounters a matching closing bracket. If it encounters a closing bracket that does not match with the top of the stack, or if there are unmatched opening brackets left on the stack at the end, it returns `False`. Otherwise, it returns `True`.

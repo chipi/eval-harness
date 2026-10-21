@@ -1,0 +1,58 @@
+Looking at this problem, I need to write a function that recursively traverses a nested list structure, flattening it and summing all numeric elements.
+
+```python
+"""
+Write a function to flatten a list and sum all of its elements.
+assert recursive_list_sum(([1, 2, [3,4],[5,6]]))==21
+"""
+
+
+def recursive_list_sum(data_list):
+    """
+    Flatten a (possibly nested) list and return the sum of all its elements.
+
+    The function walks through every item of the list. If an item is itself a
+    list (or tuple), the function calls itself on that item so that arbitrarily
+    deep nesting is handled; otherwise the item is added to the running total.
+
+    Examples:
+        >>> recursive_list_sum([1, 2, [3, 4], [5, 6]])
+        21
+        >>> recursive_list_sum([1, [2, [3, [4, [5]]]]])
+        15
+        >>> recursive_list_sum([])
+        0
+    """
+    total = 0
+    for element in data_list:
+        if isinstance(element, (list, tuple)):
+            total += recursive_list_sum(element)
+        else:
+            total += element
+    return total
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert recursive_list_sum(([1, 2, [3, 4], [5, 6]])) == 21
+
+    # A few extra sanity checks
+    assert recursive_list_sum([7, 10, [15, 14], [19, 41]]) == 106
+    assert recursive_list_sum([10, 20, [30, 40], [50, 60]]) == 210
+    assert recursive_list_sum([1, [2, [3, [4, [5]]]]]) == 15
+    assert recursive_list_sum([]) == 0
+    assert recursive_list_sum([[], [[]], [[[1]]]]) == 1
+
+    print("All tests passed!")
+    print(recursive_list_sum([1, 2, [3, 4], [5, 6]]))  # -> 21
+```
+
+**How it works:**
+
+1. Initialize `total` to `0`.
+2. Iterate over each `element` of the input list.
+3. If the element is a nested container (`list`/`tuple`), recursively compute its sum and add it to `total`.
+4. Otherwise, the element is a plain number, so add it directly.
+5. Return `total`.
+
+For `[1, 2, [3, 4], [5, 6]]`: `1 + 2 + (3 + 4) + (5 + 6) = 21` ✅

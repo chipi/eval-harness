@@ -1,0 +1,54 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+"""
+Write a function to find perfect squares between two given numbers.
+assert perfect_squares(1,30)==[1, 4, 9, 16, 25]
+"""
+
+import math
+
+def perfect_squares(start, end):
+    """
+    Find all perfect squares between two given numbers (inclusive).
+    
+    Args:
+        start (int): The lower bound of the range.
+        end (int): The upper bound of the range.
+    
+    Returns:
+        list: A list of perfect squares within the range [start, end].
+    """
+    # Find the smallest integer whose square is >= start
+    lower = math.isqrt(start)
+    if lower * lower < start:
+        lower += 1
+    
+    # Find the largest integer whose square is <= end
+    upper = math.isqrt(end)
+    
+    # Generate the list of perfect squares
+    return [i * i for i in range(lower, upper + 1)]
+
+
+# Test the function
+assert perfect_squares(1, 30) == [1, 4, 9, 16, 25]
+print("Test passed!")
+print(perfect_squares(1, 30))
+```
+
+**How it works:**
+
+1. **`math.isqrt(n)`** returns the integer square root of `n` (floor of the actual square root), which is more accurate than using `math.sqrt` for large integers.
+
+2. **Finding the lower bound:** We compute `isqrt(start)`. If its square is less than `start`, we increment by 1 to get the smallest integer whose square is `>= start`.
+
+3. **Finding the upper bound:** We compute `isqrt(end)`, which gives the largest integer whose square is `<= end`.
+
+4. **Generating squares:** We iterate from `lower` to `upper` (inclusive) and square each value.
+
+**Example output:**
+```
+Test passed!
+[1, 4, 9, 16, 25]
+```

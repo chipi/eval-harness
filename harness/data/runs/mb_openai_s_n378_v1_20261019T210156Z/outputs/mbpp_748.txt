@@ -1,0 +1,27 @@
+```python
+import re
+
+def capital_words_spaces(s: str) -> str:
+    """
+    Insert spaces before capital letters when they start a new word.
+
+    Examples:
+        "Python" -> "Python"
+        "HelloWorld" -> "Hello World"
+        "myNameIs" -> "my Name Is"
+    """
+    if not s:
+        return s
+
+    # Add a space before each uppercase letter that follows a lowercase letter or digit.
+    return re.sub(r'(?<=[a-z0-9])(?=[A-Z])', ' ', s)
+
+
+if __name__ == "__main__":
+    assert capital_words_spaces("Python") == "Python"
+    assert capital_words_spaces("HelloWorld") == "Hello World"
+    assert capital_words_spaces("myNameIs") == "my Name Is"
+    assert capital_words_spaces("ABC") == "ABC"
+    assert capital_words_spaces("") == ""
+    print("All tests passed.")
+```

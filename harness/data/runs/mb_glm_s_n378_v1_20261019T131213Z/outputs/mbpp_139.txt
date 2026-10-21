@@ -1,0 +1,42 @@
+```python
+import math
+
+def circle_circumference(radius: float) -> float:
+    """
+    Calculates the circumference of a circle given its radius.
+
+    The formula for the circumference of a circle is C = 2 * π * r.
+
+    Args:
+        radius: The radius of the circle. Must be a non-negative number.
+
+    Returns:
+        The circumference of the circle.
+        
+    Raises:
+        ValueError: If the radius is negative.
+    """
+    if radius < 0:
+        raise ValueError("Radius cannot be negative.")
+    return 2 * math.pi * radius
+
+# Example usage and assertion from the problem description
+if __name__ == "__main__":
+    # The problem's assertion uses math.isclose for floating-point comparison.
+    # This is a robust way to check if two floats are "close enough".
+    assert math.isclose(circle_circumference(10), 62.830000000000005, rel_tol=0.001)
+    
+    # Additional test cases
+    assert math.isclose(circle_circumference(0), 0.0)
+    assert math.isclose(circle_circumference(1), 2 * math.pi)
+    assert math.isclose(circle_circumference(2.5), 2 * math.pi * 2.5)
+    
+    # Test for negative radius
+    try:
+        circle_circumference(-5)
+        assert False, "Expected ValueError for negative radius"
+    except ValueError:
+        pass # This is the expected behavior
+
+    print("All tests passed!")
+```

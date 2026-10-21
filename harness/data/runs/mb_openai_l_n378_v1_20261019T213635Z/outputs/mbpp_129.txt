@@ -1,0 +1,21 @@
+```python
+def magic_square_test(matrix):
+    """Return True if matrix is a square whose rows, columns, and diagonals sum equally."""
+    if not matrix or any(len(row) != len(matrix) for row in matrix):
+        return False
+
+    n = len(matrix)
+    target = sum(matrix[0])
+
+    return (
+        all(sum(row) == target for row in matrix)
+        and all(sum(matrix[row][col] for row in range(n)) == target for col in range(n))
+        and sum(matrix[i][i] for i in range(n)) == target
+        and sum(matrix[i][n - 1 - i] for i in range(n)) == target
+    )
+
+
+assert magic_square_test(
+    [[7, 12, 1, 14], [2, 13, 8, 11], [16, 3, 10, 5], [9, 6, 15, 4]]
+) is True
+```

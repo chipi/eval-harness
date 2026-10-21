@@ -1,0 +1,39 @@
+```python
+def find_first_occurrence(nums, target):
+    """
+    Finds the index of the first occurrence of a given number in a sorted array.
+    If the number is not found, returns -1.
+    
+    Parameters:
+    nums (list): A sorted list of integers.
+    target (int): The integer to search for.
+    
+    Returns:
+    int: The index of the first occurrence of target, or -1 if not found.
+    """
+    low = 0
+    high = len(nums) - 1
+    result = -1
+
+    while low <= high:
+        mid = (low + high) // 2
+        
+        if nums[mid] == target:
+            result = mid       # Store the index
+            high = mid - 1     # Continue searching in the left half for an earlier occurrence
+        elif nums[mid] < target:
+            low = mid + 1
+        else:
+            high = mid - 1
+            
+    return result
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert find_first_occurrence([2, 5, 5, 5, 6, 6, 8, 9, 9, 9], 5) == 1
+    # Additional test cases
+    assert find_first_occurrence([2, 5, 5, 5, 6, 6, 8, 9, 9, 9], 9) == 7
+    assert find_first_occurrence([2, 5, 5, 5, 6, 6, 8, 9, 9, 9], 2) == 0
+    assert find_first_occurrence([2, 5, 5, 5, 6, 6, 8, 9, 9, 9], 7) == -1
+    print("All assertions passed.")
+```

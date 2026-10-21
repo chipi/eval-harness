@@ -1,0 +1,12 @@
+```python
+def common_in_nested_lists(nested_list):
+    result = set(nested_list[0])
+    for lst in nested_list[1:]:
+        result = result.intersection(set(lst))
+    return list(result)
+
+
+if __name__ == "__main__":
+    assert set(common_in_nested_lists([[12, 18, 23, 25, 45], [7, 12, 18, 24, 28], [1, 5, 8, 12, 15, 16, 18]])) == set([18, 12])
+    print("All tests passed.")
+```

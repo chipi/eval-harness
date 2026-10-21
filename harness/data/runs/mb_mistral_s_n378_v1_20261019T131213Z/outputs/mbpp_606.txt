@@ -1,0 +1,28 @@
+Here's a self-contained Python script that solves the problem of converting degrees to radians:
+
+```python
+import math
+
+def radian_degree(degrees):
+    """Convert degrees to radians.
+
+    Args:
+        degrees (float): Angle in degrees to be converted.
+
+    Returns:
+        float: Angle in radians.
+    """
+    return degrees * (math.pi / 180)
+
+# Test the function
+assert radian_degree(90) == 1.5707963267948966
+print("Test passed!")
+```
+
+This script:
+1. Imports the `math` module to access the value of π (pi)
+2. Defines a function `radian_degree` that converts degrees to radians using the formula: radians = degrees × (π/180)
+3. Includes the test case from the problem statement
+4. Prints a confirmation message if the test passes
+
+The function will correctly convert 90 degrees to approximately 1.5708 radians (which is π/2).

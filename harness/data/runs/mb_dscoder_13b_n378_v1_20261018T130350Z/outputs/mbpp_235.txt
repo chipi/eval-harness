@@ -1,0 +1,22 @@
+```python
+def even_bit_set_number(n):
+    """
+    Write a python function to set all even bits of a given number.
+    """
+    # Convert the number to binary and set all even bits to 1
+    binary = bin(n)[2:]
+    binary = list(binary)
+    for i in range(len(binary)):
+        if i % 2 == 0:
+            binary[i] = '1'
+    # Convert the binary list back to a number
+    result = int(''.join(binary), 2)
+    return result
+
+# Test cases
+assert even_bit_set_number(10) == 10
+assert even_bit_set_number(15) == 15
+assert even_bit_set_number(255) == 255
+assert even_bit_set_number(1) == 1
+assert even_bit_set_number(0) == 0
+```

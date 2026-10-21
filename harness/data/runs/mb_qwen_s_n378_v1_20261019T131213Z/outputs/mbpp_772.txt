@@ -1,0 +1,19 @@
+```python
+def remove_length(s, k):
+    """
+    Remove all words with length exactly k from the given string.
+    
+    Args:
+        s: Input string containing words separated by spaces
+        k: Length of words to remove
+    
+    Returns:
+        String with all words of length k removed
+    """
+    if not s or s.strip() == "":
+        return ""
+    
+    words = s.split()
+    filtered_words = [word for word in words if len(word) != k]
+    return ' '.join(filtered_words)
+```

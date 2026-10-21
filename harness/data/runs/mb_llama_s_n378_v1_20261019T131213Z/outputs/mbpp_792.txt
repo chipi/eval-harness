@@ -1,0 +1,22 @@
+```python
+def count_list(lists):
+    """
+    This function takes a list of lists as input and returns the number of lists.
+
+    Args:
+        lists (list): A list of lists.
+
+    Returns:
+        int: The number of lists.
+    """
+    return len(lists)
+
+# Test the function
+def main():
+    lists = [[1, 3], [5, 7], [9, 11], [13, 15, 17]]
+    assert count_list(lists) == 4
+    print("All tests passed.")
+
+if __name__ == "__main__":
+    main()
+```

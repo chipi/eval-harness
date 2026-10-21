@@ -1,0 +1,10 @@
+```python
+def find_char_long(s):
+    return [word for word in s.split() if len(word) >= 4]
+
+def main():
+    print(find_char_long('Please move back to stream'))
+
+if __name__ == "__main__":
+    main()
+```

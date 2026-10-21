@@ -1,0 +1,25 @@
+```python
+def second_smallest(numbers):
+    """
+    Finds the second smallest number in a list.
+    Handles duplicates by treating the second distinct smallest value as the target.
+    """
+    # Remove duplicates by converting to a set, then sort the unique values
+    unique_numbers = sorted(list(set(numbers)))
+    
+    # If there are fewer than 2 unique numbers, a second smallest doesn't exist
+    if len(unique_numbers) < 2:
+        return None
+    
+    return unique_numbers[1]
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    test_list = [1, 2, -8, -2, 0, -2]
+    result = second_smallest(test_list)
+    print(f"The second smallest number in {test_list} is: {result}")
+    
+    # Assertion check
+    assert second_smallest([1, 2, -8, -2, 0, -2]) == -2
+    print("Assertion passed!")
+```

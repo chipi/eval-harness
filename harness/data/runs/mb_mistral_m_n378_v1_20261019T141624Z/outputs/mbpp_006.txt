@@ -1,0 +1,27 @@
+Here's a self-contained Python script that solves the problem by checking if two numbers differ at exactly one bit position:
+
+```python
+def differ_At_One_Bit_Pos(a, b):
+    """
+    Check if two numbers differ at exactly one bit position.
+
+    Args:
+        a (int): First number
+        b (int): Second number
+
+    Returns:
+        bool: True if numbers differ at exactly one bit, False otherwise
+    """
+    xor = a ^ b
+    # Check if xor is a power of 2 (has exactly one bit set)
+    return xor != 0 and (xor & (xor - 1)) == 0
+
+# Test case
+assert differ_At_One_Bit_Pos(13, 9) == True
+```
+
+The solution works by:
+1. Calculating the XOR of the two numbers (which will have bits set to 1 where the numbers differ)
+2. Checking if the result is a power of 2 (which means it has exactly one bit set to 1)
+3. The expression `(xor & (xor - 1)) == 0` is a well-known bit manipulation trick to check if a number is a power of 2
+4. We also need to ensure xor is not 0 (which would mean the numbers are identical)

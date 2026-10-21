@@ -1,0 +1,48 @@
+Here's a self-contained Python script that solves the problem of finding the next perfect square greater than a given number:
+
+```python
+import math
+
+def next_Perfect_Square(n):
+    """
+    Find the next perfect square greater than a given number.
+
+    Args:
+        n (int): The input number
+
+    Returns:
+        int: The next perfect square greater than n
+
+    Examples:
+        >>> next_Perfect_Square(35)
+        36
+    """
+    if n < 0:
+        raise ValueError("Input must be a non-negative integer")
+
+    # Calculate the square root of n
+    sqrt_n = math.isqrt(n)
+
+    # The next perfect square is (sqrt_n + 1) squared
+    return (sqrt_n + 1) ** 2
+
+# Test the function
+assert next_Perfect_Square(35) == 36
+assert next_Perfect_Square(1) == 4
+assert next_Perfect_Square(0) == 1
+assert next_Perfect_Square(16) == 25
+
+print("All tests passed!")
+```
+
+This script includes:
+1. A function `next_Perfect_Square` that takes an integer `n` and returns the next perfect square
+2. Input validation to ensure the input is non-negative
+3. Efficient calculation using integer square root (available in Python 3.8+)
+4. Test cases including the provided assertion
+5. A print statement to confirm all tests passed
+
+The function works by:
+1. Calculating the integer square root of the input number
+2. Adding 1 to this square root
+3. Squaring the result to get the next perfect square

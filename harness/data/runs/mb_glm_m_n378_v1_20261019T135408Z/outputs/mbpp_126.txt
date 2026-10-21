@@ -1,0 +1,39 @@
+```python
+import math
+
+def sum_common_divisors(a, b):
+    """
+    Finds the sum of common divisors of two given numbers.
+    
+    The common divisors of two numbers are exactly the divisors of their 
+    Greatest Common Divisor (GCD). This function calculates the GCD and then
+    finds the sum of all its divisors.
+    
+    :param a: First positive integer
+    :param b: Second positive integer
+    :return: Sum of common divisors of a and b
+    """
+    # Find the greatest common divisor
+    g = math.gcd(a, b)
+    
+    # Sum the divisors of the GCD
+    divisor_sum = 0
+    for i in range(1, int(math.isqrt(g)) + 1):
+        if g % i == 0:
+            divisor_sum += i
+            # Add the corresponding pair divisor if it's different
+            if i != g // i:
+                divisor_sum += g // i
+                
+    return divisor_sum
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert sum_common_divisors(10, 15) == 6
+    print("Assertion passed: sum_common_divisors(10, 15) == 6")
+    
+    # Additional test cases
+    assert sum_common_divisors(12, 18) == 12 # Common divisors: 1, 2, 3, 6 -> Sum: 12
+    assert sum_common_divisors(100, 100) == 217 # Divisors of 100: 1, 2, 4, 5, 10, 20, 25, 50, 100 -> Sum: 217
+    print("All additional tests passed!")
+```

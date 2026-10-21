@@ -1,0 +1,13 @@
+```python
+import re
+
+def check_str(string):
+    return bool(re.match(r'^[aeiouAEIOU]', string))
+
+# Test
+assert check_str("annie")
+
+if __name__ == "__main__":
+    print(check_str("annie"))  # True
+    print(check_str("bob"))    # False
+```

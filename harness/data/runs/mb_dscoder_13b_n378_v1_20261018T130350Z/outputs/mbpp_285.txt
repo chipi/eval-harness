@@ -1,0 +1,14 @@
+```python
+def text_match_two_three(text):
+    if text[0] == 'a' and text[1] == 'b' and (text[2] == 'b' or text[2] == 'c'):
+        return True
+    else:
+        return False
+
+# Test cases
+assert text_match_two_three("ac")==(False)
+assert text_match_two_three("adbb")==(True)
+assert text_match_two_three("adbbc")==(True)
+assert text_match_two_three("adbbb")==(False)
+assert text_match_two_three("adbbcc")==(False)
+```

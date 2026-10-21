@@ -1,0 +1,16 @@
+```python
+def remove_all_spaces(s: str) -> str:
+    """
+    Remove all whitespace characters from a string.
+
+    Whitespace includes spaces, tabs, newlines, etc.
+    """
+    return ''.join(ch for ch in s if not ch.isspace())
+
+
+# Example test
+assert remove_all_spaces('python  program') == 'pythonprogram'
+
+if __name__ == "__main__":
+    print(remove_all_spaces('python  program'))
+```

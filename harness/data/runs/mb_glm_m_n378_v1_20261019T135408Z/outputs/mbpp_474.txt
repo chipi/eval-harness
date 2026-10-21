@@ -1,0 +1,38 @@
+Here's a self-contained Python script that solves the problem of replacing characters in a string:
+
+```python
+def replace_char(s, old_char, new_char):
+    """
+    Replace all occurrences of old_char in string s with new_char.
+    
+    Args:
+        s (str): The original string.
+        old_char (str): The character to be replaced.
+        new_char (str): The character to replace with.
+    
+    Returns:
+        str: The modified string with all old_char replaced by new_char.
+    """
+    return s.replace(old_char, new_char)
+
+# Test cases
+def test_replace_char():
+    assert replace_char("polygon", 'y', 'l') == "pollgon"
+    assert replace_char("hello", 'l', 'x') == "hexxo"
+    assert replace_char("world", 'w', 'W') == "World"
+    assert replace_char("test", 'z', 'a') == "test"  # no replacement
+    assert replace_char("", 'a', 'b') == ""  # empty string
+    print("All test cases passed!")
+
+if __name__ == "__main__":
+    test_replace_char()
+```
+
+This script:
+1. Defines a `replace_char` function that uses Python's built-in string `replace()` method
+2. Includes comprehensive test cases to verify the function works correctly
+3. Handles edge cases like empty strings and characters that don't exist in the string
+4. Uses assertions to verify the expected behavior
+5. Prints a success message when all tests pass
+
+The solution is concise and leverages Python's built-in functionality for string manipulation. The test cases demonstrate various scenarios including the example from the problem statement.

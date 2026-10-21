@@ -1,0 +1,43 @@
+<thinking>
+We need max over substrings of (count of 0s - count of 1s). Classic Kadane: map '0'->1, '1'->-1, find max subarray sum. For "11000010001": let's compute. Sequence: 1,1,0,0,0,0,1,0,0,0,1 -> -1,-1,1,1,1,1,-1,1,1,1,-1. Max subarray: from index2 to index10: 1+1+1+1-1+1+1+1 = 6. Yes 6.
+
+Note some versions return at least 0 (empty substring). Standard solution returns max with initial 0. Let's implement Kadane with current=0, max=0.
+</thinking>```python
+"""
+Write a function to find the maximum difference between the number of 0s and number of 1s
+in any sub-string of the given binary string.
+
+assert find_length("11000010001") == 6
+"""
+
+
+def find_length(string):
+    """
+    Return the maximum value of (number of 0s - number of 1s) over all substrings
+    of the given binary string.
+
+    This is solved with Kadane's algorithm by mapping '0' -> +1 and '1' -> -1
+    and finding the maximum subarray sum.
+    """
+    current = 0          # best sum of a subarray ending at the current position
+    maximum = 0          # best sum seen so far (0 corresponds to the empty substring)
+
+    for ch in string:
+        value = 1 if ch == '0' else -1
+        current += value
+        if current < 0:
+            current = 0
+        if current > maximum:
+            maximum = current
+
+    return maximum
+
+
+if __name__ == "__main__":
+    assert find_length("11000010001") == 6
+    assert find_length("10111") == 1
+    assert find_length("11011101100101") == 2
+    assert find_length("1111") == 0
+    assert find_length("0000") == 4
+    print("All tests passed.")
+```

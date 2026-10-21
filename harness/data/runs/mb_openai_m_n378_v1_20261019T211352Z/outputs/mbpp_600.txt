@@ -1,0 +1,15 @@
+```python
+def is_Even(n):
+    """
+    Return True if the given number is even, otherwise False.
+    """
+    return n % 2 == 0
+
+
+# Example test
+assert is_Even(1) == False
+
+if __name__ == "__main__":
+    print(is_Even(1))  # False
+    print(is_Even(2))  # True
+```

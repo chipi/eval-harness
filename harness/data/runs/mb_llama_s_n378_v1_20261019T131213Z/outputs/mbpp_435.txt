@@ -1,0 +1,42 @@
+```python
+def last_Digit(n):
+    """
+    This function finds the last digit of a given number.
+
+    Args:
+        n (int): The input number.
+
+    Returns:
+        int: The last digit of the input number.
+    """
+    return n % 10
+
+# Test the function
+assert last_Digit(123) == 3
+print("Test passed")
+```
+
+You can also use a more robust version of this function that includes error checking:
+
+```python
+def last_Digit(n):
+    """
+    This function finds the last digit of a given number.
+
+    Args:
+        n (int): The input number.
+
+    Returns:
+        int: The last digit of the input number.
+
+    Raises:
+        TypeError: If the input is not an integer.
+    """
+    if not isinstance(n, int):
+        raise TypeError("Input must be an integer.")
+    return n % 10
+
+# Test the function
+assert last_Digit(123) == 3
+print("Test passed")
+```

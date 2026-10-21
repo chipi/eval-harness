@@ -1,0 +1,11 @@
+```python
+def subject_marks(tuples):
+    return sorted(tuples, key=lambda x: x[1])
+
+def main():
+    tuples = [('English', 88), ('Science', 90), ('Maths', 97), ('Social sciences', 82)]
+    print(subject_marks(tuples))
+
+if __name__ == "__main__":
+    main()
+```

@@ -1,0 +1,20 @@
+```python
+def sort_numeric_strings(nums_str):
+    """
+    Sort a given list of strings of numbers numerically.
+    
+    Args:
+        nums_str: A list of strings representing numbers
+        
+    Returns:
+        A list of integers sorted in numerical order
+    """
+    # Convert each string to an integer and then sort
+    return sorted(int(x) for x in nums_str)
+
+
+# Test the function
+if __name__ == "__main__":
+    assert sort_numeric_strings(['4', '12', '45', '7', '0', '100', '200', '-12', '-500']) == [-500, -12, 0, 4, 7, 12, 45, 100, 200]
+    print("All tests passed!")
+```

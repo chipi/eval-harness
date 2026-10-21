@@ -1,0 +1,22 @@
+```python
+def len_log(words):
+    """
+    Find the length of the longest word in a list of words.
+    
+    Args:
+        words: A list of strings
+    
+    Returns:
+        The length of the longest word as an integer
+    """
+    return max(len(word) for word in words)
+
+
+# Test cases
+assert len_log(["python", "PHP", "bigdata"]) == 7
+assert len_log(["a", "ab", "abc"]) == 3
+assert len_log(["hello", "world"]) == 5
+assert len_log(["x"]) == 1
+
+print("All test cases passed!")
+```

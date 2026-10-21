@@ -1,0 +1,9 @@
+```python
+def dict_filter(dictionary, n):
+    return {key: value for key, value in dictionary.items() if value >= n}
+
+# Test cases
+assert dict_filter({'Cierra Vega': 175, 'Alden Cantrell': 180, 'Kierra Gentry': 165, 'Pierre Cox': 190},170)=={'Cierra Vega': 175, 'Alden Cantrell': 180, 'Pierre Cox': 190}
+assert dict_filter({'Kevin': 150, 'Jason': 160, 'Eric': 170, 'John': 180},160)=={'Jason': 160, 'Eric': 170, 'John': 180}
+assert dict_filter({'Sarah': 155, 'Alex': 165, 'Chris': 175, 'Jessica': 185},170)=={'Chris': 175, 'Jessica': 185}
+```

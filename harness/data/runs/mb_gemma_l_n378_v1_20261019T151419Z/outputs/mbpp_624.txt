@@ -1,0 +1,13 @@
+```python
+def is_upper(text):
+    """
+    Converts a given string to uppercase.
+    """
+    return text.upper()
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    result = is_upper("person")
+    assert result == "PERSON", f"Expected 'PERSON', but got '{result}'"
+    print(f"Success! 'person' converted to '{result}'")
+```

@@ -1,0 +1,26 @@
+```python
+def check(n):
+    """
+    Checks if a given number is one less than twice its reverse.
+    
+    Formula: n == (2 * reverse(n)) - 1
+    """
+    # Convert number to string, reverse it, and convert back to integer
+    # This handles trailing zeros correctly (e.g., reverse of 70 is 07 -> 7)
+    reversed_n = int(str(n)[::-1])
+    
+    return n == (2 * reversed_n) - 1
+
+# Test cases
+if __name__ == "__main__":
+    # Provided test case
+    assert check(70) == False
+    
+    # Additional test cases
+    # Example: If n = 25, reverse = 52. 2*52 - 1 = 103. (False)
+    # Example: If n = 39, reverse = 93. 2*93 - 1 = 185. (False)
+    # Example: If n = 1, reverse = 1. 2*1 - 1 = 1. (True)
+    assert check(1) == True
+    
+    print("All tests passed!")
+```

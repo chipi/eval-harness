@@ -1,0 +1,45 @@
+```python
+import re
+
+def is_decimal(s: str) -> bool:
+    """
+    Checks whether a given string is a decimal number with a precision of 2.
+
+    A valid string must:
+    1. Start with an optional '+' or '-' sign.
+    2. Be followed by one or more digits.
+    3. Contain a single '.' as a decimal point.
+    4. Have exactly two digits after the decimal point.
+
+    Args:
+        s: The string to check.
+
+    Returns:
+        True if the string is a decimal with precision 2, False otherwise.
+    """
+    # The regular expression pattern:
+    # ^[+-]?       : Matches the start of the string, followed by an optional + or -.
+    # \d+          : Matches one or more digits (the integer part).
+    # \.           : Matches the literal decimal point.
+    # \d{2}        : Matches exactly two digits (the fractional part).
+    # $            : Matches the end of the string.
+    pattern = r'^[+-]?\d+\.\d{2}$'
+    
+    # re.fullmatch ensures the entire string conforms to the pattern.
+    return bool(re.fullmatch(pattern, s))
+
+# Example usage and assertions:
+assert is_decimal('123.11') == True
+assert is_decimal('-123.11') == True
+assert is_decimal('+123.11') == True
+assert is_decimal('0.99') == True
+assert is_decimal('123.1') == False   # Only one digit after decimal
+assert is_decimal('123.111') == False # Three digits after decimal
+assert is_decimal('123.') == False    # No digits after decimal
+assert is_decimal('.11') == False     # No digits before decimal
+assert is_decimal('abc') == False     # Not a number
+assert is_decimal('123.11.11') == False # More than one decimal point
+assert is_decimal('') == False        # Empty string
+
+print("All assertions passed!")
+```

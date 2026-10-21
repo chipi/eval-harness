@@ -1,0 +1,23 @@
+```python
+import sys
+
+def tuple_size(t):
+    """
+    Calculate the size in bytes of the given tuple.
+
+    Args:
+        t (tuple): The input tuple.
+
+    Returns:
+        int: The size of the tuple in bytes.
+    """
+    return sys.getsizeof(t)
+
+# Example usage:
+if __name__ == "__main__":
+    t = ("A", 1, "B", 2, "C", 3)
+    print(tuple_size(t))
+    print(sys.getsizeof(t))  # For comparison
+```
+
+This script defines a function `tuple_size` that takes a tuple `t` as input and returns its size in bytes using the `sys.getsizeof` function. The example usage demonstrates how to use this function with a sample tuple. The `if __name__ == "__main__":` block ensures that the example code only runs when the script is executed directly, not when it's imported as a module.

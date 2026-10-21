@@ -1,0 +1,74 @@
+```python
+import re
+
+def extract_quotation(s: str) -> list[str]:
+    """
+    Extracts values between quotation marks " " from the given string.
+
+    This function uses a regular expression to find all non-overlapping
+    substrings that are enclosed in double quotes.
+
+    Args:
+        s: The input string to search within.
+
+    Returns:
+        A list of strings found inside the quotation marks.
+        Returns an empty list if no matches are found.
+
+    Example:
+        >>> extract_quotation('Cortex "A53" Based "multi" tasking "Processor"')
+        ['A53', 'multi', 'Processor']
+    """
+    # The regular expression r'"([^"]*)"' works as follows:
+    # "       - Matches a literal double quote.
+    # (       - Starts a capturing group.
+    # [^"]*   - Matches any character that is NOT a double quote, zero or more times.
+    # )       - Ends the capturing group.
+    # "       - Matches a literal closing double quote.
+    # re.findall() returns a list of all captured groups.
+    return re.findall(r'"([^"]*)"', s)
+
+# Example usage and assertion from the problem description
+if __name__ == "__main__":
+    input_string = 'Cortex "A53" Based "multi" tasking "Processor"'
+    expected_output = ['A53', 'multi', 'Processor']
+    
+    result = extract_quotation(input_string)
+    
+    print(f"Input string: {input_string}")
+    print(f"Extracted values: {result}")
+    print(f"Expected output: {expected_output}")
+    
+    assert result == expected_output
+    print("\nAssertion passed successfully!")
+
+    # Additional test cases
+    print("\n--- Running additional test cases ---")
+    
+    # Test case 1: No quotes
+    test1 = "This string has no quotes"
+    assert extract_quotation(test1) == []
+    print(f"Test 1 Passed: {extract_quotation(test1)} == []")
+
+    # Test case 2: Empty string
+    test2 = ""
+    assert extract_quotation(test2) == []
+    print(f"Test 2 Passed: {extract_quotation(test2)} == []")
+
+    # Test case 3: Quoted empty string
+    test3 = 'String with "" empty quotes'
+    assert extract_quotation(test3) == [""]
+    print(f"Test 3 Passed: {extract_quotation(test3)} == ['']")
+
+    # Test case 4: Nested quotes (will only find the outermost)
+    test4 = 'Outer "Inner "nested" quote"'
+    assert extract_quotation(test4) == ['Inner "nested" quote']
+    print(f"Test 4 Passed: {extract_quotation(test4)} == ['Inner \"nested\" quote']")
+
+    # Test case 5: Single quoted word
+    test5 = '"Just one"'
+    assert extract_quotation(test5) == ["Just one"]
+    print(f"Test 5 Passed: {extract_quotation(test5)} == ['Just one']")
+
+    print("\nAll additional test cases passed!")
+```

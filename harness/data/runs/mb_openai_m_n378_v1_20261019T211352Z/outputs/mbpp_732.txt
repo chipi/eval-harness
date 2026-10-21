@@ -1,0 +1,20 @@
+```python
+#!/usr/bin/env python3
+
+def replace_specialchar(text):
+    """
+    Replace all spaces, commas, and dots in the given string with colons.
+
+    Example:
+    >>> replace_specialchar('Python language, Programming language.')
+    'Python:language::Programming:language:'
+    """
+    return text.replace(' ', ':').replace(',', ':').replace('.', ':')
+
+
+if __name__ == "__main__":
+    assert replace_specialchar('Python language, Programming language.') == (
+        'Python:language::Programming:language:'
+    )
+    print("All tests passed.")
+```

@@ -1,0 +1,53 @@
+Looking at this problem, I need to remove leading zeroes from each octet of an IP address while preserving the structure.
+
+```python
+"""
+Write a function to remove leading zeroes from an ip address.
+assert removezero_ip("216.08.094.196")==('216.8.94.196')
+"""
+
+import re
+
+
+def removezero_ip(ip):
+    """
+    Remove leading zeroes from each octet of an IP address.
+
+    Examples:
+        "216.08.094.196" -> "216.8.94.196"
+        "12.01.024"      -> "12.1.24"
+        "216.08.094.0196"-> "216.8.94.196"
+    """
+    # Substitute one-or-more leading zeroes that occur at the start of the
+    # string or right after a dot, provided at least one digit follows.
+    string = re.sub('[.][0]*', '.', ip)
+    string = re.sub('^[0]*', '', string)
+    return string
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert removezero_ip("216.08.094.196") == ('216.8.94.196')
+
+    # Extra checks
+    assert removezero_ip("12.01.024") == ('12.1.24')
+    assert removezero_ip("216.08.094.0196") == ('216.8.94.196')
+
+    print(removezero_ip("216.08.094.196"))
+    print(removezero_ip("12.01.024"))
+    print(removezero_ip("216.08.094.0196"))
+    print("All tests passed!")
+```
+
+**How it works:**
+
+1. `re.sub('[.][0]*', '.', ip)` — finds a dot followed by any number of zeroes and replaces it with just a dot, stripping leading zeroes from octets 2 through 4.
+2. `re.sub('^[0]*', '', string)` — strips any leading zeroes from the very first octet.
+
+**Output:**
+```
+216.8.94.196
+12.1.24
+216.8.94.196
+All tests passed!
+```

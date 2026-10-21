@@ -1,0 +1,30 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+from collections import Counter
+from typing import List, Dict, Any
+
+def freq_count(lst: List[Any]) -> Dict[Any, int]:
+    """
+    Get the frequency of all elements in a list, returned as a dictionary.
+    
+    Args:
+        lst: A list of elements
+        
+    Returns:
+        A dictionary with elements as keys and their frequencies as values
+    """
+    return dict(Counter(lst))
+
+# Test the function
+if __name__ == "__main__":
+    result = freq_count([10, 10, 10, 10, 20, 20, 20, 20, 40, 40, 50, 50, 30])
+    expected = {10: 4, 20: 4, 40: 2, 50: 2, 30: 1}
+    assert result == expected, f"Expected {expected}, but got {result}"
+    print("Test passed!")
+    print(f"Result: {result}")
+```
+
+This solution uses Python's `collections.Counter` class, which is specifically designed for counting hashable objects. The `Counter` automatically creates a dictionary-like object with elements as keys and their counts as values. We convert it to a regular dictionary using `dict()` before returning.
+
+The function works with any hashable elements (numbers, strings, tuples, etc.) and returns a dictionary where keys are the unique elements from the input list and values are their corresponding frequencies.

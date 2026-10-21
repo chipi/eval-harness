@@ -1,0 +1,50 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+import math
+
+def next_Perfect_Square(n):
+    """
+    Find the next perfect square greater than a given number.
+    
+    Args:
+        n (int): The input number
+        
+    Returns:
+        int: The next perfect square greater than n
+    """
+    # Find the square root of n
+    root = math.isqrt(n)
+    
+    # If n is a perfect square, the next one is (root + 1)^2
+    # Otherwise, it's (root + 1)^2 as well since isqrt floors the value
+    if root * root == n:
+        return (root + 1) ** 2
+    else:
+        return (root + 1) ** 2
+
+
+# Test the function
+assert next_Perfect_Square(35) == 36
+assert next_Perfect_Square(36) == 49
+assert next_Perfect_Square(1) == 4
+assert next_Perfect_Square(0) == 1
+assert next_Perfect_Square(100) == 121
+
+print("All tests passed!")
+```
+
+**Explanation:**
+
+1. **`math.isqrt(n)`** — Returns the integer square root (floor of the actual square root) of `n`. This is more accurate than using `int(math.sqrt(n))` for large numbers due to floating-point precision issues.
+
+2. **Logic:**
+   - If `n` is a perfect square (e.g., `n = 36`, `isqrt(36) = 6`), then the next perfect square is `(6 + 1)² = 49`.
+   - If `n` is not a perfect square (e.g., `n = 35`, `isqrt(35) = 5`), then the next perfect square is `(5 + 1)² = 36`.
+
+3. In both cases, the formula `(isqrt(n) + 1) ** 2` gives the correct answer, so the `if/else` branches are technically redundant — but they're kept for clarity.
+
+**Output:**
+```
+All tests passed!
+```

@@ -1,0 +1,7 @@
+```python
+def concatenate_tuple(items, delimiter="-"):
+    return delimiter.join(str(item) for item in items)
+
+
+assert concatenate_tuple(("ID", "is", 4, "UTS")) == "ID-is-4-UTS"
+```

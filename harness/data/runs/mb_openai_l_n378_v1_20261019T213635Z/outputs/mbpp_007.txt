@@ -1,0 +1,13 @@
+```python
+import re
+
+
+def find_char_long(text):
+    """Return all words containing at least four characters."""
+    return re.findall(r"\b\w{4,}\b", text)
+
+
+assert set(find_char_long("Please move back to stream")) == {
+    "Please", "move", "back", "stream"
+}
+```

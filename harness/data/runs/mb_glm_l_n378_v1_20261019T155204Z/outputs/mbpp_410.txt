@@ -1,0 +1,19 @@
+```python
+def min_val(heterogeneous_list):
+    """
+    Finds the minimum numeric value in a given heterogeneous list.
+    
+    This function iterates through the list, ignores non-numeric elements 
+    (like strings), and returns the minimum value among the numeric elements.
+    """
+    # Filter the list to only include integers and floats
+    numeric_values = [x for x in heterogeneous_list if isinstance(x, (int, float))]
+    
+    # Return the minimum value if there are numeric elements, else None
+    return min(numeric_values) if numeric_values else None
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert min_val(['Python', 3, 2, 4, 5, 'version']) == 2
+    print("Test passed successfully!")
+```

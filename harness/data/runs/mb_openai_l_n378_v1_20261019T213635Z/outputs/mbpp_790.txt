@@ -1,0 +1,9 @@
+```python
+def even_position(numbers):
+    """Return True if every element at an even index is even."""
+    return all(number % 2 == 0 for number in numbers[::2])
+
+
+assert even_position([3, 2, 1]) is False
+assert even_position([4, 3, 2]) is True
+```

@@ -1,0 +1,25 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def last_Digit_Factorial(n):
+    """
+    Returns the last digit of the factorial of a given number.
+    """
+    if n < 0:
+        raise ValueError("Factorial is not defined for negative numbers.")
+    if n == 0 or n == 1:
+        return 1
+    if n >= 5:
+        return 0
+    
+    factorial = 1
+    for i in range(2, n + 1):
+        factorial *= i
+    return factorial % 10
+
+
+# Test the function
+if __name__ == "__main__":
+    assert last_Digit_Factorial(4) == 4
+    print("Test passed!")
+```

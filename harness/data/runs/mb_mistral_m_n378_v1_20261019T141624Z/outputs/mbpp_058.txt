@@ -1,0 +1,15 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def opposite_Signs(a, b):
+    """Check if two integers have opposite signs."""
+    return (a * b) < 0
+
+# Test case
+assert opposite_Signs(1, -2) == True
+```
+
+This solution works because:
+1. If one number is positive and the other is negative, their product will be negative
+2. If both numbers are positive or both are negative, their product will be positive
+3. The function returns True only when the product is negative (i.e., when the signs are opposite)

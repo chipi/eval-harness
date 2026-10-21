@@ -1,0 +1,17 @@
+```python
+def check_greater(arr, num):
+    """
+    Check if the given number is greater than all elements in the array.
+
+    Args:
+        arr (list): The input array of numbers.
+        num (int/float): The number to compare against the array elements.
+
+    Returns:
+        bool: True if the number is greater than all elements, False otherwise.
+    """
+    return all(num > x for x in arr)
+
+# Test case
+assert check_greater([1, 2, 3, 4, 5], 4) == False
+```

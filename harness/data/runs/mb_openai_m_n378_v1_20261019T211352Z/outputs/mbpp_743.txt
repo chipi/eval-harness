@@ -1,0 +1,40 @@
+```python
+"""
+Rotate a given list by a specified number of items to the right.
+
+Example:
+    rotate_right([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 3)
+    -> [8, 9, 10, 1, 2, 3, 4, 5, 6, 7]
+"""
+
+
+def rotate_right(items, n):
+    """
+    Return a new list containing the elements of `items` rotated right by `n` positions.
+
+    Args:
+        items (list): The list to rotate.
+        n (int): Number of positions to rotate right.
+
+    Returns:
+        list: The rotated list.
+    """
+    if not items:
+        return items
+
+    n = n % len(items)
+    return items[-n:] + items[:-n] if n else items[:]
+
+
+if __name__ == "__main__":
+    assert rotate_right(
+        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 3
+    ) == [8, 9, 10, 1, 2, 3, 4, 5, 6, 7]
+
+    assert rotate_right([1, 2, 3, 4, 5], 2) == [4, 5, 1, 2, 3]
+    assert rotate_right([1, 2, 3, 4, 5], 0) == [1, 2, 3, 4, 5]
+    assert rotate_right([1, 2, 3, 4, 5], 5) == [1, 2, 3, 4, 5]
+    assert rotate_right([], 3) == []
+
+    print("All tests passed.")
+```

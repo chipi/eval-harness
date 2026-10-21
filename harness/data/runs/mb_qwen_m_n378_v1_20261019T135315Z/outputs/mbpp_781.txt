@@ -1,0 +1,35 @@
+```python
+def count_divisors(n):
+    """
+    Check whether the count of divisors of n is even.
+    
+    Args:
+        n: A positive integer
+        
+    Returns:
+        True if the count of divisors is even, False otherwise
+    """
+    if n <= 0:
+        return False
+    
+    count = 0
+    for i in range(1, int(n**0.5) + 1):
+        if n % i == 0:
+            # If divisors are equal, count only once
+            if i == n // i:
+                count += 1
+            else:
+                count += 2
+    
+    return count % 2 == 0
+
+
+if __name__ == "__main__":
+    # Test cases
+    assert count_divisors(10) == True  # Divisors of 10: 1, 2, 5, 10 -> 4 divisors (even)
+    assert count_divisors(9) == False   # Divisors of 9: 1, 3, 9 -> 3 divisors (odd)
+    assert count_divisors(1) == False   # Divisors of 1: 1 -> 1 divisor (odd)
+    assert count_divisors(6) == True    # Divisors of 6: 1, 2, 3, 6 -> 4 divisors (even)
+    assert count_divisors(4) == False   # Divisors of 4: 1, 2, 4 -> 3 divisors (odd)
+    print("All tests passed!")
+```

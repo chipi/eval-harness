@@ -1,0 +1,29 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def odd_values_string(s: str) -> str:
+    """
+    Remove the characters which have odd index values of a given string.
+    
+    Args:
+        s: The input string.
+    
+    Returns:
+        A new string containing only the characters at even indices (0, 2, 4, ...).
+    """
+    return s[::2]
+
+
+if __name__ == "__main__":
+    assert odd_values_string('abcdef') == 'ace'
+    assert odd_values_string('') == ''
+    assert odd_values_string('a') == 'a'
+    assert odd_values_string('ab') == 'a'
+    assert odd_values_string('python') == 'pto'
+    print("All tests passed!")
+```
+
+**Explanation:**
+
+- `s[::2]` uses Python's slicing syntax with a step of `2`, which selects characters at indices `0, 2, 4, ...` — i.e., the even indices. Since the problem asks to *remove* characters at odd indices, keeping the even-indexed ones achieves the same result.
+- For `'abcdef'`, the even-indexed characters are `'a'` (index 0), `'c'` (index 2), and `'e'` (index 4), producing `'ace'`.

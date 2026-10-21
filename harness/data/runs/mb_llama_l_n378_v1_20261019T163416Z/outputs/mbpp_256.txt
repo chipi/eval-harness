@@ -1,0 +1,35 @@
+```python
+def count_Primes_nums(n):
+    """
+    This function takes in a non-negative number and returns the number of prime numbers less than the given non-negative number.
+
+    Args:
+        n (int): A non-negative number.
+
+    Returns:
+        int: The number of prime numbers less than n.
+    """
+    if n < 2:
+        # If n is less than 2, there are no prime numbers less than n.
+        return 0
+    
+    # Create a boolean array, prime, of size n.
+    prime = [True] * n
+    prime[0] = prime[1] = False
+    
+    # Iterate over the array starting from 2.
+    for p in range(2, int(n ** 0.5) + 1):
+        # If p is a prime number, mark as composite all the multiples of p.
+        if prime[p]:
+            for i in range(p * p, n, p):
+                prime[i] = False
+    
+    # Count the number of prime numbers in the array.
+    count = sum(prime)
+    
+    return count
+
+# Test the function
+assert count_Primes_nums(5) == 2
+print("All tests passed.")
+```

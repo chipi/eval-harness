@@ -1,0 +1,36 @@
+Here's a self-contained Python script that solves the problem in a markdown code block:
+
+```python
+"""
+Write a function to check if the given tuples contain the k or not.
+assert check_K((10, 4, 5, 6, 8), 6) == True
+"""
+
+def check_K(t, k):
+    """
+    Check if the given tuple contains the value k.
+
+    Args:
+        t (tuple): The tuple to search in
+        k: The value to search for
+
+    Returns:
+        bool: True if k is found in the tuple, False otherwise
+    """
+    return k in t
+
+# Test cases
+assert check_K((10, 4, 5, 6, 8), 6) == True
+assert check_K((1, 2, 3), 4) == False
+assert check_K((), 5) == False  # empty tuple
+assert check_K(('a', 'b', 'c'), 'a') == True
+```
+
+This script:
+1. Defines a function `check_K` that takes a tuple and a value to search for
+2. Uses the `in` operator to check for membership
+3. Includes the required test case from the problem statement
+4. Adds additional test cases to verify edge cases
+5. Is completely self-contained and can be run directly
+
+The function will return `True` if the value `k` is found in the tuple `t`, and `False` otherwise.

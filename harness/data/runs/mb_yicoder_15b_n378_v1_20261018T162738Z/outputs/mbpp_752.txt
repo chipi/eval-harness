@@ -1,0 +1,20 @@
+```python
+def jacobsthal_num(n):
+    if n == 0:
+        return 0
+    elif n == 1:
+        return 1
+    else:
+        return 2 * jacobsthal_num(n - 1) + jacobsthal_num(n - 2)
+
+# Test cases
+assert jacobsthal_num(5) == 11
+assert jacobsthal_num(6) == 21
+assert jacobsthal_num(7) == 43
+assert jacobsthal_num(8) == 85
+assert jacobsthal_num(9) == 171
+assert jacobsthal_num(10) == 341
+assert jacobsthal_num(11) == 683
+assert jacobsthal_num(12) == 1365
+assert jacobsthal_num(13) == 2731
+```

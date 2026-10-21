@@ -1,0 +1,12 @@
+```python
+import re
+
+
+def capital_words_spaces(text):
+    """Insert a space before each capital letter, except at the start."""
+    return re.sub(r"(?<!^)(?=[A-Z])", " ", text)
+
+
+assert capital_words_spaces("Python") == "Python"
+assert capital_words_spaces("PythonIsFun") == "Python Is Fun"
+```

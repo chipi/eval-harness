@@ -1,0 +1,16 @@
+```python
+def odd_Equivalent(binary_str, rotations):
+    count = 0
+    n = len(binary_str)
+    for i in range(n):
+        # Calculate the number of 1s in the current rotation
+        rotated = binary_str[i:] + binary_str[:i]
+        num_ones = rotated.count('1')
+        # Check if the number of 1s is odd
+        if num_ones % 2 != 0:
+            count += 1
+    return count
+
+# Test the function with the provided assertion
+assert odd_Equivalent("011001", 6) == 3
+```

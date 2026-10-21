@@ -1,0 +1,43 @@
+```python
+def reverse_vowels(s: str) -> str:
+    """
+    Reverses only the vowels in a given string.
+    'y' and 'Y' are not considered vowels.
+    
+    :param s: Input string
+    :return: String with the positions of vowels reversed
+    """
+    vowels = set("aeiouAEIOU")
+    
+    # Convert string to a list of characters for easy in-place modification
+    chars = list(s)
+    
+    # Two pointers approach to find and swap vowels
+    left, right = 0, len(chars) - 1
+    
+    while left < right:
+        # Move left pointer until a vowel is found
+        while left < right and chars[left] not in vowels:
+            left += 1
+            
+        # Move right pointer until a vowel is found
+        while left < right and chars[right] not in vowels:
+            right -= 1
+            
+        # Swap the vowels
+        if left < right:
+            chars[left], chars[right] = chars[right], chars[left]
+            left += 1
+            right -= 1
+            
+    return "".join(chars)
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert reverse_vowels("Python") == "Python"
+    # Additional test cases
+    assert reverse_vowels("hello") == "holle"
+    assert reverse_vowels("leetcode") == "leotcede"
+    assert reverse_vowels("aA") == "Aa"
+    print("All tests passed!")
+```

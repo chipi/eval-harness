@@ -1,0 +1,51 @@
+Looking at this problem, I need to find the first occurrence of a substring within a string and return a tuple containing the substring, its start position, and end position.
+
+```python
+"""
+Write a function to find the occurrence and position of the substrings within a string. Return None if there is no match.
+assert occurance_substring('python programming, python language','python')==('python', 0, 6)
+"""
+
+import re
+
+
+def occurance_substring(text, pattern):
+    """
+    Find the occurrence and position of a substring within a string.
+
+    Args:
+        text (str): The string to search within.
+        pattern (str): The substring to search for.
+
+    Returns:
+        tuple: (matched_substring, start_index, end_index) for the first match,
+               or None if there is no match.
+    """
+    for match in re.finditer(pattern, text):
+        s = match.start()
+        e = match.end()
+        return (text[s:e], s, e)
+    return None
+
+
+if __name__ == '__main__':
+    # Provided test case
+    assert occurance_substring('python programming, python language', 'python') == ('python', 0, 6)
+
+    # Additional test cases
+    assert occurance_substring('python programming, python language', 'programming') == ('programming', 7, 18)
+    assert occurance_substring('python programming, python language', 'language') == ('language', 27, 35)
+    assert occurance_substring('python programming, python language', 'java') is None
+    assert occurance_substring('c++ programming', 'programming') == ('programming', 4, 15)
+
+    print("All tests passed!")
+    print(occurance_substring('python programming, python language', 'python'))
+```
+
+**How it works:**
+
+1. `re.finditer(pattern, text)` returns an iterator over all non-overlapping matches of the pattern in the string.
+2. The loop grabs the **first** match (if any), extracts its `start()` and `end()` indices, and returns a tuple of `(substring, start, end)`.
+3. If the loop body never executes (no matches found), the function falls through and returns `None`.
+
+For `'python programming, python language'` searching `'python'`, the first match begins at index `0` and ends at index `6` (exclusive), yielding `('python', 0, 6)`.

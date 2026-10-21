@@ -1,0 +1,27 @@
+```python
+"""
+Write a function to create a new tuple from the given string and list.
+assert new_tuple(["WEB", "is"], "best") == ('WEB', 'is', 'best')
+"""
+
+def new_tuple(lst, s):
+    """
+    Creates a new tuple by combining elements from a list and a string.
+    
+    Args:
+        lst: A list of elements
+        s: A string to be added to the tuple
+    
+    Returns:
+        A tuple containing all elements from the list followed by the string
+    """
+    # Convert the list to a tuple and add the string as the last element
+    return tuple(lst) + (s,)
+
+# Test the function with the given assertion
+if __name__ == "__main__":
+    result = new_tuple(["WEB", "is"], "best")
+    print(f"Result: {result}")
+    assert result == ('WEB', 'is', 'best'), f"Expected ('WEB', 'is', 'best') but got {result}"
+    print("Assertion passed!")
+```

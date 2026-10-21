@@ -1,0 +1,7 @@
+```python
+def split(string):
+    return list(string)
+
+# Testing the function
+assert split('python') == ['p','y','t','h','o','n']
+```

@@ -1,0 +1,21 @@
+```python
+def find_Rotations(s):
+    """
+    Find the minimum number of rotations (greater than 0) required to get the same string.
+    
+    A rotation moves the first character to the end. We need the smallest k > 0
+    such that rotating s by k positions gives back s.
+    """
+    n = len(s)
+    if n == 0:
+        return 0
+    
+    # Try each possible rotation count from 1 to n
+    for k in range(1, n + 1):
+        rotated = s[k:] + s[:k]
+        if rotated == s:
+            return k
+    
+    # If no rotation less than n works, then n rotations (full cycle) returns the string
+    return n
+```

@@ -1,0 +1,18 @@
+```python
+def first_Digit(num):
+    """
+    Write a python function to find the first digit of a given number.
+    """
+    # Convert the number to string
+    str_num = str(num)
+    
+    # Return the first character of the string
+    return int(str_num[0])
+
+# Test cases
+assert first_Digit(123) == 1
+assert first_Digit(1) == 1
+assert first_Digit(10) == 0
+assert first_Digit(0) == 0
+assert first_Digit(999) == 9
+```

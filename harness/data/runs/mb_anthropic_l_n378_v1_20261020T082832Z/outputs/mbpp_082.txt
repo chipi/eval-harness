@@ -1,0 +1,49 @@
+Looking at this problem, I need to write a function that calculates the volume of a sphere given its radius, using the formula V = (4/3)πr³.
+
+```python
+"""
+Write a function to find the volume of a sphere.
+assert math.isclose(volume_sphere(10), 4188.790204786391, rel_tol=0.001)
+"""
+
+import math
+
+
+def volume_sphere(radius):
+    """
+    Calculate the volume of a sphere.
+
+    The volume of a sphere with radius r is given by:
+        V = (4/3) * pi * r^3
+
+    Parameters
+    ----------
+    radius : float
+        The radius of the sphere.
+
+    Returns
+    -------
+    float
+        The volume of the sphere.
+    """
+    return (4.0 / 3.0) * math.pi * (radius ** 3)
+
+
+if __name__ == "__main__":
+    # Test cases
+    assert math.isclose(volume_sphere(10), 4188.790204786391, rel_tol=0.001)
+    assert math.isclose(volume_sphere(25), 65449.84694978735, rel_tol=0.001)
+    assert math.isclose(volume_sphere(20), 33510.32163829113, rel_tol=0.001)
+    assert math.isclose(volume_sphere(0), 0.0, rel_tol=0.001)
+    assert math.isclose(volume_sphere(1), 4.1887902047863905, rel_tol=0.001)
+
+    print("All tests passed!")
+    print("Volume of sphere with radius 10:", volume_sphere(10))
+```
+
+**Explanation:**
+
+- The formula for the volume of a sphere is `V = (4/3)πr³`
+- `math.pi` provides the value of π
+- `radius ** 3` cubes the radius
+- For radius = 10: `(4/3) × π × 1000 ≈ 4188.790204786391` ✓

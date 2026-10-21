@@ -1,0 +1,31 @@
+```python
+def is_nonagonal(n: int) -> int:
+    """
+    Calculate the nth nonagonal number.
+    
+    A nonagonal number is a figurate number that extends the concept of triangular 
+    and square numbers to the nonagon (a nine-sided polygon). The nth nonagonal 
+    number counts the number of dots in a pattern of n nested nonagons, all sharing 
+    a common corner.
+    
+    The formula for the nth nonagonal number is: n * (7n - 5) / 2
+    
+    Args:
+        n: The position in the sequence of nonagonal numbers (1-indexed).
+        
+    Returns:
+        The nth nonagonal number.
+    """
+    return n * (7 * n - 5) // 2
+
+
+if __name__ == "__main__":
+    # Test the function with the provided assertion
+    assert is_nonagonal(10) == 325, f"Expected 325, got {is_nonagonal(10)}"
+    
+    # Print some additional nonagonal numbers for verification
+    for i in range(1, 11):
+        print(f"The {i}th nonagonal number is: {is_nonagonal(i)}")
+    
+    print("All tests passed!")
+```

@@ -1,0 +1,36 @@
+```python
+def check_integer(s: str) -> bool:
+    """
+    Check if a string represents an integer.
+    
+    Args:
+        s: The string to check.
+        
+    Returns:
+        True if the string represents a valid integer, False otherwise.
+    """
+    if not isinstance(s, str):
+        return False
+    
+    # Handle empty string
+    if len(s) == 0:
+        return False
+    
+    # Try to convert to int
+    try:
+        int(s)
+        return True
+    except ValueError:
+        return False
+
+
+if __name__ == "__main__":
+    assert check_integer("python") == False
+    assert check_integer("123") == True
+    assert check_integer("-456") == True
+    assert check_integer("+789") == True
+    assert check_integer("") == False
+    assert check_integer("12.34") == False
+    assert check_integer("abc123") == False
+    print("All tests passed!")
+```

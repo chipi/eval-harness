@@ -1,0 +1,24 @@
+```python
+import re
+
+def text_match_three(text):
+    """
+    This function checks if the input string contains 'a' followed by three 'b'.
+    
+    Args:
+        text (str): The input string to be checked.
+    
+    Returns:
+        bool: True if the string matches the pattern, False otherwise.
+    """
+    pattern = r'ab{3}'
+    return bool(re.search(pattern, text))
+
+# Test cases
+assert not text_match_three("ac")
+assert text_match_three("abbb")
+assert text_match_three("abbbc")
+assert not text_match_three("ab")
+assert not text_match_three("abb")
+assert not text_match_three("abbbbc")
+```

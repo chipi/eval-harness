@@ -1,0 +1,25 @@
+```python
+def return_sum(dictionary):
+  """
+  Write function to find the sum of all items in the given dictionary.
+
+  Args:
+    dictionary: A dictionary with numeric values.
+
+  Returns:
+    The sum of all the values in the dictionary.
+  """
+  # The values() method returns a view of all values in the dictionary.
+  # The built-in sum() function can then be used to add them up.
+  return sum(dictionary.values())
+
+# Example usage and assertion to verify the function
+assert return_sum({'a': 100, 'b': 200, 'c': 300}) == 600
+
+# Additional test cases
+assert return_sum({}) == 0
+assert return_sum({'x': 10, 'y': 20, 'z': 30}) == 60
+assert return_sum({'single_key': 500}) == 500
+
+print("All assertions passed!")
+```

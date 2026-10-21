@@ -1,0 +1,82 @@
+```python
+import heapq
+
+def expensive_items(items, n):
+    """
+    Finds the n most expensive items in a given dataset.
+
+    Args:
+        items: A list of dictionaries, where each dictionary represents an item
+               with at least a 'price' key.
+        n: The number of most expensive items to return.
+
+    Returns:
+        A list containing the n most expensive items, sorted from most to least expensive.
+        If n is larger than the number of items, all items are returned.
+    """
+    # Use a min-heap of size n to efficiently find the top n items.
+    # This approach has a time complexity of O(N log n), which is more efficient
+    # than sorting the entire list (O(N log N)) when n is much smaller than N.
+    
+    # The heap will store tuples of (price, item). We use a min-heap, so the
+    # smallest item in the heap will be at the root.
+    heap = []
+    
+    for item in items:
+        # Push a tuple of (-price, item) to simulate a max-heap behavior.
+        # heapq in Python is a min-heap by default. By negating the price,
+        # the largest positive price becomes the smallest negative price,
+        # effectively making the heap function as a max-heap for our purposes.
+        # This is a common and efficient pattern for finding the top N elements.
+        heapq.heappush(heap, (-item['price'], item))
+        
+        # If the heap size exceeds n, pop the smallest (i.e., the least expensive
+        # of the top n candidates) to maintain the heap size at n.
+        if len(heap) > n:
+            heapq.heappop(heap)
+            
+    # The heap now contains the n most expensive items, but not in sorted order.
+    # We extract them and sort them by price in descending order.
+    result = [item for (neg_price, item) in sorted(heap, key=lambda x: x[0])]
+    
+    return result
+
+# Example usage and assertion from the problem description
+if __name__ == "__main__":
+    dataset = [
+        {'name': 'Item-1', 'price': 101.1},
+        {'name': 'Item-2', 'price': 555.22}
+    ]
+    n = 1
+    expected = [{'name': 'Item-2', 'price': 555.22}]
+    
+    # The assertion will pass if the function works correctly.
+    assert expensive_items(dataset, n) == expected
+    
+    # Additional test cases
+    dataset_2 = [
+        {'name': 'A', 'price': 100},
+        {'name': 'B', 'price': 50},
+        {'name': 'C', 'price': 200},
+        {'name': 'D', 'price': 150},
+        {'name': 'E', 'price': 75}
+    ]
+    # Test for top 3
+    assert expensive_items(dataset_2, 3) == [
+        {'name': 'C', 'price': 200},
+        {'name': 'D', 'price': 150},
+        {'name': 'A', 'price': 100}
+    ]
+    # Test for n larger than the dataset
+    assert expensive_items(dataset_2, 10) == [
+        {'name': 'C', 'price': 200},
+        {'name': 'D', 'price': 150},
+        {'name': 'A', 'price': 100},
+        {'name': 'B', 'price': 50},
+        {'name': 'E', 'price': 75}
+    ]
+    # Test for n = 0
+    assert expensive_items(dataset_2, 0) == []
+    
+    print("All assertions passed!")
+```

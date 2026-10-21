@@ -1,0 +1,43 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def first_Digit(n):
+    """
+    Returns the first digit of a given number.
+    
+    Parameters:
+        n (int): The input number (can be positive or negative).
+    
+    Returns:
+        int: The first digit of the number.
+    """
+    n = abs(n)  # Handle negative numbers
+    while n >= 10:
+        n //= 10
+    return n
+
+
+# Test cases
+assert first_Digit(123) == 1
+assert first_Digit(9876) == 9
+assert first_Digit(5) == 5
+assert first_Digit(-456) == 4
+assert first_Digit(0) == 0
+
+print("All tests passed!")
+```
+
+**Explanation:**
+
+1. **`abs(n)`** — Converts the number to its absolute value so negative numbers are handled correctly (e.g., `-456` → `456`).
+2. **`while n >= 10: n //= 10`** — Repeatedly performs integer division by 10 until only one digit remains. For example, `123 → 12 → 1`.
+3. **`return n`** — Returns the remaining single digit, which is the first digit of the original number.
+
+**Alternative one-liner** using string conversion:
+
+```python
+def first_Digit(n):
+    return int(str(abs(n))[0])
+```
+
+Both approaches work, but the arithmetic version avoids string conversion and is generally more efficient for large numbers.

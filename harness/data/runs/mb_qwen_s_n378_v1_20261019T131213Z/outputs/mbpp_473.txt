@@ -1,0 +1,32 @@
+```python
+def tuple_intersection(tuple_list1, tuple_list2):
+    """
+    Find the intersection of elements in two lists of tuples, irrespective of order within each tuple.
+    
+    Args:
+        tuple_list1: A list of tuples.
+        tuple_list2: A list of tuples.
+        
+    Returns:
+        A set of tuples that are present in both lists, considering tuples as unordered pairs.
+    """
+    # Normalize each tuple by sorting its elements so that (a, b) and (b, a) are treated as the same
+    def normalize(t):
+        return tuple(sorted(t))
+    
+    # Create sets of normalized tuples for both lists
+    set1 = {normalize(t) for t in tuple_list1}
+    set2 = {normalize(t) for t in tuple_list2}
+    
+    # Find the intersection of the two sets
+    intersection_normalized = set1 & set2
+    
+    # Return the intersection as a set of original-style tuples (but since we normalized, 
+    # we need to map back to some canonical form). The problem expects tuples like (4,5), (3,4), etc.
+    # Since we sorted them, the result will have sorted tuples. Let's check the expected output:
+    # Expected: {(4, 5), (3, 4), (5, 6)}
+    # Note: (4,5) sorted is (4,5), (3,4) sorted is (3,4), (5,6) sorted is (5,6)
+    # So returning the normalized tuples should match the expected output format.
+    
+    return intersection_normalized
+```

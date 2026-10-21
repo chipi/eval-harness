@@ -1,0 +1,17 @@
+```python
+def recursive_list_sum(lst):
+    total = 0
+    for i in lst:
+        if type(i) is list:
+            total += recursive_list_sum(i)
+        else:
+            total += i
+    return total
+
+# Test cases
+assert recursive_list_sum([1, 2, [3,4],[5,6]])==21
+assert recursive_list_sum([1, [2, [3,4]], [5,6]])==21
+assert recursive_list_sum([1, [2, [3,[4]]]])==10
+assert recursive_list_sum([1, [2, [3,[4,[5]]]]])==15
+assert recursive_list_sum([1, [2, [3,[4,[5,[6]]]]]])==21
+```

@@ -1,0 +1,23 @@
+```python
+def is_polite(n: int) -> int:
+    """Return the nth polite number (a number expressible as a sum of
+    two or more consecutive positive integers)."""
+    if n < 1:
+        raise ValueError("n must be positive")
+
+    count = 0
+    number = 0
+
+    while count < n:
+        number += 1
+        # Powers of two are the only numbers that are not polite.
+        if number & (number - 1):
+            count += 1
+
+    return number
+
+
+if __name__ == "__main__":
+    assert is_polite(7) == 11
+    print(is_polite(7))
+```

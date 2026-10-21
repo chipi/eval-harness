@@ -1,0 +1,28 @@
+```python
+def add_dict_to_tuple(input_tuple, input_dict):
+    """
+    Adds a dictionary to a tuple and returns the result as a new tuple.
+
+    Args:
+        input_tuple: The original tuple.
+        input_dict: The dictionary to be added.
+
+    Returns:
+        A new tuple containing the original tuple's elements followed by the dictionary.
+    """
+    # Convert the original tuple to a list to allow modification
+    temp_list = list(input_tuple)
+    # Append the dictionary to the list
+    temp_list.append(input_dict)
+    # Convert the list back to a tuple and return it
+    return tuple(temp_list)
+
+# Example usage and assertion from the problem description
+assert add_dict_to_tuple((4, 5, 6), {"MSAM" : 1, "is" : 2, "best" : 3} ) == (4, 5, 6, {'MSAM': 1, 'is': 2, 'best': 3})
+
+# Additional test cases
+assert add_dict_to_tuple((), {"a": 1}) == ({"a": 1},)
+assert add_dict_to_tuple(("hello",), {"world": 2}) == ("hello", {"world": 2})
+
+print("All assertions passed!")
+```

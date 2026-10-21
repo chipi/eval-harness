@@ -1,0 +1,25 @@
+```python
+def add_pairwise(tup):
+  """
+  Finds the pairwise addition of the neighboring elements of the given tuple.
+
+  Args:
+    tup: A tuple of numbers.
+
+  Returns:
+    A tuple containing the pairwise sums of neighboring elements.
+  """
+  if len(tup) < 2:
+    return ()  # Return an empty tuple if there are fewer than 2 elements
+
+  result = tuple(tup[i] + tup[i+1] for i in range(len(tup) - 1))
+  return result
+
+# Example usage and assertion
+assert add_pairwise((1, 5, 7, 8, 10)) == (6, 12, 15, 18)
+assert add_pairwise((1, 2)) == (3,)
+assert add_pairwise((1,)) == ()
+assert add_pairwise(()) == ()
+
+print(add_pairwise((1, 5, 7, 8, 10)))
+```

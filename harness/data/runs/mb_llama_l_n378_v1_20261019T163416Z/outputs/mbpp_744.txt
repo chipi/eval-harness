@@ -1,0 +1,11 @@
+```python
+def check_none(tup):
+    return any(val is None for val in tup)
+
+def main():
+    print(check_none((10, 4, 5, 6, None)))  # True
+    print(check_none((10, 4, 5, 6)))  # False
+
+if __name__ == "__main__":
+    main()
+```

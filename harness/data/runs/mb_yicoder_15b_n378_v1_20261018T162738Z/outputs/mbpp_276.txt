@@ -1,0 +1,11 @@
+```python
+import math
+
+def volume_cylinder(radius, height):
+    return math.pi * radius**2 * height
+
+# Test cases
+assert math.isclose(volume_cylinder(10,5), 1570.7500000000002, rel_tol=0.001)
+assert math.isclose(volume_cylinder(2,3), 52.38962693689774, rel_tol=0.001)
+assert math.isclose(volume_cylinder(1,1), 3.141592653589793, rel_tol=0.001)
+```

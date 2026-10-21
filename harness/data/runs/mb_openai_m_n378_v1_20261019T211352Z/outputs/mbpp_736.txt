@@ -1,0 +1,41 @@
+```python
+#!/usr/bin/env python3
+"""
+Locate the left insertion point for a specified value in sorted order.
+
+The left insertion point is the index where the value should be inserted
+to keep the list sorted, placing it before any existing equal values.
+
+Example:
+    left_insertion([1, 2, 4, 5], 6) == 4
+"""
+
+def left_insertion(sorted_list, value):
+    """
+    Return the leftmost index at which `value` should be inserted
+    into `sorted_list` to maintain sorted order.
+    """
+    left = 0
+    right = len(sorted_list)
+
+    while left < right:
+        mid = (left + right) // 2
+
+        if sorted_list[mid] < value:
+            left = mid + 1
+        else:
+            right = mid
+
+    return left
+
+
+if __name__ == "__main__":
+    assert left_insertion([1, 2, 4, 5], 6) == 4
+    assert left_insertion([1, 2, 4, 5], 3) == 2
+    assert left_insertion([1, 2, 4, 5], 0) == 0
+    assert left_insertion([1, 2, 4, 5], 4) == 2
+    assert left_insertion([1, 2, 4, 4, 4, 5], 4) == 2
+    assert left_insertion([], 10) == 0
+
+    print("All tests passed.")
+```

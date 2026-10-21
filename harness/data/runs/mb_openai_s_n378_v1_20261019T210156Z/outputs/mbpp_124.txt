@@ -1,0 +1,29 @@
+```python
+import math
+
+def angle_complex(real=0, imag=0):
+    """
+    Return the angle (phase) of a complex number in radians.
+
+    The function accepts either:
+      - a complex number as the first argument, e.g. angle_complex(1+2j)
+      - or separate real and imaginary parts, e.g. angle_complex(1, 2)
+
+    Examples:
+        angle_complex(0, 1j) -> pi/2
+        angle_complex(1, 1)   -> pi/4
+    """
+    # If the first argument is already a complex number and no separate imag part is needed
+    if isinstance(real, complex) and imag == 0:
+        z = real
+    else:
+        # Support cases like angle_complex(0, 1j) or angle_complex(1, 2)
+        z = complex(real, imag)
+
+    return math.atan2(z.imag, z.real)
+
+
+if __name__ == "__main__":
+    assert math.isclose(angle_complex(0, 1j), 1.5707963267948966, rel_tol=0.001)
+    print("Test passed.")
+```

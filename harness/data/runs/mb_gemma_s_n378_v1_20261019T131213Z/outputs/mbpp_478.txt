@@ -1,0 +1,22 @@
+```python
+def remove_lowercase(s):
+  """
+  Write a function to remove lowercase substrings from a given string.
+  assert remove_lowercase("PYTHon")==('PYTH')
+  """
+  result = ""
+  for char in s:
+    if not 'a' <= char <= 'z':
+      result += char
+  return result
+
+# Example usage and assertion
+assert remove_lowercase("PYTHon") == "PYTH"
+assert remove_lowercase("helloWORLD") == "WORLD"
+assert remove_lowercase("ALLCAPS") == "ALLCAPS"
+assert remove_lowercase("lowercase") == ""
+assert remove_lowercase("") == ""
+assert remove_lowercase("PyThOn") == "PTO"
+
+print("All test cases passed!")
+```

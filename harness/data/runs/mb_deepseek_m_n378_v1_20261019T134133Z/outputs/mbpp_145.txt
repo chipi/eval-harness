@@ -1,0 +1,49 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def max_Abs_Diff(arr):
+    """
+    Find the maximum absolute difference between any two elements in an array.
+    
+    Args:
+        arr: A sequence (list, tuple, etc.) of numbers.
+    
+    Returns:
+        The maximum absolute difference between any two elements.
+    """
+    if len(arr) < 2:
+        return 0
+    
+    min_val = arr[0]
+    max_val = arr[0]
+    
+    for num in arr[1:]:
+        if num < min_val:
+            min_val = num
+        if num > max_val:
+            max_val = num
+    
+    return max_val - min_val
+
+
+# Test the function
+assert max_Abs_Diff((2, 1, 5, 3)) == 4
+print("Test passed!")
+print(f"max_Abs_Diff((2, 1, 5, 3)) = {max_Abs_Diff((2, 1, 5, 3))}")
+```
+
+**Explanation:**
+
+The maximum absolute difference between any two elements in an array is simply the difference between the maximum and minimum values in that array. This is because:
+
+- The largest possible difference comes from pairing the largest element with the smallest element.
+- Any other pair will have a difference less than or equal to `max - min`.
+
+The algorithm:
+1. Handles edge cases where the array has fewer than 2 elements (returns 0).
+2. Initializes both `min_val` and `max_val` to the first element.
+3. Iterates through the array once, updating `min_val` and `max_val` as needed.
+4. Returns `max_val - min_val`.
+
+**Time Complexity:** O(n) — single pass through the array.  
+**Space Complexity:** O(1) — only two extra variables used.

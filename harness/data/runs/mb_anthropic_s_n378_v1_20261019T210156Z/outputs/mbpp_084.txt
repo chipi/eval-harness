@@ -1,0 +1,53 @@
+```python
+def sequence(n):
+    """
+    Find the nth number in the Newman-Conway sequence.
+    
+    The Newman-Conway sequence is defined as:
+    P(1) = 1
+    P(2) = 1
+    P(n) = P(P(n-1)) + P(n - P(n-1)) for n > 2
+    
+    Args:
+        n: The position in the sequence (1-indexed)
+    
+    Returns:
+        The nth number in the Newman-Conway sequence
+    """
+    if n == 1 or n == 2:
+        return 1
+    
+    # Build the sequence up to n
+    p = [0] * (n + 1)  # Index 0 unused, indices 1 to n used
+    p[1] = 1
+    p[2] = 1
+    
+    for i in range(3, n + 1):
+        p[i] = p[p[i - 1]] + p[i - p[i - 1]]
+    
+    return p[n]
+
+
+# Test cases
+if __name__ == "__main__":
+    assert sequence(1) == 1
+    assert sequence(2) == 1
+    assert sequence(3) == 2
+    assert sequence(4) == 2
+    assert sequence(5) == 3
+    assert sequence(6) == 4
+    assert sequence(7) == 4
+    assert sequence(8) == 4
+    assert sequence(9) == 5
+    assert sequence(10) == 6
+    
+    print("All tests passed!")
+    print(f"sequence(10) = {sequence(10)}")
+```
+
+The Newman-Conway sequence is defined recursively as:
+- P(1) = 1
+- P(2) = 1
+- P(n) = P(P(n-1)) + P(n - P(n-1)) for n > 2
+
+The solution builds up the sequence iteratively from the base cases, storing all computed values to avoid redundant calculations. This approach has O(n) time complexity and O(n) space complexity.

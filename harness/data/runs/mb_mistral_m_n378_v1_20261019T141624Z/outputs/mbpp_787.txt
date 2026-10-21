@@ -1,0 +1,29 @@
+Here's a self-contained Python script that solves the problem using regular expressions to check if a string contains an 'a' followed by exactly three 'b's:
+
+```python
+import re
+
+def text_match_three(text):
+    """
+    Check if the string contains an 'a' followed by exactly three 'b's.
+
+    Args:
+        text (str): The input string to check.
+
+    Returns:
+        bool: True if the pattern is found, False otherwise.
+    """
+    pattern = r'a{1}b{3}'
+    return bool(re.search(pattern, text))
+
+# Test case
+assert not text_match_three("ac")
+```
+
+This script:
+1. Defines a function `text_match_three` that uses `re.search` to look for the pattern 'a' followed by exactly three 'b's
+2. The pattern `r'a{1}b{3}'` matches:
+   - Exactly one 'a' (`a{1}`)
+   - Followed by exactly three 'b's (`b{3}`)
+3. The function returns `True` if the pattern is found anywhere in the string, `False` otherwise
+4. The test case verifies that the string "ac" does not match the pattern (as required by the assertion)

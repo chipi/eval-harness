@@ -1,0 +1,10 @@
+```python
+def sum_digits(n):
+    return sum(int(digit) for digit in str(n))
+
+# Test cases
+assert sum_digits(345)==12
+assert sum_digits(12345)==15
+assert sum_digits(98765)==25
+assert sum_digits(10000)==10
+```

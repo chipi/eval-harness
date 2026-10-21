@@ -1,0 +1,32 @@
+```python
+def is_perfect_square(n):
+    """Check whether the given number is a perfect square or not."""
+    if n < 0:
+        return False
+    if n == 0:
+        return True
+    # Use integer square root to avoid floating point issues
+    low, high = 1, n
+    while low <= high:
+        mid = (low + high) // 2
+        sq = mid * mid
+        if sq == n:
+            return True
+        elif sq < n:
+            low = mid + 1
+        else:
+            high = mid - 1
+    return False
+
+
+# Test
+assert not is_perfect_square(10)
+assert is_perfect_square(0)
+assert is_perfect_square(1)
+assert is_perfect_square(4)
+assert is_perfect_square(9)
+assert is_perfect_square(16)
+assert is_perfect_square(25)
+assert not is_perfect_square(26)
+assert not is_perfect_square(-4)
+```

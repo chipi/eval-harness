@@ -1,0 +1,58 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def left_rotate(n, d):
+    """
+    Rotate left bits by d bits for a given 32-bit number.
+    
+    Args:
+        n: The number to rotate (assumed to be 32-bit)
+        d: Number of bits to rotate left
+    
+    Returns:
+        The result after left rotation
+    """
+    # Ensure we're working with 32 bits
+    n = n & 0xFFFFFFFF
+    
+    # Normalize d to be within 0-31 range
+    d = d % 32
+    
+    # Perform left rotation
+    result = ((n << d) | (n >> (32 - d))) & 0xFFFFFFFF
+    
+    return result
+
+
+# Test the function
+if __name__ == "__main__":
+    # Test case from the problem
+    assert left_rotate(16, 2) == 64, f"Expected 64, got {left_rotate(16, 2)}"
+    
+    # Additional test cases
+    assert left_rotate(1, 1) == 2, f"Expected 2, got {left_rotate(1, 1)}"
+    assert left_rotate(1, 31) == 0x80000000, f"Expected {0x80000000}, got {left_rotate(1, 31)}"
+    assert left_rotate(0x80000000, 1) == 1, f"Expected 1, got {left_rotate(0x80000000, 1)}"
+    assert left_rotate(16, 34) == 64, f"Expected 64, got {left_rotate(16, 34)}"  # d > 32
+    
+    print("All tests passed!")
+```
+
+**Explanation:**
+
+The function `left_rotate` performs a left bit rotation on a 32-bit number:
+
+1. **Mask to 32 bits**: `n & 0xFFFFFFFF` ensures we're only working with the lower 32 bits of the input number.
+
+2. **Normalize rotation amount**: `d % 32` ensures the rotation amount is between 0 and 31, since rotating by 32 bits brings us back to the original number.
+
+3. **Perform rotation**: 
+   - `(n << d)` shifts the bits left by `d` positions
+   - `(n >> (32 - d))` takes the bits that would "fall off" the left side and moves them to the right side
+   - The `|` operator combines both parts
+   - Final `& 0xFFFFFFFF` ensures the result stays within 32 bits
+
+For the test case `left_rotate(16, 2)`:
+- 16 in binary (32-bit): `00000000 00000000 00000000 00010000`
+- After left rotation by 2: `00000000 00000000 00000000 01000000`
+- Which equals 64 in decimal ✓

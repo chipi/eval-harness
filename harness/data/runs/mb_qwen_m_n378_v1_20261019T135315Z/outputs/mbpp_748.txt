@@ -1,0 +1,46 @@
+```python
+import re
+
+
+def capital_words_spaces(text: str) -> str:
+    """
+    Insert spaces before words that start with a capital letter.
+    
+    For example:
+    - "Python" -> "Python" (no change, single word)
+    - "HelloWorld" -> "Hello World"
+    - "getHTTPResponseCode" -> "get HTTP Response Code"
+    
+    Args:
+        text: Input string potentially containing concatenated words starting with capitals.
+        
+    Returns:
+        String with spaces inserted before capital letters that indicate new words.
+    """
+    if not text:
+        return text
+    
+    # Insert a space before any uppercase letter that is either:
+    # 1. Preceded by a lowercase letter or digit (e.g., "helloWorld" -> "hello World")
+    # 2. Followed by a lowercase letter and preceded by an uppercase letter (for acronyms like "HTTPResponse" -> "HTTP Response")
+    
+    # First pattern: insert space between a lowercase/digit and an uppercase letter
+    result = re.sub(r'([a-z0-9])([A-Z])', r'\1 \2', text)
+    
+    # Second pattern: insert space between consecutive uppercase letters followed by a lowercase letter
+    # e.g., "HTTPResponse" -> "HTTP Response" (the R in Response should have a space before it)
+    result = re.sub(r'([A-Z]+)([A-Z][a-z])', r'\1 \2', result)
+    
+    return result
+
+
+if __name__ == "__main__":
+    # Test cases
+    assert capital_words_spaces("Python") == 'Python'
+    assert capital_words_spaces("HelloWorld") == 'Hello World'
+    assert capital_words_spaces("getHTTPResponseCode") == 'get HTTP Response Code'
+    assert capital_words_spaces("") == ""
+    assert capital_words_spaces("already spaced") == "already spaced"
+    assert capital_words_spaces("XMLParser") == "XML Parser"
+    print("All tests passed!")
+```

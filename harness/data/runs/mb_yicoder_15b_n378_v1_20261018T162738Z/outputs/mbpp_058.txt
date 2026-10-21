@@ -1,0 +1,11 @@
+```python
+def opposite_Signs(a, b):
+    return (a < 0 and b > 0) or (a > 0 and b < 0)
+
+# Test cases
+assert opposite_Signs(1,-2) == True
+assert opposite_Signs(-1,2) == True
+assert opposite_Signs(0,0) == False
+assert opposite_Signs(-3,3) == False
+assert opposite_Signs(5,-5) == False
+```

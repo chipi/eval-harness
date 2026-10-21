@@ -1,0 +1,26 @@
+```python
+import math
+
+def next_Perfect_Square(n):
+    """
+    This function finds the next perfect square greater than a given number.
+
+    Args:
+        n (int): The input number.
+
+    Returns:
+        int: The next perfect square greater than the input number.
+    """
+    # Calculate the square root of the input number
+    root = math.sqrt(n)
+    
+    # If the square root is an integer, the next perfect square is the square of the next integer
+    if root == int(root):
+        return (root + 1) ** 2
+    # If the square root is not an integer, the next perfect square is the square of the ceiling of the square root
+    else:
+        return math.ceil(root) ** 2
+
+# Test the function
+print(next_Perfect_Square(35))  # Output: 36
+```

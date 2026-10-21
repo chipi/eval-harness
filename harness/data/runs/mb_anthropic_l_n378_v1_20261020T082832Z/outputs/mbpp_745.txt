@@ -1,0 +1,46 @@
+Looking at this problem, I need to find all numbers in a range where each number is divisible by every one of its digits (numbers containing 0 are excluded since division by zero is impossible).
+
+```python
+"""
+Write a function to find numbers within a given range from startnum to endnum where
+every number is divisible by every digit it contains.
+assert divisible_by_digits(1,22)==[1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 15, 22]
+"""
+
+
+def divisible_by_digits(startnum, endnum):
+    """
+    Return a list of numbers in [startnum, endnum] such that each number is
+    divisible by every digit it contains.
+
+    Numbers containing the digit 0 are excluded, because division by zero
+    is undefined.
+    """
+    return [
+        n for n in range(startnum, endnum + 1)
+        if not any(map(lambda x: int(x) == 0 or n % int(x) != 0, str(n)))
+    ]
+
+
+if __name__ == "__main__":
+    assert divisible_by_digits(1, 22) == [1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 15, 22]
+    print(divisible_by_digits(1, 22))
+    print(divisible_by_digits(1, 100))
+    print("All tests passed!")
+```
+
+**How it works:**
+
+1. Iterate over every integer `n` from `startnum` to `endnum` (inclusive).
+2. Convert `n` to a string so we can look at each digit individually.
+3. For each digit `x`:
+   - If `int(x) == 0`, the number fails (can't divide by zero).
+   - If `n % int(x) != 0`, the number isn't divisible by that digit, so it fails.
+4. `any(...)` returns `True` if *any* digit fails; `not any(...)` keeps only numbers where *all* digits pass.
+
+**Output:**
+```
+[1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 15, 22]
+[1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 15, 22, 24, 33, 36, 44, 48, 55, 66, 77, 88, 99]
+All tests passed!
+```

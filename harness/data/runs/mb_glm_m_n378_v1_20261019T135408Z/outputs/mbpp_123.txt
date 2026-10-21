@@ -1,0 +1,40 @@
+```python
+def amicable_numbers_sum(limit):
+    """
+    Calculate the sum of all amicable numbers up to a given limit.
+    
+    An amicable number is a number where the sum of its proper divisors 
+    (excluding itself) is equal to another number, and the sum of the 
+    proper divisors of that other number is equal to the original number.
+    
+    Args:
+        limit (int): The upper bound (inclusive) to check for amicable numbers.
+    
+    Returns:
+        int: The sum of all amicable numbers up to the given limit.
+    """
+    def sum_of_proper_divisors(n):
+        """Helper function to calculate the sum of proper divisors of n."""
+        if n == 1:
+            return 0
+        total = 1  # 1 is a proper divisor for all n > 1
+        sqrt_n = int(n ** 0.5)
+        for i in range(2, sqrt_n + 1):
+            if n % i == 0:
+                total += i
+                counterpart = n // i
+                if counterpart != i:
+                    total += counterpart
+        return total
+    
+    amicable_sum = 0
+    for a in range(2, limit + 1):
+        b = sum_of_proper_divisors(a)
+        if b != a and b <= limit and sum_of_proper_divisors(b) == a:
+            amicable_sum += a
+    return amicable_sum
+
+# Test the function
+assert amicable_numbers_sum(999) == 504
+print("Test passed! amicable_numbers_sum(999) =", amicable_numbers_sum(999))
+```

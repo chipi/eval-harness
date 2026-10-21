@@ -1,0 +1,58 @@
+Here's a self-contained Python script that implements the pancake sort algorithm:
+
+```python
+def pancake_sort(arr):
+    """
+    Sort a list using the pancake sort algorithm.
+    
+    Pancake sort works by repeatedly finding the maximum element in the
+    unsorted portion, flipping it to the front, then flipping it to its
+    correct position at the end of the unsorted portion.
+    """
+    def flip(arr, k):
+        """Reverse the first k+1 elements of arr."""
+        start = 0
+        while start < k:
+            arr[start], arr[k] = arr[k], arr[start]
+            start += 1
+            k -= 1
+    
+    n = len(arr)
+    # Reduce the size of the current unsorted portion by one each iteration
+    for curr_size in range(n, 1, -1):
+        # Find the index of the maximum element in arr[0..curr_size-1]
+        max_idx = 0
+        for i in range(1, curr_size):
+            if arr[i] > arr[max_idx]:
+                max_idx = i
+        
+        # If the maximum is not already at the end of the unsorted portion
+        if max_idx != curr_size - 1:
+            # First flip to bring the maximum to the front
+            flip(arr, max_idx)
+            # Then flip to bring it to its correct position
+            flip(arr, curr_size - 1)
+    
+    return arr
+
+
+# Test the function
+assert pancake_sort([15, 79, 25, 38, 69]) == [15, 25, 38, 69, 79]
+print("Test passed!")
+print(pancake_sort([15, 79, 25, 38, 69]))
+```
+
+**How it works:**
+
+1. **Find the maximum** in the current unsorted portion of the array.
+2. **Flip** the array up to that maximum's index, bringing it to the front.
+3. **Flip** the entire unsorted portion, placing the maximum at its final sorted position.
+4. **Repeat** with a smaller unsorted portion until the whole array is sorted.
+
+**Example trace** for `[15, 79, 25, 38, 69]`:
+- Max is `79` at index 1 → flip(1) → `[79, 15, 25, 38, 69]` → flip(4) → `[69, 38, 25, 15, 79]`
+- Max of first 4 is `69` at index 0 → flip(0) (no change) → flip(3) → `[15, 25, 38, 69, 79]`
+- Max of first 3 is `38` at index 2 → flip(2) → `[38, 25, 15, 69, 79]` → flip(2) → `[15, 25, 38, 69, 79]`
+- Max of first 2 is `25` at index 1 → flip(1) → `[25, 15, 38, 69, 79]` → flip(1) → `[15, 25, 38, 69, 79]`
+
+Result: `[15, 25, 38, 69, 79]` ✓

@@ -1,0 +1,45 @@
+```python
+from typing import List
+from collections import Counter
+
+def get_pairs_count(numbers: List[int], total_sum: int) -> int:
+    """
+    This function calculates the number of pairs in a list of numbers that sum up to a given total.
+
+    Args:
+    numbers (List[int]): A list of integers.
+    total_sum (int): The target sum.
+
+    Returns:
+    int: The number of pairs whose sum equals the target sum.
+    """
+    # Count the frequency of each number in the list
+    num_counts = Counter(numbers)
+    
+    # Initialize the count of pairs
+    pair_count = 0
+    
+    # Iterate over the counted numbers
+    for num, count in num_counts.items():
+        # Calculate the complement of the current number
+        complement = total_sum - num
+        
+        # If the complement is the same as the current number, 
+        # we need to handle this case separately to avoid double counting
+        if complement == num:
+            # The number of pairs is the combination of count choose 2
+            pair_count += count * (count - 1) // 2
+        # If the complement is different from the current number and it exists in the list
+        elif complement in num_counts:
+            # Increment the pair count by the product of the counts of the current number and its complement
+            pair_count += count * num_counts[complement]
+    
+    # Return the total count of pairs
+    return pair_count
+
+# Test the function
+assert get_pairs_count([1,1,1,1], 2) == 6
+print("All tests passed.")
+```
+
+This script defines a function `get_pairs_count` that takes a list of numbers and a target sum as input, and returns the number of pairs of numbers in the list that add up to the target sum. The function uses a `Counter` to count the frequency of each number in the list, then iterates over the counted numbers to calculate the number of pairs. The function handles the case where the complement of a number is the same as the number itself to avoid double counting. The script also includes a test case to verify the function's correctness.

@@ -1,0 +1,15 @@
+```python
+def round_and_sum(numbers):
+    """
+    Round every number in the list, sum the rounded values,
+    multiply by the length of the list, print the result, and return it.
+    """
+    total = sum(round(x) for x in numbers)
+    result = total * len(numbers)
+    print(result)
+    return result
+
+
+if __name__ == "__main__":
+    assert round_and_sum([22.4, 4.0, -16.22, -9.10, 11.00, -12.22, 14.20, -5.20, 17.50]) == 243
+```

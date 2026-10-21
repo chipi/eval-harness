@@ -1,0 +1,15 @@
+```python
+def Split(numbers):
+    """
+    Return a list of even numbers from the input list.
+
+    Example:
+        Split([1, 2, 3, 4, 5]) -> [2, 4]
+    """
+    return [n for n in numbers if n % 2 == 0]
+
+
+if __name__ == "__main__":
+    assert Split([1, 2, 3, 4, 5]) == [2, 4]
+    print("All tests passed.")
+```

@@ -1,0 +1,23 @@
+```python
+def occurance_substring(string, substring):
+    """
+    This function finds the occurrence and position of the substrings within a string.
+    
+    Args:
+        string (str): The main string to search in.
+        substring (str): The substring to search for.
+    
+    Returns:
+        tuple: A tuple containing the substring, and its first and last occurrence positions. 
+               Returns None if there is no match.
+    """
+    positions = [i for i in range(len(string)) if string.startswith(substring, i)]
+    
+    if not positions:
+        return None
+    else:
+        return (substring, positions[0], positions[-1])
+
+# Test the function
+print(occurance_substring('python programming, python language','python'))
+```

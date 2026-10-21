@@ -1,0 +1,25 @@
+```python
+from itertools import combinations_with_replacement
+
+def combinations_colors(items, n):
+    """
+    Generate all combinations with repetition of length n from the given list.
+
+    Parameters:
+        items (list): Input list of elements.
+        n (int): Length of each combination.
+
+    Returns:
+        list[tuple]: All combinations with repetition, as tuples.
+    """
+    return list(combinations_with_replacement(items, n))
+
+
+if __name__ == "__main__":
+    assert combinations_colors(["Red", "Green", "Blue"], 1) == [
+        ("Red",),
+        ("Green",),
+        ("Blue",)
+    ]
+    print("All tests passed.")
+```

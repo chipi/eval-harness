@@ -1,0 +1,24 @@
+```python
+def min_val(lst):
+    """
+    This function finds the minimum value in a given heterogeneous list.
+
+    Args:
+        lst (list): A list containing elements of different data types.
+
+    Returns:
+        The minimum value in the list. If the list is empty or does not contain comparable elements, it returns None.
+    """
+    # Filter out non-comparable elements (non-numeric) from the list
+    numeric_elements = [element for element in lst if isinstance(element, (int, float))]
+    
+    # If the list is empty or does not contain any numeric elements, return None
+    if not numeric_elements:
+        return None
+    
+    # Return the minimum value in the list of numeric elements
+    return min(numeric_elements)
+
+# Test the function
+print(min_val(['Python', 3, 2, 4, 5, 'version']))  # Output: 2
+```

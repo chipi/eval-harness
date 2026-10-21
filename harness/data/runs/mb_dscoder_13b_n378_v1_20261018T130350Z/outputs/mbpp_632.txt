@@ -1,0 +1,17 @@
+```python
+def move_zeroes(nums):
+    """
+    Write a python function to move all zeroes to the end of the given list.
+    """
+    # Count the number of zeroes in the list
+    count = nums.count(0)
+
+    # Create a new list with the same elements as the original list,
+    # but with the zeroes moved to the end
+    new_nums = [num for num in nums if num != 0] + [0]*count
+
+    return new_nums
+
+# Test the function with the provided test case
+assert move_zeroes([1,0,2,0,3,4]) == [1,2,3,4,0,0]
+```

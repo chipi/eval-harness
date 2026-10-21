@@ -1,0 +1,20 @@
+```python
+def max_val(lst):
+    """
+    This function finds the maximum value in a given heterogeneous list.
+    It filters out non-numeric values and returns the maximum numeric value.
+    If the list is empty or contains no numeric values, it returns None.
+    """
+    # Filter out non-numeric values
+    numeric_values = [x for x in lst if isinstance(x, (int, float))]
+    
+    # Check if there are any numeric values
+    if not numeric_values:
+        return None
+    
+    # Return the maximum numeric value
+    return max(numeric_values)
+
+# Test the function
+print(max_val(['Python', 3, 2, 4, 5, 'version']))  # Output: 5
+```

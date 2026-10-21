@@ -1,0 +1,20 @@
+Here is the self-contained Python script that solves the problem:
+
+```python
+def _sum(arr):
+    """
+    Finds the sum of an array of numbers.
+    
+    Args:
+    arr (list): A list of numbers (integers or floats).
+    
+    Returns:
+    int/float: The sum of the numbers in the array.
+    """
+    return sum(arr)
+
+# Assert statement to verify the correctness of the function
+if __name__ == "__main__":
+    assert _sum([1, 2, 3]) == 6
+    print("Assertion passed successfully.")
+```

@@ -1,0 +1,28 @@
+```python
+def count_Substrings(s: str) -> int:
+    """
+    This function counts the number of substrings in a given string where the sum of digits equals their length.
+
+    Args:
+    s (str): The input string consisting of digits.
+
+    Returns:
+    int: The number of substrings with the sum of digits equal to their length.
+    """
+    count = 0  # Initialize count of substrings
+    for i in range(len(s)):  # Iterate over the string
+        total = 0  # Initialize sum of digits for current substring
+        for j in range(i, len(s)):  # Iterate over substrings starting at index i
+            total += int(s[j])  # Add digit to the sum
+            if total > j - i + 1:  # If sum exceeds substring length, break
+                break
+            elif total == j - i + 1:  # If sum equals substring length, increment count
+                count += 1
+    return count
+
+# Test the function
+assert count_Substrings('112112') == 6
+print("All test cases pass")
+```
+
+This Python function `count_Substrings` takes a string `s` as input and returns the number of substrings where the sum of digits equals their length. It achieves this by iterating over all possible substrings, calculating the sum of their digits, and incrementing a counter whenever the sum matches the length of the substring. The function includes a docstring that describes its purpose, arguments, and return value. The test case `assert count_Substrings('112112') == 6` ensures that the function works correctly.

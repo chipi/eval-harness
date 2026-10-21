@@ -1,0 +1,52 @@
+```python
+#!/usr/bin/env python3
+"""
+Find the size of the largest subset of a list of numbers such that for every
+pair (a, b) in the subset, one number divides the other.
+
+Example:
+    largest_subset([1, 3, 6, 13, 17, 18]) == 4
+
+The subset is [1, 3, 6, 18].
+"""
+
+from typing import List
+
+
+def largest_subset(nums: List[int]) -> int:
+    """
+    Return the size of the largest divisible subset.
+
+    A subset is valid if for every pair of numbers (a, b), either:
+        a divides b, or b divides a.
+
+    This is solved with dynamic programming after sorting the numbers.
+    """
+    if not nums:
+        return 0
+
+    nums = sorted(nums)
+
+    n = len(nums)
+    dp = [1] * n
+
+    for i in range(n):
+        for j in range(i):
+            if nums[i] % nums[j] == 0:
+                dp[i] = max(dp[i], dp[j] + 1)
+
+    return max(dp)
+
+
+if __name__ == "__main__":
+    assert largest_subset([1, 3, 6, 13, 17, 18]) == 4
+
+    # Additional sanity checks
+    assert largest_subset([]) == 0
+    assert largest_subset([1]) == 1
+    assert largest_subset([1, 2, 4, 8]) == 4
+    assert largest_subset([2, 3, 5, 7]) == 1
+    assert largest_subset([1, 2, 3, 6]) == 3
+
+    print("All tests passed.")
+```

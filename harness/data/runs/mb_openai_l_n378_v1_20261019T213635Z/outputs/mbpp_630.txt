@@ -1,0 +1,14 @@
+```python
+def get_coordinates(coordinate):
+    """Return the 3×3 set of coordinates centered on coordinate."""
+    x, y = coordinate
+    return [[row, col] for row in range(x - 1, x + 2)
+                       for col in range(y - 1, y + 2)]
+
+
+assert get_coordinates((3, 4)) == [
+    [2, 3], [2, 4], [2, 5],
+    [3, 3], [3, 4], [3, 5],
+    [4, 3], [4, 4], [4, 5],
+]
+```

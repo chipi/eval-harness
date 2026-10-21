@@ -1,0 +1,63 @@
+Here's a self-contained Python script that solves the problem using dynamic programming to find the path with the maximum average cost in a square matrix:
+
+```python
+def maxAverageOfPath(matrix):
+    if not matrix or not matrix[0]:
+        return 0.0
+
+    n = len(matrix)
+    # dp[i][j] will store the maximum total cost and the number of cells in the path to reach (i, j)
+    dp = [[(0, 0) for _ in range(n)] for _ in range(n)]
+
+    # Initialize the starting cell
+    dp[0][0] = (matrix[0][0], 1)
+
+    # Fill the first row (can only come from the left)
+    for j in range(1, n):
+        total, count = dp[0][j-1]
+        dp[0][j] = (total + matrix[0][j], count + 1)
+
+    # Fill the first column (can only come from above)
+    for i in range(1, n):
+        total, count = dp[i-1][0]
+        dp[i][0] = (total + matrix[i][0], count + 1)
+
+    # Fill the rest of the table
+    for i in range(1, n):
+        for j in range(1, n):
+            # Come from the left
+            left_total, left_count = dp[i][j-1]
+            # Come from above
+            top_total, top_count = dp[i-1][j]
+
+            # Choose the path with maximum average
+            if left_total / left_count > top_total / top_count:
+                dp[i][j] = (left_total + matrix[i][j], left_count + 1)
+            else:
+                dp[i][j] = (top_total + matrix[i][j], top_count + 1)
+
+    # The bottom-right cell contains the total and count for the best path
+    total, count = dp[n-1][n-1]
+    return total / count
+
+# Test case
+assert maxAverageOfPath([[1, 2, 3], [6, 5, 4], [7, 3, 9]]) == 5.2
+```
+
+### Explanation:
+1. **Dynamic Programming Table (dp):**
+   - `dp[i][j]` stores a tuple `(total_cost, cell_count)` representing the maximum total cost and the number of cells in the best path to reach cell `(i, j)`.
+
+2. **Initialization:**
+   - The starting cell `(0, 0)` is initialized with its own cost and count of 1.
+   - The first row and column are filled because paths in these rows/columns can only come from one direction (left or top, respectively).
+
+3. **Filling the DP Table:**
+   - For each cell `(i, j)`, we consider the best path coming from the left `(i, j-1)` or from above `(i-1, j)`.
+   - We choose the path with the higher average cost (total cost divided by cell count) and update `dp[i][j]` accordingly.
+
+4. **Result Extraction:**
+   - The bottom-right cell `(n-1, n-1)` contains the total cost and cell count for the best path from the top-left to the bottom-right.
+   - The average is computed as `total / count` and returned.
+
+This approach efficiently computes the maximum average path in O(N²) time and space complexity.

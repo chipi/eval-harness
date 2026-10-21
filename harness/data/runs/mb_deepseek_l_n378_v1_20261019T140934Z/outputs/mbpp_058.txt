@@ -1,0 +1,31 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def opposite_Signs(a, b):
+    """
+    Check whether the given two integers have opposite signs or not.
+    
+    Args:
+        a: First integer
+        b: Second integer
+    
+    Returns:
+        bool: True if the integers have opposite signs, False otherwise
+    """
+    # XOR operation on the sign bits
+    # If signs are opposite, the result will be negative
+    return (a ^ b) < 0
+
+# Test the function
+if __name__ == "__main__":
+    assert opposite_Signs(1, -2) == True
+    assert opposite_Signs(1, 2) == False
+    assert opposite_Signs(-1, -2) == False
+    assert opposite_Signs(-1, 2) == True
+    assert opposite_Signs(0, 1) == False  # 0 is considered non-negative
+    assert opposite_Signs(0, -1) == False  # 0 is considered non-negative
+    
+    print("All tests passed!")
+```
+
+The solution uses the XOR (`^`) operator to check the sign bits of the two integers. When two numbers have opposite signs, their XOR result will be negative (the sign bit will be 1), so we check if `(a ^ b) < 0`. This is an efficient bitwise operation that avoids using multiplication or multiple conditional checks.

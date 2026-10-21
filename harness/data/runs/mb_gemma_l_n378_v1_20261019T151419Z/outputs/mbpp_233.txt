@@ -1,0 +1,20 @@
+```python
+import math
+
+def lateralsuface_cylinder(radius, height):
+    """
+    Calculates the lateral surface area of a cylinder.
+    Formula: 2 * pi * r * h
+    """
+    return 2 * math.pi * radius * height
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    # radius = 10, height = 5
+    # Expected: 2 * pi * 10 * 5 = 100 * pi ≈ 314.159...
+    result = lateralsuface_cylinder(10, 5)
+    expected = 314.15000000000003
+    
+    assert math.isclose(result, expected, rel_tol=0.001), f"Expected {expected}, but got {result}"
+    print(f"Success! Lateral surface area: {result}")
+```

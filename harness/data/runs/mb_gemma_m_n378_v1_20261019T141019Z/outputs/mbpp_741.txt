@@ -1,0 +1,31 @@
+```python
+def all_Characters_Same(string: str) -> bool:
+    """
+    Checks whether all characters in a given string are the same.
+    
+    Args:
+        string (str): The input string to check.
+        
+    Returns:
+        bool: True if all characters are identical, False otherwise. 
+              Returns True for empty strings or single-character strings.
+    """
+    # A string with 0 or 1 characters inherently has all characters the same
+    if len(string) <= 1:
+        return True
+    
+    # Convert the string to a set to find unique characters.
+    # If all characters are the same, the set will have a length of 1.
+    return len(set(string)) == 1
+
+if __name__ == "__main__":
+    # Test cases
+    assert all_Characters_Same("python") == False
+    assert all_Characters_Same("aaaaa") == True
+    assert all_Characters_Same("a") == True
+    assert all_Characters_Same("") == True
+    assert all_Characters_Same("1111") == True
+    assert all_Characters_Same("1112") == False
+
+    print("All tests passed!")
+```

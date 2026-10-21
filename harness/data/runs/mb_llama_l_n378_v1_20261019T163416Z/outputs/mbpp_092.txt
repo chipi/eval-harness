@@ -1,0 +1,12 @@
+```python
+def is_undulating(n):
+    n = str(n)
+    return len(set(n[::2])) == 1 and len(set(n[1::2])) == 1 and n[0] != n[1]
+
+def main():
+    print(is_undulating(1212121))  # True
+    print(is_undulating(1234567))  # False
+
+if __name__ == "__main__":
+    main()
+```

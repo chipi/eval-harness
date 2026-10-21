@@ -1,0 +1,32 @@
+Here is a self-contained Python script that solves the problem. It uses a regular expression to check if the string represents a valid integer (including optional leading `+` or `-` signs), and includes the provided assertion as a test.
+
+```python
+import re
+
+def check_integer(s: str) -> bool:
+    """
+    Checks if a string represents an integer or not.
+    
+    An integer string can optionally start with a '+' or '-' sign 
+    followed by one or more digits.
+    """
+    # ^ matches the start of the string
+    # [+-]? matches an optional + or - sign
+    # \d+ matches one or more digits
+    # $ matches the end of the string
+    return bool(re.match(r'^[+-]?\d+$', s))
+
+if __name__ == "__main__":
+    # Provided assertion
+    assert check_integer("python") == False
+    
+    # Additional test cases to verify correctness
+    assert check_integer("123") == True
+    assert check_integer("-456") == True
+    assert check_integer("+789") == True
+    assert check_integer("12.3") == False
+    assert check_integer("") == False
+    assert check_integer(" 123 ") == False
+    
+    print("All assertions passed successfully.")
+```

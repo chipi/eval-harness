@@ -1,0 +1,29 @@
+```python
+def last_Digit_Factorial(n):
+    """
+    Finds the last digit in factorial of a given number.
+    
+    Args:
+        n (int): The input number.
+        
+    Returns:
+        int: The last digit of n!.
+    """
+    # Factorials of numbers 5 and greater always end in 0
+    # because they include the factors 2 and 5.
+    if n >= 5:
+        return 0
+    
+    # Calculate factorial for numbers 0 to 4
+    factorial = 1
+    for i in range(1, n + 1):
+        factorial *= i
+        
+    return factorial % 10
+
+# Test cases
+assert last_Digit_Factorial(4) == 4
+assert last_Digit_Factorial(5) == 0
+assert last_Digit_Factorial(0) == 1
+assert last_Digit_Factorial(10) == 0
+```

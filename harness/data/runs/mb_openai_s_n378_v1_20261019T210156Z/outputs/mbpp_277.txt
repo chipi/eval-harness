@@ -1,0 +1,26 @@
+```python
+def dict_filter(d, n):
+    """
+    Return a new dictionary containing only the items from `d`
+    whose values are greater than or equal to `n`.
+    """
+    return {k: v for k, v in d.items() if v >= n}
+
+
+if __name__ == "__main__":
+    assert dict_filter(
+        {
+            'Cierra Vega': 175,
+            'Alden Cantrell': 180,
+            'Kierra Gentry': 165,
+            'Pierre Cox': 190
+        },
+        170
+    ) == {
+        'Cierra Vega': 175,
+        'Alden Cantrell': 180,
+        'Pierre Cox': 190
+    }
+
+    print("All tests passed.")
+```

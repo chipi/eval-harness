@@ -1,0 +1,46 @@
+```python
+def flatten_list(nested_list):
+    """
+    Flattens a nested list structure into a single-level list.
+
+    This function uses a recursive approach to handle arbitrarily deep nesting.
+    It iterates through each element of the input list. If an element is a list,
+    it recursively flattens it and extends the result. Otherwise, it appends
+    the element to the result list.
+
+    Args:
+        nested_list: A list that may contain other lists as elements.
+
+    Returns:
+        A new list containing all elements from the nested structure in a single level.
+    """
+    result = []
+    for item in nested_list:
+        if isinstance(item, list):
+            # If the item is a list, recursively flatten it and extend the result
+            result.extend(flatten_list(item))
+        else:
+            # If the item is not a list, append it to the result
+            result.append(item)
+    return result
+
+# Example usage and assertion from the problem description
+if __name__ == "__main__":
+    input_list = [0, 10, [20, 30], 40, 50, [60, 70, 80], [90, 100, 110, 120]]
+    expected_output = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120]
+    
+    # Call the function and print the result
+    flattened = flatten_list(input_list)
+    print(f"Input: {input_list}")
+    print(f"Flattened: {flattened}")
+    
+    # Assert that the output matches the expected result
+    assert flattened == expected_output
+    
+    print("\nAssertion passed! The function works correctly.")
+    
+    # Example with deeper nesting
+    deep_list = [1, [2, [3, [4, 5]]]]
+    print(f"\nDeep Input: {deep_list}")
+    print(f"Deep Flattened: {flatten_list(deep_list)}")
+```

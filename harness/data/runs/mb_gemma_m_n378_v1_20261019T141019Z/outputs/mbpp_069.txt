@@ -1,0 +1,41 @@
+```python
+def is_sublist(main_list, sublist):
+    """
+    Checks whether a list contains the given sublist as a contiguous sequence.
+    
+    Args:
+        main_list (list): The list to search within.
+        sublist (list): The sublist to look for.
+        
+    Returns:
+        bool: True if sublist is found in main_list, False otherwise.
+    """
+    # An empty list is technically a sublist of any list
+    if not sublist:
+        return True
+    
+    n = len(main_list)
+    m = len(sublist)
+    
+    # Iterate through the main list up to the point where the sublist could still fit
+    for i in range(n - m + 1):
+        # Check if the slice of main_list matches the sublist
+        if main_list[i : i + m] == sublist:
+            return True
+            
+    return False
+
+if __name__ == "__main__":
+    # Test cases
+    # The specific case provided in the prompt
+    assert is_sublist([2, 4, 3, 5, 7], [3, 7]) == False
+    
+    # Additional test cases
+    assert is_sublist([1, 2, 3, 4, 5], [2, 3, 4]) == True
+    assert is_sublist([1, 2, 3, 4, 5], [1, 5]) == False
+    assert is_sublist([1, 2, 3], []) == True
+    assert is_sublist([], [1]) == False
+    assert is_sublist([1, 2, 3], [1, 2, 3]) == True
+
+    print("All tests passed!")
+```

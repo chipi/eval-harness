@@ -1,0 +1,50 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def sum_series(n):
+    """
+    Calculate the sum of (n - 2*i) for i from 0 to n // 2.
+    
+    This produces the series: n + (n-2) + (n-4) + ... until the term is <= 0.
+    
+    Args:
+        n: A non-negative integer.
+    
+    Returns:
+        The sum of the series.
+    """
+    total = 0
+    for i in range(n // 2 + 1):
+        term = n - 2 * i
+        if term <= 0:
+            break
+        total += term
+    return total
+
+
+# Test cases
+assert sum_series(6) == 12, f"Expected 12, got {sum_series(6)}"
+assert sum_series(0) == 0, f"Expected 0, got {sum_series(0)}"
+assert sum_series(1) == 1, f"Expected 1, got {sum_series(1)}"
+assert sum_series(2) == 2, f"Expected 2, got {sum_series(2)}"
+assert sum_series(3) == 4, f"Expected 4, got {sum_series(3)}"
+assert sum_series(4) == 6, f"Expected 6, got {sum_series(4)}"
+assert sum_series(5) == 9, f"Expected 9, got {sum_series(5)}"
+assert sum_series(10) == 30, f"Expected 30, got {sum_series(10)}"
+
+print("All tests passed!")
+```
+
+**Explanation:**
+
+The function iterates `i` from `0` to `n // 2` (inclusive), computing each term as `n - 2*i`. It stops adding once a term becomes non-positive (since the problem states the series continues "until n-x =< 0").
+
+For example, with `n = 6`:
+- i=0: 6 - 0 = 6
+- i=1: 6 - 2 = 4
+- i=2: 6 - 4 = 2
+- i=3: 6 - 6 = 0 (skipped, since it's ≤ 0)
+
+Sum = 6 + 4 + 2 = **12** ✓
+
+The `break` statement ensures we don't add zero or negative terms, which is important for odd `n` values where the last term would be negative.

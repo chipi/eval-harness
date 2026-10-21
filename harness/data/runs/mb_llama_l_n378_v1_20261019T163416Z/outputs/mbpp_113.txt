@@ -1,0 +1,12 @@
+```python
+def check_integer(s):
+    try:
+        int(s)
+        return True
+    except ValueError:
+        return False
+
+# Test the function
+print(check_integer("python"))  # Should print: False
+print(check_integer("123"))     # Should print: True
+```

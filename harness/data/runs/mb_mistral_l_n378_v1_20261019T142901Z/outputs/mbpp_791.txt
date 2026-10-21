@@ -1,0 +1,33 @@
+Here's a self-contained Python script that solves the problem by removing all nested tuples from a given tuple:
+
+```python
+def remove_nested(input_tuple):
+    """
+    Removes all nested tuples from the given tuple.
+
+    Args:
+        input_tuple: A tuple that may contain nested tuples.
+
+    Returns:
+        A new tuple with all nested tuples removed.
+    """
+    result = []
+    for item in input_tuple:
+        if isinstance(item, tuple):
+            continue  # Skip nested tuples
+        result.append(item)
+    return tuple(result)
+
+# Test the function
+assert remove_nested((1, 5, 7, (4, 6), 10)) == (1, 5, 7, 10)
+```
+
+This script:
+1. Defines a function `remove_nested` that takes a tuple as input
+2. Iterates through each item in the tuple
+3. Skips any items that are themselves tuples (using `isinstance(item, tuple)`)
+4. Collects all non-tuple items into a new list
+5. Converts the list back to a tuple and returns it
+6. Includes the assertion test to verify the function works as expected
+
+The function will work with any level of nesting since it only checks if the immediate item is a tuple, not if it contains tuples. For example, it would also work with `(1, (2, (3, 4)), 5)` returning `(1, 5)`.

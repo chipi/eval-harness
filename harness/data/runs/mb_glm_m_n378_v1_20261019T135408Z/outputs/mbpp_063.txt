@@ -1,0 +1,23 @@
+```python
+def max_difference(tuple_list):
+    """
+    Find the maximum difference between available pairs in the given tuple list.
+    
+    The difference for each pair (a, b) is calculated as abs(a - b).
+    
+    Args:
+    tuple_list (list of tuples): A list of tuples containing numeric values.
+    
+    Returns:
+    int/float: The maximum difference found among all pairs.
+    """
+    if not tuple_list:
+        return 0
+        
+    return max(abs(a - b) for a, b in tuple_list)
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert max_difference([(3, 5), (1, 7), (10, 3), (1, 2)]) == 7
+    print("Test passed successfully!")
+```

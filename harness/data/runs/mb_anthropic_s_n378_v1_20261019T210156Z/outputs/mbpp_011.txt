@@ -1,0 +1,52 @@
+```python
+def remove_Occ(string, char):
+    """
+    Remove first and last occurrence of a given character from the string.
+    
+    Args:
+        string: The input string
+        char: The character to remove
+    
+    Returns:
+        The string with first and last occurrence of char removed
+    """
+    # Find the first occurrence
+    first_index = string.find(char)
+    
+    # If character not found, return original string
+    if first_index == -1:
+        return string
+    
+    # Find the last occurrence
+    last_index = string.rfind(char)
+    
+    # If first and last are the same (only one occurrence), remove it
+    if first_index == last_index:
+        return string[:first_index] + string[first_index + 1:]
+    
+    # Remove both first and last occurrences
+    # Build string: before first + between first and last + after last
+    result = string[:first_index] + string[first_index + 1:last_index] + string[last_index + 1:]
+    
+    return result
+
+
+# Test cases
+assert remove_Occ("hello", "l") == "heo"
+assert remove_Occ("abcabc", "a") == "bcabc"
+assert remove_Occ("abcabc", "c") == "abcab"
+assert remove_Occ("aaa", "a") == "aa"
+assert remove_Occ("xyz", "a") == "xyz"
+
+print("All test cases passed!")
+print(f'remove_Occ("hello", "l") = {remove_Occ("hello", "l")}')
+print(f'remove_Occ("abcabc", "a") = {remove_Occ("abcabc", "a")}')
+print(f'remove_Occ("abcabc", "c") = {remove_Occ("abcabc", "c")}')
+```
+
+The script defines a function `remove_Occ()` that:
+1. Uses `find()` to locate the first occurrence of the character
+2. Uses `rfind()` to locate the last occurrence of the character
+3. Returns the original string if the character is not found
+4. Handles the case where there's only one occurrence of the character
+5. Concatenates the parts of the string before the first occurrence, between the first and last occurrences, and after the last occurrence

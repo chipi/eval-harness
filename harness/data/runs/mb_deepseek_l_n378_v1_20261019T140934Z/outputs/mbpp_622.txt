@@ -1,0 +1,60 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def get_median(arr1, arr2, n):
+    """
+    Find the median of two sorted lists of same size.
+    
+    Args:
+        arr1: First sorted list
+        arr2: Second sorted list
+        n: Size of each list
+    
+    Returns:
+        The median value as a float
+    """
+    # Use a merge-like approach without fully merging
+    i = j = 0
+    m1 = m2 = -1  # To store the last two elements we've seen
+    
+    # Count will track how many elements we've processed
+    for count in range(n + 1):
+        # Store previous element
+        m1 = m2
+        
+        # Case 1: We've exhausted arr1
+        if i == n:
+            m2 = arr2[j]
+            j += 1
+        # Case 2: We've exhausted arr2
+        elif j == n:
+            m2 = arr1[i]
+            i += 1
+        # Case 3: Current element of arr1 is smaller
+        elif arr1[i] <= arr2[j]:
+            m2 = arr1[i]
+            i += 1
+        # Case 4: Current element of arr2 is smaller
+        else:
+            m2 = arr2[j]
+            j += 1
+    
+    # For even number of total elements (2n), median is average of nth and (n+1)th
+    return (m1 + m2) / 2.0
+
+
+# Test the function
+if __name__ == "__main__":
+    result = get_median([1, 12, 15, 26, 38], [2, 13, 17, 30, 45], 5)
+    print(f"Median: {result}")
+    assert result == 16.0, f"Expected 16.0 but got {result}"
+    print("Test passed!")
+```
+
+This function works by:
+1. Using a merge-like traversal of both sorted arrays without creating a full merged array
+2. Keeping track of only the last two elements we've seen (since we need the two middle elements for the median)
+3. For two arrays of size `n`, there are `2n` total elements, so the median is the average of the `n`th and `(n+1)`th elements
+4. Returning the average of those two middle elements as a float
+
+The time complexity is O(n) and space complexity is O(1).

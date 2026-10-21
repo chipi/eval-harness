@@ -1,0 +1,21 @@
+Here is the self-contained Python script that solves the problem:
+
+```python
+def is_lower(s: str) -> str:
+    """
+    Converts the given string to lower case.
+    
+    Args:
+        s (str): The input string.
+        
+    Returns:
+        str: The lowercased string.
+    """
+    return s.lower()
+
+# Assert statement to verify correctness
+assert is_lower("InValid") == "invalid"
+
+# If the script runs without an AssertionError, it means the test passed
+print("Test passed successfully.")
+```

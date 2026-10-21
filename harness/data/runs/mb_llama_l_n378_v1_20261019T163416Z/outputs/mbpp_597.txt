@@ -1,0 +1,23 @@
+```python
+def find_kth(arr1, arr2, k):
+    """
+    Find the kth element from the given two sorted arrays.
+
+    Args:
+        arr1 (list): The first sorted array.
+        arr2 (list): The second sorted array.
+        k (int): The index of the element to be found (1-indexed).
+
+    Returns:
+        int: The kth element from the merged array.
+
+    """
+    # Merge the two sorted arrays into one sorted array
+    merged = sorted(arr1 + arr2)
+    
+    # Return the kth element (adjusting for 0-indexing)
+    return merged[k - 1]
+
+# Test the function
+assert find_kth([2, 3, 6, 7, 9], [1, 4, 8, 10], 5) == 6
+```

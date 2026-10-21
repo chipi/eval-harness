@@ -1,0 +1,21 @@
+```python
+def reverse_string_list(strings):
+    """
+    Reverse each string in a given list of string values.
+    
+    Args:
+        strings: A list of strings to reverse
+        
+    Returns:
+        A list with each string reversed
+    """
+    return [s[::-1] for s in strings]
+
+
+# Test the function
+assert reverse_string_list(['Red', 'Green', 'Blue', 'White', 'Black']) == ['deR', 'neerG', 'eulB', 'etihW', 'kcalB']
+print("Test passed!")
+print(reverse_string_list(['Red', 'Green', 'Blue', 'White', 'Black']))
+```
+
+The solution uses a list comprehension with Python's string slicing notation `[::-1]` to reverse each string in the list. The `[::-1]` slice reverses a string by stepping through it backwards with a step of -1.

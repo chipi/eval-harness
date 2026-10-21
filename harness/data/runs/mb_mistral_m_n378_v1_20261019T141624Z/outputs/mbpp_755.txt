@@ -1,0 +1,17 @@
+```python
+def second_smallest(numbers):
+    if len(numbers) < 2:
+        return None  # or raise an error for insufficient elements
+
+    # Remove duplicates and sort the list
+    unique_numbers = sorted(list(set(numbers)))
+
+    # Return the second element if there are at least two unique numbers
+    if len(unique_numbers) >= 2:
+        return unique_numbers[1]
+    else:
+        return None  # or handle the case where all numbers are the same
+
+# Test the function
+assert second_smallest([1, 2, -8, -2, 0, -2]) == -2
+```

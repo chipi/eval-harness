@@ -1,0 +1,40 @@
+```python
+import re
+
+def is_decimal(s: str) -> bool:
+    """
+    Checks whether a given string is a decimal number with a precision of 2.
+    
+    The function validates that:
+    1. The string represents a number.
+    2. It contains a decimal point.
+    3. There are exactly two digits following the decimal point.
+    """
+    # Regular expression explanation:
+    # ^        : Start of string
+    # \d+      : One or more digits (integer part)
+    # \.       : A literal decimal point
+    # \d{2}    : Exactly two digits (fractional part)
+    # $        : End of string
+    pattern = r'^\d+\.\d{2}$'
+    
+    if re.match(pattern, s):
+        return True
+    return False
+
+# Test cases
+if __name__ == "__main__":
+    # Provided assertion
+    assert is_decimal('123.11') == True
+    
+    # Additional test cases
+    assert is_decimal('10.00') == True    # Valid precision
+    assert is_decimal('0.50') == True     # Valid precision
+    assert is_decimal('123') == False     # No decimal point
+    assert is_decimal('123.1') == False   # Precision of 1
+    assert is_decimal('123.111') == False # Precision of 3
+    assert is_decimal('abc.11') == False  # Not a number
+    assert is_decimal('.11') == False     # Missing integer part
+    
+    print("All tests passed!")
+```

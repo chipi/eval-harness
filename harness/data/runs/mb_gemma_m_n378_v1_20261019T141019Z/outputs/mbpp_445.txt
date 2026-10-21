@@ -1,0 +1,36 @@
+```python
+def index_multiplication(tuple1, tuple2):
+    """
+    Performs index-wise multiplication of elements in two nested tuples.
+    
+    Args:
+        tuple1: A tuple containing tuples of numbers.
+        tuple2: A tuple containing tuples of numbers.
+        
+    Returns:
+        A tuple of tuples where each element is the product of elements 
+        at the same index from the input tuples.
+    """
+    result = []
+    for sub_t1, sub_t2 in zip(tuple1, tuple2):
+        # Multiply elements within the inner tuples using zip
+        multiplied_inner = tuple(a * b for a, b in zip(sub_t1, sub_t2))
+        result.append(multiplied_inner)
+    
+    return tuple(result)
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    input1 = ((1, 3), (4, 5), (2, 9), (1, 10))
+    input2 = ((6, 7), (3, 9), (1, 1), (7, 3))
+    expected = ((6, 21), (12, 45), (2, 9), (7, 30))
+    
+    result = index_multiplication(input1, input2)
+    
+    # Assertion to verify correctness
+    assert result == expected
+    print(f"Input 1: {input1}")
+    print(f"Input 2: {input2}")
+    print(f"Result:  {result}")
+    print("Assertion passed successfully!")
+```

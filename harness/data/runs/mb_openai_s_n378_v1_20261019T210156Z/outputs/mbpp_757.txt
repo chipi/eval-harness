@@ -1,0 +1,25 @@
+```python
+def count_reverse_pairs(strings):
+    """
+    Count the number of pairs of strings where one string is the reverse of the other.
+
+    Example:
+        ["julia", "best", "tseb", "for", "ailuj"] -> 2
+        Pairs: ("julia", "ailuj"), ("best", "tseb")
+    """
+    seen = set()
+    count = 0
+
+    for s in strings:
+        rev = s[::-1]
+        if rev in seen:
+            count += 1
+        seen.add(s)
+
+    return count
+
+
+if __name__ == "__main__":
+    assert count_reverse_pairs(["julia", "best", "tseb", "for", "ailuj"]) == 2
+    print("All tests passed.")
+```

@@ -1,0 +1,17 @@
+```python
+import re
+
+def check_str(s):
+    # Regular expression pattern to match the first letter of the string
+    pattern = r'^[aeiouAEIOU]'
+    if re.match(pattern, s):
+        return True
+    else:
+        return False
+
+# Test cases
+assert check_str("annie") == True
+assert check_str("bob") == False
+assert check_str("cat") == True
+assert check_str("Dave") == False
+```

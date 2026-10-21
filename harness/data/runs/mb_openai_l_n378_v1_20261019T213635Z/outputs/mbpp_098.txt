@@ -1,0 +1,17 @@
+```python
+import math
+
+
+def multiply_num(numbers):
+    """Return the product of the numbers divided by their count."""
+    if not numbers:
+        raise ValueError("numbers must not be empty")
+
+    product = 1
+    for number in numbers:
+        product *= number
+    return product / len(numbers)
+
+
+assert math.isclose(multiply_num((8, 2, 3, -1, 7)), -67.2, rel_tol=0.001)
+```

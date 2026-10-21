@@ -1,0 +1,21 @@
+```python
+def digit_distance_nums(num1, num2):
+    str_num1 = str(num1)
+    str_num2 = str(num2)
+    
+    if len(str_num1) != len(str_num2):
+        raise ValueError("Both numbers should have the same number of digits")
+    
+    sum_diff = 0
+    for i in range(len(str_num1)):
+        sum_diff += abs(int(str_num1[i]) - int(str_num2[i]))
+    
+    return sum_diff
+
+# Test cases
+assert digit_distance_nums(1,2) == 1
+assert digit_distance_nums(123,456) == 9
+assert digit_distance_nums(100,200) == 100
+assert digit_distance_nums(1000,2000) == 1000
+assert digit_distance_nums(1234,5678) == 10
+```

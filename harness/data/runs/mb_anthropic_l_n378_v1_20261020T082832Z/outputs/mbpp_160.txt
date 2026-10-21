@@ -1,0 +1,51 @@
+Looking at this problem, I need to find non-negative integers x and y such that `ax + by = n`. The example `find_solution(2, 3, 7) == (2, 1)` confirms this: `2*2 + 3*1 = 7`, and we want the first solution found by iterating x upward from 0.
+
+```python
+"""
+Write a function that returns integers x and y that satisfy ax + by = n as a tuple,
+or return None if no solution exists.
+assert find_solution(2, 3, 7) == (2, 1)
+"""
+
+
+def find_solution(a, b, n):
+    """
+    Find non-negative integers x and y such that a*x + b*y == n.
+
+    Returns a tuple (x, y) for the smallest such x, or None if no
+    solution exists.
+    """
+    i = 0
+    while i * a <= n:
+        if (n - (i * a)) % b == 0:
+            return (i, (n - (i * a)) // b)
+        i = i + 1
+    return None
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert find_solution(2, 3, 7) == (2, 1)
+
+    # Additional sanity checks
+    assert find_solution(4, 2, 7) is None
+    assert find_solution(1, 13, 17) == (4, 1)
+    assert find_solution(3, 5, 11) == (2, 1)
+    assert find_solution(2, 4, 8) == (0, 2)
+
+    print("All tests passed!")
+    print("find_solution(2, 3, 7) =", find_solution(2, 3, 7))
+    print("find_solution(4, 2, 7) =", find_solution(4, 2, 7))
+```
+
+**How it works:**
+
+1. Iterate `x` (named `i`) from `0` upward, as long as `a*x` does not exceed `n`.
+2. For each `x`, check whether the remainder `n - a*x` is evenly divisible by `b`.
+3. If it is, then `y = (n - a*x) // b` is a non-negative integer, so return `(x, y)`.
+4. If the loop completes without finding anything, return `None`.
+
+For `find_solution(2, 3, 7)`: 
+- `x=0` → `7 % 3 = 1` ✗
+- `x=1` → `5 % 3 = 2` ✗
+- `x=2` → `3 % 3 = 0` ✓ → `y = 1`, return `(2, 1)` ✓

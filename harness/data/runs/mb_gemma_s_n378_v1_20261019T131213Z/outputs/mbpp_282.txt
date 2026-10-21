@@ -1,0 +1,27 @@
+```python
+def sub_list(list1, list2):
+  """
+  Subtracts two lists element-wise.
+
+  Args:
+    list1: The first list.
+    list2: The second list.
+
+  Returns:
+    A new list containing the element-wise differences.
+    Returns an empty list if the input lists have different lengths.
+  """
+  if len(list1) != len(list2):
+    return []
+  
+  result = []
+  for i in range(len(list1)):
+    result.append(list1[i] - list2[i])
+  return result
+
+# Example usage and assertion
+assert sub_list([1, 2, 3],[4,5,6])==[-3,-3,-3]
+assert sub_list([1,2],[1,2]) == [0,0]
+assert sub_list([1,2,3],[1,2]) == []
+print("All test cases passed!")
+```

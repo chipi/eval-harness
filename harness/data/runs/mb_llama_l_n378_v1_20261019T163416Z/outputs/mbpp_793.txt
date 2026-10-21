@@ -1,0 +1,30 @@
+```python
+def last(arr, target):
+    """
+    Find the last position of an element in a sorted array.
+
+    Args:
+    arr (list): A sorted list of elements.
+    target: The element to be searched.
+
+    Returns:
+    int: The last index of the target element if found, -1 otherwise.
+    """
+    low, high = 0, len(arr) - 1
+    result = -1
+    while low <= high:
+        mid = (low + high) // 2
+        if arr[mid] == target:
+            result = mid
+            low = mid + 1  # Continue searching in the right half
+        elif arr[mid] < target:
+            low = mid + 1
+        else:
+            high = mid - 1
+    return result
+
+# Test the function
+assert last([1,2,3],1) == 0
+assert last([1,1,2,2,3,3,3], 3) == 6
+assert last([1,1,2,2,3,3,3], 4) == -1
+```

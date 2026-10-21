@@ -1,0 +1,17 @@
+```python
+"""
+Remove uppercase characters from a given string.
+
+Example:
+remove_uppercase('cAstyoUrFavoRitETVshoWs') -> 'cstyoravoitshos'
+"""
+
+def remove_uppercase(text: str) -> str:
+    """Return a new string with all uppercase letters removed."""
+    return ''.join(char for char in text if not char.isupper())
+
+
+if __name__ == "__main__":
+    assert remove_uppercase('cAstyoUrFavoRitETVshoWs') == 'cstyoravoitshos'
+    print("All tests passed.")
+```

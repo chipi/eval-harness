@@ -1,0 +1,58 @@
+```python
+def find_length(s: str) -> int:
+    """
+    Finds the maximum difference between the number of 0s and the number of 1s
+    in any substring of a given binary string.
+
+    The key insight is to transform the problem into finding the maximum subarray sum.
+    We can reframe the difference (count_0 - count_1) for a substring s[i:j] as:
+    sum( (1 if char == '0' else -1) for char in s[i:j] )
+
+    This allows us to use Kadane's algorithm to find the maximum sum of a contiguous subarray,
+    which directly corresponds to the maximum difference.
+
+    Args:
+        s: A string of 0s and 1s.
+
+    Returns:
+        The maximum difference between the number of 0s and 1s in any substring.
+        Returns 0 if the string is empty or contains only 1s.
+    """
+    if not s:
+        return 0
+
+    # This variable will store the maximum difference found so far.
+    max_diff = 0
+    
+    # This variable stores the current difference for the ongoing substring.
+    # It's reset whenever starting a new substring from the current index.
+    current_diff = 0
+
+    for char in s:
+        # Calculate the value of the current character.
+        # '0' contributes +1 to the difference (0s - 1s).
+        # '1' contributes -1 to the difference (0s - 1s).
+        val = 1 if char == '0' else -1
+        
+        # Kadane's algorithm: We extend the current substring if it increases the sum.
+        # Otherwise, we start a new substring from the current character.
+        current_diff = max(val, current_diff + val)
+        
+        # Update the overall maximum difference found.
+        max_diff = max(max_diff, current_diff)
+
+    return max_diff
+
+# Example usage and assertions:
+assert find_length("11000010001") == 6
+assert find_length("1111") == 0
+assert find_length("0000") == 4
+assert find_length("1010") == 2
+assert find_length("01") == 1
+assert find_length("10") == 1
+assert find_length("") == 0
+assert find_length("0") == 1
+assert find_length("1") == 0
+
+print("All assertions passed.")
+```

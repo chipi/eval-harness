@@ -1,0 +1,8 @@
+```python
+def check_distinct(tup):
+    return len(tup) == len(set(tup))
+
+# Test cases
+print(check_distinct((1, 4, 5, 6, 1, 4)))  # Expected output: False
+print(check_distinct((1, 2, 3, 4, 5, 6)))  # Expected output: True
+```

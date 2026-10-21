@@ -1,0 +1,28 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def smallest_num(lst):
+    """
+    Find the smallest number in a list.
+    
+    Args:
+        lst: A list of numbers
+        
+    Returns:
+        The smallest number in the list
+    """
+    if not lst:
+        return None
+    
+    smallest = lst[0]
+    for num in lst:
+        if num < smallest:
+            smallest = num
+    return smallest
+
+# Test the function
+assert smallest_num([10, 20, 1, 45, 99]) == 1
+print("Test passed! The smallest number is:", smallest_num([10, 20, 1, 45, 99]))
+```
+
+This script defines the `smallest_num` function that iterates through the list to find the minimum value, and includes the assertion test to verify it works correctly with the given example.

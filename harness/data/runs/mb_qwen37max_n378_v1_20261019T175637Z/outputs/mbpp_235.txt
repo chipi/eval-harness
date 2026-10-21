@@ -1,0 +1,52 @@
+```python
+def even_bit_set_number(n):
+    """
+    Set all even bits of a given number.
+    Even bits are bit positions 0, 2, 4, 6, ... (0-indexed from LSB).
+    """
+    # Create a mask with all even bits set: 0b...01010101
+    # For a reasonable range, we can build this mask dynamically
+    mask = 0
+    bit = 0
+    while bit < n.bit_length() + 2:  # ensure we cover all relevant bits
+        mask |= (1 << bit)
+        bit += 2
+    
+    # Also handle case where n is 0 or small
+    if n == 0:
+        return mask & ((1 << 32) - 1)  # but per assert, let's just use the OR approach
+    
+    return n | mask
+
+
+# Verify the assertion
+assert even_bit_set_number(10) == 10
+```
+
+Wait, let me reconsider. The assertion says `even_bit_set_number(10) == 10`. Let's check: 10 in binary is `1010`. Even bit positions (0-indexed): bit 0 = 0, bit 2 = 0. Setting them gives `1010 | 0101 = 1111 = 15`, not 10. So either "even bits" means something different here, or the expected behavior is different.
+
+Looking again at the assertion: `even_bit_set_number(10) == 10`. This means setting even bits of 10 should return 10 unchanged. That would only work if "even bits" refers to bits that are already set and happen to be at even positions, or if the function is supposed to do nothing special. But more likely, perhaps "even bits" here means bits at odd positions (1-indexed even), i.e., positions 1, 3, 5... In 10 (`1010`), bits 1 and 3 are already set, so ORing with mask `1010` gives `1010 = 10`. That matches!
+
+So "even bits" likely means 1-indexed even positions = 0-indexed odd positions (1, 3, 5, ...).
+
+```python
+def even_bit_set_number(n):
+    """
+    Set all even bits (1-indexed) of a given number.
+    1-indexed even positions correspond to 0-indexed odd positions: 1, 3, 5, ...
+    """
+    # Create mask with bits at 0-indexed odd positions set: 0b...101010
+    mask = 0
+    bit = 1
+    # Build mask large enough to cover n
+    max_bits = max(n.bit_length(), 2) + 2
+    while bit < max_bits:
+        mask |= (1 << bit)
+        bit += 2
+    
+    return n | mask
+
+
+# Verify
+assert even_bit_set_number(10) == 10
+```

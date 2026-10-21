@@ -1,0 +1,24 @@
+```python
+def find(dividend: int, divisor: int) -> int:
+    """
+    This function calculates the quotient of two numbers rounded down to the nearest integer.
+
+    Args:
+        dividend (int): The number being divided.
+        divisor (int): The number by which we are dividing.
+
+    Returns:
+        int: The quotient of the division operation rounded down to the nearest integer.
+    """
+    if divisor == 0:
+        raise ZeroDivisionError("Cannot divide by zero")
+    return dividend // divisor
+
+# Test the function
+def main():
+    assert find(10, 3) == 3
+    print("All test cases pass")
+
+if __name__ == "__main__":
+    main()
+```

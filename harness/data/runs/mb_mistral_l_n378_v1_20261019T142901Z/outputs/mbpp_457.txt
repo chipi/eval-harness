@@ -1,0 +1,35 @@
+Here's a self-contained Python script that solves the problem by finding the sublist with the minimum length:
+
+```python
+def Find_Min(sublists):
+    """
+    Finds the sublist with the minimum length from a list of sublists.
+
+    Args:
+        sublists: A list of lists where each element is a sublist.
+
+    Returns:
+        The first sublist with the minimum length found in the input list.
+    """
+    if not sublists:
+        return None  # or raise an exception for empty input
+
+    min_sublist = sublists[0]
+    for sublist in sublists[1:]:
+        if len(sublist) < len(min_sublist):
+            min_sublist = sublist
+    return min_sublist
+
+# Test case
+assert Find_Min([[1], [1, 2], [1, 2, 3]]) == [1]
+```
+
+This script:
+1. Defines the `Find_Min` function that takes a list of sublists as input
+2. Handles the edge case of empty input (returns None)
+3. Initializes the minimum sublist as the first element
+4. Iterates through the remaining sublists to find the one with minimum length
+5. Returns the first sublist with the minimum length found
+6. Includes the provided test case as an assertion
+
+The function will return the first sublist with the minimum length if there are multiple sublists with the same minimum length.

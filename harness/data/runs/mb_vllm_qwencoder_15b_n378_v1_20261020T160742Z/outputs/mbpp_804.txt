@@ -1,0 +1,16 @@
+```python
+def is_product_even(numbers):
+    # Calculate the product of all numbers in the list
+    product = 1
+    for num in numbers:
+        product *= num
+    
+    # Check if the product is even
+    return product % 2 == 0
+
+# Test cases
+assert is_product_even([1,2,3]) == True
+assert is_product_even([1,3,5]) == False
+assert is_product_even([2,4,6]) == True
+assert is_product_even([1,3,7]) == False
+```

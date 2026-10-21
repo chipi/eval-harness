@@ -1,0 +1,37 @@
+```python
+def start_withp(words):
+    """
+    Write a function to return two words from a list of words starting with letter 'p'.
+
+    Args:
+        words: A list of strings, where each string contains one or more words.
+
+    Returns:
+        A tuple containing the first two words found that start with the letter 'p'.
+        The search is case-insensitive. Returns an empty tuple if fewer than two
+        'p' words are found.
+    """
+    result = []
+    for phrase in words:
+        # Split the phrase into individual words
+        for word in phrase.split():
+            # Check if the word starts with 'p' (case-insensitive)
+            if word.lower().startswith('p'):
+                result.append(word)
+                # Stop once we have found two words
+                if len(result) == 2:
+                    return tuple(result)
+    
+    # Return a tuple with whatever was found, which could be empty
+    return tuple(result)
+
+# Example usage and assertion from the problem description
+assert start_withp(["Python PHP", "Java JavaScript", "c c++"]) == ('Python', 'PHP')
+
+# Additional test cases
+assert start_withp(["Pandas", "Python", "PHP"]) == ('Pandas', 'Python')
+assert start_withp(["apple", "pear", "Pineapple"]) == ('apple', 'pear')
+assert start_withp(["No match here"]) == ()
+assert start_withp(["p", "p", "p"]) == ('p', 'p')
+assert start_withp(["P", "a", "p"]) == ('P', 'p')
+```

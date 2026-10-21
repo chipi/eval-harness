@@ -1,0 +1,36 @@
+### Problem: Find the n'th Star Number
+The n'th star number is a figurate number that represents a star with n points. The sequence of star numbers starts as 1, 13, 37, 73, 121, ...
+
+### Solution
+
+```python
+def find_star_num(n):
+    """
+    This function calculates the n'th star number.
+
+    The n'th star number can be calculated using the formula: 
+    Star(n) = 6 * (n - 1) * n + 1
+
+    Args:
+        n (int): The position of the star number to find.
+
+    Returns:
+        int: The n'th star number.
+    """
+    if n <= 0:
+        raise ValueError("n must be a positive integer")
+
+    return 6 * (n - 1) * n + 1
+
+
+# Example usage:
+if __name__ == "__main__":
+    print(find_star_num(3))  # Output: 37
+```
+
+### Explanation
+
+*   The function `find_star_num(n)` takes an integer `n` as input and returns the n'th star number.
+*   It first checks if `n` is less than or equal to 0. If so, it raises a `ValueError` because star numbers are only defined for positive integers.
+*   The n'th star number is calculated using the formula `6 * (n - 1) * n + 1`, which is derived from the definition of star numbers.
+*   The example usage demonstrates how to use the function to find the 3rd star number, which is 37.

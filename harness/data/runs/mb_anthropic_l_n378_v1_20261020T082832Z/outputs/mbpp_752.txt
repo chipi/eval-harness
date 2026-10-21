@@ -1,0 +1,49 @@
+Looking at this problem:
+
+- Jacobsthal numbers: J(0) = 0, J(1) = 1, J(n) = J(n-1) + 2*J(n-2)
+- Sequence: 0, 1, 1, 3, 5, 11, 21, 43, 85, 171, 341, 683, 1365, 2731, ...
+- Check: `jacobsthal_num(5) == 11` → index 5 in the sequence (0-based) is 11 ✓
+
+```python
+"""
+Write a function to find the nth jacobsthal number.
+https://www.geeksforgeeks.org/jacobsthal-and-jacobsthal-lucas-numbers/
+0, 1, 1, 3, 5, 11, 21, 43, 85, 171, 341, 683, 1365, 2731, ...
+assert jacobsthal_num(5) == 11
+"""
+
+
+def jacobsthal_num(n):
+    """
+    Return the nth Jacobsthal number (0-indexed).
+
+    Recurrence:
+        J(0) = 0
+        J(1) = 1
+        J(n) = J(n-1) + 2 * J(n-2)
+    """
+    if n < 0:
+        raise ValueError("n must be a non-negative integer")
+
+    dp = [0] * (n + 1)
+    dp[0] = 0
+    if n >= 1:
+        dp[1] = 1
+    for i in range(2, n + 1):
+        dp[i] = dp[i - 1] + 2 * dp[i - 2]
+    return dp[n]
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert jacobsthal_num(5) == 11
+
+    # Additional checks against the known sequence
+    expected = [0, 1, 1, 3, 5, 11, 21, 43, 85, 171, 341, 683, 1365, 2731]
+    for i, value in enumerate(expected):
+        assert jacobsthal_num(i) == value, (i, jacobsthal_num(i), value)
+
+    print("First 14 Jacobsthal numbers:")
+    print([jacobsthal_num(i) for i in range(14)])
+    print("All tests passed!")
+```

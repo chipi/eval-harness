@@ -1,0 +1,27 @@
+```python
+def dif_Square(n):
+    """
+    Check whether a number can be represented as the difference of two squares.
+    A number can be represented as a difference of two squares if and only if
+    it is NOT of the form (4k + 2), i.e., n % 4 != 2.
+    """
+    return n % 4 != 2
+
+
+# Test cases
+assert dif_Square(5) == True
+assert dif_Square(10) == False
+assert dif_Square(15) == True
+
+print("All test cases passed!")
+```
+
+**Explanation:**
+
+A number `n` can be expressed as a difference of two squares `a² - b²` if and only if it can be written as `(a-b)(a+b)`. 
+
+- If `n` is odd, it can always be written as a difference of two squares. For example, `n = (k+1)² - k²` where `n = 2k+1`.
+- If `n` is divisible by 4, it can be written as a difference of two squares. For example, `n = (k+1)² - (k-1)²` for appropriate `k`.
+- If `n` leaves remainder 2 when divided by 4 (i.e., `n % 4 == 2`), it **cannot** be represented as a difference of two squares. This is because `a² - b² = (a-b)(a+b)`, and `(a-b)` and `(a+b)` always have the same parity (both odd or both even). If both are odd, the product is odd. If both are even, the product is divisible by 4. Thus, numbers that are even but not divisible by 4 (i.e., `n % 4 == 2`) cannot be represented this way.
+
+This gives the simple and efficient check: `n % 4 != 2`.

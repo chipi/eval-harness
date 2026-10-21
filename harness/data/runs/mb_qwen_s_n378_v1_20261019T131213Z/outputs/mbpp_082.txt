@@ -1,0 +1,18 @@
+```python
+import math
+
+def volume_sphere(radius):
+    """
+    Calculate the volume of a sphere given its radius.
+    
+    The formula for the volume of a sphere is:
+    V = (4/3) * π * r^3
+    
+    Args:
+        radius: The radius of the sphere
+        
+    Returns:
+        The volume of the sphere
+    """
+    return (4 / 3) * math.pi * (radius ** 3)
+```

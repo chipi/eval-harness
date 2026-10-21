@@ -1,0 +1,8 @@
+```python
+def check_element(lst, element):
+    return all(item == element for item in lst)
+
+# Test the function
+print(check_element(["green", "orange", "black", "white"], 'blue'))  # Should return False
+print(check_element(["blue", "blue", "blue", "blue"], 'blue'))  # Should return True
+```

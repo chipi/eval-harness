@@ -1,0 +1,9 @@
+```python
+def sort_matrix(matrix):
+    """Sort a matrix in ascending order according to the sum of its rows."""
+    return sorted(matrix, key=sum)
+
+
+# Test
+assert sort_matrix([[1, 2, 3], [2, 4, 5], [1, 1, 1]]) == [[1, 1, 1], [1, 2, 3], [2, 4, 5]]
+```

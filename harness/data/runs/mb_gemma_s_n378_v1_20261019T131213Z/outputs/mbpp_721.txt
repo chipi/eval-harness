@@ -1,0 +1,37 @@
+```python
+def maxAverageOfPath(matrix):
+    """
+    Given a square matrix of size N*N given as a list of lists, where each cell is associated with a specific cost.
+    A path is defined as a specific sequence of cells that starts from the top-left cell move only right or down and ends on bottom right cell.
+    We want to find a path with the maximum average over all existing paths. Average is computed as total cost divided by the number of cells visited in the path.
+    assert maxAverageOfPath([[1, 2, 3], [6, 5, 4], [7, 3, 9]]) == 5.2
+    """
+    n = len(matrix)
+    dp = {}
+
+    def solve(row, col):
+        if (row, col) == (n - 1, n - 1):
+            return matrix[row][col], 1
+
+        if (row, col) in dp:
+            return dp[(row, col)]
+
+        max_avg = float('-inf')
+        
+        # Move right
+        if col + 1 < n:
+            right_sum, right_count = solve(row, col + 1)
+            avg = (matrix[row][col] + right_sum) / (right_count + 1)
+            max_avg = max(max_avg, avg)
+
+        # Move down
+        if row + 1 < n:
+            down_sum, down_count = solve(row + 1, col)
+            avg = (matrix[row][col] + down_sum) / (down_count + 1)
+            max_avg = max(max_avg, avg)
+        
+        dp[(row, col)] = (max_avg * (1) , 1)
+        return max_avg * (1), 1
+
+    return solve(0, 0)[0]
+```

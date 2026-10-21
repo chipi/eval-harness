@@ -1,0 +1,40 @@
+```python
+import sys
+
+def tuple_size(t):
+    """
+    Find the size in bytes of the given tuple.
+    
+    Args:
+        t: A tuple object
+        
+    Returns:
+        The size of the tuple in bytes
+    """
+    return sys.getsizeof(t)
+
+
+# Test cases
+if __name__ == "__main__":
+    # Test 1: Mixed types tuple
+    test_tuple_1 = ("A", 1, "B", 2, "C", 3)
+    assert tuple_size(test_tuple_1) == sys.getsizeof(test_tuple_1)
+    print(f"Test 1 passed: tuple_size({test_tuple_1}) = {tuple_size(test_tuple_1)}")
+    
+    # Test 2: Empty tuple
+    test_tuple_2 = ()
+    assert tuple_size(test_tuple_2) == sys.getsizeof(test_tuple_2)
+    print(f"Test 2 passed: tuple_size({test_tuple_2}) = {tuple_size(test_tuple_2)}")
+    
+    # Test 3: Single element tuple
+    test_tuple_3 = (42,)
+    assert tuple_size(test_tuple_3) == sys.getsizeof(test_tuple_3)
+    print(f"Test 3 passed: tuple_size({test_tuple_3}) = {tuple_size(test_tuple_3)}")
+    
+    # Test 4: Nested tuple
+    test_tuple_4 = ((1, 2), (3, 4), (5, 6))
+    assert tuple_size(test_tuple_4) == sys.getsizeof(test_tuple_4)
+    print(f"Test 4 passed: tuple_size({test_tuple_4}) = {tuple_size(test_tuple_4)}")
+    
+    print("\nAll tests passed!")
+```

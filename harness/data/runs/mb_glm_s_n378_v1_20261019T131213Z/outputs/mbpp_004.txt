@@ -1,0 +1,64 @@
+```python
+import heapq
+
+def heap_queue_largest(numbers, n):
+    """
+    Finds the n largest integers from a given list of numbers, returned in descending order.
+
+    This function uses a min-heap to efficiently find the n largest elements.
+    1. It first converts the list into a min-heap of size n. The smallest element
+       in this heap will be the n-th largest element in the original list.
+    2. It then iterates through the rest of the numbers in the list. If a number
+       is larger than the smallest element in the heap (the root), it replaces
+       the root and the heap is adjusted to maintain the min-heap property.
+    3. Finally, the heap contains the n largest numbers. Since it's a min-heap,
+       the numbers are not in sorted order. We sort them in descending order
+       before returning.
+
+    Args:
+        numbers (list): A list of integers.
+        n (int): The number of largest integers to find.
+
+    Returns:
+        list: A list of the n largest integers from the input, in descending order.
+    
+    Example:
+        >>> heap_queue_largest([25, 35, 22, 85, 14, 65, 75, 22, 58], 3)
+        [85, 75, 65]
+    """
+    # Handle edge cases where n is 0 or larger than the list size.
+    if n <= 0:
+        return []
+    if n > len(numbers):
+        # If n is larger than the list, we return the whole list sorted in descending order.
+        return sorted(numbers, reverse=True)
+
+    # heapq.nlargest is a highly optimized, built-in function that does exactly this.
+    # It is generally preferred over manual implementation for performance and clarity.
+    # It returns a new list containing the n largest elements from the dataset,
+    # sorted in descending order.
+    return heapq.nlargest(n, numbers)
+
+# Example usage and assertion from the problem description
+if __name__ == "__main__":
+    input_list = [25, 35, 22, 85, 14, 65, 75, 22, 58]
+    n = 3
+    result = heap_queue_largest(input_list, n)
+    print(f"Finding the {n} largest numbers from {input_list}")
+    print(f"Result: {result}")
+    
+    # The assert statement will raise an error if the condition is false.
+    # If the script runs without error, the assertion is correct.
+    assert result == [85, 75, 65]
+    print("\nAssertion passed: heap_queue_largest([25, 35, 22, 85, 14, 65, 75, 22, 58], 3) == [85, 75, 65]")
+
+    # Additional test cases
+    assert heap_queue_largest([1, 2, 3, 4, 5], 2) == [5, 4]
+    assert heap_queue_largest([10, 5, 20, 15], 1) == [20]
+    assert heap_queue_largest([5], 1) == [5]
+    assert heap_queue_largest([1, 1, 1, 1], 3) == [1, 1, 1]
+    assert heap_queue_largest([1, 2, 3, 4, 5], 10) == [5, 4, 3, 2, 1] # n > len(list)
+    assert heap_queue_largest([1, 2, 3, 4, 5], 0) == [] # n is 0
+    
+    print("\nAll additional test cases passed.")
+```

@@ -1,0 +1,36 @@
+```python
+import math
+
+def otherside_rightangle(a, b):
+    """
+    Calculates the third side of a right-angled triangle given the other two sides.
+
+    This function uses the Pythagorean theorem (a^2 + b^2 = c^2) to find the
+    length of the hypotenuse (the side opposite the right angle).
+
+    Args:
+        a (float or int): The length of one of the legs of the triangle.
+        b (float or int): The length of the other leg of the triangle.
+
+    Returns:
+        float: The length of the hypotenuse.
+    """
+    # The Pythagorean theorem states that for a right-angled triangle,
+    # the square of the hypotenuse (c) is equal to the sum of the squares
+    # of the other two sides (a and b).
+    # c^2 = a^2 + b^2
+    # To find c, we take the square root of the sum of the squares.
+    c_squared = a**2 + b**2
+    c = math.sqrt(c_squared)
+    return c
+
+# Example usage and assertion to verify the function
+# The assert statement will raise an error if the function's output
+# does not match the expected value.
+assert otherside_rightangle(7, 8) == 10.63014581273465
+
+# You can test with other values as well
+print(f"For sides 7 and 8, the hypotenuse is: {otherside_rightangle(7, 8)}")
+print(f"For sides 3 and 4, the hypotenuse is: {otherside_rightangle(3, 4)}")
+print(f"For sides 5 and 12, the hypotenuse is: {otherside_rightangle(5, 12)}")
+```

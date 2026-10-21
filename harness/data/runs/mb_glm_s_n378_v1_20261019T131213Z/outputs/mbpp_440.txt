@@ -1,0 +1,40 @@
+```python
+import re
+
+def find_adverb_position(sentence):
+    """
+    Finds the first adverb and its positions in a given sentence.
+
+    An adverb is identified as a word ending in the suffix '-ly'.
+
+    Args:
+        sentence: The input string to search for an adverb.
+
+    Returns:
+        A tuple containing the start index, end index (exclusive), and the
+        adverb string of the first adverb found. Returns None if no adverb
+        is found.
+    """
+    # This regex pattern looks for a sequence of word characters (\w+)
+    # that ends with 'ly'. The re.IGNORECASE flag makes the search case-insensitive.
+    # The re.search() function finds the first occurrence in the string.
+    match = re.search(r'\w+ly', sentence, re.IGNORECASE)
+
+    if match:
+        # If a match is found, return its start and end positions, and the matched string.
+        return (match.start(), match.end(), match.group())
+    else:
+        # If no adverb is found, return None as per the problem's implicit requirement.
+        return None
+
+# Example usage and assertion from the problem description
+assert find_adverb_position("clearly!! we can see the sky") == (0, 7, 'clearly')
+
+# Additional test cases
+assert find_adverb_position("He runs quickly.") == (7, 14, 'quickly')
+assert find_adverb_position("The music is loud.") == None
+assert find_adverb_position("She is a very happy person.") == None
+assert find_adverb_position("He acted foolishly and carelessly.") == (9, 17, 'foolishly')
+assert find_adverb_position("LY is an adverb.") == (0, 2, 'LY')
+assert find_adverb_position("This is a test.") == None
+```

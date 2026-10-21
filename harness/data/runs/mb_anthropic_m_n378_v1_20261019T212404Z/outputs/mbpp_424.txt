@@ -1,0 +1,12 @@
+```python
+def extract_rear(test_tuple):
+    """
+    Extract only the rear index element of each string in the given tuple.
+    """
+    return [sub[-1] for sub in test_tuple]
+
+
+if __name__ == "__main__":
+    assert extract_rear(('Mers', 'for', 'Vers')) == ['s', 'r', 's']
+    print(extract_rear(('Mers', 'for', 'Vers')))
+```

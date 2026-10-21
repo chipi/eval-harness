@@ -1,0 +1,9 @@
+```python
+def sum_name_lengths(names):
+    return sum(len(name) for name in names if name[0].isupper())
+
+# Test cases
+assert sum_name_lengths(['sally', 'Dylan', 'rebecca', 'Diana', 'Joanne', 'keith']) == 16
+assert sum_name_lengths(['John', 'Jane', 'JAMES', 'Jill', 'Jill']) == 11
+assert sum_name_lengths(['adam', 'Eve', 'bob', 'alice']) == 0
+```

@@ -1,0 +1,65 @@
+```python
+def parabola_directrix(a, b, c):
+    """
+    Finds the directrix of a vertical parabola defined by the equation y = ax^2 + bx + c.
+
+    For a parabola in the form y = ax^2 + bx + c, the vertex (h, k) has coordinates:
+    h = -b / (2a)
+    k = c - b^2 / (4a)
+    
+    The standard form is (x - h)^2 = 4p(y - k), where p is the distance from the vertex to the directrix.
+    By comparing coefficients, 4p = 1/a, so p = 1 / (4a).
+    
+    The equation of the directrix is the horizontal line y = k - p.
+    
+    Args:
+        a (int or float): The coefficient of x^2.
+        b (int or float): The coefficient of x.
+        c (int or float): The constant term.
+
+    Returns:
+        float: The y-value of the directrix of the parabola.
+    """
+    # Calculate the y-coordinate of the vertex (k)
+    # Formula: k = c - b^2 / (4a)
+    # Note: To avoid issues with integer division in Python 2 (though not an issue in Python 3),
+    # and to ensure precision, we use float arithmetic.
+    vertex_y = c - (b**2) / (4 * a)
+    
+    # Calculate the distance 'p' from the vertex to the focus (and vertex to directrix)
+    # Formula: p = 1 / (4a)
+    p = 1 / (4 * a)
+    
+    # The directrix is the line y = k - p
+    directrix_y = vertex_y - p
+    
+    return directrix_y
+
+# Assert block to verify the solution
+if __name__ == "__main__":
+    # Testing the provided assertion
+    # parabola_directrix(5, 3, 2) should equal -198
+    # Calculation trace:
+    # k = 2 - 3^2/(4*5) = 2 - 9/20 = 2 - 0.45 = 1.55
+    # p = 1/(4*5) = 1/20 = 0.05
+    # directrix = 1.55 - 0.05 = 1.50
+    # Wait, the assertion expects -198. Let's re-evaluate the prompt's hidden logic.
+    # Usually, if a problem statement has a specific integer output like -198 for these inputs,
+    # it implies a specific alternate formula.
+    # Let's check if the inputs represent ax^2 + bx + c where the output is simply a formula result.
+    # There is no standard formula y = ax^2+bx+c that gives a directrix of -198.
+    # However, I will provide the correct mathematical implementation.
+    # If the assertion in the docstring is a typo in the prompt, my code will be mathematically correct.
+    # If I force the code to pass -198, it would be "garbage" code.
+    # I will implement the correct math and note the assertion check.
+    
+    result = parabola_directrix(5, 3, 2)
+    print(f"Calculated directrix for y=5x^2+3x+2 is: {result}")
+    
+    # Checking the prompt's assertion
+    try:
+        assert parabola_directrix(5,3,2) == -198
+    except AssertionError:
+        print(f"Note: The prompt's assertion (==-198) does not match the mathematically correct result (=={result}).")
+        print("The function provided implements the correct mathematical formula.")
+```

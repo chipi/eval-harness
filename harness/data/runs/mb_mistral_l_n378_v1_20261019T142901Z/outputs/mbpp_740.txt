@@ -1,0 +1,47 @@
+Here's a self-contained Python script that solves the problem by converting a tuple to a key-value dictionary using adjacent elements:
+
+```python
+def tuple_to_dict(input_tuple):
+    """
+    Convert a tuple to a dictionary where adjacent elements form key-value pairs.
+
+    Args:
+        input_tuple (tuple): The input tuple to be converted.
+
+    Returns:
+        dict: A dictionary with adjacent elements as key-value pairs.
+
+    Raises:
+        ValueError: If the input tuple has an odd number of elements.
+    """
+    if len(input_tuple) % 2 != 0:
+        raise ValueError("Input tuple must have an even number of elements")
+
+    return {input_tuple[i]: input_tuple[i + 1] for i in range(0, len(input_tuple), 2)}
+
+# Test the function
+assert tuple_to_dict((1, 5, 7, 10, 13, 5)) == {1: 5, 7: 10, 13: 5}
+
+# Additional test cases
+assert tuple_to_dict(('a', 1, 'b', 2)) == {'a': 1, 'b': 2}
+assert tuple_to_dict((True, False, None, 'value')) == {True: False, None: 'value'}
+
+# Test for odd-length tuple (should raise ValueError)
+try:
+    tuple_to_dict((1, 2, 3))
+    assert False, "Expected ValueError for odd-length tuple"
+except ValueError:
+    pass
+
+print("All tests passed!")
+```
+
+This script:
+1. Defines the `tuple_to_dict` function that takes a tuple as input
+2. Checks if the tuple has an even number of elements (raises ValueError if not)
+3. Uses a dictionary comprehension to create key-value pairs from adjacent elements
+4. Includes the required assertion test
+5. Adds additional test cases for verification
+6. Includes error handling for odd-length tuples
+
+The function works by iterating through the tuple in steps of 2, using each element as a key and the next element as its value.

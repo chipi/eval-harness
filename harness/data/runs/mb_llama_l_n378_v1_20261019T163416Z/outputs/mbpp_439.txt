@@ -1,0 +1,10 @@
+```python
+def multiple_to_single(nums):
+    return int(''.join(map(str, nums)))
+
+def main():
+    print(multiple_to_single([11, 33, 50]))  # Output: 113350
+
+if __name__ == "__main__":
+    main()
+```

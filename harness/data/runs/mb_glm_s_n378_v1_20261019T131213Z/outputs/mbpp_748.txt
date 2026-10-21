@@ -1,0 +1,51 @@
+```python
+import re
+
+def capital_words_spaces(s: str) -> str:
+    """
+    Inserts spaces before words starting with capital letters in a given string.
+
+    This function uses a regular expression to find all occurrences of a lowercase
+    letter followed by an uppercase letter. It then inserts a space between them.
+    The original string is returned if no such pattern is found.
+
+    Args:
+        s: The input string.
+
+    Returns:
+        A new string with spaces inserted between words starting with capital letters.
+
+    Examples:
+        >>> capital_words_spaces("Python")
+        'Python'
+        >>> capital_words_spaces("HelloWorld")
+        'Hello World'
+        >>> capital_words_spaces("ThisIsAnExample")
+        'This Is An Example'
+        >>> capital_words_spaces("already spaced")
+        'already spaced'
+        >>> capital_words_spaces("")
+        ''
+    """
+    # The regular expression (?<=[a-z])(?=[A-Z]) is a "lookaround" assertion.
+    # - (?<=[a-z]) is a positive lookbehind: it asserts that the preceding character is a lowercase letter.
+    # - (?=[A-Z]) is a positive lookahead: it asserts that the following character is an uppercase letter.
+    # re.sub finds all positions where this condition is true and replaces them with a space.
+    return re.sub(r'(?<=[a-z])(?=[A-Z])', ' ', s)
+
+# Example usage and assertions:
+if __name__ == "__main__":
+    # The assertion from the problem description
+    assert capital_words_spaces("Python") == 'Python'
+
+    # Additional test cases
+    assert capital_words_spaces("HelloWorld") == 'Hello World'
+    assert capital_words_spaces("ThisIsAnExample") == 'This Is An Example'
+    assert capital_words_spaces("already spaced") == 'already spaced'
+    assert capital_words_spaces("") == ''
+    assert capital_words_spaces("A") == 'A'
+    assert capital_words_spaces("aB") == 'a B'
+    assert capital_words_spaces("AB") == 'AB'
+
+    print("All assertions passed.")
+```

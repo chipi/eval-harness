@@ -1,0 +1,9 @@
+```python
+def concatenate_tuple(t):
+    return '-'.join(str(i) for i in t)
+
+# Test cases
+assert concatenate_tuple(("ID", "is", 4, "UTS")) == 'ID-is-4-UTS'
+assert concatenate_tuple(("Name", "is", "John", "Doe")) == 'Name-is-John-Doe'
+assert concatenate_tuple(("Age", "is", 25)) == 'Age-is-25'
+```

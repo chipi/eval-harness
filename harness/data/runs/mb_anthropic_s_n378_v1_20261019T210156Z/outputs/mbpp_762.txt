@@ -1,0 +1,32 @@
+```python
+def check_monthnumber_number(month):
+    """
+    Check whether the given month number contains 30 days or not.
+    
+    Args:
+        month: An integer from 1 to 12 representing the month
+        
+    Returns:
+        True if the month has 30 days, False otherwise
+    """
+    # Months with 30 days: April (4), June (6), September (9), November (11)
+    months_with_30_days = {4, 6, 9, 11}
+    return month in months_with_30_days
+
+
+# Test cases
+if __name__ == "__main__":
+    assert check_monthnumber_number(6) == True
+    assert check_monthnumber_number(4) == True
+    assert check_monthnumber_number(9) == True
+    assert check_monthnumber_number(11) == True
+    assert check_monthnumber_number(1) == False
+    assert check_monthnumber_number(2) == False
+    assert check_monthnumber_number(3) == False
+    assert check_monthnumber_number(5) == False
+    assert check_monthnumber_number(7) == False
+    assert check_monthnumber_number(8) == False
+    assert check_monthnumber_number(10) == False
+    assert check_monthnumber_number(12) == False
+    print("All tests passed!")
+```

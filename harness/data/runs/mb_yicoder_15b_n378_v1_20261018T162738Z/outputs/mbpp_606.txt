@@ -1,0 +1,11 @@
+```python
+def radian_degree(degrees):
+    pi = 3.141592653589793
+    return degrees * pi / 180
+
+# Test cases
+assert radian_degree(90)==1.5707963267948966
+assert radian_degree(180)==3.141592653589793
+assert radian_degree(270)==4.712388980384689
+assert radian_degree(360)==3.141592653589793
+```

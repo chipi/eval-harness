@@ -1,0 +1,30 @@
+```python
+def tuple_to_int(tup):
+    """
+    Converts a tuple of positive integers into a single integer.
+
+    For example, the tuple (1, 2, 3) is converted to the integer 123.
+
+    Args:
+        tup: A tuple containing positive integers (e.g., (1, 2, 3)).
+
+    Returns:
+        An integer formed by concatenating the digits of the integers in the tuple.
+    """
+    # Use a generator expression to convert each integer in the tuple to a string,
+    # then join these strings together, and finally convert the resulting string
+    # to an integer.
+    return int("".join(str(num) for num in tup))
+
+# Example usage and assertion from the problem description
+assert tuple_to_int((1, 2, 3)) == 123
+
+# Additional test cases
+assert tuple_to_int((0, 0, 1)) == 1
+assert tuple_to_int((9, 9, 9)) == 999
+assert tuple_to_int((10, 20, 30)) == 102030
+assert tuple_to_int((5,)) == 5
+assert tuple_to_int(()) == 0
+
+print("All assertions passed!")
+```

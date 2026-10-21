@@ -1,0 +1,41 @@
+```python
+#!/usr/bin/env python3
+"""
+Check whether an expression has balanced brackets.
+
+Balanced means:
+- Every opening bracket has a matching closing bracket.
+- Brackets are closed in the correct order.
+- Supported bracket types: (), {}, []
+"""
+
+def check_expression(expression: str) -> bool:
+    pairs = {
+        ')': '(',
+        '}': '{',
+        ']': '['
+    }
+
+    opening_brackets = set(pairs.values())
+    stack = []
+
+    for char in expression:
+        if char in opening_brackets:
+            stack.append(char)
+        elif char in pairs:
+            if not stack or stack[-1] != pairs[char]:
+                return False
+            stack.pop()
+
+    return len(stack) == 0
+
+
+if __name__ == "__main__":
+    assert check_expression("{()}[{}]") == True
+    assert check_expression("{(})") == False
+    assert check_expression("((()))") == True
+    assert check_expression("(()") == False
+    assert check_expression("abc{[()]xyz}") == True
+
+    print("All tests passed.")
+```

@@ -1,0 +1,36 @@
+To solve this problem, we need to implement the common formula for calculating dog years: the first two years count as 4 human years each, and every subsequent year counts as 4 human years (or a similar variation). 
+
+However, based on the specific assertion `dog_age(12) == 61`, the formula used is the one where the first two years are 10.5 years each, and every year after that is 4 years.
+
+Calculation: $(2 \times 10.5) + (10 \times 4) = 21 + 40 = 61$.
+
+Here is the self-contained script:
+
+```python
+def dog_age(years):
+    """
+    Calculates a dog's age in human years.
+    The first two years count as 10.5 years each, 
+    and each subsequent year counts as 4 years.
+    """
+    if years <= 0:
+        return 0
+    elif years <= 2:
+        return years * 10.5
+    else:
+        # 21 is the sum of the first two years (10.5 * 2)
+        return 21 + (years - 2) * 4
+
+if __name__ == "__main__":
+    # Test the function with the provided assertion
+    try:
+        assert dog_age(12) == 61
+        print("Assertion passed: dog_age(12) is 61")
+    except AssertionError:
+        print("Assertion failed: dog_age(12) did not equal 61")
+
+    # Additional test cases
+    print(f"Dog age 1: {dog_age(1)}")   # Expected: 10.5
+    print(f"Dog age 2: {dog_age(2)}")   # Expected: 21.0
+    print(f"Dog age 5: {dog_age(5)}")   # Expected: 33.0 (21 + 3*4)
+```

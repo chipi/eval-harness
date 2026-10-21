@@ -1,0 +1,33 @@
+```python
+def extract_singly(list_of_lists):
+    """
+    Flattens a list of lists/tuples into a single set of numbers.
+
+    This function takes a list where each element is a list or tuple of numbers,
+    and returns a set containing all the unique numbers from all the inner lists.
+
+    Args:
+        list_of_lists: A list of lists or tuples of numbers.
+
+    Returns:
+        A set of numbers extracted from the inner lists.
+    """
+    # Use a set comprehension to iterate through each sublist in the main list,
+    # and then through each number in the sublist. This automatically handles
+    # deduplication, as sets cannot contain duplicate elements.
+    return {number for sublist in list_of_lists for number in sublist}
+
+# Example usage and assertion from the problem description:
+# The input is a list of tuples, which the function handles correctly.
+input_data = [(3, 4, 5), (4, 5, 7), (1, 4)]
+expected_output = {3, 4, 5, 7, 1}
+
+# Call the function and assert that the result matches the expected output.
+# The `set()` constructor is used to ensure the order doesn't affect the comparison.
+assert set(extract_singly(input_data)) == expected_output
+
+# A more direct assertion since the function already returns a set.
+assert extract_singly(input_data) == expected_output
+
+print("Assertion passed successfully!")
+```

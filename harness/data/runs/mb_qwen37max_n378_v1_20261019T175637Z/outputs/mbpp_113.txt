@@ -1,0 +1,24 @@
+```python
+def check_integer(s):
+    """Check if a string represents an integer or not."""
+    if not isinstance(s, str) or len(s) == 0:
+        return False
+    # Handle optional leading sign
+    start = 0
+    if s[0] in ('+', '-'):
+        start = 1
+    # Must have at least one digit after optional sign
+    if start >= len(s):
+        return False
+    return all(c.isdigit() for c in s[start:])
+
+
+# Test
+assert check_integer("python") == False
+assert check_integer("123") == True
+assert check_integer("-456") == True
+assert check_integer("+789") == True
+assert check_integer("") == False
+assert check_integer("12.3") == False
+assert check_integer("12a3") == False
+```

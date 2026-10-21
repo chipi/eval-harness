@@ -1,0 +1,20 @@
+Here’s a self-contained Python script that defines the function and includes the test case:
+
+```python
+def multiply_int(a: int, b: int) -> int:
+    """
+    Multiplies two integers and returns the result.
+    
+    Args:
+        a (int): First integer.
+        b (int): Second integer.
+    
+    Returns:
+        int: The product of a and b.
+    """
+    return a * b
+
+# Test case
+assert multiply_int(10, 20) == 200
+print("Test passed!")
+```

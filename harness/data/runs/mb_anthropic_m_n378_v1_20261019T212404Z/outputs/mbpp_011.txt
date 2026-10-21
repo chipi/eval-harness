@@ -1,0 +1,18 @@
+```python
+def remove_Occ(s, ch):
+    first = s.find(ch)
+    if first == -1:
+        return s
+    last = s.rfind(ch)
+    result = []
+    for i, c in enumerate(s):
+        if i == first or i == last:
+            continue
+        result.append(c)
+    return "".join(result)
+
+
+if __name__ == "__main__":
+    assert remove_Occ("hello", "l") == "heo"
+    print(remove_Occ("hello", "l"))
+```

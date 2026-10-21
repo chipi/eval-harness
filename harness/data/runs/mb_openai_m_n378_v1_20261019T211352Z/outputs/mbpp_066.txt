@@ -1,0 +1,15 @@
+```python
+def pos_count(numbers):
+    """
+    Count the number of positive numbers in a list.
+
+    A positive number is any number greater than 0.
+    """
+    return sum(1 for num in numbers if num > 0)
+
+
+# Example test
+assert pos_count([1, -2, 3, -4]) == 2
+
+print("All tests passed.")
+```

@@ -1,0 +1,29 @@
+```python
+def square_Sum(n):
+    """
+    Returns the sum of squares of first n even natural numbers.
+    
+    The first n even natural numbers are: 2, 4, 6, 8, ..., 2n
+    We need to calculate: 2^2 + 4^2 + 6^2 + ... + (2n)^2
+    
+    Args:
+        n: An integer representing how many even natural numbers to consider
+        
+    Returns:
+        The sum of squares of the first n even natural numbers
+    """
+    total = 0
+    for i in range(1, n + 1):
+        even_number = 2 * i
+        total += even_number ** 2
+    return total
+
+
+# Test cases
+assert square_Sum(2) == 20  # 2^2 + 4^2 = 4 + 16 = 20
+assert square_Sum(1) == 4   # 2^2 = 4
+assert square_Sum(3) == 56  # 2^2 + 4^2 + 6^2 = 4 + 16 + 36 = 56
+assert square_Sum(4) == 120 # 2^2 + 4^2 + 6^2 + 8^2 = 4 + 16 + 36 + 64 = 120
+
+print("All test cases passed!")
+```

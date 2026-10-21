@@ -1,0 +1,72 @@
+Looking at this problem, I need to compute Bell numbers, which count the number of ways to partition a set of n elements.
+
+```python
+"""
+Write a function to find the number of ways to partition a set of Bell numbers.
+assert bell_number(2)==2
+"""
+
+
+def bell_number(n):
+    """
+    Return the n-th Bell number, i.e. the number of ways to partition
+    a set of n distinct elements into non-empty subsets.
+
+    Uses the Bell triangle:
+        B[0][0] = 1
+        B[i][0] = B[i-1][i-1]
+        B[i][j] = B[i][j-1] + B[i-1][j-1]
+    The n-th Bell number is B[n][0].
+    """
+    if n < 0:
+        raise ValueError("n must be a non-negative integer")
+
+    # bell[i][j] holds the Bell triangle
+    bell = [[0 for _ in range(n + 1)] for _ in range(n + 1)]
+    bell[0][0] = 1
+
+    for i in range(1, n + 1):
+        # First element of row i is the last element of row i-1
+        bell[i][0] = bell[i - 1][i - 1]
+
+        # Fill the rest of the row
+        for j in range(1, i + 1):
+            bell[i][j] = bell[i][j - 1] + bell[i - 1][j - 1]
+
+    return bell[n][0]
+
+
+if __name__ == "__main__":
+    # Provided test
+    assert bell_number(2) == 2
+
+    # Additional sanity checks
+    assert bell_number(0) == 1
+    assert bell_number(1) == 1
+    assert bell_number(3) == 5
+    assert bell_number(4) == 15
+    assert bell_number(5) == 52
+    assert bell_number(10) == 115975
+
+    print("All tests passed!")
+    for i in range(11):
+        print(f"bell_number({i}) = {bell_number(i)}")
+```
+
+**How it works:**
+
+The Bell triangle (also called Aitken's array or the Peirce triangle) builds up Bell numbers row by row:
+
+```
+1
+1  2
+2  3  5
+5  7  10 15
+15 20 27 37 52
+```
+
+- Each row starts with the last value of the previous row.
+- Every other entry is the sum of the entry to its left and the entry diagonally up-left.
+- The first element of row `n` is the n-th Bell number: 1, 1, 2, 5, 15, 52, ...
+
+For `n = 2`, the two partitions of `{a, b}` are `{{a},{b}}` and `{{a,b}}`, giving the answer **2**.

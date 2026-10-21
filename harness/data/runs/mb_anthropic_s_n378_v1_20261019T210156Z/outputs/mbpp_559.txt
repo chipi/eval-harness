@@ -1,0 +1,49 @@
+```python
+def max_sub_array_sum(arr, n):
+    """
+    Find the sum of the largest contiguous sublist in the given list.
+    
+    Args:
+        arr: List of integers
+        n: Length of the list
+    
+    Returns:
+        The maximum sum of any contiguous subarray
+    
+    Uses Kadane's Algorithm for O(n) time complexity
+    """
+    max_current = arr[0]
+    max_global = arr[0]
+    
+    for i in range(1, n):
+        max_current = max(arr[i], max_current + arr[i])
+        max_global = max(max_global, max_current)
+    
+    return max_global
+
+
+# Test case
+assert max_sub_array_sum([-2, -3, 4, -1, -2, 1, 5, -3], 8) == 7
+print("Test passed! Maximum subarray sum is:", max_sub_array_sum([-2, -3, 4, -1, -2, 1, 5, -3], 8))
+
+# Additional test cases
+print(max_sub_array_sum([1, 2, 3, 4], 4))  # Expected: 10 (entire array)
+print(max_sub_array_sum([-5, -2, -8, -1, -4], 5))  # Expected: -1 (single element)
+print(max_sub_array_sum([5, -3, 5], 3))  # Expected: 7 (5 + (-3) + 5)
+```
+
+**Explanation:**
+
+This solution uses **Kadane's Algorithm**, which is an efficient dynamic programming approach:
+
+1. **max_current**: Tracks the maximum sum ending at the current position
+2. **max_global**: Tracks the overall maximum sum found so far
+
+For each element, we decide whether to:
+- Start a new subarray from the current element, or
+- Extend the existing subarray by adding the current element
+
+The algorithm runs in **O(n) time** and **O(1) space**.
+
+For the given example `[-2, -3, 4, -1, -2, 1, 5, -3]`:
+- The maximum contiguous subarray is `[4, -1, -2, 1, 5]` with sum = **7**

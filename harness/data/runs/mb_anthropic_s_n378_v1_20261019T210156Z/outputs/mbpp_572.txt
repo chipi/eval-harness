@@ -1,0 +1,52 @@
+```python
+def two_unique_nums(lst):
+    """
+    Remove duplicate numbers from a given list.
+    Returns only numbers that appear exactly once.
+    
+    Args:
+        lst: A list of numbers that may contain duplicates
+        
+    Returns:
+        A list of numbers that appear exactly once in the original list
+    """
+    # Count occurrences of each number
+    count_dict = {}
+    for num in lst:
+        count_dict[num] = count_dict.get(num, 0) + 1
+    
+    # Return numbers that appear exactly once, maintaining order
+    result = [num for num in lst if count_dict[num] == 1]
+    
+    # Remove duplicates from result while preserving order
+    seen = set()
+    final_result = []
+    for num in result:
+        if num not in seen:
+            final_result.append(num)
+            seen.add(num)
+    
+    return final_result
+
+
+# Test cases
+assert two_unique_nums([1, 2, 3, 2, 3, 4, 5]) == [1, 4, 5]
+print("Test passed!")
+print(two_unique_nums([1, 2, 3, 2, 3, 4, 5]))
+```
+
+The function works as follows:
+
+1. **Count occurrences**: First, it creates a dictionary to count how many times each number appears in the list
+2. **Filter unique numbers**: It filters the list to keep only numbers that appear exactly once
+3. **Remove duplicates from result**: Since we iterate through the original list, we might get duplicates in the result, so we use a set to track seen numbers and only add each unique number once
+4. **Return the result**: Returns the list of numbers that appeared exactly once in the original list
+
+For the example `[1, 2, 3, 2, 3, 4, 5]`:
+- `1` appears 1 time ✓
+- `2` appears 2 times ✗
+- `3` appears 2 times ✗
+- `4` appears 1 time ✓
+- `5` appears 1 time ✓
+
+Result: `[1, 4, 5]`

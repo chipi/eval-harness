@@ -1,0 +1,30 @@
+```python
+def div_list(list1, list2):
+    """
+    This function divides two lists element-wise.
+
+    Args:
+        list1 (list): The first list of numbers.
+        list2 (list): The second list of numbers.
+
+    Returns:
+        list: A new list containing the element-wise division of list1 and list2.
+
+    Raises:
+        ValueError: If the two lists are not of the same length.
+        ZeroDivisionError: If any element in list2 is zero.
+    """
+    if len(list1) != len(list2):
+        raise ValueError("Both lists must be of the same length")
+
+    result = []
+    for i in range(len(list1)):
+        if list2[i] == 0:
+            raise ZeroDivisionError("Cannot divide by zero")
+        result.append(list1[i] / list2[i])
+
+    return result
+
+# Test the function
+assert div_list([4,5,6],[1, 2, 3]) == [4.0, 2.5, 2.0]
+```

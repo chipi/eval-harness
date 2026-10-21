@@ -1,0 +1,16 @@
+```python
+def centered_hexagonal_number(n):
+    return n * (2 * n - 1)
+
+# Test cases
+assert centered_hexagonal_number(1) == 1
+assert centered_hexagonal_number(2) == 5
+assert centered_hexagonal_number(3) == 12
+assert centered_hexagonal_number(4) == 24
+assert centered_hexagonal_number(5) == 45
+assert centered_hexagonal_number(6) == 76
+assert centered_hexagonal_number(7) == 126
+assert centered_hexagonal_number(8) == 195
+assert centered_hexagonal_number(9) == 284
+assert centered_hexagonal_number(10) == 391
+```

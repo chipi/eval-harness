@@ -1,0 +1,15 @@
+```python
+def check(n):
+    # Convert the number to a string to easily reverse it
+    str_n = str(n)
+    # Reverse the string representation of the number
+    reverse_n = int(str_n[::-1])
+    # Check if the number is one less than twice its reverse
+    return n == 2 * reverse_n - 1
+
+def main():
+    print(check(70))  # Should print: False
+
+if __name__ == "__main__":
+    main()
+```

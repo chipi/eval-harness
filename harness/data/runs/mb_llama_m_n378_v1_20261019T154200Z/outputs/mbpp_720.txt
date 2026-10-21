@@ -1,0 +1,18 @@
+```python
+def add_dict_to_tuple(tup, dictionary):
+    """
+    This function adds a dictionary to the end of a tuple.
+
+    Args:
+        tup (tuple): The input tuple.
+        dictionary (dict): The dictionary to be added.
+
+    Returns:
+        tuple: A new tuple with the dictionary added at the end.
+    """
+    # Convert the tuple to a list, append the dictionary, and convert back to a tuple
+    return tup + (dictionary,)
+
+# Test the function
+assert add_dict_to_tuple((4, 5, 6), {"MSAM" : 1, "is" : 2, "best" : 3} ) == (4, 5, 6, {'MSAM': 1, 'is': 2, 'best': 3})
+```

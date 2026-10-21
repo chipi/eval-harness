@@ -1,0 +1,28 @@
+```python
+def closest_num(n):
+    # Convert the number to a string to easily access the digits
+    str_n = str(n)
+    # If the number is less than 10, return the largest possible number
+    if int(str_n[0]) < 5:
+        return int(str_n + '9')
+    # If the number is greater than or equal to 10, return the smallest possible number
+    else:
+        return int(str_n + '0')
+
+# Test cases
+assert closest_num(11) == 10
+assert closest_num(5) == 5
+assert closest_num(1) == 0
+assert closest_num(0) == 0
+assert closest_num(9) == 10
+assert closest_num(10) == 10
+assert closest_num(15) == 20
+assert closest_num(25) == 30
+assert closest_num(35) == 40
+assert closest_num(45) == 50
+assert closest_num(55) == 60
+assert closest_num(65) == 70
+assert closest_num(75) == 80
+assert closest_num(85) == 90
+assert closest_num(95) == 100
+```

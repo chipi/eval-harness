@@ -1,0 +1,36 @@
+```python
+def kth_element(arr, k):
+    """
+    Find the kth element in the given array using 1-based indexing.
+    
+    Args:
+        arr: List of elements
+        k: Position (1-based indexing)
+    
+    Returns:
+        The element at position k (1-based)
+    
+    Raises:
+        IndexError: If k is out of bounds
+    """
+    if k < 1 or k > len(arr):
+        raise IndexError(f"Index {k} out of bounds for array of length {len(arr)}")
+    
+    return arr[k - 1]
+
+
+# Test cases
+if __name__ == "__main__":
+    assert kth_element([12, 3, 5, 7, 19], 2) == 3
+    assert kth_element([12, 3, 5, 7, 19], 1) == 12
+    assert kth_element([12, 3, 5, 7, 19], 5) == 19
+    assert kth_element([10, 20, 30], 3) == 30
+    
+    print("All test cases passed!")
+```
+
+The solution is straightforward:
+- The function takes an array and a 1-based index `k`
+- Since Python uses 0-based indexing, we convert by subtracting 1: `arr[k - 1]`
+- The function includes bounds checking to raise an `IndexError` if the index is invalid
+- The test case `kth_element([12,3,5,7,19], 2)` returns `3` because the 2nd element (1-based) is at index 1 (0-based)

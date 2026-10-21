@@ -1,0 +1,9 @@
+```python
+def lateralsurface_cube(side_length):
+    return 4 * side_length ** 2
+
+# Test cases
+assert lateralsurface_cube(5)==100
+assert lateralsurface_cube(10)==80
+assert lateralsurface_cube(15)==120
+```

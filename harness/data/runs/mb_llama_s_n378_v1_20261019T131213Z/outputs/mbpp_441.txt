@@ -1,0 +1,21 @@
+```python
+def surfacearea_cube(size):
+    """
+    Calculate the surface area of a cube.
+
+    Args:
+        size (int): The length of a side of the cube.
+
+    Returns:
+        int: The surface area of the cube.
+    """
+    # Since a cube has 6 equal square faces, 
+    # we calculate the area of one face and multiply by 6
+    return 6 * (size ** 2)
+
+# Test the function
+assert surfacearea_cube(5) == 150
+print("Surface area of cube with side 5:", surfacearea_cube(5))
+```
+
+You can run this script to test the function with the provided assertion. The function `surfacearea_cube` takes one argument, the size of the cube, and returns the surface area. The surface area of a cube is calculated as 6 times the area of one face, which is `size` squared.

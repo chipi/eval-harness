@@ -1,0 +1,14 @@
+```python
+def capital_words_spaces(s):
+    if not s:
+        return s
+    result = [s[0]]
+    for char in s[1:]:
+        if char.isupper():
+            result.append(' ')
+        result.append(char)
+    return ''.join(result)
+
+# Test case
+assert capital_words_spaces("Python") == 'Python'
+```

@@ -1,0 +1,10 @@
+```python
+def long_words(n, words):
+    return [word for word in words.split() if len(word) > n]
+
+# Test cases
+assert long_words(3,"python is a programming language")==['python','programming','language']
+assert long_words(4,"hello world")==[]
+assert long_words(5,"short word")==[]
+assert long_words(0,"short word")==['short','word']
+```

@@ -1,0 +1,13 @@
+```python
+def divisible_by_digits(startnum, endnum):
+    def is_divisible(n):
+        for digit in str(n):
+            if digit == '0' or n % int(digit) != 0:
+                return False
+        return True
+
+    return [n for n in range(startnum, endnum + 1) if is_divisible(n)]
+
+# Test cases
+assert divisible_by_digits(1, 22) == [1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 15, 22]
+```

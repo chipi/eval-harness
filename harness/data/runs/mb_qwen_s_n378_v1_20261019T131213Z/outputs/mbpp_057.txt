@@ -1,0 +1,26 @@
+```python
+def find_Max_Num(digits):
+    """
+    Find the largest number that can be formed with the given list of digits.
+    
+    Args:
+        digits: A list of integers (0-9) representing available digits.
+        
+    Returns:
+        The largest integer that can be formed by arranging all the digits in descending order.
+    """
+    # Sort the digits in descending order
+    sorted_digits = sorted(digits, reverse=True)
+    
+    # Convert the sorted digits to a string and then to an integer
+    max_num_str = ''.join(str(d) for d in sorted_digits)
+    
+    return int(max_num_str)
+
+# Test cases
+assert find_Max_Num([1, 2, 3]) == 321
+assert find_Max_Num([5, 4, 3, 2, 1]) == 54321
+assert find_Max_Num([9, 8, 7, 6, 5, 4, 3, 2, 1, 0]) == 9876543210
+assert find_Max_Num([1, 1, 1]) == 111
+assert find_Max_Num([0, 0, 0]) == 0
+```

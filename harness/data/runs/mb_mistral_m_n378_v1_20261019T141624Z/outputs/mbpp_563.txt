@@ -1,0 +1,9 @@
+```python
+import re
+
+def extract_values(s):
+    return re.findall(r'"(.*?)"', s)
+
+# Test the function
+assert extract_values('"Python", "PHP", "Java"') == ['Python', 'PHP', 'Java']
+```

@@ -1,0 +1,52 @@
+Here's a self-contained Python script that solves the problem. The function `max_sum_increasing_subseq` finds the maximum sum of an increasing subsequence from the prefix up to index `i` (0-based) that also includes the element at index `k` (where `k > i`).
+
+```python
+def max_sum_increasing_subseq(arr, n, i, k):
+    """
+    Find the maximum sum of an increasing subsequence from prefix until ith index (0-based)
+    that also includes the kth element (k > i).
+
+    Args:
+        arr: List of integers
+        n: Length of the array (not used directly, but provided for context)
+        i: End index of the prefix (0-based)
+        k: Index of the element that must be included (k > i)
+
+    Returns:
+        Maximum sum of such an increasing subsequence
+    """
+    if k <= i:
+        return 0  # Invalid case as per problem statement
+
+    # The subsequence must include arr[k], so we need to find the best increasing subsequence
+    # ending at some index <= i that can be extended to arr[k]
+
+    # Initialize dp array where dp[j] represents the maximum sum of increasing subsequence
+    # ending at index j (for j <= i)
+    dp = [0] * (i + 1)
+    for j in range(i + 1):
+        dp[j] = arr[j]  # Initialize with the element itself
+        for m in range(j):
+            if arr[m] < arr[j] and dp[m] + arr[j] > dp[j]:
+                dp[j] = dp[m] + arr[j]
+
+    # Now find the maximum sum among all dp[j] where arr[j] < arr[k] (since the subsequence must be increasing)
+    max_sum = 0
+    for j in range(i + 1):
+        if arr[j] < arr[k] and dp[j] > max_sum:
+            max_sum = dp[j]
+
+    # The result is max_sum + arr[k]
+    return max_sum + arr[k]
+
+# Test case
+assert max_sum_increasing_subseq([1, 101, 2, 3, 100, 4, 5], 7, 4, 6) == 11
+```
+
+### Explanation:
+1. **Initialization**: We initialize a `dp` array where `dp[j]` will store the maximum sum of an increasing subsequence ending at index `j` (for `j <= i`).
+2. **DP Array Population**: For each index `j` from `0` to `i`, we compute `dp[j]` by checking all previous indices `m` (where `m < j`). If `arr[m] < arr[j]`, we update `dp[j]` to be the maximum of its current value or `dp[m] + arr[j]`.
+3. **Finding Maximum Valid Sum**: After populating the `dp` array, we look for the maximum value in `dp` where `arr[j] < arr[k]` (since the subsequence must be increasing and include `arr[k]`).
+4. **Result Calculation**: The result is the sum of the maximum valid `dp[j]` and `arr[k]`.
+
+The test case `max_sum_increasing_subseq([1, 101, 2, 3, 100, 4, 5], 7, 4, 6)` returns `11` because the best increasing subsequence up to index `4` (value `100`) that can be extended to `5` (index `6`) is `[1, 2, 3, 5]` with sum `1 + 2 + 3 + 5 = 11`. The `100` at index `4` cannot be included because it is not less than `5`.

@@ -1,0 +1,28 @@
+```python
+def is_woodall(n):
+    """
+    Check if the given number is woodall or not.
+    A number n is called woodall number if it can be written as n = 2^k - 1 for some k.
+    For example:
+    is_woodall(3) == True
+    is_woodall(5) == True
+    is_woodall(7) == True
+    is_woodall(8) == False
+    """
+    if n <= 0:
+        return False
+    k = 1
+    while True:
+        woodall_num = (2**k) - 1
+        if woodall_num == n:
+            return True
+        elif woodall_num > n:
+            return False
+        k += 1
+
+assert is_woodall(3) == True
+assert is_woodall(5) == True
+assert is_woodall(7) == True
+assert is_woodall(8) == False
+assert is_woodall(383) == True
+```

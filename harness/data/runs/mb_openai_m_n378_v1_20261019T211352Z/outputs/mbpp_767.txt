@@ -1,0 +1,45 @@
+```python
+#!/usr/bin/env python3
+"""
+Count the number of pairs in a list whose sum equals a given target.
+
+Example:
+    get_pairs_count([1, 1, 1, 1], 2) == 6
+"""
+
+from collections import defaultdict
+
+
+def get_pairs_count(numbers, target_sum):
+    """
+    Return the number of index pairs (i, j) such that:
+        i < j
+        numbers[i] + numbers[j] == target_sum
+
+    Args:
+        numbers: A list of numbers.
+        target_sum: The target sum.
+
+    Returns:
+        The number of pairs whose sum equals target_sum.
+    """
+    count = 0
+    seen = defaultdict(int)
+
+    for number in numbers:
+        complement = target_sum - number
+        count += seen[complement]
+        seen[number] += 1
+
+    return count
+
+
+if __name__ == "__main__":
+    assert get_pairs_count([1, 1, 1, 1], 2) == 6
+    assert get_pairs_count([1, 5, 7, -1, 5], 6) == 3
+    assert get_pairs_count([1, 2, 3, 4], 5) == 2
+    assert get_pairs_count([], 10) == 0
+    assert get_pairs_count([2], 4) == 0
+
+    print("All tests passed.")
+```

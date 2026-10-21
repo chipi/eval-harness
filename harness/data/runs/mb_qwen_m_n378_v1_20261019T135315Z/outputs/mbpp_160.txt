@@ -1,0 +1,61 @@
+```python
+def find_solution(a: int, b: int, n: int) -> tuple | None:
+    """
+    Find integers x and y such that ax + by = n.
+    Returns (x, y) as a tuple, or None if no solution exists.
+    
+    Uses the extended Euclidean algorithm to find a particular solution.
+    A solution exists if and only if gcd(a, b) divides n.
+    """
+    def extended_gcd(a: int, b: int) -> tuple:
+        """Returns (gcd, x, y) such that a*x + b*y = gcd(a, b)"""
+        if a == 0:
+            return b, 0, 1
+        g, x1, y1 = extended_gcd(b % a, a)
+        x = y1 - (b // a) * x1
+        y = x1
+        return g, x, y
+    
+    # Handle edge cases where a or b is zero
+    if a == 0 and b == 0:
+        if n == 0:
+            return (0, 0)
+        else:
+            return None
+    
+    if a == 0:
+        if n % b == 0:
+            return (0, n // b)
+        else:
+            return None
+    
+    if b == 0:
+        if n % a == 0:
+            return (n // a, 0)
+        else:
+            return None
+    
+    g, x0, y0 = extended_gcd(abs(a), abs(b))
+    
+    # Check if solution exists
+    if n % g != 0:
+        return None
+    
+    # Scale the solution
+    scale = n // g
+    x0 *= scale
+    y0 *= scale
+    
+    # Adjust signs based on original a and b
+    if a < 0:
+        x0 = -x0
+    if b < 0:
+        y0 = -y0
+    
+    return (x0, y0)
+
+
+if __name__ == "__main__":
+    assert find_solution(2, 3, 7) == (2, 1)
+    print("All tests passed!")
+```

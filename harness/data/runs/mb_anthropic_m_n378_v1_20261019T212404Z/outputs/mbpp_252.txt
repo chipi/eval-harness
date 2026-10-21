@@ -1,0 +1,12 @@
+```python
+import cmath
+
+def convert(numb):
+    return cmath.polar(numb)
+
+# Test cases
+assert convert(1) == (1.0, 0.0)
+
+if __name__ == "__main__":
+    print(convert(1))
+```

@@ -1,0 +1,23 @@
+```python
+def last(arr, target):
+    """
+    Find the last position of an element in a sorted array.
+
+    Args:
+        arr (list): A sorted list of elements.
+        target: The element to find.
+
+    Returns:
+        int: The last position of the target element. Returns -1 if the target is not found.
+
+    """
+    for i in range(len(arr) - 1, -1, -1):
+        if arr[i] == target:
+            return i
+    return -1
+
+# Example usage:
+print(last([1, 2, 3], 1))  # Output: 0
+print(last([1, 2, 2, 3], 2))  # Output: 2
+print(last([1, 2, 3], 4))  # Output: -1
+```

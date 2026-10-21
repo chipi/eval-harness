@@ -1,0 +1,20 @@
+```python
+def extract_string(lst, size):
+    """
+    This function extracts strings of a specified size from a given list of string values.
+
+    Args:
+        lst (list): A list of string values.
+        size (int): The size of strings to be extracted.
+
+    Returns:
+        list: A list of strings with the specified size.
+    """
+    return [string for string in lst if len(string) == size]
+
+# Example usage:
+strings = ['Python', 'list', 'exercises', 'practice', 'solution']
+size = 8
+result = extract_string(strings, size)
+print(result)  # Output: ['practice', 'solution']
+```

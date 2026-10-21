@@ -1,0 +1,27 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def recursive_list_sum(lst):
+    """
+    Recursively flattens a nested list and returns the sum of all elements.
+    
+    Args:
+        lst (list): A list that may contain nested lists.
+    
+    Returns:
+        int: Sum of all numeric elements in the flattened list.
+    """
+    total = 0
+    for item in lst:
+        if isinstance(item, list):
+            total += recursive_list_sum(item)
+        else:
+            total += item
+    return total
+
+
+# Test the function with the given assertion
+if __name__ == "__main__":
+    assert recursive_list_sum(([1, 2, [3,4],[5,6]])) == 21
+    print("Test passed!")
+```

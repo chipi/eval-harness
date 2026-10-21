@@ -1,0 +1,61 @@
+Here's a self-contained Python script that solves the problem of finding the next smallest palindrome after a given integer:
+
+```python
+def next_smallest_palindrome(n):
+    """
+    Find the next smallest palindrome greater than the given integer n.
+
+    Args:
+        n (int): The input integer
+
+    Returns:
+        int: The next smallest palindrome greater than n
+    """
+    if n < 0:
+        raise ValueError("Input must be a non-negative integer")
+
+    # Convert to string for easier manipulation
+    s = str(n + 1)  # Start checking from n+1
+    length = len(s)
+
+    # Handle single-digit numbers
+    if length == 1:
+        return n + 1 if n < 9 else 11
+
+    # Split into left half and middle
+    half = (length + 1) // 2
+    left = s[:half]
+
+    # Create the smallest possible palindrome by mirroring left
+    candidate = left + left[:length - half][::-1]
+
+    # If this candidate is larger than original, return it
+    if int(candidate) > n:
+        return int(candidate)
+
+    # Otherwise, increment the left half and try again
+    left = str(int(left) + 1)
+    # Handle carry-over (e.g., 99 becomes 100)
+    if len(left) > half:
+        # For even length, we need to adjust (e.g., 99 -> 1001)
+        if length % 2 == 0:
+            return int('1' + '0' * (length - 1) + '1')
+        # For odd length, we need to adjust (e.g., 999 -> 10001)
+        else:
+            return int('1' + '0' * (length - 1) + '1')
+    else:
+        return int(left + left[:length - half][::-1])
+
+# Test case
+assert next_smallest_palindrome(99) == 101
+```
+
+This solution works by:
+1. Starting from n+1 (since we want the next palindrome)
+2. Taking the left half of the number
+3. Creating a palindrome by mirroring the left half
+4. If this palindrome is larger than the original number, returning it
+5. Otherwise, incrementing the left half and creating a new palindrome
+6. Handling special cases where incrementing causes a carry-over (like 99 → 101)
+
+The algorithm efficiently finds the next palindrome without checking every number sequentially.

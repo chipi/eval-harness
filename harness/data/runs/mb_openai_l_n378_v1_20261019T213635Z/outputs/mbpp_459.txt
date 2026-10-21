@@ -1,0 +1,8 @@
+```python
+def remove_uppercase(text):
+    """Return text with all uppercase characters removed."""
+    return "".join(char for char in text if not char.isupper())
+
+
+assert remove_uppercase("cAstyoUrFavoRitETVshoWs") == "cstyoravoitshos"
+```

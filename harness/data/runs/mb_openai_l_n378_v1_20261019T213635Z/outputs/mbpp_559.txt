@@ -1,0 +1,15 @@
+```python
+def max_sub_array_sum(values, n):
+    """Return the largest sum of any non-empty contiguous sublist."""
+    if n < 1 or n > len(values):
+        raise ValueError("n must be between 1 and the length of values")
+
+    best = current = values[0]
+    for value in values[1:n]:
+        current = max(value, current + value)
+        best = max(best, current)
+    return best
+
+
+assert max_sub_array_sum([-2, -3, 4, -1, -2, 1, 5, -3], 8) == 7
+```

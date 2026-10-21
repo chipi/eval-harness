@@ -1,0 +1,12 @@
+```python
+def expensive_items(dataset, n):
+    # Sort the dataset in descending order by price
+    dataset.sort(key=lambda x: x['price'], reverse=True)
+    # Return the first n items from the sorted dataset
+    return dataset[:n]
+
+# Test the function
+assert expensive_items([{'name': 'Item-1', 'price': 101.1},{'name': 'Item-2', 'price': 555.22}],1)==[{'name': 'Item-2', 'price': 555.22}]
+assert expensive_items([{'name': 'Item-1', 'price': 101.1},{'name': 'Item-2', 'price': 555.22},{'name': 'Item-3', 'price': 100.33}],2)==[{'name': 'Item-2', 'price': 555.22}, {'name': 'Item-3', 'price': 100.33}]
+assert expensive_items([{'name': 'Item-1', 'price': 101.1},{'name': 'Item-2', 'price': 555.22},{'name': 'Item-3', 'price': 100.33},{'name': 'Item-4', 'price': 200.44}],3)==[{'name': 'Item-2', 'price': 555.22}, {'name': 'Item-3', 'price': 100.33}, {'name': 'Item-4', 'price': 200.44}]
+```

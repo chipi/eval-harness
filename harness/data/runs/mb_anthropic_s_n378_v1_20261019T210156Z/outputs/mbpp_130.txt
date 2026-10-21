@@ -1,0 +1,44 @@
+```python
+def max_occurrences(lst):
+    """
+    Find the item with maximum frequency in a given list.
+    
+    Args:
+        lst: A list of items
+        
+    Returns:
+        The item that appears most frequently in the list
+    """
+    if not lst:
+        return None
+    
+    # Count frequencies of each item
+    frequency = {}
+    for item in lst:
+        frequency[item] = frequency.get(item, 0) + 1
+    
+    # Find the item with maximum frequency
+    max_item = max(frequency, key=frequency.get)
+    return max_item
+
+
+# Test
+assert max_occurrences([2,3,8,4,7,9,8,2,6,5,1,6,1,2,3,2,4,6,9,1,2]) == 2
+print("Test passed! The item with maximum frequency is: 2")
+```
+
+**Explanation:**
+
+The function `max_occurrences()` works as follows:
+
+1. **Handle empty list**: Returns `None` if the list is empty
+2. **Count frequencies**: Uses a dictionary to count how many times each item appears in the list
+3. **Find maximum**: Uses the `max()` function with `key=frequency.get` to find the item with the highest frequency count
+
+In the test case `[2,3,8,4,7,9,8,2,6,5,1,6,1,2,3,2,4,6,9,1,2]`:
+- Item `2` appears 5 times (most frequent)
+- Item `1` appears 3 times
+- Item `6` appears 3 times
+- Other items appear 1-2 times
+
+So the function correctly returns `2`.

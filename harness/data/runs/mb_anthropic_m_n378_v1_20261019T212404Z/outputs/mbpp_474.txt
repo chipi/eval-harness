@@ -1,0 +1,9 @@
+```python
+def replace_char(s, old_char, new_char):
+    return s.replace(old_char, new_char)
+
+assert replace_char("polygon", 'y', 'l') == ("pollgon")
+
+if __name__ == "__main__":
+    print(replace_char("polygon", 'y', 'l'))
+```

@@ -1,0 +1,27 @@
+```python
+def find_substring(string_list, substring):
+    """
+    Check if a substring is present in any string in a given list.
+    
+    Args:
+        string_list: A list of strings to search through
+        substring: The substring to find
+    
+    Returns:
+        True if the substring is found in any string in the list, False otherwise
+    """
+    for string in string_list:
+        if substring in string:
+            return True
+    return False
+
+
+# Test cases
+assert find_substring(["red", "black", "white", "green", "orange"], "ack") == True
+assert find_substring(["red", "black", "white", "green", "orange"], "red") == True
+assert find_substring(["red", "black", "white", "green", "orange"], "xyz") == False
+assert find_substring(["apple", "banana", "cherry"], "ana") == True
+assert find_substring(["apple", "banana", "cherry"], "xyz") == False
+
+print("All test cases passed!")
+```

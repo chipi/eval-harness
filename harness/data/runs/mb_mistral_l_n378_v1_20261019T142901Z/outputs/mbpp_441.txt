@@ -1,0 +1,30 @@
+Here's a self-contained Python script that solves the problem, including the assertion:
+
+```python
+"""
+Function to calculate the surface area of a cube.
+
+The surface area of a cube with side length 's' is given by 6 * s^2.
+"""
+
+def surfacearea_cube(side_length):
+    """
+    Calculate the surface area of a cube.
+
+    Args:
+        side_length (int or float): The length of a side of the cube.
+
+    Returns:
+        int or float: The surface area of the cube.
+    """
+    return 6 * (side_length ** 2)
+
+# Test the function with the provided assertion
+assert surfacearea_cube(5) == 150
+```
+
+This script:
+1. Defines a function `surfacearea_cube` that takes the side length as input
+2. Calculates the surface area using the formula 6 × (side length)²
+3. Includes the assertion test case that checks if a cube with side length 5 has a surface area of 150
+4. The function will work with both integers and floating-point numbers for the side length

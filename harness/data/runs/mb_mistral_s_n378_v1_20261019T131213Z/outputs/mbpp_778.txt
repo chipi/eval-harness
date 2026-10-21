@@ -1,0 +1,31 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def pack_consecutive_duplicates(lst):
+    if not lst:
+        return []
+
+    result = []
+    current_group = [lst[0]]
+
+    for item in lst[1:]:
+        if item == current_group[-1]:
+            current_group.append(item)
+        else:
+            result.append(current_group)
+            current_group = [item]
+
+    result.append(current_group)
+    return result
+
+# Test the function
+assert pack_consecutive_duplicates([0, 0, 1, 2, 3, 4, 4, 5, 6, 6, 6, 7, 8, 9, 4, 4]) == [[0, 0], [1], [2], [3], [4, 4], [5], [6, 6, 6], [7], [8], [9], [4, 4]]
+print("Test passed!")
+```
+
+This script defines a function `pack_consecutive_duplicates` that:
+1. Takes a list as input
+2. Iterates through the list while grouping consecutive duplicates
+3. Returns a list of sublists where each sublist contains consecutive duplicates
+
+The function handles edge cases like an empty input list and properly groups all consecutive duplicates. The included test case verifies that the function works as expected.

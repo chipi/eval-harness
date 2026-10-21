@@ -1,0 +1,25 @@
+```python
+def magic_square_test(matrix):
+    # Check if the matrix is a list
+    if not isinstance(matrix, list):
+        return False
+    # Check if the matrix is a 2D list
+    if not all(isinstance(i, list) for i in matrix):
+        return False
+    # Check if the matrix is a 4x4 square
+    if len(matrix) != 4 or any(len(i) != 4 for i in matrix):
+        return False
+    # Check if the sum of each row, column, and diagonal is the same
+    if not (sum(matrix[0]) == sum(matrix[1]) == sum(matrix[2]) == sum(matrix[3]) == sum(matrix[i][0] + matrix[i][1] + matrix[i][2] + matrix[i][3] for i in range(4))):
+        return False
+    # Check if the sum of each row, column, and diagonal is the same
+    if not (sum(matrix[0][0] + matrix[1][1] + matrix[2][2] + matrix[3][3]) == sum(matrix[0][3] + matrix[1][2] + matrix[2][1] + matrix[3][0]) == 10):
+        return False
+    return True
+
+# Test cases
+print(magic_square_test([[7, 12, 1, 14], [2, 13, 8, 11], [16, 3, 10, 5], [9, 6, 15, 4]])) # Expected output: True
+print(magic_square_test([[7, 12, 1, 14], [2, 13, 8, 11], [16, 3, 10, 5], [9, 6, 15, 4]])) # Expected output: True
+print(magic_square_test([[7, 12, 1, 14], [2, 13, 8, 11], [16, 3, 10, 5], [9, 6, 15, 4]])) # Expected output: True
+print(magic_square_test([[7, 12, 1, 14], [2, 13, 8, 11], [16, 3, 10, 5], [9, 6, 15, 4]])) # Expected output: True
+```

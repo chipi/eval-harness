@@ -1,0 +1,31 @@
+```python
+import math
+
+def multiply_num(numbers):
+    """
+    Multiply all the numbers in a list and divide by the length of the list.
+    
+    Args:
+        numbers: A list or tuple of numbers
+        
+    Returns:
+        The product of all numbers divided by the length of the list
+    """
+    product = 1
+    for num in numbers:
+        product *= num
+    return product / len(numbers)
+
+
+# Test
+assert math.isclose(multiply_num((8, 2, 3, -1, 7)), -67.2, rel_tol=0.001)
+print("Test passed!")
+print(f"Result: {multiply_num((8, 2, 3, -1, 7))}")
+```
+
+**Explanation:**
+- The function `multiply_num()` takes a list or tuple of numbers as input
+- It initializes `product` to 1
+- It iterates through each number and multiplies them together: 8 × 2 × 3 × (-1) × 7 = -336
+- It divides the product by the length of the list: -336 / 5 = -67.2
+- The assertion verifies the result matches the expected value within a relative tolerance of 0.001

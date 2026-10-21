@@ -1,0 +1,17 @@
+```python
+def count_divisors(n):
+    """
+    Check whether the count of divisors of n is even.
+    Returns True if the count of divisors is even, False otherwise.
+    """
+    count = 0
+    for i in range(1, n + 1):
+        if n % i == 0:
+            count += 1
+    return count % 2 == 0
+
+
+if __name__ == "__main__":
+    assert count_divisors(10)
+    print("All test cases passed!")
+```

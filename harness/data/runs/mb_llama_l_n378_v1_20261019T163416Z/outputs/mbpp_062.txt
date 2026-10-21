@@ -1,0 +1,11 @@
+```python
+def smallest_num(numbers):
+    return min(numbers)
+
+def main():
+    numbers = [10, 20, 1, 45, 99]
+    print(smallest_num(numbers))  # Output: 1
+
+if __name__ == "__main__":
+    main()
+```

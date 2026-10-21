@@ -1,0 +1,35 @@
+```python
+def test_duplicate(arr):
+    """
+    Find whether a given array of integers contains any duplicate element.
+    
+    Args:
+        arr: A list of integers
+        
+    Returns:
+        True if duplicates exist, False otherwise
+    """
+    return len(arr) != len(set(arr))
+
+
+# Test cases
+assert test_duplicate([1, 2, 3, 4, 5]) == False
+assert test_duplicate([1, 2, 3, 4, 5, 5]) == True
+assert test_duplicate([1, 1]) == True
+assert test_duplicate([]) == False
+assert test_duplicate([1]) == False
+assert test_duplicate([1, 2, 1, 3]) == True
+
+print("All tests passed!")
+```
+
+**Explanation:**
+
+The function `test_duplicate()` works by:
+1. Converting the array to a `set`, which automatically removes all duplicate elements
+2. Comparing the length of the original array with the length of the set
+3. If the lengths are different, it means duplicates were removed, so duplicates exist
+4. Returns `True` if duplicates exist, `False` otherwise
+
+**Time Complexity:** O(n) - where n is the length of the array
+**Space Complexity:** O(n) - for the set storage

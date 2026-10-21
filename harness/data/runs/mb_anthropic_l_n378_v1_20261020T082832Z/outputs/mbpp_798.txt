@@ -1,0 +1,39 @@
+```python
+"""
+Write a python function to find the sum of an array.
+assert _sum([1, 2, 3]) == 6
+"""
+
+
+def _sum(arr):
+    """
+    Return the sum of all elements in the given array (list/tuple of numbers).
+
+    Parameters
+    ----------
+    arr : iterable
+        An iterable of numbers.
+
+    Returns
+    -------
+    The total sum of the elements (0 for an empty array).
+    """
+    total = 0
+    for item in arr:
+        total += item
+    return total
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert _sum([1, 2, 3]) == 6
+
+    # A few extra sanity checks
+    assert _sum([]) == 0
+    assert _sum([10]) == 10
+    assert _sum([-1, 1, -2, 2]) == 0
+    assert _sum([1.5, 2.5]) == 4.0
+    assert _sum((4, 5, 6)) == 15
+
+    print("All tests passed!")
+```

@@ -1,0 +1,11 @@
+```python
+def remove_lowercase(s):
+    return ''.join([char for char in s if char.isupper()])
+
+# Test cases
+assert remove_lowercase("PYTHon") == ('PYTH')
+assert remove_lowercase("Hello World!") == ('H W!')
+assert remove_lowercase("123abcABC") == ('123ABC')
+assert remove_lowercase("") == ''
+assert remove_lowercase("aAaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz") == ('')
+```

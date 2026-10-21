@@ -1,0 +1,70 @@
+Here's a self-contained Python script that solves the problem. The function `max_sub_array_sum_repeated` calculates the largest sum of a contiguous subarray in an array that is formed by repeating the given array `k` times. The solution uses Kadane's algorithm to efficiently compute the maximum subarray sum.
+
+```python
+def max_sub_array_sum_repeated(arr, n, k):
+    """
+    Find the largest sum of a contiguous subarray in the array formed by repeating the given array k times.
+
+    Parameters:
+    arr (list): The original array.
+    n (int): The length of the original array.
+    k (int): The number of times the array is repeated.
+
+    Returns:
+    int: The maximum subarray sum in the repeated array.
+    """
+    def kadane(arr):
+        max_current = max_global = arr[0]
+        for num in arr[1:]:
+            max_current = max(num, max_current + num)
+            if max_current > max_global:
+                max_global = max_current
+        return max_global
+
+    # Case 1: If k is 1, just return the maximum subarray sum of the original array
+    if k == 1:
+        return kadane(arr)
+
+    # Case 2: Calculate the maximum subarray sum in the original array
+    max_single = kadane(arr)
+
+    # Case 3: Calculate the total sum of the array
+    total_sum = sum(arr)
+
+    # Case 4: Calculate the maximum prefix sum and maximum suffix sum
+    max_prefix = 0
+    current_prefix = 0
+    for num in arr:
+        current_prefix += num
+        if current_prefix > max_prefix:
+            max_prefix = current_prefix
+
+    max_suffix = 0
+    current_suffix = 0
+    for num in reversed(arr):
+        current_suffix += num
+        if current_suffix > max_suffix:
+            max_suffix = current_suffix
+
+    # Case 5: The maximum sum could be:
+    # - The maximum subarray sum in a single array (max_single)
+    # - The maximum prefix sum + maximum suffix sum + (k-2)*total_sum (if total_sum is positive)
+    if total_sum > 0:
+        return max(max_single, max_prefix + max_suffix + (k - 2) * total_sum)
+    else:
+        return max(max_single, max_prefix + max_suffix)
+
+# Test the function
+assert max_sub_array_sum_repeated([10, 20, -30, -1], 4, 3) == 30
+```
+
+### Explanation:
+1. **Kadane's Algorithm**: This is used to find the maximum subarray sum in a single pass through the array.
+2. **Case Handling**:
+   - If `k` is 1, the solution is simply the maximum subarray sum of the original array.
+   - If `k` is greater than 1, the solution could be:
+     - The maximum subarray sum within a single copy of the array.
+     - The sum of the maximum prefix sum, the maximum suffix sum, and `(k-2)` times the total sum of the array (if the total sum is positive).
+3. **Edge Cases**: The function handles cases where the total sum of the array is not positive, ensuring the solution is optimal.
+
+The provided test case `assert max_sub_array_sum_repeated([10, 20, -30, -1], 4, 3) == 30` passes successfully.

@@ -1,0 +1,9 @@
+```python
+def merge(lst):
+    return [[sublist[0] for sublist in lst], [sublist[1] for sublist in lst]]
+
+# Test cases
+assert merge([['x', 'y'], ['a', 'b'], ['m', 'n']]) == [['x', 'a', 'm'], ['y', 'b', 'n']]
+assert merge([['1', '2'], ['3', '4'], ['5', '6']]) == [['1', '3', '5'], ['2', '4', '6']]
+assert merge([['apple', 'banana'], ['cherry', 'date'], ['elderberry', 'fig']]) == [['apple', 'cherry', 'elderberry'], ['banana', 'date', 'fig']]
+```

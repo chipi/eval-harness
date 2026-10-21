@@ -1,0 +1,50 @@
+Looking at this problem, I need to write a function that calculates the circumference of a circle using the formula **C = 2πr**.
+
+Let me verify with the test case: `circle_circumference(10)` should give approximately `62.830000000000005`
+- Using 2 × 3.1415 × 10 = 62.83 ✓ (matches when using π ≈ 3.1415)
+- Using 2 × math.pi × 10 = 62.8318... ✓ (also passes with `rel_tol=0.001`)
+
+```python
+"""
+Write a function to find the circumference of a circle.
+assert math.isclose(circle_circumference(10), 62.830000000000005, rel_tol=0.001)
+"""
+
+import math
+
+
+def circle_circumference(r):
+    """
+    Calculate the circumference of a circle given its radius.
+
+    Parameters:
+        r (float): The radius of the circle.
+
+    Returns:
+        float: The circumference, computed as 2 * pi * r.
+    """
+    return 2 * math.pi * r
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert math.isclose(circle_circumference(10), 62.830000000000005, rel_tol=0.001)
+
+    # Additional sanity checks
+    assert math.isclose(circle_circumference(1), 6.283185307179586, rel_tol=0.001)
+    assert math.isclose(circle_circumference(0), 0.0, rel_tol=0.001)
+    assert math.isclose(circle_circumference(2.5), 15.707963267948966, rel_tol=0.001)
+
+    print("All tests passed!")
+    for radius in (1, 5, 10, 12.5):
+        print(f"Radius {radius}: circumference = {circle_circumference(radius):.4f}")
+```
+
+**Output:**
+```
+All tests passed!
+Radius 1: circumference = 6.2832
+Radius 5: circumference = 31.4159
+Radius 10: circumference = 62.8319
+Radius 12.5: circumference = 78.5398
+```

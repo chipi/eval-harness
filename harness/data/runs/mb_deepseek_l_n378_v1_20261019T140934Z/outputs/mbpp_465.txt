@@ -1,0 +1,30 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def drop_empty(input_dict):
+    """
+    Drop empty items (None values) from a given dictionary.
+    
+    Args:
+        input_dict: Dictionary to filter
+        
+    Returns:
+        Dictionary with None values removed
+    """
+    return {key: value for key, value in input_dict.items() if value is not None}
+
+# Test the function
+if __name__ == "__main__":
+    # Test case from the problem
+    result = drop_empty({'c1': 'Red', 'c2': 'Green', 'c3': None})
+    expected = {'c1': 'Red', 'c2': 'Green'}
+    assert result == expected, f"Test failed: {result} != {expected}"
+    print("Test passed!")
+    
+    # Additional test cases
+    assert drop_empty({}) == {}
+    assert drop_empty({'a': 1, 'b': None, 'c': 3}) == {'a': 1, 'c': 3}
+    assert drop_empty({'x': None, 'y': None}) == {}
+    assert drop_empty({'name': 'John', 'age': 30}) == {'name': 'John', 'age': 30}
+    print("All tests passed!")
+```

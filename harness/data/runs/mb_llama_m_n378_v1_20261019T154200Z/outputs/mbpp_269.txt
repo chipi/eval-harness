@@ -1,0 +1,16 @@
+```python
+def ascii_value(char):
+    """
+    This function returns the ASCII value of a given character.
+
+    Args:
+        char (str): A single character.
+
+    Returns:
+        int: The ASCII value of the character.
+    """
+    return ord(char)
+
+# Test the function
+print(ascii_value('A'))  # Output: 65
+```

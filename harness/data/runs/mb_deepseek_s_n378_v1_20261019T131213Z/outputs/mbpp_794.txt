@@ -1,0 +1,26 @@
+```python
+import re
+
+def text_starta_endb(s: str) -> bool:
+    """
+    Returns True if the string starts with 'a' and ends with 'b',
+    with any characters (including none) in between.
+    """
+    # ^a matches 'a' at the start, .* matches any characters (including none),
+    # b$ matches 'b' at the end.
+    return bool(re.fullmatch(r'a.*b', s))
+
+# Test the assertion from the problem statement
+assert text_starta_endb("aabbbb"), "Test failed for 'aabbbb'"
+
+# Additional tests (optional, for verification)
+assert text_starta_endb("ab")       # shortest valid case
+assert text_starta_endb("a123b")    # digits in between
+assert text_starta_endb("aXYZb")    # letters in between
+assert text_starta_endb("a b")      # space in between
+assert not text_starta_endb("ba")   # reversed
+assert not text_starta_endb("abc")  # doesn't end with b
+assert not text_starta_endb("cab")  # doesn't start with a
+
+print("All tests passed.")
+```

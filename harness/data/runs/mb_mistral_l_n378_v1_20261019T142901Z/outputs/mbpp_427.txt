@@ -1,0 +1,27 @@
+Here's a self-contained Python script that solves the problem, including the assertion test:
+
+```python
+def change_date_format(date_str):
+    """
+    Convert a date string from yyyy-mm-dd format to dd-mm-yyyy format.
+
+    Args:
+        date_str (str): Date string in yyyy-mm-dd format
+
+    Returns:
+        str: Date string in dd-mm-yyyy format
+    """
+    year, month, day = date_str.split('-')
+    return f"{day}-{month}-{year}"
+
+# Test the function
+assert change_date_format("2026-01-02") == '02-01-2026'
+```
+
+This script:
+1. Defines a function `change_date_format` that takes a date string in yyyy-mm-dd format
+2. Splits the string into year, month, and day components
+3. Reconstructs the string in dd-mm-yyyy format using an f-string
+4. Includes the assertion test to verify the function works correctly
+
+The function will work for any valid date string in the yyyy-mm-dd format, maintaining the leading zeros in the day and month components.

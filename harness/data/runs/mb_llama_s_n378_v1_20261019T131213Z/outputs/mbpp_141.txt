@@ -1,0 +1,51 @@
+### Pancake Sort Implementation in Python
+
+The following Python script implements the Pancake Sort algorithm to sort a list of elements in ascending order.
+
+```python
+def pancake_sort(arr):
+    """
+    Sorts a list of elements using the Pancake Sort algorithm.
+
+    Args:
+        arr (list): The list of elements to be sorted.
+
+    Returns:
+        list: The sorted list of elements.
+    """
+
+    # Loop through the array from the end to the beginning
+    for size in range(len(arr), 0, -1):
+        # Find the index of the maximum element in the unsorted part of the array
+        max_index = arr.index(max(arr[0:size]))
+        
+        # If the maximum element is not at the beginning of the unsorted part, 
+        # flip it to the beginning
+        if max_index != size - 1:
+            # Flip the maximum element to the beginning
+            arr[0:max_index + 1] = arr[0:max_index + 1][::-1]
+            
+            # Flip the maximum element to its correct position
+            arr[0:size] = arr[0:size][::-1]
+    
+    return arr
+
+# Example usage:
+print(pancake_sort([15, 79, 25, 38, 69]))  # Output: [15, 25, 38, 69, 79]
+```
+
+### Explanation
+
+The Pancake Sort algorithm works by repeatedly finding the maximum element in the unsorted part of the array and flipping it to the beginning, then flipping it to its correct position.
+
+*   The outer loop iterates over the array from the end to the beginning.
+*   In each iteration, it finds the index of the maximum element in the unsorted part of the array.
+*   If the maximum element is not at the beginning of the unsorted part, it flips it to the beginning and then to its correct position.
+
+### Time Complexity
+
+The time complexity of the Pancake Sort algorithm is O(n^2), where n is the number of elements in the array. This is because in the worst-case scenario, the algorithm needs to iterate over the array n times, and for each iteration, it needs to find the maximum element and flip it to its correct position.
+
+### Space Complexity
+
+The space complexity of the Pancake Sort algorithm is O(1), as it only uses a constant amount of additional space to store the indices and temporary values. The input array is sorted in-place.

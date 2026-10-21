@@ -1,0 +1,15 @@
+```python
+def find_dissimilar(tuple1, tuple2):
+    set1 = set(tuple1)
+    set2 = set(tuple2)
+    dissimilar_elements = tuple(list(set1.symmetric_difference(set2)))
+    return dissimilar_elements
+
+def main():
+    tuple1 = (3, 4, 5, 6)
+    tuple2 = (5, 7, 4, 10)
+    print(find_dissimilar(tuple1, tuple2))  # Expected output: (3, 6, 7, 10)
+
+if __name__ == "__main__":
+    main()
+```

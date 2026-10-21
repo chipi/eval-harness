@@ -1,0 +1,34 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def list_split(lst, n):
+    """
+    Splits a list for every nth element, returning a list of the resulting lists.
+    
+    Args:
+        lst: The input list to be split
+        n: The interval for splitting
+    
+    Returns:
+        A list of lists where each sublist contains every nth element starting from different positions
+    """
+    result = []
+    for i in range(n):
+        sublist = lst[i::n]
+        if sublist:  # Only add non-empty sublists
+            result.append(sublist)
+    return result
+
+
+# Test the function
+if __name__ == "__main__":
+    assert list_split(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n'], 3) == [['a', 'd', 'g', 'j', 'm'], ['b', 'e', 'h', 'k', 'n'], ['c', 'f', 'i', 'l']]
+    print("Test passed!")
+    
+    # Additional test cases
+    print(list_split([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 2))
+    print(list_split(['x', 'y', 'z'], 1))
+    print(list_split([1, 2, 3, 4, 5], 3))
+```
+
+The function works by using Python's list slicing with a step parameter. For each starting position `i` from 0 to `n-1`, it creates a sublist using `lst[i::n]`, which takes every nth element starting from index `i`. The function only includes non-empty sublists in the result, which handles cases where the list length isn't evenly divisible by `n`.

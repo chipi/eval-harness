@@ -1,0 +1,23 @@
+```python
+def odd_Equivalent(binary_string, rotations):
+    # Convert the binary string to an integer
+    num = int(binary_string, 2)
+    
+    # Initialize count for odd values
+    odd_count = 0
+    
+    # Perform rotations
+    for _ in range(rotations):
+        # Rotate the binary string to the left by one position
+        num = (num << 1) | (num >> 15)
+        
+        # Check if the rotated number has an odd value
+        if num % 2 != 0:
+            odd_count += 1
+    
+    return odd_count
+
+# Test cases
+assert odd_Equivalent("011001",6) == 3
+```
+

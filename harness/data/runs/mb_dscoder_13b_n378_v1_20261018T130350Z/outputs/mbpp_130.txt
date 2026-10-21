@@ -1,0 +1,21 @@
+```python
+def max_occurrences(lst):
+    """
+    Write a function to find the item with maximum frequency in a given list.
+    """
+    # Create a dictionary to store the frequency of each item
+    freq_dict = {}
+    for item in lst:
+        if item in freq_dict:
+            freq_dict[item] += 1
+        else:
+            freq_dict[item] = 1
+
+    # Find the item with maximum frequency
+    max_freq_item = max(freq_dict, key=freq_dict.get)
+
+    return max_freq_item
+
+# Test the function
+assert max_occurrences([2,3,8,4,7,9,8,2,6,5,1,6,1,2,3,2,4,6,9,1,2])==2
+```

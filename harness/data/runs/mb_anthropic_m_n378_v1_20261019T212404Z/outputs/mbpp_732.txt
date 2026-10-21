@@ -1,0 +1,10 @@
+```python
+import re
+
+def replace_specialchar(text):
+    return re.sub(r'[ ,.]', ':', text)
+
+# Test
+assert replace_specialchar('Python language, Programming language.') == ('Python:language::Programming:language:')
+print("All tests passed!")
+```

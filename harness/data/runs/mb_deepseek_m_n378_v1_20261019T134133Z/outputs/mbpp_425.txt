@@ -1,0 +1,35 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def count_element_in_list(lst, element):
+    """
+    Counts the number of sublists in `lst` that contain `element`.
+    
+    Args:
+        lst (list of lists): The list of sublists to search.
+        element: The element to look for in each sublist.
+    
+    Returns:
+        int: The number of sublists containing `element`.
+    """
+    count = 0
+    for sublist in lst:
+        if element in sublist:
+            count += 1
+    return count
+
+
+# Test the function
+assert count_element_in_list([[1, 3], [5, 7], [1, 11], [1, 15, 7]], 1) == 3
+print("Test passed!")
+```
+
+**How it works:**
+
+1. The function `count_element_in_list` takes two arguments: a list of sublists (`lst`) and the `element` to search for.
+2. It initializes a counter `count` to `0`.
+3. It iterates over each `sublist` in `lst` and uses the `in` operator to check if `element` is present.
+4. If found, it increments the counter.
+5. Finally, it returns the total count.
+
+For the given test case, the sublists `[1, 3]`, `[1, 11]`, and `[1, 15, 7]` all contain `1`, so the result is `3`.

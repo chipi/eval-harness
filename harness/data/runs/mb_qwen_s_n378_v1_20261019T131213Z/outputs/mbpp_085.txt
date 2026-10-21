@@ -1,0 +1,17 @@
+```python
+import math
+
+def surfacearea_sphere(radius):
+    """
+    Calculate the surface area of a sphere.
+    
+    The formula for the surface area of a sphere is 4 * pi * r^2
+    
+    Args:
+        radius: The radius of the sphere
+        
+    Returns:
+        The surface area of the sphere
+    """
+    return 4 * math.pi * radius ** 2
+```

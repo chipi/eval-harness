@@ -1,0 +1,26 @@
+```python
+def overlapping(seq1, seq2):
+    """
+    Checks whether any value in the first sequence exists in the second sequence.
+    
+    Args:
+        seq1: An iterable (list, tuple, etc.)
+        seq2: An iterable (list, tuple, etc.)
+        
+    Returns:
+        bool: True if there is at least one common element, False otherwise.
+    """
+    # Converting to sets allows for an efficient intersection operation
+    # O(n + m) time complexity on average
+    return not set(seq1).isdisjoint(set(seq2))
+
+if __name__ == "__main__":
+    # Test cases
+    assert overlapping([1, 2, 3, 4, 5], [6, 7, 8, 9]) == False
+    assert overlapping([1, 2, 3], [3, 4, 5]) == True
+    assert overlapping(['a', 'b', 'c'], ['d', 'e', 'f']) == False
+    assert overlapping([], [1, 2]) == False
+    assert overlapping([1, 2], []) == False
+    
+    print("All assertions passed!")
+```

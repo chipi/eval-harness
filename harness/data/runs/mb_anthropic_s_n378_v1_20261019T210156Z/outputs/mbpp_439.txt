@@ -1,0 +1,33 @@
+```python
+def multiple_to_single(numbers):
+    """
+    Join a list of multiple integers into a single integer.
+    
+    Args:
+        numbers: A list of integers
+        
+    Returns:
+        A single integer formed by concatenating all numbers
+        
+    Example:
+        >>> multiple_to_single([11, 33, 50])
+        113350
+    """
+    return int(''.join(str(num) for num in numbers))
+
+
+# Test cases
+assert multiple_to_single([11, 33, 50]) == 113350
+assert multiple_to_single([1, 2, 3]) == 123
+assert multiple_to_single([100, 200]) == 100200
+assert multiple_to_single([5]) == 5
+
+print("All assertions passed!")
+```
+
+The solution works by:
+1. Converting each integer in the list to a string using `str(num)`
+2. Joining all the string representations together using `''.join()`
+3. Converting the resulting concatenated string back to an integer using `int()`
+
+For example, `[11, 33, 50]` becomes `['11', '33', '50']` → `'113350'` → `113350`

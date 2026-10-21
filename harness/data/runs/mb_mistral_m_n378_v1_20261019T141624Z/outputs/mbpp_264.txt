@@ -1,0 +1,17 @@
+```python
+def dog_age(human_years):
+    """
+    Calculate a dog's age in dog years based on human years.
+    The first two human years count as 10.5 dog years each,
+    and each subsequent human year counts as 4 dog years.
+    """
+    if human_years <= 0:
+        return 0
+    elif human_years <= 2:
+        return human_years * 10.5
+    else:
+        return 2 * 10.5 + (human_years - 2) * 4
+
+# Test case
+assert dog_age(12) == 61
+```

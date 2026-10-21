@@ -1,0 +1,27 @@
+```python
+from typing import List, Tuple, Set
+
+def tuple_intersection(list1: List[Tuple[int, int]], list2: List[Tuple[int, int]]) -> Set[Tuple[int, int]]:
+    """
+    Return the intersection of two lists of 2-element tuples, ignoring order
+    within each tuple.
+
+    Example:
+        (4, 5) and (5, 4) are considered the same.
+    """
+    # Normalize each tuple so order does not matter
+    norm1 = {tuple(sorted(t)) for t in list1}
+    norm2 = {tuple(sorted(t)) for t in list2}
+
+    # Intersection of normalized tuples
+    return norm1 & norm2
+
+
+if __name__ == "__main__":
+    assert tuple_intersection(
+        [(3, 4), (5, 6), (9, 10), (4, 5)],
+        [(5, 4), (3, 4), (6, 5), (9, 11)]
+    ) == {(4, 5), (3, 4), (5, 6)}
+
+    print("All tests passed.")
+```

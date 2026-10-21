@@ -1,0 +1,44 @@
+```python
+def dict_depth(d):
+    """
+    Find the depth of a dictionary.
+    
+    Args:
+        d: A dictionary to measure
+        
+    Returns:
+        The maximum depth of the dictionary
+    """
+    if not isinstance(d, dict) or not d:
+        return 1
+    
+    max_depth = 0
+    for value in d.values():
+        if isinstance(value, dict):
+            max_depth = max(max_depth, dict_depth(value))
+    
+    return max_depth + 1
+
+
+# Test cases
+assert dict_depth({'a': 1, 'b': {'c': {'d': {}}}}) == 4
+assert dict_depth({'a': 1}) == 1
+assert dict_depth({}) == 1
+assert dict_depth({'a': {'b': {'c': {'d': {'e': 1}}}}}) == 5
+assert dict_depth({'x': 1, 'y': 2, 'z': 3}) == 1
+
+print("All tests passed!")
+```
+
+The solution uses recursion to traverse the dictionary and find the maximum depth:
+
+1. **Base case**: If the input is not a dictionary or is empty, return depth 1
+2. **Recursive case**: For each value in the dictionary, if it's a dictionary itself, recursively find its depth
+3. **Return**: Return 1 plus the maximum depth found among all nested dictionaries
+
+For the example `{'a':1, 'b': {'c': {'d': {}}}}`:
+- Level 1: The outer dictionary
+- Level 2: `{'c': {'d': {}}}`
+- Level 3: `{'d': {}}`
+- Level 4: `{}`
+- Total depth: 4

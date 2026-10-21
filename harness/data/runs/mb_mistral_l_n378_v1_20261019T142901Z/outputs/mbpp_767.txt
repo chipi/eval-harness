@@ -1,0 +1,44 @@
+Here's a self-contained Python script that solves the problem by counting the number of pairs in a list that sum up to a given value:
+
+```python
+def get_pairs_count(numbers, target_sum):
+    """
+    Count the number of pairs in a list that sum up to a given value.
+
+    Args:
+        numbers: List of integers
+        target_sum: The target sum to find pairs for
+
+    Returns:
+        int: Number of pairs that sum to target_sum
+    """
+    count = 0
+    n = len(numbers)
+
+    # Iterate through all possible pairs
+    for i in range(n):
+        for j in range(i + 1, n):
+            if numbers[i] + numbers[j] == target_sum:
+                count += 1
+
+    return count
+
+# Test case
+assert get_pairs_count([1, 1, 1, 1], 2) == 6
+
+# Additional test cases
+assert get_pairs_count([1, 5, 7, -1, 5], 6) == 3
+assert get_pairs_count([1, 1, 1, 1, 1], 2) == 10
+assert get_pairs_count([1, 2, 3, 4, 5], 6) == 2
+assert get_pairs_count([], 2) == 0
+assert get_pairs_count([1], 2) == 0
+```
+
+This solution:
+1. Takes a list of numbers and a target sum as input
+2. Uses nested loops to check all possible pairs (without double-counting)
+3. Counts how many pairs sum to the target value
+4. Returns the count
+5. Includes the required test case and additional test cases for verification
+
+The time complexity is O(n²) where n is the length of the input list, which is efficient enough for small to medium-sized lists. For very large lists, a more optimized solution using a hash map could be implemented with O(n) time complexity.

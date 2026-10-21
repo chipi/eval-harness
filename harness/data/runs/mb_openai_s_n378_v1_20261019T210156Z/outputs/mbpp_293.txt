@@ -1,0 +1,21 @@
+```python
+import math
+
+def otherside_rightangle(a, b):
+    """
+    Return the hypotenuse (third side) of a right-angled triangle
+    given the lengths of the other two sides.
+
+    Uses the Pythagorean theorem:
+        c = sqrt(a^2 + b^2)
+
+    Example:
+        otherside_rightangle(7, 8) -> 10.63014581273465
+    """
+    return math.sqrt(a * a + b * b)
+
+
+if __name__ == "__main__":
+    assert otherside_rightangle(7, 8) == 10.63014581273465
+    print("All tests passed.")
+```

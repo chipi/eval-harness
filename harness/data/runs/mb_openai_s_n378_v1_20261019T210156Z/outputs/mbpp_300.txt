@@ -1,0 +1,24 @@
+```python
+import math
+
+def count_binary_seq(n: int) -> float:
+    """
+    Count binary sequences of length 2n such that the sum of the first n bits
+    equals the sum of the last n bits.
+
+    For each possible sum k in the first half, there are C(n, k) ways to choose
+    the first n bits and C(n, k) ways for the second n bits. So the total count is:
+        sum_{k=0..n} C(n, k)^2
+
+    By Vandermonde's identity, this equals C(2n, n).
+
+    Returns:
+        float: the count as a float, matching the style of the prompt.
+    """
+    return float(math.comb(2 * n, n))
+
+
+if __name__ == "__main__":
+    assert math.isclose(count_binary_seq(1), 2.0, rel_tol=0.001)
+    print(count_binary_seq(1))
+```

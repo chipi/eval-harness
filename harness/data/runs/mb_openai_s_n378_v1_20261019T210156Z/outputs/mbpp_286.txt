@@ -1,0 +1,61 @@
+```python
+def max_sub_array_sum_repeated(arr, n, k):
+    """
+    Return the largest sum of a contiguous subarray in the array formed by
+    repeating `arr` exactly `k` times.
+
+    Parameters:
+        arr: list of integers
+        n: length of arr (included for compatibility with the prompt)
+        k: number of repetitions
+
+    Example:
+        max_sub_array_sum_repeated([10, 20, -30, -1], 4, 3) -> 30
+    """
+    if not arr or k <= 0:
+        return 0
+
+    # Standard Kadane's algorithm for max subarray sum
+    def kadane(nums):
+        best = cur = nums[0]
+        for x in nums[1:]:
+            cur = max(x, cur + x)
+            best = max(best, cur)
+        return best
+
+    total = sum(arr)
+
+    # Max prefix sum
+    prefix = 0
+    best_prefix = float("-inf")
+    for x in arr:
+        prefix += x
+        best_prefix = max(best_prefix, prefix)
+
+    # Max suffix sum
+    suffix = 0
+    best_suffix = float("-inf")
+    for x in reversed(arr):
+        suffix += x
+        best_suffix = max(best_suffix, suffix)
+
+    # If k == 1, just use Kadane on the original array
+    if k == 1:
+        return kadane(arr)
+
+    # Best subarray either:
+    # 1) lies entirely within one copy, or
+    # 2) spans multiple copies using suffix + middle full copies + prefix
+    best_single = kadane(arr)
+    best_across = best_suffix + best_prefix
+
+    if total > 0:
+        best_across += (k - 2) * total
+
+    return max(best_single, best_across)
+
+
+if __name__ == "__main__":
+    assert max_sub_array_sum_repeated([10, 20, -30, -1], 4, 3) == 30
+    print("All tests passed.")
+```

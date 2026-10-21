@@ -1,0 +1,35 @@
+### Even Product Checker
+#### Problem Statement
+Write a function to check whether the product of numbers in a list is even or not.
+
+#### Solution
+
+```python
+def is_product_even(numbers):
+    """
+    Checks whether the product of numbers in a list is even or not.
+
+    Args:
+        numbers (list): A list of integers.
+
+    Returns:
+        bool: True if the product is even, False otherwise.
+    """
+    # Check if the input is a list
+    if not isinstance(numbers, list):
+        raise TypeError("Input must be a list")
+
+    # Check if all elements in the list are integers
+    if not all(isinstance(num, int) for num in numbers):
+        raise TypeError("All elements in the list must be integers")
+
+    # The product is even if at least one number is even
+    return any(num % 2 == 0 for num in numbers)
+
+# Example usage
+if __name__ == "__main__":
+    print(is_product_even([1, 2, 3]))  # True
+    print(is_product_even([1, 3, 5]))  # False
+```
+
+In this script, we define a function `is_product_even` that takes a list of integers as input and returns a boolean indicating whether the product of the numbers in the list is even or not. The function uses the `any` function with a generator expression to check if at least one number in the list is even. If the input is not a list or if the list contains non-integer values, the function raises a `TypeError`. The example usage demonstrates how to use the function with different inputs.

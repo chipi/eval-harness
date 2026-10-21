@@ -1,0 +1,52 @@
+```python
+def search(nums):
+    """
+    Finds the element that appears only once in a sorted array.
+    Assuming all other elements appear exactly twice.
+    """
+    # Using binary search to achieve O(log n) time complexity
+    low = 0
+    high = len(nums) - 1
+
+    # Edge case: array with only one element
+    if len(nums) == 1:
+        return nums[0]
+
+    while low <= high:
+        mid = (low + high) // 2
+
+        # Check if mid is the unique element
+        # Ensure we don't go out of bounds when checking neighbors
+        is_left_diff = (mid == 0 or nums[mid] != nums[mid - 1])
+        is_right_diff = (mid == len(nums) - 1 or nums[mid] != nums[mid + 1])
+
+        if is_left_diff and is_right_diff:
+            return nums[mid]
+
+        # Determine which side to search.
+        # In a sorted array where elements come in pairs, 
+        # the first element of a pair should be at an even index 
+        # and the second at an odd index.
+        if mid % 2 == 0:
+            # Even index: if it matches the next element, the unique element is to the right
+            if mid + 1 < len(nums) and nums[mid] == nums[mid + 1]:
+                low = mid + 1
+            else:
+                high = mid - 1
+        else:
+            # Odd index: if it matches the previous element, the unique element is to the right
+            if mid - 1 >= 0 and nums[mid] == nums[mid - 1]:
+                low = mid + 1
+            else:
+                high = mid - 1
+
+    return None
+
+if __name__ == "__main__":
+    # Test cases
+    assert search([1, 1, 2, 2, 3]) == 3
+    assert search([0, 1, 1]) == 0
+    assert search([1, 2, 2, 3, 3]) == 1
+    assert search([1, 1, 2, 3, 3]) == 2
+    print("All tests passed!")
+```

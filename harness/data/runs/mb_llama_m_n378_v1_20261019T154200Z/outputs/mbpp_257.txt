@@ -1,0 +1,18 @@
+```python
+def swap_numbers(a, b):
+    """
+    This function takes in two numbers and returns a tuple with the second number and then the first number.
+
+    Args:
+        a (int): The first number.
+        b (int): The second number.
+
+    Returns:
+        tuple: A tuple containing the second number and then the first number.
+    """
+    return (b, a)
+
+# Test the function
+assert swap_numbers(10, 20) == (20, 10)
+print(swap_numbers(10, 20))  # Output: (20, 10)
+```

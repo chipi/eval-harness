@@ -1,0 +1,68 @@
+```python
+def magic_square_test(matrix):
+    """
+    Calculates whether a given matrix is a magic square.
+    A magic square is a square matrix where the sums of each row, 
+    each column, and both main diagonals are equal.
+    
+    Args:
+        matrix (list of list of int): The matrix to test.
+        
+    Returns:
+        bool: True if the matrix is a magic square, False otherwise.
+    """
+    # Determine the size of the matrix
+    n = len(matrix)
+    
+    # Check if the matrix is square (number of rows equals number of columns in each row)
+    for row in matrix:
+        if len(row) != n:
+            return False
+            
+    # If matrix is empty or 1x1, it is technically a magic square, 
+    # though the definition usually implies n >= 1.
+    # The sum logic below handles n=1 correctly (sum is the element itself).
+    if n == 0:
+        return False
+
+    # Calculate the target sum using the first row
+    target_sum = sum(matrix[0])
+
+    # Check rows
+    for row in matrix:
+        if sum(row) != target_sum:
+            return False
+
+    # Check columns
+    for col_index in range(n):
+        col_sum = 0
+        for row_index in range(n):
+            col_sum += matrix[row_index][col_index]
+        if col_sum != target_sum:
+            return False
+
+    # Check main diagonal (top-left to bottom-right)
+    diag1_sum = 0
+    for i in range(n):
+        diag1_sum += matrix[i][i]
+    if diag1_sum != target_sum:
+        return False
+
+    # Check secondary diagonal (top-right to bottom-left)
+    diag2_sum = 0
+    for i in range(n):
+        diag2_sum += matrix[i][n - 1 - i]
+    if diag2_sum != target_sum:
+        return False
+
+    # If all checks pass, it is a magic square
+    return True
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert magic_square_test([[7, 12, 1, 14], [2, 13, 8, 11], [16, 3, 10, 5], [9, 6, 15, 4]]) == True
+    # Additional test cases for verification
+    assert magic_square_test([[2, 7, 6], [9, 5, 1], [4, 3, 8]]) == True
+    assert magic_square_test([[1, 2], [3, 4]]) == False
+    print("All tests passed.")
+```

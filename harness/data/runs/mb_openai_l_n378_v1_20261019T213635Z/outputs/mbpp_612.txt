@@ -1,0 +1,12 @@
+```python
+def merge(pairs):
+    first = [pair[0] for pair in pairs]
+    second = [pair[1] for pair in pairs]
+    return [first, second]
+
+
+assert merge([['x', 'y'], ['a', 'b'], ['m', 'n']]) == [
+    ['x', 'a', 'm'],
+    ['y', 'b', 'n'],
+]
+```

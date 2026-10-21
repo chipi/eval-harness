@@ -1,0 +1,19 @@
+```python
+import math
+
+def surfacearea_sphere(radius):
+    """
+    Calculates the surface area of a sphere.
+
+    Args:
+        radius: The radius of the sphere.
+
+    Returns:
+        The surface area of the sphere.
+    """
+    return 4 * math.pi * radius**2
+
+if __name__ == '__main__':
+    assert math.isclose(surfacearea_sphere(10), 1256.6370614359173, rel_tol=0.001)
+    print("All test cases passed!")
+```

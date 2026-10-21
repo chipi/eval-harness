@@ -1,0 +1,71 @@
+```python
+def sum_in_range(l: int, r: int) -> int:
+    """
+    Calculates the sum of all odd natural numbers within a given range [l, r].
+
+    This function uses a mathematical approach for efficiency, avoiding the need
+    for explicit loops. The formula for the sum of an arithmetic series is used:
+    Sum = n/2 * (first_term + last_term)
+
+    Args:
+        l (int): The lower bound of the range (inclusive).
+        r (int): The upper bound of the range (inclusive).
+
+    Returns:
+        int: The sum of all odd numbers in the range [l, r].
+             Returns 0 if the range contains no odd numbers.
+
+    Examples:
+        >>> sum_in_range(2, 5)
+        8
+        >>> sum_in_range(1, 10)
+        25
+        >>> sum_in_range(2, 2)
+        0
+        >>> sum_in_range(1, 1)
+        1
+        >>> sum_in_range(10, 1)
+        0
+    """
+    # If the range is invalid (l > r), there are no numbers to sum.
+    if l > r:
+        return 0
+
+    # Find the first odd number in the range [l, r].
+    # If l is odd, it's the first number. Otherwise, the next number is.
+    first_odd = l if l % 2 != 0 else l + 1
+
+    # If the first_odd number is now greater than r, it means there are no
+    # odd numbers in the range.
+    if first_odd > r:
+        return 0
+
+    # Find the last odd number in the range [l, r].
+    # If r is odd, it's the last number. Otherwise, the previous number is.
+    last_odd = r if r % 2 != 0 else r - 1
+
+    # The sequence of odd numbers forms an arithmetic progression.
+    # first_odd is the first term (a1).
+    # last_odd is the last term (an).
+    # The common difference (d) is 2.
+    # The number of terms (n) can be found by: n = ((an - a1) / d) + 1
+    n = ((last_odd - first_odd) // 2) + 1
+
+    # The sum of an arithmetic series is: Sum = n/2 * (a1 + an)
+    total_sum = n * (first_odd + last_odd) // 2
+
+    return total_sum
+
+# Example usage and assertions from the problem description
+assert sum_in_range(2, 5) == 8
+
+# Additional assertions to verify correctness
+assert sum_in_range(1, 10) == 25  # 1+3+5+7+9
+assert sum_in_range(2, 2) == 0    # No odd numbers
+assert sum_in_range(1, 1) == 1    # Single odd number
+assert sum_in_range(10, 1) == 0   # Invalid range
+assert sum_in_range(3, 9) == 24   # 3+5+7+9
+assert sum_in_range(4, 8) == 12   # 5+7
+
+print("All assertions passed.")
+```

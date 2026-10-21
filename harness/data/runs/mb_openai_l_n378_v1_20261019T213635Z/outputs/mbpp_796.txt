@@ -1,0 +1,7 @@
+```python
+def return_sum(items):
+    return sum(items.values())
+
+
+assert return_sum({'a': 100, 'b': 200, 'c': 300}) == 600
+```

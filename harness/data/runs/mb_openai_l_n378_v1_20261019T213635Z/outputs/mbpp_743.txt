@@ -1,0 +1,14 @@
+```python
+def rotate_right(items, count):
+    """Return a new list with items rotated right by count positions."""
+    if not items:
+        return []
+
+    count %= len(items)
+    return items[-count:] + items[:-count] if count else items[:]
+
+
+assert rotate_right([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 3) == [
+    8, 9, 10, 1, 2, 3, 4, 5, 6, 7
+]
+```

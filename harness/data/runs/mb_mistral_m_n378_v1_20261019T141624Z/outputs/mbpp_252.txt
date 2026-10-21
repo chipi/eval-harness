@@ -1,0 +1,23 @@
+```python
+import cmath
+
+def convert(complex_number):
+    """
+    Convert a complex number to polar coordinates (magnitude, phase in radians).
+
+    Args:
+        complex_number: A complex number (can be int, float, or complex type)
+
+    Returns:
+        A tuple (magnitude, phase) representing the polar coordinates
+    """
+    # Convert input to complex type if it isn't already
+    z = complex(complex_number)
+    # Get magnitude and phase using cmath
+    magnitude = abs(z)
+    phase = cmath.phase(z)
+    return (magnitude, phase)
+
+# Test case
+assert convert(1) == (1.0, 0.0)
+```

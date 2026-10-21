@@ -1,0 +1,19 @@
+```python
+def extract_even(t):
+    """Remove uneven (odd) elements from a nested mixed tuple, preserving structure."""
+    result = []
+    for item in t:
+        if isinstance(item, tuple):
+            # Recursively process nested tuples
+            processed = extract_even(item)
+            result.append(processed)
+        elif isinstance(item, int) and item % 2 == 0:
+            result.append(item)
+        # Skip odd integers
+    return tuple(result)
+
+
+# Test
+assert extract_even((4, 5, (7, 6, (2, 4)), 6, 8)) == (4, (6, (2, 4)), 6, 8)
+print("All tests passed!")
+```

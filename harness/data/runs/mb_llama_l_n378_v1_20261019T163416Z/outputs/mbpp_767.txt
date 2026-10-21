@@ -1,0 +1,42 @@
+```python
+def get_pairs_count(numbers, target_sum):
+    """
+    Counts the number of pairs in the given list of numbers whose sum is equal to the target sum.
+
+    Args:
+        numbers (list): A list of numbers.
+        target_sum (int): The target sum.
+
+    Returns:
+        int: The number of pairs whose sum is equal to the target sum.
+    """
+    count_dict = {}
+    total_count = 0
+
+    # Count occurrences of each number
+    for num in numbers:
+        if num in count_dict:
+            count_dict[num] += 1
+        else:
+            count_dict[num] = 1
+
+    # Calculate the number of pairs for each number
+    for num in count_dict:
+        complement = target_sum - num
+        if complement in count_dict:
+            if num == complement:  # If the number is the same as its complement, count the pairs differently
+                total_count += count_dict[num] * (count_dict[num] - 1) // 2
+            elif num < complement:  # Count each pair only once
+                total_count += count_dict[num] * count_dict[complement]
+
+    return total_count
+
+
+def main():
+    assert get_pairs_count([1, 1, 1, 1], 2) == 6
+    print("All tests passed.")
+
+
+if __name__ == "__main__":
+    main()
+```

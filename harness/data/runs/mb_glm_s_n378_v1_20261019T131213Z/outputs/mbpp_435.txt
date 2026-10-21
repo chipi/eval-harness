@@ -1,0 +1,24 @@
+```python
+def last_Digit(number):
+  """
+  Finds the last digit of a given number.
+
+  Args:
+    number: An integer.
+
+  Returns:
+    The last digit of the number as an integer.
+  """
+  # The last digit of a number is the remainder when the number
+  # is divided by 10. We use the modulo operator (%) to find this.
+  return number % 10
+
+# Example usage and assertions to verify the function
+assert last_Digit(123) == 3
+assert last_Digit(0) == 0
+assert last_Digit(9876) == 6
+assert last_Digit(-54) == -4  # Note: Python's modulo operator handles negative numbers this way
+assert last_Digit(100) == 0
+
+print("All assertions passed!")
+```

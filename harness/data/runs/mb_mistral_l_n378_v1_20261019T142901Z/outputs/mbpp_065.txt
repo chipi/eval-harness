@@ -1,0 +1,35 @@
+Here's a self-contained Python script that solves the problem by recursively flattening a nested list and summing all its elements:
+
+```python
+def recursive_list_sum(data):
+    """
+    Recursively flattens a nested list/tuple structure and sums all its elements.
+
+    Args:
+        data: A nested list or tuple containing integers and other lists/tuples
+
+    Returns:
+        The sum of all integer elements in the nested structure
+    """
+    total = 0
+    for element in data:
+        if isinstance(element, (list, tuple)):
+            total += recursive_list_sum(element)
+        else:
+            total += element
+    return total
+
+# Test case
+assert recursive_list_sum(([1, 2, [3, 4], [5, 6]])) == 21
+print("Test passed!")
+```
+
+This solution:
+1. Takes any nested list/tuple structure as input
+2. Recursively processes each element:
+   - If the element is a list or tuple, it recursively processes that element
+   - If the element is a number, it adds it to the total
+3. Returns the sum of all numeric elements
+4. Includes the required test case that verifies the function works correctly
+
+The function handles both lists and tuples in the input structure, as shown in the test case where the input is a tuple containing lists.

@@ -1,0 +1,37 @@
+```python
+import math
+
+def count_binary_seq(n):
+    """
+    This function calculates the count of all binary sequences of length 2n 
+    such that the sum of the first n bits is the same as the sum of the last n bits.
+
+    Args:
+        n (int): The half length of the binary sequence.
+
+    Returns:
+        float: The count of binary sequences satisfying the condition.
+    """
+    # The problem is equivalent to finding the number of ways to choose n bits 
+    # out of 2n bits, which is given by the binomial coefficient (2n choose n).
+    # We use the math.comb function to calculate this.
+    return math.comb(2*n, n)
+
+# Test the function
+assert math.isclose(count_binary_seq(1), 2.0, rel_tol=0.001)
+```
+This script defines a function `count_binary_seq` that takes an integer `n` as input and returns the count of binary sequences of length `2n` satisfying the given condition. The count is calculated using the binomial coefficient `(2n choose n)`, which is computed using the `math.comb` function. The test case `assert math.isclose(count_binary_seq(1), 2.0, rel_tol=0.001)` ensures that the function works correctly for `n = 1`. 
+
+Please note that the `math.comb` function is available in Python 3.8 and later. If you're using an earlier version of Python, you can calculate the binomial coefficient using the formula `math.factorial(2*n) / (math.factorial(n) ** 2)`. 
+
+Here is how you can do it:
+
+```python
+import math
+
+def count_binary_seq(n):
+    return math.factorial(2*n) / (math.factorial(n) ** 2)
+
+# Test the function
+assert math.isclose(count_binary_seq(1), 2.0, rel_tol=0.001)
+```

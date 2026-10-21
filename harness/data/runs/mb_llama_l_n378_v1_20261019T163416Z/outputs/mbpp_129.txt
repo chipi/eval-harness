@@ -1,0 +1,37 @@
+```python
+def magic_square_test(matrix):
+    # Check if the matrix is a square matrix
+    if len(matrix) != len(matrix[0]):
+        return False
+
+    # Calculate the expected sum
+    expected_sum = sum(matrix[0])
+
+    # Check rows
+    for row in matrix:
+        if sum(row) != expected_sum:
+            return False
+
+    # Check columns
+    for col in range(len(matrix[0])):
+        if sum(matrix[row][col] for row in range(len(matrix))) != expected_sum:
+            return False
+
+    # Check diagonals
+    if sum(matrix[i][i] for i in range(len(matrix))) != expected_sum:
+        return False
+    if sum(matrix[i][len(matrix) - i - 1] for i in range(len(matrix))) != expected_sum:
+        return False
+
+    # Check if all numbers are unique and between 1 and n^2
+    n = len(matrix)
+    flat_list = [num for row in matrix for num in row]
+    if sorted(flat_list) != list(range(1, n * n + 1)):
+        return False
+
+    return True
+
+# Test the function
+matrix = [[7, 12, 1, 14], [2, 13, 8, 11], [16, 3, 10, 5], [9, 6, 15, 4]]
+print(magic_square_test(matrix))  # Should print: True
+```

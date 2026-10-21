@@ -1,0 +1,34 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def overlapping(seq1, seq2):
+    """
+    Check whether any value in seq1 exists in seq2.
+    
+    Args:
+        seq1: First sequence
+        seq2: Second sequence
+    
+    Returns:
+        bool: True if any value in seq1 exists in seq2, False otherwise
+    """
+    return any(item in seq2 for item in seq1)
+
+
+# Test the function
+if __name__ == "__main__":
+    # Test case from the problem
+    assert overlapping([1, 2, 3, 4, 5], [6, 7, 8, 9]) == False
+    
+    # Additional test cases
+    assert overlapping([1, 2, 3], [3, 4, 5]) == True
+    assert overlapping([], [1, 2, 3]) == False
+    assert overlapping([1, 2, 3], []) == False
+    assert overlapping([1, 2, 3], [1, 2, 3]) == True
+    assert overlapping(["a", "b", "c"], ["d", "e", "f"]) == False
+    assert overlapping(["a", "b", "c"], ["c", "d", "e"]) == True
+    
+    print("All tests passed!")
+```
+
+The function uses Python's built-in `any()` function with a generator expression to efficiently check if any element from the first sequence exists in the second sequence. It returns `True` as soon as it finds a match, making it efficient for large sequences.

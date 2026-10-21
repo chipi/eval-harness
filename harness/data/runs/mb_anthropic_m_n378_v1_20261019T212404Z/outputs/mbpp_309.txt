@@ -1,0 +1,20 @@
+```python
+def maximum(a, b):
+    """
+    Function to find the maximum of two numbers.
+    """
+    if a > b:
+        return a
+    else:
+        return b
+
+
+# Test case
+assert maximum(5, 10) == 10
+
+if __name__ == "__main__":
+    print(maximum(5, 10))  # Output: 10
+    print(maximum(20, 7))  # Output: 20
+    print(maximum(-3, -8))  # Output: -3
+    print(maximum(4, 4))   # Output: 4
+```

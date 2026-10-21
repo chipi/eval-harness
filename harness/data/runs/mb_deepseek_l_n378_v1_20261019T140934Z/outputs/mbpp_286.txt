@@ -1,0 +1,72 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def max_sub_array_sum_repeated(arr, n, k):
+    """
+    Find the largest sum of a contiguous subarray in the modified array
+    formed by repeating the given array k times.
+    
+    Parameters:
+    arr (list): The input array
+    n (int): Length of the array
+    k (int): Number of times to repeat the array
+    
+    Returns:
+    int: Maximum subarray sum in the repeated array
+    """
+    # Kadane's algorithm to find max subarray sum
+    def kadane(arr):
+        max_ending_here = max_so_far = arr[0]
+        for x in arr[1:]:
+            max_ending_here = max(x, max_ending_here + x)
+            max_so_far = max(max_so_far, max_ending_here)
+        return max_so_far
+    
+    # If k == 1, just return max subarray sum of original array
+    if k == 1:
+        return kadane(arr)
+    
+    # Total sum of the array
+    total_sum = sum(arr)
+    
+    # Create array repeated twice to handle wrapping cases
+    arr_doubled = arr * 2
+    
+    # Max subarray sum in doubled array
+    max_doubled = kadane(arr_doubled)
+    
+    # If total sum is positive and k > 2, we can include middle repetitions
+    if total_sum > 0 and k > 2:
+        return max_doubled + (k - 2) * total_sum
+    else:
+        return max_doubled
+
+
+# Test the function
+if __name__ == "__main__":
+    # Test case from the problem
+    result = max_sub_array_sum_repeated([10, 20, -30, -1], 4, 3)
+    print(f"Result: {result}")
+    assert result == 30, f"Expected 30, but got {result}"
+    
+    # Additional test cases
+    print("Test 1:", max_sub_array_sum_repeated([1, 2], 2, 3))  # Should be 9
+    print("Test 2:", max_sub_array_sum_repeated([-1, -2], 2, 3))  # Should be -1
+    print("Test 3:", max_sub_array_sum_repeated([1, -2, 3], 3, 2))  # Should be 6
+    print("All tests passed!")
+```
+
+**Explanation of the approach:**
+
+1. **Kadane's Algorithm**: Used to find the maximum subarray sum in a single array.
+
+2. **Key Insight**: When repeating an array `k` times:
+   - If `k = 1`, just return the max subarray sum of the original array.
+   - If `k ≥ 2`, the maximum subarray could span across repetitions. We create a doubled array to handle wrapping cases.
+   - If the total sum of the array is positive and `k > 2`, we can include the middle repetitions to maximize the sum.
+
+3. **Formula**: When `total_sum > 0` and `k > 2`:
+   - `max_sum = max_subarray_sum(arr_doubled) + (k - 2) * total_sum`
+   - This accounts for the best prefix + suffix combination plus all middle repetitions.
+
+The function correctly returns `30` for the given test case `[10, 20, -30, -1]` repeated 3 times.

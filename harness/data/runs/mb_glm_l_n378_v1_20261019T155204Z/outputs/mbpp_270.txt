@@ -1,0 +1,15 @@
+```python
+def sum_even_and_even_index(lst):
+    """
+    Finds the sum of even numbers at even positions of a list.
+    
+    Note: In this context, positions are 0-indexed. 
+    Even positions refer to indices 0, 2, 4, etc.
+    """
+    return sum(lst[i] for i in range(0, len(lst), 2) if lst[i] % 2 == 0)
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert sum_even_and_even_index([5, 6, 12, 1, 18, 8]) == 30
+    print("Test passed successfully.")
+```

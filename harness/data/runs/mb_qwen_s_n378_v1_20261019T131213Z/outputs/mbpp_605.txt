@@ -1,0 +1,32 @@
+```python
+def prime_num(n):
+    """
+    Check if the given integer is a prime number.
+    
+    Args:
+        n (int): The integer to check for primality.
+        
+    Returns:
+        bool: True if n is a prime number, False otherwise.
+    """
+    if n <= 1:
+        return False
+    if n <= 3:
+        return True
+    if n % 2 == 0 or n % 3 == 0:
+        return False
+    i = 5
+    while i * i <= n:
+        if n % i == 0 or n % (i + 2) == 0:
+            return False
+        i += 6
+    return True
+
+# Test cases
+assert prime_num(13) == True
+assert prime_num(4) == False
+assert prime_num(2) == True
+assert prime_num(1) == False
+assert prime_num(17) == True
+assert prime_num(18) == False
+```

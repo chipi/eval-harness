@@ -1,0 +1,19 @@
+```python
+def is_nonagonal(n):
+    """
+    Calculate the nth nonagonal number.
+
+    Nonagonal numbers follow the formula: N(n) = n * (7 * n - 5) // 2
+
+    Args:
+        n (int): The position of the nonagonal number to find (1-based index)
+
+    Returns:
+        int: The nth nonagonal number
+    """
+    return n * (7 * n - 5) // 2
+
+# Test the function
+assert is_nonagonal(10) == 325
+print(f"10th nonagonal number: {is_nonagonal(10)}")
+```

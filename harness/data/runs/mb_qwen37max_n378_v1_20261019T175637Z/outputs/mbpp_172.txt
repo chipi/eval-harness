@@ -1,0 +1,9 @@
+```python
+def count_occurance(s: str) -> int:
+    """Count the number of occurrences of the string 'std' in a given string."""
+    return s.count('std')
+
+
+# Test
+assert count_occurance("letstdlenstdporstd") == 3
+```

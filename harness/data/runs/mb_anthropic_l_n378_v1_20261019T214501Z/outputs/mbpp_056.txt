@@ -1,0 +1,82 @@
+Looking at this problem, I need to check if a number equals one less than twice its reverse.
+
+**Analysis:**
+- Reverse the digits of the number
+- Check if `number == 2 * reverse - 1`
+
+**Verification with the test case:**
+- `check(70)`: reverse of 70 is 07 = 7, then `2 * 7 - 1 = 13`, and `70 != 13` → `False` ✓
+
+**Another example:**
+- `check(23)`: reverse is 32, `2 * 32 - 1 = 63`, `23 != 63` → `False`
+- `check(73)`: reverse is 37, `2 * 37 - 1 = 73`, `73 == 73` → `True`
+
+```python
+"""
+Write a python function to check if a given number is one less than twice its reverse.
+assert check(70) == False
+"""
+
+
+def rev(num):
+    """Return the digit-reversal of a non-negative integer."""
+    rev_num = 0
+    while num > 0:
+        rev_num = (rev_num * 10) + (num % 10)
+        num = num // 10
+    return rev_num
+
+
+def check(n):
+    """Return True if n is one less than twice its reverse, else False."""
+    return 2 * rev(n) == n + 1
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert check(70) == False
+
+    # Additional checks
+    assert check(73) == True      # reverse = 37 -> 2*37 - 1 = 73
+    assert check(23) == False     # reverse = 32 -> 2*32 - 1 = 63
+    assert check(943) == True     # reverse = 349 -> 2*349 - 1 = 697? (see note below)
+
+    print("check(70)  =", check(70))
+    print("check(73)  =", check(73))
+    print("check(23)  =", check(23))
+```
+
+Wait — let me verify `check(943)`: reverse is 349, `2*349 - 1 = 697 != 943`, so that assertion is wrong. Here is the corrected script:
+
+```python
+"""
+Write a python function to check if a given number is one less than twice its reverse.
+assert check(70) == False
+"""
+
+
+def rev(num):
+    """Return the digit-reversal of a non-negative integer."""
+    rev_num = 0
+    while num > 0:
+        rev_num = (rev_num * 10) + (num % 10)
+        num = num // 10
+    return rev_num
+
+
+def check(n):
+    """Return True if n is one less than twice its reverse, else False."""
+    return 2 * rev(n) == n + 1
+
+
+if __name__ == "__main__":
+    assert check(70) == False     # rev = 7   -> 2*7 - 1 = 13
+    assert check(73) == True      # rev = 37  -> 2*37 - 1 = 73
+    assert check(23) == False     # rev = 32  -> 2*32 - 1 = 63
+    assert check(1) == True       # rev = 1   -> 2*1 - 1 = 1
+
+    for n in (70, 73, 23, 1):
+        print(f"check({n}) = {check(n)}")
+
+    print("All tests passed!")
+```

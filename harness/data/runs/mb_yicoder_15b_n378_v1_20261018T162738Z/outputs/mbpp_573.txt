@@ -1,0 +1,15 @@
+```python
+def unique_product(lst):
+    unique_nums = list(set(lst))
+    product = 1
+    for num in unique_nums:
+        product *= num
+    return product
+
+# Test cases
+assert unique_product([10, 20, 30, 40, 20, 50, 60, 40]) ==  720000000
+assert unique_product([1, 2, 3, 4, 5]) == 120
+assert unique_product([1, 1, 1, 1, 1]) == 1
+assert unique_product([10]) == 10
+assert unique_product([]) == 1
+```

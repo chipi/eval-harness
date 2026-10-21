@@ -1,0 +1,34 @@
+Here’s a self-contained Python script that solves the problem:  
+
+```python
+from itertools import combinations
+
+def combinations_list(lst):
+    """
+    Returns all possible combinations of the elements of a given list.
+    The order of combinations follows the pattern of increasing length,
+    and within each length, elements are ordered as they appear in the input.
+    """
+    result = []
+    n = len(lst)
+    for r in range(n + 1):
+        for combo in combinations(lst, r):
+            # Convert tuple to list and reverse to match the expected output order
+            result.append(list(combo)[::-1])
+    return result
+
+# Test the function with the given example
+if __name__ == "__main__":
+    test_input = ['orange', 'red', 'green', 'blue']
+    output = combinations_list(test_input)
+    print(output)
+    
+    # Verify against the expected output
+    expected = [[], ['orange'], ['red'], ['red', 'orange'], ['green'], 
+                ['green', 'orange'], ['green', 'red'], ['green', 'red', 'orange'], 
+                ['blue'], ['blue', 'orange'], ['blue', 'red'], ['blue', 'red', 'orange'], 
+                ['blue', 'green'], ['blue', 'green', 'orange'], ['blue', 'green', 'red'], 
+                ['blue', 'green', 'red', 'orange']]
+    assert output == expected, "Test failed!"
+    print("Test passed!")
+```

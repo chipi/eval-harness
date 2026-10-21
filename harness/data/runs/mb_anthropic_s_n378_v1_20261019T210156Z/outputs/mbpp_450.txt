@@ -1,0 +1,31 @@
+```python
+def extract_string(strings, size):
+    """
+    Extract strings of a specified size from a given list of strings.
+    
+    Args:
+        strings: List of string values
+        size: The length of strings to extract
+    
+    Returns:
+        List of strings that have exactly the specified size
+    """
+    return [s for s in strings if len(s) == size]
+
+
+# Test cases
+assert extract_string(['Python', 'list', 'exercises', 'practice', 'solution'], 8) == ['practice', 'solution']
+assert extract_string(['Python', 'list', 'exercises', 'practice', 'solution'], 6) == ['Python']
+assert extract_string(['Python', 'list', 'exercises', 'practice', 'solution'], 4) == ['list']
+assert extract_string(['Python', 'list', 'exercises', 'practice', 'solution'], 9) == ['exercises']
+assert extract_string(['Python', 'list', 'exercises', 'practice', 'solution'], 10) == []
+
+print("All tests passed!")
+```
+
+The script defines a function `extract_string()` that:
+1. Takes a list of strings and a target size as parameters
+2. Uses a list comprehension to filter strings that have exactly the specified length
+3. Returns the filtered list
+
+The function is tested with multiple assertions to verify it works correctly for various cases, including when no strings match the specified size.

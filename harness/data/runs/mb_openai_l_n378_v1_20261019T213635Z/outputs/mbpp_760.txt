@@ -1,0 +1,9 @@
+```python
+def unique_Element(numbers):
+    return len(set(numbers)) == 1
+
+
+assert unique_Element([1, 1, 1]) is True
+assert unique_Element([1, 2, 1]) is False
+assert unique_Element([]) is False
+```

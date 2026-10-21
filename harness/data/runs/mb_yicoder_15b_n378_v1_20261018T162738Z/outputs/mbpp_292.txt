@@ -1,0 +1,12 @@
+```python
+def find(a, b):
+    return a // b
+
+# Test cases
+assert find(10, 3) == 3
+assert find(7, 2) == 3
+assert find(15, 4) == 3
+assert find(100, 3) == 33
+assert find(1000, 3) == 333
+assert find(10000, 3) == 3333
+```

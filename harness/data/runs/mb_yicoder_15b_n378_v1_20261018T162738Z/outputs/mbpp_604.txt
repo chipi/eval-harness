@@ -1,0 +1,10 @@
+```python
+def reverse_words(s):
+    return ' '.join(s.split()[::-1])
+
+# Test cases
+assert reverse_words("python program")=="program python"
+assert reverse_words("hello world")=="world hello"
+assert reverse_words("")==""
+assert reverse_words("a b c")=="c b a"
+```

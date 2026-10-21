@@ -1,0 +1,37 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def ascii_value(char):
+    """
+    Returns the ASCII value of a given character.
+    
+    Args:
+        char (str): A single character.
+    
+    Returns:
+        int: The ASCII value of the character.
+    
+    Raises:
+        TypeError: If input is not a string.
+        ValueError: If input is not a single character.
+    """
+    if not isinstance(char, str):
+        raise TypeError("Input must be a string")
+    if len(char) != 1:
+        raise ValueError("Input must be a single character")
+    return ord(char)
+
+# Test cases
+if __name__ == "__main__":
+    # Basic test
+    assert ascii_value('A') == 65
+    assert ascii_value('a') == 97
+    assert ascii_value('0') == 48
+    assert ascii_value(' ') == 32
+    
+    # Test with special characters
+    assert ascii_value('!') == 33
+    assert ascii_value('~') == 126
+    
+    print("All tests passed!")
+```

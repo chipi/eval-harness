@@ -1,0 +1,66 @@
+### Checking if a List is Sorted
+#### Problem Description
+Write a function to check whether a specified list is sorted or not.
+
+#### Solution
+```python
+def issort_list(input_list):
+    """
+    Checks if a list is sorted in ascending order.
+
+    Args:
+        input_list (list): The list to be checked.
+
+    Returns:
+        bool: True if the list is sorted, False otherwise.
+    """
+    return input_list == sorted(input_list)
+
+# Example usage:
+print(issort_list([1,2,4,6,8,10,12,14,16,17]))  # Returns: True
+print(issort_list([1,2,4,6,8,10,12,14,17,16]))  # Returns: False
+```
+However, the above approach has a time complexity of O(n log n) due to the `sorted` function. 
+
+A more efficient approach would be to iterate over the list and check if each element is less than or equal to the next one. Here's how you can do it:
+
+```python
+def issort_list(input_list):
+    """
+    Checks if a list is sorted in ascending order.
+
+    Args:
+        input_list (list): The list to be checked.
+
+    Returns:
+        bool: True if the list is sorted, False otherwise.
+    """
+    return all(input_list[i] <= input_list[i+1] for i in range(len(input_list)-1))
+
+# Example usage:
+print(issort_list([1,2,4,6,8,10,12,14,16,17]))  # Returns: True
+print(issort_list([1,2,4,6,8,10,12,14,17,16]))  # Returns: False
+```
+This approach has a time complexity of O(n), making it more efficient for large lists. 
+
+Alternatively, you can use the `numpy` library, which provides a function to check if a list is sorted:
+
+```python
+import numpy as np
+
+def issort_list(input_list):
+    """
+    Checks if a list is sorted in ascending order.
+
+    Args:
+        input_list (list): The list to be checked.
+
+    Returns:
+        bool: True if the list is sorted, False otherwise.
+    """
+    return np.all(np.diff(input_list) >= 0)
+
+# Example usage:
+print(issort_list([1,2,4,6,8,10,12,14,16,17]))  # Returns: True
+print(issort_list([1,2,4,6,8,10,12,14,17,16]))  # Returns: False
+```

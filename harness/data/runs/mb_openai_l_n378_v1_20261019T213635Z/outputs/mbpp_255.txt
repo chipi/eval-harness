@@ -1,0 +1,15 @@
+```python
+from itertools import combinations_with_replacement
+
+
+def combinations_colors(colors, n):
+    """Return all length-n combinations of colors, allowing repetition."""
+    return list(combinations_with_replacement(colors, n))
+
+
+assert combinations_colors(["Red", "Green", "Blue"], 1) == [
+    ("Red",),
+    ("Green",),
+    ("Blue",),
+]
+```

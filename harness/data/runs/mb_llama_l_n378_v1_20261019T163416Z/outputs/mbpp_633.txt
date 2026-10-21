@@ -1,0 +1,27 @@
+```python
+def pair_xor_Sum(nums, n):
+    """
+    This function calculates the sum of xor of all pairs of numbers in the given list.
+
+    Args:
+        nums (list): A list of integers.
+        n (int): The number of elements in the list.
+
+    Returns:
+        int: The sum of xor of all pairs of numbers in the list.
+    """
+    total_xor_sum = 0
+    for i in range(n):
+        for j in range(i+1, n):
+            # Calculate the xor of the current pair and add it to the total sum
+            total_xor_sum += nums[i] ^ nums[j]
+    return total_xor_sum
+
+def main():
+    nums = [5, 9, 7, 6]
+    n = len(nums)
+    print(pair_xor_Sum(nums, n))  # Output: 47
+
+if __name__ == "__main__":
+    main()
+```

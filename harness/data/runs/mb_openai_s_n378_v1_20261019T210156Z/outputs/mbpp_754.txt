@@ -1,0 +1,20 @@
+```python
+def extract_index_list(l1, l2, l3):
+    """
+    Return a list of elements that are the same at the same index in all three lists.
+    """
+    common = []
+    for a, b, c in zip(l1, l2, l3):
+        if a == b == c:
+            common.append(a)
+    return common
+
+
+if __name__ == "__main__":
+    assert extract_index_list(
+        [1, 1, 3, 4, 5, 6, 7],
+        [0, 1, 2, 3, 4, 5, 7],
+        [0, 1, 2, 3, 4, 5, 7]
+    ) == [1, 7]
+    print("All tests passed.")
+```

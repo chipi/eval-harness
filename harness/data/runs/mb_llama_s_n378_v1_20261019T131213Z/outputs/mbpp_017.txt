@@ -1,0 +1,42 @@
+```python
+def square_perimeter(side_length: int) -> int:
+    """
+    This function calculates the perimeter of a square given its side length.
+
+    Args:
+        side_length (int): The length of the side of the square.
+
+    Returns:
+        int: The perimeter of the square.
+    """
+    # Since a square has all sides equal, we multiply the side length by 4 to get the perimeter
+    return side_length * 4
+
+# Test the function
+assert square_perimeter(10) == 40
+```
+
+You can also use a main function for better structure:
+
+```python
+def square_perimeter(side_length: int) -> int:
+    """
+    This function calculates the perimeter of a square given its side length.
+
+    Args:
+        side_length (int): The length of the side of the square.
+
+    Returns:
+        int: The perimeter of the square.
+    """
+    # Since a square has all sides equal, we multiply the side length by 4 to get the perimeter
+    return side_length * 4
+
+def main():
+    # Test the function
+    assert square_perimeter(10) == 40
+    print("All tests passed.")
+
+if __name__ == "__main__":
+    main()
+```

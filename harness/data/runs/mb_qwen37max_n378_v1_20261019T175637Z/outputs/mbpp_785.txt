@@ -1,0 +1,10 @@
+```python
+def tuple_str_int(s):
+    """Convert a tuple string representation to an integer tuple."""
+    # Remove parentheses and whitespace, then split by comma and convert to int
+    inner = s.strip().strip("()")
+    return tuple(int(x.strip()) for x in inner.split(","))
+
+
+assert tuple_str_int("(7, 8, 9)") == (7, 8, 9)
+```

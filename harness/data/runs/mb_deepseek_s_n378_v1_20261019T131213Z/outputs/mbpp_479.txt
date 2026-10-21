@@ -1,0 +1,21 @@
+```python
+def first_Digit(n: int) -> int:
+    """
+    Returns the first digit of a given integer.
+    
+    For negative numbers, the first digit of the absolute value is returned.
+    """
+    n = abs(n)
+    # Keep dividing by 10 until only one digit remains
+    while n >= 10:
+        n //= 10
+    return n
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert first_Digit(123) == 1
+    assert first_Digit(0) == 0
+    assert first_Digit(98765) == 9
+    assert first_Digit(-456) == 4
+    print("All tests passed.")
+```

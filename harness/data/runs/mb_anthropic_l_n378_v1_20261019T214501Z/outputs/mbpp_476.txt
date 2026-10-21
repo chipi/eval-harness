@@ -1,0 +1,51 @@
+Looking at this problem, I need to write a function that finds the sum of the largest and smallest values in an array.
+
+**Reasoning:**
+- For `[1,2,3]`: largest = 3, smallest = 1, sum = 3 + 1 = 4 ✓
+- Python's built-in `max()` and `min()` functions make this straightforward.
+
+```python
+"""
+Write a python function to find the sum of the largest and smallest value in a given array.
+assert big_sum([1,2,3]) == 4
+"""
+
+
+def big_sum(nums):
+    """
+    Return the sum of the largest and smallest value in the given array.
+
+    Args:
+        nums: A non-empty sequence of numbers.
+
+    Returns:
+        The sum of the maximum and minimum values in nums.
+
+    Raises:
+        ValueError: If nums is empty.
+    """
+    if not nums:
+        raise ValueError("big_sum() requires a non-empty array")
+    return max(nums) + min(nums)
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert big_sum([1, 2, 3]) == 4
+
+    # Additional test cases
+    assert big_sum([-1, 2, 3, 4]) == 3          # 4 + (-1)
+    assert big_sum([5]) == 10                   # 5 + 5
+    assert big_sum([2, 2, 2, 2]) == 4           # 2 + 2
+    assert big_sum([10, -10, 0]) == 0           # 10 + (-10)
+    assert big_sum([1.5, 2.5, 3.5]) == 5.0      # 3.5 + 1.5
+
+    print("All tests passed!")
+```
+
+**How it works:**
+1. `max(nums)` scans the array and returns the largest element.
+2. `min(nums)` scans the array and returns the smallest element.
+3. Adding them gives the required result.
+
+Time complexity is **O(n)** (two passes) and space complexity is **O(1)**. A manual single-pass loop tracking both min and max would also work, but the built-ins are clearer and are implemented in C, so they're fast in practice.

@@ -1,0 +1,48 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def sum_of_digits(numbers):
+    """
+    Compute the sum of digits of each number in a given list.
+    
+    Args:
+        numbers: A list of integers
+    
+    Returns:
+        The total sum of all digits from all numbers in the list
+    """
+    total_sum = 0
+    
+    for num in numbers:
+        # Convert to absolute value to handle negative numbers
+        num = abs(num)
+        
+        # Extract and sum each digit
+        while num > 0:
+            total_sum += num % 10
+            num //= 10
+    
+    return total_sum
+
+
+# Test the function
+if __name__ == "__main__":
+    # Test case from the problem
+    assert sum_of_digits([10, 2, 56]) == 14, "Test case failed"
+    
+    # Additional test cases
+    assert sum_of_digits([0, 0, 0]) == 0, "Zero test failed"
+    assert sum_of_digits([123, 456]) == 21, "Multi-digit test failed"
+    assert sum_of_digits([9, 8, 7]) == 24, "Single digit test failed"
+    
+    print("All tests passed!")
+    print(f"sum_of_digits([10, 2, 56]) = {sum_of_digits([10, 2, 56])}")
+```
+
+**Explanation:**
+- The function iterates through each number in the input list
+- For each number, it extracts digits one by one using the modulo operator (`% 10`) to get the last digit
+- It then removes that digit using integer division (`//= 10`)
+- All digits are accumulated in `total_sum`
+- The function handles the number 0 correctly (the while loop won't execute, so it adds 0)
+- The test case `[10, 2, 56]` gives: 1+0 + 2 + 5+6 = 14 ✓

@@ -1,0 +1,39 @@
+Here's a self-contained Python script that solves the problem using the Extended Euclidean Algorithm to find integers `x` and `y` that satisfy the equation `ax + by = n`, or returns `None` if no solution exists:
+
+```python
+def find_solution(a, b, n):
+    """
+    Find integers x and y such that ax + by = n.
+    Returns (x, y) if a solution exists, otherwise returns None.
+    """
+    def extended_gcd(a, b):
+        if a == 0:
+            return (b, 0, 1)
+        else:
+            g, y, x = extended_gcd(b % a, a)
+            return (g, x - (b // a) * y, y)
+
+    g, x, y = extended_gcd(a, b)
+    if n % g != 0:
+        return None  # No solution exists
+    else:
+        x0 = x * (n // g)
+        y0 = y * (n // g)
+        # The general solution is x = x0 + (b/g)*k, y = y0 - (a/g)*k for any integer k
+        # We return the smallest non-negative solution for x and y
+        k = -x0 // (b // g) if (b // g) != 0 else 0
+        x_sol = x0 + (b // g) * k
+        y_sol = y0 - (a // g) * k
+        return (x_sol, y_sol)
+
+# Test case
+assert find_solution(2, 3, 7) == (2, 1)
+```
+
+### Explanation:
+1. **Extended Euclidean Algorithm**: The `extended_gcd` function computes the greatest common divisor (gcd) of `a` and `b`, along with coefficients `x` and `y` such that `ax + by = gcd(a, b)`.
+2. **Check for Solution**: If `n` is not divisible by the gcd of `a` and `b`, then no solution exists, and the function returns `None`.
+3. **Particular Solution**: If a solution exists, the function computes a particular solution `(x0, y0)` by scaling the coefficients from the extended gcd.
+4. **General Solution**: The general solution is of the form `x = x0 + (b/g)*k` and `y = y0 - (a/g)*k` for any integer `k`. The script chooses `k` to return the smallest non-negative solution for `x` and `y`.
+
+The test case `assert find_solution(2, 3, 7) == (2, 1)` verifies that the function works correctly for the given example.

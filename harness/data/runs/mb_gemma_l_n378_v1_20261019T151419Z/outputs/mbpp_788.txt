@@ -1,0 +1,21 @@
+```python
+def create_new_tuple(list_input, string_input):
+    """
+    Creates a new tuple by combining elements of a list and a string.
+    
+    Args:
+        list_input (list): A list of strings.
+        string_input (str): A string to be added to the end.
+        
+    Returns:
+        tuple: A tuple containing all elements from the list followed by the string.
+    """
+    # Convert the list to a tuple and add the string as a single-element tuple
+    return tuple(list_input) + (string_input,)
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    result = create_new_tuple(["WEB", "is"], "best")
+    assert result == ('WEB', 'is', 'best'), f"Expected ('WEB', 'is', 'best'), but got {result}"
+    print("Test passed!")
+```

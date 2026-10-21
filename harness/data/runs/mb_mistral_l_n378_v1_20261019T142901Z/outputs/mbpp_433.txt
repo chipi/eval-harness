@@ -1,0 +1,29 @@
+Here's a self-contained Python script that solves the problem, including the function and the assertion test:
+
+```python
+"""
+Function to check whether the entered number is greater than all elements of the given array.
+"""
+
+def check_greater(arr, num):
+    """
+    Check if the given number is greater than all elements in the array.
+
+    Args:
+        arr (list): List of numbers to compare against.
+        num (int/float): Number to check.
+
+    Returns:
+        bool: True if num is greater than all elements in arr, False otherwise.
+    """
+    return all(num > element for element in arr)
+
+# Test case
+assert check_greater([1, 2, 3, 4, 5], 4) == False
+```
+
+This script:
+1. Defines the `check_greater` function that takes an array and a number
+2. Uses the `all()` function with a generator expression to check if the number is greater than every element
+3. Includes the provided test case as an assertion
+4. Will raise an AssertionError if the test fails (which it shouldn't for this case)

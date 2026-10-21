@@ -1,0 +1,22 @@
+```python
+from collections import Counter
+
+def max_occurrences(lst):
+    """
+    Return the item with the maximum frequency in the list.
+    If there is a tie, returns the first item among those with max frequency
+    that appears in the original list.
+    """
+    counts = Counter(lst)
+    max_count = max(counts.values())
+    
+    for item in lst:
+        if counts[item] == max_count:
+            return item
+
+# Example usage / test
+assert max_occurrences([2,3,8,4,7,9,8,2,6,5,1,6,1,2,3,2,4,6,9,1,2]) == 2
+
+if __name__ == "__main__":
+    print("All tests passed.")
+```

@@ -1,0 +1,45 @@
+```python
+def max_product(arr: list) -> int:
+    """
+    Find the maximum product formed by multiplying numbers of an increasing subsequence of that array.
+    
+    An increasing subsequence means we pick elements from the array in order (maintaining their relative positions)
+    such that each selected element is strictly greater than the previous one, and we multiply them together.
+    We want to find the subsequence that gives the maximum product.
+    
+    Args:
+        arr: A list of integers
+        
+    Returns:
+        The maximum product of any increasing subsequence
+    """
+    if not arr:
+        return 0
+    
+    n = len(arr)
+    # dp[i] stores the maximum product of an increasing subsequence ending at index i
+    dp = [arr[i] for i in range(n)]
+    
+    for i in range(1, n):
+        for j in range(i):
+            if arr[j] < arr[i]:
+                # We can extend the subsequence ending at j with arr[i]
+                new_product = dp[j] * arr[i]
+                if new_product > dp[i]:
+                    dp[i] = new_product
+    
+    return max(dp)
+
+
+if __name__ == "__main__":
+    # Test case from the problem statement
+    assert max_product([3, 100, 4, 5, 150, 6]) == 3000
+    
+    # Additional test cases
+    assert max_product([1, 2, 3]) == 6  # 1*2*3 = 6
+    assert max_product([3, 2, 1]) == 3  # Just pick the largest single element
+    assert max_product([5]) == 5
+    assert max_product([]) == 0
+    
+    print("All tests passed!")
+```

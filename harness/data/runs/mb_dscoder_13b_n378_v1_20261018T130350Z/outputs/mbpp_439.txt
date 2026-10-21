@@ -1,0 +1,9 @@
+```python
+def multiple_to_single(numbers):
+    return int(''.join(map(str, numbers)))
+
+# Test cases
+assert multiple_to_single([11, 33, 50]) == 113350
+assert multiple_to_single([1, 2, 3, 4, 5]) == 12345
+assert multiple_to_single([9, 8, 7, 6, 5, 4, 3, 2, 1]) == 987654321
+```

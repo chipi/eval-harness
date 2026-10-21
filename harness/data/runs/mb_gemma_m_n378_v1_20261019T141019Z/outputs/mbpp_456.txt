@@ -1,0 +1,28 @@
+```python
+def reverse_string_list(strings):
+    """
+    Reverses each string in a given list of string values.
+    
+    Args:
+        strings (list of str): The list of strings to be reversed.
+        
+    Returns:
+        list of str: A new list containing the reversed strings.
+    """
+    return [s[::-1] for s in strings]
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    input_list = ['Red', 'Green', 'Blue', 'White', 'Black']
+    expected_output = ['deR', 'neerG', 'eulB', 'etihW', 'kcalB']
+    
+    # Execution
+    result = reverse_string_list(input_list)
+    
+    # Assertion to verify correctness
+    assert result == expected_output, f"Expected {expected_output}, but got {result}"
+    
+    print("Assertion passed!")
+    print(f"Input:  {input_list}")
+    print(f"Output: {result}")
+```

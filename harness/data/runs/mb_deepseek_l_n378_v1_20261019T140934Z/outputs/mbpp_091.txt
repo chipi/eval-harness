@@ -1,0 +1,29 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def find_substring(string_list, substring):
+    """
+    Check if a string is present as a substring in a given list of string values.
+    
+    Args:
+        string_list: List of strings to search through
+        substring: String to search for as a substring
+    
+    Returns:
+        True if substring is found in any of the strings, False otherwise
+    """
+    for string in string_list:
+        if substring in string:
+            return True
+    return False
+
+# Test the function
+if __name__ == "__main__":
+    assert find_substring(["red", "black", "white", "green", "orange"], "ack") == True
+    assert find_substring(["red", "black", "white", "green", "orange"], "xyz") == False
+    assert find_substring([], "test") == False
+    assert find_substring(["hello", "world"], "") == True
+    print("All tests passed!")
+```
+
+The function iterates through each string in the list and checks if the given substring exists within it using Python's `in` operator. It returns `True` immediately when a match is found, or `False` if no match is found after checking all strings.

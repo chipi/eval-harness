@@ -1,0 +1,33 @@
+```python
+def sum_list(list1, list2):
+    """
+    This function takes two lists of numbers as input and returns a new list 
+    where each element is the sum of the corresponding elements in the input lists.
+
+    Args:
+        list1 (list): The first list of numbers.
+        list2 (list): The second list of numbers.
+
+    Returns:
+        list: A new list where each element is the sum of the corresponding elements in the input lists.
+
+    Raises:
+        ValueError: If the input lists are not of the same length.
+    """
+    if len(list1)!= len(list2):
+        raise ValueError("Input lists must be of the same length")
+
+    return [a + b for a, b in zip(list1, list2)]
+
+
+# Example usage:
+def main():
+    list1 = [10, 20, 30]
+    list2 = [15, 25, 35]
+    result = sum_list(list1, list2)
+    print(result)  # Output: [25, 45, 65]
+
+
+if __name__ == "__main__":
+    main()
+```

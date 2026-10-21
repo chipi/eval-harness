@@ -1,0 +1,23 @@
+```python
+def add_dict_to_tuple(tup, dict_val):
+    """
+    Add a dictionary to the end of a tuple and return the new tuple.
+    
+    Args:
+        tup: The original tuple
+        dict_val: The dictionary to add
+    
+    Returns:
+        A new tuple with the dictionary appended as the last element
+    """
+    return tup + (dict_val,)
+
+
+if __name__ == "__main__":
+    # Test case from the problem statement
+    result = add_dict_to_tuple((4, 5, 6), {"MSAM": 1, "is": 2, "best": 3})
+    expected = (4, 5, 6, {'MSAM': 1, 'is': 2, 'best': 3})
+    assert result == expected, f"Expected {expected}, but got {result}"
+    print("Test passed!")
+    print(f"Result: {result}")
+```

@@ -1,0 +1,51 @@
+```python
+def remove_length(s: str, k: int) -> str:
+    """
+    Removes all words of a specified length from a string.
+
+    This function splits the input string into a list of words, filters out
+    any words whose length matches the specified integer `k`, and then joins
+    the remaining words back into a single string with spaces.
+
+    Args:
+        s: The input string from which to remove words.
+        k: The target length of words to be removed.
+
+    Returns:
+        A new string containing only the words from the input string
+        that do not have a length of `k`. Words are separated by spaces.
+        If the input string is empty, an empty string is returned.
+
+    Example:
+        >>> remove_length('The person is most value tet', 3)
+        'person is most value'
+    """
+    # Split the string into a list of words.
+    words = s.split()
+    
+    # Use a list comprehension to create a new list containing only the words
+    # whose length is not equal to k.
+    filtered_words = [word for word in words if len(word) != k]
+    
+    # Join the filtered words back into a single string with spaces.
+    return ' '.join(filtered_words)
+
+# Example usage and assertion to verify the function's correctness.
+if __name__ == "__main__":
+    # The example from the problem description.
+    input_string = 'The person is most value tet'
+    k_value = 3
+    expected_output = 'person is most value'
+    
+    # Call the function and assert that the output matches the expected result.
+    assert remove_length(input_string, k_value) == expected_output
+    
+    # Additional test cases to ensure robustness.
+    assert remove_length('a bb ccc dddd', 2) == 'a ccc dddd'
+    assert remove_length('hello world', 5) == 'world'
+    assert remove_length('short', 5) == ''
+    assert remove_length('', 3) == ''
+    assert remove_length('one two three four', 3) == 'two four'
+    
+    print("All assertions passed successfully!")
+```

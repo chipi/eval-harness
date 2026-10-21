@@ -1,0 +1,36 @@
+Here's a self-contained Python script that solves the problem of finding the median length of a trapezium. The median (or midline) of a trapezium is the average of the lengths of the two parallel sides (bases).
+
+```python
+"""
+Function to calculate the median length of a trapezium.
+The median (midline) of a trapezium is the average of the two parallel sides.
+
+Parameters:
+a (float): Length of the first parallel side.
+b (float): Length of the second parallel side.
+c (float): Length of the non-parallel side (not used in median calculation).
+           Included for compatibility with the example assertion.
+
+Returns:
+float: The median length of the trapezium.
+"""
+
+def median_trapezium(a: float, b: float, c: float) -> float:
+    """
+    Calculate the median length of a trapezium.
+
+    The median is given by (a + b) / 2, where a and b are the lengths of the parallel sides.
+    The third parameter (c) is not used in the calculation but is included to match the example.
+    """
+    return (a + b) / 2
+
+# Test the function with the provided assertion
+assert median_trapezium(15, 25, 35) == 20, "Test failed: median_trapezium(15, 25, 35) should return 20"
+print("Test passed!")
+```
+
+### Explanation:
+1. The function `median_trapezium` takes three parameters: `a`, `b`, and `c`, where `a` and `b` are the lengths of the two parallel sides of the trapezium.
+2. The median is calculated as the average of `a` and `b` (i.e., `(a + b) / 2`).
+3. The third parameter `c` is not used in the calculation but is included to match the example assertion provided.
+4. The assertion checks that `median_trapezium(15, 25, 35)` returns `20`, which is correct since `(15 + 25) / 2 = 20`.

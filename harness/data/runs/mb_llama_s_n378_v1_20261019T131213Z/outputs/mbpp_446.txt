@@ -1,0 +1,73 @@
+```python
+def count_Occurrence(tup, lst):
+    """
+    This function counts the occurrence of all elements in a list within a tuple.
+
+    Args:
+        tup (tuple): The tuple to search in.
+        lst (list): The list of elements to search for.
+
+    Returns:
+        int: The total occurrence of all elements in the list within the tuple.
+    """
+    # Initialize a counter variable
+    count = 0
+    
+    # Iterate over each element in the tuple
+    for elem in tup:
+        # Check if the element is in the list
+        if elem in lst:
+            # If it is, increment the counter
+            count += 1
+    
+    # Return the total count
+    return count
+
+# Test the function
+assert count_Occurrence(('a', 'a', 'c', 'b', 'd'),['a', 'b']) == 3
+print("All tests passed.")
+```
+
+Alternatively, you can use a more Pythonic approach with list comprehension:
+
+```python
+def count_Occurrence(tup, lst):
+    """
+    This function counts the occurrence of all elements in a list within a tuple.
+
+    Args:
+        tup (tuple): The tuple to search in.
+        lst (list): The list of elements to search for.
+
+    Returns:
+        int: The total occurrence of all elements in the list within the tuple.
+    """
+    # Use list comprehension to filter elements in the tuple that are in the list, and return the length of the resulting list
+    return len([elem for elem in tup if elem in lst])
+
+# Test the function
+assert count_Occurrence(('a', 'a', 'c', 'b', 'd'),['a', 'b']) == 3
+print("All tests passed.")
+```
+
+Or, you can use the `sum` function with a generator expression:
+
+```python
+def count_Occurrence(tup, lst):
+    """
+    This function counts the occurrence of all elements in a list within a tuple.
+
+    Args:
+        tup (tuple): The tuple to search in.
+        lst (list): The list of elements to search for.
+
+    Returns:
+        int: The total occurrence of all elements in the list within the tuple.
+    """
+    # Use sum with a generator expression to count the elements in the tuple that are in the list
+    return sum(1 for elem in tup if elem in lst)
+
+# Test the function
+assert count_Occurrence(('a', 'a', 'c', 'b', 'd'),['a', 'b']) == 3
+print("All tests passed.")
+```

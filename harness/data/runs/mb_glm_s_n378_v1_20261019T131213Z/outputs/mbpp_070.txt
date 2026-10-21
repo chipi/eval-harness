@@ -1,0 +1,58 @@
+```python
+from typing import List, Tuple
+
+def get_equal(tuples_list: List[Tuple]) -> bool:
+    """
+    Checks if all tuples in a given list have the same length.
+
+    Args:
+        tuples_list: A list of tuples.
+
+    Returns:
+        True if all tuples have the same length, False otherwise.
+        Returns True if the list is empty or contains only one tuple.
+
+    Examples:
+        >>> get_equal([(11, 22, 33), (44, 55, 66)])
+        True
+        >>> get_equal([(1, 2), (3, 4, 5)])
+        False
+        >>> get_equal([])
+        True
+        >>> get_equal([(1, 2, 3)])
+        True
+    """
+    # Handle edge cases: an empty list or a list with a single tuple
+    # are trivially considered to have equal length.
+    if not tuples_list or len(tuples_list) < 2:
+        return True
+
+    # Get the length of the first tuple to use as a reference.
+    first_len = len(tuples_list[0])
+
+    # Iterate through the rest of the tuples in the list.
+    for t in tuples_list[1:]:
+        # If any tuple has a different length, we can immediately return False.
+        if len(t) != first_len:
+            return False
+
+    # If the loop completes without finding any mismatched lengths,
+    # all tuples must have the same length.
+    return True
+
+# Example usage and assertions from the problem description
+assert get_equal([(11, 22, 33), (44, 55, 66)]) == True
+
+# Additional assertions to test various cases
+assert get_equal([(1, 2), (3, 4, 5)]) == False
+assert get_equal([(1, 2), (3, 4)]) == True
+assert get_equal([(1, 2, 3), (4, 5, 6), (7, 8, 9)]) == True
+assert get_equal([(1, 2, 3), (4, 5)]) == False
+assert get_equal([]) == True
+assert get_equal([(1, 2, 3)]) == True
+assert get_equal([()]) == True
+assert get_equal([(), ()]) == True
+assert get_equal([(), (1,)]) == False
+
+print("All assertions passed.")
+```

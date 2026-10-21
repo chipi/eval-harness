@@ -1,0 +1,33 @@
+```python
+def is_undulating(number):
+    """
+    Check if a number is undulating (alternating between two digits).
+
+    Args:
+        number (int): The number to check.
+
+    Returns:
+        bool: True if the number is undulating, False otherwise.
+    """
+    s = str(number)
+    if len(s) < 2:
+        return False  # Single-digit numbers can't be undulating
+
+    # Check if all digits alternate between two distinct digits
+    first, second = s[0], s[1]
+    if first == second:
+        return False  # Need two distinct digits to alternate
+
+    for i in range(2, len(s)):
+        if i % 2 == 0:
+            if s[i] != first:
+                return False
+        else:
+            if s[i] != second:
+                return False
+
+    return True
+
+# Test case
+assert is_undulating(1212121) == True
+```

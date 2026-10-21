@@ -1,0 +1,28 @@
+```python
+def count_first_elements(tup):
+    """
+    Counts the number of elements that occur before the first tuple element in the given tuple.
+
+    Args:
+        tup: A tuple that may contain other tuples as elements.
+
+    Returns:
+        The number of elements before the first tuple element. If there are no tuples,
+        returns the length of the tuple.
+    """
+    count = 0
+    for element in tup:
+        if isinstance(element, tuple):
+            break
+        count += 1
+    return count
+
+# Example usage and assertion from the problem description
+assert count_first_elements((1, 5, 7, (4, 6), 10)) == 3
+
+# Additional test cases
+assert count_first_elements(('a', 'b', ('c', 'd'))) == 2
+assert count_first_elements((1, 2, 3)) == 3  # No tuple element
+assert count_first_elements(((1, 2), 3, 4)) == 0  # First element is a tuple
+assert count_first_elements(()) == 0  # Empty tuple
+```

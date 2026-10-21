@@ -1,0 +1,13 @@
+```python
+def remove_odd(lst):
+    """
+    Remove odd numbers from a given list.
+    
+    Args:
+        lst: A list of integers
+        
+    Returns:
+        A new list containing only the even numbers from the input list
+    """
+    return [x for x in lst if x % 2 == 0]
+```

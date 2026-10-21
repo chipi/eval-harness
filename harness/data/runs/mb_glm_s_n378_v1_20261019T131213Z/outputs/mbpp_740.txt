@@ -1,0 +1,46 @@
+```python
+def tuple_to_dict(input_tuple):
+    """
+    Converts a tuple into a dictionary where adjacent elements form key-value pairs.
+
+    Args:
+        input_tuple: A tuple with an even number of elements.
+
+    Returns:
+        A dictionary where elements at even indices (0, 2, 4,...) are keys
+        and the subsequent elements at odd indices (1, 3, 5,...) are their values.
+
+    Raises:
+        ValueError: If the input tuple has an odd number of elements.
+    """
+    # Check if the tuple has an odd number of elements, which would leave a value without a key.
+    if len(input_tuple) % 2 != 0:
+        raise ValueError("Tuple must have an even number of elements to form key-value pairs.")
+
+    # Use dictionary comprehension to create the dictionary.
+    # The zip function pairs elements from the first half (keys) with the second half (values).
+    # input_tuple[::2] creates a slice of every other element starting from index 0 (keys).
+    # input_tuple[1::2] creates a slice of every other element starting from index 1 (values).
+    return dict(zip(input_tuple[::2], input_tuple[1::2]))
+
+# Example usage and assertion from the problem description
+if __name__ == "__main__":
+    input_data = (1, 5, 7, 10, 13, 5)
+    expected_output = {1: 5, 7: 10, 13: 5}
+    
+    result = tuple_to_dict(input_data)
+    
+    print(f"Input tuple: {input_data}")
+    print(f"Generated dictionary: {result}")
+    print(f"Expected dictionary: {expected_output}")
+    
+    assert result == expected_output, f"Assertion failed: {result} != {expected_output}"
+    print("\nAssertion passed successfully!")
+
+    # Example with an odd-length tuple to show error handling
+    try:
+        tuple_to_dict((1, 2, 3))
+    except ValueError as e:
+        print(f"\nSuccessfully caught expected error for odd-length tuple: {e}")
+
+```

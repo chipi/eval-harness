@@ -1,0 +1,54 @@
+```python
+def remove_Occ(string: str, char: str) -> str:
+    """
+    Remove the first and last occurrence of a given character from the string.
+    
+    Args:
+        string: The input string
+        char: The character to remove (first and last occurrence)
+    
+    Returns:
+        The string with first and last occurrence of char removed
+    
+    Example:
+        >>> remove_Occ("hello", "l")
+        'heo'
+    """
+    if not char or not string:
+        return string
+    
+    # Find the first occurrence
+    first_idx = string.find(char)
+    if first_idx == -1:
+        # Character not found, return original string
+        return string
+    
+    # Find the last occurrence
+    last_idx = string.rfind(char)
+    
+    # Build the result by removing characters at first_idx and last_idx
+    # If first and last are the same index (only one occurrence), remove just that one
+    if first_idx == last_idx:
+        return string[:first_idx] + string[first_idx + 1:]
+    else:
+        # Remove both occurrences
+        # Need to be careful with indices after removing the first one
+        # Remove the later index first to keep earlier index valid, or adjust
+        # Let's build it step by step:
+        # Remove last_idx first (higher index), then first_idx (lower index)
+        result = string[:last_idx] + string[last_idx + 1:]
+        # Now first_idx is still valid since last_idx > first_idx
+        result = result[:first_idx] + result[first_idx + 1:]
+        return result
+
+
+if __name__ == "__main__":
+    # Test cases
+    assert remove_Occ("hello", "l") == "heo"
+    assert remove_Occ("abcda", "a") == "bcd"
+    assert remove_Occ("hello", "z") == "hello"
+    assert remove_Occ("", "a") == ""
+    assert remove_Occ("aaa", "a") == "a"
+    assert remove_Occ("abca", "a") == "bc"
+    print("All tests passed!")
+```

@@ -1,0 +1,49 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def remove_Occ(s: str, ch: str) -> str:
+    """
+    Remove the first and last occurrence of a given character from the string.
+    
+    Args:
+        s: The input string.
+        ch: The character whose first and last occurrences should be removed.
+    
+    Returns:
+        The modified string with the first and last occurrence of `ch` removed.
+        If `ch` appears only once, that single occurrence is removed.
+        If `ch` does not appear, the original string is returned.
+    """
+    first = s.find(ch)
+    if first == -1:
+        return s
+    last = s.rfind(ch)
+    if first == last:
+        # Only one occurrence: remove it
+        return s[:first] + s[first + 1:]
+    # Remove last first (so indices for first remain valid), then first
+    return s[:first] + s[first + 1:last] + s[last + 1:]
+
+
+# Test cases
+assert remove_Occ("hello", "l") == "heo"
+assert remove_Occ("hello", "h") == "ello"
+assert remove_Occ("hello", "o") == "hell"
+assert remove_Occ("hello", "z") == "hello"
+assert remove_Occ("aabbaa", "a") == "abba"
+assert remove_Occ("abc", "b") == "ac"
+
+print("All tests passed!")
+```
+
+**How it works:**
+
+1. `s.find(ch)` locates the index of the first occurrence of `ch`. If it returns `-1`, the character isn't in the string, so we return the string unchanged.
+2. `s.rfind(ch)` locates the index of the last occurrence.
+3. If both indices are the same, there's only one occurrence — we remove just that one character.
+4. Otherwise, we build the result by concatenating:
+   - The part before the first occurrence,
+   - The part between the first and last occurrences (excluding both),
+   - The part after the last occurrence.
+
+This handles edge cases like a single occurrence, no occurrence, and the character appearing at the start or end of the string.

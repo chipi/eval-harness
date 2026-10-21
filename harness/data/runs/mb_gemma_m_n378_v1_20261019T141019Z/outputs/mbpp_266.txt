@@ -1,0 +1,21 @@
+```python
+def lateralsurface_cube(side_length):
+    """
+    Calculates the lateral surface area of a cube.
+    The lateral surface area of a cube is the sum of the areas of its 
+    four side faces (excluding the top and bottom faces).
+    Formula: 4 * (side_length^2)
+    """
+    return 4 * (side_length ** 2)
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    assert lateralsurface_cube(5) == 100
+    
+    # Additional test cases
+    assert lateralsurface_cube(1) == 4
+    assert lateralsurface_cube(0) == 0
+    assert lateralsurface_cube(2.5) == 25.0
+    
+    print("All tests passed!")
+```

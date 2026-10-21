@@ -1,0 +1,42 @@
+```python
+def is_octagonal(n):
+    """
+    Find the nth octagonal number.
+    
+    An octagonal number is a figurate number that represents an octagon.
+    The formula for the nth octagonal number is: n(3n - 2)
+    
+    Args:
+        n: The position in the octagonal number sequence (1-indexed)
+    
+    Returns:
+        The nth octagonal number
+    
+    Examples:
+        >>> is_octagonal(1)
+        1
+        >>> is_octagonal(2)
+        8
+        >>> is_octagonal(5)
+        65
+    """
+    return n * (3 * n - 2)
+
+
+# Test cases
+if __name__ == "__main__":
+    assert is_octagonal(1) == 1, "First octagonal number should be 1"
+    assert is_octagonal(2) == 8, "Second octagonal number should be 8"
+    assert is_octagonal(3) == 21, "Third octagonal number should be 21"
+    assert is_octagonal(4) == 40, "Fourth octagonal number should be 40"
+    assert is_octagonal(5) == 65, "Fifth octagonal number should be 65"
+    
+    print("All tests passed!")
+    print(f"is_octagonal(5) = {is_octagonal(5)}")
+```
+
+The solution uses the mathematical formula for octagonal numbers: **O(n) = n(3n - 2)**
+
+This formula generates the sequence: 1, 8, 21, 40, 65, 96, 133, ...
+
+For n=5: 5 × (3×5 - 2) = 5 × 13 = 65 ✓

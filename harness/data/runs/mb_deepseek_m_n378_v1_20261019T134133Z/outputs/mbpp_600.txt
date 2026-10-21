@@ -1,0 +1,32 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def is_Even(n):
+    """
+    Check whether the given number is even or not.
+    
+    Args:
+        n (int): The number to check.
+    
+    Returns:
+        bool: True if n is even, False otherwise.
+    """
+    return n % 2 == 0
+
+
+# Test cases
+assert is_Even(1) == False
+assert is_Even(2) == True
+assert is_Even(0) == True
+assert is_Even(-4) == True
+assert is_Even(-3) == False
+
+print("All tests passed!")
+```
+
+**Explanation:**
+
+- The function `is_Even(n)` uses the modulo operator `%` to check the remainder when `n` is divided by 2.
+- If the remainder is `0`, the number is even and the function returns `True`; otherwise, it returns `False`.
+- The `assert` statements verify the function's correctness for various inputs, including positive, negative, and zero values.
+- If all assertions pass, the script prints `"All tests passed!"`.

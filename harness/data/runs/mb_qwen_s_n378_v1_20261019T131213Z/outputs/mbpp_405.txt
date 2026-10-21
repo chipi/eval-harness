@@ -1,0 +1,20 @@
+```python
+def check_tuplex(tup, element):
+    """
+    Check whether an element exists within a tuple.
+    
+    Args:
+        tup: A tuple to search in.
+        element: The element to look for.
+    
+    Returns:
+        True if the element is found in the tuple, False otherwise.
+    """
+    return element in tup
+
+# Test cases
+assert check_tuplex(("w", 3, "r", "e", "s", "o", "u", "r", "c", "e"), 'r') == True
+assert check_tuplex(("w", 3, "r", "e", "s", "o", "u", "r", "c", "e"), 'x') == False
+assert check_tuplex((1, 2, 3), 2) == True
+assert check_tuplex((), 1) == False
+```

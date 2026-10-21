@@ -1,0 +1,22 @@
+```python
+def remove_length(string: str, k: int) -> str:
+    """
+    Removes all words of length k from the given string.
+
+    Parameters:
+    string (str): Input string containing words separated by spaces.
+    k (int): Length of words to remove.
+
+    Returns:
+    str: String with words of length k removed.
+    """
+    # Split the string into words, filter out those with length != k,
+    # and rejoin with spaces.
+    words = string.split()
+    filtered_words = [word for word in words if len(word) != k]
+    return ' '.join(filtered_words)
+
+# Test the function with the given assertion
+assert remove_length('The person is most value tet', 3) == 'person is most value'
+print("Test passed.")
+```

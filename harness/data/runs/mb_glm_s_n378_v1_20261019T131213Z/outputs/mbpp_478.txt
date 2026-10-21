@@ -1,0 +1,33 @@
+```python
+def remove_lowercase(s: str) -> str:
+    """
+    Removes lowercase letters from a given string.
+
+    Args:
+        s: The input string.
+
+    Returns:
+        A new string containing only the uppercase characters from the input.
+    
+    Example:
+        >>> remove_lowercase("PYTHon")
+        'PYTH'
+    """
+    # Use a generator expression to iterate through the string and
+    # keep only the characters that are uppercase.
+    # Then, join the kept characters to form the result string.
+    return "".join(char for char in s if char.isupper())
+
+# Example usage and assertion from the problem description
+assert remove_lowercase("PYTHon") == 'PYTH'
+
+# Additional test cases
+assert remove_lowercase("HELLOworld") == 'HELLO'
+assert remove_lowercase("Python") == 'P'
+assert remove_lowercase("UPPERCASE") == 'UPPERCASE'
+assert remove_lowercase("") == ''
+assert remove_lowercase("lowercase") == ''
+assert remove_lowercase("123!@#AbC") == 'ABC'
+
+print("All tests passed!")
+```

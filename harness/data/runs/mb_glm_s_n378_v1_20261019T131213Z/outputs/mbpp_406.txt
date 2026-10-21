@@ -1,0 +1,40 @@
+```python
+def find_Parity(n: int) -> bool:
+    """
+    Determines whether the parity of a given number is odd.
+
+    The parity of a number is odd if the number is not divisible by 2.
+    This function returns True if the number is odd, and False otherwise.
+
+    Args:
+        n: An integer.
+
+    Returns:
+        True if the number is odd, False if it is even.
+    
+    Examples:
+        >>> find_Parity(12)
+        False
+        >>> find_Parity(7)
+        True
+        >>> find_Parity(0)
+        False
+        >>> find_Parity(-1)
+        True
+    """
+    # A number is odd if the remainder when divided by 2 is 1.
+    # The modulo operator (%) gives the remainder of a division.
+    # If n % 2 is not 0, the number is odd.
+    return n % 2 != 0
+
+# Example usage and assertions to verify the function
+if __name__ == "__main__":
+    assert find_Parity(12) == False
+    assert find_Parity(7) == True
+    assert find_Parity(0) == False
+    assert find_Parity(1) == True
+    assert find_Parity(-2) == False
+    assert find_Parity(-3) == True
+    
+    print("All assertions passed successfully.")
+```

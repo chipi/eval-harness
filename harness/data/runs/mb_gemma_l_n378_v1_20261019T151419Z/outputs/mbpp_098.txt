@@ -1,0 +1,28 @@
+```python
+import math
+
+def multiply_num(numbers):
+    """
+    Multiplies all numbers in the provided list/tuple and 
+    divides the result by the length of the list.
+    """
+    if not numbers:
+        return 0.0
+    
+    product = 1
+    for num in numbers:
+        product *= num
+        
+    return product / len(numbers)
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    test_input = (8, 2, 3, -1, 7)
+    expected_output = -67.2
+    result = multiply_num(test_input)
+    
+    # Using math.isclose to handle floating point precision
+    assert math.isclose(result, expected_output, rel_tol=0.001)
+    print(f"Input: {test_input} -> Result: {result}")
+    print("Assertion passed!")
+```

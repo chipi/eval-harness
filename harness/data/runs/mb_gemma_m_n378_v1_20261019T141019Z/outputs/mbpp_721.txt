@@ -1,0 +1,58 @@
+To solve this problem, we need to find a path from the top-left to the bottom-right of an $N \times N$ matrix, moving only right or down, such that the average value of the cells in the path is maximized.
+
+In an $N \times N$ matrix, any path from $(0,0)$ to $(N-1, N-1)$ moving only right or down will always consist of exactly $2N - 1$ cells. Since the denominator (the number of cells visited) is constant for all valid paths, maximizing the average is equivalent to maximizing the total sum of the costs along the path.
+
+We can solve this using Dynamic Programming. Let `dp[i][j]` be the maximum sum reachable at cell `(i, j)`. The recurrence relation is:
+`dp[i][j] = matrix[i][j] + max(dp[i-1][j], dp[i][j-1])`
+
+Here is the self-contained Python script:
+
+```python
+def maxAverageOfPath(matrix):
+    """
+    Finds the maximum average value of a path from top-left to bottom-right.
+    Since all paths in an N*N matrix moving only right or down have the 
+    same length (2N - 1), maximizing the average is equivalent to 
+    maximizing the sum.
+    """
+    if not matrix or not matrix[0]:
+        return 0.0
+
+    n = len(matrix)
+    # dp[i][j] will store the maximum sum to reach cell (i, j)
+    dp = [[0.0 for _ in range(n)] for _ in range(n)]
+
+    for i in range(n):
+        for j in range(n):
+            if i == 0 and j == 0:
+                dp[i][j] = matrix[i][j]
+            elif i == 0:
+                # Can only come from the left
+                dp[i][j] = dp[i][j-1] + matrix[i][j]
+            elif j == 0:
+                # Can only come from above
+                dp[i][j] = dp[i-1][j] + matrix[i][j]
+            else:
+                # Max of coming from top or left
+                dp[i][j] = max(dp[i-1][j], dp[i][j-1]) + matrix[i][j]
+
+    # The number of cells in any valid path is (N + N - 1)
+    path_length = 2 * n - 1
+    max_sum = dp[n-1][n-1]
+    
+    return round(max_sum / path_length, 1)
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    # Path: 1 -> 6 -> 7 -> 3 -> 9 (Sum: 26) or 1 -> 2 -> 5 -> 3 -> 9 (Sum: 20) etc.
+    # Let's check the path for sum 26: 26 / 5 = 5.2
+    test_matrix = [[1, 2, 3], 
+                   [6, 5, 4], 
+                   [7, 3, 9]]
+    
+    result = maxAverageOfPath(test_matrix)
+    print(f"Result: {result}")
+    
+    assert result == 5.2
+    print("Assertion passed!")
+```

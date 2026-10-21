@@ -1,0 +1,36 @@
+```python
+def pancake_sort(arr):
+    """
+    Sort a list of elements using pancake sort and return a new sorted list.
+
+    Example:
+        pancake_sort([15, 79, 25, 38, 69]) -> [15, 25, 38, 69, 79]
+    """
+    arr = arr[:]  # work on a copy so the input is not modified
+
+    def flip(k):
+        arr[:k] = reversed(arr[:k])
+
+    n = len(arr)
+    for curr_size in range(n, 1, -1):
+        # Find index of the maximum element in arr[0:curr_size]
+        max_idx = max(range(curr_size), key=arr.__getitem__)
+
+        # If it's already in place, do nothing
+        if max_idx == curr_size - 1:
+            continue
+
+        # Bring the maximum element to the front if needed
+        if max_idx != 0:
+            flip(max_idx + 1)
+
+        # Move it to its final position
+        flip(curr_size)
+
+    return arr
+
+
+if __name__ == "__main__":
+    assert pancake_sort([15, 79, 25, 38, 69]) == [15, 25, 38, 69, 79]
+    print("All tests passed.")
+```

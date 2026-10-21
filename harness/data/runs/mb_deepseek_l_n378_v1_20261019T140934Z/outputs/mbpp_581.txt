@@ -1,0 +1,31 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+import math
+
+def surface_Area(base_edge: float, height: float) -> float:
+    """
+    Calculate the surface area of a square pyramid given its base edge and height.
+    
+    The surface area includes the base area plus the lateral area.
+    Lateral area = 2 * base_edge * slant_height
+    Slant height = sqrt((base_edge / 2)^2 + height^2)
+    Base area = base_edge^2
+    
+    Parameters:
+    base_edge (float): Length of the base edge
+    height (float): Height of the pyramid
+    
+    Returns:
+    float: Total surface area of the square pyramid
+    """
+    base_area = base_edge ** 2
+    slant_height = math.sqrt((base_edge / 2) ** 2 + height ** 2)
+    lateral_area = 2 * base_edge * slant_height
+    total_surface_area = base_area + lateral_area
+    return total_surface_area
+
+# Test the function
+assert surface_Area(3, 4) == 33
+print("Test passed! surface_Area(3, 4) =", surface_Area(3, 4))
+```

@@ -1,0 +1,32 @@
+```python
+def extended_euclidean(a, b):
+    """
+    Computes the extended Euclidean algorithm to find gcd(a, b) and 
+    coefficients x, y such that ax + by = gcd(a, b)
+    """
+    if a == 0:
+        return b, 0, 1
+    else:
+        gcd, x, y = extended_euclidean(b % a, a)
+        return gcd, y - (b // a) * x, x
+
+def find_solution(a, b, n):
+    """
+    Finds integers x and y that satisfy ax + by = n as a tuple, 
+    or returns None if no solution exists.
+    """
+    gcd, x, y = extended_euclidean(a, b)
+    
+    # If n is not divisible by gcd(a, b), there's no solution
+    if n % gcd != 0:
+        return None
+    
+    # Scale x and y to satisfy ax + by = n
+    x *= n // gcd
+    y *= n // gcd
+    
+    return x, y
+
+# Test the function
+print(find_solution(2, 3, 7))  # Expected output: (2, 1)
+```

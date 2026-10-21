@@ -1,0 +1,20 @@
+```python
+def pack_consecutive_duplicates(lst):
+    result = []
+    current = [lst[0]]
+    for i in range(1, len(lst)):
+        if lst[i] == lst[i-1]:
+            current.append(lst[i])
+        else:
+            result.append(current)
+            current = [lst[i]]
+    result.append(current)
+    return result
+
+def main():
+    print(pack_consecutive_duplicates([0, 0, 1, 2, 3, 4, 4, 5, 6, 6, 6, 7, 8, 9, 4, 4]))
+    # Expected output: [[0, 0], [1], [2], [3], [4, 4], [5], [6, 6, 6], [7], [8], [9], [4, 4]]
+
+if __name__ == "__main__":
+    main()
+```

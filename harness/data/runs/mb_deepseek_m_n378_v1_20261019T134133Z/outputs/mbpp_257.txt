@@ -1,0 +1,21 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def swap_numbers(a, b):
+    """
+    Takes in two numbers and returns a tuple with the second number
+    followed by the first number.
+    """
+    return (b, a)
+
+
+# Test the function
+assert swap_numbers(10, 20) == (20, 10)
+print("Test passed!")
+```
+
+**Explanation:**
+
+- The function `swap_numbers(a, b)` accepts two arguments.
+- It returns a tuple `(b, a)`, which places the second argument first and the first argument second — effectively swapping their order.
+- The `assert` statement verifies that `swap_numbers(10, 20)` returns `(20, 10)`, matching the expected output.

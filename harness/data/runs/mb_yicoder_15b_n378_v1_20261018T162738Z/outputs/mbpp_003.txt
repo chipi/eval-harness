@@ -1,0 +1,25 @@
+```python
+def is_not_prime(n):
+    if n <= 1:
+        return True
+    elif n <= 3:
+        return False
+    elif n % 2 == 0 or n % 3 == 0:
+        return True
+    i = 5
+    while i * i <= n:
+        if n % i == 0 or n % (i + 2) == 0:
+            return True
+        i += 6
+    return False
+
+assert is_not_prime(2) == False
+assert is_not_prime(3) == False
+assert is_not_prime(4) == True
+assert is_not_prime(5) == False
+assert is_not_prime(6) == True
+assert is_not_prime(7) == False
+assert is_not_prime(8) == True
+assert is_not_prime(9) == True
+assert is_not_prime(10) == True
+```

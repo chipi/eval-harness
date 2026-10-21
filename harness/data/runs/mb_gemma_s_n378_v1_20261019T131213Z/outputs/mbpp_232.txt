@@ -1,0 +1,10 @@
+```python
+def larg_nnum(lst, n):
+  """
+  This function takes in a list and an integer n and returns a list containing the n largest items from the list.
+  For example:
+  larg_nnum([10, 20, 50, 70, 90, 20, 50, 40, 60, 80, 100],2) == [100, 90]
+  """
+  lst.sort()
+  return lst[-n:]
+```

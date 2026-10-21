@@ -1,0 +1,16 @@
+```python
+def tuple_to_int(t):
+    """
+    Converts a tuple of positive integers into a single integer.
+    
+    Args:
+        t (tuple): A tuple of positive integers.
+    
+    Returns:
+        int: A single integer representation of the input tuple.
+    """
+    return int(''.join(map(str, t)))
+
+# Example usage:
+print(tuple_to_int((1,2,3)))  # Outputs: 123
+```

@@ -1,0 +1,24 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def multiple_to_single(numbers):
+    """Join a list of integers into a single integer by concatenating their digits."""
+    result = 0
+    for num in numbers:
+        result = result * 10**len(str(num)) + num
+    return result
+
+# Test the function
+assert multiple_to_single([11, 33, 50]) == 113350
+print("Test passed!")
+```
+
+This script defines a function `multiple_to_single` that takes a list of integers and combines them into a single integer by concatenating their digits. The function works by:
+1. Starting with a result of 0
+2. For each number in the list:
+   - Calculating how many digits the number has (using `len(str(num))`)
+   - Shifting the current result left by that many digits (multiplying by 10^n)
+   - Adding the current number to the result
+3. Returning the final concatenated number
+
+The test case verifies that the function works correctly for the given example.

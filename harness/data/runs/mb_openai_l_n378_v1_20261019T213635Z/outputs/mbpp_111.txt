@@ -1,0 +1,14 @@
+```python
+def common_in_nested_lists(nested_lists):
+    """Return the elements that appear in every inner list."""
+    if not nested_lists:
+        return []
+    return list(set.intersection(*(set(items) for items in nested_lists)))
+
+
+assert set(common_in_nested_lists([
+    [12, 18, 23, 25, 45],
+    [7, 12, 18, 24, 28],
+    [1, 5, 8, 12, 15, 16, 18],
+])) == {12, 18}
+```

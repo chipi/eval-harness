@@ -1,0 +1,34 @@
+Here's a self-contained Python script that solves the problem, including the requested markdown code block:
+
+```python
+"""
+Python function to find the quotient of two numbers (rounded down to the nearest integer).
+
+The function uses integer division (//) which automatically floors the result.
+"""
+
+def find(dividend, divisor):
+    """
+    Calculate the quotient of two numbers rounded down to the nearest integer.
+
+    Args:
+        dividend (int): The number to be divided
+        divisor (int): The number to divide by
+
+    Returns:
+        int: The quotient rounded down to the nearest integer
+    """
+    return dividend // divisor
+
+# Test case
+assert find(10, 3) == 3
+```
+
+And here's the same solution in a markdown code block as requested:
+
+```python
+def find(dividend, divisor):
+    return dividend // divisor
+
+assert find(10, 3) == 3
+```

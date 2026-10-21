@@ -1,0 +1,40 @@
+Here's a self-contained Python script to solve the problem:
+
+```python
+def decimal_to_binary(n):
+    """
+    Convert a given decimal number to its binary equivalent as a string with no leading zeros.
+    """
+    if n == 0:
+        return '0'
+    
+    is_negative = n < 0
+    n = abs(n)
+    result = ''
+    
+    while n > 0:
+        result = str(n % 2) + result
+        n //= 2
+    
+    return ('-' + result) if is_negative else result
+
+
+# Test cases
+if __name__ == "__main__":
+    assert decimal_to_binary(8) == '1000'
+    assert decimal_to_binary(0) == '0'
+    assert decimal_to_binary(1) == '1'
+    assert decimal_to_binary(5) == '101'
+    assert decimal_to_binary(255) == '11111111'
+    print("All tests passed!")
+```
+
+**How it works:**
+
+1. **Edge case (zero):** If `n == 0`, return `'0'` directly since the loop would otherwise produce an empty string.
+
+2. **Negative numbers:** The sign is stripped off and re-applied at the end, so binary conversion works on the magnitude.
+
+3. **Main loop:** Repeatedly take `n % 2` to get the least significant bit, prepend it to the result string, and divide `n` by 2 using integer division (`//`). This continues until `n` becomes 0.
+
+4. **No leading zeros:** Since we only add bits when `n > 0`, the result naturally has no leading zeros (except the special case of 0 itself, which is a single `'0'`).

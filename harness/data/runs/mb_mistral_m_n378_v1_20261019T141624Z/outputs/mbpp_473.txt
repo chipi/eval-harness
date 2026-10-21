@@ -1,0 +1,17 @@
+```python
+def tuple_intersection(tuple_list1, tuple_list2):
+    # Convert each tuple to a frozenset to ignore order and make it hashable
+    set1 = {frozenset(t) for t in tuple_list1}
+    set2 = {frozenset(t) for t in tuple_list2}
+
+    # Find the intersection of the two sets
+    common_frozensets = set1 & set2
+
+    # Convert back to tuples (sorted for consistent order)
+    result = {tuple(sorted(t)) for t in common_frozensets}
+
+    return result
+
+# Test the function
+assert tuple_intersection([(3, 4), (5, 6), (9, 10), (4, 5)] , [(5, 4), (3, 4), (6, 5), (9, 11)]) == {(4, 5), (3, 4), (5, 6)}
+```

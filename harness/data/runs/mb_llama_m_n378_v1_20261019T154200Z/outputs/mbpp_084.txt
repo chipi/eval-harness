@@ -1,0 +1,37 @@
+```python
+def sequence(n):
+    """
+    This function calculates the nth number in the Newman-Conway sequence.
+    
+    The Newman-Conway sequence is defined as follows:
+    a(1) = 2
+    a(2) = 3
+    a(n) = a(n - a(n - 1)) + a(n - 1) for n > 2
+    
+    Parameters:
+    n (int): The position of the number in the sequence.
+    
+    Returns:
+    int: The nth number in the Newman-Conway sequence.
+    """
+    # Base cases
+    if n == 1:
+        return 2
+    elif n == 2:
+        return 3
+    else:
+        # Initialize a list to store the sequence
+        seq = [0]*(n+1)
+        seq[1] = 2
+        seq[2] = 3
+        
+        # Calculate the sequence
+        for i in range(3, n+1):
+            seq[i] = seq[i - seq[i - 1]] + seq[i - 1]
+        
+        # Return the nth number in the sequence
+        return seq[n]
+
+# Test the function
+print(sequence(10))  # Output: 6
+```

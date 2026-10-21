@@ -1,0 +1,10 @@
+```python
+def decimal_to_binary(n):
+    return bin(n)[2:]
+
+def main():
+    print(decimal_to_binary(8))  # Output: '1000'
+
+if __name__ == "__main__":
+    main()
+```

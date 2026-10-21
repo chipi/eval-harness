@@ -1,0 +1,17 @@
+```python
+def min_k(lst, k):
+    """
+    Find minimum k records from tuple list.
+    
+    Args:
+        lst: List of tuples where each tuple contains a name and a numeric value.
+        k: Number of minimum records to find.
+    
+    Returns:
+        A list of the k tuples with the smallest second element (numeric value).
+    """
+    # Sort the list based on the second element of each tuple
+    sorted_lst = sorted(lst, key=lambda x: x[1])
+    # Return the first k elements
+    return sorted_lst[:k]
+```

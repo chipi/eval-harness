@@ -1,0 +1,18 @@
+```python
+def differ_At_One_Bit_Pos(num1, num2):
+    # XOR the two numbers
+    xor_result = num1 ^ num2
+    
+    # Count the number of set bits (bits that are 1)
+    count = bin(xor_result).count('1')
+    
+    # If there's exactly one set bit, return True; otherwise, return False
+    return count == 1
+
+# Test cases
+assert differ_At_One_Bit_Pos(13,9) == True
+assert differ_At_One_Bit_Pos(7,8) == False
+assert differ_At_One_Bit_Pos(5,6) == True
+assert differ_At_One_Bit_Pos(0,1) == True
+assert differ_At_One_Bit_Pos(1,0) == True
+```

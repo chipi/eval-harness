@@ -1,0 +1,31 @@
+```python
+import math
+
+def area_tetrahedron(a):
+    """
+    Calculates the surface area of a regular tetrahedron with edge length 'a'.
+    
+    The formula for the surface area of a regular tetrahedron is:
+    Area = sqrt(3) * a^2
+    
+    Args:
+        a (float): The length of the edge of the tetrahedron.
+        
+    Returns:
+        float: The total surface area.
+    """
+    return math.sqrt(3) * (a ** 2)
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    result = area_tetrahedron(3)
+    expected = 15.588457268119894
+    
+    print(f"Edge length: 3")
+    print(f"Calculated Area: {result}")
+    print(f"Expected Area:    {expected}")
+    
+    # Using math.isclose for floating point comparison to avoid precision issues
+    assert math.isclose(result, expected, rel_tol=1e-12), f"Assertion failed! Got {result}"
+    print("Assertion passed!")
+```

@@ -1,0 +1,9 @@
+```python
+def count_charac(s):
+    return len(s)
+
+assert count_charac("python programming") == 18
+
+if __name__ == "__main__":
+    print(count_charac("python programming"))
+```

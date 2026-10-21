@@ -1,0 +1,8 @@
+```python
+def check_monthnumber_number(month):
+    """Return True if the month has 30 days, otherwise False."""
+    return month in (4, 6, 9, 11)
+
+
+assert check_monthnumber_number(6) is True
+```

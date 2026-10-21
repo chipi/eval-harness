@@ -1,0 +1,34 @@
+```python
+def closest_num(n: int) -> int:
+    """
+    Find the closest smaller number than n.
+    
+    Args:
+        n: An integer
+        
+    Returns:
+        The largest integer that is strictly less than n
+        
+    Examples:
+        >>> closest_num(11)
+        10
+        >>> closest_num(5)
+        4
+        >>> closest_num(0)
+        -1
+    """
+    return n - 1
+
+
+if __name__ == "__main__":
+    # Test the function with the provided assertion
+    assert closest_num(11) == 10
+    
+    # Additional tests
+    assert closest_num(5) == 4
+    assert closest_num(0) == -1
+    assert closest_num(-3) == -4
+    assert closest_num(1) == 0
+    
+    print("All tests passed!")
+```

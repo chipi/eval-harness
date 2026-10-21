@@ -1,0 +1,37 @@
+Here's a self-contained Python script that solves the problem, including the requested assertion:
+
+```python
+"""
+Function to find the length of the smallest list in a list of lists.
+"""
+
+def Find_Min_Length(list_of_lists):
+    """
+    Returns the length of the smallest list in a list of lists.
+
+    Args:
+        list_of_lists: A list containing sublists (lists of elements)
+
+    Returns:
+        int: The length of the smallest sublist
+    """
+    if not list_of_lists:  # Handle empty input case
+        return 0
+    return min(len(sublist) for sublist in list_of_lists)
+
+# Test case
+assert Find_Min_Length([[1], [1, 2]]) == 1
+
+# Additional test cases
+assert Find_Min_Length([[1, 2, 3], [4, 5], [6]]) == 1
+assert Find_Min_Length([[1, 2], [3, 4], [5, 6]]) == 2
+assert Find_Min_Length([]) == 0  # Edge case: empty list
+assert Find_Min_Length([[], [1], [1, 2, 3]]) == 0  # Edge case: empty sublist
+```
+
+The function works by:
+1. First checking if the input list is empty (returns 0 in that case)
+2. Using a generator expression to get the lengths of all sublists
+3. Finding the minimum value among those lengths using Python's built-in `min()` function
+
+The solution is concise and handles edge cases like empty input lists or empty sublists.

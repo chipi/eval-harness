@@ -1,0 +1,22 @@
+```python
+def power(a, b):
+    """
+    Calculate a raised to the power of b.
+
+    Args:
+        a: base number
+        b: exponent (assumed to be a non-negative integer)
+
+    Returns:
+        a ** b
+    """
+    result = 1
+    for _ in range(b):
+        result *= a
+    return result
+
+
+if __name__ == "__main__":
+    assert power(3, 4) == 81
+    print("All tests passed.")
+```

@@ -1,0 +1,18 @@
+```python
+def max_difference(pairs):
+    """
+    Finds the maximum difference between available pairs in the given tuple list.
+
+    Args:
+        pairs: A list of tuples, where each tuple contains two numbers.
+
+    Returns:
+        The maximum difference between any pair in the list.
+    """
+    max_diff = 0
+    for pair in pairs:
+        diff = abs(pair[0] - pair[1])
+        if diff > max_diff:
+            max_diff = diff
+    return max_diff
+```

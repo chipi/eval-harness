@@ -1,0 +1,52 @@
+Looking at this problem, I need to calculate the **surface area of a regular tetrahedron** given its edge length.
+
+A regular tetrahedron has 4 equilateral triangular faces. Each face has area `(√3/4) × a²`, so the total surface area is:
+
+**A = √3 × a²**
+
+Let me verify: for `a = 3`, we get `√3 × 9 = 1.7320508... × 9 = 15.588457268119894` ✓
+
+```python
+"""
+Write a function to caluclate the area of a tetrahedron.
+assert area_tetrahedron(3)==15.588457268119894
+"""
+
+import math
+
+
+def area_tetrahedron(side):
+    """
+    Calculate the surface area of a regular tetrahedron.
+
+    A regular tetrahedron consists of 4 congruent equilateral triangles.
+    Area of one equilateral triangle = (sqrt(3) / 4) * side**2
+    Total surface area = 4 * (sqrt(3) / 4) * side**2 = sqrt(3) * side**2
+
+    Parameters
+    ----------
+    side : float
+        The length of an edge of the tetrahedron.
+
+    Returns
+    -------
+    float
+        The total surface area of the tetrahedron.
+    """
+    return math.sqrt(3) * (side ** 2)
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert area_tetrahedron(3) == 15.588457268119894
+
+    # A few additional sanity checks
+    assert area_tetrahedron(20) == 692.8203230275509
+    assert area_tetrahedron(10) == 173.20508075688772
+    assert area_tetrahedron(0) == 0.0
+
+    print("area_tetrahedron(3)  =", area_tetrahedron(3))
+    print("area_tetrahedron(10) =", area_tetrahedron(10))
+    print("area_tetrahedron(20) =", area_tetrahedron(20))
+    print("All tests passed!")
+```

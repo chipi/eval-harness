@@ -1,0 +1,52 @@
+```python
+def find_Rotations(s: str) -> int:
+    """
+    This function finds the minimum number of rotations (greater than 0) required to get the same string.
+
+    Args:
+        s (str): The input string.
+
+    Returns:
+        int: The minimum number of rotations required.
+    """
+    n = len(s)
+    # If string is empty or has only one character
+    if n == 0 or n == 1:
+        return 0
+    
+    # Check if string is made up of same characters
+    if len(set(s)) == 1:
+        return 1
+    
+    # Duplicate the string to handle edge cases
+    s = s + s
+    
+    # Initialize variables
+    i = 1
+    j = 0
+    lps = [0]*n
+    
+    # Compute LPS (Longest Prefix Suffix) array
+    while i < n:
+        if s[i] == s[j]:
+            j += 1
+            lps[i] = j
+            i += 1
+        elif j != 0:
+            j = lps[j - 1]
+        else:
+            lps[i] = 0
+            i += 1
+    
+    # The minimum number of rotations is n - lps[n-1]
+    # But we need to make sure it's greater than 0
+    return n - lps[n-1] if lps[n-1] != 0 else n
+
+
+# Test the function
+assert find_Rotations("aaaa") == 1
+assert find_Rotations("abcabc") == 3
+assert find_Rotations("abcb") == 4
+```
+
+The provided Python function `find_Rotations` calculates the minimum number of rotations required to get the same string. It first checks for edge cases and then uses the KMP algorithm to compute the LPS (Longest Prefix Suffix) array. The minimum number of rotations is then calculated as `n - lps[n-1]`, where `n` is the length of the string. If `lps[n-1]` is 0, it means the string is not a rotation of itself, so the function returns `n`.

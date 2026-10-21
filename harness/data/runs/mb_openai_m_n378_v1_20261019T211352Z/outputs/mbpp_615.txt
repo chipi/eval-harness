@@ -1,0 +1,44 @@
+```python
+"""
+Write a function which takes a tuple of tuples and returns the average value
+for each position across the tuples as a list.
+
+Example:
+((10, 10, 10, 12),
+ (30, 45, 56, 45),
+ (81, 80, 39, 32),
+ (1, 2, 3, 4))
+
+Averages:
+position 0: (10 + 30 + 81 + 1) / 4 = 30.5
+position 1: (10 + 45 + 80 + 2) / 4 = 34.25
+position 2: (10 + 56 + 39 + 3) / 4 = 27.0
+position 3: (12 + 45 + 32 + 4) / 4 = 23.25
+"""
+
+
+def average_tuple(nums):
+    """
+    Return the average value for each position across a tuple of tuples.
+
+    Args:
+        nums: A tuple of tuples containing numeric values.
+
+    Returns:
+        A list of averages.
+    """
+    return [sum(values) / len(values) for values in zip(*nums)]
+
+
+if __name__ == "__main__":
+    assert average_tuple(
+        (
+            (10, 10, 10, 12),
+            (30, 45, 56, 45),
+            (81, 80, 39, 32),
+            (1, 2, 3, 4),
+        )
+    ) == [30.5, 34.25, 27.0, 23.25]
+
+    print("All tests passed.")
+```

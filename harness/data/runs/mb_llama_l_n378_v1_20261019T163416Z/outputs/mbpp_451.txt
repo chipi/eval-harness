@@ -1,0 +1,10 @@
+```python
+def remove_whitespaces(s):
+    return s.replace(' ', '')
+
+def main():
+    print(remove_whitespaces(' Google    Flutter '))  # Expected output: 'GoogleFlutter'
+
+if __name__ == "__main__":
+    main()
+```

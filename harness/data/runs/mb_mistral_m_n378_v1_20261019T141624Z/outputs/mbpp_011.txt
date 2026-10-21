@@ -1,0 +1,33 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def remove_Occ(s, char):
+    # Find the first occurrence
+    first_index = s.find(char)
+    if first_index == -1:
+        return s  # character not found
+
+    # Find the last occurrence
+    last_index = s.rfind(char)
+
+    # Remove first and last occurrence
+    if first_index == last_index:
+        # Only one occurrence exists
+        return s[:first_index] + s[first_index+1:]
+    else:
+        return s[:first_index] + s[first_index+1:last_index] + s[last_index+1:]
+
+# Test case
+assert remove_Occ("hello", "l") == "heo"
+```
+
+This script:
+1. Defines a function `remove_Occ` that takes a string `s` and a character `char`
+2. Finds the first and last occurrence of `char` in `s`
+3. Handles cases where:
+   - The character doesn't exist in the string (returns original string)
+   - There's only one occurrence (removes just that one)
+   - There are multiple occurrences (removes first and last)
+4. Includes the provided test case as an assertion
+
+The function works by string slicing to exclude the first and last occurrences of the specified character.

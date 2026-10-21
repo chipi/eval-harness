@@ -1,0 +1,29 @@
+```python
+#!/usr/bin/env python3
+"""
+Replace whitespaces with underscores and underscores with whitespaces.
+
+Example:
+    replace_spaces('Jumanji The Jungle') -> 'Jumanji_The_Jungle'
+"""
+
+def replace_spaces(text: str) -> str:
+    """
+    Replace each whitespace character with '_' and each '_' with a space.
+
+    Args:
+        text: The input string.
+
+    Returns:
+        A new string with whitespaces and underscores swapped.
+    """
+    return "".join("_" if ch.isspace() else " " if ch == "_" else ch for ch in text)
+
+
+if __name__ == "__main__":
+    assert replace_spaces("Jumanji The Jungle") == "Jumanji_The_Jungle"
+    assert replace_spaces("Jumanji_The_Jungle") == "Jumanji The Jungle"
+    assert replace_spaces("Hello World_Test") == "Hello_World Test"
+
+    print("All tests passed.")
+```

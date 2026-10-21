@@ -1,0 +1,49 @@
+```python
+def flatten_list(nested_list):
+    """
+    This function takes a nested list as input and returns a new list with all elements flattened.
+
+    Args:
+        nested_list (list): A list that may contain integers and/or other lists.
+
+    Returns:
+        list: A new list with all elements flattened.
+    """
+    flattened_list = []  # Initialize an empty list to store the flattened elements
+
+    # Iterate over each element in the nested list
+    for element in nested_list:
+        if isinstance(element, list):  # Check if the element is a list
+            # Recursively call the function to flatten the sublist and extend the flattened list
+            flattened_list.extend(flatten_list(element))
+        else:
+            # If the element is not a list, append it to the flattened list
+            flattened_list.append(element)
+
+    return flattened_list
+
+
+# Test the function
+assert flatten_list([0, 10, [20, 30], 40, 50, [60, 70, 80], [90, 100, 110, 120]]) == [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120]
+```
+
+Alternatively, you can use a more concise version using a list comprehension:
+
+```python
+def flatten_list(nested_list):
+    """
+    This function takes a nested list as input and returns a new list with all elements flattened.
+
+    Args:
+        nested_list (list): A list that may contain integers and/or other lists.
+
+    Returns:
+        list: A new list with all elements flattened.
+    """
+    return [element for sublist in ([nested_list] if not isinstance(nested_list, list) else nested_list) 
+            for element in ([sublist] if not isinstance(sublist, list) else flatten_list(sublist))]
+
+
+# Test the function
+assert flatten_list([0, 10, [20, 30], 40, 50, [60, 70, 80], [90, 100, 110, 120]]) == [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120]
+```

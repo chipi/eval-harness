@@ -1,0 +1,69 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+"""
+Write a python function to calculate the product of the unique numbers in a given list.
+assert unique_product([10, 20, 30, 40, 20, 50, 60, 40]) ==  720000000
+"""
+
+def unique_product(numbers):
+    """
+    Calculate the product of unique numbers in a given list.
+    
+    Args:
+        numbers: A list of numbers (may contain duplicates)
+    
+    Returns:
+        The product of all unique numbers in the list
+    
+    Examples:
+        >>> unique_product([10, 20, 30, 40, 20, 50, 60, 40])
+        720000000
+        >>> unique_product([1, 2, 2, 3, 3, 3])
+        6
+        >>> unique_product([5])
+        5
+        >>> unique_product([])
+        1
+    """
+    unique_numbers = set(numbers)
+    
+    # Handle empty set case (product of no numbers is 1)
+    if not unique_numbers:
+        return 1
+    
+    product = 1
+    for num in unique_numbers:
+        product *= num
+    
+    return product
+
+
+# Test the function
+if __name__ == "__main__":
+    # Original test case from the problem
+    result = unique_product([10, 20, 30, 40, 20, 50, 60, 40])
+    print(f"unique_product([10, 20, 30, 40, 20, 50, 60, 40]) = {result}")
+    assert result == 720000000, f"Expected 720000000, got {result}"
+    
+    # Additional test cases
+    assert unique_product([1, 2, 2, 3, 3, 3]) == 6
+    assert unique_product([5]) == 5
+    assert unique_product([]) == 1
+    assert unique_product([2, 2, 2, 2]) == 2
+    
+    print("All tests passed!")
+```
+
+**How it works:**
+
+1. **`set(numbers)`** - Converts the input list to a set, which automatically removes duplicates and gives us only unique values.
+
+2. **Empty set handling** - If the list is empty (or contains no items after deduplication), we return `1` since the product of an empty set is the multiplicative identity.
+
+3. **Iteration** - We iterate through each unique number and multiply it into our `product` variable.
+
+**Trace through the example:**
+- Input: `[10, 20, 30, 40, 20, 50, 60, 40]`
+- Unique set: `{10, 20, 30, 40, 50, 60}`
+- Product: `10 × 20 × 30 × 40 × 50 × 60 = 720,000,000` ✓

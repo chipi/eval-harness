@@ -1,0 +1,11 @@
+```python
+def is_sublist(superlist, sublist):
+    return sublist in superlist
+
+# Test cases
+assert is_sublist([2,4,3,5,7],[3,7])==True
+assert is_sublist([2,4,3,5,7],[3,6])==False
+assert is_sublist([2,4,3,5,7],[7])==True
+assert is_sublist([2,4,3,5,7],[])==True
+assert is_sublist([],[2,4,3,5,7])==False
+```

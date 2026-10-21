@@ -1,0 +1,16 @@
+```python
+def check_tuple(t, element):
+    return element in t
+
+# Test cases
+assert check_tuple(("w", 3, "r", "e", "s", "o", "u", "r", "c", "e"),'r')==True
+assert check_tuple(("w", 3, "r", "e", "s", "o", "u", "r", "c", "e"),'z')==False
+assert check_tuple(("w", 3, "r", "e", "s", "o", "u", "r", "c", "e"),'w')==True
+assert check_tuple(("w", 3, "r", "e", "s", "o", "u", "r", "c", "e"),'e')==True
+assert check_tuple(("w", 3, "r", "e", "s", "o", "u", "r", "c", "e"),'c')==True
+assert check_tuple(("w", 3, "r", "e", "s", "o", "u", "r", "c", "e"),'o')==True
+assert check_tuple(("w", 3, "r", "e", "s", "o", "u", "r", "c", "e"),'s')==True
+assert check_tuple(("w", 3, "r", "e", "s", "o", "u", "r", "c", "e"),'r')==True
+assert check_tuple(("w", 3, "r", "e", "s", "o", "u", "r", "c", "e"),'e')==True
+assert check_tuple(("w", 3, "r", "e", "s", "o", "u", "r", "c", "e"),'w')==True
+```

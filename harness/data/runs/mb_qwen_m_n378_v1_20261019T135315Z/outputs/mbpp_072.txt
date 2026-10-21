@@ -1,0 +1,47 @@
+```python
+def dif_Square(n: int) -> bool:
+    """
+    Check whether the given number can be represented as the difference of two squares.
+    
+    A number n can be expressed as a^2 - b^2 = (a+b)(a-b) for some integers a, b.
+    Let x = a+b and y = a-b, then n = x*y where x and y have the same parity (both even or both odd).
+    Since a = (x+y)/2 and b = (x-y)/2 must be integers, x and y must have the same parity.
+    
+    Note: n = a^2 - b^2 means we need to find if there exist integers a, b such that a^2 - b^2 = n.
+    
+    Key insight: 
+    - If n is odd, we can always write n = ((n+1)/2)^2 - ((n-1)/2)^2, so all odd numbers work.
+    - If n is divisible by 4, we can write n = (n/4 + 1)^2 - (n/4 - 1)^2, so all multiples of 4 work.
+    - If n ≡ 2 (mod 4), it cannot be expressed as a difference of two squares.
+    
+    This is because:
+    - a^2 - b^2 = (a-b)(a+b). Let u = a-b, v = a+b. Then uv = n and u, v have same parity.
+    - If both u and v are odd, their product is odd.
+    - If both u and v are even, their product is divisible by 4.
+    - So n must be either odd or divisible by 4. Numbers congruent to 2 mod 4 cannot be expressed.
+    
+    Also note: We typically consider non-negative integers, but the problem seems to allow any integer.
+    For negative n, a^2 - b^2 = n means b^2 - a^2 = -n, so it's equivalent to checking |-n|.
+    Actually, let's just check |n| since a^2 - b^2 = n iff b^2 - a^2 = -n.
+    
+    Special case: n = 0 can be written as 0^2 - 0^2 = 0, so True.
+    """
+    # Handle negative numbers: n = a^2 - b^2 iff -n = b^2 - a^2
+    n = abs(n)
+    
+    # A number can be expressed as difference of two squares iff it is not congruent to 2 mod 4
+    # i.e., n % 4 != 2
+    return n % 4 != 2
+
+
+if __name__ == "__main__":
+    assert dif_Square(5) == True
+    assert dif_Square(4) == True
+    assert dif_Square(1) == True
+    assert dif_Square(2) == False
+    assert dif_Square(3) == True
+    assert dif_Square(6) == False
+    assert dif_Square(8) == True
+    assert dif_Square(0) == True
+    print("All tests passed!")
+```

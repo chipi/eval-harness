@@ -1,0 +1,18 @@
+```python
+def new_tuple(lst, string):
+    """
+    This function creates a new tuple from the given string and list.
+    
+    Parameters:
+    lst (list): A list of strings
+    string (str): A string to be added to the tuple
+    
+    Returns:
+    tuple: A new tuple containing all elements from the list and the string
+    """
+    # Convert the list to a tuple and add the string to it
+    return tuple(lst + [string])
+
+# Test the function
+assert new_tuple(["WEB", "is"], "best") == ('WEB', 'is', 'best')
+```

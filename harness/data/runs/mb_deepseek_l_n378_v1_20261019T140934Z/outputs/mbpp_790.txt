@@ -1,0 +1,30 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def even_position(nums):
+    """
+    Check whether every even index contains even numbers in a given list.
+    
+    Args:
+        nums: A list of integers
+    
+    Returns:
+        bool: True if all even indices contain even numbers, False otherwise
+    """
+    for i in range(len(nums)):
+        if i % 2 == 0 and nums[i] % 2 != 0:
+            return False
+    return True
+
+
+# Test the function
+if __name__ == "__main__":
+    assert even_position([3, 2, 1]) == False
+    assert even_position([2, 1, 4]) == True
+    assert even_position([0, 1, 2, 3]) == True
+    assert even_position([1, 2, 3, 4]) == False
+    assert even_position([]) == True  # Empty list has no even indices to check
+    print("All tests passed!")
+```
+
+The function iterates through the list and checks if any element at an even index (0, 2, 4, ...) is odd. If it finds one, it returns `False`. If it completes the loop without finding any violations, it returns `True`.

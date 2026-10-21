@@ -1,0 +1,13 @@
+```python
+def Diff(list1, list2):
+    """
+    Get the difference between two lists.
+    Returns a list of elements that are in list1 but not in list2.
+    """
+    return [item for item in list1 if item not in list2]
+
+if __name__ == "__main__":
+    # Test case provided in the problem
+    assert (Diff([10, 15, 20, 25, 30, 35, 40], [25, 40, 35])) == [10, 20, 30, 15]
+    print("Test passed successfully!")
+```

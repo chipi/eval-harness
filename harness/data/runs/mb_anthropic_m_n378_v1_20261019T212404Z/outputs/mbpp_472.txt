@@ -1,0 +1,32 @@
+```python
+def check_Consecutive(lst):
+    """
+    Check whether the given list contains consecutive numbers or not.
+    
+    Args:
+        lst: A list of numbers to check
+    
+    Returns:
+        True if the list contains consecutive numbers, False otherwise
+    """
+    if not lst:
+        return False
+    sorted_lst = sorted(lst)
+    n = len(sorted_lst)
+    return sorted_lst == list(range(min(sorted_lst), max(sorted_lst) + 1)) and n == len(set(lst))
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert check_Consecutive([1, 2, 3, 4, 5]) == True
+    
+    # Additional test cases
+    assert check_Consecutive([1, 2, 3, 5, 6]) == False
+    assert check_Consecutive([5, 4, 3, 2, 1]) == True
+    assert check_Consecutive([10]) == True
+    assert check_Consecutive([]) == False
+    assert check_Consecutive([1, 1, 2, 3]) == False
+    assert check_Consecutive([3, 1, 2]) == True
+    
+    print("All test cases passed!")
+```

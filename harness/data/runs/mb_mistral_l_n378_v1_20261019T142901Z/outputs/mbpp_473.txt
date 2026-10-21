@@ -1,0 +1,37 @@
+Here's a self-contained Python script that solves the problem by finding the tuple intersection of elements in the given tuple lists, irrespective of their order:
+
+```python
+def tuple_intersection(list1, list2):
+    """
+    Find the intersection of tuples in two lists, where order within tuples doesn't matter.
+
+    Args:
+        list1: First list of tuples
+        list2: Second list of tuples
+
+    Returns:
+        A set containing tuples that appear in both lists (order within tuples doesn't matter)
+    """
+    # Convert each tuple to a frozenset (since sets are unordered and hashable)
+    # We use frozenset because regular sets are not hashable
+    set1 = {frozenset(t) for t in list1}
+    set2 = {frozenset(t) for t in list2}
+
+    # Find the intersection
+    intersection = set1 & set2
+
+    # Convert back to tuples (sorted to maintain consistent order)
+    return {tuple(sorted(t)) for t in intersection}
+
+# Test the function
+assert tuple_intersection([(3, 4), (5, 6), (9, 10), (4, 5)],
+                         [(5, 4), (3, 4), (6, 5), (9, 11)]) == {(3, 4), (4, 5), (5, 6)}
+```
+
+This solution:
+1. Converts each tuple to a frozenset (which is unordered and hashable)
+2. Finds the intersection of these frozensets
+3. Converts the result back to sorted tuples to maintain consistent ordering
+4. Returns the result as a set of tuples
+
+The function handles the case where tuple order doesn't matter by treating (a,b) and (b,a) as the same tuple. The final output is a set of tuples where each tuple is in its sorted form for consistency.

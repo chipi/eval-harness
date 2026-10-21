@@ -1,0 +1,55 @@
+```python
+def armstrong_number(number: int) -> bool:
+    """
+    Checks if a given number is an Armstrong number.
+
+    An Armstrong number (also known as a narcissistic number) is a number
+    that is the sum of its own digits each raised to the power of the
+    number of digits.
+
+    Args:
+        number: The integer to check.
+
+    Returns:
+        True if the number is an Armstrong number, False otherwise.
+
+    Examples:
+        >>> armstrong_number(153)
+        True
+        >>> armstrong_number(370)
+        True
+        >>> armstrong_number(371)
+        True
+        >>> armstrong_number(9474)
+        True
+        >>> armstrong_number(123)
+        False
+        >>> armstrong_number(10)
+        False
+    """
+    # Convert the number to a string to easily find its length and digits.
+    str_num = str(number)
+    
+    # Get the number of digits (n).
+    n = len(str_num)
+    
+    # Calculate the sum of each digit raised to the power of n.
+    armstrong_sum = sum(int(digit) ** n for digit in str_num)
+    
+    # Check if the calculated sum is equal to the original number.
+    return armstrong_sum == number
+
+# Example usage and assertions to verify the function
+if __name__ == "__main__":
+    assert armstrong_number(153) == True
+    assert armstrong_number(370) == True
+    assert armstrong_number(371) == True
+    assert armstrong_number(9474) == True
+    assert armstrong_number(123) == False
+    assert armstrong_number(10) == False
+    assert armstrong_number(0) == True
+    assert armstrong_number(1) == True
+    assert armstrong_number(9) == True
+    
+    print("All assertions passed successfully!")
+```

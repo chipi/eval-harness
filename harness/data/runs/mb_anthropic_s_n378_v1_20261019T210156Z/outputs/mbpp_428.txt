@@ -1,0 +1,63 @@
+```python
+def shell_sort(arr):
+    """
+    Sort an array using shell sort algorithm.
+    
+    Shell sort is a generalization of insertion sort that allows the exchange
+    of items that are far apart. The method starts by sorting pairs of elements
+    far apart from each other, then progressively reducing the gap between
+    elements to be compared.
+    
+    Args:
+        arr: List of elements to sort
+        
+    Returns:
+        Sorted list
+    """
+    n = len(arr)
+    
+    # Start with a big gap, then reduce the gap
+    gap = n // 2
+    
+    # Do a gapped insertion sort for this gap size.
+    # The first gap elements arr[0..gap-1] are already in gapped order
+    # keep adding one more element until the entire array is gap sorted
+    while gap > 0:
+        # Do a gapped insertion sort for this gap size.
+        # The first gap elements arr[0..gap-1] are already in gapped order
+        # keep adding one more element until the entire array is gap sorted
+        for i in range(gap, n):
+            # add arr[i] to the elements that have been gap sorted
+            # save arr[i] in temp and make a hole at position i
+            temp = arr[i]
+            
+            # shift earlier gap-sorted elements up until the correct
+            # location for arr[i] is found
+            j = i
+            while j >= gap and arr[j - gap] > temp:
+                arr[j] = arr[j - gap]
+                j -= gap
+            
+            # put temp (the original arr[i]) in its correct location
+            arr[j] = temp
+        
+        # Reduce the gap for the next element
+        gap //= 2
+    
+    return arr
+
+
+# Test the function
+if __name__ == "__main__":
+    test_array = [12, 23, 4, 5, 3, 2, 12, 81, 56, 95]
+    result = shell_sort(test_array)
+    expected = [2, 3, 4, 5, 12, 12, 23, 56, 81, 95]
+    
+    print(f"Input: {[12, 23, 4, 5, 3, 2, 12, 81, 56, 95]}")
+    print(f"Output: {result}")
+    print(f"Expected: {expected}")
+    print(f"Test passed: {result == expected}")
+    
+    assert result == expected, f"Expected {expected}, but got {result}"
+    print("✓ Assertion passed!")
+```

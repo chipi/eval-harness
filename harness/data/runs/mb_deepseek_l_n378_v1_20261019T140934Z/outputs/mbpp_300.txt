@@ -1,0 +1,22 @@
+Here’s a self-contained Python script that solves the problem:  
+
+```python
+import math
+
+def count_binary_seq(n):
+    """
+    Returns the count of all binary sequences of length 2n
+    such that the sum of the first n bits equals the sum of the last n bits.
+    """
+    total = 0
+    # Sum of first n bits can range from 0 to n
+    for k in range(n + 1):
+        # Number of ways to choose k ones in n bits
+        ways = math.comb(n, k)
+        total += ways * ways
+    return total
+
+# Test
+assert math.isclose(count_binary_seq(1), 2.0, rel_tol=0.001)
+print("Test passed!")
+```

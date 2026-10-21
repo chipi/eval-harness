@@ -1,0 +1,28 @@
+```python
+import sys
+
+def tuple_size(input_tuple):
+    """
+    Returns the size in bytes of the given tuple.
+    
+    This function simply calls sys.getsizeof() on the tuple, which returns
+    the memory size of the tuple object itself (not including the size of
+    the objects it contains, unless they are also tuples or other container
+    types that are stored inline).
+    
+    Parameters:
+    input_tuple (tuple): The tuple whose size is to be determined.
+    
+    Returns:
+    int: The size of the tuple in bytes.
+    """
+    return sys.getsizeof(input_tuple)
+
+# Example usage and assertion test
+if __name__ == "__main__":
+    test_tuple = ("A", 1, "B", 2, "C", 3)
+    result = tuple_size(test_tuple)
+    expected = sys.getsizeof(test_tuple)
+    assert result == expected, f"Test failed: {result} != {expected}"
+    print(f"Tuple size: {result} bytes (assertion passed)")
+```

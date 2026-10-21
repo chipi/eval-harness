@@ -1,0 +1,12 @@
+```python
+def is_divisible_by_11(n):
+    return n % 11 == 0
+
+# Test cases
+assert is_divisible_by_11(12345) == False
+assert is_divisible_by_11(123456) == True
+assert is_divisible_by_11(1234567) == False
+assert is_divisible_by_11(12345678) == True
+assert is_divisible_by_11(123456789) == False
+assert is_divisible_by_11(1234567890) == True
+```

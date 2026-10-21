@@ -1,0 +1,41 @@
+```python
+def string_to_tuple(s):
+    """
+    This function takes a string as input and returns a tuple of its characters.
+
+    Args:
+        s (str): The input string.
+
+    Returns:
+        tuple: A tuple of characters.
+    """
+    # Remove leading and trailing whitespaces from the string
+    s = s.strip()
+    
+    # Convert the string to a tuple of characters
+    char_tuple = tuple(s)
+    
+    return char_tuple
+
+# Test the function
+print(string_to_tuple("python 3.0"))
+```
+
+You can also solve this problem in a more concise way:
+
+```python
+def string_to_tuple(s):
+    """
+    This function takes a string as input and returns a tuple of its characters.
+
+    Args:
+        s (str): The input string.
+
+    Returns:
+        tuple: A tuple of characters.
+    """
+    return tuple(s.strip())
+
+# Test the function
+print(string_to_tuple("python 3.0"))
+```

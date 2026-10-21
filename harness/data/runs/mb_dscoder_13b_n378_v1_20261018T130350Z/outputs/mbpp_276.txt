@@ -1,0 +1,14 @@
+```python
+import math
+
+def volume_cylinder(radius, height):
+    """
+    Function to calculate the volume of a cylinder.
+    """
+    # Calculate the volume
+    volume = math.pi * radius**2 * height
+    return volume
+
+# Test the function
+print(math.isclose(volume_cylinder(10,5), 1570.75, rel_tol=0.001))
+```

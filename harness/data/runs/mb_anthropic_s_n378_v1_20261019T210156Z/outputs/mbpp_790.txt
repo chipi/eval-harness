@@ -1,0 +1,38 @@
+```python
+def even_position(lst):
+    """
+    Check whether every even index contains even numbers of a given list.
+    
+    Args:
+        lst: A list of integers
+        
+    Returns:
+        True if every element at an even index is an even number, False otherwise
+    """
+    for i in range(0, len(lst), 2):
+        if lst[i] % 2 != 0:
+            return False
+    return True
+
+
+# Test cases
+assert even_position([3, 2, 1]) == False
+assert even_position([2, 2, 2]) == True
+assert even_position([2, 1, 4]) == True
+assert even_position([1, 2, 3]) == False
+assert even_position([2]) == True
+assert even_position([1]) == False
+assert even_position([]) == True
+
+print("All test cases passed!")
+```
+
+The function works by:
+1. Iterating through indices 0, 2, 4, ... (even indices) using `range(0, len(lst), 2)`
+2. Checking if each element at an even index is even (divisible by 2 with no remainder)
+3. Returning `False` if any even-indexed element is odd
+4. Returning `True` if all even-indexed elements are even (or the list is empty)
+
+For the given example `[3, 2, 1]`:
+- Index 0 contains 3, which is odd
+- Therefore, the function returns `False` ✓

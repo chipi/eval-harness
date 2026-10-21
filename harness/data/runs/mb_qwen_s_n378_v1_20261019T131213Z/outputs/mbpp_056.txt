@@ -1,0 +1,20 @@
+```python
+def check(n):
+    """
+    Check if a given number is one less than twice its reverse.
+    
+    Args:
+        n: An integer
+        
+    Returns:
+        True if n == 2 * reverse(n) - 1, False otherwise
+    """
+    # Handle negative numbers by working with absolute value for reversal logic
+    # But the problem likely assumes positive integers based on the example
+    str_n = str(abs(n))
+    reversed_str = str_n[::-1]
+    rev_n = int(reversed_str)
+    
+    # Check if n is one less than twice its reverse
+    return n == 2 * rev_n - 1
+```

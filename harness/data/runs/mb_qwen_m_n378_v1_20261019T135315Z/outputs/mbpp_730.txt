@@ -1,0 +1,39 @@
+```python
+def consecutive_duplicates(lst: list) -> list:
+    """
+    Remove consecutive duplicates from a given list.
+    
+    Args:
+        lst: A list of elements that may contain consecutive duplicates.
+        
+    Returns:
+        A new list with consecutive duplicates removed.
+        
+    Example:
+        >>> consecutive_duplicates([0, 0, 1, 2, 3, 4, 4, 5, 6, 6, 6, 7, 8, 9, 4, 4])
+        [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 4]
+    """
+    if not lst:
+        return []
+    
+    result = [lst[0]]
+    for i in range(1, len(lst)):
+        if lst[i] != lst[i - 1]:
+            result.append(lst[i])
+    
+    return result
+
+
+if __name__ == "__main__":
+    # Test the function with the provided assertion
+    assert consecutive_duplicates([0, 0, 1, 2, 3, 4, 4, 5, 6, 6, 6, 7, 8, 9, 4, 4]) == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 4]
+    
+    # Additional test cases
+    assert consecutive_duplicates([]) == []
+    assert consecutive_duplicates([1]) == [1]
+    assert consecutive_duplicates([1, 1, 1]) == [1]
+    assert consecutive_duplicates([1, 2, 3]) == [1, 2, 3]
+    assert consecutive_duplicates([1, 1, 2, 2, 3, 3]) == [1, 2, 3]
+    
+    print("All tests passed!")
+```

@@ -1,0 +1,48 @@
+```python
+def sumofFactors(n: int) -> int:
+    """
+    Find the sum of even factors of a number.
+    
+    Args:
+        n: A positive integer
+        
+    Returns:
+        The sum of all even factors of n
+        
+    Example:
+        >>> sumofFactors(18)
+        26
+    """
+    if n <= 0:
+        return 0
+    
+    total = 0
+    for i in range(2, n + 1, 2):  # Only check even numbers
+        if n % i == 0:
+            total += i
+    
+    return total
+
+
+if __name__ == "__main__":
+    # Test case from the problem statement
+    assert sumofFactors(18) == 26, f"Expected 26, got {sumofFactors(18)}"
+    
+    # Additional test cases
+    # Factors of 18: 1, 2, 3, 6, 9, 18. Even factors: 2, 6, 18. Sum = 26
+    print(f"sumofFactors(18) = {sumofFactors(18)}")
+    
+    # Factors of 10: 1, 2, 5, 10. Even factors: 2, 10. Sum = 12
+    assert sumofFactors(10) == 12, f"Expected 12, got {sumofFactors(10)}"
+    print(f"sumofFactors(10) = {sumofFactors(10)}")
+    
+    # Factors of 1: 1. No even factors. Sum = 0
+    assert sumofFactors(1) == 0, f"Expected 0, got {sumofFactors(1)}"
+    print(f"sumofFactors(1) = {sumofFactors(1)}")
+    
+    # Factors of 2: 1, 2. Even factors: 2. Sum = 2
+    assert sumofFactors(2) == 2, f"Expected 2, got {sumofFactors(2)}"
+    print(f"sumofFactors(2) = {sumofFactors(2)}")
+    
+    print("All tests passed!")
+```

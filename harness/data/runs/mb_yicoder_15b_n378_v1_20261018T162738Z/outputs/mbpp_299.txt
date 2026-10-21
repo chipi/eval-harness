@@ -1,0 +1,16 @@
+```python
+def max_aggregate(lst):
+    max_val = 0
+    max_name = ''
+    for name, val in lst:
+        if val > max_val:
+            max_val = val
+            max_name = name
+    return (max_name, max_val)
+
+# Test cases
+assert max_aggregate([('Juan Whelan',90),('Sabah Colley',88),('Peter Nichols',7),('Juan Whelan',122),('Sabah Colley',84)])==('Juan Whelan', 212)
+assert max_aggregate([('John Smith',85),('Jane Doe',90),('John Smith',95)])==('John Smith', 95)
+assert max_aggregate([('Tom',50),('Tom',60),('Tom',70)])==('Tom', 70)
+assert max_aggregate([('Alice',90),('Bob',80),('Charlie',90)])==('Alice', 90)
+```

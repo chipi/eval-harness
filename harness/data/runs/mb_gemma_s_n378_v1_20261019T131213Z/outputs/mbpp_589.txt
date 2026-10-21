@@ -1,0 +1,23 @@
+```python
+def perfect_squares(start, end):
+  """
+  Finds perfect squares between two given numbers (inclusive).
+
+  Args:
+    start: The starting number.
+    end: The ending number.
+
+  Returns:
+    A list of perfect squares between start and end.
+  """
+  squares = []
+  i = 1
+  while i * i <= end:
+    square = i * i
+    if square >= start:
+      squares.append(square)
+    i += 1
+  return squares
+
+assert perfect_squares(1,30)==[1, 4, 9, 16, 25]
+```

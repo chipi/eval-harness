@@ -1,0 +1,32 @@
+```python
+def multiply_elements(t: tuple) -> tuple:
+    """
+    Takes a tuple of numbers (t_1,...,t_{N+1}) and returns a tuple of length N
+    where the i-th element is equal to t_i * t_{i+1}.
+    
+    Args:
+        t: A tuple of numbers with length N+1
+        
+    Returns:
+        A tuple of length N where each element is the product of consecutive elements
+        
+    Example:
+        >>> multiply_elements((1, 5, 7, 8, 10))
+        (5, 35, 56, 80)
+    """
+    return tuple(t[i] * t[i + 1] for i in range(len(t) - 1))
+
+
+if __name__ == "__main__":
+    # Test the function with the provided example
+    result = multiply_elements((1, 5, 7, 8, 10))
+    expected = (5, 35, 56, 80)
+    assert result == expected, f"Expected {expected}, but got {result}"
+    print(f"Test passed! multiply_elements((1, 5, 7, 8, 10)) == {result}")
+    
+    # Additional test cases
+    assert multiply_elements((2, 3)) == (6,)
+    assert multiply_elements((1, 2, 3)) == (2, 6)
+    assert multiply_elements((0, 1, 2, 3)) == (0, 2, 6)
+    print("All tests passed!")
+```

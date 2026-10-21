@@ -1,0 +1,22 @@
+```python
+def big_diff(lst):
+    """
+    Find the difference between the largest and smallest value in a given list.
+    
+    Args:
+        lst: A list of numbers
+        
+    Returns:
+        The difference between the maximum and minimum values in the list
+    """
+    return max(lst) - min(lst)
+
+
+# Test cases
+assert big_diff([1, 2, 3, 4]) == 3
+assert big_diff([10, 5, 20, 3]) == 17
+assert big_diff([100]) == 0
+assert big_diff([-5, -10, 0, 5]) == 15
+
+print("All test cases passed!")
+```

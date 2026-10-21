@@ -1,0 +1,29 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def new_tuple(lst, string):
+    """
+    Create a new tuple from the given string and list.
+    
+    Args:
+        lst: A list of elements
+        string: A string to be added to the tuple
+    
+    Returns:
+        A tuple containing all elements from the list followed by the string
+    """
+    # Convert the list to a tuple and add the string as the last element
+    return tuple(lst) + (string,)
+
+# Test the function
+if __name__ == "__main__":
+    assert new_tuple(["WEB", "is"], "best") == ('WEB', 'is', 'best')
+    print("Test passed!")
+```
+
+This solution:
+1. Takes a list and a string as input parameters
+2. Converts the list to a tuple using `tuple(lst)`
+3. Creates a single-element tuple with the string `(string,)`
+4. Concatenates both tuples to create the final result
+5. Includes the test assertion to verify the function works correctly

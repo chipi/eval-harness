@@ -1,0 +1,20 @@
+```python
+import re
+
+def find_literals(text, pattern):
+    """
+    Search a string for a regex pattern and return the matching substring,
+    start index, and end index.
+    
+    Args:
+        text: The string to search in.
+        pattern: The regex pattern to search for.
+        
+    Returns:
+        A tuple of (matching_substring, start_index, end_index).
+    """
+    match = re.search(pattern, text)
+    if match:
+        return (match.group(), match.start(), match.end())
+    return None
+```

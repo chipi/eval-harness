@@ -1,0 +1,28 @@
+```python
+def odd_position(lst):
+    """
+    This function checks whether every odd index contains odd numbers of a given list.
+
+    Args:
+        lst (list): A list of integers.
+
+    Returns:
+        bool: True if every odd index contains an odd number, False otherwise.
+    """
+    # Iterate over the list with enumerate to get both index and value
+    for i, num in enumerate(lst):
+        # Check if the index is odd (using 0-based indexing)
+        if i % 2 != 0:
+            # If the index is odd, check if the number is odd
+            if num % 2 == 0:
+                # If the number is even, return False
+                return False
+    # If the function hasn't returned False, all odd indices have odd numbers
+    return True
+
+# Test the function
+assert odd_position([2,1,4,3,6,7,6,3])
+assert not odd_position([2,1,4,3,6,8,6,3])
+```
+
+This script defines a function `odd_position` that checks whether every odd index in a given list contains an odd number. The function uses a for loop with `enumerate` to iterate over both the index and value of each element in the list. If it finds an odd index with an even number, it immediately returns `False`. If it checks all elements without returning `False`, it returns `True`, indicating that all odd indices have odd numbers. The script also includes a test case to verify the function's behavior.

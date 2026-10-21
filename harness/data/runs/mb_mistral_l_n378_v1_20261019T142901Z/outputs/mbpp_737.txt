@@ -1,0 +1,34 @@
+Here's a self-contained Python script that solves the problem using regex to check if a given string starts with a vowel:
+
+```python
+import re
+
+def check_str(s):
+    """
+    Check if the given string starts with a vowel using regex.
+
+    Args:
+        s (str): The input string to check.
+
+    Returns:
+        bool: True if the string starts with a vowel, False otherwise.
+    """
+    return bool(re.match(r'^[aeiouAEIOU]', s))
+
+# Test the function
+assert check_str("annie") == True
+assert check_str("Annie") == True
+assert check_str("bannie") == False
+assert check_str("1annie") == False
+assert check_str("") == False
+```
+
+This script:
+1. Imports the `re` module for regular expressions
+2. Defines the `check_str` function that uses `re.match()` to check if the string starts with a vowel
+3. The regex pattern `^[aeiouAEIOU]` matches:
+   - `^` - start of string
+   - `[aeiouAEIOU]` - any vowel (case insensitive)
+4. Includes test cases with the required assertion and additional test cases for verification
+
+The function returns `True` if the string starts with a vowel (case insensitive) and `False` otherwise.

@@ -1,0 +1,20 @@
+```python
+def armstrong_number(n):
+    # Convert the number to string to easily access each digit
+    n = str(n)
+    length = len(n)
+    sum = 0
+    for digit in n:
+        sum += int(digit) ** length
+    return sum == int(n)
+
+# Test cases
+assert armstrong_number(153) == True
+assert armstrong_number(370) == True
+assert armstrong_number(371) == True
+assert armstrong_number(407) == True
+assert armstrong_number(1634) == True
+assert armstrong_number(8208) == True
+assert armstrong_number(9474) == True
+assert armstrong_number(9975) == False
+```

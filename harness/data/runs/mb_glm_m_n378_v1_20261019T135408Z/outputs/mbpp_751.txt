@@ -1,0 +1,50 @@
+Here's a self-contained Python script that checks if a given array represents a min heap:
+
+```python
+def check_min_heap(arr):
+    """
+    Check if the given array represents a min heap.
+    
+    Args:
+        arr (list): The array to check.
+        
+    Returns:
+        bool: True if the array represents a min heap, False otherwise.
+    """
+    n = len(arr)
+    
+    # Iterate through all internal nodes (nodes that have at least one child)
+    for i in range(n // 2):
+        left_child = 2 * i + 1
+        right_child = 2 * i + 2
+        
+        # Check if left child exists and is smaller than parent
+        if left_child < n and arr[left_child] < arr[i]:
+            return False
+        
+        # Check if right child exists and is smaller than parent
+        if right_child < n and arr[right_child] < arr[i]:
+            return False
+    
+    return True
+
+# Test cases
+assert check_min_heap([1, 2, 3, 4, 5, 6]) == True
+assert check_min_heap([10, 15, 14, 25, 30]) == True
+assert check_min_heap([2, 3, 1, 5, 4]) == False
+assert check_min_heap([1]) == True
+assert check_min_heap([]) == True
+assert check_min_heap([5, 3, 4, 1, 2]) == False
+
+print("All test cases passed!")
+```
+
+### Explanation:
+1. **Min Heap Property**: In a min heap, every parent node must be less than or equal to its children. For an array representation of a binary heap, the parent of the element at index `i` is at index `(i-1)//2`, and the children are at indices `2*i + 1` (left child) and `2*i + 2` (right child).
+
+2. **Algorithm**:
+   - Iterate through all internal nodes (nodes that have at least one child). For an array of length `n`, the internal nodes are from index `0` to `n//2 - 1`.
+   - For each internal node, check if its left or right child (if they exist) is smaller than the node itself. If any child is smaller, the array does not represent a min heap, and we return `False`.
+   - If no violations are found, return `True`.
+
+3. **Test Cases**: The script includes several test cases to verify the correctness of the function, including edge cases like an empty array or a single-element array. The `assert` statements will raise an error if any test case fails. If all pass, it prints "All test cases passed!".

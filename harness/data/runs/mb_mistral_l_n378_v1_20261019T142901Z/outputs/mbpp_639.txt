@@ -1,0 +1,28 @@
+Here's a self-contained Python script that solves the problem as described:
+
+```python
+def sample_nam(names):
+    """
+    Sums the length of names in a list after removing those that start with a lowercase letter.
+
+    Args:
+        names: List of names (strings)
+
+    Returns:
+        int: Sum of lengths of names that start with uppercase letters
+    """
+    return sum(len(name) for name in names if name and name[0].isupper())
+
+# Test case
+assert sample_nam(['sally', 'Dylan', 'rebecca', 'Diana', 'Joanne', 'keith']) == 16
+```
+
+This solution:
+1. Uses a generator expression to filter names that start with an uppercase letter (`name[0].isupper()`)
+2. Calculates the length of each remaining name (`len(name)`)
+3. Sums all these lengths (`sum()`)
+4. Includes the provided test case to verify the function works correctly
+
+The function will return 16 for the given test case because:
+- 'Dylan' (5) + 'Diana' (5) + 'Joanne' (6) = 16
+- The other names ('sally', 'rebecca', 'keith') are excluded as they start with lowercase letters

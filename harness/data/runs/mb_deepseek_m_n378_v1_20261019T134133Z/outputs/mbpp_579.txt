@@ -1,0 +1,52 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def find_dissimilar(tuple1, tuple2):
+    """
+    Find the dissimilar elements in the given two tuples.
+    Returns elements that are in one tuple but not in the other.
+    """
+    # Convert to sets for efficient difference operations
+    set1 = set(tuple1)
+    set2 = set(tuple2)
+    
+    # Find elements unique to each set
+    dissimilar = set1.symmetric_difference(set2)
+    
+    # Return as a tuple, preserving order of first appearance
+    result = []
+    for item in tuple1 + tuple2:
+        if item in dissimilar and item not in result:
+            result.append(item)
+    
+    return tuple(result)
+
+
+# Test the function
+assert find_dissimilar((3, 4, 5, 6), (5, 7, 4, 10)) == (3, 6, 7, 10)
+
+# Additional test cases
+print(find_dissimilar((1, 2, 3), (4, 5, 6)))  # (1, 2, 3, 4, 5, 6)
+print(find_dissimilar((1, 2, 3), (1, 2, 3)))  # ()
+print(find_dissimilar((1, 2, 3, 4), (3, 4, 5, 6)))  # (1, 2, 5, 6)
+
+print("All tests passed!")
+```
+
+**How it works:**
+
+1. **Convert to sets**: Both tuples are converted to sets for efficient comparison operations.
+
+2. **Symmetric difference**: `set1.symmetric_difference(set2)` returns elements that appear in exactly one of the two sets (i.e., elements that are dissimilar).
+
+3. **Preserve order**: Since sets are unordered, we iterate through the original tuples in order and collect dissimilar elements as they first appear. This ensures the output order matches the expected result `(3, 6, 7, 10)` — elements from the first tuple first, then elements from the second tuple.
+
+4. **Return as tuple**: The result is converted back to a tuple to match the expected return type.
+
+**Output:**
+```
+(1, 2, 3, 4, 5, 6)
+()
+(1, 2, 5, 6)
+All tests passed!
+```

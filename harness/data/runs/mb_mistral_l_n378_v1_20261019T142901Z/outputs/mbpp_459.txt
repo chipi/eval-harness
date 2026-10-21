@@ -1,0 +1,39 @@
+Here's a self-contained Python script that solves the problem by removing all uppercase substrings from a given string:
+
+```python
+def remove_uppercase(s: str) -> str:
+    """
+    Removes all uppercase substrings from the given string.
+
+    Args:
+        s: Input string that may contain uppercase substrings.
+
+    Returns:
+        String with all uppercase substrings removed.
+    """
+    result = []
+    i = 0
+    n = len(s)
+
+    while i < n:
+        if s[i].islower():
+            result.append(s[i])
+            i += 1
+        else:
+            # Skip the entire uppercase substring
+            while i < n and s[i].isupper():
+                i += 1
+
+    return ''.join(result)
+
+# Test the function
+assert remove_uppercase('cAstyoUrFavoRitETVshoWs') == 'cstyoravoitshos'
+```
+
+This solution:
+1. Iterates through the string character by character
+2. When it encounters a lowercase character, it adds it to the result
+3. When it encounters an uppercase character, it skips all consecutive uppercase characters
+4. Joins the collected lowercase characters into the final result string
+
+The test case verifies that the function works as expected.

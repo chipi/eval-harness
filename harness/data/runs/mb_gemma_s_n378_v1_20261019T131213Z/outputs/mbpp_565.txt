@@ -1,0 +1,16 @@
+```python
+def split(s):
+  """
+  Splits a string into a list of characters.
+
+  Args:
+    s: The input string.
+
+  Returns:
+    A list of characters in the string.
+  """
+  return list(s)
+
+# Example usage and assertion
+assert split('python') == ['p','y','t','h','o','n']
+```

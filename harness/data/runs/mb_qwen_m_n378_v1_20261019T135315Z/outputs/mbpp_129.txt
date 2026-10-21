@@ -1,0 +1,71 @@
+```python
+def magic_square_test(matrix: list[list[int]]) -> bool:
+    """
+    Check if a given matrix is a magic square.
+    
+    A magic square is an n x n grid filled with distinct positive integers such that
+    the sum of each row, each column, and both main diagonals are equal.
+    
+    Args:
+        matrix: A 2D list representing the square matrix.
+        
+    Returns:
+        True if the matrix is a magic square, False otherwise.
+    """
+    # Check if matrix is empty
+    if not matrix or not matrix[0]:
+        return False
+    
+    n = len(matrix)
+    
+    # Check if it's a square matrix
+    for row in matrix:
+        if len(row) != n:
+            return False
+    
+    # Calculate the target sum using the first row
+    target_sum = sum(matrix[0])
+    
+    # Check all rows
+    for i in range(n):
+        if sum(matrix[i]) != target_sum:
+            return False
+    
+    # Check all columns
+    for j in range(n):
+        col_sum = sum(matrix[i][j] for i in range(n))
+        if col_sum != target_sum:
+            return False
+    
+    # Check main diagonal (top-left to bottom-right)
+    main_diag_sum = sum(matrix[i][i] for i in range(n))
+    if main_diag_sum != target_sum:
+        return False
+    
+    # Check anti-diagonal (top-right to bottom-left)
+    anti_diag_sum = sum(matrix[i][n - 1 - i] for i in range(n))
+    if anti_diag_sum != target_sum:
+        return False
+    
+    return True
+
+
+if __name__ == "__main__":
+    # Test case from the problem statement
+    assert magic_square_test([[7, 12, 1, 14], [2, 13, 8, 11], [16, 3, 10, 5], [9, 6, 15, 4]]) == True
+    
+    # Additional test cases
+    # Classic 3x3 magic square
+    assert magic_square_test([[2, 7, 6], [9, 5, 1], [4, 3, 8]]) == True
+    
+    # Not a magic square
+    assert magic_square_test([[1, 2, 3], [4, 5, 6], [7, 8, 9]]) == False
+    
+    # Single element matrix
+    assert magic_square_test([[5]]) == True
+    
+    # 2x2 non-magic square
+    assert magic_square_test([[1, 2], [3, 4]]) == False
+    
+    print("All tests passed!")
+```

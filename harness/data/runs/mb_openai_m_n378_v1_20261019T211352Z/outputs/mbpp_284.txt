@@ -1,0 +1,19 @@
+```python
+def check_element(items, element):
+    """
+    Return True if all items in the list are equal to the given element,
+    otherwise return False.
+
+    Note: For an empty list, all() returns True by definition.
+    """
+    return all(item == element for item in items)
+
+
+if __name__ == "__main__":
+    assert check_element(["green", "orange", "black", "white"], "blue") == False
+    assert check_element(["blue", "blue", "blue"], "blue") == True
+    assert check_element([1, 1, 1], 1) == True
+    assert check_element([1, 2, 1], 1) == False
+
+    print("All tests passed.")
+```

@@ -1,0 +1,45 @@
+Here's a self-contained Python script that solves the problem of finding the tuple intersection of elements in two given tuple lists, irrespective of their order:
+
+```python
+def tuple_intersection(list1, list2):
+    """
+    Find the tuple intersection of elements in the given tuple lists irrespective of their order.
+    
+    Args:
+        list1 (list of tuples): First list of tuples.
+        list2 (list of tuples): Second list of tuples.
+    
+    Returns:
+        set: A set of tuples that are present in both lists, considering tuples as unordered.
+    """
+    # Convert each tuple in both lists to a frozenset to make them order-independent
+    set1 = {frozenset(t) for t in list1}
+    set2 = {frozenset(t) for t in list2}
+    
+    # Find the intersection of the two sets
+    intersection = set1 & set2
+    
+    # Convert the frozensets back to tuples (sorted for consistency)
+    result = {tuple(sorted(s)) for s in intersection}
+    
+    return result
+
+# Test the function with the provided example
+assert tuple_intersection([(3, 4), (5, 6), (9, 10), (4, 5)], [(5, 4), (3, 4), (6, 5), (9, 11)]) == {(4, 5), (3, 4), (5, 6)}
+
+# Additional test cases
+assert tuple_intersection([], []) == set()
+assert tuple_intersection([(1, 2)], [(2, 1)]) == {(1, 2)}
+assert tuple_intersection([(1, 2), (3, 4)], [(2, 1), (4, 3)]) == {(1, 2), (3, 4)}
+assert tuple_intersection([(1, 2), (3, 4)], [(5, 6)]) == set()
+
+print("All test cases passed!")
+```
+
+### Explanation:
+1. **Convert Tuples to Frozensets**: Each tuple in both lists is converted to a `frozenset` (an immutable set) to make the order of elements irrelevant. For example, `(3, 4)` and `(4, 3)` both become `frozenset({3, 4})`.
+2. **Find Intersection**: The intersection of the two sets of frozensets is computed. This gives us all the tuples that are present in both lists, regardless of order.
+3. **Convert Back to Tuples**: The frozensets in the intersection are converted back to tuples. The elements in each tuple are sorted to ensure a consistent order (e.g., `frozenset({3, 4})` becomes `(3, 4)`).
+4. **Return Result**: The result is returned as a set of tuples to avoid duplicates and to match the expected output format.
+
+The script includes the provided test case and additional test cases to verify the correctness of the solution. All test cases should pass, confirming that the function works as expected.

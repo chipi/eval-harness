@@ -1,0 +1,31 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def empty_list(N):
+    """
+    Create a list of N empty dictionaries.
+    
+    Args:
+        N (int): Number of empty dictionaries to create
+        
+    Returns:
+        list: A list containing N empty dictionaries
+    """
+    return [{} for _ in range(N)]
+
+
+# Test the function
+if __name__ == "__main__":
+    # Test with the given assertion
+    result = empty_list(5)
+    assert result == [{}, {}, {}, {}, {}], f"Expected [{}, {}, {}, {}, {}] but got {result}"
+    print("Test passed!")
+    
+    # Additional test cases
+    assert empty_list(0) == [], "Test with N=0 failed"
+    assert empty_list(1) == [{}], "Test with N=1 failed"
+    assert empty_list(3) == [{}, {}, {}], "Test with N=3 failed"
+    print("All tests passed!")
+```
+
+This solution uses a list comprehension to create N empty dictionaries. The function is simple, efficient, and handles edge cases like N=0 correctly.

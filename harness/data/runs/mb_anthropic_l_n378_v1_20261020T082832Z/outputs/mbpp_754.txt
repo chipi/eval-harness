@@ -1,0 +1,56 @@
+Looking at this problem, I need to find elements that appear at the same index across all three lists.
+
+Let me verify with the example:
+- Index 0: 1, 0, 0 → not all equal
+- Index 1: 1, 1, 1 → all equal → include 1
+- Index 2: 3, 2, 2 → not all equal
+- Index 3: 4, 3, 3 → not all equal
+- Index 4: 5, 4, 4 → not all equal
+- Index 5: 6, 5, 5 → not all equal
+- Index 6: 7, 7, 7 → all equal → include 7
+
+Result: `[1, 7]` ✓
+
+```python
+"""
+We say that an element is common for lists l1, l2, l3 if it appears in all three lists
+under the same index. Write a function to find common elements from three lists.
+The function should return a list.
+"""
+
+
+def extract_index_list(l1, l2, l3):
+    """
+    Return a list of elements that occur at the same index in all three lists.
+
+    Args:
+        l1, l2, l3: input lists
+
+    Returns:
+        list: elements common to all three lists at identical indices
+    """
+    return [a for a, b, c in zip(l1, l2, l3) if a == b == c]
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert extract_index_list([1, 1, 3, 4, 5, 6, 7],
+                              [0, 1, 2, 3, 4, 5, 7],
+                              [0, 1, 2, 3, 4, 5, 7]) == [1, 7]
+
+    # A few extra sanity checks
+    assert extract_index_list([1, 1, 3, 4, 5, 6, 7],
+                              [0, 1, 2, 3, 4, 5, 7],
+                              [0, 1, 2, 3, 4, 5, 8]) == [1]
+
+    assert extract_index_list([1, 1, 3, 4, 6, 5, 6],
+                              [0, 1, 2, 3, 4, 5, 7],
+                              [0, 1, 2, 3, 4, 5, 7]) == [1, 5]
+
+    assert extract_index_list([], [], []) == []
+
+    print(extract_index_list([1, 1, 3, 4, 5, 6, 7],
+                             [0, 1, 2, 3, 4, 5, 7],
+                             [0, 1, 2, 3, 4, 5, 7]))
+    print("All tests passed!")
+```

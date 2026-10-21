@@ -1,0 +1,28 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def power_base_sum(base, power):
+    """
+    Calculate the sum of all digits of the base to the specified power.
+
+    Args:
+        base (int): The base number
+        power (int): The exponent to raise the base to
+
+    Returns:
+        int: The sum of all digits in the result of base^power
+    """
+    result = base ** power
+    return sum(int(digit) for digit in str(result))
+
+# Test case
+assert power_base_sum(2, 100) == 115
+```
+
+This script defines a function `power_base_sum` that:
+1. Calculates the base raised to the specified power
+2. Converts the result to a string to iterate through each digit
+3. Converts each digit back to an integer and sums them up
+4. Returns the total sum
+
+The included test case verifies that the function works correctly for the given example (2^100 = 1267650600228229401496703205376, and the sum of its digits is 115).

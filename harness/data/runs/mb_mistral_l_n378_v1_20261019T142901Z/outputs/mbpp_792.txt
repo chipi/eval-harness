@@ -1,0 +1,30 @@
+Here's a self-contained Python script that solves the problem, including the function and the assertion test:
+
+```python
+"""
+Function to count the number of lists in a given list of lists.
+"""
+
+def count_list(lst):
+    """
+    Counts the number of lists in a given list of lists.
+
+    Args:
+        lst: A list that may contain other lists as elements.
+
+    Returns:
+        int: The count of lists in the input list.
+    """
+    return sum(1 for element in lst if isinstance(element, list))
+
+# Test the function
+assert count_list([[1, 3], [5, 7], [9, 11], [13, 15, 17]]) == 4
+```
+
+This script:
+1. Defines a function `count_list` that takes a list as input
+2. Uses a generator expression with `isinstance()` to check each element
+3. Counts how many elements are lists
+4. Includes the assertion test from the problem statement
+
+The function will work for any list that contains other lists as elements, counting only the top-level lists.

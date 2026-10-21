@@ -1,0 +1,34 @@
+Here's a self-contained Python script that solves the problem of finding the maximum product formed by multiplying numbers of an increasing subsequence in an array:
+
+```python
+def max_product(nums):
+    if not nums:
+        return 0
+
+    max_product = 0
+    n = len(nums)
+
+    for i in range(n):
+        current_product = 1
+        for j in range(i, n):
+            if nums[j] > nums[j - 1] if j > i else True:
+                current_product *= nums[j]
+                if current_product > max_product:
+                    max_product = current_product
+            else:
+                break
+    return max_product
+
+# Test case
+assert max_product([3, 100, 4, 5, 150, 6]) == 3000
+print("Test passed!")
+```
+
+### Explanation:
+1. The function `max_product` takes a list of numbers as input.
+2. It initializes `max_product` to 0, which will store the maximum product found.
+3. It iterates over each element in the array, treating each element as the starting point of a potential increasing subsequence.
+4. For each starting point, it checks all subsequent elements to see if they form an increasing subsequence. If they do, it multiplies them together and updates `max_product` if the current product is larger.
+5. The function returns the maximum product found.
+
+The test case checks that the function correctly returns 3000 for the input `[3, 100, 4, 5, 150, 6]`, which is the product of the subsequence `[4, 5, 150]`.

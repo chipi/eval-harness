@@ -1,0 +1,22 @@
+```python
+def concatenate_tuple(tup, delimiter="-"):
+    """
+    Concatenates each element of a tuple using the specified delimiter.
+    Converts non-string elements to strings automatically.
+    """
+    # Convert each element to a string and join them with the delimiter
+    return delimiter.join(map(str, tup))
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    result = concatenate_tuple(("ID", "is", 4, "UTS"))
+    print(f"Result: {result}")
+    
+    # Assertion to verify correctness
+    assert result == 'ID-is-4-UTS'
+    
+    # Additional test case with different delimiter
+    assert concatenate_tuple(("A", "B", "C"), "_") == "A_B_C"
+    
+    print("All assertions passed!")
+```

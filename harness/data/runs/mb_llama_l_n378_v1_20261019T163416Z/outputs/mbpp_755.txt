@@ -1,0 +1,13 @@
+```python
+def second_smallest(nums):
+    if len(set(nums)) < 2:
+        return None
+    nums = sorted(set(nums))
+    return nums[1]
+
+def main():
+    print(second_smallest([1, 2, -8, -2, 0, -2]))  # Output: -2
+
+if __name__ == "__main__":
+    main()
+```

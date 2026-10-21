@@ -1,0 +1,38 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+import re
+
+def text_match_wordz(text):
+    """
+    Returns True if the text contains a word with 'z' in it, False otherwise.
+    A word is defined as a sequence of word characters (letters, digits, underscore).
+    """
+    pattern = r'\b\w*z\w*\b'
+    return bool(re.search(pattern, text))
+
+# Test cases
+assert text_match_wordz("pythonz.") == True
+assert text_match_wordz("zebra") == True
+assert text_match_wordz("hello") == False
+assert text_match_wordz("pizza") == True
+assert text_match_wordz("buzz") == True
+assert text_match_wordz("no z here") == False
+assert text_match_wordz("Zebra") == False  # uppercase Z doesn't match lowercase z
+
+print("All tests passed!")
+```
+
+**Explanation:**
+
+- The regex pattern `\b\w*z\w*\b` matches:
+  - `\b` — a word boundary
+  - `\w*` — zero or more word characters
+  - `z` — the literal lowercase letter 'z'
+  - `\w*` — zero or more word characters
+  - `\b` — another word boundary
+
+- `re.search()` scans the string for any match of this pattern.
+- `bool()` converts the match object (or `None`) to `True`/`False`.
+
+For `"pythonz."`, the word `pythonz` matches because it contains a `z` and is bounded by a word boundary before `p` and after `z` (the `.` is a non-word character, so it forms a boundary).

@@ -1,0 +1,36 @@
+Here's a self-contained Python script that solves the problem of finding the closest smaller number than `n`:
+
+```python
+def closest_num(n):
+    """
+    Find the closest smaller number than n.
+
+    Args:
+        n (int): The input number.
+
+    Returns:
+        int: The closest smaller number than n.
+
+    Examples:
+        >>> closest_num(11)
+        10
+    """
+    if n <= 1:
+        return None  # No smaller number exists for n <= 1
+    return n - 1
+
+# Test the function
+assert closest_num(11) == 10
+assert closest_num(1) is None
+assert closest_num(5) == 4
+assert closest_num(0) is None
+
+print("All tests passed!")
+```
+
+### Explanation:
+1. The function `closest_num(n)` checks if `n` is less than or equal to 1. If so, it returns `None` because there is no smaller number.
+2. For `n > 1`, it simply returns `n - 1`, which is the closest smaller number.
+3. The script includes test cases to verify the correctness of the function, including edge cases like `n = 1` and `n = 0`.
+
+You can run this script directly, and it will print "All tests passed!" if all assertions are satisfied.

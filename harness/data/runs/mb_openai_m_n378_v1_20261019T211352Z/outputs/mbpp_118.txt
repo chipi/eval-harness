@@ -1,0 +1,18 @@
+```python
+#!/usr/bin/env python3
+
+def string_to_list(s):
+    """
+    Convert a string to a list of strings split on the space character.
+
+    Examples:
+    >>> string_to_list("python programming")
+    ['python', 'programming']
+    """
+    return s.split(" ")
+
+
+if __name__ == "__main__":
+    assert string_to_list("python programming") == ["python", "programming"]
+    print("All tests passed.")
+```

@@ -1,0 +1,26 @@
+```python
+def max_Product(arr):
+    """
+    Finds a pair with the highest product from a given array of integers.
+
+    Args:
+        arr: A list of integers.
+
+    Returns:
+        A tuple containing the pair of numbers with the highest product.
+    """
+    if len(arr) < 2:
+        return None  # Not enough elements for a pair
+
+    arr.sort()
+    return (arr[-1], arr[-2])
+
+# Example usage and assertion
+if __name__ == '__main__':
+    assert max_Product([1, 2, 3, 4, 7, 0, 8, 4]) == (8, 7)
+    assert max_Product([-1, -2, 3, 4]) == (3, 4)
+    assert max_Product([-10, -3, 5, 6]) == (5, 6)
+    assert max_Product([-1, 0, 1]) == (0, 1)
+    assert max_Product([1, 1]) == (1, 1)
+    print("All test cases passed!")
+```

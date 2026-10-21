@@ -1,0 +1,64 @@
+```python
+def remove_kth_element(input_list: list, k: int) -> list:
+    """
+    Removes the k'th element from a list and returns a new list.
+
+    The k'th element is the element at index k (0-based).
+    For example, the 0th element is the first, the 1st is the second, etc.
+
+    Args:
+        input_list: The list from which to remove an element.
+        k: The 0-based index of the element to remove.
+
+    Returns:
+        A new list with the element at index k removed.
+        If k is out of bounds, the original list is returned.
+
+    Examples:
+        >>> remove_kth_element([1,1,2,3,4,4,5,1], 3)
+        [1, 1, 3, 4, 4, 5, 1]
+        >>> remove_kth_element(['a', 'b', 'c'], 0)
+        ['b', 'c']
+        >>> remove_kth_element([10, 20, 30], 2)
+        [10, 20]
+        >>> remove_kth_element([1, 2, 3], 5)
+        [1, 2, 3]
+    """
+    # Check if the index k is valid for the given list.
+    # An index is valid if it's non-negative and less than the list's length.
+    if 0 <= k < len(input_list):
+        # Slicing is a clean and efficient way to create a new list
+        # without the element at the specified index.
+        # list[:k] gets all elements from the start up to (but not including) index k.
+        # list[k+1:] gets all elements from index k+1 to the end.
+        # Concatenating these two slices effectively removes the k'th element.
+        return input_list[:k] + input_list[k+1:]
+    else:
+        # If k is an invalid index (e.g., negative or too large),
+        # return the original list as no change is needed.
+        return input_list
+
+# Example usage and assertion from the problem description
+if __name__ == "__main__":
+    my_list = [1, 1, 2, 3, 4, 4, 5, 1]
+    k_to_remove = 3
+    
+    # The element at index 3 is the number 3.
+    # The expected result is [1, 1, 3, 4, 4, 5, 1].
+    result = remove_kth_element(my_list, k_to_remove)
+    
+    print(f"Original list: {my_list}")
+    print(f"Removing element at index {k_to_remove}...")
+    print(f"Resulting list: {result}")
+    
+    # The assert statement checks if the result is as expected.
+    # If the condition is false, it will raise an AssertionError.
+    assert result == [1, 1, 3, 4, 4, 5, 1]
+    
+    # Additional test cases
+    assert remove_kth_element(['a', 'b', 'c'], 0) == ['b', 'c']
+    assert remove_kth_element([10, 20, 30], 2) == [10, 20]
+    assert remove_kth_element([1, 2, 3], 5) == [1, 2, 3] # k is out of bounds
+    
+    print("\nAll assertions passed successfully!")
+```

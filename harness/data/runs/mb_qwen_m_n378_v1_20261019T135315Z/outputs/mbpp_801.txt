@@ -1,0 +1,34 @@
+```python
+def test_three_equal(a: int, b: int, c: int) -> int:
+    """
+    Count the number of equal numbers from three given integers.
+    
+    If all three are equal, return 3.
+    If two are equal, return 2.
+    If none are equal, return 0.
+    
+    Args:
+        a: First integer
+        b: Second integer
+        c: Third integer
+    
+    Returns:
+        The count of equal numbers (3 if all equal, 2 if two equal, 0 if none equal)
+    """
+    if a == b == c:
+        return 3
+    elif a == b or a == c or b == c:
+        return 2
+    else:
+        return 0
+
+
+if __name__ == "__main__":
+    # Test cases
+    assert test_three_equal(1, 1, 1) == 3
+    assert test_three_equal(1, 2, 3) == 0
+    assert test_three_equal(1, 1, 2) == 2
+    assert test_three_equal(1, 2, 1) == 2
+    assert test_three_equal(2, 1, 1) == 2
+    print("All tests passed!")
+```

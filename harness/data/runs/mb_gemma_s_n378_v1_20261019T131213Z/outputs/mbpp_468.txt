@@ -1,0 +1,26 @@
+```python
+def max_product(arr):
+    """
+    Finds the maximum product formed by multiplying numbers of an increasing subsequence of the array.
+
+    Args:
+        arr: A list of numbers.
+
+    Returns:
+        The maximum product of an increasing subsequence.
+    """
+    n = len(arr)
+    dp = [0] * n
+    for i in range(n):
+        dp[i] = arr[i]
+        for j in range(i):
+            if arr[i] > arr[j]:
+                dp[i] = max(dp[i], dp[j] * arr[i])
+    return max(dp)
+
+assert max_product([3, 100, 4, 5, 150, 6]) == 3000
+assert max_product([1, 2, 3, 4, 5]) == 120
+assert max_product([5, 4, 3, 2, 1]) == 5
+assert max_product([10, 2, 3, 4, 5]) == 120
+assert max_product([1, 1, 1, 1, 1]) == 1
+```

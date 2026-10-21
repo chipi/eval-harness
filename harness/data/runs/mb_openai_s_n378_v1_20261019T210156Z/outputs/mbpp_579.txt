@@ -1,0 +1,13 @@
+```python
+def find_dissimilar(t1, t2):
+    """
+    Return a tuple of elements that appear in exactly one of the two tuples.
+    The result is sorted in ascending order to match the example.
+    """
+    return tuple(sorted(set(t1) ^ set(t2)))
+
+
+if __name__ == "__main__":
+    assert find_dissimilar((3, 4, 5, 6), (5, 7, 4, 10)) == (3, 6, 7, 10)
+    print("All tests passed.")
+```

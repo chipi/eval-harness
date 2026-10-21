@@ -1,0 +1,23 @@
+```python
+def replace_spaces(text: str) -> str:
+    """
+    Replaces whitespaces with underscores and underscores with whitespaces 
+    in a given string.
+    """
+    # We use a translation table to swap characters simultaneously.
+    # This prevents a double-replacement (e.g., space -> underscore -> space).
+    trans_table = str.maketrans(' _', '_ ')
+    return text.translate(trans_table)
+
+if __name__ == "__main__":
+    # Test case 1: Spaces to underscores
+    assert replace_spaces('Jumanji The Jungle') == 'Jumanji_The_Jungle'
+    
+    # Test case 2: Underscores to spaces
+    assert replace_spaces('Jumanji_The_Jungle') == 'Jumanji The Jungle'
+    
+    # Test case 3: Mixed characters
+    assert replace_spaces('Hello World_Test') == 'Hello_World Test'
+    
+    print("All tests passed!")
+```

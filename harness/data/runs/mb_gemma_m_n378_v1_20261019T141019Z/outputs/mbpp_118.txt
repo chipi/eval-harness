@@ -1,0 +1,18 @@
+```python
+def string_to_list(s: str) -> list[str]:
+    """
+    Converts a string to a list of strings split on the space character.
+    """
+    return s.split(' ')
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    assert string_to_list("python programming") == ['python', 'programming']
+    
+    # Additional test cases
+    assert string_to_list("hello world") == ['hello', 'world']
+    assert string_to_list("single") == ['single']
+    assert string_to_list("") == ['']
+    
+    print("All tests passed!")
+```

@@ -1,0 +1,29 @@
+```python
+"""
+Write a Python function to count the number of digits in a given string.
+
+Example:
+assert number_ctr('program2bedone') == 1
+"""
+
+def number_ctr(s):
+    """
+    Count the number of digit characters in the given string.
+
+    Args:
+        s (str): Input string.
+
+    Returns:
+        int: Number of digits in the string.
+    """
+    return sum(1 for char in s if char.isdigit())
+
+
+if __name__ == "__main__":
+    assert number_ctr('program2bedone') == 1
+    assert number_ctr('abc123') == 3
+    assert number_ctr('no digits') == 0
+    assert number_ctr('2024 year') == 4
+
+    print("All tests passed.")
+```

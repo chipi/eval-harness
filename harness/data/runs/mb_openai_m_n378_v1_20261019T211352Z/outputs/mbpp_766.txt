@@ -1,0 +1,40 @@
+```python
+#!/usr/bin/env python3
+"""
+Return a list of all pairs of consecutive items in a given list.
+
+Example:
+pair_wise([1, 1, 2, 3, 3, 4, 4, 5])
+-> [(1, 1), (1, 2), (2, 3), (3, 3), (3, 4), (4, 4), (4, 5)]
+"""
+
+def pair_wise(items):
+    """
+    Return a list of tuples containing each pair of consecutive items.
+
+    Args:
+        items (list): The input list.
+
+    Returns:
+        list: A list of consecutive item pairs.
+    """
+    return [(items[i], items[i + 1]) for i in range(len(items) - 1)]
+
+
+if __name__ == "__main__":
+    assert pair_wise([1, 1, 2, 3, 3, 4, 4, 5]) == [
+        (1, 1),
+        (1, 2),
+        (2, 3),
+        (3, 3),
+        (3, 4),
+        (4, 4),
+        (4, 5),
+    ]
+
+    assert pair_wise([]) == []
+    assert pair_wise([1]) == []
+    assert pair_wise([1, 2]) == [(1, 2)]
+
+    print("All tests passed.")
+```

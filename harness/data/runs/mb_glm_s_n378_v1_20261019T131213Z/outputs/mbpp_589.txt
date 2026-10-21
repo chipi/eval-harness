@@ -1,0 +1,42 @@
+```python
+import math
+
+def perfect_squares(start, end):
+    """
+    Finds all perfect squares between two given numbers (inclusive).
+
+    Args:
+        start (int): The starting number of the range.
+        end (int): The ending number of the range.
+
+    Returns:
+        list: A list of integers that are perfect squares within the range.
+    """
+    # Handle cases where the range is invalid
+    if start > end:
+        return []
+
+    # Find the integer square roots of the start and end numbers.
+    # math.floor(sqrt(start)) gives the largest integer whose square is <= start.
+    # math.ceil(sqrt(end)) gives the smallest integer whose square is >= end.
+    # We add 1 to the ceil result because the range is inclusive.
+    lower_bound = math.floor(math.sqrt(start))
+    upper_bound = math.ceil(math.sqrt(end))
+
+    # Generate the list of squares by iterating through the integer range
+    # and squaring each number.
+    return [i * i for i in range(lower_bound, upper_bound + 1)]
+
+# Example usage and assertion from the problem description
+assert perfect_squares(1, 30) == [1, 4, 9, 16, 25]
+
+# Additional test cases
+assert perfect_squares(10, 20) == [16]
+assert perfect_squares(25, 25) == [25]
+assert perfect_squares(26, 30) == []
+assert perfect_squares(0, 0) == [0]
+assert perfect_squares(-10, 10) == [0, 1, 4, 9]
+assert perfect_squares(50, 10) == [] # Invalid range
+
+print("All assertions passed!")
+```

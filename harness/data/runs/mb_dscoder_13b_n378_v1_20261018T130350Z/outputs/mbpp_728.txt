@@ -1,0 +1,11 @@
+```python
+def sum_list(list1, list2):
+    assert len(list1) == len(list2), "Both lists must be of the same length"
+    result = []
+    for i in range(len(list1)):
+        result.append(list1[i] + list2[i])
+    return result
+
+# Test cases
+print(sum_list([10,20,30],[15,25,35])) # Expected output: [25,45,65]
+```

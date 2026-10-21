@@ -1,0 +1,14 @@
+```python
+def check_occurences(list_of_tuples):
+    """
+    Write a function that takes in a list of tuples and returns a dictionary mapping each unique tuple to the number of times it occurs in the list.
+    assert check_occurences([(3, 1), (1, 3), (2, 5), (5, 2), (6, 3)] ) == {(1, 3): 1, (3, 1): 1, (2, 5): 1, (5, 2): 1, (6, 3): 1}
+    """
+    counts = {}
+    for tup in list_of_tuples:
+        if tup in counts:
+            counts[tup] += 1
+        else:
+            counts[tup] = 1
+    return counts
+```

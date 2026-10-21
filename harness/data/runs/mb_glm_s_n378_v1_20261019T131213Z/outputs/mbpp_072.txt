@@ -1,0 +1,51 @@
+```python
+"""
+Write a python function to check whether the given number can be represented as the difference of two squares or not.
+assert dif_Square(5) == True
+"""
+
+def dif_Square(n: int) -> bool:
+    """
+    Checks if a given integer n can be represented as the difference of two squares.
+
+    A number n can be expressed as the difference of two squares, n = a^2 - b^2,
+    if and only if it is not of the form 4k + 2 (where k is an integer).
+
+    This is derived from the algebraic identity:
+    a^2 - b^2 = (a - b)(a + b)
+
+    For the product (a-b)(a+b) to equal n, the factors of n must have the same
+    parity (both even or both odd). This is only possible if n is odd or a
+    multiple of 4. Numbers of the form 4k+2 (e.g., 2, 6, 10, 14) cannot be
+    expressed as the difference of two squares.
+
+    Args:
+        n: The integer to check.
+
+    Returns:
+        True if n can be represented as the difference of two squares, False otherwise.
+    """
+    # Handle non-positive numbers
+    # 0 = 1^2 - 1^2
+    # Negative numbers can also be represented, e.g., -3 = 1^2 - 2^2
+    if n == 0:
+        return True
+
+    # The core mathematical check: n must not be congruent to 2 modulo 4.
+    # We can check this by verifying that n % 4 is not 2.
+    return n % 4 != 2
+
+# Example usage and assertions from the problem description
+if __name__ == "__main__":
+    assert dif_Square(5) == True
+    assert dif_Square(10) == False
+    assert dif_Square(7) == True
+    assert dif_Square(4) == True  # 2^2 - 0^2
+    assert dif_Square(2) == False
+    assert dif_Square(1) == True  # 1^2 - 0^2
+    assert dif_Square(0) == True  # 1^2 - 1^2
+    assert dif_Square(-3) == True # 1^2 - 2^2
+    assert dif_Square(-4) == True # 0^2 - 2^2
+
+    print("All assertions passed.")
+```

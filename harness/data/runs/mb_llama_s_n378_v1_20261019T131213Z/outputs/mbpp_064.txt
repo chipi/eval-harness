@@ -1,0 +1,18 @@
+```python
+def subject_marks(marks):
+    """
+    This function sorts a list of tuples based on the second value of each tuple.
+
+    Args:
+        marks (list): A list of tuples, where each tuple contains a subject and a mark.
+
+    Returns:
+        list: A list of tuples sorted by the second value of each tuple.
+    """
+    # Use the built-in sorted function with a custom key to sort the list of tuples
+    # The key is a lambda function that returns the second element of each tuple
+    return sorted(marks, key=lambda x: x[1])
+
+# Test the function
+assert subject_marks([('English', 88), ('Science', 90), ('Maths', 97), ('Social sciences', 82)])==[('Social sciences', 82), ('English', 88), ('Science', 90), ('Maths', 97)]
+```

@@ -1,0 +1,31 @@
+```python
+def cal_sum(n):
+    if n < 0:
+        return "Invalid input. Please enter a non-negative integer."
+    elif n == 0:
+        return 0
+    elif n == 1:
+        return 0
+    elif n == 2:
+        return 1
+    else:
+        perrn_numbers = [0, 0, 1]
+        for i in range(3, n+1):
+            p = 4 * perrn_numbers[i-1] + perrn_numbers[i-2] - perrn_numbers[i-3]
+            perrn_numbers.append(p)
+        return sum(perrn_numbers)
+
+# Test cases
+assert cal_sum(9) == 49
+assert cal_sum(10) == 114
+assert cal_sum(11) == 249
+assert cal_sum(12) == 494
+assert cal_sum(13) == 999
+assert cal_sum(14) == 1694
+assert cal_sum(15) == 2764
+assert cal_sum(16) == 4665
+assert cal_sum(17) == 7835
+assert cal_sum(18) == 12330
+assert cal_sum(19) == 20858
+assert cal_sum(20) == 34384
+```

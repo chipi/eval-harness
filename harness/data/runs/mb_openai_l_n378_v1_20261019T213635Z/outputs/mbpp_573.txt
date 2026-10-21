@@ -1,0 +1,11 @@
+```python
+def unique_product(numbers):
+    """Return the product of the distinct numbers in a list."""
+    product = 1
+    for number in set(numbers):
+        product *= number
+    return product
+
+
+assert unique_product([10, 20, 30, 40, 20, 50, 60, 40]) == 720000000
+```

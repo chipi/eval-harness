@@ -1,0 +1,43 @@
+```python
+def find_sum(lst):
+    """
+    Find the sum of non-repeated elements in a given list.
+    
+    Non-repeated elements are those that appear exactly once in the list.
+    
+    Args:
+        lst: A list of numbers
+        
+    Returns:
+        The sum of elements that appear exactly once in the list
+        
+    Example:
+        >>> find_sum([1,2,3,1,1,4,5,6])
+        21
+    """
+    # Count occurrences of each element
+    count = {}
+    for item in lst:
+        count[item] = count.get(item, 0) + 1
+    
+    # Sum elements that appear exactly once
+    total = 0
+    for item, freq in count.items():
+        if freq == 1:
+            total += item
+    
+    return total
+
+
+if __name__ == "__main__":
+    # Test case from the problem statement
+    assert find_sum([1, 2, 3, 1, 1, 4, 5, 6]) == 21
+    
+    # Additional test cases
+    assert find_sum([]) == 0
+    assert find_sum([1, 1, 1]) == 0
+    assert find_sum([1, 2, 3]) == 6
+    assert find_sum([5]) == 5
+    
+    print("All tests passed!")
+```

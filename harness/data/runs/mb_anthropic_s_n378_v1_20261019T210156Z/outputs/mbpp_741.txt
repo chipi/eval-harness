@@ -1,0 +1,40 @@
+```python
+def all_Characters_Same(s):
+    """
+    Check whether all the characters in a string are the same or not.
+    
+    Args:
+        s: A string to check
+        
+    Returns:
+        True if all characters are the same, False otherwise
+    """
+    if len(s) == 0:
+        return True
+    
+    return len(set(s)) == 1
+
+
+# Test cases
+assert all_Characters_Same("python") == False
+assert all_Characters_Same("aaaa") == True
+assert all_Characters_Same("a") == True
+assert all_Characters_Same("") == True
+assert all_Characters_Same("aab") == False
+assert all_Characters_Same("zzz") == True
+
+print("All test cases passed!")
+```
+
+**Explanation:**
+
+The function `all_Characters_Same()` works by:
+
+1. **Edge case handling**: If the string is empty, it returns `True` (vacuous truth - all zero characters are the same)
+2. **Set conversion**: Converts the string to a set, which removes all duplicate characters
+3. **Comparison**: If all characters are the same, the set will have exactly 1 element, so `len(set(s)) == 1` returns `True`
+4. **Otherwise**: If there are different characters, the set will have more than 1 element, returning `False`
+
+For example:
+- `"python"` → `set("python")` = `{'p', 'y', 't', 'h', 'o', 'n'}` → length 6 → `False` ✓
+- `"aaaa"` → `set("aaaa")` = `{'a'}` → length 1 → `True` ✓

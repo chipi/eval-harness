@@ -1,0 +1,15 @@
+```python
+def all_Characters_Same(s):
+  """
+  Write a python function to check whether all the characters are same or not.
+  assert all_Characters_Same("python") == False
+  """
+  if not s:
+    return True  # Empty string case
+
+  first_char = s[0]
+  for char in s:
+    if char != first_char:
+      return False
+  return True
+```

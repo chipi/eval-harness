@@ -1,0 +1,39 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def check_monthnumber_number(month):
+    """
+    Check whether the given month number contains 30 days or not.
+    Months are given as number from 1 to 12.
+    """
+    # Months with 30 days: April (4), June (6), September (9), November (11)
+    return month in [4, 6, 9, 11]
+
+
+assert check_monthnumber_number(6) == True
+assert check_monthnumber_number(4) == True
+assert check_monthnumber_number(9) == True
+assert check_monthnumber_number(11) == True
+assert check_monthnumber_number(1) == False
+assert check_monthnumber_number(2) == False
+assert check_monthnumber_number(3) == False
+assert check_monthnumber_number(5) == False
+assert check_monthnumber_number(7) == False
+assert check_monthnumber_number(8) == False
+assert check_monthnumber_number(10) == False
+assert check_monthnumber_number(12) == False
+
+print("All tests passed!")
+```
+
+**Explanation:**
+
+The function `check_monthnumber_number` takes a month number (1-12) and returns `True` if that month has exactly 30 days, otherwise `False`.
+
+The months with 30 days are:
+- April (4)
+- June (6)
+- September (9)
+- November (11)
+
+The function simply checks if the given month is in this list using the `in` operator. The assertions verify that the function works correctly for all 12 months, including the required test case `check_monthnumber_number(6) == True`.

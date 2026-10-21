@@ -1,0 +1,10 @@
+```python
+def swap_numbers(num1, num2):
+    return (num2, num1)
+
+def main():
+    print(swap_numbers(10, 20))  # Expected output: (20, 10)
+
+if __name__ == "__main__":
+    main()
+```

@@ -1,0 +1,46 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def count_char_position(s):
+    """
+    Count the number of characters in a string that occur at the same position
+    as in the English alphabet (case insensitive).
+    
+    Args:
+        s: Input string
+        
+    Returns:
+        Number of characters matching their alphabet position
+    """
+    count = 0
+    for i, char in enumerate(s):
+        # Convert character to lowercase and get its alphabet position (1-indexed)
+        if char.isalpha():
+            alphabet_position = ord(char.lower()) - ord('a') + 1
+            # Check if the alphabet position matches the string position (1-indexed)
+            if alphabet_position == i + 1:
+                count += 1
+    return count
+
+# Test the function
+if __name__ == "__main__":
+    assert count_char_position("xbcefg") == 2
+    print("Test passed!")
+```
+
+**Explanation:**
+- The function iterates through each character in the string with its index
+- For each alphabetic character, it calculates its position in the alphabet (a=1, b=2, etc.)
+- It compares this alphabet position with the character's position in the string (1-indexed)
+- If they match, it increments the counter
+- The function is case insensitive as it converts characters to lowercase before comparison
+
+For the example "xbcefg":
+- 'x' is at position 1, but 'x' is the 24th letter → no match
+- 'b' is at position 2, and 'b' is the 2nd letter → match
+- 'c' is at position 3, and 'c' is the 3rd letter → match
+- 'e' is at position 4, but 'e' is the 5th letter → no match
+- 'f' is at position 5, but 'f' is the 6th letter → no match
+- 'g' is at position 6, but 'g' is the 7th letter → no match
+
+Result: 2 matches

@@ -1,0 +1,61 @@
+```python
+#!/usr/bin/env python3
+"""
+Pack consecutive duplicates of a given list into sublists.
+
+Example:
+[0, 0, 1, 2, 3, 4, 4]
+becomes
+[[0, 0], [1], [2], [3], [4, 4]]
+"""
+
+
+def pack_consecutive_duplicates(items):
+    """
+    Return a list of sublists where each sublist contains consecutive
+    duplicate elements from the input list.
+
+    Args:
+        items: A list of elements.
+
+    Returns:
+        A list of lists, grouping consecutive equal elements.
+    """
+    if not items:
+        return []
+
+    packed = [[items[0]]]
+
+    for item in items[1:]:
+        if item == packed[-1][-1]:
+            packed[-1].append(item)
+        else:
+            packed.append([item])
+
+    return packed
+
+
+if __name__ == "__main__":
+    assert pack_consecutive_duplicates(
+        [0, 0, 1, 2, 3, 4, 4, 5, 6, 6, 6, 7, 8, 9, 4, 4]
+    ) == [
+        [0, 0],
+        [1],
+        [2],
+        [3],
+        [4, 4],
+        [5],
+        [6, 6, 6],
+        [7],
+        [8],
+        [9],
+        [4, 4],
+    ]
+
+    assert pack_consecutive_duplicates([]) == []
+    assert pack_consecutive_duplicates([1]) == [[1]]
+    assert pack_consecutive_duplicates([1, 1, 1]) == [[1, 1, 1]]
+    assert pack_consecutive_duplicates([1, 2, 1]) == [[1], [2], [1]]
+
+    print("All tests passed.")
+```

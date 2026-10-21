@@ -1,0 +1,18 @@
+```python
+def reverse_Array_Upto_K(arr, k):
+    """
+    Reverse the elements of arr up to position k (1-based index),
+    keeping the rest of the array unchanged.
+
+    Example:
+        reverse_Array_Upto_K([1, 2, 3, 4, 5, 6], 4)
+        -> [4, 3, 2, 1, 5, 6]
+    """
+    # Convert k from 1-based to 0-based and reverse the prefix
+    return arr[:k][::-1] + arr[k:]
+
+
+if __name__ == "__main__":
+    assert reverse_Array_Upto_K([1, 2, 3, 4, 5, 6], 4) == [4, 3, 2, 1, 5, 6]
+    print("All tests passed.")
+```

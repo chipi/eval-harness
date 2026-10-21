@@ -1,0 +1,33 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+import math
+
+def multiply_num(numbers):
+    """
+    Multiply all numbers in a list and divide by the length of the list.
+
+    Args:
+        numbers: An iterable of numbers
+
+    Returns:
+        The product of all numbers divided by the length of the list
+    """
+    product = 1
+    for num in numbers:
+        product *= num
+    return product / len(numbers)
+
+# Test case
+assert math.isclose(multiply_num((8, 2, 3, -1, 7)), -67.2, rel_tol=0.001)
+```
+
+This script:
+1. Imports the `math` module for the `isclose` function
+2. Defines the `multiply_num` function that:
+   - Initializes a product variable to 1
+   - Multiplies each number in the input list
+   - Divides the final product by the length of the list
+3. Includes the test case from the problem statement
+
+The function handles the example case correctly, returning -67.2 (which is 8*2*3*(-1)*7 divided by 5).

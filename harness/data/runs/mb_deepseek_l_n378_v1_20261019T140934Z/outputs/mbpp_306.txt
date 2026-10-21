@@ -1,0 +1,50 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def max_sum_increasing_subseq(arr, n, i, k):
+    """
+    Find the maximum sum of an increasing subsequence from the prefix up to index i
+    (inclusive) and also including the element at index k (k > i).
+    
+    Parameters:
+    arr : list of int
+        The input array.
+    n : int
+        Length of the array.
+    i : int
+        The prefix end index (0-based).
+    k : int
+        The index of the element that must be included (k > i).
+    
+    Returns:
+    int
+        The maximum sum satisfying the conditions.
+    """
+    # Step 1: Compute maximum increasing subsequence sum ending at each index up to i
+    dp = [0] * n
+    for x in range(i + 1):
+        dp[x] = arr[x]
+        for y in range(x):
+            if arr[y] < arr[x]:
+                dp[x] = max(dp[x], dp[y] + arr[x])
+    
+    # Step 2: Find the best sum from prefix that can be extended to arr[k]
+    max_sum = 0
+    for x in range(i + 1):
+        if arr[x] < arr[k]:
+            max_sum = max(max_sum, dp[x])
+    
+    # Include the k-th element
+    return max_sum + arr[k]
+
+
+# Test the function with the given assertion
+if __name__ == "__main__":
+    arr = [1, 101, 2, 3, 100, 4, 5]
+    n = 7
+    i = 4   # 0-based index for prefix end
+    k = 6   # 0-based index for the required element after i
+    result = max_sum_increasing_subseq(arr, n, i, k)
+    print(result)  # Expected output: 11
+    assert result == 11, f"Test failed: expected 11, got {result}"
+```

@@ -1,0 +1,25 @@
+```python
+def test_duplicate(nums):
+    """
+    Checks if a given array of integers contains any duplicate elements.
+    
+    Args:
+        nums (list): A list of integers.
+        
+    Returns:
+        bool: True if any value appears at least twice, False if every element is distinct.
+    """
+    # A set only stores unique elements. 
+    # If the length of the set is smaller than the length of the list, 
+    # it means duplicates were removed.
+    return len(set(nums)) != len(nums)
+
+if __name__ == "__main__":
+    # Test cases
+    assert test_duplicate([1, 2, 3, 4, 5]) == False, "Test Case 1 Failed"
+    assert test_duplicate([1, 2, 3, 1]) == True, "Test Case 2 Failed"
+    assert test_duplicate([1, 1, 1, 3, 3, 4, 3, 2, 4, 2]) == True, "Test Case 3 Failed"
+    assert test_duplicate([]) == False, "Test Case 4 Failed"
+    
+    print("All tests passed!")
+```

@@ -1,0 +1,37 @@
+Here's a self-contained Python script that solves the problem in a markdown code block:
+
+```python
+"""
+Write a python function to check whether the given number is even or not.
+assert is_Even(1) == False
+"""
+
+def is_Even(number):
+    """
+    Check if a number is even.
+
+    Args:
+        number (int): The number to check.
+
+    Returns:
+        bool: True if the number is even, False otherwise.
+    """
+    return number % 2 == 0
+
+# Test the function
+assert is_Even(1) == False
+assert is_Even(2) == True
+assert is_Even(0) == True
+assert is_Even(-3) == False
+assert is_Even(-4) == True
+
+print("All tests passed!")
+```
+
+This script:
+1. Defines the `is_Even` function that checks if a number is even by using the modulus operator
+2. Includes the required assertion test case
+3. Adds additional test cases to verify the function works correctly
+4. Prints a confirmation message if all tests pass
+
+The function works for both positive and negative integers, and correctly identifies 0 as an even number.

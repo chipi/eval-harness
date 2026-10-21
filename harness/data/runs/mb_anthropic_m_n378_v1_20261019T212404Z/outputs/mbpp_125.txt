@@ -1,0 +1,23 @@
+```python
+def find_length(s):
+    """
+    Find the maximum difference between the number of 0s and number of 1s
+    in any sub-string of the given binary string.
+    (max_zeros - max_ones over any substring, using Kadane's algorithm)
+    """
+    max_diff = float('-inf')
+    current_sum = 0
+
+    for ch in s:
+        # treat '0' as +1 and '1' as -1
+        val = 1 if ch == '0' else -1
+        current_sum = max(current_sum + val, val)
+        max_diff = max(max_diff, current_sum)
+
+    return max_diff
+
+
+if __name__ == "__main__":
+    assert find_length("11000010001") == 6
+    print("All test cases passed!")
+```

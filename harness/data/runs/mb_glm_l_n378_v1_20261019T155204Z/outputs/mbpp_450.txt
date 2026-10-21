@@ -1,0 +1,29 @@
+```python
+def extract_string(string_list, n):
+    """
+    Extracts strings from a given list that have a specified length.
+    
+    Args:
+        string_list (list): A list of string values.
+        n (int): The specified length to filter by.
+        
+    Returns:
+        list: A list containing strings with length equal to n.
+    """
+    # Use list comprehension to filter strings with the specified length
+    return [s for s in string_list if len(s) == n]
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    test_list = ['Python', 'list', 'exercises', 'practice', 'solution']
+    n_value = 8
+    
+    # Assertion check
+    assert extract_string(test_list, n_value) == ['practice', 'solution']
+    
+    # Optional: Print the result to verify
+    result = extract_string(test_list, n_value)
+    print(f"Input List: {test_list}")
+    print(f"Target Length: {n_value}")
+    print(f"Extracted Strings: {result}")
+```

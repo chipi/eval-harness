@@ -1,0 +1,28 @@
+```python
+def move_zero(lst):
+    """
+    Move all zeroes to the end of the given list.
+
+    Args:
+        lst (list): The input list.
+
+    Returns:
+        list: The list with all zeroes moved to the end.
+    """
+    # Separate non-zero elements from zero elements
+    non_zero = [i for i in lst if i != 0]
+    zero = [i for i in lst if i == 0]
+    
+    # Combine the two lists to get the desired output
+    return non_zero + zero
+
+# Test the function
+assert move_zero([1,0,2,0,3,4]) == [1,2,3,4,0,0]
+print("Test passed.")
+
+# Example usage
+if __name__ == "__main__":
+    lst = [1, 0, 2, 0, 3, 4]
+    print("Original List:", lst)
+    print("List after moving zeroes to the end:", move_zero(lst))
+```

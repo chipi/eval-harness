@@ -1,0 +1,31 @@
+```python
+def median_numbers(a: float, b: float, c: float) -> float:
+    """
+    Find the median of three numbers.
+    
+    Args:
+        a: First number
+        b: Second number
+        c: Third number
+    
+    Returns:
+        The median value of the three numbers as a float
+    """
+    # Sort the three numbers and return the middle one
+    sorted_nums = sorted([a, b, c])
+    return float(sorted_nums[1])
+
+
+if __name__ == "__main__":
+    # Test case from the problem statement
+    assert median_numbers(25, 55, 65) == 55.0
+    
+    # Additional test cases
+    assert median_numbers(10, 20, 30) == 20.0
+    assert median_numbers(30, 10, 20) == 20.0
+    assert median_numbers(5, 5, 5) == 5.0
+    assert median_numbers(1, 2, 3) == 2.0
+    assert median_numbers(-1, 0, 1) == 0.0
+    
+    print("All tests passed!")
+```

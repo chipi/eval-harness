@@ -1,0 +1,9 @@
+```python
+def is_Even(n):
+    """Return True if n is even, otherwise False."""
+    return n % 2 == 0
+
+
+# Example test
+assert is_Even(1) == False
+```

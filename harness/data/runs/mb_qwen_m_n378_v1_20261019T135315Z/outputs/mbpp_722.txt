@@ -1,0 +1,32 @@
+```python
+def filter_data(students: dict, min_height: float, min_weight: float) -> dict:
+    """
+    Filter students that have height and weight above (or equal to) the minimum.
+    
+    Args:
+        students: A dictionary with student name as key and tuple of (height, weight) as value.
+        min_height: The minimum height threshold.
+        min_weight: The minimum weight threshold.
+    
+    Returns:
+        A dictionary containing only students whose height >= min_height and weight >= min_weight.
+    """
+    return {
+        name: (height, weight)
+        for name, (height, weight) in students.items()
+        if height >= min_height and weight >= min_weight
+    }
+
+
+if __name__ == "__main__":
+    # Test case from the problem statement
+    result = filter_data(
+        {'Cierra Vega': (6.2, 70), 'Alden Cantrell': (5.9, 65), 'Kierra Gentry': (6.0, 68), 'Pierre Cox': (5.8, 66)},
+        6.0,
+        70
+    )
+    expected = {'Cierra Vega': (6.2, 70)}
+    assert result == expected, f"Expected {expected}, but got {result}"
+    print("Test passed!")
+    print(f"Result: {result}")
+```

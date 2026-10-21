@@ -1,0 +1,20 @@
+```python
+def Find_Min_Length(lst):
+    """
+    Finds the length of the smallest list in a list of lists.
+    
+    Args:
+    lst (list of lists): A list containing sublists whose lengths are to be compared.
+    
+    Returns:
+    int: The length of the smallest sublist. Returns 0 if the input list is empty.
+    """
+    if not lst:
+        return 0
+    return min(len(sublist) for sublist in lst)
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert Find_Min_Length([[1],[1,2]]) == 1
+    print("Test passed successfully!")
+```

@@ -1,0 +1,51 @@
+```python
+def combinations_list(lst):
+    """
+    Find all possible combinations of the elements of a given list.
+    
+    The combinations are generated in a specific order based on binary representation,
+    where each bit represents whether an element is included. The order follows
+    iterating through numbers 0 to 2^n - 1, and for each number, including elements
+    whose corresponding bit is set. Within each combination, elements appear in the
+    reverse order of their original indices (based on the expected output pattern).
+    
+    Looking at the expected output more carefully:
+    - [] (empty)
+    - ['orange'] (index 0)
+    - ['red'] (index 1)
+    - ['red', 'orange'] (indices 1, 0)
+    - ['green'] (index 2)
+    - ['green', 'orange'] (indices 2, 0)
+    - ['green', 'red'] (indices 2, 1)
+    - ['green', 'red', 'orange'] (indices 2, 1, 0)
+    - ['blue'] (index 3)
+    - ['blue', 'orange'] (indices 3, 0)
+    - ['blue', 'red'] (indices 3, 1)
+    - ['blue', 'red', 'orange'] (indices 3, 1, 0)
+    - ['blue', 'green'] (indices 3, 2)
+    - ['blue', 'green', 'orange'] (indices 3, 2, 0)
+    - ['blue', 'green', 'red'] (indices 3, 2, 1)
+    - ['blue', 'green', 'red', 'orange'] (indices 3, 2, 1, 0)
+    
+    This corresponds to iterating i from 0 to 2^n - 1, and for each i, collecting
+    elements where the j-th bit is set, but listing them in decreasing order of j
+    (i.e., from highest index to lowest).
+    """
+    n = len(lst)
+    result = []
+    for i in range(2 ** n):
+        combo = []
+        for j in range(n - 1, -1, -1):
+            if i & (1 << j):
+                combo.append(lst[j])
+        result.append(combo)
+    return result
+
+
+if __name__ == "__main__":
+    # Test the function
+    result = combinations_list(['orange', 'red', 'green', 'blue'])
+    expected = [[], ['orange'], ['red'], ['red', 'orange'], ['green'], ['green', 'orange'], ['green', 'red'], ['green', 'red', 'orange'], ['blue'], ['blue', 'orange'], ['blue', 'red'], ['blue', 'red', 'orange'], ['blue', 'green'], ['blue', 'green', 'orange'], ['blue', 'green', 'red'], ['blue', 'green', 'red', 'orange']]
+    assert result == expected, f"Expected {expected}, got {result}"
+    print("All tests passed!")
+```

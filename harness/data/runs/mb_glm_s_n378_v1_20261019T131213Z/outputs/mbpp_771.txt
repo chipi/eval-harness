@@ -1,0 +1,67 @@
+```python
+"""
+Write a function to check if the given expression is balanced or not. https://www.geeksforgeeks.org/check-for-balanced-parentheses-in-an-expression/
+assert check_expression("{()}[{}]") == True
+"""
+
+def check_expression(expression: str) -> bool:
+    """
+    Checks if the given expression has balanced parentheses, brackets, and braces.
+
+    This function uses a stack to keep track of opening brackets. When a closing
+    bracket is encountered, it checks if it correctly matches the most recent
+    opening bracket at the top of the stack. If the stack is empty or the
+    brackets don't match, the expression is unbalanced. At the end, the stack
+    must be empty for the expression to be fully balanced.
+
+    Args:
+        expression: The string expression to check.
+
+    Returns:
+        True if the expression is balanced, False otherwise.
+    """
+    # A dictionary to map closing brackets to their corresponding opening brackets.
+    # This allows for easy and clean matching.
+    bracket_map = {')': '(', '}': '{', ']': '['}
+    
+    # A stack to keep track of the opening brackets encountered.
+    stack = []
+
+    # Iterate through each character in the expression.
+    for char in expression:
+        # If the character is an opening bracket, push it onto the stack.
+        if char in bracket_map.values():
+            stack.append(char)
+        # If the character is a closing bracket.
+        elif char in bracket_map:
+            # If the stack is empty, there's no matching opening bracket.
+            if not stack:
+                return False
+            
+            # Pop the top element from the stack and check if it matches
+            # the corresponding opening bracket for the current closing bracket.
+            if stack.pop() != bracket_map[char]:
+                return False
+        # If the character is not a bracket, ignore it.
+        # This allows the function to work with expressions containing other characters.
+        else:
+            continue
+            
+    # If the stack is empty, all opening brackets were matched and closed.
+    # If the stack is not empty, there are unmatched opening brackets.
+    return not stack
+
+# Example usage and assertions:
+assert check_expression("{()}[{}]") == True
+assert check_expression("{()}[{]") == False
+assert check_expression("(a + b) * (c - d)") == True
+assert check_expression("([)]") == False
+assert check_expression("((())") == False
+assert check_expression("()") == True
+assert check_expression("") == True
+assert check_expression("((a + b) * (c - d))") == True
+assert check_expression("((a + b) * (c - d)") == False
+assert check_expression(")(") == False # Starts with a closing bracket
+assert check_expression("({[]})") == True
+assert check_expression("({[})]") == False
+```

@@ -1,0 +1,9 @@
+```python
+def median_numbers(a, b, c):
+    return float(sorted([a, b, c])[1])
+
+assert median_numbers(25, 55, 65) == 55.0
+
+if __name__ == "__main__":
+    print(median_numbers(25, 55, 65))
+```

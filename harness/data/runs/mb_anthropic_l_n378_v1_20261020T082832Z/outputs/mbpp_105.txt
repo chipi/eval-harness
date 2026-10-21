@@ -1,0 +1,57 @@
+Looking at this problem, I need to write a function that counts the number of `True` values in a list of booleans.
+
+```python
+"""
+Write a python function to count true booleans in the given list.
+assert count([True,False,True]) == 2
+"""
+
+
+def count(lst):
+    """
+    Count the number of True booleans in the given list.
+
+    Args:
+        lst: A list containing boolean values.
+
+    Returns:
+        int: The number of True values in the list.
+    """
+    result = 0
+    for item in lst:
+        if item is True:
+            result += 1
+    return result
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert count([True, False, True]) == 2
+
+    # Additional test cases
+    assert count([False, False]) == 0
+    assert count([True, True, True]) == 3
+    assert count([]) == 0
+    assert count([True]) == 1
+    assert count([False, True, False, True, False, True, False]) == 3
+
+    print("All tests passed!")
+    print("count([True, False, True]) =", count([True, False, True]))
+    print("count([False, False]) =", count([False, False]))
+    print("count([True, True, True]) =", count([True, True, True]))
+```
+
+**Explanation:**
+
+The function iterates through each element of the list and increments a counter whenever it encounters `True`. 
+
+A more concise alternative using built-ins would be:
+
+```python
+def count(lst):
+    return sum(lst)          # True == 1, False == 0
+    # or: return lst.count(True)
+    # or: return sum(1 for x in lst if x)
+```
+
+Since `True` behaves as `1` and `False` as `0` in Python arithmetic, `sum()` naturally gives the count of `True` values.

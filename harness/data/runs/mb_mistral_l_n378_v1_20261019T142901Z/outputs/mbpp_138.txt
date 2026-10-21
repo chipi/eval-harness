@@ -1,0 +1,29 @@
+Here's a self-contained Python script that solves the problem by checking if a given number can be represented as the sum of non-zero powers of 2:
+
+```python
+def is_Sum_Of_Powers_Of_Two(n):
+    """
+    Check if a number can be represented as the sum of non-zero powers of 2.
+
+    A number can be represented as the sum of non-zero powers of 2 if and only if
+    it is a positive integer (since 2^0 = 1 is allowed, but 0 is not a non-zero power).
+    However, the problem is essentially checking if the number is a positive integer,
+    because any positive integer can be represented as a sum of distinct powers of 2
+    (this is the binary representation of the number).
+
+    Args:
+        n (int): The number to check.
+
+    Returns:
+        bool: True if the number can be represented as sum of non-zero powers of 2, False otherwise.
+    """
+    return n > 0
+
+# Test case
+assert is_Sum_Of_Powers_Of_Two(10) == True
+```
+
+### Explanation:
+- The function `is_Sum_Of_Powers_Of_Two` checks if the input number `n` is a positive integer. This is because any positive integer can be represented as a sum of distinct non-zero powers of 2 (this is equivalent to the binary representation of the number, where each '1' bit represents a power of 2).
+- For example, 10 in binary is `1010`, which is `2^3 + 2^1 = 8 + 2 = 10`. Thus, 10 can be represented as the sum of non-zero powers of 2.
+- The test case `assert is_Sum_Of_Powers_Of_Two(10) == True` passes because 10 is a positive integer.

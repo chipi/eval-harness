@@ -1,0 +1,50 @@
+```python
+def count_Pairs(nums, n):
+    """
+    Counts the number of possible unordered pairs where both elements are unequal.
+
+    Args:
+        nums: A list of integers.
+        n: The length of the list. This argument is included to match the problem's
+           example signature but is not strictly necessary as the length can be
+           derived from the list itself.
+
+    Returns:
+        The total count of unordered pairs with distinct elements.
+    """
+    # The total number of possible unordered pairs from a list of size n is nC2,
+    # which is n * (n - 1) / 2.
+    total_pairs = n * (n - 1) // 2
+
+    # To find the number of pairs with unequal elements, we can subtract the
+    # number of pairs with equal elements from the total number of pairs.
+    # The number of pairs with equal elements is the sum of kC2 for each
+    # group of k identical elements, where kC2 = k * (k - 1) / 2.
+
+    # Use a dictionary to count the occurrences of each number.
+    element_counts = {}
+    for num in nums:
+        element_counts[num] = element_counts.get(num, 0) + 1
+
+    # Calculate the number of invalid pairs (pairs with equal elements).
+    invalid_pairs = 0
+    for count in element_counts.values():
+        if count > 1:
+            # Add the number of pairs for this group of identical elements.
+            invalid_pairs += count * (count - 1) // 2
+
+    # The result is the total pairs minus the invalid pairs.
+    return total_pairs - invalid_pairs
+
+# Example usage and assertion from the problem description
+assert count_Pairs([1, 2, 1], 3) == 2
+
+# Additional test cases
+assert count_Pairs([1, 1, 1, 1], 4) == 0  # All elements are the same
+assert count_Pairs([1, 2, 3, 4], 4) == 6  # All elements are unique
+assert count_Pairs([1, 2, 2, 3, 3, 3], 6) == 7 # Mixed unique and duplicate elements
+assert count_Pairs([], 0) == 0 # Empty list
+assert count_Pairs([5], 1) == 0 # Single element list
+
+print("All assertions passed.")
+```

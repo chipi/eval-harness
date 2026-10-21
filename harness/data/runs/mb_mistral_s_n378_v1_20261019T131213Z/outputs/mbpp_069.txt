@@ -1,0 +1,48 @@
+Here's a self-contained Python script that solves the problem of checking whether a list contains a given sublist:
+
+```python
+def is_sublist(lst, sublist):
+    """
+    Check if a list contains the given sublist.
+
+    Args:
+        lst: The main list to search in.
+        sublist: The sublist to search for.
+
+    Returns:
+        bool: True if the sublist is found in the main list, False otherwise.
+    """
+    len_lst = len(lst)
+    len_sublist = len(sublist)
+
+    if len_sublist == 0:
+        return True
+    if len_sublist > len_lst:
+        return False
+
+    for i in range(len_lst - len_sublist + 1):
+        if lst[i:i+len_sublist] == sublist:
+            return True
+    return False
+
+# Test cases
+assert is_sublist([2, 4, 3, 5, 7], [3, 7]) == False
+assert is_sublist([1, 2, 3, 4, 5], [2, 3]) == True
+assert is_sublist([1, 2, 3, 4, 5], [5, 6]) == False
+assert is_sublist([], []) == True
+assert is_sublist([1, 2, 3], []) == True
+assert is_sublist([1, 2, 3, 4, 5], [1, 2, 3, 4, 5]) == True
+assert is_sublist([1, 2, 3, 4, 5], [5, 4, 3, 2, 1]) == False
+
+print("All test cases passed!")
+```
+
+This script includes:
+1. The `is_sublist` function that checks for the presence of a sublist
+2. Several test cases including the one from your example
+3. A print statement to confirm all tests passed
+
+The function works by:
+- First handling edge cases (empty sublist or sublist longer than main list)
+- Then checking all possible starting positions in the main list where the sublist could begin
+- Returning True if a match is found, False otherwise

@@ -1,0 +1,7 @@
+```python
+def sum_negativenum(numbers):
+    return sum(number for number in numbers if number < 0)
+
+
+assert sum_negativenum([2, 4, -6, -9, 11, -12, 14, -5, 17]) == -32
+```

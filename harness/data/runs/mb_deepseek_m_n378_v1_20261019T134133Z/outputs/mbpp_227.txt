@@ -1,0 +1,48 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def min_of_three(a, b, c):
+    """
+    Returns the minimum of three numbers.
+    
+    Parameters:
+    a (int/float): First number
+    b (int/float): Second number
+    c (int/float): Third number
+    
+    Returns:
+    int/float: The smallest of the three numbers
+    """
+    return min(a, b, c)
+
+
+# Test the function
+assert min_of_three(10, 20, 0) == 0
+assert min_of_three(-5, -10, -3) == -10
+assert min_of_three(1.5, 2.5, 0.5) == 0.5
+assert min_of_three(7, 7, 7) == 7
+
+print("All tests passed!")
+```
+
+**Explanation:**
+
+- The function `min_of_three` takes three arguments `a`, `b`, and `c`.
+- It uses Python's built-in `min()` function, which returns the smallest of the given arguments.
+- The `assert` statement verifies that `min_of_three(10, 20, 0)` returns `0`, as required by the problem.
+- Additional test cases are included to verify the function works with negative numbers, floats, and equal values.
+
+**Alternative implementation** (without using built-in `min`):
+
+```python
+def min_of_three(a, b, c):
+    if a <= b and a <= c:
+        return a
+    elif b <= a and b <= c:
+        return b
+    else:
+        return c
+
+assert min_of_three(10, 20, 0) == 0
+print("Test passed!")
+```

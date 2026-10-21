@@ -1,0 +1,23 @@
+```python
+def rear_extract(tuple_list):
+    """
+    Takes in a list of tuples and returns a list containing 
+    the rear (last) element of each tuple.
+    """
+    return [t[-1] for t in tuple_list]
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    test_input = [(1, 'Rash', 21), (2, 'Varsha', 20), (3, 'Kil', 19)]
+    expected_output = [21, 20, 19]
+    
+    # Execution
+    result = rear_extract(test_input)
+    
+    # Assertion
+    assert result == expected_output, f"Expected {expected_output}, but got {result}"
+    
+    print("Test passed successfully!")
+    print(f"Input: {test_input}")
+    print(f"Output: {result}")
+```

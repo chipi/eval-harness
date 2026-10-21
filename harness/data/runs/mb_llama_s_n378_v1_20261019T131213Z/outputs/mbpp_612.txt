@@ -1,0 +1,70 @@
+```python
+def merge(list_of_lists):
+    """
+    This function takes a list of lists, where each sublist has two elements, 
+    and returns a list of two lists where the first list has the first element 
+    of each sublist and the second one has the second.
+
+    Args:
+        list_of_lists (list): A list of lists, where each sublist has two elements.
+
+    Returns:
+        list: A list of two lists.
+    """
+    # Check if input is a list
+    if not isinstance(list_of_lists, list):
+        raise TypeError("Input must be a list")
+
+    # Check if all elements in the list are lists with two elements
+    if not all(isinstance(sublist, list) and len(sublist) == 2 for sublist in list_of_lists):
+        raise ValueError("All elements in the input list must be lists with two elements")
+
+    # Use zip to transpose the list of lists
+    # The * operator unpacks the list of lists into separate arguments for zip
+    # zip returns an iterator of tuples, so we convert it to a list and then map list to it
+    return [list(i) for i in zip(*list_of_lists)]
+
+# Test the function
+print(merge([['x', 'y'], ['a', 'b'], ['m', 'n']]))  # Output: [['x', 'a', 'm'], ['y', 'b', 'n']]
+```
+
+You can also use a more traditional approach without using the built-in `zip` function:
+
+```python
+def merge(list_of_lists):
+    """
+    This function takes a list of lists, where each sublist has two elements, 
+    and returns a list of two lists where the first list has the first element 
+    of each sublist and the second one has the second.
+
+    Args:
+        list_of_lists (list): A list of lists, where each sublist has two elements.
+
+    Returns:
+        list: A list of two lists.
+    """
+    # Check if input is a list
+    if not isinstance(list_of_lists, list):
+        raise TypeError("Input must be a list")
+
+    # Check if all elements in the list are lists with two elements
+    if not all(isinstance(sublist, list) and len(sublist) == 2 for sublist in list_of_lists):
+        raise ValueError("All elements in the input list must be lists with two elements")
+
+    # Initialize two empty lists
+    first_elements = []
+    second_elements = []
+
+    # Iterate over each sublist in the list of lists
+    for sublist in list_of_lists:
+        # Append the first element of the sublist to the first_elements list
+        first_elements.append(sublist[0])
+        # Append the second element of the sublist to the second_elements list
+        second_elements.append(sublist[1])
+
+    # Return a list containing the two lists
+    return [first_elements, second_elements]
+
+# Test the function
+print(merge([['x', 'y'], ['a', 'b'], ['m', 'n']]))  # Output: [['x', 'a', 'm'], ['y', 'b', 'n']]
+```

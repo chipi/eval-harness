@@ -1,0 +1,48 @@
+Here's a self-contained Python script that calculates the nth Bell number using dynamic programming:
+
+```python
+def bell_Number(n):
+    """
+    Calculate the nth Bell number using dynamic programming.
+
+    Args:
+        n (int): The index of the Bell number to compute.
+
+    Returns:
+        int: The nth Bell number.
+    """
+    if n == 0:
+        return 1
+    if n == 1:
+        return 1
+
+    # Create a 2D array to store intermediate results
+    bell = [[0 for _ in range(n+1)] for _ in range(n+1)]
+
+    # Initialize the first row
+    bell[0][0] = 1
+
+    for i in range(1, n+1):
+        # Copy the last value from the previous row
+        bell[i][0] = bell[i-1][i-1]
+
+        for j in range(1, i+1):
+            bell[i][j] = bell[i-1][j-1] + bell[i][j-1]
+
+    return bell[n][0]
+
+# Test the function
+assert bell_Number(2) == 2
+print("Test passed!")
+```
+
+This script:
+1. Implements the Bell number calculation using a dynamic programming approach
+2. Includes the required test case
+3. Uses a 2D array to store intermediate results for efficient computation
+4. Follows the mathematical definition of Bell numbers where:
+   - B(0) = 1
+   - B(1) = 1
+   - B(n) = sum from k=0 to n-1 of C(n-1, k) * B(k) for n > 1
+
+The function will correctly return 2 for bell_Number(2) as specified in the test case.

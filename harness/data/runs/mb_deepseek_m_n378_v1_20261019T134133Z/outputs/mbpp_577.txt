@@ -1,0 +1,46 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def last_Digit_Factorial(n):
+    """
+    Find the last non-zero digit in the factorial of a given number.
+    
+    Args:
+        n (int): A non-negative integer.
+    
+    Returns:
+        int: The last digit of n! (factorial of n).
+    """
+    if n < 0:
+        raise ValueError("Input must be a non-negative integer.")
+    
+    # For n >= 5, the last digit of n! is always 0
+    # because n! contains factors of 2 and 5.
+    if n >= 5:
+        return 0
+    
+    # Compute factorial for small n (0 to 4)
+    factorial = 1
+    for i in range(2, n + 1):
+        factorial *= i
+    
+    return factorial % 10
+
+
+# Test cases
+assert last_Digit_Factorial(4) == 4
+assert last_Digit_Factorial(0) == 1
+assert last_Digit_Factorial(1) == 1
+assert last_Digit_Factorial(2) == 2
+assert last_Digit_Factorial(3) == 6
+assert last_Digit_Factorial(5) == 0
+assert last_Digit_Factorial(10) == 0
+
+print("All tests passed!")
+```
+
+**Explanation:**
+
+- For `n >= 5`, the factorial `n!` will always end in `0` because it contains at least one factor of `2` and one factor of `5` (e.g., `5! = 120`).
+- For `n < 5`, we simply compute the factorial directly and take the last digit using modulo `10`.
+- The function handles edge cases like `n = 0` (where `0! = 1`) and negative inputs (raises a `ValueError`).

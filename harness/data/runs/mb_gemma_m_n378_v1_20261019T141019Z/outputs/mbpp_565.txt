@@ -1,0 +1,18 @@
+```python
+def split(string):
+    """
+    Splits a string into a list of its individual characters.
+    """
+    return list(string)
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    assert split('python') == ['p', 'y', 't', 'h', 'o', 'n']
+    
+    # Additional test cases
+    assert split('') == []
+    assert split('a') == ['a']
+    assert split('123') == ['1', '2', '3']
+    
+    print("All tests passed!")
+```

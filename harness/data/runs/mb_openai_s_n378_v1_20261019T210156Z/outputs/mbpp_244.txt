@@ -1,0 +1,18 @@
+```python
+def next_Perfect_Square(n):
+    """
+    Return the next perfect square greater than n.
+
+    Examples:
+        next_Perfect_Square(35) -> 36
+        next_Perfect_Square(36) -> 49
+    """
+    root = int(n ** 0.5)
+    next_root = root + 1
+    return next_root * next_root
+
+
+if __name__ == "__main__":
+    assert next_Perfect_Square(35) == 36
+    print("All tests passed.")
+```

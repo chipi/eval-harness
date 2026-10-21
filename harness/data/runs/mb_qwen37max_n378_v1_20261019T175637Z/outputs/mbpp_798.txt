@@ -1,0 +1,11 @@
+```python
+def _sum(arr):
+    """Find the sum of an array."""
+    total = 0
+    for num in arr:
+        total += num
+    return total
+
+# Test
+assert _sum([1, 2, 3]) == 6
+```

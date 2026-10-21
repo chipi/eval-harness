@@ -1,0 +1,38 @@
+```python
+def Diff(list1, list2):
+    """
+    Get the difference between two lists.
+    Returns elements from list1 that are not in list2,
+    followed by elements from list2 that are not in list1.
+    
+    Args:
+        list1: First list
+        list2: Second list
+    
+    Returns:
+        A list containing elements in list1 but not in list2,
+        followed by elements in list2 but not in list1
+    """
+    # Elements in list1 but not in list2
+    diff1 = [x for x in list1 if x not in list2]
+    
+    # Elements in list2 but not in list1
+    diff2 = [x for x in list2 if x not in list1]
+    
+    # Combine both differences
+    return diff1 + diff2
+
+
+# Test the function
+assert (Diff([10, 15, 20, 25, 30, 35, 40], [25, 40, 35])) == [10, 20, 30, 15]
+print("Test passed!")
+print(f"Result: {Diff([10, 15, 20, 25, 30, 35, 40], [25, 40, 35])}")
+```
+
+The function works as follows:
+
+1. **diff1**: Finds all elements in `list1` that are NOT in `list2` → `[10, 20, 30, 15]`
+2. **diff2**: Finds all elements in `list2` that are NOT in `list1` → `[]` (all elements of list2 are in list1)
+3. **Return**: Concatenates both lists → `[10, 20, 30, 15]`
+
+This implements the symmetric difference between two lists, preserving the order of elements as they appear in the original lists.

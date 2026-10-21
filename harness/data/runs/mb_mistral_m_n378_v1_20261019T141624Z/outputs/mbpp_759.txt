@@ -1,0 +1,40 @@
+```python
+def is_decimal(s: str) -> bool:
+    """
+    Check whether a given string is a decimal number with a precision of 2.
+
+    Args:
+        s: The input string to check.
+
+    Returns:
+        bool: True if the string is a decimal number with exactly 2 decimal places, False otherwise.
+    """
+    try:
+        num = float(s)
+    except ValueError:
+        return False
+
+    # Check if the string has exactly one decimal point
+    if s.count('.') != 1:
+        return False
+
+    # Split into integer and fractional parts
+    integer_part, fractional_part = s.split('.')
+
+    # Check if both parts are digits (allowing for negative numbers)
+    if not (integer_part.lstrip('-').isdigit() and fractional_part.isdigit()):
+        return False
+
+    # Check if the fractional part has exactly 2 digits
+    if len(fractional_part) != 2:
+        return False
+
+    # Check if the float representation matches the string (to avoid cases like '123.110')
+    if f"{num:.2f}" != s:
+        return False
+
+    return True
+
+# Test case
+assert is_decimal('123.11') == True
+```

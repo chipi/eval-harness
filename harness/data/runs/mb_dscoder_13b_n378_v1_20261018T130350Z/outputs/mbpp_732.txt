@@ -1,0 +1,9 @@
+```python
+def replace_specialchar(text):
+    # Replace spaces, commas, and dots with a colon
+    new_text = text.replace(' ', ':').replace(',', ':').replace('.', ':')
+    return new_text
+
+# Test the function
+assert replace_specialchar('Python language, Programming language.')==('Python:language::Programming:language:')
+```

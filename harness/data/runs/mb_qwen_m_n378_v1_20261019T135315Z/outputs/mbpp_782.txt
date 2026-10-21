@@ -1,0 +1,73 @@
+```python
+def odd_length_sum(arr: list[int]) -> int:
+    """
+    Find the sum of all odd length subarrays.
+    
+    For each element, we can calculate how many odd-length subarrays include that element.
+    An element at index i is included in a subarray if the subarray starts at some index <= i
+    and ends at some index >= i.
+    
+    For a subarray to have odd length and include element at index i:
+    - The number of elements to the left (including i) is (i + 1) choices for start
+    - The number of elements to the right (including i) is (n - i) choices for end
+    
+    For the subarray [start, end] to have odd length, (end - start + 1) must be odd,
+    which means (end - start) must be even, so start and end must have the same parity.
+    
+    Alternatively, we can count directly:
+    - Number of ways to choose start such that start <= i: there are (i + 1) options (0 to i)
+    - Number of ways to choose end such that end >= i: there are (n - i) options (i to n-1)
+    
+    Among these combinations, we need those where (end - start + 1) is odd.
+    
+    A simpler approach: for each element arr[i], count how many odd-length subarrays contain it.
+    
+    Left choices: i + 1 (indices 0..i)
+    Right choices: n - i (indices i..n-1)
+    
+    For odd length subarrays containing arr[i]:
+    - We need to pick an odd number of total elements with arr[i] in them.
+    - Let left_count = i + 1, right_count = n - i
+    - Number of odd-length subarrays containing arr[i] = 
+      ((left_count + 1) // 2) * ((right_count + 1) // 2) + (left_count // 2) * (right_count // 2)
+    
+    This formula counts pairs of (left extension, right extension) where the total length is odd.
+    """
+    n = len(arr)
+    total = 0
+    for i in range(n):
+        left_count = i + 1
+        right_count = n - i
+        
+        # Number of ways to choose left part with odd/even lengths
+        # left_odd: number of ways to have an odd number of elements from the left side (including arr[i])
+        # Actually, let's think differently:
+        # The subarray has some elements to the left of i (0 to i-1) and some to the right (i+1 to n-1), plus arr[i].
+        # Let l = number of elements chosen from left (0 to i), r = number of elements chosen from right (0 to n-1-i).
+        # Total length = l + 1 + r, which must be odd, so l + r must be even.
+        # l can range from 0 to i, r can range from 0 to n-1-i.
+        # l + r even means both l and r are even, or both are odd.
+        
+        # Number of even values in [0, i]: (i // 2) + 1 if we include 0... wait
+        # Values 0, 1, 2, ..., i
+        # Even values: 0, 2, 4, ... -> count = i // 2 + 1
+        # Odd values: 1, 3, 5, ... -> count = (i + 1) // 2
+        
+        left_even = i // 2 + 1
+        left_odd = (i + 1) // 2
+        
+        right_len = n - 1 - i
+        right_even = right_len // 2 + 1
+        right_odd = (right_len + 1) // 2
+        
+        # Both even or both odd
+        count = left_even * right_even + left_odd * right_odd
+        total += arr[i] * count
+    
+    return total
+
+
+if __name__ == "__main__":
+    assert odd_length_sum([1, 2, 4]) == 14
+    print("All tests passed!")
+```

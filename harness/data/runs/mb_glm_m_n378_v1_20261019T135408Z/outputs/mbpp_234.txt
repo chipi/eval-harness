@@ -1,0 +1,31 @@
+Here's a self-contained Python script that solves the problem of finding the volume of a cube given its side length:
+
+```python
+def volume_cube(side_length):
+    """
+    Calculate the volume of a cube given its side length.
+    
+    Args:
+        side_length (float or int): The length of the cube's side.
+        
+    Returns:
+        float or int: The volume of the cube.
+    """
+    return side_length ** 3
+
+# Test cases
+assert volume_cube(3) == 27
+assert volume_cube(0) == 0
+assert volume_cube(1.5) == 3.375
+assert volume_cube(-2) == -8  # Note: Negative side length gives negative volume in this implementation
+
+print("All test cases passed!")
+```
+
+This script:
+1. Defines a function `volume_cube` that takes a side length as input
+2. Returns the volume by cubing the side length (side_length³)
+3. Includes several test cases to verify the function works correctly
+4. Prints a success message if all tests pass
+
+The function works for both integers and floating-point numbers. Note that in mathematics, a cube's side length is typically considered positive, but this implementation will also handle negative inputs by returning a negative volume (since (-x)³ = -x³).

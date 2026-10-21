@@ -1,0 +1,83 @@
+```python
+def max_sub_array_sum(nums, n):
+    """
+    This function finds the sum of the largest contiguous sublist in the given list.
+
+    Args:
+        nums (list): A list of integers.
+        n (int): The size of the list.
+
+    Returns:
+        int: The sum of the largest contiguous sublist.
+    """
+    max_sum = float('-inf')  # Initialize max_sum as negative infinity
+    for i in range(n):
+        for j in range(i, n):
+            # Calculate the sum of the current sublist
+            current_sum = sum(nums[i:j+1])
+            # Update max_sum if the current sum is larger
+            max_sum = max(max_sum, current_sum)
+    return max_sum
+
+# Test the function
+print(max_sub_array_sum([-2, -3, 4, -1, -2, 1, 5, -3], 8))  # Output: 7
+```
+
+However, the above solution has a time complexity of O(n^3) due to the use of the `sum` function inside the nested loops. We can improve this to O(n^2) by calculating the sum of the sublist in constant time. Here's an optimized version:
+
+```python
+def max_sub_array_sum(nums, n):
+    """
+    This function finds the sum of the largest contiguous sublist in the given list.
+
+    Args:
+        nums (list): A list of integers.
+        n (int): The size of the list.
+
+    Returns:
+        int: The sum of the largest contiguous sublist.
+    """
+    max_sum = float('-inf')  # Initialize max_sum as negative infinity
+    for i in range(n):
+        current_sum = 0
+        for j in range(i, n):
+            # Add the current element to the sum
+            current_sum += nums[j]
+            # Update max_sum if the current sum is larger
+            max_sum = max(max_sum, current_sum)
+    return max_sum
+
+# Test the function
+print(max_sub_array_sum([-2, -3, 4, -1, -2, 1, 5, -3], 8))  # Output: 7
+```
+
+This version still has a time complexity of O(n^2) but is more efficient than the previous one. 
+
+We can further optimize this to O(n) using Kadane's algorithm:
+
+```python
+def max_sub_array_sum(nums, n):
+    """
+    This function finds the sum of the largest contiguous sublist in the given list.
+
+    Args:
+        nums (list): A list of integers.
+        n (int): The size of the list.
+
+    Returns:
+        int: The sum of the largest contiguous sublist.
+    """
+    max_sum = float('-inf')  # Initialize max_sum as negative infinity
+    current_sum = 0
+    for num in nums:
+        # Update current_sum to be the maximum of the current number and the sum of the current number and the previous current_sum
+        current_sum = max(num, current_sum + num)
+        # Update max_sum if the current sum is larger
+        max_sum = max(max_sum, current_sum)
+    return max_sum
+
+# Test the function
+print(max_sub_array_sum([-2, -3, 4, -1, -2, 1, 5, -3], 8))  # Output: 7
+```
+
+This version has a time complexity of O(n) and is the most efficient solution.

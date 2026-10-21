@@ -1,0 +1,79 @@
+Looking at this problem, I need to find the sum of all subarrays with odd length.
+
+**Key insight:** Instead of generating all subarrays, I can compute how many times each element appears across all odd-length subarrays.
+
+For an element at index `i` in an array of length `n`:
+- Number of subarrays containing it = `(i + 1) * (n - i)`
+- Number of **odd-length** subarrays containing it = `((i + 1) * (n - i) + 1) // 2`
+
+**Verification with `[1, 2, 4]`:**
+- i=0: `(1*3+1)//2 = 2` → contributes `1*2 = 2`
+- i=1: `(2*2+1)//2 = 2` → contributes `2*2 = 4`
+- i=2: `(3*1+1)//2 = 2` → contributes `4*2 = 8`
+- Total = `2 + 4 + 8 = 14` ✓
+
+(Check by brute force: `[1]=1, [2]=2, [4]=4, [1,2,4]=7` → `1+2+4+7 = 14` ✓)
+
+```python
+"""
+Write a python function to find the sum of all odd length subarrays.
+https://www.geeksforgeeks.org/sum-of-all-odd-length-subarrays/
+assert odd_length_sum([1,2,4]) == 14
+"""
+
+
+def odd_length_sum(arr):
+    """
+    Return the sum of all subarrays of odd length in O(n) time.
+
+    For each index i, the element arr[i] appears in (i+1)*(n-i) subarrays,
+    of which ((i+1)*(n-i) + 1) // 2 have odd length.
+    """
+    n = len(arr)
+    total = 0
+    for i, value in enumerate(arr):
+        times = ((i + 1) * (n - i) + 1) // 2
+        total += times * value
+    return total
+
+
+def odd_length_sum_bruteforce(arr):
+    """Reference O(n^3) implementation used for validation."""
+    n = len(arr)
+    total = 0
+    for start in range(n):
+        for end in range(start, n):
+            if (end - start + 1) % 2 == 1:
+                total += sum(arr[start:end + 1])
+    return total
+
+
+if __name__ == "__main__":
+    # Given test case
+    assert odd_length_sum([1, 2, 4]) == 14
+
+    # Extra test cases
+    assert odd_length_sum([]) == 0
+    assert odd_length_sum([5]) == 5
+    assert odd_length_sum([1, 2]) == 3
+    assert odd_length_sum([1, 4, 2, 5, 3]) == 58
+    assert odd_length_sum([10, 11, 12]) == 66
+    assert odd_length_sum([-1, 2, -3, 4]) == 0 + odd_length_sum_bruteforce([-1, 2, -3, 4])
+
+    # Randomized cross-check against brute force
+    import random
+    for _ in range(200):
+        test = [random.randint(-50, 50) for _ in range(random.randint(0, 12))]
+        assert odd_length_sum(test) == odd_length_sum_bruteforce(test), test
+
+    print("All tests passed!")
+    print("odd_length_sum([1, 2, 4]) =", odd_length_sum([1, 2, 4]))
+    print("odd_length_sum([1, 4, 2, 5, 3]) =", odd_length_sum([1, 4, 2, 5, 3]))
+```
+
+**Output:**
+```
+All tests passed!
+odd_length_sum([1, 2, 4]) = 14
+odd_length_sum([1, 4, 2, 5, 3]) = 58
+```

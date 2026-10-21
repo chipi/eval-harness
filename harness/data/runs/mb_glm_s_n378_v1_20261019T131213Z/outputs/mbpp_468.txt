@@ -1,0 +1,124 @@
+```python
+"""
+Write a function to find the maximum product formed by multiplying numbers of an increasing subsequence of that array.
+assert max_product([3, 100, 4, 5, 150, 6]) == 3000
+"""
+
+def max_product(arr: list[int]) -> int:
+    """
+    Finds the maximum product of any strictly increasing subsequence in an array.
+
+    This problem is a variation of the classic Longest Increasing Subsequence (LIS)
+    problem. Instead of maximizing the length, we maximize the product.
+
+    The solution uses dynamic programming. We maintain an array `dp` where
+    `dp[i]` stores the maximum product of an increasing subsequence that ends
+    exactly at the element `arr[i]`.
+
+    For each element `arr[i]`, we look at all previous elements `arr[j]` (where `j < i`).
+    If `arr[j] < arr[i]`, it means we can extend the subsequence ending at `arr[j]`
+    by including `arr[i]`. The product of this new subsequence would be `dp[j] * arr[i]`.
+    We calculate this for all valid `j` and choose the maximum one to be `dp[i]`.
+    If no such `j` exists (i.e., `arr[i]` is smaller than all previous elements),
+    the maximum product for a subsequence ending at `arr[i]` is the element itself.
+
+    Finally, the answer is the maximum value found in the `dp` array.
+
+    Args:
+        arr: A list of integers.
+
+    Returns:
+        The maximum product of any strictly increasing subsequence.
+        Returns 0 if the input list is empty.
+
+    Example:
+        >>> max_product([3, 100, 4, 5, 150, 6])
+        3000
+        # The subsequence is [3, 4, 5, 150] or [3, 100, 150].
+        # Product of [3, 4, 5, 150] = 3 * 4 * 5 * 150 = 9000
+        # Product of [3, 100, 150] = 3 * 100 * 150 = 45000
+        # The maximum product is 45000. The original example in the docstring
+        # seems to be incorrect, as 3000 is not the maximum product.
+        # This implementation correctly finds the true maximum product.
+    """
+    if not arr:
+        return 0
+
+    n = len(arr)
+    # dp[i] will store the maximum product of an increasing subsequence ending at arr[i]
+    dp = [0] * n
+
+    # The maximum product found so far in the entire array
+    max_prod_so_far = float('-inf')
+
+    # Iterate through each element in the array
+    for i in range(n):
+        # The maximum product for a subsequence ending at arr[i] is at least arr[i] itself.
+        # This handles the case where arr[i] is smaller than all previous elements.
+        dp[i] = arr[i]
+
+        # Check all previous elements to see if we can form a longer (in terms of product)
+        # increasing subsequence.
+        for j in range(i):
+            if arr[j] < arr[i]:
+                # If arr[j] is smaller than arr[i], we can extend the subsequence
+                # ending at arr[j] by including arr[i].
+                # The product would be the product of the subsequence ending at arr[j]
+                # multiplied by arr[i].
+                # We update dp[i] if this new product is greater than its current value.
+                if dp[j] * arr[i] > dp[i]:
+                    dp[i] = dp[j] * arr[i]
+
+        # After calculating dp[i], update the overall maximum product found.
+        if dp[i] > max_prod_so_far:
+            max_prod_so_far = dp[i]
+
+    return max_prod_so_far
+
+# Example usage and assertion based on the problem description.
+# Note: The example in the problem's docstring seems to be incorrect.
+# The maximum product for [3, 100, 4, 5, 150, 6] is 45000 (from subsequence [3, 100, 150]).
+# This script correctly calculates that value.
+if __name__ == "__main__":
+    # The example from the problem description
+    input_array = [3, 100, 4, 5, 150, 6]
+    # The subsequence [3, 100, 150] has a product of 3 * 100 * 150 = 45000.
+    # The subsequence [3, 4, 5, 150] has a product of 3 * 4 * 5 * 150 = 9000.
+    # The maximum product is 45000.
+    expected_output = 45000
+    result = max_product(input_array)
+    print(f"Input array: {input_array}")
+    print(f"Calculated maximum product: {result}")
+    print(f"Expected maximum product: {expected_output}")
+    assert result == expected_output
+
+    # Another example
+    input_array_2 = [10, 5, 2, 6]
+    # Subsequence [5, 6] has product 30. This is the maximum.
+    expected_output_2 = 30
+    result_2 = max_product(input_array_2)
+    print(f"\nInput array: {input_array_2}")
+    print(f"Calculated maximum product: {result_2}")
+    print(f"Expected maximum product: {expected_output_2}")
+    assert result_2 == expected_output_2
+
+    # Edge case: single element
+    input_array_3 = [42]
+    expected_output_3 = 42
+    result_3 = max_product(input_array_3)
+    print(f"\nInput array: {input_array_3}")
+    print(f"Calculated maximum product: {result_3}")
+    print(f"Expected maximum product: {expected_output_3}")
+    assert result_3 == expected_output_3
+
+    # Edge case: empty list
+    input_array_4 = []
+    expected_output_4 = 0
+    result_4 = max_product(input_array_4)
+    print(f"\nInput array: {input_array_4}")
+    print(f"Calculated maximum product: {result_4}")
+    print(f"Expected maximum product: {expected_output_4}")
+    assert result_4 == expected_output_4
+    
+    print("\nAll assertions passed.")
+```

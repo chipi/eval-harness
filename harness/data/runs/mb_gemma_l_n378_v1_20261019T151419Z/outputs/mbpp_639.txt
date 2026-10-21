@@ -1,0 +1,19 @@
+```python
+def sample_nam(names):
+    """
+    Sums the length of names in a list, excluding those that start with a lowercase letter.
+    """
+    # Filter the list to keep only names that start with an uppercase letter
+    # and sum the lengths of the remaining names.
+    return sum(len(name) for name in names if name and name[0].isupper())
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    test_list = ['sally', 'Dylan', 'rebecca', 'Diana', 'Joanne', 'keith']
+    result = sample_nam(test_list)
+    print(f"Result: {result}")
+    
+    # Assertion to verify correctness
+    assert result == 16, f"Expected 16, but got {result}"
+    print("Assertion passed!")
+```

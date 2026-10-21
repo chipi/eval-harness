@@ -1,0 +1,25 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def subject_marks(marks_list):
+    """
+    Sort a list of tuples based on the second value (marks) in ascending order.
+    
+    Args:
+        marks_list: List of tuples where each tuple contains (subject, marks)
+    
+    Returns:
+        List of tuples sorted by the second element (marks) in ascending order
+    """
+    return sorted(marks_list, key=lambda x: x[1])
+
+# Test the function with the given assertion
+assert subject_marks([('English', 88), ('Science', 90), ('Maths', 97), ('Social sciences', 82)]) == [('Social sciences', 82), ('English', 88), ('Science', 90), ('Maths', 97)]
+
+# Additional test cases
+print(subject_marks([('Math', 95), ('Physics', 85), ('Chemistry', 90)]))
+print(subject_marks([('A', 10), ('B', 5), ('C', 20)]))
+
+# If no assertion error occurs, the function works correctly
+print("All tests passed!")
+```

@@ -1,0 +1,16 @@
+```python
+def unique_product(nums):
+    """
+    Calculate the product of the unique numbers in a list.
+    Duplicates are ignored, and each distinct value is multiplied once.
+    """
+    product = 1
+    for n in set(nums):
+        product *= n
+    return product
+
+
+if __name__ == "__main__":
+    assert unique_product([10, 20, 30, 40, 20, 50, 60, 40]) == 720000000
+    print("All tests passed.")
+```

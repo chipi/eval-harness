@@ -1,0 +1,143 @@
+```python
+import math
+
+def find_solution(a: int, b: int, n: int) -> tuple[int, int] | None:
+    """
+    Finds integers x and y that satisfy the equation ax + by = n.
+
+    This function uses the Extended Euclidean Algorithm to solve the linear
+    Diophantine equation. A solution exists if and only if the greatest common
+    divisor of 'a' and 'b' divides 'n'.
+
+    Args:
+        a: The coefficient of x.
+        b: The coefficient of y.
+        n: The target sum.
+
+    Returns:
+        A tuple (x, y) representing a solution, or None if no solution exists.
+    """
+    # Handle the trivial case where n is 0.
+    # The equation becomes ax + by = 0, which is satisfied by (0, 0).
+    if n == 0:
+        return (0, 0)
+
+    # The equation ax + by = n has a solution if and only if gcd(a, b) divides n.
+    # If not, there are no integer solutions.
+    if n % math.gcd(a, b) != 0:
+        return None
+
+    # Use the Extended Euclidean Algorithm to find a solution to ax + by = gcd(a, b).
+    # This function returns the gcd and the coefficients (x0, y0) for the equation.
+    def extended_gcd(a, b):
+        if b == 0:
+            return (a, 1, 0)
+        else:
+            # Recursive call to find coefficients for the smaller problem
+            gcd, x1, y1 = extended_gcd(b, a % b)
+            # Back-substitute to find coefficients for the original problem
+            x = y1
+            y = x1 - (a // b) * y1
+            return (gcd, x, y)
+
+    # Find a particular solution (x0, y0) for ax + by = gcd(a, b)
+    gcd, x0, y0 = extended_gcd(a, b)
+
+    # Scale the solution to satisfy ax + by = n.
+    # If (x0, y0) is a solution to ax + by = gcd(a, b),
+    # then (x0 * (n/gcd), y0 * (n/gcd)) is a solution to ax + by = n.
+    multiplier = n // gcd
+    x_particular = x0 * multiplier
+    y_particular = y0 * multiplier
+
+    return (x_particular, y_particular)
+
+# Example usage and assertions from the problem description
+assert find_solution(2, 3, 7) == (2, 1)
+
+# Additional test cases
+assert find_solution(10, 6, 14) == (1, 2/3) # This assertion is incorrect, let's fix it
+# The correct solution for 10x + 6y = 14 is (1, 2/3) which is not integer.
+# Let's re-calculate: gcd(10, 6) is 2. 14 % 2 == 0, so a solution exists.
+# extended_gcd(10, 6) -> (2, 1, -1). Scaled by 14/2=7: (7, -7).
+# 10*7 + 6*(-7) = 70 - 42 = 28. This is not 14. The multiplier should be n/gcd.
+# Let's re-verify the logic.
+# If (x0, y0) is a solution to ax+by=g, then (x0*k, y0*k) is a solution to ax+by=g*k.
+# We want g*k = n, so k = n/g.
+# So the solution is (x0 * (n/g), y0 * (n/g)).
+# Let's re-run the example: a=10, b=6, n=14. g = gcd(10,6)=2.
+# extended_gcd(10,6) -> (2, 1, -1). k = 14/2 = 7.
+# Solution is (1*7, -1*7) = (7, -7).
+# 10*7 + 6*(-7) = 70 - 42 = 28. This is not 14.
+# The error is in the extended_gcd implementation or its usage.
+# Let's trace extended_gcd(10, 6):
+# extended_gcd(10, 6) -> calls extended_gcd(6, 4)
+# extended_gcd(6, 4) -> calls extended_gcd(4, 2)
+# extended_gcd(4, 2) -> calls extended_gcd(2, 0)
+# extended_gcd(2, 0) returns (2, 1, 0)
+# Now backtracking:
+# extended_gcd(4, 2) gets (2, 1, 0). x = 0, y = 1 - (4//2)*0 = 1. Returns (2, 0, 1).
+# extended_gcd(6, 4) gets (2, 0, 1). x = 1, y = 0 - (6//4)*1 = 0 - 1*1 = -1. Returns (2, 1, -1).
+# extended_gcd(10, 6) gets (2, 1, -1). x = -1, y = 1 - (10//6)*(-1) = 1 - 1*(-1) = 2. Returns (2, -1, 2).
+# So, x0=-1, y0=2. 10*(-1) + 6*2 = -10 + 12 = 2. Correct.
+# Now, k = n/g = 14/2 = 7.
+# Solution is (x0*k, y0*k) = (-1*7, 2*7) = (-7, 14).
+# 10*(-7) + 6*14 = -70 + 84 = 14. Correct.
+# The initial implementation of extended_gcd was wrong. Let's fix it.
+
+def find_solution_corrected(a: int, b: int, n: int) -> tuple[int, int] | None:
+    """
+    Finds integers x and y that satisfy the equation ax + by = n.
+
+    This function uses the Extended Euclidean Algorithm to solve the linear
+    Diophantine equation. A solution exists if and only if the greatest common
+    divisor of 'a' and 'b' divides 'n'.
+
+    Args:
+        a: The coefficient of x.
+        b: The coefficient of y.
+        n: The target sum.
+
+    Returns:
+        A tuple (x, y) representing a solution, or None if no solution exists.
+    """
+    # Handle the trivial case where n is 0.
+    if n == 0:
+        return (0, 0)
+
+    # The equation ax + by = n has a solution if and only if gcd(a, b) divides n.
+    g = math.gcd(a, b)
+    if n % g != 0:
+        return None
+
+    # Use the Extended Euclidean Algorithm to find a solution to ax + by = g.
+    def extended_gcd(a, b):
+        if b == 0:
+            return (a, 1, 0)
+        else:
+            gcd, x1, y1 = extended_gcd(b, a % b)
+            x = y1
+            y = x1 - (a // b) * y1
+            return (gcd, x, y)
+
+    # Find a particular solution (x0, y0) for ax + by = gcd(a, b)
+    gcd_val, x0, y0 = extended_gcd(a, b)
+
+    # Scale the solution to satisfy ax + by = n.
+    multiplier = n // gcd_val
+    x_particular = x0 * multiplier
+    y_particular = y0 * multiplier
+
+    return (x_particular, y_particular)
+
+# Re-run the example with the corrected function
+assert find_solution_corrected(2, 3, 7) == (2, 1)
+assert find_solution_corrected(10, 6, 14) == (-7, 14)
+assert find_solution_corrected(3, 6, 8) is None # gcd(3,6)=3, 8%3 != 0
+assert find_solution_corrected(4, 6, 2) == (-1, 1) # gcd(4,6)=2, 2%2=0. Solution to 4x+6y=2 is (-1,1). 4*(-1)+6*1 = -4+6=2.
+assert find_solution_corrected(17, 13, 75) == (11, -8) # 17*11 + 13*(-8) = 187 - 104 = 83. This is wrong.
+# Let's re-calculate: gcd(17,13)=1. 75%1=0. Solution exists.
+# extended_gcd(17,13) -> calls extended_gcd(13,4)
+# extended_gcd(13,4) -> calls extended_gcd(4,1)
+# extended_gcd(4,1) -> calls extended_gcd(1,0) -> returns (1,1,0)
+# extended_gcd(4,1) gets (1,1,0). x=0, y=1-(4//1)*0=

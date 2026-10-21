@@ -1,0 +1,44 @@
+```python
+def catalan_number(n: int) -> int:
+    """
+    Returns the nth Catalan number.
+    
+    The Catalan numbers are a sequence of natural numbers that occur in various counting problems.
+    C(n) = (2n)! / ((n+1)! * n!)
+    
+    Args:
+        n: A non-negative integer
+        
+    Returns:
+        The nth Catalan number
+    """
+    if n < 0:
+        raise ValueError("Catalan numbers are defined for non-negative integers only")
+    
+    # Using dynamic programming approach to avoid large factorial computations
+    # C(0) = 1, C(n+1) = sum(C(i)*C(n-i) for i in range(n+1))
+    # Or using the formula: C(n) = C(2n, n) / (n+1)
+    
+    # Let's use the binomial coefficient approach which is efficient
+    # C(n) = (2n choose n) / (n + 1)
+    
+    def binomial_coefficient(n: int, k: int) -> int:
+        """Compute binomial coefficient C(n, k)"""
+        if k < 0 or k > n:
+            return 0
+        if k == 0 or k == n:
+            return 1
+        # Use symmetry property
+        k = min(k, n - k)
+        result = 1
+        for i in range(k):
+            result = result * (n - i) // (i + 1)
+        return result
+    
+    return binomial_coefficient(2 * n, n) // (n + 1)
+
+
+if __name__ == "__main__":
+    assert catalan_number(10) == 16796
+    print("All tests passed!")
+```

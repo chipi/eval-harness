@@ -1,0 +1,9 @@
+```python
+def div_list(list1, list2):
+    """Divide two lists element wise."""
+    return [a / b for a, b in zip(list1, list2)]
+
+
+# Test
+assert div_list([4, 5, 6], [1, 2, 3]) == [4.0, 2.5, 2.0]
+```

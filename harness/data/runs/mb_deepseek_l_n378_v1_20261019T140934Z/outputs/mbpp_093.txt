@@ -1,0 +1,34 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+"""
+Write a function to calculate the value of 'a' to the power 'b'.
+assert power(3,4) == 81
+"""
+
+def power(a, b):
+    """
+    Calculate the value of a raised to the power b.
+    
+    Args:
+        a: base number
+        b: exponent
+        
+    Returns:
+        a raised to the power b
+    """
+    return a ** b
+
+
+if __name__ == "__main__":
+    # Test the function with the given assertion
+    assert power(3, 4) == 81, "Test failed: 3^4 should equal 81"
+    
+    # Additional test cases
+    assert power(2, 3) == 8, "Test failed: 2^3 should equal 8"
+    assert power(5, 0) == 1, "Test failed: 5^0 should equal 1"
+    assert power(0, 5) == 0, "Test failed: 0^5 should equal 0"
+    assert power(2, -1) == 0.5, "Test failed: 2^(-1) should equal 0.5"
+    
+    print("All tests passed!")
+```

@@ -1,0 +1,19 @@
+```python
+def min_k(records, k):
+    """
+    Return the k tuples with the smallest numeric value (2nd element),
+    sorted in ascending order by that value.
+
+    If k is less than or equal to 0, return an empty list.
+    If k is greater than the number of records, return all records sorted.
+    """
+    return sorted(records, key=lambda x: x[1])[:k]
+
+
+if __name__ == "__main__":
+    # Given test case
+    assert min_k([('Manjeet', 10), ('Akshat', 4), ('Akash', 2), ('Nikhil', 8)], 2) == [
+        ('Akash', 2), ('Akshat', 4)
+    ]
+    print("All tests passed.")
+```

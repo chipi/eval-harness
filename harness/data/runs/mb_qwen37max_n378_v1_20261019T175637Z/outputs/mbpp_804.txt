@@ -1,0 +1,13 @@
+```python
+def is_product_even(lst):
+    """Check whether the product of numbers in a list is even or not."""
+    # A product is even if at least one number in the list is even
+    for num in lst:
+        if num % 2 == 0:
+            return True
+    return False
+
+
+# Test
+assert is_product_even([1, 2, 3])
+```

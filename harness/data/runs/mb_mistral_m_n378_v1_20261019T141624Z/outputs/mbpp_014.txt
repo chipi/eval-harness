@@ -1,0 +1,33 @@
+Here's a self-contained Python script that solves the problem of finding the volume of a triangular prism:
+
+```python
+def find_Volume(base, height, length):
+    """
+    Calculate the volume of a triangular prism.
+
+    The volume of a triangular prism is given by:
+    Volume = (base * height / 2) * length
+
+    Parameters:
+    base (float): The length of the base of the triangular face.
+    height (float): The height of the triangular face.
+    length (float): The length of the prism.
+
+    Returns:
+    float: The volume of the triangular prism.
+    """
+    area_of_triangle = (base * height) / 2
+    volume = area_of_triangle * length
+    return volume
+
+# Test case
+assert find_Volume(10, 8, 6) == 240
+```
+
+This script:
+1. Defines a function `find_Volume` that takes three parameters: base, height, and length
+2. Calculates the area of the triangular face (base × height / 2)
+3. Multiplies this area by the length of the prism to get the volume
+4. Includes the provided test case as an assertion to verify the function works correctly
+
+The volume of a triangular prism is calculated by first finding the area of the triangular base and then multiplying it by the length (or depth) of the prism.

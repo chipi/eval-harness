@@ -1,0 +1,59 @@
+Here's a self-contained Python script that checks whether a given number is a perfect square or not. The solution includes a function `is_perfect_square` and an assertion to test the function as specified in the problem.
+
+```python
+def is_perfect_square(n):
+    """
+    Check whether the given number is a perfect square or not.
+    
+    Args:
+        n (int): The number to check.
+        
+    Returns:
+        bool: True if n is a perfect square, False otherwise.
+    """
+    if n < 0:
+        return False
+    if n == 0:
+        return True
+    left, right = 1, n
+    while left <= right:
+        mid = left + (right - left) // 2
+        square = mid * mid
+        if square == n:
+            return True
+        elif square < n:
+            left = mid + 1
+        else:
+            right = mid - 1
+    return False
+
+# Test cases
+assert not is_perfect_square(10)
+assert is_perfect_square(16)
+assert not is_perfect_square(20)
+assert is_perfect_square(1)
+assert is_perfect_square(0)
+assert not is_perfect_square(-4)
+
+print("All test cases passed!")
+```
+
+### Explanation:
+1. **Function `is_perfect_square(n)`**:
+   - The function first checks if the number `n` is negative, in which case it immediately returns `False` since negative numbers cannot be perfect squares.
+   - If `n` is 0, it returns `True` because 0 is a perfect square (0 * 0 = 0).
+   - For positive numbers, it uses a binary search approach to determine if there exists an integer `mid` such that `mid * mid == n`. The binary search efficiently narrows down the possible values of `mid` by comparing `mid * mid` with `n`.
+
+2. **Binary Search**:
+   - Initialize `left` to 1 and `right` to `n`.
+   - Compute `mid` as the middle value between `left` and `right`.
+   - If `mid * mid` equals `n`, return `True`.
+   - If `mid * mid` is less than `n`, adjust `left` to `mid + 1` to search the higher half.
+   - If `mid * mid` is greater than `n`, adjust `right` to `mid - 1` to search the lower half.
+   - If the loop exits without finding a perfect square, return `False`.
+
+3. **Test Cases**:
+   - The assertions test various scenarios, including non-perfect squares, perfect squares, edge cases (0 and 1), and negative numbers.
+   - If all assertions pass, the script prints "All test cases passed!".
+
+This approach efficiently checks for perfect squares using binary search, which is optimal for large numbers.

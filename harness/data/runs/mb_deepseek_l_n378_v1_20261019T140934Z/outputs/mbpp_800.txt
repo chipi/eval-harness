@@ -1,0 +1,23 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def remove_all_spaces(s):
+    """
+    Remove all whitespaces from a string.
+    
+    Args:
+        s (str): Input string
+    
+    Returns:
+        str: String with all whitespaces removed
+    """
+    return ''.join(s.split())
+
+
+# Test the function
+if __name__ == "__main__":
+    assert remove_all_spaces('python  program') == 'pythonprogram'
+    print("Test passed!")
+```
+
+This solution uses the `split()` method without arguments, which splits the string on any whitespace (spaces, tabs, newlines) and removes empty strings. Then `join()` concatenates the resulting list back into a single string without any whitespace.

@@ -1,0 +1,32 @@
+Here's a self-contained Python script that calculates the area of a regular tetrahedron given the edge length, with the provided assertion:
+
+```python
+import math
+
+def area_tetrahedron(edge_length):
+    """
+    Calculate the surface area of a regular tetrahedron.
+
+    A regular tetrahedron has 4 equilateral triangular faces. The area of one
+    equilateral triangle with side length 'a' is (sqrt(3)/4) * a^2. Since there
+    are 4 faces, the total surface area is sqrt(3) * a^2.
+
+    Args:
+        edge_length (float): The length of each edge of the tetrahedron
+
+    Returns:
+        float: The total surface area of the tetrahedron
+    """
+    return math.sqrt(3) * (edge_length ** 2)
+
+# Test the function with the provided assertion
+assert area_tetrahedron(3) == 15.588457268119894
+```
+
+This script:
+1. Imports the math module for the square root function
+2. Defines a function that calculates the surface area of a regular tetrahedron
+3. Includes a docstring explaining the mathematical formula
+4. Contains the assertion test case from the problem statement
+
+The formula used is derived from the fact that a regular tetrahedron has 4 equilateral triangular faces, each with area (√3/4) × a², so the total surface area is √3 × a².

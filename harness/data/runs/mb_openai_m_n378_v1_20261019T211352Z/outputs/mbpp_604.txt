@@ -1,0 +1,19 @@
+```python
+#!/usr/bin/env python3
+
+def reverse_words(text):
+    """
+    Reverse the order of words separated by spaces in a given string.
+
+    Example:
+        reverse_words("python program") -> "program python"
+    """
+    return " ".join(text.split()[::-1])
+
+
+if __name__ == "__main__":
+    assert reverse_words("python program") == "program python"
+    assert reverse_words("hello world") == "world hello"
+    assert reverse_words("one two three") == "three two one"
+    print("All tests passed.")
+```

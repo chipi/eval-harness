@@ -1,0 +1,26 @@
+```python
+import re
+
+def text_lowercase_underscore(text):
+  """
+  Checks if the input string contains sequences of lowercase letters joined with an underscore.
+
+  Args:
+    text: The input string.
+
+  Returns:
+    True if the string matches the pattern, False otherwise.
+  """
+  pattern = r"^[a-z]+(_[a-z]+)+$"
+  return bool(re.match(pattern, text))
+
+# Example usage and assertion
+assert text_lowercase_underscore("aab_cbbbc") == True
+assert text_lowercase_underscore("abc_def_ghi") == True
+assert text_lowercase_underscore("abc") == False
+assert text_lowercase_underscore("abc_def") == False
+assert text_lowercase_underscore("Abc_def") == False
+assert text_lowercase_underscore("abc_def_123") == False
+assert text_lowercase_underscore("_abc_def") == False
+assert text_lowercase_underscore("abc_def_") == False
+```

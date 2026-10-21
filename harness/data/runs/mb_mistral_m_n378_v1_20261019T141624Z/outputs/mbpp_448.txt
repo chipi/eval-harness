@@ -1,0 +1,15 @@
+```python
+def cal_sum(n):
+    if n == 0:
+        return 0
+    perrin = [3, 0, 2]
+    if n <= 2:
+        return sum(perrin[:n])
+    for i in range(3, n + 1):
+        next_num = perrin[i-3] + perrin[i-2]
+        perrin.append(next_num)
+    return sum(perrin[:n])
+
+# Test case
+assert cal_sum(9) == 49
+```

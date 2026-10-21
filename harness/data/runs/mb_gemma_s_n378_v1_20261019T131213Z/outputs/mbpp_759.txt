@@ -1,0 +1,28 @@
+```python
+import re
+
+def is_decimal(num):
+  """
+  Checks whether a given string is a decimal number with a precision of 2.
+
+  Args:
+    num: The string to check.
+
+  Returns:
+    True if the string is a decimal number with a precision of 2, False otherwise.
+  """
+  pattern = r"^\d+\.\d{2}$"
+  return bool(re.match(pattern, num))
+
+# Example usage and assertion
+assert is_decimal('123.11') == True
+assert is_decimal('123.1') == False
+assert is_decimal('123') == False
+assert is_decimal('123.111') == False
+assert is_decimal('0.00') == True
+assert is_decimal('1.00') == True
+assert is_decimal('12.00') == True
+assert is_decimal('123.') == False
+assert is_decimal('.11') == False
+assert is_decimal('abc.11') == False
+```

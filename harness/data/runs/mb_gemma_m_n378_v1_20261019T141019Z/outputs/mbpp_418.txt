@@ -1,0 +1,29 @@
+```python
+def Find_Max(lst):
+    """
+    Finds the element of a list having maximum length.
+    
+    Args:
+        lst (list): A list of lists (or other sequences).
+        
+    Returns:
+        The element with the maximum length.
+    """
+    if not lst:
+        return None
+    
+    # The max function with key=len returns the element 
+    # that has the largest value returned by the len() function.
+    return max(lst, key=len)
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    assert Find_Max([['A'],['A','B'],['A','B','C']]) == ['A','B','C']
+    
+    # Additional test cases
+    assert Find_Max(["apple", "pie", "banana"]) == "banana"
+    assert Find_Max([[1, 2], [1, 2, 3, 4], [0]]) == [1, 2, 3, 4]
+    assert Find_Max([]) is None
+    
+    print("All tests passed!")
+```

@@ -1,0 +1,63 @@
+```python
+def max_sub_array_sum_repeated(arr, n, k):
+    """
+    Find the largest sum of a contiguous subarray in an array repeated k times.
+    
+    Args:
+        arr: The original array
+        n: Length of the array
+        k: Number of times to repeat the array
+    
+    Returns:
+        The maximum subarray sum in the repeated array
+    """
+    # Create the repeated array
+    repeated_arr = arr * k
+    
+    # Use Kadane's algorithm to find maximum subarray sum
+    max_sum = float('-inf')
+    current_sum = 0
+    
+    for num in repeated_arr:
+        current_sum = max(num, current_sum + num)
+        max_sum = max(max_sum, current_sum)
+    
+    return max_sum
+
+
+# Test cases
+if __name__ == "__main__":
+    # Test case from the problem
+    result = max_sub_array_sum_repeated([10, 20, -30, -1], 4, 3)
+    print(f"max_sub_array_sum_repeated([10, 20, -30, -1], 4, 3) = {result}")
+    assert result == 30, f"Expected 30, got {result}"
+    
+    # Additional test cases
+    result2 = max_sub_array_sum_repeated([1, 2, 3], 3, 2)
+    print(f"max_sub_array_sum_repeated([1, 2, 3], 3, 2) = {result2}")
+    
+    result3 = max_sub_array_sum_repeated([-1, -2, -3], 3, 2)
+    print(f"max_sub_array_sum_repeated([-1, -2, -3], 3, 2) = {result3}")
+    
+    result4 = max_sub_array_sum_repeated([5, -3, 5], 3, 2)
+    print(f"max_sub_array_sum_repeated([5, -3, 5], 3, 2) = {result4}")
+    
+    print("\nAll tests passed!")
+```
+
+**Explanation:**
+
+The solution uses **Kadane's algorithm**, which is the standard approach for finding the maximum subarray sum:
+
+1. **Repeat the array**: Create a new array by repeating the original array `k` times
+2. **Apply Kadane's algorithm**: 
+   - Maintain `current_sum` as the maximum sum ending at the current position
+   - At each element, decide whether to extend the existing subarray or start a new one
+   - Track the overall `max_sum` seen so far
+
+**Time Complexity**: O(n*k) where n is the length of the original array
+**Space Complexity**: O(n*k) for storing the repeated array
+
+For the test case `[10, 20, -30, -1]` repeated 3 times:
+- The repeated array is: `[10, 20, -30, -1, 10, 20, -30, -1, 10, 20, -30, -1]`
+- The maximum subarray sum is `10 + 20 = 30` (or any occurrence of this in the repeated array)

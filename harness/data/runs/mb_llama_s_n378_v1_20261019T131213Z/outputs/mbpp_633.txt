@@ -1,0 +1,55 @@
+### Pair XOR Sum Function
+#### Problem Statement
+Write a Python function to find the sum of XOR of all pairs of numbers in the given list.
+
+#### Code Solution
+```python
+def pair_xor_Sum(nums, n):
+    """
+    This function calculates the sum of XOR of all pairs of numbers in the given list.
+
+    Args:
+    nums (list): A list of integers.
+    n (int): The number of elements in the list.
+
+    Returns:
+    int: The sum of XOR of all pairs of numbers.
+    """
+    # Initialize the result variable to 0
+    result = 0
+    
+    # Iterate over each bit position (from 0 to 31 for 32-bit integers)
+    for bit in range(32):
+        # Initialize the count of pairs with XOR having this bit set
+        bit_set_count = 0
+        
+        # Iterate over each number in the list
+        for num in nums:
+            # Check if the current bit is set in the number
+            if (num >> bit) & 1:
+                # If the bit is set, increment the count
+                bit_set_count += 1
+        
+        # Calculate the number of pairs with XOR having this bit set
+        # This is the count of numbers with this bit set times the count of numbers without this bit set
+        pairs_with_bit_set = bit_set_count * (n - bit_set_count)
+        
+        # Add the contribution of this bit to the result
+        # The contribution is 2^bit times the number of pairs with this bit set
+        result += (1 << bit) * pairs_with_bit_set
+    
+    return result
+
+# Example usage:
+assert pair_xor_Sum([5,9,7,6],4) == 47
+```
+#### Explanation
+
+The provided Python function `pair_xor_Sum` calculates the sum of XOR of all pairs of numbers in the given list.
+
+*   It iterates over each bit position (from 0 to 31 for 32-bit integers).
+*   For each bit position, it counts the number of pairs with XOR having this bit set.
+*   The contribution of each bit to the result is calculated as 2^bit times the number of pairs with this bit set.
+*   The final result is the sum of contributions from all bits.
+
+This approach has a time complexity of O(n), where n is the number of elements in the list, making it efficient for large inputs.

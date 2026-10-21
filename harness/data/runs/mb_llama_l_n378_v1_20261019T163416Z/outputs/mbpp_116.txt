@@ -1,0 +1,11 @@
+```python
+def tuple_to_int(t):
+    return int(''.join(map(str, t)))
+
+def main():
+    # Test the function
+    print(tuple_to_int((1,2,3)))  # Expected output: 123
+
+if __name__ == "__main__":
+    main()
+```

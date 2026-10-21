@@ -1,0 +1,32 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+import math
+
+def circle_circumference(radius):
+    """
+    Calculate the circumference of a circle given its radius.
+    
+    Formula: C = 2 * π * r
+    
+    Args:
+        radius (float): The radius of the circle.
+    
+    Returns:
+        float: The circumference of the circle.
+    """
+    return 2 * math.pi * radius
+
+
+# Test the function
+assert math.isclose(circle_circumference(10), 62.830000000000005, rel_tol=0.001)
+print("Test passed!")
+print(f"Circumference of circle with radius 10: {circle_circumference(10)}")
+```
+
+**Explanation:**
+
+- The function `circle_circumference(radius)` uses the standard formula **C = 2πr** to compute the circumference.
+- `math.pi` provides a high-precision value of π.
+- The assertion uses `math.isclose` with a relative tolerance of `0.001` to verify the result is approximately `62.83` for a radius of `10`.
+- Running the script prints the computed circumference and confirms the test passes.

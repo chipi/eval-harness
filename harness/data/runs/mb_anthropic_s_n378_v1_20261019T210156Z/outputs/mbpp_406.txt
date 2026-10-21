@@ -1,0 +1,26 @@
+```python
+def find_Parity(n):
+    """
+    Find whether the parity of a given number is odd.
+    
+    Args:
+        n: An integer number
+        
+    Returns:
+        True if the number is odd, False if the number is even
+    """
+    return n % 2 != 0
+
+
+# Test cases
+assert find_Parity(12) == False
+assert find_Parity(13) == True
+assert find_Parity(0) == False
+assert find_Parity(1) == True
+assert find_Parity(-5) == True
+assert find_Parity(-4) == False
+
+print("All tests passed!")
+```
+
+The function `find_Parity(n)` checks if a number is odd by using the modulo operator (`%`). If `n % 2` equals 1 (or any non-zero value for negative odd numbers), the number is odd and returns `True`. If `n % 2` equals 0, the number is even and returns `False`.

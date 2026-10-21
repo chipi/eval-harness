@@ -1,0 +1,26 @@
+```python
+def ascii_value(char):
+    """
+    This function returns the ASCII value of a given character.
+
+    Args:
+        char (str): A single character.
+
+    Returns:
+        int: The ASCII value of the character.
+
+    Raises:
+        TypeError: If the input is not a string.
+        ValueError: If the input string is not a single character.
+    """
+    if not isinstance(char, str):
+        raise TypeError("Input must be a string.")
+    if len(char) != 1:
+        raise ValueError("Input string must be a single character.")
+    
+    # The built-in ord function in Python returns the ASCII value of a character.
+    return ord(char)
+
+# Test the function
+print(ascii_value('A'))  # Output: 65
+```

@@ -1,0 +1,30 @@
+```python
+import math
+
+def count_binary_seq(n):
+    # Initialize count of sequences
+    count = 0
+
+    # For each possible value of first n bits
+    for i in range(2**n):
+        # Convert i to binary and remove the '0b' part
+        binary = bin(i)[2:]
+
+        # Pad with zeros to length 2n
+        binary = binary.zfill(2*n)
+
+        # Split into two parts
+        first_n_bits = binary[:n]
+        last_n_bits = binary[n:]
+
+        # If sum of first n bits is same as sum of last n bits, increment count
+        if sum(int(bit) for bit in first_n_bits) == sum(int(bit) for bit in last_n_bits):
+            count += 1
+
+    return count
+
+# Test cases
+assert math.isclose(count_binary_seq(1), 2.0, rel_tol=0.001)
+assert math.isclose(count_binary_seq(2), 10.0, rel_tol=0.001)
+assert math.isclose(count_binary_seq(3), 42.0, rel_tol=0.001)
+```

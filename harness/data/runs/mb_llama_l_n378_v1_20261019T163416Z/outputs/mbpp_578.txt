@@ -1,0 +1,13 @@
+```python
+def interleave_lists(list1, list2, list3):
+    return [x for triple in zip(list1, list2, list3) for x in triple]
+
+def main():
+    list1 = [1, 2, 3, 4, 5, 6, 7]
+    list2 = [10, 20, 30, 40, 50, 60, 70]
+    list3 = [100, 200, 300, 400, 500, 600, 700]
+    print(interleave_lists(list1, list2, list3))
+
+if __name__ == "__main__":
+    main()
+```

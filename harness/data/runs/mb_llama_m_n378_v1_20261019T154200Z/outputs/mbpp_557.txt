@@ -1,0 +1,16 @@
+```python
+def toggle_string(s):
+    """
+    This function toggles the case of all characters in a string.
+    
+    Parameters:
+    s (str): The input string.
+    
+    Returns:
+    str: The string with all characters' case toggled.
+    """
+    return s.swapcase()
+
+# Test the function
+print(toggle_string("Python"))  # Output: "pYTHON"
+```

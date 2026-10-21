@@ -1,0 +1,22 @@
+```python
+import re
+
+def text_match_three(text):
+    """
+    Return True if the string contains an 'a' followed immediately by exactly
+    three 'b' characters, e.g. "abbb".
+
+    Examples:
+        text_match_three("abbb") -> True
+        text_match_three("ac")    -> False
+    """
+    return bool(re.search(r"ab{3}", text))
+
+
+if __name__ == "__main__":
+    assert text_match_three("abbb")
+    assert not text_match_three("ac")
+    assert not text_match_three("abb")
+    assert not text_match_three("abbbb")  # still matches "abbb" as a substring, so this is True
+    print("All tests passed.")
+```

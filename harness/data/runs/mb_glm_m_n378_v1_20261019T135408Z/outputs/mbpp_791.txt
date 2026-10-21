@@ -1,0 +1,47 @@
+Here's a self-contained Python script that solves the problem of removing nested tuples from a given tuple:
+
+```python
+def remove_nested(tup):
+    """
+    Remove all nested tuples from the given tuple and return a new tuple with only non-tuple elements.
+    
+    Args:
+        tup: A tuple that may contain nested tuples.
+    
+    Returns:
+        A new tuple with all nested tuples removed.
+    """
+    result = []
+    for item in tup:
+        if not isinstance(item, tuple):
+            result.append(item)
+    return tuple(result)
+
+# Test cases
+def test_remove_nested():
+    assert remove_nested((1, 5, 7, (4, 6), 10)) == (1, 5, 7, 10)
+    assert remove_nested((1, (2, 3), 4, (5, (6, 7)))) == (1, 4)
+    assert remove_nested(((1, 2), (3, 4), 5)) == (5,)
+    assert remove_nested((1, 2, 3)) == (1, 2, 3)
+    assert remove_nested(()) == ()
+    print("All test cases passed!")
+
+if __name__ == "__main__":
+    test_remove_nested()
+```
+
+### Explanation:
+1. The function `remove_nested` takes a tuple as input.
+2. It iterates through each item in the tuple and checks if the item is not an instance of a tuple using `isinstance(item, tuple)`.
+3. If the item is not a tuple, it is added to the result list.
+4. Finally, the result list is converted back to a tuple and returned.
+
+### Test Cases:
+- The provided test case checks if the function correctly removes the nested tuple `(4, 6)` from `(1, 5, 7, (4, 6), 10)`.
+- Additional test cases are included to verify the function works with:
+  - Multiple nested tuples at different levels.
+  - All elements being nested tuples.
+  - No nested tuples.
+  - An empty tuple.
+
+The script will print "All test cases passed!" if all assertions are true.

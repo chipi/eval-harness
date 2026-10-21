@@ -1,0 +1,14 @@
+```python
+def is_upper(s: str) -> str:
+    """
+    Convert the given string to uppercase.
+    """
+    return s.upper()
+
+
+# Example test
+assert is_upper("person") == "PERSON"
+
+if __name__ == "__main__":
+    print(is_upper("person"))
+```

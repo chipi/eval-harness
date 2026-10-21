@@ -1,0 +1,41 @@
+Here's a self-contained Python script that calculates the wind chill index:
+
+```python
+def wind_chill(wind_velocity_kmh, temperature_celsius):
+    """
+    Calculate the wind chill index rounded to the next integer.
+    
+    Uses the formula:
+    Twc = 13.12 + 0.6215*Ta - 11.37*V^0.16 + 0.3965*Ta*V^0.16
+    
+    Where:
+    - Twc is the wind chill index in Celsius
+    - Ta is the air temperature in Celsius
+    - V is the wind speed in km/h
+    
+    Args:
+        wind_velocity_kmh: Wind velocity in km/h
+        temperature_celsius: Temperature in Celsius
+    
+    Returns:
+        Wind chill index rounded to the next integer
+    """
+    # Wind chill formula (Environment Canada)
+    wind_chill_celsius = (13.12 + 
+                         0.6215 * temperature_celsius - 
+                         11.37 * (wind_velocity_kmh ** 0.16) + 
+                         0.3965 * temperature_celsius * (wind_velocity_kmh ** 0.16))
+    
+    # Round to the next integer
+    return round(wind_chill_celsius)
+
+
+# Test the function
+assert wind_chill(120, 35) == 40
+print("Test passed!")
+print(f"Wind chill for 120 km/h wind at 35°C: {wind_chill(120, 35)}")
+```
+
+The script implements the standard wind chill formula used by Environment Canada and other meteorological organizations. The formula takes into account both the temperature and wind speed to calculate how cold it actually feels.
+
+For the test case with wind velocity of 120 km/h and temperature of 35°C, the function returns 40, which matches the expected result in the assertion.

@@ -1,0 +1,39 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+"""
+Write a python function to remove duplicate numbers from a given number of lists.
+assert two_unique_nums([1,2,3,2,3,4,5]) == [1, 4, 5]
+"""
+
+
+def two_unique_nums(nums):
+    """
+    Return a list containing only the numbers that appear exactly once
+    in the input list, preserving their original order.
+    """
+    counts = {}
+    for num in nums:
+        counts[num] = counts.get(num, 0) + 1
+    return [num for num in nums if counts[num] == 1]
+
+
+# Test the function
+assert two_unique_nums([1, 2, 3, 2, 3, 4, 5]) == [1, 4, 5]
+print("All tests passed!")
+```
+
+**How it works:**
+
+1. **Count occurrences**: We iterate through the input list and build a dictionary `counts` that maps each number to how many times it appears.
+2. **Filter uniques**: We iterate through the original list again and keep only those numbers whose count is exactly `1`. Iterating over the original list (rather than the dictionary) preserves the original order of the unique numbers.
+3. **Return result**: The resulting list contains only numbers that appeared exactly once.
+
+For the example `[1, 2, 3, 2, 3, 4, 5]`:
+- `1` appears once → kept
+- `2` appears twice → dropped
+- `3` appears twice → dropped
+- `4` appears once → kept
+- `5` appears once → kept
+
+Result: `[1, 4, 5]` ✓

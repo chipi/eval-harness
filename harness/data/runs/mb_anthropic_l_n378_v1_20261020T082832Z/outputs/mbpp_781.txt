@@ -1,0 +1,52 @@
+Looking at this problem, I need to write a function that returns `True` when a number has an even count of divisors.
+
+For 10: divisors are 1, 2, 5, 10 → count = 4 → even → `True` ✓
+
+```python
+"""
+Write a python function to check whether the count of divisors is even.
+https://www.w3resource.com/python-exercises/basic/python-basic-1-exercise-24.php
+assert count_divisors(10)
+"""
+
+import math
+
+
+def count_divisors(n):
+    """
+    Return True if the number of divisors of n is even, False otherwise.
+
+    A number has an odd number of divisors if and only if it is a perfect
+    square (because divisors pair up as d and n/d, except when d == n/d).
+    """
+    n = abs(n)
+    if n == 0:
+        return False  # 0 is divisible by every integer; not a meaningful count
+
+    count = 0
+    for i in range(1, int(math.isqrt(n)) + 1):
+        if n % i == 0:
+            if i == n // i:
+                count += 1      # perfect square: count the square root once
+            else:
+                count += 2      # count both i and n // i
+    return count % 2 == 0
+
+
+if __name__ == "__main__":
+    # Provided test
+    assert count_divisors(10)
+
+    # Additional sanity checks
+    assert count_divisors(100) == False   # 1,2,4,5,10,20,25,50,100 -> 9 divisors (odd)
+    assert count_divisors(125) == True    # 1,5,25,125 -> 4 divisors (even)
+    assert count_divisors(1) == False     # 1 -> 1 divisor (odd)
+    assert count_divisors(2) == True      # 1,2 -> 2 divisors (even)
+    assert count_divisors(36) == False    # perfect square -> odd
+
+    # Demo output
+    for num in [1, 2, 9, 10, 16, 36, 100, 125]:
+        print(f"{num}: count of divisors is even -> {count_divisors(num)}")
+
+    print("All tests passed!")
+```

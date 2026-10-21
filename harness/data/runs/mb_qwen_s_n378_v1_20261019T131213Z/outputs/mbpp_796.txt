@@ -1,0 +1,16 @@
+```python
+def return_sum(d):
+    """
+    Find the sum of all values in the given dictionary.
+    
+    Args:
+        d (dict): A dictionary with numeric values
+        
+    Returns:
+        The sum of all values in the dictionary
+    """
+    return sum(d.values())
+
+# Test case
+assert return_sum({'a': 100, 'b': 200, 'c': 300}) == 600
+```

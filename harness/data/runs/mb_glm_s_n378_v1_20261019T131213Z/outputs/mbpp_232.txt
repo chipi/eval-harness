@@ -1,0 +1,98 @@
+```python
+import heapq
+
+def larg_nnum(input_list, n):
+    """
+    Finds the n largest items in a list.
+
+    This function uses a min-heap approach to efficiently find the n largest elements.
+    It first pushes the first n elements onto a min-heap. Then, for each subsequent
+    element in the list, it compares the element with the smallest item in the heap
+    (the root). If the new element is larger, it replaces the smallest item in the heap.
+    This ensures the heap always contains the n largest elements seen so far.
+
+    Args:
+        input_list (list): A list of numbers (integers or floats).
+        n (int): The number of largest items to return.
+
+    Returns:
+        list: A list containing the n largest items from the input_list.
+              The order of items in the returned list is not guaranteed.
+              Returns an empty list if n is 0 or if the input list is empty.
+              Returns the entire list (sorted in descending order) if n is
+              greater than or equal to the length of the input list.
+    """
+    # Handle edge cases where n is 0 or the list is empty.
+    if n <= 0 or not input_list:
+        return []
+
+    # Handle the case where n is larger than the list size.
+    # We can simply sort the list and return it.
+    if n >= len(input_list):
+        return sorted(input_list, reverse=True)
+
+    # Use heapq.nlargest which is an efficient way to get the n largest items.
+    # It has a time complexity of O(N log k), where N is the number of elements
+    # in the list and k is the value of n. This is generally more efficient
+    # than sorting the entire list (O(N log N)) when n is much smaller than N.
+    return heapq.nlargest(n, input_list)
+
+# Example Usage and Verification:
+# The problem statement uses `assert set(...) == set(...)` to verify the result
+# because the order of the returned list is not important, only the elements themselves.
+
+# Test case 1: From the problem description
+list1 = [10, 20, 50, 70, 90, 20, 50, 40, 60, 80, 100]
+n1 = 2
+expected1 = {100, 90}
+result1 = larg_nnum(list1, n1)
+print(f"Test 1 - Input: {list1}, n: {n1}")
+print(f"Result: {result1}")
+print(f"Expected: {expected1}")
+assert set(result1) == expected1
+print("Test 1 Passed!\n")
+
+# Test case 2: n is larger than the list size
+list2 = [1, 5, 2, 8]
+n2 = 5
+expected2 = [8, 5, 2, 1] # Sorted descending
+result2 = larg_nnum(list2, n2)
+print(f"Test 2 - Input: {list2}, n: {n2}")
+print(f"Result: {result2}")
+print(f"Expected: {expected2}")
+assert result2 == expected2
+print("Test 2 Passed!\n")
+
+# Test case 3: n is 0
+list3 = [100, 200, 300]
+n3 = 0
+expected3 = []
+result3 = larg_nnum(list3, n3)
+print(f"Test 3 - Input: {list3}, n: {n3}")
+print(f"Result: {result3}")
+print(f"Expected: {expected3}")
+assert result3 == expected3
+print("Test 3 Passed!\n")
+
+# Test case 4: Empty list
+list4 = []
+n4 = 3
+expected4 = []
+result4 = larg_nnum(list4, n4)
+print(f"Test 4 - Input: {list4}, n: {n4}")
+print(f"Result: {result4}")
+print(f"Expected: {expected4}")
+assert result4 == expected4
+print("Test 4 Passed!\n")
+
+# Test case 5: List with duplicate values
+list5 = [5, 1, 5, 2, 5, 3, 5]
+n5 = 3
+expected5 = {5, 5, 3} # The three largest are 5, 5, and 3
+result5 = larg_nnum(list5, n5)
+print(f"Test 5 - Input: {list5}, n: {n5}")
+print(f"Result: {result5}")
+print(f"Expected: {expected5}")
+assert set(result5) == expected5
+print("Test 5 Passed!\n")
+```

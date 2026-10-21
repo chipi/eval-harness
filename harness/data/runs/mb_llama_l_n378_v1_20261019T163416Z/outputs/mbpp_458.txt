@@ -1,0 +1,11 @@
+```python
+def rectangle_area(length, width):
+    return length * width
+
+def main():
+    assert rectangle_area(10,20) == 200
+    print("All test cases pass")
+
+if __name__ == "__main__":
+    main()
+```

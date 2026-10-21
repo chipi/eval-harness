@@ -1,0 +1,66 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def check_expression(expr):
+    """
+    Check if the given expression has balanced parentheses, brackets, and braces.
+    
+    Args:
+        expr (str): A string containing parentheses, brackets, and braces
+        
+    Returns:
+        bool: True if the expression is balanced, False otherwise
+    """
+    # Stack to keep track of opening brackets
+    stack = []
+    
+    # Dictionary to map closing brackets to their corresponding opening brackets
+    bracket_map = {
+        ')': '(',
+        '}': '{',
+        ']': '['
+    }
+    
+    # Set of opening brackets for quick lookup
+    opening_brackets = set(bracket_map.values())
+    
+    # Iterate through each character in the expression
+    for char in expr:
+        # If it's an opening bracket, push to stack
+        if char in opening_brackets:
+            stack.append(char)
+        # If it's a closing bracket
+        elif char in bracket_map:
+            # If stack is empty or top of stack doesn't match, expression is unbalanced
+            if not stack or stack[-1] != bracket_map[char]:
+                return False
+            # Pop the matching opening bracket
+            stack.pop()
+    
+    # Expression is balanced if stack is empty (all brackets matched)
+    return len(stack) == 0
+
+
+# Test the function
+if __name__ == "__main__":
+    # Test case from the problem
+    assert check_expression("{()}[{}]") == True
+    
+    # Additional test cases
+    assert check_expression("()") == True
+    assert check_expression("()[]{}") == True
+    assert check_expression("(]") == False
+    assert check_expression("([)]") == False
+    assert check_expression("{[]}") == True
+    assert check_expression("") == True
+    assert check_expression("{[}]") == False
+    
+    print("All test cases passed!")
+```
+
+This solution uses a stack-based approach to check for balanced parentheses, brackets, and braces. The algorithm:
+
+1. Iterates through each character in the expression
+2. Pushes opening brackets onto a stack
+3. When encountering a closing bracket, checks if it matches the most recent opening bracket
+4. Returns `True` only if all brackets are properly matched and the stack is empty at the end

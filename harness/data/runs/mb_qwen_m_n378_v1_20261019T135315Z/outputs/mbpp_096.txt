@@ -1,0 +1,42 @@
+```python
+def divisor(n: int) -> int:
+    """
+    Find the number of divisors of a given integer.
+    
+    Args:
+        n: A positive integer
+        
+    Returns:
+        The number of positive divisors of n
+        
+    Examples:
+        >>> divisor(15)
+        4
+        >>> divisor(1)
+        1
+        >>> divisor(6)
+        4
+    """
+    if n <= 0:
+        raise ValueError("Input must be a positive integer")
+    
+    count = 0
+    for i in range(1, int(n**0.5) + 1):
+        if n % i == 0:
+            # i is a divisor
+            count += 1
+            # If i and n/i are different, count n/i as well
+            if i != n // i:
+                count += 1
+    return count
+
+
+if __name__ == "__main__":
+    # Test cases
+    assert divisor(15) == 4, f"Expected 4, got {divisor(15)}"
+    assert divisor(1) == 1, f"Expected 1, got {divisor(1)}"
+    assert divisor(6) == 4, f"Expected 4, got {divisor(6)}"
+    assert divisor(12) == 6, f"Expected 6, got {divisor(12)}"
+    assert divisor(7) == 2, f"Expected 2, got {divisor(7)}"
+    print("All tests passed!")
+```

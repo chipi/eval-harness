@@ -1,0 +1,61 @@
+Looking at this problem, I need to write a function that validates whether a string is a decimal number with exactly 2 decimal places of precision.
+
+```python
+"""
+Write a function to check whether a given string is a decimal number with a precision of 2.
+assert is_decimal('123.11')==True
+"""
+
+import re
+
+
+def is_decimal(num):
+    """
+    Check whether a given string is a decimal number with a precision of 2.
+
+    A valid string consists of one or more digits, optionally followed by
+    a decimal point and at most two digits after it.
+
+    Examples:
+        '123.11'  -> True
+        '0.21'    -> True
+        '123'     -> True
+        '123.1'   -> True
+        '123.111' -> False  (precision greater than 2)
+        'e666.86' -> False  (not a number)
+    """
+    pattern = re.compile(r"^[0-9]+(\.[0-9]{1,2})?$")
+    return bool(pattern.search(str(num)))
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert is_decimal('123.11') == True
+
+    # Additional test cases
+    assert is_decimal('e666.86') == False
+    assert is_decimal('3.124587') == False
+    assert is_decimal('1.11') == True
+    assert is_decimal('1.1') == True
+    assert is_decimal('123') == True
+    assert is_decimal('0.21') == True
+    assert is_decimal('123.') == False
+    assert is_decimal('.11') == False
+    assert is_decimal('') == False
+    assert is_decimal('12 3.11') == False
+
+    print("All tests passed!")
+
+    # Quick demonstration
+    for sample in ['123.11', '123.111', '45', '45.6', 'abc', '7.00']:
+        print(f"{sample!r:12} -> {is_decimal(sample)}")
+```
+
+**How it works:**
+
+- `^` anchors the match at the start of the string.
+- `[0-9]+` requires at least one digit for the integer part.
+- `(\.[0-9]{1,2})?` optionally matches a decimal point followed by one or two digits.
+- `$` anchors the match at the end, ensuring no extra characters (like letters or spaces) sneak in.
+
+So strings like `'123.11'` and `'123'` pass, while `'123.111'` (3 decimal places) and `'e666.86'` (non-numeric characters) fail.

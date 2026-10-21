@@ -1,0 +1,35 @@
+Here's a self-contained Python script that solves the problem, including the requested assertion:
+
+```python
+"""
+Function to find the last digit of a given number.
+"""
+
+def last_digit(number):
+    """
+    Returns the last digit of the given number.
+
+    Args:
+        number (int): The input number
+
+    Returns:
+        int: The last digit of the number
+    """
+    return abs(number) % 10
+
+# Test the function
+assert last_digit(123) == 3
+assert last_digit(-456) == 6
+assert last_digit(0) == 0
+assert last_digit(7) == 7
+assert last_digit(1000) == 0
+
+print("All tests passed!")
+```
+
+This solution:
+1. Uses `abs()` to handle negative numbers correctly
+2. Uses modulo 10 (`% 10`) to get the last digit
+3. Includes the requested assertion plus additional test cases
+4. Has a docstring explaining the function
+5. Prints a success message if all tests pass

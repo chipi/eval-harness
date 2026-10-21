@@ -1,0 +1,13 @@
+```python
+import re
+
+def text_starta_endb(text):
+    """
+    Matches a string that has an 'a' followed by anything, ending in 'b'.
+    """
+    pattern = r'^a.*b$'
+    return bool(re.match(pattern, text))
+
+# Test
+assert text_starta_endb("aabbbb")
+```

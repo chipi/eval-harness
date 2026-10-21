@@ -1,0 +1,20 @@
+```python
+def larg_nnum(nums, n):
+    """
+    Return a list containing the n largest items from nums.
+
+    If n is greater than or equal to the length of nums, returns a copy of nums.
+    The result is not guaranteed to be sorted.
+    """
+    if n <= 0:
+        return []
+    if n >= len(nums):
+        return nums[:]
+    return sorted(nums, reverse=True)[:n]
+
+
+if __name__ == "__main__":
+    # Example test from the prompt
+    assert set(larg_nnum([10, 20, 50, 70, 90, 20, 50, 40, 60, 80, 100], 2)) == set([100, 90])
+    print("Test passed.")
+```

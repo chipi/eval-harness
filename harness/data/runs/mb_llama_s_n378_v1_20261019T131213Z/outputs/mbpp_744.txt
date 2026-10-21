@@ -1,0 +1,20 @@
+```python
+def check_none(tup):
+    """
+    This function checks if a given tuple contains any None value.
+
+    Args:
+        tup (tuple): The input tuple to be checked.
+
+    Returns:
+        bool: True if the tuple contains at least one None value, False otherwise.
+    """
+    return None in tup
+
+# Example usage:
+if __name__ == "__main__":
+    print(check_none((10, 4, 5, 6, None)))  # Expected output: True
+    print(check_none((10, 4, 5, 6, 7)))     # Expected output: False
+```
+
+This Python function `check_none` checks if a given tuple `tup` contains any `None` value. It uses the `in` operator, which returns `True` if a value is found in a sequence (like a tuple) and `False` otherwise. The example usage demonstrates how to use this function with different inputs.

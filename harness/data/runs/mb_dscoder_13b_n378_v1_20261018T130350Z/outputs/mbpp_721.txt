@@ -1,0 +1,18 @@
+```python
+def maxAverageOfPath(matrix):
+    def dfs(matrix, x, y, path, visited):
+        if x == len(matrix) - 1 and y == len(matrix[0]) - 1:
+            return path[0] + matrix[x][y]
+        if x == len(matrix) - 1:
+            return max(dfs(matrix, x, y + 1, path + [matrix[x][y]], visited), dfs(matrix, x, y + 1, path, visited))
+        if y == len(matrix[0]) - 1:
+            return max(dfs(matrix, x + 1, y, path + [matrix[x][y]], visited), dfs(matrix, x + 1, y, path, visited))
+        if (x, y) in visited:
+            return float('-inf')
+        visited.add((x, y))
+        return max(dfs(matrix, x + 1, y, path + [matrix[x][y]], visited), dfs(matrix, x, y + 1, path + [matrix[x][y]], visited))
+
+    return dfs(matrix, 0, 0, [], set())
+
+print(maxAverageOfPath([[1, 2, 3], [6, 5, 4], [7, 3, 9]]))  # Output: 5.2
+```

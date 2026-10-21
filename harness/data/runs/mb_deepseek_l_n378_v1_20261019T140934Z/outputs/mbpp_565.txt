@@ -1,0 +1,22 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def split(string):
+    """
+    Split a string into a list of characters.
+    
+    Args:
+        string (str): The input string to be split.
+    
+    Returns:
+        list: A list containing each character of the input string.
+    """
+    return list(string)
+
+# Test the function
+if __name__ == "__main__":
+    assert split('python') == ['p','y','t','h','o','n']
+    print("Test passed!")
+```
+
+This solution uses Python's built-in `list()` function, which when applied to a string, automatically splits it into individual characters. The function is simple, efficient, and handles the requirement correctly.

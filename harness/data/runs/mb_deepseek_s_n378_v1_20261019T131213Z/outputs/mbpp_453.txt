@@ -1,0 +1,28 @@
+```python
+def sumofFactors(n: int) -> int:
+    """
+    Returns the sum of all even factors of a given positive integer n.
+    
+    Example:
+    >>> sumofFactors(18)
+    26
+    """
+    total = 0
+    # Iterate from 1 to sqrt(n) to find all factor pairs
+    i = 1
+    while i * i <= n:
+        if n % i == 0:
+            # i is a factor
+            if i % 2 == 0:
+                total += i
+            # The paired factor n//i is distinct if i != n//i
+            j = n // i
+            if j != i and j % 2 == 0:
+                total += j
+        i += 1
+    return total
+
+# Test the assertion
+assert sumofFactors(18) == 26, "Test failed for n=18"
+print("Test passed for n=18")
+```

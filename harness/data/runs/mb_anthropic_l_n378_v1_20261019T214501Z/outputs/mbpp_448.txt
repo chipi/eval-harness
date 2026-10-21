@@ -1,0 +1,58 @@
+Looking at this problem, I need to understand the Perrin sequence:
+- P(0) = 3, P(1) = 0, P(2) = 2
+- P(n) = P(n-2) + P(n-3) for n > 2
+
+Sequence: 3, 0, 2, 3, 2, 5, 5, 7, 10, 12, 17, ...
+
+Checking the assertion: `cal_sum(9) == 49`
+- Sum of first 10 terms (indices 0..9): 3+0+2+3+2+5+5+7+10+12 = 49 ✓
+
+```python
+"""
+Write a function to calculate the sum of perrin numbers.
+assert cal_sum(9) == 49
+"""
+
+
+def cal_sum(n):
+    """
+    Calculate the sum of the Perrin numbers P(0) through P(n).
+
+    The Perrin sequence is defined as:
+        P(0) = 3, P(1) = 0, P(2) = 2
+        P(n) = P(n-2) + P(n-3)  for n > 2
+
+    Sequence: 3, 0, 2, 3, 2, 5, 5, 7, 10, 12, 17, 22, 29, ...
+    """
+    if n < 0:
+        return 0
+
+    a, b, c = 3, 0, 2          # P(0), P(1), P(2)
+
+    if n == 0:
+        return a
+    if n == 1:
+        return a + b
+    if n == 2:
+        return a + b + c
+
+    total = a + b + c
+    for _ in range(3, n + 1):
+        nxt = a + b            # P(k) = P(k-3) + P(k-2)
+        total += nxt
+        a, b, c = b, c, nxt
+
+    return total
+
+
+if __name__ == "__main__":
+    assert cal_sum(9) == 49
+    assert cal_sum(10) == 66
+    assert cal_sum(2) == 5
+    assert cal_sum(0) == 3
+
+    for i in range(11):
+        print(f"cal_sum({i}) = {cal_sum(i)}")
+
+    print("All tests passed!")
+```

@@ -1,0 +1,15 @@
+```python
+def get_pairs_count(numbers, target_sum):
+    """Count pairs of distinct positions whose values add to target_sum."""
+    seen = {}
+    count = 0
+
+    for number in numbers:
+        count += seen.get(target_sum - number, 0)
+        seen[number] = seen.get(number, 0) + 1
+
+    return count
+
+
+assert get_pairs_count([1, 1, 1, 1], 2) == 6
+```

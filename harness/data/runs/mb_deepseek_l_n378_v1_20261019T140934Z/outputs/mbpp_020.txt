@@ -1,0 +1,37 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def is_woodall(n):
+    """
+    Check if the given number is a Woodall number.
+    A Woodall number is of the form: W_m = m * 2^m - 1
+    """
+    if n < 1:
+        return False
+    
+    m = 1
+    while True:
+        woodall = m * (2 ** m) - 1
+        if woodall == n:
+            return True
+        if woodall > n:
+            return False
+        m += 1
+
+# Test the function
+if __name__ == "__main__":
+    assert is_woodall(383) == True
+    print("Test passed! 383 is a Woodall number.")
+    
+    # Additional test cases
+    assert is_woodall(1) == True    # m=1: 1*2^1 - 1 = 1
+    assert is_woodall(7) == True    # m=2: 2*2^2 - 1 = 7
+    assert is_woodall(23) == True   # m=3: 3*2^3 - 1 = 23
+    assert is_woodall(63) == True   # m=4: 4*2^4 - 1 = 63
+    assert is_woodall(383) == True  # m=6: 6*2^6 - 1 = 383
+    assert is_woodall(2) == False
+    assert is_woodall(8) == False
+    print("All tests passed!")
+```
+
+This script defines the `is_woodall` function that checks whether a given number is a Woodall number. A Woodall number follows the formula `W_m = m * 2^m - 1` for some positive integer `m`. The function iterates through possible values of `m` until it either finds a match or exceeds the input number.

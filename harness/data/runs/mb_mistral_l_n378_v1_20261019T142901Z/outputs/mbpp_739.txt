@@ -1,0 +1,55 @@
+Here's a self-contained Python script that solves the problem of finding the index of the smallest triangular number with `n` digits:
+
+```python
+"""
+Python function to find the index of the smallest triangular number with n digits.
+A triangular number is of the form T_k = k*(k+1)/2.
+The function uses binary search to efficiently find the smallest k such that T_k has at least n digits.
+"""
+
+import math
+
+def find_Index(n):
+    if n == 1:
+        return 1
+
+    # Binary search to find the smallest k where T_k has at least n digits
+    low = 1
+    high = 1
+
+    # First, find an upper bound for high
+    while True:
+        # Calculate the number of digits in T_high
+        # Using log10 to avoid computing the actual large triangular number
+        digits = int(math.log10(high * (high + 1) / 2)) + 1
+        if digits >= n:
+            break
+        high *= 2
+
+    # Now perform binary search between low and high
+    answer = high
+    while low <= high:
+        mid = (low + high) // 2
+        # Calculate number of digits in T_mid
+        # Using log10 to avoid computing the actual large triangular number
+        digits = int(math.log10(mid * (mid + 1) / 2)) + 1
+
+        if digits >= n:
+            answer = mid
+            high = mid - 1
+        else:
+            low = mid + 1
+
+    return answer
+
+# Test case
+assert find_Index(2) == 4
+```
+
+### Explanation:
+1. **Triangular Number**: The k-th triangular number is given by \( T_k = \frac{k(k+1)}{2} \).
+2. **Digits Calculation**: Instead of computing the actual triangular number (which can be very large), we use logarithms to calculate the number of digits. The number of digits \( d \) in a number \( x \) is \( d = \lfloor \log_{10} x \rfloor + 1 \).
+3. **Binary Search**: We use binary search to efficiently find the smallest \( k \) such that \( T_k \) has at least \( n \) digits. The search space is between `low` and `high`, where `high` is initially set to a value that is guaranteed to have at least \( n \) digits (by doubling until it does).
+4. **Edge Case**: If \( n = 1 \), the smallest triangular number is \( T_1 = 1 \), so the answer is 1.
+
+The function passes the provided test case `assert find_Index(2) == 4`.

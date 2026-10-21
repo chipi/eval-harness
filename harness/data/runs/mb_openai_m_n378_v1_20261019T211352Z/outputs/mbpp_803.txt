@@ -1,0 +1,39 @@
+```python
+"""
+Check whether a given number is a perfect square.
+
+A perfect square is an integer that can be written as n * n for some integer n.
+Examples: 0, 1, 4, 9, 16, 25
+"""
+
+import math
+
+
+def is_perfect_square(num):
+    """
+    Return True if num is a perfect square, otherwise False.
+
+    Negative numbers are not perfect squares.
+    """
+    if num < 0:
+        return False
+
+    root = math.isqrt(num)
+    return root * root == num
+
+
+if __name__ == "__main__":
+    assert is_perfect_square(0)
+    assert is_perfect_square(1)
+    assert is_perfect_square(4)
+    assert is_perfect_square(9)
+    assert is_perfect_square(16)
+    assert is_perfect_square(25)
+
+    assert not is_perfect_square(10)
+    assert not is_perfect_square(2)
+    assert not is_perfect_square(3)
+    assert not is_perfect_square(-4)
+
+    print("All tests passed.")
+```

@@ -1,0 +1,30 @@
+```python
+def div_list(list1, list2):
+    """
+    Divide two lists element-wise.
+    
+    Args:
+        list1: First list of numbers (numerators)
+        list2: Second list of numbers (denominators)
+    
+    Returns:
+        A list containing the element-wise division results as floats
+    
+    Raises:
+        ValueError: If lists are not of equal length or if any denominator is zero
+    """
+    if len(list1) != len(list2):
+        raise ValueError("Lists must be of equal length")
+    
+    result = []
+    for a, b in zip(list1, list2):
+        if b == 0:
+            raise ValueError("Division by zero encountered")
+        result.append(a / b)
+    
+    return result
+
+
+# Test case
+assert div_list([4, 5, 6], [1, 2, 3]) == [4.0, 2.5, 2.0]
+```

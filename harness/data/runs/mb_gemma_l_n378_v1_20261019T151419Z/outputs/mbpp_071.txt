@@ -1,0 +1,41 @@
+```python
+def comb_sort(arr):
+    """
+    Implementation of the Comb Sort algorithm.
+    Comb sort improves on bubble sort by eliminating 'turtles' 
+    (small values near the end of the list) using a gap.
+    """
+    n = len(arr)
+    gap = n
+    shrink = 1.3
+    sorted_status = False
+
+    while not sorted_status:
+        # Update the gap value for the next comb
+        gap = int(gap / shrink)
+        if gap <= 1:
+            gap = 1
+            # If gap is 1, we are essentially doing a bubble sort.
+            # If no swaps occur during a full pass, the list is sorted.
+            sorted_status = True
+        else:
+            # While gap > 1, we cannot guarantee the list is sorted
+            sorted_status = False
+
+        # Perform a "comb" pass
+        for i in range(0, n - gap):
+            if arr[i] > arr[i + gap]:
+                arr[i], arr[i + gap] = arr[i + gap], arr[i]
+                # If a swap occurred, we must continue checking
+                sorted_status = False
+
+    return arr
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    test_list = [5, 15, 37, 25, 79]
+    result = comb_sort(test_list)
+    print(f"Sorted list: {result}")
+    assert result == [5, 15, 25, 37, 79]
+    print("Assertion passed!")
+```

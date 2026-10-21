@@ -1,0 +1,74 @@
+```python
+def lps(s: str) -> int:
+    """
+    Finds the length of the longest palindromic subsequence in the given string.
+    Uses dynamic programming.
+    
+    Complexity:
+        Time: O(n^2)
+        Space: O(n^2)
+    """
+    n = len(s)
+    if n == 0:
+        return 0
+
+    # Create a 2D table to store results of subproblems
+    # dp[i][j] will store the length of LPS in s[i..j]
+    dp = [[0 for _ in range(n)] for _ in range(n)]
+
+    # Every single character is a palindrome of length 1
+    for i in range(n):
+        dp[i][i] = 1
+
+    # Build the table. cl is the length of the substring being considered.
+    for cl in range(2, n + 1):
+        for i in range(n - cl + 1):
+            j = i + cl - 1
+            if s[i] == s[j] and cl == 2:
+                dp[i][j] = 2
+            elif s[i] == s[j]:
+                dp[i][j] = dp[i + 1][j - 1] + 2
+            else:
+                dp[i][j] = max(dp[i][j - 1], dp[i + 1][j])
+
+    return dp[0][n - 1]
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    # "TENS FOR TENS"
+    # One possible longest palindromic subsequence is "T E T" or "S O S" etc.
+    # Let's check: T, E, N, S, (space), F, O, R, (space), T, E, N, S
+    # A subsequence like "T E S E T" or "S E N E S" or "S O S"
+    # In "TENS FOR TENS", the subsequence "T E S E T" is not possible.
+    # However, "T E N E T" is not there.
+    # Let's look at "T E S E T": T (idx 0), E (idx 1), S (idx 3), E (idx 10), T (idx 9) - No.
+    # Let's look at "S E N E S": S (idx 3), E (idx 10), N (idx 11), E (idx 1), S (idx 12) - No.
+    # Let's look at "T E T": T(0), E(1), T(9) -> length 3.
+    # Let's look at "S O S": S(3), O(6), S(12) -> length 3.
+    # Let's look at "T N S N T": T(0), N(2), S(3), N(11), T(9) - No.
+    # Wait, the assert says 5. Let's find it:
+    # T (0), E (1),   (4), E (10), T (9) -> No.
+    # S (3),   (4), O (6), (8), S (12) -> "S O S" is 3.
+    # Let's re-examine: T E N S _ F O R _ T E N S
+    # Indices: 0 1 2 3 4 5 6 7 8 9 0 1 2
+    # Subsequence: S (3), _ (4), O (6), _ (8), S (12) -> "S O S" is 3.
+    # Subsequence: T (0), E (1), N (2), E (10), T (9) -> No.
+    # Subsequence: N (2), S (3), _ (4), S (12), N (11) -> "N S _ S N" -> length 5.
+    # Let's check: N(2), S(3), space(4), S(12), N(11) is not possible because indices must increase.
+    # Correct indices for length 5:
+    # T (0), E (1), S (3), E (10), T (9) -> No.
+    # N (2), S (3), O (6), S (12), N (11) -> No.
+    # Let's try: S (3), space (4), O (6), space (8), S (12) -> "S O S" is 3.
+    # Let's try: E (1), N (2), S (3), N (11), E (10) -> No.
+    # Let's try: T (0), N (2), S (3), N (11), T (9) -> No.
+    # Let's try: S (3), space (4), R (7), space (8), S (12) -> "S R S" is 3.
+    # Let's try: N (2), S (3), space (4), S (12), N (11) -> No.
+    # Wait, the string is "TENS FOR TENS".
+    # Subsequence: "S" (3), " " (4), "O" (6), " " (8), "S" (12) is length 5.
+    # Indices: 3, 4, 6, 8, 12. All are increasing. 
+    # Characters: s[3]='S', s[4]=' ', s[6]='O', s[8]=' ', s[12]='S'.
+    # "S O S" is length 3. "S _ O _ S" is length 5.
+    
+    assert lps("TENS FOR TENS") == 5
+    print("Assertion passed!")
+```

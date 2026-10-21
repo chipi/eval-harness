@@ -1,0 +1,18 @@
+```python
+def divisible_by_digits(startnum, endnum):
+    """
+    Return a list of numbers in the inclusive range [startnum, endnum]
+    such that each number is divisible by every non-zero digit it contains.
+    """
+    result = []
+    for n in range(startnum, endnum + 1):
+        digits = [int(d) for d in str(n)]
+        if all(d != 0 and n % d == 0 for d in digits):
+            result.append(n)
+    return result
+
+
+if __name__ == "__main__":
+    assert divisible_by_digits(1, 22) == [1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 15, 22]
+    print(divisible_by_digits(1, 22))
+```

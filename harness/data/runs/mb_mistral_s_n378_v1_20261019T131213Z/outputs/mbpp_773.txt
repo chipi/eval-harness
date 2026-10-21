@@ -1,0 +1,33 @@
+Here's a self-contained Python script that solves the problem in a markdown code block:
+
+```python
+def occurrence_substring(main_string, sub_string):
+    """
+    Find the occurrence and position of the first occurrence of a substring within a string.
+    Returns a tuple with (substring, start_index, end_index) or None if no match is found.
+
+    Args:
+        main_string (str): The string to search within
+        sub_string (str): The substring to search for
+
+    Returns:
+        tuple or None: (substring, start_index, end_index) or None if not found
+    """
+    if sub_string in main_string:
+        start_index = main_string.find(sub_string)
+        end_index = start_index + len(sub_string)
+        return (sub_string, start_index, end_index)
+    return None
+
+# Test case
+assert occurrence_substring('python programming, python language', 'python') == ('python', 0, 6)
+```
+
+This script:
+1. Defines a function `occurrence_substring` that takes a main string and a substring
+2. Checks if the substring exists in the main string
+3. If found, returns a tuple with the substring, start index, and end index
+4. If not found, returns None
+5. Includes the test case from the problem statement
+
+The function uses Python's built-in `str.find()` method to locate the substring and calculates the end index by adding the length of the substring to the start index.

@@ -1,0 +1,49 @@
+Looking at this problem, I need to write a function that takes a list and a format string, then applies the format string to each element in the list.
+
+```python
+"""
+Write a function to apply a given format string to all of the elements in a list.
+assert add_string([1,2,3,4],'temp{0}')==['temp1', 'temp2', 'temp3', 'temp4']
+"""
+
+
+def add_string(list_, string):
+    """
+    Apply a format string to every element of a list.
+
+    Parameters
+    ----------
+    list_ : list
+        The list whose elements will be formatted.
+    string : str
+        A format string containing a replacement field, e.g. 'temp{0}'.
+
+    Returns
+    -------
+    list
+        A new list where each element is the result of formatting the
+        corresponding element of `list_` with `string`.
+    """
+    return [string.format(element) for element in list_]
+
+
+if __name__ == '__main__':
+    # Provided test case
+    assert add_string([1, 2, 3, 4], 'temp{0}') == ['temp1', 'temp2', 'temp3', 'temp4']
+
+    # A few extra checks
+    assert add_string(['a', 'b', 'c', 'd'], 'python{0}') == [
+        'pythona', 'pythonb', 'pythonc', 'pythond'
+    ]
+    assert add_string([5, 6, 7], 'string{0}') == ['string5', 'string6', 'string7']
+    assert add_string([], 'temp{0}') == []
+
+    print(add_string([1, 2, 3, 4], 'temp{0}'))
+    print("All tests passed!")
+```
+
+**How it works:**
+
+- The list comprehension iterates over every element in `list_`.
+- `string.format(element)` substitutes the element into the replacement field `{0}` of the format string.
+- The results are collected into a new list, leaving the original list unchanged.

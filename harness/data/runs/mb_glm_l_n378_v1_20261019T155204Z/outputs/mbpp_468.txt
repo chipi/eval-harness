@@ -1,0 +1,45 @@
+```python
+def max_product(arr):
+    """
+    Finds the maximum product formed by multiplying numbers of an increasing subsequence of that array.
+    
+    This function uses a dynamic programming approach similar to the Longest Increasing Subsequence (LIS)
+    problem, but modifies it to maximize the product instead of the length.
+    
+    Args:
+        arr (list): A list of numbers.
+        
+    Returns:
+        int/float: The maximum product of an increasing subsequence.
+    """
+    n = len(arr)
+    
+    # Handle empty array case
+    if n == 0:
+        return 0
+        
+    # Initialize a dp array where dp[i] stores the maximum product of an 
+    # increasing subsequence ending at index i.
+    # Initially, each element is a subsequence of length 1, so the product is the element itself.
+    dp = arr[:]
+    
+    # Iterate through each element
+    for i in range(n):
+        # Compare with all previous elements
+        for j in range(i):
+            # If the current element is greater than the previous element,
+            # it can extend the increasing subsequence ending at j.
+            if arr[i] > arr[j]:
+                # Update the maximum product for the subsequence ending at i.
+                # We compare the existing product at i with the product formed by 
+                # extending the subsequence at j.
+                dp[i] = max(dp[i], dp[j] * arr[i])
+    
+    # The result is the maximum value in the dp array
+    return max(dp)
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert max_product([3, 100, 4, 5, 150, 6]) == 3000
+    print("Test passed successfully!")
+```

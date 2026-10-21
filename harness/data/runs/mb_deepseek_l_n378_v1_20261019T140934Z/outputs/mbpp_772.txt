@@ -1,0 +1,13 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def remove_length(s, k):
+    return ' '.join(word for word in s.split() if len(word) != k)
+
+
+# Test the function with the given assertion
+if __name__ == '__main__':
+    result = remove_length('The person is most value tet', 3)
+    print(result)
+    assert result == 'person is most value', f"Expected 'person is most value' but got '{result}'"
+```

@@ -1,0 +1,34 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+"""
+Function to apply a given format string to all elements in a list.
+"""
+
+def add_string(lst, format_str):
+    """
+    Applies the given format string to each element in the list.
+
+    Args:
+        lst: List of elements to be formatted
+        format_str: Format string to apply (should contain {0} for element insertion)
+
+    Returns:
+        List of formatted strings
+    """
+    return [format_str.format(item) for item in lst]
+
+# Test case
+assert add_string([1, 2, 3, 4], 'temp{0}') == ['temp1', 'temp2', 'temp3', 'temp4']
+
+# Example usage
+if __name__ == "__main__":
+    print(add_string([1, 2, 3, 4], 'temp{0}'))  # Output: ['temp1', 'temp2', 'temp3', 'temp4']
+    print(add_string(['a', 'b', 'c'], 'item_{0}'))  # Output: ['item_a', 'item_b', 'item_c']
+```
+
+The script includes:
+1. The `add_string` function that uses a list comprehension to apply the format string to each element
+2. The required test case with assert
+3. An example usage block that demonstrates the function with different inputs
+4. The function handles any type that can be formatted with the string's format method (numbers, strings, etc.)

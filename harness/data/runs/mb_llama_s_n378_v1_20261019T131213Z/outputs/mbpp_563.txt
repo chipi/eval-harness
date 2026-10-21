@@ -1,0 +1,29 @@
+```python
+import re
+
+def extract_values(s):
+    """
+    Extract values between quotation marks from a string.
+
+    Args:
+        s (str): The input string.
+
+    Returns:
+        list: A list of extracted values.
+    """
+    # Use regular expression to find all substrings enclosed in double quotes
+    values = re.findall(r'"([^"]*)"', s)
+    return values
+
+# Test the function
+assert extract_values('"Python", "PHP", "Java"')==['Python', 'PHP', 'Java']
+print("All tests passed.")
+```
+
+In this script, we define a function `extract_values` that takes a string `s` as input and uses the `re.findall` method to find all substrings enclosed in double quotes. The regular expression pattern `r'"([^"]*)"'` matches any sequence of characters that starts and ends with a double quote and captures the characters in between. The `findall` method returns all non-overlapping matches of the pattern in the string as a list of strings.
+
+The test case `assert extract_values('"Python", "PHP", "Java"')==['Python', 'PHP', 'Java']` ensures that the function works correctly. If the function is working correctly, it will not output anything. Otherwise, it will raise an AssertionError. 
+
+You can also use `re.findall(r'"([^"]+)"', s)` if you want to avoid empty strings in the result when there are consecutive double quotes in the string. 
+
+Please note that this function does not handle cases where there are nested double quotes or escaped double quotes. If you need to handle such cases, you would need a more complex approach, possibly involving a parser or a state machine.

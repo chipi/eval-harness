@@ -1,0 +1,42 @@
+Looking at this problem, I need to find the maximum value among the numeric elements in a list that contains mixed types (strings and numbers).
+
+```python
+"""
+Write a function to find the maximum value in a given heterogeneous list.
+assert max_val(['Python', 3, 2, 4, 5, 'version'])==5
+"""
+
+
+def max_val(list_val):
+    """
+    Find the maximum numeric value in a heterogeneous list.
+
+    Args:
+        list_val: A list containing elements of mixed types.
+
+    Returns:
+        The maximum value among the numeric (int/float) elements,
+        or None if there are no numeric elements.
+    """
+    numbers = [item for item in list_val
+               if isinstance(item, (int, float)) and not isinstance(item, bool)]
+    if not numbers:
+        return None
+    return max(numbers)
+
+
+if __name__ == '__main__':
+    assert max_val(['Python', 3, 2, 4, 5, 'version']) == 5
+    assert max_val(['Python', 15, 20, 25]) == 25
+    assert max_val(['Python', 30, 20, 40, 50, 'version']) == 50
+    assert max_val(['only', 'strings']) is None
+    assert max_val([]) is None
+    assert max_val(['mix', 1.5, 2, -3]) == 2
+    print("All test cases passed!")
+```
+
+**How it works:**
+
+1. **Filter numeric values** – A list comprehension keeps only elements that are `int` or `float`. The extra `not isinstance(item, bool)` check excludes booleans, since in Python `bool` is a subclass of `int` (so `True` would otherwise be treated as `1`).
+2. **Handle the empty case** – If no numeric values exist, return `None` instead of raising a `ValueError` from `max()`.
+3. **Return the maximum** – Use the built-in `max()` on the filtered numbers.

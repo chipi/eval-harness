@@ -1,0 +1,55 @@
+```python
+def odd_length_sum(arr):
+    """
+    Calculates the sum of all odd-length subarrays of a given array.
+
+    A subarray is a contiguous part of the array. For an array of length n,
+    there are n*(n+1)/2 possible subarrays. This function iterates through
+    all possible starting and ending indices of subarrays, checks if the
+    length (end - start + 1) is odd, and if so, adds the sum of that
+    subarray to the total.
+
+    Args:
+        arr (list): A list of numbers.
+
+    Returns:
+        int: The sum of all odd-length subarrays.
+    
+    Example:
+        >>> odd_length_sum([1, 2, 4])
+        14
+        >>> odd_length_sum([1, 3, 5])
+        27
+        >>> odd_length_sum([10])
+        10
+    """
+    total_sum = 0
+    n = len(arr)
+
+    # Iterate through all possible starting indices of a subarray
+    for start in range(n):
+        # Iterate through all possible ending indices of a subarray
+        for end in range(start, n):
+            # Calculate the length of the current subarray
+            length = end - start + 1
+            
+            # If the length is odd, sum the subarray and add to total_sum
+            if length % 2 != 0:
+                subarray_sum = sum(arr[start : end + 1])
+                total_sum += subarray_sum
+                
+    return total_sum
+
+# Example usage and assertions
+if __name__ == "__main__":
+    # Test case from the problem description
+    assert odd_length_sum([1, 2, 4]) == 14
+    
+    # Additional test cases
+    assert odd_length_sum([1, 3, 5]) == 27
+    assert odd_length_sum([10]) == 10
+    assert odd_length_sum([1, 2, 3, 4]) == 50
+    assert odd_length_sum([]) == 0
+    
+    print("All assertions passed successfully!")
+```

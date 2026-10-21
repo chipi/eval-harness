@@ -1,0 +1,44 @@
+```python
+def average_tuple(tuples_input):
+    """
+    Calculates the average value for each tuple in a tuple of tuples.
+
+    Args:
+        tuples_input: A tuple containing tuples of numbers.
+
+    Returns:
+        A list of floats, where each float is the average of the corresponding
+        inner tuple.
+    """
+    # Use zip to transpose the matrix of tuples. This groups the first elements
+    # of each inner tuple together, the second elements together, and so on.
+    # For example, zip(((10, 10, 10, 12), (30, 45, 56, 45), ...)) will yield
+    # (10, 30, 81, 1), then (10, 45, 80, 2), etc.
+    transposed = zip(*tuples_input)
+
+    # Use a list comprehension to iterate over each group of numbers.
+    # For each group (e.g., (10, 30, 81, 1)), calculate the sum and divide by
+    # the number of elements to get the average.
+    return [sum(group) / len(group) for group in transposed]
+
+# Example usage with the provided assertion
+if __name__ == "__main__":
+    test_data = (
+        (10, 10, 10, 12),
+        (30, 45, 56, 45),
+        (81, 80, 39, 32),
+        (1, 2, 3, 4)
+    )
+    expected_result = [30.5, 34.25, 27.0, 23.25]
+    
+    result = average_tuple(test_data)
+    
+    print(f"Input: {test_data}")
+    print(f"Calculated Averages: {result}")
+    print(f"Expected Averages:  {expected_result}")
+    
+    # The assert statement will raise an error if the result is not as expected.
+    assert result == expected_result
+    
+    print("\nAssertion passed successfully!")
+```

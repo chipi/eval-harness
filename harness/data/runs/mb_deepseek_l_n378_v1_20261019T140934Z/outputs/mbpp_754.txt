@@ -1,0 +1,33 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def extract_index_list(l1, l2, l3):
+    """
+    Find elements that appear in all three lists at the same index.
+    
+    Args:
+        l1, l2, l3: Input lists to compare
+    
+    Returns:
+        A list of elements common to all three lists at the same index
+    """
+    # Use zip to iterate through all three lists simultaneously
+    # and find elements that are equal at the same position
+    result = []
+    for a, b, c in zip(l1, l2, l3):
+        if a == b == c:
+            result.append(a)
+    return result
+
+# Test the function with the provided example
+assert extract_index_list([1, 1, 3, 4, 5, 6, 7], [0, 1, 2, 3, 4, 5, 7], [0, 1, 2, 3, 4, 5, 7]) == [1, 7]
+
+# Additional test cases
+assert extract_index_list([1, 2, 3], [1, 2, 3], [1, 2, 3]) == [1, 2, 3]
+assert extract_index_list([1, 2, 3], [4, 5, 6], [7, 8, 9]) == []
+assert extract_index_list([], [], []) == []
+assert extract_index_list([1], [1], [1]) == [1]
+assert extract_index_list([1, 2], [1, 3], [1, 2]) == [1]
+
+print("All tests passed!")
+```

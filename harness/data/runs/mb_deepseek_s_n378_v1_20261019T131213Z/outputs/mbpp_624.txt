@@ -1,0 +1,20 @@
+```python
+def is_upper(s: str) -> str:
+    """
+    Converts a given string to uppercase.
+
+    Args:
+        s: The input string to convert.
+
+    Returns:
+        The uppercase version of the input string.
+    """
+    return s.upper()
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    result = is_upper("person")
+    expected = "PERSON"
+    assert result == expected, f"Expected {expected!r}, but got {result!r}"
+    print(f"Test passed: is_upper('person') = {result!r}")
+```

@@ -1,0 +1,35 @@
+```python
+def split(numbers):
+    """
+    This function takes a list of integers and returns a new list containing only the odd numbers.
+
+    Args:
+        numbers (list): A list of integers.
+
+    Returns:
+        list: A list of odd integers.
+    """
+    return [num for num in numbers if num % 2 != 0]
+
+
+# Example usage:
+def main():
+    numbers = [1, 2, 3, 4, 5, 6]
+    odd_numbers = split(numbers)
+    print(odd_numbers)  # Output: [1, 3, 5]
+
+if __name__ == "__main__":
+    main()
+```
+
+You can also use the following unit test to verify the correctness of the function:
+```python
+import unittest
+
+class TestSplitFunction(unittest.TestCase):
+    def test_split(self):
+        self.assertEqual(split([1, 2, 3, 4, 5, 6]), [1, 3, 5])
+
+if __name__ == "__main__":
+    unittest.main(argv=[''], exit=False)
+```

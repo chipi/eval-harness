@@ -1,0 +1,79 @@
+```python
+def max_sub_array_sum_repeated(arr, n, k):
+    """
+    Find the largest sum of a contiguous subarray in the modified array
+    formed by repeating the given array k times.
+
+    Parameters:
+    arr (list): The original array of integers.
+    n (int): Length of the array (provided for compatibility, but len(arr) can be used).
+    k (int): Number of times to repeat the array.
+
+    Returns:
+    int: Maximum subarray sum in the concatenated array.
+    """
+    # Edge case: empty array
+    if not arr:
+        return 0
+
+    # Helper function: Kadane's algorithm for maximum subarray sum
+    def kadane(nums):
+        max_ending_here = max_so_far = nums[0]
+        for x in nums[1:]:
+            max_ending_here = max(x, max_ending_here + x)
+            max_so_far = max(max_so_far, max_ending_here)
+        return max_so_far
+
+    # Helper function: maximum prefix sum
+    def max_prefix_sum(nums):
+        prefix = 0
+        max_prefix = float('-inf')
+        for x in nums:
+            prefix += x
+            max_prefix = max(max_prefix, prefix)
+        return max_prefix
+
+    # Helper function: maximum suffix sum
+    def max_suffix_sum(nums):
+        suffix = 0
+        max_suffix = float('-inf')
+        for x in reversed(nums):
+            suffix += x
+            max_suffix = max(max_suffix, suffix)
+        return max_suffix
+
+    total_sum = sum(arr)
+
+    # Case 1: k == 1, just Kadane on the original array
+    if k == 1:
+        return kadane(arr)
+
+    # Case 2: k == 2, Kadane on concatenation of two copies
+    if k == 2:
+        return kadane(arr + arr)
+
+    # Case 3: k > 2
+    # Maximum subarray can be:
+    # a) Inside a single copy (Kadane on arr)
+    max_single = kadane(arr)
+
+    # b) Spanning across two copies (Kadane on arr+arr)
+    max_two = kadane(arr + arr)
+
+    # c) Spanning across more than two copies:
+    #    max_suffix(arr) + (k-2)*total_sum + max_prefix(arr)
+    if total_sum > 0:
+        max_multi = max_suffix_sum(arr) + (k - 2) * total_sum + max_prefix_sum(arr)
+    else:
+        max_multi = max_two  # If total sum is non-positive, best is within two copies
+
+    return max(max_single, max_two, max_multi)
+
+
+# Test the given assertion
+if __name__ == "__main__":
+    result = max_sub_array_sum_repeated([10, 20, -30, -1], 4, 3)
+    print(f"Result: {result}")
+    assert result == 30, f"Expected 30 but got {result}"
+    print("Test passed.")
+```

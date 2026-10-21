@@ -1,0 +1,93 @@
+### Majority Element in Sorted Array
+
+The following Python function checks if a given element is the majority element in a sorted array.
+
+```python
+def is_majority(arr, n, target):
+    """
+    Checks if the target element is the majority element in a sorted array.
+
+    Args:
+        arr (list): A sorted list of elements.
+        n (int): The length of the array.
+        target: The target element to check.
+
+    Returns:
+        bool: True if the target element is the majority element, False otherwise.
+    """
+    # Find the first occurrence of the target element
+    first_occurrence = next((i for i, x in enumerate(arr) if x == target), -1)
+    
+    # If the target element is not found, return False
+    if first_occurrence == -1:
+        return False
+    
+    # Count the occurrences of the target element
+    count = 0
+    for i in range(first_occurrence, n):
+        if arr[i] == target:
+            count += 1
+        else:
+            break
+    
+    # Check if the target element occurs more than n/2 times
+    return count > n / 2
+
+# Example usage:
+arr = [1, 2, 3, 3, 3, 3, 10]
+n = len(arr)
+target = 3
+print(is_majority(arr, n, target))  # Output: True
+```
+
+However, we can optimize this solution by using binary search to find the first and last occurrence of the target element.
+
+### Optimized Solution
+
+```python
+def is_majority(arr, n, target):
+    """
+    Checks if the target element is the majority element in a sorted array.
+
+    Args:
+        arr (list): A sorted list of elements.
+        n (int): The length of the array.
+        target: The target element to check.
+
+    Returns:
+        bool: True if the target element is the majority element, False otherwise.
+    """
+    def binary_search(arr, target, find_first):
+        left, right = 0, n - 1
+        result = -1
+        while left <= right:
+            mid = (left + right) // 2
+            if arr[mid] == target:
+                result = mid
+                if find_first:
+                    right = mid - 1
+                else:
+                    left = mid + 1
+            elif arr[mid] < target:
+                left = mid + 1
+            else:
+                right = mid - 1
+        return result
+
+    # Find the first and last occurrence of the target element
+    first_occurrence = binary_search(arr, target, True)
+    last_occurrence = binary_search(arr, target, False)
+
+    # If the target element is not found, return False
+    if first_occurrence == -1:
+        return False
+    
+    # Check if the target element occurs more than n/2 times
+    return last_occurrence - first_occurrence + 1 > n / 2
+
+# Example usage:
+arr = [1, 2, 3, 3, 3, 3, 10]
+n = len(arr)
+target = 3
+print(is_majority(arr, n, target))  # Output: True
+```

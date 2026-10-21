@@ -1,0 +1,17 @@
+```python
+import math
+
+def area_tetrahedron(side_length):
+  """
+  Calculate the area of a regular tetrahedron.
+
+  Args:
+    side_length: The length of a side of the tetrahedron.
+
+  Returns:
+    The surface area of the tetrahedron.
+  """
+  return math.sqrt(3) * side_length**2
+
+assert area_tetrahedron(3)==15.588457268119894
+```

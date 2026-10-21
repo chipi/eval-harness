@@ -1,0 +1,10 @@
+```python
+def remove_nested(tup):
+    return tuple(i for i in tup if not isinstance(i, tuple))
+
+def main():
+    print(remove_nested((1, 5, 7, (4, 6), 10)))  # Expected output: (1, 5, 7, 10)
+
+if __name__ == "__main__":
+    main()
+```

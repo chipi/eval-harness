@@ -1,0 +1,17 @@
+```python
+def add_string(data, format_string):
+  """
+  Applies a given format string to all of the elements in a list.
+
+  Args:
+    data: A list of elements.
+    format_string: The format string to apply.
+
+  Returns:
+    A new list with the formatted elements.
+  """
+  return [format_string.format(item) for item in data]
+
+# Example usage and assertion
+assert add_string([1,2,3,4],'temp{0}')==['temp1', 'temp2', 'temp3', 'temp4']
+```

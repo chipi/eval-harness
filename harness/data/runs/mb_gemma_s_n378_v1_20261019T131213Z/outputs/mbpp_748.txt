@@ -1,0 +1,13 @@
+```python
+def capital_words_spaces(s):
+    """
+    Write a function to put spaces between words starting with capital letters in a given string.
+    assert capital_words_spaces("Python") == 'Python'
+    """
+    result = ""
+    for i in range(len(s)):
+        if i > 0 and s[i].isupper():
+            result += " "
+        result += s[i]
+    return result
+```

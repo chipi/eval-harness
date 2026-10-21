@@ -1,0 +1,15 @@
+```python
+def sequence(n):
+    """
+    Calculate the nth number in the Newman-Conway sequence.
+    The sequence is defined as:
+    - f(1) = f(2) = 1
+    - f(n) = f(f(n-1)) + f(n - f(n-1)) for n > 2
+    """
+    if n == 1 or n == 2:
+        return 1
+    return sequence(sequence(n - 1)) + sequence(n - sequence(n - 1))
+
+# Test case
+assert sequence(10) == 6
+```

@@ -1,0 +1,20 @@
+```python
+def expensive_items(items, n):
+    """
+    Find the n most expensive items in a given dataset.
+    
+    Args:
+        items: List of dictionaries with 'name' and 'price' keys.
+        n: Number of most expensive items to return.
+    
+    Returns:
+        List of the n most expensive items sorted by price descending.
+    """
+    sorted_items = sorted(items, key=lambda x: x['price'], reverse=True)
+    return sorted_items[:n]
+
+
+# Test
+assert expensive_items([{'name': 'Item-1', 'price': 101.1}, {'name': 'Item-2', 'price': 555.22}], 1) == [{'name': 'Item-2', 'price': 555.22}]
+print("All tests passed!")
+```

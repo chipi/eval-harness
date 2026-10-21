@@ -1,0 +1,21 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def validate(n: int) -> bool:
+    """
+    Check whether the frequency of each digit in the integer
+    is less than or equal to the digit itself.
+    """
+    s = str(n)
+    for digit in set(s):
+        count = s.count(digit)
+        if count > int(digit):
+            return False
+    return True
+
+
+# Test case
+if __name__ == "__main__":
+    assert validate(1234) == True
+    print("All tests passed.")
+```

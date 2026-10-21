@@ -1,0 +1,54 @@
+Looking at this problem, I need to find the nth nonagonal number.
+
+**Nonagonal numbers** (9-sided polygon numbers) follow the formula:
+```
+P(9, n) = n(7n - 5) / 2
+```
+
+Let me verify with n = 10:
+- `10 × (7×10 - 5) / 2 = 10 × 65 / 2 = 650 / 2 = 325` ✓
+
+```python
+"""
+Write a function to find the nth nonagonal number.
+assert is_nonagonal(10) == 325
+"""
+
+
+def is_nonagonal(n):
+    """
+    Return the nth nonagonal number.
+
+    A nonagonal (9-gonal) number counts the dots in a nested arrangement
+    of nonagons and is given by the formula:
+
+        P(9, n) = n * (7 * n - 5) / 2
+    """
+    return int(n * (7 * n - 5) / 2)
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert is_nonagonal(10) == 325
+
+    # A few additional checks
+    assert is_nonagonal(1) == 1
+    assert is_nonagonal(2) == 9
+    assert is_nonagonal(3) == 24
+    assert is_nonagonal(15) == 750
+    assert is_nonagonal(18) == 1089
+
+    # Show the first 15 nonagonal numbers
+    print("First 15 nonagonal numbers:")
+    print([is_nonagonal(i) for i in range(1, 16)])
+
+    print("\nAll assertions passed!")
+```
+
+**Output:**
+```
+First 15 nonagonal numbers:
+[1, 9, 24, 46, 75, 111, 154, 204, 261, 325, 396, 474, 559, 651, 750]
+
+All assertions passed!
+```

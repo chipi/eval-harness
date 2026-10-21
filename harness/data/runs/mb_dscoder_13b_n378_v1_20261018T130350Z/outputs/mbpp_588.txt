@@ -1,0 +1,10 @@
+```python
+def big_diff(lst):
+    return max(lst) - min(lst)
+
+# Test cases
+assert big_diff([1,2,3,4]) == 3
+assert big_diff([-1,-2,-3,-4]) == -8
+assert big_diff([10, 2, 3, 4]) == 9
+assert big_diff([100, 200, 300, 400]) == 300
+```

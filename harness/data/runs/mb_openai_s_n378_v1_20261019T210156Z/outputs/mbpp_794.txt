@@ -1,0 +1,25 @@
+```python
+import re
+
+def text_starta_endb(s: str) -> bool:
+    """
+    Return True if the string contains an 'a' followed by anything,
+    and ends with 'b'.
+
+    Examples:
+        "aabbbb" -> True
+        "ab"     -> True
+        "a123b"  -> True
+        "ba"     -> False
+    """
+    return re.fullmatch(r"a.*b", s) is not None
+
+
+if __name__ == "__main__":
+    assert text_starta_endb("aabbbb")
+    assert text_starta_endb("ab")
+    assert text_starta_endb("axxxb")
+    assert not text_starta_endb("ba")
+    assert not text_starta_endb("aabbbbc")
+    print("All tests passed.")
+```

@@ -1,0 +1,60 @@
+```python
+#!/usr/bin/env python3
+"""
+Count pairs of reverse strings in a given list.
+
+A pair is counted when one string is the reverse of another string appearing
+elsewhere in the list.
+
+Example:
+["julia", "best", "tseb", "for", "ailuj"]
+Pairs:
+- "julia" and "ailuj"
+- "best" and "tseb"
+So the result is 2.
+"""
+
+from collections import Counter
+
+
+def count_reverse_pairs(words):
+    """
+    Return the number of pairs of strings where one string is the reverse
+    of the other.
+
+    Each pair is counted once.
+    """
+    counts = Counter(words)
+    total = 0
+    processed = set()
+
+    for word in counts:
+        rev = word[::-1]
+
+        if word in processed:
+            continue
+
+        if rev in counts:
+            if word == rev:
+                # Palindromic strings pair among themselves.
+                total += counts[word] * (counts[word] - 1) // 2
+            else:
+                total += counts[word] * counts[rev]
+
+        processed.add(word)
+        processed.add(rev)
+
+    return total
+
+
+if __name__ == "__main__":
+    assert count_reverse_pairs(["julia", "best", "tseb", "for", "ailuj"]) == 2
+
+    # Additional simple checks
+    assert count_reverse_pairs(["abc", "cba"]) == 1
+    assert count_reverse_pairs(["abc", "cba", "abc"]) == 2
+    assert count_reverse_pairs(["aba", "aba"]) == 1
+    assert count_reverse_pairs(["abc", "def"]) == 0
+
+    print("All tests passed.")
+```

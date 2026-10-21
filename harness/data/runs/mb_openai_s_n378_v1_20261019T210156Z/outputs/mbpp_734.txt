@@ -1,0 +1,33 @@
+```python
+def sum_Of_Subarray_Prod(arr):
+    """
+    Return the sum of products of all possible contiguous subarrays.
+
+    Example:
+        [1, 2, 3]
+        Subarrays and products:
+        [1] -> 1
+        [1,2] -> 2
+        [1,2,3] -> 6
+        [2] -> 2
+        [2,3] -> 6
+        [3] -> 3
+        Total = 20
+    """
+    total = 0
+    n = len(arr)
+
+    # Generate all subarrays and accumulate their products
+    for i in range(n):
+        prod = 1
+        for j in range(i, n):
+            prod *= arr[j]
+            total += prod
+
+    return total
+
+
+if __name__ == "__main__":
+    assert sum_Of_Subarray_Prod([1, 2, 3]) == 20
+    print("All tests passed.")
+```

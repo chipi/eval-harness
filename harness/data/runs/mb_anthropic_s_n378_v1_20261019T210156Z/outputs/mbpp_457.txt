@@ -1,0 +1,31 @@
+```python
+def Find_Min(lists):
+    """
+    Find the sublist having minimum length.
+    
+    Args:
+        lists: A list of sublists
+        
+    Returns:
+        The sublist with the minimum length
+    """
+    return min(lists, key=len)
+
+
+# Test cases
+assert Find_Min([[1],[1,2],[1,2,3]]) == [1]
+assert Find_Min([[1,2,3],[1,2],[1]]) == [1]
+assert Find_Min([['a','b','c','d'],['a','b'],['a']]) == ['a']
+assert Find_Min([[1,2,3,4,5],[1,2,3],[1]]) == [1]
+
+print("All test cases passed!")
+```
+
+The solution uses Python's built-in `min()` function with a `key` parameter set to `len`. This efficiently finds the sublist with the minimum length by comparing the lengths of all sublists rather than their values.
+
+**How it works:**
+- `min(lists, key=len)` iterates through all sublists in the input list
+- For each sublist, it uses `len` as the comparison key
+- Returns the sublist with the smallest length
+- Time complexity: O(n) where n is the number of sublists
+- Space complexity: O(1)

@@ -1,0 +1,33 @@
+Here's a self-contained Python script that solves the problem, including the necessary import and the function implementation:
+
+```python
+import math
+
+def multiply_num(numbers):
+    """
+    Multiply all the numbers in a list and divide by the length of the list.
+
+    Args:
+        numbers: An iterable of numbers (e.g., list, tuple)
+
+    Returns:
+        float: The product of all numbers divided by the count of numbers
+    """
+    product = 1
+    for num in numbers:
+        product *= num
+    return product / len(numbers)
+
+# Test the function
+assert math.isclose(multiply_num((8, 2, 3, -1, 7)), -67.2, rel_tol=0.001)
+```
+
+This script:
+1. Imports the math module for the isclose function
+2. Defines the multiply_num function that:
+   - Takes an iterable of numbers as input
+   - Calculates the product of all numbers
+   - Divides the product by the length of the input
+3. Includes the assertion test from the problem statement
+
+The function will work with any iterable of numbers (lists, tuples, etc.) and returns a float result.

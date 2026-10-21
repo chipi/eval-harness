@@ -1,0 +1,20 @@
+```python
+def remove_all_spaces(s: str) -> str:
+    """
+    Removes all whitespace characters from the given string.
+    
+    Args:
+        s: Input string from which whitespace will be removed.
+    
+    Returns:
+        A new string with all whitespace characters removed.
+    """
+    # Using join with split to remove all whitespace (spaces, tabs, newlines, etc.)
+    return ''.join(s.split())
+
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert remove_all_spaces('python  program') == 'pythonprogram'
+    print("Test passed!")
+```

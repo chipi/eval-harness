@@ -1,0 +1,25 @@
+Here's a self-contained Python script that solves the problem, enclosed in a markdown code block:
+
+```python
+def swap_numbers(a, b):
+    """
+    Takes two numbers and returns a tuple with the second number first, then the first number.
+
+    Args:
+        a (int/float): First number
+        b (int/float): Second number
+
+    Returns:
+        tuple: A tuple containing (b, a)
+    """
+    return (b, a)
+
+# Test the function
+assert swap_numbers(10, 20) == (20, 10)
+```
+
+This script:
+1. Defines the `swap_numbers` function that takes two parameters
+2. Returns them in swapped order as a tuple
+3. Includes the required assertion test
+4. Has a docstring explaining the function's purpose and parameters

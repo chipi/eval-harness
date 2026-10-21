@@ -1,0 +1,13 @@
+```python
+def check_greater(arr, num):
+    """
+    Return True if 'num' is greater than every element in 'arr',
+    otherwise return False.
+    """
+    return all(num > x for x in arr)
+
+
+if __name__ == "__main__":
+    assert check_greater([1, 2, 3, 4, 5], 4) == False
+    print("All tests passed.")
+```

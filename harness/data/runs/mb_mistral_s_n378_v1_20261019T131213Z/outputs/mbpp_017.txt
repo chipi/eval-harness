@@ -1,0 +1,31 @@
+Here's a self-contained Python script that solves the problem in a markdown code block:
+
+```python
+"""
+Write a function that returns the perimeter of a square given its side length as input.
+assert square_perimeter(10) == 40
+"""
+
+def square_perimeter(side_length):
+    """Calculate the perimeter of a square given its side length.
+
+    Args:
+        side_length (float or int): The length of one side of the square.
+
+    Returns:
+        float or int: The perimeter of the square (4 * side_length).
+    """
+    return 4 * side_length
+
+# Test the function
+assert square_perimeter(10) == 40
+print("All tests passed!")
+```
+
+This script:
+1. Defines a function `square_perimeter` that takes a side length as input
+2. Returns the perimeter by multiplying the side length by 4
+3. Includes a test case that verifies the function works correctly
+4. Prints a success message if the test passes
+
+The function will work with both integer and floating-point inputs.

@@ -1,0 +1,18 @@
+```python
+def power(a, b):
+    """
+    Calculate the value of 'a' to the power 'b'.
+
+    Args:
+        a (int): The base number.
+        b (int): The exponent.
+
+    Returns:
+        int: The result of 'a' to the power 'b'.
+    """
+    return a ** b
+
+# Example usage:
+if __name__ == "__main__":
+    print(power(3, 4))  # Output: 81
+```

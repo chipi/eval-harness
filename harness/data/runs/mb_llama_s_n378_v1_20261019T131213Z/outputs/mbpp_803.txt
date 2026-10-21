@@ -1,0 +1,31 @@
+```python
+import math
+
+def is_perfect_square(n):
+    """
+    Checks whether the given number is a perfect square or not.
+
+    Args:
+        n (int): The number to check.
+
+    Returns:
+        bool: True if the number is a perfect square, False otherwise.
+    """
+    if n < 0:
+        return False
+    sqrt = math.sqrt(n)
+    return sqrt == int(sqrt)
+
+# Example usage:
+if __name__ == "__main__":
+    print(is_perfect_square(25))  # True
+    print(is_perfect_square(10))  # False
+```
+
+In this code:
+
+*   We define a function `is_perfect_square(n)` that takes an integer `n` as input.
+*   We first check if `n` is less than 0. If it is, we immediately return `False` because negative numbers cannot be perfect squares.
+*   We calculate the square root of `n` using `math.sqrt(n)`.
+*   We then check if the square root is equal to its integer value (`int(sqrt)`). If they are equal, it means `n` is a perfect square, and we return `True`. Otherwise, we return `False`.
+*   In the example usage section, we demonstrate how to use the `is_perfect_square` function with test cases.

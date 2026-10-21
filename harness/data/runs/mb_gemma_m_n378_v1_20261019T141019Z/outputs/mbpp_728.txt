@@ -1,0 +1,20 @@
+```python
+def sum_list(list_a, list_b):
+    """
+    Takes two lists of the same length and returns a new list 
+    containing the element-wise sum.
+    """
+    # Using a list comprehension with zip to pair elements and add them
+    return [a + b for a, b in zip(list_a, list_b)]
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    assert sum_list([10, 20, 30], [15, 25, 35]) == [25, 45, 65]
+    
+    # Additional test cases
+    assert sum_list([1, 2, 3], [1, 1, 1]) == [2, 3, 4]
+    assert sum_list([], []) == []
+    assert sum_list([-1, 0, 1], [1, 0, -1]) == [0, 0, 0]
+    
+    print("All tests passed!")
+```

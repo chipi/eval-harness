@@ -1,0 +1,13 @@
+```python
+def remove_kth_element(lst, k):
+    """
+    Returns a list with the same elements as lst, but with the k'th element removed.
+    Note: k is treated as a 1-based index, consistent with the provided example.
+    """
+    return lst[:k-1] + lst[k:]
+
+
+if __name__ == "__main__":
+    assert remove_kth_element([1, 1, 2, 3, 4, 4, 5, 1], 3) == [1, 1, 3, 4, 4, 5, 1]
+    print(remove_kth_element([1, 1, 2, 3, 4, 4, 5, 1], 3))
+```

@@ -1,0 +1,47 @@
+```python
+import math
+import cmath
+
+def angle_complex(complex_num):
+    """
+    This function calculates the angle of a complex number.
+
+    Args:
+        complex_num (complex): A complex number.
+
+    Returns:
+        float: The angle of the complex number in radians.
+    """
+    # Use the cmath.phase function to get the angle of the complex number
+    return cmath.phase(complex_num)
+
+# Test the function
+print(angle_complex(0+1j))  # Output: 1.5707963267948966
+```
+
+However, if you want to implement it manually without using `cmath.phase`, you can use the following code:
+
+```python
+import math
+
+def angle_complex(complex_num):
+    """
+    This function calculates the angle of a complex number.
+
+    Args:
+        complex_num (complex): A complex number.
+
+    Returns:
+        float: The angle of the complex number in radians.
+    """
+    # Extract the real and imaginary parts of the complex number
+    real = complex_num.real
+    imag = complex_num.imag
+    
+    # Use the math.atan2 function to get the angle
+    # math.atan2 returns the angle in radians in the range (-pi, pi]
+    return math.atan2(imag, real)
+
+# Test the function
+print(angle_complex(0+1j))  # Output: 1.5707963267948966
+```

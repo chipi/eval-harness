@@ -1,0 +1,16 @@
+```python
+def differ_At_One_Bit_Pos(a, b):
+    """
+    Check whether the two numbers differ at one bit position only or not.
+    
+    Args:
+        a (int): First number
+        b (int): Second number
+    
+    Returns:
+        bool: True if the numbers differ at exactly one bit position, False otherwise
+    """
+    xor = a ^ b
+    # Check if xor is a power of 2 (i.e., has exactly one bit set)
+    return xor != 0 and (xor & (xor - 1)) == 0
+```

@@ -1,0 +1,29 @@
+```python
+#!/usr/bin/env python3
+"""
+Write a function to find the size in bytes of the given tuple.
+
+The function uses sys.getsizeof(), which returns the size in bytes of a Python
+object, matching the behavior required by the assertion.
+"""
+
+import sys
+
+
+def tuple_size(t):
+    """
+    Return the size in bytes of the given tuple.
+
+    Args:
+        t (tuple): The tuple whose size should be measured.
+
+    Returns:
+        int: Size of the tuple object in bytes.
+    """
+    return sys.getsizeof(t)
+
+
+if __name__ == "__main__":
+    assert tuple_size(("A", 1, "B", 2, "C", 3)) == sys.getsizeof(("A", 1, "B", 2, "C", 3))
+    print("All tests passed.")
+```

@@ -1,0 +1,25 @@
+```python
+def tuple_intersection(test_list1, test_list2):
+    """
+    Find the tuple intersection of elements in the given tuple list irrespective of their order.
+    
+    Args:
+        test_list1 (list of tuples): First list of tuples.
+        test_list2 (list of tuples): Second list of tuples.
+        
+    Returns:
+        set: A set of tuples representing the intersection, with each tuple sorted internally.
+    """
+    # Convert each tuple to a sorted tuple and store in sets for O(1) lookups
+    set1 = {tuple(sorted(t)) for t in test_list1}
+    set2 = {tuple(sorted(t)) for t in test_list2}
+    
+    # Return the intersection of the two sets
+    return set1 & set2
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert tuple_intersection([(3, 4), (5, 6), (9, 10), (4, 5)], 
+                              [(5, 4), (3, 4), (6, 5), (9, 11)]) == {(4, 5), (3, 4), (5, 6)}
+    print("Test passed!")
+```

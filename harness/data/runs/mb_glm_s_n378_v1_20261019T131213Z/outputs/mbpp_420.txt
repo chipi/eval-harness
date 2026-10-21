@@ -1,0 +1,41 @@
+```python
+def cube_Sum(n):
+    """
+    Calculates the cube sum of the first n even natural numbers.
+
+    The first n even natural numbers are 2, 4, 6, ..., 2n.
+    The function computes the sum of their cubes: 2^3 + 4^3 + 6^3 + ... + (2n)^3.
+
+    Args:
+        n (int): The number of even natural numbers to consider.
+
+    Returns:
+        int: The sum of the cubes of the first n even natural numbers.
+    
+    Example:
+        >>> cube_Sum(2)
+        72
+        >>> cube_Sum(3)
+        288
+    """
+    # The first n even numbers are 2, 4, 6, ..., 2n.
+    # We can generate these numbers using a list comprehension: [2 * i for i in range(1, n+1)]
+    # Then, we calculate the cube of each number and sum them up.
+    return sum((2 * i) ** 3 for i in range(1, n + 1))
+
+# Example usage and assertion to verify the function
+if __name__ == "__main__":
+    # The problem states that cube_Sum(2) should be 72.
+    # Let's verify this:
+    # The first 2 even numbers are 2 and 4.
+    # Their cubes are 2^3 = 8 and 4^3 = 64.
+    # The sum is 8 + 64 = 72.
+    assert cube_Sum(2) == 72
+    
+    # Additional test cases
+    assert cube_Sum(1) == 8
+    assert cube_Sum(3) == 288
+    assert cube_Sum(4) == 800
+    
+    print("All assertions passed successfully!")
+```

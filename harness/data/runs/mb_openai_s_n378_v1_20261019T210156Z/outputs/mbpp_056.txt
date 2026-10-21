@@ -1,0 +1,19 @@
+```python
+def check(n: int) -> bool:
+    """
+    Return True if n is one less than twice its reverse.
+
+    That means:
+        n == 2 * reverse(n) - 1
+
+    Examples:
+        70 -> reverse = 7, 2*7 - 1 = 13, so False
+    """
+    rev = int(str(n)[::-1])
+    return n == 2 * rev - 1
+
+
+if __name__ == "__main__":
+    assert check(70) == False
+    print("All tests passed.")
+```

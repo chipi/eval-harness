@@ -1,0 +1,10 @@
+```python
+def capital_words_spaces(s):
+    return ' '.join(word.capitalize() for word in s.split())
+
+# Test cases
+assert capital_words_spaces("Python") == 'Python'
+assert capital_words_spaces("PythonExercises") == 'Python Exercises'
+assert capital_words_spaces("helloWORLD") == 'Hello WORLD'
+assert capital_words_spaces("helloWORLDexercises") == 'Hello WORLD exercises'
+```

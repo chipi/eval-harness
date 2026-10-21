@@ -1,0 +1,25 @@
+```python
+def get_max_sum(n: int) -> int:
+    """
+    Finds the maximum sum possible by using the given equation 
+    f(n) = max( (f(n/2) + f(n/3) + f(n/4) + f(n/5)), n).
+    """
+    memo = {0: 0}
+    
+    def solve(num):
+        if num in memo:
+            return memo[num]
+        
+        # Integer division is used for n/2, n/3, n/4, n/5
+        split_sum = solve(num // 2) + solve(num // 3) + solve(num // 4) + solve(num // 5)
+        max_sum = max(num, split_sum)
+        
+        memo[num] = max_sum
+        return max_sum
+
+    return solve(n)
+
+if __name__ == "__main__":
+    assert get_max_sum(60) == 106
+    print("Test passed successfully!")
+```

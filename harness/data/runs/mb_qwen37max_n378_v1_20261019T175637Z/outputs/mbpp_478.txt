@@ -1,0 +1,9 @@
+```python
+def remove_lowercase(s):
+    """Remove lowercase substrings from a given string."""
+    return ''.join(c for c in s if not c.islower())
+
+
+# Test
+assert remove_lowercase("PYTHon") == "PYTH"
+```

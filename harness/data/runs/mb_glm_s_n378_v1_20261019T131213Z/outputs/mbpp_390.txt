@@ -1,0 +1,45 @@
+```python
+def add_string(lst, fmt_str):
+    """
+    Applies a given format string to all elements in a list.
+
+    The format string should contain a placeholder '{0}' which will be
+    replaced by each element from the list.
+
+    Args:
+        lst: A list of elements to be formatted.
+        fmt_str: A format string containing a '{0}' placeholder.
+
+    Returns:
+        A new list with the formatted strings.
+    
+    Example:
+        >>> add_string([1, 2, 3, 4], 'temp{0}')
+        ['temp1', 'temp2', 'temp3', 'temp4']
+    """
+    return [fmt_str.format(item) for item in lst]
+
+# Example usage and assertion to verify the function
+if __name__ == "__main__":
+    # Test case from the problem description
+    input_list = [1, 2, 3, 4]
+    format_string = 'temp{0}'
+    expected_output = ['temp1', 'temp2', 'temp3', 'temp4']
+    
+    result = add_string(input_list, format_string)
+    
+    print(f"Input list: {input_list}")
+    print(f"Format string: '{format_string}'")
+    print(f"Result: {result}")
+    print(f"Expected: {expected_output}")
+    
+    # The assert statement will raise an AssertionError if the result is not as expected.
+    assert result == expected_output
+    
+    # Additional test cases
+    assert add_string(['a', 'b', 'c'], 'item_{0}') == ['item_a', 'item_b', 'item_c']
+    assert add_string([], 'prefix_{0}') == []
+    assert add_string([10, 20], 'Value is {0}') == ['Value is 10', 'Value is 20']
+    
+    print("\nAll assertions passed successfully!")
+```

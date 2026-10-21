@@ -1,0 +1,40 @@
+Here's a self-contained Python script that solves the problem of counting the number of non-empty substrings of a given string:
+
+```python
+def number_of_substrings(s):
+    """
+    Count the number of non-empty substrings of a given string.
+
+    Args:
+        s (str): The input string.
+
+    Returns:
+        int: The number of non-empty substrings.
+    """
+    count = 0
+    n = len(s)
+    for i in range(n):
+        for j in range(i + 1, n + 1):
+            count += 1
+    return count
+
+# Test the function
+assert number_of_substrings("abc") == 6
+print("All tests passed!")
+```
+
+### Explanation:
+1. The function `number_of_substrings` takes a string `s` as input.
+2. It initializes a counter `count` to zero.
+3. It then iterates over all possible starting indices `i` of the substrings.
+4. For each starting index `i`, it iterates over all possible ending indices `j` (from `i + 1` to the end of the string).
+5. Each valid substring (from `i` to `j`) increments the counter by 1.
+6. The function returns the total count of non-empty substrings.
+
+For the string "abc", the substrings are:
+- "a", "ab", "abc"
+- "b", "bc"
+- "c"
+Total: 6 substrings, which matches the assertion.
+
+The script also includes a test case to verify the correctness of the function.

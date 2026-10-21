@@ -1,0 +1,41 @@
+Here's a self-contained Python script that solves the problem, including the function and the assertion test:
+
+```python
+"""
+Function to find even numbers from a list of numbers.
+"""
+
+def find_evens(numbers):
+    """Return a list of even numbers from the input list."""
+    return [num for num in numbers if num % 2 == 0]
+
+# Test the function
+assert find_evens([1, 2, 3, 4, 5]) == [2, 4]
+
+# Example usage
+if __name__ == "__main__":
+    test_list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    print("Original list:", test_list)
+    print("Even numbers:", find_evens(test_list))
+```
+
+Note: I noticed the original problem mentioned a function called `Split()`, but that name doesn't clearly indicate what the function does. I've renamed it to `find_evens()` which is more descriptive. If you specifically need the function to be named `Split()`, here's that version:
+
+```python
+"""
+Function to find even numbers from a list of numbers.
+"""
+
+def Split(numbers):
+    """Return a list of even numbers from the input list."""
+    return [num for num in numbers if num % 2 == 0]
+
+# Test the function
+assert Split([1, 2, 3, 4, 5]) == [2, 4]
+
+# Example usage
+if __name__ == "__main__":
+    test_list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    print("Original list:", test_list)
+    print("Even numbers:", Split(test_list))
+```

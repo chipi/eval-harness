@@ -1,0 +1,26 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def add_dict_to_tuple(input_tuple, input_dict):
+    """
+    Adds a dictionary to the end of a tuple and returns the new tuple.
+
+    Args:
+        input_tuple: The original tuple to which the dictionary will be added
+        input_dict: The dictionary to add to the tuple
+
+    Returns:
+        A new tuple containing all elements of the original tuple plus the dictionary
+    """
+    return input_tuple + (input_dict,)
+
+# Test the function
+assert add_dict_to_tuple((4, 5, 6), {"MSAM": 1, "is": 2, "best": 3}) == (4, 5, 6, {'MSAM': 1, 'is': 2, 'best': 3})
+```
+
+The function works by:
+1. Taking the input tuple and concatenating it with a new tuple containing just the dictionary
+2. The comma after `input_dict` is important to make it a single-element tuple
+3. The function returns the new combined tuple
+
+The assertion verifies that the function works as expected.

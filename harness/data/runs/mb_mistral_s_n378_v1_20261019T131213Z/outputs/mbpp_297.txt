@@ -1,0 +1,34 @@
+Here's a self-contained Python script that solves the problem of flattening a nested list structure:
+
+```python
+def flatten_list(nested_list):
+    """
+    Flattens a nested list structure into a single-level list.
+
+    Args:
+        nested_list: A list that may contain other lists as elements.
+
+    Returns:
+        A flattened list with all elements at the top level.
+    """
+    flattened = []
+    for element in nested_list:
+        if isinstance(element, list):
+            flattened.extend(flatten_list(element))
+        else:
+            flattened.append(element)
+    return flattened
+
+# Test the function
+assert flatten_list([0, 10, [20, 30], 40, 50, [60, 70, 80], [90, 100, 110, 120]]) == [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120]
+print("Test passed!")
+```
+
+This script:
+1. Defines a recursive function `flatten_list` that handles nested lists
+2. Uses `isinstance()` to check if an element is a list
+3. Recursively flattens any nested lists it encounters
+4. Includes the test case from your example
+5. Prints a confirmation message if the test passes
+
+The function will work with any level of nesting in the input list.

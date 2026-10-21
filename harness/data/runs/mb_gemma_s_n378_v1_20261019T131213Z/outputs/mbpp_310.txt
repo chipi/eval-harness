@@ -1,0 +1,16 @@
+```python
+def string_to_tuple(s):
+  """
+  Converts a given string to a tuple of characters.
+
+  Args:
+    s: The input string.
+
+  Returns:
+    A tuple containing the characters of the string.
+  """
+  return tuple(s)
+
+# Example usage and assertion
+assert string_to_tuple("python 3.0")==('p', 'y', 't', 'h', 'o', 'n', '3', '.', '0')
+```

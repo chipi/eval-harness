@@ -1,0 +1,38 @@
+```python
+def max_occurrences(lst):
+    """
+    Finds the item with the maximum frequency in a given list.
+    If there is a tie, it returns the first one encountered in the list 
+    that reaches that maximum frequency.
+    """
+    if not lst:
+        return None
+    
+    # Create a dictionary to store the frequency of each element
+    counts = {}
+    for item in lst:
+        counts[item] = counts.get(item, 0) + 1
+    
+    # Find the key with the maximum value
+    # In case of ties, max() returns the first key encountered
+    max_item = max(counts, key=counts.get)
+    
+    return max_item
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    test_list = [2, 3, 8, 4, 7, 9, 8, 2, 6, 5, 1, 6, 1, 2, 3, 2, 4, 6, 9, 1, 2]
+    result = max_occurrences(test_list)
+    
+    print(f"List: {test_list}")
+    print(f"Item with max occurrences: {result}")
+    
+    # Assertion to verify correctness
+    assert result == 2
+    print("Assertion passed!")
+
+    # Additional test cases
+    assert max_occurrences(['a', 'b', 'a']) == 'a'
+    assert max_occurrences([1, 1, 2, 2]) in [1, 2] # Tie handling
+    assert max_occurrences([]) is None
+```

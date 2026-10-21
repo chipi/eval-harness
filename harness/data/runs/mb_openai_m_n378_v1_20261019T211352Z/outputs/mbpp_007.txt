@@ -1,0 +1,28 @@
+```python
+#!/usr/bin/env python3
+"""
+Find all words in a string that are at least 4 characters long.
+
+Example:
+    find_char_long('Please move back to stream')
+    -> ['Please', 'move', 'back', 'stream']
+"""
+
+def find_char_long(text):
+    """
+    Return a list of words from the given string that have length >= 4.
+    """
+    return [word for word in text.split() if len(word) >= 4]
+
+
+if __name__ == "__main__":
+    # Basic test from the prompt
+    assert set(find_char_long('Please move back to stream')) == set(['Please', 'move', 'back', 'stream'])
+
+    # Additional simple tests
+    assert find_char_long("a an the four five") == ["four", "five"]
+    assert find_char_long("") == []
+    assert find_char_long("one two six seven") == ["seven"]
+
+    print("All tests passed.")
+```

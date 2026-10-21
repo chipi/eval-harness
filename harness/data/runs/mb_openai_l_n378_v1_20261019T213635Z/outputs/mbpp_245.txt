@@ -1,0 +1,25 @@
+```python
+def max_sum(arr):
+    """Return the maximum sum of a strictly bitonic subsequence."""
+    if not arr:
+        return 0
+
+    n = len(arr)
+    increasing = arr[:]  # Best increasing sum ending at each index.
+    decreasing = arr[:]  # Best decreasing sum starting at each index.
+
+    for i in range(n):
+        for j in range(i):
+            if arr[j] < arr[i]:
+                increasing[i] = max(increasing[i], increasing[j] + arr[i])
+
+    for i in range(n - 1, -1, -1):
+        for j in range(i + 1, n):
+            if arr[j] < arr[i]:
+                decreasing[i] = max(decreasing[i], arr[i] + decreasing[j])
+
+    return max(increasing[i] + decreasing[i] - arr[i] for i in range(n))
+
+
+assert max_sum([1, 15, 51, 45, 33, 100, 12, 18, 9]) == 194
+```

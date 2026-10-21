@@ -1,0 +1,17 @@
+```python
+def minimum(a, b):
+    """
+    Returns the minimum of two numbers.
+
+    Args:
+        a (int): The first number.
+        b (int): The second number.
+
+    Returns:
+        int: The minimum of a and b.
+    """
+    return min(a, b)
+
+# Example usage:
+print(minimum(1, 2))  # Output: 1
+```

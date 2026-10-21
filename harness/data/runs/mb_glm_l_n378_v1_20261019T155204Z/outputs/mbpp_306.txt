@@ -1,0 +1,82 @@
+```python
+def max_sum_increasing_subseq(arr, n, k, i):
+    """
+    Finds the maximum sum of an increasing subsequence from the prefix until index i,
+    and also including the element at index k.
+    
+    Args:
+    arr (list): The input array.
+    n (int): The size of the array.
+    k (int): The index of the element that must be included (k > i).
+    i (int): The upper bound index for the prefix subsequence.
+    
+    Returns:
+    int: The maximum sum of the increasing subsequence.
+    """
+    
+    # We need to find a subsequence ending at some index j (where j <= i)
+    # such that arr[j] < arr[k].
+    # The sum would be MSIS[j] + arr[k].
+    # If no such j exists, the sum is just arr[k].
+    
+    # MSIS[j] is the Maximum Sum Increasing Subsequence ending at index j.
+    # We compute MSIS values for all indices from 0 to i.
+    
+    msis = [0] * n
+    
+    # Initialize MSIS values for all indexes
+    for idx in range(n):
+        msis[idx] = arr[idx]
+        
+    # Compute maximum sum increasing subsequence values in bottom-up manner
+    # We only need values up to index i to satisfy the prefix condition
+    for idx in range(1, i + 1):
+        for prev_idx in range(idx):
+            if arr[idx] > arr[prev_idx] and msis[idx] < msis[prev_idx] + arr[idx]:
+                msis[idx] = msis[prev_idx] + arr[idx]
+    
+    # Find the maximum sum from the valid prefix subsequences that can be extended by arr[k]
+    max_sum = 0
+    
+    # Iterate through all indices in the prefix [0, i]
+    for j in range(i + 1):
+        # Check if the element at j is smaller than element at k (increasing condition)
+        if arr[j] < arr[k]:
+            # If we append arr[k] to the subsequence ending at j, 
+            # the sum becomes msis[j] + arr[k]
+            if msis[j] + arr[k] > max_sum:
+                max_sum = msis[j] + arr[k]
+    
+    # If no valid prefix subsequence was found (max_sum is still 0), 
+    # it implies we can start a new subsequence with arr[k] itself.
+    # However, if arr[k] is negative, max_sum would be 0 which might be greater than arr[k].
+    # But typically in these problems, if no connection is possible, we just take arr[k].
+    # Let's handle the case where max_sum remains 0.
+    
+    # If max_sum is 0, it could mean:
+    # 1. No valid j found (all arr[j] >= arr[k]).
+    # 2. Valid j found but sums cancelled out (unlikely with positive integers usually implied).
+    # 3. The best sum is actually just arr[k].
+    
+    # If we couldn't extend any subsequence, the result is just arr[k]
+    if max_sum == 0:
+        return arr[k]
+        
+    return max_sum
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    arr = [1, 101, 2, 3, 100, 4, 5]
+    n = 7
+    k = 4
+    i = 6
+    # Note: The problem description says k > i, but the example passes k=4, i=6.
+    # The logic implemented follows the example: find subsequence in prefix [0, i] connectable to k.
+    # If k > i was strictly enforced, the loop range would change, but based on the example,
+    # 'i' is the prefix limit and 'k' is the target element.
+    
+    result = max_sum_increasing_subseq(arr, n, k, i)
+    assert result == 11, f"Expected 11, but got {result}"
+    print(f"Result: {result}")
+    print("Assertion passed.")
+```

@@ -1,0 +1,20 @@
+```python
+def sort_sublists(lst):
+    """
+    Sorts each sublist of strings in a given list of lists alphabetically.
+    """
+    # Use a list comprehension to create a new list containing sorted versions of each sublist
+    return [sorted(sublist) for sublist in lst]
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    input_data = [['green', 'orange'], ['black', 'white'], ['white', 'black', 'orange']]
+    expected_output = [['green', 'orange'], ['black', 'white'], ['black', 'orange', 'white']]
+    
+    result = sort_sublists(input_data)
+    
+    assert result == expected_output
+    print("Test passed!")
+    print(f"Input:  {input_data}")
+    print(f"Output: {result}")
+```

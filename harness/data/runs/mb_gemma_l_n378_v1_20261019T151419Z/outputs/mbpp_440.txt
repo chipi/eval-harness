@@ -1,0 +1,54 @@
+To solve this problem, we can use the `nltk` (Natural Language Toolkit) library, which is the industry standard for Part-of-Speech (POS) tagging in Python. 
+
+Below is the self-contained script. It includes a check to ensure the necessary NLTK data is downloaded.
+
+```python
+import nltk
+
+def find_adverb_position(sentence):
+    """
+    Finds the first adverb in a sentence and returns its 
+    start position, end position, and the word itself.
+    """
+    # Download the required POS tagger data
+    nltk.download('punkt', quiet=True)
+    nltk.download('averaged_perceptron_tagger', quiet=True)
+
+    # Tokenize the sentence into words
+    words = nltk.word_tokenize(sentence)
+    
+    # Tag each word with its part of speech
+    # RB: Adverb, RBR: Adverb comparative, RBS: Adverb superlative
+    tagged_words = nltk.pos_tag(words)
+    
+    current_pos = 0
+    for word, tag in tagged_words:
+        # Find the start index of the word in the original sentence
+        start = sentence.find(word, current_pos)
+        end = start + len(word)
+        
+        # Check if the tag starts with 'RB' (Adverb)
+        if tag.startswith('RB'):
+            return (start, end, word)
+        
+        # Update current_pos to ensure we find the next word correctly
+        current_pos = end
+        
+    return None
+
+# Test the function
+if __name__ == "__main__":
+    test_sentence = "clearly!! we can see the sky"
+    result = find_adverb_position(test_sentence)
+    print(f"Result: {result}")
+    
+    # Assertion check
+    assert result == (0, 7, 'clearly'), f"Expected (0, 7, 'clearly'), but got {result}"
+    print("Assertion passed!")
+```
+
+### Explanation:
+1.  **`nltk.word_tokenize`**: This splits the sentence into individual tokens (words and punctuation). This is crucial because punctuation like `!!` needs to be separated from the word `clearly` for the POS tagger to identify the word correctly.
+2.  **`nltk.pos_tag`**: This assigns a part-of-speech tag to each token. Adverbs are tagged with labels starting with **RB** (e.g., `RB` for basic adverbs, `RBR` for comparative, `RBS` for superlative).
+3.  **Position Tracking**: Since `word_tokenize` removes the original spacing/indexing, we use `sentence.find(word, current_pos)` to locate the exact character indices of the word within the original string.
+4.  **Complexity**: The time complexity is $O(N)$ where $N$ is the number of characters in the sentence.

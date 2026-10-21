@@ -1,0 +1,48 @@
+Here's a self-contained Python script that checks whether a given number is an Armstrong number (also known as a narcissistic number):
+
+```python
+def armstrong_number(num):
+    """
+    Check if a number is an Armstrong number.
+    An Armstrong number is a number that is equal to the sum of its own digits
+    each raised to the power of the number of digits.
+
+    Args:
+        num (int): The number to check
+
+    Returns:
+        bool: True if the number is an Armstrong number, False otherwise
+    """
+    # Convert the number to a string to easily access each digit
+    num_str = str(num)
+    # Get the number of digits
+    num_digits = len(num_str)
+    # Calculate the sum of each digit raised to the power of the number of digits
+    sum_of_powers = sum(int(digit) ** num_digits for digit in num_str)
+    # Check if the sum equals the original number
+    return sum_of_powers == num
+
+# Test the function
+assert armstrong_number(153) == True
+assert armstrong_number(370) == True
+assert armstrong_number(371) == True
+assert armstrong_number(407) == True
+assert armstrong_number(1634) == True
+assert armstrong_number(8208) == True
+assert armstrong_number(9474) == True
+assert armstrong_number(123) == False
+assert armstrong_number(100) == False
+print("All tests passed!")
+```
+
+This script:
+1. Defines the `armstrong_number` function that checks if a number is an Armstrong number
+2. Includes the required test case `assert armstrong_number(153)==True`
+3. Also includes additional test cases to verify the function works correctly
+4. Prints a success message if all tests pass
+
+The function works by:
+- Converting the number to a string to easily access each digit
+- Calculating the number of digits
+- Summing each digit raised to the power of the number of digits
+- Comparing this sum to the original number

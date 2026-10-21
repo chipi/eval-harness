@@ -1,0 +1,45 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def next_smallest_palindrome(num):
+    """
+    Find the next smallest palindrome greater than the given integer.
+    
+    Args:
+        num: An integer
+        
+    Returns:
+        The next smallest palindrome as an integer
+    """
+    num += 1  # Start from the next number
+    
+    while True:
+        s = str(num)
+        if s == s[::-1]:
+            return num
+        num += 1
+
+
+# Test cases
+if __name__ == "__main__":
+    assert next_smallest_palindrome(99) == 101
+    assert next_smallest_palindrome(100) == 101
+    assert next_smallest_palindrome(101) == 111
+    assert next_smallest_palindrome(9) == 11
+    assert next_smallest_palindrome(1) == 2
+    assert next_smallest_palindrome(1234) == 1331
+    assert next_smallest_palindrome(999) == 1001
+    print("All tests passed!")
+```
+
+**How it works:**
+
+1. **Increment first**: We start by adding 1 to the input, since we want the *next* palindrome (strictly greater than the input).
+
+2. **Check palindrome**: Convert the number to a string and compare it with its reverse (`s[::-1]`). If they match, it's a palindrome.
+
+3. **Loop until found**: If not a palindrome, increment and check again. This brute-force approach is simple and correct, though for very large numbers a more efficient digit-manipulation approach would be preferable.
+
+**Example walkthrough for `next_smallest_palindrome(99)`:**
+- Start at 100 → not a palindrome
+- 101 → `"101" == "101"` ✓ → return 101

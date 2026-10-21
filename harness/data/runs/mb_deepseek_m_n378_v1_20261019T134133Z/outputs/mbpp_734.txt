@@ -1,0 +1,57 @@
+Looking at this problem, I need to find the sum of products of all possible sublists (contiguous subarrays) of a given list.
+
+For `[1,2,3]`, the subarrays are:
+- `[1]` → product = 1
+- `[2]` → product = 2
+- `[3]` → product = 3
+- `[1,2]` → product = 2
+- `[2,3]` → product = 6
+- `[1,2,3]` → product = 6
+
+Sum = 1 + 2 + 3 + 2 + 6 + 6 = 20 ✓
+
+A naive O(n²) approach works, but there's a more elegant O(n) approach using the contribution of each element. For each element at index `i`, its contribution to the total sum is `arr[i] * (i+1) * (n-i)` — this counts how many subarrays include it, weighted by the product of prefix/suffix products.
+
+Actually, the cleanest O(n) approach uses a running "sum of products ending at i" recurrence:
+- Let `ending[i]` = sum of products of all subarrays ending at index `i`.
+- `ending[i] = arr[i] * (1 + ending[i-1])`
+- Total = sum of all `ending[i]`
+
+```python
+def sum_Of_Subarray_Prod(arr):
+    """
+    Returns the sum of products of all possible subarrays of arr.
+    Uses O(n) time and O(1) extra space.
+    """
+    total = 0
+    ending_here = 0  # sum of products of subarrays ending at current index
+    for x in arr:
+        ending_here = x * (1 + ending_here)
+        total += ending_here
+    return total
+
+
+# Tests
+if __name__ == "__main__":
+    assert sum_Of_Subarray_Prod([1, 2, 3]) == 20
+    assert sum_Of_Subarray_Prod([1, 2, 3, 4]) == 84
+    assert sum_Of_Subarray_Prod([5]) == 5
+    assert sum_Of_Subarray_Prod([]) == 0
+    assert sum_Of_Subarray_Prod([2, 2]) == 2 + 2 + 4  # 8
+    print("All tests passed!")
+```
+
+**Explanation of the recurrence:**
+
+Let `E[i]` be the sum of products of all subarrays ending at index `i`.
+
+- Subarrays ending at `i` are: `[arr[i]]`, `[arr[i-1], arr[i]]`, ..., `[arr[0], ..., arr[i]]`.
+- Each of these is formed by taking a subarray ending at `i-1` and appending `arr[i]`, plus the singleton `[arr[i]]`.
+- So `E[i] = arr[i] * (1 + E[i-1])`, where the `1` accounts for the singleton subarray.
+
+The answer is `sum(E[i])` over all `i`.
+
+For `[1,2,3]`:
+- `E[0] = 1 * (1 + 0) = 1` → total = 1
+- `E[1] = 2 * (1 + 1) = 4` → total = 5
+- `E[2] = 3 * (1 + 4) = 15` → total = 20 ✓

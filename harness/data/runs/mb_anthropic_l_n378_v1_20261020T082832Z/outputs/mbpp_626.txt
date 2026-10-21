@@ -1,0 +1,43 @@
+Looking at this problem:
+
+- A semicircle of radius `r` has its diameter as a base of length `2r`.
+- The largest inscribed triangle uses the diameter as its base, with the apex at the top of the arc (height = `r`).
+- Area = `(1/2) * base * height = (1/2) * 2r * r = r²`.
+- For a negative radius, return `None`.
+
+```python
+"""
+Write a python function to find the area of the largest triangle that can be inscribed
+in a semicircle with a given radius.
+
+The largest such triangle has the diameter (2*r) as its base and its apex on the arc,
+giving a height of r. Hence area = (1/2) * (2*r) * r = r**2.
+
+assert triangle_area(-1) == None
+"""
+
+
+def triangle_area(r):
+    """
+    Return the area of the largest triangle inscribable in a semicircle of radius r.
+    Returns None if the radius is negative (invalid input).
+    """
+    if r < 0:
+        return None
+    return r * r
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert triangle_area(-1) is None
+
+    # Additional sanity checks
+    assert triangle_area(0) == 0
+    assert triangle_area(1) == 1
+    assert triangle_area(2) == 4
+    assert triangle_area(5) == 25
+
+    # Demo output
+    for radius in [-1, 0, 1, 2, 3.5, 10]:
+        print(f"radius = {radius!r:>5} -> largest inscribed triangle area = {triangle_area(radius)}")
+```

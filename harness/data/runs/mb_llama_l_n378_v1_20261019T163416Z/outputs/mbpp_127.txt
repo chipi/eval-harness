@@ -1,0 +1,10 @@
+```python
+def multiply_int(a, b):
+    return a * b
+
+def main():
+    print(multiply_int(10, 20))  # Output: 200
+
+if __name__ == "__main__":
+    main()
+```

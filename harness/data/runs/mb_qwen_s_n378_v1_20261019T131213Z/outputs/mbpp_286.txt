@@ -1,0 +1,74 @@
+```python
+def max_sub_array_sum_repeated(a, n, k):
+    """
+    Find the largest sum of a contiguous subarray in the array formed by repeating 
+    the given array 'a' (of length 'n') 'k' times.
+    
+    Args:
+        a: List of integers representing the original array.
+        n: Length of the original array.
+        k: Number of times the array is repeated.
+    
+    Returns:
+        The maximum subarray sum in the concatenated array.
+    """
+    # If k == 1, just find max subarray sum in the original array
+    if k == 1:
+        return max_sub_array_sum(a)
+    
+    # Calculate prefix sums and suffix sums for one copy of the array
+    # Also calculate total sum of one copy
+    
+    # Max subarray sum in one copy
+    max_one = max_sub_array_sum(a)
+    
+    # Total sum of one copy
+    total_sum = sum(a)
+    
+    # Maximum prefix sum (sum starting from index 0 to some i)
+    max_prefix = 0
+    current_prefix = 0
+    for x in a:
+        current_prefix += x
+        if current_prefix > max_prefix:
+            max_prefix = current_prefix
+    
+    # Maximum suffix sum (sum ending at last index from some j)
+    max_suffix = 0
+    current_suffix = 0
+    for x in reversed(a):
+        current_suffix += x
+        if current_suffix > max_suffix:
+            max_suffix = current_suffix
+    
+    # Case 1: The maximum subarray lies entirely within one copy
+    result = max_one
+    
+    # Case 2: The maximum subarray spans across two copies (suffix of first + prefix of second)
+    # This is relevant when k >= 2
+    if k >= 2:
+        result = max(result, max_suffix + max_prefix)
+    
+    # Case 3: The maximum subarray spans across more than two copies
+    # This happens when total_sum > 0, we can take all middle copies plus best suffix and prefix
+    if total_sum > 0 and k > 2:
+        result = max(result, max_suffix + max_prefix + total_sum * (k - 2))
+    
+    return result
+
+
+def max_sub_array_sum(arr):
+    """Kadane's algorithm to find maximum subarray sum."""
+    if not arr:
+        return 0
+    max_ending_here = arr[0]
+    max_so_far = arr[0]
+    for x in arr[1:]:
+        max_ending_here = max(x, max_ending_here + x)
+        max_so_far = max(max_so_far, max_ending_here)
+    return max_so_far
+
+
+# Test
+assert max_sub_array_sum_repeated([10, 20, -30, -1], 4, 3) == 30
+```

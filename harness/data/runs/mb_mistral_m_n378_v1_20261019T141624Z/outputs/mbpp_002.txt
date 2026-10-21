@@ -1,0 +1,18 @@
+```python
+def similar_elements(list1, list2):
+    """
+    Find the shared elements between two lists.
+
+    Args:
+        list1: First iterable (list, tuple, etc.)
+        list2: Second iterable (list, tuple, etc.)
+
+    Returns:
+        A tuple containing the shared elements between list1 and list2
+    """
+    # Convert both inputs to sets and find their intersection
+    return tuple(set(list1) & set(list2))
+
+# Test case
+assert set(similar_elements((3, 4, 5, 6), (5, 7, 4, 10))) == set((4, 5))
+```

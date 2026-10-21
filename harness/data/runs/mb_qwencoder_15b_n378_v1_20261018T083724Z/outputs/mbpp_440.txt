@@ -1,0 +1,17 @@
+```python
+import re
+
+def find_adverb_position(sentence):
+    # Regular expression to match adverbs at the beginning of a word
+    pattern = r'\b\w+ly\b'
+    matches = re.finditer(pattern, sentence)
+    
+    # Extracting adverbs and their positions
+    adverbs_positions = [(match.start(), match.end(), match.group()) for match in matches]
+    
+    return adverbs_positions
+
+# Test the function
+assert find_adverb_position("clearly!! we can see the sky") == (0, 7, 'clearly')
+```
+

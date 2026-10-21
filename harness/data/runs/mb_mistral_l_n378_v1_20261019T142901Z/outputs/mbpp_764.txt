@@ -1,0 +1,24 @@
+Here's a self-contained Python script that solves the problem of counting the number of digits in a given string:
+
+```python
+def number_ctr(input_string):
+    """
+    Counts the number of digits in a given string.
+
+    Args:
+        input_string (str): The string to be analyzed.
+
+    Returns:
+        int: The count of digits in the string.
+    """
+    count = 0
+    for char in input_string:
+        if char.isdigit():
+            count += 1
+    return count
+
+# Test the function
+assert number_ctr('program2bedone') == 1
+```
+
+This script defines the `number_ctr` function which iterates through each character in the input string and checks if it is a digit using the `isdigit()` method. The count of digits is then returned. The assertion at the end verifies that the function works correctly for the provided test case.

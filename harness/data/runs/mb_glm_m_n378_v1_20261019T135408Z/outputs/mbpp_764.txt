@@ -1,0 +1,18 @@
+```python
+def number_ctr(s: str) -> int:
+    """
+    Counts the number of digits in a given string.
+    
+    Args:
+    s (str): The input string to be evaluated.
+    
+    Returns:
+    int: The count of digit characters in the string.
+    """
+    return sum(1 for char in s if char.isdigit())
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert number_ctr('program2bedone') == 1
+    print("Test passed successfully!")
+```

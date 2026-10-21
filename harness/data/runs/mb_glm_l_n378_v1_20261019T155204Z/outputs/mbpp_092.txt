@@ -1,0 +1,56 @@
+```python
+def is_undulating(n):
+    """
+    Checks whether the given number is undulating or not.
+    
+    A number is undulating if it has at least 3 digits, and the digits alternate
+    between two distinct values (e.g., 12121 or 90909).
+    
+    Args:
+        n (int): The number to check.
+        
+    Returns:
+        bool: True if the number is undulating, False otherwise.
+    """
+    # Convert the number to a string to easily access digits
+    s = str(n)
+    
+    # An undulating number must have at least 3 digits
+    if len(s) < 3:
+        return False
+    
+    # The pattern must alternate between the first and second digits
+    first = s[0]
+    second = s[1]
+    
+    # The two alternating digits must be distinct
+    if first == second:
+        return False
+    
+    # Check if the sequence follows the alternating pattern
+    # The digit at index i should match s[i % 2]
+    for i in range(len(s)):
+        expected_digit = first if i % 2 == 0 else second
+        if s[i] != expected_digit:
+            return False
+            
+    return True
+
+# Test cases
+if __name__ == "__main__":
+    # Provided assertion
+    assert is_undulating(1212121) == True
+    
+    # Additional test cases
+    assert is_undulating(101) == True
+    assert is_undulating(90909) == True
+    assert is_undulating(12121) == True
+    
+    # Non-undulating cases
+    assert is_undulating(12) == False     # Too short
+    assert is_undulating(111) == False    # Digits not distinct
+    assert is_undulating(1221) == False   # Does not alternate
+    assert is_undulating(12321) == False  # More than 2 distinct digits
+    
+    print("All test cases passed!")
+```

@@ -1,0 +1,36 @@
+Here's a self-contained Python script that solves the problem of sorting a dictionary by its values in descending order:
+
+```python
+def sort_counter(counter_dict):
+    """
+    Sorts a dictionary by its values in descending order and returns a list of tuples.
+    
+    Args:
+        counter_dict (dict): A dictionary with keys and numeric values.
+    
+    Returns:
+        list: A list of (key, value) tuples sorted by value in descending order.
+    """
+    # Sort the dictionary items by value in descending order
+    sorted_items = sorted(counter_dict.items(), key=lambda item: item[1], reverse=True)
+    return sorted_items
+
+# Test the function
+assert sort_counter({'Math':81, 'Physics':83, 'Chemistry':87}) == [('Chemistry', 87), ('Physics', 83), ('Math', 81)]
+
+# Additional test cases
+assert sort_counter({'a': 1, 'b': 3, 'c': 2}) == [('b', 3), ('c', 2), ('a', 1)]
+assert sort_counter({'x': 10, 'y': 10, 'z': 5}) == [('x', 10), ('y', 10), ('z', 5)]  # Note: order of equal values may vary
+assert sort_counter({}) == []
+
+print("All test cases passed!")
+```
+
+### Explanation:
+1. The function `sort_counter` takes a dictionary as input.
+2. It uses the `sorted` function with a custom key (`lambda item: item[1]`) to sort the dictionary items by their values.
+3. The `reverse=True` parameter ensures the sorting is in descending order.
+4. The sorted items are returned as a list of tuples.
+5. The script includes test cases to verify the function works correctly, including the example provided in the problem statement.
+
+Note: In Python, when multiple items have the same value, their order in the sorted list may vary (as seen in the third test case). If you need a consistent order for equal values, you can modify the key to include both value and key, like `key=lambda item: (-item[1], item[0])`.

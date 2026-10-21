@@ -1,0 +1,21 @@
+```python
+def multiple_to_single(nums):
+    """
+    This function joins a list of multiple integers into a single integer.
+
+    Args:
+        nums (list): A list of integers.
+
+    Returns:
+        int: A single integer formed by joining the input integers.
+
+    Example:
+        >>> multiple_to_single([11, 33, 50])
+        113350
+    """
+    # Convert each integer to a string, join them together, and then convert back to an integer
+    return int(''.join(map(str, nums)))
+
+# Test the function
+print(multiple_to_single([11, 33, 50]))  # Output: 113350
+```

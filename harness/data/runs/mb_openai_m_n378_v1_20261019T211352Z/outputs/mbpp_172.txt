@@ -1,0 +1,23 @@
+```python
+#!/usr/bin/env python3
+"""
+Write a function to count the number of occurrence of the string 'std'
+in a given string.
+
+Example:
+assert count_occurance("letstdlenstdporstd") == 3
+"""
+
+def count_occurance(s):
+    """Return the number of times 'std' occurs in the given string."""
+    return s.count("std")
+
+
+if __name__ == "__main__":
+    assert count_occurance("letstdlenstdporstd") == 3
+    assert count_occurance("std") == 1
+    assert count_occurance("abcdef") == 0
+    assert count_occurance("") == 0
+
+    print("All tests passed.")
+```

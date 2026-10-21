@@ -1,0 +1,24 @@
+```python
+def check_K(test_tup, K):
+    """
+    Check if the given tuple contains the element K or not.
+    
+    Args:
+        test_tup: tuple to search in
+        K: element to search for
+    
+    Returns:
+        True if K is found in test_tup, False otherwise
+    """
+    return K in test_tup
+
+
+# Test cases
+assert check_K((10, 4, 5, 6, 8), 6) == True
+assert check_K((10, 4, 5, 6, 8), 1) == False
+assert check_K((1, 2, 3, 4, 5), 5) == True
+assert check_K((), 1) == False
+assert check_K((1,), 1) == True
+
+print("All test cases passed!")
+```

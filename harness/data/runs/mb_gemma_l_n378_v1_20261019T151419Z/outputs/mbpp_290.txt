@@ -1,0 +1,25 @@
+```python
+def max_length(lists):
+    """
+    Finds the list of maximum length in a list of lists.
+    Returns a tuple containing the length of the longest list and the list itself.
+    """
+    if not lists:
+        return (0, [])
+    
+    # Use the built-in max function with a key that looks at the length of each sublist
+    longest_list = max(lists, key=len)
+    return (len(longest_list), longest_list)
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    test_input = [[0], [1, 3], [5, 7], [9, 11], [13, 15, 17]]
+    expected_output = (3, [13, 15, 17])
+    
+    result = max_length(test_input)
+    assert result == expected_output, f"Expected {expected_output}, but got {result}"
+    
+    print("Assertion passed!")
+    print(f"Input: {test_input}")
+    print(f"Output: {result}")
+```

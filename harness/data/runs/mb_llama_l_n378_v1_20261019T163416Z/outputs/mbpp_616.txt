@@ -1,0 +1,31 @@
+```python
+def tuple_modulo(tuple1, tuple2):
+    """
+    This function performs element-wise modulo operation on two tuples of the same length.
+
+    Args:
+        tuple1 (tuple): The first tuple.
+        tuple2 (tuple): The second tuple.
+
+    Returns:
+        tuple: A tuple containing the result of element-wise modulo operation.
+
+    Raises:
+        ValueError: If the two tuples are not of the same length.
+        ZeroDivisionError: If any element in the second tuple is zero.
+    """
+    if len(tuple1) != len(tuple2):
+        raise ValueError("Both tuples must be of the same length")
+
+    result = []
+    for i in range(len(tuple1)):
+        if tuple2[i] == 0:
+            raise ZeroDivisionError("Cannot perform modulo by zero")
+        result.append(tuple1[i] % tuple2[i])
+
+    return tuple(result)
+
+
+# Test the function
+assert tuple_modulo((10, 4, 5, 6), (5, 6, 7, 5)) == (0, 4, 5, 1)
+```

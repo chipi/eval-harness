@@ -1,0 +1,29 @@
+Here's a self-contained Python script that solves the problem of finding the median of three numbers:
+
+```python
+def median_numbers(a, b, c):
+    """
+    Find the median of three numbers.
+
+    Args:
+        a (int/float): First number
+        b (int/float): Second number
+        c (int/float): Third number
+
+    Returns:
+        float: The median of the three numbers
+    """
+    # The median is the number that is neither the minimum nor the maximum
+    return a + b + c - min(a, b, c) - max(a, b, c)
+
+# Test case
+assert median_numbers(25, 55, 65) == 55.0
+```
+
+This solution works by:
+1. Calculating the sum of all three numbers
+2. Subtracting the minimum value (which removes the smallest number)
+3. Subtracting the maximum value (which removes the largest number)
+4. The remaining value is the median
+
+The test case provided in the problem statement is included to verify the function works correctly.

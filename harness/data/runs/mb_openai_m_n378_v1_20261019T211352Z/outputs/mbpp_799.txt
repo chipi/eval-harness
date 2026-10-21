@@ -1,0 +1,40 @@
+```python
+#!/usr/bin/env python3
+"""
+Rotate the bits of a 32-bit integer to the left by d positions.
+
+Example:
+    left_rotate(16, 2) == 64
+"""
+
+def left_rotate(num, d):
+    """
+    Return the 32-bit left rotation of num by d bits.
+
+    Args:
+        num (int): The integer to rotate, treated as a 32-bit value.
+        d (int): Number of bits to rotate left.
+
+    Returns:
+        int: The rotated 32-bit integer.
+    """
+    bits = 32
+    mask = (1 << bits) - 1
+
+    # Ensure num is treated as a 32-bit unsigned integer
+    num &= mask
+
+    # Rotating by 32 is the same as rotating by 0
+    d %= bits
+
+    return ((num << d) & mask) | (num >> (bits - d))
+
+
+if __name__ == "__main__":
+    assert left_rotate(16, 2) == 64
+    assert left_rotate(1, 1) == 2
+    assert left_rotate(0x80000000, 1) == 1
+    assert left_rotate(0xFFFFFFFF, 4) == 0xFFFFFFFF
+
+    print("All tests passed.")
+```

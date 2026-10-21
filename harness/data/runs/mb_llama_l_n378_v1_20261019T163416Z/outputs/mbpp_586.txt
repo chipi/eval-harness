@@ -1,0 +1,27 @@
+```python
+def split_Arr(arr, n):
+    """
+    This function splits a given list at the nth element and 
+    appends the first part to the end of the second part.
+
+    Args:
+        arr (list): The input list to be split.
+        n (int): The index at which the list is to be split.
+
+    Returns:
+        list: The modified list after splitting and rearranging.
+    """
+    return arr[n:] + arr[:n]
+
+def main():
+    # Test the function
+    arr = [12, 10, 5, 6, 52, 36]
+    n = 2
+    print(split_Arr(arr, n))  # Output: [5, 6, 52, 36, 12, 10]
+
+    # Test the function with assertion
+    assert split_Arr([12, 10, 5, 6, 52, 36], 2) == [5, 6, 52, 36, 12, 10]
+
+if __name__ == "__main__":
+    main()
+```

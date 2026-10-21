@@ -1,0 +1,26 @@
+```python
+def median_trapezium(a: float, b: float, c: float) -> float:
+    """
+    Find the median length of a trapezium.
+    
+    The median (or midline) of a trapezium is the line segment connecting
+    the midpoints of the non-parallel sides. Its length is the average of
+    the lengths of the two parallel sides (bases).
+    
+    Given three parameters, we assume the first two are the parallel sides
+    (bases) and the third might be extraneous or used differently. However,
+    looking at the assertion: median_trapezium(15, 25, 35) == 20
+    
+    If we take the average of 15 and 25: (15 + 25) / 2 = 20. That matches!
+    So the function takes the first two arguments as the bases and ignores the third,
+    or perhaps the problem statement has a specific convention.
+    
+    Actually, let me reconsider. The median of a trapezoid with parallel sides
+    of length a and b is (a + b) / 2. The third parameter might be irrelevant
+    or there's a different interpretation.
+    
+    Given assert median_trapezium(15,25,35)==20, and (15+25)/2 = 20, it seems
+    the first two arguments are the bases.
+    """
+    return (a + b) / 2
+```

@@ -1,0 +1,33 @@
+Here's a self-contained Python script that solves the problem of left-rotating the bits of a 32-bit number by `d` bits:
+
+```python
+def left_rotate(n: int, d: int) -> int:
+    """
+    Rotate the bits of a 32-bit number to the left by d bits.
+
+    Args:
+        n: The number to rotate.
+        d: The number of bits to rotate left.
+
+    Returns:
+        The left-rotated number.
+    """
+    # Ensure d is within the range of 0-31
+    d = d % 32
+    # Perform the left rotation
+    return ((n << d) | (n >> (32 - d))) & 0xFFFFFFFF
+
+# Test the function
+assert left_rotate(16, 2) == 64
+```
+
+### Explanation:
+1. **Modulo Operation (`d % 32`)**: Ensures that the rotation count `d` is within the range of 0 to 31 (since rotating by 32 bits would result in the same number).
+2. **Left Shift (`n << d`)**: Shifts the bits of `n` to the left by `d` positions, filling the rightmost bits with zeros.
+3. **Right Shift (`n >> (32 - d)`)**: Shifts the bits of `n` to the right by `32 - d` positions, bringing the leftmost `d` bits to the right.
+4. **Bitwise OR (`|`)**: Combines the left-shifted and right-shifted results to form the rotated number.
+5. **Masking (`& 0xFFFFFFFF`)**: Ensures the result is a 32-bit number by masking with `0xFFFFFFFF` (which is 32 bits of 1s in hexadecimal).
+
+The test case `left_rotate(16, 2) == 64` passes because:
+- `16` in binary is `000...00010000` (32 bits).
+- Left-rotating by 2 bits gives `000...01000000` (which is `64` in decimal).

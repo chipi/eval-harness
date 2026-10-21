@@ -1,0 +1,27 @@
+Here's a self-contained Python script that solves the problem, including the assertion test:
+
+```python
+def smallest_num(numbers):
+    """
+    Find the smallest number in a list.
+
+    Args:
+        numbers: List of numbers (int or float)
+
+    Returns:
+        The smallest number in the list
+    """
+    if not numbers:
+        raise ValueError("List cannot be empty")
+    return min(numbers)
+
+# Test the function
+assert smallest_num([10, 20, 1, 45, 99]) == 1
+```
+
+This script:
+1. Defines a function `smallest_num` that takes a list of numbers
+2. Uses Python's built-in `min()` function to find the smallest number
+3. Includes input validation to handle empty lists
+4. Includes the assertion test from the problem statement
+5. Will raise an AssertionError if the test fails (which it shouldn't in this case)

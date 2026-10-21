@@ -1,0 +1,14 @@
+```python
+def change_date_format(date_str):
+    """
+    Convert a date from yyyy-mm-dd format to dd-mm-yyyy format.
+    
+    Args:
+        date_str (str): A string representing a date in yyyy-mm-dd format.
+        
+    Returns:
+        str: The date in dd-mm-yyyy format.
+    """
+    year, month, day = date_str.split('-')
+    return f"{day}-{month}-{year}"
+```

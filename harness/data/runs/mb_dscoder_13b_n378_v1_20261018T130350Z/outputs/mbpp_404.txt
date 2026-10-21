@@ -1,0 +1,17 @@
+```python
+def minimum(num1, num2):
+    """
+    Write a python function to find the minimum of two numbers.
+    """
+    if num1 < num2:
+        return num1
+    else:
+        return num2
+
+# Test cases
+assert minimum(1,2) == 1
+assert minimum(3,2) == 2
+assert minimum(10,1) == 1
+assert minimum(-1,-2) == -2
+assert minimum(-10,-1) == -1
+```

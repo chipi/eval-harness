@@ -1,0 +1,40 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+"""
+Write a function to extract values between quotation marks from a string.
+assert extract_values('"Python", "PHP", "Java"')==['Python', 'PHP', 'Java']
+"""
+
+import re
+
+
+def extract_values(text):
+    """
+    Extract all values enclosed in double quotation marks from a string.
+
+    Args:
+        text (str): The input string containing quoted values.
+
+    Returns:
+        list: A list of strings found between double quotation marks.
+    """
+    return re.findall(r'"([^"]*)"', text)
+
+
+# Test cases
+if __name__ == "__main__":
+    assert extract_values('"Python", "PHP", "Java"') == ['Python', 'PHP', 'Java']
+    assert extract_values('"Hello World"') == ['Hello World']
+    assert extract_values('no quotes here') == []
+    assert extract_values('"a", "b", "c"') == ['a', 'b', 'c']
+    assert extract_values('""') == ['']
+    assert extract_values('"one" and "two" and "three"') == ['one', 'two', 'three']
+    print("All tests passed!")
+```
+
+**How it works:**
+
+- The regex pattern `"([^"]*)"` matches a double quote, followed by any characters that are not double quotes (captured in a group), followed by a closing double quote.
+- `re.findall` returns a list of all captured groups (the content between the quotes).
+- Using `[^"]*` instead of `.*?` ensures that empty strings (`""`) are also captured correctly and prevents matching across multiple quoted sections.

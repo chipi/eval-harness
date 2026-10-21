@@ -1,0 +1,9 @@
+```python
+def check(n):
+    """
+    Check if a given number is one less than twice its reverse.
+    i.e., n == 2 * reverse(n) - 1
+    """
+    reversed_n = int(str(n)[::-1])
+    return n == 2 * reversed_n - 1
+```

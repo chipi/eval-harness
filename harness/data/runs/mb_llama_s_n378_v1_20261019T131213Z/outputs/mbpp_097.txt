@@ -1,0 +1,60 @@
+```python
+def frequency_lists(lists):
+    """
+    This function finds the frequency of each element in a flattened list of lists.
+    
+    Args:
+        lists (list): A list of lists containing elements.
+    
+    Returns:
+        dict: A dictionary where keys are the unique elements and values are their frequencies.
+    """
+    # Initialize an empty dictionary to store the frequency of each element
+    freq_dict = {}
+
+    # Flatten the list of lists into a single list
+    flat_list = [item for sublist in lists for item in sublist]
+    
+    # Iterate over each element in the flattened list
+    for item in flat_list:
+        # If the element is already in the dictionary, increment its count
+        if item in freq_dict:
+            freq_dict[item] += 1
+        # If the element is not in the dictionary, add it with a count of 1
+        else:
+            freq_dict[item] = 1
+    
+    # Return the dictionary containing the frequency of each element
+    return freq_dict
+
+# Alternatively, you can use the built-in Python libraries to solve this problem in a more concise way
+def frequency_lists_concise(lists):
+    """
+    This function finds the frequency of each element in a flattened list of lists.
+    
+    Args:
+        lists (list): A list of lists containing elements.
+    
+    Returns:
+        dict: A dictionary where keys are the unique elements and values are their frequencies.
+    """
+    from collections import Counter
+    flat_list = [item for sublist in lists for item in sublist]
+    return dict(Counter(flat_list))
+
+# Test the functions
+print(frequency_lists([[1, 2, 3, 2], [4, 5, 6, 2], [7, 8, 9, 5]]))
+print(frequency_lists_concise([[1, 2, 3, 2], [4, 5, 6, 2], [7, 8, 9, 5]]))
+```
+
+The provided code defines two functions: `frequency_lists` and `frequency_lists_concise`. Both functions take a list of lists as input, flatten it, and return a dictionary where the keys are the unique elements and the values are their frequencies.
+
+*   The `frequency_lists` function uses a traditional approach with a for loop to count the frequency of each element.
+*   The `frequency_lists_concise` function uses the `Counter` class from the `collections` module to achieve the same result in a more concise way.
+
+Both functions are tested with the provided example and produce the expected output:
+
+```plaintext
+{1: 1, 2: 3, 3: 1, 4: 1, 5: 2, 6: 1, 7: 1, 8: 1, 9: 1}
+{1: 1, 2: 3, 3: 1, 4: 1, 5: 2, 6: 1, 7: 1, 8: 1, 9: 1}
+```

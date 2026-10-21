@@ -1,0 +1,44 @@
+```python
+def return_sum(dictionary):
+    """
+    This function calculates the sum of all items in the given dictionary.
+
+    Args:
+        dictionary (dict): A dictionary with numeric values.
+
+    Returns:
+        int: The sum of all items in the dictionary.
+
+    Raises:
+        TypeError: If the input is not a dictionary.
+        ValueError: If the dictionary contains non-numeric values.
+    """
+    # Check if input is a dictionary
+    if not isinstance(dictionary, dict):
+        raise TypeError("Input must be a dictionary")
+
+    # Initialize sum variable to 0
+    total_sum = 0
+
+    # Iterate over dictionary values
+    for value in dictionary.values():
+        # Check if value is numeric
+        if not isinstance(value, (int, float)):
+            raise ValueError("Dictionary must only contain numeric values")
+        
+        # Add value to total sum
+        total_sum += value
+
+    # Return the total sum
+    return total_sum
+
+
+# Example usage:
+def main():
+    dictionary = {'a': 100, 'b': 200, 'c': 300}
+    print(return_sum(dictionary))  # Output: 600
+
+
+if __name__ == "__main__":
+    main()
+```

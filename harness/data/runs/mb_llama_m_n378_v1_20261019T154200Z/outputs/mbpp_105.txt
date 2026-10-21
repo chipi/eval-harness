@@ -1,0 +1,16 @@
+```python
+def count(bool_list):
+    """
+    This function counts the number of True booleans in a given list.
+
+    Args:
+        bool_list (list): A list containing boolean values.
+
+    Returns:
+        int: The number of True booleans in the list.
+    """
+    return sum(1 for bool_val in bool_list if bool_val)
+
+# Example usage:
+print(count([True, False, True]))  # Output: 2
+```

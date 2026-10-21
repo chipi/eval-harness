@@ -1,0 +1,48 @@
+### N Most Expensive Items Function
+#### Problem Statement
+Write a function to find the n most expensive items in a given dataset.
+
+#### Solution
+
+```python
+def expensive_items(dataset, n):
+    """
+    Find the n most expensive items in a given dataset.
+
+    Args:
+        dataset (list): A list of dictionaries, each containing 'name' and 'price' keys.
+        n (int): The number of most expensive items to return.
+
+    Returns:
+        list: A list of the n most expensive items in the dataset.
+
+    Raises:
+        ValueError: If n is less than 1.
+    """
+    if n < 1:
+        raise ValueError("n must be 1 or greater")
+
+    # Sort the dataset in descending order based on price
+    sorted_dataset = sorted(dataset, key=lambda x: x['price'], reverse=True)
+
+    # Return the n most expensive items
+    return sorted_dataset[:n]
+
+# Example usage:
+dataset = [{'name': 'Item-1', 'price': 101.1},{'name': 'Item-2', 'price': 555.22}]
+n = 1
+print(expensive_items(dataset, n))  # Output: [{'name': 'Item-2', 'price': 555.22}]
+```
+
+#### Explanation
+
+*   The `expensive_items` function takes a dataset and an integer `n` as input.
+*   It first checks if `n` is less than 1 and raises a `ValueError` if true.
+*   The function then sorts the dataset in descending order based on the 'price' of each item using the `sorted` function and a `lambda` function as the sorting key.
+*   Finally, it returns the `n` most expensive items by slicing the sorted dataset.
+
+#### Advice
+
+*   This function assumes that the input dataset is a list of dictionaries, each containing 'name' and 'price' keys.
+*   The function raises a `ValueError` if `n` is less than 1.
+*   The example usage demonstrates how to call the `expensive_items` function with a sample dataset and print the result.

@@ -1,0 +1,20 @@
+```python
+def next_smallest_palindrome(num):
+    """
+    Find the next smallest palindrome greater than the given integer.
+    """
+    num += 1
+    while not str(num) == str(num)[::-1]:
+        num += 1
+    return num
+
+
+# Test cases
+if __name__ == "__main__":
+    assert next_smallest_palindrome(99) == 101
+    assert next_smallest_palindrome(1) == 2
+    assert next_smallest_palindrome(0) == 1
+    assert next_smallest_palindrome(123) == 131
+    assert next_smallest_palindrome(808) == 818
+    print("All test cases passed!")
+```

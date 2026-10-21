@@ -1,0 +1,23 @@
+```python
+import math
+
+def wind_chill(wind_velocity_kmh, temperature_c):
+    """
+    Calculate the wind chill index, rounded to the next integer.
+
+    Formula (for wind speed in km/h and temperature in °C):
+        WCI = 13.12 + 0.6215*T - 11.37*V^0.16 + 0.3965*T*V^0.16
+
+    The result is rounded up to the next integer using math.ceil().
+    """
+    v = wind_velocity_kmh
+    t = temperature_c
+
+    wci = 13.12 + 0.6215 * t - 11.37 * (v ** 0.16) + 0.3965 * t * (v ** 0.16)
+    return math.ceil(wci)
+
+
+if __name__ == "__main__":
+    assert wind_chill(120, 35) == 40
+    print("All tests passed.")
+```

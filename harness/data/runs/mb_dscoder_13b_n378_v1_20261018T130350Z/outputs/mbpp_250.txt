@@ -1,0 +1,13 @@
+```python
+def count_X(tup, X):
+    return tup.count(X)
+
+# Testing the function
+assert count_X((10, 8, 5, 2, 10, 15, 10, 8, 5, 8, 8, 2),4) == 0
+assert count_X((10, 8, 5, 2, 10, 15, 10, 8, 5, 8, 8, 2),8) == 3
+assert count_X((10, 8, 5, 2, 10, 15, 10, 8, 5, 8, 8, 2),5) == 2
+assert count_X((10, 8, 5, 2, 10, 15, 10, 8, 5, 8, 8, 2),10) == 2
+assert count_X((10, 8, 5, 2, 10, 15, 10, 8, 5, 8, 8, 2),2) == 2
+assert count_X((10, 8, 5, 2, 10, 15, 10, 8, 5, 8, 8, 2),15) == 1
+assert count_X((10, 8, 5, 2, 10, 15, 10, 8, 5, 8, 8, 2),3) == 0
+```

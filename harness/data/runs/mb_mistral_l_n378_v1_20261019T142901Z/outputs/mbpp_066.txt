@@ -1,0 +1,48 @@
+Here's a self-contained Python script that solves the problem, including the assertion test:
+
+```python
+"""
+Function to count the number of positive numbers in a list.
+"""
+
+def pos_count(numbers):
+    """
+    Counts the number of positive numbers in a list.
+
+    Args:
+        numbers: List of numbers (can be integers or floats)
+
+    Returns:
+        int: Count of positive numbers in the list
+    """
+    count = 0
+    for num in numbers:
+        if num > 0:
+            count += 1
+    return count
+
+# Test case
+assert pos_count([1, -2, 3, -4]) == 2
+
+# Additional test cases
+assert pos_count([0, -1, -2]) == 0
+assert pos_count([1.5, 2.3, -0.5, 4]) == 3
+assert pos_count([]) == 0
+assert pos_count([-1, -2, -3]) == 0
+assert pos_count([1, 2, 3]) == 3
+
+print("All tests passed!")
+```
+
+This script includes:
+1. The `pos_count` function that counts positive numbers
+2. The required assertion test from the problem statement
+3. Additional test cases to verify the function works with:
+   - Zero values
+   - Floating point numbers
+   - Empty lists
+   - All negative numbers
+   - All positive numbers
+4. A success message when all tests pass
+
+The function works by iterating through each number in the list and incrementing a counter whenever it encounters a positive number.

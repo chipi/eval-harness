@@ -1,0 +1,8 @@
+```python
+def dif_Square(n):
+    """Return whether n can be written as a² - b² for integers a and b."""
+    return n % 4 != 2
+
+
+assert dif_Square(5) is True
+```

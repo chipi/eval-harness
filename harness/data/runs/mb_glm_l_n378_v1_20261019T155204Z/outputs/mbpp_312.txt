@@ -1,0 +1,20 @@
+```python
+import math
+
+def volume_cone(radius, height):
+    """
+    Calculate the volume of a cone given its radius and height.
+    
+    Parameters:
+    radius (float): The radius of the base of the cone.
+    height (float): The height of the cone.
+    
+    Returns:
+    float: The volume of the cone.
+    """
+    return (1/3) * math.pi * radius**2 * height
+
+# Test the function
+assert math.isclose(volume_cone(5, 12), 314.15926535897927, rel_tol=0.001)
+print("Test passed!")
+```

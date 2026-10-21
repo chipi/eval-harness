@@ -1,0 +1,26 @@
+```python
+def median_trapezium(a, b, c):
+    """
+    Find the median length of a trapezium.
+    
+    The median (or midline) of a trapezium is the segment that connects the midpoints 
+    of the non-parallel sides. Its length is equal to the average of the lengths of 
+    the two parallel sides (bases).
+    
+    In this function:
+    - a and b are the lengths of the two parallel bases.
+    - c is the length of one of the non-parallel sides (not used in calculating the median).
+    
+    Parameters:
+    a (float/int): Length of the first base
+    b (float/int): Length of the second base
+    c (float/int): Length of a non-parallel side (unused for median calculation)
+    
+    Returns:
+    float: The median length of the trapezium
+    
+    >>> median_trapezium(15, 25, 35)
+    20.0
+    """
+    return (a + b) / 2
+```

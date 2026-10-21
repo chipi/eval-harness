@@ -1,0 +1,51 @@
+To solve this problem, we need to understand what "sum of the product of consecutive binomial coefficients" refers to. Based on the provided test case `sum_Of_product(3) == 15`, we can deduce the mathematical pattern.
+
+For $n=3$, the binomial coefficients are $\binom{3}{0}, \binom{3}{1}, \binom{3}{2}, \binom{3}{3}$, which are $1, 3, 3, 1$.
+The products of consecutive coefficients are:
+- $1 \times 3 = 3$
+- $3 \times 3 = 9$
+- $3 \times 1 = 3$
+
+The sum is $3 + 9 + 3 = 15$.
+
+Mathematically, this is $\sum_{k=0}^{n-1} \binom{n}{k} \binom{n}{k+1}$.
+
+Here is the self-contained Python script:
+
+```python
+import math
+
+def combinations(n, k):
+    """Helper function to calculate nCr."""
+    if k < 0 or k > n:
+        return 0
+    return math.comb(n, k)
+
+def sum_Of_product(n):
+    """
+    Calculates the sum of the product of consecutive binomial coefficients
+    for a given n.
+    Formula: Sum_{k=0 to n-1} (nCk * nC(k+1))
+    """
+    total_sum = 0
+    # Iterate from 0 to n-1 to get pairs (k, k+1)
+    for k in range(n):
+        term = combinations(n, k) * combinations(n, k + 1)
+        total_sum += term
+    return total_sum
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    result = sum_Of_product(3)
+    print(f"sum_Of_product(3) = {result}")
+    
+    assert sum_Of_product(3) == 15
+    print("Assertion passed!")
+
+    # Additional test cases
+    # n=2: (1*2) + (2*1) = 4
+    assert sum_Of_product(2) == 4
+    # n=4: (1*4) + (4*6) + (6*4) + (4*1) = 4 + 24 + 24 + 4 = 56
+    assert sum_Of_product(4) == 56
+    print("All additional tests passed!")
+```

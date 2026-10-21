@@ -1,0 +1,14 @@
+```python
+def catalan_number(n):
+    """Return the nth Catalan number (with C_0 = 1)."""
+    if n < 0:
+        raise ValueError("n must be non-negative")
+
+    result = 1
+    for k in range(n):
+        result = result * 2 * (2 * k + 1) // (k + 2)
+    return result
+
+
+assert catalan_number(10) == 16796
+```

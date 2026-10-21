@@ -1,0 +1,44 @@
+```python
+def validate(n: int) -> bool:
+    """
+    Check whether the frequency of each digit in the integer is less than or equal to the digit itself.
+    
+    For each digit d in the integer, count how many times it appears. The condition is that
+    for every digit d, its frequency <= d. Note: if a digit is 0, its frequency must be <= 0,
+    meaning 0 cannot appear at all (since frequency is at least 1 if it appears).
+    
+    Args:
+        n: An integer
+        
+    Returns:
+        True if for every digit in n, the frequency of that digit is <= the digit value, False otherwise.
+        
+    Examples:
+        >>> validate(1234)
+        True
+        # Each digit 1, 2, 3, 4 appears once. 1<=1, 2<=2, 3<=3, 4<=4 => True
+    """
+    # Handle negative numbers by taking absolute value
+    n = abs(n)
+    
+    # Convert to string to get digits
+    s = str(n)
+    
+    # Count frequency of each digit
+    freq = {}
+    for char in s:
+        digit = int(char)
+        freq[digit] = freq.get(digit, 0) + 1
+    
+    # Check condition: for each digit, frequency <= digit value
+    for digit, count in freq.items():
+        if count > digit:
+            return False
+    
+    return True
+
+
+if __name__ == "__main__":
+    assert validate(1234) == True
+    print("All tests passed!")
+```

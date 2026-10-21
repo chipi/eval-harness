@@ -1,0 +1,34 @@
+Here's a self-contained Python script that solves the problem of checking if all elements in a list are unique:
+
+```python
+def all_unique(lst):
+    """
+    Check if all elements in the given list are unique.
+    
+    Args:
+        lst: A list of elements to check.
+        
+    Returns:
+        bool: True if all elements are unique, False otherwise.
+    """
+    return len(lst) == len(set(lst))
+
+# Test cases
+assert all_unique([1, 2, 3]) == True
+assert all_unique([1, 2, 2]) == False
+assert all_unique([]) == True
+assert all_unique(['a', 'b', 'c']) == True
+assert all_unique(['a', 'b', 'a']) == False
+assert all_unique([1, '1', 1.0]) == False  # Note: 1 and 1.0 are considered equal in Python
+
+print("All test cases passed!")
+```
+
+### Explanation:
+1. The function `all_unique` takes a list `lst` as input.
+2. It converts the list to a set using `set(lst)`. Sets automatically remove duplicate elements.
+3. It compares the length of the original list with the length of the set. If they are equal, it means all elements were unique.
+4. The function returns `True` if all elements are unique, `False` otherwise.
+5. The script includes several test cases to verify the function works correctly, including the one provided in the problem statement.
+
+This approach is efficient because converting a list to a set has an average time complexity of O(n), where n is the number of elements in the list.

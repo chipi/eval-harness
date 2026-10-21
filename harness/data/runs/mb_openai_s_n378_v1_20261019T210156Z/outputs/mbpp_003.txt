@@ -1,0 +1,30 @@
+```python
+def is_not_prime(n: int) -> bool:
+    """
+    Return True if n is not a prime number, otherwise False.
+
+    By definition:
+    - Numbers less than 2 are not prime.
+    - 2 is prime.
+    - Any even number greater than 2 is not prime.
+    - Test odd divisors up to sqrt(n).
+    """
+    if n < 2:
+        return True
+    if n == 2:
+        return False
+    if n % 2 == 0:
+        return True
+
+    divisor = 3
+    while divisor * divisor <= n:
+        if n % divisor == 0:
+            return True
+        divisor += 2
+
+    return False
+
+
+# Given assertion
+assert is_not_prime(2) == False
+```

@@ -1,0 +1,20 @@
+```python
+def remove_odd(s):
+    """
+    This function removes odd indexed characters from a given string.
+    
+    Parameters:
+    s (str): The input string.
+    
+    Returns:
+    str: The string with odd indexed characters removed.
+    """
+    return s[1::2]
+
+# Test the function
+assert remove_odd("python") == "yhn"
+```
+
+In this script, we define a function `remove_odd` that takes a string `s` as input. It uses Python's slice notation `s[start:stop:step]` to create a new string that includes only the characters at even indices (0-based indexing). The `start` parameter is omitted, which defaults to 0, and the `step` parameter is set to 2, which means we start from the second character (index 1) and take every other character.
+
+You can run this script to test the function with the provided assertion. If the function works correctly, the assertion should pass silently.

@@ -1,0 +1,7 @@
+```python
+def _sum(array):
+    return sum(array)
+
+
+assert _sum([1, 2, 3]) == 6
+```

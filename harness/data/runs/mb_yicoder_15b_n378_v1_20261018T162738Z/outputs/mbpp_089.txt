@@ -1,0 +1,14 @@
+```python
+def closest_num(n):
+    nums = [i for i in range(n, 0, -1)]
+    for i in range(len(nums)):
+        if nums[i] < n:
+            return nums[i]
+    return None
+
+# Test cases
+assert closest_num(11) == 10
+assert closest_num(10) == 9
+assert closest_num(20) == 19
+assert closest_num(0) == None
+```

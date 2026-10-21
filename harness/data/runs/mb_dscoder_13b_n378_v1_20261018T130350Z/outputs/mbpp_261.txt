@@ -1,0 +1,7 @@
+```python
+def division_elements(t1, t2):
+    return tuple(el1/el2 for el1, el2 in zip(t1, t2))
+
+# Testing the function
+assert division_elements((10, 4, 6, 9),(5, 2, 3, 3)) == (2, 2, 2, 3)
+```

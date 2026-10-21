@@ -1,0 +1,40 @@
+```python
+def dict_depth(d):
+    """
+    Recursively calculates the maximum depth of a nested dictionary.
+    
+    The depth is defined as the number of nested levels. An empty dictionary
+    or a dictionary with only scalar values has depth 1.
+    
+    Args:
+        d (dict): The dictionary to evaluate.
+    
+    Returns:
+        int: The maximum depth of the dictionary.
+    """
+    if not isinstance(d, dict) or not d:
+        # If it's not a dict or is empty, depth is 1 (the dict itself)
+        return 1
+    
+    # Recursively find depth of each value, and take the maximum
+    max_depth = 1
+    for value in d.values():
+        if isinstance(value, dict):
+            depth = 1 + dict_depth(value)
+            if depth > max_depth:
+                max_depth = depth
+    return max_depth
+
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert dict_depth({'a':1, 'b': {'c': {'d': {}}}}) == 4
+    print("Test passed: depth is 4")
+    
+    # Additional tests
+    assert dict_depth({}) == 1
+    assert dict_depth({'a': 1}) == 1
+    assert dict_depth({'a': {'b': {}}}) == 3
+    assert dict_depth({'a': {'b': 1, 'c': {'d': 2}}}) == 3
+    print("All additional tests passed.")
+```

@@ -1,0 +1,18 @@
+```python
+def overlapping(seq1, seq2):
+    """
+    Check whether any value in the first sequence exists in the second sequence.
+    
+    Args:
+        seq1: First sequence (list, tuple, etc.)
+        seq2: Second sequence (list, tuple, etc.)
+    
+    Returns:
+        True if there is at least one common element between seq1 and seq2, False otherwise.
+    """
+    set2 = set(seq2)
+    for item in seq1:
+        if item in set2:
+            return True
+    return False
+```

@@ -1,0 +1,7 @@
+```python
+from itertools import combinations_with_replacement
+
+
+def combinations_colors(colors, n):
+    return list(combinations_with_replacement(colors, n))
+```

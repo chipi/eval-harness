@@ -1,0 +1,20 @@
+Here’s a self-contained Python script that solves the problem:  
+
+```python
+def return_sum(dictionary):
+    """
+    Returns the sum of all values in the given dictionary.
+    
+    Args:
+        dictionary (dict): A dictionary with numeric values.
+    
+    Returns:
+        int/float: Sum of all values.
+    """
+    return sum(dictionary.values())
+
+# Test case
+if __name__ == "__main__":
+    assert return_sum({'a': 100, 'b': 200, 'c': 300}) == 600
+    print("Test passed!")
+```

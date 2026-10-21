@@ -1,0 +1,20 @@
+```python
+def even_Power_Sum(n):
+    """
+    Find the sum of the first n even natural numbers raised to the fifth power.
+    
+    The first n even natural numbers are: 2, 4, 6, ..., 2n
+    We need to compute: 2^5 + 4^5 + 6^5 + ... + (2n)^5
+    
+    Args:
+        n (int): The number of even natural numbers to consider
+        
+    Returns:
+        int: The sum of the first n even natural numbers raised to the fifth power
+    """
+    total = 0
+    for i in range(1, n + 1):
+        even_number = 2 * i
+        total += even_number ** 5
+    return total
+```

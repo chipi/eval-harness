@@ -1,0 +1,47 @@
+Looking at this problem, I need to find the sublist with the minimum length from a list of sublists.
+
+```python
+"""
+Write a python function to find the sublist having minimum length.
+assert Find_Min([[1],[1,2],[1,2,3]]) == [1]
+"""
+
+
+def Find_Min(lst):
+    """
+    Find the sublist having minimum length.
+
+    Args:
+        lst: A list of sublists.
+
+    Returns:
+        The sublist with the smallest length. If several sublists share the
+        minimum length, the first one encountered is returned.
+
+    Raises:
+        ValueError: If the outer list is empty.
+    """
+    if not lst:
+        raise ValueError("Cannot find the minimum sublist of an empty list.")
+    return min(lst, key=len)
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert Find_Min([[1], [1, 2], [1, 2, 3]]) == [1]
+
+    # Additional test cases
+    assert Find_Min([[1, 1], [1, 1, 1], [1, 2, 7, 8]]) == [1, 1]
+    assert Find_Min([['x'], ['x', 'y'], ['x', 'y', 'z']]) == ['x']
+    assert Find_Min([[], [1], [1, 2]]) == []
+    assert Find_Min([[3, 4], [1, 2], [5, 6, 7]]) == [3, 4]  # first of the ties
+    assert Find_Min([[9, 8, 7]]) == [9, 8, 7]
+
+    print("All tests passed!")
+```
+
+**How it works:**
+
+- `min()` with the `key=len` argument compares each sublist by its length rather than by its contents, returning the actual sublist object that has the smallest length.
+- Python's `min()` returns the *first* minimal element when there are ties, which matches the expected behavior.
+- An explicit `ValueError` is raised for an empty input list to give a clearer message than the default `min() arg is an empty sequence`.

@@ -1,0 +1,48 @@
+```python
+def odd_length_sum(arr):
+    """
+    Calculates the sum of all odd-length subarrays of a given array.
+    
+    The logic uses a mathematical approach to achieve O(n) time complexity:
+    For each element at index i, we calculate how many odd-length subarrays 
+    it belongs to.
+    
+    An element at index i in an array of length n is part of:
+    - Total subarrays = (i + 1) * (n - i)
+    - Even-length subarrays = Total / 2 (integer division)
+    - Odd-length subarrays = Total - (Total // 2)
+    
+    Wait, a more precise way to count odd-length subarrays for index i:
+    The number of subarrays containing arr[i] is (i + 1) * (n - i).
+    The number of odd-length subarrays containing arr[i] is:
+    ceil(((i + 1) * (n - i)) / 2)
+    """
+    total_sum = 0
+    n = len(arr)
+    
+    for i in range(n):
+        # Total number of subarrays that include the element at index i
+        total_subarrays_with_i = (i + 1) * (n - i)
+        
+        # Number of odd-length subarrays containing index i
+        # This is equivalent to math.ceil(total_subarrays_with_i / 2)
+        odd_subarrays_count = (total_subarrays_with_i + 1) // 2
+        
+        total_sum += odd_subarrays_count * arr[i]
+        
+    return total_sum
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    # Subarrays of [1, 2, 4]:
+    # Length 1: [1], [2], [4] -> sum = 7
+    # Length 3: [1, 2, 4]     -> sum = 7
+    # Total = 14
+    assert odd_length_sum([1, 2, 4]) == 14
+    
+    # Additional test cases
+    assert odd_length_sum([1, 4, 2, 5, 3]) == 58
+    assert odd_length_sum([12, -1, -5, -4, -2, -1]) == -12
+    
+    print("All tests passed!")
+```

@@ -1,0 +1,14 @@
+```python
+def odd_Equivalent(s, n):
+    count = 0
+    for i in range(n):
+        if s[i] == '1':
+            count += 1
+    return count
+
+# Test
+assert odd_Equivalent("011001", 6) == 3
+print("All tests passed!")
+```
+
+This function works based on the property that for a binary string under cyclic rotation, the number of rotations resulting in an odd decimal value equals the number of 1's in the string (when the string length equals the number of rotations, i.e., a full rotation cycle). Each '1' bit, when positioned at the least significant bit (rightmost) through rotation, makes the resulting number odd. Since each bit gets rotated to the last position exactly once in `n` rotations, the count of odd-valued rotations equals the count of '1's in the string.

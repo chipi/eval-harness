@@ -1,0 +1,8 @@
+```python
+def is_num_decagonal(n: int) -> int:
+    """Return the nth decagonal number."""
+    return n * (4 * n - 3)
+
+
+assert is_num_decagonal(3) == 27
+```

@@ -1,0 +1,31 @@
+Here's a self-contained Python script that solves the problem, including the function and the assertion test:
+
+```python
+"""
+Function to check if a given tuple contains any None values.
+"""
+
+def check_none(input_tuple):
+    """
+    Check if the given tuple has any None value.
+
+    Args:
+        input_tuple (tuple): The tuple to check for None values.
+
+    Returns:
+        bool: True if the tuple contains at least one None, False otherwise.
+    """
+    return any(item is None for item in input_tuple)
+
+# Test the function with the provided assertion
+assert check_none((10, 4, 5, 6, None)) == True
+
+# Additional test cases for verification
+assert check_none((1, 2, 3)) == False
+assert check_none(()) == False  # empty tuple
+assert check_none((None,)) == True
+assert check_none((None, None)) == True
+assert check_none((1, None, 3)) == True
+
+print("All tests passed!")
+```

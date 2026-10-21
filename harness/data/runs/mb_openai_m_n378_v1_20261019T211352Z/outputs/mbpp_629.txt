@@ -1,0 +1,26 @@
+```python
+"""
+Write a Python function to find even numbers from a list of numbers.
+
+Example:
+assert Split([1, 2, 3, 4, 5]) == [2, 4]
+"""
+
+def Split(numbers):
+    """
+    Return a list containing only the even numbers from the input list.
+    """
+    return [num for num in numbers if num % 2 == 0]
+
+
+# Example test
+assert Split([1, 2, 3, 4, 5]) == [2, 4]
+
+# Additional tests
+assert Split([]) == []
+assert Split([1, 3, 5]) == []
+assert Split([2, 4, 6]) == [2, 4, 6]
+assert Split([-2, -1, 0, 1, 2]) == [-2, 0, 2]
+
+print("All tests passed.")
+```

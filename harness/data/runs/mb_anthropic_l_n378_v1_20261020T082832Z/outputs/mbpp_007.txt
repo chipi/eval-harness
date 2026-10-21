@@ -1,0 +1,59 @@
+Looking at this problem, I need to extract all words from a string that are at least 4 characters long.
+
+```python
+"""
+Write a function to find all words which are at least 4 characters long in a string.
+assert set(find_char_long('Please move back to stream')) == set(['Please', 'move', 'back', 'stream'])
+"""
+
+import re
+
+
+def find_char_long(text):
+    """
+    Find all words in `text` that are at least 4 characters long.
+
+    Parameters
+    ----------
+    text : str
+        The input string to search.
+
+    Returns
+    -------
+    list of str
+        A list containing every word of length 4 or more, in the order
+        they appear in the input string.
+    """
+    return re.findall(r"\b\w{4,}\b", text)
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert set(find_char_long('Please move back to stream')) == set(
+        ['Please', 'move', 'back', 'stream']
+    )
+
+    # Additional test cases
+    assert set(find_char_long('Jing Eco and Tech')) == set(['Jing', 'Tech'])
+    assert set(find_char_long('Jhingai wulu road Zone 3')) == set(
+        ['Jhingai', 'wulu', 'road', 'Zone']
+    )
+    assert find_char_long('') == []
+    assert find_char_long('a bc def') == []
+
+    print(find_char_long('Please move back to stream'))
+    print("All tests passed!")
+```
+
+**How it works:**
+
+- `\b` marks a word boundary, ensuring we match whole words rather than fragments.
+- `\w{4,}` matches 4 or more word characters (letters, digits, underscore).
+- `re.findall` returns every non-overlapping match as a list of strings, preserving their original order.
+
+Running the script outputs:
+
+```
+['Please', 'move', 'back', 'stream']
+All tests passed!
+```

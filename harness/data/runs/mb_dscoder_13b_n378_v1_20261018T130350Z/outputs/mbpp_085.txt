@@ -1,0 +1,13 @@
+```python
+import math
+
+def surfacearea_sphere(radius):
+    """
+    Function to calculate the surface area of a sphere.
+    """
+    surface_area = 4 * math.pi * radius ** 2
+    return surface_area
+
+# Testing the function
+print(math.isclose(surfacearea_sphere(10), 1256.6370614359173, rel_tol=0.001))
+```

@@ -1,0 +1,41 @@
+```python
+def remove_all_spaces(input_string: str) -> str:
+    """
+    Removes all whitespace characters from a given string.
+
+    Args:
+        input_string: The string from which to remove whitespaces.
+
+    Returns:
+        A new string with all whitespace characters removed.
+    """
+    # The replace() method is a simple and efficient way to remove spaces.
+    # It replaces each occurrence of a space ' ' with an empty string ''.
+    return input_string.replace(' ', '')
+
+# Example usage and assertion to verify the function's correctness.
+if __name__ == "__main__":
+    # Define the input string and the expected output.
+    test_string = 'python  program'
+    expected_output = 'pythonprogram'
+    
+    # Call the function with the test string.
+    result = remove_all_spaces(test_string)
+    
+    # Print the result for clarity.
+    print(f"Original string: '{test_string}'")
+    print(f"String with spaces removed: '{result}'")
+    
+    # Assert that the result matches the expected output.
+    # This will raise an AssertionError if the function is incorrect.
+    assert result == expected_output, f"Test failed: Expected '{expected_output}', but got '{result}'"
+    
+    print("\nAssertion passed! The function works correctly.")
+
+    # Additional test cases
+    assert remove_all_spaces('hello world') == 'helloworld'
+    assert remove_all_spaces('  leading and trailing spaces  ') == 'leadingandtrailingspaces'
+    assert remove_all_spaces('') == ''
+    assert remove_all_spaces('nospace') == 'nospace'
+    print("All additional test cases passed!")
+```

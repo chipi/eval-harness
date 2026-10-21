@@ -1,0 +1,35 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def power_base_sum(base, power):
+    """
+    Calculate the sum of all digits of the base raised to the specified power.
+    
+    Args:
+        base: The base number
+        power: The exponent to raise the base to
+    
+    Returns:
+        The sum of all digits of base^power
+    """
+    # Calculate base^power
+    result = base ** power
+    
+    # Convert to string to iterate through digits
+    digit_sum = sum(int(digit) for digit in str(result))
+    
+    return digit_sum
+
+# Test the function with the given example
+if __name__ == "__main__":
+    assert power_base_sum(2, 100) == 115
+    print("Test passed! power_base_sum(2, 100) =", power_base_sum(2, 100))
+```
+
+The function works by:
+1. Computing `base ** power` to get the large number
+2. Converting the result to a string so we can iterate through each digit
+3. Converting each digit character back to an integer and summing them up
+4. Returning the total sum
+
+The assertion `power_base_sum(2, 100) == 115` is verified, as 2^100 = 1267650600228229401496703205376, and the sum of its digits is indeed 115.

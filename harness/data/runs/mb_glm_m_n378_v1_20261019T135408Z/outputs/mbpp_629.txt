@@ -1,0 +1,34 @@
+Here's a self-contained Python script that solves the problem of finding even numbers from a list:
+
+```python
+def Split(numbers):
+    """
+    Returns a list of even numbers from the input list.
+    
+    Args:
+        numbers (list): A list of integers.
+    
+    Returns:
+        list: A list containing only the even numbers from the input list.
+    """
+    return [num for num in numbers if num % 2 == 0]
+
+# Test the function with the provided assertion
+assert Split([1, 2, 3, 4, 5]) == [2, 4]
+
+# Additional test cases to verify the function
+print(Split([1, 2, 3, 4, 5]))  # Output: [2, 4]
+print(Split([0, 1, 2, 3, 4]))  # Output: [0, 2, 4]
+print(Split([10, 11, 12, 13])) # Output: [10, 12]
+print(Split([]))               # Output: []
+print(Split([1, 3, 5]))        # Output: []
+```
+
+### Explanation:
+1. The function `Split` takes a list of numbers as input.
+2. It uses a list comprehension to iterate over each number in the input list.
+3. For each number, it checks if the number is even (i.e., `num % 2 == 0`).
+4. If the number is even, it is included in the resulting list.
+5. The function returns the list of even numbers.
+6. The provided assertion `assert Split([1, 2, 3, 4, 5]) == [2, 4]` verifies that the function works correctly for the given example.
+7. Additional test cases are included to demonstrate the function's behavior with different inputs.

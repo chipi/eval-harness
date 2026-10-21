@@ -1,0 +1,81 @@
+```python
+def is_polite(n):
+    """
+    Find the nth polite number.
+    
+    A polite number is a positive integer that can be expressed as a sum of
+    consecutive positive integers in at least one way.
+    
+    For example:
+    - 3 = 1 + 2 (polite)
+    - 5 = 2 + 3 (polite)
+    - 6 = 1 + 2 + 3 (polite)
+    - 9 = 4 + 5 (polite)
+    - 11 = 5 + 6 (polite)
+    
+    Powers of 2 are NOT polite (2, 4, 8, 16, 32, ...)
+    All other positive integers ARE polite.
+    
+    Args:
+        n: The position of the polite number to find (1-indexed)
+    
+    Returns:
+        The nth polite number
+    """
+    count = 0
+    num = 1
+    
+    while count < n:
+        # Check if num is polite
+        # A number is polite if it's not a power of 2
+        if is_power_of_two(num):
+            num += 1
+            continue
+        
+        count += 1
+        if count == n:
+            return num
+        num += 1
+    
+    return num
+
+
+def is_power_of_two(num):
+    """
+    Check if a number is a power of 2.
+    
+    A number is a power of 2 if it has only one bit set in its binary representation.
+    This can be checked using the bitwise trick: n & (n-1) == 0
+    """
+    return num > 0 and (num & (num - 1)) == 0
+
+
+# Test
+if __name__ == "__main__":
+    assert is_polite(7) == 11
+    print("Test passed!")
+    
+    # Additional tests to verify correctness
+    print("First 10 polite numbers:")
+    for i in range(1, 11):
+        print(f"is_polite({i}) = {is_polite(i)}")
+```
+
+**Explanation:**
+
+A **polite number** is a positive integer that can be expressed as a sum of consecutive positive integers in at least one way. The key insight is that **all positive integers except powers of 2 are polite numbers**.
+
+For example:
+- 1 is a power of 2 (2^0) → NOT polite
+- 2 is a power of 2 (2^1) → NOT polite
+- 3 = 1 + 2 → polite
+- 4 is a power of 2 (2^2) → NOT polite
+- 5 = 2 + 3 → polite
+- 6 = 1 + 2 + 3 → polite
+- 7 = 3 + 4 → polite
+- 8 is a power of 2 (2^3) → NOT polite
+- 9 = 4 + 5 → polite
+- 10 = 1 + 2 + 3 + 4 → polite
+- 11 = 5 + 6 → polite (7th polite number)
+
+The algorithm iterates through positive integers, skipping powers of 2, and counts until we reach the nth polite number. We use the efficient bitwise check `n & (n-1) == 0` to determine if a number is a power of 2.

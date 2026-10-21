@@ -1,0 +1,19 @@
+Here’s a self-contained Python script that solves the problem as described:  
+
+```python
+def check_greater(arr, num):
+    """
+    Returns True if the entered number is greater than all elements in the array,
+    otherwise returns False.
+    """
+    return all(num > x for x in arr)
+
+# Test cases
+if __name__ == "__main__":
+    # Example from the problem statement
+    assert check_greater([1, 2, 3, 4, 5], 4) == False
+    assert check_greater([1, 2, 3], 5) == True
+    assert check_greater([10, 20, 30], 25) == False
+    assert check_greater([], 10) == True  # Edge case: empty array
+    print("All tests passed.")
+```

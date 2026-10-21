@@ -1,0 +1,34 @@
+```python
+#!/usr/bin/env python3
+"""
+Write a function that checks whether a string contains the 'a' character
+followed by two or three 'b' characters.
+
+Example:
+    text_match_two_three("abb")  -> True
+    text_match_two_three("abbb") -> True
+    text_match_two_three("ac")   -> False
+"""
+
+import re
+
+
+def text_match_two_three(text: str) -> bool:
+    """
+    Return True if the string contains 'a' followed by exactly two or three 'b'
+    characters as a substring, otherwise return False.
+    """
+    pattern = r"ab{2,3}"
+    return re.search(pattern, text) is not None
+
+
+if __name__ == "__main__":
+    assert text_match_two_three("ac") == False
+    assert text_match_two_three("abb") == True
+    assert text_match_two_three("abbb") == True
+    assert text_match_two_three("ab") == False
+    assert text_match_two_three("a") == False
+    assert text_match_two_three("xxabbxx") == True
+
+    print("All tests passed.")
+```

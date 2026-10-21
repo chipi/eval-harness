@@ -1,0 +1,42 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+import math
+import cmath
+
+def angle_complex(real, imag):
+    """
+    Calculate the angle (phase) of a complex number.
+    
+    Args:
+        real: The real part of the complex number
+        imag: The imaginary part of the complex number
+    
+    Returns:
+        The angle in radians
+    """
+    # Create complex number from real and imaginary parts
+    z = complex(real, imag)
+    
+    # Use cmath.phase to get the angle
+    return cmath.phase(z)
+
+# Test the function
+if __name__ == "__main__":
+    # Test case from the problem
+    result = angle_complex(0, 1j)
+    expected = 1.5707963267948966
+    
+    print(f"Result: {result}")
+    print(f"Expected: {expected}")
+    print(f"Match: {math.isclose(result, expected, rel_tol=0.001)}")
+    
+    # Additional test cases
+    print("\nAdditional tests:")
+    print(f"angle_complex(1, 0) = {angle_complex(1, 0)}")  # Should be 0
+    print(f"angle_complex(0, 1) = {angle_complex(0, 1)}")  # Should be π/2
+    print(f"angle_complex(-1, 0) = {angle_complex(-1, 0)}")  # Should be π
+    print(f"angle_complex(0, -1) = {angle_complex(0, -1)}")  # Should be -π/2
+```
+
+Note: The function `angle_complex` takes two arguments: the real part and the imaginary part of a complex number. The test case `angle_complex(0, 1j)` passes `0` as the real part and `1j` as the imaginary part, which creates the complex number `0 + 1j` (or simply `1j`), whose angle is π/2 ≈ 1.5707963267948966 radians.

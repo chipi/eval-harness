@@ -1,0 +1,45 @@
+```python
+def count_Substrings(s: str) -> int:
+    """
+    Count the number of substrings where the sum of digits equals the length of the substring.
+    
+    For a substring s[i:j+1], its length is (j - i + 1).
+    The sum of digits is the sum of int(c) for each character c in the substring.
+    We need sum of digits == length.
+    
+    Args:
+        s: A string consisting of digit characters.
+        
+    Returns:
+        The count of substrings where the sum of digits equals the substring's length.
+    """
+    n = len(s)
+    count = 0
+    
+    for i in range(n):
+        digit_sum = 0
+        for j in range(i, n):
+            digit_sum += int(s[j])
+            length = j - i + 1
+            if digit_sum == length:
+                count += 1
+    
+    return count
+
+
+if __name__ == "__main__":
+    # Test case from the problem statement
+    assert count_Substrings('112112') == 6, f"Expected 6, got {count_Substrings('112112')}"
+    
+    # Additional test cases
+    # Single digit '1': sum=1, length=1, so count=1
+    assert count_Substrings('1') == 1, f"Expected 1, got {count_Substrings('1')}"
+    
+    # Single digit '0': sum=0, length=1, so count=0
+    assert count_Substrings('0') == 0, f"Expected 0, got {count_Substrings('0')}"
+    
+    # String '11': substrings are '1'(sum=1,len=1), '1'(sum=1,len=1), '11'(sum=2,len=2) => all 3 match
+    assert count_Substrings('11') == 3, f"Expected 3, got {count_Substrings('11')}"
+    
+    print("All tests passed!")
+```

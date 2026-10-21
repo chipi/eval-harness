@@ -1,0 +1,36 @@
+```python
+def is_product_even(numbers):
+    """
+    Check whether the product of numbers in a list is even or not.
+    
+    Args:
+        numbers: A list of integers
+        
+    Returns:
+        True if the product is even, False if the product is odd
+    """
+    # A product is even if at least one number in the list is even
+    # A product is odd only if all numbers are odd
+    for num in numbers:
+        if num % 2 == 0:
+            return True
+    return False
+
+
+# Test cases
+assert is_product_even([1, 2, 3]) == True
+assert is_product_even([1, 3, 5]) == False
+assert is_product_even([2, 4, 6]) == True
+assert is_product_even([1, 1, 1]) == False
+assert is_product_even([7, 8, 9]) == True
+
+print("All assertions passed!")
+```
+
+**Explanation:**
+
+The key insight is that a product is even if and only if **at least one factor is even**. A product is odd only when **all factors are odd**.
+
+So instead of calculating the actual product (which could be very large), we simply check if any number in the list is even:
+- If we find an even number, the product will be even → return `True`
+- If we go through all numbers and find only odd numbers, the product will be odd → return `False`

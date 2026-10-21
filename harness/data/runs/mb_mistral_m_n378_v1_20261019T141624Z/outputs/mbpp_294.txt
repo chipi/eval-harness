@@ -1,0 +1,24 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def max_val(heterogeneous_list):
+    """
+    Find the maximum value in a given heterogeneous list.
+    Only considers numeric values (int, float) and ignores non-numeric types.
+    """
+    numeric_values = [x for x in heterogeneous_list if isinstance(x, (int, float))]
+    if not numeric_values:
+        return None  # or raise an exception if no numeric values exist
+    return max(numeric_values)
+
+# Test case
+assert max_val(['Python', 3, 2, 4, 5, 'version']) == 5
+```
+
+This solution:
+1. Filters the list to only include numeric values (integers and floats)
+2. Returns the maximum of those numeric values
+3. Handles the test case correctly by ignoring the string elements
+4. Includes a check for empty numeric lists (though the test case doesn't require it)
+
+The function will work for the given test case and similar cases with mixed types. If you need different behavior (like considering string lengths or other comparisons), the function would need to be modified accordingly.

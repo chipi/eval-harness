@@ -1,0 +1,27 @@
+```python
+def round_and_sum(numbers):
+    """
+    Rounds every number in the list, calculates the total sum, 
+    and returns the sum multiplied by the length of the list.
+    """
+    # Round each number in the list and calculate the sum
+    # Python's round() function rounds to the nearest integer
+    total_sum = sum(round(num) for num in numbers)
+    
+    # Multiply the sum by the length of the list
+    result = total_sum * len(numbers)
+    
+    return result
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    test_list = [22.4, 4.0, -16.22, -9.10, 11.00, -12.22, 14.20, -5.20, 17.50]
+    expected_output = 243
+    actual_output = round_and_sum(test_list)
+    
+    print(f"Input: {test_list}")
+    print(f"Result: {actual_output}")
+    
+    assert actual_output == expected_output, f"Expected {expected_output}, but got {actual_output}"
+    print("Assertion passed!")
+```

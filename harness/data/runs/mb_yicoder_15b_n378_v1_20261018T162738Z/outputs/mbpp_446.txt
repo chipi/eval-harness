@@ -1,0 +1,14 @@
+```python
+def count_Occurrence(t, lst):
+    count = 0
+    for i in lst:
+        count += t.count(i)
+    return count
+
+# Test cases
+assert count_Occurrence(('a', 'a', 'c', 'b', 'd'),['a', 'b']) == 3
+assert count_Occurrence(('a', 'a', 'c', 'b', 'd'),['a', 'c']) == 2
+assert count_Occurrence(('a', 'a', 'c', 'b', 'd'),['b', 'c']) == 2
+assert count_Occurrence(('a', 'a', 'c', 'b', 'd'),['a', 'b', 'c']) == 3
+assert count_Occurrence(('a', 'a', 'c', 'b', 'd'),['a', 'b', 'c', 'd']) == 5
+```

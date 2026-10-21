@@ -1,0 +1,55 @@
+Here's a self-contained Python script that solves the Newman-Conway sequence problem:
+
+```python
+def sequence(n):
+    """
+    Find the nth number in the Newman-Conway sequence.
+    
+    The Newman-Conway sequence is defined as:
+    a(1) = 1
+    a(2) = 1
+    a(n) = a(a(n-1)) + a(n - a(n-1)) for n > 2
+    
+    Args:
+        n (int): The position in the sequence (1-indexed)
+    
+    Returns:
+        int: The nth number in the Newman-Conway sequence
+    """
+    if n <= 0:
+        raise ValueError("n must be a positive integer")
+    
+    # Base cases
+    if n == 1 or n == 2:
+        return 1
+    
+    # Use dynamic programming to avoid recalculating values
+    # Initialize array with 1-indexed positions
+    seq = [0] * (n + 1)
+    seq[1] = 1
+    seq[2] = 1
+    
+    # Calculate each term using the recurrence relation
+    for i in range(3, n + 1):
+        seq[i] = seq[seq[i - 1]] + seq[i - seq[i - 1]]
+    
+    return seq[n]
+
+
+# Test the function
+if __name__ == "__main__":
+    assert sequence(10) == 6
+    print("Test passed!")
+    
+    # Print first few terms of the sequence
+    print("First 15 terms of Newman-Conway sequence:")
+    for i in range(1, 16):
+        print(f"a({i}) = {sequence(i)}")
+```
+
+This script implements the Newman-Conway sequence using dynamic programming for efficiency. The sequence follows the recurrence relation:
+- a(1) = 1
+- a(2) = 1  
+- a(n) = a(a(n-1)) + a(n - a(n-1)) for n > 2
+
+The function uses an array to store previously computed values, avoiding redundant calculations that would occur with a naive recursive approach. The test assertion `sequence(10) == 6` passes as expected.

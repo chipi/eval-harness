@@ -1,0 +1,13 @@
+```python
+def sum_series(n):
+    total = 0
+    for i in range(0, n // 2 + 1):
+        total += n - 2 * i
+    return total
+
+# Test cases
+assert sum_series(6) == 12
+assert sum_series(10) == 30
+assert sum_series(15) == 60
+assert sum_series(20) == 120
+```

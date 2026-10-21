@@ -1,0 +1,24 @@
+```python
+import math
+
+
+def otherside_rightangle(a: float, b: float) -> float:
+    """
+    Find the hypotenuse (third side) of a right-angled triangle given the other two sides.
+    
+    Args:
+        a: Length of one side
+        b: Length of the other side
+    
+    Returns:
+        The length of the hypotenuse
+    """
+    return math.sqrt(a**2 + b**2)
+
+
+if __name__ == "__main__":
+    result = otherside_rightangle(7, 8)
+    print(f"otherside_rightangle(7, 8) = {result}")
+    assert abs(result - 10.63014581273465) < 1e-10, f"Expected 10.63014581273465, got {result}"
+    print("Test passed!")
+```

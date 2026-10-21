@@ -1,0 +1,27 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def empty_list(n):
+    """
+    Create a list of N empty dictionaries.
+    
+    Args:
+        n (int): The number of empty dictionaries to create.
+    
+    Returns:
+        list: A list containing n empty dictionaries.
+    """
+    return [{} for _ in range(n)]
+
+
+# Test the function
+assert empty_list(5) == [{}, {}, {}, {}, {}]
+print("Test passed!")
+print(empty_list(5))
+```
+
+**Explanation:**
+
+- The function `empty_list(n)` uses a list comprehension `[{} for _ in range(n)]` to create `n` distinct empty dictionaries.
+- Using a list comprehension (rather than `[{}] * n`) is important because `[{}] * n` would create a list where all elements reference the **same** dictionary object. Mutating one would affect all others.
+- The `assert` statement verifies the function works as expected, and the `print` statements confirm the output.

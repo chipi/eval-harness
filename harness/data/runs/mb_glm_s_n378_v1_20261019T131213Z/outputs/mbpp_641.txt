@@ -1,0 +1,73 @@
+```python
+def is_nonagonal(n):
+    """
+    Calculates the nth nonagonal number.
+
+    A nonagonal number is a figurate number that extends the concept of triangular
+    and square numbers to the nonagon (a 9-sided polygon). The formula for the
+    nth nonagonal number is derived from the general formula for polygonal numbers:
+    P(n, s) = n * ((s - 2) * n - (s - 4)) / 2
+    where 'n' is the term number and 's' is the number of sides.
+    For a nonagon, s = 9.
+
+    Args:
+        n (int): The term number (1-based index) of the nonagonal number to find.
+
+    Returns:
+        int: The nth nonagonal number.
+    """
+    if not isinstance(n, int) or n <= 0:
+        raise ValueError("Input must be a positive integer.")
+
+    # The formula for the nth nonagonal number is: n * (7*n - 5) // 2
+    # This is derived from the general polygonal number formula with s=9.
+    return n * (7 * n - 5) // 2
+
+# Example usage and assertion from the problem description
+if __name__ == "__main__":
+    # Test the function with the provided example
+    try:
+        result = is_nonagonal(10)
+        assert result == 325
+        print(f"The 10th nonagonal number is: {result}")
+        print("Assertion passed: is_nonagonal(10) == 325")
+    except AssertionError:
+        print("Assertion failed: is_nonagonal(10) != 325")
+    except ValueError as e:
+        print(f"Error: {e}")
+
+    # Additional test cases
+    print("\n--- Additional Test Cases ---")
+    test_cases = [
+        (1, 1),   # The 1st nonagonal number is 1
+        (2, 16),  # The 2nd nonagonal number is 16
+        (3, 45),  # The 3rd nonagonal number is 45
+        (4, 88),  # The 4th nonagonal number is 88
+    ]
+    for n, expected in test_cases:
+        try:
+            result = is_nonagonal(n)
+            assert result == expected
+            print(f"✓ is_nonagonal({n}) = {result}")
+        except AssertionError:
+            print(f"✗ is_nonagonal({n}) failed. Expected {expected}, got {result}")
+        except ValueError as e:
+            print(f"Error for n={n}: {e}")
+
+    # Test with invalid input
+    print("\n--- Testing Invalid Input ---")
+    try:
+        is_nonagonal(0)
+    except ValueError as e:
+        print(f"✓ Correctly raised error for n=0: {e}")
+
+    try:
+        is_nonagonal(-5)
+    except ValueError as e:
+        print(f"✓ Correctly raised error for n=-5: {e}")
+
+    try:
+        is_nonagonal("abc")
+    except ValueError as e:
+        print(f"✓ Correctly raised error for n='abc': {e}")
+```

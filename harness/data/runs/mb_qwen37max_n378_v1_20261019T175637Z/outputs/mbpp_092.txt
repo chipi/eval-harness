@@ -1,0 +1,32 @@
+```python
+def is_undulating(n):
+    """
+    Check whether the given number is undulating or not.
+    An undulating number has at least 3 digits and follows the pattern ABABAB...
+    where A and B are different digits.
+    """
+    s = str(n)
+    
+    # Must have at least 3 digits
+    if len(s) < 3:
+        return False
+    
+    a = s[0]
+    b = s[1]
+    
+    # The two alternating digits must be different
+    if a == b:
+        return False
+    
+    # Check that the pattern ABABAB... holds throughout
+    for i in range(len(s)):
+        expected = a if i % 2 == 0 else b
+        if s[i] != expected:
+            return False
+    
+    return True
+
+
+# Test
+assert is_undulating(1212121) == True
+```

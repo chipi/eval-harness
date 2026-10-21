@@ -1,0 +1,24 @@
+```python
+def min_of_three(a, b, c):
+    """
+    Returns the minimum of three numbers.
+    """
+    if a <= b and a <= c:
+        return a
+    elif b <= a and b <= c:
+        return b
+    else:
+        return c
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    assert min_of_three(10, 20, 0) == 0
+    
+    # Additional test cases
+    assert min_of_three(5, 5, 10) == 5
+    assert min_of_three(1, 2, 3) == 1
+    assert min_of_three(10, 5, 8) == 5
+    assert min_of_three(-1, -5, -3) == -5
+    
+    print("All tests passed!")
+```

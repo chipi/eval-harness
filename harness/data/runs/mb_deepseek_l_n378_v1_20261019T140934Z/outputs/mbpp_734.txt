@@ -1,0 +1,37 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def sum_Of_Subarray_Prod(arr):
+    """
+    Returns the sum of products of all possible sublists (subarrays) of the given list.
+    """
+    n = len(arr)
+    total = 0
+    
+    # Iterate over all possible subarrays
+    for i in range(n):
+        product = 1
+        for j in range(i, n):
+            product *= arr[j]
+            total += product
+            
+    return total
+
+# Test the function
+if __name__ == "__main__":
+    assert sum_Of_Subarray_Prod([1, 2, 3]) == 20
+    print("Test passed!")
+```
+
+**Explanation:**
+- The function iterates over all starting indices `i`.
+- For each starting index, it computes the product of elements from `i` to `j` (where `j` goes from `i` to the end).
+- Each product is added to the total sum.
+- For `[1, 2, 3]`, the subarrays and their products are:
+  - `[1]` → 1
+  - `[1, 2]` → 2
+  - `[1, 2, 3]` → 6
+  - `[2]` → 2
+  - `[2, 3]` → 6
+  - `[3]` → 3
+  - Sum = 1 + 2 + 6 + 2 + 6 + 3 = 20

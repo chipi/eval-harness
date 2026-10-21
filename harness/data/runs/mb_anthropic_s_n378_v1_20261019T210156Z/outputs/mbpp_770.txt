@@ -1,0 +1,33 @@
+```python
+def odd_num_sum(n):
+    """
+    Find the sum of fourth power of first n odd natural numbers.
+    
+    The first n odd natural numbers are: 1, 3, 5, 7, ..., (2n-1)
+    We need to calculate: 1^4 + 3^4 + 5^4 + ... + (2n-1)^4
+    
+    Args:
+        n: Number of odd natural numbers to consider
+        
+    Returns:
+        Sum of fourth powers of first n odd natural numbers
+    """
+    total = 0
+    for i in range(1, n + 1):
+        odd_num = 2 * i - 1
+        total += odd_num ** 4
+    return total
+
+
+# Test cases
+assert odd_num_sum(1) == 1  # 1^4 = 1
+assert odd_num_sum(2) == 82  # 1^4 + 3^4 = 1 + 81 = 82
+assert odd_num_sum(3) == 707  # 1^4 + 3^4 + 5^4 = 1 + 81 + 625 = 707
+assert odd_num_sum(4) == 3108  # 1 + 81 + 625 + 2401 = 3108
+
+print("All test cases passed!")
+print(f"odd_num_sum(1) = {odd_num_sum(1)}")
+print(f"odd_num_sum(2) = {odd_num_sum(2)}")
+print(f"odd_num_sum(3) = {odd_num_sum(3)}")
+print(f"odd_num_sum(4) = {odd_num_sum(4)}")
+```

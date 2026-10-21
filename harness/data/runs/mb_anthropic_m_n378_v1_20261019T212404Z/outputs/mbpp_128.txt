@@ -1,0 +1,10 @@
+```python
+def long_words(n, text):
+    words = text.split()
+    return [word for word in words if len(word) > n]
+
+
+if __name__ == "__main__":
+    assert long_words(3, "python is a programming language") == ['python', 'programming', 'language']
+    print(long_words(3, "python is a programming language"))
+```

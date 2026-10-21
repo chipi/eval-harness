@@ -1,0 +1,29 @@
+```python
+"""
+Write a python function to find quotient of two numbers (rounded down to the nearest integer).
+assert find(10,3) == 3
+"""
+
+def find(dividend: int, divisor: int) -> int:
+    """
+    Returns the quotient of dividend divided by divisor, rounded down to the nearest integer.
+    Equivalent to floor division.
+    """
+    # Using floor division operator // which rounds down to the nearest integer
+    return dividend // divisor
+
+# Example test
+if __name__ == "__main__":
+    # Test the given assertion
+    result = find(10, 3)
+    assert result == 3, f"Expected 3 but got {result}"
+    
+    # Additional tests
+    assert find(9, 3) == 3
+    assert find(7, 2) == 3
+    assert find(20, 5) == 4
+    assert find(1, 2) == 0
+    assert find(-10, 3) == -4   # In Python floor division rounds toward negative infinity
+    
+    print("All tests passed.")
+```

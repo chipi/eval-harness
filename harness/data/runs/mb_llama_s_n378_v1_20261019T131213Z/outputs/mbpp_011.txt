@@ -1,0 +1,56 @@
+```python
+def remove_Occ(s, c):
+    """
+    This function removes the first and last occurrence of a given character from the string.
+
+    Args:
+        s (str): The input string.
+        c (str): The character to be removed.
+
+    Returns:
+        str: The modified string with the first and last occurrence of the character removed.
+    """
+    # Find the index of the first occurrence of the character
+    first_occ = s.find(c)
+    
+    # If the character is not found, return the original string
+    if first_occ == -1:
+        return s
+    
+    # Find the index of the last occurrence of the character
+    last_occ = s.rfind(c)
+    
+    # Remove the first and last occurrence of the character
+    return s[:first_occ] + s[first_occ + 1:last_occ] + s[last_occ + 1:]
+
+# Test the function
+assert remove_Occ("hello","l") == "heo"
+```
+
+You can also use a more Pythonic way to solve this problem:
+
+```python
+def remove_Occ(s, c):
+    """
+    This function removes the first and last occurrence of a given character from the string.
+
+    Args:
+        s (str): The input string.
+        c (str): The character to be removed.
+
+    Returns:
+        str: The modified string with the first and last occurrence of the character removed.
+    """
+    # Find all occurrences of the character
+    occs = [i for i, x in enumerate(s) if x == c]
+    
+    # If the character is not found or only found once, return the original string
+    if len(occs) < 2:
+        return s
+    
+    # Remove the first and last occurrence of the character
+    return s[:occs[0]] + s[occs[0] + 1:occs[-1]] + s[occs[-1] + 1:]
+
+# Test the function
+assert remove_Occ("hello","l") == "heo"
+```

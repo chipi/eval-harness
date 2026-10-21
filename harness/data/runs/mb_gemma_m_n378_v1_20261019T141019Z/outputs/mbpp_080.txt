@@ -1,0 +1,25 @@
+```python
+def tetrahedral_number(n):
+    """
+    Calculates the nth tetrahedral number.
+    The formula for the nth tetrahedral number is:
+    T_n = (n * (n + 1) * (n + 2)) / 6
+    """
+    if n < 0:
+        raise ValueError("n must be a non-negative integer.")
+    
+    # Using integer division // to ensure the result is an integer
+    return (n * (n + 1) * (n + 2)) // 6
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    assert tetrahedral_number(5) == 35
+    
+    # Additional test cases
+    assert tetrahedral_number(1) == 1
+    assert tetrahedral_number(2) == 4
+    assert tetrahedral_number(3) == 10
+    assert tetrahedral_number(4) == 20
+    
+    print("All tests passed!")
+```

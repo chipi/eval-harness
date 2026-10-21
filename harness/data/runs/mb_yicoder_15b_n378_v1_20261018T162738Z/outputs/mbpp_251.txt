@@ -1,0 +1,10 @@
+```python
+def insert_element(lst, element):
+    return [element] + lst
+
+# Test cases
+assert insert_element(['Red', 'Green', 'Black'] ,'c')==['c', 'Red', 'c', 'Green', 'c', 'Black']
+assert insert_element(['Red', 'Green', 'Black'] ,' ')==[' ', 'Red', ' ', 'Green', ' ', 'Black']
+assert insert_element(['Red', 'Green', 'Black'] ,'x')==['x', 'Red', 'x', 'Green', 'x', 'Black']
+assert insert_element([] ,'y')==['y']
+```

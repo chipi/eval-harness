@@ -1,0 +1,46 @@
+```python
+import cmath
+
+def convert(complex_num):
+    """
+    Converts a complex number to polar coordinates (r, phi).
+    
+    Args:
+        complex_num (int, float, or complex): The number to convert.
+        
+    Returns:
+        tuple: (magnitude, phase) as floats.
+    """
+    # Ensure the input is treated as a complex number
+    z = complex(complex_num)
+    
+    # cmath.polar returns a tuple (r, phi)
+    # r is the modulus (magnitude)
+    # phi is the phase (argument) in radians
+    r, phi = cmath.polar(z)
+    
+    return (float(r), float(phi))
+
+if __name__ == "__main__":
+    # Test cases
+    # Test case provided in the prompt
+    assert convert(1) == (1.0, 0.0)
+    
+    # Additional test cases
+    # Test pure imaginary number: 1j -> (1.0, pi/2)
+    r, phi = convert(1j)
+    assert r == 1.0
+    assert abs(phi - 1.5707963267948966) < 1e-10
+    
+    # Test negative real number: -1 -> (1.0, pi)
+    r, phi = convert(-1)
+    assert r == 1.0
+    assert abs(phi - 3.141592653589793) < 1e-10
+
+    # Test complex number: 1 + 1j -> (sqrt(2), pi/4)
+    r, phi = convert(1 + 1j)
+    assert abs(r - 1.4142135623730951) < 1e-10
+    assert abs(phi - 0.7853981633974483) < 1e-10
+
+    print("All tests passed!")
+```

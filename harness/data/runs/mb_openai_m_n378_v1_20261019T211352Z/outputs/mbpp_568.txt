@@ -1,0 +1,17 @@
+```python
+"""
+Write a function to create a list of N empty dictionaries.
+assert empty_list(5) == [{}, {}, {}, {}, {}]
+"""
+
+def empty_list(n):
+    """Return a list containing n distinct empty dictionaries."""
+    return [{} for _ in range(n)]
+
+
+# Example test
+assert empty_list(5) == [{}, {}, {}, {}, {}]
+
+if __name__ == "__main__":
+    print(empty_list(5))
+```

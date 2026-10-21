@@ -1,0 +1,19 @@
+```python
+def count_Substrings(s):
+    """
+    Count the number of substrings where the sum of digits equals the length of the substring.
+    
+    For a substring of length L with digit sum S, we need S == L.
+    Since each digit is 0-9, and we need sum == length, this means the average digit value is 1.
+    """
+    count = 0
+    n = len(s)
+    for i in range(n):
+        digit_sum = 0
+        for j in range(i, n):
+            digit_sum += int(s[j])
+            length = j - i + 1
+            if digit_sum == length:
+                count += 1
+    return count
+```

@@ -1,0 +1,52 @@
+Here's a self-contained Python script that solves the problem, including the requested assertion:
+
+```python
+def next_power_of_2(n):
+    """
+    Find the smallest power of 2 greater than or equal to n.
+
+    Args:
+        n (int): The input number (must be non-negative)
+
+    Returns:
+        int: The smallest power of 2 >= n
+
+    Examples:
+        >>> next_power_of_2(0)
+        1
+        >>> next_power_of_2(1)
+        1
+        >>> next_power_of_2(5)
+        8
+        >>> next_power_of_2(16)
+        16
+    """
+    if n <= 0:
+        return 1
+    # Subtract 1 to handle cases where n is already a power of 2
+    n -= 1
+    # Set all bits after the highest set bit
+    n |= n >> 1
+    n |= n >> 2
+    n |= n >> 4
+    n |= n >> 8
+    n |= n >> 16
+    # The next power of 2 is n+1
+    return n + 1
+
+# Test the function
+assert next_power_of_2(0) == 1
+assert next_power_of_2(1) == 1
+assert next_power_of_2(5) == 8
+assert next_power_of_2(16) == 16
+assert next_power_of_2(17) == 32
+assert next_power_of_2(100) == 128
+```
+
+This solution uses bit manipulation to efficiently find the next power of 2. The approach works by:
+1. First handling the special case where n is 0 (returns 1)
+2. For positive numbers, we subtract 1 to handle cases where n is already a power of 2
+3. Then we set all bits after the highest set bit to 1
+4. Finally, we add 1 to get the next power of 2
+
+The solution is efficient with O(1) time complexity and works for all non-negative integers.

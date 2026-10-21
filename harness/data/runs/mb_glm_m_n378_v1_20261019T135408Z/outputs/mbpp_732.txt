@@ -1,0 +1,29 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def replace_specialchar(s):
+    """
+    Replace all occurrences of spaces, commas, or dots with a colon.
+    
+    Args:
+        s (str): Input string
+        
+    Returns:
+        str: String with spaces, commas, and dots replaced by colons
+    """
+    # Replace each special character with a colon
+    result = s.replace(' ', ':').replace(',', ':').replace('.', ':')
+    return result
+
+# Test the function
+assert replace_specialchar('Python language, Programming language.') == 'Python:language::Programming:language:'
+print("Test passed! The function works as expected.")
+```
+
+This script:
+1. Defines a function `replace_specialchar` that takes a string as input
+2. Uses the string `replace()` method to replace spaces, commas, and dots with colons
+3. Includes an assertion to verify the function works correctly with the given test case
+4. Prints a success message if the test passes
+
+The solution is straightforward and handles all the specified special characters by chaining the replace operations. The test case provided in the problem statement is included to verify the correctness of the implementation.

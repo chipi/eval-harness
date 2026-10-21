@@ -1,0 +1,23 @@
+```python
+def odd_length_sum(arr):
+    n = len(arr)
+    total_sum = 0
+    
+    for i in range(n):
+        # Calculate the number of odd length subarrays starting from index i
+        num_subarrays = (n - i) * (i + 1)
+        
+        # Calculate the sum of elements in each subarray
+        subarray_sum = sum(arr[i:i+num_subarrays])
+        
+        # Add the sum of each subarray to the total sum
+        total_sum += subarray_sum
+    
+    return total_sum
+
+# Test cases
+assert odd_length_sum([1,2,4]) == 14
+assert odd_length_sum([1,3,5,7]) == 36
+assert odd_length_sum([10,20,30,40,50]) == 900
+```
+

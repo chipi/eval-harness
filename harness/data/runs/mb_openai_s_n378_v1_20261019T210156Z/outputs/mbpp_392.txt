@@ -1,0 +1,28 @@
+```python
+from functools import lru_cache
+
+@lru_cache(maxsize=None)
+def get_max_sum(n: int) -> int:
+    """
+    Return the maximum value obtainable by repeatedly replacing n with:
+        f(n) = max(n, f(n//2) + f(n//3) + f(n//4) + f(n//5))
+
+    Uses integer division and memoization for efficiency.
+    """
+    if n <= 0:
+        return 0
+
+    split_sum = (
+        get_max_sum(n // 2) +
+        get_max_sum(n // 3) +
+        get_max_sum(n // 4) +
+        get_max_sum(n // 5)
+    )
+    return max(n, split_sum)
+
+
+if __name__ == "__main__":
+    # Required test
+    assert get_max_sum(60) == 106
+    print("All tests passed.")
+```

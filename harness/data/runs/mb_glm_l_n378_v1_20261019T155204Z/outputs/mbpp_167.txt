@@ -1,0 +1,39 @@
+```python
+def next_power_of_2(n):
+    """
+    Finds the smallest power of 2 greater than or equal to n.
+    
+    Args:
+        n (int): An integer.
+        
+    Returns:
+        int: The smallest power of 2 greater than or equal to n.
+    """
+    # The problem specifies that next_power_of_2(0) should be 1.
+    # Mathematically, 2^0 = 1, so this covers the base case.
+    if n <= 0:
+        return 1
+    
+    # If n is already a power of 2, return n.
+    # We check this by verifying that n has only one bit set.
+    if (n & (n - 1)) == 0:
+        return n
+    
+    # If n is not a power of 2, find the next power.
+    # We repeatedly shift n right until it becomes 0 to count the bits,
+    # then shift 1 left by that count + 1.
+    # Alternatively, we can left shift a counter until it is >= n.
+    p = 1
+    while p < n:
+        p <<= 1
+    return p
+
+# Assertions to verify the solution
+assert next_power_of_2(0) == 1
+assert next_power_of_2(1) == 1
+assert next_power_of_2(2) == 2
+assert next_power_of_2(3) == 4
+assert next_power_of_2(15) == 16
+assert next_power_of_2(32) == 32
+assert next_power_of_2(100) == 128
+```

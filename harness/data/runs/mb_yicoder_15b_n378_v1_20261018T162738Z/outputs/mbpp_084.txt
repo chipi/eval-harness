@@ -1,0 +1,16 @@
+```python
+def newman_conway(n):
+    if n == 0:
+        return "Invalid input"
+    elif n == 1:
+        return "1"
+    elif n == 2:
+        return "11"
+    else:
+        sequence = [1, 1]
+        for i in range(2, n):
+            sequence.append(sequence[sequence[i-1]] + sequence[i-sequence[i-1]])
+        return ' '.join(map(str, sequence))
+
+print(newman_conway(10))
+```

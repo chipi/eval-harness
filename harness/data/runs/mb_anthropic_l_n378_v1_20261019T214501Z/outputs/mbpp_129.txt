@@ -1,0 +1,65 @@
+Looking at this problem, I need to write a function that checks whether a given matrix is a magic square — meaning all rows, all columns, and both main diagonals sum to the same value.
+
+```python
+"""
+Write a function to calculate whether the matrix is a magic square.
+assert magic_square_test([[7, 12, 1, 14], [2, 13, 8, 11], [16, 3, 10, 5], [9, 6, 15, 4]])==True
+"""
+
+
+def magic_square_test(my_matrix):
+    """
+    Return True if `my_matrix` is a magic square, otherwise False.
+
+    A magic square is a square matrix in which the sums of every row,
+    every column and both main diagonals are all equal.
+    """
+    # Must be a non-empty square matrix
+    if not my_matrix:
+        return False
+    n = len(my_matrix)
+    if any(len(row) != n for row in my_matrix):
+        return False
+
+    # The "magic constant" is taken from the first row
+    magic_sum = sum(my_matrix[0])
+
+    # Check every row
+    for row in my_matrix:
+        if sum(row) != magic_sum:
+            return False
+
+    # Check every column
+    for col in range(n):
+        if sum(my_matrix[row][col] for row in range(n)) != magic_sum:
+            return False
+
+    # Check the main diagonal (top-left -> bottom-right)
+    if sum(my_matrix[i][i] for i in range(n)) != magic_sum:
+        return False
+
+    # Check the anti-diagonal (top-right -> bottom-left)
+    if sum(my_matrix[i][n - 1 - i] for i in range(n)) != magic_sum:
+        return False
+
+    return True
+
+
+if __name__ == "__main__":
+    assert magic_square_test([[7, 12, 1, 14], [2, 13, 8, 11],
+                              [16, 3, 10, 5], [9, 6, 15, 4]]) == True
+    assert magic_square_test([[2, 7, 6], [9, 5, 1], [4, 3, 8]]) == True
+    assert magic_square_test([[2, 7, 6], [9, 5, 1], [4, 3, 7]]) == False
+    assert magic_square_test([[1, 2, 3], [4, 5, 6], [7, 8, 9]]) == False
+    print("All tests passed!")
+```
+
+**How it works:**
+
+1. **Validate shape** – the matrix must be non-empty and every row must have exactly `n` elements (square).
+2. **Magic constant** – computed as the sum of the first row; everything else must match it.
+3. **Rows** – each row's sum must equal the magic constant.
+4. **Columns** – sum down each column index and compare.
+5. **Diagonals** – check `matrix[i][i]` (main) and `matrix[i][n-1-i]` (anti-diagonal).
+
+For the example `[[7,12,1,14],[2,13,8,11],[16,3,10,5],[9,6,15,4]]`, every row, column, and diagonal sums to **34**, so the function returns `True`.

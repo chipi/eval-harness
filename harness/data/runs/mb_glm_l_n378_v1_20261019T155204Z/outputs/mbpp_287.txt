@@ -1,0 +1,25 @@
+```python
+def square_Sum(n: int) -> int:
+    """
+    Returns the sum of squares of the first n even natural numbers.
+    
+    The first n even natural numbers are 2, 4, 6, ..., 2n.
+    The sum of their squares is:
+    2^2 + 4^2 + 6^2 + ... + (2n)^2
+    = 4 * (1^2 + 2^2 + 3^2 + ... + n^2)
+    = 4 * n * (n + 1) * (2n + 1) / 6
+    = 2 * n * (n + 1) * (2n + 1) / 3
+    
+    Args:
+        n (int): The number of even natural numbers to sum the squares of.
+        
+    Returns:
+        int: The sum of the squares of the first n even natural numbers.
+    """
+    return (2 * n * (n + 1) * (2 * n + 1)) // 3
+
+# Example usage and assertion test
+if __name__ == "__main__":
+    assert square_Sum(2) == 20
+    print("Test passed: square_Sum(2) == 20")
+```

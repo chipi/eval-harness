@@ -1,0 +1,10 @@
+```python
+def decimal_to_binary(n):
+    return bin(n).replace("0b", "")
+
+# Test cases
+assert decimal_to_binary(8) == '1000'
+assert decimal_to_binary(10) == '1010'
+assert decimal_to_binary(15) == '1111'
+assert decimal_to_binary(0) == '0'
+```

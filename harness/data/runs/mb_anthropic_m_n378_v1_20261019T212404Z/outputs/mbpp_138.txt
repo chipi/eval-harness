@@ -1,0 +1,29 @@
+```python
+def is_Sum_Of_Powers_Of_Two(n):
+    """
+    Check whether the given number can be represented as sum of non-zero
+    powers of 2 or not.
+    
+    A non-zero power of 2 means 2^k where k >= 1 (i.e., 2, 4, 8, 16, ...).
+    So this checks if n can be formed by summing numbers from {2, 4, 8, ...}.
+    This is possible for any n except n == 1 (and n must be >= 0).
+    
+    If n is odd, we need at least one "1" which is not a non-zero power of 2
+    (since 2^0 = 1 is excluded), so odd numbers > 1 cannot be represented,
+    except this depends on interpretation. Based on simple pattern used in
+    common coding problems, the check reduces to: n is even, or n == 1 is False.
+    """
+    if n == 1:
+        return False
+    if n % 2 == 0:
+        return True
+    return False
+
+
+if __name__ == "__main__":
+    assert is_Sum_Of_Powers_Of_Two(10) == True
+    print(is_Sum_Of_Powers_Of_Two(10))  # True
+    print(is_Sum_Of_Powers_Of_Two(7))   # False
+    print(is_Sum_Of_Powers_Of_Two(1))   # False
+    print(is_Sum_Of_Powers_Of_Two(0))   # True
+```

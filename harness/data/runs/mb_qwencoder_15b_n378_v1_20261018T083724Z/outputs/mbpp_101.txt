@@ -1,0 +1,21 @@
+```python
+def kth_element(arr, k):
+    """
+    Find the kth element in the given array using 1-based indexing.
+
+    Args:
+    arr (list): The input array.
+    k (int): The position of the element to find (1-based index).
+
+    Returns:
+    int: The kth element of the array.
+    """
+    return arr[k-1]
+
+# Test cases
+assert kth_element([12,3,5,7,19], 2) == 3
+assert kth_element([4,6,8,10,12,14,16,18,20], 5) == 10
+assert kth_element([-1, -2, -3, -4, -5], 3) == -3
+assert kth_element([100, 200, 300, 400, 500], 1) == 100
+```
+

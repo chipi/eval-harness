@@ -1,0 +1,23 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def is_Sum_Of_Powers_Of_Two(n: int) -> bool:
+    """
+    Check whether the given number can be represented as a sum of non-zero powers of 2.
+    
+    A number can be represented as a sum of non-zero powers of 2 if and only if
+    it is a positive integer. Any positive integer can be expressed in binary,
+    which is exactly a sum of distinct powers of 2.
+    """
+    return n > 0
+
+
+# Test the function
+if __name__ == "__main__":
+    assert is_Sum_Of_Powers_Of_Two(10) == True
+    assert is_Sum_Of_Powers_Of_Two(0) == False
+    assert is_Sum_Of_Powers_Of_Two(-5) == False
+    assert is_Sum_Of_Powers_Of_Two(1) == True
+    assert is_Sum_Of_Powers_Of_Two(7) == True
+    print("All tests passed!")
+```

@@ -1,0 +1,19 @@
+```python
+def expensive_items(items, n):
+    """
+    Return the n most expensive items from a list of dictionaries.
+
+    Each item is expected to have a 'price' key.
+    If n is greater than the number of items, all items are returned
+    sorted from most to least expensive.
+    """
+    return sorted(items, key=lambda x: x.get('price', 0), reverse=True)[:n]
+
+
+if __name__ == "__main__":
+    assert expensive_items(
+        [{'name': 'Item-1', 'price': 101.1}, {'name': 'Item-2', 'price': 555.22}],
+        1
+    ) == [{'name': 'Item-2', 'price': 555.22}]
+    print("All tests passed.")
+```

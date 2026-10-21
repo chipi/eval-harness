@@ -1,0 +1,41 @@
+Here's a self-contained Python script that solves the problem of finding the minimum number of rotations (greater than 0) required to get the same string:
+
+```python
+def find_rotations(s: str) -> int:
+    """
+    Find the minimum number of rotations (greater than 0) required to get the same string.
+
+    Args:
+        s: Input string
+
+    Returns:
+        Minimum number of rotations (greater than 0) to get the same string.
+        Returns 1 if no non-trivial rotation exists (like "aaaa").
+    """
+    n = len(s)
+    if n == 0:
+        return 0
+
+    # Check all possible rotation counts from 1 to n-1
+    for k in range(1, n + 1):
+        # Check if rotating by k positions gives the same string
+        if all(s[i] == s[(i + k) % n] for i in range(n)):
+            return k
+
+    return 1  # Default case (shouldn't reach here for non-empty strings)
+
+# Test cases
+assert find_rotations("aaaa") == 1
+assert find_rotations("abab") == 2
+assert find_rotations("abcabc") == 3
+assert find_rotations("abcde") == 5
+assert find_rotations("a") == 1
+assert find_rotations("") == 0
+```
+
+### Explanation:
+1. The function checks all possible rotation counts from 1 to the length of the string.
+2. For each rotation count `k`, it verifies if rotating the string by `k` positions results in the same string by comparing each character with the character `k` positions ahead (using modulo arithmetic to wrap around).
+3. The first `k` that satisfies this condition is returned as the minimum number of rotations.
+4. If no non-trivial rotation (other than rotating by the full length) is found, it returns 1 (as in the case of "aaaa").
+5. The test cases verify the correctness of the function.

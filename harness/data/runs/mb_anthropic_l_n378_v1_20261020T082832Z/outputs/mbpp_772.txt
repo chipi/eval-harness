@@ -1,0 +1,48 @@
+Looking at this problem, I need to remove all words whose length equals k from the input string.
+
+Let me verify with the example:
+- `'The person is most value tet'` split into words: `['The', 'person', 'is', 'most', 'value', 'tet']`
+- Words with length 3: `'The'` (3 chars), `'tet'` (3 chars)
+- Remaining: `['person', 'is', 'most', 'value']` → `'person is most value'` ✓
+
+```python
+"""
+Write a function to remove all the words with k length in the given string.
+assert remove_length('The person is most value tet', 3) == 'person is most value'
+"""
+
+
+def remove_length(test_str, K):
+    """
+    Remove all words of length K from the given string.
+
+    Args:
+        test_str (str): The input string.
+        K (int): The length of words to remove.
+
+    Returns:
+        str: The string with all K-length words removed.
+    """
+    # Split the string into words
+    words = test_str.split()
+
+    # Keep only the words whose length is not equal to K
+    kept = [word for word in words if len(word) != K]
+
+    # Join the remaining words back into a single string
+    return ' '.join(kept)
+
+
+if __name__ == '__main__':
+    # Provided test case
+    assert remove_length('The person is most value tet', 3) == 'person is most value'
+
+    # Additional test cases
+    assert remove_length('If you want to be a success in life', 2) == 'If you want a success life'
+    assert remove_length('welcome to python', 2) == 'welcome python'
+    assert remove_length('', 3) == ''
+    assert remove_length('aaa bbb ccc', 3) == ''
+
+    print(remove_length('The person is most value tet', 3))
+    print("All tests passed!")
+```

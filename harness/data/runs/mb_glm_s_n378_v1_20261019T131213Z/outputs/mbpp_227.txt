@@ -1,0 +1,25 @@
+```python
+def min_of_three(a, b, c):
+    """
+    Finds the minimum of three numbers.
+
+    Args:
+        a: The first number.
+        b: The second number.
+        c: The third number.
+
+    Returns:
+        The smallest of the three numbers.
+    """
+    # The built-in min() function can take multiple arguments
+    # and return the smallest one.
+    return min(a, b, c)
+
+# Example usage and assertion to verify the function
+assert min_of_three(10, 20, 0) == 0
+assert min_of_three(-5, 0, 5) == -5
+assert min_of_three(100, 100, 100) == 100
+assert min_of_three(1.5, 2.5, 0.5) == 0.5
+
+print("All assertions passed!")
+```

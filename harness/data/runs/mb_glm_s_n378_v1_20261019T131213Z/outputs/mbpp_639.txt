@@ -1,0 +1,49 @@
+```python
+def sum_name_lengths(names):
+    """
+    Sums the length of names in a list, excluding names that start with a lowercase letter.
+
+    Args:
+        names: A list of strings representing names.
+
+    Returns:
+        The sum of the lengths of the names that do not start with a lowercase letter.
+    """
+    # Use a generator expression to filter and sum in one line.
+    # 1. Filter names: `name for name in names if not name.startswith(name[0].lower())`
+    #    This checks if the first character of the name, when converted to lowercase,
+    #    is not equal to the original first character. This effectively filters out
+    #    names that start with a lowercase letter.
+    # 2. Get length: `len(name)` for each filtered name.
+    # 3. Sum the lengths: `sum(...)`
+    return sum(len(name) for name in names if not name.startswith(name[0].lower()))
+
+# Example usage with the provided test case
+sample_nam = ['sally', 'Dylan', 'rebecca', 'Diana', 'Joanne', 'keith']
+result = sum_name_lengths(sample_nam)
+
+# Assert the result to verify correctness
+assert result == 16
+
+# Print the result for demonstration
+print(f"The list of names is: {sample_nam}")
+print(f"The sum of lengths of names starting with an uppercase letter is: {result}")
+
+# Additional test cases
+print("\nRunning additional test cases...")
+test_case_1 = ["Alice", "bob", "Charlie"]
+assert sum_name_lengths(test_case_1) == len("Alice") + len("Charlie") # 5 + 6 = 11
+print(f"Test Case 1: {test_case_1} -> {sum_name_lengths(test_case_1)} (Expected: 11)")
+
+test_case_2 = ["all", "lowercase"]
+assert sum_name_lengths(test_case_2) == 0
+print(f"Test Case 2: {test_case_2} -> {sum_name_lengths(test_case_2)} (Expected: 0)")
+
+test_case_3 = ["UPPERCASE", "Another", "Name"]
+assert sum_name_lengths(test_case_3) == len("UPPERCASE") + len("Another") + len("Name") # 9 + 7 + 4 = 20
+print(f"Test Case 3: {test_case_3} -> {sum_name_lengths(test_case_3)} (Expected: 20)")
+
+test_case_4 = []
+assert sum_name_lengths(test_case_4) == 0
+print(f"Test Case 4: {test_case_4} -> {sum_name_lengths(test_case_4)} (Expected: 0)")
+```

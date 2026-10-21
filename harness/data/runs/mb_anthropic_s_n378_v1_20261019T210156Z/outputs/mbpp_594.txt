@@ -1,0 +1,40 @@
+```python
+def diff_even_odd(lst):
+    """
+    Find the difference of the first even and first odd number of a given list.
+    
+    Args:
+        lst: A list of integers
+        
+    Returns:
+        The difference between the first even and first odd number
+    """
+    first_even = None
+    first_odd = None
+    
+    for num in lst:
+        if num % 2 == 0 and first_even is None:
+            first_even = num
+        elif num % 2 != 0 and first_odd is None:
+            first_odd = num
+        
+        # Exit early if we found both
+        if first_even is not None and first_odd is not None:
+            break
+    
+    return first_even - first_odd
+
+
+# Test
+assert diff_even_odd([1, 3, 5, 7, 4, 1, 6, 8]) == 3
+print("Test passed!")
+print(f"diff_even_odd([1, 3, 5, 7, 4, 1, 6, 8]) = {diff_even_odd([1, 3, 5, 7, 4, 1, 6, 8])}")
+```
+
+**Explanation:**
+- The function iterates through the list to find the first even number and the first odd number
+- For the test case `[1, 3, 5, 7, 4, 1, 6, 8]`:
+  - First odd number: `1`
+  - First even number: `4`
+  - Difference: `4 - 1 = 3` ✓
+- The function uses early exit optimization to stop searching once both numbers are found

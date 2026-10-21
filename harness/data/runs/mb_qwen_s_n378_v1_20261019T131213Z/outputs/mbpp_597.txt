@@ -1,0 +1,42 @@
+```python
+def find_kth(arr1, arr2, k):
+    """
+    Find the kth element from two sorted arrays.
+    
+    Args:
+        arr1: First sorted array
+        arr2: Second sorted array
+        k: The position (1-indexed) of the element to find
+    
+    Returns:
+        The kth smallest element in the combined sorted array
+    """
+    # Ensure arr1 is the smaller array for optimization
+    if len(arr1) > len(arr2):
+        return find_kth(arr2, arr1, k)
+    
+    m = len(arr1)
+    n = len(arr2)
+    
+    # Base cases
+    if m == 0:
+        return arr2[k - 1]
+    if k == 1:
+        return min(arr1[0], arr2[0])
+    
+    # Divide k into two parts
+    i = min(m, k // 2)
+    j = min(n, k // 2)
+    
+    # Compare elements at positions i-1 and j-1
+    if arr1[i - 1] < arr2[j - 1]:
+        # Discard first i elements of arr1
+        return find_kth(arr1[i:], arr2, k - i)
+    else:
+        # Discard first j elements of arr2
+        return find_kth(arr1, arr2[j:], k - j)
+
+
+# Test case
+assert find_kth([2, 3, 6, 7, 9], [1, 4, 8, 10], 5) == 6
+```

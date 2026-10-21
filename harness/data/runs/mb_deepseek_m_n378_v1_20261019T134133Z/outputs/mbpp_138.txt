@@ -1,0 +1,52 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def is_Sum_Of_Powers_Of_Two(n):
+    """
+    Check whether the given number can be represented as a sum of non-zero powers of 2.
+    
+    A number can be represented as a sum of non-zero powers of 2 if and only if
+    its binary representation has at least two 1-bits (i.e., it is not a power of 2
+    and not zero). This is because:
+      - A single power of 2 has exactly one 1-bit in binary.
+      - Any number with two or more 1-bits can be split into the sum of those
+        individual powers of 2.
+    
+    Args:
+        n (int): The number to check.
+    
+    Returns:
+        bool: True if n can be represented as a sum of non-zero powers of 2, else False.
+    """
+    if n <= 0:
+        return False
+    # Count the number of set bits in n
+    return bin(n).count('1') > 1
+
+
+# Test cases
+assert is_Sum_Of_Powers_Of_Two(10) == True   # 10 = 8 + 2
+assert is_Sum_Of_Powers_Of_Two(1) == False   # 1 = 2^0 (single power)
+assert is_Sum_Of_Powers_Of_Two(2) == False   # 2 = 2^1 (single power)
+assert is_Sum_Of_Powers_Of_Two(3) == True    # 3 = 2 + 1
+assert is_Sum_Of_Powers_Of_Two(4) == False   # 4 = 2^2 (single power)
+assert is_Sum_Of_Powers_Of_Two(5) == True    # 5 = 4 + 1
+assert is_Sum_Of_Powers_Of_Two(6) == True    # 6 = 4 + 2
+assert is_Sum_Of_Powers_Of_Two(7) == True    # 7 = 4 + 2 + 1
+assert is_Sum_Of_Powers_Of_Two(8) == False   # 8 = 2^3 (single power)
+assert is_Sum_Of_Powers_Of_Two(0) == False   # 0 cannot be represented
+assert is_Sum_Of_Powers_Of_Two(-5) == False  # negative numbers not applicable
+
+print("All tests passed!")
+```
+
+**Explanation:**
+
+The key insight is that any positive integer `n` can be written as a sum of distinct powers of 2 (its binary representation). The question is whether we can use **at least two** non-zero powers of 2.
+
+- If `n` is a power of 2 (like 1, 2, 4, 8, ...), its binary representation has exactly one `1` bit, so it can only be written as a single power of 2 — not a sum of multiple powers.
+- If `n` has two or more `1` bits in its binary form, we can simply add those individual powers of 2 together to get `n`.
+
+So the check reduces to: **does `n` have more than one set bit in its binary representation?**
+
+The function uses `bin(n).count('1') > 1` to make this check efficiently.

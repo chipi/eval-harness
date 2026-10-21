@@ -1,0 +1,28 @@
+Here’s a self-contained Python script that solves the problem using binary search for efficiency:  
+
+```python
+def find_first_occurrence(arr, target):
+    """
+    Returns the index of the first occurrence of target in a sorted array.
+    If target is not present, returns -1.
+    """
+    low, high = 0, len(arr) - 1
+    result = -1
+
+    while low <= high:
+        mid = (low + high) // 2
+        if arr[mid] == target:
+            result = mid
+            high = mid - 1  # continue searching in the left half
+        elif arr[mid] < target:
+            low = mid + 1
+        else:
+            high = mid - 1
+
+    return result
+
+
+# Example test
+assert find_first_occurrence([2, 5, 5, 5, 6, 6, 8, 9, 9, 9], 5) == 1
+print("Test passed.")
+```

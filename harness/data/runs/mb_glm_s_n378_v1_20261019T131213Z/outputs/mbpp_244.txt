@@ -1,0 +1,58 @@
+```python
+import math
+
+def next_Perfect_Square(num):
+    """
+    Finds the next perfect square greater than a given number.
+
+    Args:
+        num (int): The given number.
+
+    Returns:
+        int: The next perfect square greater than the given number.
+              Returns -1 if the input is not a perfect square or is negative.
+    """
+    # Check if the input number is negative.
+    # A perfect square cannot be negative.
+    if num < 0:
+        return -1
+
+    # Calculate the integer square root of the number.
+    # math.isqrt() is used as it's efficient and directly gives the floor
+    # of the square root (e.g., isqrt(35) is 5).
+    root = math.isqrt(num)
+
+    # The square of the root gives the largest perfect square
+    # that is less than or equal to the input number.
+    perfect_square = root * root
+
+    # If the input number is already a perfect square (e.g., 36),
+    # the next perfect square is (root + 1) squared.
+    if perfect_square == num:
+        return (root + 1) * (root + 1)
+    else:
+        # If the input number is not a perfect square (e.g., 35),
+        # the next perfect square is also (root + 1) squared.
+        # For example, for num=35, root=5, so the next square is 6*6=36.
+        return (root + 1) * (root + 1)
+
+# Example usage and assertions to verify the function
+if __name__ == "__main__":
+    # Test case from the problem description
+    assert next_Perfect_Square(35) == 36, "Test case 1 failed: next_Perfect_Square(35) should be 36"
+
+    # Test with a number that is already a perfect square
+    assert next_Perfect_Square(36) == 49, "Test case 2 failed: next_Perfect_Square(36) should be 49"
+
+    # Test with a smaller number
+    assert next_Perfect_Square(0) == 1, "Test case 3 failed: next_Perfect_Square(0) should be 1"
+    assert next_Perfect_Square(1) == 4, "Test case 4 failed: next_Perfect_Square(1) should be 4"
+
+    # Test with a larger number
+    assert next_Perfect_Square(150) == 169, "Test case 5 failed: next_Perfect_Square(150) should be 169"
+
+    # Test with a negative number (should return -1)
+    assert next_Perfect_Square(-10) == -1, "Test case 6 failed: next_Perfect_Square(-10) should be -1"
+
+    print("All test cases passed successfully!")
+```

@@ -1,0 +1,36 @@
+```python
+def split_two_parts(lst, L):
+    """
+    Splits a given list into two parts where the length of the first part is L.
+
+    Args:
+        lst (list): The list to be split.
+        L (int): The desired length of the first part.
+
+    Returns:
+        tuple: A tuple containing two lists. The first list has L elements,
+               and the second list contains the remaining elements.
+    """
+    # Slicing is the most efficient and Pythonic way to achieve this.
+    # It handles cases where L is 0, equal to the list length, or even
+    # larger than the list length (by returning an empty list for the second part).
+    return (lst[:L], lst[L:])
+
+# Example usage and assertion from the problem description
+assert split_two_parts([1,1,2,3,4,4,5,1], 3) == ([1, 1, 2], [3, 4, 4, 5, 1])
+
+# Additional test cases to demonstrate robustness
+# Test with L = 0
+assert split_two_parts(['a', 'b', 'c'], 0) == ([], ['a', 'b', 'c'])
+
+# Test with L equal to the list length
+assert split_two_parts([10, 20, 30], 3) == ([10, 20, 30], [])
+
+# Test with L greater than the list length
+assert split_two_parts([1, 2], 5) == ([1, 2], [])
+
+# Test with an empty list
+assert split_two_parts([], 10) == ([], [])
+
+print("All assertions passed successfully!")
+```

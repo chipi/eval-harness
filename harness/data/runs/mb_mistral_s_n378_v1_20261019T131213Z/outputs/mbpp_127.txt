@@ -1,0 +1,25 @@
+Here's a self-contained Python script that solves the problem in a markdown code block:
+
+```python
+"""
+Write a function to multiply two integers.
+assert multiply_int(10,20)==200
+"""
+
+def multiply_int(a: int, b: int) -> int:
+    """Multiply two integers and return the result."""
+    return a * b
+
+# Test the function
+assert multiply_int(10, 20) == 200
+print("Test passed!")
+```
+
+This script:
+1. Defines a function `multiply_int` that takes two integers and returns their product
+2. Includes a type hint for the parameters and return value
+3. Has a docstring explaining the function's purpose
+4. Includes the required assertion test case
+5. Prints a success message if the test passes
+
+The function will work for any two integers, not just the test case provided.

@@ -1,0 +1,18 @@
+Here’s a self-contained Python script with the function and assertion:
+
+```python
+from itertools import groupby
+
+def pack_consecutive_duplicates(lst):
+    """
+    Pack consecutive duplicates of a given list elements into sublists.
+    """
+    return [list(group) for _, group in groupby(lst)]
+
+# Test the function
+if __name__ == "__main__":
+    result = pack_consecutive_duplicates([0, 0, 1, 2, 3, 4, 4, 5, 6, 6, 6, 7, 8, 9, 4, 4])
+    expected = [[0, 0], [1], [2], [3], [4, 4], [5], [6, 6, 6], [7], [8], [9], [4, 4]]
+    assert result == expected, f"Test failed: {result} != {expected}"
+    print("Test passed!")
+```

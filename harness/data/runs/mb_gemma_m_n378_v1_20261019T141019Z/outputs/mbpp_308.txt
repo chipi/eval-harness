@@ -1,0 +1,41 @@
+```python
+def large_product(list1, list2, n):
+    """
+    Finds the n largest products possible by multiplying one element 
+    from list1 with one element from list2.
+    
+    Args:
+        list1 (list): First list of numbers.
+        list2 (list): Second list of numbers.
+        n (int): The number of largest products to return.
+        
+    Returns:
+        list: A list containing the n largest products in descending order.
+    """
+    products = []
+    
+    # Iterate through every combination of elements from both lists
+    for x in list1:
+        for y in list2:
+            products.append(x * y)
+            
+    # Sort the products in descending order
+    products.sort(reverse=True)
+    
+    # Return the first n elements
+    return products[:n]
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    result = large_product([1, 2, 3, 4, 5, 6], [3, 6, 8, 9, 10, 6], 3)
+    print(f"Result: {result}")
+    
+    # Assertion to verify correctness
+    assert result == [60, 54, 50], f"Expected [60, 54, 50], but got {result}"
+    
+    # Additional test case: handling negative numbers
+    # (-10 * -10 = 100, 5 * 5 = 25)
+    assert large_product([-10, 1], [-10, 5], 2) == [100, 25]
+    
+    print("All tests passed!")
+```

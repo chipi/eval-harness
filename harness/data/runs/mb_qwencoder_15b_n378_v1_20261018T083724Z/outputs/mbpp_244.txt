@@ -1,0 +1,23 @@
+```python
+import math
+
+def next_Perfect_Square(n):
+    """
+    Find the next perfect square greater than a given number.
+
+    Args:
+    n (int): The number to find the next perfect square for.
+
+    Returns:
+    int: The next perfect square greater than n.
+    """
+    return int(math.ceil(math.sqrt(n)) ** 2)
+
+# Test cases to verify the correctness of the solution
+assert next_Perfect_Square(35) == 36
+assert next_Perfect_Square(49) == 64
+assert next_Perfect_Square(100) == 121
+assert next_Perfect_Square(81) == 100
+assert next_Perfect_Square(7) == 9
+```
+

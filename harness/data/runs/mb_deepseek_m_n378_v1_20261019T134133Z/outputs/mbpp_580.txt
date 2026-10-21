@@ -1,0 +1,44 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def extract_even(nested_tuple):
+    """
+    Recursively removes uneven (odd) elements from a nested mixed tuple.
+    Only even integers are kept. Non-integer elements are also removed.
+    """
+    result = []
+    for item in nested_tuple:
+        if isinstance(item, tuple):
+            # Recursively process nested tuples
+            processed = extract_even(item)
+            # Only include the nested tuple if it's not empty
+            if processed:
+                result.append(processed)
+        elif isinstance(item, int) and item % 2 == 0:
+            # Keep only even integers
+            result.append(item)
+    return tuple(result)
+
+
+# Test the function
+assert extract_even((4, 5, (7, 6, (2, 4)), 6, 8)) == (4, (6, (2, 4)), 6, 8)
+print("Test passed!")
+print(extract_even((4, 5, (7, 6, (2, 4)), 6, 8)))
+```
+
+**How it works:**
+
+1. **Iterate through each element** in the input tuple.
+2. **If the element is a tuple**, recursively call `extract_even` on it. If the resulting nested tuple is non-empty, include it in the output.
+3. **If the element is an integer**, keep it only if it's even (`item % 2 == 0`).
+4. **Other types** (strings, floats, etc.) are dropped since they aren't even integers.
+5. **Return** the collected elements as a tuple.
+
+For the example `(4, 5, (7, 6, (2, 4)), 6, 8)`:
+- `4` → kept (even)
+- `5` → dropped (odd)
+- `(7, 6, (2, 4))` → recursively becomes `(6, (2, 4))` → kept
+- `6` → kept
+- `8` → kept
+
+Result: `(4, (6, (2, 4)), 6, 8)` ✅

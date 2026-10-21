@@ -1,0 +1,24 @@
+```python
+def remove_uppercase(s: str) -> str:
+    """Remove uppercase substrings from a given string.
+    
+    An uppercase substring is a contiguous sequence of uppercase letters.
+    All such sequences are removed entirely from the string.
+    """
+    result = []
+    i = 0
+    while i < len(s):
+        if s[i].isupper():
+            # Skip the entire contiguous uppercase substring
+            while i < len(s) and s[i].isupper():
+                i += 1
+        else:
+            result.append(s[i])
+            i += 1
+    return ''.join(result)
+
+
+# Test
+assert remove_uppercase('cAstyoUrFavoRitETVshoWs') == 'cstyoravoitshos'
+print("All tests passed!")
+```

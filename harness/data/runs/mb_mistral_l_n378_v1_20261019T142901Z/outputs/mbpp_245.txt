@@ -1,0 +1,44 @@
+Here's a self-contained Python script that solves the problem by finding the maximum sum of a bitonic subsequence. The approach involves dynamic programming to compute the maximum increasing subsequence sum ending at each index and the maximum decreasing subsequence sum starting at each index, then combining these results to find the maximum bitonic sum.
+
+```python
+def max_sum(arr):
+    n = len(arr)
+    if n == 0:
+        return 0
+
+    # Initialize two arrays to store the maximum increasing and decreasing subsequence sums
+    inc = [0] * n
+    dec = [0] * n
+
+    # Compute maximum increasing subsequence sum ending at each index
+    for i in range(n):
+        inc[i] = arr[i]
+        for j in range(i):
+            if arr[j] < arr[i] and inc[j] + arr[i] > inc[i]:
+                inc[i] = inc[j] + arr[i]
+
+    # Compute maximum decreasing subsequence sum starting at each index
+    for i in range(n-1, -1, -1):
+        dec[i] = arr[i]
+        for j in range(i+1, n):
+            if arr[j] < arr[i] and dec[j] + arr[i] > dec[i]:
+                dec[i] = dec[j] + arr[i]
+
+    # Find the maximum bitonic sum
+    max_sum = 0
+    for i in range(n):
+        if inc[i] + dec[i] - arr[i] > max_sum:
+            max_sum = inc[i] + dec[i] - arr[i]
+
+    return max_sum
+
+# Test the function
+assert max_sum([1, 15, 51, 45, 33, 100, 12, 18, 9]) == 194
+```
+
+### Explanation:
+1. **Initialization**: We initialize two arrays, `inc` and `dec`, to store the maximum increasing subsequence sum ending at each index and the maximum decreasing subsequence sum starting at each index, respectively.
+2. **Increasing Subsequence Sum**: For each element in the array, we compute the maximum sum of an increasing subsequence ending at that element by checking all previous elements.
+3. **Decreasing Subsequence Sum**: For each element in the array, we compute the maximum sum of a decreasing subsequence starting at that element by checking all subsequent elements.
+4. **Bitonic Sum Calculation**: The maximum bitonic sum is found by combining the `inc` and `dec` arrays, ensuring we subtract the current element once (since it's counted in both `inc` and `dec`).
+5. **Assertion**: The function is tested with the provided assertion to ensure correctness. The expected result is `194`.

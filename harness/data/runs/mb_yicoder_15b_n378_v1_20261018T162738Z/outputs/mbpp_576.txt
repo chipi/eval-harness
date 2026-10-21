@@ -1,0 +1,14 @@
+```python
+def is_Sub_Array(main_array, sub_array):
+    return sub_array in main_array
+
+# Test cases
+assert is_Sub_Array([1,4,3,5],[1,2]) == False
+assert is_Sub_Array([1,4,3,5],[1,4,3,5]) == True
+assert is_Sub_Array([1,4,3,5],[1,4,3,5,6]) == False
+assert is_Sub_Array([1,4,3,5],[1]) == True
+assert is_Sub_Array([1,4,3,5],[]) == True
+assert is_Sub_Array([],[]) == True
+assert is_Sub_Array([1,4,3,5],[1,4,3,5,6,7]) == False
+assert is_Sub_Array([1,4,3,5],[1,4,3,5,6]) == False
+```

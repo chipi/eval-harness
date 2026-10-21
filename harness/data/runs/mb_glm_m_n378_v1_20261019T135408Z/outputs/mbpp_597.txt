@@ -1,0 +1,54 @@
+```python
+def find_kth(arr1, arr2, k):
+    """
+    Find the kth element in the merged sorted array of two sorted arrays.
+    
+    Args:
+        arr1 (list): First sorted array.
+        arr2 (list): Second sorted array.
+        k (int): 1-based index of the element to find.
+    
+    Returns:
+        int: The kth element in the merged sorted array.
+    
+    Raises:
+        ValueError: If k is out of bounds.
+    """
+    len1, len2 = len(arr1), len(arr2)
+    if k < 1 or k > len1 + len2:
+        raise ValueError("k is out of bounds")
+    
+    # Ensure arr1 is the smaller array to optimize the binary search
+    if len1 > len2:
+        return find_kth(arr2, arr1, k)
+    
+    left, right = 0, len1
+    while left <= right:
+        partition1 = (left + right) // 2
+        partition2 = k - partition1
+        
+        # Handle edge cases where partitions are at the boundaries
+        max_left1 = arr1[partition1 - 1] if partition1 > 0 else float('-inf')
+        min_right1 = arr1[partition1] if partition1 < len1 else float('inf')
+        
+        max_left2 = arr2[partition2 - 1] if partition2 > 0 else float('-inf')
+        min_right2 = arr2[partition2] if partition2 < len2 else float('inf')
+        
+        if max_left1 <= min_right2 and max_left2 <= min_right1:
+            return max(max_left1, max_left2)
+        elif max_left1 > min_right2:
+            right = partition1 - 1
+        else:
+            left = partition1 + 1
+    
+    # This line should theoretically never be reached if k is valid
+    raise ValueError("k is out of bounds")
+
+# Test cases
+assert find_kth([2, 3, 6, 7, 9], [1, 4, 8, 10], 5) == 6
+assert find_kth([1, 2, 3], [4, 5, 6], 4) == 4
+assert find_kth([1, 3, 5], [2, 4, 6], 3) == 3
+assert find_kth([], [1, 2, 3], 2) == 2
+assert find_kth([1, 2, 3], [], 1) == 1
+print("All test cases passed!")
+```

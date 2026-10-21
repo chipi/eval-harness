@@ -1,0 +1,48 @@
+Here's a self-contained Python script that solves the problem of finding the sum of products of all possible sublists (subarrays) of a given list:
+
+```python
+def sum_Of_Subarray_Prod(arr):
+    """
+    Calculate the sum of products of all possible subarrays of the given list.
+    
+    Args:
+        arr (list): A list of integers.
+    
+    Returns:
+        int: The sum of products of all possible subarrays.
+    """
+    n = len(arr)
+    total_sum = 0
+    
+    # Iterate over all possible starting points of subarrays
+    for i in range(n):
+        product = 1
+        # Iterate over all possible ending points of subarrays starting at i
+        for j in range(i, n):
+            product *= arr[j]
+            total_sum += product
+    
+    return total_sum
+
+# Test cases
+assert sum_Of_Subarray_Prod([1, 2, 3]) == 20
+assert sum_Of_Subarray_Prod([1, 1, 1]) == 10
+assert sum_Of_Subarray_Prod([2, 3]) == 11
+assert sum_Of_Subarray_Prod([]) == 0
+assert sum_Of_Subarray_Prod([5]) == 5
+
+print("All test cases passed!")
+```
+
+### Explanation:
+1. **Initialization**: The function starts by initializing `total_sum` to 0, which will hold the cumulative sum of all subarray products.
+2. **Nested Loops**: 
+   - The outer loop iterates over each possible starting index `i` of the subarray.
+   - The inner loop iterates over each possible ending index `j` starting from `i` to the end of the array.
+3. **Product Calculation**: For each subarray defined by `i` and `j`, the product of its elements is calculated by multiplying each element from `i` to `j` incrementally. This product is then added to `total_sum`.
+4. **Return Result**: After processing all possible subarrays, the function returns `total_sum`.
+
+### Test Cases:
+- The provided test case `[1, 2, 3]` correctly returns 20, as the subarrays and their products are:
+  - [1], [2], [3], [1, 2], [2, 3], [1, 2, 3] → products: 1, 2, 3, 2, 6, 6 → sum: 20.
+- Additional test cases are included to verify the function's correctness for various scenarios, including edge cases like an empty list or a single-element list.

@@ -1,0 +1,8 @@
+```python
+def first_Digit(number):
+    """Return the first digit of an integer."""
+    return int(str(abs(number))[0])
+
+
+assert first_Digit(123) == 1
+```

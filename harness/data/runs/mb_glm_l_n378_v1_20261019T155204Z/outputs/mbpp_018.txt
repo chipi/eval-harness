@@ -1,0 +1,25 @@
+```python
+def remove_dirty_chars(string1, string2):
+    """
+    Removes characters from the first string which are present in the second string.
+
+    Args:
+        string1 (str): The string to be cleaned.
+        string2 (str): The string containing characters to remove.
+
+    Returns:
+        str: The cleaned string.
+    """
+    # Create a set of characters to remove for efficient lookup
+    chars_to_remove = set(string2)
+    
+    # Build the result string using list comprehension
+    result = [char for char in string1 if char not in chars_to_remove]
+    
+    return "".join(result)
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert remove_dirty_chars("probasscurve", "pros") == 'bacuve'
+    print("Test passed successfully!")
+```

@@ -1,0 +1,25 @@
+```python
+"""
+Write a function to replace characters in a string.
+
+Example:
+assert replace_char("polygon", 'y', 'l') == "pollgon"
+"""
+
+def replace_char(text, old_char, new_char):
+    """
+    Return a new string where every occurrence of old_char in text
+    is replaced by new_char.
+    """
+    return text.replace(old_char, new_char)
+
+
+# Test cases
+assert replace_char("polygon", 'y', 'l') == "pollgon"
+assert replace_char("hello", 'l', 'x') == "hexxo"
+assert replace_char("banana", 'a', 'o') == "bonono"
+assert replace_char("test", 'z', 'x') == "test"
+
+if __name__ == "__main__":
+    print("All tests passed.")
+```

@@ -1,0 +1,28 @@
+```python
+def sum_Of_Subarray_Prod(arr):
+    """
+    This function calculates the sum of products of all possible sublists of a given list.
+
+    Args:
+        arr (list): A list of integers.
+
+    Returns:
+        int: The sum of products of all possible sublists.
+
+    """
+    n = len(arr)
+    total_sum = 0
+    
+    # Iterate over all possible sublists
+    for i in range(n):
+        prod = 1
+        for j in range(i, n):
+            prod *= arr[j]
+            total_sum += prod
+    
+    return total_sum
+
+# Test the function
+assert sum_Of_Subarray_Prod([1,2,3]) == 20
+print("All test cases pass")
+```

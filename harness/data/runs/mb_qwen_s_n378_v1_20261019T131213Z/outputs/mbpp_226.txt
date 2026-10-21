@@ -1,0 +1,17 @@
+```python
+def odd_values_string(s):
+    """
+    Remove characters which have odd index values from the given string.
+    
+    Args:
+        s (str): The input string
+        
+    Returns:
+        str: A new string containing only characters at even indices (0, 2, 4, ...)
+        
+    Examples:
+        >>> odd_values_string('abcdef')
+        'ace'
+    """
+    return ''.join(s[i] for i in range(0, len(s), 2))
+```

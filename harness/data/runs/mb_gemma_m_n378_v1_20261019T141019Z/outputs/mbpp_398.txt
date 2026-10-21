@@ -1,0 +1,31 @@
+```python
+def sum_of_digits(numbers):
+    """
+    Computes the sum of digits of each number in a given list and returns the total sum.
+    
+    Args:
+        numbers (list): A list of integers.
+        
+    Returns:
+        int: The sum of all digits of all numbers in the list.
+    """
+    total_sum = 0
+    for num in numbers:
+        # Convert number to absolute value to handle negative integers
+        # Convert to string to iterate through each digit
+        for digit in str(abs(num)):
+            total_sum += int(digit)
+    return total_sum
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    assert sum_of_digits([10, 2, 56]) == 14
+    
+    # Additional test cases
+    assert sum_of_digits([1, 2, 3]) == 6
+    assert sum_of_digits([0, 0, 0]) == 0
+    assert sum_of_digits([99, 1]) == 19  # (9+9) + 1 = 19
+    assert sum_of_digits([-12, 5]) == 8  # (1+2) + 5 = 8
+    
+    print("All tests passed!")
+```

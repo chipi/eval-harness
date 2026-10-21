@@ -1,0 +1,32 @@
+```python
+def average_tuple(tuples):
+    """
+    This function calculates the average value for each tuple in a tuple of tuples.
+
+    Args:
+        tuples (tuple): A tuple of tuples, where each inner tuple contains numbers.
+
+    Returns:
+        list: A list of average values, one for each inner tuple.
+    """
+    # Initialize an empty list to store the average values
+    averages = []
+    
+    # Iterate over each inner tuple in the tuple of tuples
+    for tup in tuples:
+        # Calculate the sum of the numbers in the current inner tuple
+        total = sum(tup)
+        
+        # Calculate the average by dividing the sum by the number of elements
+        avg = total / len(tup)
+        
+        # Append the average to the list of averages
+        averages.append(avg)
+    
+    # Return the list of averages
+    return averages
+
+# Test the function
+tuples = ((10, 10, 10, 12), (30, 45, 56, 45), (81, 80,39, 32), (1, 2, 3, 4))
+print(average_tuple(tuples))  # Output: [10.5, 44.0, 58.0, 2.5]
+```

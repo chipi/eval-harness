@@ -1,0 +1,36 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def swap_List(lst):
+    """
+    Interchange the first and last elements in a list.
+    
+    Args:
+        lst: A list of elements
+        
+    Returns:
+        A new list with first and last elements swapped
+    """
+    if len(lst) < 2:
+        return lst.copy()
+    
+    # Create a copy to avoid modifying the original list
+    result = lst.copy()
+    # Swap first and last elements
+    result[0], result[-1] = result[-1], result[0]
+    return result
+
+
+# Test the function
+if __name__ == "__main__":
+    # Test case from the problem
+    assert swap_List([12, 35, 9, 56, 24]) == [24, 35, 9, 56, 12]
+    
+    # Additional test cases
+    assert swap_List([1, 2]) == [2, 1]
+    assert swap_List([5]) == [5]
+    assert swap_List([]) == []
+    assert swap_List([1, 2, 3, 4, 5]) == [5, 2, 3, 4, 1]
+    
+    print("All tests passed!")
+```

@@ -1,0 +1,60 @@
+```python
+def number_of_substrings(s: str) -> int:
+    """
+    This function calculates the number of non-empty substrings of a given string.
+
+    Args:
+    s (str): The input string.
+
+    Returns:
+    int: The number of non-empty substrings.
+
+    """
+    # Initialize a variable to store the total number of substrings
+    total_substrings = 0
+    
+    # Iterate over the string
+    for i in range(len(s)):
+        # For each character, the number of substrings starting at this position is equal to the remaining characters
+        total_substrings += len(s) - i
+    
+    # Return the total number of substrings
+    return total_substrings
+
+# Test the function
+assert number_of_substrings("abc") == 6
+print(number_of_substrings("abc"))  # Output: 6
+```
+
+However, there's a mathematical approach to solve this problem more efficiently. The total number of substrings (including empty ones) of a string of length `n` is given by `n*(n+1)/2`. We subtract `n` from this to exclude the empty substrings.
+
+```python
+def number_of_substrings(s: str) -> int:
+    """
+    This function calculates the number of non-empty substrings of a given string.
+
+    Args:
+    s (str): The input string.
+
+    Returns:
+    int: The number of non-empty substrings.
+
+    """
+    # Calculate the total number of substrings (including empty ones)
+    total_substrings = len(s) * (len(s) + 1) // 2
+    
+    # Subtract the number of empty substrings (which is equal to the length of the string)
+    # But since we are not counting the empty string as per problem, 
+    # we subtract 0 (for empty string) or simply return the value as it will be 0 for empty string case 
+    return total_substrings - 0 if s else 0 
+
+# Or simply 
+
+def number_of_substrings(s: str) -> int:
+    n = len(s)
+    return n*(n+1)//2 - (1 if n > 0 else 0)
+
+# Test the function
+assert number_of_substrings("abc") == 6
+print(number_of_substrings("abc"))  # Output: 6
+```

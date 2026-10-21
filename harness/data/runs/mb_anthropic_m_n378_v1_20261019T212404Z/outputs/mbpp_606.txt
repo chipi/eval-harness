@@ -1,0 +1,8 @@
+```python
+import math
+
+def radian_degree(degree):
+    return degree * (math.pi / 180)
+
+assert radian_degree(90) == 1.5707963267948966
+```

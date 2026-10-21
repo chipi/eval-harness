@@ -1,0 +1,47 @@
+```python
+def unique_product(numbers):
+    """
+    Calculate the product of the unique numbers in a given list.
+
+    Args:
+        numbers (list): A list of numbers.
+
+    Returns:
+        int: The product of the unique numbers in the list.
+    """
+    # Convert the list to a set to remove duplicates
+    unique_numbers = set(numbers)
+    
+    # Initialize the product to 1
+    product = 1
+    
+    # Calculate the product of the unique numbers
+    for num in unique_numbers:
+        product *= num
+    
+    return product
+
+# Example usage:
+print(unique_product([10, 20, 30, 40, 20, 50, 60, 40]))  # Output: 720000000
+```
+
+Alternatively, you can use the `math.prod` function (available in Python 3.8+) and a set comprehension to make the function more concise:
+
+```python
+import math
+
+def unique_product(numbers):
+    """
+    Calculate the product of the unique numbers in a given list.
+
+    Args:
+        numbers (list): A list of numbers.
+
+    Returns:
+        int: The product of the unique numbers in the list.
+    """
+    return math.prod(set(numbers))
+
+# Example usage:
+print(unique_product([10, 20, 30, 40, 20, 50, 60, 40]))  # Output: 720000000
+```

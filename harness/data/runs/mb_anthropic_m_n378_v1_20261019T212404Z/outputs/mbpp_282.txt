@@ -1,0 +1,14 @@
+```python
+def sub_list(list1, list2):
+    """
+    Subtract two lists element-wise.
+    """
+    return [a - b for a, b in zip(list1, list2)]
+
+
+# Test cases
+assert sub_list([1, 2, 3], [4, 5, 6]) == [-3, -3, -3]
+
+if __name__ == "__main__":
+    print(sub_list([1, 2, 3], [4, 5, 6]))
+```

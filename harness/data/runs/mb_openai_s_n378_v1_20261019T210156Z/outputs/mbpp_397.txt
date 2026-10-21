@@ -1,0 +1,12 @@
+```python
+def median_numbers(a, b, c):
+    """
+    Return the median (middle) of three numbers as a float.
+    """
+    return float(sorted([a, b, c])[1])
+
+
+if __name__ == "__main__":
+    assert median_numbers(25, 55, 65) == 55.0
+    print("All tests passed.")
+```

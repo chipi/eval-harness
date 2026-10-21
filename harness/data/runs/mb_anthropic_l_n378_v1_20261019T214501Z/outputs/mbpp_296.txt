@@ -1,0 +1,105 @@
+Looking at this problem, I need to count inversions in an array — pairs `(i, j)` where `i < j` and `arr[i] > arr[j]`.
+
+Let me verify with the example `[1, 20, 6, 4, 5]`:
+- (20, 6), (20, 4), (20, 5) → 3 inversions
+- (6, 4), (6, 5) → 2 inversions
+- (4, 5) → not an inversion
+
+Total: **5 inversions** ✓
+
+```python
+"""
+Write a python function to count inversions in an array.
+assert get_Inv_Count([1,20,6,4,5]) == 5
+"""
+
+
+def get_Inv_Count(arr):
+    """
+    Count the number of inversions in an array.
+
+    An inversion is a pair of indices (i, j) such that i < j and arr[i] > arr[j].
+
+    Uses a modified merge sort for O(n log n) time complexity.
+    """
+    n = len(arr)
+    if n < 2:
+        return 0
+
+    # Work on a copy so the caller's list is left untouched
+    work = list(arr)
+    temp = [0] * n
+
+    def merge_sort(left, right):
+        """Sort work[left:right+1] and return the inversion count."""
+        if left >= right:
+            return 0
+
+        mid = (left + right) // 2
+        count = merge_sort(left, mid)
+        count += merge_sort(mid + 1, right)
+        count += merge(left, mid, right)
+        return count
+
+    def merge(left, mid, right):
+        """Merge the two sorted halves, counting split inversions."""
+        i, j, k = left, mid + 1, left
+        count = 0
+
+        while i <= mid and j <= right:
+            if work[i] <= work[j]:
+                temp[k] = work[i]
+                i += 1
+            else:
+                # work[i..mid] are all greater than work[j]
+                temp[k] = work[j]
+                j += 1
+                count += (mid - i + 1)
+            k += 1
+
+        while i <= mid:
+            temp[k] = work[i]
+            i += 1
+            k += 1
+
+        while j <= right:
+            temp[k] = work[j]
+            j += 1
+            k += 1
+
+        work[left:right + 1] = temp[left:right + 1]
+        return count
+
+    return merge_sort(0, n - 1)
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert get_Inv_Count([1, 20, 6, 4, 5]) == 5
+
+    # Additional test cases
+    assert get_Inv_Count([8, 4, 2, 1]) == 6          # fully reversed
+    assert get_Inv_Count([3, 1, 2]) == 2
+    assert get_Inv_Count([1, 2, 3, 4, 5]) == 0       # already sorted
+    assert get_Inv_Count([]) == 0
+    assert get_Inv_Count([10]) == 0
+    assert get_Inv_Count([2, 2, 2]) == 0             # duplicates: no inversions
+
+    # Ensure the original list is not modified
+    data = [1, 20, 6, 4, 5]
+    get_Inv_Count(data)
+    assert data == [1, 20, 6, 4, 5]
+
+    print("All tests passed!")
+    print("get_Inv_Count([1, 20, 6, 4, 5]) =", get_Inv_Count([1, 20, 6, 4, 5]))
+```
+
+**How it works:**
+
+The brute-force approach would check every pair in O(n²). Instead, this uses merge sort:
+
+1. **Divide** the array into two halves and recursively count inversions in each.
+2. **Merge** the sorted halves. When an element from the right half is placed before remaining elements of the left half, those remaining left elements (`mid - i + 1` of them) are each greater than it — so we add that many inversions at once.
+3. The total is left-half inversions + right-half inversions + split inversions.
+
+This gives **O(n log n)** time and **O(n)** space.

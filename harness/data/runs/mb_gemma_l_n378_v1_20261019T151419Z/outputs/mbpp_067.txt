@@ -1,0 +1,61 @@
+The problem description asks for a function to find the number of ways to partition a set, which is the definition of the **Bell numbers**. The Bell number $B_n$ represents the number of ways to partition a set of $n$ elements into non-empty, disjoint subsets.
+
+The most efficient way to calculate Bell numbers is using the **Bell Triangle** (also known as the Aitken array).
+
+Here is the self-contained Python script:
+
+```python
+def bell_number(n):
+    """
+    Calculates the n-th Bell number using the Bell Triangle.
+    B(n) represents the number of ways to partition a set of n elements.
+    """
+    if n == 0:
+        return 1
+    
+    # The Bell Triangle is a 2D array where the first element of 
+    # each row is the last element of the previous row.
+    # We only need to keep track of the current row to save space.
+    row = [0] * (n + 1)
+    row[0] = 1
+    
+    for i in range(1, n + 1):
+        # The first element of the current row is the last element of the previous row
+        prev_last = row[i - 1]
+        
+        # We build the current row in place. 
+        # To avoid overwriting values we need, we use a temporary variable or a new list.
+        new_row = [0] * (n + 1)
+        new_row[0] = prev_last
+        
+        for j in range(1, i + 1):
+            # Each element is the sum of the element to its left 
+            # and the element above it (from the previous row)
+            new_row[j] = new_row[j - 1] + row[j - 1]
+            
+        row = new_row
+        
+    # The n-th Bell number is the first element of the n-th row 
+    # (or the last element of the (n-1)-th row).
+    # Based on the triangle construction, B(n) is row[0] of the n-th iteration.
+    return row[0]
+
+if __name__ == "__main__":
+    # Test cases
+    test_cases = {
+        0: 1, # Empty set has 1 partition
+        1: 1, # {1} -> {{1}}
+        2: 2, # {1, 2} -> {{1, 2}}, {{1}, {2}}
+        3: 5, # {1, 2, 3} -> {{1,2,3}}, {{1,2},{3}}, {{1,3},{2}}, {{2,3},{1}}, {{1},{2},{3}}
+        4: 15,
+        5: 52
+    }
+
+    for n, expected in test_cases.items():
+        result = bell_number(n)
+        print(f"bell_number({n}) = {result}; Expected: {expected} - {'PASSED' if result == expected else 'FAILED'}")
+
+    # Specific assertion from the prompt
+    assert bell_number(2) == 2
+    print("\nAssertion bell_number(2) == 2 passed!")
+```

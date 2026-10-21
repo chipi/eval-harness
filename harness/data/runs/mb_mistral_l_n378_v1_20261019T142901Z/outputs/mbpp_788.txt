@@ -1,0 +1,25 @@
+Here's a self-contained Python script that solves the problem, provided in a markdown code block:
+
+```python
+def new_tuple(lst, string):
+    """
+    Creates a new tuple from the given list and string.
+
+    Args:
+        lst: A list of strings.
+        string: A string to be added to the tuple.
+
+    Returns:
+        A tuple containing all elements from the list followed by the string.
+    """
+    return tuple(lst) + (string,)
+
+# Test the function
+assert new_tuple(["WEB", "is"], "best") == ('WEB', 'is', 'best')
+```
+
+This script:
+1. Defines the `new_tuple` function that takes a list and a string as input
+2. Converts the list to a tuple and adds the string as a new element
+3. Includes the assertion test as specified in the problem
+4. Will raise an AssertionError if the test fails (which it shouldn't with this implementation)

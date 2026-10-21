@@ -1,0 +1,11 @@
+```python
+import re
+
+
+def extract_values(text: str) -> list[str]:
+    """Return the values enclosed in double quotation marks."""
+    return re.findall(r'"([^"]*)"', text)
+
+
+assert extract_values('"Python", "PHP", "Java"') == ['Python', 'PHP', 'Java']
+```

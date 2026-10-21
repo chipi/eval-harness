@@ -1,0 +1,54 @@
+```python
+def set_left_most_unset_bit(n):
+    """
+    Set the leftmost unset bit of a given number n.
+    If all bits are set, return n unchanged.
+    """
+    if n == 0:
+        return 1
+
+    # Check if all bits are already set
+    temp = n
+    all_set = True
+    while temp > 0:
+        if temp & 1 == 0:
+            all_set = False
+            break
+        temp >>= 1
+
+    if all_set:
+        return n
+
+    # Find the position of the leftmost unset bit
+    pos = -1
+    for i in range(n.bit_length() + 1):
+        if not (n & (1 << i)):
+            pos = i
+
+    # Find the highest position among unset bits that is below the highest set bit
+    # We need the leftmost (highest significant) unset bit within the number's range
+    highest_set_bit = n.bit_length() - 1
+    leftmost_unset = -1
+    for i in range(highest_set_bit, -1, -1):
+        if not (n & (1 << i)):
+            leftmost_unset = i
+            break
+
+    if leftmost_unset == -1:
+        # No unset bit found within range, set the bit just above highest set bit
+        leftmost_unset = highest_set_bit + 1
+
+    return n | (1 << leftmost_unset)
+
+
+if __name__ == "__main__":
+    assert set_left_most_unset_bit(10) == 14
+    print("All test cases passed!")
+    
+    # Additional test examples
+    print(set_left_most_unset_bit(10))  # 14 (1010 -> 1110)
+    print(set_left_most_unset_bit(15))  # 15 (all bits set, unchanged)
+    print(set_left_most_unset_bit(0))   # 1
+    print(set_left_most_unset_bit(1))   # 3 (01 -> 11)
+    print(set_left_most_unset_bit(21))  # 29 (10101 -> 11101)
+```

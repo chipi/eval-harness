@@ -1,0 +1,34 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def replace_char(string, old_char, new_char):
+    """
+    Replace all occurrences of old_char with new_char in the given string.
+    
+    Args:
+        string (str): The input string
+        old_char (str): The character to be replaced
+        new_char (str): The character to replace with
+    
+    Returns:
+        str: The modified string with characters replaced
+    """
+    return string.replace(old_char, new_char)
+
+
+# Test the function
+if __name__ == "__main__":
+    # Test case from the problem
+    result = replace_char("polygon", 'y', 'l')
+    expected = "pollgon"
+    assert result == expected, f"Expected '{expected}', but got '{result}'"
+    print(f"Test passed: replace_char('polygon', 'y', 'l') = '{result}'")
+    
+    # Additional test cases
+    assert replace_char("hello", 'l', 'w') == "hewwo"
+    assert replace_char("banana", 'a', 'o') == "bonono"
+    assert replace_char("python", 'x', 'y') == "python"  # No replacement
+    print("All tests passed!")
+```
+
+This script defines the `replace_char` function that uses Python's built-in `str.replace()` method to replace all occurrences of a specified character with another character in a string. The function is then tested with the provided example and a few additional test cases to verify its correctness.

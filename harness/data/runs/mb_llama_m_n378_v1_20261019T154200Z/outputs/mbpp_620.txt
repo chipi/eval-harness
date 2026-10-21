@@ -1,0 +1,40 @@
+```python
+def largest_subset(nums):
+    """
+    This function finds the size of the largest subset of a list of numbers 
+    so that every pair is divisible.
+
+    Args:
+        nums (list): A list of integers.
+
+    Returns:
+        int: The size of the largest subset.
+    """
+    if not nums:
+        return 0
+
+    # Sort the list in ascending order
+    nums.sort()
+
+    # Initialize a list to store the size of the largest subset ending at each position
+    dp = [1] * len(nums)
+
+    # Initialize the maximum size of the subset
+    max_size = 1
+
+    # Iterate over the list
+    for i in range(1, len(nums)):
+        for j in range(i):
+            # Check if the current number is divisible by the previous number
+            if nums[i] % nums[j] == 0:
+                # Update the size of the largest subset ending at the current position
+                dp[i] = max(dp[i], dp[j] + 1)
+        # Update the maximum size of the subset
+        max_size = max(max_size, dp[i])
+
+    return max_size
+
+
+# Test the function
+print(largest_subset([1, 3, 6, 13, 17, 18]))  # Output: 4
+```

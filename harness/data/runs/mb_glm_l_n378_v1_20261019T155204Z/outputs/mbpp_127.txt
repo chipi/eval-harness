@@ -1,0 +1,18 @@
+```python
+def multiply_int(a: int, b: int) -> int:
+    """
+    Multiply two integers and return the result.
+    
+    Args:
+        a (int): The first integer.
+        b (int): The second integer.
+        
+    Returns:
+        int: The product of a and b.
+    """
+    return a * b
+
+# Assert statement to verify the function works as expected
+assert multiply_int(10, 20) == 200
+print("Test passed successfully!")
+```

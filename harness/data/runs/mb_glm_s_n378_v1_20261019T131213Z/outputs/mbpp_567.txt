@@ -1,0 +1,35 @@
+```python
+def issort_list(lst):
+    """
+    Checks whether a specified list is sorted in non-decreasing order.
+
+    Args:
+        lst: A list of comparable elements (e.g., numbers, strings).
+
+    Returns:
+        True if the list is sorted, False otherwise.
+    """
+    # Iterate through the list from the first element to the second-to-last element.
+    for i in range(len(lst) - 1):
+        # Compare the current element with the next one.
+        # If the current element is greater than the next, the list is not sorted.
+        if lst[i] > lst[i + 1]:
+            return False
+            
+    # If the loop completes without finding any out-of-order elements, the list is sorted.
+    return True
+
+# Example usage and assertion from the problem description
+assert issort_list([1, 2, 4, 6, 8, 10, 12, 14, 16, 17]) == True
+
+# Additional test cases to demonstrate the function's robustness
+assert issort_list([]) == True  # An empty list is considered sorted
+assert issort_list([5]) == True # A single-element list is considered sorted
+assert issort_list([1, 2, 2, 3, 4]) == True # Handles duplicates correctly
+assert issort_list([10, 20, 30, 25, 40]) == False # Correctly identifies an unsorted list
+assert issort_list(['a', 'b', 'c']) == True # Works with strings
+assert issort_list(['apple', 'banana', 'cherry', 'date']) == True
+assert issort_list(['apple', 'banana', 'cherry', 'apricot']) == False
+
+print("All assertions passed!")
+```

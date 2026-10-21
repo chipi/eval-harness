@@ -1,0 +1,35 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def sub_list(list1, list2):
+    """
+    Subtract two lists element-wise.
+    
+    Args:
+        list1: First list of numbers
+        list2: Second list of numbers
+    
+    Returns:
+        A new list where each element is list1[i] - list2[i]
+    """
+    return [a - b for a, b in zip(list1, list2)]
+
+
+if __name__ == "__main__":
+    assert sub_list([1, 2, 3], [4, 5, 6]) == [-3, -3, -3]
+    print("All tests passed!")
+```
+
+**How it works:**
+- `zip(list1, list2)` pairs up elements from both lists: `(1,4), (2,5), (3,6)`.
+- The list comprehension subtracts each pair: `1-4=-3`, `2-5=-3`, `3-6=-3`.
+- The result is `[-3, -3, -3]`, matching the expected output.
+
+**Note:** `zip` stops at the shorter list if the lists have different lengths. If you need to handle unequal lengths differently (e.g., raise an error), you could add a length check:
+
+```python
+def sub_list(list1, list2):
+    if len(list1) != len(list2):
+        raise ValueError("Lists must be of equal length")
+    return [a - b for a, b in zip(list1, list2)]
+```

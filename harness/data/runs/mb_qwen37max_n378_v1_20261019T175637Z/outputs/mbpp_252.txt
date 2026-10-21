@@ -1,0 +1,8 @@
+```python
+import cmath
+
+def convert(z):
+    """Convert a complex number to polar coordinates (r, theta)."""
+    r, theta = cmath.polar(complex(z))
+    return (r, theta)
+```

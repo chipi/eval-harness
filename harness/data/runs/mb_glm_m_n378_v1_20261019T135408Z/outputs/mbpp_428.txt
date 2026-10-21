@@ -1,0 +1,57 @@
+Here's a self-contained Python script that implements the Shell sort algorithm and includes the provided test case:
+
+```python
+def shell_sort(arr):
+    """
+    Sorts the given array using the Shell sort algorithm.
+    
+    Args:
+        arr (list): The list of elements to be sorted.
+    
+    Returns:
+        list: The sorted list.
+    """
+    n = len(arr)
+    gap = n // 2  # Start with a big gap, then reduce the gap
+    
+    while gap > 0:
+        # Do a gapped insertion sort for this gap size.
+        for i in range(gap, n):
+            temp = arr[i]
+            j = i
+            # Shift earlier gap-sorted elements up until the correct location for arr[i] is found
+            while j >= gap and arr[j - gap] > temp:
+                arr[j] = arr[j - gap]
+                j -= gap
+            # Put temp (the original arr[i]) in its correct location
+            arr[j] = temp
+        gap = gap // 2  # Reduce the gap for the next pass
+    
+    return arr
+
+# Test the function with the provided test case
+if __name__ == "__main__":
+    test_array = [12, 23, 4, 5, 3, 2, 12, 81, 56, 95]
+    sorted_array = shell_sort(test_array.copy())  # Use copy to avoid modifying the original
+    expected = [2, 3, 4, 5, 12, 12, 23, 56, 81, 95]
+    assert sorted_array == expected, f"Test failed: expected {expected}, got {sorted_array}"
+    print("Test passed! Sorted array:", sorted_array)
+```
+
+### Explanation:
+1. **Shell Sort Algorithm**: 
+   - Shell sort is an in-place comparison sort that generalizes insertion sort by allowing the exchange of items that are far apart.
+   - The algorithm starts with a large gap (half the length of the array) and reduces the gap by half in each iteration until the gap becomes 1.
+   - For each gap, the algorithm performs a gapped insertion sort, which means it sorts elements that are `gap` positions apart.
+
+2. **Implementation Details**:
+   - The function `shell_sort` takes a list `arr` as input and returns the sorted list.
+   - The outer loop controls the gap size, starting from `n // 2` and halving it each time.
+   - The inner loop performs the gapped insertion sort for the current gap size.
+   - The test case provided in the problem statement is included in the `if __name__ == "__main__":` block to verify the correctness of the implementation.
+
+3. **Testing**:
+   - The test case checks if the function correctly sorts the given array.
+   - If the assertion passes, it prints a success message along with the sorted array.
+
+This script is self-contained and can be run directly to test the Shell sort implementation.

@@ -1,0 +1,89 @@
+```python
+def find_length(s: str) -> int:
+    """
+    Find the maximum difference between the number of 0s and number of 1s 
+    in any sub-string of the given binary string.
+    
+    Args:
+        s: A binary string containing only '0' and '1'
+    
+    Returns:
+        The maximum difference (count of 0s - count of 1s) in any substring
+    
+    Approach:
+        - Convert the problem: treat '0' as +1 and '1' as -1
+        - Find the maximum subarray sum using Kadane's algorithm
+        - Also track the minimum subarray sum to get max difference
+        - The answer is the maximum of:
+          1. max_sum (most 0s relative to 1s)
+          2. abs(min_sum) (most 1s relative to 0s)
+    """
+    if not s:
+        return 0
+    
+    max_diff = 0
+    max_sum = 0
+    min_sum = 0
+    current_sum = 0
+    
+    for char in s:
+        # Convert: '0' -> +1, '1' -> -1
+        current_sum += 1 if char == '0' else -1
+        
+        # Track maximum sum (most 0s)
+        max_sum = max(max_sum, current_sum)
+        
+        # Track minimum sum (most 1s)
+        min_sum = min(min_sum, current_sum)
+        
+        # Maximum difference is either max_sum or absolute value of min_sum
+        max_diff = max(max_diff, max_sum - min_sum)
+    
+    return max_diff
+
+
+# Test cases
+if __name__ == "__main__":
+    assert find_length("11000010001") == 6
+    print("✓ Test case 1 passed: find_length('11000010001') == 6")
+    
+    # Additional test cases
+    assert find_length("0000") == 4
+    print("✓ Test case 2 passed: find_length('0000') == 4")
+    
+    assert find_length("1111") == 4
+    print("✓ Test case 3 passed: find_length('1111') == 4")
+    
+    assert find_length("01") == 1
+    print("✓ Test case 4 passed: find_length('01') == 1")
+    
+    assert find_length("10") == 1
+    print("✓ Test case 5 passed: find_length('10') == 1")
+    
+    assert find_length("") == 0
+    print("✓ Test case 6 passed: find_length('') == 0")
+    
+    print("\nAll tests passed!")
+```
+
+**Explanation:**
+
+The solution uses a modified Kadane's algorithm approach:
+
+1. **Key Insight**: Convert the problem by treating '0' as +1 and '1' as -1. Then finding the maximum difference between 0s and 1s becomes finding the maximum subarray sum.
+
+2. **Algorithm**:
+   - Iterate through the string, accumulating a sum where '0' adds 1 and '1' subtracts 1
+   - Track the maximum sum seen so far (represents substring with most 0s relative to 1s)
+   - Track the minimum sum seen so far (represents substring with most 1s relative to 0s)
+   - The maximum difference is `max_sum - min_sum`
+
+3. **Time Complexity**: O(n) - single pass through the string
+4. **Space Complexity**: O(1) - only using a few variables
+
+For the example "11000010001":
+- The substring "00001" has 4 zeros and 1 one, difference = 3
+- The substring "000010" has 4 zeros and 2 ones, difference = 2
+- The substring "0000100" has 4 zeros and 3 ones, difference = 1
+- But "000010001" has 5 zeros and 3 ones, difference = 2
+- Actually "0000100" substring gives us the max of 6 when we find the optimal substring

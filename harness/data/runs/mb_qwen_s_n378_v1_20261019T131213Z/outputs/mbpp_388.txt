@@ -1,0 +1,39 @@
+```python
+def highest_Power_of_2(n):
+    """
+    Find the highest power of 2 that is less than or equal to n.
+    
+    Args:
+        n (int): A positive integer
+        
+    Returns:
+        int: The highest power of 2 <= n
+    """
+    if n <= 0:
+        return 0
+    
+    # Find the position of the most significant bit
+    # This gives us the exponent of the highest power of 2 <= n
+    msb = n.bit_length() - 1
+    return 1 << msb
+
+
+# Test cases
+assert highest_Power_of_2(10) == 8
+assert highest_Power_of_2(16) == 16
+assert highest_Power_of_2(17) == 16
+assert highest_Power_of_2(1) == 1
+assert highest_Power_of_2(31) == 32 - 16  # Wait, let me recalculate
+# Actually for 31, the highest power of 2 <= 31 is 16? No, it's 16? 
+# Let me think: powers of 2 are 1, 2, 4, 8, 16, 32...
+# For 31, the highest power of 2 <= 31 is 16? No, 16 < 31 but 32 > 31, so yes 16.
+# Wait, that's wrong. 16 is a power of 2 and 16 <= 31. But is there a higher one? 32 > 31, so no.
+# Hmm, but actually I made an error in my reasoning above. Let me recheck.
+# Powers of 2: 1, 2, 4, 8, 16, 32, 64...
+# For n=31: 16 <= 31, 32 > 31, so answer is 16. Correct.
+
+assert highest_Power_of_2(31) == 16
+assert highest_Power_of_2(32) == 32
+assert highest_Power_of_2(63) == 32
+assert highest_Power_of_2(64) == 64
+```

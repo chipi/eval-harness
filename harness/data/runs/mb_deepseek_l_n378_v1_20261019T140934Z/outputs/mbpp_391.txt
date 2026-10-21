@@ -1,0 +1,44 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def convert_list_dictionary(keys, names, values):
+    """
+    Convert multiple lists into a list of nested dictionaries.
+    
+    Args:
+        keys: List of primary keys (e.g., student IDs)
+        names: List of names (e.g., student names)
+        values: List of values (e.g., scores)
+    
+    Returns:
+        List of nested dictionaries
+    """
+    result = []
+    for key, name, value in zip(keys, names, values):
+        result.append({key: {name: value}})
+    return result
+
+
+# Test the function
+if __name__ == "__main__":
+    # Test case from the problem
+    test_result = convert_list_dictionary(
+        ["S001", "S002", "S003", "S004"],
+        ["Adina Park", "Leyton Marsh", "Duncan Boyle", "Saim Richards"],
+        [85, 98, 89, 92]
+    )
+    
+    expected_result = [
+        {'S001': {'Adina Park': 85}},
+        {'S002': {'Leyton Marsh': 98}},
+        {'S003': {'Duncan Boyle': 89}},
+        {'S004': {'Saim Richards': 92}}
+    ]
+    
+    # Assert the result matches expected output
+    assert test_result == expected_result, f"Test failed! Got {test_result}"
+    print("Test passed!")
+    print("Result:", test_result)
+```
+
+This script defines the `convert_list_dictionary` function that takes three lists as input and combines them into a list of nested dictionaries. The function uses `zip()` to iterate through all three lists simultaneously, creating a nested dictionary structure for each set of corresponding elements. The test case from the problem is included to verify the function works correctly.

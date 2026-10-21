@@ -1,0 +1,25 @@
+```python
+def ascii_value(char):
+    """
+    Return the ASCII value of a single character.
+    
+    Parameters:
+        char (str): A string of length 1.
+    
+    Returns:
+        int: ASCII value of the character.
+    
+    Raises:
+        ValueError: If input is not a single character string.
+    """
+    if not isinstance(char, str) or len(char) != 1:
+        raise ValueError("Input must be a single character string.")
+    return ord(char)
+
+
+# Example test
+assert ascii_value('A') == 65
+
+if __name__ == "__main__":
+    print(ascii_value('A'))
+```

@@ -1,0 +1,42 @@
+Looking at this problem, I need to write a function named `is_upper` that converts a given string to uppercase.
+
+```python
+"""
+Write a python function to convert a given string to uppercase.
+assert is_upper("person") =="PERSON"
+"""
+
+
+def is_upper(string):
+    """
+    Convert a given string to uppercase.
+
+    Args:
+        string (str): The string to convert.
+
+    Returns:
+        str: The uppercase version of the input string.
+    """
+    return string.upper()
+
+
+if __name__ == "__main__":
+    # Test cases
+    assert is_upper("person") == "PERSON"
+    assert is_upper("final") == "FINAL"
+    assert is_upper("Valid") == "VALID"
+    assert is_upper("") == ""
+    assert is_upper("MiXeD123!") == "MIXED123!"
+
+    print(is_upper("person"))   # PERSON
+    print(is_upper("final"))    # FINAL
+    print(is_upper("Valid"))    # VALID
+
+    print("All tests passed!")
+```
+
+**Explanation:**
+
+- The built-in string method `.upper()` returns a new string with all cased characters converted to uppercase.
+- Non-alphabetic characters (digits, punctuation, spaces) are left unchanged.
+- Strings in Python are immutable, so `.upper()` returns a new string rather than modifying the original.

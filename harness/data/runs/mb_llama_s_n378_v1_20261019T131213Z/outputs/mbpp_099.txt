@@ -1,0 +1,20 @@
+```python
+def decimal_to_binary(n: int) -> str:
+    """
+    Converts a given decimal number to its binary equivalent, 
+    represented as a string with no leading zeros.
+
+    Args:
+        n (int): The decimal number to be converted.
+
+    Returns:
+        str: The binary representation of the decimal number.
+    """
+    return bin(n)[2:]
+
+# Example usage:
+if __name__ == "__main__":
+    assert decimal_to_binary(8) == '1000'
+    print(decimal_to_binary(10))  # Output: 1010
+    print(decimal_to_binary(15))  # Output: 1111
+```

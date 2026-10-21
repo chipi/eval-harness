@@ -1,0 +1,43 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def concatenate_tuple(tup, delimiter='-'):
+    """
+    Concatenates each element of a tuple by the specified delimiter.
+    
+    Args:
+        tup: The tuple to be concatenated.
+        delimiter: The string used to separate elements (default is '-').
+    
+    Returns:
+        A string with all tuple elements joined by the delimiter.
+    """
+    # Convert all elements to strings and join them with the delimiter
+    return delimiter.join(str(element) for element in tup)
+
+# Test cases
+def test_concatenate_tuple():
+    assert concatenate_tuple(("ID", "is", 4, "UTS")) == 'ID-is-4-UTS'
+    assert concatenate_tuple(("a", "b", "c")) == 'a-b-c'
+    assert concatenate_tuple((1, 2, 3)) == '1-2-3'
+    assert concatenate_tuple(("x",)) == 'x'
+    assert concatenate_tuple(()) == ''
+    assert concatenate_tuple(("hello", "world"), delimiter=' ') == 'hello world'
+    print("All test cases passed!")
+
+if __name__ == "__main__":
+    test_concatenate_tuple()
+```
+
+This script:
+1. Defines a `concatenate_tuple` function that takes a tuple and an optional delimiter (defaulting to '-')
+2. Converts all elements to strings and joins them with the delimiter
+3. Includes a comprehensive test function that verifies the function works correctly for various cases
+4. Runs the tests when the script is executed directly
+
+The solution handles:
+- Different data types in the tuple (strings, numbers)
+- Empty tuples
+- Single-element tuples
+- Custom delimiters
+- The default delimiter case as specified in the problem

@@ -1,0 +1,62 @@
+Here's a self-contained Python script that solves the problem of finding the smallest power of 2 greater than or equal to a given number `n`:
+
+```python
+def next_power_of_2(n):
+    """
+    Returns the smallest power of 2 that is greater than or equal to n.
+    
+    Args:
+        n (int): The input number. Should be a non-negative integer.
+    
+    Returns:
+        int: The smallest power of 2 >= n.
+    
+    Examples:
+        >>> next_power_of_2(0)
+        1
+        >>> next_power_of_2(5)
+        8
+        >>> next_power_of_2(16)
+        16
+    """
+    if n < 0:
+        raise ValueError("Input must be a non-negative integer")
+    if n == 0:
+        return 1
+    # If n is already a power of 2, return n
+    if (n & (n - 1)) == 0:
+        return n
+    # Find the position of the leftmost set bit
+    power = 1
+    while power < n:
+        power <<= 1
+    return power
+
+# Test cases
+assert next_power_of_2(0) == 1
+assert next_power_of_2(1) == 1
+assert next_power_of_2(2) == 2
+assert next_power_of_2(3) == 4
+assert next_power_of_2(4) == 4
+assert next_power_of_2(5) == 8
+assert next_power_of_2(16) == 16
+assert next_power_of_2(17) == 32
+
+print("All test cases passed!")
+```
+
+### Explanation:
+1. **Edge Cases Handling**:
+   - If `n` is 0, the smallest power of 2 is 1 (as per the problem statement).
+   - If `n` is negative, the function raises a `ValueError` since the problem expects non-negative integers.
+
+2. **Check if `n` is Already a Power of 2**:
+   - The bitwise operation `n & (n - 1)` checks if `n` is a power of 2. If the result is 0, `n` is a power of 2, and we return `n` directly.
+
+3. **Finding the Next Power of 2**:
+   - If `n` is not a power of 2, we initialize `power` to 1 and keep left-shifting it (equivalent to multiplying by 2) until `power` is greater than or equal to `n`. This gives us the smallest power of 2 that is >= `n`.
+
+4. **Test Cases**:
+   - The script includes several test cases to verify the correctness of the function, including edge cases and typical cases.
+
+The script is self-contained and can be run directly to test the function.

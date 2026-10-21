@@ -1,0 +1,77 @@
+Here's a self-contained Python script that solves the problem of finding the largest sum of a contiguous subarray in a modified array formed by repeating the given array `k` times.
+
+```python
+def max_sub_array_sum_repeated(arr, n, k):
+    """
+    Find the largest sum of a contiguous subarray in the array formed by
+    repeating the given array k times.
+    
+    Parameters:
+    arr (list): The original array
+    n (int): Length of the original array
+    k (int): Number of times the array is repeated
+    
+    Returns:
+    int: The maximum subarray sum
+    """
+    # Kadane's algorithm to find max subarray sum in a single array
+    def kadane(a):
+        max_so_far = a[0]
+        max_ending_here = a[0]
+        for i in range(1, len(a)):
+            max_ending_here = max(a[i], max_ending_here + a[i])
+            max_so_far = max(max_so_far, max_ending_here)
+        return max_so_far
+    
+    # Case 1: k == 1, just run Kadane on the original array
+    if k == 1:
+        return kadane(arr)
+    
+    # Compute total sum of the array
+    total_sum = sum(arr)
+    
+    # Case 2: If total sum is positive, the best subarray will span
+    # across multiple copies. We can take the max subarray from the
+    # first copy (suffix), the last copy (prefix), and the middle copies.
+    if total_sum > 0:
+        # Max suffix sum of the first copy
+        max_suffix = arr[0]
+        current = 0
+        for i in range(n - 1, -1, -1):
+            current += arr[i]
+            max_suffix = max(max_suffix, current)
+        
+        # Max prefix sum of the last copy
+        max_prefix = arr[0]
+        current = 0
+        for i in range(n):
+            current += arr[i]
+            max_prefix = max(max_prefix, current)
+        
+        # Middle copies contribute (k - 2) * total_sum
+        return max(kadane(arr), max_suffix + max_prefix + (k - 2) * total_sum)
+    
+    # Case 3: If total sum is <= 0, the answer is just the max subarray
+    # within a single copy (since adding more copies won't help)
+    else:
+        return kadane(arr)
+
+
+# Test the function
+assert max_sub_array_sum_repeated([10, 20, -30, -1], 4, 3) == 30
+print("Test passed!")
+```
+
+**Explanation:**
+
+1. **Kadane's Algorithm**: Used to find the maximum subarray sum within a single array in O(n) time.
+
+2. **Three Cases**:
+   - **k = 1**: Just run Kadane's algorithm on the original array.
+   - **Total sum > 0**: The optimal subarray can span across multiple copies. We combine:
+     - The maximum suffix sum of the first copy
+     - The maximum prefix sum of the last copy
+     - The full sum of the `(k-2)` middle copies
+   - **Total sum ≤ 0**: Adding more copies won't help, so the answer is just the max subarray within one copy.
+
+3. **Verification**: For `[10, 20, -30, -1]` repeated 3 times, the best subarray is `[10, 20]` from the first copy plus `[10, 20]` from the second copy, giving `10 + 20 + 10 + 20 - 30 = 30`.

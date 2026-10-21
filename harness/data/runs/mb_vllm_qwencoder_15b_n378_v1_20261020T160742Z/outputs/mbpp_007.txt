@@ -1,0 +1,13 @@
+```python
+def find_char_long(s):
+    # Split the input string into words
+    words = s.split()
+    
+    # Filter out words that are less than 4 characters long
+    long_words = [word for word in words if len(word) >= 4]
+    
+    return set(long_words)
+
+# Test the function
+assert set(find_char_long('Please move back to stream')) == set(['Please', 'move', 'back', 'stream'])
+```

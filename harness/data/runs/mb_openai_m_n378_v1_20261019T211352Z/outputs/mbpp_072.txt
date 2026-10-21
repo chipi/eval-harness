@@ -1,0 +1,33 @@
+```python
+"""
+Check whether a given integer can be represented as the difference of two squares.
+
+A number n can be written as:
+    n = a^2 - b^2
+which factors as:
+    n = (a - b)(a + b)
+
+For integers, a number can be represented as a difference of two squares
+if and only if it is not congruent to 2 modulo 4.
+
+Examples:
+    5 = 3^2 - 2^2 = 9 - 4
+"""
+
+def dif_Square(n):
+    """
+    Return True if n can be represented as the difference of two squares,
+    otherwise return False.
+    """
+    return n % 4 != 2
+
+
+# Tests
+assert dif_Square(5) == True
+assert dif_Square(2) == False
+assert dif_Square(4) == True
+assert dif_Square(7) == True
+assert dif_Square(10) == False
+
+print("All tests passed.")
+```

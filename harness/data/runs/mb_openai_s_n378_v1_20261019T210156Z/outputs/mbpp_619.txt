@@ -1,0 +1,26 @@
+```python
+def move_num(s: str) -> str:
+    """
+    Move all digits in the string to the end, preserving the order of
+    non-digit characters and the order of digits.
+
+    Example:
+        'I1love143you55three3000thousand'
+        -> 'Iloveyouthreethousand1143553000'
+    """
+    letters = []
+    digits = []
+
+    for ch in s:
+        if ch.isdigit():
+            digits.append(ch)
+        else:
+            letters.append(ch)
+
+    return ''.join(letters) + ''.join(digits)
+
+
+if __name__ == "__main__":
+    assert move_num('I1love143you55three3000thousand') == 'Iloveyouthreethousand1143553000'
+    print("All tests passed.")
+```

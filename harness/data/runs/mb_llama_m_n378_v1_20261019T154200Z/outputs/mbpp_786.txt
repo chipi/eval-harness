@@ -1,0 +1,24 @@
+```python
+def right_insertion(nums, target):
+    """
+    Locate the right insertion point for a specified value in sorted order.
+
+    Args:
+        nums (list): A sorted list of integers.
+        target (int): The value to be inserted.
+
+    Returns:
+        int: The right insertion point for the target value.
+    """
+    left, right = 0, len(nums)
+    while left < right:
+        mid = (left + right) // 2
+        if nums[mid] <= target:
+            left = mid + 1
+        else:
+            right = mid
+    return left
+
+# Test the function
+assert right_insertion([1,2,4,5],6) == 4
+```

@@ -1,0 +1,15 @@
+```python
+def get_total_number_of_sequences(m, n):
+    if n == 1:
+        return m
+    elif n == 2:
+        return m * (m - 1)
+    else:
+        return sum(get_total_number_of_sequences(m, n - 1) * (m - i) for i in range(1, m))
+
+# Test cases
+assert get_total_number_of_sequences(10, 4) == 4
+assert get_total_number_of_sequences(5, 3) == 10
+assert get_total_number_of_sequences(10, 1) == 10
+assert get_total_number_of_sequences(10, 2) == 40
+```

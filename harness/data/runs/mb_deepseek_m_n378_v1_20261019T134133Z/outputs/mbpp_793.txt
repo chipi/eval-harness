@@ -1,0 +1,39 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def last(arr, target):
+    """
+    Find the last position of an element in a sorted array.
+    Returns -1 if the element is not found.
+    """
+    result = -1
+    left, right = 0, len(arr) - 1
+    
+    while left <= right:
+        mid = (left + right) // 2
+        if arr[mid] == target:
+            result = mid
+            left = mid + 1  # keep searching to the right for the last occurrence
+        elif arr[mid] < target:
+            left = mid + 1
+        else:
+            right = mid - 1
+    
+    return result
+
+
+if __name__ == "__main__":
+    assert last([1, 2, 3], 1) == 0
+    assert last([1, 2, 2, 2, 3], 2) == 3
+    assert last([1, 2, 3], 4) == -1
+    assert last([5, 5, 5, 5], 5) == 3
+    assert last([], 1) == -1
+    print("All tests passed!")
+```
+
+**How it works:**
+
+- Uses **binary search** to achieve O(log n) time complexity.
+- When the target is found at `mid`, it records the position in `result` and continues searching the **right half** (`left = mid + 1`) to find a later occurrence.
+- If the target is smaller than `arr[mid]`, search the left half; otherwise, search the right half.
+- Returns `-1` if the target is not present in the array.

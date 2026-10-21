@@ -1,0 +1,13 @@
+```python
+def check_smaller(first_tuple, second_tuple):
+    """
+    Return True if each element in second_tuple is smaller than its
+    corresponding element in first_tuple; otherwise return False.
+    """
+    return all(b < a for a, b in zip(first_tuple, second_tuple))
+
+
+if __name__ == "__main__":
+    assert check_smaller((1, 2, 3), (2, 3, 4)) == False
+    print("All tests passed.")
+```

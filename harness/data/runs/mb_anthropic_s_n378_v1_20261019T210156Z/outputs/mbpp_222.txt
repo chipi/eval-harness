@@ -1,0 +1,41 @@
+```python
+def check_type(tup):
+    """
+    Check if all elements in a tuple have the same data type.
+    
+    Args:
+        tup: A tuple to check
+        
+    Returns:
+        True if all elements have the same data type, False otherwise
+    """
+    if len(tup) == 0:
+        return True
+    
+    # Get the type of the first element
+    first_type = type(tup[0])
+    
+    # Check if all elements have the same type as the first element
+    return all(type(element) == first_type for element in tup)
+
+
+# Test cases
+assert check_type((5, 6, 7, 3, 5, 6)) == True
+assert check_type((5, 6, 7, 3, 5, "6")) == False
+assert check_type(("a", "b", "c")) == True
+assert check_type((1.5, 2.5, 3.5)) == True
+assert check_type((1, 2.5, 3)) == False
+assert check_type(()) == True
+assert check_type((True, False, True)) == True
+
+print("All test cases passed!")
+```
+
+The script defines a `check_type()` function that:
+
+1. Returns `True` for an empty tuple (edge case)
+2. Gets the data type of the first element in the tuple
+3. Uses `all()` with a generator expression to check if every element in the tuple has the same type as the first element
+4. Returns `True` if all elements match the first element's type, `False` otherwise
+
+The function works by comparing the `type()` of each element against the type of the first element, ensuring all elements are of the same data type.

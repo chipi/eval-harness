@@ -1,0 +1,33 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def check_element(lst, element):
+    """Check if all items in the list are equal to the given element.
+
+    Args:
+        lst: List of items to check
+        element: The element to compare against
+
+    Returns:
+        bool: True if all items are equal to the element, False otherwise
+    """
+    return all(item == element for item in lst)
+
+# Test cases
+assert check_element(["green", "orange", "black", "white"], 'blue') == False
+assert check_element(["red", "red", "red"], "red") == True
+assert check_element([], "anything") == True  # Empty list is considered to have all elements equal
+assert check_element([1, 1, 1, 1], 1) == True
+assert check_element([True, True, False], True) == False
+
+print("All test cases passed!")
+```
+
+This script:
+1. Defines a function `check_element` that takes a list and an element
+2. Uses Python's `all()` function with a generator expression to check if every item in the list equals the given element
+3. Includes several test cases to verify the function works correctly
+4. The function returns `True` for empty lists (since there are no elements that don't match)
+5. The test cases cover various scenarios including strings, numbers, booleans, and empty lists
+
+The function will return `False` for the given example case as specified in the assertion.

@@ -1,0 +1,34 @@
+```python
+def move_zero(lst: list) -> list:
+    """
+    Move all zeroes to the end of the given list while maintaining the relative order of non-zero elements.
+    
+    Args:
+        lst: A list of integers
+        
+    Returns:
+        A new list with all zeroes moved to the end
+        
+    Example:
+        >>> move_zero([1, 0, 2, 0, 3, 4])
+        [1, 2, 3, 4, 0, 0]
+    """
+    # Separate non-zero elements and zeros
+    non_zeros = [x for x in lst if x != 0]
+    zeros = [x for x in lst if x == 0]
+    
+    return non_zeros + zeros
+
+
+if __name__ == "__main__":
+    # Test case from the problem statement
+    assert move_zero([1, 0, 2, 0, 3, 4]) == [1, 2, 3, 4, 0, 0]
+    
+    # Additional test cases
+    assert move_zero([]) == []
+    assert move_zero([0, 0, 0]) == [0, 0, 0]
+    assert move_zero([1, 2, 3]) == [1, 2, 3]
+    assert move_zero([0, 1, 0, 2, 0]) == [1, 2, 0, 0, 0]
+    
+    print("All tests passed!")
+```

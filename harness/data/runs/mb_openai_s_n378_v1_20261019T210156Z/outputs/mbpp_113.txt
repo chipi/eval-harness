@@ -1,0 +1,35 @@
+```python
+def check_integer(s: str) -> bool:
+    """
+    Return True if s represents an integer, otherwise False.
+
+    Accepted forms:
+    - "0"
+    - "123"
+    - "-42"
+    - "+7"
+
+    Rejected forms:
+    - "python"
+    - "12.3"
+    - ""
+    - " 123 "
+    """
+    if not isinstance(s, str) or not s:
+        return False
+
+    if s[0] in "+-":
+        return len(s) > 1 and s[1:].isdigit()
+
+    return s.isdigit()
+
+
+if __name__ == "__main__":
+    assert check_integer("python") == False
+    assert check_integer("123") == True
+    assert check_integer("-42") == True
+    assert check_integer("+7") == True
+    assert check_integer("12.3") == False
+    assert check_integer("") == False
+    print("All tests passed.")
+```

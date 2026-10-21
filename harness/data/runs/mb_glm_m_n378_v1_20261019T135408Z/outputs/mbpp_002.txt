@@ -1,0 +1,28 @@
+```python
+def similar_elements(list1, list2):
+    """
+    Find the shared elements from the given two lists.
+    
+    This function converts both input iterables to sets and finds their intersection,
+    returning the common elements as a list.
+    
+    Args:
+        list1 (iterable): The first list or tuple of elements.
+        list2 (iterable): The second list or tuple of elements.
+        
+    Returns:
+        list: A list containing the shared elements.
+    """
+    return list(set(list1) & set(list2))
+
+if __name__ == "__main__":
+    # Test case from the problem description
+    assert set(similar_elements((3, 4, 5, 6), (5, 7, 4, 10))) == set((4, 5))
+    
+    # Additional test cases
+    assert set(similar_elements([1, 2, 3], [3, 4, 5])) == set([3])
+    assert set(similar_elements(['a', 'b', 'c'], ['c', 'd', 'a'])) == set(['a', 'c'])
+    assert set(similar_elements([1, 2], [3, 4])) == set()
+    
+    print("All tests passed!")
+```

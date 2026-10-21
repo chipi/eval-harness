@@ -1,0 +1,28 @@
+Here’s a self-contained Python script that solves the problem you described:  
+
+```python
+import math
+
+def count_binary_seq(n):
+    """
+    Returns the number of binary sequences of length 2n such that
+    the sum of the first n bits equals the sum of the last n bits.
+    """
+    from math import comb
+    
+    total = 0
+    # The sum can range from 0 to n
+    for k in range(n + 1):
+        # Choose k ones in the first half and k ones in the second half
+        total += comb(n, k) * comb(n, k)
+    return float(total)
+
+# Test the function with the given assertion
+if __name__ == "__main__":
+    assert math.isclose(count_binary_seq(1), 2.0, rel_tol=0.001)
+    print("Test passed for n=1")
+    
+    # Additional examples
+    print(f"count_binary_seq(2) = {count_binary_seq(2)}")
+    print(f"count_binary_seq(3) = {count_binary_seq(3)}")
+```

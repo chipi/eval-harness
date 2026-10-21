@@ -1,0 +1,44 @@
+Here's a self-contained Python script that solves the problem of finding perfect squares between two given numbers:
+
+```python
+def perfect_squares(start, end):
+    """
+    Returns a list of perfect squares between start and end (inclusive).
+
+    Args:
+        start (int): The lower bound (inclusive)
+        end (int): The upper bound (inclusive)
+
+    Returns:
+        list: List of perfect squares in the range
+    """
+    squares = []
+    # The smallest integer whose square is >= start
+    lower = int(start ** 0.5)
+    if lower * lower < start:
+        lower += 1
+
+    # The largest integer whose square is <= end
+    upper = int(end ** 0.5)
+
+    for i in range(lower, upper + 1):
+        squares.append(i * i)
+
+    return squares
+
+# Test the function
+assert perfect_squares(1, 30) == [1, 4, 9, 16, 25]
+print("Test passed!")
+```
+
+This script:
+1. Defines a function `perfect_squares` that takes a start and end value
+2. Calculates the range of integers whose squares fall between the start and end values
+3. Generates the perfect squares for those integers
+4. Includes the test case from the problem statement
+5. Prints a confirmation message if the test passes
+
+The function works by:
+- Finding the smallest integer whose square is ≥ start
+- Finding the largest integer whose square is ≤ end
+- Generating all squares between these two integers (inclusive)

@@ -1,0 +1,19 @@
+```python
+def last_Digit_Factorial(n):
+    """
+    Write a python function to find the last digit in factorial of a given number.
+    assert last_Digit_Factorial(4) == 4
+    """
+    if n >= 5:
+        return 0
+    elif n == 0:
+        return 1
+    elif n == 1:
+        return 1
+    elif n == 2:
+        return 2
+    elif n == 3:
+        return 6
+    else:
+        return 4
+```

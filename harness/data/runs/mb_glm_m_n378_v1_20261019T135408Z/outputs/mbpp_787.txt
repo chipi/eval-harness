@@ -1,0 +1,35 @@
+Here's a self-contained Python script that solves the problem using regular expressions to match a string that has an 'a' followed by three 'b's:
+
+```python
+import re
+
+def text_match_three(text):
+    """
+    Write a function that matches a string that has an a followed by three 'b'.
+    Returns True if the pattern is found, False otherwise.
+    """
+    pattern = r'ab{3}'
+    return bool(re.search(pattern, text))
+
+# Test cases
+assert not text_match_three("ac"), "Test case 1 failed"
+assert text_match_three("abbb"), "Test case 2 failed"
+assert text_match_three("cabbbd"), "Test case 3 failed"
+assert not text_match_three("ab"), "Test case 4 failed"
+assert not text_match_three("abb"), "Test case 5 failed"
+assert not text_match_three("abbbb"), "Test case 6 failed"
+assert text_match_three("abbbabbb"), "Test case 7 failed"
+
+print("All test cases passed!")
+```
+
+### Explanation:
+1. The function `text_match_three` uses a regular expression pattern `r'ab{3}'` which matches:
+   - An 'a' followed by exactly three 'b's.
+2. `re.search` is used to find the pattern anywhere in the string.
+3. The function returns `True` if the pattern is found, `False` otherwise.
+4. The test cases verify:
+   - Strings without the pattern return `False`.
+   - Strings with the pattern return `True`.
+   - The pattern can appear anywhere in the string (not just at the start).
+   - Exactly three 'b's are required (not more or fewer).

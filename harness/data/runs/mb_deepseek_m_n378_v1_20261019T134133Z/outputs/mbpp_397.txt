@@ -1,0 +1,37 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def median_numbers(a, b, c):
+    """
+    Find the median of three numbers.
+    
+    Args:
+        a: First number
+        b: Second number
+        c: Third number
+    
+    Returns:
+        The median value as a float
+    """
+    numbers = sorted([a, b, c])
+    return float(numbers[1])
+
+
+# Test the function
+assert median_numbers(25, 55, 65) == 55.0
+print("Test passed!")
+print(f"median_numbers(25, 55, 65) = {median_numbers(25, 55, 65)}")
+```
+
+**How it works:**
+
+1. **Sort the numbers**: `sorted([a, b, c])` arranges the three numbers in ascending order.
+2. **Pick the middle element**: `numbers[1]` is the second element (index 1), which is the median.
+3. **Convert to float**: `float(...)` ensures the return type is a float, matching the expected `55.0` in the assertion.
+
+**Example walkthrough** for `median_numbers(25, 55, 65)`:
+- Sorted: `[25, 55, 65]`
+- Middle element: `55`
+- Return: `55.0` ✓
+
+This approach works for any three numbers (including duplicates and negative values) and is more readable than using conditional comparisons.

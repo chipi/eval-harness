@@ -1,0 +1,24 @@
+```python
+def pair_wise(items):
+    """
+    Returns a list of all pairs of consecutive items in a given list.
+    
+    Args:
+        items (list): The list of items to process.
+        
+    Returns:
+        list: A list of tuples containing consecutive pairs.
+    """
+    # zip the list with itself shifted by one index to create pairs
+    return list(zip(items, items[1:]))
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    input_list = [1, 1, 2, 3, 3, 4, 4, 5]
+    expected_output = [(1, 1), (1, 2), (2, 3), (3, 3), (3, 4), (4, 4), (4, 5)]
+    
+    result = pair_wise(input_list)
+    
+    assert result == expected_output, f"Expected {expected_output}, but got {result}"
+    print("Test passed!")
+```

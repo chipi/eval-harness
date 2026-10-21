@@ -1,0 +1,27 @@
+```python
+def Diff(list1, list2):
+    """
+    Returns the difference between two lists.
+    This function returns a list of elements from list1 that are not present in list2.
+    The order of elements in the result corresponds to their appearance in list1.
+    
+    Args:
+        list1 (list): The source list.
+        list2 (list): The list containing elements to be excluded from list1.
+        
+    Returns:
+        list: A new list containing the difference.
+    """
+    # Convert list2 to a set for O(1) lookups to improve performance
+    set2 = set(list2)
+    
+    # Use list comprehension to filter elements from list1
+    result = [x for x in list1 if x not in set2]
+    
+    return result
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert (Diff([10, 15, 20, 25, 30, 35, 40], [25, 40, 35])) == [10, 15, 20, 30]
+    print("Test passed successfully.")
+```

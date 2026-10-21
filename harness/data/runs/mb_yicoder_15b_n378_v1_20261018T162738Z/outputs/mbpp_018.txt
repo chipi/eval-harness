@@ -1,0 +1,13 @@
+```python
+def remove_dirty_chars(str1, str2):
+    return ''.join([char for char in str1 if char not in str2])
+
+# Test cases
+assert remove_dirty_chars("probasscurve", "pros") == 'bacuve'
+assert remove_dirty_chars("hello world", "hlowrd") == 'e'
+assert remove_dirty_chars("python is fun", "pyth") == 'on is '
+assert remove_dirty_chars("abcdefgh", "abc") == 'defgh'
+assert remove_dirty_chars("abcdefgh", "defgh") == 'abc'
+assert remove_dirty_chars("abcdefgh", "gh") == 'abcdef'
+assert remove_dirty_chars("abcdefgh", "") == 'abcdefgh'
+```

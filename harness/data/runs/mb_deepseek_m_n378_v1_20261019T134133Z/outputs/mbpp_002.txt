@@ -1,0 +1,42 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+"""
+Write a function to find the shared elements from the given two lists.
+assert set(similar_elements((3, 4, 5, 6),(5, 7, 4, 10))) == set((4, 5))
+"""
+
+def similar_elements(list1, list2):
+    """
+    Find the shared elements between two lists/tuples.
+    
+    Args:
+        list1: First sequence of elements
+        list2: Second sequence of elements
+    
+    Returns:
+        A tuple containing the elements that appear in both sequences
+    """
+    return tuple(x for x in list1 if x in list2)
+
+
+# Test the function
+assert set(similar_elements((3, 4, 5, 6), (5, 7, 4, 10))) == set((4, 5))
+print("Test passed!")
+print("Shared elements:", similar_elements((3, 4, 5, 6), (5, 7, 4, 10)))
+```
+
+**How it works:**
+
+1. The `similar_elements` function takes two sequences (tuples or lists) as input.
+2. It uses a generator expression to iterate through `list1` and keeps only the elements that are also present in `list2` (checked via the `in` operator).
+3. The result is converted to a tuple and returned.
+4. The assertion test verifies that the shared elements between `(3, 4, 5, 6)` and `(5, 7, 4, 10)` are `{4, 5}`.
+
+**Output:**
+```
+Test passed!
+Shared elements: (4, 5)
+```
+
+Note: The function returns a tuple, but since the test wraps the result in `set()`, the order of elements doesn't matter for the assertion.

@@ -1,0 +1,14 @@
+```python
+def start_withp(words):
+    """Return the first two words that start with 'p' (case-insensitive)."""
+    matches = [
+        word
+        for text in words
+        for word in text.split()
+        if word.lower().startswith("p")
+    ]
+    return tuple(matches[:2])
+
+
+assert start_withp(["Python PHP", "Java JavaScript", "c c++"]) == ("Python", "PHP")
+```

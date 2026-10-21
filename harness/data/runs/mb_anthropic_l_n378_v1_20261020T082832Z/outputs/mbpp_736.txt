@@ -1,0 +1,56 @@
+Looking at this problem, I need to find the leftmost position where a value can be inserted into a sorted list while maintaining sorted order. This is exactly what Python's `bisect.bisect_left` does.
+
+```python
+"""
+Write a function to locate the left insertion point for a specified value in sorted order.
+https://www.w3resource.com/python-exercises/data-structures-and-algorithms/python-data-structure-exercise-24.php
+assert left_insertion([1,2,4,5],6)==4
+"""
+
+import bisect
+
+
+def left_insertion(a, x):
+    """
+    Locate the left insertion point for value x in the sorted list a.
+
+    Returns the index i such that all elements in a[:i] are < x and
+    all elements in a[i:] are >= x. Inserting x at index i keeps a sorted
+    and places x before any existing entries equal to x.
+    """
+    return bisect.bisect_left(a, x)
+
+
+# --- Equivalent manual implementation (no imports) -------------------------
+def left_insertion_manual(a, x):
+    lo, hi = 0, len(a)
+    while lo < hi:
+        mid = (lo + hi) // 2
+        if a[mid] < x:
+            lo = mid + 1
+        else:
+            hi = mid
+    return lo
+
+
+if __name__ == "__main__":
+    # Tests from the exercise
+    assert left_insertion([1, 2, 4, 5], 6) == 4
+    assert left_insertion([1, 2, 4, 5], 3) == 2
+    assert left_insertion([1, 2, 4, 5], 7) == 4
+
+    # Extra tests
+    assert left_insertion([1, 2, 4, 5], 0) == 0
+    assert left_insertion([1, 2, 2, 2, 5], 2) == 1   # leftmost among duplicates
+    assert left_insertion([], 10) == 0
+
+    # The manual version must agree with bisect
+    for data in ([1, 2, 4, 5], [1, 2, 2, 2, 5], [], [3]):
+        for value in range(-1, 8):
+            assert left_insertion(data, value) == left_insertion_manual(data, value)
+
+    print("left_insertion([1, 2, 4, 5], 6) =", left_insertion([1, 2, 4, 5], 6))
+    print("left_insertion([1, 2, 4, 5], 3) =", left_insertion([1, 2, 4, 5], 3))
+    print("left_insertion([1, 2, 4, 5], 7) =", left_insertion([1, 2, 4, 5], 7))
+    print("All tests passed!")
+```

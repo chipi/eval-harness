@@ -1,0 +1,42 @@
+```python
+def last(arr, target):
+    """
+    Find the last position of an element in a sorted array.
+
+    Args:
+        arr (list): A sorted list of elements.
+        target: The target element to find.
+
+    Returns:
+        int: The last position of the target element if found, -1 otherwise.
+    """
+    # Initialize two pointers for binary search
+    left, right = 0, len(arr) - 1
+    
+    # Initialize the result variable to store the last position
+    result = -1
+    
+    # Perform binary search
+    while left <= right:
+        mid = (left + right) // 2
+        
+        # If the target is found, update the result and move the left pointer
+        if arr[mid] == target:
+            result = mid
+            left = mid + 1
+        # If the target is greater than the middle element, move the left pointer
+        elif arr[mid] < target:
+            left = mid + 1
+        # If the target is less than the middle element, move the right pointer
+        else:
+            right = mid - 1
+    
+    return result
+
+# Test the function
+assert last([1,2,3],1) == 0
+assert last([1,2,2,3,4,4,4], 4) == 5
+assert last([1,2,3], 5) == -1
+```
+
+This script defines a function `last` that takes a sorted array `arr` and a target element `target` as input. It uses a modified binary search algorithm to find the last position of the target element in the array. If the target element is not found, it returns -1. The script also includes test cases to verify the function's correctness.

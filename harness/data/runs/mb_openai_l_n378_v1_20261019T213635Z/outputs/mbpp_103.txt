@@ -1,0 +1,18 @@
+```python
+def eulerian_num(n, m):
+    """Return the Eulerian number a(n, m)."""
+    if n < 0 or m < 0 or m >= n:
+        return 1 if (n, m) == (0, 0) else 0
+
+    row = [1]  # a(1, 0)
+    for size in range(2, n + 1):
+        row = [
+            (size - k) * (row[k - 1] if k > 0 else 0)
+            + (k + 1) * (row[k] if k < len(row) else 0)
+            for k in range(size)
+        ]
+    return row[m]
+
+
+assert eulerian_num(3, 1) == 4
+```

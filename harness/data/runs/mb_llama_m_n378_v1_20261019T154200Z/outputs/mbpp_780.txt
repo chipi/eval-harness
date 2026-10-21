@@ -1,0 +1,26 @@
+```python
+from itertools import combinations
+
+def find_combinations(tuple_list):
+    """
+    This function finds all possible combinations of sums with tuples in the given tuple list.
+    
+    Args:
+        tuple_list (list): A list of tuples, where each tuple contains two integers.
+    
+    Returns:
+        list: A list of tuples, where each tuple contains the sum of the first elements and the sum of the second elements of two tuples from the input list.
+    """
+    result = []
+    # Generate all possible pairs of tuples
+    for pair in combinations(tuple_list, 2):
+        # Calculate the sum of the first elements and the sum of the second elements
+        sum_first = pair[0][0] + pair[1][0]
+        sum_second = pair[0][1] + pair[1][1]
+        # Append the sums as a tuple to the result list
+        result.append((sum_first, sum_second))
+    return result
+
+# Test the function
+assert find_combinations([(2, 4), (6, 7), (5, 1), (6, 10)]) == [(8, 11), (7, 5), (8, 14), (11, 8), (12, 17), (11, 11)]
+```

@@ -1,0 +1,47 @@
+```python
+def next_power_of_2(n: int) -> int:
+    """
+    Finds the smallest power of 2 greater than or equal to n.
+
+    This function uses a bit manipulation trick. If n is a power of 2,
+    its binary representation is a single '1' followed by zeros (e.g., 8 is '1000').
+    Subtracting 1 from it flips all the trailing zeros to '1's (e.g., 7 is '0111').
+    A bitwise OR of n and n-1 will result in a number with all bits set to 1 up to
+    the original '1' bit. Adding 1 to this result then yields the next power of 2.
+
+    Special case: If n is 0, the next power of 2 is 1.
+
+    Args:
+        n: A non-negative integer.
+
+    Returns:
+        The smallest power of 2 that is greater than or equal to n.
+    """
+    # Handle the special case where n is 0.
+    # The bit manipulation trick below fails for n=0, so we handle it directly.
+    if n == 0:
+        return 1
+
+    # The bit manipulation trick:
+    # (n - 1) | n fills all bits up to the highest set bit in n.
+    # Adding 1 then gives the next power of 2.
+    return (n - 1) | n + 1
+
+# Example usage and assertions from the problem description
+assert next_power_of_2(0) == 1
+
+# Additional test cases to demonstrate correctness
+assert next_power_of_2(1) == 1
+assert next_power_of_2(2) == 2
+assert next_power_of_2(3) == 4
+assert next_power_of_2(4) == 4
+assert next_power_of_2(5) == 8
+assert next_power_of_2(7) == 8
+assert next_power_of_2(8) == 8
+assert next_power_of_2(9) == 16
+assert next_power_of_2(15) == 16
+assert next_power_of_2(16) == 16
+assert next_power_of_2(17) == 32
+
+print("All assertions passed!")
+```

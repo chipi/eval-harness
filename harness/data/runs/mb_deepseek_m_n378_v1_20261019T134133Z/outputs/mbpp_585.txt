@@ -1,0 +1,83 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+"""
+Write a function to find the n most expensive items in a given dataset.
+assert expensive_items([{'name': 'Item-1', 'price': 101.1},{'name': 'Item-2', 'price': 555.22}],1)==[{'name': 'Item-2', 'price': 555.22}]
+"""
+
+import heapq
+
+
+def expensive_items(items, n):
+    """
+    Find the n most expensive items in a given dataset.
+
+    Args:
+        items (list of dict): A list of dictionaries, each containing at least
+                              a 'price' key.
+        n (int): The number of most expensive items to return.
+
+    Returns:
+        list of dict: The n most expensive items, sorted in descending order
+                      by price.
+    """
+    if n <= 0 or not items:
+        return []
+
+    # Use heapq.nlargest for an efficient O(m log n) solution,
+    # where m is the number of items.
+    return heapq.nlargest(n, items, key=lambda item: item['price'])
+
+
+# --- Tests ---
+if __name__ == "__main__":
+    # Provided test case
+    assert expensive_items(
+        [
+            {'name': 'Item-1', 'price': 101.1},
+            {'name': 'Item-2', 'price': 555.22},
+        ],
+        1,
+    ) == [{'name': 'Item-2', 'price': 555.22}]
+
+    # Additional test cases
+    items = [
+        {'name': 'A', 'price': 10.0},
+        {'name': 'B', 'price': 30.0},
+        {'name': 'C', 'price': 20.0},
+        {'name': 'D', 'price': 50.0},
+        {'name': 'E', 'price': 40.0},
+    ]
+
+    # Top 3 most expensive
+    assert expensive_items(items, 3) == [
+        {'name': 'D', 'price': 50.0},
+        {'name': 'E', 'price': 40.0},
+        {'name': 'B', 'price': 30.0},
+    ]
+
+    # n larger than the dataset
+    assert expensive_items(items, 10) == [
+        {'name': 'D', 'price': 50.0},
+        {'name': 'E', 'price': 40.0},
+        {'name': 'B', 'price': 30.0},
+        {'name': 'C', 'price': 20.0},
+        {'name': 'A', 'price': 10.0},
+    ]
+
+    # Empty dataset
+    assert expensive_items([], 3) == []
+
+    # n = 0
+    assert expensive_items(items, 0) == []
+
+    print("All tests passed!")
+```
+
+**How it works:**
+
+- `heapq.nlargest(n, items, key=...)` efficiently returns the `n` largest items from the iterable, using a min-heap of size `n` internally. This gives **O(m log n)** time complexity (where `m` is the number of items), which is better than fully sorting the list when `n` is small.
+- The `key` function extracts the `'price'` field from each dictionary for comparison.
+- The result is automatically sorted in descending order by price, matching the expected output format.
+- Edge cases (`n <= 0`, empty input) are handled gracefully by returning an empty list.

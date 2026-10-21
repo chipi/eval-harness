@@ -1,0 +1,16 @@
+```python
+def find_Rotations(s):
+    """
+    Find the minimum number of rotations (greater than 0) required to get the same string.
+    """
+    n = len(s)
+    if n == 0:
+        return 0
+    for i in range(1, n + 1):
+        if s == s[i:] + s[:i]:
+            return i
+    return n
+
+# Test case
+assert find_Rotations("aaaa") == 1
+```

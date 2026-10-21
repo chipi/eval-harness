@@ -1,0 +1,70 @@
+```python
+def set_left_most_unset_bit(n):
+    """
+    Set the left most unset bit in the binary representation of n.
+    
+    Args:
+        n: A non-negative integer
+        
+    Returns:
+        The number with the leftmost unset bit set to 1
+        
+    Example:
+        set_left_most_unset_bit(10) == 14
+        10 in binary is 1010
+        The leftmost unset bit is at position 2 (from right, 0-indexed)
+        Setting it gives 1110 which is 14
+    """
+    if n == 0:
+        return 1
+    
+    # Find the position of the most significant bit
+    temp = n
+    msb_position = 0
+    while temp > 0:
+        msb_position += 1
+        temp >>= 1
+    
+    # Check each bit from the most significant bit downwards
+    for i in range(msb_position - 1, -1, -1):
+        # If bit at position i is unset (0), set it and return
+        if not (n & (1 << i)):
+            return n | (1 << i)
+    
+    # If all bits up to msb are set, set the next higher bit
+    return n | (1 << msb_position)
+
+
+# Test cases
+assert set_left_most_unset_bit(10) == 14
+print(f"set_left_most_unset_bit(10) = {set_left_most_unset_bit(10)}")
+print(f"Binary: 10 = {bin(10)}, result = {bin(14)}")
+
+# Additional test cases
+assert set_left_most_unset_bit(0) == 1
+assert set_left_most_unset_bit(1) == 3
+assert set_left_most_unset_bit(5) == 7
+assert set_left_most_unset_bit(7) == 15
+
+print("\nAll tests passed!")
+```
+
+**Explanation:**
+
+The function `set_left_most_unset_bit(n)` works as follows:
+
+1. **Handle edge case**: If `n` is 0, return 1 (set the first bit)
+
+2. **Find MSB position**: Determine the position of the most significant bit by repeatedly right-shifting until the number becomes 0
+
+3. **Search for leftmost unset bit**: Iterate from the bit position just below the MSB down to position 0, checking each bit:
+   - If a bit is unset (0), set it using bitwise OR and return immediately
+   - This ensures we find the **leftmost** (most significant) unset bit
+
+4. **Handle all-set case**: If all bits up to the MSB are set, set the next higher bit
+
+**Example with 10:**
+- 10 in binary: `1010`
+- MSB is at position 3
+- Check position 2: bit is 0 (unset) → set it
+- Result: `1110` = 14 ✓

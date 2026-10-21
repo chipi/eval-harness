@@ -1,0 +1,28 @@
+To determine if the XOR of two integers results in an even number, we can look at the parity (even or odd) of the numbers. The XOR of two integers is even if and only if both integers have the same parity (i.e., both are even or both are odd). 
+
+Therefore, the problem simplifies to counting the number of pairs of integers that share the same parity. If we have `e` even numbers and `o` odd numbers in the list, the number of valid pairs is given by the combinations formula: `C(e, 2) + C(o, 2)`, which simplifies to `e * (e - 1) // 2 + o * (o - 1) // 2`.
+
+Here is the self-contained Python script:
+
+```python
+def find_even_pair(lst):
+    """
+    Counts the number of pairs of integers in a list that xor to an even number.
+    
+    The XOR of two integers is even if and only if both integers have the same parity
+    (i.e., both are even or both are odd). Thus, we just need to count the number of 
+    even and odd numbers in the list and find the combinations of pairs for both.
+    """
+    even_count = sum(1 for x in lst if x % 2 == 0)
+    odd_count = len(lst) - even_count
+    
+    # Calculate pairs of evens and pairs of odds
+    even_pairs = even_count * (even_count - 1) // 2
+    odd_pairs = odd_count * (odd_count - 1) // 2
+    
+    return even_pairs + odd_pairs
+
+# Test the function with the provided assertion
+assert find_even_pair([5, 4, 7, 2, 1]) == 4
+print("Assertion passed successfully!")
+```

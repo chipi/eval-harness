@@ -1,0 +1,20 @@
+```python
+def newman_prime(n):
+    if n < 1:
+        raise ValueError("Input must be a positive integer.")
+    elif n == 1:
+        return 2
+    elif n == 2:
+        return 5
+    else:
+        primes = [2, 5]
+        for i in range(3, n + 1):
+            if all(i % p != 0 for p in primes):
+                primes.append(i)
+        return primes[n - 1]
+
+# Test cases
+assert newman_prime(3) == 7
+assert newman_prime(4) == 13
+assert newman_prime(5) == 29
+```

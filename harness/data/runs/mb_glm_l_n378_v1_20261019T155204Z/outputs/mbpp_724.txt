@@ -1,0 +1,17 @@
+```python
+def power_base_sum(base: int, power: int) -> int:
+    """
+    Calculates the sum of all digits of the base raised to the specified power.
+    
+    Args:
+        base: The base integer.
+        power: The exponent integer.
+        
+    Returns:
+        The sum of the digits of the resulting mathematical expression.
+    """
+    return sum(int(digit) for digit in str(base ** power))
+
+# Assert to verify the function works as expected
+assert power_base_sum(2, 100) == 115
+```

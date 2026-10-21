@@ -1,0 +1,39 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def index_minimum(tuples_list):
+    """
+    Given a list of tuples, returns the first value of the tuple with the smallest second value.
+    
+    Args:
+        tuples_list: A list of tuples where each tuple contains (value, number)
+    
+    Returns:
+        The first value of the tuple with the smallest second value
+    """
+    if not tuples_list:
+        return None
+    
+    # Find the tuple with the minimum second value
+    min_tuple = min(tuples_list, key=lambda x: x[1])
+    
+    # Return the first value of that tuple
+    return min_tuple[0]
+
+
+# Test the function
+if __name__ == "__main__":
+    # Test case from the problem
+    result = index_minimum([('Rash', 143), ('Manjeet', 200), ('Varsha', 100)])
+    print(f"Result: {result}")
+    assert result == 'Varsha', f"Expected 'Varsha', but got {result}"
+    
+    # Additional test cases
+    assert index_minimum([('A', 5), ('B', 3), ('C', 7)]) == 'B'
+    assert index_minimum([('X', 10)]) == 'X'
+    assert index_minimum([('First', 1), ('Second', 1)]) == 'First'  # Returns first occurrence if tie
+    
+    print("All tests passed!")
+```
+
+This solution uses Python's built-in `min()` function with a `key` parameter that extracts the second element of each tuple for comparison. The function then returns the first element of the tuple with the minimum second value.

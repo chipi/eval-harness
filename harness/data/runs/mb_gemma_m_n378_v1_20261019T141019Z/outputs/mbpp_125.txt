@@ -1,0 +1,58 @@
+To solve this problem, we can transform the binary string into an array of values where `0` is treated as `1` and `1` is treated as `-1`. 
+
+The problem then becomes finding the **Maximum Subarray Sum** (a classic problem solvable using Kadane's Algorithm). The sum of any subarray in this transformed array represents the difference between the count of 0s and the count of 1s.
+
+Here is the self-contained Python script:
+
+```python
+def find_length(s: str) -> int:
+    """
+    Finds the maximum difference between the number of 0s and 1s 
+    in any sub-string of the given binary string.
+    
+    Logic:
+    Treat '0' as 1 and '1' as -1. 
+    The problem reduces to finding the maximum sum subarray.
+    """
+    max_so_far = 0
+    current_max = 0
+    
+    for char in s:
+        # Convert 0 to 1 and 1 to -1
+        val = 1 if char == '0' else -1
+        
+        # Kadane's Algorithm
+        current_max += val
+        
+        if current_max < 0:
+            current_max = 0
+            
+        if max_so_far < current_max:
+            max_so_far = current_max
+            
+    return max_so_far
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    # String: "11000010001"
+    # Substring "00001000" has six 0s and one 1. Difference = 5? 
+    # Wait, let's re-check the substring "00001000": 
+    # 0s: 7, 1s: 1. Difference: 7 - 1 = 6.
+    test_input = "11000010001"
+    result = find_length(test_input)
+    
+    print(f"Input: {test_input}")
+    print(f"Result: {result}")
+    
+    assert result == 6, f"Expected 6, but got {result}"
+    print("Assertion passed!")
+```
+
+### Explanation:
+1.  **Transformation**: We map the character `'0'` to `1` and `'1'` to `-1`.
+2.  **Mathematical Intuition**: If a substring has $N_0$ zeros and $N_1$ ones, the sum of our transformed values for that substring is:
+    $(N_0 \times 1) + (N_1 \times -1) = N_0 - N_1$.
+3.  **Algorithm**: We use **Kadane's Algorithm**, which iterates through the array once, keeping track of the `current_max` sum. If `current_max` drops below zero, we reset it to zero (effectively starting a new potential substring). We keep track of the highest value `current_max` ever reached in `max_so_far`.
+4.  **Complexity**: 
+    *   **Time Complexity**: $O(n)$, where $n$ is the length of the string, as we iterate through the string exactly once.
+    *   **Space Complexity**: $O(1)$, as we only store a few integer variables.

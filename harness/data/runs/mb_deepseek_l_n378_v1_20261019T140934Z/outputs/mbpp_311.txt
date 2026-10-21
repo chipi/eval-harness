@@ -1,0 +1,32 @@
+Here’s a self-contained Python script that solves the problem:  
+
+```python
+def set_left_most_unset_bit(n: int) -> int:
+    """
+    Sets the leftmost unset bit (0) in the binary representation of n.
+    If all bits are already set, returns n unchanged.
+    """
+    # Find the position of the leftmost unset bit
+    # We start from the most significant bit of n
+    if n == 0:
+        return 1  # 0 has all bits unset, leftmost is bit 0
+    
+    # Find the position of the most significant set bit
+    msb_pos = n.bit_length() - 1
+    
+    # Check bits from msb_pos down to 0
+    for i in range(msb_pos, -1, -1):
+        if not (n & (1 << i)):
+            # Found the leftmost unset bit, set it
+            return n | (1 << i)
+    
+    # All bits up to msb_pos are set, set the next higher bit
+    return n | (1 << (msb_pos + 1))
+
+
+# Test the function
+if __name__ == "__main__":
+    assert set_left_most_unset_bit(10) == 14, f"Expected 14, got {set_left_most_unset_bit(10)}"
+    print("Test passed!")
+    print(f"set_left_most_unset_bit(10) = {set_left_most_unset_bit(10)}")
+```

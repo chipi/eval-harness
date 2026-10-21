@@ -1,0 +1,31 @@
+```python
+def extract_nth_element(tuples_list, n):
+    """
+    Extracts the nth element from each tuple in a given list of tuples.
+    
+    Args:
+        tuples_list (list): A list of tuples.
+        n (int): The index of the element to extract from each tuple.
+        
+    Returns:
+        list: A list containing the nth element of each tuple.
+    """
+    return [item[n] for item in tuples_list]
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    data = [
+        ('Greyson Fulton', 98, 99), 
+        ('Brady Kent', 97, 96), 
+        ('Wyatt Knott', 91, 94), 
+        ('Beau Turnbull', 94, 98)
+    ]
+    n = 0
+    expected = ['Greyson Fulton', 'Brady Kent', 'Wyatt Knott', 'Beau Turnbull']
+    
+    result = extract_nth_element(data, n)
+    
+    # Assertion to verify the correctness
+    assert result == expected, f"Expected {expected}, but got {result}"
+    print("Assertion passed successfully!")
+```

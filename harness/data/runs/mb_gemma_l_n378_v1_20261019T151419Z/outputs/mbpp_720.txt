@@ -1,0 +1,24 @@
+```python
+def add_dict_to_tuple(tup, dct):
+    """
+    Adds a dictionary to a tuple.
+    
+    Args:
+        tup (tuple): The original tuple.
+        dct (dict): The dictionary to be added.
+        
+    Returns:
+        tuple: A new tuple containing the original elements and the dictionary.
+    """
+    # Tuples are immutable, so we create a new tuple by adding 
+    # the original tuple to a single-element tuple containing the dictionary.
+    return tup + (dct,)
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    result = add_dict_to_tuple((4, 5, 6), {"MSAM" : 1, "is" : 2, "best" : 3})
+    expected = (4, 5, 6, {'MSAM': 1, 'is': 2, 'best': 3})
+    
+    assert result == expected
+    print(f"Success! Result: {result}")
+```

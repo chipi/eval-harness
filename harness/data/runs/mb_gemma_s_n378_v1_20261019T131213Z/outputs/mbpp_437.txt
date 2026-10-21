@@ -1,0 +1,16 @@
+```python
+def remove_odd(s):
+  """
+  Write a function to remove odd characters in a string.
+  assert remove_odd("python")==("yhn")
+  """
+  result = ""
+  for i in range(len(s)):
+    if (i + 1) % 2 == 0:
+      result += s[i]
+  return result
+
+if __name__ == '__main__':
+  assert remove_odd("python") == "yhn"
+  print("All test cases passed")
+```

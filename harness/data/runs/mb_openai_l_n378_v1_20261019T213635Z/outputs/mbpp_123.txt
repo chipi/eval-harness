@@ -1,0 +1,35 @@
+```python
+def amicable_numbers_sum(limit):
+    """Return the sum of all amicable numbers from 1 through limit."""
+    if limit < 2:
+        return 0
+
+    # A number at most limit can have an amicable partner above limit.
+    # Compute divisor sums on demand so those partners are covered too.
+    divisor_sums = {1: 0}
+
+    def proper_divisor_sum(n):
+        if n not in divisor_sums:
+            total = 1
+            divisor = 2
+            while divisor * divisor <= n:
+                if n % divisor == 0:
+                    total += divisor
+                    other = n // divisor
+                    if other != divisor:
+                        total += other
+                divisor += 1
+            divisor_sums[n] = total
+        return divisor_sums[n]
+
+    return sum(
+        number
+        for number in range(2, limit + 1)
+        if (partner := proper_divisor_sum(number)) != number
+        and partner > 0
+        and proper_divisor_sum(partner) == number
+    )
+
+
+assert amicable_numbers_sum(999) == 504
+```

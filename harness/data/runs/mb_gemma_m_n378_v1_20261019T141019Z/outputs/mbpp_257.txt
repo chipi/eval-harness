@@ -1,0 +1,19 @@
+```python
+def swap_numbers(a, b):
+    """
+    Takes in two numbers and returns a tuple with the second number 
+    and then the first number.
+    """
+    return (b, a)
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    assert swap_numbers(10, 20) == (20, 10)
+    
+    # Additional test cases
+    assert swap_numbers(1, 2) == (2, 1)
+    assert swap_numbers(-5, 5) == (5, -5)
+    assert swap_numbers(0, 0) == (0, 0)
+    
+    print("All tests passed!")
+```

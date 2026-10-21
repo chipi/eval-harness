@@ -1,0 +1,15 @@
+```python
+def divisible_by_digits(startnum, endnum):
+    """Return numbers in the inclusive range divisible by every digit they contain."""
+    return [
+        number
+        for number in range(startnum, endnum + 1)
+        if number > 0
+        and all(digit != "0" and number % int(digit) == 0 for digit in str(number))
+    ]
+
+
+assert divisible_by_digits(1, 22) == [
+    1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 15, 22
+]
+```

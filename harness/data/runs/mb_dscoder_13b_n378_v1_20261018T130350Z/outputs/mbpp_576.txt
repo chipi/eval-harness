@@ -1,0 +1,10 @@
+```python
+def is_Sub_Array(list1, list2):
+    return list1 in list2 or list2 in list1
+
+# Test cases
+assert is_Sub_Array([1,4,3,5],[1,2]) == False
+assert is_Sub_Array([1,4,3,5],[1,4,3,5]) == True
+assert is_Sub_Array([1,2,3],[1,2,3]) == True
+assert is_Sub_Array([1,2,3],[1,2,3,4]) == False
+```

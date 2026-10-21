@@ -1,0 +1,23 @@
+```python
+def search(arr):
+    """Return the single element in a sorted array where all others appear twice."""
+    if not arr or len(arr) % 2 == 0:
+        raise ValueError("Expected a nonempty array with exactly one unpaired element")
+
+    left, right = 0, len(arr) - 1
+
+    while left < right:
+        mid = (left + right) // 2
+        if mid % 2:
+            mid -= 1
+
+        if arr[mid] == arr[mid + 1]:
+            left = mid + 2
+        else:
+            right = mid
+
+    return arr[left]
+
+
+assert search([1, 1, 2, 2, 3]) == 3
+```

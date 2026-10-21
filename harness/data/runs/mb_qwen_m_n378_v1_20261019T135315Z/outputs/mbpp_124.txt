@@ -1,0 +1,26 @@
+```python
+import math
+
+
+def angle_complex(real: float, imag: complex | float) -> float:
+    """
+    Get the angle (argument) of a complex number.
+    
+    Args:
+        real: The real part of the complex number.
+        imag: The imaginary part of the complex number (can be a complex number like 1j or a float).
+    
+    Returns:
+        The angle in radians.
+    """
+    # Handle the case where imag is passed as a complex number (e.g., 1j)
+    if isinstance(imag, complex):
+        # Extract the imaginary component; the real part should be 0 for pure imaginary
+        imaginary_part = imag.imag
+        real_part = real + imag.real
+    else:
+        imaginary_part = imag
+        real_part = real
+    
+    return math.atan2(imaginary_part, real_part)
+```

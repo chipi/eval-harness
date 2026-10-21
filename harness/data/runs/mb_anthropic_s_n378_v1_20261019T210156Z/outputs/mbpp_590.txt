@@ -1,0 +1,49 @@
+```python
+import math
+
+def polar_rect(r, theta):
+    """
+    Convert polar coordinates to rectangular coordinates.
+    
+    Args:
+        r: radius (distance from origin)
+        theta: angle in radians
+    
+    Returns:
+        A tuple containing:
+        - (x, y) as rectangular coordinates
+        - complex number representation
+    """
+    # Convert polar to rectangular using formulas:
+    # x = r * cos(theta)
+    # y = r * sin(theta)
+    x = r * math.cos(theta)
+    y = r * math.sin(theta)
+    
+    # Also return as complex number: x + yi
+    complex_form = complex(x, y)
+    
+    return ((x, y), complex_form)
+
+
+# Test cases
+if __name__ == "__main__":
+    result = polar_rect(3, 4)
+    print(f"Result: {result}")
+    
+    # Verify the assertion
+    expected = ((5.0, 0.9272952180016122), (-2+2.4492935982947064e-16j))
+    print(f"Expected: {expected}")
+    
+    # Check if results match (with floating point tolerance)
+    rect_coords, complex_coords = result
+    exp_rect, exp_complex = expected
+    
+    x_match = abs(rect_coords[0] - exp_rect[0]) < 1e-10
+    y_match = abs(rect_coords[1] - exp_rect[1]) < 1e-10
+    complex_match = abs(complex_coords - exp_complex) < 1e-10
+    
+    print(f"Rectangular coordinates match: {x_match and y_match}")
+    print(f"Complex form matches: {complex_match}")
+    print(f"Test passed: {x_match and y_match and complex_match}")
+```

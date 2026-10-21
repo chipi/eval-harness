@@ -1,0 +1,34 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def tuple_modulo(tuple1, tuple2):
+    """
+    Perform element-wise modulo operation on two tuples of the same length.
+
+    Args:
+        tuple1: First tuple of numbers
+        tuple2: Second tuple of numbers (same length as tuple1)
+
+    Returns:
+        A tuple containing the element-wise modulo results
+
+    Raises:
+        ValueError: If the tuples have different lengths
+    """
+    if len(tuple1) != len(tuple2):
+        raise ValueError("Tuples must be of the same length")
+
+    return tuple(a % b for a, b in zip(tuple1, tuple2))
+
+# Test case
+assert tuple_modulo((10, 4, 5, 6), (5, 6, 7, 5)) == (0, 4, 5, 1)
+```
+
+This script:
+1. Defines a function `tuple_modulo` that takes two tuples as input
+2. Checks that the tuples have the same length (raises ValueError if not)
+3. Uses a generator expression with `zip` to perform element-wise modulo
+4. Converts the result back to a tuple
+5. Includes the provided test case as an assertion
+
+The function will work with any two tuples of numbers of the same length.

@@ -1,0 +1,42 @@
+Here's a self-contained Python script that solves the problem by counting the number of occurrences of the string 'std' in a given string:
+
+```python
+def count_occurance(s):
+    """
+    Count the number of occurrences of the substring 'std' in the given string.
+    
+    Args:
+        s (str): The input string to search within.
+    
+    Returns:
+        int: The number of times 'std' appears in the string.
+    """
+    count = 0
+    substring = 'std'
+    length = len(substring)
+    
+    for i in range(len(s) - length + 1):
+        if s[i:i+length] == substring:
+            count += 1
+    
+    return count
+
+# Test cases
+assert count_occurance("letstdlenstdporstd") == 3
+assert count_occurance("stdstdstd") == 3
+assert count_occurance("stdstdstdstd") == 4
+assert count_occurance("abc") == 0
+assert count_occurance("ststd") == 1
+assert count_occurance("std") == 1
+
+print("All test cases passed!")
+```
+
+### Explanation:
+1. **Function Definition**: The function `count_occurance` takes a string `s` as input.
+2. **Initialization**: We initialize `count` to 0 to keep track of the number of occurrences.
+3. **Substring Check**: We iterate over the string `s` and check each substring of length 3 (same as 'std') starting from each position `i`. If the substring matches 'std', we increment the count.
+4. **Return Result**: After checking all possible substrings, we return the total count.
+5. **Test Cases**: The script includes several test cases to verify the correctness of the function, including the one provided in the problem statement.
+
+This approach efficiently checks all possible starting positions for the substring 'std' and counts how many times it appears in the input string.

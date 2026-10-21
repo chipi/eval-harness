@@ -1,0 +1,14 @@
+```python
+def unique_Element(lst):
+    """Check whether a list of numbers contains only one distinct element."""
+    if not lst:
+        return True
+    return len(set(lst)) == 1
+
+
+# Test
+assert unique_Element([1, 1, 1]) == True
+assert unique_Element([1, 2, 1]) == False
+assert unique_Element([]) == True
+assert unique_Element([5]) == True
+```

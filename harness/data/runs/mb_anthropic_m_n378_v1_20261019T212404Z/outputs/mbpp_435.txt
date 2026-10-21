@@ -1,0 +1,11 @@
+```python
+def last_Digit(n):
+    return abs(n) % 10
+
+assert last_Digit(123) == 3
+
+if __name__ == "__main__":
+    print(last_Digit(123))
+    print(last_Digit(0))
+    print(last_Digit(10))
+```

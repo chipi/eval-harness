@@ -1,0 +1,8 @@
+```python
+def frequency(lst, num):
+    return lst.count(num)
+
+if __name__ == "__main__":
+    assert frequency([1, 2, 3], 4) == 0
+    print("All tests passed.")
+```

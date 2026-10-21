@@ -1,0 +1,85 @@
+```python
+"""
+Write a function to sort a list of elements.
+assert comb_sort([5, 15, 37, 25, 79]) == [5, 15, 25, 37, 79]
+"""
+
+def comb_sort(arr: list) -> list:
+    """
+    Sorts a list of elements in ascending order using the Comb Sort algorithm.
+
+    Comb Sort is an improvement over Bubble Sort. It works by comparing elements
+    separated by a gap, which shrinks by a shrink factor (traditionally 1.3)
+    in each pass until the gap becomes 1, at which point it performs a final
+    Bubble Sort pass.
+
+    Args:
+        arr: A list of comparable elements (e.g., numbers, strings).
+
+    Returns:
+        A new list containing the elements of the input list sorted in
+        ascending order.
+    """
+    # Create a copy of the input list to avoid modifying the original
+    arr_copy = list(arr)
+    n = len(arr_copy)
+
+    # If the list is empty or has one element, it's already sorted
+    if n <= 1:
+        return arr_copy
+
+    # The shrink factor is a key parameter for Comb Sort.
+    # 1.3 is empirically determined to be a good value.
+    shrink_factor = 1.3
+
+    # The initial gap is the length of the list
+    gap = n
+
+    # A flag to check if any swaps were made in a pass
+    swapped = True
+
+    # Continue looping until the gap is 1 and no swaps were made in the last pass
+    while gap > 1 or swapped:
+        # Update the gap for the next pass
+        # The gap is calculated by dividing by the shrink factor and converting to an int
+        gap = int(gap / shrink_factor)
+        
+        # Ensure the gap is at least 1 for the final pass
+        if gap < 1:
+            gap = 1
+
+        # Reset the swapped flag for the new pass
+        swapped = False
+
+        # Iterate through the list with the current gap
+        for i in range(n - gap):
+            # Compare elements at i and i + gap
+            if arr_copy[i] > arr_copy[i + gap]:
+                # If they are in the wrong order, swap them
+                arr_copy[i], arr_copy[i + gap] = arr_copy[i + gap], arr_copy[i]
+                # Set the swapped flag to True
+                swapped = True
+                
+    return arr_copy
+
+# Example usage and assertion
+if __name__ == "__main__":
+    # Test case from the problem description
+    input_list = [5, 15, 37, 25, 79]
+    expected_output = [5, 15, 25, 37, 79]
+    
+    sorted_list = comb_sort(input_list)
+    
+    print(f"Original list: {input_list}")
+    print(f"Sorted list:   {sorted_list}")
+    print(f"Expected list: {expected_output}")
+    
+    # The assert statement will raise an error if the condition is False
+    assert comb_sort([5, 15, 37, 25, 79]) == [5, 15, 25, 37, 79]
+    assert comb_sort([]) == []
+    assert comb_sort([1]) == [1]
+    assert comb_sort([3, 1, 4, 1, 5, 9, 2, 6]) == [1, 1, 2, 3, 4, 5, 6, 9]
+    assert comb_sort(['z', 'a', 'd', 'b']) == ['a', 'b', 'd', 'z']
+    
+    print("\nAll assertions passed successfully!")
+```

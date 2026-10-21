@@ -1,0 +1,32 @@
+```python
+from collections import Counter
+
+
+def unique_sublists(lst: list) -> dict:
+    """
+    Count occurrences of each sublist in the given list.
+    
+    Convert each sublist to a tuple (since lists are not hashable) and count
+    how many times each tuple appears. Return a dictionary with tuples as keys
+    and their counts as values.
+    
+    Args:
+        lst: A list containing sublists
+        
+    Returns:
+        A dictionary where keys are tuples (converted from sublists) and values
+        are the number of occurrences of each tuple in the original list.
+    """
+    # Convert each sublist to a tuple and count occurrences
+    counter = Counter(tuple(sublist) for sublist in lst)
+    return dict(counter)
+
+
+if __name__ == "__main__":
+    # Test case from the problem statement
+    result = unique_sublists([[1, 3], [5, 7], [1, 3], [13, 15, 17], [5, 7], [9, 11]])
+    expected = {(1, 3): 2, (5, 7): 2, (13, 15, 17): 1, (9, 11): 1}
+    assert result == expected, f"Expected {expected}, but got {result}"
+    print("Test passed!")
+    print(f"Result: {result}")
+```

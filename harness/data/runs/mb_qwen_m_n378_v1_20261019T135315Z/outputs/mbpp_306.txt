@@ -1,0 +1,71 @@
+```python
+def max_sum_increasing_subseq(arr, n, i, k):
+    """
+    Find the maximum sum of an increasing subsequence from the prefix until index i (inclusive),
+    and also including the kth element (where k > i).
+    
+    The subsequence must:
+    1. Be strictly increasing in values
+    2. Include arr[k] as the last element
+    3. Only use elements from indices 0 to i (plus arr[k])
+    4. All selected elements from prefix must be less than arr[k] and form an increasing subsequence
+    
+    Args:
+        arr: The input array
+        n: Length of the array
+        i: The prefix ends at index i (we consider elements from 0 to i)
+        k: Index of the element that must be included (k > i)
+    
+    Returns:
+        Maximum sum of such an increasing subsequence
+    """
+    # We need to find the maximum sum increasing subsequence ending at some element in arr[0..i]
+    # where all elements are < arr[k], and then add arr[k] to it.
+    
+    # Actually, re-reading the problem: we need an increasing subsequence from prefix [0..i] 
+    # that includes arr[k]. Since k > i, arr[k] comes after all elements in the prefix.
+    # So we need to find the maximum sum increasing subsequence within arr[0..i] where all 
+    # elements are less than arr[k], and the subsequence is increasing, then add arr[k].
+    
+    # More precisely: find max sum of increasing subsequence from arr[0..i] such that:
+    # - The subsequence is strictly increasing
+    # - All elements in the subsequence are < arr[k]
+    # Then add arr[k] to get the final answer.
+    
+    target_val = arr[k]
+    
+    # dp[j] represents the maximum sum of an increasing subsequence ending at index j (j <= i)
+    # where all elements are < target_val
+    dp = [0] * n
+    
+    max_sum = 0
+    
+    for j in range(i + 1):
+        if arr[j] < target_val:
+            dp[j] = arr[j]  # At minimum, the subsequence can just be arr[j] itself
+            for m in range(j):
+                if arr[m] < arr[j] and arr[m] < target_val:
+                    if dp[m] + arr[j] > dp[j]:
+                        dp[j] = dp[m] + arr[j]
+            if dp[j] > max_sum:
+                max_sum = dp[j]
+    
+    # Add arr[k] to the best sum found
+    return max_sum + target_val
+
+
+if __name__ == "__main__":
+    # Test case from the problem
+    result = max_sum_increasing_subseq([1, 101, 2, 3, 100, 4, 5], 7, 4, 6)
+    print(f"Result: {result}")
+    assert result == 11, f"Expected 11, got {result}"
+    
+    # Let's verify: arr = [1, 101, 2, 3, 100, 4, 5], i=4, k=6
+    # arr[k] = arr[6] = 5
+    # Prefix is arr[0..4] = [1, 101, 2, 3, 100]
+    # We need increasing subsequence from prefix with all elements < 5
+    # Valid elements from prefix that are < 5: 1, 2, 3, 4... wait, arr[4]=100 which is not < 5
+    # So valid: arr[0]=1, arr[2]=2, arr[3]=3
+    # Best increasing subsequence: 1, 2, 3 with sum 6, plus arr[6]=5 gives 11. Correct!
+    print("All tests passed!")
+```

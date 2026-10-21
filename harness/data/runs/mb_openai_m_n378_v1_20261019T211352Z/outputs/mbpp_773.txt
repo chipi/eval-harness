@@ -1,0 +1,44 @@
+```python
+"""
+Write a function to find the occurrence and position of a substring within a string.
+Return None if there is no match.
+
+Example:
+assert occurance_substring('python programming, python language', 'python') == ('python', 0, 6)
+"""
+
+def occurance_substring(text, substring):
+    """
+    Find the first occurrence of substring in text.
+
+    Returns:
+        tuple: (substring, start_index, end_index) if found
+        None: if substring is not found
+    """
+    start = text.find(substring)
+
+    if start == -1:
+        return None
+
+    end = start + len(substring)
+    return (substring, start, end)
+
+
+if __name__ == "__main__":
+    assert occurance_substring(
+        'python programming, python language',
+        'python'
+    ) == ('python', 0, 6)
+
+    assert occurance_substring(
+        'hello world',
+        'world'
+    ) == ('world', 6, 11)
+
+    assert occurance_substring(
+        'hello world',
+        'python'
+    ) is None
+
+    print("All tests passed.")
+```

@@ -1,0 +1,9 @@
+```python
+def number_of_substrings(s):
+    return len(s) * (len(s) + 1) // 2
+
+# Test cases
+assert number_of_substrings("abc") == 6
+assert number_of_substrings("a") == 1
+assert number_of_substrings("") == 0
+```

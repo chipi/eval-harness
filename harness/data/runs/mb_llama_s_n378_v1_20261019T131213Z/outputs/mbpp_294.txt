@@ -1,0 +1,30 @@
+```python
+def max_val(lst):
+    """
+    This function finds the maximum value in a given heterogeneous list.
+
+    Args:
+        lst (list): A list containing elements of different data types.
+
+    Returns:
+        The maximum value in the list. If the list is empty, it returns None.
+    """
+    # Filter out non-numeric values from the list
+    numeric_values = [i for i in lst if isinstance(i, (int, float))]
+    
+    # Check if the list contains any numeric values
+    if not numeric_values:
+        return None
+    
+    # Return the maximum numeric value
+    return max(numeric_values)
+
+
+# Test the function
+assert max_val(['Python', 3, 2, 4, 5, 'version']) == 5
+assert max_val(['a', 'b', 'c']) is None
+assert max_val([1, 2, 3, 4, 5]) == 5
+assert max_val([]) is None
+```
+
+This script defines a function `max_val` that takes a list as input, filters out non-numeric values, and returns the maximum numeric value. If the list is empty or does not contain any numeric values, it returns `None`. The script also includes test cases to demonstrate the function's behavior.

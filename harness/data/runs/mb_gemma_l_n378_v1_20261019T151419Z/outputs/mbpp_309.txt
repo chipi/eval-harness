@@ -1,0 +1,21 @@
+```python
+def maximum(a, b):
+    """
+    Returns the maximum of two numbers.
+    """
+    if a > b:
+        return a
+    else:
+        return b
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    assert maximum(5, 10) == 10
+    
+    # Additional test cases
+    assert maximum(20, 10) == 20
+    assert maximum(7, 7) == 7
+    assert maximum(-1, -5) == -1
+    
+    print("All tests passed!")
+```

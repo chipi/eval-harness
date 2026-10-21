@@ -1,0 +1,56 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def max_aggregate(tuples_list):
+    """
+    Calculate the maximum aggregate from the list of tuples.
+    
+    Args:
+        tuples_list: A list of tuples where each tuple contains a name and a value.
+    
+    Returns:
+        A tuple with the name that has the highest aggregate value and the aggregate value itself.
+    """
+    aggregates = {}
+    
+    for name, value in tuples_list:
+        if name in aggregates:
+            aggregates[name] += value
+        else:
+            aggregates[name] = value
+    
+    if not aggregates:
+        return None
+    
+    max_name = max(aggregates, key=lambda x: aggregates[x])
+    return (max_name, aggregates[max_name])
+
+# Test cases
+def test_max_aggregate():
+    assert max_aggregate([('Juan Whelan', 90), ('Sabah Colley', 88), ('Peter Nichols', 7), 
+                         ('Juan Whelan', 122), ('Sabah Colley', 84)]) == ('Juan Whelan', 212)
+    assert max_aggregate([('Alice', 10), ('Bob', 20), ('Alice', 5)]) == ('Bob', 20)
+    assert max_aggregate([('X', 1), ('Y', 2), ('Z', 3)]) == ('Z', 3)
+    assert max_aggregate([]) == None
+    print("All test cases passed!")
+
+if __name__ == "__main__":
+    test_max_aggregate()
+```
+
+### Explanation:
+1. **Function `max_aggregate`**:
+   - Takes a list of tuples as input.
+   - Uses a dictionary `aggregates` to accumulate the values for each name.
+   - For each tuple in the input list, it either adds the value to the existing entry in the dictionary or creates a new entry if the name is not present.
+   - After processing all tuples, it finds the name with the highest aggregate value using the `max` function with a custom key.
+   - Returns a tuple with the name and its aggregate value.
+
+2. **Test Cases**:
+   - The provided test case checks the function with the example given in the problem.
+   - Additional test cases are included to verify the function's correctness with different scenarios, including an empty list.
+
+3. **Execution**:
+   - The script runs the test cases when executed directly, ensuring the function works as expected.
+
+This script is self-contained and includes all necessary components to solve the problem and verify its correctness.

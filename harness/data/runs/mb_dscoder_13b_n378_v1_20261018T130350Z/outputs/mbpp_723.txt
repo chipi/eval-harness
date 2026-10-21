@@ -1,0 +1,11 @@
+```python
+def count_same_pair(list1, list2):
+    assert len(list1) == len(list2)
+    return sum(1 for a, b in zip(list1, list2) if a == b)
+
+# Test cases
+print(count_same_pair([1, 2, 3, 4, 5, 6, 7, 8],[2, 2, 3, 1, 2, 6, 7, 9])==4)
+print(count_same_pair([1, 2, 3, 4, 5, 6, 7, 8],[2, 2, 3, 1, 2, 6, 7, 8])==6)
+print(count_same_pair([1, 2, 3, 4, 5, 6, 7, 8],[2, 2, 3, 1, 2, 6, 7, 9])==4)
+print(count_same_pair([1, 2, 3, 4, 5, 6, 7, 8],[2, 2, 3, 1, 2, 6, 7, 9])==4)
+```

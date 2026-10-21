@@ -1,0 +1,20 @@
+```python
+def sum_in_range(l, r):
+  """
+  Finds the sum of all odd natural numbers within the range l and r (inclusive).
+
+  Args:
+    l: The lower bound of the range.
+    r: The upper bound of the range.
+
+  Returns:
+    The sum of all odd natural numbers within the range.
+  """
+  total = 0
+  for i in range(l, r + 1):
+    if i % 2 != 0:
+      total += i
+  return total
+
+assert sum_in_range(2,5) == 8
+```

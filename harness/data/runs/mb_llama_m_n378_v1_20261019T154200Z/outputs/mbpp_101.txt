@@ -1,0 +1,25 @@
+```python
+def kth_element(array, k):
+    """
+    This function finds the kth element in the given array using 1-based indexing.
+
+    Args:
+        array (list): The input array.
+        k (int): The index of the element to find (1-based indexing).
+
+    Returns:
+        The kth element in the array, or None if k is out of range.
+    """
+    # Check if k is within the valid range
+    if k < 1 or k > len(array):
+        return None
+    
+    # Since Python uses 0-based indexing, subtract 1 from k
+    return array[k - 1]
+
+# Example usage:
+array = [12, 3, 5, 7, 19]
+k = 2
+result = kth_element(array, k)
+print(result)  # Output: 3
+```

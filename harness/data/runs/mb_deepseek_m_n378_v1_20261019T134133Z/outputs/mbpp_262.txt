@@ -1,0 +1,36 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def split_two_parts(lst, L):
+    """
+    Splits a list into two parts where the first part has length L.
+    
+    Args:
+        lst: The input list to split.
+        L: The length of the first part.
+    
+    Returns:
+        A tuple containing two lists: the first with L elements,
+        and the second with the remaining elements.
+    """
+    return (lst[:L], lst[L:])
+
+
+# Test the function
+assert split_two_parts([1,1,2,3,4,4,5,1],3)==([1, 1, 2], [3, 4, 4, 5, 1])
+print("Test passed!")
+```
+
+**How it works:**
+
+- `lst[:L]` uses Python's list slicing to extract the first `L` elements.
+- `lst[L:]` extracts everything from index `L` to the end.
+- Both slices are returned as a tuple.
+
+**Example:**
+```python
+split_two_parts([1,1,2,3,4,4,5,1], 3)
+# Returns: ([1, 1, 2], [3, 4, 4, 5, 1])
+```
+
+This approach is clean and efficient, leveraging Python's built-in slicing which handles edge cases gracefully (e.g., if `L` is larger than the list length, the first part will contain the whole list and the second will be empty).

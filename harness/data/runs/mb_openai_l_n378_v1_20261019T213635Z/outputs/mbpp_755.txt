@@ -1,0 +1,11 @@
+```python
+def second_smallest(numbers):
+    """Return the second smallest distinct number in a list."""
+    distinct = sorted(set(numbers))
+    if len(distinct) < 2:
+        raise ValueError("At least two distinct numbers are required")
+    return distinct[1]
+
+
+assert second_smallest([1, 2, -8, -2, 0, -2]) == -2
+```

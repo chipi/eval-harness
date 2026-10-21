@@ -1,0 +1,11 @@
+```python
+import re
+
+def text_match_wordz(text):
+    """
+    Matches a word containing 'z'.
+    Returns True if any word in the text contains the letter 'z', False otherwise.
+    """
+    pattern = r'\b\w*z\w*\b'
+    return bool(re.search(pattern, text))
+```

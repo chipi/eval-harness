@@ -1,0 +1,21 @@
+```python
+def union_elements(tuple1, tuple2):
+    """
+    Finds the union of elements from two tuples and returns them 
+    as a sorted tuple.
+    """
+    # Convert tuples to sets to get unique elements, 
+    # then use the union operator '|'
+    combined_set = set(tuple1) | set(tuple2)
+    
+    # Convert the set back to a list, sort it, and then convert to a tuple
+    return tuple(sorted(list(combined_set)))
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    result = union_elements((3, 4, 5, 6), (5, 7, 4, 10))
+    expected = (3, 4, 5, 6, 7, 10)
+    
+    assert result == expected
+    print(f"Test Passed: {result} == {expected}")
+```

@@ -1,0 +1,53 @@
+### Adverb Position Finder
+#### Problem Statement
+Write a function to find the first adverb and their positions in a given sentence.
+
+#### Solution
+
+```python
+import nltk
+from nltk import word_tokenize, pos_tag
+
+# Ensure necessary NLTK data is downloaded
+nltk.download('punkt')
+nltk.download('averaged_perceptron_tagger')
+
+def find_adverb_position(sentence):
+    """
+    Finds the first adverb and its position in a given sentence.
+
+    Args:
+        sentence (str): The input sentence.
+
+    Returns:
+        tuple: A tuple containing the start position, end position, and the adverb itself.
+    """
+    # Tokenize the sentence into words
+    words = word_tokenize(sentence)
+
+    # Tag parts of speech for each word
+    tagged_words = pos_tag(words)
+
+    # Iterate over the tagged words to find the first adverb
+    for i, (word, tag) in enumerate(tagged_words):
+        if tag in ['RB', 'RBR', 'RBS']:  # RB, RBR, RBS are adverb tags in NLTK
+            start_pos = sum(len(w) for w in words[:i]) + sum(1 for _ in words[:i])
+            end_pos = start_pos + len(word)
+            return (start_pos, end_pos, word)
+
+    # Return None if no adverb is found
+    return None
+
+# Example usage
+sentence = "clearly!! we can see the sky"
+result = find_adverb_position(sentence)
+assert result == (0, 7, 'clearly')
+print(f"Adverb position: {result}")
+```
+
+#### Explanation
+
+*   The `find_adverb_position` function tokenizes the input sentence into words and tags their parts of speech using NLTK.
+*   It then iterates over the tagged words to find the first adverb, identified by the tags 'RB', 'RBR', or 'RBS'.
+*   Once the first adverb is found, the function calculates its start and end positions in the sentence.
+*   The function returns a tuple containing the start position, end position, and the adverb itself. If no adverb is found, it returns `None`.

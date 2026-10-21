@@ -1,0 +1,17 @@
+```python
+def is_Diff(n):
+    """
+    Check whether a number is divisible by 11.
+    """
+    return n % 11 == 0
+
+
+# Test case
+assert is_Diff(12345) == False
+
+if __name__ == "__main__":
+    print(is_Diff(12345))  # False
+    print(is_Diff(11))     # True
+    print(is_Diff(22))     # True
+    print(is_Diff(23))     # False
+```

@@ -1,0 +1,39 @@
+```python
+"""
+Write a python function to find the highest power of 2 that is less than or equal to n.
+
+Example:
+assert highest_Power_of_2(10) == 8
+"""
+
+def highest_Power_of_2(n):
+    """
+    Return the highest power of 2 that is less than or equal to n.
+
+    Args:
+        n (int): A positive integer.
+
+    Returns:
+        int: The greatest power of 2 <= n.
+    """
+    if n < 1:
+        raise ValueError("n must be a positive integer")
+
+    power = 1
+    while power * 2 <= n:
+        power *= 2
+
+    return power
+
+
+if __name__ == "__main__":
+    assert highest_Power_of_2(10) == 8
+    assert highest_Power_of_2(1) == 1
+    assert highest_Power_of_2(2) == 2
+    assert highest_Power_of_2(15) == 8
+    assert highest_Power_of_2(16) == 16
+    assert highest_Power_of_2(31) == 16
+    assert highest_Power_of_2(64) == 64
+
+    print("All tests passed.")
+```

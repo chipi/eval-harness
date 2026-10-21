@@ -1,0 +1,43 @@
+Here's a self-contained Python script that solves the problem of finding the median length of a trapezium:
+
+```python
+def median_trapezium(a, b, c):
+    """
+    Calculate the median length of a trapezium given three sides.
+
+    The median (or midline) of a trapezium is the average of the lengths of the two parallel sides.
+    If three sides are given, we assume the two parallel sides are the two smaller sides.
+
+    Args:
+        a (int/float): Length of first side
+        b (int/float): Length of second side
+        c (int/float): Length of third side
+
+    Returns:
+        float: The median length of the trapezium
+
+    Example:
+        >>> median_trapezium(15, 25, 35)
+        20
+    """
+    # Find the two smaller sides (assuming they are the parallel sides)
+    sides = sorted([a, b, c])
+    parallel_sides = sides[:2]
+
+    # Calculate the median as the average of the two parallel sides
+    median = sum(parallel_sides) / 2
+    return median
+
+# Test the function
+assert median_trapezium(15, 25, 35) == 20
+print("Test passed!")
+```
+
+This script:
+1. Defines a function `median_trapezium` that takes three side lengths as input
+2. Sorts the sides to identify the two smaller sides (assumed to be the parallel sides)
+3. Calculates the median as the average of these two parallel sides
+4. Includes the test case from the problem statement
+5. Prints a confirmation message if the test passes
+
+The function works by the mathematical property that the median (midline) of a trapezium is the average of the lengths of its two parallel sides. In the given example (15, 25, 35), the two smaller sides (15 and 25) are assumed to be the parallel sides, and their average (20) is returned.

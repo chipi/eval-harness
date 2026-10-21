@@ -1,0 +1,41 @@
+Looking at this problem, I need to insert spaces before capital letters that start new words (but not at the beginning of the string).
+
+```python
+"""
+Write a function to put spaces between words starting with capital letters in a given string.
+assert capital_words_spaces("Python") == 'Python'
+"""
+
+import re
+
+
+def capital_words_spaces(str1):
+    """
+    Insert a space before each capital letter that begins a new word.
+
+    The first character of the string is never preceded by a space.
+
+    Examples:
+        >>> capital_words_spaces("Python")
+        'Python'
+        >>> capital_words_spaces("PythonProgrammingExamples")
+        'Python Programming Examples'
+        >>> capital_words_spaces("GetReadyToBeCodingFreak")
+        'Get Ready To Be Coding Freak'
+    """
+    return re.sub(r"(\w)([A-Z])", r"\1 \2", str1)
+
+
+if __name__ == "__main__":
+    assert capital_words_spaces("Python") == 'Python'
+    assert capital_words_spaces("PythonProgramming") == 'Python Programming'
+    assert capital_words_spaces("PythonProgrammingExamples") == 'Python Programming Examples'
+    assert capital_words_spaces("GetReadyToBeCodingFreak") == 'Get Ready To Be Coding Freak'
+    print("All tests passed!")
+```
+
+**How it works:**
+
+- The regex `(\w)([A-Z])` matches any word character followed immediately by an uppercase letter.
+- The replacement `\1 \2` keeps both matched characters but inserts a space between them.
+- Because a capital letter at the very start of the string has no preceding word character, it is left untouched — so `"Python"` returns `'Python'` unchanged.

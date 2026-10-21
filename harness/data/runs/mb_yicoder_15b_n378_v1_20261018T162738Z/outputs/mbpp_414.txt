@@ -1,0 +1,11 @@
+```python
+def overlapping(seq1, seq2):
+    return any(item in seq1 for item in seq2)
+
+# Test cases
+print(overlapping([1,2,3,4,5],[6,7,8,9])) # Expected output: False
+print(overlapping([1,2,3,4,5],[5,7,8,9])) # Expected output: True
+print(overlapping([1,2,3,4,5],[1,7,8,9])) # Expected output: True
+print(overlapping([1,2,3,4,5],[6,7,8,9,1])) # Expected output: True
+print(overlapping([1,2,3,4,5],[1,7,8,9,5])) # Expected output: True
+```

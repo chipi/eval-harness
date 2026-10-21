@@ -1,0 +1,16 @@
+```python
+def remove_dirty_chars(string1, string2):
+    """
+    Write a function to remove characters from the first string which are present in the second string.
+    assert remove_dirty_chars("probasscurve", "pros") == 'bacuve'
+    """
+    result = ""
+    for char in string1:
+        if char not in string2:
+            result += char
+    return result
+
+if __name__ == '__main__':
+    assert remove_dirty_chars("probasscurve", "pros") == 'bacuve'
+    print("All tests passed!")
+```

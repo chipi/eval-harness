@@ -1,0 +1,53 @@
+```python
+def count_char_position(s: str) -> int:
+    """
+    Counts the number of characters in a string that occur at the same position
+    in the string as in the English alphabet (case insensitive).
+
+    For example, in the string "xbcefg":
+    - 'b' is the 2nd character in the string (index 1) and the 2nd letter of the alphabet.
+    - 'c' is the 3rd character in the string (index 2) and the 3rd letter of the alphabet.
+    - 'x' is the 1st character but the 24th letter, so it doesn't match.
+    - 'e', 'f', 'g' are at positions 4, 5, 6 in the string, but are the 5th, 6th, and 7th letters.
+    Therefore, the count is 2.
+
+    Args:
+        s: The input string.
+
+    Returns:
+        The count of characters that match their alphabet position.
+    """
+    count = 0
+    # Iterate through the string using its index and character
+    for index, char in enumerate(s):
+        # Convert character to lowercase for case-insensitive comparison
+        lower_char = char.lower()
+        
+        # Check if the character is a letter from 'a' to 'z'
+        if 'a' <= lower_char <= 'z':
+            # Calculate the 1-based position of the character in the alphabet
+            # ord('a') is 97, so 'a' -> 0, 'b' -> 1, etc.
+            # We add 1 to get the 1-based position (e.g., 'a' -> 1, 'b' -> 2)
+            alphabet_position = ord(lower_char) - ord('a') + 1
+            
+            # The string position is the 1-based index, which is `index + 1`
+            string_position = index + 1
+            
+            # If the positions match, increment the count
+            if alphabet_position == string_position:
+                count += 1
+                
+    return count
+
+# Example usage and assertion from the problem description
+if __name__ == "__main__":
+    assert count_char_position("xbcefg") == 2
+    assert count_char_position("abc") == 1 # Only 'a' matches (pos 1)
+    assert count_char_position("acegik") == 3 # 'a', 'c', 'e' match
+    assert count_char_position("z") == 1 # 'z' is the 26th letter and at position 1
+    assert count_char_position("") == 0
+    assert count_char_position("XYZ") == 0 # 'x' is at pos 1, 'y' at 2, 'z' at 3
+    assert count_char_position("a b c") == 1 # Only 'a' matches (pos 1)
+    
+    print("All assertions passed.")
+```

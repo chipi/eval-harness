@@ -1,0 +1,33 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def dog_age(human_years):
+    """
+    Calculate a dog's age in dog's years.
+    
+    The first two years of a dog's life count as 10.5 dog years each,
+    and every year after that counts as 4 dog years.
+    
+    Args:
+        human_years (int): The dog's age in human years.
+    
+    Returns:
+        int: The dog's age in dog years.
+    """
+    if human_years <= 0:
+        return 0
+    elif human_years <= 2:
+        return int(human_years * 10.5)
+    else:
+        return int(21 + (human_years - 2) * 4)
+
+
+# Test the function
+assert dog_age(12) == 61
+print("All tests passed!")
+```
+
+**How it works:**
+- For the first 2 years, each human year = 10.5 dog years (so 2 years = 21 dog years).
+- For every year after that, each human year = 4 dog years.
+- For a 12-year-old dog: `21 + (12 - 2) * 4 = 21 + 40 = 61` ✓

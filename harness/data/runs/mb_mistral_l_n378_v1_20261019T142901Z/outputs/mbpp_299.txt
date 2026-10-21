@@ -1,0 +1,34 @@
+Here's a self-contained Python script that solves the problem by calculating the maximum aggregate from a list of tuples:
+
+```python
+def max_aggregate(scores):
+    """
+    Calculate the maximum aggregate score from a list of (name, score) tuples.
+
+    Args:
+        scores: List of tuples where each tuple contains a name and a score.
+
+    Returns:
+        A tuple containing the name with the highest aggregate score and the total score.
+    """
+    aggregates = {}
+
+    for name, score in scores:
+        if name in aggregates:
+            aggregates[name] += score
+        else:
+            aggregates[name] = score
+
+    max_name = max(aggregates.items(), key=lambda x: x[1])
+    return max_name
+
+# Test the function
+assert max_aggregate([('Juan Whelan',90),('Sabah Colley',88),('Peter Nichols',7),('Juan Whelan',122),('Sabah Colley',84)]) == ('Juan Whelan', 212)
+```
+
+This script:
+1. Creates a dictionary to store the aggregate scores for each name
+2. Iterates through the input list, summing scores for each name
+3. Finds the name with the maximum aggregate score using the `max()` function with a custom key
+4. Returns the result as a tuple (name, total_score)
+5. Includes the assertion test from the problem statement

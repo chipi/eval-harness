@@ -1,0 +1,40 @@
+Here's a self-contained Python script that checks if a given array represents a min heap:
+
+```python
+def check_min_heap(arr):
+    """
+    Check if the given array represents a min heap.
+
+    Args:
+        arr (list): The array to check.
+
+    Returns:
+        bool: True if the array is a min heap, False otherwise.
+    """
+    n = len(arr)
+    for i in range((n // 2) - 1, -1, -1):
+        left = 2 * i + 1
+        right = 2 * i + 2
+        if left < n and arr[i] > arr[left]:
+            return False
+        if right < n and arr[i] > arr[right]:
+            return False
+    return True
+
+# Test cases
+assert check_min_heap([1, 2, 3, 4, 5, 6]) == True
+assert check_min_heap([1, 2, 3, 4, 5, 7]) == False
+assert check_min_heap([1, 2, 3, 4, 6, 5]) == False
+assert check_min_heap([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) == True
+assert check_min_heap([1, 2, 3, 4, 5, 6, 7, 8, 9, 11]) == False
+
+print("All test cases passed!")
+```
+
+This script:
+1. Defines a function `check_min_heap` that verifies if the array satisfies the min heap property
+2. The function checks that each parent node is less than or equal to its children
+3. Includes test cases to verify the function works correctly
+4. The test cases cover both valid and invalid min heaps
+
+The min heap property is verified by checking all non-leaf nodes (nodes from index (n//2)-1 down to 0) to ensure they're less than or equal to their children.

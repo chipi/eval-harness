@@ -1,0 +1,65 @@
+```python
+#!/usr/bin/env python3
+"""
+Find the nth Newman–Shanks–Williams prime number.
+
+The Newman–Shanks–Williams (NSW) numbers are defined by:
+    S(0) = 1
+    S(1) = 1
+    S(n) = 2*S(n-1) + S(n-2)
+
+The NSW primes are the prime numbers that occur in this sequence.
+This implementation uses 1-based indexing for prime counts:
+    newman_prime(1) == 2
+    newman_prime(2) == 5
+    newman_prime(3) == 7
+"""
+
+import math
+
+
+def is_prime(n: int) -> bool:
+    """Return True if n is prime, otherwise False."""
+    if n < 2:
+        return False
+    if n == 2:
+        return True
+    if n % 2 == 0:
+        return False
+
+    limit = math.isqrt(n)
+    for d in range(3, limit + 1, 2):
+        if n % d == 0:
+            return False
+    return True
+
+
+def newman_prime(n: int) -> int:
+    """
+    Return the nth Newman–Shanks–Williams prime number.
+
+    Examples:
+        newman_prime(1) -> 2
+        newman_prime(2) -> 5
+        newman_prime(3) -> 7
+    """
+    if n <= 0:
+        raise ValueError("n must be a positive integer")
+
+    a, b = 1, 1  # S(0), S(1)
+    count = 0
+
+    while True:
+        c = 2 * b + a  # next NSW number
+        a, b = b, c
+
+        if is_prime(c):
+            count += 1
+            if count == n:
+                return c
+
+
+if __name__ == "__main__":
+    assert newman_prime(3) == 7
+    print(newman_prime(3))
+```

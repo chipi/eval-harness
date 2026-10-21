@@ -1,0 +1,13 @@
+```python
+def replace_blank(text, char):
+    """
+    Replaces all blank spaces in the input string with the specified character.
+    """
+    return text.replace(" ", char)
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    result = replace_blank("hello people", '@')
+    assert result == "hello@people"
+    print(f"Test passed! Result: {result}")
+```

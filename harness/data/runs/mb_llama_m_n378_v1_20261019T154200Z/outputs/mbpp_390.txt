@@ -1,0 +1,17 @@
+```python
+def add_string(lst, format_str):
+    """
+    Applies a given format string to all elements in a list.
+
+    Args:
+        lst (list): The list of elements to be formatted.
+        format_str (str): The format string to be applied.
+
+    Returns:
+        list: A new list with the format string applied to each element.
+    """
+    return [format_str.format(i) for i in lst]
+
+# Example usage:
+print(add_string([1, 2, 3, 4], 'temp{0}'))  # Output: ['temp1', 'temp2', 'temp3', 'temp4']
+```

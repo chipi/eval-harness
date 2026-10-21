@@ -1,0 +1,43 @@
+```python
+def dict_depth(d):
+    """
+    Find the depth of a dictionary.
+    
+    The depth is defined as the maximum nesting level of dictionaries within the given dictionary.
+    An empty dictionary has depth 1. A non-dictionary value contributes to the depth only if it's 
+    part of a nested structure.
+    
+    For example:
+    - {} has depth 1
+    - {'a': 1} has depth 1 (the values are not dicts, so no additional nesting)
+    - {'a': {'b': {}}} has depth 3
+    
+    Args:
+        d: A dictionary
+        
+    Returns:
+        int: The depth of the dictionary
+    """
+    if not isinstance(d, dict):
+        return 0
+    
+    if len(d) == 0:
+        return 1
+    
+    max_depth = 0
+    for key, value in d.items():
+        if isinstance(value, dict):
+            current_depth = dict_depth(value)
+            if current_depth > max_depth:
+                max_depth = current_depth
+    
+    return 1 + max_depth
+
+
+# Test cases
+assert dict_depth({'a':1, 'b': {'c': {'d': {}}}})==4
+assert dict_depth({})==1
+assert dict_depth({'a': 1})==1
+assert dict_depth({'a': {'b': {}}})==3
+assert dict_depth({'a': {'b': {'c': {'d': {'e': {}}}}}})==5
+```

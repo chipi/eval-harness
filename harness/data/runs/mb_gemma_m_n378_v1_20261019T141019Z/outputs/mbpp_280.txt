@@ -1,0 +1,36 @@
+```python
+def sequential_search(arr, element):
+    """
+    Performs a sequential search to find the index of an element in an array.
+
+    Args:
+        arr (list): The list to search through.
+        element: The target value to find.
+
+    Returns:
+        tuple: (bool, int) where the bool indicates if the element was found,
+               and the int is the index of the element or -1 if not found.
+    """
+    for index, value in enumerate(arr):
+        if value == element:
+            return (True, index)
+    
+    return (False, -1)
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    test_arr = [11, 23, 58, 31, 56, 77, 43, 12, 65, 19]
+    target = 31
+    result = sequential_search(test_arr, target)
+    
+    # Assertion to verify correctness
+    assert result == (True, 3), f"Expected (True, 3), but got {result}"
+    
+    # Additional test cases
+    assert sequential_search(test_arr, 99) == (False, -1)  # Element not present
+    assert sequential_search([], 10) == (False, -1)       # Empty array
+    assert sequential_search([5, 5, 5], 5) == (True, 0)   # Duplicate elements (returns first index)
+    
+    print("All tests passed successfully!")
+    print(f"Search for {target} in {test_arr} returned: {result}")
+```

@@ -1,0 +1,27 @@
+```python
+def find_Odd_Pair(A, N):
+    """
+    This function counts the number of pairs in the given list A whose xor value is odd.
+
+    Args:
+        A (list): A list of integers.
+        N (int): The size of the list A.
+
+    Returns:
+        int: The number of pairs whose xor value is odd.
+    """
+    # Count the number of even and odd numbers in the list
+    even_count = sum(1 for num in A if num % 2 == 0)
+    odd_count = N - even_count
+    
+    # The number of pairs whose xor value is odd is the product of the number of even and odd numbers
+    return even_count * odd_count
+
+def main():
+    A = [5,4,7,2,1]
+    N = 5
+    print(find_Odd_Pair(A, N))  # Output: 6
+
+if __name__ == "__main__":
+    main()
+```

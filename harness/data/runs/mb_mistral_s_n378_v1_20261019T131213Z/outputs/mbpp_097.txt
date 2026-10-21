@@ -1,0 +1,26 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def frequency_lists(list_of_lists):
+    frequency = {}
+    for sublist in list_of_lists:
+        for element in sublist:
+            if element in frequency:
+                frequency[element] += 1
+            else:
+                frequency[element] = 1
+    return frequency
+
+# Test the function
+assert frequency_lists([[1, 2, 3, 2], [4, 5, 6, 2], [7, 8, 9, 5]]) == {1: 1, 2: 3, 3: 1, 4: 1, 5: 2, 6: 1, 7: 1, 8: 1, 9: 1}
+print("Test passed!")
+```
+
+This script defines a function `frequency_lists` that:
+1. Takes a list of lists as input
+2. Creates an empty dictionary to store frequencies
+3. Iterates through each sublist and each element within
+4. Updates the frequency count for each element
+5. Returns the frequency dictionary
+
+The test case at the bottom verifies that the function works as expected.

@@ -1,0 +1,24 @@
+```python
+def max_product(arr):
+    """
+    Returns the maximum product formed by multiplying numbers of an increasing subsequence of the array.
+    """
+    if not arr:
+        return 0
+    
+    n = len(arr)
+    # dp[i] will store the maximum product of an increasing subsequence ending at index i
+    dp = [0] * n
+    
+    for i in range(n):
+        dp[i] = arr[i]  # at minimum, the subsequence is just the element itself
+        for j in range(i):
+            if arr[j] < arr[i]:  # strictly increasing condition
+                dp[i] = max(dp[i], dp[j] * arr[i])
+    
+    return max(dp)
+
+# Test the given assertion
+assert max_product([3, 100, 4, 5, 150, 6]) == 3000
+print("Test passed.")
+```

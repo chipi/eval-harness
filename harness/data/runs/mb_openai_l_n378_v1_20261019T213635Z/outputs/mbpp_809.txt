@@ -1,0 +1,10 @@
+```python
+def check_smaller(first, second):
+    return len(first) == len(second) and all(
+        b < a for a, b in zip(first, second)
+    )
+
+
+assert check_smaller((1, 2, 3), (2, 3, 4)) is False
+assert check_smaller((2, 3, 4), (1, 2, 3)) is True
+```

@@ -1,0 +1,57 @@
+Looking at this problem, I need to check whether a list contains a given sublist as a **contiguous** subsequence (based on the assertion: `[3,7]` appears in `[2,4,3,5,7]` as separate elements but not consecutively, so the result is `False`).
+
+```python
+"""
+Write a function to check whether a list contains the given sublist or not.
+assert is_sublist([2,4,3,5,7],[3,7])==False
+"""
+
+
+def is_sublist(lst, sublist):
+    """
+    Check whether `sublist` occurs as a contiguous block inside `lst`.
+
+    Parameters
+    ----------
+    lst : list
+        The list to search within.
+    sublist : list
+        The candidate sublist.
+
+    Returns
+    -------
+    bool
+        True if `sublist` appears as consecutive elements of `lst`,
+        otherwise False.
+    """
+    n, m = len(lst), len(sublist)
+
+    # An empty sublist is trivially contained in any list.
+    if m == 0:
+        return True
+
+    # A longer "sublist" can never fit inside a shorter list.
+    if m > n:
+        return False
+
+    for i in range(n - m + 1):
+        if lst[i:i + m] == sublist:
+            return True
+    return False
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert is_sublist([2, 4, 3, 5, 7], [3, 7]) == False
+
+    # Additional test cases
+    assert is_sublist([2, 4, 3, 5, 7], [4, 3]) == True
+    assert is_sublist([2, 4, 3, 5, 7], [1, 6]) == False
+    assert is_sublist([2, 4, 3, 5, 7], [3, 5, 7]) == True
+    assert is_sublist([2, 4, 3, 5, 7], []) == True
+    assert is_sublist([], [1]) == False
+    assert is_sublist([1, 2, 3], [1, 2, 3]) == True
+    assert is_sublist([1, 2, 3], [1, 2, 3, 4]) == False
+
+    print("All test cases passed!")
+```

@@ -1,0 +1,43 @@
+```python
+def extract_nth_element(tuples_list, n):
+    """
+    Extract the nth element from a given list of tuples.
+
+    Args:
+        tuples_list (list): A list of tuples.
+        n (int): The index of the element to extract.
+
+    Returns:
+        list: A list of nth elements from the input tuples.
+    """
+    return [t[n] for t in tuples_list]
+
+# Example usage:
+if __name__ == "__main__":
+    tuples_list = [('Greyson Fulton', 98, 99), ('Brady Kent', 97, 96), ('Wyatt Knott', 91, 94), ('Beau Turnbull', 94, 98)]
+    n = 0
+    result = extract_nth_element(tuples_list, n)
+    print(result)  # Output: ['Greyson Fulton', 'Brady Kent', 'Wyatt Knott', 'Beau Turnbull']
+```
+
+You can run this script, and it will print the list of first elements from the tuples. You can adjust the `n` variable to extract different elements. 
+
+The function `extract_nth_element` uses list comprehension to create a new list containing the nth element from each tuple in the input list. 
+
+The example usage demonstrates how to call the function with a sample list of tuples and print the result. 
+
+Please note that this function does not include any error checking. If the input list is not a list of tuples, or if `n` is out of range for any tuple, the function may raise an exception. You may want to add error checking code depending on your specific requirements. 
+
+For example, you could add a check to ensure that `n` is within the valid range for all tuples:
+
+```python
+def extract_nth_element(tuples_list, n):
+    if not tuples_list:
+        return []
+    
+    max_len = max(len(t) for t in tuples_list)
+    if n >= max_len:
+        raise ValueError(f"n is out of range. Maximum valid index is {max_len - 1}")
+    
+    return [t[n] for t in tuples_list]
+```

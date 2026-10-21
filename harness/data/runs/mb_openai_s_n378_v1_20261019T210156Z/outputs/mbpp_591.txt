@@ -1,0 +1,23 @@
+```python
+def swap_List(lst):
+    """
+    Interchange the first and last elements in a list.
+
+    Parameters:
+        lst (list): The input list.
+
+    Returns:
+        list: A new list with the first and last elements swapped.
+    """
+    if len(lst) <= 1:
+        return lst[:]  # Return a copy for consistency
+
+    new_lst = lst[:]  # Make a copy to avoid modifying the original list
+    new_lst[0], new_lst[-1] = new_lst[-1], new_lst[0]
+    return new_lst
+
+
+if __name__ == "__main__":
+    assert swap_List([12, 35, 9, 56, 24]) == [24, 35, 9, 56, 12]
+    print("All tests passed.")
+```

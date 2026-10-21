@@ -1,0 +1,11 @@
+```python
+def has_duplicate(nums):
+    return len(nums) != len(set(nums))
+
+def test_duplicate(nums):
+    return has_duplicate(nums)
+
+# Test the function
+print(test_duplicate([1,2,3,4,5]))  # False
+print(test_duplicate([1,2,3,4,4]))  # True
+```

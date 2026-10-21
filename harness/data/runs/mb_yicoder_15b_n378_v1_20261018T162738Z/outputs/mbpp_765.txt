@@ -1,0 +1,12 @@
+```python
+def is_polite(n):
+    if n == 1:
+        return 1
+    else:
+        return (n * (n + 1)) / 2
+
+assert is_polite(7) == 11
+assert is_polite(8) == 20
+assert is_polite(9) == 30
+assert is_polite(10) == 42
+```

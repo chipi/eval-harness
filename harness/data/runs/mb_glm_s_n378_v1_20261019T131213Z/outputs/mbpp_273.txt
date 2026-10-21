@@ -1,0 +1,44 @@
+```python
+def substract_elements(tuple1, tuple2):
+  """
+  Subtracts the elements of the second tuple from the elements of the first tuple.
+
+  Args:
+    tuple1: The first tuple of numbers.
+    tuple2: The second tuple of numbers.
+
+  Returns:
+    A new tuple containing the result of the subtraction.
+    
+  Raises:
+    ValueError: If the tuples are not of the same length.
+  """
+  if len(tuple1) != len(tuple2):
+    raise ValueError("Tuples must be of the same length to subtract elements.")
+  
+  # Use a generator expression to perform the subtraction element-wise
+  # and convert the result to a tuple.
+  return tuple(a - b for a, b in zip(tuple1, tuple2))
+
+# Example usage and assertion from the problem description
+if __name__ == "__main__":
+  input_tuple1 = (10, 4, 5)
+  input_tuple2 = (2, 5, 18)
+  expected_result = (8, -1, -13)
+  
+  result = substract_elements(input_tuple1, input_tuple2)
+  
+  print(f"Subtracting {input_tuple2} from {input_tuple1}")
+  print(f"Result: {result}")
+  print(f"Expected: {expected_result}")
+  
+  # The assert statement will raise an error if the result is not as expected.
+  assert result == expected_result
+  
+  # Example with tuples of different lengths to show the error handling
+  try:
+    substract_elements((1, 2), (3,))
+  except ValueError as e:
+    print(f"\nCaught expected error: {e}")
+
+```

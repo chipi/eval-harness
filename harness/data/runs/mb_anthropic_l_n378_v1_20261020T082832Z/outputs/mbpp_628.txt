@@ -1,0 +1,27 @@
+```python
+"""
+Write a function to replace all spaces in the given string with '%20'.
+assert replace_spaces("My Name is Dawood") == 'My%20Name%20is%20Dawood'
+"""
+
+
+def replace_spaces(string):
+    """Replace every space character in `string` with '%20'."""
+    result = []
+    for char in string:
+        if char == ' ':
+            result.append('%20')
+        else:
+            result.append(char)
+    return ''.join(result)
+
+
+if __name__ == "__main__":
+    assert replace_spaces("My Name is Dawood") == 'My%20Name%20is%20Dawood'
+    assert replace_spaces("My Name is Dawood") == 'My%20Name%20is%20Dawood'
+    assert replace_spaces("Part of the journey is end") == 'Part%20of%20the%20journey%20is%20end'
+    assert replace_spaces("") == ''
+    assert replace_spaces("NoSpaces") == 'NoSpaces'
+    assert replace_spaces(" ") == '%20'
+    print("All tests passed!")
+```

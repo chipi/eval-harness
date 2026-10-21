@@ -1,0 +1,56 @@
+```python
+def count_reverse_pairs(strs):
+    """
+    This function counts the pairs of reverse strings in the given string list.
+
+    Args:
+        strs (list): A list of strings.
+
+    Returns:
+        int: The number of pairs of reverse strings.
+
+    Example:
+        >>> count_reverse_pairs(["julia", "best", "tseb", "for", "ailuj"])
+        2
+    """
+    # Create a dictionary to store the frequency of each string
+    freq = {}
+    for s in strs:
+        # Use the reversed string as the key
+        freq[s[::-1]] = freq.get(s[::-1], 0) + 1
+
+    # Initialize the count of pairs
+    count = 0
+    # Iterate over the frequency dictionary
+    for s in strs:
+        # If the string is in the dictionary and its frequency is greater than 0
+        if s in freq and freq[s] > 0:
+            # Increment the count by the frequency of the reversed string
+            count += freq[s]
+            # Decrement the frequency to avoid counting the same pair multiple times
+            freq[s] -= 1
+
+    # Since we counted each pair twice, divide the count by 2
+    return count // 2
+
+
+# Test the function
+assert count_reverse_pairs(["julia", "best", "tseb", "for", "ailuj"]) == 2
+```
+
+However, the above approach can be optimized. A more efficient approach would be to use a set to store the strings we've seen so far and then for each string, check if its reverse is in the set.
+
+```python
+def count_reverse_pairs(strs):
+    seen = set()
+    count = 0
+    for s in strs:
+        rev = s[::-1]
+        if rev in seen:
+            count += 1
+        seen.add(s)
+    return count
+
+# Test the function
+assert count_reverse_pairs(["julia", "best", "tseb", "for", "ailuj"]) == 2
+```

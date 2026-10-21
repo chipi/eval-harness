@@ -1,0 +1,36 @@
+```python
+import sys
+from functools import lru_cache
+
+sys.setrecursionlimit(2000)
+
+@lru_cache(maxsize=None)
+def get_max_sum(n: int) -> int:
+    """
+    Find the maximum sum possible by using the given equation:
+    f(n) = max( (f(n//2) + f(n//3) + f(n//4) + f(n//5)), n)
+    
+    For n = 0, the sum of the recursive calls is 0, so f(0) = max(0, 0) = 0.
+    """
+    if n == 0:
+        return 0
+    
+    # Calculate the sum of the recursive steps
+    recursive_sum = get_max_sum(n // 2) + get_max_sum(n // 3) + get_max_sum(n // 4) + get_max_sum(n // 5)
+    
+    # Return the maximum of the recursive sum and n itself
+    return max(recursive_sum, n)
+
+if __name__ == "__main__":
+    # Verify the provided assertion
+    assert get_max_sum(60) == 106, "Test case for n=60 failed!"
+    
+    # Additional test cases
+    assert get_max_sum(0) == 0
+    assert get_max_sum(1) == 1
+    assert get_max_sum(10) == 10
+    assert get_max_sum(24) == 24
+    assert get_max_sum(100) == 106
+    
+    print("All test cases passed!")
+```

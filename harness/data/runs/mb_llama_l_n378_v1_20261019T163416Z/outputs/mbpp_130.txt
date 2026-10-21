@@ -1,0 +1,11 @@
+```python
+def max_occurrences(lst):
+    return max(set(lst), key=lst.count)
+
+def main():
+    lst = [2,3,8,4,7,9,8,2,6,5,1,6,1,2,3,2,4,6,9,1,2]
+    print(max_occurrences(lst))  # Output: 2
+
+if __name__ == "__main__":
+    main()
+```

@@ -1,0 +1,18 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+from collections import Counter
+
+def max_occurrences(lst):
+    """
+    Find the item with maximum frequency in a given list.
+    If there is a tie, the first encountered item with that frequency is returned.
+    """
+    frequency = Counter(lst)
+    return max(frequency, key=frequency.get)
+
+# Test the function
+if __name__ == "__main__":
+    assert max_occurrences([2,3,8,4,7,9,8,2,6,5,1,6,1,2,3,2,4,6,9,1,2]) == 2
+    print("Test passed!")
+```

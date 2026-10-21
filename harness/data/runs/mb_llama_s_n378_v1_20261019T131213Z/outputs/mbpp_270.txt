@@ -1,0 +1,26 @@
+```python
+def sum_even_and_even_index(lst):
+    """
+    This function calculates the sum of even numbers at even positions in a list.
+
+    Args:
+        lst (list): A list of integers.
+
+    Returns:
+        int: The sum of even numbers at even positions.
+    """
+    return sum(num for idx, num in enumerate(lst) if idx % 2 == 0 and num % 2 == 0)
+
+
+# Example usage:
+def main():
+    numbers = [5, 6, 12, 1, 18, 8]
+    result = sum_even_and_even_index(numbers)
+    print(f"The sum of even numbers at even positions is: {result}")
+
+
+if __name__ == "__main__":
+    main()
+```
+
+You can run this script, and it will output the sum of even numbers at even positions in the provided list. The `sum_even_and_even_index` function uses list comprehension with `enumerate` to iterate over both the index and value of each element in the list, checking if the index and value are both even. The `main` function demonstrates how to use this function with an example list.

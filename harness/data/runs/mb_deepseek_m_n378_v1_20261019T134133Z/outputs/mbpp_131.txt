@@ -1,0 +1,51 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def reverse_vowels(s: str) -> str:
+    """
+    Reverse only the vowels of a given string.
+    Vowels are 'a', 'e', 'i', 'o', 'u' (case-insensitive).
+    'y' is NOT considered a vowel.
+    """
+    vowels = set("aeiouAEIOU")
+    s_list = list(s)
+    
+    # Collect indices of vowels
+    vowel_indices = [i for i, ch in enumerate(s_list) if ch in vowels]
+    
+    # Reverse the vowels in place
+    left, right = 0, len(vowel_indices) - 1
+    while left < right:
+        i, j = vowel_indices[left], vowel_indices[right]
+        s_list[i], s_list[j] = s_list[j], s_list[i]
+        left += 1
+        right -= 1
+    
+    return "".join(s_list)
+
+
+# Test cases
+assert reverse_vowels("Python") == "Python"
+assert reverse_vowels("hello") == "holle"
+assert reverse_vowels("leetcode") == "leotcede"
+assert reverse_vowels("AEIOU") == "UOIEA"
+assert reverse_vowels("bcdfg") == "bcdfg"
+assert reverse_vowels("") == ""
+assert reverse_vowels("aA") == "Aa"
+
+print("All tests passed!")
+```
+
+**How it works:**
+
+1. **Identify vowels**: A set `vowels` contains all vowel characters (both cases). Since `y` is not included, it's treated as a consonant.
+
+2. **Collect vowel positions**: Iterate through the string and record the indices where vowels appear.
+
+3. **Two-pointer swap**: Use two pointers (`left` and `right`) starting at the ends of the `vowel_indices` list. Swap the characters at those positions, then move the pointers inward.
+
+4. **Return result**: Join the modified character list back into a string.
+
+**Example trace** for `"hello"`:
+- Vowel indices: `[1, 4]` (e and o)
+- Swap `s[1]` and `s[4]` → `"holle"` ✓

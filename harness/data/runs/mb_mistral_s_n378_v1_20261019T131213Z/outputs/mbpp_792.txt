@@ -1,0 +1,32 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def count_list(lists):
+    """
+    Count the number of lists in a given number of lists.
+
+    Args:
+        lists: A list of lists (or other iterables, but only lists are counted)
+
+    Returns:
+        int: The number of lists in the input
+    """
+    count = 0
+    for item in lists:
+        if isinstance(item, list):
+            count += 1
+    return count
+
+# Test case
+assert count_list([[1, 3], [5, 7], [9, 11], [13, 15, 17]]) == 4
+print("Test passed!")
+```
+
+This script:
+1. Defines a function `count_list` that takes a list of items
+2. Iterates through each item and checks if it's an instance of `list`
+3. Counts and returns the number of list items found
+4. Includes the test case from the problem statement
+5. Prints a confirmation message if the test passes
+
+The function will correctly count only the actual list objects in the input, ignoring any other types of elements that might be present.

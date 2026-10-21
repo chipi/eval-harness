@@ -1,0 +1,80 @@
+```python
+def get_pairs_count(numbers, target_sum):
+    """
+    Counts the number of pairs in a list of numbers that sum up to a target value.
+
+    This function efficiently counts pairs by using a dictionary to store the frequency
+    of each number encountered. For each number, it calculates its complement (the
+    number needed to reach the target sum) and adds the frequency of that complement
+    to the total count. This approach ensures that each valid pair is counted exactly once.
+
+    Args:
+        numbers (list): A list of integers.
+        target_sum (int): The target sum for the pairs.
+
+    Returns:
+        int: The total number of pairs that sum up to the target_sum.
+
+    Example:
+        >>> get_pairs_count([1, 1, 1, 1], 2)
+        6
+        >>> get_pairs_count([10, 12, 10, 15, -1, 7, 6, 5, 4, 2, 1, 1, 1], 11)
+        9
+    """
+    # A dictionary to store the frequency of each number encountered so far.
+    frequency_map = {}
+    pair_count = 0
+
+    # Iterate through each number in the input list.
+    for num in numbers:
+        # Calculate the complement, which is the number needed to form the target sum.
+        complement = target_sum - num
+
+        # If the complement exists in our frequency map, it means we can form
+        # 'frequency_map[complement]' new pairs with the current number.
+        if complement in frequency_map:
+            pair_count += frequency_map[complement]
+
+        # Update the frequency map for the current number.
+        # If the number is already in the map, its count is incremented.
+        # Otherwise, it's added to the map with a count of 1.
+        frequency_map[num] = frequency_map.get(num, 0) + 1
+
+    return pair_count
+
+# Example Usage and Verification
+if __name__ == "__main__":
+    # Test case from the problem description
+    list1 = [1, 1, 1, 1]
+    sum1 = 2
+    result1 = get_pairs_count(list1, sum1)
+    print(f"List: {list1}, Target Sum: {sum1}")
+    print(f"Number of pairs: {result1}")
+    assert result1 == 6, f"Assertion failed: Expected 6, but got {result1}"
+    print("Assertion passed for the first test case.\n")
+
+    # Additional test cases
+    list2 = [10, 12, 10, 15, -1, 7, 6, 5, 4, 2, 1, 1, 1]
+    sum2 = 11
+    result2 = get_pairs_count(list2, sum2)
+    print(f"List: {list2}, Target Sum: {sum2}")
+    print(f"Number of pairs: {result2}")
+    assert result2 == 9, f"Assertion failed: Expected 9, but got {result2}"
+    print("Assertion passed for the second test case.\n")
+
+    list3 = [1, 5, 7, -1, 5]
+    sum3 = 6
+    result3 = get_pairs_count(list3, sum3)
+    print(f"List: {list3}, Target Sum: {sum3}")
+    print(f"Number of pairs: {result3}")
+    assert result3 == 3, f"Assertion failed: Expected 3, but got {result3}"
+    print("Assertion passed for the third test case.\n")
+
+    list4 = [1, 2, 3, 4, 5]
+    sum4 = 10
+    result4 = get_pairs_count(list4, sum4)
+    print(f"List: {list4}, Target Sum: {sum4}")
+    print(f"Number of pairs: {result4}")
+    assert result4 == 0, f"Assertion failed: Expected 0, but got {result4}"
+    print("Assertion passed for the fourth test case.\n")
+```

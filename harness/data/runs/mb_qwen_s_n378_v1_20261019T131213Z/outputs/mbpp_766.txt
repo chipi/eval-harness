@@ -1,0 +1,17 @@
+```python
+def pair_wise(lst):
+    """
+    Return a list of all pairs of consecutive items in the given list.
+    
+    Args:
+        lst: A list of elements.
+        
+    Returns:
+        A list of tuples, where each tuple contains two consecutive elements from the input list.
+        
+    Example:
+        >>> pair_wise([1, 1, 2, 3, 3, 4, 4, 5])
+        [(1, 1), (1, 2), (2, 3), (3, 3), (3, 4), (4, 4), (4, 5)]
+    """
+    return [(lst[i], lst[i + 1]) for i in range(len(lst) - 1)]
+```

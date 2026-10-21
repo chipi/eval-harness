@@ -1,0 +1,11 @@
+```python
+def get_equal(tuples):
+    return len(set(map(len, tuples))) == 1
+
+def main():
+    print(get_equal([(11, 22, 33), (44, 55, 66)]))  # True
+    print(get_equal([(11, 22, 33), (44, 55)]))  # False
+
+if __name__ == "__main__":
+    main()
+```

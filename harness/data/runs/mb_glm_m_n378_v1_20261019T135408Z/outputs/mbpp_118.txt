@@ -1,0 +1,37 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def string_to_list(s):
+    """
+    Convert a string to a list of strings split on the space character.
+    
+    Args:
+        s (str): The input string to be split.
+    
+    Returns:
+        list: A list of strings split on the space character.
+    """
+    return s.split()
+
+# Test cases
+def test_string_to_list():
+    assert string_to_list("python programming") == ['python', 'programming']
+    assert string_to_list("hello world") == ['hello', 'world']
+    assert string_to_list("") == []
+    assert string_to_list("single") == ['single']
+    assert string_to_list("multiple spaces between words") == ['multiple', 'spaces', 'between', 'words']
+    print("All test cases passed!")
+
+if __name__ == "__main__":
+    test_string_to_list()
+```
+
+### Explanation:
+1. The function `string_to_list` takes a string `s` as input and returns a list of strings split on the space character using the `split()` method.
+2. The `split()` method without any arguments splits the string at whitespace characters (including spaces, tabs, newlines) and handles multiple spaces between words by treating them as a single delimiter.
+3. The test cases verify the function's behavior with various inputs, including:
+   - A simple string with two words.
+   - An empty string.
+   - A string with a single word.
+   - A string with multiple spaces between words.
+4. The script runs the test cases when executed directly, and all assertions must pass for the script to complete successfully.

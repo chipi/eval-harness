@@ -1,0 +1,33 @@
+```python
+def is_Sub_Array(list1, list2):
+  """
+  Checks whether list1 is a sublist of list2.
+
+  Args:
+    list1: The potential sublist.
+    list2: The list to check against.
+
+  Returns:
+    True if list1 is a sublist of list2, False otherwise.
+  """
+  n = len(list1)
+  m = len(list2)
+
+  if n > m:
+    return False
+
+  for i in range(m - n + 1):
+    if list1 == list2[i:i+n]:
+      return True
+
+  return False
+
+# Example usage/tests
+assert is_Sub_Array([1,4,3,5],[1,2]) == False
+assert is_Sub_Array([1,2],[1,2,3,4]) == True
+assert is_Sub_Array([1,2,3],[1,2]) == False
+assert is_Sub_Array([],[1,2,3]) == True
+assert is_Sub_Array([1,2,3],[1,2,3]) == True
+assert is_Sub_Array([1,2,3],[1,2,3,4]) == True
+assert is_Sub_Array([1,2,3],[1,2,4]) == False
+```

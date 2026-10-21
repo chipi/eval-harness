@@ -1,0 +1,28 @@
+Here's a self-contained Python script that solves the problem by defining a function to calculate the area of a rectangle and includes an assertion to verify the correctness:
+
+```python
+def rectangle_area(length, width):
+    """
+    Calculate the area of a rectangle given its length and width.
+    
+    Parameters:
+    length (float or int): The length of the rectangle.
+    width (float or int): The width of the rectangle.
+    
+    Returns:
+    float or int: The area of the rectangle.
+    """
+    return length * width
+
+# Test the function with the provided assertion
+assert rectangle_area(10, 20) == 200
+
+# Additional test cases (optional)
+assert rectangle_area(5, 5) == 25
+assert rectangle_area(0, 10) == 0
+assert rectangle_area(3.5, 2) == 7.0
+
+print("All test cases passed!")
+```
+
+This script defines the `rectangle_area` function, which multiplies the given length and width to compute the area. The assertion checks that the function returns the expected result for the input (10, 20). Additional test cases are included to further verify the function's correctness. If all assertions pass, it will print "All test cases passed!".

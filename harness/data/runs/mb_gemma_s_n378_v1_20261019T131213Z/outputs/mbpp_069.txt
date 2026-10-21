@@ -1,0 +1,33 @@
+```python
+def is_sublist(list1, list2):
+  """
+  Checks whether a list contains the given sublist or not.
+
+  Args:
+    list1: The main list.
+    list2: The sublist to check for.
+
+  Returns:
+    True if list2 is a sublist of list1, False otherwise.
+  """
+  n = len(list1)
+  m = len(list2)
+
+  if m > n:
+    return False
+
+  for i in range(n - m + 1):
+    if list1[i:i+m] == list2:
+      return True
+
+  return False
+
+# Example usage and assertion
+assert is_sublist([2,4,3,5,7],[3,7])==False
+assert is_sublist([1, 2, 3, 4, 5], [2, 3, 4]) == True
+assert is_sublist([1, 2, 3, 4, 5], [1, 2, 3]) == True
+assert is_sublist([1, 2, 3, 4, 5], [5]) == True
+assert is_sublist([1, 2, 3, 4, 5], [6]) == False
+assert is_sublist([1, 2, 3, 4, 5], []) == True
+assert is_sublist([], [1, 2]) == False
+```

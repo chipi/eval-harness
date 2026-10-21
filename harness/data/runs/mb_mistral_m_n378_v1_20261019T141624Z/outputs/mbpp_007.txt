@@ -1,0 +1,8 @@
+```python
+def find_char_long(s):
+    """Return a list of words in the string s that are at least 4 characters long."""
+    return [word for word in s.split() if len(word) >= 4]
+
+# Test the function
+assert set(find_char_long('Please move back to stream')) == set(['Please', 'move', 'back', 'stream'])
+```

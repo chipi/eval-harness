@@ -1,0 +1,21 @@
+```python
+def count_list(lst):
+    """
+    Count the number of lists in a given number of lists.
+    
+    This function calculates the length of the outer list, which corresponds
+    to the number of inner lists contained within it.
+    
+    Args:
+    lst (list): A list containing other lists.
+    
+    Returns:
+    int: The number of lists inside the main list.
+    """
+    return len(lst)
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert count_list([[1, 3], [5, 7], [9, 11], [13, 15, 17]]) == 4
+    print("Test passed successfully!")
+```

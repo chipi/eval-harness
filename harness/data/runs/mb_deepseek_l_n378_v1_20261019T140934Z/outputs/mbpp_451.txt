@@ -1,0 +1,23 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def remove_whitespaces(s: str) -> str:
+    """
+    Remove all whitespaces from the given string.
+    
+    Args:
+        s: Input string containing whitespaces
+        
+    Returns:
+        String with all whitespace characters removed
+    """
+    return ''.join(s.split())
+
+
+# Test the function
+if __name__ == "__main__":
+    assert remove_whitespaces(' Google    Flutter ') == 'GoogleFlutter'
+    print("Test passed!")
+```
+
+The function works by using `split()` which splits the string on any whitespace (spaces, tabs, newlines) and returns a list of non-whitespace substrings. Then `''.join()` concatenates them back together without any spaces, effectively removing all whitespace characters.

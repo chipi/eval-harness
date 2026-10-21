@@ -1,0 +1,20 @@
+```python
+def test_duplicate(nums):
+    """
+    Return True if the given list contains any duplicate element,
+    otherwise return False.
+    """
+    seen = set()
+    for num in nums:
+        if num in seen:
+            return True
+        seen.add(num)
+    return False
+
+
+# Example test
+assert test_duplicate([1, 2, 3, 4, 5]) == False
+assert test_duplicate([1, 2, 3, 2, 5]) == True
+
+print("All tests passed.")
+```

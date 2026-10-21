@@ -1,0 +1,40 @@
+```python
+import re
+
+def text_match_wordz_middle(text):
+    """
+    Checks if a string contains 'z' (case-insensitive), 
+    excluding 'z's that appear at the very start or very end of the string.
+    """
+    # We look for 'z' that is preceded by at least one character 
+    # and followed by at least one character.
+    # The regex .*z.* ensures there is something before and after the 'z'.
+    # Since we are checking the whole string, we check if 'z' exists 
+    # in the slice from index 1 to length-1.
+    
+    # Strip trailing punctuation if the problem implies "word" boundaries, 
+    # but based on the provided assert "pythonzabc.", the period is part of the string.
+    
+    # If the string length is less than 3, it's impossible to have a 'z' 
+    # that isn't at the start or end.
+    if len(text) < 3:
+        return False
+    
+    # Check if 'z' exists in the substring excluding the first and last characters
+    return 'z' in text[1:-1].lower()
+
+# Test cases
+if __name__ == "__main__":
+    # Provided test case
+    assert text_match_wordz_middle("pythonzabc.") == True
+    
+    # Additional test cases
+    assert text_match_wordz_middle("zabc") == False      # z at start
+    assert text_match_wordz_middle("abcz") == False    # z at end
+    assert text_match_wordz_middle("zabc z") == False   # z at start and end
+    assert text_match_wordz_middle("azb") == True      # z in middle
+    assert text_match_wordz_middle("apple") == False    # no z
+    assert text_match_wordz_middle("zzz") == True      # middle z exists
+    
+    print("All tests passed!")
+```

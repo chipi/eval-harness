@@ -1,0 +1,34 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def prime_num(n):
+    """
+    Check if the given integer is a prime number.
+    
+    Args:
+        n (int): The integer to check.
+    
+    Returns:
+        bool: True if n is prime, False otherwise.
+    """
+    if n < 2:
+        return False
+    if n == 2:
+        return True
+    if n % 2 == 0:
+        return False
+    for i in range(3, int(n**0.5) + 1, 2):
+        if n % i == 0:
+            return False
+    return True
+
+
+assert prime_num(13) == True
+print("Test passed!")
+```
+
+**Explanation:**
+- Numbers less than 2 are not prime.
+- 2 is the only even prime number.
+- Any other even number is not prime.
+- For odd numbers, we only need to check divisors up to the square root of `n`, incrementing by 2 (skipping even divisors), which makes the function efficient.

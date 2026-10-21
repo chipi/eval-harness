@@ -1,0 +1,16 @@
+```python
+def digit_distance_nums(num1, num2):
+    """
+    Write a python function to find the sum of the per-digit difference between two integers.
+    """
+    # Convert the numbers to strings and calculate the difference in each digit
+    diff = sum(abs(int(d) - int(d2)) for d, d2 in zip(str(num1), str(num2)))
+    return diff
+
+# Test cases
+assert digit_distance_nums(1,2) == 1
+assert digit_distance_nums(12,34) == 4
+assert digit_distance_nums(123,456) == 9
+assert digit_distance_nums(1234,5678) == 15
+assert digit_distance_nums(12345,67890) == 25
+```

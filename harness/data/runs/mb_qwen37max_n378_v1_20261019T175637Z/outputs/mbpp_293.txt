@@ -1,0 +1,10 @@
+```python
+import math
+
+def otherside_rightangle(a, b):
+    """
+    Find the third side (hypotenuse) of a right angled triangle
+    given the two other sides.
+    """
+    return math.sqrt(a**2 + b**2)
+```

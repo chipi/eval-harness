@@ -1,0 +1,32 @@
+```python
+"""
+Problem:
+Write a function to check whether the given amount has no profit and no loss.
+
+No profit and no loss occurs when the cost price is equal to the selling price.
+"""
+
+def noprofit_noloss(cost_price, selling_price):
+    """
+    Return True if there is no profit and no loss, otherwise False.
+
+    Args:
+        cost_price (int/float): The original cost price.
+        selling_price (int/float): The selling price.
+
+    Returns:
+        bool: True if cost_price == selling_price, else False.
+    """
+    return cost_price == selling_price
+
+
+# Example test
+assert noprofit_noloss(1500, 1200) == False
+
+# Additional tests
+assert noprofit_noloss(1000, 1000) == True
+assert noprofit_noloss(500, 700) == False
+assert noprofit_noloss(700, 500) == False
+
+print("All tests passed.")
+```

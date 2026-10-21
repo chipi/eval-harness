@@ -1,0 +1,45 @@
+Here's a self-contained Python script that solves the problem of finding the n'th Lucas number:
+
+```python
+def find_lucas(n):
+    """
+    Calculate the n'th Lucas number.
+    
+    The Lucas sequence is similar to the Fibonacci sequence but starts with 2 and 1.
+    The sequence is: 2, 1, 3, 4, 7, 11, 18, 29, 47, 76, ...
+    
+    Args:
+        n (int): The position in the Lucas sequence (0-based index).
+        
+    Returns:
+        int: The n'th Lucas number.
+    """
+    if n == 0:
+        return 2
+    elif n == 1:
+        return 1
+    else:
+        a, b = 2, 1
+        for _ in range(2, n + 1):
+            a, b = b, a + b
+        return b
+
+# Test the function
+assert find_lucas(9) == 76
+print("Test passed! find_lucas(9) =", find_lucas(9))
+```
+
+### Explanation:
+1. **Lucas Sequence**: The Lucas sequence is defined similarly to the Fibonacci sequence but starts with 2 and 1 instead of 0 and 1. The recurrence relation is:
+   - \( L(0) = 2 \)
+   - \( L(1) = 1 \)
+   - \( L(n) = L(n-1) + L(n-2) \) for \( n \geq 2 \)
+
+2. **Function Logic**:
+   - For \( n = 0 \), return 2.
+   - For \( n = 1 \), return 1.
+   - For \( n \geq 2 \), iteratively compute the Lucas numbers by updating two variables `a` and `b` to hold the previous two values in the sequence.
+
+3. **Test Case**: The script includes an assertion to verify that `find_lucas(9)` returns 76, which is the 9th Lucas number (0-based index).
+
+This script is efficient with a time complexity of \( O(n) \) and space complexity of \( O(1) \).

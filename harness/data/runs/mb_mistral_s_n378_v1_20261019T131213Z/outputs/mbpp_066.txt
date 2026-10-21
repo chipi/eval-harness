@@ -1,0 +1,23 @@
+Here's a self-contained Python script that solves the problem in a markdown code block:
+
+```python
+def pos_count(numbers):
+    """Count the number of positive numbers in a list."""
+    return sum(1 for num in numbers if num > 0)
+
+# Test the function
+assert pos_count([1, -2, 3, -4]) == 2
+print("All tests passed!")
+```
+
+This script:
+1. Defines a function `pos_count` that takes a list of numbers
+2. Uses a generator expression to count how many numbers are positive (greater than 0)
+3. Includes the required assertion test case
+4. Prints a confirmation message if the test passes
+
+The function works by:
+- Iterating through each number in the input list
+- Including the number in the count if it's positive (num > 0)
+- Summing the 1's for each positive number found
+- Returning the total count

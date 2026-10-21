@@ -1,0 +1,34 @@
+Here's a self-contained Python script that solves the problem as described:
+
+```python
+"""
+Function to replace blank spaces in a string with a specified character.
+
+Args:
+    input_string (str): The string to process.
+    replacement_char (str): The character to replace spaces with.
+
+Returns:
+    str: The processed string with spaces replaced by the specified character.
+"""
+
+def replace_blank(input_string: str, replacement_char: str) -> str:
+    """
+    Replaces all blank spaces in the input string with the specified character.
+
+    >>> replace_blank("hello people", '@')
+    'hello@people'
+    """
+    return input_string.replace(' ', replacement_char)
+
+# Test the function with the provided assertion
+assert replace_blank("hello people", '@') == "hello@people"
+```
+
+This script:
+1. Defines a function `replace_blank` that takes a string and a character as input
+2. Uses the built-in string `replace()` method to replace all spaces with the specified character
+3. Includes a docstring with an example usage
+4. Contains the assertion test as specified in the problem
+
+The function will work for any string input and any single character replacement.

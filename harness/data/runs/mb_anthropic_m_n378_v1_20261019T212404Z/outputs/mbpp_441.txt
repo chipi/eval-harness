@@ -1,0 +1,9 @@
+```python
+def surfacearea_cube(l):
+    return 6 * l * l
+
+assert surfacearea_cube(5) == 150
+
+if __name__ == "__main__":
+    print(surfacearea_cube(5))
+```

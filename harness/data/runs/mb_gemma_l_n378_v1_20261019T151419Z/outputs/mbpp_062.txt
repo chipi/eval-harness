@@ -1,0 +1,21 @@
+```python
+def smallest_num(numbers):
+    """
+    Finds the smallest number in a given list.
+    """
+    if not numbers:
+        return None
+    return min(numbers)
+
+# Test the function
+if __name__ == "__main__":
+    # Provided test case
+    assert smallest_num([10, 20, 1, 45, 99]) == 1
+    
+    # Additional test cases
+    assert smallest_num([-10, -20, -1, -45, -99]) == -99
+    assert smallest_num([5]) == 5
+    assert smallest_num([3.14, 2.71, 1.61]) == 1.61
+    
+    print("All tests passed!")
+```

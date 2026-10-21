@@ -1,0 +1,24 @@
+```python
+def get_total_number_of_sequences(m: int, n: int) -> int:
+    """
+    Write a function that takes in positive integers m and n and finds the number of possible sequences of length n, such that each element is a positive integer and is greater than or equal to twice the previous element but less than or equal to m.
+    assert get_total_number_of_sequences(10, 4) == 4
+    """
+    dp = {}
+
+    def solve(index, prev):
+        if index == n:
+            return 1
+
+        if (index, prev) in dp:
+            return dp[(index, prev)]
+
+        count = 0
+        for i in range(2 * prev, m + 1):
+            count += solve(index + 1, i)
+
+        dp[(index, prev)] = count
+        return count
+
+    return solve(0, 1)
+```

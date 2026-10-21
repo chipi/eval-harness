@@ -1,0 +1,14 @@
+```python
+import sys
+
+def tuple_size(t):
+    return sys.getsizeof(t)
+
+def main():
+    t = ("A", 1, "B", 2, "C", 3)
+    print(tuple_size(t))
+    assert tuple_size(t) == sys.getsizeof(t)
+
+if __name__ == "__main__":
+    main()
+```

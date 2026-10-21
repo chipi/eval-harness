@@ -1,0 +1,39 @@
+```python
+import math
+
+def volume_sphere(radius: float) -> float:
+    """
+    Calculate the volume of a sphere.
+
+    The formula for the volume of a sphere is V = (4/3) * π * r^3.
+
+    Args:
+        radius: The radius of the sphere. Must be a non-negative number.
+
+    Returns:
+        The volume of the sphere.
+
+    Raises:
+        ValueError: If the radius is negative.
+    """
+    if radius < 0:
+        raise ValueError("Radius cannot be negative.")
+    return (4 / 3) * math.pi * (radius ** 3)
+
+# Example usage and assertion from the problem description
+if __name__ == "__main__":
+    # The problem asks for a function, so we define it above.
+    # This block demonstrates its usage and verifies the assertion.
+    radius = 10
+    expected_volume = 4188.790204786391
+    
+    # Calculate the volume using our function
+    calculated_volume = volume_sphere(radius)
+    
+    # Assert that the calculated volume is close to the expected value
+    # math.isclose is used for floating-point comparisons to avoid precision issues.
+    assert math.isclose(calculated_volume, expected_volume, rel_tol=0.001)
+    
+    print(f"Volume of a sphere with radius {radius} is: {calculated_volume}")
+    print("Assertion passed: The calculated volume is close to the expected value.")
+```

@@ -1,0 +1,8 @@
+```python
+def tuple_to_dict(values):
+    """Convert adjacent elements of a tuple into key-value pairs."""
+    return dict(zip(values[::2], values[1::2]))
+
+
+assert tuple_to_dict((1, 5, 7, 10, 13, 5)) == {1: 5, 7: 10, 13: 5}
+```

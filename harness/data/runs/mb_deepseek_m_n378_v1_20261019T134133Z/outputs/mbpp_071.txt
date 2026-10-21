@@ -1,0 +1,59 @@
+Here's a self-contained Python script that implements the **comb sort** algorithm to solve the problem:
+
+```python
+"""
+Write a function to sort a list of elements.
+assert comb_sort([5, 15, 37, 25, 79]) == [5, 15, 25, 37, 79]
+"""
+
+
+def comb_sort(arr):
+    """
+    Sorts a list of elements in ascending order using the comb sort algorithm.
+
+    Comb sort is an improvement over bubble sort. It works by comparing
+    elements separated by a gap, which starts large and shrinks by a
+    factor of 1.3 each iteration until it reaches 1. This helps eliminate
+    "turtles" (small values near the end of the list) quickly.
+    """
+    # Work on a copy so the original list is not mutated
+    data = list(arr)
+    n = len(data)
+    gap = n
+    shrink = 1.3
+    swapped = True
+
+    while gap > 1 or swapped:
+        # Update the gap for the next pass
+        gap = int(gap / shrink)
+        if gap < 1:
+            gap = 1
+
+        swapped = False
+
+        # Compare elements separated by 'gap'
+        for i in range(n - gap):
+            if data[i] > data[i + gap]:
+                data[i], data[i + gap] = data[i + gap], data[i]
+                swapped = True
+
+    return data
+
+
+# Test the function
+assert comb_sort([5, 15, 37, 25, 79]) == [5, 15, 25, 37, 79]
+assert comb_sort([]) == []
+assert comb_sort([1]) == [1]
+assert comb_sort([3, 2, 1]) == [1, 2, 3]
+assert comb_sort([10, -1, 5, 3, 3, 8]) == [-1, 3, 3, 5, 8, 10]
+
+print("All tests passed!")
+```
+
+### How it works
+1. **Gap initialization**: Start with a gap equal to the list length.
+2. **Shrink factor**: Each pass, the gap is divided by `1.3` (a value empirically found to work well).
+3. **Compare and swap**: Elements `gap` positions apart are compared and swapped if out of order.
+4. **Termination**: The loop continues until the gap is `1` and no swaps occur in a full pass.
+
+This gives an average time complexity of roughly **O(n²/2^p)** (where `p` is the number of increments), and in practice it's significantly faster than bubble sort.

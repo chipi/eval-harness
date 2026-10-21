@@ -1,0 +1,27 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+import re
+
+def text_match_wordz(text):
+    """
+    Returns True if the given text contains a word that includes the letter 'z'.
+    A word is defined as a sequence of letters (a-z, A-Z) surrounded by non-letter characters.
+    """
+    # Pattern: word boundary, then any letters including at least one 'z', then word boundary
+    pattern = r'\b\w*z\w*\b'
+    return bool(re.search(pattern, text, re.IGNORECASE))
+
+# Test the function
+if __name__ == "__main__":
+    # Provided test case
+    assert text_match_wordz("pythonz.") == True
+    print("Test passed: 'pythonz.' contains a word with 'z'")
+    
+    # Additional tests
+    assert text_match_wordz("hello world") == False
+    assert text_match_wordz("zebra") == True
+    assert text_match_wordz("amazing!") == True
+    assert text_match_wordz("no z here") == False
+    print("All tests passed.")
+```

@@ -1,0 +1,12 @@
+```python
+def count(list_):
+  """
+  Write a python function to count true booleans in the given list.
+  assert count([True,False,True]) == 2
+  """
+  count = 0
+  for item in list_:
+    if item == True:
+      count += 1
+  return count
+```

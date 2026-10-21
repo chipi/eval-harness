@@ -1,0 +1,27 @@
+```python
+#!/usr/bin/env python3
+"""
+Write a function to get the sum of the digits of a non-negative integer.
+
+Example:
+assert sum_digits(345) == 12
+"""
+
+def sum_digits(n: int) -> int:
+    """Return the sum of the digits of a non-negative integer."""
+    if not isinstance(n, int):
+        raise TypeError("n must be an integer")
+    if n < 0:
+        raise ValueError("n must be non-negative")
+
+    return sum(int(digit) for digit in str(n))
+
+
+if __name__ == "__main__":
+    assert sum_digits(345) == 12
+    assert sum_digits(0) == 0
+    assert sum_digits(1001) == 2
+    assert sum_digits(999) == 27
+
+    print("All tests passed.")
+```

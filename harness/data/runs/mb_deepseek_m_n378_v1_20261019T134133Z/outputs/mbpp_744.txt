@@ -1,0 +1,32 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def check_none(tup):
+    """
+    Check if the given tuple has any None value.
+    
+    Args:
+        tup: A tuple to check for None values.
+    
+    Returns:
+        True if the tuple contains at least one None value, False otherwise.
+    """
+    return any(item is None for item in tup)
+
+
+# Test cases
+assert check_none((10, 4, 5, 6, None)) == True
+assert check_none((10, 4, 5, 6)) == False
+assert check_none((None, None)) == True
+assert check_none(()) == False
+assert check_none((0, False, "", None)) == True
+
+print("All tests passed!")
+```
+
+**How it works:**
+
+- The function uses a generator expression `(item is None for item in tup)` to check each element.
+- `any()` returns `True` as soon as it finds the first `None`, making it efficient (short-circuits on the first match).
+- Using `is None` (identity comparison) is the correct way to check for `None`, rather than `== None`.
+- An empty tuple returns `False` since there are no elements to check.

@@ -1,0 +1,26 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def check_distinct(tup):
+    """
+    Check if given tuple contains no duplicates.
+    
+    Args:
+        tup: A tuple of elements
+        
+    Returns:
+        bool: True if all elements are distinct, False if there are duplicates
+    """
+    return len(tup) == len(set(tup))
+
+# Test the function
+assert check_distinct((1, 4, 5, 6, 1, 4)) == False
+assert check_distinct((1, 2, 3, 4, 5)) == True
+assert check_distinct(()) == True
+assert check_distinct((1,)) == True
+assert check_distinct((1, 1)) == False
+
+print("All tests passed!")
+```
+
+The function works by comparing the length of the original tuple with the length of a set created from the tuple. Since sets automatically remove duplicates, if the lengths are equal, there are no duplicates; if the set is shorter, there were duplicates in the original tuple.

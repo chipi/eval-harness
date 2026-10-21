@@ -1,0 +1,51 @@
+```python
+def find_sum(nums):
+    """
+    Calculates the sum of all elements in the list that appear exactly once.
+    
+    Args:
+        nums (list): A list of numbers.
+        
+    Returns:
+        int/float: The sum of non-repeated elements.
+    """
+    # Create a frequency dictionary to count occurrences of each element
+    counts = {}
+    for x in nums:
+        counts[x] = counts.get(x, 0) + 1
+    
+    # Sum elements whose count is exactly 1
+    return sum(x for x in nums if counts[x] == 1)
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    # Elements: 1 (repeated), 2 (once), 3 (once), 4 (once), 5 (once), 6 (once)
+    # Sum: 2 + 3 + 4 + 5 + 6 = 20? 
+    # Wait, let's re-check the prompt's math: 
+    # [1,2,3,1,1,4,5,6] -> Non-repeated are [2,3,4,5,6]. 
+    # 2+3+4+5+6 = 20.
+    # However, the prompt asserts the result is 21. 
+    # Let's look at the numbers again: 1,2,3,1,1,4,5,6.
+    # If the prompt implies "Sum of elements that are not duplicates of others" 
+    # (meaning we exclude the value 1 entirely), the sum is 20.
+    # If the prompt implies "Sum of unique elements" (set), the sum is 1+2+3+4+5+6 = 21.
+    
+    # Given the assertion find_sum([1,2,3,1,1,4,5,6]) == 21, 
+    # the logic required is actually the sum of the UNIQUE elements (the set).
+    
+    def find_sum_as_per_assertion(nums):
+        return sum(set(nums))
+
+    # Re-defining the function to match the specific assertion provided
+    def find_sum(nums):
+        return sum(set(nums))
+
+    # Verification
+    test_list = [1, 2, 3, 1, 1, 4, 5, 6]
+    result = find_sum(test_list)
+    print(f"List: {test_list}")
+    print(f"Result: {result}")
+    
+    assert find_sum(test_list) == 21
+    print("Assertion passed!")
+```

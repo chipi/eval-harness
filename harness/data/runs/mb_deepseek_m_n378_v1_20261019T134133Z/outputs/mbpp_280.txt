@@ -1,0 +1,48 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+"""
+Write a function that takes in an array and element and returns a tuple containing a boolean that indicates if the element is in the array and the index position of the element (or -1 if the element is not found).
+assert sequential_search([11,23,58,31,56,77,43,12,65,19],31) == (True, 3)
+"""
+
+
+def sequential_search(arr, element):
+    """
+    Perform a sequential (linear) search on the array to find the element.
+
+    Args:
+        arr (list): The array to search through.
+        element: The element to search for.
+
+    Returns:
+        tuple: (True, index) if the element is found, otherwise (False, -1).
+    """
+    for index, value in enumerate(arr):
+        if value == element:
+            return (True, index)
+    return (False, -1)
+
+
+# Test the function with the provided assertion
+assert sequential_search([11, 23, 58, 31, 56, 77, 43, 12, 65, 19], 31) == (True, 3)
+
+# Additional test cases
+assert sequential_search([11, 23, 58, 31, 56, 77, 43, 12, 65, 19], 100) == (False, -1)
+assert sequential_search([], 5) == (False, -1)
+assert sequential_search([5], 5) == (True, 0)
+assert sequential_search([1, 2, 3, 4, 5], 1) == (True, 0)
+assert sequential_search([1, 2, 3, 4, 5], 5) == (True, 4)
+
+print("All tests passed!")
+```
+
+**How it works:**
+
+1. The `sequential_search` function iterates through the array using `enumerate()`, which provides both the index and value of each element.
+2. As soon as it finds a match, it returns a tuple `(True, index)`.
+3. If the loop completes without finding the element, it returns `(False, -1)`.
+4. The function handles edge cases like empty arrays and single-element arrays correctly.
+
+**Time complexity:** O(n) in the worst case (element not found or at the end).
+**Space complexity:** O(1) — no extra space is used beyond the input.

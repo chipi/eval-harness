@@ -1,0 +1,67 @@
+```python
+def set_left_most_unset_bit(n: int) -> int:
+    """
+    Set the leftmost unset (0) bit in the binary representation of n.
+    
+    For example:
+    - 10 in binary is 1010
+    - The leftmost unset bit is at position 3 (0-indexed from right), so setting it gives 1110 = 14
+    
+    Args:
+        n: A non-negative integer
+        
+    Returns:
+        The integer with the leftmost unset bit set to 1
+    """
+    if n == 0:
+        return 1
+    
+    # Find the position of the leftmost unset bit
+    # We need to find the highest bit position where there's a 0 before or at the most significant bit
+    
+    # Get the number of bits needed to represent n
+    num_bits = n.bit_length()
+    
+    # Check bits from the most significant bit down to 0
+    # The leftmost unset bit could be:
+    # 1. Within the current bit range (bits num_bits-1 down to 0)
+    # 2. Just above the current MSB (bit position num_bits) if all bits are set
+    
+    # First, check if all bits from 0 to num_bits-1 are set
+    # If n == (1 << num_bits) - 1, then all bits are set, so the leftmost unset bit is at position num_bits
+    if n == (1 << num_bits) - 1:
+        return n | (1 << num_bits)
+    
+    # Otherwise, find the leftmost 0 bit within the range [num_bits-1, 0]
+    # Start from the most significant bit and go down
+    for i in range(num_bits - 1, -1, -1):
+        if not (n & (1 << i)):
+            # This bit is unset, set it
+            return n | (1 << i)
+    
+    # Should never reach here given the check above
+    return n
+
+
+if __name__ == "__main__":
+    # Test cases
+    assert set_left_most_unset_bit(10) == 14, f"Expected 14, got {set_left_most_unset_bit(10)}"
+    
+    # Additional tests
+    # 10 = 1010, leftmost unset is bit 3, result = 1110 = 14
+    assert set_left_most_unset_bit(10) == 14
+    
+    # 0 = 0, leftmost unset is bit 0, result = 1
+    assert set_left_most_unset_bit(0) == 1
+    
+    # 1 = 1, leftmost unset is bit 1, result = 11 = 3
+    assert set_left_most_unset_bit(1) == 3
+    
+    # 7 = 111, all bits set in range, leftmost unset is bit 3, result = 1111 = 15
+    assert set_left_most_unset_bit(7) == 15
+    
+    # 5 = 101, leftmost unset is bit 1, result = 111 = 7
+    assert set_left_most_unset_bit(5) == 7
+    
+    print("All tests passed!")
+```

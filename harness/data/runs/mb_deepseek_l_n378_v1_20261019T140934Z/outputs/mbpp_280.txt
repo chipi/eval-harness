@@ -1,0 +1,27 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def sequential_search(arr, target):
+    """
+    Perform a sequential search on the array to find the target element.
+    
+    Args:
+        arr: List of elements to search through
+        target: Element to find in the array
+        
+    Returns:
+        tuple: (boolean indicating if element is found, index position or -1)
+    """
+    for index, element in enumerate(arr):
+        if element == target:
+            return (True, index)
+    return (False, -1)
+
+
+# Test the function with the provided example
+if __name__ == "__main__":
+    result = sequential_search([11, 23, 58, 31, 56, 77, 43, 12, 65, 19], 31)
+    print(result)
+    assert result == (True, 3), f"Test failed! Expected (True, 3) but got {result}"
+    print("Test passed!")
+```

@@ -1,0 +1,37 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def swap_List(lst):
+    """
+    Interchange the first and last elements in a list.
+    
+    Args:
+        lst: A list of elements.
+    
+    Returns:
+        A new list with the first and last elements swapped.
+    """
+    if len(lst) < 2:
+        return lst.copy()
+    
+    result = lst.copy()
+    result[0], result[-1] = result[-1], result[0]
+    return result
+
+
+if __name__ == "__main__":
+    assert swap_List([12, 35, 9, 56, 24]) == [24, 35, 9, 56, 12]
+    assert swap_List([1, 2]) == [2, 1]
+    assert swap_List([5]) == [5]
+    assert swap_List([]) == []
+    print("All tests passed!")
+```
+
+**Explanation:**
+
+1. **`swap_List(lst)`** — Takes a list as input.
+2. **Edge case handling** — If the list has fewer than 2 elements, there's nothing to swap, so we return a copy of the original list.
+3. **Copy the list** — We use `lst.copy()` to avoid mutating the original input list.
+4. **Swap elements** — Python's tuple-unpacking syntax allows a clean swap: `result[0], result[-1] = result[-1], result[0]`.
+5. **Return the new list** with the first and last elements interchanged.
+6. **Assertions** — Verify the given test case plus a few extra edge cases (2-element list, single-element list, empty list).

@@ -1,0 +1,22 @@
+```python
+def min_val(lst):
+    """
+    Finds the minimum value in a heterogeneous list by filtering 
+    out non-numeric types.
+    """
+    # Filter the list to keep only integers and floats
+    numeric_values = [x for x in lst if isinstance(x, (int, float))]
+    
+    # Return the minimum of the filtered list, or None if no numbers exist
+    return min(numeric_values) if numeric_values else None
+
+# Test the function
+if __name__ == "__main__":
+    test_list = ['Python', 3, 2, 4, 5, 'version']
+    result = min_val(test_list)
+    print(f"The minimum value is: {result}")
+    
+    # Assertion check
+    assert min_val(['Python', 3, 2, 4, 5, 'version']) == 2
+    print("Assertion passed!")
+```

@@ -1,0 +1,31 @@
+Here’s a self-contained Python script that solves the problem:  
+
+```python
+def lps(s: str) -> int:
+    """
+    Returns the length of the longest palindromic subsequence in string s.
+    """
+    n = len(s)
+    # dp[i][j] will store the length of LPS in s[i:j+1]
+    dp = [[0] * n for _ in range(n)]
+
+    # Every single character is a palindrome of length 1
+    for i in range(n):
+        dp[i][i] = 1
+
+    # Build the table for substrings of increasing length
+    for length in range(2, n + 1):
+        for i in range(n - length + 1):
+            j = i + length - 1
+            if s[i] == s[j]:
+                dp[i][j] = 2 + dp[i + 1][j - 1]
+            else:
+                dp[i][j] = max(dp[i + 1][j], dp[i][j - 1])
+
+    return dp[0][n - 1]
+
+
+# Test the function
+assert lps("TENS FOR TENS") == 5
+print("Test passed!")
+```

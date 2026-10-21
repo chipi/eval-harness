@@ -1,0 +1,7 @@
+```python
+def count_occurance(s):
+    return s.count('std')
+
+# Test cases
+assert count_occurance("letstdlenstdporstd") == 3
+```

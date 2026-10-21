@@ -1,0 +1,31 @@
+Here is the self-contained Python script that solves the problem:
+
+```python
+import math
+
+def convert(num):
+    """
+    Converts a complex number (or a real number) to its polar coordinates.
+    
+    Args:
+        num (complex or int or float): The number to convert.
+        
+    Returns:
+        tuple: A tuple (r, phi) where r is the modulus and phi is the phase angle in radians.
+    """
+    # Ensure the input is treated as a complex number
+    c = complex(num)
+    
+    # Calculate the modulus (r) and the phase angle (phi)
+    r = abs(c)
+    phi = math.atan2(c.imag, c.real)
+    
+    return (r, phi)
+
+# Assertions to verify the correctness of the function
+if __name__ == "__main__":
+    assert convert(1) == (1.0, 0.0)
+    assert convert(1j) == (1.0, math.pi / 2)
+    assert convert(1 + 1j) == (math.sqrt(2), math.pi / 4)
+    print("All assertions passed.")
+```

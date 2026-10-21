@@ -1,0 +1,40 @@
+Here's a self-contained Python script that solves the problem by implementing the `freq_count` function to count the frequency of elements in a list and return the result as a dictionary:
+
+```python
+def freq_count(lst):
+    """
+    Returns a dictionary with the frequency of each element in the input list.
+    
+    Args:
+        lst (list): The input list of elements.
+    
+    Returns:
+        dict: A dictionary where keys are the elements from the list and values are their frequencies.
+    """
+    frequency = {}
+    for item in lst:
+        if item in frequency:
+            frequency[item] += 1
+        else:
+            frequency[item] = 1
+    return frequency
+
+# Test the function with the provided assert statement
+assert freq_count([10,10,10,10,20,20,20,20,40,40,50,50,30]) == {10: 4, 20: 4, 40: 2, 50: 2, 30: 1}
+
+# Additional test cases to verify the function
+print(freq_count([1, 2, 2, 3, 3, 3]))  # Expected output: {1: 1, 2: 2, 3: 3}
+print(freq_count(['a', 'b', 'a', 'c', 'b', 'a']))  # Expected output: {'a': 3, 'b': 2, 'c': 1}
+print(freq_count([]))  # Expected output: {}
+```
+
+### Explanation:
+1. **Function Definition**: The `freq_count` function takes a list `lst` as input.
+2. **Frequency Dictionary Initialization**: An empty dictionary `frequency` is initialized to store the counts of each element.
+3. **Counting Elements**: The function iterates over each element in the list. For each element:
+   - If the element is already a key in the dictionary, its count is incremented by 1.
+   - If the element is not in the dictionary, it is added as a new key with a count of 1.
+4. **Return Result**: The dictionary `frequency` is returned, containing the counts of all elements in the input list.
+5. **Testing**: The function is tested with the provided assert statement and additional test cases to ensure correctness.
+
+This approach efficiently counts the frequency of each element in the list with a time complexity of O(n), where n is the number of elements in the list.

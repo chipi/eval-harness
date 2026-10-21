@@ -1,0 +1,33 @@
+```python
+def odd_values_string(s: str) -> str:
+    """
+    Remove characters which have odd index values from the given string.
+    
+    This keeps characters at even indices (0, 2, 4, ...) and removes those at odd indices (1, 3, 5, ...).
+    
+    Args:
+        s: The input string
+        
+    Returns:
+        A new string with characters at odd indices removed
+        
+    Example:
+        >>> odd_values_string('abcdef')
+        'ace'
+    """
+    return s[::2]
+
+
+if __name__ == "__main__":
+    # Test the function with the provided assertion
+    assert odd_values_string('abcdef') == 'ace', f"Expected 'ace', got '{odd_values_string('abcdef')}'"
+    
+    # Additional tests
+    assert odd_values_string('') == '', "Empty string should return empty string"
+    assert odd_values_string('a') == 'a', "Single character should return itself"
+    assert odd_values_string('ab') == 'a', "Two characters should return first"
+    assert odd_values_string('abc') == 'ac', "Three characters should return first and third"
+    assert odd_values_string('hello') == 'hlo', "'hello' should return 'hlo'"
+    
+    print("All tests passed!")
+```

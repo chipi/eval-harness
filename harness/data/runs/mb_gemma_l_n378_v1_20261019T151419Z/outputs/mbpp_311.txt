@@ -1,0 +1,38 @@
+```python
+def set_left_most_unset_bit(n):
+    """
+    Sets the left-most unset bit (the most significant zero) of a number.
+    
+    Example: 
+    10 in binary is 1010. 
+    The left-most unset bit is at the 2^2 position (the second zero from the left).
+    Setting it results in 1110, which is 14.
+    """
+    if n == 0:
+        return 1
+    
+    # Find the position of the highest set bit
+    # bin(n) gives '0b1010', so len is 6. Subtract 2 for '0b'.
+    bit_length = n.bit_length()
+    
+    # We iterate from the most significant bit downwards to find the first 0
+    for i in range(bit_length - 1, -1, -1):
+        # Check if the i-th bit is unset
+        if not (n & (1 << i)):
+            return n | (1 << i)
+            
+    # If all bits up to the bit_length were set (e.g., n=7 which is 111),
+    # the "left-most unset bit" is the next bit to the left.
+    return n | (1 << bit_length)
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    assert set_left_most_unset_bit(10) == 14
+    
+    # Additional test cases
+    assert set_left_most_unset_bit(0) == 1    # 0000 -> 0001
+    assert set_left_most_unset_bit(7) == 15   # 0111 -> 1111
+    assert set_left_most_unset_bit(13) == 15  # 1101 -> 1111
+    
+    print("All tests passed!")
+```

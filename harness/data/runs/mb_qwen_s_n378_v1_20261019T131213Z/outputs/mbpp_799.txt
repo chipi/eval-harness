@@ -1,0 +1,27 @@
+```python
+def left_rotate(n, d):
+    """
+    Rotate left bits by d bits for a 32-bit number.
+    
+    Args:
+        n: The input number (assumed to be 32-bit)
+        d: Number of bits to rotate left
+    
+    Returns:
+        The result after rotating left by d bits
+    """
+    # Ensure we're working with 32-bit numbers
+    n = n & 0xFFFFFFFF
+    d = d % 32
+    
+    if d == 0:
+        return n
+    
+    # Left rotate: shift left by d, then OR with the bits that overflowed
+    # The overflowed bits are the top d bits, which need to come back at the bottom
+    return ((n << d) | (n >> (32 - d))) & 0xFFFFFFFF
+
+
+# Test case from the problem statement
+assert left_rotate(16, 2) == 64
+```

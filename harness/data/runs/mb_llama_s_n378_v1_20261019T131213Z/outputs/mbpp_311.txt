@@ -1,0 +1,59 @@
+```python
+def set_left_most_unset_bit(n: int) -> int:
+    """
+    This function takes an integer as input, sets the leftmost unset bit to 1, and returns the modified integer.
+
+    Args:
+        n (int): The input integer.
+
+    Returns:
+        int: The modified integer with the leftmost unset bit set to 1.
+    """
+    # Calculate the number of bits in the given integer
+    bit_count = n.bit_length()
+    
+    # Create a mask with all bits set to 1, with the same number of bits as the input integer
+    mask = (1 << bit_count) - 1
+    
+    # Use bitwise AND operation with the complement of the input integer to get the leftmost unset bit
+    left_most_unset_bit_mask = ~(n & mask)
+    
+    # Find the leftmost set bit in the left_most_unset_bit_mask
+    left_most_unset_bit_position = left_most_unset_bit_mask.bit_length() - 1
+    
+    # Create a mask with the leftmost unset bit set to 1
+    left_most_unset_bit_mask = 1 << left_most_unset_bit_position
+    
+    # Use bitwise OR operation to set the leftmost unset bit in the input integer
+    result = n | left_most_unset_bit_mask
+    
+    return result
+
+assert set_left_most_unset_bit(10) == 14
+```
+
+However, there is a more efficient solution for this problem.
+
+```python
+def set_left_most_unset_bit(n: int) -> int:
+    """
+    This function takes an integer as input, sets the leftmost unset bit to 1, and returns the modified integer.
+
+    Args:
+        n (int): The input integer.
+
+    Returns:
+        int: The modified integer with the leftmost unset bit set to 1.
+    """
+    # Calculate the next power of 2 greater than or equal to n
+    next_power_of_two = 1 << (n.bit_length())
+    
+    # If n is a power of 2, return n | (n - 1)
+    # Otherwise, return n | (next_power_of_two >> 1)
+    if (n & (n - 1) == 0):
+        return n | (n - 1)
+    else:
+        return n | (next_power_of_two >> 1)
+
+assert set_left_most_unset_bit(10) == 14
+```

@@ -1,0 +1,66 @@
+```python
+def is_samepatterns(words, patterns):
+    """
+    Checks whether the sequence of words follows the sequence given in the patterns array.
+    
+    This function establishes a bidirectional mapping between words and patterns.
+    It returns True if the mapping is consistent throughout the entire lists, 
+    and False otherwise.
+    
+    Args:
+        words (list): A list of strings representing the sequence of words.
+        patterns (list): A list of strings representing the sequence of patterns.
+        
+    Returns:
+        bool: True if words follow the patterns, False otherwise.
+    """
+    # If lengths differ, they cannot follow the same sequence structure
+    if len(words) != len(patterns):
+        return False
+    
+    # Dictionary to map pattern -> word
+    pattern_map = {}
+    # Dictionary to map word -> pattern
+    word_map = {}
+    
+    # Iterate through both lists simultaneously
+    for word, pattern in zip(words, patterns):
+        # Check consistency for the pattern -> word mapping
+        if pattern in pattern_map:
+            if pattern_map[pattern] != word:
+                return False
+        else:
+            pattern_map[pattern] = word
+            
+        # Check consistency for the word -> pattern mapping
+        if word in word_map:
+            if word_map[word] != pattern:
+                return False
+        else:
+            word_map[word] = pattern
+            
+    return True
+
+# Test cases based on the provided assertion and additional edge cases
+if __name__ == "__main__":
+    # Provided assertion
+    assert is_samepatterns(["red","green","green"], ["a", "b", "b"]) == True
+    
+    # Additional test cases
+    # Test inconsistent mapping (one pattern mapping to two different words)
+    assert is_samepatterns(["red","green","blue"], ["a", "b", "b"]) == False
+    
+    # Test inconsistent mapping (one word mapping to two different patterns)
+    assert is_samepatterns(["red","red","green"], ["a", "b", "b"]) == False
+    
+    # Test valid complex mapping
+    assert is_samepatterns(["cat", "dog", "cat", "bird"], ["x", "y", "x", "z"]) == True
+    
+    # Test empty lists
+    assert is_samepatterns([], []) == True
+    
+    # Test different lengths
+    assert is_samepatterns(["red", "green"], ["a"]) == False
+    
+    print("All test cases passed!")
+```

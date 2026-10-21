@@ -1,0 +1,41 @@
+Here's a self-contained Python script that solves the problem by finding the union of two tuples and returning the result in sorted order:
+
+```python
+def union_elements(tuple1, tuple2):
+    """
+    Find the union of the elements of two given tuples and return them in sorted order.
+    
+    Args:
+        tuple1: First tuple of elements
+        tuple2: Second tuple of elements
+        
+    Returns:
+        A tuple containing the union of elements from both tuples, sorted in ascending order.
+    """
+    # Combine both tuples and convert to a set to get unique elements
+    combined_set = set(tuple1 + tuple2)
+    # Convert the set back to a sorted tuple
+    return tuple(sorted(combined_set))
+
+# Test the function with the provided example
+assert union_elements((3, 4, 5, 6), (5, 7, 4, 10)) == (3, 4, 5, 6, 7, 10)
+
+# Additional test cases
+assert union_elements((), ()) == ()
+assert union_elements((1, 2, 3), (4, 5, 6)) == (1, 2, 3, 4, 5, 6)
+assert union_elements((1, 1, 2), (2, 3, 3)) == (1, 2, 3)
+assert union_elements((10, 20), (20, 30, 10)) == (10, 20, 30)
+
+print("All test cases passed!")
+```
+
+This script:
+1. Defines a function `union_elements` that takes two tuples as input
+2. Combines the tuples using the `+` operator
+3. Converts the combined tuple to a set to remove duplicates (union operation)
+4. Sorts the set and converts it back to a tuple
+5. Includes the provided test case as an assertion
+6. Adds additional test cases to verify edge cases
+7. Prints a success message if all tests pass
+
+The solution efficiently handles the union operation using Python's built-in set operations and ensures the result is sorted as required.

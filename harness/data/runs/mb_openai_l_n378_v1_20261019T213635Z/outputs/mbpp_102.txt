@@ -1,0 +1,7 @@
+```python
+def snake_to_camel(text: str) -> str:
+    return "".join(word.capitalize() for word in text.split("_"))
+
+
+assert snake_to_camel("python_program") == "PythonProgram"
+```

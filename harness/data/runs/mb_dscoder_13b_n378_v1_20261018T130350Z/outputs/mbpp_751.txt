@@ -1,0 +1,21 @@
+```python
+def check_min_heap(arr):
+    # Check if the array is a min heap
+    for i in range(len(arr)):
+        # Check if left child exists
+        if 2*i+1 < len(arr):
+            # If left child is greater than parent, return False
+            if arr[i] > arr[2*i+1]:
+                return False
+        # Check if right child exists
+        if 2*i+2 < len(arr):
+            # If right child is greater than parent, return False
+            if arr[i] > arr[2*i+2]:
+                return False
+    # If all checks pass, the array is a min heap
+    return True
+
+# Test cases
+print(check_min_heap([1, 2, 3, 4, 5, 6]))  # Expected output: True
+print(check_min_heap([1, 2, 3, 4, 5, 6, 7]))  # Expected output: False
+```

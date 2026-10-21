@@ -1,0 +1,49 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def find_Average_Of_Cube(n):
+    """
+    Find the average of cubes of first n natural numbers.
+    
+    Args:
+        n: A positive integer representing the count of first natural numbers
+        
+    Returns:
+        The average of cubes of first n natural numbers
+    """
+    # Calculate sum of cubes of first n natural numbers
+    # Formula: sum of cubes = (n * (n + 1) / 2) ^ 2
+    sum_of_cubes = (n * (n + 1) // 2) ** 2
+    
+    # Calculate average by dividing sum by n
+    average = sum_of_cubes / n
+    
+    return average
+
+
+# Test the function
+if __name__ == "__main__":
+    # Test case from the problem
+    result = find_Average_Of_Cube(2)
+    print(f"Average of cubes of first 2 natural numbers: {result}")
+    assert find_Average_Of_Cube(2) == 4.5, "Test failed!"
+    
+    # Additional test cases
+    print(f"Average of cubes of first 1 natural numbers: {find_Average_Of_Cube(1)}")
+    print(f"Average of cubes of first 3 natural numbers: {find_Average_Of_Cube(3)}")
+    print(f"Average of cubes of first 5 natural numbers: {find_Average_Of_Cube(5)}")
+    
+    print("All tests passed!")
+```
+
+**Explanation:**
+
+The function uses the mathematical formula for the sum of cubes of first n natural numbers:
+- Sum of cubes = (n × (n + 1) / 2)²
+
+Then it divides this sum by n to get the average.
+
+For n = 2:
+- Cubes: 1³ = 1, 2³ = 8
+- Sum = 1 + 8 = 9
+- Average = 9 / 2 = 4.5 ✓

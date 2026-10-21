@@ -1,0 +1,43 @@
+```python
+def toggle_middle_bits(n):
+    """
+    Toggles all bits of the number except the first (most significant) 
+    and the last (least significant) bit.
+    """
+    if n == 0:
+        return 0
+    
+    # Find the number of bits in the binary representation of n
+    # bin(n) returns '0b...', so we subtract 2 from the length
+    num_bits = n.bit_length()
+    
+    # If the number has 2 or fewer bits, there are no "middle" bits to toggle
+    if num_bits <= 2:
+        return n
+    
+    # Create a mask that has 1s in all positions except the first and last bit.
+    # 1. (1 << num_bits) - 1 creates a mask of all 1s for the length of n.
+    # 2. We XOR this with (1 << (num_bits - 1)) to flip the first bit to 0.
+    # 3. We XOR this with 1 to flip the last bit to 0.
+    mask = ((1 << num_bits) - 1) ^ (1 << (num_bits - 1)) ^ 1
+    
+    # XOR the original number with the mask to toggle the middle bits
+    return n ^ mask
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    # 9 in binary is 1001. 
+    # Middle bits are 00. Toggling them makes it 1111.
+    # 1111 in decimal is 15.
+    result = toggle_middle_bits(9)
+    print(f"toggle_middle_bits(9) = {result}")
+    assert result == 15
+    
+    # Additional test cases
+    # 10 (1010) -> Middle bits '01' toggle to '10' -> 1100 (12)
+    assert toggle_middle_bits(10) == 12
+    # 7 (111) -> Middle bit '1' toggles to '0' -> 101 (5)
+    assert toggle_middle_bits(7) == 5
+    
+    print("All tests passed!")
+```

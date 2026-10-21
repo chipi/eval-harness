@@ -1,0 +1,33 @@
+Here's a self-contained Python script that solves the problem, including the requested markdown code block:
+
+```python
+"""
+Python function to check if a number is even.
+
+The function uses the modulus operator to determine if the number is even.
+An even number is any integer that leaves a remainder of 0 when divided by 2.
+"""
+
+def is_Even(num):
+    """Check if the given number is even.
+
+    Args:
+        num (int): The number to check.
+
+    Returns:
+        bool: True if the number is even, False otherwise.
+    """
+    return num % 2 == 0
+
+# Test case
+assert is_Even(1) == False
+```
+
+And here's the same solution in a markdown code block as requested:
+
+```python
+def is_Even(num):
+    return num % 2 == 0
+
+assert is_Even(1) == False
+```

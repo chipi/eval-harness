@@ -1,0 +1,4 @@
+```python
+def add_string(lst, fmt):
+    return [fmt.format(item) for item in lst]
+```

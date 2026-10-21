@@ -1,0 +1,61 @@
+Looking at this problem, I need to find the sum of binomial coefficients at even indices:
+
+$$\binom{n}{0} + \binom{n}{2} + \binom{n}{4} + \cdots$$
+
+**Mathematical insight:** From the binomial theorem:
+- $(1+1)^n = \sum_k \binom{n}{k} = 2^n$
+- $(1-1)^n = \sum_k (-1)^k \binom{n}{k} = 0$ (for $n \geq 1$)
+
+Adding these equations: $2\left(\binom{n}{0} + \binom{n}{2} + \cdots\right) = 2^n$
+
+Therefore the answer is $2^{n-1}$.
+
+**Verification:** For $n = 4$: $\binom{4}{0} + \binom{4}{2} + \binom{4}{4} = 1 + 6 + 1 = 8 = 2^3$ ✓
+
+```python
+"""
+Write a python function that takes in a positive integer n and finds the sum of even index binomial coefficients.
+assert even_binomial_Coeff_Sum(4) == 8
+"""
+
+import math
+
+
+def even_binomial_Coeff_Sum(n):
+    """
+    Return the sum of binomial coefficients C(n, k) for even k.
+
+    Using the binomial theorem:
+        (1+1)^n = sum_k C(n,k)            = 2^n
+        (1-1)^n = sum_k (-1)^k * C(n,k)   = 0   (for n >= 1)
+    Adding them gives 2 * (sum over even k) = 2^n, hence 2^(n-1).
+    """
+    if n < 1:
+        raise ValueError("n must be a positive integer")
+    return 1 << (n - 1)          # 2 ** (n - 1)
+
+
+def even_binomial_Coeff_Sum_bruteforce(n):
+    """Direct computation, used here to double-check the closed form."""
+    return sum(math.comb(n, k) for k in range(0, n + 1, 2))
+
+
+if __name__ == "__main__":
+    # Required assertion
+    assert even_binomial_Coeff_Sum(4) == 8
+
+    # A few more checks
+    assert even_binomial_Coeff_Sum(1) == 1    # C(1,0) = 1
+    assert even_binomial_Coeff_Sum(2) == 2    # C(2,0)+C(2,2) = 1+1
+    assert even_binomial_Coeff_Sum(3) == 4    # C(3,0)+C(3,2) = 1+3
+    assert even_binomial_Coeff_Sum(10) == 512
+
+    # Cross-validate the closed form against brute force
+    for i in range(1, 50):
+        assert even_binomial_Coeff_Sum(i) == even_binomial_Coeff_Sum_bruteforce(i)
+
+    for i in range(1, 11):
+        print(f"even_binomial_Coeff_Sum({i}) = {even_binomial_Coeff_Sum(i)}")
+
+    print("All tests passed!")
+```

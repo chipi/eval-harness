@@ -1,0 +1,29 @@
+```python
+def odd_num_sum(n):
+    """
+    This function calculates the sum of fourth power of first n odd natural numbers.
+
+    Args:
+        n (int): The number of odd natural numbers.
+
+    Returns:
+        int: The sum of fourth power of first n odd natural numbers.
+    """
+    # Initialize sum as 0
+    total_sum = 0
+    
+    # Loop through the first n odd natural numbers
+    for i in range(n):
+        # Calculate the ith odd natural number
+        odd_num = 2 * i + 1
+        
+        # Add the fourth power of the odd number to the total sum
+        total_sum += odd_num ** 4
+    
+    # Return the total sum
+    return total_sum
+
+# Test the function
+assert odd_num_sum(2) == 82
+print("All tests passed.")
+```

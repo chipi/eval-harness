@@ -1,0 +1,64 @@
+```python
+def validate(n: int) -> bool:
+    """
+    This function checks whether the frequency of each digit in the integer is less than or equal to the digit itself.
+
+    Args:
+        n (int): The input integer.
+
+    Returns:
+        bool: True if the frequency of each digit in the integer is less than or equal to the digit itself, False otherwise.
+    """
+    # Convert the integer into a string to easily access each digit
+    str_n = str(n)
+    
+    # Initialize a dictionary to store the frequency of each digit
+    freq_dict = {}
+    
+    # Iterate over each character (digit) in the string
+    for digit in str_n:
+        # If the digit is already in the dictionary, increment its count
+        if digit in freq_dict:
+            freq_dict[digit] += 1
+        # If the digit is not in the dictionary, add it with a count of 1
+        else:
+            freq_dict[digit] = 1
+    
+    # Iterate over each digit and its frequency in the dictionary
+    for digit, freq in freq_dict.items():
+        # If the frequency of the digit is greater than the digit itself, return False
+        if freq > int(digit):
+            return False
+    
+    # If the function hasn't returned False, return True
+    return True
+
+# Test the function
+if __name__ == "__main__":
+    print(validate(1234))  # Expected output: True
+    print(validate(2222))  # Expected output: False
+```
+
+However, here is a more concise version of the function:
+
+```python
+def validate(n: int) -> bool:
+    """
+    This function checks whether the frequency of each digit in the integer is less than or equal to the digit itself.
+
+    Args:
+        n (int): The input integer.
+
+    Returns:
+        bool: True if the frequency of each digit in the integer is less than or equal to the digit itself, False otherwise.
+    """
+    freq_dict = {}
+    for digit in str(n):
+        freq_dict[digit] = freq_dict.get(digit, 0) + 1
+    return all(freq <= int(digit) for digit, freq in freq_dict.items())
+
+# Test the function
+if __name__ == "__main__":
+    print(validate(1234))  # Expected output: True
+    print(validate(2222))  # Expected output: False
+```

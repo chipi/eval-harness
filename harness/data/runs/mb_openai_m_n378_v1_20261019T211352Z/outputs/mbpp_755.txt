@@ -1,0 +1,28 @@
+```python
+"""
+Write a function to find the second smallest number in a list.
+
+Example:
+assert second_smallest([1, 2, -8, -2, 0, -2]) == -2
+"""
+
+def second_smallest(numbers):
+    """
+    Return the second smallest unique number in the given list.
+
+    Raises:
+        ValueError: If the list has fewer than two unique numbers.
+    """
+    unique_numbers = sorted(set(numbers))
+
+    if len(unique_numbers) < 2:
+        raise ValueError("List must contain at least two unique numbers")
+
+    return unique_numbers[1]
+
+
+# Example test
+assert second_smallest([1, 2, -8, -2, 0, -2]) == -2
+
+print("All tests passed.")
+```

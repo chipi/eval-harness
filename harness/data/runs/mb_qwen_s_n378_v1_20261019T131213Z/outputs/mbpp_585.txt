@@ -1,0 +1,17 @@
+```python
+def expensive_items(dataset, n):
+    """
+    Find the n most expensive items in a given dataset.
+    
+    Args:
+        dataset: A list of dictionaries, each containing 'name' and 'price' keys.
+        n: The number of most expensive items to return.
+    
+    Returns:
+        A list of the n most expensive items (dictionaries) sorted by price descending.
+    """
+    # Sort the dataset by price in descending order
+    sorted_dataset = sorted(dataset, key=lambda x: x['price'], reverse=True)
+    # Return the first n items
+    return sorted_dataset[:n]
+```

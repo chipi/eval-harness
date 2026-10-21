@@ -1,0 +1,13 @@
+```python
+def check_none(t):
+    """
+    Check if the given tuple has any None value.
+    
+    Args:
+        t: A tuple to check
+        
+    Returns:
+        True if the tuple contains at least one None value, False otherwise
+    """
+    return any(x is None for x in t)
+```

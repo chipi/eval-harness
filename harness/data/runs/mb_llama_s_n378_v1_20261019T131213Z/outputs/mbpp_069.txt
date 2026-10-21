@@ -1,0 +1,72 @@
+```python
+def is_sublist(main_list, sub_list):
+    """
+    Checks whether a list contains the given sublist or not.
+
+    Args:
+        main_list (list): The main list to be checked.
+        sub_list (list): The sublist to be searched for.
+
+    Returns:
+        bool: True if the sublist is found, False otherwise.
+    """
+    # Check if sub_list is actually a sublist of main_list
+    return ''.join(map(str, sub_list)) in ''.join(map(str, main_list))
+
+# Test the function
+print(is_sublist([2,4,3,5,7],[3,7]))  # Should return False
+print(is_sublist([2,3,4,3,5,7],[3,7]))  # Should return True
+```
+However, the above approach may not work correctly if the sublist elements are not strings or if they are large numbers.
+
+A more robust approach would be to use a for loop and check each sublist of the main list with the given sublist.
+
+```python
+def is_sublist(main_list, sub_list):
+    """
+    Checks whether a list contains the given sublist or not.
+
+    Args:
+        main_list (list): The main list to be checked.
+        sub_list (list): The sublist to be searched for.
+
+    Returns:
+        bool: True if the sublist is found, False otherwise.
+    """
+    # Get the length of the sublist
+    sub_len = len(sub_list)
+
+    # Iterate over the main list
+    for i in range(len(main_list)):
+        # Check if the current element is the start of the sublist
+        if i + sub_len <= len(main_list) and main_list[i:i+sub_len] == sub_list:
+            return True
+
+    # If no match is found, return False
+    return False
+
+# Test the function
+print(is_sublist([2,4,3,5,7],[3,7]))  # Should return False
+print(is_sublist([2,3,4,3,5,7],[3,7]))  # Should return True
+```
+
+Alternatively, you can use Python's built-in `in` operator with a list comprehension to achieve the same result in a more concise way:
+
+```python
+def is_sublist(main_list, sub_list):
+    """
+    Checks whether a list contains the given sublist or not.
+
+    Args:
+        main_list (list): The main list to be checked.
+        sub_list (list): The sublist to be searched for.
+
+    Returns:
+        bool: True if the sublist is found, False otherwise.
+    """
+    return any(main_list[i:i+len(sub_list)] == sub_list for i in range(len(main_list)-len(sub_list)+1))
+
+# Test the function
+print(is_sublist([2,4,3,5,7],[3,7]))  # Should return False
+print(is_sublist([2,3,4,3,5,7],[3,7]))  # Should return True
+```

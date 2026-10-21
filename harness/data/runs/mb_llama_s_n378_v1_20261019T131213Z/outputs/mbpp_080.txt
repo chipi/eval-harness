@@ -1,0 +1,33 @@
+```python
+def tetrahedral_number(n: int) -> int:
+    """
+    Calculate the nth tetrahedral number.
+
+    The nth tetrahedral number is the number of balls in a tetrahedral 
+    structure with n layers. It is given by the formula: 
+
+    T(n) = n*(n+1)*(n+2)/6
+
+    Args:
+        n (int): The layer number.
+
+    Returns:
+        int: The nth tetrahedral number.
+
+    Raises:
+        ValueError: If n is less than 1.
+    """
+    if n < 1:
+        raise ValueError("n must be a positive integer")
+
+    # Calculate the nth tetrahedral number using the formula
+    return n*(n+1)*(n+2)//6
+
+
+# Test the function
+if __name__ == "__main__":
+    assert tetrahedral_number(5) == 35
+    print("All tests passed.")
+```
+
+You can run this script to test the `tetrahedral_number` function. The function takes an integer `n` as input and returns the nth tetrahedral number. It also includes input validation to ensure that `n` is a positive integer. The test case at the end verifies that the function works correctly for `n = 5`.

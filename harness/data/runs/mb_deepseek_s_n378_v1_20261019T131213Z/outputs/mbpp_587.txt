@@ -1,0 +1,23 @@
+```python
+def list_tuple(input_list):
+    """
+    Convert a list to a tuple.
+    
+    Args:
+        input_list: A list of elements.
+        
+    Returns:
+        A tuple containing the same elements in the same order.
+    """
+    return tuple(input_list)
+
+# Test the function with the provided assertion
+assert list_tuple([5, 10, 7, 4, 15, 3]) == (5, 10, 7, 4, 15, 3)
+
+# Additional test cases (optional)
+assert list_tuple([]) == ()
+assert list_tuple([1]) == (1,)
+assert list_tuple(["a", "b", "c"]) == ("a", "b", "c")
+
+print("All tests passed!")
+```

@@ -1,0 +1,15 @@
+```python
+def centered_hexagonal_number(n):
+  """
+  Finds the nth centered hexagonal number.
+
+  Args:
+    n: The index of the centered hexagonal number to find.
+
+  Returns:
+    The nth centered hexagonal number.
+  """
+  return 3 * n * (n - 1) + 1
+
+assert centered_hexagonal_number(10) == 271
+```

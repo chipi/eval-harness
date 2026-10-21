@@ -1,0 +1,26 @@
+```python
+def max_run_uppercase(s: str) -> int:
+    """
+    Returns the length of the longest consecutive sequence of uppercase letters
+    in the given string.
+    """
+    max_length = 0
+    current_length = 0
+    
+    for char in s:
+        if char.isupper():
+            current_length += 1
+            if current_length > max_length:
+                max_length = current_length
+        else:
+            current_length = 0
+            
+    return max_length
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    result = max_run_uppercase('GeMKSForGERksISBESt')
+    print(f"Result: {result}")
+    assert result == 5, f"Expected 5 but got {result}"
+    print("Assertion passed.")
+```

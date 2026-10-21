@@ -1,0 +1,14 @@
+```python
+from collections import Counter
+
+
+def validate(number: int) -> bool:
+    """Return True if each digit appears no more times than its value."""
+    counts = Counter(str(abs(number)))
+    return all(count <= int(digit) for digit, count in counts.items())
+
+
+assert validate(1234) is True
+assert validate(11) is False
+assert validate(0) is False
+```

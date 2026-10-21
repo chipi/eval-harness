@@ -1,0 +1,22 @@
+Here's a self-contained Python script that checks whether a given number can be represented as the difference of two squares:
+
+```python
+"""
+A number can be expressed as the difference of two squares if and only if it is not congruent to 2 modulo 4.
+This is because:
+    a² - b² = (a - b)(a + b)
+For this to be an integer, (a - b) and (a + b) must be both even or both odd.
+If both are even, their product is divisible by 4.
+If both are odd, their product is odd.
+Thus, numbers ≡ 2 mod 4 cannot be expressed as difference of two squares.
+"""
+
+def dif_Square(n: int) -> bool:
+    """Check if a number can be represented as the difference of two squares."""
+    return n % 4 != 2
+
+# Test case
+assert dif_Square(5) == True
+```
+
+The function works by checking the mathematical property that a number can be expressed as the difference of two squares if and only if it is not congruent to 2 modulo 4 (i.e., not of the form 4k + 2). The test case `assert dif_Square(5) == True` verifies that 5 can indeed be expressed as the difference of two squares (for example, 3² - 2² = 9 - 4 = 5).

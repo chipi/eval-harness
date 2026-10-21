@@ -1,0 +1,38 @@
+```python
+def next_power_of_2(n):
+    """
+    Find the smallest power of 2 greater than or equal to n.
+    
+    Args:
+        n: A non-negative integer
+        
+    Returns:
+        The smallest power of 2 that is >= n
+        
+    Examples:
+        >>> next_power_of_2(0)
+        1
+        >>> next_power_of_2(1)
+        1
+        >>> next_power_of_2(3)
+        4
+        >>> next_power_of_2(4)
+        4
+        >>> next_power_of_2(5)
+        8
+    """
+    if n <= 0:
+        return 1
+    
+    # If n is already a power of 2, return it
+    if (n & (n - 1)) == 0:
+        return n
+    
+    # Find the next power of 2
+    # Start with 1 and keep doubling until we reach or exceed n
+    power = 1
+    while power < n:
+        power <<= 1
+    
+    return power
+```

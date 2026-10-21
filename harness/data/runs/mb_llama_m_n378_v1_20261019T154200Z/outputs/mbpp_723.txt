@@ -1,0 +1,27 @@
+```python
+def count_same_pair(list1, list2):
+    """
+    This function counts the indices where two input lists have the same values.
+
+    Args:
+        list1 (list): The first list.
+        list2 (list): The second list.
+
+    Returns:
+        int: The number of indices where the lists have the same values.
+    """
+    # Check if the lists are of the same length
+    if len(list1) != len(list2):
+        raise ValueError("The input lists must be of the same length")
+
+    # Use a list comprehension to create a list of boolean values indicating whether the elements at each index are equal
+    same_indices = [x == y for x, y in zip(list1, list2)]
+
+    # Use the sum function to count the number of True values in the list, which represents the number of indices where the lists have the same values
+    count = sum(same_indices)
+
+    return count
+
+# Test the function
+print(count_same_pair([1, 2, 3, 4, 5, 6, 7, 8], [2, 2, 3, 1, 2, 6, 7, 9]))  # Output: 4
+```

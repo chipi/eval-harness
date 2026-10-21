@@ -1,0 +1,44 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def find_star_num(n):
+    """
+    Find the n'th star number.
+    
+    Star numbers are figurate numbers that represent a centered hexagram
+    (like the Star of David). The formula for the n'th star number is:
+    S_n = 6n(n-1) + 1
+    
+    Args:
+        n (int): The position of the star number to find (1-indexed)
+    
+    Returns:
+        int: The n'th star number
+    """
+    return 6 * n * (n - 1) + 1
+
+
+# Test the function
+assert find_star_num(3) == 37
+print(f"find_star_num(3) = {find_star_num(3)}")
+print(f"find_star_num(1) = {find_star_num(1)}")
+print(f"find_star_num(2) = {find_star_num(2)}")
+print(f"find_star_num(4) = {find_star_num(4)}")
+print(f"find_star_num(5) = {find_star_num(5)}")
+print("All tests passed!")
+```
+
+**Explanation:**
+
+Star numbers are a sequence of figurate numbers that count the number of dots needed to form a hexagram (six-pointed star). The formula for the n'th star number is:
+
+$$S_n = 6n(n-1) + 1$$
+
+For example:
+- n=1: 6(1)(0) + 1 = 1
+- n=2: 6(2)(1) + 1 = 13
+- n=3: 6(3)(2) + 1 = 37 ✓
+- n=4: 6(4)(3) + 1 = 73
+- n=5: 6(5)(4) + 1 = 121
+
+The sequence is: 1, 13, 37, 73, 121, 181, 253, 337, 433, 541, ...

@@ -1,0 +1,34 @@
+Here's a self-contained Python script that checks whether a given list contains consecutive numbers:
+
+```python
+def check_Consecutive(lst):
+    if not lst:
+        return False  # empty list is not considered consecutive
+
+    # Check if the list is already sorted in ascending order
+    is_sorted = all(lst[i] <= lst[i+1] for i in range(len(lst)-1))
+
+    if not is_sorted:
+        # If not sorted, sort it and check consecutive
+        sorted_lst = sorted(lst)
+        return all(sorted_lst[i] + 1 == sorted_lst[i+1] for i in range(len(sorted_lst)-1))
+    else:
+        # If already sorted, check consecutive
+        return all(lst[i] + 1 == lst[i+1] for i in range(len(lst)-1))
+
+# Test case
+assert check_Consecutive([1,2,3,4,5]) == True
+```
+
+This solution:
+1. Handles empty lists by returning False
+2. Checks if the list is already sorted in ascending order
+3. If not sorted, sorts the list and checks if each element is exactly 1 less than the next element
+4. If already sorted, performs the same consecutive check without sorting
+5. Returns True only if all adjacent elements differ by exactly 1
+
+The function will work for both sorted and unsorted lists containing consecutive numbers. For example:
+- `[1,2,3,4,5]` → True
+- `[5,4,3,2,1]` → False (unless you want to consider descending consecutive, which this doesn't)
+- `[1,3,2,4,5]` → True (after sorting)
+- `[1,2,4,5]` → False

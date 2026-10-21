@@ -1,0 +1,23 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def add_dict_to_tuple(t, d):
+    """
+    Add a dictionary to a tuple and return the result as a tuple.
+    
+    Args:
+        t (tuple): The original tuple.
+        d (dict): The dictionary to add.
+    
+    Returns:
+        tuple: A new tuple with the dictionary appended.
+    """
+    return t + (d,)
+
+# Test the function
+if __name__ == "__main__":
+    result = add_dict_to_tuple((4, 5, 6), {"MSAM": 1, "is": 2, "best": 3})
+    expected = (4, 5, 6, {'MSAM': 1, 'is': 2, 'best': 3})
+    assert result == expected, f"Test failed: {result} != {expected}"
+    print("Test passed!")
+```

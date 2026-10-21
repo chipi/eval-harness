@@ -1,0 +1,126 @@
+```python
+def set_left_most_unset_bit(n):
+    """
+    Set the leftmost unset bit in the binary representation of n.
+    
+    The leftmost unset bit is the most significant bit that is 0 in the 
+    binary representation of n (considering only bits up to the highest 
+    set bit, or potentially extending if needed).
+    
+    For example:
+    - 10 in binary is 1010. The leftmost unset bit among the existing 
+      bit positions (from MSB down) would be... let's think carefully.
+      
+    Actually, let's reconsider what "leftmost unset bit" means. In many 
+    contexts, it refers to the most significant bit position that is 0, 
+    starting from the highest set bit downward. But sometimes it can mean 
+    the first 0 bit when scanning from left to right in the minimal binary 
+    representation.
+    
+    Let's verify with the example:
+    assert set_left_most_unset_bit(10) == 14
+    
+    10 in binary: 1010
+    14 in binary: 1110
+    
+    So we changed the second bit from the left (which was 0) to 1.
+    In 1010, the bits are: 1, 0, 1, 0. The leftmost unset bit is the 
+    second bit (value 8's place? No, let's index properly).
+    
+    Binary 10 = 1010_2
+    Bit positions (from right, 0-indexed): 
+      pos 3: 1
+      pos 2: 0
+      pos 1: 1
+      pos 0: 0
+    
+    The leftmost unset bit is at position 2 (the most significant 0 bit).
+    Setting it gives us: 1110_2 = 14. Correct!
+    
+    Algorithm:
+    1. Find the position of the leftmost unset bit. This is the most 
+       significant bit position where the bit is 0, considering all bit 
+       positions from the highest set bit down to 0.
+    2. If there is no unset bit (i.e., n is of the form 2^k - 1), then 
+       we might need to consider extending, but typically for this problem, 
+       we assume there is an unset bit within the range of the current 
+       highest set bit.
+    
+    How to find the leftmost unset bit:
+    - Let msb_pos be the position of the most significant set bit.
+    - We want to find the largest position p <= msb_pos such that the 
+      bit at p is 0.
+    
+    Alternative approach:
+    - Consider the complement of n within the range of bits up to msb_pos.
+    - The leftmost unset bit corresponds to the leftmost set bit in ~n 
+      (masked to relevant bits).
+    
+    Steps:
+    1. Find the number of bits needed to represent n: num_bits = floor(log2(n)) + 1
+    2. Create a mask of num_bits ones: mask = (1 << num_bits) - 1
+    3. Compute inverted = (~n) & mask  -- this gives us the unset bits as set bits
+    4. Find the most significant set bit in inverted. That tells us which 
+       bit to set in n.
+    5. Set that bit in n.
+    
+    Let's trace with n=10:
+    - num_bits = 4 (since 10 = 1010)
+    - mask = 0b1111 = 15
+    - ~10 in infinite bits is ...11110101, but masked with 15: 
+      10 = 0b1010, ~10 & 0b1111 = 0b0101 = 5
+    - Most significant set bit in 5 (0b0101) is at position 2 (0-indexed from right).
+    - Set bit 2 in n: 10 | (1 << 2) = 10 | 4 = 14. Correct!
+    
+    Edge case: if n has all bits set (e.g., n=7=0b111), then inverted=0, 
+    and there's no unset bit within the current representation. In some 
+    interpretations, we might return n unchanged or handle differently. 
+    But based on typical problems like this, if all bits are set, there's 
+    no unset bit to set, so we could return n. However, let's check if 
+    the problem expects handling this. Since the assertion only covers 
+    one case, I'll implement the general logic and if inverted is 0, 
+    return n (or possibly extend by setting the next higher bit, but 
+    that's ambiguous). Given common implementations, returning n when 
+    no unset bit exists within the current width seems reasonable.
+    
+    Actually, another interpretation: "leftmost unset bit" could include 
+    bits beyond the current MSB. But that doesn't make sense because 
+    leading zeros are not considered part of the representation. So we 
+    stick with bits within the minimal representation.
+    """
+    if n < 0:
+        raise ValueError("Input must be non-negative")
+    
+    if n == 0:
+        # Binary of 0 is just 0, leftmost unset bit... tricky.
+        # Typically, 0 has no set bits. The leftmost unset bit could be 
+        # considered as bit 0. Setting it gives 1.
+        return 1
+    
+    # Find the position of the most significant set bit
+    # Number of bits in n
+    num_bits = n.bit_length()
+    
+    # Mask to keep only the relevant bits
+    mask = (1 << num_bits) - 1
+    
+    # Get the unset bits (within the range of num_bits)
+    inverted = (~n) & mask
+    
+    if inverted == 0:
+        # All bits are set, no unset bit to set
+        return n
+    
+    # Find the most significant set bit in inverted
+    # This gives us the position of the leftmost unset bit in n
+    msb_inverted = inverted.bit_length() - 1
+    
+    # Set that bit in n
+    result = n | (1 << msb_inverted)
+    
+    return result
+
+
+# Test
+assert set_left_most_unset_bit(10) == 14
+```

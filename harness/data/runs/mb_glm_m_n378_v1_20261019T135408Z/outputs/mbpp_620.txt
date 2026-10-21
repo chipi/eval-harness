@@ -1,0 +1,38 @@
+To solve this problem, we need to find the size of the largest subset of a list of numbers where every pair of numbers in the subset is divisible by each other. This means that for any two numbers \(a\) and \(b\) in the subset, either \(a\) divides \(b\) or \(b\) divides \(a\). 
+
+### Approach
+1. **Sort the List**: First, we sort the list in ascending order. This allows us to process each number in order and check divisibility with previous numbers efficiently.
+2. **Dynamic Programming (DP) Setup**: We use a dynamic programming array `dp` where `dp[i]` represents the size of the largest divisible subset ending with the number at index `i`.
+3. **DP Initialization**: Initialize each element in `dp` to 1 because each number is a subset of size 1 by itself.
+4. **DP Population**: For each number at index `i`, check all previous numbers (from index `0` to `i-1`). If the current number is divisible by a previous number, update `dp[i]` to be the maximum of its current value or `dp[j] + 1`.
+5. **Result Extraction**: The result will be the maximum value in the `dp` array after processing all numbers.
+
+### Solution Code
+```python
+def largest_subset(nums):
+    if not nums:
+        return 0
+    nums.sort()
+    n = len(nums)
+    dp = [1] * n
+    max_size = 1
+    for i in range(1, n):
+        for j in range(i):
+            if nums[i] % nums[j] == 0:
+                if dp[j] + 1 > dp[i]:
+                    dp[i] = dp[j] + 1
+        if dp[i] > max_size:
+            max_size = dp[i]
+    return max_size
+
+# Test the function
+assert largest_subset([1, 3, 6, 13, 17, 18]) == 4
+```
+
+### Explanation
+1. **Sorting the List**: The list is sorted to ensure that we process each number in increasing order. This helps in checking divisibility conditions efficiently because any number that divides the current number must be smaller or equal.
+2. **Dynamic Programming Array Initialization**: The `dp` array is initialized to 1 for each element because each number alone forms a subset of size 1.
+3. **DP Population**: For each number `nums[i]`, we check all previous numbers `nums[j]` (where \(j < i\)). If `nums[i]` is divisible by `nums[j]`, it means `nums[i]` can extend the subset ending at `nums[j]`. Thus, `dp[i]` is updated to `dp[j] + 1` if it results in a larger subset size.
+4. **Result Extraction**: The maximum value in the `dp` array after processing all numbers gives the size of the largest divisible subset. For the given example `[1, 3, 6, 13, 17, 18]`, the largest subset is `[1, 3, 6, 18]`, which has a size of 4.
+
+This approach efficiently checks all possible subsets using dynamic programming, leveraging the sorted order to minimize the number of checks required. The time complexity is \(O(n^2)\) due to the nested loops, which is optimal for this problem.

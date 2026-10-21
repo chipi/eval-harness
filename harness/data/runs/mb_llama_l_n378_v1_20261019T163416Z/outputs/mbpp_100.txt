@@ -1,0 +1,14 @@
+```python
+def next_smallest_palindrome(n):
+    def is_palindrome(num):
+        return str(num) == str(num)[::-1]
+
+    num = n + 1
+    while not is_palindrome(num):
+        num += 1
+    return num
+
+# Test the function
+assert next_smallest_palindrome(99) == 101
+print("All tests passed.")
+```

@@ -1,0 +1,19 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def neg_nos(numbers):
+    """Return a list of negative numbers from the input list."""
+    return [num for num in numbers if num < 0]
+
+# Test the function
+assert neg_nos([-1, 4, 5, -6]) == [-1, -6]
+print("Test passed!")
+```
+
+This script:
+1. Defines a function `neg_nos` that takes a list of numbers as input
+2. Uses a list comprehension to filter and return only the negative numbers
+3. Includes an assertion to verify the function works as expected
+4. Prints a success message if the test passes
+
+The function will return all negative numbers from the input list in the same order they appeared in the original list.

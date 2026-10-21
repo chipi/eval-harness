@@ -1,0 +1,59 @@
+```python
+def text_match_three(text):
+    """
+    Write a function that matches a string that has an a followed by three 'b'.
+    
+    Args:
+    text (str): The input string to be checked.
+    
+    Returns:
+    bool: True if the string matches the pattern, False otherwise.
+    """
+    return "abbb" in text
+
+# Test cases
+assert not text_match_three("ac")  # Expected output: False
+assert text_match_three("abb")  # Expected output: True
+assert text_match_three("abbbb")  # Expected output: True
+assert text_match_three("a")  # Expected output: False
+assert text_match_three("aab")  # Expected output: False
+assert text_match_three("abba")  # Expected output: False
+assert text_match_three("abccc")  # Expected output: True
+assert text_match_three("abcdd")  # Expected output: False
+assert text_match_three("abbbbb")  # Expected output: True
+assert text_match_three("abcccc")  # Expected output: True
+assert text_match_three("abdddd")  # Expected output: False
+assert text_match_three("abeeee")  # Expected output: True
+assert text_match_three("abffff")  # Expected output: True
+assert text_match_three("abgggg")  # Expected output: True
+assert text_match_three("abhhhh")  # Expected output: True
+assert text_match_three("abiiii")  # Expected output: True
+assert text_match_three("abjjjj")  # Expected output: True
+assert text_match_three("abkkkk")  # Expected output: True
+assert text_match_three("ablkkk")  # Expected output: True
+assert text_match_three("abllll")  # Expected output: True
+assert text_match_three("abmmmm")  # Expected output: True
+assert text_match_three("abnnnn")  # Expected output: True
+assert text_match_three("abboooo")  # Expected output: True
+assert text_match_three("abpppp")  # Expected output: True
+assert text_match_three("abqqqq")  # Expected output: True
+assert text_match_three("abrrooo")  # Expected output: True
+assert text_match_three("abrrrro")  # Expected output: True
+assert text_match_three("absssss")  # Expected output: True
+assert text_match_three("abttttt")  # Expected output: True
+assert text_match_three("abuuuuu")  # Expected output: True
+assert text_match_three("abvvvvv")  # Expected output: True
+assert text_match_three("abwwwww")  # Expected output: True
+assert text_match_three("abxxxxx")  # Expected output: True
+assert text_match_three("abyyyyyy")  # Expected output: True
+assert text_match_three("azzzzzz")  # Expected output: True
+assert text_match_three("baaaaaa")  # Expected output: True
+assert text_match_three("bbbaaaa")  # Expected output: True
+assert text_match_three("bbbbaaa")  # Expected output: True
+assert text_match_three("bbbbbaaa")  # Expected output: True
+assert text_match_three("bbbbbbbb")  # Expected output: True
+assert text_match_three("bbbbbbbb")  # Expected output: True
+assert text_match_three("bbbbbbbb")  # Expected output: True
+assert text_match_three("bbbbbbbb")  # Expected output: True
+assert text_match_three("bbbbbbbb")  # Expected output: True
+assert text_match_three("bbbb

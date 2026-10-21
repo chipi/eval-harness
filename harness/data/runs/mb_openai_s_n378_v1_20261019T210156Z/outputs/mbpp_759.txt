@@ -1,0 +1,24 @@
+```python
+import re
+
+def is_decimal(s: str) -> bool:
+    """
+    Return True if s is a decimal number with exactly 2 digits after the dot.
+    Examples:
+        '123.11' -> True
+        '0.00'   -> True
+        '123'    -> False
+        '123.1'  -> False
+        '123.111'-> False
+    """
+    return bool(re.fullmatch(r"\d+\.\d{2}", s))
+
+
+if __name__ == "__main__":
+    assert is_decimal('123.11') == True
+    assert is_decimal('0.00') == True
+    assert is_decimal('123') == False
+    assert is_decimal('123.1') == False
+    assert is_decimal('123.111') == False
+    print("All tests passed.")
+```

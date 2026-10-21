@@ -1,0 +1,47 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def count_char_position(s: str) -> int:
+    """
+    Count the number of characters in a string that occur at the same position
+    in the string as in the English alphabet (case insensitive).
+    
+    Position is 1-indexed: 'a'/'A' at position 1, 'b'/'B' at position 2, etc.
+    """
+    count = 0
+    for i, ch in enumerate(s):
+        if ch.isalpha():
+            # Convert to lowercase and compare with expected letter at position i+1
+            expected = chr(ord('a') + i)
+            if ch.lower() == expected:
+                count += 1
+    return count
+
+
+# Test cases
+assert count_char_position("xbcefg") == 2
+assert count_char_position("abcde") == 5
+assert count_char_position("ABCDE") == 5
+assert count_char_position("aBcDe") == 5
+assert count_char_position("xyz") == 0
+assert count_char_position("") == 0
+assert count_char_position("a") == 1
+assert count_char_position("b") == 0
+
+print("All tests passed!")
+```
+
+**Explanation:**
+
+- The function iterates through each character in the string using `enumerate`, which gives both the index `i` and the character `ch`.
+- For each character, it checks if it's alphabetic (to skip digits, spaces, etc.).
+- It computes the expected letter at that position: since positions are 1-indexed in the alphabet, the expected letter at index `i` is `chr(ord('a') + i)`.
+- It compares the lowercase version of the character with the expected letter. If they match, it increments the counter.
+- For `"xbcefg"`:
+  - Index 0: `'x'` vs `'a'` → no
+  - Index 1: `'b'` vs `'b'` → yes ✓
+  - Index 2: `'c'` vs `'c'` → yes ✓
+  - Index 3: `'e'` vs `'d'` → no
+  - Index 4: `'f'` vs `'e'` → no
+  - Index 5: `'g'` vs `'f'` → no
+  - Result: **2** ✓

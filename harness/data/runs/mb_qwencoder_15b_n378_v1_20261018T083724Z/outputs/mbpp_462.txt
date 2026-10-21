@@ -1,0 +1,33 @@
+```python
+def combinations_list(lst):
+    if not lst:
+        return [[]]
+    
+    first_element = lst[0]
+    rest_elements = lst[1:]
+    combinations_without_first = combinations_list(rest_elements)
+    combinations_with_first = [ [first_element] + combo for combo in combinations_without_first ]
+    
+    return combinations_without_first + combinations_with_first
+
+# Test cases
+assert combinations_list(['orange', 'red', 'green', 'blue']) == [
+    [], 
+    ['orange'], 
+    ['red'], 
+    ['red', 'orange'], 
+    ['green'], 
+    ['green', 'orange'], 
+    ['green', 'red'], 
+    ['green', 'red', 'orange'], 
+    ['blue'], 
+    ['blue', 'orange'], 
+    ['blue', 'red'], 
+    ['blue', 'red', 'orange'], 
+    ['blue', 'green'], 
+    ['blue', 'green', 'orange'], 
+    ['blue', 'green', 'red'], 
+    ['blue', 'green', 'red', 'orange']
+]
+```
+

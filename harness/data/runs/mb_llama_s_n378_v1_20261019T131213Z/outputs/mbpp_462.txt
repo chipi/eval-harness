@@ -1,0 +1,91 @@
+```python
+def combinations_list(lst):
+    """
+    This function generates all possible combinations of the elements in a given list.
+
+    Args:
+        lst (list): The input list.
+
+    Returns:
+        list: A list of lists, where each sublist is a combination of the elements in the input list.
+    """
+    def combinations(lst, n):
+        if n == 0:
+            return [[]]
+        else:
+            result = []
+            for i in range(len(lst)):
+                current = lst[i]
+                rest = lst[i + 1:]
+                for c in combinations(rest, n - 1):
+                    result.append([current] + c)
+            return result
+
+    result = []
+    for i in range(len(lst) + 1):
+        result.extend(combinations(lst, i))
+    return result
+
+
+def main():
+    print(combinations_list(['orange', 'red', 'green', 'blue']))
+
+
+if __name__ == "__main__":
+    main()
+```
+
+However, there is a more Pythonic and efficient way to solve this problem using the `itertools` module:
+
+```python
+import itertools
+
+def combinations_list(lst):
+    """
+    This function generates all possible combinations of the elements in a given list.
+
+    Args:
+        lst (list): The input list.
+
+    Returns:
+        list: A list of lists, where each sublist is a combination of the elements in the input list.
+    """
+    result = []
+    for r in range(len(lst) + 1):
+        result.extend(itertools.combinations(lst, r))
+    return [list(c) for c in result]
+
+
+def main():
+    print(combinations_list(['orange', 'red', 'green', 'blue']))
+
+
+if __name__ == "__main__":
+    main()
+```
+
+Or even more concise:
+
+```python
+import itertools
+
+def combinations_list(lst):
+    """
+    This function generates all possible combinations of the elements in a given list.
+
+    Args:
+        lst (list): The input list.
+
+    Returns:
+        list: A list of lists, where each sublist is a combination of the elements in the input list.
+    """
+    return [list(c) for r in range(len(lst) + 1) for c in itertools.combinations(lst, r)]
+
+
+def main():
+    print(combinations_list(['orange', 'red', 'green', 'blue']))
+
+
+if __name__ == "__main__":
+    main()
+```

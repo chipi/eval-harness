@@ -1,0 +1,29 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def sum_even_and_even_index(lst):
+    """
+    Find the sum of even numbers at even positions (0-indexed) of a list.
+    
+    Args:
+        lst: A list of integers
+    
+    Returns:
+        The sum of even numbers at even indices
+    """
+    total = 0
+    for i in range(0, len(lst), 2):  # Step by 2 to get even indices only
+        if lst[i] % 2 == 0:  # Check if the number is even
+            total += lst[i]
+    return total
+
+# Test the function
+assert sum_even_and_even_index([5, 6, 12, 1, 18, 8]) == 30
+print("Test passed!")
+
+# Let's verify the calculation:
+# Even indices: 0, 2, 4
+# Values at even indices: 5, 12, 18
+# Even values among these: 12, 18
+# Sum: 12 + 18 = 30
+```

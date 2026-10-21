@@ -1,0 +1,24 @@
+Here's a self-contained Python script that solves the problem in a markdown code block:
+
+```python
+"""
+Write a function to find the ascii value of a character.
+assert ascii_value('A')==65
+"""
+
+def ascii_value(char):
+    """Return the ASCII value of a character."""
+    return ord(char)
+
+# Test the function
+assert ascii_value('A') == 65
+print("Test passed! ascii_value('A') returns 65")
+```
+
+This script:
+1. Defines a function `ascii_value` that takes a character as input
+2. Uses Python's built-in `ord()` function to get the ASCII value
+3. Includes the required assertion test case
+4. Prints a confirmation message if the test passes
+
+The `ord()` function is the most straightforward way to get ASCII values in Python, and it works for any Unicode character (though the test specifically checks for ASCII).

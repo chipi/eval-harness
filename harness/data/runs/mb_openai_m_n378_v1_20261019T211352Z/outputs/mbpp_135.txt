@@ -1,0 +1,28 @@
+```python
+"""
+Write a function to find the nth hexagonal number.
+
+The nth hexagonal number is given by the formula:
+H(n) = n * (2n - 1)
+"""
+
+def hexagonal_num(n):
+    """
+    Return the nth hexagonal number.
+
+    Args:
+        n (int): The position in the hexagonal number sequence.
+
+    Returns:
+        int: The nth hexagonal number.
+    """
+    return n * (2 * n - 1)
+
+
+# Example test
+assert hexagonal_num(10) == 190
+
+if __name__ == "__main__":
+    n = 10
+    print(f"The {n}th hexagonal number is {hexagonal_num(n)}")
+```

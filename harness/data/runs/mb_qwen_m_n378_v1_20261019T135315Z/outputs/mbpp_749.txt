@@ -1,0 +1,22 @@
+```python
+def sort_numeric_strings(strings: list) -> list:
+    """
+    Sort a list of strings representing numbers numerically.
+    
+    Args:
+        strings: A list of strings, each representing a number.
+        
+    Returns:
+        A list of integers sorted in ascending numerical order.
+    """
+    # Convert each string to an integer, then sort
+    numeric_values = [int(s) for s in strings]
+    numeric_values.sort()
+    return numeric_values
+
+
+if __name__ == "__main__":
+    result = sort_numeric_strings(['4', '12', '45', '7', '0', '100', '200', '-12', '-500'])
+    assert result == [-500, -12, 0, 4, 7, 12, 45, 100, 200], f"Expected [-500, -12, 0, 4, 7, 12, 45, 100, 200], got {result}"
+    print("All tests passed!")
+```

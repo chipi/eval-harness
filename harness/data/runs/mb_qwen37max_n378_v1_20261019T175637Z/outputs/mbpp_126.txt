@@ -1,0 +1,13 @@
+```python
+def sum(a, b):
+    """Find the sum of common divisors of two given numbers."""
+    total = 0
+    # Find the minimum of the two numbers to limit our search
+    min_val = min(abs(a), abs(b)) if a != 0 and b != 0 else max(abs(a), abs(b))
+    
+    for i in range(1, min_val + 1):
+        if a % i == 0 and b % i == 0:
+            total += i
+    
+    return total
+```

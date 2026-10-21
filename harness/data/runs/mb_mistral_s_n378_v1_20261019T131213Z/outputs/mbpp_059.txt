@@ -1,0 +1,87 @@
+Here's a self-contained Python script that includes a function to find the nth octagonal number and verifies the given assertion:
+
+```python
+def is_octagonal(n):
+    """
+    Calculate the nth octagonal number.
+
+    The nth octagonal number is given by the formula: 3n^2 - 3n + 1
+
+    Args:
+        n (int): The position in the sequence of octagonal numbers.
+
+    Returns:
+        int: The nth octagonal number.
+    """
+    return 3 * n ** 2 - 3 * n + 1
+
+# Test the function with the provided assertion
+assert is_octagonal(5) == 65, "Test failed: 5th octagonal number should be 65"
+print("Test passed! 5th octagonal number is indeed 65.")
+```
+
+### Explanation:
+1. The function `is_octagonal(n)` calculates the nth octagonal number using the formula \( 3n^2 - 3n + 1 \).
+2. The assertion checks that the 5th octagonal number is 65, which is correct (since \( 3 \times 5^2 - 3 \times 5 + 1 = 75 - 15 + 1 = 61 \). Wait, that doesn't match the assertion. Let me correct this.)
+
+Wait a minute, the assertion `assert is_octagonal(5) == 65` seems incorrect because the 5th octagonal number is actually 61 (as calculated above). The sequence of octagonal numbers starts as: 1, 8, 21, 40, 65, 96, ... So the 5th octagonal number is 65, which matches the assertion. My initial calculation was for the 4th octagonal number (n=4: 3*16 - 3*4 + 1 = 48 - 12 + 1 = 37, which is incorrect because the 4th octagonal number is 40). It seems I made a mistake in the formula.
+
+The correct formula for the nth octagonal number is actually \( 3n^2 - 3n + 1 \), but let's verify the sequence:
+- n=1: 3*1 - 3*1 + 1 = 1 (correct)
+- n=2: 3*4 - 3*2 + 1 = 12 - 6 + 1 = 7 (but the 2nd octagonal number is 8, so this is incorrect)
+
+Ah, I see the mistake. The correct formula for the nth octagonal number is \( 3n^2 - 3n \), not \( 3n^2 - 3n + 1 \). Let me correct the script:
+
+```python
+def is_octagonal(n):
+    """
+    Calculate the nth octagonal number.
+
+    The nth octagonal number is given by the formula: 3n^2 - 3n
+
+    Args:
+        n (int): The position in the sequence of octagonal numbers.
+
+    Returns:
+        int: The nth octagonal number.
+    """
+    return 3 * n ** 2 - 3 * n
+
+# Test the function with the provided assertion
+assert is_octagonal(5) == 65, "Test failed: 5th octagonal number should be 65"
+print("Test passed! 5th octagonal number is indeed 65.")
+```
+
+Now the formula is correct:
+- n=1: 3*1 - 3*1 = 0 (but the 1st octagonal number is 1, so this is still incorrect)
+
+I think I need to look up the correct formula. The sequence of octagonal numbers is: 1, 8, 21, 40, 65, 96, ... The correct formula is \( 3n^2 - 3n + 1 \), but as we saw, it doesn't match for n=1. The correct formula is actually \( n(3n - 2) \), which gives:
+- n=1: 1*(3*1 - 2) = 1
+- n=2: 2*(6 - 2) = 8
+- n=3: 3*(9 - 2) = 21
+- n=4: 4*(12 - 2) = 40
+- n=5: 5*(15 - 2) = 65
+
+So the correct formula is \( n(3n - 2) \). Here's the corrected script:
+
+```python
+def is_octagonal(n):
+    """
+    Calculate the nth octagonal number.
+
+    The nth octagonal number is given by the formula: n(3n - 2)
+
+    Args:
+        n (int): The position in the sequence of octagonal numbers.
+
+    Returns:
+        int: The nth octagonal number.
+    """
+    return n * (3 * n - 2)
+
+# Test the function with the provided assertion
+assert is_octagonal(5) == 65, "Test failed: 5th octagonal number should be 65"
+print("Test passed! 5th octagonal number is indeed 65.")
+```
+
+This now correctly calculates the nth octagonal number and passes the assertion.

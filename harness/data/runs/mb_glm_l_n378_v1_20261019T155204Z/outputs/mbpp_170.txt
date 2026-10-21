@@ -1,0 +1,27 @@
+```python
+def sum_range_list(nums, start_index, end_index):
+    """
+    Finds the sum of numbers in a list within a range specified by two indices.
+    
+    Args:
+        nums (list): A list of numbers.
+        start_index (int): The starting index of the range (inclusive).
+        end_index (int): The ending index of the range (inclusive).
+        
+    Returns:
+        int/float: The sum of the elements in the specified range.
+    """
+    # Using Python's slice notation [start:end+1] to get the sublist.
+    # We add 1 to end_index because the upper bound of a slice is exclusive.
+    sublist = nums[start_index : end_index + 1]
+    
+    # Return the sum of the sublist
+    return sum(sublist)
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    # Test case from the problem description
+    result = sum_range_list([2,1,5,6,8,3,4,9,10,11,8,12], 8, 10)
+    assert result == 29, f"Expected 29, but got {result}"
+    print("Test passed successfully.")
+```

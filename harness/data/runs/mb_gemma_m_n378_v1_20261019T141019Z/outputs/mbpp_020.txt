@@ -1,0 +1,55 @@
+To solve this problem, we first need to identify what a "Woodall number" is. A **Woodall number** is a natural number that follows the form:
+$W_n = n \cdot 2^n - 1$
+where $n$ is a non-negative integer.
+
+Here is the self-contained Python script to solve this:
+
+```python
+def is_woodall(num):
+    """
+    Checks if a given number is a Woodall number.
+    A Woodall number follows the formula: W_n = n * 2^n - 1
+    """
+    # Woodall numbers must be at least 1 (for n=1, 1*2^1 - 1 = 1)
+    # However, for n=0, 0*2^0 - 1 = -1. 
+    # Based on the test case 383, we assume n >= 1.
+    if num < 1:
+        return False
+
+    n = 1
+    while True:
+        # Calculate the n-th Woodall number
+        woodall_n = n * (2**n) - 1
+        
+        if woodall_n == num:
+            return True
+        if woodall_n > num:
+            return False
+        
+        n += 1
+
+# Test cases
+if __name__ == "__main__":
+    # Provided test case
+    assert is_woodall(383) == True
+    
+    # Additional test cases
+    # n=1: 1*2^1 - 1 = 1
+    # n=2: 2*2^2 - 1 = 7
+    # n=3: 3*2^3 - 1 = 23
+    # n=4: 4*2^4 - 1 = 63
+    # n=5: 5*2^5 - 1 = 159
+    # n=6: 6*2^6 - 1 = 383
+    assert is_woodall(1) == True
+    assert is_woodall(7) == True
+    assert is_woodall(23) == True
+    assert is_woodall(63) == True
+    assert is_woodall(159) == True
+    assert is_woodall(383) == True
+    
+    # Negative test cases
+    assert is_woodall(10) == False
+    assert is_woodall(100) == False
+    
+    print("All tests passed!")
+```

@@ -1,0 +1,42 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+import re
+
+def text_match_three(text):
+    """
+    Matches a string that has an 'a' followed by three 'b's.
+    
+    Args:
+        text (str): The input string to check
+        
+    Returns:
+        bool: True if the string matches the pattern, False otherwise
+    """
+    pattern = r'ab{3}'
+    if re.search(pattern, text):
+        return True
+    return False
+
+# Test cases
+if __name__ == "__main__":
+    # Test the given assertion
+    assert not text_match_three("ac"), "Test failed: 'ac' should not match"
+    
+    # Additional test cases
+    assert text_match_three("abbb"), "Test failed: 'abbb' should match"
+    assert text_match_three("xabbb"), "Test failed: 'xabbb' should match"
+    assert text_match_three("abbbx"), "Test failed: 'abbbx' should match"
+    assert not text_match_three("abb"), "Test failed: 'abb' should not match"
+    assert not text_match_three("abbbb"), "Test failed: 'abbbb' should not match"
+    assert not text_match_three(""), "Test failed: empty string should not match"
+    assert not text_match_three("abc"), "Test failed: 'abc' should not match"
+    
+    print("All tests passed!")
+```
+
+The function `text_match_three` uses the regular expression pattern `r'ab{3}'` which matches:
+- `a` - the letter 'a'
+- `b{3}` - exactly three 'b' characters
+
+The `re.search()` function looks for this pattern anywhere in the string, so it will match strings like "abbb", "xabbb", or "abbbx". The function returns `True` if a match is found and `False` otherwise.

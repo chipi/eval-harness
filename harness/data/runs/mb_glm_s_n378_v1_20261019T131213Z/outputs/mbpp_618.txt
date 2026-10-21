@@ -1,0 +1,61 @@
+```python
+def div_list(list1, list2):
+    """
+    Divides two lists element-wise.
+
+    Args:
+        list1: A list of numbers (dividends).
+        list2: A list of numbers (divisors). Must be the same length as list1.
+
+    Returns:
+        A new list containing the result of dividing corresponding elements.
+        Returns floats for the results.
+
+    Raises:
+        ValueError: If the input lists are not of the same length.
+        ZeroDivisionError: If any element in list2 is zero.
+    """
+    if len(list1) != len(list2):
+        raise ValueError("Input lists must be of the same length.")
+
+    result = []
+    for i in range(len(list1)):
+        # Perform the division and append the result.
+        # We use float() to ensure the result is a float, as in the example.
+        result.append(float(list1[i]) / list2[i])
+        
+    return result
+
+# Example usage and assertion from the problem description
+if __name__ == "__main__":
+    # The example from the problem
+    list_a = [4, 5, 6]
+    list_b = [1, 2, 3]
+    expected_output = [4.0, 2.5, 2.0]
+    
+    # Call the function
+    actual_output = div_list(list_a, list_b)
+    
+    # Assert that the output matches the expected result
+    assert actual_output == expected_output
+    
+    # Print a success message if the assertion passes
+    print("Assertion passed: div_list([4,5,6],[1, 2, 3]) == [4.0, 2.5, 2.0]")
+    print(f"Result: {actual_output}")
+
+    # Example with different data types
+    list_c = [10, 20, 30]
+    list_d = [2, 5, 10]
+    print(f"\ndiv_list({list_c}, {list_d}) = {div_list(list_c, list_d)}")
+
+    # Example of error handling
+    try:
+        div_list([1, 2], [3])
+    except ValueError as e:
+        print(f"\nCaught expected error: {e}")
+
+    try:
+        div_list([1, 2, 3], [1, 0, 2])
+    except ZeroDivisionError as e:
+        print(f"Caught expected error: {e}")
+```

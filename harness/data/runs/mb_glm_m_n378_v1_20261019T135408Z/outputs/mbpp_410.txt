@@ -1,0 +1,42 @@
+Here's a self-contained Python script that solves the problem of finding the minimum value in a heterogeneous list (containing both strings and numbers). The script includes the function `min_val` and a test case to verify its correctness:
+
+```python
+def min_val(lst):
+    """
+    Find the minimum value in a heterogeneous list containing both strings and numbers.
+    
+    Args:
+        lst: A list that may contain both strings and numbers.
+        
+    Returns:
+        The minimum value in the list, considering only numeric values.
+        If no numeric values are found, returns None.
+    """
+    numeric_values = []
+    for item in lst:
+        if isinstance(item, (int, float)):
+            numeric_values.append(item)
+    
+    if not numeric_values:
+        return None
+    
+    return min(numeric_values)
+
+# Test case
+assert min_val(['Python', 3, 2, 4, 5, 'version']) == 2
+print("Test passed! The minimum value is:", min_val(['Python', 3, 2, 4, 5, 'version']))
+```
+
+### Explanation:
+1. **Function `min_val`**:
+   - Iterates through each item in the input list.
+   - Checks if the item is a numeric type (either `int` or `float`).
+   - Collects all numeric values into a new list `numeric_values`.
+   - If no numeric values are found, returns `None`.
+   - Otherwise, returns the minimum value from the numeric values using Python's built-in `min` function.
+
+2. **Test Case**:
+   - The test case checks the function with the input `['Python', 3, 2, 4, 5, 'version']`, which should return `2` (the smallest numeric value in the list).
+   - The `assert` statement ensures the function works as expected, and a success message is printed if the test passes.
+
+This script handles heterogeneous lists by ignoring non-numeric values and focusing only on numeric ones to find the minimum.

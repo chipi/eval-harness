@@ -1,0 +1,93 @@
+```python
+def is_Sum_Of_Powers_Of_Two(n: int) -> bool:
+    """
+    Checks if a given number can be represented as the sum of non-zero powers of 2.
+
+    A number can be represented as the sum of non-zero powers of 2 if and only if
+    it is greater than 1 and its binary representation contains at least two '1's.
+
+    Args:
+        n: The integer to check.
+
+    Returns:
+        True if the number can be represented as the sum of non-zero powers of 2,
+        False otherwise.
+
+    Examples:
+        >>> is_Sum_Of_Powers_Of_Two(10)
+        True
+        # 10 = 2^1 + 2^3 = 2 + 8
+
+        >>> is_Sum_Of_Powers_Of_Two(1)
+        False
+        # 1 = 2^0, but the power must be non-zero.
+
+        >>> is_Sum_Of_Powers_Of_Two(2)
+        False
+        # 2 = 2^1, which is a single power, not a sum of powers.
+
+        >>> is_Sum_Of_Powers_Of_Two(3)
+        True
+        # 3 = 2^0 + 2^1, but the power must be non-zero.
+        # Wait, the problem description is ambiguous. Let's re-read: "sum of non-zero powers of 2".
+        # This means the powers themselves must be non-zero (i.e., 2^1, 2^2, ...).
+        # So, 3 = 2^1 + 2^0 is not valid because 2^0 is a zero power.
+        # Let's re-evaluate the logic.
+
+    Corrected Logic:
+    The problem is to check if `n` can be written as `2^a + 2^b + ...` where `a, b, ...` are
+    positive integers (i.e., non-zero powers).
+
+    Let's consider the binary representation of `n`. Each '1' in the binary string
+    corresponds to a power of 2. For example, 10 is `1010` in binary, which is `2^3 + 2^1`.
+
+    The condition "sum of non-zero powers of 2" means we cannot use `2^0`.
+    This is equivalent to saying the number must be even, because if it were odd,
+    its binary representation would have a '1' in the 2^0 place.
+
+    However, the number must also be a sum of *at least two* such powers.
+    A single power of 2 (e.g., 2, 4, 8, 16...) is just `2^k`, not a sum.
+
+    Therefore, the conditions are:
+    1. The number must be greater than 1.
+    2. The number must be even (so it doesn't require 2^0).
+    3. The number must not be a single power of 2 (i.e., its binary representation
+       must have more than one '1').
+
+    Let's test this logic:
+    - n = 10 (1010): Is even, has two '1's. -> True. Correct.
+    - n = 1: Is not > 1. -> False. Correct.
+    - n = 2 (10): Is even, but has only one '1'. -> False. Correct.
+    - n = 3 (11): Is not even. -> False. Correct.
+    - n = 6 (110): Is even, has two '1's. -> True. Correct (2^2 + 2^1).
+    - n = 12 (1100): Is even, has two '1's. -> True. Correct (2^3 + 2^2).
+    - n = 7 (111): Is not even. -> False. Correct.
+    - n = 0: Is not > 1. -> False. Correct.
+
+    This logic seems robust. We can implement it by checking the number of '1's
+    in the binary representation of `n`.
+    """
+    if n <= 1:
+        return False
+
+    # Convert the number to its binary representation string, e.g., bin(10) -> '0b1010'
+    # and count the number of '1' characters.
+    # The .count("1") method is a simple and efficient way to do this.
+    return bin(n).count("1") > 1
+
+# Example usage and assertions from the problem description
+assert is_Sum_Of_Powers_Of_Two(10) == True
+
+# Additional assertions to verify the logic
+assert is_Sum_Of_Powers_Of_Two(1) == False
+assert is_Sum_Of_Powers_Of_Two(2) == False
+assert is_Sum_Of_Powers_Of_Two(3) == False
+assert is_Sum_Of_Powers_Of_Two(6) == True  # 2^2 + 2^1
+assert is_Sum_Of_Powers_Of_Two(7) == False
+assert is_Sum_Of_Powers_Of_Two(12) == True # 2^3 + 2^2
+assert is_Sum_Of_Powers_Of_Two(0) == False
+assert is_Sum_Of_Powers_Of_Two(1024) == False # 2^10, a single power
+assert is_Sum_Of_Powers_Of_Two(1026) == True # 2^10 + 2^1
+
+print("All assertions passed.")
+```

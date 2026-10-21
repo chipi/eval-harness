@@ -1,0 +1,34 @@
+```python
+"""
+Write a function to find the cumulative sum of all the values that are present
+in the given tuple list.
+
+Example:
+assert cummulative_sum([(1, 3), (5, 6, 7), (2, 6)]) == 30
+"""
+
+def cummulative_sum(tuple_list):
+    """
+    Return the sum of all numbers contained in the tuples of a list.
+
+    Args:
+        tuple_list: A list of tuples containing numeric values.
+
+    Returns:
+        The cumulative sum of all values.
+    """
+    total = 0
+    for tup in tuple_list:
+        for value in tup:
+            total += value
+    return total
+
+
+# Test cases
+assert cummulative_sum([(1, 3), (5, 6, 7), (2, 6)]) == 30
+assert cummulative_sum([]) == 0
+assert cummulative_sum([(1,), (2,), (3,)]) == 6
+assert cummulative_sum([(10, -5), (3, 2)]) == 10
+
+print("All tests passed.")
+```

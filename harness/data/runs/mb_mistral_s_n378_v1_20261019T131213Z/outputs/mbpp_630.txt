@@ -1,0 +1,28 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def get_coordinates(coord):
+    """
+    Extract all adjacent coordinates of the given coordinate tuple.
+
+    Args:
+        coord: A tuple (x, y) representing the center coordinate.
+
+    Returns:
+        A list of lists, where each inner list represents an adjacent coordinate.
+    """
+    x, y = coord
+    adjacent = []
+    for i in range(x - 1, x + 2):
+        for j in range(y - 1, y + 2):
+            adjacent.append([i, j])
+    return adjacent
+
+# Test the function
+assert get_coordinates((3, 4)) == [[2, 3], [2, 4], [2, 5], [3, 3], [3, 4], [3, 5], [4, 3], [4, 4], [4, 5]]
+print("Test passed!")
+```
+
+This script defines a function `get_coordinates` that takes a coordinate tuple (x, y) and returns a list of all adjacent coordinates (including the original coordinate itself). The function works by iterating through all possible x and y values in the range [x-1, x+1] and [y-1, y+1], respectively, and collecting all combinations.
+
+The test case at the bottom verifies that the function works as expected. If the test passes, it prints "Test passed!".

@@ -1,0 +1,56 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def sum(a, b):
+    """
+    Find the sum of common divisors of two given numbers.
+    
+    Args:
+        a: First integer
+        b: Second integer
+    
+    Returns:
+        Sum of all common divisors of a and b
+    """
+    # Find the greatest common divisor using Euclidean algorithm
+    def gcd(x, y):
+        while y:
+            x, y = y, x % y
+        return x
+    
+    # Get GCD of a and b
+    g = gcd(a, b)
+    
+    # Find all divisors of the GCD — these are the common divisors
+    total = 0
+    i = 1
+    while i * i <= g:
+        if g % i == 0:
+            total += i
+            if i != g // i:
+                total += g // i
+        i += 1
+    
+    return total
+
+
+# Test the function
+assert sum(10, 15) == 6
+print("Test passed!")
+print(f"sum(10, 15) = {sum(10, 15)}")
+print(f"sum(12, 18) = {sum(12, 18)}")
+print(f"sum(7, 13)  = {sum(7, 13)}")
+```
+
+**Explanation:**
+
+The key insight is that **common divisors of two numbers are exactly the divisors of their GCD (Greatest Common Divisor)**.
+
+1. **Find GCD** using the Euclidean algorithm.
+2. **Enumerate all divisors** of the GCD in O(√n) time by iterating up to √GCD and adding both `i` and `GCD // i` whenever `i` divides GCD.
+3. **Sum them up** and return.
+
+**Verification for `sum(10, 15)`:**
+- GCD(10, 15) = 5
+- Divisors of 5: {1, 5}
+- Sum = 1 + 5 = **6** ✓

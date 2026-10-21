@@ -1,0 +1,19 @@
+```python
+def merge_dictionaries_three(first, second, third):
+    """Merge three dictionaries; later values override earlier ones."""
+    return {**first, **second, **third}
+
+
+assert merge_dictionaries_three(
+    {"R": "Red", "B": "Black", "P": "Pink"},
+    {"G": "Green", "W": "White"},
+    {"O": "Orange", "W": "White", "B": "Black"},
+) == {
+    "B": "Black",
+    "R": "Red",
+    "P": "Pink",
+    "G": "Green",
+    "W": "White",
+    "O": "Orange",
+}
+```

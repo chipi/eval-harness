@@ -1,0 +1,35 @@
+```python
+def word_len(word: str) -> bool:
+    """
+    Checks whether the length of the word is odd.
+    
+    Args:
+        word (str): The input string.
+        
+    Returns:
+        bool: True if the length is odd, False if the length is even.
+    """
+    return len(word) % 2 != 0
+
+if __name__ == "__main__":
+    # Test cases
+    # "Hadoop" has 6 characters (even), so it should return False
+    assert word_len("Hadoop") == False
+    
+    # "Python" has 6 characters (even), so it should return False
+    assert word_len("Python") == False
+    
+    # "Data" has 4 characters (even), so it should return False
+    assert word_len("Data") == False
+    
+    # "AI" has 2 characters (even), so it should return False
+    assert word_len("AI") == False
+    
+    # "Hello" has 5 characters (odd), so it should return True
+    assert word_len("Hello") == True
+    
+    # "A" has 1 character (odd), so it should return True
+    assert word_len("A") == True
+
+    print("All tests passed!")
+```

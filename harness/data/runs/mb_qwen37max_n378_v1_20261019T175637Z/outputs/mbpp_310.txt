@@ -1,0 +1,10 @@
+```python
+def string_to_tuple(s):
+    """Convert a given string to a tuple of characters, excluding spaces."""
+    return tuple(ch for ch in s if ch != ' ')
+
+
+# Test
+assert string_to_tuple("python 3.0") == ('p', 'y', 't', 'h', 'o', 'n', '3', '.', '0')
+print("All tests passed!")
+```

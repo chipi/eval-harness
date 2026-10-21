@@ -1,0 +1,32 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+from itertools import product
+
+def large_product(list1, list2, n):
+    """
+    Find the specified number of largest products from two given lists,
+    selecting one factor from each list.
+
+    Args:
+        list1 (list): First list of numbers
+        list2 (list): Second list of numbers
+        n (int): Number of largest products to return
+
+    Returns:
+        list: The n largest products in descending order
+    """
+    # Generate all possible products by pairing one element from each list
+    products = [a * b for a, b in product(list1, list2)]
+    
+    # Sort in descending order and return the top n
+    products.sort(reverse=True)
+    return products[:n]
+
+# Test the function with the provided example
+if __name__ == "__main__":
+    result = large_product([1, 2, 3, 4, 5, 6], [3, 6, 8, 9, 10, 6], 3)
+    print(result)  # Expected: [60, 54, 50]
+    assert result == [60, 54, 50], f"Test failed: got {result}"
+    print("Test passed!")
+```

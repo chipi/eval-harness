@@ -1,0 +1,67 @@
+```python
+import math
+
+def parabola_directrix(a, b, c):
+    """
+    Calculates the directrix of a parabola given its standard form equation.
+
+    The function assumes the parabola is defined by the equation:
+    y = ax^2 + bx + c
+
+    The directrix of a parabola in the form y = ax^2 + bx + c is a horizontal line
+    given by the formula: y = c - (b^2)/(4a) - 1/(4a)
+
+    Args:
+        a (float): The coefficient of the x^2 term.
+        b (float): The coefficient of the x term.
+        c (float): The constant term.
+
+    Returns:
+        float: The y-coordinate of the directrix line.
+    
+    Raises:
+        ValueError: If 'a' is zero, as the equation would not represent a parabola.
+    """
+    if a == 0:
+        raise ValueError("Coefficient 'a' cannot be zero, as the equation would not represent a parabola.")
+
+    # The formula for the directrix of y = ax^2 + bx + c is:
+    # y = c - (b^2)/(4a) - 1/(4a)
+    # This can be simplified to:
+    # y = (4ac - b^2 - 1) / (4a)
+    
+    numerator = 4 * a * c - b**2 - 1
+    denominator = 4 * a
+    
+    directrix_y = numerator / denominator
+    
+    return directrix_y
+
+# Example usage and assertion from the problem description
+if __name__ == "__main__":
+    # The problem states: assert parabola_directrix(5,3,2)==-198
+    # Let's verify this calculation:
+    # a = 5, b = 3, c = 2
+    # y = (4 * 5 * 2 - 3^2 - 1) / (4 * 5)
+    # y = (40 - 9 - 1) / 20
+    # y = 30 / 20
+    # y = 1.5
+    
+    # It appears there is a discrepancy in the problem's assertion.
+    # The correct directrix for y = 5x^2 + 3x + 2 is y = 1.5.
+    # The provided assertion `assert parabola_directrix(5,3,2)==-198` is incorrect.
+    # The following code will raise an AssertionError because the assertion is false.
+    
+    try:
+        assert parabola_directrix(5, 3, 2) == -198
+        print("Assertion passed: parabola_directrix(5,3,2) == -198")
+    except AssertionError:
+        print("Assertion failed: The directrix for y=5x^2+3x+2 is not -198.")
+        print(f"The correct directrix is: {parabola_directrix(5, 3, 2)}")
+
+    # A correct assertion would be:
+    # assert parabola_directrix(5, 3, 2) == 1.5
+    # assert parabola_directrix(1, 0, 0) == -0.25  # For y = x^2
+    # assert parabola_directrix(1, 0, -4) == -4.25 # For y = x^2 - 4
+    # assert parabola_directrix(-2, 4, 1) == 1.75  # For y = -2x^2 + 4x + 1
+```

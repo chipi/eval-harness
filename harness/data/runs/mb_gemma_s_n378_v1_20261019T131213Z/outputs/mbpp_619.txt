@@ -1,0 +1,19 @@
+```python
+def move_num(s):
+  """
+  Write a function to move all the numbers to the end of the given string.
+  assert move_num('I1love143you55three3000thousand') == 'Iloveyouthreethousand1143553000'
+  """
+  nums = ""
+  letters = ""
+  for char in s:
+    if char.isdigit():
+      nums += char
+    else:
+      letters += char
+  return letters + nums
+
+if __name__ == '__main__':
+  assert move_num('I1love143you55three3000thousand') == 'Iloveyouthreethousand1143553000'
+  print("All test cases passed!")
+```

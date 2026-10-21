@@ -1,0 +1,11 @@
+```python
+def extract_string(string_list, size):
+    # Use list comprehension to filter out strings whose length is greater than or equal to the specified size
+    return [s for s in string_list if len(s) >= size]
+
+# Test cases to verify the correctness of the function
+assert extract_string(['Python', 'list', 'exercises', 'practice', 'solution'], 8) == ['practice', 'solution']
+assert extract_string(['apple', 'banana', 'cherry', 'date'], 5) == ['banana', 'cherry']
+assert extract_string(['hello', 'world', 'python', 'programming'], 3) == ['python', 'programming']
+```
+

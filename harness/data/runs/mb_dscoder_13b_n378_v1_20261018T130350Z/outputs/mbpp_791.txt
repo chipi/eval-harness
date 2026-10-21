@@ -1,0 +1,10 @@
+```python
+def remove_nested(t):
+    if isinstance(t, tuple):
+        return tuple(remove_nested(i) if isinstance(i, tuple) else i for i in t)
+    else:
+        return t
+
+# Test cases
+assert remove_nested((1, 5, 7, (4, 6), 10)) == (1, 5, 7, 10)
+```

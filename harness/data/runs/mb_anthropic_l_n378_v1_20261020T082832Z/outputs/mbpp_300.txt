@@ -1,0 +1,53 @@
+Looking at this problem, I need to count binary sequences of length 2n where the sum of the first n bits equals the sum of the last n bits.
+
+**Reasoning:** If the first half has sum $k$, there are $\binom{n}{k}$ ways to choose it, and $\binom{n}{k}$ ways for the second half. So the total is:
+
+$$\sum_{k=0}^{n} \binom{n}{k}^2 = \binom{2n}{n}$$
+
+For $n = 1$: $\binom{2}{1} = 2$ ✓
+
+```python
+"""
+Write a function to find the count of all binary sequences of length 2n such that sum of first n bits is same as sum of last n bits.
+assert math.isclose(count_binary_seq(1), 2.0, rel_tol=0.001)
+"""
+
+import math
+
+
+def count_binary_seq(n):
+    """
+    Return the number of binary sequences of length 2n whose first n bits
+    have the same sum as the last n bits.
+
+    If the first half contains exactly k ones, there are C(n, k) choices for
+    it and C(n, k) choices for the second half.  Summing over k gives
+
+        sum_{k=0}^{n} C(n, k)^2 = C(2n, n)   (Vandermonde's identity)
+
+    The result is computed as a float (built up multiplicatively to avoid
+    huge intermediate integers) to match the expected floating point output.
+    """
+    n = int(n)
+    if n < 0:
+        raise ValueError("n must be non-negative")
+
+    # C(2n, n) = product_{i=1}^{n} (n + i) / i
+    result = 1.0
+    for i in range(1, n + 1):
+        result = result * (n + i) / i
+    return result
+
+
+if __name__ == "__main__":
+    assert math.isclose(count_binary_seq(1), 2.0, rel_tol=0.001)
+    assert math.isclose(count_binary_seq(2), 6.0, rel_tol=0.001)
+    assert math.isclose(count_binary_seq(3), 20.0, rel_tol=0.001)
+    assert math.isclose(count_binary_seq(4), 70.0, rel_tol=0.001)
+    assert math.isclose(count_binary_seq(0), 1.0, rel_tol=0.001)
+
+    for n in range(0, 11):
+        print(f"n = {n:2d} -> {count_binary_seq(n)}")
+
+    print("All tests passed!")
+```

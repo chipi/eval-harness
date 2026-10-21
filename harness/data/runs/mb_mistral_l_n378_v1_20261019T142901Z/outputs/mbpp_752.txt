@@ -1,0 +1,43 @@
+Here's a self-contained Python script that solves the problem of finding the nth Jacobsthal number:
+
+```python
+"""
+Function to find the nth Jacobsthal number.
+The Jacobsthal sequence is defined by the recurrence relation:
+J(n) = J(n-1) + 2*J(n-2)
+with base cases J(0) = 0 and J(1) = 1.
+"""
+
+def jacobsthal_num(n):
+    if n == 0:
+        return 0
+    elif n == 1:
+        return 1
+
+    a, b = 0, 1
+    for _ in range(2, n + 1):
+        a, b = b, b + 2 * a
+    return b
+
+# Test case
+assert jacobsthal_num(5) == 11
+
+# Additional test cases
+assert jacobsthal_num(0) == 0
+assert jacobsthal_num(1) == 1
+assert jacobsthal_num(2) == 1
+assert jacobsthal_num(3) == 3
+assert jacobsthal_num(4) == 5
+assert jacobsthal_num(6) == 21
+assert jacobsthal_num(7) == 43
+print("All test cases passed!")
+```
+
+This script:
+1. Implements the Jacobsthal number calculation using an iterative approach
+2. Handles the base cases (n=0 and n=1) explicitly
+3. Uses a loop to compute the number for n ≥ 2
+4. Includes the required test case and additional test cases to verify correctness
+5. Prints a success message if all tests pass
+
+The solution is efficient with O(n) time complexity and O(1) space complexity.

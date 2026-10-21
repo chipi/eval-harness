@@ -1,0 +1,30 @@
+```python
+import math
+
+def surface_Area(base_edge, height):
+    """
+    Calculate the surface area of a square pyramid.
+    
+    The surface area consists of:
+    1. Base area: base_edge^2
+    2. Lateral surface area: 4 * (area of one triangular face)
+    
+    Each triangular face has:
+    - Base = base_edge
+    - Slant height = sqrt((base_edge/2)^2 + height^2)
+    - Area of one triangle = 0.5 * base_edge * slant_height
+    
+    Total surface area = base_area + 4 * triangle_area
+                       = base_edge^2 + 2 * base_edge * slant_height
+    """
+    base_area = base_edge ** 2
+    # Slant height is the height of each triangular face
+    slant_height = math.sqrt((base_edge / 2) ** 2 + height ** 2)
+    # Lateral surface area: 4 triangles, each with area 0.5 * base_edge * slant_height
+    lateral_area = 2 * base_edge * slant_height
+    total_surface_area = base_area + lateral_area
+    return round(total_surface_area)
+
+# Test the function
+assert surface_Area(3, 4) == 33
+```

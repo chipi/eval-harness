@@ -1,0 +1,47 @@
+```python
+def pancake_sort(arr):
+    """
+    Sort a list of elements using the pancake sort algorithm.
+    
+    Pancake sort works by repeatedly finding the maximum element in the unsorted
+    portion and flipping it to the beginning, then flipping it to its correct position.
+    
+    Args:
+        arr: List of elements to sort
+        
+    Returns:
+        Sorted list in ascending order
+    """
+    def flip(arr, k):
+        """Flip the first k elements of the array"""
+        arr[:k] = arr[:k][::-1]
+    
+    n = len(arr)
+    arr = arr.copy()  # Create a copy to avoid modifying the original
+    
+    # Start from the end and move towards the beginning
+    for i in range(n, 1, -1):
+        # Find the index of the maximum element in arr[0:i]
+        max_idx = arr[:i].index(max(arr[:i]))
+        
+        # If the maximum element is not already at the end of current unsorted portion
+        if max_idx != i - 1:
+            # Flip to bring max element to the front
+            if max_idx != 0:
+                flip(arr, max_idx + 1)
+            # Flip to bring max element to its correct position
+            flip(arr, i)
+    
+    return arr
+
+
+# Test cases
+assert pancake_sort([15, 79, 25, 38, 69]) == [15, 25, 38, 69, 79]
+assert pancake_sort([3, 1, 4, 1, 5, 9, 2, 6]) == [1, 1, 2, 3, 4, 5, 6, 9]
+assert pancake_sort([1]) == [1]
+assert pancake_sort([2, 1]) == [1, 2]
+assert pancake_sort([5, 4, 3, 2, 1]) == [1, 2, 3, 4, 5]
+assert pancake_sort([]) == []
+
+print("All tests passed!")
+```

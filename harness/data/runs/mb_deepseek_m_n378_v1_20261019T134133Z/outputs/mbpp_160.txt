@@ -1,0 +1,101 @@
+Looking at this problem, I need to solve the linear Diophantine equation `ax + by = n` for integers `x` and `y`.
+
+The approach:
+1. First, use the Extended Euclidean Algorithm to find the GCD of `a` and `b`, along with coefficients that satisfy `ax + by = gcd(a, b)`.
+2. If `n` is not divisible by `gcd(a, b)`, no integer solution exists, so return `None`.
+3. Otherwise, multiply the coefficients from the extended GCD by `n / gcd(a, b)` to get a particular solution.
+
+Here's the solution:
+
+```python
+def find_solution(a, b, n):
+    """
+    Find integers x and y such that ax + by = n.
+    Return (x, y) tuple, or None if no solution exists.
+    """
+    
+    def extended_gcd(a, b):
+        """Return (g, x, y) such that a*x + b*y = g = gcd(a, b)."""
+        if b == 0:
+            return a, 1, 0
+        g, x1, y1 = extended_gcd(b, a % b)
+        return g, y1, x1 - (a // b) * y1
+    
+    if a == 0 and b == 0:
+        # 0*x + 0*y = n has solutions only if n == 0
+        return (0, 0) if n == 0 else None
+    
+    g, x0, y0 = extended_gcd(a, b)
+    
+    # No integer solution if n is not divisible by gcd(a, b)
+    if n % g != 0:
+        return None
+    
+    # Scale the particular solution
+    factor = n // g
+    return (x0 * factor, y0 * factor)
+
+
+# Test the provided assertion
+assert find_solution(2, 3, 7) == (2, 1)
+```
+
+**Verification of the example:**
+- For `a=2, b=3, n=7`: `gcd(2,3)=1`, and `7 % 1 == 0`, so a solution exists.
+- Extended GCD of `(2, 3)` gives `g=1, x0=-1, y0=1` (since `2*(-1) + 3*1 = 1`).
+- Scale by `7/1 = 7`: `x = -1*7 = -7`, `y = 1*7 = 7`.
+- Check: `2*(-7) + 3*(7) = -14 + 21 = 7`. ✓
+
+**Note on the assertion:** The problem statement asserts `find_solution(2, 3, 7) == (2, 1)`, but the extended Euclidean algorithm typically returns `(-7, 7)` or other equivalent solutions (since solutions form a family: `x = x0 + (b/g)*t`, `y = y0 - (a/g)*t` for any integer `t`).
+
+If you specifically need the expected output `(2, 1)` for that test case, we'd need to normalize the solution. Here's an adjusted version that returns the smallest non-negative `x`:
+
+```python
+def find_solution(a, b, n):
+    """
+    Find integers x and y such that ax + by = n.
+    Returns the solution with smallest non-negative x, or None if no solution.
+    """
+    
+    def extended_gcd(a, b):
+        if b == 0:
+            return a, 1, 0
+        g, x1, y1 = extended_gcd(b, a % b)
+        return g, y1, x1 - (a // b) * y1
+    
+    if a == 0 and b == 0:
+        return (0, 0) if n == 0 else None
+    
+    if b == 0:
+        if a != 0 and n % a == 0:
+            return (n // a, 0)
+        return None
+    
+    g, x0, y0 = extended_gcd(a, b)
+    
+    if n % g != 0:
+        return None
+    
+    factor = n // g
+    x0 *= factor
+    y0 *= factor
+    
+    # Normalize: reduce x to smallest non-negative value
+    step_x = b // g
+    t = -x0 // step_x  # choose t so x becomes non-negative but small
+    x = x0 + t * step_x
+    y = y0 - t * (a // g)
+    
+    # Ensure non-negative x (handle when -x0 // step_x rounds down)
+    while x < 0:
+        t += 1
+        x = x0 + t * step_x
+        y = y0 - t * (a // g)
+    
+    return (x, y)
+
+
+assert find_solution(2, 3, 7) == (2, 1)
+```
+
+For `a=2, b=3, n=7`: base solution is `(-7, 7)`. With `step_x = 3`, we have `t = -(-7)//3 = 2`, giving `x = -7 + 6 = -1`. Then increment `t` to `3`: `x = -7 + 9 = 2`, `y = 7 - 3*2 = 1`. Result: `(2, 1)`. ✓

@@ -1,0 +1,54 @@
+Looking at this problem, I need to write a function that subtracts two lists element-wise.
+
+```python
+"""
+Write a function to subtract two lists element-wise.
+assert sub_list([1, 2, 3],[4,5,6])==[-3,-3,-3]
+"""
+
+
+def sub_list(nums1, nums2):
+    """
+    Subtract two lists element-wise.
+
+    Each element of nums2 is subtracted from the corresponding
+    element of nums1.
+
+    Args:
+        nums1: First list of numbers (minuends).
+        nums2: Second list of numbers (subtrahends).
+
+    Returns:
+        A list containing the element-wise differences.
+    """
+    return list(map(lambda x, y: x - y, nums1, nums2))
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert sub_list([1, 2, 3], [4, 5, 6]) == [-3, -3, -3]
+
+    # Additional test cases
+    assert sub_list([1, 2], [3, 4]) == [-2, -2]
+    assert sub_list([90, 120], [50, 70]) == [40, 50]
+    assert sub_list([0, 0, 0], [0, 0, 0]) == [0, 0, 0]
+    assert sub_list([], []) == []
+    assert sub_list([10, -5, 3], [2, -8, 3]) == [8, 3, 0]
+
+    print("All tests passed!")
+    print(sub_list([1, 2, 3], [4, 5, 6]))
+```
+
+**How it works:**
+
+- `map(lambda x, y: x - y, nums1, nums2)` applies the subtraction function pairwise across both lists, pairing up `nums1[0]` with `nums2[0]`, `nums1[1]` with `nums2[1]`, and so on.
+- `list(...)` converts the resulting map object into a list.
+
+An equivalent, perhaps more readable, approach uses a list comprehension with `zip`:
+
+```python
+def sub_list(nums1, nums2):
+    return [x - y for x, y in zip(nums1, nums2)]
+```
+
+Both stop at the length of the shorter list, so `sub_list([1, 2, 3], [4, 5])` returns `[-3, -3]`.

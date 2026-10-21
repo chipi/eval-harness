@@ -1,0 +1,67 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def check_Consecutive(lst):
+    """
+    Check whether the given list contains consecutive numbers or not.
+    
+    Args:
+        lst: A list of numbers to check
+        
+    Returns:
+        True if the list contains consecutive numbers, False otherwise
+    """
+    # Handle edge cases
+    if not lst or len(lst) < 2:
+        return True
+    
+    # Sort the list to handle unsorted input
+    sorted_lst = sorted(lst)
+    
+    # Check if each consecutive pair differs by exactly 1
+    for i in range(len(sorted_lst) - 1):
+        if sorted_lst[i + 1] - sorted_lst[i] != 1:
+            return False
+    
+    return True
+
+
+# Test cases
+if __name__ == "__main__":
+    # Test the given assertion
+    assert check_Consecutive([1, 2, 3, 4, 5]) == True
+    print("Test 1 passed: [1,2,3,4,5] -> True")
+    
+    # Additional test cases
+    assert check_Consecutive([5, 4, 3, 2, 1]) == True
+    print("Test 2 passed: [5,4,3,2,1] -> True")
+    
+    assert check_Consecutive([1, 2, 4, 5]) == False
+    print("Test 3 passed: [1,2,4,5] -> False")
+    
+    assert check_Consecutive([1, 3, 2, 4, 5]) == True
+    print("Test 4 passed: [1,3,2,4,5] -> True")
+    
+    assert check_Consecutive([1]) == True
+    print("Test 5 passed: [1] -> True")
+    
+    assert check_Consecutive([]) == True
+    print("Test 6 passed: [] -> True")
+    
+    assert check_Consecutive([1, 1, 2, 3]) == False
+    print("Test 7 passed: [1,1,2,3] -> False")
+    
+    print("\nAll tests passed!")
+```
+
+**Explanation:**
+
+1. **Edge cases**: Empty lists and single-element lists are considered consecutive (return `True`).
+
+2. **Sorting**: The list is sorted first so that the function works regardless of the original order of elements.
+
+3. **Consecutive check**: After sorting, we iterate through the list and verify that each adjacent pair differs by exactly `1`. If any pair doesn't satisfy this, we return `False`.
+
+4. **Duplicates**: If there are duplicate values (e.g., `[1, 1, 2, 3]`), the difference between the duplicates will be `0`, not `1`, so the function correctly returns `False`.
+
+**Note on interpretation**: This implementation treats the list as consecutive if, after sorting, all elements form a sequence with a step of 1 (e.g., `[1,2,3,4,5]`). If you want to check whether the list is *already* in consecutive order without sorting, simply remove the `sorted()` call.

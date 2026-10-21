@@ -1,0 +1,23 @@
+Here’s a self-contained Python script that solves the problem:  
+
+```python
+def list_split(lst, n):
+    """
+    Splits a list into n sublists by taking every nth element.
+    
+    Args:
+        lst: The input list.
+        n: The step size for splitting.
+    
+    Returns:
+        A list of n sublists.
+    """
+    return [lst[i::n] for i in range(n)]
+
+# Test the function
+if __name__ == "__main__":
+    result = list_split(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n'], 3)
+    expected = [['a', 'd', 'g', 'j', 'm'], ['b', 'e', 'h', 'k', 'n'], ['c', 'f', 'i', 'l']]
+    assert result == expected
+    print("Test passed!")
+```

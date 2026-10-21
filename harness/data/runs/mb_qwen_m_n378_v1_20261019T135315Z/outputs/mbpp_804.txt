@@ -1,0 +1,29 @@
+```python
+def is_product_even(numbers: list) -> bool:
+    """
+    Check whether the product of numbers in a list is even or not.
+    
+    A product is even if at least one number in the list is even.
+    
+    Args:
+        numbers: A list of integers
+        
+    Returns:
+        True if the product is even, False otherwise
+    """
+    # If any number in the list is even, the product will be even
+    for num in numbers:
+        if num % 2 == 0:
+            return True
+    return False
+
+
+if __name__ == "__main__":
+    # Test cases
+    assert is_product_even([1, 2, 3]) == True
+    assert is_product_even([1, 3, 5]) == False
+    assert is_product_even([2, 4, 6]) == True
+    assert is_product_even([1, 1, 1]) == False
+    assert is_product_even([0, 1, 3]) == True  # 0 is even
+    print("All tests passed!")
+```

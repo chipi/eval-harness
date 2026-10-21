@@ -1,0 +1,19 @@
+```python
+def max_subarray_product(nums):
+    """Return the largest product of any non-empty contiguous subarray."""
+    if not nums:
+        raise ValueError("nums must not be empty")
+
+    current_max = current_min = answer = nums[0]
+
+    for value in nums[1:]:
+        candidates = (value, current_max * value, current_min * value)
+        current_max = max(candidates)
+        current_min = min(candidates)
+        answer = max(answer, current_max)
+
+    return answer
+
+
+assert max_subarray_product([1, -2, -3, 0, 7, -8, -2]) == 112
+```

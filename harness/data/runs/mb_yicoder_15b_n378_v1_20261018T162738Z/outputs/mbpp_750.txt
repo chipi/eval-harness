@@ -1,0 +1,9 @@
+```python
+def add_tuple(lst, tpl):
+    return lst + list(tpl)
+
+# Test cases
+assert add_tuple([5, 6, 7], (9, 10)) == [5, 6, 7, 9, 10]
+assert add_tuple([1, 2, 3], (4, 5)) == [1, 2, 3, 4, 5]
+assert add_tuple([10, 20, 30], (40, 50, 60)) == [10, 20, 30, 40, 50, 60]
+```

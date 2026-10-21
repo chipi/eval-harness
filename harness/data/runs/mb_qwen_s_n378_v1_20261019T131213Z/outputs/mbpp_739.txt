@@ -1,0 +1,52 @@
+```python
+def find_Index(n):
+    """
+    Find the index of the smallest triangular number with n digits.
+    
+    A triangular number T_k = k*(k+1)/2.
+    We need to find the smallest k such that T_k has exactly n digits.
+    
+    The number of digits in a positive integer x is floor(log10(x)) + 1.
+    So we need: floor(log10(k*(k+1)/2)) + 1 == n
+    Which means: 10^(n-1) <= k*(k+1)/2 < 10^n
+    
+    For large n, we can approximate k*(k+1)/2 ≈ k^2/2, so k ≈ sqrt(2 * 10^(n-1)).
+    We can use binary search or direct computation to find the exact k.
+    
+    Args:
+        n: Number of digits (positive integer)
+    
+    Returns:
+        The index k of the smallest triangular number with n digits.
+    """
+    if n <= 0:
+        return 0
+    
+    # Lower bound for k: we need k*(k+1)/2 >= 10^(n-1)
+    # Approximate: k^2/2 >= 10^(n-1) => k >= sqrt(2 * 10^(n-1))
+    import math
+    
+    lower_bound = int(math.sqrt(2 * (10 ** (n - 1))))
+    
+    # Adjust lower_bound downward slightly to ensure we don't miss the correct value
+    k = max(1, lower_bound - 10)
+    
+    # Search upward from k until we find the first triangular number with n digits
+    while True:
+        tri = k * (k + 1) // 2
+        num_digits = len(str(tri))
+        if num_digits == n:
+            return k
+        elif num_digits > n:
+            # This shouldn't happen if we started low enough, but just in case
+            k -= 1
+            continue
+        else:
+            k += 1
+
+
+# Test
+if __name__ == "__main__":
+    assert find_Index(2) == 4
+    print("Test passed!")
+```

@@ -1,0 +1,31 @@
+```python
+def get_coordinates(coord):
+    """
+    Extracts all adjacent coordinates of the given coordinate tuple.
+
+    Args:
+        coord: A tuple representing a coordinate (x, y).
+
+    Returns:
+        A list of lists, where each inner list is an adjacent coordinate
+        including the original coordinate. The order is:
+        [top-left, top, top-right, left, center, right, bottom-left, bottom, bottom-right].
+    """
+    x, y = coord
+    adjacent = []
+    # Iterate over the 3x3 grid centered at (x, y)
+    for dx in (-1, 0, 1):
+        for dy in (-1, 0, 1):
+            # Create a new list for each coordinate to match the assert's output type
+            adjacent.append([x + dx, y + dy])
+    return adjacent
+
+# Example usage and assertion from the problem description
+assert get_coordinates((3, 4)) == [[2, 3], [2, 4], [2, 5], [3, 3], [3, 4], [3, 5], [4, 3], [4, 4], [4, 5]]
+
+# Additional test cases
+assert get_coordinates((0, 0)) == [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 0], [0, 1], [1, -1], [1, 0], [1, 1]]
+assert get_coordinates((10, -5)) == [[9, -6], [9, -5], [9, -4], [10, -6], [10, -5], [10, -4], [11, -6], [11, -5], [11, -4]]
+
+print("All tests passed!")
+```

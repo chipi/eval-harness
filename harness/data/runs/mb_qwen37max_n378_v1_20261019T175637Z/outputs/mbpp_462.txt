@@ -1,0 +1,23 @@
+```python
+def combinations_list(lst):
+    """
+    Find all possible combinations of the elements of a given list.
+    Returns combinations ordered by binary counting pattern matching the expected output.
+    """
+    result = [[]]
+    for item in lst:
+        new_combinations = []
+        for combo in result:
+            new_combinations.append([item] + combo)
+        result.extend(new_combinations)
+    return result
+
+
+# Test
+assert combinations_list(['orange', 'red', 'green', 'blue']) == [
+    [], ['orange'], ['red'], ['red', 'orange'],
+    ['green'], ['green', 'orange'], ['green', 'red'], ['green', 'red', 'orange'],
+    ['blue'], ['blue', 'orange'], ['blue', 'red'], ['blue', 'red', 'orange'],
+    ['blue', 'green'], ['blue', 'green', 'orange'], ['blue', 'green', 'red'], ['blue', 'green', 'red', 'orange']
+]
+```

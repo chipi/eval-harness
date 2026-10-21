@@ -1,0 +1,31 @@
+```python
+def even_bit_set_number(n: int) -> int:
+    """
+    Set all even bits (bits at even positions, 0-indexed from LSB) of a given number.
+    
+    Even positions are bits 0, 2, 4, ... (LSB is position 0).
+    The function returns the number with those bits set to 1.
+    """
+    # Create a mask with 1s at all even bit positions.
+    # For a 32-bit integer, the mask is 0x55555555 (binary: 0101 0101 ...)
+    # We'll use a loop to handle arbitrary positive integers.
+    mask = 0
+    bit_position = 0
+    while (1 << bit_position) <= n or bit_position < 32:  # ensure we cover enough bits
+        if bit_position % 2 == 0:
+            mask |= (1 << bit_position)
+        bit_position += 1
+        # Safety break for very large numbers
+        if bit_position > 64:
+            break
+    return n | mask
+
+# Test the function with the given assertion
+assert even_bit_set_number(10) == 10
+
+# Additional tests
+print(even_bit_set_number(0))   # Expected: 0x55555555... but for 0, all even bits set = 0x55555555 (if 32-bit)
+print(even_bit_set_number(1))   # 1 -> binary 1, set even bits -> 1 (bit0 already 1) -> 1
+print(even_bit_set_number(2))   # 2 -> binary 10, set even bits -> 11 (binary) = 3
+print(even_bit_set_number(5))   # 5 -> 101, set even bits -> 111 = 7
+```

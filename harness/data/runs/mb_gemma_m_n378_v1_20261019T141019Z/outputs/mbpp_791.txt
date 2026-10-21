@@ -1,0 +1,25 @@
+```python
+def remove_nested(input_tuple):
+    """
+    Removes any element from the tuple that is itself a tuple.
+    
+    Args:
+        input_tuple (tuple): The tuple to process.
+        
+    Returns:
+        tuple: A new tuple containing only the non-tuple elements.
+    """
+    return tuple(item for item in input_tuple if not isinstance(item, tuple))
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    assert remove_nested((1, 5, 7, (4, 6), 10)) == (1, 5, 7, 10)
+    
+    # Additional test cases
+    assert remove_nested((1, (2, 3), 4)) == (1, 4)
+    assert remove_nested(((1, 2), (3, 4))) == ()
+    assert remove_nested((1, 2, 3)) == (1, 2, 3)
+    assert remove_nested(()) == ()
+
+    print("All tests passed!")
+```

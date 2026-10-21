@@ -1,0 +1,166 @@
+{
+  "adapter": "examples/code-mbpp-plus/adapter.py",
+  "build": {
+    "dirty": true,
+    "ref": "79f02239d03edfc6faa0c7c1e3ed6d58d764682d",
+    "source": "git"
+  },
+  "config_id": "mb_vllm_qwencoder_15b_n378_v1",
+  "created_at": "2026-10-20T16:46:08Z",
+  "dataset_id": "mbppplus_378",
+  "fingerprint": {
+    "arm": {
+      "config_id": "mb_vllm_qwencoder_15b_n378_v1",
+      "params": {
+        "api_key_env": "EVAL_VLLM_API_KEY",
+        "base_url": "http://dgx-llm-1:9100/v1",
+        "family": "qwen-coder",
+        "max_new_tokens": 768,
+        "model": "Qwen/Qwen2.5-Coder-1.5B-Instruct",
+        "precision": "fp32",
+        "price_tier": "free",
+        "prompt_file": "prompt.txt",
+        "provider": "vllm",
+        "revision": "2e1fd397ee46e1388853d2af2c993145b0f1098a"
+      }
+    },
+    "data": {
+      "dataset_id": "mbppplus_378",
+      "items_sha256": "bdc8a93cb44edbfc172656c31d5d1fe6407e78e469861fe83177ccf40f5902ef",
+      "n_items": 378,
+      "reference_id": "gold/mbppplus_378",
+      "reference_tier": "gold",
+      "references_sha256": "28cb6d415d57f58fbfdb7d6618714ef489dba65dba08ea51c65de680ad8c37ec"
+    },
+    "hash": "903a0d83d6deffa6839cfd8d4adbe8afb8e36db0e1846bad806d13a58cbb8489",
+    "host": {
+      "cpu_count": 32,
+      "label": "mac-dev",
+      "platform": "Linux/x86_64",
+      "processor": null,
+      "python": "3.11.16",
+      "release": "7.2.5-3-omarchy"
+    },
+    "instrument": {
+      "adapter": {
+        "id": "examples/code-mbpp-plus/adapter.py",
+        "sha256": "a9a8883677f136cd4d45ab1039b51b9c35f2b7983c76f786fc3af269501560ff"
+      },
+      "harness": {
+        "commit": "79f02239d03e",
+        "dirty": true
+      }
+    },
+    "system_under_test": {
+      "libraries": {
+        "numpy": "1.26.4",
+        "openai": "3.31.0",
+        "torch": "2.14.1",
+        "transformers": "4.55.4"
+      },
+      "model": {
+        "base_url": "http://dgx-llm-1:9100/v1",
+        "code_sha256": "eb4c61feb5d96604e0d873108ddd98d0986f55661c20701b1a787b8554e0969d",
+        "decoding": "greedy",
+        "engine": "vllm",
+        "id": "Qwen/Qwen2.5-Coder-1.5B-Instruct",
+        "identity_declared": true,
+        "max_new_tokens": 768,
+        "prompt_sha256": "65e89c87d749ee294ce4069d771f97c1fe99a6def34a59035b25a12fdcd33cdf",
+        "python": "3.11.16",
+        "revision": "2e1fd397ee46e1388853d2af2c993145b0f1098a",
+        "revision_source": "config, served as such by the server below",
+        "sandbox": "linux-namespaces",
+        "sandbox_probe": {
+          "catches_wrong_code": "fail",
+          "fork": "pass",
+          "network": "error",
+          "runs_code": "pass",
+          "timeout": "timeout",
+          "write_home": "error"
+        },
+        "scorer_sha256": "4b639a9170d3c2a8819305375680b58f87bc2e0941b66101312b1f270a158444",
+        "server": {
+          "models": {
+            "data": [
+              {
+                "created": 1792512469,
+                "id": "Qwen/Qwen2.5-Coder-1.5B-Instruct",
+                "max_model_len": 4096,
+                "object": "model",
+                "owned_by": "vllm",
+                "parent": null,
+                "permission": [
+                  {
+                    "allow_create_engine": false,
+                    "allow_fine_tuning": false,
+                    "allow_logprobs": true,
+                    "allow_sampling": true,
+                    "allow_search_indices": false,
+                    "allow_view": true,
+                    "created": 1792512469,
+                    "group": null,
+                    "id": "modelperm-b07599a604b7fef4",
+                    "is_blocking": false,
+                    "object": "model_permission",
+                    "organization": "*"
+                  }
+                ],
+                "root": "Qwen/Qwen2.5-Coder-1.5B-Instruct"
+              }
+            ],
+            "object": "list"
+          },
+          "version": {
+            "version": "0.20.1+7124b12a.dev"
+          }
+        }
+      }
+    },
+    "version": 3
+  },
+  "metric_kinds": {
+    "code_found": "descriptive",
+    "pass_base": "quality",
+    "pass_plus": "quality",
+    "reasoning_tokens": "descriptive",
+    "resumed": "descriptive",
+    "syntax_ok": "descriptive",
+    "timeout": "descriptive",
+    "truncated": "descriptive"
+  },
+  "n_items": 378,
+  "params": {
+    "api_key_env": "EVAL_VLLM_API_KEY",
+    "base_url": "http://dgx-llm-1:9100/v1",
+    "family": "qwen-coder",
+    "max_new_tokens": 768,
+    "model": "Qwen/Qwen2.5-Coder-1.5B-Instruct",
+    "precision": "fp32",
+    "price_tier": "free",
+    "prompt_file": "prompt.txt",
+    "provider": "vllm",
+    "revision": "2e1fd397ee46e1388853d2af2c993145b0f1098a"
+  },
+  "primary_metric": "pass_plus",
+  "providers_seen": {},
+  "reference_tier": "gold",
+  "run_id": "mb_vllm_qwencoder_15b_n378_v1_20261020T160742Z",
+  "scores": {
+    "code_found": 1.0,
+    "cost_usd": 0.0,
+    "latency_ms": 5635.687423,
+    "pass_base": 0.640212,
+    "pass_plus": 0.547619,
+    "resumed": 0.0,
+    "syntax_ok": 1.0,
+    "timeout": 0.002646,
+    "tokens_in": 124.433862,
+    "tokens_out": 185.957672,
+    "total_cost_usd": 0.0,
+    "total_tokens_in": 47036.0,
+    "total_tokens_out": 70292.0,
+    "truncated": 0.044974
+  },
+  "warmup_ms": 6607.017
+}

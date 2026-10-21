@@ -1,0 +1,56 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+import math
+
+def zero_count(arr):
+    """
+    Find the ratio of zeroes to non-zeroes in an array of integers.
+    
+    Args:
+        arr: List of integers
+        
+    Returns:
+        float: Ratio of zero count to non-zero count
+    """
+    zero_count = 0
+    non_zero_count = 0
+    
+    for num in arr:
+        if num == 0:
+            zero_count += 1
+        else:
+            non_zero_count += 1
+    
+    # Handle edge case where there are no non-zero elements
+    if non_zero_count == 0:
+        return float('inf') if zero_count > 0 else 0.0
+    
+    return zero_count / non_zero_count
+
+# Test the function
+if __name__ == "__main__":
+    result = zero_count([0, 1, 2, -1, -5, 6, 0, -3, -2, 3, 4, 6, 8])
+    print(f"Result: {result}")
+    print(f"Expected: 0.181818")
+    print(f"Test passed: {math.isclose(result, 0.181818, rel_tol=0.001)}")
+    
+    # Verify the assertion
+    assert math.isclose(zero_count([0, 1, 2, -1, -5, 6, 0, -3, -2, 3, 4, 6, 8]), 0.181818, rel_tol=0.001)
+    print("Assertion passed!")
+```
+
+**Explanation:**
+
+1. **Function Logic**: The `zero_count` function iterates through the array once, counting zeros and non-zeros separately.
+
+2. **Ratio Calculation**: It returns `zero_count / non_zero_count` as the ratio of zeroes to non-zeroes.
+
+3. **Edge Case Handling**: If there are no non-zero elements, the function returns `inf` (if there are zeros) or `0.0` (if the array is empty), avoiding a division-by-zero error.
+
+4. **Test Case**: For the input `[0, 1, 2, -1, -5, 6, 0, -3, -2, 3, 4, 6, 8]`:
+   - Zeros: 2 (at indices 0 and 6)
+   - Non-zeros: 11
+   - Ratio: 2/11 ≈ 0.181818
+
+5. **Verification**: Uses `math.isclose` with `rel_tol=0.001` to account for floating-point precision, matching the assertion in the problem statement.

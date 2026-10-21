@@ -1,0 +1,22 @@
+```python
+def insert_element(lst, element):
+    """
+    Inserts the given element before each element in the list and returns the resulting list.
+    
+    Args:
+        lst: The original list.
+        element: The element to insert before each item.
+    
+    Returns:
+        A new list with the element inserted before each original element.
+    """
+    result = []
+    for item in lst:
+        result.append(element)
+        result.append(item)
+    return result
+
+# Test the function with the provided assertion
+assert insert_element(['Red', 'Green', 'Black'], 'c') == ['c', 'Red', 'c', 'Green', 'c', 'Black']
+print("Test passed.")
+```

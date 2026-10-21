@@ -1,0 +1,25 @@
+```python
+def freq_count(lst):
+    """
+    Get the frequency of all elements in a list, returned as a dictionary.
+    
+    Args:
+        lst: A list of elements
+        
+    Returns:
+        A dictionary with elements as keys and their frequencies as values
+    """
+    frequency = {}
+    for element in lst:
+        if element in frequency:
+            frequency[element] += 1
+        else:
+            frequency[element] = 1
+    return frequency
+
+
+# Test the function
+assert freq_count([10,10,10,10,20,20,20,20,40,40,50,50,30]) == ({10: 4, 20: 4, 40: 2, 50: 2, 30: 1})
+print("All tests passed!")
+print(freq_count([10,10,10,10,20,20,20,20,40,40,50,50,30]))
+```

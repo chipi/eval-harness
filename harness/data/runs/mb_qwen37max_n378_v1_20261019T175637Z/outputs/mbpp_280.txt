@@ -1,0 +1,10 @@
+```python
+def sequential_search(arr, element):
+    for i, val in enumerate(arr):
+        if val == element:
+            return (True, i)
+    return (False, -1)
+
+
+assert sequential_search([11, 23, 58, 31, 56, 77, 43, 12, 65, 19], 31) == (True, 3)
+```

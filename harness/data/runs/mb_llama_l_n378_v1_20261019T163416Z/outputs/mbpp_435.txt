@@ -1,0 +1,12 @@
+```python
+def last_Digit(n):
+    return n % 10
+
+def main():
+    # Test the function
+    assert last_Digit(123) == 3
+    print("Test passed.")
+
+if __name__ == "__main__":
+    main()
+```

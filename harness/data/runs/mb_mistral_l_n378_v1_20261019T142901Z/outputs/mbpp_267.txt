@@ -1,0 +1,36 @@
+Here's a self-contained Python script that solves the problem, including the assertion test:
+
+```python
+"""
+Function to calculate the sum of squares of the first n odd natural numbers.
+"""
+
+def square_sum(n: int) -> int:
+    """
+    Calculate the sum of squares of the first n odd natural numbers.
+
+    Args:
+        n: The number of odd natural numbers to consider.
+
+    Returns:
+        The sum of squares of the first n odd natural numbers.
+
+    Examples:
+        >>> square_sum(2)
+        10
+        >>> square_sum(3)
+        35
+    """
+    return n * (2 * n - 1) * (2 * n + 1) // 3
+
+# Test the function
+assert square_sum(2) == 10
+```
+
+### Explanation:
+1. The function `square_sum` takes an integer `n` as input.
+2. The formula `n * (2 * n - 1) * (2 * n + 1) // 3` is derived from the mathematical identity for the sum of squares of the first `n` odd numbers:
+   \[
+   \sum_{k=1}^{n} (2k - 1)^2 = \frac{n(2n - 1)(2n + 1)}{3}
+   \]
+3. The assertion `assert square_sum(2) == 10` verifies that the function works correctly for the given example (1² + 3² = 1 + 9 = 10).

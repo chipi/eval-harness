@@ -1,0 +1,5 @@
+```python
+def is_Diff(n):
+    """Check whether a number is divisible by 11."""
+    return n % 11 == 0
+```

@@ -1,0 +1,51 @@
+```python
+def division_elements(tuple1, tuple2):
+    """
+    Performs element-wise division of two tuples.
+
+    Args:
+        tuple1: A tuple of numbers (dividends).
+        tuple2: A tuple of numbers (divisors). Must be the same length as tuple1.
+
+    Returns:
+        A new tuple containing the results of the division for each corresponding pair.
+
+    Raises:
+        ValueError: If the input tuples are not of the same length.
+        ZeroDivisionError: If any element in tuple2 is zero.
+    """
+    if len(tuple1) != len(tuple2):
+        raise ValueError("Input tuples must be of the same length.")
+
+    # Use a generator expression to perform the division element-wise
+    # and convert the result to a tuple.
+    return tuple(a / b for a, b in zip(tuple1, tuple2))
+
+# Example usage and assertion from the problem description
+if __name__ == "__main__":
+    input_tuple1 = (10, 4, 6, 9)
+    input_tuple2 = (5, 2, 3, 3)
+    expected_output = (2.0, 2.0, 2.0, 3.0)
+
+    result = division_elements(input_tuple1, input_tuple2)
+
+    print(f"Input Tuples: {input_tuple1}, {input_tuple2}")
+    print(f"Result: {result}")
+    print(f"Expected: {expected_output}")
+
+    # The assertion will pass because the result matches the expected output.
+    # Note: In Python 3, division of integers produces a float.
+    assert result == expected_output
+
+    # Example of a failing assertion due to different lengths
+    try:
+        division_elements((1, 2), (3,))
+    except ValueError as e:
+        print(f"\nCaught expected error: {e}")
+
+    # Example of a failing assertion due to division by zero
+    try:
+        division_elements((10, 20), (2, 0))
+    except ZeroDivisionError as e:
+        print(f"Caught expected error: {e}")
+```

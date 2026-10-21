@@ -1,0 +1,59 @@
+```python
+def lps(s: str) -> int:
+    """
+    Finds the length of the longest palindromic subsequence in the given string.
+    
+    This function uses dynamic programming to solve the problem in O(n^2) time 
+    and O(n) space, where n is the length of the string.
+    
+    Args:
+        s (str): The input string.
+        
+    Returns:
+        int: The length of the longest palindromic subsequence.
+    """
+    n = len(s)
+    if n == 0:
+        return 0
+        
+    # dp[i] will store the length of the longest palindromic subsequence
+    # for the substring s[i...j] in the current iteration.
+    dp = [0] * n
+    
+    # Iterate from the end of the string to the beginning
+    for i in range(n - 1, -1, -1):
+        # Every single character is a palindrome of length 1
+        dp[i] = 1
+        prev = 0  # Stores dp[i+1][j-1] from the previous iteration
+        
+        # Iterate from i+1 to the end of the string
+        for j in range(i + 1, n):
+            # temp stores the value of dp[i+1][j] before it gets overwritten
+            temp = dp[j]
+            
+            if s[i] == s[j]:
+                # If characters match, add 2 to the LPS of the inner substring
+                dp[j] = prev + 2
+            else:
+                # If characters don't match, take the max of excluding s[i] or s[j]
+                dp[j] = max(dp[j - 1], dp[j])
+                
+            # Update prev to be the old dp[i+1][j] for the next iteration (which acts as dp[i+1][j+1-1])
+            prev = temp
+            
+    # The result for the entire string s[0...n-1] is stored in dp[n-1]
+    return dp[n - 1]
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert lps("TENS FOR TENS") == 5
+    print("Assertion passed: lps('TENS FOR TENS') == 5")
+    
+    # Additional test cases
+    assert lps("bbbab") == 4
+    assert lps("cbbd") == 2
+    assert lps("a") == 1
+    assert lps("") == 0
+    assert lps("character") == 5
+    print("All additional test cases passed!")
+```

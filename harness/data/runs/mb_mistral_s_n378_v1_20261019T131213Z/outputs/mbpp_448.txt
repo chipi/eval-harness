@@ -1,0 +1,48 @@
+Here's a self-contained Python script that solves the problem of calculating the sum of Perrin numbers up to a given index:
+
+```python
+def cal_sum(n):
+    """
+    Calculate the sum of Perrin numbers up to the nth term.
+
+    The Perrin sequence is defined as:
+    P(0) = 3, P(1) = 0, P(2) = 2
+    P(n) = P(n-2) + P(n-3) for n > 2
+
+    Args:
+        n (int): The index up to which to sum the Perrin numbers
+
+    Returns:
+        int: The sum of Perrin numbers from P(0) to P(n)
+    """
+    if n < 0:
+        return 0
+
+    # Initialize the first three Perrin numbers
+    a, b, c = 3, 0, 2
+    total = a + b + c
+
+    if n <= 2:
+        return total
+
+    for i in range(3, n + 1):
+        next_val = a + b
+        total += next_val
+        # Update the previous values for the next iteration
+        a, b, c = b, c, next_val
+
+    return total
+
+# Test the function
+assert cal_sum(9) == 49
+print("Test passed!")
+```
+
+This script:
+1. Defines the `cal_sum` function that calculates the sum of Perrin numbers up to index `n`
+2. Handles the base cases (n = 0, 1, 2) directly
+3. For larger values of n, it iteratively calculates each Perrin number and adds it to the running total
+4. Includes the test case from the problem statement
+5. Prints a confirmation message if the test passes
+
+The Perrin sequence starts with 3, 0, 2, and each subsequent number is the sum of the two preceding numbers that are two places apart (similar to the Fibonacci sequence but with a different starting point).

@@ -1,0 +1,32 @@
+```python
+def is_sublist(lst, sublist):
+    """
+    Check whether a list contains the given sublist as a contiguous sequence.
+    
+    Args:
+        lst: The main list to search in.
+        sublist: The sublist to search for.
+    
+    Returns:
+        True if sublist appears as a contiguous sequence in lst, False otherwise.
+    """
+    if not sublist:
+        return True
+    if len(sublist) > len(lst):
+        return False
+    
+    for i in range(len(lst) - len(sublist) + 1):
+        if lst[i:i + len(sublist)] == sublist:
+            return True
+    return False
+
+
+# Test with the provided assertion
+assert is_sublist([2, 4, 3, 5, 7], [3, 7]) == False
+assert is_sublist([2, 4, 3, 5, 7], [3, 5]) == True
+assert is_sublist([2, 4, 3, 5, 7], [2, 4, 3]) == True
+assert is_sublist([2, 4, 3, 5, 7], []) == True
+assert is_sublist([], [1]) == False
+
+print("All assertions passed!")
+```

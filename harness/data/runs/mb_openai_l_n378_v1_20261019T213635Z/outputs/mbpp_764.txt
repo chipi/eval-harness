@@ -1,0 +1,7 @@
+```python
+def number_ctr(text: str) -> int:
+    return sum(char.isdigit() for char in text)
+
+
+assert number_ctr('program2bedone') == 1
+```

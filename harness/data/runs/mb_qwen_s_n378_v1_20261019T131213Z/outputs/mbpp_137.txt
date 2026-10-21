@@ -1,0 +1,25 @@
+```python
+import math
+
+def zero_count(arr):
+    """
+    Find the ratio of zeroes to non-zeroes in an array of integers.
+    
+    Args:
+        arr: A list of integers.
+        
+    Returns:
+        The ratio of the count of zeros to the count of non-zeros.
+        If there are no non-zero elements, returns 0.0 to avoid division by zero.
+    """
+    if not arr:
+        return 0.0
+    
+    zero_count = sum(1 for x in arr if x == 0)
+    non_zero_count = len(arr) - zero_count
+    
+    if non_zero_count == 0:
+        return 0.0
+    
+    return zero_count / non_zero_count
+```

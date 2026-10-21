@@ -1,0 +1,18 @@
+```python
+def odd_length_sum(arr):
+    """Return the sum of all odd-length contiguous subarrays."""
+    n = len(arr)
+    total = 0
+
+    for i, value in enumerate(arr):
+        # (i + 1) choices of start and (n - i) choices of end.
+        # Exactly half of these subarrays have odd length, rounding up.
+        odd_count = ((i + 1) * (n - i) + 1) // 2
+        total += value * odd_count
+
+    return total
+
+
+if __name__ == "__main__":
+    assert odd_length_sum([1, 2, 4]) == 14
+```

@@ -1,0 +1,12 @@
+```python
+def freq_count(items):
+    frequencies = {}
+    for item in items:
+        frequencies[item] = frequencies.get(item, 0) + 1
+    return frequencies
+
+
+assert freq_count([10, 10, 10, 10, 20, 20, 20, 20, 40, 40, 50, 50, 30]) == {
+    10: 4, 20: 4, 40: 2, 50: 2, 30: 1
+}
+```

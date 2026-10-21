@@ -1,0 +1,43 @@
+### Perrin Number Sum Calculation
+
+The Perrin sequence is a sequence of integers defined by the recurrence relation:
+- `P(0) = 3`
+- `P(1) = 0`
+- `P(2) = 2`
+- `P(n) = P(n-2) + P(n-3)` for `n > 2`
+
+#### Code
+
+```python
+def cal_sum(n):
+    """
+    Calculate the sum of Perrin numbers up to the nth term.
+
+    Args:
+    n (int): The number of terms in the Perrin sequence to sum.
+
+    Returns:
+    int: The sum of the Perrin numbers up to the nth term.
+    """
+    # Initialize the Perrin sequence with the first three terms
+    perrin_sequence = [3, 0, 2]
+    
+    # Generate the Perrin sequence up to the nth term
+    for i in range(3, n):
+        perrin_sequence.append(perrin_sequence[i-2] + perrin_sequence[i-3])
+    
+    # Return the sum of the Perrin numbers up to the nth term
+    return sum(perrin_sequence[:n])
+
+# Test the function
+assert cal_sum(9) == 49
+```
+
+#### Explanation
+
+- The function `cal_sum(n)` takes an integer `n` as input and returns the sum of the first `n` Perrin numbers.
+- It starts by initializing a list `perrin_sequence` with the first three Perrin numbers: 3, 0, and 2.
+- It then generates the Perrin sequence up to the nth term using a loop and the recurrence relation.
+- Finally, it returns the sum of the Perrin numbers up to the nth term using the `sum` function.
+
+You can run this script to test the function with the provided assertion.

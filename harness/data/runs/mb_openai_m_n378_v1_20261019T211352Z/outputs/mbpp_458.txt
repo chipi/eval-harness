@@ -1,0 +1,10 @@
+```python
+def rectangle_area(length, width):
+    """Return the area of a rectangle."""
+    return length * width
+
+
+if __name__ == "__main__":
+    assert rectangle_area(10, 20) == 200
+    print("All tests passed.")
+```

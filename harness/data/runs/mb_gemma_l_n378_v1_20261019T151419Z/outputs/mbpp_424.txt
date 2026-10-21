@@ -1,0 +1,19 @@
+```python
+def extract_rear(strings_tuple):
+    """
+    Extracts the last character (rear index element) of each string 
+    in the provided tuple and returns them as a list.
+    """
+    return [s[-1] for s in strings_tuple]
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    input_tuple = ('Mers', 'for', 'Vers')
+    expected_output = ['s', 'r', 's']
+    result = extract_rear(input_tuple)
+    
+    assert result == expected_output
+    print(f"Input: {input_tuple}")
+    print(f"Output: {result}")
+    print("Assertion passed successfully!")
+```

@@ -1,0 +1,25 @@
+```python
+from collections import Counter
+from typing import List, Dict, Any
+
+def frequency_lists(lst: List[List[Any]]) -> Dict[Any, int]:
+    """
+    Returns a dictionary with the frequency of each element in a flattened list of lists.
+    
+    Args:
+        lst: A list of lists containing elements to count.
+    
+    Returns:
+        A dictionary mapping each unique element to its frequency.
+    """
+    # Flatten the list of lists and count frequencies using Counter
+    flattened = [item for sublist in lst for item in sublist]
+    return dict(Counter(flattened))
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    result = frequency_lists([[1, 2, 3, 2], [4, 5, 6, 2], [7, 8, 9, 5]])
+    expected = {1: 1, 2: 3, 3: 1, 4: 1, 5: 2, 6: 1, 7: 1, 8: 1, 9: 1}
+    assert result == expected, f"Test failed: {result} != {expected}"
+    print("Test passed!")
+```

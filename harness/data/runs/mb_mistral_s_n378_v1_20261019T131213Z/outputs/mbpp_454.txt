@@ -1,0 +1,45 @@
+Here's a self-contained Python script that solves the problem in a markdown code block:
+
+```python
+"""
+Write a function that matches a word containing 'z'.
+assert text_match_wordz("pythonz.")==True
+"""
+
+import re
+
+def text_match_wordz(text):
+    """
+    Check if a word containing 'z' exists in the given text.
+
+    Args:
+        text (str): The input text to search for a word with 'z'.
+
+    Returns:
+        bool: True if a word with 'z' is found, False otherwise.
+    """
+    # Use regular expression to find a word containing 'z'
+    # \w+ matches one or more word characters (letters, digits, or underscores)
+    # The 'i' flag makes the search case-insensitive
+    return bool(re.search(r'\w*z\w*', text, re.IGNORECASE))
+
+# Test cases
+assert text_match_wordz("pythonz.") == True
+assert text_match_wordz("Pythonz!") == True
+assert text_match_wordz("noz") == True
+assert text_match_wordz("NoZ") == True
+assert text_match_wordz("hello world") == False
+assert text_match_wordz("") == False
+```
+
+This script:
+1. Imports the `re` module for regular expression operations
+2. Defines the `text_match_wordz` function that uses a regular expression to find any word containing 'z' (case-insensitive)
+3. Includes test cases that verify the function works as expected
+4. The regular expression `\w*z\w*` matches:
+   - `\w*` - zero or more word characters
+   - `z` - the letter 'z'
+   - `\w*` - zero or more word characters
+5. The `re.IGNORECASE` flag makes the search case-insensitive
+
+The function returns `True` if a word containing 'z' is found, and `False` otherwise.

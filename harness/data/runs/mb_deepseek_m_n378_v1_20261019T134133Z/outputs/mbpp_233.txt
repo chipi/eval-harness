@@ -1,0 +1,41 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+import math
+
+def lateralsuface_cylinder(radius, height):
+    """
+    Calculate the lateral surface area of a cylinder.
+    
+    Parameters:
+    radius (float): The radius of the cylinder's base.
+    height (float): The height of the cylinder.
+    
+    Returns:
+    float: The lateral surface area of the cylinder.
+    """
+    return 2 * math.pi * radius * height
+
+# Test the function
+assert math.isclose(lateralsuface_cylinder(10, 5), 314.15000000000003, rel_tol=0.001)
+print("Test passed!")
+```
+
+**Explanation:**
+
+The lateral surface area of a cylinder is the area of the curved surface (excluding the top and bottom circles). The formula is:
+
+\[
+\text{Lateral Surface Area} = 2 \pi r h
+\]
+
+Where:
+- `r` is the radius of the base
+- `h` is the height of the cylinder
+
+For `radius=10` and `height=5`:
+\[
+2 \times \pi \times 10 \times 5 = 100\pi \approx 314.159265...
+\]
+
+The `math.isclose` function with `rel_tol=0.001` verifies the result is within 0.1% relative tolerance of the expected value `314.15000000000003`.

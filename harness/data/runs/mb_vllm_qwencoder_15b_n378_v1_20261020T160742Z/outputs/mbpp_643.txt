@@ -1,0 +1,61 @@
+```python
+def text_match_wordz_middle(text):
+    # Check if the string starts or ends with 'z'
+    if text.startswith('z') or text.endswith('z'):
+        return False
+    
+    # Check if there's any 'z' character in the middle of the string
+    for i in range(1, len(text) - 1):
+        if text[i] == 'z':
+            return True
+    
+    return False
+
+# Test cases to verify the correctness of the function
+assert text_match_wordz_middle("pythonzabc.") == True
+assert text_match_wordz_middle("xyz") == False
+assert text_match_wordz_middle("z") == False
+assert text_match_wordz_middle(".z.") == False
+assert text_match_wordz_middle("zz") == False
+assert text_match_wordz_middle("a") == False
+assert text_match_wordz_middle("ab") == False
+assert text_match_wordz_middle("abc") == False
+assert text_match_wordz_middle("abcd") == False
+assert text_match_wordz_middle("abcde") == False
+assert text_match_wordz_middle("abcdefg") == False
+assert text_match_wordz_middle("abcdefghi") == False
+assert text_match_wordz_middle("abcdefghij") == False
+assert text_match_wordz_middle("abcdefghijk") == False
+assert text_match_wordz_middle("abcdefghijklm") == False
+assert text_match_wordz_middle("abcdefghijklmn") == False
+assert text_match_wordz_middle("abcdefghijklmnopqrstuvwxy") == False
+assert text_match_wordz_middle("abcdefghijklmnopqrstuvwxyz") == False
+assert text_match_wordz_middle("abcdefghijklmnopqrstuvwxyzz") == True
+assert text_match_wordz_middle("abcdefghijklmnopqrstuvwxyzza") == True
+assert text_match_wordz_middle("abcdefghijklmnopqrstuvwxyzzb") == True
+assert text_match_wordz_middle("abcdefghijklmnopqrstuvwxyzzc") == True
+assert text_match_wordz_middle("abcdefghijklmnopqrstuvwxyzzd") == True
+assert text_match_wordz_middle("abcdefghijklmnopqrstuvwxyzze") == True
+assert text_match_wordz_middle("abcdefghijklmnopqrstuvwxyzzf") == True
+assert text_match_wordz_middle("abcdefghijklmnopqrstuvwxyzzh") == True
+assert text_match_wordz_middle("abcdefghijklmnopqrstuvwxyzzi") == True
+assert text_match_wordz_middle("abcdefghijklmnopqrstuvwxyzzx") == True
+assert text_match_wordz_middle("abcdefghijklmnopqrstuvwxyzzy") == True
+assert text_match_wordz_middle("abcdefghijklmnopqrstuvwxyzzz") == True
+assert text_match_wordz_middle("abcdefghijklmnopqrstuvwxyzzzz") == True
+assert text_match_wordz_middle("abcdefghijklmnopqrstuvwxyzzzzz") == True
+assert text_match_wordz_middle("abcdefghijklmnopqrstuvwxyzzzzzz") == True
+assert text_match_wordz_middle("abcdefghijklmnopqrstuvwxyzzzzzzz") == True
+assert text_match_wordz_middle("abcdefghijklmnopqrstuvwxyzzzzzzzz") == True
+assert text_match_wordz_middle("abcdefghijklmnopqrstuvwxyzzzzzzzzz") == True
+assert text_match_wordz_middle("abcdefghijklmnopqrstuvwxyzzzzzzzzzz") == True
+assert text_match_wordz_middle("abcdefghijklmnopqrstuvwxyzzzzzzzzzzz") == True
+assert text_match_wordz_middle("abcdefghijklmnopqrstuvwxyzzzzzzzzzzzz") == True
+assert text_match_wordz_middle("abcdefghijklmnopqrstuvwxyzzzzzzzzzzzzz") == True
+assert text_match_wordz_middle("abcdefghijklmnopqrstuvwxyzzzzzzzzzzzzzz") == True
+assert text_match_wordz_middle("abcdefghijklmnopqrstuvwxyzzzzzzzzzzzzzzz") == True
+assert text_match_wordz_middle("abcdefghijklmnopqrstuvwxyzzzzzzzzzzzzzzzz") == True
+assert text_match_wordz_middle("abcdefghijklmnopqrstuvwxyzzzzzzzzzzzzzzzzz") == True
+assert text_match_wordz_middle("abcdefghijklmnopqrstuvwxyzzzzzzzzzzzzzzzzzz") == True
+assert text_match_wordz_middle("abcdefghijklmnopqrstuvwxyzzzzzzzzzzzzzzzzzzz") == True
+assert text_match_wordz

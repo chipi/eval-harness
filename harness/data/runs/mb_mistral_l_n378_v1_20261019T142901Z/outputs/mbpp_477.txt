@@ -1,0 +1,33 @@
+Here's a self-contained Python script that solves the problem, including the function and the assertion test:
+
+```python
+"""
+Function to convert a given string to lowercase.
+"""
+
+def is_lower(input_string: str) -> str:
+    """
+    Converts the given string to lowercase.
+
+    Args:
+        input_string (str): The string to be converted to lowercase.
+
+    Returns:
+        str: The lowercase version of the input string.
+    """
+    return input_string.lower()
+
+# Test the function with the provided assertion
+assert is_lower("InValid") == "invalid", "Test failed: 'InValid' should convert to 'invalid'"
+
+# Optional: Print a success message if the assertion passes
+print("Test passed successfully!")
+```
+
+This script:
+1. Defines the `is_lower()` function that converts a string to lowercase using the built-in `lower()` method
+2. Includes the required assertion test
+3. Adds a success message that will print if the test passes
+4. Includes type hints and docstring for better documentation
+
+The function will pass the assertion test as "InValid".lower() correctly returns "invalid".

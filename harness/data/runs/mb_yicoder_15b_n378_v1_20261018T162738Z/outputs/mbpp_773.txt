@@ -1,0 +1,11 @@
+```python
+def occurance_substring(string, substring):
+    if string.count(substring):
+        return (substring, string.index(substring), len(substring))
+    else:
+        return None
+
+# Test cases
+assert occurance_substring('python programming, python language','python')==('python', 0, 6)
+assert occurance_substring('python programming, python language','java')==None
+```

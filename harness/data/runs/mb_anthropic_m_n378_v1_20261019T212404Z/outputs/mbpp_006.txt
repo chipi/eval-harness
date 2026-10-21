@@ -1,0 +1,11 @@
+```python
+def differ_At_One_Bit_Pos(a, b):
+    x = a ^ b
+    return x != 0 and (x & (x - 1)) == 0
+
+
+assert differ_At_One_Bit_Pos(13, 9) == True
+
+if __name__ == "__main__":
+    print(differ_At_One_Bit_Pos(13, 9))
+```

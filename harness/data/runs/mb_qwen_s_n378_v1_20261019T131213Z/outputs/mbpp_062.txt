@@ -1,0 +1,23 @@
+```python
+def smallest_num(lst):
+    """
+    Find the smallest number in a list.
+    
+    Args:
+        lst: A list of numbers
+        
+    Returns:
+        The smallest number in the list
+        
+    >>> smallest_num([10, 20, 1, 45, 99])
+    1
+    """
+    if not lst:
+        raise ValueError("List is empty")
+    return min(lst)
+
+
+if __name__ == "__main__":
+    assert smallest_num([10, 20, 1, 45, 99]) == 1
+    print("All tests passed!")
+```

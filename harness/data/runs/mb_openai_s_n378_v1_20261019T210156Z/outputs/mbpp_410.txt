@@ -1,0 +1,19 @@
+```python
+def min_val(lst):
+    """
+    Return the minimum numeric value from a heterogeneous list.
+    Non-numeric items (e.g., strings) are ignored.
+
+    Example:
+        min_val(['Python', 3, 2, 4, 5, 'version']) -> 2
+    """
+    numeric_items = [x for x in lst if isinstance(x, (int, float))]
+    if not numeric_items:
+        raise ValueError("The list contains no numeric values.")
+    return min(numeric_items)
+
+
+if __name__ == "__main__":
+    assert min_val(['Python', 3, 2, 4, 5, 'version']) == 2
+    print("Test passed.")
+```

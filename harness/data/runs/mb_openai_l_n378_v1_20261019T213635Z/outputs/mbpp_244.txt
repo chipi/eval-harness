@@ -1,0 +1,13 @@
+```python
+from math import isqrt
+
+
+def next_Perfect_Square(n):
+    """Return the smallest perfect square strictly greater than n."""
+    if n < 0:
+        return 0
+    return (isqrt(n) + 1) ** 2
+
+
+assert next_Perfect_Square(35) == 36
+```

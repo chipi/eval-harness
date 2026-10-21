@@ -1,0 +1,9 @@
+```python
+def concatenate_tuple(tup, delimiter='-'):
+    return delimiter.join(map(str, tup))
+
+
+if __name__ == "__main__":
+    assert concatenate_tuple(("ID", "is", 4, "UTS")) == "ID-is-4-UTS"
+    print("All tests passed.")
+```

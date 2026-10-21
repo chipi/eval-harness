@@ -1,0 +1,24 @@
+```python
+def split(string):
+    """
+    Split a string into individual characters.
+    
+    Args:
+        string: A string to split into characters
+        
+    Returns:
+        A list of individual characters from the string
+    """
+    return list(string)
+
+
+# Test cases
+assert split('python') == ['p', 'y', 't', 'h', 'o', 'n']
+assert split('hello') == ['h', 'e', 'l', 'l', 'o']
+assert split('a') == ['a']
+assert split('') == []
+
+print("All tests passed!")
+```
+
+The solution uses Python's built-in `list()` function to convert a string into a list of characters. Since strings are iterable in Python, `list(string)` automatically splits the string into individual characters.

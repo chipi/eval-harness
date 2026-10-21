@@ -1,0 +1,45 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def text_match_wordz_middle(text: str) -> bool:
+    """
+    Checks if a string contains 'z', except at the start and end of the word.
+    
+    Args:
+        text: The input string to check.
+    
+    Returns:
+        True if 'z' appears in the middle of the string (not at start or end),
+        False otherwise.
+    """
+    # Check if 'z' exists in the string, excluding the first and last characters
+    if len(text) < 3:
+        return False
+    return 'z' in text[1:-1]
+
+
+# Test cases
+assert text_match_wordz_middle("pythonzabc.") == True
+assert text_match_wordz_middle("zpythonabc") == False
+assert text_match_wordz_middle("pythonabcz") == False
+assert text_match_wordz_middle("pythonabc") == False
+assert text_match_wordz_middle("azb") == True
+assert text_match_wordz_middle("zz") == False
+assert text_match_wordz_middle("z") == False
+
+print("All tests passed!")
+```
+
+**Explanation:**
+
+- The function `text_match_wordz_middle` takes a string `text` as input.
+- It first checks if the string has fewer than 3 characters — in that case, there's no "middle" portion, so it returns `False`.
+- It then checks if the character `'z'` appears in `text[1:-1]`, which is the string with the first and last characters removed.
+- If `'z'` is found in that middle slice, it returns `True`; otherwise, `False`.
+
+The test cases verify:
+- `"pythonzabc."` → `'z'` is in the middle → `True`
+- `"zpythonabc"` → `'z'` is at the start → `False`
+- `"pythonabcz"` → `'z'` is at the end → `False`
+- `"azb"` → `'z'` is in the middle → `True`
+- `"zz"` → too short, no middle → `False`

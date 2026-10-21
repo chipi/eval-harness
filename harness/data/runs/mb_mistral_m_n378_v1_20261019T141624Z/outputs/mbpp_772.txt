@@ -1,0 +1,11 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def remove_length(s, k):
+    words = s.split()
+    filtered_words = [word for word in words if len(word) != k]
+    return ' '.join(filtered_words)
+
+# Test case
+assert remove_length('The person is most value tet', 3) == 'person is most value'
+```

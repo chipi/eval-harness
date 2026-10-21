@@ -1,0 +1,6 @@
+```python
+def is_lower(s):
+    return s.lower()
+
+assert is_lower("InValid") == "invalid"
+```

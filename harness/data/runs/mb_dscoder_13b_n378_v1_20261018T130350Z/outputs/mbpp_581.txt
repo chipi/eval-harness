@@ -1,0 +1,11 @@
+```python
+def surface_Area(base, height):
+    """
+    Function to calculate the surface area of a square pyramid.
+    """
+    assert base > 0 and height > 0, "Both base and height must be greater than 0"
+    return (base * base) + (2 * base * height) + (height * height)
+
+# Test cases
+print(surface_Area(3, 4))  # Expected output: 33
+```

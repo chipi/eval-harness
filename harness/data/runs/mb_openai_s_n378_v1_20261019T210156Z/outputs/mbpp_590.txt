@@ -1,0 +1,21 @@
+```python
+import cmath
+
+def polar_rect(r, theta):
+    """
+    Convert polar coordinates (r, theta) to rectangular coordinates.
+
+    Returns a tuple:
+      ((radius, angle), complex_number)
+
+    This matches the example:
+      polar_rect(3, 4) == ((5.0, 0.9272952180016122), (-2+2.4492935982947064e-16j))
+    """
+    z = cmath.rect(r, theta)
+    return (cmath.polar(z), z)
+
+
+if __name__ == "__main__":
+    assert polar_rect(3, 4) == ((5.0, 0.9272952180016122), (-2+2.4492935982947064e-16j))
+    print("Assertion passed.")
+```

@@ -1,0 +1,22 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def multiply_elements(t):
+    """
+    Takes a tuple of numbers (t_1,...,t_{N+1}) and returns a tuple of length N
+    where the i-th element is equal to t_i * t_{i+1}.
+    
+    Args:
+        t: A tuple of numbers
+        
+    Returns:
+        A tuple where each element is the product of adjacent elements from the input
+    """
+    return tuple(t[i] * t[i + 1] for i in range(len(t) - 1))
+
+
+# Test the function
+if __name__ == "__main__":
+    assert multiply_elements((1, 5, 7, 8, 10)) == (5, 35, 56, 80)
+    print("Test passed!")
+```

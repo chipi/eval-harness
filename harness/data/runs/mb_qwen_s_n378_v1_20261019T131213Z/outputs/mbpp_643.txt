@@ -1,0 +1,25 @@
+```python
+import re
+
+def text_match_wordz_middle(text):
+    """
+    Checks if a string contains 'z' except at the start and end of the word.
+    
+    Args:
+        text (str): The input string to check.
+        
+    Returns:
+        bool: True if there is a 'z' that is not at the start or end of any word, False otherwise.
+    """
+    # Find all words in the text
+    words = re.findall(r'\b\w+\b', text)
+    
+    for word in words:
+        # Check if 'z' exists in the middle of the word (not at index 0 or last index)
+        if len(word) > 2:
+            # Check characters from index 1 to len(word)-2
+            if 'z' in word[1:-1]:
+                return True
+    
+    return False
+```

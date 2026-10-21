@@ -1,0 +1,36 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+import re
+
+def text_match_wordz_middle(s):
+    """
+    Checks if a string contains 'z', except at the start and end of the word.
+    
+    Args:
+        s (str): The input string to check
+        
+    Returns:
+        bool: True if 'z' appears in the middle of a word, False otherwise
+    """
+    # Find all words in the string (sequences of word characters)
+    words = re.findall(r'\b\w+\b', s)
+    
+    # Check each word for 'z' not at the start or end
+    for word in words:
+        # Check if 'z' exists in the word and is not at position 0 or -1
+        if 'z' in word[1:-1]:
+            return True
+    
+    return False
+
+# Test the function
+assert text_match_wordz_middle("pythonzabc.") == True
+print("Test passed!")
+```
+
+This solution:
+1. Uses regex `\b\w+\b` to extract all words from the string
+2. For each word, checks if 'z' appears in the middle portion (excluding first and last characters)
+3. Returns `True` if any word has 'z' in the middle, `False` otherwise
+4. The test case `"pythonzabc."` returns `True` because 'z' is in the middle of the word "pythonzabc"

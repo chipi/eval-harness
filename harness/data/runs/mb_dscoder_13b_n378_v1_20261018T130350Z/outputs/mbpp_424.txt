@@ -1,0 +1,7 @@
+```python
+def extract_rear(tup):
+    return [word[-1] for word in tup]
+
+# Testing the function
+assert extract_rear(('Mers', 'for', 'Vers') ) == ['s', 'r', 's']
+```

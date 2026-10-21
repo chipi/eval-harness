@@ -1,0 +1,35 @@
+Here's a self-contained Python script that solves the problem by toggling the case of all characters in a string:
+
+```python
+def toggle_string(s):
+    """
+    Toggles the case of all characters in the input string.
+
+    Args:
+        s (str): The input string to toggle.
+
+    Returns:
+        str: The string with all character cases toggled.
+    """
+    toggled = []
+    for char in s:
+        if char.islower():
+            toggled.append(char.upper())
+        elif char.isupper():
+            toggled.append(char.lower())
+        else:
+            toggled.append(char)  # leaves non-alphabetic characters unchanged
+    return ''.join(toggled)
+
+# Test the function
+assert toggle_string("Python") == "pYTHON"
+```
+
+This script:
+1. Defines a function `toggle_string` that takes a string as input
+2. Iterates through each character in the string
+3. For each character, checks if it's lowercase and converts to uppercase (or vice versa)
+4. Joins all the processed characters back into a string
+5. Includes the assertion test case from the problem statement
+
+The function handles all alphabetic characters while leaving non-alphabetic characters unchanged.

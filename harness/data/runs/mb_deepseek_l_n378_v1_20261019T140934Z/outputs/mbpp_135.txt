@@ -1,0 +1,25 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def hexagonal_num(n):
+    """
+    Find the nth hexagonal number.
+    
+    A hexagonal number is given by the formula: H_n = n * (2n - 1)
+    
+    Args:
+        n (int): The position of the hexagonal number to find
+        
+    Returns:
+        int: The nth hexagonal number
+    """
+    return n * (2 * n - 1)
+
+
+# Test the function
+if __name__ == "__main__":
+    assert hexagonal_num(10) == 190
+    print("Test passed! hexagonal_num(10) =", hexagonal_num(10))
+```
+
+The formula for the nth hexagonal number is `H_n = n(2n - 1)`. This formula gives the number of dots in a hexagonal arrangement with `n` dots on each side. The function implements this formula directly, and the assertion confirms that the 10th hexagonal number is indeed 190.

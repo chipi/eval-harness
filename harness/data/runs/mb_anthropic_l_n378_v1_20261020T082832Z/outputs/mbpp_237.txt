@@ -1,0 +1,47 @@
+Looking at the assertion, the tuples are being normalized by sorting their elements before counting — so `(3, 1)` and `(1, 3)` both become `(1, 3)` (count 2), `(2, 5)` and `(5, 2)` both become `(2, 5)` (count 2), and `(6, 3)` becomes `(3, 6)` (count 1).
+
+```python
+"""
+Write a function that takes in a list of tuples and returns a dictionary mapping each unique tuple
+to the number of times it occurs in the list.
+assert check_occurences([(3, 1), (1, 3), (2, 5), (5, 2), (6, 3)] ) == {(1, 3): 2, (2, 5): 2, (3, 6): 1}
+"""
+
+from collections import Counter
+
+
+def check_occurences(test_list):
+    """
+    Count occurrences of each unique tuple in the list, treating tuples as
+    unordered (i.e. (3, 1) and (1, 3) are considered the same).
+
+    Args:
+        test_list: list of tuples
+
+    Returns:
+        dict mapping each normalized (sorted) tuple to its number of occurrences
+    """
+    res = dict(Counter(tuple(sorted(tup)) for tup in test_list))
+    return res
+
+
+if __name__ == "__main__":
+    assert check_occurences([(3, 1), (1, 3), (2, 5), (5, 2), (6, 3)]) == {
+        (1, 3): 2,
+        (2, 5): 2,
+        (3, 6): 1,
+    }
+    assert check_occurences([(4, 2), (2, 4), (3, 6), (6, 3), (5, 4)]) == {
+        (2, 4): 2,
+        (3, 6): 2,
+        (4, 5): 1,
+    }
+    assert check_occurences([(13, 2), (11, 23), (12, 25), (25, 12), (16, 23)]) == {
+        (2, 13): 1,
+        (11, 23): 1,
+        (12, 25): 2,
+        (16, 23): 1,
+    }
+    print(check_occurences([(3, 1), (1, 3), (2, 5), (5, 2), (6, 3)]))
+    print("All tests passed!")
+```

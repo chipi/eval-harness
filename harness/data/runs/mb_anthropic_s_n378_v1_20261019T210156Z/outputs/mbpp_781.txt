@@ -1,0 +1,61 @@
+```python
+def count_divisors(n):
+    """
+    Check whether the count of divisors of n is even.
+    
+    Args:
+        n: A positive integer
+        
+    Returns:
+        True if the count of divisors is even, False otherwise
+    """
+    count = 0
+    
+    # Count divisors up to sqrt(n)
+    i = 1
+    while i * i <= n:
+        if n % i == 0:
+            if i * i == n:
+                # Perfect square: count the divisor once
+                count += 1
+            else:
+                # Non-perfect square: count both i and n/i
+                count += 2
+        i += 1
+    
+    # Return True if count is even, False if odd
+    return count % 2 == 0
+
+
+# Test cases
+if __name__ == "__main__":
+    # Test with 10: divisors are 1, 2, 5, 10 (count = 4, which is even)
+    assert count_divisors(10) == True
+    print("✓ count_divisors(10) = True (divisors: 1, 2, 5, 10 - count: 4)")
+    
+    # Test with 16: divisors are 1, 2, 4, 8, 16 (count = 5, which is odd)
+    assert count_divisors(16) == False
+    print("✓ count_divisors(16) = False (divisors: 1, 2, 4, 8, 16 - count: 5)")
+    
+    # Test with 1: divisor is 1 (count = 1, which is odd)
+    assert count_divisors(1) == False
+    print("✓ count_divisors(1) = False (divisors: 1 - count: 1)")
+    
+    # Test with 12: divisors are 1, 2, 3, 4, 6, 12 (count = 6, which is even)
+    assert count_divisors(12) == True
+    print("✓ count_divisors(12) = True (divisors: 1, 2, 3, 4, 6, 12 - count: 6)")
+    
+    print("\nAll tests passed!")
+```
+
+**Explanation:**
+
+The function counts the divisors of a number `n` efficiently by only iterating up to √n:
+
+1. For each number `i` from 1 to √n, if `i` divides `n`:
+   - If `i² = n` (perfect square), we count it once
+   - Otherwise, both `i` and `n/i` are divisors, so we count 2
+
+2. Finally, we return `True` if the count is even, `False` if odd
+
+**Key insight:** A number has an odd count of divisors if and only if it's a perfect square (because divisors pair up except for the square root in perfect squares).

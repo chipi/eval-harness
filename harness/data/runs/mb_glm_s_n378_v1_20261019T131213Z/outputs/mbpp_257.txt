@@ -1,0 +1,15 @@
+```python
+def swap_numbers(a, b):
+    """
+    Write a function that takes in two numbers and returns a tuple with the second number and then the first number.
+    assert swap_numbers(10,20)==(20,10)
+    """
+    return (b, a)
+
+# Example usage and assertion to verify the function
+assert swap_numbers(10, 20) == (20, 10)
+assert swap_numbers(5, 0) == (0, 5)
+assert swap_numbers(-1, 100) == (100, -1)
+
+print("All assertions passed!")
+```

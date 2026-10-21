@@ -1,0 +1,49 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def is_not_prime(n):
+    """
+    Identify non-prime numbers.
+    
+    Args:
+        n: An integer to check.
+    
+    Returns:
+        True if n is not a prime number, False if n is prime.
+    """
+    if n < 2:
+        return True
+    if n == 2:
+        return False
+    if n % 2 == 0:
+        return True
+    for i in range(3, int(n ** 0.5) + 1, 2):
+        if n % i == 0:
+            return True
+    return False
+
+
+# Test cases
+assert is_not_prime(2) == False
+assert is_not_prime(1) == True
+assert is_not_prime(0) == True
+assert is_not_prime(-5) == True
+assert is_not_prime(3) == False
+assert is_not_prime(4) == True
+assert is_not_prime(17) == False
+assert is_not_prime(18) == True
+assert is_not_prime(97) == False
+assert is_not_prime(100) == True
+
+print("All tests passed!")
+```
+
+**How it works:**
+
+1. **Numbers less than 2** (0, 1, and negatives) are not prime, so return `True`.
+2. **2 is prime**, so return `False`.
+3. **Even numbers greater than 2** are composite, so return `True`.
+4. **Odd numbers**: Loop from 3 up to √n (in steps of 2, checking only odd divisors). If any divisor is found, the number is not prime.
+5. If no divisors are found, the number is prime, so return `False`.
+
+The time complexity is O(√n), which is efficient for checking primality.

@@ -1,0 +1,28 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def division_elements(tuple1, tuple2):
+    """
+    Performs element-wise division of two tuples.
+    
+    Args:
+        tuple1: First tuple containing dividend values
+        tuple2: Second tuple containing divisor values
+    
+    Returns:
+        A tuple containing the element-wise division results
+    """
+    # Use zip to pair elements and perform division
+    result = tuple(a // b for a, b in zip(tuple1, tuple2))
+    return result
+
+# Test the function
+assert division_elements((10, 4, 6, 9), (5, 2, 3, 3)) == (2, 2, 2, 3)
+print("Test passed!")
+```
+
+This solution:
+1. Uses `zip()` to pair corresponding elements from both tuples
+2. Performs integer division (`//`) on each pair using a generator expression
+3. Converts the result back to a tuple
+4. Includes the assertion test to verify correctness

@@ -1,0 +1,26 @@
+```python
+def add_lists(lst, tpl):
+    """
+    Appends the given list to the given tuple and returns a new tuple.
+    
+    Args:
+        lst (list): The list to be appended.
+        tpl (tuple): The original tuple.
+        
+    Returns:
+        tuple: A new tuple containing elements of tpl followed by elements of lst.
+    """
+    # Convert the list to a tuple and concatenate it with the original tuple
+    return tpl + tuple(lst)
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    assert add_lists([5, 6, 7], (9, 10)) == (9, 10, 5, 6, 7)
+    
+    # Additional test cases
+    assert add_lists([], (1, 2)) == (1, 2)
+    assert add_lists([1, 2], ()) == (1, 2)
+    assert add_lists([0], (1,)) == (1, 0)
+    
+    print("All tests passed!")
+```

@@ -1,0 +1,21 @@
+```python
+from typing import Tuple
+
+def maximize_elements(t1, t2):
+    """
+    Given two tuples of equal length, return a tuple whose i-th element is
+    the element-wise maximum of t1[i] and t2[i].
+
+    Each element is itself a tuple of two comparable values.
+    """
+    return tuple((max(a[0], b[0]), max(a[1], b[1])) for a, b in zip(t1, t2))
+
+
+if __name__ == "__main__":
+    assert maximize_elements(
+        ((1, 3), (4, 5), (2, 9), (1, 10)),
+        ((6, 7), (3, 9), (1, 1), (7, 3))
+    ) == ((6, 7), (4, 9), (2, 9), (7, 10))
+
+    print("All tests passed.")
+```

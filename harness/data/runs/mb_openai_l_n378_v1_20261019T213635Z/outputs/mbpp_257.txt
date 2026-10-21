@@ -1,0 +1,7 @@
+```python
+def swap_numbers(first, second):
+    return second, first
+
+
+assert swap_numbers(10, 20) == (20, 10)
+```

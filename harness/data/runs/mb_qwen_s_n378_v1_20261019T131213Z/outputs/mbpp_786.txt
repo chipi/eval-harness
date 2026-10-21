@@ -1,0 +1,17 @@
+```python
+def right_insertion(lst, value):
+    """
+    Locate the right insertion point for a specified value in sorted order.
+    
+    Args:
+        lst: A list of numbers sorted in ascending order.
+        value: The value to find the right insertion point for.
+    
+    Returns:
+        The index where the value should be inserted to maintain sorted order,
+        such that all elements before the index are <= value and all elements
+        from the index onwards are > value.
+    """
+    import bisect
+    return bisect.bisect_right(lst, value)
+```

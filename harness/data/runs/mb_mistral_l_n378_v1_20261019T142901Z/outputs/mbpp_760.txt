@@ -1,0 +1,39 @@
+Here's a self-contained Python script that solves the problem, including the requested assertion:
+
+```python
+"""
+Function to check if a list contains only one distinct element.
+"""
+
+def unique_Element(numbers):
+    """
+    Check if all elements in the list are the same.
+
+    Args:
+        numbers: List of numbers to check
+
+    Returns:
+        bool: True if all elements are the same, False otherwise
+    """
+    if not numbers:  # Handle empty list case
+        return True  # or False, depending on how you want to handle empty lists
+    first_element = numbers[0]
+    return all(element == first_element for element in numbers)
+
+# Test case
+assert unique_Element([1, 1, 1]) == True
+
+# Additional test cases
+assert unique_Element([1, 2, 1]) == False
+assert unique_Element([5]) == True
+assert unique_Element([]) == True  # Assuming empty list counts as having one distinct element
+assert unique_Element([3, 3, 3, 3]) == True
+assert unique_Element([1, 1, 2]) == False
+```
+
+The function works by:
+1. Taking the first element of the list as a reference
+2. Checking if all other elements in the list match this reference
+3. Returning True if they all match, False otherwise
+
+The solution handles edge cases like empty lists (returns True in this implementation, though you could modify this if needed) and single-element lists.

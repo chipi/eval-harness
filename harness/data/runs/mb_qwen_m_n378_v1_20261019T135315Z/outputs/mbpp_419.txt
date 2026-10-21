@@ -1,0 +1,24 @@
+```python
+def round_and_sum(numbers: list) -> int:
+    """
+    Round every number in the given list, compute the sum of rounded numbers,
+    and return the total sum multiplied by the length of the list.
+    
+    Args:
+        numbers: A list of numbers (floats or ints).
+        
+    Returns:
+        The sum of rounded numbers multiplied by the length of the list.
+    """
+    rounded_numbers = [round(n) for n in numbers]
+    total_sum = sum(rounded_numbers)
+    return total_sum * len(numbers)
+
+
+if __name__ == "__main__":
+    # Test case from the problem statement
+    result = round_and_sum([22.4, 4.0, -16.22, -9.10, 11.00, -12.22, 14.20, -5.20, 17.50])
+    print(f"Result: {result}")
+    assert result == 243, f"Expected 243, got {result}"
+    print("Assertion passed!")
+```

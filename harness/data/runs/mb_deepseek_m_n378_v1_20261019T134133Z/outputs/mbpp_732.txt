@@ -1,0 +1,42 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def replace_specialchar(text: str) -> str:
+    """
+    Replace all occurrences of spaces, commas, or dots with a colon.
+    
+    Args:
+        text: The input string to process.
+    
+    Returns:
+        A new string with spaces, commas, and dots replaced by colons.
+    """
+    result = []
+    for char in text:
+        if char in (' ', ',', '.'):
+            result.append(':')
+        else:
+            result.append(char)
+    return ''.join(result)
+
+
+# Test the function
+assert replace_specialchar('Python language, Programming language.') == 'Python:language::Programming:language:'
+print("All tests passed!")
+```
+
+**How it works:**
+
+1. The function iterates through each character in the input string.
+2. If the character is a space (`' '`), comma (`','`), or dot (`'.'`), it appends a colon (`':'`) to the result list.
+3. Otherwise, it appends the original character.
+4. Finally, it joins the list back into a single string.
+
+**Note on the expected output:** The test case `'Python language, Programming language.'` produces `'Python:language::Programming:language:'` because:
+- The space after "Python" → `:`
+- The comma after "language" → `:`
+- The space after the comma → `:`
+- The space after "Programming" → `:`
+- The dot at the end → `:`
+
+This gives us `Python:language::Programming:language:` — matching the expected result.

@@ -1,0 +1,63 @@
+Here's a self-contained Python script that solves the balanced parentheses problem:
+
+```python
+"""
+Write a function to check if the given expression is balanced or not.
+https://www.geeksforgeeks.org/check-for-balanced-parentheses-in-an-expression/
+assert check_expression("{()}[{}]") == True
+"""
+
+
+def check_expression(expression):
+    """
+    Check if the given expression has balanced parentheses, brackets, and braces.
+
+    Args:
+        expression (str): The expression to check.
+
+    Returns:
+        bool: True if the expression is balanced, False otherwise.
+    """
+    # Mapping of closing brackets to their corresponding opening brackets
+    matching = {')': '(', ']': '[', '}': '{'}
+    opening = set(matching.values())
+
+    stack = []
+
+    for char in expression:
+        if char in opening:
+            # Push opening bracket onto the stack
+            stack.append(char)
+        elif char in matching:
+            # If stack is empty or top doesn't match, it's unbalanced
+            if not stack or stack[-1] != matching[char]:
+                return False
+            stack.pop()
+        # Ignore any other characters (letters, digits, operators, etc.)
+
+    # Balanced only if no unmatched opening brackets remain
+    return len(stack) == 0
+
+
+# Test cases
+if __name__ == "__main__":
+    assert check_expression("{()}[{}]") == True
+    assert check_expression("{()}[{]") == False
+    assert check_expression("[(])") == False
+    assert check_expression("") == True
+    assert check_expression("((()))") == True
+    assert check_expression("({[a+b]*c})") == True
+    assert check_expression("({[a+b]*c}") == False
+    print("All tests passed!")
+```
+
+**How it works:**
+
+1. **Stack-based approach**: We iterate through each character in the expression.
+2. **Opening brackets** (`(`, `[`, `{`) are pushed onto the stack.
+3. **Closing brackets** (`)`, `]`, `}`) must match the top of the stack — if they don't (or the stack is empty), the expression is unbalanced.
+4. **Other characters** (letters, digits, operators) are ignored, so the function works on full expressions, not just bracket sequences.
+5. At the end, the stack must be empty for the expression to be balanced.
+
+**Time complexity:** O(n) — single pass through the string.  
+**Space complexity:** O(n) — worst case, all characters are opening brackets.

@@ -1,0 +1,14 @@
+```python
+def move_num(s):
+    # Split the string into parts based on digits
+    parts = [part for part in s.split() if part.isdigit()]
+    # Join the non-digit parts back together
+    result = ''.join(parts)
+    return result
+
+# Test cases to verify the correctness of the solution
+assert move_num('I1love143you55three3000thousand') == 'Iloveyouthreethousand1143553000'
+assert move_num('HelloWorld12345') == 'HelloWorld'
+assert move_num('NoDigitsHere') == 'NoDigitsHere'
+```
+

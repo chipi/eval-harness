@@ -1,0 +1,10 @@
+```python
+def is_Monotonic(array):
+    return (
+        all(array[i] <= array[i + 1] for i in range(len(array) - 1))
+        or all(array[i] >= array[i + 1] for i in range(len(array) - 1))
+    )
+
+
+assert is_Monotonic([6, 5, 4, 4]) is True
+```

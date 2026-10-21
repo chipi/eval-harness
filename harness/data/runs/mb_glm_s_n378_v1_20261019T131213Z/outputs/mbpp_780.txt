@@ -1,0 +1,60 @@
+```python
+import itertools
+
+def find_combinations(tuple_list):
+    """
+    Finds all combinations of sums from pairs of tuples in a given list.
+
+    This function takes a list of tuples, each containing two integers. It
+    generates all unique pairs of these tuples (including pairs of a tuple
+    with itself) and calculates the sum of their corresponding elements.
+    The resulting sums are formed into new tuples, which are then collected
+    into a list and returned.
+
+    Args:
+        tuple_list: A list of tuples, where each tuple contains two integers.
+                    e.g., [(2, 4), (6, 7), (5, 1), (6, 10)]
+
+    Returns:
+        A list of tuples, where each tuple contains the sums of the
+        corresponding elements from the original tuple pairs.
+        e.g., [(8, 11), (7, 5), (8, 14), (11, 8), (12, 17), (11, 11)]
+    """
+    # Use itertools.combinations to generate all unique pairs of tuples from the list.
+    # The `r=2` argument specifies that we want to choose 2 items at a time.
+    # For the input [(2, 4), (6, 7), (5, 1), (6, 10)], this will produce:
+    # ((2, 4), (6, 7)), ((2, 4), (5, 1)), ((2, 4), (6, 10)),
+    # ((6, 7), (5, 1)), ((6, 7), (6, 10)), ((5, 1), (6, 10))
+    tuple_pairs = itertools.combinations(tuple_list, 2)
+
+    # Use a list comprehension to iterate over each pair of tuples.
+    # For each pair (t1, t2), it calculates the sum of their first elements
+    # (t1[0] + t2[0]) and the sum of their second elements (t1[1] + t2[1]),
+    # then forms these two sums into a new tuple.
+    result = [ (t1[0] + t2[0], t1[1] + t2[1]) for t1, t2 in tuple_pairs ]
+
+    return result
+
+# Example usage and assertion to verify the function's correctness.
+if __name__ == "__main__":
+    # The input list of tuples as provided in the problem description.
+    input_data = [(2, 4), (6, 7), (5, 1), (6, 10)]
+    
+    # The expected output list of tuples.
+    expected_output = [(8, 11), (7, 5), (8, 14), (11, 8), (12, 17), (11, 11)]
+    
+    # Call the function with the input data.
+    actual_output = find_combinations(input_data)
+    
+    # Print the results for clarity.
+    print(f"Input: {input_data}")
+    print(f"Expected Output: {expected_output}")
+    print(f"Actual Output:   {actual_output}")
+    
+    # Assert that the actual output matches the expected output.
+    # If they are not the same, the script will raise an AssertionError.
+    assert actual_output == expected_output
+    
+    print("\nAssertion passed! The function works correctly.")
+
+```

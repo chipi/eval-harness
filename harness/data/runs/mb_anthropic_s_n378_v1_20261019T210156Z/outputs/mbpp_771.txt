@@ -1,0 +1,65 @@
+```python
+def check_expression(expression):
+    """
+    Check if the given expression has balanced parentheses, brackets, and braces.
+    
+    Args:
+        expression: A string containing parentheses, brackets, and braces
+        
+    Returns:
+        True if the expression is balanced, False otherwise
+    """
+    # Stack to keep track of opening brackets
+    stack = []
+    
+    # Mapping of closing brackets to opening brackets
+    bracket_map = {
+        ')': '(',
+        ']': '[',
+        '}': '{'
+    }
+    
+    # Opening brackets
+    opening_brackets = {'(', '[', '{'}
+    
+    for char in expression:
+        if char in opening_brackets:
+            # Push opening bracket onto stack
+            stack.append(char)
+        elif char in bracket_map:
+            # Check if stack is empty or top doesn't match
+            if not stack or stack[-1] != bracket_map[char]:
+                return False
+            # Pop the matching opening bracket
+            stack.pop()
+    
+    # Expression is balanced only if stack is empty
+    return len(stack) == 0
+
+
+# Test cases
+if __name__ == "__main__":
+    assert check_expression("{()}[{}]") == True
+    assert check_expression("{(})[{}]") == False
+    assert check_expression("") == True
+    assert check_expression("()") == True
+    assert check_expression("([{}])") == True
+    assert check_expression("([)]") == False
+    assert check_expression("{") == False
+    assert check_expression("}") == False
+    assert check_expression("((()))") == True
+    assert check_expression("([{}]){}") == True
+    
+    print("All test cases passed!")
+```
+
+The solution uses a **stack-based approach**:
+
+1. **Opening brackets** (`(`, `[`, `{`) are pushed onto the stack
+2. **Closing brackets** (`)`, `]`, `}`) are checked against the top of the stack:
+   - If the stack is empty or the top doesn't match, return `False`
+   - Otherwise, pop the matching opening bracket
+3. After processing all characters, the expression is balanced only if the stack is empty
+
+**Time Complexity:** O(n) where n is the length of the expression
+**Space Complexity:** O(n) for the stack in the worst case

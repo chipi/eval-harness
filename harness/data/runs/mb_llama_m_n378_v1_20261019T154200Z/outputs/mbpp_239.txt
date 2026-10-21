@@ -1,0 +1,44 @@
+```python
+def get_total_number_of_sequences(m, n):
+    """
+    This function calculates the number of possible sequences of length n, 
+    where each element is a positive integer and is greater than or equal to 
+    twice the previous element but less than or equal to m.
+
+    Args:
+        m (int): The maximum value for each element in the sequence.
+        n (int): The length of the sequence.
+
+    Returns:
+        int: The total number of possible sequences.
+    """
+    memo = {}
+
+    def dfs(i, prev):
+        # If we have reached the end of the sequence, return 1
+        if i == n:
+            return 1
+        
+        # If we have already computed the result for the current state, return it
+        if (i, prev) in memo:
+            return memo[(i, prev)]
+
+        # Initialize the count of sequences for the current state
+        count = 0
+
+        # For each possible value of the current element
+        for curr in range(max(1, 2 * prev), m + 1):
+            # Recursively compute the count of sequences for the next state
+            count += dfs(i + 1, curr)
+
+        # Store the result for the current state and return it
+        memo[(i, prev)] = count
+        return count
+
+    # Start the depth-first search from the first element
+    return dfs(0, 0)
+
+
+# Test the function
+print(get_total_number_of_sequences(10, 4))  # Output: 4
+```

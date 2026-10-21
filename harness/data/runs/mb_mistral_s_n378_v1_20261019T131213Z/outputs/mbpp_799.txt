@@ -1,0 +1,38 @@
+Here's a self-contained Python script that solves the problem of rotating the bits of a 32-bit number to the left by `d` bits:
+
+```python
+def left_rotate(n: int, d: int) -> int:
+    """
+    Rotate the bits of a 32-bit number to the left by d bits.
+
+    Args:
+        n: The 32-bit number to rotate.
+        d: The number of bits to rotate left.
+
+    Returns:
+        The rotated 32-bit number.
+    """
+    # Ensure d is within the 32-bit range
+    d = d % 32
+    # Perform the rotation
+    return ((n << d) | (n >> (32 - d))) & 0xFFFFFFFF
+
+# Test the function
+assert left_rotate(16, 2) == 64
+print("Test passed!")
+```
+
+### Explanation:
+1. **Function `left_rotate`**:
+   - Takes a 32-bit number `n` and an integer `d` representing the number of bits to rotate left.
+   - `d = d % 32` ensures that `d` is within the 32-bit range (0 to 31).
+   - `(n << d)` shifts the bits of `n` left by `d` positions, moving the leftmost `d` bits out of the 32-bit range.
+   - `(n >> (32 - d))` shifts the bits of `n` right by `(32 - d)` positions, bringing the leftmost `d` bits to the rightmost positions.
+   - The bitwise OR (`|`) combines the results of the left and right shifts.
+   - `& 0xFFFFFFFF` masks the result to ensure it is a 32-bit number (in case of overflow).
+
+2. **Test Case**:
+   - The test `assert left_rotate(16, 2) == 64` verifies that rotating `16` (binary `00000000000000000000000000010000`) left by 2 bits results in `64` (binary `00000000000000000000000001000000`).
+
+3. **Output**:
+   - If the test passes, it prints "Test passed!".

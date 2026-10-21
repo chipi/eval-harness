@@ -1,0 +1,39 @@
+```python
+def tetrahedral_number(n):
+    """
+    Find the nth tetrahedral number.
+    
+    A tetrahedral number represents a pyramid with a triangular base.
+    The nth tetrahedral number is the sum of the first n triangular numbers.
+    Formula: T(n) = n(n+1)(n+2)/6
+    
+    Args:
+        n: A positive integer
+        
+    Returns:
+        The nth tetrahedral number
+    """
+    return n * (n + 1) * (n + 2) // 6
+
+
+# Test cases
+if __name__ == "__main__":
+    assert tetrahedral_number(5) == 35
+    assert tetrahedral_number(1) == 1
+    assert tetrahedral_number(2) == 4
+    assert tetrahedral_number(3) == 10
+    assert tetrahedral_number(4) == 20
+    assert tetrahedral_number(6) == 56
+    print("All tests passed!")
+```
+
+The solution uses the mathematical formula for tetrahedral numbers: **T(n) = n(n+1)(n+2)/6**
+
+This formula works because:
+- The 1st tetrahedral number = 1
+- The 2nd tetrahedral number = 1 + 3 = 4
+- The 3rd tetrahedral number = 1 + 3 + 6 = 10
+- The 4th tetrahedral number = 1 + 3 + 6 + 10 = 20
+- The 5th tetrahedral number = 1 + 3 + 6 + 10 + 15 = 35
+
+Each tetrahedral number is the sum of the first n triangular numbers, and the closed-form formula above efficiently computes this value.

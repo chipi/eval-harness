@@ -1,0 +1,52 @@
+```python
+import math
+
+def count_divisors(n):
+    """
+    Checks whether the count of divisors of a number n is even.
+    
+    Mathematical logic:
+    A number has an odd number of divisors if and only if it is a perfect square.
+    For all other positive integers, divisors come in pairs (d, n/d), 
+    resulting in an even count.
+    
+    Args:
+        n (int): The number to check.
+        
+    Returns:
+        bool: True if the count of divisors is even, False otherwise.
+    """
+    if n <= 0:
+        return False
+    
+    # Calculate the integer square root
+    sqrt_n = int(math.isqrt(n))
+    
+    # If n is a perfect square, count of divisors is odd.
+    # We return True if it is NOT a perfect square (meaning count is even).
+    return sqrt_n * sqrt_n != n
+
+def test_function():
+    """
+    Test cases to verify the function.
+    """
+    # 10 has divisors [1, 2, 5, 10] -> count is 4 (even) -> True
+    assert count_divisors(10) == True
+    
+    # 9 has divisors [1, 3, 9] -> count is 3 (odd) -> False
+    assert count_divisors(9) == False
+    
+    # 16 has divisors [1, 2, 4, 8, 16] -> count is 5 (odd) -> False
+    assert count_divisors(16) == False
+    
+    # 12 has divisors [1, 2, 3, 4, 6, 12] -> count is 6 (even) -> True
+    assert count_divisors(12) == True
+    
+    # 1 has divisor [1] -> count is 1 (odd) -> False
+    assert count_divisors(1) == False
+
+    print("All tests passed!")
+
+if __name__ == "__main__":
+    test_function()
+```

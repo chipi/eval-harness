@@ -1,0 +1,33 @@
+```python
+"""
+Write a function that takes in a string and character, replaces blank spaces in the string with the character, and returns the string.
+assert replace_blank("hello people",'@')==("hello@people")
+"""
+
+
+def replace_blank(str1, char):
+    """
+    Replace every blank space in `str1` with `char`.
+
+    Parameters
+    ----------
+    str1 : str
+        The input string.
+    char : str
+        The character used to replace blank spaces.
+
+    Returns
+    -------
+    str
+        The string with all blank spaces replaced by `char`.
+    """
+    return str1.replace(' ', char)
+
+
+if __name__ == '__main__':
+    assert replace_blank("hello people", '@') == "hello@people"
+    assert replace_blank("python program language", '$') == "python$program$language"
+    assert replace_blank("blank space", "-") == "blank-space"
+    print(replace_blank("hello people", '@'))
+    print("All tests passed!")
+```

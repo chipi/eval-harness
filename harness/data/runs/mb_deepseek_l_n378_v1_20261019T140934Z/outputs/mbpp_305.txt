@@ -1,0 +1,42 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def start_withp(words_list):
+    """
+    Return two words from a list of words starting with letter 'p'.
+    
+    Args:
+        words_list: A list of strings, where each string may contain multiple words
+    
+    Returns:
+        A tuple of two words that start with 'p' (case-insensitive)
+    """
+    p_words = []
+    
+    # Iterate through each string in the list
+    for phrase in words_list:
+        # Split the phrase into individual words
+        words = phrase.split()
+        # Check each word if it starts with 'p' (case-insensitive)
+        for word in words:
+            if word.lower().startswith('p'):
+                p_words.append(word)
+                # Return as soon as we have two words
+                if len(p_words) == 2:
+                    return tuple(p_words)
+    
+    # Return whatever we found (might be less than 2 words)
+    return tuple(p_words)
+
+
+# Test the function
+assert start_withp(["Python PHP", "Java JavaScript", "c c++"]) == ('Python', 'PHP')
+print("Test passed!")
+```
+
+The function works by:
+1. Iterating through each string in the input list
+2. Splitting each string into individual words
+3. Checking if each word starts with 'p' (case-insensitive)
+4. Collecting words that match and returning them as a tuple once two are found
+5. The assertion test confirms it correctly returns `('Python', 'PHP')` from the given input

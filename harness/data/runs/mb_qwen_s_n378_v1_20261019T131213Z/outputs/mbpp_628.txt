@@ -1,0 +1,13 @@
+```python
+def replace_spaces(s: str) -> str:
+    """
+    Replace all spaces in the given string with '%20'.
+    
+    Args:
+        s: Input string
+        
+    Returns:
+        String with all spaces replaced by '%20'
+    """
+    return s.replace(' ', '%20')
+```

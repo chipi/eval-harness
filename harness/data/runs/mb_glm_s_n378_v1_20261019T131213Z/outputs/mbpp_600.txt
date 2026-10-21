@@ -1,0 +1,35 @@
+```python
+def is_Even(number):
+    """
+    Checks whether the given number is even.
+
+    Args:
+        number (int): The integer to check.
+
+    Returns:
+        bool: True if the number is even, False otherwise.
+    """
+    # An even number is perfectly divisible by 2.
+    # The modulo operator (%) gives the remainder of a division.
+    # If the remainder is 0, the number is even.
+    return number % 2 == 0
+
+# Example usage and assertions to verify the function
+assert is_Even(1) == False
+assert is_Even(2) == True
+assert is_Even(0) == True
+assert is_Even(-4) == True
+assert is_Even(-5) == False
+
+# You can test the function with an input from the user
+if __name__ == "__main__":
+    try:
+        num_to_check = int(input("Enter a number to check if it's even: "))
+        if is_Even(num_to_check):
+            print(f"{num_to_check} is an even number.")
+        else:
+            print(f"{num_to_check} is not an even number.")
+    except ValueError:
+        print("Invalid input. Please enter a valid integer.")
+
+```

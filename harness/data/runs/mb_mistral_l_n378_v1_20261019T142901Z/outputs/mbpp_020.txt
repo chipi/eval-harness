@@ -1,0 +1,36 @@
+Here's a self-contained Python script that checks if a given number is a Woodall number (a number of the form \( n \times 2^n - 1 \)):
+
+```python
+def is_woodall(n):
+    """
+    Check if the given number is a Woodall number.
+    A Woodall number is a number of the form n * 2^n - 1 for some positive integer n.
+
+    Args:
+        n (int): The number to check.
+
+    Returns:
+        bool: True if n is a Woodall number, False otherwise.
+    """
+    if n <= 0:
+        return False
+
+    # Iterate possible values of k to find if n = k * 2^k - 1
+    k = 1
+    while True:
+        woodall = k * (2 ** k) - 1
+        if woodall == n:
+            return True
+        if woodall > n:
+            return False
+        k += 1
+
+# Test case
+assert is_woodall(383) == True
+```
+
+### Explanation:
+1. The function `is_woodall(n)` checks if `n` can be written in the form \( k \times 2^k - 1 \) for some positive integer \( k \).
+2. It iterates over possible values of \( k \), computes the Woodall number for each \( k \), and checks if it matches `n`.
+3. If the computed Woodall number exceeds `n`, the loop terminates, and the function returns `False`.
+4. The test case `assert is_woodall(383) == True` verifies that 383 is a Woodall number (since \( 6 \times 2^6 - 1 = 6 \times 64 - 1 = 384 - 1 = 383 \)).

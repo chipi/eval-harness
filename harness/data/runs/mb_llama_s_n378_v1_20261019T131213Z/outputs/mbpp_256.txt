@@ -1,0 +1,47 @@
+### Prime Counting Function
+#### Overview
+
+The following Python function uses the Sieve of Eratosthenes algorithm to efficiently count the number of prime numbers less than a given non-negative number.
+
+#### Code
+
+```python
+def count_Primes_nums(n):
+    """
+    Returns the number of prime numbers less than the given non-negative number.
+
+    Args:
+        n (int): A non-negative integer.
+
+    Returns:
+        int: The number of prime numbers less than n.
+    """
+    if n < 2:
+        return 0
+
+    sieve = [True] * n
+    sieve[0] = sieve[1] = False
+
+    for i in range(2, int(n ** 0.5) + 1):
+        if sieve[i]:
+            for j in range(i * i, n, i):
+                sieve[j] = False
+
+    return sum(sieve)
+
+
+# Example usage:
+if __name__ == "__main__":
+    assert count_Primes_nums(5) == 3  # 2, 3 are prime numbers less than 5
+    print("All tests passed.")
+```
+
+#### Explanation
+
+*   The function `count_Primes_nums(n)` initializes a boolean array `sieve` of size `n`, where `sieve[i]` represents whether `i` is a prime or not.
+*   It then iterates over the numbers from 2 to the square root of `n`, and for each prime `i` encountered, it marks all multiples of `i` as non-prime.
+*   Finally, it returns the sum of all prime numbers in the `sieve` array, which represents the count of prime numbers less than `n`.
+
+#### Time Complexity
+
+The time complexity of this function is O(n log log n) due to the Sieve of Eratosthenes algorithm. This is much more efficient than a naive approach of checking each number for primality, which would have a time complexity of O(n^2).

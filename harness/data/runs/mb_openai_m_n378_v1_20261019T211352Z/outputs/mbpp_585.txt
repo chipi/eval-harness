@@ -1,0 +1,37 @@
+```python
+"""
+Write a function to find the n most expensive items in a given dataset.
+
+Example:
+assert expensive_items(
+    [{'name': 'Item-1', 'price': 101.1}, {'name': 'Item-2', 'price': 555.22}],
+    1
+) == [{'name': 'Item-2', 'price': 555.22}]
+"""
+
+def expensive_items(items, n):
+    """
+    Return the n most expensive items from a list of dictionaries.
+
+    Each item is expected to have a 'price' key.
+    The result is sorted from most expensive to least expensive.
+    """
+    return sorted(items, key=lambda item: item["price"], reverse=True)[:n]
+
+
+if __name__ == "__main__":
+    assert expensive_items(
+        [{'name': 'Item-1', 'price': 101.1}, {'name': 'Item-2', 'price': 555.22}],
+        1
+    ) == [{'name': 'Item-2', 'price': 555.22}]
+
+    # Additional examples
+    items = [
+        {'name': 'Item-1', 'price': 101.1},
+        {'name': 'Item-2', 'price': 555.22},
+        {'name': 'Item-3', 'price': 45.0},
+        {'name': 'Item-4', 'price': 999.99},
+    ]
+
+    print(expensive_items(items, 2))
+```

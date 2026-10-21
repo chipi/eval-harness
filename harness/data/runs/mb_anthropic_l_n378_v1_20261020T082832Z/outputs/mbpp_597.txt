@@ -1,0 +1,70 @@
+Looking at this problem, I need to find the kth element in the merged sorted order of two sorted arrays.
+
+Let me verify with the example: `[2, 3, 6, 7, 9]` and `[1, 4, 8, 10]` merge to `[1, 2, 3, 4, 6, 7, 8, 9, 10]`. The 5th element (1-indexed) is `6`. ✓
+
+```python
+"""
+Write a function to find kth element from the given two sorted arrays.
+assert find_kth([2, 3, 6, 7, 9], [1, 4, 8, 10], 5) == 6
+"""
+
+
+def find_kth(arr1, arr2, k):
+    """
+    Find the k-th element (1-indexed) of the sorted merge of two sorted arrays.
+
+    Uses a binary-search / divide-and-conquer approach running in
+    O(log(min(len(arr1), len(arr2)))) time and O(1) extra space.
+    """
+    if k < 1 or k > len(arr1) + len(arr2):
+        raise ValueError("k is out of range for the given arrays")
+
+    # Indices marking the start of the "still in play" portion of each array
+    i, j = 0, 0
+
+    while True:
+        # If one array is exhausted, answer lies directly in the other
+        if i == len(arr1):
+            return arr2[j + k - 1]
+        if j == len(arr2):
+            return arr1[i + k - 1]
+
+        # Base case: the smaller of the two current heads
+        if k == 1:
+            return min(arr1[i], arr2[j])
+
+        # Try to discard k//2 elements from one of the arrays
+        half = k // 2
+        new_i = min(i + half, len(arr1)) - 1
+        new_j = min(j + half, len(arr2)) - 1
+
+        if arr1[new_i] <= arr2[new_j]:
+            k -= (new_i - i + 1)
+            i = new_i + 1
+        else:
+            k -= (new_j - j + 1)
+            j = new_j + 1
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert find_kth([2, 3, 6, 7, 9], [1, 4, 8, 10], 5) == 6
+
+    # Extra sanity checks
+    assert find_kth([100, 112, 256, 349, 770], [72, 86, 113, 119, 265, 445, 892], 7) == 256
+    assert find_kth([3, 4, 7, 8, 10], [2, 5, 9, 11], 6) == 8
+    assert find_kth([1, 2, 3], [], 2) == 2
+    assert find_kth([], [5, 6, 7], 3) == 7
+    assert find_kth([1, 1, 1], [1, 1], 4) == 1
+
+    # Cross-check against brute force for many random cases
+    import random
+    for _ in range(500):
+        a = sorted(random.randint(0, 50) for _ in range(random.randint(0, 10)))
+        b = sorted(random.randint(0, 50) for _ in range(random.randint(0, 10)))
+        merged = sorted(a + b)
+        for k in range(1, len(merged) + 1):
+            assert find_kth(a, b, k) == merged[k - 1], (a, b, k)
+
+    print("All tests passed!")
+```

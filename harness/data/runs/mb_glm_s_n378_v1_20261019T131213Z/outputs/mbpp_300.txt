@@ -1,0 +1,62 @@
+```python
+import math
+from math import comb
+
+def count_binary_seq(n: int) -> float:
+    """
+    Calculates the count of all binary sequences of length 2n such that the sum
+    of the first n bits is the same as the sum of the last n bits.
+
+    The solution is derived from combinatorial principles. For a sequence of
+    length 2n, let the sum of the first n bits be `k` and the sum of the last
+    n bits also be `k`. The value of `k` can range from 0 to n.
+
+    For a specific `k`:
+    1. The number of ways to choose `k` ones in the first n bits is C(n, k).
+    2. The number of ways to choose `k` ones in the last n bits is also C(n, k).
+
+    The total number of sequences for a given `k` is the product of these two
+    values: C(n, k) * C(n, k) = C(n, k)^2.
+
+    To find the total count for all possible values of `k`, we sum this product
+    over the range of k from 0 to n.
+
+    The final formula is: Sum_{k=0 to n} [ C(n, k)^2 ]
+
+    This sum is a well-known combinatorial identity and is equal to the central
+    binomial coefficient C(2n, n).
+
+    Args:
+        n: A non-negative integer representing half the length of the binary sequence.
+
+    Returns:
+        The count of such binary sequences as a float.
+    """
+    if not isinstance(n, int) or n < 0:
+        raise ValueError("Input 'n' must be a non-negative integer.")
+
+    # The solution is given by the central binomial coefficient C(2n, n).
+    # We use math.comb for efficient calculation.
+    return float(comb(2 * n, n))
+
+# Example usage and assertions from the problem description
+if __name__ == "__main__":
+    # For n=1, the binary sequences of length 2 are:
+    # 00 (sum of first 1 bit is 0, sum of last 1 bit is 0) -> match
+    # 01 (sum of first 1 bit is 0, sum of last 1 bit is 1) -> no match
+    # 10 (sum of first 1 bit is 1, sum of last 1 bit is 0) -> no match
+    # 11 (sum of first 1 bit is 1, sum of last 1 bit is 1) -> match
+    # There are 2 valid sequences. The formula C(2*1, 1) = C(2, 1) = 2.
+    assert math.isclose(count_binary_seq(1), 2.0, rel_tol=0.001)
+
+    # Additional test cases
+    # For n=2, sequences of length 4. Valid sequences are:
+    # 0000, 0011, 0101, 0110, 1001, 1010, 1100, 1111. Total 8.
+    # The formula C(2*2, 2) = C(4, 2) = 6.
+    assert math.isclose(count_binary_seq(2), 6.0, rel_tol=0.001)
+
+    # For n=3, sequences of length 6. The formula C(2*3, 3) = C(6, 3) = 20.
+    assert math.isclose(count_binary_seq(3), 20.0, rel_tol=0.001)
+
+    print("All assertions passed.")
+```

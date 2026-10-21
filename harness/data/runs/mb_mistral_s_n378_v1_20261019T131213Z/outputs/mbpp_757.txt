@@ -1,0 +1,40 @@
+Here's a self-contained Python script that solves the problem of counting pairs of reverse strings in a given list:
+
+```python
+def count_reverse_pairs(strings):
+    """
+    Counts the number of pairs of reverse strings in the given list.
+
+    Args:
+        strings: List of strings to check for reverse pairs.
+
+    Returns:
+        int: Number of reverse string pairs found.
+    """
+    count = 0
+    seen = set()
+
+    for s in strings:
+        reversed_s = s[::-1]
+        if reversed_s in seen:
+            count += 1
+        else:
+            seen.add(s)
+
+    return count
+
+# Test case
+assert count_reverse_pairs(["julia", "best", "tseb", "for", "ailuj"]) == 2
+```
+
+### Explanation:
+1. The function `count_reverse_pairs` takes a list of strings as input.
+2. It initializes a counter `count` to zero and a set `seen` to keep track of strings we've already processed.
+3. For each string in the input list:
+   - It creates the reversed version of the string using slicing (`s[::-1]`).
+   - If the reversed string is found in the `seen` set, it increments the count (indicating a reverse pair).
+   - Otherwise, it adds the original string to the `seen` set.
+4. The function returns the total count of reverse pairs found.
+5. The provided test case verifies that the function works correctly.
+
+This solution efficiently counts reverse pairs in O(n) time complexity, where n is the number of strings in the input list, by using a set for O(1) lookups.

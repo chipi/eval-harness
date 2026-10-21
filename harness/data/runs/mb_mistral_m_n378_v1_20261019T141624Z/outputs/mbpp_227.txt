@@ -1,0 +1,18 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def min_of_three(a, b, c):
+    """Return the minimum of three numbers."""
+    return min(a, b, c)
+
+# Test case
+assert min_of_three(10, 20, 0) == 0
+```
+
+This script:
+1. Defines a function `min_of_three` that takes three parameters
+2. Uses Python's built-in `min()` function to find the smallest value
+3. Includes the required test case with an assert statement
+4. Is completely self-contained (no external dependencies)
+
+The function will work with any comparable types (numbers, strings, etc.), not just integers.

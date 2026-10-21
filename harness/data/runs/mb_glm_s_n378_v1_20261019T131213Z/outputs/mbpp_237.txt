@@ -1,0 +1,53 @@
+```python
+from collections import Counter
+
+def check_occurences(tuple_list: list[tuple]) -> dict[tuple, int]:
+    """
+    Counts the occurrences of each unique tuple in a list and returns a dictionary.
+
+    This function uses the Counter class from the collections module to efficiently
+    count the occurrences of each tuple. Since tuples are hashable, they can be
+    used as keys in a dictionary or as elements in a Counter.
+
+    Args:
+        tuple_list: A list of tuples to be counted.
+
+    Returns:
+        A dictionary where keys are the unique tuples from the input list and
+        values are the number of times each tuple appears.
+    """
+    # The Counter object takes an iterable and creates a dictionary-like object
+    # where elements are keys and their counts are values.
+    counts = Counter(tuple_list)
+    
+    # The result is already in the required dictionary format.
+    return dict(counts)
+
+# Example usage and assertion from the problem description
+if __name__ == "__main__":
+    # The example input list
+    input_data = [(3, 1), (1, 3), (2, 5), (5, 2), (6, 3)]
+    
+    # The expected output dictionary
+    expected_output = {(1, 3): 2, (2, 5): 2, (3, 6): 1}
+    
+    # Call the function and get the result
+    result = check_occurences(input_data)
+    
+    # Print the results for clarity
+    print(f"Input list: {input_data}")
+    print(f"Function result: {result}")
+    print(f"Expected output: {expected_output}")
+    
+    # Assert that the function's output matches the expected output
+    assert result == expected_output
+    
+    print("\nAssertion passed! The function works as expected.")
+
+    # Another test case
+    test_data_2 = [('a', 'b'), ('c', 'd'), ('a', 'b'), ('a', 'b'), ('c', 'd')]
+    expected_output_2 = {('a', 'b'): 3, ('c', 'd'): 2}
+    result_2 = check_occurences(test_data_2)
+    assert result_2 == expected_output_2
+    print("\nSecond test case passed!")
+```

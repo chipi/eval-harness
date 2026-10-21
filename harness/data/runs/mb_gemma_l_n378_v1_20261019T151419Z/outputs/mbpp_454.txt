@@ -1,0 +1,33 @@
+```python
+import re
+
+def text_match_wordz(text):
+    """
+    Checks if the provided text contains a word that includes the letter 'z'.
+    A 'word' is defined as a sequence of alphanumeric characters.
+    """
+    # \w* matches zero or more alphanumeric characters
+    # z matches the literal character 'z'
+    # \w* matches zero or more alphanumeric characters
+    # This pattern ensures 'z' is part of a word sequence
+    pattern = r'\w*z\w*'
+    
+    if re.search(pattern, text, re.IGNORECASE):
+        return True
+    else:
+        return False
+
+# Test cases
+if __name__ == "__main__":
+    # Provided test case
+    assert text_match_wordz("pythonz.") == True
+    
+    # Additional test cases
+    assert text_match_wordz("zebra") == True
+    assert text_match_wordz("The wizard is here") == True
+    assert text_match_wordz("Hello world") == False
+    assert text_match_wordz("123z456") == True
+    assert text_match_wordz("z") == True
+    
+    print("All tests passed!")
+```

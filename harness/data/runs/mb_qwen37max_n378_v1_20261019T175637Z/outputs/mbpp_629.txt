@@ -1,0 +1,6 @@
+```python
+def Split(numbers):
+    return [n for n in numbers if n % 2 == 0]
+
+assert Split([1, 2, 3, 4, 5]) == [2, 4]
+```

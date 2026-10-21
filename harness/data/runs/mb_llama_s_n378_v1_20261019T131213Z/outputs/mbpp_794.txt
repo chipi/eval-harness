@@ -1,0 +1,32 @@
+```python
+import re
+
+def text_starta_endb(s):
+    """
+    Checks if a given string starts with 'a' and ends with 'b'.
+
+    Args:
+        s (str): The input string.
+
+    Returns:
+        bool: True if the string starts with 'a' and ends with 'b', False otherwise.
+    """
+    pattern = r'^a.*b$'
+    return bool(re.match(pattern, s))
+
+# Test the function
+assert text_starta_endb("aabbbb")
+assert not text_starta_endb("bbaaaa")
+assert text_starta_endb("abcdb")
+```
+
+### Explanation
+
+* The function `text_starta_endb` uses a regular expression (`re` module) to match the input string.
+* The regular expression `^a.*b$` means:
+  * `^` asserts the start of the line.
+  * `a` matches the character 'a'.
+  * `.*` matches any character (except a newline) 0 or more times.
+  * `b` matches the character 'b'.
+  * `$` asserts the end of the line.
+* The `re.match` function returns a match object if the string matches the pattern, or `None` otherwise. We convert this to a boolean value (`True` if the string matches, `False` otherwise) using the `bool` function.

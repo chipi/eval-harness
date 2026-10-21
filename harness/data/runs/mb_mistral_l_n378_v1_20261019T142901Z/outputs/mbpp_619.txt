@@ -1,0 +1,35 @@
+Here's a self-contained Python script that solves the problem by moving all the numbers to the end of the given string while preserving their original order:
+
+```python
+def move_num(s: str) -> str:
+    """
+    Moves all digits to the end of the string while preserving their original order.
+
+    Args:
+        s: Input string containing letters and digits.
+
+    Returns:
+        String with all digits moved to the end in their original order.
+    """
+    letters = []
+    numbers = []
+
+    for char in s:
+        if char.isdigit():
+            numbers.append(char)
+        else:
+            letters.append(char)
+
+    return ''.join(letters) + ''.join(numbers)
+
+# Test the function
+assert move_num('I1love143you55three3000thousand') == 'Iloveyouthreethousand1143553000'
+```
+
+This solution:
+1. Iterates through each character in the input string
+2. Separates digits into a `numbers` list and non-digits into a `letters` list
+3. Joins the letters first, then the numbers to form the final string
+4. Preserves the original order of both letters and numbers
+
+The test case provided in the problem statement is included as an assertion to verify the function works correctly.

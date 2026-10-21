@@ -1,0 +1,14 @@
+```python
+def cube_Sum(n):
+    """
+    Return the cube sum of the first n even natural numbers:
+    2^3 + 4^3 + 6^3 + ... + (2n)^3
+    """
+    return sum((2 * i) ** 3 for i in range(1, n + 1))
+
+
+if __name__ == "__main__":
+    # Example check
+    assert cube_Sum(2) == 72
+    print(cube_Sum(2))
+```

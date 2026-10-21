@@ -1,0 +1,16 @@
+```python
+def round_and_sum(lst):
+    # Round each number in the list
+    rounded_lst = [round(num) for num in lst]
+    
+    # Calculate the sum of the rounded list
+    total_sum = sum(rounded_lst)
+    
+    # Multiply the total sum by the length of the list
+    result = total_sum * len(lst)
+    
+    return result
+
+# Test the function
+assert round_and_sum([22.4, 4.0, -16.22, -9.10, 11.00, -12.22, 14.20, -5.20, 17.50])==243
+```

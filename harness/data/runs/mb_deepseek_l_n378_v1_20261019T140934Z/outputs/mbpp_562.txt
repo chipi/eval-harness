@@ -1,0 +1,17 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def Find_Max_Length(lst):
+    """
+    Returns the length of the longest sublist in a list of lists.
+    """
+    if not lst:
+        return 0
+    return max(len(sublist) for sublist in lst)
+
+
+# Test the function
+if __name__ == "__main__":
+    assert Find_Max_Length([[1], [1, 4], [5, 6, 7, 8]]) == 4
+    print("Test passed!")
+```

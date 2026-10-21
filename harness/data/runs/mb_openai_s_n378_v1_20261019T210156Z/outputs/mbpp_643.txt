@@ -1,0 +1,18 @@
+```python
+def text_match_wordz_middle(text: str) -> bool:
+    """
+    Return True if the string contains the letter 'z' somewhere
+    other than the first or last character of the string.
+
+    Example:
+        "pythonzabc." -> True
+    """
+    if len(text) < 3:
+        return False
+    return 'z' in text[1:-1]
+
+
+if __name__ == "__main__":
+    assert text_match_wordz_middle("pythonzabc.") == True
+    print("All tests passed.")
+```

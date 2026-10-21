@@ -1,0 +1,36 @@
+```python
+"""
+Write a function to remove all whitespaces from a string.
+assert remove_all_spaces('python  program')==('pythonprogram')
+"""
+
+import re
+
+
+def remove_all_spaces(text):
+    """
+    Remove all whitespace characters from the given string.
+
+    Whitespace includes spaces, tabs, newlines, carriage returns,
+    form feeds and vertical tabs.
+
+    :param text: the input string
+    :return: a new string with every whitespace character removed
+    """
+    return re.sub(r'\s+', '', text)
+
+
+if __name__ == '__main__':
+    # Provided test case
+    assert remove_all_spaces('python  program') == ('pythonprogram')
+
+    # A few extra sanity checks
+    assert remove_all_spaces('python   programming  language') == 'pythonprogramminglanguage'
+    assert remove_all_spaces('  no  spaces  here  ') == 'nospaceshere'
+    assert remove_all_spaces('\tmixed \n white\r\nspace\f\v') == 'mixedwhitespace'
+    assert remove_all_spaces('') == ''
+    assert remove_all_spaces('nospaces') == 'nospaces'
+
+    print(remove_all_spaces('python  program'))
+    print('All tests passed!')
+```

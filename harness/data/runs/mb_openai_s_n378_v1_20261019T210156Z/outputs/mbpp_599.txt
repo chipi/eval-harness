@@ -1,0 +1,20 @@
+```python
+def sum_average(n):
+    """
+    Return the sum and average of the first n natural numbers.
+
+    Parameters:
+        n (int): Number of natural numbers to include.
+
+    Returns:
+        tuple: (sum, average)
+    """
+    total = n * (n + 1) // 2
+    average = total / n if n != 0 else 0
+    return total, average
+
+
+if __name__ == "__main__":
+    assert sum_average(10) == (55, 5.5)
+    print("All tests passed.")
+```

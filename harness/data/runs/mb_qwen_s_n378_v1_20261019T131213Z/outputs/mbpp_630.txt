@@ -1,0 +1,19 @@
+```python
+def get_coordinates(coord):
+    """
+    Extract all the adjacent coordinates of the given coordinate tuple.
+    
+    Args:
+        coord: A tuple (x, y) representing a coordinate.
+        
+    Returns:
+        A list of lists, where each inner list represents an adjacent coordinate [x, y].
+        The result includes all 9 coordinates in the 3x3 grid centered on the input coordinate.
+    """
+    x, y = coord
+    result = []
+    for dx in range(-1, 2):
+        for dy in range(-1, 2):
+            result.append([x + dx, y + dy])
+    return result
+```

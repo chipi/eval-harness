@@ -1,0 +1,36 @@
+```python
+def set_left_most_unset_bit(n: int) -> int:
+    """
+    Set the left-most (most significant) unset bit of n and return the result.
+
+    Example:
+        n = 10 (binary 1010)
+        left-most unset bit is the 3rd bit from the right (binary 0100)
+        result = 1110 (14)
+    """
+    if n < 0:
+        raise ValueError("This function is intended for non-negative integers only.")
+
+    # Find the position of the most significant bit
+    bit_length = n.bit_length()
+
+    # If n is 0, its left-most unset bit is bit 0 (value 1)
+    if bit_length == 0:
+        return 1
+
+    # The left-most unset bit is the highest zero bit within the binary representation
+    # up to the most significant 1-bit. We scan from MSB to LSB.
+    for pos in range(bit_length - 1, -1, -1):
+        if not (n & (1 << pos)):
+            return n | (1 << pos)
+
+    # If all bits from 0..bit_length-1 are set (e.g., 1, 3, 7, 15),
+    # then the left-most unset bit is the next higher bit.
+    return n | (1 << bit_length)
+
+
+# Self-test
+if __name__ == "__main__":
+    assert set_left_most_unset_bit(10) == 14
+    print("All tests passed.")
+```

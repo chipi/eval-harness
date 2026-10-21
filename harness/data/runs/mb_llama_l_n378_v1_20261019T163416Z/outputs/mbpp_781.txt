@@ -1,0 +1,25 @@
+```python
+def count_divisors(n):
+    """
+    Checks whether the count of divisors of a number is even.
+
+    Args:
+        n (int): The number to check.
+
+    Returns:
+        bool: True if the count of divisors is even, False otherwise.
+    """
+    count = 0
+    for i in range(1, n + 1):
+        if n % i == 0:
+            count += 1
+    return count % 2 == 0
+
+def main():
+    # Test the function
+    assert count_divisors(10)
+    print("Test passed.")
+
+if __name__ == "__main__":
+    main()
+```

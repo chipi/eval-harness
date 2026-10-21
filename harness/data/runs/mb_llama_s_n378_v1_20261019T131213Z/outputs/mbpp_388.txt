@@ -1,0 +1,81 @@
+```python
+def highest_Power_of_2(n):
+    """
+    This function finds the highest power of 2 that is less than or equal to n.
+
+    Args:
+        n (int): The input number.
+
+    Returns:
+        int: The highest power of 2 that is less than or equal to n.
+    """
+    if n <= 0:
+        return 0
+    
+    # Initialize the power of 2 to 1
+    power_of_2 = 1
+    
+    # Keep doubling the power of 2 until it exceeds n
+    while power_of_2 * 2 <= n:
+        power_of_2 *= 2
+    
+    return power_of_2
+
+# Test the function
+assert highest_Power_of_2(10) == 8
+print(highest_Power_of_2(10))  # Output: 8
+```
+
+Alternatively, you can use bitwise operations to solve this problem more efficiently:
+
+```python
+def highest_Power_of_2(n):
+    """
+    This function finds the highest power of 2 that is less than or equal to n.
+
+    Args:
+        n (int): The input number.
+
+    Returns:
+        int: The highest power of 2 that is less than or equal to n.
+    """
+    if n <= 0:
+        return 0
+    
+    # Use bitwise shift to find the highest power of 2
+    power = 0
+    while (1 << (power + 1)) <= n:
+        power += 1
+    
+    return 1 << power
+
+# Test the function
+assert highest_Power_of_2(10) == 8
+print(highest_Power_of_2(10))  # Output: 8
+```
+
+Or using math library:
+
+```python
+import math
+
+def highest_Power_of_2(n):
+    """
+    This function finds the highest power of 2 that is less than or equal to n.
+
+    Args:
+        n (int): The input number.
+
+    Returns:
+        int: The highest power of 2 that is less than or equal to n.
+    """
+    if n <= 0:
+        return 0
+    
+    # Use math.log2 to find the highest power of 2
+    return 2 ** math.floor(math.log2(n))
+
+# Test the function
+assert highest_Power_of_2(10) == 8
+print(highest_Power_of_2(10))  # Output: 8
+```

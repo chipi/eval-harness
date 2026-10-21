@@ -1,0 +1,31 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+import math
+
+def otherside_rightangle(a, b):
+    """
+    Find the hypotenuse of a right-angled triangle given the two other sides.
+    
+    Parameters:
+    a (float): length of one side
+    b (float): length of the other side
+    
+    Returns:
+    float: length of the hypotenuse
+    """
+    return math.sqrt(a**2 + b**2)
+
+# Test the function
+assert otherside_rightangle(7, 8) == 10.63014581273465
+
+print(otherside_rightangle(7, 8))
+```
+
+**Explanation:**
+
+- The function `otherside_rightangle(a, b)` uses the Pythagorean theorem:  
+  \( c = \sqrt{a^2 + b^2} \)
+- It takes the two known sides of a right-angled triangle and returns the hypotenuse.
+- The `math.sqrt` function is used to compute the square root.
+- The assertion verifies that the result matches the expected value for sides 7 and 8.

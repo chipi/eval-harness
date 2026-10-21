@@ -1,0 +1,33 @@
+```python
+def next_smallest_palindrome(n: int) -> int:
+    """Return the smallest palindrome strictly greater than n."""
+    if n < 0:
+        raise ValueError("n must be non-negative")
+
+    length = len(str(n))
+    while True:
+        half_length = (length + 1) // 2
+        half = int(str(n).zfill(length)[:half_length]) if len(str(n)) <= length else 10 ** (half_length - 1)
+
+        def mirror(prefix: int) -> int:
+            left = str(prefix)
+            return int(left + left[-2::-1]) if length % 2 else int(left + left[::-1])
+
+        candidate = mirror(half)
+        if candidate > n:
+            return candidate
+
+        half += 1
+        if len(str(half)) > half_length:
+            length += 1
+            n = max(n, 10 ** (length - 1) - 1)
+        else:
+            return mirror(half)
+
+
+if __name__ == "__main__":
+    assert next_smallest_palindrome(99) == 101
+    assert next_smallest_palindrome(123) == 131
+    assert next_smallest_palindrome(9) == 11
+    print("All tests passed.")
+```

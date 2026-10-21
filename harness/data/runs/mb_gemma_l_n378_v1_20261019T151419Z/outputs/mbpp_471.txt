@@ -1,0 +1,34 @@
+```python
+def find_remainder(arr, n):
+    """
+    Calculates the product of all elements in the array modulo n.
+    
+    Args:
+        arr (list): A list of integers.
+        n (int): The modulo value.
+        
+    Returns:
+        int: The result of (element1 * element2 * ... * elementN) % n.
+    """
+    # Initialize product to 1 (multiplicative identity)
+    product = 1
+    
+    for num in arr:
+        # Multiply and take modulo at each step to prevent integer overflow 
+        # and maintain efficiency.
+        product = (product * num) % n
+        
+    return product
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    test_arr = [100, 10, 5, 25, 35, 14]
+    test_n = 11
+    result = find_remainder(test_arr, test_n)
+    
+    print(f"The product of {test_arr} modulo {test_n} is: {result}")
+    
+    # Assertion check
+    assert result == 9, f"Expected 9, but got {result}"
+    print("Assertion passed!")
+```

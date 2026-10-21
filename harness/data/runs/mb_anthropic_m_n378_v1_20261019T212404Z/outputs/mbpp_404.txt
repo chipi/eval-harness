@@ -1,0 +1,17 @@
+```python
+def minimum(a, b):
+    """
+    Function to find the minimum of two numbers.
+    """
+    return a if a < b else b
+
+
+# Test case
+assert minimum(1, 2) == 1
+
+if __name__ == "__main__":
+    print(minimum(1, 2))  # Output: 1
+    print(minimum(5, 3))  # Output: 3
+    print(minimum(-1, -5))  # Output: -5
+    print(minimum(4, 4))  # Output: 4
+```

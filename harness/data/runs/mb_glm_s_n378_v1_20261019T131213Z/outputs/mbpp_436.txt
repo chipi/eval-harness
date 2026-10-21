@@ -1,0 +1,26 @@
+```python
+def neg_nos(lst):
+    """
+    Write a python function to return the negative numbers in a list.
+
+    Args:
+        lst (list): A list of numbers.
+
+    Returns:
+        list: A new list containing only the negative numbers from the input list.
+
+    Example:
+        >>> neg_nos([-1, 4, 5, -6])
+        [-1, -6]
+    """
+    # Use a list comprehension to iterate through the list
+    # and include only the numbers that are less than 0.
+    return [num for num in lst if num < 0]
+
+# Example usage and assertion to verify the function
+if __name__ == "__main__":
+    assert neg_nos([-1, 4, 5, -6]) == [-1, -6]
+    assert neg_nos([1, 2, 3]) == []
+    assert neg_nos([-5, -10, 0, 15]) == [-5, -10]
+    print("All tests passed!")
+```

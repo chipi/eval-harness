@@ -1,0 +1,17 @@
+```python
+def return_sum(input_dict):
+    """
+    This function calculates the sum of all items in the given dictionary.
+    
+    Args:
+        input_dict (dict): A dictionary containing numeric values.
+    
+    Returns:
+        int: The sum of all items in the dictionary.
+    """
+    return sum(input_dict.values())
+
+# Test the function
+assert return_sum({'a': 100, 'b':200, 'c':300}) == 600
+print("All tests passed.")
+```

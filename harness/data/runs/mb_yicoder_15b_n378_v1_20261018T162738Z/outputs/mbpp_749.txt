@@ -1,0 +1,10 @@
+```python
+def sort_numeric_strings(list_of_strings):
+    # Convert all strings to integers and sort
+    list_of_integers = [int(i) for i in list_of_strings]
+    list_of_integers.sort()
+    return list_of_integers
+
+# Test the function
+assert sort_numeric_strings( ['4','12','45','7','0','100','200','-12','-500'])==[-500, -12, 0, 4, 7, 12, 45, 100, 200]
+```

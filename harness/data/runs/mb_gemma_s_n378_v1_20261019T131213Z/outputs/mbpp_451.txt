@@ -1,0 +1,16 @@
+```python
+def remove_whitespaces(text):
+  """
+  Removes all whitespace characters from a string.
+
+  Args:
+    text: The input string.
+
+  Returns:
+    The string with all whitespace characters removed.
+  """
+  return text.replace(" ", "")
+
+# Example usage and assertion
+assert remove_whitespaces(' Google    Flutter ') == 'GoogleFlutter'
+```

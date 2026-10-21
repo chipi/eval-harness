@@ -1,0 +1,45 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def find_Max_Num(digits):
+    """
+    Find the largest number that can be formed with the given list of digits.
+    
+    Args:
+        digits: A list of integers representing digits (0-9)
+    
+    Returns:
+        The largest number that can be formed by arranging the digits
+    """
+    # Sort digits in descending order
+    sorted_digits = sorted(digits, reverse=True)
+    
+    # Convert each digit to string and join them
+    result_str = ''.join(str(d) for d in sorted_digits)
+    
+    # Convert back to integer
+    return int(result_str)
+
+
+# Test cases
+if __name__ == "__main__":
+    assert find_Max_Num([1, 2, 3]) == 321
+    assert find_Max_Num([4, 5, 6, 7]) == 7654
+    assert find_Max_Num([9, 0, 1]) == 910
+    assert find_Max_Num([5]) == 5
+    assert find_Max_Num([1, 1, 1]) == 111
+    assert find_Max_Num([0, 0, 0]) == 0
+    print("All tests passed!")
+```
+
+**How it works:**
+
+1. **Sort in descending order**: The key insight is that to form the largest number from a set of digits, we simply need to arrange them from largest to smallest. For example, with digits `[1, 2, 3]`, sorting descending gives `[3, 2, 1]`, which forms `321`.
+
+2. **Join the digits**: Convert each digit to a string and concatenate them together.
+
+3. **Convert to integer**: Finally, convert the resulting string back to an integer to return the numeric value.
+
+**Time complexity**: O(n log n) due to sorting, where n is the number of digits.
+
+**Space complexity**: O(n) for the sorted list and string representation.

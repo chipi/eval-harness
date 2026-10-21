@@ -1,0 +1,26 @@
+```python
+def drop_empty(d: dict) -> dict:
+    """
+    Drop items with empty values (None, empty string, etc.) from a given dictionary.
+    
+    Args:
+        d: Input dictionary
+        
+    Returns:
+        Dictionary with empty items removed
+    """
+    return {k: v for k, v in d.items() if v is not None and v != ''}
+
+
+if __name__ == "__main__":
+    # Test case from the problem statement
+    result = drop_empty({'c1': 'Red', 'c2': 'Green', 'c3': None})
+    assert result == {'c1': 'Red', 'c2': 'Green'}, f"Expected {{'c1': 'Red', 'c2': 'Green'}}, got {result}"
+    
+    # Additional test cases
+    assert drop_empty({}) == {}
+    assert drop_empty({'a': 1, 'b': None, 'c': ''}) == {'a': 1}
+    assert drop_empty({'a': 0, 'b': False}) == {'a': 0, 'b': False}  # 0 and False are not "empty" in this context
+    
+    print("All tests passed!")
+```

@@ -1,0 +1,44 @@
+```python
+def combinations_list(elements):
+    """
+    Finds all possible combinations (the power set) of the elements of a given list.
+    The order of the output matches the specific sequence required by the assertion:
+    it iterates through the list and for each new element, it creates new combinations 
+    by appending the current element to all previously found combinations.
+    """
+    result = [[]]
+    for element in elements:
+        # For every existing combination, create a new one including the current element
+        # We iterate over a copy of the current result list
+        new_combinations = [current + [element] for current in result]
+        
+        # To match the specific order in the prompt's assertion:
+        # The prompt expects the new element to be at the END of the list 
+        # but the new combinations to be added to the result list.
+        # However, the assertion shows ['red', 'orange'] where 'red' is the new element.
+        # This means the new element is prepended to the existing combinations.
+        
+        # Correcting logic to match the assertion: ['red', 'orange'] means 
+        # the new element 'red' was added to the front of the existing combination ['orange'].
+        new_combinations = [[element] + current for current in result]
+        result.extend(new_combinations)
+        
+    return result
+
+if __name__ == "__main__":
+    # Test case from the prompt
+    input_list = ['orange', 'red', 'green', 'blue']
+    expected_output = [
+        [], 
+        ['orange'], 
+        ['red'], ['red', 'orange'], 
+        ['green'], ['green', 'orange'], ['green', 'red'], ['green', 'red', 'orange'], 
+        ['blue'], ['blue', 'orange'], ['blue', 'red'], ['blue', 'red', 'orange'], 
+        ['blue', 'green'], ['blue', 'green', 'orange'], ['blue', 'green', 'red'], ['blue', 'green', 'red', 'orange']
+    ]
+    
+    actual_output = combinations_list(input_list)
+    
+    assert actual_output == expected_output, f"Expected {expected_output}, but got {actual_output}"
+    print("Assertion passed successfully!")
+```

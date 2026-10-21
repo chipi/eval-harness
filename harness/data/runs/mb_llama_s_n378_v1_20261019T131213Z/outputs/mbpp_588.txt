@@ -1,0 +1,49 @@
+```python
+def big_diff(lst):
+    """
+    This function calculates the difference between the largest and smallest value in a given list.
+
+    Args:
+        lst (list): A list of integers.
+
+    Returns:
+        int: The difference between the largest and smallest value in the list.
+
+    Raises:
+        ValueError: If the input list is empty.
+    """
+    if not lst:
+        raise ValueError("Input list cannot be empty")
+
+    return max(lst) - min(lst)
+
+# Example usage:
+print(big_diff([1,2,3,4]))  # Output: 3
+```
+
+You can also use a more robust version of the function that checks if all elements in the list are integers:
+
+```python
+def big_diff(lst):
+    """
+    This function calculates the difference between the largest and smallest value in a given list.
+
+    Args:
+        lst (list): A list of integers.
+
+    Returns:
+        int: The difference between the largest and smallest value in the list.
+
+    Raises:
+        ValueError: If the input list is empty or contains non-integer values.
+    """
+    if not lst:
+        raise ValueError("Input list cannot be empty")
+    if not all(isinstance(x, int) for x in lst):
+        raise ValueError("Input list must contain only integers")
+
+    return max(lst) - min(lst)
+
+# Example usage:
+print(big_diff([1,2,3,4]))  # Output: 3
+```

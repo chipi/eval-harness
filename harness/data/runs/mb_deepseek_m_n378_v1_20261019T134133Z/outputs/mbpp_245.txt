@@ -1,0 +1,56 @@
+Here's a self-contained Python script that solves the problem of finding the maximum sum of a bitonic subsequence:
+
+```python
+def max_sum(arr):
+    """
+    Find the maximum sum of a bitonic subsequence in the given array.
+    A bitonic subsequence first increases and then decreases.
+    """
+    n = len(arr)
+    if n == 0:
+        return 0
+    if n == 1:
+        return arr[0]
+    
+    # inc[i] = maximum sum of increasing subsequence ending at index i
+    inc = [0] * n
+    for i in range(n):
+        inc[i] = arr[i]
+        for j in range(i):
+            if arr[j] < arr[i]:
+                inc[i] = max(inc[i], inc[j] + arr[i])
+    
+    # dec[i] = maximum sum of decreasing subsequence starting at index i
+    dec = [0] * n
+    for i in range(n - 1, -1, -1):
+        dec[i] = arr[i]
+        for j in range(i + 1, n):
+            if arr[j] < arr[i]:
+                dec[i] = max(dec[i], dec[j] + arr[i])
+    
+    # The maximum bitonic sum is the max over all i of inc[i] + dec[i] - arr[i]
+    # (subtract arr[i] because it's counted in both inc and dec)
+    result = 0
+    for i in range(n):
+        result = max(result, inc[i] + dec[i] - arr[i])
+    
+    return result
+
+
+# Test the function
+assert max_sum([1, 15, 51, 45, 33, 100, 12, 18, 9]) == 194
+print("Test passed!")
+print("Result:", max_sum([1, 15, 51, 45, 33, 100, 12, 18, 9]))
+```
+
+**How it works:**
+
+1. **Increasing subsequence sums (`inc`)**: For each index `i`, compute the maximum sum of an increasing subsequence ending at `i`. This is done by checking all previous indices `j < i` where `arr[j] < arr[i]`.
+
+2. **Decreasing subsequence sums (`dec`)**: For each index `i`, compute the maximum sum of a decreasing subsequence starting at `i`. This is done by checking all later indices `j > i` where `arr[j] < arr[i]`.
+
+3. **Combine**: For each index `i` as the "peak" of the bitonic sequence, the total sum is `inc[i] + dec[i] - arr[i]` (subtracting `arr[i]` since it's counted in both). Take the maximum over all `i`.
+
+**Time complexity:** O(n²), **Space complexity:** O(n).
+
+For the test case `[1, 15, 51, 45, 33, 100, 12, 18, 9]`, the optimal bitonic subsequence is `[1, 15, 51, 100, 18, 9]` with sum `194`.

@@ -1,0 +1,37 @@
+```python
+def replace_list(list1, list2):
+    """
+    Replaces the last element of the first list with the elements of the second list.
+
+    This function creates a new list by taking all elements from the first list
+    except the last one, and then appending all elements from the second list.
+
+    Args:
+        list1 (list): The primary list whose last element will be replaced.
+        list2 (list): The list of elements to insert.
+
+    Returns:
+        list: A new list containing the modified elements.
+    """
+    # Slice list1 to get all elements except the last one.
+    # Then, concatenate it with list2.
+    return list1[:-1] + list2
+
+# Example usage and assertion from the problem description
+if __name__ == "__main__":
+    input_list1 = [1, 3, 5, 7, 9, 10]
+    input_list2 = [2, 4, 6, 8]
+    expected_output = [1, 3, 5, 7, 9, 2, 4, 6, 8]
+
+    result = replace_list(input_list1, input_list2)
+
+    print(f"Input list 1: {input_list1}")
+    print(f"Input list 2: {input_list2}")
+    print(f"Result:       {result}")
+    print(f"Expected:     {expected_output}")
+    
+    # The assert statement will raise an error if the result is not as expected.
+    assert result == expected_output
+
+    print("\nAssertion passed: The function works correctly.")
+```

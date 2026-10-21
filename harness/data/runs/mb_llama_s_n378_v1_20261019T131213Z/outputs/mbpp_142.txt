@@ -1,0 +1,34 @@
+```python
+def count_samepair(list1, list2, list3):
+    """
+    This function counts the number of items that are identical in the same position of three given lists.
+
+    Args:
+        list1 (list): The first list.
+        list2 (list): The second list.
+        list3 (list): The third list.
+
+    Returns:
+        int: The number of items that are identical in the same position of three given lists.
+    """
+    # Initialize a counter variable to store the count of identical items
+    count = 0
+    
+    # Find the minimum length among the three lists to avoid index out of range error
+    min_length = min(len(list1), len(list2), len(list3))
+    
+    # Iterate over the range of the minimum length
+    for i in range(min_length):
+        # Check if the items at the current position are identical in all three lists
+        if list1[i] == list2[i] == list3[i]:
+            # If identical, increment the counter
+            count += 1
+    
+    # Return the count of identical items
+    return count
+
+# Test the function
+print(count_samepair([1,2,3,4,5,6,7,8],[2,2,3,1,2,6,7,9],[2,1,3,1,2,6,7,9]))  # Output: 3
+```
+
+This Python script defines a function `count_samepair` that takes three lists as input and returns the count of items that are identical in the same position across all three lists. The function iterates over the range of the minimum length among the three lists, checks for identical items at each position, and increments a counter if the items match. The function returns the count of identical items. The script also includes a test case to demonstrate the function's usage.

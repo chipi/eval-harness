@@ -1,0 +1,53 @@
+```python
+"""
+Sum all amicable numbers from 1 to a specified number.
+
+Two different numbers a and b are amicable if:
+- sum of proper divisors of a == b
+- sum of proper divisors of b == a
+
+Example:
+amicable_numbers_sum(999) == 504
+"""
+
+def sum_proper_divisors(n: int) -> int:
+    """Return the sum of proper divisors of n."""
+    if n <= 1:
+        return 0
+
+    total = 1
+    i = 2
+
+    while i * i <= n:
+        if n % i == 0:
+            total += i
+            other = n // i
+            if other != i:
+                total += other
+        i += 1
+
+    return total
+
+
+def amicable_numbers_sum(limit: int) -> int:
+    """
+    Return the sum of all amicable numbers from 1 up to and including limit.
+    """
+    if limit < 1:
+        return 0
+
+    total = 0
+
+    for a in range(1, limit + 1):
+        b = sum_proper_divisors(a)
+
+        if b != a and b > 0 and sum_proper_divisors(b) == a:
+            total += a
+
+    return total
+
+
+if __name__ == "__main__":
+    assert amicable_numbers_sum(999) == 504
+    print(amicable_numbers_sum(999))
+```

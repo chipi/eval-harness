@@ -1,0 +1,44 @@
+```python
+def count_Set_Bits(n: int) -> int:
+    """
+    This function counts the number of set bits (binary digits with value 1) in a given number.
+
+    Args:
+        n (int): The input number.
+
+    Returns:
+        int: The number of set bits in the binary representation of n.
+    """
+    # Convert the number to binary, remove the '0b' prefix, and count the number of '1' bits
+    return bin(n).count('1')
+
+# Test the function
+assert count_Set_Bits(2) == 1
+print("All tests passed.")
+```
+
+You can also use bitwise operations to solve this problem more efficiently:
+
+```python
+def count_Set_Bits(n: int) -> int:
+    """
+    This function counts the number of set bits (binary digits with value 1) in a given number.
+
+    Args:
+        n (int): The input number.
+
+    Returns:
+        int: The number of set bits in the binary representation of n.
+    """
+    count = 0
+    while n:
+        count += n & 1
+        n >>= 1
+    return count
+
+# Test the function
+assert count_Set_Bits(2) == 1
+print("All tests passed.")
+```
+
+This version of the function works by repeatedly shifting the bits of `n` one place to the right and adding the least significant bit to the count. The `&` operator is used to get the least significant bit of `n`. This approach is more efficient than converting `n` to a binary string because it only needs to iterate over the bits of `n`, rather than creating a string representation of `n`.

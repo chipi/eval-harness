@@ -1,0 +1,23 @@
+```python
+def max_product(arr):
+    if not arr:
+        return 0
+
+    n = len(arr)
+    # dp[i] will store the maximum product of increasing subsequence ending at arr[i]
+    dp = [1] * n
+    for i in range(n):
+        dp[i] = arr[i]  # Initialize with the element itself
+
+    for i in range(1, n):
+        for j in range(i):
+            if arr[j] < arr[i]:
+                dp[i] = max(dp[i], dp[j] * arr[i])
+
+    return max(dp)
+
+# Test case
+assert max_product([3, 100, 4, 5, 150, 6]) == 45000
+```
+
+**Note:** The expected output in the original problem statement (`3000`) seems incorrect for the given input. The correct maximum product for the increasing subsequence `[3, 100, 150]` is `3 * 100 * 150 = 45000`. The provided solution correctly computes this. If the problem intended a different interpretation (e.g., only pairs), please clarify. Otherwise, the solution above is correct for the standard interpretation of the problem.

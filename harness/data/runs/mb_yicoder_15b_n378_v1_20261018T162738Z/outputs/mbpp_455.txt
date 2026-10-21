@@ -1,0 +1,28 @@
+```python
+def check_month_number(month_number):
+    if month_number in [1, 3, 5, 7, 8, 10, 12]:
+        return True
+    elif month_number in [4, 6, 9, 11]:
+        return False
+    elif month_number == 2:
+        return True
+    else:
+        return "Invalid month number"
+
+# Test cases
+assert check_month_number(1) == True
+assert check_month_number(2) == False
+assert check_month_number(3) == True
+assert check_month_number(4) == False
+assert check_month_number(5) == True
+assert check_month_number(6) == False
+assert check_month_number(7) == True
+assert check_month_number(8) == True
+assert check_month_number(9) == False
+assert check_month_number(10) == True
+assert check_month_number(11) == False
+assert check_month_number(12) == True
+assert check_month_number(0) == "Invalid month number"
+assert check_month_number(-1) == "Invalid month number"
+assert check_month_number(13) == "Invalid month number"
+```

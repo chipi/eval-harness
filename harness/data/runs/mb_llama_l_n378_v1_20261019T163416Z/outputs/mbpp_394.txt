@@ -1,0 +1,11 @@
+```python
+def check_distinct(tup):
+    return len(tup) == len(set(tup))
+
+def main():
+    print(check_distinct((1, 4, 5, 6, 1, 4)))  # False
+    print(check_distinct((1, 2, 3)))  # True
+
+if __name__ == "__main__":
+    main()
+```

@@ -1,0 +1,96 @@
+To solve this problem efficiently, we should avoid actually constructing the repeated array, as it could lead to memory issues if $k$ is very large. Instead, we can use a variation of **Kadane's Algorithm** and mathematical logic based on the properties of the array.
+
+There are three main cases to consider:
+1. **The array contains only negative numbers:** The maximum sum is simply the largest single element.
+2. **The total sum of the array is positive:** The maximum sum will involve taking all elements of the array $(k-1)$ times, plus the maximum subarray sum found in a "doubled" version of the array (to account for subarrays that wrap around the boundary).
+3. **The total sum of the array is non-positive:** The maximum sum is simply the maximum subarray sum found within a single instance of the array (or a doubled version if the wrap-around provides a larger sum, though with a non-positive total sum, the wrap-around won't exceed the single-array max).
+
+Here is the self-contained Python script:
+
+```python
+def max_sub_array_sum_repeated(arr, n, k):
+    """
+    Finds the largest sum of a contiguous subarray in an array repeated k times.
+    
+    Args:
+        arr: The original list of integers.
+        n: The length of the original array.
+        k: The number of times the array is repeated.
+        
+    Returns:
+        The maximum contiguous subarray sum.
+    """
+    if not arr or k == 0:
+        return 0
+
+    def kadane(nums):
+        """Standard Kadane's algorithm to find max subarray sum."""
+        max_so_far = float('-inf')
+        current_max = 0
+        for x in nums:
+            current_max += x
+            if max_so_far < current_max:
+                max_so_far = current_max
+            if current_max < 0:
+                current_max = 0
+        return max_so_far
+
+    def max_wrap_kadane(nums):
+        """Finds max subarray sum allowing wrap-around within a single cycle."""
+        # Standard Kadane
+        max_kadane = kadane(nums)
+        
+        # To find max wrap-around, we find (Total Sum - Min Subarray Sum)
+        total_sum = sum(nums)
+        
+        # Find min subarray sum using Kadane on inverted values
+        inverted_nums = [-x for x in nums]
+        min_subarray_sum = -kadane(inverted_nums)
+        
+        max_wrap = total_sum - min_subarray_sum
+        
+        # If max_wrap is 0 (all elements negative), return max_kadane
+        if max_wrap == 0:
+            return max_kadane
+        return max(max_kadane, max_wrap)
+
+    total_sum = sum(arr)
+    
+    # Case 1: If k == 1, it's just standard Kadane
+    if k == 1:
+        return kadane(arr)
+    
+    # Case 2: If total_sum > 0, we can include (k-1) full cycles
+    if total_sum > 0:
+        # The max sum will be (k-1) * total_sum + max subarray sum in a doubled array
+        # The doubled array handles the wrap-around logic for the boundary
+        return (k - 1) * total_sum + max_wrap_kadane(arr)
+    
+    # Case 3: If total_sum <= 0, the max sum is found within at most two copies
+    # (to account for wrap-around), but since total_sum <= 0, 
+    # it won't benefit from more than 2 copies.
+    else:
+        return max_wrap_kadane(arr)
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    # arr = [10, 20, -30, -1], n = 4, k = 3
+    # Repeated: [10, 20, -30, -1, 10, 20, -30, -1, 10, 20, -30, -1]
+    # Max subarray: [10, 20] = 30
+    assert max_sub_array_sum_repeated([10, 20, -30, -1], 4, 3) == 30
+    
+    # Additional Test Cases
+    # All positive
+    assert max_sub_array_sum_repeated([1, 2, 3], 3, 2) == 12 # (1+2+3) * 2
+    
+    # All negative
+    assert max_sub_array_sum_repeated([-5, -2, -10], 3, 3) == -2
+    
+    # Wrap around case
+    assert max_sub_array_sum_repeated([5, -10, 5], 3, 2) == 10 # [5, 5] via wrap
+    
+    # Large k with positive sum
+    assert max_sub_array_sum_repeated([1, 2], 2, 100) == 300
+    
+    print("All tests passed!")
+```

@@ -1,0 +1,38 @@
+```python
+def first_Digit(number):
+    """
+    Finds the first digit of a given integer.
+
+    This function handles both positive and negative numbers by first
+    converting the number to its absolute value. It then iteratively
+    divides the number by 10 until it is less than 10, at which point
+    the remaining value is the first digit.
+
+    Args:
+        number (int): The integer to find the first digit of.
+
+    Returns:
+        int: The first digit of the number.
+    """
+    # Convert the number to its absolute value to handle negative inputs
+    num = abs(number)
+
+    # Loop until the number is less than 10
+    while num >= 10:
+        # Integer division by 10 removes the last digit
+        num = num // 10
+
+    # The remaining number is the first digit
+    return num
+
+# Example usage and assertions from the problem description
+assert first_Digit(123) == 1
+assert first_Digit(-456) == 4
+assert first_Digit(0) == 0
+assert first_Digit(987654321) == 9
+assert first_Digit(7) == 7
+
+# You can test the function with a print statement
+print(f"The first digit of 123 is: {first_Digit(123)}")
+print(f"The first digit of -789 is: {first_Digit(-789)}")
+```

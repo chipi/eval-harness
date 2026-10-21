@@ -1,0 +1,33 @@
+```python
+import itertools
+
+def find_combinations(tuple_list):
+    """
+    Finds all possible combinations of sums of two distinct tuples from the given list.
+    Each resulting tuple consists of the sum of the first elements and the sum of the second elements.
+    """
+    combinations = []
+    
+    # Use itertools.combinations to get all unique pairs of tuples from the list
+    for pair in itertools.combinations(tuple_list, 2):
+        t1, t2 = pair
+        # Sum the first elements and the second elements respectively
+        sum_tuple = (t1[0] + t2[0], t1[1] + t2[1])
+        combinations.append(sum_tuple)
+        
+    return combinations
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    input_list = [(2, 4), (6, 7), (5, 1), (6, 10)]
+    expected_output = [(8, 11), (7, 5), (8, 14), (11, 8), (12, 17), (11, 11)]
+    
+    result = find_combinations(input_list)
+    
+    print(f"Input: {input_list}")
+    print(f"Result: {result}")
+    print(f"Expected: {expected_output}")
+    
+    assert result == expected_output, "The result does not match the expected output!"
+    print("Assertion passed successfully!")
+```

@@ -1,0 +1,7 @@
+```python
+def remove_all_spaces(text):
+    return "".join(text.split())
+
+
+assert remove_all_spaces("python  program") == "pythonprogram"
+```

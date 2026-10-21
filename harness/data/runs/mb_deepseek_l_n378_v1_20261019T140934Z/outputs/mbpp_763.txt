@@ -1,0 +1,47 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def find_min_diff(arr, n):
+    """
+    Find the minimum difference between any two elements in a given array.
+    
+    Parameters:
+    arr (tuple or list): The input array of integers
+    n (int): The number of elements in the array
+    
+    Returns:
+    int: The minimum difference between any two elements
+    """
+    # Convert to list if tuple and sort the array
+    sorted_arr = sorted(arr)
+    
+    # Initialize minimum difference as a large number
+    min_diff = float('inf')
+    
+    # Find the minimum difference between adjacent elements in sorted array
+    for i in range(n - 1):
+        diff = sorted_arr[i + 1] - sorted_arr[i]
+        if diff < min_diff:
+            min_diff = diff
+    
+    return min_diff
+
+
+# Test the function with the given example
+assert find_min_diff((1, 5, 3, 19, 18, 25), 6) == 1
+
+# Additional test cases
+assert find_min_diff((1, 2, 3, 4), 4) == 1
+assert find_min_diff((10, 20, 30, 40), 4) == 10
+assert find_min_diff((5, 5, 5, 5), 4) == 0
+assert find_min_diff((1, 19, -4, 31, 38, 25, 100), 7) == 5
+
+print("All test cases passed!")
+```
+
+**Explanation:**
+1. The function first sorts the array in ascending order
+2. After sorting, the minimum difference will always be between adjacent elements
+3. We iterate through the sorted array comparing each adjacent pair
+4. We keep track of the smallest difference found
+5. The time complexity is O(n log n) due to sorting, and space complexity is O(1) or O(n) depending on the sorting algorithm

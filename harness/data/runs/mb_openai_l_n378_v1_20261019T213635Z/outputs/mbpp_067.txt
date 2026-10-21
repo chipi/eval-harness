@@ -1,0 +1,19 @@
+```python
+def bell_number(n: int) -> int:
+    """Return the number of ways to partition a set of n elements."""
+    if n < 0:
+        raise ValueError("n must be non-negative")
+
+    # Bell triangle: the first entry of each row is a Bell number.
+    row = [1]
+    for _ in range(n):
+        next_row = [row[-1]]
+        for previous in row:
+            next_row.append(next_row[-1] + previous)
+        row = next_row
+
+    return row[0]
+
+
+assert bell_number(2) == 2
+```

@@ -1,0 +1,38 @@
+Here's a self-contained Python script that solves the problem of finding the nth hexagonal number:
+
+```python
+"""
+A hexagonal number is a figurate number that can be represented as a hexagon.
+The nth hexagonal number is given by the formula: H(n) = n(2n - 1)
+
+This script provides a function to calculate the nth hexagonal number.
+"""
+
+def hexagonal_num(n: int) -> int:
+    """
+    Calculate the nth hexagonal number.
+
+    Args:
+        n: The position of the hexagonal number to find (1-based index)
+
+    Returns:
+        The nth hexagonal number
+
+    Raises:
+        ValueError: If n is less than 1
+    """
+    if n < 1:
+        raise ValueError("n must be a positive integer")
+    return n * (2 * n - 1)
+
+# Test case
+assert hexagonal_num(10) == 190
+
+# Example usage
+if __name__ == "__main__":
+    print("Hexagonal numbers:")
+    for i in range(1, 11):
+        print(f"H({i}) = {hexagonal_num(i)}")
+```
+
+The function uses the mathematical formula for hexagonal numbers: H(n) = n(2n - 1). The test case verifies that hexagonal_num(10) returns 190 as specified in the problem statement. The example usage demonstrates how to calculate the first 10 hexagonal numbers.

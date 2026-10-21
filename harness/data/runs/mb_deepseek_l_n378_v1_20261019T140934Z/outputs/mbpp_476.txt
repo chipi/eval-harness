@@ -1,0 +1,34 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def big_sum(arr):
+    """
+    Find the sum of the largest and smallest value in a given array.
+    
+    Args:
+        arr: A list of numbers
+        
+    Returns:
+        The sum of the maximum and minimum values in the array
+    """
+    if not arr:
+        return 0
+    
+    return max(arr) + min(arr)
+
+
+# Test the function
+if __name__ == "__main__":
+    # Test case from the problem statement
+    assert big_sum([1, 2, 3]) == 4, "Test case 1 failed"
+    
+    # Additional test cases
+    assert big_sum([5, 5, 5]) == 10, "Test case 2 failed"
+    assert big_sum([-1, 0, 1]) == 0, "Test case 3 failed"
+    assert big_sum([10]) == 20, "Test case 4 failed"
+    assert big_sum([-5, -2, -10]) == -15, "Test case 5 failed"
+    
+    print("All test cases passed!")
+```
+
+The function `big_sum` takes an array as input, finds the maximum and minimum values using Python's built-in `max()` and `min()` functions, and returns their sum. The script includes the required test case as well as additional test cases to verify the function works correctly with different inputs.

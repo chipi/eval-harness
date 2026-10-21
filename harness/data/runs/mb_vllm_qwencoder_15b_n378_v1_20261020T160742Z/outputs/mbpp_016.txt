@@ -1,0 +1,13 @@
+```python
+def text_lowercase_underscore(text):
+    # Check if the text contains sequences of lowercase letters joined with an underscore
+    return bool(re.search(r'^[a-z]+_[a-z]+$', text))
+
+# Test cases
+assert text_lowercase_underscore("aab_cbbbc") == (True)
+assert text_lowercase_underscore("aab_Abbbc") == (False)
+assert text_lowercase_underscore("Aaab_abbbc") == (False)
+assert text_lowercase_underscore("aab_aabbcc") == (False)
+assert text_lowercase_underscore("12345") == (False)
+assert text_lowercase_underscore("") == (False)
+```

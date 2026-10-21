@@ -1,0 +1,8 @@
+```python
+def big_sum(values):
+    """Return the sum of the largest and smallest values in a nonempty array."""
+    return min(values) + max(values)
+
+
+assert big_sum([1, 2, 3]) == 4
+```

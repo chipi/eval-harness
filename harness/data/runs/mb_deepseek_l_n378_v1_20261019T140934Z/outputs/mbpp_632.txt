@@ -1,0 +1,26 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def move_zero(nums):
+    """
+    Move all zeroes to the end of the given list while maintaining
+    the relative order of non-zero elements.
+    
+    Args:
+        nums: List of integers
+    
+    Returns:
+        List with all zeros moved to the end
+    """
+    # Filter out non-zero elements and count zeros
+    non_zeros = [num for num in nums if num != 0]
+    zeros = [0] * (len(nums) - len(non_zeros))
+    
+    return non_zeros + zeros
+
+
+# Test the function
+if __name__ == "__main__":
+    assert move_zero([1, 0, 2, 0, 3, 4]) == [1, 2, 3, 4, 0, 0]
+    print("Test passed!")
+```

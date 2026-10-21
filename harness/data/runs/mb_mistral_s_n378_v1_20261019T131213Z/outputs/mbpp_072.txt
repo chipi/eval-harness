@@ -1,0 +1,51 @@
+Here's a self-contained Python script that solves the problem of checking whether a given number can be represented as the difference of two squares:
+
+```python
+def dif_Square(n):
+    """
+    Check if the given number can be represented as the difference of two squares.
+
+    The difference of two squares can be expressed as:
+    a² - b² = (a + b)(a - b)
+
+    For a number to be representable as a difference of squares, it must be:
+    1. 0 (trivial case)
+    2. A positive number that is either:
+       - Odd
+       - Divisible by 4
+
+    Args:
+        n (int): The number to check
+
+    Returns:
+        bool: True if the number can be represented as a difference of squares, False otherwise
+    """
+    if n == 0:
+        return True
+    if n < 0:
+        return False
+    return n % 2 == 1 or n % 4 == 0
+
+# Test cases
+assert dif_Square(5) == True
+assert dif_Square(4) == True
+assert dif_Square(10) == True
+assert dif_Square(3) == True
+assert dif_Square(0) == True
+assert dif_Square(2) == False
+assert dif_Square(6) == False
+assert dif_Square(8) == False
+assert dif_Square(-5) == False
+
+print("All test cases passed!")
+```
+
+### Explanation:
+1. The function `dif_Square(n)` checks if a number `n` can be expressed as the difference of two squares.
+2. The mathematical insight is that any number that is either:
+   - 0 (trivial case)
+   - Odd
+   - Divisible by 4
+   can be represented as a difference of squares.
+3. Numbers that are even but not divisible by 4 (like 2, 6, 10, etc.) cannot be expressed as a difference of squares.
+4. The test cases verify the correctness of the function, including edge cases like 0 and negative numbers.

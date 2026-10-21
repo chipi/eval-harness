@@ -1,0 +1,28 @@
+```python
+def max_product_tuple(tuples):
+    """
+    This function calculates the maximum absolute product between numbers in pairs of tuples within a given list.
+
+    Args:
+        tuples (list): A list of tuples, where each tuple contains two numbers.
+
+    Returns:
+        int: The maximum absolute product between numbers in pairs of tuples.
+    """
+    max_product = float('-inf')  # Initialize max_product as negative infinity
+
+    # Iterate over each tuple in the list
+    for tup in tuples:
+        # Calculate the absolute product of the numbers in the current tuple
+        product = abs(tup[0] * tup[1])
+        
+        # Update max_product if the current product is greater
+        if product > max_product:
+            max_product = product
+
+    return max_product
+
+# Example usage:
+tuples = [(2, 7), (2, 6), (1, 8), (4, 9)]
+print(max_product_tuple(tuples))  # Output: 36
+```

@@ -1,0 +1,39 @@
+Here's a self-contained Python script that solves the problem of merging three dictionaries into a single dictionary, with the last dictionary's values taking precedence in case of key conflicts:
+
+```python
+def merge_dictionaries_three(dict1, dict2, dict3):
+    """
+    Merge three dictionaries into a single dictionary.
+    In case of key conflicts, the value from the last dictionary (dict3) takes precedence.
+
+    Args:
+        dict1 (dict): First dictionary to merge
+        dict2 (dict): Second dictionary to merge
+        dict3 (dict): Third dictionary to merge
+
+    Returns:
+        dict: Merged dictionary
+    """
+    merged = dict1.copy()
+    merged.update(dict2)
+    merged.update(dict3)
+    return merged
+
+# Test the function
+assert merge_dictionaries_three(
+    {"R": "Red", "B": "Black", "P": "Pink"},
+    {"G": "Green", "W": "White"},
+    {"O": "Orange", "W": "White", "B": "Black"}
+) == {'B': 'Black', 'R': 'Red', 'P': 'Pink', 'G': 'Green', 'W': 'White', 'O': 'Orange'}
+
+print("Test passed successfully!")
+```
+
+This script:
+1. Defines a function `merge_dictionaries_three` that takes three dictionaries as input
+2. Creates a copy of the first dictionary to avoid modifying the original
+3. Updates the merged dictionary with the contents of the second and third dictionaries
+4. Returns the merged dictionary
+5. Includes the test case from the problem statement to verify the function works correctly
+
+The function handles key conflicts by keeping the value from the last dictionary that contains the key (in this case, dict3 takes precedence over dict2, which takes precedence over dict1).

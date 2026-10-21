@@ -1,0 +1,18 @@
+```python
+def split_two_parts(lst, L):
+    """
+    Splits a list into two parts: the first part has length L, 
+    and the second part contains the remaining elements.
+    """
+    first_part = lst[:L]
+    second_part = lst[L:]
+    return (first_part, second_part)
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    result = split_two_parts([1, 1, 2, 3, 4, 4, 5, 1], 3)
+    expected = ([1, 1, 2], [3, 4, 4, 5, 1])
+    
+    assert result == expected, f"Expected {expected}, but got {result}"
+    print("Test passed!")
+```

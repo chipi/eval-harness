@@ -1,0 +1,44 @@
+```python
+def dict_depth(d):
+    """
+    Calculates the maximum depth of a nested dictionary.
+
+    The depth of a dictionary is defined as the maximum level of nesting.
+    - An empty dictionary {} has a depth of 1.
+    - A flat dictionary {'a': 1} has a depth of 1.
+    - A dictionary with one nested dictionary {'a': {}} has a depth of 2.
+
+    Args:
+        d (dict): The dictionary to find the depth of.
+
+    Returns:
+        int: The maximum depth of the dictionary. Returns 0 if the input
+             is not a dictionary or is None.
+    """
+    # Base case: If the input is not a dictionary, it's at the end of a branch.
+    # We return 0 because this level doesn't contribute to the depth count.
+    if not isinstance(d, dict) or not d:
+        return 0
+
+    # Recursive step:
+    # 1. For each value in the dictionary, recursively call dict_depth to find
+    #    the depth of its branch.
+    # 2. Find the maximum depth among all the branches.
+    # 3. Add 1 to account for the current level of nesting.
+    return 1 + max(dict_depth(value) for value in d.values())
+
+# Example usage and assertions from the problem description:
+assert dict_depth({'a': 1, 'b': {'c': {'d': {}}}}) == 4
+
+# Additional test cases to ensure correctness:
+assert dict_depth({}) == 0
+assert dict_depth({'a': 1, 'b': 2, 'c': 3}) == 1
+assert dict_depth({'a': {'b': {}}}) == 3
+assert dict_depth({'a': 1, 'b': {'c': 2}}) == 2
+assert dict_depth({'a': {'b': 1, 'c': {'d': 2}}}) == 3
+assert dict_depth(None) == 0
+assert dict_depth("not a dict") == 0
+assert dict_depth([1, 2, 3]) == 0
+
+print("All assertions passed.")
+```

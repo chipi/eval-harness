@@ -1,0 +1,32 @@
+```python
+def sumofFactors(n):
+    """
+    This function calculates the sum of even factors of a given number.
+
+    Args:
+        n (int): The input number.
+
+    Returns:
+        int: The sum of even factors of the input number.
+    """
+    # Initialize sum to 0
+    total_sum = 0
+    
+    # Iterate over all numbers from 1 to n (inclusive)
+    for i in range(1, n + 1):
+        # Check if i is a factor of n
+        if n % i == 0:
+            # Check if the factor is even
+            if i % 2 == 0:
+                # Add the even factor to the sum
+                total_sum += i
+                
+    return total_sum
+
+# Test the function
+assert sumofFactors(18) == 26
+print("Test passed")
+
+# Example usage
+print("Sum of even factors of 18:", sumofFactors(18))
+```

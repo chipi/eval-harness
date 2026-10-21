@@ -1,0 +1,10 @@
+```python
+def min_of_three(a, b, c):
+    return min(a, b, c)
+
+def main():
+    print(min_of_three(10, 20, 0))  # Expected output: 0
+
+if __name__ == "__main__":
+    main()
+```

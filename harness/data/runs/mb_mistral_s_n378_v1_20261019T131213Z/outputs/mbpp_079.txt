@@ -1,0 +1,36 @@
+Here's a self-contained Python script that solves the problem in a markdown code block:
+
+```python
+"""
+Write a python function to check whether the length of the word is odd or not.
+assert word_len("Hadoop") == False
+"""
+
+def word_len(word):
+    """Check if the length of the word is odd.
+
+    Args:
+        word (str): The input word to check.
+
+    Returns:
+        bool: True if the length is odd, False otherwise.
+    """
+    return len(word) % 2 != 0
+
+# Test the function
+assert word_len("Hadoop") == False
+assert word_len("Python") == True
+assert word_len("") == False
+assert word_len("a") == True
+
+print("All tests passed!")
+```
+
+This script:
+1. Defines a function `word_len` that checks if the length of a word is odd
+2. Uses the modulus operator `%` to determine if the length is odd
+3. Includes the required test case from the problem statement
+4. Adds additional test cases to verify edge cases
+5. Prints a confirmation message if all tests pass
+
+The function returns `True` for odd lengths and `False` for even lengths, which matches the requirement in the assertion.

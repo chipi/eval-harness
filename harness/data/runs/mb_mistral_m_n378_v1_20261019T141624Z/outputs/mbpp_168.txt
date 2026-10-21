@@ -1,0 +1,8 @@
+```python
+def frequency(lst, num):
+    """Count the number of occurrences of a number in a given list."""
+    return lst.count(num)
+
+# Test case
+assert frequency([1, 2, 3], 4) == 0
+```

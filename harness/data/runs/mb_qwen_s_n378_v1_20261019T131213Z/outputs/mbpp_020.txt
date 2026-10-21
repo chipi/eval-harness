@@ -1,0 +1,30 @@
+```python
+def is_woodall(n):
+    """
+    Check if the given number is a Woodall number.
+    
+    A Woodall number is defined as W_n = n * 2^n - 1 for some positive integer n.
+    
+    Args:
+        n (int): The number to check.
+        
+    Returns:
+        bool: True if n is a Woodall number, False otherwise.
+    """
+    if n < 0:
+        return False
+    
+    # Try values of k starting from 1 until k * 2^k - 1 exceeds n
+    k = 1
+    while True:
+        woodall_val = k * (2 ** k) - 1
+        if woodall_val == n:
+            return True
+        elif woodall_val > n:
+            return False
+        k += 1
+
+
+# Test case
+assert is_woodall(383) == True
+```

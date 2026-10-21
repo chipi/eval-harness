@@ -1,0 +1,18 @@
+```python
+def get_coordinates(coord):
+    """
+    Extract all adjacent coordinates (including the coordinate itself) of the given coordinate tuple.
+    Returns a list of lists representing the 3x3 grid centered at the given coordinate.
+    """
+    x, y = coord
+    result = []
+    for dx in [-1, 0, 1]:
+        for dy in [-1, 0, 1]:
+            result.append([x + dx, y + dy])
+    return result
+
+
+# Test
+assert get_coordinates((3, 4)) == [[2, 3], [2, 4], [2, 5], [3, 3], [3, 4], [3, 5], [4, 3], [4, 4], [4, 5]]
+print("All tests passed!")
+```

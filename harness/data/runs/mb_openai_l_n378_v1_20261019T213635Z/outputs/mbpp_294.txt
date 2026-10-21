@@ -1,0 +1,9 @@
+```python
+def max_val(items):
+    """Return the largest numeric value in a heterogeneous list."""
+    numbers = [item for item in items if isinstance(item, (int, float)) and not isinstance(item, bool)]
+    return max(numbers)
+
+
+assert max_val(['Python', 3, 2, 4, 5, 'version']) == 5
+```

@@ -1,0 +1,49 @@
+```python
+def tuple_intersection(list1, list2):
+    """
+    Find the tuple intersection of elements in the given tuple lists irrespective of their order.
+    
+    Args:
+        list1: First list of tuples
+        list2: Second list of tuples
+    
+    Returns:
+        A set of tuples that appear in both lists (considering order-independent matching)
+    """
+    # Normalize tuples to a canonical form (sorted) for comparison
+    # This allows (3, 4) and (4, 3) to be considered the same
+    normalized_list1 = {tuple(sorted(t)) for t in list1}
+    normalized_list2 = {tuple(sorted(t)) for t in list2}
+    
+    # Find intersection of the normalized sets
+    intersection = normalized_list1 & normalized_list2
+    
+    return intersection
+
+
+# Test with the provided assertion
+result = tuple_intersection([(3, 4), (5, 6), (9, 10), (4, 5)], [(5, 4), (3, 4), (6, 5), (9, 11)])
+expected = {(4, 5), (3, 4), (5, 6)}
+
+print(f"Result: {result}")
+print(f"Expected: {expected}")
+print(f"Test passed: {result == expected}")
+
+assert result == expected, f"Expected {expected}, but got {result}"
+print("✓ Assertion passed!")
+```
+
+**Explanation:**
+
+1. **Normalization**: The function converts each tuple to a sorted tuple (canonical form) so that `(3, 4)` and `(4, 3)` are treated as the same element.
+
+2. **Set Creation**: Both lists are converted to sets of normalized tuples, which automatically removes duplicates.
+
+3. **Intersection**: The `&` operator finds the common elements between the two sets.
+
+4. **Result**: Returns a set of tuples representing the intersection.
+
+For the given example:
+- `list1` normalized: `{(3, 4), (4, 5), (5, 6), (9, 10)}`
+- `list2` normalized: `{(3, 4), (4, 5), (5, 6), (9, 11)}`
+- Intersection: `{(3, 4), (4, 5), (5, 6)}`

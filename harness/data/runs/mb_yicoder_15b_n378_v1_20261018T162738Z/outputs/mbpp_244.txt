@@ -1,0 +1,21 @@
+```python
+def next_Perfect_Square(n):
+    if n < 0:
+        return "Invalid input. Please enter a non-negative number."
+    elif n == 0:
+        return 1
+    else:
+        root = n ** 0.5
+        if root.is_integer():
+            return (root + 1)**2
+        else:
+            return "There is no perfect square greater than the given number."
+
+# Test cases
+assert next_Perfect_Square(35) == 36
+assert next_Perfect_Square(144) == 144
+assert next_Perfect_Square(0) == 1
+assert next_Perfect_Square(-1) == "Invalid input. Please enter a non-negative number."
+assert next_Perfect_Square(1) == 4
+assert next_Perfect_Square(100) == 121
+```

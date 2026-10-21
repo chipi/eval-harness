@@ -1,0 +1,28 @@
+```python
+"""
+Write a function to maximize the given two tuples.
+assert maximize_elements(((1, 3), (4, 5), (2, 9), (1, 10)), ((6, 7), (3, 9), (1, 1), (7, 3))) == ((6, 7), (4, 9), (2, 9), (7, 10))
+"""
+
+def maximize_elements(t1, t2):
+    """
+    Takes two tuples of tuples and returns a new tuple of tuples where each 
+    inner element is the element-wise maximum of the corresponding inner tuples.
+    
+    Args:
+        t1 (tuple): A tuple containing tuples of numbers.
+        t2 (tuple): A tuple containing tuples of numbers.
+        
+    Returns:
+        tuple: A tuple of tuples with maximized elements.
+    """
+    # Use zip to pair corresponding inner tuples from t1 and t2
+    result = tuple(
+        tuple(max(a, b) for a, b in zip(sub1, sub2))
+        for sub1, sub2 in zip(t1, t2)
+    )
+    return result
+
+# Assert provided in the problem
+assert maximize_elements(((1, 3), (4, 5), (2, 9), (1, 10)), ((6, 7), (3, 9), (1, 1), (7, 3))) == ((6, 7), (4, 9), (2, 9), (7, 10))
+```

@@ -1,0 +1,38 @@
+Here's a self-contained Python script that solves the problem by implementing the `and_tuples` function, which performs a bitwise AND operation on each corresponding pair of elements in the two input tuples:
+
+```python
+def and_tuples(tuple1, tuple2):
+    """
+    Perform element-wise bitwise AND operation on two tuples of the same length.
+
+    Args:
+        tuple1: First input tuple of integers.
+        tuple2: Second input tuple of integers.
+
+    Returns:
+        A tuple where each element is the result of the bitwise AND of the corresponding
+        elements in tuple1 and tuple2.
+
+    Raises:
+        ValueError: If the input tuples have different lengths.
+    """
+    if len(tuple1) != len(tuple2):
+        raise ValueError("Input tuples must have the same length")
+
+    return tuple(a & b for a, b in zip(tuple1, tuple2))
+
+# Test the function with the provided assertion
+assert and_tuples((10, 4, 6, 9), (5, 2, 3, 3)) == (0, 0, 2, 1)
+
+# Example usage
+if __name__ == "__main__":
+    print(and_tuples((10, 4, 6, 9), (5, 2, 3, 3)))  # Output: (0, 0, 2, 1)
+```
+
+### Explanation:
+1. The function `and_tuples` takes two tuples as input.
+2. It first checks if the tuples have the same length; if not, it raises a `ValueError`.
+3. It then uses a generator expression with `zip` to iterate over corresponding elements of the two tuples, performing a bitwise AND (`&`) on each pair.
+4. The result is converted to a tuple and returned.
+5. The provided assertion is included to verify the correctness of the function.
+6. The `if __name__ == "__main__":` block demonstrates the function's usage.

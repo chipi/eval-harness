@@ -1,0 +1,32 @@
+```python
+def pancake_sort(arr):
+    arr = arr[:]
+    n = len(arr)
+    
+    def flip(arr, k):
+        left = 0
+        while left < k:
+            arr[left], arr[k] = arr[k], arr[left]
+            left += 1
+            k -= 1
+    
+    def max_index(arr, n):
+        max_idx = 0
+        for i in range(1, n):
+            if arr[i] > arr[max_idx]:
+                max_idx = i
+        return max_idx
+    
+    for curr_size in range(n, 1, -1):
+        max_idx = max_index(arr, curr_size)
+        if max_idx != curr_size - 1:
+            flip(arr, max_idx)
+            flip(arr, curr_size - 1)
+    
+    return arr
+
+
+if __name__ == "__main__":
+    assert pancake_sort([15, 79, 25, 38, 69]) == [15, 25, 38, 69, 79]
+    print("All test cases passed!")
+```

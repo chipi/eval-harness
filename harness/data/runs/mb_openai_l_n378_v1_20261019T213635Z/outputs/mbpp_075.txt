@@ -1,0 +1,13 @@
+```python
+def find_tuples(tuples, k):
+    """Return tuples whose elements are all divisible by k."""
+    if k == 0:
+        raise ValueError("k must be nonzero")
+    return [item for item in tuples if all(value % k == 0 for value in item)]
+
+
+if __name__ == "__main__":
+    assert find_tuples(
+        [(6, 24, 12), (7, 9, 6), (12, 18, 21)], 6
+    ) == [(6, 24, 12)]
+```

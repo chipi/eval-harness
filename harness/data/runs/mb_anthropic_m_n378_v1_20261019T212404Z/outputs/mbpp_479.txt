@@ -1,0 +1,15 @@
+```python
+def first_Digit(n):
+    n = abs(n)
+    while n >= 10:
+        n //= 10
+    return n
+
+assert first_Digit(123) == 1
+
+if __name__ == "__main__":
+    print(first_Digit(123))
+    print(first_Digit(7))
+    print(first_Digit(-456))
+    print(first_Digit(1000))
+```

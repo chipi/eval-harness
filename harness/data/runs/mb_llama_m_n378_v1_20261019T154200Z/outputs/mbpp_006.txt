@@ -1,0 +1,28 @@
+```python
+def differ_At_One_Bit_Pos(num1, num2):
+    """
+    This function checks whether two numbers differ at one bit position only or not.
+    
+    Parameters:
+    num1 (int): The first number.
+    num2 (int): The second number.
+    
+    Returns:
+    bool: True if the numbers differ at one bit position, False otherwise.
+    """
+    # Calculate the XOR of the two numbers
+    xor_result = num1 ^ num2
+    
+    # Count the number of bits set in the XOR result
+    count = 0
+    while xor_result:
+        count += xor_result & 1
+        xor_result >>= 1
+    
+    # If only one bit is set, the numbers differ at one bit position
+    return count == 1
+
+# Test the function
+assert differ_At_One_Bit_Pos(13, 9) == True
+print("Test passed")
+```

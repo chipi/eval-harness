@@ -1,0 +1,39 @@
+```python
+from typing import List
+
+def max_sum_increasing_subseq(arr: List[int], n: int, i: int, k: int) -> int:
+    """
+    Return the maximum sum of an increasing subsequence such that:
+      - the subsequence uses elements from arr[0..i]
+      - it must also include arr[k]
+      - k > i
+      - the subsequence is strictly increasing in value
+    Assumes 0-based indexing for i and k.
+    """
+    if not (0 <= i < k < n):
+        raise ValueError("Require 0 <= i < k < n")
+
+    # Best sum of an increasing subsequence ending at each position
+    dp = arr[:]
+
+    # Standard MSIS DP for prefix up to i
+    for j in range(i + 1):
+        for p in range(j):
+            if arr[p] < arr[j]:
+                dp[j] = max(dp[j], dp[p] + arr[j])
+
+    # Now force inclusion of arr[k]
+    # We can append arr[k] to any increasing subsequence ending at j <= i
+    # where arr[j] < arr[k].
+    best = arr[k]
+    for j in range(i + 1):
+        if arr[j] < arr[k]:
+            best = max(best, dp[j] + arr[k])
+
+    return best
+
+
+if __name__ == "__main__":
+    assert max_sum_increasing_subseq([1, 101, 2, 3, 100, 4, 5], 7, 4, 6) == 11
+    print("Passed example test.")
+```

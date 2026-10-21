@@ -1,0 +1,32 @@
+```python
+def left_insertion(sorted_list, value):
+    """
+    Locates the left insertion point for a specified value in a sorted list.
+
+    Args:
+        sorted_list: A sorted list of numbers.
+        value: The value to find the insertion point for.
+
+    Returns:
+        The index where the value should be inserted to maintain sorted order.
+    """
+    low = 0
+    high = len(sorted_list)
+
+    while low < high:
+        mid = (low + high) // 2
+        if sorted_list[mid] < value:
+            low = mid + 1
+        else:
+            high = mid
+
+    return low
+
+if __name__ == '__main__':
+    assert left_insertion([1, 2, 4, 5], 6) == 4
+    assert left_insertion([1, 2, 4, 5], 3) == 2
+    assert left_insertion([1, 2, 4, 5], 1) == 0
+    assert left_insertion([1, 2, 4, 5], 5) == 3
+    assert left_insertion([1, 2, 4, 5], 0) == 0
+    print("All test cases passed!")
+```

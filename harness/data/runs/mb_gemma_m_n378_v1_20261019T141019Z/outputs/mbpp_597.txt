@@ -1,0 +1,66 @@
+To solve this problem efficiently, we can use a binary search approach (logarithmic time complexity) rather than merging the arrays (linear time complexity). The goal is to find a partition in both arrays such that the total number of elements in the left partitions equals $k$.
+
+Here is the self-contained Python script:
+
+```python
+def find_kth(arr1, arr2, k):
+    """
+    Finds the kth smallest element in the union of two sorted arrays.
+    Uses a binary search approach with O(log(min(n, m))) time complexity.
+    """
+    n, m = len(arr1), len(arr2)
+    
+    # Ensure arr1 is the shorter array to minimize binary search range
+    if n > m:
+        return find_kth(arr2, arr1, k)
+    
+    # Binary search range for the number of elements taken from arr1
+    # We can take at most k elements, and at most all elements in arr1
+    # We must also ensure we don't take so few that we'd need more than m from arr2
+    low = max(0, k - m)
+    high = min(k, n)
+    
+    while low <= high:
+        cut1 = (low + high) // 2
+        cut2 = k - cut1
+        
+        # Boundary values for the partitions
+        # If cut is 0, there is no left element (use -infinity)
+        # If cut is at the end, there is no right element (use +infinity)
+        l1 = arr1[cut1 - 1] if cut1 > 0 else float('-inf')
+        l2 = arr2[cut2 - 1] if cut2 > 0 else float('-inf')
+        r1 = arr1[cut1] if cut1 < n else float('inf')
+        r2 = arr2[cut2] if cut2 < m else float('inf')
+        
+        # Check if we found the correct partition
+        if l1 <= r2 and l2 <= r1:
+            return max(l1, l2)
+        elif l1 > r2:
+            # Too many elements from arr1, move left
+            high = cut1 - 1
+        else:
+            # Too few elements from arr1, move right
+            low = cut1 + 1
+            
+    return None
+
+# Test cases
+if __name__ == "__main__":
+    # Provided test case
+    assert find_kth([2, 3, 6, 7, 9], [1, 4, 8, 10], 5) == 6
+    
+    # Additional test cases
+    assert find_kth([1, 2], [3, 4], 2) == 2
+    assert find_kth([1, 2], [3, 4], 3) == 3
+    assert find_kth([10, 20, 30], [5, 15, 25], 4) == 15
+    assert find_kth([], [1, 2, 3], 2) == 2
+    assert find_kth([1, 2, 3], [], 1) == 1
+    
+    print("All tests passed!")
+```
+
+### Explanation:
+1.  **Efficiency**: Instead of merging the arrays (which takes $O(n+m)$), this algorithm uses binary search on the smaller array, resulting in $O(\log(\min(n, m)))$ time complexity.
+2.  **Logic**: We try to partition both arrays into two parts such that the total number of elements in the "left" parts is exactly $k$. 
+3.  **Conditions**: A partition is valid if the largest element on the left side of `arr1` is $\le$ the smallest element on the right side of `arr2`, and vice versa.
+4.  **Edge Cases**: The script handles empty arrays and cases where $k$ is at the very beginning or end of the combined sequence using `float('-inf')` and `float('inf')`.

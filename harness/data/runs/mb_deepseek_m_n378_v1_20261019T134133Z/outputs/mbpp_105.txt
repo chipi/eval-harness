@@ -1,0 +1,32 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def count(lst):
+    """
+    Counts the number of True booleans in the given list.
+    
+    Args:
+        lst: A list containing boolean values (and possibly other values).
+    
+    Returns:
+        The count of True values in the list.
+    """
+    return sum(1 for item in lst if item is True)
+
+
+# Test the function
+assert count([True, False, True]) == 2
+assert count([True, True, True]) == 3
+assert count([False, False, False]) == 0
+assert count([]) == 0
+assert count([True, False, True, False, True]) == 3
+
+print("All tests passed!")
+```
+
+**Explanation:**
+
+- The function `count` iterates through the list using a generator expression.
+- `item is True` ensures we only count actual `True` boolean values (not truthy values like `1` or `"hello"`).
+- `sum(1 for ...)` adds 1 for each matching item, giving the total count.
+- The `assert` statements verify the function works correctly, including the example from the problem statement.

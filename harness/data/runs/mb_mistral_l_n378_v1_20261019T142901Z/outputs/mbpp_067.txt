@@ -1,0 +1,50 @@
+Here's a self-contained Python script that calculates the Bell number (the number of ways to partition a set) for a given input. The script includes the function `bell_number` and the assertion test as requested:
+
+```python
+"""
+A script to calculate the Bell number for a given n, which represents the number of ways
+to partition a set of n elements.
+
+The Bell number B(n) can be computed using the Bell triangle method.
+"""
+
+def bell_number(n):
+    """
+    Calculate the nth Bell number using dynamic programming.
+
+    Args:
+        n (int): The index of the Bell number to compute.
+
+    Returns:
+        int: The nth Bell number.
+    """
+    if n == 0:
+        return 1
+
+    # Initialize a Bell triangle with (n+1) x (n+1) elements
+    bell = [[0] * (n + 1) for _ in range(n + 1)]
+    bell[0][0] = 1  # Base case: B(0) = 1
+
+    for i in range(1, n + 1):
+        # The first element of the row is the last element of the previous row
+        bell[i][0] = bell[i - 1][i - 1]
+
+        for j in range(1, i + 1):
+            bell[i][j] = bell[i][j - 1] + bell[i - 1][j - 1]
+
+    return bell[n][0]
+
+# Test the function
+assert bell_number(2) == 2, "Test failed: bell_number(2) should be 2"
+print("Test passed: bell_number(2) ==", bell_number(2))
+```
+
+### Explanation:
+1. **Bell Triangle Method**: The Bell number \( B(n) \) is computed using a dynamic programming approach where we build a Bell triangle. Each entry in the triangle is derived from previous entries.
+2. **Base Case**: \( B(0) = 1 \).
+3. **Recurrence Relation**:
+   - The first element of the \( i \)-th row is the last element of the \( (i-1) \)-th row.
+   - The \( j \)-th element of the \( i \)-th row is the sum of the \( (j-1) \)-th element of the \( i \)-th row and the \( (j-1) \)-th element of the \( (i-1) \)-th row.
+4. **Result**: The \( n \)-th Bell number is the first element of the \( n \)-th row in the Bell triangle.
+
+The script includes the assertion test `assert bell_number(2) == 2` to verify correctness.

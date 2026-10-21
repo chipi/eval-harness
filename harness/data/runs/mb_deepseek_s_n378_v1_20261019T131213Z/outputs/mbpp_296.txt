@@ -1,0 +1,68 @@
+```python
+def get_Inv_Count(arr):
+    """
+    Count the number of inversions in an array using a modified merge sort.
+    An inversion is a pair (i, j) such that i < j and arr[i] > arr[j].
+    """
+    def merge_sort_and_count(arr, temp_arr, left, right):
+        inv_count = 0
+        if left < right:
+            mid = (left + right) // 2
+
+            # Count inversions in left half
+            inv_count += merge_sort_and_count(arr, temp_arr, left, mid)
+            # Count inversions in right half
+            inv_count += merge_sort_and_count(arr, temp_arr, mid + 1, right)
+            # Count inversions when merging the two halves
+            inv_count += merge_and_count(arr, temp_arr, left, mid, right)
+
+        return inv_count
+
+    def merge_and_count(arr, temp_arr, left, mid, right):
+        i = left      # Starting index of left subarray
+        j = mid + 1   # Starting index of right subarray
+        k = left      # Starting index of merged subarray
+        inv_count = 0
+
+        while i <= mid and j <= right:
+            if arr[i] <= arr[j]:
+                temp_arr[k] = arr[i]
+                i += 1
+            else:
+                # All remaining elements in left subarray (i..mid) are greater than arr[j]
+                temp_arr[k] = arr[j]
+                inv_count += (mid - i + 1)
+                j += 1
+            k += 1
+
+        # Copy remaining elements of left subarray, if any
+        while i <= mid:
+            temp_arr[k] = arr[i]
+            i += 1
+            k += 1
+
+        # Copy remaining elements of right subarray, if any
+        while j <= right:
+            temp_arr[k] = arr[j]
+            j += 1
+            k += 1
+
+        # Copy the sorted subarray back to original array
+        for idx in range(left, right + 1):
+            arr[idx] = temp_arr[idx]
+
+        return inv_count
+
+    # Create a temporary array for merge sort
+    temp_arr = [0] * len(arr)
+    return merge_sort_and_count(arr, temp_arr, 0, len(arr) - 1)
+
+
+# Test the function
+if __name__ == "__main__":
+    test_array = [1, 20, 6, 4, 5]
+    result = get_Inv_Count(test_array)
+    print(f"Inversion count for {test_array}: {result}")
+    assert result == 5, f"Expected 5 but got {result}"
+    print("Test passed!")
+```

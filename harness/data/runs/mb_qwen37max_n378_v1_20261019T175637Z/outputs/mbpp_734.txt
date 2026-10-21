@@ -1,0 +1,23 @@
+```python
+def sum_Of_Subarray_Prod(arr):
+    """
+    Find sum of products of all possible sublists (contiguous subarrays) of a given list.
+    
+    For [1,2,3]:
+    Subarrays: [1], [2], [3], [1,2], [2,3], [1,2,3]
+    Products:   1,   2,   3,   2,     6,     6
+    Sum = 1+2+3+2+6+6 = 20
+    """
+    n = len(arr)
+    total = 0
+    for i in range(n):
+        product = 1
+        for j in range(i, n):
+            product *= arr[j]
+            total += product
+    return total
+
+
+# Test
+assert sum_Of_Subarray_Prod([1, 2, 3]) == 20
+```

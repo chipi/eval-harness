@@ -1,0 +1,70 @@
+```python
+def heap_sort(arr):
+    """
+    Sorts a list in ascending order using the heap sort algorithm.
+    
+    Args:
+    arr (list): A list of comparable elements (e.g., numbers).
+    
+    Returns:
+    list: The sorted list in ascending order.
+    """
+    
+    def heapify(array, n, i):
+        """
+        Rearranges the subtree rooted at index i so that it satisfies 
+        the max-heap property.
+        
+        Args:
+        array (list): The list representing the heap.
+        n (int): The size of the heap (limit of the list to consider).
+        i (int): The index of the root of the subtree.
+        """
+        largest = i  # Initialize largest as root
+        left = 2 * i + 1
+        right = 2 * i + 2
+        
+        # Check if left child exists and is greater than root
+        if left < n and array[left] > array[largest]:
+            largest = left
+            
+        # Check if right child exists and is greater than largest so far
+        if right < n and array[right] > array[largest]:
+            largest = right
+            
+        # Change root, if needed
+        if largest != i:
+            array[i], array[largest] = array[largest], array[i]  # Swap
+            
+            # Heapify the root of the affected subtree
+            heapify(array, n, largest)
+
+    n = len(arr)
+    
+    # Build a max-heap.
+    # We start from the last non-leaf node and go up to the root.
+    for i in range(n // 2 - 1, -1, -1):
+        heapify(arr, n, i)
+        
+    # Extract elements from the heap one by one.
+    for i in range(n - 1, 0, -1):
+        # Move current root (largest) to the end
+        arr[i], arr[0] = arr[0], arr[i]
+        
+        # Call heapify on the reduced heap
+        heapify(arr, i, 0)
+        
+    return arr
+
+# Test the function based on the provided assertion
+if __name__ == "__main__":
+    test_list = [1, 3, 5, 7, 9, 2, 4, 6, 8, 0]
+    expected_result = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    
+    result = heap_sort(test_list)
+    
+    # Verify the result
+    assert result == expected_result, f"Test failed: expected {expected_result}, got {result}"
+    print("Test passed successfully!")
+    print(f"Sorted list: {result}")
+```

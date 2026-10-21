@@ -1,0 +1,44 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def replace_list(list1, list2):
+    """
+    Replaces the last element of the first list with the elements of the second list.
+    
+    Args:
+        list1 (list): The first list whose last element will be replaced.
+        list2 (list): The second list whose elements will replace the last element of list1.
+    
+    Returns:
+        list: A new list with the last element of list1 replaced by all elements of list2.
+    """
+    if not list1:
+        return list2.copy()
+    
+    # Create a new list by taking all elements except the last one from list1
+    # and then adding all elements from list2
+    new_list = list1[:-1] + list2
+    return new_list
+
+# Test cases
+assert replace_list([1, 3, 5, 7, 9, 10], [2, 4, 6, 8]) == [1, 3, 5, 7, 9, 2, 4, 6, 8]
+assert replace_list([1, 2, 3], [4, 5]) == [1, 2, 4, 5]
+assert replace_list([1], [2, 3, 4]) == [2, 3, 4]
+assert replace_list([], [1, 2]) == [1, 2]
+assert replace_list([1, 2, 3], []) == [1, 2]
+
+print("All test cases passed!")
+```
+
+### Explanation:
+1. The function `replace_list` takes two lists as input.
+2. If the first list is empty, it returns a copy of the second list.
+3. Otherwise, it creates a new list by taking all elements except the last one from the first list (`list1[:-1]`) and concatenating it with the second list (`list2`).
+4. The function returns this new list.
+5. The test cases verify the function works correctly for various scenarios, including:
+   - Normal case where both lists have elements
+   - First list has only one element
+   - First list is empty
+   - Second list is empty
+
+The script will print "All test cases passed!" if all assertions are true.

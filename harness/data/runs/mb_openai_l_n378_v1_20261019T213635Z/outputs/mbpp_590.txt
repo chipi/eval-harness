@@ -1,0 +1,17 @@
+```python
+import cmath
+import math
+
+
+def polar_rect(x, y):
+    """Return the polar form of (x, y) and its corresponding complex value."""
+    polar = (math.hypot(x, y), math.atan2(y, x))
+    rectangular = cmath.rect(x, y)
+    return polar, rectangular
+
+
+assert polar_rect(3, 4) == (
+    (5.0, 0.9272952180016122),
+    (-2 + 2.4492935982947064e-16j),
+)
+```

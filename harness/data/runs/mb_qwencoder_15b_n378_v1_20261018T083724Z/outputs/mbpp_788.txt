@@ -1,0 +1,12 @@
+```python
+def new_tuple(string_list, element):
+    # Create a new tuple using the provided string list and element
+    result = tuple(string_list + [element])
+    return result
+
+# Test cases to verify the correctness of the solution
+assert new_tuple(["WEB", "is"], "best") == ('WEB', 'is', 'best')
+assert new_tuple([], "Python") == ('Python',)
+assert new_tuple(["Java", "C++"], "Ruby") == ('Java', 'C++', 'Ruby')
+```
+

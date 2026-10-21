@@ -1,0 +1,11 @@
+```python
+def min_of_three(a, b, c):
+    return min(a, b, c)
+
+
+# Example test
+assert min_of_three(10, 20, 0) == 0
+
+if __name__ == "__main__":
+    print("All tests passed.")
+```

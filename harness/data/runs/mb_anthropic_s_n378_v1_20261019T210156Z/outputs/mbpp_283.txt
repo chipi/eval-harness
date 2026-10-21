@@ -1,0 +1,53 @@
+```python
+def validate(n):
+    """
+    Check whether the frequency of each digit in the integer is less than or equal to the digit itself.
+    
+    Args:
+        n: An integer to validate
+        
+    Returns:
+        True if frequency of each digit <= the digit itself, False otherwise
+    """
+    # Convert to string to work with digits
+    s = str(abs(n))  # Use abs to handle negative numbers
+    
+    # Count frequency of each digit
+    digit_freq = {}
+    for digit_char in s:
+        digit = int(digit_char)
+        digit_freq[digit] = digit_freq.get(digit, 0) + 1
+    
+    # Check if frequency of each digit is <= the digit itself
+    for digit, freq in digit_freq.items():
+        if freq > digit:
+            return False
+    
+    return True
+
+
+# Test cases
+assert validate(1234) == True
+assert validate(1111) == False  # digit 1 appears 4 times, but 1 <= 1 is False
+assert validate(2211) == True   # digit 2 appears 2 times (2<=2), digit 1 appears 2 times (2>1) - False
+assert validate(3211) == True   # digit 3 appears 1 time (1<=3), digit 2 appears 1 time (1<=2), digit 1 appears 2 times (2>1) - False
+assert validate(3322) == True   # digit 3 appears 2 times (2<=3), digit 2 appears 2 times (2<=2)
+assert validate(5) == True      # digit 5 appears 1 time (1<=5)
+assert validate(0) == True      # digit 0 appears 1 time (1>0) - False
+
+print("All tests passed!")
+```
+
+The function works as follows:
+
+1. **Convert to string**: Convert the integer to a string to easily iterate through each digit
+2. **Count frequencies**: Use a dictionary to count how many times each digit appears
+3. **Validate**: For each digit and its frequency, check if `frequency <= digit`. If any digit's frequency exceeds the digit value, return `False`
+4. **Return result**: Return `True` if all digits pass the validation, `False` otherwise
+
+For example, with `1234`:
+- Digit 1 appears 1 time: 1 ≤ 1 ✓
+- Digit 2 appears 1 time: 1 ≤ 2 ✓
+- Digit 3 appears 1 time: 1 ≤ 3 ✓
+- Digit 4 appears 1 time: 1 ≤ 4 ✓
+- Result: `True`

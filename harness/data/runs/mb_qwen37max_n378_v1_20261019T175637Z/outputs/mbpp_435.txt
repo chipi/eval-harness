@@ -1,0 +1,6 @@
+```python
+def last_Digit(n):
+    return abs(n) % 10
+
+assert last_Digit(123) == 3
+```

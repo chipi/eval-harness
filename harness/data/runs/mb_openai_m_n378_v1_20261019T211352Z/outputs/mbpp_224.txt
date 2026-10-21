@@ -1,0 +1,33 @@
+```python
+"""
+Write a python function to count the number of set bits (binary digits with value 1)
+in a given number.
+
+Example:
+assert count_Set_Bits(2) == 1
+"""
+
+def count_Set_Bits(n):
+    """
+    Count the number of set bits (1s) in the binary representation of a non-negative integer.
+    """
+    if n < 0:
+        raise ValueError("Only non-negative integers are supported")
+
+    count = 0
+    while n:
+        count += n & 1
+        n >>= 1
+
+    return count
+
+
+if __name__ == "__main__":
+    assert count_Set_Bits(2) == 1
+    assert count_Set_Bits(0) == 0
+    assert count_Set_Bits(1) == 1
+    assert count_Set_Bits(7) == 3
+    assert count_Set_Bits(10) == 2
+
+    print("All tests passed.")
+```

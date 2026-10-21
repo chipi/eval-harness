@@ -1,0 +1,10 @@
+```python
+def max_Abs_Diff(arr):
+    """Return the maximum absolute difference between two elements."""
+    if not arr:
+        raise ValueError("arr must not be empty")
+    return max(arr) - min(arr)
+
+
+assert max_Abs_Diff((2, 1, 5, 3)) == 4
+```

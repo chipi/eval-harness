@@ -1,0 +1,34 @@
+```python
+"""
+Write a function to get the angle of a complex number.
+
+The angle (also called the phase or argument) of a complex number z is the angle
+between the positive real axis and the line from the origin to z.
+
+For a complex number z = x + yi, the angle is atan2(y, x), in radians.
+"""
+
+import math
+
+
+def angle_complex(real, imag):
+    """
+    Return the angle of the complex number real + imag.
+
+    Parameters:
+        real: The real part of the complex number.
+        imag: The imaginary part, which may be a number or a complex value
+              such as 1j.
+
+    Returns:
+        The angle in radians.
+    """
+    z = complex(real) + complex(imag)
+    return math.atan2(z.imag, z.real)
+
+
+# Example test
+assert math.isclose(angle_complex(0, 1j), 1.5707963267948966, rel_tol=0.001)
+
+print("All tests passed.")
+```

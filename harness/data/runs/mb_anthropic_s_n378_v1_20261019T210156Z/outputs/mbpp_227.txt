@@ -1,0 +1,24 @@
+```python
+def min_of_three(a, b, c):
+    """
+    Find the minimum of three numbers.
+    
+    Args:
+        a: First number
+        b: Second number
+        c: Third number
+    
+    Returns:
+        The minimum of the three numbers
+    """
+    return min(a, b, c)
+
+
+# Test cases
+assert min_of_three(10, 20, 0) == 0
+assert min_of_three(5, 3, 8) == 3
+assert min_of_three(-1, -5, -3) == -5
+assert min_of_three(100, 100, 100) == 100
+
+print("All tests passed!")
+```

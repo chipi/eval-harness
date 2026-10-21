@@ -1,0 +1,13 @@
+```python
+def snake_to_camel(snake_str):
+    """Converts a snake case string to camel case string."""
+    components = snake_str.split('_')
+    return ''.join(x.capitalize() for x in components)
+
+def main():
+    # Test the function
+    print(snake_to_camel('python_program'))  # Should print 'PythonProgram'
+
+if __name__ == "__main__":
+    main()
+```

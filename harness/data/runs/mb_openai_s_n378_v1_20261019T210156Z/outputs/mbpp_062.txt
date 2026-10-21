@@ -1,0 +1,15 @@
+```python
+def smallest_num(nums):
+    if not nums:
+        raise ValueError("The list must not be empty.")
+    smallest = nums[0]
+    for num in nums[1:]:
+        if num < smallest:
+            smallest = num
+    return smallest
+
+
+if __name__ == "__main__":
+    assert smallest_num([10, 20, 1, 45, 99]) == 1
+    print("All tests passed.")
+```

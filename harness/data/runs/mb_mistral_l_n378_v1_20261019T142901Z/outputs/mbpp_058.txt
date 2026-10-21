@@ -1,0 +1,27 @@
+Here's a self-contained Python script that solves the problem of checking whether two given integers have opposite signs:
+
+```python
+def opposite_signs(x, y):
+    """
+    Check if two integers have opposite signs.
+
+    Args:
+        x (int): First integer
+        y (int): Second integer
+
+    Returns:
+        bool: True if x and y have opposite signs, False otherwise
+    """
+    return (x ^ y) < 0
+
+# Test case
+assert opposite_signs(1, -2) == True
+```
+
+### Explanation:
+1. The function `opposite_signs` takes two integers `x` and `y` as input.
+2. The expression `(x ^ y) < 0` works because:
+   - The XOR operation (`^`) between two numbers with opposite signs will have the most significant bit (sign bit) set to 1, making the result negative.
+   - If the numbers have the same sign, the XOR result will be positive (or zero if both are zero).
+3. The function returns `True` if the numbers have opposite signs, `False` otherwise.
+4. The test case `assert opposite_signs(1, -2) == True` verifies that the function works correctly.

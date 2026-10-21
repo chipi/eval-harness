@@ -1,0 +1,53 @@
+```python
+def is_samepatterns(colors, patterns):
+    """
+    Check whether the colors list follows the sequence given in the patterns array.
+    
+    Two lists follow the same pattern if there is a bijective mapping (one-to-one correspondence)
+    between the elements of the patterns and the elements of the colors such that identical 
+    elements in the patterns correspond to identical elements in the colors, and vice versa.
+    
+    Args:
+        colors (list): The list of items to check.
+        patterns (list): The list representing the pattern.
+        
+    Returns:
+        bool: True if colors follows the patterns, False otherwise.
+    """
+    if len(colors) != len(patterns):
+        return False
+        
+    mapping = {}
+    reverse_mapping = {}
+    
+    for color, pattern in zip(colors, patterns):
+        if pattern in mapping:
+            if mapping[pattern] != color:
+                return False
+        else:
+            if color in reverse_mapping and reverse_mapping[color] != pattern:
+                return False
+            mapping[pattern] = color
+            reverse_mapping[color] = pattern
+            
+    return True
+
+if __name__ == "__main__":
+    # Provided test case
+    assert is_samepatterns(["red", "green", "green"], ["a", "b", "b"]) == True
+    
+    # Additional test cases to ensure robustness
+    # Different patterns mapping to the same color (violates one-to-one mapping)
+    assert is_samepatterns(["red", "red", "green"], ["a", "b", "b"]) == False
+    
+    # Same pattern mapping to different colors
+    assert is_samepatterns(["red", "green", "blue"], ["a", "b", "a"]) == False
+    
+    # Mismatched lengths
+    assert is_samepatterns(["red", "green"], ["a", "b", "b"]) == False
+    
+    # Completely different elements but same pattern
+    assert is_samepatterns(["blue", "yellow", "yellow"], ["x", "y", "y"]) == True
+    
+    print("All test cases passed!")
+```

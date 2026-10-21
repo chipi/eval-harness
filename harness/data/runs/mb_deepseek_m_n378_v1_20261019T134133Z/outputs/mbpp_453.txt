@@ -1,0 +1,37 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def sumofFactors(n):
+    """
+    Find the sum of even factors of a number.
+    
+    Args:
+        n (int): The number to find even factors for.
+    
+    Returns:
+        int: The sum of all even factors of n.
+    """
+    total = 0
+    for i in range(1, n + 1):
+        if n % i == 0 and i % 2 == 0:
+            total += i
+    return total
+
+
+# Test the function
+assert sumofFactors(18) == 26
+print("Test passed!")
+print(f"sumofFactors(18) = {sumofFactors(18)}")
+print(f"sumofFactors(12) = {sumofFactors(12)}")
+print(f"sumofFactors(7) = {sumofFactors(7)}")
+```
+
+**Explanation:**
+
+The function `sumofFactors(n)` iterates through all integers from 1 to `n` and checks two conditions:
+1. `n % i == 0` — `i` is a factor of `n`
+2. `i % 2 == 0` — `i` is even
+
+If both conditions are met, `i` is added to the running total.
+
+For `n = 18`, the factors are: 1, 2, 3, 6, 9, 18. The even ones are: 2, 6, 18. Their sum is `2 + 6 + 18 = 26`. ✓

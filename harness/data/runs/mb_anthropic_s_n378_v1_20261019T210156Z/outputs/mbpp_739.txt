@@ -1,0 +1,76 @@
+```python
+def find_Index(n):
+    """
+    Find the index of the smallest triangular number with n digits.
+    
+    A triangular number is the sum of the first k positive integers: T(k) = k*(k+1)/2
+    
+    Args:
+        n: Number of digits required
+        
+    Returns:
+        The index k of the smallest triangular number with n digits
+    """
+    # The smallest n-digit number is 10^(n-1)
+    # We need to find the smallest k such that k*(k+1)/2 >= 10^(n-1)
+    
+    # From k*(k+1)/2 >= 10^(n-1)
+    # k^2 + k >= 2 * 10^(n-1)
+    # k^2 + k - 2 * 10^(n-1) >= 0
+    
+    # Using quadratic formula: k = (-1 + sqrt(1 + 8 * 10^(n-1))) / 2
+    
+    import math
+    
+    min_n_digit_number = 10 ** (n - 1)
+    
+    # Solve k*(k+1)/2 >= min_n_digit_number
+    # k^2 + k - 2*min_n_digit_number >= 0
+    # Using quadratic formula
+    discriminant = 1 + 8 * min_n_digit_number
+    k = (-1 + math.sqrt(discriminant)) / 2
+    
+    # We need the ceiling of k to get the smallest integer that satisfies the condition
+    k = math.ceil(k)
+    
+    # Verify that the triangular number has exactly n digits
+    triangular = k * (k + 1) // 2
+    
+    # If it has more than n digits, we might have a rounding issue, but this shouldn't happen
+    # with our calculation
+    
+    return k
+
+
+# Test cases
+if __name__ == "__main__":
+    assert find_Index(2) == 4
+    
+    # Verify: T(4) = 4*5/2 = 10 (2 digits) ✓
+    # T(3) = 3*4/2 = 6 (1 digit)
+    print(f"T(4) = {4*5//2}")  # Should be 10
+    print(f"T(3) = {3*4//2}")  # Should be 6
+    
+    # Additional test cases
+    print(f"find_Index(1) = {find_Index(1)}")  # Should be 1 (T(1) = 1)
+    print(f"find_Index(2) = {find_Index(2)}")  # Should be 4 (T(4) = 10)
+    print(f"find_Index(3) = {find_Index(3)}")  # Should be 14 (T(14) = 105)
+    
+    # Verify
+    print(f"T(1) = {1*2//2}")    # 1 (1 digit)
+    print(f"T(14) = {14*15//2}") # 105 (3 digits)
+```
+
+The solution works as follows:
+
+1. **Problem Understanding**: A triangular number T(k) = k*(k+1)/2. We need to find the smallest index k such that T(k) has exactly n digits.
+
+2. **Mathematical Approach**: 
+   - The smallest n-digit number is 10^(n-1)
+   - We need k*(k+1)/2 ≥ 10^(n-1)
+   - Rearranging: k² + k - 2*10^(n-1) ≥ 0
+   - Using the quadratic formula: k = (-1 + √(1 + 8*10^(n-1))) / 2
+
+3. **Implementation**: We calculate k using the quadratic formula and take the ceiling to get the smallest integer that satisfies the condition.
+
+4. **Verification**: For n=2, we get k=4, and T(4) = 4*5/2 = 10, which is indeed the smallest 2-digit triangular number.

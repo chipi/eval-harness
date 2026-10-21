@@ -1,0 +1,7 @@
+```python
+def median_trapezium(a, b, h):
+    return (a + b) / 2
+
+# Test the function
+print(median_trapezium(15, 25, 35))  # Output: 20.0
+```

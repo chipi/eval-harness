@@ -1,0 +1,22 @@
+```python
+def closest_num(n):
+    """
+    Find the closest smaller number than n.
+    
+    Args:
+        n: A number
+        
+    Returns:
+        The closest integer that is smaller than n
+    """
+    return int(n) - 1 if isinstance(n, float) and n != int(n) else n - 1
+
+
+# Test cases
+assert closest_num(11) == 10
+assert closest_num(5) == 4
+assert closest_num(0) == -1
+assert closest_num(-3) == -4
+assert closest_num(2.5) == 2
+assert closest_num(7.9) == 7
+```

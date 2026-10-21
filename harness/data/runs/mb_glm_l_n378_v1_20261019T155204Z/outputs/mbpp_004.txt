@@ -1,0 +1,22 @@
+```python
+import heapq
+
+def heap_queue_largest(nums, n):
+    """
+    Finds the n largest integers from a given list of numbers, returned in descending order.
+    
+    Args:
+        nums (list): A list of numbers.
+        n (int): The number of largest elements to return.
+        
+    Returns:
+        list: A list containing the n largest numbers in descending order.
+    """
+    # heapq.nlargest returns the n largest elements, sorted from largest to smallest.
+    return heapq.nlargest(n, nums)
+
+# Test assertion
+if __name__ == "__main__":
+    assert heap_queue_largest([25, 35, 22, 85, 14, 65, 75, 22, 58], 3) == [85, 75, 65]
+    print("Test passed successfully.")
+```

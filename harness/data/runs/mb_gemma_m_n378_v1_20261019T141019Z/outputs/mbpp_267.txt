@@ -1,0 +1,26 @@
+```python
+def square_sum(n):
+    """
+    Calculates the sum of the squares of the first n odd natural numbers.
+    The first n odd numbers are 1, 3, 5, ..., (2n - 1).
+    """
+    total = 0
+    for i in range(n):
+        # The i-th odd number (starting from i=0) is 2*i + 1
+        odd_number = 2 * i + 1
+        total += odd_number ** 2
+    return total
+
+if __name__ == "__main__":
+    # Test cases
+    # n=1: 1^2 = 1
+    # n=2: 1^2 + 3^2 = 1 + 9 = 10
+    # n=3: 1^2 + 3^2 + 5^2 = 1 + 9 + 25 = 35
+    
+    assert square_sum(2) == 10
+    assert square_sum(1) == 1
+    assert square_sum(3) == 35
+    
+    print("All tests passed!")
+    print(f"square_sum(2) = {square_sum(2)}")
+```

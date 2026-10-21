@@ -1,0 +1,46 @@
+```python
+import re
+
+def text_match_wordz_middle(text):
+    """
+    Checks if a string contains the character 'z', except at the start and end 
+    of the word boundaries within the string.
+    
+    This function finds words (sequences of alphanumeric characters) and checks 
+    if 'z' exists strictly between the first and last character of that word.
+    
+    Args:
+        text (str): The input string to check.
+        
+    Returns:
+        bool: True if a 'z' is found in the middle of any word, False otherwise.
+    """
+    # Regex explanation:
+    # \b            : Word boundary (start of a word)
+    # \w            : Matches the first character of the word
+    # \w*           : Matches zero or more characters (the potential middle part)
+    # z             : Matches the character 'z' we are looking for
+    # \w*           : Matches zero or more characters (remaining middle part)
+    # \w            : Matches the last character of the word (ensuring 'z' is not at the end)
+    # \b            : Word boundary (end of a word)
+    #
+    # This pattern ensures 'z' is surrounded by other word characters, effectively
+    # excluding it from being at the start or the end of a word.
+    pattern = r'\b\w\w*z\w*\w\b'
+    
+    # Search the text for the pattern
+    return bool(re.search(pattern, text))
+
+# Test cases
+assert text_match_wordz_middle("pythonzabc.") == True   # 'pythonzabc' has 'z' in the middle
+assert text_match_wordz_middle("zebra") == False        # 'z' is at the start
+assert text_match_wordz_middle("jazz") == False        # 'z' is at the end
+assert text_match_wordz_middle("pizzazz") == True      # 'z' exists in the middle
+assert text_match_wordz_middle("z") == False           # Single 'z' is both start and end
+assert text_match_wordz_middle("az") == False          # 'z' is at the end
+assert text_match_wordz_middle("za") == False          # 'z' is at the start
+assert text_match_wordz_middle("a-z") == False         # 'z' is at the end of word 'z'
+assert text_match_wordz_middle("hello world") == False # No 'z'
+
+print("All tests passed!")
+```

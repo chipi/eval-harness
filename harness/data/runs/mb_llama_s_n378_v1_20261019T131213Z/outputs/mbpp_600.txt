@@ -1,0 +1,28 @@
+### Even Number Checker Function
+```python
+def is_Even(num: int) -> bool:
+    """
+    Checks whether the given number is even or not.
+
+    Args:
+        num (int): The number to check.
+
+    Returns:
+        bool: True if the number is even, False otherwise.
+    """
+    return num % 2 == 0
+
+# Example usage:
+if __name__ == "__main__":
+    assert is_Even(1) == False
+    assert is_Even(2) == True
+    assert is_Even(10) == True
+    assert is_Even(-1) == False
+    assert is_Even(-2) == True
+    print("All tests passed.")
+```
+In this code:
+
+*   We define a function `is_Even` that takes an integer `num` as input and returns a boolean value.
+*   Inside the function, we use the modulus operator (`%`) to find the remainder of `num` divided by 2. If the remainder is 0, the number is even, and we return `True`. Otherwise, we return `False`.
+*   In the example usage section, we include test cases to verify the function's correctness. If all tests pass, it prints "All tests passed."

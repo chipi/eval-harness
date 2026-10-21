@@ -1,0 +1,74 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def division_elements(tuple1, tuple2):
+    """
+    Perform element-wise division of two tuples.
+    
+    Args:
+        tuple1: First tuple of numbers.
+        tuple2: Second tuple of numbers.
+        
+    Returns:
+        A new tuple with each element being the result of dividing the corresponding
+        elements from tuple1 and tuple2.
+        
+    Raises:
+        ValueError: If the tuples have different lengths.
+        ZeroDivisionError: If any element in tuple2 is zero.
+    """
+    if len(tuple1) != len(tuple2):
+        raise ValueError("Tuples must have the same length")
+    
+    result = []
+    for a, b in zip(tuple1, tuple2):
+        if b == 0:
+            raise ZeroDivisionError("Division by zero is not allowed")
+        result.append(a // b)
+    
+    return tuple(result)
+
+# Test cases
+def test_division_elements():
+    assert division_elements((10, 4, 6, 9), (5, 2, 3, 3)) == (2, 2, 2, 3)
+    assert division_elements((8, 6, 4), (2, 3, 2)) == (4, 2, 2)
+    try:
+        division_elements((1, 2), (1,))
+    except ValueError:
+        pass
+    else:
+        assert False, "Expected ValueError for different length tuples"
+    
+    try:
+        division_elements((1, 2), (0, 1))
+    except ZeroDivisionError:
+        pass
+    else:
+        assert False, "Expected ZeroDivisionError for division by zero"
+    
+    print("All test cases passed!")
+
+if __name__ == "__main__":
+    test_division_elements()
+```
+
+This script:
+1. Defines the `division_elements` function that performs element-wise division of two tuples
+2. Includes error handling for:
+   - Different length tuples (raises ValueError)
+   - Division by zero (raises ZeroDivisionError)
+3. Uses integer division (//) as shown in the example
+4. Includes comprehensive test cases to verify the functionality
+5. Runs the tests when the script is executed directly
+
+The function works by:
+1. First checking if the tuples have the same length
+2. Then iterating through both tuples simultaneously using zip
+3. Performing integer division for each pair of elements
+4. Returning the result as a new tuple
+
+The test cases verify:
+- The basic functionality from the example
+- Another normal case
+- Error handling for different length tuples
+- Error handling for division by zero

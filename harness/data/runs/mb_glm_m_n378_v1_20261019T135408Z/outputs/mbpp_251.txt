@@ -1,0 +1,30 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def insert_element(lst, element):
+    """
+    Inserts the given element before each element in the list and returns the resulting list.
+    
+    Args:
+        lst: The original list of elements.
+        element: The element to insert before each element in the list.
+    
+    Returns:
+        A new list with the element inserted before each original element.
+    """
+    result = []
+    for item in lst:
+        result.append(element)
+        result.append(item)
+    return result
+
+# Test cases
+assert insert_element(['Red', 'Green', 'Black'], 'c') == ['c', 'Red', 'c', 'Green', 'c', 'Black']
+assert insert_element([], 'x') == []
+assert insert_element([1, 2, 3], 0) == [0, 1, 0, 2, 0, 3]
+assert insert_element(['a'], 'b') == ['b', 'a']
+
+print("All test cases passed!")
+```
+
+This script defines the `insert_element` function that takes a list and an element, then creates a new list where the element is inserted before each original element. The function handles empty lists correctly and works with any type of elements. The test cases verify the function works as expected.

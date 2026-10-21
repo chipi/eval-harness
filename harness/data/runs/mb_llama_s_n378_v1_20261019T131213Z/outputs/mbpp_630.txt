@@ -1,0 +1,24 @@
+```python
+def get_coordinates(coord):
+    """
+    This function generates all adjacent coordinates of a given coordinate.
+
+    Args:
+        coord (tuple): A tuple representing the x and y coordinates.
+
+    Returns:
+        list: A list of lists, each containing the adjacent coordinates.
+    """
+    x, y = coord
+    adjacent_coords = [
+        [x-1, y-1], [x-1, y], [x-1, y+1],
+        [x, y-1], [x, y], [x, y+1],
+        [x+1, y-1], [x+1, y], [x+1, y+1]
+    ]
+    return adjacent_coords
+
+# Test the function
+assert get_coordinates((3, 4)) == [[2, 3], [2, 4], [2, 5], [3, 3], [3, 4], [3, 5], [4, 3], [4, 4], [4, 5]]
+```
+
+This Python script defines a function `get_coordinates` that takes a coordinate tuple as input and returns a list of adjacent coordinates. The adjacent coordinates are calculated by decrementing and incrementing the x and y values of the input coordinate by 1. The function is then tested with the provided assertion.

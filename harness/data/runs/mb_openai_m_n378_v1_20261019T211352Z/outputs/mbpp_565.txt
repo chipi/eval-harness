@@ -1,0 +1,17 @@
+```python
+"""
+Write a python function to split a string into characters.
+
+Example:
+assert split('python') == ['p', 'y', 't', 'h', 'o', 'n']
+"""
+
+def split(s):
+    """Return a list of characters from the given string."""
+    return list(s)
+
+
+if __name__ == "__main__":
+    assert split('python') == ['p', 'y', 't', 'h', 'o', 'n']
+    print("All tests passed.")
+```

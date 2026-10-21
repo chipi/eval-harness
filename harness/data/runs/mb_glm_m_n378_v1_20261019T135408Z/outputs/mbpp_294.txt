@@ -1,0 +1,53 @@
+Here's a self-contained Python script that solves the problem of finding the maximum value in a heterogeneous list, where the list contains both strings and numbers. The script includes the function `max_val` and a test case to verify its correctness:
+
+```python
+def max_val(lst):
+    """
+    Find the maximum value in a heterogeneous list containing both strings and numbers.
+    
+    Args:
+        lst: A list that may contain strings and numbers.
+        
+    Returns:
+        The maximum value in the list. If the list contains both strings and numbers,
+        the function compares them based on their natural ordering (strings are compared
+        lexicographically, numbers are compared numerically). The maximum value is
+        determined by comparing all elements in the list.
+    """
+    if not lst:
+        return None
+    
+    max_value = lst[0]
+    for item in lst[1:]:
+        if isinstance(item, str) and isinstance(max_value, str):
+            if item > max_value:
+                max_value = item
+        elif isinstance(item, (int, float)) and isinstance(max_value, (int, float)):
+            if item > max_value:
+                max_value = item
+        elif isinstance(item, (int, float)) and isinstance(max_value, str):
+            max_value = item
+        elif isinstance(item, str) and isinstance(max_value, (int, float)):
+            continue  # numbers are considered greater than strings in this context
+    return max_value
+
+# Test case
+assert max_val(['Python', 3, 2, 4, 5, 'version']) == 5
+print("Test passed!")
+```
+
+### Explanation:
+1. **Function `max_val`**:
+   - The function takes a list `lst` as input.
+   - It initializes `max_value` with the first element of the list.
+   - It then iterates over the remaining elements in the list:
+     - If both the current item and `max_value` are strings, it compares them lexicographically.
+     - If both are numbers (integers or floats), it compares them numerically.
+     - If the current item is a number and `max_value` is a string, the number is considered greater (as per the test case where `5` is greater than `'Python'`).
+     - If the current item is a string and `max_value` is a number, the number remains the maximum.
+   - The function returns the `max_value` after processing all elements.
+
+2. **Test Case**:
+   - The test case checks if `max_val(['Python', 3, 2, 4, 5, 'version'])` returns `5`, which it does because `5` is the largest number in the list, and numbers are considered greater than strings in this context.
+
+This script handles the heterogeneous list by comparing elements based on their types and returns the maximum value accordingly. The test case ensures the function works as expected.

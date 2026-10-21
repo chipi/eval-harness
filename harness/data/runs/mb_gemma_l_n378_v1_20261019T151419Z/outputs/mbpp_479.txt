@@ -1,0 +1,19 @@
+```python
+def first_Digit(n):
+    """
+    Returns the first digit of a given number.
+    Handles positive and negative integers.
+    """
+    # Convert to absolute value to handle negative numbers, 
+    # then to a string to easily access the first character.
+    s = str(abs(n))
+    return int(s[0])
+
+if __name__ == "__main__":
+    # Test cases
+    assert first_Digit(123) == 1
+    assert first_Digit(4567) == 4
+    assert first_Digit(5) == 5
+    assert first_Digit(-987) == 9
+    print("All tests passed!")
+```

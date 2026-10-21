@@ -1,0 +1,15 @@
+```python
+def empty_list(n):
+    """
+    Return a list containing n empty dictionaries.
+
+    Example:
+        empty_list(5) -> [{}, {}, {}, {}, {}]
+    """
+    return [{} for _ in range(n)]
+
+
+if __name__ == "__main__":
+    assert empty_list(5) == [{}, {}, {}, {}, {}]
+    print("All tests passed.")
+```

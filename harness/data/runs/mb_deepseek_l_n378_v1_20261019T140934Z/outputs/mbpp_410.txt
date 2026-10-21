@@ -1,0 +1,35 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def min_val(heterogeneous_list):
+    """
+    Find the minimum value in a given heterogeneous list.
+    
+    Args:
+        heterogeneous_list: A list containing mixed types (strings, integers, etc.)
+    
+    Returns:
+        The minimum numeric value found in the list
+    """
+    # Filter out only the numeric values (integers and floats)
+    numeric_values = [x for x in heterogeneous_list if isinstance(x, (int, float))]
+    
+    # Return the minimum value from the filtered numeric values
+    return min(numeric_values)
+
+# Test the function with the given assertion
+assert min_val(['Python', 3, 2, 4, 5, 'version']) == 2
+
+# Additional test cases
+print("Test 1:", min_val(['Python', 3, 2, 4, 5, 'version']))  # Should print 2
+print("Test 2:", min_val([10, 'hello', 5.5, 'world', 3]))     # Should print 3
+print("Test 3:", min_val(['a', 'b', 1, 2, 3]))                # Should print 1
+print("Test 4:", min_val([3.14, 2.71, 'pi', 'e']))            # Should print 2.71
+
+print("All tests passed!")
+```
+
+The function works by:
+1. Filtering the heterogeneous list to keep only numeric values (integers and floats)
+2. Finding and returning the minimum value from those filtered numbers
+3. The assertion `min_val(['Python', 3, 2, 4, 5, 'version']) == 2` passes because 2 is the smallest number in the list

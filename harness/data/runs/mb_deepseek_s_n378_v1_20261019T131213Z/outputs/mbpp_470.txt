@@ -1,0 +1,19 @@
+```python
+def add_pairwise(input_tuple):
+    """
+    Returns a tuple where each element is the sum of two consecutive elements
+    from the input tuple.
+    
+    Example:
+    >>> add_pairwise((1, 5, 7, 8, 10))
+    (6, 12, 15, 18)
+    """
+    # Using a list comprehension to sum each pair of consecutive elements
+    result = tuple(input_tuple[i] + input_tuple[i + 1] for i in range(len(input_tuple) - 1))
+    return result
+
+# Test the function with the given assertion
+if __name__ == "__main__":
+    assert add_pairwise((1, 5, 7, 8, 10)) == (6, 12, 15, 18)
+    print("Test passed!")
+```

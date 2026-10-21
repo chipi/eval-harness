@@ -1,0 +1,31 @@
+```python
+def amicable_numbers_sum(n: int) -> int:
+    """
+    Returns the sum of all amicable numbers from 1 to n (inclusive).
+    An amicable pair consists of two different numbers where the sum of the proper divisors 
+    of each number equals the other number.
+    """
+    # Step 1: Precompute the sum of proper divisors for all numbers up to n
+    # using a modified Sieve of Eratosthenes approach.
+    div_sums = [0] * (n + 1)
+    for i in range(1, n // 2 + 1):
+        for j in range(i * 2, n + 1, i):
+            div_sums[j] += i
+            
+    # Step 2: Identify all amicable numbers up to n
+    amicable_nums = set()
+    for a in range(1, n + 1):
+        b = div_sums[a]
+        # Check if b is within our computed range, forms an amicable pair, and is distinct from a
+        if b <= n and div_sums[b] == a and a != b:
+            amicable_nums.add(a)
+            amicable_nums.add(b)
+            
+    # Step 3: Return the sum of the identified amicable numbers
+    return sum(amicable_nums)
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert amicable_numbers_sum(999) == 504
+    print("Assertion passed successfully.")
+```

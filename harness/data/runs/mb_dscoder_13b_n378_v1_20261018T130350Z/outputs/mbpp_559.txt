@@ -1,0 +1,33 @@
+```python
+def max_sub_array_sum(lst, k):
+    # Initialize the maximum sum and current sum
+    max_sum = curr_sum = lst[0]
+
+    # Initialize the start and end index of the maximum sublist
+    start = end = 0
+
+    # Initialize the start index of the current sublist
+    curr_start = 0
+
+    # Iterate over the list
+    for i in range(1, len(lst)):
+        # If the current sum is negative, reset the current sum and start index
+        if curr_sum < 0:
+            curr_sum = lst[i]
+            curr_start = i
+        # Otherwise, add the current element to the current sum
+        else:
+            curr_sum += lst[i]
+
+        # If the current sum is greater than the maximum sum, update the maximum sum and indices
+        if curr_sum > max_sum:
+            max_sum = curr_sum
+            start = curr_start
+            end = i
+
+    # Return the maximum sum of the maximum sublist
+    return max_sum
+
+# Test the function with the provided test case
+assert max_sub_array_sum([-2, -3, 4, -1, -2, 1, 5, -3], 8) == 7
+```

@@ -1,0 +1,89 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+"""
+Write a function to check whether a given string is a decimal number with a precision of 2.
+assert is_decimal('123.11')==True
+"""
+
+
+def is_decimal(s):
+    """
+    Check whether a given string represents a decimal number with a precision of 2.
+    
+    A valid decimal string with precision 2:
+    - Consists only of digits and a single decimal point.
+    - Has exactly 2 digits after the decimal point.
+    - May optionally start with a '+' or '-' sign.
+    - Has at least one digit before the decimal point.
+    
+    Examples:
+        '123.11'  -> True
+        '-12.50'  -> True
+        '+0.00'   -> True
+        '0.99'    -> True
+        '123'     -> False  (no decimal point)
+        '123.1'   -> False  (only 1 digit after point)
+        '123.111' -> False  (3 digits after point)
+        'abc.11'  -> False  (non-digit characters)
+        ''        -> False  (empty)
+        '.11'     -> False  (no digit before point)
+    """
+    if not isinstance(s, str) or len(s) == 0:
+        return False
+
+    # Strip optional sign
+    if s[0] in ('+', '-'):
+        s = s[1:]
+        if len(s) == 0:
+            return False
+
+    # Must contain exactly one decimal point
+    if s.count('.') != 1:
+        return False
+
+    integer_part, fractional_part = s.split('.')
+
+    # Integer part must have at least one digit
+    if not integer_part.isdigit():
+        return False
+
+    # Fractional part must have exactly 2 digits
+    if len(fractional_part) != 2 or not fractional_part.isdigit():
+        return False
+
+    return True
+
+
+# --- Tests ---
+if __name__ == "__main__":
+    assert is_decimal('123.11') == True
+    assert is_decimal('-123.11') == True
+    assert is_decimal('+0.00') == True
+    assert is_decimal('0.99') == True
+
+    assert is_decimal('123') == False
+    assert is_decimal('123.1') == False
+    assert is_decimal('123.111') == False
+    assert is_decimal('abc.11') == False
+    assert is_decimal('12a.11') == False
+    assert is_decimal('') == False
+    assert is_decimal('.11') == False
+    assert is_decimal('123.') == False
+    assert is_decimal('123..11') == False
+    assert is_decimal('+') == False
+    assert is_decimal('-') == False
+    assert is_decimal(123.11) == False
+
+    print("All tests passed!")
+```
+
+**How it works:**
+
+1. **Type / empty check** — Rejects anything that isn't a non-empty string.
+2. **Sign handling** — Strips an optional leading `+` or `-`.
+3. **Decimal point count** — Ensures there is exactly one `.`.
+4. **Split and validate** — Splits on `.` and checks:
+   - The integer part (`integer_part`) contains only digits (at least one).
+   - The fractional part (`fractional_part`) is exactly 2 digits long and all digits.
+5. **`isdigit()`** conveniently rejects any non-digit characters (including more `+`/`-` signs) and won't match Unicode-style numeric characters in the middle, keeping validation strict.

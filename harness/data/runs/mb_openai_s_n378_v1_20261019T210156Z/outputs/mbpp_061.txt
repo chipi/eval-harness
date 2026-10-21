@@ -1,0 +1,29 @@
+```python
+def count_Substrings(s: str) -> int:
+    """
+    Count substrings where the sum of digits equals the substring length.
+
+    Let each digit d contribute (d - 1). Then for a substring:
+        sum(digits) == length
+    is equivalent to:
+        sum(d - 1) over the substring == 0
+
+    So we need to count zero-sum substrings in the transformed array.
+    Using prefix sums, count pairs of equal prefix sums.
+    """
+    prefix = 0
+    freq = {0: 1}  # prefix sum 0 seen once before starting
+    ans = 0
+
+    for ch in s:
+        prefix += int(ch) - 1
+        ans += freq.get(prefix, 0)
+        freq[prefix] = freq.get(prefix, 0) + 1
+
+    return ans
+
+
+if __name__ == "__main__":
+    assert count_Substrings('112112') == 6
+    print("All tests passed.")
+```

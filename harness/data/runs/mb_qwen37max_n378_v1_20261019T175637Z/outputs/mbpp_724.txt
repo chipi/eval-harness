@@ -1,0 +1,10 @@
+```python
+def power_base_sum(base, power):
+    """Calculate the sum of all digits of base raised to the specified power."""
+    result = base ** power
+    return sum(int(digit) for digit in str(result))
+
+
+# Test
+assert power_base_sum(2, 100) == 115
+```

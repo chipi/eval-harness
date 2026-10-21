@@ -1,0 +1,23 @@
+```python
+def find_lucas(n: int) -> int:
+    """
+    Returns the n-th Lucas number (0-indexed).
+    Lucas numbers: L(0)=2, L(1)=1, L(n)=L(n-1)+L(n-2) for n>=2.
+    """
+    if n < 0:
+        raise ValueError("n must be non-negative")
+    if n == 0:
+        return 2
+    if n == 1:
+        return 1
+
+    a, b = 2, 1  # L(0), L(1)
+    for _ in range(2, n + 1):
+        a, b = b, a + b
+    return b
+
+# Test the assertion
+if __name__ == "__main__":
+    assert find_lucas(9) == 76, "Test failed"
+    print("Test passed: find_lucas(9) =", find_lucas(9))
+```

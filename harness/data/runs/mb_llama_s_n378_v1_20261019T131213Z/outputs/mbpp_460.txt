@@ -1,0 +1,54 @@
+```python
+def extract(lst):
+    """
+    This function takes a list of sublists as input and returns a list containing the first element of each sublist.
+
+    Args:
+        lst (list): A list of sublists.
+
+    Returns:
+        list: A list containing the first element of each sublist.
+    """
+    return [sublist[0] for sublist in lst if sublist]
+
+# Test the function
+assert extract([[1, 2], [3, 4, 5], [6, 7, 8, 9]]) == [1, 3, 6]
+```
+
+Alternatively, you can use the `map` function in combination with a lambda function to achieve the same result:
+
+```python
+def extract(lst):
+    """
+    This function takes a list of sublists as input and returns a list containing the first element of each sublist.
+
+    Args:
+        lst (list): A list of sublists.
+
+    Returns:
+        list: A list containing the first element of each sublist.
+    """
+    return list(map(lambda x: x[0], lst))
+
+# Test the function
+assert extract([[1, 2], [3, 4, 5], [6, 7, 8, 9]]) == [1, 3, 6]
+```
+
+Or, if you want to handle the case where a sublist might be empty:
+
+```python
+def extract(lst):
+    """
+    This function takes a list of sublists as input and returns a list containing the first element of each non-empty sublist.
+
+    Args:
+        lst (list): A list of sublists.
+
+    Returns:
+        list: A list containing the first element of each non-empty sublist.
+    """
+    return [sublist[0] for sublist in lst if sublist]
+
+# Test the function
+assert extract([[1, 2], [], [3, 4, 5], [6, 7, 8, 9]]) == [1, 3, 6]
+```

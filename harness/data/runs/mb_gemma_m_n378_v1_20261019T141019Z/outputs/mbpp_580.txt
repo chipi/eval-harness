@@ -1,0 +1,44 @@
+```python
+def extract_even(data):
+    """
+    Recursively traverses a nested tuple and removes all odd integers.
+    If an element is a tuple, it processes it recursively.
+    """
+    # If the input is not a tuple, we assume it's a single value.
+    # Based on the problem context, we only care about filtering tuples.
+    if not isinstance(data, tuple):
+        return data
+
+    result = []
+    for item in data:
+        if isinstance(item, tuple):
+            # Recursively process the nested tuple
+            processed_tuple = extract_even(item)
+            # Only add the processed tuple if it's not empty (optional, 
+            # but usually expected in these types of problems)
+            # However, to match the specific test case provided:
+            result.append(processed_tuple)
+        elif isinstance(item, int):
+            # Keep only even integers
+            if item % 2 == 0:
+                result.append(item)
+        else:
+            # Keep other types as is (if any)
+            result.append(item)
+            
+    return tuple(result)
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    input_tuple = (4, 5, (7, 6, (2, 4)), 6, 8)
+    expected_output = (4, (6, (2, 4)), 6, 8)
+    
+    result = extract_even(input_tuple)
+    
+    print(f"Input:    {input_tuple}")
+    print(f"Result:   {result}")
+    print(f"Expected: {expected_output}")
+    
+    assert result == expected_output
+    print("Assertion passed!")
+```

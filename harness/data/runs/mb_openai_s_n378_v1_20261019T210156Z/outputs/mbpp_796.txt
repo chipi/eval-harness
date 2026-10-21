@@ -1,0 +1,8 @@
+```python
+def return_sum(d):
+    return sum(d.values())
+
+# Example test
+assert return_sum({'a': 100, 'b': 200, 'c': 300}) == 600
+print("All tests passed.")
+```

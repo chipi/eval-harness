@@ -1,0 +1,20 @@
+```python
+def first_odd(numbers):
+    """
+    Finds the first odd number in a given list of numbers.
+    Returns None if no odd number is found.
+    """
+    for num in numbers:
+        if num % 2 != 0:
+            return num
+    return None
+
+if __name__ == "__main__":
+    # Test cases
+    assert first_odd([1, 3, 5]) == 1
+    assert first_odd([2, 4, 6, 7, 8]) == 7
+    assert first_odd([2, 4, 6]) is None
+    assert first_odd([]) is None
+    
+    print("All tests passed!")
+```

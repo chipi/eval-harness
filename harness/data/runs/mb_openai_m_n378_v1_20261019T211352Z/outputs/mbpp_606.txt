@@ -1,0 +1,15 @@
+```python
+import math
+
+def radian_degree(degrees):
+    """
+    Convert an angle from degrees to radians.
+    """
+    return degrees * math.pi / 180
+
+# Test case
+assert radian_degree(90) == 1.5707963267948966
+
+if __name__ == "__main__":
+    print(radian_degree(90))
+```

@@ -1,0 +1,8 @@
+```python
+def split(s):
+    return list(s)
+
+# Example usage / simple test
+assert split('python') == ['p', 'y', 't', 'h', 'o', 'n']
+print(split('python'))
+```

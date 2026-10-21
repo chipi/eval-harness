@@ -1,0 +1,33 @@
+```python
+def is_Monotonic(array):
+    """
+    Checks whether the given array is monotonic or not.
+
+    An array is monotonic if it is either monotonically increasing or monotonically decreasing.
+    An array is monotonically increasing if for every index i, array[i] <= array[i + 1].
+    An array is monotonically decreasing if for every index i, array[i] >= array[i + 1].
+
+    Args:
+        array (list): The input array to check.
+
+    Returns:
+        bool: True if the array is monotonic, False otherwise.
+    """
+    increasing = decreasing = True
+
+    for i in range(len(array) - 1):
+        if array[i] > array[i + 1]:
+            increasing = False
+        if array[i] < array[i + 1]:
+            decreasing = False
+
+    return increasing or decreasing
+
+
+# Example usage:
+if __name__ == "__main__":
+    print(is_Monotonic([6, 5, 4, 4]))  # True
+    print(is_Monotonic([1, 2, 3, 4]))  # True
+    print(is_Monotonic([4, 3, 2, 1]))  # True
+    print(is_Monotonic([1, 2, 3, 2]))  # False
+```

@@ -1,0 +1,46 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def minimum(a, b):
+    """
+    Returns the minimum of two numbers.
+    
+    Parameters:
+        a (int/float): First number
+        b (int/float): Second number
+    
+    Returns:
+        int/float: The smaller of the two numbers
+    """
+    if a < b:
+        return a
+    else:
+        return b
+
+
+# Test cases
+assert minimum(1, 2) == 1
+assert minimum(2, 1) == 1
+assert minimum(5, 5) == 5
+assert minimum(-3, 4) == -3
+assert minimum(3.5, 2.1) == 2.1
+
+print("All tests passed!")
+```
+
+**Explanation:**
+
+- The `minimum` function takes two arguments, `a` and `b`.
+- It compares them using the `<` operator.
+- If `a` is less than `b`, it returns `a`; otherwise, it returns `b`.
+- The `assert` statements verify the function works correctly for various cases, including equal numbers, negatives, and floats.
+- If all assertions pass, the script prints `"All tests passed!"`.
+
+Alternatively, you could use Python's built-in `min()` function:
+
+```python
+def minimum(a, b):
+    return min(a, b)
+```
+
+But the explicit comparison version is more instructive for understanding the logic.

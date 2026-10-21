@@ -1,0 +1,9 @@
+```python
+def ascii_value(char):
+    return ord(char)
+
+assert ascii_value('A')==65
+assert ascii_value('a')==97
+assert ascii_value('1')==49
+assert ascii_value(' ')==32
+```

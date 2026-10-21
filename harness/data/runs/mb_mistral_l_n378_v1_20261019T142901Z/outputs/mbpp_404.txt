@@ -1,0 +1,16 @@
+Here's a self-contained Python script that solves the problem, enclosed in a markdown code block:
+
+```python
+def minimum(a, b):
+    """Return the minimum of two numbers."""
+    return a if a < b else b
+
+# Test the function
+assert minimum(1, 2) == 1
+```
+
+This script:
+1. Defines a function `minimum` that takes two parameters
+2. Uses a conditional expression to return the smaller of the two numbers
+3. Includes the required assertion test case
+4. Will raise an AssertionError if the test fails (which it shouldn't in this case)

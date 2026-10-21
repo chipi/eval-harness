@@ -1,0 +1,14 @@
+```python
+def sum_range_list(lst, start, end):
+    return sum(lst[start:end+1])
+
+def main():
+    numbers = [2,1,5,6,8,3,4,9,10,11,8,12]
+    start_index = 8
+    end_index = 10
+    result = sum_range_list(numbers, start_index, end_index)
+    print(f"Sum of numbers between index {start_index} and {end_index}: {result}")
+
+if __name__ == "__main__":
+    main()
+```

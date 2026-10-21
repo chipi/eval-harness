@@ -1,0 +1,31 @@
+```python
+def highest_Power_of_2(n):
+    """
+    Finds the highest power of 2 that is less than or equal to n.
+    This is also known as finding the Most Significant Bit (MSB) of n.
+    """
+    # If n is 0, the highest power is 0.
+    if n == 0:
+        return 0
+        
+    # Initialize the result to 1 (2^0).
+    # Since n >= 1, there is always at least 1 power of 2 less than or equal to n.
+    res = 1
+    
+    # Loop while the next power of 2 is still less than or equal to n.
+    # We check (res << 1) <= n which is equivalent to (res * 2) <= n.
+    while (res << 1) <= n:
+        res <<= 1
+        
+    return res
+
+# Assert statement provided in the problem description
+assert highest_Power_of_2(10) == 8
+
+# Additional test cases to verify functionality
+assert highest_Power_of_2(1) == 1
+assert highest_Power_of_2(2) == 2
+assert highest_Power_of_2(3) == 2
+assert highest_Power_of_2(16) == 16
+assert highest_Power_of_2(31) == 16
+```

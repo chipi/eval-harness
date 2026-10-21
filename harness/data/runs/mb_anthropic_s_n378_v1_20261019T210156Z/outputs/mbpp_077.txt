@@ -1,0 +1,36 @@
+```python
+def is_Diff(n):
+    """
+    Find whether a number is divisible by 11.
+    
+    A number is divisible by 11 if the absolute difference between
+    the sum of digits at odd positions and the sum of digits at even positions
+    is either 0 or divisible by 11.
+    
+    Args:
+        n: An integer to check for divisibility by 11
+        
+    Returns:
+        True if n is divisible by 11, False otherwise
+    """
+    return n % 11 == 0
+
+
+# Test cases
+assert is_Diff(12345) == False
+assert is_Diff(11) == True
+assert is_Diff(22) == True
+assert is_Diff(121) == True
+assert is_Diff(100) == False
+assert is_Diff(0) == True
+assert is_Diff(1331) == True
+
+print("All test cases passed!")
+```
+
+The solution is straightforward: a number is divisible by 11 if the remainder when divided by 11 is 0. The function uses the modulo operator (`%`) to check this condition.
+
+**How it works:**
+- `n % 11 == 0` returns `True` if n is divisible by 11, `False` otherwise
+- For example: `12345 % 11 = 1`, so it returns `False`
+- For example: `121 % 11 = 0`, so it returns `True`

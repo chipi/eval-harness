@@ -1,0 +1,16 @@
+```python
+def closest_num(n):
+    """
+    Find the closest smaller number than n.
+    """
+    return n - 1
+
+
+# Test cases
+assert closest_num(11) == 10
+
+if __name__ == "__main__":
+    print(closest_num(11))  # Output: 10
+    print(closest_num(1))   # Output: 0
+    print(closest_num(100)) # Output: 99
+```

@@ -1,0 +1,55 @@
+```python
+def max_Abs_Diff(arr):
+    """
+    Calculates the maximum absolute difference between any two elements in a given array.
+
+    The maximum absolute difference is found by subtracting the smallest element
+    from the largest element in the array.
+
+    Args:
+        arr: A tuple or list of numbers.
+
+    Returns:
+        The maximum absolute difference as an integer or float.
+        Returns 0 if the array has fewer than two elements.
+
+    Examples:
+        >>> max_Abs_Diff((2, 1, 5, 3))
+        4
+        >>> max_Abs_Diff([10, 2, 5])
+        8
+        >>> max_Abs_Diff((5,))
+        0
+        >>> max_Abs_Diff([])
+        0
+    """
+    # Handle edge cases where the array has fewer than two elements.
+    # In such cases, no two elements can be compared, so the difference is 0.
+    if len(arr) < 2:
+        return 0
+
+    # Find the minimum and maximum values in the array.
+    # The built-in min() and max() functions are efficient and clear for this.
+    min_val = min(arr)
+    max_val = max(arr)
+
+    # The maximum absolute difference is the difference between the max and min values.
+    return max_val - min_val
+
+# Example usage and assertions to verify the function's correctness.
+if __name__ == "__main__":
+    # Test case from the problem description
+    assert max_Abs_Diff((2, 1, 5, 3)) == 4
+
+    # Additional test cases
+    assert max_Abs_Diff([10, 2, 5]) == 8
+    assert max_Abs_Diff((5, 10, 1, 20)) == 19
+    assert max_Abs_Diff((-10, 2, 5, -1)) == 15 # max(5) - min(-10) = 15
+
+    # Edge cases
+    assert max_Abs_Diff((5,)) == 0
+    assert max_Abs_Diff([]) == 0
+    assert max_Abs_Diff((1, 1, 1, 1)) == 0
+
+    print("All assertions passed successfully!")
+```

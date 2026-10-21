@@ -1,0 +1,38 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def test_three_equal(a, b, c):
+    """
+    Count the number of equal numbers from three given integers.
+    
+    Args:
+        a: First integer
+        b: Second integer
+        c: Third integer
+    
+    Returns:
+        The count of equal numbers (3 if all equal, 2 if two are equal, 0 if all different)
+    """
+    if a == b == c:
+        return 3
+    elif a == b or b == c or a == c:
+        return 2
+    else:
+        return 0
+
+# Test the function
+assert test_three_equal(1, 1, 1) == 3
+assert test_three_equal(1, 1, 2) == 2
+assert test_three_equal(1, 2, 1) == 2
+assert test_three_equal(2, 1, 1) == 2
+assert test_three_equal(1, 2, 3) == 0
+
+print("All tests passed!")
+```
+
+This function checks how many equal numbers exist among three given integers:
+- Returns 3 if all three numbers are equal
+- Returns 2 if exactly two numbers are equal
+- Returns 0 if all numbers are different
+
+The script includes the required assertion test and additional test cases to verify the function works correctly.

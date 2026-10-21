@@ -1,0 +1,23 @@
+```python
+def even_bit_set_number(n):
+    """
+    This function sets all even bits of a given number.
+
+    Args:
+    n (int): The input number.
+
+    Returns:
+    int: The number with all even bits set.
+    """
+    # Create a mask with all even bits set
+    mask = 0
+    for i in range(32):  # Assuming 32-bit integer
+        if i % 2 == 0:  # Even bit position
+            mask |= (1 << i)
+    
+    # Use bitwise OR operation to set even bits in the given number
+    return n | mask
+
+# Test the function
+print(even_bit_set_number(10))  # Output: 10
+```

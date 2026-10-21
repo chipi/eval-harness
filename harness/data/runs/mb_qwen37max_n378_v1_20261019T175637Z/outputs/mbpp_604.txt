@@ -1,0 +1,9 @@
+```python
+def reverse_words(s):
+    """Reverse the order of words separated by spaces in a given string."""
+    return " ".join(s.split()[::-1])
+
+
+# Test
+assert reverse_words("python program") == "program python"
+```

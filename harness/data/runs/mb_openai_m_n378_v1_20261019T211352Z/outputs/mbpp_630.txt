@@ -1,0 +1,42 @@
+```python
+"""
+Write a function to extract all the adjacent coordinates of the given coordinate tuple.
+
+The function returns all coordinates in the 3x3 grid centered on the given
+coordinate, including the coordinate itself.
+
+Example:
+get_coordinates((3, 4)) returns:
+[[2, 3], [2, 4], [2, 5],
+ [3, 3], [3, 4], [3, 5],
+ [4, 3], [4, 4], [4, 5]]
+"""
+
+def get_coordinates(coord):
+    """
+    Return all adjacent coordinates around the given coordinate, including itself.
+
+    Args:
+        coord (tuple): A tuple containing two integers, for example (3, 4).
+
+    Returns:
+        list: A list of [x, y] coordinate pairs.
+    """
+    x, y = coord
+
+    return [
+        [i, j]
+        for i in range(x - 1, x + 2)
+        for j in range(y - 1, y + 2)
+    ]
+
+
+# Test
+assert get_coordinates((3, 4)) == [
+    [2, 3], [2, 4], [2, 5],
+    [3, 3], [3, 4], [3, 5],
+    [4, 3], [4, 4], [4, 5]
+]
+
+print("All tests passed.")
+```

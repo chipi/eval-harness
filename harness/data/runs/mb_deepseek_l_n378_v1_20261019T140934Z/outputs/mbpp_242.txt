@@ -1,0 +1,22 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def count_charac(s):
+    """
+    Count the total number of characters in a string.
+    
+    Args:
+        s (str): The input string
+    
+    Returns:
+        int: The total number of characters in the string
+    """
+    return len(s)
+
+# Test the function
+if __name__ == "__main__":
+    assert count_charac("python programming") == 18
+    print("Test passed! The function works correctly.")
+```
+
+This script defines the `count_charac` function that uses Python's built-in `len()` function to count the total number of characters in a string. The assertion test verifies that the function returns 18 for the string "python programming", which indeed has 18 characters (including the space).

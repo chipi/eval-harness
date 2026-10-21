@@ -1,0 +1,17 @@
+```python
+def cummulative_sum(tuple_list):
+    """
+    Find the cumulative sum of all the values present in the given tuple list.
+    
+    Args:
+        tuple_list: A list of tuples containing numeric values.
+        
+    Returns:
+        The sum of all elements across all tuples in the list.
+    """
+    total = 0
+    for tup in tuple_list:
+        for value in tup:
+            total += value
+    return total
+```

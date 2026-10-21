@@ -1,0 +1,36 @@
+```python
+def sum_average(n):
+    """
+    Calculate the sum and average of the first n natural numbers.
+
+    Args:
+        n (int): A positive integer representing the count of natural numbers.
+
+    Returns:
+        tuple: A tuple containing the sum (int) and the average (float) of the first n natural numbers.
+
+    Example:
+        >>> sum_average(10)
+        (55, 5.5)
+    """
+    if not isinstance(n, int) or n <= 0:
+        raise ValueError("Input must be a positive integer.")
+
+    # Calculate the sum of the first n natural numbers using the formula n*(n+1)/2
+    total_sum = n * (n + 1) // 2
+
+    # Calculate the average by dividing the sum by n
+    average = total_sum / n
+
+    return total_sum, average
+
+# Example usage and assertion to verify the function
+if __name__ == "__main__":
+    # The assert statement will raise an AssertionError if the condition is false.
+    # If the function is correct, it will run without any output.
+    assert sum_average(10) == (55, 5.5)
+    assert sum_average(1) == (1, 1.0)
+    assert sum_average(5) == (15, 3.0)
+
+    print("All assertions passed successfully!")
+```

@@ -1,0 +1,12 @@
+```python
+def Split(numbers):
+  """
+  Write a python function to find even numbers from a list of numbers.
+  assert Split([1,2,3,4,5]) == [2,4]
+  """
+  even_numbers = []
+  for number in numbers:
+    if number % 2 == 0:
+      even_numbers.append(number)
+  return even_numbers
+```

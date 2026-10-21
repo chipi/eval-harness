@@ -1,0 +1,19 @@
+```python
+def centered_hexagonal_number(n):
+    """
+    Calculate the nth centered hexagonal number.
+
+    The centered hexagonal number is given by the formula: 
+    Hn = 3n^2 - 3n + 1
+
+    Args:
+        n (int): The position of the centered hexagonal number.
+
+    Returns:
+        int: The nth centered hexagonal number.
+    """
+    return 3 * n**2 - 3 * n + 1
+
+# Example usage:
+print(centered_hexagonal_number(10))  # Output: 271
+```

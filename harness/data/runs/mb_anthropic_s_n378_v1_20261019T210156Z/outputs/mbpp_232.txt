@@ -1,0 +1,33 @@
+```python
+def larg_nnum(lst, n):
+    """
+    Returns a list containing the n largest items from the input list.
+    
+    Args:
+        lst: A list of numbers
+        n: An integer specifying how many largest items to return
+    
+    Returns:
+        A list containing the n largest items
+    """
+    return sorted(lst, reverse=True)[:n]
+
+
+# Test case
+assert set(larg_nnum([10, 20, 50, 70, 90, 20, 50, 40, 60, 80, 100], 2)) == set([100, 90])
+print("Test passed!")
+print(larg_nnum([10, 20, 50, 70, 90, 20, 50, 40, 60, 80, 100], 2))
+```
+
+**Explanation:**
+
+The function `larg_nnum` works as follows:
+
+1. **`sorted(lst, reverse=True)`** - Sorts the list in descending order (largest to smallest)
+2. **`[:n]`** - Slices the sorted list to get only the first n elements (which are the n largest)
+3. Returns the resulting list
+
+For the test case with `[10, 20, 50, 70, 90, 20, 50, 40, 60, 80, 100]` and `n=2`:
+- Sorted in descending order: `[100, 90, 80, 70, 60, 50, 50, 40, 20, 20, 10]`
+- First 2 elements: `[100, 90]`
+- The assertion passes because `set([100, 90]) == set([100, 90])`

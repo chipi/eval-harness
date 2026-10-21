@@ -1,0 +1,30 @@
+Here's a self-contained Python script that solves the problem of finding the maximum run of uppercase characters in a given string:
+
+```python
+def max_run_uppercase(s):
+    max_run = 0
+    current_run = 0
+
+    for char in s:
+        if char.isupper():
+            current_run += 1
+            max_run = max(max_run, current_run)
+        else:
+            current_run = 0
+
+    return max_run
+
+# Test case
+assert max_run_uppercase('GeMKSForGERksISBESt') == 5
+```
+
+This script:
+1. Defines a function `max_run_uppercase` that takes a string `s` as input
+2. Initializes two counters: `max_run` to track the longest sequence found, and `current_run` to count the current sequence
+3. Iterates through each character in the string
+4. If the character is uppercase, increments `current_run` and updates `max_run` if needed
+5. If the character is not uppercase, resets `current_run` to 0
+6. Returns the maximum run length found
+7. Includes the provided test case as an assertion
+
+The function correctly returns 5 for the test case 'GeMKSForGERksISBESt' because the longest sequence of uppercase letters is "GERKS" (5 characters).

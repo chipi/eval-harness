@@ -1,0 +1,29 @@
+Here’s a self-contained Python script that solves the problem as described:
+
+```python
+def min_k(records, k):
+    """
+    Find the minimum k records from a list of tuples based on the second element.
+    
+    Args:
+        records (list of tuple): List of tuples where each tuple is (name, value).
+        k (int): Number of minimum records to return.
+    
+    Returns:
+        list of tuple: The k tuples with the smallest values.
+    """
+    # Sort the list by the second element (value) in ascending order
+    sorted_records = sorted(records, key=lambda x: x[1])
+    # Return the first k elements
+    return sorted_records[:k]
+
+
+# Test cases
+assert min_k([('Manjeet', 10), ('Akshat', 4), ('Akash', 2), ('Nikhil', 8)], 2) == [('Akash', 2), ('Akshat', 4)]
+assert min_k([('a', 5), ('b', 1), ('c', 3)], 1) == [('b', 1)]
+assert min_k([('x', 9), ('y', 7), ('z', 8)], 3) == [('y', 7), ('z', 8), ('x', 9)]
+assert min_k([], 0) == []
+assert min_k([('only', 1)], 1) == [('only', 1)]
+
+print("All test cases passed!")
+```

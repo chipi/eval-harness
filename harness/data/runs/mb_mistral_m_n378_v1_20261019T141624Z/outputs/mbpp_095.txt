@@ -1,0 +1,18 @@
+```python
+def Find_Min_Length(list_of_lists):
+    """
+    Find the length of the smallest list in a list of lists.
+
+    Args:
+        list_of_lists: A list containing other lists.
+
+    Returns:
+        The length of the smallest inner list.
+    """
+    if not list_of_lists:
+        return 0
+    return min(len(inner_list) for inner_list in list_of_lists)
+
+# Test case
+assert Find_Min_Length([[1],[1,2]]) == 1
+```

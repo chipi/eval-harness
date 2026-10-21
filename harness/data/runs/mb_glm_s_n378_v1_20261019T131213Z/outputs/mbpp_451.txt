@@ -1,0 +1,31 @@
+```python
+def remove_whitespaces(s: str) -> str:
+  """
+  Removes all whitespace characters from a given string.
+
+  This function uses a generator expression within the join() method
+  to efficiently build a new string containing only the non-whitespace
+  characters from the input string.
+
+  Args:
+    s: The input string from which to remove whitespaces.
+
+  Returns:
+    A new string with all whitespace characters removed.
+  """
+  return "".join(char for char in s if not char.isspace())
+
+# Example usage and assertion from the problem description
+if __name__ == "__main__":
+  input_string = ' Google    Flutter '
+  expected_output = 'GoogleFlutter'
+  
+  result = remove_whitespaces(input_string)
+  
+  print(f"Input string: '{input_string}'")
+  print(f"Result: '{result}'")
+  print(f"Expected: '{expected_output}'")
+  
+  assert result == expected_output
+  print("\nAssertion passed successfully!")
+```

@@ -1,0 +1,30 @@
+```python
+def max_sum_list(lists):
+    """
+    Returns the sublist from a list of lists whose sum of elements is the highest.
+    
+    Args:
+        lists: A list of lists containing numeric elements.
+    
+    Returns:
+        The sublist with the maximum sum. If multiple sublists have the same sum,
+        the first one encountered is returned.
+    """
+    if not lists:
+        return []
+    
+    max_sum = float('-inf')
+    max_list = None
+    
+    for sublist in lists:
+        current_sum = sum(sublist)
+        if current_sum > max_sum:
+            max_sum = current_sum
+            max_list = sublist
+    
+    return max_list
+
+# Test the function with the provided assertion
+assert max_sum_list([[1,2,3], [4,5,6], [10,11,12], [7,8,9]]) == [10, 11, 12]
+print("Test passed!")
+```

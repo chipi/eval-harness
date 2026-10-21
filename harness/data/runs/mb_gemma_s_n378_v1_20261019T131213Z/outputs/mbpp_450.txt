@@ -1,0 +1,25 @@
+```python
+def extract_string(string_list, size):
+  """
+  Extracts strings of a specified size from a list of strings.
+
+  Args:
+    string_list: A list of strings.
+    size: The minimum size of strings to extract.
+
+  Returns:
+    A list of strings that have a length greater than or equal to the specified size.
+  """
+  result = []
+  for s in string_list:
+    if len(s) >= size:
+      result.append(s)
+  return result
+
+# Example usage and assertion
+string_list = ['Python', 'list', 'exercises', 'practice', 'solution']
+size = 8
+extracted_strings = extract_string(string_list, size)
+print(extracted_strings)
+assert extracted_strings == ['exercises', 'practice', 'solution']
+```

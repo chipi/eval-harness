@@ -1,0 +1,41 @@
+```python
+from typing import List, Dict
+
+def expensive_items(items: List[Dict], n: int) -> List[Dict]:
+    """
+    Finds the n most expensive items in a given dataset.
+    
+    Args:
+        items: A list of dictionaries, where each dictionary contains 'name' and 'price'.
+        n: The number of top expensive items to return.
+        
+    Returns:
+        A list of the n most expensive items sorted in descending order of price.
+    """
+    # Sort the items list based on the 'price' key in descending order
+    sorted_items = sorted(items, key=lambda x: x['price'], reverse=True)
+    
+    # Return the first n elements of the sorted list
+    return sorted_items[:n]
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    test_data = [{'name': 'Item-1', 'price': 101.1}, {'name': 'Item-2', 'price': 555.22}]
+    n = 1
+    expected = [{'name': 'Item-2', 'price': 555.22}]
+    
+    result = expensive_items(test_data, n)
+    assert result == expected
+    print(f"Test passed! Result: {result}")
+
+    # Additional test case: multiple items
+    test_data_2 = [
+        {'name': 'A', 'price': 10},
+        {'name': 'B', 'price': 50},
+        {'name': 'C', 'price': 20},
+        {'name': 'D', 'price': 100}
+    ]
+    # Get top 2
+    assert expensive_items(test_data_2, 2) == [{'name': 'D', 'price': 100}, {'name': 'B', 'price': 50}]
+    print("Additional test passed!")
+```

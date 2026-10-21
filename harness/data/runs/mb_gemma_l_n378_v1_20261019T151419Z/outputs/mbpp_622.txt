@@ -1,0 +1,53 @@
+```python
+def get_median(arr1, arr2, n):
+    """
+    Finds the median of two sorted lists of the same size.
+    The combined size of the lists is 2n.
+    The median of an even-sized combined list is the average of the 
+    n-th and (n+1)-th elements.
+    """
+    # We use a binary search approach to find the partition point.
+    # Time Complexity: O(log n)
+    # Space Complexity: O(1)
+    
+    low = 0
+    high = n
+    
+    while low <= high:
+        # Partition index for arr1
+        partition1 = (low + high) // 2
+        # Partition index for arr2 such that total elements on left is n
+        partition2 = n - partition1
+        
+        # Edge cases: if partition is 0, there is no element on the left
+        # If partition is n, there is no element on the right
+        max_left1 = float('-inf') if partition1 == 0 else arr1[partition1 - 1]
+        min_right1 = float('inf') if partition1 == n else arr1[partition1]
+        
+        max_left2 = float('-inf') if partition2 == 0 else arr2[partition2 - 1]
+        min_right2 = float('inf') if partition2 == n else arr2[partition2]
+        
+        # Check if we have found the correct partition
+        if max_left1 <= min_right2 and max_left2 <= min_right1:
+            # The median is the average of the maximum of the left side 
+            # and the minimum of the right side
+            return (max(max_left1, max_left2) + min(min_right1, min_right2)) / 2.0
+        
+        elif max_left1 > min_right2:
+            # We are too far right in arr1, move left
+            high = partition1 - 1
+        else:
+            # We are too far left in arr1, move right
+            low = partition1 + 1
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    list1 = [1, 12, 15, 26, 38]
+    list2 = [2, 13, 17, 30, 45]
+    size = 5
+    result = get_median(list1, list2, size)
+    print(f"Median: {result}")
+    
+    assert result == 16.0
+    print("Assertion passed!")
+```

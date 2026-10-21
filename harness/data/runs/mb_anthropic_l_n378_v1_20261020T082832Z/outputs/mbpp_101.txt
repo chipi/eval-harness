@@ -1,0 +1,49 @@
+Looking at this problem, the function needs to return the kth element of the array using 1-based indexing. With the given test case, `kth_element([12,3,5,7,19], 2)` should return `3`, which is indeed the 2nd element of the array as-is.
+
+```python
+"""
+Write a function to find the kth element in the given array using 1-based indexing.
+assert kth_element([12,3,5,7,19], 2) == 3
+"""
+
+
+def kth_element(arr, k):
+    """
+    Return the kth element of `arr` using 1-based indexing.
+
+    Parameters
+    ----------
+    arr : list
+        The input array/list.
+    k : int
+        The 1-based position of the desired element (1 <= k <= len(arr)).
+
+    Returns
+    -------
+    The element located at position k (1-based) in `arr`.
+
+    Raises
+    ------
+    IndexError
+        If k is out of the valid range 1..len(arr).
+    """
+    if not isinstance(k, int):
+        raise TypeError("k must be an integer")
+    if k < 1 or k > len(arr):
+        raise IndexError("k is out of range for the given array")
+
+    return arr[k - 1]
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert kth_element([12, 3, 5, 7, 19], 2) == 3
+
+    # Additional checks
+    assert kth_element([12, 3, 5, 7, 19], 1) == 12
+    assert kth_element([12, 3, 5, 7, 19], 5) == 19
+    assert kth_element([17, 24, 8, 23], 3) == 8
+    assert kth_element([16, 21, 25, 36, 4], 4) == 36
+
+    print("All tests passed!")
+```

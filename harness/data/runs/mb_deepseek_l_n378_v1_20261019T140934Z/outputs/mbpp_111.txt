@@ -1,0 +1,34 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+def common_in_nested_lists(nested_lists):
+    """
+    Find the common elements in given nested lists.
+    
+    Args:
+        nested_lists: A list of lists containing elements to compare
+        
+    Returns:
+        A list of elements common to all nested lists
+    """
+    if not nested_lists:
+        return []
+    
+    # Convert the first list to a set
+    common = set(nested_lists[0])
+    
+    # Intersect with each subsequent list
+    for lst in nested_lists[1:]:
+        common = common.intersection(set(lst))
+    
+    return list(common)
+
+
+# Test the function
+if __name__ == "__main__":
+    result = common_in_nested_lists([[12, 18, 23, 25, 45], 
+                                      [7, 12, 18, 24, 28], 
+                                      [1, 5, 8, 12, 15, 16, 18]])
+    assert set(result) == set([18, 12])
+    print("Test passed! Common elements:", result)
+```

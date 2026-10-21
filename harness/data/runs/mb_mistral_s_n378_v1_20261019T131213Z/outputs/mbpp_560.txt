@@ -1,0 +1,27 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def union_elements(tuple1, tuple2):
+    # Combine the elements of both tuples
+    combined = tuple1 + tuple2
+    # Convert to a set to remove duplicates, then back to a list
+    unique_elements = list(set(combined))
+    # Sort the unique elements
+    sorted_elements = sorted(unique_elements)
+    # Convert back to a tuple
+    return tuple(sorted_elements)
+
+# Test the function
+assert union_elements((3, 4, 5, 6), (5, 7, 4, 10)) == (3, 4, 5, 6, 7, 10)
+print("Test passed!")
+```
+
+This script:
+1. Defines a function `union_elements` that takes two tuples as input
+2. Combines them into a single tuple
+3. Converts to a set to remove duplicates
+4. Sorts the unique elements
+5. Returns the result as a sorted tuple
+6. Includes the test case from the problem statement
+
+The function will work for any two input tuples, not just the example provided.

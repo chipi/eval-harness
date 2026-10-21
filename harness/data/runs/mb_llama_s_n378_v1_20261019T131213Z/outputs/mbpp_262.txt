@@ -1,0 +1,36 @@
+```python
+def split_two_parts(input_list, L):
+    """
+    This function splits a given list into two parts where the length of the first part is L.
+
+    Args:
+        input_list (list): The list to be split.
+        L (int): The length of the first part of the list.
+
+    Returns:
+        tuple: A tuple containing two lists. The first list has length L and the second list contains the remaining elements.
+
+    Raises:
+        ValueError: If L is greater than the length of the input list.
+    """
+    if L > len(input_list):
+        raise ValueError("L cannot be greater than the length of the input list")
+
+    # Split the list into two parts using list slicing
+    first_part = input_list[:L]
+    second_part = input_list[L:]
+
+    return (first_part, second_part)
+
+
+# Example usage:
+def main():
+    input_list = [1, 1, 2, 3, 4, 4, 5, 1]
+    L = 3
+    result = split_two_parts(input_list, L)
+    print(result)  # Output: ([1, 1, 2], [3, 4, 4, 5, 1])
+
+
+if __name__ == "__main__":
+    main()
+```

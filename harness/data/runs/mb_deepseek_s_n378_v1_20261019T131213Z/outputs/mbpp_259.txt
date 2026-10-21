@@ -1,0 +1,24 @@
+```python
+def maximize_elements(tup1, tup2):
+    """
+    Returns a tuple of tuples where each inner tuple contains the maximum 
+    corresponding elements from the two input tuples.
+    """
+    # Ensure both tuples have the same length
+    if len(tup1) != len(tup2):
+        raise ValueError("Both tuples must have the same length")
+    
+    result = []
+    for pair1, pair2 in zip(tup1, tup2):
+        # For each pair of tuples, take the max of each corresponding element
+        max_pair = (max(pair1[0], pair2[0]), max(pair1[1], pair2[1]))
+        result.append(max_pair)
+    
+    return tuple(result)
+
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert maximize_elements(((1, 3), (4, 5), (2, 9), (1, 10)), ((6, 7), (3, 9), (1, 1), (7, 3))) == ((6, 7), (4, 9), (2, 9), (7, 10))
+    print("Test passed!")
+```

@@ -1,0 +1,54 @@
+```python
+def find_solution(a, b, n):
+    """
+    Find integers x and y such that a*x + b*y = n.
+    Returns a tuple (x, y) if a solution exists, otherwise None.
+    """
+    def extended_gcd(a, b):
+        if b == 0:
+            return (a, 1, 0)
+        g, x1, y1 = extended_gcd(b, a % b)
+        x = y1
+        y = x1 - (a // b) * y1
+        return (g, x, y)
+
+    g, x0, y0 = extended_gcd(a, b)
+
+    if g == 0:
+        if n == 0:
+            return (0, 0)
+        else:
+            return None
+
+    if n % g != 0:
+        return None
+
+    factor = n // g
+    x = x0 * factor
+    y = y0 * factor
+
+    return (x, y)
+
+
+if __name__ == "__main__":
+    # Test cases
+    result = find_solution(2, 3, 7)
+    print(result)
+    assert 2 * result[0] + 3 * result[1] == 7
+
+    # Additional tests
+    assert find_solution(0, 0, 0) == (0, 0)
+    assert find_solution(0, 0, 5) is None
+
+    result2 = find_solution(4, 6, 8)
+    assert result2 is not None
+    assert 4 * result2[0] + 6 * result2[1] == 8
+
+    result3 = find_solution(3, 5, 1)
+    assert result3 is not None
+    assert 3 * result3[0] + 5 * result3[1] == 1
+
+    assert find_solution(2, 4, 7) is None  # gcd(2,4)=2, 7 not divisible by 2
+
+    print("All tests passed!")
+```

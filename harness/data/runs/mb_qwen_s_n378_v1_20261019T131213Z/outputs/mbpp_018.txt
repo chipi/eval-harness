@@ -1,0 +1,15 @@
+```python
+def remove_dirty_chars(str1, str2):
+    """
+    Remove characters from the first string which are present in the second string.
+    
+    Args:
+        str1: The original string to clean.
+        str2: A string containing characters to be removed from str1.
+        
+    Returns:
+        A new string with all characters from str2 removed from str1.
+    """
+    dirty_chars = set(str2)
+    return ''.join(char for char in str1 if char not in dirty_chars)
+```

@@ -1,0 +1,29 @@
+```python
+def nth_nums(numbers, n):
+    """
+    Computes the n-th power of each number in a list.
+    
+    Args:
+        numbers (list): A list of numerical values.
+        n (int/float): The exponent to raise each number to.
+        
+    Returns:
+        list: A new list containing the results.
+    """
+    return [num ** n for num in numbers]
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    input_list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    exponent = 2
+    expected_output = [1, 4, 9, 16, 25, 36, 49, 64, 81, 100]
+    
+    result = nth_nums(input_list, exponent)
+    
+    # Assertion to verify the correctness
+    assert result == expected_output, f"Expected {expected_output}, but got {result}"
+    
+    print("Assertion passed successfully!")
+    print(f"Input: {input_list}, Power: {exponent}")
+    print(f"Result: {result}")
+```

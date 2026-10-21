@@ -1,0 +1,10 @@
+```python
+def cube_Sum(n):
+    """Return the sum of the cubes of the first n even natural numbers."""
+    if n < 0:
+        raise ValueError("n must be non-negative")
+    return 2 * n**2 * (n + 1) ** 2
+
+
+assert cube_Sum(2) == 72
+```

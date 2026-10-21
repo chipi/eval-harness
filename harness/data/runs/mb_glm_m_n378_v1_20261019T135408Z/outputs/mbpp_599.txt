@@ -1,0 +1,27 @@
+```python
+def sum_average(n):
+    """
+    Find the sum and average of the first n natural numbers.
+    
+    Parameters:
+    n (int): The number of natural numbers to consider.
+    
+    Returns:
+    tuple: A tuple containing the sum (int) and the average (float).
+    """
+    if n <= 0:
+        return (0, 0.0)
+    
+    # Sum of first n natural numbers formula: n * (n + 1) / 2
+    total_sum = n * (n + 1) // 2
+    
+    # Average of first n natural numbers formula: (n + 1) / 2
+    average = (n + 1) / 2.0
+    
+    return (total_sum, average)
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert sum_average(10) == (55, 5.5)
+    print("Test passed successfully!")
+```

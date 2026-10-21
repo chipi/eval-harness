@@ -1,0 +1,27 @@
+```python
+def freq_count(lst):
+    """
+    Returns a dictionary containing the frequency of each element in the list.
+    """
+    frequency_dict = {}
+    for item in lst:
+        if item in frequency_dict:
+            frequency_dict[item] += 1
+        else:
+            frequency_dict[item] = 1
+    return frequency_dict
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    input_list = [10, 10, 10, 10, 20, 20, 20, 20, 40, 40, 50, 50, 30]
+    expected_output = {10: 4, 20: 4, 40: 2, 50: 2, 30: 1}
+    
+    result = freq_count(input_list)
+    
+    # Assertion to verify correctness
+    assert result == expected_output, f"Expected {expected_output}, but got {result}"
+    
+    print("Test passed successfully!")
+    print(f"Input: {input_list}")
+    print(f"Output: {result}")
+```

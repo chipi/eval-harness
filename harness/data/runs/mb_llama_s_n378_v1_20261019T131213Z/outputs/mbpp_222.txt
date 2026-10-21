@@ -1,0 +1,53 @@
+### Check if All Elements in a Tuple Have the Same Data Type
+
+Here's a Python function that checks if all elements in a tuple have the same data type.
+
+```python
+def check_type(tup):
+    """
+    Checks if all elements in a tuple have the same data type.
+
+    Args:
+        tup (tuple): The input tuple.
+
+    Returns:
+        bool: True if all elements have the same data type, False otherwise.
+    """
+    # Check if the tuple is empty
+    if len(tup) == 0:
+        return True
+
+    # Get the type of the first element
+    data_type = type(tup[0])
+
+    # Check if all elements have the same data type
+    for element in tup:
+        if type(element) != data_type:
+            return False
+
+    return True
+
+# Example usage:
+print(check_type((5, 6, 7, 3, 5, 6)))  # Returns: True
+print(check_type((5, '6', 7, 3, 5, 6)))  # Returns: False
+```
+
+Alternatively, you can use the `set` data structure to make the function more concise:
+
+```python
+def check_type(tup):
+    """
+    Checks if all elements in a tuple have the same data type.
+
+    Args:
+        tup (tuple): The input tuple.
+
+    Returns:
+        bool: True if all elements have the same data type, False otherwise.
+    """
+    return len(set(type(x) for x in tup)) <= 1
+
+# Example usage:
+print(check_type((5, 6, 7, 3, 5, 6)))  # Returns: True
+print(check_type((5, '6', 7, 3, 5, 6)))  # Returns: False
+```

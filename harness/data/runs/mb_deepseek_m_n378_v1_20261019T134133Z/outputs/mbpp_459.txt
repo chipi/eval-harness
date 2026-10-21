@@ -1,0 +1,35 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def remove_uppercase(s):
+    """
+    Remove all uppercase letters from the given string.
+    
+    Args:
+        s (str): Input string
+        
+    Returns:
+        str: String with all uppercase letters removed
+    """
+    return ''.join(char for char in s if not char.isupper())
+
+
+# Test the function
+assert remove_uppercase('cAstyoUrFavoRitETVshoWs') == 'cstyoravoitshos'
+print("Test passed!")
+print(remove_uppercase('cAstyoUrFavoRitETVshoWs'))
+```
+
+**Explanation:**
+
+The function `remove_uppercase` uses a generator expression with `str.isupper()` to filter out uppercase characters:
+- `char.isupper()` returns `True` for uppercase letters, so `not char.isupper()` keeps lowercase letters and non-alphabetic characters.
+- `''.join(...)` combines the filtered characters back into a single string.
+
+**Output:**
+```
+Test passed!
+cstyoravoitshos
+```
+
+The assertion passes because removing all uppercase letters (`A`, `U`, `F`, `R`, `E`, `T`, `V`, `W`) from `'cAstyoUrFavoRitETVshoWs'` yields `'cstyoravoitshos'`.

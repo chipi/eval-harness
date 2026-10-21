@@ -1,0 +1,28 @@
+```python
+def check_occurences(lst):
+    """
+    Takes in a list of tuples and returns a dictionary mapping each unique tuple 
+    to the number of times it occurs in the list.
+    The function handles tuples as unordered pairs (e.g., (1, 3) is considered 
+    the same as (3, 1)).
+    """
+    counts = {}
+    for item in lst:
+        # Sort the tuple to ensure (a, b) is treated the same as (b, a)
+        # This is inferred from the provided example where (3, 1) and (1, 3) are grouped.
+        normalized_tuple = tuple(sorted(item))
+        
+        if normalized_tuple in counts:
+            counts[normalized_tuple] += 1
+        else:
+            counts[normalized_tuple] = 1
+            
+    return counts
+
+# Assertion block
+if __name__ == "__main__":
+    # Note: In the provided assertion, the expected output includes (3, 6): 1.
+    # This suggests that the input tuple (6, 3) should be normalized to (3, 6).
+    assert check_occurences([(3, 1), (1, 3), (2, 5), (5, 2), (6, 3)]) == {(1, 3): 2, (2, 5): 2, (3, 6): 1}
+    print("Assertion passed successfully.")
+```

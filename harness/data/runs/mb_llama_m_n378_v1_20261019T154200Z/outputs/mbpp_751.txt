@@ -1,0 +1,33 @@
+```python
+def check_min_heap(arr):
+    """
+    Checks if the given array represents a min heap.
+
+    Args:
+    arr (list): The input array to be checked.
+
+    Returns:
+    bool: True if the array represents a min heap, False otherwise.
+    """
+    n = len(arr)
+    
+    # Start from the first non-leaf node and check the heap property
+    for i in range(n // 2):
+        # For each node, check if it is smaller than its children
+        left_child = 2 * i + 1
+        right_child = 2 * i + 2
+        
+        # Check if the left child exists and is smaller than the node
+        if left_child < n and arr[i] > arr[left_child]:
+            return False
+        
+        # Check if the right child exists and is smaller than the node
+        if right_child < n and arr[i] > arr[right_child]:
+            return False
+    
+    # If the function hasn't returned False, the array represents a min heap
+    return True
+
+# Test the function
+assert check_min_heap([1, 2, 3, 4, 5, 6])
+```

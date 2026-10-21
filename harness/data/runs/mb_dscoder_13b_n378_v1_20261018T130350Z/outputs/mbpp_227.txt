@@ -1,0 +1,10 @@
+```python
+def min_of_three(a, b, c):
+    """
+    Write a function to find minimum of three numbers.
+    """
+    return min(a, b, c)
+
+# Testing the function
+assert min_of_three(10,20,0)==0
+```

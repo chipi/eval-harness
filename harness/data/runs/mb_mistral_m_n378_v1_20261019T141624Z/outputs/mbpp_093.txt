@@ -1,0 +1,21 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def power(a, b):
+    """Calculate a to the power of b."""
+    result = 1
+    for _ in range(b):
+        result *= a
+    return result
+
+# Test the function
+assert power(3, 4) == 81
+print("Test passed!")
+```
+
+This script:
+1. Defines a `power` function that calculates a^b using a simple iterative approach
+2. Includes the required assertion test case
+3. Prints a confirmation message when the test passes
+
+The function works by multiplying the base `a` by itself `b` times. For the test case `power(3, 4)`, it calculates 3 × 3 × 3 × 3 = 81.

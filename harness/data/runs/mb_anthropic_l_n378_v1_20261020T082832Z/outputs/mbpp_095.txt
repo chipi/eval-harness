@@ -1,0 +1,40 @@
+Looking at this problem, I need to find the minimum length among all sublists in a list of lists.
+
+```python
+"""
+Write a python function to find the length of the smallest list in a list of lists.
+assert Find_Min_Length([[1],[1,2]]) == 1
+"""
+
+
+def Find_Min_Length(lst):
+    """
+    Find the length of the smallest list in a list of lists.
+
+    Args:
+        lst: A list containing sublists.
+
+    Returns:
+        The length of the shortest sublist.
+    """
+    return min(len(sublist) for sublist in lst)
+
+
+# Test cases
+if __name__ == "__main__":
+    assert Find_Min_Length([[1], [1, 2]]) == 1
+    assert Find_Min_Length([[1, 2], [1, 2, 3], [1, 2, 3, 4]]) == 2
+    assert Find_Min_Length([[3, 3, 3], [4, 4, 4, 4]]) == 3
+    assert Find_Min_Length([[], [1, 2, 3]]) == 0
+    assert Find_Min_Length([[5, 6, 7, 8, 9]]) == 5
+
+    print("All test cases passed!")
+```
+
+**How it works:**
+
+1. `min(...)` takes an iterable and returns the smallest element.
+2. The generator expression `len(sublist) for sublist in lst` produces the length of each sublist one at a time (memory-efficient compared to building a full list).
+3. `min` then returns the smallest of those lengths.
+
+**Complexity:** O(n) time where n is the number of sublists, and O(1) extra space.

@@ -1,0 +1,61 @@
+```python
+def get_median(arr1, arr2, n):
+    """
+    Finds the median of two sorted lists of the same size using a 
+    recursive divide and conquer approach.
+    
+    The time complexity of this approach is O(log(n)) and space complexity is O(log(n))
+    due to the recursion stack.
+    """
+    # Base case: when the size of the arrays is 1, the median is the average of the two elements
+    if n == 1:
+        return (arr1[0] + arr2[0]) / 2.0
+        
+    # Base case: when the size of the arrays is 2
+    if n == 2:
+        # The median of the combined array is the average of the two middle elements
+        # The middle elements are max(arr1[0], arr2[0]) and min(arr1[1], arr2[1])
+        return (max(arr1[0], arr2[0]) + min(arr1[1], arr2[1])) / 2.0
+        
+    # Calculate the medians of the two individual arrays
+    m1 = median_of_single(arr1, n)
+    m2 = median_of_single(arr2, n)
+    
+    # If medians are equal, the overall median is the same
+    if m1 == m2:
+        return m1
+        
+    # If m1 < m2, the overall median must exist in arr1[m1...] and arr2[...m2]
+    if m1 < m2:
+        if n % 2 == 0:
+            return get_median(arr1[n // 2 - 1:], arr2[:n // 2 + 1], n // 2 + 1)
+        else:
+            return get_median(arr1[n // 2:], arr2[:n // 2 + 1], n // 2 + 1)
+    # If m1 > m2, the overall median must exist in arr1[...m1] and arr2[m2...]
+    else:
+        if n % 2 == 0:
+            return get_median(arr1[:n // 2 + 1], arr2[n // 2 - 1:], n // 2 + 1)
+        else:
+            return get_median(arr1[:n // 2 + 1], arr2[n // 2:], n // 2 + 1)
+
+def median_of_single(arr, n):
+    """Helper function to find the median of a single sorted array."""
+    if n % 2 == 0:
+        return (arr[n // 2 - 1] + arr[n // 2]) / 2.0
+    else:
+        return arr[n // 2]
+
+if __name__ == "__main__":
+    # Provided test case
+    assert get_median([1, 12, 15, 26, 38], [2, 13, 17, 30, 45], 5) == 16.0
+    
+    # Additional test cases
+    # Test with even length arrays
+    assert get_median([1, 2, 3, 4], [5, 6, 7, 8], 4) == 4.5
+    # Test with arrays where medians are the same
+    assert get_median([1, 2, 3], [4, 5, 6], 3) == 3.5
+    # Test with identical arrays
+    assert get_median([1, 2, 3], [1, 2, 3], 3) == 2.0
+    
+    print("All test cases passed!")
+```

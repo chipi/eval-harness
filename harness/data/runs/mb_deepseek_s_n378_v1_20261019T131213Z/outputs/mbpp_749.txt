@@ -1,0 +1,20 @@
+Here’s a self-contained Python script that solves the problem:  
+
+```python
+def sort_numeric_strings(lst):
+    """
+    Sorts a list of numeric strings in numerical order.
+    
+    Args:
+        lst (list): List of strings representing numbers.
+    
+    Returns:
+        list: Sorted list of numeric strings.
+    """
+    return sorted(lst, key=int)
+
+# Test case
+assert sort_numeric_strings(['4','12','45','7','0','100','200','-12','-500']) == [-500, -12, 0, 4, 7, 12, 45, 100, 200]
+
+print("Test passed!")
+```

@@ -1,0 +1,16 @@
+```python
+def tup_string(tup):
+    """
+    This function takes a tuple of characters as input and returns a string.
+    
+    Parameters:
+    tup (tuple): A tuple of characters.
+    
+    Returns:
+    str: A string formed by joining the characters in the tuple.
+    """
+    return "".join(tup)
+
+# Test the function
+print(tup_string(('e', 'x', 'e', 'r', 'c', 'i', 's', 'e', 's')))  # Output: "exercises"
+```

@@ -1,0 +1,31 @@
+```python
+def last_Digit(n: int) -> int:
+    """
+    Returns the last digit of a given integer.
+    
+    Args:
+        n: An integer number
+        
+    Returns:
+        The last digit of the number
+        
+    Examples:
+        >>> last_Digit(123)
+        3
+        >>> last_Digit(4567)
+        7
+        >>> last_Digit(0)
+        0
+    """
+    return abs(n) % 10
+
+
+if __name__ == "__main__":
+    # Test cases
+    assert last_Digit(123) == 3
+    assert last_Digit(4567) == 7
+    assert last_Digit(0) == 0
+    assert last_Digit(-123) == 3
+    assert last_Digit(10) == 0
+    print("All tests passed!")
+```

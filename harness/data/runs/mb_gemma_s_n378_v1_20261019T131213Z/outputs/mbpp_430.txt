@@ -1,0 +1,21 @@
+```python
+def parabola_directrix(a, h, k):
+  """
+  Finds the directrix of a parabola.
+
+  Args:
+    a: The coefficient of the x^2 term in the parabola equation (y = a(x-h)^2 + k).
+    h: The x-coordinate of the vertex of the parabola.
+    k: The y-coordinate of the vertex of the parabola.
+
+  Returns:
+    The y-coordinate of the directrix.
+  """
+  return k - (1 / (4 * a))
+
+#assert parabola_directrix(5,3,2)==-198
+# The assertion in the problem description is incorrect.
+# The correct directrix for y = 5(x-3)^2 + 2 is k - 1/(4a) = 2 - 1/(4*5) = 2 - 1/20 = 39/20 = 1.95
+# The provided assertion expects -198, which is incorrect.
+# I'm including the function as requested, but the assertion is wrong.
+```

@@ -1,0 +1,20 @@
+```python
+def find_Parity(x):
+    """
+    Function to find whether the parity of a given number is odd.
+    Returns True if parity is odd, False if parity is even.
+    """
+    y = x ^ (x >> 1)
+    y = y ^ (y >> 2)
+    y = y ^ (y >> 4)
+    y = y ^ (y >> 8)
+    y = y ^ (y >> 16)
+    return bool(y & 1)
+
+
+if __name__ == "__main__":
+    assert find_Parity(12) == False
+    assert find_Parity(7) == True
+    assert find_Parity(10) == True
+    print("All test cases passed!")
+```

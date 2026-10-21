@@ -1,0 +1,27 @@
+```python
+def sum(a, b):
+    # Find the greatest common divisor (GCD) of a and b
+    def gcd(a, b):
+        while b:
+            a, b = b, a % b
+        return a
+
+    # Calculate the GCD
+    g = gcd(a, b)
+
+    # Initialize sum of divisors
+    total = 0
+
+    # Iterate from 1 to the GCD
+    for i in range(1, g + 1):
+        # Check if i is a divisor of the GCD
+        if g % i == 0:
+            # If it is, add it to the total
+            total += i
+
+    return total
+
+# Test the function
+assert sum(10, 15) == 6
+print("All tests passed.")
+```

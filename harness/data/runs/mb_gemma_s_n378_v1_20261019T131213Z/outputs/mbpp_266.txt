@@ -1,0 +1,13 @@
+```python
+def lateralsurface_cube(side):
+  """
+  Calculate the lateral surface area of a cube.
+
+  Args:
+    side: The length of a side of the cube.
+
+  Returns:
+    The lateral surface area of the cube.
+  """
+  return 4 * side * side
+```

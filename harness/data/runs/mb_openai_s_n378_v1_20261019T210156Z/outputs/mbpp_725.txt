@@ -1,0 +1,31 @@
+```python
+def extract_quotation(s: str):
+    """
+    Extract all substrings enclosed in double quotation marks from a string.
+
+    Example:
+        'Cortex "A53" Based "multi" tasking "Processor"'
+        -> ['A53', 'multi', 'Processor']
+    """
+    result = []
+    inside = False
+    current = []
+
+    for ch in s:
+        if ch == '"':
+            if inside:
+                result.append(''.join(current))
+                current = []
+                inside = False
+            else:
+                inside = True
+        elif inside:
+            current.append(ch)
+
+    return result
+
+
+if __name__ == "__main__":
+    assert extract_quotation('Cortex "A53" Based "multi" tasking "Processor"') == ['A53', 'multi', 'Processor']
+    print("All tests passed.")
+```

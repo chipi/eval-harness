@@ -1,0 +1,13 @@
+```python
+import math
+
+def lateralsurface_cone(r, h):
+    l = math.sqrt(r**2 + h**2)
+    return math.pi * r * l
+
+def main():
+    print(lateralsurface_cone(5, 12))  # Should print: 204.20352248333654
+
+if __name__ == "__main__":
+    main()
+```

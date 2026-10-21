@@ -1,0 +1,31 @@
+```python
+def opposite_signs(a, b):
+    """
+    Checks whether the given two integers have opposite signs.
+    
+    Args:
+        a (int): First integer.
+        b (int): Second integer.
+        
+    Returns:
+        bool: True if one is positive and the other is negative, False otherwise.
+    """
+    # Two numbers have opposite signs if their product is negative.
+    # We use (a ^ b) < 0 as a bitwise trick: 
+    # The sign bit of an integer is the most significant bit.
+    # XORing two numbers will result in a negative number (sign bit 1) 
+    # only if the sign bits of the two numbers are different.
+    return (a ^ b) < 0
+
+if __name__ == "__main__":
+    # Test cases
+    assert opposite_signs(1, -2) == True
+    assert opposite_signs(-1, 2) == True
+    assert opposite_signs(1, 2) == False
+    assert opposite_signs(-1, -2) == False
+    # Zero is typically treated as positive in bitwise sign checks
+    assert opposite_signs(0, -1) == True 
+    assert opposite_signs(0, 1) == False
+    
+    print("All tests passed!")
+```

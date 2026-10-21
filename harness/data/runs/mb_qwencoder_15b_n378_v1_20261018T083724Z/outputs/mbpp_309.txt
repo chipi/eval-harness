@@ -1,0 +1,14 @@
+```python
+def maximum(a, b):
+    """
+    Write a python function to find the maximum of two numbers.
+    assert maximum(5,10) == 10
+    """
+    return max(a, b)
+
+# Test cases
+assert maximum(5,10) == 10
+assert maximum(-2, -3) == -2
+assert maximum(7, 7) == 7
+assert maximum(0, 0) == 0
+```

@@ -1,0 +1,55 @@
+```python
+def left_rotate(n: int, d: int) -> int:
+    """
+    Rotates the bits of a 32-bit integer to the left by d positions.
+
+    Args:
+        n: The 32-bit integer to rotate.
+        d: The number of positions to rotate left.
+
+    Returns:
+        The resulting 32-bit integer after the rotation.
+
+    Example:
+        >>> left_rotate(16, 2)
+        64
+    """
+    # Ensure the number is treated as a 32-bit unsigned integer.
+    # This masks the number to its last 32 bits.
+    n = n & 0xFFFFFFFF
+
+    # Ensure the rotation count is within the 32-bit range.
+    # Rotating by 32 bits is the same as rotating by 0 bits.
+    d = d % 32
+
+    # The core logic:
+    # 1. Shift the original number 'n' left by 'd' bits. The bits that fall
+    #    off the left end are lost.
+    # 2. Shift the original number 'n' right by (32 - d) bits. This moves the
+    #    bits that were shifted off the left in step 1 to the right end.
+    # 3. Combine the results from step 1 and 2 using a bitwise OR.
+    #    The OR operation effectively merges the two parts of the rotated number.
+    return ((n << d) | (n >> (32 - d))) & 0xFFFFFFFF
+
+# Example usage and assertion from the problem description
+if __name__ == "__main__":
+    # Let's trace the example: left_rotate(16, 2)
+    # n = 16 (binary: 0b0000...00010000)
+    # d = 2
+
+    # 1. n << d:
+    #    0b0000...00010000 << 2 becomes 0b0000...01000000 (which is 64)
+    # 2. n >> (32 - d) (i.e., n >> 30):
+    #    0b0000...00010000 >> 30 becomes 0b0000...00000000 (the '1' is shifted off)
+    # 3. (n << d) | (n >> (32 - d)):
+    #    0b0000...01000000 | 0b0000...00000000 becomes 0b0000...01000000 (which is 64)
+    assert left_rotate(16, 2) == 64
+
+    # Another example: left_rotate(227, 5)
+    # n = 227 (binary: 0b...11100011)
+    # d = 5
+    # Expected: 0b...00011111000 (which is 248)
+    assert left_rotate(227, 5) == 248
+
+    print("All assertions passed.")
+```

@@ -1,0 +1,10 @@
+```python
+def list_tuple(lst):
+    return tuple(lst)
+
+# Test cases
+assert list_tuple([5, 10, 7, 4, 15, 3])==(5, 10, 7, 4, 15, 3)
+assert list_tuple([1, 2, 3, 4, 5])==(1, 2, 3, 4, 5)
+assert list_tuple([6, 7, 8, 9, 10])==(6, 7, 8, 9, 10)
+assert list_tuple([])==()
+```

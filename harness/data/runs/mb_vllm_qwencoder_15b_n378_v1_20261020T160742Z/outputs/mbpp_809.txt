@@ -1,0 +1,12 @@
+```python
+def check_smaller(tuple1, tuple2):
+    # Check if all elements in tuple2 are less than their corresponding elements in tuple1
+    return all(x < y for x, y in zip(tuple1, tuple2))
+
+# Test cases to verify the correctness of the function
+assert check_smaller((1, 2, 3), (2, 3, 4)) == False
+assert check_smaller((5, 6, 7), (8, 9, 10)) == True
+assert check_smaller((10, 20, 30), (10, 20, 30)) == True
+assert check_smaller((1, 2, 3), (1, 2, 3)) == True
+assert check_smaller((1, 2, 3), (4, 5, 6)) == False
+```

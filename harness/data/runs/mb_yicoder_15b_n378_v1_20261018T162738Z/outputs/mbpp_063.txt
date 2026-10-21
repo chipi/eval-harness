@@ -1,0 +1,16 @@
+```python
+def max_difference(tuples):
+    max_diff = 0
+    for i in range(len(tuples)):
+        for j in range(i+1, len(tuples)):
+            diff = abs(tuples[i][1] - tuples[j][1])
+            if diff > max_diff:
+                max_diff = diff
+    return max_diff
+
+# Test cases
+assert max_difference([(3, 5), (1, 7), (10, 3), (1, 2)]) == 7
+assert max_difference([(1, 1), (2, 2), (3, 3), (4, 4)]) == 0
+assert max_difference([(10, 10), (20, 20), (30, 30), (40, 40)]) == 0
+assert max_difference([(1, 2), (3, 4), (5, 6), (7, 8)]) == 7
+```

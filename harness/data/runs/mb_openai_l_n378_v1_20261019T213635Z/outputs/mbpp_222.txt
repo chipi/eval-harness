@@ -1,0 +1,8 @@
+```python
+def check_type(values):
+    return len({type(value) for value in values}) <= 1
+
+
+assert check_type((5, 6, 7, 3, 5, 6)) is True
+assert check_type((5, "6", 7)) is False
+```

@@ -1,0 +1,18 @@
+```python
+def max_val(items):
+    """
+    Return the maximum numeric value from a heterogeneous list.
+
+    Non-numeric items are ignored.
+    Raises ValueError if no numeric values are present.
+    """
+    numeric_items = [x for x in items if isinstance(x, (int, float)) and not isinstance(x, bool)]
+    if not numeric_items:
+        raise ValueError("No numeric values found in the list.")
+    return max(numeric_items)
+
+
+if __name__ == "__main__":
+    assert max_val(['Python', 3, 2, 4, 5, 'version']) == 5
+    print("All tests passed.")
+```

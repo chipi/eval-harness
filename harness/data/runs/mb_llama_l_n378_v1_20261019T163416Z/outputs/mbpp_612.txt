@@ -1,0 +1,15 @@
+```python
+def merge(pairs):
+    """Takes a list of pairs and returns a list of two lists where the first list has the first element of each pair and the second one has the second."""
+    first_elements = [pair[0] for pair in pairs]
+    second_elements = [pair[1] for pair in pairs]
+    return [first_elements, second_elements]
+
+def main():
+    # Test the function
+    assert merge([['x', 'y'], ['a', 'b'], ['m', 'n']]) == [['x', 'a', 'm'], ['y', 'b', 'n']]
+    print("All tests passed.")
+
+if __name__ == "__main__":
+    main()
+```

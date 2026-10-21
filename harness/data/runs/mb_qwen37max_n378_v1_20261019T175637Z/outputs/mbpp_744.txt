@@ -1,0 +1,8 @@
+```python
+def check_none(tup):
+    """Check if the given tuple has any None value."""
+    return None in tup
+
+
+assert check_none((10, 4, 5, 6, None)) == True
+```

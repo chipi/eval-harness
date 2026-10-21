@@ -1,0 +1,29 @@
+Here's a self-contained Python script that solves the problem, including the requested assertion:
+
+```python
+import re
+
+def text_match_two_three(text):
+    """
+    Checks whether a string contains the 'a' character followed by two or three 'b' characters.
+
+    Args:
+        text (str): The input string to check.
+
+    Returns:
+        bool: True if the pattern is found, False otherwise.
+    """
+    pattern = r'ab{2,3}'
+    return bool(re.search(pattern, text))
+
+# Test case
+assert text_match_two_three("ac") == False
+```
+
+This script:
+1. Uses the `re` module for regular expression matching
+2. Defines the pattern `ab{2,3}` which matches:
+   - 'a' followed by exactly 2 'b's (ab{2})
+   - OR 'a' followed by exactly 3 'b's (ab{3})
+3. Returns True if the pattern is found anywhere in the string, False otherwise
+4. Includes the requested test case that verifies the function returns False for "ac"

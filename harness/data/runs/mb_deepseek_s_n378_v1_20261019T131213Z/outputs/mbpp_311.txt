@@ -1,0 +1,64 @@
+```python
+def set_left_most_unset_bit(n: int) -> int:
+    """
+    Sets the leftmost unset (0) bit in the binary representation of n.
+    
+    The leftmost unset bit is the most significant bit that is 0.
+    If all bits are set (e.g., n is of the form 2^k - 1), the function
+    returns n unchanged.
+    
+    Args:
+        n: A non-negative integer.
+    
+    Returns:
+        The integer after setting the leftmost unset bit.
+    """
+    if n < 0:
+        raise ValueError("Input must be a non-negative integer")
+    
+    # Find the position of the leftmost unset bit
+    # We'll iterate from the most significant bit downwards
+    # For a 32-bit integer, we can use a fixed width, but to be general,
+    # we'll find the highest set bit first.
+    
+    if n == 0:
+        # Special case: 0 has no set bits; leftmost unset is bit 0
+        return 1
+    
+    # Find the highest set bit position
+    highest_set_bit = n.bit_length() - 1
+    
+    # Now scan from that position down to 0 to find the first 0 bit
+    for i in range(highest_set_bit, -1, -1):
+        if not (n >> i) & 1:
+            # Found leftmost unset bit
+            return n | (1 << i)
+    
+    # If we get here, all bits from highest_set_bit down to 0 are set.
+    # This means n is of the form 2^(highest_set_bit+1) - 1.
+    # The leftmost unset bit is the next higher bit.
+    return n | (1 << (highest_set_bit + 1))
+
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    # Test case from the problem statement
+    result = set_left_most_unset_bit(10)
+    print(f"set_left_most_unset_bit(10) = {result}")
+    assert result == 14, f"Expected 14, got {result}"
+    
+    # Additional test cases
+    assert set_left_most_unset_bit(0) == 1
+    assert set_left_most_unset_bit(1) == 3   # 01 -> 11
+    assert set_left_most_unset_bit(2) == 3   # 10 -> 11
+    assert set_left_most_unset_bit(3) == 7   # 011 -> 111
+    assert set_left_most_unset_bit(4) == 6   # 100 -> 110
+    assert set_left_most_unset_bit(5) == 7   # 101 -> 111
+    assert set_left_most_unset_bit(6) == 7   # 110 -> 111
+    assert set_left_most_unset_bit(7) == 15  # 0111 -> 1111
+    assert set_left_most_unset_bit(8) == 12  # 1000 -> 1100
+    assert set_left_most_unset_bit(9) == 11  # 1001 -> 1011
+    assert set_left_most_unset_bit(10) == 14 # 1010 -> 1110
+    
+    print("All tests passed!")
+```

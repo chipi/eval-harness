@@ -1,0 +1,26 @@
+```python
+def left_rotate(n, d):
+    """
+    Rotate left bits by d bits a given 32-bit number.
+
+    Args:
+        n (int): The input number.
+        d (int): The number of bits to rotate.
+
+    Returns:
+        int: The result of rotating the bits of n to the left by d places.
+    """
+    # Calculate the number of bits to keep after rotation
+    bits_to_keep = 32 - d
+    
+    # Perform the rotation using bitwise operations
+    result = (n << d) | (n >> bits_to_keep)
+    
+    # Ensure the result is a 32-bit integer
+    result = result & 0xFFFFFFFF
+    
+    return result
+
+# Test the function
+assert left_rotate(16, 2) == 64
+```

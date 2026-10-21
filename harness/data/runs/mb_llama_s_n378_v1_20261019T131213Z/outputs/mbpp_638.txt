@@ -1,0 +1,39 @@
+```python
+import math
+
+def wind_chill(v, t):
+    """
+    Calculate the wind chill index given the wind velocity in km/h and a temperature in celsius.
+
+    Args:
+        v (float): The wind velocity in km/h.
+        t (float): The temperature in celsius.
+
+    Returns:
+        int: The wind chill index rounded to the next integer.
+    """
+    # Convert wind velocity from km/h to m/s
+    v_ms = v * 1000 / 3600
+    
+    # Calculate wind chill index using the formula
+    # Note: This formula is a simplification and actual formulas may vary based on the source
+    # The formula used here is from: https://en.wikipedia.org/wiki/Wind_chill
+    if v_ms >= 20:
+        wind_chill_index = 13.12 + 0.6215 * t - 11.37 * math.pow(v_ms, 0.16) + 0.3965 * t * math.pow(v_ms, 0.16)
+    else:
+        wind_chill_index = t
+
+    # Round the wind chill index to the next integer
+    wind_chill_index = math.ceil(wind_chill_index)
+
+    return wind_chill_index
+
+# Test the function
+assert wind_chill(120, 35) == 40
+```
+
+This Python script defines a function `wind_chill` that takes wind velocity `v` in km/h and temperature `t` in celsius as input, calculates the wind chill index, and returns it rounded to the next integer. The wind chill index calculation uses a simplified formula. 
+
+**Note:** For accurate calculations, consider using a reliable source for the wind chill formula, as it may vary based on the specific requirements or standards. 
+
+You can run this script in a Python environment to test the `wind_chill` function. The provided unit test `assert wind_chill(120, 35) == 40` should pass if the function is implemented correctly.

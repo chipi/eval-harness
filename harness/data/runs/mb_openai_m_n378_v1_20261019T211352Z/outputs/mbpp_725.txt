@@ -1,0 +1,35 @@
+```python
+#!/usr/bin/env python3
+"""
+Extract values between double quotation marks in a given string.
+
+Example:
+extract_quotation('Cortex "A53" Based "multi" tasking "Processor"')
+-> ['A53', 'multi', 'Processor']
+"""
+
+import re
+
+
+def extract_quotation(text):
+    """
+    Return a list of all substrings enclosed in double quotation marks.
+
+    Args:
+        text (str): The input string.
+
+    Returns:
+        list[str]: Values found between double quotes.
+    """
+    return re.findall(r'"([^"]*)"', text)
+
+
+if __name__ == "__main__":
+    assert extract_quotation('Cortex "A53" Based "multi" tasking "Processor"') == [
+        "A53",
+        "multi",
+        "Processor",
+    ]
+
+    print("All tests passed.")
+```

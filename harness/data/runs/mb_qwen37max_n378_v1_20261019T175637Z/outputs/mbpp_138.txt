@@ -1,0 +1,39 @@
+```python
+def is_Sum_Of_Powers_Of_Two(n):
+    """
+    Check whether the given number can be represented as sum of non-zero powers of 2.
+    
+    Non-zero powers of 2 are: 2^1=2, 2^2=4, 2^3=8, 2^4=16, ...
+    Note: 2^0 = 1 is excluded since it's not a "non-zero power" (the exponent must be non-zero).
+    
+    A number can be represented as a sum of non-zero powers of 2 if and only if:
+    - n >= 2 (since the smallest non-zero power of 2 is 2)
+    - n is even OR n can be formed without using 2^0=1
+    
+    Actually, let's think more carefully. The non-zero powers of 2 are 2, 4, 8, 16, ...
+    Any positive integer that has no bit set at position 0 in its binary representation
+    (i.e., is even) can trivially be represented. But odd numbers cannot use 1 (2^0),
+    so they cannot be represented as sum of non-zero powers of 2.
+    
+    Wait - but what about n=1? 1 = 2^0, but 0 is not a non-zero power, so False.
+    n=2 = 2^1, True.
+    n=3 = 2^1 + 2^0, but 2^0 is not allowed, so False.
+    n=4 = 2^2, True.
+    n=5 = 4+1, needs 2^0, False.
+    n=6 = 4+2, True.
+    n=7 = 4+2+1, needs 2^0, False.
+    n=8 = 2^3, True.
+    n=10 = 8+2, True. ✓ matches assert
+    
+    So the answer is: n must be even and n >= 2.
+    Actually wait, every even number >= 2 can be written as sum of non-zero powers of 2
+    because its binary representation only uses bits at positions >= 1.
+    
+    And no odd number can be represented without 2^0.
+    And n <= 0 cannot be represented.
+    """
+    if n < 2:
+        return False
+    # n must be even (no need for 2^0 = 1)
+    return n % 2 == 0
+```

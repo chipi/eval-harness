@@ -1,0 +1,34 @@
+Here's a self-contained Python script that solves the problem, including the requested assertion:
+
+```python
+"""
+Function to calculate the value of 'a' to the power 'b'.
+"""
+
+def power(a, b):
+    """
+    Calculate a raised to the power of b.
+
+    Args:
+        a (int/float): The base number
+        b (int): The exponent (must be non-negative integer)
+
+    Returns:
+        int/float: The result of a^b
+    """
+    result = 1
+    for _ in range(b):
+        result *= a
+    return result
+
+# Test the function
+assert power(3, 4) == 81
+print("Test passed! 3^4 =", power(3, 4))
+```
+
+This script:
+1. Defines a `power()` function that calculates a^b using a simple loop
+2. Includes the requested assertion to verify the function works correctly
+3. Also prints the result for additional confirmation
+4. Handles the case where b is 0 (will return 1)
+5. Works with both integers and floats for the base (a)

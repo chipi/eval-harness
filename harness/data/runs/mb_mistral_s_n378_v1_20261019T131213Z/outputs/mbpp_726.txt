@@ -1,0 +1,32 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def multiply_elements(tuple_numbers):
+    """
+    Takes a tuple of numbers and returns a new tuple where each element is the product
+    of consecutive elements in the input tuple.
+
+    Args:
+        tuple_numbers: A tuple of numbers (t_1, t_2, ..., t_{N+1})
+
+    Returns:
+        A tuple of length N where the i-th element is t_i * t_{i+1}
+
+    Example:
+        >>> multiply_elements((1, 5, 7, 8, 10))
+        (5, 35, 56, 80)
+    """
+    return tuple(tuple_numbers[i] * tuple_numbers[i+1] for i in range(len(tuple_numbers)-1))
+
+# Test the function
+assert multiply_elements((1, 5, 7, 8, 10)) == (5, 35, 56, 80)
+print("Test passed!")
+```
+
+This script:
+1. Defines a function `multiply_elements` that takes a tuple of numbers
+2. Uses a generator expression to create a new tuple where each element is the product of consecutive elements
+3. Includes the required assertion test case
+4. Prints a confirmation message if the test passes
+
+The function works by iterating through the input tuple (except the last element) and multiplying each element with the next one, then converting the resulting generator to a tuple.

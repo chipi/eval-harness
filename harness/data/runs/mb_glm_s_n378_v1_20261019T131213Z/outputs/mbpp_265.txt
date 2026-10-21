@@ -1,0 +1,70 @@
+```python
+def list_split(input_list, n):
+    """
+    Splits a list into n sublists, where each sublist contains every nth element
+    from the original list, starting from the 0th, 1st, ... (n-1)th positions.
+
+    Args:
+        input_list: The list to be split.
+        n: The integer to split the list by. Must be a positive integer.
+
+    Returns:
+        A list of n sublists. If the original list length is not a multiple of n,
+        the last sublist in each resulting group will be shorter.
+    """
+    if not isinstance(n, int) or n <= 0:
+        raise ValueError("n must be a positive integer.")
+
+    # Create a list of n empty lists to hold the result
+    result = [[] for _ in range(n)]
+
+    # Iterate through the original list with its index
+    for i, item in enumerate(input_list):
+        # Determine which sublist the item should go into.
+        # The modulo operator (%) gives the remainder of i divided by n,
+        # which cycles from 0 to n-1.
+        sublist_index = i % n
+        result[sublist_index].append(item)
+
+    return result
+
+# Example usage and assertion from the problem description
+if __name__ == "__main__":
+    input_data = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n']
+    split_number = 3
+    expected_output = [['a', 'd', 'g', 'j', 'm'], ['b', 'e', 'h', 'k', 'n'], ['c', 'f', 'i', 'l']]
+
+    # Call the function
+    actual_output = list_split(input_data, split_number)
+
+    # Print the results for verification
+    print(f"Input list: {input_data}")
+    print(f"Splitting by n={split_number}")
+    print(f"Expected output: {expected_output}")
+    print(f"Actual output:   {actual_output}")
+
+    # Assert that the output matches the expected result
+    assert actual_output == expected_output, f"Test failed. Expected {expected_output}, but got {actual_output}"
+
+    print("\nAssertion passed! The function works as expected.")
+
+    # Additional test cases
+    print("\n--- Running additional test cases ---")
+    # Test with n=1
+    assert list_split([1, 2, 3], 1) == [[1, 2, 3]]
+    print("Test n=1 passed.")
+
+    # Test with n equal to list length
+    assert list_split(['x', 'y', 'z'], 3) == [['x'], ['y'], ['z']]
+    print("Test n=len(list) passed.")
+
+    # Test with n greater than list length
+    assert list_split([10, 20], 5) == [[10], [20], [], [], []]
+    print("Test n > len(list) passed.")
+
+    # Test with an empty list
+    assert list_split([], 4) == [[], [], [], []]
+    print("Test with empty list passed.")
+
+    print("\nAll additional tests passed!")
+```

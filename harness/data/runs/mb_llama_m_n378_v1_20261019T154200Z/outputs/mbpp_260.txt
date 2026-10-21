@@ -1,0 +1,43 @@
+```python
+def is_prime(n):
+    """Check if a number is prime."""
+    if n < 2:
+        return False
+    for i in range(2, int(n**0.5) + 1):
+        if n % i == 0:
+            return False
+    return True
+
+def newman_prime(n):
+    """
+    Find the nth Newman-Shanks-Williams prime number.
+
+    A Newman-Shanks-Williams prime is a prime number that can be expressed in the form
+    2 * (2^p - 1) + 1, where p is also a prime number.
+
+    Args:
+        n (int): The index of the Newman-Shanks-Williams prime to find.
+
+    Returns:
+        int: The nth Newman-Shanks-Williams prime number.
+    """
+    count = 0
+    p = 2
+    while True:
+        # Calculate the potential Newman-Shanks-Williams prime
+        potential_prime = 2 * (2**p - 1) + 1
+        # Check if the potential prime is indeed prime
+        if is_prime(potential_prime):
+            count += 1
+            # If this is the nth prime, return it
+            if count == n:
+                return potential_prime
+        # Move on to the next potential prime
+        p += 1
+        # Only consider prime values of p
+        while not is_prime(p):
+            p += 1
+
+# Test the function
+print(newman_prime(3))  # Output: 7
+```

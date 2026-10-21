@@ -1,0 +1,40 @@
+Looking at this problem, I need to write a function that takes a string and returns a list of its individual characters.
+
+```python
+"""
+Write a python function to split a string into characters.
+assert split('python') == ['p','y','t','h','o','n']
+"""
+
+
+def split(word):
+    """
+    Split a string into a list of its individual characters.
+
+    Args:
+        word (str): The string to split.
+
+    Returns:
+        list: A list containing each character of the string.
+    """
+    return [char for char in word]
+
+
+# Test cases
+if __name__ == '__main__':
+    assert split('python') == ['p', 'y', 't', 'h', 'o', 'n']
+    assert split('Name') == ['N', 'a', 'm', 'e']
+    assert split('program') == ['p', 'r', 'o', 'g', 'r', 'a', 'm']
+    assert split('') == []
+    assert split('a') == ['a']
+    assert split('hi there') == ['h', 'i', ' ', 't', 'h', 'e', 'r', 'e']
+    print("All test cases passed!")
+    print(split('python'))
+```
+
+**Explanation:**
+
+- The function uses a list comprehension `[char for char in word]` to iterate through each character in the string and collect them into a list.
+- Strings in Python are iterable, so looping over them yields one character at a time.
+- Alternatively, `list(word)` would accomplish the same result in a more concise way.
+- Edge cases like empty strings naturally return an empty list.

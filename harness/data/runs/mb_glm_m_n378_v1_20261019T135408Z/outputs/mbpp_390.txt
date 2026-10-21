@@ -1,0 +1,19 @@
+```python
+def add_string(lst, format_str):
+    """
+    Applies a given format string to all of the elements in a list.
+    
+    Args:
+        lst (list): A list of elements to be formatted.
+        format_str (str): A format string containing a placeholder (e.g., '{0}').
+        
+    Returns:
+        list: A new list with the format string applied to each element.
+    """
+    return [format_str.format(item) for item in lst]
+
+# Test the function with the provided assertion
+if __name__ == "__main__":
+    assert add_string([1, 2, 3, 4], 'temp{0}') == ['temp1', 'temp2', 'temp3', 'temp4']
+    print("Test passed successfully!")
+```

@@ -1,0 +1,46 @@
+```python
+def rectangle_area(length, width):
+    """
+    Calculate the area of a rectangle.
+
+    Args:
+        length (int): The length of the rectangle.
+        width (int): The width of the rectangle.
+
+    Returns:
+        int: The area of the rectangle.
+    """
+    return length * width
+
+# Test the function
+assert rectangle_area(10, 20) == 200
+```
+
+You can save this script to a file (e.g., `rectangle_area.py`) and run it to test the function. If the assertion passes, it means the function is working correctly. 
+
+To make the script more robust, you could add some error checking to ensure that the inputs are positive numbers:
+
+```python
+def rectangle_area(length, width):
+    """
+    Calculate the area of a rectangle.
+
+    Args:
+        length (int): The length of the rectangle.
+        width (int): The width of the rectangle.
+
+    Returns:
+        int: The area of the rectangle.
+
+    Raises:
+        ValueError: If either the length or width is not a positive number.
+    """
+    if not (isinstance(length, (int, float)) and isinstance(width, (int, float))):
+        raise ValueError("Both length and width must be numbers")
+    if length <= 0 or width <= 0:
+        raise ValueError("Both length and width must be positive")
+    return length * width
+
+# Test the function
+assert rectangle_area(10, 20) == 200
+```

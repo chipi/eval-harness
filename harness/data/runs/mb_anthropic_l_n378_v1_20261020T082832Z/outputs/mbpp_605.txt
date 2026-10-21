@@ -1,0 +1,81 @@
+Looking at this problem, I need to write a function that determines whether a given integer is prime.
+
+**Key considerations:**
+- Primes are integers greater than 1 with no positive divisors other than 1 and themselves
+- Numbers ≤ 1 (including 0, 1, and negatives) are not prime
+- 2 is the only even prime
+- I only need to test divisors up to √n, since any factor larger than √n pairs with one smaller than √n
+
+```python
+"""
+Write a function to check if the given integer is a prime number.
+assert prime_num(13)==True
+"""
+
+
+def prime_num(num):
+    """
+    Check if the given integer is a prime number.
+
+    A prime number is a natural number greater than 1 that has no positive
+    divisors other than 1 and itself.
+
+    Args:
+        num: The integer to test.
+
+    Returns:
+        True if num is prime, False otherwise.
+    """
+    # Handle non-integers and values less than 2
+    if not isinstance(num, int) or num < 2:
+        return False
+
+    # 2 and 3 are prime
+    if num < 4:
+        return True
+
+    # Eliminate even numbers and multiples of 3 early
+    if num % 2 == 0 or num % 3 == 0:
+        return False
+
+    # Check remaining candidates of the form 6k +/- 1 up to sqrt(num)
+    divisor = 5
+    while divisor * divisor <= num:
+        if num % divisor == 0 or num % (divisor + 2) == 0:
+            return False
+        divisor += 6
+
+    return True
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert prime_num(13) == True
+
+    # Additional test cases
+    assert prime_num(2) == True
+    assert prime_num(3) == True
+    assert prime_num(4) == False
+    assert prime_num(1) == False
+    assert prime_num(0) == False
+    assert prime_num(-7) == False
+    assert prime_num(97) == True
+    assert prime_num(100) == False
+    assert prime_num(7919) == True
+    assert prime_num(7920) == False
+
+    print("All tests passed!")
+
+    # Show the primes below 50
+    print("Primes under 50:", [n for n in range(50) if prime_num(n)])
+```
+
+**How it works:**
+
+The `6k ± 1` optimization comes from the fact that every integer can be written as `6k + r` where `r ∈ {0, 1, 2, 3, 4, 5}`. Forms `6k`, `6k+2`, `6k+4` are divisible by 2, and `6k+3` is divisible by 3. So after screening out multiples of 2 and 3, only candidates of the form `6k ± 1` remain — this checks roughly one-third as many divisors as a naive loop.
+
+**Output:**
+```
+All tests passed!
+Primes under 50: [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47]
+```

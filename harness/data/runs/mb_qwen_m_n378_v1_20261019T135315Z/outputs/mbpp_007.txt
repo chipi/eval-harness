@@ -1,0 +1,25 @@
+```python
+import re
+
+
+def find_char_long(text: str) -> list:
+    """
+    Find all words which are at least 4 characters long in a string.
+    
+    Args:
+        text: Input string to search for words
+        
+    Returns:
+        List of words that are at least 4 characters long
+    """
+    # Find all word sequences (alphanumeric and underscore, but typically just letters)
+    words = re.findall(r'\b[a-zA-Z]+\b', text)
+    # Filter words with at least 4 characters
+    return [word for word in words if len(word) >= 4]
+
+
+if __name__ == "__main__":
+    result = find_char_long('Please move back to stream')
+    assert set(result) == set(['Please', 'move', 'back', 'stream']), f"Expected {{'Please', 'move', 'back', 'stream'}}, got {set(result)}"
+    print("All tests passed!")
+```

@@ -1,0 +1,70 @@
+```python
+"""
+Write a function to calculate whether the matrix is a magic square.
+
+A magic square is a square matrix where:
+- every row has the same sum,
+- every column has the same sum,
+- both main diagonals have the same sum.
+
+Example:
+assert magic_square_test([
+    [7, 12, 1, 14],
+    [2, 13, 8, 11],
+    [16, 3, 10, 5],
+    [9, 6, 15, 4]
+]) == True
+"""
+
+def magic_square_test(matrix):
+    """
+    Return True if the given matrix is a magic square, otherwise False.
+    """
+    if not matrix:
+        return False
+
+    n = len(matrix)
+
+    # Check that the matrix is square
+    for row in matrix:
+        if len(row) != n:
+            return False
+
+    magic_sum = sum(matrix[0])
+
+    # Check all row sums
+    for row in matrix:
+        if sum(row) != magic_sum:
+            return False
+
+    # Check all column sums
+    for col in range(n):
+        if sum(matrix[row][col] for row in range(n)) != magic_sum:
+            return False
+
+    # Check main diagonal
+    if sum(matrix[i][i] for i in range(n)) != magic_sum:
+        return False
+
+    # Check secondary diagonal
+    if sum(matrix[i][n - 1 - i] for i in range(n)) != magic_sum:
+        return False
+
+    return True
+
+
+if __name__ == "__main__":
+    assert magic_square_test([
+        [7, 12, 1, 14],
+        [2, 13, 8, 11],
+        [16, 3, 10, 5],
+        [9, 6, 15, 4]
+    ]) == True
+
+    assert magic_square_test([
+        [1, 2],
+        [3, 4]
+    ]) == False
+
+    print("All tests passed.")
+```

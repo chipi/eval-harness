@@ -1,0 +1,32 @@
+```python
+import math
+
+def count_binary_seq(n):
+    """
+    Calculate the number of binary sequences of length 2n where the sum of the first n bits equals the sum of the last n bits.
+
+    Args:
+    n (int): The length of the binary sequence.
+
+    Returns:
+    float: The probability of having an equal sum of the first n bits and the last n bits.
+    """
+    total_sequences = 2 ** (2 * n)  # Total number of possible binary sequences of length 2n
+    half_sum = n  # Half of the length of the sequence
+    valid_sequences = 0
+    
+    for i in range(half_sum + 1):
+        # Number of ways to choose i zeros out of n positions for the first half
+        ways_first_half = math.comb(n, i)
+        # Number of ways to choose i ones out of n positions for the second half
+        ways_second_half = math.comb(n, i)
+        
+        # Multiply by 2 because each choice of i zeros or i ones can be paired with another choice of i zeros or i ones
+        valid_sequences += 2 * ways_first_half * ways_second_half
+    
+    return valid_sequences / total_sequences
+
+# Test the function
+assert math.isclose(count_binary_seq(1), 2.0, rel_tol=0.001)
+```
+

@@ -1,0 +1,8 @@
+```python
+def remove_all_spaces(s: str) -> str:
+    """Remove all whitespaces from a string."""
+    return ''.join(s.split())
+
+
+assert remove_all_spaces('python  program') == 'pythonprogram'
+```

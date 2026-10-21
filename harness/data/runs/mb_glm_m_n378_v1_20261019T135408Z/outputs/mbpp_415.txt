@@ -1,0 +1,56 @@
+Here's a self-contained Python script that solves the problem of finding a pair with the highest product from a given array of integers:
+
+```python
+def max_Product(arr):
+    if len(arr) < 2:
+        return None  # Not enough elements to form a pair
+    
+    # Initialize the two largest and two smallest values
+    max1 = max2 = float('-inf')
+    min1 = min2 = float('inf')
+    
+    for num in arr:
+        # Update the two largest values
+        if num > max1:
+            max2 = max1
+            max1 = num
+        elif num > max2:
+            max2 = num
+        
+        # Update the two smallest values
+        if num < min1:
+            min2 = min1
+            min1 = num
+        elif num < min2:
+            min2 = num
+    
+    # Compare the product of the two largest and two smallest numbers
+    product1 = max1 * max2
+    product2 = min1 * min2
+    
+    if product1 > product2:
+        return (max2, max1)  # Return in ascending order
+    else:
+        return (min1, min2)  # Return in ascending order
+
+# Test cases
+assert max_Product([1, 2, 3, 4, 7, 0, 8, 4]) == (7, 8)
+assert max_Product([-10, -3, 5, 6, -20]) == (-20, -10)
+assert max_Product([1, 2, 3]) == (2, 3)
+assert max_Product([-1, -2, -3, -4]) == (-4, -3)
+assert max_Product([0, 0, 0]) == (0, 0)
+assert max_Product([5]) is None  # Not enough elements
+
+print("All test cases passed!")
+```
+
+### Explanation:
+1. **Initialization**: We initialize four variables to keep track of the two largest (`max1`, `max2`) and two smallest (`min1`, `min2`) numbers in the array.
+2. **Iteration**: For each number in the array, we update these variables accordingly:
+   - If the number is greater than `max1`, we update `max2` to `max1` and `max1` to the current number.
+   - If the number is between `max1` and `max2`, we update `max2` to the current number.
+   - Similarly, we update `min1` and `min2` for the smallest numbers.
+3. **Comparison**: After processing all numbers, we compare the product of the two largest numbers (`max1 * max2`) with the product of the two smallest numbers (`min1 * min2`). The pair with the higher product is returned.
+4. **Edge Cases**: The function handles cases where the array has fewer than two elements by returning `None`. It also correctly handles arrays with negative numbers, zeros, or all positive numbers.
+
+This approach efficiently finds the pair with the highest product in O(n) time with O(1) space complexity.

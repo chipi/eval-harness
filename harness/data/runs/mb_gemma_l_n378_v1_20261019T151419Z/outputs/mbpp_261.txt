@@ -1,0 +1,25 @@
+```python
+def division_elements(tuple1, tuple2):
+    """
+    Performs element-wise division of two tuples and returns the result as a tuple.
+    
+    Args:
+        tuple1 (tuple): The dividend tuple.
+        tuple2 (tuple): The divisor tuple.
+        
+    Returns:
+        tuple: A tuple containing the results of the division.
+    """
+    # Use a generator expression to divide elements and convert the result back to a tuple
+    # We use integer division (//) to match the expected output of the provided assertion
+    return tuple(a // b for a, b in zip(tuple1, tuple2))
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    result = division_elements((10, 4, 6, 9), (5, 2, 3, 3))
+    print(f"Result: {result}")
+    
+    # Assertion to verify correctness
+    assert result == (2, 2, 2, 3), f"Expected (2, 2, 2, 3), but got {result}"
+    print("Assertion passed!")
+```

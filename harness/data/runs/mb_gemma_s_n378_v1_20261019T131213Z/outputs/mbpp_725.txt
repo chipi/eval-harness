@@ -1,0 +1,22 @@
+```python
+import re
+
+def extract_quotation(input_string):
+  """
+  Extracts values between quotation marks " " of the given string.
+
+  Args:
+    input_string: The string to extract from.
+
+  Returns:
+    A list of strings containing the values between quotation marks.
+  """
+  pattern = r'"([^"]*)"'
+  matches = re.findall(pattern, input_string)
+  return matches
+
+# Example usage and assertion
+if __name__ == '__main__':
+  assert extract_quotation('Cortex "A53" Based "multi" tasking "Processor"') == ['A53', 'multi', 'Processor']
+  print("All test cases passed!")
+```

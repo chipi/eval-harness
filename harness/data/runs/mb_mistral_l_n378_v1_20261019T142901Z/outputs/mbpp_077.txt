@@ -1,0 +1,49 @@
+Here's a self-contained Python script that solves the problem of checking whether a number is divisible by 11. The function uses the divisibility rule for 11, which states that a number is divisible by 11 if the difference between the sum of its digits in odd positions and the sum of its digits in even positions is either 0 or a multiple of 11.
+
+```python
+def is_divisible_by_11(number):
+    """
+    Check if a number is divisible by 11 using the divisibility rule.
+
+    The rule states that a number is divisible by 11 if the difference between
+    the sum of its digits in odd positions and the sum of its digits in even
+    positions is either 0 or a multiple of 11.
+
+    Args:
+        number (int): The number to check for divisibility by 11.
+
+    Returns:
+        bool: True if the number is divisible by 11, False otherwise.
+    """
+    num_str = str(abs(number))  # Handle negative numbers by taking absolute value
+    sum_odd = 0
+    sum_even = 0
+
+    for i in range(len(num_str)):
+        digit = int(num_str[i])
+        if i % 2 == 0:  # Odd position (1-based index)
+            sum_odd += digit
+        else:  # Even position (1-based index)
+            sum_even += digit
+
+    difference = sum_odd - sum_even
+    return difference % 11 == 0
+
+# Test the function with the provided assertion
+assert is_divisible_by_11(12345) == False, "Test case failed: 12345 should not be divisible by 11"
+
+# Additional test cases
+assert is_divisible_by_11(0) == True, "Test case failed: 0 should be divisible by 11"
+assert is_divisible_by_11(121) == True, "Test case failed: 121 should be divisible by 11"
+assert is_divisible_by_11(1331) == True, "Test case failed: 1331 should be divisible by 11"
+assert is_divisible_by_11(123456) == False, "Test case failed: 123456 should not be divisible by 11"
+assert is_divisible_by_11(-121) == True, "Test case failed: -121 should be divisible by 11"
+
+print("All test cases passed!")
+```
+
+### Explanation:
+1. The function `is_divisible_by_11` converts the number to a string to easily access each digit.
+2. It then iterates over each digit, summing the digits in odd positions (1-based index) and even positions separately.
+3. The difference between these two sums is calculated, and the function checks if this difference is divisible by 11.
+4. The function includes test cases to verify its correctness, including the provided assertion and additional edge cases.

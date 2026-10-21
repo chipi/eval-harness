@@ -1,0 +1,25 @@
+```python
+def all_unique(lst):
+    """
+    Checks if all elements in a given list are unique.
+
+    Args:
+        lst: A list of elements.
+
+    Returns:
+        True if all elements are unique, False otherwise.
+    """
+    # A set is a collection of unique elements. By converting the list to a set,
+    # we automatically remove any duplicate elements. If the length of the set
+    # is the same as the length of the original list, it means no duplicates
+    # were removed, and all elements are unique.
+    return len(lst) == len(set(lst))
+
+# Example usage and assertions:
+assert all_unique([1, 2, 3]) == True
+assert all_unique([1, 2, 2, 3]) == False
+assert all_unique([]) == True
+assert all_unique(['a', 'b', 'c']) == True
+assert all_unique(['a', 'b', 'a']) == False
+assert all_unique([1, '1', True]) == False # Note: 1 and True are considered the same in a set
+```

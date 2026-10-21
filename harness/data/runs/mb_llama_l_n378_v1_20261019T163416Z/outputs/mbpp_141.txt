@@ -1,0 +1,27 @@
+```python
+def pancake_sort(lst):
+    """
+    Sorts a list of elements using the pancake sort algorithm.
+
+    :param lst: The list to be sorted.
+    :return: The sorted list.
+    """
+    # Make a copy of the input list to avoid modifying it in place
+    lst = lst.copy()
+    n = len(lst)
+    # Start from the complete array and one by one reduce current size by one
+    for curr_size in range(n, 0, -1):
+        # Find index of the maximum element in lst[0..curr_size]
+        max_index = lst.index(max(lst[0:curr_size]))
+        # Move the maximum element to end of current array if it's not already at the end
+        if max_index != curr_size-1:
+            # First flip 'max_index'
+            if max_index != 0:
+                lst[:max_index+1] = lst[:max_index+1][::-1]
+            # Now move the maximum number to end by reversing current array
+            lst[:curr_size] = lst[:curr_size][::-1]
+    return lst
+
+# Test the function
+print(pancake_sort([15, 79, 25, 38, 69]))  # Output: [15, 25, 38, 69, 79]
+```

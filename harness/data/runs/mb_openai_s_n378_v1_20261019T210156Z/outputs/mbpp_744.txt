@@ -1,0 +1,13 @@
+```python
+def check_none(tup):
+    """
+    Return True if the tuple contains at least one None value, otherwise False.
+    """
+    return None in tup
+
+
+# Example usage / test
+if __name__ == "__main__":
+    assert check_none((10, 4, 5, 6, None)) == True
+    print("Passed")
+```

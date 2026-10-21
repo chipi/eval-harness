@@ -1,0 +1,50 @@
+Looking at this problem, I need to write a function that replaces all occurrences of one character with another in a string.
+
+```python
+"""
+Write a function to replace characters in a string.
+assert replace_char("polygon",'y','l')==("pollgon")
+"""
+
+
+def replace_char(str1, ch, newch):
+    """
+    Replace all occurrences of character `ch` in `str1` with `newch`.
+
+    Parameters:
+        str1  (str): The original string.
+        ch    (str): The character to be replaced.
+        newch (str): The replacement character.
+
+    Returns:
+        str: A new string with all occurrences of `ch` replaced by `newch`.
+    """
+    return str1.replace(ch, newch)
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert replace_char("polygon", 'y', 'l') == ("pollgon")
+
+    # A few extra sanity checks
+    assert replace_char("character", 'c', 'a') == "aharaater"
+    assert replace_char("python", 'l', 'a') == "python"
+    assert replace_char("", 'a', 'b') == ""
+    assert replace_char("aaa", 'a', 'b') == "bbb"
+
+    print(replace_char("polygon", 'y', 'l'))   # pollgon
+    print("All tests passed!")
+```
+
+**Explanation:**
+
+- Python strings have a built-in `replace(old, new)` method that returns a new string where every occurrence of `old` is substituted with `new`.
+- Since strings are immutable in Python, `replace` doesn't modify the original string—it returns a new one.
+- For `"polygon"` with `ch='y'` and `newch='l'`, the single `'y'` at index 3 becomes `'l'`, producing `"pollgon"`.
+
+**Alternative implementation** (without using `str.replace`), in case a manual approach is desired:
+
+```python
+def replace_char(str1, ch, newch):
+    return ''.join(newch if c == ch else c for c in str1)
+```

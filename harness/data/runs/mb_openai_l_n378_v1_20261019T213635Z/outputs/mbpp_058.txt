@@ -1,0 +1,12 @@
+```python
+def opposite_Signs(a: int, b: int) -> bool:
+    """Return True if one integer is positive and the other is negative."""
+    return (a < 0 < b) or (b < 0 < a)
+
+
+if __name__ == "__main__":
+    assert opposite_Signs(1, -2) is True
+    assert opposite_Signs(-1, 2) is True
+    assert opposite_Signs(1, 2) is False
+    assert opposite_Signs(0, -2) is False
+```

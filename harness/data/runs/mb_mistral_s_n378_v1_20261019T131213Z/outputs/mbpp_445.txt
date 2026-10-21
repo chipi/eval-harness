@@ -1,0 +1,43 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def index_multiplication(tuple1, tuple2):
+    """
+    Perform index-wise multiplication of elements in two tuples of tuples.
+
+    Args:
+        tuple1: First tuple of tuples
+        tuple2: Second tuple of tuples
+
+    Returns:
+        A new tuple of tuples where each element is the product of corresponding elements
+        from the input tuples at the same index.
+    """
+    if len(tuple1) != len(tuple2):
+        raise ValueError("Input tuples must have the same length")
+
+    result = []
+    for t1, t2 in zip(tuple1, tuple2):
+        if len(t1) != len(t2):
+            raise ValueError("Corresponding tuples must have the same length")
+        multiplied = tuple(a * b for a, b in zip(t1, t2))
+        result.append(multiplied)
+
+    return tuple(result)
+
+# Test the function
+assert index_multiplication(((1, 3), (4, 5), (2, 9), (1, 10)), ((6, 7), (3, 9), (1, 1), (7, 3))) == ((6, 21), (12, 45), (2, 9), (7, 30))
+print("Test passed!")
+```
+
+This script:
+1. Defines a function `index_multiplication` that takes two tuples of tuples as input
+2. Performs element-wise multiplication of corresponding elements in the nested tuples
+3. Includes error checking to ensure the input tuples have compatible shapes
+4. Contains the test case from the problem statement
+5. Prints a confirmation message if the test passes
+
+The function works by:
+- First checking that the outer tuples have the same length
+- Then for each pair of inner tuples, checking they have the same length
+- Finally performing the element-wise multiplication using tuple comprehensions and the `zip` function

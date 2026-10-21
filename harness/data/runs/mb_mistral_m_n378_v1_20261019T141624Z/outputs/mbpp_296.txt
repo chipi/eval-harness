@@ -1,0 +1,48 @@
+Here's a self-contained Python script that counts the number of inversions in an array using a modified merge sort algorithm, which efficiently counts inversions in O(n log n) time:
+
+```python
+def get_Inv_Count(arr):
+    # Function to use modified merge sort to count inversions
+    def merge_sort_and_count(arr):
+        if len(arr) <= 1:
+            return arr, 0
+
+        mid = len(arr) // 2
+        left, inv_left = merge_sort_and_count(arr[:mid])
+        right, inv_right = merge_sort_and_count(arr[mid:])
+        merged, inv_merge = merge_and_count(left, right)
+
+        total = inv_left + inv_right + inv_merge
+        return merged, total
+
+    def merge_and_count(left, right):
+        result = []
+        i = j = 0
+        inv_count = 0
+
+        while i < len(left) and j < len(right):
+            if left[i] <= right[j]:
+                result.append(left[i])
+                i += 1
+            else:
+                result.append(right[j])
+                j += 1
+                inv_count += len(left) - i
+
+        result.extend(left[i:])
+        result.extend(right[j:])
+        return result, inv_count
+
+    _, total_inversions = merge_sort_and_count(arr)
+    return total_inversions
+
+# Test case
+assert get_Inv_Count([1, 20, 6, 4, 5]) == 5
+```
+
+This solution:
+1. Uses a divide-and-conquer approach with merge sort
+2. Counts inversions during the merge step (when an element from the right half is placed before elements remaining in the left half)
+3. Has O(n log n) time complexity, which is optimal for this problem
+4. Passes the provided test case where [1,20,6,4,5] has 5 inversions:
+   - (20,6), (20,4), (20,5), (6,4), (6,5)

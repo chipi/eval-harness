@@ -1,0 +1,16 @@
+```python
+def empty_list(n):
+    """
+    This function creates a list of N empty dictionaries.
+
+    Args:
+        n (int): The number of empty dictionaries to create.
+
+    Returns:
+        list: A list of N empty dictionaries.
+    """
+    return [{} for _ in range(n)]
+
+# Test the function
+print(empty_list(5))  # Output: [{}, {}, {}, {}, {}]
+```

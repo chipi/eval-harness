@@ -1,0 +1,32 @@
+```python
+def overlapping(seq1, seq2):
+    """
+    Check whether any value in seq1 exists in seq2.
+    
+    Args:
+        seq1: First sequence
+        seq2: Second sequence
+    
+    Returns:
+        True if any element from seq1 exists in seq2, False otherwise
+    """
+    return any(item in seq2 for item in seq1)
+
+
+# Test cases
+assert overlapping([1, 2, 3, 4, 5], [6, 7, 8, 9]) == False
+assert overlapping([1, 2, 3, 4, 5], [5, 6, 7, 8]) == True
+assert overlapping([1, 2, 3], [3, 4, 5]) == True
+assert overlapping([], [1, 2, 3]) == False
+assert overlapping([1, 2, 3], []) == False
+assert overlapping(['a', 'b'], ['c', 'd']) == False
+assert overlapping(['a', 'b'], ['b', 'c']) == True
+
+print("All tests passed!")
+```
+
+The function `overlapping()` checks if any value from the first sequence exists in the second sequence by:
+1. Using `any()` to check if at least one condition is true
+2. Iterating through each item in `seq1` with a generator expression
+3. Checking if each item exists in `seq2` using the `in` operator
+4. Returning `True` if any match is found, `False` otherwise

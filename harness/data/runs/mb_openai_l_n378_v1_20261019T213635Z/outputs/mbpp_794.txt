@@ -1,0 +1,11 @@
+```python
+import re
+
+
+def text_starta_endb(text):
+    """Return True if text starts with 'a' and ends with 'b'."""
+    return re.fullmatch(r"a.*b", text, flags=re.DOTALL) is not None
+
+
+assert text_starta_endb("aabbbb")
+```

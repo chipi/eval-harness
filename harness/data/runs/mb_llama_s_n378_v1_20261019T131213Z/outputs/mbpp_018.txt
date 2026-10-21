@@ -1,0 +1,52 @@
+```python
+def remove_dirty_chars(clean_str, dirty_str):
+    """
+    This function removes characters from the clean_str which are present in the dirty_str.
+
+    Args:
+        clean_str (str): The original string from which characters will be removed.
+        dirty_str (str): The string containing characters to be removed.
+
+    Returns:
+        str: The string with characters from dirty_str removed.
+    """
+    # Convert the dirty_str to a set for efficient lookups
+    dirty_chars = set(dirty_str)
+    
+    # Use a list comprehension to filter out characters present in dirty_str
+    clean_chars = [char for char in clean_str if char not in dirty_chars]
+    
+    # Join the characters back into a string
+    cleaned_str = ''.join(clean_chars)
+    
+    return cleaned_str
+
+# Test the function
+assert remove_dirty_chars("probasscurve", "pros") == 'bacuve'
+```
+
+Alternatively, you can use Python's built-in `str.translate()` method along with `str.maketrans()` to achieve the same result in a more concise way:
+
+```python
+def remove_dirty_chars(clean_str, dirty_str):
+    """
+    This function removes characters from the clean_str which are present in the dirty_str.
+
+    Args:
+        clean_str (str): The original string from which characters will be removed.
+        dirty_str (str): The string containing characters to be removed.
+
+    Returns:
+        str: The string with characters from dirty_str removed.
+    """
+    # Create a translation table that maps dirty characters to None
+    translation_table = str.maketrans('', '', dirty_str)
+    
+    # Use the translation table to remove dirty characters
+    cleaned_str = clean_str.translate(translation_table)
+    
+    return cleaned_str
+
+# Test the function
+assert remove_dirty_chars("probasscurve", "pros") == 'bacuve'
+```

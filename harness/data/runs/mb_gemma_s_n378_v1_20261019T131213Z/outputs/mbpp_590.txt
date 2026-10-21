@@ -1,0 +1,21 @@
+```python
+import cmath
+
+def polar_rect(r, theta):
+  """
+  Converts polar coordinates (r, theta) to rectangular coordinates (x, y).
+
+  Args:
+    r: The radius.
+    theta: The angle in radians.
+
+  Returns:
+    A tuple containing the rectangular coordinates (x, y).
+  """
+  x = r * cmath.cos(theta)
+  y = r * cmath.sin(theta)
+  return (x, y)
+
+# Example usage and assertion
+assert polar_rect(3, 4)==((5.0, 0.9272952180016122), (-2+2.4492935982947064e-16j))
+```

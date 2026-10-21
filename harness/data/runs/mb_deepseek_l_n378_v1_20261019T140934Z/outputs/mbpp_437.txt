@@ -1,0 +1,31 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def remove_odd(s):
+    """
+    Remove characters at odd indices (1-based) from the string.
+    In other words, keep characters at even indices (0-based).
+    
+    Args:
+        s: Input string
+        
+    Returns:
+        String with characters at odd positions removed
+    """
+    return ''.join(s[i] for i in range(len(s)) if i % 2 != 0)
+
+# Test the function
+if __name__ == "__main__":
+    assert remove_odd("python") == "yhn"
+    print("Test passed!")
+```
+
+The function `remove_odd` removes characters at odd positions (1-based indexing) from the string. In the example "python":
+- Index 0: 'p' (odd position 1) → removed
+- Index 1: 'y' (even position 2) → kept
+- Index 2: 't' (odd position 3) → removed
+- Index 3: 'h' (even position 4) → kept
+- Index 4: 'o' (odd position 5) → removed
+- Index 5: 'n' (even position 6) → kept
+
+Result: "yhn" ✓

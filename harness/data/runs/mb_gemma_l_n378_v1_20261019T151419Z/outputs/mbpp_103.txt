@@ -1,0 +1,52 @@
+```python
+def eulerian_num(n, m):
+    """
+    Calculates the Eulerian number A(n, m), which represents the number of 
+    permutations of {1, ..., n} with exactly m ascents.
+    
+    The Eulerian numbers satisfy the recurrence relation:
+    A(n, m) = (m + 1) * A(n-1, m) + (n - m) * A(n-1, m-1)
+    
+    Base cases:
+    A(0, 0) = 1
+    A(n, 0) = 1 for n >= 0
+    A(n, m) = 0 if m >= n or m < 0
+    """
+    # Handle base cases and boundaries
+    if m < 0 or m >= n:
+        return 1 if (n == 0 and m == 0) else 0
+    if m == 0:
+        return 1
+
+    # We use a 2D table (DP) to store results of subproblems
+    # dp[i][j] will store A(i, j)
+    dp = [[0] * (n + 1) for _ in range(n + 1)]
+
+    # Base case: A(i, 0) = 1 for all i
+    for i in range(n + 1):
+        dp[i][0] = 1
+
+    for i in range(1, n + 1):
+        for j in range(1, i):
+            # Recurrence: A(n, m) = (m + 1) * A(n-1, m) + (n - m) * A(n-1, m-1)
+            dp[i][j] = (j + 1) * dp[i-1][j] + (i - j) * dp[i-1][j-1]
+
+    return dp[n][m]
+
+if __name__ == "__main__":
+    # Test case provided in the prompt
+    result = eulerian_num(3, 1)
+    print(f"eulerian_num(3, 1) = {result}")
+    assert result == 4
+    
+    # Additional test cases
+    # A(4, 1) = 11
+    # A(4, 2) = 11
+    # A(3, 0) = 1
+    # A(3, 2) = 1
+    assert eulerian_num(4, 1) == 11
+    assert eulerian_num(4, 2) == 11
+    assert eulerian_num(3, 0) == 1
+    assert eulerian_num(3, 2) == 1
+    print("All tests passed!")
+```

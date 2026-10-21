@@ -1,0 +1,10 @@
+```python
+def unique_Element(lst):
+    return len(lst) == len(set(lst))
+
+# Test cases
+assert unique_Element([1,1,1]) == True
+assert unique_Element([1,2,3]) == False
+assert unique_Element([1]) == True
+assert unique_Element([]) == True
+```

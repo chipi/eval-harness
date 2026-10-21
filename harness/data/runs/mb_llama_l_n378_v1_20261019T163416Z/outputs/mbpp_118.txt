@@ -1,0 +1,22 @@
+```python
+def string_to_list(s):
+    """
+    This function takes a string as input and returns a list of strings 
+    split on the space character.
+
+    Args:
+        s (str): The input string.
+
+    Returns:
+        list: A list of strings split on the space character.
+    """
+    return s.split()
+
+# Test the function
+def main():
+    assert string_to_list("python programming") == ['python', 'programming']
+    print("Test passed.")
+
+if __name__ == "__main__":
+    main()
+```

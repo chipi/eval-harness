@@ -1,0 +1,60 @@
+Looking at this problem, I need to convert a complex number to polar coordinates (magnitude, phase angle).
+
+```python
+"""
+Write a python function to convert complex numbers to polar coordinates.
+assert convert(1) == (1.0, 0.0)
+"""
+
+import cmath
+
+
+def convert(numbers):
+    """
+    Convert a complex number to its polar coordinate representation.
+
+    Parameters
+    ----------
+    numbers : complex, int or float
+        The number to convert. Real numbers are treated as complex
+        numbers with a zero imaginary part.
+
+    Returns
+    -------
+    tuple of (float, float)
+        A tuple ``(r, phi)`` where ``r`` is the modulus (distance from
+        the origin) and ``phi`` is the phase angle in radians.
+    """
+    num = cmath.polar(numbers)
+    return num
+
+
+if __name__ == "__main__":
+    # Provided test case
+    assert convert(1) == (1.0, 0.0)
+
+    # A few extra sanity checks
+    assert convert(4) == (4.0, 0.0)
+    assert convert(5) == (5.0, 0.0)
+
+    import math
+    r, phi = convert(1j)
+    assert math.isclose(r, 1.0) and math.isclose(phi, math.pi / 2)
+
+    r, phi = convert(complex(3, 4))
+    assert math.isclose(r, 5.0)
+    assert math.isclose(phi, math.atan2(4, 3))
+
+    print("All tests passed!")
+    print("convert(1)        =", convert(1))
+    print("convert(1j)       =", convert(1j))
+    print("convert(3 + 4j)   =", convert(complex(3, 4)))
+```
+
+**How it works:**
+
+- A complex number `z = a + bi` can be written in polar form as `z = r·(cos φ + i·sin φ)`.
+- `r = |z| = sqrt(a² + b²)` is the modulus/magnitude.
+- `φ = atan2(b, a)` is the phase/argument in radians.
+- `cmath.polar(z)` returns exactly this `(r, φ)` pair, so the function simply delegates to it.
+- For `convert(1)`, the magnitude is `1.0` and the angle is `0.0`, matching the assertion.

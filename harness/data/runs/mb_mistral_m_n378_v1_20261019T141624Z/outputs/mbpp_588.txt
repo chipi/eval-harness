@@ -1,0 +1,19 @@
+Here's a self-contained Python script that solves the problem:
+
+```python
+def big_diff(numbers):
+    """Find the difference between the largest and smallest value in a given list."""
+    if not numbers:  # Handle empty list case
+        return 0
+    return max(numbers) - min(numbers)
+
+# Test case
+assert big_diff([1, 2, 3, 4]) == 3
+```
+
+This script:
+1. Defines a function `big_diff` that takes a list of numbers as input
+2. Uses Python's built-in `max()` and `min()` functions to find the largest and smallest values
+3. Returns their difference
+4. Includes the provided test case as an assertion
+5. Handles the edge case of an empty list by returning 0 (though the problem doesn't specify this requirement)

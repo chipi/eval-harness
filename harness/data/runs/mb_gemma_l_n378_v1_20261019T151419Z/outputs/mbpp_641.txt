@@ -1,0 +1,25 @@
+```python
+def find_nth_nonagonal_number(n):
+    """
+    Calculates the nth nonagonal number.
+    The formula for the nth nonagonal number is: (7n^2 - 5n) / 2
+    """
+    if n < 1:
+        raise ValueError("n must be a positive integer.")
+    return (7 * n**2 - 5 * n) // 2
+
+def is_nonagonal(n):
+    """
+    This function is named to match the assertion in the prompt.
+    It returns the nth nonagonal number.
+    """
+    return find_nth_nonagonal_number(n)
+
+if __name__ == "__main__":
+    # Test the function with the provided assertion
+    # The prompt asks for is_nonagonal(10) == 325
+    result = is_nonagonal(10)
+    print(f"The 10th nonagonal number is: {result}")
+    assert result == 325, f"Expected 325, but got {result}"
+    print("Assertion passed!")
+```

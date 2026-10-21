@@ -1,0 +1,43 @@
+Here's a self-contained Python script that solves the problem as described:
+
+```python
+def validate(n):
+    """
+    Check whether the frequency of each digit in the integer is less than or equal to the digit itself.
+
+    Args:
+        n (int): The integer to validate.
+
+    Returns:
+        bool: True if the frequency of each digit is <= the digit itself, False otherwise.
+    """
+    digit_counts = {}
+
+    # Convert the number to a string to iterate over each digit
+    num_str = str(abs(n))  # Handle negative numbers by taking absolute value
+
+    for digit in num_str:
+        d = int(digit)
+        digit_counts[d] = digit_counts.get(d, 0) + 1
+
+    # Check each digit's count against the digit itself
+    for digit, count in digit_counts.items():
+        if count > digit:
+            return False
+
+    return True
+
+# Test case
+assert validate(1234) == True
+```
+
+This script:
+1. Defines the `validate` function that takes an integer as input
+2. Creates a dictionary to count occurrences of each digit
+3. Converts the number to a string to process each digit (handling negative numbers by using absolute value)
+4. Counts how many times each digit appears
+5. Verifies that for each digit, its count is less than or equal to the digit itself
+6. Returns True if all digits meet the condition, False otherwise
+7. Includes the provided test case as an assertion
+
+The function will return True for numbers like 1234 (where each digit appears once, which is ≤ the digit itself) and False for numbers like 112 (where digit '1' appears twice, which is > 1).

@@ -1,0 +1,12 @@
+```python
+def extract_nth_element(tuples_list, n):
+    return [t[n] for t in tuples_list]
+
+def main():
+    tuples_list = [('Greyson Fulton', 98, 99), ('Brady Kent', 97, 96), ('Wyatt Knott', 91, 94), ('Beau Turnbull', 94, 98)]
+    n = 0
+    print(extract_nth_element(tuples_list, n))  # Output: ['Greyson Fulton', 'Brady Kent', 'Wyatt Knott', 'Beau Turnbull']
+
+if __name__ == "__main__":
+    main()
+```

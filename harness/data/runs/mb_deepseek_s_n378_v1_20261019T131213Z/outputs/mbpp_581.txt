@@ -1,0 +1,37 @@
+Here’s a self-contained Python script that solves the problem:
+
+```python
+import math
+
+def surface_Area(base_edge, height):
+    """
+    Calculate the surface area of a square pyramid.
+    
+    Parameters:
+    base_edge (float): Length of the base edge
+    height (float): Perpendicular height of the pyramid
+    
+    Returns:
+    float: Total surface area
+    """
+    # Base area
+    base_area = base_edge ** 2
+    
+    # Slant height of the triangular faces
+    slant_height = math.sqrt((base_edge / 2) ** 2 + height ** 2)
+    
+    # Lateral surface area (4 triangular faces)
+    lateral_area = 4 * (0.5 * base_edge * slant_height)
+    
+    # Total surface area
+    total_surface_area = base_area + lateral_area
+    
+    return total_surface_area
+
+# Test the function with the given assertion
+if __name__ == "__main__":
+    result = surface_Area(3, 4)
+    print(f"Surface area for base_edge=3, height=4: {result}")
+    assert surface_Area(3, 4) == 33, "Test case failed"
+    print("Test passed!")
+```

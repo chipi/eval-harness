@@ -1,0 +1,35 @@
+Here's a self-contained Python script that solves the problem of finding the cube sum of the first `n` even natural numbers:
+
+```python
+def cube_Sum(n):
+    """
+    Calculate the sum of cubes of the first n even natural numbers.
+
+    Args:
+        n (int): The number of even natural numbers to consider.
+
+    Returns:
+        int: The sum of cubes of the first n even natural numbers.
+
+    Examples:
+        >>> cube_Sum(2)
+        72
+    """
+    total = 0
+    for i in range(1, n + 1):
+        even_num = 2 * i
+        total += even_num ** 3
+    return total
+
+# Test the function
+assert cube_Sum(2) == 72
+print("Test passed!")
+```
+
+### Explanation:
+1. The function `cube_Sum(n)` calculates the sum of cubes of the first `n` even natural numbers.
+2. The first `n` even natural numbers are `2, 4, 6, ..., 2n`.
+3. For each even number, we compute its cube and add it to the total sum.
+4. The function includes a test case to verify the correctness of the implementation, as specified in the problem statement.
+
+You can run this script directly, and it will print "Test passed!" if the assertion holds true.
