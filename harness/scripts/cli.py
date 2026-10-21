@@ -29,6 +29,7 @@ COMMANDS = {
     "sweep": ("sweep.py", "run several arms, then the leaderboard"),
     "runs-list": ("list_runs.py", "list runs (or baselines)"),
     "rescore": ("rescore.py", "re-score stored outputs against references, for $0"),
+    "judge-score": ("judge_score.py", "re-measure frozen outputs with a validated LLM judge (--dry-run first)"),
     "silver-calibrate": ("silver_calibrate.py", "how far silver references drift from gold"),
     "cost-report": ("cost_report.py", "billed cost per arm, with projections"),
     "leaderboard": ("leaderboard.py", "rank arms, with Friedman/Nemenyi before any order"),

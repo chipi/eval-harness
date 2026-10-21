@@ -340,11 +340,34 @@ make judge-score DATASET_ID=cnn_dailymail_200 SCORER=judge-summ-v1
 EVAL_RUNS_DIR=data/runs-judged/judge-summ-v1 make leaderboard DATASET_ID=cnn_dailymail_200
 ```
 
+From an installed package the same pass is `evh judge-score --dataset-id <id> --scorer <id>`
+(same flags), in a project that has only its own data directory, scorer, prompt and runs:
+the judging code, the prompt builder and the judge client are all in `evaluation_harness`.
+`validate_judge_goyal.py`, which checks a scorer against the Goyal et al. human preferences
+on 2022 CNN articles, stays a script of this repository: it is specific to that download
+and to the news-summary judge, so it is not an `evh` command.
+
 1. **The scorer** is `data/scorers/<id>.yaml`: two or more judges from different vendor
    families, the prompt, the protocol, a `validation` block and a cost cap. The command
    refuses a scorer whose validation does not name a committed run with the stated value and
    the judge's model. `ARGS=--unvalidated` overrides it and labels every number
    "unvalidated judge" (the primary metric becomes `judge_score_unvalidated`).
+   - **`prompt.file`** is looked up in this order, first hit wins: an absolute path as
+     written; the project root (`EVAL_HOME`, else the harness checkout); the directory of
+     the scorer file itself; and, only in a checkout of this repository, the repository root,
+     which is where the committed scorers' `examples/summeval-judging/prompt.txt` points. A
+     project keeps its prompt wherever it likes and names it relative to its root
+     (`prompts/judge.txt`). `sha256_at_16` is the hash of the file's text rendered for 16
+     summaries; the gate recomputes it.
+   - **Routing.** A judge's `model` is sent as written to `LITELLM_BASE_URL` (or the judge's
+     own `base_url`) with `LITELLM_API_KEY` (or its `api_key_env`); with only
+     `OPENROUTER_API_KEY` it goes straight to OpenRouter, so `model` must then be an
+     OpenRouter id (`vendor/model`) or an alias in `$EVAL_MODELS_FILE` or `<project>/models.json`.
+     Billed cost is read from the response; the scorer's price table is the fallback.
+     `pip install 'evaluation-harness[llm]'` for the `openai` client.
+   - **`provider: fake`** judges call nothing and cost nothing. They exist to try a scorer
+     end to end and to test one; the gate refuses them whatever the `validation` block says,
+     so they only run with `--unvalidated`.
 2. **Dry-run first.** It builds the judging set and prints calls, tokens and estimated cost
    per judge, and calls nothing.
 3. **The judging set** is one item = the article plus every arm's primary output, arm ids
