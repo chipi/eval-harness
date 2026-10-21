@@ -210,13 +210,13 @@ def adjudicated(slug: str, exps: list) -> dict:
 
 def judged_summarisation(exps: list, scorer: str = "") -> dict:
     """The summarisation arms on coverage (the primary) and on a judge scorer's score,
-    projected from its stored verdicts exactly as judge_figures does; for judge-summ-v1 also
+    projected from its stored verdicts exactly as judge_figures does, with
     judge_figures' own figures (human check, Goyal, pointwise, agreement)."""
     sys.path.insert(0, str(HARNESS / "scripts"))
     import judge_figures as jf  # noqa: PLC0415
     import judge_score as js  # noqa: PLC0415
     scorer = scorer or jf.SCORER
-    jfig = jf.compute() if scorer == jf.SCORER else None
+    jfig = jf.compute(scorer)
     m = json.loads(next((DATA / "judging-sets").glob(jf.SET_GLOB)).read_text())
     sc = js.load_scorer(DATA / "scorers" / f"{scorer}.yaml")
     vdir = DATA / "judge-verdicts" / scorer / m["judging_set_id"]
@@ -252,6 +252,13 @@ def judged_summarisation(exps: list, scorer: str = "") -> dict:
                                       > proj[p["item_id"]]["cnn_bart_l_n200_v1"]["_mean"] for p in pairs),
             "prefers_bart_l": sum(proj[p["item_id"]]["cnn_deepseek_m_n200_v1"]["_mean"]
                                   < proj[p["item_id"]]["cnn_bart_l_n200_v1"]["_mean"] for p in pairs)}
+
+
+def validation_spend() -> float:
+    """Billed for checking the judges against published human ratings (Goyal et al., Zhang et
+    al.), from the committed records: spent beside the re-measurement, not part of it."""
+    files = [p for p in (DATA / "judge-validation").glob("*/*/*/*.json")]
+    return round(sum(json.loads(p.read_text()).get("cost_usd") or 0.0 for p in files), 4)
 
 
 def zhang_figures() -> dict:
@@ -307,7 +314,8 @@ def compute() -> dict:
         "hardware": hardware(),
         "remeasure": {"ag": adjudicated("ag-news", exps), "db": adjudicated("dbpedia", exps),
                       "summ": judged_summarisation(exps), "summeval": instrument_check(exps),
-                      "summ_v2": judged_summarisation(exps, "judge-summ-v2"), "zhang": zhang_figures()},
+                      "summ_v2": judged_summarisation(exps, "judge-summ-v2"), "zhang": zhang_figures(),
+                      "validation_usd": validation_spend()},
     }
 
 

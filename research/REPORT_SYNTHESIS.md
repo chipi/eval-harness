@@ -40,7 +40,7 @@ the end. The seven findings, each tested in every experiment that could test it,
 
 | # | finding | evidence |
 |---|---|---|
-| **1** | **The dearest arm is never first** | `anthropic_l`, the dearest in five of six experiments, ranked 18th of 29 (summarisation), 5th of 30 (AG News), 2nd of 28 (DBpedia), 3rd of 28 (Few-NERD) and 3rd of 33 (SummEval), and was separated below the leader in three (summarisation, AG News, Few-NERD). SciFact had no frontier tier: its dearest, `glm_m`, is the dearest of twelve cheap models (2nd of 19). The dearest beat the cheapest in 5 of 6. |
+| **1** | **The dearest arm is never first** | `anthropic_l`, the dearest in five of six experiments, ranked 18th of 29 (summarisation), 5th of 30 (AG News), 2nd of 28 (DBpedia), 3rd of 28 (Few-NERD) and 3rd of 33 (SummEval), and was separated below the leader in three (summarisation, AG News, Few-NERD). SciFact had no frontier tier: its dearest, `glm_m`, is the dearest of twelve cheap models (2nd of 19). The dearest beat the cheapest in 5 of 6. All on each experiment's primary metric: re-measured against labels one reader corrected (AG News, [REPORT_CLASSIFICATION](REPORT_CLASSIFICATION.md)) and by validated LLM judges (summarisation, [REPORT_SUMMARIZATION](REPORT_SUMMARIZATION.md) §3.8), `anthropic_l` is first on the point estimate in both; neither re-measurement is confirmed, and both primaries stand by decision. |
 | **2** | **The top is a group, not a podium** | The leader is separated from 100% (Few-NERD, 27 of 27), 90% (AG News), 84% (SummEval), 46% (summarisation), 33% (SciFact) and 30% (DBpedia) of its opponents. |
 | **3** | **Training exposure predicts who wins, not price — with one exception** | The best fine-tune ranked first in three of four experiments that had one and third-equal on DBpedia, two items behind; zero-shot models ranked last among learned arms; a BART trained on XSum finished 29th of 29 on CNN. Exception: on SummEval, UniEval, trained to judge, is separated below 23 of the 24 LLM judges (cause untested). |
 | **4** | **A pilot picks the wrong winner** | Pilot ρ was 0.68–0.90 where it can be recomputed, and the pilot's leader was not the full-run leader in 3 of the 5 experiments that ran one. |
@@ -98,8 +98,9 @@ Two more facts about cost:
    arm never separated from the best open-weight arm in any experiment. A 128 GB machine
    matched the unlimited-hardware answer on five of six tasks; a 64 GB one, at native precision,
    on two (see above).
-4. **Do not default to the most expensive arm.** `anthropic_l` was never first, and in three
-   experiments it was *worse* than free. SciFact had no frontier tier, so its dearest arm says
+4. **Do not default to the most expensive arm.** `anthropic_l` was never first on a primary
+   metric (re-measured, it is first on the point estimate on AG News and summarisation, neither
+   re-measurement confirmed), and in three experiments it was *worse* than free. SciFact had no frontier tier, so its dearest arm says
    nothing about frontier models. Price still separates bad from mediocre: the dearest beat the
    cheapest in 5 of 6.
 5. **Pick the cheapest arm your test cannot separate from the leader** — which requires a
@@ -890,8 +891,9 @@ One row per experiment, since each says something different:
   there the answer need not be rented: `gemma_l`, tied with the leader, has open weights and
   bills $278/month rented.
 
-In no experiment did the most expensive option win (SciFact's was the dearest of twelve
-cheap models). In three of six the free option
+In no experiment did the most expensive option win on the primary metric (SciFact's was the
+dearest of twelve cheap models; re-measured, it is first on the point estimate in two, neither
+confirmed). In three of six the free option
 ranked first, and on Few-NERD it is separated from everything.
 
 ### What "free" actually gets you, in all six

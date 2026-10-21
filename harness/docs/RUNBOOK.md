@@ -402,10 +402,9 @@ and to the news-summary judge, so it is not an `evh` command.
    keeps everything bought; raise the cap to continue. A reply that does not parse (wrong
    shape, missing dimension, a score off the scale) is stored as it came and reported as
    `unparsed reply: …`; an item counts only when every one of its primary blocks parsed.
-   Real judges do this: in an uncommitted trial of the tutorial's ticket task with two real
-   judges (`gemma_l`, `qwen_s`), one of 24 replies was a bare list (`[1, 2, 3, 4]`) instead of
-   the JSON asked for. `ARGS="--retry-unparsed"` calls again for
-   those blocks only.
+   Real judges do this: on the Zhang et al. validation `gemma_l` left 1 of its 200 replies
+   unparsed and `qwen_s` 2 (`data/judge-validation/judge-summ-v1/zhang2023-cnndm/report.json`).
+   `ARGS="--retry-unparsed"` calls again for those blocks only.
 6. **Read `data/runs-judged/<id>/summary.json` before the leaderboard:** per-judge columns,
    inter-judge agreement, which arms share a judge's family, the position check (a second
    shuffle on a subset) and the noise check (a repeat on a subset). A difference between arms
@@ -442,11 +441,12 @@ a judge's JSON reply into tau against the experts, and `judge-summ-v1` cites two
 **Validate on outputs like the ones you will judge.** In this repository, judges validated
 on SummEval's 2019 summaries ranked modern LLM summaries above a fine-tuned BART; one blind
 human check (one non-expert reader, 20 pairs, truncated articles) preferred the BART 14 to 6,
-p = 0.115 (REPORT_SUMMARIZATION §3.8). Neither result is confirmed, and whether the validation
-carries to modern outputs is not tested. Stronger judges did not change it: the two best SummEval
-judges, at 42× the price, gave the same verdict (`judge-summ-v2`). On crowd ratings of LLM-era
-summaries (Zhang et al. 2024, `validate_judge_zhang.py`) all four judges track people better
-than one rater does. The gate checks that a validation exists and is
+p = 0.115 (REPORT_SUMMARIZATION §3.8). Neither result is confirmed on those outputs. Larger,
+dearer judges did not change it: the two highest-scoring SummEval judges from vendors not in the
+first pair, with the same prompt and reasoning off, at 41× the price, gave the same verdict
+(`judge-summ-v2`). On crowd ratings of 2022 LLM summaries (Zhang et al. 2024,
+`validate_judge_zhang.py`) all four judges track people better than one rater does, while
+deviating from them system by system in both directions. The gate checks that a validation exists and is
 current, not that it transfers. `differs_from_this_use` is where
 you say how far it has to travel, and the honest next step is a small human check on your
 own outputs.

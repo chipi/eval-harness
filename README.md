@@ -18,8 +18,11 @@ system is actually better than another, or only ahead on this sample.
 This is ongoing work. The harness and its method are the point; the six experiments below are
 worked examples of them, not a benchmark, and they are still being extended. As those
 examples, it measured 24 LLMs, small fine-tuned models and baselines on six public
-benchmarks. The most expensive hosted model never won (on SciFact only the twelve cheapest
-hosted models ran), and in five of six the leader could not be separated from other arms,
+benchmarks. On each experiment's primary metric the most expensive hosted model never won (on
+SciFact only the twelve cheapest hosted models ran); re-measured, against labels a person
+corrected on AG News and by LLM judges on summarisation, it is first on the point estimate in
+both, and neither re-measurement is confirmed
+([judging](https://evals.humancopilot.eu/experiments/judging.html)). In five of six the leader could not be separated from other arms,
 each time including one that cost less than the dearest hosted model, at 100–280 items — not
 shown different, which is not the same as equal.
 

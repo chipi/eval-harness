@@ -714,6 +714,145 @@ with tempfile.TemporaryDirectory() as td:
     finally:
         vg.DATA, vg.load, sys.argv = saved
 
+# ── validate_judge_zhang: statistics, loading, the record checks, withholding ──
+import validate_judge_zhang as vz  # noqa: E402
+
+pt = vz.paired_test({"x": 1.0, "y": 1.0, "z": 1.0}, {"x": 0.0, "y": 0.0, "z": 0.0, "w": 9.0})
+check("paired test: only shared articles count; three +1 differences give p near 2/8",
+      pt["articles"] == 3 and pt["mean_difference"] == 1.0 and pt["a_ahead"] == 3
+      and pt["b_ahead"] == 0 and 0.22 < pt["p_two_sided"] < 0.28)
+pt = vz.paired_test({str(i): 1.0 for i in range(20)}, {str(i): 0.0 for i in range(20)})
+check("paired test: twenty +1 differences are significant (p < 0.001)", pt["p_two_sided"] < 0.001)
+pt = vz.paired_test({"x": 1.0, "y": -1.0}, {"x": 0.0, "y": 0.0})
+check("paired test: differences that cancel are not (p = 1)", pt["p_two_sided"] == 1.0
+      and pt["a_ahead"] == 1 and pt["b_ahead"] == 1)
+
+SYS3 = ["s1", "s2", "s3"]
+
+
+def _refs(vals):
+    """The three two-rater references of an article, all alike: [{system: {human dim: v}}]."""
+    return [{m: {h: v for h, _ in vz.PAIRS} for m, v in zip(SYS3, vals)} for _ in range(3)]
+
+
+def _jscores(vals):
+    return {m: {jd: v for _, jd in vz.PAIRS} for m, v in zip(SYS3, vals)}
+
+
+refs_ = {"a1": _refs([3.0, 2.0, 1.0]), "a2": _refs([1.0, 2.0, 3.0])}
+same_ = {"a1": _jscores([5.0, 4.0, 1.0]), "a2": _jscores([1.0, 4.0, 5.0])}
+jt_ = vz.judge_tau(same_, refs_, SYS3)
+check("judge tau: a judge ordering every article as the raters do is 1 on every dimension",
+      jt_["mean"] == 1.0 and all(jt_[h] == 1.0 for h, _ in vz.PAIRS))
+check("judge tau: the reverse order is -1",
+      vz.judge_tau({"a1": same_["a2"], "a2": same_["a1"]}, refs_, SYS3)["mean"] == -1.0)
+mdata_ = {aid: {"systems": {"reference": {"summary": "r"}, **{m: {"summary": m} for m in SYS3}}}
+          for aid in ("a1", "a2")}
+order_ = {"a1": {"s1": 3, "s2": 2, "s3": 1}, "a2": {"s1": 1, "s2": 2, "s3": 3}}
+check("metric tau: a constant metric orders nothing: 0, the convention of judging.kendall_tau_b",
+      vz.metric_tau(mdata_, refs_, SYS3, lambda s, r: 1.0)["mean"] == 0.0)
+check("metric tau: a metric ordering the article as the raters do is 1",
+      vz.metric_tau({"a1": mdata_["a1"]}, refs_, SYS3, lambda s, r: order_["a1"][s])["mean"] == 1.0)
+check("article taus: one value per article, averaged over references and dimensions",
+      vz.article_taus(lambda aid, k, h: [order_[aid][m] for m in SYS3], refs_, SYS3, ["a1", "a2"])
+      == {"a1": 1.0, "a2": 1.0})
+
+
+def _rated(vals):
+    return {m: {"ratings": [{h: v for h, _ in vz.PAIRS}] * 3} for m, v in zip(SYS3, vals)}
+
+
+# Over both articles the raters put s2 first; on a1 alone, s1. A judge that scored a1 only
+# and put s1 first agrees with the raters on the articles it scored.
+smd = {"a1": {"systems": _rated([5.0, 4.0, 1.0])}, "a2": {"systems": _rated([1.0, 5.0, 1.0])}}
+sm_ = vz.system_means(smd, SYS3, {"j": {"a1": _jscores([5.0, 4.0, 1.0])}})
+check("system means: the raters' ranking over every article puts s2 first",
+      sm_["ranking"]["raters"]["s2"] == 1)
+check("system means: a judge is compared with the raters on the articles it scored (Spearman 1)",
+      sm_["ranking"]["spearman_vs_raters"]["j"] == 1.0 and sm_["ranking"]["judges"]["j"]["s1"] == 1)
+
+with tempfile.TemporaryDirectory() as td:
+    td = Path(td)
+    rows = [{"dataset": "cnndm", "article": "An article.", "model": "m", "summary": float("nan"),
+             "coherence": 1, "relevance": 1, "faithfulness": 0},
+            {"dataset": "xsum", "article": "Other.", "model": "m", "summary": "s",
+             "coherence": 5, "relevance": 5, "faithfulness": 1}]
+    blob = json.dumps(rows).encode()
+    saved = (vz.FILE, vz.EXT, vz.PINNED)
+    vz.EXT, vz.FILE, vz.PINNED = td, td / "f.json", hashlib.sha256(blob).hexdigest()
+    try:
+        (td / "f.json").write_bytes(blob)
+        got = vz.load()
+        one = next(iter(got.values()))
+        check("load: CNN/DailyMail rows only; a NaN summary is an empty one",
+              len(got) == 1 and one["systems"]["m"]["summary"] == ""
+              and one["systems"]["m"]["ratings"] == [{"coherence": 1.0, "relevance": 1.0, "faithfulness": 0.0}])
+        vz.PINNED = "0" * 64
+        check("load: a file that is not the pinned one is refused", "not the pinned" in _exit(vz.load))
+    finally:
+        vz.FILE, vz.EXT, vz.PINNED = saved
+
+# The whole script on a synthetic world with a fake call: a reply that quotes the article
+# is not stored, the report is built, and the record checks refuse what they should.
+ART = {"a1": "The café on the corner served coffee to every single visitor all morning long today.",
+       "a2": "A storm closed the harbour for two days and the ferries stayed in port until Friday.",
+       "a3": "The council voted to plant four hundred trees along the river before the spring."}
+QUOTE = "the café on the corner served coffee to every"
+SYSZ = ["reference", "s1", "s2", "s3"]
+rng_ = __import__("random").Random(3)
+synth_z = {aid: {"article": art, "systems": {
+    m: {"summary": f"{m} wrote a summary of {aid} number {k}",
+        "ratings": [{"coherence": float(rng_.randint(1, 5)), "relevance": float(rng_.randint(1, 5)),
+                     "faithfulness": float(rng_.randint(0, 1))} for _ in range(3)]}
+    for k, m in enumerate(SYSZ)}} for aid, art in ART.items()}
+
+
+def zhang_reply(fn, args, label):
+    msg, _params = args
+    n = len(re.findall(r"^\d+\. ", msg.split("SUMMARIES:\n", 1)[1], re.M))
+    body = json.dumps({d: [float(1 + (i % 5)) for i in range(n)] for d in js.DIMS})
+    text = (f"As the article says, {QUOTE}. " + body) if "café" in msg else body
+    return SimpleNamespace(output=text, tokens_in=10, tokens_out=10, cost_usd=0.0001)
+
+
+with tempfile.TemporaryDirectory() as td:
+    td = Path(td)
+    (td / "scorers").mkdir()
+    shutil.copy(HERE.parent / "data" / "scorers" / "judge-summ-v1.yaml", td / "scorers" / "judge-summ-v1.yaml")
+    saved = (vz.DATA, vz.load, vz.call_with_retries, sys.argv)
+    vz.DATA, vz.load, vz.call_with_retries = td, lambda: synth_z, zhang_reply
+    sys.argv = ["validate_judge_zhang.py", "--scorer", "judge-summ-v1"]
+    try:
+        rc = vz.main()
+        vroot = td / "judge-validation" / "judge-summ-v1" / "zhang2023-cnndm"
+        rep = json.loads((vroot / "report.json").read_text())
+        f_a1 = vz.record_path(vroot / "gemma_l", "a1", 0)
+        rec_a1 = json.loads(f_a1.read_text())
+        rec_a2 = json.loads(vz.record_path(vroot / "gemma_l", "a2", 0).read_text())
+        check("main: a reply that quotes 8 words of the article is withheld (no text, its hash kept)",
+              rc == 0 and rec_a1["output"] is None and rec_a1["output_withheld"] is True
+              and len(rec_a1["output_sha256"]) == 64 and rec_a1["dims"] is not None)
+        check("main: a reply that quotes nothing is stored as it came",
+              rec_a2["output_withheld"] is False and rec_a2["output"].startswith("{"))
+        check("main: the report counts the withheld replies and scores every article",
+              rep["judges"]["gemma_l"]["withheld_replies"] == 1
+              and rep["judges"]["gemma_l"]["articles_scored"] == 3 and rep["articles"] == 3)
+        sc_z = js.load_scorer(td / "scorers" / "judge-summ-v1.yaml")
+        args_z = (sc_z, js.prompt_text(sc_z), int(sc_z["protocol"]["outputs_per_call"]), synth_z, SYSZ, vroot)
+        orig_a1 = f_a1.read_text()
+        f_a1.write_text(json.dumps({**rec_a1, "judge_fp": "0" * 16}))
+        check("build_report: a record stored for another judge definition is refused",
+              "different judge" in _exit(lambda: vz.build_report(*args_z)))
+        # json.dumps writes "café" as "café", so the raw file hides the quote; the
+        # decoded reply does not.
+        f_a1.write_text(json.dumps({**rec_a1, "output": f"{QUOTE} {{}}"}))
+        check("build_report: a stored reply quoting the article is refused even when JSON-escaped",
+              "\\u00e9" in f_a1.read_text() and "repeats 8 words" in _exit(lambda: vz.build_report(*args_z)))
+        f_a1.write_text(orig_a1)
+        check("build_report: the restored records build again", vz.build_report(*args_z)["articles"] == 3)
+    finally:
+        vz.DATA, vz.load, vz.call_with_retries, sys.argv = saved
+
 # ── validate_tree V11-V13 each fail on a deliberately broken copy ────────────
 import shutil  # noqa: E402
 import validate_tree as vt  # noqa: E402

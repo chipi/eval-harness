@@ -12,6 +12,7 @@ committed report.json and says so in `goyal_source`.
 
 from __future__ import annotations
 
+import copy
 import json
 import math
 import sys
@@ -57,7 +58,17 @@ def goyal(scorer: str = SCORER) -> Dict[str, Any]:
 def zhang(scorer: str = SCORER) -> Dict[str, Any]:
     """The Zhang et al. (2024) validation of a scorer's judges. Recomputed from the stored
     records when data/external/zhang2023 is present; otherwise the committed report.json,
-    whose call counts and bill are checked against the committed records."""
+    whose call counts and bill are checked against the committed records. Computed once per
+    process (the recomputation takes about a minute; the claims and the site ask repeatedly)."""
+    if scorer not in _ZHANG:
+        _ZHANG[scorer] = _zhang(scorer)
+    return copy.deepcopy(_ZHANG[scorer])
+
+
+_ZHANG: Dict[str, Dict[str, Any]] = {}
+
+
+def _zhang(scorer: str) -> Dict[str, Any]:
     vroot = DATA / "judge-validation" / scorer / "zhang2023-cnndm"
     if vz.FILE.is_file():
         sc = js.load_scorer(DATA / "scorers" / f"{scorer}.yaml")
@@ -124,6 +135,8 @@ def compute(scorer: str = SCORER) -> Dict[str, Any]:
     h_ds = sum(x["preferred"] == "deepseek_m" for x in hc["pairs"])
     j_ds = sum(proj[x["item_id"]]["cnn_deepseek_m_n200_v1"]["_mean"]
                > proj[x["item_id"]]["cnn_bart_l_n200_v1"]["_mean"] for x in hc["pairs"] if x["item_id"] in proj)
+    j_bart = sum(proj[x["item_id"]]["cnn_deepseek_m_n200_v1"]["_mean"]
+                 < proj[x["item_id"]]["cnn_bart_l_n200_v1"]["_mean"] for x in hc["pairs"] if x["item_id"] in proj)
     n_pairs_judged = sum(1 for x in hc["pairs"] if x["item_id"] in proj)
     agr = next(iter(summ["judge_agreement"].values()))
     pos = [summ["controls"][j]["position"]["mean_abs_diff"] for j in summ["controls"]]
@@ -144,7 +157,8 @@ def compute(scorer: str = SCORER) -> Dict[str, Any]:
         "noise_mean_tau": [summ["controls"][j]["noise"]["mean_tau"] for j in summ["controls"]],
         "human_check": {"pairs": len(hc["pairs"]), "human_prefers_bart_l": h_bart,
                         "human_prefers_deepseek_m": h_ds,
-                        "pairs_with_judge_scores": n_pairs_judged, "judge_prefers_deepseek_m": j_ds},
+                        "pairs_with_judge_scores": n_pairs_judged, "judge_prefers_deepseek_m": j_ds,
+                        "judge_prefers_bart_l": j_bart},
         "pointwise": pointwise(), "goyal": goyal(scorer),
     }
 

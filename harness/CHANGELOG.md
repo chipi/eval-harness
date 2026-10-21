@@ -14,10 +14,11 @@ that can move a result is never a patch release without saying so under **Change
 Re-measure what you already have. Stored outputs can now be scored again by LLM judges, as an
 optional pass that never touches a committed run: `evh judge-score`, for any text task you
 declare (what an item is, what the outputs are, the dimensions, the scale). The harness refuses
-a judge until committed runs show it agrees with human ratings, runs at least two judges from
-different vendors blind, measures their position bias and noise, and stores every verdict so a
-rerun costs $0. The tutorial has an offline, $0 judging step (GUIDE step 10). Upgrading from
-0.2.0 changes no committed run or score. Design: [ADR-0001](https://github.com/chipi/eval-harness/blob/main/docs/adr/ADR-0001-judge-scorers.md);
+a judge until the scorer names, for each judge, a committed run that measured it against human
+ratings; it runs at least two judges from different vendors blind, measures their position bias
+and noise, and stores every verdict so a rerun costs $0. The tutorial has an offline, $0
+judging step (GUIDE step 10). Upgrading from 0.2.0 changes no committed run or score and adds
+no dependency. Design: [ADR-0001](https://github.com/chipi/eval-harness/blob/main/docs/adr/ADR-0001-judge-scorers.md);
 what it found here: the [judging page](https://evals.humancopilot.eu/experiments/judging.html).
 
 ### Added
@@ -41,8 +42,10 @@ what it found here: the [judging page](https://evals.humancopilot.eu/experiments
   fake judges, offline and $0,
   through the refusal, the dry run, the pass and the leaderboard.
 - **A validation gate.** A scorer runs only if its `validation` block names a committed run
-  for each judge that has the stated metric, the judge's model, temperature, reasoning,
-  provider, max tokens and prompt. Otherwise `--unvalidated` runs it and labels every number
+  for each judge whose metric equals the stated value (and is at least `min_metric`, when the
+  scorer sets one) and whose model, temperature, reasoning, provider, max tokens, prompt file
+  and prompt sha256 are the judge's. The gate checks that a validation exists and is current,
+  not that it transfers to your outputs. Otherwise `--unvalidated` runs it and labels every number
   "unvalidated judge". `provider: fake` judges (offline, free, for testing a scorer) can never
   pass the gate.
 - **Judging sets and stored verdicts.** One item is the article plus every arm's output, arm
@@ -59,39 +62,35 @@ what it found here: the [judging page](https://evals.humancopilot.eu/experiments
   `validate_judge_goyal.py` (Goyal, Li & Durrett 2022) and `validate_judge_zhang.py` (Zhang et
   al. 2024, crowd ratings of 19 LLM-era summarisers) check a scorer's judges against people.
   The ratings are downloaded when the check runs, pinned by sha256, and never committed; the
-  committed records hold article ids, the judges' scores and hashes, and a judge reply that
-  quotes the source text is not stored.
+  committed records hold article ids, the judges' replies and scores, and hashes; a Zhang et al.
+  reply that repeats 8 consecutive words of the article or a summary is withheld, only its hash kept.
 - **`validate` V11-V13.** V11: every judging set's stored hash is the hash of its content.
   V12: every stored verdict names a real set, item, pass and block, and its `n` is that
   block's size. V13: every judge scorer loads, is structurally valid (its `task` included),
   and its prompt file resolves and renders. They read the configured data directory.
+- **`judge-score` judges every arm on the dataset by default.** A scorer's `arms_match`,
+  `--match` and `--arms` narrow it, and it warns when the arm set mixes config versions (`_v1`
+  and `_v2` of one arm are judged as two arms).
+- **A scorer's `prompt.file` resolves against the project root**, then the scorer file's own
+  directory, then (in a checkout of this repository only) the repository root.
+- **Judged runs carry no `reference_tier`**, since a judge reads no reference: the source
+  run's tier is kept as `judged_with.source_reference_tier`, and `leaderboard` says the scores
+  come from a judge, with its label.
+- **A refused judge call stops the pass cleanly.** A call refused, or still failing after its
+  retries (a provider's own budget guardrail answering 403, for example), stops the pass the
+  way the cost cap does: every stored verdict is kept, the partial result is projected and
+  labelled, and the same command resumes.
+- **Scorer checks.** `task.scale` must be whole numbers, and a prompt with both `{n}` and
+  SummEval's fixed count phrases is refused (the phrases would keep saying 16). V13 renders
+  each prompt at 2 outputs, so a prompt that cannot be rendered fails there, not at run time.
 - Experiment-level results this enables are reported in the repository's reports (the
-  summarisation experiment re-measured with two validated judges; AG News and DBpedia against
-  adjudicated gold); none of them is in the package.
+  summarisation experiment re-measured with two pairs of validated judges; AG News and DBpedia
+  against adjudicated gold); none of them is in the package.
 
 ### Changed
-- **`prompt.file` in a scorer resolves against the project root**, then the scorer file's own
-  directory, then (in a checkout of this repository only) the repository root. A committed
-  scorer's repo-relative path resolves exactly as before.
-- **`judge-score` judges every arm on the dataset by default.** It used to default to arms
-  whose `config_id` contains `_n200_v1`, this repository's naming, which found nothing in any
-  other project. A scorer's `arms_match`, `--match` and `--arms` still narrow it.
-- **Judged runs carry no `reference_tier`**: a judge reads no reference. The source run's tier
-  is kept as `judged_with.source_reference_tier`, and `leaderboard` says the scores come from a
-  judge, with its label, instead of "scored against SILVER references".
-- **A refused judge call stops the pass cleanly.** A non-transient failure (a provider's own
-  budget guardrail answering 403, for example) used to end `judge-score` with a traceback. It
-  now stops the way the cost cap does: every stored verdict is kept, the partial result is
-  projected and labelled, and the same command resumes.
-- **`judge-score` warns when the arm set mixes config versions** (`_v1` and `_v2` of one arm
-  are judged as two arms).
-- **A judge scorer's `task.scale` must be whole numbers**, and a prompt with both `{n}` and
-  SummEval's fixed count phrases is refused (the phrases would keep saying 16). `validate`'s
-  V13 renders each prompt at 2 outputs, so a prompt that cannot be rendered fails there, not
-  at run time.
 - **`leaderboard`'s precision note** no longer fires on values that are exact small-integer
-  fractions (a mean of 1-5 ratings is in quarters or sixths); scores rounded on the way to disk
-  still get it.
+  fractions (a mean of 1-5 ratings over two judges and four dimensions is in eighths); scores
+  rounded on the way to disk still get it.
 - Nothing that scores a run changed: committed runs and their recorded hashes are untouched,
   and the committed summarisation judging set rebuilds from its stored verdicts with the same
   id.

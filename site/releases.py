@@ -16,7 +16,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 CHANGELOG = ROOT / "harness" / "CHANGELOG.md"
-_RELEASE = re.compile(r"^##\s+(\d+\.\d+\.\d+)(?:\s+—\s+(\S+))?\s*$")
+_RELEASE = re.compile(r"^##\s+(\d+\.\d+\.\d+)(?:\s+—\s+(\d{4}-\d{2}-\d{2}))?\s*$")
 
 
 def _inline(H, text: str, blob: str) -> str:
@@ -39,6 +39,10 @@ def releases(text: str) -> list:
     for raw in text.splitlines():
         line = raw.rstrip()
         m = _RELEASE.match(line)
+        if line.startswith("## ") and not m:
+            # A release written another way ('-' for the em dash, 'v0.3.0') would otherwise be
+            # read into the release above it.
+            raise SystemExit(f"harness/CHANGELOG.md: {line!r} is not '## X.Y.Z' or '## X.Y.Z — YYYY-MM-DD'")
         if m:
             cur = {"version": m.group(1), "date": m.group(2), "blocks": []}
             out.append(cur)
@@ -85,7 +89,7 @@ def release_html(H, rel: dict, blob: str, repo: str) -> str:
     if in_list:
         parts.append("</ul>")
     v = rel["version"]
-    date = rel["date"] or "never tagged"
+    date = rel["date"] or "unreleased"
     tag = (f'<p class="note"><a href="{repo}/releases/tag/v{v}">GitHub Release v{v} ↗</a></p>'
            if rel["date"] else "")
     return (f'<article class="release" id="v{v}" style="margin-bottom:72px"><div class="eyebrow"><span class="num">release</span>{H.e(date)}</div><h2>v{v}</h2>'
@@ -96,7 +100,7 @@ def releases_page(H) -> str:
     rels = releases(CHANGELOG.read_text(encoding="utf-8"))
     if not rels:
         raise SystemExit("harness/CHANGELOG.md has no '## X.Y.Z — date' section")
-    toc = "".join(f'<a href="#v{r["version"]}"><span>v{r["version"]}</span>{H.e(r["date"] or "never tagged")}</a>'
+    toc = "".join(f'<a href="#v{r["version"]}"><span>v{r["version"]}</span>{H.e(r["date"] or "unreleased")}</a>'
                   for r in rels)
     body = f"""
 <section class="hero"><div class="wrap">

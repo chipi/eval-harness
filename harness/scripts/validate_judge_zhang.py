@@ -26,8 +26,10 @@ raters do:
 The ratings are downloaded to data/external/zhang2023/ (gitignored; the file's sha256 is
 pinned) and never committed: the stored records under
 data/judge-validation/<scorer>/zhang2023-cnndm/<judge>/ hold article ids, block orders, the
-judge's scores and hashes. A reply that quotes the article or a summary is not stored, only
-its hash. report.json holds the aggregates.
+judge's reply and scores, and hashes. A reply that repeats 8 consecutive words of the article
+or a summary is not stored, only its hash. report.json holds the aggregates. CI has no
+ratings, so there report.json is checked only against its records' call count and bill;
+rebuild it with --no-calls before a release (harness/docs/RELEASING.md).
 """
 
 from __future__ import annotations
@@ -245,9 +247,12 @@ def paired_test(a: Dict[str, float], b: Dict[str, float], n: int = 20000, seed: 
 
 
 def system_means(data: Dict[str, dict], systems: Sequence[str], scores: Dict[str, dict]) -> dict:
-    """Mean rating per system: the raters' (all three ratings) and each judge's, per dimension."""
-    hum = {m: {h: round(statistics.fmean(r[h] for a in data.values() for r in a["systems"][m]["ratings"]), 4)
-               for h, _ in PAIRS} for m in systems}
+    """Mean rating per system: the raters' (all three ratings) and each judge's, per dimension.
+    A judge is ranked against the raters' means on the articles that judge scored."""
+    def rater_means(aids) -> dict:
+        return {m: {h: round(statistics.fmean(r[h] for aid in aids for r in data[aid]["systems"][m]["ratings"]), 4)
+                    for h, _ in PAIRS} for m in systems}
+    hum = rater_means(data)
     judges = {}
     for jid, s in scores.items():
         judges[jid] = {m: {jd: round(statistics.fmean(s[aid][m][jd] for aid in s), 4) for _, jd in PAIRS}
@@ -262,9 +267,10 @@ def system_means(data: Dict[str, dict], systems: Sequence[str], scores: Dict[str
     ranking = {"raters": hr, "judges": {}, "spearman_vs_raters": {}}
     for jid, s in judges.items():
         jr = ranks(s, "coherence", "relevance")
+        same = hr if len(scores[jid]) == len(data) else ranks(rater_means(scores[jid]), "coherence", "relevance")
         ranking["judges"][jid] = jr
         ranking["spearman_vs_raters"][jid] = round(
-            1 - 6 * sum((jr[m] - hr[m]) ** 2 for m in systems) / (n * (n * n - 1)), 4)
+            1 - 6 * sum((jr[m] - same[m]) ** 2 for m in systems) / (n * (n * n - 1)), 4)
     return {"raters": hum, "judges": judges, "ranking": ranking}
 
 
@@ -298,9 +304,10 @@ def build_report(sc: dict, base: str, per_call: int, data: Dict[str, dict],
                 want = js._sha(js.build_message(base, a["article"], [a["systems"][m]["summary"] for m in ms]))
                 if rec.get("judge_fp") != fp or rec.get("prompt_sha") != want or rec.get("order") != ms:
                     problems.append(f"{j['id']}/{aid}.b{b}: stored for a different judge, prompt or order")
-                # The whole record, not only the reply: none of the article's or the summaries'
-                # text may be in what is committed.
-                if quotes_source(raw, src):
+                # The whole record as stored, and the reply decoded (JSON escapes can split a
+                # quote in the raw file): none of the article's or the summaries' text may be
+                # in what is committed.
+                if quotes_source(raw, src) or quotes_source(rec.get("output") or "", src):
                     problems.append(f"{j['id']}/{aid}.b{b}: repeats 8 words of the article or a summary")
                 if rec.get("dims") is None:
                     ok = False
@@ -339,10 +346,6 @@ def build_report(sc: dict, base: str, per_call: int, data: Dict[str, dict],
             "billed_usd": round(sum(float(r.get("cost_usd") or 0) for r in recs), 4),
             "all_19": judge_tau(scores[jid], {a: refs19[a] for a in scores[jid]}, systems),
             "non_reference_18": judge_tau(scores[jid], {a: refs18[a] for a in scores[jid]}, nonref)}
-        r = report["judges"][jid]
-        print(f"{jid}: tau all-19 {r['all_19']}; non-reference {r['non_reference_18']}; "
-              f"{r['articles_scored']} articles, unparsed {r['unparsed']}, withheld {r['withheld_replies']}, "
-              f"billed ${r['billed_usd']:.4f}")
     # Paired over articles, on the 18 non-reference summaries: each judge against one rater
     # and against coverage, ROUGE-1. The article is the unit; refs are the same for all.
     aids = sorted(data)
@@ -359,13 +362,20 @@ def build_report(sc: dict, base: str, per_call: int, data: Dict[str, dict],
         report["paired_non_reference_18"][jid] = {
             "vs_one_rater": paired_test(jt, human_t),
             **{f"vs_{name}": paired_test(jt, t) for name, t in metric_t.items()}}
-        print(f"{jid} paired (non-reference 18): {report['paired_non_reference_18'][jid]}")
     report["system_means"] = system_means(data, systems, scores)
+    return report
+
+
+def print_report(report: Dict[str, Any]) -> None:
+    for jid, r in report["judges"].items():
+        print(f"{jid}: tau all-19 {r['all_19']}; non-reference {r['non_reference_18']}; "
+              f"{r['articles_scored']} articles, unparsed {r['unparsed']}, withheld {r['withheld_replies']}, "
+              f"billed ${r['billed_usd']:.4f}")
+        print(f"{jid} paired (non-reference 18): {report['paired_non_reference_18'][jid]}")
     print(f"humans (one rating vs the mean of the other two): all-19 {report['human_baseline']['all_19']}; "
           f"non-reference {report['human_baseline']['non_reference_18']}")
     for k, v in report["free_metrics_non_reference_18"].items():
         print(f"{k} vs the reference highlights, non-reference 18: {v}")
-    return report
 
 
 def main() -> int:
@@ -422,7 +432,7 @@ def main() -> int:
         except SystemExit:
             raise
         except Exception as exc:  # noqa: BLE001 — stop cleanly, as judge_score does
-            stopped = f"JUDGE CALL FAILED, not transient: {j['id']}: {type(exc).__name__}: {str(exc)[:300]}"
+            stopped = f"JUDGE CALL FAILED after retries or refused: {j['id']}: {type(exc).__name__}: {str(exc)[:300]}"
             break
         cost, known = js.call_cost(res, j["params"])
         quoted = quotes_source(res.output, shingles([a["article"], *texts]))
@@ -444,6 +454,7 @@ def main() -> int:
         return 2
 
     report = build_report(sc, base, per_call, data, systems, vroot)
+    print_report(report)
     write_text_atomic(vroot / "report.json", json.dumps(report, indent=1) + "\n")
     return 0
 

@@ -491,7 +491,7 @@
    },
    "spearman_vs_raters": {
     "gemma_l": 0.7772,
-    "qwen_s": 0.7895
+    "qwen_s": 0.7947
    }
   }
  }

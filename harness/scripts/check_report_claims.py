@@ -1157,7 +1157,8 @@ check(f"summarisation: judges vs Goyal annotators, like-for-like (leave-one-out,
       f"against one annotator they score {_loo['gemma_l']:.3f} (`gemma_l`) and {_loo['qwen_s']:.3f} (`qwen_s`), "
       f"annotators against each other {_hloo:.3f}, chance 0.333" in _SUMM
       and f"({_jp['gemma_l']:.1f}% and {_jp['qwen_s']:.1f}% against {_hp2['gemma_l']:.1f}% and {_hp2['qwen_s']:.1f}%; "
-          f"the 95% intervals overlap for both judges)" in _SUMM and _overlap_g,
+          f"each rate's 95% interval is computed on its own, not as a paired test, and the intervals overlap "
+          f"for both judges)" in _SUMM and _overlap_g,
       f"derived loo {_loo}, humans {_hloo}; judge {_jp}, humans {_hp2}; both judges' CIs overlap {_overlap_g}")
 if _G["source"].startswith("recomputed"):
     _rep = json.loads((HERE.parent / "data" / "judge-validation" / "judge-summ-v1" / "goyal2022-cnn"
@@ -1234,7 +1235,7 @@ check("summarisation: on judge-summ-v1, bart_l is separated from all 28 others (
 #: The frontier re-measurement (judge-summ-v2), the same judging set: every figure the report
 #: states, recomputed from its committed verdicts and Goyal records.
 _JF2 = _jfm.compute("judge-summ-v2")
-_V2 = _SUMM[_SUMM.find("**Stronger judges, the same verdict"):_SUMM.find("## 4. Discussion")]
+_V2 = _SUMM[_SUMM.find("**Frontier judges, the same verdict"):_SUMM.find("## 4. Discussion")]
 _lo2, _hi2 = _JF2["hosted_judge_score_range"]
 check("summarisation, frontier judges: 960 calls, $12.92, 200 of 200, none unparsed; bart_l 3.82, "
       "hosted 4.04-4.89 and all above every BART, anthropic_l first",
@@ -1256,7 +1257,7 @@ check("summarisation, frontier judges: bart_l separated from all 28; anthropic_l
 _hc2 = _JF2["human_check"]
 check("summarisation, frontier judges: deepseek_m preferred on 20 of the 20 human-check pairs; "
       "the judges agree at Spearman 0.94",
-      _hc2["judge_prefers_deepseek_m"] == 20 == _hc2["pairs_with_judge_scores"]
+      _hc2["judge_prefers_deepseek_m"] == 20 == _hc2["pairs_with_judge_scores"] and _hc2["judge_prefers_bart_l"] == 0
       and _is(_JF2["agreement_arm_mean_spearman"], 0.94) and "20 to 0" in _V2 and "Spearman 0.94" in _V2,
       f"derived {_hc2['judge_prefers_deepseek_m']}/{_hc2['pairs_with_judge_scores']}, "
       f"spearman {_JF2['agreement_arm_mean_spearman']}")
@@ -1287,9 +1288,9 @@ _am1, _am2 = _arm_means("judge-summ-v1"), _arm_means("judge-summ-v2")
 _cids = sorted(_am1)
 _rho12 = _spearman([_am1[c] for c in _cids], [_am2[c] for c in _cids])
 _cost_ratio = _JF2["billed_usd"] / _JF["billed_usd"]
-check("summarisation, frontier judges: the two scorers' arm means at Spearman 0.85; 42x the cost",
-      _is(_rho12, 0.85) and round(_cost_ratio) == 42 and "Spearman 0.85 over arm means" in _V2
-      and "42× the cost" in _V2, f"derived rho {_rho12:.4f}, ratio {_cost_ratio:.2f}")
+check("summarisation, frontier judges: the two scorers' arm means at Spearman 0.85; 41x the cost (41.6, truncated)",
+      _is(_rho12, 0.85) and _math.floor(_cost_ratio) == 41 and "Spearman 0.85 over arm means" in _V2
+      and "41× the cost" in _V2, f"derived rho {_rho12:.4f}, ratio {_cost_ratio:.2f}")
 _G2 = _JF2["goyal"]["judges"]
 _loo = {j: _G2[j]["best_pick_vs_loo_reference"]["rate"] for j in _G2}
 _pg = {j: (_G2[j]["pairwise_gpt3_vs_brio_per_article"]["judge_prefers_gpt3"]["rate"],
