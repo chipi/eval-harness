@@ -433,7 +433,7 @@ def footer(up: str) -> str:
       <a href="mailto:marko@humancopilot.eu" data-umami-event="cta-email" data-umami-event-position="footer">Email</a>
     </nav>
   </div>
-  <div class="foot-legal"><span>© Marko Dragoljevic · eval-harness · <a href="{up}docs/DATA/">Data &amp; licences</a></span><span>Cookieless, self-hosted analytics. No cookies, no tracking across sites.</span></div>
+  <div class="foot-legal"><span>© Marko Dragoljevic · eval-harness · <a href="{up}docs/DATA/">Data &amp; licences</a></span><span>Cookieless, self-hosted analytics (Umami). No cookies, no tracking across sites. <a href="{up}privacy.html">Privacy</a></span></div>
 </div></footer>"""
 
 
@@ -1007,6 +1007,37 @@ def findings_for(x: dict, f: dict) -> list:
     return common
 
 
+def privacy_page() -> str:
+    """The family's standard privacy page, with this site's own facts: no cookies or forms,
+    Umami only (no Cloudflare: the site is served by GitHub Pages, not proxied), GitHub's own
+    request logs, and the theme choice kept in the browser."""
+    gh = "https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement"
+    umami = "https://umami.is/"
+
+    def ext(url: str, label: str, tgt: str) -> str:
+        return (f'<a href="{e(url)}" data-umami-event="outbound" data-umami-event-target="{tgt}" '
+                f'rel="noopener">{label}</a>')
+
+    body = f"""
+<section class="hero"><div class="wrap">
+  <h1>Privacy</h1>
+  <p class="dek">This site sets no cookies and has no forms.</p>
+</div></section>
+<section class="block"><div class="wrap prose">
+  <h2>Analytics</h2>
+  <p>Page views and clicks on links are counted with a self-hosted instance of {ext(umami, "Umami", "umami")}. It sets no cookies and stores no personal data. Counts are aggregate: pages, referrers, countries, browsers and devices.</p>
+  <h2>Hosting</h2>
+  <p>The site is hosted on GitHub Pages; there are no server logs of ours. GitHub keeps its own request logs under its {ext(gh, "privacy statement", "github-privacy")}.</p>
+  <h2>Your browser</h2>
+  <p>The light/dark switch remembers your choice in your browser's local storage. It is not a cookie and is never sent anywhere.</p>
+  <h2>Email</h2>
+  <p>If you email me, I use your message only to reply.</p>
+  <h2>Contact</h2>
+  <p><a href="mailto:marko@humancopilot.eu" data-umami-event="cta-email" data-umami-event-position="privacy">marko@humancopilot.eu</a></p>
+</div></section>"""
+    return page("Privacy — eval-harness", "What this site counts, and what it does not.", body)
+
+
 def experiment_page(x: dict, f: dict) -> str:
     cal = [r for r in f["calibration"] if r["bench"] == x["bench"]]
     cal_txt = "; ".join(f'{r["what"]} {r["ours"] / r["scale"]:.4f} vs {r["published"] / r["scale"]:.4f} published'
@@ -1170,6 +1201,7 @@ def build(out: Path) -> None:
     (out / "experiments.html").write_text(landing(f), encoding="utf-8")
     (out / "method.html").write_text(method.method_page(H, f), encoding="utf-8")
     (out / "use.html").write_text(method.use_page(H, f), encoding="utf-8")
+    (out / "privacy.html").write_text(privacy_page(), encoding="utf-8")
     for x in f["experiments"]:
         (out / "experiments" / f'{x["slug"]}.html').write_text(experiment_page(x, f), encoding="utf-8")
     (out / ".nojekyll").write_text("")
