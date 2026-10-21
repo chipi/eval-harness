@@ -76,6 +76,10 @@ VERDICTS = DATA / "judge-verdicts"
 JUDGED = DATA / "runs-judged"
 
 PASSES = ("primary", "position", "noise")
+
+
+class JudgeCallFailed(Exception):
+    """A judge call failed in a way retrying does not fix (a refusal, a provider budget)."""
 #: Describe the CALL that made an arm's output, not how it was measured: carried across as
 #: rescore.py carries them.
 CARRY = ("latency_ms", "tokens_in", "tokens_out", "cost_usd", "truncated", "reasoning_tokens")
@@ -473,9 +477,16 @@ def run_judging(manifest: Dict[str, Any], sc: Dict[str, Any], base: str,
                     finally:
                         _took.append((time.perf_counter() - t0) * 1000.0)
 
-                res = call_with_retries(
-                    timed, (msg, judge_params(sc, j)),
-                    label=f"{j['id']} {item['item_id'][:8]} {pass_name} b{block}")
+                try:
+                    res = call_with_retries(
+                        timed, (msg, judge_params(sc, j)),
+                        label=f"{j['id']} {item['item_id'][:8]} {pass_name} b{block}")
+                except SystemExit:
+                    raise
+                except Exception as exc:  # noqa: BLE001 — provider SDKs vary too much to enumerate
+                    # Not transient (call_with_retries already retried those): a provider
+                    # refusing, e.g. its own budget guardrail. Stop like the cost cap does.
+                    raise JudgeCallFailed(f"{j['id']}: {type(exc).__name__}: {str(exc)[:300]}") from exc
                 est, known = call_cost(res, j["params"])
                 cost = est if est is not None else 0.0
                 meta = getattr(res, "meta", None) or {}
@@ -505,6 +516,11 @@ def run_judging(manifest: Dict[str, Any], sc: Dict[str, Any], base: str,
     except CostCapExceeded as exc:
         stats["aborted"] = True
         log(f"  COST CAP: {exc}. Stopping; every stored verdict is kept and re-read for $0.")
+    except JudgeCallFailed as exc:
+        stats["aborted"] = True
+        stats["call_failed"] = str(exc)
+        log(f"  JUDGE CALL FAILED, not transient: {exc}\n  Stopping; every stored verdict is kept. "
+            "Fix the cause and run the same command again: it resumes where it stopped.")
     stats["spent_usd"] = spent
     return stats
 

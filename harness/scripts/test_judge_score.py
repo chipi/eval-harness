@@ -1021,6 +1021,25 @@ with tempfile.TemporaryDirectory() as td_:
                    log=lambda *_: None)
     check("run_judging: no real judge's call carries _task", handed and all("_task" not in p for p in handed))
 
+# A provider refusing mid-pass (its own budget guardrail, 403) stops the pass like the cost cap:
+# no traceback, every verdict bought so far kept, and the same command resumes.
+with tempfile.TemporaryDirectory() as td_:
+    good = fake_judge()
+    n_ok = [0]
+
+    def refusing(message, params):
+        if n_ok[0] >= 5:
+            raise RuntimeError("Error code: 403 - Budget limit exceeded (weekly limit)")
+        n_ok[0] += 1
+        return good(message, params)
+    st_r = run_all(td_, call=refusing)
+    kept = len(list(Path(td_).glob("*/*.json")))
+    check("a refused judge call stops the pass cleanly, verdicts so far kept",
+          st_r["aborted"] and "403" in st_r.get("call_failed", "") and kept == 5 and st_r["calls"] == 5)
+    st_r2 = run_all(td_, call=fake_judge())
+    check("after a refusal the same pass resumes: only the missing verdicts are bought",
+          not st_r2["aborted"] and st_r2["skipped"] == 5 and st_r2["calls"] == 2 * N_TASKS - 5)
+
 bad = [l for l, c in ok if not c]
 print(f"\n{len(ok) - len(bad)}/{len(ok)} assertions passed")
 if bad:
