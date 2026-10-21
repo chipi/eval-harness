@@ -115,7 +115,14 @@ handle lower-is-better metrics.
   policy) instead of being hardcoded for this repository's run directories.
 - The `family-test` cache lives under the project root, not beside the code.
 
-## 0.1.0
+## 0.1.0 — 2026-10-19
 
-The harness as extracted, before it was packaged; see `docs/UPGRADING.md` for what changed
-between extraction and 0.2.0.
+The harness as first published with its six worked experiments, before it was packaged: a copy
+you take into your project rather than install. Frozen, hash-checked datasets; one adapter
+function for your system; runs that record their data, prompt, code, model and build; each
+arm's own noise; paired tests with Holm correction that say separated or tied; billed cost
+beside quality; re-scoring from stored outputs for $0; validation that fails CI; baselines
+promoted only with a reason. Tagged afterwards, at the commit the site was deployed from on
+2026-10-19 (`9454f19`), so a project that took a copy that week can name what it took. What
+changed between this copy and 0.2.0, including fixes that can move results:
+[UPGRADING](https://github.com/chipi/eval-harness/blob/main/harness/docs/UPGRADING.md).
