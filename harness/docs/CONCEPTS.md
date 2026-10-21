@@ -97,7 +97,7 @@ instrument arrives. There are three kinds:
 | --- | --- | --- | --- |
 | new reference | what an output is scored against, e.g. gold adjudicated by a person | $0 | `make rescore REFERENCE=…` |
 | new code scorer | the metric, written as code | $0 | `make rescore` with the new scorer |
-| judge scorer | the metric, delivered by a validated model | billed | `make judge-score` ([ADR-0001](../../docs/adr/ADR-0001-judge-scorers.md), [RUNBOOK §12](RUNBOOK.md)) |
+| judge scorer | the metric, delivered by a validated model | billed | `make judge-score` / `evh judge-score` ([ADR-0001](../../docs/adr/ADR-0001-judge-scorers.md), [RUNBOOK §12](RUNBOOK.md)) |
 
 Two rules hold for all three. The originals are never overwritten: a re-measurement is
 written to its own runs directory, and the leaderboard is pointed at it. And an

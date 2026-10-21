@@ -2217,6 +2217,120 @@ def test_a_project_elsewhere_imports_runs_and_tests_them() -> None:
     shutil.rmtree(proj, ignore_errors=True)
 
 
+def test_judge_score_runs_from_an_installed_package() -> None:
+    """`evh judge-score` in a project that has only the package, its own data, scorer, prompt
+    and runs. The package is laid out as pip lays it out (scripts/ as evaluation_harness,
+    schemas/ inside it, per pyproject.toml) in a directory with no checkout beside it, and run
+    with `python -m evaluation_harness` from the project. The judges are `provider: fake`:
+    no network, no key, and the gate refuses them unless the scorer is run --unvalidated.
+
+    EVH_TEST_PYTHON=<venv>/bin/python runs the same project against a real `pip install`
+    of the package instead of the copy."""
+    import json as _json  # noqa: PLC0415
+    import os  # noqa: PLC0415
+    import shutil  # noqa: PLC0415
+    import tempfile  # noqa: PLC0415
+
+    tmp = Path(tempfile.mkdtemp(prefix="harness-installed-"))
+    try:
+        site = tmp / "site-packages"
+        shutil.copytree(HERE, site / "evaluation_harness",
+                        ignore=shutil.ignore_patterns("__pycache__", "test_*.py", "self_test.py"))
+        shutil.copytree(ROOT / "schemas", site / "evaluation_harness" / "schemas")
+        installed = os.environ.get("EVH_TEST_PYTHON", "")  # a real pip install, when given
+        ipy = installed or PY
+        pkg = site / "evaluation_harness"
+        if installed:
+            pkg = Path(subprocess.run(
+                [ipy, "-c", "import evaluation_harness as e; print(e.__path__[0])"], cwd=tmp,
+                capture_output=True, text=True, check=True).stdout.strip())
+
+        def listing() -> list[str]:
+            return sorted(str(f.relative_to(pkg)) for f in pkg.rglob("*"))
+        before = listing()
+        proj = tmp / "project"
+        data = proj / "data"
+        (data / "sources" / "jds_v1").mkdir(parents=True)
+        ids = ["ep_1", "ep_2", "ep_3"]
+        for i in ids:
+            (data / "sources" / "jds_v1" / f"{i}.txt").write_text(f"Article {i}. It has a few sentences.\n")
+        env = {"EVAL_HOME": str(proj), "EVAL_DATA_DIR": "data", "EVAL_RUNS_DIR": "",
+               **({} if installed else {"PYTHONPATH": str(site)}), "PYTHONDONTWRITEBYTECODE": "1",
+               "LITELLM_BASE_URL": "", "OPENROUTER_API_KEY": "", "EVAL_MAX_COST_USD": ""}
+
+        def evh(*args: str) -> subprocess.CompletedProcess:
+            return subprocess.run([ipy, "-m", "evaluation_harness", *args], cwd=proj,
+                                  capture_output=True, text=True, env={**os.environ, **env})
+
+        made = evh("dataset-create", "--dataset-id", "jds_v1", "--source-dir", str(data / "sources" / "jds_v1"))
+        mat = evh("dataset-materialize", "--dataset-id", "jds_v1")
+        check("installed judge-score: the project's dataset is frozen and materialized by the package",
+              made.returncode == 0 and mat.returncode == 0, (made.stderr + mat.stderr)[-300:])
+        for arm, fam in (("arm_a", "gemma"), ("arm_b", "qwen")):
+            d = data / "runs" / f"{arm}_20260101T000000Z"
+            (d / "outputs").mkdir(parents=True)
+            for i in ids:
+                (d / "outputs" / f"{i}.txt").write_text(f"{arm} summary of {i}\n")
+            (d / "predictions.jsonl").write_text("".join(
+                _json.dumps({"item_id": i, "rouge1": 0.3}) + "\n" for i in ids))
+            (d / "metrics.json").write_text(_json.dumps({
+                "config_id": arm, "dataset_id": "jds_v1", "created_at": "2026-01-01T00:00:00Z",
+                "params": {"family": fam}, "n_items": 3, "primary_metric": "rouge1",
+                "scores": {"rouge1": 0.3}, "metric_kinds": {"rouge1": "quality"}}))
+        (proj / "prompts").mkdir()
+        shutil.copy2(ROOT.parent / "examples" / "summeval-judging" / "prompt.txt",
+                     proj / "prompts" / "judge.txt")
+        fake = {"provider": "fake", "temperature": 0.0, "usd_per_mtok_in": 1.0,
+                "usd_per_mtok_out": 2.0}
+        (data / "scorers").mkdir()
+        (data / "scorers" / "judge-fake-v1.yaml").write_text(_json.dumps({
+            "scorer_id": "judge-fake-v1", "kind": "judge", "dataset_id": "jds_v1",
+            "judges": [{"id": "fa", "params": {**fake, "model": "fake-a", "family": "gemma"}},
+                       {"id": "fb", "params": {**fake, "model": "fake-b", "family": "qwen"}}],
+            "prompt": {"file": "prompts/judge.txt"},
+            "protocol": {"outputs_per_call": 16, "blinding": True, "order_seed": 0,
+                         "position_check_fraction": 0.34, "noise_check_fraction": 0.34},
+            "arms_match": "arm_", "cost_cap_usd": 1.0}))
+        judged = data / "runs-judged" / "judge-fake-v1"
+
+        refused = evh("judge-score", "--dataset-id", "jds_v1", "--scorer", "judge-fake-v1")
+        check("installed judge-score: a fake-judge scorer is refused without --unvalidated",
+              refused.returncode == 3 and "REFUSED" in refused.stderr and not judged.exists(),
+              refused.stderr[-300:])
+        dry = evh("judge-score", "--dataset-id", "jds_v1", "--scorer", "judge-fake-v1",
+                  "--unvalidated", "--dry-run")
+        check("installed judge-score: --dry-run counts the calls and writes nothing",
+              dry.returncode == 0 and "DRY RUN" in dry.stdout and not judged.exists()
+              and not (data / "judge-verdicts").exists(), (dry.stderr + dry.stdout)[-300:])
+        ran = evh("judge-score", "--dataset-id", "jds_v1", "--scorer", "judge-fake-v1", "--unvalidated")
+        runs = sorted(judged.glob("arm_*/metrics.json"))
+        m = _json.loads(runs[0].read_text()) if runs else {}
+        check("installed judge-score: scored runs land in the project's data dir, labelled unvalidated",
+              ran.returncode == 0 and len(runs) == 2 and m.get("judge_label") == "unvalidated judge"
+              and m.get("primary_metric") == "judge_score_unvalidated"
+              and m["judged_with"]["validated"] is False, (ran.stderr + ran.stdout)[-400:])
+        check("installed judge-score: the judging set and the verdicts are in the project too",
+              len(list((data / "judging-sets").glob("*.json"))) == 1
+              and len(list((data / "judge-verdicts").glob("judge-fake-v1/*/fa/*.json"))) > 0)
+        check("installed judge-score: nothing was written beside the package code",
+              listing() == before)
+        check("installed judge-score: nothing was written into this checkout's data",
+              not (ROOT / "data" / "runs-judged" / "judge-fake-v1" / "arm_a_20260101T000000Z").exists()
+              and not list((ROOT / "data" / "judging-sets").glob("jds_v1-*")))
+        board = subprocess.run([ipy, "-m", "evaluation_harness", "leaderboard", "--dataset-id", "jds_v1"],
+                               cwd=proj, capture_output=True, text=True,
+                               env={**os.environ, **env, "EVAL_RUNS_DIR": str(judged)})
+        check("installed judge-score: leaderboard reads the scored runs",
+              board.returncode == 0 and "arm_a" in board.stdout and "arm_b" in board.stdout
+              and "judge_score_unvalidated" in board.stdout, (board.stderr + board.stdout)[-400:])
+        again = evh("judge-score", "--dataset-id", "jds_v1", "--scorer", "judge-fake-v1",
+                    "--unvalidated")
+        check("installed judge-score: a rerun resumes from the stored verdicts (no new calls)",
+              again.returncode == 0 and "calls 0," in again.stdout, again.stdout[-300:])
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
 def main() -> int:
     print("harness self-tests (no network, no keys)\n")
     for fn in (
@@ -2263,6 +2377,7 @@ def main() -> int:
         test_the_reproduction_tables_agree_with_the_configs_and_runs,
         test_the_gateway_routes_as_documented,
         test_a_project_elsewhere_imports_runs_and_tests_them,
+        test_judge_score_runs_from_an_installed_package,
     ):
         # A TEST THAT RAISES MUST NOT HIDE THE ONES AFTER IT. `fn()` bare meant one
         # ImportError -- from a helper that had been renamed, say -- aborted the suite

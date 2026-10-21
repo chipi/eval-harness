@@ -19,7 +19,10 @@ from pathlib import Path
 from types import SimpleNamespace
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import importlib.util  # noqa: E402
+
 import judge_score as js  # noqa: E402
+import judging  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
 ok = []
@@ -28,6 +31,15 @@ ok = []
 def check(label, cond):
     ok.append((label, bool(cond)))
     print(f"  {'ok  ' if cond else 'FAIL'} {label}")
+
+
+def _exit(fn):
+    """The message of the SystemExit fn raises, or '' if it does not."""
+    try:
+        fn()
+    except SystemExit as exc:
+        return str(exc.code)
+    return ""
 
 
 def raises_exit(fn):
@@ -123,7 +135,18 @@ check("5 outputs -> one block of 5", js.block_sizes(5, 16) == [5])
 check("the largest block never exceeds outputs_per_call",
       all(max(js.block_sizes(n, 16)) <= 16 for n in range(2, 80)))
 
-ad = js.summeval_adapter()
+def summeval_adapter():
+    """SummEval's own adapter, loaded only here: the package no longer depends on it, and this
+    is where the package's copies are held to it."""
+    path = HERE.parents[1] / "examples" / "summeval-judging" / "adapter.py"
+    spec = importlib.util.spec_from_file_location("summeval_judging_adapter", path)
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
+ad = summeval_adapter()
 item16 = {"article": "An article.", "summaries": [f"s{i}" for i in range(16)]}
 mine = js.build_message(BASE, item16["article"], item16["summaries"])
 check("N=16: the message is byte-identical to SummEval's own _judge_message",
@@ -133,10 +156,26 @@ check("N=16: the prompt sha256 equals SummEval's _prompt_sha256",
 real = js.load_scorer(HERE.parent / "data" / "scorers" / "judge-summ-v1.yaml")
 check("the committed scorer's sha256_at_16 is SummEval's prompt hash",
       real["prompt"]["sha256_at_16"] == ad._prompt_sha256({}))
+check("the N=16 rendering the package builds hashes to the committed sha256_at_16",
+      hashlib.sha256(judging.render_prompt(js.prompt_text(real), 16).encode()).hexdigest()
+      == real["prompt"]["sha256_at_16"])
 p15 = js.render_prompt(BASE, 15)
 check("N=15: both count phrases say 15 and no other word of the prompt changed",
       "15 numbered summaries" in p15 and "a list of 15 integers" in p15
       and p15.replace("15", "16") == BASE)
+
+for n_, label_ in ((16, "N=16"), (15, "N=15"), (1, "N=1")):
+    it_ = {"article": "  An article.\n", "summaries": [f" s{i} \n" for i in range(n_)]}
+    check(f"{label_}: the package's message is byte-identical to the adapter's, for the same "
+          "rendered prompt",
+          judging.build_message(BASE, it_["article"], it_["summaries"])
+          == ad._judge_message(it_, {"prompt": judging.render_prompt(BASE, n_)}))
+check("the package's render_prompt is judge_score's (one implementation)",
+      js.render_prompt is judging.render_prompt and js.build_message is judging.build_message)
+a_, b_ = [3.0, 1.0, 2.0, 2.0, 5.0], [1.0, 1.0, 4.0, 2.0, 3.0]
+check("tau-b and Spearman equal the adapter's on tied data",
+      judging.kendall_tau_b(a_, b_) == ad.kendall_tau_b(a_, b_)
+      and judging.spearman(a_, b_) == ad.spearman(a_, b_))
 
 reply16 = json.dumps({d: list(range(1, 6)) * 3 + [1] for d in js.DIMS})
 theirs = ad.parse_scores(reply16)
@@ -745,6 +784,74 @@ with tempfile.TemporaryDirectory() as td:
             print("   check crashed:", type(exc).__name__, exc)
         check(f"V13: a scorer with {what} fails", bad_sc != [])
     pf.write_text(sorig)
+
+# ── no dependency outside the package: routing, the fake judge, prompt resolution ──
+check("judge_score no longer loads the SummEval adapter",
+      not hasattr(js, "summeval_adapter") and "adapter.py" not in (HERE / "judge_score.py").read_text())
+fake_sc = scorer(judges=[
+    {"id": "fa", "params": {"provider": "fake", "model": "m_a", "family": "gemma",
+                            "usd_per_mtok_in": 1.0, "usd_per_mtok_out": 2.0}},
+    {"id": "fb", "params": {"provider": "fake", "model": "m_b", "family": "qwen",
+                            "usd_per_mtok_in": 1.0, "usd_per_mtok_out": 2.0}}])
+check("a provider: fake scorer can never pass the gate, validation block or not",
+      js.validation_problems({**fake_sc, "validation": real["validation"]}, real_runs) != []
+      and all("fake" in p_ for p_ in js.validation_problems(fake_sc, real_runs)))
+msg_ = js.build_message(BASE, "An article.", ["one", "two", "three"])
+r1, r2 = judging.call_judge(msg_, fake_sc["judges"][0]["params"]), \
+    judging.call_judge(msg_, fake_sc["judges"][0]["params"])
+r3 = judging.call_judge(msg_, fake_sc["judges"][1]["params"])
+check("the fake judge is deterministic, parses at n, and differs by model",
+      r1.output == r2.output and js.parse_block(r1.output, 3) is not None
+      and r1.output != r3.output and r1.cost_usd is not None)
+
+_keys = ("LITELLM_BASE_URL", "LITELLM_API_KEY", "OPENROUTER_API_KEY", "EVAL_MODELS_FILE", "MY_KEY")
+_saved = {k: os.environ.pop(k, None) for k in _keys}
+try:
+    check("routing: nothing configured is refused, naming both ways to fix it",
+          "OPENROUTER_API_KEY" in _exit(lambda: judging.route({"model": "a/b"}))
+          and "LITELLM_BASE_URL" in _exit(lambda: judging.route({"model": "a/b"})))
+    os.environ["OPENROUTER_API_KEY"] = "k-or"
+    r_ = judging.route({"model": "vendor/model"})
+    check("routing: OpenRouter alone goes direct, with the id as written and usage accounting",
+          r_["mode"] == "direct" and r_["model"] == "vendor/model"
+          and judging.extra_body({}, r_) == {"usage": {"include": True}})
+    check("routing: a bare alias with no models table is refused",
+          "neither an alias" in str(_exit(lambda: judging.route({"model": "bare-alias"}))))
+    os.environ["LITELLM_BASE_URL"] = "http://proxy.invalid/"
+    check("routing: a proxy URL without its key is refused, not silently sent to OpenRouter",
+          "LITELLM_API_KEY" in str(_exit(lambda: judging.route({"model": "x"}))))
+    os.environ["LITELLM_API_KEY"] = "k-px"
+    r_ = judging.route({"model": "alias-x"})
+    check("routing: the proxy wins when both are set, with the model as written",
+          r_["mode"] == "proxy" and r_["base_url"] == "http://proxy.invalid/v1"
+          and r_["model"] == "alias-x" and judging.extra_body({}, r_) == {})
+    os.environ["MY_KEY"] = "k-own"
+    r_ = judging.route({"model": "m", "base_url": "http://own.invalid", "api_key_env": "MY_KEY"})
+    check("routing: a judge's own base_url and api_key_env override the environment's",
+          r_["base_url"] == "http://own.invalid/v1" and r_["key"] == "k-own")
+finally:
+    for k_, v_ in _saved.items():
+        os.environ.pop(k_, None)
+        if v_ is not None:
+            os.environ[k_] = v_
+
+with tempfile.TemporaryDirectory() as td_:
+    tdp = Path(td_)
+    (tdp / "scorers").mkdir()
+    (tdp / "scorers" / "mine.txt").write_text("beside the scorer\n")
+    (tdp / "scorers" / "sub").mkdir()
+    (tdp / "scorers" / "sub" / "p.txt").write_text("nested\n")
+    here_sc = scorer(prompt={"file": "mine.txt"}, _dir=str(tdp / "scorers"))
+    check("prompt.file: relative to the scorer's own directory when the project root has none",
+          js.prompt_text(here_sc) == "beside the scorer")
+    check("prompt.file: the repo-relative path still resolves in this checkout",
+          "16 numbered summaries" in js.prompt_text(scorer()))
+    check("prompt.file: an absolute path is taken as written",
+          js.prompt_text(scorer(prompt={"file": str(tdp / "scorers" / "mine.txt")})) == "beside the scorer")
+    check("prompt.file: an explicit root replaces the search",
+          js.prompt_text(scorer(prompt={"file": "sub/p.txt"}), tdp / "scorers") == "nested")
+    check("prompt.file: missing everywhere is refused, listing where it looked",
+          "looked in" in str(_exit(lambda: js.prompt_text(scorer(prompt={"file": "nope.txt"})))))
 
 bad = [l for l, c in ok if not c]
 print(f"\n{len(ok) - len(bad)}/{len(ok)} assertions passed")

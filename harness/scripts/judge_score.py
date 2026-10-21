@@ -39,7 +39,6 @@ from __future__ import annotations
 
 import argparse
 import hashlib
-import importlib.util
 import json
 import math
 import re
@@ -52,10 +51,14 @@ from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _common import (  # noqa: E402
-    DATA, MATERIALIZED, ROOT, RUNS, CostCapExceeded, die, env_float, now, read_json,
+    CODE, DATA, MATERIALIZED, ROOT, RUNS, CostCapExceeded, die, env_float, now, read_json,
     write_json, write_text_atomic,
 )
 from _retry import call_with_retries  # noqa: E402
+from judging import (  # noqa: E402
+    DIMS, FAKE, build_message, call_judge, kendall_tau_b, parse_block, render_prompt,
+    spearman,
+)
 
 try:
     import yaml
@@ -66,9 +69,7 @@ SCORERS = DATA / "scorers"
 SETS = DATA / "judging-sets"
 VERDICTS = DATA / "judge-verdicts"
 JUDGED = DATA / "runs-judged"
-SUMMEVAL_ADAPTER = ROOT.parent / "examples" / "summeval-judging" / "adapter.py"
 
-DIMS = ("coherence", "consistency", "fluency", "relevance")
 PASSES = ("primary", "position", "noise")
 #: Describe the CALL that made an arm's output, not how it was measured: carried across as
 #: rescore.py carries them.
@@ -78,22 +79,6 @@ CARRY = ("latency_ms", "tokens_in", "tokens_out", "cost_usd", "truncated", "reas
 OUT_TOKENS_PER_SUMMARY = 14
 OUT_TOKENS_FIXED = 10
 CHARS_PER_TOKEN = 4
-
-_ADAPTER: Any = None
-
-
-def summeval_adapter() -> Any:
-    """The validated judge's own module: `_litellm`, `_judge_message`, `kendall_tau_b`."""
-    global _ADAPTER
-    if _ADAPTER is None:
-        if not SUMMEVAL_ADAPTER.is_file():
-            die(f"the SummEval judge is missing: {SUMMEVAL_ADAPTER}")
-        spec = importlib.util.spec_from_file_location("summeval_judging_adapter", SUMMEVAL_ADAPTER)
-        mod = importlib.util.module_from_spec(spec)  # type: ignore[arg-type]
-        sys.modules[spec.name] = mod            # @dataclass looks its own module up
-        spec.loader.exec_module(mod)  # type: ignore[union-attr]
-        _ADAPTER = mod
-    return _ADAPTER
 
 
 def _sha(text: str) -> str:
@@ -110,6 +95,7 @@ def load_scorer(path: Path) -> Dict[str, Any]:
         die(f"no such scorer: {path}")
     sc = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
     sc["_sha256"] = hashlib.sha256(path.read_bytes()).hexdigest()
+    sc["_dir"] = str(path.resolve().parent)
     if sc.get("kind") != "judge":
         die(f"{path.name}: kind must be 'judge', got {sc.get('kind')!r}")
     for k in ("scorer_id", "dataset_id", "judges", "prompt", "protocol"):
@@ -122,10 +108,33 @@ def load_scorer(path: Path) -> Dict[str, Any]:
     return sc
 
 
-def prompt_text(sc: Dict[str, Any], root: Path = ROOT.parent) -> str:
-    p = root / sc["prompt"]["file"]
-    if not p.is_file():
-        die(f"prompt file not found: {p}")
+def prompt_candidates(sc: Dict[str, Any], root: Optional[Path] = None) -> List[Path]:
+    """Where a scorer's `prompt.file` may be, in the order it is looked for.
+
+    An absolute path is taken as written. A relative one resolves against the PROJECT root
+    (EVAL_HOME, else the harness checkout), then the directory of the scorer file that names
+    it, and, only in a checkout of this repository, the repository root, which is where the
+    committed scorers' `examples/...` paths point. `root` replaces all of that with one base.
+    """
+    f = Path(sc["prompt"]["file"])
+    if f.is_absolute():
+        return [f]
+    if root is not None:
+        return [root / f]
+    out = [ROOT / f]
+    if sc.get("_dir"):
+        out.append(Path(sc["_dir"]) / f)
+    if (ROOT / "scripts").resolve() == CODE:
+        out.append(ROOT.parent / f)
+    return out
+
+
+def prompt_text(sc: Dict[str, Any], root: Optional[Path] = None) -> str:
+    cands = prompt_candidates(sc, root)
+    p = next((c for c in cands if c.is_file()), None)
+    if p is None:
+        die(f"prompt file not found: {sc['prompt']['file']} (looked in "
+            f"{', '.join(str(c) for c in cands)})")
     return p.read_text(encoding="utf-8").strip()
 
 
@@ -135,8 +144,12 @@ OUTPUT_PARAMS = ("provider", "model", "temperature", "reasoning", "max_tokens")
 
 
 def validation_problems(sc: Dict[str, Any], runs_dir: Path = RUNS,
-                        prompt_root: Path = ROOT.parent) -> List[str]:
+                        prompt_root: Optional[Path] = None) -> List[str]:
     """Why this scorer is not validated; empty means it is."""
+    fakes = [j["id"] for j in sc["judges"] if j["params"].get("provider") == FAKE]
+    if fakes:
+        return [f"judge {i!r} uses provider: fake, a stand-in that can never be validated"
+                for i in fakes]
     v = sc.get("validation")
     if not isinstance(v, dict) or not v.get("runs"):
         return ["no `validation` block naming a committed run"]
@@ -192,69 +205,6 @@ def validation_problems(sc: Dict[str, Any], runs_dir: Path = RUNS,
 def validated_label(sc: Dict[str, Any]) -> str:
     """Says where the validation was done, not that the judge is valid for this use."""
     return f"validated on {sc['validation']['experiment']} (provenance)"
-
-
-# ── the prompt, generalised only in its count ────────────────────────────────
-def render_prompt(base: str, n: int) -> str:
-    """SummEval's prompt for `n` summaries. Byte-identical to it when n == 16."""
-    if n == 16:
-        return base
-    a, b = "16 numbered summaries", "a list of 16 integers"
-    if a not in base or b not in base:
-        die("the prompt no longer contains the two count phrases this pass rewrites "
-            f"({a!r}, {b!r}); it cannot be rendered for {n} summaries")
-    if n == 1:
-        # Singular grammar, and an example showing one value per key: the 16-wide example
-        # ("[3, 4, ...]") would invite a list that parse_block then rejects.
-        ex = ('{"coherence": [3, 4, ...], "consistency": [5, 2, ...], '
-              '"fluency": [4, 4, ...], "relevance": [2, 3, ...]}')
-        if ex not in base:
-            die("the prompt no longer contains the example line this pass rewrites for one summary")
-        return (base.replace(a, "1 numbered summary").replace(b, "a list of 1 integer")
-                .replace(ex, '{"coherence": [3], "consistency": [5], "fluency": [4], "relevance": [2]}')
-                .replace("Rate every summary", "Rate the summary")
-                .replace("the summaries may share mistakes", "the summary may contain mistakes")
-                .replace("a list of 1 integer in summary order", "a list of 1 integer"))
-    return base.replace(a, f"{n} numbered summaries").replace(b, f"a list of {n} integers")
-
-
-def build_message(base: str, article: str, summaries: Sequence[str]) -> str:
-    """The judge's input, assembled by SummEval's own function so the layout cannot drift."""
-    return summeval_adapter()._judge_message(
-        {"article": article, "summaries": list(summaries)},
-        {"prompt": render_prompt(base, len(summaries))})
-
-
-def parse_block(output: str, n: int) -> Optional[List[float]]:
-    """Per-summary mean of the four dimensions, or None.
-
-    Same reading as SummEval's `parse_scores` with the count a parameter: lenient about
-    wrapping, strict about content. A dimension counts only with exactly `n` numbers, and
-    a block counts only with all four, each in 1..5.
-    """
-    ad = summeval_adapter()
-    m = ad._JSON.search(output or "")
-    if not m:
-        return None
-    try:
-        obj = json.loads(m.group(0))
-    except json.JSONDecodeError:
-        return None
-    if not isinstance(obj, dict):
-        return None
-    cols = []
-    for d in DIMS:
-        v = obj.get(d)
-        if not isinstance(v, list) or len(v) != n:
-            return None
-        try:
-            f = [float(x) for x in v]
-        except (TypeError, ValueError):
-            return None
-        if any(not (1.0 <= x <= 5.0) for x in f):
-            return None
-        cols.append(f)
-    return [statistics.fmean(c[i] for c in cols) for i in range(n)]
 
 
 # ── order, blocks, subsets ───────────────────────────────────────────────────
@@ -562,7 +512,7 @@ def project(sc: Dict[str, Any], scores: Dict[str, Dict[str, Dict[str, Dict[str, 
 
 
 def _tau(a: List[float], b: List[float]) -> Optional[float]:
-    v = summeval_adapter().kendall_tau_b(a, b)
+    v = kendall_tau_b(a, b)
     return None if v is None or (isinstance(v, float) and math.isnan(v)) else v
 
 
@@ -613,7 +563,7 @@ def summarise(manifest: Dict[str, Any], sc: Dict[str, Any], arms: Sequence[Dict[
             mb = [per_arm[c][f"judge_{jb}"] for c in per_arm]
             agreement[f"{ja}~{jb}"] = {
                 "n_items": len(proj), "mean_item_tau": _mean(taus),
-                "arm_mean_spearman": (round(summeval_adapter().spearman(ma, mb), 6)
+                "arm_mean_spearman": (round(spearman(ma, mb), 6)
                                       if all(v is not None for v in ma + mb) and len(ma) > 2 else None),
                 "arm_mean_abs_diff": _mean([abs(p - q) for p, q in zip(ma, mb)
                                             if p is not None and q is not None])}
@@ -768,7 +718,7 @@ def effective_cap(sc: Dict[str, Any]) -> Optional[float]:
 
 # ── main ─────────────────────────────────────────────────────────────────────
 def real_call(message: str, params: Dict[str, Any]) -> Any:
-    return summeval_adapter()._litellm(message, {**params, "_raw_message": True})
+    return call_judge(message, params)
 
 
 def main() -> int:
