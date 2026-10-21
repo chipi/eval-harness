@@ -2,8 +2,9 @@
 
 Your first evaluation, end to end, in about twenty minutes — offline, no API key. You will
 freeze a dataset, author references, build a small **golden dataset**, measure four
-systems, compare them honestly, and promote a baseline. Every command below was run as
-written; the output shown is what it printed.
+systems, compare them honestly, promote a baseline and, if you want, re-measure the same
+outputs with an LLM judge. Every command below was run as written; the output shown is what
+it printed.
 
 The running example is a support-ticket summariser. The tutorial kit in
 [`harness/tutorial/`](../harness/tutorial/README.md) has six invented tickets, a one-line
@@ -30,6 +31,11 @@ function, covered [at the end](#doing-it-for-real).
                                                      │
                                        run-promote ──▶ baselines/<id>_baseline.json
                                                      (a decision, with its reason)
+
+ optional, any time later: re-measure the same frozen outputs, without re-running an arm
+   rescore      new reference or new code scorer, $0  ──▶ runs-rescored/ (or OUT=…)
+   judge-score  a validated LLM judge, billed + capped ──▶ runs-judged/<scorer>/
+                the originals are never touched; point the leaderboard at the new directory
 ```
 
 | term | what it is | lives in | edited? |
@@ -41,6 +47,7 @@ function, covered [at the end](#doing-it-for-real).
 | **run** | one pass of an arm over a dataset: outputs, scores, fingerprint | `data/runs/<run_id>/` | never |
 | **reference** | the answer each item is scored against — **gold** (a person) or **silver** (a model) | `data/references/<tier>/<id>/` | never; a change is a new set |
 | **baseline** | the run you decided to measure future changes against, with why | `data/baselines/` | superseded, never edited |
+| **judge scorer** | optional: LLM judges, their prompt, the task they score, and the runs that validated them | `data/scorers/<id>.yaml` | a change is a new `scorer_id` |
 
 ## 0 · Set up
 
@@ -337,7 +344,111 @@ Refused if the run came from a dirty tree, if its build is unknown, or if the re
 single word: six months from now, "why is this the baseline?" must have an answer. The
 previous baseline is archived, never edited.
 
-## 10 · Validate
+## 10 · Optional: re-measure with an LLM judge
+
+Word overlap is a weak measure of a summary, and you will not always have gold to score
+against. An LLM judge can read each ticket and rate every arm's summary instead. It does
+not re-run any arm: it reads the outputs already stored, so it is a second measurement of
+the same frozen record, written to its own directory. Nothing here is required. Skip this
+step and every other one still works.
+
+A judge is a **judge scorer**, one file. The kit has one whose two judges are `provider:
+fake`, a deterministic stand-in that calls nothing, so this step stays offline and $0:
+
+```yaml
+# data/scorers/tickets-judge-v1.yaml (abridged)
+scorer_id: tickets-judge-v1
+kind: judge
+dataset_id: tickets_v1
+task:                          # what is judged; omit it for SummEval's news-summary task
+  source_label: TICKET
+  output_label: SUMMARIES
+  dimensions: [accuracy, usefulness]
+  scale: [1, 5]
+judges:                        # at least two, from different vendor families
+  - {id: judge_a, params: {provider: fake, model: fake-a, family: vendor_a, ...}}
+  - {id: judge_b, params: {provider: fake, model: fake-b, family: vendor_b, ...}}
+prompt:
+  file: tutorial/judge_prompt.txt   # "{n}" in it becomes the number of summaries per call
+protocol: {outputs_per_call: 16, blinding: true, order_seed: 0, ...}
+cost_cap_usd: 0.01
+```
+
+```bash
+mkdir -p data/scorers && cp tutorial/scorers/tickets-judge-v1.yaml data/scorers/
+make judge-score DATASET_ID=tickets_v1 SCORER=tickets-judge-v1
+```
+```text
+REFUSED: judge scorer tickets-judge-v1 is not validated:
+  - judge 'judge_a' uses provider: fake, a stand-in that can never be validated
+  - judge 'judge_b' uses provider: fake, a stand-in that can never be validated
+  Fix the `validation` block, or pass --unvalidated to run it labelled 'unvalidated judge'.
+```
+
+**The harness refuses a judge nobody has checked.** A judge is a model's opinion, as silver
+is, so before its scores count it must be validated: a `validation` block names the
+committed runs that measured each judge against human ratings, on data like yours. Fake
+judges can never pass. To try the pass anyway, say so, and every number is labelled.
+Price it first; `--dry-run` calls nothing:
+
+```bash
+make judge-score DATASET_ID=tickets_v1 SCORER=tickets-judge-v1 ARGS="--unvalidated --dry-run"
+```
+```text
+judging set  tickets_v1-4arms-4b9495ca9db6
+  arms 4, items 6, blocks per item [4], position items 3, noise items 3
+DRY RUN (nothing called; tokens are chars/4 estimates, cost from the scorer's price table)
+  judge judge_a  calls    12 (stored 0)  tokens in      4,947  out      456  est $0.0000
+  judge judge_b  calls    12 (stored 0)  tokens in      4,947  out      456  est $0.0000
+  TOTAL        calls    24  tokens in      9,894  out      912  est $0.0000   cap $0.01
+```
+
+The **judging set** is frozen first: each ticket with every arm's summary, the arms' names
+hidden and their order shuffled per ticket. Its id hashes all of that, so a different arm
+set is a different judging set, never an addition to this one. 24 calls: each judge reads
+each ticket once, plus a second shuffle on half the tickets (the **position** check: does
+order change the verdict?) and a repeat on half (the **noise** check: does the judge agree
+with itself?). Then:
+
+```bash
+make judge-score DATASET_ID=tickets_v1 SCORER=tickets-judge-v1 ARGS=--unvalidated
+EVAL_RUNS_DIR=data/runs-judged/tickets-judge-v1 make leaderboard DATASET_ID=tickets_v1
+```
+```text
+4 scored run(s) -> data/runs-judged/tickets-judge-v1  (6/6 items, unvalidated judge)
+  calls 24, billed this run $0.0000, stored total $0.0000
+
+dataset: tickets_v1   ranked by: judge_score_unvalidated (higher is better)
+
+  arm                      runs  judge_judge_a_unvalidated  judge_judge_b_unvalidated  judge_score_unvalidated
+  tickets_author_v1           1          3.000000          3.500000          3.250000
+  tickets_lead2_noisy_v1      1          3.666667          2.500000          3.083333
+  tickets_lead2_v1            1          2.833333          3.000000          2.916667
+  tickets_lead1_v1            1          2.333333          1.833333          2.083333
+  ...
+  IS THE ORDERING REAL?   metric=judge_score_unvalidated  k=4 arms  N=6 items
+    global test (permutation on within-item ranks): p = 0.2889  ->  NO detectable arm effect
+  ...
+  Scored by an LLM judge, not against references: tickets-judge-v1, unvalidated judge.
+```
+
+Your judging-set id, token counts and p-value will differ from these: `lead2_noisy` is
+unseeded, so its outputs, and the set built from them, differ on every run.
+
+Each judge's raw reply is stored under `data/judge-verdicts/`, so the same command again
+calls nothing, and `ARGS=--no-calls` rebuilds the scored runs from the stored verdicts for
+$0. The judged runs read like any others: `leaderboard`, `pair-test` and `family-test`
+work on them unchanged, through `EVAL_RUNS_DIR`. The fake judges' numbers mean nothing,
+and the test says so: no detectable arm effect.
+
+**When a real judge's scores disagree with your primary metric**, nothing changes until you
+decide it should. The primary metric stays what it was; making a judge's score primary is a
+recorded decision, with the old score kept beside it. Real judges, the validation block and
+the controls: [RUNBOOK §12](../harness/docs/RUNBOOK.md#12-re-measure-with-a-validated-judge).
+Why the gate exists: [Concepts](../harness/docs/CONCEPTS.md#re-measuring-a-frozen-experiment)
+and [ADR-0001](adr/ADR-0001-judge-scorers.md).
+
+## 11 · Validate
 
 ```bash
 make validate
@@ -374,6 +485,10 @@ averaged into one row.
 - **What the system is.** If the thing under test is not this repository, say what it
   is: `EVAL_BUILD_REF=v2.3.1 make experiment-run …` (a tag, a commit, an image digest).
 - **Scorer changed?** `make rescore` recomputes every score from stored outputs, $0.
+- **A metric you do not trust?** Re-measure with real LLM judges (step 10), validated
+  first against human ratings on outputs like yours. The judges in a scorer are ordinary
+  model specs, routed through a LiteLLM proxy or OpenRouter:
+  [RUNBOOK §12](../harness/docs/RUNBOOK.md#12-re-measure-with-a-validated-judge).
 
 ## Every verb
 
@@ -392,6 +507,8 @@ averaged into one row.
 | a pre-named pair | `make pair-test DATASET_ID=… A=… B=…` |
 | a winner claim | `make family-test DATASET_ID=… A=… AGAINST=…` |
 | re-score, $0 | `make rescore DATASET_ID=… [REFERENCE=gold/…] OUT=…` |
+| re-measure with a judge (optional) | `make judge-score DATASET_ID=… SCORER=… [ARGS=--dry-run]` |
+| read the judged runs | `EVAL_RUNS_DIR=data/runs-judged/<scorer> make leaderboard DATASET_ID=…` |
 | is silver good enough | `make silver-calibrate DATASET_ID=…` |
 | how many items | `make rank-stability DATASET_ID=…` |
 | dev-slice-free result | `make holdout DATASET_ID=… EXCLUDE=…` |
@@ -400,5 +517,5 @@ averaged into one row.
 | consistency | `make validate` · `make check` |
 
 The reasoning behind each rule is in [Concepts](../harness/docs/CONCEPTS.md); every flag
-and edge case — resuming, the judge panel, choosing the system under test — in the
-[Runbook](../harness/docs/RUNBOOK.md).
+and edge case — resuming, the judge panel, judge scorers, choosing the system under test —
+in the [Runbook](../harness/docs/RUNBOOK.md).

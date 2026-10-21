@@ -28,7 +28,7 @@ if(!p.has('static'))document.documentElement.classList.add('js');})();
 <body>
 <header class="bar"><div class="wrap">
   <a class="brand" href="../index.html" aria-label="eval-harness home"><img class="mark" src="../assets/icon.svg" alt="" width="28" height="28"><span>eval-harness</span></a>
-  <nav class="nav"><a href="../index.html">Harness</a><a href="../use.html">Use it</a><a href="../method.html" class="hide-sm">Method</a><a href="../experiments.html" aria-current="page">Experiments</a><a href="../docs/" class="hide-sm">Docs</a><a href="https://github.com/chipi/eval-harness" class="hide-sm">GitHub ↗</a><button id="theme" class="theme" aria-label="Toggle light and dark">◐</button></nav>
+  <nav class="nav"><a href="../index.html">Harness</a><a href="../use.html">Use it</a><a href="../method.html" class="hide-sm">Method</a><a href="../experiments.html" aria-current="page">Experiments</a><a href="../experiments/judging.html" class="hide-sm">Judging</a><a href="../docs/" class="hide-sm">Docs</a><a href="https://github.com/chipi/eval-harness" class="hide-sm">GitHub ↗</a><button id="theme" class="theme" aria-label="Toggle light and dark">◐</button></nav>
 </div></header>
 <main>
 
@@ -472,11 +472,11 @@ $0.2973 per 1,000 items"/><circle cx="328.8" cy="70.5" r="11" class="ring"/><tex
   <h2>What this experiment found.</h2>
   <ol class="findings"><li><div><h3>On mean τ, 23 of 24 LLM judges score above a free evaluator trained for the task.</h3><p>The best free scorer, unievalpub (UniEval, on its own inputs), scores 0.3717; the weakest judge, llama_s, 0.3533. In the paired test UniEval is separated below 23 of the 24 judges and cannot be separated from the weakest, on either set of inputs. The judges rank all 16 summaries in one call while UniEval scores one at a time, and a pointwise LLM judge was not run.</p></div></li><li><div><h3>An open-weight judge is not separated from the leader.</h3><p>gemma_l scores 0.5384 against openai_l&#x27;s 0.5398, and the leader cannot be separated from it or from 4 others. No provider was pinned: one judge, run once on each of two providers, scored 0.0113 apart and billed 3.7× apart.</p></div></li><li><div><h3>The dearest model finished 3rd of 33.</h3><p>anthropic_l billed $2.01 for 100 items. The cheapest model not separated from the leader, gemma_l, cost 72× less.</p></div></li><li><div><h3>The best judges come close to a single expert, and stay below one.</h3><p>Scored against the mean of two experts, as one expert is against the other two, the best judge reaches 0.5195 — 93% of one expert&#x27;s 0.5587 (95% interval 89–97%), and the gap excludes zero. It is the best of 24, chosen on the same articles (92% when chosen on half and scored on the other half). UniEval reaches 64%, BARTScore 44%; a no-model lookup of which system wrote each summary reaches 63%. The summaries are 2019-era and reasoning was off.</p></div></li><li><div><h3>The order is stable; the winner is not.</h3><p>Two disjoint 20-article halves agree at ρ = 0.90 on the order of the 24 judges, but name the same unique winner only 21% of the time.</p></div></li><li><div><h3>This repository&#x27;s own metric agrees with experts less than ROUGE does.</h3><p>coverage agrees with the experts at τ 0.1011, below ROUGE-1&#x27;s 0.1487.</p></div></li></ol>
 </div></section>
-
-<section class="block" id="habit"><div class="wrap"><div class="eyebrow"><span class="num">04</span>The method, here</div>
+<section class="block" id="remeasured"><div class="wrap"><div class="eyebrow"><span class="num">04</span>Re-measured</div><h2>These judges, put to work.</h2><div class="prose"><p>Two of these judges, gemma_l (τ 0.54) and qwen_s (0.52), re-measured the summarisation experiment&#x27;s summaries, where its own metric agrees with the experts at τ 0.10. They re-ranked the field; one reader&#x27;s blind check of 20 pairs went the other way, not significantly. On crowd ratings of 2022 LLM summaries (Zhang et al.) the same judges track people better than one rater does on coherence and relevance, trail on faithfulness, and do not rank the systems the same way; on the summarisation experiment&#x27;s own outputs neither is confirmed.</p></div><div class="btns"><a class="btn" href="judging.html">What re-measuring changed, and what it teaches →</a></div></div></section>
+<section class="block" id="habit"><div class="wrap"><div class="eyebrow"><span class="num">05</span>The method, here</div>
   <div class="lesson"><h2>Silver is not gold.</h2><p>The best of the 24 judges agrees with the experts at τ 0.5398 — better than any free scorer measured, and, against two experts, 93% of one expert's agreement with the other two. An LLM judge is a silver reference. This experiment is what checking one against a gold set looks like.</p><a class="btn" href="../method.html#gold">This habit, in the method →</a></div>
 </div></section>
-<section class="block" id="reproduce"><div class="wrap"><div class="eyebrow"><span class="num">05</span>Reproduce it</div>
+<section class="block" id="reproduce"><div class="wrap"><div class="eyebrow"><span class="num">06</span>Reproduce it</div>
   <h2>Check it yourself.</h2>
   <div class="cols">
     <div class="prose">
@@ -509,7 +509,7 @@ $0.2973 per 1,000 items"/><circle cx="328.8" cy="70.5" r="11" class="ring"/><tex
       <a href="mailto:marko@humancopilot.eu" data-umami-event="cta-email" data-umami-event-position="footer">Email</a>
     </nav>
   </div>
-  <div class="foot-legal"><span>© Marko Dragoljevic · eval-harness · <a href="../docs/DATA/">Data &amp; licences</a></span><span>Cookieless, self-hosted analytics (Umami). No cookies, no tracking across sites. <a href="../privacy.html">Privacy</a></span></div>
+  <div class="foot-legal"><span>© Marko Dragoljevic · eval-harness · <a href="../docs/DATA/">Data &amp; licences</a> · <a href="../releases.html">Release notes</a></span><span>Cookieless, self-hosted analytics (Umami). No cookies, no tracking across sites. <a href="../privacy.html">Privacy</a></span></div>
 </div></footer>
 <div id="tip" role="tooltip"></div>
 <script>

@@ -55,6 +55,13 @@ NODES = [
      "The run future changes are measured against, recorded with why. Superseded, never "
      "edited — in six months, “why is this the baseline?” has an answer.",
      "data/baselines/", 'make run-promote RUN=… REASON="…"', "9-promote-a-baseline"),
+    ("remeasure", "Re-measure", "optional · later",
+     "The same frozen outputs, measured again without re-running an arm: new gold or a new "
+     "code scorer for $0, or LLM judges, billed and capped, that the harness refuses until "
+     "they are validated against people. Written beside the originals, never over them; the "
+     "primary metric changes only by a recorded decision.",
+     "data/runs-rescored/ · data/runs-judged/&lt;scorer&gt;/",
+     "make judge-score DATASET_ID=… SCORER=…", "10-optional-re-measure-with-an-llm-judge"),
 ]
 
 
@@ -79,7 +86,7 @@ def lifecycle(interactive: bool = False) -> str:
     h = 12 + len(NODES) * step
     return (f'<svg class="lc" viewBox="0 0 {w} {h}" role="img" aria-label="The evaluation '
             f'lifecycle: sources, dataset, materialized copy, references, arms, runs, tests, '
-            f'baseline">{"".join(parts)}</svg>')
+            f'baseline, and an optional re-measurement">{"".join(parts)}</svg>')
 
 
 def lifecycle_panels(H) -> str:
@@ -139,7 +146,7 @@ def chapters(H, f: dict) -> list:
                   "a changed input fails loudly instead of silently measuring different bytes"),
          "yours": "Your dataset is a set of real inputs, frozen. Sample it on purpose — by date, "
                   "by customer, by difficulty — and write down what it covers."},
-        {"id": "gold", "nodes": "references", "kicker": "Ground truth",
+        {"id": "gold", "nodes": "references remeasure", "kicker": "Ground truth",
          "title": "Silver is not gold.",
          "short": "A model's answers rank; a person's answers judge.",
          "story": ("<p>" + H.q("In the tutorial, the system that wrote the silver references "
@@ -147,20 +154,32 @@ def chapters(H, f: dict) -> list:
                    "summaries a person wrote, it falls to second — and no arm can be told apart "
                    "from any other (p = 0.2124).", GUIDE) + "</p>"
                    "<p>" + H.q("On AG News, the lead of the three fine-tunes is concentrated in 17 "
-                   "items the hosted field mostly gets wrong.", CLASS)
-                   + " Read by one person, about half are a learnable convention and half "
-                   "mislabels. Disputed gold is a finding, not noise.</p>"
+                   "items the hosted field mostly gets wrong. Adjudicated by topic by one reader "
+                   "shown the hosted answer, the gold was wrong on all 17, and on that gold every "
+                   "hosted LLM scores above every fine-tune.", CLASS)
+                   + " The dataset's own gold stays primary; the adjudicated one sits beside it. "
+                   "Disputed gold is a finding, not noise.</p>"
                    "<p>" + H.q("An AI judge is silver too, and SummEval measures how good: scored "
                    "against the mean of two experts, as one expert is against the other two, the "
                    "best judges reach 93% of a human's agreement (the best of 24, chosen on the same "
                    "articles; 92% held out). The experts are not noiseless "
                    "either: 41 of 44 groups of word-for-word identical summaries got different "
-                   "expert scores.", JUDGE) + " Close to a person is not the same as a person.</p>"),
+                   "expert scores.", JUDGE) + " Close to a person is not the same as a person.</p>"
+                   "<p>" + H.q("Two of those judges re-measured the summarisation experiment and "
+                   "ranked every hosted LLM above every BART model. The one blind human check on "
+                   "those outputs, one non-expert reader on 20 pairs, preferred bart_l 14 to 6.", SUMM)
+                   + " That check is weak too (p = 0.115, truncated articles), so neither is "
+                   "confirmed on those outputs; on crowd ratings of 2022 LLM summaries the judges track "
+                   "people better than one rater does on coherence and relevance, not on faithfulness, "
+                   "and not system by system. "
+                   "So the harness refuses a judge until it is validated, and the "
+                   "summarisation experiment still ranks by coverage.</p>"),
          "habit": "Silver gets you started; gold tells you the truth. Write a small gold set "
                   "early, check silver — and any AI judge — against it, and read every item "
                   "where strong systems agree against the gold.",
-         "tool": ("make rescore REFERENCE=gold/… · make silver-calibrate",
-                  "re-score old runs against new gold for $0, then measure how far silver drifts"),
+         "tool": ("make rescore REFERENCE=gold/… · make silver-calibrate · make judge-score",
+                  "re-score old runs against new gold for $0, measure how far silver drifts, "
+                  "re-measure with judges you have validated"),
          "yours": "A small set of answers written by someone who knows the domain is worth more "
                   "than a large set a model generated: it is the only one that can tell you the "
                   "model is wrong."},
@@ -307,7 +326,9 @@ def patterns(H, f: dict) -> list:
              "the way you do. On SummEval the best judges reached 93% of an expert's agreement "
              "(the best of 24, chosen on the same articles; 92% held out), and an open-weight one at 1/23 of the "
              "leader's price was not separated from it.", JUDGE)
-         + " Pin the provider: one judge, run once on each of two providers, scored 0.0113 apart and billed 3.7× apart.",
+         + " Pin the provider: one judge, run once on each of two providers, scored 0.0113 apart and billed 3.7× apart."
+         " Once validated, a judge can re-measure your arms' stored outputs (make judge-score), "
+         "on any text task you declare; validate it on outputs like the ones it will judge.",
          "summeval-judging", "Kendall τ · human ceiling"),
         ("Summaries and generated text", "arms = generators",
          "Score against references, clip for length so verbosity cannot buy recall, and check "
@@ -345,6 +366,11 @@ STEPS = [
     ("Decide and record", "Promote with a reason that says what the tests showed; validate in CI.",
      'make run-promote RUN=… REASON="leads on gold but separates from no arm"',
      "VALIDATION PASSED", "9-promote-a-baseline"),
+    ("Optional: re-measure with a judge", "LLM judges re-read every arm's stored outputs. The "
+     "harness refuses a judge nobody validated; the tutorial's are fake, so it runs labelled.",
+     "make judge-score DATASET_ID=tickets_v1 SCORER=tickets-judge-v1 ARGS=--unvalidated",
+     "4 scored run(s) -> data/runs-judged/tickets-judge-v1  (6/6 items, unvalidated judge)",
+     "10-optional-re-measure-with-an-llm-judge"),
 ]
 
 
@@ -370,8 +396,8 @@ def use_page(H, f: dict) -> str:
 
 <section class="block" id="lifecycle"><div class="wrap">
   <div class="eyebrow"><span class="num">01</span>The lifecycle</div>
-  <h2>Eight things, one direction.</h2>
-  <p class="lede">Every evaluation here — ours and yours — moves through the same eight artifacts. Pick one to see what it is, where it lives and the command that makes it.</p>
+  <h2>Eight things, one direction, and one optional pass.</h2>
+  <p class="lede">Every evaluation here — ours and yours — moves through the same eight artifacts; re-measuring the stored outputs later is optional. Pick one to see what it is, where it lives and the command that makes it.</p>
   <div class="lc-explorer">
     <div class="lc-map">{lifecycle(interactive=True)}</div>
     <div class="lc-panels">{lifecycle_panels(H)}</div>
@@ -387,7 +413,7 @@ def use_page(H, f: dict) -> str:
 
 <section class="block" id="steps"><div class="wrap">
   <div class="eyebrow"><span class="num">03</span>Step by step</div>
-  <h2>Seven steps, on a real example.</h2>
+  <h2>Seven steps and an optional eighth, on a real example.</h2>
   <p class="lede">The tutorial kit ships six support tickets and summaries a person wrote. Every output below is what the command printed.</p>
   <ol class="findings steps">{steps}</ol>
 </div></section>
@@ -409,6 +435,7 @@ def use_page(H, f: dict) -> str:
       <li>Paired and Holm-corrected tests — separated or tied.</li>
       <li>Billed cost and latency beside quality.</li>
       <li>Re-scoring from stored outputs for $0; validation for CI; baselines with reasons.</li>
+      <li>Optional LLM judges that re-measure stored outputs, refused until validated against people.</li>
     </ul></div>
     <div class="byo-col check"><h3>Start on Monday</h3><ul>
       <li>Write the question as a decision: <i>can ticket routing move to the cheaper model?</i></li>
@@ -439,7 +466,8 @@ show('dataset');}})();
 </script>"""
     return H.page("Use it on your problem — eval-harness",
                   "Apply the method to your own system: the evaluation lifecycle, patterns for "
-                  "common questions, seven steps on a real example, and what you write vs. what "
+                  "common questions, seven steps and an optional judging step on a real example, "
+                  "and what you write vs. what "
                   "the harness gives you.", body + H.author("use"), here="use")
 
 

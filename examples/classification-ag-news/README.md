@@ -9,8 +9,8 @@ model, a hand-written rule set, and a constant.
 > a hosted field of 0.835–0.910. Only `bert_base_ta` is separated from 26 of the 29 other
 > arms (not from the other two fine-tunes or `anthropic_m`); `bert_mini` is separated from 16
 > and not from `anthropic_l`. The lead is concentrated in 17 items the hosted field mostly
-> gets wrong; on one rater's reading about half are a learnable convention and half
-> mislabels. As run here: hosted
+> gets wrong; adjudicated by topic by one reader shown the hosted answer, the gold was wrong
+> on all 17, and on that gold every hosted LLM scores above every fine-tune. As run here: hosted
 > models zero-shot, one prompt, no label definitions or examples, temperature 0, reasoning
 > off, no provider pinned. See
 > [`REPORT_CLASSIFICATION.md`](../../research/REPORT_CLASSIFICATION.md) §3.1 and §3.4. The

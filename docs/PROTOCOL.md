@@ -151,7 +151,8 @@ they compare them.
 - **Sample.** `dbpedia_280`: 20 per class from a seeded per-class permutation (seed
   20260927). Dev slice `dbpedia_56`, nested.
 - **Reference.** Dataset labels — gold; three items' gold is disputed by 24–25 of 26 arms
-  and analysed apart (REPORT_CLASSIFICATION §3.4); one rater's reading, unadjudicated.
+  and analysed apart (REPORT_CLASSIFICATION §3.4); adjudicated by one reader shown the hosted answer, the gold was
+  wrong on all three. The dataset's own gold stays primary.
 - **Metric.** Accuracy — the standard one. The benchmark is saturated: the top group is
   separated from the rest, not ordered within itself.
 - **Reproduce.** `examples/classification-dbpedia-14/README.md`; calibration: `calibrate.py`.

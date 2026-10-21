@@ -332,7 +332,9 @@ Worked example: `examples/classification-ag-news/adjudication.json`.
 When a better instrument exists than the metric the experiment ranks by (SummEval showed
 `coverage` agrees with experts at τ 0.10, a validated LLM judge at 0.52), measure the frozen
 outputs again, billed and capped. Design: [ADR-0001](../../docs/adr/ADR-0001-judge-scorers.md).
-This is not `make judge`, the older judge panel.
+This is not `make judge`, the older judge panel. **It is optional:** nothing else in the
+harness needs it, and it never changes a committed run. To see the whole pass offline and
+for $0 first, run the tutorial's [step 10](../../docs/GUIDE.md).
 
 ```bash
 make judge-score DATASET_ID=cnn_dailymail_200 SCORER=judge-summ-v1 ARGS=--dry-run   # free
@@ -343,15 +345,35 @@ EVAL_RUNS_DIR=data/runs-judged/judge-summ-v1 make leaderboard DATASET_ID=cnn_dai
 From an installed package the same pass is `evh judge-score --dataset-id <id> --scorer <id>`
 (same flags), in a project that has only its own data directory, scorer, prompt and runs:
 the judging code, the prompt builder and the judge client are all in `evaluation_harness`.
-`validate_judge_goyal.py`, which checks a scorer against the Goyal et al. human preferences
-on 2022 CNN articles, stays a script of this repository: it is specific to that download
-and to the news-summary judge, so it is not an `evh` command.
+`validate_judge_goyal.py` and `validate_judge_zhang.py`, which check a scorer against the Goyal
+et al. human preferences and the Zhang et al. crowd ratings (CNN/DailyMail articles), stay
+scripts of this repository: each is specific to its download
+and to the news-summary judge, so neither is an `evh` command.
 
 1. **The scorer** is `data/scorers/<id>.yaml`: two or more judges from different vendor
-   families, the prompt, the protocol, a `validation` block and a cost cap. The command
-   refuses a scorer whose validation does not name a committed run with the stated value and
-   the judge's model. `ARGS=--unvalidated` overrides it and labels every number
-   "unvalidated judge" (the primary metric becomes `judge_score_unvalidated`).
+   families, the task, the prompt, the protocol, a `validation` block and a cost cap. The
+   command refuses a scorer whose validation does not name a committed run with the stated
+   value and the judge's model. `ARGS=--unvalidated` overrides it and labels every number
+   "unvalidated judge" (the primary metric becomes `judge_score_unvalidated`). Templates:
+   [`judge-summ-v1.yaml`](../data/scorers/judge-summ-v1.yaml), real and validated, and
+   [`tickets-judge-v1.yaml`](../tutorial/scorers/tickets-judge-v1.yaml), fake, with a `task`.
+   - **`task`** says what is judged: `source_label` (what each item is, e.g. `TICKET`,
+     `QUERY`), `output_label` (what the arms wrote, e.g. `SUMMARIES`, `ANSWERS`),
+     `dimensions` (the names the judge must score, each a JSON key in its reply) and `scale`
+     (`[low, high]`, whole numbers; a score outside it makes the reply unparsed). The judge receives the
+     prompt, then `<source_label>:` and the item, then `<output_label>:` and the outputs
+     numbered 1..n. Leave `task` out and it is SummEval's news-summary task (`ARTICLE`,
+     `SUMMARIES`, coherence/consistency/fluency/relevance, 1-5), which the committed
+     summarisation scorer uses. A declared `task` is hashed into the judging set's id.
+   - **The prompt** writes `{n}` wherever the number of outputs in a call goes ("rate each of
+     the {n} numbered answers", "a list of {n} integers"); the pass replaces it per call. It
+     must ask for JSON with one list of n numbers per dimension. A prompt without `{n}` is
+     taken to be SummEval's, whose own count phrases are rewritten instead; a prompt with both
+     is refused, since its fixed phrases would keep saying 16.
+   - **Which arms.** Every arm on the dataset (its latest run per `config_id`) unless the
+     scorer sets `arms_match` (a `config_id` substring), or `ARGS="--match … "` or
+     `--arms a,b,c` narrows it. A subset is its own judging set. If the arms mix config versions
+     (`_v1` and `_v2` of one arm), the pass warns: each version is judged as its own arm.
    - **`prompt.file`** is looked up in this order, first hit wins: an absolute path as
      written; the project root (`EVAL_HOME`, else the harness checkout); the directory of
      the scorer file itself; and, only in a checkout of this repository, the repository root,
@@ -370,15 +392,23 @@ and to the news-summary judge, so it is not an `evh` command.
      so they only run with `--unvalidated`.
 2. **Dry-run first.** It builds the judging set and prints calls, tokens and estimated cost
    per judge, and calls nothing.
-3. **The judging set** is one item = the article plus every arm's primary output, arm ids
+3. **The judging set** is one item = the source plus every arm's primary output, arm ids
    hidden, order shuffled per item by the seed. Its id pins the arm set, and its manifest is
    frozen in `data/judging-sets/`. Add an arm and you get a new set and a new pass.
 4. **Blocks.** SummEval validated 16 summaries per call, so an item's arms are judged in the
-   fewest blocks of at most `outputs_per_call`: 29 arms are 15 + 14. Scores are absolute
-   1–5 per dimension, so blocks are pooled.
-5. **Verdicts** are stored raw per call in `data/judge-verdicts/`. A rerun skips what is
+   fewest blocks of at most `outputs_per_call`: 29 arms are 15 + 14. Scores are absolute on
+   the task's scale per dimension, so blocks are pooled. Validate at the block size you run.
+5. **Verdicts** are stored per call in `data/judge-verdicts/`. A rerun skips what is
    stored; `ARGS=--no-calls` projects from them for $0. At the cost cap the pass stops and
-   keeps everything bought; raise the cap to continue.
+   keeps everything bought; raise the cap to continue. A reply that does not parse (wrong
+   shape, missing dimension, a score off the scale) is stored and reported as
+   `unparsed reply: …`; an item counts only when every one of its primary blocks parsed. A
+   reply that is not bare JSON scores (a judge reasoning aloud, a reply cut off) or that
+   repeats 8 consecutive words of the item or an output is stored only as its hash, so the
+   source's text is never committed by accident; `validate` V12 checks every committed reply.
+   Real judges do this: on the Zhang et al. validation `gemma_l` left 1 of its 200 replies
+   unparsed and `qwen_s` 2 (`data/judge-validation/judge-summ-v1/zhang2023-cnndm/report.json`).
+   `ARGS="--retry-unparsed"` calls again for those blocks only.
 6. **Read `data/runs-judged/<id>/summary.json` before the leaderboard:** per-judge columns,
    inter-judge agreement, which arms share a judge's family, the position check (a second
    shuffle on a subset) and the noise check (a repeat on a subset). A difference between arms
@@ -386,6 +416,45 @@ and to the news-summary judge, so it is not an `evh` command.
 7. **Record the decision.** Changing an experiment's primary metric is a recorded decision
    with a reason; the old metric stays beside the new one (CONCEPTS: Re-measuring a frozen
    experiment).
+
+### Validating a judge: what the gate needs
+
+A validation is an ordinary experiment whose **arms are the judges** and whose items carry
+human ratings. Each judge runs as an arm (same `model`, `temperature`, `reasoning`,
+`max_tokens`, `provider` and prompt file as in the scorer) over items people have already
+rated, and its score is how well it agrees with them: rank correlation for ratings, accuracy
+for preferences. The scorer's `validation` block then names those runs:
+
+```yaml
+validation:
+  experiment: <the human-rated dataset_id>
+  metric: tau                      # the validation run's primary metric
+  what: mean Kendall tau-b against the mean of three expert annotators
+  differs_from_this_use: <how the rated outputs differ from the ones you will judge>
+  runs:
+    - {judge: gemma_l, run: <run_id>, value: 0.538416, min_metric: 0.371714}
+```
+
+The gate reads each named run's `metrics.json` and refuses unless the metric equals
+`value`, is at least `min_metric` (set it to the best free scorer's score on the same data,
+so a judge must beat it), and the run's model, params, prompt file and prompt sha256 are the
+scorer's. The worked example is
+[`examples/summeval-judging/`](../../examples/summeval-judging/README.md): its adapter turns
+a judge's JSON reply into tau against the experts, and `judge-summ-v1` cites two of its runs.
+
+**Validate on outputs like the ones you will judge.** In this repository, judges validated
+on SummEval's 2019 summaries ranked modern LLM summaries above a fine-tuned BART; one blind
+human check (one non-expert reader, 20 pairs, truncated articles) preferred the BART 14 to 6,
+p = 0.115 (REPORT_SUMMARIZATION §3.8). Neither result is confirmed on those outputs. Larger,
+dearer judges did not change it: the two highest-scoring SummEval judges from vendors not in the
+first pair, with the same prompt and reasoning off, at 41× the price, gave the same verdict
+(`judge-summ-v2`). On crowd ratings of 2022 LLM summaries (Zhang et al. 2024,
+`validate_judge_zhang.py`) all four judges track people better than one rater does on coherence and
+relevance (not on faithfulness), while
+deviating from them system by system in both directions. The gate checks that a validation exists and is
+current, not that it transfers. `differs_from_this_use` is where
+you say how far it has to travel, and the honest next step is a small human check on your
+own outputs.
 
 ---
 

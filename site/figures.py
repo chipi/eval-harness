@@ -179,6 +179,109 @@ def dailymail() -> list:
     return out
 
 
+def _ranks(scores: dict) -> dict:
+    """arm -> 1-based position by score, highest first (ties by name, as the tables print)."""
+    return {a: i for i, a in enumerate(sorted(scores, key=lambda a: (-scores[a], a)), 1)}
+
+
+def adjudicated(slug: str, exps: list) -> dict:
+    """Accuracy per arm on the dataset's gold (v1) and on the adjudicated gold (v2), from the
+    committed predictions and the committed adjudication record: an adjudicated item's
+    verdict replaces its gold, every other item keeps the correctness the run recorded. The
+    same rule check_report_claims verifies the report's table with."""
+    x = next(e for e in exps if e["slug"] == slug)
+    adj = json.loads((ROOT / "examples" / x["example"] / "adjudication.json").read_text())
+    verdict = {i["item_id"]: i["adjudicated"] for i in adj["items"]}
+    v1, v2 = {}, {}
+    for arm, d in _runs(x["base"], x["dataset"], x["prefix"], x["suffix"]).items():
+        rows = [json.loads(line) for line in (d / "predictions.jsonl").open() if line.strip()]
+        v1[arm] = sum(r["correct"] for r in rows) / len(rows)
+        v2[arm] = sum((r["_meta"].get("predicted") == verdict[r["item_id"]])
+                      if r["item_id"] in verdict else r["correct"] for r in rows) / len(rows)
+    kind = {a["arm"]: a["kind"] for a in x["arms"]}
+    wts = {a["arm"]: a["weights"] for a in x["arms"]}
+    r1, r2 = _ranks(v1), _ranks(v2)
+    return {"arms": [{"arm": a, "kind": kind[a], "weights": wts[a], "v1": v1[a], "v2": v2[a], "r1": r1[a],
+                      "r2": r2[a]} for a in sorted(v1, key=lambda a: r1[a])],
+            "n_items": len(adj["items"]),
+            "changed": sum(i["verdict"] == "gold wrong" for i in adj["items"]),
+            "n_arms": len(v1)}
+
+
+def judged_summarisation(exps: list, scorer: str = "") -> dict:
+    """The summarisation arms on coverage (the primary) and on a judge scorer's score,
+    projected from its stored verdicts exactly as judge_figures does, with
+    judge_figures' own figures (human check, Goyal, pointwise, agreement)."""
+    sys.path.insert(0, str(HARNESS / "scripts"))
+    import judge_figures as jf  # noqa: PLC0415
+    import judge_score as js  # noqa: PLC0415
+    scorer = scorer or jf.SCORER
+    jfig = jf.compute(scorer)
+    m = json.loads(next((DATA / "judging-sets").glob(jf.SET_GLOB)).read_text())
+    sc = js.load_scorer(DATA / "scorers" / f"{scorer}.yaml")
+    vdir = DATA / "judge-verdicts" / scorer / m["judging_set_id"]
+    ids = [i["item_id"] for i in m["items"]]
+    scores = js.load_scores(m, sc, vdir)
+    proj = js.project(sc, scores, ids)
+    summ = js.summarise(m, sc, m["arms"], scores, proj, {}, "recomputed", True, vdir)
+    files = [json.loads(p.read_text()) for p in vdir.glob("*/*.json")]
+    hc = json.loads((ROOT / "examples" / "summarization-cnn-dailymail" / "human_check_judge.json").read_text())
+    pairs = [p for p in hc["pairs"] if p["item_id"] in proj]
+    ctrl = summ["controls"]
+    x = next(e for e in exps if e["slug"] == "summarization")
+    judged = {a["config_id"][len(x["prefix"]):-len(x["suffix"])]:
+              sum(proj[i][a["config_id"]]["_mean"] for i in proj) / len(proj) for a in m["arms"]}
+    cov = {a["arm"]: a["score"] for a in x["arms"]}
+    kind = {a["arm"]: a["kind"] for a in x["arms"]}
+    wts = {a["arm"]: a["weights"] for a in x["arms"]}
+    if set(cov) != set(judged):
+        raise SystemExit(f"judged arms differ from the summarisation arms: {set(cov) ^ set(judged)}")
+    rc, rj = _ranks(cov), _ranks(judged)
+    return {"arms": [{"arm": a, "kind": kind[a], "weights": wts[a], "v1": cov[a], "v2": judged[a], "r1": rc[a],
+                      "r2": rj[a]} for a in sorted(cov, key=lambda a: rc[a])],
+            "n_arms": len(cov), "items_scored": len(proj), "items_total": len(ids), "fig": jfig,
+            "scorer": scorer, "judges": [j["id"] for j in sc["judges"]],
+            "calls": len(files), "billed_usd": round(sum(f.get("cost_usd") or 0.0 for f in files), 4),
+            "unparsed": sum(1 for f in files if f.get("scores") is None),
+            "spearman": next(iter(summ["judge_agreement"].values()))["arm_mean_spearman"],
+            "position": [ctrl[j]["position"]["mean_abs_diff"] for j in ctrl],
+            "noise": [ctrl[j]["noise"]["mean_abs_diff"] for j in ctrl],
+            "self_family_gap": {j: v["own_minus_others"] for j, v in summ["self_family_gap"].items()},
+            "human_pairs": len(pairs),
+            "prefers_deepseek_m": sum(proj[p["item_id"]]["cnn_deepseek_m_n200_v1"]["_mean"]
+                                      > proj[p["item_id"]]["cnn_bart_l_n200_v1"]["_mean"] for p in pairs),
+            "prefers_bart_l": sum(proj[p["item_id"]]["cnn_deepseek_m_n200_v1"]["_mean"]
+                                  < proj[p["item_id"]]["cnn_bart_l_n200_v1"]["_mean"] for p in pairs)}
+
+
+def validation_spend() -> float:
+    """Billed for checking the judges against published human ratings (Goyal et al., Zhang et
+    al.), from the committed records: spent beside the re-measurement, not part of it."""
+    files = [p for p in (DATA / "judge-validation").glob("*/*/*/*.json")]
+    return round(sum(json.loads(p.read_text()).get("cost_usd") or 0.0 for p in files), 4)
+
+
+def zhang_figures() -> dict:
+    """Both scorers' judges against Zhang et al.'s crowd ratings of LLM-era summaries, through
+    judge_figures.zhang: recomputed from the stored records when the ratings are downloaded,
+    the committed report.json (checked against the records) when not."""
+    sys.path.insert(0, str(HARNESS / "scripts"))
+    import judge_figures as jf  # noqa: PLC0415
+    return {s: jf.zhang(s) for s in ("judge-summ-v1", "judge-summ-v2")}
+
+
+def instrument_check(exps: list) -> dict:
+    """How well each instrument agrees with SummEval's experts (mean Kendall tau): the
+    summarisation experiment's own metric, ROUGE-1, the best free scorer, the best judge."""
+    x = next(e for e in exps if e["slug"] == "summeval")
+    s = {a["arm"]: a["score"] for a in x["arms"]}
+    local = [a for a in x["arms"] if a["kind"] == "local"]
+    return {"coverage": s["coverage"], "rouge1": s["rouge1"], "best_judge": x["top"]["arm"],
+            "best_judge_tau": x["top"]["score"], "best_free": max(local, key=lambda a: a["score"])["arm"],
+            "best_free_tau": max(a["score"] for a in local),
+            "gemma_l": s["gemma_l"], "qwen_s": s["qwen_s"]}
+
+
 def compute() -> dict:
     weights = _weights()
     exps = [experiment(e, weights) for e in EXPERIMENTS]
@@ -209,6 +312,10 @@ def compute() -> dict:
         "calibration_inside": sum(abs(r["delta"]) <= r["ci"] for r in cal),
         "dailymail": dailymail(),
         "hardware": hardware(),
+        "remeasure": {"ag": adjudicated("ag-news", exps), "db": adjudicated("dbpedia", exps),
+                      "summ": judged_summarisation(exps), "summeval": instrument_check(exps),
+                      "summ_v2": judged_summarisation(exps, "judge-summ-v2"), "zhang": zhang_figures(),
+                      "validation_usd": validation_spend()},
     }
 
 

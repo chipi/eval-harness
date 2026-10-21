@@ -72,8 +72,12 @@ data/materialized/   derived, regenerable, disposable
 data/references/
       ↓  make experiment-run          → scores + cost + speed + build provenance
 data/runs/
-      ↓  make run-compare / make judge
+      ↓  make run-compare / make leaderboard
 data/baselines/      make run-promote — the number future work is judged against
+
+optional, later, from the same frozen outputs (the originals are never touched):
+data/runs-rescored/  make rescore        new reference or new code scorer, $0
+data/runs-judged/    make judge-score    a validated LLM judge, billed and capped
 ```
 
 `make validate` checks the whole tree — thirteen integrity rules, exits non-zero, so
@@ -166,6 +170,24 @@ how it was later measured.
 This exists because a scorer bug survived two full sweeps: checking it would have cost a
 third. When verifying a measurement is expensive, it does not get verified.
 
+The same frozen outputs can be measured again in three ways, and none of them is required:
+
+| kind | what changes | cost | command |
+| --- | --- | --- | --- |
+| new reference | what an output is scored against (gold a person adjudicated) | $0 | `make rescore REFERENCE=gold/<id>` |
+| new code scorer | the metric, as code | $0 | `make rescore` |
+| judge scorer | the metric, delivered by LLM judges validated against people | billed, capped | `make judge-score` / `evh judge-score` |
+
+A **judge scorer** (`data/scorers/<id>.yaml`) names two or more judges from different vendor
+families, the task they score, the prompt, and the runs that validated each judge against
+human ratings. The command refuses a judge nobody validated (`--unvalidated` runs it with
+every number labelled), freezes a blinded, shuffled judging set, stores every verdict so a
+rerun costs $0, and writes scored runs that `leaderboard`, `pair-test` and `family-test`
+read unchanged. An experiment's primary metric changes only by a recorded decision.
+Walkthrough: [GUIDE step 10](../docs/GUIDE.md);
+reference: [RUNBOOK §12](docs/RUNBOOK.md#12-re-measure-with-a-validated-judge); why:
+[ADR-0001](../docs/adr/ADR-0001-judge-scorers.md).
+
 ## Do you trust your reference?
 
 Most of the time there is no gold, so a strong model writes the references — "silver" — and
@@ -222,10 +244,13 @@ how 18 arms of paid results were lost during this harness's own development.
 
 ## The judge panel
 
-The harness this grew around, unchanged. Given many candidate runs: narrow to
-finalists (top-K per stratum + floor + global cap), score each with an LLM
-judge, **abort mid-run** if a cost cap is hit, aggregate to per-dimension means,
-and flag finalists where two judges disagree.
+The harness this grew around, unchanged, and not the same thing as `make judge-score`
+above: the panel judges finalists one at a time and keeps no verdicts; the judge scorer
+judges every arm, listwise and blind, behind a validation gate, and stores every verdict.
+Given many candidate runs, the panel narrows to
+finalists (top-K per stratum + floor + global cap), scores each with an LLM
+judge, **aborts mid-run** if a cost cap is hit, aggregates to per-dimension means,
+and flags finalists where two judges disagree.
 
 ```bash
 make judge                                  # FakeJudge — no API key
@@ -256,6 +281,8 @@ partial results preserved so a blown budget still yields a usable report.
 | `scripts/validate_tree.py` | thirteen integrity checks |
 | `scripts/list_runs.py` | what runs and baselines exist |
 | `schemas/` | the three contracts: dataset, metrics, baseline |
+| `scripts/rescore.py` | re-score stored outputs for a new reference or scorer, $0 |
+| `scripts/judge_score.py`, `scripts/judging.py` | the judge scorer: gate, judging set, verdicts, projection; prompt, parser, judge client |
 | `runner.py`, `judges.py` | the judge panel |
 
 Bundled providers: `echo` (no network), `anthropic`, and anything

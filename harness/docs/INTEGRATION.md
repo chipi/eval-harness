@@ -137,6 +137,13 @@ Most projects do not have it. The sequence that works:
 Cost control: `ARGS="--limit 10"`. Ten references is enough to rank four arms, and you
 can extend later without re-authoring what you have.
 
+4. **Or score without references at all**, with LLM judges that read each item and rate
+   every arm's output (`make judge-score`, optional). A judge is a model's opinion too, so
+   the harness refuses one until runs show it agrees with human ratings on outputs like
+   yours; until then it runs only as `--unvalidated`, labelled. The judge's task (what an
+   item is, what the outputs are, which dimensions, which scale) is declared in the scorer,
+   so it is not limited to summaries. [RUNBOOK §12](RUNBOOK.md#12-re-measure-with-a-validated-judge).
+
 ---
 
 ## What you get, in exchange for that one function
@@ -149,6 +156,7 @@ can extend later without re-authoring what you have.
 | cost and speed | per item and totalled, alongside quality |
 | refusals | cross-dataset comparisons, dirty-tree promotions and unreasoned baselines are blocked, not warned about |
 | integrity | `make validate` fails CI on a tree that has drifted |
+| re-measurement | stored outputs scored again for a new reference or scorer at $0, or by validated LLM judges, without re-running an arm |
 | a judge panel | when the cheap metric is biased and you need an LLM to adjudicate |
 
 ---

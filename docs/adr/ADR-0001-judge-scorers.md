@@ -67,6 +67,9 @@ recorded decision to use it. The rest of this ADR is about the third.
 1. **The scorer artifact.** `data/scorers/<scorer_id>.yaml` declares:
    - `kind: judge` (code scorers stay in the adapter and `rescore`);
    - the judge models, each a full arm-style model spec;
+   - the task: what an item is, what the outputs are, the dimensions and the scale
+     (`task`; without it, SummEval's news-summary task), so judging is not tied to one kind
+     of output;
    - the prompt (hashed) and the protocol: listwise, the number of outputs per call, blinding
      and the order seed;
    - a `validation` block: the experiment, metric and value that justify the judge
@@ -111,13 +114,23 @@ recorded decision to use it. The rest of this ADR is about the third.
    baseline promotion is. The old metric stays, as history, beside the new one.
 
 The first use is the summarisation experiment, re-measured with judges validated on SummEval.
-That first use showed why validation must be on data like the data being judged. Validated
+That first use showed why validation should be on data like the data being judged. Validated
 on 2019-era summaries, the judges ranked every LLM above every BART model. The one human check
-on these outputs disagreed (one reader, 14 to 6 for BART). On a different modern pair (GPT-3
-against BRIO) the judges matched the annotators' agreement with each other, but preferred the
-LLM summary more often than the annotators did. A validation does not transfer just because
-the judge is the same; calibrate on comparable human data before a judged score replaces a
-primary.
+on these outputs went the other way (one non-expert reader, 20 pairs on truncated articles,
+14 to 6 for BART, p = 0.115), which confirms neither. On three 2022 systems (GPT-3, BRIO and
+T0) the judges matched the annotators' agreement with each other, and preferred the LLM
+summary to BRIO's more often than the annotators did, within noise. Neither shows whether the
+validation transfers to this experiment's outputs; calibrate on comparable human data
+before a judged score replaces a primary. Larger, dearer judges did not settle it either: the
+two highest-scoring SummEval judges from vendors not in the first pair (`judge-summ-v2`, the
+same prompt, reasoning off, at 41× the cost) reached the same verdict and the same 20-to-0
+preference on the human-check pairs. Checked against crowd ratings of LLM-era summaries (Zhang
+et al. 2024), all four judges track the raters better than one rater does on coherence and relevance
+(they trail one on faithfulness) and, by mean coherence and relevance, rank a BART-based
+fine-tune first or second of 19, so they show no blanket preference for LLM-written summaries;
+they still deviate from the raters system by system in both directions (the reference
+highlights 3rd to 6th against the raters' 16th). This experiment's own outputs are still
+unchecked by people beyond the one reader.
 The second is SciFact. Its relevance labels are incomplete: 227 judgments cover 200 queries,
 so a relevant but unlabelled abstract ranked first counts against an arm. A judge can label
 those abstracts, but no judge here has been validated on scientific relevance. That run goes
@@ -142,9 +155,9 @@ the same way but is out of scope here.
   judging pass, a new version, not an append. The arm set is pinned in the judging set's id
   for this reason.
 - **The validation transfers only partly.** SummEval validated 16 summaries per call, from
-  2019-era systems; summarisation has 29 per article, all modern. The report must state the
-  difference. Choosing how many outputs per call (all 29, or blocks of 16) is an open
-  parameter, decided and recorded in the first scorer.
+  2019-era systems; summarisation has 29 per article: 24 current hosted LLMs, four BART models
+  and LEAD-3. The report must state the difference. How many outputs go in one call was
+  decided in the first scorer: blocks of at most 16, so 29 arms are 15 + 14.
 - Judging costs money and adds a noise source. It has a cost cap, and its noise is measured.
 - One more artifact type and one more command to learn.
 
@@ -170,5 +183,7 @@ the same way but is out of scope here.
 - **One judge.** This is cheaper, but it leaves self-preference unmeasured, and the
   reference-writing result shows that preference is large. Rejected.
 - **Human scoring of the summarisation outputs.** This is the gold standard, but no budget
-  exists for 200 × 29 summaries. A small human slice to check the judges on this data is a
-  natural follow-up. Deferred.
+  exists for 200 × 29 summaries. A small human slice to check the judges on this data was
+  done on 2026-10-20: one reader, 20 blind `bart_l`/`deepseek_m` pairs on truncated articles
+  (`examples/summarization-cnn-dailymail/human_check_judge.json`). A larger check, several
+  readers on full articles, is still open.

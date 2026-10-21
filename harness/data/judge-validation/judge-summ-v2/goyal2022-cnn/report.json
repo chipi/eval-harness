@@ -1,0 +1,1524 @@
+{
+ "source": "Goyal, Li & Durrett 2022, cnn_human.json (CC BY 4.0)",
+ "scorer": "judge-summ-v2",
+ "articles": 100,
+ "judges": {
+  "openai_l": {
+   "best_pick_agreement": "35/82",
+   "judge_gpt3_over_brio": 61,
+   "judge_brio_over_gpt3": 26,
+   "human_gpt3_over_brio": 168,
+   "human_brio_over_gpt3": 106,
+   "unparsed": 0,
+   "billed_usd": 0.2717,
+   "best_pick_partial_credit": {
+    "k": 42.5,
+    "n": 82,
+    "rate": 0.5183,
+    "ci95": [
+     0.4118,
+     0.6232
+    ],
+    "chance": 0.3333,
+    "exact_unique": 35,
+    "tied_with_human_best": 15,
+    "miss": 32,
+    "rule": "1/k when the human majority best is among the judge's k tied top summaries"
+   },
+   "best_pick_per_article": [
+    {
+     "article_id": "0",
+     "human_best": "gpt3",
+     "judge_top": [
+      "t0"
+     ],
+     "credit": 0.0
+    },
+    {
+     "article_id": "1",
+     "human_best": "brio",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 0.0
+    },
+    {
+     "article_id": "2",
+     "human_best": "gpt3",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "3",
+     "human_best": "t0",
+     "judge_top": [
+      "gpt3",
+      "t0"
+     ],
+     "credit": 0.5
+    },
+    {
+     "article_id": "4",
+     "human_best": "brio",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 0.0
+    },
+    {
+     "article_id": "5",
+     "human_best": "gpt3",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "6",
+     "human_best": "gpt3",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "7",
+     "human_best": "gpt3",
+     "judge_top": [
+      "t0"
+     ],
+     "credit": 0.0
+    },
+    {
+     "article_id": "8",
+     "human_best": "brio",
+     "judge_top": [
+      "brio"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "9",
+     "human_best": "gpt3",
+     "judge_top": [
+      "gpt3",
+      "t0"
+     ],
+     "credit": 0.5
+    },
+    {
+     "article_id": "10",
+     "human_best": "brio",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 0.0
+    },
+    {
+     "article_id": "13",
+     "human_best": "brio",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 0.0
+    },
+    {
+     "article_id": "14",
+     "human_best": "t0",
+     "judge_top": [
+      "brio",
+      "gpt3"
+     ],
+     "credit": 0.0
+    },
+    {
+     "article_id": "15",
+     "human_best": "brio",
+     "judge_top": [
+      "gpt3",
+      "t0"
+     ],
+     "credit": 0.0
+    },
+    {
+     "article_id": "16",
+     "human_best": "gpt3",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "17",
+     "human_best": "gpt3",
+     "judge_top": [
+      "brio"
+     ],
+     "credit": 0.0
+    },
+    {
+     "article_id": "18",
+     "human_best": "brio",
+     "judge_top": [
+      "t0"
+     ],
+     "credit": 0.0
+    },
+    {
+     "article_id": "21",
+     "human_best": "gpt3",
+     "judge_top": [
+      "brio"
+     ],
+     "credit": 0.0
+    },
+    {
+     "article_id": "22",
+     "human_best": "gpt3",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "23",
+     "human_best": "gpt3",
+     "judge_top": [
+      "brio",
+      "gpt3"
+     ],
+     "credit": 0.5
+    },
+    {
+     "article_id": "24",
+     "human_best": "gpt3",
+     "judge_top": [
+      "brio",
+      "gpt3"
+     ],
+     "credit": 0.5
+    },
+    {
+     "article_id": "27",
+     "human_best": "brio",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 0.0
+    },
+    {
+     "article_id": "29",
+     "human_best": "brio",
+     "judge_top": [
+      "brio",
+      "gpt3"
+     ],
+     "credit": 0.5
+    },
+    {
+     "article_id": "30",
+     "human_best": "brio",
+     "judge_top": [
+      "brio",
+      "t0"
+     ],
+     "credit": 0.5
+    },
+    {
+     "article_id": "31",
+     "human_best": "brio",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 0.0
+    },
+    {
+     "article_id": "32",
+     "human_best": "t0",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 0.0
+    },
+    {
+     "article_id": "33",
+     "human_best": "gpt3",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "34",
+     "human_best": "gpt3",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "35",
+     "human_best": "gpt3",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "37",
+     "human_best": "gpt3",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "38",
+     "human_best": "gpt3",
+     "judge_top": [
+      "brio"
+     ],
+     "credit": 0.0
+    },
+    {
+     "article_id": "39",
+     "human_best": "t0",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 0.0
+    },
+    {
+     "article_id": "40",
+     "human_best": "gpt3",
+     "judge_top": [
+      "brio",
+      "t0"
+     ],
+     "credit": 0.0
+    },
+    {
+     "article_id": "41",
+     "human_best": "gpt3",
+     "judge_top": [
+      "brio",
+      "gpt3"
+     ],
+     "credit": 0.5
+    },
+    {
+     "article_id": "42",
+     "human_best": "brio",
+     "judge_top": [
+      "t0"
+     ],
+     "credit": 0.0
+    },
+    {
+     "article_id": "43",
+     "human_best": "gpt3",
+     "judge_top": [
+      "t0"
+     ],
+     "credit": 0.0
+    },
+    {
+     "article_id": "44",
+     "human_best": "gpt3",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "45",
+     "human_best": "gpt3",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "46",
+     "human_best": "gpt3",
+     "judge_top": [
+      "t0"
+     ],
+     "credit": 0.0
+    },
+    {
+     "article_id": "47",
+     "human_best": "gpt3",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "48",
+     "human_best": "gpt3",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "50",
+     "human_best": "gpt3",
+     "judge_top": [
+      "t0"
+     ],
+     "credit": 0.0
+    },
+    {
+     "article_id": "51",
+     "human_best": "gpt3",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "52",
+     "human_best": "t0",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 0.0
+    },
+    {
+     "article_id": "53",
+     "human_best": "gpt3",
+     "judge_top": [
+      "brio",
+      "gpt3"
+     ],
+     "credit": 0.5
+    },
+    {
+     "article_id": "54",
+     "human_best": "brio",
+     "judge_top": [
+      "brio"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "55",
+     "human_best": "brio",
+     "judge_top": [
+      "brio",
+      "t0"
+     ],
+     "credit": 0.5
+    },
+    {
+     "article_id": "56",
+     "human_best": "brio",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 0.0
+    },
+    {
+     "article_id": "59",
+     "human_best": "gpt3",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "60",
+     "human_best": "brio",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 0.0
+    },
+    {
+     "article_id": "61",
+     "human_best": "gpt3",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "62",
+     "human_best": "gpt3",
+     "judge_top": [
+      "t0"
+     ],
+     "credit": 0.0
+    },
+    {
+     "article_id": "63",
+     "human_best": "gpt3",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "64",
+     "human_best": "gpt3",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "65",
+     "human_best": "brio",
+     "judge_top": [
+      "brio"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "66",
+     "human_best": "gpt3",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "67",
+     "human_best": "brio",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 0.0
+    },
+    {
+     "article_id": "68",
+     "human_best": "brio",
+     "judge_top": [
+      "brio"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "69",
+     "human_best": "gpt3",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "70",
+     "human_best": "gpt3",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "71",
+     "human_best": "gpt3",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "73",
+     "human_best": "brio",
+     "judge_top": [
+      "brio",
+      "t0"
+     ],
+     "credit": 0.5
+    },
+    {
+     "article_id": "75",
+     "human_best": "gpt3",
+     "judge_top": [
+      "brio"
+     ],
+     "credit": 0.0
+    },
+    {
+     "article_id": "76",
+     "human_best": "gpt3",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "77",
+     "human_best": "t0",
+     "judge_top": [
+      "brio",
+      "gpt3"
+     ],
+     "credit": 0.0
+    },
+    {
+     "article_id": "78",
+     "human_best": "brio",
+     "judge_top": [
+      "brio",
+      "gpt3"
+     ],
+     "credit": 0.5
+    },
+    {
+     "article_id": "79",
+     "human_best": "gpt3",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "80",
+     "human_best": "brio",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 0.0
+    },
+    {
+     "article_id": "81",
+     "human_best": "gpt3",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "82",
+     "human_best": "brio",
+     "judge_top": [
+      "brio"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "83",
+     "human_best": "gpt3",
+     "judge_top": [
+      "brio"
+     ],
+     "credit": 0.0
+    },
+    {
+     "article_id": "84",
+     "human_best": "gpt3",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "85",
+     "human_best": "brio",
+     "judge_top": [
+      "brio",
+      "t0"
+     ],
+     "credit": 0.5
+    },
+    {
+     "article_id": "86",
+     "human_best": "t0",
+     "judge_top": [
+      "t0"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "88",
+     "human_best": "brio",
+     "judge_top": [
+      "brio"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "89",
+     "human_best": "gpt3",
+     "judge_top": [
+      "brio",
+      "gpt3"
+     ],
+     "credit": 0.5
+    },
+    {
+     "article_id": "91",
+     "human_best": "gpt3",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "93",
+     "human_best": "brio",
+     "judge_top": [
+      "brio",
+      "t0"
+     ],
+     "credit": 0.5
+    },
+    {
+     "article_id": "95",
+     "human_best": "gpt3",
+     "judge_top": [
+      "brio",
+      "gpt3"
+     ],
+     "credit": 0.5
+    },
+    {
+     "article_id": "96",
+     "human_best": "gpt3",
+     "judge_top": [
+      "brio"
+     ],
+     "credit": 0.0
+    },
+    {
+     "article_id": "97",
+     "human_best": "gpt3",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "99",
+     "human_best": "brio",
+     "judge_top": [
+      "t0"
+     ],
+     "credit": 0.0
+    }
+   ],
+   "best_pick_vs_loo_reference": {
+    "k": 139.6667,
+    "n": 300,
+    "rate": 0.4656,
+    "ci95": [
+     0.4099,
+     0.5221
+    ],
+    "rule": "the judge's top set against the other-two-annotators reference of each (article, held-out annotator) pair; the same pairs as the human baseline"
+   },
+   "pairwise_gpt3_vs_brio_per_article": {
+    "human_preference": "majority of the three annotators' implied orderings (best > unranked > worst), ties skipped",
+    "articles_both_decided": 81,
+    "judge_tied": 13,
+    "human_tied": 8,
+    "agreement": {
+     "k": 52,
+     "n": 81,
+     "rate": 0.642,
+     "ci95": [
+      0.5333,
+      0.7378
+     ]
+    },
+    "judge_prefers_gpt3": {
+     "k": 57,
+     "n": 81,
+     "rate": 0.7037,
+     "ci95": [
+      0.5969,
+      0.7921
+     ]
+    },
+    "human_prefers_gpt3": {
+     "k": 50,
+     "n": 81,
+     "rate": 0.6173,
+     "ci95": [
+      0.5084,
+      0.7155
+     ]
+    }
+   },
+   "records_sha256": "612b3479eeda40dea7d0bcc327082b4bd8dcbe3761d11c93fcaaef3d9ce15611",
+   "records_backfilled": 0,
+   "records_cost_unknown": 0
+  },
+  "anthropic_l": {
+   "best_pick_agreement": "37/82",
+   "judge_gpt3_over_brio": 58,
+   "judge_brio_over_gpt3": 29,
+   "human_gpt3_over_brio": 168,
+   "human_brio_over_gpt3": 106,
+   "unparsed": 0,
+   "billed_usd": 0.9468,
+   "best_pick_partial_credit": {
+    "k": 44.0,
+    "n": 82,
+    "rate": 0.5366,
+    "ci95": [
+     0.4294,
+     0.6404
+    ],
+    "chance": 0.3333,
+    "exact_unique": 37,
+    "tied_with_human_best": 14,
+    "miss": 31,
+    "rule": "1/k when the human majority best is among the judge's k tied top summaries"
+   },
+   "best_pick_per_article": [
+    {
+     "article_id": "0",
+     "human_best": "gpt3",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "1",
+     "human_best": "brio",
+     "judge_top": [
+      "brio",
+      "gpt3"
+     ],
+     "credit": 0.5
+    },
+    {
+     "article_id": "2",
+     "human_best": "gpt3",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "3",
+     "human_best": "t0",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 0.0
+    },
+    {
+     "article_id": "4",
+     "human_best": "brio",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 0.0
+    },
+    {
+     "article_id": "5",
+     "human_best": "gpt3",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "6",
+     "human_best": "gpt3",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "7",
+     "human_best": "gpt3",
+     "judge_top": [
+      "brio",
+      "t0"
+     ],
+     "credit": 0.0
+    },
+    {
+     "article_id": "8",
+     "human_best": "brio",
+     "judge_top": [
+      "brio"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "9",
+     "human_best": "gpt3",
+     "judge_top": [
+      "brio"
+     ],
+     "credit": 0.0
+    },
+    {
+     "article_id": "10",
+     "human_best": "brio",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 0.0
+    },
+    {
+     "article_id": "13",
+     "human_best": "brio",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 0.0
+    },
+    {
+     "article_id": "14",
+     "human_best": "t0",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 0.0
+    },
+    {
+     "article_id": "15",
+     "human_best": "brio",
+     "judge_top": [
+      "t0"
+     ],
+     "credit": 0.0
+    },
+    {
+     "article_id": "16",
+     "human_best": "gpt3",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "17",
+     "human_best": "gpt3",
+     "judge_top": [
+      "brio"
+     ],
+     "credit": 0.0
+    },
+    {
+     "article_id": "18",
+     "human_best": "brio",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 0.0
+    },
+    {
+     "article_id": "21",
+     "human_best": "gpt3",
+     "judge_top": [
+      "brio"
+     ],
+     "credit": 0.0
+    },
+    {
+     "article_id": "22",
+     "human_best": "gpt3",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "23",
+     "human_best": "gpt3",
+     "judge_top": [
+      "brio",
+      "gpt3"
+     ],
+     "credit": 0.5
+    },
+    {
+     "article_id": "24",
+     "human_best": "gpt3",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "27",
+     "human_best": "brio",
+     "judge_top": [
+      "brio"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "29",
+     "human_best": "brio",
+     "judge_top": [
+      "brio",
+      "gpt3"
+     ],
+     "credit": 0.5
+    },
+    {
+     "article_id": "30",
+     "human_best": "brio",
+     "judge_top": [
+      "brio"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "31",
+     "human_best": "brio",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 0.0
+    },
+    {
+     "article_id": "32",
+     "human_best": "t0",
+     "judge_top": [
+      "gpt3",
+      "t0"
+     ],
+     "credit": 0.5
+    },
+    {
+     "article_id": "33",
+     "human_best": "gpt3",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "34",
+     "human_best": "gpt3",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "35",
+     "human_best": "gpt3",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "37",
+     "human_best": "gpt3",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "38",
+     "human_best": "gpt3",
+     "judge_top": [
+      "brio"
+     ],
+     "credit": 0.0
+    },
+    {
+     "article_id": "39",
+     "human_best": "t0",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 0.0
+    },
+    {
+     "article_id": "40",
+     "human_best": "gpt3",
+     "judge_top": [
+      "brio"
+     ],
+     "credit": 0.0
+    },
+    {
+     "article_id": "41",
+     "human_best": "gpt3",
+     "judge_top": [
+      "brio"
+     ],
+     "credit": 0.0
+    },
+    {
+     "article_id": "42",
+     "human_best": "brio",
+     "judge_top": [
+      "brio"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "43",
+     "human_best": "gpt3",
+     "judge_top": [
+      "brio",
+      "gpt3"
+     ],
+     "credit": 0.5
+    },
+    {
+     "article_id": "44",
+     "human_best": "gpt3",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "45",
+     "human_best": "gpt3",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "46",
+     "human_best": "gpt3",
+     "judge_top": [
+      "t0"
+     ],
+     "credit": 0.0
+    },
+    {
+     "article_id": "47",
+     "human_best": "gpt3",
+     "judge_top": [
+      "brio",
+      "gpt3"
+     ],
+     "credit": 0.5
+    },
+    {
+     "article_id": "48",
+     "human_best": "gpt3",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "50",
+     "human_best": "gpt3",
+     "judge_top": [
+      "t0"
+     ],
+     "credit": 0.0
+    },
+    {
+     "article_id": "51",
+     "human_best": "gpt3",
+     "judge_top": [
+      "brio"
+     ],
+     "credit": 0.0
+    },
+    {
+     "article_id": "52",
+     "human_best": "t0",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 0.0
+    },
+    {
+     "article_id": "53",
+     "human_best": "gpt3",
+     "judge_top": [
+      "brio"
+     ],
+     "credit": 0.0
+    },
+    {
+     "article_id": "54",
+     "human_best": "brio",
+     "judge_top": [
+      "brio"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "55",
+     "human_best": "brio",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 0.0
+    },
+    {
+     "article_id": "56",
+     "human_best": "brio",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 0.0
+    },
+    {
+     "article_id": "59",
+     "human_best": "gpt3",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "60",
+     "human_best": "brio",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 0.0
+    },
+    {
+     "article_id": "61",
+     "human_best": "gpt3",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "62",
+     "human_best": "gpt3",
+     "judge_top": [
+      "t0"
+     ],
+     "credit": 0.0
+    },
+    {
+     "article_id": "63",
+     "human_best": "gpt3",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "64",
+     "human_best": "gpt3",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "65",
+     "human_best": "brio",
+     "judge_top": [
+      "brio"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "66",
+     "human_best": "gpt3",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "67",
+     "human_best": "brio",
+     "judge_top": [
+      "brio"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "68",
+     "human_best": "brio",
+     "judge_top": [
+      "brio",
+      "gpt3"
+     ],
+     "credit": 0.5
+    },
+    {
+     "article_id": "69",
+     "human_best": "gpt3",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "70",
+     "human_best": "gpt3",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "71",
+     "human_best": "gpt3",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "73",
+     "human_best": "brio",
+     "judge_top": [
+      "brio"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "75",
+     "human_best": "gpt3",
+     "judge_top": [
+      "gpt3",
+      "t0"
+     ],
+     "credit": 0.5
+    },
+    {
+     "article_id": "76",
+     "human_best": "gpt3",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "77",
+     "human_best": "t0",
+     "judge_top": [
+      "brio"
+     ],
+     "credit": 0.0
+    },
+    {
+     "article_id": "78",
+     "human_best": "brio",
+     "judge_top": [
+      "brio"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "79",
+     "human_best": "gpt3",
+     "judge_top": [
+      "brio",
+      "gpt3"
+     ],
+     "credit": 0.5
+    },
+    {
+     "article_id": "80",
+     "human_best": "brio",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 0.0
+    },
+    {
+     "article_id": "81",
+     "human_best": "gpt3",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "82",
+     "human_best": "brio",
+     "judge_top": [
+      "brio",
+      "gpt3"
+     ],
+     "credit": 0.5
+    },
+    {
+     "article_id": "83",
+     "human_best": "gpt3",
+     "judge_top": [
+      "brio"
+     ],
+     "credit": 0.0
+    },
+    {
+     "article_id": "84",
+     "human_best": "gpt3",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "85",
+     "human_best": "brio",
+     "judge_top": [
+      "brio",
+      "t0"
+     ],
+     "credit": 0.5
+    },
+    {
+     "article_id": "86",
+     "human_best": "t0",
+     "judge_top": [
+      "brio"
+     ],
+     "credit": 0.0
+    },
+    {
+     "article_id": "88",
+     "human_best": "brio",
+     "judge_top": [
+      "brio"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "89",
+     "human_best": "gpt3",
+     "judge_top": [
+      "gpt3",
+      "t0"
+     ],
+     "credit": 0.5
+    },
+    {
+     "article_id": "91",
+     "human_best": "gpt3",
+     "judge_top": [
+      "gpt3"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "93",
+     "human_best": "brio",
+     "judge_top": [
+      "brio"
+     ],
+     "credit": 1.0
+    },
+    {
+     "article_id": "95",
+     "human_best": "gpt3",
+     "judge_top": [
+      "brio",
+      "gpt3"
+     ],
+     "credit": 0.5
+    },
+    {
+     "article_id": "96",
+     "human_best": "gpt3",
+     "judge_top": [
+      "brio"
+     ],
+     "credit": 0.0
+    },
+    {
+     "article_id": "97",
+     "human_best": "gpt3",
+     "judge_top": [
+      "gpt3",
+      "t0"
+     ],
+     "credit": 0.5
+    },
+    {
+     "article_id": "99",
+     "human_best": "brio",
+     "judge_top": [
+      "t0"
+     ],
+     "credit": 0.0
+    }
+   ],
+   "best_pick_vs_loo_reference": {
+    "k": 146.4167,
+    "n": 300,
+    "rate": 0.4881,
+    "ci95": [
+     0.432,
+     0.5444
+    ],
+    "rule": "the judge's top set against the other-two-annotators reference of each (article, held-out annotator) pair; the same pairs as the human baseline"
+   },
+   "pairwise_gpt3_vs_brio_per_article": {
+    "human_preference": "majority of the three annotators' implied orderings (best > unranked > worst), ties skipped",
+    "articles_both_decided": 81,
+    "judge_tied": 13,
+    "human_tied": 8,
+    "agreement": {
+     "k": 49,
+     "n": 81,
+     "rate": 0.6049,
+     "ci95": [
+      0.4961,
+      0.7043
+     ]
+    },
+    "judge_prefers_gpt3": {
+     "k": 52,
+     "n": 81,
+     "rate": 0.642,
+     "ci95": [
+      0.5333,
+      0.7378
+     ]
+    },
+    "human_prefers_gpt3": {
+     "k": 52,
+     "n": 81,
+     "rate": 0.642,
+     "ci95": [
+      0.5333,
+      0.7378
+     ]
+    }
+   },
+   "records_sha256": "7bdb8b4832ddec7a7d9ce90496b4326618543bd7711970d7a191494775b9331a",
+   "records_backfilled": 0,
+   "records_cost_unknown": 0
+  }
+ },
+ "inputs": {
+  "zip_sha256": "0139228dd09f652865015495551685caf886e540f816f06d4fc7961b82124cf6",
+  "cnn_human_sha256": "4e13a6eeb2aeb2c300b32e870360f0118d4855bcbb1ade8d8946976c4b203fe4",
+  "scorer_sha256": "6cfd6eeaac8366c15fb85a13c83708fd922297e4495e6a579440433fb0733814",
+  "chance_best_pick": 0.3333
+ },
+ "human_baseline": {
+  "definition": "Leave-one-annotator-out over ALL articles: for each article and each of its three annotators, that annotator's best set P is scored against R, the system(s) with the most best-votes among the OTHER two annotators (one system when they agree, two when they name different ones). Credit = |P and R| / (|P| x |R|): the chance that a system drawn at random from P equals one drawn from R, which is the judge's 1/k rule when R has one system. Pairs where P or R is empty are skipped. This is one annotator against two others, the judge's score is against three: the judge is also scored against these same leave-one-out references (best_pick_vs_loo_reference).",
+  "leave_one_annotator_out": {
+   "k": 136.3333,
+   "n": 300,
+   "rate": 0.4544,
+   "ci95": [
+    0.399,
+    0.511
+   ]
+  },
+  "pairs_skipped_empty": 0,
+  "leave_one_annotator_out_agreeing_others_only": {
+   "k": 82.1667,
+   "n": 160,
+   "rate": 0.5135,
+   "ci95": [
+    0.4367,
+    0.5898
+   ]
+  },
+  "one_annotator_matches_other_two_best": "51/109"
+ }
+}

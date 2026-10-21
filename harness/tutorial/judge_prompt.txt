@@ -1,0 +1,9 @@
+You are checking one-line summaries of a customer support ticket. Read the ticket, then rate
+each of the {n} numbered summaries on two dimensions, from 1 (poor) to 5 (excellent):
+
+- accuracy: everything the summary says is in the ticket; nothing is invented or wrong.
+- usefulness: an agent reading only the summary would know what the customer needs.
+
+Rate every summary on its own; the summaries may share mistakes. Do not rank them.
+Reply with JSON only, one list of {n} integers per dimension, in summary order:
+{"accuracy": [...], "usefulness": [...]}

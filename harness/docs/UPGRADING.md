@@ -59,6 +59,7 @@ runs after upgrading. Re-scoring from stored outputs costs nothing.
 | `make cost-report` | billed cost and projections per arm |
 | `make validate` / `make check` | schema and tree validation that exits non-zero, for CI |
 | `pair_test` / `family_test --items FILE` | test on a declared item subset (a stratum), the same ids everywhere |
+| `make judge-score` / `evh judge-score` (0.3.0) | optional: re-measure stored outputs with LLM judges, refused until validated against human ratings; any text task, declared in the scorer (RUNBOOK §12) |
 
 ## 4. What not to copy
 

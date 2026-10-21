@@ -1276,7 +1276,11 @@ def test_v8_and_v9_go_red_on_a_copied_or_gutted_run() -> None:
     """
     import shutil  # noqa: PLC0415
 
-    linux = HERE.parent / "data" / "runs-linux"
+    # In a shadow tree with its own copy of runs-linux: the test empties a committed run's
+    # predictions and adds a duplicate run, which another process must never see.
+    shadow = _shadow_tree(copy_data=("runs", "runs-rescored", "runs-reparsed", "runs-pair",
+                                     "runs-repeats", "runs-linux", "runs-fp32"))
+    linux = shadow / "harness" / "data" / "runs-linux"
     src = next(iter(sorted(linux.glob("cnn_bart_s_*/"))), None)
     if src is None:
         print("  --   V8/V9: data/runs-linux/cnn_bart_s_* absent — skipped")
@@ -1291,12 +1295,12 @@ def test_v8_and_v9_go_red_on_a_copied_or_gutted_run() -> None:
     shutil.copytree(src, dup)
     _TEMP_DIRS.add(dup)
     try:
-        r = run("scripts/validate_tree.py")
+        r = _run_in(shadow, "scripts/validate_tree.py")
         out = (r.stdout or "") + (r.stderr or "")
         check("V8 refuses a duplicate config_id in runs-linux",
               r.returncode != 0 and "FAIL V8" in out,
               f"exit {r.returncode}")
-        r2 = run("scripts/check_report_claims.py")
+        r2 = _run_in(shadow, "scripts/check_report_claims.py")
         check("...and the latency medians refuse it too, whichever name sorts last",
               r2.returncode != 0, f"exit {r2.returncode}")
     finally:
@@ -1306,22 +1310,20 @@ def test_v8_and_v9_go_red_on_a_copied_or_gutted_run() -> None:
     # V9: the rows gone, the file still tracked and present.
     pj = src / "predictions.jsonl"
     before = pj.read_text(encoding="utf-8")
-    _PLANTS[pj] = before
     try:
-        pj.write_text("", encoding="utf-8")
-        r = run("scripts/validate_tree.py")
+        _replace(pj, "")
+        r = _run_in(shadow, "scripts/validate_tree.py")
         out = (r.stdout or "") + (r.stderr or "")
         check("V9 refuses a run whose predictions.jsonl is empty",
               r.returncode != 0 and "is empty" in out, f"exit {r.returncode}")
         # ...and a PARTIAL one, which is the shape a crash leaves behind.
-        pj.write_text("".join(before.splitlines(keepends=True)[:-3]), encoding="utf-8")
-        r = run("scripts/validate_tree.py")
+        _replace(pj, "".join(before.splitlines(keepends=True)[:-3]))
+        r = _run_in(shadow, "scripts/validate_tree.py")
         out = (r.stdout or "") + (r.stderr or "")
         check("V9 refuses a run with fewer rows than its own n_items",
               r.returncode != 0 and "prediction rows" in out, f"exit {r.returncode}")
     finally:
-        pj.write_text(before, encoding="utf-8")
-        _PLANTS.pop(pj, None)
+        _replace(pj, before)
 
 
 def test_v10_fails_when_a_derived_run_states_no_scorer() -> None:
@@ -1572,6 +1574,60 @@ def _restore_plants(*_args) -> None:
         sys.exit(130)
 
 
+def _shadow_tree(copy_data: tuple = ()) -> pathlib.Path:
+    """A private copy of the repository for a test that plants a defect, so the real tree
+    is never written to: another process reading the reports or the runs mid-plant would
+    otherwise see the defect (it happened). Code, reports and docs are copied; harness/data
+    is a directory of links to the real one, except the subdirectories named in
+    `copy_data`, which are copied because the test writes into them. Removed at exit and on
+    the signals _restore_plants handles."""
+    import shutil as _shutil  # noqa: PLC0415
+    import os  # noqa: PLC0415
+    import tempfile as _tmp  # noqa: PLC0415
+
+    real = HERE.parents[1]
+    shadow = pathlib.Path(_tmp.mkdtemp(prefix="selftest-shadow-"))
+    _TEMP_DIRS.add(shadow)
+    _shutil.copytree(real, shadow, dirs_exist_ok=True, symlinks=True,
+                     ignore=_shutil.ignore_patterns(".git", ".venv", "build", "__pycache__", "data"))
+    data = shadow / "harness" / "data"
+    data.mkdir()
+    for child in (real / "harness" / "data").iterdir():
+        if child.name in copy_data:
+            # Hard links, not copies: instant and no extra space. A test must REPLACE a
+            # file it changes (unlink, then write), or it would write through the link
+            # into the real file. _replace() does that.
+            def _link_or_copy(s, d, _copy=_shutil.copy2):
+                try:
+                    os.link(s, d)
+                except OSError:      # another filesystem: copy instead
+                    _copy(s, d)
+            _shutil.copytree(child, data / child.name, symlinks=True, copy_function=_link_or_copy)
+        else:
+            (data / child.name).symlink_to(child)
+    return shadow
+
+
+def _replace(f: pathlib.Path, text: str) -> None:
+    """Write `text` to a shadow file as a NEW file: a hard-linked file written in place
+    would change the real one too."""
+    f.unlink()
+    f.write_text(text, encoding="utf-8")
+
+
+def _run_in(shadow: pathlib.Path, script: str) -> subprocess.CompletedProcess:
+    """`run`, inside a shadow tree: its own copy of the script, with the shadow as root."""
+    import os  # noqa: PLC0415
+    # V7 and V9 read what is COMMITTED from the git index: the real repository's, read
+    # only, with the shadow as the work tree, so they compare the real index with the copy.
+    gitdir = subprocess.run(["git", "rev-parse", "--absolute-git-dir"], cwd=HERE.parents[1],
+                            capture_output=True, text=True).stdout.strip()
+    # GIT_OPTIONAL_LOCKS=0: a status-like command must never take the real index lock.
+    env = {**os.environ, "GIT_DIR": gitdir, "GIT_WORK_TREE": str(shadow), "GIT_OPTIONAL_LOCKS": "0"}
+    return subprocess.run([PY, str(shadow / "harness" / script)], cwd=shadow / "harness",
+                          capture_output=True, text=True, env=env)
+
+
 atexit.register(_restore_plants)
 for _sig in (signal.SIGTERM, signal.SIGINT, signal.SIGHUP):
     try:
@@ -1593,29 +1649,27 @@ def test_the_checks_can_actually_fail() -> None:
         been noticed;
       - and a checker that prints FAIL and exits 0 satisfied all of it.
 
-    So this plants the REAL defect in the REAL tree, one at a time, restoring each
-    afterwards. A checker that cannot see a wrong number in the file it is pointed at
+    So this plants the REAL defect in a COPY of the real tree, one at a time, and runs the
+    checker there. A checker that cannot see a wrong number in the file it is pointed at
     is not checking that file, whatever it prints.
+
+    A COPY, NOT THE TREE ITSELF. Planting in the working tree, even with a restore on exit
+    and on signals, let any other process that read the reports mid-plant see the defect:
+    a second check run in the same worktree did, and reported a 0.9999 that nobody had
+    committed. The copy holds everything a checker reads except harness/data, which is
+    linked (read-only, and 338 MB), so the real tree is never written to.
     """
     import contextlib  # noqa: PLC0415
 
+    shadow = _shadow_tree()
+
+    def run_shadow(script: str) -> subprocess.CompletedProcess:
+        return _run_in(shadow, script)
+
     @contextlib.contextmanager
     def planted(rel: str, old: str, new: str):
-        """Swap a string in a repo file, then put it back whatever happens.
-
-        "WHATEVER HAPPENS" USED TO MEAN "UNLESS THE PROCESS IS KILLED". `try/finally`
-        does not run on SIGTERM or SIGKILL, so a `make ci` stopped part-way left the
-        planted defect in the working tree -- and a planted defect looks exactly like a
-        wrong number someone committed. It happened: a run killed inside the tie-group
-        row left `18 arms (17 paid)` in REPORT_SYNTHESIS.md, and `git status` showed it
-        among 40 legitimately modified files. I nearly committed it.
-
-        So every plant now also registers for restore at interpreter exit and on the
-        two signals a terminal sends, and the registry is restored even if the test
-        itself dies. A test that can corrupt the repo it is testing is worse than no
-        test.
-        """
-        f = HERE.parents[1] / rel
+        """Swap a string in the copy's file, then put it back."""
+        f = shadow / rel
         before = f.read_text(encoding="utf-8")
         if before.count(old) != 1:
             # AN ANCHOR THAT NO LONGER MATCHES IS A FAILURE, NOT A SKIP. This used to
@@ -1628,13 +1682,11 @@ def test_the_checks_can_actually_fail() -> None:
                   f"{before.count(old)} matches for {old[:60]!r} — update the anchor")
             yield False
             return
-        _PLANTS[f] = before
         try:
             f.write_text(before.replace(old, new), encoding="utf-8")
             yield True
         finally:
             f.write_text(before, encoding="utf-8")
-            _PLANTS.pop(f, None)
 
     #: (checker, label, file, the defect, what the string becomes)
     DEFECTS = [
@@ -1743,7 +1795,7 @@ def test_the_checks_can_actually_fail() -> None:
                 print(f"  --   checks can fail: {script} skipped "
                       f"({what!r} anchor not found in {rel})")
                 continue
-            r = run(f"scripts/{script}")
+            r = run_shadow(f"scripts/{script}")
             out = (r.stdout or "") + (r.stderr or "")
             check(f"checks can fail: {script} catches {what}",
                   r.returncode != 0, f"exit {r.returncode}")
@@ -2276,6 +2328,7 @@ def test_judge_score_runs_from_an_installed_package() -> None:
             (d / "metrics.json").write_text(_json.dumps({
                 "config_id": arm, "dataset_id": "jds_v1", "created_at": "2026-01-01T00:00:00Z",
                 "params": {"family": fam}, "n_items": 3, "primary_metric": "rouge1",
+                "reference_tier": "silver",
                 "scores": {"rouge1": 0.3}, "metric_kinds": {"rouge1": "quality"}}))
         (proj / "prompts").mkdir()
         shutil.copy2(ROOT.parent / "examples" / "summeval-judging" / "prompt.txt",
@@ -2323,10 +2376,47 @@ def test_judge_score_runs_from_an_installed_package() -> None:
         check("installed judge-score: leaderboard reads the scored runs",
               board.returncode == 0 and "arm_a" in board.stdout and "arm_b" in board.stdout
               and "judge_score_unvalidated" in board.stdout, (board.stderr + board.stdout)[-400:])
+        check("installed judge-score: a judged run carries no reference tier; the source's is kept",
+              "reference_tier" not in m and m.get("judged_with", {}).get("source_reference_tier") == "silver")
+        check("installed judge-score: leaderboard says a judge scored them, not silver references",
+              "Scored by an LLM judge, not against references: judge-fake-v1, unvalidated judge" in board.stdout
+              and "SILVER" not in board.stdout, board.stdout[-400:])
         again = evh("judge-score", "--dataset-id", "jds_v1", "--scorer", "judge-fake-v1",
                     "--unvalidated")
         check("installed judge-score: a rerun resumes from the stored verdicts (no new calls)",
               again.returncode == 0 and "calls 0," in again.stdout, again.stdout[-300:])
+
+        # A scorer that declares its own task: labels, dimensions, a 0-3 scale, `{n}` prompt.
+        (proj / "prompts" / "answers.txt").write_text(
+            "Rate each of the {n} numbered answers to the question, 0 to 3, on correctness "
+            "and completeness. Reply as JSON: one list of {n} integers per dimension.\n")
+        (data / "scorers" / "judge-task-v1.yaml").write_text(_json.dumps({
+            "scorer_id": "judge-task-v1", "kind": "judge", "dataset_id": "jds_v1",
+            "task": {"source_label": "QUESTION", "output_label": "ANSWERS",
+                     "dimensions": ["correctness", "completeness"], "scale": [0, 3]},
+            "judges": [{"id": "fa", "params": {**fake, "model": "fake-a", "family": "gemma"}},
+                       {"id": "fb", "params": {**fake, "model": "fake-b", "family": "qwen"}}],
+            "prompt": {"file": "prompts/answers.txt"},
+            "protocol": {"outputs_per_call": 16, "blinding": True, "order_seed": 0,
+                         "position_check_fraction": 0.34, "noise_check_fraction": 0.34},
+            "cost_cap_usd": 1.0}))
+        task_ran = evh("judge-score", "--dataset-id", "jds_v1", "--scorer", "judge-task-v1",
+                       "--unvalidated")
+        tjudged = data / "runs-judged" / "judge-task-v1"
+        tvals = [_json.loads(line)["judge_score_unvalidated"]
+                 for f in sorted(tjudged.glob("arm_*/predictions.jsonl"))
+                 for line in f.read_text().splitlines() if line.strip()]
+        tsets = [_json.loads(f.read_text()) for f in (data / "judging-sets").glob("jds_v1-*.json")]
+        tverd = [_json.loads(f.read_text()) for f in (data / "judge-verdicts").glob("judge-task-v1/*/fa/*.json")]
+        check("installed judge-score: a declared task runs end to end, scores on its own scale",
+              task_ran.returncode == 0 and len(tvals) == 2 * len(ids)
+              and all(0 <= v <= 3 for v in tvals), (task_ran.stderr + task_ran.stdout)[-400:])
+        check("installed judge-score: the declared task is in the judging set and shapes the replies",
+              any((s.get("task") or {}).get("dimensions") == ["correctness", "completeness"] for s in tsets)
+              and tverd and all(set(_json.loads(v["output"])) == {"correctness", "completeness"}
+                                for v in tverd))
+        check("installed judge-score: a declared task is a different judging set from the default",
+              len(tsets) == 2)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 

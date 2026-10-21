@@ -21,6 +21,9 @@ ROOT = Path(__file__).resolve().parents[1]
 BLOB = "https://github.com/chipi/eval-harness/blob/main"
 TREE = "https://github.com/chipi/eval-harness/tree/main"
 EXTRA = {"harness/" + p.name: p for p in sorted((ROOT / "harness" / "docs").glob("*.md"))}
+#: The changelog lives beside the code it versions (harness/CHANGELOG.md); the site shows it as
+#: the release notes.
+EXTRA["harness/CHANGELOG.md"] = ROOT / "harness" / "CHANGELOG.md"
 LINK = re.compile(r"(\]\()([^)\s]+?)(\))")
 
 

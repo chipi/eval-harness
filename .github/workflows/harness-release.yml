@@ -37,10 +37,10 @@ jobs:
           tag="${GITHUB_REF_NAME#v}"
           ver=$(python -c "import re,pathlib; print(re.search(r'__version__ = \"([^\"]+)\"', pathlib.Path('harness/scripts/_version.py').read_text()).group(1))")
           test "$tag" = "$ver" || { echo "tag v$tag but harness/scripts/_version.py says $ver"; exit 1; }
-          grep -q "^## $ver" harness/CHANGELOG.md || { echo "harness/CHANGELOG.md has no '## $ver' section"; exit 1; }
-          if grep -q "^## $ver — unreleased" harness/CHANGELOG.md; then
-            echo "harness/CHANGELOG.md still marks $ver as unreleased; date it before tagging"; exit 1
-          fi
+          v_re="${ver//./\\.}"   # the exact version: 0.3.1 must not match 0.3.10
+          grep -qxE "## $v_re( — .*)?" harness/CHANGELOG.md || { echo "harness/CHANGELOG.md has no '## $ver' section"; exit 1; }
+          grep -qxE "## $v_re — [0-9]{4}-[0-9]{2}-[0-9]{2}" harness/CHANGELOG.md || {
+            echo "harness/CHANGELOG.md does not date $ver ('## $ver — YYYY-MM-DD'); date it before tagging"; exit 1; }
 
       - name: The harness's own gate
         run: make verify
@@ -60,7 +60,7 @@ jobs:
       - name: Release notes from the changelog
         run: |
           ver="${GITHUB_REF_NAME#v}"
-          awk -v v="## $ver" 'index($0, v)==1 {on=1; next} on && /^## / {exit} on' harness/CHANGELOG.md > notes.md
+          awk -v v="## $ver" '$0 == v || index($0, v " ")==1 {on=1; next} on && /^## / {exit} on' harness/CHANGELOG.md > notes.md
           {
             echo ""
             echo "### Install"

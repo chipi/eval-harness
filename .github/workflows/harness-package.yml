@@ -45,4 +45,4 @@ jobs:
       - name: The version has a CHANGELOG section
         run: |
           ver=$(python -c "import re,pathlib; print(re.search(r'__version__ = \"([^\"]+)\"', pathlib.Path('harness/scripts/_version.py').read_text()).group(1))")
-          grep -q "^## $ver" harness/CHANGELOG.md || { echo "harness/CHANGELOG.md has no '## $ver' section for version $ver"; exit 1; }
+          grep -qxE "## ${ver//./\\.}( — .*)?" harness/CHANGELOG.md || { echo "harness/CHANGELOG.md has no '## $ver' section for version $ver"; exit 1; }

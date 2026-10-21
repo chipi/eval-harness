@@ -1,0 +1,40 @@
+# A judge scorer for the tutorial (docs/GUIDE.md, step 10). It re-measures the tickets_v1
+# arms' frozen outputs with two judges, for $0 and offline: both are `provider: fake`, a
+# deterministic stand-in that calls nothing. A fake judge can never be validated, so the
+# harness refuses this scorer unless --unvalidated is given, and labels every number it makes.
+#
+# For real judges, replace each `params` with a model you can call (see RUNBOOK §12) and add
+# a `validation` block naming the runs that measured each judge against human ratings.
+scorer_id: tickets-judge-v1
+kind: judge
+dataset_id: tickets_v1
+
+# What is judged. Without this block a scorer judges news summaries the way SummEval did
+# (ARTICLE, SUMMARIES, coherence/consistency/fluency/relevance, 1-5).
+task:
+  source_label: TICKET
+  output_label: SUMMARIES
+  dimensions: [accuracy, usefulness]
+  scale: [1, 5]
+
+# At least two judges, from different vendor families (ADR-0001).
+judges:
+  - id: judge_a
+    params: {provider: fake, model: fake-a, family: vendor_a, temperature: 0.0,
+             usd_per_mtok_in: 0.0, usd_per_mtok_out: 0.0}
+  - id: judge_b
+    params: {provider: fake, model: fake-b, family: vendor_b, temperature: 0.0,
+             usd_per_mtok_in: 0.0, usd_per_mtok_out: 0.0}
+
+# `{n}` in the prompt is replaced by the number of summaries in each call.
+prompt:
+  file: tutorial/judge_prompt.txt
+
+protocol:
+  outputs_per_call: 16
+  blinding: true
+  order_seed: 0
+  position_check_fraction: 0.5
+  noise_check_fraction: 0.5
+
+cost_cap_usd: 0.01

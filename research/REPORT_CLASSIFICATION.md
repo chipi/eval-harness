@@ -82,15 +82,18 @@ to beat.*
    `bert_mini` from 16 (not from 11 hosted arms, among them `anthropic_l`, +0.0450,
    p = 0.063). The two bert-base fine-tunes agree on 192 of 200 labels.
 
-2. **The AG News lead lives in 17 items the hosted arms get wrong; on one rater's reading about
-   half a learnable convention, about half mislabels.** 17 items are missed by ≥80% of the 24
+2. **The AG News lead lives in 17 items the hosted arms get wrong; on an earlier reading about
+   half a learnable convention, about half mislabels; adjudicated by topic, by one reader
+   shown the hosted answer, the gold was wrong on all 17 (§3.4, reference v2).** 17 items are missed by ≥80% of the 24
    hosted arms (19 at 75%, 20 at 70%; `anthropic_m` gets 3 of the 17 right). The fine-tunes
-   agree with the gold on 12–14 of them; `anthropic_l` on none. By a single rater, after the
+   agree with the gold on 12–14 of them; `anthropic_l` on none. The earlier reading, by a single rater after the
    fact: 8 follow a convention a trained model learns and a zero-shot prompt that states none
    has no reason to — business news about technology companies (HP, IBM, Dell, Sohu,
    Vodafone) filed under `Sci/Tech`; 7 this rater judges mislabels (Olympic results filed as
    `World`); 2 are ambiguous. Of the 14 the leader gets right, 6 are convention, 2 ambiguous,
-   6 mislabels. All 17 are listed in §3.4. The 17 are defined by the hosted arms' own errors,
+   6 mislabels. The later adjudication judged all 17 by topic: "wrong" in
+   the heading means the gold does not name the topic, not that the label breaks the feed's own
+   convention. All 17 are listed in §3.4. The 17 are defined by the hosted arms' own errors,
    so a lead concentrated in them is close to built in. On the other 183 items `anthropic_l`
    (0.984) and `bert_base_ta` (0.973) cannot be told apart — discordant items 3 vs 1, exact
    sign p = 0.625. A prompt that stated the convention is untested, and AG News's inline
@@ -116,8 +119,8 @@ to beat.*
 
 4. **Both corpora have recurring label noise, and on DBpedia it is the same size as the
    signal.** Items nearly the whole field misses are candidates for a wrong gold label —
-   nobody has adjudicated them (§5), and on one rater's reading the field's answer is
-   defensible on each: a canal filed under `NaturalPlace`, a "historic school" filed under
+   one reader adjudicated them, shown the hosted answer, and found the gold wrong on every
+   one the field missed (§3.4, reference v2): a canal filed under `NaturalPlace`, a "historic school" filed under
    `Building`, an IPO story filed under `World`. The top eleven DBpedia arms are separated by
    four items; three items are missed by 24–25 of the 26 learned arms, and each has a
    dissenter that agrees with the gold: the arm trained on DBpedia on the canal, `qwen_m`

@@ -12,6 +12,7 @@ committed report.json and says so in `goyal_source`.
 
 from __future__ import annotations
 
+import copy
 import json
 import math
 import sys
@@ -22,6 +23,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import judge_score as js  # noqa: E402
 import validate_judge_goyal as vg  # noqa: E402
+import validate_judge_zhang as vz  # noqa: E402
 
 REPO = HERE.parents[1]
 DATA = HERE.parent / "data"
@@ -34,22 +36,81 @@ def _range(xs):
     return [round(min(xs), 4), round(max(xs), 4)]
 
 
-def goyal() -> Dict[str, Any]:
-    vroot = DATA / "judge-validation" / SCORER / "goyal2022-cnn"
+def goyal(scorer: str = SCORER) -> Dict[str, Any]:
+    vroot = DATA / "judge-validation" / scorer / "goyal2022-cnn"
+    jids = [j["id"] for j in js.load_scorer(DATA / "scorers" / f"{scorer}.yaml")["judges"]]
     human = vg.load_local()
     if human is None:
         rep = json.loads((vroot / "report.json").read_text())
-        return {"source": "report.json (data/external/goyal2022 absent: not recomputed)",
+        _check_report(rep, scorer, vroot, jids)
+        return {"source": "report.json (data/external/goyal2022 absent: checked against the records only)",
                 "judges": rep["judges"], "human_baseline": rep["human_baseline"]}
     out: Dict[str, Any] = {"source": "recomputed from the stored per-article records and the "
                                      "human annotations", "judges": {}}
-    for jid in ("gemma_l", "qwen_s"):
+    for jid in jids:
         st = vg.judge_stats(human, vg.read_records(vroot / jid, human))
         st["human_gpt3_over_brio"] = sum(vg.human_prefs(v["annotators"])[1] for v in human.values())
         st["human_brio_over_gpt3"] = sum(vg.human_prefs(v["annotators"])[2] for v in human.values())
         out["judges"][jid] = st
     out["human_baseline"] = vg.human_baseline(human)
     return out
+
+
+def zhang(scorer: str = SCORER) -> Dict[str, Any]:
+    """The Zhang et al. (2024) validation of a scorer's judges. Recomputed from the stored
+    records when data/external/zhang2023 is present; otherwise the committed report.json,
+    whose call counts and bill are checked against the committed records. Computed once per
+    process (the recomputation takes about a minute; the claims and the site ask repeatedly)."""
+    if scorer not in _ZHANG:
+        _ZHANG[scorer] = _zhang(scorer)
+    return copy.deepcopy(_ZHANG[scorer])
+
+
+_ZHANG: Dict[str, Dict[str, Any]] = {}
+
+
+def _zhang(scorer: str) -> Dict[str, Any]:
+    vroot = DATA / "judge-validation" / scorer / "zhang2023-cnndm"
+    if vz.FILE.is_file():
+        sc = js.load_scorer(DATA / "scorers" / f"{scorer}.yaml")
+        data = vz.load()
+        systems = sorted(next(iter(data.values()))["systems"])
+        rep = vz.build_report(sc, js.prompt_text(sc), int(sc["protocol"]["outputs_per_call"]),
+                              data, systems, vroot)
+        rep["recomputed"] = "from the stored records and the ratings"
+        return rep
+    rep = json.loads((vroot / "report.json").read_text())
+    _check_report(rep, scorer, vroot, [j["id"] for j in js.load_scorer(DATA / "scorers" / f"{scorer}.yaml")["judges"]])
+    rep["recomputed"] = "report.json (data/external/zhang2023 absent: checked against the records only)"
+    return rep
+
+
+def _check_report(rep: Dict[str, Any], scorer: str, vroot: Path, jids: list) -> None:
+    """Where the human data is absent (CI), a validation report is used as committed. It must
+    still be the report of these records and this scorer: the scorer's sha256, and per judge
+    the records' own hash, count, bill and unparsed and withheld counts. A record edited, or
+    a scorer changed, without rebuilding the report (RELEASING) fails here."""
+    sc = js.load_scorer(DATA / "scorers" / f"{scorer}.yaml")
+    bad = []
+    if rep.get("inputs", {}).get("scorer_sha256") != sc["_sha256"]:
+        bad.append("its scorer_sha256 is not the current scorer's")
+    if sorted(rep["judges"]) != sorted(jids):
+        bad.append(f"its judges {sorted(rep['judges'])} are not the scorer's {sorted(jids)}")
+    for jid, r in rep["judges"].items():
+        files = [f for f in (vroot / jid).glob("*.json")]
+        recs = [json.loads(f.read_text()) for f in files]
+        got = {"records_sha256": js.records_sha256(vroot / jid),
+               "billed_usd": round(sum(float(x.get("cost_usd") or 0) for x in recs), 4),
+               "unparsed": sum(1 for x in recs if x.get("scores", x.get("dims")) is None)}
+        if "calls" in r:
+            got["calls"] = len(recs)
+        if "withheld_replies" in r:
+            got["withheld_replies"] = sum(1 for x in recs if x.get("output_withheld"))
+        bad += [f"{jid}: {k} {r.get(k)!r} in the report, {v!r} from the records"
+                for k, v in got.items() if r.get(k) != v]
+    if bad:
+        raise SystemExit(f"{vroot}/report.json is not the report of the committed records: "
+                         + "; ".join(bad) + ". Rebuild it with --no-calls (harness/docs/RELEASING.md).")
 
 
 def pointwise() -> Dict[str, int]:
@@ -72,7 +133,7 @@ def pointwise() -> Dict[str, int]:
     return {"deepseek_m_above_bart_l": hi, "deepseek_m_below_bart_l": lo, "articles": len(per)}
 
 
-def compute() -> Dict[str, Any]:
+def compute(scorer: str = SCORER) -> Dict[str, Any]:
     sets = sorted((DATA / "judging-sets").glob(SET_GLOB))
     if len(sets) != 1:
         raise SystemExit(f"expected exactly one {SET_GLOB} in data/judging-sets, found "
@@ -80,8 +141,8 @@ def compute() -> Dict[str, Any]:
     m = json.loads(sets[0].read_text())
     if len(m["arms"]) != 29:
         raise SystemExit(f"{sets[0].name} has {len(m['arms'])} arms, not 29")
-    sc = js.load_scorer(DATA / "scorers" / f"{SCORER}.yaml")
-    vdir = DATA / "judge-verdicts" / SCORER / m["judging_set_id"]
+    sc = js.load_scorer(DATA / "scorers" / f"{scorer}.yaml")
+    vdir = DATA / "judge-verdicts" / scorer / m["judging_set_id"]
     item_ids = [i["item_id"] for i in m["items"]]
     scores = js.load_scores(m, sc, vdir)
     proj = js.project(sc, scores, item_ids)
@@ -100,8 +161,10 @@ def compute() -> Dict[str, Any]:
     h_ds = sum(x["preferred"] == "deepseek_m" for x in hc["pairs"])
     j_ds = sum(proj[x["item_id"]]["cnn_deepseek_m_n200_v1"]["_mean"]
                > proj[x["item_id"]]["cnn_bart_l_n200_v1"]["_mean"] for x in hc["pairs"] if x["item_id"] in proj)
+    j_bart = sum(proj[x["item_id"]]["cnn_deepseek_m_n200_v1"]["_mean"]
+                 < proj[x["item_id"]]["cnn_bart_l_n200_v1"]["_mean"] for x in hc["pairs"] if x["item_id"] in proj)
     n_pairs_judged = sum(1 for x in hc["pairs"] if x["item_id"] in proj)
-    agr = summ["judge_agreement"]["gemma_l~qwen_s"]
+    agr = next(iter(summ["judge_agreement"].values()))
     pos = [summ["controls"][j]["position"]["mean_abs_diff"] for j in summ["controls"]]
     noi = [summ["controls"][j]["noise"]["mean_abs_diff"] for j in summ["controls"]]
     return {
@@ -120,8 +183,9 @@ def compute() -> Dict[str, Any]:
         "noise_mean_tau": [summ["controls"][j]["noise"]["mean_tau"] for j in summ["controls"]],
         "human_check": {"pairs": len(hc["pairs"]), "human_prefers_bart_l": h_bart,
                         "human_prefers_deepseek_m": h_ds,
-                        "pairs_with_judge_scores": n_pairs_judged, "judge_prefers_deepseek_m": j_ds},
-        "pointwise": pointwise(), "goyal": goyal(),
+                        "pairs_with_judge_scores": n_pairs_judged, "judge_prefers_deepseek_m": j_ds,
+                        "judge_prefers_bart_l": j_bart},
+        "pointwise": pointwise(), "goyal": goyal(scorer),
     }
 
 

@@ -104,7 +104,7 @@ learned arms — a canal labelled `NaturalPlace`, a "historic school" labelled `
 rather than `EducationalInstitution`, Bharhut labelled `Building`. Each has a dissenter that
 sides with the gold: the arm trained on DBpedia on the canal, `qwen_m` and zero-shot
 `bart_mnli` on Bharhut, `bart_mnli` on the school. On one rater's reading the field's answer is defensible on all
-three and nobody has adjudicated them. The leader's one-item lead over `anthropic_l` is Bharhut.
+three, and one reader who adjudicated them, shown the hosted answer, found the gold wrong on all three (REPORT_CLASSIFICATION §3.4; the dataset's gold stays primary). The leader's one-item lead over `anthropic_l` is Bharhut.
 The top eleven arms are separated by four items in total. Any ranking within that
 group ranks which model best reproduces DBpedia's ontology quirks; this data cannot say
 whether it also ranks which classifies better.

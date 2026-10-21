@@ -638,6 +638,36 @@ def verdict_problems(verdicts_dir: Path, sets_dir: Path) -> list[str]:
             bad.append(f"{label}: n is {v.get('n')!r}, the block has {len(blocks[b])}")
         if f.name != f"{v['item_id']}.{p}.b{b}.json" or f.parent.name != v.get("judge"):
             bad.append(f"{label}: file location does not match its judge/item/pass/block")
+        bad.extend(f"{label}: {p_}" for p_ in reply_problems(v))
+    return bad
+
+
+def reply_problems(rec: dict) -> list[str]:
+    """A committed judge reply is bare JSON scores, or withheld (no text, its hash kept).
+    A reply that reasons aloud can copy the article or the outputs it scored; the writers
+    withhold those (judging.withheld_reason), and this catches one that slipped through."""
+    from judging import json_only  # noqa: PLC0415
+
+    out = rec.get("output")
+    if out is None:
+        if not (rec.get("output_withheld") and len(str(rec.get("output_sha256") or "")) == 64):
+            return ["no reply text and not marked withheld with its sha256"]
+        return []
+    if not json_only(out):
+        return [f"reply is not bare JSON ({len(out)} chars): withhold it, keep its hash"]
+    return []
+
+
+def validation_record_problems(validation_dir: Path) -> list[str]:
+    """The same rule for the judge-validation records (<scorer>/<set>/<judge>/*.json)."""
+    bad = []
+    for f in sorted(validation_dir.glob("*/*/*/*.json")):
+        try:
+            rec = json.loads(f.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            bad.append(f"{f.relative_to(validation_dir)}: unreadable")
+            continue
+        bad.extend(f"{f.relative_to(validation_dir)}: {p}" for p in reply_problems(rec))
     return bad
 
 
@@ -666,7 +696,10 @@ def scorer_problems(scorers_dir: Path) -> list[str]:
                 for k in ("model", "usd_per_mtok_in", "usd_per_mtok_out"):
                     if pr.get(k) in (None, ""):
                         bad.append(f"{f.name}: judge {j.get('id')!r} has no params.{k}")
-            js.prompt_text(sc)
+            # The prompt must render for a call: `{n}`, or SummEval's own count phrases.
+            # Size 2 exercises the rewrite: at 16 a SummEval prompt is returned unchanged, so a
+            # prompt with neither `{n}` nor its phrases would pass and fail only at run time.
+            js.render_prompt(js.prompt_text(sc), 2)
         except SystemExit as exc:
             bad.append(f"{f.name}: does not load ({exc})")
         except (KeyError, TypeError, AttributeError, ValueError, yaml_error) as exc:
@@ -688,8 +721,10 @@ def v11_judging_sets_match_their_hash() -> None:
 
 
 def v12_verdicts_belong_to_their_set() -> None:
-    _report(verdict_problems(DATA_DIR / "judge-verdicts", DATA_DIR / "judging-sets"),
-            "V12 every judge verdict names a real set, item, pass and block, and its n",
+    _report(verdict_problems(DATA_DIR / "judge-verdicts", DATA_DIR / "judging-sets")
+            + validation_record_problems(DATA_DIR / "judge-validation"),
+            "V12 every judge verdict names a real set, item, pass and block, and its n; "
+            "every committed reply is bare JSON or withheld",
             "bad verdict(s)")
 
 

@@ -18,8 +18,11 @@ system is actually better than another, or only ahead on this sample.
 This is ongoing work. The harness and its method are the point; the six experiments below are
 worked examples of them, not a benchmark, and they are still being extended. As those
 examples, it measured 24 LLMs, small fine-tuned models and baselines on six public
-benchmarks. The most expensive hosted model never won (on SciFact only the twelve cheapest
-hosted models ran), and in five of six the leader could not be separated from other arms,
+benchmarks. On each experiment's primary metric the most expensive hosted model never won (on
+SciFact only the twelve cheapest hosted models ran); re-measured, against labels a person
+corrected on AG News and by LLM judges on summarisation, it is first on the point estimate in
+both, and neither re-measurement is confirmed
+([judging](https://evals.humancopilot.eu/experiments/judging.html)). In five of six the leader could not be separated from other arms,
 each time including one that cost less than the dearest hosted model, at 100–280 items — not
 shown different, which is not the same as equal.
 
@@ -141,6 +144,7 @@ your project and [`harness/docs/RUNBOOK.md`](harness/docs/RUNBOOK.md) for every 
 | `make rank-stability DATASET_ID=my_v1` | how many items before the ordering stops moving: measured, not assumed |
 | `make silver-calibrate DATASET_ID=my_v1` | is a model-authored reference usable? Read it against the ceiling it prints |
 | `make rescore DATASET_ID=my_v1` | recompute scores from stored outputs, no API calls |
+| `make judge-score DATASET_ID=my_v1 SCORER=…` | optional: re-measure stored outputs with LLM judges, refused until they are validated against people ([GUIDE step 10](docs/GUIDE.md)) |
 
 Each needs `DATASET_ID`; without it the Makefile falls back to the demo dataset, `smoke_v1`.
 
@@ -163,8 +167,10 @@ what all six agree on: **[`research/REPORT_SYNTHESIS.md`](research/REPORT_SYNTHE
 What they found, and what a plain leaderboard would have hidden. Each report opens with its
 pick, as run here:
 
-- **Summarisation:** `bart_l` if you can run a free 1.6 GB model on CPU and your text looks
-  like CNN news; `deepseek_m` ($191 per 1M articles) if you need speed; not `anthropic_l`.
+- **Summarisation:** on `coverage`, `bart_l` if you can run a free 1.6 GB model on CPU and your text looks
+  like CNN news; `deepseek_m` ($191 per 1M articles) if you need speed; not `anthropic_l`
+  (re-scored by SummEval-validated LLM judges, every hosted LLM ranks above every BART and
+  `anthropic_l` is first on the point estimate; neither ranking is confirmed by people).
 - **AG News:** fine-tune, starting with `bert_mini`, if your labels follow a house convention; if they mean what the words say, a hosted LLM; if you rent, `gemma_m` ($8 per 1M).
 - **DBpedia-14:** the cheapest arm you can run at 0.9857: `gemma_m` (~$12), `qwen_s` (~$26)
   or the fine-tuned `bert_base_fy`.
@@ -188,7 +194,7 @@ pick, as run here:
   every fine-tune. On DBpedia a **115× price
   difference** was not shown to buy accuracy (no gap under 10 items is detectable at n = 280), and the fine-tuned model is not separated from
   the top group: the top eleven arms are within four items, three of them items whose
-  label the field disputes, unadjudicated.
+  label the field disputes; one reader adjudicated them, shown the hosted answer, and found the gold wrong on all three.
 - **Extraction.** A 499 MB span tagger separated from **all 27** opponents, but **57%** of
   its margin over the best LLM is one entity type whose meaning exists only inside that
   corpus, and **up to 38%** of that lead is agreeing with annotation the rest of the field

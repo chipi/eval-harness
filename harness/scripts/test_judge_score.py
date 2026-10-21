@@ -220,8 +220,9 @@ with tempfile.TemporaryDirectory() as td:
     sets = Path(td)
     p = js.freeze(m1, sets)
     check("freeze writes the manifest under its id", p.name == f"{m1['judging_set_id']}.json")
+    before = (p.read_bytes(), p.stat().st_mtime_ns)
     js.freeze(m1, sets)
-    check("freezing the same set again is a no-op", True)
+    check("freezing the same set again leaves the file as it was", (p.read_bytes(), p.stat().st_mtime_ns) == before)
     bad = dict(m1, judging_set_sha256="deadbeef")
     check("an existing set with a different hash is never rewritten",
           raises_exit(lambda: js.freeze(bad, sets)))
@@ -378,11 +379,43 @@ with tempfile.TemporaryDirectory() as td:
     check("an unparseable reply is stored with scores null, and the item is not scored",
           json.loads(next(Path(td).glob("ja/*.json")).read_text())["scores"] is None
           and js.project(sc, sc_scores, ITEMS) == {})
+    first = json.loads(next(Path(td).glob("ja/*.json")).read_text())
+    check("a reply that is not bare JSON is stored as its hash, not its text",
+          first["output"] is None and first["output_withheld"] is True
+          and first["withheld_reason"] == "not bare JSON"
+          and first["output_sha256"] == hashlib.sha256(b"I cannot do this.").hexdigest())
     good = fake_judge()
     st2 = run_all(td, call=good)
     check("resume does not re-pay for unparsed replies unless asked", st2["calls"] == 0)
     st3 = run_all(td, call=good, retry=True)
     check("--retry-unparsed calls them again", st3["calls"] == 2 * N_TASKS)
+    again = json.loads(next(Path(td).glob("ja/*.json")).read_text())
+    check("a retried block keeps the earlier call's cost: 0.01 + 0.01, attempt 2",
+          abs(again["cost_usd"] - 0.02) < 1e-12 and again["attempts"] == 2
+          and abs(again["cost_usd_earlier_attempts"] - 0.01) < 1e-12 and again["scores"] is not None)
+    check("...and the stored bill counts both calls", abs(js.stored_cost(Path(td)) - 0.02 * 2 * N_TASKS) < 1e-9)
+
+with tempfile.TemporaryDirectory() as td:
+    quote = " ".join(ARTICLES["itemA"].split()[:8])
+    run_all(td, call=fake_judge(reply=json.dumps({"note": quote})))
+    recs = [json.loads(f.read_text()) for f in Path(td).glob("*/itemA.*.json")]
+    check("a bare-JSON reply that repeats 8 words of the article is stored as its hash",
+          recs and all(r["output"] is None and r["withheld_reason"] == "repeats the source" for r in recs))
+    import validate_tree as _vt  # noqa: E402
+    check("V12's reply rule accepts a withheld record and bare JSON",
+          all(_vt.reply_problems(r) == [] for r in recs)
+          and _vt.reply_problems({"output": '```json\n{"coherence": [1]}\n```'}) == [])
+    check("V12's reply rule refuses prose, a reply cut off, and text gone with no hash",
+          _vt.reply_problems({"output": "Let me think. {\"a\": 1}"}) != []
+          and _vt.reply_problems({"output": '{"coherence": [5, 2'}) != []
+          and _vt.reply_problems({"output": None}) != [])
+
+check("parse_block refuses true and \"4\" as scores",
+      js.parse_block(json.dumps({d: [True] for d in js.DIMS}), 1) is None
+      and js.parse_block(json.dumps({d: ["4"] for d in js.DIMS}), 1) is None
+      and js.parse_block(json.dumps({d: [4] for d in js.DIMS}), 1) == [4.0])
+check("a scorer with no validation.experiment gets a label, not a KeyError",
+      js.validated_label({"validation": {}}).startswith("validated by"))
 
 with tempfile.TemporaryDirectory() as td:
     run_all(td, call=fake_judge())
@@ -714,6 +747,145 @@ with tempfile.TemporaryDirectory() as td:
     finally:
         vg.DATA, vg.load, sys.argv = saved
 
+# ── validate_judge_zhang: statistics, loading, the record checks, withholding ──
+import validate_judge_zhang as vz  # noqa: E402
+
+pt = vz.paired_test({"x": 1.0, "y": 1.0, "z": 1.0}, {"x": 0.0, "y": 0.0, "z": 0.0, "w": 9.0})
+check("paired test: only shared articles count; three +1 differences give p near 2/8",
+      pt["articles"] == 3 and pt["mean_difference"] == 1.0 and pt["a_ahead"] == 3
+      and pt["b_ahead"] == 0 and 0.22 < pt["p_two_sided"] < 0.28)
+pt = vz.paired_test({str(i): 1.0 for i in range(20)}, {str(i): 0.0 for i in range(20)})
+check("paired test: twenty +1 differences are significant (p < 0.001)", pt["p_two_sided"] < 0.001)
+pt = vz.paired_test({"x": 1.0, "y": -1.0}, {"x": 0.0, "y": 0.0})
+check("paired test: differences that cancel are not (p = 1)", pt["p_two_sided"] == 1.0
+      and pt["a_ahead"] == 1 and pt["b_ahead"] == 1)
+
+SYS3 = ["s1", "s2", "s3"]
+
+
+def _refs(vals):
+    """The three two-rater references of an article, all alike: [{system: {human dim: v}}]."""
+    return [{m: {h: v for h, _ in vz.PAIRS} for m, v in zip(SYS3, vals)} for _ in range(3)]
+
+
+def _jscores(vals):
+    return {m: {jd: v for _, jd in vz.PAIRS} for m, v in zip(SYS3, vals)}
+
+
+refs_ = {"a1": _refs([3.0, 2.0, 1.0]), "a2": _refs([1.0, 2.0, 3.0])}
+same_ = {"a1": _jscores([5.0, 4.0, 1.0]), "a2": _jscores([1.0, 4.0, 5.0])}
+jt_ = vz.judge_tau(same_, refs_, SYS3)
+check("judge tau: a judge ordering every article as the raters do is 1 on every dimension",
+      jt_["mean"] == 1.0 and all(jt_[h] == 1.0 for h, _ in vz.PAIRS))
+check("judge tau: the reverse order is -1",
+      vz.judge_tau({"a1": same_["a2"], "a2": same_["a1"]}, refs_, SYS3)["mean"] == -1.0)
+mdata_ = {aid: {"systems": {"reference": {"summary": "r"}, **{m: {"summary": m} for m in SYS3}}}
+          for aid in ("a1", "a2")}
+order_ = {"a1": {"s1": 3, "s2": 2, "s3": 1}, "a2": {"s1": 1, "s2": 2, "s3": 3}}
+check("metric tau: a constant metric orders nothing: 0, the convention of judging.kendall_tau_b",
+      vz.metric_tau(mdata_, refs_, SYS3, lambda s, r: 1.0)["mean"] == 0.0)
+check("metric tau: a metric ordering the article as the raters do is 1",
+      vz.metric_tau({"a1": mdata_["a1"]}, refs_, SYS3, lambda s, r: order_["a1"][s])["mean"] == 1.0)
+check("article taus: one value per article, averaged over references and dimensions",
+      vz.article_taus(lambda aid, k, h: [order_[aid][m] for m in SYS3], refs_, SYS3, ["a1", "a2"])
+      == {"a1": 1.0, "a2": 1.0})
+
+
+def _rated(vals):
+    return {m: {"ratings": [{h: v for h, _ in vz.PAIRS}] * 3} for m, v in zip(SYS3, vals)}
+
+
+# Over both articles the raters put s2 first; on a1 alone, s1. A judge that scored a1 only
+# and put s1 first agrees with the raters on the articles it scored.
+smd = {"a1": {"systems": _rated([5.0, 4.0, 1.0])}, "a2": {"systems": _rated([1.0, 5.0, 1.0])}}
+sm_ = vz.system_means(smd, SYS3, {"j": {"a1": _jscores([5.0, 4.0, 1.0])}})
+check("system means: the raters' ranking over every article puts s2 first",
+      sm_["ranking"]["raters"]["s2"] == 1)
+check("system means: a judge is compared with the raters on the articles it scored (Spearman 1)",
+      sm_["ranking"]["spearman_vs_raters"]["j"] == 1.0 and sm_["ranking"]["judges"]["j"]["s1"] == 1)
+
+with tempfile.TemporaryDirectory() as td:
+    td = Path(td)
+    rows = [{"dataset": "cnndm", "article": "An article.", "model": "m", "summary": float("nan"),
+             "coherence": 1, "relevance": 1, "faithfulness": 0},
+            {"dataset": "xsum", "article": "Other.", "model": "m", "summary": "s",
+             "coherence": 5, "relevance": 5, "faithfulness": 1}]
+    blob = json.dumps(rows).encode()
+    saved = (vz.FILE, vz.EXT, vz.PINNED)
+    vz.EXT, vz.FILE, vz.PINNED = td, td / "f.json", hashlib.sha256(blob).hexdigest()
+    try:
+        (td / "f.json").write_bytes(blob)
+        got = vz.load()
+        one = next(iter(got.values()))
+        check("load: CNN/DailyMail rows only; a NaN summary is an empty one",
+              len(got) == 1 and one["systems"]["m"]["summary"] == ""
+              and one["systems"]["m"]["ratings"] == [{"coherence": 1.0, "relevance": 1.0, "faithfulness": 0.0}])
+        vz.PINNED = "0" * 64
+        check("load: a file that is not the pinned one is refused", "not the pinned" in _exit(vz.load))
+    finally:
+        vz.FILE, vz.EXT, vz.PINNED = saved
+
+# The whole script on a synthetic world with a fake call: a reply that quotes the article
+# is not stored, the report is built, and the record checks refuse what they should.
+ART = {"a1": "The café on the corner served coffee to every single visitor all morning long today.",
+       "a2": "A storm closed the harbour for two days and the ferries stayed in port until Friday.",
+       "a3": "The council voted to plant four hundred trees along the river before the spring."}
+QUOTE = "the café on the corner served coffee to every"
+SYSZ = ["reference", "s1", "s2", "s3"]
+rng_ = __import__("random").Random(3)
+synth_z = {aid: {"article": art, "systems": {
+    m: {"summary": f"{m} wrote a summary of {aid} number {k}",
+        "ratings": [{"coherence": float(rng_.randint(1, 5)), "relevance": float(rng_.randint(1, 5)),
+                     "faithfulness": float(rng_.randint(0, 1))} for _ in range(3)]}
+    for k, m in enumerate(SYSZ)}} for aid, art in ART.items()}
+
+
+def zhang_reply(fn, args, label):
+    msg, _params = args
+    n = len(re.findall(r"^\d+\. ", msg.split("SUMMARIES:\n", 1)[1], re.M))
+    body = json.dumps({d: [float(1 + (i % 5)) for i in range(n)] for d in js.DIMS})
+    text = (f"As the article says, {QUOTE}. " + body) if "café" in msg else body
+    return SimpleNamespace(output=text, tokens_in=10, tokens_out=10, cost_usd=0.0001)
+
+
+with tempfile.TemporaryDirectory() as td:
+    td = Path(td)
+    (td / "scorers").mkdir()
+    shutil.copy(HERE.parent / "data" / "scorers" / "judge-summ-v1.yaml", td / "scorers" / "judge-summ-v1.yaml")
+    saved = (vz.DATA, vz.load, vz.call_with_retries, sys.argv)
+    vz.DATA, vz.load, vz.call_with_retries = td, lambda: synth_z, zhang_reply
+    sys.argv = ["validate_judge_zhang.py", "--scorer", "judge-summ-v1"]
+    try:
+        rc = vz.main()
+        vroot = td / "judge-validation" / "judge-summ-v1" / "zhang2023-cnndm"
+        rep = json.loads((vroot / "report.json").read_text())
+        f_a1 = vz.record_path(vroot / "gemma_l", "a1", 0)
+        rec_a1 = json.loads(f_a1.read_text())
+        rec_a2 = json.loads(vz.record_path(vroot / "gemma_l", "a2", 0).read_text())
+        check("main: a reply that quotes 8 words of the article is withheld (no text, its hash kept)",
+              rc == 0 and rec_a1["output"] is None and rec_a1["output_withheld"] is True
+              and len(rec_a1["output_sha256"]) == 64 and rec_a1["dims"] is not None)
+        check("main: a reply that quotes nothing is stored as it came",
+              rec_a2["output_withheld"] is False and rec_a2["output"].startswith("{"))
+        check("main: the report counts the withheld replies and scores every article",
+              rep["judges"]["gemma_l"]["withheld_replies"] == 1
+              and rep["judges"]["gemma_l"]["articles_scored"] == 3 and rep["articles"] == 3)
+        sc_z = js.load_scorer(td / "scorers" / "judge-summ-v1.yaml")
+        args_z = (sc_z, js.prompt_text(sc_z), int(sc_z["protocol"]["outputs_per_call"]), synth_z, SYSZ, vroot)
+        orig_a1 = f_a1.read_text()
+        f_a1.write_text(json.dumps({**rec_a1, "judge_fp": "0" * 16}))
+        check("build_report: a record stored for another judge definition is refused",
+              "different judge" in _exit(lambda: vz.build_report(*args_z)))
+        # json.dumps writes "café" as "café", so the raw file hides the quote; the
+        # decoded reply does not.
+        f_a1.write_text(json.dumps({**rec_a1, "output": f"{QUOTE} {{}}"}))
+        check("build_report: a stored reply quoting the article is refused even when JSON-escaped",
+              "\\u00e9" in f_a1.read_text() and "repeats 8 words" in _exit(lambda: vz.build_report(*args_z)))
+        f_a1.write_text(orig_a1)
+        check("build_report: the restored records build again", vz.build_report(*args_z)["articles"] == 3)
+    finally:
+        vz.DATA, vz.load, vz.call_with_retries, sys.argv = saved
+
 # ── validate_tree V11-V13 each fail on a deliberately broken copy ────────────
 import shutil  # noqa: E402
 import validate_tree as vt  # noqa: E402
@@ -852,6 +1024,219 @@ with tempfile.TemporaryDirectory() as td_:
           js.prompt_text(scorer(prompt={"file": "sub/p.txt"}), tdp / "scorers") == "nested")
     check("prompt.file: missing everywhere is refused, listing where it looked",
           "looked in" in str(_exit(lambda: js.prompt_text(scorer(prompt={"file": "nope.txt"})))))
+
+# ── the task: what is judged, from the scorer ────────────────────────────────
+check("task: none declared is SummEval's (ARTICLE, SUMMARIES, four dimensions, 1-5)",
+      judging.task_of({}) == {"source_label": "ARTICLE", "output_label": "SUMMARIES",
+                              "dimensions": list(judging.DIMS), "scale": [1, 5]})
+REL = {"source_label": "QUERY", "output_label": "PASSAGES", "dimensions": ["relevance"],
+       "scale": [0, 3]}
+check("task: a declared one replaces the defaults it names", judging.task_of({"task": REL}) == REL)
+check("task: a partial one keeps the other defaults",
+      judging.task_of({"task": {"dimensions": ["helpfulness"]}})["output_label"] == "SUMMARIES")
+for bad_task, why in (({"labels": "x"}, "an unknown key"), ({"dimensions": []}, "no dimensions"),
+                      ({"dimensions": ["a", "a"]}, "a repeated dimension"),
+                      ({"scale": [5, 1]}, "a scale whose low is not below its high"),
+                      ({"scale": [1]}, "a scale that is not two numbers"),
+                      ({"scale": [1.0, 5.0]}, "a scale in floats"),
+                      ({"scale": [0.5, 3.5]}, "a fractional scale"),
+                      ({"source_label": "A:B"}, "a label with ':'"),
+                      ({"output_label": "two\nlines"}, "a two-line label")):
+    try:
+        judging.task_of({"task": bad_task})
+        refused_ = False
+    except ValueError:
+        refused_ = True
+    check(f"task: {why} is refused", refused_)
+check("task: a bad task is refused by name",
+      "task.scale" in _exit(lambda: js.task_for(scorer(task={"scale": [3, 3]}))))
+
+GEN = "Rate how well each of the {n} numbered passages answers the query, 0 to 3."
+check("prompt: {n} is replaced by the count and nothing else changes",
+      judging.render_prompt(GEN, 3) == GEN.replace("{n}", "3")
+      and judging.render_prompt(GEN, 16) == GEN.replace("{n}", "16"))
+check("prompt: a prompt with neither {n} nor SummEval's phrases is refused, naming {n}",
+      "{n}" in _exit(lambda: judging.render_prompt("Rate them.", 3)))
+gm = judging.build_message(GEN, "what is x?", ["x is y", "no idea"], "QUERY", "PASSAGES")
+check("message: the task's labels head the source and the numbered outputs",
+      gm == GEN.replace("{n}", "2") + "\n\nQUERY:\nwhat is x?\n\nPASSAGES:\n1. x is y\n2. no idea")
+check("message: the default labels are unchanged (SummEval's layout)",
+      judging.build_message(BASE, "a", ["s"]) == judging.build_message(BASE, "a", ["s"], "ARTICLE",
+                                                                       "SUMMARIES"))
+check("parse: the task's dimensions and scale",
+      judging.parse_block('{"relevance": [0, 3, 2]}', 3, ["relevance"], [0, 3]) == [0.0, 3.0, 2.0])
+check("parse: a number outside the task's scale is refused",
+      judging.parse_block('{"relevance": [0, 4, 2]}', 3, ["relevance"], [0, 3]) is None)
+check("parse: a missing task dimension is refused",
+      judging.parse_block('{"relevance": [1]}', 1, ["relevance", "grounded"], [0, 3]) is None)
+fk = judging.call_judge(gm, {"provider": judging.FAKE, "model": "fa", "_task": REL})
+fv = json.loads(fk.output)
+check("fake judge: answers in the task's dimensions, on its scale, one number per output",
+      list(fv) == ["relevance"] and len(fv["relevance"]) == 2
+      and all(0 <= x <= 3 for x in fv["relevance"]))
+
+check("judging set: a scorer without a task keeps the id it had (the task is not hashed)",
+      "task" not in m1 and manifest_for()["judging_set_id"] == m1["judging_set_id"])
+check("judging set: declaring even the default task is a different set (it is hashed)",
+      manifest_for(scorer(task=judging.task_of({})))["judging_set_id"] != m1["judging_set_id"])
+check("judging set: a different declared task is a different set",
+      manifest_for(scorer(task=REL))["judging_set_id"]
+      != manifest_for(scorer(task={**REL, "scale": [0, 2]}))["judging_set_id"])
+
+with tempfile.TemporaryDirectory() as td_:
+    prompt_ = Path(td_) / "rel.txt"
+    prompt_.write_text(GEN + "\nReply as JSON: {\"relevance\": [one integer per passage]}\n")
+    fake_ = {"provider": judging.FAKE, "temperature": 0.0, "usd_per_mtok_in": 1.0,
+             "usd_per_mtok_out": 2.0}
+    rel_sc = scorer(task=REL, prompt={"file": str(prompt_)},
+                    judges=[{"id": "fa", "params": {**fake_, "model": "fake-a", "family": "gemma"}},
+                            {"id": "fb", "params": {**fake_, "model": "fake-b", "family": "qwen"}}])
+    rel_base = js.prompt_text(rel_sc)
+    rel_m = js.build_manifest(rel_sc, "ds", "i" * 64, ITEMS, ARMS, ARTICLES, OUTPUTS, rel_base)
+    rel_msgs = [js.message_for(rel_m, rel_base, ARTICLES, OUTPUTS, it, "primary", 0)
+                for it in rel_m["items"]]
+    check("a declared task reaches the message: its labels, and the count in place of {n}",
+          all("\n\nQUERY:\n" in m_ and "\n\nPASSAGES:\n1. " in m_ and "the 10 numbered passages" in m_
+              for m_ in rel_msgs))
+    st_ = js.run_judging(rel_m, rel_sc, rel_base, ARTICLES, OUTPUTS, Path(td_) / "v",
+                         js.real_call, 1.0, log=lambda *_: None)
+    sc_ = js.load_scores(rel_m, rel_sc, Path(td_) / "v")
+    vals_ = [v for p_ in sc_.values() for i_ in p_["primary"].values() for v in i_.values()]
+    check("a declared task end to end with fake judges: every block parses, scores on its scale",
+          st_["calls"] > 0 and len(vals_) == 2 * len(ITEMS) * N_ARMS
+          and all(0 <= v <= 3 for v in vals_))
+    check("a fake judge's task is not sent as one of a real judge's params",
+          "_task" not in js.judge_params(rel_sc, {"id": "r", "params": {"provider": "litellm"}})
+          and js.judge_params(rel_sc, rel_sc["judges"][0])["_task"] == REL)
+
+import validate_tree as vt  # noqa: E402
+with tempfile.TemporaryDirectory() as td_:
+    sdir = Path(td_)
+    (sdir / "good.txt").write_text("Rate each of the {n} numbered answers.\n")
+    (sdir / "bad.txt").write_text("Rate the answers.\n")
+    base_ = {"kind": "judge", "dataset_id": "ds", "prompt": {"file": str(sdir / "good.txt")},
+             "judges": [{"id": "fa", "params": {"provider": "fake", "model": "a", "family": "x",
+                                                "usd_per_mtok_in": 0, "usd_per_mtok_out": 0}},
+                        {"id": "fb", "params": {"provider": "fake", "model": "b", "family": "y",
+                                                "usd_per_mtok_in": 0, "usd_per_mtok_out": 0}}],
+             "protocol": {"outputs_per_call": 4}, "task": {"dimensions": ["correct"]}}
+    (sdir / "s-good.yaml").write_text(json.dumps({**base_, "scorer_id": "s-good"}))
+    check("V13: a scorer with a declared task and a {n} prompt passes",
+          vt.scorer_problems(sdir) == [])
+    (sdir / "s-bad.yaml").write_text(json.dumps(
+        {**base_, "scorer_id": "s-bad", "prompt": {"file": str(sdir / "bad.txt")},
+         "protocol": {"outputs_per_call": 16}}))
+    (sdir / "s-task.yaml").write_text(json.dumps(
+        {**base_, "scorer_id": "s-task", "task": {"scale": [3, 1]}}))
+    probs_ = vt.scorer_problems(sdir)
+    check("V13: a prompt that cannot be rendered (no {n}, not SummEval's) is reported",
+          any(p.startswith("s-bad.yaml") and "{n}" in p for p in probs_))
+    check("V13: a bad task block is reported", any(p.startswith("s-task.yaml") and "task.scale" in p
+                                                   for p in probs_))
+
+tut = js.load_scorer(HERE.parent / "tutorial" / "scorers" / "tickets-judge-v1.yaml")
+tut_prompt = js.prompt_text(tut)
+check("tutorial scorer: loads, declares its task, and its prompt renders with the count",
+      tut["_task"]["dimensions"] == ["accuracy", "usefulness"]
+      and "each of the 4 numbered summaries" in judging.render_prompt(tut_prompt, 4)
+      and "{n}" not in judging.render_prompt(tut_prompt, 4))
+check("tutorial scorer: refused by the gate (fake judges), so it runs only --unvalidated",
+      js.validation_problems(tut) != [])
+
+import leaderboard as lb  # noqa: E402
+check("leaderboard: judge means (quarters, sixths) are exact, so no precision note",
+      lb._small_fractions([3.25, 2.5, 4.0, 1.75, 2 / 3, 13 / 6]))
+check("leaderboard: scores rounded to 6 decimals still get the note",
+      not lb._small_fractions([0.25, 0.333333]) and not lb._small_fractions([0.123457]))
+check("leaderboard: no values is not 'all exact'", not lb._small_fractions([]))
+check("leaderboard: judge means as stored (round 10) never get the note: exact or >= 8 decimals",
+      all(lb._small_fractions([round(v, 10)]) or lb._stored_decimals([round(v, 10)]) >= lb._MIN_TIE_DECIMALS
+          for v in (3.25, 2.5, 2 / 3, 13 / 6, 4.0833333333)))
+
+check("prompt: {n} together with SummEval's fixed phrases is refused (they would stay at 16)",
+      "16" in _exit(lambda: judging.render_prompt(
+          "Rate the {n} items: 16 numbered summaries, a list of 16 integers.", 5)))
+
+# The default arm set: every config on the dataset, latest run per config; another dataset's
+# runs are not in it; a mix of config versions is reported.
+with tempfile.TemporaryDirectory() as td_:
+    rd = Path(td_)
+    for name, cid, ds, at in (("a_v1_r1", "a_v1", "ds", "2026-01-01"), ("a_v1_r2", "a_v1", "ds", "2026-01-02"),
+                              ("b_v1_r1", "b_v1", "ds", "2026-01-01"), ("a_v2_r1", "a_v2", "ds", "2026-01-03"),
+                              ("c_v1_r1", "c_v1", "other", "2026-01-01")):
+        (rd / name).mkdir()
+        (rd / name / "metrics.json").write_text(json.dumps(
+            {"config_id": cid, "dataset_id": ds, "created_at": at, "params": {"family": "x"}}))
+    got = js.discover_arms("ds", "", rd)
+    check("default arms: every config on the dataset, none from another dataset",
+          [a["config_id"] for a in got] == ["a_v1", "a_v2", "b_v1"])
+    check("default arms: repeat runs of one config are one arm, the latest",
+          next(a for a in got if a["config_id"] == "a_v1")["run"] == "a_v1_r2")
+    check("default arms: a mix of config versions is reported", js.config_versions(got) == ["_v1", "_v2"]
+          and js.config_versions([a for a in got if a["config_id"] != "a_v2"]) == ["_v1"])
+
+# A real judge is never handed the fake judge's task, whatever run_judging does.
+with tempfile.TemporaryDirectory() as td_:
+    handed = []
+
+    def rec(message, params):
+        handed.append(dict(params))
+        n_ = len(re.findall(r"^\d+\. ", message.rsplit("SUMMARIES:\n", 1)[1], re.M))
+        return SimpleNamespace(output=json.dumps({d: [3] * n_ for d in judging.DIMS}), tokens_in=10,
+                               tokens_out=10, cost_usd=0.0, extra={}, meta={})
+    real_sc = scorer(task={"dimensions": list(judging.DIMS)},
+                     judges=[{"id": "ra", "params": {"provider": "litellm", "model": "m_a", "family": "gemma",
+                                                     "usd_per_mtok_in": 1.0, "usd_per_mtok_out": 2.0}},
+                             {"id": "rb", "params": {"provider": "litellm", "model": "m_b", "family": "qwen",
+                                                     "usd_per_mtok_in": 1.0, "usd_per_mtok_out": 2.0}}])
+    js.run_judging(manifest_for(real_sc), real_sc, BASE, ARTICLES, OUTPUTS, Path(td_), rec, 1.0,
+                   log=lambda *_: None)
+    check("run_judging: no real judge's call carries _task", handed and all("_task" not in p for p in handed))
+
+# A provider refusing mid-pass (its own budget guardrail, 403) stops the pass like the cost cap:
+# no traceback, every verdict bought so far kept, and the same command resumes.
+with tempfile.TemporaryDirectory() as td_:
+    good = fake_judge()
+    n_ok = [0]
+
+    def refusing(message, params):
+        if n_ok[0] >= 5:
+            raise RuntimeError("Error code: 403 - Budget limit exceeded (weekly limit)")
+        n_ok[0] += 1
+        return good(message, params)
+    st_r = run_all(td_, call=refusing)
+    kept = len(list(Path(td_).glob("*/*.json")))
+    check("a refused judge call stops the pass cleanly, verdicts so far kept",
+          st_r["aborted"] and "403" in st_r.get("call_failed", "") and kept == 5 and st_r["calls"] == 5)
+    st_r2 = run_all(td_, call=fake_judge())
+    check("after a refusal the same pass resumes: only the missing verdicts are bought",
+          not st_r2["aborted"] and st_r2["skipped"] == 5 and st_r2["calls"] == 2 * N_TASKS - 5)
+
+# ── validate_judge_zhang: the parts that keep the third-party text out of the records ──
+import validate_judge_zhang as vz  # noqa: E402
+art = "The council approved the new bridge on Tuesday after a long and heated debate about its cost"
+summ = ["The council approved a new bridge.", ""]
+src = vz.shingles([art, *summ])
+check("zhang: a reply quoting eight words of the article is detected (and so withheld)",
+      vz.quotes_source('{"coherence": [5]} the council approved the new bridge on tuesday after', src))
+check("zhang: an ordinary JSON reply is not",
+      not vz.quotes_source('{"coherence": [5, 4], "consistency": [5, 1], "fluency": [5, 1], "relevance": [4, 1]}', src))
+check("zhang: dimensions parsed per dimension, each in 1..5, n numbers",
+      vz.parse_dims('{"coherence": [5, 1], "consistency": [4, 1], "fluency": [5, 2], "relevance": [3, 1]}', 2)
+      == {"coherence": [5.0, 1.0], "consistency": [4.0, 1.0], "fluency": [5.0, 2.0], "relevance": [3.0, 1.0]}
+      and vz.parse_dims('{"coherence": [5, 1]}', 2) is None
+      and vz.parse_dims('{"coherence": [5, 9], "consistency": [4, 1], "fluency": [5, 2], "relevance": [3, 1]}', 2) is None)
+_ho = vz.held_out([{"coherence": 5, "relevance": 4, "faithfulness": 1},
+                   {"coherence": 3, "relevance": 2, "faithfulness": 0},
+                   {"coherence": 1, "relevance": 5, "faithfulness": 1}], "a", "m")
+check("zhang: each rating is held out once against the mean of the other two",
+      len(_ho) == 3 and sorted(h["coherence"] for h, _ in _ho) == [1, 3, 5]
+      and all(abs(rest["coherence"] - (9 - h["coherence"]) / 2) < 1e-9 for h, rest in _ho))
+_bl = vz.blocks("a1", [f"s{i:02d}" for i in range(19)], 16)
+check("zhang: 19 summaries in blocks of 10 and 9, each summary once, order seeded per article",
+      [len(b) for b in _bl] == [10, 9] and sorted(sum(_bl, [])) == [f"s{i:02d}" for i in range(19)]
+      and _bl == vz.blocks("a1", [f"s{i:02d}" for i in range(19)], 16)
+      and sum(_bl, []) != sum(vz.blocks("a2", [f"s{i:02d}" for i in range(19)], 16), []))
 
 bad = [l for l, c in ok if not c]
 print(f"\n{len(ok) - len(bad)}/{len(ok)} assertions passed")

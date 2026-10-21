@@ -11,7 +11,7 @@ stored. This is the judging PASS: listwise, every arm, verdicts stored as a froz
 THE PASS, IN ORDER
   1. gate       the scorer must name a committed run that validates each judge (or
                 --unvalidated, which labels every number "unvalidated").
-  2. judging set  one item = the article + every arm's output for it. Arm identities are
+  2. judging set  one item = the source + every arm's output for it. Arm identities are
                 hidden and the order is shuffled per item with a seed. The arm set, the
                 outputs, the seed and the block size are hashed into the set's id, and the
                 manifest is written to data/judging-sets/. Listwise scores depend on who
@@ -21,16 +21,21 @@ THE PASS, IN ORDER
                 stored per call under data/judge-verdicts/, written atomically, so a rerun
                 skips what is stored (resume) and re-reading costs $0. Cost-capped mid-run;
                 what was bought is kept.
-  4. projection one score per arm per item (mean of the four dimensions, per judge; the
+  4. projection one score per arm per item (mean of the task's dimensions, per judge; the
                 primary is the mean over judges) written as scored runs, shaped like
                 rescore's, plus summary.json with the controls.
+
+THE TASK. What is judged comes from the scorer's optional `task` block: the label of the
+source item, the label of the numbered outputs, the dimensions and the scale. Without one it
+is SummEval's (ARTICLE, SUMMARIES, coherence/consistency/fluency/relevance, 1-5), which the
+committed summarisation scorer uses. A declared task is part of the judging set's hash.
 
 BLOCKS. SummEval validated 16 summaries per call. With more arms than that, an item is
 judged in the fewest blocks of at most `outputs_per_call`, sizes as equal as possible: 29
 arms are 15 + 14, never 16 + 13, so no call is further from the validated size than it must
 be, and no block is a runt. Arms are assigned to blocks by the per-item shuffle, so a block
 is a random sample of the arms and the blocks of an item are exchangeable. The judge scores
-each summary on an ABSOLUTE 1-5 scale per dimension, not a rank within the block, which is
+each output on an ABSOLUTE scale per dimension, not a rank within the block, which is
 what lets scores from different blocks be averaged together. That is an assumption, and the
 position check tests it: its second shuffle re-forms the blocks.
 """
@@ -57,7 +62,7 @@ from _common import (  # noqa: E402
 from _retry import call_with_retries  # noqa: E402
 from judging import (  # noqa: E402
     DIMS, FAKE, build_message, call_judge, kendall_tau_b, parse_block, render_prompt,
-    spearman,
+    shingles, spearman, task_of, withheld_reason,
 )
 
 try:
@@ -71,11 +76,16 @@ VERDICTS = DATA / "judge-verdicts"
 JUDGED = DATA / "runs-judged"
 
 PASSES = ("primary", "position", "noise")
+
+
+class JudgeCallFailed(Exception):
+    """A judge call failed after its retries, or was refused (a provider budget, a policy)."""
 #: Describe the CALL that made an arm's output, not how it was measured: carried across as
 #: rescore.py carries them.
 CARRY = ("latency_ms", "tokens_in", "tokens_out", "cost_usd", "truncated", "reasoning_tokens")
 #: Reply size per summary for the dry-run estimate: SummEval's gemma_l returned 217.5 tokens
 #: for 16 summaries x 4 dimensions (committed run se_gemma_l_n100_v1, scores.tokens_out).
+#: A task with other dimensions scales it by their number.
 OUT_TOKENS_PER_SUMMARY = 14
 OUT_TOKENS_FIXED = 10
 CHARS_PER_TOKEN = 4
@@ -83,6 +93,15 @@ CHARS_PER_TOKEN = 4
 
 def _sha(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def records_sha256(vdir: Path) -> str:
+    """One hash over a judge's stored validation records (names and bytes, sorted), so a
+    report built from them can be checked against them where the human data is absent."""
+    h = hashlib.sha256()
+    for f in sorted(p for p in vdir.glob("*.json") if p.name != "report.json"):
+        h.update(f.name.encode() + b"\0" + f.read_bytes() + b"\0")
+    return h.hexdigest()
 
 
 def _canon(obj: Any) -> str:
@@ -105,7 +124,30 @@ def load_scorer(path: Path) -> Dict[str, Any]:
     if len(sc["judges"]) < 2 or len(fams) < 2:
         die(f"{path.name}: needs at least two judges from different vendor families "
             f"(ADR-0001 §4); got {sorted(map(str, fams))}")
+    try:
+        sc["_task"] = task_of(sc)
+    except ValueError as exc:
+        die(f"{path.name}: {exc}")
     return sc
+
+
+def task_for(sc: Dict[str, Any]) -> Dict[str, Any]:
+    """The scorer's checked task: set by load_scorer, derived here for a scorer built in code."""
+    if "_task" not in sc:
+        try:
+            sc["_task"] = task_of(sc)
+        except ValueError as exc:
+            die(f"scorer {sc.get('scorer_id')}: {exc}")
+    return sc["_task"]
+
+
+def judge_params(sc: Dict[str, Any], j: Dict[str, Any]) -> Dict[str, Any]:
+    """What a judge is called with. A fake judge is also told the task, to answer in its
+    shape; a real one is not (its request carries only its own params)."""
+    p = dict(j["params"])
+    if p.get("provider") == FAKE:
+        p["_task"] = task_for(sc)
+    return p
 
 
 def prompt_candidates(sc: Dict[str, Any], root: Optional[Path] = None) -> List[Path]:
@@ -204,7 +246,8 @@ def validation_problems(sc: Dict[str, Any], runs_dir: Path = RUNS,
 
 def validated_label(sc: Dict[str, Any]) -> str:
     """Says where the validation was done, not that the judge is valid for this use."""
-    return f"validated on {sc['validation']['experiment']} (provenance)"
+    exp = (sc.get("validation") or {}).get("experiment")
+    return f"validated on {exp} (provenance)" if exp else "validated by the runs its scorer names (provenance)"
 
 
 # ── order, blocks, subsets ───────────────────────────────────────────────────
@@ -255,6 +298,11 @@ def discover_arms(dataset_id: str, match: str, runs_dir: Path = RUNS) -> List[Di
                      "family": (m.get("params") or {}).get("family")
                      or (m.get("fingerprint", {}).get("arm", {}).get("params") or {}).get("family")})
     return arms
+
+
+def config_versions(arms: Sequence[Dict[str, Any]]) -> List[str]:
+    """The distinct `_vN` endings of the arms' config_ids (leaderboard warns on the same mix)."""
+    return sorted({m.group(0) for a in arms for m in [re.search(r"_v\d+$", a["config_id"])] if m})
 
 
 def select_arms(arms: Sequence[Dict[str, Any]], spec: str) -> List[Dict[str, Any]]:
@@ -308,6 +356,8 @@ def build_manifest(sc: Dict[str, Any], dataset_id: str, items_sha256: Optional[s
         "protocol": {"outputs_per_call": per_call, "blinding": bool(pr.get("blinding", True)),
                      "order_seed": seed, "block_sizes": block_sizes(len(arm_ids), per_call)},
         "prompt_sha256_at_16": _sha(base_prompt),
+        # Only a declared task is hashed, so a scorer without one keeps the set id it had.
+        **({"task": task_for(sc)} if sc.get("task") else {}),
         "items": items,
         "position_items": pick_subset(list(item_ids), pr.get("position_check_fraction", 0),
                                       seed, "position-subset"),
@@ -330,8 +380,10 @@ def message_for(manifest: Dict[str, Any], base: str, articles: Dict[str, str],
                 block: int) -> str:
     key = "position" if pass_name == "position" else "primary"
     arm_ids = item[key][block]
-    return build_message(base, articles[item["item_id"]], [outputs[a][item["item_id"]]
-                                                          for a in arm_ids])
+    task = manifest.get("task") or task_of({})
+    return build_message(base, articles[item["item_id"]],
+                         [outputs[a][item["item_id"]] for a in arm_ids],
+                         task["source_label"], task["output_label"])
 
 
 def freeze(manifest: Dict[str, Any], sets_dir: Path = SETS) -> Path:
@@ -435,20 +487,38 @@ def run_judging(manifest: Dict[str, Any], sc: Dict[str, Any], base: str,
                     finally:
                         _took.append((time.perf_counter() - t0) * 1000.0)
 
-                res = call_with_retries(
-                    timed, (msg, dict(j["params"])),
-                    label=f"{j['id']} {item['item_id'][:8]} {pass_name} b{block}")
+                try:
+                    res = call_with_retries(
+                        timed, (msg, judge_params(sc, j)),
+                        label=f"{j['id']} {item['item_id'][:8]} {pass_name} b{block}")
+                except SystemExit:
+                    raise
+                except Exception as exc:  # noqa: BLE001 — provider SDKs vary too much to enumerate
+                    # Refused (e.g. a provider's own budget guardrail), or still failing after
+                    # call_with_retries' retries. Stop like the cost cap does.
+                    raise JudgeCallFailed(f"{j['id']}: {type(exc).__name__}: {str(exc)[:300]}") from exc
                 est, known = call_cost(res, j["params"])
                 cost = est if est is not None else 0.0
                 meta = getattr(res, "meta", None) or {}
-                scores = parse_block(res.output, n)
+                scores = parse_block(res.output, n, task_for(sc)["dimensions"], task_for(sc)["scale"])
+                arms = item["position" if pass_name == "position" else "primary"][block]
+                why = withheld_reason(res.output, shingles(
+                    [articles[item["item_id"]], *(outputs[a][item["item_id"]] for a in arms)]))
+                # A retried block replaces the stored reply; the earlier calls were paid for
+                # too, so their cost stays in the record (and in every bill read from it).
+                prior = read_json(path) if path.is_file() else {}
+                earlier = float(prior.get("cost_usd") or 0.0)
                 write_json(path, {
                     "set_id": manifest["judging_set_id"], "judge": j["id"],
                     "judge_fp": judge_fingerprint(j), "item_id": item["item_id"],
                     "pass": pass_name, "block": block, "n": n,
-                    "prompt_sha256": _sha(msg), "output": res.output,
+                    "prompt_sha256": _sha(msg), "output": None if why else res.output,
+                    "output_sha256": _sha(res.output or ""), "output_withheld": bool(why),
+                    **({"withheld_reason": why} if why else {}),
                     "scores": scores, "tokens_in": res.tokens_in, "tokens_out": res.tokens_out,
-                    "cost_usd": cost, "cost_known": known,
+                    "cost_usd": cost + earlier, "cost_known": known and prior.get("cost_known", True),
+                    **({"attempts": int(prior.get("attempts") or 1) + 1,
+                        "cost_usd_earlier_attempts": round(earlier, 8)} if prior else {}),
                     "latency_ms": round(took[-1], 3),
                     "truncated": (getattr(res, "extra", None) or {}).get("truncated"),
                     "finish_reason": meta.get("finish_reason"),
@@ -460,6 +530,9 @@ def run_judging(manifest: Dict[str, Any], sc: Dict[str, Any], base: str,
                 if est is None:
                     raise CostCapExceeded(f"{j['id']} returned no cost and no token counts: "
                                           "the spend is unknown, so the cap cannot be enforced")
+                if why:
+                    log(f"    reply not stored as text ({why}), only its hash: "
+                        f"{j['id']} {item['item_id'][:8]} {pass_name} b{block}")
                 if scores is None:
                     log(f"    unparsed reply: {j['id']} {item['item_id'][:8]} {pass_name} b{block}")
                 elif stats["calls"] % 25 == 0:
@@ -467,6 +540,11 @@ def run_judging(manifest: Dict[str, Any], sc: Dict[str, Any], base: str,
     except CostCapExceeded as exc:
         stats["aborted"] = True
         log(f"  COST CAP: {exc}. Stopping; every stored verdict is kept and re-read for $0.")
+    except JudgeCallFailed as exc:
+        stats["aborted"] = True
+        stats["call_failed"] = str(exc)
+        log(f"  JUDGE CALL FAILED after retries or refused: {exc}\n  Stopping; every stored verdict is kept. "
+            "Fix the cause and run the same command again: it resumes where it stopped.")
     stats["spent_usd"] = spent
     return stats
 
@@ -598,7 +676,8 @@ def summarise(manifest: Dict[str, Any], sc: Dict[str, Any], arms: Sequence[Dict[
         "per_arm": per_arm, "judge_agreement": agreement,
         "self_family_gap": self_gap, "controls": ctrl,
         "notes": [
-            "Each judge scored each item's arms in blocks; scores are absolute 1-5 per "
+            f"Each judge scored each item's arms in blocks; scores are absolute "
+            f"{task_for(sc)['scale'][0]:g}-{task_for(sc)['scale'][1]:g} per "
             "dimension and block scores are pooled. The position control re-forms the blocks.",
             "self_family: the arm and the judge are the same vendor family. own_minus_others "
             "is a raw gap, not a bias estimate: families differ in real quality.",
@@ -657,6 +736,9 @@ def write_scored_runs(manifest: Dict[str, Any], sc: Dict[str, Any], arms: Sequen
         write_text_atomic(run_dir / "predictions.jsonl",
                           "".join(json.dumps(r, sort_keys=True) + "\n" for r in rows))
         new = dict(m)
+        # A judge reads no reference, so the source run's tier does not describe these scores;
+        # it is kept, as the source's, inside judged_with.
+        source_tier = new.pop("reference_tier", None)
         new.update({
             "scores": scores, "metric_kinds": kinds, "primary_metric": primary,
             "n_items": len(rows), "judged_from": src.name, "judged_at": now(),
@@ -670,7 +752,8 @@ def write_scored_runs(manifest: Dict[str, Any], sc: Dict[str, Any], arms: Sequen
                 "judges": [{"id": j["id"], "model": j["params"].get("model"),
                             "family": j["params"].get("family"), "fp": judge_fingerprint(j)}
                            for j in sc["judges"]],
-                "self_family": {j: a.get("family") == fam[j] for j in jids}},
+                "self_family": {j: a.get("family") == fam[j] for j in jids},
+                "source_reference_tier": source_tier},
         })
         fp = new.get("fingerprint")
         if isinstance(fp, dict):
@@ -703,7 +786,8 @@ def estimate(manifest: Dict[str, Any], sc: Dict[str, Any], base: str, articles: 
                 continue
             e["calls"] += 1
             e["tokens_in"] += math.ceil(len(msg) / CHARS_PER_TOKEN)
-            e["tokens_out"] += OUT_TOKENS_FIXED + OUT_TOKENS_PER_SUMMARY * n
+            e["tokens_out"] += OUT_TOKENS_FIXED + math.ceil(
+                OUT_TOKENS_PER_SUMMARY * len(task_for(sc)["dimensions"]) / len(DIMS)) * n
     for j in sc["judges"]:
         e, pr = per_judge[j["id"]], j["params"]
         e["est_cost_usd"] = round(e["tokens_in"] / 1e6 * float(pr["usd_per_mtok_in"])
@@ -733,7 +817,8 @@ def main() -> int:
                     help="project from stored verdicts only; never call a judge ($0)")
     ap.add_argument("--retry-unparsed", action="store_true",
                     help="call again for stored verdicts whose reply did not parse")
-    ap.add_argument("--match", help="arm set: config_id substring (default: scorer's arms_match or _n200_v1)")
+    ap.add_argument("--match", help="arm set: config_id substring (default: the scorer's "
+                    "arms_match, else every arm on the dataset)")
     ap.add_argument("--arms", help="comma-separated config_ids or substrings: judge only these "
                     "arms (a subset is its own judging set id)")
     ap.add_argument("--out", type=Path, default=JUDGED)
@@ -771,11 +856,16 @@ def main() -> int:
             die(f"{f} is missing: materialize the dataset first "
                 f"(make dataset-materialize DATASET_ID={args.dataset_id})")
         articles[it["item_id"]] = f.read_text(encoding="utf-8", errors="replace")
-    arms = discover_arms(args.dataset_id, args.match or sc.get("arms_match", "_n200_v1"))
+    arms = discover_arms(args.dataset_id, args.match or sc.get("arms_match", ""))
     if args.arms:
         arms = select_arms(arms, args.arms)
     if len(arms) < 2:
         die(f"found {len(arms)} arm run(s) on {args.dataset_id} in {RUNS}")
+    vers = config_versions(arms)
+    if len(vers) > 1:
+        print(f"WARNING: the arm set mixes config versions {', '.join(vers)}: v1 and v2 of one arm are "
+              "judged as two arms. Narrow it with --match _v2 (or the scorer's arms_match) if that "
+              "is not what you mean.")
     outputs = {a["config_id"]: read_outputs(a, item_ids) for a in arms}
     base = prompt_text(sc)
     items_sha = (read_json(RUNS / arms[0]["run"] / "metrics.json").get("fingerprint", {})

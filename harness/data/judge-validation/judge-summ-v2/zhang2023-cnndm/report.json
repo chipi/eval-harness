@@ -1,0 +1,501 @@
+{
+ "source": "Zhang, Ladhak, Durmus, Liang, McKeown & Hashimoto (2024), Benchmarking Large Language Models for News Summarization, TACL 12; likert_evaluation_results.json, CNN/DailyMail rows",
+ "scorer": "judge-summ-v2",
+ "articles": 100,
+ "systems": 19,
+ "empty_summaries": 38,
+ "blocks": [
+  10,
+  9
+ ],
+ "inputs": {
+  "commit": "4e87890ed070c7db3dd5c1125adb5bde0ccd2eb1",
+  "file_sha256": "5f9936bb9c09877f758605a1767031d547db8edfd45ab1f93608a0fd6f56b56c",
+  "scorer_sha256": "6cfd6eeaac8366c15fb85a13c83708fd922297e4495e6a579440433fb0733814"
+ },
+ "human_baseline": {
+  "all_19": {
+   "coherence": 0.2761,
+   "relevance": 0.2428,
+   "faithfulness": 0.6203,
+   "mean": 0.3797
+  },
+  "non_reference_18": {
+   "coherence": 0.2712,
+   "relevance": 0.2358,
+   "faithfulness": 0.6438,
+   "mean": 0.3836
+  }
+ },
+ "free_metrics_non_reference_18": {
+  "rouge1": {
+   "coherence": 0.3047,
+   "relevance": 0.3383,
+   "faithfulness": 0.3706,
+   "mean": 0.3379
+  },
+  "coverage": {
+   "coherence": 0.2783,
+   "relevance": 0.3297,
+   "faithfulness": 0.3704,
+   "mean": 0.3261
+  }
+ },
+ "judges": {
+  "openai_l": {
+   "articles_scored": 100,
+   "calls": 200,
+   "unparsed": 0,
+   "withheld_replies": 0,
+   "billed_usd": 1.0149,
+   "records_sha256": "db85b3e7c9dc5533da58342cb7b53262aba1d8ce5e34b700b36f093abb15836f",
+   "all_19": {
+    "coherence": 0.4305,
+    "relevance": 0.4055,
+    "faithfulness": 0.4717,
+    "mean": 0.4359
+   },
+   "non_reference_18": {
+    "coherence": 0.4598,
+    "relevance": 0.4304,
+    "faithfulness": 0.4796,
+    "mean": 0.4566
+   }
+  },
+  "anthropic_l": {
+   "articles_scored": 100,
+   "calls": 200,
+   "unparsed": 0,
+   "withheld_replies": 0,
+   "billed_usd": 3.3395,
+   "records_sha256": "1e7f36d5ef2217a0e69f9aeb588c54337d76b9eb7e9477a9dbc86c4055c67a84",
+   "all_19": {
+    "coherence": 0.4055,
+    "relevance": 0.3931,
+    "faithfulness": 0.5738,
+    "mean": 0.4575
+   },
+   "non_reference_18": {
+    "coherence": 0.4408,
+    "relevance": 0.4224,
+    "faithfulness": 0.5853,
+    "mean": 0.4828
+   }
+  }
+ },
+ "paired_non_reference_18": {
+  "openai_l": {
+   "vs_one_rater": {
+    "articles": 100,
+    "mean_difference": 0.073,
+    "a_ahead": 72,
+    "b_ahead": 28,
+    "p_two_sided": 5e-05
+   },
+   "vs_rouge1": {
+    "articles": 100,
+    "mean_difference": 0.1187,
+    "a_ahead": 87,
+    "b_ahead": 13,
+    "p_two_sided": 5e-05
+   },
+   "vs_coverage": {
+    "articles": 100,
+    "mean_difference": 0.1305,
+    "a_ahead": 88,
+    "b_ahead": 12,
+    "p_two_sided": 5e-05
+   }
+  },
+  "anthropic_l": {
+   "vs_one_rater": {
+    "articles": 100,
+    "mean_difference": 0.0992,
+    "a_ahead": 80,
+    "b_ahead": 20,
+    "p_two_sided": 5e-05
+   },
+   "vs_rouge1": {
+    "articles": 100,
+    "mean_difference": 0.145,
+    "a_ahead": 93,
+    "b_ahead": 7,
+    "p_two_sided": 5e-05
+   },
+   "vs_coverage": {
+    "articles": 100,
+    "mean_difference": 0.1567,
+    "a_ahead": 92,
+    "b_ahead": 8,
+    "p_two_sided": 5e-05
+   }
+  }
+ },
+ "system_means": {
+  "raters": {
+   "anthropic_stanford-online-all-v4-s3": {
+    "coherence": 3.88,
+    "relevance": 4.33,
+    "faithfulness": 0.94
+   },
+   "brio": {
+    "coherence": 3.94,
+    "relevance": 4.4,
+    "faithfulness": 0.9367
+   },
+   "cohere_xlarge-20220609": {
+    "coherence": 3.4167,
+    "relevance": 4.48,
+    "faithfulness": 0.9933
+   },
+   "openai_ada": {
+    "coherence": 3.7333,
+    "relevance": 3.85,
+    "faithfulness": 0.8633
+   },
+   "openai_ada (0 shot)": {
+    "coherence": 1.9233,
+    "relevance": 1.8433,
+    "faithfulness": 0.2933
+   },
+   "openai_curie": {
+    "coherence": 3.8667,
+    "relevance": 4.1733,
+    "faithfulness": 0.97
+   },
+   "openai_curie (0 shot)": {
+    "coherence": 1.7667,
+    "relevance": 1.9333,
+    "faithfulness": 0.2867
+   },
+   "openai_davinci": {
+    "coherence": 3.9533,
+    "relevance": 4.3433,
+    "faithfulness": 0.9933
+   },
+   "openai_davinci (0 shot)": {
+    "coherence": 2.6467,
+    "relevance": 3.5033,
+    "faithfulness": 0.7633
+   },
+   "openai_text-ada-001": {
+    "coherence": 3.84,
+    "relevance": 4.07,
+    "faithfulness": 0.8433
+   },
+   "openai_text-ada-001 (0 shot)": {
+    "coherence": 4.02,
+    "relevance": 4.26,
+    "faithfulness": 0.88
+   },
+   "openai_text-curie-001": {
+    "coherence": 4.2967,
+    "relevance": 4.43,
+    "faithfulness": 0.9567
+   },
+   "openai_text-curie-001 (0 shot)": {
+    "coherence": 4.2433,
+    "relevance": 4.5867,
+    "faithfulness": 0.9667
+   },
+   "openai_text-davinci-002": {
+    "coherence": 4.1267,
+    "relevance": 4.49,
+    "faithfulness": 0.98
+   },
+   "openai_text-davinci-002 (0 shot)": {
+    "coherence": 4.1533,
+    "relevance": 4.6,
+    "faithfulness": 0.9933
+   },
+   "pegasus": {
+    "coherence": 3.9267,
+    "relevance": 4.3833,
+    "faithfulness": 0.97
+   },
+   "reference": {
+    "coherence": 3.1967,
+    "relevance": 3.9367,
+    "faithfulness": 0.8367
+   },
+   "together_glm": {
+    "coherence": 3.69,
+    "relevance": 4.2433,
+    "faithfulness": 0.94
+   },
+   "together_opt-175b": {
+    "coherence": 3.64,
+    "relevance": 4.33,
+    "faithfulness": 0.9567
+   }
+  },
+  "judges": {
+   "openai_l": {
+    "anthropic_stanford-online-all-v4-s3": {
+     "coherence": 3.74,
+     "relevance": 3.97,
+     "consistency": 4.84
+    },
+    "brio": {
+     "coherence": 4.16,
+     "relevance": 4.33,
+     "consistency": 4.15
+    },
+    "cohere_xlarge-20220609": {
+     "coherence": 2.65,
+     "relevance": 2.89,
+     "consistency": 4.86
+    },
+    "openai_ada": {
+     "coherence": 2.39,
+     "relevance": 2.27,
+     "consistency": 3.84
+    },
+    "openai_ada (0 shot)": {
+     "coherence": 1.18,
+     "relevance": 1.23,
+     "consistency": 2.11
+    },
+    "openai_curie": {
+     "coherence": 2.66,
+     "relevance": 2.8,
+     "consistency": 4.76
+    },
+    "openai_curie (0 shot)": {
+     "coherence": 1.4,
+     "relevance": 1.4,
+     "consistency": 2.78
+    },
+    "openai_davinci": {
+     "coherence": 3.52,
+     "relevance": 3.57,
+     "consistency": 4.82
+    },
+    "openai_davinci (0 shot)": {
+     "coherence": 1.59,
+     "relevance": 1.79,
+     "consistency": 3.6
+    },
+    "openai_text-ada-001": {
+     "coherence": 2.37,
+     "relevance": 2.49,
+     "consistency": 3.14
+    },
+    "openai_text-ada-001 (0 shot)": {
+     "coherence": 2.31,
+     "relevance": 2.49,
+     "consistency": 2.86
+    },
+    "openai_text-curie-001": {
+     "coherence": 3.47,
+     "relevance": 3.59,
+     "consistency": 4.56
+    },
+    "openai_text-curie-001 (0 shot)": {
+     "coherence": 3.82,
+     "relevance": 3.93,
+     "consistency": 4.0
+    },
+    "openai_text-davinci-002": {
+     "coherence": 3.9,
+     "relevance": 4.04,
+     "consistency": 4.89
+    },
+    "openai_text-davinci-002 (0 shot)": {
+     "coherence": 4.1,
+     "relevance": 4.33,
+     "consistency": 4.65
+    },
+    "pegasus": {
+     "coherence": 3.2,
+     "relevance": 3.83,
+     "consistency": 4.8
+    },
+    "reference": {
+     "coherence": 3.66,
+     "relevance": 3.89,
+     "consistency": 4.03
+    },
+    "together_glm": {
+     "coherence": 3.09,
+     "relevance": 3.27,
+     "consistency": 4.67
+    },
+    "together_opt-175b": {
+     "coherence": 3.29,
+     "relevance": 3.44,
+     "consistency": 4.78
+    }
+   },
+   "anthropic_l": {
+    "anthropic_stanford-online-all-v4-s3": {
+     "coherence": 3.68,
+     "relevance": 3.94,
+     "consistency": 4.83
+    },
+    "brio": {
+     "coherence": 4.18,
+     "relevance": 4.37,
+     "consistency": 4.32
+    },
+    "cohere_xlarge-20220609": {
+     "coherence": 2.91,
+     "relevance": 3.05,
+     "consistency": 4.89
+    },
+    "openai_ada": {
+     "coherence": 2.16,
+     "relevance": 2.08,
+     "consistency": 3.83
+    },
+    "openai_ada (0 shot)": {
+     "coherence": 1.18,
+     "relevance": 1.24,
+     "consistency": 1.7
+    },
+    "openai_curie": {
+     "coherence": 2.75,
+     "relevance": 2.82,
+     "consistency": 4.72
+    },
+    "openai_curie (0 shot)": {
+     "coherence": 1.36,
+     "relevance": 1.37,
+     "consistency": 2.04
+    },
+    "openai_davinci": {
+     "coherence": 3.42,
+     "relevance": 3.41,
+     "consistency": 4.79
+    },
+    "openai_davinci (0 shot)": {
+     "coherence": 1.82,
+     "relevance": 2.04,
+     "consistency": 3.39
+    },
+    "openai_text-ada-001": {
+     "coherence": 2.4,
+     "relevance": 2.3,
+     "consistency": 3.05
+    },
+    "openai_text-ada-001 (0 shot)": {
+     "coherence": 2.26,
+     "relevance": 2.25,
+     "consistency": 2.9
+    },
+    "openai_text-curie-001": {
+     "coherence": 3.51,
+     "relevance": 3.62,
+     "consistency": 4.58
+    },
+    "openai_text-curie-001 (0 shot)": {
+     "coherence": 3.84,
+     "relevance": 3.75,
+     "consistency": 4.12
+    },
+    "openai_text-davinci-002": {
+     "coherence": 3.81,
+     "relevance": 3.88,
+     "consistency": 4.9
+    },
+    "openai_text-davinci-002 (0 shot)": {
+     "coherence": 4.03,
+     "relevance": 4.11,
+     "consistency": 4.69
+    },
+    "pegasus": {
+     "coherence": 3.77,
+     "relevance": 4.01,
+     "consistency": 4.84
+    },
+    "reference": {
+     "coherence": 3.82,
+     "relevance": 4.04,
+     "consistency": 4.05
+    },
+    "together_glm": {
+     "coherence": 3.12,
+     "relevance": 3.24,
+     "consistency": 4.74
+    },
+    "together_opt-175b": {
+     "coherence": 3.34,
+     "relevance": 3.29,
+     "consistency": 4.83
+    }
+   }
+  },
+  "ranking": {
+   "basis": "the mean of coherence and relevance (faithfulness, 0/1, is not in it)",
+   "raters": {
+    "openai_text-curie-001 (0 shot)": 1,
+    "openai_text-davinci-002 (0 shot)": 2,
+    "openai_text-curie-001": 3,
+    "openai_text-davinci-002": 4,
+    "brio": 5,
+    "pegasus": 6,
+    "openai_davinci": 7,
+    "openai_text-ada-001 (0 shot)": 8,
+    "anthropic_stanford-online-all-v4-s3": 9,
+    "openai_curie": 10,
+    "together_opt-175b": 11,
+    "together_glm": 12,
+    "openai_text-ada-001": 13,
+    "cohere_xlarge-20220609": 14,
+    "openai_ada": 15,
+    "reference": 16,
+    "openai_davinci (0 shot)": 17,
+    "openai_ada (0 shot)": 18,
+    "openai_curie (0 shot)": 19
+   },
+   "judges": {
+    "openai_l": {
+     "brio": 1,
+     "openai_text-davinci-002 (0 shot)": 2,
+     "openai_text-davinci-002": 3,
+     "openai_text-curie-001 (0 shot)": 4,
+     "anthropic_stanford-online-all-v4-s3": 5,
+     "reference": 6,
+     "openai_davinci": 7,
+     "openai_text-curie-001": 8,
+     "pegasus": 9,
+     "together_opt-175b": 10,
+     "together_glm": 11,
+     "cohere_xlarge-20220609": 12,
+     "openai_curie": 13,
+     "openai_text-ada-001": 14,
+     "openai_text-ada-001 (0 shot)": 15,
+     "openai_ada": 16,
+     "openai_davinci (0 shot)": 17,
+     "openai_curie (0 shot)": 18,
+     "openai_ada (0 shot)": 19
+    },
+    "anthropic_l": {
+     "brio": 1,
+     "openai_text-davinci-002 (0 shot)": 2,
+     "reference": 3,
+     "pegasus": 4,
+     "openai_text-davinci-002": 5,
+     "anthropic_stanford-online-all-v4-s3": 6,
+     "openai_text-curie-001 (0 shot)": 7,
+     "openai_text-curie-001": 8,
+     "openai_davinci": 9,
+     "together_opt-175b": 10,
+     "together_glm": 11,
+     "cohere_xlarge-20220609": 12,
+     "openai_curie": 13,
+     "openai_text-ada-001": 14,
+     "openai_text-ada-001 (0 shot)": 15,
+     "openai_ada": 16,
+     "openai_davinci (0 shot)": 17,
+     "openai_curie (0 shot)": 18,
+     "openai_ada (0 shot)": 19
+    }
+   },
+   "spearman_vs_raters": {
+    "openai_l": 0.786,
+    "anthropic_l": 0.7088
+   }
+  }
+ }
+}

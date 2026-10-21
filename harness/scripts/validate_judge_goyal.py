@@ -48,6 +48,8 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import judge_score as js  # noqa: E402
 from _common import die, write_text_atomic  # noqa: E402
+from _retry import call_with_retries  # noqa: E402
+from judging import shingles, withheld_reason  # noqa: E402
 
 DATA = HERE.parent / "data"
 EXT = DATA / "external" / "goyal2022"
@@ -393,9 +395,21 @@ def main() -> int:
             sysorder, sha = exp[(jid, aid)]
             msg = js.build_message(base, v["article"], [v[s]["text"] for s in sysorder])
             t0 = time.monotonic()
-            res = js.real_call(msg, dict(j["params"]))
+            try:
+                res = call_with_retries(js.real_call, (msg, dict(j["params"])), label=f"{jid} {aid}")
+            except SystemExit:
+                raise
+            except Exception as exc:  # noqa: BLE001 — stop cleanly, as judge_score does
+                print(f"  JUDGE CALL FAILED after retries or refused: {jid}: {type(exc).__name__}: "
+                      f"{str(exc)[:300]}\n  Stopping; every stored record is kept. Run the same "
+                      "command again to resume.")
+                aborted = True
+                continue
             cost, known = js.call_cost(res, j["params"])
-            rec = {"article_id": aid, "order": sysorder, "output": res.output,
+            why = withheld_reason(res.output, shingles([v["article"], *(v[s]["text"] for s in sysorder)]))
+            rec = {"article_id": aid, "order": sysorder, "output": None if why else res.output,
+                   "output_sha256": hashlib.sha256((res.output or "").encode()).hexdigest(),
+                   "output_withheld": bool(why), **({"withheld_reason": why} if why else {}),
                    "cost_usd": cost if cost is not None else 0.0, "cost_known": known,
                    "latency_ms": round((time.monotonic() - t0) * 1000, 1),
                    "scores": js.parse_block(res.output, 3), "judge_fp": fp, "prompt_sha": sha}
@@ -412,6 +426,7 @@ def main() -> int:
         st["human_gpt3_over_brio"] = sum(human_prefs(v["annotators"])[1] for v in data.values())
         st["human_brio_over_gpt3"] = sum(human_prefs(v["annotators"])[2] for v in data.values())
         st["billed_usd"] = round(billed, 4)
+        st["records_sha256"] = js.records_sha256(vdir)
         st["records_backfilled"] = sum(1 for r in recs.values() if r.get("provenance_backfilled"))
         st["records_cost_unknown"] = sum(1 for r in recs.values() if r.get("cost_known") is False)
         report["judges"][jid] = {k: st[k] for k in (
