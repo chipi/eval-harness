@@ -39,6 +39,7 @@ from __future__ import annotations
 import ast
 import hashlib
 import json
+import os
 import re
 import sys
 import time
@@ -261,7 +262,78 @@ def _local(text: str, params: Dict[str, Any]) -> Result:
                   extra={"truncated": 1.0 if new.shape[0] >= max_new else 0.0})
 
 
-PROVIDERS = {"litellm": _litellm, "local": _local}
+# ── the same local arms, served by vLLM on another machine ──────────────────
+# The prompt is the local arm's, rendered here with the model's own tokenizer at the pinned
+# revision; only the generation happens on the server, through /v1/completions (not chat),
+# so the server's chat formatting can never change what the model sees. Greedy, the same
+# stop and the same token budget. vLLM's greedy decoding is not bit-identical to
+# transformers', so a vLLM run is its own engine in the fingerprint, never read as the
+# transformers run of the same model.
+_TOK: Any = None
+_TOK_KEY: Optional[tuple] = None
+
+
+def _vllm_prompt(text: str, params: Dict[str, Any]) -> str:
+    global _TOK, _TOK_KEY
+    key = (params.get("model"), params.get("revision"))
+    if _TOK_KEY != key:
+        from transformers import AutoTokenizer  # noqa: PLC0415
+
+        kw = {"revision": params["revision"]} if params.get("revision") else {}
+        _TOK, _TOK_KEY = AutoTokenizer.from_pretrained(params["model"], **kw), key
+    chat = [{"role": "user", "content": user_message(text, params)}]
+    return _TOK.apply_chat_template(chat, tokenize=False, add_generation_prompt=True) + RESPONSE_PREFIX
+
+
+def _vllm_key(params: Dict[str, Any]) -> str:
+    return os.environ.get(params.get("api_key_env", "EVAL_VLLM_API_KEY"), "") or "none"
+
+
+def _vllm(text: str, params: Dict[str, Any]) -> Result:
+    """Greedy completion of the local arm's exact prompt on a vLLM server."""
+    from openai import OpenAI  # noqa: PLC0415
+
+    if not params.get("base_url"):
+        raise SystemExit("provider vllm needs base_url (the server's /v1 address)")
+    max_new = int(params.get("max_new_tokens", 768))
+    client = OpenAI(api_key=_vllm_key(params), base_url=params["base_url"].rstrip("/"))
+    resp = client.completions.create(
+        model=params["model"], prompt=_vllm_prompt(text, params), max_tokens=max_new,
+        temperature=0.0, stop=["```"],
+        # transformers keeps the stop string in its output; keep it here too, so the
+        # extracted code is cut the same way.
+        extra_body={"include_stop_str_in_output": True, "skip_special_tokens": True})
+    choice = resp.choices[0]
+    usage = resp.usage
+    return Result(output="```python\n" + (choice.text or ""),
+                  tokens_in=getattr(usage, "prompt_tokens", None),
+                  tokens_out=getattr(usage, "completion_tokens", None), cost_usd=0.0,
+                  extra={"truncated": 1.0 if choice.finish_reason == "length" else 0.0})
+
+
+def _vllm_server(params: Dict[str, Any]) -> Dict[str, Any]:
+    """What the server says it is serving, read at fingerprint time."""
+    import urllib.request  # noqa: PLC0415
+
+    base = params["base_url"].rstrip("/")
+    root = base[:-3] if base.endswith("/v1") else base
+    hdr = {"Authorization": "Bearer " + _vllm_key(params)}
+    out: Dict[str, Any] = {}
+    for name, url in (("version", root + "/version"), ("models", base + "/models")):
+        try:
+            with urllib.request.urlopen(urllib.request.Request(url, headers=hdr), timeout=10) as resp:
+                out[name] = json.loads(resp.read())
+        except Exception as exc:  # noqa: BLE001
+            out[name] = f"unreadable: {type(exc).__name__}"
+    return out
+
+
+PROVIDERS = {"litellm": _litellm, "local": _local, "vllm": _vllm}
+
+#: Providers whose calls may run in parallel (experiment_run --concurrency): a vLLM server
+#: batches them. Not "local" (one model object, one device) and not "litellm" (billed;
+#: the cost cap is checked per call).
+CONCURRENT_PROVIDERS = ("vllm",)
 
 
 def call_system(text: str, params: Dict[str, Any]) -> Result:
@@ -390,6 +462,8 @@ def warmup(params: Dict[str, Any]) -> None:
     provider = params.get("provider", "litellm")
     if provider == "local":
         _local(_SAMPLE, {**params, "max_new_tokens": 8})
+    elif provider == "vllm":
+        _vllm(_SAMPLE, {**params, "max_new_tokens": 8})
     elif provider == "litellm":
         _litellm("Warm up.", {**params, "max_tokens": 1, "_raw_message": True})
 
@@ -413,6 +487,13 @@ def fingerprint(params: Dict[str, Any]) -> Dict[str, Any]:
                    "prompt_sha256": _prompt_sha256(params), "decoding": "greedy",
                    "max_new_tokens": int(params.get("max_new_tokens", 768)), **_scorer_fp()})
         return fp
+    if provider == "vllm":
+        return {"id": params["model"], "revision": params.get("revision"),
+                "revision_source": "config, served as such by the server below",
+                "engine": "vllm", "base_url": params["base_url"], "server": _vllm_server(params),
+                "code_sha256": code_digest(_vllm, _vllm_prompt, consts={"RESPONSE_PREFIX": RESPONSE_PREFIX}),
+                "prompt_sha256": _prompt_sha256(params), "decoding": "greedy",
+                "max_new_tokens": int(params.get("max_new_tokens", 768)), **_scorer_fp()}
     alias = params.get("model")
     upstream, id_source = gateway.resolve_upstream(alias)
     return {"id": upstream or alias, "alias": alias, "id_source": id_source,
