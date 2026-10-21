@@ -37,6 +37,11 @@ REPO = "https://github.com/chipi/eval-harness"
 BLOB = f"{REPO}/blob/main"
 SITE = "https://evals.humancopilot.eu"
 OUT = HERE / "public"
+#: The harness version the site describes, from the one place it is set.
+VERSION = re.search(r'__version__ = "([^"]+)"',
+                    (ROOT / "harness" / "scripts" / "_version.py").read_text()).group(1)
+#: Replaced at deploy (pages.yml) with the commit being served; a local build says so.
+BUILD_MARK = "build: local"
 
 
 # ── the quote guard ─────────────────────────────────────────────────────────
@@ -453,7 +458,7 @@ def footer(up: str) -> str:
       <a href="mailto:marko@humancopilot.eu" data-umami-event="cta-email" data-umami-event-position="footer">Email</a>
     </nav>
   </div>
-  <div class="foot-legal"><span>© Marko Dragoljevic · eval-harness · <a href="{up}docs/DATA/">Data &amp; licences</a> · <a href="{up}releases.html">Release notes</a></span><span>Cookieless, self-hosted analytics (Umami). No cookies, no tracking across sites. <a href="{up}privacy.html">Privacy</a></span></div>
+  <div class="foot-legal"><span>© Marko Dragoljevic · eval-harness <a href="{up}releases.html#v{VERSION}">v{VERSION}</a> · {BUILD_MARK} · <a href="{up}docs/DATA/">Data &amp; licences</a> · <a href="{up}releases.html">Release notes</a></span><span>Cookieless, self-hosted analytics (Umami). No cookies, no tracking across sites. <a href="{up}privacy.html">Privacy</a></span></div>
 </div></footer>"""
 
 

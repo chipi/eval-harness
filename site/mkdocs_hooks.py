@@ -27,6 +27,15 @@ EXTRA["harness/CHANGELOG.md"] = ROOT / "harness" / "CHANGELOG.md"
 LINK = re.compile(r"(\]\()([^)\s]+?)(\))")
 
 
+def on_config(config):
+    """The footer names the harness version (from _version.py) and the build, which the
+    deploy (pages.yml) replaces with the commit being served, as on the findings site."""
+    v = re.search(r'__version__ = "([^"]+)"',
+                  (ROOT / "harness" / "scripts" / "_version.py").read_text()).group(1)
+    config["copyright"] = f"{config['copyright']} · v{v} · build: local"
+    return config
+
+
 def on_files(files, config):
     for dest, src in EXTRA.items():
         files.append(File(dest, src_dir=str(src.parent.parent), dest_dir=config["site_dir"],

@@ -60,6 +60,14 @@ jobs:
           mkdir -p _site
           cp -r site/public/. _site/
           cp -r build/docs-site _site/docs
+          # The footers say "build: local" (a commit cannot hold its own hash); the deployed
+          # copy names the commit it was built from.
+          sha="${GITHUB_SHA:?}"
+          link="build: <a href=\"https://github.com/${GITHUB_REPOSITORY}/commit/${sha}\">${sha:0:7}</a>"
+          grep -rlF --include='*.html' 'build: local' _site | xargs -r sed -i "s#build: local#${link}#g"
+          n=$(grep -rlF --include='*.html' 'build: local' _site | wc -l)
+          test "$n" -eq 0 || { echo "$n page(s) still say 'build: local'"; exit 1; }
+          grep -rqF --include='*.html' "${sha:0:7}</a>" _site || { echo "no page names the commit"; exit 1; }
       - uses: actions/configure-pages@v5
         if: github.event_name != 'pull_request'
       - uses: actions/upload-pages-artifact@v3
