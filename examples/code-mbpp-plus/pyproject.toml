@@ -24,6 +24,11 @@ local = [
     "torch>=2.6; sys_platform != 'darwin' or platform_machine != 'x86_64'",
     "transformers>=4.40,<4.56",
     "numpy<2; sys_platform == 'darwin' and platform_machine == 'x86_64'",
+    # Yi-Coder's tokenizer ships only as a sentencepiece model; transformers converts it
+    # to a fast tokenizer at load, which needs both of these. Without them the yicoder_15b
+    # arm fails at warm-up (ImportError, then ValueError), having run nothing.
+    "protobuf>=3.20",
+    "sentencepiece>=0.2",
 ]
 
 [tool.uv]
