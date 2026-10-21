@@ -1,6 +1,6 @@
 # ADR-0001 — Judge scorers: re-measuring frozen outputs with a validated LLM judge
 
-**Status:** Proposed
+**Status:** Accepted (2026-10-21)
 **Date:** 2026-10-19
 
 ## Context
@@ -79,15 +79,16 @@ recorded decision to use it. The rest of this ADR is about the third.
    carries the label "unvalidated judge" in tables and reports. "Silver is not gold" is
    enforced, not advised.
 
-3. **The judging pass.** `make judge-score EXP=<exp> SCORER=<scorer_id>` (`make judge` stays
+3. **The judging pass.** `make judge-score DATASET_ID=<dataset> SCORER=<scorer_id>` (`make judge` stays
    the judge panel's):
    - builds a derived, hash-frozen **judging set** from the committed runs. One item is one
      source item with every arm's output for it. The arm set is pinned in the judging set's
      id;
    - hides arm identities and shuffles their order per item with a recorded seed;
-   - runs each judge as an arm over the judging set with the existing machinery (dataset
-     hashes, fingerprints, cost caps, resume, stored outputs), so a judge's raw verdicts are
-     themselves a frozen record and re-reading them is $0;
+   - runs each judge over the judging set with its own runner (`judge_score.py`), built on
+     the harness's pieces where they fit (atomic writes, retries, the cost cap) and recording
+     the same things a run does (set hash, judge fingerprint, prompt hash, cost, resume), so
+     a judge's raw verdicts are themselves a frozen record and re-reading them is $0;
    - projects the verdicts back to one score per arm per item and writes them as scored runs
      in `data/runs-judged/<scorer_id>/`. The originals are never touched. The leaderboard,
      `family_test` and `pair_test` read that directory like any rescored one, so every test
