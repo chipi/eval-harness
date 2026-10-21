@@ -666,7 +666,8 @@ def scorer_problems(scorers_dir: Path) -> list[str]:
                 for k in ("model", "usd_per_mtok_in", "usd_per_mtok_out"):
                     if pr.get(k) in (None, ""):
                         bad.append(f"{f.name}: judge {j.get('id')!r} has no params.{k}")
-            js.prompt_text(sc)
+            # The prompt must render for a call: `{n}`, or SummEval's own count phrases.
+            js.render_prompt(js.prompt_text(sc), n if isinstance(n, int) and n > 1 else 16)
         except SystemExit as exc:
             bad.append(f"{f.name}: does not load ({exc})")
         except (KeyError, TypeError, AttributeError, ValueError, yaml_error) as exc:

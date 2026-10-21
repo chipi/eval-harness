@@ -141,6 +141,7 @@ your project and [`harness/docs/RUNBOOK.md`](harness/docs/RUNBOOK.md) for every 
 | `make rank-stability DATASET_ID=my_v1` | how many items before the ordering stops moving: measured, not assumed |
 | `make silver-calibrate DATASET_ID=my_v1` | is a model-authored reference usable? Read it against the ceiling it prints |
 | `make rescore DATASET_ID=my_v1` | recompute scores from stored outputs, no API calls |
+| `make judge-score DATASET_ID=my_v1 SCORER=…` | optional: re-measure stored outputs with LLM judges, refused until they are validated against people ([GUIDE step 10](docs/GUIDE.md)) |
 
 Each needs `DATASET_ID`; without it the Makefile falls back to the demo dataset, `smoke_v1`.
 

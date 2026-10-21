@@ -19,8 +19,16 @@ keep both honest. Design: [ADR-0001](../docs/adr/ADR-0001-judge-scorers.md).
   from the response, retries) are in `evaluation_harness.judging`, with no dependency on
   `examples/`.
 - **The judge scorer artifact** (`data/scorers/<id>.yaml`): two or more judges from different
-  vendor families, the prompt (with its sha256 at 16 summaries), the protocol, a `validation`
+  vendor families, the task, the prompt (with its sha256), the protocol, a `validation`
   block and a cost cap.
+- **Any text task, declared in the scorer.** An optional `task` block names what each item is
+  (`source_label`), what the arms wrote (`output_label`), the `dimensions` the judge scores
+  and the `scale`; a prompt writes `{n}` where the number of outputs per call goes. Without a
+  `task` block a scorer judges SummEval's news-summary task (ARTICLE, SUMMARIES, four
+  dimensions, 1-5), byte for byte as before. A declared task is hashed into the judging set.
+- **A judging step in the tutorial** (`docs/GUIDE.md` step 10): `harness/tutorial/scorers/
+  tickets-judge-v1.yaml` re-measures the tutorial's arms with two fake judges, offline and $0,
+  through the refusal, the dry run, the pass and the leaderboard.
 - **A validation gate.** A scorer runs only if its `validation` block names a committed run
   for each judge that has the stated metric, the judge's model, temperature, reasoning,
   provider, max tokens and prompt. Otherwise `--unvalidated` runs it and labels every number
@@ -38,8 +46,8 @@ keep both honest. Design: [ADR-0001](../docs/adr/ADR-0001-judge-scorers.md).
   against it for $0, the old reference kept beside it.
 - **`validate` V11-V13.** V11: every judging set's stored hash is the hash of its content.
   V12: every stored verdict names a real set, item, pass and block, and its `n` is that
-  block's size. V13: every judge scorer loads, is structurally valid, and its prompt file
-  resolves. They read the configured data directory.
+  block's size. V13: every judge scorer loads, is structurally valid (its `task` included),
+  and its prompt file resolves and renders. They read the configured data directory.
 - Experiment-level results this enables are reported in the repository's reports (the
   summarisation experiment re-measured with two validated judges; AG News and DBpedia against
   adjudicated gold); none of them is in the package.
@@ -48,7 +56,18 @@ keep both honest. Design: [ADR-0001](../docs/adr/ADR-0001-judge-scorers.md).
 - **`prompt.file` in a scorer resolves against the project root**, then the scorer file's own
   directory, then (in a checkout of this repository only) the repository root. A committed
   scorer's repo-relative path resolves exactly as before.
-- Nothing that scores a run changed: committed runs and their recorded hashes are untouched.
+- **`judge-score` judges every arm on the dataset by default.** It used to default to arms
+  whose `config_id` contains `_n200_v1`, this repository's naming, which found nothing in any
+  other project. A scorer's `arms_match`, `--match` and `--arms` still narrow it.
+- **Judged runs carry no `reference_tier`**: a judge reads no reference. The source run's tier
+  is kept as `judged_with.source_reference_tier`, and `leaderboard` says the scores come from a
+  judge, with its label, instead of "scored against SILVER references".
+- **`leaderboard`'s precision note** no longer fires on values that are exact small-integer
+  fractions (a mean of 1-5 ratings is in quarters or sixths); scores rounded on the way to disk
+  still get it.
+- Nothing that scores a run changed: committed runs and their recorded hashes are untouched,
+  and the committed summarisation judging set rebuilds from its stored verdicts with the same
+  id.
 
 ## 0.2.0 — 2026-10-20
 

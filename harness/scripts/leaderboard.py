@@ -85,6 +85,19 @@ def _stored_decimals(values: List[float]) -> int:
             best = max(best, len(t.split(".")[1].rstrip("0")))
     return best
 
+
+#: A value that is a whole number of 1/_FRACTION_DENOM's is a ratio of small integers (a mean
+#: of 1-5 ratings over 2 judges and 2 dimensions is in quarters), stored exactly however few
+#: decimals it shows, so its ties are exact and the precision note would be a false alarm.
+_FRACTION_DENOM = 27720  # lcm(1..12)
+
+
+def _small_fractions(values: List[float]) -> bool:
+    vals = values[:500]
+    return bool(vals) and all(abs(v * _FRACTION_DENOM - round(v * _FRACTION_DENOM)) < 1e-6
+                              for v in vals)
+
+
 _NEMENYI_Q05 = {
     # alpha = 0.05, nu = infinity: the studentised range divided by sqrt(2).
     #
@@ -170,7 +183,7 @@ def _significance(matrix: Dict[str, Dict[str, float]], metric: str, seed: int = 
     avg_rank = {a: statistics.fmean(ranks[a]) for a in arms}
 
     decimals = _stored_decimals(_RAW_SEEN)
-    if decimals and decimals < _MIN_TIE_DECIMALS:
+    if decimals and decimals < _MIN_TIE_DECIMALS and not _small_fractions(_RAW_SEEN):
         print(f"\n  NOTE: these runs store scores to ~{decimals} decimals, so arms that\n"
               f"        genuinely tie on an item can differ by rounding alone and be\n"
               f"        ordered anyway — which inflates the p-value. `make rescore` "
@@ -541,6 +554,14 @@ def main() -> int:
     if matrix:
         _significance(matrix, sort_key, asc=args.asc)
     _frontier(rows, sort_key, kinds, asc=args.asc)
+    judged = sorted({f"{(r.get('judged_with') or {}).get('scorer_id')}, {r['judge_label']}"
+                     for runs in by_config.values() for r in runs if r.get("judge_label")})
+    if judged:
+        print(
+            f"\n  Scored by an LLM judge, not against references: {'; '.join(judged)}.\n"
+            "  A judge's score is only as good as its validation; an unvalidated one is a\n"
+            "  trial run, not a measurement."
+        )
     if any("silver" in r["tiers"] for r in rows):
         print(
             "\n  Scored against SILVER references (model-generated). Good for ranking\n"

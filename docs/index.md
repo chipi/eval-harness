@@ -11,13 +11,13 @@ measured, every metric, model and test with its source, and how to rerun all of 
 
 <div class="eh-cards" markdown>
 
-[<span class="n">01</span><b>Use the harness</b><span class="d">Your first evaluation end to end, offline: freeze a dataset, build a golden reference set, measure, compare honestly, promote a baseline.</span>](GUIDE.md)
+[<span class="n">01</span><b>Use the harness</b><span class="d">Your first evaluation end to end, offline: freeze a dataset, build a golden reference set, measure, compare honestly, promote a baseline, and optionally re-measure with an LLM judge.</span>](GUIDE.md)
 
 [<span class="n">02</span><b>Concepts</b><span class="d">The ideas it is built on: frozen datasets, fingerprints, gold and silver references, paired tests.</span>](../harness/docs/CONCEPTS.md)
 
 [<span class="n">03</span><b>Integration</b><span class="d">Drop the harness into another project: one adapter, four functions.</span>](../harness/docs/INTEGRATION.md)
 
-[<span class="n">04</span><b>Runbook</b><span class="d">Every step and every verb: datasets, runs, the analysis scripts.</span>](../harness/docs/RUNBOOK.md)
+[<span class="n">04</span><b>Runbook</b><span class="d">Every step and every verb: datasets, runs, the analysis scripts, and judge scorers.</span>](../harness/docs/RUNBOOK.md)
 
 </div>
 

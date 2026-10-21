@@ -853,6 +853,128 @@ with tempfile.TemporaryDirectory() as td_:
     check("prompt.file: missing everywhere is refused, listing where it looked",
           "looked in" in str(_exit(lambda: js.prompt_text(scorer(prompt={"file": "nope.txt"})))))
 
+# ── the task: what is judged, from the scorer ────────────────────────────────
+check("task: none declared is SummEval's (ARTICLE, SUMMARIES, four dimensions, 1-5)",
+      judging.task_of({}) == {"source_label": "ARTICLE", "output_label": "SUMMARIES",
+                              "dimensions": list(judging.DIMS), "scale": [1, 5]})
+REL = {"source_label": "QUERY", "output_label": "PASSAGES", "dimensions": ["relevance"],
+       "scale": [0, 3]}
+check("task: a declared one replaces the defaults it names", judging.task_of({"task": REL}) == REL)
+check("task: a partial one keeps the other defaults",
+      judging.task_of({"task": {"dimensions": ["helpfulness"]}})["output_label"] == "SUMMARIES")
+for bad_task, why in (({"labels": "x"}, "an unknown key"), ({"dimensions": []}, "no dimensions"),
+                      ({"dimensions": ["a", "a"]}, "a repeated dimension"),
+                      ({"scale": [5, 1]}, "a scale whose low is not below its high"),
+                      ({"scale": [1]}, "a scale that is not two numbers"),
+                      ({"source_label": "A:B"}, "a label with ':'"),
+                      ({"output_label": "two\nlines"}, "a two-line label")):
+    try:
+        judging.task_of({"task": bad_task})
+        refused_ = False
+    except ValueError:
+        refused_ = True
+    check(f"task: {why} is refused", refused_)
+check("task: a bad task is refused by name",
+      "task.scale" in _exit(lambda: js.task_for(scorer(task={"scale": [3, 3]}))))
+
+GEN = "Rate how well each of the {n} numbered passages answers the query, 0 to 3."
+check("prompt: {n} is replaced by the count and nothing else changes",
+      judging.render_prompt(GEN, 3) == GEN.replace("{n}", "3")
+      and judging.render_prompt(GEN, 16) == GEN.replace("{n}", "16"))
+check("prompt: a prompt with neither {n} nor SummEval's phrases is refused, naming {n}",
+      "{n}" in _exit(lambda: judging.render_prompt("Rate them.", 3)))
+gm = judging.build_message(GEN, "what is x?", ["x is y", "no idea"], "QUERY", "PASSAGES")
+check("message: the task's labels head the source and the numbered outputs",
+      gm == GEN.replace("{n}", "2") + "\n\nQUERY:\nwhat is x?\n\nPASSAGES:\n1. x is y\n2. no idea")
+check("message: the default labels are unchanged (SummEval's layout)",
+      judging.build_message(BASE, "a", ["s"]) == judging.build_message(BASE, "a", ["s"], "ARTICLE",
+                                                                       "SUMMARIES"))
+check("parse: the task's dimensions and scale",
+      judging.parse_block('{"relevance": [0, 3, 2]}', 3, ["relevance"], [0, 3]) == [0.0, 3.0, 2.0])
+check("parse: a number outside the task's scale is refused",
+      judging.parse_block('{"relevance": [0, 4, 2]}', 3, ["relevance"], [0, 3]) is None)
+check("parse: a missing task dimension is refused",
+      judging.parse_block('{"relevance": [1]}', 1, ["relevance", "grounded"], [0, 3]) is None)
+fk = judging.call_judge(gm, {"provider": judging.FAKE, "model": "fa", "_task": REL})
+fv = json.loads(fk.output)
+check("fake judge: answers in the task's dimensions, on its scale, one number per output",
+      list(fv) == ["relevance"] and len(fv["relevance"]) == 2
+      and all(0 <= x <= 3 for x in fv["relevance"]))
+
+check("judging set: a scorer without a task keeps the id it had (the task is not hashed)",
+      "task" not in m1 and manifest_for()["judging_set_id"] == m1["judging_set_id"])
+check("judging set: declaring even the default task is a different set (it is hashed)",
+      manifest_for(scorer(task=judging.task_of({})))["judging_set_id"] != m1["judging_set_id"])
+check("judging set: a different declared task is a different set",
+      manifest_for(scorer(task=REL))["judging_set_id"]
+      != manifest_for(scorer(task={**REL, "scale": [0, 2]}))["judging_set_id"])
+
+with tempfile.TemporaryDirectory() as td_:
+    prompt_ = Path(td_) / "rel.txt"
+    prompt_.write_text(GEN + "\nReply as JSON: {\"relevance\": [one integer per passage]}\n")
+    fake_ = {"provider": judging.FAKE, "temperature": 0.0, "usd_per_mtok_in": 1.0,
+             "usd_per_mtok_out": 2.0}
+    rel_sc = scorer(task=REL, prompt={"file": str(prompt_)},
+                    judges=[{"id": "fa", "params": {**fake_, "model": "fake-a", "family": "gemma"}},
+                            {"id": "fb", "params": {**fake_, "model": "fake-b", "family": "qwen"}}])
+    rel_base = js.prompt_text(rel_sc)
+    rel_m = js.build_manifest(rel_sc, "ds", "i" * 64, ITEMS, ARMS, ARTICLES, OUTPUTS, rel_base)
+    rel_msgs = [js.message_for(rel_m, rel_base, ARTICLES, OUTPUTS, it, "primary", 0)
+                for it in rel_m["items"]]
+    check("a declared task reaches the message: its labels, and the count in place of {n}",
+          all("\n\nQUERY:\n" in m_ and "\n\nPASSAGES:\n1. " in m_ and "the 10 numbered passages" in m_
+              for m_ in rel_msgs))
+    st_ = js.run_judging(rel_m, rel_sc, rel_base, ARTICLES, OUTPUTS, Path(td_) / "v",
+                         js.real_call, 1.0, log=lambda *_: None)
+    sc_ = js.load_scores(rel_m, rel_sc, Path(td_) / "v")
+    vals_ = [v for p_ in sc_.values() for i_ in p_["primary"].values() for v in i_.values()]
+    check("a declared task end to end with fake judges: every block parses, scores on its scale",
+          st_["calls"] > 0 and len(vals_) == 2 * len(ITEMS) * N_ARMS
+          and all(0 <= v <= 3 for v in vals_))
+    check("a fake judge's task is not sent as one of a real judge's params",
+          "_task" not in js.judge_params(rel_sc, {"id": "r", "params": {"provider": "litellm"}})
+          and js.judge_params(rel_sc, rel_sc["judges"][0])["_task"] == REL)
+
+import validate_tree as vt  # noqa: E402
+with tempfile.TemporaryDirectory() as td_:
+    sdir = Path(td_)
+    (sdir / "good.txt").write_text("Rate each of the {n} numbered answers.\n")
+    (sdir / "bad.txt").write_text("Rate the answers.\n")
+    base_ = {"kind": "judge", "dataset_id": "ds", "prompt": {"file": str(sdir / "good.txt")},
+             "judges": [{"id": "fa", "params": {"provider": "fake", "model": "a", "family": "x",
+                                                "usd_per_mtok_in": 0, "usd_per_mtok_out": 0}},
+                        {"id": "fb", "params": {"provider": "fake", "model": "b", "family": "y",
+                                                "usd_per_mtok_in": 0, "usd_per_mtok_out": 0}}],
+             "protocol": {"outputs_per_call": 4}, "task": {"dimensions": ["correct"]}}
+    (sdir / "s-good.yaml").write_text(json.dumps({**base_, "scorer_id": "s-good"}))
+    check("V13: a scorer with a declared task and a {n} prompt passes",
+          vt.scorer_problems(sdir) == [])
+    (sdir / "s-bad.yaml").write_text(json.dumps(
+        {**base_, "scorer_id": "s-bad", "prompt": {"file": str(sdir / "bad.txt")}}))
+    (sdir / "s-task.yaml").write_text(json.dumps(
+        {**base_, "scorer_id": "s-task", "task": {"scale": [3, 1]}}))
+    probs_ = vt.scorer_problems(sdir)
+    check("V13: a prompt that cannot be rendered (no {n}, not SummEval's) is reported",
+          any(p.startswith("s-bad.yaml") and "{n}" in p for p in probs_))
+    check("V13: a bad task block is reported", any(p.startswith("s-task.yaml") and "task.scale" in p
+                                                   for p in probs_))
+
+tut = js.load_scorer(HERE.parent / "tutorial" / "scorers" / "tickets-judge-v1.yaml")
+tut_prompt = js.prompt_text(tut)
+check("tutorial scorer: loads, declares its task, and its prompt renders with the count",
+      tut["_task"]["dimensions"] == ["accuracy", "usefulness"]
+      and "each of the 4 numbered summaries" in judging.render_prompt(tut_prompt, 4)
+      and "{n}" not in judging.render_prompt(tut_prompt, 4))
+check("tutorial scorer: refused by the gate (fake judges), so it runs only --unvalidated",
+      js.validation_problems(tut) != [])
+
+import leaderboard as lb  # noqa: E402
+check("leaderboard: judge means (quarters, sixths) are exact, so no precision note",
+      lb._small_fractions([3.25, 2.5, 4.0, 1.75, 2 / 3, 13 / 6]))
+check("leaderboard: scores rounded to 6 decimals still get the note",
+      not lb._small_fractions([0.25, 0.333333]) and not lb._small_fractions([0.123457]))
+check("leaderboard: no values is not 'all exact'", not lb._small_fractions([]))
+
 bad = [l for l, c in ok if not c]
 print(f"\n{len(ok) - len(bad)}/{len(ok)} assertions passed")
 if bad:

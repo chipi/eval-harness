@@ -67,6 +67,9 @@ recorded decision to use it. The rest of this ADR is about the third.
 1. **The scorer artifact.** `data/scorers/<scorer_id>.yaml` declares:
    - `kind: judge` (code scorers stay in the adapter and `rescore`);
    - the judge models, each a full arm-style model spec;
+   - the task: what an item is, what the outputs are, the dimensions and the scale
+     (`task`; without it, SummEval's news-summary task), so judging is not tied to one kind
+     of output;
    - the prompt (hashed) and the protocol: listwise, the number of outputs per call, blinding
      and the order seed;
    - a `validation` block: the experiment, metric and value that justify the judge

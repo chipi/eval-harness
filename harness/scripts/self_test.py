@@ -2327,6 +2327,38 @@ def test_judge_score_runs_from_an_installed_package() -> None:
                     "--unvalidated")
         check("installed judge-score: a rerun resumes from the stored verdicts (no new calls)",
               again.returncode == 0 and "calls 0," in again.stdout, again.stdout[-300:])
+
+        # A scorer that declares its own task: labels, dimensions, a 0-3 scale, `{n}` prompt.
+        (proj / "prompts" / "answers.txt").write_text(
+            "Rate each of the {n} numbered answers to the question, 0 to 3, on correctness "
+            "and completeness. Reply as JSON: one list of {n} integers per dimension.\n")
+        (data / "scorers" / "judge-task-v1.yaml").write_text(_json.dumps({
+            "scorer_id": "judge-task-v1", "kind": "judge", "dataset_id": "jds_v1",
+            "task": {"source_label": "QUESTION", "output_label": "ANSWERS",
+                     "dimensions": ["correctness", "completeness"], "scale": [0, 3]},
+            "judges": [{"id": "fa", "params": {**fake, "model": "fake-a", "family": "gemma"}},
+                       {"id": "fb", "params": {**fake, "model": "fake-b", "family": "qwen"}}],
+            "prompt": {"file": "prompts/answers.txt"},
+            "protocol": {"outputs_per_call": 16, "blinding": True, "order_seed": 0,
+                         "position_check_fraction": 0.34, "noise_check_fraction": 0.34},
+            "cost_cap_usd": 1.0}))
+        task_ran = evh("judge-score", "--dataset-id", "jds_v1", "--scorer", "judge-task-v1",
+                       "--unvalidated")
+        tjudged = data / "runs-judged" / "judge-task-v1"
+        tvals = [_json.loads(line)["judge_score_unvalidated"]
+                 for f in sorted(tjudged.glob("arm_*/predictions.jsonl"))
+                 for line in f.read_text().splitlines() if line.strip()]
+        tsets = [_json.loads(f.read_text()) for f in (data / "judging-sets").glob("jds_v1-*.json")]
+        tverd = [_json.loads(f.read_text()) for f in (data / "judge-verdicts").glob("judge-task-v1/*/fa/*.json")]
+        check("installed judge-score: a declared task runs end to end, scores on its own scale",
+              task_ran.returncode == 0 and len(tvals) == 2 * len(ids)
+              and all(0 <= v <= 3 for v in tvals), (task_ran.stderr + task_ran.stdout)[-400:])
+        check("installed judge-score: the declared task is in the judging set and shapes the replies",
+              any((s.get("task") or {}).get("dimensions") == ["correctness", "completeness"] for s in tsets)
+              and tverd and all(set(_json.loads(v["output"])) == {"correctness", "completeness"}
+                                for v in tverd))
+        check("installed judge-score: a declared task is a different judging set from the default",
+              len(tsets) == 2)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 

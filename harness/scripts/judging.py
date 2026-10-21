@@ -3,10 +3,14 @@
 `judge_score.py` used to borrow these from examples/summeval-judging/adapter.py and
 examples/_shared/gateway.py, which an installed package does not have. They live here now:
 
-  prompt       `render_prompt` and `build_message`. At 16 summaries the message is byte-identical
-               to the one SummEval's adapter builds (self-tested against it), so the validation
-               a judge earned there still describes what is sent.
-  parsing      `parse_block`: the four dimensions, exactly n numbers each, each in 1..5.
+  the task     `task_of`: what is judged, from the scorer's optional `task` block (the labels of
+               the source and of the outputs, the dimensions, the scale). Without one it is
+               SummEval's: an ARTICLE, numbered SUMMARIES, four dimensions on 1..5.
+  prompt       `render_prompt` and `build_message`. A prompt with `{n}` has the count put there;
+               one without is SummEval's, whose two count phrases are rewritten. At 16 summaries
+               the message is byte-identical to the one SummEval's adapter builds (self-tested
+               against it), so the validation a judge earned there still describes what is sent.
+  parsing      `parse_block`: every dimension, exactly n numbers each, each inside the scale.
   statistics   `spearman`, `kendall_tau_b` (tie-corrected: a judge ties constantly).
   the call     `call_judge`: an OpenAI-compatible client, routed as examples/_shared/gateway.py
                routes (below), billed cost read from the response, price table as the fallback.
@@ -39,17 +43,52 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 DIMS = ("coherence", "consistency", "fluency", "relevance")
 OPENROUTER = "https://openrouter.ai/api/v1"
 FAKE = "fake"
+COUNT = "{n}"
+
+#: What a scorer without a `task` block judges: SummEval's task, which the committed
+#: summarisation scorers and their judging sets were built on.
+DEFAULT_TASK: Dict[str, Any] = {"source_label": "ARTICLE", "output_label": "SUMMARIES",
+                                "dimensions": list(DIMS), "scale": [1, 5]}
+
+
+def task_of(scorer: Dict[str, Any]) -> Dict[str, Any]:
+    """The scorer's `task` block over the defaults, checked. Raises ValueError on a bad one."""
+    raw = scorer.get("task") or {}
+    if not isinstance(raw, dict):
+        raise ValueError("`task` must be a mapping")
+    unknown = sorted(set(raw) - set(DEFAULT_TASK))
+    if unknown:
+        raise ValueError(f"`task` has unknown key(s) {unknown}; known: {sorted(DEFAULT_TASK)}")
+    t = {**DEFAULT_TASK, **raw}
+    for k in ("source_label", "output_label"):
+        v = t[k]
+        if not isinstance(v, str) or not v.strip() or "\n" in v or ":" in v:
+            raise ValueError(f"task.{k} must be one line of text without ':', got {v!r}")
+    dims = t["dimensions"]
+    if (not isinstance(dims, list) or not dims or len(set(dims)) != len(dims)
+            or not all(isinstance(d, str) and d.strip() for d in dims)):
+        raise ValueError(f"task.dimensions must be a list of distinct names, got {dims!r}")
+    sc = t["scale"]
+    if (not isinstance(sc, list) or len(sc) != 2
+            or not all(isinstance(x, (int, float)) and not isinstance(x, bool) for x in sc)
+            or not sc[0] < sc[1]):
+        raise ValueError(f"task.scale must be [low, high] with low < high, got {sc!r}")
+    return {"source_label": t["source_label"], "output_label": t["output_label"],
+            "dimensions": list(dims), "scale": [sc[0], sc[1]]}
 
 
 # ── the prompt, generalised only in its count ────────────────────────────────
 def render_prompt(base: str, n: int) -> str:
-    """SummEval's prompt for `n` summaries. Byte-identical to it when n == 16."""
+    """The prompt for `n` outputs. A prompt containing `{n}` gets the count there and nothing
+    else changes. Otherwise it is SummEval's prompt, byte-identical to it when n == 16."""
+    if COUNT in base:
+        return base.replace(COUNT, str(n))
     if n == 16:
         return base
     a, b = "16 numbered summaries", "a list of 16 integers"
     if a not in base or b not in base:
-        raise SystemExit("the prompt no longer contains the two count phrases this pass rewrites "
-                         f"({a!r}, {b!r}); it cannot be rendered for {n} summaries")
+        raise SystemExit(f"the prompt has no {COUNT} where the count goes, and not SummEval's two "
+                         f"count phrases ({a!r}, {b!r}); it cannot be rendered for {n} outputs")
     if n == 1:
         # Singular grammar, and an example showing one value per key: the 16-wide example
         # ("[3, 4, ...]") would invite a list that parse_block then rejects.
@@ -66,25 +105,28 @@ def render_prompt(base: str, n: int) -> str:
     return base.replace(a, f"{n} numbered summaries").replace(b, f"a list of {n} integers")
 
 
-def build_message(base: str, article: str, summaries: Sequence[str]) -> str:
-    """The judge's input: the prompt for this many summaries, the article, the numbered
-    summaries. Same layout as SummEval's `_judge_message`; the human references are left out
-    on purpose (a judge shown them would be doing ROUGE's job)."""
+def build_message(base: str, article: str, summaries: Sequence[str],
+                  source_label: str = "ARTICLE", output_label: str = "SUMMARIES") -> str:
+    """The judge's input: the prompt for this many outputs, the source item, the numbered
+    outputs. With the default labels, the layout of SummEval's `_judge_message`; references are
+    left out on purpose (a judge shown them would be doing the code scorer's job)."""
     numbered = "\n".join(f"{i}. {s.strip()}" for i, s in enumerate(summaries, 1))
-    return (f"{render_prompt(base, len(summaries))}\n\nARTICLE:\n{article.strip()}"
-            f"\n\nSUMMARIES:\n{numbered}")
+    return (f"{render_prompt(base, len(summaries))}\n\n{source_label}:\n{article.strip()}"
+            f"\n\n{output_label}:\n{numbered}")
 
 
 _JSON = re.compile(r"\{.*\}", re.S)
 
 
-def parse_block(output: str, n: int) -> Optional[List[float]]:
-    """Per-summary mean of the four dimensions, or None.
+def parse_block(output: str, n: int, dims: Sequence[str] = DIMS,
+                scale: Sequence[float] = (1, 5)) -> Optional[List[float]]:
+    """Per-output mean of the dimensions, or None.
 
     Lenient about wrapping (a fence, a sentence before the JSON), strict about content: a
-    dimension counts only with exactly `n` numbers, and a block counts only with all four,
-    each in 1..5.
+    dimension counts only with exactly `n` numbers, and a block counts only with every
+    dimension, each number inside the scale.
     """
+    lo, hi = float(scale[0]), float(scale[1])
     m = _JSON.search(output or "")
     if not m:
         return None
@@ -95,7 +137,7 @@ def parse_block(output: str, n: int) -> Optional[List[float]]:
     if not isinstance(obj, dict):
         return None
     cols = []
-    for d in DIMS:
+    for d in dims:
         v = obj.get(d)
         if not isinstance(v, list) or len(v) != n:
             return None
@@ -103,7 +145,7 @@ def parse_block(output: str, n: int) -> Optional[List[float]]:
             f = [float(x) for x in v]
         except (TypeError, ValueError):
             return None
-        if any(not (1.0 <= x <= 5.0) for x in f):
+        if any(not (lo <= x <= hi) for x in f):
             return None
         cols.append(f)
     return [statistics.fmean(c[i] for c in cols) for i in range(n)]
@@ -311,13 +353,18 @@ def _price(params: Dict[str, Any], tin: Optional[int], tout: Optional[int]) -> O
 
 
 def _fake_call(message: str, params: Dict[str, Any]) -> JudgeResult:
-    """Scores each numbered summary 1-5 from a hash of its text and the judge's model, so
-    two fake judges disagree a little and a rerun reproduces itself."""
-    body = message.split("SUMMARIES:\n", 1)[1] if "SUMMARIES:\n" in message else ""
+    """Scores each numbered output on the task's scale from a hash of its text and the judge's
+    model, so two fake judges disagree a little and a rerun reproduces itself. The task arrives
+    in `params["_task"]` (judge_score puts it there for fake judges only)."""
+    task = params.get("_task") or DEFAULT_TASK
+    head = f"\n\n{task['output_label']}:\n"
+    body = message.rsplit(head, 1)[1] if head in message else ""
     sums = re.findall(r"^\d+\. (.*)$", body, re.M)
     model = str(params.get("model", ""))
-    s = [1 + int(hashlib.sha256(f"{model}|{x}".encode()).hexdigest()[:8], 16) % 5 for x in sums]
-    out = json.dumps({d: s for d in DIMS})
+    lo, hi = int(task["scale"][0]), int(task["scale"][1])
+    s = [lo + int(hashlib.sha256(f"{model}|{x}".encode()).hexdigest()[:8], 16) % (hi - lo + 1)
+         for x in sums]
+    out = json.dumps({d: s for d in task["dimensions"]})
     tin, tout = max(1, len(message) // 4), max(1, len(out) // 4)
     return JudgeResult(output=out, tokens_in=tin, tokens_out=tout,
                        cost_usd=_price(params, tin, tout) or 0.0, extra={"truncated": 0.0},
