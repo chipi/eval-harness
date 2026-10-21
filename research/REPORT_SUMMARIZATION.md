@@ -709,6 +709,26 @@ arms, and `coverage` stays the primary metric. The record is
 `harness/data/judge-verdicts/judge-summ-v1/`, and `make judge-score ... ARGS=--no-calls`
 rebuilds the scored runs from them for $0.
 
+**Stronger judges, the same verdict (`judge-summ-v2`).** To test whether the disagreement came
+from weak judges, the two strongest judges SummEval measured from different vendors, `openai_l`
+(τ 0.5398) and `anthropic_l` (τ 0.5283), each validated by its committed SummEval run under the
+same prompt and protocol, judged the same judging set: 960 calls, $12.92, 200 of 200 articles,
+no reply unparsed. They reach the same verdict. Every hosted LLM ranks above every BART model:
+`bart_l` scores 3.82 of 5 and is separated below all 24 hosted LLMs, which score 4.04–4.89, with
+`anthropic_l` first and separated from 27 of its 28 opponents, all but `deepseek_m`. The two
+scorers order the arms alike (Spearman 0.85 over arm means), and the frontier judges agree with
+each other at Spearman 0.94. On the 20 human-check pairs they prefer `deepseek_m` 20 to 0, as
+the first judges did. On the Goyal et al. pair they score 0.466 (`openai_l`) and 0.488
+(`anthropic_l`) against one annotator, annotators against each other 0.454; on the articles
+both decided, `openai_l` prefers the GPT-3 summary on 70.4% against the annotators' 61.7%, and
+`anthropic_l` on 64.2% against 64.2%. Their own-family gaps are larger: `openai_l` scored OpenAI's
+arms 0.53 above the others and `anthropic_l` Anthropic's 0.59, against 0.18 and 0.30 for the
+first judges (raw gaps, not bias estimates: families differ in real quality). So judges of very
+different size and price agree with each other and not with the one reader, at 42× the cost,
+and the judged scores stay directional at most. The verdicts are in
+`harness/data/judge-verdicts/judge-summ-v2/`, the Goyal records in
+`harness/data/judge-validation/judge-summ-v2/`.
+
 ## 4. Discussion
 
 **The experiment's resolution is set by the corpus, not the models.** With 67.8% of

@@ -1,0 +1,1 @@
+{"article_id": "41", "order": ["brio", "gpt3", "t0"], "output": "{\"coherence\": [5, 4, 4], \"consistency\": [5, 5, 4], \"fluency\": [5, 5, 5], \"relevance\": [5, 4, 4]}", "cost_usd": 0.00957, "cost_known": true, "latency_ms": 1856.1, "scores": [5.0, 4.5, 4.25], "judge_fp": "d65edda4f70a628c", "prompt_sha": "c762ecc1beef98ee47e612882d1d1dd887cb64798ca1f71e3767fa6427b58227"}

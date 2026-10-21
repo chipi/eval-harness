@@ -1181,6 +1181,131 @@ check("summarisation: pointwise, deepseek_m above bart_l on 192 of 200 and never
       f"derived {_pw['deepseek_m_above_bart_l']} above, {_pw['deepseek_m_below_bart_l']} below, "
       f"of {_pw['articles']}")
 
+
+def _judged_family(scorer, a):
+    """A judge scorer's Holm family test for arm `a`, on judged runs rebuilt in a temp dir
+    from the committed judging-set manifest and stored verdicts (data/runs-judged is
+    gitignored, and --no-calls would need the gitignored article texts; the projection does
+    not). Returns the family test's stdout."""
+    import tempfile as _tf
+    import judge_score as _js
+    _m = json.loads(next((HERE.parent / "data" / "judging-sets").glob(_jfm.SET_GLOB)).read_text())
+    _sc = _js.load_scorer(HERE.parent / "data" / "scorers" / f"{scorer}.yaml")
+    _vd = HERE.parent / "data" / "judge-verdicts" / scorer / _m["judging_set_id"]
+    _ids = [i["item_id"] for i in _m["items"]]
+    _pj = _js.project(_sc, _js.load_scores(_m, _sc, _vd), _ids)
+    with _tf.TemporaryDirectory() as td:
+        for arm in _m["arms"]:
+            out = Path(td) / arm["run"]
+            out.mkdir()
+            (out / "metrics.json").write_text(json.dumps(
+                {"config_id": arm["config_id"], "dataset_id": "cnn_dailymail_200"}))
+            (out / "predictions.jsonl").write_text("".join(json.dumps(
+                {"item_id": i, "judge_score": _pj[i][arm["config_id"]]["_mean"]}) + "\n" for i in _ids if i in _pj))
+        r = _clsp.run([sys.executable, str(HERE / "family_test.py"), "--dataset-id", "cnn_dailymail_200",
+                       "--a", a, "--against", "_n200_v1", "--metric", "judge_score", "--runs-dir", td],
+                      capture_output=True, text=True, cwd=HERE.parent)
+        return r.stdout
+
+
+def _separated_from(stdout):
+    _mm = re.search(r"separated from (\d+) of (\d+) opponents", stdout or "")
+    return (int(_mm.group(1)), int(_mm.group(2))) if _mm else (None, None)
+
+
+_ft1 = _judged_family("judge-summ-v1", "cnn_bart_l_n200_v1")
+check("summarisation: on judge-summ-v1, bart_l is separated from all 28 others (below all 24 hosted)",
+      _separated_from(_ft1) == (28, 28) and "is separated below all 24 hosted LLMs" in _SUMM,
+      f"derived {_separated_from(_ft1)}")
+
+#: The frontier re-measurement (judge-summ-v2), the same judging set: every figure the report
+#: states, recomputed from its committed verdicts and Goyal records.
+_JF2 = _jfm.compute("judge-summ-v2")
+_V2 = _SUMM[_SUMM.find("**Stronger judges, the same verdict"):_SUMM.find("## 4. Discussion")]
+_lo2, _hi2 = _JF2["hosted_judge_score_range"]
+check("summarisation, frontier judges: 960 calls, $12.92, 200 of 200, none unparsed; bart_l 3.82, "
+      "hosted 4.04-4.89 and all above every BART, anthropic_l first",
+      _JF2["calls"] == 960 and _JF2["items_scored"] == 200 and f"${_JF2['billed_usd']:.2f}" in _V2
+      and _is(_JF2["bart_l_judge_score"], 3.82) and _is(_lo2, 4.04) and _is(_hi2, 4.89)
+      and _JF2["hosted_all_above_every_bart"] and _JF2["hosted_leader"] == "cnn_anthropic_l_n200_v1"
+      and "200 of 200 articles" in _V2 and "`bart_l` scores 3.82 of 5" in _V2 and "4.04–4.89" in _V2,
+      f"derived {_JF2['calls']} calls ${_JF2['billed_usd']}, {_JF2['items_scored']}, bart_l "
+      f"{_JF2['bart_l_judge_score']}, hosted {_lo2}-{_hi2}")
+_ft2b = _judged_family("judge-summ-v2", "cnn_bart_l_n200_v1")
+_ft2a = _judged_family("judge-summ-v2", "cnn_anthropic_l_n200_v1")
+_ns2 = [ln.split()[0] for ln in _ft2a.splitlines() if ln.strip().endswith("--")]
+check("summarisation, frontier judges: bart_l separated from all 28; anthropic_l from 27 of 28, "
+      "all but deepseek_m",
+      _separated_from(_ft2b) == (28, 28) and _separated_from(_ft2a) == (27, 28)
+      and _ns2 == ["cnn_deepseek_m_n200_v1"]
+      and "separated from 27 of its 28 opponents, all but `deepseek_m`" in _V2,
+      f"derived bart_l {_separated_from(_ft2b)}, anthropic_l {_separated_from(_ft2a)} not {_ns2}")
+_hc2 = _JF2["human_check"]
+check("summarisation, frontier judges: deepseek_m preferred on 20 of the 20 human-check pairs; "
+      "the judges agree at Spearman 0.94",
+      _hc2["judge_prefers_deepseek_m"] == 20 == _hc2["pairs_with_judge_scores"]
+      and _is(_JF2["agreement_arm_mean_spearman"], 0.94) and "20 to 0" in _V2 and "Spearman 0.94" in _V2,
+      f"derived {_hc2['judge_prefers_deepseek_m']}/{_hc2['pairs_with_judge_scores']}, "
+      f"spearman {_JF2['agreement_arm_mean_spearman']}")
+
+
+def _arm_means(scorer):
+    import judge_score as _js
+    _m = json.loads(next((HERE.parent / "data" / "judging-sets").glob(_jfm.SET_GLOB)).read_text())
+    _sc = _js.load_scorer(HERE.parent / "data" / "scorers" / f"{scorer}.yaml")
+    _vd = HERE.parent / "data" / "judge-verdicts" / scorer / _m["judging_set_id"]
+    _pj = _js.project(_sc, _js.load_scores(_m, _sc, _vd), [i["item_id"] for i in _m["items"]])
+    return {a["config_id"]: statistics.fmean(_pj[i][a["config_id"]]["_mean"] for i in _pj) for a in _m["arms"]}
+
+
+def _spearman(x, y):
+    def rk(v):
+        o = sorted(range(len(v)), key=lambda i: v[i])
+        r = [0.0] * len(v)
+        for k, i in enumerate(o):
+            r[i] = k
+        return r
+    rx, ry = rk(x), rk(y)
+    n = len(x)
+    return 1 - 6 * sum((p - q) ** 2 for p, q in zip(rx, ry)) / (n * (n * n - 1))
+
+
+_am1, _am2 = _arm_means("judge-summ-v1"), _arm_means("judge-summ-v2")
+_cids = sorted(_am1)
+_rho12 = _spearman([_am1[c] for c in _cids], [_am2[c] for c in _cids])
+_cost_ratio = _JF2["billed_usd"] / _JF["billed_usd"]
+check("summarisation, frontier judges: the two scorers' arm means at Spearman 0.85; 42x the cost",
+      _is(_rho12, 0.85) and round(_cost_ratio) == 42 and "Spearman 0.85 over arm means" in _V2
+      and "42× the cost" in _V2, f"derived rho {_rho12:.4f}, ratio {_cost_ratio:.2f}")
+_G2 = _JF2["goyal"]["judges"]
+_loo = {j: _G2[j]["best_pick_vs_loo_reference"]["rate"] for j in _G2}
+_pg = {j: (_G2[j]["pairwise_gpt3_vs_brio_per_article"]["judge_prefers_gpt3"]["rate"],
+           _G2[j]["pairwise_gpt3_vs_brio_per_article"]["human_prefers_gpt3"]["rate"]) for j in _G2}
+check(f"summarisation, frontier judges vs Goyal annotators -- {_JF2['goyal']['source']}",
+      round(_loo["openai_l"], 3) == 0.466 and round(_loo["anthropic_l"], 3) == 0.488
+      and [round(100 * v, 1) for v in _pg["openai_l"]] == [70.4, 61.7]
+      and [round(100 * v, 1) for v in _pg["anthropic_l"]] == [64.2, 64.2]
+      and "0.466 (`openai_l`) and 0.488" in _V2 and "70.4% against the annotators' 61.7%" in _V2
+      and "64.2% against 64.2%" in _V2,
+      f"derived loo {_loo}, gpt3 {_pg}")
+def _self_gap(scorer):
+    import judge_score as _js
+    _m = json.loads(next((HERE.parent / "data" / "judging-sets").glob(_jfm.SET_GLOB)).read_text())
+    _sc = _js.load_scorer(HERE.parent / "data" / "scorers" / f"{scorer}.yaml")
+    _vd = HERE.parent / "data" / "judge-verdicts" / scorer / _m["judging_set_id"]
+    _s = _js.load_scores(_m, _sc, _vd)
+    _pj = _js.project(_sc, _s, [i["item_id"] for i in _m["items"]])
+    _sm = _js.summarise(_m, _sc, _m["arms"], _s, _pj, {}, "recomputed", True, _vd)
+    return {j: v["own_minus_others"] for j, v in _sm["self_family_gap"].items()}
+
+
+_sg1, _sg2 = _self_gap("judge-summ-v1"), _self_gap("judge-summ-v2")
+check("summarisation, frontier judges: own-family raw gaps 0.53 and 0.59, against 0.18 and 0.30",
+      _is(_sg2["openai_l"], 0.53) and _is(_sg2["anthropic_l"], 0.59)
+      and _is(_sg1["gemma_l"], 0.18) and _is(_sg1["qwen_s"], 0.30)
+      and "0.53 above the others" in _V2 and "Anthropic's 0.59" in _V2 and "0.18 and 0.30" in _V2,
+      f"derived v2 {_sg2}, v1 {_sg1}")
+
 #: Pairwise cost ratios the summarisation report states in its separation tables.
 CNN = _arm_costs("cnn_", "cnn_dailymail_200")
 for dear, cheap in (("anthropic_m", "deepseek_m"), ("openai_l", "deepseek_m")):

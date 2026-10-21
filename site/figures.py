@@ -297,7 +297,8 @@ def compute() -> dict:
         "dailymail": dailymail(),
         "hardware": hardware(),
         "remeasure": {"ag": adjudicated("ag-news", exps), "db": adjudicated("dbpedia", exps),
-                      "summ": judged_summarisation(exps), "summeval": instrument_check(exps)},
+                      "summ": judged_summarisation(exps), "summeval": instrument_check(exps),
+                      "summ_v2": judged_summarisation(exps, "judge-summ-v2")},
     }
 
 

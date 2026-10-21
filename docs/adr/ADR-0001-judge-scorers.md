@@ -121,7 +121,9 @@ on these outputs went the other way (one non-expert reader, 20 pairs on truncate
 against BRIO) the judges matched the annotators' agreement with each other, and preferred the
 LLM summary more often than the annotators did, within noise. Nothing here shows that the
 validation transfers, and nothing shows that it does not; calibrate on comparable human data
-before a judged score replaces a primary.
+before a judged score replaces a primary. Stronger judges did not settle it either: the two best
+SummEval judges from different vendors (`judge-summ-v2`, at 42× the cost) reached the same
+verdict and the same 20-to-0 preference on the human-check pairs.
 The second is SciFact. Its relevance labels are incomplete: 227 judgments cover 200 queries,
 so a relevant but unlabelled abstract ranked first counts against an arm. A judge can label
 those abstracts, but no judge here has been validated on scientific relevance. That run goes
