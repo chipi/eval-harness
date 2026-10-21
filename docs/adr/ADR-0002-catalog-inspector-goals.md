@@ -1,7 +1,8 @@
 # ADR-0002 — Catalog, run inspector and goals in the harness (0.4.0)
 
 **Status:** Accepted (2026-10-21). The owner approved the design and all four open questions as
-recommended (see the end of this note). Step 1 shipped as 0.4.0a1.
+recommended (see the end of this note), except the alpha tags: 0.4.0 is built on one branch,
+layer by layer, and released once.
 **Date:** 2026-10-21
 
 ## Context
@@ -174,15 +175,16 @@ podcast rules.
 Goals are **optional for a project and required only from its cut-over date**: an existing
 project upgrading from 0.3.0 changes nothing until it sets that date.
 
-### 6. Release sequence
+### 6. Build sequence: one branch, one release
 
-| step | release | content | gate |
+| step | layer (one commit or more, same branch) | content | gate |
 |---|---|---|---|
-| 1 | 0.4.0a1 (tag only) | `stats.py` + `pair-test` and `family-test` moved onto it | self-test; `check_report_claims` re-derived; moved verdicts listed |
-| 2 | 0.4.0a2 | `catalog` package, `Adapter` protocol, `HarnessAdapter`, `evh catalog build/serve` | catalog builds on harness data and the tutorial; server security tests ported |
-| 3 | 0.4.0a3 | goals: schema, `goal:` on configs, promotion `format`, validate check | tutorial gets one goal; validate passes on harness data |
-| 4 | — | podcast repo pins 0.4.0a3, deletes its copies of the generic code, keeps `podcast_adapter.py` | its full suite (1,212 tests) and `make catalog` give the same pages |
-| 5 | 0.4.0 | changelog, UPGRADING, GUIDE step for goals and the catalog | owner's merge |
+| 1 | stats | `stats.py` + `pair-test` and `family-test` moved onto it | self-test; `check_report_claims` re-derived; moved verdicts listed |
+| 2 | catalog | `catalog` package, `Adapter` protocol, `HarnessAdapter`, `evh catalog build/serve` | catalog builds on harness data and the tutorial; server security tests ported |
+| 3 | goals | goals: schema, `goal:` on configs, promotion `format`, validate check | tutorial gets one goal; validate passes on harness data |
+| 4 | podcast repo | pins the branch head, deletes its copies of the generic code, keeps `podcast_adapter.py` | its full suite (1,212 tests) and `make catalog` give the same pages |
+| 5 | release | changelog, UPGRADING, GUIDE step for goals and the catalog | owner's merge |
+
 
 Step 4 is the proof the split is right: if the podcast pages change other than by intent, the
 interface is wrong, and that gets fixed before 0.4.0.
@@ -200,15 +202,16 @@ interface is wrong, and that gets fixed before 0.4.0.
 
 ## Owner's decisions (2026-10-21)
 
-1. **Exact p in the CLI: yes.** `pair-test` and `family-test` are exact at n ≤ 30 from 0.4.0a1.
+1. **Exact p in the CLI: yes.** `pair-test` and `family-test` are exact at n ≤ 30 in 0.4.0.
    Re-deriving the reports moved nothing: all 201 report claims hold, because every published
    pair and family test is on more than 30 items. The tutorial's 6-item p-values changed and
-   its verdicts did not (CHANGELOG 0.4.0a1).
+   its verdicts did not (CHANGELOG 0.4.0).
 2. **Goal cut-over: a date the project sets.** Nothing is required of an upgrading project
    until it sets one.
 3. **The harness's own catalog: published** with the findings site, since it holds only public
    data. The privacy rule (no item text in static output) applies there as everywhere.
-4. **Alpha tags: yes**, 0.4.0a1 to a3, then 0.4.0.
+4. **No intermediate releases.** One branch, one layer per step, CI on every push, one 0.4.0
+   release at the end.
 
 ## Not covered by this note
 

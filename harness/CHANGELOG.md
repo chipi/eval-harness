@@ -9,12 +9,12 @@ The version lives in `scripts/_version.py`; a release is the git tag `v<version>
 release workflow refuses a tag that disagrees with that file or has no section here. A change
 that can move a result is never a patch release without saying so under **Changed**.
 
-## 0.4.0a1 — 2026-10-21
+## 0.4.0 — unreleased
 
-The first step of 0.4.0 ([ADR-0002](https://github.com/chipi/eval-harness/blob/main/docs/adr/ADR-0002-catalog-inspector-goals.md)):
-one implementation of the paired test, `evaluation_harness.stats`, shared by `pair-test`,
-`family-test` and (from 0.4.0a2) the catalog's run inspector. A pre-release, tagged so a
-project can pin each step.
+Catalog, run inspector and goals in the harness ([ADR-0002](https://github.com/chipi/eval-harness/blob/main/docs/adr/ADR-0002-catalog-inspector-goals.md)).
+Built on one branch, layer by layer, and released once. Done so far: one implementation of the
+paired test, `evaluation_harness.stats`, shared by `pair-test`, `family-test` and the catalog's
+run inspector.
 
 ### Changed
 - **Exact p-values at 30 items or fewer.** `pair-test` and `family-test` now count the
