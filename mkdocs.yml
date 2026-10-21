@@ -37,7 +37,7 @@ nav:
       - Integration: harness/INTEGRATION.md
       - Runbook: harness/RUNBOOK.md
       - "ADR-0001: Judge scorers": adr/ADR-0001-judge-scorers.md
-      - "ADR-0002: Catalog, inspector, goals (proposed)": adr/ADR-0002-catalog-inspector-goals.md
+      - "ADR-0002: Catalog, inspector, goals": adr/ADR-0002-catalog-inspector-goals.md
       - Release notes: harness/CHANGELOG.md
       - Releasing: harness/RELEASING.md
       - Upgrading: harness/UPGRADING.md

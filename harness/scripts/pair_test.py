@@ -20,7 +20,8 @@ WHY A SECOND TEST, WHEN leaderboard.py ALREADY HAS ONE
 THE TEST
   Per item, delta = A - B (items both arms scored, means over repeats). Under the null the
   sign of each delta is a coin flip, so: flip each sign at random, recompute the mean,
-  repeat. p = how often |mean| of a flipped sample reaches the observed |mean|. No
+  repeat. p = how often |mean| of a flipped sample reaches the observed |mean| (counted
+  over every sign pattern up to 30 items, estimated above that: stats.py). No
   distributional assumption, and it keeps the pairing -- which matters here, where ~74% of
   the variance is between articles.
 """
@@ -29,7 +30,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import random
 import statistics
 import sys
 from collections import defaultdict
@@ -39,6 +39,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
 from _common import DATA, RUNS, SOURCES, read_json, warn_on_ambiguous_runs  # noqa: E402
+from stats import EXACT_UP_TO, sign_flip_p  # noqa: E402
 
 
 def per_item(runs_dir: Path, dataset_id: str, config_id: str, metric: str) -> dict[str, float]:
@@ -114,12 +115,7 @@ def main() -> int:
     wins = sum(1 for d in deltas if (d < 0 if args.asc else d > 0))
     ties = sum(1 for d in deltas if d == 0)
 
-    rng = random.Random(args.seed)
-    hits = sum(
-        1 for _ in range(args.permutations)
-        if abs(statistics.fmean(d if rng.random() < 0.5 else -d for d in deltas)) >= abs(obs)
-    )
-    p = (hits + 1) / (args.permutations + 1)
+    p = sign_flip_p(deltas, permutations=args.permutations, seed=args.seed)
     # BONFERRONI, not Holm. One pair cannot do Holm: the step-down procedure compares the
     # smallest p to alpha/m, the next to alpha/(m-1), and so on, which needs the whole
     # family's p-values at once. alpha/m applied to every member is the strictest step
@@ -132,7 +128,9 @@ def main() -> int:
     print(f"    delta (A - B)      {obs:+.4f}")
     print(f"    items A wins       {wins}/{len(items)}" + (" (lower is better)" if args.asc else "")
           + (f" ({ties} exact tie(s))" if ties else ""))
-    print(f"    sign-flip p        {p:.4f}  ({args.permutations} permutations)")
+    how = (f"exact, all 2^{len(items)} sign patterns" if len(items) <= EXACT_UP_TO
+           else f"{args.permutations} permutations")
+    print(f"    sign-flip p        {p:.4f}  ({how})")
     if args.family > 1:
         verdict = "SEPARATED" if p < thresh else "NOT-SEPARATED"
         print(f"    Bonferroni/{args.family}     threshold {thresh:.4f} -> {verdict}")

@@ -222,7 +222,7 @@ make pair-test DATASET_ID=tickets_v1 A=tickets_lead2_v1 B=tickets_lead1_v1 METRI
 ```
 ```text
     items A wins       6/6
-    sign-flip p        0.0330  (20000 permutations)
+    sign-flip p        0.0312  (exact, all 2^6 sign patterns)
     verdict            SEPARATED at 0.05
     (uncorrected: valid only if this pair was named before the table was read)
 ```
@@ -319,9 +319,9 @@ make family-test DATASET_ID=tickets_v1 A=tickets_lead2_v1 AGAINST=tickets_ \
   family size m=3, declared before the p-values were read
   Holm step-down at alpha=0.05
     opponent                     delta      wins        p   thresh   verdict
-    tickets_lead1_v1           +0.0424    5/6      0.0955   0.0167   --
-    tickets_lead2_noisy_v1     +0.0185    4/6      0.3050   0.0250   --
-    tickets_author_v1          +0.0122    4/6      0.3133   0.0500   --
+    tickets_lead1_v1           +0.0424    5/6      0.0938   0.0167   --
+    tickets_author_v1          +0.0122    4/6      0.3125   0.0250   --
+    tickets_lead2_noisy_v1     +0.0106    4/6      0.5625   0.0500   --
 
     separated from 0 of 3 opponents; ahead on the point estimate against 3 of 3
 ```

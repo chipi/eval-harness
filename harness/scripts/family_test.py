@@ -48,6 +48,7 @@ sys.path.insert(0, str(HERE))
 
 from _common import DATA, ROOT, RUNS, SOURCES, read_json, warn_on_ambiguous_runs  # noqa: E402
 from pair_test import per_item  # noqa: E402 -- one implementation of "score per item"
+from stats import sign_flip_p  # noqa: E402 -- one implementation of the paired test
 
 
 def _opponents(runs_dir: Path, dataset_id: str, against: str, exclude: str) -> list[str]:
@@ -63,27 +64,18 @@ def _opponents(runs_dir: Path, dataset_id: str, against: str, exclude: str) -> l
     return sorted(found)
 
 
-def _sign_flip(deltas: list[float], permutations: int, rng: random.Random) -> float:
-    obs = abs(statistics.fmean(deltas))
-    hits = sum(
-        1 for _ in range(permutations)
-        if abs(statistics.fmean(d if rng.random() < 0.5 else -d for d in deltas)) >= obs
-    )
-    return (hits + 1) / (permutations + 1)
-
-
 # Under the PROJECT, not beside the code: installed, the code sits in site-packages.
 CACHE = ROOT / ".cache" / "family_test"
 
 
 def _cache_key(argv: list[str], runs_dir: Path, args) -> str:
-    """Everything the answer depends on: this script and the two it imports, the exact
+    """Everything the answer depends on: this script and the three it imports, the exact
     arguments, and the bytes of every run of this dataset (metrics.json + predictions.jsonl)
     plus any --items / --exclude-dataset input. Change any of them and the key changes, so
     a hit is the same computation, already done -- the test is seeded and deterministic."""
     h = hashlib.sha256()
     here = Path(__file__).resolve().parent
-    for f in ("family_test.py", "pair_test.py", "_common.py"):
+    for f in ("family_test.py", "pair_test.py", "_common.py", "stats.py"):
         h.update((here / f).read_bytes())
     h.update("\0".join(argv + [str(RUNS)]).encode())
     for d in sorted(runs_dir.glob("*")):
@@ -183,7 +175,7 @@ def _run(args) -> int:
             "n": len(items),
             "delta": statistics.fmean(deltas),
             "wins": sum(1 for d in deltas if (d < 0 if args.asc else d > 0)),
-            "p": _sign_flip(deltas, args.permutations, rng),
+            "p": sign_flip_p(deltas, permutations=args.permutations, rng=rng),
         })
     if not rows:
         print("  no opponents with enough shared items")

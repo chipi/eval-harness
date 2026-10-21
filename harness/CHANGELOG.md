@@ -9,6 +9,39 @@ The version lives in `scripts/_version.py`; a release is the git tag `v<version>
 release workflow refuses a tag that disagrees with that file or has no section here. A change
 that can move a result is never a patch release without saying so under **Changed**.
 
+## 0.4.0a1 — 2026-10-21
+
+The first step of 0.4.0 ([ADR-0002](https://github.com/chipi/eval-harness/blob/main/docs/adr/ADR-0002-catalog-inspector-goals.md)):
+one implementation of the paired test, `evaluation_harness.stats`, shared by `pair-test`,
+`family-test` and (from 0.4.0a2) the catalog's run inspector. A pre-release, tagged so a
+project can pin each step.
+
+### Changed
+- **Exact p-values at 30 items or fewer.** `pair-test` and `family-test` now count the
+  two-sided sign-flip p over all 2^n sign patterns when a pair shares 30 items or fewer, instead
+  of estimating it from 20,000 seeded permutations. Above 30 items the estimate is unchanged,
+  bit for bit, including `family-test`'s single stream across opponents. Near a threshold the
+  estimate could land on either side of it; the count cannot. **This can move a result**:
+  - **in this repository's reports:** none moved. All 201 report claims re-derive unchanged,
+    because every published pair and family test is on more than 30 items;
+  - **in the tutorial** (6 items): `pair-test` reads 0.0312 (was 0.0330) and the family test
+    0.0938, 0.3125, 0.5625. The verdicts are the same (GUIDE steps 6 and 8);
+  - **in your project:** re-run `pair-test` / `family-test` on any pair with 30 or fewer
+    shared items. Whether a verdict near its threshold moves depends on your data.
+- `pair-test` says which it did: `(exact, all 2^n sign patterns)` or `(20000 permutations)`.
+- `family-test`'s cache key includes `stats.py`, so a cached answer from 0.3.0 is recomputed.
+
+### Added
+- **`evaluation_harness.stats`**. Standard library only, and the one place the paired test
+  lives:
+  - `exact_p` and `sign_flip_p`;
+  - `holm`, with a declared family larger than the p-values passed;
+  - `exact_ci`, an interval for the mean difference that agrees with the test: none at 5
+    items or fewer, where no shift can be rejected;
+  - `compare`, every arm against a baseline with verdicts in words.
+
+  It has its own test suite, `scripts/test_stats.py`, run by `make test`.
+
 ## 0.3.0 — 2026-10-21
 
 Re-measure what you already have. Stored outputs can now be scored again by LLM judges, as an

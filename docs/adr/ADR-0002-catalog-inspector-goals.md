@@ -1,6 +1,7 @@
 # ADR-0002 — Catalog, run inspector and goals in the harness (0.4.0)
 
-**Status:** Proposed. Awaiting the owner's approval before any code moves.
+**Status:** Accepted (2026-10-21). The owner approved the design and all four open questions as
+recommended (see the end of this note). Step 1 shipped as 0.4.0a1.
 **Date:** 2026-10-21
 
 ## Context
@@ -57,11 +58,14 @@ That set is the interface proposed below.
 
 ### What the harness has today
 
-The paired test is written three times, each as a seeded Monte Carlo sign-flip (`(hits + 1) /
+The paired test is written twice, each as a seeded Monte Carlo sign-flip (`(hits + 1) /
 (permutations + 1)`, 20,000 permutations):
 - `pair_test.py`;
-- `family_test.py` (with Holm);
-- `leaderboard.py`.
+- `family_test.py` (with Holm).
+
+`leaderboard.py` has no pairwise sign-flip: its significance block is a Friedman permutation
+test with Nemenyi, a different question, and it stays as it is. (A first draft of this note
+counted it as a third copy; it is not.)
 
 `inspect_core.exact_p` enumerates all 2^n sign patterns up to n = 30, so it is exact there,
 and falls back to Monte Carlo above that. In the podcast repo, the Monte Carlo estimate flipped
@@ -73,8 +77,8 @@ three published verdicts that sat on the 0.05 line.
 
 - `inspect_core.py` moves into the harness as `scripts/stats.py`, installed as
   `evaluation_harness.stats`.
-- `pair_test`, `family_test`, `leaderboard` and the inspector all call it.
-- The three private copies are deleted.
+- `pair_test`, `family_test` and the inspector all call it.
+- The two private copies are deleted.
 
 **This can change published numbers.** Above n = 30 nothing changes (it stays seeded Monte
 Carlo). At n ≤ 30, a p that was a Monte Carlo estimate becomes exact. The harness's reports
@@ -174,7 +178,7 @@ project upgrading from 0.3.0 changes nothing until it sets that date.
 
 | step | release | content | gate |
 |---|---|---|---|
-| 1 | 0.4.0a1 (tag only) | `stats.py` + the three scripts moved onto it | self-test; `check_report_claims` re-derived; moved verdicts listed |
+| 1 | 0.4.0a1 (tag only) | `stats.py` + `pair-test` and `family-test` moved onto it | self-test; `check_report_claims` re-derived; moved verdicts listed |
 | 2 | 0.4.0a2 | `catalog` package, `Adapter` protocol, `HarnessAdapter`, `evh catalog build/serve` | catalog builds on harness data and the tutorial; server security tests ported |
 | 3 | 0.4.0a3 | goals: schema, `goal:` on configs, promotion `format`, validate check | tutorial gets one goal; validate passes on harness data |
 | 4 | — | podcast repo pins 0.4.0a3, deletes its copies of the generic code, keeps `podcast_adapter.py` | its full suite (1,212 tests) and `make catalog` give the same pages |
@@ -194,17 +198,17 @@ interface is wrong, and that gets fixed before 0.4.0.
   annotations` throughout (already in most files) or `Optional`, because the package's floor
   is 3.9.
 
-## Open questions for the owner
+## Owner's decisions (2026-10-21)
 
-1. **Exact p in the CLI.** Should `pair-test`/`family-test` switch to exact at n ≤ 30 in 0.4.0
-   (recommended; it can move published verdicts, each one listed), or keep Monte Carlo and use
-   exact only in the inspector?
-2. **Goal cut-over.** Is a project-set date (recommended) right, or should 0.4.0 require goals
-   on all new configs from the upgrade on?
-3. **Catalog on the public site.** Should the harness's own catalog be published with the
-   findings site (it holds only public data), or stay local-only like the podcast one?
-4. **Alpha tags.** Use 0.4.0a1–a3 tags so the podcast repo can pin each step (recommended), or
-   one 0.4.0 at the end?
+1. **Exact p in the CLI: yes.** `pair-test` and `family-test` are exact at n ≤ 30 from 0.4.0a1.
+   Re-deriving the reports moved nothing: all 201 report claims hold, because every published
+   pair and family test is on more than 30 items. The tutorial's 6-item p-values changed and
+   its verdicts did not (CHANGELOG 0.4.0a1).
+2. **Goal cut-over: a date the project sets.** Nothing is required of an upgrading project
+   until it sets one.
+3. **The harness's own catalog: published** with the findings site, since it holds only public
+   data. The privacy rule (no item text in static output) applies there as everywhere.
+4. **Alpha tags: yes**, 0.4.0a1 to a3, then 0.4.0.
 
 ## Not covered by this note
 

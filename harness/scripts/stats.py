@@ -1,0 +1,193 @@
+"""The harness's paired test, in one place: sign-flip on per-item deltas, Holm across a family.
+
+    from stats import sign_flip_p, holm, exact_ci, compare
+
+Used by pair_test.py, family_test.py and the catalog's run inspector, so the command line
+and the inspector cannot disagree (ADR-0002).
+
+EXACT UP TO 30 ITEMS. The two-sided p is counted over all 2^n sign patterns (meet in the
+middle: two halves of at most 2^15 sums each, so it is instant). Before 0.4.0 the harness
+estimated it by Monte Carlo at every n, and near a threshold the estimate can land on either
+side: one pair is p 0.0254 exactly (26 of 1024 patterns, not separated at a 0.025 Holm
+step) against a 20,000-permutation estimate of 0.0237 (separated). Above 30 items it is the
+seeded estimate, unchanged: p = (hits + 1) / (permutations + 1).
+
+Standard library only.
+"""
+
+from __future__ import annotations
+
+import bisect
+import itertools
+import math
+import random
+import statistics
+
+PERMUTATIONS = 20000
+SEED = 20260926
+ALPHA = 0.05
+EXACT_UP_TO = 30
+_EPS = 1e-12
+
+
+def exact_p(deltas: list) -> float:
+    """Exact two-sided sign-flip p: the share of all 2^n sign patterns with |sum| >= |observed|."""
+    n = len(deltas)
+    if n == 0:
+        return 1.0
+    obs = abs(sum(deltas)) - _EPS * max(1.0, abs(sum(deltas)))
+    if obs <= 0:  # no difference at all: every pattern is at least as extreme
+        return 1.0
+    half = n // 2
+    left = [
+        sum(s * d for s, d in zip(signs, deltas[:half]))
+        for signs in itertools.product((1, -1), repeat=half)
+    ]
+    right = sorted(
+        sum(s * d for s, d in zip(signs, deltas[half:]))
+        for signs in itertools.product((1, -1), repeat=n - half)
+    )
+    hits = 0
+    for x in left:  # count r with x + r >= obs or x + r <= -obs
+        hits += len(right) - bisect.bisect_left(right, obs - x)
+        hits += bisect.bisect_right(right, -obs - x)
+    return hits / 2**n
+
+
+def sign_flip_p(
+    deltas: list,
+    permutations: int = PERMUTATIONS,
+    seed: int = SEED,
+    rng: random.Random | None = None,
+) -> float:
+    """Two-sided paired sign-flip p: exact up to EXACT_UP_TO items, else a seeded estimate.
+
+    rng: a generator shared across calls, for callers whose published estimates drew every
+    opponent from one stream (family_test.py); otherwise a fresh one seeded with `seed`.
+    """
+    if not deltas:
+        return 1.0
+    if len(deltas) <= EXACT_UP_TO:
+        return exact_p(deltas)
+    obs = statistics.fmean(deltas)
+    rng = rng or random.Random(seed)
+    hits = sum(
+        1
+        for _ in range(permutations)
+        if abs(statistics.fmean(d if rng.random() < 0.5 else -d for d in deltas)) >= abs(obs)
+    )
+    return (hits + 1) / (permutations + 1)
+
+
+def holm(pvalues: dict, alpha: float = ALPHA, family: int | None = None) -> dict:
+    """{name: (threshold, separated)} by Holm step-down; stops at the first p over its threshold.
+
+    family: the number of comparisons being corrected for, when it is larger than the ones
+    passed (a pair opened from a page that tested many keeps that page's correction).
+    """
+    out, m, stopped = {}, max(len(pvalues), family or 0), False
+    for i, (name, p) in enumerate(sorted(pvalues.items(), key=lambda kv: kv[1])):
+        thr = alpha / (m - i)
+        ok = not stopped and p <= thr
+        stopped = stopped or not ok
+        out[name] = (thr, ok)
+    return out
+
+
+def min_attainable_p(n: int) -> float:
+    """The smallest two-sided p a paired sign-flip test can return on n items."""
+    return 2 / 2**n if n else 1.0
+
+
+def exact_ci(deltas: list, alpha: float = ALPHA):
+    """Interval for the mean paired difference that agrees with the paired test.
+
+    The set of shifts d for which the sign-flip test on (delta - d) does not reject at
+    alpha: exact up to EXACT_UP_TO items (found by bisection on each side of the mean),
+    a t interval above that. None when no shift can be rejected at all (n=5 and below:
+    the smallest attainable p is over alpha), so there is no interval to draw.
+    """
+    n = len(deltas)
+    if n < 2 or min_attainable_p(n) > alpha:
+        return None
+    mean = statistics.fmean(deltas)
+    if n > EXACT_UP_TO:
+        sd = statistics.stdev(deltas)
+        z = 1.959964
+        t = z + (z**3 + z) / (4 * (n - 1))  # Cornish-Fisher: t quantile without scipy
+        half = t * sd / math.sqrt(n)
+        return [mean - half, mean + half]
+    span = (max(deltas) - min(deltas)) or abs(mean) or 1.0
+
+    def rejected(d):
+        return exact_p([x - d for x in deltas]) <= alpha
+
+    def bound(outer):
+        inner = mean  # never rejected: the shifted sum is 0
+        for _ in range(48):
+            mid = (inner + outer) / 2
+            inner, outer = (inner, mid) if rejected(mid) else (mid, outer)
+        return inner
+
+    return [bound(min(deltas) - span), bound(max(deltas) + span)]
+
+
+def compare(
+    arms: dict,
+    baseline: str,
+    higher_is_better: bool = True,
+    neutral: bool = False,
+    family: int | None = None,
+    threshold: float | None = None,
+) -> dict:
+    """Test every arm against `baseline` on the items both scored; Holm across the family.
+
+    arms: {arm_id: {item_id: float}}. Returns {"items": [...], "rows": [...]} where each row
+    has n (shared items), mean, baseline_mean, delta (arm - baseline), wins/losses/ties
+    (by direction), p, threshold, verdict.
+    """
+    base = arms.get(baseline) or {}
+    rows, pvals = [], {}
+    for arm, scores in arms.items():
+        if arm == baseline:
+            continue
+        shared = sorted(set(scores) & set(base))
+        deltas = [scores[i] - base[i] for i in shared]
+        sign = 1 if higher_is_better else -1
+        row = {
+            "arm": arm,
+            "n": len(shared),
+            "mean": statistics.fmean(scores[i] for i in shared) if shared else None,
+            "baseline_mean": statistics.fmean(base[i] for i in shared) if shared else None,
+            "delta": statistics.fmean(deltas) if deltas else None,
+            "wins": sum(1 for d in deltas if d * sign > 0),
+            "losses": sum(1 for d in deltas if d * sign < 0),
+            "ties": sum(1 for d in deltas if d == 0),
+            "min_p": min_attainable_p(len(shared)),
+            "ci": exact_ci(deltas),
+        }
+        if len(shared) >= 2 and any(deltas):
+            row["p"] = sign_flip_p(deltas)
+            pvals[arm] = row["p"]
+        else:
+            row["p"] = None
+        rows.append(row)
+    verdicts = holm(pvals, family=family)
+    if threshold is not None:
+        # A pair opened from a page that tested many: the page's Holm threshold for this row,
+        # so the verdict is the same one the page showed (family size alone loses the rank).
+        verdicts = {a: (threshold, p <= threshold) for a, p in pvals.items()}
+    for row in rows:
+        thr, ok = verdicts.get(row["arm"], (None, False))
+        row["threshold"] = thr
+        if row["p"] is None:
+            row["verdict"] = "untestable" if row["n"] < 2 else "identical"
+        elif ok and neutral:  # a measurement with no better direction (length, counts)
+            row["verdict"] = "separated: higher" if row["delta"] > 0 else "separated: lower"
+        elif ok:
+            better = (row["delta"] > 0) == higher_is_better
+            row["verdict"] = "separated: better" if better else "separated: worse"
+        else:
+            row["verdict"] = "not separated"
+    items = sorted(set().union(*(set(s) for s in arms.values()))) if arms else []
+    return {"items": items, "rows": rows, "family_size": max(len(pvals), family or 0)}
