@@ -35,6 +35,10 @@ Pin a release tag:
    - major: a change to the run format or the CLI that breaks existing projects.
 2. **Write its section** at the top of `harness/CHANGELOG.md` (`## X.Y.Z — YYYY-MM-DD`).
    Anything that can move a number goes under **Changed**, in words a consumer can act on.
+   Open it with a short paragraph a reader can take in at once: what the release lets you do,
+   and whether upgrading changes any result. The section is the release notes in three places:
+   the GitHub Release (the workflow copies it), the docs site and the findings site's release
+   notes page. Use absolute links: the GitHub Release cannot resolve relative ones.
 3. **Merge to `main`.** The `harness-package` workflow builds the package, installs it in
    a clean venv, runs it outside the checkout, and checks the changelog section exists.
 4. **Tag and push:**

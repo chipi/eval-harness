@@ -1,14 +1,24 @@
 # Changelog
 
-Every release of the harness, newest first. The version lives in `scripts/_version.py`; a
-release is the git tag `v<version>`, and the release workflow refuses a tag that disagrees
-with that file or has no section here. A change that can move a result is never a patch
-release without saying so under **Changed**.
+Every release of the harness, newest first: what it shipped, and what a project pinning it
+should know. These are the release notes. The same section is the text of the release's
+GitHub Release, and the findings site shows them at
+[evals.humancopilot.eu/releases.html](https://evals.humancopilot.eu/releases.html).
+
+The version lives in `scripts/_version.py`; a release is the git tag `v<version>`, and the
+release workflow refuses a tag that disagrees with that file or has no section here. A change
+that can move a result is never a patch release without saying so under **Changed**.
 
 ## 0.3.0 — 2026-10-21
 
-Re-measuring a frozen experiment: judge scorers, an adjudicated-gold pass, and the checks that
-keep both honest. Design: [ADR-0001](../docs/adr/ADR-0001-judge-scorers.md).
+Re-measure what you already have. Stored outputs can now be scored again by LLM judges, as an
+optional pass that never touches a committed run: `evh judge-score`, for any text task you
+declare (what an item is, what the outputs are, the dimensions, the scale). The harness refuses
+a judge until committed runs show it agrees with human ratings, runs at least two judges from
+different vendors blind, measures their position bias and noise, and stores every verdict so a
+rerun costs $0. The tutorial has an offline, $0 judging step (GUIDE step 10). Upgrading from
+0.2.0 changes no committed run or score. Design: [ADR-0001](https://github.com/chipi/eval-harness/blob/main/docs/adr/ADR-0001-judge-scorers.md);
+what it found here: the [judging page](https://evals.humancopilot.eu/experiments/judging.html).
 
 ### Added
 - **`evh judge-score`** (and `make judge-score`). Re-measure an experiment's frozen outputs
@@ -26,8 +36,9 @@ keep both honest. Design: [ADR-0001](../docs/adr/ADR-0001-judge-scorers.md).
   and the `scale`; a prompt writes `{n}` where the number of outputs per call goes. Without a
   `task` block a scorer judges SummEval's news-summary task (ARTICLE, SUMMARIES, four
   dimensions, 1-5), byte for byte as before. A declared task is hashed into the judging set.
-- **A judging step in the tutorial** (`docs/GUIDE.md` step 10): `harness/tutorial/scorers/
-  tickets-judge-v1.yaml` re-measures the tutorial's arms with two fake judges, offline and $0,
+- **A judging step in the tutorial** (`docs/GUIDE.md` step 10):
+  `harness/tutorial/scorers/tickets-judge-v1.yaml` re-measures the tutorial's arms with two
+  fake judges, offline and $0,
   through the refusal, the dry run, the pass and the leaderboard.
 - **A validation gate.** A scorer runs only if its `validation` block names a committed run
   for each judge that has the stated metric, the judge's model, temperature, reasoning,
@@ -81,7 +92,10 @@ keep both honest. Design: [ADR-0001](../docs/adr/ADR-0001-judge-scorers.md).
 
 ## 0.2.0 — 2026-10-20
 
-The first version meant to be installed rather than copied.
+The first version meant to be installed rather than copied: pin a release tag, run `evh`, and
+your project's data stays in your project, never in the installed package. Runs now record
+which harness produced them, other tools' scores can be imported as runs, and the paired tests
+handle lower-is-better metrics.
 
 ### Added
 - **Installable package.** `pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.2.0#subdirectory=harness"`

@@ -28,6 +28,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import figures  # noqa: E402
+import releases  # noqa: E402
 import remeasured  # noqa: E402
 import method  # noqa: E402
 
@@ -452,7 +453,7 @@ def footer(up: str) -> str:
       <a href="mailto:marko@humancopilot.eu" data-umami-event="cta-email" data-umami-event-position="footer">Email</a>
     </nav>
   </div>
-  <div class="foot-legal"><span>© Marko Dragoljevic · eval-harness · <a href="{up}docs/DATA/">Data &amp; licences</a></span><span>Cookieless, self-hosted analytics (Umami). No cookies, no tracking across sites. <a href="{up}privacy.html">Privacy</a></span></div>
+  <div class="foot-legal"><span>© Marko Dragoljevic · eval-harness · <a href="{up}docs/DATA/">Data &amp; licences</a> · <a href="{up}releases.html">Release notes</a></span><span>Cookieless, self-hosted analytics (Umami). No cookies, no tracking across sites. <a href="{up}privacy.html">Privacy</a></span></div>
 </div></footer>"""
 
 
@@ -1325,6 +1326,7 @@ def build(out: Path) -> None:
     (out / "method.html").write_text(method.method_page(H, f), encoding="utf-8")
     (out / "use.html").write_text(method.use_page(H, f), encoding="utf-8")
     (out / "privacy.html").write_text(privacy_page(), encoding="utf-8")
+    (out / "releases.html").write_text(releases.releases_page(H), encoding="utf-8")
     (out / "experiments" / "judging.html").write_text(remeasured.judging_page(H, f), encoding="utf-8")
     for x in f["experiments"]:
         (out / "experiments" / f'{x["slug"]}.html').write_text(experiment_page(x, f), encoding="utf-8")

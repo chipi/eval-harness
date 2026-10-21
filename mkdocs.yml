@@ -37,6 +37,9 @@ nav:
       - Integration: harness/INTEGRATION.md
       - Runbook: harness/RUNBOOK.md
       - "ADR-0001: Judge scorers": adr/ADR-0001-judge-scorers.md
+      - Release notes: harness/CHANGELOG.md
+      - Releasing: harness/RELEASING.md
+      - Upgrading: harness/UPGRADING.md
   - The experiments:
       - Reproduce it: REPRODUCE.md
       - Protocol: PROTOCOL.md
