@@ -30,6 +30,11 @@ inspector; and the catalog and run inspector themselves, for any project.
     shared items. Whether a verdict near its threshold moves depends on your data.
 - `pair-test` says which it did: `(exact, all 2^n sign patterns)` or `(20000 permutations)`.
 - `family-test`'s cache key includes `stats.py`, so a cached answer from 0.3.0 is recomputed.
+- **`validate` V4 no longer passes what it did not check.** A materialized copy that has lost
+  an item file now fails; it used to be skipped. A dataset with no materialized copy on the
+  machine (materialized data is not committed, so a CI job has none) is named as not checked,
+  and the ok line says how many were checked, e.g. "3 of 14 datasets materialized here". A
+  project whose materialized copy is incomplete goes red where it was green.
 
 ### Added
 - **`evaluation_harness.stats`**. Standard library only, and the one place the paired test
