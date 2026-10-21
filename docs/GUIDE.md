@@ -295,7 +295,9 @@ too — `make rank-stability` shows how many items it takes before the order sto
   and report on the rest — `make holdout` re-tests excluding it.
 - **Disputed gold is a finding, not noise.** When most strong systems disagree with a
   gold answer, read it: in this repository's AG News and DBpedia experiments, one reader
-  judged some such items mislabelled or a matter of convention (unadjudicated).
+  adjudicated those items by topic, shown the hosted answer, and found the gold wrong on all
+  20 (AG News 17, DBpedia 3). The dataset's own gold stays primary; the adjudicated one sits
+  beside it.
 
 ## 8 · Decide: is the winner separated?
 

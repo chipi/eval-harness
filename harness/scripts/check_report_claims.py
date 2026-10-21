@@ -1137,13 +1137,15 @@ _hloo = _G["human_baseline"]["leave_one_annotator_out"]["rate"]
 _pw = {j: _gj[j]["pairwise_gpt3_vs_brio_per_article"] for j in ("gemma_l", "qwen_s")}
 _jp = {j: 100 * _pw[j]["judge_prefers_gpt3"]["rate"] for j in _pw}
 _hp2 = {j: 100 * _pw[j]["human_prefers_gpt3"]["rate"] for j in _pw}
-_overlap_g = _pw["gemma_l"]["judge_prefers_gpt3"]["ci95"][0] <= _pw["gemma_l"]["human_prefers_gpt3"]["ci95"][1]
+_overlap_g = all(_pw[j]["judge_prefers_gpt3"]["ci95"][0] <= _pw[j]["human_prefers_gpt3"]["ci95"][1]
+                 and _pw[j]["human_prefers_gpt3"]["ci95"][0] <= _pw[j]["judge_prefers_gpt3"]["ci95"][1]
+                 for j in ("gemma_l", "qwen_s"))
 check(f"summarisation: judges vs Goyal annotators, like-for-like (leave-one-out, per-article) -- {_G['source']}",
       f"against one annotator they score {_loo['gemma_l']:.3f} (`gemma_l`) and {_loo['qwen_s']:.3f} (`qwen_s`), "
       f"annotators against each other {_hloo:.3f}, chance 0.333" in _SUMM
       and f"({_jp['gemma_l']:.1f}% and {_jp['qwen_s']:.1f}% against {_hp2['gemma_l']:.1f}% and {_hp2['qwen_s']:.1f}%; "
-          f"the 95% intervals overlap for `gemma_l`)" in _SUMM and _overlap_g,
-      f"derived loo {_loo}, humans {_hloo}; judge {_jp}, humans {_hp2}; gemma CIs overlap {_overlap_g}")
+          f"the 95% intervals overlap for both judges)" in _SUMM and _overlap_g,
+      f"derived loo {_loo}, humans {_hloo}; judge {_jp}, humans {_hp2}; both judges' CIs overlap {_overlap_g}")
 if _G["source"].startswith("recomputed"):
     _rep = json.loads((HERE.parent / "data" / "judge-validation" / "judge-summ-v1" / "goyal2022-cnn"
                        / "report.json").read_text())

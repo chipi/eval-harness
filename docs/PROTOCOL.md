@@ -137,7 +137,9 @@ they compare them.
 - **Dev slice.** `ag_news_20`, the first 5 per class (nested).
 - **Reference.** Dataset labels — gold, and disputed: 17 items are labelled against the
   judgement of ≥80% of the hosted field; they stay in the score and are analysed apart
-  (REPORT_CLASSIFICATION §3.4); one rater reads about half as convention, half as mislabels.
+  (REPORT_CLASSIFICATION §3.4); adjudicated by topic by one reader shown the hosted answer, the
+  gold was wrong on all 17 (an earlier reading had split them about half convention, half
+  mislabels). The dataset's own gold stays primary.
 - **Metric.** Accuracy — the standard one.
 - **Comparability.** Comparable in kind to published accuracy; at n=200 a single figure
   carries ±0.03.

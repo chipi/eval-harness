@@ -701,7 +701,7 @@ Li & Durrett (2022, CC BY 4.0; 100 CNN articles, three annotators each), the jud
 people about as well as people agree with each other: against one annotator they score 0.498
 (`gemma_l`) and 0.526 (`qwen_s`), annotators against each other 0.454, chance 0.333. On the
 same articles they prefer the GPT-3 summary more often than the annotators do (72.7% and 77.0%
-against 63.6% and 63.2%; the 95% intervals overlap for `gemma_l`). Scored one summary at a time
+against 63.6% and 63.2%; the 95% intervals overlap for both judges). Scored one summary at a time
 instead of in lists (unvalidated), they still rated `deepseek_m` above `bart_l` on 192 of 200
 articles and never below. So the judged scores are directional at most and unconfirmed on these
 arms, and `coverage` stays the primary metric. The record is
