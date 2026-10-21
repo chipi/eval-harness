@@ -28,7 +28,7 @@ if(!p.has('static'))document.documentElement.classList.add('js');})();
 <body>
 <header class="bar"><div class="wrap">
   <a class="brand" href="../index.html" aria-label="eval-harness home"><img class="mark" src="../assets/icon.svg" alt="" width="28" height="28"><span>eval-harness</span></a>
-  <nav class="nav"><a href="../index.html">Harness</a><a href="../use.html">Use it</a><a href="../method.html" class="hide-sm">Method</a><a href="../experiments.html" aria-current="page">Experiments</a><a href="../docs/" class="hide-sm">Docs</a><a href="https://github.com/chipi/eval-harness" class="hide-sm">GitHub ↗</a><button id="theme" class="theme" aria-label="Toggle light and dark">◐</button></nav>
+  <nav class="nav"><a href="../index.html">Harness</a><a href="../use.html">Use it</a><a href="../method.html" class="hide-sm">Method</a><a href="../experiments.html" aria-current="page">Experiments</a><a href="../experiments/judging.html" class="hide-sm">Judging</a><a href="../docs/" class="hide-sm">Docs</a><a href="https://github.com/chipi/eval-harness" class="hide-sm">GitHub ↗</a><button id="theme" class="theme" aria-label="Toggle light and dark">◐</button></nav>
 </div></header>
 <main>
 
@@ -468,11 +468,11 @@ $0.0185 per 1,000 items"/><circle cx="314.7" cy="74.2" r="11" class="ring"/><tex
   <h2>What this experiment found.</h2>
   <ol class="findings"><li><div><h3>No winner: the leader and nineteen others.</h3><p>qwen_m leads at 0.9929, not separated from 19 others, including the free fine-tune.</p></div></li><li><div><h3>The dearest model finished 2nd of 28.</h3><p>anthropic_l billed $0.3784 for 280 items. The cheapest model not separated from the leader, gemma_m, cost 115× less.</p></div></li><li><div><h3>The benchmark is saturated, and the gold is sometimes disputed.</h3><p>Three items are disputed by 24 to 25 of 26 arms, and on one rater&#x27;s reading, unadjudicated, the gold label is the error.</p></div></li></ol>
 </div></section>
-
-<section class="block" id="habit"><div class="wrap"><div class="eyebrow"><span class="num">04</span>The method, here</div>
+<section class="block" id="remeasured"><div class="wrap"><div class="eyebrow"><span class="num">04</span>Re-measured</div><h2>Re-measured against labels a person corrected.</h2><div class="prose"><p>One reader adjudicated the 5 disputed items, shown the hosted answer; the gold was wrong on 3. The top stays a crowd, and bert_base_fy moves from 3rd to 11th at an unchanged 0.9857. The dataset&#x27;s own gold stays primary.</p></div><div class="btns"><a class="btn" href="judging.html">What re-measuring changed, and what it teaches →</a></div></div></section>
+<section class="block" id="habit"><div class="wrap"><div class="eyebrow"><span class="num">05</span>The method, here</div>
   <div class="lesson"><h2>Tested, not read.</h2><p>19 arms cannot be separated from the leader. A saturated benchmark sorts; it does not rank — and the table still prints them first, second, third.</p><a class="btn" href="../method.html#tested">This habit, in the method →</a></div>
 </div></section>
-<section class="block" id="reproduce"><div class="wrap"><div class="eyebrow"><span class="num">05</span>Reproduce it</div>
+<section class="block" id="reproduce"><div class="wrap"><div class="eyebrow"><span class="num">06</span>Reproduce it</div>
   <h2>Check it yourself.</h2>
   <div class="cols">
     <div class="prose">

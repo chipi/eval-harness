@@ -28,7 +28,7 @@ if(!p.has('static'))document.documentElement.classList.add('js');})();
 <body>
 <header class="bar"><div class="wrap">
   <a class="brand" href="../index.html" aria-label="eval-harness home"><img class="mark" src="../assets/icon.svg" alt="" width="28" height="28"><span>eval-harness</span></a>
-  <nav class="nav"><a href="../index.html">Harness</a><a href="../use.html">Use it</a><a href="../method.html" class="hide-sm">Method</a><a href="../experiments.html" aria-current="page">Experiments</a><a href="../docs/" class="hide-sm">Docs</a><a href="https://github.com/chipi/eval-harness" class="hide-sm">GitHub ↗</a><button id="theme" class="theme" aria-label="Toggle light and dark">◐</button></nav>
+  <nav class="nav"><a href="../index.html">Harness</a><a href="../use.html">Use it</a><a href="../method.html" class="hide-sm">Method</a><a href="../experiments.html" aria-current="page">Experiments</a><a href="../experiments/judging.html" class="hide-sm">Judging</a><a href="../docs/" class="hide-sm">Docs</a><a href="https://github.com/chipi/eval-harness" class="hide-sm">GitHub ↗</a><button id="theme" class="theme" aria-label="Toggle light and dark">◐</button></nav>
 </div></header>
 <main>
 
@@ -534,11 +534,11 @@ coverage 0.2718 on CNN → 0.3697 on DailyMail</title></circle><line x1="64" y1=
 coverage 0.2071 on CNN → 0.1522 on DailyMail"><title>bart_l_xsum
 coverage 0.2071 on CNN → 0.1522 on DailyMail</title></circle><circle cx="196" cy="327.3" r="6" class="dot k-local" data-tip="bart_l_xsum
 coverage 0.2071 on CNN → 0.1522 on DailyMail"><title>bart_l_xsum
-coverage 0.2071 on CNN → 0.1522 on DailyMail</title></circle></svg></div></figure></div></div></section>
-<section class="block" id="habit"><div class="wrap"><div class="eyebrow"><span class="num">05</span>The method, here</div>
+coverage 0.2071 on CNN → 0.1522 on DailyMail</title></circle></svg></div></figure></div></div></section><section class="block" id="remeasured"><div class="wrap"><div class="eyebrow"><span class="num">05</span>Re-measured</div><h2>Re-measured by validated LLM judges, and checked by a person.</h2><div class="prose"><p>Scored again by two LLM judges validated on SummEval, every hosted LLM ranks above every BART model: bart_l falls from 1st to 25th of 29, and anthropic_l rises from 18th to first. One blind human check went the other way, 14 to 6 for bart_l over deepseek_m, so coverage stays the primary metric.</p></div><div class="btns"><a class="btn" href="judging.html">What re-measuring changed, and what it teaches →</a></div></div></section>
+<section class="block" id="habit"><div class="wrap"><div class="eyebrow"><span class="num">06</span>The method, here</div>
   <div class="lesson"><h2>The data is the instrument.</h2><p>The committed sample turned out to be all CNN's articles. A calibration row — copying the first three sentences on the full test set, against its published score — is what showed it.</p><a class="btn" href="../method.html#data">This habit, in the method →</a></div>
 </div></section>
-<section class="block" id="reproduce"><div class="wrap"><div class="eyebrow"><span class="num">06</span>Reproduce it</div>
+<section class="block" id="reproduce"><div class="wrap"><div class="eyebrow"><span class="num">07</span>Reproduce it</div>
   <h2>Check it yourself.</h2>
   <div class="cols">
     <div class="prose">

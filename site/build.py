@@ -28,6 +28,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import figures  # noqa: E402
+import remeasured  # noqa: E402
 import method  # noqa: E402
 
 ROOT = HERE.parent
@@ -495,7 +496,7 @@ def page(title: str, desc: str, body: str, depth: int = 0, here: str = "",
 <body>
 <header class="bar"><div class="wrap">
   <a class="brand" href="{up}index.html" aria-label="eval-harness home"><img class="mark" src="{up}assets/icon.svg" alt="" width="28" height="28"><span>eval-harness</span></a>
-  <nav class="nav">{nav("harness", f"{up}index.html", "Harness")}{nav("use", f"{up}use.html", "Use it")}{nav("method", f"{up}method.html", "Method", "hide-sm")}{nav("experiments", f"{up}experiments.html", "Experiments")}<a href="{up}docs/" class="hide-sm">Docs</a><a href="{REPO}" class="hide-sm">GitHub ↗</a><button id="theme" class="theme" aria-label="Toggle light and dark">◐</button></nav>
+  <nav class="nav">{nav("harness", f"{up}index.html", "Harness")}{nav("use", f"{up}use.html", "Use it")}{nav("method", f"{up}method.html", "Method", "hide-sm")}{nav("experiments", f"{up}experiments.html", "Experiments")}{nav("judging", f"{up}experiments/judging.html", "Judging", "hide-sm")}<a href="{up}docs/" class="hide-sm">Docs</a><a href="{REPO}" class="hide-sm">GitHub ↗</a><button id="theme" class="theme" aria-label="Toggle light and dark">◐</button></nav>
 </div></header>
 <main>
 {body}
@@ -702,7 +703,7 @@ def home(f: dict) -> str:
   <div class="stats">
     <div class="stat"><div class="n">{f["dearest_not_best_frontier"]}<small>/{f["frontier_exps"]}</small></div>{marks(f["dearest_not_best_frontier"], f["frontier_exps"])}<div class="l">experiments with frontier models where the dearest model was not the best (the same model each time; SciFact ran only the twelve cheapest hosted models)</div></div>
     <div class="stat"><div class="n">{ties}<small>/{len(exps)}</small></div>{marks(ties, len(exps))}<div class="l">leaderboards where the leader cannot be separated from others (at 100–280 items)</div></div>
-    <div class="stat"><div class="n">$0</div>{marks(f["local_first_or_tied"], len(exps))}<div class="l">for a model that is first, or not separable from first, in {f["local_first_or_tied"]} of the {len(exps)}</div></div>
+    <div class="stat"><div class="n">$0</div>{marks(f["local_first_or_tied"], len(exps))}<div class="l">for a model that is first, or not separable from first, in {f["local_first_or_tied"]} of the {len(exps)}; {f["local_first_or_tied"] - 2} of {len(exps)} on the <a href="experiments/judging.html">re-measured scores</a></div></div>
     <div class="stat"><div class="n">{cal_ok}<small>/{cal_n}</small></div>{marks(cal_in, cal_n)}<div class="l">calibration checks that agree with the published numbers, {cal_in} inside their own interval</div></div>
   </div>
   <div class="chart benches" style="margin-top:48px">{legend(reading="higher score: further right →", baseline=False)}{benches}</div>
@@ -745,7 +746,13 @@ def landing(f: dict) -> str:
         f'<a class="card reveal" href="experiments/{x["slug"]}.html"><div class="task">{e(x["task"])}</div>'
         f'<h3>{e(x["bench"])}</h3><p>{e(CARD[x["slug"]])}</p>'
         f'<div class="meta"><span>{x["n_items"]} items · {x["n_arms"]} arms</span><span>1st <b>{e(x["top"]["arm"])}</b></span></div></a>'
-        for x in exps)
+        for x in exps) + (
+        '<a class="card reveal" href="experiments/judging.html"><div class="task">Re-measured, not re-run</div>'
+        '<h3>Judging</h3><p>Three experiments scored again without re-running a model: validated LLM '
+        'judges re-ranked summarisation, a person corrected AG News and DBpedia labels. Why a judge '
+        'beat the metric, and why a person still had the last word.</p>'
+        f'<div class="meta"><span>3 experiments · {money(f["remeasure"]["summ"]["fig"]["billed_usd"])} of judging</span>'
+        '<span>primaries <b>unchanged</b></span></div></a>')
     s = by["summarization"]
     hw_rows = "".join(
         f'<tr><td class="exp">{e(m["name"])}</td><td data-label="what it is">{e(m["summary"])}</td>'
@@ -773,7 +780,7 @@ def landing(f: dict) -> str:
   <div class="stats">
     <div class="stat"><div class="n">{f["dearest_not_best_frontier"]}<small>/{f["frontier_exps"]}</small></div><div class="l">experiments with frontier models where the dearest model was not the best (the same model each time; SciFact ran only the twelve cheapest hosted models)</div></div>
     <div class="stat"><div class="n">{ties}<small>/{len(exps)}</small></div><div class="l">leaderboards where the leader cannot be separated from others (at 100–280 items)</div></div>
-    <div class="stat"><div class="n">$0</div><div class="l">for a model that is first, or not separable from first, in {f["local_first_or_tied"]} of the {len(exps)}</div></div>
+    <div class="stat"><div class="n">$0</div><div class="l">for a model that is first, or not separable from first, in {f["local_first_or_tied"]} of the {len(exps)}; {f["local_first_or_tied"] - 2} of {len(exps)} on the <a href="experiments/judging.html">re-measured scores</a></div></div>
     <div class="stat"><div class="n">{cal_ok}<small>/{cal_n}</small></div><div class="l">calibration checks that agree with the published numbers, {cal_in} inside their own interval</div></div>
   </div>
 </div></section>
@@ -897,6 +904,11 @@ def require(cond: bool, claim: str) -> None:
     """A structural claim written into the copy must hold in the data, or the build stops."""
     if not cond:
         raise SystemExit(f"site copy claims something the data no longer supports: {claim}")
+
+
+# What remeasured.py borrows beyond method.py's set (defined above this point, so added here).
+H.require, H.kind_of, H.both, H.legend, H.spread, H.ordinal, H.BLOB = (
+    require, kind_of, both, legend, _spread, ordinal, BLOB)
 
 
 def findings_for(x: dict, f: dict) -> list:
@@ -1038,6 +1050,57 @@ def privacy_page() -> str:
     return page("Privacy — eval-harness", "What this site counts, and what it does not.", body)
 
 
+def remeasured_block(x: dict, f: dict, num: int) -> str:
+    """For an experiment that was re-measured (or whose judges did the re-measuring): what
+    changed, in one paragraph, and the way to the judging page. Numbers are computed."""
+    r = f["remeasure"]
+    head, text = "", ""
+    if x["slug"] == "summarization":
+        a = {z["arm"]: z for z in r["summ"]["arms"]}
+        hc = r["summ"]["fig"]["human_check"]
+        lead = max(r["summ"]["arms"], key=lambda z: z["v2"])
+        head = "Re-measured by validated LLM judges, and checked by a person."
+        text = (f"Scored again by two LLM judges validated on SummEval, every hosted LLM ranks above "
+                f"every BART model: bart_l falls from {ordinal(a['bart_l']['r1'])} to "
+                f"{ordinal(a['bart_l']['r2'])} of {r['summ']['n_arms']}, and {lead['arm']} rises from "
+                f"{ordinal(lead['r1'])} to first. One blind human check went the other way, "
+                f"{hc['human_prefers_bart_l']} to {hc['human_prefers_deepseek_m']} for bart_l over "
+                f"deepseek_m, so coverage stays the primary metric.")
+    elif x["slug"] in ("ag-news", "dbpedia"):
+        d = r["ag" if x["slug"] == "ag-news" else "db"]
+        if x["slug"] == "ag-news":
+            fts = [z for z in d["arms"] if z["arm"].startswith("bert_")]
+            lead = max(d["arms"], key=lambda z: z["v2"])
+            head = "Re-measured against labels a person corrected."
+            text = (f"One reader adjudicated by topic the {d['n_items']} disputed items, shown the hosted "
+                    f"answer; the gold was wrong on {d['changed']}. On that gold every hosted LLM scores "
+                    f"above every fine-tune: the fine-tunes fall from "
+                    f"{min(z['r1'] for z in fts)}–{max(z['r1'] for z in fts)} to "
+                    f"{min(z['r2'] for z in fts)}–{max(z['r2'] for z in fts)} of {d['n_arms']}, and "
+                    f"{lead['arm']} rises to first. The dataset's own gold stays primary.")
+        else:
+            fy = next(z for z in d["arms"] if z["arm"] == "bert_base_fy")
+            head = "Re-measured against labels a person corrected."
+            text = (f"One reader adjudicated the {d['n_items']} disputed items, shown the hosted answer; "
+                    f"the gold was wrong on {d['changed']}. The top stays a crowd, and bert_base_fy moves "
+                    f"from {ordinal(fy['r1'])} to {ordinal(fy['r2'])} at an unchanged {fy['v1']:.4f}. "
+                    "The dataset's own gold stays primary.")
+    elif x["slug"] == "summeval":
+        se = r["summeval"]
+        head = "These judges, put to work."
+        text = (f"Two of these judges, gemma_l (τ {se['gemma_l']:.2f}) and qwen_s ({se['qwen_s']:.2f}), "
+                "re-measured the summarisation experiment's summaries, where its own metric agrees with "
+                f"the experts at τ {se['coverage']:.2f}. They re-ranked the field, and a person disagreed "
+                "with them: a validation earned on 2019 summaries did not carry to modern ones.")
+    if not head:
+        return ""
+    return (f'<section class="block" id="remeasured"><div class="wrap"><div class="eyebrow">'
+            f'<span class="num">{num:02d}</span>Re-measured</div><h2>{e(head)}</h2>'
+            f'<div class="prose"><p>{e(text)}</p></div><div class="btns">'
+            f'<a class="btn" href="judging.html">What re-measuring changed, and what it teaches →</a>'
+            f'</div></div></section>')
+
+
 def experiment_page(x: dict, f: dict) -> str:
     cal = [r for r in f["calibration"] if r["bench"] == x["bench"]]
     cal_txt = "; ".join(f'{r["what"]} {r["ours"] / r["scale"]:.4f} vs {r["published"] / r["scale"]:.4f} published'
@@ -1055,11 +1118,17 @@ def experiment_page(x: dict, f: dict) -> str:
     finds = "".join(f'<li><div><h3>{e(h)}</h3><p>{e(p)}</p></div></li>' for h, p in findings_for(x, f))
     free = x["n_arms"] - x["n_hosted"]
     lesson = method.experiment_lesson(H, x)
+    n = 4
     extra = ""
     if x["slug"] == "summarization":
-        extra = f"""<section class="block" id="dailymail"><div class="wrap"><div class="eyebrow"><span class="num">04</span>Outside CNN</div>
+        extra = f"""<section class="block" id="dailymail"><div class="wrap"><div class="eyebrow"><span class="num">{n:02d}</span>Outside CNN</div>
 <h2>Does it hold on DailyMail?</h2><div class="cols"><div class="prose"><p>The committed sample is all CNN. On 200 DailyMail articles drawn at random, the five local summarisers keep every verdict among themselves. The hosted models were not re-run there.</p></div>
 <figure class="chart">{both(slope(f["dailymail"]), slope(f["dailymail"], compact=True))}</figure></div></div></section>"""
+        n += 1
+    rem = remeasured_block(x, f, n)
+    if rem:
+        extra += rem
+        n += 1
     body = f"""
 <section class="hero"><div class="wrap">
   <div class="kicker"><b>{e(x["task"])}</b> · {e(x["bench"])}</div>
@@ -1082,10 +1151,10 @@ def experiment_page(x: dict, f: dict) -> str:
   <ol class="findings">{finds}</ol>
 </div></section>
 {extra}
-<section class="block" id="habit"><div class="wrap"><div class="eyebrow"><span class="num">{"05" if extra else "04"}</span>The method, here</div>
+<section class="block" id="habit"><div class="wrap"><div class="eyebrow"><span class="num">{n:02d}</span>The method, here</div>
   <div class="lesson"><h2>{e(lesson[1])}</h2><p>{lesson[2]}</p><a class="btn" href="../method.html#{lesson[0]}">This habit, in the method →</a></div>
 </div></section>
-<section class="block" id="reproduce"><div class="wrap"><div class="eyebrow"><span class="num">{"06" if extra else "05"}</span>Reproduce it</div>
+<section class="block" id="reproduce"><div class="wrap"><div class="eyebrow"><span class="num">{n + 1:02d}</span>Reproduce it</div>
   <h2>Check it yourself.</h2>
   <div class="cols">
     <div class="prose">
@@ -1202,6 +1271,7 @@ def build(out: Path) -> None:
     (out / "method.html").write_text(method.method_page(H, f), encoding="utf-8")
     (out / "use.html").write_text(method.use_page(H, f), encoding="utf-8")
     (out / "privacy.html").write_text(privacy_page(), encoding="utf-8")
+    (out / "experiments" / "judging.html").write_text(remeasured.judging_page(H, f), encoding="utf-8")
     for x in f["experiments"]:
         (out / "experiments" / f'{x["slug"]}.html').write_text(experiment_page(x, f), encoding="utf-8")
     (out / ".nojekyll").write_text("")
