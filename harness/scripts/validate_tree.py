@@ -21,6 +21,9 @@ Each check exists because its absence let a real defect through somewhere:
   V12 verdicts       a stored judge verdict naming a set, item, pass or block that does not
                      exist, or whose `n` is not that block's size
   V13 judge scorers  a scorer yaml that does not load or fails judge_score's structure checks
+  V14 goals          a goal that breaks its schema; a config, run or baseline naming a goal that
+                     does not exist, or a format its goal does not accept; a run created on or
+                     after data/goals/policy.yaml's `required_from` that names no goal
 
 Exit 1 on any failure, so it can gate.
 
@@ -39,13 +42,17 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _common import (  # noqa: E402
     BASELINES,
+    CONFIGS,
     DATA,
     DATASETS,
+    GOALS,
     MATERIALIZED,
     ROOT,
     RUNS,
     SCHEMAS,
     data_rel,
+    goal_policy,
+    load_goals,
     read_json,
     sha256,
 )
@@ -748,6 +755,69 @@ def v13_judge_scorers_are_well_formed() -> None:
             "V13 every judge scorer yaml loads and is structurally valid", "bad scorer(s)")
 
 
+def v14_goals() -> None:
+    """Goals are what a number is FOR (ADR-0002). Optional until a project sets
+    data/goals/policy.yaml `required_from`; from then on every new run must name one."""
+    if not GOALS.is_dir():
+        print("  --   V14 goals (no data/goals/: goals are optional until a project adds them)")
+        return
+    import yaml
+
+    goals, bad = load_goals(), []
+    schema = json.loads((SCHEMAS / "goal.schema.json").read_text())
+    for gid, g in goals.items():
+        if g.get("goal_id") != gid:
+            bad.append(f"goals/{gid}.yaml: goal_id {g.get('goal_id')!r} is not its file name")
+        if jsonschema is not None:
+            try:
+                jsonschema.validate(g, schema)
+            except jsonschema.ValidationError as exc:
+                bad.append(f"goals/{gid}.yaml: {exc.message[:90]}")
+
+    def named(where: str, doc: dict) -> None:
+        gid, fmt = doc.get("goal"), doc.get("format")
+        if not gid:
+            return
+        if gid not in goals:
+            bad.append(f"{where}: goal {gid!r} does not exist")
+            return
+        ok = {c.get("format") for c in goals[gid].get("output_contract") or [] if c.get("format")}
+        if fmt and ok and fmt not in ok:
+            bad.append(f"{where}: format {fmt!r} is not one goal {gid!r} accepts ({', '.join(sorted(ok))})")
+
+    for f in sorted(CONFIGS.glob("*.yaml")) if CONFIGS.is_dir() else []:
+        doc = yaml.safe_load(f.read_text(encoding="utf-8"))
+        named(f"configs/{f.name}", doc if isinstance(doc, dict) else {})
+    since = str(goal_policy().get("required_from") or "")
+    unnamed, n_runs = [], 0
+    for run in sorted(RUNS.iterdir()) if RUNS.is_dir() else []:
+        m = read_json(run / "metrics.json") if (run / "metrics.json").is_file() else None
+        if not isinstance(m, dict):
+            continue
+        n_runs += 1
+        named(f"runs/{run.name}", m)
+        if since and not m.get("goal") and str(m.get("created_at", ""))[:10] >= since:
+            unnamed.append(run.name)
+    for b in sorted(BASELINES.glob("*.json")):
+        named(f"baselines/{b.name}", read_json(b))
+    bad += [f"runs/{r}: created on or after {since} and names no goal" for r in unnamed]
+    for x in bad:
+        print(f"       {x}")
+    # min_items: a note, not a failure. A dataset smaller than the goal's minimum can still
+    # be measured; it cannot pick a winner, and the goal page says so.
+    sizes = {p.stem: len((read_json(p) or {}).get("items") or []) for p in DATASETS.glob("*.json")}
+    for gid, g in goals.items():
+        need = (g.get("success_criteria") or {}).get("min_items")
+        for d in g.get("datasets") or []:
+            n = sizes.get(d.get("dataset_id"))
+            if need and n is not None and n < need:
+                notes.append(f"V14 goal {gid}: dataset {d['dataset_id']} has {n} items, "
+                             f"under its min_items {need}: it can measure, not pick a winner")
+    rule = f"; runs from {since} must name one" if since else "; optional (no required_from set)"
+    check(not bad, f"V14 goals — {len(goals)} goal(s), every goal named resolves{rule}",
+          f"{len(bad)} problem(s)")
+
+
 def main() -> int:
     # `--help` prints help. It used to fall through and run the whole validation, which
     # made self_test's `validate_tree.py --help` check assert "the tree is valid" instead
@@ -763,7 +833,7 @@ def main() -> int:
                v9_no_committed_evidence_is_missing,
                v10_derived_runs_carry_the_current_scorer,
                v11_judging_sets_match_their_hash, v12_verdicts_belong_to_their_set,
-               v13_judge_scorers_are_well_formed):
+               v13_judge_scorers_are_well_formed, v14_goals):
         fn()
     for n in notes:
         print(f"\n  note: {n}")

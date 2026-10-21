@@ -75,7 +75,7 @@ try:
 
     out = tmp / ".build" / "catalog"
     counts = cb.build(A, out)
-    check("build: datasets, arms and references counted", counts == {"datasets": 2, "arms": 3, "references": 1}, counts)
+    check("build: datasets, arms and references counted", counts == {"goals": 0, "datasets": 2, "arms": 3, "references": 1}, counts)
     pages = {p.relative_to(out).as_posix() for p in out.rglob("*.html")}
     check("build: home, a page per dataset, the inspector", {"index.html", "d/ds1.html", "d/ds2.html", "inspect.html"} <= pages, pages)
     leaked = [p.name for p in out.rglob("*") if p.is_file() and SECRET in p.read_text(encoding="utf-8", errors="ignore")]

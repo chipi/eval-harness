@@ -1,0 +1,21 @@
+# The tutorial's goal (GUIDE step 2): what the ticket summaries are FOR. Copy it to
+# data/goals/ and name it in each config with `goal: tickets_summary`.
+goal_id: tickets_summary
+schema_version: "0.1"
+title: One-line support ticket summaries
+statement: Summarise a support ticket in a line or two, so the person triaging the queue knows what it is about without opening it.
+status: active
+context:
+  audience: the person triaging the support queue
+decision: Which summariser to use for the queue view.
+output_contract:
+  - {id: line, format: paragraph, length: one or two sentences, language: en}
+success_criteria:
+  primary: {measure: overlap_f1, direction: higher}
+  min_items: 6
+datasets:
+  - {dataset_id: tickets_v1, role: dev, notes: six hand-written tickets; enough to learn the loop, not to pick a winner}
+references:
+  - {reference_id: gold/tickets_v1, tier: gold, format: paragraph}
+measures:
+  - {id: overlap_f1, kind: metric, validity: unvalidated}

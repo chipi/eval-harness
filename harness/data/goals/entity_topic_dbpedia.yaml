@@ -1,0 +1,17 @@
+goal_id: entity_topic_dbpedia
+schema_version: "0.1"
+title: Encyclopedia topic classification (DBpedia)
+statement: Pick a classifier that labels an encyclopedia abstract with one of fourteen classes, at a known cost per item.
+status: active
+context:
+  audience: a pipeline that files encyclopedia entries by class
+decision: Which classifiers can be told apart on accuracy across many classes, and at what cost.
+output_contract:
+  - {id: label, format: label}
+success_criteria:
+  primary: {measure: correct, direction: higher}
+datasets:
+  - {dataset_id: dbpedia_280, role: heldout, notes: 20 per class, seeded}
+  - {dataset_id: dbpedia_56, role: dev}
+measures:
+  - {id: correct, kind: metric, validity: validated}

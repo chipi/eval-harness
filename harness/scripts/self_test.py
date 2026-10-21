@@ -510,6 +510,7 @@ def test_example_scorer_suites_pass() -> None:
                             ("test_retrieval_scorer.py", "ranked-list scorer"),
                             ("test_stats.py", "paired test (stats.py)"),
                             ("test_catalog.py", "catalog and run inspector"),
+                            ("test_goals.py", "goals: config, run, baseline, V14, pages"),
                             ("test_judge_score.py", "judging pass"),
                             ("test_code_hashes.py", "scoring-code hashes"),
                             ("check_report_claims.py", "report claims vs committed runs"),

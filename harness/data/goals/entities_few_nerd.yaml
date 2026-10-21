@@ -1,0 +1,17 @@
+goal_id: entities_few_nerd
+schema_version: "0.1"
+title: Named-entity extraction (Few-NERD)
+statement: Pick an extractor that finds the named entities in a sentence and types them into eight coarse types.
+status: active
+context:
+  audience: a pipeline that indexes people, places and organisations mentioned in text
+decision: Which extractors can be told apart on entity F1, and at what cost.
+output_contract:
+  - {id: entities, format: entity_list}
+success_criteria:
+  primary: {measure: f1, direction: higher}
+datasets:
+  - {dataset_id: few_nerd_280, role: heldout, notes: 280 sentences, seeded; at least 3 tokens}
+  - {dataset_id: few_nerd_56, role: dev}
+measures:
+  - {id: f1, kind: metric, validity: partial}

@@ -14,7 +14,7 @@ that can move a result is never a patch release without saying so under **Change
 Catalog, run inspector and goals in the harness ([ADR-0002](https://github.com/chipi/eval-harness/blob/main/docs/adr/ADR-0002-catalog-inspector-goals.md)).
 Built on one branch, layer by layer, and released once. Done so far: one implementation of the
 paired test, `evaluation_harness.stats`, shared by `pair-test`, `family-test` and the run
-inspector; and the catalog and run inspector themselves, for any project.
+inspector; the catalog and run inspector themselves, for any project; and goals.
 
 ### Changed
 - **Exact p-values at 30 items or fewer.** `pair-test` and `family-test` now count the
@@ -66,6 +66,33 @@ inspector; and the catalog and run inspector themselves, for any project.
     `config.yaml` (`catalog: {adapter: path/to/file.py:Class}`) or passes `--adapter`.
 
   Tests: `scripts/test_catalog.py` (26 assertions), run by `make test`.
+- **Goals: what an evaluation is for** (`data/goals/<goal_id>.yaml`, `schemas/goal.schema.json`).
+  - **What a goal says:** who uses the output, the decision it informs, the measure that
+    decides (and which direction is better), the output formats it accepts, its datasets
+    and their roles, and optionally `min_items`, the fewest items a winner may rest on.
+  - **Configs name their goal** (`goal:`) and may declare the `format` they ask for.
+    - `experiment-run` refuses an unknown goal before it runs.
+    - The run records both, outside the fingerprint: they change what a run answers, not
+      what it measured.
+    - `run-promote` carries both onto the baseline.
+  - **`validate` V14** fails:
+    - a goal that breaks its schema, or whose `goal_id` is not its file name;
+    - a config, run or baseline naming a goal that does not exist, or a format the goal
+      does not accept.
+
+    A dataset smaller than a goal's `min_items` gets a note.
+  - **Optional until a project opts in.** Set `required_from: YYYY-MM-DD` in
+    `data/goals/policy.yaml`, and every run created from then on must name a goal. A
+    project upgrading changes nothing until it sets the date.
+  - **In the catalog:** a goals page, and a page per goal. On each of the goal's datasets
+    it ranks the arms that record the goal's measure. An arm under `min_items` or in a format
+    the goal does not accept is flagged and never the leader. Each arm links to the
+    inspector, tested against the leader.
+  - **This repository's six experiments have goals** (`data/goals/`), and so does the
+    tutorial (`tutorial/goals/tickets_summary.yaml`). No date is set here, so nothing
+    already committed is held to one.
+
+  Tests: `scripts/test_goals.py` (14 assertions), run by `make test`.
 
 ## 0.3.0 — 2026-10-21
 

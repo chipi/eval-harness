@@ -104,6 +104,12 @@ class Adapter(Protocol):
 
     def reference_view(self, ref: str, item: str) -> dict: ...
 
+    def goals(self) -> List[dict]:
+        """Every goal (goal.schema.json): what the evaluations are FOR. [] when there are none."""
+
+    def goal_of(self, arm: str) -> str:
+        """The goal an arm names ("" if none)."""
+
 
 def _json(p: Path):
     try:
@@ -185,7 +191,7 @@ class HarnessAdapter:
             keys = set(self.scores(arm))
             primary = next((k for k in ("judge_score", "judge_score_unvalidated") if k in keys), primary)
         return {"id": arm, "label": label, "dataset": dataset, "task": judged or primary,
-                "primary": primary, "runs": n,
+                "primary": primary, "runs": n, "goal": m.get("goal", ""), "format": m.get("format", ""),
                 "reference": ((m.get("fingerprint") or {}).get("data") or {}).get("reference_id", "")}
 
     # -- scores -------------------------------------------------------------------------
@@ -259,7 +265,8 @@ class HarnessAdapter:
         return False
 
     def output_format(self, arm: str) -> dict:
-        return {"asked": "", "got": "", "how": ""}
+        fmt = self._metrics(arm).get("format", "")
+        return {"asked": fmt, "got": "", "how": "config" if fmt else ""}
 
     def item_view(self, arm: str, item: str) -> dict:
         for d in reversed(self._dirs(arm)):  # the latest repeat
@@ -275,6 +282,22 @@ class HarnessAdapter:
         if f and f.is_file():
             return {"kind": "text", "text": f.read_text(encoding="utf-8", errors="replace")}
         return {"kind": "none"}
+
+
+    # -- goals --------------------------------------------------------------------------
+    @lru_cache(maxsize=1)
+    def goals(self) -> List[dict]:
+        import yaml
+
+        out = []
+        for f in sorted((self.data_dir / "goals").glob("*.yaml")):
+            doc = yaml.safe_load(f.read_text(encoding="utf-8")) if f.name != "policy.yaml" else None
+            if isinstance(doc, dict):
+                out.append(dict(doc, goal_id=doc.get("goal_id") or f.stem))
+        return out
+
+    def goal_of(self, arm: str) -> str:
+        return self._metrics(arm).get("goal", "")
 
 
 def load_adapter(spec: Optional[str] = None) -> Adapter:

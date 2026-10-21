@@ -95,6 +95,8 @@ def main() -> int:
             "scores": m["scores"],
             "build": build,
             "supersedes": supersedes,
+            # carried from the run: the goal it answers and the format it was asked for
+            **{k: m[k] for k in ("goal", "format") if m.get(k)},
         },
     )
     print(f"{out}")

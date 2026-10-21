@@ -252,3 +252,8 @@ tr.eprow:focus-visible { outline-offset: -2px; }
 
 /* phones: charts draw in a narrow layout (labels above rows), so they fit instead of scrolling */
 @media (max-width: 700px) { #app svg, #forest svg, .refchart.ceiling svg { min-width: 0; } }
+/* key / value list (goal pages): labels in the muted mono, values in body text */
+dl.kv { display: grid; grid-template-columns: minmax(120px, 180px) 1fr; gap: 10px 24px; margin: 0; }
+dl.kv dt { font: 500 11px/1.9 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+dl.kv dd { margin: 0; }
+@media (max-width: 700px) { dl.kv { grid-template-columns: 1fr; gap: 2px; } dl.kv dd { margin-bottom: 10px; } }

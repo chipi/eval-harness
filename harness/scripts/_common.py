@@ -105,6 +105,8 @@ _runs_override = os.environ.get("EVAL_RUNS_DIR", "").strip()
 RUNS = Path(_runs_override).expanduser() if _runs_override else DATA / "runs"
 BASELINES = DATA / "baselines"
 REFERENCES = DATA / "references"
+#: What each evaluation is FOR (ADR-0002): one <goal_id>.yaml per goal, plus policy.yaml.
+GOALS = DATA / "goals"
 
 #: The JSON Schemas the harness validates against. Inside the installed package they sit
 #: beside the code; in a checkout they are one level up, in harness/schemas.
@@ -235,6 +237,29 @@ def build_info() -> Dict[str, Any]:
         "dirty": bool(dirt),
         "source": "git",
     }
+
+
+def load_goals() -> Dict[str, Dict[str, Any]]:
+    """{goal_id: goal} from data/goals/*.yaml (policy.yaml is the policy, not a goal)."""
+    import yaml
+
+    out: Dict[str, Dict[str, Any]] = {}
+    for f in sorted(GOALS.glob("*.yaml")):
+        if f.name != "policy.yaml":
+            doc = yaml.safe_load(f.read_text(encoding="utf-8"))
+            out[f.stem] = doc if isinstance(doc, dict) else {}
+    return out
+
+
+def goal_policy() -> Dict[str, Any]:
+    """data/goals/policy.yaml: `required_from: YYYY-MM-DD`, the date from which every run must
+    name a goal. Absent, goals stay optional: a project upgrading changes nothing until it
+    sets the date."""
+    import yaml
+
+    f = GOALS / "policy.yaml"
+    doc = yaml.safe_load(f.read_text(encoding="utf-8")) if f.is_file() else None
+    return doc if isinstance(doc, dict) else {}
 
 
 def load_dataset(dataset_id: str) -> Dict[str, Any]:

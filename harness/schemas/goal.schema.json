@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "goal",
+  "description": "What an evaluation is FOR: who uses the output, the decision it informs, the measure that decides, and the data that stands for the use. One file per goal, data/goals/<goal_id>.yaml. Runs and baselines name it with `goal:`. Projects may add fields; these are the ones the harness reads.",
+  "type": "object",
+  "required": ["goal_id", "title", "statement", "decision", "success_criteria", "datasets"],
+  "properties": {
+    "goal_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9_]*$", "description": "Permanent; equals the file name. A materially different purpose is a new goal."},
+    "schema_version": {"type": "string"},
+    "title": {"type": "string"},
+    "statement": {"type": "string", "description": "One sentence: X for Y so that Z."},
+    "status": {"enum": ["active", "draft", "exploratory", "dormant", "superseded"]},
+    "superseded_by": {"type": "string"},
+    "context": {"type": "object", "properties": {"audience": {"type": "string"}, "usage": {"type": "string"}}},
+    "decision": {"type": "string", "description": "The decision an answer to this goal informs."},
+    "output_contract": {
+      "type": "array",
+      "description": "Every output shape the goal accepts. A run that declares a `format` must match one.",
+      "items": {"type": "object", "required": ["format"], "properties": {
+        "id": {"type": "string"}, "format": {"type": "string"}, "length": {"type": "string"},
+        "structure": {"type": "string"}, "language": {"type": "string"}}}
+    },
+    "success_criteria": {
+      "type": "object",
+      "required": ["primary"],
+      "properties": {
+        "primary": {"type": "object", "required": ["measure", "direction"], "properties": {
+          "measure": {"type": "string", "description": "The per-item metric that decides, as runs record it."},
+          "direction": {"enum": ["higher", "lower"]},
+          "threshold": {}}},
+        "secondary": {"type": "array", "items": {"type": "object"}},
+        "guardrails": {"type": "array", "items": {"type": "object"}},
+        "min_items": {"type": "integer", "minimum": 1, "description": "The fewest shared items a winner-picking comparison may rest on."}
+      }
+    },
+    "datasets": {
+      "type": "array", "minItems": 1,
+      "items": {"type": "object", "required": ["dataset_id"], "properties": {
+        "dataset_id": {"type": "string"},
+        "role": {"type": "string", "description": "dev, heldout, smoke, generalization (a check that never decides), ..."},
+        "notes": {"type": "string"}}}
+    },
+    "references": {"type": "array", "items": {"type": "object", "properties": {
+      "reference_id": {"type": "string"}, "tier": {"type": "string"}, "format": {"type": "string"}}}},
+    "measures": {"type": "array", "items": {"type": "object", "properties": {
+      "id": {"type": "string"}, "kind": {"type": "string"}, "validity": {"type": "string"}}}},
+    "links": {"type": "array", "items": {"type": "object", "properties": {"url": {"type": "string"}, "note": {"type": "string"}}}}
+  }
+}

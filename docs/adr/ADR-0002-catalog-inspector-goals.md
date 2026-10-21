@@ -2,7 +2,7 @@
 
 **Status:** Accepted (2026-10-21). The owner approved the design and all four open questions as
 recommended (see the end of this note), except the alpha tags: 0.4.0 is built on one branch,
-layer by layer, and released once. Done: layers 1 (stats) and 2 (catalog and inspector).
+layer by layer, and released once. Done: layers 1 (stats), 2 (catalog and inspector) and 3 (goals).
 **Date:** 2026-10-21
 
 ## Context
@@ -183,6 +183,7 @@ project upgrading from 0.3.0 changes nothing until it sets that date.
 | 2 | catalog | `catalog` package, `Adapter` protocol, `HarnessAdapter`, `evh catalog build/serve` | catalog builds on harness data and the tutorial; server security tests ported |
 | 3 | goals | goals: schema, `goal:` on configs, promotion `format`, validate check | tutorial gets one goal; validate passes on harness data |
 | 4 | podcast repo | pins the branch head, deletes its copies of the generic code, keeps `podcast_adapter.py` | its full suite (1,212 tests) and `make catalog` give the same pages |
+| 4b | site on the VPS | the findings site, the catalog and the live inspector move to the prod VPS (Caddy in front, Docker); the project docs stay on GitHub Pages at their own address, with redirects from the old `/docs/...` URLs; the inspector gets a public mode (hostname setting, arm cap, cache, rate limit) | deploy from `main` through a protected `prod` environment; the live crawl check passes on the new host |
 | 5 | release | changelog, UPGRADING, GUIDE step for goals and the catalog | owner's merge |
 
 

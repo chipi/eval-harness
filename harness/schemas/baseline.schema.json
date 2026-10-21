@@ -12,6 +12,8 @@
     "reason": {"type": "string", "description": "Why this run earned promotion. Required by the runbook, not by the schema."},
     "scores": {"type": "object", "additionalProperties": {"type": "number"}},
     "build": {"type": "object"},
-    "supersedes": {"type": ["string", "null"]}
+    "supersedes": {"type": ["string", "null"]},
+    "goal": {"type": "string", "description": "The goal this answers, carried from the run: data/goals/<goal_id>.yaml (validate V14)."},
+    "format": {"type": "string", "description": "The output format the run was asked for, carried from the run (validate V14)."}
   }
 }

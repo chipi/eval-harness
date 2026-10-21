@@ -1,0 +1,18 @@
+goal_id: summary_judge_summeval
+schema_version: "0.1"
+title: A scorer that agrees with experts on summaries (SummEval)
+statement: Find a summary scorer whose ranking of summaries agrees with expert judges, so it can stand in for them.
+status: active
+context:
+  audience: anyone choosing a metric or an LLM judge to score summaries
+decision: Which scorers (overlap metrics, learned metrics, LLM judges) agree with experts, and how close they come to one expert agreeing with the others.
+output_contract:
+  - {id: scores, format: scores}
+success_criteria:
+  primary: {measure: tau, direction: higher}
+datasets:
+  - {dataset_id: summeval_100, role: heldout, notes: all 100 annotated articles, 16 summaries each; no dev slice}
+measures:
+  - {id: tau, kind: metric, validity: validated}
+links:
+  - {url: research/REPORT_SUMMEVAL.md, note: the report}

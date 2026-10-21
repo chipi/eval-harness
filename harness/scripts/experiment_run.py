@@ -39,6 +39,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _fingerprint import build_fingerprint  # noqa: E402
 from _retry import call_with_retries  # noqa: E402
 from _common import (  # noqa: E402
+    GOALS,
     MATERIALIZED,
     REFERENCES,
     ROOT,
@@ -46,6 +47,7 @@ from _common import (  # noqa: E402
     CostCapExceeded,
     build_info,
     die,
+    load_goals,
     env_float,
     load_dataset,
     now,
@@ -581,6 +583,11 @@ def main() -> int:
         if required not in cfg:
             die(f"{args.config} is missing required key: {required}")
 
+    # A config names the goal it answers (data/goals/<goal_id>.yaml). Refused before a cent is
+    # spent when the goal does not exist: a run filed under a typo answers nothing.
+    if cfg.get("goal") and GOALS.is_dir() and cfg["goal"] not in load_goals():
+        die(f"{args.config}: goal {cfg['goal']!r} is not in {GOALS} "
+            f"(known: {', '.join(sorted(load_goals())) or 'none'})")
     ds = load_dataset(cfg["dataset_id"])
     stamp = now().replace(":", "").replace("-", "")
     base_id = args.run_id or f"{cfg['config_id']}_{stamp}"
@@ -809,6 +816,11 @@ def main() -> int:
             "scores": result["scores"],
             "n_items": len(result["predictions"]),
         }
+        # What the run is FOR, and the output format it was asked for: outside the
+        # fingerprint on purpose. Neither changes what was measured, only what it answers.
+        for key in ("goal", "format"):
+            if cfg.get(key):
+                metrics[key] = cfg[key]
         if result["reference_tier"]:
             metrics["reference_tier"] = result["reference_tier"]
         if result.get("resume"):

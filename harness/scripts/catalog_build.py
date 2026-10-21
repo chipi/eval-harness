@@ -44,7 +44,7 @@ if(t==='light'||t==='dark')document.documentElement.dataset.theme=t;
 document.documentElement.classList.add('js');})();
 </script>"""
 
-NAV = [("home", "index.html", "Catalog"), ("inspect", "inspect.html", "Inspector")]
+NAV = [("home", "index.html", "Catalog"), ("goals", "goals.html", "Goals"), ("inspect", "inspect.html", "Inspector")]
 
 
 def e(s) -> str:
@@ -160,6 +160,10 @@ def collect(A: Adapter) -> dict:
             "n": len(values) or max((len(v["values"]) for v in sc.values()), default=0),
             "lower": A.lower_is_better(head) if head else False,
             "reference": d.get("reference", ""),
+            "goal": d.get("goal", ""), "format": d.get("format", ""),
+            # every metric's mean and item count, for the goal pages (numbers only)
+            "means": {k: (statistics.fmean(v["values"].values()), len(v["values"]))
+                      for k, v in sc.items() if v["values"]},
         })
     for r in A.references():
         by_ds.setdefault(r["dataset"], {"arms": [], "refs": [], "items": 0})["refs"].append(r)
@@ -215,6 +219,95 @@ def render_dataset(A: Adapter, ds: str, v: dict, out: Path) -> None:
     write(out, f"d/{slug(ds or 'none')}.html", page(ds or "dataset", body, 1, "", item=A.item_word))
 
 
+def goal_answers(goal: dict, by_ds: dict) -> list:
+    """[(dataset, role, rows, leader)] for one goal: on each of its datasets, every arm that
+    records the goal's primary measure, best first. Only arms on the same dataset are ever
+    ranked together; an arm filed under the goal is marked, and so is one whose format the
+    goal does not accept or whose items are fewer than its min_items."""
+    crit = goal.get("success_criteria") or {}
+    measure = (crit.get("primary") or {}).get("measure", "")
+    lower = (crit.get("primary") or {}).get("direction") == "lower"
+    need = crit.get("min_items")
+    formats = {c.get("format") for c in goal.get("output_contract") or [] if c.get("format")}
+    out = []
+    for d in goal.get("datasets") or []:
+        ds = d.get("dataset_id", "")
+        rows = []
+        for a in (by_ds.get(ds) or {}).get("arms", []):
+            if measure not in a["means"]:
+                continue
+            mean, n = a["means"][measure]
+            flags = []
+            if need and n < need:
+                flags.append(f"n {n} < min_items {need}")
+            if a["format"] and formats and a["format"] not in formats:
+                flags.append(f"format {a['format']} not in the contract")
+            rows.append(dict(a, mean=mean, n=n, filed=a["goal"] == goal["goal_id"], flags=flags))
+        rows.sort(key=lambda r: (bool(r["flags"]), r["mean"] if lower else -r["mean"], r["label"]))
+        leader = next((r for r in rows if not r["flags"]), None)
+        out.append((ds, d.get("role", ""), rows, leader))
+    return out
+
+
+def render_goals(A: Adapter, by_ds: dict, out: Path) -> int:
+    goals = A.goals()
+    rows = []
+    for g in goals:
+        prim = (g.get("success_criteria") or {}).get("primary") or {}
+        filed = sum(1 for v in by_ds.values() for a in v["arms"] if a["goal"] == g["goal_id"])
+        rows.append([f'<a href="g/{slug(g["goal_id"])}.html">{e(g.get("title") or g["goal_id"])}</a>',
+                     e(g.get("statement", "")), e(f'{prim.get("measure", "")} ({prim.get("direction", "")})'),
+                     e(", ".join(d.get("dataset_id", "") for d in g.get("datasets") or [])),
+                     f'<span data-v="{filed}">{filed}</span>'])
+        render_goal(A, g, by_ds, out)
+    dek = ("What each evaluation is for: who uses the output, the decision it informs, and the "
+           "measure that decides. Runs name their goal in their config (<code>goal:</code>).")
+    body = hero("goals", "Goals", dek)
+    body += block("01", "goals", table("goals", ["goal", "statement", "decides", "datasets", "arms filed"], rows)
+                  if rows else '<p class="muted">No goals yet: add <code>data/goals/&lt;goal_id&gt;.yaml</code> '
+                  "(schema: <code>goal.schema.json</code>).</p>")
+    write(out, "goals.html", page("Goals", body, 0, "goals", item=A.item_word))
+    return len(goals)
+
+
+def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path) -> None:
+    crit = g.get("success_criteria") or {}
+    prim = crit.get("primary") or {}
+    measure = prim.get("measure", "")
+    facts = [("decision", g.get("decision", "")), ("audience", (g.get("context") or {}).get("audience", "")),
+             ("decides", f'{measure}, {prim.get("direction", "")} is better'
+              + (f'; threshold {prim["threshold"]}' if prim.get("threshold") is not None else "")),
+             ("min items", crit.get("min_items", "")),
+             ("output contract", "; ".join(" · ".join(str(c.get(k)) for k in ("format", "length", "language") if c.get(k))
+                                          for c in g.get("output_contract") or [])),
+             ("status", g.get("status", ""))]
+    dl = "".join(f"<dt>{e(k)}</dt><dd>{e(v)}</dd>" for k, v in facts if v not in ("", None))
+    body = hero("goal", e(g.get("title") or g["goal_id"]), e(g.get("statement", "")))
+    body += block("01", "what it is for", f'<dl class="kv">{dl}</dl>')
+    n = 2
+    for ds, role, rows, leader in goal_answers(g, by_ds):
+        if not rows:
+            inner = f'<p class="muted">No arm on this dataset records <code>{e(measure)}</code>.</p>'
+        else:
+            trs = []
+            for r in rows:
+                link = (f'<a class="btn small" href="{inspect_url([r["arm"], leader["arm"]], "../", baseline=leader["arm"], metric=measure)}">'
+                        "test vs leader</a>") if leader and r["arm"] != leader["arm"] else ("leader" if leader and r is leader else "")
+                trs.append([e(r["label"]) + (" <small>filed</small>" if r["filed"] else ""),
+                            f'<span data-v="{r["mean"]}">{fmt(r["mean"])}</span>', f'<span data-v="{r["n"]}">{r["n"]}</span>',
+                            e("; ".join(r["flags"]) or "—"), link])
+            arms = [r["arm"] for r in rows][:INSPECT_MAX]
+            all_link = (f'<p><a class="btn" href="{inspect_url(arms, "../", baseline=leader["arm"], metric=measure)}">'
+                        "Test every arm against the leader</a></p>") if leader and len(arms) > 1 else ""
+            inner = (f'<p class="small muted">Mean {e(measure)} over each arm\'s {e(A.item_word)}s; a mean is not a '
+                     "verdict: the inspector tests each arm against the leader (Holm across them). "
+                     "Flagged arms are never the leader.</p>" + all_link
+                     + table(f"ans{n}", ["arm", f"mean {e(measure)}", f"{e(A.item_word)}s", "flags", ""], trs))
+        body += block(f"{n:02d}", f"{ds}{' · ' + role if role else ''}", inner)
+        n += 1
+    write(out, f"g/{slug(g['goal_id'])}.html", page(g.get("title") or g["goal_id"], body, 1, "goals", item=A.item_word))
+
+
 def render_inspect(A: Adapter, out: Path, page_fn=page, **page_kw) -> None:
     """The inspector shell; assets/inspect.js fills it from the local server's /api/."""
     arms = {a: A.describe(a)["dataset"] for a in sorted(A.arms())}
@@ -240,6 +333,9 @@ def write_search(A: Adapter, by_ds: dict, out: Path) -> None:
         for a in v["arms"]:
             idx.append({"k": "arm", "t": a["label"], "d": f"{ds} · {a['metric']}",
                         "u": inspect_url([a["arm"]]), "s": f"{a['label']} {ds} {a['metric']}".lower()})
+    for g in A.goals():
+        idx.append({"k": "goal", "t": g.get("title") or g["goal_id"], "d": g.get("statement", "")[:120],
+                    "u": f"g/{slug(g['goal_id'])}.html", "s": f"{g['goal_id']} {g.get('title', '')} {g.get('statement', '')}".lower()})
     write(out, "search.js", "window.CATALOG=" + json.dumps(idx, separators=(",", ":")) + ";\n")
 
 
@@ -251,9 +347,10 @@ def build(A: Adapter, out: Path) -> dict:
     render_home(A, by_ds, out)
     for ds, v in by_ds.items():
         render_dataset(A, ds, v, out)
+    n_goals = render_goals(A, by_ds, out)
     write_search(A, by_ds, out)
     render_inspect(A, out)
-    return {"datasets": len(by_ds), "arms": sum(len(v["arms"]) for v in by_ds.values()),
+    return {"goals": n_goals, "datasets": len(by_ds), "arms": sum(len(v["arms"]) for v in by_ds.values()),
             "references": sum(len(v["refs"]) for v in by_ds.values())}
 
 
