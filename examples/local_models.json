@@ -27,7 +27,10 @@
     "sshleifer/distilbart-cnn-12-6": "a4f8f3ea906ed274767e9906dbaede7531d660ff",
     "sshleifer/distilbart-cnn-6-6": "d2fde4ca965ba893255479612e4b801aa6500029",
     "textattack/bert-base-uncased-ag-news": "fe417ad660b1657142f66353a184dc0c7e6d2e48",
-    "urchade/gliner_medium-v2.1": "40ec419335d09393f298636f471328b722c6da9e"
+    "urchade/gliner_medium-v2.1": "40ec419335d09393f298636f471328b722c6da9e",
+    "deepseek-ai/deepseek-coder-1.3b-instruct": "e063262dac8366fc1f28a4da0ff3c50ea66259ca",
+    "Qwen/Qwen2.5-Coder-1.5B-Instruct": "2e1fd397ee46e1388853d2af2c993145b0f1098a",
+    "01-ai/Yi-Coder-1.5B-Chat": "92fdd1b2f1539ac990e7f4a921db5601da2f0299"
   },
   "_safetensors_comment": [
     "What a RERUN loads for five models whose measured revision is a pickle (pytorch_model.bin).",
@@ -40,10 +43,25 @@
     "absent on purpose: its conversion is fp16 and matches only 19 of 20 cast to fp32."
   ],
   "safetensors": {
-    "textattack/bert-base-uncased-ag-news": {"revision": "918429b01da487ca32803c054bd53339bbb5c986", "pr": "refs/pr/1"},
-    "fabriceyhc/bert-base-uncased-ag_news": {"revision": "95d12e3924dd72ab6f40bc6b2991010268944fc1", "pr": "refs/pr/1"},
-    "fabriceyhc/bert-base-uncased-dbpedia_14": {"revision": "2311ab6a95bba29c97cad4b3332219c0f340515a", "pr": "refs/pr/1"},
-    "sshleifer/distilbart-cnn-12-6": {"revision": "e9f0c28b06171c3fc52cd02cc8481cb7350fd32e", "pr": "refs/pr/29"},
-    "facebook/bart-large-xsum": {"revision": "11b65c131d59e3d10964281e22d34e6bd7628616", "pr": "refs/pr/9"}
+    "textattack/bert-base-uncased-ag-news": {
+      "revision": "918429b01da487ca32803c054bd53339bbb5c986",
+      "pr": "refs/pr/1"
+    },
+    "fabriceyhc/bert-base-uncased-ag_news": {
+      "revision": "95d12e3924dd72ab6f40bc6b2991010268944fc1",
+      "pr": "refs/pr/1"
+    },
+    "fabriceyhc/bert-base-uncased-dbpedia_14": {
+      "revision": "2311ab6a95bba29c97cad4b3332219c0f340515a",
+      "pr": "refs/pr/1"
+    },
+    "sshleifer/distilbart-cnn-12-6": {
+      "revision": "e9f0c28b06171c3fc52cd02cc8481cb7350fd32e",
+      "pr": "refs/pr/29"
+    },
+    "facebook/bart-large-xsum": {
+      "revision": "11b65c131d59e3d10964281e22d34e6bd7628616",
+      "pr": "refs/pr/9"
+    }
   }
 }

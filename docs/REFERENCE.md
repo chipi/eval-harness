@@ -237,6 +237,9 @@ the cache by hand and are a record, not a fingerprint.
 | `bert_base_fy` (AG) | [`fabriceyhc/bert-base-uncased-ag_news`](https://huggingface.co/fabriceyhc/bert-base-uncased-ag_news) | 438 MB | `c14e3b32fe1f` | BERT-base fine-tuned on AG News by a second author — a check on the first |
 | `bert_base_fy` (DBpedia) | [`fabriceyhc/bert-base-uncased-dbpedia_14`](https://huggingface.co/fabriceyhc/bert-base-uncased-dbpedia_14) | 438 MB | `1fbfc3deaa28` | BERT-base fine-tuned on DBpedia-14 |
 | `qwencoder_05b` | [`Qwen/Qwen2.5-Coder-0.5B-Instruct`](https://huggingface.co/Qwen/Qwen2.5-Coder-0.5B-Instruct) | 988 MB | `ea3f2471cf1b` | Code-instruct model, the smallest of the Qwen2.5-Coder family; writes MBPP+ functions, scored by execution. The other 17 open coder arms are listed in [`code-mbpp-plus`](../examples/code-mbpp-plus/README.md#arms) |
+| `qwencoder_15b` | [`Qwen/Qwen2.5-Coder-1.5B-Instruct`](https://huggingface.co/Qwen/Qwen2.5-Coder-1.5B-Instruct) | 3087 MB | `2e1fd397ee46` | Qwen2.5-Coder, 1.5B, run with transformers on CPU; served by vLLM on the DGX as `vllm_qwencoder_15b`, the check that the vLLM path reproduces it |
+| `dscoder_13b` | [`deepseek-ai/deepseek-coder-1.3b-instruct`](https://huggingface.co/deepseek-ai/deepseek-coder-1.3b-instruct) | 2693 MB | `e063262dac83` | DeepSeek-Coder, 1.3B, run with transformers on CPU |
+| `yicoder_15b` | [`01-ai/Yi-Coder-1.5B-Chat`](https://huggingface.co/01-ai/Yi-Coder-1.5B-Chat) | 2953 MB | `92fdd1b2f153` | Yi-Coder, 1.5B, run with transformers on CPU |
 
 SummEval's `bartscore` arm loads the same checkpoint as `bart_l`, at the same revision
 (`37f520fa929c`), and scores a summary by its log-likelihood given the article
@@ -415,6 +418,9 @@ and check before reusing any of them commercially.
 | [`sentence-transformers/all-MiniLM-L6-v2`](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2) | Apache-2.0 |
 | [`sentence-transformers/all-mpnet-base-v2`](https://huggingface.co/sentence-transformers/all-mpnet-base-v2) | Apache-2.0 |
 | [`Qwen/Qwen2.5-Coder-0.5B-Instruct`](https://huggingface.co/Qwen/Qwen2.5-Coder-0.5B-Instruct) | Apache-2.0 |
+| [`Qwen/Qwen2.5-Coder-1.5B-Instruct`](https://huggingface.co/Qwen/Qwen2.5-Coder-1.5B-Instruct) | Apache-2.0 |
+| [`deepseek-ai/deepseek-coder-1.3b-instruct`](https://huggingface.co/deepseek-ai/deepseek-coder-1.3b-instruct) | DeepSeek License (the card's `license: other`; use is permitted with restrictions, read it before redistributing) |
+| [`01-ai/Yi-Coder-1.5B-Chat`](https://huggingface.co/01-ai/Yi-Coder-1.5B-Chat) | Apache-2.0 |
 | [`urchade/gliner_medium-v2.1`](https://huggingface.co/urchade/gliner_medium-v2.1) | Apache-2.0 |
 | [`sshleifer/distilbart-cnn-12-6`](https://huggingface.co/sshleifer/distilbart-cnn-12-6) | Apache-2.0 |
 | [`sshleifer/distilbart-cnn-6-6`](https://huggingface.co/sshleifer/distilbart-cnn-6-6) | Apache-2.0 |
