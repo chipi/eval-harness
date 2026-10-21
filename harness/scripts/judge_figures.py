@@ -42,7 +42,8 @@ def goyal(scorer: str = SCORER) -> Dict[str, Any]:
     human = vg.load_local()
     if human is None:
         rep = json.loads((vroot / "report.json").read_text())
-        return {"source": "report.json (data/external/goyal2022 absent: not recomputed)",
+        _check_report(rep, scorer, vroot, jids)
+        return {"source": "report.json (data/external/goyal2022 absent: checked against the records only)",
                 "judges": rep["judges"], "human_baseline": rep["human_baseline"]}
     out: Dict[str, Any] = {"source": "recomputed from the stored per-article records and the "
                                      "human annotations", "judges": {}}
@@ -79,12 +80,37 @@ def _zhang(scorer: str) -> Dict[str, Any]:
         rep["recomputed"] = "from the stored records and the ratings"
         return rep
     rep = json.loads((vroot / "report.json").read_text())
-    for jid, r in rep["judges"].items():
-        recs = [json.loads(f.read_text()) for f in (vroot / jid).glob("*.json")]
-        if len(recs) != r["calls"] or round(sum(float(x.get("cost_usd") or 0) for x in recs), 4) != r["billed_usd"]:
-            raise SystemExit(f"{vroot}/report.json disagrees with the stored records of {jid}")
+    _check_report(rep, scorer, vroot, [j["id"] for j in js.load_scorer(DATA / "scorers" / f"{scorer}.yaml")["judges"]])
     rep["recomputed"] = "report.json (data/external/zhang2023 absent: checked against the records only)"
     return rep
+
+
+def _check_report(rep: Dict[str, Any], scorer: str, vroot: Path, jids: list) -> None:
+    """Where the human data is absent (CI), a validation report is used as committed. It must
+    still be the report of these records and this scorer: the scorer's sha256, and per judge
+    the records' own hash, count, bill and unparsed and withheld counts. A record edited, or
+    a scorer changed, without rebuilding the report (RELEASING) fails here."""
+    sc = js.load_scorer(DATA / "scorers" / f"{scorer}.yaml")
+    bad = []
+    if rep.get("inputs", {}).get("scorer_sha256") != sc["_sha256"]:
+        bad.append("its scorer_sha256 is not the current scorer's")
+    if sorted(rep["judges"]) != sorted(jids):
+        bad.append(f"its judges {sorted(rep['judges'])} are not the scorer's {sorted(jids)}")
+    for jid, r in rep["judges"].items():
+        files = [f for f in (vroot / jid).glob("*.json")]
+        recs = [json.loads(f.read_text()) for f in files]
+        got = {"records_sha256": js.records_sha256(vroot / jid),
+               "billed_usd": round(sum(float(x.get("cost_usd") or 0) for x in recs), 4),
+               "unparsed": sum(1 for x in recs if x.get("scores", x.get("dims")) is None)}
+        if "calls" in r:
+            got["calls"] = len(recs)
+        if "withheld_replies" in r:
+            got["withheld_replies"] = sum(1 for x in recs if x.get("output_withheld"))
+        bad += [f"{jid}: {k} {r.get(k)!r} in the report, {v!r} from the records"
+                for k, v in got.items() if r.get(k) != v]
+    if bad:
+        raise SystemExit(f"{vroot}/report.json is not the report of the committed records: "
+                         + "; ".join(bad) + ". Rebuild it with --no-calls (harness/docs/RELEASING.md).")
 
 
 def pointwise() -> Dict[str, int]:

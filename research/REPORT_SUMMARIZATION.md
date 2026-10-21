@@ -8,9 +8,9 @@
 
 ## Executive summary
 
-**Use `bart_l` if you can run a free 1.6 GB model on CPU and your text looks like CNN news; rent `deepseek_m` if you need speed; do not buy `anthropic_l`.** On `coverage` (this repo's overlap metric, 0 to 1), `bart_l` (BART-large-CNN, MIT) scores 0.3461 and the best hosted arm, `deepseek_m`, 0.3460: not separated (p = 0.99), so the extra spend bought no measured quality. `bart_l` costs $0 but takes 11.0 s per article on a 12-core Mac CPU; `deepseek_m` costs $191 per 1M articles at 1.6 s. `anthropic_l` costs $9,826 per 1M articles, 52× `deepseek_m`, and scores 0.0306 lower (p < 0.0001).
+**On `coverage`: use `bart_l` if you can run a free 1.6 GB model on CPU and your text looks like CNN news; rent `deepseek_m` if you need speed; do not buy `anthropic_l`.** On `coverage` (this repo's overlap metric, 0 to 1), `bart_l` (BART-large-CNN, MIT) scores 0.3461 and the best hosted arm, `deepseek_m`, 0.3460: not separated (p = 0.99), so the extra spend bought no measured quality. `bart_l` costs $0 but takes 11.0 s per article on a 12-core Mac CPU; `deepseek_m` costs $191 per 1M articles at 1.6 s. `anthropic_l` costs $9,826 per 1M articles, 52× `deepseek_m`, and scores 0.0306 lower (p < 0.0001).
 
-Three limits could change this. `coverage` agrees with expert judgement poorly: τ 0.1011 on SummEval, below plain ROUGE-1's 0.1487 ([REPORT_SUMMEVAL](REPORT_SUMMEVAL.md) §3.3), and on ROUGE-1 the LLMs lead (`bart_l` 12th of 29). Re-scored by validated LLM judges, every hosted LLM ranks above every BART model and `anthropic_l` is first on the point estimate (§3.8); one reader's blind check of 20 pairs went the other way, not significantly, so nobody has yet shown which to believe and `coverage` stays the primary metric. And `bart_l`'s result is specific to CNN-style text: an XSum-trained BART scores last of 29 on `coverage`, and no hosted arm was run outside CNN. As run here: the first 200 CNN test articles, hosted LLMs zero-shot on one prompt, one run per arm (§5).
+Three limits could change this. `coverage` agrees with expert judgement poorly: τ 0.1011 on SummEval, below plain ROUGE-1's 0.1487 ([REPORT_SUMMEVAL](REPORT_SUMMEVAL.md) §3.3), and on ROUGE-1 the LLMs lead (`bart_l` 12th of 29). Re-scored by SummEval-validated LLM judges, every hosted LLM ranks above every BART model and `anthropic_l` is first on the point estimate (§3.8); one reader's blind check of 20 pairs went the other way, not significantly, so nobody has yet shown which to believe and `coverage` stays the primary metric. And `bart_l`'s result is specific to CNN-style text: an XSum-trained BART scores last of 29 on `coverage`, and no hosted arm was run outside CNN. As run here: the first 200 CNN test articles, hosted LLMs zero-shot on one prompt, one run per arm (§5).
 
 Corrections and their dates: §6. Cross-cutting context for all six experiments: [`REPORT_SYNTHESIS.md`](REPORT_SYNTHESIS.md).
 
@@ -682,7 +682,7 @@ sampling interval) — 0.9 above, inside that interval, though a different ROUGE
 implementation and 400 articles rather than 11,490 are also in play. The instrument is
 close to the literature on the model, and on LEAD-3 (R1 0.40 below, outside its ±0.22).
 
-### 3.8 Re-measured with validated LLM judges
+### 3.8 Re-measured with SummEval-validated LLM judges
 
 The same 29 outputs were scored again by two LLM judges validated on SummEval (`gemma_l`,
 τ 0.5384; `qwen_s`, τ 0.5192), with scorer `judge-summ-v1`
@@ -747,7 +747,9 @@ the 18 non-reference summaries, mean τ over the three dimensions is 0.496 (`gem
 and 0.326 for ROUGE-1 and `coverage` against the reference highlights. Every judge is ahead of
 one rater on 72–80 articles and of `coverage` on 88–94 (paired sign-flip over articles, p < 0.001
 for each). By dimension the judges lead on coherence and relevance and trail one rater on
-faithfulness (0.48–0.61 against 0.64). On the systems' mean scores the raters rank BRIO 5th of 19
+faithfulness (0.48–0.61 against 0.64; the judges' consistency score is set against the raters'
+0/1 faithfulness). Ranking the systems by mean coherence and relevance (faithfulness left out),
+the raters rank BRIO 5th of 19
 and Pegasus 6th, after four instruction-tuned OpenAI models; the judges rank BRIO 1st or 2nd,
 with Spearman 0.71–0.79 between the judges' and the raters' rankings of the 19. They deviate
 system by system in both directions: the raters rank the reference highlights 16th, the judges
@@ -760,7 +762,8 @@ Spearman easier; the articles and ratings have been public since 2023, so a judg
 them. The systems are 2022's, not this experiment's arms: this is evidence about the judges, not
 a check of the ranking above. The
 ratings are downloaded at run time, not committed; the records, which hold article ids, the
-judges' replies (withheld when one repeats 8 consecutive words of the article or a summary),
+judges' replies (kept only as a hash when one is not bare JSON scores or repeats 8 consecutive
+words of the article or a summary),
 scores and hashes, are in `harness/data/judge-validation/<scorer>/zhang2023-cnndm/`.
 
 ## 4. Discussion
@@ -855,7 +858,7 @@ higher price tier does not buy cleaner output — worth checking before paying f
 ## 5. What this experiment cannot say
 
 - **No measure here has been confirmed by people on these summaries.** `coverage` tracks
-  experts less well than ROUGE-1 (on SummEval), and the validated LLM judges disagreed
+  experts less well than ROUGE-1 (on SummEval), and the SummEval-validated LLM judges disagreed
   with a blind human check on 20 pairs (§3.8).
 - **How well `coverage` tracks what a person prefers.** Measured since on SummEval, against
   expert judgement of 1,600 summaries, it agrees at τ 0.1011, below plain ROUGE-1 (0.1487)

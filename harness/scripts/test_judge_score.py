@@ -220,8 +220,9 @@ with tempfile.TemporaryDirectory() as td:
     sets = Path(td)
     p = js.freeze(m1, sets)
     check("freeze writes the manifest under its id", p.name == f"{m1['judging_set_id']}.json")
+    before = (p.read_bytes(), p.stat().st_mtime_ns)
     js.freeze(m1, sets)
-    check("freezing the same set again is a no-op", True)
+    check("freezing the same set again leaves the file as it was", (p.read_bytes(), p.stat().st_mtime_ns) == before)
     bad = dict(m1, judging_set_sha256="deadbeef")
     check("an existing set with a different hash is never rewritten",
           raises_exit(lambda: js.freeze(bad, sets)))
@@ -378,11 +379,43 @@ with tempfile.TemporaryDirectory() as td:
     check("an unparseable reply is stored with scores null, and the item is not scored",
           json.loads(next(Path(td).glob("ja/*.json")).read_text())["scores"] is None
           and js.project(sc, sc_scores, ITEMS) == {})
+    first = json.loads(next(Path(td).glob("ja/*.json")).read_text())
+    check("a reply that is not bare JSON is stored as its hash, not its text",
+          first["output"] is None and first["output_withheld"] is True
+          and first["withheld_reason"] == "not bare JSON"
+          and first["output_sha256"] == hashlib.sha256(b"I cannot do this.").hexdigest())
     good = fake_judge()
     st2 = run_all(td, call=good)
     check("resume does not re-pay for unparsed replies unless asked", st2["calls"] == 0)
     st3 = run_all(td, call=good, retry=True)
     check("--retry-unparsed calls them again", st3["calls"] == 2 * N_TASKS)
+    again = json.loads(next(Path(td).glob("ja/*.json")).read_text())
+    check("a retried block keeps the earlier call's cost: 0.01 + 0.01, attempt 2",
+          abs(again["cost_usd"] - 0.02) < 1e-12 and again["attempts"] == 2
+          and abs(again["cost_usd_earlier_attempts"] - 0.01) < 1e-12 and again["scores"] is not None)
+    check("...and the stored bill counts both calls", abs(js.stored_cost(Path(td)) - 0.02 * 2 * N_TASKS) < 1e-9)
+
+with tempfile.TemporaryDirectory() as td:
+    quote = " ".join(ARTICLES["itemA"].split()[:8])
+    run_all(td, call=fake_judge(reply=json.dumps({"note": quote})))
+    recs = [json.loads(f.read_text()) for f in Path(td).glob("*/itemA.*.json")]
+    check("a bare-JSON reply that repeats 8 words of the article is stored as its hash",
+          recs and all(r["output"] is None and r["withheld_reason"] == "repeats the source" for r in recs))
+    import validate_tree as _vt  # noqa: E402
+    check("V12's reply rule accepts a withheld record and bare JSON",
+          all(_vt.reply_problems(r) == [] for r in recs)
+          and _vt.reply_problems({"output": '```json\n{"coherence": [1]}\n```'}) == [])
+    check("V12's reply rule refuses prose, a reply cut off, and text gone with no hash",
+          _vt.reply_problems({"output": "Let me think. {\"a\": 1}"}) != []
+          and _vt.reply_problems({"output": '{"coherence": [5, 2'}) != []
+          and _vt.reply_problems({"output": None}) != [])
+
+check("parse_block refuses true and \"4\" as scores",
+      js.parse_block(json.dumps({d: [True] for d in js.DIMS}), 1) is None
+      and js.parse_block(json.dumps({d: ["4"] for d in js.DIMS}), 1) is None
+      and js.parse_block(json.dumps({d: [4] for d in js.DIMS}), 1) == [4.0])
+check("a scorer with no validation.experiment gets a label, not a KeyError",
+      js.validated_label({"validation": {}}).startswith("validated by"))
 
 with tempfile.TemporaryDirectory() as td:
     run_all(td, call=fake_judge())

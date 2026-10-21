@@ -384,7 +384,7 @@ run fingerprints, not the ones a lockfile would prefer.
 | [Few-NERD](https://huggingface.co/datasets/DFKI-SLT/few-nerd) | [Ding et al. (2021)](https://aclanthology.org/2021.acl-long.248/) | CC BY-SA 4.0 |
 | [BEIR SciFact](https://huggingface.co/datasets/BeIR/scifact) | [Wadden et al. (2020)](https://aclanthology.org/2020.emnlp-main.609/); BEIR by [Thakur et al. (2021)](https://arxiv.org/abs/2104.08663) | CC BY-SA 4.0 |
 | [SummEval](https://huggingface.co/datasets/mteb/summeval) | [Fabbri et al. (2021)](https://aclanthology.org/2021.tacl-1.24/) | MIT |
-| [Goyal et al. human annotations](https://tagoyal.github.io/zero-shot-explorer/) (judge validation) | [Goyal, Li & Durrett (2022)](https://arxiv.org/abs/2209.12356) | CC BY 4.0 |
+| [Goyal et al. human annotations](https://tagoyal.github.io/zero-shot-explorer/human_annotations.zip) (judge validation) | [Goyal, Li & Durrett (2022)](https://arxiv.org/abs/2209.12356) | CC BY 4.0 |
 | [Zhang et al. human ratings](https://github.com/Tiiiger/benchmark_llm_summarization) (judge validation) | [Zhang, Ladhak, Durmus, Liang, McKeown & Hashimoto (2024)](https://aclanthology.org/2024.tacl-1.3/) | not stated by the authors |
 
 ### Models

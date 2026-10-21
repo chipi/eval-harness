@@ -1622,7 +1622,8 @@ def _run_in(shadow: pathlib.Path, script: str) -> subprocess.CompletedProcess:
     # only, with the shadow as the work tree, so they compare the real index with the copy.
     gitdir = subprocess.run(["git", "rev-parse", "--absolute-git-dir"], cwd=HERE.parents[1],
                             capture_output=True, text=True).stdout.strip()
-    env = {**os.environ, "GIT_DIR": gitdir, "GIT_WORK_TREE": str(shadow)}
+    # GIT_OPTIONAL_LOCKS=0: a status-like command must never take the real index lock.
+    env = {**os.environ, "GIT_DIR": gitdir, "GIT_WORK_TREE": str(shadow), "GIT_OPTIONAL_LOCKS": "0"}
     return subprocess.run([PY, str(shadow / "harness" / script)], cwd=shadow / "harness",
                           capture_output=True, text=True, env=env)
 

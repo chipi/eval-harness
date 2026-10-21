@@ -9,7 +9,9 @@
   "judge_fp": "5031d8671837eb80",
   "latency_ms": null,
   "n": 14,
-  "output": "```json\n{\"coherence\": [5, 2, 5, 2, 5, 5, 5, 5, 5, 5, 2, 5, 5, 5], \"consistency\": [5, 5, 5, 3, 5, 5, 5, 5, 5, 5, 3, 5, 5, 5",
+  "output": null,
+  "output_sha256": "799e1f316b163e0274a93e66520f3fcde5a9cedd8b86a932e9cfe8e9c6a9d827",
+  "output_withheld": true,
   "pass": "primary",
   "prompt_sha256": "ad703f68b1a635bce626eefea164a406cb23a4aa740fbe33575ad63a26731128",
   "provider": "Parasail",
@@ -18,5 +20,6 @@
   "set_id": "cnn_dailymail_200-29arms-a079833ca3c9",
   "tokens_in": 2376,
   "tokens_out": 32,
-  "truncated": 0.0
+  "truncated": 0.0,
+  "withheld_reason": "not bare JSON"
 }

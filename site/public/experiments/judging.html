@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Change the ruler, not the run — judging · eval-harness</title>
-<meta name="description" content="What re-measuring frozen experiments with validated LLM judges and corrected labels changed, why a judge beat the metric on SummEval, and why one reader&#x27;s check kept coverage primary.">
+<meta name="description" content="What re-measuring frozen experiments with SummEval-validated LLM judges and corrected labels changed, why a judge beat the metric on SummEval, and why one reader&#x27;s check kept coverage primary.">
 <meta property="og:title" content="Change the ruler, not the run — judging · eval-harness">
-<meta property="og:description" content="What re-measuring frozen experiments with validated LLM judges and corrected labels changed, why a judge beat the metric on SummEval, and why one reader&#x27;s check kept coverage primary.">
+<meta property="og:description" content="What re-measuring frozen experiments with SummEval-validated LLM judges and corrected labels changed, why a judge beat the metric on SummEval, and why one reader&#x27;s check kept coverage primary.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="eval-harness">
 <meta property="og:image" content="https://evals.humancopilot.eu/assets/social.png">
@@ -35,7 +35,7 @@ if(!p.has('static'))document.documentElement.classList.add('js');})();
 <section class="hero"><div class="wrap">
   <div class="kicker"><b>Judging</b> · re-measured, not re-run</div>
   <h1>Change the ruler, <em>not the run.</em></h1>
-  <p class="dek">Every model output in these experiments is frozen, so when a better way to score them arrives the experiment can be measured again for the price of the scoring alone. We did it twice: a person corrected disputed labels, and validated LLM judges re-scored the summaries. Both moved a headline result. Then one reader's blind check went the other way from the judges, and judges at 41× the price agreed with the first ones, not with the reader. On SummEval's expert ratings and on crowd ratings of 2022 LLM summaries, judges agree with people far better than the metric this leaderboard used, though not system by system; on this experiment's own outputs, nobody has yet shown which of the two to believe. That is the lesson: a judge is worth having, and worth checking.</p>
+  <p class="dek">Every model output in these experiments is frozen, so when a better way to score them arrives the experiment can be measured again for the price of the scoring alone. We did it twice: a person corrected disputed labels, and SummEval-validated LLM judges re-scored the summaries. Both moved a headline result. Then one reader's blind check went the other way from the judges, and judges at 41× the price agreed with the first ones, not with the reader. On SummEval's expert ratings and on crowd ratings of 2022 LLM summaries, judges agree with people far better than the metric this leaderboard used, though not system by system; on this experiment's own outputs, nobody has yet shown which of the two to believe. That is the lesson: a judge is worth having, and worth checking.</p>
   <div class="facts"><div class="fact"><div class="k">Re-measured</div><div class="v">3 experiments: summarisation by LLM judges; AG News and DBpedia against labels a person corrected</div></div><div class="fact"><div class="k">Re-run</div><div class="v">nothing: every model output is the one committed when it was measured</div></div><div class="fact"><div class="k">Cost</div><div class="v">$0.3109 for the first judges, $12.92 for the frontier judges, 960 calls each; $5.71 checking all four against published human ratings; $0 for the labels</div></div><div class="fact"><div class="k">Primary metric</div><div class="v">unchanged in all three, by decision (below)</div></div></div>
   <div class="btns"><a class="btn primary" href="#value">Why judge</a><a class="btn" href="#checklist">Judging, done right</a><a class="btn" href="../docs/GUIDE/#10-optional-re-measure-with-an-llm-judge">Try it, offline</a></div>
 </div></section>
@@ -57,239 +57,239 @@ if(!p.has('static'))document.documentElement.classList.add('js');})();
     <p>The two judges read every article with all 29 arms' summaries, names hidden and order shuffled: 960 calls, $0.3109, 197 of 200 articles scored. On their score <strong>every hosted LLM ranks above every BART model</strong>. <code>bart_l</code>, first on coverage, scores 3.87 of 5 and ranks 25th of 29, separated below all 24 hosted LLMs. The hosted LLMs score 4.53–4.98, bunched near the top of a 5-point scale, so the order among them, <code>anthropic_l</code> first (18th on coverage), is not a finding.</p>
     <p>The judges agree closely with each other: Spearman 0.93 over arm means. Re-ordering the summaries moved per-article scores by 0.11–0.21, a repeat call by 0.03–0.12. 3 of 960 replies did not parse; an article counts only when every block of every judge parsed, and 197 of 200 did.</p>
   </div>
-  <figure class="chart" style="margin-top:32px"><div class="legend"><span><i style="background:var(--proprietary)"></i>hosted · proprietary</span><span><i style="background:var(--open)"></i>hosted · open weights</span><span><i style="background:var(--local)"></i>local · free</span><span><i style="background:var(--baseline)"></i>baseline</span></div><div class="vw"><svg viewBox="0 0 1000 560" role="img" aria-label="coverage (primary) rank against validated LLM judges rank"><text x="150" y="22" text-anchor="middle" class="t-muted" font-size="14">coverage (primary)</text><text x="850" y="22" text-anchor="middle" class="t-muted" font-size="14">validated LLM judges</text><text x="150" y="40" text-anchor="middle" class="t-muted" font-size="11">rank 1 at the top</text><text x="850" y="40" text-anchor="middle" class="t-muted" font-size="11">rank 1 at the top</text><line x1="150" x2="150" y1="46" y2="548" class="axis"/><line x1="850" x2="850" y1="46" y2="548" class="axis"/><line x1="150" y1="87.0" x2="850" y2="367.0" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="150" cy="87.0" r="3.5" class="dot k-open" data-tip="llama_l
+  <figure class="chart" style="margin-top:32px"><div class="legend"><span><i style="background:var(--proprietary)"></i>hosted · proprietary</span><span><i style="background:var(--open)"></i>hosted · open weights</span><span><i style="background:var(--local)"></i>local · free</span><span><i style="background:var(--baseline)"></i>baseline</span></div><div class="vw"><svg viewBox="0 0 1000 560" role="img" aria-label="coverage (primary) rank against SummEval-validated judges rank"><text x="150" y="22" text-anchor="middle" class="t-muted" font-size="14">coverage (primary)</text><text x="850" y="22" text-anchor="middle" class="t-muted" font-size="14">SummEval-validated judges</text><text x="150" y="40" text-anchor="middle" class="t-muted" font-size="11">rank 1 at the top</text><text x="850" y="40" text-anchor="middle" class="t-muted" font-size="11">rank 1 at the top</text><line x1="150" x2="150" y1="46" y2="548" class="axis"/><line x1="850" x2="850" y1="46" y2="548" class="axis"/><line x1="150" y1="87.0" x2="850" y2="367.0" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="150" cy="87.0" r="3.5" class="dot k-open" data-tip="llama_l
 coverage (primary): coverage 0.3387 (rank 3 of 29)
-validated LLM judges: judge score 4.70 of 5 (rank 19 of 29)"><title>llama_l
+SummEval-validated judges: judge score 4.70 of 5 (rank 19 of 29)"><title>llama_l
 coverage (primary): coverage 0.3387 (rank 3 of 29)
-validated LLM judges: judge score 4.70 of 5 (rank 19 of 29)</title></circle><circle cx="850" cy="367.0" r="3.5" class="dot k-open" data-tip="llama_l
+SummEval-validated judges: judge score 4.70 of 5 (rank 19 of 29)</title></circle><circle cx="850" cy="367.0" r="3.5" class="dot k-open" data-tip="llama_l
 coverage (primary): coverage 0.3387 (rank 3 of 29)
-validated LLM judges: judge score 4.70 of 5 (rank 19 of 29)"><title>llama_l
+SummEval-validated judges: judge score 4.70 of 5 (rank 19 of 29)"><title>llama_l
 coverage (primary): coverage 0.3387 (rank 3 of 29)
-validated LLM judges: judge score 4.70 of 5 (rank 19 of 29)</title></circle><line x1="150" y1="104.5" x2="850" y2="402.0" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="150" cy="104.5" r="3.5" class="dot k-open" data-tip="llama_m
+SummEval-validated judges: judge score 4.70 of 5 (rank 19 of 29)</title></circle><line x1="150" y1="104.5" x2="850" y2="402.0" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="150" cy="104.5" r="3.5" class="dot k-open" data-tip="llama_m
 coverage (primary): coverage 0.3382 (rank 4 of 29)
-validated LLM judges: judge score 4.67 of 5 (rank 21 of 29)"><title>llama_m
+SummEval-validated judges: judge score 4.67 of 5 (rank 21 of 29)"><title>llama_m
 coverage (primary): coverage 0.3382 (rank 4 of 29)
-validated LLM judges: judge score 4.67 of 5 (rank 21 of 29)</title></circle><circle cx="850" cy="402.0" r="3.5" class="dot k-open" data-tip="llama_m
+SummEval-validated judges: judge score 4.67 of 5 (rank 21 of 29)</title></circle><circle cx="850" cy="402.0" r="3.5" class="dot k-open" data-tip="llama_m
 coverage (primary): coverage 0.3382 (rank 4 of 29)
-validated LLM judges: judge score 4.67 of 5 (rank 21 of 29)"><title>llama_m
+SummEval-validated judges: judge score 4.67 of 5 (rank 21 of 29)"><title>llama_m
 coverage (primary): coverage 0.3382 (rank 4 of 29)
-validated LLM judges: judge score 4.67 of 5 (rank 21 of 29)</title></circle><line x1="150" y1="122.0" x2="850" y2="489.5" class="s-local" stroke-width="1.2" opacity="0.4"/><circle cx="150" cy="122.0" r="3.5" class="dot k-local" data-tip="bart_m
+SummEval-validated judges: judge score 4.67 of 5 (rank 21 of 29)</title></circle><line x1="150" y1="122.0" x2="850" y2="489.5" class="s-local" stroke-width="1.2" opacity="0.4"/><circle cx="150" cy="122.0" r="3.5" class="dot k-local" data-tip="bart_m
 coverage (primary): coverage 0.3367 (rank 5 of 29)
-validated LLM judges: judge score 3.56 of 5 (rank 26 of 29)"><title>bart_m
+SummEval-validated judges: judge score 3.56 of 5 (rank 26 of 29)"><title>bart_m
 coverage (primary): coverage 0.3367 (rank 5 of 29)
-validated LLM judges: judge score 3.56 of 5 (rank 26 of 29)</title></circle><circle cx="850" cy="489.5" r="3.5" class="dot k-local" data-tip="bart_m
+SummEval-validated judges: judge score 3.56 of 5 (rank 26 of 29)</title></circle><circle cx="850" cy="489.5" r="3.5" class="dot k-local" data-tip="bart_m
 coverage (primary): coverage 0.3367 (rank 5 of 29)
-validated LLM judges: judge score 3.56 of 5 (rank 26 of 29)"><title>bart_m
+SummEval-validated judges: judge score 3.56 of 5 (rank 26 of 29)"><title>bart_m
 coverage (primary): coverage 0.3367 (rank 5 of 29)
-validated LLM judges: judge score 3.56 of 5 (rank 26 of 29)</title></circle><line x1="150" y1="139.5" x2="850" y2="349.5" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="150" cy="139.5" r="3.5" class="dot k-open" data-tip="llama_s
+SummEval-validated judges: judge score 3.56 of 5 (rank 26 of 29)</title></circle><line x1="150" y1="139.5" x2="850" y2="349.5" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="150" cy="139.5" r="3.5" class="dot k-open" data-tip="llama_s
 coverage (primary): coverage 0.3333 (rank 6 of 29)
-validated LLM judges: judge score 4.70 of 5 (rank 18 of 29)"><title>llama_s
+SummEval-validated judges: judge score 4.70 of 5 (rank 18 of 29)"><title>llama_s
 coverage (primary): coverage 0.3333 (rank 6 of 29)
-validated LLM judges: judge score 4.70 of 5 (rank 18 of 29)</title></circle><circle cx="850" cy="349.5" r="3.5" class="dot k-open" data-tip="llama_s
+SummEval-validated judges: judge score 4.70 of 5 (rank 18 of 29)</title></circle><circle cx="850" cy="349.5" r="3.5" class="dot k-open" data-tip="llama_s
 coverage (primary): coverage 0.3333 (rank 6 of 29)
-validated LLM judges: judge score 4.70 of 5 (rank 18 of 29)"><title>llama_s
+SummEval-validated judges: judge score 4.70 of 5 (rank 18 of 29)"><title>llama_s
 coverage (primary): coverage 0.3333 (rank 6 of 29)
-validated LLM judges: judge score 4.70 of 5 (rank 18 of 29)</title></circle><line x1="150" y1="157.0" x2="850" y2="122.0" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="150" cy="157.0" r="3.5" class="dot k-open" data-tip="deepseek_l
+SummEval-validated judges: judge score 4.70 of 5 (rank 18 of 29)</title></circle><line x1="150" y1="157.0" x2="850" y2="122.0" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="150" cy="157.0" r="3.5" class="dot k-open" data-tip="deepseek_l
 coverage (primary): coverage 0.3325 (rank 7 of 29)
-validated LLM judges: judge score 4.88 of 5 (rank 5 of 29)"><title>deepseek_l
+SummEval-validated judges: judge score 4.88 of 5 (rank 5 of 29)"><title>deepseek_l
 coverage (primary): coverage 0.3325 (rank 7 of 29)
-validated LLM judges: judge score 4.88 of 5 (rank 5 of 29)</title></circle><circle cx="850" cy="122.0" r="3.5" class="dot k-open" data-tip="deepseek_l
+SummEval-validated judges: judge score 4.88 of 5 (rank 5 of 29)</title></circle><circle cx="850" cy="122.0" r="3.5" class="dot k-open" data-tip="deepseek_l
 coverage (primary): coverage 0.3325 (rank 7 of 29)
-validated LLM judges: judge score 4.88 of 5 (rank 5 of 29)"><title>deepseek_l
+SummEval-validated judges: judge score 4.88 of 5 (rank 5 of 29)"><title>deepseek_l
 coverage (primary): coverage 0.3325 (rank 7 of 29)
-validated LLM judges: judge score 4.88 of 5 (rank 5 of 29)</title></circle><line x1="150" y1="174.5" x2="850" y2="157.0" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="150" cy="174.5" r="3.5" class="dot k-open" data-tip="glm_m
+SummEval-validated judges: judge score 4.88 of 5 (rank 5 of 29)</title></circle><line x1="150" y1="174.5" x2="850" y2="157.0" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="150" cy="174.5" r="3.5" class="dot k-open" data-tip="glm_m
 coverage (primary): coverage 0.3320 (rank 8 of 29)
-validated LLM judges: judge score 4.86 of 5 (rank 7 of 29)"><title>glm_m
+SummEval-validated judges: judge score 4.86 of 5 (rank 7 of 29)"><title>glm_m
 coverage (primary): coverage 0.3320 (rank 8 of 29)
-validated LLM judges: judge score 4.86 of 5 (rank 7 of 29)</title></circle><circle cx="850" cy="157.0" r="3.5" class="dot k-open" data-tip="glm_m
+SummEval-validated judges: judge score 4.86 of 5 (rank 7 of 29)</title></circle><circle cx="850" cy="157.0" r="3.5" class="dot k-open" data-tip="glm_m
 coverage (primary): coverage 0.3320 (rank 8 of 29)
-validated LLM judges: judge score 4.86 of 5 (rank 7 of 29)"><title>glm_m
+SummEval-validated judges: judge score 4.86 of 5 (rank 7 of 29)"><title>glm_m
 coverage (primary): coverage 0.3320 (rank 8 of 29)
-validated LLM judges: judge score 4.86 of 5 (rank 7 of 29)</title></circle><line x1="150" y1="192.0" x2="850" y2="192.0" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="150" cy="192.0" r="3.5" class="dot k-open" data-tip="deepseek_s
+SummEval-validated judges: judge score 4.86 of 5 (rank 7 of 29)</title></circle><line x1="150" y1="192.0" x2="850" y2="192.0" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="150" cy="192.0" r="3.5" class="dot k-open" data-tip="deepseek_s
 coverage (primary): coverage 0.3285 (rank 9 of 29)
-validated LLM judges: judge score 4.82 of 5 (rank 9 of 29)"><title>deepseek_s
+SummEval-validated judges: judge score 4.82 of 5 (rank 9 of 29)"><title>deepseek_s
 coverage (primary): coverage 0.3285 (rank 9 of 29)
-validated LLM judges: judge score 4.82 of 5 (rank 9 of 29)</title></circle><circle cx="850" cy="192.0" r="3.5" class="dot k-open" data-tip="deepseek_s
+SummEval-validated judges: judge score 4.82 of 5 (rank 9 of 29)</title></circle><circle cx="850" cy="192.0" r="3.5" class="dot k-open" data-tip="deepseek_s
 coverage (primary): coverage 0.3285 (rank 9 of 29)
-validated LLM judges: judge score 4.82 of 5 (rank 9 of 29)"><title>deepseek_s
+SummEval-validated judges: judge score 4.82 of 5 (rank 9 of 29)"><title>deepseek_s
 coverage (primary): coverage 0.3285 (rank 9 of 29)
-validated LLM judges: judge score 4.82 of 5 (rank 9 of 29)</title></circle><line x1="150" y1="209.5" x2="850" y2="542.0" class="s-local" stroke-width="1.2" opacity="0.4"/><circle cx="150" cy="209.5" r="3.5" class="dot k-local" data-tip="bart_s
+SummEval-validated judges: judge score 4.82 of 5 (rank 9 of 29)</title></circle><line x1="150" y1="209.5" x2="850" y2="542.0" class="s-local" stroke-width="1.2" opacity="0.4"/><circle cx="150" cy="209.5" r="3.5" class="dot k-local" data-tip="bart_s
 coverage (primary): coverage 0.3276 (rank 10 of 29)
-validated LLM judges: judge score 3.19 of 5 (rank 29 of 29)"><title>bart_s
+SummEval-validated judges: judge score 3.19 of 5 (rank 29 of 29)"><title>bart_s
 coverage (primary): coverage 0.3276 (rank 10 of 29)
-validated LLM judges: judge score 3.19 of 5 (rank 29 of 29)</title></circle><circle cx="850" cy="542.0" r="3.5" class="dot k-local" data-tip="bart_s
+SummEval-validated judges: judge score 3.19 of 5 (rank 29 of 29)</title></circle><circle cx="850" cy="542.0" r="3.5" class="dot k-local" data-tip="bart_s
 coverage (primary): coverage 0.3276 (rank 10 of 29)
-validated LLM judges: judge score 3.19 of 5 (rank 29 of 29)"><title>bart_s
+SummEval-validated judges: judge score 3.19 of 5 (rank 29 of 29)"><title>bart_s
 coverage (primary): coverage 0.3276 (rank 10 of 29)
-validated LLM judges: judge score 3.19 of 5 (rank 29 of 29)</title></circle><line x1="150" y1="227.0" x2="850" y2="262.0" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="150" cy="227.0" r="3.5" class="dot k-proprietary" data-tip="openai_m
+SummEval-validated judges: judge score 3.19 of 5 (rank 29 of 29)</title></circle><line x1="150" y1="227.0" x2="850" y2="262.0" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="150" cy="227.0" r="3.5" class="dot k-proprietary" data-tip="openai_m
 coverage (primary): coverage 0.3268 (rank 11 of 29)
-validated LLM judges: judge score 4.80 of 5 (rank 13 of 29)"><title>openai_m
+SummEval-validated judges: judge score 4.80 of 5 (rank 13 of 29)"><title>openai_m
 coverage (primary): coverage 0.3268 (rank 11 of 29)
-validated LLM judges: judge score 4.80 of 5 (rank 13 of 29)</title></circle><circle cx="850" cy="262.0" r="3.5" class="dot k-proprietary" data-tip="openai_m
+SummEval-validated judges: judge score 4.80 of 5 (rank 13 of 29)</title></circle><circle cx="850" cy="262.0" r="3.5" class="dot k-proprietary" data-tip="openai_m
 coverage (primary): coverage 0.3268 (rank 11 of 29)
-validated LLM judges: judge score 4.80 of 5 (rank 13 of 29)"><title>openai_m
+SummEval-validated judges: judge score 4.80 of 5 (rank 13 of 29)"><title>openai_m
 coverage (primary): coverage 0.3268 (rank 11 of 29)
-validated LLM judges: judge score 4.80 of 5 (rank 13 of 29)</title></circle><line x1="150" y1="244.5" x2="850" y2="279.5" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="150" cy="244.5" r="3.5" class="dot k-proprietary" data-tip="openai_l
+SummEval-validated judges: judge score 4.80 of 5 (rank 13 of 29)</title></circle><line x1="150" y1="244.5" x2="850" y2="279.5" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="150" cy="244.5" r="3.5" class="dot k-proprietary" data-tip="openai_l
 coverage (primary): coverage 0.3268 (rank 12 of 29)
-validated LLM judges: judge score 4.77 of 5 (rank 14 of 29)"><title>openai_l
+SummEval-validated judges: judge score 4.77 of 5 (rank 14 of 29)"><title>openai_l
 coverage (primary): coverage 0.3268 (rank 12 of 29)
-validated LLM judges: judge score 4.77 of 5 (rank 14 of 29)</title></circle><circle cx="850" cy="279.5" r="3.5" class="dot k-proprietary" data-tip="openai_l
+SummEval-validated judges: judge score 4.77 of 5 (rank 14 of 29)</title></circle><circle cx="850" cy="279.5" r="3.5" class="dot k-proprietary" data-tip="openai_l
 coverage (primary): coverage 0.3268 (rank 12 of 29)
-validated LLM judges: judge score 4.77 of 5 (rank 14 of 29)"><title>openai_l
+SummEval-validated judges: judge score 4.77 of 5 (rank 14 of 29)"><title>openai_l
 coverage (primary): coverage 0.3268 (rank 12 of 29)
-validated LLM judges: judge score 4.77 of 5 (rank 14 of 29)</title></circle><line x1="150" y1="262.0" x2="850" y2="244.5" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="150" cy="262.0" r="3.5" class="dot k-open" data-tip="mistral_s
+SummEval-validated judges: judge score 4.77 of 5 (rank 14 of 29)</title></circle><line x1="150" y1="262.0" x2="850" y2="244.5" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="150" cy="262.0" r="3.5" class="dot k-open" data-tip="mistral_s
 coverage (primary): coverage 0.3255 (rank 13 of 29)
-validated LLM judges: judge score 4.80 of 5 (rank 12 of 29)"><title>mistral_s
+SummEval-validated judges: judge score 4.80 of 5 (rank 12 of 29)"><title>mistral_s
 coverage (primary): coverage 0.3255 (rank 13 of 29)
-validated LLM judges: judge score 4.80 of 5 (rank 12 of 29)</title></circle><circle cx="850" cy="244.5" r="3.5" class="dot k-open" data-tip="mistral_s
+SummEval-validated judges: judge score 4.80 of 5 (rank 12 of 29)</title></circle><circle cx="850" cy="244.5" r="3.5" class="dot k-open" data-tip="mistral_s
 coverage (primary): coverage 0.3255 (rank 13 of 29)
-validated LLM judges: judge score 4.80 of 5 (rank 12 of 29)"><title>mistral_s
+SummEval-validated judges: judge score 4.80 of 5 (rank 12 of 29)"><title>mistral_s
 coverage (primary): coverage 0.3255 (rank 13 of 29)
-validated LLM judges: judge score 4.80 of 5 (rank 12 of 29)</title></circle><line x1="150" y1="279.5" x2="850" y2="87.0" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="150" cy="279.5" r="3.5" class="dot k-proprietary" data-tip="anthropic_s
+SummEval-validated judges: judge score 4.80 of 5 (rank 12 of 29)</title></circle><line x1="150" y1="279.5" x2="850" y2="87.0" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="150" cy="279.5" r="3.5" class="dot k-proprietary" data-tip="anthropic_s
 coverage (primary): coverage 0.3238 (rank 14 of 29)
-validated LLM judges: judge score 4.95 of 5 (rank 3 of 29)"><title>anthropic_s
+SummEval-validated judges: judge score 4.95 of 5 (rank 3 of 29)"><title>anthropic_s
 coverage (primary): coverage 0.3238 (rank 14 of 29)
-validated LLM judges: judge score 4.95 of 5 (rank 3 of 29)</title></circle><circle cx="850" cy="87.0" r="3.5" class="dot k-proprietary" data-tip="anthropic_s
+SummEval-validated judges: judge score 4.95 of 5 (rank 3 of 29)</title></circle><circle cx="850" cy="87.0" r="3.5" class="dot k-proprietary" data-tip="anthropic_s
 coverage (primary): coverage 0.3238 (rank 14 of 29)
-validated LLM judges: judge score 4.95 of 5 (rank 3 of 29)"><title>anthropic_s
+SummEval-validated judges: judge score 4.95 of 5 (rank 3 of 29)"><title>anthropic_s
 coverage (primary): coverage 0.3238 (rank 14 of 29)
-validated LLM judges: judge score 4.95 of 5 (rank 3 of 29)</title></circle><line x1="150" y1="297.0" x2="850" y2="69.5" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="150" cy="297.0" r="3.5" class="dot k-proprietary" data-tip="anthropic_m
+SummEval-validated judges: judge score 4.95 of 5 (rank 3 of 29)</title></circle><line x1="150" y1="297.0" x2="850" y2="69.5" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="150" cy="297.0" r="3.5" class="dot k-proprietary" data-tip="anthropic_m
 coverage (primary): coverage 0.3236 (rank 15 of 29)
-validated LLM judges: judge score 4.96 of 5 (rank 2 of 29)"><title>anthropic_m
+SummEval-validated judges: judge score 4.96 of 5 (rank 2 of 29)"><title>anthropic_m
 coverage (primary): coverage 0.3236 (rank 15 of 29)
-validated LLM judges: judge score 4.96 of 5 (rank 2 of 29)</title></circle><circle cx="850" cy="69.5" r="3.5" class="dot k-proprietary" data-tip="anthropic_m
+SummEval-validated judges: judge score 4.96 of 5 (rank 2 of 29)</title></circle><circle cx="850" cy="69.5" r="3.5" class="dot k-proprietary" data-tip="anthropic_m
 coverage (primary): coverage 0.3236 (rank 15 of 29)
-validated LLM judges: judge score 4.96 of 5 (rank 2 of 29)"><title>anthropic_m
+SummEval-validated judges: judge score 4.96 of 5 (rank 2 of 29)"><title>anthropic_m
 coverage (primary): coverage 0.3236 (rank 15 of 29)
-validated LLM judges: judge score 4.96 of 5 (rank 2 of 29)</title></circle><line x1="150" y1="314.5" x2="850" y2="297.0" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="150" cy="314.5" r="3.5" class="dot k-open" data-tip="gemma_l
+SummEval-validated judges: judge score 4.96 of 5 (rank 2 of 29)</title></circle><line x1="150" y1="314.5" x2="850" y2="297.0" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="150" cy="314.5" r="3.5" class="dot k-open" data-tip="gemma_l
 coverage (primary): coverage 0.3204 (rank 16 of 29)
-validated LLM judges: judge score 4.72 of 5 (rank 15 of 29)"><title>gemma_l
+SummEval-validated judges: judge score 4.72 of 5 (rank 15 of 29)"><title>gemma_l
 coverage (primary): coverage 0.3204 (rank 16 of 29)
-validated LLM judges: judge score 4.72 of 5 (rank 15 of 29)</title></circle><circle cx="850" cy="297.0" r="3.5" class="dot k-open" data-tip="gemma_l
+SummEval-validated judges: judge score 4.72 of 5 (rank 15 of 29)</title></circle><circle cx="850" cy="297.0" r="3.5" class="dot k-open" data-tip="gemma_l
 coverage (primary): coverage 0.3204 (rank 16 of 29)
-validated LLM judges: judge score 4.72 of 5 (rank 15 of 29)"><title>gemma_l
+SummEval-validated judges: judge score 4.72 of 5 (rank 15 of 29)"><title>gemma_l
 coverage (primary): coverage 0.3204 (rank 16 of 29)
-validated LLM judges: judge score 4.72 of 5 (rank 15 of 29)</title></circle><line x1="150" y1="332.0" x2="850" y2="174.5" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="150" cy="332.0" r="3.5" class="dot k-proprietary" data-tip="openai_s
+SummEval-validated judges: judge score 4.72 of 5 (rank 15 of 29)</title></circle><line x1="150" y1="332.0" x2="850" y2="174.5" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="150" cy="332.0" r="3.5" class="dot k-proprietary" data-tip="openai_s
 coverage (primary): coverage 0.3171 (rank 17 of 29)
-validated LLM judges: judge score 4.82 of 5 (rank 8 of 29)"><title>openai_s
+SummEval-validated judges: judge score 4.82 of 5 (rank 8 of 29)"><title>openai_s
 coverage (primary): coverage 0.3171 (rank 17 of 29)
-validated LLM judges: judge score 4.82 of 5 (rank 8 of 29)</title></circle><circle cx="850" cy="174.5" r="3.5" class="dot k-proprietary" data-tip="openai_s
+SummEval-validated judges: judge score 4.82 of 5 (rank 8 of 29)</title></circle><circle cx="850" cy="174.5" r="3.5" class="dot k-proprietary" data-tip="openai_s
 coverage (primary): coverage 0.3171 (rank 17 of 29)
-validated LLM judges: judge score 4.82 of 5 (rank 8 of 29)"><title>openai_s
+SummEval-validated judges: judge score 4.82 of 5 (rank 8 of 29)"><title>openai_s
 coverage (primary): coverage 0.3171 (rank 17 of 29)
-validated LLM judges: judge score 4.82 of 5 (rank 8 of 29)</title></circle><line x1="150" y1="367.0" x2="850" y2="454.5" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="150" cy="367.0" r="3.5" class="dot k-open" data-tip="glm_s
+SummEval-validated judges: judge score 4.82 of 5 (rank 8 of 29)</title></circle><line x1="150" y1="367.0" x2="850" y2="454.5" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="150" cy="367.0" r="3.5" class="dot k-open" data-tip="glm_s
 coverage (primary): coverage 0.3139 (rank 19 of 29)
-validated LLM judges: judge score 4.53 of 5 (rank 24 of 29)"><title>glm_s
+SummEval-validated judges: judge score 4.53 of 5 (rank 24 of 29)"><title>glm_s
 coverage (primary): coverage 0.3139 (rank 19 of 29)
-validated LLM judges: judge score 4.53 of 5 (rank 24 of 29)</title></circle><circle cx="850" cy="454.5" r="3.5" class="dot k-open" data-tip="glm_s
+SummEval-validated judges: judge score 4.53 of 5 (rank 24 of 29)</title></circle><circle cx="850" cy="454.5" r="3.5" class="dot k-open" data-tip="glm_s
 coverage (primary): coverage 0.3139 (rank 19 of 29)
-validated LLM judges: judge score 4.53 of 5 (rank 24 of 29)"><title>glm_s
+SummEval-validated judges: judge score 4.53 of 5 (rank 24 of 29)"><title>glm_s
 coverage (primary): coverage 0.3139 (rank 19 of 29)
-validated LLM judges: judge score 4.53 of 5 (rank 24 of 29)</title></circle><line x1="150" y1="384.5" x2="850" y2="332.0" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="150" cy="384.5" r="3.5" class="dot k-open" data-tip="gemma_m
+SummEval-validated judges: judge score 4.53 of 5 (rank 24 of 29)</title></circle><line x1="150" y1="384.5" x2="850" y2="332.0" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="150" cy="384.5" r="3.5" class="dot k-open" data-tip="gemma_m
 coverage (primary): coverage 0.3136 (rank 20 of 29)
-validated LLM judges: judge score 4.71 of 5 (rank 17 of 29)"><title>gemma_m
+SummEval-validated judges: judge score 4.71 of 5 (rank 17 of 29)"><title>gemma_m
 coverage (primary): coverage 0.3136 (rank 20 of 29)
-validated LLM judges: judge score 4.71 of 5 (rank 17 of 29)</title></circle><circle cx="850" cy="332.0" r="3.5" class="dot k-open" data-tip="gemma_m
+SummEval-validated judges: judge score 4.71 of 5 (rank 17 of 29)</title></circle><circle cx="850" cy="332.0" r="3.5" class="dot k-open" data-tip="gemma_m
 coverage (primary): coverage 0.3136 (rank 20 of 29)
-validated LLM judges: judge score 4.71 of 5 (rank 17 of 29)"><title>gemma_m
+SummEval-validated judges: judge score 4.71 of 5 (rank 17 of 29)"><title>gemma_m
 coverage (primary): coverage 0.3136 (rank 20 of 29)
-validated LLM judges: judge score 4.71 of 5 (rank 17 of 29)</title></circle><line x1="150" y1="402.0" x2="850" y2="437.0" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="150" cy="402.0" r="3.5" class="dot k-open" data-tip="glm_l
+SummEval-validated judges: judge score 4.71 of 5 (rank 17 of 29)</title></circle><line x1="150" y1="402.0" x2="850" y2="437.0" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="150" cy="402.0" r="3.5" class="dot k-open" data-tip="glm_l
 coverage (primary): coverage 0.3124 (rank 21 of 29)
-validated LLM judges: judge score 4.61 of 5 (rank 23 of 29)"><title>glm_l
+SummEval-validated judges: judge score 4.61 of 5 (rank 23 of 29)"><title>glm_l
 coverage (primary): coverage 0.3124 (rank 21 of 29)
-validated LLM judges: judge score 4.61 of 5 (rank 23 of 29)</title></circle><circle cx="850" cy="437.0" r="3.5" class="dot k-open" data-tip="glm_l
+SummEval-validated judges: judge score 4.61 of 5 (rank 23 of 29)</title></circle><circle cx="850" cy="437.0" r="3.5" class="dot k-open" data-tip="glm_l
 coverage (primary): coverage 0.3124 (rank 21 of 29)
-validated LLM judges: judge score 4.61 of 5 (rank 23 of 29)"><title>glm_l
+SummEval-validated judges: judge score 4.61 of 5 (rank 23 of 29)"><title>glm_l
 coverage (primary): coverage 0.3124 (rank 21 of 29)
-validated LLM judges: judge score 4.61 of 5 (rank 23 of 29)</title></circle><line x1="150" y1="419.5" x2="850" y2="227.0" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="150" cy="419.5" r="3.5" class="dot k-open" data-tip="gemma_s
+SummEval-validated judges: judge score 4.61 of 5 (rank 23 of 29)</title></circle><line x1="150" y1="419.5" x2="850" y2="227.0" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="150" cy="419.5" r="3.5" class="dot k-open" data-tip="gemma_s
 coverage (primary): coverage 0.3120 (rank 22 of 29)
-validated LLM judges: judge score 4.80 of 5 (rank 11 of 29)"><title>gemma_s
+SummEval-validated judges: judge score 4.80 of 5 (rank 11 of 29)"><title>gemma_s
 coverage (primary): coverage 0.3120 (rank 22 of 29)
-validated LLM judges: judge score 4.80 of 5 (rank 11 of 29)</title></circle><circle cx="850" cy="227.0" r="3.5" class="dot k-open" data-tip="gemma_s
+SummEval-validated judges: judge score 4.80 of 5 (rank 11 of 29)</title></circle><circle cx="850" cy="227.0" r="3.5" class="dot k-open" data-tip="gemma_s
 coverage (primary): coverage 0.3120 (rank 22 of 29)
-validated LLM judges: judge score 4.80 of 5 (rank 11 of 29)"><title>gemma_s
+SummEval-validated judges: judge score 4.80 of 5 (rank 11 of 29)"><title>gemma_s
 coverage (primary): coverage 0.3120 (rank 22 of 29)
-validated LLM judges: judge score 4.80 of 5 (rank 11 of 29)</title></circle><line x1="150" y1="437.0" x2="850" y2="209.5" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="150" cy="437.0" r="3.5" class="dot k-proprietary" data-tip="qwen_l
+SummEval-validated judges: judge score 4.80 of 5 (rank 11 of 29)</title></circle><line x1="150" y1="437.0" x2="850" y2="209.5" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="150" cy="437.0" r="3.5" class="dot k-proprietary" data-tip="qwen_l
 coverage (primary): coverage 0.3108 (rank 23 of 29)
-validated LLM judges: judge score 4.81 of 5 (rank 10 of 29)"><title>qwen_l
+SummEval-validated judges: judge score 4.81 of 5 (rank 10 of 29)"><title>qwen_l
 coverage (primary): coverage 0.3108 (rank 23 of 29)
-validated LLM judges: judge score 4.81 of 5 (rank 10 of 29)</title></circle><circle cx="850" cy="209.5" r="3.5" class="dot k-proprietary" data-tip="qwen_l
+SummEval-validated judges: judge score 4.81 of 5 (rank 10 of 29)</title></circle><circle cx="850" cy="209.5" r="3.5" class="dot k-proprietary" data-tip="qwen_l
 coverage (primary): coverage 0.3108 (rank 23 of 29)
-validated LLM judges: judge score 4.81 of 5 (rank 10 of 29)"><title>qwen_l
+SummEval-validated judges: judge score 4.81 of 5 (rank 10 of 29)"><title>qwen_l
 coverage (primary): coverage 0.3108 (rank 23 of 29)
-validated LLM judges: judge score 4.81 of 5 (rank 10 of 29)</title></circle><line x1="150" y1="454.5" x2="850" y2="384.5" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="150" cy="454.5" r="3.5" class="dot k-open" data-tip="mistral_l
+SummEval-validated judges: judge score 4.81 of 5 (rank 10 of 29)</title></circle><line x1="150" y1="454.5" x2="850" y2="384.5" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="150" cy="454.5" r="3.5" class="dot k-open" data-tip="mistral_l
 coverage (primary): coverage 0.3080 (rank 24 of 29)
-validated LLM judges: judge score 4.70 of 5 (rank 20 of 29)"><title>mistral_l
+SummEval-validated judges: judge score 4.70 of 5 (rank 20 of 29)"><title>mistral_l
 coverage (primary): coverage 0.3080 (rank 24 of 29)
-validated LLM judges: judge score 4.70 of 5 (rank 20 of 29)</title></circle><circle cx="850" cy="384.5" r="3.5" class="dot k-open" data-tip="mistral_l
+SummEval-validated judges: judge score 4.70 of 5 (rank 20 of 29)</title></circle><circle cx="850" cy="384.5" r="3.5" class="dot k-open" data-tip="mistral_l
 coverage (primary): coverage 0.3080 (rank 24 of 29)
-validated LLM judges: judge score 4.70 of 5 (rank 20 of 29)"><title>mistral_l
+SummEval-validated judges: judge score 4.70 of 5 (rank 20 of 29)"><title>mistral_l
 coverage (primary): coverage 0.3080 (rank 24 of 29)
-validated LLM judges: judge score 4.70 of 5 (rank 20 of 29)</title></circle><line x1="150" y1="472.0" x2="850" y2="419.5" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="150" cy="472.0" r="3.5" class="dot k-proprietary" data-tip="qwen_s
+SummEval-validated judges: judge score 4.70 of 5 (rank 20 of 29)</title></circle><line x1="150" y1="472.0" x2="850" y2="419.5" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="150" cy="472.0" r="3.5" class="dot k-proprietary" data-tip="qwen_s
 coverage (primary): coverage 0.3068 (rank 25 of 29)
-validated LLM judges: judge score 4.61 of 5 (rank 22 of 29)"><title>qwen_s
+SummEval-validated judges: judge score 4.61 of 5 (rank 22 of 29)"><title>qwen_s
 coverage (primary): coverage 0.3068 (rank 25 of 29)
-validated LLM judges: judge score 4.61 of 5 (rank 22 of 29)</title></circle><circle cx="850" cy="419.5" r="3.5" class="dot k-proprietary" data-tip="qwen_s
+SummEval-validated judges: judge score 4.61 of 5 (rank 22 of 29)</title></circle><circle cx="850" cy="419.5" r="3.5" class="dot k-proprietary" data-tip="qwen_s
 coverage (primary): coverage 0.3068 (rank 25 of 29)
-validated LLM judges: judge score 4.61 of 5 (rank 22 of 29)"><title>qwen_s
+SummEval-validated judges: judge score 4.61 of 5 (rank 22 of 29)"><title>qwen_s
 coverage (primary): coverage 0.3068 (rank 25 of 29)
-validated LLM judges: judge score 4.61 of 5 (rank 22 of 29)</title></circle><line x1="150" y1="489.5" x2="850" y2="314.5" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="150" cy="489.5" r="3.5" class="dot k-proprietary" data-tip="mistral_m
+SummEval-validated judges: judge score 4.61 of 5 (rank 22 of 29)</title></circle><line x1="150" y1="489.5" x2="850" y2="314.5" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="150" cy="489.5" r="3.5" class="dot k-proprietary" data-tip="mistral_m
 coverage (primary): coverage 0.3043 (rank 26 of 29)
-validated LLM judges: judge score 4.71 of 5 (rank 16 of 29)"><title>mistral_m
+SummEval-validated judges: judge score 4.71 of 5 (rank 16 of 29)"><title>mistral_m
 coverage (primary): coverage 0.3043 (rank 26 of 29)
-validated LLM judges: judge score 4.71 of 5 (rank 16 of 29)</title></circle><circle cx="850" cy="314.5" r="3.5" class="dot k-proprietary" data-tip="mistral_m
+SummEval-validated judges: judge score 4.71 of 5 (rank 16 of 29)</title></circle><circle cx="850" cy="314.5" r="3.5" class="dot k-proprietary" data-tip="mistral_m
 coverage (primary): coverage 0.3043 (rank 26 of 29)
-validated LLM judges: judge score 4.71 of 5 (rank 16 of 29)"><title>mistral_m
+SummEval-validated judges: judge score 4.71 of 5 (rank 16 of 29)"><title>mistral_m
 coverage (primary): coverage 0.3043 (rank 26 of 29)
-validated LLM judges: judge score 4.71 of 5 (rank 16 of 29)</title></circle><line x1="150" y1="507.0" x2="850" y2="139.5" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="150" cy="507.0" r="3.5" class="dot k-proprietary" data-tip="qwen_m
+SummEval-validated judges: judge score 4.71 of 5 (rank 16 of 29)</title></circle><line x1="150" y1="507.0" x2="850" y2="139.5" class="s-proprietary" stroke-width="1.2" opacity="0.4"/><circle cx="150" cy="507.0" r="3.5" class="dot k-proprietary" data-tip="qwen_m
 coverage (primary): coverage 0.3030 (rank 27 of 29)
-validated LLM judges: judge score 4.88 of 5 (rank 6 of 29)"><title>qwen_m
+SummEval-validated judges: judge score 4.88 of 5 (rank 6 of 29)"><title>qwen_m
 coverage (primary): coverage 0.3030 (rank 27 of 29)
-validated LLM judges: judge score 4.88 of 5 (rank 6 of 29)</title></circle><circle cx="850" cy="139.5" r="3.5" class="dot k-proprietary" data-tip="qwen_m
+SummEval-validated judges: judge score 4.88 of 5 (rank 6 of 29)</title></circle><circle cx="850" cy="139.5" r="3.5" class="dot k-proprietary" data-tip="qwen_m
 coverage (primary): coverage 0.3030 (rank 27 of 29)
-validated LLM judges: judge score 4.88 of 5 (rank 6 of 29)"><title>qwen_m
+SummEval-validated judges: judge score 4.88 of 5 (rank 6 of 29)"><title>qwen_m
 coverage (primary): coverage 0.3030 (rank 27 of 29)
-validated LLM judges: judge score 4.88 of 5 (rank 6 of 29)</title></circle><line x1="150" y1="542.0" x2="850" y2="507.0" class="s-local" stroke-width="1.2" opacity="0.4"/><circle cx="150" cy="542.0" r="3.5" class="dot k-local" data-tip="bart_l_xsum
+SummEval-validated judges: judge score 4.88 of 5 (rank 6 of 29)</title></circle><line x1="150" y1="542.0" x2="850" y2="507.0" class="s-local" stroke-width="1.2" opacity="0.4"/><circle cx="150" cy="542.0" r="3.5" class="dot k-local" data-tip="bart_l_xsum
 coverage (primary): coverage 0.2071 (rank 29 of 29)
-validated LLM judges: judge score 3.52 of 5 (rank 27 of 29)"><title>bart_l_xsum
+SummEval-validated judges: judge score 3.52 of 5 (rank 27 of 29)"><title>bart_l_xsum
 coverage (primary): coverage 0.2071 (rank 29 of 29)
-validated LLM judges: judge score 3.52 of 5 (rank 27 of 29)</title></circle><circle cx="850" cy="507.0" r="3.5" class="dot k-local" data-tip="bart_l_xsum
+SummEval-validated judges: judge score 3.52 of 5 (rank 27 of 29)</title></circle><circle cx="850" cy="507.0" r="3.5" class="dot k-local" data-tip="bart_l_xsum
 coverage (primary): coverage 0.2071 (rank 29 of 29)
-validated LLM judges: judge score 3.52 of 5 (rank 27 of 29)"><title>bart_l_xsum
+SummEval-validated judges: judge score 3.52 of 5 (rank 27 of 29)"><title>bart_l_xsum
 coverage (primary): coverage 0.2071 (rank 29 of 29)
-validated LLM judges: judge score 3.52 of 5 (rank 27 of 29)</title></circle><line x1="150" y1="52.0" x2="850" y2="472.0" class="s-local" stroke-width="3.5" opacity="1"/><circle cx="150" cy="52.0" r="5.5" class="dot k-local" data-tip="bart_l
+SummEval-validated judges: judge score 3.52 of 5 (rank 27 of 29)</title></circle><line x1="150" y1="52.0" x2="850" y2="472.0" class="s-local" stroke-width="3.5" opacity="1"/><circle cx="150" cy="52.0" r="5.5" class="dot k-local" data-tip="bart_l
 coverage (primary): coverage 0.3461 (rank 1 of 29)
-validated LLM judges: judge score 3.87 of 5 (rank 25 of 29)"><title>bart_l
+SummEval-validated judges: judge score 3.87 of 5 (rank 25 of 29)"><title>bart_l
 coverage (primary): coverage 0.3461 (rank 1 of 29)
-validated LLM judges: judge score 3.87 of 5 (rank 25 of 29)</title></circle><circle cx="850" cy="472.0" r="5.5" class="dot k-local" data-tip="bart_l
+SummEval-validated judges: judge score 3.87 of 5 (rank 25 of 29)</title></circle><circle cx="850" cy="472.0" r="5.5" class="dot k-local" data-tip="bart_l
 coverage (primary): coverage 0.3461 (rank 1 of 29)
-validated LLM judges: judge score 3.87 of 5 (rank 25 of 29)"><title>bart_l
+SummEval-validated judges: judge score 3.87 of 5 (rank 25 of 29)"><title>bart_l
 coverage (primary): coverage 0.3461 (rank 1 of 29)
-validated LLM judges: judge score 3.87 of 5 (rank 25 of 29)</title></circle><line x1="150" y1="69.5" x2="850" y2="104.5" class="s-open" stroke-width="3.5" opacity="1"/><circle cx="150" cy="69.5" r="5.5" class="dot k-open" data-tip="deepseek_m
+SummEval-validated judges: judge score 3.87 of 5 (rank 25 of 29)</title></circle><line x1="150" y1="69.5" x2="850" y2="104.5" class="s-open" stroke-width="3.5" opacity="1"/><circle cx="150" cy="69.5" r="5.5" class="dot k-open" data-tip="deepseek_m
 coverage (primary): coverage 0.3460 (rank 2 of 29)
-validated LLM judges: judge score 4.92 of 5 (rank 4 of 29)"><title>deepseek_m
+SummEval-validated judges: judge score 4.92 of 5 (rank 4 of 29)"><title>deepseek_m
 coverage (primary): coverage 0.3460 (rank 2 of 29)
-validated LLM judges: judge score 4.92 of 5 (rank 4 of 29)</title></circle><circle cx="850" cy="104.5" r="5.5" class="dot k-open" data-tip="deepseek_m
+SummEval-validated judges: judge score 4.92 of 5 (rank 4 of 29)</title></circle><circle cx="850" cy="104.5" r="5.5" class="dot k-open" data-tip="deepseek_m
 coverage (primary): coverage 0.3460 (rank 2 of 29)
-validated LLM judges: judge score 4.92 of 5 (rank 4 of 29)"><title>deepseek_m
+SummEval-validated judges: judge score 4.92 of 5 (rank 4 of 29)"><title>deepseek_m
 coverage (primary): coverage 0.3460 (rank 2 of 29)
-validated LLM judges: judge score 4.92 of 5 (rank 4 of 29)</title></circle><line x1="150" y1="349.5" x2="850" y2="52.0" class="s-proprietary" stroke-width="3.5" opacity="1"/><circle cx="150" cy="349.5" r="5.5" class="dot k-proprietary" data-tip="anthropic_l
+SummEval-validated judges: judge score 4.92 of 5 (rank 4 of 29)</title></circle><line x1="150" y1="349.5" x2="850" y2="52.0" class="s-proprietary" stroke-width="3.5" opacity="1"/><circle cx="150" cy="349.5" r="5.5" class="dot k-proprietary" data-tip="anthropic_l
 coverage (primary): coverage 0.3155 (rank 18 of 29)
-validated LLM judges: judge score 4.98 of 5 (rank 1 of 29)"><title>anthropic_l
+SummEval-validated judges: judge score 4.98 of 5 (rank 1 of 29)"><title>anthropic_l
 coverage (primary): coverage 0.3155 (rank 18 of 29)
-validated LLM judges: judge score 4.98 of 5 (rank 1 of 29)</title></circle><circle cx="850" cy="52.0" r="5.5" class="dot k-proprietary" data-tip="anthropic_l
+SummEval-validated judges: judge score 4.98 of 5 (rank 1 of 29)</title></circle><circle cx="850" cy="52.0" r="5.5" class="dot k-proprietary" data-tip="anthropic_l
 coverage (primary): coverage 0.3155 (rank 18 of 29)
-validated LLM judges: judge score 4.98 of 5 (rank 1 of 29)"><title>anthropic_l
+SummEval-validated judges: judge score 4.98 of 5 (rank 1 of 29)"><title>anthropic_l
 coverage (primary): coverage 0.3155 (rank 18 of 29)
-validated LLM judges: judge score 4.98 of 5 (rank 1 of 29)</title></circle><line x1="150" y1="524.5" x2="850" y2="524.5" class="s-baseline" stroke-width="3.5" opacity="1"/><circle cx="150" cy="524.5" r="5.5" class="dot k-baseline" data-tip="lead3
+SummEval-validated judges: judge score 4.98 of 5 (rank 1 of 29)</title></circle><line x1="150" y1="524.5" x2="850" y2="524.5" class="s-baseline" stroke-width="3.5" opacity="1"/><circle cx="150" cy="524.5" r="5.5" class="dot k-baseline" data-tip="lead3
 coverage (primary): coverage 0.2718 (rank 28 of 29)
-validated LLM judges: judge score 3.42 of 5 (rank 28 of 29)"><title>lead3
+SummEval-validated judges: judge score 3.42 of 5 (rank 28 of 29)"><title>lead3
 coverage (primary): coverage 0.2718 (rank 28 of 29)
-validated LLM judges: judge score 3.42 of 5 (rank 28 of 29)</title></circle><circle cx="850" cy="524.5" r="5.5" class="dot k-baseline" data-tip="lead3
+SummEval-validated judges: judge score 3.42 of 5 (rank 28 of 29)</title></circle><circle cx="850" cy="524.5" r="5.5" class="dot k-baseline" data-tip="lead3
 coverage (primary): coverage 0.2718 (rank 28 of 29)
-validated LLM judges: judge score 3.42 of 5 (rank 28 of 29)"><title>lead3
+SummEval-validated judges: judge score 3.42 of 5 (rank 28 of 29)"><title>lead3
 coverage (primary): coverage 0.2718 (rank 28 of 29)
-validated LLM judges: judge score 3.42 of 5 (rank 28 of 29)</title></circle><text x="138" y="57.0" text-anchor="end" class="t-ink" font-size="14">bart_l · 1</text><text x="862" y="477.0" class="t-ink" font-size="14">25 · bart_l</text><text x="138" y="75.0" text-anchor="end" class="t-ink" font-size="14">deepseek_m · 2</text><text x="862" y="109.5" class="t-ink" font-size="14">4 · deepseek_m</text><text x="138" y="354.5" text-anchor="end" class="t-ink" font-size="14">anthropic_l · 18</text><text x="862" y="57.0" class="t-ink" font-size="14">1 · anthropic_l</text><text x="138" y="529.5" text-anchor="end" class="t-ink" font-size="14">lead3 · 28</text><text x="862" y="529.5" class="t-ink" font-size="14">28 · lead3</text></svg></div><div class="vn"><svg viewBox="0 0 400 520" role="img" aria-label="coverage rank against judges rank"><text x="128" y="22" text-anchor="middle" class="t-muted" font-size="14">coverage</text><text x="264" y="22" text-anchor="middle" class="t-muted" font-size="14">judges</text><text x="128" y="40" text-anchor="middle" class="t-muted" font-size="11">rank 1 at the top</text><text x="264" y="40" text-anchor="middle" class="t-muted" font-size="11">rank 1 at the top</text><line x1="128" x2="128" y1="46" y2="508" class="axis"/><line x1="264" x2="264" y1="46" y2="508" class="axis"/><line x1="128" y1="84.1" x2="264" y2="341.3" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="84.1" r="3.5" class="dot k-open" data-tip="llama_l
+SummEval-validated judges: judge score 3.42 of 5 (rank 28 of 29)</title></circle><text x="138" y="57.0" text-anchor="end" class="t-ink" font-size="14">bart_l · 1</text><text x="862" y="477.0" class="t-ink" font-size="14">25 · bart_l</text><text x="138" y="75.0" text-anchor="end" class="t-ink" font-size="14">deepseek_m · 2</text><text x="862" y="109.5" class="t-ink" font-size="14">4 · deepseek_m</text><text x="138" y="354.5" text-anchor="end" class="t-ink" font-size="14">anthropic_l · 18</text><text x="862" y="57.0" class="t-ink" font-size="14">1 · anthropic_l</text><text x="138" y="529.5" text-anchor="end" class="t-ink" font-size="14">lead3 · 28</text><text x="862" y="529.5" class="t-ink" font-size="14">28 · lead3</text></svg></div><div class="vn"><svg viewBox="0 0 400 520" role="img" aria-label="coverage rank against judges rank"><text x="128" y="22" text-anchor="middle" class="t-muted" font-size="14">coverage</text><text x="264" y="22" text-anchor="middle" class="t-muted" font-size="14">judges</text><text x="128" y="40" text-anchor="middle" class="t-muted" font-size="11">rank 1 at the top</text><text x="264" y="40" text-anchor="middle" class="t-muted" font-size="11">rank 1 at the top</text><line x1="128" x2="128" y1="46" y2="508" class="axis"/><line x1="264" x2="264" y1="46" y2="508" class="axis"/><line x1="128" y1="84.1" x2="264" y2="341.3" class="s-open" stroke-width="1.2" opacity="0.4"/><circle cx="128" cy="84.1" r="3.5" class="dot k-open" data-tip="llama_l
 coverage: coverage 0.3387 (rank 3 of 29)
 judges: judge score 4.70 of 5 (rank 19 of 29)"><title>llama_l
 coverage: coverage 0.3387 (rank 3 of 29)
@@ -529,7 +529,7 @@ judges: judge score 4.98 of 5 (rank 1 of 29)</title></circle><text x="116" y="57
   <h2>14 to 6 the other way.</h2>
   <ol class="findings">
     <li><div><h3>The one blind human check went the other way.</h3><p>One reader, the author and not an expert, compared 20 pairs of <code>bart_l</code> and <code>deepseek_m</code> summaries blind and preferred <code>bart_l</code> 14 to 6 (sign test p = 0.115: a split at least this lopsided would turn up that often from coin flips, so not significant). The judges preferred <code>deepseek_m</code> on all 20. Scored one summary at a time instead of in lists (unvalidated), they still rated <code>deepseek_m</code> higher on 192 of 200 articles and never lower. Two limits on the check itself: the reader saw only the first 170-220 words of each article, which can favour a summary that stays close to the lead; and the judged leader, <code>anthropic_l</code>, was not in it.</p></div></li>
-    <li><div><h3>On three published 2022 systems, the judges agree with annotators about as well as annotators agree with each other.</h3><p>On three other systems, the GPT-3, BART-based BRIO and T0 summaries of Goyal, Li & Durrett (2022, CC BY 4.0; 100 CNN articles, three annotators each), the judges agree with people about as well as people agree with each other: picking the best of the three, against one annotator they score 0.498 (gemma_l) and 0.526 (qwen_s), annotators against each other 0.454, chance 0.333. On the same articles they prefer the GPT-3 summary to BRIO's more often than the annotators do (72.7% and 77.0% against 63.6% and 63.2%; each rate's 95% interval is computed on its own, not as a paired test, and the intervals overlap for both judges). So they lean towards the LLM summary, within noise, in one comparison. The reader above was asked a different question, which summary is better overall; the judges score four dimensions.</p></div></li>
+    <li><div><h3>A published check, on three 2022 systems.</h3><p>On three other systems, the GPT-3, BART-based BRIO and T0 summaries of Goyal, Li & Durrett (2022, CC BY 4.0; 100 CNN articles, three annotators each), the judges agree with people about as well as people agree with each other: picking the best of the three, against one annotator they score 0.498 (gemma_l) and 0.526 (qwen_s), annotators against each other 0.454, chance 0.333. On the same articles they prefer the GPT-3 summary to BRIO's more often than the annotators do (72.7% and 77.0% against 63.6% and 63.2%; each rate's 95% interval is computed on its own, not as a paired test, and the intervals overlap for both judges). So they lean towards the LLM summary, within noise, in one comparison. The reader above was asked a different question, which summary is better overall; the judges score four dimensions.</p></div></li>
     <li><div><h3>So neither instrument is confirmed, and coverage stays primary.</h3><p>The judges' ranking is directional at most. The one check against it is one reader on truncated articles, also not conclusive. Possible reasons the two differ, none tested here: the judges were validated on 2019 summaries and checked on 2022 ones (§05), never on these arms; the truncated articles can favour a summary that copies the lead; one reader is a small sample. Two judges agreeing with each other is not two judges agreeing with people.</p></div></li>
   </ol>
 </div></section>
@@ -1014,7 +1014,7 @@ frontier judges: judge score 4.85 of 5 (rank 2 of 29)</title></circle><text x="1
   <div class="prose">
     <p>SummEval's summaries are from 2019. <a href="https://aclanthology.org/2024.tacl-1.3/">Zhang et al. (2024)</a> released crowd ratings of 19 summarisers on 100 CNN/DailyMail articles: GPT-3-era LLMs, base and instruction-tuned; the fine-tunes BRIO and Pegasus; and the reference highlights, three ratings each. All four judges scored them. Each is measured against the mean of two ratings with the third held out, and so is one rater against the other two; the ratings themselves are not stored here, only the judges' scores. Agreement is Kendall τ per article: 1 when an instrument orders the summaries as the raters do, 0 when it is unrelated, −1 when reversed.</p>
     <p>Every judge agrees with the raters' consensus better than one rater does, ahead on 72–80 of the articles, and better than <code>coverage</code>, ahead on 88–94; every comparison p &lt; 0.001. The cheap pair does as well as the frontier pair, for $0.11 against $4.35. On faithfulness alone they trail one rater (0.48–0.61 against 0.64).</p>
-    <p>And on the question this page keeps returning to: the raters rank BRIO, a BART-based fine-tune, 5th of 19, after four instruction-tuned LLMs; the judges rank it 1st or 2nd (Spearman 0.71–0.79 between the judges' and the raters' rankings of the systems; 1 is the same order). So these judges show no blanket preference for LLM-written summaries over a BART-style one. They deviate from the raters system by system in both directions: the raters rank the reference highlights 16th, the judges 3rd to 6th.</p>
+    <p>And on the question this page keeps returning to: ranking the systems by mean coherence and relevance, the raters put BRIO, a BART-based fine-tune, 5th of 19, after four instruction-tuned LLMs; the judges rank it 1st or 2nd (Spearman 0.71–0.79 between the judges' and the raters' rankings of the systems; 1 is the same order). So these judges show no blanket preference for LLM-written summaries over a BART-style one. They deviate from the raters system by system in both directions: the raters rank the reference highlights 16th, the judges 3rd to 6th.</p>
     <p>The limits. One crowd rating is a noisy baseline, and these τ are against crowd raters on another set, so they do not compare with SummEval's experts. The 19 systems span a wide range of quality, which makes a high Spearman easier. The articles and ratings have been public since 2023, so a judge may have seen them. And these are 2022's systems, not this experiment's arms: this is evidence about the judges, not a check of the ranking in §02.</p>
   </div>
   <figure class="chart" style="margin-top:32px;max-width:900px"><div class="vw"><svg viewBox="0 0 1000 314" role="img" aria-label="Agreement with expert judgements, by instrument"><line x1="300.0" x2="300.0" y1="10" y2="292" class="axis" opacity="0.5"/><text x="300.0" y="310" text-anchor="middle" class="t-muted" font-size="12">0.0</text><line x1="503.3" x2="503.3" y1="10" y2="292" class="axis" opacity="0.5"/><text x="503.3" y="310" text-anchor="middle" class="t-muted" font-size="12">0.2</text><line x1="706.7" x2="706.7" y1="10" y2="292" class="axis" opacity="0.5"/><text x="706.7" y="310" text-anchor="middle" class="t-muted" font-size="12">0.4</text><line x1="910.0" x2="910.0" y1="10" y2="292" class="axis" opacity="0.5"/><text x="910.0" y="310" text-anchor="middle" class="t-muted" font-size="12">0.6</text><text x="288" y="31.0" text-anchor="end" class="t-ink" font-size="14">coverage</text><text x="288" y="47.0" text-anchor="end" class="t-muted" font-size="11">vs the reference highlights</text><rect x="300" y="18" width="331.5" height="22" rx="3" class="k-baseline"/><text x="639.5" y="34.0" class="t-ink" font-size="14">0.33</text><text x="288" y="71.0" text-anchor="end" class="t-ink" font-size="14">ROUGE-1</text><text x="288" y="87.0" text-anchor="end" class="t-muted" font-size="11">vs the reference highlights</text><rect x="300" y="58" width="343.5" height="22" rx="3" class="k-baseline"/><text x="651.5" y="74.0" class="t-ink" font-size="14">0.34</text><text x="288" y="111.0" text-anchor="end" class="t-ink" font-size="14">one rater</text><text x="288" y="127.0" text-anchor="end" class="t-muted" font-size="11">vs the other two</text><rect x="300" y="98" width="390.0" height="22" rx="3" class="k-baseline"/><text x="698.0" y="114.0" class="t-ink" font-size="14">0.38</text><text x="288" y="151.0" text-anchor="end" class="t-ink" font-size="14">qwen_s</text><text x="288" y="167.0" text-anchor="end" class="t-muted" font-size="11">LLM judge</text><rect x="300" y="138" width="486.6" height="22" rx="3" class="k-proprietary"/><text x="794.6" y="154.0" class="t-ink" font-size="14">0.48</text><text x="288" y="191.0" text-anchor="end" class="t-ink" font-size="14">gemma_l</text><text x="288" y="207.0" text-anchor="end" class="t-muted" font-size="11">LLM judge</text><rect x="300" y="178" width="504.5" height="22" rx="3" class="k-open"/><text x="812.5" y="194.0" class="t-ink" font-size="14">0.50</text><text x="288" y="231.0" text-anchor="end" class="t-ink" font-size="14">openai_l</text><text x="288" y="247.0" text-anchor="end" class="t-muted" font-size="11">LLM judge</text><rect x="300" y="218" width="464.2" height="22" rx="3" class="k-proprietary"/><text x="772.2" y="234.0" class="t-ink" font-size="14">0.46</text><text x="288" y="271.0" text-anchor="end" class="t-ink" font-size="14">anthropic_l</text><text x="288" y="287.0" text-anchor="end" class="t-muted" font-size="11">LLM judge</text><rect x="300" y="258" width="490.8" height="22" rx="3" class="k-proprietary"/><text x="798.8" y="274.0" class="t-ink" font-size="14">0.48</text></svg></div><div class="vn"><svg viewBox="0 0 400 356" role="img" aria-label="Agreement with expert judgements, by instrument"><line x1="150.0" x2="150.0" y1="10" y2="334" class="axis" opacity="0.5"/><text x="150.0" y="352" text-anchor="middle" class="t-muted" font-size="12">0.0</text><line x1="213.3" x2="213.3" y1="10" y2="334" class="axis" opacity="0.5"/><text x="213.3" y="352" text-anchor="middle" class="t-muted" font-size="12">0.2</text><line x1="276.7" x2="276.7" y1="10" y2="334" class="axis" opacity="0.5"/><text x="276.7" y="352" text-anchor="middle" class="t-muted" font-size="12">0.4</text><line x1="340.0" x2="340.0" y1="10" y2="334" class="axis" opacity="0.5"/><text x="340.0" y="352" text-anchor="middle" class="t-muted" font-size="12">0.6</text><text x="138" y="34.0" text-anchor="end" class="t-ink" font-size="14">coverage</text><rect x="150" y="18" width="103.3" height="28" rx="3" class="k-baseline"/><text x="261.3" y="37.0" class="t-ink" font-size="14">0.33</text><text x="138" y="80.0" text-anchor="end" class="t-ink" font-size="14">ROUGE-1</text><rect x="150" y="64" width="107.0" height="28" rx="3" class="k-baseline"/><text x="265.0" y="83.0" class="t-ink" font-size="14">0.34</text><text x="138" y="126.0" text-anchor="end" class="t-ink" font-size="14">one rater</text><rect x="150" y="110" width="121.5" height="28" rx="3" class="k-baseline"/><text x="279.5" y="129.0" class="t-ink" font-size="14">0.38</text><text x="138" y="172.0" text-anchor="end" class="t-ink" font-size="14">qwen_s</text><rect x="150" y="156" width="151.6" height="28" rx="3" class="k-proprietary"/><text x="309.6" y="175.0" class="t-ink" font-size="14">0.48</text><text x="138" y="218.0" text-anchor="end" class="t-ink" font-size="14">gemma_l</text><rect x="150" y="202" width="157.1" height="28" rx="3" class="k-open"/><text x="315.1" y="221.0" class="t-ink" font-size="14">0.50</text><text x="138" y="264.0" text-anchor="end" class="t-ink" font-size="14">openai_l</text><rect x="150" y="248" width="144.6" height="28" rx="3" class="k-proprietary"/><text x="302.6" y="267.0" class="t-ink" font-size="14">0.46</text><text x="138" y="310.0" text-anchor="end" class="t-ink" font-size="14">anthropic_l</text><rect x="150" y="294" width="152.9" height="28" rx="3" class="k-proprietary"/><text x="310.9" y="313.0" class="t-ink" font-size="14">0.48</text></svg></div><figcaption>Mean Kendall τ per article against the mean of two crowd ratings, over coherence, relevance and faithfulness, on the 18 non-reference summaries.</figcaption></figure>
@@ -1518,13 +1518,13 @@ adjudicated: accuracy 0.9850 (rank 1 of 30)</title></circle><text x="116" y="57.
     <p><strong>AG News and DBpedia</strong> keep the dataset's gold: anyone can repeat it, and the adjudication is one reader's, made while seeing the hosted answer. <strong>Summarisation</strong> keeps coverage: the judges' ranking has not been confirmed by people on these summaries, and the one check that exists went the other way.</p>
     <p>It matters, in both directions. On the primary metrics a free model is first, or not separable from first, in 5 of the 6 experiments, and the dearest model is first in none. Taken at face value, the two re-measurements would make that 3 of 6, and put the dearest model, <code>anthropic_l</code>, first in 2 of 6: in AG News and summarisation it is first on the point estimate of both re-measured rankings, though unseparated from most of the field in AG News; DBpedia's top stays a crowd. One of them rests on one reader who saw the hosted answer, the other on a ranking one reader's check went against. That is how much a measurement decision can move a headline, and why the decision is recorded rather than made by whichever number came last.</p>
   </div>
-  <div class="note"><b>What would settle it.</b> Not a larger, dearer judge: that was tried (§04). Judges checked on human ratings of LLM-written summaries: that was done too (§05); they track people better than one rater does, and still deviate from them system by system in both directions. What is left is people on this experiment's own outputs: several readers comparing full articles, not one reader on truncated ones. That is a re-measurement of the same frozen outputs.</div></div>
+  <div class="note"><b>What would settle it.</b> Not a larger, dearer judge: that was tried (§04). Judges checked on human ratings of LLM-written summaries: that was done too (§05); they track people better than one rater does on coherence and relevance, trail on faithfulness, and deviate from them system by system in both directions. What is left is people on this experiment's own outputs: several readers comparing full articles, not one reader on truncated ones. That is a re-measurement of the same frozen outputs.</div></div>
 </div></section>
 
 <section class="block" id="checklist"><div class="wrap">
   <div class="eyebrow"><span class="num">08</span>Judging, done right</div>
   <h2>Five rules the harness enforces, or asks you to.</h2>
-  <ol class="findings"><li><div><h3>Validate it against people, on outputs like yours.</h3><p>The gate refuses a judge with no committed validation run, and one below the scorer&#x27;s floor if the scorer sets one (set it to the best free scorer&#x27;s score on the same human ratings). What it cannot check is whether those ratings look like your outputs. Here the first validation was on 2019 summaries; a second, on crowd ratings of LLM-era summaries (§05), agrees with it, and neither is this experiment&#x27;s own outputs.</p></div></li><li><div><h3>Use two judges from different vendors, blind.</h3><p>Each judge is reported, and how far they agree. Arm names are hidden and the order is shuffled per article, so a preference for a name is impossible and a preference for a slot is spread across the arms instead of following one. Arms from a judge&#x27;s own vendor family are flagged: gemma_l rated them +0.18 against the others; qwen_s rated them +0.30 against the others, a raw gap, not a bias estimate, since families differ in real quality.</p></div></li><li><div><h3>Measure the judge&#x27;s own noise and position bias.</h3><p>A second shuffle and a repeat on a subset. Here the reshuffle moved per-article scores by 0.11–0.21 and a repeat by 0.03–0.12. Those are per-article numbers; whether a gap between two arms&#x27; means is real is what the paired tests answer, run on the judged scores like any other.</p></div></li><li><div><h3>Keep every verdict.</h3><p>Each raw reply is stored, so the pass resumes, costs $0 to re-read, and anyone can check what the judge said.</p></div></li><li><div><h3>Read some yourself before you trust the ranking.</h3><p>Agreement between two judges is not agreement with people. Reading 20 pairs is what produced the disagreement here; the primary metric changes only after a check like that agrees, and a check worth that weight needs more than one reader.</p></div></li></ol>
+  <ol class="findings"><li><div><h3>Validate it against people, on outputs like yours.</h3><p>The gate refuses a judge with no committed validation run, and one below the scorer&#x27;s floor if the scorer sets one (set it to the best free scorer&#x27;s score on the same human ratings). What it cannot check is whether those ratings look like your outputs. Here the first validation was on 2019 summaries; a second, on crowd ratings of LLM-era summaries (§05), agrees with it, and neither is this experiment&#x27;s own outputs.</p></div></li><li><div><h3>Use two judges from different vendors, blind.</h3><p>Each judge is reported, and how far they agree. Arm names are hidden and the order is shuffled per article, so a preference for a name is impossible and a preference for a slot is spread across the arms instead of following one. Arms from a judge&#x27;s own vendor family are flagged: gemma_l rated them +0.18 against the others; qwen_s rated them +0.30 against the others, a raw gap, not a bias estimate, since families differ in real quality.</p></div></li><li><div><h3>Measure the judge&#x27;s own noise and position bias.</h3><p>A second shuffle and a repeat on a subset. Here the reshuffle moved per-article scores by 0.11–0.21 and a repeat by 0.03–0.12. Those are per-article numbers; whether a gap between two arms&#x27; means is real is what the paired tests answer, run on the judged scores like any other.</p></div></li><li><div><h3>Keep every verdict.</h3><p>Each reply is stored with its scores, so the pass resumes, costs $0 to re-read, and anyone can check what the judge said. A reply that is not bare JSON scores, which can carry the source&#x27;s text, is kept only as its hash.</p></div></li><li><div><h3>Read some yourself before you trust the ranking.</h3><p>Agreement between two judges is not agreement with people. Reading 20 pairs is what produced the disagreement here; the primary metric changes only after a check like that agrees, and a check worth that weight needs more than one reader.</p></div></li></ol>
 </div></section>
 
 <section class="block" id="yours"><div class="wrap">

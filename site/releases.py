@@ -16,7 +16,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 CHANGELOG = ROOT / "harness" / "CHANGELOG.md"
-_RELEASE = re.compile(r"^##\s+(\d+\.\d+\.\d+)(?:\s+—\s+(\d{4}-\d{2}-\d{2}))?\s*$")
+_RELEASE = re.compile(r"^##\s+(\d+\.\d+\.\d+)(?:\s+—\s+(\d{4}-\d{2}-\d{2}|unreleased))?\s*$")
 
 
 def _inline(H, text: str, blob: str) -> str:
@@ -42,9 +42,9 @@ def releases(text: str) -> list:
         if line.startswith("## ") and not m:
             # A release written another way ('-' for the em dash, 'v0.3.0') would otherwise be
             # read into the release above it.
-            raise SystemExit(f"harness/CHANGELOG.md: {line!r} is not '## X.Y.Z' or '## X.Y.Z — YYYY-MM-DD'")
+            raise SystemExit(f"harness/CHANGELOG.md: {line!r} is not '## X.Y.Z', '## X.Y.Z — unreleased' or '## X.Y.Z — YYYY-MM-DD'")
         if m:
-            cur = {"version": m.group(1), "date": m.group(2), "blocks": []}
+            cur = {"version": m.group(1), "date": None if m.group(2) in (None, "unreleased") else m.group(2), "blocks": []}
             out.append(cur)
             para, item = [], None
             continue

@@ -1352,7 +1352,7 @@ check("summarisation, Zhang et al.: judges trail one rater on faithfulness, 0.48
       "and lead on coherence and relevance",
       (round(min(_faith), 2), round(max(_faith), 2)) == (0.48, 0.61) and round(_h18["faithfulness"], 2) == 0.64
       and all(r["non_reference_18"][d] > _h18[d] for r in _zj.values() for d in ("coherence", "relevance"))
-      and "faithfulness (0.48–0.61 against 0.64)" in _VZ,
+      and "faithfulness (0.48–0.61 against 0.64;" in _VZ,
       f"derived faithfulness {_faith}, one rater {_h18['faithfulness']}")
 _rk = next(iter(_zr.values()))["raters"]
 _top4 = sorted(_rk, key=_rk.get)[:4]

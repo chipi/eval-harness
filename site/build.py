@@ -1110,7 +1110,7 @@ REMEASURED_NOTE = {
                "fine-tune, so the fine-tune pick holds only if your labels follow AG News's filing "
                "convention.",
     "dbpedia": "Three disputed labels were corrected; the top stays a crowd and the pick stands.",
-    "summarization": "Validated LLM judges, cheap and frontier, rank every hosted LLM above every BART "
+    "summarization": "SummEval-validated LLM judges, cheap and frontier, rank every hosted LLM above every BART "
                      "model; one reader's check went the other way. Neither is confirmed.",
 }
 
@@ -1129,7 +1129,7 @@ def remeasured_block(x: dict, f: dict, num: int) -> str:
     if x["slug"] == "summarization":
         a = {z["arm"]: z for z in r["summ"]["arms"]}
         hc, hc2 = r["summ"]["fig"]["human_check"], r["summ_v2"]["fig"]["human_check"]
-        head = "Re-measured by validated LLM judges, and checked by a person."
+        head = "Re-measured by SummEval-validated LLM judges, and checked by a person."
         text = (f"Scored again by two LLM judges validated on SummEval, every hosted LLM ranks above "
                 f"every BART model: bart_l falls from {ordinal(a['bart_l']['r1'])} to "
                 f"{ordinal(a['bart_l']['r2'])} of {r['summ']['n_arms']} (the hosted scores bunch near the "
@@ -1140,7 +1140,8 @@ def remeasured_block(x: dict, f: dict, num: int) -> str:
                 f"{times(r['summ_v2']['billed_usd'] / r['summ']['billed_usd'])} the price agreed with the first pair, "
                 f"{hc2['judge_prefers_deepseek_m']} to {hc2['judge_prefers_bart_l']} on the same "
                 "pairs. On crowd ratings of 2022 LLM summaries the judges track people better than one, "
-                "noisy, rater does, while still ranking systems differently in both directions; on these "
+                "noisy, rater does on coherence and relevance (not on faithfulness), while still ranking "
+                "systems differently in both directions; on these "
                 "outputs neither is confirmed, so coverage stays the primary metric.")
     elif x["slug"] in ("ag-news", "dbpedia"):
         d = r["ag" if x["slug"] == "ag-news" else "db"]
@@ -1168,9 +1169,10 @@ def remeasured_block(x: dict, f: dict, num: int) -> str:
         text = (f"Two of these judges, gemma_l (τ {se['gemma_l']:.2f}) and qwen_s ({se['qwen_s']:.2f}), "
                 "re-measured the summarisation experiment's summaries, where its own metric agrees with "
                 f"the experts at τ {se['coverage']:.2f}. They re-ranked the field; one reader's blind check "
-                "of 20 pairs went the other way, not significantly. On crowd ratings of 2022 LLM summaries "
-                "(Zhang et al.) the same judges track people better than one rater does, though not system "
-                "by system; on the summarisation experiment's own outputs neither is confirmed.")
+                f"of {r['summ']['fig']['human_check']['pairs']} pairs went the other way, not significantly. "
+                "On crowd ratings of 2022 LLM summaries (Zhang et al.) the same judges track people better "
+                "than one rater does on coherence and relevance, trail on faithfulness, and do not rank the "
+                "systems the same way; on the summarisation experiment's own outputs neither is confirmed.")
     if not head:
         return ""
     return (f'<section class="block" id="remeasured"><div class="wrap"><div class="eyebrow">'

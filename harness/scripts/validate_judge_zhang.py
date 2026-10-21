@@ -26,9 +26,10 @@ raters do:
 The ratings are downloaded to data/external/zhang2023/ (gitignored; the file's sha256 is
 pinned) and never committed: the stored records under
 data/judge-validation/<scorer>/zhang2023-cnndm/<judge>/ hold article ids, block orders, the
-judge's reply and scores, and hashes. A reply that repeats 8 consecutive words of the article
-or a summary is not stored, only its hash. report.json holds the aggregates. CI has no
-ratings, so there report.json is checked only against its records' call count and bill;
+judge's reply and scores, and hashes. A reply that is not bare JSON scores, or repeats 8
+consecutive words of the article or a summary, is not stored, only its hash. report.json holds the
+aggregates and a hash of the records. CI has no ratings, so there report.json is checked only
+against its records (their hash, count, bill, unparsed and withheld) and the scorer's hash;
 rebuild it with --no-calls before a release (harness/docs/RELEASING.md).
 """
 
@@ -52,7 +53,9 @@ sys.path.insert(0, str(HERE))
 import judge_score as js  # noqa: E402
 from _common import die, write_text_atomic  # noqa: E402
 from _retry import call_with_retries  # noqa: E402
-from judging import DIMS, kendall_tau_b  # noqa: E402
+from judging import (  # noqa: E402,F401
+    DIMS, SHINGLE, kendall_tau_b, quotes_source, shingles, spearman, withheld_reason,
+)
 
 DATA = HERE.parent / "data"
 EXT = DATA / "external" / "zhang2023"
@@ -63,7 +66,6 @@ URL = f"https://raw.githubusercontent.com/Tiiiger/benchmark_llm_summarization/{C
 REFERENCE = "reference"
 #: Human dimension -> the judge dimension that orders the same property.
 PAIRS = (("coherence", "coherence"), ("relevance", "relevance"), ("faithfulness", "consistency"))
-SHINGLE = 8
 
 
 def _sha(b: bytes) -> str:
@@ -135,28 +137,16 @@ def parse_dims(output: str, n: int) -> Optional[Dict[str, List[float]]]:
         v = obj.get(d)
         if not isinstance(v, list) or len(v) != n:
             return None
-        try:
-            f = [float(x) for x in v]
-        except (TypeError, ValueError):
+        # Numbers only, as judging.parse_block: `true` and "4" are not scores.
+        if any(isinstance(x, bool) or not isinstance(x, (int, float)) for x in v):
             return None
+        f = [float(x) for x in v]
         if any(not (1.0 <= x <= 5.0) for x in f):
             return None
         out[d] = f
     return out
 
 
-def shingles(texts: Sequence[str]) -> set:
-    out = set()
-    for t in texts:
-        w = t.lower().split()
-        out.update(" ".join(w[i:i + SHINGLE]) for i in range(len(w) - SHINGLE + 1))
-    return out
-
-
-def quotes_source(output: str, source: set) -> bool:
-    """Whether a reply repeats any 8 consecutive words of the article or a summary."""
-    w = (output or "").lower().split()
-    return any(" ".join(w[i:i + SHINGLE]) in source for i in range(len(w) - SHINGLE + 1))
 
 
 def _tau(a: Sequence[float], b: Sequence[float]) -> Optional[float]:
@@ -262,15 +252,17 @@ def system_means(data: Dict[str, dict], systems: Sequence[str], scores: Dict[str
     def ranks(means: dict, a: str, b: str) -> Dict[str, int]:
         o = sorted(means, key=lambda m: (-(means[m][a] + means[m][b]), m))
         return {m: i + 1 for i, m in enumerate(o)}
+    def key(means: dict) -> List[float]:
+        return [means[m]["coherence"] + means[m]["relevance"] for m in systems]
     hr = ranks(hum, "coherence", "relevance")
-    n = len(systems)
-    ranking = {"raters": hr, "judges": {}, "spearman_vs_raters": {}}
+    ranking = {"basis": "the mean of coherence and relevance (faithfulness, 0/1, is not in it)",
+               "raters": hr, "judges": {}, "spearman_vs_raters": {}}
     for jid, s in judges.items():
-        jr = ranks(s, "coherence", "relevance")
-        same = hr if len(scores[jid]) == len(data) else ranks(rater_means(scores[jid]), "coherence", "relevance")
-        ranking["judges"][jid] = jr
-        ranking["spearman_vs_raters"][jid] = round(
-            1 - 6 * sum((jr[m] - same[m]) ** 2 for m in systems) / (n * (n * n - 1)), 4)
+        same = hum if len(scores[jid]) == len(data) else rater_means(scores[jid])
+        ranking["judges"][jid] = ranks(s, "coherence", "relevance")
+        # On the means themselves, tie-corrected (average ranks), not on the listed ranks,
+        # which break ties by name.
+        ranking["spearman_vs_raters"][jid] = round(spearman(key(s), key(same)), 4)
     return {"raters": hum, "judges": judges, "ranking": ranking}
 
 
@@ -344,6 +336,7 @@ def build_report(sc: dict, base: str, per_call: int, data: Dict[str, dict],
             "unparsed": sum(1 for r in recs if r.get("dims") is None),
             "withheld_replies": sum(1 for r in recs if r.get("output_withheld")),
             "billed_usd": round(sum(float(r.get("cost_usd") or 0) for r in recs), 4),
+            "records_sha256": js.records_sha256(vroot / jid),
             "all_19": judge_tau(scores[jid], {a: refs19[a] for a in scores[jid]}, systems),
             "non_reference_18": judge_tau(scores[jid], {a: refs18[a] for a in scores[jid]}, nonref)}
     # Paired over articles, on the 18 non-reference summaries: each judge against one rater
@@ -435,10 +428,11 @@ def main() -> int:
             stopped = f"JUDGE CALL FAILED after retries or refused: {j['id']}: {type(exc).__name__}: {str(exc)[:300]}"
             break
         cost, known = js.call_cost(res, j["params"])
-        quoted = quotes_source(res.output, shingles([a["article"], *texts]))
+        why = withheld_reason(res.output, shingles([a["article"], *texts]))
         rec = {"article_id": aid, "block": b, "order": ms,
-               "output": None if quoted else res.output,
-               "output_sha256": _sha((res.output or "").encode()), "output_withheld": quoted,
+               "output": None if why else res.output,
+               "output_sha256": _sha((res.output or "").encode()), "output_withheld": bool(why),
+               **({"withheld_reason": why} if why else {}),
                "dims": parse_dims(res.output, len(ms)),
                "cost_usd": cost if cost is not None else 0.0, "cost_known": known,
                "latency_ms": round((time.monotonic() - t0) * 1000, 1),

@@ -146,10 +146,10 @@ def parse_block(output: str, n: int, dims: Sequence[str] = DIMS,
         v = obj.get(d)
         if not isinstance(v, list) or len(v) != n:
             return None
-        try:
-            f = [float(x) for x in v]
-        except (TypeError, ValueError):
+        # Numbers only: json gives True for `true`, and "4" is a string, neither a score.
+        if any(isinstance(x, bool) or not isinstance(x, (int, float)) for x in v):
             return None
+        f = [float(x) for x in v]
         if any(not (lo <= x <= hi) for x in f):
             return None
         cols.append(f)
@@ -211,13 +211,72 @@ def kendall_tau_b(a: List[float], b: List[float]) -> float:
     return 0.0 if den == 0 else (c - d) / den
 
 
+# ── quoting ──────────────────────────────────────────────────────────────────
+#: A stored reply that repeats this many consecutive words of the item or an output is not
+#: committed, only its hash: a judge that reasons aloud can copy the source text.
+SHINGLE = 8
+
+
+def _words(text: Optional[str]) -> List[str]:
+    # Word characters only: a quote inside a JSON string, or ending a sentence, is the same
+    # eight words with or without the quote marks and commas around it.
+    return re.findall(r"\w+", (text or "").lower())
+
+
+def shingles(texts: Sequence[str]) -> set:
+    out = set()
+    for t in texts:
+        w = _words(t)
+        out.update(" ".join(w[i:i + SHINGLE]) for i in range(len(w) - SHINGLE + 1))
+    return out
+
+
+def quotes_source(output: str, source: set) -> bool:
+    """Whether a reply repeats any SHINGLE consecutive words of the source texts."""
+    w = _words(output)
+    return any(" ".join(w[i:i + SHINGLE]) in source for i in range(len(w) - SHINGLE + 1))
+
+
+_FENCE = re.compile(r"^```(?:json)?\s*(.*?)\s*```$", re.S)
+
+
+def json_only(output: Optional[str]) -> bool:
+    """A reply that is one JSON object and nothing else (a ```json fence allowed)."""
+    t = (output or "").strip()
+    m = _FENCE.match(t)
+    t = m.group(1) if m else t
+    if not (t.startswith("{") and t.endswith("}")):
+        return False
+    try:
+        return isinstance(json.loads(t), dict)
+    except json.JSONDecodeError:
+        return False
+
+
+def withheld_reason(output: Optional[str], source: set) -> Optional[str]:
+    """Why a reply must not be committed as text, or None. Only its hash is stored then: a
+    reply that reasons aloud (not bare JSON) or repeats the source can carry the source's
+    text, and validate checks every committed reply is bare JSON (V12)."""
+    if output and quotes_source(output, source):
+        return "repeats the source"
+    if output and not json_only(output):
+        return "not bare JSON"
+    return None
+
+
 # ── routing ──────────────────────────────────────────────────────────────────
 def _models_table() -> Dict[str, str]:
     """alias -> upstream id, from the first models file that exists; {} when none does."""
-    from _common import ROOT  # noqa: PLC0415
+    try:  # imported as evaluation_harness.judging, or as a script beside _common.py
+        from ._common import CODE, ROOT  # noqa: PLC0415
+    except ImportError:
+        from _common import CODE, ROOT  # noqa: PLC0415
 
-    cands = [os.environ.get("EVAL_MODELS_FILE", "").strip(), ROOT / "models.json",
-             ROOT.parent / "examples" / "models.json"]
+    cands = [os.environ.get("EVAL_MODELS_FILE", "").strip(), ROOT / "models.json"]
+    # The repository's own table, only in a checkout of it: in a project elsewhere,
+    # ROOT.parent is whatever directory the project happens to sit in.
+    if (ROOT / "scripts").resolve() == CODE:
+        cands.append(ROOT.parent / "examples" / "models.json")
     for c in cands:
         if c and Path(c).is_file():
             return json.loads(Path(c).read_text(encoding="utf-8")).get("aliases", {})

@@ -86,12 +86,14 @@ to beat.*
    half a learnable convention, about half mislabels; adjudicated by topic, by one reader
    shown the hosted answer, the gold was wrong on all 17 (§3.4, reference v2).** 17 items are missed by ≥80% of the 24
    hosted arms (19 at 75%, 20 at 70%; `anthropic_m` gets 3 of the 17 right). The fine-tunes
-   agree with the gold on 12–14 of them; `anthropic_l` on none. By a single rater, after the
+   agree with the gold on 12–14 of them; `anthropic_l` on none. The earlier reading, by a single rater after the
    fact: 8 follow a convention a trained model learns and a zero-shot prompt that states none
    has no reason to — business news about technology companies (HP, IBM, Dell, Sohu,
    Vodafone) filed under `Sci/Tech`; 7 this rater judges mislabels (Olympic results filed as
    `World`); 2 are ambiguous. Of the 14 the leader gets right, 6 are convention, 2 ambiguous,
-   6 mislabels. All 17 are listed in §3.4. The 17 are defined by the hosted arms' own errors,
+   6 mislabels. The later adjudication judged all 17 by topic: "wrong" in
+   the heading means the gold does not name the topic, not that the label breaks the feed's own
+   convention. All 17 are listed in §3.4. The 17 are defined by the hosted arms' own errors,
    so a lead concentrated in them is close to built in. On the other 183 items `anthropic_l`
    (0.984) and `bert_base_ta` (0.973) cannot be told apart — discordant items 3 vs 1, exact
    sign p = 0.625. A prompt that stated the convention is untested, and AG News's inline

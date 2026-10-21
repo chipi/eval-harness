@@ -50,8 +50,11 @@ what it found here: the [judging page](https://evals.humancopilot.eu/experiments
   pass the gate.
 - **Judging sets and stored verdicts.** One item is the article plus every arm's output, arm
   identities hidden, order shuffled by a seed; the set is hashed into its id and frozen in
-  `data/judging-sets/`. Every raw reply is stored per call in `data/judge-verdicts/`, so a
-  rerun resumes and re-reading costs $0. A different arm set is a new set, never an append.
+  `data/judging-sets/`. Every reply is stored per call in `data/judge-verdicts/`, with its
+  scores, so a rerun resumes and re-reading costs $0; a reply that is not bare JSON scores, or
+  repeats 8 consecutive words of the item or an output, is kept only as its hash, since a
+  judge that reasons aloud can copy the source. A different arm set is a new set, never an
+  append. A block retried with `--retry-unparsed` keeps the earlier calls' cost in its record.
 - **Controls.** A position check (a second shuffle that re-forms the blocks) and a noise check
   (a repeat on a subset), plus per-judge agreement and a self-family flag, in `summary.json`.
 - **Adjudicated gold re-measurement** (repository tooling, `examples/_shared/adjudicate.py`,
@@ -62,11 +65,12 @@ what it found here: the [judging page](https://evals.humancopilot.eu/experiments
   `validate_judge_goyal.py` (Goyal, Li & Durrett 2022) and `validate_judge_zhang.py` (Zhang et
   al. 2024, crowd ratings of 19 LLM-era summarisers) check a scorer's judges against people.
   The ratings are downloaded when the check runs, pinned by sha256, and never committed; the
-  committed records hold article ids, the judges' replies and scores, and hashes; a Zhang et al.
-  reply that repeats 8 consecutive words of the article or a summary is withheld, only its hash kept.
+  committed records hold article ids, the judges' replies and scores, and hashes; a reply that
+  is not bare JSON scores, or repeats 8 consecutive words of the source, is kept only as its hash.
 - **`validate` V11-V13.** V11: every judging set's stored hash is the hash of its content.
   V12: every stored verdict names a real set, item, pass and block, and its `n` is that
-  block's size. V13: every judge scorer loads, is structurally valid (its `task` included),
+  block's size, and every committed judge reply (verdicts and validation records) is bare
+  JSON or kept only as its hash. V13: every judge scorer loads, is structurally valid (its `task` included),
   and its prompt file resolves and renders. They read the configured data directory.
 - **`judge-score` judges every arm on the dataset by default.** A scorer's `arms_match`,
   `--match` and `--arms` narrow it, and it warns when the arm set mixes config versions (`_v1`
@@ -84,7 +88,7 @@ what it found here: the [judging page](https://evals.humancopilot.eu/experiments
   SummEval's fixed count phrases is refused (the phrases would keep saying 16). V13 renders
   each prompt at 2 outputs, so a prompt that cannot be rendered fails there, not at run time.
 - Experiment-level results this enables are reported in the repository's reports (the
-  summarisation experiment re-measured with two pairs of validated judges; AG News and DBpedia
+  summarisation experiment re-measured with two pairs of SummEval-validated judges, not confirmed by people on those outputs; AG News and DBpedia
   against adjudicated gold); none of them is in the package.
 
 ### Changed

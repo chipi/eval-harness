@@ -167,8 +167,10 @@ what all six agree on: **[`research/REPORT_SYNTHESIS.md`](research/REPORT_SYNTHE
 What they found, and what a plain leaderboard would have hidden. Each report opens with its
 pick, as run here:
 
-- **Summarisation:** `bart_l` if you can run a free 1.6 GB model on CPU and your text looks
-  like CNN news; `deepseek_m` ($191 per 1M articles) if you need speed; not `anthropic_l`.
+- **Summarisation:** on `coverage`, `bart_l` if you can run a free 1.6 GB model on CPU and your text looks
+  like CNN news; `deepseek_m` ($191 per 1M articles) if you need speed; not `anthropic_l`
+  (re-scored by SummEval-validated LLM judges, every hosted LLM ranks above every BART and
+  `anthropic_l` is first on the point estimate; neither ranking is confirmed by people).
 - **AG News:** fine-tune, starting with `bert_mini`, if your labels follow a house convention; if they mean what the words say, a hosted LLM; if you rent, `gemma_m` ($8 per 1M).
 - **DBpedia-14:** the cheapest arm you can run at 0.9857: `gemma_m` (~$12), `qwen_s` (~$26)
   or the fine-tuned `bert_base_fy`.

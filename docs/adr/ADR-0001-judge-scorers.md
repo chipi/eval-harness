@@ -125,7 +125,8 @@ before a judged score replaces a primary. Larger, dearer judges did not settle i
 two highest-scoring SummEval judges from vendors not in the first pair (`judge-summ-v2`, the
 same prompt, reasoning off, at 41× the cost) reached the same verdict and the same 20-to-0
 preference on the human-check pairs. Checked against crowd ratings of LLM-era summaries (Zhang
-et al. 2024), all four judges track the raters better than one rater does and rank a BART-based
+et al. 2024), all four judges track the raters better than one rater does on coherence and relevance
+(they trail one on faithfulness) and, by mean coherence and relevance, rank a BART-based
 fine-tune first or second of 19, so they show no blanket preference for LLM-written summaries;
 they still deviate from the raters system by system in both directions (the reference
 highlights 3rd to 6th against the raters' 16th). This experiment's own outputs are still
@@ -154,9 +155,9 @@ the same way but is out of scope here.
   judging pass, a new version, not an append. The arm set is pinned in the judging set's id
   for this reason.
 - **The validation transfers only partly.** SummEval validated 16 summaries per call, from
-  2019-era systems; summarisation has 29 per article, all modern. The report must state the
-  difference. Choosing how many outputs per call (all 29, or blocks of 16) is an open
-  parameter, decided and recorded in the first scorer.
+  2019-era systems; summarisation has 29 per article: 24 current hosted LLMs, four BART models
+  and LEAD-3. The report must state the difference. How many outputs go in one call was
+  decided in the first scorer: blocks of at most 16, so 29 arms are 15 + 14.
 - Judging costs money and adds a noise source. It has a cost cap, and its noise is measured.
 - One more artifact type and one more command to learn.
 

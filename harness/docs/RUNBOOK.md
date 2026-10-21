@@ -345,9 +345,10 @@ EVAL_RUNS_DIR=data/runs-judged/judge-summ-v1 make leaderboard DATASET_ID=cnn_dai
 From an installed package the same pass is `evh judge-score --dataset-id <id> --scorer <id>`
 (same flags), in a project that has only its own data directory, scorer, prompt and runs:
 the judging code, the prompt builder and the judge client are all in `evaluation_harness`.
-`validate_judge_goyal.py`, which checks a scorer against the Goyal et al. human preferences
-on 2022 CNN articles, stays a script of this repository: it is specific to that download
-and to the news-summary judge, so it is not an `evh` command.
+`validate_judge_goyal.py` and `validate_judge_zhang.py`, which check a scorer against the Goyal
+et al. human preferences and the Zhang et al. crowd ratings (CNN/DailyMail articles), stay
+scripts of this repository: each is specific to its download
+and to the news-summary judge, so neither is an `evh` command.
 
 1. **The scorer** is `data/scorers/<id>.yaml`: two or more judges from different vendor
    families, the task, the prompt, the protocol, a `validation` block and a cost cap. The
@@ -397,11 +398,14 @@ and to the news-summary judge, so it is not an `evh` command.
 4. **Blocks.** SummEval validated 16 summaries per call, so an item's arms are judged in the
    fewest blocks of at most `outputs_per_call`: 29 arms are 15 + 14. Scores are absolute on
    the task's scale per dimension, so blocks are pooled. Validate at the block size you run.
-5. **Verdicts** are stored raw per call in `data/judge-verdicts/`. A rerun skips what is
+5. **Verdicts** are stored per call in `data/judge-verdicts/`. A rerun skips what is
    stored; `ARGS=--no-calls` projects from them for $0. At the cost cap the pass stops and
    keeps everything bought; raise the cap to continue. A reply that does not parse (wrong
-   shape, missing dimension, a score off the scale) is stored as it came and reported as
-   `unparsed reply: …`; an item counts only when every one of its primary blocks parsed.
+   shape, missing dimension, a score off the scale) is stored and reported as
+   `unparsed reply: …`; an item counts only when every one of its primary blocks parsed. A
+   reply that is not bare JSON scores (a judge reasoning aloud, a reply cut off) or that
+   repeats 8 consecutive words of the item or an output is stored only as its hash, so the
+   source's text is never committed by accident; `validate` V12 checks every committed reply.
    Real judges do this: on the Zhang et al. validation `gemma_l` left 1 of its 200 replies
    unparsed and `qwen_s` 2 (`data/judge-validation/judge-summ-v1/zhang2023-cnndm/report.json`).
    `ARGS="--retry-unparsed"` calls again for those blocks only.
@@ -445,7 +449,8 @@ p = 0.115 (REPORT_SUMMARIZATION §3.8). Neither result is confirmed on those out
 dearer judges did not change it: the two highest-scoring SummEval judges from vendors not in the
 first pair, with the same prompt and reasoning off, at 41× the price, gave the same verdict
 (`judge-summ-v2`). On crowd ratings of 2022 LLM summaries (Zhang et al. 2024,
-`validate_judge_zhang.py`) all four judges track people better than one rater does, while
+`validate_judge_zhang.py`) all four judges track people better than one rater does on coherence and
+relevance (not on faithfulness), while
 deviating from them system by system in both directions. The gate checks that a validation exists and is
 current, not that it transfers. `differs_from_this_use` is where
 you say how far it has to travel, and the honest next step is a small human check on your

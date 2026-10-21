@@ -62,7 +62,7 @@ from _common import (  # noqa: E402
 from _retry import call_with_retries  # noqa: E402
 from judging import (  # noqa: E402
     DIMS, FAKE, build_message, call_judge, kendall_tau_b, parse_block, render_prompt,
-    spearman, task_of,
+    shingles, spearman, task_of, withheld_reason,
 )
 
 try:
@@ -93,6 +93,15 @@ CHARS_PER_TOKEN = 4
 
 def _sha(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def records_sha256(vdir: Path) -> str:
+    """One hash over a judge's stored validation records (names and bytes, sorted), so a
+    report built from them can be checked against them where the human data is absent."""
+    h = hashlib.sha256()
+    for f in sorted(p for p in vdir.glob("*.json") if p.name != "report.json"):
+        h.update(f.name.encode() + b"\0" + f.read_bytes() + b"\0")
+    return h.hexdigest()
 
 
 def _canon(obj: Any) -> str:
@@ -237,7 +246,8 @@ def validation_problems(sc: Dict[str, Any], runs_dir: Path = RUNS,
 
 def validated_label(sc: Dict[str, Any]) -> str:
     """Says where the validation was done, not that the judge is valid for this use."""
-    return f"validated on {sc['validation']['experiment']} (provenance)"
+    exp = (sc.get("validation") or {}).get("experiment")
+    return f"validated on {exp} (provenance)" if exp else "validated by the runs its scorer names (provenance)"
 
 
 # ── order, blocks, subsets ───────────────────────────────────────────────────
@@ -491,13 +501,24 @@ def run_judging(manifest: Dict[str, Any], sc: Dict[str, Any], base: str,
                 cost = est if est is not None else 0.0
                 meta = getattr(res, "meta", None) or {}
                 scores = parse_block(res.output, n, task_for(sc)["dimensions"], task_for(sc)["scale"])
+                arms = item["position" if pass_name == "position" else "primary"][block]
+                why = withheld_reason(res.output, shingles(
+                    [articles[item["item_id"]], *(outputs[a][item["item_id"]] for a in arms)]))
+                # A retried block replaces the stored reply; the earlier calls were paid for
+                # too, so their cost stays in the record (and in every bill read from it).
+                prior = read_json(path) if path.is_file() else {}
+                earlier = float(prior.get("cost_usd") or 0.0)
                 write_json(path, {
                     "set_id": manifest["judging_set_id"], "judge": j["id"],
                     "judge_fp": judge_fingerprint(j), "item_id": item["item_id"],
                     "pass": pass_name, "block": block, "n": n,
-                    "prompt_sha256": _sha(msg), "output": res.output,
+                    "prompt_sha256": _sha(msg), "output": None if why else res.output,
+                    "output_sha256": _sha(res.output or ""), "output_withheld": bool(why),
+                    **({"withheld_reason": why} if why else {}),
                     "scores": scores, "tokens_in": res.tokens_in, "tokens_out": res.tokens_out,
-                    "cost_usd": cost, "cost_known": known,
+                    "cost_usd": cost + earlier, "cost_known": known and prior.get("cost_known", True),
+                    **({"attempts": int(prior.get("attempts") or 1) + 1,
+                        "cost_usd_earlier_attempts": round(earlier, 8)} if prior else {}),
                     "latency_ms": round(took[-1], 3),
                     "truncated": (getattr(res, "extra", None) or {}).get("truncated"),
                     "finish_reason": meta.get("finish_reason"),
@@ -509,6 +530,9 @@ def run_judging(manifest: Dict[str, Any], sc: Dict[str, Any], base: str,
                 if est is None:
                     raise CostCapExceeded(f"{j['id']} returned no cost and no token counts: "
                                           "the spend is unknown, so the cap cannot be enforced")
+                if why:
+                    log(f"    reply not stored as text ({why}), only its hash: "
+                        f"{j['id']} {item['item_id'][:8]} {pass_name} b{block}")
                 if scores is None:
                     log(f"    unparsed reply: {j['id']} {item['item_id'][:8]} {pass_name} b{block}")
                 elif stats["calls"] % 25 == 0:

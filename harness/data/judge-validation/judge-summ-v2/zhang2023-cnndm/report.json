@@ -48,6 +48,7 @@
    "unparsed": 0,
    "withheld_replies": 0,
    "billed_usd": 1.0149,
+   "records_sha256": "db85b3e7c9dc5533da58342cb7b53262aba1d8ce5e34b700b36f093abb15836f",
    "all_19": {
     "coherence": 0.4305,
     "relevance": 0.4055,
@@ -67,6 +68,7 @@
    "unparsed": 0,
    "withheld_replies": 0,
    "billed_usd": 3.3395,
+   "records_sha256": "1e7f36d5ef2217a0e69f9aeb588c54337d76b9eb7e9477a9dbc86c4055c67a84",
    "all_19": {
     "coherence": 0.4055,
     "relevance": 0.3931,
@@ -424,6 +426,7 @@
    }
   },
   "ranking": {
+   "basis": "the mean of coherence and relevance (faithfulness, 0/1, is not in it)",
    "raters": {
     "openai_text-curie-001 (0 shot)": 1,
     "openai_text-davinci-002 (0 shot)": 2,

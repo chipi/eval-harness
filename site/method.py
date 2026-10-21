@@ -170,7 +170,8 @@ def chapters(H, f: dict) -> list:
                    "those outputs, one non-expert reader on 20 pairs, preferred bart_l 14 to 6.", SUMM)
                    + " That check is weak too (p = 0.115, truncated articles), so neither is "
                    "confirmed on those outputs; on crowd ratings of 2022 LLM summaries the judges track "
-                   "people better than one rater does, though not system by system. "
+                   "people better than one rater does on coherence and relevance, not on faithfulness, "
+                   "and not system by system. "
                    "So the harness refuses a judge until it is validated, and the "
                    "summarisation experiment still ranks by coverage.</p>"),
          "habit": "Silver gets you started; gold tells you the truth. Write a small gold set "

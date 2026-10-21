@@ -46,8 +46,9 @@
    "articles_scored": 99,
    "calls": 200,
    "unparsed": 1,
-   "withheld_replies": 0,
+   "withheld_replies": 1,
    "billed_usd": 0.0537,
+   "records_sha256": "9595b36215c48fa8c6bd536ddf3fa87928d162956488d9a0191cb4f27d8e120a",
    "all_19": {
     "coherence": 0.4259,
     "relevance": 0.3928,
@@ -67,6 +68,7 @@
    "unparsed": 2,
    "withheld_replies": 0,
    "billed_usd": 0.0583,
+   "records_sha256": "46cbdbdf3f30cf0adfc0c8dc8fdc33985fba0bdf4f0c58a5e15e531593d8bf38",
    "all_19": {
     "coherence": 0.402,
     "relevance": 0.3862,
@@ -424,6 +426,7 @@
    }
   },
   "ranking": {
+   "basis": "the mean of coherence and relevance (faithfulness, 0/1, is not in it)",
    "raters": {
     "openai_text-curie-001 (0 shot)": 1,
     "openai_text-davinci-002 (0 shot)": 2,
@@ -490,7 +493,7 @@
     }
    },
    "spearman_vs_raters": {
-    "gemma_l": 0.7772,
+    "gemma_l": 0.7644,
     "qwen_s": 0.7947
    }
   }
