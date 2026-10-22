@@ -44,7 +44,7 @@ from typing import Any, Dict, List, Optional
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _common import MATERIALIZED, REFERENCES, RUNS, ROOT, die, read_json, warn_on_ambiguous_runs  # noqa: E402
-from experiment_run import load_adapter, _score_wants_source  # noqa: E402
+from experiment_run import load_recorded_adapter, _score_wants_source  # noqa: E402
 
 
 def _ranks(vals: List[float]) -> List[float]:
@@ -132,18 +132,13 @@ def main() -> int:
     spec = arms_side[arms[0]]["adapter"]
     if not spec:
         die("runs record no adapter — cannot score")
-    # Adapter ids are relative to the HARNESS root for the bundled adapter
-    # ("scripts/adapter.py") and to the EXAMPLES root for an example's
-    # ("ner-few-nerd/adapter.py"). Assuming one broke the other: this script joined
-    # ROOT.parent unconditionally and so could never find the bundled adapter. The same
-    # bug, and the same two-base fix, are documented in rescore.py.
-    for base in (ROOT, ROOT.parent):
-        cand = Path(spec) if Path(spec).is_absolute() else base / spec
-        if cand.is_file():
-            break
-    else:
-        die(f"adapter not found: {spec!r} is under neither {ROOT} nor {ROOT.parent}")
-    _call, score, _aid, adapter_path, _w, _fp = load_adapter(str(cand), None)
+    # One lookup for every tool that scores a finished run again (experiment_run): this
+    # script once joined ROOT.parent unconditionally and could never find the bundled
+    # adapter, and later, with its own copy of the lookup, not in a pinned project either.
+    found = load_recorded_adapter(spec)
+    if found is None:
+        die(f"adapter not found: {spec!r} is under none of {ROOT}, {ROOT.parent}, {ROOT.parent / 'examples'}")
+    _call, score, _aid, adapter_path, _w, _fp = found
     wants_source = _score_wants_source(score)
     metric = args.metric
     if not metric:

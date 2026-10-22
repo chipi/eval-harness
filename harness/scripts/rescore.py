@@ -34,10 +34,8 @@ from typing import Any, Dict, List
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _common import DATA, DATASETS, MATERIALIZED, REFERENCES, RUNS, ROOT, die, now, read_json, write_json  # noqa: E402
 from _fingerprint import _references_digest  # noqa: E402
-from experiment_run import load_adapter, _score_wants_source  # noqa: E402
+from experiment_run import load_recorded_adapter, _score_wants_source  # noqa: E402
 
-#: The id experiment_run records for a run made with no `adapter:` (the bundled one).
-BUNDLED_ADAPTER_ID = "scripts/adapter.py"
 
 try:
     import yaml
@@ -132,21 +130,13 @@ def main() -> int:
             #
             # Found while testing a different fix. Resolving the id is the right repair;
             # rewriting `adapter` inside 24 finished runs is not, because their
-            # fingerprint hashes were computed over the bytes that are there.
-            for base in (ROOT, ROOT.parent, ROOT.parent / "examples"):
-                cand = Path(spec) if Path(spec).is_absolute() else base / spec
-                if cand.is_file():
-                    adapters[spec] = load_adapter(str(cand), None)
-                    break
-            else:
-                # The bundled adapter's id is a checkout path. A project that pins the
-                # package has no such file: the run was made by the package's own copy, so
-                # that is the one to rescore with (found by a fresh project on 0.4.0).
-                if spec == BUNDLED_ADAPTER_ID:
-                    adapters[spec] = load_adapter(None, None)
-                else:
-                    die(f"adapter not found for {d.name}: {spec!r} is under none of "
-                        f"{ROOT}, {ROOT.parent}, {ROOT.parent / 'examples'}")
+            # fingerprint hashes were computed over the bytes that are there. The lookup
+            # lives in experiment_run.load_recorded_adapter, shared with silver-calibrate.
+            found = load_recorded_adapter(spec)
+            if found is None:
+                die(f"adapter not found for {d.name}: {spec!r} is under none of "
+                    f"{ROOT}, {ROOT.parent}, {ROOT.parent / 'examples'}")
+            adapters[spec] = found
         _call, score, adapter_id, adapter_path, _warm, _fp = adapters[spec]
         wants_source = _score_wants_source(score)
 
@@ -351,7 +341,8 @@ def main() -> int:
             # beside it when the two differ, because "the gold set changed under us" is
             # a finding and not a detail. Found by external review.
             fp_data = fp.setdefault("data", {})
-            if args.reference_id and fp_data.get("reference_id") != args.reference_id:
+            moved = bool(args.reference_id and fp_data.get("reference_id") != args.reference_id)
+            if moved:
                 fp_data["reference_id_at_measurement"] = fp_data.get("reference_id")
                 fp_data["reference_tier_at_measurement"] = fp_data.get("reference_tier")
                 fp_data["reference_id"] = args.reference_id
@@ -361,9 +352,13 @@ def main() -> int:
             fp_data["references_sha256"] = actual_refs
             if prior_refs and actual_refs and prior_refs != actual_refs:
                 fp_data["references_sha256_at_measurement"] = prior_refs
-                fp_data["references_changed_since_measurement"] = True
-                print(f"    WARNING: {d.name}: the reference files have CHANGED since "
-                      f"this run was measured; scores here are against the current ones")
+                # Onto ANOTHER reference set the hashes always differ (other files): that is
+                # the move, recorded above, not a change. Only the same set's files changing
+                # under the run is (found by the GUIDE's check, 0.4.0).
+                if not moved:
+                    fp_data["references_changed_since_measurement"] = True
+                    print(f"    WARNING: {d.name}: the reference files have CHANGED since "
+                          f"this run was measured; scores here are against the current ones")
             fp["hash"] = None
             fp["hash_invalid_because"] = (
                 "scores were recomputed by a different scorer than the one this "

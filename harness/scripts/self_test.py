@@ -2341,9 +2341,13 @@ def test_rescore_finds_the_bundled_adapter_from_an_installed_package() -> None:
         (data / "sources" / "rs_v1").mkdir(parents=True)
         (data / "configs").mkdir(parents=True)
         for i in ("t1", "t2", "t3"):
-            (data / "sources" / "rs_v1" / f"{i}.txt").write_text(f"Ticket {i} cannot log in. It fails twice.\n")
-        (data / "configs" / "arm_echo.yaml").write_text(
-            "config_id: arm_echo_v1\ndataset_id: rs_v1\nparams:\n  provider: echo\n  sentences: 1\n")
+            (data / "sources" / "rs_v1" / f"{i}.txt").write_text(
+                f"Ticket {i} cannot log in. It fails twice. The user reset the password. Support replied.\n")
+        # Four arms: silver-calibrate needs three to rank plus the one authoring the silver.
+        for n in (1, 2, 3, 4):
+            name = "arm_echo" if n == 1 else f"arm_echo{n}"
+            (data / "configs" / f"{name}.yaml").write_text(
+                f"config_id: {name}_v1\ndataset_id: rs_v1\nparams:\n  provider: echo\n  sentences: {n}\n")
         env = {**os.environ, "EVAL_HOME": str(proj), "EVAL_DATA_DIR": "data", "EVAL_RUNS_DIR": "",
                "PYTHONPATH": str(site), "PYTHONDONTWRITEBYTECODE": "1", "EVAL_MAX_COST_USD": ""}
 
@@ -2353,7 +2357,9 @@ def test_rescore_finds_the_bundled_adapter_from_an_installed_package() -> None:
 
         steps = [evh("dataset-create", "--dataset-id", "rs_v1", "--source-dir", str(data / "sources" / "rs_v1")),
                  evh("dataset-materialize", "--dataset-id", "rs_v1"),
-                 evh("experiment-run", "--config", str(data / "configs" / "arm_echo.yaml"))]
+                 # silver first, so the runs are scored against it and rescore moves them to gold
+                 evh("reference-create", "--dataset-id", "rs_v1", "--config", str(data / "configs" / "arm_echo4.yaml")),
+                 *(evh("experiment-run", "--config", str(c)) for c in sorted((data / "configs").glob("*.yaml")))]
         check("installed rescore: a run made with the bundled adapter",
               all(s.returncode == 0 for s in steps), "".join(s.stderr for s in steps)[-300:])
         made = [json.loads(p.read_text()) for p in (data / "runs").glob("arm_echo_v1_*/metrics.json")]
@@ -2371,6 +2377,34 @@ def test_rescore_finds_the_bundled_adapter_from_an_installed_package() -> None:
               r.returncode == 0 and "adapter not found" not in out, out[-300:])
         check("installed rescore: the re-scored run is written",
               any((data / "runs-gold").glob("arm_echo_v1_*/metrics.json")), out[-300:])
+        moved = [json.loads(p.read_text())["fingerprint"]["data"]
+                 for p in (data / "runs-gold").glob("arm_echo_v1_*/metrics.json")]
+        # Moving runs onto another reference set is not the reference files changing: the
+        # old and the new set are different files, so their hashes always differ. The flag
+        # was set, and "CHANGED" printed, on every deliberate move (0.3.0 and before).
+        check("rescore onto a new reference: where it was measured is kept, nothing is called changed",
+              moved and all(f.get("reference_id") == "gold/rs_v1"
+                             and f.get("reference_id_at_measurement") == "silver/rs_v1"
+                             and not f.get("references_changed_since_measurement") for f in moved)
+              and "CHANGED" not in out,
+              [(f.get("reference_id_at_measurement"), f.get("references_changed_since_measurement")) for f in moved])
+        # ...while the same set's files changing under a run is still called out.
+        (gold / "t1.txt").write_text("Ticket t1: login fails twice.\n")
+        again = subprocess.run([PY, "-m", "evaluation_harness", "rescore", "--dataset-id", "rs_v1",
+                                "--reference-id", "gold/rs_v1", "--out", str(data / "runs-gold2")],
+                               cwd=proj, capture_output=True, text=True,
+                               env={**env, "EVAL_RUNS_DIR": str(data / "runs-gold")})
+        changed = [json.loads(p.read_text())["fingerprint"]["data"]
+                   for p in (data / "runs-gold2").glob("arm_echo_v1_*/metrics.json")]
+        check("rescore against the same reference after its files changed: flagged and warned",
+              changed and all(f.get("references_changed_since_measurement") is True for f in changed)
+              and "CHANGED" in again.stdout, (again.stdout + again.stderr)[-200:])
+        sc = subprocess.run([PY, "-m", "evaluation_harness", "silver-calibrate", "--dataset-id", "rs_v1"],
+                            cwd=proj, capture_output=True, text=True,
+                            env={**env, "EVAL_RUNS_DIR": str(data / "runs-gold")})
+        check("installed silver-calibrate: it finds the bundled adapter inside the package",
+              sc.returncode == 0 and "adapter not found" not in sc.stdout + sc.stderr
+              and "rho vs trusted" in sc.stdout, (sc.stdout + sc.stderr)[-300:])
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 

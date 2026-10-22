@@ -19,12 +19,12 @@ OUT ?= data/runs-rescored
 NOISE ?=
 TIER ?= silver
 
-.PHONY: help demo env-check install venv-init catalog catalog-serve \
+.PHONY: help demo init env-check install venv-init catalog catalog-serve \
         dataset-create dataset-materialize reference-create \
         holdout pair-test rank-stability \
         experiment-dry-run experiment-run sweep \
         runs-list baselines-list run-compare leaderboard run-promote \
-        validate judge judge-score check ci test smoke-fixture cost-report clean clean-cache
+        validate judge judge-score check guide-check ci test smoke-fixture cost-report clean clean-cache
 
 # ── getting started ─────────────────────────────────────────────────────────
 help:
@@ -95,6 +95,10 @@ install venv-init:
 	$(VENV)/bin/pip install -q --upgrade pip
 	$(VENV)/bin/pip install -q -r requirements.txt
 	@echo "$(VENV) ready. Use it with:  make <target> PYTHON=$(VENV)/bin/python"
+
+# A new project beside this checkout: make init DIR=../my-evals ARGS=--tutorial
+init:
+	$(PYTHON) scripts/init_project.py $(DIR) $(ARGS)
 
 env-check:
 	@$(PYTHON) scripts/env_check.py
@@ -272,9 +276,14 @@ smoke-fixture:
 test: smoke-fixture
 	$(PYTHON) scripts/self_test.py
 
-check: validate test
+# docs/GUIDE.md run in a fresh project, every quoted output compared: the onboarding path
+# a new reader follows cannot drift from what the commands print.
+guide-check:
+	$(PYTHON) scripts/check_guide.py
+
+check: validate test guide-check
 	@echo ""
-	@echo "check: tree valid, self-tests pass"
+	@echo "check: tree valid, self-tests pass, the GUIDE runs as written"
 
 # THE SITE IS GENERATED FROM THE RUNS. A stale site/public -- a run added, a report
 # figure changed, the build script edited without rebuilding -- fails here, so the public
@@ -285,7 +294,7 @@ site:
 site-check:
 	$(PYTHON) ../site/build.py --check
 
-# The documentation site (published at /docs/ beside the findings site). Needs
+# The documentation site (published to GitHub Pages, docs.evals.humancopilot.eu). Needs
 # `pip install -r ../site/requirements-docs.txt`; not part of `make ci`, which must run
 # without it, but the Pages workflow builds it in strict mode on every deploy.
 docs:

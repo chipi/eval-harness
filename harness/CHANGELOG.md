@@ -39,8 +39,9 @@ package.
   estimate could land on either side of it; the count cannot. **This can move a result**:
   - **in this repository's reports:** none moved. All 201 report claims re-derive unchanged,
     because every published pair and family test is on more than 30 items;
-  - **in the tutorial** (6 items): `pair-test` reads 0.0312 (was 0.0330) and the family test
-    0.0938, 0.3125, 0.5625. The verdicts are the same (GUIDE steps 6 and 8);
+  - **in the tutorial** (6 items): `pair-test` reads 0.0312 (was 0.0330), and the family test
+    0.0938 against `lead1` and 0.3125 against `author` (`lead2_noisy`'s is unseeded and moves
+    with every run). The verdicts are the same (GUIDE steps 6 and 8);
   - **in your project:** re-run `pair-test` / `family-test` on any pair with 30 or fewer
     shared items. Whether a verdict near its threshold moves depends on your data.
 - `pair-test` says which it did: `(exact, all 2^n sign patterns)` or `(20000 permutations)`.
@@ -50,13 +51,27 @@ package.
   machine (materialized data is not committed, so a CI job has none) is named as not checked,
   and the ok line says how many were checked, e.g. "3 of 14 datasets materialized here". A
   project whose materialized copy is incomplete goes red where it was green.
+- **The bundled adapter names its primary metric** (`PRIMARY_METRIC = "overlap_f1"`). New runs
+  on it record `primary_metric: overlap_f1`. The leaderboard already ranked them by it, first
+  by name; it no longer prints that the metric was "chosen by sort order", and the catalog and
+  the inspector open on it. Runs made before keep what they recorded.
+- **`docs/GUIDE.md` is a walkthrough in your own project**: install the package, `evh init
+  --tutorial`, then every step with `evh`. It used to run inside a checkout of this
+  repository, with `make`.
 
 ### Fixed
-- **`evh rescore` in a project that pins the package.** A run made with no `adapter:` uses
-  the bundled adapter and records it as `scripts/adapter.py`, a path that exists only in a
-  checkout, so `rescore` failed with "adapter not found" in every pinned project on the
-  default adapter (0.2.0 and 0.3.0 alike). It now rescores with the package's own copy, the
-  one that made the run. Found by following the GUIDE in a brand-new project.
+- **`evh rescore` and `evh silver-calibrate` in a project that pins the package.** A run
+  made with no `adapter:` uses the bundled adapter and records it as `scripts/adapter.py`, a
+  path that exists only in a checkout, so both failed with "adapter not found" in every pinned
+  project on the default adapter (0.2.0 and 0.3.0 alike). They now score with the package's
+  own copy, the one that made the run, through one shared lookup. Found by following the GUIDE
+  in a brand-new project.
+- **`rescore` onto another reference no longer claims the references changed.** Moving runs
+  from silver to gold (`--reference-id`) compared the gold files' hash with the silver files'
+  and, as they always differ, wrote `references_changed_since_measurement: true` into every
+  re-scored run and printed "the reference files have CHANGED". The move is recorded as
+  before (`reference_id_at_measurement`); the flag and the warning are kept for the same
+  reference's files changing. No committed run in this repository carries the false flag.
 
 ### Added
 - **`evaluation_harness.stats`**. Standard library only, and the one place the paired test
@@ -75,7 +90,8 @@ package.
 - **`evh catalog` and `evh catalog-serve`** (`make catalog`, `make catalog-serve`).
   - **The catalog:** static pages over a project's runs, by dataset, built into
     `.build/catalog/`. Each dataset page lists every arm with its headline number, and links
-    to the inspector for one arm or all of them.
+    to the inspector for one arm, or for all the arms on one metric scored against one
+    reference.
   - **The run inspector:** a server on 127.0.0.1 that tests any arms on one dataset against
     a baseline with `stats.py`, so it gives the same p as `pair-test` on the same pair. It
     shows the verdicts, charts of the per-item scores and differences, and, for one item,
@@ -107,7 +123,7 @@ package.
   - **CSP-clean:** no inline script or style. The theme script is a file, and the legend
     colours are set from JS.
 
-  Tests: `scripts/test_catalog.py` (33 assertions), run by `make test`.
+  Tests: `scripts/test_catalog.py` (39 assertions), run by `make test`.
 - **Goals: what an evaluation is for** (`data/goals/<goal_id>.yaml`, `schemas/goal.schema.json`).
   - **What a goal says:** who uses the output, the decision it informs, the measure that
     decides (and which direction is better), the output formats it accepts, its datasets
@@ -135,6 +151,13 @@ package.
     already committed is held to one.
 
   Tests: `scripts/test_goals.py` (14 assertions), run by `make test`.
+- **`evh init [DIR] [--tutorial]`** starts a project: `data/sources`, `data/configs`,
+  `data/goals` and a `.gitignore` for what the harness derives. `--tutorial` copies the GUIDE's
+  kit (tickets, gold, arms, a goal, a judge scorer) into `tutorial/`; the kit now ships inside
+  the package. It never overwrites a file.
+- **`make guide-check`** (part of `make check`) runs `docs/GUIDE.md` in a fresh project, as a
+  reader would, and fails when a quoted output no longer matches what the command prints.
+  Lines that the unseeded `lead2_noisy` arm moves are marked in the GUIDE and not compared.
 
 ## 0.3.0 — 2026-10-21
 

@@ -33,6 +33,7 @@ in DIR links to, so the pages' own links answer from the cache.
 from __future__ import annotations
 
 import argparse
+import errno
 import json
 import re
 import sys
@@ -507,7 +508,12 @@ def main() -> int:
     if args.warm:
         threading.Thread(target=lambda: print(f"warm: {warm(args.warm)} comparison(s) cached", flush=True),
                          daemon=True).start()
-    server = ThreadingHTTPServer((args.bind, args.port), partial(Handler, directory=str(ROOT)))
+    try:
+        server = ThreadingHTTPServer((args.bind, args.port), partial(Handler, directory=str(ROOT)))
+    except OSError as exc:
+        why = (f"port {args.port} is in use. Stop what holds it, or pass --port N."
+               if exc.errno == errno.EADDRINUSE else f"{exc.strerror}. Pass --port N, or check --bind.")
+        raise SystemExit(f"cannot listen on {args.bind}:{args.port}: {why}")
     if args.public:
         print(f"inspector API on {args.bind}:{args.port} for {', '.join(LIMITS['hosts'])} "
               f"({LIMITS['rate']}/min per client, {LIMITS['max_arms']} arms max)", flush=True)

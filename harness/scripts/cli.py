@@ -21,6 +21,7 @@ HERE = Path(__file__).resolve().parent
 
 #: command -> (script, one line of help). Names follow the Makefile targets.
 COMMANDS = {
+    "init": ("init_project.py", "start a project: data folders, a .gitignore; --tutorial adds the GUIDE's kit"),
     "env-check": ("env_check.py", "check the Python environment and keys"),
     "dataset-create": ("dataset_create.py", "freeze a dataset: item list + per-item sha256"),
     "dataset-materialize": ("materialize.py", "hash-checked working copy of a dataset"),

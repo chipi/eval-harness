@@ -39,12 +39,14 @@ Homepage = "https://chipi.github.io/eval-harness/"
 Source = "https://github.com/chipi/eval-harness"
 
 [tool.setuptools]
-packages = ["evaluation_harness", "evaluation_harness.schemas", "evaluation_harness.catalog_assets"]
-package-dir = {"evaluation_harness" = "scripts", "evaluation_harness.schemas" = "schemas", "evaluation_harness.catalog_assets" = "catalog_assets"}
+packages = ["evaluation_harness", "evaluation_harness.schemas", "evaluation_harness.catalog_assets", "evaluation_harness.tutorial"]
+package-dir = {"evaluation_harness" = "scripts", "evaluation_harness.schemas" = "schemas", "evaluation_harness.catalog_assets" = "catalog_assets", "evaluation_harness.tutorial" = "tutorial"}
 
 [tool.setuptools.package-data]
 "evaluation_harness.schemas" = ["*.json"]
 "evaluation_harness.catalog_assets" = ["*.css", "*.js", "*.svg"]
+# The GUIDE's kit: `evh init --tutorial` copies it into a new project.
+"evaluation_harness.tutorial" = ["*.md", "*.txt", "tickets/*.txt", "gold/*.txt", "configs/*.yaml", "goals/*.yaml", "scorers/*.yaml"]
 
 [tool.setuptools.dynamic]
 version = {attr = "evaluation_harness._version.__version__"}

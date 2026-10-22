@@ -29,15 +29,15 @@ NODES = [
     ("dataset", "Dataset", "frozen · sha256",
      "The comparison contract: an item list with the hash of every item. Two runs on "
      "different datasets cannot be compared, and a changed input is a new version.",
-     "data/datasets/&lt;id&gt;.json", 'make dataset-create DATASET_ID=tickets_v1', "1-freeze-a-dataset"),
+     "data/datasets/&lt;id&gt;.json", 'evh dataset-create --dataset-id tickets_v1', "1-freeze-a-dataset"),
     ("materialized", "Materialized", "hash-checked copy",
      "A working copy, re-verified against the frozen hashes every time — so a run can "
      "never measure bytes the dataset does not describe.",
-     "data/materialized/&lt;id&gt;/", "make dataset-materialize DATASET_ID=tickets_v1", "2-materialize"),
+     "data/materialized/&lt;id&gt;/", "evh dataset-materialize --dataset-id tickets_v1", "2-materialize"),
     ("references", "References", "silver · gold",
      "What each item is scored against. Silver: a model wrote it — consistent, not correct. "
      "Gold: a person wrote or checked it. Gold always wins, and every run says which it used.",
-     "data/references/&lt;tier&gt;/&lt;id&gt;/", "make reference-create DATASET_ID=… CONFIG=…",
+     "data/references/&lt;tier&gt;/&lt;id&gt;/", "evh reference-create --dataset-id … --config …",
      "4-author-silver-references"),
     ("arms", "Arms", "one config each",
      "One system under test: provider, model, prompt, settings, in a YAML file. Change one "
@@ -46,22 +46,22 @@ NODES = [
     ("runs", "Runs", "outputs + fingerprint",
      "One pass of an arm over the dataset: every output, every per-item score, billed cost, "
      "latency, and a fingerprint of data, code, model and build. Repeat it to measure noise.",
-     "data/runs/&lt;run_id&gt;/", "make experiment-run CONFIG=… REPEAT=3", "5-commit-then-measure"),
+     "data/runs/&lt;run_id&gt;/", "evh experiment-run --config … --repeat 3", "5-commit-then-measure"),
     ("tests", "Tests", "separated or tied",
      "The leaderboard with its significance block, paired tests, Holm-corrected families. "
      "A claim means separated, not scored higher.",
-     "your terminal", "make family-test DATASET_ID=… A=… AGAINST=…", "8-decide-is-the-winner-separated"),
+     "your terminal", "evh family-test --dataset-id … --a … --against …", "8-decide-is-the-winner-separated"),
     ("baseline", "Baseline", "a decision + reason",
      "The run future changes are measured against, recorded with why. Superseded, never "
      "edited — in six months, “why is this the baseline?” has an answer.",
-     "data/baselines/", 'make run-promote RUN=… REASON="…"', "9-promote-a-baseline"),
+     "data/baselines/", 'evh run-promote --run … --reason "…"', "9-promote-a-baseline"),
     ("remeasure", "Re-measure", "optional · later",
      "The same frozen outputs, measured again without re-running an arm: new gold or a new "
      "code scorer for $0, or LLM judges, billed and capped, that the harness refuses until "
      "they are validated against people. Written beside the originals, never over them; the "
      "primary metric changes only by a recorded decision.",
      "data/runs-rescored/ · data/runs-judged/&lt;scorer&gt;/",
-     "make judge-score DATASET_ID=… SCORER=…", "10-optional-re-measure-with-an-llm-judge"),
+     "evh judge-score --dataset-id … --scorer …", "10-optional-re-measure-with-an-llm-judge"),
 ]
 
 
@@ -123,7 +123,7 @@ def chapters(H, f: dict) -> list:
                    "lists the fields that moved.</p>"),
          "habit": "Change one thing per arm, and record everything else — so “we only changed "
                   "the prompt” is checkable rather than claimed.",
-         "tool": ("make run-compare BASE=… CAND=…",
+         "tool": ("evh run-compare --baseline … --candidate …",
                   "Fingerprints DIFFER. Fields that moved: arm.params.sentences"),
          "yours": "Your arms are your candidates — prompts, models, retrieval settings, "
                   "thresholds — one YAML file each."},
@@ -142,7 +142,7 @@ def chapters(H, f: dict) -> list:
                    f"{f['calibration_inside']} of them inside their own interval.</p>"),
          "habit": "Freeze the data and hash it, so a number always means the same items. Then "
                   "check your sample against the population it claims to represent.",
-         "tool": ("make dataset-create · make dataset-materialize",
+         "tool": ("evh dataset-create · evh dataset-materialize",
                   "a changed input fails loudly instead of silently measuring different bytes"),
          "yours": "Your dataset is a set of real inputs, frozen. Sample it on purpose — by date, "
                   "by customer, by difficulty — and write down what it covers."},
@@ -151,8 +151,8 @@ def chapters(H, f: dict) -> list:
          "short": "A model's answers rank; a person's answers judge.",
          "story": ("<p>" + H.q("In the tutorial, the system that wrote the silver references "
                    "scores a perfect 1.000 against them and ranks first. Re-scored against six "
-                   "summaries a person wrote, it falls to second — and no arm can be told apart "
-                   "from any other (p = 0.2124).", GUIDE) + "</p>"
+                   "summaries a person wrote, it loses first place — and six items can almost "
+                   "never tell the arms apart.", GUIDE) + "</p>"
                    "<p>" + H.q("On AG News, the lead of the three fine-tunes is concentrated in 17 "
                    "items the hosted field mostly gets wrong. Adjudicated by topic by one reader "
                    "shown the hosted answer, the gold was wrong on all 17, and on that gold every "
@@ -177,7 +177,7 @@ def chapters(H, f: dict) -> list:
          "habit": "Silver gets you started; gold tells you the truth. Write a small gold set "
                   "early, check silver — and any AI judge — against it, and read every item "
                   "where strong systems agree against the gold.",
-         "tool": ("make rescore REFERENCE=gold/… · make silver-calibrate · make judge-score",
+         "tool": ("evh rescore --reference-id gold/… · evh silver-calibrate · evh judge-score",
                   "re-score old runs against new gold for $0, measure how far silver drifts, "
                   "re-measure with judges you have validated"),
          "yours": "A small set of answers written by someone who knows the domain is worth more "
@@ -194,8 +194,8 @@ def chapters(H, f: dict) -> list:
          "habit": "Run every arm more than once and measure how far it disagrees with itself. "
                   "Tune on a small dev slice, report on the rest, and measure how many items a "
                   "ranking needs instead of assuming it.",
-         "tool": ("make experiment-run REPEAT=3 · make holdout · make rank-stability",
-                  H.q("treat deltas below 0.044479 as noise", GUIDE)),
+         "tool": ("evh experiment-run --repeat 3 · evh holdout · evh rank-stability",
+                  H.q("treat deltas below 0.029372 as noise", GUIDE)),
          "yours": "Before you believe the new prompt is a few points better, run the old one "
                   "twice."},
         {"id": "tested", "nodes": "tests", "kicker": "Significance",
@@ -212,7 +212,7 @@ def chapters(H, f: dict) -> list:
                    "bootstrapped, and the price slopes are fits, not tests.</p>"),
          "habit": "Decide the comparisons before reading the table, correct for how many you "
                   "made, and report a tie as a tie.",
-         "tool": ("make family-test · make leaderboard",
+         "tool": ("evh family-test · evh leaderboard",
                   f"separated from {sf['n_arms'] - 1 - sf['n_tied']} of {sf['n_arms'] - 1} opponents"
                   f"   ← SciFact's leader, {sf['leader_row']['arm']}"),
          "yours": "When the answer is “tied”, look at the gap and the sample size first: if the "
@@ -229,7 +229,7 @@ def chapters(H, f: dict) -> list:
                    "retracted along the way, several caused by this harness's own scorer.</p>"),
          "habit": "Hash and test the scorer, re-score stored outputs when it changes, and "
                   "promote a baseline only with a reason that says what the tests showed.",
-         "tool": ('make rescore · make run-promote REASON="…" · make validate',
+         "tool": ('evh rescore · evh run-promote --reason "…" · evh validate',
                   "re-scoring is $0; validation exits non-zero, so it belongs in CI"),
          "yours": "Keep a journal. The mistakes you write down are the checks you add next."},
     ]
@@ -327,7 +327,7 @@ def patterns(H, f: dict) -> list:
              "(the best of 24, chosen on the same articles; 92% held out), and an open-weight one at 1/23 of the "
              "leader's price was not separated from it.", JUDGE)
          + " Pin the provider: one judge, run once on each of two providers, scored 0.0113 apart and billed 3.7× apart."
-         " Once validated, a judge can re-measure your arms' stored outputs (make judge-score), "
+         " Once validated, a judge can re-measure your arms' stored outputs (evh judge-score), "
          "on any text task you declare; validate it on outputs like the ones it will judge.",
          "summeval-judging", "Kendall τ · human ceiling"),
         ("Summaries and generated text", "arms = generators",
@@ -347,29 +347,29 @@ def patterns(H, f: dict) -> list:
 
 STEPS = [
     ("Freeze a dataset", "Your inputs become a contract: an item list with a hash per item.",
-     'make dataset-create DATASET_ID=tickets_v1 ARGS="--source-dir tutorial/tickets"',
+     'evh dataset-create --dataset-id tickets_v1 --source-dir tutorial/tickets',
      "data/datasets/tickets_v1.json  (6 item(s))", "1-freeze-a-dataset"),
     ("Describe your arms", "One YAML per candidate. Change one thing; bump the id.",
      "cp tutorial/configs/tickets_*.yaml data/configs/", "", "3-describe-your-arms"),
     ("Draft silver references", "Let your best system write first answers — and label them silver.",
-     "make reference-create DATASET_ID=tickets_v1 CONFIG=data/configs/tickets_author.yaml",
+     "evh reference-create --dataset-id tickets_v1 --config data/configs/tickets_author.yaml",
      "data/references/silver/tickets_v1  (6 item(s), tier=silver, $0.0000)", "4-author-silver-references"),
     ("Commit, then measure — three times", "The spread is how far an arm disagrees with itself.",
-     "make experiment-run CONFIG=data/configs/tickets_lead2_noisy.yaml REPEAT=3",
-     "overlap_f1     spread=0.044479   treat deltas below 0.044479 as noise", "5-commit-then-measure"),
+     "evh experiment-run --config data/configs/tickets_lead2_noisy.yaml --repeat 3",
+     "overlap_f1     spread=0.029372   treat deltas below 0.029372 as noise", "5-commit-then-measure"),
     ("Compare", "Read the significance block, not the row numbers.",
-     "make leaderboard DATASET_ID=tickets_v1",
+     "evh leaderboard --dataset-id tickets_v1",
      "pairs distinguishable: 3 of 6", "6-compare"),
     ("Make it golden", "Add answers a person wrote; re-score every run against them for $0.",
-     "make rescore DATASET_ID=tickets_v1 REFERENCE=gold/tickets_v1 OUT=data/runs-gold",
+     "evh rescore --dataset-id tickets_v1 --reference-id gold/tickets_v1 --out data/runs-gold",
      "NO detectable arm effect · pairs distinguishable: 0 of 6", "7-make-it-golden"),
     ("Decide and record", "Promote with a reason that says what the tests showed; validate in CI.",
-     'make run-promote RUN=… REASON="leads on gold but separates from no arm"',
+     'evh run-promote --run … --reason "leads on gold but separates from no arm"',
      "VALIDATION PASSED", "9-promote-a-baseline"),
     ("Optional: re-measure with a judge", "LLM judges re-read every arm's stored outputs. The "
      "harness refuses a judge nobody validated; the tutorial's are fake, so it runs labelled.",
-     "make judge-score DATASET_ID=tickets_v1 SCORER=tickets-judge-v1 ARGS=--unvalidated",
-     "4 scored run(s) -> data/runs-judged/tickets-judge-v1  (6/6 items, unvalidated judge)",
+     "evh judge-score --dataset-id tickets_v1 --scorer tickets-judge-v1 --unvalidated",
+     "data/runs-judged/tickets-judge-v1  (6/6 items, unvalidated judge)",
      "10-optional-re-measure-with-an-llm-judge"),
 ]
 
@@ -444,7 +444,7 @@ def use_page(H, f: dict) -> str:
       <li>Write the adapter; one config per candidate.</li>
       <li>Dry-run; set a cost cap.</li>
       <li>Run each arm three times; note its noise.</li>
-      <li>Test the comparison you named; promote with a reason; put <code>make validate</code> in CI.</li>
+      <li>Test the comparison you named; promote with a reason; put <code>evh validate</code> in CI.</li>
     </ul></div>
   </div>
 </div></section>

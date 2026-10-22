@@ -211,6 +211,19 @@ try:
                        env={"EVAL_HOME": str(env_root), "PATH": "/usr/bin:/bin"})
     check("evh catalog: builds into <project>/.build/catalog", r.returncode == 0 and (env_root / ".build/catalog/index.html").is_file(),
           r.stderr[-300:])
+
+    # a port another program holds: say so, never a traceback
+    import socket
+    with socket.socket() as held:
+        held.bind(("127.0.0.1", 0))
+        held.listen(1)
+        busy = held.getsockname()[1]
+        r = subprocess.run([sys.executable, str(HERE / "cli.py"), "catalog-serve", "--port", str(busy)], cwd=env_root,
+                           capture_output=True, text=True, timeout=60,
+                           env={"EVAL_HOME": str(env_root), "PATH": "/usr/bin:/bin"})
+    check("evh catalog-serve: a port in use is named, with --port as the way out",
+          r.returncode != 0 and f"port {busy} is in use" in r.stderr and "--port" in r.stderr
+          and "Traceback" not in r.stderr, r.stderr[-300:])
 finally:
     shutil.rmtree(tmp, ignore_errors=True)
 

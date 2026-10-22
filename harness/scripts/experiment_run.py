@@ -179,6 +179,30 @@ def _adapter_primary_metric(adapter_path: Optional[Path]) -> Optional[str]:
     value = getattr(module, "PRIMARY_METRIC", None)
     return value if isinstance(value, str) and value else None
 
+
+#: The id a run records when its config names no `adapter:` (the bundled one).
+BUNDLED_ADAPTER_ID = "scripts/adapter.py"
+
+
+def load_recorded_adapter(spec: str) -> Optional[tuple]:
+    """The adapter a finished run recorded, for scoring it again (rescore, silver-calibrate),
+    or None if it cannot be found.
+
+    Recorded ids are relative to the harness root for the bundled adapter
+    ("scripts/adapter.py"), to the repository root for most examples
+    ("examples/ner-few-nerd/adapter.py"), and to the examples root for the oldest sweep
+    ("summarization-cnn-dailymail/adapter.py"). The bundled id is a checkout path: a project
+    that pins the package has no such file, and the run was made by the package's own copy,
+    so that is the one returned (found by a fresh project on 0.4.0)."""
+    for base in (ROOT, ROOT.parent, ROOT.parent / "examples"):
+        cand = Path(spec) if Path(spec).is_absolute() else base / spec
+        if cand.is_file():
+            return load_adapter(str(cand), None)
+    if spec == BUNDLED_ADAPTER_ID:
+        return load_adapter(None, None)
+    return None
+
+
 def _score_wants_source(score: Any) -> bool:
     """Whether this adapter's `score()` takes the source text as a third argument.
 
