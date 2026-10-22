@@ -36,6 +36,9 @@ from _common import DATA, DATASETS, MATERIALIZED, REFERENCES, RUNS, ROOT, die, n
 from _fingerprint import _references_digest  # noqa: E402
 from experiment_run import load_adapter, _score_wants_source  # noqa: E402
 
+#: The id experiment_run records for a run made with no `adapter:` (the bundled one).
+BUNDLED_ADAPTER_ID = "scripts/adapter.py"
+
 try:
     import yaml
 except ImportError:  # pragma: no cover
@@ -136,8 +139,14 @@ def main() -> int:
                     adapters[spec] = load_adapter(str(cand), None)
                     break
             else:
-                die(f"adapter not found for {d.name}: {spec!r} is under none of "
-                    f"{ROOT}, {ROOT.parent}, {ROOT.parent / 'examples'}")
+                # The bundled adapter's id is a checkout path. A project that pins the
+                # package has no such file: the run was made by the package's own copy, so
+                # that is the one to rescore with (found by a fresh project on 0.4.0).
+                if spec == BUNDLED_ADAPTER_ID:
+                    adapters[spec] = load_adapter(None, None)
+                else:
+                    die(f"adapter not found for {d.name}: {spec!r} is under none of "
+                        f"{ROOT}, {ROOT.parent}, {ROOT.parent / 'examples'}")
         _call, score, adapter_id, adapter_path, _warm, _fp = adapters[spec]
         wants_source = _score_wants_source(score)
 

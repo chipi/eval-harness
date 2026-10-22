@@ -51,6 +51,13 @@ package.
   and the ok line says how many were checked, e.g. "3 of 14 datasets materialized here". A
   project whose materialized copy is incomplete goes red where it was green.
 
+### Fixed
+- **`evh rescore` in a project that pins the package.** A run made with no `adapter:` uses
+  the bundled adapter and records it as `scripts/adapter.py`, a path that exists only in a
+  checkout, so `rescore` failed with "adapter not found" in every pinned project on the
+  default adapter (0.2.0 and 0.3.0 alike). It now rescores with the package's own copy, the
+  one that made the run. Found by following the GUIDE in a brand-new project.
+
 ### Added
 - **`evaluation_harness.stats`**. Standard library only, and the one place the paired test
   lives:

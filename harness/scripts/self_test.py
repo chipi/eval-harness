@@ -2316,6 +2316,60 @@ def test_a_project_elsewhere_imports_runs_and_tests_them() -> None:
     shutil.rmtree(proj, ignore_errors=True)
 
 
+def test_rescore_finds_the_bundled_adapter_from_an_installed_package() -> None:
+    """A project that pins the package and runs an arm with no `adapter:` uses the bundled
+    one, recorded as `scripts/adapter.py`. `rescore` looked for that path in the project
+    and its parents only, which in a checkout is the harness root, and in an installed
+    package is nowhere:
+
+        ERROR: adapter not found for <run>: 'scripts/adapter.py' is under none of <project>, ...
+
+    so re-scoring for $0 failed out of the box for every pinned project on the default
+    adapter. Found by following the GUIDE in a brand-new project on 0.4.0."""
+    import os  # noqa: PLC0415
+    import shutil  # noqa: PLC0415
+    import tempfile  # noqa: PLC0415
+
+    tmp = Path(tempfile.mkdtemp(prefix="harness-installed-rescore-"))
+    try:
+        site = tmp / "site-packages"
+        shutil.copytree(HERE, site / "evaluation_harness",
+                        ignore=shutil.ignore_patterns("__pycache__", "test_*.py", "self_test.py"))
+        shutil.copytree(ROOT / "schemas", site / "evaluation_harness" / "schemas")
+        proj = tmp / "project"
+        data = proj / "data"
+        (data / "sources" / "rs_v1").mkdir(parents=True)
+        (data / "configs").mkdir(parents=True)
+        for i in ("t1", "t2", "t3"):
+            (data / "sources" / "rs_v1" / f"{i}.txt").write_text(f"Ticket {i} cannot log in. It fails twice.\n")
+        (data / "configs" / "arm_echo.yaml").write_text(
+            "config_id: arm_echo_v1\ndataset_id: rs_v1\nparams:\n  provider: echo\n  sentences: 1\n")
+        env = {**os.environ, "EVAL_HOME": str(proj), "EVAL_DATA_DIR": "data", "EVAL_RUNS_DIR": "",
+               "PYTHONPATH": str(site), "PYTHONDONTWRITEBYTECODE": "1", "EVAL_MAX_COST_USD": ""}
+
+        def evh(*args: str) -> subprocess.CompletedProcess:
+            return subprocess.run([PY, "-m", "evaluation_harness", *args], cwd=proj,
+                                  capture_output=True, text=True, env=env)
+
+        steps = [evh("dataset-create", "--dataset-id", "rs_v1", "--source-dir", str(data / "sources" / "rs_v1")),
+                 evh("dataset-materialize", "--dataset-id", "rs_v1"),
+                 evh("experiment-run", "--config", str(data / "configs" / "arm_echo.yaml"))]
+        check("installed rescore: a run made with the bundled adapter",
+              all(s.returncode == 0 for s in steps), "".join(s.stderr for s in steps)[-300:])
+        gold = data / "references" / "gold" / "rs_v1"
+        gold.mkdir(parents=True)
+        for i in ("t1", "t2", "t3"):
+            (gold / f"{i}.txt").write_text(f"Ticket {i}: cannot log in.\n")
+        r = evh("rescore", "--dataset-id", "rs_v1", "--reference-id", "gold/rs_v1", "--out", str(data / "runs-gold"))
+        out = r.stdout + r.stderr
+        check("installed rescore: it finds the bundled adapter inside the package",
+              r.returncode == 0 and "adapter not found" not in out, out[-300:])
+        check("installed rescore: the re-scored run is written",
+              any((data / "runs-gold").glob("arm_echo_v1_*/metrics.json")), out[-300:])
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
 def test_judge_score_runs_from_an_installed_package() -> None:
     """`evh judge-score` in a project that has only the package, its own data, scorer, prompt
     and runs. The package is laid out as pip lays it out (scripts/ as evaluation_harness,
@@ -2515,6 +2569,7 @@ def main() -> int:
         test_the_reproduction_tables_agree_with_the_configs_and_runs,
         test_the_gateway_routes_as_documented,
         test_a_project_elsewhere_imports_runs_and_tests_them,
+        test_rescore_finds_the_bundled_adapter_from_an_installed_package,
         test_judge_score_runs_from_an_installed_package,
     ):
         # A TEST THAT RAISES MUST NOT HIDE THE ONES AFTER IT. `fn()` bare meant one
