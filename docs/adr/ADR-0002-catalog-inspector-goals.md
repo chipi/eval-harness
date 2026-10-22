@@ -2,7 +2,9 @@
 
 **Status:** Accepted (2026-10-21). The owner approved the design and all four open questions as
 recommended (see the end of this note), except the alpha tags: 0.4.0 is built on one branch,
-layer by layer, and released once. Done: layers 1 (stats), 2 (catalog and inspector) and 3 (goals).
+layer by layer, and released once. Built: layers 1 (stats), 2 (catalog and inspector), 3 (goals)
+and the code of 4b (the deployment). Left: layer 4 (the podcast repo on the harness) and layer 5
+(the release). Where the build differs from this note, see "As built" below.
 **Date:** 2026-10-21
 
 ## Context
@@ -183,7 +185,7 @@ project upgrading from 0.3.0 changes nothing until it sets that date.
 | 2 | catalog | `catalog` package, `Adapter` protocol, `HarnessAdapter`, `evh catalog build/serve` | catalog builds on harness data and the tutorial; server security tests ported |
 | 3 | goals | goals: schema, `goal:` on configs, promotion `format`, validate check | tutorial gets one goal; validate passes on harness data |
 | 4 | podcast repo | pins the branch head, deletes its copies of the generic code, keeps `podcast_adapter.py` | its full suite (1,212 tests) and `make catalog` give the same pages |
-| 4b | site on the VPS | three addresses: `evals.humancopilot.eu` (findings site) and `catalog.evals.humancopilot.eu` (the harness deployed on these experiments: catalog, goal pages, live inspector, item outputs included) on the prod VPS, Caddy in front and Docker behind; `docs.evals.humancopilot.eu` on GitHub Pages, old `/docs/...` URLs redirected. The inspector gets a public mode (host allowlist, arm cap, per-client rate, cache, warm start). Both sites pass a CSP with no `'unsafe-inline'`. Runbook: `infra/README.md` | deploy from `main` through a protected `prod` environment; the on-box health check; the live probes on both hosts |
+| 4b | site on the VPS | three addresses: `evals.humancopilot.eu` (the harness site: the harness and its findings) and `catalog.evals.humancopilot.eu` (the harness deployed on these experiments: catalog, goal pages, live inspector, item outputs included) on the prod VPS, Caddy in front and Docker behind; `docs.evals.humancopilot.eu` on GitHub Pages, old `/docs/...` URLs redirected. The inspector gets a public mode (host allowlist, arm cap, per-client rate, cache, warm start). Both sites pass a CSP with no `'unsafe-inline'`. Runbook: `infra/README.md` | deploy from `main` through a protected `prod` environment; the on-box health check; the live probes on both hosts |
 | 5 | release | changelog, UPGRADING, GUIDE step for goals and the catalog | owner's merge |
 
 
@@ -209,10 +211,28 @@ interface is wrong, and that gets fixed before 0.4.0.
    its verdicts did not (CHANGELOG 0.4.0).
 2. **Goal cut-over: a date the project sets.** Nothing is required of an upgrading project
    until it sets one.
-3. **The harness's own catalog: published** with the findings site, since it holds only public
+3. **The harness's own catalog: published** with the harness site, since it holds only public
    data. The privacy rule (no item text in static output) applies there as everywhere.
 4. **No intermediate releases.** One branch, one layer per step, CI on every push, one 0.4.0
    release at the end.
+5. **Hosting:** the public site moves to the prod VPS with the catalog beside it; the docs move
+   to their own host on GitHub Pages (layer 4b).
+
+## As built
+
+The decision above is kept as it was accepted. Where the code came out differently, this is
+what it does (checked against the branch, 2026-10-22):
+
+| the note says | the code does |
+|---|---|
+| `evh catalog build` and `evh catalog serve` | two commands: `evh catalog` and `evh catalog-serve` (`make catalog`, `make catalog-serve`) |
+| the adapter named as `module:Class` in `config.yaml` | `catalog: {adapter: path/to/file.py:Class}` or `--adapter`, a file path or a module |
+| the module `evaluation_harness.catalog.Adapter` | `evaluation_harness.catalog_adapter.Adapter`; the built-in adapter is `HarnessAdapter` in the same module |
+| goal fields `id`, `purpose`, `reader`, `output_contract`, `primary_measure`, `references`, `evidence`, `min_items` | `schemas/goal.schema.json` requires `goal_id`, `title`, `statement`, `decision`, `success_criteria` (the primary measure and its direction) and `datasets`; `context`, `output_contract`, `references`, `measures` and `min_items` (inside `success_criteria`) are optional |
+| `experiment-run` copies `goal:` into the run fingerprint | the run records `goal` and `format` beside the fingerprint, not in it: they change what a run answers, not what it measured |
+| `run-promote` records `format` and `format_observed` | `run-promote` carries `goal` and `format` (asked) onto the baseline; no observed format is recorded |
+| a cut-over date in `config.yaml` | `required_from` in `data/goals/policy.yaml` |
+| the catalog renders reports, so a `markdown` dependency (an extra) | the catalog renders no reports; no dependency was added |
 
 ## Not covered by this note
 

@@ -111,6 +111,31 @@ The four arms: `lead1` (one sentence), `lead2` (two), `lead2_noisy` (two, with r
 drops — what a model at temperature > 0 looks like), and `author` (three) — the one we
 will trust to write references.
 
+**Say what the evaluation is for.** A goal names who uses the output, the decision it
+informs, the measure that decides it and which direction is better, and the datasets it
+rests on. The tutorial has one:
+
+```bash
+mkdir -p data/goals && cp tutorial/goals/tickets_summary.yaml data/goals/
+for f in data/configs/tickets_*.yaml; do echo "goal: tickets_summary" >> "$f"; done
+```
+
+Each config now names it, and every run records it:
+
+```yaml
+# data/configs/tickets_lead2.yaml
+config_id: tickets_lead2_v1
+dataset_id: tickets_v1
+params:
+  provider: echo
+  sentences: 2
+goal: tickets_summary
+```
+
+A config naming a goal that does not exist is refused before it runs. Goals are optional:
+nothing requires one until a project sets a date from which every new run must name one
+(`required_from` in `data/goals/policy.yaml`).
+
 ## 4 · Author silver references
 
 You cannot score quality without something to score against, and most projects start with
@@ -133,8 +158,8 @@ says so. Step 7 shows exactly what they get wrong.
 ## 5 · Commit, then measure
 
 ```bash
-git add data/datasets/tickets_v1.json data/configs/tickets_*.yaml data/references/silver/tickets_v1
-git commit -m "tickets_v1: dataset, arms, silver references"
+git add data/datasets/tickets_v1.json data/configs/tickets_*.yaml data/goals/tickets_summary.yaml data/references/silver/tickets_v1
+git commit -m "tickets_v1: dataset, arms, goal, silver references"
 ```
 
 Commit **before** measuring. A run records the commit it ran on; from a dirty tree that
@@ -454,21 +479,62 @@ and [ADR-0001](adr/ADR-0001-judge-scorers.md).
 make validate
 ```
 ```text
-  ok   V1 schemas — 183 document(s) validated
-  ok   V2 every run's dataset_id resolves
-  ok   V4 materialized copies match their frozen hashes (1 of 1 datasets materialized here)
+  ok   V1 schemas — 217 document(s) validated
+  ok   V2 every run's dataset_id resolves (15 dataset(s) known)
+  ok   V4 materialized copies match their frozen hashes (1 of 15 datasets materialized here)
+       not checked (no materialized copy here): ag_news_20, ag_news_200, ...
   ok   V5 no two configs report byte-identical scores
   ok   V6 every baseline's source run still exists
   ok   V8 no two runs share a config_id (outside a --repeat set)
+  ok   V14 goals — 7 goal(s), every goal named resolves; optional (no required_from set)
   ...
 VALIDATION PASSED
 ```
 
-Run it in CI; it exits non-zero. V4 can only check a dataset whose materialized copy is on
-the machine, and names each one it could not check; a CI job without the sources checks none
-of them, so materialize first where the copy matters. Two independent arms never agree to full
-float precision — V5 catches a copied number or a mis-wired arm, V8 two measurements quietly
-averaged into one row.
+Run it in CI; it exits non-zero. The counts include this repository's six example
+experiments; in your own project they are yours alone. V4 can only check a dataset whose
+materialized copy is on the machine, and names each one it could not check; a CI job without
+the sources checks none of them, so materialize first where the copy matters. Two independent
+arms never agree to full float precision — V5 catches a copied number or a mis-wired arm, V8
+two measurements quietly averaged into one row. V14 checks every goal and everything that
+names one.
+
+## 12 · Browse it: the catalog and the inspector
+
+Tables answer the questions you thought to ask. To look around, build the catalog and start
+the inspector:
+
+```bash
+make catalog
+make catalog-serve
+```
+```text
+catalog: .build/catalog — 7 goals, 10 datasets, 256 arms, 3 references
+catalog: http://127.0.0.1:8765/.build/catalog/   (Ctrl-C to stop)
+```
+
+Open the address it prints.
+
+- **The catalog** is static pages: one per dataset with every arm and its headline number, a
+  goals page, and a page per goal ranking the arms that record its measure. Counts and means
+  only, never an item's text, so the pages can be published.
+- **The inspector** is the server behind them, on 127.0.0.1 only. Pick arms on one dataset
+  and it tests each against a baseline with the same paired test as `pair-test`: lead2
+  against lead1 on gold gives p = 0.0938, as step 8's numbers do. It charts the per-ticket
+  scores, and for one ticket shows each arm's output beside the reference.
+- **Its refusals** are the tests' refusals: no comparison across two datasets, and on a metric
+  scored against a reference, no arm scored against another reference than the baseline's (a
+  silver-scored run against a gold-scored one).
+
+Here the catalog also lists this repository's six example experiments. In your own project it
+lists your runs alone.
+
+**In your own project.** If your data follows the harness's layout (`data/datasets/`,
+`data/runs*/`, `data/references/`, `data/goals/`), both commands work as they are: nothing to
+write. If your runs live in another layout, write one adapter that answers the catalog's
+questions (which arms exist, what each scored per item, which references exist, what one item
+looked like) and name it in `config.yaml`: `catalog: {adapter: path/to/file.py:Class}`.
+[INTEGRATION](../harness/docs/INTEGRATION.md#the-catalog-and-the-inspector) shows how.
 
 ## Doing it for real
 
@@ -516,6 +582,8 @@ averaged into one row.
 | dev-slice-free result | `make holdout DATASET_ID=… EXCLUDE=…` |
 | billed cost | `make cost-report` |
 | baseline | `make run-promote RUN=… REASON="…"` · `make baselines-list` |
+| what it is for | `data/goals/<goal_id>.yaml`, and `goal:` on each config |
+| browse and inspect | `make catalog` · `make catalog-serve` |
 | consistency | `make validate` · `make check` |
 
 The reasoning behind each rule is in [Concepts](../harness/docs/CONCEPTS.md); every flag

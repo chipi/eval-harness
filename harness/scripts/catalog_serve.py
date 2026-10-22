@@ -86,6 +86,24 @@ def _ref_of(metric: str) -> str:
     return metric.split(" vs ", 1)[1] if " vs " in metric else ""
 
 
+#: Measured off the output or the bill, not against a reference: comparable across references.
+_REFERENCE_FREE = ("cost", "latency", "tokens")
+
+
+def _other_reference(series: dict, baseline: str, metric: str, rescore: bool) -> list:
+    """Arms whose `metric` was scored against another reference than the baseline's, which a
+    paired test must not set against it: on one dataset, a silver-scored and a gold-scored run
+    both record `overlap_f1`, but not of the same thing. Nothing is set aside when the scores
+    were recomputed against one reference (re-scoring, or a metric named `x vs <ref>`), or when
+    the metric needs no reference (length, cost, latency, tokens)."""
+    if rescore or _ref_of(metric) or A.is_neutral(metric) or metric in A.shape_metrics \
+            or any(k in metric for k in _REFERENCE_FREE):
+        return []
+    ref = {a: A.describe(a).get("reference", "") for a in series}
+    want = ref.get(baseline, "")
+    return [a for a in series if a != baseline and want and ref[a] and ref[a] != want]
+
+
 def _one_dataset(by_run: dict, baseline: str):
     """Comparisons always use one dataset_id: pairing by item id alone would line up runs on
     different datasets that happen to share ids.
@@ -209,6 +227,12 @@ def _warnings(ctx: dict) -> list:
     if ctx["aside"]:
         w.append(f"Left out, on another dataset than {ctx['dataset']}: "
                  + ", ".join(_label(a) for a in ctx["aside"]) + ".")
+    if ctx.get("other_ref"):
+        want = A.describe(ctx["baseline"]).get("reference", "")
+        w.append(f"Not tested against the baseline: '{metric}' was scored against another reference "
+                 f"than the baseline's ({want}) for "
+                 + ", ".join(f"{_label(a)} ({A.describe(a).get('reference', '')})" for a in ctx["other_ref"])
+                 + ". Pick a baseline scored against the same reference to compare them.")
     if averages:
         w.append(f"{len(averages)} arm(s) recorded only an average '{metric}', no per-{item} "
                  "scores: shown as averages, not tested.")
@@ -266,6 +290,9 @@ def compare(params: dict) -> dict:
     # With no baseline named, a promoted baseline is the natural reference point.
     fallback = next((a for a in series if a.startswith("baselines/")), next(iter(series)))
     baseline = asked if asked in series else fallback
+    other_ref = _other_reference(series, baseline, metric, rescore)
+    for a in other_ref:
+        series.pop(a)
     higher, neutral = not A.lower_is_better(metric), A.is_neutral(metric)
     result = stats.compare(series, baseline, higher_is_better=higher, neutral=neutral,
                            family=_number(params, "family", int) or None,
@@ -273,7 +300,8 @@ def compare(params: dict) -> dict:
     averages, repeats = _averages(arms, series, metric)
     swapped = bool(asked) and asked != baseline
     ctx = dict(metric=metric, series=series, arms=arms, ds=ds, asked=asked, baseline=baseline,
-               swapped=swapped, averages=averages, repeats=repeats, aside=aside, dataset=dataset)
+               swapped=swapped, averages=averages, repeats=repeats, aside=aside, dataset=dataset,
+               other_ref=other_ref)
     return {
         "metric": metric,
         "higher_is_better": higher,

@@ -2,7 +2,7 @@
 
 Every release of the harness, newest first: what it shipped, and what a project pinning it
 should know. These are the release notes. The same section is the text of the release's
-GitHub Release, and the findings site shows them at
+GitHub Release, and the harness site shows them at
 [evals.humancopilot.eu/releases.html](https://evals.humancopilot.eu/releases.html).
 
 The version lives in `scripts/_version.py`; a release is the git tag `v<version>`, and the
@@ -11,15 +11,20 @@ that can move a result is never a patch release without saying so under **Change
 
 ## 0.4.0 — unreleased
 
-Catalog, run inspector and goals in the harness ([ADR-0002](https://github.com/chipi/eval-harness/blob/main/docs/adr/ADR-0002-catalog-inspector-goals.md)).
-Built on one branch, layer by layer, and released once. Done so far: one implementation of the
-paired test, `evaluation_harness.stats`, shared by `pair-test`, `family-test` and the run
-inspector; the catalog and run inspector themselves, for any project; and goals.
+See your runs, not only tables of them. `evh catalog` builds static pages over a project's
+runs, and `evh catalog-serve` runs an inspector that tests chosen arms against a baseline and
+shows one item's outputs beside its reference. A project on the harness's layout needs no code;
+one with its own layout writes one adapter. Goals record what an evaluation is for, and the
+paired test now lives in one place, `evaluation_harness.stats`, exact at 30 items or fewer.
+**Upgrading can move a result** only where `pair-test` or `family-test` ran on 30 items or fewer
+(below), and adds no dependency. Design:
+[ADR-0002](https://github.com/chipi/eval-harness/blob/main/docs/adr/ADR-0002-catalog-inspector-goals.md);
+how to upgrade: [UPGRADING](https://github.com/chipi/eval-harness/blob/main/harness/docs/UPGRADING.md).
 
 This repository now deploys the harness on its own example experiments:
 - the catalog and run inspector are public at
   [catalog.evals.humancopilot.eu](https://catalog.evals.humancopilot.eu/);
-- the findings site moves from GitHub Pages to the same server;
+- the public site, the harness and its findings, moves from GitHub Pages to the same server;
 - the docs move to [docs.evals.humancopilot.eu](https://docs.evals.humancopilot.eu/), and old
   `/docs/` links redirect there.
 
@@ -70,6 +75,9 @@ package.
     each arm's output beside the reference.
   - **The same rules as everywhere else:**
     - Arms on different `dataset_id`s are refused.
+    - On a metric scored against a reference, an arm scored against another reference than
+      the baseline's (silver against gold, say) is named and not tested against it; cost,
+      latency, tokens and length compare across references.
     - The static pages carry counts and means only, never an item's text.
     - The server answers only to a 127.0.0.1 Host. It serves only the catalog and the
       data tree, and no dot-folder in either.

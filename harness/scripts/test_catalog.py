@@ -40,13 +40,13 @@ tmp = Path(tempfile.mkdtemp(prefix="evh-catalog-"))
 data = tmp / "data"
 
 
-def run(runs_dir, run_id, dataset, config, scores, text=SECRET, kinds=None):
-    d = data / runs_dir / run_id
+def run(runs_dir, run_id, dataset, config, scores, text=SECRET, kinds=None, ref=None, root=None):
+    d = (root or data) / runs_dir / run_id
     (d / "outputs").mkdir(parents=True)
     (d / "metrics.json").write_text(json.dumps({
         "run_id": run_id, "dataset_id": dataset, "config_id": config, "primary_metric": "acc",
         "metric_kinds": kinds or {"acc": "quality", "words": "descriptive"},
-        "fingerprint": {"data": {"reference_id": f"gold/{dataset}"}}}))
+        "fingerprint": {"data": {"reference_id": ref or f"gold/{dataset}"}}}))
     rows = []
     for i, s in enumerate(scores):
         rows.append(json.dumps({"item_id": f"i{i:02d}", "acc": s, "words": 10.0 + i}))
@@ -152,6 +152,25 @@ try:
     pub.shutdown()
     cs.LIMITS.update(hosts=(), rate=0, max_arms=40)
     cs._CACHE.clear(); cs._HITS.clear()
+
+    # One reference per comparison: an arm scored against silver and one scored against gold
+    # (runs/ and a rescored copy, say) both record `acc`, but the numbers measure different
+    # things, so the inspector must not pair them on it. Output length needs no reference.
+    data2 = tmp / "data2"
+    run("runs", "g_1", "ds1", "arm_g", [0.5] * 12, root=data2)
+    run("runs-silver", "s_1", "ds1", "arm_s", [0.9] * 12, ref="silver/ds1", root=data2)
+    cs.set_adapter(HarnessAdapter(data2))
+    mixed = cs.compare({"runs": ["runs/ds1/arm_g,runs-silver/ds1/arm_s"], "baseline": ["runs/ds1/arm_g"]})
+    check("compare: an arm scored against another reference is not tested against the baseline",
+          mixed.get("metric") == "acc" and "runs-silver/ds1/arm_s" not in mixed.get("series", {})
+          and not mixed.get("rows"), list(mixed.get("series", {})))
+    check("compare: ...and the answer names it and its reference",
+          any("silver/ds1" in w and "arm_s" in w for w in mixed.get("warnings", [])), mixed.get("warnings"))
+    words = cs.compare({"runs": ["runs/ds1/arm_g,runs-silver/ds1/arm_s"], "baseline": ["runs/ds1/arm_g"],
+                        "metric": ["words"]})
+    check("compare: a metric that needs no reference compares them anyway",
+          "runs-silver/ds1/arm_s" in words.get("series", {}) and len(words.get("rows", [])) == 1, words.get("warnings"))
+    cs.set_adapter(A)
 
     # the command line: evh catalog builds into the project
     env_root = tmp / "proj"

@@ -29,7 +29,7 @@ LINK = re.compile(r"(\]\()([^)\s]+?)(\))")
 
 def on_config(config):
     """The footer names the harness version (from _version.py) and the build, which the
-    deploy (pages.yml) replaces with the commit being served, as on the findings site."""
+    deploy (pages.yml) replaces with the commit being served, as on the harness site."""
     v = re.search(r'__version__ = "([^"]+)"',
                   (ROOT / "harness" / "scripts" / "_version.py").read_text()).group(1)
     config["copyright"] = f"{config['copyright']} · v{v} · build: local"
@@ -81,7 +81,7 @@ def on_post_page(output, page, config):
     """3. The link-preview card, and the Umami tag from site/analytics.json when configured."""
     import json  # noqa: PLC0415
     from html import escape  # noqa: PLC0415
-    # The findings site's link-preview card, so a shared docs link is not a bare URL.
+    # The harness site's link-preview card, so a shared docs link is not a bare URL.
     tag = ('<meta property="og:image" content="https://evals.humancopilot.eu/assets/social.png">'
            '<meta name="twitter:card" content="summary_large_image">')
     cfg = json.loads((ROOT / "site" / "analytics.json").read_text())

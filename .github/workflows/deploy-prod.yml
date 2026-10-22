@@ -1,6 +1,6 @@
 name: Deploy evals to prod VPS
 
-# Renders a release (infra/deploy/render.sh: the findings site, the catalog built from the
+# Renders a release (infra/deploy/render.sh: the harness site, the catalog built from the
 # committed runs, the inspector's code and data), rsyncs it to /srv/evals/releases/<sha>/ on the
 # prod VPS over the tailnet, and runs infra/deploy/deploy.sh there, which validates, switches the
 # `current` symlink, health-checks every site and the inspector (rolling back on failure), and

@@ -3,7 +3,7 @@
 # eval-harness
 
 [![verify](https://github.com/chipi/eval-harness/actions/workflows/reproduce.yml/badge.svg?branch=main)](https://github.com/chipi/eval-harness/actions/workflows/reproduce.yml)
-[![site](https://github.com/chipi/eval-harness/actions/workflows/pages.yml/badge.svg?branch=main)](https://evals.humancopilot.eu/)
+[![site](https://github.com/chipi/eval-harness/actions/workflows/deploy-prod.yml/badge.svg?branch=main)](https://evals.humancopilot.eu/)
 [![docs](https://img.shields.io/badge/docs-docs.evals.humancopilot.eu-c8ff3d)](https://docs.evals.humancopilot.eu/)
 [![python](https://img.shields.io/badge/python-3.11%2B-3776ab)](harness/README.md)
 [![demo](https://img.shields.io/badge/demo-no%20API%20key-2ea44f)](#try-it-in-a-minute)
@@ -65,7 +65,8 @@ It was built to answer four questions anyone building with AI ends up asking:
 | **learn the method** | [**The method**](https://evals.humancopilot.eu/method.html): six habits for measuring AI systems, as these experiments taught them |
 | **read what it found** | [**The experiments**](https://evals.humancopilot.eu/experiments.html): 24 LLMs, fine-tunes and baselines on six benchmarks, generated from the runs in this repository, so every number on it is checked |
 | **check it yourself** | [**Reproduce it**](docs/REPRODUCE.md): five levels, from recomputing every number ($0, one command) to rerunning every model with one OpenRouter key |
-| **read the full documentation** | [docs.evals.humancopilot.eu](https://docs.evals.humancopilot.eu/): guide, concepts, runbook, integration, protocol, reference |
+| **browse the runs, test any two** | [**The catalog**](https://catalog.evals.humancopilot.eu/): every run of the six experiments, with the run inspector; `make catalog-serve` gives you the same over your own runs |
+| **read the full documentation** | [docs.evals.humancopilot.eu](https://docs.evals.humancopilot.eu/): guide, concepts, runbook, integration, architecture, protocol, reference |
 | **review or contribute** | [KNOWN_ISSUES](research/internal/KNOWN_ISSUES.md) (what is open), [CONTRIBUTING](CONTRIBUTING.md) |
 
 ## What it is
@@ -85,6 +86,10 @@ system lives in one file, `adapter.py`, with four functions.
   says plainly when nothing is distinguishable.
 - **Re-scoring for $0.** `make rescore` recomputes metrics from stored outputs. Checking a
   metric should not cost another sweep; when it did, a broken metric survived two.
+- **A catalog and an inspector.** Pages over your runs, and a local server that tests any arms
+  against a baseline with the same paired test and shows outputs beside references. No code
+  on the harness's layout; one adapter on yours.
+- **Goals.** Each config names what its evaluation is for, and validation checks it.
 
 And it **refuses** to mislead: it won't compare runs measured on different data, it won't
 promote a baseline from a dirty or unknown build, and it records whether a reference is
@@ -145,6 +150,7 @@ your project and [`harness/docs/RUNBOOK.md`](harness/docs/RUNBOOK.md) for every 
 | `make silver-calibrate DATASET_ID=my_v1` | is a model-authored reference usable? Read it against the ceiling it prints |
 | `make rescore DATASET_ID=my_v1` | recompute scores from stored outputs, no API calls |
 | `make judge-score DATASET_ID=my_v1 SCORER=…` | optional: re-measure stored outputs with LLM judges, refused until they are validated against people ([GUIDE step 10](docs/GUIDE.md)) |
+| `make catalog-serve` | browse every run and test any arms against a baseline, item by item ([GUIDE step 12](docs/GUIDE.md)) |
 
 Each needs `DATASET_ID`; without it the Makefile falls back to the demo dataset, `smoke_v1`.
 
@@ -257,8 +263,9 @@ examples/    the six experiments, each with its own uv environment
 research/    the experiment reports and the synthesis; research/internal/ is the lab
              notebook: handovers, review rounds and an append-only journal
 site/        the public site, generated from the runs (make site; checked by make ci)
-docs/        the guide, REPRODUCE, PROTOCOL, REFERENCE, evidence/: published as the
-             documentation site by mkdocs.yml
+docs/        the guide, architecture, REPRODUCE, PROTOCOL, REFERENCE, evidence/: published
+             as the documentation site by mkdocs.yml
+infra/       how this repository is deployed: the site and the catalog on the prod VPS
 Makefile     verify / plan / data / reproduce / compare: the way in for a rerun
 ```
 

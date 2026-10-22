@@ -158,6 +158,46 @@ can extend later without re-authoring what you have.
 | integrity | `make validate` fails CI on a tree that has drifted |
 | re-measurement | stored outputs scored again for a new reference or scorer at $0, or by validated LLM judges, without re-running an arm |
 | a judge panel | when the cheap metric is biased and you need an LLM to adjudicate |
+| goals | what each evaluation is for, named on every config and checked by `make validate` |
+| a catalog and an inspector | pages over your runs, and a local server that tests any arms against a baseline and shows outputs beside references |
+
+---
+
+## The catalog and the inspector
+
+`make catalog` (`evh catalog`) builds static pages over your runs; `make catalog-serve`
+(`evh catalog-serve`) serves them with the run inspector on 127.0.0.1. Both only ask an
+**adapter** questions: which arms exist, what each scored per item, which way is better,
+which references exist, what one arm wrote for one item.
+
+- **On the harness's layout, there is nothing to write.** The built-in `HarnessAdapter`
+  reads `data/runs*/`, `data/references/`, `data/datasets/` and `data/goals/`, and its arm is
+  one config on one dataset with its repeats averaged per item, exactly as `pair-test` reads
+  them, so the inspector gives the same p.
+- **With your own layout, write one adapter** and name it in your project's `config.yaml`:
+
+  ```yaml
+  catalog:
+    adapter: tools/catalog_adapter.py:Adapter    # a file path or a module, then the class
+  ```
+
+  The class implements the `evaluation_harness.catalog_adapter.Adapter` protocol. Subclassing
+  `HarnessAdapter` and overriding what differs is usually shorter than starting empty. The
+  questions, grouped:
+
+  | question | members |
+  |---|---|
+  | which arms, on which data | `arms()`, `arms_of(path)`, `describe(arm)`, `notes(arm)` |
+  | what each scored, per item | `scores(arm, rescore=False)`, `recorded_means(arm)`, `input_hashes(arm)`, `can_rescore` |
+  | which way is better | `lower_is_better(metric)`, `is_neutral(metric)`, `preferred_metrics`, `shape_metrics` |
+  | which references | `references()`, `reference_format(ref)`, `reference_archived(ref)` |
+  | what was asked, what came back | `output_format(arm)` |
+  | one item, side by side (the inspector only) | `item_view(arm, item)`, `reference_view(ref, item)` |
+  | what it is for | `goals()`, `goal_of(arm)` |
+  | words and places | `item_word` (e.g. `"episode"`), `data_dir` |
+
+  Item text is only ever returned by `item_view` and `reference_view`, which only the local
+  inspector calls: the static pages never carry it, whatever the adapter.
 
 ---
 

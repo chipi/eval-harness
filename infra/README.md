@@ -4,7 +4,7 @@ Three addresses, one repository:
 
 | address | what | served by |
 |---|---|---|
-| `evals.humancopilot.eu` | the findings site (`site/public`, built by `make site`) | prod VPS: `evals-nginx` |
+| `evals.humancopilot.eu` | the harness site: the harness and its findings (`site/public`, built by `make site`) | prod VPS: `evals-nginx` |
 | `catalog.evals.humancopilot.eu` | the harness deployed on these example experiments: the catalog, goal pages and run inspector | prod VPS: `evals-nginx` (pages) + `evals-inspector` (`/api/*`) |
 | `docs.evals.humancopilot.eu` | the documentation (mkdocs) | GitHub Pages (`.github/workflows/pages.yml`) |
 
@@ -95,7 +95,7 @@ as `CSP_REPORT_URI`. Until then the CSP is enforced without reports.
 The deploy workflow runs only from `main`: the prod environment allows no other branch. So the
 first deploy comes with the merge of the 0.4.0 branch, and so does the switch of `pages.yml` to
 docs only. Between the merge and the DNS change, `evals.humancopilot.eu` (still on GitHub
-Pages) shows the docs instead of the findings site. Do steps 2–5 together, in a few minutes.
+Pages) shows the docs instead of the harness site. Do steps 2–5 together, in a few minutes.
 
 0. **Before the merge:** the one-time setup above is done, and the prod session confirms
    `/srv/evals` and the key.

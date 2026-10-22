@@ -37,7 +37,7 @@ Pin a release tag:
    Anything that can move a number goes under **Changed**, in words a consumer can act on.
    Open it with a short paragraph a reader can take in at once: what the release lets you do,
    and whether upgrading changes any result. The section is the release notes in three places:
-   the GitHub Release (the workflow copies it), the docs site and the findings site's release
+   the GitHub Release (the workflow copies it), the docs site and the harness site's release
    notes page. Use absolute links: the GitHub Release cannot resolve relative ones.
 3. **Rebuild the validation reports that CI cannot.** The Goyal et al. annotations and the
    Zhang et al. ratings are downloaded at run time and never committed, so CI checks each

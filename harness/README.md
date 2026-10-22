@@ -78,10 +78,14 @@ data/baselines/      make run-promote — the number future work is judged again
 optional, later, from the same frozen outputs (the originals are never touched):
 data/runs-rescored/  make rescore        new reference or new code scorer, $0
 data/runs-judged/    make judge-score    a validated LLM judge, billed and capped
+
+beside them, also optional:
+data/goals/          what each evaluation is for; configs name one with `goal:`
+.build/catalog/      make catalog / make catalog-serve   pages over the runs, and the inspector
 ```
 
-`make validate` checks the whole tree — thirteen integrity rules, exits non-zero, so
-it can gate CI.
+`make validate` checks the whole tree — fourteen integrity rules (V1–V14), exits non-zero,
+so it can gate CI.
 
 ### The three inputs
 
@@ -237,7 +241,7 @@ how 18 arms of paid results were lost during this harness's own development.
 | **[INTEGRATION.md](docs/INTEGRATION.md)** | plugging in an existing system; getting ground truth when you have none |
 | **[RUNBOOK.md](docs/RUNBOOK.md)** | the operational walk, step by step, with the reasoning |
 | **[RELEASING.md](docs/RELEASING.md)** | pinning a release in your project, and cutting one: version, changelog, tag, GitHub Release |
-| **[UPGRADING.md](docs/UPGRADING.md)** | for a copy of the harness taken before October 2026: the fixes that can change results, the breaking changes, how to stay current |
+| **[UPGRADING.md](docs/UPGRADING.md)** | from one release to the next (what can move a number), and for a copy of the harness taken before October 2026 |
 | **[CONCEPTS.md](docs/CONCEPTS.md)** | why each refusal exists, and the failure it prevents |
 
 ---
@@ -278,11 +282,14 @@ partial results preserved so a blown budget still yields a usable report.
 | `scripts/experiment_run.py` | run an arm → scores, cost, speed, provenance |
 | `scripts/compare_runs.py` | compare two runs, or refuse |
 | `scripts/promote_baseline.py` | run → baseline, or refuse |
-| `scripts/validate_tree.py` | thirteen integrity checks |
+| `scripts/validate_tree.py` | fourteen integrity checks (V1–V14) |
 | `scripts/list_runs.py` | what runs and baselines exist |
-| `schemas/` | the three contracts: dataset, metrics, baseline |
+| `schemas/` | the contracts: dataset, metrics, baseline, goal |
+| `scripts/stats.py` | the one paired test: `pair-test`, `family-test` and the inspector all call it |
 | `scripts/rescore.py` | re-score stored outputs for a new reference or scorer, $0 |
 | `scripts/judge_score.py`, `scripts/judging.py` | the judge scorer: gate, judging set, verdicts, projection; prompt, parser, judge client |
+| `scripts/catalog_build.py`, `scripts/catalog_serve.py`, `catalog_assets/` | the catalog's pages, and the run inspector |
+| `scripts/catalog_adapter.py` | what the catalog asks of a project's data, and `HarnessAdapter`, the answer for this layout |
 | `runner.py`, `judges.py` | the judge panel |
 
 Bundled providers: `echo` (no network), `anthropic`, and anything

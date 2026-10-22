@@ -2,7 +2,7 @@
 
 The changelog is the one record of what each release shipped. The GitHub Release for a tag
 takes its notes from the same section (harness-release.yml), the docs site shows the file
-itself, and this page shows it on the findings site, so the three cannot disagree.
+itself, and this page shows it on the harness site, so the three cannot disagree.
 
 Only the Markdown the changelog uses is rendered: `##`/`###` headings, `- ` bullets (wrapped
 lines continue them), paragraphs, **bold**, `code` and [links](url). Anything else stays as

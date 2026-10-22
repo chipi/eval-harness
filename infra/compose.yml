@@ -1,4 +1,4 @@
-# The `evals` stack on the prod VPS: the findings site, the catalog, and the run inspector of
+# The `evals` stack on the prod VPS: the harness site, the catalog, and the run inspector of
 # this repository's example experiments. Lives at /srv/evals/current/compose.yml on the box
 # (infra/deploy/deploy.sh). Shares nothing with the other tenants: own compose project, own
 # containers, own loopback ports (127.0.0.1:8096 nginx, 127.0.0.1:8097 inspector), own files.

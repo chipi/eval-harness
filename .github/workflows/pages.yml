@@ -2,7 +2,7 @@
 #
 #   /   mkdocs.yml   the documentation (docs/ + harness/docs/), built here
 #
-# The findings site (evals.humancopilot.eu) and the catalog with its run inspector
+# The harness site (evals.humancopilot.eu) and the catalog with its run inspector
 # (catalog.evals.humancopilot.eu) are served from the prod VPS by deploy-prod.yml; only the
 # docs stay here. The docs are built in strict mode, so a broken link fails the deploy instead
 # of shipping, and on every pull request too, so it fails the PR's checks before the merge
