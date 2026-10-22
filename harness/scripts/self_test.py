@@ -2356,6 +2356,11 @@ def test_rescore_finds_the_bundled_adapter_from_an_installed_package() -> None:
                  evh("experiment-run", "--config", str(data / "configs" / "arm_echo.yaml"))]
         check("installed rescore: a run made with the bundled adapter",
               all(s.returncode == 0 for s in steps), "".join(s.stderr for s in steps)[-300:])
+        made = [json.loads(p.read_text()) for p in (data / "runs").glob("arm_echo_v1_*/metrics.json")]
+        check("bundled adapter: its runs record a primary metric (the catalog's headline, the "
+              "leaderboard's sort, the inspector's default)",
+              made and all(m.get("primary_metric") == "overlap_f1" for m in made),
+              [m.get("primary_metric") for m in made])
         gold = data / "references" / "gold" / "rs_v1"
         gold.mkdir(parents=True)
         for i in ("t1", "t2", "t3"):

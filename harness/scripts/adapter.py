@@ -97,6 +97,12 @@ def call_system(text: str, params: Dict[str, Any]) -> Result:
 
 
 # ── 2. HOW GOOD WAS IT ───────────────────────────────────────────────────────
+#: The metric that answers "which arm is better": recorded on every run, it is what the
+#: leaderboard ranks by, the catalog's headline number and the inspector's default. Name
+#: yours when you replace score(); without one they fall back to name order.
+PRIMARY_METRIC = "overlap_f1"
+
+
 def score(output: str, reference: Optional[str]) -> Dict[str, float]:
     """Score one output. Replace with whatever "good" means for you.
 

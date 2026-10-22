@@ -94,7 +94,7 @@ data/runs/cnn_*_v[12]_2026092[56]T*_r[0-9]/**
 # judge panel output
 out/
 
-.venv/
+.venv
 __pycache__/
 
 # ── third-party corpus content: NEVER committed to this public repo ──────────

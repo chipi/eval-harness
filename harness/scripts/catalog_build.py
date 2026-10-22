@@ -206,11 +206,24 @@ def render_dataset(A: Adapter, ds: str, v: dict, out: Path) -> None:
              f'{" ↓" if a["lower"] else ""}</span>',
              f'<span data-v="{a["n"]}">{a["n"]}</span>', str(a["runs"]), e(a["reference"] or "—"),
              f'<a class="btn small" href="{inspect_url([a["arm"]], "../")}">inspect</a>'] for a in arms]
-    all_arms = [a["arm"] for a in arms][:INSPECT_MAX]
-    more = (f" (the first {INSPECT_MAX} of {len(arms)}; add others in the inspector)"
-            if len(arms) > INSPECT_MAX else "")
-    btn = (f'<p><a class="btn" href="{inspect_url(all_arms, "../")}">Inspect these arms together</a>'
-           f'<span class="muted small">{more}</span></p>') if len(all_arms) > 1 else ""
+    # One button per group of arms that can be tested together: the same headline metric,
+    # scored against the same reference. A silver-scored and a gold-scored run both record
+    # the metric but measure different things, and the inspector sets such arms aside.
+    groups: dict = {}
+    for a in arms:
+        groups.setdefault((a["metric"] or "", a["reference"] or ""), []).append(a["arm"])
+    btns = []
+    for (metric, ref), members in sorted(groups.items(), key=lambda kv: (-len(kv[1]), kv[0])):
+        if len(members) < 2:
+            continue
+        more = (f" (the first {INSPECT_MAX} of {len(members)}; add others in the inspector)"
+                if len(members) > INSPECT_MAX else "")
+        what = ", ".join(x for x in ((f"on {e(metric)}" if metric else ""),
+                                     (f"scored against {e(ref)}" if ref else "")) if x)
+        btns.append(f'<a class="btn" href="{inspect_url(members[:INSPECT_MAX], "../", metric=metric)}">'
+                    f"Inspect the {len(members)} arms {what}</a>"
+                    + (f'<span class="muted small">{more}</span>' if more else ""))
+    btn = f'<p class="btns">{"".join(btns)}</p>' if btns else ""
     refs = "".join(f"<li><code>{e(r['id'])}</code> · {e(r['tier'])}</li>" for r in v["refs"])
     body = hero("dataset", e(ds or "(no dataset_id)"),
                 f"{v['items']} {e(A.item_word)}s · {len(arms)} arms. Headline: each arm's own "

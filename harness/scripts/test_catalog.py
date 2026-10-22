@@ -8,6 +8,7 @@ inspector's numbers against pair-test's, its refusals (mixed datasets, unknown a
 server's rules (127.0.0.1 Host only, only the catalog and the data tree, no dot-folders).
 """
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -171,6 +172,19 @@ try:
                         "metric": ["words"]})
     check("compare: a metric that needs no reference compares them anyway",
           "runs-silver/ds1/arm_s" in words.get("series", {}) and len(words.get("rows", [])) == 1, words.get("warnings"))
+    # The dataset page offers one "inspect together" link per group the inspector can test as
+    # a whole: same metric, same reference. One link over all four would mix gold and silver.
+    run("runs", "g_2", "ds1", "arm_h", [0.6] * 12, root=data2)
+    run("runs-silver", "s_2", "ds1", "arm_t", [0.8] * 12, ref="silver/ds1", root=data2)
+    out2 = tmp / "out2"
+    cb.build(HarnessAdapter(data2), out2)
+    page2 = (out2 / "d" / "ds1.html").read_text(encoding="utf-8")
+    together = re.findall(r'inspect\.html\?runs=([^"&]+)&metric=acc">Inspect the 2 arms on acc, scored against ([^<]+)<',
+                          page2)
+    check("build: one 'inspect together' link per reference, none mixing them",
+          sorted(ref for _, ref in together) == ["gold/ds1", "silver/ds1"]
+          and all(("runs-silver" in runs) == (ref == "silver/ds1") and runs.count(",") == 1
+                  for runs, ref in together), together)
 
     # No primary metric on record (the bundled adapter declares none): the default yardstick
     # fell to the name order, so a fresh project's inspector opened on cost_usd. A score is the
