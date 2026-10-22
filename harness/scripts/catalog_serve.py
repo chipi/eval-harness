@@ -219,7 +219,8 @@ def _warnings(ctx: dict) -> list:
         w.append(f"No dataset_id on record for: {', '.join(unknown)}. The same-dataset rule cannot "
                  f"be checked for them; they are paired by {item} id only.")
     averages, repeats = ctx["averages"], ctx["repeats"]
-    missing = [_label(a) for a in ctx["arms"] if a not in series and a not in averages and a not in repeats]
+    missing = [_label(a) for a in ctx["arms"] if a not in series and a not in averages and a not in repeats
+               and a not in ctx.get("other_ref", ())]
     if missing:
         w.append(f"No '{metric}' on record for: {', '.join(missing)}.")
     if repeats:

@@ -165,7 +165,8 @@ try:
           mixed.get("metric") == "acc" and "runs-silver/ds1/arm_s" not in mixed.get("series", {})
           and not mixed.get("rows"), list(mixed.get("series", {})))
     check("compare: ...and the answer names it and its reference",
-          any("silver/ds1" in w and "arm_s" in w for w in mixed.get("warnings", [])), mixed.get("warnings"))
+          any("silver/ds1" in w and "arm_s" in w for w in mixed.get("warnings", []))
+          and not any("on record" in w for w in mixed.get("warnings", [])), mixed.get("warnings"))
     words = cs.compare({"runs": ["runs/ds1/arm_g,runs-silver/ds1/arm_s"], "baseline": ["runs/ds1/arm_g"],
                         "metric": ["words"]})
     check("compare: a metric that needs no reference compares them anyway",

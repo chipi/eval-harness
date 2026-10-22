@@ -538,6 +538,12 @@ looked like) and name it in `config.yaml`: `catalog: {adapter: path/to/file.py:C
 
 ## Doing it for real
 
+- **In your own repository.** You do not need this checkout: pin the package
+  ([RELEASING](../harness/docs/RELEASING.md#for-a-project-that-depends-on-it)) and run the
+  same steps as `evh <verb>` from your project root (`evh dataset-create`, `evh experiment-run`,
+  `evh catalog-serve`, …), with your data under `data/`. Every step of this guide, the
+  catalog and the inspector included, runs that way with no other setup.
+
 - **Your system.** Replace `call_system()` in `scripts/adapter.py` — one function, text
   in, output plus tokens out — or point a config's `adapter:` at your own file. The
   contract, the second function (`score`) and how to wrap a non-Python system:
