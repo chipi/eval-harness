@@ -9,6 +9,7 @@ editing `_BARE_KEY`, `_LEADIN`, `_PUNCT` or `_TOKEN` changed every score and lef
 hash identical -- and the retrieval parser was in no hash at all. An external review
 found all five at once. These assertions are the thing that would have caught them.
 """
+
 import pathlib
 import re
 import sys
@@ -17,25 +18,40 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parents[1] / "examples" / "_shared"))
 
-ok = []
-def check(label, cond): ok.append((label, cond)); print(f"  {'ok  ' if cond else 'FAIL'} {label}")
+ok: list = []
+
+
+def check(label, cond):
+    ok.append((label, cond))
+    print(f"  {'ok  ' if cond else 'FAIL'} {label}")
+
 
 import codehash  # noqa: E402
 import extraction  # noqa: E402
 import retrieval  # noqa: E402
 
+
 # ── the helper itself ────────────────────────────────────────────────────────
-def f(): return 1
+def f():
+    return 1
+
+
 check("code_digest: stable across calls", codehash.code_digest(f) == codehash.code_digest(f))
-check("code_digest: a changed constant changes the digest",
-      codehash.code_digest(f, consts={"x": re.compile("a")})
-      != codehash.code_digest(f, consts={"x": re.compile("b")}))
-check("code_digest: regex FLAGS count, not just the pattern",
-      codehash.code_digest(f, consts={"x": re.compile("a")})
-      != codehash.code_digest(f, consts={"x": re.compile("a", re.I)}))
-check("code_digest: set order does not change the digest",
-      codehash.code_digest(f, consts={"x": {"a", "b"}})
-      == codehash.code_digest(f, consts={"x": {"b", "a"}}))
+check(
+    "code_digest: a changed constant changes the digest",
+    codehash.code_digest(f, consts={"x": re.compile("a")})
+    != codehash.code_digest(f, consts={"x": re.compile("b")}),
+)
+check(
+    "code_digest: regex FLAGS count, not just the pattern",
+    codehash.code_digest(f, consts={"x": re.compile("a")})
+    != codehash.code_digest(f, consts={"x": re.compile("a", re.I)}),
+)
+check(
+    "code_digest: set order does not change the digest",
+    codehash.code_digest(f, consts={"x": {"a", "b"}}) == codehash.code_digest(f, consts={"x": {"b", "a"}}),
+)
+
 
 # ── the real hashes move when their constants move ───────────────────────────
 def moves(mod, hash_fn, const_name, new_value):
@@ -49,14 +65,22 @@ def moves(mod, hash_fn, const_name, new_value):
         setattr(mod, const_name, old)
     return before != after
 
-check("extraction: normalizer_sha256 covers _PUNCT",
-      moves(extraction, extraction.normalizer_sha256, "_PUNCT", re.compile(r"[x]")))
-check("extraction: normalizer_sha256 covers _ARTICLES",
-      moves(extraction, extraction.normalizer_sha256, "_ARTICLES", ("zzz ",)))
-check("extraction: scorer_sha256 covers _PUNCT too",
-      moves(extraction, extraction.scorer_sha256, "_PUNCT", re.compile(r"[x]")))
-check("retrieval: scorer_sha256 covers the CUT-OFFS",
-      moves(retrieval, retrieval.scorer_sha256, "NDCG_AT", 99))
+
+check(
+    "extraction: normalizer_sha256 covers _PUNCT",
+    moves(extraction, extraction.normalizer_sha256, "_PUNCT", re.compile(r"[x]")),
+)
+check(
+    "extraction: normalizer_sha256 covers _ARTICLES",
+    moves(extraction, extraction.normalizer_sha256, "_ARTICLES", ("zzz ",)),
+)
+check(
+    "extraction: scorer_sha256 covers _PUNCT too",
+    moves(extraction, extraction.scorer_sha256, "_PUNCT", re.compile(r"[x]")),
+)
+check(
+    "retrieval: scorer_sha256 covers the CUT-OFFS", moves(retrieval, retrieval.scorer_sha256, "NDCG_AT", 99)
+)
 
 # ── the NER and classification adapters, which had no assertions here at all ──
 #
@@ -83,40 +107,55 @@ _ner = _load("ner_adapter_hashcheck", _HERE / "examples/ner-few-nerd/adapter.py"
 if _ner is None:
     print("  --   NER adapter: skipped (its dependencies are not on this interpreter)")
 else:
-    check("NER: _parser_sha256 covers _BARE_KEY",
-          moves(_ner, _ner._parser_sha256, "_BARE_KEY", re.compile(r"(zzz)(zzz)")))
-    check("NER: _parser_sha256 covers _FENCE",
-          moves(_ner, _ner._parser_sha256, "_FENCE", re.compile(r"zzz")))
+    check(
+        "NER: _parser_sha256 covers _BARE_KEY",
+        moves(_ner, _ner._parser_sha256, "_BARE_KEY", re.compile(r"(zzz)(zzz)")),
+    )
+    check("NER: _parser_sha256 covers _FENCE", moves(_ner, _ner._parser_sha256, "_FENCE", re.compile(r"zzz")))
     # The function, not just the constants. This is the one that regressed.
-    check("NER: _parser_sha256 covers _balanced_arrays ITSELF",
-          moves(_ner, _ner._parser_sha256, "_balanced_arrays", lambda body: []))
-    check("NER: and _parse_entities itself",
-          moves(_ner, _ner._parser_sha256, "_parse_entities", lambda text: None))
+    check(
+        "NER: _parser_sha256 covers _balanced_arrays ITSELF",
+        moves(_ner, _ner._parser_sha256, "_balanced_arrays", lambda body: []),
+    )
+    check(
+        "NER: and _parse_entities itself",
+        moves(_ner, _ner._parser_sha256, "_parse_entities", lambda text: None),
+    )
 
 # The classification parser hash lives on the shared ClassificationTask, not on the
 # example adapter, so it is checked directly against the module the adapters import.
 import classification as _cls  # noqa: E402
 
 _task = _cls.ClassificationTask(labels=("Alpha", "Beta"), default_label="Alpha")
-check("classification: parser_sha256 covers the alias table",
-      moves(_task, _task.parser_sha256, "_aliases", {"zzz": "a"}))
-check("classification: parser_sha256 covers _MARKDOWN",
-      moves(_cls, _task.parser_sha256, "_MARKDOWN", re.compile(r"zzz")))
-check("classification: parser_sha256 covers _LEADIN",
-      moves(_cls, _task.parser_sha256, "_LEADIN", re.compile(r"zzz")))
-check("classification: and parse_label itself",
-      moves(_cls.ClassificationTask, _task.parser_sha256, "parse_label",
-            lambda self, text: None))
+check(
+    "classification: parser_sha256 covers the alias table",
+    moves(_task, _task.parser_sha256, "_aliases", {"zzz": "a"}),
+)
+check(
+    "classification: parser_sha256 covers _MARKDOWN",
+    moves(_cls, _task.parser_sha256, "_MARKDOWN", re.compile(r"zzz")),
+)
+check(
+    "classification: parser_sha256 covers _LEADIN",
+    moves(_cls, _task.parser_sha256, "_LEADIN", re.compile(r"zzz")),
+)
+check(
+    "classification: and parse_label itself",
+    moves(_cls.ClassificationTask, _task.parser_sha256, "parse_label", lambda self, text: None),
+)
 
 # THE ONE THAT WAS IN NO HASH AT ALL: the retrieval parser.
 src_before = retrieval.scorer_sha256()
 _orig = retrieval.parse_ranking
+
+
 def _stub(text):  # a parser that returns something else entirely
     return ["different"]
+
+
 retrieval.parse_ranking = _stub
 try:
-    check("retrieval: scorer_sha256 now covers parse_ranking",
-          retrieval.scorer_sha256() != src_before)
+    check("retrieval: scorer_sha256 now covers parse_ranking", retrieval.scorer_sha256() != src_before)
 finally:
     retrieval.parse_ranking = _orig
 

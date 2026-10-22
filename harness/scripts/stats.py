@@ -182,7 +182,8 @@ def compare(
         # so the verdict is the same one the page showed (family size alone loses the rank).
         verdicts = {a: (threshold, p <= threshold) for a, p in pvals.items()}
     for row in rows:
-        _set_verdict(row, *verdicts.get(row["arm"], (None, False)), higher_is_better, neutral)
+        thr, ok = verdicts.get(row["arm"], (None, False))
+        _set_verdict(row, thr, ok, higher_is_better, neutral)
     items = sorted(set().union(*(set(s) for s in arms.values()))) if arms else []
     return {"items": items, "rows": rows, "family_size": max(len(pvals), family or 0)}
 
@@ -226,5 +227,6 @@ def compare_by(
     verdicts = holm(pvals, family=family)
     for grp in out:
         for row in grp["rows"]:
-            _set_verdict(row, *verdicts.get((grp["group"], row["arm"]), (None, False)), higher_is_better, neutral)
+            thr, ok = verdicts.get((grp["group"], row["arm"]), (None, False))
+            _set_verdict(row, thr, ok, higher_is_better, neutral)
     return {"groups": out, "family_size": max(len(pvals), family or 0)}

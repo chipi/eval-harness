@@ -14,7 +14,6 @@ import os
 import tempfile
 import urllib.request
 from pathlib import Path
-from typing import Optional
 from urllib.parse import urlparse
 
 from _common import ITEM_CACHE
@@ -45,12 +44,12 @@ def _headers_for(url: str) -> dict:
 
 
 def _download_once(url: str) -> Path:
-    req = urllib.request.Request(url, headers={"User-Agent": "evaluation-harness"})
+    req = urllib.request.Request(url, headers={"User-Agent": "evaluation-harness"})  # noqa: S310 — fetch() refuses any scheme but http(s)
     for k, v in _headers_for(url).items():
         req.add_unredirected_header(k, v)
     fd, tmp = tempfile.mkstemp(dir=ITEM_CACHE, prefix=".part-")
     try:
-        with urllib.request.urlopen(req, timeout=TIMEOUT_S) as resp, os.fdopen(fd, "wb") as out:
+        with urllib.request.urlopen(req, timeout=TIMEOUT_S) as resp, os.fdopen(fd, "wb") as out:  # noqa: S310 — fetch() refuses any scheme but http(s)  # nosec B310
             while True:
                 chunk = resp.read(CHUNK)
                 if not chunk:
@@ -71,7 +70,7 @@ def _download(url: str) -> Path:
         return call_with_retries(_download_once, (url,), label=urlparse(url).hostname or url)
     except FetchError:
         raise
-    except Exception as exc:  # noqa: BLE001 — every failure to read is the same refusal
+    except Exception as exc:  # every failure to read is the same refusal
         raise FetchError(f"{url}: {exc}") from exc
 
 
@@ -83,10 +82,13 @@ def _sha256(p: Path) -> str:
     return h.hexdigest()
 
 
-def fetch(url: str, sha256: Optional[str]) -> tuple:
+def fetch(url: str, sha256: str | None) -> tuple:
     """(path in the cache, sha256). With `sha256` given, a cached copy is reused and a download
     whose bytes hash differently raises FetchError. Without it the bytes are pinned now: the
     caller records the hash it gets back, and from then on that is what the item is."""
+    if urlparse(url).scheme not in ("http", "https"):
+        # urlopen would also read file:// and ftp://; a dataset's schema allows only these two.
+        raise FetchError(f"{url}: only http:// and https:// URLs can be items")
     if sha256:
         cached = ITEM_CACHE / sha256
         if cached.is_file() and _sha256(cached) == sha256:
@@ -95,8 +97,10 @@ def fetch(url: str, sha256: Optional[str]) -> tuple:
     got = _sha256(tmp)
     if sha256 and got != sha256:
         tmp.unlink(missing_ok=True)
-        raise FetchError(f"{url}: the bytes hash to {got[:12]}, not the pinned {sha256[:12]}. "
-                         "The file at that URL changed; that is a new dataset version, not this one.")
+        raise FetchError(
+            f"{url}: the bytes hash to {got[:12]}, not the pinned {sha256[:12]}. "
+            "The file at that URL changed; that is a new dataset version, not this one."
+        )
     dst = ITEM_CACHE / got
     os.replace(tmp, dst)
     return dst, got
@@ -104,7 +108,5 @@ def fetch(url: str, sha256: Optional[str]) -> tuple:
 
 def suffix_of(url: str) -> str:
     """The URL path's file extension ('.mp3'), or '' when it has none."""
-    from urllib.parse import urlparse
-
     name = urlparse(url).path.rsplit("/", 1)[-1]
     return "." + name.rsplit(".", 1)[1] if "." in name and len(name.rsplit(".", 1)[1]) <= 8 else ""

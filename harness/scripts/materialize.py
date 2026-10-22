@@ -20,7 +20,8 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _common import (  # noqa: E402
+import _fetch
+from _common import (
     MATERIALIZED,
     die,
     load_dataset,
@@ -28,7 +29,6 @@ from _common import (  # noqa: E402
     sha256,
     write_json,
 )
-import _fetch  # noqa: E402
 
 
 def main() -> int:

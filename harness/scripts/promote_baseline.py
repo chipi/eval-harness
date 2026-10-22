@@ -22,8 +22,15 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _common import how  # noqa: E402
-from _common import BASELINES, RUNS, die, now, read_json, write_json  # noqa: E402
+from _common import (
+    BASELINES,
+    RUNS,
+    die,
+    how,
+    now,
+    read_json,
+    write_json,
+)
 
 
 def main() -> int:
@@ -34,9 +41,12 @@ def main() -> int:
     # As a command-line argument interpolated by make, a backtick in the reason
     # executed and a double quote mangled it -- and this text is written into a
     # baseline, where it is the permanent record of why a number was promoted.
-    ap.add_argument("--reason-from-env", action="store_true",
-                    help="take the reason from $EVAL_PROMOTE_REASON (what `make "
-                         "run-promote` does, so the shell never re-parses it)")
+    ap.add_argument(
+        "--reason-from-env",
+        action="store_true",
+        help="take the reason from $EVAL_PROMOTE_REASON (what `make "
+        "run-promote` does, so the shell never re-parses it)",
+    )
     ap.add_argument("--baseline-id", help="default: <dataset_id>_baseline")
     ap.add_argument("--allow-dirty", action="store_true", help="promote from a dirty tree anyway")
     ap.add_argument(
@@ -49,8 +59,7 @@ def main() -> int:
     if args.reason_from_env:
         args.reason = os.environ.get("EVAL_PROMOTE_REASON", "")
     if not (args.reason or "").strip():
-        die("a reason is required: --reason \"...\" or --reason-from-env with "
-            "EVAL_PROMOTE_REASON set")
+        die('a reason is required: --reason "..." or --reason-from-env with EVAL_PROMOTE_REASON set')
 
     src = RUNS / args.run / "metrics.json"
     if not src.is_file():
@@ -63,7 +72,8 @@ def main() -> int:
             "REFUSED — this run does not identify its build.\n"
             "  A baseline whose build is unknown cannot be attributed to any code.\n"
             "  Declare it and re-run:  EVAL_BUILD_REF=<version|digest|sha> "
-            + how("evh experiment-run ...", "make experiment-run ...") + "\n"
+            + how("evh experiment-run ...", "make experiment-run ...")
+            + "\n"
             "  (--allow-unknown-build overrides, but then the baseline names no system.)"
         )
     if build.get("dirty") and not args.allow_dirty:
@@ -73,8 +83,10 @@ def main() -> int:
             "  Commit, re-run, and promote that — or --allow-dirty and say why in --reason."
         )
     if len(args.reason.split()) < 3:
-        die("REFUSED — --reason must be a sentence, not a word. It is the answer to "
-            '"why is this the baseline?" in six months.')
+        die(
+            "REFUSED — --reason must be a sentence, not a word. It is the answer to "
+            '"why is this the baseline?" in six months.'
+        )
 
     baseline_id = args.baseline_id or f"{m['dataset_id']}_baseline"
     out = BASELINES / f"{baseline_id}.json"

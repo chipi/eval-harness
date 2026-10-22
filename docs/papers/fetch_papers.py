@@ -23,7 +23,6 @@ WHY THE DEFAULT IS THE SMALLER SET, AND WHY NOTHING IS COMMITTED
 from __future__ import annotations
 
 import argparse
-import sys
 import time
 import urllib.error
 import urllib.request
@@ -68,14 +67,18 @@ PAPERS = [
 PAYWALLED = [
     ("Järvelin & Kekäläinen (2002), nDCG", "https://dl.acm.org/doi/10.1145/582415.582418", "© ACM"),
     ("Holm (1979), sequentially rejective procedure", "Scand. J. Statist. 6(2):65-70", "© journal"),
-    ("Demšar (2006), classifier comparisons", "https://www.jmlr.org/papers/v7/demsar06a.html", "no licence stated"),
+    (
+        "Demšar (2006), classifier comparisons",
+        "https://www.jmlr.org/papers/v7/demsar06a.html",
+        "no licence stated",
+    ),
 ]
 
 
 def get(url: str, dest: Path, delay: float) -> bool:
-    req = urllib.request.Request(url, headers={"User-Agent": "eval-harness-paper-fetch/1.0"})
+    req = urllib.request.Request(url, headers={"User-Agent": "eval-harness-paper-fetch/1.0"})  # noqa: S310 — the papers list's https URLs
     try:
-        with urllib.request.urlopen(req, timeout=90) as r:
+        with urllib.request.urlopen(req, timeout=90) as r:  # noqa: S310 — the papers list's https URLs  # nosec B310
             body = r.read()
     except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError) as exc:
         print(f"  FAILED {dest.name}: {exc}")
@@ -93,8 +96,9 @@ def get(url: str, dest: Path, delay: float) -> bool:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--all", action="store_true",
-                    help="also fetch papers that may NOT be redistributed (personal use)")
+    ap.add_argument(
+        "--all", action="store_true", help="also fetch papers that may NOT be redistributed (personal use)"
+    )
     ap.add_argument("--delay", type=float, default=1.0, help="seconds between requests")
     ap.add_argument("--out", type=Path, default=HERE)
     args = ap.parse_args()
@@ -104,7 +108,7 @@ def main() -> int:
     print(f"fetching {len(want)} paper(s) into {args.out}\n")
 
     ok = restricted = 0
-    for slug, url, lic, redist in want:
+    for slug, url, _lic, redist in want:
         dest = args.out / f"{slug}.pdf"
         if dest.exists():
             print(f"  {dest.name}  (already here)")

@@ -29,19 +29,24 @@ import json
 import shutil
 import sys
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _common import how  # noqa: E402
-from _common import DATA, DATASETS, MATERIALIZED, REFERENCES, RUNS, ROOT, die, now, read_json, write_json  # noqa: E402
-from _fingerprint import _references_digest  # noqa: E402
-from experiment_run import load_recorded_adapter, _score_wants_source  # noqa: E402
-
-
-try:
-    import yaml
-except ImportError:  # pragma: no cover
-    die("pyyaml is required — pip install -r requirements.txt")
+from _common import (
+    DATA,
+    DATASETS,
+    MATERIALIZED,
+    REFERENCES,
+    ROOT,
+    RUNS,
+    die,
+    how,
+    now,
+    read_json,
+    write_json,
+)
+from _fingerprint import _references_digest
+from experiment_run import _score_wants_source, load_recorded_adapter
 
 #: Carried across from the original run rather than recomputed: these describe the CALL,
 #: not the measurement. A rescore that recomputed a latency would be reporting a number
@@ -59,20 +64,22 @@ def main() -> int:
     ap.add_argument("--dataset-id", required=True)
     ap.add_argument("--match", help="only runs whose config_id contains this substring")
     ap.add_argument("--out", type=Path, default=DATA / "runs-rescored")
-    ap.add_argument("--reference-id",
-                    help="score against THIS reference set (e.g. gold/my_v1) instead of the "
-                         "one each run recorded -- for when gold arrives after the runs")
-    ap.add_argument("--config-dir", type=Path,
-                    help="where to find the arm configs naming the adapter "
-                         "(default: alongside each run's recorded adapter path)")
+    ap.add_argument(
+        "--reference-id",
+        help="score against THIS reference set (e.g. gold/my_v1) instead of the "
+        "one each run recorded -- for when gold arrives after the runs",
+    )
+    ap.add_argument(
+        "--config-dir",
+        type=Path,
+        help="where to find the arm configs naming the adapter "
+        "(default: alongside each run's recorded adapter path)",
+    )
     args = ap.parse_args()
     if args.reference_id and not (REFERENCES / args.reference_id).is_dir():
         die(f"no reference set at data/references/{args.reference_id}")
 
-    srcs = [
-        d for d in (RUNS.iterdir() if RUNS.is_dir() else [])
-        if (d / "metrics.json").is_file()
-    ]
+    srcs = [d for d in (RUNS.iterdir() if RUNS.is_dir() else []) if (d / "metrics.json").is_file()]
     todo = []
     for d in srcs:
         m = read_json(d / "metrics.json")
@@ -99,16 +106,16 @@ def main() -> int:
     #
     # Round 1 reported this fixed. The commit that claimed it added the `source_path`
     # lookup without checking that the field existed where it was being read from.
-    item_source: Dict[str, str] = {}
+    item_source: dict[str, str] = {}
     ds_file = DATASETS / f"{args.dataset_id}.json"
     if ds_file.is_file():
-        for it in (read_json(ds_file).get("items") or []):
+        for it in read_json(ds_file).get("items") or []:
             if it.get("item_id") and it.get("source_path"):
                 item_source[it["item_id"]] = it["source_path"]
     print(f"rescoring {len(todo)} run(s) -> {args.out}")
     args.out.mkdir(parents=True, exist_ok=True)
 
-    adapters: Dict[str, Any] = {}
+    adapters: dict[str, Any] = {}
     written = 0
     for d, m in sorted(todo, key=lambda t: t[0].name):
         spec = m.get("adapter")
@@ -135,15 +142,20 @@ def main() -> int:
             # lives in experiment_run.load_recorded_adapter, shared with silver-calibrate.
             found = load_recorded_adapter(spec)
             if found is None:
-                die(f"adapter not found for {d.name}: {spec!r} is under none of "
-                    f"{ROOT}, {ROOT.parent}, {ROOT.parent / 'examples'}")
+                die(
+                    f"adapter not found for {d.name}: {spec!r} is under none of "
+                    f"{ROOT}, {ROOT.parent}, {ROOT.parent / 'examples'}"
+                )
             adapters[spec] = found
         _call, score, adapter_id, adapter_path, _warm, _fp = adapters[spec]
         wants_source = _score_wants_source(score)
 
         tier = m.get("reference_tier")
-        ref_dir = (REFERENCES / m["fingerprint"]["data"]["reference_id"]) \
-            if (m.get("fingerprint", {}).get("data", {}) or {}).get("reference_id") else None
+        ref_dir = (
+            (REFERENCES / m["fingerprint"]["data"]["reference_id"])
+            if (m.get("fingerprint", {}).get("data", {}) or {}).get("reference_id")
+            else None
+        )
         # NEW REFERENCES, OLD OUTPUTS. The usual life of a golden dataset: runs are made
         # against silver because nothing better exists, then a person writes or reviews
         # gold. The outputs are the expensive part and do not change, so re-scoring them
@@ -153,7 +165,7 @@ def main() -> int:
             ref_dir = REFERENCES / args.reference_id
             tier = args.reference_id.split("/", 1)[0]
 
-        rows: List[Dict[str, Any]] = []
+        rows: list[dict[str, Any]] = []
         refs_found = 0
         recosted = 0
         # Keys the ADAPTER attached at call time (Result.extra) rather than at score time:
@@ -181,15 +193,13 @@ def main() -> int:
             # equal "<item_id>.txt" here. Ignoring it means source_text is silently None
             # on any dataset that names files differently -- and a scorer that wanted the
             # source then measures nothing, quietly.
-            rel = (item_source.get(item_id) or old.get("source_path")
-                   or f"{item_id}.txt")
+            rel = item_source.get(item_id) or old.get("source_path") or f"{item_id}.txt"
             for cand in (mat / rel, mat / f"{item_id}.txt", mat / item_id):
                 if cand.is_file():
                     source_text = cand.read_text(encoding="utf-8", errors="replace")
                     break
-            scored = (score(output, reference, source_text) if wants_source
-                      else score(output, reference))
-            row: Dict[str, Any] = {"item_id": item_id, **scored}
+            scored = score(output, reference, source_text) if wants_source else score(output, reference)
+            row: dict[str, Any] = {"item_id": item_id, **scored}
             for k, v in old.items():
                 if k == "item_id" or k in scored:
                     continue
@@ -216,14 +226,16 @@ def main() -> int:
             # An adapter that stores parser output in `_meta` declares how to rebuild
             # it. One that does not is not asked to.
             _mod = inspect.getmodule(score)
-            if hasattr(_mod, "reparse_meta") and isinstance(row.get("_meta"), dict):
+            if _mod is not None and hasattr(_mod, "reparse_meta") and isinstance(row.get("_meta"), dict):
                 try:
                     fresh = _mod.reparse_meta(output)
                 except Exception as exc:  # noqa: BLE001
-                    die(f"{d.name}: the adapter's reparse_meta() raised on item "
+                    die(
+                        f"{d.name}: the adapter's reparse_meta() raised on item "
                         f"{item_id}: {type(exc).__name__}: {exc}\n"
                         f"  A rescored run must not carry a parse the current parser "
-                        f"did not produce, so this is a failure rather than a carry.")
+                        f"did not produce, so this is a failure rather than a carry."
+                    )
                 if isinstance(fresh, dict):
                     row["_meta"] = {**row["_meta"], **fresh}
 
@@ -269,7 +281,8 @@ def main() -> int:
         # cover every item -- so it warns and says how many, rather than refusing.
         if ref_dir and rows:
             if refs_found == 0:
-                die(f"{d.name}: reference_id {m['fingerprint']['data']['reference_id']!r} "
+                die(
+                    f"{d.name}: reference_id {m['fingerprint']['data']['reference_id']!r} "
                     f"is declared but NOT ONE of its {len(rows)} reference files exists "
                     f"under {ref_dir}.\n"
                     f"  Scoring would silently treat every gold set as empty and report a "
@@ -277,17 +290,23 @@ def main() -> int:
                     f"  The corpora are gitignored, not committed: rebuild them with the "
                     f"example's fetcher, e.g.\n"
                     f"    python examples/<example>/fetch.py\n"
-                    f"    " + how(f"evh dataset-create --dataset-id {m.get('dataset_id')} --source-dir …",
-                               f"make dataset-create DATASET_ID={m.get('dataset_id')}"))
+                    f"    "
+                    + how(
+                        f"evh dataset-create --dataset-id {m.get('dataset_id')} --source-dir …",
+                        f"make dataset-create DATASET_ID={m.get('dataset_id')}",
+                    )
+                )
             if refs_found < len(rows):
-                print(f"    WARNING: only {refs_found} of {len(rows)} items have a "
-                      f"reference under {ref_dir}; the rest scored against None",
-                      flush=True)
+                print(
+                    f"    WARNING: only {refs_found} of {len(rows)} items have a "
+                    f"reference under {ref_dir}; the rest scored against None",
+                    flush=True,
+                )
 
-        import statistics
+        import statistics  # noqa: PLC0415
+
         keys = sorted({k for r in rows for k in r if k != "item_id" and not k.startswith("_")})
-        scores = {k: round(statistics.fmean([float(r[k]) for r in rows if k in r]), 10)
-                  for k in keys}
+        scores = {k: round(statistics.fmean([float(r[k]) for r in rows if k in r]), 10) for k in keys}
         for k in ("cost_usd", "tokens_in", "tokens_out"):
             vals = [float(r[k]) for r in rows if k in r]
             if vals:
@@ -298,7 +317,8 @@ def main() -> int:
         for f in (d / "outputs").glob("*.txt"):
             shutil.copy2(f, run_dir / "outputs" / f.name)
         (run_dir / "predictions.jsonl").write_text(
-            "".join(json.dumps(r, sort_keys=True) + "\n" for r in rows), encoding="utf-8")
+            "".join(json.dumps(r, sort_keys=True) + "\n" for r in rows), encoding="utf-8"
+        )
         new = dict(m)
         new["scores"] = scores
         if args.reference_id:
@@ -318,8 +338,7 @@ def main() -> int:
         # An adapter may expose `scorer_id()` -- no params, no network -- naming the
         # hashes that identify its scoring rule; without it, an extraction.py-only change
         # is invisible here and a rescored run cannot say what measured it.
-        sid = getattr(sys.modules.get(getattr(score, "__module__", ""), None),
-                      "scorer_id", None)
+        sid = getattr(sys.modules.get(getattr(score, "__module__", ""), None), "scorer_id", None)
         if callable(sid):
             new["rescored_with"]["scorer"] = sid()
         # The fingerprint is copied from the source run, and its `instrument.adapter`
@@ -332,7 +351,8 @@ def main() -> int:
         if isinstance(fp, dict):
             fp = json.loads(json.dumps(fp))
             fp.setdefault("instrument", {})["adapter"] = {
-                "id": adapter_id, "sha256": _sha(adapter_path),
+                "id": adapter_id,
+                "sha256": _sha(adapter_path),
             }
             # THE REFERENCE HASH DESCRIBED THE WRONG BYTES. `data.references_sha256`
             # was copied from the source run, where it records the references as they
@@ -359,8 +379,10 @@ def main() -> int:
                 # under the run is (found by the GUIDE's check, 0.4.0).
                 if not moved:
                     fp_data["references_changed_since_measurement"] = True
-                    print(f"    WARNING: {d.name}: the reference files have CHANGED since "
-                          f"this run was measured; scores here are against the current ones")
+                    print(
+                        f"    WARNING: {d.name}: the reference files have CHANGED since "
+                        f"this run was measured; scores here are against the current ones"
+                    )
             fp["hash"] = None
             fp["hash_invalid_because"] = (
                 "scores were recomputed by a different scorer than the one this "
@@ -375,23 +397,31 @@ def main() -> int:
         print(f"  {d.name}  -> {len(rows)} item(s){note}")
 
     print(f"\n{written} run(s) rescored into {args.out}")
-    print(f"  EVAL_RUNS_DIR={args.out} " + how(f"evh leaderboard --dataset-id {args.dataset_id}",
-                                              f"make leaderboard DATASET_ID={args.dataset_id}"))
+    print(
+        f"  EVAL_RUNS_DIR={args.out} "
+        + how(
+            f"evh leaderboard --dataset-id {args.dataset_id}",
+            f"make leaderboard DATASET_ID={args.dataset_id}",
+        )
+    )
     return 0
 
 
 def _kinds(path):
-    from experiment_run import _adapter_metric_kinds
+    from experiment_run import _adapter_metric_kinds  # noqa: PLC0415
+
     return _adapter_metric_kinds("", path)
 
 
 def _primary(path):
-    from experiment_run import _adapter_primary_metric
+    from experiment_run import _adapter_primary_metric  # noqa: PLC0415
+
     return _adapter_primary_metric(path)
 
 
 def _sha(path):
-    import hashlib
+    import hashlib  # noqa: PLC0415
+
     return hashlib.sha256(Path(path).read_bytes()).hexdigest() if path else None
 
 

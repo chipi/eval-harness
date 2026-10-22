@@ -33,10 +33,20 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _common import how  # noqa: E402
-from _common import DATASETS, ROOT, SCHEMAS, SOURCES, die, now, read_json, sha256, write_json  # noqa: E402
-import _fetch  # noqa: E402
-import _fields  # noqa: E402
+import _fetch
+import _fields
+from _common import (
+    DATASETS,
+    ROOT,
+    SCHEMAS,
+    SOURCES,
+    die,
+    how,
+    now,
+    read_json,
+    sha256,
+    write_json,
+)
 
 
 def _relative_source_dir(source_dir: Path) -> str:
@@ -63,12 +73,16 @@ def _fieldset(fieldset_id):
         return None
     fs = _fields.load_fieldset(fieldset_id)
     if fs is None:
-        die(f"no field set {fieldset_id!r}: expected {_fields.fieldset_path(fieldset_id)}\n"
-            "  Declare the fields there first (schemas/fieldset.schema.json, docs: CONCEPTS, item fields).")
+        die(
+            f"no field set {fieldset_id!r}: expected {_fields.fieldset_path(fieldset_id)}\n"
+            "  Declare the fields there first (schemas/fieldset.schema.json, docs: CONCEPTS, item fields)."
+        )
     if fs.get("fieldset_id") != fieldset_id:
-        die(f"{_fields.fieldset_path(fieldset_id)}: fieldset_id {fs.get('fieldset_id')!r} is not its file name")
+        die(
+            f"{_fields.fieldset_path(fieldset_id)}: fieldset_id {fs.get('fieldset_id')!r} is not its file name"
+        )
     try:
-        import jsonschema
+        import jsonschema  # noqa: PLC0415
 
         jsonschema.validate(fs, json.loads((SCHEMAS / "fieldset.schema.json").read_text()))
     except ImportError:
@@ -93,8 +107,11 @@ def _attach(items: list, fieldset: dict, path: Path) -> None:
         bad += [f"row {n} ({iid}): {e}" for e in errs]
         # An empty cell in a declared column means "this item has no value": it clears one
         # that was there (--update-fields), and on a new dataset leaves it absent.
-        cleared = {c for c, raw in row.items() if c in _fields.declared(fieldset)
-                   and (raw is None or (isinstance(raw, str) and not raw.strip()))}
+        cleared = {
+            c
+            for c, raw in row.items()
+            if c in _fields.declared(fieldset) and (raw is None or (isinstance(raw, str) and not raw.strip()))
+        }
         merged = {k: v for k, v in by_id[iid].get("fields", {}).items() if k not in cleared}
         merged.update(vals)
         if merged:
@@ -119,7 +136,7 @@ def _from_manifest(path: Path, fieldset, source_dir: Path, tags: list) -> list:
         if not iid:
             bad.append(f"row {n}: no item_id")
             continue
-        item = {"item_id": iid}
+        item: dict = {"item_id": iid}
         if url:
             # A pinned hash is taken as given: materialize fetches and checks it. Without one,
             # the bytes are fetched now and their hash becomes the item's identity.
@@ -166,23 +183,25 @@ def _from_manifest(path: Path, fieldset, source_dir: Path, tags: list) -> list:
     return items
 
 
-def _write(out: Path, dataset_id: str, items: list, previous: dict, fieldset, description: str,
-           source_dir: str) -> None:
+def _write(
+    out: Path, dataset_id: str, items: list, previous: dict, fieldset, description: str, source_dir: str
+) -> None:
     # A re-create that selects the SAME items keeps its original created_at. Without this
     # the documented first command, `make demo`, rewrites a tracked file on every run and
     # leaves a new clone with a dirty tree — a timestamp presented as a change when nothing
     # about the selection changed. What freezes a dataset is the item hashes; created_at is
     # a label, and it should move when the selection does, not when the clock does (nor when
     # a field is corrected: fields are not the selection).
-    unchanged = (_identity(previous.get("items") or []) == _identity(items)
-                 and previous.get("dataset_id") == dataset_id)
+    unchanged = (
+        _identity(previous.get("items") or []) == _identity(items)
+        and previous.get("dataset_id") == dataset_id
+    )
     created_at = previous.get("created_at") if unchanged and previous.get("created_at") else now()
     if fieldset:
         bad = [p for it in items for p in _fields.problems(fieldset, it["item_id"], it.get("fields") or {})]
         if bad:
             die(f"{len(bad)} field problem(s)\n  " + "\n  ".join(bad[:15]))
-    doc = {"dataset_id": dataset_id, "version": "1.0", "description": description,
-           "created_at": created_at}
+    doc = {"dataset_id": dataset_id, "version": "1.0", "description": description, "created_at": created_at}
     if source_dir:
         doc["source_dir"] = source_dir
     if fieldset:
@@ -219,12 +238,20 @@ def main() -> int:
         help="also treat README files as items (they are skipped by default)",
     )
     ap.add_argument("--force", action="store_true", help="overwrite an existing dataset")
-    ap.add_argument("--fieldset", help="the field set (data/fields/<id>.yaml) that declares the items' fields")
+    ap.add_argument(
+        "--fieldset", help="the field set (data/fields/<id>.yaml) that declares the items' fields"
+    )
     ap.add_argument("--fields", type=Path, help="a .csv or .jsonl of field values, one row per item_id")
-    ap.add_argument("--manifest", type=Path,
-                    help="a .csv or .jsonl of items: item_id, source_url [, source_sha256] [, field columns]")
-    ap.add_argument("--update-fields", action="store_true",
-                    help="replace the field values of an existing dataset; its items must be unchanged")
+    ap.add_argument(
+        "--manifest",
+        type=Path,
+        help="a .csv or .jsonl of items: item_id, source_url [, source_sha256] [, field columns]",
+    )
+    ap.add_argument(
+        "--update-fields",
+        action="store_true",
+        help="replace the field values of an existing dataset; its items must be unchanged",
+    )
     args = ap.parse_args()
 
     out = DATASETS / f"{args.dataset_id}.json"
@@ -246,10 +273,19 @@ def main() -> int:
         # Merged: a value in the file replaces that value; every other value is kept.
         items = [dict(it) for it in previous["items"]]
         _attach(items, fieldset, args.fields)
-        _write(out, args.dataset_id, items, previous, fieldset,
-               previous.get("description", ""), previous.get("source_dir", ""))
-        print(f"{out.relative_to(DATASETS.parents[1])}  fields updated on {len(items)} item(s); "
-              "the items, and so every run measured on them, are unchanged")
+        _write(
+            out,
+            args.dataset_id,
+            items,
+            previous,
+            fieldset,
+            previous.get("description", ""),
+            previous.get("source_dir", ""),
+        )
+        print(
+            f"{out.relative_to(DATASETS.parents[1])}  fields updated on {len(items)} item(s); "
+            "the items, and so every run measured on them, are unchanged"
+        )
         return 0
 
     if out.exists() and not args.force:
@@ -265,11 +301,23 @@ def main() -> int:
         if args.fields:
             _attach(items, fieldset, args.fields)
         desc = args.description or f"{len(items)} item(s) from {args.manifest.name}"
-        _write(out, args.dataset_id, items, previous, fieldset, desc,
-               _relative_source_dir(args.source_dir) if args.source_dir.is_dir() else "")
+        _write(
+            out,
+            args.dataset_id,
+            items,
+            previous,
+            fieldset,
+            desc,
+            _relative_source_dir(args.source_dir) if args.source_dir.is_dir() else "",
+        )
         print(f"{out.relative_to(DATASETS.parents[1])}  ({len(items)} item(s))")
-        print("Next: " + how(f"evh dataset-materialize --dataset-id {args.dataset_id}",
-                             f"make dataset-materialize DATASET_ID={args.dataset_id}"))
+        print(
+            "Next: "
+            + how(
+                f"evh dataset-materialize --dataset-id {args.dataset_id}",
+                f"make dataset-materialize DATASET_ID={args.dataset_id}",
+            )
+        )
         return 0
 
     if not args.source_dir.is_dir():
@@ -308,17 +356,28 @@ def main() -> int:
     if args.fields:
         _attach(items, fieldset, args.fields)
 
-    _write(out, args.dataset_id, items, previous, fieldset,
-           args.description or f"{len(items)} item(s) from {args.source_dir.name}/",
-           # Relative to the harness root when it sits inside it. `as_posix()` on the
-           # resolved arg wrote an ABSOLUTE path into a committed file — every dataset in
-           # this repo carries "/Users/<name>/projects/..." today. That leaks whoever ran
-           # it into a public repo, and makes the file describe a machine rather than a
-           # selection. The item hashes are what freeze a dataset; this field is a label.
-           _relative_source_dir(args.source_dir))
+    _write(
+        out,
+        args.dataset_id,
+        items,
+        previous,
+        fieldset,
+        args.description or f"{len(items)} item(s) from {args.source_dir.name}/",
+        # Relative to the harness root when it sits inside it. `as_posix()` on the
+        # resolved arg wrote an ABSOLUTE path into a committed file — every dataset in
+        # this repo carries "/Users/<name>/projects/..." today. That leaks whoever ran
+        # it into a public repo, and makes the file describe a machine rather than a
+        # selection. The item hashes are what freeze a dataset; this field is a label.
+        _relative_source_dir(args.source_dir),
+    )
     print(f"{out.relative_to(DATASETS.parents[1])}  ({len(items)} item(s))")
-    print("Next: " + how(f"evh dataset-materialize --dataset-id {args.dataset_id}",
-                         f"make dataset-materialize DATASET_ID={args.dataset_id}"))
+    print(
+        "Next: "
+        + how(
+            f"evh dataset-materialize --dataset-id {args.dataset_id}",
+            f"make dataset-materialize DATASET_ID={args.dataset_id}",
+        )
+    )
     return 0
 
 

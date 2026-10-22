@@ -61,7 +61,7 @@ sys.path.insert(0, str(HERE.parents[1] / "examples" / "_shared"))
 from _common import REFERENCES, RUNS, die, item_path, read_json, warn_on_ambiguous_runs  # noqa: E402
 
 try:
-    from extraction import as_members, match_one_to_one, normalize  # noqa: E402
+    from extraction import as_members, match_one_to_one, normalize
 except ImportError:  # pragma: no cover
     die("examples/_shared/extraction.py not importable — run from the harness root")
 
@@ -125,9 +125,14 @@ def corpus_prf(pred_by_item: dict, gold: dict, typed: bool) -> dict:
         fn += len(gm) - hit
     prec = tp / (tp + fp) if tp + fp else 0.0
     rec = tp / (tp + fn) if tp + fn else 0.0
-    return {"p": prec, "r": rec,
-            "f1": 2 * prec * rec / (prec + rec) if prec + rec else 0.0,
-            "tp": tp, "fp": fp, "fn": fn}
+    return {
+        "p": prec,
+        "r": rec,
+        "f1": 2 * prec * rec / (prec + rec) if prec + rec else 0.0,
+        "tp": tp,
+        "fp": fp,
+        "fn": fn,
+    }
 
 
 def per_type(pred_by_item: dict, gold: dict) -> dict:
@@ -152,9 +157,12 @@ def per_type(pred_by_item: dict, gold: dict) -> dict:
     for t in sorted(set(tp) | set(fp) | set(fn)):
         prec = tp[t] / (tp[t] + fp[t]) if tp[t] + fp[t] else 0.0
         rec = tp[t] / (tp[t] + fn[t]) if tp[t] + fn[t] else 0.0
-        stats[t] = {"p": prec, "r": rec,
-                    "f1": 2 * prec * rec / (prec + rec) if prec + rec else 0.0,
-                    "support": tp[t] + fn[t]}
+        stats[t] = {
+            "p": prec,
+            "r": rec,
+            "f1": 2 * prec * rec / (prec + rec) if prec + rec else 0.0,
+            "support": tp[t] + fn[t],
+        }
     return stats
 
 
@@ -168,9 +176,10 @@ def type_confusion(pred_by_item: dict, gold: dict) -> Counter:
     for item, g in gold.items():
         if item not in pred_by_item:
             continue
-        gt = {normalize(e.get("text", "")): (e.get("type") or "").casefold()
-              for e in g if isinstance(e, dict)}
-        for e in (pred_by_item[item] or []):
+        gt = {
+            normalize(e.get("text", "")): (e.get("type") or "").casefold() for e in g if isinstance(e, dict)
+        }
+        for e in pred_by_item[item] or []:
             if not isinstance(e, dict):
                 continue
             key = normalize(e.get("text", ""))
@@ -181,13 +190,13 @@ def type_confusion(pred_by_item: dict, gold: dict) -> Counter:
     return conf
 
 
-def _consensus(preds: dict, gold: dict, threshold: float, top: int,
-               dataset_id: str) -> dict:
+def _consensus(preds: dict, gold: dict, threshold: float, top: int, dataset_id: str) -> dict | None:
     learned = {a: p for a, p in preds.items() if not any(b in a for b in _BASELINES)}
     if len(learned) < 3:
         print(f"\n  {len(learned)} learned arm(s) — need at least 3 for a consensus pass.")
-        return
+        return None
     n = len(learned)
+
     def snippet(item: str) -> str:
         f = item_path(dataset_id, item)
         return " ".join(f.read_text(encoding="utf-8").split())[:150] if f is not None else ""
@@ -227,43 +236,41 @@ def _consensus(preds: dict, gold: dict, threshold: float, top: int,
     # split across the two sections below where a reader had to notice it twice and join
     # it up. "Georgia Dome", gold `location`, called `building` by all 17 arms, is one.
     type_rows = []
-    for (item, (text, kind)), arms in missed.items():
+    for (item, (text, kind)), _arms in missed.items():
         for (item2, (text2, kind2)), arms2 in invented.items():
             if item2 == item and text2 == text and kind2 != kind and len(arms2) >= threshold * n:
                 type_rows.append((len(arms2), item, text, kind, kind2))
     type_rows.sort(reverse=True)
-    print(f"\n  TYPE DISAGREEMENTS — same span, gold says one type, >= {threshold:.0%} of"
-          f" {n} arms say another")
+    print(
+        f"\n  TYPE DISAGREEMENTS — same span, gold says one type, >= {threshold:.0%} of {n} arms say another"
+    )
     print("    The span is not in dispute; only its label is, and the field is unanimous")
     print("    against the annotation. Read these before concluding an arm is weak on a type.")
     if not type_rows:
         print("    None.")
     for c, item, text, gk, pk in type_rows[:top]:
-        print(f"    {c}/{n}  \"{text}\"   gold {gk}  ->  arms {pk}   item {item[:12]}")
+        print(f'    {c}/{n}  "{text}"   gold {gk}  ->  arms {pk}   item {item[:12]}')
     relabel = {(item, text): pk for _, item, text, _gk, pk in type_rows}
 
-    print(f"\n  CONSENSUS INVENTIONS — predicted by >= {threshold:.0%} of {n} learned arms,"
-          f" ABSENT from gold")
+    print(f"\n  CONSENSUS INVENTIONS — predicted by >= {threshold:.0%} of {n} learned arms, ABSENT from gold")
     print("    Independent models do not agree on a hallucination. Where they all tag the")
     print("    same span, the ANNOTATION is the thing most likely to be incomplete.")
-    rows = sorted(((len(v), k) for k, v in invented.items() if len(v) >= threshold * n),
-                  reverse=True)
+    rows = sorted(((len(v), k) for k, v in invented.items() if len(v) >= threshold * n), reverse=True)
     if not rows:
         print(f"    None. No span was invented by >= {threshold:.0%} of the arms.")
     for c, (item, (text, kind)) in rows[:top]:
-        print(f"\n    {c}/{n}  \"{text}\" as {kind}   item {item[:12]}")
-        print(f"      gold: {[ (e.get('text'), e.get('type')) for e in gold[item] ]}")
+        print(f'\n    {c}/{n}  "{text}" as {kind}   item {item[:12]}')
+        print(f"      gold: {[(e.get('text'), e.get('type')) for e in gold[item]]}")
         print(f"      {snippet(item)}")
 
     print(f"\n  CONSENSUS MISSES — in gold, found by < {1 - threshold:.0%} of {n} learned arms")
     print("    Either genuinely hard, or a span no arm can reproduce. Few-NERD is")
     print("    IO-tagged, so two adjacent entities of one type merge into one gold span.")
-    rows = sorted(((len(v), k) for k, v in missed.items() if len(v) >= threshold * n),
-                  reverse=True)
+    rows = sorted(((len(v), k) for k, v in missed.items() if len(v) >= threshold * n), reverse=True)
     if not rows:
         print(f"    None. Every gold span was found by > {1 - threshold:.0%} of the arms.")
     for c, (item, (text, kind)) in rows[:top]:
-        print(f"\n    missed by {c}/{n}  \"{text}\" as {kind}   item {item[:12]}")
+        print(f'\n    missed by {c}/{n}  "{text}" as {kind}   item {item[:12]}')
         print(f"      {snippet(item)}")
     return relabel
 
@@ -299,8 +306,12 @@ def main() -> int:
     ap.add_argument("--dataset-id", required=True)
     ap.add_argument("--match", help="only config_ids containing this substring")
     ap.add_argument("--arm", help="print this arm's per-type table and type confusion")
-    ap.add_argument("--miss-threshold", type=float, default=0.8,
-                    help="share of learned arms that must agree (default: 0.8)")
+    ap.add_argument(
+        "--miss-threshold",
+        type=float,
+        default=0.8,
+        help="share of learned arms that must agree (default: 0.8)",
+    )
     ap.add_argument("--top", type=int, default=10, help="rows per consensus section")
     args = ap.parse_args()
     # Two runs sharing a config_id are averaged together below without
@@ -310,8 +321,7 @@ def main() -> int:
     gold = gold_sets(args.dataset_id)
     preds = predictions(args.dataset_id, args.match)
     if not preds:
-        die(f"no runs on {args.dataset_id!r}"
-            + (f" matching {args.match!r}" if args.match else ""))
+        die(f"no runs on {args.dataset_id!r}" + (f" matching {args.match!r}" if args.match else ""))
 
     n_ent = sum(len(v) for v in gold.values())
     empty = sum(1 for v in gold.values() if not v)
@@ -328,32 +338,37 @@ def main() -> int:
     # `nothing` arm and the empty-gold rate is the kind of thing that gets rationalised
     # away instead of looked at. So it is printed.
     ghosts = [i for i, v in gold.items() if v and not as_members(v, True)]
-    print(f"\n  {args.dataset_id}: {len(gold)} item(s), {n_ent} gold entities, "
-          f"{len(preds)} arm(s)")
+    print(f"\n  {args.dataset_id}: {len(gold)} item(s), {n_ent} gold entities, {len(preds)} arm(s)")
     print(f"  {empty} item(s) have no gold entities")
     if ghosts:
         print(f"  {len(ghosts)} further item(s) have gold that NORMALISES AWAY entirely, so")
-        print(f"  the floor an empty prediction scores is "
-              f"{(empty + len(ghosts)) / len(gold):.4f}, not {empty / len(gold):.4f}:")
+        print(
+            f"  the floor an empty prediction scores is "
+            f"{(empty + len(ghosts)) / len(gold):.4f}, not {empty / len(gold):.4f}:"
+        )
         for i in ghosts:
             raw = ", ".join(f"{e.get('text')!r}/{e.get('type')}" for e in gold[i])
             print(f"    {i[:12]}  gold {raw}")
     print()
 
-    print(f"  {'arm':<26} {'mean f1':>8} {'micro f1':>9} {'micro P':>8} {'micro R':>8} "
-          f"{'unt micro':>10} {'unread':>7}")
+    print(
+        f"  {'arm':<26} {'mean f1':>8} {'micro f1':>9} {'micro P':>8} {'micro R':>8} "
+        f"{'unt micro':>10} {'unread':>7}"
+    )
     print("  " + "-" * 82)
     table = []
     for arm, by_item in preds.items():
-        rows = [v for v in by_item.values()]
+        rows = list(by_item.values())
         unread = sum(1 for v in rows if v is None)
         mean_f1 = _mean_item_f1(by_item, gold)
         c = corpus_prf(by_item, gold, True)
         cu = corpus_prf(by_item, gold, False)
         table.append((mean_f1, arm, c, cu, unread, len(rows)))
     for mean_f1, arm, c, cu, unread, n in sorted(table, reverse=True):
-        print(f"  {arm:<26} {mean_f1:>8.4f} {c['f1']:>9.4f} {c['p']:>8.4f} {c['r']:>8.4f} "
-              f"{cu['f1']:>10.4f} {unread:>4}/{n}")
+        print(
+            f"  {arm:<26} {mean_f1:>8.4f} {c['f1']:>9.4f} {c['p']:>8.4f} {c['r']:>8.4f} "
+            f"{cu['f1']:>10.4f} {unread:>4}/{n}"
+        )
     print("\n  'mean f1' is the harness metric: the mean of each item's own F1.")
     print("  'micro f1' pools every tp/fp/fn in the run. They answer different questions;")
     print("  where micro is the lower of the two, the arm is worse on entity-dense items.")
@@ -365,19 +380,18 @@ def main() -> int:
         print(f"\n  PER TYPE — {args.arm}")
         print(f"    {'type':<16} {'P':>7} {'R':>7} {'F1':>7} {'support':>8}")
         for t, s in sorted(per_type(by_item, gold).items(), key=lambda kv: -kv[1]["support"]):
-            print(f"    {t or '<none>':<16} {s['p']:>7.4f} {s['r']:>7.4f} {s['f1']:>7.4f} "
-                  f"{s['support']:>8}")
+            print(f"    {t or '<none>':<16} {s['p']:>7.4f} {s['r']:>7.4f} {s['f1']:>7.4f} {s['support']:>8}")
         conf = type_confusion(by_item, gold)
         print(f"\n  TYPE CONFUSION — {args.arm} (span found, type wrong)")
         if not conf:
             print("    None: every span it found, it typed correctly.")
-        for (g, p), c in conf.most_common(15):
-            print(f"    {g:<16} -> {p:<16} {c:>4}")
+        for (g, got), times in conf.most_common(15):
+            print(f"    {g:<16} -> {got:<16} {times:>4}")
 
     relabel = _consensus(preds, gold, args.miss_threshold, args.top, args.dataset_id)
     if relabel:
         ceil = _ceiling(preds, gold, relabel)
-        print(f"\n  UPPER BOUND ON THE ANNOTATION SHARE OF `type_penalty`")
+        print("\n  UPPER BOUND ON THE ANNOTATION SHARE OF `type_penalty`")
         print(f"    Typed mean F1 if all {len(relabel)} unanimous type disagreements were")
         print("    resolved the arms' way. An upper bound, not an estimate: resolving them")
         print("    in the arms' favour is what raises the number. Read the SIZE of the")

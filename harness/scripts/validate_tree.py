@@ -44,7 +44,7 @@ from collections import defaultdict
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _common import (  # noqa: E402
+from _common import (
     BASELINES,
     CONFIGS,
     DATA,
@@ -65,9 +65,10 @@ from _common import (  # noqa: E402
 try:
     import jsonschema
 except ImportError:
-    jsonschema = None
+    jsonschema = None  # type: ignore[assignment]  # V1 is then skipped, and says why
 
-from _common import DATA as DATA_DIR  # noqa: E402  (honours the data-dir override)
+from _common import DATA as DATA_DIR
+
 problems: list[str] = []
 notes: list[str] = []
 
@@ -109,7 +110,7 @@ def v1_schemas() -> None:
 def v2_dataset_ids() -> None:
     known = {p.stem for p in DATASETS.glob("*.json")}
     dangling = []
-    for run in (RUNS.iterdir() if RUNS.is_dir() else []):
+    for run in RUNS.iterdir() if RUNS.is_dir() else []:
         m = run / "metrics.json"
         if m.is_file():
             did = read_json(m).get("dataset_id")
@@ -117,13 +118,16 @@ def v2_dataset_ids() -> None:
                 dangling.append(f"{run.name} -> {did}")
     for d in dangling:
         print(f"       {d}")
-    check(not dangling, f"V2 every run's dataset_id resolves ({len(known)} dataset(s) known)",
-          f"{len(dangling)} dangling")
+    check(
+        not dangling,
+        f"V2 every run's dataset_id resolves ({len(known)} dataset(s) known)",
+        f"{len(dangling)} dangling",
+    )
 
 
 def v3_provenance() -> None:
     missing = []
-    for run in (RUNS.iterdir() if RUNS.is_dir() else []):
+    for run in RUNS.iterdir() if RUNS.is_dir() else []:
         m = run / "metrics.json"
         if m.is_file():
             b = read_json(m).get("build") or {}
@@ -159,9 +163,11 @@ def v4_materialized() -> None:
     for d in missing:
         print(f"       missing: {d}")
     total = checked + len(unchecked)
-    check(not drifted and not missing,
-          f"V4 materialized copies match their frozen hashes ({checked} of {total} datasets materialized here)",
-          f"{len(drifted)} drifted, {len(missing)} missing")
+    check(
+        not drifted and not missing,
+        f"V4 materialized copies match their frozen hashes ({checked} of {total} datasets materialized here)",
+        f"{len(drifted)} drifted, {len(missing)} missing",
+    )
     if unchecked:
         print(f"       not checked (no materialized copy here): {', '.join(unchecked)}")
 
@@ -171,8 +177,15 @@ def v4_materialized() -> None:
 #: full precision on every measured metric still keyed differently because their latencies
 #: differed by microseconds. Measured on this tree: arm_a_v1 and arm_short_v1 both scored
 #: overlap_f1 0.135256 and output_words 3.6, and V5 reported OK.
-_V5_RUN_PROPERTIES = ("latency_ms", "cost_usd", "total_cost_usd", "tokens_in", "tokens_out",
-                      "total_tokens_in", "total_tokens_out")
+_V5_RUN_PROPERTIES = (
+    "latency_ms",
+    "cost_usd",
+    "total_cost_usd",
+    "tokens_in",
+    "tokens_out",
+    "total_tokens_in",
+    "total_tokens_out",
+)
 
 
 def _per_item_signature(run_name: str) -> str:
@@ -192,8 +205,7 @@ def _per_item_signature(run_name: str) -> str:
             if not line.strip():
                 continue
             row = json.loads(line)
-            scored = {k: v for k, v in row.items()
-                      if k not in _V5_RUN_PROPERTIES and k != "_meta"}
+            scored = {k: v for k, v in row.items() if k not in _V5_RUN_PROPERTIES and k != "_meta"}
             rows.append(json.dumps(scored, sort_keys=True))
     except (OSError, ValueError):
         return f"<unreadable:{run_name}>"
@@ -202,16 +214,14 @@ def _per_item_signature(run_name: str) -> str:
 
 def v5_duplicate_scores() -> None:
     by_key = defaultdict(list)
-    for run in (RUNS.iterdir() if RUNS.is_dir() else []):
+    for run in RUNS.iterdir() if RUNS.is_dir() else []:
         m = run / "metrics.json"
         if m.is_file():
             d = read_json(m)
             # Compare what the arm PRODUCED. A fabricated or copy-pasted result differs in
             # latency like any other, so keying on it let exactly the case this check exists
             # for slip through.
-            produced = {
-                k: v for k, v in (d.get("scores") or {}).items() if k not in _V5_RUN_PROPERTIES
-            }
+            produced = {k: v for k, v in (d.get("scores") or {}).items() if k not in _V5_RUN_PROPERTIES}
             key = (d.get("dataset_id"), json.dumps(produced, sort_keys=True))
             # None (not {}) when the run predates params being recorded — kept distinct so
             # those runs can be EXCLUDED below rather than compared. Treating a missing
@@ -223,7 +233,7 @@ def v5_duplicate_scores() -> None:
     # arm DOES, and two configs may legitimately request the same thing. What deserves a look
     # is DIFFERENT params landing on byte-identical output: either a result was not measured,
     # or the knobs that differ are inert.
-    dupes = []
+    dupes: list[list] = []
     for group in by_key.values():
         known = [(n, c, p) for n, c, p in group if p is not None]
         if len({c for _, c, _ in known}) > 1 and len({p for _, _, p in known}) > 1:
@@ -243,8 +253,7 @@ def v5_duplicate_scores() -> None:
                 continue
             dupes.append(known)
     for group in dupes:
-        print(f"       identical scores AND identical per-item results: "
-              f"{', '.join(n for n, _, _ in group)}")
+        print(f"       identical scores AND identical per-item results: {', '.join(n for n, _, _ in group)}")
     check(
         not dupes,
         "V5 no two configs report byte-identical scores",
@@ -267,13 +276,14 @@ def _tracked_runs(runs_dir: Path) -> dict:
     """{run id: names of its tracked top-level entries}, from the git INDEX, for a runs
     directory wherever the data root sits (<runs dir>/<run id>/<file...>)."""
     prefix = data_rel(runs_dir).rstrip("/") + "/"
-    tracked = subprocess.run(["git", "ls-files", prefix], cwd=ROOT, capture_output=True,
-                             text=True).stdout.split()
+    tracked = subprocess.run(
+        ["git", "ls-files", prefix], cwd=ROOT, capture_output=True, text=True
+    ).stdout.split()
     out: dict = {}
     for f in tracked:
         if not f.startswith(prefix):
             continue
-        parts = f[len(prefix):].split("/")
+        parts = f[len(prefix) :].split("/")
         if len(parts) >= 2:
             out.setdefault(parts[0], set()).add(parts[1])
     return out
@@ -302,20 +312,17 @@ def v7_committed_runs_are_readable() -> None:
     # AND THE OTHER RUN DIRECTORIES, which V1 never looked at. `data/runs-rescored`,
     # `-reparsed`, `-pair` and `-repeats` are all committed and all cited by reports,
     # and nothing validated them at all. Found by external review.
-    for extra in ("runs-rescored", "runs-reparsed", "runs-pair", "runs-repeats", "runs-linux",
-                  "runs-fp32"):
+    for extra in ("runs-rescored", "runs-reparsed", "runs-pair", "runs-repeats", "runs-linux", "runs-fp32"):
         base = DATA / extra
         if not base.is_dir():
             continue
         seen = _tracked_runs(base)
-        bad += [f"{extra}/{r}" for r, files in sorted(seen.items())
-                if "metrics.json" not in files]
+        bad += [f"{extra}/{r}" for r, files in sorted(seen.items()) if "metrics.json" not in files]
     for x in bad[:10]:
         print(f"       {x}")
     if len(bad) > 10:
         print(f"       ... and {len(bad) - 10} more")
-    check(not bad, "V7 every committed run has metrics.json",
-          f"{len(bad)} run(s) committed as outputs only")
+    check(not bad, "V7 every committed run has metrics.json", f"{len(bad)} run(s) committed as outputs only")
 
 
 def v9_no_committed_evidence_is_missing() -> None:
@@ -344,9 +351,25 @@ def v9_no_committed_evidence_is_missing() -> None:
     FLOORS = (read_json(floors_file).get("floors") or {}) if floors_file.is_file() else {}
 
     tracked = subprocess.run(
-        ["git", "ls-files", *(data_rel(DATA / d) for d in ("runs", "runs-rescored", "runs-reparsed",
-         "runs-pair", "runs-repeats", "runs-linux", "runs-fp32"))],
-        cwd=ROOT, capture_output=True, text=True,
+        [
+            "git",
+            "ls-files",
+            *(
+                data_rel(DATA / d)
+                for d in (
+                    "runs",
+                    "runs-rescored",
+                    "runs-reparsed",
+                    "runs-pair",
+                    "runs-repeats",
+                    "runs-linux",
+                    "runs-fp32",
+                )
+            ),
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
     ).stdout.split()
     missing, incomplete = [], []
     seen: dict = {}
@@ -355,7 +378,7 @@ def v9_no_committed_evidence_is_missing() -> None:
         # <data root>/<runs dir>/<run id>/<file>, wherever the data root sits.
         if not f.startswith(data_prefix):
             continue
-        parts = f[len(data_prefix):].split("/")
+        parts = f[len(data_prefix) :].split("/")
         if len(parts) < 3:
             continue
         seen.setdefault(f"{parts[0]}/{parts[1]}", set()).add(parts[2])
@@ -368,17 +391,16 @@ def v9_no_committed_evidence_is_missing() -> None:
     # says. Found by external review, round 5.
     for key, files in sorted(seen.items()):
         if "metrics.json" not in files:
-            continue                       # V7's business, not this one
+            continue  # V7's business, not this one
         if "predictions.jsonl" not in files:
             incomplete.append(f"{key} has no predictions.jsonl")
             continue
         _pj = DATA / key / "predictions.jsonl"
         _mj = DATA / key / "metrics.json"
         if not _pj.is_file() or not _mj.is_file():
-            continue                       # already counted as missing above
+            continue  # already counted as missing above
         try:
-            _rows = sum(1 for _l in _pj.read_text(encoding="utf-8").splitlines()
-                        if _l.strip())
+            _rows = sum(1 for _l in _pj.read_text(encoding="utf-8").splitlines() if _l.strip())
             _want = int(read_json(_mj).get("n_items") or 0)
         except (OSError, ValueError, TypeError):
             incomplete.append(f"{key} predictions.jsonl is unreadable")
@@ -386,26 +408,26 @@ def v9_no_committed_evidence_is_missing() -> None:
         if _rows == 0:
             incomplete.append(f"{key} predictions.jsonl is empty")
         elif _want and _rows != _want:
-            incomplete.append(f"{key} has {_rows} prediction rows, "
-                              f"metrics.json says n_items={_want}")
-    for x in (missing[:5] + incomplete[:5]):
+            incomplete.append(f"{key} has {_rows} prediction rows, metrics.json says n_items={_want}")
+    for x in missing[:5] + incomplete[:5]:
         print(f"       {x}")
     if len(missing) > 5:
         print(f"       ... and {len(missing) - 5} more missing files")
-    check(not missing and not incomplete,
-          "V9 every committed run file is on disk, with its rows",
-          f"{len(missing)} tracked file(s) missing, {len(incomplete)} run(s) incomplete")
+    check(
+        not missing and not incomplete,
+        "V9 every committed run file is on disk, with its rows",
+        f"{len(missing)} tracked file(s) missing, {len(incomplete)} run(s) incomplete",
+    )
 
     short = []
     for name, floor in sorted(FLOORS.items()):
         base = DATA / name
-        n = len([d for d in base.glob("*/metrics.json")]) if base.is_dir() else 0
+        n = len(list(base.glob("*/metrics.json"))) if base.is_dir() else 0
         if n < floor:
             short.append(f"{name}: {n} runs, expected at least {floor}")
     for x in short:
         print(f"       {x}")
-    check(not short, "V9 each committed runs directory meets its floor",
-          "; ".join(short))
+    check(not short, "V9 each committed runs directory meets its floor", "; ".join(short))
 
 
 def v10_derived_runs_carry_the_current_scorer() -> None:
@@ -444,12 +466,23 @@ def v10_derived_runs_carry_the_current_scorer() -> None:
     #: unwatched. `data/runs` predates `scorer_sha256` and states `parser_sha256` alone,
     #: under `system_under_test.model`, so that is what is compared there.
     SOURCES = (
-        ("runs-rescored", "*", ("rescored_with", "scorer"),
-         "examples/ner-few-nerd", "adapter", "scorer_id"),
-        ("runs-reparsed", "*", ("reparsed_with", "scorer_sha256"),
-         "examples/_shared", "retrieval", "scorer_sha256"),
-        ("runs", "fn_*", ("fingerprint", "system_under_test", "model", "parser_sha256"),
-         "examples/ner-few-nerd", "adapter", "scorer_id"),
+        ("runs-rescored", "*", ("rescored_with", "scorer"), "examples/ner-few-nerd", "adapter", "scorer_id"),
+        (
+            "runs-reparsed",
+            "*",
+            ("reparsed_with", "scorer_sha256"),
+            "examples/_shared",
+            "retrieval",
+            "scorer_sha256",
+        ),
+        (
+            "runs",
+            "fn_*",
+            ("fingerprint", "system_under_test", "model", "parser_sha256"),
+            "examples/ner-few-nerd",
+            "adapter",
+            "scorer_id",
+        ),
     )
 
     def _dig(d, path):
@@ -471,15 +504,17 @@ def v10_derived_runs_carry_the_current_scorer() -> None:
             mod = __import__(modname)
             current = getattr(mod, fn)()
         except Exception as exc:  # noqa: BLE001 — an absent example dep is a named skip
-            print(f"  skip V10 {directory}: {modname}.{fn} not importable "
-                  f"({type(exc).__name__}: {str(exc)[:60]})")
+            print(
+                f"  skip V10 {directory}: {modname}.{fn} not importable "
+                f"({type(exc).__name__}: {str(exc)[:60]})"
+            )
             continue
         # A str at the end of `path` is one hash; a dict is a set of named ones. When
         # the run states a dict, compare every key it and the code have in common --
         # and refuse if they have none, because that is the same blindness by another
         # route.
         if isinstance(current, dict) and path[-1] in current:
-            current = {path[-1]: current[path[-1]]}   # the run names ONE of them
+            current = {path[-1]: current[path[-1]]}  # the run names ONE of them
         checked, stale, silent, keys = 0, [], [], set()
         for mj in runs:
             rec = _dig(read_json(mj), path)
@@ -497,38 +532,47 @@ def v10_derived_runs_carry_the_current_scorer() -> None:
             shared = sorted(set(pairs) & set(want))
             keys.update(shared)
             if not shared:
-                silent.append(f"{mj.parent.name} (states {sorted(pairs)}, code offers "
-                              f"{sorted(want)})")
+                silent.append(f"{mj.parent.name} (states {sorted(pairs)}, code offers {sorted(want)})")
                 continue
             for k in shared:
                 if pairs[k] != want[k]:
                     stale.append(f"{mj.parent.name} {k} {pairs[k][:12]}")
-        label = (f"V10 {directory}: {', '.join(sorted(keys))} match the code "
-                 f"({checked} run(s))" if keys
-                 else f"V10 {directory}: a scorer hash was compared at all")
+        label = (
+            f"V10 {directory}: {', '.join(sorted(keys))} match the code ({checked} run(s))"
+            if keys
+            else f"V10 {directory}: a scorer hash was compared at all"
+        )
 
         if directory == "runs":
             # Measurement runs SHOULD carry the hash of their own day. A note, not a gate.
             if stale:
-                notes.append(f"{len(stale)} of {checked} run(s) in data/runs were "
-                             f"measured with a scorer that is not the current one "
-                             f"(expected; the hash is the record)")
-            print(f"  ok   {label} — {checked - len(stale)} current, "
-                  f"{len(stale)} historical")
+                notes.append(
+                    f"{len(stale)} of {checked} run(s) in data/runs were "
+                    f"measured with a scorer that is not the current one "
+                    f"(expected; the hash is the record)"
+                )
+            print(f"  ok   {label} — {checked - len(stale)} current, {len(stale)} historical")
             continue
 
         # A DERIVED RUN THAT STATES NOTHING IS A FAILURE. Skipping here is how the
         # check disappears at the moment it matters.
         for x in silent[:5]:
             print(f"       {x} states no hash at {'.'.join(path)}")
-        check(not silent, f"V10 {directory}: every run states its scorer",
-              f"{len(silent)} of {len(runs)} run(s) record nothing at "
-              f"{'.'.join(path)} — a derived run must say what derived it")
+        check(
+            not silent,
+            f"V10 {directory}: every run states its scorer",
+            f"{len(silent)} of {len(runs)} run(s) record nothing at "
+            f"{'.'.join(path)} — a derived run must say what derived it",
+        )
         for x in stale[:5]:
             print(f"       {x} != the code")
-        check(not stale and checked > 0, label,
-              f"{len(stale)} mismatch(es) over {checked} derived run(s)"
-              if stale else "no run was compared at all")
+        check(
+            not stale and checked > 0,
+            label,
+            f"{len(stale)} mismatch(es) over {checked} derived run(s)"
+            if stale
+            else "no run was compared at all",
+        )
 
 
 def v8_no_duplicate_config_ids() -> None:
@@ -556,8 +600,15 @@ def v8_no_duplicate_config_ids() -> None:
     # the one place a duplicate config_id could still land -- and the latency claims read
     # it by filesystem order, so a duplicate changed the answer depending on how the
     # names sorted. That is the round-3 ext4 defect in the sixth directory. Round 5.
-    COMMITTED = ("runs", "runs-rescored", "runs-reparsed", "runs-pair", "runs-repeats",
-                 "runs-linux", "runs-fp32")
+    COMMITTED = (
+        "runs",
+        "runs-rescored",
+        "runs-reparsed",
+        "runs-pair",
+        "runs-repeats",
+        "runs-linux",
+        "runs-fp32",
+    )
     #: One documented exception. `demo_v1` on `smoke_v1` is the bundled demo, run many
     #: times by `make demo` and by the self-test; smoke_v1 is not an experiment and no
     #: report cites it. Named here rather than scoped away silently, so that adding a
@@ -584,17 +635,21 @@ def v8_no_duplicate_config_ids() -> None:
             if len(stems) == 1 and all(_re.search(r"_r\d+$", n) for n in names):
                 continue
             if (ds, cid) in ALLOWED:
-                notes.append(f"{base.name}/: {len(names)} {cid!r} runs on {ds} "
-                             f"(allowed: the bundled demo, cited by no report)")
+                notes.append(
+                    f"{base.name}/: {len(names)} {cid!r} runs on {ds} "
+                    f"(allowed: the bundled demo, cited by no report)"
+                )
                 continue
-            bad.append(f"{base.name}/: {len(names)} runs claim {cid!r} on {ds} "
-                       f"— {', '.join(sorted(names))}")
+            bad.append(f"{base.name}/: {len(names)} runs claim {cid!r} on {ds} — {', '.join(sorted(names))}")
     for x in bad[:6]:
         print(f"       {x}")
     if len(bad) > 6:
         print(f"       ... and {len(bad) - 6} more")
-    check(not bad, "V8 no two runs share a config_id (outside a --repeat set)",
-          f"{len(bad)} ambiguous config_id(s)")
+    check(
+        not bad,
+        "V8 no two runs share a config_id (outside a --repeat set)",
+        f"{len(bad)} ambiguous config_id(s)",
+    )
 
 
 def judging_set_problems(sets_dir: Path) -> list[str]:
@@ -613,8 +668,9 @@ def judging_set_problems(sets_dir: Path) -> list[str]:
             bad.append(f"{f.name}: judging_set_id is {m.get('judging_set_id')!r}")
         want = js.manifest_hash(m)
         if m.get("judging_set_sha256") != want:
-            bad.append(f"{f.name}: stored hash {str(m.get('judging_set_sha256'))[:12]} != "
-                       f"recomputed {want[:12]}")
+            bad.append(
+                f"{f.name}: stored hash {str(m.get('judging_set_sha256'))[:12]} != recomputed {want[:12]}"
+            )
         elif not f.stem.endswith(want[:12]):
             bad.append(f"{f.name}: id does not end in the content hash {want[:12]}")
     return bad
@@ -743,21 +799,29 @@ def _report(bad: list[str], label: str, noun: str) -> None:
 
 
 def v11_judging_sets_match_their_hash() -> None:
-    _report(judging_set_problems(DATA_DIR / "judging-sets"),
-            "V11 every judging set's stored hash is the hash of its content", "bad set(s)")
+    _report(
+        judging_set_problems(DATA_DIR / "judging-sets"),
+        "V11 every judging set's stored hash is the hash of its content",
+        "bad set(s)",
+    )
 
 
 def v12_verdicts_belong_to_their_set() -> None:
-    _report(verdict_problems(DATA_DIR / "judge-verdicts", DATA_DIR / "judging-sets")
-            + validation_record_problems(DATA_DIR / "judge-validation"),
-            "V12 every judge verdict names a real set, item, pass and block, and its n; "
-            "every committed reply is bare JSON or withheld",
-            "bad verdict(s)")
+    _report(
+        verdict_problems(DATA_DIR / "judge-verdicts", DATA_DIR / "judging-sets")
+        + validation_record_problems(DATA_DIR / "judge-validation"),
+        "V12 every judge verdict names a real set, item, pass and block, and its n; "
+        "every committed reply is bare JSON or withheld",
+        "bad verdict(s)",
+    )
 
 
 def v13_judge_scorers_are_well_formed() -> None:
-    _report(scorer_problems(DATA_DIR / "scorers"),
-            "V13 every judge scorer yaml loads and is structurally valid", "bad scorer(s)")
+    _report(
+        scorer_problems(DATA_DIR / "scorers"),
+        "V13 every judge scorer yaml loads and is structurally valid",
+        "bad scorer(s)",
+    )
 
 
 def v14_goals() -> None:
@@ -766,7 +830,7 @@ def v14_goals() -> None:
     if not GOALS.is_dir():
         print("  --   V14 goals (no data/goals/: goals are optional until a project adds them)")
         return
-    import yaml
+    import yaml  # noqa: PLC0415
 
     goals, bad = load_goals(), []
     schema = json.loads((SCHEMAS / "goal.schema.json").read_text())
@@ -816,17 +880,22 @@ def v14_goals() -> None:
         for d in g.get("datasets") or []:
             n = sizes.get(d.get("dataset_id"))
             if need and n is not None and n < need:
-                notes.append(f"V14 goal {gid}: dataset {d['dataset_id']} has {n} items, "
-                             f"under its min_items {need}: it can measure, not pick a winner")
+                notes.append(
+                    f"V14 goal {gid}: dataset {d['dataset_id']} has {n} items, "
+                    f"under its min_items {need}: it can measure, not pick a winner"
+                )
     rule = f"; runs from {since} must name one" if since else "; optional (no required_from set)"
-    check(not bad, f"V14 goals — {len(goals)} goal(s), every goal named resolves{rule}",
-          f"{len(bad)} problem(s)")
+    check(
+        not bad,
+        f"V14 goals — {len(goals)} goal(s), every goal named resolves{rule}",
+        f"{len(bad)} problem(s)",
+    )
 
 
 def v15_item_fields() -> None:
     """Item fields are declared, typed and hashed (ADR-0003). Undeclared means unchecked: a
     typo in a column name would be a new field nobody filters or groups by."""
-    import _fields
+    import _fields  # noqa: PLC0415
 
     fieldsets = {p.stem: p for p in sorted(FIELDS.glob("*.yaml"))} if FIELDS.is_dir() else {}
     with_fields = []
@@ -856,17 +925,27 @@ def v15_item_fields() -> None:
             bad.append(f"{where}: items carry fields, but the dataset names no fieldset")
             continue
         if fid not in loaded:
-            bad.append(f"{where}: field set {fid!r} " + ("is not valid" if fid in fieldsets else "does not exist"))
+            bad.append(
+                f"{where}: field set {fid!r} " + ("is not valid" if fid in fieldsets else "does not exist")
+            )
             continue
         for it in ds["items"]:
-            bad += [f"{where}: {p}" for p in _fields.problems(loaded[fid], it["item_id"], it.get("fields") or {})]
+            bad += [
+                f"{where}: {p}" for p in _fields.problems(loaded[fid], it["item_id"], it.get("fields") or {})
+            ]
         if ds.get("fields_sha256") != _fields.digest(ds["items"]):
-            bad.append(f"{where}: fields_sha256 is not the hash of the items' fields "
-                       "(edited by hand? `dataset-create --update-fields` records the change)")
+            bad.append(
+                f"{where}: fields_sha256 is not the hash of the items' fields "
+                "(edited by hand? `dataset-create --update-fields` records the change)"
+            )
     for x in bad[:30]:
         print(f"       {x}")
-    check(not bad, f"V15 item fields — {len(loaded)} field set(s), {len(with_fields)} dataset(s) with fields, "
-          "every value declared and typed", f"{len(bad)} problem(s)")
+    check(
+        not bad,
+        f"V15 item fields — {len(loaded)} field set(s), {len(with_fields)} dataset(s) with fields, "
+        "every value declared and typed",
+        f"{len(bad)} problem(s)",
+    )
 
 
 def main() -> int:
@@ -878,13 +957,23 @@ def main() -> int:
         print(__doc__)
         return 0
     print(f"eval tree: {DATA}\n")
-    for fn in (v1_schemas, v2_dataset_ids, v3_provenance, v4_materialized,
-               v5_duplicate_scores, v6_baselines, v7_committed_runs_are_readable,
-               v8_no_duplicate_config_ids,
-               v9_no_committed_evidence_is_missing,
-               v10_derived_runs_carry_the_current_scorer,
-               v11_judging_sets_match_their_hash, v12_verdicts_belong_to_their_set,
-               v13_judge_scorers_are_well_formed, v14_goals, v15_item_fields):
+    for fn in (
+        v1_schemas,
+        v2_dataset_ids,
+        v3_provenance,
+        v4_materialized,
+        v5_duplicate_scores,
+        v6_baselines,
+        v7_committed_runs_are_readable,
+        v8_no_duplicate_config_ids,
+        v9_no_committed_evidence_is_missing,
+        v10_derived_runs_carry_the_current_scorer,
+        v11_judging_sets_match_their_hash,
+        v12_verdicts_belong_to_their_set,
+        v13_judge_scorers_are_well_formed,
+        v14_goals,
+        v15_item_fields,
+    ):
         fn()
     for n in notes:
         print(f"\n  note: {n}")

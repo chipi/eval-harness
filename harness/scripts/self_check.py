@@ -29,8 +29,11 @@ HERE = Path(__file__).resolve().parent
 
 
 def in_checkout() -> bool:
-    return (HERE.parent / "Makefile").is_file() and (HERE.parent / "pyproject.toml").is_file() \
+    return (
+        (HERE.parent / "Makefile").is_file()
+        and (HERE.parent / "pyproject.toml").is_file()
         and (HERE / "self_test.py").is_file()
+    )
 
 
 def main() -> int:
@@ -54,29 +57,76 @@ def main() -> int:
 
     tmp = Path(tempfile.mkdtemp(prefix="evh-self-check-"))
     try:
-        env = {**os.environ, "EVAL_HOME": str(tmp), "PYTHONDONTWRITEBYTECODE": "1",
-               "EVAL_BUILD_REF": "self-check", "EVAL_MAX_COST_USD": ""}
+        env = {
+            **os.environ,
+            "EVAL_HOME": str(tmp),
+            "PYTHONDONTWRITEBYTECODE": "1",
+            "EVAL_BUILD_REF": "self-check",
+            "EVAL_MAX_COST_USD": "",
+        }
         for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR"):
             env.pop(k, None)
         evh = [sys.executable, "-m", "evaluation_harness"]
-        step("the paired test's own suite (test_stats.py)", [sys.executable, str(HERE / "test_stats.py")], tmp, env)
-        if step("init --tutorial", evh + ["init", "--tutorial"], tmp, env):
+        step(
+            "the paired test's own suite (test_stats.py)",
+            [sys.executable, str(HERE / "test_stats.py")],
+            tmp,
+            env,
+        )
+        if step("init --tutorial", [*evh, "init", "--tutorial"], tmp, env):
             shutil.copy(tmp / "tutorial/fields/tickets.yaml", tmp / "data/fields/")
             for f in (tmp / "tutorial/configs").glob("tickets_lead*.yaml"):
                 if "noisy" not in f.name:
                     shutil.copy(f, tmp / "data/configs/")
             shutil.copytree(tmp / "tutorial/gold", tmp / "data/references/gold/tickets_v1")
             steps = [
-                ("dataset-create with fields", ["dataset-create", "--dataset-id", "tickets_v1", "--source-dir",
-                                                "tutorial/tickets", "--fieldset", "tickets", "--fields",
-                                                "tutorial/ticket_fields.csv"]),
+                (
+                    "dataset-create with fields",
+                    [
+                        "dataset-create",
+                        "--dataset-id",
+                        "tickets_v1",
+                        "--source-dir",
+                        "tutorial/tickets",
+                        "--fieldset",
+                        "tickets",
+                        "--fields",
+                        "tutorial/ticket_fields.csv",
+                    ],
+                ),
                 ("dataset-materialize", ["dataset-materialize", "--dataset-id", "tickets_v1"]),
-                ("experiment-run lead1 x2", ["experiment-run", "--config", "data/configs/tickets_lead1.yaml", "--repeat", "2"]),
-                ("experiment-run lead2 x2", ["experiment-run", "--config", "data/configs/tickets_lead2.yaml", "--repeat", "2"]),
-                ("pair-test on the recorded primary metric", ["pair-test", "--dataset-id", "tickets_v1",
-                                                               "--a", "tickets_lead2_v1", "--b", "tickets_lead1_v1"]),
-                ("rescore against gold", ["rescore", "--dataset-id", "tickets_v1", "--reference-id", "gold/tickets_v1",
-                                          "--out", "data/runs-gold"]),
+                (
+                    "experiment-run lead1 x2",
+                    ["experiment-run", "--config", "data/configs/tickets_lead1.yaml", "--repeat", "2"],
+                ),
+                (
+                    "experiment-run lead2 x2",
+                    ["experiment-run", "--config", "data/configs/tickets_lead2.yaml", "--repeat", "2"],
+                ),
+                (
+                    "pair-test on the recorded primary metric",
+                    [
+                        "pair-test",
+                        "--dataset-id",
+                        "tickets_v1",
+                        "--a",
+                        "tickets_lead2_v1",
+                        "--b",
+                        "tickets_lead1_v1",
+                    ],
+                ),
+                (
+                    "rescore against gold",
+                    [
+                        "rescore",
+                        "--dataset-id",
+                        "tickets_v1",
+                        "--reference-id",
+                        "gold/tickets_v1",
+                        "--out",
+                        "data/runs-gold",
+                    ],
+                ),
                 ("validate", ["validate"]),
                 ("catalog", ["catalog"]),
             ]
@@ -86,8 +136,10 @@ def main() -> int:
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
     failed = results.count(False)
-    print(f"\nself-check: {len(results) - failed}/{len(results)} passed"
-          + ("" if not failed else " — the harness does not work as installed here; the lines above say where"))
+    print(
+        f"\nself-check: {len(results) - failed}/{len(results)} passed"
+        + ("" if not failed else " — the harness does not work as installed here; the lines above say where")
+    )
     return 1 if failed else 0
 
 

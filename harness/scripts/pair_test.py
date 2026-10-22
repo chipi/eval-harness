@@ -38,7 +38,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-from _common import DATA, RUNS, dataset_item_ids, default_metric, read_json, warn_on_ambiguous_runs  # noqa: E402
+from _common import RUNS, dataset_item_ids, default_metric, read_json, warn_on_ambiguous_runs  # noqa: E402
 from stats import EXACT_UP_TO, sign_flip_p  # noqa: E402
 
 
@@ -73,11 +73,15 @@ def main() -> int:
         help="file of item_ids (one per line); restrict the test to exactly these",
     )
     ap.add_argument("--permutations", type=int, default=20000)
-    ap.add_argument("--family", type=int, default=1,
-                    help="how many pairs were tested together (Bonferroni: alpha/family)")
+    ap.add_argument(
+        "--family", type=int, default=1, help="how many pairs were tested together (Bonferroni: alpha/family)"
+    )
     ap.add_argument("--seed", type=int, default=20260926)
-    ap.add_argument("--asc", action="store_true",
-                    help="lower is better (WER, latency): 'A wins' counts items where A scored lower")
+    ap.add_argument(
+        "--asc",
+        action="store_true",
+        help="lower is better (WER, latency): 'A wins' counts items where A scored lower",
+    )
     args = ap.parse_args()
     # Two runs sharing a config_id are averaged together below without
     # saying so. See _common.warn_on_ambiguous_runs.
@@ -127,10 +131,16 @@ def main() -> int:
 
     print(f"  {args.a}  vs  {args.b}    metric={args.metric}  N={len(items)}")
     print(f"    delta (A - B)      {obs:+.4f}")
-    print(f"    items A wins       {wins}/{len(items)}" + (" (lower is better)" if args.asc else "")
-          + (f" ({ties} exact tie(s))" if ties else ""))
-    how = (f"exact, all 2^{len(items)} sign patterns" if len(items) <= EXACT_UP_TO
-           else f"{args.permutations} permutations")
+    print(
+        f"    items A wins       {wins}/{len(items)}"
+        + (" (lower is better)" if args.asc else "")
+        + (f" ({ties} exact tie(s))" if ties else "")
+    )
+    how = (
+        f"exact, all 2^{len(items)} sign patterns"
+        if len(items) <= EXACT_UP_TO
+        else f"{args.permutations} permutations"
+    )
     print(f"    sign-flip p        {p:.4f}  ({how})")
     if args.family > 1:
         verdict = "SEPARATED" if p < thresh else "NOT-SEPARATED"

@@ -43,8 +43,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from _common import DATASETS, RUNS, ROOT, die, now, read_json, write_json, write_text_atomic  # noqa: E402
-from _fingerprint import build_fingerprint  # noqa: E402
+from _common import DATASETS, ROOT, RUNS, die, now, read_json, write_json, write_text_atomic
+from _fingerprint import build_fingerprint
 
 
 def _rows(path: Path) -> list:
@@ -69,24 +69,37 @@ def main() -> int:
     ap.add_argument("--scores", required=True, type=Path, help="JSONL: item_id + numeric metrics")
     ap.add_argument("--primary-metric", required=True)
     ap.add_argument("--asc", action="store_true", help="lower is better for the primary metric")
-    ap.add_argument("--build-ref", required=True,
-                    help="identity of the system that produced the outputs (commit, version, digest)")
+    ap.add_argument(
+        "--build-ref",
+        required=True,
+        help="identity of the system that produced the outputs (commit, version, digest)",
+    )
     ap.add_argument("--source", required=True, help="where the outputs and scores came from")
     ap.add_argument("--scorer-id", required=True, help="the scoring code that produced the numbers")
     ap.add_argument("--scorer-sha256", help="hash of that scoring code, if known")
     ap.add_argument("--reference-id", help="the references the scores are against, e.g. gold/my_v1")
     ap.add_argument("--reference-tier", choices=("gold", "silver"))
-    ap.add_argument("--metric-kind", action="append", default=[], metavar="METRIC=KIND",
-                    help="quality | descriptive | cost | speed (repeatable)")
-    ap.add_argument("--allow-subset", action="store_true",
-                    help="accept scores for only part of the dataset, recorded as coverage")
+    ap.add_argument(
+        "--metric-kind",
+        action="append",
+        default=[],
+        metavar="METRIC=KIND",
+        help="quality | descriptive | cost | speed (repeatable)",
+    )
+    ap.add_argument(
+        "--allow-subset",
+        action="store_true",
+        help="accept scores for only part of the dataset, recorded as coverage",
+    )
     ap.add_argument("--run-id", help="default: <config-id>_<timestamp>")
     args = ap.parse_args()
 
     ds_file = DATASETS / f"{args.dataset_id}.json"
     if not ds_file.is_file():
-        die(f"dataset {args.dataset_id} is not frozen: {ds_file} does not exist. "
-            f"Freeze the items first (evh dataset-create).")
+        die(
+            f"dataset {args.dataset_id} is not frozen: {ds_file} does not exist. "
+            f"Freeze the items first (evh dataset-create)."
+        )
     dataset = read_json(ds_file)
     known = {it["item_id"] for it in dataset["items"]}
 
@@ -109,8 +122,10 @@ def main() -> int:
         die(f"--primary-metric {args.primary_metric!r} is not among the scored metrics: {sorted(metrics)}")
     missing = sorted(known - seen)
     if missing and not args.allow_subset:
-        die(f"{len(missing)} of {len(known)} items have no scores (first: {missing[0]}). "
-            f"Pass --allow-subset to import anyway; the coverage is recorded on the run.")
+        die(
+            f"{len(missing)} of {len(known)} items have no scores (first: {missing[0]}). "
+            f"Pass --allow-subset to import anyway; the coverage is recorded on the run."
+        )
 
     kinds = {}
     for spec in args.metric_kind:
@@ -130,30 +145,56 @@ def main() -> int:
         die(f"{run_dir} already exists")
     import hashlib  # noqa: PLC0415
 
-    imported = {"source": args.source, "scorer_id": args.scorer_id,
-                "scorer_sha256": args.scorer_sha256, "scores_file": args.scores.name,
-                # The exact bytes imported: a name can be reused, a hash cannot.
-                "scores_sha256": hashlib.sha256(args.scores.read_bytes()).hexdigest(),
-                "items_scored": len(seen), "items_in_dataset": len(known)}
+    imported = {
+        "source": args.source,
+        "scorer_id": args.scorer_id,
+        "scorer_sha256": args.scorer_sha256,
+        "scores_file": args.scores.name,
+        # The exact bytes imported: a name can be reused, a hash cannot.
+        "scores_sha256": hashlib.sha256(args.scores.read_bytes()).hexdigest(),
+        "items_scored": len(seen),
+        "items_in_dataset": len(known),
+    }
     params = {"imported": True, "source": args.source}
     fingerprint = build_fingerprint(
-        root=ROOT, dataset=dataset, reference_id=args.reference_id,
-        reference_tier=args.reference_tier, config_id=args.config_id, params=params,
-        adapter_id=f"imported:{args.scorer_id}", adapter_path=None)
+        root=ROOT,
+        dataset=dataset,
+        reference_id=args.reference_id,
+        reference_tier=args.reference_tier,
+        config_id=args.config_id,
+        params=params,
+        adapter_id=f"imported:{args.scorer_id}",
+        adapter_path=None,
+    )
     fingerprint["imported"] = imported
 
     run_dir.mkdir(parents=True)
-    write_json(run_dir / "run.json", {"config_id": args.config_id, "dataset_id": args.dataset_id,
-                                      "run_id": run_id, "started_at": now(), "imported": True})
-    write_text_atomic(run_dir / "predictions.jsonl",
-                      "".join(json.dumps(r, sort_keys=True) + "\n" for r in rows))
+    write_json(
+        run_dir / "run.json",
+        {
+            "config_id": args.config_id,
+            "dataset_id": args.dataset_id,
+            "run_id": run_id,
+            "started_at": now(),
+            "imported": True,
+        },
+    )
+    write_text_atomic(
+        run_dir / "predictions.jsonl", "".join(json.dumps(r, sort_keys=True) + "\n" for r in rows)
+    )
     metrics_doc = {
-        "run_id": run_id, "dataset_id": args.dataset_id, "config_id": args.config_id,
+        "run_id": run_id,
+        "dataset_id": args.dataset_id,
+        "config_id": args.config_id,
         "created_at": now(),
         "build": {"ref": args.build_ref, "dirty": None, "source": "import-run --build-ref"},
-        "params": params, "adapter": f"imported:{args.scorer_id}",
-        "metric_kinds": kinds, "primary_metric": args.primary_metric,
-        "fingerprint": fingerprint, "scores": scores, "n_items": len(rows),
+        "params": params,
+        "adapter": f"imported:{args.scorer_id}",
+        "metric_kinds": kinds,
+        "primary_metric": args.primary_metric,
+        "fingerprint": fingerprint,
+        "scores": scores,
+        "n_items": len(rows),
         "imported": imported,
     }
     if args.asc:
@@ -162,8 +203,10 @@ def main() -> int:
         metrics_doc["reference_tier"] = args.reference_tier
     write_json(run_dir / "metrics.json", metrics_doc)
     cover = f"{len(seen)}/{len(known)} items" + (" (subset)" if missing else "")
-    print(f"imported {run_id}: {cover}, {len(metrics)} metric(s), "
-          f"{args.primary_metric}={scores[args.primary_metric]}")
+    print(
+        f"imported {run_id}: {cover}, {len(metrics)} metric(s), "
+        f"{args.primary_metric}={scores[args.primary_metric]}"
+    )
     print(f"  {run_dir}")
     return 0
 

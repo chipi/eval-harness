@@ -112,6 +112,14 @@ package.
 - **The catalog counted a dataset's items from the harness's own path**, not the adapter's,
   so a project with its own layout got "the most items any arm scored". It now asks the
   adapter (`dataset_items`, optional).
+- **The bundled adapter's `anthropic` provider failed every call** with the anthropic SDK 1.x,
+  which dropped the `temperature=` keyword: a TypeError before the request was sent. The
+  temperature now travels in the request body, so the request is the one every SDK version
+  sends. A self-test checks the call against the installed SDK's own signature. Found by mypy.
+- **A manifest URL could read a local file.** `dataset-create --manifest` fetched any scheme
+  `urlopen` accepts, so a `file:///…` row was copied into the item cache and pinned, although
+  a dataset's schema allows only http(s). Every fetch now refuses other schemes before reading
+  anything. Found by bandit.
 
 ### Added
 - **`evaluation_harness.stats`**. Standard library only, and the one place the paired test
@@ -240,10 +248,16 @@ package.
 - **`scripts/test_installed_commands.py`** (in `make test`) runs every `evh` command in a
   project that pins the package; a command without a case fails it.
 - **`scripts/check_commands.py`** (in `make test`) checks every `make` target, `evh` command
-  and flag shown in the current docs still exists: 261 of them across 27 docs today.
+  and flag shown in the current docs still exists: 262 of them across 27 docs today.
 - **The deploy's health check** also asks the inspector the question readers send most, a
   group of arms on one metric (`infra/deploy/probe_link.sh`), and rolls back without verdict
   rows.
+- **Code-quality gates**, `make quality` at the repository root and a CI job of the same name:
+  ruff (lint and format), mypy, bandit, pip-audit, vulture, interrogate, codespell, shellcheck
+  and actionlint, with radon's complexity report. Tools pinned in `requirements-dev.txt`
+  (`make quality-install`), never a dependency of the package. What they found, and how ruff
+  compares with the black, isort and flake8 that podcast_scraper runs:
+  `research/internal/QUALITY_TOOLING_EXPERIMENT.md`.
 
 ## 0.3.0 — 2026-10-21
 

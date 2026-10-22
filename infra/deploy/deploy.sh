@@ -100,8 +100,9 @@ fi
 q2="$(bash "$REL/deploy/probe_link.sh" "$REL/sites/$CATALOG_HOST/public/d")"
 if [ -n "$q2" ]; then
   body="$(curl -s -m 180 -H "Host: $CATALOG_HOST" "http://127.0.0.1:$IPORT/api/compare?$q2")"
-  grep -q '"rows": \[{' <<<"$body" && ! grep -q '"error"' <<<"$body" ||
+  if ! { grep -q '"rows": \[{' <<<"$body" && ! grep -q '"error"' <<<"$body"; }; then
     rollback "health check failed: the inspector did not test a group of arms (${body:0:200})"
+  fi
 fi
 echo "  inspector ok"
 

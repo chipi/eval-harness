@@ -12,6 +12,7 @@ indistinguishable.
 The capture is docs/evidence/model_facts.json. Refresh it with
 docs/evidence/capture.sh; this script never reaches the network itself.
 """
+
 import json
 import re
 import sys
@@ -29,9 +30,12 @@ EV = ROOT / "docs" / "evidence" / "model_facts.json"
 
 ok: list = []
 notes: list = []
+
+
 def check(label, cond, detail=""):
     ok.append(cond)
     print(f"  {'ok  ' if cond else 'FAIL'} {label}{('   ' + detail) if detail and not cond else ''}")
+
 
 if not EV.is_file():
     print(f"FAIL  no evidence capture at {EV}")
@@ -91,23 +95,23 @@ def derived_gb(mid):
 
 
 # ---- licences, read from docs/REFERENCE.md's licence table -------------------------
-lic_rows = re.findall(r"^\|\s*\[`([^`]+)`\]\([^)]*\)\s*\|\s*([A-Za-z0-9.\- ]+?)\s*\|\s*$",
-                      REF, re.M)
-check("REFERENCE.md's licence table is readable", len(lic_rows) >= 10,
-      f"parsed {len(lic_rows)} rows")
+lic_rows = re.findall(r"^\|\s*\[`([^`]+)`\]\([^)]*\)\s*\|\s*([A-Za-z0-9.\- ]+?)\s*\|\s*$", REF, re.M)
+check("REFERENCE.md's licence table is readable", len(lic_rows) >= 10, f"parsed {len(lic_rows)} rows")
 for mid, claimed in lic_rows:
     got = (facts.get(mid) or {}).get("license")
     if got is None:
-        continue                      # not in the capture; the coverage check catches it
-    check(f"licence {mid}", got.lower() == claimed.strip().lower(),
-          f"REFERENCE.md says {claimed}, evidence says {got}")
+        continue  # not in the capture; the coverage check catches it
+    check(
+        f"licence {mid}",
+        got.lower() == claimed.strip().lower(),
+        f"REFERENCE.md says {claimed}, evidence says {got}",
+    )
 
 # ---- small-model sizes, read from docs/REFERENCE.md's model table ------------------
 size_rows = re.findall(
-    r"^\|\s*`[^`]*`\s*\|\s*\[`([^`]+)`\]\([^)]*\)\s*\|\s*([0-9.]+)\s*(GB|MB)\s*\|",
-    REF, re.M)
-check("REFERENCE.md's model table is readable", len(size_rows) >= 8,
-      f"parsed {len(size_rows)} rows")
+    r"^\|\s*`[^`]*`\s*\|\s*\[`([^`]+)`\]\([^)]*\)\s*\|\s*([0-9.]+)\s*(GB|MB)\s*\|", REF, re.M
+)
+check("REFERENCE.md's model table is readable", len(size_rows) >= 8, f"parsed {len(size_rows)} rows")
 for mid, num, unit in size_rows:
     claimed = float(num) * (1.0 if unit == "GB" else 0.001)
     got = weights_gb(mid)
@@ -117,8 +121,11 @@ for mid, num, unit in size_rows:
     # are checkpoint byte counts, not estimates, so the tolerance only has to
     # absorb MB-vs-MiB rounding and how the doc rounds. 20 MB or 5%, whichever is
     # larger. Found by external review.
-    check(f"size {mid} ~{num} {unit}", abs(got - claimed) <= max(0.02, claimed * 0.05),
-          f"REFERENCE.md says {num} {unit}, evidence gives {got*1000:.0f} MB")
+    check(
+        f"size {mid} ~{num} {unit}",
+        abs(got - claimed) <= max(0.02, claimed * 0.05),
+        f"REFERENCE.md says {num} {unit}, evidence gives {got * 1000:.0f} MB",
+    )
 
 # ---- large-model sizes, read from the synthesis's own sentences --------------------
 # Every "<display name> ... N GB" within one line. The synthesis states these in tables
@@ -140,37 +147,48 @@ for disp, mid in ALIASES.items():
             if claimed < got * 0.6:
                 continue
             seen_big.add(disp)
-            check(f"size {disp} ~{claimed:.0f} GB (REPORT_SYNTHESIS)",
-                  abs(got - claimed) <= max(2, claimed * 0.05),
-                  f"the synthesis says {claimed:.0f} GB, the checkpoint measures {got:.0f} GB")
-check("the synthesis's large-model sizes were actually found and checked",
-      len(seen_big) >= 4, f"only matched {sorted(seen_big)}")
+            check(
+                f"size {disp} ~{claimed:.0f} GB (REPORT_SYNTHESIS)",
+                abs(got - claimed) <= max(2, claimed * 0.05),
+                f"the synthesis says {claimed:.0f} GB, the checkpoint measures {got:.0f} GB",
+            )
+check(
+    "the synthesis's large-model sizes were actually found and checked",
+    len(seen_big) >= 4,
+    f"only matched {sorted(seen_big)}",
+)
 
 # ---- the derived figure disagreeing with the measured one is itself a finding ------
 for mid in facts:
     d, m = derived_gb(mid), weights_gb(mid)
     if d and m and abs(d - m) > max(2, m * 0.05):
-        notes.append(f"{mid}: dtype-derived {d:.0f} GB vs measured {m:.0f} GB "
-                     f"({d/m:.2f}x) — packed tensors, use the measured figure")
+        notes.append(
+            f"{mid}: dtype-derived {d:.0f} GB vs measured {m:.0f} GB "
+            f"({d / m:.2f}x) — packed tensors, use the measured figure"
+        )
 
 # THE ONE THE REVIEW DISPUTED: both numbers are right about different things.
 ds = facts.get("deepseek-ai/DeepSeek-V4.1-Flash") or {}
-check("DeepSeek-V4.1-Flash total params are 763B, not 552B",
-      abs((ds.get("params_total") or 0) / 1e9 - 763) < 1,
-      f"evidence: {ds.get('params_total')}")
-check("...and the reports say BOTH the 552B backbone and the measured checkpoint size",
-      all(t in SYN for t in ("552B", "510 GB")))
+check(
+    "DeepSeek-V4.1-Flash total params are 763B, not 552B",
+    abs((ds.get("params_total") or 0) / 1e9 - 763) < 1,
+    f"evidence: {ds.get('params_total')}",
+)
+check(
+    "...and the reports say BOTH the 552B backbone and the measured checkpoint size",
+    all(t in SYN for t in ("552B", "510 GB")),
+)
 # 765 GB may still APPEAR -- the synthesis explains where it came from and why it was
 # wrong, and deleting that history would hide the correction. What must not survive is
 # the number presented as the size. So: every line that mentions it must also mark it
 # as the old figure.
-_stale = [f"{f}:{i}: {ln.strip()[:70]}"
-          for f in ("REPORT_SYNTHESIS.md", "REPORT_SUMMARIZATION.md")
-          for i, ln in enumerate((ROOT / "research" / f).read_text().splitlines(), 1)
-          if "765 GB" in ln and not any(w in ln for w in ("until", "never measured",
-                                                          "inflated", "derived"))]
-check("765 GB survives only where it is marked as the corrected-away figure",
-      not _stale, "; ".join(_stale))
+_stale = [
+    f"{f}:{i}: {ln.strip()[:70]}"
+    for f in ("REPORT_SYNTHESIS.md", "REPORT_SUMMARIZATION.md")
+    for i, ln in enumerate((ROOT / "research" / f).read_text().splitlines(), 1)
+    if "765 GB" in ln and not any(w in ln for w in ("until", "never measured", "inflated", "derived"))
+]
+check("765 GB survives only where it is marked as the corrected-away figure", not _stale, "; ".join(_stale))
 
 # The tier split the synthesis states.
 syn = (ROOT / "research" / "REPORT_SYNTHESIS.md").read_text()
@@ -188,14 +206,15 @@ syn = (ROOT / "research" / "REPORT_SYNTHESIS.md").read_text()
 # The hosted arm table IS the source: 24 rows, each ending `**open**` or `proprietary`.
 # Count them, and require the synthesis to state the count. Marking a model proprietary
 # in REFERENCE.md must move the number in REPORT_SYNTHESIS or fail.
-_HOSTED_ROW = re.compile(
-    r"^\| `([a-z0-9_]+)` \|[^|]*\|[^|]*\| (\*\*open\*\*|proprietary)", re.M)
+_HOSTED_ROW = re.compile(r"^\| `([a-z0-9_]+)` \|[^|]*\|[^|]*\| (\*\*open\*\*|proprietary)", re.M)
 _hosted_rows = _HOSTED_ROW.findall((ROOT / "docs" / "REFERENCE.md").read_text())
 _hosted_open = sum(1 for _a, _k in _hosted_rows if _k != "proprietary")
-check(f"REFERENCE.md tabulates 24 hosted arms (found {len(_hosted_rows)})",
-      len(_hosted_rows) == 24,
-      "the open-weight count below is derived from this table; if it is not 24 rows "
-      "the derivation is reading the wrong thing")
+check(
+    f"REFERENCE.md tabulates 24 hosted arms (found {len(_hosted_rows)})",
+    len(_hosted_rows) == 24,
+    "the open-weight count below is derived from this table; if it is not 24 rows "
+    "the derivation is reading the wrong thing",
+)
 # EVERY statement of the count, not the first one. `re.search` returned the earliest
 # match, so the synthesis states this number in three places and only one was read --
 # editing either of the other two passed. That is round 4's M3 (a presence check that
@@ -205,31 +224,38 @@ _prop = len(_hosted_rows) - _hosted_open
 # alone also matches "slower than 17 of the 24 hosted arms" -- a latency sentence --
 # which the first version of this flagged as a wrong open-weight count. A check that
 # cries wolf on correct text gets muted.
-_counts = [(int(_n), "open") for _n in
-           re.findall(r"(\d+) of the 24 hosted arms have \*\*downloadable weights\*\*", syn)]
+_counts = [
+    (int(_n), "open")
+    for _n in re.findall(r"(\d+) of the 24 hosted arms have \*\*downloadable weights\*\*", syn)
+]
 for _line in syn.splitlines():
-    _kind = ("open" if "Open-weight LLM" in _line else
-             "proprietary" if "· Proprietary" in _line else None)
+    _kind = "open" if "Open-weight LLM" in _line else "proprietary" if "· Proprietary" in _line else None
     if _kind:
-        _counts += [(int(_n), _kind)
-                    for _n in re.findall(r"\*\*(\d+) of the 24\*\*", _line)]
-check(f"the synthesis states an open-weight count at all ({len(_counts)} statement(s))",
-      any(k == "open" for _n, k in _counts),
-      "no 'N of the 24' in REPORT_SYNTHESIS")
-_wrong = [f"{_n} ({k})" for _n, k in _counts
-          if _n != (_hosted_open if k == "open" else _prop)]
-check(f"...and EVERY statement of it is the {_hosted_open} open / {_prop} proprietary "
-      f"REFERENCE.md's hosted table supports",
-      not _wrong,
-      f"the synthesis says {', '.join(_wrong)}; the hosted table marks {_hosted_open} "
-      f"of {len(_hosted_rows)} as open")
+        _counts += [(int(_n), _kind) for _n in re.findall(r"\*\*(\d+) of the 24\*\*", _line)]
+check(
+    f"the synthesis states an open-weight count at all ({len(_counts)} statement(s))",
+    any(k == "open" for _n, k in _counts),
+    "no 'N of the 24' in REPORT_SYNTHESIS",
+)
+_wrong = [f"{_n} ({k})" for _n, k in _counts if _n != (_hosted_open if k == "open" else _prop)]
+check(
+    f"...and EVERY statement of it is the {_hosted_open} open / {_prop} proprietary "
+    f"REFERENCE.md's hosted table supports",
+    not _wrong,
+    f"the synthesis says {', '.join(_wrong)}; the hosted table marks {_hosted_open} "
+    f"of {len(_hosted_rows)} as open",
+)
 # REFERENCE.md repeats the count in its own prose, two paragraphs below the table.
-check(f"...and REFERENCE.md's own prose agrees ({_hosted_open})",
-      re.search(rf"\*\*{_hosted_open} of these 24\b",
-                (ROOT / "docs" / "REFERENCE.md").read_text()) is not None,
-      f"REFERENCE.md's table marks {_hosted_open} open; its prose says otherwise")
-check("mistral_l is tabulated as open in REFERENCE.md",
-      re.search(r"\| `mistral_l` \|[^|]*\|[^|]*\| \*\*open\*\*", (ROOT / "docs" / "REFERENCE.md").read_text()) is not None)
+check(
+    f"...and REFERENCE.md's own prose agrees ({_hosted_open})",
+    re.search(rf"\*\*{_hosted_open} of these 24\b", (ROOT / "docs" / "REFERENCE.md").read_text()) is not None,
+    f"REFERENCE.md's table marks {_hosted_open} open; its prose says otherwise",
+)
+check(
+    "mistral_l is tabulated as open in REFERENCE.md",
+    re.search(r"\| `mistral_l` \|[^|]*\|[^|]*\| \*\*open\*\*", (ROOT / "docs" / "REFERENCE.md").read_text())
+    is not None,
+)
 
 for n in notes:
     print(f"\n  note: {n}")

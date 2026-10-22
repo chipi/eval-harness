@@ -44,6 +44,7 @@ HERE = Path(__file__).resolve().parent
 HARNESS = HERE.parent
 sys.path.insert(0, str(HERE))
 import _wheel  # noqa: E402
+
 GUIDE = HARNESS.parent / "docs" / "GUIDE.md"
 FENCE = re.compile(r"^```(\w*)\s*$")
 MARK = re.compile(r"^<!--\s*guide-check:\s*(\w+)((?:\s+[\w.-]+)*)\s*-->\s*$")
@@ -90,12 +91,25 @@ def setup(tmp: Path) -> tuple:
     bindir = site / "bin"  # pip --target puts the console script here
     proj = tmp / "my-evals"
     proj.mkdir()
-    env = {**os.environ, "PATH": f"{bindir}{os.pathsep}{os.environ.get('PATH', '')}",
-           "PYTHONPATH": str(site), "PYTHONDONTWRITEBYTECODE": "1", "PYTHONUNBUFFERED": "1",
-           "GIT_AUTHOR_NAME": "guide", "GIT_AUTHOR_EMAIL": "guide@example.invalid",
-           "GIT_COMMITTER_NAME": "guide", "GIT_COMMITTER_EMAIL": "guide@example.invalid"}
-    for k in ("EVAL_HOME", "EVAL_DATA_DIR", "EVAL_RUNS_DIR", "OPENROUTER_API_KEY", "LITELLM_BASE_URL",
-              "EVAL_MAX_COST_USD"):
+    env = {
+        **os.environ,
+        "PATH": f"{bindir}{os.pathsep}{os.environ.get('PATH', '')}",
+        "PYTHONPATH": str(site),
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "PYTHONUNBUFFERED": "1",
+        "GIT_AUTHOR_NAME": "guide",
+        "GIT_AUTHOR_EMAIL": "guide@example.invalid",
+        "GIT_COMMITTER_NAME": "guide",
+        "GIT_COMMITTER_EMAIL": "guide@example.invalid",
+    }
+    for k in (
+        "EVAL_HOME",
+        "EVAL_DATA_DIR",
+        "EVAL_RUNS_DIR",
+        "OPENROUTER_API_KEY",
+        "LITELLM_BASE_URL",
+        "EVAL_MAX_COST_USD",
+    ):
         env.pop(k, None)
     return proj, env
 
@@ -104,6 +118,7 @@ def fill(cmd: str, proj: Path) -> str:
     def run_id(m):
         runs = sorted(p.name for p in (proj / "data" / "runs").glob(f"{m.group(1)}_2*"))
         return runs[0] if runs else m.group(0)
+
     return PLACEHOLDER.sub(run_id, cmd)
 
 
@@ -127,12 +142,20 @@ def free_port() -> int:
 
 def run(cmd: str, proj: Path, env: dict, background: bool) -> tuple:
     if not background:
-        r = subprocess.run(["bash", "-c", cmd], cwd=proj, env=env, capture_output=True, text=True, timeout=900)
+        r = subprocess.run(
+            ["bash", "-c", cmd], cwd=proj, env=env, capture_output=True, text=True, timeout=900
+        )
         return r.returncode, r.stdout + r.stderr
     log = proj.parent / "background.log"
     with open(log, "w") as fh:
-        p = subprocess.Popen(["bash", "-c", f"exec {cmd}"], cwd=proj, env=env, stdout=fh,
-                             stderr=subprocess.STDOUT, start_new_session=True)
+        p = subprocess.Popen(
+            ["bash", "-c", f"exec {cmd}"],
+            cwd=proj,
+            env=env,
+            stdout=fh,
+            stderr=subprocess.STDOUT,
+            start_new_session=True,
+        )
     for _ in range(80):
         if log.read_text().strip():
             break
@@ -157,35 +180,48 @@ def main() -> int:
                 continue
             cmd = fill(body, proj)
             nxt = bs[n + 1] if n + 1 < len(bs) else None
-            want = nxt[1] if nxt and nxt[0] == "text" and nxt[3] - line <= len(body.splitlines()) + 3 else None
+            want = (
+                nxt[1] if nxt and nxt[0] == "text" and nxt[3] - line <= len(body.splitlines()) + 3 else None
+            )
             if mark == "background" and want and f"127.0.0.1:{PORT}" in want and not port_free(PORT):
                 # Another program on this machine holds the default port: not the GUIDE's to take.
                 free = free_port()
-                cmd, want = f"{cmd.strip()} --port {free}", want.replace(f"127.0.0.1:{PORT}", f"127.0.0.1:{free}")
+                cmd, want = (
+                    f"{cmd.strip()} --port {free}",
+                    want.replace(f"127.0.0.1:{PORT}", f"127.0.0.1:{free}"),
+                )
             code, out = run(cmd, proj, env, mark == "background")
             ran += 1
             if args.print:
                 print(f"\n=== GUIDE line {line} (exit {code}):\n{cmd}\n--- printed:\n{out.rstrip()}")
             if want is None:
                 if code != 0:
-                    problems.append(f"line {line}: exited {code}, and the GUIDE quotes no output for it\n"
-                                    f"    {out.strip()[-300:]}")
+                    problems.append(
+                        f"line {line}: exited {code}, and the GUIDE quotes no output for it\n"
+                        f"    {out.strip()[-300:]}"
+                    )
                 continue
+            assert nxt is not None  # `want` was read from it
             vmark, vwords = nxt[2]
             if vmark == "varies" and not vwords:
                 continue
             got = norm(out)
-            lines_ = [x for x in expected_lines(want)
-                      if not (vmark == "varies" and any(w in x for w in vwords))]
+            lines_ = [
+                x for x in expected_lines(want) if not (vmark == "varies" and any(w in x for w in vwords))
+            ]
             missing = [x for x in lines_ if x not in got]
             if missing:
-                problems.append(f"line {line}: {len(missing)} quoted line(s) not printed, e.g. {missing[0]!r}")
+                problems.append(
+                    f"line {line}: {len(missing)} quoted line(s) not printed, e.g. {missing[0]!r}"
+                )
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
     for p in problems:
         print(f"  FAIL {p}")
-    print(f"GUIDE: {ran} command block(s) run in a fresh project, "
-          + ("every quoted output matches" if not problems else f"{len(problems)} problem(s)"))
+    print(
+        f"GUIDE: {ran} command block(s) run in a fresh project, "
+        + ("every quoted output matches" if not problems else f"{len(problems)} problem(s)")
+    )
     return 1 if problems else 0
 
 

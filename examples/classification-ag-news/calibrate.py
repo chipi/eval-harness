@@ -29,8 +29,10 @@ import calibration as cal  # noqa: E402
 
 ARMS = {
     "bert_mini": {"published": 0.9339, "source": "model card, HF-verified test accuracy"},
-    "bert_base_ta": {"published": 0.9514, "source": "model card, 'eval set accuracy' "
-                     "(0.951447 = 7,231/7,600, i.e. the test split)"},
+    "bert_base_ta": {
+        "published": 0.9514,
+        "source": "model card, 'eval set accuracy' (0.951447 = 7,231/7,600, i.e. the test split)",
+    },
     "bert_base_fy": {"published": 0.9375, "source": "model card, 'evaluation set' accuracy"},
 }
 #: Allowed gap beyond our own CI: the cards' figures may use other truncation/precision.
@@ -44,18 +46,26 @@ def main() -> int:
     spec.loader.exec_module(adapter)
     labels = ["World", "Sports", "Business", "Sci/Tech"]
     test = cal.rows("fancyzhx/ag_news", "default", "test")
-    out = {"what": "fine-tuned arms on the full fancyzhx/ag_news test split, this repo's "
-                   "adapter and configs", "split_rows": len(test), "arms": {}}
+    out = {
+        "what": "fine-tuned arms on the full fancyzhx/ag_news test split, this repo's adapter and configs",
+        "split_rows": len(test),
+        "arms": {},
+    }
     for arm, pub in ARMS.items():
         params = yaml.safe_load((HERE / "configs" / f"arm_{arm}_n200.yaml").read_text())["params"]
         adapter.warmup(params)
-        acc = cal.accuracy(lambda t: adapter.call_system(t, params).output, test, "text",
-                           lambda r: labels[r["label"]])
-        acc.update(pub, verdict=cal.verdict(acc["value"], acc["ci95"], pub["published"],
-                                            TOLERANCE))
+        acc = cal.accuracy(
+            lambda t, params=params: adapter.call_system(t, params).output,
+            test,
+            "text",
+            lambda r: labels[r["label"]],
+        )
+        acc.update(pub, verdict=cal.verdict(acc["value"], acc["ci95"], pub["published"], TOLERANCE))
         out["arms"][arm] = acc
-        print(f"{arm:13s} full test {acc['value']:.4f} ±{acc['ci95']:.4f}   "
-              f"card {pub['published']:.4f}   {acc['verdict']}")
+        print(
+            f"{arm:13s} full test {acc['value']:.4f} ±{acc['ci95']:.4f}   "
+            f"card {pub['published']:.4f}   {acc['verdict']}"
+        )
     print(f"wrote {cal.write('ag_news', out).relative_to(cal.ROOT)}")
     return 0
 

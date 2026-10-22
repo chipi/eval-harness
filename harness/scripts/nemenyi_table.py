@@ -48,10 +48,30 @@ SQRT2 = math.sqrt(2.0)
 
 #: Demsar (2006), Table 5(a), alpha = 0.05. Kept ONLY as the validation target.
 PUBLISHED = {
-    2: 1.960, 3: 2.343, 4: 2.569, 5: 2.728, 6: 2.850, 7: 2.949, 8: 3.031, 9: 3.102,
-    10: 3.164, 11: 3.219, 12: 3.268, 13: 3.313, 14: 3.354, 15: 3.391, 16: 3.426,
-    17: 3.458, 18: 3.489, 19: 3.517, 20: 3.544, 21: 3.569, 22: 3.593, 23: 3.616,
-    24: 3.637, 25: 3.658,
+    2: 1.960,
+    3: 2.343,
+    4: 2.569,
+    5: 2.728,
+    6: 2.850,
+    7: 2.949,
+    8: 3.031,
+    9: 3.102,
+    10: 3.164,
+    11: 3.219,
+    12: 3.268,
+    13: 3.313,
+    14: 3.354,
+    15: 3.391,
+    16: 3.426,
+    17: 3.458,
+    18: 3.489,
+    19: 3.517,
+    20: 3.544,
+    21: 3.569,
+    22: 3.593,
+    23: 3.616,
+    24: 3.637,
+    25: 3.658,
 }
 
 
@@ -59,12 +79,11 @@ def _phi(x: float) -> float:
     return math.exp(-0.5 * x * x) / math.sqrt(2.0 * math.pi)
 
 
-def _Phi(x: float) -> float:
+def _norm_cdf(x: float) -> float:
     return 0.5 * (1.0 + math.erf(x / SQRT2))
 
 
-def studentised_range_cdf(q: float, k: int, lo: float = -9.0, hi: float = 9.0,
-                          n: int = 4000) -> float:
+def studentised_range_cdf(q: float, k: int, lo: float = -9.0, hi: float = 9.0, n: int = 4000) -> float:
     """P(range of k iid standard normals <= q), nu = infinity. Simpson, n even."""
     if q <= 0:
         return 0.0
@@ -73,7 +92,7 @@ def studentised_range_cdf(q: float, k: int, lo: float = -9.0, hi: float = 9.0,
     for i in range(n + 1):
         z = lo + i * h
         weight = 1 if i in (0, n) else (4 if i % 2 else 2)
-        total += weight * _phi(z) * (_Phi(z) - _Phi(z - q)) ** (k - 1)
+        total += weight * _phi(z) * (_norm_cdf(z) - _norm_cdf(z - q)) ** (k - 1)
     return k * total * h / 3.0
 
 
@@ -105,9 +124,8 @@ def main() -> int:
     args = ap.parse_args()
 
     err = max_error_against_published()
-    print(f"  validation against Demsar (2006), k = 2..25:")
-    print(f"    worst absolute disagreement: {err:.4f}   "
-          f"({'OK' if err < 0.002 else 'TOO LARGE'})\n")
+    print("  validation against Demsar (2006), k = 2..25:")
+    print(f"    worst absolute disagreement: {err:.4f}   ({'OK' if err < 0.002 else 'TOO LARGE'})\n")
     t = table(args.max, args.alpha)
     print(f"  alpha = {args.alpha}, nu = infinity")
     for k in sorted(t):

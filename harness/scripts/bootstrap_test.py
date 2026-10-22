@@ -66,14 +66,13 @@ from __future__ import annotations
 
 import argparse
 import random
-import statistics
 import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-from _common import RUNS, dataset_item_ids, default_metric, die, warn_on_ambiguous_runs  # noqa: E402
+from _common import RUNS, dataset_item_ids, die, warn_on_ambiguous_runs  # noqa: E402
 from classification_report import gold_labels, per_class, predictions  # noqa: E402
 
 
@@ -93,8 +92,9 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", required=True)
     ap.add_argument("--a", required=True, help="config_id of the arm under test")
-    ap.add_argument("--against", required=True,
-                    help="substring selecting the opponent family, declared in advance")
+    ap.add_argument(
+        "--against", required=True, help="substring selecting the opponent family, declared in advance"
+    )
     ap.add_argument("--metric", default="macro_f1", choices=sorted(METRICS))
     ap.add_argument("--draws", type=int, default=5000)
     ap.add_argument("--alpha", type=float, default=0.05)
@@ -112,9 +112,11 @@ def main() -> int:
     # free text (summaries, answers) makes every item its own "class", and macro-F1 over that
     # is a number with no meaning. Refused rather than computed.
     if len(gold) >= 4 and len(labels) > len(gold) / 2:
-        die(f"bootstrap-test is for classification: {args.dataset_id}'s gold has {len(labels)} distinct "
+        die(
+            f"bootstrap-test is for classification: {args.dataset_id}'s gold has {len(labels)} distinct "
             f"labels over {len(gold)} items, so it reads as free text, not labels. For a per-item "
-            "score, pair-test and family-test are the exact tests.")
+            "score, pair-test and family-test are the exact tests."
+        )
     preds = predictions(args.dataset_id, None)
     if args.a not in preds:
         die(f"no runs for {args.a} on {args.dataset_id}")
@@ -124,11 +126,9 @@ def main() -> int:
         drop = dataset_item_ids(args.exclude_dataset)
     keep = None
     if args.items:
-        keep = {ln.strip() for ln in args.items.read_text(encoding="utf-8").splitlines()
-                if ln.strip()}
+        keep = {ln.strip() for ln in args.items.read_text(encoding="utf-8").splitlines() if ln.strip()}
 
-    opponents = sorted(c for c in preds
-                       if c != args.a and args.against in c and preds[c])
+    opponents = sorted(c for c in preds if c != args.a and args.against in c and preds[c])
     if not opponents:
         die(f"no opponents matching {args.against!r}")
 
@@ -151,8 +151,7 @@ def main() -> int:
             # ONE resample, BOTH arms. Drawing separately for each arm would throw away
             # the pairing and inflate the variance of the difference by roughly two.
             draw = [items[rng.randrange(n)] for _ in range(n)]
-            deltas.append(fn([a_pairs[i] for i in draw], labels)
-                          - fn([b_pairs[i] for i in draw], labels))
+            deltas.append(fn([a_pairs[i] for i in draw], labels) - fn([b_pairs[i] for i in draw], labels))
         deltas.sort()
         lo = deltas[int(0.025 * len(deltas))]
         hi = deltas[min(int(0.975 * len(deltas)), len(deltas) - 1)]
@@ -163,8 +162,10 @@ def main() -> int:
         rows.append({"opp": opp, "n": n, "delta": observed, "lo": lo, "hi": hi, "p": p})
 
     if not rows:
-        die(f"no opponent shares at least 10 items with {args.a} (a percentile bootstrap needs them); "
-            f"opponents tried: {', '.join(opponents)}")
+        die(
+            f"no opponent shares at least 10 items with {args.a} (a percentile bootstrap needs them); "
+            f"opponents tried: {', '.join(opponents)}"
+        )
 
     m = len(rows)
     rows.sort(key=lambda r: r["p"])
@@ -175,8 +176,7 @@ def main() -> int:
             still = False
         r["sep"] = still
 
-    print(f"  {args.a}  vs family '{args.against}'   metric={args.metric}  "
-          f"{rows[0]['n']} items")
+    print(f"  {args.a}  vs family '{args.against}'   metric={args.metric}  {rows[0]['n']} items")
     print(f"  paired bootstrap, {args.draws} draws, seed {args.seed}")
     print(f"  family size m={m}, declared before the p-values were read")
     print(f"  Holm step-down at alpha={args.alpha}\n")
@@ -184,15 +184,15 @@ def main() -> int:
     print(f"    {'opponent':{w}} {'delta':>9} {'95% CI':>20} {'p':>8} {'thresh':>8}   verdict")
     for r in rows:
         ci = f"[{r['lo']:+.4f}, {r['hi']:+.4f}]"
-        print(f"    {r['opp']:{w}} {r['delta']:+9.4f} {ci:>20} {r['p']:8.4f} "
-              f"{r['thresh']:8.4f}   {'SEPARATED' if r['sep'] else '--'}")
+        print(
+            f"    {r['opp']:{w}} {r['delta']:+9.4f} {ci:>20} {r['p']:8.4f} "
+            f"{r['thresh']:8.4f}   {'SEPARATED' if r['sep'] else '--'}"
+        )
     sep = sum(1 for r in rows if r["sep"])
     ahead = sum(1 for r in rows if r["delta"] > 0)
     spans = sum(1 for r in rows if r["lo"] <= 0 <= r["hi"])
-    print(f"\n    separated from {sep} of {m}; ahead on the point estimate against "
-          f"{ahead} of {m}")
-    print(f"    {spans} of {m} intervals span zero — those arms are not ordered by this "
-          f"data,")
+    print(f"\n    separated from {sep} of {m}; ahead on the point estimate against {ahead} of {m}")
+    print(f"    {spans} of {m} intervals span zero — those arms are not ordered by this data,")
     print("    whatever the point estimates say.")
     return 0
 

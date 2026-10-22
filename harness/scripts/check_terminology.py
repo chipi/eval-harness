@@ -12,7 +12,10 @@ nothing catches the drift by eye once a document is 500 lines long.
 The canonical labels are defined in docs/REFERENCE.md#terminology. This fails if a
 cell in any experiment-keyed table does not use one.
 """
-import pathlib, re, sys
+
+import pathlib
+import re
+import sys
 
 if "--help" in sys.argv[1:] or "-h" in sys.argv[1:]:
     # It used to fall through and run the whole check, so `--help`
@@ -27,8 +30,7 @@ if "--help" in sys.argv[1:] or "-h" in sys.argv[1:]:
 # in a commit message as having "earned itself twice". It had checked nothing.
 root = pathlib.Path(__file__).resolve().parents[2]
 
-files = [f for f in root.rglob("*.md")
-         if ".venv" not in str(f) and "/data/" not in str(f)]
+files = [f for f in root.rglob("*.md") if ".venv" not in str(f) and "/data/" not in str(f)]
 if not files:
     # A check that cannot find its inputs must FAIL, not pass. This is the assertion
     # that would have caught the hardcoded path immediately.
@@ -44,35 +46,48 @@ bad = []
 with_table = []
 cells = 0
 for f in files:
-    lines = f.read_text().split("\n"); in_exp = False; seen_here = False
+    lines = f.read_text().split("\n")
+    in_exp = False
+    seen_here = False
     for i, line in enumerate(lines, 1):
-        if re.match(r"^\| *experiment *\|", line, re.I): in_exp = True; seen_here = True; continue
+        if re.match(r"^\| *experiment *\|", line, re.I):
+            in_exp = True
+            seen_here = True
+            continue
         if in_exp:
-            if not line.startswith("|"): in_exp = False; continue
-            if re.match(r"^\|[-: |]+\|$", line): continue
+            if not line.startswith("|"):
+                in_exp = False
+                continue
+            if re.match(r"^\|[-: |]+\|$", line):
+                continue
             cell = re.match(r"^\| *\*{0,2}([^|*]+?)\*{0,2} *\|", line)
             if cell:
                 v = cell.group(1).strip()
                 if v in ("all", "", "—"):
                     continue
                 cells += 1
-                if not v.startswith(("Summarisation ·","Classification ·",
-                                     "Extraction ·","Retrieval ·","Judging ·")):
-                    bad.append("%s:%d  %s" % (f.relative_to(root), i, v))
+                if not v.startswith(
+                    ("Summarisation ·", "Classification ·", "Extraction ·", "Retrieval ·", "Judging ·")
+                ):
+                    bad.append(f"{f.relative_to(root)}:{i}  {v}")
     if seen_here:
         with_table.append(f.relative_to(root))
 
 if bad:
-    print("FAIL  %d non-canonical experiment label(s):" % len(bad))
+    print(f"FAIL  {len(bad)} non-canonical experiment label(s):")
     print("\n".join("  " + b for b in bad))
     sys.exit(1)
 if not cells:
     # Same hole as the hardcoded path, one level in: reading 40 files and asserting on
     # none of them is not a pass.
-    print("FAIL  %d markdown file(s) read, but NOT ONE experiment-column cell was "
-          "checked — this check is asserting nothing" % len(files))
+    print(
+        f"FAIL  {len(files)} markdown file(s) read, but NOT ONE experiment-column cell was "
+        "checked — this check is asserting nothing"
+    )
     sys.exit(1)
-print("%d experiment-column cell(s) in %d of %d markdown file(s) use the canonical "
-      "Task · Dataset label" % (cells, len(with_table), len(files)))
+print(
+    f"{cells} experiment-column cell(s) in {len(with_table)} of {len(files)} markdown file(s) use the canonical "
+    "Task · Dataset label"
+)
 print("  files with an experiment column: " + ", ".join(str(x) for x in with_table))
 sys.exit(0)

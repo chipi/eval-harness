@@ -31,8 +31,10 @@ def main() -> int:
     adj = json.loads(Path(sys.argv[1]).read_text())
     base, dest = REFS / adj["base_reference"], REFS / adj["reference_id"]
     if adj["reference_id"] == adj["base_reference"] or dest.resolve() == base.resolve():
-        print(f"reference_id {adj['reference_id']!r} is the base reference: "
-              "refusing, because the copy would delete the gold set it copies from")
+        print(
+            f"reference_id {adj['reference_id']!r} is the base reference: "
+            "refusing, because the copy would delete the gold set it copies from"
+        )
         return 1
     if not base.is_dir():
         print(f"no gold reference set at {base}: run the experiment's fetch.py first")
@@ -47,8 +49,10 @@ def main() -> int:
             print(f"item {it['item_id']} is not in {base}")
             return 1
         if f.read_text().strip() != it["gold"]:
-            print(f"item {it['item_id']}: local gold is {f.read_text().strip()!r}, "
-                  f"the adjudication file says {it['gold']!r}")
+            print(
+                f"item {it['item_id']}: local gold is {f.read_text().strip()!r}, "
+                f"the adjudication file says {it['gold']!r}"
+            )
             return 1
         f.write_text(it["adjudicated"])
         changed += it["adjudicated"] != it["gold"]

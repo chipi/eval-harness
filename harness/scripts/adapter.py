@@ -24,10 +24,9 @@ import sys
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _common import env_int  # noqa: E402
 
 
 @dataclass
@@ -35,22 +34,22 @@ class Result:
     """What one call to your system produced, and what it cost."""
 
     output: str
-    tokens_in: Optional[int] = None
-    tokens_out: Optional[int] = None
-    cost_usd: Optional[float] = None
-    latency_ms: Optional[float] = None
-    extra: Dict[str, float] = field(default_factory=dict)
+    tokens_in: int | None = None
+    tokens_out: int | None = None
+    cost_usd: float | None = None
+    latency_ms: float | None = None
+    extra: dict[str, float] = field(default_factory=dict)
     # Raw provider metadata, kept verbatim and never averaged: the `usage` object,
     # `finish_reason`, the model string the provider actually reports back. Anything
     # numeric belongs in `extra` (it becomes a metric); anything you want preserved
     # for forensics belongs here. Without this the harness could not answer "were
     # reasoning tokens billed?" or "was this output cut off at max_tokens?" -- both
     # of which silently corrupt a comparison.
-    meta: Dict[str, Any] = field(default_factory=dict)
+    meta: dict[str, Any] = field(default_factory=dict)
 
 
 # ── 1. YOUR SYSTEM ───────────────────────────────────────────────────────────
-def call_system(text: str, params: Dict[str, Any]) -> Result:
+def call_system(text: str, params: dict[str, Any]) -> Result:
     """Run YOUR system over one item. Replace the body.
 
     `params` is whatever the experiment config put under `params:` — model name,
@@ -71,7 +70,7 @@ def call_system(text: str, params: Dict[str, Any]) -> Result:
         return Result(output=summarise(text, model=params["model"]))
     """
     provider = params.get("provider", "echo")
-    fn: Callable[[str, Dict[str, Any]], Result] = PROVIDERS.get(provider, _echo)
+    fn: Callable[[str, dict[str, Any]], Result] = PROVIDERS.get(provider, _echo)
     started = time.perf_counter()
     # No retry wrapper here: the core retries every adapter. See the note below.
     result = fn(text, params)
@@ -103,7 +102,7 @@ def call_system(text: str, params: Dict[str, Any]) -> Result:
 PRIMARY_METRIC = "overlap_f1"
 
 
-def score(output: str, reference: Optional[str]) -> Dict[str, float]:
+def score(output: str, reference: str | None) -> dict[str, float]:
     """Score one output. Replace with whatever "good" means for you.
 
     Called with the golden reference when one exists for the item, and with
@@ -130,7 +129,7 @@ def score(output: str, reference: Optional[str]) -> Dict[str, float]:
 
 
 # ── example adapters — delete the ones you do not use ────────────────────────
-def _echo(text: str, params: Dict[str, Any]) -> Result:
+def _echo(text: str, params: dict[str, Any]) -> Result:
     """No network. Returns the first N sentences — a stand-in 'summary'.
 
     Deterministic BY DEFAULT: `--repeat 3` reports spread 0.000000, which is the
@@ -161,8 +160,8 @@ def _echo(text: str, params: Dict[str, Any]) -> Result:
     return Result(output=out, cost_usd=0.0)
 
 
-def _anthropic(text: str, params: Dict[str, Any]) -> Result:
-    import anthropic  # imported lazily so the demo needs no SDK
+def _anthropic(text: str, params: dict[str, Any]) -> Result:
+    import anthropic  # imported lazily so the demo needs no SDK  # noqa: PLC0415
 
     key = os.environ.get("ANTHROPIC_API_KEY")
     if not key:
@@ -172,21 +171,23 @@ def _anthropic(text: str, params: Dict[str, Any]) -> Result:
     msg = client.messages.create(
         model=model,
         max_tokens=int(params.get("max_tokens", 600)),
-        temperature=float(params.get("temperature", 0.0)),
         messages=[{"role": "user", "content": params.get("prompt", "Summarise:") + "\n\n" + text}],
+        # The SDK dropped the `temperature` keyword in 1.x; the body carries it, so the request
+        # is the same one every SDK version sends.
+        extra_body={"temperature": float(params.get("temperature", 0.0))},
     )
     usage = getattr(msg, "usage", None)
     ti = getattr(usage, "input_tokens", None)
     to = getattr(usage, "output_tokens", None)
     return Result(
-        output="".join(b.text for b in msg.content if getattr(b, "type", "") == "text"),
+        output="".join(b.text for b in msg.content if b.type == "text"),
         tokens_in=ti,
         tokens_out=to,
         cost_usd=_price(params, ti, to),
     )
 
 
-def _litellm(text: str, params: Dict[str, Any]) -> Result:
+def _litellm(text: str, params: dict[str, Any]) -> Result:
     """A LiteLLM proxy — one key, many providers, spend tracked centrally.
 
     Usually the best answer for a sweep: the proxy already holds the provider
@@ -202,8 +203,7 @@ def _litellm(text: str, params: Dict[str, Any]) -> Result:
     """
     params = {
         **params,
-        "base_url": (params.get("base_url") or os.environ.get("LITELLM_BASE_URL", "")).rstrip("/")
-        + "/v1",
+        "base_url": (params.get("base_url") or os.environ.get("LITELLM_BASE_URL", "")).rstrip("/") + "/v1",
         "api_key_env": params.get("api_key_env", "LITELLM_API_KEY"),
     }
     if not params["base_url"].startswith("http"):
@@ -214,9 +214,9 @@ def _litellm(text: str, params: Dict[str, Any]) -> Result:
     return _openai_compatible(text, params)
 
 
-def _openai_compatible(text: str, params: Dict[str, Any]) -> Result:
+def _openai_compatible(text: str, params: dict[str, Any]) -> Result:
     """OpenAI-shaped APIs, including OpenRouter — set `base_url` in params."""
-    from openai import OpenAI  # lazy
+    from openai import OpenAI  # lazy  # noqa: PLC0415
 
     env_key = params.get("api_key_env", "OPENAI_API_KEY")
     key = os.environ.get(env_key)
@@ -227,9 +227,7 @@ def _openai_compatible(text: str, params: Dict[str, Any]) -> Result:
         model=params["model"],
         temperature=float(params.get("temperature", 0.0)),
         max_tokens=int(params.get("max_tokens", 600)),
-        messages=[
-            {"role": "user", "content": params.get("prompt", "Summarise:") + "\n\n" + text}
-        ],
+        messages=[{"role": "user", "content": params.get("prompt", "Summarise:") + "\n\n" + text}],
     )
     u = getattr(resp, "usage", None)
     ti = getattr(u, "prompt_tokens", None)
@@ -242,7 +240,7 @@ def _openai_compatible(text: str, params: Dict[str, Any]) -> Result:
     )
 
 
-def _price(params: Dict[str, Any], tin: Optional[int], tout: Optional[int]) -> Optional[float]:
+def _price(params: dict[str, Any], tin: int | None, tout: int | None) -> float | None:
     """Cost from per-million-token prices declared in the config.
 
     Prices live in the experiment config, not in code, because they change and
@@ -256,7 +254,7 @@ def _price(params: Dict[str, Any], tin: Optional[int], tout: Optional[int]) -> O
     return round(tin / 1e6 * float(pin) + tout / 1e6 * float(pout), 8)
 
 
-PROVIDERS: Dict[str, Callable[[str, Dict[str, Any]], Result]] = {
+PROVIDERS: dict[str, Callable[[str, dict[str, Any]], Result]] = {
     "echo": _echo,
     "anthropic": _anthropic,
     "openai": _openai_compatible,

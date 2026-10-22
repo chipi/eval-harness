@@ -38,7 +38,7 @@ sys.path.insert(0, str(HERE.parents[1] / "examples" / "_shared"))
 from _common import REFERENCES, RUNS, die, read_json, warn_on_ambiguous_runs  # noqa: E402
 
 try:
-    from retrieval import NDCG_AT, dcg, score_ranking  # noqa: E402
+    from retrieval import NDCG_AT, dcg
 except ImportError:  # pragma: no cover
     die("examples/_shared/retrieval.py not importable — run from the harness root")
 
@@ -79,7 +79,7 @@ def oracle_ndcg(candidates: list, rel: dict) -> float:
     """nDCG@10 of a PERFECT reordering of these candidates. The bound, not a baseline."""
     gains = sorted((float(2 ** rel[c] - 1) for c in candidates if c in rel), reverse=True)
     gains += [0.0] * (NDCG_AT - len(gains))
-    ideal = sorted((float(2 ** g - 1) for g in rel.values()), reverse=True)[:NDCG_AT]
+    ideal = sorted((float(2**g - 1) for g in rel.values()), reverse=True)[:NDCG_AT]
     idcg = dcg(ideal)
     return dcg(gains[:NDCG_AT]) / idcg if idcg else 0.0
 
@@ -101,8 +101,7 @@ def main() -> int:
         die(f"no runs on {args.dataset_id!r}")
 
     print(f"\n  {args.dataset_id}: {len(gold)} queries, {len(R)} arm(s)\n")
-    print(f"  {'arm':<26} {'nDCG@10':>8} {'ceiling':>8} {'gap':>7} {'used':>7} "
-          f"{'llm_ok':>7} {'invented':>9}")
+    print(f"  {'arm':<26} {'nDCG@10':>8} {'ceiling':>8} {'gap':>7} {'used':>7} {'llm_ok':>7} {'invented':>9}")
     print("  " + "-" * 80)
 
     table = []
@@ -125,13 +124,19 @@ def main() -> int:
         # is credited against what its candidates made POSSIBLE, so a pipeline on a weak
         # first stage is not penalised twice for the retriever's misses.
         used = ndcg / ceiling if ceiling else 0.0
-        table.append((ndcg, cid, ceiling, used,
-                      (sum(llm_ok) / len(llm_ok)) if llm_ok else None,
-                      invented / n if n else 0.0))
+        table.append(
+            (
+                ndcg,
+                cid,
+                ceiling,
+                used,
+                (sum(llm_ok) / len(llm_ok)) if llm_ok else None,
+                invented / n if n else 0.0,
+            )
+        )
     for ndcg, cid, ceil, used, ok, inv in sorted(table, key=lambda t: -t[0]):
         oks = f"{ok:>7.3f}" if ok is not None else "      -"
-        print(f"  {cid:<26} {ndcg:>8.4f} {ceil:>8.4f} {ceil-ndcg:>7.4f} {used:>6.1%} "
-              f"{oks} {inv:>9.2f}")
+        print(f"  {cid:<26} {ndcg:>8.4f} {ceil:>8.4f} {ceil - ndcg:>7.4f} {used:>6.1%} {oks} {inv:>9.2f}")
     print("\n  'ceiling' = nDCG@10 of a PERFECT reordering of this arm's own top-20")
     print("  candidates. An ORACLE: it reads the gold labels and nobody can deploy it.")
     print("  'gap' is what a better reranker could still win WITHOUT a better retriever;")
@@ -148,8 +153,8 @@ def main() -> int:
             if not r:
                 continue
             meta = r.get("_meta") or {}
-            before = [c for c in (meta.get("first_stage") or [])]
-            after = [c for c in (meta.get("ranking") or [])]
+            before = list(meta.get("first_stage") or [])
+            after = list(meta.get("ranking") or [])
             for d in rel:
                 if d in before and d in after:
                     moved[before.index(d) - after.index(d)] += 1
@@ -159,7 +164,7 @@ def main() -> int:
         down = sum(c for k, c in moved.items() if k < 0)
         same = moved.get(0, 0)
         print(f"    moved up {up}   unchanged {same}   moved DOWN {down}")
-        for k, c in sorted(moved.items(), key=lambda kv: -kv[1])[:args.top]:
+        for k, c in sorted(moved.items(), key=lambda kv: -kv[1])[: args.top]:
             print(f"      {k:+d} positions  x{c}")
     return 0
 

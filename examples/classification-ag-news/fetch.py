@@ -88,15 +88,14 @@ def fetch_rows(limit: int, split: str) -> list[dict]:
     while len(rows) < limit:
         want = min(PAGE, limit - len(rows))
         query = urllib.parse.urlencode(
-            {"dataset": DATASET, "config": CONFIG, "split": split,
-             "offset": len(rows), "length": want}
+            {"dataset": DATASET, "config": CONFIG, "split": split, "offset": len(rows), "length": want}
         )
         # Retried, as every other fetcher here is: the datasets-server returns transient
         # 502s, and one failed CI's replication job on its first page (2026-10-18).
         payload, last = None, None
         for attempt in range(6):
             try:
-                with urllib.request.urlopen(f"{ROWS_API}?{query}", timeout=60) as resp:
+                with urllib.request.urlopen(f"{ROWS_API}?{query}", timeout=60) as resp:  # noqa: S310 — a constant https URL  # nosec B310
                     payload = json.loads(resp.read())
                 break
             except Exception as exc:  # noqa: BLE001 - retried, then one message
@@ -148,12 +147,14 @@ def item_id(text: str) -> str:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--n", type=int, default=200,
-                    help="total items; split evenly across the 4 classes (default: 200)")
+    ap.add_argument(
+        "--n", type=int, default=200, help="total items; split evenly across the 4 classes (default: 200)"
+    )
     ap.add_argument("--split", default="test", help="dataset split (default: test)")
     ap.add_argument("--dataset-id", default=None, help="harness dataset_id (default: ag_news_<n>)")
-    ap.add_argument("--pool", type=int, default=None,
-                    help="rows to scan for the stratified draw (default: 8x n, min 400)")
+    ap.add_argument(
+        "--pool", type=int, default=None, help="rows to scan for the stratified draw (default: 8x n, min 400)"
+    )
     ap.add_argument("--force", action="store_true", help="overwrite an existing slice")
     args = ap.parse_args()
 
@@ -200,8 +201,7 @@ def main() -> int:
     print(f"  gold refs  {golds}")
     print(f"  classes    {dict(sorted(got.items()))}")
     print(f"  words      min {words[0]}  median {words[len(words) // 2]}  max {words[-1]}")
-    print(f"\n  Balanced by construction, so the majority-class floor is exactly "
-          f"{1 / len(LABELS):.2f}.")
+    print(f"\n  Balanced by construction, so the majority-class floor is exactly {1 / len(LABELS):.2f}.")
     print("  Any arm below that is worse than a constant, which is worth knowing.")
     print("\nNext:")
     if (ROOT / "data" / "datasets" / f"{dataset_id}.json").is_file():

@@ -23,8 +23,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 RUNS = HERE.parent / "data" / "runs"
 DATASET, PREFIX, SUFFIX = "summeval_100", "se_", "_n100_v1"
-FREE = {"bartscore", "unieval", "unievalpub", "rouge1", "rouge2", "rougeL", "coverage", "length",
-        "random"}
+FREE = {"bartscore", "unieval", "unievalpub", "rouge1", "rouge2", "rougeL", "coverage", "length", "random"}
 DIMENSIONS = ("coherence", "consistency", "fluency", "relevance")
 FAMILIES = ("anthropic", "deepseek", "gemma", "glm", "llama", "mistral", "openai", "qwen")
 #: qwen_l's model was withdrawn before this run; qwen37max is the large Qwen judge here.
@@ -94,8 +93,11 @@ def summarisation_hosted(n: int = 20) -> dict:
 def sign_flip(deltas: list, permutations: int, rng: random.Random) -> float:
     """Two-sided paired sign-flip permutation p, as scripts/family_test.py computes it."""
     obs = abs(statistics.fmean(deltas))
-    hits = sum(1 for _ in range(permutations)
-               if abs(statistics.fmean(d if rng.random() < 0.5 else -d for d in deltas)) >= obs)
+    hits = sum(
+        1
+        for _ in range(permutations)
+        if abs(statistics.fmean(d if rng.random() < 0.5 else -d for d in deltas)) >= obs
+    )
     return (hits + 1) / (permutations + 1)
 
 
@@ -109,10 +111,10 @@ def tier_tests(per_item: dict, items: list, permutations: int = 20000) -> dict:
             d = [per_item[lg][i] - per_item[sm][i] for i in items]
             out[fam] = {"delta": statistics.fmean(d), "p": sign_flip(d, permutations, rng)}
     m = len(out)
-    for k, (fam, v) in enumerate(sorted(out.items(), key=lambda kv: kv[1]["p"])):
+    for k, (_fam, v) in enumerate(sorted(out.items(), key=lambda kv: kv[1]["p"])):
         v["holm_threshold"] = 0.05 / (m - k)
     stop = False
-    for fam, v in sorted(out.items(), key=lambda kv: kv[1]["p"]):
+    for _fam, v in sorted(out.items(), key=lambda kv: kv[1]["p"]):
         stop = stop or v["p"] > v["holm_threshold"]
         v["separated"] = not stop
     return out
@@ -125,7 +127,7 @@ def load() -> dict:
         m = json.loads(mj.read_text(encoding="utf-8"))
         if m.get("dataset_id") != DATASET:
             continue
-        arm = m["config_id"][len(PREFIX):-len(SUFFIX)]
+        arm = m["config_id"][len(PREFIX) : -len(SUFFIX)]
         if arm in arms:
             raise SystemExit(f"two runs for {m['config_id']}: cannot pick one")
         rows, billed = {}, 0.0
@@ -133,7 +135,7 @@ def load() -> dict:
             if line.strip():
                 r = json.loads(line)
                 rows[r["item_id"]] = r
-                billed += float((((r.get("_meta") or {}).get("usage") or {}).get("cost") or 0))
+                billed += float(((r.get("_meta") or {}).get("usage") or {}).get("cost") or 0)
         arms[arm] = {"scores": m["scores"], "rows": rows, "billed": billed}
     return arms
 
@@ -161,16 +163,22 @@ def compute() -> dict:
         k = f"tau_{d}"
         best = max(names, key=lambda a: judges[a]["scores"][k])
         worst = min(names, key=lambda a: judges[a]["scores"][k])
-        dims[d] = {"best": best, "best_tau": judges[best]["scores"][k],
-                   "worst": worst, "worst_tau": judges[worst]["scores"][k]}
+        dims[d] = {
+            "best": best,
+            "best_tau": judges[best]["scores"][k],
+            "worst": worst,
+            "worst_tau": judges[worst]["scores"][k],
+        }
     return {
         "arms": {a: {"scores": v["scores"], "billed": v["billed"]} for a, v in arms.items()},
-        "n_judges": len(names), "n_items": len(items),
+        "n_judges": len(names),
+        "n_items": len(items),
         "stability": stability,
         "summarisation_hosted_20": summarisation_hosted(20),
         "spearman_cost_tau": spearman(cost, tau),
         "price_range": judges[dearest]["billed"] / judges[cheapest]["billed"],
-        "dearest": dearest, "cheapest": cheapest,
+        "dearest": dearest,
+        "cheapest": cheapest,
         "spearman_tie_rate_tau": spearman([judges[a]["scores"]["tie_rate"] for a in names], tau),
         "ladders": ladders,
         "tier_tests": tier_tests(per_item, items),
@@ -187,20 +195,26 @@ def main() -> int:
     print(f"{f['n_judges']} hosted judges, {f['n_items']} articles, ${f['total_billed']:.4f} billed")
     print(f"\nsplit-half stability of the judges' order ({DRAWS} draws, seed {SEED})")
     for n, s in f["stability"].items():
-        print(f"  {n:3d} articles per half   rho {s['rho']:.3f}   5th pct {s['p5']:.3f}"
-              f"   same unique winner {s['same_winner']:.0%}")
+        print(
+            f"  {n:3d} articles per half   rho {s['rho']:.3f}   5th pct {s['p5']:.3f}"
+            f"   same unique winner {s['same_winner']:.0%}"
+        )
     sh = f["summarisation_hosted_20"]
     print(f"  the summarisation experiment's {sh['n_arms']} hosted arms, 20 per half: rho {sh['rho']:.3f}")
-    print(f"\nSpearman(billed cost, tau) = {f['spearman_cost_tau']:+.3f} over a "
-          f"{f['price_range']:.1f}x price range ({f['dearest']} / {f['cheapest']})")
+    print(
+        f"\nSpearman(billed cost, tau) = {f['spearman_cost_tau']:+.3f} over a "
+        f"{f['price_range']:.1f}x price range ({f['dearest']} / {f['cheapest']})"
+    )
     print(f"Spearman(tie rate, tau)    = {f['spearman_tie_rate_tau']:+.3f}")
     print("\nfamily ladders, tau by tier")
     for fam, lad in f["ladders"].items():
         print(f"  {fam:9s} " + "  ".join(f"{t} {v:.4f}" for t, v in lad.items()))
     print("\nlarge tier against small, paired over articles, Holm over the eight")
     for fam, t in sorted(f["tier_tests"].items(), key=lambda kv: kv[1]["p"]):
-        print(f"  {fam:9s} {t['delta']:+.4f}  p {t['p']:.4f}  threshold {t['holm_threshold']:.4f}  "
-              f"{'separated' if t['separated'] else 'not separated'}")
+        print(
+            f"  {fam:9s} {t['delta']:+.4f}  p {t['p']:.4f}  threshold {t['holm_threshold']:.4f}  "
+            f"{'separated' if t['separated'] else 'not separated'}"
+        )
     print("\nper-dimension leaders among the judges")
     for d, r in f["dimensions"].items():
         print(f"  {d:11s} best {r['best']} {r['best_tau']:.4f}   worst {r['worst']} {r['worst_tau']:.4f}")

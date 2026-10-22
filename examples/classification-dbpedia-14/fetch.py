@@ -81,9 +81,20 @@ CONFIG = "dbpedia_14"
 
 #: The dataset's own label order. Index IS the stored integer; do not reorder.
 LABELS = [
-    "Company", "EducationalInstitution", "Artist", "Athlete", "OfficeHolder",
-    "MeanOfTransportation", "Building", "NaturalPlace", "Village", "Animal",
-    "Plant", "Album", "Film", "WrittenWork",
+    "Company",
+    "EducationalInstitution",
+    "Artist",
+    "Athlete",
+    "OfficeHolder",
+    "MeanOfTransportation",
+    "Building",
+    "NaturalPlace",
+    "Village",
+    "Animal",
+    "Plant",
+    "Album",
+    "Film",
+    "WrittenWork",
 ]
 
 #: Verified at both ends of all 14 blocks on 2026-09-27. Checked again at fetch time.
@@ -114,13 +125,12 @@ DEFAULT_DELAY = 0.35
 
 def _get(offset: int, length: int, delay: float = DEFAULT_DELAY) -> list[dict]:
     query = urllib.parse.urlencode(
-        {"dataset": DATASET, "config": CONFIG, "split": "test",
-         "offset": offset, "length": length}
+        {"dataset": DATASET, "config": CONFIG, "split": "test", "offset": offset, "length": length}
     )
     last = ""
     for attempt in range(1, _MAX_ATTEMPTS + 1):
         try:
-            with urllib.request.urlopen(f"{ROWS_API}?{query}", timeout=60) as resp:
+            with urllib.request.urlopen(f"{ROWS_API}?{query}", timeout=60) as resp:  # noqa: S310 — a constant https URL  # nosec B310
                 rows = [r["row"] for r in (json.loads(resp.read()).get("rows") or [])]
             time.sleep(delay)
             return rows
@@ -129,17 +139,18 @@ def _get(offset: int, length: int, delay: float = DEFAULT_DELAY) -> list[dict]:
             if exc.code == 429:
                 wait = _RATE_LIMIT_BACKOFF[min(attempt - 1, len(_RATE_LIMIT_BACKOFF) - 1)]
             elif exc.code in _TRANSIENT_STATUS:
-                wait = min(2 ** attempt, 30)
+                wait = min(2**attempt, 30)
             else:
                 # A 400 or 404 will not fix itself; retrying wastes a minute before
                 # printing the same message.
                 break
         except Exception as exc:  # noqa: BLE001 - timeouts, resets, DNS
             last = f"{type(exc).__name__}: {exc}"
-            wait = min(2 ** attempt, 30)
+            wait = min(2**attempt, 30)
         if attempt < _MAX_ATTEMPTS:
-            print(f"      {last} at offset {offset}; retry {attempt}/{_MAX_ATTEMPTS - 1} "
-                  f"in {wait}s", flush=True)
+            print(
+                f"      {last} at offset {offset}; retry {attempt}/{_MAX_ATTEMPTS - 1} in {wait}s", flush=True
+            )
             time.sleep(wait)
     sys.exit(
         f"datasets-server failed at offset {offset} after {_MAX_ATTEMPTS} attempt(s): {last}\n"
@@ -157,7 +168,7 @@ def fetch_class(label_index: int, wanted: list[int], delay: float = DEFAULT_DELA
     base = label_index * PER_CLASS_IN_SPLIT
     out: list[dict] = []
     for start in range(0, len(wanted), PAGE):
-        for off in wanted[start:start + PAGE]:
+        for off in wanted[start : start + PAGE]:
             rows = _get(base + off, 1, delay)
             if not rows:
                 sys.exit(f"no row at offset {base + off} — the split is smaller than expected")
@@ -185,13 +196,22 @@ def item_id(text: str) -> str:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--n", type=int, default=280,
-                    help="total items; split evenly across the 14 classes (default: 280)")
+    ap.add_argument(
+        "--n", type=int, default=280, help="total items; split evenly across the 14 classes (default: 280)"
+    )
     ap.add_argument("--dataset-id", default=None, help="harness dataset_id (default: dbpedia_<n>)")
-    ap.add_argument("--seed", type=int, default=20260927,
-                    help="draw seed; the same --n and --seed reproduce the same items")
-    ap.add_argument("--delay", type=float, default=DEFAULT_DELAY,
-                    help=f"seconds between requests (default: {DEFAULT_DELAY}); raise it if 429s persist")
+    ap.add_argument(
+        "--seed",
+        type=int,
+        default=20260927,
+        help="draw seed; the same --n and --seed reproduce the same items",
+    )
+    ap.add_argument(
+        "--delay",
+        type=float,
+        default=DEFAULT_DELAY,
+        help=f"seconds between requests (default: {DEFAULT_DELAY}); raise it if 429s persist",
+    )
     ap.add_argument("--force", action="store_true", help="overwrite an existing slice")
     args = ap.parse_args()
 
@@ -237,11 +257,13 @@ def main() -> int:
     print(f"\n{len(rows)} item(s) written, {per_class} per class, seed {args.seed}")
     print(f"  texts      {sources}")
     print(f"  gold refs  {golds}")
-    print(f"  classes    {len(got)} distinct, all at {min(got.values())}"
-          if len(set(got.values())) == 1 else f"  classes    {dict(sorted(got.items()))}")
+    print(
+        f"  classes    {len(got)} distinct, all at {min(got.values())}"
+        if len(set(got.values())) == 1
+        else f"  classes    {dict(sorted(got.items()))}"
+    )
     print(f"  words      min {words[0]}  median {words[len(words) // 2]}  max {words[-1]}")
-    print(f"\n  Balanced by construction, so the majority-class floor is exactly "
-          f"{1 / len(LABELS):.4f}.")
+    print(f"\n  Balanced by construction, so the majority-class floor is exactly {1 / len(LABELS):.4f}.")
     print("\nNext:")
     if (ROOT / "data" / "datasets" / f"{dataset_id}.json").is_file():
         # Frozen and committed: check the fetched bytes against it, never re-create it.

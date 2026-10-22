@@ -270,8 +270,8 @@ def _bart(params: Dict[str, Any]) -> Any:
         from transformers import AutoTokenizer, BartForConditionalGeneration  # noqa: PLC0415
 
         kw = {"revision": params["revision"]} if params.get("revision") else {}
-        tok = AutoTokenizer.from_pretrained(params["model"], **kw)
-        model = BartForConditionalGeneration.from_pretrained(params["model"], **kw).eval()
+        tok = AutoTokenizer.from_pretrained(params["model"], **kw)  # every config that reaches this pins `revision`  # nosec B615
+        model = BartForConditionalGeneration.from_pretrained(params["model"], **kw).eval()  # every config that reaches this pins `revision`  # nosec B615
         _BART, _BART_KEY = (tok, model), key
     return _BART
 
@@ -336,7 +336,7 @@ def _cached(path: Path, url: str, sha256: str) -> Path:
         import urllib.request  # noqa: PLC0415
 
         path.parent.mkdir(parents=True, exist_ok=True)
-        with urllib.request.urlopen(url, timeout=120) as r:
+        with urllib.request.urlopen(url, timeout=120) as r:  # noqa: S310 — a pinned https URL, its bytes checked by sha256  # nosec B310
             path.write_bytes(r.read())
     got = hashlib.sha256(path.read_bytes()).hexdigest()
     if got != sha256:
@@ -379,8 +379,8 @@ def _unieval_model(params: Dict[str, Any]) -> Any:
         from transformers import AutoModelForSeq2SeqLM, AutoTokenizer  # noqa: PLC0415
 
         kw = {"revision": params["revision"]} if params.get("revision") else {}
-        tok = AutoTokenizer.from_pretrained(params["model"], **kw)
-        model = AutoModelForSeq2SeqLM.from_pretrained(params["model"], **kw).eval()
+        tok = AutoTokenizer.from_pretrained(params["model"], **kw)  # every config that reaches this pins `revision`  # nosec B615
+        model = AutoModelForSeq2SeqLM.from_pretrained(params["model"], **kw).eval()  # every config that reaches this pins `revision`  # nosec B615
         _UE, _UE_KEY = (tok, model, tok("Yes")["input_ids"][0], tok("No")["input_ids"][0]), key
     return _UE
 

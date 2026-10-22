@@ -31,6 +31,7 @@ import random
 import statistics
 import sys
 from collections import defaultdict
+from collections.abc import Sequence
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -62,7 +63,7 @@ def load(dataset_id: str, metric: str, match: str | None):
     return {a: {i: statistics.fmean(v) for i, v in it.items()} for a, it in acc.items()}
 
 
-def spearman(x: list[float], y: list[float]) -> float:
+def spearman(x: Sequence[float], y: Sequence[float]) -> float:
     """Spearman's rho as Pearson correlation OF THE RANKS, which is tie-correct.
 
     THE VERSION THIS REPLACES WAS WRONG IN THE PRESENCE OF TIES, not merely inflated.
@@ -108,7 +109,7 @@ def ranks_on(M, arms, items):
         j = i
         while j + 1 < len(order) and mu[order[j + 1]] == mu[order[i]]:
             j += 1
-        midrank = (i + j) / 2 + 1          # 1-indexed average of the tied block
+        midrank = (i + j) / 2 + 1  # 1-indexed average of the tied block
         for k in range(i, j + 1):
             out[order[k]] = midrank
         i = j + 1
@@ -160,22 +161,27 @@ def main() -> int:
         M = {a: {i: -v for i, v in s.items()} for a, s in M.items()}
     arms = sorted(M)
     if len(arms) < 3:
-        print(f"  {len(arms)} arm(s) with per-item '{args.metric}' on {args.dataset_id} — need at least 3 to rank")
+        print(
+            f"  {len(arms)} arm(s) with per-item '{args.metric}' on {args.dataset_id} — need at least 3 to rank"
+        )
         return 1
     items = sorted(set.intersection(*(set(M[a]) for a in arms)))
     if 2 * SIZES[0] > len(items):
-        print(f"  {len(items)} items shared by the {len(arms)} arms: too few for two disjoint halves of "
-              f"{SIZES[0]}, the smallest size measured. Rank stability needs at least {2 * SIZES[0]}.")
+        print(
+            f"  {len(items)} items shared by the {len(arms)} arms: too few for two disjoint halves of "
+            f"{SIZES[0]}, the smallest size measured. Rank stability needs at least {2 * SIZES[0]}."
+        )
         return 1
-    print(f"  {len(arms)} arms, {len(items)} items, metric={args.metric}, "
-          f"{args.draws} draws per size\n")
+    print(f"  {len(arms)} arms, {len(items)} items, metric={args.metric}, {args.draws} draws per size\n")
 
     full = ranks_on(M, arms, items)
     winner = min(arms, key=lambda a: full[a])
     rng = random.Random(args.seed)
 
-    print(f"  {'n per half':>11} {'rho(half A, half B)':>21} {'5th pct':>9} "
-          f"{'P(same winner)':>15} {'median |rank move|':>19} {'arms tied 1st':>14}")
+    print(
+        f"  {'n per half':>11} {'rho(half A, half B)':>21} {'5th pct':>9} "
+        f"{'P(same winner)':>15} {'median |rank move|':>19} {'arms tied 1st':>14}"
+    )
     worst_ties = 0.0
     for n in SIZES:
         if 2 * n > len(items):
@@ -213,10 +219,12 @@ def main() -> int:
         # unique best arm, how often was it the same one". Dividing by all draws would
         # mix "they disagreed" with "neither half had an answer".
         pw = (same / decided) if decided else float("nan")
-        print(f"  {n:>11} {rho_m:>21.3f} {rho_5:>9.3f} "
-              f"{pw:>15.2f} {statistics.fmean(moves):>19.2f} "
-              f"{mean_ties:>14.1f}{flag}"
-              + (f"   [{undecided}/{args.draws} draws undecided]" if undecided else ""))
+        print(
+            f"  {n:>11} {rho_m:>21.3f} {rho_5:>9.3f} "
+            f"{pw:>15.2f} {statistics.fmean(moves):>19.2f} "
+            f"{mean_ties:>14.1f}{flag}"
+            + (f"   [{undecided}/{args.draws} draws undecided]" if undecided else "")
+        )
         worst_ties = max(worst_ties, mean_ties)
     print(f"\n  full-{len(items)} ordering's leader: {winner}")
     print("  'P(same winner)' = of the draws where BOTH halves had a UNIQUE best arm, how")

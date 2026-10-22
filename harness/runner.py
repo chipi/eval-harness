@@ -9,18 +9,17 @@ from __future__ import annotations
 
 import argparse
 import json
-import pathlib
 import logging
+import pathlib
 import subprocess
 import sys
+from collections.abc import Iterable
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Tuple
+from typing import Any
 
 import yaml
-
 from judges import ItemScore, build_judge
-
 
 logger = logging.getLogger("eval-harness")
 
@@ -45,8 +44,8 @@ class StratumPromotion:
     name: str
     leader_score: float
     floor: float
-    promoted: List[str] = field(default_factory=list)
-    rejected: List[Dict[str, Any]] = field(default_factory=list)
+    promoted: list[str] = field(default_factory=list)
+    rejected: list[dict[str, Any]] = field(default_factory=list)
 
 
 @dataclass
@@ -56,13 +55,13 @@ class FinalistAggregate:
     run_id: str
     stratum: str
     primary_judge: str
-    cross_judge: Optional[str]
+    cross_judge: str | None
     n_items: int
-    primary_mean_per_dim: Dict[str, float] = field(default_factory=dict)
-    cross_mean_per_dim: Dict[str, float] = field(default_factory=dict)
+    primary_mean_per_dim: dict[str, float] = field(default_factory=dict)
+    cross_mean_per_dim: dict[str, float] = field(default_factory=dict)
     primary_overall_mean: float = 0.0
-    cross_overall_mean: Optional[float] = None
-    agreement_rate: Optional[float] = None
+    cross_overall_mean: float | None = None
+    agreement_rate: float | None = None
     contested: bool = False
     total_cost_usd: float = 0.0
     errors: int = 0
@@ -79,7 +78,7 @@ def promote_finalists(
     floor_fraction: float,
     overall_cap: int,
     carte_blanche: Iterable[str] = (),
-) -> Tuple[List[RunCandidate], List[StratumPromotion]]:
+) -> tuple[list[RunCandidate], list[StratumPromotion]]:
     """Top-K per stratum, drop below floor, cap globally, carte-blanche overrides.
 
     The carte-blanche override exists because the cheap metric is the very
@@ -87,12 +86,12 @@ def promote_finalists(
     a metric you don't trust is the bias you're trying to fix.
     """
     carte_blanche_terms = tuple(s for s in carte_blanche if s)
-    by_stratum: Dict[str, List[RunCandidate]] = {}
+    by_stratum: dict[str, list[RunCandidate]] = {}
     for c in candidates:
         by_stratum.setdefault(c.stratum, []).append(c)
 
-    promoted: List[RunCandidate] = []
-    summary: List[StratumPromotion] = []
+    promoted: list[RunCandidate] = []
+    summary: list[StratumPromotion] = []
     for name, runs in by_stratum.items():
         runs_sorted = sorted(runs, key=lambda r: r.primary_score, reverse=True)
         if not runs_sorted:
@@ -155,16 +154,16 @@ def judge_finalist(
     *,
     finalist: RunCandidate,
     judge,
-    items: List[Dict[str, Any]],
-    dimensions: List[str],
-    cost_budget_remaining: Optional[float],
-) -> Tuple[List[ItemScore], float, int]:
+    items: list[dict[str, Any]],
+    dimensions: list[str],
+    cost_budget_remaining: float | None,
+) -> tuple[list[ItemScore], float, int]:
     """Score every item of `finalist` with `judge`.
 
     Aborts mid-finalist if cost cap drops to <= 0. Caller's responsibility
     to track cumulative spend across finalists.
     """
-    scores: List[ItemScore] = []
+    scores: list[ItemScore] = []
     total_cost = 0.0
     errors = 0
     remaining = cost_budget_remaining
@@ -199,30 +198,28 @@ def aggregate_finalist(
     *,
     finalist: RunCandidate,
     primary_judge_name: str,
-    primary_scores: List[ItemScore],
-    cross_judge_name: Optional[str] = None,
-    cross_scores: Optional[List[ItemScore]] = None,
+    primary_scores: list[ItemScore],
+    cross_judge_name: str | None = None,
+    cross_scores: list[ItemScore] | None = None,
     contested_threshold: float = 0.5,
     agreement_tolerance: int = 1,
-    dimensions: List[str] = (),
+    dimensions: Iterable[str] = (),
 ) -> FinalistAggregate:
     """Reduce per-item scores to per-dimension means + contested flag."""
 
-    def _per_dim_mean(scores: List[ItemScore], dim: str) -> Optional[float]:
+    def _per_dim_mean(scores: list[ItemScore], dim: str) -> float | None:
         vals = [s.per_dimension[dim] for s in scores if dim in s.per_dimension]
         return (sum(vals) / len(vals)) if vals else None
 
     primary_per_dim_raw = {d: _per_dim_mean(primary_scores, d) for d in dimensions}
     primary_per_dim = {d: v for d, v in primary_per_dim_raw.items() if v is not None}
-    primary_overall = (
-        sum(primary_per_dim.values()) / len(primary_per_dim) if primary_per_dim else 0.0
-    )
+    primary_overall = sum(primary_per_dim.values()) / len(primary_per_dim) if primary_per_dim else 0.0
     total_cost = sum(s.total_cost_usd for s in primary_scores)
     n_err = sum(len(s.errors) for s in primary_scores)
 
-    cross_per_dim: Dict[str, float] = {}
-    cross_overall: Optional[float] = None
-    agree_rate: Optional[float] = None
+    cross_per_dim: dict[str, float] = {}
+    cross_overall: float | None = None
+    agree_rate: float | None = None
     contested = False
     if cross_scores is not None:
         cross_per_dim_raw = {d: _per_dim_mean(cross_scores, d) for d in dimensions}
@@ -230,9 +227,7 @@ def aggregate_finalist(
         if cross_per_dim:
             cross_overall = sum(cross_per_dim.values()) / len(cross_per_dim)
             contested = abs(primary_overall - cross_overall) > contested_threshold
-        agree_rate = _pairwise_agreement_rate(
-            primary_scores, cross_scores, tolerance=agreement_tolerance
-        )
+        agree_rate = _pairwise_agreement_rate(primary_scores, cross_scores, tolerance=agreement_tolerance)
         total_cost += sum(s.total_cost_usd for s in cross_scores)
         n_err += sum(len(s.errors) for s in cross_scores)
 
@@ -254,11 +249,11 @@ def aggregate_finalist(
 
 
 def _pairwise_agreement_rate(
-    primary: List[ItemScore],
-    cross: List[ItemScore],
+    primary: list[ItemScore],
+    cross: list[ItemScore],
     *,
     tolerance: int,
-) -> Optional[float]:
+) -> float | None:
     """Per-(item, dim) agreement (exact-or-adjacent within tolerance)."""
     cross_by_item = {s.item_id: s for s in cross}
     total = 0
@@ -284,9 +279,9 @@ def _pairwise_agreement_rate(
 def write_report(
     *,
     output_dir: Path,
-    finalists: List[FinalistAggregate],
-    promotion_summary: List[StratumPromotion],
-    config: Dict[str, Any],
+    finalists: list[FinalistAggregate],
+    promotion_summary: list[StratumPromotion],
+    config: dict[str, Any],
 ) -> None:
     """Write finalists.jsonl + report.json + report.md."""
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -310,8 +305,8 @@ def write_report(
 
 
 def _markdown_report(
-    finalists: List[FinalistAggregate],
-    promotion_summary: List[StratumPromotion],
+    finalists: list[FinalistAggregate],
+    promotion_summary: list[StratumPromotion],
 ) -> str:
     lines = ["# Eval report", ""]
     for s in promotion_summary:
@@ -339,11 +334,9 @@ def _markdown_report(
     return "\n".join(lines) + "\n"
 
 
-def _git_sha() -> Optional[str]:
+def _git_sha() -> str | None:
     try:
-        return subprocess.check_output(
-            ["git", "rev-parse", "HEAD"], text=True
-        ).strip()
+        return subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
     except (subprocess.SubprocessError, FileNotFoundError):
         return None
 
@@ -352,15 +345,12 @@ def _git_sha() -> Optional[str]:
 # main
 
 
-def _synth_items(run_id: str, n: int = 5) -> List[Dict[str, Any]]:
+def _synth_items(run_id: str, n: int = 5) -> list[dict[str, Any]]:
     """Demo items for the FakeJudge run. Replace with your data loader."""
-    return [
-        {"item_id": f"{run_id}-{i}", "content": f"Synthetic item {i} for {run_id}"}
-        for i in range(n)
-    ]
+    return [{"item_id": f"{run_id}-{i}", "content": f"Synthetic item {i} for {run_id}"} for i in range(n)]
 
 
-def _candidates_from(cfg: Dict[str, Any]) -> List["RunCandidate"]:
+def _candidates_from(cfg: dict[str, Any]) -> list[RunCandidate]:
     """Build candidates from real runs when asked, else from the config list.
 
     The panel used to accept ONLY a hand-written `runs:` block, which meant it
@@ -386,7 +376,7 @@ def _candidates_from(cfg: Dict[str, Any]) -> List["RunCandidate"]:
 
     metric = cfg.get("primary_metric")
     want_ds = cfg.get("dataset_id")
-    out: List[RunCandidate] = []
+    out: list[RunCandidate] = []
     for d in sorted(root.iterdir()):
         mf = d / "metrics.json"
         if not mf.is_file():
@@ -398,8 +388,11 @@ def _candidates_from(cfg: Dict[str, Any]) -> List["RunCandidate"]:
         key = metric or next((k for k in sorted(scores) if not k.startswith("total_")), None)
         if key is None or key not in scores:
             continue
-        out.append(RunCandidate(run_id=m["run_id"], stratum=m.get("config_id", "default"),
-                                primary_score=float(scores[key])))
+        out.append(
+            RunCandidate(
+                run_id=m["run_id"], stratum=m.get("config_id", "default"), primary_score=float(scores[key])
+            )
+        )
     if not out:
         raise SystemExit(
             f"runs_from={root} matched no runs"
@@ -410,7 +403,7 @@ def _candidates_from(cfg: Dict[str, Any]) -> List["RunCandidate"]:
     return out
 
 
-def main(argv: List[str]) -> int:
+def main(argv: list[str]) -> int:
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 
     ap = argparse.ArgumentParser()
@@ -431,12 +424,14 @@ def main(argv: List[str]) -> int:
     logger.info("Promoted %d finalists across %d strata", len(promoted), len(promo_summary))
 
     primary = build_judge(cfg["judging"]["primary_judge"], use_fake=args.use_fake_judge)
+    if primary is None:
+        raise SystemExit("judging.primary_judge is required: name the judge that scores every finalist")
     cross = build_judge(cfg["judging"].get("cross_judge"), use_fake=args.use_fake_judge)
     dims = cfg["judging"]["dimensions"]
     cost_remaining = float(cfg["judging"]["cost_cap_usd"])
     max_items = int(cfg["judging"]["max_items_per_finalist"])
 
-    aggregates: List[FinalistAggregate] = []
+    aggregates: list[FinalistAggregate] = []
     for finalist in promoted:
         items = _synth_items(finalist.run_id, n=max_items)
 

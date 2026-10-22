@@ -22,7 +22,10 @@ HERE = Path(__file__).resolve().parent
 
 #: command -> (script, one line of help). Names follow the Makefile targets.
 COMMANDS = {
-    "init": ("init_project.py", "start a project: data folders, a .gitignore; --tutorial adds the GUIDE's kit"),
+    "init": (
+        "init_project.py",
+        "start a project: data folders, a .gitignore; --tutorial adds the GUIDE's kit",
+    ),
     "env-check": ("env_check.py", "check the Python environment and keys"),
     "dataset-create": ("dataset_create.py", "freeze a dataset: item list + per-item sha256"),
     "dataset-materialize": ("materialize.py", "hash-checked working copy of a dataset"),
@@ -31,7 +34,10 @@ COMMANDS = {
     "sweep": ("sweep.py", "run several arms, then the leaderboard"),
     "runs-list": ("list_runs.py", "list runs (or baselines)"),
     "rescore": ("rescore.py", "re-score stored outputs against references, for $0"),
-    "judge-score": ("judge_score.py", "re-measure frozen outputs with a validated LLM judge (--dry-run first)"),
+    "judge-score": (
+        "judge_score.py",
+        "re-measure frozen outputs with a validated LLM judge (--dry-run first)",
+    ),
     "silver-calibrate": ("silver_calibrate.py", "how far silver references drift from gold"),
     "cost-report": ("cost_report.py", "billed cost per arm, with projections"),
     "leaderboard": ("leaderboard.py", "rank arms, with Friedman/Nemenyi before any order"),
@@ -46,18 +52,23 @@ COMMANDS = {
     "catalog": ("catalog_build.py", "build the catalog: static pages over the runs, by dataset"),
     "catalog-serve": ("catalog_serve.py", "serve the catalog and the run inspector on 127.0.0.1"),
     "validate": ("validate_tree.py", "schema and integrity checks over the data tree"),
-    "self-test": ("self_check.py", "does the installed harness work here? (in a checkout: the full test suite)"),
+    "self-test": (
+        "self_check.py",
+        "does the installed harness work here? (in a checkout: the full test suite)",
+    ),
 }
 
 
 def _usage() -> str:
-    from _version import __version__
+    from _version import __version__  # noqa: PLC0415
 
     width = max(map(len, COMMANDS))
     rows = "\n".join(f"  {name:<{width}}  {help_}" for name, (_, help_) in COMMANDS.items())
-    return (f"evaluation-harness {__version__}\n\nusage: evh <command> [args]\n\n{rows}\n\n"
-            f"`evh <command> --help` for a command's own options.\n"
-            f"Data: EVAL_HOME (project root, default: cwd), EVAL_DATA_DIR (default: data).")
+    return (
+        f"evaluation-harness {__version__}\n\nusage: evh <command> [args]\n\n{rows}\n\n"
+        f"`evh <command> --help` for a command's own options.\n"
+        f"Data: EVAL_HOME (project root, default: cwd), EVAL_DATA_DIR (default: data)."
+    )
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -67,7 +78,8 @@ def main(argv: list[str] | None = None) -> int:
         print(_usage())
         return 0
     if argv[0] in ("-V", "--version", "version"):
-        from _version import __version__
+        from _version import __version__  # noqa: PLC0415
+
         print(__version__)
         return 0
     name, rest = argv[0], argv[1:]

@@ -89,8 +89,7 @@ def main() -> int:
             continue
         if with_bill != total:
             # Half a bill is not a bill. Say so rather than summing a mixture.
-            no_bill.append((f"{cid} (only {with_bill}/{total} items billed)",
-                            recorded, m.get("dataset_id")))
+            no_bill.append((f"{cid} (only {with_bill}/{total} items billed)", recorded, m.get("dataset_id")))
             continue
         rows.append((billed, recorded, cid, m.get("dataset_id")))
 
@@ -110,12 +109,13 @@ def main() -> int:
         tb += billed
         tr += recorded
     print("  " + "-" * (w + 31))
-    print(f"  {'TOTAL':{w}}{tb:>11.4f}{tr:>11.4f}"
-          f"{(tb / tr) if tr else float('nan'):>8.2f}x")
+    print(f"  {'TOTAL':{w}}{tb:>11.4f}{tr:>11.4f}{(tb / tr) if tr else float('nan'):>8.2f}x")
 
     if no_bill:
-        print(f"\n  {len(no_bill)} run(s) with NO provider bill — the price table is all "
-              f"there is, and they are NOT in the total above:")
+        print(
+            f"\n  {len(no_bill)} run(s) with NO provider bill — the price table is all "
+            f"there is, and they are NOT in the total above:"
+        )
         for cid, recorded, ds in no_bill:
             print(f"    {cid}  ${recorded:.4f}  ({ds})")
 

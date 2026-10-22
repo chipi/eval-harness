@@ -91,8 +91,7 @@ CONFIG = "supervised"
 SPLIT_ROWS = 37648  # `supervised` test split; re-checked at fetch time
 
 #: The dataset's coarse label order. Index IS the stored integer; 0 is "no entity".
-COARSE = ["O", "art", "building", "event", "location", "organization", "other",
-          "person", "product"]
+COARSE = ["O", "art", "building", "event", "location", "organization", "other", "person", "product"]
 
 #: Copied from the DBpedia fetcher, where both were found by an actual failure: one
 #: transient 502 lost a whole draw, then HTTP 429 showed the limiter is on request RATE.
@@ -104,13 +103,12 @@ DEFAULT_DELAY = 0.35
 
 def _get(offset: int, length: int, delay: float = DEFAULT_DELAY) -> list[dict]:
     query = urllib.parse.urlencode(
-        {"dataset": DATASET, "config": CONFIG, "split": "test",
-         "offset": offset, "length": length}
+        {"dataset": DATASET, "config": CONFIG, "split": "test", "offset": offset, "length": length}
     )
     last = ""
     for attempt in range(1, _MAX_ATTEMPTS + 1):
         try:
-            with urllib.request.urlopen(f"{ROWS_API}?{query}", timeout=60) as resp:
+            with urllib.request.urlopen(f"{ROWS_API}?{query}", timeout=60) as resp:  # noqa: S310 — a constant https URL  # nosec B310
                 rows = [r["row"] for r in (json.loads(resp.read()).get("rows") or [])]
             time.sleep(delay)
             return rows
@@ -119,18 +117,21 @@ def _get(offset: int, length: int, delay: float = DEFAULT_DELAY) -> list[dict]:
             if exc.code == 429:
                 wait = _RATE_LIMIT_BACKOFF[min(attempt - 1, len(_RATE_LIMIT_BACKOFF) - 1)]
             elif exc.code in _TRANSIENT_STATUS:
-                wait = min(2 ** attempt, 30)
+                wait = min(2**attempt, 30)
             else:
                 break
         except Exception as exc:  # noqa: BLE001
             last = f"{type(exc).__name__}: {exc}"
-            wait = min(2 ** attempt, 30)
+            wait = min(2**attempt, 30)
         if attempt < _MAX_ATTEMPTS:
-            print(f"      {last} at offset {offset}; retry {attempt}/{_MAX_ATTEMPTS - 1} "
-                  f"in {wait}s", flush=True)
+            print(
+                f"      {last} at offset {offset}; retry {attempt}/{_MAX_ATTEMPTS - 1} in {wait}s", flush=True
+            )
             time.sleep(wait)
-    sys.exit(f"datasets-server failed at offset {offset} after {_MAX_ATTEMPTS} attempt(s): "
-             f"{last}\n  check connectivity, then retry — or raise --delay.")
+    sys.exit(
+        f"datasets-server failed at offset {offset} after {_MAX_ATTEMPTS} attempt(s): "
+        f"{last}\n  check connectivity, then retry — or raise --delay."
+    )
 
 
 def entities(tokens: list, tags: list) -> list:
@@ -162,13 +163,21 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--n", type=int, default=280, help="sentences to draw (default: 280)")
     ap.add_argument("--dataset-id", default=None, help="harness dataset_id (default: few_nerd_<n>)")
-    ap.add_argument("--seed", type=int, default=20260928,
-                    help="draw seed; same --n and --seed reproduce the same items")
-    ap.add_argument("--delay", type=float, default=DEFAULT_DELAY,
-                    help=f"seconds between requests (default: {DEFAULT_DELAY})")
-    ap.add_argument("--min-tokens", type=int, default=3,
-                    help="skip sentences shorter than this (default: 3); see DEGENERATE "
-                         "ITEMS in the module docstring")
+    ap.add_argument(
+        "--seed", type=int, default=20260928, help="draw seed; same --n and --seed reproduce the same items"
+    )
+    ap.add_argument(
+        "--delay",
+        type=float,
+        default=DEFAULT_DELAY,
+        help=f"seconds between requests (default: {DEFAULT_DELAY})",
+    )
+    ap.add_argument(
+        "--min-tokens",
+        type=int,
+        default=3,
+        help="skip sentences shorter than this (default: 3); see DEGENERATE ITEMS in the module docstring",
+    )
     ap.add_argument("--force", action="store_true", help="overwrite an existing slice")
     args = ap.parse_args()
 
@@ -227,7 +236,8 @@ def main() -> int:
         # A JSON array, not a word: the answer to this task is a SET. Sorted and
         # separator-normalised so the file is byte-stable for the dataset hash.
         (golds / f"{item}.txt").write_text(
-            json.dumps(ents, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+            json.dumps(ents, ensure_ascii=False, separators=(",", ":")), encoding="utf-8"
+        )
 
     n_ents = sum(counts.values())
     print(f"\n{len(rows)} sentence(s) written, seed {args.seed}")
@@ -237,10 +247,8 @@ def main() -> int:
     print(f"  types      {dict(counts.most_common())}")
     print(f"  no-entity  {empty} of {len(rows)} sentences ({empty / len(rows):.1%})")
     if skipped:
-        print(f"  skipped    {len(skipped)} sentence(s) under --min-tokens "
-              f"{args.min_tokens}: {skipped[:5]}")
-    print(f"\n  An arm that predicts NOTHING scores about {empty / len(rows):.4f} — that is"
-          f" the floor,")
+        print(f"  skipped    {len(skipped)} sentence(s) under --min-tokens {args.min_tokens}: {skipped[:5]}")
+    print(f"\n  An arm that predicts NOTHING scores about {empty / len(rows):.4f} — that is the floor,")
     print("  and a calibration check on the scorer before it is a baseline on the task.")
     print("  ABOUT, not exactly: the scorer's normaliser strips punctuation, so a gold")
     print("  entity that is only punctuation normalises to nothing and its item behaves")

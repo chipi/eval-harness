@@ -69,12 +69,20 @@ def main() -> int:
     print(f"project: {root}")
     print(f"  folders  {', '.join(FOLDERS)}")
     if made:
-        print(f"  wrote    {len(made)} file(s)" + (f", the tutorial kit under tutorial/" if args.tutorial else ""))
+        print(
+            f"  wrote    {len(made)} file(s)"
+            + (", the tutorial kit under tutorial/" if args.tutorial else "")
+        )
     if kept:
-        print(f"  kept     {len(kept)} existing file(s), unchanged: {', '.join(kept[:5])}"
-              + (" ..." if len(kept) > 5 else ""))
-    print("Next: docs/GUIDE.md step 1, `evh dataset-create`." if args.tutorial
-          else "Next: put your inputs in data/sources/<name>/ and freeze them with `evh dataset-create`.")
+        print(
+            f"  kept     {len(kept)} existing file(s), unchanged: {', '.join(kept[:5])}"
+            + (" ..." if len(kept) > 5 else "")
+        )
+    print(
+        "Next: docs/GUIDE.md step 1, `evh dataset-create`."
+        if args.tutorial
+        else "Next: put your inputs in data/sources/<name>/ and freeze them with `evh dataset-create`."
+    )
     return 0
 
 

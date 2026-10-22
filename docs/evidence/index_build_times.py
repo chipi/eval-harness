@@ -7,18 +7,38 @@ Move harness/data/corpora/scifact/.index aside first, or every dense arm loads i
 seconds. Run from examples/retrieval-scifact with that example's venv:
     .venv/bin/python ../../docs/evidence/index_build_times.py bm25 minilm bge_small mpnet e5_base
 """
-import json, sys, time, yaml
+
+import json
+import sys
+import time
 from pathlib import Path
+
+import yaml
+
 sys.path.insert(0, ".")
 import adapter
-pins = json.load(open("../local_models.json"))["revisions"]  # the revisions the runs measured
+
+pins = json.loads(Path("../local_models.json").read_text(encoding="utf-8"))[
+    "revisions"
+]  # the revisions the runs measured
 for arm in sys.argv[1:]:
-    p = yaml.safe_load(open(f"configs/arm_{arm}_n200.yaml"))["params"]
+    p = yaml.safe_load(Path(f"configs/arm_{arm}_n200.yaml").read_text(encoding="utf-8"))["params"]
     rev = pins.get(p.get("model", ""))
     if isinstance(rev, dict):
         rev = rev.get("revision")
     if rev and p.get("provider") == "dense":
         p["revision"] = rev
-    t = time.perf_counter(); adapter.warmup(p); s = time.perf_counter() - t
-    print(json.dumps({"arm": arm, "model": p.get("model", "bm25"), "revision": p.get("revision"),
-                      "build_s": round(s, 1)}), flush=True)
+    t = time.perf_counter()
+    adapter.warmup(p)
+    s = time.perf_counter() - t
+    print(
+        json.dumps(
+            {
+                "arm": arm,
+                "model": p.get("model", "bm25"),
+                "revision": p.get("revision"),
+                "build_s": round(s, 1),
+            }
+        ),
+        flush=True,
+    )

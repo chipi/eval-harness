@@ -33,8 +33,7 @@ import calibration as cal  # noqa: E402
 
 DATA = cal.ROOT / "harness" / "data"
 DATASET = "scifact_test300"
-PUBLISHED = {"published": 0.665, "source": "Thakur et al. 2021, BEIR, Table 2 "
-             "(BM25, SciFact, nDCG@10)"}
+PUBLISHED = {"published": 0.665, "source": "Thakur et al. 2021, BEIR, Table 2 (BM25, SciFact, nDCG@10)"}
 #: Allowed gap beyond our CI for a different BM25 implementation and field handling.
 TOLERANCE = 0.02
 
@@ -48,21 +47,32 @@ def main() -> int:
     src, gold = DATA / "sources" / DATASET, DATA / "references" / "gold" / DATASET
     queries = sorted(src.glob("*.txt"))
     if len(queries) != 300:
-        sys.exit(f"expected 300 queries under {src}, found {len(queries)} — run fetch.py "
-                 f"--n 300 --dataset-id {DATASET} first")
+        sys.exit(
+            f"expected 300 queries under {src}, found {len(queries)} — run fetch.py "
+            f"--n 300 --dataset-id {DATASET} first"
+        )
     adapter.warmup(params)
     ndcg = []
     for q in queries:
         out = adapter.call_system(q.read_text(encoding="utf-8"), params).output
         ndcg.append(adapter.score(out, (gold / q.name).read_text(encoding="utf-8"))["ndcg_10"])
     n = len(ndcg)
-    res = {"n": n, "value": round(st.mean(ndcg), 4),
-           "ci95": round(1.96 * st.pstdev(ndcg) / math.sqrt(n), 4), **PUBLISHED}
+    res = {
+        "n": n,
+        "value": round(st.mean(ndcg), 4),
+        "ci95": round(1.96 * st.pstdev(ndcg) / math.sqrt(n), 4),
+        **PUBLISHED,
+    }
     res["verdict"] = cal.verdict(res["value"], res["ci95"], PUBLISHED["published"], TOLERANCE)
-    out = {"what": "this repo's BM25 arm (rank_bm25, one field, no stemming) on all 300 "
-                   "BeIR/scifact test queries, full 5,183-doc corpus", "arms": {"bm25": res}}
-    print(f"bm25  all 300 queries nDCG@10 {res['value']:.4f} ±{res['ci95']:.4f}   "
-          f"BEIR {PUBLISHED['published']}   {res['verdict']}")
+    out = {
+        "what": "this repo's BM25 arm (rank_bm25, one field, no stemming) on all 300 "
+        "BeIR/scifact test queries, full 5,183-doc corpus",
+        "arms": {"bm25": res},
+    }
+    print(
+        f"bm25  all 300 queries nDCG@10 {res['value']:.4f} ±{res['ci95']:.4f}   "
+        f"BEIR {PUBLISHED['published']}   {res['verdict']}"
+    )
     print(f"wrote {cal.write('scifact', out).relative_to(cal.ROOT)}")
     return 0
 

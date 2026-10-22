@@ -36,7 +36,6 @@ rebuild it with --no-calls before a release (harness/docs/RELEASING.md).
 from __future__ import annotations
 
 import argparse
-import collections
 import hashlib
 import importlib.util
 import json
@@ -45,8 +44,9 @@ import statistics
 import sys
 import time
 import urllib.request
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Any
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
@@ -54,7 +54,13 @@ import judge_score as js  # noqa: E402
 from _common import die, write_text_atomic  # noqa: E402
 from _retry import call_with_retries  # noqa: E402
 from judging import (  # noqa: E402,F401
-    DIMS, SHINGLE, kendall_tau_b, quotes_source, shingles, spearman, withheld_reason,
+    DIMS,
+    SHINGLE,
+    kendall_tau_b,
+    quotes_source,
+    shingles,
+    spearman,
+    withheld_reason,
 )
 
 DATA = HERE.parent / "data"
@@ -72,12 +78,12 @@ def _sha(b: bytes) -> str:
     return hashlib.sha256(b).hexdigest()
 
 
-def load() -> Dict[str, dict]:
+def load() -> dict[str, dict]:
     """{article_id: {"article": text, "systems": {model: {"summary", "ratings": [{dim: v}x3]}}}},
     CNN/DailyMail only. Downloads the pinned file if it is not present."""
     if not FILE.is_file():
         EXT.mkdir(parents=True, exist_ok=True)
-        with urllib.request.urlopen(URL, timeout=120) as r:  # noqa: S310 — a pinned https URL
+        with urllib.request.urlopen(URL, timeout=120) as r:  # a constant https URL  # nosec B310
             blob = r.read()
         if _sha(blob) != PINNED:
             die(f"the download from {URL} has sha256 {_sha(blob)}, not the pinned {PINNED}")
@@ -85,7 +91,7 @@ def load() -> Dict[str, dict]:
     raw = FILE.read_bytes()
     if _sha(raw) != PINNED:
         die(f"{FILE} has sha256 {_sha(raw)}, not the pinned {PINNED}; refusing to use it")
-    out: Dict[str, dict] = {}
+    out: dict[str, dict] = {}
     for r in json.loads(raw):
         if r["dataset"] != "cnndm":
             continue
@@ -103,15 +109,15 @@ def load() -> Dict[str, dict]:
 PINNED = "5f9936bb9c09877f758605a1767031d547db8edfd45ab1f93608a0fd6f56b56c"
 
 
-def order(aid: str, systems: Sequence[str]) -> List[str]:
+def order(aid: str, systems: Sequence[str]) -> list[str]:
     return sorted(systems, key=lambda s: _sha(f"zhang-0:{aid}:{s}".encode()))
 
 
-def blocks(aid: str, systems: Sequence[str], per_call: int) -> List[List[str]]:
+def blocks(aid: str, systems: Sequence[str], per_call: int) -> list[list[str]]:
     o = order(aid, systems)
     out, i = [], 0
     for n in js.block_sizes(len(o), per_call):
-        out.append(o[i:i + n])
+        out.append(o[i : i + n])
         i += n
     return out
 
@@ -120,7 +126,7 @@ def record_path(vdir: Path, aid: str, b: int) -> Path:
     return vdir / f"{aid}.b{b}.json"
 
 
-def parse_dims(output: str, n: int) -> Optional[Dict[str, List[float]]]:
+def parse_dims(output: str, n: int) -> dict[str, list[float]] | None:
     """The judge's scores per dimension, or None. The same rule as judging.parse_block, kept
     per dimension: every dimension, exactly n numbers, each 1..5."""
     m = re.search(r"\{.*\}", output or "", re.S)
@@ -147,21 +153,21 @@ def parse_dims(output: str, n: int) -> Optional[Dict[str, List[float]]]:
     return out
 
 
-
-
-def _tau(a: Sequence[float], b: Sequence[float]) -> Optional[float]:
+def _tau(a: Sequence[float], b: Sequence[float]) -> float | None:
     v = kendall_tau_b(list(a), list(b))
     return None if v is None or v != v else v
 
 
-def _mean(xs: Sequence[Optional[float]]) -> Optional[float]:
+def _mean(xs: Sequence[float | None]) -> float | None:
     v = [x for x in xs if x is not None]
     return round(statistics.fmean(v), 4) if v else None
 
 
-def held_out(ratings: Sequence[dict], aid: str, model: str) -> List[Tuple[dict, dict]]:
+def held_out(ratings: Sequence[dict], aid: str, model: str) -> list[tuple[dict, dict]]:
     """[(held-out rating, mean of the other two)] for each of the three, in a seeded order."""
-    rs = sorted(ratings, key=lambda r: _sha(f"zhang-ho:{aid}:{model}:{json.dumps(r, sort_keys=True)}".encode()))
+    rs = sorted(
+        ratings, key=lambda r: _sha(f"zhang-ho:{aid}:{model}:{json.dumps(r, sort_keys=True)}".encode())
+    )
     out = []
     for k in range(len(rs)):
         rest = [r for i, r in enumerate(rs) if i != k]
@@ -169,11 +175,11 @@ def held_out(ratings: Sequence[dict], aid: str, model: str) -> List[Tuple[dict, 
     return out
 
 
-def human_and_refs(data: Dict[str, dict], systems: Sequence[str]) -> Tuple[dict, dict]:
+def human_and_refs(data: dict[str, dict], systems: Sequence[str]) -> tuple[dict, dict]:
     """Human baseline tau per dimension, and the two-rater reference means per article,
     held-out position and system (the judges are scored against the same references)."""
-    refs: Dict[str, List[Dict[str, Dict[str, float]]]] = {}
-    hum = {h: [] for h, _ in PAIRS}
+    refs: dict[str, list[dict[str, dict[str, float]]]] = {}
+    hum: dict[str, list] = {h: [] for h, _ in PAIRS}
     for aid, a in data.items():
         per = {m: held_out(a["systems"][m]["ratings"], aid, m) for m in systems}
         refs[aid] = [{m: per[m][k][1] for m in systems} for k in range(3)]
@@ -183,10 +189,10 @@ def human_and_refs(data: Dict[str, dict], systems: Sequence[str]) -> Tuple[dict,
     return {h: _mean(v) for h, v in hum.items()}, refs
 
 
-def judge_tau(scores: Dict[str, Dict[str, Dict[str, float]]], refs: dict, systems: Sequence[str]) -> dict:
+def judge_tau(scores: dict[str, dict[str, dict[str, float]]], refs: dict, systems: Sequence[str]) -> dict:
     """Mean tau per human dimension, against the same two-rater references, over articles
     where every block parsed."""
-    per = {h: [] for h, _ in PAIRS}
+    per: dict[str, list] = {h: [] for h, _ in PAIRS}
     for aid, s in scores.items():
         for k in range(3):
             for h, jd in PAIRS:
@@ -196,8 +202,8 @@ def judge_tau(scores: Dict[str, Dict[str, Dict[str, float]]], refs: dict, system
     return out
 
 
-def metric_tau(data: Dict[str, dict], refs: dict, systems: Sequence[str], fn) -> dict:
-    per = {h: [] for h, _ in PAIRS}
+def metric_tau(data: dict[str, dict], refs: dict, systems: Sequence[str], fn) -> dict:
+    per: dict[str, list] = {h: [] for h, _ in PAIRS}
     for aid, a in data.items():
         ref = a["systems"][REFERENCE]["summary"]
         vals = {m: fn(a["systems"][m]["summary"], ref) for m in systems}
@@ -209,54 +215,80 @@ def metric_tau(data: Dict[str, dict], refs: dict, systems: Sequence[str], fn) ->
     return out
 
 
-def article_taus(get, refs: dict, systems: Sequence[str], aids: Sequence[str]) -> Dict[str, float]:
+def article_taus(get, refs: dict, systems: Sequence[str], aids: Sequence[str]) -> dict[str, float]:
     """{article: tau averaged over the three held-out references and the three dimensions}.
     `get(aid, k, human_dim)` returns the instrument's value per system, in `systems` order."""
     out = {}
     for aid in aids:
-        v = [_tau(get(aid, k, h), [refs[aid][k][m][h] for m in systems]) for k in range(3) for h, _ in PAIRS]
-        v = [x for x in v if x is not None]
-        if v:
-            out[aid] = statistics.fmean(v)
+        taus = [
+            _tau(get(aid, k, h), [refs[aid][k][m][h] for m in systems]) for k in range(3) for h, _ in PAIRS
+        ]
+        known = [x for x in taus if x is not None]
+        if known:
+            out[aid] = statistics.fmean(known)
     return out
 
 
-def paired_test(a: Dict[str, float], b: Dict[str, float], n: int = 20000, seed: int = 0) -> dict:
+def paired_test(a: dict[str, float], b: dict[str, float], n: int = 20000, seed: int = 0) -> dict:
     """a minus b over the articles both have: mean difference, articles where a is ahead, and a
     two-sided sign-flip permutation p (seeded; the article is the unit)."""
     import random  # noqa: PLC0415
+
     ids = sorted(set(a) & set(b))
     d = [a[i] - b[i] for i in ids]
     obs = abs(statistics.fmean(d))
     rng = random.Random(seed)
-    hits = sum(abs(statistics.fmean(x if rng.random() < 0.5 else -x for x in d)) >= obs - 1e-12
-               for _ in range(n))
-    return {"articles": len(ids), "mean_difference": round(statistics.fmean(d), 4),
-            "a_ahead": sum(x > 0 for x in d), "b_ahead": sum(x < 0 for x in d),
-            "p_two_sided": round((hits + 1) / (n + 1), 5)}
+    hits = sum(
+        abs(statistics.fmean(x if rng.random() < 0.5 else -x for x in d)) >= obs - 1e-12 for _ in range(n)
+    )
+    return {
+        "articles": len(ids),
+        "mean_difference": round(statistics.fmean(d), 4),
+        "a_ahead": sum(x > 0 for x in d),
+        "b_ahead": sum(x < 0 for x in d),
+        "p_two_sided": round((hits + 1) / (n + 1), 5),
+    }
 
 
-def system_means(data: Dict[str, dict], systems: Sequence[str], scores: Dict[str, dict]) -> dict:
+def system_means(data: dict[str, dict], systems: Sequence[str], scores: dict[str, dict]) -> dict:
     """Mean rating per system: the raters' (all three ratings) and each judge's, per dimension.
     A judge is ranked against the raters' means on the articles that judge scored."""
+
     def rater_means(aids) -> dict:
-        return {m: {h: round(statistics.fmean(r[h] for aid in aids for r in data[aid]["systems"][m]["ratings"]), 4)
-                    for h, _ in PAIRS} for m in systems}
+        return {
+            m: {
+                h: round(
+                    statistics.fmean(r[h] for aid in aids for r in data[aid]["systems"][m]["ratings"]), 4
+                )
+                for h, _ in PAIRS
+            }
+            for m in systems
+        }
+
     hum = rater_means(data)
     judges = {}
     for jid, s in scores.items():
-        judges[jid] = {m: {jd: round(statistics.fmean(s[aid][m][jd] for aid in s), 4) for _, jd in PAIRS}
-                       for m in systems}
+        judges[jid] = {
+            m: {jd: round(statistics.fmean(s[aid][m][jd] for aid in s), 4) for _, jd in PAIRS}
+            for m in systems
+        }
+
     # The system ranking: by the mean of coherence and relevance (the two 1-5 ratings; the
     # judge's coherence and relevance likewise), rank 1 the best.
-    def ranks(means: dict, a: str, b: str) -> Dict[str, int]:
+    def ranks(means: dict, a: str, b: str) -> dict[str, int]:
         o = sorted(means, key=lambda m: (-(means[m][a] + means[m][b]), m))
         return {m: i + 1 for i, m in enumerate(o)}
-    def key(means: dict) -> List[float]:
+
+    def key(means: dict) -> list[float]:
         return [means[m]["coherence"] + means[m]["relevance"] for m in systems]
+
     hr = ranks(hum, "coherence", "relevance")
-    ranking = {"basis": "the mean of coherence and relevance (faithfulness, 0/1, is not in it)",
-               "raters": hr, "judges": {}, "spearman_vs_raters": {}}
+    ranking: dict = {
+        "basis": "the mean of coherence and relevance (faithfulness, 0/1, is not in it)",
+        "raters": hr,
+        "judges": {},
+        "spearman_vs_raters": {},
+    }
     for jid, s in judges.items():
         same = hum if len(scores[jid]) == len(data) else rater_means(scores[jid])
         ranking["judges"][jid] = ranks(s, "coherence", "relevance")
@@ -268,18 +300,24 @@ def system_means(data: Dict[str, dict], systems: Sequence[str], scores: Dict[str
 
 def free_metrics() -> dict:
     from rouge_score import rouge_scorer  # noqa: PLC0415
+
     rs = rouge_scorer.RougeScorer(["rouge1"], use_stemmer=True)
     path = HERE.parents[1] / "examples" / "summarization-cnn-dailymail" / "adapter.py"
     spec = importlib.util.spec_from_file_location("_summ_adapter", path)
+    if spec is None or spec.loader is None:
+        raise SystemExit(f"cannot load {path}")
     mod = importlib.util.module_from_spec(spec)
     sys.modules["_summ_adapter"] = mod
-    spec.loader.exec_module(mod)  # type: ignore[union-attr]
-    return {"rouge1": lambda s, r: rs.score(r, s)["rouge1"].fmeasure,
-            "coverage": lambda s, r: mod.score(s, r)["coverage"]}
+    spec.loader.exec_module(mod)
+    return {
+        "rouge1": lambda s, r: rs.score(r, s)["rouge1"].fmeasure,
+        "coverage": lambda s, r: mod.score(s, r)["coverage"],
+    }
 
 
-def build_report(sc: dict, base: str, per_call: int, data: Dict[str, dict],
-                 systems: List[str], vroot: Path) -> Dict[str, Any]:
+def build_report(
+    sc: dict, base: str, per_call: int, data: dict[str, dict], systems: list[str], vroot: Path
+) -> dict[str, Any]:
     """Every figure the report states, recomputed from the stored records and the data;
     refuses records stored for another judge, prompt or order, or holding their text."""
     # Every record checked against the scorer and the data as they are now.
@@ -287,7 +325,7 @@ def build_report(sc: dict, base: str, per_call: int, data: Dict[str, dict],
     for j in sc["judges"]:
         fp, s = js.judge_fingerprint(j), {}
         for aid, a in data.items():
-            merged: Dict[str, Dict[str, float]] = {}
+            merged: dict[str, dict[str, float]] = {}
             ok = True
             src = shingles([a["article"], *(a["systems"][m]["summary"] for m in systems)])
             for b, ms in enumerate(blocks(aid, systems, per_call)):
@@ -316,57 +354,83 @@ def build_report(sc: dict, base: str, per_call: int, data: Dict[str, dict],
     hum19, refs19 = human_and_refs(data, systems)
     hum18, refs18 = human_and_refs(data, nonref)
     fm = free_metrics()
-    report: Dict[str, Any] = {
-        "source": ("Zhang, Ladhak, Durmus, Liang, McKeown & Hashimoto (2024), Benchmarking Large "
-                   "Language Models for News Summarization, TACL 12; likert_evaluation_results.json, "
-                   "CNN/DailyMail rows"),
-        "scorer": sc["scorer_id"], "articles": len(data), "systems": len(systems),
+    report: dict[str, Any] = {
+        "source": (
+            "Zhang, Ladhak, Durmus, Liang, McKeown & Hashimoto (2024), Benchmarking Large "
+            "Language Models for News Summarization, TACL 12; likert_evaluation_results.json, "
+            "CNN/DailyMail rows"
+        ),
+        "scorer": sc["scorer_id"],
+        "articles": len(data),
+        "systems": len(systems),
         "empty_summaries": sum(1 for a in data.values() for s in a["systems"].values() if not s["summary"]),
         "blocks": js.block_sizes(len(systems), per_call),
         "inputs": {"commit": COMMIT, "file_sha256": PINNED, "scorer_sha256": sc["_sha256"]},
-        "human_baseline": {"all_19": {**hum19, "mean": _mean(list(hum19.values()))},
-                           "non_reference_18": {**hum18, "mean": _mean(list(hum18.values()))}},
+        "human_baseline": {
+            "all_19": {**hum19, "mean": _mean(list(hum19.values()))},
+            "non_reference_18": {**hum18, "mean": _mean(list(hum18.values()))},
+        },
         "free_metrics_non_reference_18": {k: metric_tau(data, refs18, nonref, fn) for k, fn in fm.items()},
-        "judges": {}}
+        "judges": {},
+    }
     for j in sc["judges"]:
         jid = j["id"]
         recs = [json.loads(f.read_text()) for f in (vroot / jid).glob("*.json")]
         report["judges"][jid] = {
-            "articles_scored": len(scores[jid]), "calls": len(recs),
+            "articles_scored": len(scores[jid]),
+            "calls": len(recs),
             "unparsed": sum(1 for r in recs if r.get("dims") is None),
             "withheld_replies": sum(1 for r in recs if r.get("output_withheld")),
             "billed_usd": round(sum(float(r.get("cost_usd") or 0) for r in recs), 4),
             "records_sha256": js.records_sha256(vroot / jid),
             "all_19": judge_tau(scores[jid], {a: refs19[a] for a in scores[jid]}, systems),
-            "non_reference_18": judge_tau(scores[jid], {a: refs18[a] for a in scores[jid]}, nonref)}
+            "non_reference_18": judge_tau(scores[jid], {a: refs18[a] for a in scores[jid]}, nonref),
+        }
     # Paired over articles, on the 18 non-reference summaries: each judge against one rater
     # and against coverage, ROUGE-1. The article is the unit; refs are the same for all.
     aids = sorted(data)
     ho18 = {aid: {m: held_out(data[aid]["systems"][m]["ratings"], aid, m) for m in nonref} for aid in aids}
     human_t = article_taus(lambda aid, k, h: [ho18[aid][m][k][0][h] for m in nonref], refs18, nonref, aids)
-    vals = {name: {aid: {m: fn(data[aid]["systems"][m]["summary"], data[aid]["systems"][REFERENCE]["summary"])
-                         for m in nonref} for aid in aids} for name, fn in fm.items()}
-    metric_t = {name: article_taus(lambda aid, k, h, v=v: [v[aid][m] for m in nonref], refs18, nonref, aids)
-                for name, v in vals.items()}
+    vals = {
+        name: {
+            aid: {
+                m: fn(data[aid]["systems"][m]["summary"], data[aid]["systems"][REFERENCE]["summary"])
+                for m in nonref
+            }
+            for aid in aids
+        }
+        for name, fn in fm.items()
+    }
+    metric_t = {
+        name: article_taus(lambda aid, k, h, v=v: [v[aid][m] for m in nonref], refs18, nonref, aids)
+        for name, v in vals.items()
+    }
     jd_of = dict(PAIRS)
     report["paired_non_reference_18"] = {}
     for jid, s in scores.items():
-        jt = article_taus(lambda aid, k, h, s=s: [s[aid][m][jd_of[h]] for m in nonref], refs18, nonref, sorted(s))
+        jt = article_taus(
+            lambda aid, k, h, s=s: [s[aid][m][jd_of[h]] for m in nonref], refs18, nonref, sorted(s)
+        )
         report["paired_non_reference_18"][jid] = {
             "vs_one_rater": paired_test(jt, human_t),
-            **{f"vs_{name}": paired_test(jt, t) for name, t in metric_t.items()}}
+            **{f"vs_{name}": paired_test(jt, t) for name, t in metric_t.items()},
+        }
     report["system_means"] = system_means(data, systems, scores)
     return report
 
 
-def print_report(report: Dict[str, Any]) -> None:
+def print_report(report: dict[str, Any]) -> None:
     for jid, r in report["judges"].items():
-        print(f"{jid}: tau all-19 {r['all_19']}; non-reference {r['non_reference_18']}; "
-              f"{r['articles_scored']} articles, unparsed {r['unparsed']}, withheld {r['withheld_replies']}, "
-              f"billed ${r['billed_usd']:.4f}")
+        print(
+            f"{jid}: tau all-19 {r['all_19']}; non-reference {r['non_reference_18']}; "
+            f"{r['articles_scored']} articles, unparsed {r['unparsed']}, withheld {r['withheld_replies']}, "
+            f"billed ${r['billed_usd']:.4f}"
+        )
         print(f"{jid} paired (non-reference 18): {report['paired_non_reference_18'][jid]}")
-    print(f"humans (one rating vs the mean of the other two): all-19 {report['human_baseline']['all_19']}; "
-          f"non-reference {report['human_baseline']['non_reference_18']}")
+    print(
+        f"humans (one rating vs the mean of the other two): all-19 {report['human_baseline']['all_19']}; "
+        f"non-reference {report['human_baseline']['non_reference_18']}"
+    )
     for k, v in report["free_metrics_non_reference_18"].items():
         print(f"{k} vs the reference highlights, non-reference 18: {v}")
 
@@ -389,26 +453,34 @@ def main() -> int:
 
     tasks = []
     for j in sc["judges"]:
-        for aid, a in data.items():
+        for aid in data:
             for b, ms in enumerate(blocks(aid, systems, per_call)):
                 tasks.append((j, aid, b, ms))
     missing = [t for t in tasks if not record_path(vroot / t[0]["id"], t[1], t[2]).is_file()]
     if args.dry_run:
         est = 0.0
-        for j, aid, b, ms in missing:
-            msg = js.build_message(base, data[aid]["article"], [data[aid]["systems"][m]["summary"] for m in ms])
-            tin, tout = len(msg) / js.CHARS_PER_TOKEN, js.OUT_TOKENS_FIXED + js.OUT_TOKENS_PER_SUMMARY * len(ms)
-            est += tin / 1e6 * float(j["params"]["usd_per_mtok_in"]) + tout / 1e6 * float(j["params"]["usd_per_mtok_out"])
-        print(f"{len(data)} articles x {len(systems)} summaries, blocks {js.block_sizes(len(systems), per_call)}; "
-              f"{len(tasks)} calls ({len(missing)} not stored), est ${est:.4f}; cap {cap}")
+        for j, aid, _b, ms in missing:
+            msg = js.build_message(
+                base, data[aid]["article"], [data[aid]["systems"][m]["summary"] for m in ms]
+            )
+            tin, tout = (
+                len(msg) / js.CHARS_PER_TOKEN,
+                js.OUT_TOKENS_FIXED + js.OUT_TOKENS_PER_SUMMARY * len(ms),
+            )
+            est += tin / 1e6 * float(j["params"]["usd_per_mtok_in"]) + tout / 1e6 * float(
+                j["params"]["usd_per_mtok_out"]
+            )
+        print(
+            f"{len(data)} articles x {len(systems)} summaries, blocks {js.block_sizes(len(systems), per_call)}; "
+            f"{len(tasks)} calls ({len(missing)} not stored), est ${est:.4f}; cap {cap}"
+        )
         return 0
     if missing and args.no_calls:
         die(f"--no-calls but {len(missing)} record(s) are missing")
     if missing and cap is None:
         die("no cost cap: set cost_cap_usd in the scorer or EVAL_MAX_COST_USD")
 
-    spent = sum(float(json.loads(f.read_text()).get("cost_usd") or 0.0)
-                for f in vroot.glob("*/*.json"))
+    spent = sum(float(json.loads(f.read_text()).get("cost_usd") or 0.0) for f in vroot.glob("*/*.json"))
     stopped = None
     for j, aid, b, ms in missing:
         if stopped:
@@ -429,14 +501,21 @@ def main() -> int:
             break
         cost, known = js.call_cost(res, j["params"])
         why = withheld_reason(res.output, shingles([a["article"], *texts]))
-        rec = {"article_id": aid, "block": b, "order": ms,
-               "output": None if why else res.output,
-               "output_sha256": _sha((res.output or "").encode()), "output_withheld": bool(why),
-               **({"withheld_reason": why} if why else {}),
-               "dims": parse_dims(res.output, len(ms)),
-               "cost_usd": cost if cost is not None else 0.0, "cost_known": known,
-               "latency_ms": round((time.monotonic() - t0) * 1000, 1),
-               "judge_fp": js.judge_fingerprint(j), "prompt_sha": js._sha(msg)}
+        rec: dict = {
+            "article_id": aid,
+            "block": b,
+            "order": ms,
+            "output": None if why else res.output,
+            "output_sha256": _sha((res.output or "").encode()),
+            "output_withheld": bool(why),
+            **({"withheld_reason": why} if why else {}),
+            "dims": parse_dims(res.output, len(ms)),
+            "cost_usd": cost if cost is not None else 0.0,
+            "cost_known": known,
+            "latency_ms": round((time.monotonic() - t0) * 1000, 1),
+            "judge_fp": js.judge_fingerprint(j),
+            "prompt_sha": js._sha(msg),
+        }
         f = record_path(vroot / j["id"], aid, b)
         f.parent.mkdir(parents=True, exist_ok=True)
         write_text_atomic(f, json.dumps(rec))

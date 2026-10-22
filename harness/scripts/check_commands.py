@@ -23,7 +23,7 @@ import re
 import shlex
 import subprocess
 import sys
-from functools import lru_cache
+from functools import cache
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -32,9 +32,13 @@ REPO = HARNESS.parent
 sys.path.insert(0, str(HERE))
 from cli import COMMANDS  # noqa: E402
 
-DOCS = [REPO / "README.md", HARNESS / "README.md", *sorted((HARNESS / "docs").glob("*.md")),
-        *sorted(p for p in (REPO / "docs").rglob("*.md") if "papers" not in p.parts),
-        *sorted((REPO / "examples").glob("*/README.md"))]
+DOCS = [
+    REPO / "README.md",
+    HARNESS / "README.md",
+    *sorted((HARNESS / "docs").glob("*.md")),
+    *sorted(p for p in (REPO / "docs").rglob("*.md") if "papers" not in p.parts),
+    *sorted((REPO / "examples").glob("*/README.md")),
+]
 SKIP = {HARNESS / "CHANGELOG.md"}
 FENCE = re.compile(r"^```(\w*)")
 INLINE = re.compile(r"`([^`\n]+)`")
@@ -63,7 +67,7 @@ HARNESS_MK = makefile(HARNESS / "Makefile")
 ROOT_MK = makefile(REPO / "Makefile")
 
 
-@lru_cache(maxsize=None)
+@cache
 def flags_of(script: Path) -> frozenset:
     r = subprocess.run([sys.executable, str(script), "--help"], capture_output=True, text=True, timeout=120)
     return frozenset(re.findall(r"(--[a-z][a-z0-9-]*)", r.stdout + r.stderr)) | {"--help"}
@@ -108,8 +112,11 @@ def check_line(cmd: str) -> list:
                 problems.append(f"`evh {name}`: no such command")
                 continue
             ok = flags_of(HERE / COMMANDS[name][0])
-            problems += [f"`evh {name} {w}`: {COMMANDS[name][0]} has no {w}"
-                         for w in words[2:] if w.startswith("--") and w.split("=")[0] not in ok]
+            problems += [
+                f"`evh {name} {w}`: {COMMANDS[name][0]} has no {w}"
+                for w in words[2:]
+                if w.startswith("--") and w.split("=")[0] not in ok
+            ]
         elif words[0] == "make" and len(words) > 1:
             rest, mk = words[1:], None
             if rest[:2] == ["-C", "harness"]:
@@ -132,23 +139,36 @@ def check_line(cmd: str) -> list:
                     problems.append(f"`make {target} {var}=…`: the Makefile never uses {var}")
                 if var == "ARGS":
                     for w in val.split():
-                        if w.startswith("--") and hit[0][target]:
-                            if not any(w.split("=")[0] in flags_of(s) for s in hit[0][target] if s.is_file()):
-                                problems.append(f"`make {target} ARGS=\"{w}\"`: "
-                                                f"{', '.join(s.name for s in hit[0][target])} has no {w}")
+                        if (
+                            w.startswith("--")
+                            and hit[0][target]
+                            and not any(w.split("=")[0] in flags_of(s) for s in hit[0][target] if s.is_file())
+                        ):
+                            problems.append(
+                                f'`make {target} ARGS="{w}"`: '
+                                f"{', '.join(s.name for s in hit[0][target])} has no {w}"
+                            )
     return problems
 
 
 def self_check() -> list:
     """Each rule must fire on a line that breaks it, and stay quiet on one that does not:
     a checker that reports nothing proves nothing until it is shown to report something."""
-    cases = [("evh pair-test --dataset-id x --nope", True), ("evh nosuch", True),
-             ("make nosuch-target", True), ('make dataset-create DATASET_ID=x ARGS="--nope"', True),
-             ("make leaderboard NOSUCHVAR=1", True),
-             ('make dataset-create DATASET_ID=x ARGS="--fieldset t"', False),
-             ("evh leaderboard --dataset-id x --sort overlap_f1", False), ("make -C harness ci", False)]
-    return [f"self-check: {line!r} should {'' if want else 'not '}be reported"
-            for line, want in cases if bool(check_line(line)) != want]
+    cases = [
+        ("evh pair-test --dataset-id x --nope", True),
+        ("evh nosuch", True),
+        ("make nosuch-target", True),
+        ('make dataset-create DATASET_ID=x ARGS="--nope"', True),
+        ("make leaderboard NOSUCHVAR=1", True),
+        ('make dataset-create DATASET_ID=x ARGS="--fieldset t"', False),
+        ("evh leaderboard --dataset-id x --sort overlap_f1", False),
+        ("make -C harness ci", False),
+    ]
+    return [
+        f"self-check: {line!r} should {'' if want else 'not '}be reported"
+        for line, want in cases
+        if bool(check_line(line)) != want
+    ]
 
 
 def main() -> int:
@@ -163,8 +183,10 @@ def main() -> int:
                 bad.append(f"{doc.relative_to(REPO)}:{n}: {p}")
     for b in bad:
         print(f"  {b}")
-    print(f"documented commands: {seen} make/evh command(s) in {len(DOCS)} docs, "
-          + ("every target, command and flag exists" if not bad else f"{len(bad)} problem(s)"))
+    print(
+        f"documented commands: {seen} make/evh command(s) in {len(DOCS)} docs, "
+        + ("every target, command and flag exists" if not bad else f"{len(bad)} problem(s)")
+    )
     return 1 if bad else 0
 
 

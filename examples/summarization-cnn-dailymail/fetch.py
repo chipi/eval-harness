@@ -76,13 +76,12 @@ PAGE = 100
 def _page(split: str, offset: int, length: int) -> list[dict]:
     """One page of rows. Retried: the datasets-server returns transient 502s."""
     query = urllib.parse.urlencode(
-        {"dataset": DATASET, "config": CONFIG, "split": split,
-         "offset": offset, "length": length}
+        {"dataset": DATASET, "config": CONFIG, "split": split, "offset": offset, "length": length}
     )
     last: Exception | None = None
     for attempt in range(6):
         try:
-            with urllib.request.urlopen(f"{ROWS_API}?{query}", timeout=60) as resp:
+            with urllib.request.urlopen(f"{ROWS_API}?{query}", timeout=60) as resp:  # noqa: S310 — a constant https URL  # nosec B310
                 return [r["row"] for r in (json.loads(resp.read()).get("rows") or [])]
         except Exception as exc:  # noqa: BLE001 - retried, then one message
             last = exc
@@ -114,8 +113,7 @@ def source_of(row: dict) -> str:
     DailyMail pool; three landed in the first draw of the DailyMail slice.
     """
     a = row["article"]
-    return ("cnn" if "(CNN)" in a[:300] or re.match(r"\s*\([^)]{2,40}\)", a)
-            else "dailymail")
+    return "cnn" if "(CNN)" in a[:300] or re.match(r"\s*\([^)]{2,40}\)", a) else "dailymail"
 
 
 def fetch_random(n: int, split: str, seed: int, source: str) -> list[dict]:
@@ -141,12 +139,20 @@ def main() -> int:
     ap.add_argument("--split", default="test", help="dataset split (default: test)")
     ap.add_argument("--dataset-id", default=None, help="harness dataset_id (default: cnn_dailymail_<n>)")
     ap.add_argument("--force", action="store_true", help="overwrite an existing slice")
-    ap.add_argument("--draw", choices=("head", "random"), default="head",
-                    help="head = the first n rows (default; the committed slice); "
-                         "random = a seeded uniform draw from the whole split")
+    ap.add_argument(
+        "--draw",
+        choices=("head", "random"),
+        default="head",
+        help="head = the first n rows (default; the committed slice); "
+        "random = a seeded uniform draw from the whole split",
+    )
     ap.add_argument("--seed", type=int, default=20261014, help="seed for --draw random")
-    ap.add_argument("--source", choices=("any", "cnn", "dailymail"), default="any",
-                    help="restrict --draw random to one outlet")
+    ap.add_argument(
+        "--source",
+        choices=("any", "cnn", "dailymail"),
+        default="any",
+        help="restrict --draw random to one outlet",
+    )
     args = ap.parse_args()
 
     dataset_id = args.dataset_id or f"cnn_dailymail_{args.n}"
@@ -158,10 +164,12 @@ def main() -> int:
         return 0
 
     if args.draw == "head" and args.source != "any":
-        sys.exit("--source needs --draw random: the first n rows are whatever the split "
-                 "starts with")
-    rows = (fetch_rows(args.n, args.split) if args.draw == "head"
-            else fetch_random(args.n, args.split, args.seed, args.source))
+        sys.exit("--source needs --draw random: the first n rows are whatever the split starts with")
+    rows = (
+        fetch_rows(args.n, args.split)
+        if args.draw == "head"
+        else fetch_random(args.n, args.split, args.seed, args.source)
+    )
     cnn = sum(source_of(r) == "cnn" for r in rows)
     print(f"  slice: {cnn} CNN, {len(rows) - cnn} DailyMail")
     if len(rows) < args.n:

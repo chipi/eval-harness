@@ -35,7 +35,7 @@ from cli import COMMANDS  # noqa: E402
 ok: list = []
 
 
-def check(label: str, cond, detail: str = "") -> None:
+def check(label: str, cond, detail: object = "") -> None:
     ok.append((label, bool(cond)))
     print(f"  {'ok  ' if cond else 'FAIL'} {label}" + (f"  ({detail})" if detail and not cond else ""))
 
@@ -46,15 +46,28 @@ def main() -> int:
         site = _wheel.install(tmp / "site-packages")
         proj = tmp / "proj"
         proj.mkdir()
-        env = {**os.environ, "PYTHONPATH": str(site), "PYTHONDONTWRITEBYTECODE": "1",
-               "EVAL_BUILD_REF": "test-commands", "GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@example.invalid",
-               "GIT_COMMITTER_NAME": "t", "GIT_COMMITTER_EMAIL": "t@example.invalid"}
+        env = {
+            **os.environ,
+            "PYTHONPATH": str(site),
+            "PYTHONDONTWRITEBYTECODE": "1",
+            "EVAL_BUILD_REF": "test-commands",
+            "GIT_AUTHOR_NAME": "t",
+            "GIT_AUTHOR_EMAIL": "t@example.invalid",
+            "GIT_COMMITTER_NAME": "t",
+            "GIT_COMMITTER_EMAIL": "t@example.invalid",
+        }
         for k in ("EVAL_HOME", "EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD"):
             env.pop(k, None)
 
         def evh(*args: str, timeout: int = 600) -> subprocess.CompletedProcess:
-            return subprocess.run([sys.executable, "-m", "evaluation_harness", *args], cwd=proj, env=env,
-                                  capture_output=True, text=True, timeout=timeout)
+            return subprocess.run(
+                [sys.executable, "-m", "evaluation_harness", *args],
+                cwd=proj,
+                env=env,
+                capture_output=True,
+                text=True,
+                timeout=timeout,
+            )
 
         def setup(*args: str) -> None:
             r = evh(*args)
@@ -63,7 +76,15 @@ def main() -> int:
 
         setup("init", "--tutorial")
         setup("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets")
-        setup("dataset-create", "--dataset-id", "tickets_dev_v1", "--source-dir", "tutorial/tickets", "--limit", "2")
+        setup(
+            "dataset-create",
+            "--dataset-id",
+            "tickets_dev_v1",
+            "--source-dir",
+            "tutorial/tickets",
+            "--limit",
+            "2",
+        )
         setup("dataset-materialize", "--dataset-id", "tickets_v1")
         for f in (proj / "tutorial/configs").glob("tickets_*.yaml"):
             shutil.copy(f, proj / "data/configs/")
@@ -73,51 +94,122 @@ def main() -> int:
         shutil.copytree(proj / "tutorial/scorers", proj / "data/scorers")
         run_id = sorted(p.name for p in (proj / "data/runs").glob("tickets_lead2_v1_*"))[0]
         base_id = sorted(p.name for p in (proj / "data/runs").glob("tickets_lead1_v1_*"))[0]
-        (proj / "imported.jsonl").write_text("".join(
-            json.dumps({"item_id": i, "acc": 1.0}) + "\n" for i in
-            (it["item_id"] for it in json.loads((proj / "data/datasets/tickets_v1.json").read_text())["items"])))
+        (proj / "imported.jsonl").write_text(
+            "".join(
+                json.dumps({"item_id": i, "acc": 1.0}) + "\n"
+                for i in (
+                    it["item_id"]
+                    for it in json.loads((proj / "data/datasets/tickets_v1.json").read_text())["items"]
+                )
+            )
+        )
         subprocess.run(["git", "init", "-q"], cwd=proj, env=env)
         subprocess.run(["git", "add", "-A"], cwd=proj, env=env)
         subprocess.run(["git", "commit", "-qm", "start"], cwd=proj, env=env)
 
         # (command, args, expect): "ok" = exit 0; "ok:TEXT" = exit 0 and TEXT printed; any other
         # string = a refusal (non-zero exit) whose output contains it.
-        cases = [
+        cases: list[tuple[str, list, str]] = [
             ("init", ["--help"], "ok"),
             ("env-check", [], "ok"),
-            ("dataset-create", ["--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets"], "already exists"),
+            (
+                "dataset-create",
+                ["--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets"],
+                "already exists",
+            ),
             ("dataset-materialize", ["--dataset-id", "tickets_v1"], "ok"),
-            ("reference-create", ["--dataset-id", "tickets_v1", "--config", "data/configs/tickets_author.yaml"], "ok"),
+            (
+                "reference-create",
+                ["--dataset-id", "tickets_v1", "--config", "data/configs/tickets_author.yaml"],
+                "ok",
+            ),
             ("experiment-run", ["--config", "data/configs/tickets_lead1.yaml", "--dry-run"], "ok"),
-            ("sweep", ["--configs", "data/configs/tickets_lead1.yaml", "data/configs/tickets_lead2.yaml", "--dry-run"], "ok"),
+            (
+                "sweep",
+                [
+                    "--configs",
+                    "data/configs/tickets_lead1.yaml",
+                    "data/configs/tickets_lead2.yaml",
+                    "--dry-run",
+                ],
+                "ok",
+            ),
             ("runs-list", [], "ok"),
-            ("rescore", ["--dataset-id", "tickets_v1", "--reference-id", "gold/tickets_v1", "--out", "data/runs-gold"], "ok"),
-            ("judge-score", ["--dataset-id", "tickets_v1", "--scorer", "tickets-judge-v1", "--unvalidated", "--dry-run"], "ok"),
+            (
+                "rescore",
+                [
+                    "--dataset-id",
+                    "tickets_v1",
+                    "--reference-id",
+                    "gold/tickets_v1",
+                    "--out",
+                    "data/runs-gold",
+                ],
+                "ok",
+            ),
+            (
+                "judge-score",
+                ["--dataset-id", "tickets_v1", "--scorer", "tickets-judge-v1", "--unvalidated", "--dry-run"],
+                "ok",
+            ),
             ("silver-calibrate", ["--dataset-id", "tickets_v1"], "ok"),
             ("cost-report", ["--dataset-id", "tickets_v1"], "ok"),
             ("leaderboard", ["--dataset-id", "tickets_v1"], "ok"),
             # No --metric: the default is the runs' recorded primary metric, not another project's.
-            ("pair-test", ["--dataset-id", "tickets_v1", "--a", "tickets_lead2_v1", "--b", "tickets_lead1_v1"],
-             "ok:overlap_f1"),
-            ("family-test", ["--dataset-id", "tickets_v1", "--a", "tickets_lead2_v1", "--against", "tickets_"],
-             "ok:overlap_f1"),
-            ("bootstrap-test", ["--dataset-id", "tickets_v1", "--a", "tickets_lead2_v1", "--against", "tickets_"],
-             "for classification"),
+            (
+                "pair-test",
+                ["--dataset-id", "tickets_v1", "--a", "tickets_lead2_v1", "--b", "tickets_lead1_v1"],
+                "ok:overlap_f1",
+            ),
+            (
+                "family-test",
+                ["--dataset-id", "tickets_v1", "--a", "tickets_lead2_v1", "--against", "tickets_"],
+                "ok:overlap_f1",
+            ),
+            (
+                "bootstrap-test",
+                ["--dataset-id", "tickets_v1", "--a", "tickets_lead2_v1", "--against", "tickets_"],
+                "for classification",
+            ),
             ("holdout", ["--dataset-id", "tickets_v1", "--exclude-dataset", "tickets_dev_v1"], "ok"),
             ("rank-stability", ["--dataset-id", "tickets_v1"], "too few"),
-            ("import-run", ["--dataset-id", "tickets_v1", "--config-id", "imported_v1", "--scores", "imported.jsonl",
-                            "--primary-metric", "acc", "--build-ref", "tool-1.0", "--source", "another tool",
-                            "--scorer-id", "acc-v1"], "ok"),
+            (
+                "import-run",
+                [
+                    "--dataset-id",
+                    "tickets_v1",
+                    "--config-id",
+                    "imported_v1",
+                    "--scores",
+                    "imported.jsonl",
+                    "--primary-metric",
+                    "acc",
+                    "--build-ref",
+                    "tool-1.0",
+                    "--source",
+                    "another tool",
+                    "--scorer-id",
+                    "acc-v1",
+                ],
+                "ok",
+            ),
             ("run-compare", ["--baseline", base_id, "--candidate", run_id], "ok"),
-            ("run-promote", ["--run", run_id, "--reason", "the tutorial's working baseline, for this test"], "ok"),
+            (
+                "run-promote",
+                ["--run", run_id, "--reason", "the tutorial's working baseline, for this test"],
+                "ok",
+            ),
             ("catalog", [], "ok"),
-            ("catalog-serve", None, "ok"),  # started, its address read, stopped
+            ("catalog-serve", [], "ok"),  # started, its address read, stopped
             ("validate", [], "ok"),
             ("self-test", [], "ok"),
         ]
         covered = {c for c, _, _ in cases}
-        check("every evh command has a case here", covered == set(COMMANDS),
-              f"no case: {sorted(set(COMMANDS) - covered)}; unknown: {sorted(covered - set(COMMANDS))}")
+        check(
+            "every evh command has a case here",
+            covered == set(COMMANDS),
+            f"no case: {sorted(set(COMMANDS) - covered)}; unknown: {sorted(covered - set(COMMANDS))}",
+        )
 
         for cmd, args, expect in cases:
             if cmd == "catalog-serve":
@@ -126,8 +218,14 @@ def main() -> int:
                     port = s.getsockname()[1]
                 log = tmp / "serve.log"
                 with open(log, "w") as fh:
-                    p = subprocess.Popen([sys.executable, "-m", "evaluation_harness", "catalog-serve", "--port", str(port)],
-                                         cwd=proj, env=env, stdout=fh, stderr=subprocess.STDOUT, start_new_session=True)
+                    p = subprocess.Popen(
+                        [sys.executable, "-m", "evaluation_harness", "catalog-serve", "--port", str(port)],
+                        cwd=proj,
+                        env=env,
+                        stdout=fh,
+                        stderr=subprocess.STDOUT,
+                        start_new_session=True,
+                    )
                 for _ in range(100):
                     if "catalog:" in log.read_text() or p.poll() is not None:
                         break
@@ -138,31 +236,45 @@ def main() -> int:
                 # first group link on the dataset pages, answered with verdict rows, no error.
                 probe = REPO / "infra" / "deploy" / "probe_link.sh"
                 if alive and probe.is_file():
-                    q = subprocess.run(["bash", str(probe), str(proj / ".build/catalog/d")],
-                                       capture_output=True, text=True).stdout.strip()
+                    q = subprocess.run(
+                        ["bash", str(probe), str(proj / ".build/catalog/d")], capture_output=True, text=True
+                    ).stdout.strip()
                     body = ""
                     if q:
                         import urllib.request  # noqa: PLC0415
-                        with urllib.request.urlopen(f"http://127.0.0.1:{port}/api/compare?{q}", timeout=120) as resp:
+
+                        with urllib.request.urlopen(  # the test's own server on 127.0.0.1  # nosec B310
+                            f"http://127.0.0.1:{port}/api/compare?{q}", timeout=120
+                        ) as resp:
                             body = resp.read().decode()
-                    check("deploy probe: finds a group link, and the inspector tests it",
-                          "," in q and "metric=" in q and '"rows": [{' in body and '"error"' not in body,
-                          (q, body[:200]))
+                    check(
+                        "deploy probe: finds a group link, and the inspector tests it",
+                        "," in q and "metric=" in q and '"rows": [{' in body and '"error"' not in body,
+                        (q, body[:200]),
+                    )
                 if alive:
                     os.killpg(p.pid, signal.SIGTERM)
                     p.wait(timeout=10)
-                check("catalog-serve: serves, and says where", alive and f"127.0.0.1:{port}" in out, out[-300:])
+                check(
+                    "catalog-serve: serves, and says where", alive and f"127.0.0.1:{port}" in out, out[-300:]
+                )
                 continue
             r = evh(cmd, *args)
             out = r.stdout + r.stderr
             clean = "Traceback" not in out
             if expect.startswith("ok"):
                 want = expect.partition(":")[2]
-                check(f"{cmd}: runs" + (f", on {want}" if want else ""),
-                      r.returncode == 0 and clean and want in out, out.strip()[-300:])
+                check(
+                    f"{cmd}: runs" + (f", on {want}" if want else ""),
+                    r.returncode == 0 and clean and want in out,
+                    out.strip()[-300:],
+                )
             else:
-                check(f"{cmd}: refuses, saying {expect!r}", r.returncode != 0 and clean and expect in out,
-                      f"exit {r.returncode}: {out.strip()[-300:]}")
+                check(
+                    f"{cmd}: refuses, saying {expect!r}",
+                    r.returncode != 0 and clean and expect in out,
+                    f"exit {r.returncode}: {out.strip()[-300:]}",
+                )
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
     bad = [lb for lb, c in ok if not c]

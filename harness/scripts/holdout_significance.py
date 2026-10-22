@@ -78,9 +78,11 @@ def main() -> int:
         prior = dataset_item_ids(args.exclude_dataset)
         all_items = dataset_item_ids(args.dataset_id)
         keep = all_items - prior
-        print(f"  {args.dataset_id}: {len(all_items)} items, "
-              f"{len(prior & all_items)} shared with {args.exclude_dataset}, "
-              f"{len(keep)} held out")
+        print(
+            f"  {args.dataset_id}: {len(all_items)} items, "
+            f"{len(prior & all_items)} shared with {args.exclude_dataset}, "
+            f"{len(keep)} held out"
+        )
 
     matrix, runs = _matrix(args.dataset_id, args.metric, keep, args.match)
     if not matrix:

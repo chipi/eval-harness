@@ -48,9 +48,9 @@ from urllib.parse import parse_qs, unquote, urlparse
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
+import _fields  # noqa: E402
 import stats  # noqa: E402
 from _common import ROOT  # noqa: E402
-import _fields  # noqa: E402
 from catalog_adapter import Adapter, item_fields, load_adapter  # noqa: E402
 
 #: Every comparison ends in one of these, so a page can always say what it shows and why.
@@ -98,8 +98,13 @@ def _other_reference(series: dict, baseline: str, metric: str, rescore: bool) ->
     both record `overlap_f1`, but not of the same thing. Nothing is set aside when the scores
     were recomputed against one reference (re-scoring, or a metric named `x vs <ref>`), or when
     the metric needs no reference (length, cost, latency, tokens)."""
-    if rescore or _ref_of(metric) or A.is_neutral(metric) or metric in A.shape_metrics \
-            or any(k in metric for k in _REFERENCE_FREE):
+    if (
+        rescore
+        or _ref_of(metric)
+        or A.is_neutral(metric)
+        or metric in A.shape_metrics
+        or any(k in metric for k in _REFERENCE_FREE)
+    ):
         return []
     ref = {a: A.describe(a).get("reference", "") for a in series}
     want = ref.get(baseline, "")
@@ -188,7 +193,8 @@ def _averages(arms: list, series: dict, metric: str):
     """Arms with only a run-level average for this metric: shown beside the comparison, never
     tested. The same value as an arm already shown is the same result filed twice: reported,
     not drawn again."""
-    averages, repeats = {}, {}
+    averages: dict = {}
+    repeats: dict = {}
     tested = {a: A.recorded_means(a).get(metric) for a in series}
     for a in arms:
         if a in series or metric not in A.recorded_means(a):
@@ -207,40 +213,59 @@ def _warnings(ctx: dict) -> list:
     """Everything a reader needs to know about what the comparison could not do."""
     w, metric, series, item = [], ctx["metric"], ctx["series"], A.item_word
     if ctx["swapped"]:
-        w.append(f"{_label(ctx['asked'])} has no '{metric}' scores, so "
-                 f"{_label(ctx['baseline'])} is the baseline instead.")
+        w.append(
+            f"{_label(ctx['asked'])} has no '{metric}' scores, so "
+            f"{_label(ctx['baseline'])} is the baseline instead."
+        )
     hashes = {a: A.input_hashes(a) for a in series}
     base_h = hashes.get(ctx["baseline"], {})
     for a, h in hashes.items():
         diff = [e for e in h if e in base_h and h[e] != base_h[e]]
         if diff:
-            w.append(f"{_label(a)} recorded a different input hash than the baseline on "
-                     f"{len(diff)} {item}(s): the arms may not have read the same input.")
+            w.append(
+                f"{_label(a)} recorded a different input hash than the baseline on "
+                f"{len(diff)} {item}(s): the arms may not have read the same input."
+            )
     unknown = [_label(a) for a in ctx["arms"] if not ctx["ds"][a]]
     if unknown:
-        w.append(f"No dataset_id on record for: {', '.join(unknown)}. The same-dataset rule cannot "
-                 f"be checked for them; they are paired by {item} id only.")
+        w.append(
+            f"No dataset_id on record for: {', '.join(unknown)}. The same-dataset rule cannot "
+            f"be checked for them; they are paired by {item} id only."
+        )
     averages, repeats = ctx["averages"], ctx["repeats"]
-    missing = [_label(a) for a in ctx["arms"] if a not in series and a not in averages and a not in repeats
-               and a not in ctx.get("other_ref", ())]
+    missing = [
+        _label(a)
+        for a in ctx["arms"]
+        if a not in series and a not in averages and a not in repeats and a not in ctx.get("other_ref", ())
+    ]
     if missing:
         w.append(f"No '{metric}' on record for: {', '.join(missing)}.")
     if repeats:
-        w.append(f"{len(repeats)} arm(s) recorded exactly the same '{metric}' as an arm already "
-                 "shown, so they are not drawn again: "
-                 + "; ".join(f"{_label(a)} = {_label(t)}" for a, t in repeats.items()) + ".")
+        w.append(
+            f"{len(repeats)} arm(s) recorded exactly the same '{metric}' as an arm already "
+            "shown, so they are not drawn again: "
+            + "; ".join(f"{_label(a)} = {_label(t)}" for a, t in repeats.items())
+            + "."
+        )
     if ctx["aside"]:
-        w.append(f"Left out, on another dataset than {ctx['dataset']}: "
-                 + ", ".join(_label(a) for a in ctx["aside"]) + ".")
+        w.append(
+            f"Left out, on another dataset than {ctx['dataset']}: "
+            + ", ".join(_label(a) for a in ctx["aside"])
+            + "."
+        )
     if ctx.get("other_ref"):
         want = A.describe(ctx["baseline"]).get("reference", "")
-        w.append(f"Not tested against the baseline: '{metric}' was scored against another reference "
-                 f"than the baseline's ({want}) for "
-                 + ", ".join(f"{_label(a)} ({A.describe(a).get('reference', '')})" for a in ctx["other_ref"])
-                 + ". Pick a baseline scored against the same reference to compare them.")
+        w.append(
+            f"Not tested against the baseline: '{metric}' was scored against another reference "
+            f"than the baseline's ({want}) for "
+            + ", ".join(f"{_label(a)} ({A.describe(a).get('reference', '')})" for a in ctx["other_ref"])
+            + ". Pick a baseline scored against the same reference to compare them."
+        )
     if averages:
-        w.append(f"{len(averages)} arm(s) recorded only an average '{metric}', no per-{item} "
-                 "scores: shown as averages, not tested.")
+        w.append(
+            f"{len(averages)} arm(s) recorded only an average '{metric}', no per-{item} "
+            "scores: shown as averages, not tested."
+        )
     drift = []
     for a in series:
         f = A.output_format(a)
@@ -251,11 +276,16 @@ def _warnings(ctx: dict) -> list:
     w += [f"Re-scoring: {n}." for n in dict.fromkeys(n for a in ctx["arms"] for n in A.notes(a))]
     if ctx.get("wheres"):
         n = len(series.get(ctx["baseline"], {}))
-        w.append(f"Filtered to the {n} {item}(s) where " + " and ".join(x.replace(":", " = ", 1) for x in ctx["wheres"])
-                 + ": a subset is a smaller sample, so less can be separated.")
+        w.append(
+            f"Filtered to the {n} {item}(s) where "
+            + " and ".join(x.replace(":", " = ", 1) for x in ctx["wheres"])
+            + ": a subset is a smaller sample, so less can be separated."
+        )
     if ctx.get("breakdown"):
-        w.append(f"Broken down by {ctx['by']}: {ctx['breakdown']['family_size']} tests, Holm-corrected "
-                 "together, so a group is held to a stricter threshold than it would be alone.")
+        w.append(
+            f"Broken down by {ctx['by']}: {ctx['breakdown']['family_size']} tests, Holm-corrected "
+            "together, so a group is held to a stricter threshold than it would be alone."
+        )
         if ctx.get("ungrouped"):
             w.append(f"{ctx['ungrouped']} {item}(s) have no {ctx['by']} and are in no group.")
     return w
@@ -274,8 +304,17 @@ def _fields_of(dataset: str) -> tuple:
 
 
 def _field_list(decl: dict) -> list:
-    return [{"name": n, "label": f.get("label") or n, "type": f["type"], "values": f.get("values"),
-             "unit": f.get("unit", ""), "groupable": f["type"] in _fields.GROUPABLE} for n, f in decl.items()]
+    return [
+        {
+            "name": n,
+            "label": f.get("label") or n,
+            "type": f["type"],
+            "values": f.get("values"),
+            "unit": f.get("unit", ""),
+            "groupable": f["type"] in _fields.GROUPABLE,
+        }
+        for n, f in decl.items()
+    ]
 
 
 def _filter(series: dict, decl: dict, values: dict, wheres: list):
@@ -334,16 +373,17 @@ def compare(params: dict) -> dict:
     metric = params.get("metric", [""])[0]
     if metric not in counts:
         metric = _default_metric(counts, per_arm, arms, asked) if counts else ""
-    if not counts or metric in A.shape_metrics and not params.get("metric", [""])[0]:
+    if not counts or (metric in A.shape_metrics and not params.get("metric", [""])[0]):
         return {
             "state": "not scorable",
             "can_rescore": A.can_rescore,
             "arms": [A.describe(a) for a in arms],
             "metrics": _metric_rows(counts, per_arm, asked),
-            "warnings": notes + [
+            "warnings": [
+                *notes,
                 f"No score per {A.item_word} on record for these runs"
                 + (", only output length or latency: pick one of those to compare them." if counts else ".")
-                + (" Re-scoring may produce one." if A.can_rescore and not rescore else "")
+                + (" Re-scoring may produce one." if A.can_rescore and not rescore else ""),
             ],
         }
     series = {a: s[metric]["values"] for a, s in per_arm.items() if metric in s}
@@ -359,9 +399,14 @@ def compare(params: dict) -> dict:
     if error:
         return {"error": error}
     higher, neutral = not A.lower_is_better(metric), A.is_neutral(metric)
-    result = stats.compare(series, baseline, higher_is_better=higher, neutral=neutral,
-                           family=_number(params, "family", int) or None,
-                           threshold=_number(params, "threshold", float))
+    result = stats.compare(
+        series,
+        baseline,
+        higher_is_better=higher,
+        neutral=neutral,
+        family=_number(params, "family", int) or None,
+        threshold=_number(params, "threshold", float),
+    )
     by, breakdown, ungrouped = params.get("by", [""])[0], None, 0
     if by:
         if by not in decl or decl[by]["type"] not in _fields.GROUPABLE:
@@ -370,9 +415,24 @@ def compare(params: dict) -> dict:
         breakdown = stats.compare_by(series, baseline, groups, higher_is_better=higher, neutral=neutral)
     averages, repeats = _averages(arms, series, metric)
     swapped = bool(asked) and asked != baseline
-    ctx = dict(metric=metric, series=series, arms=arms, ds=ds, asked=asked, baseline=baseline,
-               swapped=swapped, averages=averages, repeats=repeats, aside=aside, dataset=dataset,
-               other_ref=other_ref, wheres=wheres, by=by, breakdown=breakdown, ungrouped=ungrouped)
+    ctx = {
+        "metric": metric,
+        "series": series,
+        "arms": arms,
+        "ds": ds,
+        "asked": asked,
+        "baseline": baseline,
+        "swapped": swapped,
+        "averages": averages,
+        "repeats": repeats,
+        "aside": aside,
+        "dataset": dataset,
+        "other_ref": other_ref,
+        "wheres": wheres,
+        "by": by,
+        "breakdown": breakdown,
+        "ungrouped": ungrouped,
+    }
     return {
         "metric": metric,
         "higher_is_better": higher,
@@ -383,8 +443,11 @@ def compare(params: dict) -> dict:
         "arms": [dict(A.describe(a), source=per_arm[a].get(metric, {}).get("source", "")) for a in arms],
         "series": series,
         # every arm's shape metrics, for the scatter's x axis, whatever metric is chosen
-        "shape": {k: {a: s[k]["values"] for a, s in per_arm.items() if k in s}
-                  for k in A.shape_metrics if any(k in s for s in per_arm.values())},
+        "shape": {
+            k: {a: s[k]["values"] for a, s in per_arm.items() if k in s}
+            for k in A.shape_metrics
+            if any(k in s for s in per_arm.values())
+        },
         "items": result["items"],
         "rows": result["rows"],
         "family_size": result["family_size"],
@@ -407,8 +470,11 @@ def item(params: dict) -> dict:
         return {"error": "need arms=<arm>,... known to the catalog and item=<item_id>"}
     out = {"item": it, "views": {a: A.item_view(a, it) for a in arms}}
     decl, values = _fields_of(A.describe(A.arms_of(arms[0])[0]).get("dataset", ""))
-    out["fields"] = [dict(f, value=values.get(it, {})[f["name"]]) for f in _field_list(decl)
-                     if f["name"] in values.get(it, {})]
+    out["fields"] = [
+        dict(f, value=values.get(it, {})[f["name"]])
+        for f in _field_list(decl)
+        if f["name"] in values.get(it, {})
+    ]
     ref = params.get("ref", [""])[0]
     if ref:
         out["reference"] = {"id": ref, "view": A.reference_view(ref, it)}
@@ -416,12 +482,12 @@ def item(params: dict) -> dict:
 
 
 #: Set by main(): the public mode's limits. max_arms applies locally too (a URL is not a query).
-LIMITS = {"max_arms": 40, "rate": 0, "hosts": ()}
-_CACHE: "OrderedDict[str, tuple]" = OrderedDict()
+LIMITS: dict = {"max_arms": 40, "rate": 0, "hosts": ()}
+_CACHE: OrderedDict[str, tuple] = OrderedDict()
 _CACHE_MAX = 1024
 _CACHE_LOCK = threading.Lock()
 _COMPUTE = threading.BoundedSemaphore(2)
-_HITS: "defaultdict[str, list]" = defaultdict(list)
+_HITS: defaultdict[str, list] = defaultdict(list)
 
 
 def answer(path: str, query: str) -> tuple:
@@ -437,7 +503,7 @@ def answer(path: str, query: str) -> tuple:
         try:
             body = compare(params) if path == "/api/compare" else item(params)
             code = 400 if "error" in body else 200
-        except Exception as exc:  # report, don't kill the server
+        except Exception as exc:  # noqa: BLE001 — report, don't kill the server
             body = {"error": "internal error" if LIMITS["hosts"] else f"{type(exc).__name__}: {exc}"}
             code = 500
     if code != 500:
@@ -485,9 +551,11 @@ def served(build_dir: Path, data_dir: Path) -> tuple:
         except ValueError:
             # The server's document root is the project: it serves the catalog and the data
             # tree from inside it, and nothing outside, so a directory elsewhere has no URL.
-            raise SystemExit(f"{p} is not inside the project ({ROOT}): the inspector serves the catalog "
-                             "and the data tree from inside the project only. Build the catalog there "
-                             "(the default, .build/catalog), or run from the project that holds it.")
+            raise SystemExit(
+                f"{p} is not inside the project ({ROOT}): the inspector serves the catalog "
+                "and the data tree from inside the project only. Build the catalog there "
+                "(the default, .build/catalog), or run from the project that holds it."
+            ) from None
     return tuple(out)
 
 
@@ -509,7 +577,7 @@ def allowed(path: str, host: str, port: int, prefixes: tuple) -> int:
     prefix = next((x for x in prefixes if p.startswith(x)), None)
     if prefix is None:
         return 404
-    if any(seg.startswith(".") for seg in p[len(prefix):].split("/")):
+    if any(seg.startswith(".") for seg in p[len(prefix) :].split("/")):
         return 404
     return 0
 
@@ -523,17 +591,18 @@ class Handler(SimpleHTTPRequestHandler):
             self.send_header("Location", self.prefixes[0])
             self.end_headers()
             return True
-        code = allowed(self.path, self.headers.get("Host", ""), self.server.server_address[1], self.prefixes)
+        port = int(self.server.server_address[1])  # type: ignore[index]  # an AF_INET (host, port)
+        code = allowed(self.path, self.headers.get("Host", ""), port, self.prefixes)
         if code:
             self.send_error(code)
             return True
         return False
 
-    def do_HEAD(self):  # noqa: N802
+    def do_HEAD(self):
         if not self._refuse():
             super().do_HEAD()
 
-    def do_GET(self):  # noqa: N802 (http.server's naming)
+    def do_GET(self):
         if self._refuse():
             return
         url = urlparse(self.path)
@@ -542,7 +611,9 @@ class Handler(SimpleHTTPRequestHandler):
         if url.path in ("/api/compare", "/api/item"):
             client = self.headers.get("CF-Connecting-IP") if LIMITS["hosts"] else None
             if over_rate(client or self.client_address[0]):
-                return self._json(429, {"error": f"more than {LIMITS['rate']} requests a minute; wait a moment"})
+                return self._json(
+                    429, {"error": f"more than {LIMITS['rate']} requests a minute; wait a moment"}
+                )
             code, body = answer(url.path, url.query)
             return self._json(code, body)
         super().do_GET()
@@ -564,17 +635,29 @@ class Handler(SimpleHTTPRequestHandler):
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--port", type=int, default=8765)
-    ap.add_argument("--adapter", help="path/to/file.py:Class (default: config.yaml catalog.adapter, "
-                                      "else the harness's own layout)")
+    ap.add_argument(
+        "--adapter",
+        help="path/to/file.py:Class (default: config.yaml catalog.adapter, else the harness's own layout)",
+    )
     ap.add_argument("--build-dir", type=Path, default=ROOT / ".build" / "catalog")
-    ap.add_argument("--public", metavar="HOST[,HOST]",
-                    help="serve the API only, to these Host names, behind a reverse proxy")
-    ap.add_argument("--bind", default="127.0.0.1",
-                    help="address to listen on (0.0.0.0 inside a container whose port is published on loopback)")
+    ap.add_argument(
+        "--public",
+        metavar="HOST[,HOST]",
+        help="serve the API only, to these Host names, behind a reverse proxy",
+    )
+    ap.add_argument(
+        "--bind",
+        default="127.0.0.1",
+        help="address to listen on (0.0.0.0 inside a container whose port is published on loopback)",
+    )
     ap.add_argument("--rate", type=int, default=30, help="public mode: API requests per client per minute")
     ap.add_argument("--max-arms", type=int, default=40, help="most arms in one comparison")
-    ap.add_argument("--warm", type=Path, metavar="CATALOG_DIR",
-                    help="answer every comparison this built catalog links to, in the background")
+    ap.add_argument(
+        "--warm",
+        type=Path,
+        metavar="CATALOG_DIR",
+        help="answer every comparison this built catalog links to, in the background",
+    )
     args = ap.parse_args()
     set_adapter(load_adapter(args.adapter))
     LIMITS["max_arms"] = args.max_arms
@@ -589,17 +672,24 @@ def main() -> int:
             raise SystemExit(f"no catalog at {args.build_dir}: run `evh catalog` first")
         Handler.prefixes = served(args.build_dir, A.data_dir)
     if args.warm:
-        threading.Thread(target=lambda: print(f"warm: {warm(args.warm)} comparison(s) cached", flush=True),
-                         daemon=True).start()
+        threading.Thread(
+            target=lambda: print(f"warm: {warm(args.warm)} comparison(s) cached", flush=True), daemon=True
+        ).start()
     try:
         server = ThreadingHTTPServer((args.bind, args.port), partial(Handler, directory=str(ROOT)))
     except OSError as exc:
-        why = (f"port {args.port} is in use. Stop what holds it, or pass --port N."
-               if exc.errno == errno.EADDRINUSE else f"{exc.strerror}. Pass --port N, or check --bind.")
-        raise SystemExit(f"cannot listen on {args.bind}:{args.port}: {why}")
+        why = (
+            f"port {args.port} is in use. Stop what holds it, or pass --port N."
+            if exc.errno == errno.EADDRINUSE
+            else f"{exc.strerror}. Pass --port N, or check --bind."
+        )
+        raise SystemExit(f"cannot listen on {args.bind}:{args.port}: {why}") from exc
     if args.public:
-        print(f"inspector API on {args.bind}:{args.port} for {', '.join(LIMITS['hosts'])} "
-              f"({LIMITS['rate']}/min per client, {LIMITS['max_arms']} arms max)", flush=True)
+        print(
+            f"inspector API on {args.bind}:{args.port} for {', '.join(LIMITS['hosts'])} "
+            f"({LIMITS['rate']}/min per client, {LIMITS['max_arms']} arms max)",
+            flush=True,
+        )
     else:
         print(f"catalog: http://127.0.0.1:{args.port}{Handler.prefixes[0]}   (Ctrl-C to stop)", flush=True)
     try:

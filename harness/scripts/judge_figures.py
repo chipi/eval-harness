@@ -17,7 +17,7 @@ import json
 import math
 import sys
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
@@ -36,17 +36,22 @@ def _range(xs):
     return [round(min(xs), 4), round(max(xs), 4)]
 
 
-def goyal(scorer: str = SCORER) -> Dict[str, Any]:
+def goyal(scorer: str = SCORER) -> dict[str, Any]:
     vroot = DATA / "judge-validation" / scorer / "goyal2022-cnn"
     jids = [j["id"] for j in js.load_scorer(DATA / "scorers" / f"{scorer}.yaml")["judges"]]
     human = vg.load_local()
     if human is None:
         rep = json.loads((vroot / "report.json").read_text())
         _check_report(rep, scorer, vroot, jids)
-        return {"source": "report.json (data/external/goyal2022 absent: checked against the records only)",
-                "judges": rep["judges"], "human_baseline": rep["human_baseline"]}
-    out: Dict[str, Any] = {"source": "recomputed from the stored per-article records and the "
-                                     "human annotations", "judges": {}}
+        return {
+            "source": "report.json (data/external/goyal2022 absent: checked against the records only)",
+            "judges": rep["judges"],
+            "human_baseline": rep["human_baseline"],
+        }
+    out: dict[str, Any] = {
+        "source": "recomputed from the stored per-article records and the human annotations",
+        "judges": {},
+    }
     for jid in jids:
         st = vg.judge_stats(human, vg.read_records(vroot / jid, human))
         st["human_gpt3_over_brio"] = sum(vg.human_prefs(v["annotators"])[1] for v in human.values())
@@ -56,7 +61,7 @@ def goyal(scorer: str = SCORER) -> Dict[str, Any]:
     return out
 
 
-def zhang(scorer: str = SCORER) -> Dict[str, Any]:
+def zhang(scorer: str = SCORER) -> dict[str, Any]:
     """The Zhang et al. (2024) validation of a scorer's judges. Recomputed from the stored
     records when data/external/zhang2023 is present; otherwise the committed report.json,
     whose call counts and bill are checked against the committed records. Computed once per
@@ -66,26 +71,29 @@ def zhang(scorer: str = SCORER) -> Dict[str, Any]:
     return copy.deepcopy(_ZHANG[scorer])
 
 
-_ZHANG: Dict[str, Dict[str, Any]] = {}
+_ZHANG: dict[str, dict[str, Any]] = {}
 
 
-def _zhang(scorer: str) -> Dict[str, Any]:
+def _zhang(scorer: str) -> dict[str, Any]:
     vroot = DATA / "judge-validation" / scorer / "zhang2023-cnndm"
     if vz.FILE.is_file():
         sc = js.load_scorer(DATA / "scorers" / f"{scorer}.yaml")
         data = vz.load()
         systems = sorted(next(iter(data.values()))["systems"])
-        rep = vz.build_report(sc, js.prompt_text(sc), int(sc["protocol"]["outputs_per_call"]),
-                              data, systems, vroot)
+        rep = vz.build_report(
+            sc, js.prompt_text(sc), int(sc["protocol"]["outputs_per_call"]), data, systems, vroot
+        )
         rep["recomputed"] = "from the stored records and the ratings"
         return rep
     rep = json.loads((vroot / "report.json").read_text())
-    _check_report(rep, scorer, vroot, [j["id"] for j in js.load_scorer(DATA / "scorers" / f"{scorer}.yaml")["judges"]])
+    _check_report(
+        rep, scorer, vroot, [j["id"] for j in js.load_scorer(DATA / "scorers" / f"{scorer}.yaml")["judges"]]
+    )
     rep["recomputed"] = "report.json (data/external/zhang2023 absent: checked against the records only)"
     return rep
 
 
-def _check_report(rep: Dict[str, Any], scorer: str, vroot: Path, jids: list) -> None:
+def _check_report(rep: dict[str, Any], scorer: str, vroot: Path, jids: list) -> None:
     """Where the human data is absent (CI), a validation report is used as committed. It must
     still be the report of these records and this scorer: the scorer's sha256, and per judge
     the records' own hash, count, bill and unparsed and withheld counts. A record edited, or
@@ -97,27 +105,35 @@ def _check_report(rep: Dict[str, Any], scorer: str, vroot: Path, jids: list) -> 
     if sorted(rep["judges"]) != sorted(jids):
         bad.append(f"its judges {sorted(rep['judges'])} are not the scorer's {sorted(jids)}")
     for jid, r in rep["judges"].items():
-        files = [f for f in (vroot / jid).glob("*.json")]
+        files = list((vroot / jid).glob("*.json"))
         recs = [json.loads(f.read_text()) for f in files]
-        got = {"records_sha256": js.records_sha256(vroot / jid),
-               "billed_usd": round(sum(float(x.get("cost_usd") or 0) for x in recs), 4),
-               "unparsed": sum(1 for x in recs if x.get("scores", x.get("dims")) is None)}
+        got = {
+            "records_sha256": js.records_sha256(vroot / jid),
+            "billed_usd": round(sum(float(x.get("cost_usd") or 0) for x in recs), 4),
+            "unparsed": sum(1 for x in recs if x.get("scores", x.get("dims")) is None),
+        }
         if "calls" in r:
             got["calls"] = len(recs)
         if "withheld_replies" in r:
             got["withheld_replies"] = sum(1 for x in recs if x.get("output_withheld"))
-        bad += [f"{jid}: {k} {r.get(k)!r} in the report, {v!r} from the records"
-                for k, v in got.items() if r.get(k) != v]
+        bad += [
+            f"{jid}: {k} {r.get(k)!r} in the report, {v!r} from the records"
+            for k, v in got.items()
+            if r.get(k) != v
+        ]
     if bad:
-        raise SystemExit(f"{vroot}/report.json is not the report of the committed records: "
-                         + "; ".join(bad) + ". Rebuild it with --no-calls (harness/docs/RELEASING.md).")
+        raise SystemExit(
+            f"{vroot}/report.json is not the report of the committed records: "
+            + "; ".join(bad)
+            + ". Rebuild it with --no-calls (harness/docs/RELEASING.md)."
+        )
 
 
-def pointwise() -> Dict[str, int]:
+def pointwise() -> dict[str, int]:
     man = sorted((DATA / "judging-sets").glob("cnn_dailymail_200-2arms-*.json"))
     assert len(man) == 1, man
     m = json.loads(man[0].read_text())
-    per: Dict[str, Dict[str, list]] = {}
+    per: dict[str, dict[str, list]] = {}
     for f in (DATA / "judge-verdicts" / "judge-summ-pointwise-v1" / m["judging_set_id"]).glob("*/*.json"):
         v = json.loads(f.read_text())
         if v.get("pass") != "primary" or v.get("scores") is None:
@@ -133,11 +149,12 @@ def pointwise() -> Dict[str, int]:
     return {"deepseek_m_above_bart_l": hi, "deepseek_m_below_bart_l": lo, "articles": len(per)}
 
 
-def compute(scorer: str = SCORER) -> Dict[str, Any]:
+def compute(scorer: str = SCORER) -> dict[str, Any]:
     sets = sorted((DATA / "judging-sets").glob(SET_GLOB))
     if len(sets) != 1:
-        raise SystemExit(f"expected exactly one {SET_GLOB} in data/judging-sets, found "
-                         f"{[p.name for p in sets]}")
+        raise SystemExit(
+            f"expected exactly one {SET_GLOB} in data/judging-sets, found {[p.name for p in sets]}"
+        )
     m = json.loads(sets[0].read_text())
     if len(m["arms"]) != 29:
         raise SystemExit(f"{sets[0].name} has {len(m['arms'])} arms, not 29")
@@ -156,38 +173,61 @@ def compute(scorer: str = SCORER) -> Dict[str, Any]:
             hosted.append(a["config_id"])
     pa = summ["per_arm"]
     hscores = [pa[c]["judge_score"] for c in hosted]
-    hc = json.loads((REPO / "examples" / "summarization-cnn-dailymail" / "human_check_judge.json").read_text())
+    hc = json.loads(
+        (REPO / "examples" / "summarization-cnn-dailymail" / "human_check_judge.json").read_text()
+    )
     h_bart = sum(x["preferred"] == "bart_l" for x in hc["pairs"])
     h_ds = sum(x["preferred"] == "deepseek_m" for x in hc["pairs"])
-    j_ds = sum(proj[x["item_id"]]["cnn_deepseek_m_n200_v1"]["_mean"]
-               > proj[x["item_id"]]["cnn_bart_l_n200_v1"]["_mean"] for x in hc["pairs"] if x["item_id"] in proj)
-    j_bart = sum(proj[x["item_id"]]["cnn_deepseek_m_n200_v1"]["_mean"]
-                 < proj[x["item_id"]]["cnn_bart_l_n200_v1"]["_mean"] for x in hc["pairs"] if x["item_id"] in proj)
+    j_ds = sum(
+        proj[x["item_id"]]["cnn_deepseek_m_n200_v1"]["_mean"]
+        > proj[x["item_id"]]["cnn_bart_l_n200_v1"]["_mean"]
+        for x in hc["pairs"]
+        if x["item_id"] in proj
+    )
+    j_bart = sum(
+        proj[x["item_id"]]["cnn_deepseek_m_n200_v1"]["_mean"]
+        < proj[x["item_id"]]["cnn_bart_l_n200_v1"]["_mean"]
+        for x in hc["pairs"]
+        if x["item_id"] in proj
+    )
     n_pairs_judged = sum(1 for x in hc["pairs"] if x["item_id"] in proj)
     agr = next(iter(summ["judge_agreement"].values()))
     pos = [summ["controls"][j]["position"]["mean_abs_diff"] for j in summ["controls"]]
     noi = [summ["controls"][j]["noise"]["mean_abs_diff"] for j in summ["controls"]]
     return {
-        "judging_set_id": m["judging_set_id"], "arms": len(m["arms"]), "hosted_arms": len(hosted),
-        "calls": len(files), "billed_usd": round(sum(f.get("cost_usd") or 0.0 for f in files), 4),
-        "items_total": len(item_ids), "items_scored": len(proj),
+        "judging_set_id": m["judging_set_id"],
+        "arms": len(m["arms"]),
+        "hosted_arms": len(hosted),
+        "calls": len(files),
+        "billed_usd": round(sum(f.get("cost_usd") or 0.0 for f in files), 4),
+        "items_total": len(item_ids),
+        "items_scored": len(proj),
         "bart_l_judge_score": round(pa["cnn_bart_l_n200_v1"]["judge_score"], 4),
         "hosted_judge_score_range": _range(hscores),
-        "hosted_all_above_every_bart": min(hscores) > max(
-            pa[c]["judge_score"] for c in pa if "bart" in c),
+        "hosted_all_above_every_bart": min(hscores) > max(pa[c]["judge_score"] for c in pa if "bart" in c),
         "hosted_leader": max(hosted, key=lambda c: pa[c]["judge_score"]),
         "agreement_arm_mean_spearman": round(agr["arm_mean_spearman"], 4),
         "agreement_mean_item_tau": round(agr["mean_item_tau"], 4),
-        "position_mean_abs_diff_range": _range(pos), "noise_mean_abs_diff_range": _range(noi),
+        "position_mean_abs_diff_range": _range(pos),
+        "noise_mean_abs_diff_range": _range(noi),
         "position_mean_tau": [summ["controls"][j]["position"]["mean_tau"] for j in summ["controls"]],
         "noise_mean_tau": [summ["controls"][j]["noise"]["mean_tau"] for j in summ["controls"]],
-        "human_check": {"pairs": len(hc["pairs"]), "human_prefers_bart_l": h_bart,
-                        "human_prefers_deepseek_m": h_ds,
-                        "pairs_with_judge_scores": n_pairs_judged, "judge_prefers_deepseek_m": j_ds,
-                        "judge_prefers_bart_l": j_bart},
-        "pointwise": pointwise(), "goyal": goyal(scorer),
+        "human_check": {
+            "pairs": len(hc["pairs"]),
+            "human_prefers_bart_l": h_bart,
+            "human_prefers_deepseek_m": h_ds,
+            "pairs_with_judge_scores": n_pairs_judged,
+            "judge_prefers_deepseek_m": j_ds,
+            "judge_prefers_bart_l": j_bart,
+        },
+        "pointwise": pointwise(),
+        "goyal": goyal(scorer),
     }
 
 
 if __name__ == "__main__":
-    print(json.dumps(compute(), indent=1, default=lambda o: None if isinstance(o, float) and math.isnan(o) else str(o)))
+    print(
+        json.dumps(
+            compute(), indent=1, default=lambda o: None if isinstance(o, float) and math.isnan(o) else str(o)
+        )
+    )

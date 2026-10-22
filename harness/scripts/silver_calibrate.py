@@ -33,21 +33,20 @@ from __future__ import annotations
 
 import argparse
 import glob
-import json
 import os
 import re
 import statistics
 import sys
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _common import MATERIALIZED, REFERENCES, RUNS, ROOT, die, read_json, warn_on_ambiguous_runs  # noqa: E402
-from experiment_run import load_recorded_adapter, _score_wants_source  # noqa: E402
+from _common import MATERIALIZED, REFERENCES, ROOT, RUNS, die, read_json, warn_on_ambiguous_runs
+from experiment_run import _score_wants_source, load_recorded_adapter
 
 
-def _ranks(vals: List[float]) -> List[float]:
+def _ranks(vals: list[float]) -> list[float]:
     """Ranks with ties sharing the average. A value->index dict silently gave tied values
     one arbitrary rank each, which is wrong whenever two arms score the same."""
     order = sorted(range(len(vals)), key=lambda i: vals[i])
@@ -64,7 +63,7 @@ def _ranks(vals: List[float]) -> List[float]:
     return out
 
 
-def _spearman(a: List[float], b: List[float]) -> float:
+def _spearman(a: list[float], b: list[float]) -> float:
     x = _ranks(a)
     y = _ranks(b)
     mx, my = statistics.fmean(x), statistics.fmean(y)
@@ -73,9 +72,9 @@ def _spearman(a: List[float], b: List[float]) -> float:
     return num / den if den else 0.0
 
 
-def _collect(dataset_id: str, match: Optional[str]) -> Dict[str, Dict[str, Any]]:
+def _collect(dataset_id: str, match: str | None) -> dict[str, dict[str, Any]]:
     """arm -> {"texts": {item: [text, ...]}, "params": {...}, "adapter": str}"""
-    acc: Dict[str, Dict[str, Any]] = {}
+    acc: dict[str, dict[str, Any]] = {}
     # SORTED. The reference set is whichever repeat comes first, and glob order is the
     # filesystem's, not the run's: one author's rho moved 0.238 -> 0.391 purely by which
     # repeat the directory happened to list first. A result that changes when you copy the
@@ -90,11 +89,11 @@ def _collect(dataset_id: str, match: Optional[str]) -> Dict[str, Dict[str, Any]]
         # Strip ANY numeric version suffix, not a hardcoded three: `_v10` was kept while
         # `_v1` was stripped, so the same arm appeared twice under different names.
         arm = re.sub(r"_v\d+$", "", cid)
-        entry = acc.setdefault(arm, {"texts": defaultdict(list), "params": m.get("params") or {},
-                                     "adapter": m.get("adapter")})
+        entry = acc.setdefault(
+            arm, {"texts": defaultdict(list), "params": m.get("params") or {}, "adapter": m.get("adapter")}
+        )
         for f in sorted(glob.glob(os.path.join(os.path.dirname(mp), "outputs", "*.txt"))):
-            entry["texts"][os.path.basename(f)[:-4]].append(
-                Path(f).read_text(encoding="utf-8").strip())
+            entry["texts"][os.path.basename(f)[:-4]].append(Path(f).read_text(encoding="utf-8").strip())
     return acc
 
 
@@ -103,11 +102,12 @@ def main() -> int:
     ap.add_argument("--dataset-id", required=True)
     ap.add_argument("--ref-match", help="config_id substring for runs used AS references")
     ap.add_argument("--arm-match", help="config_id substring for runs used AS arms")
-    ap.add_argument("--reference-id", help="trusted reference dir under data/references "
-                                           "(default: the one the runs recorded)")
+    ap.add_argument(
+        "--reference-id",
+        help="trusted reference dir under data/references (default: the one the runs recorded)",
+    )
     ap.add_argument("--metric", default=None, help="default: the adapter's PRIMARY_METRIC")
-    ap.add_argument("--group-by", default="family",
-                    help="params key for the sibling-bias report; '' to skip")
+    ap.add_argument("--group-by", default="family", help="params key for the sibling-bias report; '' to skip")
     args = ap.parse_args()
     # Two runs sharing a config_id are averaged together below without
     # saying so. See _common.warn_on_ambiguous_runs.
@@ -124,10 +124,12 @@ def main() -> int:
     # while formatting a table with no rows. The gate said 3 because it was counting the
     # field instead of the comparison. Found by external review.
     if len(arms) < 4:
-        die(f"need at least 4 arms present on both sides; found {len(arms)}.\n"
+        die(
+            f"need at least 4 arms present on both sides; found {len(arms)}.\n"
             f"  Each arm authors a silver reference and is scored on how it ranks the "
             f"OTHER {len(arms) - 1 if arms else 0}, so the comparison needs 3 subjects "
-            f"plus the author.")
+            f"plus the author."
+        )
 
     spec = arms_side[arms[0]]["adapter"]
     if not spec:
@@ -142,7 +144,8 @@ def main() -> int:
     wants_source = _score_wants_source(score)
     metric = args.metric
     if not metric:
-        from experiment_run import _adapter_primary_metric
+        from experiment_run import _adapter_primary_metric  # noqa: PLC0415
+
         metric = _adapter_primary_metric(adapter_path) or "overlap_f1"
 
     ref_id = args.reference_id
@@ -161,21 +164,30 @@ def main() -> int:
                 if ref_id:
                     break
     if not ref_id:
-        die("no trusted reference found — this measures a proxy AGAINST ground truth, "
-            "so there is nothing to calibrate without one")
+        die(
+            "no trusted reference found — this measures a proxy AGAINST ground truth, "
+            "so there is nothing to calibrate without one"
+        )
     if ref_id.startswith("silver/"):
-        print(f"  WARNING: the trusted reference is SILVER ({ref_id}). This compares one "
-              "proxy with another;\n           author gold for this dataset, or pass "
-              "--reference-id, for a calibration.")
-    trusted = {os.path.basename(f)[:-4]: Path(f).read_text(encoding="utf-8").strip()
-               for f in glob.glob(str(REFERENCES / ref_id / "*.txt"))}
+        print(
+            f"  WARNING: the trusted reference is SILVER ({ref_id}). This compares one "
+            "proxy with another;\n           author gold for this dataset, or pass "
+            "--reference-id, for a calibration."
+        )
+    trusted = {
+        os.path.basename(f)[:-4]: Path(f).read_text(encoding="utf-8").strip()
+        for f in glob.glob(str(REFERENCES / ref_id / "*.txt"))
+    }
     mat = MATERIALIZED / args.dataset_id
-    sources = {os.path.basename(f)[:-4]: Path(f).read_text(encoding="utf-8", errors="replace")
-               for f in glob.glob(str(mat / "*.txt"))}
+    sources = {
+        os.path.basename(f)[:-4]: Path(f).read_text(encoding="utf-8", errors="replace")
+        for f in glob.glob(str(mat / "*.txt"))
+    }
     items = sorted(trusted)
 
-    def rank_against(refs: Dict[str, str], side: Dict[str, Dict[str, Any]],
-                     subject: List[str]) -> Dict[str, float]:
+    def rank_against(
+        refs: dict[str, str], side: dict[str, dict[str, Any]], subject: list[str]
+    ) -> dict[str, float]:
         out = {}
         for a in subject:
             vals = []
@@ -183,8 +195,7 @@ def main() -> int:
                 if i not in refs:
                     continue
                 for text in side[a]["texts"].get(i, []):
-                    s = (score(text, refs[i], sources.get(i)) if wants_source
-                         else score(text, refs[i]))
+                    s = score(text, refs[i], sources.get(i)) if wants_source else score(text, refs[i])
                     if metric in s:
                         vals.append(s[metric])
             if vals:
@@ -198,8 +209,10 @@ def main() -> int:
     gold_ref = rank_against(trusted, refs_side, arms)
     common = sorted(set(gold_arm) & set(gold_ref))
     ceiling = _spearman([gold_ref[a] for a in common], [gold_arm[a] for a in common])
-    print(f"\n  CEILING — the same arms scored against the same trusted reference, from two\n"
-          f"  different sets of runs, agree at rho = {ceiling:+.3f}. No proxy can beat this.")
+    print(
+        f"\n  CEILING — the same arms scored against the same trusted reference, from two\n"
+        f"  different sets of runs, agree at rho = {ceiling:+.3f}. No proxy can beat this."
+    )
 
     key = args.group_by or None
     group = {a: (arms_side[a]["params"].get(key) if key else None) for a in arms}
@@ -224,9 +237,11 @@ def main() -> int:
         # Belt and braces: the gate above makes this unreachable for arm COUNT, but a
         # field where the two sides barely overlap can still leave every subject group
         # under three. Say which, rather than dying in the table formatter.
-        die(f"no author had 3+ subject arms in common between the two reference sides; "
+        die(
+            f"no author had 3+ subject arms in common between the two reference sides; "
             f"{len(arms)} arm(s) were present on both, and the overlap is what decides "
-            f"this, not the total.")
+            f"this, not the total."
+        )
     w = max(len(r[2]) for r in rows) + 2
     print(f"\n  {'silver author':{w}}{'rho vs trusted':>16}{'sibling lift':>14}")
     print("  " + "-" * (w + 30))
@@ -236,19 +251,25 @@ def main() -> int:
 
     rr = [r[0] for r in rows]
     ll = [r[1] for r in rows if r[1] is not None]
-    print(f"\n  rho: min {min(rr):+.3f}  mean {statistics.fmean(rr):+.3f}  max {max(rr):+.3f}"
-          f"   (ceiling {ceiling:+.3f})")
+    print(
+        f"\n  rho: min {min(rr):+.3f}  mean {statistics.fmean(rr):+.3f}  max {max(rr):+.3f}"
+        f"   (ceiling {ceiling:+.3f})"
+    )
     if ll:
         pos = sum(1 for x in ll if x > 0)
-        print(f"  sibling lift: mean {statistics.fmean(ll):+.1f} rank positions, positive for"
-              f" {pos} of {len(ll)} authors")
+        print(
+            f"  sibling lift: mean {statistics.fmean(ll):+.1f} rank positions, positive for"
+            f" {pos} of {len(ll)} authors"
+        )
         if pos > len(ll) * 0.7:
-            print(f"\n  A silver author systematically PROMOTES models grouped with it by"
-                  f" {args.group_by!r}.\n"
-                  "  Excluding the author's own row does not remove this: the bias is not an\n"
-                  "  author scoring itself, it is an author rewarding its own kind's style.\n"
-                  "  A silver-ranked leaderboard is therefore not merely noisier than a gold\n"
-                  "  one -- it is biased in a direction you can predict from who wrote it.")
+            print(
+                f"\n  A silver author systematically PROMOTES models grouped with it by"
+                f" {args.group_by!r}.\n"
+                "  Excluding the author's own row does not remove this: the bias is not an\n"
+                "  author scoring itself, it is an author rewarding its own kind's style.\n"
+                "  A silver-ranked leaderboard is therefore not merely noisier than a gold\n"
+                "  one -- it is biased in a direction you can predict from who wrote it."
+            )
     return 0
 
 

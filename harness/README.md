@@ -294,6 +294,7 @@ partial results preserved so a blown budget still yields a usable report.
 | `scripts/catalog_adapter.py` | what the catalog asks of a project's data, and `HarnessAdapter`, the answer for this layout |
 | `scripts/test_*.py`, `scripts/self_test.py`, `scripts/check_guide.py` | the tests (`make test`) and the GUIDE run in a fresh project (`make guide-check`); the ones that run `evh` install the real wheel (`scripts/_wheel.py`) |
 | `scripts/test_inspector_browser.py`, `requirements-browser.txt` | the catalog and the inspector in headless Chromium: `make browser-install`, then `make browser-check` |
+| `requirements-dev.txt` | the code-quality tools; from the repository root, `make quality-install`, then `make quality` |
 | `runner.py`, `judges.py` | the judge panel |
 
 Bundled providers: `echo` (no network), `anthropic`, and anything

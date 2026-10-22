@@ -13,7 +13,7 @@ import hashlib
 import json
 import os
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Protocol
+from typing import Protocol
 
 
 @dataclass
@@ -22,9 +22,9 @@ class ItemScore:
 
     run_id: str
     item_id: str
-    per_dimension: Dict[str, int] = field(default_factory=dict)  # dim → 1-5
+    per_dimension: dict[str, int] = field(default_factory=dict)  # dim → 1-5
     total_cost_usd: float = 0.0
-    errors: List[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
 
 
 class Judge(Protocol):
@@ -38,7 +38,7 @@ class Judge(Protocol):
         run_id: str,
         item_id: str,
         item_content: str,
-        dimensions: List[str],
+        dimensions: list[str],
     ) -> ItemScore: ...
 
 
@@ -61,13 +61,13 @@ class FakeJudge:
         run_id: str,
         item_id: str,
         item_content: str,
-        dimensions: List[str],
+        dimensions: list[str],
     ) -> ItemScore:
-        per_dim: Dict[str, int] = {}
+        per_dim: dict[str, int] = {}
         for dim in dimensions:
             # Deterministic 1-5 from a hash of (run_id, item_id, dim).
             # Bias slightly toward 3-4 to look like real ratings.
-            key = f"{run_id}|{item_id}|{dim}".encode("utf-8")
+            key = f"{run_id}|{item_id}|{dim}".encode()
             digest = hashlib.sha256(key).digest()
             per_dim[dim] = 2 + (digest[0] % 4)  # → 2, 3, 4, or 5
         return ItemScore(
@@ -95,15 +95,15 @@ class LLMJudge:
     SYSTEM = (
         "You are an evaluation judge. Score the candidate output on each "
         "requested dimension using a 1-5 scale (1 = poor, 5 = excellent). "
-        "Return STRICT JSON only: {\"scores\": {\"<dim>\": <int>, ...}, "
-        "\"rationale\": \"<one sentence>\"}. No prose outside the JSON."
+        'Return STRICT JSON only: {"scores": {"<dim>": <int>, ...}, '
+        '"rationale": "<one sentence>"}. No prose outside the JSON.'
     )
 
     def __init__(self, model: str = "claude-sonnet-4-6"):
         self.name = model
         self.model = model
         # Lazy-import so the demo (FakeJudge only) doesn't require the SDK.
-        from anthropic import Anthropic
+        from anthropic import Anthropic  # noqa: PLC0415
 
         self._client = Anthropic()
 
@@ -113,7 +113,7 @@ class LLMJudge:
         run_id: str,
         item_id: str,
         item_content: str,
-        dimensions: List[str],
+        dimensions: list[str],
     ) -> ItemScore:
         prompt = self._build_prompt(item_content, dimensions)
         try:
@@ -130,7 +130,7 @@ class LLMJudge:
                 ],
                 messages=[{"role": "user", "content": prompt}],
             )
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 — any provider error is this item's error, recorded
             return ItemScore(
                 run_id=run_id,
                 item_id=item_id,
@@ -148,15 +148,12 @@ class LLMJudge:
         )
 
     @staticmethod
-    def _build_prompt(item_content: str, dimensions: List[str]) -> str:
+    def _build_prompt(item_content: str, dimensions: list[str]) -> str:
         dims_csv = ", ".join(dimensions)
-        return (
-            f"Dimensions to score: {dims_csv}\n\n"
-            f"Candidate output:\n---\n{item_content}\n---"
-        )
+        return f"Dimensions to score: {dims_csv}\n\nCandidate output:\n---\n{item_content}\n---"
 
     @staticmethod
-    def _parse_response(response, dimensions: List[str]):
+    def _parse_response(response, dimensions: list[str]):
         try:
             text = response.content[0].text
             payload = json.loads(text)
@@ -173,19 +170,13 @@ class LLMJudge:
         """Rough $ estimate from usage; replace with your project's pricing table."""
         u = response.usage
         # Default Sonnet pricing as of writing — update for current model.
-        input_tok = (u.input_tokens or 0) + (
-            getattr(u, "cache_creation_input_tokens", 0) or 0
-        )
+        input_tok = (u.input_tokens or 0) + (getattr(u, "cache_creation_input_tokens", 0) or 0)
         cached_tok = getattr(u, "cache_read_input_tokens", 0) or 0
         output_tok = u.output_tokens or 0
-        return (
-            input_tok * 3e-6
-            + cached_tok * 0.3e-6
-            + output_tok * 15e-6
-        )
+        return input_tok * 3e-6 + cached_tok * 0.3e-6 + output_tok * 15e-6
 
 
-def build_judge(name: Optional[str], *, use_fake: bool = False) -> Optional[Judge]:
+def build_judge(name: str | None, *, use_fake: bool = False) -> Judge | None:
     """Factory used by runner.py.
 
     `None` returns `None` (skip the cross-judge pass).

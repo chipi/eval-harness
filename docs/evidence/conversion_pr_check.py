@@ -20,6 +20,7 @@ The BERT arms are checked on every item. The BART arms are checked on the first
 `--bart-items` items in dataset order, because beam search on a CPU costs 3-6 s per item.
 The result is written to docs/evidence/conversion_pr_check.json.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -48,7 +49,7 @@ ARMS = [
 def _adapter(path: Path):
     spec = importlib.util.spec_from_file_location(f"adapter_{path.parent.name}", path)
     mod = importlib.util.module_from_spec(spec)
-    sys.modules[spec.name] = mod      # a @dataclass in the adapter looks itself up here
+    sys.modules[spec.name] = mod  # a @dataclass in the adapter looks itself up here
     spec.loader.exec_module(mod)
     return mod
 
@@ -63,8 +64,11 @@ def _recorded_run(config_id: str) -> Path:
 def _main_refused(model: str, kind: str) -> str:
     import transformers  # noqa: PLC0415
 
-    cls = (transformers.AutoModelForSeq2SeqLM if kind == "bart"
-           else transformers.AutoModelForSequenceClassification)
+    cls = (
+        transformers.AutoModelForSeq2SeqLM
+        if kind == "bart"
+        else transformers.AutoModelForSequenceClassification
+    )
     try:
         cls.from_pretrained(model, revision="main", use_safetensors=False)
     except Exception as e:  # noqa: BLE001 - the refusal is the point
@@ -75,8 +79,7 @@ def _main_refused(model: str, kind: str) -> str:
 def _compare(adapter, params, items, mat, run) -> dict:
     same, diffs = 0, []
     for it in items:
-        text = (mat / (it.get("source_path") or it["item_id"])).read_text(
-            encoding="utf-8", errors="replace")
+        text = (mat / (it.get("source_path") or it["item_id"])).read_text(encoding="utf-8", errors="replace")
         got = adapter.call_system(text, params).output
         want = (run / "outputs" / f"{it['item_id']}.txt").read_text(encoding="utf-8")
         if got == want:
@@ -94,8 +97,12 @@ def main() -> int:
     import torch  # noqa: PLC0415
     import transformers  # noqa: PLC0415
 
-    out = {"torch": torch.__version__, "transformers": transformers.__version__,
-           "bart_items": args.bart_items, "arms": {}}
+    out = {
+        "torch": torch.__version__,
+        "transformers": transformers.__version__,
+        "bart_items": args.bart_items,
+        "arms": {},
+    }
     print(f"torch {torch.__version__}  transformers {transformers.__version__}")
     for rel, rev, kind in ARMS:
         cfg_path = EX / rel
@@ -103,20 +110,27 @@ def main() -> int:
         params = dict(cfg["params"])
         adapter = _adapter((cfg_path.parent / cfg["adapter"]).resolve())
         run = _recorded_run(cfg["config_id"])
-        items = json.loads((HARNESS / "data" / "datasets" /
-                            f"{cfg['dataset_id']}.json").read_text())["items"]
+        items = json.loads((HARNESS / "data" / "datasets" / f"{cfg['dataset_id']}.json").read_text())["items"]
         if kind == "bart":
             items = items[: args.bart_items]
         mat = HARNESS / "data" / "materialized" / cfg["dataset_id"]
 
         refused = _main_refused(params["model"], kind)
         params["revision"] = rev
-        rec = {"model": params["model"], "revision": rev, "main": refused,
-               "items_checked": len(items), "recorded_run": run.name}
+        rec = {
+            "model": params["model"],
+            "revision": rev,
+            "main": refused,
+            "items_checked": len(items),
+            "recorded_run": run.name,
+        }
         try:
             adapter.warmup(params)
-            rec["loaded_dtype"] = str(next(adapter._PIPE.model.parameters()).dtype) \
-                if getattr(adapter, "_PIPE", None) is not None else None
+            rec["loaded_dtype"] = (
+                str(next(adapter._PIPE.model.parameters()).dtype)
+                if getattr(adapter, "_PIPE", None) is not None
+                else None
+            )
             rec.update(_compare(adapter, params, items, mat, run))
         except RuntimeError as e:
             # distilbart-cnn-6-6 is stored at fp16 and the pipeline keeps it there. torch
@@ -129,9 +143,11 @@ def main() -> int:
             rec["fp32_cast"] = _compare(adapter, params, items, mat, run)
         out["arms"][cfg["config_id"]] = rec
         res = rec.get("fp32_cast", rec)
-        print(f"{cfg['config_id']:28s} main: {refused[:40]!s:42s} {rev:11s} "
-              f"{rec['loaded_dtype']}  {res['byte_identical']}/{len(items)} byte-identical"
-              + ("  (only after an fp32 cast)" if "fp32_cast" in rec else ""))
+        print(
+            f"{cfg['config_id']:28s} main: {refused[:40]!s:42s} {rev:11s} "
+            f"{rec['loaded_dtype']}  {res['byte_identical']}/{len(items)} byte-identical"
+            + ("  (only after an fp32 cast)" if "fp32_cast" in rec else "")
+        )
     dest = Path(__file__).with_suffix(".json")
     dest.write_text(json.dumps(out, indent=2) + "\n")
     print(f"wrote {dest.relative_to(ROOT)}")

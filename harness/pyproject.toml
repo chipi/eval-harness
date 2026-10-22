@@ -50,3 +50,32 @@ package-dir = {"evaluation_harness" = "scripts", "evaluation_harness.schemas" = 
 
 [tool.setuptools.dynamic]
 version = {attr = "evaluation_harness._version.__version__"}
+
+[tool.mypy]
+# 3.10, not the package's 3.9 floor: mypy 2.x no longer type-checks for 3.9. The 3.9 floor is
+# held by CI's package job, which installs the wheel on 3.9 and runs `evh self-test`.
+python_version = "3.10"
+# The scripts import each other as top-level modules (`from _common import …`), the way they
+# run from a checkout; scripts/ has an __init__.py only for the installed package.
+mypy_path = "scripts"
+explicit_package_bases = true
+files = ["scripts", "judges.py", "runner.py"]
+exclude = ['^scripts/__main__\.py$', '^scripts/__init__\.py$']
+ignore_missing_imports = true
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+
+[tool.interrogate]
+# podcast_scraper's exemptions. Its bar is 100%; this repo's starts where it stands (53.5% on
+# 2026-10-22) and may only go up.
+ignore-init-module = true
+ignore-init-method = true
+ignore-magic = true
+ignore-semiprivate = true
+ignore-private = true
+ignore-property-decorators = true
+ignore-module = true
+ignore-nested-functions = true
+exclude = ["scripts/test_*.py", "scripts/self_test.py"]
+fail-under = 53

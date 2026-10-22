@@ -26,45 +26,42 @@ half stays generic.
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
 import os
-import importlib.util
 import statistics
 import sys
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _fingerprint import build_fingerprint  # noqa: E402
-from _retry import call_with_retries  # noqa: E402
-from _common import how  # noqa: E402
-from _common import CODE, resolve_adapter_path  # noqa: E402
-from _common import (  # noqa: E402
+from _common import (
+    CODE,
     GOALS,
     MATERIALIZED,
     REFERENCES,
     ROOT,
     RUNS,
-    CostCapExceeded,
     build_info,
     die,
-    load_goals,
     env_float,
+    how,
     load_dataset,
+    load_goals,
     now,
     read_json,
+    resolve_adapter_path,
     write_json,
     write_text_atomic,
 )
+from _fingerprint import build_fingerprint
+from _retry import call_with_retries
 
 try:
     import yaml
 except ImportError:  # pragma: no cover
     die("pyyaml is required — pip install -r requirements.txt")
-
-
-
 
 
 class _Resumed:
@@ -77,10 +74,18 @@ class _Resumed:
     amount that depends on how far the previous attempt happened to get.
     """
 
-    __slots__ = ("output", "cost_usd", "latency_ms", "tokens_in", "tokens_out",
-                 "extra", "extra_known", "meta")
+    __slots__ = (
+        "cost_usd",
+        "extra",
+        "extra_known",
+        "latency_ms",
+        "meta",
+        "output",
+        "tokens_in",
+        "tokens_out",
+    )
 
-    def __init__(self, output: str, prior: Optional[Dict[str, Any]] = None) -> None:
+    def __init__(self, output: str, prior: dict[str, Any] | None = None) -> None:
         """`prior` is the item's row from the run being resumed, when one was found.
 
         WHAT CHANGED AND WHY. Every field here used to be None, on the reasoning in the
@@ -122,15 +127,20 @@ class _Resumed:
         # existed carries nothing, and the run says how many such rows it replayed.
         carried = prior.get("_extra")
         self.extra_known = isinstance(carried, dict)
-        self.extra: Dict[str, float] = {
-            k: float(v) for k, v in (carried or {}).items()
-            if isinstance(v, (int, float)) and not isinstance(v, bool)
-        } if self.extra_known else {}
-        self.meta: Dict[str, Any] = dict(prior.get("_meta") or {})
+        self.extra: dict[str, float] = (
+            {
+                k: float(v)
+                for k, v in (carried or {}).items()
+                if isinstance(v, (int, float)) and not isinstance(v, bool)
+            }
+            if self.extra_known
+            else {}
+        )
+        self.meta: dict[str, Any] = dict(prior.get("_meta") or {})
         self.meta["resumed_from_disk"] = True
 
 
-def _adapter_metric_kinds(adapter_id: str, adapter_path: Optional[Path]) -> Dict[str, str]:
+def _adapter_metric_kinds(adapter_id: str, adapter_path: Path | None) -> dict[str, str]:
     """`METRIC_KINDS` from the loaded adapter module, or {}."""
     module = sys.modules.get(f"eval_adapter_{adapter_path.stem}") if adapter_path else None
     if module is None:
@@ -148,7 +158,7 @@ def _adapter_metric_kinds(adapter_id: str, adapter_path: Optional[Path]) -> Dict
     return out
 
 
-def _adapter_transient(adapter_path: Optional[Path]) -> tuple:
+def _adapter_transient(adapter_path: Path | None) -> tuple:
     """Extra "worth retrying" markers this adapter declares, as `TRANSIENT_MARKERS`.
 
     The core knows the shapes every HTTP provider shares (429, 503, "rate limit"). It
@@ -163,7 +173,7 @@ def _adapter_transient(adapter_path: Optional[Path]) -> tuple:
     return tuple(str(m) for m in markers) if isinstance(markers, (list, tuple)) else ()
 
 
-def _adapter_primary_metric(adapter_path: Optional[Path]) -> Optional[str]:
+def _adapter_primary_metric(adapter_path: Path | None) -> str | None:
     """`PRIMARY_METRIC` from the adapter, or None.
 
     WHICH quality facet heads the table is a judgement the adapter author makes, not
@@ -183,7 +193,7 @@ def _adapter_primary_metric(adapter_path: Optional[Path]) -> Optional[str]:
 
 
 #: The id a run records when its config names no `adapter:` (the bundled one).
-def load_recorded_adapter(spec: str) -> Optional[tuple]:
+def load_recorded_adapter(spec: str) -> tuple | None:
     """The adapter a finished run recorded, for scoring it again (rescore, silver-calibrate),
     or None if it cannot be found.
 
@@ -213,10 +223,7 @@ def _score_wants_source(score: Any) -> bool:
         params = inspect.signature(score).parameters
     except (TypeError, ValueError):
         return False
-    positional = [
-        p for p in params.values()
-        if p.kind in (p.POSITIONAL_ONLY, p.POSITIONAL_OR_KEYWORD)
-    ]
+    positional = [p for p in params.values() if p.kind in (p.POSITIONAL_ONLY, p.POSITIONAL_OR_KEYWORD)]
     return len(positional) >= 3 or any(p.kind is p.VAR_POSITIONAL for p in params.values())
 
 
@@ -243,8 +250,8 @@ def _portable_id(path: Path) -> str:
 
 
 def load_adapter(
-    spec: Optional[str], config_path: Optional[Path] = None
-) -> tuple[Any, Any, str, Optional[Path], Any, Any]:
+    spec: str | None, config_path: Path | None = None
+) -> tuple[Any, Any, str, Path | None, Any, Any]:
     """``(call_system, score, adapter_id)`` for the adapter a config names.
 
     Defaults to ``scripts/adapter.py`` — the single seam, unchanged for anyone who has one
@@ -262,8 +269,8 @@ def load_adapter(
     comparable than two runs on different datasets. run-compare refuses across it.
     """
     if not spec:
-        from adapter import call_system, score  # noqa: PLC0415
         import adapter as _default  # noqa: PLC0415
+        from adapter import call_system, score  # noqa: PLC0415
 
         return (
             call_system,
@@ -290,10 +297,7 @@ def load_adapter(
             path = candidate
             break
     else:
-        die(
-            f"adapter not found: {spec}\n"
-            + "".join(f"  looked in: {c}\n" for c in candidates)
-        )
+        die(f"adapter not found: {spec}\n" + "".join(f"  looked in: {c}\n" for c in candidates))
     module_spec = importlib.util.spec_from_file_location(f"eval_adapter_{path.stem}", path)
     if module_spec is None or module_spec.loader is None:
         die(f"adapter is not importable: {path}")
@@ -316,6 +320,7 @@ def load_adapter(
         getattr(module, "fingerprint", None),
     )
 
+
 def _reference_for(dataset_id: str) -> tuple[Path | None, str | None]:
     """Prefer gold over silver, and report which was used.
 
@@ -330,35 +335,38 @@ def _reference_for(dataset_id: str) -> tuple[Path | None, str | None]:
 
 
 def one_pass(
-    ds: Dict[str, Any],
-    cfg: Dict[str, Any],
+    ds: dict[str, Any],
+    cfg: dict[str, Any],
     idx: int,
-    resume_dir: Optional[Path] = None,
-    prior_rows: Optional[Dict[str, Dict[str, Any]]] = None,
-    live_dir: Optional[Path] = None,
+    resume_dir: Path | None = None,
+    prior_rows: dict[str, dict[str, Any]] | None = None,
+    live_dir: Path | None = None,
     *,
     call_system: Any,
     score: Any,
     extra_transient: tuple = (),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """One pass over the dataset. ``call_system``/``score`` are INJECTED rather than
     imported at module scope, because which adapter runs is a property of the arm now."""
     mat = MATERIALIZED / ds["dataset_id"]
     if not mat.is_dir():
         die(
             f"{ds['dataset_id']} is not materialized.\n"
-            f"  " + how(f"evh dataset-materialize --dataset-id {ds['dataset_id']}",
-                     f"make dataset-materialize DATASET_ID={ds['dataset_id']}")
+            f"  "
+            + how(
+                f"evh dataset-materialize --dataset-id {ds['dataset_id']}",
+                f"make dataset-materialize DATASET_ID={ds['dataset_id']}",
+            )
         )
     params = dict(cfg.get("params") or {})
     params.setdefault("seed", idx)
     ref_dir, ref_tier = _reference_for(ds["dataset_id"])
 
-    predictions: List[Dict[str, Any]] = []
-    outputs: Dict[str, str] = {}
+    predictions: list[dict[str, Any]] = []
+    outputs: dict[str, str] = {}
     spent = 0.0
     cap = env_float("EVAL_MAX_COST_USD")
-    capped_at: Optional[str] = None
+    capped_at: str | None = None
     n_replayed = 0
     n_unknown_extra = 0
     carried_keys: set = set()
@@ -398,16 +406,18 @@ def one_pass(
         source_text = src.read_text(encoding="utf-8", errors="replace")
 
         if resumed:
-            res = _Resumed(done.read_text(encoding="utf-8"),
-                           (prior_rows or {}).get(item["item_id"]))
+            assert done is not None  # resumed means it is on disk
+            res = _Resumed(done.read_text(encoding="utf-8"), (prior_rows or {}).get(item["item_id"]))
         else:
             # EVERY adapter gets retries, whether or not its author wrote any. This used
             # to be the adapter's business, and one adapter simply had none -- so a
             # single upstream 429 discarded an arm mid-sweep along with the items
             # already paid for.
             res = call_with_retries(
-                call_system, (source_text, params),
-                extra_transient=extra_transient, label=f"item {item['item_id'][:8]}",
+                call_system,
+                (source_text, params),
+                extra_transient=extra_transient,
+                label=f"item {item['item_id'][:8]}",
             )
             if res.cost_usd:
                 spent += res.cost_usd
@@ -432,7 +442,7 @@ def one_pass(
             if _score_wants_source(score)
             else score(res.output, reference)
         )
-        row: Dict[str, Any] = {"item_id": item["item_id"], **scored}
+        row: dict[str, Any] = {"item_id": item["item_id"], **scored}
         # On EVERY row, not just the resumed ones: the aggregate averages only the rows
         # that carry a key, so a flag set on resumed items alone would report 1.0
         # whether one item was replayed or all of them. As 0/1 on every row its mean is
@@ -481,12 +491,8 @@ def one_pass(
                 fh.flush()
                 os.fsync(fh.fileno())
 
-    keys = sorted(
-        {k for p in predictions for k in p if k != "item_id" and not k.startswith("_")}
-    )
-    scores = {
-        k: round(statistics.fmean([float(p[k]) for p in predictions if k in p]), 6) for k in keys
-    }
+    keys = sorted({k for p in predictions for k in p if k != "item_id" and not k.startswith("_")})
+    scores = {k: round(statistics.fmean([float(p[k]) for p in predictions if k in p]), 6) for k in keys}
     # Totals, not means, for the things you are billed for.
     for k in ("cost_usd", "tokens_in", "tokens_out"):
         vals = [float(p[k]) for p in predictions if k in p]
@@ -497,7 +503,7 @@ def one_pass(
     # and its mean mixes two -- which is exactly the confound the fingerprint exists to
     # rule out, happening below the level the fingerprint can see. Counted here so the
     # run says so instead of the numbers quietly absorbing it.
-    providers: Dict[str, int] = {}
+    providers: dict[str, int] = {}
     for pred in predictions:
         name = (pred.get("_meta") or {}).get("provider")
         if name:
@@ -512,9 +518,12 @@ def one_pass(
             "replayed_without_recorded_extra": n_unknown_extra,
         }
         if n_unknown_extra:
-            print(f"  WARNING: {n_unknown_extra} replayed item(s) predate per-row `_extra`; "
-                  "their adapter extras could not be carried, so extra metrics average "
-                  "only the items computed in this pass.", file=sys.stderr)
+            print(
+                f"  WARNING: {n_unknown_extra} replayed item(s) predate per-row `_extra`; "
+                "their adapter extras could not be carried, so extra metrics average "
+                "only the items computed in this pass.",
+                file=sys.stderr,
+            )
     return {
         "predictions": predictions,
         "scores": scores,
@@ -527,7 +536,7 @@ def one_pass(
     }
 
 
-def _dry_run(ds: Dict[str, Any], cfg: Dict[str, Any], repeat: int) -> int:
+def _dry_run(ds: dict[str, Any], cfg: dict[str, Any], repeat: int) -> int:
     """Shape and cost the sweep without calling anything.
 
     A pre-flight estimate is not a substitute for the mid-run cap — token
@@ -549,9 +558,12 @@ def _dry_run(ds: Dict[str, Any], cfg: Dict[str, Any], repeat: int) -> int:
     est_out = int(params.get("max_tokens", 600)) * len(items)
     calls = len(items) * repeat
 
-    print(f"DRY RUN — nothing was called\n")
-    print(f"  config      {cfg['config_id']}  ({params.get('provider', 'echo')}"
-          + (f" / {params['model']}" if params.get("model") else "") + ")")
+    print("DRY RUN — nothing was called\n")
+    print(
+        f"  config      {cfg['config_id']}  ({params.get('provider', 'echo')}"
+        + (f" / {params['model']}" if params.get("model") else "")
+        + ")"
+    )
     print(f"  dataset     {ds['dataset_id']}  ({len(items)} items)")
     print(f"  repeats     {repeat}")
     print(f"  API calls   {calls}")
@@ -566,7 +578,7 @@ def _dry_run(ds: Dict[str, Any], cfg: Dict[str, Any], repeat: int) -> int:
         est = (est_in / 1e6 * float(pin) + est_out / 1e6 * float(pout)) * repeat
         print(f"\n  ESTIMATE    ~${est:.4f}  (upper bound: assumes max_tokens every time)")
     cap = env_float("EVAL_MAX_COST_USD")
-    print(f"  cap         " + (f"${cap:.2f} (EVAL_MAX_COST_USD)" if cap else "NONE — set EVAL_MAX_COST_USD"))
+    print("  cap         " + (f"${cap:.2f} (EVAL_MAX_COST_USD)" if cap else "NONE — set EVAL_MAX_COST_USD"))
     return 0
 
 
@@ -581,10 +593,11 @@ def main() -> int:
         help="cost and shape the sweep WITHOUT calling anything",
     )
     ap.add_argument(
-        "--resume-unverified", action="store_true",
+        "--resume-unverified",
+        action="store_true",
         help="resume from a directory whose arm cannot be identified. Only for runs "
-             "made before run.json existed; it will record another arm's answers "
-             "under this config if you are wrong.",
+        "made before run.json existed; it will record another arm's answers "
+        "under this config if you are wrong.",
     )
     ap.add_argument(
         "--resume",
@@ -607,8 +620,10 @@ def main() -> int:
     # A config names the goal it answers (data/goals/<goal_id>.yaml). Refused before a cent is
     # spent when the goal does not exist: a run filed under a typo answers nothing.
     if cfg.get("goal") and GOALS.is_dir() and cfg["goal"] not in load_goals():
-        die(f"{args.config}: goal {cfg['goal']!r} is not in {GOALS} "
-            f"(known: {', '.join(sorted(load_goals())) or 'none'})")
+        die(
+            f"{args.config}: goal {cfg['goal']!r} is not in {GOALS} "
+            f"(known: {', '.join(sorted(load_goals())) or 'none'})"
+        )
     ds = load_dataset(cfg["dataset_id"])
     stamp = now().replace(":", "").replace("-", "")
     base_id = args.run_id or f"{cfg['config_id']}_{stamp}"
@@ -618,8 +633,13 @@ def main() -> int:
         print(f"  scoring against {ref_tier.upper()} references for {cfg['dataset_id']}")
     else:
         print(f"  no references for {cfg['dataset_id']} — quality cannot be scored.")
-        print("  " + how(f"evh reference-create --dataset-id {cfg['dataset_id']} --config <a model you trust>",
-                         f"make reference-create DATASET_ID={cfg['dataset_id']} CONFIG=<a model you trust>"))
+        print(
+            "  "
+            + how(
+                f"evh reference-create --dataset-id {cfg['dataset_id']} --config <a model you trust>",
+                f"make reference-create DATASET_ID={cfg['dataset_id']} CONFIG=<a model you trust>",
+            )
+        )
     if build["ref"] == "unknown":
         print("  WARNING: could not identify the build — this run is not attributable")
 
@@ -638,7 +658,7 @@ def main() -> int:
     #
     # Once per ARM, not per repeat: REPEAT exists to measure the arm's own jitter, and
     # letting load variance into that measures the wrong thing.
-    warmup_ms: Optional[float] = None
+    warmup_ms: float | None = None
     if warmup is not None:
         started = time.perf_counter()
         try:
@@ -646,7 +666,9 @@ def main() -> int:
             # aborted the arm before a single item was attempted -- a safety check that
             # invents a new way to lose a run is not a safety check.
             call_with_retries(
-                warmup, (dict(cfg.get("params") or {}),), label="warm-up",
+                warmup,
+                (dict(cfg.get("params") or {}),),
+                label="warm-up",
                 extra_transient=_adapter_transient(adapter_path),
             )
         except Exception as exc:  # noqa: BLE001 - fail before spending, with the reason
@@ -675,10 +697,12 @@ def main() -> int:
     # until the runs were audited afterwards. Say it at the top of the run, where the
     # person paying for it will see it.
     if (fingerprint.get("instrument", {}).get("harness", {}) or {}).get("dirty"):
-        print("  WARNING: harness tree is DIRTY — the recorded commit does not identify\n"
-              "           the code that is about to run. Commit first for a reproducible\n"
-              "           record, or accept that this run cannot be reproduced from its\n"
-              "           own fingerprint.")
+        print(
+            "  WARNING: harness tree is DIRTY — the recorded commit does not identify\n"
+            "           the code that is about to run. Commit first for a reproducible\n"
+            "           record, or accept that this run cannot be reproduced from its\n"
+            "           own fingerprint."
+        )
 
     # `--resume` WITH `--repeat N` REPLAYS THE SAME OUTPUTS N TIMES. Each repeat reads
     # the same resume directory, so every pass after the first is a copy of the same
@@ -687,14 +711,16 @@ def main() -> int:
     # things: --repeat asks for N independent measurements, --resume says do not
     # measure what you already have. Found by external review.
     if args.resume and args.repeat > 1:
-        die("--resume and --repeat are mutually exclusive.\n"
+        die(
+            "--resume and --repeat are mutually exclusive.\n"
             "  --repeat N asks for N INDEPENDENT passes; --resume says replay what is\n"
             "  already on disk. Together, every repeat after the first replays the same\n"
             "  outputs and re-counts their cost.\n"
-            "  Resume the interrupted pass with --repeat 1, then run the rest.")
+            "  Resume the interrupted pass with --repeat 1, then run the rest."
+        )
 
     resume_dir = (RUNS / args.resume / "outputs") if args.resume else None
-    if args.resume and not resume_dir.is_dir():
+    if resume_dir is not None and not resume_dir.is_dir():
         die(f"cannot resume: no outputs under {resume_dir}")
 
     # RESUMING FROM ANOTHER ARM'S OUTPUTS WAS ACCEPTED WITHOUT A WORD.
@@ -708,7 +734,7 @@ def main() -> int:
     #
     # The dataset must match too: replaying answers produced against different items is
     # the same failure wearing different clothes.
-    prior_rows: Dict[str, Dict[str, Any]] = {}
+    prior_rows: dict[str, dict[str, Any]] = {}
     if args.resume:
         # WHAT ARM DID THESE OUTPUTS COME FROM? A crashed run has no metrics.json --
         # it is written after the pass returns -- so the previous version of this check
@@ -720,35 +746,47 @@ def main() -> int:
         # `run.json` is now written BEFORE the first item, so identity survives a kill.
         src_id = RUNS / args.resume / "run.json"
         src_metrics = RUNS / args.resume / "metrics.json"
-        ident = (read_json(src_id) if src_id.is_file()
-                 else read_json(src_metrics) if src_metrics.is_file() else None)
+        ident = (
+            read_json(src_id)
+            if src_id.is_file()
+            else read_json(src_metrics)
+            if src_metrics.is_file()
+            else None
+        )
         if ident is None:
             if not args.resume_unverified:
-                die(f"cannot resume: {args.resume} has neither run.json nor "
+                die(
+                    f"cannot resume: {args.resume} has neither run.json nor "
                     f"metrics.json, so the arm that produced those outputs cannot be "
                     f"identified.\n"
                     f"  Resuming anyway would replay whatever is in that directory and "
                     f"record it under {cfg.get('config_id')!r}.\n"
                     f"  Runs started before 2026-09-30 predate run.json. If you are "
-                    f"certain, pass --resume-unverified.")
-            print(f"  WARNING: --resume-unverified: {args.resume} cannot be identified "
-                  f"and its outputs are being replayed as {cfg.get('config_id')!r}.")
+                    f"certain, pass --resume-unverified."
+                )
+            print(
+                f"  WARNING: --resume-unverified: {args.resume} cannot be identified "
+                f"and its outputs are being replayed as {cfg.get('config_id')!r}."
+            )
         else:
             if ident.get("config_id") and ident["config_id"] != cfg.get("config_id"):
-                die(f"cannot resume: {args.resume} is arm {ident['config_id']!r}, "
+                die(
+                    f"cannot resume: {args.resume} is arm {ident['config_id']!r}, "
                     f"this config is {cfg.get('config_id')!r}.\n"
                     f"  Resuming would replay another arm's answers and record them "
-                    f"under this one.")
+                    f"under this one."
+                )
             if ident.get("dataset_id") and ident["dataset_id"] != cfg.get("dataset_id"):
-                die(f"cannot resume: {args.resume} ran on dataset "
+                die(
+                    f"cannot resume: {args.resume} ran on dataset "
                     f"{ident['dataset_id']!r}, this config is on "
-                    f"{cfg.get('dataset_id')!r}.")
+                    f"{cfg.get('dataset_id')!r}."
+                )
 
         # THE PRIOR ROWS, so a replayed item keeps the cost, tokens, latency and _meta
         # measured for it. `outputs/_rows.jsonl` is appended DURING the pass and so
         # survives a crash; predictions.jsonl is the tidy-exit copy of the same thing.
-        for src in (RUNS / args.resume / "outputs" / "_rows.jsonl",
-                    RUNS / args.resume / "predictions.jsonl"):
+        for src in (RUNS / args.resume / "outputs" / "_rows.jsonl", RUNS / args.resume / "predictions.jsonl"):
             if not src.is_file():
                 continue
             for line in src.read_text(encoding="utf-8").splitlines():
@@ -757,17 +795,19 @@ def main() -> int:
                 try:
                     r = json.loads(line)
                 except ValueError:
-                    continue          # a torn final line from a kill mid-append
+                    continue  # a torn final line from a kill mid-append
                 if r.get("item_id"):
                     prior_rows.setdefault(r["item_id"], r)
         if not prior_rows:
-            print(f"  WARNING: {args.resume} carries no per-item rows — replayed items "
-                  f"will report no cost, tokens or _meta.")
+            print(
+                f"  WARNING: {args.resume} carries no per-item rows — replayed items "
+                f"will report no cost, tokens or _meta."
+            )
 
-    made: List[Path] = []
+    made: list[Path] = []
 
     capped = False
-    per_repeat: List[Dict[str, float]] = []
+    per_repeat: list[dict[str, float]] = []
     for i in range(args.repeat):
         run_id = base_id if args.repeat == 1 else f"{base_id}_r{i + 1}"
         run_dir = RUNS / run_id
@@ -779,18 +819,26 @@ def main() -> int:
         # which made `--resume`'s arm guard unenforceable in the one case resume is
         # for. This is small, written first, and never rewritten.
         (run_dir / "outputs").mkdir(parents=True, exist_ok=True)
-        write_json(run_dir / "run.json", {
-            "config_id": cfg.get("config_id"),
-            "dataset_id": cfg.get("dataset_id"),
-            "started_at": now(),
-            "run_id": run_id,
-            "note": "written before the first item so a crashed run can still be "
-                    "identified; metrics.json is written only on a clean exit",
-        })
+        write_json(
+            run_dir / "run.json",
+            {
+                "config_id": cfg.get("config_id"),
+                "dataset_id": cfg.get("dataset_id"),
+                "started_at": now(),
+                "run_id": run_id,
+                "note": "written before the first item so a crashed run can still be "
+                "identified; metrics.json is written only on a clean exit",
+            },
+        )
         result = one_pass(
-            ds, cfg, i, resume_dir=resume_dir, prior_rows=prior_rows,
+            ds,
+            cfg,
+            i,
+            resume_dir=resume_dir,
+            prior_rows=prior_rows,
             live_dir=run_dir / "outputs",
-            call_system=call_system, score=score,
+            call_system=call_system,
+            score=score,
             extra_transient=_adapter_transient(adapter_path),
         )
         run_dir.mkdir(parents=True, exist_ok=True)
@@ -862,13 +910,16 @@ def main() -> int:
                 f"\n  COST CAP HIT at item {result['capped_at']} — "
                 f"spent ${result['spent_usd']:.4f} of EVAL_MAX_COST_USD.\n"
                 f"  Partial results kept. Raise the cap and resume without paying twice:\n"
-                f"    " + how(f"evh experiment-run --config {args.config} --resume {run_id}",
-                       f"make experiment-run CONFIG={args.config} ARGS=\"--resume {run_id}\"")
+                f"    "
+                + how(
+                    f"evh experiment-run --config {args.config} --resume {run_id}",
+                    f'make experiment-run CONFIG={args.config} ARGS="--resume {run_id}"',
+                )
             )
             break
 
     if args.repeat > 1:
-        print("\n  Arm spread over %d repeats (max - min on identical input):" % args.repeat)
+        print(f"\n  Arm spread over {args.repeat} repeats (max - min on identical input):")
         w = max(len(k) for k in per_repeat[0])
         for k in sorted(per_repeat[0]):
             vals = [r[k] for r in per_repeat]

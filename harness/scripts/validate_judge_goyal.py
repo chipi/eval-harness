@@ -41,8 +41,9 @@ import sys
 import time
 import urllib.request
 import zipfile
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Any
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
@@ -66,7 +67,7 @@ def _file_sha(b: bytes) -> str:
     return hashlib.sha256(b).hexdigest()
 
 
-def load_local() -> Optional[dict]:
+def load_local() -> dict | None:
     """The human annotations if already on disk (both pins checked), else None. Never downloads."""
     f = EXT / "human_annotations" / "cnn_human.json"
     if ZIP_PATH.is_file() and _file_sha(ZIP_PATH.read_bytes()) != ZIP_SHA256:
@@ -83,15 +84,19 @@ def load() -> dict:
     data = load_local()
     if data is None:
         if not ZIP_PATH.is_file():
-            with urllib.request.urlopen(URL, timeout=60) as r:
+            with urllib.request.urlopen(URL, timeout=60) as r:  # a constant https URL  # nosec B310
                 blob = r.read()
             if _file_sha(blob) != ZIP_SHA256:
-                die(f"the download from {URL} has sha256 {_file_sha(blob)}, not the pinned "
-                    f"{ZIP_SHA256}; refusing to extract it")
+                die(
+                    f"the download from {URL} has sha256 {_file_sha(blob)}, not the pinned "
+                    f"{ZIP_SHA256}; refusing to extract it"
+                )
             EXT.mkdir(parents=True, exist_ok=True)
             ZIP_PATH.write_bytes(blob)
         zipfile.ZipFile(io.BytesIO(ZIP_PATH.read_bytes())).extractall(EXT)
         data = load_local()
+        if data is None:
+            die(f"{ZIP_PATH} extracted, but it holds no human_annotations/cnn_human.json")
     return data
 
 
@@ -111,7 +116,7 @@ def best_counts(annotators: Sequence[dict]) -> collections.Counter:
     return c
 
 
-def majority_best(annotators: Sequence[dict]) -> Optional[str]:
+def majority_best(annotators: Sequence[dict]) -> str | None:
     """The one system at least 2 of the annotators name best, else None."""
     c = best_counts(annotators)
     if not c:
@@ -131,11 +136,11 @@ def human_prefs(annotators: Sequence[dict]) -> tuple:
     return majority_best(annotators), g, b
 
 
-def ranks(a: dict) -> Dict[str, int]:
+def ranks(a: dict) -> dict[str, int]:
     return {s: (2 if s in a["best_summary"] else 0 if s in a["worst_summary"] else 1) for s in SYSTEMS}
 
 
-def human_pair_pref(annotators: Sequence[dict]) -> Optional[str]:
+def human_pair_pref(annotators: Sequence[dict]) -> str | None:
     """Majority of the annotators' implied gpt3-vs-brio orderings; None on a tie."""
     net = 0
     for a in annotators:
@@ -144,7 +149,7 @@ def human_pair_pref(annotators: Sequence[dict]) -> Optional[str]:
     return "gpt3" if net > 0 else "brio" if net < 0 else None
 
 
-def top_set(counts: collections.Counter) -> List[str]:
+def top_set(counts: collections.Counter) -> list[str]:
     if not counts:
         return []
     top = max(counts.values())
@@ -160,7 +165,7 @@ def credit(picks: Sequence[str], ref: Sequence[str]) -> float:
     return len(set(picks) & set(ref)) / (len(picks) * len(ref))
 
 
-def wilson(k: float, n: int, z: float = 1.959964) -> Optional[List[float]]:
+def wilson(k: float, n: int, z: float = 1.959964) -> list[float] | None:
     """Wilson 95% interval for k successes in n. k may be fractional (partial credit): the
     interval then treats the mean credit as a proportion of n, an approximation."""
     if n <= 0:
@@ -176,7 +181,7 @@ def rate(k: float, n: int) -> dict:
     return {"k": round(k, 4), "n": n, "rate": round(k / n, 4) if n else None, "ci95": wilson(k, n)}
 
 
-def loo_refs(annotators: Sequence[dict]) -> List[Tuple[dict, List[str]]]:
+def loo_refs(annotators: Sequence[dict]) -> list[tuple[dict, list[str]]]:
     """(held-out annotator, the other annotators' top-voted best systems) for each annotator."""
     out = []
     for i, a in enumerate(annotators):
@@ -188,7 +193,6 @@ def loo_refs(annotators: Sequence[dict]) -> List[Tuple[dict, List[str]]]:
 def human_baseline(data: dict) -> dict:
     tot = n = n_skip = 0.0
     tot_agree = n_agree = 0.0
-    maj_only = 0
     for v in data.values():
         for a, ref in loo_refs(v["annotators"]):
             picks = sorted(a["best_summary"])
@@ -218,27 +222,30 @@ def human_baseline(data: dict) -> dict:
             "a system drawn at random from P equals one drawn from R, which is the judge's 1/k "
             "rule when R has one system. Pairs where P or R is empty are skipped. This is one "
             "annotator against two others, the judge's score is against three: the judge is "
-            "also scored against these same leave-one-out references (best_pick_vs_loo_reference)."),
+            "also scored against these same leave-one-out references (best_pick_vs_loo_reference)."
+        ),
         "leave_one_annotator_out": rate(tot, int(n)),
         "pairs_skipped_empty": int(n_skip),
         "leave_one_annotator_out_agreeing_others_only": rate(tot_agree, int(n_agree)),
-        "one_annotator_matches_other_two_best": f"{old_k}/{old_n}"}
+        "one_annotator_matches_other_two_best": f"{old_k}/{old_n}",
+    }
 
 
 # ── judge side ───────────────────────────────────────────────────────────────
-def judge_top(rec: dict) -> Tuple[Dict[str, float], List[str]]:
+def judge_top(rec: dict) -> tuple[dict[str, float], list[str]]:
     s = dict(zip(rec["order"], rec["scores"]))
     top = max(s.values())
     return s, sorted(k for k, x in s.items() if x == top)
 
 
-def judge_stats(data: dict, recs: Dict[str, dict]) -> dict:
+def judge_stats(data: dict, recs: dict[str, dict]) -> dict:
     per_article = []
-    cred = n_maj = exact = tied_hit = miss = 0
+    cred: float = 0
+    n_maj = exact = tied_hit = miss = 0
     unparsed = 0
-    jg = jb = 0                              # the old, all-articles counts
+    jg = jb = 0  # the old, all-articles counts
     pw_n = pw_agree = 0
-    pw_j_g = pw_h_g = 0                      # GPT-3 preferred, on the articles both sides decided
+    pw_j_g = pw_h_g = 0  # GPT-3 preferred, on the articles both sides decided
     pw_j_tied = pw_h_tied = 0
     loo_cred = loo_n = 0.0
     for aid, v in data.items():
@@ -257,7 +264,9 @@ def judge_stats(data: dict, recs: Dict[str, dict]) -> dict:
             exact += c == 1
             tied_hit += 0 < c < 1
             miss += c == 0
-            per_article.append({"article_id": aid, "human_best": maj, "judge_top": top, "credit": round(c, 4)})
+            per_article.append(
+                {"article_id": aid, "human_best": maj, "judge_top": top, "credit": round(c, 4)}
+            )
         for a, ref in loo_refs(v["annotators"]):
             if a["best_summary"] and ref:
                 loo_cred += credit(top, ref)
@@ -273,38 +282,49 @@ def judge_stats(data: dict, recs: Dict[str, dict]) -> dict:
             pw_h_g += hp == "gpt3"
     strict = sum(1 for p in per_article if p["credit"] == 1.0 and len(p["judge_top"]) == 1)
     return {
-        "unparsed": unparsed, "judge_gpt3_over_brio": jg, "judge_brio_over_gpt3": jb,
+        "unparsed": unparsed,
+        "judge_gpt3_over_brio": jg,
+        "judge_brio_over_gpt3": jb,
         "best_pick_agreement": f"{strict}/{n_maj}",
         "best_pick_partial_credit": {
-            **rate(cred, n_maj), "chance": round(CHANCE_BEST, 4),
-            "exact_unique": strict, "tied_with_human_best": int(tied_hit), "miss": int(miss),
-            "rule": "1/k when the human majority best is among the judge's k tied top summaries"},
+            **rate(cred, n_maj),
+            "chance": round(CHANCE_BEST, 4),
+            "exact_unique": strict,
+            "tied_with_human_best": int(tied_hit),
+            "miss": int(miss),
+            "rule": "1/k when the human majority best is among the judge's k tied top summaries",
+        },
         "best_pick_per_article": per_article,
         "best_pick_vs_loo_reference": {
             **rate(loo_cred, int(loo_n)),
             "rule": "the judge's top set against the other-two-annotators reference of each "
-                    "(article, held-out annotator) pair; the same pairs as the human baseline"},
+            "(article, held-out annotator) pair; the same pairs as the human baseline",
+        },
         "pairwise_gpt3_vs_brio_per_article": {
             "human_preference": "majority of the three annotators' implied orderings "
-                                "(best > unranked > worst), ties skipped",
-            "articles_both_decided": pw_n, "judge_tied": pw_j_tied, "human_tied": pw_h_tied,
+            "(best > unranked > worst), ties skipped",
+            "articles_both_decided": pw_n,
+            "judge_tied": pw_j_tied,
+            "human_tied": pw_h_tied,
             "agreement": rate(pw_agree, pw_n),
             "judge_prefers_gpt3": rate(pw_j_g, pw_n),
-            "human_prefers_gpt3": rate(pw_h_g, pw_n)}}
+            "human_prefers_gpt3": rate(pw_h_g, pw_n),
+        },
+    }
 
 
-def read_records(vdir: Path, data: dict) -> Dict[str, dict]:
+def read_records(vdir: Path, data: dict) -> dict[str, dict]:
     return {aid: json.loads(record_path(vdir, aid).read_text()) for aid in data}
 
 
 # ── stored-record integrity ──────────────────────────────────────────────────
-def expected(base: str, aid: str, v: dict) -> Tuple[List[str], str]:
+def expected(base: str, aid: str, v: dict) -> tuple[list[str], str]:
     so = order(aid)
     msg = js.build_message(base, v["article"], [v[s]["text"] for s in so])
     return so, js._sha(msg)
 
 
-def record_problem(rec: dict, so: List[str], sha: str, fp: str) -> Optional[str]:
+def record_problem(rec: dict, so: list[str], sha: str, fp: str) -> str | None:
     if "judge_fp" not in rec or "prompt_sha" not in rec:
         return "has no judge_fp/prompt_sha (run --backfill-provenance --no-calls once)"
     if rec["judge_fp"] != fp:
@@ -320,11 +340,17 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--scorer", required=True)
     ap.add_argument("--dry-run", action="store_true")
-    ap.add_argument("--no-calls", action="store_true",
-                    help="recompute from the stored records; error, listing them, if any is missing")
-    ap.add_argument("--backfill-provenance", action="store_true",
-                    help="stamp judge_fp and prompt_sha, from the scorer as it is now, on stored "
-                         "records that lack them (one-off; records the fact in the report)")
+    ap.add_argument(
+        "--no-calls",
+        action="store_true",
+        help="recompute from the stored records; error, listing them, if any is missing",
+    )
+    ap.add_argument(
+        "--backfill-provenance",
+        action="store_true",
+        help="stamp judge_fp and prompt_sha, from the scorer as it is now, on stored "
+        "records that lack them (one-off; records the fact in the report)",
+    )
     args = ap.parse_args()
     sc = js.load_scorer(DATA / "scorers" / f"{args.scorer}.yaml")
     base = js.prompt_text(sc)
@@ -334,7 +360,7 @@ def main() -> int:
 
     backfilled = {j["id"]: 0 for j in sc["judges"]}
     missing, problems = [], []
-    exp: Dict[Tuple[str, str], Tuple[List[str], str]] = {}
+    exp: dict[tuple[str, str], tuple[list[str], str]] = {}
     for j in sc["judges"]:
         fp = js.judge_fingerprint(j)
         for aid, v in data.items():
@@ -346,7 +372,9 @@ def main() -> int:
             rec = json.loads(f.read_text())
             if args.backfill_provenance and "judge_fp" not in rec and "prompt_sha" not in rec:
                 if rec.get("order") != so:
-                    problems.append(f"{j['id']}/{f.name}: order differs from the seeded order; not backfilled")
+                    problems.append(
+                        f"{j['id']}/{f.name}: order differs from the seeded order; not backfilled"
+                    )
                     continue
                 rec.update({"judge_fp": fp, "prompt_sha": sha, "provenance_backfilled": True})
                 write_text_atomic(f, json.dumps(rec))
@@ -357,11 +385,16 @@ def main() -> int:
     if args.backfill_provenance:
         print(f"backfilled: {backfilled}")
     if problems:
-        die("stored records refused:\n  " + "\n  ".join(problems[:20])
-            + (f"\n  ... and {len(problems) - 20} more" if len(problems) > 20 else ""))
+        die(
+            "stored records refused:\n  "
+            + "\n  ".join(problems[:20])
+            + (f"\n  ... and {len(problems) - 20} more" if len(problems) > 20 else "")
+        )
     if args.dry_run:
-        print(f"{len(data)} articles x {len(sc['judges'])} judges = {len(data) * len(sc['judges'])} "
-              f"calls, {len(missing)} not stored; cap {cap}")
+        print(
+            f"{len(data)} articles x {len(sc['judges'])} judges = {len(data) * len(sc['judges'])} "
+            f"calls, {len(missing)} not stored; cap {cap}"
+        )
         return 0
     if missing:
         if args.no_calls:
@@ -369,13 +402,23 @@ def main() -> int:
         if cap is None:
             die("no cost cap: set cost_cap_usd in the scorer or EVAL_MAX_COST_USD")
 
-    spent = sum(float(json.loads(f.read_text()).get("cost_usd") or 0.0)
-                for j in sc["judges"] for f in (vroot / j["id"]).glob("*.json"))
-    report: Dict[str, Any] = {
-        "source": "Goyal, Li & Durrett 2022, cnn_human.json (CC BY 4.0)", "scorer": args.scorer,
-        "articles": len(data), "judges": {},
-        "inputs": {"zip_sha256": ZIP_SHA256, "cnn_human_sha256": CNN_JSON_SHA256,
-                   "scorer_sha256": sc["_sha256"], "chance_best_pick": round(CHANCE_BEST, 4)}}
+    spent = sum(
+        float(json.loads(f.read_text()).get("cost_usd") or 0.0)
+        for j in sc["judges"]
+        for f in (vroot / j["id"]).glob("*.json")
+    )
+    report: dict[str, Any] = {
+        "source": "Goyal, Li & Durrett 2022, cnn_human.json (CC BY 4.0)",
+        "scorer": args.scorer,
+        "articles": len(data),
+        "judges": {},
+        "inputs": {
+            "zip_sha256": ZIP_SHA256,
+            "cnn_human_sha256": CNN_JSON_SHA256,
+            "scorer_sha256": sc["_sha256"],
+            "chance_best_pick": round(CHANCE_BEST, 4),
+        },
+    }
     aborted = False
     for j in sc["judges"]:
         jid, fp = j["id"], js.judge_fingerprint(j)
@@ -400,19 +443,29 @@ def main() -> int:
             except SystemExit:
                 raise
             except Exception as exc:  # noqa: BLE001 — stop cleanly, as judge_score does
-                print(f"  JUDGE CALL FAILED after retries or refused: {jid}: {type(exc).__name__}: "
-                      f"{str(exc)[:300]}\n  Stopping; every stored record is kept. Run the same "
-                      "command again to resume.")
+                print(
+                    f"  JUDGE CALL FAILED after retries or refused: {jid}: {type(exc).__name__}: "
+                    f"{str(exc)[:300]}\n  Stopping; every stored record is kept. Run the same "
+                    "command again to resume."
+                )
                 aborted = True
                 continue
             cost, known = js.call_cost(res, j["params"])
             why = withheld_reason(res.output, shingles([v["article"], *(v[s]["text"] for s in sysorder)]))
-            rec = {"article_id": aid, "order": sysorder, "output": None if why else res.output,
-                   "output_sha256": hashlib.sha256((res.output or "").encode()).hexdigest(),
-                   "output_withheld": bool(why), **({"withheld_reason": why} if why else {}),
-                   "cost_usd": cost if cost is not None else 0.0, "cost_known": known,
-                   "latency_ms": round((time.monotonic() - t0) * 1000, 1),
-                   "scores": js.parse_block(res.output, 3), "judge_fp": fp, "prompt_sha": sha}
+            rec = {
+                "article_id": aid,
+                "order": sysorder,
+                "output": None if why else res.output,
+                "output_sha256": hashlib.sha256((res.output or "").encode()).hexdigest(),
+                "output_withheld": bool(why),
+                **({"withheld_reason": why} if why else {}),
+                "cost_usd": cost if cost is not None else 0.0,
+                "cost_known": known,
+                "latency_ms": round((time.monotonic() - t0) * 1000, 1),
+                "scores": js.parse_block(res.output, 3),
+                "judge_fp": fp,
+                "prompt_sha": sha,
+            }
             write_text_atomic(f, json.dumps(rec))
             spent += rec["cost_usd"]
             if cost is None:
@@ -429,27 +482,46 @@ def main() -> int:
         st["records_sha256"] = js.records_sha256(vdir)
         st["records_backfilled"] = sum(1 for r in recs.values() if r.get("provenance_backfilled"))
         st["records_cost_unknown"] = sum(1 for r in recs.values() if r.get("cost_known") is False)
-        report["judges"][jid] = {k: st[k] for k in (
-            "best_pick_agreement", "judge_gpt3_over_brio", "judge_brio_over_gpt3",
-            "human_gpt3_over_brio", "human_brio_over_gpt3", "unparsed", "billed_usd")}
+        report["judges"][jid] = {
+            k: st[k]
+            for k in (
+                "best_pick_agreement",
+                "judge_gpt3_over_brio",
+                "judge_brio_over_gpt3",
+                "human_gpt3_over_brio",
+                "human_brio_over_gpt3",
+                "unparsed",
+                "billed_usd",
+            )
+        }
         report["judges"][jid].update({k: v for k, v in st.items() if k not in report["judges"][jid]})
-        bp, pw, lo = st["best_pick_partial_credit"], st["pairwise_gpt3_vs_brio_per_article"], st["best_pick_vs_loo_reference"]
-        print(f"{jid}: best pick, partial credit {bp['k']}/{bp['n']} = {bp['rate']} {bp['ci95']} "
-              f"(chance {bp['chance']}; unique-and-right {bp['exact_unique']}, tied-with-best "
-              f"{bp['tied_with_human_best']}, miss {bp['miss']}); vs leave-one-out refs {lo['rate']} {lo['ci95']}")
-        print(f"{jid}: GPT-3 vs BRIO per article, {pw['articles_both_decided']} articles both decided "
-              f"(judge tied {pw['judge_tied']}, humans tied {pw['human_tied']}): agreement "
-              f"{pw['agreement']['k']:.0f}/{pw['agreement']['n']} = {pw['agreement']['rate']} {pw['agreement']['ci95']}; "
-              f"judge prefers GPT-3 {pw['judge_prefers_gpt3']['rate']} {pw['judge_prefers_gpt3']['ci95']}, "
-              f"humans {pw['human_prefers_gpt3']['rate']} {pw['human_prefers_gpt3']['ci95']}; "
-              f"unparsed {st['unparsed']}; billed ${billed:.4f}; backfilled records {st['records_backfilled']}")
+        bp, pw, lo = (
+            st["best_pick_partial_credit"],
+            st["pairwise_gpt3_vs_brio_per_article"],
+            st["best_pick_vs_loo_reference"],
+        )
+        print(
+            f"{jid}: best pick, partial credit {bp['k']}/{bp['n']} = {bp['rate']} {bp['ci95']} "
+            f"(chance {bp['chance']}; unique-and-right {bp['exact_unique']}, tied-with-best "
+            f"{bp['tied_with_human_best']}, miss {bp['miss']}); vs leave-one-out refs {lo['rate']} {lo['ci95']}"
+        )
+        print(
+            f"{jid}: GPT-3 vs BRIO per article, {pw['articles_both_decided']} articles both decided "
+            f"(judge tied {pw['judge_tied']}, humans tied {pw['human_tied']}): agreement "
+            f"{pw['agreement']['k']:.0f}/{pw['agreement']['n']} = {pw['agreement']['rate']} {pw['agreement']['ci95']}; "
+            f"judge prefers GPT-3 {pw['judge_prefers_gpt3']['rate']} {pw['judge_prefers_gpt3']['ci95']}, "
+            f"humans {pw['human_prefers_gpt3']['rate']} {pw['human_prefers_gpt3']['ci95']}; "
+            f"unparsed {st['unparsed']}; billed ${billed:.4f}; backfilled records {st['records_backfilled']}"
+        )
     hb = human_baseline(data)
     report["human_baseline"] = hb
     lo = hb["leave_one_annotator_out"]
-    print(f"humans, leave-one-annotator-out partial credit {lo['k']}/{lo['n']} = {lo['rate']} {lo['ci95']} "
-          f"(others agreeing only: {hb['leave_one_annotator_out_agreeing_others_only']['rate']} on "
-          f"{hb['leave_one_annotator_out_agreeing_others_only']['n']}); old strict figure "
-          f"{hb['one_annotator_matches_other_two_best']}")
+    print(
+        f"humans, leave-one-annotator-out partial credit {lo['k']}/{lo['n']} = {lo['rate']} {lo['ci95']} "
+        f"(others agreeing only: {hb['leave_one_annotator_out_agreeing_others_only']['rate']} on "
+        f"{hb['leave_one_annotator_out_agreeing_others_only']['n']}); old strict figure "
+        f"{hb['one_annotator_matches_other_two_best']}"
+    )
     n_back = sum(r["records_backfilled"] for r in report["judges"].values())
     if n_back:
         report["provenance_note"] = (
@@ -457,7 +529,8 @@ def main() -> int:
             "deterministically, from the scorer as it was at that moment (--backfill-provenance), after "
             "checking each record's summary order against the seeded order; they are marked "
             "provenance_backfilled. The stamp attests the scorer at backfill time, not what "
-            "was sent at the time.")
+            "was sent at the time."
+        )
         print(report["provenance_note"])
     write_text_atomic(vroot / "report.json", json.dumps(report, indent=1) + "\n")
     return 0

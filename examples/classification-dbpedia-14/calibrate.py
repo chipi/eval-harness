@@ -42,16 +42,19 @@ def main() -> int:
     offsets = sorted(random.Random(SEED).sample(range(0, SPLIT_ROWS, 100), PAGES))
     sample = [r for o in offsets for r in cal.page("fancyzhx/dbpedia_14", "dbpedia_14", "test", o)]
     adapter.warmup(params)
-    acc = cal.accuracy(lambda t: adapter.call_system(t, params).output, sample, "content",
-                       lambda r: labels[r["label"]])
-    acc.update(PUBLISHED, verdict=cal.verdict(acc["value"], acc["ci95"],
-                                              PUBLISHED["published"], TOLERANCE))
-    out = {"what": "bert_base_fy on a seeded sample of fancyzhx/dbpedia_14 test, this "
-                   "repo's adapter and config",
-           "sample": f"{PAGES} random 100-row pages of {SPLIT_ROWS}, seed {SEED}",
-           "arms": {"bert_base_fy": acc}}
-    print(f"bert_base_fy  sample {acc['value']:.4f} ±{acc['ci95']:.4f} (n={acc['n']})   "
-          f"card {PUBLISHED['published']:.4f}   {acc['verdict']}")
+    acc = cal.accuracy(
+        lambda t: adapter.call_system(t, params).output, sample, "content", lambda r: labels[r["label"]]
+    )
+    acc.update(PUBLISHED, verdict=cal.verdict(acc["value"], acc["ci95"], PUBLISHED["published"], TOLERANCE))
+    out = {
+        "what": "bert_base_fy on a seeded sample of fancyzhx/dbpedia_14 test, this repo's adapter and config",
+        "sample": f"{PAGES} random 100-row pages of {SPLIT_ROWS}, seed {SEED}",
+        "arms": {"bert_base_fy": acc},
+    }
+    print(
+        f"bert_base_fy  sample {acc['value']:.4f} ±{acc['ci95']:.4f} (n={acc['n']})   "
+        f"card {PUBLISHED['published']:.4f}   {acc['verdict']}"
+    )
     print(f"wrote {cal.write('dbpedia', out).relative_to(cal.ROOT)}")
     return 0
 

@@ -8,9 +8,10 @@ import os
 import re
 import subprocess
 import tempfile
+from collections.abc import Iterable
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, Iterable, Optional, List
+from typing import Any, NoReturn
 
 #: Where the harness CODE lives: this directory. Schemas and sibling scripts are found
 #: relative to it, so they travel with the code whether it runs from a checkout or from an
@@ -27,7 +28,7 @@ def _project_root() -> Path:
     else the current directory. Kept apart from CODE because a project that depends on the
     harness must never write its data into site-packages.
     """
-    import os
+    import os  # noqa: PLC0415
 
     home = os.environ.get("EVAL_HOME", "").strip()
     if home:
@@ -45,12 +46,12 @@ def how(evh: str, make: str) -> str:
     """The command a hint should name: `evh …` when the harness runs as the installed tool,
     the Makefile target in a checkout. A pinned project has no Makefile, so a `make …` hint
     sends its user to a command that does not exist."""
-    import os
+    import os  # noqa: PLC0415
 
     return evh if os.environ.get("EVH_CLI") else make
 
 
-def load_dotenv(path: Optional[Path] = None) -> int:
+def load_dotenv(path: Path | None = None) -> int:
     """Read `.env` into the environment. No dependency, no surprises.
 
     Loaded by every script, so keys are never exported by hand and never pasted
@@ -60,7 +61,7 @@ def load_dotenv(path: Optional[Path] = None) -> int:
 
     Copy `.env.example` to `.env` to start. `.env` is gitignored.
     """
-    import os
+    import os  # noqa: PLC0415
 
     env_path = path or (ROOT / ".env")
     if not env_path.is_file():
@@ -81,8 +82,8 @@ def load_dotenv(path: Optional[Path] = None) -> int:
 DOTENV_LOADED = load_dotenv()
 
 
-def env_float(name: str, default: Optional[float] = None) -> Optional[float]:
-    import os
+def env_float(name: str, default: float | None = None) -> float | None:
+    import os  # noqa: PLC0415
 
     raw = os.environ.get(name, "").strip()
     if not raw:
@@ -90,17 +91,19 @@ def env_float(name: str, default: Optional[float] = None) -> Optional[float]:
     try:
         return float(raw)
     except ValueError:
-        raise SystemExit(f"ERROR: {name}={raw!r} is not a number")
+        raise SystemExit(f"ERROR: {name}={raw!r} is not a number") from None
 
 
 def env_int(name: str, default: int) -> int:
     v = env_float(name, float(default))
     return int(v) if v is not None else default
+
+
 # The data root. `EVAL_DATA_DIR` moves it, for a project whose own layout puts the
 # harness's records somewhere other than <project>/data (a relative path is taken from
 # the project root). Everything below is derived from it.
 _data_override = os.environ.get("EVAL_DATA_DIR", "").strip()
-DATA = ((ROOT / Path(_data_override).expanduser()).resolve() if _data_override else ROOT / "data")
+DATA = (ROOT / Path(_data_override).expanduser()).resolve() if _data_override else ROOT / "data"
 SOURCES = DATA / "sources"
 DATASETS = DATA / "datasets"
 MATERIALIZED = DATA / "materialized"
@@ -123,8 +126,9 @@ ITEM_CACHE = ROOT / ".cache" / "items"
 
 #: The JSON Schemas the harness validates against. Inside the installed package they sit
 #: beside the code; in a checkout they are one level up, in harness/schemas.
-SCHEMAS = next((p for p in (CODE / "schemas", CODE.parent / "schemas") if p.is_dir()),
-               CODE.parent / "schemas")
+SCHEMAS = next(
+    (p for p in (CODE / "schemas", CODE.parent / "schemas") if p.is_dir()), CODE.parent / "schemas"
+)
 
 
 def data_rel(path: Path) -> str:
@@ -196,7 +200,7 @@ def write_json(path: Path, obj: Any) -> None:
     write_text_atomic(path, json.dumps(obj, indent=2, sort_keys=True) + "\n")
 
 
-def build_info() -> Dict[str, Any]:
+def build_info() -> dict[str, Any]:
     """Identify the SYSTEM UNDER TEST.
 
     Three inputs decide what an eval means: the system under test, the
@@ -218,7 +222,7 @@ def build_info() -> Dict[str, Any]:
     #     EVAL_BUILD_REF=$(pip show pkg …)   an installed version
     #
     # Falling back to this tree's git SHA only when nothing is declared.
-    import os
+    import os  # noqa: PLC0415
 
     declared = os.environ.get("EVAL_BUILD_REF")
     if declared:
@@ -230,11 +234,9 @@ def build_info() -> Dict[str, Any]:
         # things and appearing to contradict each other.
         return {"ref": declared, "dirty": None, "source": "EVAL_BUILD_REF"}
 
-    def git(*args: str) -> Optional[str]:
+    def git(*args: str) -> str | None:
         try:
-            out = subprocess.run(
-                ["git", *args], cwd=ROOT, capture_output=True, text=True, timeout=5
-            )
+            out = subprocess.run(["git", *args], cwd=ROOT, capture_output=True, text=True, timeout=5)
             return out.stdout.strip() if out.returncode == 0 else None
         except (OSError, subprocess.SubprocessError):
             return None
@@ -252,11 +254,11 @@ def build_info() -> Dict[str, Any]:
     }
 
 
-def load_goals() -> Dict[str, Dict[str, Any]]:
+def load_goals() -> dict[str, dict[str, Any]]:
     """{goal_id: goal} from data/goals/*.yaml (policy.yaml is the policy, not a goal)."""
-    import yaml
+    import yaml  # noqa: PLC0415
 
-    out: Dict[str, Dict[str, Any]] = {}
+    out: dict[str, dict[str, Any]] = {}
     for f in sorted(GOALS.glob("*.yaml")):
         if f.name != "policy.yaml":
             doc = yaml.safe_load(f.read_text(encoding="utf-8"))
@@ -264,26 +266,28 @@ def load_goals() -> Dict[str, Dict[str, Any]]:
     return out
 
 
-def goal_policy() -> Dict[str, Any]:
+def goal_policy() -> dict[str, Any]:
     """data/goals/policy.yaml: `required_from: YYYY-MM-DD`, the date from which every run must
     name a goal. Absent, goals stay optional: a project upgrading changes nothing until it
     sets the date."""
-    import yaml
+    import yaml  # noqa: PLC0415
 
     f = GOALS / "policy.yaml"
     doc = yaml.safe_load(f.read_text(encoding="utf-8")) if f.is_file() else None
     return doc if isinstance(doc, dict) else {}
 
 
-def load_dataset(dataset_id: str) -> Dict[str, Any]:
+def load_dataset(dataset_id: str) -> dict[str, Any]:
     path = DATASETS / f"{dataset_id}.json"
     if not path.is_file():
         raise SystemExit(
             f"no such dataset: {dataset_id}\n"
             f"  expected {path}\n"
             f"  create one with: "
-            + how(f"evh dataset-create --dataset-id {dataset_id} --source-dir …",
-                  f"make dataset-create DATASET_ID={dataset_id}")
+            + how(
+                f"evh dataset-create --dataset-id {dataset_id} --source-dir …",
+                f"make dataset-create DATASET_ID={dataset_id}",
+            )
         )
     return read_json(path)
 
@@ -298,7 +302,7 @@ def dataset_item_ids(dataset_id: str) -> set:
     return {it["item_id"] for it in load_dataset(dataset_id).get("items") or []}
 
 
-def item_path(dataset_id: str, item_id: str) -> Optional[Path]:
+def item_path(dataset_id: str, item_id: str) -> Path | None:
     """Where an item's materialized copy is, or None when it is not materialized here."""
     try:
         ds = load_dataset(dataset_id)
@@ -315,7 +319,7 @@ def item_path(dataset_id: str, item_id: str) -> Optional[Path]:
 BUNDLED_ADAPTER_ID = "scripts/adapter.py"
 
 
-def resolve_adapter_path(spec: Optional[str]) -> Optional[Path]:
+def resolve_adapter_path(spec: str | None) -> Path | None:
     """The file a run's recorded adapter id names, or None.
 
     Looked for under the project, its parent and `examples/` beside it (a checkout's
@@ -334,16 +338,17 @@ def resolve_adapter_path(spec: Optional[str]) -> Optional[Path]:
     return None
 
 
-def default_metric(dataset_id: str, match: Optional[str] = None, runs_dir: Optional[Path] = None) -> str:
+def default_metric(dataset_id: str, match: str | None = None, runs_dir: Path | None = None) -> str:
     """The metric a command reads when none is named: the primary metric the matching runs
     on this dataset recorded, the most common one. It used to be `coverage`, the
     summarisation example's metric, hard-coded: every other project got "no arms" or a
     crash unless it passed --metric."""
-    from collections import Counter
+    from collections import Counter  # noqa: PLC0415
 
-    primary, seen = Counter(), set()
+    primary: Counter = Counter()
+    seen: set = set()
     base = runs_dir or RUNS
-    for d in (sorted(base.iterdir()) if base.is_dir() else []):
+    for d in sorted(base.iterdir()) if base.is_dir() else []:
         m = read_json(d / "metrics.json") if (d / "metrics.json").is_file() else None
         if not isinstance(m, dict) or m.get("dataset_id") != dataset_id:
             continue
@@ -354,8 +359,10 @@ def default_metric(dataset_id: str, match: Optional[str] = None, runs_dir: Optio
         seen |= set((m.get("scores") or {}).keys())
     if primary:
         return primary.most_common(1)[0][0]
-    raise SystemExit(f"ERROR: no run on {dataset_id} records a primary metric: pass --metric"
-                     + (f" (recorded: {', '.join(sorted(seen))})" if seen else ""))
+    raise SystemExit(
+        f"ERROR: no run on {dataset_id} records a primary metric: pass --metric"
+        + (f" (recorded: {', '.join(sorted(seen))})" if seen else "")
+    )
 
 
 def iter_runs() -> Iterable[Path]:
@@ -364,7 +371,7 @@ def iter_runs() -> Iterable[Path]:
     return sorted(p for p in RUNS.iterdir() if (p / "metrics.json").is_file())
 
 
-def die(msg: str) -> "NoReturn":  # type: ignore[valid-type]
+def die(msg: str) -> NoReturn:
     raise SystemExit(f"ERROR: {msg}")
 
 
@@ -412,9 +419,8 @@ def is_descriptive(metric: str) -> bool:
     return metric in DESCRIPTIVE_KEYS
 
 
-def verdict_for(metric: str, delta: float,
-                kinds: Optional[Dict[str, str]] = None) -> str:
-    """"better" / "worse" / "changed" / "identical" for ``delta`` on ``metric``.
+def verdict_for(metric: str, delta: float, kinds: dict[str, str] | None = None) -> str:
+    """ "better" / "worse" / "changed" / "identical" for ``delta`` on ``metric``.
 
     The one place that decides what a movement MEANS. Descriptive metrics get
     "changed" on purpose: calling a longer output "better" is a claim the number
@@ -432,7 +438,7 @@ def verdict_for(metric: str, delta: float,
     return "better" if improved else "worse"
 
 
-def classify_metrics(extra_kinds: Optional[Dict[str, str]] = None) -> Dict[str, str]:
+def classify_metrics(extra_kinds: dict[str, str] | None = None) -> dict[str, str]:
     """metric -> "cost" | "speed" | "descriptive" | "quality", with adapter overrides.
 
     The built-in tuples only know the metrics the bundled adapter emits. An example that
@@ -446,7 +452,7 @@ def classify_metrics(extra_kinds: Optional[Dict[str, str]] = None) -> Dict[str, 
     leaderboard's own "you are ranking on a descriptive metric" warning stayed silent,
     because by its tuples compression was a quality metric.
     """
-    kinds: Dict[str, str] = {}
+    kinds: dict[str, str] = {}
     for k in COST_KEYS:
         kinds[k] = "cost"
     for k in SPEED_KEYS:
@@ -457,12 +463,12 @@ def classify_metrics(extra_kinds: Optional[Dict[str, str]] = None) -> Dict[str, 
         kinds.update(extra_kinds)
     return kinds
 
+
 class AmbiguousRuns(Exception):
     """Two runs claim the same config_id and nothing says which one to read."""
 
 
-def runs_by_arm(base: Path, dataset_id: str, prefix: str = "",
-                strip: str = "") -> Dict[str, List[Path]]:
+def runs_by_arm(base: Path, dataset_id: str, prefix: str = "", strip: str = "") -> dict[str, list[Path]]:
     """config_id -> the run directories that produced it, deterministically ordered.
 
     WHY THIS EXISTS RATHER THAN A GLOB AT EACH CALL SITE.
@@ -479,7 +485,7 @@ def runs_by_arm(base: Path, dataset_id: str, prefix: str = "",
     ELSE sharing a config_id is two different measurement occasions wearing one name,
     and this raises rather than picking one, because there is no correct pick.
     """
-    groups: Dict[str, List[Path]] = {}
+    groups: dict[str, list[Path]] = {}
     for mj in sorted(base.glob("*/metrics.json")):
         try:
             m = json.loads(mj.read_text(encoding="utf-8"))
@@ -490,7 +496,7 @@ def runs_by_arm(base: Path, dataset_id: str, prefix: str = "",
         cid = m.get("config_id")
         if not cid or (prefix and not cid.startswith(prefix)):
             continue
-        key = cid[len(prefix):] if prefix else cid
+        key = cid[len(prefix) :] if prefix else cid
         if strip and key.endswith(strip):
             key = key[: -len(strip)]
         groups.setdefault(key, []).append(mj.parent)
@@ -512,8 +518,8 @@ def runs_by_arm(base: Path, dataset_id: str, prefix: str = "",
         )
     return {k: sorted(v) for k, v in sorted(groups.items())}
 
-def warn_on_ambiguous_runs(base: Path, dataset_id: Optional[str] = None,
-                           label: str = "") -> int:
+
+def warn_on_ambiguous_runs(base: Path, dataset_id: str | None = None, label: str = "") -> int:
     """Say loudly when two runs share a config_id for reasons other than --repeat.
 
     Every loader in this repo groups runs by `config_id` and then averages or picks --
@@ -530,7 +536,7 @@ def warn_on_ambiguous_runs(base: Path, dataset_id: Optional[str] = None,
     A `--repeat N` set (`<id>_r1.._rN`) is one arm measured N times and is not
     ambiguous; averaging those is the point.
     """
-    groups: Dict[str, List[str]] = {}
+    groups: dict[str, list[str]] = {}
     for mj in sorted(base.glob("*/metrics.json")):
         try:
             m = json.loads(mj.read_text(encoding="utf-8"))
@@ -549,9 +555,12 @@ def warn_on_ambiguous_runs(base: Path, dataset_id: Optional[str] = None,
             continue
         bad.append((cid, sorted(names)))
     for cid, names in bad:
-        print(f"  WARNING: {len(names)} runs claim config_id {cid!r}"
-              f"{' in ' + label if label else ''} — {', '.join(names)}.")
-        print(f"           They are averaged together below. If they are different "
-              f"measurement occasions, move all but one out of {base.name}/.")
+        print(
+            f"  WARNING: {len(names)} runs claim config_id {cid!r}"
+            f"{' in ' + label if label else ''} — {', '.join(names)}."
+        )
+        print(
+            f"           They are averaged together below. If they are different "
+            f"measurement occasions, move all but one out of {base.name}/."
+        )
     return len(bad)
-

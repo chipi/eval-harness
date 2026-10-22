@@ -41,7 +41,7 @@ def wheel() -> Path:
                 shutil.copy(p, src / name)
         base = [sys.executable, "-m", "pip", "wheel", "-q", "--no-deps", "-w", str(out), str(src)]
         # Offline first, with the setuptools already installed; an isolated build fetches it.
-        r = subprocess.run(base[:4] + ["--no-build-isolation"] + base[4:], capture_output=True, text=True)
+        r = subprocess.run([*base[:4], "--no-build-isolation", *base[4:]], capture_output=True, text=True)
         if r.returncode:
             r = subprocess.run(base, capture_output=True, text=True)
         if r.returncode:
@@ -54,8 +54,22 @@ def wheel() -> Path:
 
 def install(target: Path) -> Path:
     """Install the wheel into `target` (a site-packages for PYTHONPATH) and return it."""
-    r = subprocess.run([sys.executable, "-m", "pip", "install", "-q", "--no-deps", "--no-index",
-                        "--target", str(target), str(wheel())], capture_output=True, text=True)
+    r = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "pip",
+            "install",
+            "-q",
+            "--no-deps",
+            "--no-index",
+            "--target",
+            str(target),
+            str(wheel()),
+        ],
+        capture_output=True,
+        text=True,
+    )
     if r.returncode:
         raise SystemExit(f"installing the wheel failed:\n{r.stdout}{r.stderr}")
     return target

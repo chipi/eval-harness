@@ -36,9 +36,10 @@ import json
 import os
 import re
 import statistics
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Any
 
 DIMS = ("coherence", "consistency", "fluency", "relevance")
 OPENROUTER = "https://openrouter.ai/api/v1"
@@ -47,11 +48,15 @@ COUNT = "{n}"
 
 #: What a scorer without a `task` block judges: SummEval's task, which the committed
 #: summarisation scorers and their judging sets were built on.
-DEFAULT_TASK: Dict[str, Any] = {"source_label": "ARTICLE", "output_label": "SUMMARIES",
-                                "dimensions": list(DIMS), "scale": [1, 5]}
+DEFAULT_TASK: dict[str, Any] = {
+    "source_label": "ARTICLE",
+    "output_label": "SUMMARIES",
+    "dimensions": list(DIMS),
+    "scale": [1, 5],
+}
 
 
-def task_of(scorer: Dict[str, Any]) -> Dict[str, Any]:
+def task_of(scorer: dict[str, Any]) -> dict[str, Any]:
     """The scorer's `task` block over the defaults, checked. Raises ValueError on a bad one."""
     raw = scorer.get("task") or {}
     if not isinstance(raw, dict):
@@ -65,18 +70,29 @@ def task_of(scorer: Dict[str, Any]) -> Dict[str, Any]:
         if not isinstance(v, str) or not v.strip() or "\n" in v or ":" in v:
             raise ValueError(f"task.{k} must be one line of text without ':', got {v!r}")
     dims = t["dimensions"]
-    if (not isinstance(dims, list) or not dims or len(set(dims)) != len(dims)
-            or not all(isinstance(d, str) and d.strip() for d in dims)):
+    if (
+        not isinstance(dims, list)
+        or not dims
+        or len(set(dims)) != len(dims)
+        or not all(isinstance(d, str) and d.strip() for d in dims)
+    ):
         raise ValueError(f"task.dimensions must be a list of distinct names, got {dims!r}")
     sc = t["scale"]
     # Whole numbers only: a judge rates on points, and a fractional bound such as [0.5, 3.5]
     # would make every integer reply at the bottom fall outside it.
-    if (not isinstance(sc, list) or len(sc) != 2
-            or not all(isinstance(x, int) and not isinstance(x, bool) for x in sc)
-            or not sc[0] < sc[1]):
+    if (
+        not isinstance(sc, list)
+        or len(sc) != 2
+        or not all(isinstance(x, int) and not isinstance(x, bool) for x in sc)
+        or not sc[0] < sc[1]
+    ):
         raise ValueError(f"task.scale must be [low, high], whole numbers with low < high, got {sc!r}")
-    return {"source_label": t["source_label"], "output_label": t["output_label"],
-            "dimensions": list(dims), "scale": [sc[0], sc[1]]}
+    return {
+        "source_label": t["source_label"],
+        "output_label": t["output_label"],
+        "dimensions": list(dims),
+        "scale": [sc[0], sc[1]],
+    }
 
 
 # ── the prompt, generalised only in its count ────────────────────────────────
@@ -86,45 +102,63 @@ def render_prompt(base: str, n: int) -> str:
     a, b = "16 numbered summaries", "a list of 16 integers"
     if COUNT in base:
         if a in base or b in base:
-            raise SystemExit(f"the prompt has both {COUNT} and SummEval's fixed count phrases "
-                             f"({a!r} / {b!r}); the phrases would keep saying 16. Use one or the other")
+            raise SystemExit(
+                f"the prompt has both {COUNT} and SummEval's fixed count phrases "
+                f"({a!r} / {b!r}); the phrases would keep saying 16. Use one or the other"
+            )
         return base.replace(COUNT, str(n))
     if n == 16:
         return base
     if a not in base or b not in base:
-        raise SystemExit(f"the prompt has no {COUNT} where the count goes, and not SummEval's two "
-                         f"count phrases ({a!r}, {b!r}); it cannot be rendered for {n} outputs")
+        raise SystemExit(
+            f"the prompt has no {COUNT} where the count goes, and not SummEval's two "
+            f"count phrases ({a!r}, {b!r}); it cannot be rendered for {n} outputs"
+        )
     if n == 1:
         # Singular grammar, and an example showing one value per key: the 16-wide example
         # ("[3, 4, ...]") would invite a list that parse_block then rejects.
-        ex = ('{"coherence": [3, 4, ...], "consistency": [5, 2, ...], '
-              '"fluency": [4, 4, ...], "relevance": [2, 3, ...]}')
+        ex = (
+            '{"coherence": [3, 4, ...], "consistency": [5, 2, ...], '
+            '"fluency": [4, 4, ...], "relevance": [2, 3, ...]}'
+        )
         if ex not in base:
-            raise SystemExit("the prompt no longer contains the example line this pass rewrites "
-                             "for one summary")
-        return (base.replace(a, "1 numbered summary").replace(b, "a list of 1 integer")
-                .replace(ex, '{"coherence": [3], "consistency": [5], "fluency": [4], "relevance": [2]}')
-                .replace("Rate every summary", "Rate the summary")
-                .replace("the summaries may share mistakes", "the summary may contain mistakes")
-                .replace("a list of 1 integer in summary order", "a list of 1 integer"))
+            raise SystemExit(
+                "the prompt no longer contains the example line this pass rewrites for one summary"
+            )
+        return (
+            base.replace(a, "1 numbered summary")
+            .replace(b, "a list of 1 integer")
+            .replace(ex, '{"coherence": [3], "consistency": [5], "fluency": [4], "relevance": [2]}')
+            .replace("Rate every summary", "Rate the summary")
+            .replace("the summaries may share mistakes", "the summary may contain mistakes")
+            .replace("a list of 1 integer in summary order", "a list of 1 integer")
+        )
     return base.replace(a, f"{n} numbered summaries").replace(b, f"a list of {n} integers")
 
 
-def build_message(base: str, article: str, summaries: Sequence[str],
-                  source_label: str = "ARTICLE", output_label: str = "SUMMARIES") -> str:
+def build_message(
+    base: str,
+    article: str,
+    summaries: Sequence[str],
+    source_label: str = "ARTICLE",
+    output_label: str = "SUMMARIES",
+) -> str:
     """The judge's input: the prompt for this many outputs, the source item, the numbered
     outputs. With the default labels, the layout of SummEval's `_judge_message`; references are
     left out on purpose (a judge shown them would be doing the code scorer's job)."""
     numbered = "\n".join(f"{i}. {s.strip()}" for i, s in enumerate(summaries, 1))
-    return (f"{render_prompt(base, len(summaries))}\n\n{source_label}:\n{article.strip()}"
-            f"\n\n{output_label}:\n{numbered}")
+    return (
+        f"{render_prompt(base, len(summaries))}\n\n{source_label}:\n{article.strip()}"
+        f"\n\n{output_label}:\n{numbered}"
+    )
 
 
 _JSON = re.compile(r"\{.*\}", re.S)
 
 
-def parse_block(output: str, n: int, dims: Sequence[str] = DIMS,
-                scale: Sequence[float] = (1, 5)) -> Optional[List[float]]:
+def parse_block(
+    output: str, n: int, dims: Sequence[str] = DIMS, scale: Sequence[float] = (1, 5)
+) -> list[float] | None:
     """Per-output mean of the dimensions, or None.
 
     Lenient about wrapping (a fence, a sentence before the JSON), strict about content: a
@@ -157,7 +191,7 @@ def parse_block(output: str, n: int, dims: Sequence[str] = DIMS,
 
 
 # ── rank statistics ──────────────────────────────────────────────────────────
-def _ranks(x: List[float]) -> List[float]:
+def _ranks(x: Sequence[float]) -> list[float]:
     order = sorted(range(len(x)), key=lambda i: x[i])
     r = [0.0] * len(x)
     i = 0
@@ -171,7 +205,7 @@ def _ranks(x: List[float]) -> List[float]:
     return r
 
 
-def _pearson(a: List[float], b: List[float]) -> float:
+def _pearson(a: Sequence[float], b: Sequence[float]) -> float:
     n = len(a)
     ma, mb = sum(a) / n, sum(b) / n
     va = sum((x - ma) ** 2 for x in a)
@@ -181,12 +215,12 @@ def _pearson(a: List[float], b: List[float]) -> float:
     return sum((x - ma) * (y - mb) for x, y in zip(a, b)) / (va * vb) ** 0.5
 
 
-def spearman(a: List[float], b: List[float]) -> float:
+def spearman(a: Sequence[float], b: Sequence[float]) -> float:
     """Spearman's rho with average ranks for ties; 0 when either side is constant."""
     return _pearson(_ranks(a), _ranks(b))
 
 
-def kendall_tau_b(a: List[float], b: List[float]) -> float:
+def kendall_tau_b(a: list[float], b: list[float]) -> float:
     """Kendall's tau-b, which corrects for ties on both sides; 0 when either side is constant.
 
     An LLM judge gives integer scores 1-5, so it ties constantly, and tau-a would punish it
@@ -217,30 +251,30 @@ def kendall_tau_b(a: List[float], b: List[float]) -> float:
 SHINGLE = 8
 
 
-def _words(text: Optional[str]) -> List[str]:
+def _words(text: str | None) -> list[str]:
     # Word characters only: a quote inside a JSON string, or ending a sentence, is the same
     # eight words with or without the quote marks and commas around it.
     return re.findall(r"\w+", (text or "").lower())
 
 
 def shingles(texts: Sequence[str]) -> set:
-    out = set()
+    out: set = set()
     for t in texts:
         w = _words(t)
-        out.update(" ".join(w[i:i + SHINGLE]) for i in range(len(w) - SHINGLE + 1))
+        out.update(" ".join(w[i : i + SHINGLE]) for i in range(len(w) - SHINGLE + 1))
     return out
 
 
 def quotes_source(output: str, source: set) -> bool:
     """Whether a reply repeats any SHINGLE consecutive words of the source texts."""
     w = _words(output)
-    return any(" ".join(w[i:i + SHINGLE]) in source for i in range(len(w) - SHINGLE + 1))
+    return any(" ".join(w[i : i + SHINGLE]) in source for i in range(len(w) - SHINGLE + 1))
 
 
 _FENCE = re.compile(r"^```(?:json)?\s*(.*?)\s*```$", re.S)
 
 
-def json_only(output: Optional[str]) -> bool:
+def json_only(output: str | None) -> bool:
     """A reply that is one JSON object and nothing else (a ```json fence allowed)."""
     t = (output or "").strip()
     m = _FENCE.match(t)
@@ -253,7 +287,7 @@ def json_only(output: Optional[str]) -> bool:
         return False
 
 
-def withheld_reason(output: Optional[str], source: set) -> Optional[str]:
+def withheld_reason(output: str | None, source: set) -> str | None:
     """Why a reply must not be committed as text, or None. Only its hash is stored then: a
     reply that reasons aloud (not bare JSON) or repeats the source can carry the source's
     text, and validate checks every committed reply is bare JSON (V12)."""
@@ -265,7 +299,7 @@ def withheld_reason(output: Optional[str], source: set) -> Optional[str]:
 
 
 # ── routing ──────────────────────────────────────────────────────────────────
-def _models_table() -> Dict[str, str]:
+def _models_table() -> dict[str, str]:
     """alias -> upstream id, from the first models file that exists; {} when none does."""
     try:  # imported as evaluation_harness.judging, or as a script beside _common.py
         from ._common import CODE, ROOT  # noqa: PLC0415
@@ -283,7 +317,7 @@ def _models_table() -> Dict[str, str]:
     return {}
 
 
-def _upstream_for(alias: Optional[str]) -> Optional[str]:
+def _upstream_for(alias: str | None) -> str | None:
     """An alias from the table, or -- to name a model of your own -- an OpenRouter id as-is."""
     if not alias:
         return None
@@ -293,7 +327,7 @@ def _upstream_for(alias: Optional[str]) -> Optional[str]:
     return f"openrouter/{alias}" if "/" in alias else None
 
 
-def route(params: Dict[str, Any]) -> Dict[str, Any]:
+def route(params: dict[str, Any]) -> dict[str, Any]:
     """{mode, base_url, key, model, endpoint} for this judge, or SystemExit saying how to fix it."""
     alias = params.get("model")
     base = (params.get("base_url") or os.environ.get("LITELLM_BASE_URL", "")).rstrip("/")
@@ -301,43 +335,50 @@ def route(params: Dict[str, Any]) -> Dict[str, Any]:
         key_env = params.get("api_key_env", "LITELLM_API_KEY")
         key = os.environ.get(key_env)
         if not key:
-            raise SystemExit(f"{key_env} is not set (a proxy base_url is, so the proxy route "
-                             "was chosen)")
-        return {"mode": "proxy", "base_url": f"{base}/v1", "key": key, "model": alias,
-                "endpoint": base}
+            raise SystemExit(f"{key_env} is not set (a proxy base_url is, so the proxy route was chosen)")
+        return {"mode": "proxy", "base_url": f"{base}/v1", "key": key, "model": alias, "endpoint": base}
     key = os.environ.get("OPENROUTER_API_KEY")
     if key:
         upstream = _upstream_for(alias)
         if not upstream:
-            raise SystemExit(f"{alias!r} is neither an alias in a models table nor an "
-                             "OpenRouter id (vendor/model), so it cannot be sent to "
-                             "OpenRouter directly")
-        return {"mode": "direct", "base_url": OPENROUTER, "key": key,
-                "model": upstream.removeprefix("openrouter/"), "endpoint": OPENROUTER}
+            raise SystemExit(
+                f"{alias!r} is neither an alias in a models table nor an "
+                "OpenRouter id (vendor/model), so it cannot be sent to "
+                "OpenRouter directly"
+            )
+        return {
+            "mode": "direct",
+            "base_url": OPENROUTER,
+            "key": key,
+            "model": upstream.removeprefix("openrouter/"),
+            "endpoint": OPENROUTER,
+        }
     raise SystemExit(
         f"No route to hosted model {alias!r}. Set ONE of:\n"
         "  OPENROUTER_API_KEY=sk-or-...           one key, no proxy\n"
         "  LITELLM_BASE_URL + LITELLM_API_KEY     your own LiteLLM proxy\n"
         "in the project's .env or the environment (a judge may also carry base_url / "
-        "api_key_env).")
+        "api_key_env)."
+    )
 
 
-def client(params: Dict[str, Any]) -> Tuple[Any, Dict[str, Any]]:
+def client(params: dict[str, Any]) -> tuple[Any, dict[str, Any]]:
     """An OpenAI-compatible client for this judge, and the route it was built for."""
     try:
         from openai import OpenAI  # noqa: PLC0415 - hosted judges only
     except ImportError:
-        raise SystemExit("a hosted judge needs the openai client: pip install "
-                         "'evaluation-harness[llm]'") from None
+        raise SystemExit(
+            "a hosted judge needs the openai client: pip install 'evaluation-harness[llm]'"
+        ) from None
     r = route(params)
     return OpenAI(api_key=r["key"], base_url=r["base_url"]), r
 
 
-def extra_body(params: Dict[str, Any], r: Dict[str, Any]) -> Dict[str, Any]:
+def extra_body(params: dict[str, Any], r: dict[str, Any]) -> dict[str, Any]:
     """Provider knobs outside the OpenAI schema. `reasoning` matters: a fixed field list once
     DROPPED it, so configs said reasoning was off and the requests did not. Direct mode also
     asks OpenRouter for usage accounting, which is where billed cost comes from."""
-    out: Dict[str, Any] = {}
+    out: dict[str, Any] = {}
     for k in ("reasoning", "reasoning_effort"):
         if params.get(k) is not None:
             out[k] = params[k]
@@ -352,12 +393,12 @@ def extra_body(params: Dict[str, Any], r: Dict[str, Any]) -> Dict[str, Any]:
 @dataclass
 class JudgeResult:
     output: str
-    tokens_in: Optional[int] = None
-    tokens_out: Optional[int] = None
-    cost_usd: Optional[float] = None
-    latency_ms: Optional[float] = None
-    extra: Dict[str, float] = field(default_factory=dict)
-    meta: Dict[str, Any] = field(default_factory=dict)
+    tokens_in: int | None = None
+    tokens_out: int | None = None
+    cost_usd: float | None = None
+    latency_ms: float | None = None
+    extra: dict[str, float] = field(default_factory=dict)
+    meta: dict[str, Any] = field(default_factory=dict)
 
 
 def _as_dict(obj: Any) -> Any:
@@ -378,7 +419,7 @@ def _as_dict(obj: Any) -> Any:
         return str(obj)
 
 
-def _reasoning_tokens(usage: Any) -> Optional[int]:
+def _reasoning_tokens(usage: Any) -> int | None:
     """Reasoning tokens billed, or None when the provider did not say (None is not 0)."""
     d = _as_dict(usage)
     if not isinstance(d, dict):
@@ -393,11 +434,10 @@ def _reasoning_tokens(usage: Any) -> Optional[int]:
     return None
 
 
-def _billed(usage: Any) -> Optional[float]:
+def _billed(usage: Any) -> float | None:
     """What the provider billed for this call; it outranks the price table, which has been
     wrong by 0.67x-3.21x per arm."""
-    d = usage if isinstance(usage, dict) else (
-        usage.model_dump() if hasattr(usage, "model_dump") else None)
+    d = usage if isinstance(usage, dict) else (usage.model_dump() if hasattr(usage, "model_dump") else None)
     if not isinstance(d, dict):
         return None
     c = d.get("cost")
@@ -409,14 +449,14 @@ def _billed(usage: Any) -> Optional[float]:
         return None
 
 
-def _price(params: Dict[str, Any], tin: Optional[int], tout: Optional[int]) -> Optional[float]:
+def _price(params: dict[str, Any], tin: int | None, tout: int | None) -> float | None:
     pin, pout = params.get("usd_per_mtok_in"), params.get("usd_per_mtok_out")
     if pin is None or pout is None or tin is None or tout is None:
         return None
     return round(tin / 1e6 * float(pin) + tout / 1e6 * float(pout), 8)
 
 
-def _fake_call(message: str, params: Dict[str, Any]) -> JudgeResult:
+def _fake_call(message: str, params: dict[str, Any]) -> JudgeResult:
     """Scores each numbered output on the task's scale from a hash of its text and the judge's
     model, so two fake judges disagree a little and a rerun reproduces itself. The task arrives
     in `params["_task"]` (judge_score puts it there for fake judges only)."""
@@ -426,16 +466,20 @@ def _fake_call(message: str, params: Dict[str, Any]) -> JudgeResult:
     sums = re.findall(r"^\d+\. (.*)$", body, re.M)
     model = str(params.get("model", ""))
     lo, hi = int(task["scale"][0]), int(task["scale"][1])
-    s = [lo + int(hashlib.sha256(f"{model}|{x}".encode()).hexdigest()[:8], 16) % (hi - lo + 1)
-         for x in sums]
-    out = json.dumps({d: s for d in task["dimensions"]})
+    s = [lo + int(hashlib.sha256(f"{model}|{x}".encode()).hexdigest()[:8], 16) % (hi - lo + 1) for x in sums]
+    out = json.dumps(dict.fromkeys(task["dimensions"], s))
     tin, tout = max(1, len(message) // 4), max(1, len(out) // 4)
-    return JudgeResult(output=out, tokens_in=tin, tokens_out=tout,
-                       cost_usd=_price(params, tin, tout) or 0.0, extra={"truncated": 0.0},
-                       meta={"finish_reason": "stop", "provider": FAKE, "response_model": model})
+    return JudgeResult(
+        output=out,
+        tokens_in=tin,
+        tokens_out=tout,
+        cost_usd=_price(params, tin, tout) or 0.0,
+        extra={"truncated": 0.0},
+        meta={"finish_reason": "stop", "provider": FAKE, "response_model": model},
+    )
 
 
-def call_judge(message: str, params: Dict[str, Any]) -> JudgeResult:
+def call_judge(message: str, params: dict[str, Any]) -> JudgeResult:
     """One judge reply to one message. Retrying transient failures is the caller's job."""
     if params.get("provider") == FAKE:
         return _fake_call(message, params)
@@ -463,11 +507,17 @@ def call_judge(message: str, params: Dict[str, Any]) -> JudgeResult:
         tokens_in=ti,
         tokens_out=to,
         cost_usd=billed if billed is not None else _price(params, ti, to),
-        extra={"truncated": 1.0 if truncated else 0.0,
-               **({"reasoning_tokens": float(reasoning)} if reasoning is not None else {})},
-        meta={"usage": _as_dict(usage), "finish_reason": finish,
-              "response_model": getattr(resp, "model", None),
-              "reasoning_tokens_reported": reasoning is not None,
-              "provider": (getattr(resp, "provider", None)
-                           or (getattr(resp, "model_extra", None) or {}).get("provider"))},
+        extra={
+            "truncated": 1.0 if truncated else 0.0,
+            **({"reasoning_tokens": float(reasoning)} if reasoning is not None else {}),
+        },
+        meta={
+            "usage": _as_dict(usage),
+            "finish_reason": finish,
+            "response_model": getattr(resp, "model", None),
+            "reasoning_tokens_reported": reasoning is not None,
+            "provider": (
+                getattr(resp, "provider", None) or (getattr(resp, "model_extra", None) or {}).get("provider")
+            ),
+        },
     )

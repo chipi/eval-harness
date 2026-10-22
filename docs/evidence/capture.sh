@@ -81,7 +81,9 @@ print('    %s: %s' % (json.dumps('$r'), json.dumps(rec)), end='')
 " >> "$OUT/model_facts.json"
   sleep 1.5
 done
-echo '' >> "$OUT/model_facts.json"
-echo '  }' >> "$OUT/model_facts.json"
-echo '}' >> "$OUT/model_facts.json"
+{
+  echo ''
+  echo '  }'
+  echo '}'
+} >> "$OUT/model_facts.json"
 python3 -c "import json;d=json.load(open('$OUT/model_facts.json'));print('  captured %d models' % len(d['models']))"

@@ -46,7 +46,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-from _common import DATA, ROOT, RUNS, dataset_item_ids, default_metric, read_json, warn_on_ambiguous_runs  # noqa: E402
+from _common import ROOT, RUNS, dataset_item_ids, default_metric, read_json, warn_on_ambiguous_runs  # noqa: E402
 from pair_test import per_item  # noqa: E402 -- one implementation of "score per item"
 from stats import sign_flip_p  # noqa: E402 -- one implementation of the paired test
 
@@ -77,7 +77,7 @@ def _cache_key(argv: list[str], runs_dir: Path, args) -> str:
     here = Path(__file__).resolve().parent
     for f in ("family_test.py", "pair_test.py", "_common.py", "stats.py"):
         h.update((here / f).read_bytes())
-    h.update("\0".join(argv + [str(RUNS)]).encode())
+    h.update("\0".join([*argv, str(RUNS)]).encode())
     for d in sorted(runs_dir.glob("*")):
         mj, pj = d / "metrics.json", d / "predictions.jsonl"
         if mj.is_file() and read_json(mj).get("dataset_id") == args.dataset_id:
@@ -114,7 +114,9 @@ def main() -> int:
     if use_cache:
         CACHE.mkdir(parents=True, exist_ok=True)
         tmp = hit.with_suffix(".tmp")
-        tmp.write_text(json.dumps({"stdout": out.getvalue(), "stderr": err.getvalue(), "rc": rc}), encoding="utf-8")
+        tmp.write_text(
+            json.dumps({"stdout": out.getvalue(), "stderr": err.getvalue(), "rc": rc}), encoding="utf-8"
+        )
         tmp.replace(hit)  # atomic: a concurrent reader never sees half a file
     return rc
 
@@ -123,16 +125,20 @@ def _parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", required=True)
     ap.add_argument("--a", required=True, help="config_id of the arm under test")
-    ap.add_argument("--against", required=True,
-                    help="substring selecting the opponent family, declared in advance")
+    ap.add_argument(
+        "--against", required=True, help="substring selecting the opponent family, declared in advance"
+    )
     ap.add_argument("--metric", help="default: the primary metric the runs recorded")
     ap.add_argument("--runs-dir", default=None, help="default: data/runs")
     ap.add_argument("--exclude-dataset", help="drop items this dataset also contains")
     ap.add_argument("--items", type=Path, help="file of item_ids; restrict to exactly these")
     ap.add_argument("--permutations", type=int, default=20000)
     ap.add_argument("--alpha", type=float, default=0.05)
-    ap.add_argument("--asc", action="store_true",
-                    help="lower is better (WER, latency): wins and 'ahead' count the lower score")
+    ap.add_argument(
+        "--asc",
+        action="store_true",
+        help="lower is better (WER, latency): wins and 'ahead' count the lower score",
+    )
     ap.add_argument("--seed", type=int, default=20260926)
     return ap
 
@@ -162,7 +168,7 @@ def _run(args) -> int:
         keep = {ln.strip() for ln in args.items.read_text(encoding="utf-8").splitlines() if ln.strip()}
 
     rng = random.Random(args.seed)
-    rows = []
+    rows: list[dict] = []
     for opp in _opponents(runs_dir, args.dataset_id, args.against, args.a):
         B = per_item(runs_dir, args.dataset_id, opp, args.metric)
         items = sorted(set(A) & set(B) - drop)
@@ -171,13 +177,15 @@ def _run(args) -> int:
         if len(items) < 3:
             continue
         deltas = [A[i] - B[i] for i in items]
-        rows.append({
-            "opp": opp,
-            "n": len(items),
-            "delta": statistics.fmean(deltas),
-            "wins": sum(1 for d in deltas if (d < 0 if args.asc else d > 0)),
-            "p": sign_flip_p(deltas, permutations=args.permutations, rng=rng),
-        })
+        rows.append(
+            {
+                "opp": opp,
+                "n": len(items),
+                "delta": statistics.fmean(deltas),
+                "wins": sum(1 for d in deltas if (d < 0 if args.asc else d > 0)),
+                "p": sign_flip_p(deltas, permutations=args.permutations, rng=rng),
+            }
+        )
     if not rows:
         print("  no opponents with enough shared items")
         return 1
@@ -206,12 +214,13 @@ def _run(args) -> int:
     width = max(len(r["opp"]) for r in rows) + 2
     print(f"    {'opponent':{width}} {'delta':>9} {'wins':>9} {'p':>8} {'thresh':>8}   verdict")
     for r in rows:
-        print(f"    {r['opp']:{width}} {r['delta']:+9.4f} {r['wins']:>4}/{r['n']:<4} "
-              f"{r['p']:8.4f} {r['thresh']:8.4f}   {'SEPARATED' if r['sep'] else '--'}")
+        print(
+            f"    {r['opp']:{width}} {r['delta']:+9.4f} {r['wins']:>4}/{r['n']:<4} "
+            f"{r['p']:8.4f} {r['thresh']:8.4f}   {'SEPARATED' if r['sep'] else '--'}"
+        )
     sep = sum(1 for r in rows if r["sep"])
     ahead = sum(1 for r in rows if (r["delta"] < 0 if args.asc else r["delta"] > 0))
-    print(f"\n    separated from {sep} of {m} opponents; ahead on the point estimate "
-          f"against {ahead} of {m}")
+    print(f"\n    separated from {sep} of {m} opponents; ahead on the point estimate against {ahead} of {m}")
     # The gap between those two numbers is the finding most of the time: an ordering the
     # means assert and the data cannot support.
     return 0

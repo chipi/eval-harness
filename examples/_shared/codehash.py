@@ -1,4 +1,4 @@
-"""Hash the code that decides a score — functions AND the constants they read.
+r"""Hash the code that decides a score — functions AND the constants they read.
 
 WHY THIS EXISTS AS A SHARED HELPER
 
@@ -32,7 +32,8 @@ from __future__ import annotations
 
 import hashlib
 import inspect
-from typing import Any, Callable, Dict, Iterable, Union
+from collections.abc import Iterable
+from typing import Any, Callable
 
 
 def _stable(value: Any) -> str:
@@ -42,7 +43,7 @@ def _stable(value: Any) -> str:
     dicts are sorted, because their repr order is not guaranteed to be stable across
     versions and a hash that changes without the code changing is worse than no hash.
     """
-    import re as _re
+    import re as _re  # noqa: PLC0415
 
     if isinstance(value, _re.Pattern):
         return f"re({value.pattern!r},{value.flags})"
@@ -55,8 +56,7 @@ def _stable(value: Any) -> str:
     return repr(value)
 
 
-def code_digest(*fns: Union[Callable, Iterable[Callable]],
-                consts: Dict[str, Any] | None = None) -> str:
+def code_digest(*fns: Callable | Iterable[Callable], consts: dict[str, Any] | None = None) -> str:
     """sha256 over the source of every function plus every declared constant.
 
     Functions are hashed in the order given and constants by sorted name, so the digest

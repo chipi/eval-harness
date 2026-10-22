@@ -37,10 +37,11 @@ HERE = Path(__file__).resolve().parent
 HARNESS = HERE.parent
 sys.path.insert(0, str(HERE))
 import _wheel  # noqa: E402
+
 ok: list = []
 
 
-def check(label: str, cond, detail: str = "") -> None:
+def check(label: str, cond, detail: object = "") -> None:
     ok.append((label, bool(cond)))
     print(f"  {'ok  ' if cond else 'FAIL'} {label}" + (f"  ({detail})" if detail and not cond else ""))
 
@@ -50,20 +51,39 @@ def project(tmp: Path) -> tuple:
     site = _wheel.install(tmp / "site-packages")
     proj = tmp / "proj"
     proj.mkdir()
-    env = {**os.environ, "PYTHONPATH": str(site), "PYTHONDONTWRITEBYTECODE": "1", "EVAL_BUILD_REF": "browser-check"}
+    env = {
+        **os.environ,
+        "PYTHONPATH": str(site),
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "EVAL_BUILD_REF": "browser-check",
+    }
     for k in ("EVAL_HOME", "EVAL_DATA_DIR", "EVAL_RUNS_DIR"):
         env.pop(k, None)
 
     def evh(*args: str) -> None:
-        r = subprocess.run([sys.executable, "-m", "evaluation_harness", *args], cwd=proj, env=env,
-                           capture_output=True, text=True)
+        r = subprocess.run(
+            [sys.executable, "-m", "evaluation_harness", *args],
+            cwd=proj,
+            env=env,
+            capture_output=True,
+            text=True,
+        )
         if r.returncode:
             raise SystemExit(f"setup: evh {' '.join(args)} failed:\n{r.stdout}{r.stderr}")
 
     evh("init", "--tutorial")
     shutil.copy(proj / "tutorial/fields/tickets.yaml", proj / "data/fields/")
-    evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets",
-        "--fieldset", "tickets", "--fields", "tutorial/ticket_fields.csv")
+    evh(
+        "dataset-create",
+        "--dataset-id",
+        "tickets_v1",
+        "--source-dir",
+        "tutorial/tickets",
+        "--fieldset",
+        "tickets",
+        "--fields",
+        "tutorial/ticket_fields.csv",
+    )
     evh("dataset-materialize", "--dataset-id", "tickets_v1")
     for f in (proj / "tutorial/configs").glob("tickets_*.yaml"):
         shutil.copy(f, proj / "data/configs/")
@@ -78,9 +98,15 @@ def serve(proj: Path, env: dict, log: Path) -> tuple:
     with socket.socket() as s:
         s.bind(("127.0.0.1", 0))
         port = s.getsockname()[1]
-    fh = open(log, "w")
-    p = subprocess.Popen([sys.executable, "-m", "evaluation_harness", "catalog-serve", "--port", str(port)],
-                         cwd=proj, env=env, stdout=fh, stderr=subprocess.STDOUT, start_new_session=True)
+    with open(log, "w", encoding="utf-8") as fh:  # the child keeps its own copy of the fd
+        p = subprocess.Popen(
+            [sys.executable, "-m", "evaluation_harness", "catalog-serve", "--port", str(port)],
+            cwd=proj,
+            env=env,
+            stdout=fh,
+            stderr=subprocess.STDOUT,
+            start_new_session=True,
+        )
     for _ in range(100):
         if "catalog:" in log.read_text():
             break
@@ -91,7 +117,7 @@ def serve(proj: Path, env: dict, log: Path) -> tuple:
 
 
 def drive(base: str) -> None:
-    from playwright.sync_api import sync_playwright
+    from playwright.sync_api import sync_playwright  # noqa: PLC0415
 
     with sync_playwright() as pw:
         browser = pw.chromium.launch()
@@ -108,27 +134,37 @@ def drive(base: str) -> None:
         arms = ",".join(f"runs/tickets_v1/tickets_{a}_v1" for a in ("lead1", "lead2", "author"))
         page.goto(f"{base}inspect.html?runs={arms}&baseline=runs/tickets_v1/tickets_lead1_v1")
         page.wait_for_selector("#metric", timeout=15000)
-        check("inspector: opens on the primary metric", page.locator("#metric").input_value() == "overlap_f1",
-              page.locator("#metric").input_value())
+        check(
+            "inspector: opens on the primary metric",
+            page.locator("#metric").input_value() == "overlap_f1",
+            page.locator("#metric").input_value(),
+        )
         verdicts = page.locator("table.data").first.locator("tbody tr").count()
         check("inspector: a verdict row per arm against the baseline", verdicts == 2, verdicts)
         check("inspector: the charts are drawn", page.locator("figure.chart svg").count() >= 2)
         with page.expect_navigation():
             page.select_option("#baseline", "runs/tickets_v1/tickets_lead2_v1")
         page.wait_for_selector("#baseline")
-        check("inspector: the baseline can be switched",
-              page.locator("#baseline").input_value() == "runs/tickets_v1/tickets_lead2_v1")
+        check(
+            "inspector: the baseline can be switched",
+            page.locator("#baseline").input_value() == "runs/tickets_v1/tickets_lead2_v1",
+        )
         page.locator("tr.eprow").first.click()
         page.wait_for_selector(".outgrid", timeout=15000)
-        check("inspector: an item shows each arm's output beside the gold reference",
-              page.locator(".refcol").count() == 1 and page.locator(".outcol").count() == 4,
-              page.locator(".outcol").count())
+        check(
+            "inspector: an item shows each arm's output beside the gold reference",
+            page.locator(".refcol").count() == 1 and page.locator(".outcol").count() == 4,
+            page.locator(".outcol").count(),
+        )
 
         page.goto(base + "d/tickets_v1.html")
         ftable = page.locator("table#fields").inner_text()
         check("dataset page: element ids are unique", page.locator('[id="fields"]').count() == 1)
-        check("dataset page: the fields, with their labels",
-              all(x in ftable for x in ("Area", "Plan", "Names a deadline")), ftable[:200])
+        check(
+            "dataset page: the fields, with their labels",
+            all(x in ftable for x in ("Area", "Plan", "Names a deadline")),
+            ftable[:200],
+        )
         check("dataset page: coverage, 6 of 6 and 2 of 6", "6 of 6" in ftable and "2 of 6" in ftable)
         check("dataset page: a public field summarised (account 2)", "account 2" in " ".join(ftable.split()))
         check("dataset page: the hidden field shows 'not public'", "not public" in ftable)
@@ -138,7 +174,11 @@ def drive(base: str) -> None:
         opts = page.locator("#wfield option").all_inner_texts()
         check("inspector: a filter on every field", opts == ["Area", "Plan", "Names a deadline"], opts)
         by = page.locator("#by option").all_inner_texts()
-        check("inspector: a breakdown on the choice and yes/no fields", by == ["none", "Area", "Plan", "Names a deadline"], by)
+        check(
+            "inspector: a breakdown on the choice and yes/no fields",
+            by == ["none", "Area", "Plan", "Names a deadline"],
+            by,
+        )
 
         page.select_option("#wfield", "area")
         page.wait_for_selector("#wv")
@@ -147,24 +187,34 @@ def drive(base: str) -> None:
             page.click("#addwhere button")
         page.wait_for_selector(".note")
         notes = " ".join(page.locator(".note").all_inner_texts())
-        check("inspector: a filter narrows to 2 tickets and says so",
-              "Filtered to the 2 item(s) where area = account" in notes, notes[:300])
+        check(
+            "inspector: a filter narrows to 2 tickets and says so",
+            "Filtered to the 2 item(s) where area = account" in notes,
+            notes[:300],
+        )
         chip = page.locator('[data-unwhere="area:account"]')
         check("inspector: the filter is a removable chip", chip.count() == 1)
         with page.expect_navigation():
             chip.click()
         page.wait_for_selector("#by")
-        check("inspector: removing it brings every ticket back", "Filtered to" not in " ".join(
-            page.locator(".note").all_inner_texts()))
+        check(
+            "inspector: removing it brings every ticket back",
+            "Filtered to" not in " ".join(page.locator(".note").all_inner_texts()),
+        )
 
         with page.expect_navigation():
             page.select_option("#by", "deadline")
         page.wait_for_selector("h3.sub")
-        check("inspector: a breakdown table by Names a deadline",
-              page.locator("h3.sub", has_text="By Names a deadline").count() == 1)
+        check(
+            "inspector: a breakdown table by Names a deadline",
+            page.locator("h3.sub", has_text="By Names a deadline").count() == 1,
+        )
         table = page.locator("h3.sub + div table").inner_text()
-        check("inspector: groups named yes and no, too-small groups flagged",
-              "yes" in table and "no" in table and "cannot reach 0.05" in table, table[:300])
+        check(
+            "inspector: groups named yes and no, too-small groups flagged",
+            "yes" in table and "no" in table and "cannot reach 0.05" in table,
+            table[:300],
+        )
 
         page.locator("tr.eprow").first.click()
         page.wait_for_selector("table.fields", timeout=15000)
@@ -174,8 +224,10 @@ def drive(base: str) -> None:
         # A phone: the pages must not scroll sideways (tables scroll inside their own box).
         phone = browser.new_page(viewport={"width": 390, "height": 844})
         phone.on("pageerror", lambda e: errors.append(str(e)))
-        for path, ready in (("d/tickets_v1.html", "table#fields"),
-                            (f"inspect.html?runs={arms}&by=deadline", "h3.sub")):
+        for path, ready in (
+            ("d/tickets_v1.html", "table#fields"),
+            (f"inspect.html?runs={arms}&by=deadline", "h3.sub"),
+        ):
             phone.goto(base + path)
             phone.wait_for_selector(ready, timeout=15000)
             wide = phone.evaluate("document.documentElement.scrollWidth - window.innerWidth")
@@ -186,7 +238,7 @@ def drive(base: str) -> None:
 
 def main() -> int:
     try:
-        import playwright  # noqa: F401
+        import playwright  # noqa: F401, PLC0415
     except ImportError:
         print("  FAIL Playwright is not installed: `make browser-install` (requirements-browser.txt)")
         return 1

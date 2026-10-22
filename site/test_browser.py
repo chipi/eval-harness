@@ -26,6 +26,7 @@ import re
 import sys
 import threading
 from pathlib import Path
+from typing import ClassVar
 from urllib.parse import urldefrag, urljoin, urlparse
 
 SITE = Path(__file__).resolve().parent
@@ -51,7 +52,7 @@ def prod_headers() -> dict:
 
 
 class Handler(http.server.SimpleHTTPRequestHandler):
-    headers_to_add: dict = {}
+    headers_to_add: ClassVar[dict] = {}  # set once in main(), before the server starts
 
     def end_headers(self):
         for k, v in self.headers_to_add.items():
@@ -68,27 +69,39 @@ def pages() -> list:
 
 
 def drive(base: str) -> None:
-    from playwright.sync_api import sync_playwright
+    from playwright.sync_api import sync_playwright  # noqa: PLC0415
 
     with sync_playwright() as pw:
         browser = pw.chromium.launch()
         ctx = browser.new_context()
         # Other hosts (the analytics scripts) answer locally and empty: no network, no noise.
-        ctx.route(lambda url: urlparse(url).hostname not in ("127.0.0.1", None),
-                  lambda route: route.fulfill(status=200, body="", content_type="application/javascript"))
+        ctx.route(
+            lambda url: urlparse(url).hostname not in ("127.0.0.1", None),
+            lambda route: route.fulfill(status=200, body="", content_type="application/javascript"),
+        )
         page = ctx.new_page()
         problems: list = []
         page.on("console", lambda m: problems.append(f"console: {m.text}") if m.type == "error" else None)
         page.on("pageerror", lambda e: problems.append(f"error: {e}"))
         page.on("requestfailed", lambda r: problems.append(f"failed: {r.url}"))
-        page.on("response", lambda r: problems.append(f"{r.status}: {r.url}")
-                if r.url.startswith(base) and r.status >= 400 and not r.url.endswith("/404.html") else None)
+        page.on(
+            "response",
+            lambda r: (
+                problems.append(f"{r.status}: {r.url}")
+                if r.url.startswith(base) and r.status >= 400 and not r.url.endswith("/404.html")
+                else None
+            ),
+        )
 
         links: set = set()
         for path in pages():
             problems.clear()
             page.goto(base + path, wait_until="load")
-            check(f"{path}: no console error, CSP violation or failed request", not problems, "; ".join(problems[:3]))
+            check(
+                f"{path}: no console error, CSP violation or failed request",
+                not problems,
+                "; ".join(problems[:3]),
+            )
             for href in page.eval_on_selector_all("a[href]", "as => as.map(a => a.getAttribute('href'))"):
                 full = urljoin(base + path, href)
                 if full.startswith(base):
@@ -100,9 +113,9 @@ def drive(base: str) -> None:
             target = PUBLIC / (urlparse(url).path.lstrip("/") or "index.html")
             if target.is_dir():
                 target = target / "index.html"
-            if not target.is_file():
-                bad.append(link)
-            elif frag and not re.search(rf'\bid="{re.escape(frag)}"', target.read_text(encoding="utf-8")):
+            if not target.is_file() or (
+                frag and not re.search(rf'\bid="{re.escape(frag)}"', target.read_text(encoding="utf-8"))
+            ):
                 bad.append(link)
         check(f"links: all {len(links)} same-site links and anchors resolve", not bad, ", ".join(bad[:5]))
 
@@ -113,21 +126,32 @@ def drive(base: str) -> None:
         after = page.evaluate("document.documentElement.dataset.theme")
         page.reload()
         kept = page.evaluate("document.documentElement.dataset.theme")
-        check("theme: the toggle switches the theme", after in ("light", "dark") and after != before, f"{before!r} -> {after!r}")
+        check(
+            "theme: the toggle switches the theme",
+            after in ("light", "dark") and after != before,
+            f"{before!r} -> {after!r}",
+        )
         check("theme: the choice survives a reload", kept == after, f"{after!r} then {kept!r}")
 
         # The lifecycle explorer on use.html: live, a panel shown, another on click.
         page.goto(base + "use.html")
         check("explorer: the script made it live", page.locator(".lc-explorer.live").count() == 1)
-        check("explorer: the dataset panel shows first", page.locator('.lc-panel.on[data-node="dataset"]').count() == 1)
+        check(
+            "explorer: the dataset panel shows first",
+            page.locator('.lc-panel.on[data-node="dataset"]').count() == 1,
+        )
         page.locator('.lc-map .lc-node[data-node="sources"]').click()
-        check("explorer: clicking a node shows its panel",
-              page.locator('.lc-panel.on[data-node="sources"]').count() == 1
-              and page.locator(".lc-panel.on").count() == 1)
+        check(
+            "explorer: clicking a node shows its panel",
+            page.locator('.lc-panel.on[data-node="sources"]').count() == 1
+            and page.locator(".lc-panel.on").count() == 1,
+        )
 
         phone = browser.new_context(viewport={"width": 390, "height": 844})
-        phone.route(lambda url: urlparse(url).hostname not in ("127.0.0.1", None),
-                    lambda route: route.fulfill(status=200, body="", content_type="application/javascript"))
+        phone.route(
+            lambda url: urlparse(url).hostname not in ("127.0.0.1", None),
+            lambda route: route.fulfill(status=200, body="", content_type="application/javascript"),
+        )
         p = phone.new_page()
         wide = []
         for path in pages():
@@ -141,7 +165,7 @@ def drive(base: str) -> None:
 
 def main() -> int:
     try:
-        import playwright  # noqa: F401
+        import playwright  # noqa: F401, PLC0415
     except ImportError:
         print("  FAIL Playwright is not installed: `make -C harness browser-install`")
         return 1

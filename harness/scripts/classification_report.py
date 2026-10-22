@@ -41,7 +41,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-from _common import REFERENCES, RUNS, die, item_path, read_json, resolve_adapter_path, ROOT, warn_on_ambiguous_runs  # noqa: E402
+from _common import REFERENCES, RUNS, die, item_path, read_json, resolve_adapter_path, warn_on_ambiguous_runs  # noqa: E402
 
 #: Predictions the adapter could not parse into a label are counted, never dropped. An arm
 #: that returns prose on a fifth of the items has a real problem, and silently excluding
@@ -70,7 +70,10 @@ def _label_parser(adapter_spec: str | None):
         return None
     try:
         import importlib.util  # noqa: PLC0415
+
         spec = importlib.util.spec_from_file_location(f"clsrep_{cand.stem}", cand)
+        if spec is None or spec.loader is None:
+            raise ImportError(f"cannot load {cand}")
         mod = importlib.util.module_from_spec(spec)
         sys.modules[spec.name] = mod
         spec.loader.exec_module(mod)
@@ -149,8 +152,11 @@ def _report_consensus_misses(rows: list, gold: dict, dataset_id: str, threshold:
     Baseline arms are excluded: `constant` gets 13 of 14 classes wrong by construction and
     would drown the signal.
     """
-    learned = [r for r in rows if not r["arm"].endswith(("constant_v1", "constant_n200_v1"))
-               and "keyword" not in r["arm"]]
+    learned = [
+        r
+        for r in rows
+        if not r["arm"].endswith(("constant_v1", "constant_n200_v1")) and "keyword" not in r["arm"]
+    ]
     if len(learned) < 3:
         return
     missed: dict = defaultdict(list)
@@ -159,8 +165,7 @@ def _report_consensus_misses(rows: list, gold: dict, dataset_id: str, threshold:
             if g != p:
                 missed[item].append(p)
     n = len(learned)
-    consensus = sorted(((len(v), i, v) for i, v in missed.items() if len(v) >= threshold * n),
-                       reverse=True)
+    consensus = sorted(((len(v), i, v) for i, v in missed.items() if len(v) >= threshold * n), reverse=True)
     if not consensus:
         print(f"\n    No item was missed by >= {threshold:.0%} of the {n} learned arms.")
         return
@@ -168,8 +173,7 @@ def _report_consensus_misses(rows: list, gold: dict, dataset_id: str, threshold:
     print("    A near-universal miss is evidence about the LABEL or the item, not about")
     print("    the models. Read these before reading the ranking.")
     for count, item, preds in consensus[:10]:
-        tally = ", ".join(f"{lab} x{c}" for lab, c in
-                          sorted(Counter(preds).items(), key=lambda kv: -kv[1]))
+        tally = ", ".join(f"{lab} x{c}" for lab, c in sorted(Counter(preds).items(), key=lambda kv: -kv[1]))
         print(f"\n    {item}  missed by {count}/{n}")
         print(f"      gold {gold[item]}   predicted {tally}")
         f = item_path(dataset_id, item)
@@ -184,8 +188,12 @@ def main() -> int:
     ap.add_argument("--match", help="only config_ids containing this substring")
     ap.add_argument("--arm", help="print this arm's full confusion matrix")
     ap.add_argument("--sort", default="macro_f1", choices=("macro_f1", "accuracy"))
-    ap.add_argument("--miss-threshold", type=float, default=0.8,
-                    help="flag items missed by at least this share of learned arms")
+    ap.add_argument(
+        "--miss-threshold",
+        type=float,
+        default=0.8,
+        help="flag items missed by at least this share of learned arms",
+    )
     args = ap.parse_args()
     # Two runs sharing a config_id are averaged together below without
     # saying so. See _common.warn_on_ambiguous_runs.
@@ -204,30 +212,36 @@ def main() -> int:
             continue
         stats = per_class(pairs, labels)
         n = len(pairs)
-        rows.append({
-            "arm": cid,
-            "n": n,
-            "accuracy": sum(1 for g, p in pairs if g == p) / n,
-            "macro_f1": sum(s["f1"] for s in stats.values()) / len(labels),
-            "unparsed": sum(1 for _, p in pairs if p == UNPARSED) / n,
-            # The worst class is the number a single accuracy figure hides. An arm at 0.92
-            # accuracy with a class at 0.55 is not a 0.92 arm for anyone who cares about
-            # that class.
-            "worst_f1": min(s["f1"] for s in stats.values()),
-            "worst_class": min(stats.items(), key=lambda kv: kv[1]["f1"])[0],
-            "stats": stats,
-            "pairs": pairs,
-            "items": [i for i in by_item if i in gold],
-        })
+        rows.append(
+            {
+                "arm": cid,
+                "n": n,
+                "accuracy": sum(1 for g, p in pairs if g == p) / n,
+                "macro_f1": sum(s["f1"] for s in stats.values()) / len(labels),
+                "unparsed": sum(1 for _, p in pairs if p == UNPARSED) / n,
+                # The worst class is the number a single accuracy figure hides. An arm at 0.92
+                # accuracy with a class at 0.55 is not a 0.92 arm for anyone who cares about
+                # that class.
+                "worst_f1": min(s["f1"] for s in stats.values()),
+                "worst_class": min(stats.items(), key=lambda kv: kv[1]["f1"])[0],
+                "stats": stats,
+                "pairs": pairs,
+                "items": [i for i in by_item if i in gold],
+            }
+        )
     rows.sort(key=lambda r: -r[args.sort])
 
     width = max(len(r["arm"]) for r in rows) + 2
     print(f"\n  dataset: {args.dataset_id}   {len(labels)} classes   sorted by {args.sort}")
-    print(f"\n    {'arm':{width}} {'n':>5} {'accuracy':>9} {'macro_f1':>9} "
-          f"{'unparsed':>9} {'worst_f1':>9}  worst class")
+    print(
+        f"\n    {'arm':{width}} {'n':>5} {'accuracy':>9} {'macro_f1':>9} "
+        f"{'unparsed':>9} {'worst_f1':>9}  worst class"
+    )
     for r in rows:
-        print(f"    {r['arm']:{width}} {r['n']:>5} {r['accuracy']:9.4f} {r['macro_f1']:9.4f} "
-              f"{r['unparsed']:9.4f} {r['worst_f1']:9.4f}  {r['worst_class']}")
+        print(
+            f"    {r['arm']:{width}} {r['n']:>5} {r['accuracy']:9.4f} {r['macro_f1']:9.4f} "
+            f"{r['unparsed']:9.4f} {r['worst_f1']:9.4f}  {r['worst_class']}"
+        )
 
     gaps = [(r["accuracy"] - r["macro_f1"], r["arm"]) for r in rows]
     worst_gap, worst_arm = max(gaps)
@@ -242,7 +256,7 @@ def main() -> int:
         if row is None:
             die(f"no run for arm {args.arm}")
         print(f"\n  CONFUSION MATRIX — {args.arm}   rows = gold, columns = predicted")
-        cols = labels + [UNPARSED]
+        cols = [*labels, UNPARSED]
         cw = max(len(c) for c in cols) + 2
         lw = max(len(x) for x in labels) + 2
         print(f"    {'':{lw}}" + "".join(f"{c:>{cw}}" for c in cols))
@@ -251,8 +265,7 @@ def main() -> int:
             print(f"    {g:{lw}}" + "".join(f"{v:>{cw}}" for v in counts))
         print(f"\n    {'class':{lw}} {'precision':>10} {'recall':>8} {'f1':>8} {'support':>8}")
         for label, s in row["stats"].items():
-            print(f"    {label:{lw}} {s['p']:10.4f} {s['r']:8.4f} {s['f1']:8.4f} "
-                  f"{s['support']:8d}")
+            print(f"    {label:{lw}} {s['p']:10.4f} {s['r']:8.4f} {s['f1']:8.4f} {s['support']:8d}")
     return 0
 
 
