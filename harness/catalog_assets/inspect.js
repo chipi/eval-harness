@@ -82,7 +82,8 @@
     const controls = `<div class="controls">
       <label>metric <select id="metric">${mopts}</select></label>
       <label>baseline <select id="baseline">${bopts}</select></label>
-      ${d.can_rescore ? `<label class="tick"><input type="checkbox" id="rescore" ${resc ? 'checked' : ''}> re-score what is not on record</label>` : ''}</div>`;
+      ${d.can_rescore ? `<label class="tick"><input type="checkbox" id="rescore" ${resc ? 'checked' : ''}> re-score what is not on record</label>` : ''}</div>`
+      + fieldControls(d);
 
     const rows = [...d.rows].sort((a, b) => (a.p ?? 9) - (b.p ?? 9));
     // The verdict is the second column, so a phone sees it without scrolling.
@@ -113,9 +114,11 @@
       <div class="scroll-x"><table class="data"><thead><tr><th>run</th><th>recorded average</th><th>vs the baseline's mean</th></tr></thead><tbody>${avgs.map(([a, v]) =>
         `<tr><td class="mono" title="${esc(a)}">${esc(label[a] || a)}</td><td class="num">${fmt(v)}</td><td class="num">${baseMean == null ? '—' : (v - baseMean >= 0 ? '+' : '') + fmt(v - baseMean)}</td></tr>`).join('')}</tbody></table></div>`;
     app.innerHTML = controls + warn + `<p class="eyebrow"><span class="num">01</span>verdicts · ${esc(d.metric)}</p>` + verdicts + avgTable
+      + breakdown(d, label)
       + `<p class="eyebrow gap"><span class="num">02</span>charts</p>` + charts(d, label)
       + `<p class="eyebrow gap"><span class="num">03</span>per ${ITEM} · ${d.items.length}</p>` + eps;
     wireCharts(d, label);
+    wireFields(d);
     document.getElementById('metric').onchange = ev => { P.set('metric', ev.target.value); go(); };
     document.getElementById('baseline').onchange = ev => { P.set('baseline', ev.target.value); go(); };
     const rs = document.getElementById('rescore');
@@ -128,6 +131,72 @@
     });
   }
 
+
+  // ── item fields (ADR-0003): filter the comparison, break it down by a choice or yes/no field ─
+  function fieldControls(d) {
+    const fs = d.fields || [];
+    if (!fs.length) return '';
+    const chips = P.getAll('where').map(w => { const [n, v] = [w.slice(0, w.indexOf(':')), w.slice(w.indexOf(':') + 1)];
+      const f = fs.find(x => x.name === n) || {};
+      return `<span class="chip pickchip">${esc(f.label || n)} = ${esc(v)}<button data-unwhere="${esc(w)}" aria-label="remove filter">×</button></span>`; }).join('');
+    const fopts = fs.map(f => `<option value="${esc(f.name)}">${esc(f.label)}</option>`).join('');
+    const bopts = '<option value="">none</option>' + fs.filter(f => f.groupable).map(f =>
+      `<option value="${esc(f.name)}" ${P.get('by') === f.name ? 'selected' : ''}>${esc(f.label)}</option>`).join('');
+    return `<div class="controls">
+      <form id="addwhere" class="filter"><label>filter ${ITEMS} by <select id="wfield">${fopts}</select></label>
+        <span id="wvalue"></span><button class="btn small" type="submit">Filter</button></form>
+      ${fs.some(f => f.groupable) ? `<label>break down by <select id="by">${bopts}</select></label>` : ''}</div>`
+      + (chips ? `<div class="chips">${chips}</div>` : '');
+  }
+
+  function valueInput(f) {
+    if (f.type === 'choice') return `<select id="wv">${(f.values || []).map(v => `<option>${esc(v)}</option>`).join('')}</select>`;
+    if (f.type === 'boolean') return '<select id="wv"><option value="true">yes</option><option value="false">no</option></select>';
+    const hint = ['number', 'integer', 'duration'].includes(f.type)
+      ? (f.type === 'duration' ? 'seconds: 600..  or  ..1800' : 'min..max, or one value') : 'exact value';
+    return `<input id="wv" placeholder="${esc(hint)}" autocomplete="off">`;
+  }
+
+  function wireFields(d) {
+    const fs = d.fields || [], sel = document.getElementById('wfield');
+    if (!sel) return;
+    const show = () => { document.getElementById('wvalue').innerHTML = valueInput(fs.find(f => f.name === sel.value) || {}); };
+    sel.onchange = show; show();
+    document.getElementById('addwhere').onsubmit = ev => { ev.preventDefault();
+      const v = (document.getElementById('wv').value || '').trim(); if (!v) return;
+      P.append('where', sel.value + ':' + v); go(); };
+    app.querySelectorAll('[data-unwhere]').forEach(b => b.onclick = () => {
+      const keep = P.getAll('where').filter(w => w !== b.dataset.unwhere); P.delete('where'); keep.forEach(w => P.append('where', w)); go(); });
+    const by = document.getElementById('by');
+    if (by) by.onchange = () => { by.value ? P.set('by', by.value) : P.delete('by'); go(); };
+  }
+
+  function breakdown(d, label) {
+    const b = d.breakdown;
+    if (!b) return '';
+    const f = (d.fields || []).find(x => x.name === d.by) || {label: d.by};
+    const name = g => f.type === 'boolean' ? (g === 'true' ? 'yes' : 'no') : g;
+    const rows = b.groups.flatMap(g => g.rows.map(r => `<tr><td>${esc(name(g.group))} <small class="muted">${g.items} ${ITEMS}</small></td>
+      <td class="mono">${esc(label[r.arm] || r.arm)}</td><td>${verdictChip(r.verdict)}${r.n && r.min_p > 0.05 ? ' <small class="muted">' + r.n + ' ' + ITEMS + ' cannot reach 0.05</small>' : ''}</td><td class="num">${r.n}</td>
+      <td class="num">${fmt(r.delta)}</td><td class="num">${r.wins}–${r.losses}</td><td class="num">${fmtp(r.p)}</td>
+      <td class="num">${r.threshold ? r.threshold.toFixed(4) : '—'}</td></tr>`)).join('');
+    return `<h3 class="sub">By ${esc(f.label)} · ${b.groups.length} group(s)</h3>
+      <div class="scroll-x"><table class="data"><thead><tr><th>${esc(f.label)}</th><th>run vs baseline</th><th>verdict</th><th>${ITEMS}</th><th>Δ vs baseline</th><th>wins–losses</th><th>p</th><th>Holm threshold</th></tr></thead>
+      <tbody>${rows || '<tr><td colspan="8" class="muted">No group has two arms to test.</td></tr>'}</tbody></table></div>
+      <p class="small muted">The same paired test within each group, Holm-corrected over all ${b.family_size} tests together: each extra group is another chance of a false "separated", so the thresholds are stricter than for one group alone.</p>`;
+  }
+
+  function fieldsTable(fs) {
+    if (!fs || !fs.length) return '';
+    // Returns HTML: every value escaped; a link only for an http(s) URL (an adapter's own data
+    // could carry any scheme, and a javascript: href would run on click).
+    const clock = v => { const s = Math.round(v); return `${Math.floor(s / 3600)}:${String(Math.floor(s % 3600 / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`; };
+    const show = f => f.type === 'boolean' ? (f.value ? 'yes' : 'no')
+      : f.type === 'duration' && typeof f.value === 'number' ? clock(f.value)
+      : f.type === 'url' && /^https?:\/\//i.test(String(f.value)) ? `<a href="${esc(f.value)}" rel="noopener noreferrer" target="_blank">${esc(f.value)}</a>`
+      : esc(f.value) + (f.unit ? ' ' + esc(f.unit) : '');
+    return `<table class="data fields"><tbody>${fs.map(f => `<tr><th>${esc(f.label)}</th><td>${show(f)}</td></tr>`).join('')}</tbody></table>`;
+  }
 
   // ── charts: inline SVG, the catalog's tokens; colours follow the run, never its rank ─────────
   const SLOTS = 8;
@@ -314,7 +383,7 @@
     const refcol = d.reference && d.reference.view && d.reference.view.kind !== 'none' ? `<div class="outcol refcol"><h3>${esc(d.reference.id)} <small class="muted">reference</small></h3>${view(d.reference.view, null)}</div>` : '';
     const hasText = Object.values(d.views).some(v => v && v.kind === 'text');
     const toggle = hasText ? `<label class="tick small"><input type="checkbox" id="difft" ${DIFF ? 'checked' : ''}> mark what each run <ins>adds</ins> and <del>drops</del> against the baseline (useful between near-identical outputs, noisy between independent ones)</label>` : '';
-    box.innerHTML = `<p class="eyebrow gap"><span class="num">04</span>${ITEM} · ${esc(ep)}</p>${toggle}<div class="outgrid">${refcol}${cols}</div>`;
+    box.innerHTML = `<p class="eyebrow gap"><span class="num">04</span>${ITEM} · ${esc(ep)}</p>${fieldsTable(d.fields)}${toggle}<div class="outgrid">${refcol}${cols}</div>`;
     const t = document.getElementById('difft');
     if (t) t.onchange = () => { DIFF = t.checked; drill(ep, arms, baseline, label, ref, tr); };
     box.scrollIntoView({behavior: 'smooth', block: 'start'});

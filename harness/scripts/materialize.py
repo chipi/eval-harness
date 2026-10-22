@@ -28,6 +28,7 @@ from _common import (  # noqa: E402
     sha256,
     write_json,
 )
+import _fetch  # noqa: E402
 
 
 def main() -> int:
@@ -47,9 +48,22 @@ def main() -> int:
         shutil.rmtree(out)
     out.mkdir(parents=True)
 
-    drifted, missing = [], []
+    drifted, missing, unfetched = [], [], []
     for item in ds["items"]:
         rel = item.get("source_path") or item["item_id"]
+        if item.get("source_url"):
+            # A URL item (ADR-0003): fetched once into the cache, and refused unless its bytes
+            # are the pinned ones. A changed file at the URL is the same failure as a changed
+            # file under sources/.
+            try:
+                src, _ = _fetch.fetch(item["source_url"], item["source_sha256"])
+            except _fetch.FetchError as exc:
+                unfetched.append((rel, str(exc)))
+                continue
+            dst = out / rel
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(src, dst)
+            continue
         src = src_root / rel
         if not src.is_file():
             missing.append(rel)
@@ -62,13 +76,16 @@ def main() -> int:
         dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(src, dst)
 
-    if missing or drifted:
+    if missing or drifted or unfetched:
         for rel in missing:
             print(f"  MISSING  {rel}")
         for rel, was, now_ in drifted:
             print(f"  CHANGED  {rel}  frozen={was} actual={now_}")
+        for rel, why in unfetched:
+            print(f"  FETCH    {rel}  {why}")
         die(
-            f"{len(missing)} missing, {len(drifted)} changed since the dataset was frozen.\n"
+            f"{len(missing)} missing, {len(drifted)} changed, {len(unfetched)} not fetched as pinned "
+            "since the dataset was frozen.\n"
             "  sources/ is immutable. If an input genuinely changed, that is a NEW\n"
             "  dataset (_v2) — every number already published was measured on the old bytes."
         )

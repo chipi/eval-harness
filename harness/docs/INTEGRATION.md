@@ -159,6 +159,7 @@ can extend later without re-authoring what you have.
 | re-measurement | stored outputs scored again for a new reference or scorer at $0, or by validated LLM judges, without re-running an arm |
 | a judge panel | when the cheap metric is biased and you need an LLM to adjudicate |
 | goals | what each evaluation is for, named on every config and checked by `make validate` |
+| item fields | the facts you know about each item (typed, declared once in a field set), checked by `make validate`; items fetched from a pinned URL |
 | a catalog and an inspector | pages over your runs, and a local server that tests any arms against a baseline and shows outputs beside references |
 
 ---
@@ -194,10 +195,17 @@ which references exist, what one arm wrote for one item.
   | what was asked, what came back | `output_format(arm)` |
   | one item, side by side (the inspector only) | `item_view(arm, item)`, `reference_view(ref, item)` |
   | what it is for | `goals()`, `goal_of(arm)` |
+  | what each item is (optional) | `item_fields(dataset)`: `{"fieldset": <field set>, "values": {item_id: {field: value}}}` |
   | words and places | `item_word` (e.g. `"episode"`), `data_dir` |
 
   Item text is only ever returned by `item_view` and `reference_view`, which only the local
   inspector calls: the static pages never carry it, whatever the adapter.
+
+  `item_fields` is optional: without it the pages show no fields. With it, the dataset page
+  lists each field and its coverage, and summarises the values of a field marked `public`
+  only; the local inspector shows every value, filters a comparison by a field and breaks it
+  down by a `choice` or `boolean` one. A public deployment (`catalog-serve --public`) answers
+  with public fields only (ADR-0003).
 
 ---
 

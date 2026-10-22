@@ -69,8 +69,8 @@ evh init --tutorial
 git init -q && git add -A && git commit -qm "Start: the tutorial kit"
 ```
 ```text
-  folders  data/sources, data/configs, data/goals
-  wrote    21 file(s), the tutorial kit under tutorial/
+  folders  data/sources, data/configs, data/goals, data/fields
+  wrote    23 file(s), the tutorial kit under tutorial/
 ```
 
 `data/` is where everything the harness freezes and records will live; `tutorial/` is the
@@ -79,8 +79,14 @@ catalog build, caches, your `.env`). Every command from here runs from this fold
 
 ## 1 · Freeze a dataset
 
+The tickets, and what you know about each one: the part of the product it is about, the
+customer's plan, whether it names a deadline. Those facts are **fields**, and you declare
+them yourself, in a field set; the harness defines none.
+
 ```bash
-evh dataset-create --dataset-id tickets_v1 --source-dir tutorial/tickets
+cp tutorial/fields/tickets.yaml data/fields/
+evh dataset-create --dataset-id tickets_v1 --source-dir tutorial/tickets \
+    --fieldset tickets --fields tutorial/ticket_fields.csv
 ```
 ```text
 data/datasets/tickets_v1.json  (6 item(s))
@@ -92,6 +98,16 @@ on `tickets_v1` *means* those six byte strings: every run records the dataset's 
 what it is (`support_tickets_2026q1_v1`), not for what you are doing (`test2`). If an
 input changes, make `tickets_v2` — editing a frozen item silently invalidates every number
 measured on it.
+
+**Fields describe an item; they are not what it is.** `data/fields/tickets.yaml` gives each
+field a type (`choice` with its values, `boolean`, `number`, `integer`, `duration`, `date`,
+`url` or `text`) and says whether it is `required` and `public`. `--fields` reads one row per
+item from a CSV or JSONL, and refuses a column the field set does not declare or a value of
+the wrong type. The run fingerprint hashes the items' bytes, not their fields, so correcting
+a field later (`evh dataset-create --dataset-id tickets_v1 --update-fields --fields fix.csv`)
+invalidates no run. Items that live at a URL instead of on disk come in through `--manifest`:
+one row per item with its `source_url` and `source_sha256`, and `dataset-materialize` refuses
+bytes that hash to anything else.
 
 **Keep your sources under version control** (or gitignore them, if you cannot redistribute
 them — the dataset's hashes are the record either way). An untracked input makes the tree
@@ -178,7 +194,7 @@ says so. Step 7 shows exactly what they get wrong.
 ## 5 · Commit, then measure
 
 ```bash
-git add data/datasets/tickets_v1.json data/configs/tickets_*.yaml data/goals/tickets_summary.yaml data/references/silver/tickets_v1
+git add data/datasets/tickets_v1.json data/fields/tickets.yaml data/configs/tickets_*.yaml data/goals/tickets_summary.yaml data/references/silver/tickets_v1
 git commit -m "tickets_v1: dataset, arms, goal, silver references"
 ```
 
@@ -529,6 +545,7 @@ evh validate
   ok   V8 no two runs share a config_id (outside a --repeat set)
   ...
   ok   V14 goals — 1 goal(s), every goal named resolves; optional (no required_from set)
+  ok   V15 item fields — 1 field set(s), 1 dataset(s) with fields, every value declared and typed
 VALIDATION PASSED
 ```
 
@@ -537,7 +554,8 @@ materialized copy is on the machine, and names each one it could not check; a CI
 the sources checks none of them, so materialize first where the copy matters. Two independent
 arms never agree to full float precision — V5 catches a copied number or a mis-wired arm, V8
 two measurements quietly averaged into one row. V14 checks every goal and everything that
-names one.
+names one; V15 every field value against its field set, and the fields' hash against a hand
+edit.
 
 ## 12 · Browse it: the catalog and the inspector
 
@@ -564,11 +582,18 @@ Open the address it prints (if another program holds port 8765, add `--port 8766
 
 - **The catalog** is static pages: one per dataset with every arm and its headline number, a
   goals page, and a page per goal ranking the arms that record its measure. Counts and means
-  only, never an item's text, so the pages can be published.
+  only, never an item's text, so the pages can be published. The dataset page lists its
+  fields and how many tickets fill each; it summarises the values of a field marked `public`
+  (Area, Plan) and no other (Names a deadline).
 - **The inspector** is the server behind them, on 127.0.0.1 only. Pick arms on one dataset
   and it tests each against a baseline with the same paired test as `pair-test`: lead2
   against lead1 on gold gives p = 0.0938, as step 8's numbers do. It charts the per-ticket
-  scores, and for one ticket shows each arm's output beside the reference.
+  scores, and for one ticket shows its fields and each arm's output beside the reference.
+- **Fields in a comparison.** Filter it to the tickets whose field matches (Area = account),
+  or break it down by a choice or yes/no field (Names a deadline): the paired test within
+  each group, Holm-corrected over every group together. Here two tickets name a deadline and
+  four do not, and on two tickets no test can reach 0.05: a breakdown needs items in every
+  group, and the page says when it has too few.
 - **Its refusals** are the tests' refusals: no comparison across two datasets, and on a metric
   scored against a reference, no arm scored against another reference than the baseline's (a
   silver-scored run against a gold-scored one).

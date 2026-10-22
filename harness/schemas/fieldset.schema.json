@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "fieldset",
+  "description": "The fields a project's dataset items may carry (ADR-0003): data/fields/<fieldset_id>.yaml. The harness defines no field; a project declares its own, and any number of datasets can name the same field set. Fields describe items; they are not part of a dataset's identity.",
+  "type": "object",
+  "required": ["fieldset_id", "fields"],
+  "additionalProperties": false,
+  "properties": {
+    "fieldset_id": {"type": "string", "pattern": "^[a-z0-9_]+$"},
+    "description": {"type": "string"},
+    "fields": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["name", "type"],
+        "additionalProperties": false,
+        "properties": {
+          "name": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+          "type": {"enum": ["text", "number", "integer", "boolean", "date", "duration", "url", "choice"]},
+          "label": {"type": "string"},
+          "description": {"type": "string"},
+          "unit": {"type": "string", "description": "for number and integer fields; a duration is always in seconds"},
+          "values": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string"},
+                     "description": "the allowed values of a choice field"},
+          "required": {"type": "boolean", "description": "every item must have a value (default false)"},
+          "public": {"type": "boolean", "description": "a summary of the values may appear on the static catalog pages (default false)"}
+        },
+        "if": {"properties": {"type": {"const": "choice"}}},
+        "then": {"required": ["values"]},
+        "else": {"not": {"required": ["values"]}}
+      }
+    }
+  }
+}

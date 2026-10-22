@@ -45,6 +45,21 @@ edit in place.
 
 ---
 
+## Fields describe an item; they do not identify it
+
+What you know about an item (the product area of a ticket, the show an episode came from,
+its length) belongs with the item, typed and checked, not in a spreadsheet beside the
+dataset that drifts from it. So a project declares its fields in a field set and the dataset
+carries the values. But a field is a description, not the bytes that were measured: correct
+a title and every run measured on that item is still a measurement of the same item. The
+fingerprint therefore hashes the items' bytes and ignores their fields, and the dataset
+records a separate hash of its fields, so a change to them is visible without invalidating
+anything.
+
+A field is also what makes "better on long episodes, worse on short ones" testable. Breaking a
+comparison into groups is several comparisons at once, though, so the per-group tests are
+corrected together: a group is held to a stricter threshold than it would be alone.
+
 ## Measure the arm's own noise before believing any delta
 
 ```bash

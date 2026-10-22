@@ -25,6 +25,12 @@ runs has to change.
   ([GUIDE step 12](https://docs.evals.humancopilot.eu/GUIDE/#12-browse-it-the-catalog-and-the-inspector)).
 - **Goals** (`data/goals/<goal_id>.yaml`, `goal:` on configs, validate V14). Nothing is
   required of an upgrading project until it sets `required_from` in `data/goals/policy.yaml`.
+- **Item fields and URL items** (`data/fields/<fieldset_id>.yaml`, `dataset-create --fieldset
+  --fields`, `--manifest`, validate V15). The dataset schema only gains optional keys, so
+  every 0.3.0 dataset is still valid; a dataset that uses them needs 0.4.0 to validate. If
+  you keep a second registry of facts about your items beside your datasets, this replaces
+  it: declare the facts as fields and attach them with `--update-fields`, which changes no
+  run's fingerprint.
 
 **After upgrading:** `evh self-test`, `evh validate`, and re-run the small paired tests.
 

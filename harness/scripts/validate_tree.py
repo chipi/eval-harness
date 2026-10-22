@@ -24,6 +24,10 @@ Each check exists because its absence let a real defect through somewhere:
   V14 goals          a goal that breaks its schema; a config, run or baseline naming a goal that
                      does not exist, or a format its goal does not accept; a run created on or
                      after data/goals/policy.yaml's `required_from` that names no goal
+  V15 item fields    a field set that breaks its schema; a dataset naming a field set that does
+                     not exist, or carrying fields without one; a value of an undeclared field,
+                     of the wrong type or outside its choices; a required field with no value;
+                     a fields_sha256 that is not the hash of the fields
 
 Exit 1 on any failure, so it can gate.
 
@@ -45,6 +49,7 @@ from _common import (  # noqa: E402
     CONFIGS,
     DATA,
     DATASETS,
+    FIELDS,
     GOALS,
     MATERIALIZED,
     ROOT,
@@ -818,6 +823,52 @@ def v14_goals() -> None:
           f"{len(bad)} problem(s)")
 
 
+def v15_item_fields() -> None:
+    """Item fields are declared, typed and hashed (ADR-0003). Undeclared means unchecked: a
+    typo in a column name would be a new field nobody filters or groups by."""
+    import _fields
+
+    fieldsets = {p.stem: p for p in sorted(FIELDS.glob("*.yaml"))} if FIELDS.is_dir() else {}
+    with_fields = []
+    for ds_file in sorted(DATASETS.glob("*.json")):
+        ds = read_json(ds_file)
+        if ds.get("fieldset") or any("fields" in it for it in ds.get("items") or []):
+            with_fields.append(ds)
+    if not fieldsets and not with_fields:
+        print("  --   V15 item fields (no field set, no dataset with fields)")
+        return
+    bad, loaded = [], {}
+    schema = json.loads((SCHEMAS / "fieldset.schema.json").read_text())
+    for fid in fieldsets:
+        fs = _fields.load_fieldset(fid) or {}
+        if fs.get("fieldset_id") != fid:
+            bad.append(f"fields/{fid}.yaml: fieldset_id {fs.get('fieldset_id')!r} is not its file name")
+        if jsonschema is not None:
+            try:
+                jsonschema.validate(fs, schema)
+            except jsonschema.ValidationError as exc:
+                bad.append(f"fields/{fid}.yaml: {exc.message[:90]}")
+                continue
+        loaded[fid] = fs
+    for ds in with_fields:
+        where, fid = f"datasets/{ds['dataset_id']}.json", ds.get("fieldset")
+        if not fid:
+            bad.append(f"{where}: items carry fields, but the dataset names no fieldset")
+            continue
+        if fid not in loaded:
+            bad.append(f"{where}: field set {fid!r} " + ("is not valid" if fid in fieldsets else "does not exist"))
+            continue
+        for it in ds["items"]:
+            bad += [f"{where}: {p}" for p in _fields.problems(loaded[fid], it["item_id"], it.get("fields") or {})]
+        if ds.get("fields_sha256") != _fields.digest(ds["items"]):
+            bad.append(f"{where}: fields_sha256 is not the hash of the items' fields "
+                       "(edited by hand? `dataset-create --update-fields` records the change)")
+    for x in bad[:30]:
+        print(f"       {x}")
+    check(not bad, f"V15 item fields — {len(loaded)} field set(s), {len(with_fields)} dataset(s) with fields, "
+          "every value declared and typed", f"{len(bad)} problem(s)")
+
+
 def main() -> int:
     # `--help` prints help. It used to fall through and run the whole validation, which
     # made self_test's `validate_tree.py --help` check assert "the tree is valid" instead
@@ -833,7 +884,7 @@ def main() -> int:
                v9_no_committed_evidence_is_missing,
                v10_derived_runs_carry_the_current_scorer,
                v11_judging_sets_match_their_hash, v12_verdicts_belong_to_their_set,
-               v13_judge_scorers_are_well_formed, v14_goals):
+               v13_judge_scorers_are_well_formed, v14_goals, v15_item_fields):
         fn()
     for n in notes:
         print(f"\n  note: {n}")

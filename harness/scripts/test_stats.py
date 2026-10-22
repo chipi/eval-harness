@@ -86,6 +86,31 @@ for _ in range(400):
     miss += ci[0] > 0 or ci[1] < 0
 check(f"interval: misses zero at about the nominal rate under no difference ({miss}/400)", miss / 400 <= 0.08)
 
+# compare_by: the paired test per group of items, one Holm over every (group, arm) test
+# Three groups of 10 items. Arm a: p 0.0020 on short, 0.0039 on mid, 0.0156 on long; arm b ties
+# the baseline in sign everywhere (p 1.0). Long alone: a's 0.0156 is under its 0.025 threshold;
+# jointly (6 tests) it ranks third, under 0.0125, and is not separated.
+g1, g3, g2 = ([f"i{k:02d}" for k in range(s, s + 10)] for s in (0, 10, 20))
+base = {i: 0.0 for i in g1 + g2 + g3}
+arm_a = {**{i: 1.0 for i in g1}, **dict(zip(g3, [1.0] * 9 + [-0.2])),
+         **dict(zip(g2, [1.0] * 7 + [-0.1] * 3))}
+arm_b = {i: (0.1 if k % 2 else -0.1) for k, i in enumerate(g1 + g2 + g3)}
+three = {"base": base, "a": arm_a, "b": arm_b}
+by = stats.compare_by(three, "base", {"short": set(g1), "mid": set(g3), "long": set(g2)})
+joint = {(g["group"], r["arm"]): r["p"] for g in by["groups"] for r in g["rows"] if r["p"] is not None}
+want = stats.holm(joint)
+check("compare_by: the family is every (group, arm) test", by["family_size"] == len(joint) == 6)
+check("compare_by: each threshold and verdict is the joint Holm's",
+      all((r["threshold"], r["verdict"].startswith("separated")) == want[(g["group"], r["arm"])]
+          for g in by["groups"] for r in g["rows"] if r["p"] is not None))
+alone = {g: {r["arm"]: r["verdict"] for r in stats.compare(
+    {k: {i: v for i, v in s.items() if i in m} for k, s in three.items()}, "base")["rows"]}
+    for g, m in (("short", set(g1)), ("mid", set(g3)), ("long", set(g2)))}
+flipped = [(g["group"], r["arm"]) for g in by["groups"] for r in g["rows"]
+           if alone[g["group"]][r["arm"]].startswith("separated") and not r["verdict"].startswith("separated")]
+check("compare_by: a group tested alone can separate where the joint correction does not", bool(flipped))
+check("compare_by: items per group", [g["items"] for g in by["groups"]] == [10, 10, 10])
+
 bad = [lb for lb, c in ok if not c]
 print(f"\n{len(ok) - len(bad)}/{len(ok)} assertions passed")
 if bad:

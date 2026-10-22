@@ -30,7 +30,8 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
 from _common import DATASETS, ROOT  # noqa: E402
-from catalog_adapter import Adapter, load_adapter  # noqa: E402
+import _fields  # noqa: E402
+from catalog_adapter import Adapter, item_fields, load_adapter  # noqa: E402
 
 #: The front-end files every page loads: installed beside the package, or in a checkout.
 ASSET_DIR = next(p for p in (HERE / "catalog_assets", HERE.parent / "catalog_assets") if p.is_dir())
@@ -231,9 +232,59 @@ def render_dataset(A: Adapter, ds: str, v: dict, out: Path) -> None:
                 "not ranked against each other.", btn)
     body += block("01", "arms", table("arms", ["arm", "metric", "mean", f"{e(A.item_word)}s", "runs",
                                                "reference", ""], rows, "filter arms"))
+    n = 1
     if refs:
-        body += block("02", "references", f"<ul>{refs}</ul>")
+        n += 1
+        body += block(f"{n:02d}", "references", f"<ul>{refs}</ul>")
+    fields_html = render_fields(A, ds)
+    if fields_html:
+        n += 1
+        body += block(f"{n:02d}", f"{A.item_word} fields", fields_html, "item-fields")
     write(out, f"d/{slug(ds or 'none')}.html", page(ds or "dataset", body, 1, "", item=A.item_word))
+
+
+def _show(v, field: dict) -> str:
+    if field.get("type") == "duration" and isinstance(v, (int, float)):
+        s = int(round(v))
+        return f"{s // 3600}:{s % 3600 // 60:02d}:{s % 60:02d}"
+    s = fmt(v) if isinstance(v, float) else str(v)
+    return s + (f" {field['unit']}" if field.get("unit") else "")
+
+
+def render_fields(A: Adapter, ds: str) -> str:
+    """The dataset's declared fields (ADR-0003): name, type, how many items fill each, and for a
+    field marked public a summary of its values. A field not marked public shows none: the
+    static pages carry no item content unless the project says so."""
+    fl = item_fields(A, ds)
+    fs = fl["fieldset"]
+    if not fs:
+        return ""
+    decl = {f["name"]: f for f in fs.get("fields") or []}
+    items = [{"item_id": i, "fields": f} for i, f in fl["values"].items()]
+    rows = []
+    for s in _fields.summary(fs, items):
+        f = decl[s["name"]]
+        if not s["public"]:
+            vals = '<span class="muted small">not public</span>'
+        elif "counts" in s:
+            vals = " · ".join(f"{e(k)} <b>{c}</b>" for k, c in sorted(s["counts"].items(), key=lambda kv: -kv[1]))
+        elif "median" in s:
+            vals = f"{e(_show(s['min'], f))} – {e(_show(s['max'], f))}, median {e(_show(s['median'], f))}"
+        elif "min" in s:
+            vals = f"{e(s['min'])} – {e(s['max'])}"
+        elif "distinct" in s:
+            vals = f"{s['distinct']} distinct"
+        else:
+            vals = "—"
+        rows.append([f"{e(s['label'])}<br><code class=\"small\">{e(s['name'])}</code>",
+                     e(s["type"] + (f" ({s['unit']})" if s["unit"] else "")),
+                     f'<span data-v="{s["filled"]}">{s["filled"]} of {s["of"]}</span>',
+                     e(s["description"]), vals])
+    intro = (f'<p class="muted small">Declared in the field set <code>{e(fs.get("fieldset_id", ""))}</code>. '
+             f"Values are summarised only for fields marked public; the inspector shows each "
+             f"{e(A.item_word)}'s, filters a comparison by them, and breaks it down by a choice or "
+             "yes/no field.</p>")
+    return intro + table("fields", ["field", "type", "filled", "description", "values"], rows)
 
 
 def goal_answers(goal: dict, by_ds: dict) -> list:

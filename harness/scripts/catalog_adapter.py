@@ -71,9 +71,6 @@ class Adapter(Protocol):
     @property
     def preferred_metrics(self) -> tuple:
         """Every arm's primary metric, most common first: the inspector's default yardstick."""
-        from collections import Counter
-        c = Counter((_json(ds[-1] / "metrics.json") or {}).get("primary_metric") for ds in self._index().values())
-        return tuple(k for k, _ in c.most_common() if k)
 
     def recorded_means(self, arm: str) -> Dict[str, float]:
         """Run-level averages, for arms with no per-item scores: shown, never tested."""
@@ -109,6 +106,18 @@ class Adapter(Protocol):
 
     def goal_of(self, arm: str) -> str:
         """The goal an arm names ("" if none)."""
+
+    # Optional (ADR-0003); `item_fields(A, dataset)` below answers for an adapter without it.
+    # def item_fields(self, dataset: str) -> dict:
+    #     {"fieldset": <fieldset.schema.json document> or None, "values": {item_id: {field: value}}}
+
+
+def item_fields(A, dataset: str) -> dict:
+    """A dataset's declared fields and its items' values, from the adapter if it answers, else
+    none: the pages then show no fields."""
+    fn = getattr(A, "item_fields", None)
+    got = fn(dataset) if callable(fn) else None
+    return got if isinstance(got, dict) and got.get("fieldset") else {"fieldset": None, "values": {}}
 
 
 def _json(p: Path):
@@ -298,6 +307,17 @@ class HarnessAdapter:
 
     def goal_of(self, arm: str) -> str:
         return self._metrics(arm).get("goal", "")
+
+    # -- item fields (ADR-0003) -----------------------------------------------------------
+    @lru_cache(maxsize=None)
+    def item_fields(self, dataset: str) -> dict:
+        import yaml
+
+        ds = _json(self.data_dir / "datasets" / f"{dataset}.json") or {}
+        f = self.data_dir / "fields" / f"{ds.get('fieldset', '')}.yaml"
+        fs = yaml.safe_load(f.read_text(encoding="utf-8")) if ds.get("fieldset") and f.is_file() else None
+        return {"fieldset": fs if isinstance(fs, dict) else None,
+                "values": {it["item_id"]: it.get("fields") or {} for it in ds.get("items") or []}}
 
 
 def load_adapter(spec: Optional[str] = None) -> Adapter:

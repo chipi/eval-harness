@@ -124,6 +124,9 @@ footer code { font: .9em var(--mono); }
 .controls select { font: 500 13px/1 var(--mono); color: var(--ink); background: var(--surface); border: 1px solid var(--hair);
   border-radius: 10px; padding: 9px 12px; margin-left: 8px; max-width: 46ch; }
 .controls .tick input { margin-right: 6px; vertical-align: middle; }
+/* The field filter (ADR-0003): picker, value and button wrap onto the next line on a phone. */
+.controls .filter { flex-wrap: wrap; margin-bottom: 0; }
+.controls .filter input, .controls .filter select { max-width: 100%; }
 .eyebrow.gap { margin-top: 48px; }
 .chip.v-better { border-color: var(--open); color: var(--ink); }
 .chip.v-worse { border-color: var(--local); color: var(--ink); }

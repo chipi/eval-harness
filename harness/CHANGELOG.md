@@ -14,11 +14,13 @@ that can move a result is never a patch release without saying so under **Change
 See your runs, not only tables of them. `evh catalog` builds static pages over a project's
 runs, and `evh catalog-serve` runs an inspector that tests chosen arms against a baseline and
 shows one item's outputs beside its reference. A project on the harness's layout needs no code;
-one with its own layout writes one adapter. Goals record what an evaluation is for, and the
-paired test now lives in one place, `evaluation_harness.stats`, exact at 30 items or fewer.
+one with its own layout writes one adapter. Goals record what an evaluation is for; items carry
+the typed fields a project declares, and can live at a pinned URL. The paired test now lives in
+one place, `evaluation_harness.stats`, exact at 30 items or fewer.
 **Upgrading can move a result** only where `pair-test` or `family-test` ran on 30 items or fewer
 (below), and adds no dependency. Design:
-[ADR-0002](https://github.com/chipi/eval-harness/blob/main/docs/adr/ADR-0002-catalog-inspector-goals.md);
+[ADR-0002](https://github.com/chipi/eval-harness/blob/main/docs/adr/ADR-0002-catalog-inspector-goals.md),
+[ADR-0003](https://github.com/chipi/eval-harness/blob/main/docs/adr/ADR-0003-item-fields-and-url-items.md);
 how to upgrade: [UPGRADING](https://github.com/chipi/eval-harness/blob/main/harness/docs/UPGRADING.md).
 
 This repository now deploys the harness on its own example experiments:
@@ -87,7 +89,9 @@ package.
   - `holm`, with a declared family larger than the p-values passed;
   - `exact_ci`, an interval for the mean difference that agrees with the test: none at 5
     items or fewer, where no shift can be rejected;
-  - `compare`, every arm against a baseline with verdicts in words.
+  - `compare`, every arm against a baseline with verdicts in words;
+  - `compare_by`, the same test within each group of items, Holm-corrected over every group
+    and arm together.
 
   It has its own test suite, `scripts/test_stats.py`, run by `make test`.
 - **The exact count is ~4x faster** (0.03 s at 30 items, was 0.11 s): the sign-pattern sums are
@@ -130,7 +134,7 @@ package.
   - **CSP-clean:** no inline script or style. The theme script is a file, and the legend
     colours are set from JS.
 
-  Tests: `scripts/test_catalog.py` (39 assertions), run by `make test`.
+  Tests: `scripts/test_catalog.py` (51 assertions), run by `make test`.
 - **Goals: what an evaluation is for** (`data/goals/<goal_id>.yaml`, `schemas/goal.schema.json`).
   - **What a goal says:** who uses the output, the decision it informs, the measure that
     decides (and which direction is better), the output formats it accepts, its datasets
@@ -158,6 +162,32 @@ package.
     already committed is held to one.
 
   Tests: `scripts/test_goals.py` (14 assertions), run by `make test`.
+- **Item fields** (`data/fields/<fieldset_id>.yaml`, `schemas/fieldset.schema.json`, ADR-0003).
+  The harness defines no field: a project declares its own in a field set, and any number of
+  its datasets name it.
+  - **Types:** text, number, integer, boolean, date, duration (seconds; `h:mm:ss` accepted),
+    url, and choice with its values; a field can be `required` and `public`.
+  - **`dataset-create --fieldset ID --fields FILE`** attaches values from a CSV or JSONL, one
+    row per `item_id`, and refuses an undeclared column, a mistyped value, a value outside a
+    choice, an unknown item and an empty required field. `--update-fields` corrects values on
+    an existing dataset.
+  - **Not the identity.** A run's fingerprint hashes item ids and bytes only, so a corrected
+    field invalidates no run; the dataset records `fields_sha256` beside them.
+  - **`validate` V15** fails a field set that breaks its schema, fields with no field set or an
+    unknown one, an undeclared or mistyped value, a missing required value, and a
+    `fields_sha256` that does not match (a hand edit).
+  - **In the catalog:** each field with its coverage, and a summary of its values only when it
+    is `public`. **In the inspector:** an item's fields beside its outputs; a filter on any
+    field; a breakdown by a choice or yes/no field, tested per group with `stats.compare_by`.
+    A public deployment answers with public fields only.
+  - The adapter protocol gains an optional `item_fields(dataset)`.
+- **Items fetched from a pinned URL.** `dataset-create --manifest FILE` takes one row per item:
+  `item_id`, `source_url` and `source_sha256` (empty: fetched and pinned now), and field
+  columns. `dataset-materialize` downloads each into `.cache/items/` and refuses bytes that
+  hash to anything else, as it refuses a changed file.
+
+  Tests: `scripts/test_fields.py` (39 assertions), run by `make test`; the catalog's in
+  `test_catalog.py`.
 - **`evh init [DIR] [--tutorial]`** starts a project: `data/sources`, `data/configs`,
   `data/goals` and a `.gitignore` for what the harness derives. `--tutorial` copies the GUIDE's
   kit (tickets, gold, arms, a goal, a judge scorer) into `tutorial/`; the kit now ships inside
@@ -165,6 +195,13 @@ package.
 - **`make guide-check`** (part of `make check`) runs `docs/GUIDE.md` in a fresh project, as a
   reader would, and fails when a quoted output no longer matches what the command prints.
   Lines that the unseeded `lead2_noisy` arm moves are marked in the GUIDE and not compared.
+- **The tests that run `evh` install the real wheel** (`scripts/_wheel.py`), built from
+  `pyproject.toml`, instead of copying folders. A file the package data leaves out now fails
+  them, where a copy would have included it.
+- **`make browser-check`** drives the catalog and the inspector in headless Chromium: a
+  tutorial project with fields, the main paths and the field controls, the phone-width layout,
+  and no console error. A development extra (`requirements-browser.txt`, `make
+  browser-install`), never a dependency of the package; CI runs it as its own job.
 
 ## 0.3.0 — 2026-10-21
 

@@ -50,7 +50,8 @@ sys.path.insert(0, str(HERE))
 
 import stats  # noqa: E402
 from _common import ROOT  # noqa: E402
-from catalog_adapter import Adapter, load_adapter  # noqa: E402
+import _fields  # noqa: E402
+from catalog_adapter import Adapter, item_fields, load_adapter  # noqa: E402
 
 #: Every comparison ends in one of these, so a page can always say what it shows and why.
 STATES = ("compared", "average only", "no shared metric", "not scorable")
@@ -248,7 +249,62 @@ def _warnings(ctx: dict) -> list:
     if drift:
         w.append("Format not followed: " + "; ".join(drift) + ". The score compares what came back.")
     w += [f"Re-scoring: {n}." for n in dict.fromkeys(n for a in ctx["arms"] for n in A.notes(a))]
+    if ctx.get("wheres"):
+        n = len(series.get(ctx["baseline"], {}))
+        w.append(f"Filtered to the {n} {item}(s) where " + " and ".join(x.replace(":", " = ", 1) for x in ctx["wheres"])
+                 + ": a subset is a smaller sample, so less can be separated.")
+    if ctx.get("breakdown"):
+        w.append(f"Broken down by {ctx['by']}: {ctx['breakdown']['family_size']} tests, Holm-corrected "
+                 "together, so a group is held to a stricter threshold than it would be alone.")
+        if ctx.get("ungrouped"):
+            w.append(f"{ctx['ungrouped']} {item}(s) have no {ctx['by']} and are in no group.")
     return w
+
+
+def _fields_of(dataset: str) -> tuple:
+    """({name: field}, {item_id: {name: value}}) for the dataset's declared fields (ADR-0003).
+    A public deployment (--public) sees only the fields marked public: what the static pages may
+    show, the public API may show, and a filter on a hidden field would leak it through counts."""
+    fl = item_fields(A, dataset) if dataset else {"fieldset": None, "values": {}}
+    decl = {f["name"]: f for f in (fl["fieldset"] or {}).get("fields") or []}
+    if LIMITS["hosts"]:
+        decl = {n: f for n, f in decl.items() if f.get("public")}
+    values = {i: {n: v for n, v in vs.items() if n in decl} for i, vs in fl["values"].items()}
+    return decl, values
+
+
+def _field_list(decl: dict) -> list:
+    return [{"name": n, "label": f.get("label") or n, "type": f["type"], "values": f.get("values"),
+             "unit": f.get("unit", ""), "groupable": f["type"] in _fields.GROUPABLE} for n, f in decl.items()]
+
+
+def _filter(series: dict, decl: dict, values: dict, wheres: list):
+    """series restricted to the items whose fields pass every `name:value` filter; or an error."""
+    for w in wheres:
+        name, _, want = w.partition(":")
+        if name not in decl:
+            return None, f"no field {name!r} to filter by" + (" here" if LIMITS["hosts"] else "")
+        try:
+            keep = {i for i, vs in values.items() if _fields.matches(decl[name], vs.get(name), want)}
+        except ValueError as exc:
+            return None, f"filter {w}: {exc}"
+        series = {a: {i: x for i, x in s.items() if i in keep} for a, s in series.items()}
+    return series, ""
+
+
+def _groups(field: dict, name: str, values: dict, items) -> tuple:
+    """({group: set of items}, items with no value): a choice field's groups in declared order,
+    a boolean's as yes then no."""
+    order = field.get("values") or ["true", "false"]
+    groups: dict = {g: set() for g in order}
+    none = 0
+    for i in items:
+        v = values.get(i, {}).get(name)
+        if v is None:
+            none += 1
+            continue
+        groups.setdefault(str(v).lower() if isinstance(v, bool) else str(v), set()).add(i)
+    return {g: m for g, m in groups.items() if m}, none
 
 
 def _number(params: dict, key: str, kind):
@@ -297,15 +353,26 @@ def compare(params: dict) -> dict:
     other_ref = _other_reference(series, baseline, metric, rescore)
     for a in other_ref:
         series.pop(a)
+    decl, fvalues = _fields_of(dataset)
+    wheres = [w for w in params.get("where", []) if w]
+    series, error = _filter(series, decl, fvalues, wheres)
+    if error:
+        return {"error": error}
     higher, neutral = not A.lower_is_better(metric), A.is_neutral(metric)
     result = stats.compare(series, baseline, higher_is_better=higher, neutral=neutral,
                            family=_number(params, "family", int) or None,
                            threshold=_number(params, "threshold", float))
+    by, breakdown, ungrouped = params.get("by", [""])[0], None, 0
+    if by:
+        if by not in decl or decl[by]["type"] not in _fields.GROUPABLE:
+            return {"error": f"break a comparison down by a choice or yes/no field, not {by!r}"}
+        groups, ungrouped = _groups(decl[by], by, fvalues, series.get(baseline, {}))
+        breakdown = stats.compare_by(series, baseline, groups, higher_is_better=higher, neutral=neutral)
     averages, repeats = _averages(arms, series, metric)
     swapped = bool(asked) and asked != baseline
     ctx = dict(metric=metric, series=series, arms=arms, ds=ds, asked=asked, baseline=baseline,
                swapped=swapped, averages=averages, repeats=repeats, aside=aside, dataset=dataset,
-               other_ref=other_ref)
+               other_ref=other_ref, wheres=wheres, by=by, breakdown=breakdown, ungrouped=ungrouped)
     return {
         "metric": metric,
         "higher_is_better": higher,
@@ -326,6 +393,10 @@ def compare(params: dict) -> dict:
         "repeats": repeats,
         "state": _state(result["rows"], averages, swapped),
         "warnings": _warnings(ctx),
+        "fields": _field_list(decl),
+        "where": wheres,
+        "by": by,
+        "breakdown": breakdown,
     }
 
 
@@ -335,6 +406,9 @@ def item(params: dict) -> dict:
     if not it or not arms or any(not A.arms_of(a) for a in arms):
         return {"error": "need arms=<arm>,... known to the catalog and item=<item_id>"}
     out = {"item": it, "views": {a: A.item_view(a, it) for a in arms}}
+    decl, values = _fields_of(A.describe(A.arms_of(arms[0])[0]).get("dataset", ""))
+    out["fields"] = [dict(f, value=values.get(it, {})[f["name"]]) for f in _field_list(decl)
+                     if f["name"] in values.get(it, {})]
     ref = params.get("ref", [""])[0]
     if ref:
         out["reference"] = {"id": ref, "view": A.reference_view(ref, it)}

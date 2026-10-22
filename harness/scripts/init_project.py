@@ -8,7 +8,7 @@ DIR defaults to the current directory. Nothing that already exists is overwritte
 already there is kept and named, so running it twice, or in a project that has started,
 is safe.
 
-  data/sources/  data/configs/  data/goals/   your inputs, arms and goals
+  data/sources/  data/configs/  data/goals/  data/fields/   your inputs, arms, goals and item fields
   .gitignore     the harness's derived and private paths (materialized copies, the
                  catalog build, caches, .env, the venv)
   tutorial/      with --tutorial: six support tickets, their gold summaries, four arms, a
@@ -26,7 +26,7 @@ HERE = Path(__file__).resolve().parent
 #: The kit is package data in an install (evaluation_harness/tutorial) and a sibling of
 #: scripts/ in a checkout (harness/tutorial).
 KIT = next((p for p in (HERE / "tutorial", HERE.parent / "tutorial") if (p / "tickets").is_dir()), None)
-FOLDERS = ("data/sources", "data/configs", "data/goals")
+FOLDERS = ("data/sources", "data/configs", "data/goals", "data/fields")
 IGNORE = """\
 # evaluation-harness: derived or private, never committed
 .venv

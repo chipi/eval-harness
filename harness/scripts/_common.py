@@ -116,6 +116,10 @@ BASELINES = DATA / "baselines"
 REFERENCES = DATA / "references"
 #: What each evaluation is FOR (ADR-0002): one <goal_id>.yaml per goal, plus policy.yaml.
 GOALS = DATA / "goals"
+#: Field sets (ADR-0003): one <fieldset_id>.yaml each, declaring the fields items may carry.
+FIELDS = DATA / "fields"
+#: Items fetched from a source_url, by their sha256. Derived and gitignored, like materialized/.
+ITEM_CACHE = ROOT / ".cache" / "items"
 
 #: The JSON Schemas the harness validates against. Inside the installed package they sit
 #: beside the code; in a checkout they are one level up, in harness/schemas.

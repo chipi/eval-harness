@@ -47,6 +47,36 @@ The `dataset_id` is the comparison contract. Every run records it, and
 *is* (`support_tickets_2026q1_v1`), not for what you were doing at the time
 (`test2`).
 
+**What you know about each item goes in fields** (ADR-0003). Declare them once in a
+field set, `data/fields/<fieldset_id>.yaml` (`schemas/fieldset.schema.json`): a name and
+a type for each (`text`, `number`, `integer`, `boolean`, `date`, `duration`, `url`, or
+`choice` with its `values`), optionally `required` and `public`. Then attach the values,
+one row per `item_id`, from a CSV or JSONL:
+
+```bash
+make dataset-create DATASET_ID=my_v1 ARGS="--fieldset tickets --fields fields.csv"
+make dataset-create DATASET_ID=my_v1 ARGS="--update-fields --fields fixes.csv"   # later
+```
+
+A column the field set does not declare, a value of the wrong type or outside a
+choice, and a required field left empty are refused. Fields are not the dataset's
+identity: runs hash the items' bytes, so correcting a field invalidates no run, and
+`fields_sha256` records that the fields changed. `make validate` (V15) checks every
+value. The catalog summarises a field's values only when it is `public`; the local
+inspector shows them all, filters a comparison by them, and breaks it down by a
+`choice` or `boolean` field.
+
+**Items that live at a URL** come in through a manifest, one row per item:
+`item_id`, `source_url` and `source_sha256` (leave the hash empty and the bytes are
+fetched and pinned now), plus any field columns:
+
+```bash
+make dataset-create DATASET_ID=episodes_v1 ARGS="--manifest items.csv --fieldset episodes"
+```
+
+`make dataset-materialize` downloads each one into `.cache/items/` and refuses bytes
+that hash to anything else, the same failure as a changed file under `sources/`.
+
 ---
 
 ## 3. Materialize

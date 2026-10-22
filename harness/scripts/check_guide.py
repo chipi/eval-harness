@@ -11,8 +11,8 @@ order in a scratch project, the way a reader would, and checks that every line o
 ```text block after it appears in what was printed (spaces collapsed; a line with "..." is
 an elision and is not checked).
 
-The package is laid out as pip lays it out, beside the project, and `evh` is a shim on PATH
-that runs it: no network, no install. A one-line HTML comment before a block steers the
+The package is built into its wheel and installed beside the project, with its own `evh` on
+PATH (_wheel.py): a file pyproject.toml leaves out of the package is missing here too. A one-line HTML comment before a block steers the
 check, and does not show on the page:
 
   <!-- guide-check: skip -->        not run (installing the package: done here instead)
@@ -42,6 +42,8 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 HARNESS = HERE.parent
+sys.path.insert(0, str(HERE))
+import _wheel  # noqa: E402
 GUIDE = HARNESS.parent / "docs" / "GUIDE.md"
 FENCE = re.compile(r"^```(\w*)\s*$")
 MARK = re.compile(r"^<!--\s*guide-check:\s*(\w+)((?:\s+[\w.-]+)*)\s*-->\s*$")
@@ -83,17 +85,9 @@ def expected_lines(text: str) -> list:
 
 
 def setup(tmp: Path) -> tuple:
-    """The package as pip lays it out, an `evh` shim on PATH, and an empty project."""
-    site = tmp / "site-packages"
-    pkg = site / "evaluation_harness"
-    shutil.copytree(HERE, pkg, ignore=shutil.ignore_patterns("__pycache__", "test_*.py", "self_test.py"))
-    for sub in ("schemas", "catalog_assets", "tutorial"):
-        shutil.copytree(HARNESS / sub, pkg / sub, ignore=shutil.ignore_patterns("__pycache__"))
-    bindir = tmp / "bin"
-    bindir.mkdir()
-    shim = bindir / "evh"
-    shim.write_text(f'#!/bin/sh\nexec "{sys.executable}" -m evaluation_harness "$@"\n')
-    shim.chmod(0o755)
+    """The package installed from its wheel, its own `evh` on PATH, and an empty project."""
+    site = _wheel.install(tmp / "site-packages")
+    bindir = site / "bin"  # pip --target puts the console script here
     proj = tmp / "my-evals"
     proj.mkdir()
     env = {**os.environ, "PATH": f"{bindir}{os.pathsep}{os.environ.get('PATH', '')}",

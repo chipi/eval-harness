@@ -511,6 +511,7 @@ def test_example_scorer_suites_pass() -> None:
                             ("test_stats.py", "paired test (stats.py)"),
                             ("test_catalog.py", "catalog and run inspector"),
                             ("test_goals.py", "goals: config, run, baseline, V14, pages"),
+                            ("test_fields.py", "item fields and URL items: create, materialize, V15"),
                             ("test_judge_score.py", "judging pass"),
                             ("test_code_hashes.py", "scoring-code hashes"),
                             ("check_report_claims.py", "report claims vs committed runs"),
@@ -2328,10 +2329,8 @@ def test_hints_name_the_command_the_user_has() -> None:
 
     tmp = Path(tempfile.mkdtemp(prefix="harness-hints-"))
     try:
-        site = tmp / "site-packages"
-        shutil.copytree(HERE, site / "evaluation_harness",
-                        ignore=shutil.ignore_patterns("__pycache__", "test_*.py", "self_test.py"))
-        shutil.copytree(ROOT / "schemas", site / "evaluation_harness" / "schemas")
+        import _wheel  # noqa: PLC0415 — the real wheel, so package-data omissions fail here
+        site = _wheel.install(tmp / "site-packages")
         proj = tmp / "project"
         (proj / "data" / "sources" / "h_v1").mkdir(parents=True)
         (proj / "data" / "sources" / "h_v1" / "a.txt").write_text("One. Two.\n")
@@ -2384,10 +2383,8 @@ def test_rescore_finds_the_bundled_adapter_from_an_installed_package() -> None:
 
     tmp = Path(tempfile.mkdtemp(prefix="harness-installed-rescore-"))
     try:
-        site = tmp / "site-packages"
-        shutil.copytree(HERE, site / "evaluation_harness",
-                        ignore=shutil.ignore_patterns("__pycache__", "test_*.py", "self_test.py"))
-        shutil.copytree(ROOT / "schemas", site / "evaluation_harness" / "schemas")
+        import _wheel  # noqa: PLC0415 — the real wheel, so package-data omissions fail here
+        site = _wheel.install(tmp / "site-packages")
         proj = tmp / "project"
         data = proj / "data"
         (data / "sources" / "rs_v1").mkdir(parents=True)
@@ -2465,11 +2462,12 @@ def test_judge_score_runs_from_an_installed_package() -> None:
     """`evh judge-score` in a project that has only the package, its own data, scorer, prompt
     and runs. The package is laid out as pip lays it out (scripts/ as evaluation_harness,
     schemas/ inside it, per pyproject.toml) in a directory with no checkout beside it, and run
-    with `python -m evaluation_harness` from the project. The judges are `provider: fake`:
+    with `python -m evaluation_harness` from the project (the wheel built from pyproject.toml,
+    installed by _wheel.py). The judges are `provider: fake`:
     no network, no key, and the gate refuses them unless the scorer is run --unvalidated.
 
-    EVH_TEST_PYTHON=<venv>/bin/python runs the same project against a real `pip install`
-    of the package instead of the copy."""
+    EVH_TEST_PYTHON=<venv>/bin/python runs the same project against a package installed in
+    another interpreter's environment."""
     import json as _json  # noqa: PLC0415
     import os  # noqa: PLC0415
     import shutil  # noqa: PLC0415
@@ -2477,10 +2475,8 @@ def test_judge_score_runs_from_an_installed_package() -> None:
 
     tmp = Path(tempfile.mkdtemp(prefix="harness-installed-"))
     try:
-        site = tmp / "site-packages"
-        shutil.copytree(HERE, site / "evaluation_harness",
-                        ignore=shutil.ignore_patterns("__pycache__", "test_*.py", "self_test.py"))
-        shutil.copytree(ROOT / "schemas", site / "evaluation_harness" / "schemas")
+        import _wheel  # noqa: PLC0415 — the real wheel, so package-data omissions fail here
+        site = _wheel.install(tmp / "site-packages")
         installed = os.environ.get("EVH_TEST_PYTHON", "")  # a real pip install, when given
         ipy = installed or PY
         pkg = site / "evaluation_harness"

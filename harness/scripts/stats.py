@@ -182,16 +182,49 @@ def compare(
         # so the verdict is the same one the page showed (family size alone loses the rank).
         verdicts = {a: (threshold, p <= threshold) for a, p in pvals.items()}
     for row in rows:
-        thr, ok = verdicts.get(row["arm"], (None, False))
-        row["threshold"] = thr
-        if row["p"] is None:
-            row["verdict"] = "untestable" if row["n"] < 2 else "identical"
-        elif ok and neutral:  # a measurement with no better direction (length, counts)
-            row["verdict"] = "separated: higher" if row["delta"] > 0 else "separated: lower"
-        elif ok:
-            better = (row["delta"] > 0) == higher_is_better
-            row["verdict"] = "separated: better" if better else "separated: worse"
-        else:
-            row["verdict"] = "not separated"
+        _set_verdict(row, *verdicts.get(row["arm"], (None, False)), higher_is_better, neutral)
     items = sorted(set().union(*(set(s) for s in arms.values()))) if arms else []
     return {"items": items, "rows": rows, "family_size": max(len(pvals), family or 0)}
+
+
+def _set_verdict(row: dict, thr, ok: bool, higher_is_better: bool, neutral: bool) -> None:
+    row["threshold"] = thr
+    if row["p"] is None:
+        row["verdict"] = "untestable" if row["n"] < 2 else "identical"
+    elif ok and neutral:  # a measurement with no better direction (length, counts)
+        row["verdict"] = "separated: higher" if row["delta"] > 0 else "separated: lower"
+    elif ok:
+        better = (row["delta"] > 0) == higher_is_better
+        row["verdict"] = "separated: better" if better else "separated: worse"
+    else:
+        row["verdict"] = "not separated"
+
+
+def compare_by(
+    arms: dict,
+    baseline: str,
+    groups: dict,
+    higher_is_better: bool = True,
+    neutral: bool = False,
+    family: int | None = None,
+) -> dict:
+    """`compare` within each group of items, with ONE Holm correction over every (group, arm)
+    test. Breaking a comparison into k groups makes k times the chances of a false
+    "separated", so the correction counts all of them, ranked together, not each group alone.
+
+    groups: {group name: set of item ids}. Returns {"groups": [{"group", "items", "rows"}],
+    "family_size"}; each row is `compare`'s, its threshold and verdict from the joint Holm.
+    """
+    out, pvals = [], {}
+    for g, members in groups.items():
+        sub = {a: {i: v for i, v in s.items() if i in members} for a, s in arms.items()}
+        res = compare(sub, baseline, higher_is_better, neutral)
+        for row in res["rows"]:
+            if row["p"] is not None:
+                pvals[(g, row["arm"])] = row["p"]
+        out.append({"group": g, "items": len(set(sub.get(baseline) or {})), "rows": res["rows"]})
+    verdicts = holm(pvals, family=family)
+    for grp in out:
+        for row in grp["rows"]:
+            _set_verdict(row, *verdicts.get((grp["group"], row["arm"]), (None, False)), higher_is_better, neutral)
+    return {"groups": out, "family_size": max(len(pvals), family or 0)}

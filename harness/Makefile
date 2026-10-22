@@ -24,7 +24,7 @@ TIER ?= silver
         holdout pair-test rank-stability \
         experiment-dry-run experiment-run sweep \
         runs-list baselines-list run-compare leaderboard run-promote \
-        validate judge judge-score check guide-check ci test smoke-fixture cost-report clean clean-cache
+        validate judge judge-score check guide-check browser-install browser-check ci test smoke-fixture cost-report clean clean-cache
 
 # ── getting started ─────────────────────────────────────────────────────────
 help:
@@ -95,6 +95,17 @@ install venv-init:
 	$(VENV)/bin/pip install -q --upgrade pip
 	$(VENV)/bin/pip install -q -r requirements.txt
 	@echo "$(VENV) ready. Use it with:  make <target> PYTHON=$(VENV)/bin/python"
+
+# The inspector's browser test: Playwright and its Chromium, in this checkout's venv. A
+# development extra, like the docs build: `make ci` runs without it, and CI runs
+# browser-check as its own job.
+browser-install:
+	@test -d $(VENV) || $(PYTHON) -m venv $(VENV)
+	$(VENV)/bin/pip install -q -r requirements-browser.txt
+	$(VENV)/bin/python -m playwright install chromium $(ARGS)
+
+browser-check:
+	$(PYTHON) scripts/test_inspector_browser.py
 
 # A new project beside this checkout: make init DIR=../my-evals ARGS=--tutorial
 init:

@@ -154,6 +154,64 @@ try:
     cs.LIMITS.update(hosts=(), rate=0, max_arms=40)
     cs._CACHE.clear(); cs._HITS.clear()
 
+    # Item fields (ADR-0003): a public choice field and a hidden text field on ds1.
+    HIDDEN = "walrus-hidden-customer-name"
+    (data / "fields").mkdir()
+    (data / "fields" / "fs.yaml").write_text(
+        "fieldset_id: fs\nfields:\n"
+        "  - {name: product, type: choice, values: [x, y], public: true}\n"
+        "  - {name: size, type: number}\n"
+        f"  - {{name: customer, type: text}}\n")
+    (data / "datasets").mkdir()
+    (data / "datasets" / "ds1.json").write_text(json.dumps({
+        "dataset_id": "ds1", "version": "1.0", "created_at": "x", "fieldset": "fs",
+        "items": [{"item_id": f"i{k:02d}", "source_sha256": "0" * 64,
+                   "fields": {"product": "x" if k < 6 else "y", "size": k, "customer": HIDDEN}}
+                  for k in range(12)]}))
+    AF = HarnessAdapter(data)
+    cs.set_adapter(AF)
+    out_f = tmp / ".build" / "catalog-fields"
+    cb.build(AF, out_f)
+    page_f = (out_f / "d/ds1.html").read_text()
+    check("fields: the dataset page lists the declared fields and their coverage",
+          "item fields" in page_f and "product" in page_f and "customer" in page_f and "12 of 12" in page_f)
+    check("fields: a public field's values are summarised", "x <b>6</b>" in page_f and "y <b>6</b>" in page_f)
+    ids = re.findall(r'\bid="([^"]+)"', page_f)
+    check("fields: every element id on the page is unique", len(ids) == len(set(ids)),
+          sorted(i for i in set(ids) if ids.count(i) > 1))
+    leaked = [p.name for p in out_f.rglob("*") if p.is_file() and HIDDEN in p.read_text(encoding="utf-8", errors="ignore")]
+    check("fields: a field not marked public shows no value on any static page",
+          not leaked and page_f.count("not public") == 2 and "0 – 11" not in page_f and "distinct" not in page_f,
+          leaked or page_f.count("not public"))
+    two = ["runs/ds1/arm_a,runs/ds1/arm_b"]
+    r = cs.compare({"runs": two, "baseline": ["runs/ds1/arm_a"], "where": ["product:x"]})
+    check("fields: a filter compares only the matching items", r.get("rows") and r["rows"][0]["n"] == 6
+          and any("Filtered to the 6" in w for w in r["warnings"]), r.get("error") or r.get("rows"))
+    r = cs.compare({"runs": two, "baseline": ["runs/ds1/arm_a"], "where": ["size:..2"]})
+    check("fields: a number filter takes a range", r.get("rows") and r["rows"][0]["n"] == 3, r.get("error"))
+    check("fields: filtering by an undeclared field is refused",
+          "error" in cs.compare({"runs": two, "where": ["colour:red"]}))
+    r = cs.compare({"runs": two, "baseline": ["runs/ds1/arm_a"], "by": ["product"]})
+    bd = r.get("breakdown") or {}
+    joint = {(g["group"], x["arm"]): x["p"] for g in bd.get("groups", []) for x in g["rows"] if x["p"] is not None}
+    check("fields: a breakdown tests each group, Holm over all of them together",
+          [g["group"] for g in bd.get("groups", [])] == ["x", "y"] and bd.get("family_size") == len(joint) == 2
+          and all(x["threshold"] == stats.holm(joint)[(g["group"], x["arm"])][0]
+                  for g in bd["groups"] for x in g["rows"] if x["p"] is not None), r.get("error") or bd)
+    check("fields: a breakdown by a number field is refused", "error" in cs.compare({"runs": two, "by": ["size"]}))
+    it = cs.item({"arms": two, "item": ["i00"]})
+    got = {f["name"]: f["value"] for f in it.get("fields", [])}
+    check("fields: the local inspector shows every field of an item", got == {"product": "x", "size": 0, "customer": HIDDEN}, got)
+    cs.LIMITS.update(hosts=("catalog.example.org",))
+    it = cs.item({"arms": two, "item": ["i00"]})
+    r = cs.compare({"runs": two})
+    check("fields: a public deployment shows only public fields",
+          {f["name"] for f in it.get("fields", [])} == {"product"} and [f["name"] for f in r.get("fields", [])] == ["product"])
+    check("fields: a public deployment refuses a filter on a hidden field",
+          "error" in cs.compare({"runs": two, "where": [f"customer:{HIDDEN}"]}))
+    cs.LIMITS.update(hosts=())
+    cs.set_adapter(A)
+
     # One reference per comparison: an arm scored against silver and one scored against gold
     # (runs/ and a rescored copy, say) both record `acc`, but the numbers measure different
     # things, so the inspector must not pair them on it. Output length needs no reference.

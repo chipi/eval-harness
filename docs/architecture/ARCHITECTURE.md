@@ -21,15 +21,17 @@ Each layer freezes what it produces, so the next one can be redone without redoi
 
 | layer | what it records | commands | what it refuses |
 |---|---|---|---|
-| **1. Data** | a dataset: every item and the sha256 of its bytes | `dataset-create`, `dataset-materialize` | a working copy whose bytes differ from the frozen hashes |
+| **1. Data** | a dataset: every item and the sha256 of its bytes, from a file or a pinned URL, and the typed fields a project declares for it | `dataset-create`, `dataset-materialize` | a working copy whose bytes differ from the frozen hashes; a field nobody declared |
 | **2. Arms and runs** | a config per arm; per run its outputs, scores, cost, latency and a fingerprint of the system, the instrument and the data | `experiment-run`, `sweep`, `import-run` | a run missing any of the three inputs; an unknown goal |
 | **3. Scoring** | scores are arithmetic over stored outputs, so they can be redone | `rescore` ($0), `judge-score` (billed, optional) | rescoring over the original run; a judge that is not validated |
 | **4. Decisions** | paired tests, rankings, baselines with a reason | `pair-test`, `family-test`, `leaderboard`, `run-promote` | comparing runs on two different `dataset_id`s |
 | **5. Goals** | what an evaluation is for and the measure that decides | `goal:` on configs, validate V14 | a config or run naming a goal that does not exist |
 | **6. Looking** | the catalog (static pages) and the run inspector (a local server) | `catalog`, `catalog-serve` | item text in the static pages; mixed datasets in one comparison |
 
-Under all of them, `validate` (V1–V14) checks the tree in CI and exits non-zero, and
-`self-test` checks the harness itself.
+Under all of them, `validate` (V1–V15) checks the tree in CI and exits non-zero, and
+`self-test` checks the harness itself. The tests that run `evh` install the package from its
+real wheel, the GUIDE is run in a fresh project on every change (`guide-check`), and the
+catalog and the inspector are driven in headless Chromium (`browser-check`).
 
 ### One paired test
 
@@ -86,6 +88,23 @@ generic part moved into the harness; the project keeps one adapter.
   measure that decides, the formats it accepts, its datasets. Configs name their goal, runs and
   baselines carry it, validate checks it, and the catalog ranks each goal's arms. A goal is
   optional until a project sets a date from which every new run must name one.
+
+## Item fields and items at a URL
+
+*The short version of [ADR-0003](../adr/ADR-0003-item-fields-and-url-items.md).*
+
+The harness defines no field. A project declares its own in a field set (a name and a type
+each), any number of its datasets name it, and each item carries values for those names.
+Fields describe an item and are not its identity: a run's fingerprint hashes item ids and
+bytes only, so correcting a field invalidates no run, and the dataset's `fields_sha256`
+records that it changed. `validate` (V15) refuses an undeclared field and a value of the
+wrong type. The catalog summarises a field's values only when it is marked public; the
+inspector filters a comparison by a field, and breaks it down by a choice or yes/no field
+with one Holm correction over every group, since each group is another chance of a false
+"separated".
+
+An item can also live at a URL: it is frozen by its sha256 like any other, fetched once into a
+cache, and refused when the bytes there are not the pinned ones.
 
 ## This repository's deployment
 
