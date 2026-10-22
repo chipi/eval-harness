@@ -16,6 +16,16 @@ Built on one branch, layer by layer, and released once. Done so far: one impleme
 paired test, `evaluation_harness.stats`, shared by `pair-test`, `family-test` and the run
 inspector; the catalog and run inspector themselves, for any project; and goals.
 
+This repository now deploys the harness on its own example experiments:
+- the catalog and run inspector are public at
+  [catalog.evals.humancopilot.eu](https://catalog.evals.humancopilot.eu/);
+- the findings site moves from GitHub Pages to the same server;
+- the docs move to [docs.evals.humancopilot.eu](https://docs.evals.humancopilot.eu/), and old
+  `/docs/` links redirect there.
+
+The deployment files are in `infra/` (runbook: `infra/README.md`). They are not part of the
+package.
+
 ### Changed
 - **Exact p-values at 30 items or fewer.** `pair-test` and `family-test` now count the
   two-sided sign-flip p over all 2^n sign patterns when a pair shares 30 items or fewer, instead
@@ -46,6 +56,10 @@ inspector; the catalog and run inspector themselves, for any project; and goals.
   - `compare`, every arm against a baseline with verdicts in words.
 
   It has its own test suite, `scripts/test_stats.py`, run by `make test`.
+- **The exact count is ~4x faster** (0.03 s at 30 items, was 0.11 s): the sign-pattern sums are
+  built by doubling a list instead of enumerating each pattern. The same sums, so the same p.
+  The exact interval bisects to ~1e-9 of its span, not ~1e-14: 1.4 s at 30 items, was 11 s.
+  It is shown to 3 decimals.
 - **`evh catalog` and `evh catalog-serve`** (`make catalog`, `make catalog-serve`).
   - **The catalog:** static pages over a project's runs, by dataset, built into
     `.build/catalog/`. Each dataset page lists every arm with its headline number, and links
@@ -65,7 +79,20 @@ inspector; the catalog and run inspector themselves, for any project; and goals.
     repeats averaged per item. A project with another layout names its own adapter in
     `config.yaml` (`catalog: {adapter: path/to/file.py:Class}`) or passes `--adapter`.
 
-  Tests: `scripts/test_catalog.py` (26 assertions), run by `make test`.
+  - **A public mode** (`evh catalog-serve --public HOST`), for a deployment behind a reverse
+    proxy that serves the static pages:
+    - it answers only the named host;
+    - each client gets `--rate` requests a minute;
+    - at most `--max-arms` arms in one comparison;
+    - two computations at once, every answer cached;
+    - errors never show the server's internals;
+    - `--warm` computes, at start, every comparison the built catalog links to.
+
+    `evh catalog --link LABEL=URL` adds the deployment's other sites to the nav.
+  - **CSP-clean:** no inline script or style. The theme script is a file, and the legend
+    colours are set from JS.
+
+  Tests: `scripts/test_catalog.py` (33 assertions), run by `make test`.
 - **Goals: what an evaluation is for** (`data/goals/<goal_id>.yaml`, `schemas/goal.schema.json`).
   - **What a goal says:** who uses the output, the decision it informs, the measure that
     decides (and which direction is better), the output formats it accepts, its datasets

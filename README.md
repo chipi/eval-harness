@@ -4,7 +4,7 @@
 
 [![verify](https://github.com/chipi/eval-harness/actions/workflows/reproduce.yml/badge.svg?branch=main)](https://github.com/chipi/eval-harness/actions/workflows/reproduce.yml)
 [![site](https://github.com/chipi/eval-harness/actions/workflows/pages.yml/badge.svg?branch=main)](https://evals.humancopilot.eu/)
-[![docs](https://img.shields.io/badge/docs-evals.humancopilot.eu-c8ff3d)](https://evals.humancopilot.eu/docs/)
+[![docs](https://img.shields.io/badge/docs-docs.evals.humancopilot.eu-c8ff3d)](https://docs.evals.humancopilot.eu/)
 [![python](https://img.shields.io/badge/python-3.11%2B-3776ab)](harness/README.md)
 [![demo](https://img.shields.io/badge/demo-no%20API%20key-2ea44f)](#try-it-in-a-minute)
 [![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
@@ -65,7 +65,7 @@ It was built to answer four questions anyone building with AI ends up asking:
 | **learn the method** | [**The method**](https://evals.humancopilot.eu/method.html): six habits for measuring AI systems, as these experiments taught them |
 | **read what it found** | [**The experiments**](https://evals.humancopilot.eu/experiments.html): 24 LLMs, fine-tunes and baselines on six benchmarks, generated from the runs in this repository, so every number on it is checked |
 | **check it yourself** | [**Reproduce it**](docs/REPRODUCE.md): five levels, from recomputing every number ($0, one command) to rerunning every model with one OpenRouter key |
-| **read the full documentation** | [evals.humancopilot.eu/docs](https://evals.humancopilot.eu/docs/): guide, concepts, runbook, integration, protocol, reference |
+| **read the full documentation** | [docs.evals.humancopilot.eu](https://docs.evals.humancopilot.eu/): guide, concepts, runbook, integration, protocol, reference |
 | **review or contribute** | [KNOWN_ISSUES](research/internal/KNOWN_ISSUES.md) (what is open), [CONTRIBUTING](CONTRIBUTING.md) |
 
 ## What it is

@@ -14,21 +14,17 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="color-scheme" content="dark light">
-<script>
-(function(){var p=new URLSearchParams(location.search),t=p.get('theme');
-try{t=t||localStorage.getItem('theme');}catch(e){}
-if(t==='light'||t==='dark')document.documentElement.dataset.theme=t;
-if(!p.has('static'))document.documentElement.classList.add('js');})();
-</script><script defer src="https://analytics.closelistening.app/script.js" data-website-id="76169139-07c1-4806-bde6-f9014e803e7f" data-domains="evals.humancopilot.eu"></script>
+<script src="assets/js/30a5128d39a2.js"></script><script defer src="https://analytics.humancopilot.eu/script.js" data-website-id="76169139-07c1-4806-bde6-f9014e803e7f" data-domains="evals.humancopilot.eu,docs.evals.humancopilot.eu"></script>
 <link rel="stylesheet" href="assets/style.css">
 <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
 <link rel="icon" href="assets/icon-32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="stylesheet" href="assets/inline.css">
 </head>
 <body>
 <header class="bar"><div class="wrap">
   <a class="brand" href="index.html" aria-label="eval-harness home"><img class="mark" src="assets/icon.svg" alt="" width="28" height="28"><span>eval-harness</span></a>
-  <nav class="nav"><a href="index.html" aria-current="page">Harness</a><a href="use.html">Use it</a><a href="method.html" class="hide-sm">Method</a><a href="experiments.html">Experiments</a><a href="experiments/judging.html" class="hide-sm">Judging</a><a href="docs/" class="hide-sm">Docs</a><a href="https://github.com/chipi/eval-harness" class="hide-sm">GitHub ↗</a><button id="theme" class="theme" aria-label="Toggle light and dark">◐</button></nav>
+  <nav class="nav"><a href="index.html" aria-current="page">Harness</a><a href="use.html">Use it</a><a href="method.html" class="hide-sm">Method</a><a href="experiments.html">Experiments</a><a href="experiments/judging.html" class="hide-sm">Judging</a><a href="https://catalog.evals.humancopilot.eu/" class="hide-sm">Catalog</a><a href="https://docs.evals.humancopilot.eu/" class="hide-sm">Docs</a><a href="https://github.com/chipi/eval-harness" class="hide-sm">GitHub ↗</a><button id="theme" class="theme" aria-label="Toggle light and dark">◐</button></nav>
 </div></header>
 <main>
 
@@ -52,9 +48,9 @@ if(!p.has('static'))document.documentElement.classList.add('js');})();
   <h2>Four ideas, one adapter file.</h2>
   <p class="lede">Most eval code answers “which scored highest”. That is the easy half; the hard half is whether the answer survives being asked again. The harness imports nothing domain-specific — everything about your system lives in one file, <code>adapter.py</code>, with four functions.</p>
   <div class="habits"><div class="habit-card"><span class="n">01</span><b>A frozen dataset</b><span>Items are hashed and every run records the hash. Change the data and you get a different id — not a silently different number.</span></div><div class="habit-card"><span class="n">02</span><b>A fingerprint per run</b><span>The model behind the alias, the prompt, the scoring code, library versions, the commit. So “we changed one thing” is checkable, not asserted.</span></div><div class="habit-card"><span class="n">03</span><b>A leaderboard that argues with itself</b><span>Before it prints an order it tests every pair at once — a Friedman permutation test and a Nemenyi critical difference — and says plainly when nothing is distinguishable.</span></div><div class="habit-card"><span class="n">04</span><b>Re-scoring for $0</b><span>Scores are recomputed from stored outputs. Checking a metric should never cost another sweep of paid calls.</span></div></div>
-  <div class="cols" style="margin-top:48px">
-    <div class="prose"><h3 style="font-size:28px;line-height:1.15;margin-bottom:16px">Try the whole loop in a minute.</h3><p>The demo runs on bundled synthetic data — no API key, no network. It freezes a dataset, runs an arm three times and checks the record; <code>make leaderboard</code> then shows the ranking and whether it is real.</p>
-      <div class="btns"><a class="btn primary" href="docs/GUIDE/">Your first evaluation — the guide</a></div></div>
+  <div class="cols s-0b8bc41c">
+    <div class="prose"><h3 class="s-7cd35dc8">Try the whole loop in a minute.</h3><p>The demo runs on bundled synthetic data — no API key, no network. It freezes a dataset, runs an arm three times and checks the record; <code>make leaderboard</code> then shows the ranking and whether it is real.</p>
+      <div class="btns"><a class="btn primary" href="https://docs.evals.humancopilot.eu/GUIDE/">Your first evaluation — the guide</a></div></div>
 <pre class="term"><span class="p">$ </span>git clone https://github.com/chipi/eval-harness
 <span class="p">$ </span>cd eval-harness/harness
 <span class="p">$ </span>make install
@@ -69,7 +65,7 @@ if(!p.has('static'))document.documentElement.classList.add('js');})();
 
 <section class="block" id="proof"><div class="wrap">
   <div class="eyebrow"><span class="num">03</span>Worked examples · 24 LLMs</div>
-  <h2>The most expensive model <em style="font-style:normal;color:var(--accent)">never won.</em></h2>
+  <h2>The most expensive model <em class="s-649e9edf">never won.</em></h2>
   <p class="lede">These are examples of the harness and its method at work, not a leaderboard, and they are still being extended. To show the harness doing something real, it measured 24 hosted LLMs, proprietary and open-weight from small to frontier tiers, small fine-tuned models and baselines on six public benchmarks — 167 runs, $19.07 billed, every cost read off the provider's bill. The headline is on each experiment's primary metric. <a href="experiments/judging.html">Re-measured</a>, against labels a person corrected and by LLM judges, the dearest model, anthropic_l, is first on the point estimate in two: AG News and CNN/DailyMail; neither re-measurement is confirmed.</p>
   <div class="stats">
     <div class="stat"><div class="n">5<small>/5</small></div><svg class="marks" viewBox="0 0 68 12" width="68" height="12" aria-hidden="true"><circle cx="6" cy="6" r="4.5" class="on"/><circle cx="20" cy="6" r="4.5" class="on"/><circle cx="34" cy="6" r="4.5" class="on"/><circle cx="48" cy="6" r="4.5" class="on"/><circle cx="62" cy="6" r="4.5" class="on"/></svg><div class="l">experiments with frontier models where the dearest model was not the best (the same model each time; SciFact ran only the twelve cheapest hosted models)</div></div>
@@ -77,7 +73,7 @@ if(!p.has('static'))document.documentElement.classList.add('js');})();
     <div class="stat"><div class="n">$0</div><svg class="marks" viewBox="0 0 82 12" width="82" height="12" aria-hidden="true"><circle cx="6" cy="6" r="4.5" class="on"/><circle cx="20" cy="6" r="4.5" class="on"/><circle cx="34" cy="6" r="4.5" class="on"/><circle cx="48" cy="6" r="4.5" class="on"/><circle cx="62" cy="6" r="4.5" class="on"/><circle cx="76" cy="6" r="4.5" class="off"/></svg><div class="l">for a model that is first, or not separable from first, in 5 of the 6; 3 of 6 if the <a href="experiments/judging.html">re-measured scores</a> are taken at face value</div></div>
     <div class="stat"><div class="n">11<small>/11</small></div><svg class="marks" viewBox="0 0 152 12" width="152" height="12" aria-hidden="true"><circle cx="6" cy="6" r="4.5" class="on"/><circle cx="20" cy="6" r="4.5" class="on"/><circle cx="34" cy="6" r="4.5" class="on"/><circle cx="48" cy="6" r="4.5" class="on"/><circle cx="62" cy="6" r="4.5" class="on"/><circle cx="76" cy="6" r="4.5" class="on"/><circle cx="90" cy="6" r="4.5" class="on"/><circle cx="104" cy="6" r="4.5" class="on"/><circle cx="118" cy="6" r="4.5" class="on"/><circle cx="132" cy="6" r="4.5" class="on"/><circle cx="146" cy="6" r="4.5" class="off"/></svg><div class="l">calibration checks that agree with the published numbers, 10 inside their own interval</div></div>
   </div>
-  <div class="chart benches" style="margin-top:48px"><div class="legend"><span><i style="background:var(--proprietary)"></i>hosted · proprietary</span><span><i style="background:var(--open)"></i>hosted · open weights</span><span><i style="background:var(--local)"></i>local · free</span><span><i class="sw-band"></i>not separated from the leader</span><span class="read">higher score: further right →</span></div><a class="bench-row reveal" href="experiments/summarization.html" aria-label="CNN/DailyMail: Summarise a news article in two or three sentences. A 1.6 GB fine-tune is not separated from the best paid model (0.0001 apart) — on CNN&#x27;s articles."><div class="vw"><svg viewBox="0 0 1000 92" role="img" aria-label="CNN/DailyMail: every learned arm by coverage"><text x="0" y="44" class="t-head" font-size="17">CNN/DailyMail</text><text x="0" y="64" class="t-muted" font-size="11">summarisation · coverage</text><rect x="527.7" y="28" width="416.0" height="44" rx="10" class="band"/><line x1="224" x2="976" y1="50" y2="50" class="axis"/><line x1="190" x2="204" y1="50" y2="50" class="axis"/><text x="213" y="55" text-anchor="middle" class="t-muted" font-size="13">⫽</text><circle cx="935.7" cy="50.0" r="7" class="dot k-local"><title>bart_l · local · free
+  <div class="chart benches s-0b8bc41c"><div class="legend"><span><i class="s-f16d511a"></i>hosted · proprietary</span><span><i class="s-0435c850"></i>hosted · open weights</span><span><i class="s-e4dfe1fe"></i>local · free</span><span><i class="sw-band"></i>not separated from the leader</span><span class="read">higher score: further right →</span></div><a class="bench-row reveal" href="experiments/summarization.html" aria-label="CNN/DailyMail: Summarise a news article in two or three sentences. A 1.6 GB fine-tune is not separated from the best paid model (0.0001 apart) — on CNN&#x27;s articles."><div class="vw"><svg viewBox="0 0 1000 92" role="img" aria-label="CNN/DailyMail: every learned arm by coverage"><text x="0" y="44" class="t-head" font-size="17">CNN/DailyMail</text><text x="0" y="64" class="t-muted" font-size="11">summarisation · coverage</text><rect x="527.7" y="28" width="416.0" height="44" rx="10" class="band"/><line x1="224" x2="976" y1="50" y2="50" class="axis"/><line x1="190" x2="204" y1="50" y2="50" class="axis"/><text x="213" y="55" text-anchor="middle" class="t-muted" font-size="13">⫽</text><circle cx="935.7" cy="50.0" r="7" class="dot k-local"><title>bart_l · local · free
 coverage 0.3461 · rank 1/29
 free: runs locally, nothing billed</title></circle><circle cx="935.7" cy="50.0" r="12" class="hit" data-tip="bart_l · local · free
 coverage 0.3461 · rank 1/29
@@ -1346,24 +1342,9 @@ billed $2.01 for 100 items"/><circle cx="352.6" cy="74" r="11" class="ring"/><te
       <a href="mailto:marko@humancopilot.eu" data-umami-event="cta-email" data-umami-event-position="footer">Email</a>
     </nav>
   </div>
-  <div class="foot-legal"><span>© Marko Dragoljevic · eval-harness <a href="releases.html#v0.4.0">v0.4.0</a> · build: local · <a href="docs/DATA/">Data &amp; licences</a> · <a href="releases.html">Release notes</a></span><span>Cookieless, self-hosted analytics (Umami). No cookies, no tracking across sites. <a href="privacy.html">Privacy</a></span></div>
+  <div class="foot-legal"><span>© Marko Dragoljevic · eval-harness <a href="releases.html#v0.4.0">v0.4.0</a> · build: local · <a href="https://docs.evals.humancopilot.eu/DATA/">Data &amp; licences</a> · <a href="releases.html">Release notes</a></span><span>Cookieless, self-hosted analytics (Umami). No cookies, no tracking across sites. <a href="privacy.html">Privacy</a></span></div>
 </div></footer>
 <div id="tip" role="tooltip"></div>
-<script>
-document.getElementById('theme').addEventListener('click',()=>{const r=document.documentElement;
-const dark=r.dataset.theme?r.dataset.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches;
-r.dataset.theme=dark?'light':'dark';try{localStorage.setItem('theme',r.dataset.theme);}catch(e){}});
-const tip=document.getElementById('tip');
-function place(x,y){const w=tip.offsetWidth,h=tip.offsetHeight;tip.style.left=Math.max(8,Math.min(x+14,innerWidth-w-8))+'px';tip.style.top=(y+14+h>innerHeight?y-h-14:y+14)+'px';}
-document.addEventListener('pointerover',ev=>{if(ev.pointerType==='touch')return;const t=ev.target.closest('[data-tip]');if(!t)return;tip.textContent=t.dataset.tip;tip.classList.add('on');place(ev.clientX,ev.clientY);});
-document.addEventListener('pointermove',ev=>{if(ev.pointerType==='touch'||!tip.classList.contains('on'))return;place(ev.clientX,ev.clientY);});
-document.addEventListener('pointerout',ev=>{if(ev.pointerType!=='touch'&&ev.target.closest('[data-tip]'))tip.classList.remove('on');});
-// Touch: a tap shows the tip where the finger is; the next tap elsewhere, or a scroll, hides it.
-document.addEventListener('pointerdown',ev=>{if(ev.pointerType!=='touch')return;const t=ev.target.closest('[data-tip]');if(!t){tip.classList.remove('on');return;}tip.textContent=t.dataset.tip;tip.classList.add('on');place(ev.clientX,ev.clientY);});
-addEventListener('scroll',()=>tip.classList.remove('on'),{passive:true});
-const io=new IntersectionObserver(es=>es.forEach(x=>{if(x.isIntersecting){x.target.classList.add('in');io.unobserve(x.target);}}),{rootMargin:'0px 0px -8% 0px'});
-document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
-setTimeout(()=>document.querySelectorAll('.reveal').forEach(el=>el.classList.add('in')),2500);
-</script>
+<script src="assets/js/2b3d1b9b2afe.js"></script>
 </body>
 </html>

@@ -14,27 +14,23 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="color-scheme" content="dark light">
-<script>
-(function(){var p=new URLSearchParams(location.search),t=p.get('theme');
-try{t=t||localStorage.getItem('theme');}catch(e){}
-if(t==='light'||t==='dark')document.documentElement.dataset.theme=t;
-if(!p.has('static'))document.documentElement.classList.add('js');})();
-</script><script defer src="https://analytics.closelistening.app/script.js" data-website-id="76169139-07c1-4806-bde6-f9014e803e7f" data-domains="evals.humancopilot.eu"></script>
+<script src="../assets/js/30a5128d39a2.js"></script><script defer src="https://analytics.humancopilot.eu/script.js" data-website-id="76169139-07c1-4806-bde6-f9014e803e7f" data-domains="evals.humancopilot.eu,docs.evals.humancopilot.eu"></script>
 <link rel="stylesheet" href="../assets/style.css">
 <link rel="icon" href="../assets/icon.svg" type="image/svg+xml">
 <link rel="icon" href="../assets/icon-32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+<link rel="stylesheet" href="../assets/inline.css">
 </head>
 <body>
 <header class="bar"><div class="wrap">
   <a class="brand" href="../index.html" aria-label="eval-harness home"><img class="mark" src="../assets/icon.svg" alt="" width="28" height="28"><span>eval-harness</span></a>
-  <nav class="nav"><a href="../index.html">Harness</a><a href="../use.html">Use it</a><a href="../method.html" class="hide-sm">Method</a><a href="../experiments.html" aria-current="page">Experiments</a><a href="../experiments/judging.html" class="hide-sm">Judging</a><a href="../docs/" class="hide-sm">Docs</a><a href="https://github.com/chipi/eval-harness" class="hide-sm">GitHub ↗</a><button id="theme" class="theme" aria-label="Toggle light and dark">◐</button></nav>
+  <nav class="nav"><a href="../index.html">Harness</a><a href="../use.html">Use it</a><a href="../method.html" class="hide-sm">Method</a><a href="../experiments.html" aria-current="page">Experiments</a><a href="../experiments/judging.html" class="hide-sm">Judging</a><a href="https://catalog.evals.humancopilot.eu/" class="hide-sm">Catalog</a><a href="https://docs.evals.humancopilot.eu/" class="hide-sm">Docs</a><a href="https://github.com/chipi/eval-harness" class="hide-sm">GitHub ↗</a><button id="theme" class="theme" aria-label="Toggle light and dark">◐</button></nav>
 </div></header>
 <main>
 
 <section class="hero"><div class="wrap">
   <div class="kicker"><b>Judging</b> · SummEval</div>
-  <h1 style="max-width:16ch">On mean τ, 23 of 24 LLM judges score above a trained free evaluator.</h1>
+  <h1 class="s-9977b745">On mean τ, 23 of 24 LLM judges score above a trained free evaluator.</h1>
   <p class="dek">Grade machine summaries the way experts do. The best LLM judges reach 93% of a human expert&#x27;s agreement (best of 24, same articles), far ahead of the free evaluator trained for the task (64%), which scores one summary at a time while the judges rank all 16 at once; and an open-weight judge is not separated from the leader.</p>
   <p class="note"><b>The report's pick, as run here.</b> Use an LLM judge, and start with gemma_l; before relying on any judge, check it against a small set of human judgements on your own outputs.</p>
   <div class="facts"><div class="fact"><div class="k">Question</div><div class="v">Score 16 summaries of a news article on coherence, consistency, fluency and relevance, as three experts did.</div></div><div class="fact"><div class="k">Data</div><div class="v">100 items from the SummEval test split</div></div><div class="fact"><div class="k">Systems</div><div class="v">33 compared: 24 hosted models billed per call; 9 local models and baselines, free</div></div><div class="fact"><div class="k">Metric</div><div class="v">Kendall tau vs experts — how well a judge&#x27;s scores order the 16 summaries of an article the way the experts&#x27; do (Kendall τ-b per article, averaged over four dimensions); the field&#x27;s standard. 1 is perfect agreement, 0 none</div></div><div class="fact"><div class="k">Calibration</div><div class="v">rouge1 0.1487 vs 0.1500 published; rouge2 0.1578 vs 0.1610 published; rougeL 0.1435 vs 0.1280 published; unievalpub 0.3717 vs 0.3770 published</div></div><div class="fact"><div class="k">Billed</div><div class="v">$7.03 for the whole sweep</div></div></div>
@@ -42,7 +38,7 @@ if(!p.has('static'))document.documentElement.classList.add('js');})();
 </div></section>
 <section class="block" id="field"><div class="wrap"><div class="eyebrow"><span class="num">01</span>The field</div>
   <h2>Every system, one axis.</h2>
-  <div class="chart"><div class="legend"><span><i style="background:var(--proprietary)"></i>hosted · proprietary</span><span><i style="background:var(--open)"></i>hosted · open weights</span><span><i style="background:var(--local)"></i>local · free</span><span><i class="sw-band"></i>not separated from the leader</span><span class="read">higher score: further right →</span></div><div class="vw"><svg viewBox="0 0 1000 80" role="img" aria-label="SummEval: every learned arm by Kendall tau vs experts"><rect x="855.0" y="28" width="77.8" height="44" rx="10" class="band"/><line x1="20" x2="976" y1="50" y2="50" class="axis"/><circle cx="924.8" cy="50.0" r="7" class="dot k-proprietary"><title>openai_l · hosted · proprietary
+  <div class="chart"><div class="legend"><span><i class="s-f16d511a"></i>hosted · proprietary</span><span><i class="s-0435c850"></i>hosted · open weights</span><span><i class="s-e4dfe1fe"></i>local · free</span><span><i class="sw-band"></i>not separated from the leader</span><span class="read">higher score: further right →</span></div><div class="vw"><svg viewBox="0 0 1000 80" role="img" aria-label="SummEval: every learned arm by Kendall tau vs experts"><rect x="855.0" y="28" width="77.8" height="44" rx="10" class="band"/><line x1="20" x2="976" y1="50" y2="50" class="axis"/><circle cx="924.8" cy="50.0" r="7" class="dot k-proprietary"><title>openai_l · hosted · proprietary
 Kendall tau vs experts 0.5398 · rank 1/33
 billed $0.6350 for 100 items</title></circle><circle cx="924.8" cy="50.0" r="12" class="hit" data-tip="openai_l · hosted · proprietary
 Kendall tau vs experts 0.5398 · rank 1/33
@@ -262,7 +258,7 @@ billed $2.01 for 100 items"/><circle cx="352.6" cy="48" r="11" class="ring"/><te
 </div></section>
 <section class="block" id="cost"><div class="wrap"><div class="eyebrow"><span class="num">02</span>Cost</div>
   <h2>What the money bought.</h2>
-  <div class="chart"><div class="legend"><span><i style="background:var(--proprietary)"></i>hosted · proprietary</span><span><i style="background:var(--open)"></i>hosted · open weights</span><span><i style="background:var(--local)"></i>local · free</span><span class="read">better: up · cheaper: left</span></div><div class="vw"><svg viewBox="0 0 1000 440" role="img" aria-label="SummEval: cost against quality"><line x1="150.0" x2="150.0" y1="34" y2="390" class="grid"/><text x="150.0" y="412" text-anchor="middle" class="t-muted" font-size="10">$0.1</text><line x1="423.3" x2="423.3" y1="34" y2="390" class="grid"/><text x="423.3" y="412" text-anchor="middle" class="t-muted" font-size="10">$1</text><line x1="696.7" x2="696.7" y1="34" y2="390" class="grid"/><text x="696.7" y="412" text-anchor="middle" class="t-muted" font-size="10">$10</text><line x1="970.0" x2="970.0" y1="34" y2="390" class="grid"/><text x="970.0" y="412" text-anchor="middle" class="t-muted" font-size="10">$100</text><line x1="40" x2="970" y1="365.4" y2="365.4" class="grid"/><text x="34" y="369.4" text-anchor="end" class="t-muted" font-size="10">0.256</text><line x1="40" x2="970" y1="212.0" y2="212.0" class="grid"/><text x="34" y="216.0" text-anchor="end" class="t-muted" font-size="10">0.398</text><line x1="40" x2="970" y1="58.6" y2="58.6" class="grid"/><text x="34" y="62.6" text-anchor="end" class="t-muted" font-size="10">0.540</text><text x="560" y="434" text-anchor="middle" class="t-muted" font-size="11">billed cost per 1,000 items (log scale)</text><text x="0" y="24" class="t-muted" font-size="11">↑ Kendall tau vs experts</text><text x="76" y="412" text-anchor="middle" class="t-muted" font-size="10">free</text><line x1="120" x2="120" y1="34" y2="390" class="axis"/><circle cx="76.0" cy="240.4" r="6" class="dot k-local"><title>unievalpub · local · free
+  <div class="chart"><div class="legend"><span><i class="s-f16d511a"></i>hosted · proprietary</span><span><i class="s-0435c850"></i>hosted · open weights</span><span><i class="s-e4dfe1fe"></i>local · free</span><span class="read">better: up · cheaper: left</span></div><div class="vw"><svg viewBox="0 0 1000 440" role="img" aria-label="SummEval: cost against quality"><line x1="150.0" x2="150.0" y1="34" y2="390" class="grid"/><text x="150.0" y="412" text-anchor="middle" class="t-muted" font-size="10">$0.1</text><line x1="423.3" x2="423.3" y1="34" y2="390" class="grid"/><text x="423.3" y="412" text-anchor="middle" class="t-muted" font-size="10">$1</text><line x1="696.7" x2="696.7" y1="34" y2="390" class="grid"/><text x="696.7" y="412" text-anchor="middle" class="t-muted" font-size="10">$10</text><line x1="970.0" x2="970.0" y1="34" y2="390" class="grid"/><text x="970.0" y="412" text-anchor="middle" class="t-muted" font-size="10">$100</text><line x1="40" x2="970" y1="365.4" y2="365.4" class="grid"/><text x="34" y="369.4" text-anchor="end" class="t-muted" font-size="10">0.256</text><line x1="40" x2="970" y1="212.0" y2="212.0" class="grid"/><text x="34" y="216.0" text-anchor="end" class="t-muted" font-size="10">0.398</text><line x1="40" x2="970" y1="58.6" y2="58.6" class="grid"/><text x="34" y="62.6" text-anchor="end" class="t-muted" font-size="10">0.540</text><text x="560" y="434" text-anchor="middle" class="t-muted" font-size="11">billed cost per 1,000 items (log scale)</text><text x="0" y="24" class="t-muted" font-size="11">↑ Kendall tau vs experts</text><text x="76" y="412" text-anchor="middle" class="t-muted" font-size="10">free</text><line x1="120" x2="120" y1="34" y2="390" class="axis"/><circle cx="76.0" cy="240.4" r="6" class="dot k-local"><title>unievalpub · local · free
 Kendall tau vs experts 0.3717 · $0</title></circle><circle cx="76.0" cy="240.4" r="12" class="hit" data-tip="unievalpub · local · free
 Kendall tau vs experts 0.3717 · $0"/><circle cx="76.0" cy="266.5" r="6" class="dot k-local"><title>unieval · local · free
 Kendall tau vs experts 0.3476 · $0</title></circle><circle cx="76.0" cy="266.5" r="12" class="hit" data-tip="unieval · local · free
@@ -482,7 +478,7 @@ $0.2973 per 1,000 items"/><circle cx="328.8" cy="70.5" r="11" class="ring"/><tex
     <div class="prose">
       <p>The 9 free arms rerun on a laptop CPU for $0, pinned to the weights that were measured. The 24 hosted arms billed <strong>$7.03</strong> when measured and rerun with one OpenRouter key.</p>
       <p><code>make compare</code> writes a replication card: each rerun against its committed run, item by item, and every separation and tie on this page re-tested with your reruns in place.</p>
-      <div class="btns"><a class="btn primary" href="../docs/REPRODUCE/">The guide</a><a class="btn" href="https://github.com/chipi/eval-harness/tree/main/examples/summeval-judging">This example's code</a></div>
+      <div class="btns"><a class="btn primary" href="https://docs.evals.humancopilot.eu/REPRODUCE/">The guide</a><a class="btn" href="https://github.com/chipi/eval-harness/tree/main/examples/summeval-judging">This example's code</a></div>
     </div>
 <pre class="term"><span class="p">$ </span>make plan      EXP=summeval
 <span class="p">$ </span>make data      EXP=summeval
@@ -509,24 +505,9 @@ $0.2973 per 1,000 items"/><circle cx="328.8" cy="70.5" r="11" class="ring"/><tex
       <a href="mailto:marko@humancopilot.eu" data-umami-event="cta-email" data-umami-event-position="footer">Email</a>
     </nav>
   </div>
-  <div class="foot-legal"><span>© Marko Dragoljevic · eval-harness <a href="../releases.html#v0.4.0">v0.4.0</a> · build: local · <a href="../docs/DATA/">Data &amp; licences</a> · <a href="../releases.html">Release notes</a></span><span>Cookieless, self-hosted analytics (Umami). No cookies, no tracking across sites. <a href="../privacy.html">Privacy</a></span></div>
+  <div class="foot-legal"><span>© Marko Dragoljevic · eval-harness <a href="../releases.html#v0.4.0">v0.4.0</a> · build: local · <a href="https://docs.evals.humancopilot.eu/DATA/">Data &amp; licences</a> · <a href="../releases.html">Release notes</a></span><span>Cookieless, self-hosted analytics (Umami). No cookies, no tracking across sites. <a href="../privacy.html">Privacy</a></span></div>
 </div></footer>
 <div id="tip" role="tooltip"></div>
-<script>
-document.getElementById('theme').addEventListener('click',()=>{const r=document.documentElement;
-const dark=r.dataset.theme?r.dataset.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches;
-r.dataset.theme=dark?'light':'dark';try{localStorage.setItem('theme',r.dataset.theme);}catch(e){}});
-const tip=document.getElementById('tip');
-function place(x,y){const w=tip.offsetWidth,h=tip.offsetHeight;tip.style.left=Math.max(8,Math.min(x+14,innerWidth-w-8))+'px';tip.style.top=(y+14+h>innerHeight?y-h-14:y+14)+'px';}
-document.addEventListener('pointerover',ev=>{if(ev.pointerType==='touch')return;const t=ev.target.closest('[data-tip]');if(!t)return;tip.textContent=t.dataset.tip;tip.classList.add('on');place(ev.clientX,ev.clientY);});
-document.addEventListener('pointermove',ev=>{if(ev.pointerType==='touch'||!tip.classList.contains('on'))return;place(ev.clientX,ev.clientY);});
-document.addEventListener('pointerout',ev=>{if(ev.pointerType!=='touch'&&ev.target.closest('[data-tip]'))tip.classList.remove('on');});
-// Touch: a tap shows the tip where the finger is; the next tap elsewhere, or a scroll, hides it.
-document.addEventListener('pointerdown',ev=>{if(ev.pointerType!=='touch')return;const t=ev.target.closest('[data-tip]');if(!t){tip.classList.remove('on');return;}tip.textContent=t.dataset.tip;tip.classList.add('on');place(ev.clientX,ev.clientY);});
-addEventListener('scroll',()=>tip.classList.remove('on'),{passive:true});
-const io=new IntersectionObserver(es=>es.forEach(x=>{if(x.isIntersecting){x.target.classList.add('in');io.unobserve(x.target);}}),{rootMargin:'0px 0px -8% 0px'});
-document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
-setTimeout(()=>document.querySelectorAll('.reveal').forEach(el=>el.classList.add('in')),2500);
-</script>
+<script src="../assets/js/2b3d1b9b2afe.js"></script>
 </body>
 </html>

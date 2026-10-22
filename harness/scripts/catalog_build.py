@@ -38,13 +38,16 @@ ASSETS = ("style.css", "catalog.css", "catalog.js", "inspect.js", "forest.js", "
 #: Links that would put more arms than this in one inspector URL go to the picker instead.
 INSPECT_MAX = 40
 
-HEAD_JS = """<script>
-(function(){var t;try{t=localStorage.getItem('theme');}catch(e){}
+#: The theme is applied before first paint by assets/head.js, a file rather than an inline
+#: script, so the pages need no 'unsafe-inline' in a Content-Security-Policy.
+HEAD_JS_SRC = """(function(){var t;try{t=localStorage.getItem('theme');}catch(e){}
 if(t==='light'||t==='dark')document.documentElement.dataset.theme=t;
 document.documentElement.classList.add('js');})();
-</script>"""
+"""
 
 NAV = [("home", "index.html", "Catalog"), ("goals", "goals.html", "Goals"), ("inspect", "inspect.html", "Inspector")]
+#: Links to the deployment's other sites (--link LABEL=URL), after the catalog's own.
+EXTRA_NAV: list = []
 
 
 def e(s) -> str:
@@ -59,11 +62,11 @@ def page(title: str, body: str, depth: int = 0, here: str = "", scripts: tuple =
          nav: list = NAV, brand: str = "eval catalog", item: str = "item",
          serve: str = "evh catalog-serve", footer: str = "") -> str:
     up = "../" * depth
-    links = "".join(f'<a href="{up}{href}"{" aria-current=page" if key == here else ""}>{label}</a>'
-                    for key, href, label in nav)
+    links = "".join(f'<a href="{href if "://" in href else up + href}"{" aria-current=page" if key == here else ""}>{label}</a>'
+                    for key, href, label in nav + EXTRA_NAV)
     built = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
-    foot = footer or (f"Built {built} by <code>evh catalog</code>. Counts and means only: no "
-                      f"{e(item)} text is embedded; the inspector reads it from this machine.")
+    foot = footer or (f"Built {built} by <code>evh catalog</code>. The pages carry counts and means "
+                      f"only; {e(item)} text is fetched from the inspector when you open an {e(item)}.")
     return f"""<!doctype html>
 <html lang="en">
 <head>
@@ -72,7 +75,7 @@ def page(title: str, body: str, depth: int = 0, here: str = "", scripts: tuple =
 <meta name="robots" content="noindex, nofollow">
 <title>{e(title)} · {e(brand)}</title>
 <meta name="color-scheme" content="dark light">
-{HEAD_JS}
+<script src="{up}assets/head.js"></script>
 <link rel="stylesheet" href="{up}assets/style.css">
 <link rel="stylesheet" href="{up}assets/catalog.css">
 <link rel="icon" href="{up}assets/icon.svg" type="image/svg+xml">
@@ -137,6 +140,7 @@ def copy_assets(out: Path) -> None:
     (out / "assets").mkdir(parents=True, exist_ok=True)
     for a in ASSETS:
         shutil.copy(ASSET_DIR / a, out / "assets" / a)
+    (out / "assets" / "head.js").write_text(HEAD_JS_SRC, encoding="utf-8")
 
 
 def fmt(v) -> str:
@@ -359,7 +363,14 @@ def main() -> int:
     ap.add_argument("--out", type=Path, default=ROOT / ".build" / "catalog")
     ap.add_argument("--adapter", help="path/to/file.py:Class (default: config.yaml catalog.adapter, "
                                       "else the harness's own layout)")
+    ap.add_argument("--link", action="append", default=[], metavar="LABEL=URL",
+                    help="add a link to the nav, e.g. Findings=https://evals.example.org/ (repeatable)")
     args = ap.parse_args()
+    for spec in args.link:
+        label, _, url = spec.partition("=")
+        if not url.startswith(("https://", "http://")):
+            raise SystemExit(f"--link {spec!r}: expected LABEL=https://...")
+        EXTRA_NAV.append((label.lower(), url, label))
     counts = build(load_adapter(args.adapter), args.out)
     print(f"catalog: {args.out} — " + ", ".join(f"{v} {k}" for k, v in counts.items()))
     print("inspect: evh catalog-serve, then open the address it prints")

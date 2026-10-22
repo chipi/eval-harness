@@ -27,6 +27,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
+import csp  # noqa: E402
 import figures  # noqa: E402
 import releases  # noqa: E402
 import remeasured  # noqa: E402
@@ -36,6 +37,10 @@ ROOT = HERE.parent
 REPO = "https://github.com/chipi/eval-harness"
 BLOB = f"{REPO}/blob/main"
 SITE = "https://evals.humancopilot.eu"
+#: The docs (mkdocs, GitHub Pages) and the harness's own deployment for these experiments
+#: (catalog, goal pages, run inspector) live on their own subdomains, linked from the nav.
+DOCS = "https://docs.evals.humancopilot.eu/"
+CATALOG = "https://catalog.evals.humancopilot.eu/"
 OUT = HERE / "public"
 #: The harness version the site describes, from the one place it is set.
 VERSION = re.search(r'__version__ = "([^"]+)"',
@@ -520,7 +525,7 @@ def page(title: str, desc: str, body: str, depth: int = 0, here: str = "",
 <body>
 <header class="bar"><div class="wrap">
   <a class="brand" href="{up}index.html" aria-label="eval-harness home"><img class="mark" src="{up}assets/icon.svg" alt="" width="28" height="28"><span>eval-harness</span></a>
-  <nav class="nav">{nav("harness", f"{up}index.html", "Harness")}{nav("use", f"{up}use.html", "Use it")}{nav("method", f"{up}method.html", "Method", "hide-sm")}{nav("experiments", f"{up}experiments.html", "Experiments")}{nav("judging", f"{up}experiments/judging.html", "Judging", "hide-sm")}<a href="{up}docs/" class="hide-sm">Docs</a><a href="{REPO}" class="hide-sm">GitHub ↗</a><button id="theme" class="theme" aria-label="Toggle light and dark">◐</button></nav>
+  <nav class="nav">{nav("harness", f"{up}index.html", "Harness")}{nav("use", f"{up}use.html", "Use it")}{nav("method", f"{up}method.html", "Method", "hide-sm")}{nav("experiments", f"{up}experiments.html", "Experiments")}{nav("judging", f"{up}experiments/judging.html", "Judging", "hide-sm")}<a href="{CATALOG}" class="hide-sm">Catalog</a><a href="{up}docs/" class="hide-sm">Docs</a><a href="{REPO}" class="hide-sm">GitHub ↗</a><button id="theme" class="theme" aria-label="Toggle light and dark">◐</button></nav>
 </div></header>
 <main>
 {body}
@@ -1077,10 +1082,22 @@ def findings_for(x: dict, f: dict) -> list:
     return common
 
 
+def not_found_page() -> str:
+    body = f"""
+<section class="hero"><div class="wrap">
+  <h1>Not here.</h1>
+  <p class="dek">That page does not exist, or it moved. The documentation now lives at its own
+  address, and the catalog of runs at another.</p>
+  <div class="btns"><a class="btn primary" href="index.html">The harness</a><a class="btn" href="experiments.html">The experiments</a><a class="btn" href="docs/">Documentation</a><a class="btn" href="{CATALOG}">Catalog</a></div>
+</div></section>"""
+    return page("Not found — eval-harness", "This page does not exist.", body)
+
+
 def privacy_page() -> str:
-    """The family's standard privacy page, with this site's own facts: no cookies or forms,
-    Umami only (no Cloudflare: the site is served by GitHub Pages, not proxied), GitHub's own
-    request logs, and the theme choice kept in the browser."""
+    """The family's standard privacy page (humancopilot.eu's wording), with this site's own
+    facts: no cookies or forms; Umami, and Cloudflare Web Analytics because Cloudflare delivers
+    the site; the server's request logs, kept 30 days; the docs on GitHub Pages, which keeps its
+    own logs; and the theme choice kept in the browser."""
     gh = "https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement"
     umami = "https://umami.is/"
 
@@ -1096,8 +1113,11 @@ def privacy_page() -> str:
 <section class="block"><div class="wrap prose">
   <h2>Analytics</h2>
   <p>Page views and clicks on links are counted with a self-hosted instance of {ext(umami, "Umami", "umami")}. It sets no cookies and stores no personal data. Counts are aggregate: pages, referrers, countries, browsers and devices.</p>
-  <h2>Hosting</h2>
-  <p>The site is hosted on GitHub Pages; there are no server logs of ours. GitHub keeps its own request logs under its {ext(gh, "privacy statement", "github-privacy")}.</p>
+  <p>Cloudflare, which delivers this site, also measures visits and page speed with its Web Analytics. It sets no cookies either.</p>
+  <h2>Server logs</h2>
+  <p>The web server records requests (time, page, IP address, browser) to keep the site running and secure. That includes the catalog and its run inspector, which answer from the same server. Searchable logs are deleted after 30 days. Copies on the server are size-capped and overwritten as new requests come in. Logs are not shared.</p>
+  <h2>Documentation</h2>
+  <p>The documentation is hosted on GitHub Pages. GitHub keeps its own request logs under its {ext(gh, "privacy statement", "github-privacy")}.</p>
   <h2>Your browser</h2>
   <p>The light/dark switch remembers your choice in your browser's local storage. It is not a cookie and is never sent anywhere.</p>
   <h2>Email</h2>
@@ -1301,7 +1321,6 @@ ROBOTS = f"""User-agent: *
 Allow: /
 
 Sitemap: {SITE}/sitemap.xml
-Sitemap: {SITE}/docs/sitemap.xml
 """
 
 
@@ -1309,7 +1328,7 @@ def sitemap_urls(out: Path) -> list:
     """Absolute URLs of every page this build writes, as Pages serves them. No lastmod:
     the build is deterministic and site-check compares it byte for byte, so a build date
     would make every day's check fail, and no other date here is reliable per page."""
-    pages = sorted((p.relative_to(out).as_posix() for p in out.rglob("*.html")),
+    pages = sorted((p.relative_to(out).as_posix() for p in out.rglob("*.html") if p.name != "404.html"),
                    key=lambda p: (p != "index.html", p))
     return [f"{SITE}/" if p == "index.html" else f"{SITE}/{p}" for p in pages]
 
@@ -1345,6 +1364,18 @@ def check_crawl_files(out: Path) -> list:
     return problems
 
 
+def point_docs(out: Path) -> None:
+    """The templates link the docs as `docs/<page>/`, relative, from when the docs were served
+    under /docs/ on this host. They now live at DOCS: rewrite every such link there, in one
+    place. Old /docs/... URLs elsewhere on the web are redirected by the server (infra/nginx)."""
+    pat = re.compile(r'href="(?:\.\./)*docs/')
+    for page in out.rglob("*.html"):
+        text = page.read_text(encoding="utf-8")
+        new = pat.sub(f'href="{DOCS}', text)
+        if new != text:
+            page.write_text(new, encoding="utf-8")
+
+
 # ── build ───────────────────────────────────────────────────────────────────
 def build(out: Path) -> None:
     f = figures.compute()
@@ -1357,6 +1388,8 @@ def build(out: Path) -> None:
     (out / "method.html").write_text(method.method_page(H, f), encoding="utf-8")
     (out / "use.html").write_text(method.use_page(H, f), encoding="utf-8")
     (out / "privacy.html").write_text(privacy_page(), encoding="utf-8")
+    # Served for any missing path at any depth, so its relative links resolve from the root.
+    (out / "404.html").write_text(not_found_page().replace("<head>", '<head>\n<base href="/">', 1), encoding="utf-8")
     (out / "releases.html").write_text(releases.releases_page(H), encoding="utf-8")
     (out / "experiments" / "judging.html").write_text(remeasured.judging_page(H, f), encoding="utf-8")
     for x in f["experiments"]:
@@ -1364,6 +1397,9 @@ def build(out: Path) -> None:
     (out / ".nojekyll").write_text("")
     (out / "sitemap.xml").write_text(sitemap_xml(sitemap_urls(out)), encoding="utf-8")
     (out / "robots.txt").write_text(ROBOTS, encoding="utf-8")
+    point_docs(out)
+    # Last: no inline script or style survives, so the prod CSP needs no 'unsafe-inline'.
+    csp.externalize(out)
 
 
 def main() -> int:

@@ -14,16 +14,31 @@ Builds nothing: run `evh catalog` first. Static files are the built catalog and 
   GET /api/item?arms=<arm>,...&item=<item_id>[&ref=<reference_id>]
       each arm's output for one item, and the reference's
 
-Item text leaves this process only towards 127.0.0.1. Runs on different dataset_ids are never
-compared: the request is refused, as `run-compare` refuses.
+Runs on different dataset_ids are never compared: the request is refused, as `run-compare`
+refuses.
+
+LOCAL (default): binds 127.0.0.1, serves the built catalog and the data tree beside the API, and
+answers only to a 127.0.0.1/localhost Host (DNS rebinding). Item text leaves this machine only
+towards this machine.
+
+PUBLIC (--public HOST[,HOST]): the API only, behind a reverse proxy that serves the static
+catalog (infra/: nginx for the pages, Caddy in front). It answers only to the named Host(s);
+each client (CF-Connecting-IP, else the peer) gets --rate requests a minute; at most
+--max-arms arms per comparison; two comparisons compute at once and the rest wait; every
+answer is cached by its exact question; errors say what was wrong with the request, never the
+server's internals. --warm DIR computes, in the background, every comparison the built catalog
+in DIR links to, so the pages' own links answer from the cache.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
-from collections import Counter
+import threading
+import time
+from collections import Counter, OrderedDict, defaultdict
 from functools import lru_cache, partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -217,6 +232,8 @@ def _number(params: dict, key: str, kind):
 
 def compare(params: dict) -> dict:
     runs = [r.strip("/") for r in params.get("runs", [""])[0].split(",") if r.strip()]
+    if len(runs) > LIMITS["max_arms"]:
+        return {"error": f"{len(runs)} arms asked for; at most {LIMITS['max_arms']} in one comparison"}
     by_run = {r: A.arms_of(r) for r in runs}
     bad = [r for r, xs in by_run.items() if not xs]
     if bad:
@@ -292,6 +309,66 @@ def item(params: dict) -> dict:
     return out
 
 
+#: Set by main(): the public mode's limits. max_arms applies locally too (a URL is not a query).
+LIMITS = {"max_arms": 40, "rate": 0, "hosts": ()}
+_CACHE: "OrderedDict[str, tuple]" = OrderedDict()
+_CACHE_MAX = 1024
+_CACHE_LOCK = threading.Lock()
+_COMPUTE = threading.BoundedSemaphore(2)
+_HITS: "defaultdict[str, list]" = defaultdict(list)
+
+
+def answer(path: str, query: str) -> tuple:
+    """(status, body) for one API request; every answer cached by its exact question (the data
+    under a running server does not change: restart it to see new runs)."""
+    key = f"{path}?{'&'.join(sorted(query.split('&')))}"
+    with _CACHE_LOCK:
+        if key in _CACHE:
+            _CACHE.move_to_end(key)
+            return _CACHE[key]
+    params = parse_qs(query)
+    with _COMPUTE:
+        try:
+            body = compare(params) if path == "/api/compare" else item(params)
+            code = 400 if "error" in body else 200
+        except Exception as exc:  # report, don't kill the server
+            body = {"error": "internal error" if LIMITS["hosts"] else f"{type(exc).__name__}: {exc}"}
+            code = 500
+    if code != 500:
+        with _CACHE_LOCK:
+            _CACHE[key] = (code, body)
+            while len(_CACHE) > _CACHE_MAX:
+                _CACHE.popitem(last=False)
+    return code, body
+
+
+def over_rate(client: str) -> bool:
+    """True when this client has made LIMITS["rate"] API requests in the last minute."""
+    if not LIMITS["rate"]:
+        return False
+    now = time.monotonic()
+    with _CACHE_LOCK:
+        hits = [t for t in _HITS[client] if now - t < 60]
+        hits.append(now)
+        _HITS[client] = hits
+        if len(_HITS) > 10000:  # forget idle clients
+            for k in [k for k, v in _HITS.items() if now - v[-1] > 60]:
+                del _HITS[k]
+    return len(hits) > LIMITS["rate"]
+
+
+def warm(build_dir: Path) -> int:
+    """Answer, once, every comparison the built catalog links to: the pages' own links then
+    come from the cache. Returns how many."""
+    links = set()
+    for page in sorted(build_dir.rglob("*.html")):
+        for href in re.findall(r'href="(?:\.\./)*inspect\.html\?([^"]+)"', page.read_text(encoding="utf-8")):
+            links.add(href.replace("&amp;", "&"))
+    for q in sorted(links):
+        answer("/api/compare", q)
+    return len(links)
+
+
 def served(build_dir: Path, data_dir: Path) -> tuple:
     """The URL prefixes readable over HTTP: the built catalog and the data tree, both under
     the project root (the server's document root)."""
@@ -306,7 +383,8 @@ def allowed(path: str, host: str, port: int, prefixes: tuple) -> int:
     rebinding, so the Host header must name this machine. Only the served trees are readable,
     and no dot-folder inside them (.git and the like) ever is.
     """
-    if host not in (f"127.0.0.1:{port}", f"localhost:{port}", "127.0.0.1", "localhost"):
+    local = (f"127.0.0.1:{port}", f"localhost:{port}", "127.0.0.1", "localhost")
+    if host not in (LIMITS["hosts"] or local):
         return 403
     p = unquote(urlparse(path).path)
     if p.startswith("/api/"):
@@ -325,7 +403,7 @@ class Handler(SimpleHTTPRequestHandler):
     prefixes: tuple = ()
 
     def _refuse(self) -> bool:
-        if urlparse(self.path).path in ("", "/"):
+        if urlparse(self.path).path in ("", "/") and self.prefixes:
             self.send_response(302)
             self.send_header("Location", self.prefixes[0])
             self.end_headers()
@@ -344,21 +422,24 @@ class Handler(SimpleHTTPRequestHandler):
         if self._refuse():
             return
         url = urlparse(self.path)
+        if url.path == "/api/health":
+            return self._json(200, {"ok": True})
         if url.path in ("/api/compare", "/api/item"):
-            params = parse_qs(url.query)
-            try:
-                body = compare(params) if url.path == "/api/compare" else item(params)
-                code = 400 if "error" in body else 200
-            except Exception as exc:  # report, don't kill the server
-                body, code = {"error": f"{type(exc).__name__}: {exc}"}, 500
-            data = json.dumps(body).encode()
-            self.send_response(code)
-            self.send_header("Content-Type", "application/json")
-            self.send_header("Content-Length", str(len(data)))
-            self.end_headers()
-            self.wfile.write(data)
-            return
+            client = self.headers.get("CF-Connecting-IP") if LIMITS["hosts"] else None
+            if over_rate(client or self.client_address[0]):
+                return self._json(429, {"error": f"more than {LIMITS['rate']} requests a minute; wait a moment"})
+            code, body = answer(url.path, url.query)
+            return self._json(code, body)
         super().do_GET()
+
+    def _json(self, code: int, body: dict) -> None:
+        data = json.dumps(body).encode()
+        self.send_response(code)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(data)))
+        self.send_header("Cache-Control", "no-store" if code >= 400 else "public, max-age=300")
+        self.end_headers()
+        self.wfile.write(data)
 
     def log_message(self, fmt, *args):
         if args and "/api/" in str(args[0]):
@@ -371,13 +452,36 @@ def main() -> int:
     ap.add_argument("--adapter", help="path/to/file.py:Class (default: config.yaml catalog.adapter, "
                                       "else the harness's own layout)")
     ap.add_argument("--build-dir", type=Path, default=ROOT / ".build" / "catalog")
+    ap.add_argument("--public", metavar="HOST[,HOST]",
+                    help="serve the API only, to these Host names, behind a reverse proxy")
+    ap.add_argument("--bind", default="127.0.0.1",
+                    help="address to listen on (0.0.0.0 inside a container whose port is published on loopback)")
+    ap.add_argument("--rate", type=int, default=30, help="public mode: API requests per client per minute")
+    ap.add_argument("--max-arms", type=int, default=40, help="most arms in one comparison")
+    ap.add_argument("--warm", type=Path, metavar="CATALOG_DIR",
+                    help="answer every comparison this built catalog links to, in the background")
     args = ap.parse_args()
     set_adapter(load_adapter(args.adapter))
-    if not (args.build_dir / "index.html").is_file():
-        raise SystemExit(f"no catalog at {args.build_dir}: run `evh catalog` first")
-    Handler.prefixes = served(args.build_dir, A.data_dir)
-    server = ThreadingHTTPServer(("127.0.0.1", args.port), partial(Handler, directory=str(ROOT)))
-    print(f"catalog: http://127.0.0.1:{args.port}{Handler.prefixes[0]}   (Ctrl-C to stop)")
+    LIMITS["max_arms"] = args.max_arms
+    if args.public:
+        LIMITS["hosts"] = tuple(h.strip() for h in args.public.split(",") if h.strip())
+        LIMITS["rate"] = args.rate
+        Handler.prefixes = ()
+    else:
+        if args.bind != "127.0.0.1":
+            raise SystemExit("--bind other than 127.0.0.1 needs --public (and a proxy in front)")
+        if not (args.build_dir / "index.html").is_file():
+            raise SystemExit(f"no catalog at {args.build_dir}: run `evh catalog` first")
+        Handler.prefixes = served(args.build_dir, A.data_dir)
+    if args.warm:
+        threading.Thread(target=lambda: print(f"warm: {warm(args.warm)} comparison(s) cached", flush=True),
+                         daemon=True).start()
+    server = ThreadingHTTPServer((args.bind, args.port), partial(Handler, directory=str(ROOT)))
+    if args.public:
+        print(f"inspector API on {args.bind}:{args.port} for {', '.join(LIMITS['hosts'])} "
+              f"({LIMITS['rate']}/min per client, {LIMITS['max_arms']} arms max)", flush=True)
+    else:
+        print(f"catalog: http://127.0.0.1:{args.port}{Handler.prefixes[0]}   (Ctrl-C to stop)")
     try:
         server.serve_forever()
     except KeyboardInterrupt:

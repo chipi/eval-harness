@@ -18,7 +18,6 @@ Standard library only.
 from __future__ import annotations
 
 import bisect
-import itertools
 import math
 import random
 import statistics
@@ -30,6 +29,17 @@ EXACT_UP_TO = 30
 _EPS = 1e-12
 
 
+def _signed_sums(xs: list) -> list:
+    """Every sum of +-x over xs (2^len values), built by doubling: each element adds itself to,
+    and subtracts itself from, every sum so far. The same multiset of sums as enumerating each
+    sign pattern, ~20x faster, which is what makes the exact interval (a bisection of exact
+    p-values) take about a second instead of ten at 30 items."""
+    sums = [0.0]
+    for x in xs:
+        sums = [s + x for s in sums] + [s - x for s in sums]
+    return sums
+
+
 def exact_p(deltas: list) -> float:
     """Exact two-sided sign-flip p: the share of all 2^n sign patterns with |sum| >= |observed|."""
     n = len(deltas)
@@ -39,14 +49,8 @@ def exact_p(deltas: list) -> float:
     if obs <= 0:  # no difference at all: every pattern is at least as extreme
         return 1.0
     half = n // 2
-    left = [
-        sum(s * d for s, d in zip(signs, deltas[:half]))
-        for signs in itertools.product((1, -1), repeat=half)
-    ]
-    right = sorted(
-        sum(s * d for s, d in zip(signs, deltas[half:]))
-        for signs in itertools.product((1, -1), repeat=n - half)
-    )
+    left = _signed_sums(deltas[:half])
+    right = sorted(_signed_sums(deltas[half:]))
     hits = 0
     for x in left:  # count r with x + r >= obs or x + r <= -obs
         hits += len(right) - bisect.bisect_left(right, obs - x)
@@ -124,7 +128,7 @@ def exact_ci(deltas: list, alpha: float = ALPHA):
 
     def bound(outer):
         inner = mean  # never rejected: the shifted sum is 0
-        for _ in range(48):
+        for _ in range(30):  # the interval to ~1e-9 of its span; it is shown to 3 decimals
             mid = (inner + outer) / 2
             inner, outer = (inner, mid) if rejected(mid) else (mid, outer)
         return inner

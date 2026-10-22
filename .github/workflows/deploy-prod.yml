@@ -1,0 +1,137 @@
+name: Deploy evals to prod VPS
+
+# Renders a release (infra/deploy/render.sh: the findings site, the catalog built from the
+# committed runs, the inspector's code and data), rsyncs it to /srv/evals/releases/<sha>/ on the
+# prod VPS over the tailnet, and runs infra/deploy/deploy.sh there, which validates, switches the
+# `current` symlink, health-checks every site and the inspector (rolling back on failure), and
+# then installs our Alloy drop-in and Caddy vhosts with whole-set validation.
+# Template: chipi/humancopilot.eu .github/workflows/deploy-prod.yml (the prod session's pattern).
+#
+# Environment `prod` (deployment branches: main only) holds:
+#   secrets.PROD_SSH_PRIVATE_KEY   CI-only ed25519 key; public half in deploy@'s authorized_keys
+#   secrets.TS_OAUTH_CLIENT_ID     Tailscale OAuth client (tag:gha-deployer)
+#   secrets.TS_OAUTH_SECRET
+#   vars.PROD_TAILNET_FQDN         MagicDNS name of the VPS
+#   vars.PROD_SSH_HOST_KEY         the VPS's host key, pinned
+# This repository is public: nothing here runs for a pull request, the job only runs on
+# refs/heads/main, and the environment's branch rule keeps the secrets from any other ref.
+#
+# Rollback: "Re-run all jobs" on an older successful run (redeploys its sha); or `git revert` on
+# main; or, to take a host off the edge, remove it from infra/caddy/enabled.txt and push.
+# A failed deploy rolls itself back on the box (deploy.sh steps 3-4).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "site/public/**"
+      - "harness/scripts/**"
+      - "harness/catalog_assets/**"
+      - "harness/data/**"
+      - "infra/**"
+      - ".github/workflows/deploy-prod.yml"
+      - ".github/actions/prod-ssh-key/**"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Upload and validate on the box (port preflight + nginx -t), then stop before switching anything
+        type: boolean
+        default: false
+
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: prod
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6
+
+      - name: Pre-flight — required secrets and variables present
+        env:
+          TS_OAUTH_CLIENT_ID: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          TS_OAUTH_SECRET: ${{ secrets.TS_OAUTH_SECRET }}
+          PROD_SSH_PRIVATE_KEY: ${{ secrets.PROD_SSH_PRIVATE_KEY }}
+          PROD_TAILNET_FQDN: ${{ vars.PROD_TAILNET_FQDN }}
+          PROD_SSH_HOST_KEY: ${{ vars.PROD_SSH_HOST_KEY }}
+        run: |
+          missing=0
+          for v in TS_OAUTH_CLIENT_ID TS_OAUTH_SECRET PROD_SSH_PRIVATE_KEY PROD_TAILNET_FQDN PROD_SSH_HOST_KEY; do
+            if [ -z "${!v}" ]; then echo "::error::$v is not set in the prod environment"; missing=1; fi
+          done
+          exit $missing
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.12"
+
+      - name: Render the release
+        run: |
+          set -euo pipefail
+          python -m pip install --quiet "pyyaml==6.0.2"
+          echo "SHA=${GITHUB_SHA::12}" >> "$GITHUB_ENV"
+          bash infra/deploy/render.sh _release "${GITHUB_SHA::12}"
+
+      - name: Join the tailnet
+        uses: tailscale/github-action@306e68a486fd2350f2bfc3b19fcd143891a4a2d8 # v4
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:gha-deployer
+          # Pinned: `latest` has broken sha256 verification in GHA before (podcast_scraper RFC-082).
+          version: 1.96.4
+
+      - name: SSH identity with pinned host key
+        uses: ./.github/actions/prod-ssh-key
+        with:
+          ssh_private_key: ${{ secrets.PROD_SSH_PRIVATE_KEY }}
+          pinned_host_key: ${{ vars.PROD_SSH_HOST_KEY }}
+
+      - name: Upload the release
+        env:
+          TARGET: deploy@${{ vars.PROD_TAILNET_FQDN }}
+        run: |
+          set -euo pipefail
+          # Hard-link every file the current release already has (most of the ~36,000 run
+          # files never change), so only what changed crosses the tailnet.
+          rsync -a --delete --mkpath --link-dest=/srv/evals/current/ \
+            -e "ssh -i $SSH_PROD_IDENTITY -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o BatchMode=yes" \
+            _release/ "$TARGET:/srv/evals/releases/$SHA/"
+
+      - name: Activate on the VPS
+        env:
+          TARGET: deploy@${{ vars.PROD_TAILNET_FQDN }}
+          DRY_RUN: ${{ inputs.dry_run && 'true' || 'false' }}
+        run: |
+          set -euo pipefail
+          ssh -i "$SSH_PROD_IDENTITY" -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o BatchMode=yes \
+            "$TARGET" "DRY_RUN=$DRY_RUN bash /srv/evals/releases/$SHA/deploy/deploy.sh"
+
+      - name: Public probe (only for vhosts enabled on the edge)
+        if: ${{ !inputs.dry_run }}
+        run: |
+          set -euo pipefail
+          enabled="$(grep -vE '^\s*(#|$)' infra/caddy/enabled.txt | tr -d ' \t' || true)"
+          probe() {  # url, text that only this release's page contains
+            for _ in 1 2 3 4 5 6; do
+              code="$(curl -s -o /dev/null -w '%{http_code}' "$1")" && [ "$code" = 200 ] && break
+              sleep 10
+            done
+            [ "$code" = 200 ] || { echo "::error::$1 returned $code"; exit 1; }
+            curl -fsS "$1" | grep -q "$2" || { echo "::error::$1 is not this release"; exit 1; }
+            echo "public $1 OK"
+          }
+          if grep -qx evals <<<"$enabled"; then probe https://evals.humancopilot.eu/ "?v=$SHA"; fi
+          if grep -qx catalog <<<"$enabled"; then
+            probe https://catalog.evals.humancopilot.eu/ "?v=$SHA"
+            curl -fsS https://catalog.evals.humancopilot.eu/api/health | grep -q '"ok": true' \
+              || { echo "::error::the inspector API does not answer on the public host"; exit 1; }
+          fi
+          [ -n "$enabled" ] || echo "no vhost enabled yet; the on-box loopback health check is the gate"

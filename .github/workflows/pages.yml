@@ -1,30 +1,36 @@
-# Publish the public site to GitHub Pages:
+# Publish the DOCUMENTATION to GitHub Pages, at docs.evals.humancopilot.eu:
 #
-#   /        site/public      the findings site, generated from the runs by `make site`
-#   /docs/   mkdocs.yml       the documentation (docs/ + harness/docs/), built here
+#   /   mkdocs.yml   the documentation (docs/ + harness/docs/), built here
 #
-# The findings site is built and committed, and `make ci` fails if it is stale, so this
-# workflow only copies it; no corpora, weights or API keys are needed. The docs are built
-# here in strict mode, so a broken link fails the deploy instead of shipping -- and on
-# every pull request too, so it fails the PR's checks before the merge rather than the
-# deploy after it. A pull request only builds; only a push to main deploys.
+# The findings site (evals.humancopilot.eu) and the catalog with its run inspector
+# (catalog.evals.humancopilot.eu) are served from the prod VPS by deploy-prod.yml; only the
+# docs stay here. The docs are built in strict mode, so a broken link fails the deploy instead
+# of shipping, and on every pull request too, so it fails the PR's checks before the merge
+# rather than the deploy after it. A pull request only builds; only a push to main deploys.
 #
-# One-time setup: Settings -> Pages -> Source: "GitHub Actions".
+# One-time setup: Settings -> Pages -> Source: "GitHub Actions", custom domain
+# docs.evals.humancopilot.eu (DNS: a CNAME to chipi.github.io, not proxied).
 name: pages
 
 on:
   push:
     branches: [main]
     paths:
-      - "site/**"
+      - "site/mkdocs_hooks.py"
+      - "site/analytics.json"
+      - "site/requirements-docs.txt"
       - "docs/**"
       - "harness/docs/**"
+      - "harness/CHANGELOG.md"
       - "mkdocs.yml"
       - ".github/workflows/pages.yml"
   pull_request:
     paths:
-      - "site/**"
+      - "site/mkdocs_hooks.py"
+      - "site/analytics.json"
+      - "site/requirements-docs.txt"
       - "docs/**"
+      - "harness/CHANGELOG.md"
       - "harness/docs/**"
       - "mkdocs.yml"
       - ".github/workflows/pages.yml"
@@ -58,8 +64,7 @@ jobs:
       - name: Assemble the site
         run: |
           mkdir -p _site
-          cp -r site/public/. _site/
-          cp -r build/docs-site _site/docs
+          cp -r build/docs-site/. _site/
           # The footers say "build: local" (a commit cannot hold its own hash); the deployed
           # copy names the commit it was built from.
           sha="${GITHUB_SHA:?}"
@@ -86,7 +91,7 @@ jobs:
       - id: deployment
         uses: actions/deploy-pages@v4
 
-  # After the deploy: does the LIVE domain serve robots.txt and sitemap.xml at its root,
+  # After the deploy: does the LIVE docs domain serve robots.txt and sitemap.xml at its root,
   # with the right types, and does every sitemap URL answer 200? (build.py --check proves
   # each URL is a built page; only the live domain can prove Pages publishes it.)
   crawl-check:
@@ -96,7 +101,7 @@ jobs:
     steps:
       - name: robots.txt, sitemap.xml and every sitemap URL, on the live domain
         run: |
-          site=https://evals.humancopilot.eu
+          site=https://docs.evals.humancopilot.eu
           for i in 1 2 3 4 5 6; do
             code=$(curl -s -o /dev/null -w '%{http_code}' "$site/sitemap.xml")
             [ "$code" = 200 ] && break; sleep 20

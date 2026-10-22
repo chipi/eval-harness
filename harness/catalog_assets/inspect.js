@@ -244,7 +244,9 @@
   }
 
   function legend(d, label, col) {
-    return '<p class="legend">' + Object.keys(d.series).map(a => `<span title="${esc(a)}"><i style="background:${col[a]}"></i>${esc(label[a] || a)}${a === d.baseline ? ' <small>baseline</small>' : ''}</span>`).join('') + '</p>';
+    // The swatch colour is set after rendering (wireCharts), never as a style="" attribute,
+    // which a Content-Security-Policy without 'unsafe-inline' refuses.
+    return '<p class="legend">' + Object.keys(d.series).map(a => `<span title="${esc(a)}"><i data-swatch="${esc(col[a])}"></i>${esc(label[a] || a)}${a === d.baseline ? ' <small>baseline</small>' : ''}</span>`).join('') + '</p>';
   }
 
   function charts(d, label) {
@@ -255,6 +257,7 @@
   }
 
   function wireCharts(d, label) {
+    app.querySelectorAll('i[data-swatch]').forEach(i => { i.style.background = i.dataset.swatch; });
     const tip = document.getElementById('ctip') || Object.assign(document.body.appendChild(document.createElement('div')), {id: 'ctip'});
     app.querySelectorAll('svg').forEach(svg => {
       svg.addEventListener('pointermove', ev => { const t = ev.target.closest('[data-tip]'); if (!t) { tip.classList.remove('on'); return; }

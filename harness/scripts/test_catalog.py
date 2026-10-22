@@ -128,6 +128,31 @@ try:
     check("http: no climbing out", get("/data/../secret")[0] == 404)
     srv.shutdown()
 
+    # PUBLIC mode: the API only, to the named host, rate-limited, arms capped, answers cached
+    cs.LIMITS.update(hosts=("catalog.example.org",), rate=5, max_arms=2)
+    cs.Handler.prefixes = ()
+    cs._CACHE.clear(); cs._HITS.clear()
+    pub = ThreadingHTTPServer(("127.0.0.1", 0), partial(cs.Handler, directory=str(tmp)))
+    port = pub.server_address[1]
+    threading.Thread(target=pub.serve_forever, daemon=True).start()
+    H = "catalog.example.org"
+    check("public: answers the named host", get("/api/health", H)[0] == 200)
+    check("public: refuses any other host, localhost included", get("/api/health")[0] == 403)
+    check("public: serves no files, catalog or data", get("/.build/catalog/index.html", H)[0] == 404
+          and get("/data/runs/a_1/metrics.json", H)[0] == 404)
+    st, body = get("/api/compare?runs=runs/ds1/arm_a,runs/ds1/arm_b", H)
+    check("public: compares", st == 200 and json.loads(body)["metric"] == "acc", st)
+    st, body = get("/api/compare?runs=runs/ds1/arm_a,runs/ds1/arm_b,runs/ds2/arm_c", H)
+    capped = next((v for k, v in cs._CACHE.items() if "arm_c" in k), (0, {}))
+    check("public: at most --max-arms arms in one comparison", st == 400 and "at most 2" in capped[1].get("error", ""), (st, capped))
+    key = next(k for k in cs._CACHE if "arm_b" in k)
+    check("public: an answer is cached by its exact question", cs._CACHE[key][0] == 200)
+    codes = [get("/api/health", H)[0] for _ in range(2)] + [get("/api/item?arms=runs/ds1/arm_a&item=i00", H)[0] for _ in range(4)]
+    check("public: a client over --rate requests a minute gets 429", 429 in codes, codes)
+    pub.shutdown()
+    cs.LIMITS.update(hosts=(), rate=0, max_arms=40)
+    cs._CACHE.clear(); cs._HITS.clear()
+
     # the command line: evh catalog builds into the project
     env_root = tmp / "proj"
     shutil.copytree(data, env_root / "data")
