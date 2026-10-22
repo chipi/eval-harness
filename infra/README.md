@@ -19,7 +19,7 @@ infra/
   compose.yml            evals-nginx (127.0.0.1:8096), evals-inspector (127.0.0.1:8097)
   nginx/                 nginx.conf, one server block per host, the security headers
   caddy/                 evals.caddy, catalog.caddy, enabled.txt (which ones are live)
-  sites/<host>.env       per-host public settings (the CSP report address)
+  sites/<host>.cfg       per-host public settings (the CSP report address)
   observability/         evals.alloy: both containers' logs to VictoriaLogs, app=evals
   deploy/                render.sh (CI), deploy.sh + install_vhosts.sh + install_alloy.sh (box)
 .github/workflows/deploy-prod.yml   render, upload, activate, probe
@@ -89,40 +89,91 @@ p-value as `pair-test`; a browser passed both hosts with zero violations of the 
   don't ship twice;
 - record ports 8096 and 8097 in ADR-114.
 
-**GlitchTip (needs the superuser):** create a project for evals. Put its security endpoint in
-`infra/sites/evals.humancopilot.eu.env` and `infra/sites/catalog.evals.humancopilot.eu.env`
-as `CSP_REPORT_URI`. Until then the CSP is enforced without reports.
+**GlitchTip (done 2026-10-22):** project `evals-web` (id 36) receives both hosts' CSP violation
+reports, through the shared `telemetry.humancopilot.eu` ingest vhost; `infra/sites/*.cfg` holds
+the report URI, and a probe report proved the path end to end. To point it elsewhere: create
+the project (the handbook's superuser recipe), and put its security endpoint in
+`infra/sites/evals.humancopilot.eu.cfg` and `infra/sites/catalog.evals.humancopilot.eu.cfg` as
+`CSP_REPORT_URI`. An empty value turns reporting off; the CSP is enforced either way.
 
 ## Cutover, in this order
 
-The deploy workflow runs only from `main`: the prod environment allows no other branch. So the
-first deploy comes with the merge of the 0.4.0 branch, and so does the switch of `pages.yml` to
-docs only. Between the merge and the DNS change, `evals.humancopilot.eu` (still on GitHub
-Pages) shows the docs instead of the harness site. Do steps 2–5 together, in a few minutes.
+The deploy workflow runs only from `main`: the prod environment allows no other branch. Two
+repository variables keep the merge itself from changing anything public: a push deploys to the
+VPS only once `PROD_AUTO_DEPLOY` is `true`, and publishes the docs to Pages only once
+`DOCS_ON_OWN_DOMAIN` is `true`. Both start unset, so after the merge GitHub Pages keeps serving
+the harness site on `evals.humancopilot.eu` until step 5 moves it. A dispatch of either workflow
+always runs.
 
-0. **Before the merge:** the one-time setup above is done, and the prod session confirms
-   `/srv/evals` and the key.
-1. **Merge the 0.4.0 branch.** The deploy goes live on the loopback ports only (`enabled.txt`
-   is empty), and the on-box health check is the gate. If it fails, nothing public has
-   changed yet: fix and re-run it.
-2. **Cloudflare:**
-   - `evals.humancopilot.eu` and `catalog.evals.humancopilot.eu`: A + AAAA to the VPS,
-     proxied.
-   - `docs.evals.humancopilot.eu`: CNAME to `chipi.github.io`, DNS only.
-3. **GitHub Pages:** set the custom domain to `docs.evals.humancopilot.eu`, then re-run the
-   `pages` workflow.
-4. **Enable the vhosts:** add `evals` and `catalog` to `infra/caddy/enabled.txt` and push. The
-   deploy installs both vhosts; Caddy gets their certificates over HTTP-01 (through Cloudflare's
-   proxy, verified by the prod session). The workflow probes both public hosts, and the
-   inspector API on the catalog host. Don't list them before step 2: install_vhosts.sh only
-   checks that a name resolves, not where, and today `evals` resolves to GitHub, so Caddy
-   would try for a certificate it cannot get.
-5. **Check:** the `pages` workflow's crawl check passes on the docs host, and an old
-   `evals.humancopilot.eu/docs/GUIDE/` link lands on `docs.evals.humancopilot.eu/GUIDE/`.
+**Already done (2026-10-22):**
+
+| What | Evidence |
+|---|---|
+| `prod` environment: 3 secrets, 2 variables, `main` only | `gh secret list --env prod`, `gh variable list --env prod -R chipi/eval-harness` |
+| Deploy key in `deploy@`'s `authorized_keys` (tailnet-only `from=`), `/srv/evals`, ports 8096/8097, the Alloy split, the tailnet ACL | the prod session's report |
+| GlitchTip `evals-web` (36) and `infra/sites/*.cfg` | a probe report through `telemetry.humancopilot.eu` became an issue (then deleted) |
+| `main` protected: `verify`, `browser` and the three `rerun` jobs required | `gh api repos/chipi/eval-harness/branches/main/protection` |
+
+**The steps.** Steps 0 to 3 can be days apart; 4 to 6 belong together, within minutes.
+
+0. **Before the merge** (operator). PR #22's checks are green and its review is done.
+1. **Merge PR #22** (operator). Nothing deploys and nothing public changes.
+   - *Confirm:* the merge commit's `deploy-prod` and `pages` deploy jobs show as skipped.
+2. **Release** (operator; after layer 4, before the first deploy). Date the CHANGELOG section,
+   tag `v0.4.0` (`harness/docs/RELEASING.md`). The deployed pages show `@v0.4.0` install lines,
+   which work only once the tag exists.
+   - *Confirm:* the `harness-release` run on the tag is green, and
+     `pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.4.0#subdirectory=harness"`
+     installs in a fresh venv.
+3. **First deploy, by hand** (operator or this repo's session; tell the prod session first, it
+   watches the box).
+   - `gh workflow run deploy-prod.yml -R chipi/eval-harness -f dry_run=true`: uploads and
+     validates on the box (port preflight, `nginx -t`), switches nothing.
+   - `gh workflow run deploy-prod.yml -R chipi/eval-harness`: goes live on the loopback ports
+     only (`enabled.txt` is empty). The on-box health check is the gate: both sites 200 on `/`
+     and 404 on a missing page, the inspector's `/api/health`, one single-arm comparison and one
+     group comparison (`deploy/probe_link.sh`).
+   - Then `gh variable set PROD_AUTO_DEPLOY --body true -R chipi/eval-harness`: later pushes
+     deploy.
+   - *Confirm:* both runs green; the log ends `== release <sha> live on 127.0.0.1:8096 (nginx)
+     and 127.0.0.1:8097 (inspector)`.
+   - *If it fails:* nothing public has changed and the box rolled itself back. Read the run's
+     log, fix, dispatch again.
+4. **DNS in Cloudflare** (operator).
+   - `evals.humancopilot.eu` and `catalog.evals.humancopilot.eu`: A + AAAA to the VPS (the
+     same addresses as the box's other sites; the prod session has them), proxied.
+   - `docs.evals.humancopilot.eu`: CNAME `chipi.github.io`, DNS only.
+   - *Confirm:* `dig +short docs.evals.humancopilot.eu` names `chipi.github.io`; the two proxied
+     names resolve to Cloudflare addresses.
+   - From here `evals.humancopilot.eu` reaches the VPS, which has no vhost for it yet: go
+     straight on.
+5. **Docs on their own domain** (operator or this repo's session).
+   - `gh api -X PUT repos/chipi/eval-harness/pages -f cname=docs.evals.humancopilot.eu`
+   - `gh workflow run pages.yml -R chipi/eval-harness`
+   - `gh variable set DOCS_ON_OWN_DOMAIN --body true -R chipi/eval-harness`
+   - *Confirm:* the `pages` run's crawl check is green (robots.txt, sitemap.xml and every
+     sitemap URL answer on `docs.evals.humancopilot.eu`).
+6. **Enable the vhosts** (this repo's session, with the operator's go; tell the prod session, it
+   watches certificate issuance). Add `evals` and `catalog` to `infra/caddy/enabled.txt` and
+   push. The deploy installs both vhosts; Caddy gets their certificates over HTTP-01 through
+   Cloudflare's proxy. Never before step 4: `install_vhosts.sh` checks that a name resolves, not
+   where, and Caddy would burn Let's Encrypt attempts on a name that still points at GitHub.
+   - *Confirm:* `curl -sI https://evals.humancopilot.eu/` and `curl -sI
+     https://catalog.evals.humancopilot.eu/` answer 200;
+     `curl -s https://catalog.evals.humancopilot.eu/api/health` answers.
+7. **Check** (anyone).
+   - `curl -sI https://evals.humancopilot.eu/docs/GUIDE/ | grep -i '^location'` names
+     `https://docs.evals.humancopilot.eu/GUIDE/`.
+   - The catalog's pages open and a group "Inspect" link answers with verdicts.
+   - GlitchTip `evals-web` stays empty in normal use: an issue there is a page loading
+     something the CSP blocks.
 
 Later deploys need none of this: a push to `main` that touches what ships redeploys.
 
 **Rollback:**
-- re-run an older successful deploy;
-- or `git revert` on main;
-- or remove a name from `enabled.txt` to take that host off the edge.
+- a bad release: re-run an older successful `deploy-prod` run (it redeploys that sha), or
+  `git revert` on `main`;
+- one host off the edge: remove its name from `enabled.txt` and push;
+- the docs back off their domain: set the Pages custom domain back and unset
+  `DOCS_ON_OWN_DOMAIN`;
+- stop pushes deploying: `gh variable delete PROD_AUTO_DEPLOY -R chipi/eval-harness`.

@@ -50,7 +50,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment: prod
-    if: github.ref == 'refs/heads/main'
+    # A push deploys only once the repository variable PROD_AUTO_DEPLOY is "true". It is unset
+    # until the first deploy has been dispatched (a dry run, then a real one) and has passed, so
+    # merging the branch that adds this workflow deploys nothing by itself (infra/README.md,
+    # "Cutover"). A dispatch always runs.
+    if: >-
+      github.ref == 'refs/heads/main'
+      && (github.event_name == 'workflow_dispatch' || vars.PROD_AUTO_DEPLOY == 'true')
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6
 

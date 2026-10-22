@@ -35,8 +35,8 @@ The release notes so far are in [`harness/CHANGELOG.md`](../../harness/CHANGELOG
    - `catalog.evals.humancopilot.eu`: the catalog and inspector of the example experiments,
      treated as a full deployment of the harness, item outputs shown;
    - `docs.evals.humancopilot.eu`: the docs, on GitHub Pages.
-6. **CSP reports:** a separate GlitchTip project for evals (not created yet; needs the
-   GlitchTip superuser).
+6. **CSP reports:** GlitchTip project `evals-web` (id 36), created 2026-10-22, through the
+   shared `telemetry.humancopilot.eu` vhost; `infra/sites/*.cfg` holds the report URI.
 7. **Branch names:** meaningful, never `claude/...`.
 
 ## Done (on the branch)
@@ -100,6 +100,12 @@ The release notes so far are in [`harness/CHANGELOG.md`](../../harness/CHANGELOG
 
 Everything is in `infra/README.md` ("One-time setup", "Cutover"). In short:
 
+Status 2026-10-22: steps 1 and 2 are done (the environment read back with `gh secret list` /
+`gh variable list --env prod`, branch policy `main`; the prod session reported its side, with
+the key's fingerprint). Step 3 is done too
+(GlitchTip `evals-web`, below).
+`main` is protected: required checks `verify`, `browser` and the three `rerun` jobs.
+
 1. **GitHub `prod` environment** on chipi/eval-harness, `main` only:
    - secrets `TS_OAUTH_CLIENT_ID` and `TS_OAUTH_SECRET` (a Tailscale OAuth client of this
      repo's own, `tag:gha-deployer`), and `PROD_SSH_PRIVATE_KEY` (minted by the operator,
@@ -112,21 +118,30 @@ Everything is in `infra/README.md` ("One-time setup", "Cutover"). In short:
    - add `evals-nginx` and `evals-inspector` to podcast_scraper's `unscoped.alloy`;
    - record ports 8096 and 8097 in ADR-114;
    - review `infra/` before the first deploy.
-3. **GlitchTip:** create the evals project; set `CSP_REPORT_URI` in both `infra/sites/*.env`.
-4. **The cutover:**
-   - merge PR #22. The deploy runs on loopback only; `pages.yml` goes docs-only;
+3. **GlitchTip:** done 2026-10-22: project `evals-web` (36); `CSP_REPORT_URI` in both
+   `infra/sites/*.cfg`; a probe report returned 201, appeared as an issue, and was deleted.
+4. **The cutover** (`infra/README.md`, "Cutover, in this order", is the source):
+   - merge PR #22. Nothing deploys by itself: a push deploys to the VPS only once the repo
+     variable `PROD_AUTO_DEPLOY` is `true`, and publishes the docs only once
+     `DOCS_ON_OWN_DOMAIN` is `true`; both start unset, so Pages keeps serving the harness site;
+   - after layer 4, date the CHANGELOG and tag `v0.4.0`: the deployed pages show `@v0.4.0`
+     install lines, so the tag comes before the first deploy;
+   - dispatch `deploy-prod` with `dry_run=true`, then for real (loopback only), then set
+     `PROD_AUTO_DEPLOY`;
    - Cloudflare: `evals.` and `catalog.evals.` get A + AAAA to the VPS, proxied;
      `docs.evals.` gets a CNAME to `chipi.github.io`, DNS only;
-   - set the Pages custom domain to `docs.evals.humancopilot.eu`;
+   - set the Pages custom domain to `docs.evals.humancopilot.eu`, dispatch `pages`, set
+     `DOCS_ON_OWN_DOMAIN`;
    - add `evals` and `catalog` to `infra/caddy/enabled.txt` and push.
 
-   Between the merge and the DNS change, `evals.humancopilot.eu` (still on Pages) shows the
-   docs: do these steps together. **Never list a vhost in `enabled.txt` before its DNS
-   points at the box:** `install_vhosts.sh` checks that a name resolves, not where, and
-   Caddy would burn Let's Encrypt attempts.
+   **Never list a vhost in `enabled.txt` before its DNS points at the box:**
+   `install_vhosts.sh` checks that a name resolves, not where, and Caddy would burn Let's
+   Encrypt attempts.
 
-The merge is the operator's. The open question: merge before layers 4 and 5 are in (to cut
-over now), or after (one merge, one release)? The plan so far was one release.
+The merge is the operator's. Decided 2026-10-22: PR #22 merges to main first, after the
+operator's manual review of the docs, catalog and inspector; layer 4 (the podcast repo on the
+harness, including the read-only audit of its dataset registry that replaces the lost
+dataset-registry note) follows on main, and what it finds is fixed before 0.4.0 is tagged.
 
 ### B. Layer 4: the podcast repo on the branch (the proof the split is right)
 

@@ -1,0 +1,17 @@
+# gitleaks: the default rules, plus one narrow allowance.
+#
+# A GlitchTip CSP report URI carries the project's PUBLIC key (glitchtip_key=<uuid>): every
+# browser that reports a violation sends it, so it is public by design and lives in the
+# committed per-site settings (infra/sites/<domain>.cfg). gitleaks' generic-api-key rule flags
+# it. The allowance is that exact shape, a report URI's line: any other line in any file,
+# those included, is still scanned. Tested with gitleaks 8.30: a token planted beside the key
+# is reported, and the same key outside a report URI is reported. Two forms that look tighter
+# do not work there: a `paths` condition allowed every finding in the file, and `^...$` anchors
+# matched only when the line was the file's first.
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "GlitchTip public keys in CSP report URIs (public by design)"
+regexTarget = "line"
+regexes = ['''CSP_REPORT_URI=https://[A-Za-z0-9./-]+/api/[0-9]+/security/\?glitchtip_key=[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}''']

@@ -60,8 +60,10 @@ for site_dir in "$OUT"/sites/*/; do
   domain="$(basename "$site_dir")"
   [ -f "$ROOT/infra/nginx/sites/${domain}.conf" ] || { echo "::error::sites/$domain has no infra/nginx/sites/${domain}.conf"; exit 1; }
   CSP_REPORT_URI=""
+  # infra/sites/<domain>.cfg, not .env: the repo ignores every *.env so no secret is ever
+  # committed, and this file (public settings only) must be.
   # shellcheck disable=SC1090
-  [ -f "$ROOT/infra/sites/${domain}.env" ] && . "$ROOT/infra/sites/${domain}.env"
+  [ -f "$ROOT/infra/sites/${domain}.cfg" ] && . "$ROOT/infra/sites/${domain}.cfg"
 
   # Cache-bust: assets are cached for an hour under fixed names, so every reference carries the
   # release sha (relative references too: ../assets/ from a page one level down).
