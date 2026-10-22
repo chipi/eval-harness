@@ -32,7 +32,14 @@ runs has to change.
   it: declare the facts as fields and attach them with `--update-fields`, which changes no
   run's fingerprint.
 
-**After upgrading:** `evh self-test`, `evh validate`, and re-run the small paired tests.
+**Also changed:** `pair-test`, `family-test`, `holdout` and `rank-stability` read the
+primary metric your runs recorded when no `--metric` is given. They used to default to
+`coverage`, the summarisation example's metric, and said "no runs" or crashed in any project
+that does not score it. Pass `--metric` as before to choose another.
+
+**After upgrading:** `evh self-test` (in a project it checks that the installed harness
+works here: its paired test, and the tutorial end to end in a scratch folder), `evh
+validate`, and re-run the small paired tests.
 
 ---
 

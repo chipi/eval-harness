@@ -38,7 +38,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-from _common import DATA, RUNS, SOURCES, read_json, warn_on_ambiguous_runs  # noqa: E402
+from _common import DATA, RUNS, dataset_item_ids, default_metric, read_json, warn_on_ambiguous_runs  # noqa: E402
 from stats import EXACT_UP_TO, sign_flip_p  # noqa: E402
 
 
@@ -64,7 +64,7 @@ def main() -> int:
     ap.add_argument("--dataset-id", required=True)
     ap.add_argument("--a", required=True, help="config_id of the arm under test")
     ap.add_argument("--b", required=True, help="config_id it is compared against")
-    ap.add_argument("--metric", default="coverage")
+    ap.add_argument("--metric", help="default: the primary metric the runs recorded")
     ap.add_argument("--runs-dir", default=None, help="default: data/runs")
     ap.add_argument("--exclude-dataset", help="drop items this dataset also contains")
     ap.add_argument(
@@ -89,11 +89,12 @@ def main() -> int:
     # looked perfectly normal. `_common.RUNS` already resolves the variable; these two
     # were the only scripts that rebuilt the path by hand.
     runs_dir = Path(args.runs_dir) if args.runs_dir else RUNS
+    args.metric = args.metric or default_metric(args.dataset_id, runs_dir=runs_dir)
     A = per_item(runs_dir, args.dataset_id, args.a, args.metric)
     B = per_item(runs_dir, args.dataset_id, args.b, args.metric)
     items = sorted(set(A) & set(B))
     if args.exclude_dataset:
-        prior = {p.stem for p in (SOURCES / args.exclude_dataset).glob("*.txt")}
+        prior = dataset_item_ids(args.exclude_dataset)
         items = [i for i in items if i not in prior]
     # AN EXPLICIT ITEM SET, because some strata are not datasets. The one this was added
     # for: the 154 articles that fitted inside BART's 1024-token encoder. On the other 46

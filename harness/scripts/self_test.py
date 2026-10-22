@@ -512,10 +512,12 @@ def test_example_scorer_suites_pass() -> None:
                             ("test_catalog.py", "catalog and run inspector"),
                             ("test_goals.py", "goals: config, run, baseline, V14, pages"),
                             ("test_fields.py", "item fields and URL items: create, materialize, V15"),
+                            ("test_installed_commands.py", "every evh command in a project that pins the package"),
                             ("test_judge_score.py", "judging pass"),
                             ("test_code_hashes.py", "scoring-code hashes"),
                             ("check_report_claims.py", "report claims vs committed runs"),
                             ("check_links.py", "markdown links and anchors"),
+                            ("check_commands.py", "documented commands: every make target, evh command and flag exists"),
                             ("check_model_facts.py", "model facts vs the evidence capture")):
         path = HERE / script
         # A MISSING CHECKER IS A FAILURE, NOT A SKIP. `continue` here meant deleting
@@ -1998,6 +2000,33 @@ def test_spearman_is_tie_correct() -> None:
               - shortcut(tied, [1.0, 2.0, 3.0, 4.0])) > 1e-9)
 
 
+def test_rank_stability_ranks_the_right_way_up() -> None:
+    """rank-stability ranked every metric highest-first, so for a lower-is-better one
+    (latency, cost) it named the SLOWEST arm the leader. Three arms with known latencies on
+    20 items: the leader must be the fastest."""
+    import json as _json  # noqa: PLC0415
+    import os  # noqa: PLC0415
+    import shutil  # noqa: PLC0415
+    import tempfile  # noqa: PLC0415
+
+    tmp = Path(tempfile.mkdtemp(prefix="harness-rankdir-"))
+    try:
+        for arm, ms in (("fast", 1.0), ("mid", 2.0), ("slow", 3.0)):
+            d = tmp / "data" / "runs" / f"{arm}_run"
+            d.mkdir(parents=True)
+            (d / "metrics.json").write_text(_json.dumps({"dataset_id": "rd_v1", "config_id": arm,
+                                                         "primary_metric": "latency_ms"}))
+            (d / "predictions.jsonl").write_text("".join(
+                _json.dumps({"item_id": f"i{k:02d}", "latency_ms": ms + k / 100}) + "\n" for k in range(20)))
+        r = subprocess.run([PY, str(HERE / "rank_stability.py"), "--dataset-id", "rd_v1", "--draws", "20"],
+                           capture_output=True, text=True,
+                           env={**os.environ, "EVAL_HOME": str(tmp), "EVAL_DATA_DIR": "data", "EVAL_RUNS_DIR": ""})
+        check("rank-stability: on a lower-is-better metric the leader is the lowest",
+              "ordering's leader: fast" in r.stdout, (r.stdout + r.stderr)[-300:])
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
 def test_v5_tells_a_tie_from_a_copy() -> None:
     """Agreeing MEANS are not suspicious on a discrete metric; agreeing per ITEM is.
 
@@ -2651,6 +2680,7 @@ def main() -> int:
         test_promote_reads_its_reason_from_the_env,
         test_rescore_refuses_a_missing_reference_set,
         test_spearman_is_tie_correct,
+        test_rank_stability_ranks_the_right_way_up,
         test_v5_tells_a_tie_from_a_copy,
         test_rescore_can_move_runs_onto_a_new_reference_set,
         test_the_reproduction_tables_agree_with_the_configs_and_runs,

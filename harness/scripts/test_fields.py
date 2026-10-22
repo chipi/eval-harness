@@ -149,6 +149,17 @@ try:
           r.returncode == 0 and ds2["fields_sha256"] != before_fields
           and {i["item_id"]: i.get("fields") for i in ds2["items"]}["t1"] == by["t1"]["fields"], out(r)[-200:])
 
+    (proj / "clear.csv").write_text("item_id,opened,priority\nt1,,1\n")
+    r = evh("dataset-create", "--dataset-id", "tk_v1", "--update-fields", "--fields", "clear.csv")
+    ds3 = json.loads((data / "datasets" / "tk_v1.json").read_text())
+    t1 = {i["item_id"]: i.get("fields") for i in ds3["items"]}["t1"]
+    check("update-fields: an empty cell clears that value; the item's other values stay",
+          r.returncode == 0 and "opened" not in t1 and t1.get("wait") == 3600, (out(r)[-200:], t1))
+    (proj / "clear_req.csv").write_text("item_id,priority\nt1,\n")
+    r = evh("dataset-create", "--dataset-id", "tk_v1", "--update-fields", "--fields", "clear_req.csv")
+    check("update-fields: clearing a required field is refused", r.returncode != 0 and "priority" in out(r),
+          out(r)[-200:])
+
     # ── V15 ───────────────────────────────────────────────────────────────────────────
     path = data / "datasets" / "tk_v1.json"
     keep = path.read_text()
@@ -180,9 +191,38 @@ try:
     served.mkdir()
     (served / "a.mp3").write_bytes(b"ID3 audio a")
     (served / "b.mp3").write_bytes(b"ID3 audio b")
+    flaky = {"left": 1}
+
     class Quiet(http.server.SimpleHTTPRequestHandler):
         def log_message(self, *a):
             pass
+
+        def do_GET(self):  # noqa: N802
+            if self.path == "/private.mp3":  # refused without the project's header
+                if self.headers.get("Authorization") != "Bearer t0k":
+                    self.send_error(403)
+                    return
+                body = b"ID3 private"
+            elif self.path == "/away.mp3":  # a redirect to another host name
+                self.send_response(302)
+                self.send_header("Location", f"http://localhost:{self.server.server_address[1]}/landed.mp3")
+                self.end_headers()
+                return
+            elif self.path == "/landed.mp3":  # records what the other host was sent
+                flaky["landed_auth"] = self.headers.get("Authorization")
+                body = b"ID3 landed"
+            elif self.path == "/flaky.mp3":  # one 503, then the file
+                if flaky["left"]:
+                    flaky["left"] -= 1
+                    self.send_error(503)
+                    return
+                body = b"ID3 flaky"
+            else:
+                return super().do_GET()
+            self.send_response(200)
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
 
     srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), functools.partial(Quiet, directory=str(served)))
     threading.Thread(target=srv.serve_forever, daemon=True).start()
@@ -218,6 +258,27 @@ try:
           r.returncode != 0 and "not the pinned" in out(r)
           and not (proj / ".cache" / "items" / hashlib.sha256(b"ID3 audio b, re-encoded").hexdigest()).exists(),
           out(r)[-300:])
+    (proj / "auth_manifest.csv").write_text(f"item_id,source_url\nep_p,{base}/private.mp3\n")
+    r = evh("dataset-create", "--dataset-id", "private_v1", "--manifest", "auth_manifest.csv")
+    check("fetch: a URL that needs a header is refused without it", r.returncode != 0 and "403" in out(r), out(r)[-200:])
+    env["EVAL_FETCH_HEADERS"] = json.dumps({"127.0.0.1": {"Authorization": "Bearer t0k"}})
+    r = evh("dataset-create", "--dataset-id", "private_v1", "--manifest", "auth_manifest.csv")
+    stored = (data / "datasets" / "private_v1.json").read_text() if r.returncode == 0 else ""
+    check("fetch: EVAL_FETCH_HEADERS sends the project's header to its host",
+          r.returncode == 0 and hashlib.sha256(b"ID3 private").hexdigest() in stored, out(r)[-200:])
+    check("fetch: the header is never written into the dataset", stored and "t0k" not in stored)
+    (proj / "away_manifest.csv").write_text(f"item_id,source_url\nep_r,{base}/away.mp3\n")
+    r = evh("dataset-create", "--dataset-id", "away_v1", "--manifest", "away_manifest.csv")
+    check("fetch: a redirect to another host does not carry the header",
+          r.returncode == 0 and "landed_auth" in flaky and flaky["landed_auth"] is None,
+          (out(r)[-200:], flaky.get("landed_auth")))
+    env.pop("EVAL_FETCH_HEADERS")
+    env["EVAL_RETRY_MAX_DELAY"] = "0"
+    (proj / "flaky_manifest.csv").write_text(f"item_id,source_url\nep_f,{base}/flaky.mp3\n")
+    r = evh("dataset-create", "--dataset-id", "flaky_v1", "--manifest", "flaky_manifest.csv")
+    check("fetch: a transient 503 is retried, then the item is pinned",
+          r.returncode == 0 and "retry" in out(r) and flaky["left"] == 0, out(r)[-300:])
+    env.pop("EVAL_RETRY_MAX_DELAY")
     (proj / "bad_manifest.csv").write_text(f"item_id,source_url\nep_x,{base}/missing.mp3\n")
     r = evh("dataset-create", "--dataset-id", "bad_urls_v1", "--manifest", "bad_manifest.csv")
     check("manifest: a URL that cannot be read is refused", r.returncode != 0 and "missing.mp3" in out(r), out(r)[-200:])

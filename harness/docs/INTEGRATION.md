@@ -196,6 +196,7 @@ which references exist, what one arm wrote for one item.
   | one item, side by side (the inspector only) | `item_view(arm, item)`, `reference_view(ref, item)` |
   | what it is for | `goals()`, `goal_of(arm)` |
   | what each item is (optional) | `item_fields(dataset)`: `{"fieldset": <field set>, "values": {item_id: {field: value}}}` |
+  | how big each dataset is (optional) | `dataset_items(dataset)`: its item count; without it the catalog shows the most items any arm scored |
   | words and places | `item_word` (e.g. `"episode"`), `data_dir` |
 
   Item text is only ever returned by `item_view` and `reference_view`, which only the local

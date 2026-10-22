@@ -29,7 +29,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
 import leaderboard as lb  # noqa: E402
-from _common import RUNS, SOURCES, read_json, warn_on_ambiguous_runs  # noqa: E402
+from _common import RUNS, dataset_item_ids, default_metric, read_json, warn_on_ambiguous_runs  # noqa: E402
 
 
 def _matrix(dataset_id: str, metric: str, keep: set[str] | None, match: str | None):
@@ -65,19 +65,18 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", required=True)
     ap.add_argument("--exclude-dataset", help="drop every item this dataset also contains")
-    ap.add_argument("--metric", default="coverage")
+    ap.add_argument("--metric", help="default: the primary metric the runs recorded")
     ap.add_argument("--match", help="only config_ids containing this substring")
     args = ap.parse_args()
     # Two runs sharing a config_id are averaged together below without
     # saying so. See _common.warn_on_ambiguous_runs.
     warn_on_ambiguous_runs(RUNS, args.dataset_id, label=RUNS.name)
 
+    args.metric = args.metric or default_metric(args.dataset_id, args.match)
     keep = None
     if args.exclude_dataset:
-        prior = {p.stem for p in (SOURCES / args.exclude_dataset).glob("*.txt")}
-        if not prior:
-            print(f"  no items found under data/sources/{args.exclude_dataset} — nothing excluded")
-        all_items = {p.stem for p in (SOURCES / args.dataset_id).glob("*.txt")}
+        prior = dataset_item_ids(args.exclude_dataset)
+        all_items = dataset_item_ids(args.dataset_id)
         keep = all_items - prior
         print(f"  {args.dataset_id}: {len(all_items)} items, "
               f"{len(prior & all_items)} shared with {args.exclude_dataset}, "

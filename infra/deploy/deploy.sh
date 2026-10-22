@@ -94,6 +94,15 @@ if [ -n "$q" ]; then
   body="$(curl -s -m 120 -H "Host: $CATALOG_HOST" "http://127.0.0.1:$IPORT/api/compare?$q")"
   grep -q '"rows"' <<<"$body" || rollback "health check failed: the inspector did not answer a comparison (${body:0:200})"
 fi
+# And the question readers send most: a dataset page's group button, several arms on one
+# metric (its URL carries `,` and `&metric=`). It must come back with verdict rows, not an
+# error. probe_link.sh holds the extraction, so it is tested off the box (make -C harness test).
+q2="$(bash "$REL/deploy/probe_link.sh" "$REL/sites/$CATALOG_HOST/public/d")"
+if [ -n "$q2" ]; then
+  body="$(curl -s -m 180 -H "Host: $CATALOG_HOST" "http://127.0.0.1:$IPORT/api/compare?$q2")"
+  grep -q '"rows": \[{' <<<"$body" && ! grep -q '"error"' <<<"$body" ||
+    rollback "health check failed: the inspector did not test a group of arms (${body:0:200})"
+fi
 echo "  inspector ok"
 
 # 5. Logs: our Alloy drop-in (evals-nginx, evals-inspector), validated with the whole set.

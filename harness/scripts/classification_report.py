@@ -41,7 +41,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-from _common import REFERENCES, RUNS, SOURCES, die, read_json, ROOT, warn_on_ambiguous_runs  # noqa: E402
+from _common import REFERENCES, RUNS, die, item_path, read_json, resolve_adapter_path, ROOT, warn_on_ambiguous_runs  # noqa: E402
 
 #: Predictions the adapter could not parse into a label are counted, never dropped. An arm
 #: that returns prose on a fifth of the items has a real problem, and silently excluding
@@ -65,13 +65,8 @@ def _label_parser(adapter_spec: str | None):
     `_meta.predicted`. Degrading to the old behaviour is correct; silently reporting
     two different parsers in one table was not.
     """
-    if not adapter_spec:
-        return None
-    for base in (ROOT, ROOT.parent):
-        cand = Path(adapter_spec) if Path(adapter_spec).is_absolute() else base / adapter_spec
-        if cand.is_file():
-            break
-    else:
+    cand = resolve_adapter_path(adapter_spec)
+    if cand is None:
         return None
     try:
         import importlib.util  # noqa: PLC0415
@@ -172,14 +167,13 @@ def _report_consensus_misses(rows: list, gold: dict, dataset_id: str, threshold:
     print(f"\n  ITEMS THE FIELD MISSED — >= {threshold:.0%} of {n} learned arms wrong")
     print("    A near-universal miss is evidence about the LABEL or the item, not about")
     print("    the models. Read these before reading the ranking.")
-    src = SOURCES / dataset_id
     for count, item, preds in consensus[:10]:
         tally = ", ".join(f"{lab} x{c}" for lab, c in
                           sorted(Counter(preds).items(), key=lambda kv: -kv[1]))
         print(f"\n    {item}  missed by {count}/{n}")
         print(f"      gold {gold[item]}   predicted {tally}")
-        f = src / f"{item}.txt"
-        if f.is_file():
+        f = item_path(dataset_id, item)
+        if f is not None:
             snippet = " ".join(f.read_text(encoding="utf-8").split())[:150]
             print(f"      {snippet}")
 

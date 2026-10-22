@@ -73,7 +73,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-from _common import RUNS, SOURCES, die, warn_on_ambiguous_runs  # noqa: E402
+from _common import RUNS, dataset_item_ids, default_metric, die, warn_on_ambiguous_runs  # noqa: E402
 from classification_report import gold_labels, per_class, predictions  # noqa: E402
 
 
@@ -108,13 +108,20 @@ def main() -> int:
 
     gold = gold_labels(args.dataset_id)
     labels = sorted(set(gold.values()))
+    # FOR CLASSIFICATION ONLY. Its gold is one label per item from a small set; a gold set of
+    # free text (summaries, answers) makes every item its own "class", and macro-F1 over that
+    # is a number with no meaning. Refused rather than computed.
+    if len(gold) >= 4 and len(labels) > len(gold) / 2:
+        die(f"bootstrap-test is for classification: {args.dataset_id}'s gold has {len(labels)} distinct "
+            f"labels over {len(gold)} items, so it reads as free text, not labels. For a per-item "
+            "score, pair-test and family-test are the exact tests.")
     preds = predictions(args.dataset_id, None)
     if args.a not in preds:
         die(f"no runs for {args.a} on {args.dataset_id}")
 
     drop: set = set()
     if args.exclude_dataset:
-        drop = {p.stem for p in (SOURCES / args.exclude_dataset).glob("*.txt")}
+        drop = dataset_item_ids(args.exclude_dataset)
     keep = None
     if args.items:
         keep = {ln.strip() for ln in args.items.read_text(encoding="utf-8").splitlines()
@@ -156,7 +163,8 @@ def main() -> int:
         rows.append({"opp": opp, "n": n, "delta": observed, "lo": lo, "hi": hi, "p": p})
 
     if not rows:
-        die("no opponents with enough shared items")
+        die(f"no opponent shares at least 10 items with {args.a} (a percentile bootstrap needs them); "
+            f"opponents tried: {', '.join(opponents)}")
 
     m = len(rows)
     rows.sort(key=lambda r: r["p"])

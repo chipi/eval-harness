@@ -110,6 +110,9 @@ class Adapter(Protocol):
     # Optional (ADR-0003); `item_fields(A, dataset)` below answers for an adapter without it.
     # def item_fields(self, dataset: str) -> dict:
     #     {"fieldset": <fieldset.schema.json document> or None, "values": {item_id: {field: value}}}
+    # Optional: how many items a dataset has. Without it the catalog shows the most items any
+    # arm scored, which undercounts a dataset no arm covered fully.
+    # def dataset_items(self, dataset: str) -> Optional[int]: ...
 
 
 def item_fields(A, dataset: str) -> dict:
@@ -307,6 +310,10 @@ class HarnessAdapter:
 
     def goal_of(self, arm: str) -> str:
         return self._metrics(arm).get("goal", "")
+
+    def dataset_items(self, dataset: str) -> Optional[int]:
+        ds = _json(self.data_dir / "datasets" / f"{dataset}.json")
+        return len(ds.get("items") or []) if isinstance(ds, dict) else None
 
     # -- item fields (ADR-0003) -----------------------------------------------------------
     @lru_cache(maxsize=None)

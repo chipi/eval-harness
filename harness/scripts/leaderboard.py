@@ -30,6 +30,7 @@ from typing import Dict, List
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _common import how  # noqa: E402
+from _common import resolve_adapter_path  # noqa: E402
 from _common import (  # noqa: E402
     ROOT,
     warn_on_ambiguous_runs,
@@ -358,12 +359,7 @@ def _adapter_kinds(adapter_spec: str) -> Dict[str, str]:
         return _ADAPTER_KINDS_CACHE[adapter_spec]
     out: Dict[str, str] = {}
     try:
-        cand = None
-        for base in (ROOT, ROOT.parent):
-            c = Path(adapter_spec) if Path(adapter_spec).is_absolute() else base / adapter_spec
-            if c.is_file():
-                cand = c
-                break
+        cand = resolve_adapter_path(adapter_spec)
         if cand is not None:
             import importlib.util  # noqa: PLC0415
 

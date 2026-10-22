@@ -288,6 +288,76 @@ def load_dataset(dataset_id: str) -> Dict[str, Any]:
     return read_json(path)
 
 
+def dataset_item_ids(dataset_id: str) -> set:
+    """The item ids a dataset freezes, read from its dataset file.
+
+    Commands that exclude a dev slice (`--exclude-dataset`) used to glob
+    `data/sources/<id>/*.txt` instead: empty for an item that is not a .txt file, for a
+    dataset built from a manifest, and for a project whose sources live elsewhere, and
+    "nothing excluded" was then reported as if it were true."""
+    return {it["item_id"] for it in load_dataset(dataset_id).get("items") or []}
+
+
+def item_path(dataset_id: str, item_id: str) -> Optional[Path]:
+    """Where an item's materialized copy is, or None when it is not materialized here."""
+    try:
+        ds = load_dataset(dataset_id)
+    except SystemExit:
+        return None
+    it = next((x for x in ds.get("items") or [] if x.get("item_id") == item_id), None)
+    if it is None:
+        return None
+    p = MATERIALIZED / dataset_id / (it.get("source_path") or item_id)
+    return p if p.is_file() else None
+
+
+#: The id a run records when it used the adapter bundled with the harness.
+BUNDLED_ADAPTER_ID = "scripts/adapter.py"
+
+
+def resolve_adapter_path(spec: Optional[str]) -> Optional[Path]:
+    """The file a run's recorded adapter id names, or None.
+
+    Looked for under the project, its parent and `examples/` beside it (a checkout's
+    layout), and, for the bundled adapter's id, in the package itself: a project that pins
+    the package has no `scripts/adapter.py`, and every lookup that stopped at the project
+    failed for it (rescore, silver-calibrate, the leaderboard's metric kinds, run-compare,
+    the classification report's label parser)."""
+    if not spec:
+        return None
+    for base in (ROOT, ROOT.parent, ROOT.parent / "examples"):
+        cand = Path(spec) if Path(spec).is_absolute() else base / spec
+        if cand.is_file():
+            return cand
+    if spec == BUNDLED_ADAPTER_ID and (CODE / "adapter.py").is_file():
+        return CODE / "adapter.py"
+    return None
+
+
+def default_metric(dataset_id: str, match: Optional[str] = None, runs_dir: Optional[Path] = None) -> str:
+    """The metric a command reads when none is named: the primary metric the matching runs
+    on this dataset recorded, the most common one. It used to be `coverage`, the
+    summarisation example's metric, hard-coded: every other project got "no arms" or a
+    crash unless it passed --metric."""
+    from collections import Counter
+
+    primary, seen = Counter(), set()
+    base = runs_dir or RUNS
+    for d in (sorted(base.iterdir()) if base.is_dir() else []):
+        m = read_json(d / "metrics.json") if (d / "metrics.json").is_file() else None
+        if not isinstance(m, dict) or m.get("dataset_id") != dataset_id:
+            continue
+        if match and match not in str(m.get("config_id", "")):
+            continue
+        if m.get("primary_metric"):
+            primary[m["primary_metric"]] += 1
+        seen |= set((m.get("scores") or {}).keys())
+    if primary:
+        return primary.most_common(1)[0][0]
+    raise SystemExit(f"ERROR: no run on {dataset_id} records a primary metric: pass --metric"
+                     + (f" (recorded: {', '.join(sorted(seen))})" if seen else ""))
+
+
 def iter_runs() -> Iterable[Path]:
     if not RUNS.is_dir():
         return []

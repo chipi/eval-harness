@@ -25,6 +25,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _common import how  # noqa: E402
 from _common import RUNS, die, is_descriptive, read_json, verdict_for, ROOT  # noqa: E402
+from _common import resolve_adapter_path  # noqa: E402
 
 
 
@@ -136,10 +137,7 @@ def main() -> int:
         spec = run.get("adapter")
         if not spec:
             continue
-        for base in (ROOT, ROOT.parent, ROOT.parent / "examples"):
-            cand = Path(spec) if Path(spec).is_absolute() else base / spec
-            if not cand.is_file():
-                continue
+        for cand in filter(None, [resolve_adapter_path(spec)]):
             try:
                 import importlib.util  # noqa: PLC0415
 

@@ -46,7 +46,7 @@ COMMANDS = {
     "catalog": ("catalog_build.py", "build the catalog: static pages over the runs, by dataset"),
     "catalog-serve": ("catalog_serve.py", "serve the catalog and the run inspector on 127.0.0.1"),
     "validate": ("validate_tree.py", "schema and integrity checks over the data tree"),
-    "self-test": ("self_test.py", "the harness's own test suite"),
+    "self-test": ("self_check.py", "does the installed harness work here? (in a checkout: the full test suite)"),
 }
 
 

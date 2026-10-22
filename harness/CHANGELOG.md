@@ -60,6 +60,16 @@ package.
 - **`docs/GUIDE.md` is a walkthrough in your own project**: install the package, `evh init
   --tutorial`, then every step with `evh`. It used to run inside a checkout of this
   repository, with `make`.
+- **The default metric is the one your runs recorded.** `pair-test`, `family-test`, `holdout`
+  and `rank-stability` defaulted to `coverage`, the summarisation example's metric: in any
+  project that does not score it they found no runs, or crashed. Without `--metric` they now
+  read the primary metric the runs on the dataset recorded, and refuse, naming the recorded
+  metrics, when none did.
+- **`evh self-test` in a project checks the installed harness**: the paired test's own suite,
+  then the tutorial end to end in a scratch folder (dataset with fields, runs, pair-test,
+  rescore, validate, catalog). It used to run this repository's development suite, which
+  checks this repository's reports and failed 52 checks in every project; in a checkout it
+  still does.
 
 ### Fixed
 - **`evh rescore` and `evh silver-calibrate` in a project that pins the package.** A run
@@ -81,6 +91,27 @@ package.
   re-scored run and printed "the reference files have CHANGED". The move is recorded as
   before (`reference_id_at_measurement`); the flag and the warning are kept for the same
   reference's files changing. No committed run in this repository carries the false flag.
+- **Commands that assumed a checkout**, each found by running every `evh` command in a
+  project that pins the package:
+  - `rank-stability` crashed (`set.intersection()`) instead of saying no arm had the metric;
+    on a lower-is-better metric it named the worst arm the leader; with too few items for two
+    halves it now says so.
+  - `--exclude-dataset` (`pair-test`, `family-test`, `holdout`, `bootstrap-test`) read
+    `data/sources/<id>/*.txt` instead of the dataset file: wrong for any item that is not a
+    .txt, any dataset from a manifest, any project keeping sources elsewhere, and "nothing
+    excluded" was then reported as true.
+  - The leaderboard's metric kinds, `run-compare`'s, and the classification report's label
+    parser looked for a run's adapter in the checkout only; they now find the bundled one in
+    the package, as `rescore` does.
+  - `bootstrap-test` on a gold set of free text (summaries) treated every summary as a class
+    and would have reported a macro-F1; it now refuses, and its "too few items" refusal names
+    the threshold and the opponents.
+  - `catalog-serve` printed its address without flushing, so under a log file or a process
+    supervisor the line did not appear; `--build-dir` outside the project was a traceback,
+    now a refusal; `self-test --help` ran the whole suite instead of printing help.
+- **The catalog counted a dataset's items from the harness's own path**, not the adapter's,
+  so a project with its own layout got "the most items any arm scored". It now asks the
+  adapter (`dataset_items`, optional).
 
 ### Added
 - **`evaluation_harness.stats`**. Standard library only, and the one place the paired test
@@ -134,7 +165,7 @@ package.
   - **CSP-clean:** no inline script or style. The theme script is a file, and the legend
     colours are set from JS.
 
-  Tests: `scripts/test_catalog.py` (51 assertions), run by `make test`.
+  Tests: `scripts/test_catalog.py` (53 assertions), run by `make test`.
 - **Goals: what an evaluation is for** (`data/goals/<goal_id>.yaml`, `schemas/goal.schema.json`).
   - **What a goal says:** who uses the output, the decision it informs, the measure that
     decides (and which direction is better), the output formats it accepts, its datasets
@@ -184,9 +215,12 @@ package.
 - **Items fetched from a pinned URL.** `dataset-create --manifest FILE` takes one row per item:
   `item_id`, `source_url` and `source_sha256` (empty: fetched and pinned now), and field
   columns. `dataset-materialize` downloads each into `.cache/items/` and refuses bytes that
-  hash to anything else, as it refuses a changed file.
+  hash to anything else, as it refuses a changed file. A transient failure is retried like a
+  provider call; a host that needs a header gets it from `EVAL_FETCH_HEADERS` (that host only,
+  never on a redirect elsewhere, never written into a dataset). With `--update-fields`, an
+  empty cell clears a value.
 
-  Tests: `scripts/test_fields.py` (39 assertions), run by `make test`; the catalog's in
+  Tests: `scripts/test_fields.py` (46 assertions), run by `make test`; the catalog's in
   `test_catalog.py`.
 - **`evh init [DIR] [--tutorial]`** starts a project: `data/sources`, `data/configs`,
   `data/goals` and a `.gitignore` for what the harness derives. `--tutorial` copies the GUIDE's
@@ -201,7 +235,15 @@ package.
 - **`make browser-check`** drives the catalog and the inspector in headless Chromium: a
   tutorial project with fields, the main paths and the field controls, the phone-width layout,
   and no console error. A development extra (`requirements-browser.txt`, `make
-  browser-install`), never a dependency of the package; CI runs it as its own job.
+  browser-install`), never a dependency of the package; CI runs it as its own job. The root
+  `make browser-check` also drives the public site, served with production's headers.
+- **`scripts/test_installed_commands.py`** (in `make test`) runs every `evh` command in a
+  project that pins the package; a command without a case fails it.
+- **`scripts/check_commands.py`** (in `make test`) checks every `make` target, `evh` command
+  and flag shown in the current docs still exists: 261 of them across 27 docs today.
+- **The deploy's health check** also asks the inspector the question readers send most, a
+  group of arms on one metric (`infra/deploy/probe_link.sh`), and rolls back without verdict
+  rows.
 
 ## 0.3.0 — 2026-10-21
 

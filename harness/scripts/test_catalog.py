@@ -168,7 +168,13 @@ try:
         "items": [{"item_id": f"i{k:02d}", "source_sha256": "0" * 64,
                    "fields": {"product": "x" if k < 6 else "y", "size": k, "customer": HIDDEN}}
                   for k in range(12)]}))
+    (data / "datasets" / "ds2.json").write_text(json.dumps({
+        "dataset_id": "ds2", "version": "1.0", "created_at": "x",
+        "items": [{"item_id": f"i{k:02d}", "source_sha256": "0" * 64} for k in range(20)]}))
     AF = HarnessAdapter(data)
+    by = cb.collect(AF)
+    check("collect: a dataset's size is its dataset file's, read through the adapter's data_dir "
+          "(20 items, though its one arm scored 12)", by["ds2"]["items"] == 20, by["ds2"]["items"])
     cs.set_adapter(AF)
     out_f = tmp / ".build" / "catalog-fields"
     cb.build(AF, out_f)
@@ -279,6 +285,14 @@ try:
         r = subprocess.run([sys.executable, str(HERE / "cli.py"), "catalog-serve", "--port", str(busy)], cwd=env_root,
                            capture_output=True, text=True, timeout=60,
                            env={"EVAL_HOME": str(env_root), "PATH": "/usr/bin:/bin"})
+    elsewhere = Path(tempfile.mkdtemp(prefix="evh-elsewhere-"))
+    shutil.copytree(env_root / ".build/catalog", elsewhere / "catalog")
+    r2 = subprocess.run([sys.executable, str(HERE / "cli.py"), "catalog-serve", "--build-dir", str(elsewhere / "catalog")],
+                        cwd=env_root, capture_output=True, text=True, timeout=60,
+                        env={"EVAL_HOME": str(env_root), "PATH": "/usr/bin:/bin"})
+    shutil.rmtree(elsewhere, ignore_errors=True)
+    check("evh catalog-serve: a build dir outside the project is refused in words, not a traceback",
+          r2.returncode != 0 and "inside the project" in r2.stderr and "Traceback" not in r2.stderr, r2.stderr[-300:])
     check("evh catalog-serve: a port in use is named, with --port as the way out",
           r.returncode != 0 and f"port {busy} is in use" in r.stderr and "--port" in r.stderr
           and "Traceback" not in r.stderr, r.stderr[-300:])

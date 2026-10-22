@@ -478,8 +478,17 @@ def warm(build_dir: Path) -> int:
 def served(build_dir: Path, data_dir: Path) -> tuple:
     """The URL prefixes readable over HTTP: the built catalog and the data tree, both under
     the project root (the server's document root)."""
-    return tuple("/" + p.resolve().relative_to(ROOT.resolve()).as_posix().strip("/") + "/"
-                 for p in (build_dir, data_dir))
+    out = []
+    for p in (build_dir, data_dir):
+        try:
+            out.append("/" + p.resolve().relative_to(ROOT.resolve()).as_posix().strip("/") + "/")
+        except ValueError:
+            # The server's document root is the project: it serves the catalog and the data
+            # tree from inside it, and nothing outside, so a directory elsewhere has no URL.
+            raise SystemExit(f"{p} is not inside the project ({ROOT}): the inspector serves the catalog "
+                             "and the data tree from inside the project only. Build the catalog there "
+                             "(the default, .build/catalog), or run from the project that holds it.")
+    return tuple(out)
 
 
 def allowed(path: str, host: str, port: int, prefixes: tuple) -> int:
@@ -592,7 +601,7 @@ def main() -> int:
         print(f"inspector API on {args.bind}:{args.port} for {', '.join(LIMITS['hosts'])} "
               f"({LIMITS['rate']}/min per client, {LIMITS['max_arms']} arms max)", flush=True)
     else:
-        print(f"catalog: http://127.0.0.1:{args.port}{Handler.prefixes[0]}   (Ctrl-C to stop)")
+        print(f"catalog: http://127.0.0.1:{args.port}{Handler.prefixes[0]}   (Ctrl-C to stop)", flush=True)
     try:
         server.serve_forever()
     except KeyboardInterrupt:

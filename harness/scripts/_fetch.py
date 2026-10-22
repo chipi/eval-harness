@@ -9,13 +9,16 @@ refused and deleted, never cached.
 from __future__ import annotations
 
 import hashlib
+import json
 import os
 import tempfile
 import urllib.request
 from pathlib import Path
 from typing import Optional
+from urllib.parse import urlparse
 
 from _common import ITEM_CACHE
+from _retry import call_with_retries
 
 TIMEOUT_S = 60
 CHUNK = 1 << 20
@@ -25,10 +28,26 @@ class FetchError(Exception):
     """The URL could not be read, or its bytes are not the pinned ones."""
 
 
-def _download(url: str) -> Path:
-    """The URL's bytes in a temporary file inside the cache directory."""
-    ITEM_CACHE.mkdir(parents=True, exist_ok=True)
+def _headers_for(url: str) -> dict:
+    """The project's own headers for this URL's host, from EVAL_FETCH_HEADERS (environment or
+    .env): a JSON object {"host": {"Header": "value"}}. Only the exact host gets them, and
+    they are attached so that a redirect to another host does not carry them. They are never
+    printed or written into a dataset."""
+    raw = os.environ.get("EVAL_FETCH_HEADERS", "").strip()
+    if not raw:
+        return {}
+    try:
+        table = json.loads(raw)
+    except ValueError as exc:
+        raise FetchError('EVAL_FETCH_HEADERS is not JSON: {"host": {"Header": "value"}}') from exc
+    got = table.get(urlparse(url).hostname or "") if isinstance(table, dict) else None
+    return {str(k): str(v) for k, v in got.items()} if isinstance(got, dict) else {}
+
+
+def _download_once(url: str) -> Path:
     req = urllib.request.Request(url, headers={"User-Agent": "evaluation-harness"})
+    for k, v in _headers_for(url).items():
+        req.add_unredirected_header(k, v)
     fd, tmp = tempfile.mkstemp(dir=ITEM_CACHE, prefix=".part-")
     try:
         with urllib.request.urlopen(req, timeout=TIMEOUT_S) as resp, os.fdopen(fd, "wb") as out:
@@ -37,10 +56,23 @@ def _download(url: str) -> Path:
                 if not chunk:
                     break
                 out.write(chunk)
-    except Exception as exc:  # noqa: BLE001 — every failure to read is the same refusal
+    except BaseException:
         Path(tmp).unlink(missing_ok=True)
-        raise FetchError(f"{url}: {exc}") from exc
+        raise
     return Path(tmp)
+
+
+def _download(url: str) -> Path:
+    """The URL's bytes in a temporary file inside the cache directory. A transient failure
+    (429, 5xx, a timeout, a dropped connection) is retried as the harness retries a provider
+    (_retry.py: EVAL_MAX_RETRIES, EVAL_RETRY_MAX_DELAY); a 404 or 403 is not."""
+    ITEM_CACHE.mkdir(parents=True, exist_ok=True)
+    try:
+        return call_with_retries(_download_once, (url,), label=urlparse(url).hostname or url)
+    except FetchError:
+        raise
+    except Exception as exc:  # noqa: BLE001 — every failure to read is the same refusal
+        raise FetchError(f"{url}: {exc}") from exc
 
 
 def _sha256(p: Path) -> str:

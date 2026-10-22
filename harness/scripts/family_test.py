@@ -46,7 +46,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-from _common import DATA, ROOT, RUNS, SOURCES, read_json, warn_on_ambiguous_runs  # noqa: E402
+from _common import DATA, ROOT, RUNS, dataset_item_ids, default_metric, read_json, warn_on_ambiguous_runs  # noqa: E402
 from pair_test import per_item  # noqa: E402 -- one implementation of "score per item"
 from stats import sign_flip_p  # noqa: E402 -- one implementation of the paired test
 
@@ -85,7 +85,7 @@ def _cache_key(argv: list[str], runs_dir: Path, args) -> str:
     if args.items:
         h.update(args.items.read_bytes())
     if args.exclude_dataset:
-        h.update("\0".join(sorted(p.name for p in (SOURCES / args.exclude_dataset).glob("*.txt"))).encode())
+        h.update("\0".join(sorted(dataset_item_ids(args.exclude_dataset))).encode())
     return h.hexdigest()
 
 
@@ -125,7 +125,7 @@ def _parser() -> argparse.ArgumentParser:
     ap.add_argument("--a", required=True, help="config_id of the arm under test")
     ap.add_argument("--against", required=True,
                     help="substring selecting the opponent family, declared in advance")
-    ap.add_argument("--metric", default="coverage")
+    ap.add_argument("--metric", help="default: the primary metric the runs recorded")
     ap.add_argument("--runs-dir", default=None, help="default: data/runs")
     ap.add_argument("--exclude-dataset", help="drop items this dataset also contains")
     ap.add_argument("--items", type=Path, help="file of item_ids; restrict to exactly these")
@@ -148,6 +148,7 @@ def _run(args) -> int:
     # looked perfectly normal. `_common.RUNS` already resolves the variable; these two
     # were the only scripts that rebuilt the path by hand.
     runs_dir = Path(args.runs_dir) if args.runs_dir else RUNS
+    args.metric = args.metric or default_metric(args.dataset_id, runs_dir=runs_dir)
     A = per_item(runs_dir, args.dataset_id, args.a, args.metric)
     if not A:
         print(f"  no runs for {args.a} on {args.dataset_id}")
@@ -155,7 +156,7 @@ def _run(args) -> int:
 
     drop: set[str] = set()
     if args.exclude_dataset:
-        drop = {p.stem for p in (SOURCES / args.exclude_dataset).glob("*.txt")}
+        drop = dataset_item_ids(args.exclude_dataset)
     keep: set[str] | None = None
     if args.items:
         keep = {ln.strip() for ln in args.items.read_text(encoding="utf-8").splitlines() if ln.strip()}

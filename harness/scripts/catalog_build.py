@@ -29,7 +29,7 @@ from urllib.parse import quote
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-from _common import DATASETS, ROOT  # noqa: E402
+from _common import ROOT  # noqa: E402
 import _fields  # noqa: E402
 from catalog_adapter import Adapter, item_fields, load_adapter  # noqa: E402
 
@@ -172,12 +172,13 @@ def collect(A: Adapter) -> dict:
         })
     for r in A.references():
         by_ds.setdefault(r["dataset"], {"arms": [], "refs": [], "items": 0})["refs"].append(r)
+    # The dataset's own size, from the ADAPTER: the harness's DATASETS path is not where a
+    # project with its own layout keeps them. An adapter that cannot say falls back to the
+    # most items any arm scored.
+    size = getattr(A, "dataset_items", None)
     for ds, v in by_ds.items():
-        meta = DATASETS / f"{ds}.json"
-        try:
-            v["items"] = len(json.loads(meta.read_text(encoding="utf-8")).get("items") or [])
-        except (OSError, ValueError):
-            v["items"] = max((a["n"] for a in v["arms"]), default=0)
+        n = size(ds) if callable(size) else None
+        v["items"] = n if n is not None else max((a["n"] for a in v["arms"]), default=0)
     return by_ds
 
 

@@ -58,7 +58,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parents[1] / "examples" / "_shared"))
 
-from _common import REFERENCES, RUNS, SOURCES, die, read_json, warn_on_ambiguous_runs  # noqa: E402
+from _common import REFERENCES, RUNS, die, item_path, read_json, warn_on_ambiguous_runs  # noqa: E402
 
 try:
     from extraction import as_members, match_one_to_one, normalize  # noqa: E402
@@ -188,11 +188,9 @@ def _consensus(preds: dict, gold: dict, threshold: float, top: int,
         print(f"\n  {len(learned)} learned arm(s) — need at least 3 for a consensus pass.")
         return
     n = len(learned)
-    src = SOURCES / dataset_id
-
     def snippet(item: str) -> str:
-        f = src / f"{item}.txt"
-        return " ".join(f.read_text(encoding="utf-8").split())[:150] if f.is_file() else ""
+        f = item_path(dataset_id, item)
+        return " ".join(f.read_text(encoding="utf-8").split())[:150] if f is not None else ""
 
     # ARMS, not occurrences. Counting occurrences let one arm that emitted the same span
     # twice contribute two votes, and the report printed "25/17" -- a consensus figure

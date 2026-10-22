@@ -39,6 +39,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _fingerprint import build_fingerprint  # noqa: E402
 from _retry import call_with_retries  # noqa: E402
 from _common import how  # noqa: E402
+from _common import CODE, resolve_adapter_path  # noqa: E402
 from _common import (  # noqa: E402
     GOALS,
     MATERIALIZED,
@@ -182,9 +183,6 @@ def _adapter_primary_metric(adapter_path: Optional[Path]) -> Optional[str]:
 
 
 #: The id a run records when its config names no `adapter:` (the bundled one).
-BUNDLED_ADAPTER_ID = "scripts/adapter.py"
-
-
 def load_recorded_adapter(spec: str) -> Optional[tuple]:
     """The adapter a finished run recorded, for scoring it again (rescore, silver-calibrate),
     or None if it cannot be found.
@@ -195,13 +193,10 @@ def load_recorded_adapter(spec: str) -> Optional[tuple]:
     ("summarization-cnn-dailymail/adapter.py"). The bundled id is a checkout path: a project
     that pins the package has no such file, and the run was made by the package's own copy,
     so that is the one returned (found by a fresh project on 0.4.0)."""
-    for base in (ROOT, ROOT.parent, ROOT.parent / "examples"):
-        cand = Path(spec) if Path(spec).is_absolute() else base / spec
-        if cand.is_file():
-            return load_adapter(str(cand), None)
-    if spec == BUNDLED_ADAPTER_ID:
-        return load_adapter(None, None)
-    return None
+    path = resolve_adapter_path(spec)
+    if path is None:
+        return None
+    return load_adapter(None, None) if path == CODE / "adapter.py" else load_adapter(str(path), None)
 
 
 def _score_wants_source(score: Any) -> bool:

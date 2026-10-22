@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """How many items before a leaderboard stops moving? Measured, not assumed. $0.
 
-    python scripts/rank_stability.py --dataset-id cnn_dailymail_200 --metric coverage
+    python scripts/rank_stability.py --dataset-id cnn_dailymail_200 [--metric coverage]
 
 WHY
   "Is n big enough?" is normally answered from a power table, which needs an effect size
@@ -36,7 +36,10 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-from _common import RUNS, read_json, warn_on_ambiguous_runs  # noqa: E402
+from _common import RUNS, default_metric, lower_is_better, read_json, warn_on_ambiguous_runs  # noqa: E402
+
+#: The half sizes measured: two disjoint halves of n items each.
+SIZES = (10, 20, 50, 100)
 
 
 def load(dataset_id: str, metric: str, match: str | None):
@@ -140,7 +143,7 @@ def tied_at_top(M, arms, items) -> int:
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", required=True)
-    ap.add_argument("--metric", default="coverage")
+    ap.add_argument("--metric", help="default: the primary metric the runs recorded")
     ap.add_argument("--match")
     ap.add_argument("--draws", type=int, default=400)
     ap.add_argument("--seed", type=int, default=20260926)
@@ -149,11 +152,21 @@ def main() -> int:
     # saying so. See _common.warn_on_ambiguous_runs.
     warn_on_ambiguous_runs(RUNS, args.dataset_id, label=RUNS.name)
 
+    args.metric = args.metric or default_metric(args.dataset_id, args.match)
     M = load(args.dataset_id, args.metric, args.match)
+    if lower_is_better(args.metric):
+        # Ranked best first, whichever way is better: for cost or latency the best is the
+        # lowest. Negating once here keeps every rank and "winner" below the right way up.
+        M = {a: {i: -v for i, v in s.items()} for a, s in M.items()}
     arms = sorted(M)
-    items = sorted(set.intersection(*(set(M[a]) for a in arms)))
     if len(arms) < 3:
-        print(f"  {len(arms)} arm(s) — need at least 3 to rank"); return 1
+        print(f"  {len(arms)} arm(s) with per-item '{args.metric}' on {args.dataset_id} — need at least 3 to rank")
+        return 1
+    items = sorted(set.intersection(*(set(M[a]) for a in arms)))
+    if 2 * SIZES[0] > len(items):
+        print(f"  {len(items)} items shared by the {len(arms)} arms: too few for two disjoint halves of "
+              f"{SIZES[0]}, the smallest size measured. Rank stability needs at least {2 * SIZES[0]}.")
+        return 1
     print(f"  {len(arms)} arms, {len(items)} items, metric={args.metric}, "
           f"{args.draws} draws per size\n")
 
@@ -164,7 +177,7 @@ def main() -> int:
     print(f"  {'n per half':>11} {'rho(half A, half B)':>21} {'5th pct':>9} "
           f"{'P(same winner)':>15} {'median |rank move|':>19} {'arms tied 1st':>14}")
     worst_ties = 0.0
-    for n in (10, 20, 50, 100):
+    for n in SIZES:
         if 2 * n > len(items):
             continue
         rhos, same, moves, ties, undecided = [], 0, [], [], 0

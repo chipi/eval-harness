@@ -91,8 +91,16 @@ def _attach(items: list, fieldset: dict, path: Path) -> None:
             continue
         vals, errs = _fields.values_from(fieldset, row, skip=("item_id",))
         bad += [f"row {n} ({iid}): {e}" for e in errs]
-        if vals:
-            by_id[iid]["fields"] = {**by_id[iid].get("fields", {}), **vals}
+        # An empty cell in a declared column means "this item has no value": it clears one
+        # that was there (--update-fields), and on a new dataset leaves it absent.
+        cleared = {c for c, raw in row.items() if c in _fields.declared(fieldset)
+                   and (raw is None or (isinstance(raw, str) and not raw.strip()))}
+        merged = {k: v for k, v in by_id[iid].get("fields", {}).items() if k not in cleared}
+        merged.update(vals)
+        if merged:
+            by_id[iid]["fields"] = merged
+        else:
+            by_id[iid].pop("fields", None)
     if bad:
         die(f"{path}: {len(bad)} problem(s)\n  " + "\n  ".join(bad[:15]))
 

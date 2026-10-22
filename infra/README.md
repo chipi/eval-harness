@@ -50,7 +50,10 @@ infra/
 3. The `current` symlink switches atomically. nginx comes up, and the inspector is recreated
    so it loads the new code and data. nginx reloads.
 4. Each host answers 200 on `/` and 404 on a missing page. The inspector answers
-   `/api/health` and a real comparison taken from the catalog's own links.
+   `/api/health` and two real comparisons taken from the catalog's own links: one arm, and
+   the first group of arms on one metric (`deploy/probe_link.sh` picks it; `make -C harness
+   test` runs the same probe against the tutorial project). Both must come back with verdict
+   rows.
 
 Any failure in 3 or 4 rolls back to the previous release: the symlink, the containers and
 the config. Then the Alloy drop-in and the Caddy vhosts are installed, each validated with

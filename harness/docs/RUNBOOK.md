@@ -59,7 +59,9 @@ make dataset-create DATASET_ID=my_v1 ARGS="--update-fields --fields fixes.csv"  
 ```
 
 A column the field set does not declare, a value of the wrong type or outside a
-choice, and a required field left empty are refused. Fields are not the dataset's
+choice, and a required field left empty are refused. With `--update-fields`, a value in
+the file replaces that value, an empty cell clears it, and every column and item the file
+leaves out is kept. Fields are not the dataset's
 identity: runs hash the items' bytes, so correcting a field invalidates no run, and
 `fields_sha256` records that the fields changed. `make validate` (V15) checks every
 value. The catalog summarises a field's values only when it is `public`; the local
@@ -75,7 +77,11 @@ make dataset-create DATASET_ID=episodes_v1 ARGS="--manifest items.csv --fieldset
 ```
 
 `make dataset-materialize` downloads each one into `.cache/items/` and refuses bytes
-that hash to anything else, the same failure as a changed file under `sources/`.
+that hash to anything else, the same failure as a changed file under `sources/`. A
+transient failure (429, 5xx, a timeout) is retried like a provider call. A host that needs
+a header gets it from `EVAL_FETCH_HEADERS` in `.env`, a JSON object
+`{"media.example.com": {"Authorization": "Bearer …"}}`: only that host receives it, a
+redirect to another host does not, and it is never written into a dataset.
 
 ---
 
