@@ -146,7 +146,8 @@ def _metric_rows(counts: Counter, per_arm: dict, baseline: str) -> list:
 def _default_metric(counts: Counter, per_arm: dict, arms: list, asked: str) -> str:
     """The yardstick shown first.
 
-    Order: never a shape metric (length, latency); scores before neutral counts; what the
+    Order: never a shape metric (length, latency); scores before neutral counts and before
+    cost, latency and tokens; what the
     baseline recorded; a reference in the baseline's output format; the most arms; what most
     arms recorded (per item or as an average); the adapter's preferred names.
     """
@@ -170,6 +171,7 @@ def _default_metric(counts: Counter, per_arm: dict, arms: list, asked: str) -> s
         key=lambda k: (
             k in A.shape_metrics,
             A.is_neutral(k),
+            any(x in k for x in _REFERENCE_FREE),  # the bill and the clock: only when nothing is scored
             k not in mine,
             mismatch(k),
             -counts[k],

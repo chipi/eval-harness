@@ -170,6 +170,23 @@ try:
                         "metric": ["words"]})
     check("compare: a metric that needs no reference compares them anyway",
           "runs-silver/ds1/arm_s" in words.get("series", {}) and len(words.get("rows", [])) == 1, words.get("warnings"))
+
+    # No primary metric on record (the bundled adapter declares none): the default yardstick
+    # fell to the name order, so a fresh project's inspector opened on cost_usd. A score is the
+    # yardstick; the bill and the clock only when nothing else was recorded.
+    data3 = tmp / "data3"
+    for arm, accs in (("arm_p", [0.5] * 8), ("arm_q", [0.7] * 8)):
+        d = data3 / "runs" / f"{arm}_1"
+        (d / "outputs").mkdir(parents=True)
+        (d / "metrics.json").write_text(json.dumps({"run_id": f"{arm}_1", "dataset_id": "ds1", "config_id": arm,
+                                                    "fingerprint": {"data": {"reference_id": "gold/ds1"}}}))
+        (d / "predictions.jsonl").write_text("".join(
+            json.dumps({"item_id": f"i{i}", "overlap_f1": v, "cost_usd": 0.0, "latency_ms": 1.0 + i}) + "\n"
+            for i, v in enumerate(accs)))
+    cs.set_adapter(HarnessAdapter(data3))
+    plain = cs.compare({"runs": ["runs/ds1/arm_p,runs/ds1/arm_q"], "baseline": ["runs/ds1/arm_p"]})
+    check("compare: with no primary metric on record, a score is the default, never cost or latency",
+          plain.get("metric") == "overlap_f1", plain.get("metric"))
     cs.set_adapter(A)
 
     # the command line: evh catalog builds into the project
