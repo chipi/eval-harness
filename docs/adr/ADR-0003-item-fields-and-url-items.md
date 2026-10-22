@@ -65,6 +65,10 @@ still its id and its bytes' hash; the URL is where to get them.
   test and a correction that grows with the number of groups.
 - Datasets without fields are unchanged; the schema change is additive.
 - Materializing a URL dataset needs the network once per item; the cache makes it once.
+- **This repository's own experiments carry no fields** (decided 2026-10-22). The truthful
+  candidates are each item's gold class, and this repository does not redistribute gold: it
+  is fetched, never committed, and AG News comes with no grant of rights beyond research use.
+  The tutorial, the tests and the browser checks exercise fields; the public catalog does not.
 
 ## Alternatives considered
 
