@@ -7,9 +7,10 @@
 #   make reproduce EXP=scifact LEVEL=local      (local | baselines | hosted | all)
 #   make compare   EXP=scifact           the replication card: does every finding hold?
 #   make reproduce EXP=scifact CONFIG=path/to/your_arm.yaml    add a model of your own
+#   make browser-check                   the inspector and the public site in headless Chromium
 #
 # docs/REPRODUCE.md walks through it. The harness's own verbs live in harness/Makefile
-# (`make -C harness help`); this file only drives the worked examples.
+# (`make -C harness help`); this file drives the worked examples and the repository-wide checks.
 
 PY := harness/.venv/bin/python
 EXP ?=
@@ -18,7 +19,7 @@ ARMS ?=
 CONFIG ?=
 
 .DEFAULT_GOAL := help
-.PHONY: help setup verify list plan data reproduce compare site docs
+.PHONY: help setup verify list plan data reproduce compare site docs browser-check
 
 help:
 	@sed -n '1,13p' Makefile | sed 's/^# \{0,1\}//'
@@ -56,6 +57,12 @@ compare: $(PY)
 
 site: $(PY)
 	$(MAKE) -C harness site
+
+# Both front ends in headless Chromium: the catalog and run inspector, then the public site
+# served with production's headers. Needs `make -C harness browser-install` once.
+browser-check: $(PY)
+	$(MAKE) -C harness browser-check
+	$(PY) site/test_browser.py
 
 docs:
 	mkdocs build --strict

@@ -159,6 +159,18 @@ pages must stay the same, apart from intended changes.
     `.build/catalog`, and its "files" links point into `data/eval/`, so check they still open.
   - The podcast `assets/inspect.js` used `/api/episode?ep=`; the harness's uses
     `/api/item?item=`, with views keyed by arm id. Use the harness's assets.
+- **Move its second registry into item fields** (ADR-0003). The podcast datasets keep facts
+  about each episode (title, show, duration, links) in a registry beside the frozen dataset.
+  Not yet done; it is part of this switch:
+  - declare them in a field set, `data/eval/fields/<id>.yaml` (`schemas/fieldset.schema.json`),
+    marking `public` only what the public catalog may show;
+  - attach the values with `evh dataset-create --dataset-id <id> --update-fields --fields
+    <file>`: no run's fingerprint changes, because fields are not the identity;
+  - items published as audio at a URL come in through `--manifest` (`source_url` +
+    `source_sha256`), so `dataset-materialize` fetches and hash-checks them;
+  - give the adapter `item_fields(dataset)`, or let `HarnessAdapter` read the datasets, so
+    the catalog and inspector show, filter and break down by them;
+  - `evh validate` V15 passes, and the old registry is deleted.
 - **`tools/catalog/build.py` stays project-side** (its pages are podcast-specific).
   - Swap its `page()` shell and its assets for the harness's: `catalog_build.page` takes
     `nav`, `brand`, `item`, `serve` and `footer`, and `copy_assets`.

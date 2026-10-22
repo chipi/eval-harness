@@ -8,10 +8,10 @@
 #              arms, and require the replication card to say they match the committed runs
 #              exactly. A change that breaks a fetcher, a scorer, the data upstream or the
 #              reproduce tooling turns this red before a stranger finds it.
-#   browser    the catalog and the run inspector in headless Chromium, the way a reader uses
-#              them (harness/scripts/test_inspector_browser.py): a tutorial project built from
-#              the package's wheel, the pages driven, any console error a failure. The same
-#              three make targets a developer runs.
+#   browser    the catalog, the run inspector and the public site in headless Chromium, as a reader uses
+#              them (harness/scripts/test_inspector_browser.py, site/test_browser.py): a tutorial project built from
+#              the package's wheel and the site served with production's headers, any console error or
+#              CSP violation a failure. The same make targets a developer runs.
 #
 # No secrets: nothing here calls a paid model, so it is safe on pull requests from forks.
 name: reproduce
@@ -60,7 +60,7 @@ jobs:
       - name: Playwright and Chromium (with the system libraries it needs)
         run: make -C harness browser-install ARGS=--with-deps
       - name: make browser-check
-        run: make -C harness browser-check
+        run: make browser-check
 
   rerun:
     runs-on: ubuntu-latest
