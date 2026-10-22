@@ -30,6 +30,7 @@ _TRUE, _FALSE = {"true", "yes", "1", "y"}, {"false", "no", "0", "n"}
 
 
 def fieldset_path(fieldset_id: str) -> Path:
+    """Return the path to a field set file."""
     return FIELDS / f"{fieldset_id}.yaml"
 
 

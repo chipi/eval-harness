@@ -62,6 +62,7 @@ def _matrix(dataset_id: str, metric: str, keep: set[str] | None, match: str | No
 
 
 def main() -> int:
+    """The significance tests, on only the items a previous dataset did not contain."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", required=True)
     ap.add_argument("--exclude-dataset", help="drop every item this dataset also contains")

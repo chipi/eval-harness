@@ -67,8 +67,7 @@ warn_redundant_casts = true
 warn_unused_ignores = true
 
 [tool.interrogate]
-# podcast_scraper's exemptions. Its bar is 100%; this repo's starts where it stands (53.5% on
-# 2026-10-22) and may only go up.
+# podcast_scraper's exemptions and its bar: every public function, class and method has one.
 ignore-init-module = true
 ignore-init-method = true
 ignore-magic = true
@@ -78,4 +77,4 @@ ignore-property-decorators = true
 ignore-module = true
 ignore-nested-functions = true
 exclude = ["scripts/test_*.py", "scripts/self_test.py"]
-fail-under = 53
+fail-under = 100

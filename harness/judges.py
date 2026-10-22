@@ -39,7 +39,9 @@ class Judge(Protocol):
         item_id: str,
         item_content: str,
         dimensions: list[str],
-    ) -> ItemScore: ...
+    ) -> ItemScore:
+        """Return a verdict on one item."""
+        ...
 
 
 # ---------------------------------------------------------------------------
@@ -63,6 +65,7 @@ class FakeJudge:
         item_content: str,
         dimensions: list[str],
     ) -> ItemScore:
+        """Return a hashed deterministic verdict (1-5 per dimension)."""
         per_dim: dict[str, int] = {}
         for dim in dimensions:
             # Deterministic 1-5 from a hash of (run_id, item_id, dim).
@@ -115,6 +118,7 @@ class LLMJudge:
         item_content: str,
         dimensions: list[str],
     ) -> ItemScore:
+        """Query the model and return a per-dimension 1-5 score and USD cost."""
         prompt = self._build_prompt(item_content, dimensions)
         try:
             response = self._client.messages.create(

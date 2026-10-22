@@ -44,6 +44,7 @@ SIZES = (10, 20, 50, 100)
 
 
 def load(dataset_id: str, metric: str, match: str | None):
+    """All arms' per-item scores on this dataset; optionally filtered by config_id substring."""
     acc: dict[str, dict[str, list[float]]] = defaultdict(lambda: defaultdict(list))
     for d in sorted(RUNS.glob("*")):
         mj, pj = d / "metrics.json", d / "predictions.jsonl"
@@ -142,6 +143,7 @@ def tied_at_top(M, arms, items) -> int:
 
 
 def main() -> int:
+    """Measure how many items it takes before the ranking stops moving."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", required=True)
     ap.add_argument("--metric", help="default: the primary metric the runs recorded")

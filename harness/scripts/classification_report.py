@@ -183,6 +183,7 @@ def _report_consensus_misses(rows: list, gold: dict, dataset_id: str, threshold:
 
 
 def main() -> int:
+    """Report classification metrics and analysis."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", required=True)
     ap.add_argument("--match", help="only config_ids containing this substring")

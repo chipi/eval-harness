@@ -110,10 +110,12 @@ PINNED = "5f9936bb9c09877f758605a1767031d547db8edfd45ab1f93608a0fd6f56b56c"
 
 
 def order(aid: str, systems: Sequence[str]) -> list[str]:
+    """Deterministic (seeded by article_id) ordering of the systems."""
     return sorted(systems, key=lambda s: _sha(f"zhang-0:{aid}:{s}".encode()))
 
 
 def blocks(aid: str, systems: Sequence[str], per_call: int) -> list[list[str]]:
+    """Partition shuffled systems into balanced blocks (fewest blocks, roughly equal sizes)."""
     o = order(aid, systems)
     out, i = [], 0
     for n in js.block_sizes(len(o), per_call):
@@ -123,6 +125,7 @@ def blocks(aid: str, systems: Sequence[str], per_call: int) -> list[list[str]]:
 
 
 def record_path(vdir: Path, aid: str, b: int) -> Path:
+    """Path to a judge's stored verdict for one article's block."""
     return vdir / f"{aid}.b{b}.json"
 
 
@@ -203,6 +206,7 @@ def judge_tau(scores: dict[str, dict[str, dict[str, float]]], refs: dict, system
 
 
 def metric_tau(data: dict[str, dict], refs: dict, systems: Sequence[str], fn) -> dict:
+    """Kendall tau of a metric against human ratings, per dimension and overall mean."""
     per: dict[str, list] = {h: [] for h, _ in PAIRS}
     for aid, a in data.items():
         ref = a["systems"][REFERENCE]["summary"]
@@ -299,6 +303,7 @@ def system_means(data: dict[str, dict], systems: Sequence[str], scores: dict[str
 
 
 def free_metrics() -> dict:
+    """ROUGE-1 F1 and coverage metric functions."""
     from rouge_score import rouge_scorer  # noqa: PLC0415
 
     rs = rouge_scorer.RougeScorer(["rouge1"], use_stemmer=True)
@@ -420,6 +425,7 @@ def build_report(
 
 
 def print_report(report: dict[str, Any]) -> None:
+    """Print a summary of the judging results and human baseline."""
     for jid, r in report["judges"].items():
         print(
             f"{jid}: tau all-19 {r['all_19']}; non-reference {r['non_reference_18']}; "
@@ -436,6 +442,7 @@ def print_report(report: dict[str, Any]) -> None:
 
 
 def main() -> int:
+    """Validate a judge on Zhang 2024 summaries; call or recompute from stored verdicts."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--scorer", required=True)
     ap.add_argument("--dry-run", action="store_true", help="count calls and estimate cost; call nothing")

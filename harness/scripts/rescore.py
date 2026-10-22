@@ -60,6 +60,7 @@ CARRY = ("latency_ms", "tokens_in", "tokens_out", "cost_usd")
 
 
 def main() -> int:
+    """Re-score finished runs from their stored outputs: no API calls, no money."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", required=True)
     ap.add_argument("--match", help="only runs whose config_id contains this substring")

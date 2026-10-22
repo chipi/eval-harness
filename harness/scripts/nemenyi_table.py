@@ -109,6 +109,7 @@ def q_alpha(k: int, alpha: float = 0.05) -> float:
 
 
 def table(k_max: int = 40, alpha: float = 0.05) -> dict:
+    """Nemenyi critical values q_alpha for k = 2..k_max at the given alpha."""
     return {k: round(q_alpha(k, alpha), 4) for k in range(2, k_max + 1)}
 
 
@@ -118,6 +119,7 @@ def max_error_against_published() -> float:
 
 
 def main() -> int:
+    """Compute the Nemenyi table for post-hoc pairwise comparisons."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--max", type=int, default=40)
     ap.add_argument("--alpha", type=float, default=0.05)

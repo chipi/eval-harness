@@ -29,6 +29,7 @@ except ImportError:  # pragma: no cover
 
 
 def main() -> int:
+    """Generate a parameter sweep configuration."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--configs", nargs="+", required=True, type=Path)
     ap.add_argument("--repeat", type=int, default=1)

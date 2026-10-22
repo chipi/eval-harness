@@ -34,6 +34,7 @@ from _common import (
 
 
 def main() -> int:
+    """Promote a run to baseline status."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--run", required=True)
     ap.add_argument("--reason", help="why this run earned promotion")

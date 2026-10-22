@@ -418,6 +418,7 @@ def _adapter_kinds(adapter_spec: str) -> dict[str, str]:
 
 
 def main() -> int:
+    """Generate a leaderboard from run results."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", required=True)
     ap.add_argument("--sort", help="metric to rank by (default: the first quality metric)")

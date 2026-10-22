@@ -583,6 +583,7 @@ def _dry_run(ds: dict[str, Any], cfg: dict[str, Any], repeat: int) -> int:
 
 
 def main() -> int:
+    """Run an experiment config against a dataset."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--config", required=True, type=Path)
     ap.add_argument("--repeat", type=int, default=1, help="run N times to measure the arm's spread")

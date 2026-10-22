@@ -404,6 +404,7 @@ def _candidates_from(cfg: dict[str, Any]) -> list[RunCandidate]:
 
 
 def main(argv: list[str]) -> int:
+    """Promote, judge, aggregate, and report on finalists."""
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 
     ap = argparse.ArgumentParser()

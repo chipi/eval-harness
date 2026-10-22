@@ -89,6 +89,7 @@ METRICS = {"macro_f1": _macro_f1, "accuracy": _accuracy}
 
 
 def main() -> int:
+    """Run bootstrap resampling test."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", required=True)
     ap.add_argument("--a", required=True, help="config_id of the arm under test")

@@ -74,6 +74,7 @@ notes: list[str] = []
 
 
 def check(ok: bool, label: str, detail: str = "") -> None:
+    """Log a check result and append to problems if it failed."""
     if ok:
         print(f"  ok   {label}")
     else:
@@ -82,6 +83,7 @@ def check(ok: bool, label: str, detail: str = "") -> None:
 
 
 def v1_schemas() -> None:
+    """V1: every document matches its schema."""
     if jsonschema is None:
         notes.append("V1 skipped: jsonschema not installed (pip install -r requirements.txt)")
         print("  --   V1 schemas (jsonschema not installed)")
@@ -108,6 +110,7 @@ def v1_schemas() -> None:
 
 
 def v2_dataset_ids() -> None:
+    """V2: every run's dataset_id resolves to an existing dataset."""
     known = {p.stem for p in DATASETS.glob("*.json")}
     dangling = []
     for run in RUNS.iterdir() if RUNS.is_dir() else []:
@@ -126,6 +129,7 @@ def v2_dataset_ids() -> None:
 
 
 def v3_provenance() -> None:
+    """V3: every run identifies its build ref."""
     missing = []
     for run in RUNS.iterdir() if RUNS.is_dir() else []:
         m = run / "metrics.json"
@@ -213,6 +217,7 @@ def _per_item_signature(run_name: str) -> str:
 
 
 def v5_duplicate_scores() -> None:
+    """V5: no two runs report byte-identical scores and per-item results."""
     by_key = defaultdict(list)
     for run in RUNS.iterdir() if RUNS.is_dir() else []:
         m = run / "metrics.json"
@@ -262,6 +267,7 @@ def v5_duplicate_scores() -> None:
 
 
 def v6_baselines() -> None:
+    """V6: every baseline's promoted_from run still exists."""
     broken = []
     for b in BASELINES.glob("*.json"):
         d = read_json(b)
@@ -799,6 +805,7 @@ def _report(bad: list[str], label: str, noun: str) -> None:
 
 
 def v11_judging_sets_match_their_hash() -> None:
+    """V11: every frozen judging set's stored hash matches its content's hash."""
     _report(
         judging_set_problems(DATA_DIR / "judging-sets"),
         "V11 every judging set's stored hash is the hash of its content",
@@ -807,6 +814,7 @@ def v11_judging_sets_match_their_hash() -> None:
 
 
 def v12_verdicts_belong_to_their_set() -> None:
+    """V12: every judge verdict names an existing set, item, pass and block."""
     _report(
         verdict_problems(DATA_DIR / "judge-verdicts", DATA_DIR / "judging-sets")
         + validation_record_problems(DATA_DIR / "judge-validation"),
@@ -817,6 +825,7 @@ def v12_verdicts_belong_to_their_set() -> None:
 
 
 def v13_judge_scorers_are_well_formed() -> None:
+    """V13: every judge scorer yaml loads and is structurally valid."""
     _report(
         scorer_problems(DATA_DIR / "scorers"),
         "V13 every judge scorer yaml loads and is structurally valid",
@@ -949,6 +958,7 @@ def v15_item_fields() -> None:
 
 
 def main() -> int:
+    """Run all integrity checks over the eval tree; exit 1 if any fails."""
     # `--help` prints help. It used to fall through and run the whole validation, which
     # made self_test's `validate_tree.py --help` check assert "the tree is valid" instead
     # of "the CLI responds" — so the one script whose failure matters most had a self-test

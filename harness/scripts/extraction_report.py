@@ -302,6 +302,7 @@ def _ceiling(preds: dict, gold: dict, relabel: dict) -> dict:
 
 
 def main() -> int:
+    """Report extraction task metrics and analysis."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", required=True)
     ap.add_argument("--match", help="only config_ids containing this substring")

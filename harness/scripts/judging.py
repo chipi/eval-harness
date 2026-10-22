@@ -258,6 +258,7 @@ def _words(text: str | None) -> list[str]:
 
 
 def shingles(texts: Sequence[str]) -> set:
+    """All 8-word shingles across multiple texts, lowercased."""
     out: set = set()
     for t in texts:
         w = _words(t)
@@ -392,6 +393,8 @@ def extra_body(params: dict[str, Any], r: dict[str, Any]) -> dict[str, Any]:
 # ── the call ─────────────────────────────────────────────────────────────────
 @dataclass
 class JudgeResult:
+    """Result of a judge call: the output and token/cost metadata."""
+
     output: str
     tokens_in: int | None = None
     tokens_out: int | None = None

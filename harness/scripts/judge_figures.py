@@ -37,6 +37,7 @@ def _range(xs):
 
 
 def goyal(scorer: str = SCORER) -> dict[str, Any]:
+    """Goyal 2022 validation figures; recomputed or from the committed report."""
     vroot = DATA / "judge-validation" / scorer / "goyal2022-cnn"
     jids = [j["id"] for j in js.load_scorer(DATA / "scorers" / f"{scorer}.yaml")["judges"]]
     human = vg.load_local()
@@ -130,6 +131,7 @@ def _check_report(rep: dict[str, Any], scorer: str, vroot: Path, jids: list) -> 
 
 
 def pointwise() -> dict[str, int]:
+    """Pointwise (non-listwise) judge preference counts."""
     man = sorted((DATA / "judging-sets").glob("cnn_dailymail_200-2arms-*.json"))
     assert len(man) == 1, man
     m = json.loads(man[0].read_text())
@@ -150,6 +152,7 @@ def pointwise() -> dict[str, int]:
 
 
 def compute(scorer: str = SCORER) -> dict[str, Any]:
+    """Every figure from the judge re-measurement, including Goyal and Zhang validations."""
     sets = sorted((DATA / "judging-sets").glob(SET_GLOB))
     if len(sets) != 1:
         raise SystemExit(

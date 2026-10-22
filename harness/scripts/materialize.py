@@ -32,6 +32,7 @@ from _common import (
 
 
 def main() -> int:
+    """Materialize a dataset from sources and verify hashes."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", required=True)
     ap.add_argument("--force", action="store_true", help="rebuild even if it exists")

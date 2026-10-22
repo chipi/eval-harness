@@ -98,6 +98,7 @@ def _collect(dataset_id: str, match: str | None) -> dict[str, dict[str, Any]]:
 
 
 def main() -> int:
+    """Calibrate silver reference outputs."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", required=True)
     ap.add_argument("--ref-match", help="config_id substring for runs used AS references")

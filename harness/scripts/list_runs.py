@@ -21,6 +21,7 @@ from _common import (
 
 
 def main() -> int:
+    """List the runs, or with --baselines the baselines."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--baselines", action="store_true")
     args = ap.parse_args()

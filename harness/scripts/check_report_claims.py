@@ -188,11 +188,13 @@ ok: list = []
 
 
 def check(label: str, cond: object, detail: str = "") -> None:
+    """Record and print a check result."""
     ok.append(cond)
     print(f"  {'ok  ' if cond else 'FAIL'} {label}{('   ' + detail) if detail and not cond else ''}")
 
 
 def score(base: Path, cid: str, metric: str):
+    """Retrieve a metric score from a run by config_id."""
     for d in glob.glob(str(base / f"{cid}_*")):
         m = json.loads(Path(Path(d) / "metrics.json").read_text(encoding="utf-8"))
         if m.get("config_id") == cid:

@@ -81,6 +81,7 @@ def load_local() -> dict | None:
 
 
 def load() -> dict:
+    """Download and extract the Goyal data if not already on disk; validate both pins."""
     data = load_local()
     if data is None:
         if not ZIP_PATH.is_file():
@@ -101,15 +102,18 @@ def load() -> dict:
 
 
 def order(article_id: str) -> list:
+    """Deterministic (seeded by article_id) ordering of the three summaries."""
     return sorted(SYSTEMS, key=lambda s: hashlib.sha256(f"goyal-0:{article_id}:{s}".encode()).hexdigest())
 
 
 def record_path(vdir: Path, aid: str) -> Path:
+    """Path to a judge's stored verdict for an article, hashed to a short filename."""
     return vdir / f"{hashlib.sha256(aid.encode()).hexdigest()[:16]}.json"
 
 
 # ── human side ───────────────────────────────────────────────────────────────
 def best_counts(annotators: Sequence[dict]) -> collections.Counter:
+    """Vote counts for systems named best by the annotators."""
     c: collections.Counter = collections.Counter()
     for a in annotators:
         c.update(a["best_summary"])
@@ -137,6 +141,7 @@ def human_prefs(annotators: Sequence[dict]) -> tuple:
 
 
 def ranks(a: dict) -> dict[str, int]:
+    """Rank of each system in one annotator: 2=best, 1=unranked, 0=worst."""
     return {s: (2 if s in a["best_summary"] else 0 if s in a["worst_summary"] else 1) for s in SYSTEMS}
 
 
@@ -150,6 +155,7 @@ def human_pair_pref(annotators: Sequence[dict]) -> str | None:
 
 
 def top_set(counts: collections.Counter) -> list[str]:
+    """All systems tied for the highest count; empty list if counts is empty."""
     if not counts:
         return []
     top = max(counts.values())
@@ -178,6 +184,7 @@ def wilson(k: float, n: int, z: float = 1.959964) -> list[float] | None:
 
 
 def rate(k: float, n: int) -> dict:
+    """Score k out of n with the rate, Wilson 95% CI, and raw counts."""
     return {"k": round(k, 4), "n": n, "rate": round(k / n, 4) if n else None, "ci95": wilson(k, n)}
 
 
@@ -191,6 +198,7 @@ def loo_refs(annotators: Sequence[dict]) -> list[tuple[dict, list[str]]]:
 
 
 def human_baseline(data: dict) -> dict:
+    """Leave-one-annotator-out baseline stats for all articles."""
     tot = n = n_skip = 0.0
     tot_agree = n_agree = 0.0
     for v in data.values():
@@ -233,12 +241,14 @@ def human_baseline(data: dict) -> dict:
 
 # ── judge side ───────────────────────────────────────────────────────────────
 def judge_top(rec: dict) -> tuple[dict[str, float], list[str]]:
+    """(score dict, all systems with the top score)."""
     s = dict(zip(rec["order"], rec["scores"]))
     top = max(s.values())
     return s, sorted(k for k, x in s.items() if x == top)
 
 
 def judge_stats(data: dict, recs: dict[str, dict]) -> dict:
+    """Comprehensive stats comparing judge to human preferences."""
     per_article = []
     cred: float = 0
     n_maj = exact = tied_hit = miss = 0
@@ -314,17 +324,20 @@ def judge_stats(data: dict, recs: dict[str, dict]) -> dict:
 
 
 def read_records(vdir: Path, data: dict) -> dict[str, dict]:
+    """Load all judge verdicts for the articles in data; keyed by article_id."""
     return {aid: json.loads(record_path(vdir, aid).read_text()) for aid in data}
 
 
 # ── stored-record integrity ──────────────────────────────────────────────────
 def expected(base: str, aid: str, v: dict) -> tuple[list[str], str]:
+    """(summary order for this article, sha256 of the message sent to the judge)."""
     so = order(aid)
     msg = js.build_message(base, v["article"], [v[s]["text"] for s in so])
     return so, js._sha(msg)
 
 
 def record_problem(rec: dict, so: list[str], sha: str, fp: str) -> str | None:
+    """Error message if the stored record is inconsistent with the scorer as it is now, else None."""
     if "judge_fp" not in rec or "prompt_sha" not in rec:
         return "has no judge_fp/prompt_sha (run --backfill-provenance --no-calls once)"
     if rec["judge_fp"] != fp:
@@ -337,6 +350,7 @@ def record_problem(rec: dict, so: list[str], sha: str, fp: str) -> str | None:
 
 
 def main() -> int:
+    """Validate a judge on Goyal 2022 summaries; call or recompute from stored verdicts."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--scorer", required=True)
     ap.add_argument("--dry-run", action="store_true")

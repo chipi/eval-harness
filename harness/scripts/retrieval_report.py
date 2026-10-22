@@ -44,6 +44,7 @@ except ImportError:  # pragma: no cover
 
 
 def qrels(dataset_id: str) -> dict:
+    """Load gold relevance judgments for a dataset; die if not found."""
     root = REFERENCES / "gold" / dataset_id
     if not root.is_dir():
         die(f"no gold references at {root}")
@@ -55,6 +56,7 @@ def qrels(dataset_id: str) -> dict:
 
 
 def runs(dataset_id: str, match: str | None) -> dict:
+    """All runs on this dataset; optionally filtered by config_id substring."""
     out: dict = {}
     for d in sorted(RUNS.glob("*")):
         mj, pj = d / "metrics.json", d / "predictions.jsonl"
@@ -85,6 +87,7 @@ def oracle_ndcg(candidates: list, rel: dict) -> float:
 
 
 def main() -> int:
+    """Report ranking ceilings and oracle performance for retrieval arms."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", required=True)
     ap.add_argument("--match")

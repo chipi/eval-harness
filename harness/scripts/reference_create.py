@@ -86,6 +86,7 @@ def _identity(hook: object, params: dict) -> object:
 
 
 def main() -> int:
+    """Create a reference (gold or silver) for a dataset."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", required=True)
     ap.add_argument("--config", required=True, type=Path, help="which model authors the reference")

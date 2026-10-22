@@ -60,6 +60,7 @@ A: Adapter = None  # type: ignore[assignment]  # set by main() or set_adapter()
 
 
 def set_adapter(adapter: Adapter) -> None:
+    """Set the adapter and clear cached scores."""
     global A
     A = adapter
     _scores.cache_clear()
@@ -354,6 +355,7 @@ def _number(params: dict, key: str, kind):
 
 
 def compare(params: dict) -> dict:
+    """Compare arms: parse query params, get scores, run paired tests, return result."""
     runs = [r.strip("/") for r in params.get("runs", [""])[0].split(",") if r.strip()]
     if len(runs) > LIMITS["max_arms"]:
         return {"error": f"{len(runs)} arms asked for; at most {LIMITS['max_arms']} in one comparison"}
@@ -464,6 +466,7 @@ def compare(params: dict) -> dict:
 
 
 def item(params: dict) -> dict:
+    """Fetch one item's output from multiple arms and the reference."""
     arms = [a for a in params.get("arms", [""])[0].split(",") if a.strip()]
     it = params.get("item", [""])[0]
     if not it or not arms or any(not A.arms_of(a) for a in arms):
@@ -583,6 +586,8 @@ def allowed(path: str, host: str, port: int, prefixes: tuple) -> int:
 
 
 class Handler(SimpleHTTPRequestHandler):
+    """HTTP request handler for catalog serving and API endpoints."""
+
     prefixes: tuple = ()
 
     def _refuse(self) -> bool:
@@ -599,10 +604,12 @@ class Handler(SimpleHTTPRequestHandler):
         return False
 
     def do_HEAD(self):
+        """Handle HEAD requests with access checks."""
         if not self._refuse():
             super().do_HEAD()
 
     def do_GET(self):
+        """Handle GET requests for static files and API endpoints."""
         if self._refuse():
             return
         url = urlparse(self.path)
@@ -628,11 +635,13 @@ class Handler(SimpleHTTPRequestHandler):
         self.wfile.write(data)
 
     def log_message(self, fmt, *args):
+        """Log API requests only; suppress static file serving noise."""
         if args and "/api/" in str(args[0]):
             super().log_message(fmt, *args)
 
 
 def main() -> int:
+    """Start the catalog server on localhost or in public mode."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--port", type=int, default=8765)
     ap.add_argument(

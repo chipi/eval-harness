@@ -33,6 +33,7 @@ notes: list = []
 
 
 def check(label, cond, detail=""):
+    """Log a check result and append to ok."""
     ok.append(cond)
     print(f"  {'ok  ' if cond else 'FAIL'} {label}{('   ' + detail) if detail and not cond else ''}")
 

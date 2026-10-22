@@ -56,10 +56,12 @@ EXTRA_NAV: list = []
 
 
 def e(s) -> str:
+    """HTML-escape a string."""
     return html.escape(str(s), quote=True)
 
 
 def slug(s: str) -> str:
+    """Convert a string to a URL-friendly slug."""
     return re.sub(r"[^A-Za-z0-9._-]+", "-", s).strip("-") or "x"
 
 
@@ -76,6 +78,7 @@ def page(
     serve: str = "evh catalog-serve",
     footer: str = "",
 ) -> str:
+    """Build a complete HTML page with header, nav, body, and footer."""
     up = "../" * depth
     links = "".join(
         f'<a href="{href if "://" in href else up + href}"{" aria-current=page" if key == here else ""}>{label}</a>'
@@ -121,6 +124,7 @@ def page(
 
 
 def hero(kicker: str, title: str, dek: str = "", extra: str = "") -> str:
+    """Build a hero section with kicker, title, and optional dek."""
     d = f'<p class="dek">{dek}</p>' if dek else ""
     return (
         f'<section class="hero slim"><div class="wrap"><p class="kicker">{kicker}</p>'
@@ -129,6 +133,7 @@ def hero(kicker: str, title: str, dek: str = "", extra: str = "") -> str:
 
 
 def block(num: str, eyebrow: str, inner: str, anchor: str = "") -> str:
+    """Build a block section with a number, eyebrow text, and inner HTML."""
     aid = f' id="{anchor}"' if anchor else ""
     return (
         f'<section class="block tight"{aid}><div class="wrap"><p class="eyebrow">'
@@ -137,6 +142,7 @@ def block(num: str, eyebrow: str, inner: str, anchor: str = "") -> str:
 
 
 def table(tid: str, heads: list, rows: list, filt: str = "") -> str:
+    """Build an HTML table with optional search filter."""
     th = "".join(f"<th>{h}</th>" for h in heads)
     f = ""
     if filt:
@@ -153,17 +159,20 @@ def table(tid: str, heads: list, rows: list, filt: str = "") -> str:
 
 
 def write(out: Path, rel: str, content: str) -> None:
+    """Write content to a relative path within output directory."""
     p = out / rel
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(content, encoding="utf-8")
 
 
 def inspect_url(arms: list, up: str = "", **params) -> str:
+    """Build a URL for the inspector with arms and optional query parameters."""
     q = "&".join(f"{k}={quote(str(v), safe='')}" for k, v in params.items() if v)
     return f"{up}inspect.html?runs=" + quote(",".join(arms), safe=",/") + (f"&{q}" if q else "")
 
 
 def copy_assets(out: Path) -> None:
+    """Copy CSS, JS, and SVG assets to output directory."""
     (out / "assets").mkdir(parents=True, exist_ok=True)
     for a in ASSETS:
         shutil.copy(ASSET_DIR / a, out / "assets" / a)
@@ -171,6 +180,7 @@ def copy_assets(out: Path) -> None:
 
 
 def fmt(v) -> str:
+    """Format a number for display, or return — for None."""
     if v is None:
         return "—"
     return f"{v:.1f}" if abs(v) >= 10 else f"{v:.3f}"
@@ -218,6 +228,7 @@ def collect(A: Adapter) -> dict:
 
 
 def render_home(A: Adapter, by_ds: dict, out: Path) -> None:
+    """Render the catalog home page with all datasets."""
     rows = []
     for ds in sorted(by_ds, key=lambda d: (-len(by_ds[d]["arms"]), d)):
         v = by_ds[ds]
@@ -246,6 +257,7 @@ def render_home(A: Adapter, by_ds: dict, out: Path) -> None:
 
 
 def render_dataset(A: Adapter, ds: str, v: dict, out: Path) -> None:
+    """Render a page for one dataset with all its arms."""
     arms = sorted(
         v["arms"],
         key=lambda a: (
@@ -409,6 +421,7 @@ def goal_answers(goal: dict, by_ds: dict) -> list:
 
 
 def render_goals(A: Adapter, by_ds: dict, out: Path) -> int:
+    """Render the goals page and one page per goal; return the number rendered."""
     goals = A.goals()
     rows = []
     for g in goals:
@@ -442,6 +455,7 @@ def render_goals(A: Adapter, by_ds: dict, out: Path) -> int:
 
 
 def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path) -> None:
+    """Render a page for one goal showing which arms satisfy its criteria."""
     crit = g.get("success_criteria") or {}
     prim = crit.get("primary") or {}
     measure = prim.get("measure", "")
@@ -538,6 +552,7 @@ def render_inspect(A: Adapter, out: Path, page_fn=page, **page_kw) -> None:
 
 
 def write_search(A: Adapter, by_ds: dict, out: Path) -> None:
+    """Write the search index as a JavaScript file."""
     idx = []
     for ds, v in by_ds.items():
         idx.append(
@@ -573,6 +588,7 @@ def write_search(A: Adapter, by_ds: dict, out: Path) -> None:
 
 
 def build(A: Adapter, out: Path) -> dict:
+    """Build all catalog pages and return statistics."""
     if out.exists():
         shutil.rmtree(out)
     copy_assets(out)
@@ -592,6 +608,7 @@ def build(A: Adapter, out: Path) -> dict:
 
 
 def main() -> int:
+    """Build the catalog and write static pages to output directory."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--out", type=Path, default=ROOT / ".build" / "catalog")
     ap.add_argument(

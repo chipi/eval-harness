@@ -64,6 +64,7 @@ def billed_and_recorded(run_dir: Path) -> tuple[float, float, int, int]:
 
 
 def main() -> int:
+    """Report cost metrics for runs."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", help="only this dataset; default every dataset")
     ap.add_argument("--match", help="only runs whose config_id contains this")

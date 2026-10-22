@@ -46,6 +46,7 @@ def _ranks(x: list) -> list:
 
 
 def spearman(a: list, b: list) -> float:
+    """Spearman rank correlation coefficient."""
     ra, rb = _ranks(a), _ranks(b)
     ma, mb = statistics.fmean(ra), statistics.fmean(rb)
     num = sum((x - ma) * (y - mb) for x, y in zip(ra, rb))
@@ -141,6 +142,7 @@ def load() -> dict:
 
 
 def compute() -> dict:
+    """All derived SummEval figures: stability, ladders, tier tests, per-dimension leaders."""
     arms = load()
     judges = {a: v for a, v in arms.items() if a not in FREE}
     names = sorted(judges)
@@ -188,6 +190,7 @@ def compute() -> dict:
 
 
 def main() -> int:
+    """Print the derived SummEval figures."""
     if "--help" in sys.argv[1:] or "-h" in sys.argv[1:]:
         print(__doc__)
         return 0

@@ -78,10 +78,12 @@ def blocks(text: str) -> list:
 
 
 def norm(s: str) -> str:
+    """Normalize whitespace for comparison."""
     return " ".join(s.split())
 
 
 def expected_lines(text: str) -> list:
+    """Extract normalized non-empty lines, excluding elision markers."""
     return [norm(x) for x in text.splitlines() if x.strip() and "..." not in x and "…" not in x]
 
 
@@ -115,6 +117,8 @@ def setup(tmp: Path) -> tuple:
 
 
 def fill(cmd: str, proj: Path) -> str:
+    """Replace placeholders like <name run_id> with actual run ids from the project."""
+
     def run_id(m):
         runs = sorted(p.name for p in (proj / "data" / "runs").glob(f"{m.group(1)}_2*"))
         return runs[0] if runs else m.group(0)
@@ -126,6 +130,7 @@ PORT = 8765  # catalog-serve's default
 
 
 def port_free(port: int) -> bool:
+    """Check whether a port is available on localhost."""
     with socket.socket() as s:
         try:
             s.bind(("127.0.0.1", port))
@@ -135,12 +140,14 @@ def port_free(port: int) -> bool:
 
 
 def free_port() -> int:
+    """Return an available port number on localhost."""
     with socket.socket() as s:
         s.bind(("127.0.0.1", 0))
         return s.getsockname()[1]
 
 
 def run(cmd: str, proj: Path, env: dict, background: bool) -> tuple:
+    """Execute a command and return (return_code, output)."""
     if not background:
         r = subprocess.run(
             ["bash", "-c", cmd], cwd=proj, env=env, capture_output=True, text=True, timeout=900
@@ -167,6 +174,7 @@ def run(cmd: str, proj: Path, env: dict, background: bool) -> tuple:
 
 
 def main() -> int:
+    """Run the GUIDE.md walkthrough and check all quoted outputs match."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--print", action="store_true", help="print what each command printed")
     args = ap.parse_args()

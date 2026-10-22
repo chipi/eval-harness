@@ -133,6 +133,7 @@ def _canon(obj: Any) -> str:
 
 # ── the scorer artifact and the validation gate ──────────────────────────────
 def load_scorer(path: Path) -> dict[str, Any]:
+    """Load and validate a judge scorer YAML file; die on schema or missing judges."""
     if not path.is_file():
         die(f"no such scorer: {path}")
     sc = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
@@ -197,6 +198,7 @@ def prompt_candidates(sc: dict[str, Any], root: Path | None = None) -> list[Path
 
 
 def prompt_text(sc: dict[str, Any], root: Path | None = None) -> str:
+    """Read the scorer's prompt file; die if it is not found."""
     cands = prompt_candidates(sc, root)
     p = next((c for c in cands if c.is_file()), None)
     if p is None:
@@ -296,10 +298,12 @@ def block_sizes(n_outputs: int, per_call: int) -> list[int]:
 
 
 def shuffled(arm_ids: Sequence[str], seed: Any, salt: str, item_id: str) -> list[str]:
+    """The arms in a hashed order: different for each item and pass (salt), the same on a rerun."""
     return sorted(arm_ids, key=lambda a: _sha(f"{seed}|{salt}|{item_id}|{a}"))
 
 
 def blocks_for(arm_ids: Sequence[str], seed: Any, salt: str, item_id: str, per_call: int) -> list[list[str]]:
+    """Partition shuffled arms into balanced blocks (fewest blocks, roughly equal sizes)."""
     order = shuffled(arm_ids, seed, salt, item_id)
     out, i = [], 0
     for s in block_sizes(len(order), per_call):
@@ -309,6 +313,7 @@ def blocks_for(arm_ids: Sequence[str], seed: Any, salt: str, item_id: str, per_c
 
 
 def pick_subset(item_ids: Sequence[str], frac: float, seed: Any, salt: str) -> list[str]:
+    """Deterministically select a fraction of items (seeded by salt); empty list if frac <= 0."""
     if not frac or frac <= 0:
         return []
     k = min(len(item_ids), max(1, round(frac * len(item_ids))))
@@ -361,6 +366,7 @@ def select_arms(arms: Sequence[dict[str, Any]], spec: str) -> list[dict[str, Any
 
 
 def read_outputs(arm: dict[str, Any], item_ids: Sequence[str]) -> dict[str, str]:
+    """All outputs of one arm; die if any item's file is missing."""
     out = {}
     for i in item_ids:
         f = Path(arm["dir"]) / "outputs" / f"{i}.txt"
@@ -450,6 +456,7 @@ def message_for(
     pass_name: str,
     block: int,
 ) -> str:
+    """Build the judge prompt for this item's block in this pass."""
     key = "position" if pass_name == "position" else "primary"  # noqa: S105 — a judging pass, not a password
     arm_ids = item[key][block]
     task = manifest.get("task") or task_of({})
@@ -494,6 +501,7 @@ def call_cost(res: Any, params: dict[str, Any]) -> tuple[float | None, bool]:
 
 
 def verdict_path(vdir: Path, judge_id: str, item_id: str, pass_name: str, block: int) -> Path:
+    """Path to a judge's stored verdict for one item's block in one pass."""
     return vdir / judge_id / f"{item_id}.{pass_name}.b{block}.json"
 
 
@@ -513,6 +521,7 @@ def tasks(manifest: dict[str, Any]) -> list[tuple[dict[str, Any], str, int]]:
 
 
 def stored_cost(vdir: Path) -> float:
+    """Sum cost_usd over all verdicts in the judge directory."""
     total = 0.0
     for f in vdir.glob("*/*.json"):
         try:
@@ -756,6 +765,7 @@ def summarise(
     validated: bool,
     vdir: Path,
 ) -> dict[str, Any]:
+    """Summarize the judging: per-arm scores, judge agreement, controls, and cost."""
     jids = [j["id"] for j in sc["judges"]]
     fam = {j["id"]: j["params"].get("family") for j in sc["judges"]}
     thr = float(sc["protocol"].get("contested_threshold", 0.5))
@@ -981,6 +991,7 @@ def estimate(
     outputs: dict[str, dict[str, str]],
     vdir: Path,
 ) -> dict[str, Any]:
+    """Estimate tokens and cost for dry-run output; counts already-stored verdicts."""
     per_judge: dict[str, dict] = {
         j["id"]: {"calls": 0, "stored": 0, "tokens_in": 0, "tokens_out": 0} for j in sc["judges"]
     }
@@ -1009,16 +1020,19 @@ def estimate(
 
 
 def effective_cap(sc: dict[str, Any]) -> float | None:
+    """The smaller of the scorer's cost_cap_usd and EVAL_MAX_COST_USD, or None."""
     caps = [c for c in (sc.get("cost_cap_usd"), env_float("EVAL_MAX_COST_USD")) if c is not None]
     return min(float(c) for c in caps) if caps else None
 
 
 # ── main ─────────────────────────────────────────────────────────────────────
 def real_call(message: str, params: dict[str, Any]) -> Any:
+    """Call a judge; the call_with_retries hook."""
     return call_judge(message, params)
 
 
 def main() -> int:
+    """Re-measure a frozen experiment with a validated LLM judge."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", required=True)
     ap.add_argument("--scorer", required=True, help="scorer id (data/scorers/<id>.yaml)")

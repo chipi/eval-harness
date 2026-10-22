@@ -29,6 +29,7 @@ HERE = Path(__file__).resolve().parent
 
 
 def in_checkout() -> bool:
+    """Check whether we are running in an eval-harness checkout."""
     return (
         (HERE.parent / "Makefile").is_file()
         and (HERE.parent / "pyproject.toml").is_file()
@@ -37,6 +38,7 @@ def in_checkout() -> bool:
 
 
 def main() -> int:
+    """Run a self-test of the installed harness."""
     if "-h" in sys.argv[1:] or "--help" in sys.argv[1:]:
         print(__doc__)
         return 0

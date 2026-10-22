@@ -36,6 +36,7 @@ def _probe(base: str) -> str:
 
 
 def main() -> int:
+    """Report configured environment variables before a sweep."""
     argparse.ArgumentParser(description=__doc__.splitlines()[0]).parse_args()
     env_file = ROOT / ".env"
     # DOTENV_LOADED is the count from the FIRST load, at import. Calling

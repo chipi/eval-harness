@@ -86,6 +86,7 @@ def _report_fingerprint_delta(a: dict, b: dict) -> None:
 
 
 def load(run_id: str) -> dict:
+    """Load metrics.json for a run; die if not found."""
     p = RUNS / run_id / "metrics.json"
     if not p.is_file():
         die(f"no run {run_id!r} (looked for {p})")
@@ -93,6 +94,7 @@ def load(run_id: str) -> dict:
 
 
 def main() -> int:
+    """Load and summarize a single run."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--baseline", required=True)
     ap.add_argument("--candidate", required=True)

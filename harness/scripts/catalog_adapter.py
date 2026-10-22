@@ -95,7 +95,9 @@ class Adapter(Protocol):
     def notes(self, arm: str) -> list[str]:
         """Why something could not be scored, in words."""
 
-    def lower_is_better(self, metric: str) -> bool: ...
+    def lower_is_better(self, metric: str) -> bool:
+        """Whether a decrease in this metric is an improvement."""
+        ...
 
     def is_neutral(self, metric: str) -> bool:
         """A measurement with no better direction (length, counts)."""
@@ -103,9 +105,14 @@ class Adapter(Protocol):
     def references(self) -> list[dict]:
         """[{"id", "tier", "dataset", "task", "archived", "format"}]."""
 
-    def reference_format(self, ref: str) -> str: ...
+    def reference_format(self, ref: str) -> str:
+        """The output format a reference was written for, compared with the format an arm was asked
+        for (`output_format()["asked"]`) to flag a mismatch; "" when unknown, which never flags."""
+        ...
 
-    def reference_archived(self, ref: str) -> bool: ...
+    def reference_archived(self, ref: str) -> bool:
+        """Whether a reference has been archived."""
+        ...
 
     def output_format(self, arm: str) -> dict:
         """{"asked", "got", "how"}: the output format the arm was asked for and produced."""
@@ -113,7 +120,9 @@ class Adapter(Protocol):
     def item_view(self, arm: str, item: str) -> dict:
         """One arm's output for one item: {"kind": "text", "text": ...} or {"kind": "none"}."""
 
-    def reference_view(self, ref: str, item: str) -> dict: ...
+    def reference_view(self, ref: str, item: str) -> dict:
+        """One reference's text for one item: {"kind": "text", "text": ...} or {"kind": "none"}."""
+        ...
 
     def goals(self) -> list[dict]:
         """Every goal (goal.schema.json): what the evaluations are FOR. [] when there are none."""
@@ -189,9 +198,11 @@ class HarnessAdapter:
         return out
 
     def arms(self) -> list[str]:
+        """Return all arm ids."""
         return list(self._index())
 
     def arms_of(self, path: str) -> list[str]:
+        """The arm ids a path the caller selected yields; [] if none."""
         path = path.strip("/")
         if path in self._index():
             return [path]
@@ -210,6 +221,7 @@ class HarnessAdapter:
         return (_json(ds[-1] / "metrics.json") or {}) if ds else {}
 
     def describe(self, arm: str) -> dict:
+        """Return arm metadata: id, label, dataset, task, etc."""
         base, _, rest = arm.rpartition("/")
         runs_dir, _, dataset = base.rpartition("/")
         m = self._metrics(arm)
@@ -235,6 +247,7 @@ class HarnessAdapter:
 
     # -- scores -------------------------------------------------------------------------
     def scores(self, arm: str, rescore: bool = False) -> dict[str, dict]:
+        """Return per-item scores for this arm: {metric: {source, values}}."""
         acc: dict[str, dict[str, list]] = {}
         for d in self._dirs(arm):
             for r in _rows(d / "predictions.jsonl"):
@@ -260,17 +273,21 @@ class HarnessAdapter:
         return tuple(k for k, _ in c.most_common() if k)
 
     def recorded_means(self, arm: str) -> dict[str, float]:
+        """Return run-level averages for arms with no per-item scores."""
         if any((d / "predictions.jsonl").is_file() for d in self._dirs(arm)):
             return {}
         return _numeric(self._metrics(arm).get("scores") or {})
 
     def input_hashes(self, arm: str) -> dict[str, str]:
+        """Return per-item input hashes where recorded."""
         return {}  # the dataset's per-item sha256 is the input, for every arm alike
 
     def notes(self, arm: str) -> list[str]:
+        """Return notes explaining why something could not be scored."""
         return []
 
     def lower_is_better(self, metric: str) -> bool:
+        """Return whether a decrease in this metric is an improvement."""
         return lower_is_better(metric)
 
     @_memo
@@ -282,6 +299,7 @@ class HarnessAdapter:
         return frozenset(kinds)
 
     def is_neutral(self, metric: str) -> bool:
+        """Return whether this metric is descriptive (neither better nor worse)."""
         return is_descriptive(metric) or metric in self._descriptive()
 
     @property
@@ -294,6 +312,7 @@ class HarnessAdapter:
     # -- references and outputs -----------------------------------------------------------
     @_memo
     def references(self) -> list[dict]:
+        """Return all reference sets: {id, tier, dataset, task, archived, format}."""
         out = []
         for tier in ("gold", "silver"):
             for d in sorted((self.data_dir / "references" / tier).glob("*")):
@@ -312,16 +331,20 @@ class HarnessAdapter:
         return out
 
     def reference_format(self, ref: str) -> str:
+        """This layout records no format for a reference: "", which never flags a mismatch."""
         return ""
 
     def reference_archived(self, ref: str) -> bool:
+        """Return whether a reference has been archived."""
         return False
 
     def output_format(self, arm: str) -> dict:
+        """Return the output format this arm was asked for and produced."""
         fmt = self._metrics(arm).get("format", "")
         return {"asked": fmt, "got": "", "how": "config" if fmt else ""}
 
     def item_view(self, arm: str, item: str) -> dict:
+        """Return one arm's output for one item."""
         for d in reversed(self._dirs(arm)):  # the latest repeat
             f = d / "outputs" / f"{item}.txt"
             if f.is_file():
@@ -333,6 +356,7 @@ class HarnessAdapter:
         return {"kind": "none", "note": "No stored output for this item (outputs/<item_id>.txt)."}
 
     def reference_view(self, ref: str, item: str) -> dict:
+        """Return one reference's text for one item."""
         r = next((x for x in self.references() if x["id"] == ref), None)
         f = r["dir"] / f"{item}.txt" if r else None
         if f and f.is_file():
@@ -342,6 +366,7 @@ class HarnessAdapter:
     # -- goals --------------------------------------------------------------------------
     @_memo
     def goals(self) -> list[dict]:
+        """Return all goals: what the evaluations are for."""
         import yaml  # noqa: PLC0415
 
         out = []
@@ -352,15 +377,18 @@ class HarnessAdapter:
         return out
 
     def goal_of(self, arm: str) -> str:
+        """Return the goal this arm names."""
         return self._metrics(arm).get("goal", "")
 
     def dataset_items(self, dataset: str) -> int | None:
+        """Return how many items a dataset has, or None if not recorded."""
         ds = _json(self.data_dir / "datasets" / f"{dataset}.json")
         return len(ds.get("items") or []) if isinstance(ds, dict) else None
 
     # -- item fields (ADR-0003) -----------------------------------------------------------
     @_memo
     def item_fields(self, dataset: str) -> dict:
+        """Return a dataset's declared fields and items' values."""
         import yaml  # noqa: PLC0415
 
         ds = _json(self.data_dir / "datasets" / f"{dataset}.json") or {}

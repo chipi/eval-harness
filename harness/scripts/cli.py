@@ -72,6 +72,7 @@ def _usage() -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Dispatch evh commands to their scripts."""
     sys.path.insert(0, str(HERE))
     argv = list(sys.argv[1:] if argv is None else argv)
     if not argv or argv[0] in ("-h", "--help", "help"):

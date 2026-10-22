@@ -38,6 +38,7 @@ data/materialized/
 
 
 def main() -> int:
+    """Initialize a new eval project."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("dir", nargs="?", default=".", help="the project directory (default: here)")
     ap.add_argument("--tutorial", action="store_true", help="add the GUIDE's kit under tutorial/")

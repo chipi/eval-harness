@@ -43,6 +43,7 @@ from stats import EXACT_UP_TO, sign_flip_p  # noqa: E402
 
 
 def per_item(runs_dir: Path, dataset_id: str, config_id: str, metric: str) -> dict[str, float]:
+    """Per-item means for one arm on this dataset; averaged over repeated runs."""
     acc: dict[str, list[float]] = defaultdict(list)
     for d in sorted(runs_dir.glob("*")):
         mj, pj = d / "metrics.json", d / "predictions.jsonl"
@@ -60,6 +61,7 @@ def per_item(runs_dir: Path, dataset_id: str, config_id: str, metric: str) -> di
 
 
 def main() -> int:
+    """Test a pre-registered pair with sign-flip permutation."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", required=True)
     ap.add_argument("--a", required=True, help="config_id of the arm under test")

@@ -83,6 +83,7 @@ DOTENV_LOADED = load_dotenv()
 
 
 def env_float(name: str, default: float | None = None) -> float | None:
+    """Parse an environment variable as a float, or return the default."""
     import os  # noqa: PLC0415
 
     raw = os.environ.get(name, "").strip()
@@ -95,6 +96,7 @@ def env_float(name: str, default: float | None = None) -> float | None:
 
 
 def env_int(name: str, default: int) -> int:
+    """Parse an environment variable as an integer, or return the default."""
     v = env_float(name, float(default))
     return int(v) if v is not None else default
 
@@ -151,10 +153,12 @@ class CostCapExceeded(RuntimeError):
 
 
 def now() -> str:
+    """Return the current UTC time in ISO 8601 format."""
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def sha256(path: Path) -> str:
+    """Return the SHA-256 digest of a file's contents."""
     h = hashlib.sha256()
     with path.open("rb") as fh:
         for chunk in iter(lambda: fh.read(1 << 20), b""):
@@ -163,6 +167,7 @@ def sha256(path: Path) -> str:
 
 
 def read_json(path: Path) -> Any:
+    """Parse and return the JSON object from a file."""
     return json.loads(path.read_text(encoding="utf-8"))
 
 
@@ -197,6 +202,7 @@ def write_text_atomic(path: Path, text: str) -> None:
 
 
 def write_json(path: Path, obj: Any) -> None:
+    """Write an object as formatted JSON to a file atomically."""
     write_text_atomic(path, json.dumps(obj, indent=2, sort_keys=True) + "\n")
 
 
@@ -278,6 +284,7 @@ def goal_policy() -> dict[str, Any]:
 
 
 def load_dataset(dataset_id: str) -> dict[str, Any]:
+    """Load a dataset by id from data/datasets, or raise SystemExit."""
     path = DATASETS / f"{dataset_id}.json"
     if not path.is_file():
         raise SystemExit(
@@ -366,12 +373,14 @@ def default_metric(dataset_id: str, match: str | None = None, runs_dir: Path | N
 
 
 def iter_runs() -> Iterable[Path]:
+    """Iterate over all run directories with metrics.json, in sorted order."""
     if not RUNS.is_dir():
         return []
     return sorted(p for p in RUNS.iterdir() if (p / "metrics.json").is_file())
 
 
 def die(msg: str) -> NoReturn:
+    """Exit with an error message."""
     raise SystemExit(f"ERROR: {msg}")
 
 

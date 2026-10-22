@@ -69,6 +69,7 @@ ROOT_MK = makefile(REPO / "Makefile")
 
 @cache
 def flags_of(script: Path) -> frozenset:
+    """Extract all --flags from a script's --help output."""
     r = subprocess.run([sys.executable, str(script), "--help"], capture_output=True, text=True, timeout=120)
     return frozenset(re.findall(r"(--[a-z][a-z0-9-]*)", r.stdout + r.stderr)) | {"--help"}
 
@@ -95,6 +96,7 @@ def commands_in(text: str) -> list:
 
 
 def check_line(cmd: str) -> list:
+    """Check that all evh and make commands in a line are real and take valid flags."""
     problems = []
     for part in re.split(r"&&|\|\||;|\|", cmd):
         part = re.sub(r"^\s*(\$\s+)?([A-Z_]+=\S*\s+)*", "", part.split("#", 1)[0]).strip()
@@ -172,6 +174,7 @@ def self_check() -> list:
 
 
 def main() -> int:
+    """Check all command references in the docs still exist with valid flags."""
     bad, seen = self_check(), 0
     for doc in DOCS:
         if doc in SKIP or not doc.is_file():

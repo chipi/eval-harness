@@ -63,6 +63,7 @@ def _rows(path: Path) -> list:
 
 
 def main() -> int:
+    """Import external scores as a harness run."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", required=True)
     ap.add_argument("--config-id", required=True, help="the arm's name, as tests will refer to it")

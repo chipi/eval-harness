@@ -25,6 +25,7 @@ root = pathlib.Path(__file__).resolve().parents[2]
 
 
 def slugs(text):
+    """All markdown heading slugs in the text (GitHub's rules: lowercase, spaces->hyphens)."""
     out = set()
     for line in text.split("\n"):
         m = re.match(r"^#{1,6}\s+(.*)", line)

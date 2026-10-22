@@ -212,6 +212,7 @@ def _write(
 
 
 def main() -> int:
+    """Freeze a dataset from source items."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", required=True, help="lowercase_with_underscores")
     ap.add_argument("--source-dir", type=Path, default=SOURCES)
