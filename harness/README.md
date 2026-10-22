@@ -25,7 +25,7 @@ It imports nothing from your project and your project imports nothing from it.
 Use it from this checkout through `make`, or pin it into your own project:
 
 ```bash
-pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.2.0#subdirectory=harness"
+pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.4.0#subdirectory=harness"
 evh --help                       # every make target, as a command
 evh dataset-create --dataset-id my_v1
 evh experiment-run --config data/configs/arm_a.yaml
