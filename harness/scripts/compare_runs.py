@@ -23,6 +23,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _common import how  # noqa: E402
 from _common import RUNS, die, is_descriptive, read_json, verdict_for, ROOT  # noqa: E402
 
 
@@ -180,7 +181,8 @@ def main() -> int:
     if args.noise is None:
         print(
             "\n  --noise was not given, so nothing was judged against the arm's own\n"
-            "  spread. Measure it first:  make experiment-run CONFIG=... REPEAT=3"
+            "  spread. Measure it first:  "
+            + how("evh experiment-run --config … --repeat 3", "make experiment-run CONFIG=... REPEAT=3")
         )
     print(f"\n  {worth} metric(s) moved beyond the stated noise floor")
     return 0

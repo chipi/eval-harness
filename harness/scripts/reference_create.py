@@ -33,6 +33,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _common import how  # noqa: E402
 from _common import (  # noqa: E402
     MATERIALIZED,
     REFERENCES,
@@ -110,7 +111,8 @@ def main() -> int:
         warmup(params)
     mat = MATERIALIZED / args.dataset_id
     if not mat.is_dir():
-        die(f"materialize first:  make dataset-materialize DATASET_ID={args.dataset_id}")
+        die("materialize first:  " + how(f"evh dataset-materialize --dataset-id {args.dataset_id}",
+                                         f"make dataset-materialize DATASET_ID={args.dataset_id}"))
 
     out_dir = REFERENCES / args.tier / args.dataset_id
     if out_dir.exists() and not args.force:

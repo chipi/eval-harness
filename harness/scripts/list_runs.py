@@ -12,6 +12,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _common import how  # noqa: E402
 from _common import BASELINES, RUNS, read_json  # noqa: E402
 
 
@@ -23,7 +24,8 @@ def main() -> int:
     if args.baselines:
         files = sorted(BASELINES.glob("*.json"))
         if not files:
-            print("no baselines yet — promote a run:  make promote RUN=<id> REASON=\"...\"")
+            print("no baselines yet — promote a run:  "
+                  + how('evh run-promote --run <id> --reason "..."', 'make run-promote RUN=<id> REASON="..."'))
             return 0
         for f in files:
             b = read_json(f)
@@ -36,7 +38,8 @@ def main() -> int:
 
     dirs = sorted(p for p in RUNS.iterdir() if (p / "metrics.json").is_file()) if RUNS.is_dir() else []
     if not dirs:
-        print("no runs yet — try:  make demo")
+        print("no runs yet — " + how("start with `evh experiment-run --config <arm>.yaml` (docs/GUIDE.md)",
+                                     "try:  make demo"))
         return 0
     print(f"{'run_id':44} {'dataset_id':18} {'build':14} scores")
     for d in dirs:

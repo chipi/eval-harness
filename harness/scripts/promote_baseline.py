@@ -22,6 +22,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _common import how  # noqa: E402
 from _common import BASELINES, RUNS, die, now, read_json, write_json  # noqa: E402
 
 
@@ -61,7 +62,8 @@ def main() -> int:
         die(
             "REFUSED — this run does not identify its build.\n"
             "  A baseline whose build is unknown cannot be attributed to any code.\n"
-            "  Declare it and re-run:  EVAL_BUILD_REF=<version|digest|sha> make experiment-run ...\n"
+            "  Declare it and re-run:  EVAL_BUILD_REF=<version|digest|sha> "
+            + how("evh experiment-run ...", "make experiment-run ...") + "\n"
             "  (--allow-unknown-build overrides, but then the baseline names no system.)"
         )
     if build.get("dirty") and not args.allow_dirty:

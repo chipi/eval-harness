@@ -66,6 +66,13 @@ package.
   project on the default adapter (0.2.0 and 0.3.0 alike). They now score with the package's
   own copy, the one that made the run, through one shared lookup. Found by following the GUIDE
   in a brand-new project.
+- **The "next, run this" hints name a command you have.** Every one said `make …`, a target
+  only a checkout of this repository has; through `evh` they now say `evh …` (the first was
+  GUIDE step 1's "Next: make dataset-materialize"). Two were wrong in a checkout too: an empty
+  baselines list suggested `make promote` (the target is `run-promote`), and an empty runs list
+  suggested `make demo`, which a project without the bundled sample data cannot run.
+- **`evh catalog-serve` on a port another program holds** says so and suggests `--port`,
+  instead of a Python traceback.
 - **`rescore` onto another reference no longer claims the references changed.** Moving runs
   from silver to gold (`--reference-id`) compared the gold files' hash with the silver files'
   and, as they always differ, wrote `references_changed_since_measurement: true` into every

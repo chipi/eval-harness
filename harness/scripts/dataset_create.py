@@ -22,6 +22,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _common import how  # noqa: E402
 from _common import DATASETS, ROOT, SOURCES, die, now, read_json, sha256, write_json  # noqa: E402
 
 
@@ -139,7 +140,8 @@ def main() -> int:
         },
     )
     print(f"{out.relative_to(DATASETS.parents[1])}  ({len(items)} item(s))")
-    print("Next: make dataset-materialize DATASET_ID=" + args.dataset_id)
+    print("Next: " + how(f"evh dataset-materialize --dataset-id {args.dataset_id}",
+                         f"make dataset-materialize DATASET_ID={args.dataset_id}"))
     return 0
 
 

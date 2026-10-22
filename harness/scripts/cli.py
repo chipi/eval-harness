@@ -13,6 +13,7 @@ Where the data lives is the PROJECT's business, not the package's:
 
 from __future__ import annotations
 
+import os
 import runpy
 import sys
 from pathlib import Path
@@ -75,6 +76,8 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     script = HERE / COMMANDS[name][0]
     sys.argv = [str(script), *rest]
+    # The scripts' "next, run this" hints read it: `evh …` here, `make …` in a checkout.
+    os.environ["EVH_CLI"] = "1"
     try:
         runpy.run_path(str(script), run_name="__main__")
     except SystemExit as exc:

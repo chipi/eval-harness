@@ -55,6 +55,7 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _common import how  # noqa: E402
 from _common import (  # noqa: E402
     CODE, DATA, MATERIALIZED, ROOT, RUNS, CostCapExceeded, die, env_float, now, read_json,
     write_json, write_text_atomic,
@@ -854,7 +855,7 @@ def main() -> int:
         f = mat / (it.get("source_path") or f"{it['item_id']}.txt")
         if not f.is_file():
             die(f"{f} is missing: materialize the dataset first "
-                f"(make dataset-materialize DATASET_ID={args.dataset_id})")
+                f"({how(f'evh dataset-materialize --dataset-id {args.dataset_id}', f'make dataset-materialize DATASET_ID={args.dataset_id}')})")
         articles[it["item_id"]] = f.read_text(encoding="utf-8", errors="replace")
     arms = discover_arms(args.dataset_id, args.match or sc.get("arms_match", ""))
     if args.arms:
@@ -913,7 +914,8 @@ def main() -> int:
     print(f"\n{len(written)} scored run(s) -> {out_root}  ({len(proj)}/{len(item_ids)} items, {label})")
     print(f"  calls {stats['calls']}, billed this run ${stats['billed_this_run']:.4f}, "
           f"stored total ${stats['spent_usd']:.4f}")
-    print(f"  EVAL_RUNS_DIR={out_root} make leaderboard DATASET_ID={args.dataset_id}")
+    print(f"  EVAL_RUNS_DIR={out_root} " + how(f"evh leaderboard --dataset-id {args.dataset_id}",
+                                              f"make leaderboard DATASET_ID={args.dataset_id}"))
     if stats["aborted"]:
         return 2
     return 0

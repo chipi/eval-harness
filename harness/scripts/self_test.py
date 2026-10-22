@@ -2316,6 +2316,58 @@ def test_a_project_elsewhere_imports_runs_and_tests_them() -> None:
     shutil.rmtree(proj, ignore_errors=True)
 
 
+def test_hints_name_the_command_the_user_has() -> None:
+    """Every "next, run this" a tool prints said `make …`, a target only a checkout of this
+    repository has. A project that pins the package has `evh`, so its first step, GUIDE step
+    1, ended "Next: make dataset-materialize DATASET_ID=tickets_v1", and four of the hints
+    named targets no project has (`make promote`, `make demo`). Through `evh` each hint is an
+    `evh` command; run as a checkout's script it stays `make`."""
+    import os  # noqa: PLC0415
+    import shutil  # noqa: PLC0415
+    import tempfile  # noqa: PLC0415
+
+    tmp = Path(tempfile.mkdtemp(prefix="harness-hints-"))
+    try:
+        site = tmp / "site-packages"
+        shutil.copytree(HERE, site / "evaluation_harness",
+                        ignore=shutil.ignore_patterns("__pycache__", "test_*.py", "self_test.py"))
+        shutil.copytree(ROOT / "schemas", site / "evaluation_harness" / "schemas")
+        proj = tmp / "project"
+        (proj / "data" / "sources" / "h_v1").mkdir(parents=True)
+        (proj / "data" / "sources" / "h_v1" / "a.txt").write_text("One. Two.\n")
+        env = {**os.environ, "EVAL_HOME": str(proj), "EVAL_DATA_DIR": "data", "EVAL_RUNS_DIR": "",
+               "PYTHONPATH": str(site), "PYTHONDONTWRITEBYTECODE": "1"}
+        env.pop("EVH_CLI", None)
+
+        def evh(*args: str) -> str:
+            r = subprocess.run([PY, "-m", "evaluation_harness", *args], cwd=proj,
+                               capture_output=True, text=True, env=env)
+            return r.stdout + r.stderr
+
+        def script(name: str, *args: str) -> str:
+            r = subprocess.run([PY, str(site / "evaluation_harness" / name), *args], cwd=proj,
+                               capture_output=True, text=True, env=env)
+            return r.stdout + r.stderr
+
+        created = evh("dataset-create", "--dataset-id", "h_v1", "--source-dir", "data/sources/h_v1")
+        base = evh("runs-list", "--baselines")
+        none = evh("runs-list")
+        missing = evh("leaderboard", "--dataset-id", "nope_v1")
+        direct = script("dataset_create.py", "--dataset-id", "h_v1", "--source-dir", "data/sources/h_v1",
+                        "--force")
+        outs = (created, base, none, missing)
+        check("hints: through evh, the next step is an evh command",
+              "Next: evh dataset-materialize --dataset-id h_v1" in created, created[-300:])
+        check("hints: through evh, no hint says make",
+              not any("make " in o for o in outs), "\n---\n".join(o[-200:] for o in outs))
+        check("hints: promoting a baseline is `evh run-promote`",
+              "evh run-promote --run" in base, base[-200:])
+        check("hints: a checkout's script keeps the make form",
+              "Next: make dataset-materialize DATASET_ID=h_v1" in direct, direct[-300:])
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
 def test_rescore_finds_the_bundled_adapter_from_an_installed_package() -> None:
     """A project that pins the package and runs an arm with no `adapter:` uses the bundled
     one, recorded as `scripts/adapter.py`. `rescore` looked for that path in the project
@@ -2608,6 +2660,7 @@ def main() -> int:
         test_the_reproduction_tables_agree_with_the_configs_and_runs,
         test_the_gateway_routes_as_documented,
         test_a_project_elsewhere_imports_runs_and_tests_them,
+        test_hints_name_the_command_the_user_has,
         test_rescore_finds_the_bundled_adapter_from_an_installed_package,
         test_judge_score_runs_from_an_installed_package,
     ):

@@ -38,6 +38,7 @@ from typing import Any, Dict, List, Optional
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _fingerprint import build_fingerprint  # noqa: E402
 from _retry import call_with_retries  # noqa: E402
+from _common import how  # noqa: E402
 from _common import (  # noqa: E402
     GOALS,
     MATERIALIZED,
@@ -351,7 +352,8 @@ def one_pass(
     if not mat.is_dir():
         die(
             f"{ds['dataset_id']} is not materialized.\n"
-            f"  make dataset-materialize DATASET_ID={ds['dataset_id']}"
+            f"  " + how(f"evh dataset-materialize --dataset-id {ds['dataset_id']}",
+                     f"make dataset-materialize DATASET_ID={ds['dataset_id']}")
         )
     params = dict(cfg.get("params") or {})
     params.setdefault("seed", idx)
@@ -621,7 +623,8 @@ def main() -> int:
         print(f"  scoring against {ref_tier.upper()} references for {cfg['dataset_id']}")
     else:
         print(f"  no references for {cfg['dataset_id']} — quality cannot be scored.")
-        print(f"  make reference-create DATASET_ID={cfg['dataset_id']} CONFIG=<a model you trust>")
+        print("  " + how(f"evh reference-create --dataset-id {cfg['dataset_id']} --config <a model you trust>",
+                         f"make reference-create DATASET_ID={cfg['dataset_id']} CONFIG=<a model you trust>"))
     if build["ref"] == "unknown":
         print("  WARNING: could not identify the build — this run is not attributable")
 
@@ -864,7 +867,8 @@ def main() -> int:
                 f"\n  COST CAP HIT at item {result['capped_at']} — "
                 f"spent ${result['spent_usd']:.4f} of EVAL_MAX_COST_USD.\n"
                 f"  Partial results kept. Raise the cap and resume without paying twice:\n"
-                f"    make experiment-run CONFIG={args.config} ARGS=\"--resume {run_id}\""
+                f"    " + how(f"evh experiment-run --config {args.config} --resume {run_id}",
+                       f"make experiment-run CONFIG={args.config} ARGS=\"--resume {run_id}\"")
             )
             break
 

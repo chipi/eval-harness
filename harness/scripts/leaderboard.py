@@ -29,6 +29,7 @@ from pathlib import Path
 from typing import Dict, List
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _common import how  # noqa: E402
 from _common import (  # noqa: E402
     ROOT,
     warn_on_ambiguous_runs,
@@ -186,7 +187,7 @@ def _significance(matrix: Dict[str, Dict[str, float]], metric: str, seed: int = 
     if decimals and decimals < _MIN_TIE_DECIMALS and not _small_fractions(_RAW_SEEN):
         print(f"\n  NOTE: these runs store scores to ~{decimals} decimals, so arms that\n"
               f"        genuinely tie on an item can differ by rounding alone and be\n"
-              f"        ordered anyway — which inflates the p-value. `make rescore` "
+              f"        ordered anyway — which inflates the p-value. `{how('evh rescore', 'make rescore')}` "
               f"regenerates\n        them at full precision.")
 
     # Friedman, as a permutation test: shuffle which arm got which rank WITHIN each item
@@ -413,7 +414,7 @@ def main() -> int:
         die(
             f"no runs on dataset {args.dataset_id!r}"
             + (f" matching {args.match!r}" if args.match else "")
-            + ".\n  make runs-list   to see what exists"
+            + ".\n  " + how("evh runs-list", "make runs-list") + "   to see what exists"
         )
 
     all_keys = sorted({k for runs in by_config.values() for r in runs for k in r["scores"]})
@@ -542,7 +543,7 @@ def main() -> int:
         print(
             f"\n  RANKED ON A DESCRIPTIVE METRIC ({sort_key}) — it measures what the output\n"
             "  WAS, not whether it was good, so this ordering rewards verbosity. Author\n"
-            "  references (make reference-create) so runs carry a quality score, or pass\n"
+            f"  references ({how('evh reference-create', 'make reference-create')}) so runs carry a quality score, or pass\n"
             "  --sort <metric> explicitly."
         )
 

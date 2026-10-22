@@ -32,6 +32,7 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _common import how  # noqa: E402
 from _common import DATA, DATASETS, MATERIALIZED, REFERENCES, RUNS, ROOT, die, now, read_json, write_json  # noqa: E402
 from _fingerprint import _references_digest  # noqa: E402
 from experiment_run import load_recorded_adapter, _score_wants_source  # noqa: E402
@@ -276,7 +277,8 @@ def main() -> int:
                     f"  The corpora are gitignored, not committed: rebuild them with the "
                     f"example's fetcher, e.g.\n"
                     f"    python examples/<example>/fetch.py\n"
-                    f"    make dataset-create DATASET_ID={m.get('dataset_id')}")
+                    f"    " + how(f"evh dataset-create --dataset-id {m.get('dataset_id')} --source-dir …",
+                               f"make dataset-create DATASET_ID={m.get('dataset_id')}"))
             if refs_found < len(rows):
                 print(f"    WARNING: only {refs_found} of {len(rows)} items have a "
                       f"reference under {ref_dir}; the rest scored against None",
@@ -373,7 +375,8 @@ def main() -> int:
         print(f"  {d.name}  -> {len(rows)} item(s){note}")
 
     print(f"\n{written} run(s) rescored into {args.out}")
-    print(f"  EVAL_RUNS_DIR={args.out} make leaderboard DATASET_ID={args.dataset_id}")
+    print(f"  EVAL_RUNS_DIR={args.out} " + how(f"evh leaderboard --dataset-id {args.dataset_id}",
+                                              f"make leaderboard DATASET_ID={args.dataset_id}"))
     return 0
 
 

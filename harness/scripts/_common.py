@@ -41,6 +41,15 @@ def _project_root() -> Path:
 ROOT = _project_root()
 
 
+def how(evh: str, make: str) -> str:
+    """The command a hint should name: `evh …` when the harness runs as the installed tool,
+    the Makefile target in a checkout. A pinned project has no Makefile, so a `make …` hint
+    sends its user to a command that does not exist."""
+    import os
+
+    return evh if os.environ.get("EVH_CLI") else make
+
+
 def load_dotenv(path: Optional[Path] = None) -> int:
     """Read `.env` into the environment. No dependency, no surprises.
 
@@ -268,7 +277,9 @@ def load_dataset(dataset_id: str) -> Dict[str, Any]:
         raise SystemExit(
             f"no such dataset: {dataset_id}\n"
             f"  expected {path}\n"
-            f"  create one with: make dataset-create DATASET_ID={dataset_id}"
+            f"  create one with: "
+            + how(f"evh dataset-create --dataset-id {dataset_id} --source-dir …",
+                  f"make dataset-create DATASET_ID={dataset_id}")
         )
     return read_json(path)
 
