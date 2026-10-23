@@ -57,6 +57,7 @@ import re
 import shutil
 import sys
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
@@ -71,21 +72,33 @@ CONFIG = "1.0.0"
 
 #: The API caps a single request; ask in pages rather than assuming one call is enough.
 PAGE = 100
+#: A random draw reads the whole split (~115 pages), and the datasets-server limits request RATE:
+#: back to back, it answers 429 partway through. So pages are paced, and a 429 waits long enough
+#: for the limiter (the same schedule as ner-few-nerd/fetch.py); other failures retry quickly.
+_PACE_S = 0.35
+_RATE_LIMIT_BACKOFF = (5, 15, 30, 60, 60, 60)
 
 
 def _page(split: str, offset: int, length: int) -> list[dict]:
-    """One page of rows. Retried: the datasets-server returns transient 502s."""
+    """One page of rows, paced. Retried: transient 502s quickly, a 429 on a slower schedule."""
     query = urllib.parse.urlencode(
         {"dataset": DATASET, "config": CONFIG, "split": split, "offset": offset, "length": length}
     )
     last: Exception | None = None
-    for attempt in range(6):
+    for attempt in range(len(_RATE_LIMIT_BACKOFF) + 1):
         try:
             with urllib.request.urlopen(f"{ROWS_API}?{query}", timeout=60) as resp:  # noqa: S310 — a constant https URL  # nosec B310
-                return [r["row"] for r in (json.loads(resp.read()).get("rows") or [])]
+                rows = [r["row"] for r in (json.loads(resp.read()).get("rows") or [])]
+            time.sleep(_PACE_S)
+            return rows
         except Exception as exc:  # noqa: BLE001 - retried, then one message
             last = exc
-            time.sleep(2 * (attempt + 1))
+            if attempt == len(_RATE_LIMIT_BACKOFF):
+                break
+            limited = isinstance(exc, urllib.error.HTTPError) and exc.code == 429
+            wait = _RATE_LIMIT_BACKOFF[attempt] if limited else 2 * (attempt + 1)
+            print(f"      {exc} at offset {offset}; retry {attempt + 1} in {wait}s", flush=True)
+            time.sleep(wait)
     sys.exit(
         f"could not reach the datasets-server: {type(last).__name__}: {last}\n"
         "  it is an HTTPS API; check connectivity, then retry."

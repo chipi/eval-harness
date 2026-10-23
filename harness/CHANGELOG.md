@@ -263,9 +263,8 @@ package.
   sentence-transformers 6.2.0, pillow 13.0.0, aiohttp 3.14.5, nltk 3.10.4, certifi 2026.10.19,
   clearing 58 published advisories in their locks; few-nerd stays on transformers 4.55.4,
   because span-marker has no transformers 5 release. `make audit-locks` audits every lock per
-  platform. Every local arm of six experiments was re-run against the committed record (the
-  DailyMail slice's has not been yet: its data source rate-limited this machine): every published
-  finding holds, and all but three arms reproduce item for item (why, per arm, in the record).
+  platform. Every local arm was re-run against the committed record: every published finding
+  holds, and all but four arms reproduce item for item (why, per arm, in the record).
   Not part of the package.
 
 ## 0.3.0 — 2026-10-21

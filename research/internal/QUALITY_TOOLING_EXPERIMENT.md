@@ -107,9 +107,14 @@ lock is clean on Linux and Apple-silicon macOS except few-nerd's transformers, a
 | few-nerd | 4 | exact, 280/280 (on transformers 4.55.4) |
 | summarization | 5 | 4 exact; bart_s 199/200, see below |
 | summeval | 9 | 7 exact; unieval 65/100 and unievalpub 63/100 items identical, means within 0.0002, paired p 0.42 and 0.49 |
-| summarization-dailymail | 5 | not re-run: the datasets-server answered HTTP 429 to every request from this machine for hours; scheduled to retry |
+| summarization-dailymail | 5 | 4 exact; bart_s 187/200, mean +0.0009, paired p 0.52 (its committed run records `precision_not_applied`: it ran fp16) |
 
-Every committed separation and tie holds in every experiment that ran.
+Every committed separation and tie holds in all seven.
+
+The DailyMail slice waited a night: its random draw reads the whole split (~115 pages), and
+the datasets-server answered HTTP 429 to every request from this machine for hours. Its fetcher
+retried for ~40 s and gave up; it now paces its pages and backs off on a 429 (5 s to 60 s, as
+ner-few-nerd's fetcher does), and the data came through, every item's hash verified.
 
 What transformers 5 broke, and what was done:
 
@@ -135,6 +140,5 @@ What transformers 5 broke, and what was done:
 
 ## Still open
 
-- **The DailyMail slice** has not been re-run (see the table).
 - Three separate `spearman` implementations exist (`judging`, `rank_stability`,
   `summeval_analysis`). Not changed here.
