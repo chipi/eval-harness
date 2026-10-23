@@ -417,8 +417,8 @@ evh run-promote --run <the tickets_lead2_v1 run_id> \
 evh runs-list --baselines
 ```
 
-Refused if the run came from a dirty tree, if its build is unknown, or if the reason is a
-single word: six months from now, "why is this the baseline?" must have an answer. The
+Refused if the run came from a dirty tree, if its build is unknown, or if the reason is
+under three words: six months from now, "why is this the baseline?" must have an answer. The
 next promotion replaces this baseline, and git keeps it.
 
 ## 10 · Optional: re-measure with an LLM judge

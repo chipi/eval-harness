@@ -74,7 +74,8 @@ It was built to answer four questions anyone building with AI ends up asking:
 Most eval code answers "which scored highest". That is the easy half. The hard half is
 whether the answer survives being asked again, and this harness is built around that. It
 is deliberately small: it imports nothing domain-specific, and everything about your
-system lives in one file, `adapter.py`, with four functions.
+system lives in one file, `adapter.py`, with two functions, `call_system` and `score`
+(plus optional `warmup` and `fingerprint` hooks).
 
 - **A frozen dataset.** Items are hashed; a run records `items_sha256`. Change the data
   and you get a different id, not a silently different number.
@@ -262,7 +263,8 @@ the statistics it also stands on: [docs/INFLUENCES.md](docs/INFLUENCES.md).
 ## Layout
 
 ```
-harness/     the harness. Liftable into another project as-is (harness/README.md).
+harness/     the harness, installed into a project as the `evaluation-harness` package
+             (pip install, then evh init; harness/README.md)
 examples/    the six experiments, each with its own uv environment
 research/    the experiment reports and the synthesis; research/internal/ is the lab
              notebook: handovers, review rounds and an append-only journal

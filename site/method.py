@@ -111,8 +111,9 @@ NODES = [
         "Baseline",
         "a decision + reason",
         (
-            "The run future changes are measured against, recorded with why. Superseded, never "
-            "edited — in six months, “why is this the baseline?” has an answer."
+            "The run future changes are measured against, recorded with why. Never edited: the "
+            "next promotion replaces it and git keeps the old one — in six months, “why is this "
+            "the baseline?” has an answer."
         ),
         "data/baselines/",
         'evh run-promote --run … --reason "…"',
@@ -385,8 +386,9 @@ def chapters(H, f: dict) -> list:
                     SYN,
                 )
                 + " The scoring code is a model-sized lever.</p>"
-                "<p>Every correction is kept: the lab notebook records the findings that were "
-                "retracted along the way, several caused by this harness's own scorer.</p>"
+                "<p>The lab notebook records the findings that were retracted along the way, "
+                "several caused by this harness's own scorer; the reports state today's figures, "
+                "and git keeps every earlier version.</p>"
             ),
             "habit": "Hash and test the scorer, re-score stored outputs when it changes, and "
             "promote a baseline only with a reason that says what the tests showed.",
@@ -568,6 +570,13 @@ def patterns(H, f: dict) -> list:
 
 STEPS = [
     (
+        "Set up",
+        "A new folder, the harness pinned to a release, and the tutorial kit copied in.",
+        'pip install "evaluation-harness @ git+{repo}@v{version}#subdirectory=harness"\nevh init --tutorial',
+        "wrote    24 file(s), the tutorial kit under tutorial/",
+        "0-set-up",
+    ),
+    (
         "Freeze a dataset",
         "Your inputs become a contract: an item list with a hash per item.",
         "evh dataset-create --dataset-id tickets_v1 --source-dir tutorial/tickets",
@@ -643,7 +652,11 @@ def use_page(H, f: dict) -> str:
     )
     steps = "".join(
         f'<li class="reveal"><div><h3>{H.e(t)}</h3><p>{H.e(d)} <a href="docs/GUIDE/#{a}">Guide →</a></p>'
-        f'<pre class="term"><span class="p">$ </span>{H.e(cmd)}'
+        '<pre class="term">'
+        + "\n".join(
+            f'<span class="p">$ </span>{H.e(c)}'
+            for c in cmd.format(repo=H.REPO, version=H.VERSION).split("\n")
+        )
         + (f'\n<span class="c">{H.e(H.q(out, GUIDE))}</span>' if out else "")
         + "</pre></div></li>"
         for t, d, cmd, out, a in STEPS
@@ -675,7 +688,7 @@ def use_page(H, f: dict) -> str:
 
 <section class="block" id="steps"><div class="wrap">
   <div class="eyebrow"><span class="num">03</span>Step by step</div>
-  <h2>Seven steps and an optional eighth, on a real example.</h2>
+  <h2>Eight steps and an optional ninth, on a real example.</h2>
   <p class="lede">The tutorial kit ships six support tickets and summaries a person wrote. Every output below is what the command printed.</p>
   <ol class="findings steps">{steps}</ol>
 </div></section>
@@ -817,5 +830,5 @@ def experiment_lesson(H, x: dict) -> tuple:
     return (
         "noise",
         "Measure the noise before the difference.",
-        H.q("The dev slice picked the wrong winner — its leader finished 10th of 19.", RET),
+        H.q("The dev slice's leader finished 10th of 19, a rank inside a tie.", RET),
     )

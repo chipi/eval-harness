@@ -31,8 +31,8 @@ infra/
 - **evals-nginx:** the template's nginx unchanged. It is unprivileged, read-only, has every
   capability dropped, and is limited to 64 MB, half a CPU and 64 processes. It serves two hosts.
   Unknown hosts are closed (444). `/docs/...` redirects 301 to the same page on the docs host.
-- **evals-inspector:** the stock Python image (pinned by digest) running the release's own
-  `harness/scripts/catalog_serve.py --public catalog.evals.humancopilot.eu`.
+- **evals-inspector:** the stock Python image (pinned by digest) running the release's copy of the package, installed from its wheel on the CI runner by
+  `render.sh`: `inspector/pkg/evaluation_harness/catalog_serve.py --public catalog.evals.humancopilot.eu`.
   - **Nothing is built or installed on the box.** The server is standard library only and
     reads the release's copy of the runs from the read-only mount.
   - **Hardening:** it runs as nobody, read-only, every capability dropped, limited to 256 MB,

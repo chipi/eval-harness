@@ -206,7 +206,7 @@ interface is wrong, and that gets fixed before 0.4.0.
 ## Owner's decisions (2026-10-21)
 
 1. **Exact p in the CLI: yes.** `pair-test` and `family-test` are exact at n ≤ 30 in 0.4.0.
-   Re-deriving the reports moved nothing: all 201 report claims hold, because every published
+   Re-deriving the reports moved nothing: all 200 report claims hold, because every published
    pair and family test is on more than 30 items. The tutorial's 6-item p-values changed and
    its verdicts did not (CHANGELOG 0.4.0).
 2. **Goal cut-over: a date the project sets.** Nothing is required of an upgrading project

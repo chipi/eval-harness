@@ -1,7 +1,8 @@
 # Eval harness — the verbs. `make help` is the entry point.
 #
-# Drop this directory into a project, point `data/sources/` at your inputs, edit
-# ONE function in scripts/adapter.py, and the loop below works.
+# Point `data/sources/` at your inputs, write adapter.py beside this Makefile (start from
+# a copy of scripts/adapter.py; call_system() is the one function to change), and the
+# loop below works.
 
 # Prefer the venv `make install` creates, so `make install` is not immediately followed by
 # having to pass PYTHON=.venv/bin/python to every other target. Overridable as before.
@@ -36,7 +37,7 @@ help:
 	@echo "  2. cp .env.example .env       and fill in the keys you need"
 	@echo "  3. make dataset-create  DATASET_ID=my_v1"
 	@echo "  4. make dataset-materialize DATASET_ID=my_v1"
-	@echo "  5. edit scripts/adapter.py    call_system() -> YOUR system"
+	@echo "  5. write adapter.py           call_system() -> YOUR system (copy scripts/adapter.py)"
 	@echo "  6. make reference-create DATASET_ID=my_v1 CONFIG=<trusted model>"
 	@echo ""
 	@echo "MEASURE  (dry-run first — it costs nothing and tells you what the sweep will)"

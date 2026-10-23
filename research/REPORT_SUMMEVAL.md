@@ -75,7 +75,7 @@ apart on two providers, one run each (§3.3).
   `qwen37max` and `qwen_s` sit on a Holm boundary (§3.2).
 - **Large is separated above small in six of the eight families; the medium steps were not
   tested.** DeepSeek and Qwen are not separated, and Qwen's large is a substituted model
-  (§3.4). Tier is a price label, not a size: OpenAI's medium now costs more than its large.
+  (§3.4). Tier is a price label, not a size: at this run's prices OpenAI's medium costs more than its large.
 - **The order is stable; the winner is not.** Rankings agree across disjoint halves far
   more than on the summarisation experiment: ρ 0.90 at 20 articles per half, against 0.333
   for the same 24 models there, by the same method — though the judges are also far more
@@ -164,7 +164,7 @@ passes on the machine that measured each — UniEval asks one question per summa
 coherence and relevance and one per sentence for consistency and fluency.
 
 **Is the ordering real?** Yes: the global permutation test on within-article ranks gives
-p = 0.0002, and 334 of 528 pairs are distinguishable (`make leaderboard`).
+p = 0.0002, and 334 of 528 pairs are distinguishable (`make leaderboard DATASET_ID=summeval_100`).
 
 **A reference row that is not an arm.** Each of the 16 positions is the same system on every
 article (§7), so a prior that scores each summary by the mean expert score its position got
@@ -176,8 +176,8 @@ summary; this report does not split the two.
 ### 3.2 The leader and five arms it cannot be separated from
 
 The leader tested against every other arm on the same articles — paired sign-flip
-permutation, Holm step-down over the 32 opponents (`make family-test A=se_openai_l_n100_v1
-METRIC=tau`):
+permutation, Holm step-down over the 32 opponents (`make family-test DATASET_ID=summeval_100
+A=se_openai_l_n100_v1 AGAINST=se_ METRIC=tau`):
 
 | tied with the leader | Δτ vs leader | articles the leader wins | p | Holm threshold |
 |---|---|---|---|---|
@@ -189,7 +189,7 @@ METRIC=tau`):
 
 `openai_l` is separated from the other 27. "Tie" here means the leader cannot be separated
 from an arm, not that the six cannot be separated from each other: tested from `gemma_l`
-instead (`make family-test A=se_gemma_l_n100_v1 METRIC=tau`), the arms it cannot be
+instead (`make family-test DATASET_ID=summeval_100 A=se_gemma_l_n100_v1 AGAINST=se_ METRIC=tau`), the arms it cannot be
 separated from are `openai_l`, `anthropic_l`, `openai_m`, `qwen37max`, `qwen_s` and also
 `glm_m` (p 0.0107 against 0.0083). Two members sit on the boundary: `qwen37max`
 (p 0.0108 against a threshold of 0.0100) and `qwen_s` (0.0112 against 0.0125) — a few
@@ -224,8 +224,8 @@ G-Eval's table, and it runs here twice: on the text every other arm saw (`unieva
 UniEval's own published SummEval inputs (`unievalpub`), the protocol its published figures
 come from (§5).
 
-Each was tested against the other 32 arms (`make family-test A=se_unieval_n100_v1
-METRIC=tau`, and the same for `unievalpub`):
+Each was tested against the other 32 arms (`make family-test DATASET_ID=summeval_100
+A=se_unieval_n100_v1 AGAINST=se_ METRIC=tau`, and the same for `unievalpub`):
 
 | arm | τ | Δτ vs `llama_s`, the weakest judge | articles UniEval wins | p | separated from |
 |---|---|---|---|---|---|
@@ -235,7 +235,7 @@ METRIC=tau`, and the same for `unievalpub`):
 So 23 of the 24 judges are separated from, and ahead of, the best free scorer, and the
 weakest judge cannot be told apart from it under either set of inputs. Every judge,
 `llama_s` included, is separated from BARTScore, the best free scorer not trained to judge
-(`make family-test A=se_bartscore_n100_v1 METRIC=tau`: separated from all 32). `llama_s`
+(`make family-test DATASET_ID=summeval_100 A=se_bartscore_n100_v1 AGAINST=se_ METRIC=tau`: separated from all 32). `llama_s`
 leads BARTScore by 0.0971, and BARTScore wins only 33 of 100 articles against it. Both
 UniEval arms are separated above BARTScore (by 0.0914 and 0.1155) and every reference metric.
 
@@ -330,7 +330,7 @@ from the committed runs):
 | 20 | 0.902 | 0.837 | 21% |
 | 50 | 0.960 | 0.933 | 12% |
 
-With all 33 arms included (`make rank-stability METRIC=tau`) ρ is higher still (0.960 at 20
+With all 33 arms included (`make rank-stability DATASET_ID=summeval_100 METRIC=tau`) ρ is higher still (0.960 at 20
 per half), because most free scorers sit far below the judges and are easy to agree on.
 
 The order of the judges is far more stable than the summarisation experiment's. The same
@@ -464,9 +464,9 @@ BARTScore comes out at τ 0.2562 against G-Eval's 0.305; G-Eval does not state i
 and ours is plain `bart-large-cnn`, source → summary, so it is reported as measured and not
 counted as a calibration row.
 
-## 6. What changed while measuring
+## 6. Conditions of this run
 
-**`qwen_l` could not run.** Its model, `qwen/qwen3-max`, is no longer served by OpenRouter:
+**`qwen_l` could not run.** Its model, `qwen/qwen3-max`, is not served by OpenRouter:
 the model page remains, but its list of endpoints is empty (checked 2026-10-18), and it was
 already missing from the model listing on 2026-10-15. Four of the other five experiments
 measured it, on 2026-09-26 to 09-28; SciFact's sweep did not include it. The run failed at warm-up (404) and billed nothing. Qwen's current flagship, `qwen/qwen3.8-max-0902`, refuses reasoning
@@ -476,11 +476,11 @@ and runs as `qwen37max` — its own config, never read as `qwen_l`.
 
 **Prices moved since the configs were written.** Each config carries the per-token price
 the earlier experiments used (September 2026); OpenRouter's prices on the day of this run
-differ, in both directions — GPT-5.5 is now $5/$30 per million tokens against $1.25/$10 in
+differ, in both directions — GPT-5.5 costs $5/$30 per million tokens against $1.25/$10 in
 its config, the three GLM models rose about 2.5×, DeepSeek V4 Pro and Claude Sonnet 5 fell.
 The costs in this report are the bills, so they are right; the dry-run estimates, which use
-the config prices, were not. One consequence: within OpenAI the medium tier now costs more
-than the large one, so "price tier" here is a label, not a price order. Cost comparisons
+the config prices, were not. One consequence: within OpenAI the medium tier costs more
+than the large one at those prices, so "price tier" here is a label, not a price order. Cost comparisons
 between this experiment and the earlier five mix September and October prices.
 
 ## 7. NOT covered, NOT measured, NOT verified

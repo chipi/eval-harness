@@ -48,7 +48,7 @@ hosted models (§5).
 | **What not to deploy** | `anthropic_l`: the most expensive arm, $2,463/month per 1M items, 11.4% below `span_marker`. 0.0066 behind `openai_m` (p = 0.67, not separated, §3.3); 78× the price of `gemma_m` at the routed mix billed in this run for a +0.0065 point-estimate gap (not tested pairwise). |
 | **Does paying more help?** | A little, not enough. Across the 24 hosted arms, +0.0407 F1 per 10× in cost (r = 0.50, 95% Fisher interval 0.13 to 0.75): 5.9% of the best hosted F1, 5.3% of `span_marker`'s. A cross-vendor association confounded with vendor. The steepest absolute slope of the six experiments (SummEval's is larger as a share of its best score; [synthesis](REPORT_SYNTHESIS.md)). |
 | **What part of the lead is learned convention?** | Against `openai_m`: 57% on `other` (30–57% across the 24 hosted arms, for a prompt that defines no type) and up to 38% on 34 disputed labels (19–34% against the next three hosted arms; 7–53% across thresholds 90% to 70%; voters share zero-shot priors). They overlap. Lead after the bound: 0.0503. On `person`, three hosted arms edge it by 0.004–0.007 (untested). |
-| **Is a pilot enough?** | Here yes: ρ = 0.903 over the 28 arms (§3.8), right winner. In 3 of the 4 other experiments that ran a pilot it was wrong (a count from the [synthesis](REPORT_SYNTHESIS.md), not a result of this run). |
+| **Is a pilot enough?** | Here yes: ρ = 0.963 over the 28 arms, from the dev items inside the committed 280-item runs (§3.8), right winner. In 3 of the 4 other experiments that ran a pilot it was wrong (a count from the [synthesis](REPORT_SYNTHESIS.md), not a result of this run). |
 | **Fine-tune or pay?** | Fine-tune, if you have labelled data, as run here: 0.7674 against 0.6864 at $0 to run. The zero-shot control `gliner` (0.4540, +0.3134 behind) differs in training exposure and architecture, so that gap is both, split unmeasured (§3.5); the case rests on `span_marker` beating the LLMs, not on it. |
 
 *How to read this table.* Scores are **mean per-sentence F1** over 280 sentences (0–1,
@@ -63,8 +63,7 @@ Cross-cutting context for all six experiments: [`REPORT_SYNTHESIS.md`](REPORT_SY
 1. **A winner, not a group.** `span_marker` scored **0.7674** against a hosted field of
    0.524–0.686, separated from all 27 other arms (Holm step-down over a family declared in
    advance). Neither classification corpus produced this: AG News's leader is tied with three
-   other arms, DBpedia's with nineteen (counts per [`REPORT_SYNTHESIS.md`](REPORT_SYNTHESIS.md),
-   after the 2026-09-30 fine-tune runs).
+   other arms, DBpedia's with nineteen (counts per [`REPORT_SYNTHESIS.md`](REPORT_SYNTHESIS.md)).
 
 2. **Behind it, the familiar tie.** `openai_m` (0.6864) separates from 16 of the 23 other
    hosted arms (20 of the 27 opponents once `span_marker`, `gliner`, `capitalized` and
@@ -103,7 +102,7 @@ Cross-cutting context for all six experiments: [`REPORT_SYNTHESIS.md`](REPORT_SY
 
 6. **A scoring bug paid non-answers full marks, and no fingerprint could have caught it.**
    An unreadable output was indistinguishable from an empty prediction; on the 12% of
-   items with no gold entities that scored **1.0**. Found and fixed mid-sweep; see §6.
+   items with no gold entities that scored **1.0**. An unreadable reply scores 0; see §6.
 
 ---
 
@@ -169,8 +168,7 @@ Casefold, strip accents and punctuation, drop a leading article, squeeze whitesp
 Deliberately **not** stemming: "Olympics" and "Olympic" are surface forms a reader would
 judge differently, and a normaliser that collapses them is quietly grading a different task.
 
-The whole rule is hashed into `scorer_sha256` and carried on every run. §6 is about the
-version of this report that would have been wrong without it.
+The whole rule is hashed into `scorer_sha256` and carried on every run (§6).
 
 ### Typed and untyped are both reported, and they disagree
 
@@ -356,8 +354,7 @@ model, and the `gliner` figure is confounded.
 of **+0.3134 F1**. It is not one variable. `span_marker` saw Few-NERD's training split and
 `gliner` did not, but they are also different models: a SpanMarker span classifier on a
 RoBERTa encoder (`numind/generic-entity_recognition-v1`, per its config) against GLiNER's
-label-prompted matcher on DeBERTa-v3-base. An earlier version of this section called them
-the same model class with exposure as "the one variable"; that was wrong. The gap is
+label-prompted matcher on DeBERTa-v3-base. The gap is
 exposure plus architecture, and how it splits is not measured.
 
 This is the question the summarisation and AG News examples kept running into, and
@@ -368,8 +365,8 @@ XSum, first and last of 29.
 
 34 of 768 gold entities (4.4%) carry a coarse type that at least 80% of the 26 learned
 arms (all 28 except the two baselines, `capitalized` and `nothing`) reject, agreeing on
-the same alternative type. The first 14 of the 34, as `extraction_report.py` prints them
-(count = arms that agree, out of 26):
+the same alternative type. The first 14 of the 34 (`extraction_report.py` prints the first
+10; count = arms that agree, out of 26):
 
 ```
 26/26  "georgia dome"                     gold location     -> arms building
@@ -463,11 +460,14 @@ set. It is reported as a property of the arm.
 
 ### 3.8 The dev slice predicted the ranking, and the winner held
 
-Spearman ρ between the 56-item dev slice and the 280-item measurement slice, 28 arms:
-**0.903**. Dev leader and measurement leader are the same arm.
+Spearman ρ between the 56 dev items and the 280-item measurement slice, 28 arms:
+**0.963**, from the dev items inside the committed 280-item runs (`stats.spearman`, ties
+given midranks); the separate dev-slice runs were not committed. Dev leader and measurement
+leader are the same arm, `span_marker`.
 
-Mean |rank move| 2.36 positions; **max 11** — `glm_l`, rank 11 → 22, for the reason in §3.7:
-the dev slice sampled its truncation rate at 5.4% and the measurement slice found 11.4%, the 0.114 in §3.7.
+Mean |rank move| 1.71 positions; **max 5** — `deepseek_l` (22nd on the dev items, 17th on
+the full slice) and `llama_m` (15th → 20th). `glm_l` is 21st on the dev items and 22nd on
+the full slice; it truncates 14.3% of the dev items against the 0.114 in §3.7.
 
 **No winner's curse.** On the 224 items the dev slice never contained:
 
@@ -503,9 +503,8 @@ DBpedia; `arms tied 1st` = **1.0 at every size** here.
 
 **The metric's shape decides whether this diagnostic can be read at all.** Per-item set F1
 takes many values, ties essentially never happen, and ρ measures the data. Binary accuracy
-on a saturated task ties constantly, and ρ measures the sort order. The tie column was
-added after DBpedia; Few-NERD is the case that shows what it looks like when nothing is
-wrong.
+on a saturated task ties constantly, and ρ measures the sort order. Few-NERD is the case
+that shows what the tie column looks like when nothing is wrong.
 
 `spearman()` gives tied arms midranks. A metric that does not tie is not affected by how
 ties are handled; the classification corpora, whose metric does tie, are in
@@ -571,7 +570,7 @@ Neither half is wrong enough to change for one item: stripping punctuation is ri
 comparing entity mentions, and calling a currency sign an entity is the odd end of it. But
 the floor moves, and a 1/280 discrepancy between a baseline and its predicted value is
 exactly the kind of thing that gets explained away instead of opened. `extraction_report.py`
-now prints these, and `fetch.py` no longer claims the floor is *exactly* the empty-gold rate.
+prints these, and `fetch.py` does not claim the floor is *exactly* the empty-gold rate.
 
 ---
 
@@ -591,9 +590,10 @@ now prints these, and `fetch.py` no longer claims the floor is *exactly* the emp
 - **`scorer_sha256` covers the whole scoring rule**, not only the normaliser, and each
   adapter exposes `scorer_id()`, so a rescored run records the rule that scored it.
 - **Consensus counts arms, not occurrences**: one arm emitting a span twice votes once.
-- **Every number here comes from one instrument**: all 27 measurement runs and all 28 dev
-  runs share one `items_sha256`, one adapter sha256, one `scorer_sha256` and one
-  `parser_sha256`.
+- **Every number here comes from one instrument**: all 28 measurement runs share one
+  `items_sha256` and one adapter sha256, and all 28 were rescored under one scoring rule
+  (`derived.with`: one `scorer_sha256`, one `parser_sha256`). The dev-slice runs were not
+  committed.
 
 ---
 
@@ -601,22 +601,10 @@ now prints these, and `fetch.py` no longer claims the floor is *exactly* the emp
 
 This section is deliberately as detailed as the results.
 
-- ~~**`mistral_l` was never measured on the 280-item slice.**~~ **MEASURED 2026-10-01.**
-  It had been blocked for five review rounds: `mistralai/mistral-large-2512` is
-  rate-limited upstream on OpenRouter's shared pool
-  (`limit_source: upstream_provider_shared_pool`), litellm burns 6 internal retries per
-  call before returning 429, and the measured rate was **3 items in 7 minutes** — about
-  11 hours for the arm. Retried when the pool was quieter and it completed in ~2 h 20 m
-  at ~2 items/minute; the 429s never stopped (the proxy logged 70–134 per 10 minutes
-  throughout) and the retry ladder absorbed them, so this is "retried hard enough", not
-  "the limit lifted". **f1 0.5979**, parsed 279/280, $0.0419, `providers_seen`
-  `{Mistral: 280}`, fingerprint `dirty: false`.
-
-  It lands **13th of 28**, inside the `mistral_m` / `glm_m` / `llama_l` band the handover
-  predicted (0.591–0.594), slightly above it. The family is now **27**, so every Holm
-  threshold in §3.2 and §3.3 is stricter than it was: `span_marker` still separates from
-  **27 of 27** and `openai_m` from **20 of 27**, the same seven arms unseparated.
-  Its **dev** score on 56 items was **0.6005**; the measurement is 0.5979, a 0.0026 move.
+- **The pilot, from its own runs.** The 56-item dev-slice runs were never committed, so ρ,
+  the rank moves and the dev leader in §3.8 are computed from the dev items inside the
+  committed 280-item runs, the method the classification report uses. A separate dev-slice
+  run need not give the same figures.
 - **No confidence/calibration analysis.** Hosted arms have no `confidence`: logprobs were
   never requested. The classification report's calibration section has no counterpart here.
 - **Boundary errors are not separated from detection errors.** A prediction that overlaps a
@@ -702,8 +690,8 @@ gitignored. Dataset identity travels as `items_sha256`, not as bytes in the repo
 
 ## Costs are what the provider billed
 
-The `$` figures are what the provider reported charging, per call, in `usage.cost`, not a price computed from `usd_per_mtok_in/out` in each arm's config. A config holds one price per model **alias**, and an alias is not a price. OpenRouter routes each request to one of several upstream providers — a single run in this repo recorded Novita 262 times, Parasail 9, DeepInfra 6, Nebius 3 — and they charge differently, so the effective price is a routing-dependent mixture no config can state in advance. Measured across all four examples, the price table is wrong **per arm by 0.67× to 3.76×, in both directions**.
+The `$` figures are what the provider reported charging, per call, in `usage.cost`, not a price computed from `usd_per_mtok_in/out` in each arm's config. A config holds one price per model **alias**, and an alias is not a price. OpenRouter routes each request to one of several upstream providers — a single run in this repo recorded Novita 262 times, Parasail 9, DeepInfra 6, Nebius 3 — and they charge differently, so the effective price is a routing-dependent mixture no config can state in advance. Across the 132 committed hosted runs of the six examples, the price table is wrong **per arm by 0.32× to 3.76×, in both directions** (0.67× to 3.76× in summarisation, classification and NER; the 0.32× is SummEval's `deepseek_l`).
 
-**The error is not uniform, and that is what makes it matter.** Arms served by a single provider — the Anthropic models, notably — match the table exactly. The cheap, multi-routed models are undercounted. So the table systematically **understates the cheap end of the field, and therefore inflates every price-ratio claim.** It also reorders arms by cost: on `few_nerd_280`, `glm_s` is the 2nd-cheapest arm by the table and the 9th by what was billed. Rankings by *quality* never depended on cost.
+**The error is not uniform, and that is what makes it matter.** `anthropic_l` and `anthropic_s` match the table exactly on every corpus, but one provider is not enough: `anthropic_m`, served by one, was billed 0.67× the table on every corpus, and the single-provider OpenAI and Qwen arms 0.71× to 3.76×. The cheap, multi-routed models are undercounted: 60 of the 66 multi-provider runs were billed at or above the table. So the table systematically **understates the cheap end of the field, and therefore inflates every price-ratio claim.** It also reorders arms by cost: on `few_nerd_280`, `glm_s` is the 3rd-cheapest arm by the table and the 10th by what was billed. Rankings by *quality* never depended on cost.
 
-All four adapters record `usage.cost` when the provider supplies it and fall back to the table only when it is silent. Runs made before the adapters recorded it keep the estimate in `cost_usd`; the billed figure is in `_meta.usage.cost` in each stored run.
+The adapters of all six examples record `usage.cost` when the provider supplies it and fall back to the table only when it is silent. Runs made before the adapters recorded it keep the estimate in `cost_usd`; the billed figure is in `_meta.usage.cost` in each stored run.

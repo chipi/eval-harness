@@ -39,7 +39,9 @@ measure it.
 ## The one function
 
 `call_system()`, in `adapter.py` at your project's root (start from a copy of the bundled
-`scripts/adapter.py`, which also has `score()`). It receives one item's text and the
+adapter, `evaluation_harness/adapter.py`, which also has `score()`;
+`python -c "import evaluation_harness, os; print(os.path.join(evaluation_harness.__path__[0], 'adapter.py'))"`
+prints where it is). It receives one item's text and the
 config's `params`, and returns what your system produced:
 
 ```python
@@ -124,24 +126,24 @@ Most projects do not have it. The sequence that works:
 
 1. **Pick your best model** and author references with it:
    ```bash
-   make reference-create DATASET_ID=my_v1 CONFIG=data/configs/sonnet.yaml
+   evh reference-create --dataset-id my_v1 --config data/configs/sonnet.yaml
    ```
    That writes **silver** — model-generated. It is not correct, it is
    *consistent*, which is enough to rank other arms against it.
 
 2. **Review a few by hand.** Where you agree with the output, you now have gold.
-   Re-run with `TIER=gold` once a human has actually checked them.
+   Re-run with `--tier gold` once a human has actually checked them.
 
 3. **Never let the distinction blur.** A run records which tier it scored
    against (`reference_tier` in its `metrics.json`). Silver-scored numbers are for
    ranking arms against each other; they are not a claim about correctness, and
    publishing them as one is how eval loses credibility internally.
 
-Cost control: `ARGS="--limit 10"`. Ten references is enough to rank four arms, and you
+Cost control: `--limit 10`. Ten references is enough to rank four arms, and you
 can extend later without re-authoring what you have.
 
 4. **Or score without references at all**, with LLM judges that read each item and rate
-   every arm's output (`make judge-score`, optional). A judge is a model's opinion too, so
+   every arm's output (`evh judge-score`, optional). A judge is a model's opinion too, so
    the harness refuses one until runs show it agrees with human ratings on outputs like
    yours; until then it runs only as `--unvalidated`, labelled. The judge's task (what an
    item is, what the outputs are, which dimensions, which scale) is declared in the scorer,
@@ -155,7 +157,7 @@ can extend later without re-authoring what you have.
 | --- | --- |
 | a frozen dataset | a `dataset_id` plus a sha256 per item — the thing that makes two numbers comparable |
 | provenance | every run records which build produced it |
-| noise floor | `REPEAT=3` reports the arm's own spread, so you stop promoting jitter |
+| noise floor | `--repeat 3` reports the arm's own spread, so you stop promoting jitter |
 | cost and speed | per item and totalled, alongside quality |
 | refusals | cross-dataset comparisons, dirty-tree promotions and unreasoned baselines are blocked, not warned about |
 | integrity | `make validate` fails CI on a tree that has drifted |

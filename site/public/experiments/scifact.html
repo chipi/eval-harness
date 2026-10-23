@@ -306,11 +306,11 @@ $0.4811 per 1,000 items"/><circle cx="307.2" cy="62.1" r="11" class="ring"/><tex
 </div></section>
 <section class="block" id="findings"><div class="wrap"><div class="eyebrow"><span class="num">03</span>Findings</div>
   <h2>What this experiment found.</h2>
-  <ol class="findings"><li><div><h3>LLM rerankers lead — and cannot be separated from eleven or twelve others.</h3><p>glm_s reranking BM25&#x27;s top 20 scores 0.7437 nDCG@10; 12 arms cannot be separated from it, including the free retrievers e5_base and bge_small.</p></div></li><li><div><h3>The dearest model finished 2nd of 19.</h3><p>glm_m billed $0.4576 for 200 items. Only the twelve cheapest hosted models ran here, so this is the dearest of those; no Anthropic or OpenAI arm was run. The cheapest model not separated from the leader, deepseek_s, cost 7.6× less.</p></div></li><li><div><h3>The dev slice picked the wrong winner.</h3><p>Tuned on a 40-query dev slice, the leaderboard&#x27;s winner there was not the winner on the 160 queries it never saw.</p></div></li></ol>
+  <ol class="findings"><li><div><h3>LLM rerankers lead — and cannot be separated from eleven or twelve others.</h3><p>glm_s reranking BM25&#x27;s top 20 scores 0.7437 nDCG@10; 12 arms cannot be separated from it, including the free retrievers e5_base and bge_small.</p></div></li><li><div><h3>The dearest model finished 2nd of 19.</h3><p>glm_m billed $0.4576 for 200 items. Only the twelve cheapest hosted models ran here, so this is the dearest of those; no Anthropic or OpenAI arm was run. The cheapest model not separated from the leader, deepseek_s, cost 7.6× less.</p></div></li><li><div><h3>The dev slice&#x27;s winner finished 10th — inside a tie.</h3><p>Tuned on a 40-query dev slice, the leaderboard&#x27;s winner there, llama_s, finished 10th of 19 on the 200-query measurement slice, 0.0265 behind the leader and not separated from it under Holm: a rank inside a tie, not a wrong pick shown at this n.</p></div></li></ol>
 </div></section>
 
 <section class="block" id="habit"><div class="wrap"><div class="eyebrow"><span class="num">04</span>The method, here</div>
-  <div class="lesson"><h2>Measure the noise before the difference.</h2><p>The dev slice picked the wrong winner — its leader finished 10th of 19.</p><a class="btn" href="../method.html#noise">This habit, in the method →</a></div>
+  <div class="lesson"><h2>Measure the noise before the difference.</h2><p>The dev slice's leader finished 10th of 19, a rank inside a tie.</p><a class="btn" href="../method.html#noise">This habit, in the method →</a></div>
 </div></section>
 <section class="block" id="reproduce"><div class="wrap"><div class="eyebrow"><span class="num">05</span>Reproduce it</div>
   <h2>Check it yourself.</h2>

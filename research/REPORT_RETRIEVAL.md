@@ -30,7 +30,7 @@ better retriever are comparable moves; **do both** and they stack to +0.1441 ove
 
 **As run here:** the 12 cheapest of 24 hosted LLMs (no Anthropic or OpenAI arm), zero-shot,
 one prompt, one run per arm, 200 SciFact claims. Frontier models, fine-tuning on SciFact and
-other rerank depths were not tested (§7).
+other rerank depths were tested only on the dev slice (§7).
 
 ### Supporting facts
 
@@ -210,8 +210,7 @@ mislead.
 
 Each line is a paired sign-flip on 200 queries, uncorrected (20,000 permutations):
 
-- worst reranker → best reranker (`gemma_s` → `glm_s`): **+0.0420**, p 0.004, across a
-  **7.6× billed** price range — the *choice* of reranker
+- worst reranker → best reranker (`gemma_s` → `glm_s`): **+0.0420**, p 0.004 (the twelve span a **7.6× billed** price range) — the *choice* of reranker
 - BM25 → worst reranker (`gemma_s`): **+0.0566**, p 0.005 — the cheapest *addition* of a reranker
 - BM25 → `e5_base`, no LLM at all: **+0.0740**, p 0.001 — the *retriever swap*
 - BM25 → best reranker (`glm_s`): **+0.0986**, p < 0.0001 — adding the best reranker
@@ -248,11 +247,8 @@ the two rerankers' own shares at the time — `qwen_s` 0.899 and `glm_s` 0.911 �
 
 **Measured:**
 
-*Evidence: `harness/data/runs-pair/`, committed since 2026-09-29. These four runs sat
-in an ignored directory until an external review pointed out that the most-advertised
-number in this repo was the one number with no committed run behind it.
-`check_report_claims.py` now verifies 0.7891 against the registered **range**, 0.786–0.797,
-rather than against itself.*
+*Evidence: `harness/data/runs-pair/`. `check_report_claims.py` verifies 0.7891 against the
+registered **range**, 0.786–0.797, rather than against itself.*
 
 Both halves of each pair ran under the same adapter, so the comparison is internally valid;
 that adapter differs from the 19-arm main table's, which is why these four are reported
@@ -261,7 +257,7 @@ separately and are not in §3.1 — and why `glm_s` over BM25 reads 0.7423 here 
 
 | reranker | nDCG@10, BM25 candidates | nDCG@10, e5_base candidates | gain from e5_base | share of ceiling reached (BM25 → e5_base) |
 |---|---|---|---|---|
-| glm_s | 0.7423 | **0.7891** | +0.0468 | 90.9% → 90.2% |
+| glm_s | 0.7423 | **0.7891** | +0.0469 | 90.9% → 90.2% |
 | qwen_s | 0.7138 | 0.7713 | +0.0575 | 87.4% → 88.2% |
 
 Each reranker reorders the top 20 candidates of the named first stage. **Share of ceiling
@@ -276,7 +272,7 @@ point when the candidates changed entirely (−0.7 for `glm_s`, +0.7 for `qwen_s
 **What the four pair runs show** (sign-flip on 200 queries, uncorrected; each prediction
 was made once before and tested once, and none of these was repeated):
 
-- `glm_s`, e5-first vs BM25-first: +0.0469, p 0.015. `qwen_s`: +0.0575, p 0.002.
+- `glm_s`, e5-first vs BM25-first: +0.0469, p 0.015. `qwen_s`: +0.0575, p 0.005.
 - `glm_s`, e5-first vs `e5_base` alone: +0.0700, p 0.0001 — the LLM adds on top of the
   encoder.
 
@@ -341,15 +337,22 @@ trained for retrieval.
 
 The parser refuses a leading array that will not parse, rather than harvesting fragments from it, and a line-path token must look like an id (`[\w.-]+`). A reply that opens with a real array and then corrects itself in prose, such as `…, 4459491 is removed and [30813140, …`, fails `json.loads`; if the line path then splits it on commas, tokens like `[8925851` and `21884449]` pass a "no spaces" test and are accepted as document ids. Those bracket tokens are never real ids, so they count as hallucinations, and the harvested partial ranking scores below the BM25 fallback the pipeline uses when a reply is unreadable. The arm is punished for the parser's guess.
 
-16 of `qwen_s`'s 200 replies are prose; the parser no longer reads them as a one-document ranking.
+**50 of `qwen_s`'s 200 replies in the main run do not parse, and the parser reads none of them as a
+ranking.** All 50 open with prose (a discussion of the claim before any list), and 48 of them
+are cut off at `max_tokens` 700 before reaching one; the other 2 finish without a list the
+parser can read. Those
+50 queries keep BM25's order, so `qwen_s`'s 0.7183 is a reranker on 150 queries and BM25 on
+50 (`llm_parsed` 0.75). Its repeat run and its two pair runs leave 52, 47 (BM25-first) and
+44 (e5-first) unparsed.
 
 ### Between-run variance — still unmeasured
 
 Three arms were re-run on 2026-09-29 (`data/runs-repeats/`). The deltas are:
 
 `bm25first` is the BM25-candidate half of the §3.4 pair (`sf_glm_s_bm25first_n200_v1`,
-`sf_qwen_s_bm25first_n200_v1`): the same reranker settings run again later, under the
-pair adapter — which is not the main table's adapter, so these two pairs mix run-to-run
+`sf_qwen_s_bm25first_n200_v1`): the same reranker settings run again later. The three
+repeats ran under adapter `4037bb6398` and the two `bm25first` runs under the pair adapter
+`068ef8c236`; neither is the main table's `cedb9f962a`, so all five pairs mix run-to-run
 difference with an adapter difference. Δ = nDCG@10 of the second (later) run − the
 first, both read under the current parser; a negative Δ means the later run scored lower.
 
@@ -396,11 +399,10 @@ All twelve beat BM25 by 0.0566–0.0986, and the worst-to-best spread is +0.0420
 (p 0.004), so the choice among rerankers is not nothing; `e5_base`'s candidates have a
 cap of 0.8747.
 
-**The tie is the recurring result across the four examples that existed when this was
-written** (five of the six experiments now; see the synthesis). Summarisation:
+**The tie recurs in five of the six experiments** (see the synthesis). Summarisation:
 the dearest arm ranked 18th of 29 (15th of the 24 hosted). AG News: a leader tied with three others. DBpedia: a leader
 tied with nineteen, across a 115× price range (both per
-[`REPORT_SYNTHESIS.md`](REPORT_SYNTHESIS.md), after the 2026-09-30 fine-tune runs). NER:
+[`REPORT_SYNTHESIS.md`](REPORT_SYNTHESIS.md)). NER:
 eight hosted arms across 78×. Here: twelve or thirteen, two of which are free. Five unrelated tasks, the same shape — at the top of a field, the leader cannot be
 separated from a group spanning a wide price range (not shown different, which is not the
 same as equal).
@@ -451,9 +453,9 @@ reads true before any of it is believed.
   [`HANDOVER_RETRIEVAL_FRONTIER_ARMS.md`](internal/HANDOVER_RETRIEVAL_FRONTIER_ARMS.md).
 - **The cost column is what the provider BILLED, not this repo's price table.** Those
   differ, because an alias is not a price: OpenRouter routes across upstream providers
-  that charge differently. Measured across all four examples the table was wrong **per arm
-  by 0.67× to 3.76×**, in both directions, and it reordered arms by cost. All four reports
-  are now corrected and all four adapters record `usage.cost`.
+  that charge differently. Measured over the hosted runs of the five experiments other than SummEval,
+  the table is wrong **per arm by 0.67× to 3.76×**, in both directions, and it reorders arms by cost.
+  Every report uses the billed figure, and every experiment's adapter records `usage.cost`.
 - **One first-stage swap, two rerankers, one corpus.** §3.4 is a pair, not a study. It does
   not show that e5_base is the best possible first stage, or that the headroom share
   transfers for any other reranker or corpus. The prediction was registered once and
@@ -472,14 +474,15 @@ reads true before any of it is believed.
   prompt wording; a different prompt could reorder the twelve.
 - **Rerank depth 20 and snippet 900 chars were tuned on the dev slice** and then fixed.
   `k=50` was tested and failed for a budget reason (`llm_parsed` 0.700); `k=10` scored
-  0.6799 against `k=20`'s 0.6908. Nothing between 20 and 50 was tested.
+  0.6799 against `k=20`'s 0.6908. Nothing between 20 and 50 was tested. At `k=20`,
+  `qwen_s` still runs out of budget on 48 of 200 queries ("The parser", §3).
 - **`gliner`-style threshold tuning has no analogue here, but BM25's k1/b do.** They are
   `rank_bm25`'s defaults (1.5 / 0.75), recorded in the fingerprint, and **untuned**. A
   tuned BM25 might close some of the 0.074 gap to e5_base; nothing here bounds how much.
 - **No confidence, no calibration.** Logprobs were never requested from any hosted model,
   in this example or any other.
-- **Stability statistics handle ties explicitly.** `spearman()` uses midranks for ties and
-  `ranks_on()` no longer breaks ties alphabetically. `P(same winner)` excludes
+- **Stability statistics handle ties explicitly.** `spearman()` and `ranks_on()` use midranks
+  for ties. `P(same winner)` excludes
   draws where either half had no unique best arm rather than crediting them as agreement.
 - **One pass per arm, temperature 0** — and temperature 0 is *not* reproducible here:
   between 13 and 78 of 200 replies are byte-identical across two runs of the same config,

@@ -23,7 +23,7 @@ Each layer freezes what it produces, so the next one can be redone without redoi
 |---|---|---|---|
 | **1. Data** | a dataset: every item and the sha256 of its bytes, from a file or a pinned URL, and the typed fields a project declares for it | `dataset-create`, `dataset-materialize` | a working copy whose bytes differ from the frozen hashes; a field nobody declared |
 | **2. Arms and runs** | a config per arm; per run its outputs, scores, cost, latency and a fingerprint of the system, the instrument and the data | `experiment-run`, `sweep`, `import-run` | a run missing any of the three inputs; an unknown goal |
-| **3. Scoring** | scores are arithmetic over stored outputs, so they can be redone | `rescore` ($0), `judge-score` (billed, optional) | rescoring over the original run; a judge that is not validated |
+| **3. Scoring** | scores are arithmetic over stored outputs, so they can be redone | `rescore` ($0), `judge-score` (billed, optional) | an `--out` that is a directory it reads runs from; a judge that is not validated |
 | **4. Decisions** | paired tests, rankings, baselines with a reason | `pair-test`, `family-test`, `leaderboard`, `run-promote` | comparing runs on two different `dataset_id`s |
 | **5. Goals** | what an evaluation is for and the measure that decides | `goal:` on configs, validate V14 | a config or run naming a goal that does not exist |
 | **6. Looking** | the catalog (static pages) and the run inspector (a local server) | `catalog`, `catalog-serve` | item text in the static pages; mixed datasets in one comparison |

@@ -79,7 +79,7 @@ carry use conditions. Each is listed, read from the publisher, in
 ## Your own data
 
 When you point the harness at your own system, your data stays where you put it: datasets,
-references and runs are files under `harness/data/`. It goes nowhere unless you configure
+references and runs are files under your project's `data/` directory (or `EVAL_HOME`). It goes nowhere unless you configure
 a hosted model, and then each item is sent to that provider (via OpenRouter or your own gateway),
 under that provider's terms. Read them before you send anything confidential, and prefer a
 local model for data that cannot leave your machine.

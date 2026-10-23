@@ -85,7 +85,7 @@ fits any budget. In this experiment the free model is also *slower* than renting
 that, at a price that differs by arm. Timed on one machine (`data/runs-linux/`), `bart_l`
 takes **6.3 s**, `bart_m` (1.2 GB, 0.3367) **4.1 s** and `bart_s` (460 MB, 0.3276) **3.4 s**.
 In the 28-arm Holm family neither is separated from `bart_l`; in the five-arm family of §3.7
-`bart_s` is (gap 0.0186, p = 0.017), and on DailyMail by 0.0391.
+`bart_s` is (gap 0.0186, p = 0.017), and on DailyMail by 0.0382.
 
 **The XSum control points to house style, and cannot separate it from length.**
 `bart_l_xsum` is the same BART-large architecture fine-tuned on XSum, whose references are
@@ -106,11 +106,9 @@ on the held-out 180), and the critical difference fell from 8.13 rank positions 
 printing a smooth 1-to-24 ordering is still asserting hundreds of comparisons it cannot
 support.
 
-*Both figures are over the **24 hosted arms** this section was computed on. The field
-is now 29 — `bart_l` and `lead3` were added later, the three other BARTs on 2026-09-30 —
-and over all 29 the critical difference is **3.18** with **80 of 406** pairs separating
-(71 of 406 on the held-out 180). The 2.57 figures above remain those of the original
-24, reproducible with the command in §2.*
+*Both figures are over the **24 hosted arms**, reproducible with the command in §2. Over
+all 29 arms the critical difference is **3.18** with **80 of 406** pairs separating
+(71 of 406 on the held-out 180).*
 
 **The n=20 ranking largely did not survive.** Spearman between the two orderings of the
 same 24 arms is **+0.667**. `qwen_s` fell 15 places, `llama_s` rose 12, `anthropic_m` fell
@@ -192,11 +190,11 @@ spend the same budget — at fixed cost, n=60/r=1 gave sd(delta) 0.0090 against 
 0.0133. The consequence is stated rather than hidden: this run measures no within-arm
 variance, and the determinism figures in §3.3 come from the earlier r=3 sweep.
 
-**Provenance caveats.** 23 of the 24 hosted runs record `harness.dirty: true` (`anthropic_l` does not). The cause is now known:
+**Provenance caveats.** 23 of the 24 hosted runs record `harness.dirty: true` (`anthropic_l` does not). The cause:
 `_fingerprint.py` derives that flag from `git status --porcelain`, which counts UNTRACKED
-files, and a sweep's own configs are untracked at the moment it starts. The fix is
-procedural — commit configs before launching — and it was applied for the last 16 arms but
-not the first 8, which therefore sit on an earlier commit. The measurement is unaffected:
+files, and a sweep's own configs are untracked at the moment it starts. The first 8 arms
+record earlier commits (`d9def7c7` for seven, `5790bb31` for `qwen_m`) than the last 16
+(`e0810991`). The measurement is unaffected:
 the fingerprint stores content, not pointers (`arm.params` inline, `items_sha256`,
 `adapter.sha256`, `prompt_sha256`, the resolved upstream model id).
 
@@ -244,9 +242,7 @@ kept because which one you want is a product decision the eval must not make for
 
 **`coverage` came out much closer to length-neutral at n=200 than at n=20** — |ρ(words)|
 0.07 against `rougeLsum`'s 0.31 — where at n=20 the two were indistinguishable at 0.28 and
-0.30, and this report said so. That earlier reading was not wrong about the data it had; 24
-points is a thin basis for a correlation, and the honest conclusion is that the n=20 figure
-could not support the claim either way.
+0.30; 24 points is a thin basis for a correlation either way.
 
 The clip still only binds *above* the reference length: **577 of 4,800 outputs (12.0%) are
 shorter than their reference and are never clipped at all**. `coverage` is the primary
@@ -368,8 +364,9 @@ unigrams barely see. None of these absolute figures is comparable to published
 ROUGE, which is computed on the full test set (§5).
 
 `bart_m` is distilbart-cnn-12-6 (12 encoder / 6 decoder layers, 1.2 GB) and `bart_s`
-distilbart-cnn-6-6 (460 MB, stored and **run** at fp16, although its config declares
-`precision: fp32` — the adapter records that field without applying it) — both distilled from `bart_l`, so they sit below it as they
+distilbart-cnn-6-6 (460 MB, stored at fp16; the CNN run executed at fp16 although its config
+declares `precision: fp32`, because the adapter did not apply that field when it ran — see the
+note in §6) — both distilled from `bart_l`, so they sit below it as they
 should, in the order their size predicts. Their grounding stays in `bart_l`'s range
 (0.85–0.88) against 0.25–0.43 for the hosted field. `bart_l_xsum`'s concision is the best
 in the table only because concision rewards brevity and XSum writes one sentence.
@@ -379,7 +376,7 @@ No local arm here differed between runs. On the same machine all three new arms 
 `data/runs-repeats/`), and across machines (Mac → Linux) so did `bart_l` and `lead3`
 (`data/runs-linux/README.md`). Hosted arms at temperature 0 do not: 47 of 480 article
 outputs were identical across three repeats in the earlier sweep here (§3.3), and 13–78 of
-200 across two runs of five SciFact arms (`REPORT_RETRIEVAL.md`).
+200 across five pairs of runs of four SciFact rerankers (`REPORT_RETRIEVAL.md`).
 
 ### 3.1 Is the ordering real?
 
@@ -502,7 +499,7 @@ Nothing in this run contradicts that; nothing in it confirms it either.
 **The local contrast was measured.** Every local arm was re-run (`data/runs-linux/`):
 `bart_m`, `bart_s` and `bart_l_xsum` on the same Linux machine, `bart_l` and `lead3` on a
 different one from their recorded Mac runs. **All five reproduced 200 of 200 outputs
-byte-identically** — beam search on a CPU, at fp32 except `bart_s`, which runs at its stored
+byte-identically** — beam search on a CPU, at fp32 except `bart_s`, which ran at its stored
 fp16. Run-to-run variance for these local arms,
 on these two CPUs, is zero; for a hosted one it is not, and no test in this report sees it
 (every separation test is over items within one run). GPUs and other torch builds were not
@@ -610,7 +607,7 @@ Every result above was measured on CNN's articles alone (§1). To test whether t
 conclusions travel, `cnn_dailymail_dm200` draws **200 DailyMail articles at random** (seed
 20261014) from the same test split — none carries a CNN or CNN-partner dateline — and the
 five local arms re-ran on it with their parameters unchanged. All five runs are clean
-(`build.dirty: false`, commit `a81669ca`) and committed as
+(`build.dirty: false`; four on commit `a81669ca`, `bart_s` on `8165bd94`, the fp32 run) and committed as
 `harness/data/runs/cnn_*_dm200_v1_*`.
 
 `coverage` is on the same 0–1 scale as above (higher is better); ROUGE is printed ×100, as
@@ -637,7 +634,7 @@ the Holm verdict within that slice's family of four.
 |---|---|---|
 | `bart_l_xsum` | +0.1390, separated | +0.2908, separated |
 | `lead3` | +0.0743, separated | +0.0733, separated |
-| `bart_s` | +0.0186, separated (p = 0.017) | +0.0391, separated |
+| `bart_s` | +0.0186, separated (p = 0.017) | +0.0382, separated |
 | `bart_m` | +0.0095, not separated (p = 0.16) | +0.0000, not separated (p = 1.00) |
 
 **Among the local arms, every verdict transfers.** The fine-tune beats LEAD-3 by the same
@@ -784,8 +781,8 @@ in both item cuts and on both ROUGE facets; `anthropic_m` is separated below `de
 in both test families, `openai_l` in the four named pairs but not in the 28-arm family. At
 n=20 the same `anthropic_l` comparison was "not separated" (p = 0.52) and the honest
 reading was *"if a model 52× cheaper cannot be shown to be worse, the expensive one has not
-earned its price."* That reading was right, and for that pair the stronger version is now
-available: it **is** shown to be better. One pair is not a trend.
+earned its price."* That reading was right, and for that pair n=200 gives the stronger
+version: it **is** shown to be better. One pair is not a trend.
 
 **The eliminations are the actionable output, with their gaps.** 16 of 24 arms are
 dominated on the point estimates: behind another arm on quality *and* cost *and* speed
@@ -804,8 +801,8 @@ six arms with P(top 5) ≥ 0.47 — not a podium.
 n=20 ordering and the n=200 ordering of the same 24 arms correlate at 0.667. `qwen_s` was
 7th and is 22nd; `llama_s` was 16th and is 4th. Anyone who had shortlisted the n=20 top
 five (`deepseek_m` 1st, `deepseek_s` 2nd, `llama_l` 3rd, `anthropic_m` 4th, `llama_m` 5th)
-would have carried `deepseek_s` (now 7th) and `anthropic_m` (now 12th), and missed
-`llama_s` (now 4th) and `deepseek_l` (now 5th). (The n=20 ranks are the earlier run's, not recomputable here.)
+would have carried `deepseek_s` (7th at n=200) and `anthropic_m` (12th), and missed
+`llama_s` (4th) and `deepseek_l` (5th). (The n=20 ranks are the earlier run's, not recomputable here.)
 
 **The tier ladders are mixed.** By `coverage`: `llama` large > mid > small and `gemma`
 large > mid > small; `openai` mid = large (0.3268 each) > small; `anthropic` the reverse,
@@ -868,15 +865,14 @@ higher price tier does not buy cleaner output — worth checking before paying f
 - **Whether `bart_l`'s lead is style or length.** The XSum control fails for two reasons
   at once — it was trained on BBC single-sentence summaries *and* it decodes at 62/11
   tokens against 142/56 (and 6 beams with no length penalty, against 4 and 2.0). An arm at
-  CNN/DailyMail decode settings would separate them; it was not run. (This bullet used to read "ML versus LLM: not built" — five local arms have
-  since run, so the comparison exists; what it cannot yet say is *why* the specialist wins.)
+  CNN/DailyMail decode settings would separate them; it was not run.
 - **Within-arm variance for the hosted arms.** This run is r=1; the determinism figures are
   from the earlier r=3 sweep and were not re-measured. For the five local arms it was: each
   re-run was 200 of 200 byte-identical (`data/runs-linux/`).
 
 ---
 
-## 6. Retracted findings, and what is now enforced in code
+## 6. Retracted findings, and what is enforced in code
 
 Nine findings were retracted during this work. They are listed because the retraction rate
 *is* a result: it measures how much of a first-pass eval is instrument rather than signal.
@@ -912,7 +908,7 @@ would have crashed a fresh clone *after paying for its first API call*.
 > fp16 measurement under an fp32 label. It stays the record because the LLM judges' verdicts in
 > §3.8 were made on its outputs. The DailyMail `bart_s` record is the fp32 measurement (0.4048).
 
-The practical lessons, all now enforced in code:
+The practical lessons, all enforced in code:
 
 1. **If it can be computed over the whole corpus, it must not be reported from a sample.**
 2. **Verifying a measurement must be cheap** — `make rescore` recomputes scores from stored
@@ -961,11 +957,10 @@ recorded outputs on 20 of 20 items checked; the `bart_s` PR does not run, becaus
 fp16 and torch 2.2.2 has no fp16 LayerNorm on CPU (`docs/evidence/conversion_pr_check.py`) — see
 [`KNOWN_ISSUES.md`](internal/KNOWN_ISSUES.md).
 
-No `rescore` step is needed here. It was, for the n=20 sweep: scores were written rounded
-to 6 decimals, which cannot tell a genuine tie from a rounding artifact, and the tie
-tolerance is load-bearing for `coverage` (13-23% of arm pairs tie exactly on an item,
-depending on how short the reference is). Score precision is 10 decimals since journal
-entry 31, and the leaderboard warns if it ever reads runs written at less.
+No `rescore` step is needed: scores are written at 10 decimals, because the tie tolerance
+is load-bearing for `coverage` (13-23% of arm pairs tie exactly on an item, depending on how
+short the reference is) and 6 decimals cannot tell a genuine tie from a rounding artifact.
+The leaderboard warns if it reads runs written at less.
 
 Expect different absolute numbers. Providers update models behind stable names, and
 `reasoning_tokens`, `providers_seen` and the resolved upstream model id are recorded per run
@@ -975,8 +970,8 @@ precisely so a future divergence can be attributed rather than guessed at.
 
 ## Costs are what the provider billed
 
-The `$` figures are what the provider reported charging, per call, in `usage.cost`, not a price computed from `usd_per_mtok_in/out` in each arm's config. A config holds one price per model **alias**, and an alias is not a price. OpenRouter routes each request to one of several upstream providers — a single run in this repo recorded Novita 262 times, Parasail 9, DeepInfra 6, Nebius 3 — and they charge differently, so the effective price is a routing-dependent mixture no config can state in advance. Measured across all four examples, the price table is wrong **per arm by 0.67× to 3.76×, in both directions**.
+The `$` figures are what the provider reported charging, per call, in `usage.cost`, not a price computed from `usd_per_mtok_in/out` in each arm's config. A config holds one price per model **alias**, and an alias is not a price. OpenRouter routes each request to one of several upstream providers — a single run in this repo recorded Novita 262 times, Parasail 9, DeepInfra 6, Nebius 3 — and they charge differently, so the effective price is a routing-dependent mixture no config can state in advance. Measured over the hosted runs of the five experiments other than SummEval, the price table is wrong **per arm by 0.67× to 3.76×, in both directions**.
 
 **The error is not uniform, and that is what makes it matter.** Arms served by a single provider — the Anthropic models, notably — match the table exactly. The cheap, multi-routed models are undercounted. So the table systematically **understates the cheap end of the field, and therefore inflates every price-ratio claim.** It also reorders arms by cost: on `few_nerd_280`, `glm_s` is the 2nd-cheapest arm by the table and the 9th by what was billed. Rankings by *quality* never depended on cost.
 
-All four adapters record `usage.cost` when the provider supplies it and fall back to the table only when it is silent. Runs made before the adapters recorded it keep the estimate in `cost_usd`; the billed figure is in `_meta.usage.cost` in each stored run.
+Every experiment's adapter records `usage.cost` when the provider supplies it and falls back to the table only when it is silent. Runs made before the adapters recorded it keep the estimate in `cost_usd`; the billed figure is in `_meta.usage.cost` in each stored run.

@@ -2717,6 +2717,34 @@ check(
 # NER: how often each arm emitted the `other` type. The report rests its reading of gliner's
 # 0.0000 on `other` on this count, and it needs no gold, so it runs wherever the runs do.
 _NERT = " ".join((ROOT / "research" / "REPORT_NER.md").read_text().split())
+
+# NER's pilot rho, the way the classification ones are derived: dev-slice mean f1 against the
+# full 280-item mean over every committed arm, midranks for ties. The few_nerd_56 dev runs
+# were never committed, so this is the only pilot figure the repository can check.
+_FN = _cls_correct("fn")
+if len(_FN) == 28 and "span_marker" in _FN:
+    _fn_dev = {
+        (_i if isinstance(_i, str) else (_i.get("item_id") or _i.get("id")))
+        for _i in json.loads((ROOT / "harness" / "data" / "datasets" / "few_nerd_56.json").read_text())[
+            "items"
+        ]
+    }
+    _fn_arms = sorted(_FN)
+    _fn_d = [statistics.fmean(_FN[a][i]["f1"] for i in _fn_dev) for a in _fn_arms]
+    _fn_f = [statistics.fmean(r["f1"] for r in _FN[a].values()) for a in _fn_arms]
+    _fn_rho = _stats.spearman(_fn_d, _fn_f)
+    _fn_lead = [a for a, v in zip(_fn_arms, _fn_d) if v == max(_fn_d)]
+    check(
+        "NER: pilot rho from the dev items in the committed runs, and its leader",
+        f"ρ = {_fn_rho:.3f} over the 28 arms" in _NERT
+        and f"| Extraction · Few-NERD | {_fn_rho:.3f} committed |" in _SYN
+        and _fn_lead == ["span_marker"]
+        and _fn_f.index(max(_fn_f)) == _fn_arms.index("span_marker"),
+        f"derived rho {_fn_rho:.3f}, dev leader {_fn_lead}",
+    )
+else:
+    missing += 1
+    print("  --   NER: pilot rho skipped (the 28 Few-NERD runs are not all here)")
 _oth = {}
 for _a in ("gliner", "openai_m", "anthropic_l", "span_marker"):
     _found = glob.glob(str(DATA / f"fn_{_a}_n200_v1_*"))

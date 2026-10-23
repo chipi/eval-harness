@@ -625,7 +625,16 @@ def page(title: str, desc: str, body: str, depth: int = 0, here: str = "", card:
 
 #: The helpers method.py borrows, passed in rather than imported (no circular import).
 H = types.SimpleNamespace(
-    q=q, qv=qv, e=e, page=page, times=times, money=money, word=word, REPO=REPO, author=author
+    q=q,
+    qv=qv,
+    e=e,
+    page=page,
+    times=times,
+    money=money,
+    word=word,
+    REPO=REPO,
+    VERSION=VERSION,
+    author=author,
 )
 
 
@@ -814,8 +823,9 @@ def home(f: dict) -> str:
             "Agentic AI can do months of work in days. How do I trust what it builds?",
             (
                 f"This project was built that way, with AI agents. A checker re-verifies "
-                f"{f['claims_checked']} claims against the runs on every commit, and the lab notebook "
-                "keeps every finding that had to be retracted along the way."
+                f"{f['claims_checked']} claims against the runs on every commit, the lab notebook "
+                "records the findings that had to be retracted along the way, and git keeps every "
+                "earlier version of the reports."
             ),
             f"{REPO}/tree/main/research/internal",
             "The lab notebook",
@@ -905,20 +915,23 @@ def home(f: dict) -> str:
 <section class="block" id="what"><div class="wrap">
   <div class="eyebrow"><span class="num">02</span>What it does</div>
   <h2>Four ideas, one adapter file.</h2>
-  <p class="lede">Most eval code answers \u201cwhich scored highest\u201d. That is the easy half; the hard half is whether the answer survives being asked again. The harness imports nothing domain-specific — everything about your system lives in one file, <code>adapter.py</code>, with four functions.</p>
+  <p class="lede">Most eval code answers \u201cwhich scored highest\u201d. That is the easy half; the hard half is whether the answer survives being asked again. The harness imports nothing domain-specific — everything about your system lives in one file, <code>adapter.py</code>, with two functions you write: <code>call_system()</code> and <code>score()</code>.</p>
   <div class="habits">{idea_html}</div>
   <div class="cols" style="margin-top:48px">
-    <div class="prose"><h3 style="font-size:28px;line-height:1.15;margin-bottom:16px">Try the whole loop in a minute.</h3><p>The demo runs on bundled synthetic data — no API key, no network. It freezes a dataset, runs an arm three times and checks the record; <code>make leaderboard</code> then shows the ranking and whether it is real.</p>
+    <div class="prose"><h3 style="font-size:28px;line-height:1.15;margin-bottom:16px">Try the whole loop.</h3><p>Install the pinned release in a new folder; <code>evh init --tutorial</code> writes the project's folders and a six-ticket tutorial kit, and the guide takes it from a frozen dataset to a promoted baseline in about twenty minutes — offline, no API key. From a checkout of this repository, <code>make demo</code> runs the loop on bundled synthetic data in a minute.</p>
       <div class="btns"><a class="btn primary" href="docs/GUIDE/">Your first evaluation — the guide</a></div></div>
-<pre class="term"><span class="p">$ </span>git clone {REPO}
+<pre class="term"><span class="p">$ </span>pip install "evaluation-harness @ git+{REPO}@v{VERSION}#subdirectory=harness"
+<span class="p">$ </span>evh init --tutorial
+<span class="c"># the guide walks the tutorial from here; then, on your own system</span>
+<span class="p">$ </span>evh dataset-create --dataset-id my_v1 --source-dir data/sources
+<span class="p">$ </span>evh experiment-run --config data/configs/arm_a.yaml --repeat 3
+<span class="p">$ </span>evh leaderboard --dataset-id my_v1
+<span class="c"># or, from a checkout: the bundled demo</span>
+<span class="p">$ </span>git clone {REPO}
 <span class="p">$ </span>cd eval-harness/harness
 <span class="p">$ </span>make install
 <span class="p">$ </span>make demo
-<span class="p">$ </span>make leaderboard
-<span class="c"># then, on your own system</span>
-<span class="p">$ </span>make dataset-create DATASET_ID=my_v1
-<span class="p">$ </span>make experiment-run CONFIG=data/configs/arm_a.yaml
-<span class="p">$ </span>make leaderboard DATASET_ID=my_v1</pre>
+<span class="p">$ </span>make leaderboard</pre>
   </div>
 </div></section>
 
@@ -1117,7 +1130,7 @@ def landing(f: dict) -> str:
         <a class="btn" href="docs/PROTOCOL/">The protocol</a>
         <a class="btn" href="docs/">Full documentation</a>
       </div>
-      <p class="note" style="margin-top:32px">Reviewed in adversarial rounds, every correction kept: the <a href="{REPO}/tree/main/research/internal">lab notebook</a> records what was wrong, how it was found, and what changed.</p>
+      <p class="note" style="margin-top:32px">Reviewed in adversarial rounds: the <a href="{REPO}/tree/main/research/internal">lab notebook</a> records what was wrong, how it was found, and what changed; the reports state today's figures, and git keeps every earlier version.</p>
     </div>
   </div>
 </div></section>
@@ -1318,9 +1331,9 @@ def findings_for(x: dict, f: dict) -> list:
             ),
             *common,
             (
-                "The dev slice picked the wrong winner.",
+                "The dev slice's winner finished 10th — inside a tie.",
                 q(
-                    "Tuned on a 40-query dev slice, the leaderboard's winner there was not the winner on the 160 queries it never saw.",
+                    "Tuned on a 40-query dev slice, the leaderboard's winner there, llama_s, finished 10th of 19 on the 200-query measurement slice, 0.0265 behind the leader and not separated from it under Holm: a rank inside a tie, not a wrong pick shown at this n.",
                     rep,
                 ),
             ),
@@ -1488,8 +1501,11 @@ def remeasured_block(x: dict, f: dict, num: int) -> str:
             lead = max(d["arms"], key=lambda z: z["v2"])
             head = "Re-measured against labels a person corrected."
             text = (
-                f"One reader, the author, adjudicated by topic the {d['n_items']} disputed items, shown the hosted "
-                f"answer, and judged the gold wrong on {d['changed']}. On that gold every hosted LLM has "
+                f"One reader, the author, adjudicated by topic {d['n_items']} items, shown the hosted answer: "
+                f"the {d['changed']} disputed ones, which at least 80% of the hosted LLMs got wrong, and the "
+                f"{d['n_items'] - d['changed']} others a fine-tune got wrong. The gold was wrong on all "
+                f"{d['changed']} disputed items and right on the {d['n_items'] - d['changed']}. On that gold "
+                "every hosted LLM has "
                 f"a higher accuracy than every fine-tune: the fine-tunes fall from "
                 f"{min(z['r1'] for z in fts)}–{max(z['r1'] for z in fts)} to "
                 f"{min(z['r2'] for z in fts)}–{max(z['r2'] for z in fts)} of {d['n_arms']}, and "
@@ -1500,8 +1516,11 @@ def remeasured_block(x: dict, f: dict, num: int) -> str:
             fy = next(z for z in d["arms"] if z["arm"] == "bert_base_fy")
             head = "Re-measured against labels a person corrected."
             text = (
-                f"One reader, the author, adjudicated the {d['n_items']} disputed items, shown the hosted answer; "
-                f"the gold was wrong on {d['changed']}. The top stays a crowd, and bert_base_fy moves "
+                f"One reader, the author, adjudicated {d['n_items']} items, shown the hosted answer: the "
+                f"{d['changed']} disputed ones, which at least 90% of the hosted LLMs got wrong, and the "
+                f"{d['n_items'] - d['changed']} others bert_base_fy got wrong. The gold was wrong on all "
+                f"{d['changed']} disputed items and right on the {d['n_items'] - d['changed']}. The top "
+                "stays a crowd, and bert_base_fy moves "
                 f"from {ordinal(fy['r1'])} to {ordinal(fy['r2'])} at an unchanged {fy['v1']:.4f}. "
                 "The dataset's own gold stays primary."
             )

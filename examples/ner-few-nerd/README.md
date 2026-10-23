@@ -37,7 +37,7 @@ uv run fetch.py --n 56        # the dev slice, a strict PREFIX of the 280
 ```
 
 `uv sync` without `--extra local` provisions only the hosted arms, and the two ML arms then
-fail at import. That is how the DBpedia zero-shot arm was lost for a sweep.
+fail at import.
 
 Texts land in `../../harness/data/sources/few_nerd_<n>/`, gold in
 `../../harness/data/references/gold/few_nerd_<n>/`. A gold file holds a **JSON array of
@@ -122,8 +122,8 @@ python scripts/family_test.py --dataset-id few_nerd_280 --a fn_span_marker_n200_
 The first row is the one people get wrong by leaving precision undefined and dropping the
 item — which would delete exactly the items where a hallucinating arm should be punished.
 
-The last row exists because the first version did not have it, and an arm whose output
-could not be read arrived at the scorer as an empty list and collected the full 1.0. See
+The last row matters because an unreadable output would otherwise reach the scorer as an
+empty list and collect the full 1.0 on empty-gold items. See
 [the report](../../research/REPORT_NER.md) §6.
 
 ### Matching is one-to-one
@@ -151,10 +151,9 @@ detection problem. `capitalized` is the extreme: untyped **0.6191**, typed **0.1
 
 ### The scorer is fingerprinted, all of it
 
-`normalizer_sha256` covered only the string normaliser, on the reasoning that a normaliser
-has the most room to move a score. The reasoning was right and the scope was wrong — the
-bug above lived in the matcher. `scorer_sha256` now covers normalisation, member coercion,
-matching, the per-item rule and the metric block together.
+`scorer_sha256` covers normalisation, member coercion, matching, the per-item rule and the
+metric block together; `normalizer_sha256` alone would miss a change in the matcher, which
+is where the unreadable-output case above is decided.
 
 ---
 
@@ -186,9 +185,9 @@ as `person`, a football league as an `event`, a diuretic as `other`.
 a JSON array of ~2.7 objects rather than one word. One arm still ran out of it — see the
 report §3.7.
 
-**The GLiNER/SpanMarker pair is the control in this example, not a matched pair.** The
-DBpedia example could not run a fine-tuned ML arm at all, so its ML-vs-LLM question went
-unanswered. Here both load. They differ in exposure to Few-NERD's training split, and also
+**The GLiNER/SpanMarker pair is the control in this example, not a matched pair.** On
+DBpedia the fine-tuned arm joined the top group without leading it. Here both span taggers
+load. They differ in exposure to Few-NERD's training split, and also
 in architecture and encoder (a span classifier on RoBERTa against a label-prompted matcher
 on DeBERTa-v3), so the gap between them is exposure plus architecture; how it splits is
 not measured. The ML-vs-LLM answer rests on `span_marker` against the 24 hosted arms.

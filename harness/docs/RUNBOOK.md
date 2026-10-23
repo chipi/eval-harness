@@ -11,13 +11,22 @@ golden dataset. This page is the reference for each step.
 
 ## 0. Prove it works before you touch it
 
+In a project that pins the package:
+
+```bash
+evh self-test
+```
+
+That runs the paired test's own suite and the tutorial end to end in a scratch folder,
+offline and at $0. In a checkout of the harness:
+
 ```bash
 make demo
 ```
 
 That freezes a dataset from the bundled samples, materializes it, runs an
-experiment three times, and validates the tree. No API key. If that works, the
-skeleton is wired correctly and anything that breaks later is your change.
+experiment three times, and validates the tree. No API key. If either works, the
+harness is wired correctly and anything that breaks later is your change.
 
 ---
 
@@ -287,7 +296,7 @@ make run-promote RUN=<run_id> REASON="beat prev baseline by 6% on my_v1 n=40, sp
 ```
 
 Refused if the run came from a dirty tree, if its build is unknown, or if the
-reason is a single word. Those refusals exist for the same reason: in six months, *"why is this the
+reason is under three words. Those refusals exist for the same reason: in six months, *"why is this the
 baseline?"* must have an answer.
 
 The baseline carries what its number means, from the run: the reference tier it was scored
@@ -436,7 +445,8 @@ and to the news-summary judge, so neither is an `evh` command.
      `--arms a,b,c` narrows it. A subset is its own judging set. If the arms mix config versions
      (`_v1` and `_v2` of one arm), the pass warns: each version is judged as its own arm.
    - **`prompt.file`** is looked up in this order, first hit wins: an absolute path as
-     written; the project root (`EVAL_HOME`, else the harness checkout); the directory of
+     written; the project root (`EVAL_HOME`; else, in a checkout, the checkout; else the nearest
+     directory up from where you run that has `data/`); the directory of
      the scorer file itself; and, only in a checkout of this repository, the repository root,
      which is where the committed scorers' `examples/summeval-judging/prompt.txt` points. A
      project keeps its prompt wherever it likes and names it relative to its root
@@ -561,16 +571,15 @@ notebook) reads no `.env`, and the project's paths are resolved on first use, so
 
 ## Choosing what to evaluate against
 
-The **system under test** is recorded as `build.ref`. It defaults to this tree's
-git SHA, which is right only if this tree *is* the system — and a drop-in
-usually is not.
+The **system under test** is recorded as `build.ref`. It defaults to the project's
+git SHA, which is right only if the project *is* the system under test.
 
 Declare it instead. No code edit:
 
 ```bash
 EVAL_BUILD_REF=v2.3.1                make experiment-run CONFIG=...
 EVAL_BUILD_REF=sha256:ab12…          make experiment-run CONFIG=...   # image digest
-EVAL_BUILD_REF=$(git -C ../ rev-parse HEAD)   make experiment-run ...  # the parent repo
+EVAL_BUILD_REF=$(git -C ../my-system rev-parse HEAD)   make experiment-run ...  # the system's repo
 ```
 
 **Pin it.** An eval against a moving target measures the target's movement, and

@@ -14,8 +14,10 @@ model, a hand-written rule set, and a constant.
 > models zero-shot, one prompt, no label definitions or examples, temperature 0, reasoning
 > off, no provider pinned. See
 > [`REPORT_CLASSIFICATION.md`](../../research/REPORT_CLASSIFICATION.md) §3.1 and §3.4. The
-> two bert-base arms need torch ≥ 2.6 (`uv sync --extra local` resolves it everywhere but
-> x86_64 macOS).
+> two bert-base arms' `main` revisions need torch ≥ 2.6 (`uv sync --extra local` resolves it
+> everywhere but x86_64 macOS); their safetensors conversion PRs (`refs/pr/1`) load on torch
+> 2.2.2 and give the same output on all 200 items
+> ([`docs/evidence/conversion_pr_check.json`](../../docs/evidence/conversion_pr_check.json)).
 
 It is the second worked example for [`../../harness`](../../harness), and it exists
 because classification breaks things the summarisation example never touched. The

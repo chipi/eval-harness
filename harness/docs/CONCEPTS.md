@@ -17,7 +17,7 @@ Every run records three things:
 | **data** | `dataset_id` | you cannot compare anything to anything |
 
 `make validate` fails on a run missing any of them. `EVAL_BUILD_REF` sets the
-first when the harness lives outside a git repo — a version, an image digest, a
+first when the project is not the system under test, or is not a git repository — a version, an image digest, a
 pinned dependency ref, whatever actually identifies the thing being measured.
 
 **Pin it.** An eval against a moving target measures the target's movement, and
@@ -142,7 +142,7 @@ one from last quarter without saying so.
 - a run from a **dirty tree** — its `build.ref` does not describe what ran
 - a run whose **build is unknown** — a different and worse problem, so it takes
   its own flag
-- a **one-word reason** — because *"why is this the baseline?"* must have an
+- a **reason under three words** — because *"why is this the baseline?"* must have an
   answer in six months
 
 A baseline is never edited. Promoting a new one replaces it, and git keeps the old one:

@@ -82,17 +82,15 @@ to beat.*
    `bert_mini` from 16 (not from 11 hosted arms, among them `anthropic_l`, +0.0450,
    p = 0.063). The two bert-base fine-tunes agree on 192 of 200 labels.
 
-2. **The AG News lead lives in 17 items the hosted arms get wrong; on an earlier reading about
-   half a learnable convention, about half mislabels; adjudicated by topic, by one reader
-   shown the hosted answer, the gold was wrong on all 17 (§3.4, reference v2).** 17 items are missed by ≥80% of the 24
-   hosted arms (19 at 75%, 20 at 70%; `anthropic_m` gets 3 of the 17 right). The fine-tunes
-   agree with the gold on 12–14 of them; `anthropic_l` on none. The earlier reading, by a single rater after the
-   fact: 8 follow a convention a trained model learns and a zero-shot prompt that states none
-   has no reason to — business news about technology companies (HP, IBM, Dell, Sohu,
-   Vodafone) filed under `Sci/Tech`; 7 this rater judges mislabels (Olympic results filed as
-   `World`); 2 are ambiguous. Of the 14 the leader gets right, 6 are convention, 2 ambiguous,
-   6 mislabels. The later adjudication judged all 17 by topic: "wrong" in
-   the heading means the gold does not name the topic, not that the label breaks the feed's own
+2. **The AG News lead lives in 17 items the hosted arms get wrong; adjudicated by topic, by
+   one reader shown the hosted answer, the gold was wrong on all 17 (§3.4, reference v2).**
+   17 items are missed by ≥80% of the 24 hosted arms (19 at 75%, 20 at 70%; `anthropic_m`
+   gets 3 of the 17 right). The fine-tunes agree with the gold on 12–14 of them;
+   `anthropic_l` on none. The reader's reason: the labels follow the source feed's section,
+   not the article's topic — business news about technology companies (HP, IBM, Dell, Sohu,
+   Vodafone) filed under `Sci/Tech`, Olympic results filed as `World` — a convention a
+   trained model learns and a zero-shot prompt that states none has no reason to. "Wrong"
+   means the gold does not name the topic, not that the label breaks the feed's own
    convention. All 17 are listed in §3.4. The 17 are defined by the hosted arms' own errors,
    so a lead concentrated in them is close to built in. On the other 183 items `anthropic_l`
    (0.984) and `bert_base_ta` (0.973) cannot be told apart — discordant items 3 vs 1, exact
@@ -133,8 +131,7 @@ to beat.*
    survive Holm (p = 0.0149, threshold 0.0063), and it is not separated from `gemma_s`,
    `gemma_l` or `deepseek_l` either. The highest-scoring self-hostable arm is a CPU model
    under half a gigabyte; whether the 44 MB one is better than the open-weight LLMs is a
-   point estimate this data does not confirm. On DBpedia the fine-tuned arm — measured
-   2026-09-30, once a machine with torch ≥ 2.6 could load it — scores **0.9857 at 438 MB**,
+   point estimate this data does not confirm. On DBpedia the fine-tuned arm scores **0.9857 at 438 MB**,
    the same as Gemma-4-26B at 52 GB and GLM-4.6 at 714 GB (those two as served by providers;
    neither was self-hosted here), and like them it is not separated from the overall winner.
    The top group therefore contains a CPU-sized classifier and open-weight models as well as
@@ -246,7 +243,7 @@ mistral_s            0.8600    0.8597   0.0019
 ```
 
 ◆ = fine-tuned on AG News, local, $0. `bert_base_ta` (textattack) and `bert_base_fy`
-(fabriceyhc) added 2026-09-30: 438 MB each, 76 and 90 ms/item on a 4-core Linux CPU; `bert_mini`
+(fabriceyhc), measured 2026-09-30: 438 MB each, 76 and 90 ms/item on a 4-core Linux CPU; `bert_mini`
 is 44 MB at 7 ms on the 12-core Mac. Re-timed together on the Linux machine (medians,
 `harness/data/runs-linux/`): 49, 55 and 4.3 ms. textattack's model card reports 0.9514 on its own eval set; 0.9600 here on
 200 items is consistent with it, and both new arms' confusion matrices are diagonal — the
@@ -315,7 +312,7 @@ anthropic_s          0.9786    0.9782    0.0536    glm_s              0.9393    
                                                    constant           0.0714    0
 ```
 
-◆ = fine-tuned on DBpedia-14, local, $0, 87 ms/item on a 4-core Linux CPU (61 ms median). Added 2026-09-30.
+◆ = fine-tuned on DBpedia-14, local, $0, 87 ms/item on a 4-core Linux CPU (61 ms median), measured 2026-09-30.
 
 `p = 0.0002`, **CD 2.58**, **77 of 378** pairs distinguishable, observed span 12.90
 (k=28). Holdout on the 224 items outside the dev slice: CD 2.89, **76 of 378**.
@@ -329,7 +326,7 @@ against a threshold of 0.0026; `qwen_l` and `glm_l` are seven items behind). Aga
 `anthropic_l`: delta **+0.0036** — one item in 280 — at **p = 1.0000**. Against the fine-tuned
 arm: **+0.0071**, two items, **p = 0.62**.
 
-**The fine-tuned arm, measured.** The checkpoint ships only a pickle, which `transformers`
+**The fine-tuned arm, measured.** The checkpoint's `main` revision ships only a pickle, which `transformers`
 refuses below torch 2.6; it ran unmodified on Linux.
 `bert_base_fy` from its own side (Holm over m=27): **separated from 5 of 27** — the three
 non-LLM floors, `glm_s` and `deepseek_s` — and ahead on the point estimate against 21.
@@ -378,7 +375,9 @@ is not ordered by this data.
 ### 3.4 Label noise
 
 `classification_report.py` reports items that at least 80% of the *learned* arms got
-wrong. A near-universal miss is evidence about the label, not the models.
+wrong: all 3 on DBpedia and 17 on AG News, of which five are shown here (all 17 are in the
+table below; the most-missed, "Oil prices bubble to record high", 27/28, is there). A
+near-universal miss is evidence about the label, not the models.
 
 ```
 DBpedia   Dukart's Canal            gold NaturalPlace  25/26 → MeanOfTransportation, Building
@@ -392,8 +391,8 @@ AG News   "Rivals Try to Turn Tables on Charles Schwab"   gold Sci/Tech   26/28 
           "Live: Olympics day four … gold for GB"         gold World      25/28 → Sports
 ```
 
-The field's answer is defensible on all three; the gold may be wrong on each, and nobody has
-adjudicated them (§5). **On DBpedia the top eleven arms are separated by four items in total
+The field's answer is defensible on all three, and one reader, shown the hosted answer,
+judged the gold wrong on each (reference v2, below). **On DBpedia the top eleven arms are separated by four items in total
 and three items are missed by 24–25 of the 26 learned arms: the noise floor and the signal are
 the same size.** Any ranking inside that group ranks which model best reproduces the corpus's
 ontology quirks, and this data cannot say whether it also ranks which classifies better.
@@ -438,44 +437,40 @@ arms wrong, 19 at 75%, 20 at 70%. All 17, so the reading below can be checked ra
 taken on trust (the corpus is not redistributed; these are headlines only). The fourth column
 lists which of the three fine-tunes (`ta` = `bert_base_ta`, `fy` = `bert_base_fy`, `mini` =
 `bert_mini`) agree with the gold label; "—" means none of them does. "Field's majority" is
-the label most of the 24 hosted arms chose. Rows are grouped by the reading, which is mine —
-a single rater, after the fact, with no second reading: convention, then ambiguous, then
-mislabel.
+the label most of the 24 hosted arms chose; on all 17 it is also the adjudicated label
+(reference v2, below).
 
-| headline | gold | field's majority | fine-tunes agreeing with gold | reading |
-|---|---|---|---|---|
-| Storage, servers bruise HP earnings update | Sci/Tech | Business | ta fy mini | convention |
-| Some People Not Eligible to Get in on Google IPO | Sci/Tech | Business | fy | convention |
-| Consumers Would Pay In Phone Proposal | Sci/Tech | Business | ta fy mini | convention |
-| IBM to hire even more new workers | Sci/Tech | Business | ta mini | convention |
-| Spam suspension hits Sohu.com shares | Sci/Tech | Business | ta fy mini | convention |
-| Vodafone hires Citi for Cesky bid | Sci/Tech | Business | ta fy mini | convention |
-| IBM Buys Two Danish Services Firms | Sci/Tech | Business | mini | convention |
-| Dell Exits Low-End China Consumer PC Market | Sci/Tech | Business | ta mini | convention |
-| Card fraud unit nets 36,000 cards | Sci/Tech | Business | ta fy | ambiguous |
-| Rivals Try to Turn Tables on Charles Schwab | Sci/Tech | Business | ta fy | ambiguous |
-| China cracks down on "phone sex" services | Sci/Tech | World | ta fy mini | mislabel |
-| Live: Olympics day four | World | Sports | ta fy mini | mislabel |
-| U.S. Misses Cut in Olympic 100 Free | World | Sports | ta fy mini | mislabel |
-| Oil prices bubble to record high | World | Business | — | mislabel |
-| India's Tata expands regional footprint via NatSteel buyout | World | Business | ta fy | mislabel |
-| Stocks Climb on Drop in Consumer Prices | World | Business | ta fy mini | mislabel |
-| Google Lowers Its IPO Price Range | World | Business | ta fy mini | mislabel |
+| headline | gold | field's majority | fine-tunes agreeing with gold |
+|---|---|---|---|
+| Storage, servers bruise HP earnings update | Sci/Tech | Business | ta fy mini |
+| Some People Not Eligible to Get in on Google IPO | Sci/Tech | Business | fy |
+| Consumers Would Pay In Phone Proposal | Sci/Tech | Business | ta fy mini |
+| IBM to hire even more new workers | Sci/Tech | Business | ta mini |
+| Spam suspension hits Sohu.com shares | Sci/Tech | Business | ta fy mini |
+| Vodafone hires Citi for Cesky bid | Sci/Tech | Business | ta fy mini |
+| IBM Buys Two Danish Services Firms | Sci/Tech | Business | mini |
+| Dell Exits Low-End China Consumer PC Market | Sci/Tech | Business | ta mini |
+| Card fraud unit nets 36,000 cards | Sci/Tech | Business | ta fy |
+| Rivals Try to Turn Tables on Charles Schwab | Sci/Tech | Business | ta fy |
+| China cracks down on "phone sex" services | Sci/Tech | World | ta fy mini |
+| Live: Olympics day four | World | Sports | ta fy mini |
+| U.S. Misses Cut in Olympic 100 Free | World | Sports | ta fy mini |
+| Oil prices bubble to record high | World | Business | — |
+| India's Tata expands regional footprint via NatSteel buyout | World | Business | ta fy |
+| Stocks Climb on Drop in Consumer Prices | World | Business | ta fy mini |
+| Google Lowers Its IPO Price Range | World | Business | ta fy mini |
 
-- **8 follow a convention.** Business news *about technology and telecoms companies* is
-  filed under `Sci/Tech` — HP, IBM twice, Dell, Sohu, Vodafone, Google, a phone-fee
-  proposal. A model trained on AG News learns that; a zero-shot LLM, asked for the topic,
-  says Business — defensibly.
-- **7 this rater judges mislabels:** Olympic results filed under `World`, a stock-market
-  report and an oil-price record under `World`, a Chinese crackdown on phone-sex lines under
-  `Sci/Tech`.
-- **2 are ambiguous** — a card-fraud unit's arrests and a discount broker's rivals fit
-  neither label well.
+Business news about technology and telecoms companies is filed under `Sci/Tech` (HP, IBM
+twice, Dell, Sohu, Vodafone, Google, a phone-fee proposal, a card-fraud unit, a discount
+broker's rivals), as is a Chinese crackdown on phone-sex lines; Olympic results, a
+stock-market report, an oil-price record, an IPO story and a steel buyout are filed under
+`World`. A model trained on AG News learns the feed's sections; a zero-shot LLM, asked for
+the topic, says Business, Sports or World.
 
 **Three cautions about the table.** The "other 183" column is selected by the hosted arms'
 own errors, so it flatters them by construction — and even so it shows no separable difference, not a
 reversal; it does *not* show that LLMs are more accurate readers of news. "Agrees with gold"
-on a mislabel is not a virtue. And the prompt (`prompt.txt`) gives no `Sci/Tech`-versus-
+on these 17 is agreement with a label the adjudication judged wrong, not a virtue. And the prompt (`prompt.txt`) gives no `Sci/Tech`-versus-
 `Business` convention, so the convention gap is partly a prompt gap; a prompt with label
 definitions or examples is untested here. The defensible reading is narrower and more useful:
 **the fine-tuned arms lead AG News by reproducing AG News's labelling, conventions and
@@ -486,8 +481,8 @@ tags (§5) are a further unexcluded route to the lead: whether the 17 carry them
 checked, because the AG News text is not in this repository (the fetched slices are
 gitignored and none was downloaded for this review).
 
-This is the in-distribution caveat [`HANDOVER_CLASSIFICATION_AG_NEWS.md`](internal/HANDOVER_CLASSIFICATION_AG_NEWS.md)
-was corrected to state, now with a number on it. `bert_mini` alone could not show it
+This is the in-distribution caveat that [`HANDOVER_CLASSIFICATION_AG_NEWS.md`](internal/HANDOVER_CLASSIFICATION_AG_NEWS.md)
+states, with a number on it. `bert_mini` alone could not show it
 clearly — it was one arm; three fine-tunes (all trained on AG News's labels, two of them by
 different authors) agreeing with the gold where 24 LLMs agree with each other is a pattern,
 though not three independent tests of it.
@@ -497,23 +492,25 @@ though not three independent tests of it.
 The disputed items were adjudicated on 2026-10-19 by one reader, the operator, who was shown
 each item's text, its gold label and the hosted field's majority answer. So that the review
 was not one-sided, it covered every item at least 80% of the 24 hosted LLMs got wrong (AG
-News, 17; DBpedia, at 90%, 3) and every item a fine-tuned arm got wrong (AG News, 12;
-DBpedia, 2). The gold was wrong on all 20 items the hosted field missed and right on all 14
-the fine-tunes missed. The reader's reason, for AG News: the labels follow the source feed's
+News, 17; DBpedia, at 90%, 3) and every other item a fine-tuned arm got wrong (AG News, 12
+more; DBpedia, 2 more). The gold was wrong on all 20 items the hosted field missed and right
+on all 14 the fine-tunes alone missed. The reader's reason, for AG News: the labels follow the source feed's
 section, not the article's topic, so company news from a technology desk is Sci/Tech and
 non-US news, sport included, is World.
 
 The record is `examples/classification-ag-news/adjudication.json` and
 `examples/classification-dbpedia-14/adjudication.json`. `examples/_shared/adjudicate.py`
-builds the reference set from the local gold, and every committed run was re-scored against
-it for $0 into `data/runs-adjudicated/`. The original runs and scores are unchanged.
+builds the reference set from the local gold, and `rescore.py` re-scores every committed run
+against it for $0 into `data/runs-adjudicated/`, a regenerable output that is not committed.
+`harness/tools/check_report_claims.py` recomputes every v2 figure below from the committed
+predictions and the adjudication records. The original runs and scores are unchanged.
 
 | AG News arm | gold v1 (rank) | adjudicated v2 (rank) |
 |---|---|---|
 | `anthropic_l` | 0.9000 (5) | **0.9850 (1)** |
 | `openai_m` | 0.8950 (6) | 0.9800 (2) |
 | `openai_l` | 0.8900 (7) | 0.9750 (3) |
-| `anthropic_m` | 0.9100 (4) | 0.9650 (4) |
+| `anthropic_m` | 0.9100 (4) | 0.9650 (4–5) |
 | `gemma_m` | 0.8550 (21) | 0.9400 (17) |
 | `llama_s`, lowest hosted | 0.8350 (27) | 0.9200 (24) |
 | `bert_base_ta` | **0.9600 (1)** | 0.9050 (25–27) |
@@ -524,7 +521,7 @@ Holm over the 29 other arms, on v2: `anthropic_l` is separated from 9, including
 fine-tunes (p 0.0001–0.0005), and not separated from 20 hosted arms. `bert_base_ta` is
 separated below `anthropic_l` and `openai_m`. On DBpedia the top stays a crowd: `gemma_m`
 and `qwen_m` lead at 0.9964, `gemma_m` is separated from only 5 of 27, and `bert_base_fy`
-moves from 3rd to 11th at an unchanged 0.9857.
+moves from 3rd= to 11th= (tied with `openai_s` and `gemma_l`) at an unchanged 0.9857.
 
 So the fine-tunes' AG News lead was the corpus's convention, learned. If your labels follow a
 house convention, a fine-tune trained on them learns it; if they mean what the words say,
@@ -629,16 +626,17 @@ run.
 ## 5. What this experiment cannot say
 
 - **Whether a *different* DBpedia fine-tune would clear the top group.** One was measured
-  (`fabriceyhc/bert-base-uncased-dbpedia_14`, 2026-09-30, on Linux — no DBpedia-14
-  fine-tune loads on x86_64 macOS, because the whole 2021–2023 cohort ships pickles only).
+  (`fabriceyhc/bert-base-uncased-dbpedia_14`, on Linux — its `main` revision ships only a
+  pickle, which `transformers` refuses below torch 2.6 and so not on x86_64 macOS; its
+  safetensors conversion PR, `refs/pr/1`, loads on torch 2.2.2 and gives byte-identical
+  outputs, §7).
   One checkpoint is not the cohort, and the top eleven are separated by four items, three of
   them disputed labels; a RoBERTa or a newer fine-tune could land one item higher or lower
   and nothing here would say which.
-- **How much of each arm's error is irreducible.** Doing that properly means adjudicating
-  the disputed items against fresh human judgement. Nobody has — and since the AG News
-  fine-tuned lead is concentrated in 17 such items, that adjudication would decide how much
-  of the lead is convention (defensible) and how much is memorised mislabels (not). The
-  split here (8 / 7 / 2) is one rater's, after the fact.
+- **How much of each arm's error is irreducible.** One reader, the operator, adjudicated
+  the disputed items, shown the hosted answer (§3.4, reference v2); no blind or second
+  annotator has, and only items some arm disagreed with were reviewed, so an error the gold
+  and every arm share was not seen.
 - **The pilot ρ values, from committed data.** The dev-slice runs were never committed, so
   the pilot ρ cannot be checked from this repository. Ranking the dev items *inside* the
   committed n=200 runs by accuracy, ties given midranks, gives 0.701 on AG News's 30 arms and
@@ -685,7 +683,8 @@ run.
 ## 6. The label parser is part of the instrument
 
 `parser_sha256` is recorded on every run because the parse is worth points: on one arm it is
-worth 8.6 of them ([`NOTES.md`](internal/NOTES.md) entry 47). Two runs whose parsers differ
+worth 8.6 of them on DBpedia ([`NOTES.md`](internal/NOTES.md) entry 49; 7.5 on AG News,
+entry 47). Two runs whose parsers differ
 are not one measurement.
 
 ---
@@ -730,8 +729,8 @@ written from. The corpora are not committed — rebuild them with each example's
 
 ## Costs are what the provider billed
 
-The `$` figures are what the provider reported charging, per call, in `usage.cost`, not a price computed from `usd_per_mtok_in/out` in each arm's config. A config holds one price per model **alias**, and an alias is not a price. OpenRouter routes each request to one of several upstream providers — a single run in this repo recorded Novita 262 times, Parasail 9, DeepInfra 6, Nebius 3 — and they charge differently, so the effective price is a routing-dependent mixture no config can state in advance. Measured across all four examples, the price table is wrong **per arm by 0.67× to 3.76×, in both directions**.
+The `$` figures are what the provider reported charging, per call, in `usage.cost`, not a price computed from `usd_per_mtok_in/out` in each arm's config. A config holds one price per model **alias**, and an alias is not a price. OpenRouter routes each request to one of several upstream providers — a single run in this repo recorded Novita 262 times, Parasail 9, DeepInfra 6, Nebius 3 — and they charge differently, so the effective price is a routing-dependent mixture no config can state in advance. Across the 132 committed hosted runs of the six examples, the price table is wrong **per arm by 0.32× to 3.76×, in both directions** (0.67× to 3.76× in summarisation, classification and NER; the 0.32× is SummEval's `deepseek_l`).
 
-**The error is not uniform, and that is what makes it matter.** Arms served by a single provider — the Anthropic models, notably — match the table exactly. The cheap, multi-routed models are undercounted. So the table systematically **understates the cheap end of the field, and therefore inflates every price-ratio claim.** It also reorders arms by cost: on `few_nerd_280`, `glm_s` is the 2nd-cheapest arm by the table and the 9th by what was billed. Rankings by *quality* never depended on cost.
+**The error is not uniform, and that is what makes it matter.** `anthropic_l` and `anthropic_s` match the table exactly on every corpus, but one provider is not enough: `anthropic_m`, served by one, was billed 0.67× the table on every corpus, and the single-provider OpenAI and Qwen arms 0.71× to 3.76×. The cheap, multi-routed models are undercounted: 60 of the 66 multi-provider runs were billed at or above the table. So the table systematically **understates the cheap end of the field, and therefore inflates every price-ratio claim.** It also reorders arms by cost: on `few_nerd_280`, `glm_s` is the 3rd-cheapest arm by the table and the 10th by what was billed. Rankings by *quality* never depended on cost.
 
-All four adapters record `usage.cost` when the provider supplies it and fall back to the table only when it is silent. Runs made before the adapters recorded it keep the estimate in `cost_usd`; the billed figure is in `_meta.usage.cost` in each stored run.
+The adapters of all six examples record `usage.cost` when the provider supplies it and fall back to the table only when it is silent. Runs made before the adapters recorded it keep the estimate in `cost_usd`; the billed figure is in `_meta.usage.cost` in each stored run.

@@ -55,7 +55,7 @@ what people thought:
 | a source file changed under a frozen dataset | every item is hashed; `materialize` re-verifies and fails loudly |
 | model-generated references quoted as ground truth | gold and silver are distinct; every run records which it used |
 | "model B is better" with no mention of 4× the cost | cost, tokens and latency recorded beside quality |
-| a baseline nobody can justify | `promote` refuses a dirty build, an unknown build, or a one-word reason |
+| a baseline nobody can justify | `promote` refuses a dirty build, an unknown build, or a reason under three words |
 
 The refusals are the product. A tool that always yields a number teaches people
 to trust numbers.
@@ -173,8 +173,9 @@ make rescore DATASET_ID=my_v1 MATCH=_v2
 EVAL_RUNS_DIR=data/runs-rescored make leaderboard DATASET_ID=my_v1
 ```
 
-Rescored runs go to a separate directory carrying `rescored_from`, `rescored_at` and the
-scorer's sha256, so a recomputation can never be mistaken for a measurement. Latency, cost
+Rescored runs go to a separate directory and record `derived: {kind: rescore, from, at, with}`:
+the source run, when, and the sha256 of the adapter (and its scorer) that rescored it, so a
+recomputation can never be mistaken for a measurement. Latency, cost
 and token counts are carried across untouched — they describe the call that happened, not
 how it was later measured.
 
@@ -215,10 +216,12 @@ and all of them are tried.
 
 Read the result against the **ceiling** it prints. Two runs of the same arms against the
 same gold do not rank identically either, so that retest correlation is the best any proxy
-could score. On the bundled example: ceiling 0.93, silver authors −0.01–0.69 (mean 0.35).
+could score. In the summarisation experiment's 24 hosted arms
+([REPORT_SUMMARIZATION §3.5](../research/REPORT_SUMMARIZATION.md)): ceiling 0.92, silver
+authors −0.01–0.70 (mean 0.33).
 
 The number that matters most is the last one. Grouping arms by `family`, a silver author
-**promotes models of its own kind by ~8 rank positions, for 22 of 24 authors** — and
+**promotes models of its own kind by ~7 rank positions, for 22 of 24 authors** — and
 excluding the author's own row does not remove it, because the bias is not an author
 scoring itself, it is an author rewarding its own kind's style. A silver-ranked leaderboard
 is not merely noisier than a gold one; it is biased in a direction you can predict from who

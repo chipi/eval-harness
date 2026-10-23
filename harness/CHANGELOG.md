@@ -18,7 +18,9 @@ one with its own layout writes one adapter. Goals record what an evaluation is f
 the typed fields a project declares, and can live at a pinned URL. The paired test now lives in
 one place, `evaluation_harness.stats`, exact at 30 items or fewer.
 **Upgrading can move a result** only where `pair-test` or `family-test` ran on 30 items or fewer,
-or in a wins count or an order on a lower-is-better metric (both below), and adds no dependency. Design:
+in a wins count or an order on a lower-is-better metric, or where `--exclude-dataset` named a
+dataset whose items are not `.txt` files under `data/sources/<id>/` (all below), and adds no
+dependency. Design:
 [ADR-0002](https://github.com/chipi/eval-harness/blob/main/docs/adr/ADR-0002-catalog-inspector-goals.md),
 [ADR-0003](https://github.com/chipi/eval-harness/blob/main/docs/adr/ADR-0003-item-fields-and-url-items.md);
 how to upgrade: [UPGRADING](https://github.com/chipi/eval-harness/blob/main/harness/docs/UPGRADING.md).
@@ -48,7 +50,7 @@ p 0.36, from the pre-fix run), and DBpedia's 56-item dev slice, over today's 28 
   of estimating it from 20,000 seeded permutations. Above 30 items the estimate is unchanged,
   bit for bit, including `family-test`'s single stream across opponents. Near a threshold the
   estimate could land on either side of it; the count cannot. **This can move a result**:
-  - **in this repository's reports:** none moved. All 199 report claims re-derive unchanged,
+  - **in this repository's reports:** none moved. All 200 report claims re-derive unchanged,
     because every published pair and family test is on more than 30 items;
   - **in the tutorial** (6 items): `pair-test` reads 0.0312 (was 0.0330), and the family test
     0.0938 against `lead1` and 0.3125 against `author` (`lead2_noisy`'s is unseeded and moves
@@ -87,7 +89,7 @@ p 0.36, from the pre-fix run), and DBpedia's 56-item dev slice, over today's 28 
   and "ahead", the leaderboard's order and significance block, `holdout` and `rank-stability`.
   `leaderboard --sort latency_ms` ranked the slowest arm first. p-values do not change (the
   tests are two-sided); `--asc` and `--desc` override. **This can move** a wins or "ahead"
-  count, and an order, on a lower-is-better metric; no published claim is on one (199/199
+  count, and an order, on a lower-is-better metric; no published claim is on one (200/200
   re-derive).
 - **`validate` checks the project's own run directories.** V7, V8 and V9 read this
   repository's six directory names, so a project's `data/runs-adjudicated` was never checked;
@@ -257,7 +259,7 @@ p 0.36, from the pre-fix run), and DBpedia's 56-item dev slice, over today's 28 
   - **CSP-clean:** no inline script or style. The theme script is a file, and the legend
     colours are set from JS.
 
-  Tests: `tests/test_catalog.py` (53 assertions), run by `make test`.
+  Tests: `tests/test_catalog.py` (54 assertions), run by `make test`.
 - **Goals: what an evaluation is for** (`data/goals/<goal_id>.yaml`, `schemas/goal.schema.json`).
   - **What a goal says:** who uses the output, the decision it informs, the measure that
     decides (and which direction is better), the output formats it accepts, its datasets
@@ -312,16 +314,16 @@ p 0.36, from the pre-fix run), and DBpedia's 56-item dev slice, over today's 28 
   never on a redirect elsewhere, never written into a dataset). With `--update-fields`, an
   empty cell clears a value.
 
-  Tests: `tests/test_fields.py` (46 assertions), run by `make test`; the catalog's in
+  Tests: `tests/test_fields.py` (47 assertions), run by `make test`; the catalog's in
   `test_catalog.py`.
 - **`evh init [DIR] [--tutorial]`** starts a project: `data/sources`, `data/configs`,
-  `data/goals` and a `.gitignore` for what the harness derives. `--tutorial` copies the GUIDE's
-  kit (tickets, gold, arms, a goal, a judge scorer) into `tutorial/`; the kit now ships inside
-  the package. It never overwrites a file.
+  `data/goals`, `data/fields` and a `.gitignore` for what the harness derives. `--tutorial`
+  copies the GUIDE's kit (tickets, their fields, gold, arms, a goal, a judge scorer and its
+  prompt, the judge panel's config) into `tutorial/`; the kit ships inside the package. It never overwrites a file.
 - **`make guide-check`** (part of `make check`) runs `docs/GUIDE.md` in a fresh project, as a
   reader would, and fails when a quoted output no longer matches what the command prints.
   Lines that the unseeded `lead2_noisy` arm moves are marked in the GUIDE and not compared.
-- **The tests that run `evh` install the real wheel** (`tests/_wheel.py`), built from
+- **The tests that run `evh` install the real wheel** (`tools/_wheel.py`), built from
   `pyproject.toml`, instead of copying folders. A file the package data leaves out now fails
   them, where a copy would have included it.
 - **`make browser-check`** drives the catalog and the inspector in headless Chromium: a
@@ -332,7 +334,7 @@ p 0.36, from the pre-fix run), and DBpedia's 56-item dev slice, over today's 28 
 - **`tests/test_installed_commands.py`** (in `make test`) runs every `evh` command in a
   project that pins the package; a command without a case fails it.
 - **`tests/check_commands.py`** (in `make test`) checks every `make` target, `evh` command
-  and flag shown in the current docs still exists: 262 of them across 27 docs today.
+  and flag shown in the current docs still exists: 274 of them across 27 docs today.
 - **The deploy's health check** also asks the inspector the question readers send most, a
   group of arms on one metric (`infra/deploy/probe_link.sh`), and rolls back without verdict
   rows.

@@ -167,7 +167,7 @@ All of it as run here (report §3.4): the 12
 cheapest of 24 hosted LLMs, zero-shot, one prompt, temperature 0, reasoning off, no
 provider pinned, on a public benchmark (contamination unmeasured).
 
-Four things worth reading the report for:
+Three things worth reading the report for:
 
 1. **A top group of twelve or thirteen arms the data cannot separate, and two of them are free.** `e5_base` and `bge_small` — local,
    CPU, $0 — are not separated from any of the twelve rerankers (p 0.27–0.97 and
@@ -178,5 +178,3 @@ Four things worth reading the report for:
    for `qwen_s`.
 3. **The dev slice's leader finished 10th of 19** by point estimate, 0.0265 behind `glm_s`
    — not separated. The dev runs are not committed.
-4. **One arm looked broken and was misconfigured by me:** this adapter never disabled
-   reasoning, which the other three examples all do.

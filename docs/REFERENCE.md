@@ -22,8 +22,9 @@ paper or specification for a metric.
 Each example declares `PRIMARY_METRIC` (the one thing arms are ranked by) and
 `METRIC_KINDS`, which splits everything else into **quality** (a claim about how good the
 output is) and **descriptive** (a diagnostic that must never be ranked). The split is
-enforced in code, not convention: `harness/scripts/leaderboard.py` will not rank a
-descriptive metric.
+enforced in code, not convention: `harness/scripts/leaderboard.py` never picks a
+descriptive metric to rank by while a quality metric exists, and when told to rank on one
+(`--sort`, or runs with no quality metric) it says so under the table.
 
 Which way is better is decided once, the same for every command and the inspector: a
 `--asc`/`--desc` flag, else the goal the runs name (`success_criteria.primary.direction`),
@@ -189,7 +190,7 @@ price tier.
 > stands in for `qwen_l` on SummEval only. `qwen_l`'s model is no longer served by
 > OpenRouter, and Qwen's current flagship refuses to run with reasoning disabled; Qwen3.7
 > Max is the previous flagship and accepts it. It is its own arm, never read as `qwen_l`
-> ([REPORT_SUMMEVAL §6](../research/REPORT_SUMMEVAL.md#6-what-changed-while-measuring)).
+> ([REPORT_SUMMEVAL §6](../research/REPORT_SUMMEVAL.md#6-conditions-of-this-run)).
 
 > **14 of these 24 have downloadable weights and could be self-hosted.** Verified on
 > 2026-09-29 against the HuggingFace API. Ten are unrestricted (MIT / Apache-2.0); four
@@ -444,7 +445,7 @@ Underlying architectures: [BART](https://arxiv.org/abs/1910.13461),
 | Package | Version recorded | Licence |
 |---|---|---|
 | [transformers](https://github.com/huggingface/transformers) | 4.55.4 | Apache-2.0 |
-| [torch](https://github.com/pytorch/pytorch) | 2.2.2 (macOS runs) · 2.14.0 (Linux runs) | BSD-3-Clause |
+| [torch](https://github.com/pytorch/pytorch) | 2.2.2 (macOS runs) · 2.14.0 and 2.14.1 (Linux runs) | BSD-3-Clause |
 | [sentence-transformers](https://github.com/huggingface/sentence-transformers) | 3.4.1 | Apache-2.0 |
 | [datasets](https://github.com/huggingface/datasets) | 5.0.1 | Apache-2.0 |
 | [rouge-score](https://github.com/google-research/google-research/tree/master/rouge) | 0.1.2 | Apache-2.0 |

@@ -399,11 +399,11 @@ def judging_page(H, f: dict) -> str:
     <div class="btns"><a class="btn primary" href="../docs/GUIDE/#10-optional-re-measure-with-an-llm-judge">Try it offline, $0</a><a class="btn" href="../docs/harness/RUNBOOK/#12-re-measure-with-a-validated-judge">The runbook</a><a class="btn" href="{H.BLOB}/docs/adr/ADR-0001-judge-scorers.md">The design</a><a class="btn" href="{H.BLOB}/{SUMM}">The summarisation report</a></div>
   </div>
 <pre class="term"><span class="c"># price it: builds the judging set, calls nothing</span>
-<span class="p">$ </span>make judge-score DATASET_ID=my_v1 SCORER=my-judge ARGS=--dry-run
+<span class="p">$ </span>evh judge-score --dataset-id my_v1 --scorer my-judge --dry-run
 <span class="c"># judge, capped and resumable; refused until validated</span>
-<span class="p">$ </span>make judge-score DATASET_ID=my_v1 SCORER=my-judge
+<span class="p">$ </span>evh judge-score --dataset-id my_v1 --scorer my-judge
 <span class="c"># rank and test on the judged scores</span>
-<span class="p">$ </span>EVAL_RUNS_DIR=data/runs-judged/my-judge make leaderboard DATASET_ID=my_v1</pre></div>
+<span class="p">$ </span>EVAL_RUNS_DIR=data/runs-judged/my-judge evh leaderboard --dataset-id my_v1</pre></div>
 </div></section>
 {H.author("judging")}"""
     return H.page(
