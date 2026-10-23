@@ -10,6 +10,8 @@
   "latency_ms": null,
   "n": 15,
   "output": "{\n  \"coherence\": [5, 5, 5, 3, 5, 5, 5, 2, 5, 4, 5, 5, 5, 4, 5],\n  \"consistency\": [5, 5, 5, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5],\n  \"fluency\": [5, 5, 5, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 4, 5],\n  \"relevance\": [3, 5, 5, 2, 5, 5, 5, 1, 5, 4, 5, 5, 5, 4, 5]\n}",
+  "output_sha256": "d46bbf1a5ee3baaa66227d8d80b55a7423bd631b88c5260422fa0ef0c619cd54",
+  "output_withheld": false,
   "pass": "primary",
   "prompt_sha256": "203a1e37b1eaa568b501805f5921675094e02434604d7989f4c6b995361a936c",
   "provider": "Alibaba",

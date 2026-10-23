@@ -10,6 +10,8 @@
   "latency_ms": 2921.117,
   "n": 15,
   "output": "{\"coherence\":[5,4,4,3,5,5,4,2,4,5,5,5,4,5,5],\"consistency\":[5,3,3,5,5,4,5,5,1,5,4,4,2,5,5],\"fluency\":[5,5,5,3,5,5,5,1,5,5,5,5,5,5,5],\"relevance\":[5,4,4,2,5,5,4,2,1,4,5,5,3,5,4]}",
+  "output_sha256": "a33826b5861fa869130900c210b601cc8f7fa3a609181a11b30126ea93f490a1",
+  "output_withheld": false,
   "pass": "primary",
   "prompt_sha256": "2a47aa61113d57776a4b26d65705dd085c9def8587122f5525931f0d35e1f840",
   "provider": "OpenAI",

@@ -305,7 +305,8 @@ make baselines-list
 make validate
 ```
 
-Fifteen checks (V1–V15): schema conformance, every run's `dataset_id` resolves, every run
+Fifteen checks (V1–V15): schema conformance (datasets, runs, baselines, configs, judge
+scorers, judging sets, verdicts), every run's `dataset_id` resolves, every run
 identifies its build, materialized copies still match their hashes, no two
 configs reporting byte-identical scores and per-item results, no baseline pointing at a
 deleted run, every committed run readable and present on disk, no two runs claiming one

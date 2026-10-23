@@ -70,8 +70,6 @@ try:
 except ImportError:
     jsonschema = None  # type: ignore[assignment]  # V1 is then skipped, and says why
 
-from _common import DATA as DATA_DIR
-
 problems: list[str] = []
 notes: list[str] = []
 
@@ -124,13 +122,19 @@ def v1_schemas() -> None:
         notes.append("V1 skipped: jsonschema not installed (pip install -r requirements.txt)")
         print("  --   V1 schemas (jsonschema not installed)")
         return
+    import yaml  # noqa: PLC0415
+
     pairs = [
         (DATASETS.glob("*.json"), "dataset.schema.json"),
         (
             (r / "metrics.json" for _, r in all_runs() if (r / "metrics.json").is_file()),
             "metrics.schema.json",
         ),
-        ((p for p in BASELINES.glob("*.json")), "baseline.schema.json"),
+        (BASELINES.glob("*.json"), "baseline.schema.json"),
+        (CONFIGS.glob("*.yaml"), "config.schema.json"),
+        ((DATA / "scorers").glob("*.yaml"), "scorer.schema.json"),
+        ((DATA / "judging-sets").glob("*.json"), "judging-set.schema.json"),
+        ((DATA / "judge-verdicts").glob("*/*/*/*.json"), "verdict.schema.json"),
     ]
     bad = 0
     n = 0
@@ -141,10 +145,14 @@ def v1_schemas() -> None:
                 continue
             n += 1
             try:
-                jsonschema.validate(read_json(Path(f)), schema)
+                doc = yaml.safe_load(f.read_text(encoding="utf-8")) if f.suffix == ".yaml" else read_json(f)
+                jsonschema.validate(doc, schema)
             except jsonschema.ValidationError as exc:
                 bad += 1
-                print(f"       {Path(f).name}: {exc.message[:90]}")
+                print(f"       {data_rel(f)}: {exc.message[:90]}")
+            except (ValueError, yaml.YAMLError) as exc:
+                bad += 1
+                print(f"       {data_rel(f)}: does not parse ({type(exc).__name__})")
     check(f"V1 schemas — {n} document(s) validated", bad == 0, f"{bad} violation(s)")
 
 
@@ -837,7 +845,7 @@ def _report(bad: list[str], label: str, noun: str) -> None:
 def v11_judging_sets_match_their_hash() -> None:
     """V11: every frozen judging set's stored hash matches its content's hash."""
     _report(
-        judging_set_problems(DATA_DIR / "judging-sets"),
+        judging_set_problems(DATA / "judging-sets"),
         "V11 every judging set's stored hash is the hash of its content",
         "bad set(s)",
     )
@@ -846,8 +854,8 @@ def v11_judging_sets_match_their_hash() -> None:
 def v12_verdicts_belong_to_their_set() -> None:
     """V12: every judge verdict names an existing set, item, pass and block."""
     _report(
-        verdict_problems(DATA_DIR / "judge-verdicts", DATA_DIR / "judging-sets")
-        + validation_record_problems(DATA_DIR / "judge-validation"),
+        verdict_problems(DATA / "judge-verdicts", DATA / "judging-sets")
+        + validation_record_problems(DATA / "judge-validation"),
         "V12 every judge verdict names a real set, item, pass and block, and its n; "
         "every committed reply is bare JSON or withheld",
         "bad verdict(s)",
@@ -857,7 +865,7 @@ def v12_verdicts_belong_to_their_set() -> None:
 def v13_judge_scorers_are_well_formed() -> None:
     """V13: every judge scorer yaml loads and is structurally valid."""
     _report(
-        scorer_problems(DATA_DIR / "scorers"),
+        scorer_problems(DATA / "scorers"),
         "V13 every judge scorer yaml loads and is structurally valid",
         "bad scorer(s)",
     )

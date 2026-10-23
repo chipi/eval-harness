@@ -10,6 +10,8 @@
   "latency_ms": null,
   "n": 14,
   "output": "```json\n{\n  \"coherence\": [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 4, 1, 5, 5],\n  \"consistency\": [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 3, 5, 5, 5],\n  \"fluency\": [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 1, 5, 5],\n  \"relevance\": [4, 5, 5, 4, 4, 5, 5, 5, 4, 4, 3, 1, 5, 5]\n}\n```",
+  "output_sha256": "b4c68abbed854251a10426158ed3ff3b0618349c11b334c59b2d76dd84460159",
+  "output_withheld": false,
   "pass": "primary",
   "prompt_sha256": "bfa5c7366fdb3c1d48360f42c9d784cf95d5adf8bf72b65e33af764133e5d806",
   "provider": "DeepInfra",

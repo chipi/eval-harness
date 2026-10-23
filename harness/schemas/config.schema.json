@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "config",
+  "description": "One arm: data/configs/<name>.yaml. What experiment-run and reference-create read. The knobs of the system under test go in `params`, which the adapter interprets; nothing else is read, so an unknown top-level key is a typo.",
+  "type": "object",
+  "required": ["config_id", "dataset_id", "params"],
+  "additionalProperties": false,
+  "properties": {
+    "config_id": {"type": "string", "minLength": 1, "description": "The arm's identity; runs are named after it."},
+    "dataset_id": {"type": "string", "minLength": 1},
+    "params": {"type": "object", "description": "Passed to the adapter's call_system() as is. Prices (`usd_per_mtok_in`, `usd_per_mtok_out`) live here."},
+    "adapter": {"type": "string", "minLength": 1, "description": "The adapter file, relative to the config, then the project. Absent: <project>/adapter.py, else the bundled one."},
+    "goal": {"type": "string", "minLength": 1, "description": "The goal_id this arm is measured for (ADR-0002)."},
+    "format": {"type": "string", "minLength": 1, "description": "The output shape, matched against the goal's output_contract."}
+  }
+}

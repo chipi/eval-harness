@@ -292,7 +292,7 @@ partial results preserved so a blown budget still yields a usable report.
 | `scripts/promote_baseline.py` | run → baseline, or refuse |
 | `scripts/validate_tree.py` | fifteen integrity checks (V1–V15) |
 | `scripts/list_runs.py` | what runs and baselines exist |
-| `schemas/` | the contracts: dataset, metrics, baseline, goal, field set |
+| `schemas/` | the contracts: dataset, metrics (a run), baseline, config (an arm), goal, field set, judge scorer, judging set, verdict |
 | `scripts/_fields.py`, `scripts/_fetch.py` | item fields (types, checks, the catalog's summary) and items fetched from a pinned URL (ADR-0003) |
 | `scripts/stats.py` | the one paired test: `pair-test`, `family-test` and the inspector all call it |
 | `scripts/rescore.py` | re-score stored outputs for a new reference or scorer, $0 |

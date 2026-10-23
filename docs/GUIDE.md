@@ -70,7 +70,7 @@ git init -q && git add -A && git commit -qm "Start: the tutorial kit"
 ```
 ```text
   folders  data/sources, data/configs, data/goals, data/fields
-  wrote    23 file(s), the tutorial kit under tutorial/
+  wrote    24 file(s), the tutorial kit under tutorial/
 ```
 
 `data/` is where everything the harness freezes and records will live; `tutorial/` is the
@@ -535,7 +535,7 @@ and [ADR-0001](adr/ADR-0001-judge-scorers.md).
 evh validate
 ```
 ```text
-  ok   V1 schemas — 14 document(s) validated
+  ok   V1 schemas — 44 document(s) validated
   ok   V2 every run's dataset_id resolves (1 dataset(s) known)
   ok   V3 every run identifies its build
   ok   V4 materialized copies match their frozen hashes (1 of 1 datasets materialized here)

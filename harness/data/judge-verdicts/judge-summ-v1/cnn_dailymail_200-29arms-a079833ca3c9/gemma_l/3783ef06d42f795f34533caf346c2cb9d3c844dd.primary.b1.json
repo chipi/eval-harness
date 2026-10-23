@@ -10,6 +10,8 @@
   "latency_ms": null,
   "n": 14,
   "output": "```json\n{\"coherence\": [5, 3, 5, 5, 5, 5, 5, 5, 5, 5, 5, 3, 5, 5], \"consistency\": [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5], \"fluency\": [5, 3, 5, 5, 5, 5, 5, 5, 5, 5, 5, 3, 5, 5], \"relevance\": [4, 3, 4, 3, 5, 5, 4, 5, 4, 5, 4, 3, 3, 4]}\n```",
+  "output_sha256": "72a2f781a817a6a289fbef9938d4bd500d80c72f975fe6dbaf187814336aa9e5",
+  "output_withheld": false,
   "pass": "primary",
   "prompt_sha256": "cb708bbce228ccaac3835e8d1f7261eedba30fbd4716dd1d64983c7f5a87f221",
   "provider": "Parasail",

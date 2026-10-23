@@ -333,6 +333,32 @@ with tempfile.TemporaryDirectory() as tmp:
         r.stdout[-400:],
     )
 
+# V1 holds configs, scorers, judging sets and verdicts to their schemas: a mistyped key in an
+# arm was read by nothing and passed.
+with tempfile.TemporaryDirectory() as tmp:
+    data = Path(tmp) / "data"
+    (data / "configs").mkdir(parents=True)
+    (data / "configs" / "a.yaml").write_text(
+        "config_id: a\ndataset_id: d\nparams: {}\nadaptor: mine.py\n", encoding="utf-8"
+    )
+    verdict = data / "judge-verdicts" / "s" / "set" / "j" / "i.primary.b0.json"
+    verdict.parent.mkdir(parents=True)
+    verdict.write_text(json.dumps({"set_id": "set", "judge": "j", "pass": "first"}), encoding="utf-8")
+    r = subprocess.run(
+        [sys.executable, str(HERE / "validate_tree.py")],
+        cwd=tmp,
+        env={**os.environ, "EVAL_HOME": tmp, "EVAL_DATA_DIR": "", "EVAL_RUNS_DIR": ""},
+        capture_output=True,
+        text=True,
+    )
+    check(
+        "V1: a config key nothing reads, and a malformed verdict, fail",
+        "FAIL V1 schemas" in r.stdout
+        and "data/configs/a.yaml" in r.stdout
+        and "i.primary.b0.json" in r.stdout,
+        r.stdout[-600:],
+    )
+
 # B1: a config that names no adapter uses the project's own <project>/adapter.py, recorded as
 # `adapter.py`; without one, the bundled adapter.
 with tempfile.TemporaryDirectory() as tmp:
