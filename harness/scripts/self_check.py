@@ -33,7 +33,7 @@ def in_checkout() -> bool:
     return (
         (HERE.parent / "Makefile").is_file()
         and (HERE.parent / "pyproject.toml").is_file()
-        and (HERE / "self_test.py").is_file()
+        and (HERE.parent / "tests" / "self_test.py").is_file()
     )
 
 

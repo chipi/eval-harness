@@ -57,7 +57,7 @@ from typing import Any, Callable
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _common import (
-    CODE,
+    BOOKKEEPING_PREFIXES,
     DATA,
     MATERIALIZED,
     ROOT,
@@ -66,6 +66,7 @@ from _common import (
     die,
     env_float,
     how,
+    in_checkout,
     now,
     read_json,
     write_json,
@@ -193,7 +194,7 @@ def prompt_candidates(sc: dict[str, Any], root: Path | None = None) -> list[Path
     out = [ROOT / f]
     if sc.get("_dir"):
         out.append(Path(sc["_dir"]) / f)
-    if (ROOT / "scripts").resolve() == CODE:
+    if in_checkout():
         out.append(ROOT.parent / f)
     return out
 
@@ -916,7 +917,7 @@ def write_scored_runs(
         for k in keys:
             kinds[k] = (
                 "descriptive"
-                if k.startswith("self_family_")
+                if k.startswith(BOOKKEEPING_PREFIXES)
                 else kinds.get(k, "quality" if k.startswith("judge_") else "descriptive")
             )
         run_dir = out_root / src.name

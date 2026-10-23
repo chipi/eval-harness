@@ -129,19 +129,20 @@ def tree_dirt(root: Path, data_dir: Path | None = None) -> list | None:
 _PRODUCERS = ("experiment_run.py", "rescore.py", "judge_score.py", "import_run.py", "reference_create.py")
 
 
-def measuring_modules(here: Path | None = None) -> list[Path]:
+def measuring_modules(here: Path | None = None, producers: tuple[str, ...] = _PRODUCERS) -> list[Path]:
     """The code a run's numbers can depend on: the run-writing commands and every module
     beside them they import, at any depth, lazily or not, read from the source.
 
     It was every .py file in the directory, tests and report checkers included, so editing a
     test between two runs made run-compare call them "not a controlled comparison" over a
     file that cannot touch a measurement. Derived rather than listed, so a new measuring
-    module is covered the day it is imported."""
+    module is covered the day it is imported. `producers` names other roots: family-test
+    keys its result cache on its own closure the same way."""
     import ast  # noqa: PLC0415
 
     here = here or Path(__file__).resolve().parent
     seen: set[str] = set()
-    todo = list(_PRODUCERS)
+    todo = list(producers)
     while todo:
         name = todo.pop()
         p = here / name

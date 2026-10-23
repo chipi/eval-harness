@@ -230,4 +230,37 @@ with tempfile.TemporaryDirectory() as proj, tempfile.TemporaryDirectory() as els
         (r.stdout + r.stderr).strip()[-200:],
     )
 
+# In a project (not this checkout) the project's parent is an arbitrary directory: a recorded
+# adapter id must not be looked for there, and the bundled id is the package's own copy, not a
+# stray `scripts/adapter.py` that happens to sit in the project.
+with tempfile.TemporaryDirectory() as top:
+    pinned = Path(top) / "pinned"
+    (pinned / "scripts").mkdir(parents=True)
+    (pinned / "scripts" / "adapter.py").write_text("STRAY = 1\n", encoding="utf-8")
+    (Path(top) / "examples" / "x").mkdir(parents=True)
+    (Path(top) / "examples" / "x" / "adapter.py").write_text("STRAY = 2\n", encoding="utf-8")
+    probe = (
+        "import _common as c\n"
+        "print(c.in_checkout())\n"
+        "print(c.resolve_adapter_path('scripts/adapter.py') == c.CODE / 'adapter.py')\n"
+        "print(c.resolve_adapter_path('x/adapter.py'))\n"
+    )
+    r = subprocess.run(
+        [sys.executable, "-c", probe],
+        cwd=pinned,
+        env={**os.environ, "PYTHONPATH": str(HERE), "EVAL_HOME": str(pinned)},
+        capture_output=True,
+        text=True,
+    )
+    check(
+        "pinned project: the bundled adapter id is the package's copy, and the parent is not searched",
+        r.stdout.split() == ["False", "True", "None"],
+        (r.stdout + r.stderr).strip()[-300:],
+    )
+import _common  # noqa: E402
+import self_check  # noqa: E402
+
+check("checkout: in_checkout() is true here", _common.in_checkout())
+check("checkout: `evh self-test` finds the full suite in tests/", self_check.in_checkout())
+
 sys.exit(summary())

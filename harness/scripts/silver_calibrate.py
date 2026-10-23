@@ -43,7 +43,15 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _adapter import load_recorded_adapter, score_wants_source
-from _common import MATERIALIZED, REFERENCES, ROOT, RUNS, die, read_json, warn_on_ambiguous_runs
+from _common import (
+    MATERIALIZED,
+    REFERENCES,
+    RUNS,
+    adapter_search_dirs,
+    die,
+    read_json,
+    warn_on_ambiguous_runs,
+)
 from stats import spearman
 
 
@@ -115,7 +123,9 @@ def main() -> int:
     # adapter, and later, with its own copy of the lookup, not in a pinned project either.
     found = load_recorded_adapter(spec)
     if found is None:
-        die(f"adapter not found: {spec!r} is under none of {ROOT}, {ROOT.parent}, {ROOT.parent / 'examples'}")
+        die(
+            f"adapter not found: {spec!r} is under none of {', '.join(str(d) for d in adapter_search_dirs())}"
+        )
     _call, score, _aid, adapter_path, _w, _fp = found
     wants_source = score_wants_source(score)
     metric = args.metric

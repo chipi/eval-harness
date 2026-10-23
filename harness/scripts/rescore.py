@@ -39,6 +39,7 @@ from _common import (
     MATERIALIZED,
     REFERENCES,
     ROOT,
+    adapter_search_dirs,
     die,
     how,
     now,
@@ -138,7 +139,7 @@ def main() -> int:
             if found is None:
                 die(
                     f"adapter not found for {d.name}: {spec!r} is under none of "
-                    f"{ROOT}, {ROOT.parent}, {ROOT.parent / 'examples'}"
+                    f"{', '.join(str(d) for d in adapter_search_dirs())}"
                 )
             adapters[spec] = found
         _call, score, adapter_id, adapter_path, _warm, _fp = adapters[spec]

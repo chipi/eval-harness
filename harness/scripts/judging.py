@@ -281,12 +281,12 @@ def withheld_reason(output: str | None, source: set) -> str | None:
 # ── routing ──────────────────────────────────────────────────────────────────
 def _models_table() -> dict[str, str]:
     """alias -> upstream id, from the first models file that exists; {} when none does."""
-    from _common import CODE, ROOT  # noqa: PLC0415
+    from _common import ROOT, in_checkout  # noqa: PLC0415
 
     cands: list[str | Path] = [os.environ.get("EVAL_MODELS_FILE", "").strip(), ROOT / "models.json"]
     # The repository's own table, only in a checkout of it: in a project elsewhere,
     # ROOT.parent is whatever directory the project happens to sit in.
-    if (ROOT / "scripts").resolve() == CODE:
+    if in_checkout():
         cands.append(ROOT.parent / "examples" / "models.json")
     for c in cands:
         if c and Path(c).is_file():

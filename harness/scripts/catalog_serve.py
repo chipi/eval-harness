@@ -701,6 +701,7 @@ def main() -> int:
         )
     else:
         print(f"catalog: http://127.0.0.1:{args.port}{Handler.prefixes[0]}   (Ctrl-C to stop)", flush=True)
+        print("  it reads the runs once: restart it to see runs made after it started", flush=True)
     try:
         server.serve_forever()
     except KeyboardInterrupt:

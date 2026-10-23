@@ -35,7 +35,7 @@ from typing import Protocol
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-from _common import DATA, ROOT, ModuleNotLoadable, is_descriptive, load_module  # noqa: E402
+from _common import BOOKKEEPING_PREFIXES, DATA, ROOT, ModuleNotLoadable, is_descriptive, load_module  # noqa: E402
 from _runs import direction, item_rows, score_of  # noqa: E402
 
 
@@ -57,7 +57,8 @@ def _memo(fn):
 
 class Adapter(Protocol):
     """The questions the catalog and the inspector ask. Every method must be cheap to call
-    twice: the server caches nothing but `scores`."""
+    twice. The server caches `scores` for as long as it runs, and the built-in adapter its
+    index of runs: restart `catalog-serve` to see runs made after it started."""
 
     #: What one item is called on the pages ("item", "episode", "article").
     item_word: str
@@ -126,10 +127,8 @@ class Adapter(Protocol):
         ...
 
     def goals(self) -> list[dict]:
-        """Every goal (goal.schema.json): what the evaluations are FOR. [] when there are none."""
-
-    def goal_of(self, arm: str) -> str:
-        """The goal an arm names ("" if none)."""
+        """Every goal (goal.schema.json): what the evaluations are FOR. [] when there are none.
+        The goal an arm names is `describe(arm)["goal"]`."""
 
     # Optional (ADR-0003); `item_fields(A, dataset)` below answers for an adapter without it.
     # def item_fields(self, dataset: str) -> dict:
@@ -157,7 +156,9 @@ def _json(p: Path):
 def _numeric(row: dict) -> dict:
     """Every score on a row, read as pair-test reads one (`_runs.score_of`), so the inspector's
     p and pair-test's are the same computation, not two that agree on clean data."""
-    return {k: v for k in row if not k.startswith("self_family_") and (v := score_of(row, k)) is not None}
+    return {
+        k: v for k in row if not k.startswith(BOOKKEEPING_PREFIXES) and (v := score_of(row, k)) is not None
+    }
 
 
 class HarnessAdapter:
@@ -366,10 +367,6 @@ class HarnessAdapter:
             if isinstance(doc, dict):
                 out.append(dict(doc, goal_id=doc.get("goal_id") or f.stem))
         return out
-
-    def goal_of(self, arm: str) -> str:
-        """Return the goal this arm names."""
-        return self._metrics(arm).get("goal", "")
 
     def dataset_items(self, dataset: str) -> int | None:
         """Return how many items a dataset has, or None if not recorded."""

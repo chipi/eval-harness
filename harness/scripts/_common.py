@@ -348,6 +348,19 @@ def item_path(dataset_id: str, item_id: str) -> Path | None:
 BUNDLED_ADAPTER_ID = "scripts/adapter.py"
 
 
+def in_checkout() -> bool:
+    """Whether this is a checkout of the eval-harness repository with its own data, rather
+    than the package installed in a project. Only then do `<root>/..` and `<root>/../examples`
+    mean anything: in a project, the root's parent is whatever directory the project sits in."""
+    return (ROOT / "scripts").resolve() == CODE
+
+
+def adapter_search_dirs() -> tuple[Path, ...]:
+    """Where a recorded adapter id is looked for: the project, and in a checkout its parent
+    and examples/ (the ids the examples record)."""
+    return (ROOT, ROOT.parent, ROOT.parent / "examples") if in_checkout() else (ROOT,)
+
+
 def resolve_adapter_path(spec: str | None) -> Path | None:
     """The file a run's recorded adapter id names, or None.
 
@@ -358,7 +371,11 @@ def resolve_adapter_path(spec: str | None) -> Path | None:
     the classification report's label parser)."""
     if not spec:
         return None
-    for base in (ROOT, ROOT.parent, ROOT.parent / "examples"):
+    # The bundled id names the package's own copy wherever a project runs it; a stray
+    # `scripts/adapter.py` under the project is not the code that ran.
+    if spec == BUNDLED_ADAPTER_ID and not in_checkout() and (CODE / "adapter.py").is_file():
+        return CODE / "adapter.py"
+    for base in adapter_search_dirs():
         cand = Path(spec) if Path(spec).is_absolute() else base / spec
         if cand.is_file():
             return cand
@@ -462,6 +479,12 @@ SPEED_KEYS = ("latency_ms",)
 #: leaderboard ends up confidently answering the wrong question. Comparing two
 #: of them and calling the bigger one "better" is the same error, per-metric.
 DESCRIPTIVE_KEYS = ("output_words", "output_chars", "lines", "chars", "n_items")
+
+
+#: Per-item columns a run records that are bookkeeping, not a measurement: judge_score marks
+#: whether each judge shares the judged arm's model family (`self_family_<judge>`). The catalog
+#: lists no metric for them; the judging summary reads them.
+BOOKKEEPING_PREFIXES = ("self_family_",)
 
 
 def lower_is_better(metric: str) -> bool:

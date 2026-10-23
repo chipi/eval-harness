@@ -55,6 +55,7 @@ from _common import (  # noqa: E402
     item_selection,
     warn_on_ambiguous_runs,
 )
+from _fingerprint import measuring_modules  # noqa: E402
 from _runs import direction, per_item, runs_on  # noqa: E402 -- one implementation of "score per item"
 from stats import holm, sign_flip_p  # noqa: E402 -- one implementation of the paired test
 
@@ -70,14 +71,14 @@ CACHE = ROOT / ".cache" / "family_test"
 
 
 def _cache_key(argv: list[str], runs_dir: Path, args) -> str:
-    """Everything the answer depends on: this script and the three it imports, the exact
+    """Everything the answer depends on: this script and every module it imports (read from
+    the source, as the run code hash is: a hand-kept list missed an import added later), the exact
     arguments, and the bytes of every run of this dataset (metrics.json + predictions.jsonl)
     plus any --items / --exclude-dataset input. Change any of them and the key changes, so
     a hit is the same computation, already done -- the test is seeded and deterministic."""
     h = hashlib.sha256()
-    here = Path(__file__).resolve().parent
-    for f in ("family_test.py", "_runs.py", "_common.py", "stats.py"):
-        h.update((here / f).read_bytes())
+    for f in measuring_modules(Path(__file__).resolve().parent, ("family_test.py",)):
+        h.update(f.name.encode() + b"\0" + f.read_bytes())
     h.update("\0".join([*argv, str(runs_dir.resolve())]).encode())
     for d, _m in runs_on(args.dataset_id, runs_dir=runs_dir):
         mj, pj = d / "metrics.json", d / "predictions.jsonl"

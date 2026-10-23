@@ -576,9 +576,11 @@ evh catalog-serve
 ```
 ```text
 catalog: http://127.0.0.1:8765/.build/catalog/   (Ctrl-C to stop)
+  it reads the runs once: restart it to see runs made after it started
 ```
 
-Open the address it prints (if another program holds port 8765, add `--port 8766`).
+Open the address it prints (if another program holds port 8765, add `--port 8766`). It reads
+the runs when it starts, so after a new run, stop it and start it again.
 
 - **The catalog** is static pages: one per dataset with every arm and its headline number, a
   goals page, and a page per goal ranking the arms that record its measure. Counts and means

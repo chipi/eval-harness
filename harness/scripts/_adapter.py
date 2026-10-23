@@ -22,6 +22,7 @@ from _common import (
     CODE,
     ROOT,
     ModuleNotLoadable,
+    adapter_search_dirs,
     die,
     load_module,
     resolve_adapter_path,
@@ -161,7 +162,7 @@ def _portable_id(path: Path) -> str:
     and if even that fails keep only the last two components rather than emit a home path.
     """
     resolved = path.resolve()
-    for base in (ROOT, ROOT.parent):
+    for base in adapter_search_dirs()[:2]:
         try:
             return str(resolved.relative_to(base))
         except ValueError:
