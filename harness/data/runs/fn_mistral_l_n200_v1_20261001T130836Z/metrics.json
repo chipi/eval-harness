@@ -150,7 +150,7 @@
   },
   "reference_tier": "gold",
   "rescore_dropped_metrics": [
-    "untyped_tp"
+    "resumed"
   ],
   "run_id": "fn_mistral_l_n200_v1_20261001T130836Z",
   "scores": {

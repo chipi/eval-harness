@@ -18,12 +18,27 @@ The fields are specified in schemas/metrics.schema.json.
 from __future__ import annotations
 
 import json
+import statistics
 from typing import Any
 
 from _common import now
 
 #: The kinds of derivation, and what each one's `with` names.
 DERIVED_KINDS = ("rescore", "judge", "reparse")
+
+
+def aggregate_scores(rows: list[dict[str, Any]], digits: int = 10) -> dict[str, float]:
+    """A run's `scores` from its per-item rows: each metric's mean over the rows that carry
+    it, and totals, not means, for what is billed (`total_cost_usd`, `total_tokens_in`,
+    `total_tokens_out`). Keys starting with `_` are not metrics. experiment-run rounds means
+    to 6 digits, as its runs always have; the derived records to 10."""
+    keys = sorted({k for r in rows for k in r if k != "item_id" and not k.startswith("_")})
+    scores = {k: round(statistics.fmean(float(r[k]) for r in rows if k in r), digits) for k in keys}
+    for k in ("cost_usd", "tokens_in", "tokens_out"):
+        vals = [float(r[k]) for r in rows if k in r]
+        if vals:
+            scores[f"total_{k}"] = round(sum(vals), 8)
+    return scores
 
 
 def run_record(

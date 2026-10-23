@@ -158,9 +158,6 @@
     "Venice": 1
   },
   "reference_tier": "gold",
-  "rescore_dropped_metrics": [
-    "untyped_tp"
-  ],
   "run_id": "fn_deepseek_l_n200_v1_20260928T092110Z",
   "scores": {
     "cost_usd": 0.0003046287,

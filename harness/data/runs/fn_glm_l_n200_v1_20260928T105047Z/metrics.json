@@ -155,9 +155,6 @@
     "Z.AI": 26
   },
   "reference_tier": "gold",
-  "rescore_dropped_metrics": [
-    "untyped_tp"
-  ],
   "run_id": "fn_glm_l_n200_v1_20260928T105047Z",
   "scores": {
     "cost_usd": 0.0003654177,

@@ -71,7 +71,7 @@ from _common import (
     write_json,
     write_text_atomic,
 )
-from _record import derived_record
+from _record import aggregate_scores, derived_record
 from _retry import call_with_retries
 from _runs import runs_on
 from judging import (
@@ -904,15 +904,7 @@ def write_scored_runs(
                     row[k] = v
             rows.append(row)
         keys = sorted({k for r in rows for k in r if k != "item_id" and not k.startswith("_")})
-        scores = (
-            {k: round(statistics.fmean(float(r[k]) for r in rows if k in r), 10) for k in keys}
-            if rows
-            else {}
-        )
-        for k in ("cost_usd", "tokens_in", "tokens_out"):
-            vals = [float(r[k]) for r in rows if k in r]
-            if vals:
-                scores[f"total_{k}"] = round(sum(vals), 8)
+        scores = aggregate_scores(rows)
         kinds = {k: v for k, v in (m.get("metric_kinds") or {}).items() if k in scores}
         for k in keys:
             kinds[k] = (

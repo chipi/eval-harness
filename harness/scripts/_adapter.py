@@ -77,7 +77,19 @@ def adapter_module(adapter_spec: str | None) -> Any:
 
 def metric_kinds(adapter_path: Path | None) -> dict[str, str]:
     """`METRIC_KINDS` from the adapter at `adapter_path` (None: the bundled one), or {}."""
-    module = _module_or_none(adapter_path)
+    return _kinds_of(_module_or_none(adapter_path))
+
+
+def recorded_metric_kinds(adapter_spec: str | None) -> dict[str, str] | None:
+    """`METRIC_KINDS` as the adapter a run recorded declares them TODAY, or None when it
+    cannot be found or imported. A run freezes the kinds declared when it was measured, and
+    the current adapter is the authority on what its metrics mean, so the leaderboard and
+    run-compare override the run's with these; None leaves the run's own."""
+    module = adapter_module(adapter_spec)
+    return None if module is None else _kinds_of(module)
+
+
+def _kinds_of(module: Any) -> dict[str, str]:
     kinds = getattr(module, "METRIC_KINDS", None)
     out = dict(kinds) if isinstance(kinds, dict) else {}
     # Metrics the CORE emits, which no adapter declares because no adapter produces

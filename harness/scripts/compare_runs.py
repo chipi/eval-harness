@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import argparse
 
-from _adapter import adapter_module
+from _adapter import recorded_metric_kinds
 from _common import (
     RUNS,
     die,
@@ -140,12 +140,7 @@ def main() -> int:
     # fixed this in leaderboard.py and not here. Found by external review.
     kinds = {**(a.get("metric_kinds") or {}), **(b.get("metric_kinds") or {})}
     for run in (a, b):
-        spec = run.get("adapter")
-        if not spec:
-            continue
-        cur = getattr(adapter_module(spec), "METRIC_KINDS", None)  # None: a stale adapter
-        if isinstance(cur, dict):
-            kinds.update(cur)
+        kinds.update(recorded_metric_kinds(run.get("adapter")) or {})
 
     worth = 0
     for k in keys:

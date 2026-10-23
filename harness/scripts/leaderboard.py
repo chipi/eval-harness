@@ -23,7 +23,7 @@ import math
 import random
 import statistics
 
-from _adapter import adapter_module
+from _adapter import recorded_metric_kinds
 from _common import (
     RUNS,
     classify_metrics,
@@ -362,24 +362,50 @@ def _frontier(rows: list[dict], quality: str, kinds: dict[str, str], asc: bool =
         print(f"    dominated (worse on all three than some other arm): {', '.join(beaten)}")
 
 
-_ADAPTER_KINDS_CACHE: dict[str, dict[str, str]] = {}
+def _metric_kinds(by_config: dict[str, list[dict]]) -> dict[str, str]:
+    """{metric: kind} for these runs: what they recorded, overridden by what their adapters
+    declare today; a disagreement no adapter settles is printed as a warning."""
+    # An adapter may declare what ITS metrics mean; runs carry the declaration. Without
+    # this the sort key falls to whatever sorts first among the unclassified, which ranked
+    # a ten-model sweep by `compression` — a length ratio — and called it quality.
+    declared: dict[str, str] = {}
+    disagree: dict[str, set] = {}
+    for runs in by_config.values():
+        for r in runs:
+            for k, v in (r.get("metric_kinds") or {}).items():
+                if k in declared and declared[k] != v:
+                    disagree.setdefault(k, {declared[k]}).add(v)
+                declared[k] = v
 
+    # THE ADAPTER'S CURRENT DECLARATION WINS OVER THE RUNS'. A run freezes the metric
+    # kinds that were declared when it was measured, and this used to merge those and
+    # stop -- so fixing a misdeclared metric in the adapter changed nothing on any
+    # leaderboard built from runs that predate the fix. `llm_named_unknown` counts
+    # document ids a reranker INVENTED; undeclared, it landed in the quality columns
+    # where higher reads as better, so an arm that hallucinated more looked improved.
+    # It was corrected in the adapter and kept showing as quality here, because the runs
+    # measured before the fix carry the old declaration.
+    #
+    # The runs remain the fallback for an adapter that cannot be imported (a missing
+    # dependency, a moved file), which is why they are read first and overridden second
+    # rather than skipped.
+    for runs in by_config.values():
+        for r in runs:
+            current = recorded_metric_kinds(r.get("adapter"))
+            for k, v in (current or {}).items():
+                if k in declared and declared[k] != v:
+                    disagree.pop(k, None)  # the adapter settles it; not a conflict
+                declared[k] = v
 
-def _adapter_kinds(adapter_spec: str) -> dict[str, str]:
-    """`METRIC_KINDS` as the adapter declares them TODAY, or {} if it cannot be imported.
-
-    Same shape as `classification_report._label_parser`, and for the same reason: a run
-    freezes what was declared when it was measured, and the current adapter is the
-    authority on what its metrics mean. Returning {} on any failure is deliberate --
-    a machine without the example's venv falls back to the run's own declaration, which
-    is the previous behaviour, rather than losing the table.
-    """
-    if adapter_spec in _ADAPTER_KINDS_CACHE:
-        return _ADAPTER_KINDS_CACHE[adapter_spec]
-    kinds = getattr(adapter_module(adapter_spec), "METRIC_KINDS", None)
-    out: dict[str, str] = dict(kinds) if isinstance(kinds, dict) else {}
-    _ADAPTER_KINDS_CACHE[adapter_spec] = out
-    return out
+    # Two runs of the same metric declaring different kinds is a real disagreement and
+    # used to be resolved by dict ordering -- silently, by whichever run happened to be
+    # read last. Say so instead.
+    for k, vs in sorted(disagree.items()):
+        print(
+            f"  WARNING: runs disagree on metric kind for {k!r}: {sorted(vs)} — "
+            f"no adapter could be imported to settle it"
+        )
+    return declared
 
 
 def main() -> int:
@@ -417,52 +443,7 @@ def main() -> int:
         )
 
     all_keys = sorted({k for runs in by_config.values() for r in runs for k in r["scores"]})
-    # An adapter may declare what ITS metrics mean; runs carry the declaration. Without
-    # this the sort key falls to whatever sorts first among the unclassified, which ranked
-    # a ten-model sweep by `compression` — a length ratio — and called it quality.
-    declared: dict[str, str] = {}
-    disagree: dict[str, set] = {}
-    for runs in by_config.values():
-        for r in runs:
-            for k, v in (r.get("metric_kinds") or {}).items():
-                if k in declared and declared[k] != v:
-                    disagree.setdefault(k, {declared[k]}).add(v)
-                declared[k] = v
-
-    # THE ADAPTER'S CURRENT DECLARATION WINS OVER THE RUNS'. A run freezes the metric
-    # kinds that were declared when it was measured, and this used to merge those and
-    # stop -- so fixing a misdeclared metric in the adapter changed nothing on any
-    # leaderboard built from runs that predate the fix. `llm_named_unknown` counts
-    # document ids a reranker INVENTED; undeclared, it landed in the quality columns
-    # where higher reads as better, so an arm that hallucinated more looked improved.
-    # It was corrected in the adapter and kept showing as quality here, because 19
-    # committed SciFact runs still carry the old declaration.
-    #
-    # The runs remain the fallback for an adapter that cannot be imported (a missing
-    # dependency, a moved file), which is why they are read first and overridden second
-    # rather than skipped.
-    for runs in by_config.values():
-        for r in runs:
-            spec = r.get("adapter")
-            if not spec:
-                continue
-            try:
-                current = _adapter_kinds(spec)
-            except Exception:  # noqa: BLE001 — a stale adapter must not break the table
-                continue
-            for k, v in (current or {}).items():
-                if k in declared and declared[k] != v:
-                    disagree.pop(k, None)  # the adapter settles it; not a conflict
-                declared[k] = v
-
-    # Two runs of the same metric declaring different kinds is a real disagreement and
-    # used to be resolved by dict ordering -- silently, by whichever run happened to be
-    # read last. Say so instead.
-    for k, vs in sorted(disagree.items()):
-        print(
-            f"  WARNING: runs disagree on metric kind for {k!r}: {sorted(vs)} — "
-            f"no adapter could be imported to settle it"
-        )
+    declared = _metric_kinds(by_config)
 
     kinds = classify_metrics(declared)
     quality = [k for k in all_keys if kinds.get(k, "quality") == "quality" and not k.startswith("total_")]

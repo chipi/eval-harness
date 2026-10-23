@@ -156,9 +156,6 @@
     "Venice": 7
   },
   "reference_tier": "gold",
-  "rescore_dropped_metrics": [
-    "untyped_tp"
-  ],
   "run_id": "fn_gemma_l_n200_v1_20260928T095505Z",
   "scores": {
     "cost_usd": 4.80041e-05,

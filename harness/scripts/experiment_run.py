@@ -28,7 +28,6 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import statistics
 import time
 from pathlib import Path
 from typing import Any
@@ -60,7 +59,7 @@ from _common import (
     write_text_atomic,
 )
 from _fingerprint import build_fingerprint
-from _record import run_record
+from _record import aggregate_scores, run_record
 from _retry import call_with_retries
 
 try:
@@ -305,13 +304,7 @@ def one_pass(
                 fh.flush()
                 os.fsync(fh.fileno())
 
-    keys = sorted({k for p in predictions for k in p if k != "item_id" and not k.startswith("_")})
-    scores = {k: round(statistics.fmean([float(p[k]) for p in predictions if k in p]), 6) for k in keys}
-    # Totals, not means, for the things you are billed for.
-    for k in ("cost_usd", "tokens_in", "tokens_out"):
-        vals = [float(p[k]) for p in predictions if k in p]
-        if vals:
-            scores[f"total_{k}"] = round(sum(vals), 8)
+    scores = aggregate_scores(predictions, digits=6)
     # WAS THIS ARM ONE SYSTEM? A gateway can serve the same model from several hosts and
     # switch between calls. If it did, the arm's 20 items were not produced by one system
     # and its mean mixes two -- which is exactly the confound the fingerprint exists to
@@ -384,6 +377,89 @@ def _dry_run(ds: dict[str, Any], cfg: dict[str, Any], repeat: int) -> int:
     cap = env_float("EVAL_MAX_COST_USD")
     print("  cap         " + (f"${cap:.2f} (EVAL_MAX_COST_USD)" if cap else "NONE — set EVAL_MAX_COST_USD"))
     return 0
+
+
+def _resume_source(resume: str | None, cfg: dict[str, Any]) -> tuple[Path | None, dict[str, dict[str, Any]]]:
+    """For `--resume <run_id>`: (its outputs directory, {item_id: its row}); (None, {}) without.
+    Dies when the run cannot be resumed as this arm."""
+    if not resume:
+        return None, {}
+    resume_dir = RUNS / resume / "outputs"
+    if not resume_dir.is_dir():
+        die(f"cannot resume: no outputs under {resume_dir}")
+
+    # RESUMING FROM ANOTHER ARM'S OUTPUTS WAS ACCEPTED WITHOUT A WORD.
+    #
+    # `--resume` took a run id and read its outputs/ directory. Nothing compared that
+    # run's arm to the one being launched, so
+    #   make experiment-run CONFIG=arm_glm_s.yaml ARGS="--resume <a qwen_s run>"
+    # replayed qwen_s's answers, scored them, and recorded the whole thing as glm_s --
+    # a fabricated result with a valid fingerprint. One mistyped run id in a recovery
+    # command, which is exactly when the operator is rushed. Found by external review.
+    #
+    # The dataset must match too: replaying answers produced against different items is
+    # the same failure wearing different clothes.
+    prior_rows: dict[str, dict[str, Any]] = {}
+    # WHAT ARM DID THESE OUTPUTS COME FROM? A crashed run has no metrics.json --
+    # it is written after the pass returns -- so the previous version of this check
+    # could only WARN, and
+    #     make experiment-run CONFIG=arm_a.yaml ARGS="--resume <crashed arm_b run>"
+    # exited 0 having recorded arm_a with arm_b's answers. The guard covered the
+    # tidy case and not the crash, which is the only case resume exists for.
+    #
+    # `run.json` is now written BEFORE the first item, so identity survives a kill.
+    src_id = RUNS / resume / "run.json"
+    src_metrics = RUNS / resume / "metrics.json"
+    ident = (
+        read_json(src_id) if src_id.is_file() else read_json(src_metrics) if src_metrics.is_file() else None
+    )
+    if ident is None:
+        die(
+            f"cannot resume: {resume} has neither run.json nor metrics.json, so the "
+            f"arm that produced those outputs cannot be identified.\n"
+            f"  Resuming anyway would replay whatever is in that directory and record it "
+            f"under {cfg.get('config_id')!r}."
+        )
+    if ident.get("config_id") and ident["config_id"] != cfg.get("config_id"):
+        die(
+            f"cannot resume: {resume} is arm {ident['config_id']!r}, "
+            f"this config is {cfg.get('config_id')!r}.\n"
+            f"  Resuming would replay another arm's answers and record them "
+            f"under this one."
+        )
+    if ident.get("dataset_id") and ident["dataset_id"] != cfg.get("dataset_id"):
+        die(
+            f"cannot resume: {resume} ran on dataset "
+            f"{ident['dataset_id']!r}, this config is on "
+            f"{cfg.get('dataset_id')!r}."
+        )
+
+    # THE PRIOR ROWS, so a replayed item keeps the cost, tokens, latency and _meta
+    # measured for it. `outputs/_rows.jsonl` is appended DURING the pass and so
+    # survives a crash; predictions.jsonl is the tidy-exit copy of the same thing.
+    for src in (RUNS / resume / "outputs" / "_rows.jsonl", RUNS / resume / "predictions.jsonl"):
+        if not src.is_file():
+            continue
+        for line in src.read_text(encoding="utf-8").splitlines():
+            if not line.strip():
+                continue
+            try:
+                r = json.loads(line)
+            except ValueError:
+                continue  # a torn final line from a kill mid-append
+            if r.get("item_id"):
+                if not isinstance(r.get("_extra"), dict):
+                    die(
+                        f"cannot resume: {src} has rows without `_extra`; it was not written "
+                        f"by this version of the harness"
+                    )
+                prior_rows.setdefault(r["item_id"], r)
+    if not prior_rows:
+        print(
+            f"  WARNING: {resume} carries no per-item rows — replayed items "
+            f"will report no cost, tokens or _meta."
+        )
+    return resume_dir, prior_rows
 
 
 def main() -> int:
@@ -518,87 +594,7 @@ def main() -> int:
             "  Resume the interrupted pass with --repeat 1, then run the rest."
         )
 
-    resume_dir = (RUNS / args.resume / "outputs") if args.resume else None
-    if resume_dir is not None and not resume_dir.is_dir():
-        die(f"cannot resume: no outputs under {resume_dir}")
-
-    # RESUMING FROM ANOTHER ARM'S OUTPUTS WAS ACCEPTED WITHOUT A WORD.
-    #
-    # `--resume` took a run id and read its outputs/ directory. Nothing compared that
-    # run's arm to the one being launched, so
-    #   make experiment-run CONFIG=arm_glm_s.yaml ARGS="--resume <a qwen_s run>"
-    # replayed qwen_s's answers, scored them, and recorded the whole thing as glm_s --
-    # a fabricated result with a valid fingerprint. One mistyped run id in a recovery
-    # command, which is exactly when the operator is rushed. Found by external review.
-    #
-    # The dataset must match too: replaying answers produced against different items is
-    # the same failure wearing different clothes.
-    prior_rows: dict[str, dict[str, Any]] = {}
-    if args.resume:
-        # WHAT ARM DID THESE OUTPUTS COME FROM? A crashed run has no metrics.json --
-        # it is written after the pass returns -- so the previous version of this check
-        # could only WARN, and
-        #     make experiment-run CONFIG=arm_a.yaml ARGS="--resume <crashed arm_b run>"
-        # exited 0 having recorded arm_a with arm_b's answers. The guard covered the
-        # tidy case and not the crash, which is the only case resume exists for.
-        #
-        # `run.json` is now written BEFORE the first item, so identity survives a kill.
-        src_id = RUNS / args.resume / "run.json"
-        src_metrics = RUNS / args.resume / "metrics.json"
-        ident = (
-            read_json(src_id)
-            if src_id.is_file()
-            else read_json(src_metrics)
-            if src_metrics.is_file()
-            else None
-        )
-        if ident is None:
-            die(
-                f"cannot resume: {args.resume} has neither run.json nor metrics.json, so the "
-                f"arm that produced those outputs cannot be identified.\n"
-                f"  Resuming anyway would replay whatever is in that directory and record it "
-                f"under {cfg.get('config_id')!r}."
-            )
-        else:
-            if ident.get("config_id") and ident["config_id"] != cfg.get("config_id"):
-                die(
-                    f"cannot resume: {args.resume} is arm {ident['config_id']!r}, "
-                    f"this config is {cfg.get('config_id')!r}.\n"
-                    f"  Resuming would replay another arm's answers and record them "
-                    f"under this one."
-                )
-            if ident.get("dataset_id") and ident["dataset_id"] != cfg.get("dataset_id"):
-                die(
-                    f"cannot resume: {args.resume} ran on dataset "
-                    f"{ident['dataset_id']!r}, this config is on "
-                    f"{cfg.get('dataset_id')!r}."
-                )
-
-        # THE PRIOR ROWS, so a replayed item keeps the cost, tokens, latency and _meta
-        # measured for it. `outputs/_rows.jsonl` is appended DURING the pass and so
-        # survives a crash; predictions.jsonl is the tidy-exit copy of the same thing.
-        for src in (RUNS / args.resume / "outputs" / "_rows.jsonl", RUNS / args.resume / "predictions.jsonl"):
-            if not src.is_file():
-                continue
-            for line in src.read_text(encoding="utf-8").splitlines():
-                if not line.strip():
-                    continue
-                try:
-                    r = json.loads(line)
-                except ValueError:
-                    continue  # a torn final line from a kill mid-append
-                if r.get("item_id"):
-                    if not isinstance(r.get("_extra"), dict):
-                        die(
-                            f"cannot resume: {src} has rows without `_extra`; it was not written "
-                            f"by this version of the harness"
-                        )
-                    prior_rows.setdefault(r["item_id"], r)
-        if not prior_rows:
-            print(
-                f"  WARNING: {args.resume} carries no per-item rows — replayed items "
-                f"will report no cost, tokens or _meta."
-            )
+    resume_dir, prior_rows = _resume_source(args.resume, cfg)
 
     made: list[Path] = []
 

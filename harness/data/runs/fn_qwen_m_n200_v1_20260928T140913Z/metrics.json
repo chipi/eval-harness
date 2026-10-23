@@ -149,9 +149,6 @@
     "Alibaba": 280
   },
   "reference_tier": "gold",
-  "rescore_dropped_metrics": [
-    "untyped_tp"
-  ],
   "run_id": "fn_qwen_m_n200_v1_20260928T140913Z",
   "scores": {
     "cost_usd": 0.0001415406,

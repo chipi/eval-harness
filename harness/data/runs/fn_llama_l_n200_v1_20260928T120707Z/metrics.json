@@ -152,9 +152,6 @@
     "Parasail": 10
   },
   "reference_tier": "gold",
-  "rescore_dropped_metrics": [
-    "untyped_tp"
-  ],
   "run_id": "fn_llama_l_n200_v1_20260928T120707Z",
   "scores": {
     "cost_usd": 6.29245e-05,
