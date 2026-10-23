@@ -25,17 +25,16 @@ READING IT
 from __future__ import annotations
 
 import argparse
-import json
 import random
 import statistics
 import sys
-from collections import defaultdict
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-from _common import RUNS, default_metric, lower_is_better, read_json, warn_on_ambiguous_runs  # noqa: E402
+from _common import RUNS, default_metric, warn_on_ambiguous_runs  # noqa: E402
+from _runs import direction, matrix, runs_on  # noqa: E402
 from stats import spearman  # noqa: E402 - midranks of midranks are the midranks: same rho
 
 #: The half sizes measured: two disjoint halves of n items each.
@@ -44,23 +43,7 @@ SIZES = (10, 20, 50, 100)
 
 def load(dataset_id: str, metric: str, match: str | None):
     """All arms' per-item scores on this dataset; optionally filtered by config_id substring."""
-    acc: dict[str, dict[str, list[float]]] = defaultdict(lambda: defaultdict(list))
-    for d in sorted(RUNS.glob("*")):
-        mj, pj = d / "metrics.json", d / "predictions.jsonl"
-        if not (mj.is_file() and pj.is_file()):
-            continue
-        m = read_json(mj)
-        if m.get("dataset_id") != dataset_id:
-            continue
-        cid = m.get("config_id", d.name)
-        if match and match not in cid:
-            continue
-        for line in pj.read_text(encoding="utf-8").splitlines():
-            if line.strip():
-                row = json.loads(line)
-                if metric in row:
-                    acc[cid][row["item_id"]].append(float(row[metric]))
-    return {a: {i: statistics.fmean(v) for i, v in it.items()} for a, it in acc.items()}
+    return matrix(runs_on(dataset_id, match=match), metric)
 
 
 def ranks_on(M, arms, items):
@@ -122,6 +105,8 @@ def main() -> int:
     ap.add_argument("--match")
     ap.add_argument("--draws", type=int, default=400)
     ap.add_argument("--seed", type=int, default=20260926)
+    ap.add_argument("--asc", action="store_true", help="lower is better (default: inferred)")
+    ap.add_argument("--desc", action="store_true", help="higher is better, whatever the runs declare")
     args = ap.parse_args()
     # Two runs sharing a config_id are averaged together below without
     # saying so. See _common.warn_on_ambiguous_runs.
@@ -129,7 +114,7 @@ def main() -> int:
 
     args.metric = args.metric or default_metric(args.dataset_id, args.match)
     M = load(args.dataset_id, args.metric, args.match)
-    if lower_is_better(args.metric):
+    if direction(runs_on(args.dataset_id, match=args.match), args.metric, args.asc, args.desc):
         # Ranked best first, whichever way is better: for cost or latency the best is the
         # lowest. Negating once here keeps every rank and "winner" below the right way up.
         M = {a: {i: -v for i, v in s.items()} for a, s in M.items()}

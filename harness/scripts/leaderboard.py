@@ -19,24 +19,23 @@ neighbour is not distinguishable from it, and the table says so.
 from __future__ import annotations
 
 import argparse
-import json
 import math
 import random
 import statistics
 import sys
-from collections import defaultdict
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _adapter import adapter_module
 from _common import (
     RUNS,
-    adapter_module,
     classify_metrics,
     die,
     how,
-    read_json,
     warn_on_ambiguous_runs,
 )
+from _runs import by_arm, direction, runs_on
+from _runs import matrix as matrix_of
 
 # COST_KEYS / SPEED_KEYS / DESCRIPTIVE_KEYS now live in _common, so that
 # compare_runs.py judges direction the same way this ranks it.
@@ -69,12 +68,6 @@ _TIE_TOL = 1e-9
 _MIN_TIE_DECIMALS = 8
 
 
-#: Raw per-item values as they came off disk, before any averaging. Precision has to be
-#: measured HERE: `fmean` returns full float precision whatever it was given, so checking
-#: the means reports 17 decimals for scores that were stored with 6.
-_RAW_SEEN: list[float] = []
-
-
 def _stored_decimals(values: list[float]) -> int:
     """How many decimal places the stored values actually carry."""
     best = 0
@@ -96,7 +89,7 @@ def _small_fractions(values: list[float]) -> bool:
     return bool(vals) and all(abs(v * _FRACTION_DENOM - round(v * _FRACTION_DENOM)) < 1e-6 for v in vals)
 
 
-_NEMENYI_Q05 = {
+NEMENYI_Q05 = {
     # alpha = 0.05, nu = infinity: the studentised range divided by sqrt(2).
     #
     # COMPUTED, NOT TRANSCRIBED -- see scripts/nemenyi_table.py, which solves
@@ -152,30 +145,19 @@ _NEMENYI_Q05 = {
 }
 
 
-def _per_item(runs: list[dict], run_dirs: dict[int, Path], metric: str) -> dict[str, float]:
-    """One value per item for one arm: the mean over that arm's repeats."""
-    acc: dict[str, list[float]] = defaultdict(list)
-    for r in runs:
-        d = run_dirs.get(id(r))
-        if not d:
-            continue
-        pj = d / "predictions.jsonl"
-        if not pj.is_file():
-            continue
-        for line in pj.read_text(encoding="utf-8").splitlines():
-            if not line.strip():
-                continue
-            row = json.loads(line)
-            if metric in row:
-                acc[row["item_id"]].append(float(row[metric]))
-                _RAW_SEEN.append(row[metric])
-    return {k: statistics.fmean(v) for k, v in acc.items() if v}
-
-
-def _significance(
-    matrix: dict[str, dict[str, float]], metric: str, seed: int = 20260925, asc: bool = False
+def significance(
+    matrix: dict[str, dict[str, float]],
+    metric: str,
+    seed: int = 20260925,
+    asc: bool = False,
+    raw_values: list[float] | None = None,
 ) -> None:
-    """Print the global test, the critical difference, and per-arm rank intervals."""
+    """Print the global test, the critical difference, and per-arm rank intervals.
+
+    `raw_values` are the per-item values as they came off disk, before any averaging
+    (`_runs.per_item(raw=...)` collects them). Stored precision has to be measured on those:
+    `fmean` returns full float precision whatever it was given, so checking the means
+    reports 17 decimals for scores that were stored with 6."""
     arms = sorted(matrix)
     items = sorted(set.intersection(*(set(matrix[a]) for a in arms))) if arms else []
     k, N = len(arms), len(items)
@@ -214,8 +196,9 @@ def _significance(
             i = grp[-1] + 1
     avg_rank = {a: statistics.fmean(ranks[a]) for a in arms}
 
-    decimals = _stored_decimals(_RAW_SEEN)
-    if decimals and decimals < _MIN_TIE_DECIMALS and not _small_fractions(_RAW_SEEN):
+    raw = raw_values or []
+    decimals = _stored_decimals(raw)
+    if decimals and decimals < _MIN_TIE_DECIMALS and not _small_fractions(raw):
         print(
             f"\n  NOTE: these runs store scores to ~{decimals} decimals, so arms that\n"
             f"        genuinely tie on an item can differ by rounding alone and be\n"
@@ -248,7 +231,7 @@ def _significance(
     # experiments have 26-28 arms, so four of five published "pairs distinguishable"
     # counts were mildly anti-conservative. Guessing a critical value is worse than
     # declining to print one.
-    q = _NEMENYI_Q05.get(k)
+    q = NEMENYI_Q05.get(k)
     cd = q * math.sqrt(k * (k + 1) / (6.0 * N)) if q else None
     span = max(avg_rank.values()) - min(avg_rank.values())
     pairs = [(a, b) for a in arms for b in arms if avg_rank[b] - avg_rank[a] > cd] if cd is not None else []
@@ -261,7 +244,7 @@ def _significance(
     if cd is None:
         print(
             f"    Nemenyi critical difference: NOT AVAILABLE for k={k} arms — the\n"
-            f"    tabulated studentised range in this file stops at k={max(_NEMENYI_Q05)}.\n"
+            f"    tabulated studentised range in this file stops at k={max(NEMENYI_Q05)}.\n"
             f"    No pairwise verdict is printed rather than reusing a smaller k's value,\n"
             f"    which would understate the critical difference and overstate how many\n"
             f"    pairs differ. Narrow the field with --match, or extend the table from a\n"
@@ -407,7 +390,10 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", required=True)
     ap.add_argument("--sort", help="metric to rank by (default: the first quality metric)")
-    ap.add_argument("--asc", action="store_true", help="lower is better for the sort metric")
+    ap.add_argument(
+        "--asc", action="store_true", help="lower is better for the sort metric (default: inferred)"
+    )
+    ap.add_argument("--desc", action="store_true", help="higher is better, whatever the runs declare")
     # A dataset accumulates arms across config VERSIONS -- v1 and v2 of the same arm are
     # different measurements and must not share a row, but they do share a dataset. Without
     # a way to scope the table, the only ways to get a readable leaderboard are to delete
@@ -416,21 +402,12 @@ def main() -> int:
     ap.add_argument("--match", help="only arms whose config_id contains this substring")
     args = ap.parse_args()
 
-    by_config: dict[str, list[dict]] = defaultdict(list)
-    # Where each run's artifacts live, so the significance test can reach its
-    # predictions.jsonl. Per-item scores are what make a PAIRED comparison possible, and
-    # a comparison that is not paired throws away the fact that every arm was graded on
-    # the same items.
-    run_dirs: dict[int, Path] = {}
-    for run in RUNS.iterdir() if RUNS.is_dir() else []:
-        m = run / "metrics.json"
-        if m.is_file():
-            d = read_json(m)
-            if d.get("dataset_id") == args.dataset_id and (
-                not args.match or args.match in d.get("config_id", "")
-            ):
-                by_config[d["config_id"]].append(d)
-                run_dirs[id(d)] = run
+    # Each run with its directory, so the significance test can reach its predictions.jsonl.
+    # Per-item scores are what make a PAIRED comparison possible, and a comparison that is
+    # not paired throws away the fact that every arm was graded on the same items.
+    found = runs_on(args.dataset_id, match=args.match)
+    arm_runs = by_arm(found)
+    by_config: dict[str, list[dict]] = {cid: [m for _d, m in rs] for cid, rs in arm_runs.items()}
 
     warn_on_ambiguous_runs(RUNS, args.dataset_id, label=RUNS.name)
     if not by_config:
@@ -507,6 +484,7 @@ def main() -> int:
     sort_key = (
         args.sort or primary or (quality[0] if quality else (descriptive[0] if descriptive else all_keys[0]))
     )
+    asc = direction(found, sort_key, args.asc, args.desc)
     # SAY SO when the headline metric was picked alphabetically. Runs written before
     # adapters declared PRIMARY_METRIC carry none, so this falls through to whichever
     # quality metric sorts first by name -- for one set of runs here that is `grounding`,
@@ -555,17 +533,12 @@ def main() -> int:
                 row[f"__spread_{k}"] = max(vals) - min(vals)
         rows.append(row)
 
-    rows.sort(
-        key=lambda r: r.get(sort_key, float("inf") if args.asc else float("-inf")), reverse=not args.asc
-    )
+    rows.sort(key=lambda r: r.get(sort_key, float("inf") if asc else float("-inf")), reverse=not asc)
 
     show = quality + descriptive + [k for k in all_keys if kinds.get(k) in ("cost", "speed")]
     show = [k for k in show if k in all_keys]
     w = max(len(r["config_id"]) for r in rows) + 2
-    print(
-        f"dataset: {args.dataset_id}   ranked by: {sort_key}"
-        f" ({'lower' if args.asc else 'higher'} is better)\n"
-    )
+    print(f"dataset: {args.dataset_id}   ranked by: {sort_key} ({'lower' if asc else 'higher'} is better)\n")
     header = f"  {'arm':{w}} {'runs':>4}  " + "  ".join(f"{k:>16}" for k in show)
     print(header)
     print("  " + "-" * (len(header) - 2))
@@ -581,11 +554,11 @@ def main() -> int:
             "  --sort <metric> explicitly."
         )
 
-    matrix = {cid: _per_item(runs, run_dirs, sort_key) for cid, runs in by_config.items()}
-    matrix = {c: v for c, v in matrix.items() if v}
+    raw: list[float] = []
+    matrix = matrix_of(found, sort_key, raw=raw)
     if matrix:
-        _significance(matrix, sort_key, asc=args.asc)
-    _frontier(rows, sort_key, kinds, asc=args.asc)
+        significance(matrix, sort_key, asc=asc, raw_values=raw)
+    _frontier(rows, sort_key, kinds, asc=asc)
     judged = sorted(
         {
             f"{(r.get('judged_with') or {}).get('scorer_id')}, {r['judge_label']}"

@@ -387,29 +387,6 @@ def load_module(path: Path, name: str) -> Any:
     return mod
 
 
-_ADAPTER_MODULES: dict[str, Any] = {}
-
-
-def adapter_module(adapter_spec: str | None) -> Any:
-    """The adapter a run recorded, imported once per process, or None when it cannot be found
-    or imported (a machine without the example's environment, an adapter that moved). For the
-    readers that degrade to what the run recorded: the leaderboard's and run-compare's metric
-    kinds, the classification report's label parser."""
-    if not adapter_spec:
-        return None
-    if adapter_spec not in _ADAPTER_MODULES:
-        cand = resolve_adapter_path(adapter_spec)
-        mod = None
-        if cand is not None:
-            digest = hashlib.sha256(str(cand.resolve()).encode()).hexdigest()[:8]
-            try:
-                mod = load_module(cand, f"evh_adapter_{cand.stem}_{digest}")
-            except Exception:  # noqa: BLE001 — an un-importable adapter is a fallback, not a crash
-                mod = None
-        _ADAPTER_MODULES[adapter_spec] = mod
-    return _ADAPTER_MODULES[adapter_spec]
-
-
 def default_metric(dataset_id: str, match: str | None = None, runs_dir: Path | None = None) -> str:
     """The metric a command reads when none is named: the primary metric the matching runs
     on this dataset recorded, the most common one. It used to be `coverage`, the

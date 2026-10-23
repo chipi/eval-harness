@@ -58,6 +58,7 @@ from _common import (
     data_rel,
     goal_policy,
     load_goals,
+    load_module,
     read_json,
     sha256,
 )
@@ -71,6 +72,43 @@ from _common import DATA as DATA_DIR
 
 problems: list[str] = []
 notes: list[str] = []
+
+#: The bundled demo: `demo_v1` on `smoke_v1` is run many times by `make demo` and by the
+#: self-test, smoke_v1 is not an experiment, and no report cites it. A project adds its own
+#: exceptions in `duplicate_ok`, each one a deliberate, justified edit.
+_DEMO_DUPLICATE = ("smoke_v1", "demo_v1")
+
+
+def policy() -> dict:
+    """<data>/validate.json: what this project's validate holds it to (committed run
+    directories, floors, scorer sources, duplicate exceptions). These were this
+    repository's directory names and example paths written into the validator, so a pinned
+    project's own `runs-adjudicated` was never checked while six names it does not have were.
+    A 0.2/0.3 project's `validate_floors.json` still supplies the floors."""
+    f = DATA / "validate.json"
+    pol = dict(read_json(f)) if f.is_file() else {}
+    legacy = DATA / "validate_floors.json"
+    if "floors" not in pol and legacy.is_file():
+        pol["floors"] = read_json(legacy).get("floors") or {}
+    return pol
+
+
+def committed_dirs() -> list[str]:
+    """The run directories that back the project's claims: `committed` in validate.json,
+    else every git-tracked <data>/runs* directory holding a run."""
+    declared = policy().get("committed")
+    if declared:
+        return list(declared)
+    tracked = subprocess.run(
+        ["git", "ls-files", data_rel(DATA)], cwd=ROOT, capture_output=True, text=True
+    ).stdout.split()
+    prefix = data_rel(DATA).rstrip("/") + "/"
+    names = set()
+    for f in tracked:
+        parts = f[len(prefix) :].split("/") if f.startswith(prefix) else []
+        if len(parts) >= 3 and parts[0].startswith("runs") and parts[2] == "metrics.json":
+            names.add(parts[0])
+    return sorted(names)
 
 
 def check(label: str, ok: object, detail: str = "") -> None:
@@ -315,12 +353,12 @@ def v7_committed_runs_are_readable() -> None:
     have = _tracked_runs(RUNS)
     bad = sorted(r for r, files in have.items() if "metrics.json" not in files)
 
-    # AND THE OTHER RUN DIRECTORIES, which V1 never looked at. `data/runs-rescored`,
+    # AND THE OTHER RUN DIRECTORIES, which V1 never looked at. Here `data/runs-rescored`,
     # `-reparsed`, `-pair` and `-repeats` are all committed and all cited by reports,
     # and nothing validated them at all. Found by external review.
-    for extra in ("runs-rescored", "runs-reparsed", "runs-pair", "runs-repeats", "runs-linux", "runs-fp32"):
+    for extra in committed_dirs():
         base = DATA / extra
-        if not base.is_dir():
+        if not base.is_dir() or base.resolve() == RUNS.resolve():
             continue
         seen = _tracked_runs(base)
         bad += [f"{extra}/{r}" for r, files in sorted(seen.items()) if "metrics.json" not in files]
@@ -351,27 +389,15 @@ def v9_no_committed_evidence_is_missing() -> None:
     #: the merged ML-arm work, which is the same defect round 4 found one directory over.
     # The floors are PROJECT policy: how many runs each committed directory must keep is
     # a fact about one project's evidence, not about the harness. They are read from
-    # <data>/validate_floors.json; a project without one has no floors (V9's missing-file
-    # and empty-rows checks still apply).
-    floors_file = DATA / "validate_floors.json"
-    FLOORS = (read_json(floors_file).get("floors") or {}) if floors_file.is_file() else {}
+    # <data>/validate.json (`policy`); a project without them has no floors (V9's
+    # missing-file and empty-rows checks still apply).
+    FLOORS = policy().get("floors") or {}
 
     tracked = subprocess.run(
         [
             "git",
             "ls-files",
-            *(
-                data_rel(DATA / d)
-                for d in (
-                    "runs",
-                    "runs-rescored",
-                    "runs-reparsed",
-                    "runs-pair",
-                    "runs-repeats",
-                    "runs-linux",
-                    "runs-fp32",
-                )
-            ),
+            *(data_rel(DATA / d) for d in committed_dirs()),
         ],
         cwd=ROOT,
         capture_output=True,
@@ -471,25 +497,12 @@ def v10_derived_runs_carry_the_current_scorer() -> None:
     #: EVERY key of that dict is compared -- naming one key here is how the parser went
     #: unwatched. `data/runs` predates `scorer_sha256` and states `parser_sha256` alone,
     #: under `system_under_test.model`, so that is what is compared there.
-    SOURCES = (
-        ("runs-rescored", "*", ("rescored_with", "scorer"), "examples/ner-few-nerd", "adapter", "scorer_id"),
-        (
-            "runs-reparsed",
-            "*",
-            ("reparsed_with", "scorer_sha256"),
-            "examples/_shared",
-            "retrieval",
-            "scorer_sha256",
-        ),
-        (
-            "runs",
-            "fn_*",
-            ("fingerprint", "system_under_test", "model", "parser_sha256"),
-            "examples/ner-few-nerd",
-            "adapter",
-            "scorer_id",
-        ),
-    )
+    #: Declared per project in validate.json `scorer_sources`; a project without them has
+    #: nothing for V10 to compare.
+    SOURCES = [
+        (src["dir"], src["glob"], tuple(src["path"]), src["module"], src["callable"])
+        for src in policy().get("scorer_sources") or []
+    ]
 
     def _dig(d, path):
         for k in path:
@@ -498,20 +511,25 @@ def v10_derived_runs_carry_the_current_scorer() -> None:
             d = d.get(k)
         return d
 
-    for directory, pat, path, modpath, modname, fn in SOURCES:
+    for directory, pat, path, modfile, fn in SOURCES:
         base = DATA / directory
         if not base.is_dir():
             continue
         runs = sorted(base.glob(f"{pat}/metrics.json"))
         if not runs:
             continue
-        sys.path.insert(0, str(ROOT.parent / modpath))
+        # By path, never by `import adapter`: every example's adapter is `adapter.py`, so a
+        # name import returns whichever one this process loaded first.
+        modpath = (ROOT / modfile).resolve()
+        sys.path.insert(0, str(modpath.parent))  # the module's own siblings (_shared, ...)
         try:
-            mod = __import__(modname)
+            mod = load_module(
+                modpath, f"validate_v10_{hashlib.sha256(str(modpath).encode()).hexdigest()[:12]}"
+            )
             current = getattr(mod, fn)()
         except Exception as exc:  # noqa: BLE001 — an absent example dep is a named skip
             print(
-                f"  skip V10 {directory}: {modname}.{fn} not importable "
+                f"  skip V10 {directory}: {modpath.stem}.{fn} not importable "
                 f"({type(exc).__name__}: {str(exc)[:60]})"
             )
             continue
@@ -606,20 +624,10 @@ def v8_no_duplicate_config_ids() -> None:
     # the one place a duplicate config_id could still land -- and the latency claims read
     # it by filesystem order, so a duplicate changed the answer depending on how the
     # names sorted. That is the round-3 ext4 defect in the sixth directory. Round 5.
-    COMMITTED = (
-        "runs",
-        "runs-rescored",
-        "runs-reparsed",
-        "runs-pair",
-        "runs-repeats",
-        "runs-linux",
-        "runs-fp32",
-    )
-    #: One documented exception. `demo_v1` on `smoke_v1` is the bundled demo, run many
-    #: times by `make demo` and by the self-test; smoke_v1 is not an experiment and no
-    #: report cites it. Named here rather than scoped away silently, so that adding a
-    #: second exception is a deliberate edit someone has to justify.
-    ALLOWED = {("smoke_v1", "demo_v1")}
+    COMMITTED = committed_dirs()
+    #: The bundled demo, plus the project's own `duplicate_ok`: named, never scoped away
+    #: silently, so that adding an exception is a deliberate edit someone has to justify.
+    ALLOWED = {_DEMO_DUPLICATE, *(tuple(x) for x in policy().get("duplicate_ok") or [])}
 
     bad = []
     for base in [(DATA / n) for n in COMMITTED]:
@@ -643,7 +651,7 @@ def v8_no_duplicate_config_ids() -> None:
             if (ds, cid) in ALLOWED:
                 notes.append(
                     f"{base.name}/: {len(names)} {cid!r} runs on {ds} "
-                    f"(allowed: the bundled demo, cited by no report)"
+                    f"(allowed: {'the bundled demo, cited by no report' if (ds, cid) == _DEMO_DUPLICATE else 'duplicate_ok in validate.json'})"
                 )
                 continue
             bad.append(f"{base.name}/: {len(names)} runs claim {cid!r} on {ds} — {', '.join(sorted(names))}")

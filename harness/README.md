@@ -249,13 +249,13 @@ how 18 arms of paid results were lost during this harness's own development.
 
 ## The judge panel
 
-The harness this grew around, unchanged, and not the same thing as `make judge-score`
-above: the panel judges finalists one at a time and keeps no verdicts; the judge scorer
-judges every arm, listwise and blind, behind a validation gate, and stores every verdict.
-Given many candidate runs, the panel narrows to
-finalists (top-K per stratum + floor + global cap), scores each with an LLM
-judge, **aborts mid-run** if a cost cap is hit, aggregates to per-dimension means,
-and flags finalists where two judges disagree.
+The harness this grew around, and not the same thing as `make judge-score` above: the
+panel judges finalists one at a time and keeps no verdicts; the judge scorer judges every
+arm, listwise and blind, behind a validation gate, and stores every verdict. Given many
+candidate runs (`runs_from:` reads them where every command does, ranked by their primary
+metric), the panel narrows to finalists (top-K per stratum + floor + global cap), scores
+each finalist's stored outputs with an LLM judge, **aborts mid-run** if a cost cap is hit,
+aggregates to per-dimension means, and flags finalists where two judges disagree.
 
 ```bash
 make judge                                  # FakeJudge — no API key

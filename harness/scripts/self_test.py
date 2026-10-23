@@ -579,6 +579,7 @@ def test_example_scorer_suites_pass() -> None:
         ("test_judge_score.py", "judging pass"),
         ("test_code_hashes.py", "scoring-code hashes"),
         ("test_hf_rows.py", "the examples' datasets-server fetcher: pacing, 429 and 5xx retries"),
+        ("test_runs_adapter.py", "run reading, direction, adapter loading, the judge panel"),
         ("check_report_claims.py", "report claims vs committed runs"),
         ("check_links.py", "markdown links and anchors"),
         ("check_commands.py", "documented commands: every make target, evh command and flag exists"),
@@ -1689,7 +1690,7 @@ def test_nemenyi_table_is_computed_not_copied() -> None:
     the shipped numbers could still be anything.
     """
     sys.path.insert(0, str(HERE))
-    from leaderboard import _NEMENYI_Q05  # noqa: PLC0415
+    from leaderboard import NEMENYI_Q05  # noqa: PLC0415
     from nemenyi_table import PUBLISHED, max_error_against_published, q_alpha  # noqa: PLC0415
 
     err = max_error_against_published()
@@ -1697,17 +1698,17 @@ def test_nemenyi_table_is_computed_not_copied() -> None:
         "nemenyi: the computation reproduces Demsar's 24 values", err < 0.002, f"worst disagreement {err:.4f}"
     )
 
-    bad = [k for k, v in PUBLISHED.items() if abs(_NEMENYI_Q05.get(k, 0) - v) > 0.002]
+    bad = [k for k, v in PUBLISHED.items() if abs(NEMENYI_Q05.get(k, 0) - v) > 0.002]
     check(
         "nemenyi: and the shipped table agrees with the published one where it overlaps", not bad, f"k={bad}"
     )
 
     # Spot-check the extension against the computation, not against itself.
-    ext = [k for k in (26, 27, 28) if k in _NEMENYI_Q05]
+    ext = [k for k in (26, 27, 28) if k in NEMENYI_Q05]
     drift = [
-        f"k={k}: table {_NEMENYI_Q05[k]:.4f} vs computed {q_alpha(k):.4f}"
+        f"k={k}: table {NEMENYI_Q05[k]:.4f} vs computed {q_alpha(k):.4f}"
         for k in ext
-        if abs(_NEMENYI_Q05[k] - q_alpha(k)) > 0.002
+        if abs(NEMENYI_Q05[k] - q_alpha(k)) > 0.002
     ]
     check(
         "nemenyi: the extension beyond k=25 is what the computation gives",
@@ -1718,8 +1719,8 @@ def test_nemenyi_table_is_computed_not_copied() -> None:
     # And the covering assertion: every experiment here must now get a verdict.
     check(
         "nemenyi: the table covers every arm count this repo measures (<= 28)",
-        all(k in _NEMENYI_Q05 for k in range(2, 29)),
-        f"missing {[k for k in range(2, 29) if k not in _NEMENYI_Q05]}",
+        all(k in NEMENYI_Q05 for k in range(2, 29)),
+        f"missing {[k for k in range(2, 29) if k not in NEMENYI_Q05]}",
     )
 
 

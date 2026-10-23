@@ -35,24 +35,21 @@ from pathlib import Path
 from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _adapter import load_adapter, metric_kinds, primary_metric, score_wants_source, transient_markers
 from _common import (
-    CODE,
     GOALS,
     MATERIALIZED,
     REFERENCES,
     ROOT,
     RUNS,
-    ModuleNotLoadable,
     build_info,
     die,
     env_float,
     how,
     load_dataset,
     load_goals,
-    load_module,
     now,
     read_json,
-    resolve_adapter_path,
     write_json,
     write_text_atomic,
 )
@@ -139,182 +136,6 @@ class _Resumed:
         )
         self.meta: dict[str, Any] = dict(prior.get("_meta") or {})
         self.meta["resumed_from_disk"] = True
-
-
-def _adapter_metric_kinds(adapter_id: str, adapter_path: Path | None) -> dict[str, str]:
-    """`METRIC_KINDS` from the loaded adapter module, or {}."""
-    module = sys.modules.get(f"eval_adapter_{adapter_path.stem}") if adapter_path else None
-    if module is None:
-        try:
-            import adapter as module  # noqa: PLC0415
-        except ImportError:
-            return {}
-    kinds = getattr(module, "METRIC_KINDS", None)
-    out = dict(kinds) if isinstance(kinds, dict) else {}
-    # Metrics the CORE emits, which no adapter declares because no adapter produces
-    # them. Without this `resumed` lands among the quality columns, where a leaderboard
-    # reads higher as better -- and "was not actually run this pass" would sort to the
-    # top. Declared here rather than asked of every adapter, because the core owns them.
-    out.setdefault("resumed", "descriptive")
-    return out
-
-
-def _adapter_transient(adapter_path: Path | None) -> tuple:
-    """Extra "worth retrying" markers this adapter declares, as `TRANSIENT_MARKERS`.
-
-    The core knows the shapes every HTTP provider shares (429, 503, "rate limit"). It
-    cannot know that a particular local runtime says "CUDA out of memory" on a transient
-    allocation, or that some SDK wraps a timeout in a bespoke class. The adapter can add
-    to the list; it cannot shrink it, because the shapes in the core are not negotiable.
-    """
-    module = sys.modules.get(f"eval_adapter_{adapter_path.stem}") if adapter_path else None
-    if module is None:
-        return ()
-    markers = getattr(module, "TRANSIENT_MARKERS", None)
-    return tuple(str(m) for m in markers) if isinstance(markers, (list, tuple)) else ()
-
-
-def _adapter_primary_metric(adapter_path: Path | None) -> str | None:
-    """`PRIMARY_METRIC` from the adapter, or None.
-
-    WHICH quality facet heads the table is a judgement the adapter author makes, not
-    something to settle alphabetically. Without this the leaderboard sorted by whichever
-    quality metric sorted first by name -- which, for a summariser declaring `coverage`
-    and `concision`, is `concision`: brevity, quietly promoted to the headline. The same
-    shape of accident once ranked a ten-model sweep by `compression`.
-    """
-    module = sys.modules.get(f"eval_adapter_{adapter_path.stem}") if adapter_path else None
-    if module is None:
-        try:
-            import adapter as module  # noqa: PLC0415
-        except ImportError:
-            return None
-    value = getattr(module, "PRIMARY_METRIC", None)
-    return value if isinstance(value, str) and value else None
-
-
-#: The id a run records when its config names no `adapter:` (the bundled one).
-def load_recorded_adapter(spec: str) -> tuple | None:
-    """The adapter a finished run recorded, for scoring it again (rescore, silver-calibrate),
-    or None if it cannot be found.
-
-    Recorded ids are relative to the harness root for the bundled adapter
-    ("scripts/adapter.py"), to the repository root for most examples
-    ("examples/ner-few-nerd/adapter.py"), and to the examples root for the oldest sweep
-    ("summarization-cnn-dailymail/adapter.py"). The bundled id is a checkout path: a project
-    that pins the package has no such file, and the run was made by the package's own copy,
-    so that is the one returned (found by a fresh project on 0.4.0)."""
-    path = resolve_adapter_path(spec)
-    if path is None:
-        return None
-    return load_adapter(None, None) if path == CODE / "adapter.py" else load_adapter(str(path), None)
-
-
-def _score_wants_source(score: Any) -> bool:
-    """Whether this adapter's `score()` takes the source text as a third argument.
-
-    Arity, not configuration: the bundled adapter scores output against reference and has
-    no use for the input, while a summarisation adapter needs it to measure grounding.
-    Inspected once per run rather than guessed, so an adapter that does not want it is
-    never handed an argument it cannot take.
-    """
-    import inspect  # noqa: PLC0415
-
-    try:
-        params = inspect.signature(score).parameters
-    except (TypeError, ValueError):
-        return False
-    positional = [p for p in params.values() if p.kind in (p.POSITIONAL_ONLY, p.POSITIONAL_OR_KEYWORD)]
-    return len(positional) >= 3 or any(p.kind is p.VAR_POSITIONAL for p in params.values())
-
-
-def _portable_id(path: Path) -> str:
-    """A path safe to write into a run record: relative, resolved, never a home directory.
-
-    This is recorded in `metrics.json` and hashed into the fingerprint, so an absolute
-    path both leaks the author's username into anything published and makes two identical
-    runs on two machines look different.
-
-    The old version tried `relative_to(ROOT)` on an UNRESOLVED path. Adapters live in
-    sibling example directories, so that never matched -- `configs/../adapter.py` is not
-    under the harness root -- and every run silently fell back to the absolute path.
-    Resolve first, then widen the base one level so a sibling example resolves cleanly,
-    and if even that fails keep only the last two components rather than emit a home path.
-    """
-    resolved = path.resolve()
-    for base in (ROOT, ROOT.parent):
-        try:
-            return str(resolved.relative_to(base))
-        except ValueError:
-            continue
-    return str(Path(*resolved.parts[-2:]))
-
-
-def load_adapter(
-    spec: str | None, config_path: Path | None = None
-) -> tuple[Any, Any, str, Path | None, Any, Any]:
-    """``(call_system, score, adapter_id)`` for the adapter a config names.
-
-    Defaults to ``scripts/adapter.py`` — the single seam, unchanged for anyone who has one
-    system to measure. A config may name its own instead:
-
-        adapter: examples/summarization-cnn-dailymail/adapter.py
-
-    That exists because an example is not just a different model, it is a different TASK:
-    summarisation scores ROUGE, classification scores macro-F1, and neither is the token
-    overlap the bundled adapter computes. One adapter file per task, selected by the arm,
-    keeps "an arm is a YAML file" true.
-
-    The returned id is recorded on the run. It has to be: a scorer is half of what a number
-    means, so two runs sharing a config_id but scored by different adapters are no more
-    comparable than two runs on different datasets. run-compare refuses across it.
-    """
-    if not spec:
-        import adapter as _default  # noqa: PLC0415
-        from adapter import call_system, score  # noqa: PLC0415
-
-        return (
-            call_system,
-            score,
-            "scripts/adapter.py",
-            Path(__file__).resolve().parent / "adapter.py",
-            getattr(_default, "warmup", None),
-            getattr(_default, "fingerprint", None),
-        )
-
-    # Relative to the CONFIG first, then the harness root. An example's arm sits beside its
-    # adapter and should be able to say `adapter: adapter.py` — the two travel together, and
-    # a path written from the harness's point of view breaks the moment the example moves.
-    path = Path(spec)
-    candidates = []
-    if path.is_absolute():
-        candidates = [path]
-    else:
-        if config_path is not None:
-            candidates.append(config_path.resolve().parent / path)
-        candidates.append(ROOT / path)
-    for candidate in candidates:
-        if candidate.is_file():
-            path = candidate
-            break
-    else:
-        die(f"adapter not found: {spec}\n" + "".join(f"  looked in: {c}\n" for c in candidates))
-    try:
-        module = load_module(path, f"eval_adapter_{path.stem}")
-    except ModuleNotLoadable:
-        die(f"adapter is not importable: {path}")
-    for required in ("call_system", "score"):
-        if not hasattr(module, required):
-            die(f"adapter {spec} defines no {required}()")
-    adapter_id = _portable_id(path)
-    return (
-        module.call_system,
-        module.score,
-        adapter_id,
-        path,
-        getattr(module, "warmup", None),
-        getattr(module, "fingerprint", None),
-    )
 
 
 def _reference_for(dataset_id: str) -> tuple[Path | None, str | None]:
@@ -435,7 +256,7 @@ def one_pass(
         # hallucination check simply never ran and nothing said so.
         scored = (
             score(res.output, reference, source_text)
-            if _score_wants_source(score)
+            if score_wants_source(score)
             else score(res.output, reference)
         )
         row: dict[str, Any] = {"item_id": item["item_id"], **scored}
@@ -609,7 +430,7 @@ def main() -> int:
     call_system, score, adapter_id, adapter_path, warmup, model_fingerprint = load_adapter(
         cfg.get("adapter"), Path(args.config)
     )
-    metric_kinds = _adapter_metric_kinds(adapter_id, adapter_path)
+    declared_kinds = metric_kinds(adapter_path)
     for required in ("config_id", "dataset_id"):
         if required not in cfg:
             die(f"{args.config} is missing required key: {required}")
@@ -666,7 +487,7 @@ def main() -> int:
                 warmup,
                 (dict(cfg.get("params") or {}),),
                 label="warm-up",
-                extra_transient=_adapter_transient(adapter_path),
+                extra_transient=transient_markers(adapter_path),
             )
         except Exception as exc:  # noqa: BLE001 - fail before spending, with the reason
             die(
@@ -836,7 +657,7 @@ def main() -> int:
             live_dir=run_dir / "outputs",
             call_system=call_system,
             score=score,
-            extra_transient=_adapter_transient(adapter_path),
+            extra_transient=transient_markers(adapter_path),
         )
         run_dir.mkdir(parents=True, exist_ok=True)
         write_text_atomic(
@@ -869,9 +690,9 @@ def main() -> int:
             "adapter": adapter_id,
             # The adapter's own reading of its metrics, carried on the run so a leaderboard
             # built later does not have to guess what `compression` is.
-            "metric_kinds": dict(metric_kinds or {}),
+            "metric_kinds": dict(declared_kinds or {}),
             "providers_seen": result.get("providers_seen") or {},
-            "primary_metric": _adapter_primary_metric(adapter_path),
+            "primary_metric": primary_metric(adapter_path),
             # Outside `scores` on purpose: real, worth seeing, but not the arm's per-item
             # speed — and in scores it would reach the leaderboard's speed column and V5's
             # duplicate key, where it means something else.

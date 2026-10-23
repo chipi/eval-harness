@@ -283,7 +283,7 @@ def build_fingerprint(
             "dataset_id": dataset.get("dataset_id"),
             # The item hashes ARE the dataset's identity — dataset_id is a name, and a
             # name can be reused over different bytes.
-            "items_sha256": _items_digest(dataset),
+            "items_sha256": items_digest(dataset),
             "n_items": len(dataset.get("items") or []),
             "reference_id": reference_id,
             "reference_tier": reference_tier,
@@ -293,7 +293,7 @@ def build_fingerprint(
             # different measurements. That is the exact failure this whole structure
             # exists to prevent, and it applied to references for as long as the
             # comment two fields above has been telling you a name is not an identity.
-            "references_sha256": _references_digest(root, reference_id),
+            "references_sha256": references_digest(root, reference_id),
         },
         "host": _host_identity(),
         "arm": {"config_id": config_id, "params": dict(params or {})},
@@ -302,7 +302,7 @@ def build_fingerprint(
     return fp
 
 
-def _references_digest(root: Path, reference_id: str | None) -> str | None:
+def references_digest(root: Path, reference_id: str | None) -> str | None:
     """One hash over every reference file's bytes, by filename order.
 
     None when the run has no references -- distinguishable from a hash, so "not scored
@@ -329,7 +329,7 @@ def _references_digest(root: Path, reference_id: str | None) -> str | None:
     return h.hexdigest()
 
 
-def _items_digest(dataset: dict[str, Any]) -> str | None:
+def items_digest(dataset: dict[str, Any]) -> str | None:
     """One hash over every item's frozen sha256, in item order."""
     items = dataset.get("items") or []
     if not items:

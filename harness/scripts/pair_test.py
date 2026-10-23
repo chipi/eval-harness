@@ -29,10 +29,8 @@ THE TEST
 from __future__ import annotations
 
 import argparse
-import json
 import statistics
 import sys
-from collections import defaultdict
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -43,28 +41,10 @@ from _common import (  # noqa: E402
     dataset_item_ids,
     default_metric,
     read_item_ids,
-    read_json,
     warn_on_ambiguous_runs,
 )
+from _runs import direction, per_item, runs_on  # noqa: E402
 from stats import EXACT_UP_TO, sign_flip_p  # noqa: E402
-
-
-def per_item(runs_dir: Path, dataset_id: str, config_id: str, metric: str) -> dict[str, float]:
-    """Per-item means for one arm on this dataset; averaged over repeated runs."""
-    acc: dict[str, list[float]] = defaultdict(list)
-    for d in sorted(runs_dir.glob("*")):
-        mj, pj = d / "metrics.json", d / "predictions.jsonl"
-        if not (mj.is_file() and pj.is_file()):
-            continue
-        m = read_json(mj)
-        if m.get("dataset_id") != dataset_id or m.get("config_id") != config_id:
-            continue
-        for line in pj.read_text(encoding="utf-8").splitlines():
-            if line.strip():
-                row = json.loads(line)
-                if metric in row:
-                    acc[row["item_id"]].append(float(row[metric]))
-    return {k: statistics.fmean(v) for k, v in acc.items() if v}
 
 
 def main() -> int:
@@ -74,7 +54,7 @@ def main() -> int:
     ap.add_argument("--a", required=True, help="config_id of the arm under test")
     ap.add_argument("--b", required=True, help="config_id it is compared against")
     ap.add_argument("--metric", help="default: the primary metric the runs recorded")
-    ap.add_argument("--runs-dir", default=None, help="default: data/runs")
+    ap.add_argument("--runs-dir", type=Path, default=None, help="default: EVAL_RUNS_DIR, else data/runs")
     ap.add_argument("--exclude-dataset", help="drop items this dataset also contains")
     ap.add_argument(
         "--items",
@@ -89,22 +69,21 @@ def main() -> int:
     ap.add_argument(
         "--asc",
         action="store_true",
-        help="lower is better (WER, latency): 'A wins' counts items where A scored lower",
+        help="lower is better: 'A wins' counts items where A scored lower "
+        "(default: inferred from the metric and the runs)",
     )
+    ap.add_argument("--desc", action="store_true", help="higher is better, whatever the runs declare")
     args = ap.parse_args()
+    # The directory read is the directory warned about: --runs-dir, else EVAL_RUNS_DIR.
+    runs_dir = args.runs_dir or RUNS
     # Two runs sharing a config_id are averaged together below without
     # saying so. See _common.warn_on_ambiguous_runs.
-    warn_on_ambiguous_runs(RUNS, args.dataset_id, label=RUNS.name)
-
-    # EVAL_RUNS_DIR, same as every other script. Without this, running these two
-    # under a non-default runs directory silently read data/runs instead -- so a
-    # rescored or smoke sweep was compared against the ORIGINAL runs and the output
-    # looked perfectly normal. `_common.RUNS` already resolves the variable; these two
-    # were the only scripts that rebuilt the path by hand.
-    runs_dir = Path(args.runs_dir) if args.runs_dir else RUNS
+    warn_on_ambiguous_runs(runs_dir, args.dataset_id, label=runs_dir.name)
     args.metric = args.metric or default_metric(args.dataset_id, runs_dir=runs_dir)
-    A = per_item(runs_dir, args.dataset_id, args.a, args.metric)
-    B = per_item(runs_dir, args.dataset_id, args.b, args.metric)
+    runs = runs_on(args.dataset_id, runs_dir=runs_dir)
+    lower = direction(runs, args.metric, args.asc, args.desc)
+    A = per_item([r for r in runs if r[1]["config_id"] == args.a], args.metric)
+    B = per_item([r for r in runs if r[1]["config_id"] == args.b], args.metric)
     items = sorted(set(A) & set(B))
     if args.exclude_dataset:
         prior = dataset_item_ids(args.exclude_dataset)
@@ -126,7 +105,7 @@ def main() -> int:
 
     deltas = [A[i] - B[i] for i in items]
     obs = statistics.fmean(deltas)
-    wins = sum(1 for d in deltas if (d < 0 if args.asc else d > 0))
+    wins = sum(1 for d in deltas if (d < 0 if lower else d > 0))
     ties = sum(1 for d in deltas if d == 0)
 
     p = sign_flip_p(deltas, permutations=args.permutations, seed=args.seed)
@@ -142,7 +121,7 @@ def main() -> int:
     print(f"    delta (A - B)      {obs:+.4f}")
     print(
         f"    items A wins       {wins}/{len(items)}"
-        + (" (lower is better)" if args.asc else "")
+        + (" (lower is better)" if lower else "")
         + (f" ({ties} exact tie(s))" if ties else "")
     )
     how = (

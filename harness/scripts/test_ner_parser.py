@@ -7,12 +7,15 @@ an explanation would be scoring answers the model never gave.
 """
 
 import sys
+from pathlib import Path
 
-sys.path.insert(
-    0, str(__import__("pathlib").Path(__file__).resolve().parents[2] / "examples" / "ner-few-nerd")
-)
-from _check import check, summary
-from adapter import _parse_entities  # type: ignore[attr-defined]  # the NER example's, on sys.path above; mypy sees scripts/adapter.py
+NER = Path(__file__).resolve().parents[2] / "examples" / "ner-few-nerd"
+sys.path.insert(0, str(NER))
+from _check import check, summary  # noqa: E402
+from _common import load_module  # noqa: E402
+
+# By path: `import adapter` names the harness's bundled adapter as well as this example's.
+_parse_entities = load_module(NER / "adapter.py", "ner_few_nerd_adapter")._parse_entities
 
 # observed on the dev slice
 r1 = _parse_entities('{"text": "p", "type": "other"}')

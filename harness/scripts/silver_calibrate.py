@@ -42,8 +42,8 @@ from pathlib import Path
 from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _adapter import load_recorded_adapter, score_wants_source
 from _common import MATERIALIZED, REFERENCES, ROOT, RUNS, die, read_json, warn_on_ambiguous_runs
-from experiment_run import _score_wants_source, load_recorded_adapter
 from stats import spearman
 
 
@@ -117,12 +117,12 @@ def main() -> int:
     if found is None:
         die(f"adapter not found: {spec!r} is under none of {ROOT}, {ROOT.parent}, {ROOT.parent / 'examples'}")
     _call, score, _aid, adapter_path, _w, _fp = found
-    wants_source = _score_wants_source(score)
+    wants_source = score_wants_source(score)
     metric = args.metric
     if not metric:
-        from experiment_run import _adapter_primary_metric  # noqa: PLC0415
+        from _adapter import primary_metric  # noqa: PLC0415
 
-        metric = _adapter_primary_metric(adapter_path) or "overlap_f1"
+        metric = primary_metric(adapter_path) or "overlap_f1"
 
     ref_id = args.reference_id
     # GOLD WHEN IT EXISTS -- the rule every run follows (experiment_run._reference_for).

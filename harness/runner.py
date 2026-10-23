@@ -21,6 +21,12 @@ from typing import Any
 import yaml
 from judges import ItemScore, build_judge
 
+# The harness's own run reading, so the panel finds runs where every command does (the
+# project, EVAL_RUNS_DIR) and picks the metric the same way.
+sys.path.insert(0, str(Path(__file__).resolve().parent / "scripts"))
+from _common import ROOT, RUNS, default_metric
+from _runs import direction, item_rows, runs_on
+
 logger = logging.getLogger("eval-harness")
 
 
@@ -35,6 +41,8 @@ class RunCandidate:
     run_id: str
     stratum: str
     primary_score: float
+    #: The run's directory, when the candidate is a real run: its outputs are what is judged.
+    run_dir: str | None = None
 
 
 @dataclass
@@ -346,8 +354,27 @@ def _git_sha() -> str | None:
 
 
 def _synth_items(run_id: str, n: int = 5) -> list[dict[str, Any]]:
-    """Demo items for the FakeJudge run. Replace with your data loader."""
+    """Placeholder items for the literal `runs:` demo list, which names no real run."""
     return [{"item_id": f"{run_id}-{i}", "content": f"Synthetic item {i} for {run_id}"} for i in range(n)]
+
+
+def _items_of(finalist: RunCandidate, n: int) -> list[dict[str, Any]]:
+    """What the judges read: the finalist run's own stored outputs, first `n` items in
+    prediction order. It judged `_synth_items` for every candidate, real runs included, so
+    a billed panel scored placeholder text."""
+    if finalist.run_dir is None:
+        return _synth_items(finalist.run_id, n=n)
+    d = Path(finalist.run_dir)
+    items: list[dict[str, Any]] = []
+    for row in item_rows(d):
+        out = d / "outputs" / f"{row['item_id']}.txt"
+        if out.is_file():
+            items.append({"item_id": row["item_id"], "content": out.read_text(encoding="utf-8")})
+        if len(items) == n:
+            break
+    if not items:
+        raise SystemExit(f"{finalist.run_id}: no stored outputs under {d / 'outputs'} to judge")
+    return items
 
 
 def _candidates_from(cfg: dict[str, Any]) -> list[RunCandidate]:
@@ -368,29 +395,40 @@ def _candidates_from(cfg: dict[str, Any]) -> list[RunCandidate]:
     if not src:
         return [RunCandidate(**r) for r in cfg["runs"]]
 
-    root = pathlib.Path(src if src != "runs" else "data/runs")
+    # "runs" is the runs directory every command reads (EVAL_RUNS_DIR, else <project>/data/runs);
+    # a relative path is the PROJECT's, not this file's directory's.
+    root = RUNS if src == "runs" else pathlib.Path(src)
     if not root.is_absolute():
-        root = pathlib.Path(__file__).resolve().parent / root
+        root = ROOT / root
     if not root.is_dir():
         raise SystemExit(f"runs_from: no such directory: {root}")
 
-    metric = cfg.get("primary_metric")
-    want_ds = cfg.get("dataset_id")
+    want_ds: str | None = cfg.get("dataset_id")
+    metric: str | None = cfg.get("primary_metric")
+    if not metric:
+        if not want_ds:
+            raise SystemExit(
+                "runs_from: name dataset_id (its runs' primary metric ranks them) or primary_metric"
+            )
+        # The metric every command defaults to: the primary metric the runs recorded.
+        metric = default_metric(want_ds, runs_dir=root)
+    runs = runs_on(want_ds, runs_dir=root)
+    if direction(runs, metric):
+        raise SystemExit(
+            f"{metric!r} is lower-is-better; the panel promotes the HIGHEST scores within a "
+            "floor of the leader, so name a quality metric as primary_metric"
+        )
     out: list[RunCandidate] = []
-    for d in sorted(root.iterdir()):
-        mf = d / "metrics.json"
-        if not mf.is_file():
-            continue
-        m = json.loads(mf.read_text(encoding="utf-8"))
-        if want_ds and m.get("dataset_id") != want_ds:
-            continue
+    for d, m in runs:
         scores = m.get("scores", {})
-        key = metric or next((k for k in sorted(scores) if not k.startswith("total_")), None)
-        if key is None or key not in scores:
+        if metric not in scores:
             continue
         out.append(
             RunCandidate(
-                run_id=m["run_id"], stratum=m.get("config_id", "default"), primary_score=float(scores[key])
+                run_id=m["run_id"],
+                stratum=m["config_id"],
+                primary_score=float(scores[metric]),
+                run_dir=str(d),
             )
         )
     if not out:
@@ -434,7 +472,7 @@ def main(argv: list[str]) -> int:
 
     aggregates: list[FinalistAggregate] = []
     for finalist in promoted:
-        items = _synth_items(finalist.run_id, n=max_items)
+        items = _items_of(finalist, n=max_items)
 
         primary_scores, primary_cost, _ = judge_finalist(
             finalist=finalist,

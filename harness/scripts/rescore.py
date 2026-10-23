@@ -32,6 +32,7 @@ from pathlib import Path
 from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _adapter import load_recorded_adapter, score_wants_source
 from _common import (
     DATA,
     DATASETS,
@@ -46,8 +47,7 @@ from _common import (
     sha256,
     write_json,
 )
-from _fingerprint import _references_digest
-from experiment_run import _score_wants_source, load_recorded_adapter
+from _fingerprint import references_digest
 
 #: Carried across from the original run rather than recomputed: these describe the CALL,
 #: not the measurement. A rescore that recomputed a latency would be reporting a number
@@ -141,7 +141,7 @@ def main() -> int:
             # Found while testing a different fix. Resolving the id is the right repair;
             # rewriting `adapter` inside 24 finished runs is not, because their
             # fingerprint hashes were computed over the bytes that are there. The lookup
-            # lives in experiment_run.load_recorded_adapter, shared with silver-calibrate.
+            # lives in _adapter.load_recorded_adapter, shared with silver-calibrate.
             found = load_recorded_adapter(spec)
             if found is None:
                 die(
@@ -150,7 +150,7 @@ def main() -> int:
                 )
             adapters[spec] = found
         _call, score, adapter_id, adapter_path, _warm, _fp = adapters[spec]
-        wants_source = _score_wants_source(score)
+        wants_source = score_wants_source(score)
 
         tier = m.get("reference_tier")
         ref_dir = (
@@ -371,7 +371,7 @@ def main() -> int:
                 fp_data["reference_tier_at_measurement"] = fp_data.get("reference_tier")
                 fp_data["reference_id"] = args.reference_id
                 fp_data["reference_tier"] = tier
-            actual_refs = _references_digest(ROOT, fp_data.get("reference_id"))
+            actual_refs = references_digest(ROOT, fp_data.get("reference_id"))
             prior_refs = fp_data.get("references_sha256")
             fp_data["references_sha256"] = actual_refs
             if prior_refs and actual_refs and prior_refs != actual_refs:
@@ -410,15 +410,15 @@ def main() -> int:
 
 
 def _kinds(path):
-    from experiment_run import _adapter_metric_kinds  # noqa: PLC0415
+    from _adapter import metric_kinds  # noqa: PLC0415
 
-    return _adapter_metric_kinds("", path)
+    return metric_kinds(path)
 
 
 def _primary(path):
-    from experiment_run import _adapter_primary_metric  # noqa: PLC0415
+    from _adapter import primary_metric  # noqa: PLC0415
 
-    return _adapter_primary_metric(path)
+    return primary_metric(path)
 
 
 def _sha(path):

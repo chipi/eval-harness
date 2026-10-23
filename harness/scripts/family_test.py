@@ -52,24 +52,16 @@ from _common import (  # noqa: E402
     dataset_item_ids,
     default_metric,
     item_selection,
-    read_json,
     warn_on_ambiguous_runs,
 )
-from pair_test import per_item  # noqa: E402 -- one implementation of "score per item"
+from _runs import direction, per_item, runs_on  # noqa: E402 -- one implementation of "score per item"
 from stats import holm, sign_flip_p  # noqa: E402 -- one implementation of the paired test
 
 
-def _opponents(runs_dir: Path, dataset_id: str, against: str, exclude: str) -> list[str]:
-    found = set()
-    for d in sorted(runs_dir.glob("*")):
-        mj = d / "metrics.json"
-        if not mj.is_file():
-            continue
-        m = read_json(mj)
-        cid = m.get("config_id")
-        if m.get("dataset_id") == dataset_id and cid and cid != exclude and against in cid:
-            found.add(cid)
-    return sorted(found)
+def _opponents(runs: list, against: str, exclude: str) -> list[str]:
+    return sorted(
+        {m["config_id"] for _d, m in runs if m["config_id"] != exclude and against in m["config_id"]}
+    )
 
 
 # Under the PROJECT, not beside the code: installed, the code sits in site-packages.
@@ -83,13 +75,12 @@ def _cache_key(argv: list[str], runs_dir: Path, args) -> str:
     a hit is the same computation, already done -- the test is seeded and deterministic."""
     h = hashlib.sha256()
     here = Path(__file__).resolve().parent
-    for f in ("family_test.py", "pair_test.py", "_common.py", "stats.py"):
+    for f in ("family_test.py", "_runs.py", "_common.py", "stats.py"):
         h.update((here / f).read_bytes())
-    h.update("\0".join([*argv, str(RUNS)]).encode())
-    for d in sorted(runs_dir.glob("*")):
+    h.update("\0".join([*argv, str(runs_dir.resolve())]).encode())
+    for d, _m in runs_on(args.dataset_id, runs_dir=runs_dir):
         mj, pj = d / "metrics.json", d / "predictions.jsonl"
-        if mj.is_file() and read_json(mj).get("dataset_id") == args.dataset_id:
-            h.update(d.name.encode() + mj.read_bytes() + (pj.read_bytes() if pj.is_file() else b""))
+        h.update(d.name.encode() + mj.read_bytes() + (pj.read_bytes() if pj.is_file() else b""))
     if args.items:
         h.update(args.items.read_bytes())
     if args.exclude_dataset:
@@ -105,7 +96,7 @@ def main() -> int:
     planted defect) and the site build ask the same questions dozens of times per `make
     ci`. EVAL_NO_CACHE=1 forces a recomputation."""
     args = _parser().parse_args()
-    runs_dir = Path(args.runs_dir) if args.runs_dir else RUNS
+    runs_dir = args.runs_dir or RUNS
     use_cache = not os.environ.get("EVAL_NO_CACHE") and runs_dir.is_dir()
     if use_cache:
         hit = CACHE / f"{_cache_key(sys.argv[1:], runs_dir, args)}.json"
@@ -137,7 +128,7 @@ def _parser() -> argparse.ArgumentParser:
         "--against", required=True, help="substring selecting the opponent family, declared in advance"
     )
     ap.add_argument("--metric", help="default: the primary metric the runs recorded")
-    ap.add_argument("--runs-dir", default=None, help="default: data/runs")
+    ap.add_argument("--runs-dir", type=Path, default=None, help="default: EVAL_RUNS_DIR, else data/runs")
     ap.add_argument("--exclude-dataset", help="drop items this dataset also contains")
     ap.add_argument("--items", type=Path, help="file of item_ids; restrict to exactly these")
     ap.add_argument("--permutations", type=int, default=20000)
@@ -145,25 +136,24 @@ def _parser() -> argparse.ArgumentParser:
     ap.add_argument(
         "--asc",
         action="store_true",
-        help="lower is better (WER, latency): wins and 'ahead' count the lower score",
+        help="lower is better: wins and 'ahead' count the lower score "
+        "(default: inferred from the metric and the runs)",
     )
+    ap.add_argument("--desc", action="store_true", help="higher is better, whatever the runs declare")
     ap.add_argument("--seed", type=int, default=20260926)
     return ap
 
 
 def _run(args) -> int:
+    # The directory read is the directory warned about: --runs-dir, else EVAL_RUNS_DIR.
+    runs_dir = args.runs_dir or RUNS
     # Two runs sharing a config_id are averaged together below without
     # saying so. See _common.warn_on_ambiguous_runs.
-    warn_on_ambiguous_runs(RUNS, args.dataset_id, label=RUNS.name)
-
-    # EVAL_RUNS_DIR, same as every other script. Without this, running these two
-    # under a non-default runs directory silently read data/runs instead -- so a
-    # rescored or smoke sweep was compared against the ORIGINAL runs and the output
-    # looked perfectly normal. `_common.RUNS` already resolves the variable; these two
-    # were the only scripts that rebuilt the path by hand.
-    runs_dir = Path(args.runs_dir) if args.runs_dir else RUNS
+    warn_on_ambiguous_runs(runs_dir, args.dataset_id, label=runs_dir.name)
     args.metric = args.metric or default_metric(args.dataset_id, runs_dir=runs_dir)
-    A = per_item(runs_dir, args.dataset_id, args.a, args.metric)
+    runs = runs_on(args.dataset_id, runs_dir=runs_dir)
+    lower = direction(runs, args.metric, args.asc, args.desc)
+    A = per_item([r for r in runs if r[1]["config_id"] == args.a], args.metric)
     if not A:
         print(f"  no runs for {args.a} on {args.dataset_id}")
         return 1
@@ -172,8 +162,8 @@ def _run(args) -> int:
 
     rng = random.Random(args.seed)
     rows: list[dict] = []
-    for opp in _opponents(runs_dir, args.dataset_id, args.against, args.a):
-        B = per_item(runs_dir, args.dataset_id, opp, args.metric)
+    for opp in _opponents(runs, args.against, args.a):
+        B = per_item([r for r in runs if r[1]["config_id"] == opp], args.metric)
         items = sorted(set(A) & set(B) - drop)
         if keep is not None:
             items = [i for i in items if i in keep]
@@ -185,7 +175,7 @@ def _run(args) -> int:
                 "opp": opp,
                 "n": len(items),
                 "delta": statistics.fmean(deltas),
-                "wins": sum(1 for d in deltas if (d < 0 if args.asc else d > 0)),
+                "wins": sum(1 for d in deltas if (d < 0 if lower else d > 0)),
                 "p": sign_flip_p(deltas, permutations=args.permutations, rng=rng),
             }
         )
@@ -210,7 +200,7 @@ def _run(args) -> int:
         stratum += f" (excluding {args.exclude_dataset})"
     print(f"  {args.a}  vs family '{args.against}'   metric={args.metric}  {stratum}")
     print(f"  family size m={m}, declared before the p-values were read")
-    print(f"  Holm step-down at alpha={args.alpha}\n")
+    print(f"  Holm step-down at alpha={args.alpha}" + ("  (lower is better)" if lower else "") + "\n")
     width = max(len(r["opp"]) for r in rows) + 2
     print(f"    {'opponent':{width}} {'delta':>9} {'wins':>9} {'p':>8} {'thresh':>8}   verdict")
     for r in rows:
@@ -219,7 +209,7 @@ def _run(args) -> int:
             f"{r['p']:8.4f} {r['thresh']:8.4f}   {'SEPARATED' if r['sep'] else '--'}"
         )
     sep = sum(1 for r in rows if r["sep"])
-    ahead = sum(1 for r in rows if (r["delta"] < 0 if args.asc else r["delta"] > 0))
+    ahead = sum(1 for r in rows if (r["delta"] < 0 if lower else r["delta"] > 0))
     print(f"\n    separated from {sep} of {m} opponents; ahead on the point estimate against {ahead} of {m}")
     # The gap between those two numbers is the finding most of the time: an ordering the
     # means assert and the data cannot support.

@@ -78,7 +78,7 @@ from _common import (  # noqa: E402
     item_selection,
     warn_on_ambiguous_runs,
 )
-from classification_report import gold_labels, per_class, predictions  # noqa: E402
+from _labels import gold_labels, per_class, predictions  # noqa: E402
 from stats import holm  # noqa: E402 -- one Holm: p equal to its threshold is separated
 
 

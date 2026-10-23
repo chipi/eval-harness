@@ -245,13 +245,17 @@ for label, claimed, (b1, c1, m1), (b2, c2, m2) in DELTAS:
 # arm with no bill and must never be what a report quotes.
 import glob as _glob  # noqa: E402
 
-COST_REPORTS = {
-    "REPORT_NER.md": ("fn_", "few_nerd_280"),
-    "REPORT_RETRIEVAL.md": ("sf_", "scifact_200"),
-    "REPORT_SUMMARIZATION.md": ("cnn_", "cnn_dailymail_200"),
-    "REPORT_CLASSIFICATION.md": ("ag_", "ag_news_200"),
-    "REPORT_SUMMEVAL.md": ("se_", "summeval_100"),
-}
+#: The experiments, from the one registry reproduce.py and the site read
+#: (examples/experiments.json). These tables restated it by hand, so a renamed dataset or
+#: a moved base directory had to be changed in two places and nothing checked they agreed.
+_EXPERIMENTS = [
+    e
+    for e in json.loads((HERE.parents[1] / "examples" / "experiments.json").read_text(encoding="utf-8"))[
+        "experiments"
+    ]
+    if e.get("site")
+]
+COST_REPORTS = {e["report"]: (e["prefix"], e["dataset"]) for e in _EXPERIMENTS if e.get("costs")}
 
 #: The size suffix every config_id ends with. It was a literal "_n200_v1" at each call
 #: site, which is right for the five 200-item datasets and silently wrong for SummEval's
@@ -357,27 +361,19 @@ for _rep, (_pref, _ds) in COST_REPORTS.items():
 # name, and only where the value is within 0.5 of the run's primary metric -- a row
 # whose leading number is something else entirely (a count, a price) is skipped rather
 # than guessed at. It catches a stale score, which is the failure that happened.
+# The metric is the one the runs record: "accuracy" for classification was wrong (the runs
+# record `correct`), `_vals` came back empty and 0 classification rows were checked for a
+# week, while the aggregate floor of 40 was cleared by the other three reports. Found by
+# external review. The floor per report below still catches a metric that matches nothing.
 PRIMARY_BY_DATASET = {
-    "few_nerd_280": ("fn_", "f1", RESCORED),
-    "scifact_200": ("sf_", "ndcg_10", HERE.parent / "data" / "runs-reparsed"),
-    # "accuracy" was wrong: the runs record `correct`. `_vals` came back empty and
-    # 0 classification rows were checked for a week, while the aggregate floor of 40
-    # was cleared by the other three reports. Found by external review.
-    "ag_news_200": ("ag_", "correct", DATA),
-    "dbpedia_280": ("db_", "correct", DATA),
-    "cnn_dailymail_200": ("cnn_", "coverage", DATA),
-    "summeval_100": ("se_", "tau", DATA),
+    e["dataset"]: (e["prefix"], e["metric"], HERE.parent / "data" / e["base"]) for e in _EXPERIMENTS
 }
-REPORT_DATASETS = {
-    "REPORT_NER.md": ["few_nerd_280"],
-    "REPORT_RETRIEVAL.md": ["scifact_200"],
-    "REPORT_CLASSIFICATION.md": ["ag_news_200", "dbpedia_280"],
-    "REPORT_SUMMARIZATION.md": ["cnn_dailymail_200"],
-    "REPORT_SUMMEVAL.md": ["summeval_100"],
-    # SYNTHESIS tables are keyed by EXPERIMENT, not by arm, so this check cannot
-    # reach them and the per-report floor below deliberately excludes it.
-    "REPORT_SYNTHESIS.md": list(PRIMARY_BY_DATASET),
-}
+REPORT_DATASETS: dict[str, list[str]] = {}
+for _e in _EXPERIMENTS:
+    REPORT_DATASETS.setdefault(_e["report"], []).append(_e["dataset"])
+# SYNTHESIS tables are keyed by EXPERIMENT, not by arm, so this check cannot reach them and
+# the per-report floor below deliberately excludes it.
+REPORT_DATASETS["REPORT_SYNTHESIS.md"] = list(PRIMARY_BY_DATASET)
 
 
 def _runs_for(base, dataset_id, prefix):

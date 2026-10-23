@@ -35,7 +35,8 @@ from typing import Protocol
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-from _common import DATA, ROOT, ModuleNotLoadable, is_descriptive, load_module, lower_is_better  # noqa: E402
+from _common import DATA, ROOT, ModuleNotLoadable, is_descriptive, load_module  # noqa: E402
+from _runs import direction, item_rows, score_of  # noqa: E402
 
 
 def _memo(fn):
@@ -153,23 +154,10 @@ def _json(p: Path):
         return None
 
 
-def _rows(p: Path) -> list:
-    out = []
-    if p.is_file():
-        for line in p.read_text(encoding="utf-8", errors="replace").splitlines():
-            try:
-                out.append(json.loads(line))
-            except ValueError:
-                continue
-    return out
-
-
 def _numeric(row: dict) -> dict:
-    return {
-        k: float(v)
-        for k, v in row.items()
-        if isinstance(v, (int, float)) and not isinstance(v, bool) and not k.startswith("self_family_")
-    }
+    """Every score on a row, read as pair-test reads one (`_runs.score_of`), so the inspector's
+    p and pair-test's are the same computation, not two that agree on clean data."""
+    return {k: v for k in row if not k.startswith("self_family_") and (v := score_of(row, k)) is not None}
 
 
 class HarnessAdapter:
@@ -250,9 +238,8 @@ class HarnessAdapter:
         """Return per-item scores for this arm: {metric: {source, values}}."""
         acc: dict[str, dict[str, list]] = {}
         for d in self._dirs(arm):
-            for r in _rows(d / "predictions.jsonl"):
-                if "item_id" not in r:
-                    continue
+            # A page may show a run with a corrupt line; a statistical test may not (strict).
+            for r in item_rows(d, strict=False):
                 for k, v in _numeric(r).items():
                     acc.setdefault(k, {}).setdefault(r["item_id"], []).append(v)
         n = len(self._dirs(arm))
@@ -286,9 +273,13 @@ class HarnessAdapter:
         """Return notes explaining why something could not be scored."""
         return []
 
+    @_memo
     def lower_is_better(self, metric: str) -> bool:
-        """Return whether a decrease in this metric is an improvement."""
-        return lower_is_better(metric)
+        """Whether a decrease in this metric is an improvement, by the rule every command uses
+        (`_runs.direction`): a cost, speed or token count, or a primary metric the runs declare
+        ascending."""
+        runs = [(d, _json(d / "metrics.json") or {}) for ds in self._index().values() for d in ds]
+        return direction(runs, metric)
 
     @_memo
     def _descriptive(self) -> frozenset:

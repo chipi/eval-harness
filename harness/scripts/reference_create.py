@@ -59,7 +59,7 @@ except ImportError:  # pragma: no cover
 # against a 37-word human reference — which was read as "Opus ignores instructions" when it
 # had simply never been given one. A reference is the thing everything else is scored
 # against; authoring it with different code than the arms run is not a small inconsistency.
-from experiment_run import load_adapter
+from _adapter import load_adapter
 
 
 def _repo_relative(path: object) -> str:

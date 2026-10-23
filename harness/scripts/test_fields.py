@@ -186,9 +186,9 @@ try:
     check("V15: a dataset with declared, typed fields passes", line.strip().startswith("ok"), line)
 
     # ── fields are not the identity ───────────────────────────────────────────────────
-    from _fingerprint import _items_digest
+    from _fingerprint import items_digest
 
-    before_id, before_fields, before_at = _items_digest(ds), ds["fields_sha256"], ds["created_at"]
+    before_id, before_fields, before_at = items_digest(ds), ds["fields_sha256"], ds["created_at"]
     (proj / "fix.csv").write_text("item_id,product,priority\nt3,export,3\n")
     r = evh("dataset-create", "--dataset-id", "tk_v1", "--update-fields", "--fields", "fix.csv")
     ds2 = json.loads((data / "datasets" / "tk_v1.json").read_text())
@@ -201,7 +201,7 @@ try:
     )
     check(
         "update-fields: the data identity a run fingerprint records is unchanged",
-        _items_digest(ds2) == before_id,
+        items_digest(ds2) == before_id,
     )
     check(
         "update-fields: created_at kept, fields_sha256 moved",
