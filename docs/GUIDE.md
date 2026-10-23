@@ -610,9 +610,10 @@ looked like) and name it in `config.yaml`: `catalog: {adapter: path/to/file.py:C
 ## Doing it for real
 
 - **Your system.** Write an adapter: a Python file whose `call_system()` takes the text in
-  and returns the output plus tokens, and whose `score()` says what good means. Name it in
-  each arm's config, `adapter: adapters/my_system.py`. The tutorial's arms used the bundled
-  one; start from a copy of it (`python -c "import evaluation_harness, os; print(os.path.join(evaluation_harness.__path__[0], 'adapter.py'))"`
+  and returns the output plus tokens, and whose `score()` says what good means. Call it
+  `adapter.py` at the project root and every arm that names no adapter uses it; with several
+  tasks, name one in each arm's config, `adapter: adapters/my_system.py`. The tutorial's arms
+  used the bundled one; start from a copy of it (`python -c "import evaluation_harness, os; print(os.path.join(evaluation_harness.__path__[0], 'adapter.py'))"`
   prints where it is). The contract, and how to wrap a non-Python system:
   [INTEGRATION](../harness/docs/INTEGRATION.md).
 - **Hosted models.** Put prices in the config (`usd_per_mtok_in`, `usd_per_mtok_out`) and

@@ -178,26 +178,46 @@ def _portable_id(path: Path) -> str:
     return str(Path(*resolved.parts[-2:]))
 
 
+def _find_adapter(spec: str, config_path: Path | None) -> Path:
+    """The file an `adapter:` entry names: relative to the config first, then the project."""
+    path = Path(spec)
+    candidates = [path] if path.is_absolute() else []
+    if not path.is_absolute():
+        if config_path is not None:
+            candidates.append(config_path.resolve().parent / path)
+        candidates.append(_common.ROOT / path)
+    for candidate in candidates:
+        if candidate.is_file():
+            return candidate
+    die(f"adapter not found: {spec}\n" + "".join(f"  looked in: {c}\n" for c in candidates))
+
+
 def load_adapter(
     spec: str | None, config_path: Path | None = None
 ) -> tuple[Any, Any, str, Path | None, Any, Any]:
     """``(call_system, score, adapter_id)`` for the adapter a config names.
 
-    Defaults to ``scripts/adapter.py`` — the single seam, unchanged for anyone who has one
-    system to measure. A config may name its own instead:
+    A config names its adapter:
 
-        adapter: examples/summarization-cnn-dailymail/adapter.py
+        adapter: adapter.py
 
-    That exists because an example is not just a different model, it is a different TASK:
-    summarisation scores ROUGE, classification scores macro-F1, and neither is the token
-    overlap the bundled adapter computes. One adapter file per task, selected by the arm,
-    keeps "an arm is a YAML file" true.
+    relative to the config first, then the project root. An example's arm sits beside its
+    adapter, so the two travel together. A config that names none uses the project's own
+    ``<project>/adapter.py`` when there is one, else the adapter bundled with the harness
+    (``scripts/adapter.py``, token overlap: the worked example's).
+
+    One adapter file per task, selected by the arm, keeps "an arm is a YAML file" true:
+    summarisation scores ROUGE, classification macro-F1, and neither is the bundled overlap.
 
     The returned id is recorded on the run. It has to be: a scorer is half of what a number
     means, so two runs sharing a config_id but scored by different adapters are no more
     comparable than two runs on different datasets. run-compare refuses across it.
     """
-    if not spec:
+    if spec:
+        path = _find_adapter(spec, config_path)
+    elif (_common.ROOT / "adapter.py").is_file():
+        path = _common.ROOT / "adapter.py"
+    else:
         default = module_at(BUNDLED)
         return (
             default.call_system,
@@ -207,31 +227,13 @@ def load_adapter(
             getattr(default, "warmup", None),
             getattr(default, "fingerprint", None),
         )
-
-    # Relative to the CONFIG first, then the harness root. An example's arm sits beside its
-    # adapter and should be able to say `adapter: adapter.py` — the two travel together, and
-    # a path written from the harness's point of view breaks the moment the example moves.
-    path = Path(spec)
-    candidates = []
-    if path.is_absolute():
-        candidates = [path]
-    else:
-        if config_path is not None:
-            candidates.append(config_path.resolve().parent / path)
-        candidates.append(_common.ROOT / path)
-    for candidate in candidates:
-        if candidate.is_file():
-            path = candidate
-            break
-    else:
-        die(f"adapter not found: {spec}\n" + "".join(f"  looked in: {c}\n" for c in candidates))
     try:
         module = module_at(path)
     except ModuleNotLoadable:
         die(f"adapter is not importable: {path}")
     for required in ("call_system", "score"):
         if not hasattr(module, required):
-            die(f"adapter {spec} defines no {required}()")
+            die(f"adapter {path} defines no {required}()")
     adapter_id = _portable_id(path)
     return (
         module.call_system,

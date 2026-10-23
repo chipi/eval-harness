@@ -102,7 +102,10 @@ rebuilds it. If something in there cannot be rebuilt, it is in the wrong place.
 
 ## 4. Point the harness at your system
 
-Edit **one function**, `call_system()` in `scripts/adapter.py`:
+Write **one function**, `call_system()`, in `adapter.py` at the project root. An arm whose
+config names no `adapter:` uses it (and records `adapter.py`); without one, the adapter
+bundled with the harness runs. A project with several tasks names one per arm,
+`adapter: adapters/ner.py`, relative to the config or the project:
 
 ```python
 def call_system(text, params):

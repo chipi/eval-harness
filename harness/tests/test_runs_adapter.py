@@ -6,6 +6,7 @@ adapter registries that never saw each other, a panel that judged placeholder te
 
 import json
 import os
+import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -217,7 +218,6 @@ with tempfile.TemporaryDirectory() as tmp:
 
 # EVAL_RUNS_DIR is relative to the project, as EVAL_DATA_DIR is. It resolved against the shell's
 # directory, so with EVAL_HOME set a run was written in one place and read from another.
-import subprocess  # noqa: E402
 
 with tempfile.TemporaryDirectory() as proj, tempfile.TemporaryDirectory() as elsewhere:
     r = subprocess.run(
@@ -332,5 +332,33 @@ with tempfile.TemporaryDirectory() as tmp:
         "FAIL V14" in r.stdout and "f1 is higher-is-better, its runs record lower-is-better" in r.stdout,
         r.stdout[-400:],
     )
+
+# B1: a config that names no adapter uses the project's own <project>/adapter.py, recorded as
+# `adapter.py`; without one, the bundled adapter.
+with tempfile.TemporaryDirectory() as tmp:
+    adapter_probe = Path(tmp) / "probe.py"
+    adapter_probe.write_text(
+        f"import sys\nsys.path.insert(0, {str(HERE)!r})\nimport _adapter\n"
+        "print(_adapter.load_adapter(None)[2])\n",
+        encoding="utf-8",
+    )
+    env = {**os.environ, "EVAL_HOME": tmp, "EVAL_DATA_DIR": "", "EVAL_RUNS_DIR": ""}
+
+    def _default_id() -> str:
+        r = subprocess.run([sys.executable, str(adapter_probe)], env=env, capture_output=True, text=True)
+        return r.stdout.strip() or r.stderr[-300:]
+
+    bundled_id = _default_id()
+    (Path(tmp) / "adapter.py").write_text(
+        "def call_system(item, params):\n    return None\ndef score(output, reference):\n    return {}\n",
+        encoding="utf-8",
+    )
+    own_id = _default_id()
+    check(
+        "adapter: no adapter named and none in the project -> the bundled one",
+        bundled_id == "scripts/adapter.py",
+        bundled_id,
+    )
+    check("adapter: no adapter named -> the project's adapter.py", own_id == "adapter.py", own_id)
 
 sys.exit(summary())

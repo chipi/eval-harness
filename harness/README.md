@@ -5,24 +5,28 @@ works, mostly. What you do not have is a way to tell whether a change made it
 better. You swap a model or edit a prompt, read a few outputs, and form an
 impression.
 
-This is the missing half. Copy it into your project as `eval/`, write **one
-function** that calls your existing code, and you have a repeatable loop:
-frozen datasets, runs that know what produced them, cost and speed alongside
-quality, and comparisons that **refuse** to mislead you.
+This is the missing half. Pin it into your project, write **one function**
+that calls your existing code, and you have a repeatable loop: frozen datasets,
+runs that know what produced them, cost and speed alongside quality, and
+comparisons that **refuse** to mislead you.
 
 ```bash
-cp -r eval-harness/harness your-project/eval && cd your-project/eval
-make demo        # the whole loop on bundled data — no API key, no network
-make help        # the verbs, in the order you need them
+cd your-project
+pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.4.0#subdirectory=harness"
+evh init --tutorial    # the data folders, a .gitignore, and the GUIDE's kit
+evh --help             # the verbs, in the order you need them
 ```
 
-It imports nothing from your project and your project imports nothing from it.
+It imports nothing from your project until an arm names your adapter, and your project
+imports nothing from it.
 
 ---
 
 ## Install it as a dependency
 
-Use it from this checkout through `make`, or pin it into your own project:
+Pin it into your project (above), or work from a checkout of this repository, where every
+`evh` command is a `make` target (`make demo` runs the whole loop on bundled data, no API
+key, no network):
 
 ```bash
 pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.4.0#subdirectory=harness"
@@ -102,7 +106,9 @@ Drop any one and a delta cannot be attributed to anything.
 
 ## Integrating your system
 
-One function, `call_system()` in `scripts/adapter.py`:
+One function, `call_system()`, in `adapter.py` at your project's root. An arm whose
+config names no `adapter:` uses it; a project with several tasks names one per arm
+(`adapter: adapters/ner.py`):
 
 ```python
 def call_system(text, params):
@@ -277,7 +283,7 @@ partial results preserved so a blown budget still yields a usable report.
 | Path | What it is |
 | --- | --- |
 | `Makefile` | the verbs — start with `make help` |
-| `scripts/adapter.py` | **the integration seam** — the file you edit |
+| `scripts/adapter.py` | the bundled adapter (token overlap, the worked example's), used when a project has no `adapter.py`; start yours from a copy |
 | `scripts/dataset_create.py` | freeze a selection into a `dataset_id` |
 | `scripts/materialize.py` | build run inputs, verifying every hash |
 | `scripts/reference_create.py` | author gold/silver ground truth |

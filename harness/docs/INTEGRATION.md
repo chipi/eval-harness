@@ -14,20 +14,22 @@ learn about this harness. The harness calls you.
 
 ## Where it goes
 
-Copy this directory into your project as `eval/`:
+Pin it into your project, and start the project's folders:
 
 ```bash
-cp -r eval-harness/harness /path/to/your-project/eval
-cd /path/to/your-project/eval
-make demo        # proves the plumbing, no API key
+cd /path/to/your-project
+pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.4.0#subdirectory=harness"
+evh init         # data/sources, data/configs, data/goals, data/fields, a .gitignore
 ```
 
-Keep `eval/data/materialized/` out of git (derived; the bundled `.gitignore` already does
-this) and decide whether to commit runs: the bundled rules keep each run's `metrics.json`,
-`predictions.jsonl` and `outputs/` so scores can be recomputed, and ignore the rest.
+Keep `data/materialized/` out of git (derived; the `.gitignore` `evh init` writes already
+does this) and decide whether to commit runs: keep each run's `metrics.json`,
+`predictions.jsonl` and `outputs/` so scores can be recomputed. A project whose own layout
+puts the harness's records elsewhere sets `EVAL_DATA_DIR`.
 
-It has **no dependency on your project** and your project has none on it. It
-shells out to nothing, imports nothing of yours until you tell it to. That
+Your project **does not depend on it at runtime**, and it has no dependency on your
+project: it shells out to nothing and imports nothing of yours until an arm names your
+adapter. That
 isolation is deliberate: an eval harness that requires a refactor does not get
 adopted, and one that entangles with the system it measures stops being able to
 measure it.
@@ -36,7 +38,8 @@ measure it.
 
 ## The one function
 
-`scripts/adapter.py`, `call_system()`. It receives one item's text and the
+`call_system()`, in `adapter.py` at your project's root (start from a copy of the bundled
+`scripts/adapter.py`, which also has `score()`). It receives one item's text and the
 config's `params`, and returns what your system produced:
 
 ```python
@@ -213,19 +216,19 @@ which references exist, what one arm wrote for one item.
 ## The first hour, concretely
 
 ```bash
-cp -r eval-harness/harness your-project/eval && cd your-project/eval
-make demo                                     # plumbing works
+cd your-project && pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.4.0#subdirectory=harness"
+evh init
 
-cp ../some/real/items/* data/sources/         # your data
-make dataset-create DATASET_ID=pilot_v1 ARGS="--limit 10"
-make dataset-materialize DATASET_ID=pilot_v1
+cp some/real/items/* data/sources/            # your data
+evh dataset-create --dataset-id pilot_v1 --limit 10
+evh dataset-materialize --dataset-id pilot_v1
 
-$EDITOR scripts/adapter.py                    # call_system() -> your code
-make reference-create DATASET_ID=pilot_v1 CONFIG=data/configs/best_model.yaml
+$EDITOR adapter.py                            # call_system() -> your code
+evh reference-create --dataset-id pilot_v1 --config data/configs/best_model.yaml
 
-make experiment-run CONFIG=data/configs/arm_a.yaml REPEAT=3   # + the noise floor
-make experiment-run CONFIG=data/configs/arm_b.yaml
-make run-compare BASE=<a> CAND=<b> NOISE=<the spread you just measured>
+evh experiment-run --config data/configs/arm_a.yaml --repeat 3   # + the noise floor
+evh experiment-run --config data/configs/arm_b.yaml
+evh run-compare --baseline <a> --candidate <b> --noise <the spread you just measured>
 ```
 
 Ten items keeps the first pass cheap. Widen the dataset once the loop works —

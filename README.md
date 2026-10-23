@@ -128,15 +128,18 @@ check with `make -C harness env-check`.
 ## The loop, on your system
 
 ```bash
-make dataset-create  DATASET_ID=my_v1 ARGS='--source-dir data/sources/my_v1'
-make dataset-materialize DATASET_ID=my_v1
-# edit scripts/adapter.py -> call_system() talks to YOUR system
-make experiment-dry-run CONFIG=data/configs/arm_a.yaml    # costs nothing, shapes the run
-make experiment-run     CONFIG=data/configs/arm_a.yaml
-make leaderboard DATASET_ID=my_v1
+cd your-project
+pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.4.0#subdirectory=harness"
+evh init
+evh dataset-create --dataset-id my_v1 --source-dir data/sources/my_v1
+evh dataset-materialize --dataset-id my_v1
+# write adapter.py at the project root -> call_system() talks to YOUR system
+evh experiment-run --config data/configs/arm_a.yaml --dry-run    # costs nothing, shapes the run
+evh experiment-run --config data/configs/arm_a.yaml
+evh leaderboard --dataset-id my_v1
 ```
 
-`make help` lists every verb. Start with [`docs/GUIDE.md`](docs/GUIDE.md) (a worked example,
+`evh --help` lists every verb (in this checkout, each is a `make` target too). Start with [`docs/GUIDE.md`](docs/GUIDE.md) (a worked example,
 offline), then [`harness/docs/INTEGRATION.md`](harness/docs/INTEGRATION.md) to drop it into
 your project and [`harness/docs/RUNBOOK.md`](harness/docs/RUNBOOK.md) for every step.
 
