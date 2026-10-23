@@ -174,3 +174,32 @@ Left as copies, on purpose:
   text, infra's `restore()` and reproduce's newest-rerun discovery: each copy is a few lines,
   differs where it matters, or sits on a boundary (package vs. examples vs. infra) that a shared
   helper would cross.
+
+### A holistic design review (2026-10-23)
+
+After the duplication pass, a read-only review of the whole tree for what accumulates over
+increments: 22 findings, every one acted on. The ones that could give a wrong reading in a new
+run (none moved a committed number):
+
+| Finding | What was wrong | Now |
+|---|---|---|
+| Direction by flag | "A wins 180/200" on latency meant A was slower unless `--asc` was passed; `holdout` had no direction at all; `primary_metric_asc`, written by `import-run --asc`, was read by nothing | `_runs.direction`, inferred from the metric and the runs, in every test and the leaderboard |
+| Two adapter registries | every example adapter loaded as `eval_adapter_adapter`, and the kind lookup fell back to the bundled adapter | `_adapter.py`, one cache keyed by the file |
+| Code hash over tests | editing a test made `run-compare` report a confound | `measuring_modules()`: the run-writing commands and what they import |
+| The judge panel | judged "Synthetic item i for <run>" for every candidate, real runs included | judges each finalist's stored outputs |
+| Package imports | `import evaluation_harness.judging` failed; `_common` loaded twice | the package puts its directory on sys.path, one import style |
+| A typo'd provider | fell back to `echo` | refused |
+
+The structural ones: run discovery in ~15 places (now `_runs.py`), a validator hard-coded to
+this repository's directory names (now `<data>/validate.json`), a core command importing a
+showcase report (now `_labels.py`), ~14,500 lines of tests and report checks in the wheel (now
+`harness/tests/` and `harness/tools/`), a second hand-written experiment registry in the claims
+checker (now read from `experiments.json`), the deploy running a copy instead of the wheel. And
+the small ones: a `check()` with its arguments reversed, eight Makefile targets not `.PHONY`
+(`make docs` did nothing), a test check that could not fail, a checker (`check_terminology`)
+that was failing with nothing running it, refusals on stdout, unknown arguments ignored, two
+environment-variable prefixes.
+
+Kept on purpose, by the owner's call: `pair-test --family N` (Bonferroni for one
+pre-registered pair, which cannot run Holm) and `--out` meaning a runs directory in `rescore`
+and a site directory in `catalog` (published commands use both).
