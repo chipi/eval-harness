@@ -45,6 +45,26 @@ def load_fieldset(fieldset_id: str, fields_dir: Path | None = None) -> dict[str,
     return doc if isinstance(doc, dict) else {}
 
 
+def fieldset_problems(fieldset_id: str, fs: dict[str, Any]) -> list[str]:
+    """What is wrong with a loaded field set: its `fieldset_id` is not its file name, or it
+    breaks schemas/fieldset.schema.json (not checked when jsonschema is not installed).
+    dataset-create refuses on these and validate (V15) reports them."""
+    out = []
+    if fs.get("fieldset_id") != fieldset_id:
+        out.append(f"fieldset_id {fs.get('fieldset_id')!r} is not its file name")
+    try:
+        import jsonschema  # noqa: PLC0415
+    except ImportError:
+        return out
+    import json  # noqa: PLC0415
+
+    try:
+        jsonschema.validate(fs, json.loads((_common.SCHEMAS / "fieldset.schema.json").read_text()))
+    except jsonschema.ValidationError as exc:
+        out.append(exc.message)
+    return out
+
+
 def declared(fieldset: dict[str, Any]) -> dict[str, dict[str, Any]]:
     """{name: field} in declaration order."""
     return {f["name"]: f for f in fieldset.get("fields") or [] if isinstance(f, dict) and "name" in f}

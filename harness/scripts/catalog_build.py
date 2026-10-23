@@ -50,8 +50,6 @@ NAV = [
     ("goals", "goals.html", "Goals"),
     ("inspect", "inspect.html", "Inspector"),
 ]
-#: Links to the deployment's other sites (--link LABEL=URL), after the catalog's own.
-EXTRA_NAV: list = []
 
 
 def e(s) -> str:
@@ -81,7 +79,7 @@ def page(
     up = "../" * depth
     links = "".join(
         f'<a href="{href if "://" in href else up + href}"{" aria-current=page" if key == here else ""}>{label}</a>'
-        for key, href, label in nav + EXTRA_NAV
+        for key, href, label in nav
     )
     built = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     foot = footer or (
@@ -226,7 +224,7 @@ def collect(A: Adapter) -> dict:
     return by_ds
 
 
-def render_home(A: Adapter, by_ds: dict, out: Path) -> None:
+def render_home(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
     """Render the catalog home page with all datasets."""
     rows = []
     for ds in sorted(by_ds, key=lambda d: (-len(by_ds[d]["arms"]), d)):
@@ -252,10 +250,10 @@ def render_home(A: Adapter, by_ds: dict, out: Path) -> None:
         "datasets",
         table("datasets", ["dataset", f"{e(A.item_word)}s", "arms", "references"], rows, "filter datasets"),
     )
-    write(out, "index.html", page("Catalog", body, 0, "home", item=A.item_word))
+    write(out, "index.html", page("Catalog", body, 0, "home", nav=nav, item=A.item_word))
 
 
-def render_dataset(A: Adapter, ds: str, v: dict, out: Path) -> None:
+def render_dataset(A: Adapter, ds: str, v: dict, out: Path, nav: list) -> None:
     """Render a page for one dataset with all its arms."""
     arms = sorted(
         v["arms"],
@@ -333,7 +331,7 @@ def render_dataset(A: Adapter, ds: str, v: dict, out: Path) -> None:
     if fields_html:
         n += 1
         body += block(f"{n:02d}", f"{A.item_word} fields", fields_html, "item-fields")
-    write(out, f"d/{slug(ds or 'none')}.html", page(ds or "dataset", body, 1, "", item=A.item_word))
+    write(out, f"d/{slug(ds or 'none')}.html", page(ds or "dataset", body, 1, "", nav=nav, item=A.item_word))
 
 
 def _show(v, field: dict) -> str:
@@ -419,7 +417,7 @@ def goal_answers(goal: dict, by_ds: dict) -> list:
     return out
 
 
-def render_goals(A: Adapter, by_ds: dict, out: Path) -> int:
+def render_goals(A: Adapter, by_ds: dict, out: Path, nav: list) -> int:
     """Render the goals page and one page per goal; return the number rendered."""
     goals = A.goals()
     rows = []
@@ -435,7 +433,7 @@ def render_goals(A: Adapter, by_ds: dict, out: Path) -> int:
                 f'<span data-v="{filed}">{filed}</span>',
             ]
         )
-        render_goal(A, g, by_ds, out)
+        render_goal(A, g, by_ds, out, nav)
     dek = (
         "What each evaluation is for: who uses the output, the decision it informs, and the "
         "measure that decides. Runs name their goal in their config (<code>goal:</code>)."
@@ -449,11 +447,11 @@ def render_goals(A: Adapter, by_ds: dict, out: Path) -> int:
         else '<p class="muted">No goals yet: add <code>data/goals/&lt;goal_id&gt;.yaml</code> '
         "(schema: <code>goal.schema.json</code>).</p>",
     )
-    write(out, "goals.html", page("Goals", body, 0, "goals", item=A.item_word))
+    write(out, "goals.html", page("Goals", body, 0, "goals", nav=nav, item=A.item_word))
     return len(goals)
 
 
-def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path) -> None:
+def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
     """Render a page for one goal showing which arms satisfy its criteria."""
     crit = g.get("success_criteria") or {}
     prim = crit.get("primary") or {}
@@ -524,7 +522,7 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path) -> None:
     write(
         out,
         f"g/{slug(g['goal_id'])}.html",
-        page(g.get("title") or g["goal_id"], body, 1, "goals", item=A.item_word),
+        page(g.get("title") or g["goal_id"], body, 1, "goals", nav=nav, item=A.item_word),
     )
 
 
@@ -586,18 +584,20 @@ def write_search(A: Adapter, by_ds: dict, out: Path) -> None:
     write(out, "search.js", "window.CATALOG=" + json.dumps(idx, separators=(",", ":")) + ";\n")
 
 
-def build(A: Adapter, out: Path) -> dict:
-    """Build all catalog pages and return statistics."""
+def build(A: Adapter, out: Path, links: tuple = ()) -> dict:
+    """Build all catalog pages and return statistics. `links` are extra nav entries,
+    (key, url, label) each."""
+    nav = NAV + list(links)
     if out.exists():
         shutil.rmtree(out)
     copy_assets(out)
     by_ds = collect(A)
-    render_home(A, by_ds, out)
+    render_home(A, by_ds, out, nav)
     for ds, v in by_ds.items():
-        render_dataset(A, ds, v, out)
-    n_goals = render_goals(A, by_ds, out)
+        render_dataset(A, ds, v, out, nav)
+    n_goals = render_goals(A, by_ds, out, nav)
     write_search(A, by_ds, out)
-    render_inspect(A, out)
+    render_inspect(A, out, nav=nav)
     return {
         "goals": n_goals,
         "datasets": len(by_ds),
@@ -622,12 +622,13 @@ def main() -> int:
         help="add a link to the nav, e.g. Findings=https://evals.example.org/ (repeatable)",
     )
     args = ap.parse_args()
+    links = []
     for spec in args.link:
         label, _, url = spec.partition("=")
         if not url.startswith(("https://", "http://")):
             raise SystemExit(f"--link {spec!r}: expected LABEL=https://...")
-        EXTRA_NAV.append((label.lower(), url, label))
-    counts = build(load_catalog_adapter(args.adapter), args.out)
+        links.append((label.lower(), url, label))
+    counts = build(load_catalog_adapter(args.adapter), args.out, tuple(links))
     print(f"catalog: {args.out} — " + ", ".join(f"{v} {k}" for k, v in counts.items()))
     print("inspect: evh catalog-serve, then open the address it prints")
     return 0

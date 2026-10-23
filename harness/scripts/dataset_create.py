@@ -28,7 +28,6 @@ Items can carry fields a project declares (ADR-0003), and can live at a URL:
 from __future__ import annotations
 
 import argparse
-import json
 from pathlib import Path
 
 import _fetch
@@ -36,7 +35,6 @@ import _fields
 from _common import (
     DATASETS,
     ROOT,
-    SCHEMAS,
     SOURCES,
     die,
     how,
@@ -75,18 +73,9 @@ def _fieldset(fieldset_id):
             f"no field set {fieldset_id!r}: expected {_fields.fieldset_path(fieldset_id)}\n"
             "  Declare the fields there first (schemas/fieldset.schema.json, docs: CONCEPTS, item fields)."
         )
-    if fs.get("fieldset_id") != fieldset_id:
-        die(
-            f"{_fields.fieldset_path(fieldset_id)}: fieldset_id {fs.get('fieldset_id')!r} is not its file name"
-        )
-    try:
-        import jsonschema  # noqa: PLC0415
-
-        jsonschema.validate(fs, json.loads((SCHEMAS / "fieldset.schema.json").read_text()))
-    except ImportError:
-        pass
-    except Exception as exc:  # noqa: BLE001 — jsonschema.ValidationError, reported as it is
-        die(f"{_fields.fieldset_path(fieldset_id)}: {getattr(exc, 'message', exc)}")
+    problems = _fields.fieldset_problems(fieldset_id, fs)
+    if problems:
+        die(f"{_fields.fieldset_path(fieldset_id)}: {problems[0]}")
     return fs
 
 

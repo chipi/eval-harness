@@ -385,12 +385,14 @@ class HarnessAdapter:
     @_memo
     def item_fields(self, dataset: str) -> dict:
         """Return a dataset's declared fields and items' values."""
-        from _fields import load_fieldset  # noqa: PLC0415
+        from _fields import fieldset_problems, load_fieldset  # noqa: PLC0415
 
         ds = _json(self.data_dir / "datasets" / f"{dataset}.json") or {}
-        fs = load_fieldset(ds["fieldset"], self.data_dir / "fields") if ds.get("fieldset") else None
+        fid = ds.get("fieldset")
+        fs = load_fieldset(fid, self.data_dir / "fields") if fid else None
+        # A field set that breaks its schema drives no page; validate (V15) names what is wrong.
         return {
-            "fieldset": fs or None,
+            "fieldset": fs if fs and not fieldset_problems(str(fid), fs) else None,
             "values": {it["item_id"]: it.get("fields") or {} for it in ds.get("items") or []},
         }
 

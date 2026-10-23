@@ -996,19 +996,14 @@ def v15_item_fields() -> None:
     if not fieldsets and not with_fields:
         print("  --   V15 item fields (no field set, no dataset with fields)")
         return
-    bad, loaded = [], {}
-    schema = json.loads((SCHEMAS / "fieldset.schema.json").read_text())
+    bad: list[str] = []
+    loaded: dict[str, dict] = {}
     for fid in fieldsets:
         fs = _fields.load_fieldset(fid) or {}
-        if fs.get("fieldset_id") != fid:
-            bad.append(f"fields/{fid}.yaml: fieldset_id {fs.get('fieldset_id')!r} is not its file name")
-        if jsonschema is not None:
-            try:
-                jsonschema.validate(fs, schema)
-            except jsonschema.ValidationError as exc:
-                bad.append(f"fields/{fid}.yaml: {exc.message[:90]}")
-                continue
-        loaded[fid] = fs
+        problems = _fields.fieldset_problems(fid, fs)
+        bad.extend(f"fields/{fid}.yaml: {p[:90]}" for p in problems)
+        if not problems:
+            loaded[fid] = fs
     for ds in with_fields:
         where, fid = f"datasets/{ds['dataset_id']}.json", ds.get("fieldset")
         if not fid:
@@ -1045,6 +1040,8 @@ def main() -> int:
     # of "the CLI responds" — so the one script whose failure matters most had a self-test
     # that could only pass when it had nothing to report.
     no_options(__doc__)
+    problems.clear()
+    notes.clear()
     print(f"eval tree: {DATA}\n")
     for fn in (
         v1_schemas,
