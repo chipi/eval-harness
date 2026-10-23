@@ -33,7 +33,6 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import random
 import shutil
 import statistics as st
 import subprocess
@@ -359,13 +358,10 @@ def _latest_repro(exp: dict) -> dict:
 
 
 def _paired_p(a: list, b: list, perms: int = 10000, seed: int = 20261014) -> float:
-    d = [x - y for x, y in zip(a, b)]
-    obs = abs(sum(d))
-    if obs == 0:
-        return 1.0
-    rng = random.Random(seed)
-    hit = sum(abs(sum(x if rng.random() < 0.5 else -x for x in d)) >= obs - 1e-12 for _ in range(perms))
-    return (hit + 1) / (perms + 1)
+    """The harness's paired sign-flip p (stats.sign_flip_p) on the per-item differences."""
+    from stats import sign_flip_p  # noqa: PLC0415 - harness/scripts is on sys.path above
+
+    return sign_flip_p([x - y for x, y in zip(a, b)], permutations=perms, seed=seed)
 
 
 def _family(exp: dict, runs_dir: Path, arm: str | None = None) -> tuple[list, list]:

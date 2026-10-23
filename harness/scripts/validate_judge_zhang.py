@@ -237,22 +237,17 @@ def article_taus(get, refs: dict, systems: Sequence[str], aids: Sequence[str]) -
 
 def paired_test(a: dict[str, float], b: dict[str, float], n: int = 20000, seed: int = 0) -> dict:
     """a minus b over the articles both have: mean difference, articles where a is ahead, and a
-    two-sided sign-flip permutation p (seeded; the article is the unit)."""
-    import random  # noqa: PLC0415
+    two-sided sign-flip permutation p (stats.sign_flip_p, seeded; the article is the unit)."""
+    from stats import sign_flip_p  # noqa: PLC0415
 
     ids = sorted(set(a) & set(b))
     d = [a[i] - b[i] for i in ids]
-    obs = abs(statistics.fmean(d))
-    rng = random.Random(seed)
-    hits = sum(
-        abs(statistics.fmean(x if rng.random() < 0.5 else -x for x in d)) >= obs - 1e-12 for _ in range(n)
-    )
     return {
         "articles": len(ids),
         "mean_difference": round(statistics.fmean(d), 4),
         "a_ahead": sum(x > 0 for x in d),
         "b_ahead": sum(x < 0 for x in d),
-        "p_two_sided": round((hits + 1) / (n + 1), 5),
+        "p_two_sided": round(sign_flip_p(d, permutations=n, seed=seed), 5),
     }
 
 
