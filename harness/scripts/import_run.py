@@ -44,6 +44,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from _common import (
+    DATA,
     DATASETS,
     ROOT,
     RUNS,
@@ -168,6 +169,7 @@ def main() -> int:
     params = {"imported": True, "source": args.source}
     fingerprint = build_fingerprint(
         root=ROOT,
+        data_dir=DATA,
         dataset=dataset,
         reference_id=args.reference_id,
         reference_tier=args.reference_tier,

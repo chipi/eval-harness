@@ -130,7 +130,7 @@ def v1_schemas() -> None:
     pairs = [
         (DATASETS.glob("*.json"), "dataset.schema.json"),
         (
-            (p / "metrics.json" for p in sorted(RUNS.iterdir())) if RUNS.is_dir() else [],
+            (r / "metrics.json" for _, r in all_runs() if (r / "metrics.json").is_file()),
             "metrics.schema.json",
         ),
         ((p for p in BASELINES.glob("*.json")), "baseline.schema.json"),
@@ -155,12 +155,12 @@ def v2_dataset_ids() -> None:
     """V2: every run's dataset_id resolves to an existing dataset."""
     known = {p.stem for p in DATASETS.glob("*.json")}
     dangling = []
-    for run in sorted(RUNS.iterdir()) if RUNS.is_dir() else []:
+    for label, run in all_runs():
         m = run / "metrics.json"
         if m.is_file():
             did = read_json(m).get("dataset_id")
             if did not in known:
-                dangling.append(f"{run.name} -> {did}")
+                dangling.append(f"{label} -> {did}")
     for d in dangling:
         print(f"       {d}")
     check(
@@ -173,12 +173,12 @@ def v2_dataset_ids() -> None:
 def v3_provenance() -> None:
     """V3: every run identifies its build ref."""
     missing = []
-    for run in sorted(RUNS.iterdir()) if RUNS.is_dir() else []:
+    for label, run in all_runs():
         m = run / "metrics.json"
         if m.is_file():
             b = read_json(m).get("build") or {}
             if b.get("ref", "unknown") == "unknown":
-                missing.append(run.name)
+                missing.append(label)
     for r in missing:
         print(f"       {r}")
     check("V3 every run identifies its build", not missing, f"{len(missing)} without a ref")
@@ -234,7 +234,7 @@ _V5_RUN_PROPERTIES = (
 )
 
 
-def _per_item_signature(run_name: str) -> str:
+def _per_item_signature(run_name: str | Path) -> str:
     """A stable digest of one run's per-item scores, for telling ties from copies.
 
     Run-level properties are excluded for the same reason they are excluded from the key
@@ -242,7 +242,11 @@ def _per_item_signature(run_name: str) -> str:
     predictions returns its own name, so it can never match another run -- an unreadable
     file is a reason to say nothing, not a reason to accuse.
     """
-    path = RUNS / run_name / "predictions.jsonl"
+    path = (
+        run_name / "predictions.jsonl"
+        if isinstance(run_name, Path)
+        else RUNS / run_name / "predictions.jsonl"
+    )
     if not path.is_file():
         return f"<no-predictions:{run_name}>"
     rows = []
@@ -259,9 +263,26 @@ def _per_item_signature(run_name: str) -> str:
 
 
 def v5_duplicate_scores() -> None:
-    """V5: no two runs report byte-identical scores and per-item results."""
+    """V5: no two runs in one directory report byte-identical scores and per-item results.
+    Within a directory: a rescore that left a run's scores as they were is identical to its
+    source in runs/ by design."""
+    dupes: list[list] = []
+    for base in run_bases():
+        dupes += _v5_in(base)
+    for group in dupes:
+        print(
+            f"       identical scores AND identical per-item results: {', '.join(str(n) for n, _, _ in group)}"
+        )
+    check(
+        "V5 no two configs report byte-identical scores",
+        not dupes,
+        f"{len(dupes)} suspicious group(s) — differing params produced identical output",
+    )
+
+
+def _v5_in(base: Path) -> list[list]:
     by_key = defaultdict(list)
-    for run in sorted(RUNS.iterdir()) if RUNS.is_dir() else []:
+    for run in sorted(base.iterdir()):
         m = run / "metrics.json"
         if m.is_file():
             d = read_json(m)
@@ -275,7 +296,7 @@ def v5_duplicate_scores() -> None:
             # field as "different params" made every pre-existing run look suspicious
             # against every new one, which is a false alarm I walked straight into.
             params = json.dumps(d["params"], sort_keys=True) if "params" in d else None
-            by_key[key].append((run.name, d.get("config_id"), params))
+            by_key[key].append((run, d.get("config_id"), params))
     # Identical scores from identical params is not suspicious — it is what a deterministic
     # arm DOES, and two configs may legitimately request the same thing. What deserves a look
     # is DIFFERENT params landing on byte-identical output: either a result was not measured,
@@ -298,14 +319,8 @@ def v5_duplicate_scores() -> None:
             # exists for, and a low-cardinality metric cannot hide that.
             if len({_per_item_signature(n) for n, _, _ in known}) > 1:
                 continue
-            dupes.append(known)
-    for group in dupes:
-        print(f"       identical scores AND identical per-item results: {', '.join(n for n, _, _ in group)}")
-    check(
-        "V5 no two configs report byte-identical scores",
-        not dupes,
-        f"{len(dupes)} suspicious group(s) — differing params produced identical output",
-    )
+            dupes.append([(f"{base.name}/{n.name}", c, p) for n, c, p in known])
+    return dupes
 
 
 def v6_baselines() -> None:
@@ -313,11 +328,33 @@ def v6_baselines() -> None:
     broken = []
     for b in BASELINES.glob("*.json"):
         d = read_json(b)
-        if not (RUNS / d.get("promoted_from", "")).is_dir():
+        if not any((base / d.get("promoted_from", "")).is_dir() for base in run_bases()):
             broken.append(f"{b.name} -> {d.get('promoted_from')}")
     for x in broken:
         print(f"       {x}")
     check("V6 every baseline's source run still exists", not broken, f"{len(broken)} broken")
+
+
+def run_bases() -> list[Path]:
+    """The runs directory and every committed run directory, each once. V1-V3, V5 and V14
+    read RUNS alone, so the derived directories reports cite (68 runs here) were never
+    schema- or integrity-checked while the RUNBOOK said every run was."""
+    out, seen = [], set()
+    for base in [RUNS, *(DATA / d for d in committed_dirs())]:
+        key = base.resolve()
+        if base.is_dir() and key not in seen:
+            seen.add(key)
+            out.append(base)
+    return out
+
+
+def all_runs() -> list[tuple[str, Path]]:
+    """(label, run directory) for every run in run_bases(), labelled `<dir>/<run>` outside RUNS."""
+    out = []
+    for base in run_bases():
+        prefix = "" if base.resolve() == RUNS.resolve() else f"{base.name}/"
+        out += [(f"{prefix}{r.name}", r) for r in sorted(base.iterdir()) if r.is_dir()]
+    return out
 
 
 def _tracked_runs(runs_dir: Path) -> dict:
@@ -880,14 +917,14 @@ def v14_goals() -> None:
         named(f"configs/{f.name}", doc if isinstance(doc, dict) else {})
     since = str(goal_policy().get("required_from") or "")
     unnamed, n_runs = [], 0
-    for run in sorted(RUNS.iterdir()) if RUNS.is_dir() else []:
+    for label, run in all_runs():
         m = read_json(run / "metrics.json") if (run / "metrics.json").is_file() else None
         if not isinstance(m, dict):
             continue
         n_runs += 1
-        named(f"runs/{run.name}", m)
+        named(f"runs/{label}", m)
         if since and not m.get("goal") and str(m.get("created_at", ""))[:10] >= since:
-            unnamed.append(run.name)
+            unnamed.append(label)
     for b in sorted(BASELINES.glob("*.json")):
         named(f"baselines/{b.name}", read_json(b))
     bad += [f"runs/{r}: created on or after {since} and names no goal" for r in unnamed]

@@ -106,15 +106,19 @@ def filter_dirt(status: str, data_rel: str | None) -> list:
     return dirt
 
 
-def tree_dirt(root: Path) -> list | None:
-    """The lines that make `root`'s git tree dirty, or None when git cannot say."""
+def tree_dirt(root: Path, data_dir: Path | None = None) -> list | None:
+    """The lines that make `root`'s git tree dirty, or None when git cannot say. Untracked
+    run output under `data_dir` (the project's data root, `EVAL_DATA_DIR`; default
+    `<root>/data`) does not count."""
     status = _git(root, "status", "--porcelain")
     if status is None:
         return None
     top = _git(root, "rev-parse", "--show-toplevel")
     try:
         data_rel = (
-            (root / "data").resolve().relative_to(Path(top).resolve()).as_posix() + "/" if top else None
+            (data_dir or root / "data").resolve().relative_to(Path(top).resolve()).as_posix() + "/"
+            if top
+            else None
         )
     except ValueError:
         data_rel = None
@@ -169,7 +173,7 @@ def harness_code_sha256() -> str:
     return h.hexdigest()
 
 
-def _harness_identity(root: Path) -> dict[str, Any]:
+def _harness_identity(root: Path, data_dir: Path | None = None) -> dict[str, Any]:
     """The INSTRUMENT: this harness's own code state, and the project it ran in.
 
     `commit` and `dirty` describe the PROJECT's git tree (in a checkout of eval-harness,
@@ -179,7 +183,7 @@ def _harness_identity(root: Path) -> dict[str, Any]:
     from _version import __version__  # noqa: PLC0415
 
     commit = _git(root, "rev-parse", "--short=12", "HEAD")
-    dirt = tree_dirt(root)
+    dirt = tree_dirt(root, data_dir)
     here = Path(__file__).resolve().parent
     return {
         "commit": commit,
@@ -280,8 +284,10 @@ def build_fingerprint(
     adapter_id: str,
     adapter_path: Path | None,
     model_hook: Callable[[dict[str, Any]], dict[str, Any]] | None = None,
+    data_dir: Path | None = None,
 ) -> dict[str, Any]:
-    """The full fingerprint, plus one hash over all of it.
+    """The full fingerprint, plus one hash over all of it. `data_dir` is the project's data
+    root (`_common.DATA`, which honours EVAL_DATA_DIR); it defaults to `<root>/data`.
 
     The hash is the point: comparing two runs field by field is work nobody does, and a
     single differing hash answers "did anything else move?" at a glance. If it matches,
@@ -301,7 +307,7 @@ def build_fingerprint(
         # review.
         "version": 3,
         "instrument": {
-            "harness": _harness_identity(root),
+            "harness": _harness_identity(root, data_dir),
             "adapter": _adapter_identity(adapter_path, adapter_id),
         },
         "system_under_test": {
@@ -322,7 +328,7 @@ def build_fingerprint(
             # different measurements. That is the exact failure this whole structure
             # exists to prevent, and it applied to references for as long as the
             # comment two fields above has been telling you a name is not an identity.
-            "references_sha256": references_digest(root, reference_id),
+            "references_sha256": references_digest(root, reference_id, data_dir),
         },
         "host": _host_identity(),
         "arm": {"config_id": config_id, "params": dict(params or {})},
@@ -331,15 +337,17 @@ def build_fingerprint(
     return fp
 
 
-def references_digest(root: Path, reference_id: str | None) -> str | None:
-    """One hash over every reference file's bytes, by filename order.
+def references_digest(root: Path, reference_id: str | None, data_dir: Path | None = None) -> str | None:
+    """One hash over every reference file's bytes, by filename order. The references live
+    under `data_dir` (default `<root>/data`): hard-coding `<root>/data` recorded None, "not
+    scored against anything", for every run of a project that moves its data root.
 
     None when the run has no references -- distinguishable from a hash, so "not scored
     against anything" and "scored against these bytes" never look alike.
     """
     if not reference_id:
         return None
-    ref_dir = root / "data" / "references" / reference_id
+    ref_dir = (data_dir or root / "data") / "references" / reference_id
     if not ref_dir.is_dir():
         return None
     # EVERY FILE, not just *.txt. A silver reference directory also carries

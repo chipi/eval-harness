@@ -1514,6 +1514,34 @@ def test_a_rescored_run_carries_the_current_parse() -> None:
     )
 
 
+def test_validate_checks_every_committed_run_directory() -> None:
+    """V1, V2 and V3 read data/runs alone: the derived directories the reports cite were
+    never schema- or integrity-checked. A broken run in runs-rescored must fail all three."""
+    import json as _json  # noqa: PLC0415
+
+    shadow = _shadow_tree(copy_data=("runs-rescored",))
+    run = next(iter(sorted((shadow / "harness" / "data" / "runs-rescored").glob("*/metrics.json"))), None)
+    if run is None:
+        print("  --   validate over committed dirs: data/runs-rescored is empty — skipped")
+        return
+    m = _json.loads(run.read_text(encoding="utf-8"))
+    m["dataset_id"] = "no_such_dataset"
+    m["build"] = {**(m.get("build") or {}), "ref": "unknown"}
+    m.pop("scores", None)
+    _replace(run, _json.dumps(m))
+    out = "".join(
+        x or "" for x in (lambda r: (r.stdout, r.stderr))(_run_in(shadow, "scripts/validate_tree.py"))
+    )
+    where = f"runs-rescored/{run.parent.name}"
+    check("validate: V1 checks the schema of a run in runs-rescored", "FAIL V1" in out, out[-300:])
+    check(
+        "validate: V2 names the dangling dataset in runs-rescored",
+        "FAIL V2" in out and where in out,
+        out[-300:],
+    )
+    check("validate: V3 names the run in runs-rescored with no build ref", "FAIL V3" in out and where in out)
+
+
 def test_v8_and_v9_go_red_on_a_copied_or_gutted_run() -> None:
     """V8 and V9 are the two gates the planted-string guard cannot reach.
 
@@ -2882,9 +2910,19 @@ def test_a_project_elsewhere_imports_runs_and_tests_them() -> None:
         shutil.rmtree(proj, ignore_errors=True)
         return
     ids = [i["item_id"] for i in _json.loads((data / "datasets" / "proj_v1.json").read_text())["items"]]
+    # A git project with gold references under the moved data root: the fingerprint read
+    # `<root>/data`, so it recorded references_sha256 None and every run after the first
+    # made the tree dirty (its own untracked run output under data/eval/stats/runs).
+    gold = data / "references" / "gold" / "proj_v1"
+    gold.mkdir(parents=True)
+    for i in ids:
+        (gold / f"{i}.txt").write_text(f"reference {i}\n", encoding="utf-8")
+    git = ["git", "-c", "user.name=t", "-c", "user.email=t@example.invalid", "-c", "commit.gpgsign=false"]
+    for argv in (["init", "-q"], ["add", "-A"], ["commit", "-q", "-m", "project"]):
+        subprocess.run([*git, *argv], cwd=proj, capture_output=True, text=True)
 
     def scores(name: str, base: float, rows=None) -> Path:
-        f = proj / f"{name}.jsonl"
+        f = Path(tempfile.gettempdir()) / f"{proj.name}-{name}.jsonl"  # outside the project: not tree dirt
         rows = (
             rows if rows is not None else [{"item_id": i, "wer": base + 0.01 * k} for k, i in enumerate(ids)]
         )
@@ -2923,6 +2961,21 @@ def test_a_project_elsewhere_imports_runs_and_tests_them() -> None:
         "import-run: nothing written beside the code",
         not list((HERE.parent / "data" / "runs").glob("arm_lo_*")),
     )
+    ref = imp("arm_ref", scores("ref", 0.2), "--reference-id", "gold/proj_v1", "--reference-tier", "gold")
+    fp_ref: dict = {}
+    for mj in (data / "runs").glob("arm_ref_*/metrics.json"):
+        fp_ref = _json.loads(mj.read_text()).get("fingerprint") or {}
+    check(
+        "fingerprint under EVAL_DATA_DIR: the references' bytes are hashed, not recorded as none",
+        ref.returncode == 0 and bool((fp_ref.get("data") or {}).get("references_sha256")),
+        (ref.stderr or "")[-200:] + str(fp_ref.get("data")),
+    )
+    check(
+        "fingerprint under EVAL_DATA_DIR: the project's own run output does not make the tree dirty",
+        ((fp_ref.get("instrument") or {}).get("harness") or {}).get("dirty") is False,
+        str((fp_ref.get("instrument") or {}).get("harness")),
+    )
+    shutil.rmtree(next((data / "runs").glob("arm_ref_*"), proj / "none"), ignore_errors=True)
     bad = imp("arm_bad", scores("bad", 0, [{"item_id": ids[0], "wer": "n/a"}]))
     check(
         "import-run: refuses a non-numeric score",
@@ -2989,6 +3042,8 @@ def test_a_project_elsewhere_imports_runs_and_tests_them() -> None:
         (proj / ".cache" / "family_test").is_dir(),
     )
     shutil.rmtree(proj, ignore_errors=True)
+    for f in Path(tempfile.gettempdir()).glob(f"{proj.name}-*.jsonl"):
+        f.unlink()
 
 
 def test_hints_name_the_command_the_user_has() -> None:
@@ -3528,6 +3583,7 @@ def main() -> int:
         test_a_run_that_measured_nothing_is_not_a_success,
         test_adapter_declaration_beats_a_stale_run,
         test_a_rescored_run_carries_the_current_parse,
+        test_validate_checks_every_committed_run_directory,
         test_v8_and_v9_go_red_on_a_copied_or_gutted_run,
         test_v4_neither_skips_a_missing_file_nor_hides_what_it_did_not_check,
         test_v10_fails_when_a_derived_run_states_no_scorer,

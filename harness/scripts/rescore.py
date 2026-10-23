@@ -363,7 +363,7 @@ def main() -> int:
                 fp_data["reference_tier_at_measurement"] = fp_data.get("reference_tier")
                 fp_data["reference_id"] = args.reference_id
                 fp_data["reference_tier"] = tier
-            actual_refs = references_digest(ROOT, fp_data.get("reference_id"))
+            actual_refs = references_digest(ROOT, fp_data.get("reference_id"), DATA)
             prior_refs = fp_data.get("references_sha256")
             fp_data["references_sha256"] = actual_refs
             if prior_refs and actual_refs and prior_refs != actual_refs:

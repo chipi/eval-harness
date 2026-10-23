@@ -115,7 +115,9 @@ CONFIGS = DATA / "configs"
 # sources, datasets and references stay shared, so a smoke run is scored against the
 # same references as the real thing and is therefore actually a check of the real path.
 _runs_override = os.environ.get("EVAL_RUNS_DIR", "").strip()
-RUNS = Path(_runs_override).expanduser() if _runs_override else DATA / "runs"
+# Relative to the PROJECT root, as EVAL_DATA_DIR is: it resolved against the current
+# directory, so with EVAL_HOME set a run written from one directory was read from another.
+RUNS = ROOT / Path(_runs_override).expanduser() if _runs_override else DATA / "runs"
 BASELINES = DATA / "baselines"
 REFERENCES = DATA / "references"
 #: What each evaluation is FOR (ADR-0002): one <goal_id>.yaml per goal, plus policy.yaml.
@@ -260,7 +262,7 @@ def build_info() -> dict[str, Any]:
     # previous run's directory no longer marks the next run dirty. One rule, one place.
     from _fingerprint import tree_dirt  # noqa: PLC0415
 
-    dirt = tree_dirt(ROOT)
+    dirt = tree_dirt(ROOT, DATA)
     return {
         "ref": ref or "unknown",
         "dirty": bool(dirt),

@@ -37,6 +37,7 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _adapter import load_adapter, metric_kinds, primary_metric, score_wants_source, transient_markers
 from _common import (
+    DATA,
     GOALS,
     MATERIALIZED,
     REFERENCES,
@@ -499,6 +500,7 @@ def main() -> int:
 
     fingerprint = build_fingerprint(
         root=ROOT,
+        data_dir=DATA,
         dataset=ds,
         reference_id=(str(ref_dir.relative_to(REFERENCES)) if ref_dir else None),
         reference_tier=ref_tier,

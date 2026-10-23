@@ -5,6 +5,7 @@ adapter registries that never saw each other, a panel that judged placeholder te
 """
 
 import json
+import os
 import sys
 import tempfile
 from pathlib import Path
@@ -209,6 +210,24 @@ with tempfile.TemporaryDirectory() as tmp:
     check(
         "code hash: a new test file is not",
         "test_unrelated.py" not in {p.name for p in _fingerprint.measuring_modules(code)},
+    )
+
+# EVAL_RUNS_DIR is relative to the project, as EVAL_DATA_DIR is. It resolved against the shell's
+# directory, so with EVAL_HOME set a run was written in one place and read from another.
+import subprocess  # noqa: E402
+
+with tempfile.TemporaryDirectory() as proj, tempfile.TemporaryDirectory() as elsewhere:
+    r = subprocess.run(
+        [sys.executable, "-c", "import _common; print(_common.RUNS.resolve())"],
+        cwd=elsewhere,
+        env={**os.environ, "PYTHONPATH": str(HERE), "EVAL_HOME": proj, "EVAL_RUNS_DIR": "data/runs-scratch"},
+        capture_output=True,
+        text=True,
+    )
+    check(
+        "EVAL_RUNS_DIR: a relative path is the project's, not the shell's directory",
+        r.stdout.strip() == str((Path(proj) / "data" / "runs-scratch").resolve()),
+        (r.stdout + r.stderr).strip()[-200:],
     )
 
 sys.exit(summary())
