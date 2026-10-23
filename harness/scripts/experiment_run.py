@@ -29,7 +29,6 @@ import argparse
 import json
 import os
 import statistics
-import sys
 import time
 from pathlib import Path
 from typing import Any
@@ -61,6 +60,7 @@ from _common import (
     write_text_atomic,
 )
 from _fingerprint import build_fingerprint
+from _record import run_record
 from _retry import call_with_retries
 
 try:
@@ -82,7 +82,6 @@ class _Resumed:
     __slots__ = (
         "cost_usd",
         "extra",
-        "extra_known",
         "latency_ms",
         "meta",
         "output",
@@ -127,20 +126,13 @@ class _Resumed:
         # own. That also carried the prior pass's SCORES, and any score the current scorer
         # no longer emits -- references absent, a metric renamed -- then reached the
         # aggregate from the replayed rows alone, reported as if measured. A prior row
-        # cannot tell an extra from a score by looking at it, so rows now record their
-        # extras under `_extra`, and exactly that is carried. A row written before `_extra`
-        # existed carries nothing, and the run says how many such rows it replayed.
-        carried = prior.get("_extra")
-        self.extra_known = isinstance(carried, dict)
-        self.extra: dict[str, float] = (
-            {
-                k: float(v)
-                for k, v in (carried or {}).items()
-                if isinstance(v, (int, float)) and not isinstance(v, bool)
-            }
-            if self.extra_known
-            else {}
-        )
+        # cannot tell an extra from a score by looking at it, so every row records its
+        # extras under `_extra` (empty when it has none), and exactly that is carried.
+        self.extra: dict[str, float] = {
+            k: float(v)
+            for k, v in prior["_extra"].items()
+            if isinstance(v, (int, float)) and not isinstance(v, bool)
+        }
         self.meta: dict[str, Any] = dict(prior.get("_meta") or {})
         self.meta["resumed_from_disk"] = True
 
@@ -192,7 +184,6 @@ def one_pass(
     cap = env_float("EVAL_MAX_COST_USD")
     capped_at: str | None = None
     n_replayed = 0
-    n_unknown_extra = 0
     carried_keys: set = set()
 
     # WRITE EACH OUTPUT THE MOMENT IT EXISTS, not at the end of the pass.
@@ -282,13 +273,12 @@ def one_pass(
         row.update(extra)
         # The extras again, by name, so a later `--resume` can carry exactly these and
         # never mistake a score for one. `_`-prefixed, so never aggregated.
-        if extra:
-            row["_extra"] = extra
+        # On EVERY row, empty or not: written only when non-empty, a row with no extras read
+        # on resume as one from before `_extra` existed.
+        row["_extra"] = extra
         if resumed:
             n_replayed += 1
             carried_keys.update(extra)
-            if not res.extra_known:
-                n_unknown_extra += 1
         # Raw provider metadata rides along under a `_`-prefixed key. Everything
         # `_`-prefixed is excluded from the aggregation below, so an adapter can record
         # a nested dict (a usage object, a finish_reason) without the mean-of-every-key
@@ -337,17 +327,7 @@ def one_pass(
         resume_note = {
             "replayed_items": n_replayed,
             "carried_extra_keys": sorted(carried_keys),
-            # Rows written before rows recorded their extras: nothing could be carried
-            # for them, so any extra metric's mean covers only the items computed fresh.
-            "replayed_without_recorded_extra": n_unknown_extra,
         }
-        if n_unknown_extra:
-            print(
-                f"  WARNING: {n_unknown_extra} replayed item(s) predate per-row `_extra`; "
-                "their adapter extras could not be carried, so extra metrics average "
-                "only the items computed in this pass.",
-                file=sys.stderr,
-            )
     return {
         "predictions": predictions,
         "scores": scores,
@@ -416,13 +396,6 @@ def main() -> int:
         "--dry-run",
         action="store_true",
         help="cost and shape the sweep WITHOUT calling anything",
-    )
-    ap.add_argument(
-        "--resume-unverified",
-        action="store_true",
-        help="resume from a directory whose arm cannot be identified. Only for runs "
-        "made before run.json existed; it will record another arm's answers "
-        "under this config if you are wrong.",
     )
     ap.add_argument(
         "--resume",
@@ -580,19 +553,11 @@ def main() -> int:
             else None
         )
         if ident is None:
-            if not args.resume_unverified:
-                die(
-                    f"cannot resume: {args.resume} has neither run.json nor "
-                    f"metrics.json, so the arm that produced those outputs cannot be "
-                    f"identified.\n"
-                    f"  Resuming anyway would replay whatever is in that directory and "
-                    f"record it under {cfg.get('config_id')!r}.\n"
-                    f"  Runs started before 2026-09-30 predate run.json. If you are "
-                    f"certain, pass --resume-unverified."
-                )
-            print(
-                f"  WARNING: --resume-unverified: {args.resume} cannot be identified "
-                f"and its outputs are being replayed as {cfg.get('config_id')!r}."
+            die(
+                f"cannot resume: {args.resume} has neither run.json nor metrics.json, so the "
+                f"arm that produced those outputs cannot be identified.\n"
+                f"  Resuming anyway would replay whatever is in that directory and record it "
+                f"under {cfg.get('config_id')!r}."
             )
         else:
             if ident.get("config_id") and ident["config_id"] != cfg.get("config_id"):
@@ -623,6 +588,11 @@ def main() -> int:
                 except ValueError:
                     continue  # a torn final line from a kill mid-append
                 if r.get("item_id"):
+                    if not isinstance(r.get("_extra"), dict):
+                        die(
+                            f"cannot resume: {src} has rows without `_extra`; it was not written "
+                            f"by this version of the harness"
+                        )
                     prior_rows.setdefault(r["item_id"], r)
         if not prior_rows:
             print(
@@ -681,52 +651,47 @@ def main() -> int:
             if not dest.is_file():
                 write_text_atomic(dest, text)
 
-        metrics = {
-            "run_id": run_id,
-            "dataset_id": cfg["dataset_id"],
-            "config_id": cfg["config_id"],
-            "created_at": now(),
-            "build": build,
+        metrics = run_record(
+            run_id=run_id,
+            dataset_id=cfg["dataset_id"],
+            config_id=cfg["config_id"],
+            build=build,
+            scores=result["scores"],
+            n_items=len(result["predictions"]),
             # The knobs this run ACTUALLY used, not just the config's name. A config_id
             # names a file, and a file can be edited after the run — so without this a run
             # cannot say what produced it, only which YAML was pointed at. It also lets V5
             # tell a deterministic repeat (same params, same scores — expected) from two
             # different configs landing on byte-identical output (worth a look).
-            "params": dict(cfg.get("params") or {}),
+            params=dict(cfg.get("params") or {}),
             # WHICH scorer produced these numbers. A scorer is half of what a number means,
             # so a run that does not name it cannot be compared to one that used another.
-            "adapter": adapter_id,
+            adapter=adapter_id,
             # The adapter's own reading of its metrics, carried on the run so a leaderboard
             # built later does not have to guess what `compression` is.
-            "metric_kinds": dict(declared_kinds or {}),
-            "metric_directions": metric_directions(adapter_path),
-            "providers_seen": result.get("providers_seen") or {},
-            "primary_metric": primary_metric(adapter_path),
+            metric_kinds=dict(declared_kinds or {}),
+            metric_directions=metric_directions(adapter_path),
+            providers_seen=result.get("providers_seen") or {},
+            primary_metric=primary_metric(adapter_path),
             # Outside `scores` on purpose: real, worth seeing, but not the arm's per-item
             # speed — and in scores it would reach the leaderboard's speed column and V5's
             # duplicate key, where it means something else.
-            "warmup_ms": warmup_ms,
+            warmup_ms=warmup_ms,
             # What this number depended on, and one hash over all of it. A comparison is
             # only valid if exactly one field moved; this is what makes that checkable
             # rather than asserted.
-            "fingerprint": fingerprint,
-            "scores": result["scores"],
-            "n_items": len(result["predictions"]),
-        }
-        # What the run is FOR, and the output format it was asked for: outside the
-        # fingerprint on purpose. Neither changes what was measured, only what it answers.
-        for key in ("goal", "format"):
-            if cfg.get(key):
-                metrics[key] = cfg[key]
-        if result["reference_tier"]:
-            metrics["reference_tier"] = result["reference_tier"]
-        if result.get("resume"):
+            fingerprint=fingerprint,
+            # What the run is FOR, and the output format it was asked for: outside the
+            # fingerprint on purpose. Neither changes what was measured, only what it answers.
+            goal=cfg.get("goal") or None,
+            format=cfg.get("format") or None,
+            reference_tier=result["reference_tier"] or None,
             # What a resumed run carried from the pass it replayed, on the record rather
             # than only in the terminal: which extras came forward, and for how many
             # replayed items nothing could.
-            metrics["resume"] = result["resume"]
-        if args.repeat > 1:
-            metrics["repeat_index"] = i + 1
+            resume=result.get("resume") or None,
+            repeat_index=(i + 1) if args.repeat > 1 else None,
+        )
         write_json(run_dir / "metrics.json", metrics)
         made.append(run_dir)
         per_repeat.append(result["scores"])

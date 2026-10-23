@@ -58,6 +58,7 @@ ROOT = HERE.parents[1]
 sys.path.insert(0, str(ROOT / "examples" / "_shared"))
 sys.path.insert(0, str(ROOT / "harness" / "scripts"))
 
+from _record import derived_record  # noqa: E402
 from retrieval import parse_ranking, score_ranking, scorer_sha256  # noqa: E402
 
 
@@ -158,19 +159,20 @@ def main() -> int:
         (run_dir / "predictions.jsonl").write_text(
             "".join(json.dumps(r, sort_keys=True) + "\n" for r in new_rows), encoding="utf-8"
         )
-        new = dict(m)
-        new["scores"] = scores
-        new["reparsed_from"] = d.name
-        new["reparsed_with"] = {
-            "parser": "examples/_shared/retrieval.parse_ranking",
-            "scorer_sha256": scorer_sha256(),
-        }
+        new = derived_record(
+            m,
+            kind="reparse",
+            source_dir=d.name,
+            with_={"parser": "examples/_shared/retrieval.parse_ranking", "scorer_sha256": scorer_sha256()},
+            scores=scores,
+            n_items=len(new_rows),
+        )
         fp = json.loads(json.dumps(new.get("fingerprint") or {}))
         if fp:
             fp["hash"] = None
             fp["hash_invalid_because"] = (
                 "rankings were rebuilt from stored LLM replies with a parser this "
-                "fingerprint does not describe; see reparsed_with"
+                "fingerprint does not describe; see derived.with"
             )
             new["fingerprint"] = fp
         (run_dir / "metrics.json").write_text(

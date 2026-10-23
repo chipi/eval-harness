@@ -917,9 +917,8 @@ Holm test between the two arms.
 | Classification · DBpedia | `bert_base_fy` 438 MB | 0.9857 | 3= | `qwen_m` | 0.9929 | $51 | paid wins +0.7%, **not separated** |
 | Judging · SummEval | `unievalpub` 3.1 GB | 0.3717 | 24 | `openai_l` | 0.5398 | $6,350 | **paid wins +45.2%**, separated |
 
-*The SciFact rank is 8th against the corrected-parser runs in `data/runs-reparsed/`, which
-are the retrieval report's record (`qwen_s` 0.7183). A plain `leaderboard.py` over
-`data/runs/` reads the original-parser `qwen_s` (0.7338) and puts `e5_base` 9th.*
+*The SciFact rank is over the committed runs, scored with the corrected parser (`qwen_s`
+0.7183).*
 
 **DBpedia has a zero-shot control at the same price:** `bart_mnli` scores **0.6286** and
 the fine-tuned `bert_base_fy` **0.9857** — **+0.357 from training exposure**, on a task where

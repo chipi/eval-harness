@@ -62,10 +62,9 @@ other rerank depths were not tested (§7). Corrections and their dates: §6.
 
 3. **The registered prediction, 1 of 2** (commit `a903fb37`, 2026-09-28, before the pair
    runs): 0.786–0.797, built from `qwen_s`'s pre-fix headroom share (0.899) and `glm_s`'s
-   (0.911). `glm_s` **0.7891**, inside. `qwen_s` **0.7799** as printed, outside by 0.006,
-   and **0.7713** under the corrected parser, outside by 0.0147. Headroom-used went 90.9% →
-   90.2% (`glm_s`) and, corrected, 87.4% → 88.2% (`qwen_s`): a mechanism seen in two
-   rerankers on one corpus, not established. (The pair runs' BM25 half scored 0.7422
+   (0.911). `glm_s` **0.7891**, inside. `qwen_s` **0.7713**, outside by 0.0147.
+   Headroom-used went 90.9% → 90.2% (`glm_s`) and 87.4% → 88.2% (`qwen_s`): a mechanism seen in two
+   rerankers on one corpus, not established. (The pair runs' BM25 half scored 0.7423
    rather than §3.1's 0.7437, hence 90.9% here against 91.1% above.)
 
 ---
@@ -205,7 +204,7 @@ separated from 6 of 18; ahead on the point estimate against 18 of 18
 encoder running on a laptop CPU is not shown different from any of the twelve hosted LLM
 rerankers: with `e5_base` as arm A, the sign-flip p against the twelve is 0.27–0.97 (it
 trails `glm_s` by 0.0246, p 0.27); with `bge_small`, 0.12–0.97 (0.0340 behind `glm_s`, p
-0.13) — `family_test.py --a sf_e5_base_n200_v1 --runs-dir data/runs-reparsed`, uncorrected
+0.13) — `family_test.py --a sf_e5_base_n200_v1`, uncorrected
 per pair. That is not "equal": n = 200 cannot resolve gaps of 0.02–0.03. The twelve or
 thirteen span 0.7437–0.7017 by point estimate, and "not separated" is not transitive.
 
@@ -213,9 +212,7 @@ The tie also explains the stability numbers: ρ between two disjoint halves rise
 monotonically 0.409 → 0.748, so the *ordering* is real, while **P(same winner) is 0.01–0.07**
 — with twelve or thirteen arms that cannot be told apart at this n, which one crowns a random half is
 close to a coin toss. Both statements are true at once, and reading either alone would
-mislead. (`rank_stability.py` reads `EVAL_RUNS_DIR`; the figures above are under
-`data/runs-reparsed`, the record. Under `data/runs`, with the pre-fix `qwen_s`, they read
-0.408 → 0.742.)
+mislead.
 
 ### 3.3 Adding a reranker and swapping the retriever are comparable; together they stack
 
@@ -276,19 +273,18 @@ one stated here.*
 
 Both halves of each pair ran under the same adapter, so the comparison is internally valid;
 that adapter differs from the 19-arm main table's, which is why these four are reported
-separately and are not in §3.1 — and why `glm_s` over BM25 reads 0.7422 here against
+separately and are not in §3.1 — and why `glm_s` over BM25 reads 0.7423 here against
 0.7437 in §3.1 (90.9% of the ceiling here, 91.1% in the block above).
 
 | reranker | nDCG@10, BM25 candidates | nDCG@10, e5_base candidates | gain from e5_base | share of ceiling reached (BM25 → e5_base) |
 |---|---|---|---|---|
-| glm_s | 0.7422 | **0.7891** | +0.0469 | 90.9% → 90.2% |
-| qwen_s, as stored | 0.7224 | 0.7799 | +0.0575 | 88.5% → 89.2% |
-| qwen_s, corrected parser | 0.7138 | 0.7713 | +0.0575 | 87.4% → 88.2% |
+| glm_s | 0.7423 | **0.7891** | +0.0468 | 90.9% → 90.2% |
+| qwen_s | 0.7138 | 0.7713 | +0.0575 | 87.4% → 88.2% |
 
 Each reranker reorders the top 20 candidates of the named first stage. **Share of ceiling
 reached** = nDCG@10 ÷ that first stage's oracle ceiling (0.8163 for BM25, 0.8747 for
-`e5_base`). The corrected `qwen_s` row is `reparse.py` run over the two stored pair runs
-(`qwen_s` BM25-first 12 items reordered, e5-first 10); it is not a committed run.
+`e5_base`). The pair runs are scored with the corrected parser, as every SciFact run is (each
+run's `derived` block records it).
 
 **Outcome: one of two inside the registered range.** `glm_s`, at 0.7891, is inside.
 `qwen_s` is outside: 0.006 below 0.786 as printed, **0.0147 below** under the corrected
@@ -332,8 +328,7 @@ summarisation study and found none in NER.
 On the 160 queries the dev slice never contained (only the 40 dev item ids are needed,
 from `fetch.py --n 40`; the dev runs are not), the global permutation test gives p = 0.0002 — an arm effect exists — with **34 of 171 pairs distinguishable**
 and a Nemenyi critical difference of 2.21 rank positions against an observed span of
-8.4. This part is recomputable: `EVAL_RUNS_DIR=data/runs-reparsed holdout_significance.py`
-(§8).
+8.4. This part is recomputable: `holdout_significance.py` (§8).
 
 ### 3.6 Index cost is a first-class number, because `warmup_ms` made it one
 
@@ -410,11 +405,8 @@ first, both read under the current parser; a negative Δ means the later run sco
 | `glm_s` bm25first vs `glm_s` | 0.7437 | 0.7423 | −0.0015 |
 | `qwen_s` bm25first vs `qwen_s` | 0.7183 | 0.7138 | −0.0045 |
 
-**These deltas are derived, not stored.** The committed `data/runs-repeats/` and
-`data/runs-pair/` hold the uncorrected figures (`llama_l` 0.6386, `llama_s` 0.7132,
-`qwen_s` 0.7187; `qwen_s` BM25-first 0.7224), and the repeat runs are `dirty: true`. The
-table reads them through `reparse.py` (`--runs <dir> --out <scratch>`, which needs the
-qrels from `fetch.py`); the reparsed copies are not committed. `llama_s` previously read
+The repeat and pair runs are scored with the corrected parser, like the main runs (each
+run's `derived` block records it), and the repeat runs are `dirty: true`. `llama_s` previously read
 −0.0003 and `qwen_s` −0.0004 here: the first compared the repeat with the round-2
 parser's figure for the original, the second had its sign reversed.
 
@@ -616,28 +608,26 @@ for f in ../examples/retrieval-scifact/configs/arm_*_n200.yaml; do
   python scripts/experiment_run.py --config "$f"
 done
 
-# The record for every SciFact figure is data/runs-reparsed (corrected parser). Every script
-# reads it through EVAL_RUNS_DIR; data/runs holds the pre-fix qwen_s (0.7338).
-export EVAL_RUNS_DIR=data/runs-reparsed
+# The committed runs are scored with the corrected parser (recorded in each run's `derived`
+# block); a fresh run parses with it directly.
 python tools/retrieval_report.py --dataset-id scifact_200 --match sf_
 python scripts/family_test.py --dataset-id scifact_200 --a sf_glm_s_n200_v1 \
-    --against _n200_v1 --metric ndcg_10 --runs-dir data/runs-reparsed
+    --against _n200_v1 --metric ndcg_10
 python scripts/holdout_significance.py --dataset-id scifact_200 \
     --exclude-dataset scifact_40 --metric ndcg_10 --match sf_
 python scripts/rank_stability.py --dataset-id scifact_200 --metric ndcg_10 --match sf_
 
 # The §3.4 pair runs live in data/runs-pair, so testing them against the main arms needs
 # one directory holding both (copy the runs; the config_ids differ, so nothing collides):
-mkdir -p /tmp/sf_all && cp -r data/runs-reparsed/* data/runs-pair/sf_* /tmp/sf_all/
+mkdir -p /tmp/sf_all && cp -r data/runs/sf_* data/runs-pair/sf_* /tmp/sf_all/
 python scripts/family_test.py --dataset-id scifact_200 --a sf_glm_s_e5first_n200_v1 \
     --against _n200_v1 --metric ndcg_10 --runs-dir /tmp/sf_all
 python scripts/pair_test.py --dataset-id scifact_200 --a sf_glm_s_e5first_n200_v1 \
     --b sf_glm_s_bm25first_n200_v1 --metric ndcg_10 --runs-dir /tmp/sf_all
 ```
 
-The between-run table is `examples/retrieval-scifact/reparse.py --runs <dir> --out
-<scratch>` over `data/runs-repeats` and `data/runs-pair`; the pair runs are stored
-uncorrected.
+The between-run table compares the committed runs in `data/runs-repeats` and `data/runs-pair`
+with the main runs, all scored with the corrected parser.
 
 Neither the corpus nor the queries are committed: `fetch.py` downloads both and both are
 gitignored. Corpus identity travels as `corpus_sha256` inside every run, not as bytes.

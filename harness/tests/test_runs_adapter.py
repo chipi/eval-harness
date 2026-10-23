@@ -84,8 +84,11 @@ with tempfile.TemporaryDirectory() as tmp:
 
     check("direction: a cost metric is lower-is-better without a flag", direction(runs, "cost_usd"))
     check("direction: a quality metric is higher-is-better", not direction(runs, "f1"))
-    asc_runs = [(d, {**mm, "primary_metric": "wer", "primary_metric_asc": True}) for d, mm in runs]
-    check("direction: primary_metric_asc, which import-run records, is read", direction(asc_runs, "wer"))
+    asc_runs = [(d, {**mm, "metric_directions": {"wer": "lower"}}) for d, mm in runs]
+    check(
+        "direction: metric_directions, which an adapter or import-run --asc records, is read",
+        direction(asc_runs, "wer"),
+    )
     check("direction: --desc overrides what the runs declare", not direction(asc_runs, "wer", desc=True))
     check("direction: --asc overrides", direction(runs, "f1", asc=True))
     try:

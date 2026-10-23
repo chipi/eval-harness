@@ -131,15 +131,12 @@ def matrix(
 
 
 def recorded_direction(runs: Iterable[Run], metric: str) -> str | None:
-    """ "lower" / "higher" as the runs record it for `metric`: the adapter's METRIC_DIRECTIONS
-    (`metric_directions` on the run), or `primary_metric_asc`, which `import-run --asc`
-    writes for the primary metric. None when no run says."""
+    """ "lower" / "higher" as the runs record it for `metric` (`metric_directions`: the
+    adapter's METRIC_DIRECTIONS, or `import-run --asc`). None when no run says."""
     for _d, m in runs:
         declared = (m.get("metric_directions") or {}).get(metric)
         if declared in ("lower", "higher"):
             return str(declared)
-        if m.get("primary_metric") == metric and m.get("primary_metric_asc"):
-            return "lower"
     return None
 
 

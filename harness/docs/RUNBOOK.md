@@ -224,9 +224,8 @@ Three things worth knowing:
   the first item** precisely so a crashed run can still answer the question
   (`metrics.json`, which a crashed run does not have, could not).
 
-  A directory with neither file is refused outright. `--resume-unverified` overrides
-  that, for runs made before `run.json` existed; it will record another arm's answers
-  under your config if you are wrong about whose outputs those are.
+  A directory with neither file is refused outright, as is one whose rows were not written
+  by this version of the harness.
 
 Exit codes: `0` complete, `2` stopped early by the cost cap with usable partial
 results, `1` nothing was measured at all.
@@ -318,7 +317,7 @@ What it holds *your* project to is yours to declare, in `data/validate.json` (al
 {
   "committed": ["runs", "runs-adjudicated"],
   "floors": {"runs-adjudicated": 12},
-  "scorer_sources": [{"dir": "runs-adjudicated", "glob": "*", "path": ["rescored_with", "scorer"],
+  "scorer_sources": [{"dir": "runs-adjudicated", "glob": "*", "path": ["derived", "with", "scorer"],
                       "module": "../my_scorer.py", "callable": "scorer_id"}],
   "duplicate_ok": [["my_v1", "smoke_arm_v1"]]
 }

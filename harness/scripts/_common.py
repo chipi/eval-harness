@@ -359,9 +359,9 @@ def in_checkout() -> bool:
 
 
 def adapter_search_dirs() -> tuple[Path, ...]:
-    """Where a recorded adapter id is looked for: the project, and in a checkout its parent
-    and examples/ (the ids the examples record)."""
-    return (ROOT, ROOT.parent, ROOT.parent / "examples") if in_checkout() else (ROOT,)
+    """Where a recorded adapter id is looked for: the project, and in a checkout the
+    repository root (the examples record `examples/<example>/adapter.py`)."""
+    return (ROOT, ROOT.parent) if in_checkout() else (ROOT,)
 
 
 def resolve_adapter_path(spec: str | None) -> Path | None:

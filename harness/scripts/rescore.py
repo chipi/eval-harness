@@ -41,12 +41,12 @@ from _common import (
     adapter_search_dirs,
     die,
     how,
-    now,
     read_json,
     sha256,
     write_json,
 )
 from _fingerprint import references_digest
+from _record import derived_record
 from _runs import runs_on
 
 #: Carried across from the original run rather than recomputed: these describe the CALL,
@@ -313,28 +313,28 @@ def main() -> int:
         (run_dir / "predictions.jsonl").write_text(
             "".join(json.dumps(r, sort_keys=True) + "\n" for r in rows), encoding="utf-8"
         )
-        new = dict(m)
-        new["scores"] = scores
-        if args.reference_id:
-            new["reference_tier"] = tier
-        new["metric_kinds"] = _kinds(adapter_path) or m.get("metric_kinds") or {}
-        new["primary_metric"] = _primary(adapter_path) or m.get("primary_metric")
         # Provenance of the RESCORE itself: which run it came from, and which scorer
         # produced these numbers. Without this a rescored run is indistinguishable from
         # a measured one, which is the whole risk of having this script at all.
-        new["rescored_from"] = d.name
-        new["rescored_at"] = now()
-        new["rescored_with"] = {
-            "adapter": adapter_id,
-            "sha256": _sha(adapter_path),
-        }
+        rescored_with: dict = {"adapter": adapter_id, "sha256": _sha(adapter_path)}
         # The adapter FILE's hash does not cover a scorer that lives in a shared module.
         # An adapter may expose `scorer_id()` -- no params, no network -- naming the
         # hashes that identify its scoring rule; without it, an extraction.py-only change
         # is invisible here and a rescored run cannot say what measured it.
         sid = getattr(sys.modules.get(getattr(score, "__module__", ""), None), "scorer_id", None)
         if callable(sid):
-            new["rescored_with"]["scorer"] = sid()
+            rescored_with["scorer"] = sid()
+        new = derived_record(
+            m,
+            kind="rescore",
+            source_dir=d.name,
+            with_=rescored_with,
+            scores=scores,
+            n_items=len(rows),
+            metric_kinds=_kinds(adapter_path) or m.get("metric_kinds") or {},
+            primary_metric=_primary(adapter_path) or m.get("primary_metric"),
+            reference_tier=tier if args.reference_id else None,
+        )
         # The fingerprint is copied from the source run, and its `instrument.adapter`
         # identifies the scorer that produced the ORIGINAL numbers -- not these. Left
         # alone, a rescored run asserts the old scorer in the one field meant to identify
@@ -380,7 +380,7 @@ def main() -> int:
             fp["hash"] = None
             fp["hash_invalid_because"] = (
                 "scores were recomputed by a different scorer than the one this "
-                "fingerprint was built from; see rescored_with"
+                "fingerprint was built from; see derived.with"
             )
             new["fingerprint"] = fp
         if dropped:

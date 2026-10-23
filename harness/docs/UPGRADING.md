@@ -29,7 +29,8 @@ runs has to change.
 - **`validate` checks every committed `runs*` directory** (V7, V8, V9), read from git: it
   checked only this repository's six directory names, so a project's own `data/runs-adjudicated`
   was never validated. Declare the list, floors, scorer sources and duplicate exceptions in
-  `<data>/validate.json` (RUNBOOK §9); a `validate_floors.json` is still read for floors.
+  `<data>/validate.json` (RUNBOOK §9), which replaces `validate_floors.json`: move its
+  `floors` there.
 
 **New, all optional:**
 - **The catalog and the run inspector** (`evh catalog`, `evh catalog-serve`). On the

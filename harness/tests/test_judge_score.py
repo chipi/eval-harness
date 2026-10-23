@@ -838,8 +838,9 @@ with tempfile.TemporaryDirectory() as tmp:
         "metrics.json: primary_metric, scores, provenance, fingerprint hash invalidated",
         mj["primary_metric"] == "judge_score"
         and abs(mj["scores"]["judge_score"] - (expected_a(0) + expected_b(0)) / 2) < 1e-9
-        and mj["judged_from"] == arms[0]["run"]
-        and mj["judged_with"]["judging_set_id"] == m1["judging_set_id"]
+        and mj["derived"]["kind"] == "judge"
+        and mj["derived"]["from"] == arms[0]["run"]
+        and mj["derived"]["with"]["judging_set_id"] == m1["judging_set_id"]
         and mj["fingerprint"]["hash"] is None
         and "coverage" not in mj["scores"],
     )
@@ -849,8 +850,8 @@ with tempfile.TemporaryDirectory() as tmp:
     check(
         "--unvalidated: the primary metric and the label say so",
         mu["primary_metric"] == "judge_score_unvalidated"
-        and mu["judge_label"] == "unvalidated judge"
-        and mu["judged_with"]["validated"] is False,
+        and mu["derived"]["with"]["label"] == "unvalidated judge"
+        and mu["derived"]["with"]["validated"] is False,
     )
     # Python of the running interpreter: the same one that ran these assertions.
     env = dict(os.environ, EVAL_RUNS_DIR=str(out))

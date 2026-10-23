@@ -30,6 +30,7 @@ from _common import (
     die,
     how,
 )
+from _record import derived_with
 from _runs import by_arm, direction, runs_on, warn_on_ambiguous_runs
 from _runs import matrix as matrix_of
 
@@ -557,10 +558,10 @@ def main() -> int:
     _frontier(rows, sort_key, kinds, asc=asc)
     judged = sorted(
         {
-            f"{(r.get('judged_with') or {}).get('scorer_id')}, {r['judge_label']}"
+            f"{derived_with(r, 'judge').get('scorer_id')}, {derived_with(r, 'judge').get('label')}"
             for runs in by_config.values()
             for r in runs
-            if r.get("judge_label")
+            if derived_with(r, "judge").get("label")
         }
     )
     if judged:

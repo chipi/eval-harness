@@ -71,6 +71,7 @@ from _common import (
     write_json,
     write_text_atomic,
 )
+from _record import derived_record
 from _retry import call_with_retries
 from _runs import runs_on
 from judging import (
@@ -926,52 +927,51 @@ def write_scored_runs(
         write_text_atomic(
             run_dir / "predictions.jsonl", "".join(json.dumps(r, sort_keys=True) + "\n" for r in rows)
         )
-        new = dict(m)
         # A judge reads no reference, so the source run's tier does not describe these scores;
-        # it is kept, as the source's, inside judged_with.
-        source_tier = new.pop("reference_tier", None)
-        new.update(
-            {
-                "scores": scores,
-                "metric_kinds": kinds,
-                "primary_metric": primary,
-                "n_items": len(rows),
-                "judged_from": src.name,
-                "judged_at": now(),
-                "judge_label": label,
-                "judged_with": {
-                    "scorer_id": sc["scorer_id"],
-                    "scorer_sha256": sc["_sha256"],
-                    "judging_set_id": manifest["judging_set_id"],
-                    "judging_set_sha256": manifest["judging_set_sha256"],
-                    "prompt_sha256_at_16": manifest["prompt_sha256_at_16"],
-                    "protocol": manifest["protocol"],
-                    "validated": validated,
-                    "judges": [
-                        {
-                            "id": j["id"],
-                            "model": j["params"].get("model"),
-                            "family": j["params"].get("family"),
-                            "fp": judge_fingerprint(j),
-                        }
-                        for j in sc["judges"]
-                    ],
-                    "self_family": {j: a.get("family") == fam[j] for j in jids},
-                    "source_reference_tier": source_tier,
-                },
-            }
+        # it is kept, as the source's, in derived.with.
+        source_tier = m.get("reference_tier")
+        new = derived_record(
+            m,
+            kind="judge",
+            source_dir=src.name,
+            scores=scores,
+            n_items=len(rows),
+            drop=("reference_tier",),
+            metric_kinds=kinds,
+            primary_metric=primary,
+            with_={
+                "label": label,
+                "scorer_id": sc["scorer_id"],
+                "scorer_sha256": sc["_sha256"],
+                "judging_set_id": manifest["judging_set_id"],
+                "judging_set_sha256": manifest["judging_set_sha256"],
+                "prompt_sha256_at_16": manifest["prompt_sha256_at_16"],
+                "protocol": manifest["protocol"],
+                "validated": validated,
+                "judges": [
+                    {
+                        "id": j["id"],
+                        "model": j["params"].get("model"),
+                        "family": j["params"].get("family"),
+                        "fp": judge_fingerprint(j),
+                    }
+                    for j in sc["judges"]
+                ],
+                "self_family": {j: a.get("family") == fam[j] for j in jids},
+                "source_reference_tier": source_tier,
+            },
         )
         fp = new.get("fingerprint")
         if isinstance(fp, dict):
             fp = json.loads(json.dumps(fp))
             fp.setdefault("instrument", {})["adapter"] = {
-                "id": "scripts/judge_score.py",
+                "id": f"judge-score:{sc['scorer_id']}",
                 "sha256": hashlib.sha256(self_path.read_bytes()).hexdigest(),
             }
             fp["hash"] = None
             fp["hash_invalid_because"] = (
                 "scores were produced by a judge scorer, not the adapter this fingerprint "
-                "was built from; see judged_with"
+                "was built from; see derived.with"
             )
             new["fingerprint"] = fp
         write_json(run_dir / "metrics.json", new)

@@ -86,13 +86,9 @@ def policy() -> dict:
     directories, floors, scorer sources, duplicate exceptions). These were this
     repository's directory names and example paths written into the validator, so a pinned
     project's own `runs-adjudicated` was never checked while six names it does not have were.
-    A 0.2/0.3 project's `validate_floors.json` still supplies the floors."""
+    """
     f = DATA / "validate.json"
-    pol = dict(read_json(f)) if f.is_file() else {}
-    legacy = DATA / "validate_floors.json"
-    if "floors" not in pol and legacy.is_file():
-        pol["floors"] = read_json(legacy).get("floors") or {}
-    return pol
+    return dict(read_json(f)) if f.is_file() else {}
 
 
 def committed_dirs() -> list[str]:
@@ -292,19 +288,14 @@ def _v5_in(base: Path) -> list[list]:
             # for slip through.
             produced = {k: v for k, v in (d.get("scores") or {}).items() if k not in _V5_RUN_PROPERTIES}
             key = (d.get("dataset_id"), json.dumps(produced, sort_keys=True))
-            # None (not {}) when the run predates params being recorded — kept distinct so
-            # those runs can be EXCLUDED below rather than compared. Treating a missing
-            # field as "different params" made every pre-existing run look suspicious
-            # against every new one, which is a false alarm I walked straight into.
-            params = json.dumps(d["params"], sort_keys=True) if "params" in d else None
-            by_key[key].append((run, d.get("config_id"), params))
+            by_key[key].append((run, d.get("config_id"), json.dumps(d.get("params") or {}, sort_keys=True)))
     # Identical scores from identical params is not suspicious — it is what a deterministic
     # arm DOES, and two configs may legitimately request the same thing. What deserves a look
     # is DIFFERENT params landing on byte-identical output: either a result was not measured,
     # or the knobs that differ are inert.
     dupes: list[list] = []
     for group in by_key.values():
-        known = [(n, c, p) for n, c, p in group if p is not None]
+        known = group
         if len({c for _, c, _ in known}) > 1 and len({p for _, _, p in known}) > 1:
             # AGREEING MEANS IS NOT AGREEING MEASUREMENT. The check's premise -- "independent
             # arms do not agree to full float precision" -- holds for a continuous metric and
@@ -608,17 +599,6 @@ def v10_derived_runs_carry_the_current_scorer() -> None:
             if keys
             else f"V10 {directory}: a scorer hash was compared at all"
         )
-
-        if directory == "runs":
-            # Measurement runs SHOULD carry the hash of their own day. A note, not a gate.
-            if stale:
-                notes.append(
-                    f"{len(stale)} of {checked} run(s) in data/runs were "
-                    f"measured with a scorer that is not the current one "
-                    f"(expected; the hash is the record)"
-                )
-            print(f"  ok   {label} — {checked - len(stale)} current, {len(stale)} historical")
-            continue
 
         # A DERIVED RUN THAT STATES NOTHING IS A FAILURE. Skipping here is how the
         # check disappears at the moment it matters.

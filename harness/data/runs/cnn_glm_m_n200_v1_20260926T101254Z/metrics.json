@@ -1,5 +1,5 @@
 {
-  "adapter": "summarization-cnn-dailymail/adapter.py",
+  "adapter": "examples/summarization-cnn-dailymail/adapter.py",
   "build": {
     "dirty": null,
     "ref": "eval-harness-scenario",
@@ -33,7 +33,7 @@
       "reference_id": "gold/cnn_dailymail_200",
       "reference_tier": "gold"
     },
-    "hash": "74a7dd5748bddaf8acad7188f9941cdebff77c20c2f12b32d2907129f577c2b0",
+    "hash": "146c946039d7ca2e6b987141f43123d09634d5baf267de69bd972e617522c62a",
     "host": {
       "cpu_count": 12,
       "label": null,
@@ -44,7 +44,7 @@
     },
     "instrument": {
       "adapter": {
-        "id": "summarization-cnn-dailymail/adapter.py",
+        "id": "examples/summarization-cnn-dailymail/adapter.py",
         "sha256": "efb387bfca67b4b9f62b8c15f8e1ee8d6837c72a59d72284b6189fba75329bd7"
       },
       "harness": {

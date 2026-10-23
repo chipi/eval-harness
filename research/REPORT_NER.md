@@ -187,7 +187,7 @@ per-item metric — which means the sign-flip permutation test works directly an
 bootstrap is needed. Corpus micro-F1 pools every tp/fp/fn into one figure. The mean is
 the ranking metric; this sentence used to say "both are reported" and no micro-F1 figure
 appeared anywhere. They do now
-(`EVAL_RUNS_DIR=data/runs-rescored tools/extraction_report.py --dataset-id few_nerd_280`):
+(`tools/extraction_report.py --dataset-id few_nerd_280`):
 
 | arm | mean per-sentence F1 (ranking) | corpus micro-F1 | micro precision | micro recall |
 |---|---|---|---|---|
@@ -817,13 +817,12 @@ for f in ../examples/ner-few-nerd/configs/arm_*_n200.yaml; do
   python scripts/experiment_run.py --config "$f"
 done
 
-python scripts/rescore.py --dataset-id few_nerd_280 --match fn_ --out data/runs-rescored
-EVAL_RUNS_DIR=data/runs-rescored python tools/extraction_report.py --dataset-id few_nerd_280 --match fn_
+python tools/extraction_report.py --dataset-id few_nerd_280 --match fn_
 python scripts/family_test.py --dataset-id few_nerd_280 --a fn_span_marker_n200_v1 \
-    --against _n200_v1 --metric f1 --runs-dir data/runs-rescored
-EVAL_RUNS_DIR=data/runs-rescored python scripts/holdout_significance.py \
+    --against _n200_v1 --metric f1
+python scripts/holdout_significance.py \
     --dataset-id few_nerd_280 --exclude-dataset few_nerd_56 --metric f1 --match fn_
-EVAL_RUNS_DIR=data/runs-rescored python scripts/rank_stability.py \
+python scripts/rank_stability.py \
     --dataset-id few_nerd_280 --metric f1 --match fn_
 ```
 

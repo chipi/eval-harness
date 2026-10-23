@@ -44,6 +44,7 @@ from _common import (  # noqa: E402
     load_goals,
     load_module,
 )
+from _record import derived_with  # noqa: E402
 from _runs import item_rows, lower_is_better_on, runs_on, score_of  # noqa: E402
 
 
@@ -146,18 +147,6 @@ class Adapter(Protocol):
     # def dataset_items(self, dataset: str) -> Optional[int]: ...
 
 
-def lower_is_better(A, metric: str, dataset: str | None = None) -> bool:
-    """The adapter's direction for `metric` on `dataset`. An adapter written before the dataset
-    argument (one positional `metric`) is asked without it."""
-    import inspect  # noqa: PLC0415
-
-    try:
-        takes = "dataset" in inspect.signature(A.lower_is_better).parameters
-    except (TypeError, ValueError):
-        takes = False
-    return A.lower_is_better(metric, dataset) if takes else A.lower_is_better(metric)
-
-
 def item_fields(A, dataset: str) -> dict:
     """A dataset's declared fields and its items' values, from the adapter if it answers, else
     none: the pages then show no fields."""
@@ -236,7 +225,7 @@ class HarnessAdapter:
         n = len(self._dirs(arm))
         label = rest + ("" if runs_dir == "runs" else f" · {runs_dir.removeprefix('runs-')}")
         label += f" ×{n}" if n > 1 else ""
-        judged = (m.get("judged_with") or {}).get("scorer_id")
+        judged = derived_with(m, "judge").get("scorer_id")
         primary = m.get("primary_metric") or ""
         if judged:  # a judged run's headline is the judge's score, not the source run's metric
             keys = set(self.scores(arm))

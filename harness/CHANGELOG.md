@@ -84,7 +84,7 @@ package.
   repository's six directory names, so a project's `data/runs-adjudicated` was never checked;
   V10's scorer sources were this repository's example paths. They are project policy in
   `<data>/validate.json` (`committed`, `floors`, `scorer_sources`, `duplicate_ok`); without it
-  every git-tracked `runs*` directory is checked. `validate_floors.json` is still read.
+  every git-tracked `runs*` directory is checked (`validate_floors.json` is gone).
 - **The package holds the harness, not this repository's tests.** The wheel shipped ~14,500
   lines of tests and report checkers; they are in `harness/tests/` and `harness/tools/` in the
   checkout. `self-test`'s own suite (`test_stats.py`) still ships. A run's `code_sha256` hashes

@@ -170,7 +170,7 @@ def _portable_id(path: Path) -> str:
     and if even that fails keep only the last two components rather than emit a home path.
     """
     resolved = path.resolve()
-    for base in adapter_search_dirs()[:2]:
+    for base in adapter_search_dirs():
         try:
             return str(resolved.relative_to(base))
         except ValueError:

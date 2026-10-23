@@ -983,8 +983,7 @@ def test_resume_scores_and_persists() -> None:
         )
         check(
             "resume: the run records which extras it carried",
-            (fx_m.get("resume") or {}).get("carried_extra_keys") == ["call_flag"]
-            and (fx_m.get("resume") or {}).get("replayed_without_recorded_extra") == 0,
+            (fx_m.get("resume") or {}).get("carried_extra_keys") == ["call_flag"],
             f"resume note: {fx_m.get('resume')}",
         )
 
@@ -1014,20 +1013,6 @@ def test_resume_scores_and_persists() -> None:
         "resume: an unidentifiable source is refused, not warned about",
         r4.returncode != 0 and "cannot be identified" in m4,
         m4[-200:],
-    )
-    r5 = run(
-        "scripts/experiment_run.py",
-        "--config",
-        "data/configs/arm_a.yaml",
-        "--resume",
-        "anonymous",
-        "--resume-unverified",
-        env=env,
-    )
-    check(
-        "resume: ...unless --resume-unverified is passed explicitly",
-        r5.returncode == 0,
-        ((r5.stderr or "") + (r5.stdout or ""))[-200:],
     )
     shutil.rmtree(anon, ignore_errors=True)
     shutil.rmtree(runs, ignore_errors=True)
@@ -1453,7 +1438,7 @@ def test_a_rescored_run_carries_the_current_parse() -> None:
     """
     import json as _json  # noqa: PLC0415
 
-    base = HERE.parent / "data" / "runs-rescored"
+    base = HERE.parent / "data" / "runs"
     gold_dir = HERE.parent / "data" / "references" / "gold" / "few_nerd_280"
     if not base.is_dir() or not gold_dir.is_dir() or not any(gold_dir.glob("*.txt")):
         print("  --   rescored parse: the gold corpus is absent — skipped")
@@ -1516,13 +1501,13 @@ def test_a_rescored_run_carries_the_current_parse() -> None:
 
 def test_validate_checks_every_committed_run_directory() -> None:
     """V1, V2 and V3 read data/runs alone: the derived directories the reports cite were
-    never schema- or integrity-checked. A broken run in runs-rescored must fail all three."""
+    never schema- or integrity-checked. A broken run in runs-pair must fail all three."""
     import json as _json  # noqa: PLC0415
 
-    shadow = _shadow_tree(copy_data=("runs-rescored",))
-    run = next(iter(sorted((shadow / "harness" / "data" / "runs-rescored").glob("*/metrics.json"))), None)
+    shadow = _shadow_tree(copy_data=("runs-pair",))
+    run = next(iter(sorted((shadow / "harness" / "data" / "runs-pair").glob("*/metrics.json"))), None)
     if run is None:
-        print("  --   validate over committed dirs: data/runs-rescored is empty — skipped")
+        print("  --   validate over committed dirs: data/runs-pair is empty — skipped")
         return
     m = _json.loads(run.read_text(encoding="utf-8"))
     m["dataset_id"] = "no_such_dataset"
@@ -1532,14 +1517,14 @@ def test_validate_checks_every_committed_run_directory() -> None:
     out = "".join(
         x or "" for x in (lambda r: (r.stdout, r.stderr))(_run_in(shadow, "scripts/validate_tree.py"))
     )
-    where = f"runs-rescored/{run.parent.name}"
-    check("validate: V1 checks the schema of a run in runs-rescored", "FAIL V1" in out, out[-300:])
+    where = f"runs-pair/{run.parent.name}"
+    check("validate: V1 checks the schema of a run in runs-pair", "FAIL V1" in out, out[-300:])
     check(
-        "validate: V2 names the dangling dataset in runs-rescored",
+        "validate: V2 names the dangling dataset in runs-pair",
         "FAIL V2" in out and where in out,
         out[-300:],
     )
-    check("validate: V3 names the run in runs-rescored with no build ref", "FAIL V3" in out and where in out)
+    check("validate: V3 names the run in runs-pair with no build ref", "FAIL V3" in out and where in out)
 
 
 def test_v8_and_v9_go_red_on_a_copied_or_gutted_run() -> None:
@@ -1560,12 +1545,9 @@ def test_v8_and_v9_go_red_on_a_copied_or_gutted_run() -> None:
     shadow = _shadow_tree(
         copy_data=(
             "runs",
-            "runs-rescored",
-            "runs-reparsed",
             "runs-pair",
             "runs-repeats",
             "runs-linux",
-            "runs-fp32",
         )
     )
     linux = shadow / "harness" / "data" / "runs-linux"
@@ -1688,8 +1670,8 @@ def test_v10_fails_when_a_derived_run_states_no_scorer() -> None:
     """
     import json as _json  # noqa: PLC0415
 
-    base = HERE.parent / "data" / "runs-rescored"
-    mjs = sorted(base.glob("*/metrics.json"))
+    base = HERE.parent / "data" / "runs"
+    mjs = sorted(base.glob("fn_*/metrics.json"))
     if not mjs:
         print("  --   V10 provenance: no rescored runs — skipped")
         return
@@ -1697,7 +1679,7 @@ def test_v10_fails_when_a_derived_run_states_no_scorer() -> None:
     try:
         for f in mjs:
             m = _json.loads(before[f])
-            m.pop("rescored_with", None)
+            m.pop("derived", None)
             f.write_text(_json.dumps(m, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         r = run("scripts/validate_tree.py")
         out = (r.stdout or "") + (r.stderr or "")
@@ -1708,7 +1690,7 @@ def test_v10_fails_when_a_derived_run_states_no_scorer() -> None:
         )
         check(
             "...and says so rather than printing a skip",
-            "skip V10 runs-rescored" not in out,
+            "skip V10 runs" not in out,
             "it still skips",
         )
     finally:
@@ -1851,7 +1833,7 @@ def test_the_reports_separation_counts_are_real() -> None:
     """
     import re as _re  # noqa: PLC0415
 
-    reparsed = HERE.parent / "data" / "runs-reparsed"
+    reparsed = HERE.parent / "data" / "runs"
     if not any(reparsed.glob("sf_glm_s_n200_v1_*/predictions.jsonl")):
         print("  --   separation counts: skipped (no reparsed SciFact runs on disk)")
         return
@@ -2288,7 +2270,6 @@ def test_the_checks_can_actually_fail() -> None:
     with _tf.TemporaryDirectory() as td:
         fake = pathlib.Path(td) / "repo" / "harness"
         (fake / "data" / "runs").mkdir(parents=True)
-        (fake / "data" / "runs-rescored").mkdir(parents=True)
         shutil.copytree(HERE, fake / "scripts")
         shutil.copytree(ROOT / "tools", fake / "tools")
         r = subprocess.run(
@@ -2665,7 +2646,7 @@ def test_the_reproduction_tables_agree_with_the_configs_and_runs() -> None:
     }
     check("litellm.config.yaml serves exactly models.json", proxy == table)
     wrong = []
-    for d in ("runs", "runs-rescored", "runs-reparsed"):
+    for d in ("runs", "runs-pair", "runs-repeats", "runs-linux"):
         for f in (ROOT / "data" / d).glob("*/metrics.json"):
             m = json.loads(f.read_text())
             sut = ((m.get("fingerprint") or {}).get("system_under_test") or {}).get("model") or {}
@@ -2707,7 +2688,7 @@ def test_the_reproduction_tables_agree_with_the_configs_and_runs() -> None:
 
     pins = json.loads((ex / "local_models.json").read_text())["revisions"]
     clash = []
-    for d in ("runs", "runs-rescored", "runs-reparsed", "runs-linux"):
+    for d in ("runs", "runs-pair", "runs-repeats", "runs-linux"):
         for f in (ROOT / "data" / d).glob("*/metrics.json"):
             sut = ((json.loads(f.read_text()).get("fingerprint") or {}).get("system_under_test") or {}).get(
                 "model"
@@ -3439,9 +3420,9 @@ def test_judge_score_runs_from_an_installed_package() -> None:
             "installed judge-score: scored runs land in the project's data dir, labelled unvalidated",
             ran.returncode == 0
             and len(runs) == 2
-            and m.get("judge_label") == "unvalidated judge"
+            and m["derived"]["with"]["label"] == "unvalidated judge"
             and m.get("primary_metric") == "judge_score_unvalidated"
-            and m["judged_with"]["validated"] is False,
+            and m["derived"]["with"]["validated"] is False,
             (ran.stderr + ran.stdout)[-400:],
         )
         check(
@@ -3472,7 +3453,7 @@ def test_judge_score_runs_from_an_installed_package() -> None:
         )
         check(
             "installed judge-score: a judged run carries no reference tier; the source's is kept",
-            "reference_tier" not in m and m.get("judged_with", {}).get("source_reference_tier") == "silver",
+            "reference_tier" not in m and m["derived"]["with"].get("source_reference_tier") == "silver",
         )
         check(
             "installed judge-score: leaderboard says a judge scored them, not silver references",

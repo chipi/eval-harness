@@ -43,36 +43,33 @@ if _ARGS.print_judge_figures:
     print(json.dumps(_f0, indent=1))
     raise SystemExit(0)
 DATA = HERE.parent / "data" / "runs"
-FP32 = HERE.parent / "data" / "runs-fp32"
-RESCORED = HERE.parent / "data" / "runs-rescored"
 #: The pre-registered first-stage prediction. Its four runs lived in an ignored
 #: directory until round 2, so the most-advertised number in the repo -- 0.7891 -- was
 #: the one number no reader could check.
 PAIR = HERE.parent / "data" / "runs-pair"
-REPARSED = HERE.parent / "data" / "runs-reparsed"
 
 #: (label, runs-dir, config_id, metric, claimed). NER reads the rescored directory,
 #: because that is the instrument its report states -- the un-rescored copies carry the
 #: pre-fix glm_l and comparing against them would pass for the wrong reason.
 CLAIMS = [
-    ("NER span_marker f1", RESCORED, "fn_span_marker_n200_v1", "f1", 0.7674),
-    ("NER openai_m f1", RESCORED, "fn_openai_m_n200_v1", "f1", 0.6864),
-    ("NER gliner f1", RESCORED, "fn_gliner_n200_v1", "f1", 0.4540),
+    ("NER span_marker f1", DATA, "fn_span_marker_n200_v1", "f1", 0.7674),
+    ("NER openai_m f1", DATA, "fn_openai_m_n200_v1", "f1", 0.6864),
+    ("NER gliner f1", DATA, "fn_gliner_n200_v1", "f1", 0.4540),
     # The arm that was blocked for five review rounds, measured 2026-10-01. Pinned
     # because adding it moved every Holm threshold in the NER family from 26 to 27.
-    ("NER mistral_l f1", RESCORED, "fn_mistral_l_n200_v1", "f1", 0.5979),
-    ("NER capitalized typed", RESCORED, "fn_capitalized_n200_v1", "f1", 0.1913),
-    ("NER capitalized untyped", RESCORED, "fn_capitalized_n200_v1", "untyped_f1", 0.6191),
-    ("NER nothing = the floor", RESCORED, "fn_nothing_n200_v1", "f1", 0.1250),
-    ("NER glm_l parsed", RESCORED, "fn_glm_l_n200_v1", "parsed", 0.8893),
-    # SciFact reads REPARSED, which is the instrument REPORT_RETRIEVAL states. These
+    ("NER mistral_l f1", DATA, "fn_mistral_l_n200_v1", "f1", 0.5979),
+    ("NER capitalized typed", DATA, "fn_capitalized_n200_v1", "f1", 0.1913),
+    ("NER capitalized untyped", DATA, "fn_capitalized_n200_v1", "untyped_f1", 0.6191),
+    ("NER nothing = the floor", DATA, "fn_nothing_n200_v1", "f1", 0.1250),
+    ("NER glm_l parsed", DATA, "fn_glm_l_n200_v1", "parsed", 0.8893),
+    # SciFact reads DATA, which is the instrument REPORT_RETRIEVAL states. These
     # four pointed at data/runs, which is harmless only because no claimed arm moved
     # under the parser fix -- a claim about qwen_s would have been verified against
     # 0.7338 rather than the report's 0.7183. Found by external review.
-    ("SciFact glm_s ndcg@10", REPARSED, "sf_glm_s_n200_v1", "ndcg_10", 0.7437),
-    ("SciFact e5_base ndcg@10", REPARSED, "sf_e5_base_n200_v1", "ndcg_10", 0.7191),
-    ("SciFact bm25 ndcg@10", REPARSED, "sf_bm25_n200_v1", "ndcg_10", 0.6451),
-    ("SciFact rerank recall@100", REPARSED, "sf_glm_s_n200_v1", "recall_100", 0.8586),
+    ("SciFact glm_s ndcg@10", DATA, "sf_glm_s_n200_v1", "ndcg_10", 0.7437),
+    ("SciFact e5_base ndcg@10", DATA, "sf_e5_base_n200_v1", "ndcg_10", 0.7191),
+    ("SciFact bm25 ndcg@10", DATA, "sf_bm25_n200_v1", "ndcg_10", 0.6451),
+    ("SciFact rerank recall@100", DATA, "sf_glm_s_n200_v1", "recall_100", 0.8586),
     ("AG News bert_mini", DATA, "ag_bert_mini_n200_v1", "correct", 0.9450),
     ("DBpedia qwen_m", DATA, "db_qwen_m_n200_v1", "correct", 0.9929),
     ("Summarisation bart_l", DATA, "cnn_bart_l_n200_v1", "coverage", 0.3461),
@@ -87,13 +84,9 @@ CLAIMS = [
     # local arms re-ran on 200 DailyMail articles. REPORT_SUMMARIZATION §3.7 quotes these.
     ("DailyMail bart_l", DATA, "cnn_bart_l_dm200_v1", "coverage", 0.4430),
     ("DailyMail bart_m", DATA, "cnn_bart_m_dm200_v1", "coverage", 0.4430),
-    ("DailyMail bart_s", DATA, "cnn_bart_s_dm200_v1", "coverage", 0.4039),
+    ("DailyMail bart_s", DATA, "cnn_bart_s_dm200_v1", "coverage", 0.4048),
     ("DailyMail lead3", DATA, "cnn_lead3_dm200_v1", "coverage", 0.3697),
     ("DailyMail bart_l_xsum", DATA, "cnn_bart_l_xsum_dm200_v1", "coverage", 0.1522),
-    # bart_s at the precision its config declared (data/runs-fp32, 2026-10-15): the
-    # committed runs above are fp16 measurements, and REPORT_SUMMARIZATION says so.
-    ("Summarisation bart_s at fp32", FP32, "cnn_bart_s_n200_v1", "coverage", 0.3274),
-    ("DailyMail bart_s at fp32", FP32, "cnn_bart_s_dm200_v1", "coverage", 0.4048),
     # SummEval judging (2026-10-18): tau against the expert means, REPORT_SUMMEVAL §3.1.
     ("SummEval openai_l tau", DATA, "se_openai_l_n100_v1", "tau", 0.5398),
     ("SummEval gemma_l tau", DATA, "se_gemma_l_n100_v1", "tau", 0.5384),
@@ -137,8 +130,8 @@ DELTAS = [
     (
         "NER fine-tuning is worth +0.3134",
         0.3134,
-        (RESCORED, "fn_span_marker_n200_v1", "f1"),
-        (RESCORED, "fn_gliner_n200_v1", "f1"),
+        (DATA, "fn_span_marker_n200_v1", "f1"),
+        (DATA, "fn_gliner_n200_v1", "f1"),
     ),
     (
         "SciFact BM25 -> e5_base = +0.0740",
@@ -2716,7 +2709,7 @@ check(
 _NERT = " ".join((ROOT / "research" / "REPORT_NER.md").read_text().split())
 _oth = {}
 for _a in ("gliner", "openai_m", "anthropic_l", "span_marker"):
-    _found = glob.glob(str(RESCORED / f"fn_{_a}_n200_v1_*"))
+    _found = glob.glob(str(DATA / f"fn_{_a}_n200_v1_*"))
     _oth[_a] = (
         sum(
             1
@@ -2750,8 +2743,8 @@ check(
 _SLOPE_EXPS = [
     # (row key in the synthesis table, prefix, dataset, primary metric, runs dir)
     ("| Judging · SummEval |", "se_", "summeval_100", "tau", DATA),
-    ("| Extraction · Few-NERD |", "fn_", "few_nerd_280", "f1", RESCORED),
-    ("| Retrieval · SciFact |", "sf_", "scifact_200", "ndcg_10", REPARSED),
+    ("| Extraction · Few-NERD |", "fn_", "few_nerd_280", "f1", DATA),
+    ("| Retrieval · SciFact |", "sf_", "scifact_200", "ndcg_10", DATA),
     ("| Classification · AG News |", "ag_", "ag_news_200", "correct", DATA),
     ("| Classification · DBpedia |", "db_", "dbpedia_280", "correct", DATA),
     ("| Summarisation · CNN/DM |", "cnn_", "cnn_dailymail_200", "coverage", DATA),
@@ -2840,7 +2833,7 @@ if len(_fits) == len(_SLOPE_EXPS):
     )
 
     _ner = _fits["few_nerd_280"]
-    _spm = score(RESCORED, "fn_span_marker_n200_v1", "f1")
+    _spm = score(DATA, "fn_span_marker_n200_v1", "f1")
     _z, _se = _math.atanh(_ner["r"]), 1 / _math.sqrt(_ner["n"] - 3)
     _ner_say = (
         f"{_sx(_ner['slope'], 4)} F1 per 10× in cost (r = {_r2(_ner['r'])}, 95% Fisher "

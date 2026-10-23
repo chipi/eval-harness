@@ -13,22 +13,22 @@
     "                  root; callable returns a hash or a dict of named hashes",
     "  duplicate_ok    V8: (dataset_id, config_id) pairs allowed to repeat, each one justified"
   ],
-  "committed": ["runs", "runs-rescored", "runs-reparsed", "runs-pair", "runs-repeats", "runs-linux", "runs-fp32"],
+  "committed": ["runs", "runs-pair", "runs-repeats", "runs-linux"],
   "floors": {
-    "runs-reparsed": 19,
-    "runs-rescored": 28,
+    "runs": 174,
     "runs-pair": 6,
     "runs-repeats": 3,
-    "runs-linux": 9,
-    "runs-fp32": 2
+    "runs-linux": 9
   },
   "scorer_sources": [
-    {"dir": "runs-rescored", "glob": "*", "path": ["rescored_with", "scorer"],
+    {"dir": "runs", "glob": "fn_*", "path": ["derived", "with", "scorer"],
      "module": "../examples/ner-few-nerd/adapter.py", "callable": "scorer_id"},
-    {"dir": "runs-reparsed", "glob": "*", "path": ["reparsed_with", "scorer_sha256"],
+    {"dir": "runs", "glob": "sf_*", "path": ["derived", "with", "scorer_sha256"],
      "module": "../examples/_shared/retrieval.py", "callable": "scorer_sha256"},
-    {"dir": "runs", "glob": "fn_*", "path": ["fingerprint", "system_under_test", "model", "parser_sha256"],
-     "module": "../examples/ner-few-nerd/adapter.py", "callable": "scorer_id"}
+    {"dir": "runs-pair", "glob": "sf_*", "path": ["derived", "with", "scorer_sha256"],
+     "module": "../examples/_shared/retrieval.py", "callable": "scorer_sha256"},
+    {"dir": "runs-repeats", "glob": "sf_*", "path": ["derived", "with", "scorer_sha256"],
+     "module": "../examples/_shared/retrieval.py", "callable": "scorer_sha256"}
   ],
   "duplicate_ok": []
 }

@@ -642,7 +642,7 @@ in the ROUGE table in §3; words are the mean summary length. **Bold** = best on
 |---|---|---|---|---|
 | `bart_l` | 0.3461 | **0.4430** | 46.16 / 23.18 | 67 |
 | `bart_m` | 0.3367 | **0.4430** | 46.95 / 24.09 | 76 |
-| `bart_s` | 0.3276 | 0.4039 | 44.78 / 22.03 | 54 |
+| `bart_s` | 0.3276 | 0.4048 | 44.78 / 21.92 | 54 |
 | `lead3` | 0.2718 | 0.3697 | 42.20 / 18.69 | 77 |
 | `bart_l_xsum` | 0.2071 | 0.1522 | 24.72 / 7.04 | 20 |
 
@@ -989,12 +989,12 @@ are kept in full, with their dates.
 > with the conventional reading of a leaderboard — is in
 > [`REPORT_SYNTHESIS.md`](REPORT_SYNTHESIS.md).
 
-> **`bart_s` ran at fp16.** Its checkpoint is stored at half precision, and until the
-> 2026-10-14 instrument fix the adapters did not apply a config's `precision`, so every
-> committed `bart_s` figure here is an fp16 measurement under an fp32 label. Re-measured
-> at fp32 (`harness/data/runs-fp32/`): **0.3274** on CNN and **0.4048** on DailyMail,
-> identical scores on 199 and 187 of 200 items, and no verdict in this report moves. The
-> fp16 runs stay the record.
+> **`bart_s` on CNN ran at fp16.** Its checkpoint is stored at half precision, and until
+> the 2026-10-14 instrument fix the adapters did not apply a config's `precision`, so the
+> CNN `bart_s` record (0.3276) is an fp16 measurement under an fp32 label. It stays the
+> record because the LLM judges' verdicts in §3.8 were made on its outputs. The DailyMail
+> `bart_s` record is the fp32 measurement (2026-10-15, 0.4048); no verdict in this report
+> moved when it replaced the fp16 run.
 
 **Earlier wording and figures, replaced in the executive summary (2026-10-19 and before).**
 The summary's `bart_l` verdict said "wins outright" and that distillation narrows the gap

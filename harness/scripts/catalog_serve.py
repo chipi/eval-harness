@@ -50,7 +50,7 @@ HERE = Path(__file__).resolve().parent
 import _fields  # noqa: E402
 import stats  # noqa: E402
 from _common import ROOT  # noqa: E402
-from catalog_adapter import Adapter, item_fields, load_adapter, lower_is_better  # noqa: E402
+from catalog_adapter import Adapter, item_fields, load_adapter  # noqa: E402
 
 #: Every comparison ends in one of these, so a page can always say what it shows and why.
 STATES = ("compared", "average only", "no shared metric", "not scorable")
@@ -140,7 +140,7 @@ def _metric_rows(counts: Counter, per_arm: dict, baseline: str, dataset: str | N
         {
             "name": k,
             "arms": n,
-            "lower_is_better": lower_is_better(A, k, dataset),
+            "lower_is_better": A.lower_is_better(k, dataset),
             "neutral": A.is_neutral(k),
             "baseline_has": k in per_arm.get(baseline, {}),
             "format": A.reference_format(_ref_of(k)) if _ref_of(k) else "",
@@ -399,7 +399,7 @@ def compare(params: dict) -> dict:
     series, error = _filter(series, decl, fvalues, wheres)
     if error:
         return {"error": error}
-    higher, neutral = not lower_is_better(A, metric, dataset), A.is_neutral(metric)
+    higher, neutral = not A.lower_is_better(metric, dataset), A.is_neutral(metric)
     result = stats.compare(
         series,
         baseline,

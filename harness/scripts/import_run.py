@@ -53,6 +53,7 @@ from _common import (
     write_text_atomic,
 )
 from _fingerprint import build_fingerprint
+from _record import run_record
 
 
 def _rows(path: Path) -> list:
@@ -191,26 +192,23 @@ def main() -> int:
     write_text_atomic(
         run_dir / "predictions.jsonl", "".join(json.dumps(r, sort_keys=True) + "\n" for r in rows)
     )
-    metrics_doc = {
-        "run_id": run_id,
-        "dataset_id": args.dataset_id,
-        "config_id": args.config_id,
-        "created_at": now(),
-        "build": {"ref": args.build_ref, "dirty": None, "source": "import-run --build-ref"},
-        "params": params,
-        "adapter": f"imported:{args.scorer_id}",
-        "metric_kinds": kinds,
-        "primary_metric": args.primary_metric,
-        "fingerprint": fingerprint,
-        "scores": scores,
-        "n_items": len(rows),
-        "imported": imported,
-    }
-    if args.asc:
-        metrics_doc["primary_metric_asc"] = True
-        metrics_doc["metric_directions"] = {args.primary_metric: "lower"}
-    if args.reference_tier:
-        metrics_doc["reference_tier"] = args.reference_tier
+    metrics_doc = run_record(
+        run_id=run_id,
+        dataset_id=args.dataset_id,
+        config_id=args.config_id,
+        build={"ref": args.build_ref, "dirty": None, "source": "import-run --build-ref"},
+        scores=scores,
+        n_items=len(rows),
+        params=params,
+        adapter=f"imported:{args.scorer_id}",
+        metric_kinds=kinds,
+        # --asc is the importer's way of saying what an adapter says with METRIC_DIRECTIONS.
+        metric_directions={args.primary_metric: "lower"} if args.asc else None,
+        primary_metric=args.primary_metric,
+        fingerprint=fingerprint,
+        imported=imported,
+        reference_tier=args.reference_tier or None,
+    )
     write_json(run_dir / "metrics.json", metrics_doc)
     cover = f"{len(seen)}/{len(known)} items" + (" (subset)" if missing else "")
     print(
