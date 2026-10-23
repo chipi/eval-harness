@@ -51,58 +51,28 @@ NOTHING IS COMMITTED
 from __future__ import annotations
 
 import argparse
-import json
 import random
 import re
 import shutil
 import sys
-import time
-import urllib.error
-import urllib.parse
-import urllib.request
 from pathlib import Path
 
 # parents[2] is the repo root, so this resolves to <root>/harness — the harness this
 # example feeds. Getting the level wrong silently creates a SECOND data tree somewhere
 # else and everything appears to work, which is exactly what it did the first time.
 ROOT = Path(__file__).resolve().parents[2] / "harness"
-ROWS_API = "https://datasets-server.huggingface.co/rows"
 DATASET = "abisee/cnn_dailymail"
 CONFIG = "1.0.0"
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "_shared"))
+from hf_rows import page as _rows_page  # noqa: E402 - the one retry/pacing schedule
 
 #: The API caps a single request; ask in pages rather than assuming one call is enough.
 PAGE = 100
-#: A random draw reads the whole split (~115 pages), and the datasets-server limits request RATE:
-#: back to back, it answers 429 partway through. So pages are paced, and a 429 waits long enough
-#: for the limiter (the same schedule as ner-few-nerd/fetch.py); other failures retry quickly.
-_PACE_S = 0.35
-_RATE_LIMIT_BACKOFF = (5, 15, 30, 60, 60, 60)
 
 
 def _page(split: str, offset: int, length: int) -> list[dict]:
-    """One page of rows, paced. Retried: transient 502s quickly, a 429 on a slower schedule."""
-    query = urllib.parse.urlencode(
-        {"dataset": DATASET, "config": CONFIG, "split": split, "offset": offset, "length": length}
-    )
-    last: Exception | None = None
-    for attempt in range(len(_RATE_LIMIT_BACKOFF) + 1):
-        try:
-            with urllib.request.urlopen(f"{ROWS_API}?{query}", timeout=60) as resp:  # noqa: S310 — a constant https URL  # nosec B310
-                rows = [r["row"] for r in (json.loads(resp.read()).get("rows") or [])]
-            time.sleep(_PACE_S)
-            return rows
-        except Exception as exc:  # noqa: BLE001 - retried, then one message
-            last = exc
-            if attempt == len(_RATE_LIMIT_BACKOFF):
-                break
-            limited = isinstance(exc, urllib.error.HTTPError) and exc.code == 429
-            wait = _RATE_LIMIT_BACKOFF[attempt] if limited else 2 * (attempt + 1)
-            print(f"      {exc} at offset {offset}; retry {attempt + 1} in {wait}s", flush=True)
-            time.sleep(wait)
-    sys.exit(
-        f"could not reach the datasets-server: {type(last).__name__}: {last}\n"
-        "  it is an HTTPS API; check connectivity, then retry."
-    )
+    """One page of rows, paced, retried (hf_rows: the shared schedule)."""
+    return _rows_page(DATASET, CONFIG, split, offset, length)
 
 
 def fetch_rows(n: int, split: str) -> list[dict]:

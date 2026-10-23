@@ -583,6 +583,7 @@ def test_example_scorer_suites_pass() -> None:
         ("test_installed_commands.py", "every evh command in a project that pins the package"),
         ("test_judge_score.py", "judging pass"),
         ("test_code_hashes.py", "scoring-code hashes"),
+        ("test_hf_rows.py", "the examples' datasets-server fetcher: pacing, 429 and 5xx retries"),
         ("check_report_claims.py", "report claims vs committed runs"),
         ("check_links.py", "markdown links and anchors"),
         ("check_commands.py", "documented commands: every make target, evh command and flag exists"),

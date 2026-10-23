@@ -15,9 +15,6 @@ from __future__ import annotations
 
 import json
 import math
-import time
-import urllib.parse
-import urllib.request
 from pathlib import Path
 from typing import Callable
 
@@ -27,19 +24,10 @@ ROWS_API = "https://datasets-server.huggingface.co/rows"
 
 
 def page(dataset: str, config: str, split: str, offset: int, length: int = 100) -> list:
-    """One page of rows from the HF datasets-server, retried on transient errors."""
-    q = urllib.parse.urlencode(
-        {"dataset": dataset, "config": config, "split": split, "offset": offset, "length": length}
-    )
-    last: Exception | None = None
-    for attempt in range(6):
-        try:
-            with urllib.request.urlopen(f"{ROWS_API}?{q}", timeout=60) as r:  # noqa: S310 — a constant https URL  # nosec B310
-                return [x["row"] for x in (json.loads(r.read()).get("rows") or [])]
-        except Exception as exc:  # noqa: BLE001 - retried, then raised
-            last = exc
-            time.sleep(2 * (attempt + 1))
-    raise SystemExit(f"datasets-server unreachable at offset {offset}: {last}")
+    """One page of rows from the HF datasets-server (hf_rows: paced, retried, 429-aware)."""
+    from hf_rows import page as _rows_page  # noqa: PLC0415
+
+    return _rows_page(dataset, config, split, offset, length)
 
 
 def rows(dataset: str, config: str, split: str, limit: int | None = None) -> list:

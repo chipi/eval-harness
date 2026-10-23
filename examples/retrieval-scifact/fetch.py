@@ -65,60 +65,24 @@ import hashlib
 import json
 import random
 import sys
-import time
-import urllib.error
-import urllib.parse
-import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2] / "harness"
-ROWS_API = "https://datasets-server.huggingface.co/rows"
 DATASET = "BeIR/scifact"
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "_shared"))
+from hf_rows import DEFAULT_DELAY  # noqa: E402
+from hf_rows import page as _rows_page  # noqa: E402 - the one retry/pacing schedule
+
 QRELS = "BeIR/scifact-qrels"
 CORPUS_ID = "scifact"
 N_CORPUS = 5183  # re-checked at fetch time
 PAGE = 100  # the rows API's maximum
 
-_TRANSIENT_STATUS = frozenset({500, 502, 503, 504})
-_RATE_LIMIT_BACKOFF = (5, 15, 30, 60, 60, 60)
-_MAX_ATTEMPTS = 7
-DEFAULT_DELAY = 0.35
-
 
 def _get(
     dataset: str, config: str, split: str, offset: int, length: int, delay: float = DEFAULT_DELAY
 ) -> list[dict]:
-    query = urllib.parse.urlencode(
-        {"dataset": dataset, "config": config, "split": split, "offset": offset, "length": length}
-    )
-    last = ""
-    for attempt in range(1, _MAX_ATTEMPTS + 1):
-        try:
-            with urllib.request.urlopen(f"{ROWS_API}?{query}", timeout=90) as resp:  # noqa: S310 — a constant https URL  # nosec B310
-                rows = [r["row"] for r in (json.loads(resp.read()).get("rows") or [])]
-            time.sleep(delay)
-            return rows
-        except urllib.error.HTTPError as exc:
-            last = f"HTTP {exc.code}"
-            if exc.code == 429:
-                wait = _RATE_LIMIT_BACKOFF[min(attempt - 1, len(_RATE_LIMIT_BACKOFF) - 1)]
-            elif exc.code in _TRANSIENT_STATUS:
-                wait = min(2**attempt, 30)
-            else:
-                break
-        except Exception as exc:  # noqa: BLE001
-            last = f"{type(exc).__name__}: {exc}"
-            wait = min(2**attempt, 30)
-        if attempt < _MAX_ATTEMPTS:
-            print(
-                f"      {last} at {config}/{split}+{offset}; retry {attempt}/{_MAX_ATTEMPTS - 1} in {wait}s",
-                flush=True,
-            )
-            time.sleep(wait)
-    sys.exit(
-        f"datasets-server failed on {dataset} {config}/{split} at offset {offset} "
-        f"after {_MAX_ATTEMPTS} attempt(s): {last}"
-    )
+    return _rows_page(dataset, config, split, offset, length, delay=delay, timeout=90)
 
 
 def _page_all(dataset: str, config: str, split: str, delay: float, label: str) -> list[dict]:
