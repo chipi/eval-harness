@@ -318,6 +318,18 @@ def dataset_item_ids(dataset_id: str) -> set:
     return {it["item_id"] for it in load_dataset(dataset_id).get("items") or []}
 
 
+def read_item_ids(path: Path) -> set[str]:
+    """The item ids an `--items` file lists, one per line (blank lines ignored)."""
+    return {ln.strip() for ln in path.read_text(encoding="utf-8").splitlines() if ln.strip()}
+
+
+def item_selection(exclude_dataset: str | None, items_file: Path | None) -> tuple[set[str], set[str] | None]:
+    """(drop, keep) for `--exclude-dataset` and `--items`: the ids another dataset contains, and
+    the only ids to use (None: no restriction)."""
+    drop = dataset_item_ids(exclude_dataset) if exclude_dataset else set()
+    return drop, (read_item_ids(items_file) if items_file else None)
+
+
 def item_path(dataset_id: str, item_id: str) -> Path | None:
     """Where an item's materialized copy is, or None when it is not materialized here."""
     try:

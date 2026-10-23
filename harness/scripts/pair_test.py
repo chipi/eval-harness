@@ -38,7 +38,14 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-from _common import RUNS, dataset_item_ids, default_metric, read_json, warn_on_ambiguous_runs  # noqa: E402
+from _common import (  # noqa: E402
+    RUNS,
+    dataset_item_ids,
+    default_metric,
+    read_item_ids,
+    read_json,
+    warn_on_ambiguous_runs,
+)
 from stats import EXACT_UP_TO, sign_flip_p  # noqa: E402
 
 
@@ -111,7 +118,7 @@ def main() -> int:
     # script means the leaderboard, the pair tests and the report all use provably the same
     # set -- and a reader can diff it.
     if args.items:
-        keep = {ln.strip() for ln in args.items.read_text(encoding="utf-8").splitlines() if ln.strip()}
+        keep = read_item_ids(args.items)
         items = [i for i in items if i in keep]
     if len(items) < 3:
         print(f"  only {len(items)} shared item(s) — nothing to test")

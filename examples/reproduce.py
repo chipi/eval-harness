@@ -61,15 +61,10 @@ def registry() -> dict:
 
 
 def _load_dotenv() -> None:
-    """harness/.env, as the harness reads it -- an exported variable always wins."""
-    env = HARNESS / ".env"
-    if env.is_file():
-        for line in env.read_text().splitlines():
-            line = line.strip()
-            if line and not line.startswith("#") and "=" in line:
-                k, v = line.split("=", 1)
-                if v.strip() and k.strip() not in os.environ:
-                    os.environ[k.strip()] = v.strip().strip('"').strip("'")
+    """harness/.env, read by the harness's own loader -- an exported variable always wins."""
+    from _common import load_dotenv  # noqa: PLC0415 - harness/scripts is on sys.path above
+
+    load_dotenv(HARNESS / ".env")
 
 
 # ── what was measured ───────────────────────────────────────────────────────────────────

@@ -46,7 +46,15 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-from _common import ROOT, RUNS, dataset_item_ids, default_metric, read_json, warn_on_ambiguous_runs  # noqa: E402
+from _common import (  # noqa: E402
+    ROOT,
+    RUNS,
+    dataset_item_ids,
+    default_metric,
+    item_selection,
+    read_json,
+    warn_on_ambiguous_runs,
+)
 from pair_test import per_item  # noqa: E402 -- one implementation of "score per item"
 from stats import holm, sign_flip_p  # noqa: E402 -- one implementation of the paired test
 
@@ -160,12 +168,7 @@ def _run(args) -> int:
         print(f"  no runs for {args.a} on {args.dataset_id}")
         return 1
 
-    drop: set[str] = set()
-    if args.exclude_dataset:
-        drop = dataset_item_ids(args.exclude_dataset)
-    keep: set[str] | None = None
-    if args.items:
-        keep = {ln.strip() for ln in args.items.read_text(encoding="utf-8").splitlines() if ln.strip()}
+    drop, keep = item_selection(args.exclude_dataset, args.items)
 
     rng = random.Random(args.seed)
     rows: list[dict] = []

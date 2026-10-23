@@ -728,11 +728,6 @@ def project(
     return out
 
 
-def _tau(a: list[float], b: list[float]) -> float | None:
-    v = kendall_tau_b(a, b)
-    return None if v is None or (isinstance(v, float) and math.isnan(v)) else v
-
-
 def _mean(xs: Sequence[float | None]) -> float | None:
     v = [x for x in xs if x is not None]
     return round(statistics.fmean(v), 6) if v else None
@@ -745,7 +740,7 @@ def compare_passes(a: dict[str, dict[str, float]], b: dict[str, dict[str, float]
     taus, diffs = [], []
     for i in ids:
         arms = sorted(a[i])
-        taus.append(_tau([a[i][x] for x in arms], [b[i][x] for x in arms]))
+        taus.append(kendall_tau_b([a[i][x] for x in arms], [b[i][x] for x in arms]))
         diffs += [abs(a[i][x] - b[i][x]) for x in arms]
     return {
         "n_items": len(ids),
@@ -789,7 +784,9 @@ def summarise(
             taus = []
             for i in proj:
                 arm_ids = sorted(proj[i])
-                taus.append(_tau([proj[i][c][ja] for c in arm_ids], [proj[i][c][jb] for c in arm_ids]))
+                taus.append(
+                    kendall_tau_b([proj[i][c][ja] for c in arm_ids], [proj[i][c][jb] for c in arm_ids])
+                )
             ma = [per_arm[c][f"judge_{ja}"] for c in per_arm]
             mb = [per_arm[c][f"judge_{jb}"] for c in per_arm]
             agreement[f"{ja}~{jb}"] = {

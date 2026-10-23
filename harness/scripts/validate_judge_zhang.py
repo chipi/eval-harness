@@ -155,11 +155,6 @@ def parse_dims(output: str, n: int) -> dict[str, list[float]] | None:
     return out
 
 
-def _tau(a: Sequence[float], b: Sequence[float]) -> float | None:
-    v = kendall_tau_b(list(a), list(b))
-    return None if v is None or v != v else v
-
-
 def _mean(xs: Sequence[float | None]) -> float | None:
     v = [x for x in xs if x is not None]
     return round(statistics.fmean(v), 4) if v else None
@@ -187,7 +182,9 @@ def human_and_refs(data: dict[str, dict], systems: Sequence[str]) -> tuple[dict,
         refs[aid] = [{m: per[m][k][1] for m in systems} for k in range(3)]
         for k in range(3):
             for h, _ in PAIRS:
-                hum[h].append(_tau([per[m][k][0][h] for m in systems], [refs[aid][k][m][h] for m in systems]))
+                hum[h].append(
+                    kendall_tau_b([per[m][k][0][h] for m in systems], [refs[aid][k][m][h] for m in systems])
+                )
     return {h: _mean(v) for h, v in hum.items()}, refs
 
 
@@ -198,7 +195,9 @@ def judge_tau(scores: dict[str, dict[str, dict[str, float]]], refs: dict, system
     for aid, s in scores.items():
         for k in range(3):
             for h, jd in PAIRS:
-                per[h].append(_tau([s[m][jd] for m in systems], [refs[aid][k][m][h] for m in systems]))
+                per[h].append(
+                    kendall_tau_b([s[m][jd] for m in systems], [refs[aid][k][m][h] for m in systems])
+                )
     out = {h: _mean(v) for h, v in per.items()}
     out["mean"] = _mean(list(out.values()))
     return out
@@ -212,7 +211,9 @@ def metric_tau(data: dict[str, dict], refs: dict, systems: Sequence[str], fn) ->
         vals = {m: fn(a["systems"][m]["summary"], ref) for m in systems}
         for k in range(3):
             for h, _ in PAIRS:
-                per[h].append(_tau([vals[m] for m in systems], [refs[aid][k][m][h] for m in systems]))
+                per[h].append(
+                    kendall_tau_b([vals[m] for m in systems], [refs[aid][k][m][h] for m in systems])
+                )
     out = {h: _mean(v) for h, v in per.items()}
     out["mean"] = _mean(list(out.values()))
     return out
@@ -224,7 +225,9 @@ def article_taus(get, refs: dict, systems: Sequence[str], aids: Sequence[str]) -
     out = {}
     for aid in aids:
         taus = [
-            _tau(get(aid, k, h), [refs[aid][k][m][h] for m in systems]) for k in range(3) for h, _ in PAIRS
+            kendall_tau_b(get(aid, k, h), [refs[aid][k][m][h] for m in systems])
+            for k in range(3)
+            for h, _ in PAIRS
         ]
         known = [x for x in taus if x is not None]
         if known:

@@ -72,7 +72,12 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-from _common import RUNS, dataset_item_ids, die, warn_on_ambiguous_runs  # noqa: E402
+from _common import (  # noqa: E402
+    RUNS,
+    die,
+    item_selection,
+    warn_on_ambiguous_runs,
+)
 from classification_report import gold_labels, per_class, predictions  # noqa: E402
 from stats import holm  # noqa: E402 -- one Holm: p equal to its threshold is separated
 
@@ -123,12 +128,7 @@ def main() -> int:
     if args.a not in preds:
         die(f"no runs for {args.a} on {args.dataset_id}")
 
-    drop: set = set()
-    if args.exclude_dataset:
-        drop = dataset_item_ids(args.exclude_dataset)
-    keep = None
-    if args.items:
-        keep = {ln.strip() for ln in args.items.read_text(encoding="utf-8").splitlines() if ln.strip()}
+    drop, keep = item_selection(args.exclude_dataset, args.items)
 
     opponents = sorted(c for c in preds if c != args.a and args.against in c and preds[c])
     if not opponents:

@@ -43,6 +43,7 @@ from _common import (
     how,
     now,
     read_json,
+    sha256,
     write_json,
 )
 from _fingerprint import _references_digest
@@ -421,9 +422,7 @@ def _primary(path):
 
 
 def _sha(path):
-    import hashlib  # noqa: PLC0415
-
-    return hashlib.sha256(Path(path).read_bytes()).hexdigest() if path else None
+    return sha256(Path(path)) if path else None
 
 
 if __name__ == "__main__":

@@ -8,7 +8,6 @@ refused and deleted, never cached.
 
 from __future__ import annotations
 
-import hashlib
 import json
 import os
 import tempfile
@@ -17,6 +16,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 from _common import ITEM_CACHE
+from _common import sha256 as _sha256  # `sha256` is fetch()'s parameter name
 from _retry import call_with_retries
 
 TIMEOUT_S = 60
@@ -72,14 +72,6 @@ def _download(url: str) -> Path:
         raise
     except Exception as exc:  # every failure to read is the same refusal
         raise FetchError(f"{url}: {exc}") from exc
-
-
-def _sha256(p: Path) -> str:
-    h = hashlib.sha256()
-    with p.open("rb") as fh:
-        for chunk in iter(lambda: fh.read(CHUNK), b""):
-            h.update(chunk)
-    return h.hexdigest()
 
 
 def fetch(url: str, sha256: str | None) -> tuple:

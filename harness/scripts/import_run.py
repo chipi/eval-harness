@@ -43,7 +43,17 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from _common import DATASETS, ROOT, RUNS, die, now, read_json, write_json, write_text_atomic
+from _common import (
+    DATASETS,
+    ROOT,
+    RUNS,
+    die,
+    now,
+    read_json,
+    sha256,
+    write_json,
+    write_text_atomic,
+)
 from _fingerprint import build_fingerprint
 
 
@@ -144,7 +154,6 @@ def main() -> int:
     run_dir = RUNS / run_id
     if run_dir.exists():
         die(f"{run_dir} already exists")
-    import hashlib  # noqa: PLC0415
 
     imported = {
         "source": args.source,
@@ -152,7 +161,7 @@ def main() -> int:
         "scorer_sha256": args.scorer_sha256,
         "scores_file": args.scores.name,
         # The exact bytes imported: a name can be reused, a hash cannot.
-        "scores_sha256": hashlib.sha256(args.scores.read_bytes()).hexdigest(),
+        "scores_sha256": sha256(args.scores),
         "items_scored": len(seen),
         "items_in_dataset": len(known),
     }
