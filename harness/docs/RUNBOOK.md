@@ -557,6 +557,7 @@ notebook) reads no `.env`, and the project's paths are resolved on first use, so
 | `EVAL_HOME` | the project root (default: the nearest directory up from where you run that has `data/`) |
 | `EVAL_DATA_DIR` | the data root, when it is not `<project>/data` |
 | `EVAL_RUNS_DIR` | read and write runs here instead of `data/runs` (`validate` too) |
+| `EVAL_GOALS_DIR` | read goals here instead of `<data>/goals`, relative to the project (for goals kept outside the data root) |
 | `EVAL_MAX_COST_USD` | per-run ceiling on billed spend; the run stops, keeps its results, resumes |
 | `EVAL_MAX_RETRIES`, `EVAL_RETRY_MAX_DELAY` | retries around every provider call |
 | `EVAL_BUILD_REF` | the identity of the system under test (default: the git SHA) |

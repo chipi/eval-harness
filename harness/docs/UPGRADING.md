@@ -18,6 +18,11 @@ format, so check these before you trust a `validate`:
   no longer written; git keeps a replaced baseline.
 - **Configs** may hold only `config_id`, `dataset_id`, `params`, `adapter`, `goal` and
   `format` (V1); anything else was read by nothing.
+- **Run records** may hold only the fields the harness writes (V1). A run imported with
+  0.3.0's `import-run --asc` carries `primary_metric_asc`, which no version read: the metric
+  was ranked higher-is-better unless every command passed `--asc`. Replace it with
+  `metric_directions: {<metric>: lower}` (or re-import with 0.4.0, which writes that), and
+  `--asc` becomes unnecessary.
 - **Judge verdicts** need `output_sha256` and `output_withheld` (V1): the hash of the stored
   reply, and false.
 - **`--resume`** takes a run made by 0.4.0 (rows with `_extra`); `--resume-unverified` is

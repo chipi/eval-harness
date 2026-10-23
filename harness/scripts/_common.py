@@ -121,6 +121,10 @@ def _paths() -> dict[str, Path]:
     # same references as the real thing and is therefore actually a check of the real path.
     # Relative to the PROJECT root, as EVAL_DATA_DIR is.
     runs_override = os.environ.get("EVAL_RUNS_DIR", "").strip()
+    # Goals can live outside the data root: a project whose harness records sit in a
+    # subdirectory keeps one copy of its goals where the rest of its tooling reads them.
+    # Relative to the project root, as EVAL_RUNS_DIR is.
+    goals_override = os.environ.get("EVAL_GOALS_DIR", "").strip()
     return {
         "ROOT": root,
         "DATA": data,
@@ -132,7 +136,7 @@ def _paths() -> dict[str, Path]:
         "BASELINES": data / "baselines",
         "REFERENCES": data / "references",
         # What each evaluation is FOR (ADR-0002): one <goal_id>.yaml per goal, plus policy.yaml.
-        "GOALS": data / "goals",
+        "GOALS": root / Path(goals_override).expanduser() if goals_override else data / "goals",
         # Field sets (ADR-0003): one <fieldset_id>.yaml each, declaring the fields items may carry.
         "FIELDS": data / "fields",
         # Items fetched from a source_url, by their sha256. Derived and gitignored, like materialized/.
@@ -489,7 +493,7 @@ COST_KEYS = (
     "tokens_out",
 )
 #: Lower is better. Wall time.
-SPEED_KEYS = ("latency_ms",)
+SPEED_KEYS = ("latency_ms", "latency_s")
 #: Neither better nor worse: they say what the output WAS, not whether it was
 #: good. Ranking by one puts the most verbose arm on top — which is how a
 #: leaderboard ends up confidently answering the wrong question. Comparing two

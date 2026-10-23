@@ -1,8 +1,9 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "metrics",
-  "description": "One run's result (metrics.json), as scripts/_record.py builds it. dataset_id and build are REQUIRED: a number without the data it measured and the build that produced it cannot be compared to anything. A field the harness writes is declared here; other fields are allowed, for a project's own records.",
+  "description": "One run's result (metrics.json), as scripts/_record.py builds it. dataset_id and build are REQUIRED: a number without the data it measured and the build that produced it cannot be compared to anything. Every field the harness writes is declared here, and nothing else is accepted: a field from another version would otherwise pass silently while nothing reads it.",
   "type": "object",
+  "additionalProperties": false,
   "required": ["run_id", "dataset_id", "config_id", "build", "created_at", "scores", "n_items"],
   "properties": {
     "run_id": {"type": "string"},

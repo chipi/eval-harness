@@ -177,6 +177,8 @@ class HarnessAdapter:
 
     def __init__(self, data_dir: Path | None = None):
         self.data_dir = Path(data_dir or _common.DATA)
+        # The project's goals (EVAL_GOALS_DIR when set) unless a data directory is named.
+        self.goals_dir = _common.GOALS if data_dir is None else self.data_dir / "goals"
 
     # -- arms ---------------------------------------------------------------------------
     @_memo
@@ -374,7 +376,7 @@ class HarnessAdapter:
     @_memo
     def goals(self) -> list[dict]:
         """Return all goals: what the evaluations are for (the loader every command uses)."""
-        return [dict(g, goal_id=gid) for gid, g in load_goals(self.data_dir / "goals").items() if g]
+        return [dict(g, goal_id=gid) for gid, g in load_goals(self.goals_dir).items() if g]
 
     def dataset_items(self, dataset: str) -> int | None:
         """Return how many items a dataset has, or None if not recorded."""

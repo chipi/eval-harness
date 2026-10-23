@@ -470,4 +470,57 @@ with tempfile.TemporaryDirectory() as tmp:
         r.stderr[-300:],
     )
 
+# A run record with a field no harness version writes now fails V1 (a 0.3.0 import's
+# primary_metric_asc was read by nothing and passed); EVAL_GOALS_DIR puts the goals outside the
+# data root, and V14 reads them there.
+with tempfile.TemporaryDirectory() as tmp:
+    data = Path(tmp) / "data" / "eval" / "stats"
+    goals = Path(tmp) / "data" / "eval" / "goals"
+    for d in (data / "runs" / "r1", data / "datasets", goals):
+        d.mkdir(parents=True)
+    src_goal = HERE.parent / "data" / "goals" / "entities_few_nerd.yaml"
+    (goals / "g1.yaml").write_text(
+        src_goal.read_text(encoding="utf-8").replace("goal_id: entities_few_nerd", "goal_id: g1"),
+        encoding="utf-8",
+    )
+    record = {
+        "run_id": "r1",
+        "config_id": "c",
+        "dataset_id": "d",
+        "goal": "g1",
+        "created_at": "2026-10-23",
+        "build": {"ref": "t"},
+        "scores": {"f1": 0.5},
+        "n_items": 1,
+        "metric_directions": {"f1": "lower"},
+    }
+    (data / "runs" / "r1" / "metrics.json").write_text(json.dumps(record), encoding="utf-8")
+    env = {**os.environ, "EVAL_HOME": tmp, "EVAL_DATA_DIR": "data/eval/stats", "EVAL_RUNS_DIR": ""}
+
+    def _validate(extra: dict) -> str:
+        r = subprocess.run(
+            [sys.executable, str(HERE / "validate_tree.py")],
+            env={**env, **extra},
+            capture_output=True,
+            text=True,
+        )
+        return r.stdout
+
+    elsewhere = _validate({"EVAL_GOALS_DIR": "data/eval/goals"})
+    unset = _validate({"EVAL_GOALS_DIR": ""})
+    check(
+        "EVAL_GOALS_DIR: V14 reads the goals there (and finds its contradiction)",
+        "FAIL V14" in elsewhere and "f1 is higher-is-better" in elsewhere and "FAIL V14" not in unset,
+        elsewhere[-400:],
+    )
+    (data / "runs" / "r1" / "metrics.json").write_text(
+        json.dumps({**record, "primary_metric_asc": True}), encoding="utf-8"
+    )
+    old_field = _validate({"EVAL_GOALS_DIR": ""})
+    check(
+        "V1: a run record with a field no harness writes fails",
+        "FAIL V1 schemas" in old_field and "primary_metric_asc" in old_field,
+        old_field[-400:],
+    )
+
 sys.exit(summary())

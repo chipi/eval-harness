@@ -71,7 +71,7 @@ def _usage() -> str:
     return (
         f"evaluation-harness {__version__}\n\nusage: evh <command> [args]\n\n{rows}\n\n"
         f"`evh <command> --help` for a command's own options.\n"
-        f"Data: EVAL_HOME (project root, default: the nearest directory up with data/), EVAL_DATA_DIR (default: data)."
+        f"Data: EVAL_HOME (project root, default: the nearest directory up with data/), EVAL_DATA_DIR (default: data), EVAL_GOALS_DIR (default: <data>/goals)."
     )
 
 
