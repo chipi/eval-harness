@@ -13,13 +13,7 @@ def f1(pred, gold=G):
     return score_sets(pred, gold)["f1"]
 
 
-ok: list = []
-
-
-def check(label, cond):
-    ok.append((label, cond))
-    print(f"  {'ok  ' if cond else 'FAIL'} {label}")
-
+from _check import check, summary  # noqa: E402
 
 check(
     "perfect match -> 1.0",
@@ -74,5 +68,4 @@ from extraction import normalizer_sha256, scorer_sha256  # noqa: E402
 check("scorer_sha256 differs from normalizer_sha256 (wider scope)", scorer_sha256() != normalizer_sha256())
 check("scorer_sha256 is stable across calls", scorer_sha256() == scorer_sha256())
 
-print(f"\n{sum(1 for _, c in ok if c)}/{len(ok)} passed")
-sys.exit(0 if all(c for _, c in ok) else 1)
+sys.exit(summary())

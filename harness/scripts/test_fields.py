@@ -23,13 +23,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-ok: list = []
-
-
-def check(label, cond, detail=""):
-    ok.append((label, bool(cond)))
-    print(f"  {'ok  ' if cond else 'FAIL'} {label}" + (f"  ({detail})" if detail and not cond else ""))
-
+from _check import check, summary  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-fields-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-fields")
@@ -429,8 +423,4 @@ finally:
 
     shutil.rmtree(proj, ignore_errors=True)
 
-bad = [lb for lb, c in ok if not c]
-print(f"\n{len(ok) - len(bad)}/{len(ok)} assertions passed")
-if bad:
-    print("FAILED:", *bad, sep="\n  ")
-    sys.exit(1)
+sys.exit(summary())

@@ -18,17 +18,10 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parents[1] / "examples" / "_shared"))
 
-ok: list = []
-
-
-def check(label, cond):
-    ok.append((label, cond))
-    print(f"  {'ok  ' if cond else 'FAIL'} {label}")
-
-
 import codehash  # noqa: E402
 import extraction  # noqa: E402
 import retrieval  # noqa: E402
+from _check import check, summary  # noqa: E402
 
 
 # ── the helper itself ────────────────────────────────────────────────────────
@@ -155,5 +148,4 @@ try:
 finally:
     retrieval.parse_ranking = _orig
 
-print(f"\n{sum(1 for _, c in ok if c)}/{len(ok)} passed")
-sys.exit(0 if all(c for _, c in ok) else 1)
+sys.exit(summary())

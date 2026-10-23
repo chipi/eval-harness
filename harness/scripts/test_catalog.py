@@ -27,15 +27,8 @@ sys.path.insert(0, str(HERE))
 import catalog_build as cb  # noqa: E402
 import catalog_serve as cs  # noqa: E402
 import stats  # noqa: E402
+from _check import check, summary  # noqa: E402
 from catalog_adapter import HarnessAdapter  # noqa: E402
-
-ok: list = []
-
-
-def check(label, cond, detail=""):
-    ok.append((label, bool(cond)))
-    print(f"  {'ok  ' if cond else 'FAIL'} {label}" + (f"  ({detail})" if detail and not cond else ""))
-
 
 SECRET = "zebra-quokka-unique-output-text"
 tmp = Path(tempfile.mkdtemp(prefix="evh-catalog-"))
@@ -493,8 +486,4 @@ try:
 finally:
     shutil.rmtree(tmp, ignore_errors=True)
 
-failed = [lb for lb, c in ok if not c]
-print(f"\n{len(ok) - len(failed)}/{len(ok)} assertions passed")
-if failed:
-    print("FAILED:", *failed, sep="\n  ")
-    sys.exit(1)
+sys.exit(summary())

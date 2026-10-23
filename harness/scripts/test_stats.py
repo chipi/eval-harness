@@ -12,13 +12,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import stats
-
-ok: list = []
-
-
-def check(label, cond):
-    ok.append((label, bool(cond)))
-    print(f"  {'ok  ' if cond else 'FAIL'} {label}")
+from _check import check, summary
 
 
 def brute_p(deltas):
@@ -176,8 +170,4 @@ flipped = [
 check("compare_by: a group tested alone can separate where the joint correction does not", bool(flipped))
 check("compare_by: items per group", [g["items"] for g in by["groups"]] == [10, 10, 10])
 
-bad = [lb for lb, c in ok if not c]
-print(f"\n{len(ok) - len(bad)}/{len(ok)} assertions passed")
-if bad:
-    print("FAILED:", *bad, sep="\n  ")
-    sys.exit(1)
+sys.exit(summary())

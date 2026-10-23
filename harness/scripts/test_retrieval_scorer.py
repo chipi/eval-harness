@@ -13,15 +13,8 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "examples" / "_shared"))
+from _check import check, summary
 from retrieval import dcg, dedupe, parse_ranking, score_ranking, scorer_sha256
-
-ok: list = []
-
-
-def check(label, cond):
-    ok.append((label, cond))
-    print(f"  {'ok  ' if cond else 'FAIL'} {label}")
-
 
 Q1 = {"d1": 1}  # one relevant document, the SciFact majority case
 Q3 = {"d1": 1, "d2": 1, "d3": 1}  # three, so IDCG has three terms
@@ -200,5 +193,4 @@ check(
     parse_ranking('Here are the results:\n["a","b"]') == ["a", "b"],
 )
 
-print(f"\n{sum(1 for _, c in ok if c)}/{len(ok)} passed")
-sys.exit(0 if all(c for _, c in ok) else 1)
+sys.exit(summary())

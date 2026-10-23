@@ -11,15 +11,8 @@ import sys
 sys.path.insert(
     0, str(__import__("pathlib").Path(__file__).resolve().parents[2] / "examples" / "ner-few-nerd")
 )
+from _check import check, summary
 from adapter import _parse_entities  # type: ignore[attr-defined]  # the NER example's, on sys.path above; mypy sees scripts/adapter.py
-
-ok: list = []
-
-
-def check(label, cond, got=None):
-    ok.append(cond)
-    print(f"  {'ok  ' if cond else 'FAIL'} {label}" + (f"  -> {got!r}" if not cond else ""))
-
 
 # observed on the dev slice
 r1 = _parse_entities('{"text": "p", "type": "other"}')
@@ -111,5 +104,4 @@ check(
     _parse_entities("I could not find any entities.") is None,
 )
 
-print(f"\n{sum(ok)}/{len(ok)} passed")
-sys.exit(0 if all(ok) else 1)
+sys.exit(summary())

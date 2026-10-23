@@ -28,12 +28,7 @@ import judging
 from _common import load_module
 
 HERE = Path(__file__).resolve().parent
-ok: list = []
-
-
-def check(label, cond):
-    ok.append((label, bool(cond)))
-    print(f"  {'ok  ' if cond else 'FAIL'} {label}")
+from _check import check, summary  # noqa: E402
 
 
 def _exit(fn):
@@ -1935,8 +1930,4 @@ check(
     != functools.reduce(operator.iadd, vz.blocks("a2", [f"s{i:02d}" for i in range(19)], 16), []),
 )
 
-failed = [label for label, c in ok if not c]
-print(f"\n{len(ok) - len(failed)}/{len(ok)} assertions passed")
-if failed:
-    print("FAILED:", *failed, sep="\n  ")
-    sys.exit(1)
+sys.exit(summary())

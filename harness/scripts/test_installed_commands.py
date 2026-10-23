@@ -30,14 +30,8 @@ HERE = Path(__file__).resolve().parent
 REPO = HERE.parent.parent  # the checkout (infra/ is not part of the package)
 sys.path.insert(0, str(HERE))
 import _wheel  # noqa: E402
+from _check import check, summary  # noqa: E402
 from cli import COMMANDS  # noqa: E402
-
-ok: list = []
-
-
-def check(label: str, cond, detail: object = "") -> None:
-    ok.append((label, bool(cond)))
-    print(f"  {'ok  ' if cond else 'FAIL'} {label}" + (f"  ({detail})" if detail and not cond else ""))
 
 
 def main() -> int:
@@ -277,11 +271,7 @@ def main() -> int:
                 )
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
-    bad = [lb for lb, c in ok if not c]
-    print(f"\n{len(ok) - len(bad)}/{len(ok)} assertions passed")
-    if bad:
-        print("FAILED:", *bad, sep="\n  ")
-    return 1 if bad else 0
+    return summary()
 
 
 if __name__ == "__main__":
