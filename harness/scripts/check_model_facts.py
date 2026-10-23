@@ -18,11 +18,10 @@ import re
 import sys
 from pathlib import Path
 
-if "--help" in sys.argv[1:] or "-h" in sys.argv[1:]:
-    # It used to fall through and run the whole check, so `--help` returned 0 only when
-    # every assertion happened to pass -- the same trap validate_tree had.
-    print(__doc__)
-    raise SystemExit(0)
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _common import no_options
+
+no_options(__doc__)  # --help prints this; anything else is refused
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]

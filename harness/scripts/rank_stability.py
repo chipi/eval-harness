@@ -33,7 +33,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-from _common import RUNS, default_metric, warn_on_ambiguous_runs  # noqa: E402
+from _common import RUNS, default_metric, die, warn_on_ambiguous_runs  # noqa: E402
 from _runs import direction, matrix, runs_on  # noqa: E402
 from stats import spearman  # noqa: E402 - midranks of midranks are the midranks: same rho
 
@@ -120,10 +120,7 @@ def main() -> int:
         M = {a: {i: -v for i, v in s.items()} for a, s in M.items()}
     arms = sorted(M)
     if len(arms) < 3:
-        print(
-            f"  {len(arms)} arm(s) with per-item '{args.metric}' on {args.dataset_id} — need at least 3 to rank"
-        )
-        return 1
+        die(f"{len(arms)} arm(s) with per-item '{args.metric}' on {args.dataset_id}: need at least 3 to rank")
     items = sorted(set.intersection(*(set(M[a]) for a in arms)))
     if 2 * SIZES[0] > len(items):
         print(

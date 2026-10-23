@@ -17,12 +17,10 @@ import pathlib
 import re
 import sys
 
-if "--help" in sys.argv[1:] or "-h" in sys.argv[1:]:
-    # It used to fall through and run the whole check, so `--help`
-    # returned 0 only when every assertion happened to pass -- the trap
-    # validate_tree and check_model_facts already learned.
-    print(__doc__)
-    raise SystemExit(0)
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from _common import no_options
+
+no_options(__doc__)  # --help prints this; anything else is refused
 
 # The repo root, derived from THIS FILE. It was hardcoded to one laptop's absolute
 # path, so everywhere else `rglob` matched nothing, `bad` stayed empty and the check

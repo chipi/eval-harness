@@ -3002,7 +3002,7 @@ def test_hints_name_the_command_the_user_has() -> None:
             "PYTHONPATH": str(site),
             "PYTHONDONTWRITEBYTECODE": "1",
         }
-        env.pop("EVH_CLI", None)
+        env.pop("EVAL_VIA_EVH", None)
 
         def evh(*args: str) -> str:
             r = subprocess.run(
@@ -3226,7 +3226,7 @@ def test_judge_score_runs_from_an_installed_package() -> None:
     installed by _wheel.py). The judges are `provider: fake`:
     no network, no key, and the gate refuses them unless the scorer is run --unvalidated.
 
-    EVH_TEST_PYTHON=<venv>/bin/python runs the same project against a package installed in
+    EVAL_TEST_PYTHON=<venv>/bin/python runs the same project against a package installed in
     another interpreter's environment."""
     import json as _json  # noqa: PLC0415
     import os  # noqa: PLC0415
@@ -3238,7 +3238,7 @@ def test_judge_score_runs_from_an_installed_package() -> None:
         import _wheel  # noqa: PLC0415 — the real wheel, so package-data omissions fail here
 
         site = _wheel.install(tmp / "site-packages")
-        installed = os.environ.get("EVH_TEST_PYTHON", "")  # a real pip install, when given
+        installed = os.environ.get("EVAL_TEST_PYTHON", "")  # a real pip install, when given
         ipy = installed or PY
         pkg = site / "evaluation_harness"
         if installed:

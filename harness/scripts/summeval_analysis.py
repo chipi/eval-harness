@@ -18,7 +18,6 @@ import json
 import math
 import random
 import statistics
-import sys
 from pathlib import Path
 
 from stats import holm, sign_flip_p, spearman
@@ -172,9 +171,9 @@ def compute() -> dict:
 
 def main() -> int:
     """Print the derived SummEval figures."""
-    if "--help" in sys.argv[1:] or "-h" in sys.argv[1:]:
-        print(__doc__)
-        return 0
+    from _common import no_options  # noqa: PLC0415
+
+    no_options(__doc__)
     f = compute()
     print(f"{f['n_judges']} hosted judges, {f['n_items']} articles, ${f['total_billed']:.4f} billed")
     print(f"\nsplit-half stability of the judges' order ({DRAWS} draws, seed {SEED})")

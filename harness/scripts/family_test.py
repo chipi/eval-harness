@@ -51,6 +51,7 @@ from _common import (  # noqa: E402
     RUNS,
     dataset_item_ids,
     default_metric,
+    die,
     item_selection,
     warn_on_ambiguous_runs,
 )
@@ -155,8 +156,7 @@ def _run(args) -> int:
     lower = direction(runs, args.metric, args.asc, args.desc)
     A = per_item([r for r in runs if r[1]["config_id"] == args.a], args.metric)
     if not A:
-        print(f"  no runs for {args.a} on {args.dataset_id}")
-        return 1
+        die(f"no runs for {args.a} on {args.dataset_id}")
 
     drop, keep = item_selection(args.exclude_dataset, args.items)
 
@@ -180,8 +180,7 @@ def _run(args) -> int:
             }
         )
     if not rows:
-        print("  no opponents with enough shared items")
-        return 1
+        die("no opponents with enough shared items")
 
     # HOLM STEP-DOWN. Sorted ascending, threshold alpha/(m-i), and the moment one fails
     # every larger p-value fails with it -- that carry-forward is the whole procedure, and

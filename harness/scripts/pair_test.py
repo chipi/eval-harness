@@ -40,6 +40,7 @@ from _common import (  # noqa: E402
     RUNS,
     dataset_item_ids,
     default_metric,
+    die,
     read_item_ids,
     warn_on_ambiguous_runs,
 )
@@ -100,8 +101,7 @@ def main() -> int:
         keep = read_item_ids(args.items)
         items = [i for i in items if i in keep]
     if len(items) < 3:
-        print(f"  only {len(items)} shared item(s) — nothing to test")
-        return 1
+        die(f"only {len(items)} shared item(s): nothing to test")
 
     deltas = [A[i] - B[i] for i in items]
     obs = statistics.fmean(deltas)

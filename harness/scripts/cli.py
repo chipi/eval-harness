@@ -90,7 +90,7 @@ def main(argv: list[str] | None = None) -> int:
     script = HERE / COMMANDS[name][0]
     sys.argv = [str(script), *rest]
     # The scripts' "next, run this" hints read it: `evh …` here, `make …` in a checkout.
-    os.environ["EVH_CLI"] = "1"
+    os.environ["EVAL_VIA_EVH"] = "1"
     try:
         runpy.run_path(str(script), run_name="__main__")
     except SystemExit as exc:

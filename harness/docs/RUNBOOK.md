@@ -494,6 +494,43 @@ own outputs.
 
 ---
 
+## Exit codes
+
+Every command, `make` target and `evh` subcommand, for scripts and CI that branch on them:
+
+| Exit | Meaning | From |
+|---|---|---|
+| `0` | done | every command |
+| `1` | refused, or nothing was measured: `ERROR: <why>` on stderr | every command |
+| `2` | a usage error: an unknown command or argument (the usage is printed) | `evh`, every command's argument parser |
+| `2` | stopped early by the cost cap; the partial results are kept and resumable | `experiment-run`, `judge-score` |
+| `3` | the judge scorer is not validated; `--unvalidated` runs it labelled as such | `judge-score` |
+
+The two meanings of `2` are told apart by stderr: a usage error prints the usage, a stopped
+run prints how many items it measured and how to resume.
+
+## Environment variables
+
+Read from the environment or the project's `.env` (an exported value wins). `.env.example`
+carries the ones a project usually sets, with the reasoning.
+
+| Variable | What it does |
+|---|---|
+| `EVAL_HOME` | the project root, when commands run from elsewhere |
+| `EVAL_DATA_DIR` | the data root, when it is not `<project>/data` |
+| `EVAL_RUNS_DIR` | read and write runs here instead of `data/runs` (`validate` too) |
+| `EVAL_MAX_COST_USD` | per-run ceiling on billed spend; the run stops, keeps its results, resumes |
+| `EVAL_MAX_RETRIES`, `EVAL_RETRY_MAX_DELAY` | retries around every provider call |
+| `EVAL_BUILD_REF` | the identity of the system under test (default: the git SHA) |
+| `EVAL_HOST_LABEL` | a name for this machine, so latency is comparable across runs |
+| `EVAL_FINGERPRINT_WEIGHTS` | `1`: hash a local model's weight files into the fingerprint |
+| `EVAL_MODELS_FILE` | the alias to upstream-model table judges are routed by |
+| `EVAL_FETCH_HEADERS` | JSON `{"host": {"Header": "value"}}` for URL items behind a login |
+| `EVAL_NO_CACHE` | `1`: `family-test` recomputes instead of replaying an identical earlier run |
+| `OPENROUTER_API_KEY`, `LITELLM_BASE_URL` + `LITELLM_API_KEY`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` | hosted models and judges |
+
+---
+
 ## Choosing what to evaluate against
 
 The **system under test** is recorded as `build.ref`. It defaults to this tree's

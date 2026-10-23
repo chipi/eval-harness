@@ -59,6 +59,7 @@ from _common import (
     goal_policy,
     load_goals,
     load_module,
+    no_options,
     read_json,
     sha256,
 )
@@ -971,9 +972,7 @@ def main() -> int:
     # made self_test's `validate_tree.py --help` check assert "the tree is valid" instead
     # of "the CLI responds" — so the one script whose failure matters most had a self-test
     # that could only pass when it had nothing to report.
-    if "--help" in sys.argv[1:] or "-h" in sys.argv[1:]:
-        print(__doc__)
-        return 0
+    no_options(__doc__)
     print(f"eval tree: {DATA}\n")
     for fn in (
         v1_schemas,

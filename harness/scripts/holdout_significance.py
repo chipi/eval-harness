@@ -26,7 +26,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
 import leaderboard as lb  # noqa: E402
-from _common import RUNS, dataset_item_ids, default_metric, warn_on_ambiguous_runs  # noqa: E402
+from _common import RUNS, dataset_item_ids, default_metric, die, warn_on_ambiguous_runs  # noqa: E402
 from _runs import direction, matrix, runs_on  # noqa: E402
 
 
@@ -60,8 +60,7 @@ def main() -> int:
     raw: list[float] = []
     M = matrix(runs, args.metric, keep=keep, raw=raw)
     if not M:
-        print("  no runs matched")
-        return 1
+        die("no runs matched")
     print(f"  {len(runs)} run(s), {len(M)} arm(s)")
     lb.significance(M, args.metric, asc=direction(runs, args.metric, args.asc, args.desc), raw_values=raw)
     return 0

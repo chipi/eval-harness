@@ -48,7 +48,7 @@ def how(evh: str, make: str) -> str:
     sends its user to a command that does not exist."""
     import os  # noqa: PLC0415
 
-    return evh if os.environ.get("EVH_CLI") else make
+    return evh if os.environ.get("EVAL_VIA_EVH") else make
 
 
 def load_dotenv(path: Path | None = None) -> int:
@@ -422,8 +422,22 @@ def iter_runs() -> Iterable[Path]:
 
 
 def die(msg: str) -> NoReturn:
-    """Exit with an error message."""
+    """Refuse: `ERROR: msg` on stderr, exit 1. Every command refuses this way; four printed
+    their refusal to stdout instead, where a caller reading stderr saw nothing."""
     raise SystemExit(f"ERROR: {msg}")
+
+
+def no_options(doc: str | None, *flags: str) -> Any:
+    """The command line of a command that takes no arguments but `flags` (each an on/off
+    switch): -h/--help prints `doc`, anything else is refused with exit 2. Seven commands
+    checked for --help by hand and ignored every other argument, so `evh validate --strict`
+    ran the plain validation and said nothing."""
+    import argparse  # noqa: PLC0415
+
+    ap = argparse.ArgumentParser(description=doc, formatter_class=argparse.RawDescriptionHelpFormatter)
+    for flag in flags:
+        ap.add_argument(flag, action="store_true")
+    return ap.parse_args()
 
 
 # ── what a metric MEANS ──────────────────────────────────────────────────────

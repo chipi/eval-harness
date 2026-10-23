@@ -39,11 +39,12 @@ def in_checkout() -> bool:
 
 def main() -> int:
     """Run a self-test of the installed harness."""
-    if "-h" in sys.argv[1:] or "--help" in sys.argv[1:]:
-        print(__doc__)
-        return 0
+    sys.path.insert(0, str(HERE))
+    from _common import no_options  # noqa: PLC0415
+
+    no_options(__doc__)
     if in_checkout():
-        return subprocess.run([sys.executable, str(HERE / "self_test.py"), *sys.argv[1:]]).returncode
+        return subprocess.run([sys.executable, str(HERE / "self_test.py")]).returncode
     print("evaluation-harness self-check (the installed package, in a scratch folder; $0, offline)\n")
     results = []
 

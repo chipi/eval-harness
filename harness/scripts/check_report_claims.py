@@ -22,20 +22,19 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import stats as _stats
-from _common import AmbiguousRuns, runs_by_arm
+from _common import (
+    AmbiguousRuns,
+    no_options,
+    runs_by_arm,
+)
 from cost_report import billed_and_recorded
 
-if "--help" in sys.argv[1:] or "-h" in sys.argv[1:]:
-    # It used to fall through and run the whole check, so `--help`
-    # returned 0 only when every assertion happened to pass -- the trap
-    # validate_tree and check_model_facts already learned.
-    print(__doc__)
-    raise SystemExit(0)
+_ARGS = no_options(__doc__, "--print-judge-figures")  # --help prints this; anything else is refused
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 
-if "--print-judge-figures" in sys.argv[1:]:
+if _ARGS.print_judge_figures:
     import judge_figures as _jf0
 
     _f0 = _jf0.compute()
