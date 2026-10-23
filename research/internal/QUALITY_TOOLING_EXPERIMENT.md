@@ -138,7 +138,39 @@ What transformers 5 broke, and what was done:
    about 1e-7 in P(Yes) (eager attention does not remove it), enough to reorder near-tied
    summaries within an article, not to move a finding.
 
-## Still open
+### Code kept in more than one copy (2026-10-23)
 
-- Three separate `spearman` implementations exist (`judging`, `rank_stability`,
-  `summeval_analysis`). Not changed here.
+A survey of the repository for logic written two or more times. Each item below now has one
+home; after each change all 201 report claims re-derive unchanged and `make validate` matches
+every run's scorer hash.
+
+| What | Copies | Now |
+|---|---|---|
+| Spearman (and Pearson, ranks) | 5 scripts | `stats.spearman`, `stats.pearson`, `stats.ranks`; a constant input returns `constant` (NaN by default; `silver_calibrate` keeps its 0.0) |
+| Holm | 3 | `stats.holm` (family_test, bootstrap_test, summeval_analysis) |
+| Sign-flip p | 3 | `stats.sign_flip_p` (summeval_analysis, validate_judge_zhang, reproduce), same seed and stream: zhang's reports regenerate byte-identical, reproduce's p equal on 60 random cases |
+| Loading a module from a path | 8 harness scripts, 6 example scripts | `_common.load_module`; `examples/_shared/modules.py` (this also fixed summeval's calibrate, which lacked the `_shared` path) |
+| The test scripts' `check()` | 11 | `scripts/_check.py`; a test script that ran no check now fails |
+| The datasets-server fetcher | 6 `fetch.py` + `calibration.page` | `examples/_shared/hf_rows.page`: paced, backs off on 429 and 5xx, stops on another 4xx; its own test |
+| Cost sums | 2 beside `cost_report` | `cost_report.billed_and_recorded` (check_report_claims, site figures) |
+| Pinned downloads, file hashes, item selection, `.env` | 2 or more each | `_fetch.fetch` + `write_bytes_atomic`; `_common.sha256`, `read_item_ids`, `item_selection`, `load_dotenv` |
+| Deploy link probes | 2 | `infra/deploy/probe_link.sh [group\|one]` |
+| Gateway parity (judge scorer vs. the gateway's copy) | by hand | a test in `test_judge_score` |
+
+Bugs the survey found in the copies, fixed:
+
+- **summeval split-half named a tied top's alphabetically first arm as the winner**, the bug
+  `rank_stability` already fixed. It now counts only a unique winner and reports the rest as
+  `undecided`. No published draw has a tied top, so no number moved.
+- **scifact priced an unbilled call with no declared price at 0.0**, a claim it was free; every
+  other adapter records None (unpriced). No committed run reached it: every hosted arm is billed.
+- `check_report_claims` read runs in filesystem order; its globs are now sorted.
+
+Left as copies, on purpose:
+
+- Functions inside frozen adapters (their tau, Spearman, billing and `_cached`): the scorer hash
+  covers them, and a change would invalidate every run recorded with them.
+- `_fingerprint`'s hash, the `item_id` helpers, `e()` / `evh()` / `_mean`, the Makefile help
+  text, infra's `restore()` and reproduce's newest-rerun discovery: each copy is a few lines,
+  differs where it matters, or sits on a boundary (package vs. examples vs. infra) that a shared
+  helper would cross.

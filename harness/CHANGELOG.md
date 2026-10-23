@@ -130,7 +130,10 @@ package.
     items or fewer, where no shift can be rejected;
   - `compare`, every arm against a baseline with verdicts in words;
   - `compare_by`, the same test within each group of items, Holm-corrected over every group
-    and arm together.
+    and arm together;
+  - `ranks`, `pearson` and `spearman` (average ranks for ties; a constant input returns
+    `constant`, NaN unless you pass another), which the judging, rank-stability and
+    report-check scripts share instead of keeping their own copies.
 
   It has its own test suite, `scripts/test_stats.py`, run by `make test`.
 - **The exact count is ~4x faster** (0.03 s at 30 items, was 0.11 s): the sign-pattern sums are
@@ -258,7 +261,10 @@ package.
   (`make quality-install`), never a dependency of the package. What they found, and how ruff
   compares with the black, isort and flake8 that podcast_scraper runs:
   `research/internal/QUALITY_TOOLING_EXPERIMENT.md`. Every public function, class and method
-  has a docstring (interrogate at 100%, the bar podcast_scraper sets).
+  has a docstring (interrogate at 100%, the bar podcast_scraper sets). Logic kept in two or
+  more copies (Spearman, Holm, the sign-flip test, module loading, the test scripts' `check()`,
+  cost sums, file hashing) now lives in one place each, and every report claim re-derives
+  unchanged; a test script that runs no check now fails.
 - **This repository's worked examples run on patched libraries** (Linux): transformers 5.20.2,
   sentence-transformers 6.2.0, pillow 13.0.0, aiohttp 3.14.5, nltk 3.10.4, certifi 2026.10.19,
   clearing 58 published advisories in their locks; few-nerd stays on transformers 4.55.4,
