@@ -73,7 +73,7 @@ problems: list[str] = []
 notes: list[str] = []
 
 
-def check(ok: bool, label: str, detail: str = "") -> None:
+def check(label: str, ok: object, detail: str = "") -> None:
     """Log a check result and append to problems if it failed."""
     if ok:
         print(f"  ok   {label}")
@@ -106,7 +106,7 @@ def v1_schemas() -> None:
             except jsonschema.ValidationError as exc:
                 bad += 1
                 print(f"       {Path(f).name}: {exc.message[:90]}")
-    check(bad == 0, f"V1 schemas — {n} document(s) validated", f"{bad} violation(s)")
+    check(f"V1 schemas — {n} document(s) validated", bad == 0, f"{bad} violation(s)")
 
 
 def v2_dataset_ids() -> None:
@@ -122,8 +122,8 @@ def v2_dataset_ids() -> None:
     for d in dangling:
         print(f"       {d}")
     check(
-        not dangling,
         f"V2 every run's dataset_id resolves ({len(known)} dataset(s) known)",
+        not dangling,
         f"{len(dangling)} dangling",
     )
 
@@ -139,7 +139,7 @@ def v3_provenance() -> None:
                 missing.append(run.name)
     for r in missing:
         print(f"       {r}")
-    check(not missing, "V3 every run identifies its build", f"{len(missing)} without a ref")
+    check("V3 every run identifies its build", not missing, f"{len(missing)} without a ref")
 
 
 def v4_materialized() -> None:
@@ -168,8 +168,8 @@ def v4_materialized() -> None:
         print(f"       missing: {d}")
     total = checked + len(unchecked)
     check(
-        not drifted and not missing,
         f"V4 materialized copies match their frozen hashes ({checked} of {total} datasets materialized here)",
+        not drifted and not missing,
         f"{len(drifted)} drifted, {len(missing)} missing",
     )
     if unchecked:
@@ -260,8 +260,8 @@ def v5_duplicate_scores() -> None:
     for group in dupes:
         print(f"       identical scores AND identical per-item results: {', '.join(n for n, _, _ in group)}")
     check(
-        not dupes,
         "V5 no two configs report byte-identical scores",
+        not dupes,
         f"{len(dupes)} suspicious group(s) — differing params produced identical output",
     )
 
@@ -275,7 +275,7 @@ def v6_baselines() -> None:
             broken.append(f"{b.name} -> {d.get('promoted_from')}")
     for x in broken:
         print(f"       {x}")
-    check(not broken, "V6 every baseline's source run still exists", f"{len(broken)} broken")
+    check("V6 every baseline's source run still exists", not broken, f"{len(broken)} broken")
 
 
 def _tracked_runs(runs_dir: Path) -> dict:
@@ -328,7 +328,7 @@ def v7_committed_runs_are_readable() -> None:
         print(f"       {x}")
     if len(bad) > 10:
         print(f"       ... and {len(bad) - 10} more")
-    check(not bad, "V7 every committed run has metrics.json", f"{len(bad)} run(s) committed as outputs only")
+    check("V7 every committed run has metrics.json", not bad, f"{len(bad)} run(s) committed as outputs only")
 
 
 def v9_no_committed_evidence_is_missing() -> None:
@@ -420,8 +420,8 @@ def v9_no_committed_evidence_is_missing() -> None:
     if len(missing) > 5:
         print(f"       ... and {len(missing) - 5} more missing files")
     check(
-        not missing and not incomplete,
         "V9 every committed run file is on disk, with its rows",
+        not missing and not incomplete,
         f"{len(missing)} tracked file(s) missing, {len(incomplete)} run(s) incomplete",
     )
 
@@ -433,7 +433,7 @@ def v9_no_committed_evidence_is_missing() -> None:
             short.append(f"{name}: {n} runs, expected at least {floor}")
     for x in short:
         print(f"       {x}")
-    check(not short, "V9 each committed runs directory meets its floor", "; ".join(short))
+    check("V9 each committed runs directory meets its floor", not short, "; ".join(short))
 
 
 def v10_derived_runs_carry_the_current_scorer() -> None:
@@ -565,16 +565,16 @@ def v10_derived_runs_carry_the_current_scorer() -> None:
         for x in silent[:5]:
             print(f"       {x} states no hash at {'.'.join(path)}")
         check(
-            not silent,
             f"V10 {directory}: every run states its scorer",
+            not silent,
             f"{len(silent)} of {len(runs)} run(s) record nothing at "
             f"{'.'.join(path)} — a derived run must say what derived it",
         )
         for x in stale[:5]:
             print(f"       {x} != the code")
         check(
-            not stale and checked > 0,
             label,
+            not stale and checked > 0,
             f"{len(stale)} mismatch(es) over {checked} derived run(s)"
             if stale
             else "no run was compared at all",
@@ -652,8 +652,8 @@ def v8_no_duplicate_config_ids() -> None:
     if len(bad) > 6:
         print(f"       ... and {len(bad) - 6} more")
     check(
-        not bad,
         "V8 no two runs share a config_id (outside a --repeat set)",
+        not bad,
         f"{len(bad)} ambiguous config_id(s)",
     )
 
@@ -801,7 +801,7 @@ def _report(bad: list[str], label: str, noun: str) -> None:
         print(f"       {x}")
     if len(bad) > 6:
         print(f"       ... and {len(bad) - 6} more")
-    check(not bad, label, f"{len(bad)} {noun}")
+    check(label, not bad, f"{len(bad)} {noun}")
 
 
 def v11_judging_sets_match_their_hash() -> None:
@@ -895,8 +895,8 @@ def v14_goals() -> None:
                 )
     rule = f"; runs from {since} must name one" if since else "; optional (no required_from set)"
     check(
-        not bad,
         f"V14 goals — {len(goals)} goal(s), every goal named resolves{rule}",
+        not bad,
         f"{len(bad)} problem(s)",
     )
 
@@ -950,9 +950,9 @@ def v15_item_fields() -> None:
     for x in bad[:30]:
         print(f"       {x}")
     check(
-        not bad,
         f"V15 item fields — {len(loaded)} field set(s), {len(with_fields)} dataset(s) with fields, "
         "every value declared and typed",
+        not bad,
         f"{len(bad)} problem(s)",
     )
 

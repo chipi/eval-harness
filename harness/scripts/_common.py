@@ -1,4 +1,4 @@
-"""Shared helpers. Deliberately tiny — the skeleton should be readable in one sitting."""
+"""Shared helpers: paths and environment, metric semantics, adapter resolution, run grouping."""
 
 from __future__ import annotations
 

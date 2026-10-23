@@ -35,7 +35,7 @@ test = ["rouge-score"]
 evh = "evaluation_harness.cli:main"
 
 [project.urls]
-Homepage = "https://chipi.github.io/eval-harness/"
+Homepage = "https://evals.humancopilot.eu/"
 Source = "https://github.com/chipi/eval-harness"
 
 [tool.setuptools]

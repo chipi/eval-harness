@@ -27,15 +27,10 @@ HERE = Path(__file__).resolve().parent
 #: nothing and passes for the wrong reason. That is exactly how the first version of
 #: test_no_absolute_home_path_in_committed_data shipped green while checking nothing.
 ROOT = HERE.parent
-ROOT = HERE.parent
 PY = sys.executable
-failures: list[str] = []
+sys.path.insert(0, str(HERE))
 
-
-def check(label: str, ok: object, detail: object = "") -> None:
-    print(f"  {'ok  ' if ok else 'FAIL'} {label}" + (f" — {detail}" if detail and not ok else ""))
-    if not ok:
-        failures.append(label)
+from _check import check, results  # noqa: E402
 
 
 def run(*args: str, env: dict | None = None) -> subprocess.CompletedProcess:
@@ -1329,14 +1324,21 @@ def test_a_run_that_measured_nothing_is_not_a_success() -> None:
     # on the author's laptop and red in a fresh clone is the exact shape of bug this
     # review found elsewhere, so it must skip honestly instead.
     r2 = run("scripts/experiment_run.py", "--config", "data/configs/arm_b.yaml", env=env)
-    if r2.returncode != 0:
-        why = ((r2.stdout or "") + (r2.stderr or "")).strip().splitlines()
-        print(
-            f"  --   cost cap: skipped (the demo arm cannot run here: {why[-1][:70] if why else 'no output'})"
-        )
+    out2 = (r2.stdout or "") + (r2.stderr or "")
+    if r2.returncode != 0 and "is not materialized" in out2:
+        print("  --   cost cap: skipped (smoke_v1 is not materialized in this checkout)")
         shutil.rmtree(runs, ignore_errors=True)
         return
-    check("cost cap: an uncapped run of the same arm still exits 0", True)
+    # Any other failure of the control is a failure, not a skip.
+    why = out2.strip().splitlines()
+    check(
+        "cost cap: an uncapped run of the same arm still exits 0",
+        r2.returncode == 0,
+        f"exit {r2.returncode}: {why[-1][:90] if why else 'no output'}",
+    )
+    if r2.returncode != 0:
+        shutil.rmtree(runs, ignore_errors=True)
+        return
     shutil.rmtree(runs, ignore_errors=True)
 
     r = run(
@@ -3543,8 +3545,9 @@ def main() -> int:
 
             check(f"{fn.__name__} ran without raising", False, f"{type(exc).__name__}: {exc}")
             traceback.print_exc()
-    if failures:
-        print(f"\n{len(failures)} FAILED: {', '.join(failures)}")
+    failures = [label for label, passed in results if not passed]
+    if failures or not results:
+        print(f"\n{len(failures)} FAILED: {', '.join(failures)}" if failures else "\nFAIL  no self-test ran")
         return 1
     print("\nall self-tests passed")
     return 0

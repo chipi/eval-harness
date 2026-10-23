@@ -5,7 +5,7 @@
 [![verify](https://github.com/chipi/eval-harness/actions/workflows/reproduce.yml/badge.svg?branch=main)](https://github.com/chipi/eval-harness/actions/workflows/reproduce.yml)
 [![site](https://github.com/chipi/eval-harness/actions/workflows/deploy-prod.yml/badge.svg?branch=main)](https://evals.humancopilot.eu/)
 [![docs](https://img.shields.io/badge/docs-docs.evals.humancopilot.eu-c8ff3d)](https://docs.evals.humancopilot.eu/)
-[![python](https://img.shields.io/badge/python-3.11%2B-3776ab)](harness/README.md)
+[![python](https://img.shields.io/badge/python-3.11%2B_(package_3.9%2B)-3776ab)](docs/REPRODUCE.md)
 [![demo](https://img.shields.io/badge/demo-no%20API%20key-2ea44f)](#try-it-in-a-minute)
 [![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
@@ -97,7 +97,8 @@ gold (checked by a person) or silver (written by a model). The refusals are the 
 
 ## Try it in a minute
 
-You need `git`, `make` and Python ≥ 3.11.
+You need `git`, `make` and Python ≥ 3.11 (the worked examples need it; the `evaluation-harness`
+package alone runs on 3.9).
 
 ```bash
 git clone https://github.com/chipi/eval-harness && cd eval-harness/harness

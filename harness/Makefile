@@ -2,11 +2,6 @@
 #
 # Drop this directory into a project, point `data/sources/` at your inputs, edit
 # ONE function in scripts/adapter.py, and the loop below works.
-#
-# Target names deliberately mirror the conventions of the project this pattern
-# came from, so muscle memory transfers: dataset-create, dataset-materialize,
-# experiment-dry-run, experiment-run, run-compare, run-promote, runs-list,
-# baselines-list, validate, check, ci.
 
 # Prefer the venv `make install` creates, so `make install` is not immediately followed by
 # having to pass PYTHON=.venv/bin/python to every other target. Overridable as before.
@@ -24,7 +19,8 @@ TIER ?= silver
         holdout pair-test rank-stability \
         experiment-dry-run experiment-run sweep \
         runs-list baselines-list run-compare leaderboard run-promote \
-        validate judge judge-score check guide-check browser-install browser-check ci test smoke-fixture cost-report clean clean-cache
+        validate judge judge-score check guide-check browser-install browser-check ci test smoke-fixture cost-report clean clean-cache \
+        bootstrap-test family-test import-run rescore silver-calibrate site site-check docs
 
 # ── getting started ─────────────────────────────────────────────────────────
 help:
@@ -66,8 +62,8 @@ help:
 	@echo "ASK ONE QUESTION  (free — no API calls)"
 	@echo "  make pair-test DATASET_ID=my_v1 A=<arm> B=<arm> [FAMILY=n]"
 	@echo "  make family-test DATASET_ID=my_v1 A=<arm> AGAINST=<substring> [ITEMS=f]"
-	@echo "      one arm vs a family named in advance; real Holm step-down"
-	@echo "      one pair you named BEFORE reading the table, sign-flip permutation"
+	@echo "      the pair: one pair you named BEFORE reading the table, sign-flip permutation"
+	@echo "      the family: one arm vs a family named in advance; real Holm step-down"
 	@echo "  make rank-stability DATASET_ID=my_200"
 	@echo "      how many items before the ordering stops moving? measured, not assumed"
 	@echo "  make holdout DATASET_ID=my_200 EXCLUDE=my_20"
@@ -86,7 +82,7 @@ help:
 	@echo "  make leaderboard DATASET_ID=my_v1 MATCH=_v2   only v2 arms"
 	@echo "  EVAL_RUNS_DIR=<dir>                           run/read elsewhere, e.g. a"
 	@echo "                                                smoke pass or a rescore"
-	@echo "  make check                    validate + test"
+	@echo "  make check                    validate + test + guide-check"
 	@echo ""
 	@echo "Read docs/INTEGRATION.md first, then docs/RUNBOOK.md."
 
@@ -94,7 +90,7 @@ install venv-init:
 	@test -d $(VENV) || $(PYTHON) -m venv $(VENV)
 	$(VENV)/bin/pip install -q --upgrade pip
 	$(VENV)/bin/pip install -q -r requirements.txt
-	@echo "$(VENV) ready. Use it with:  make <target> PYTHON=$(VENV)/bin/python"
+	@echo "$(VENV) ready; every target uses it."
 
 # The inspector's browser test: Playwright and its Chromium, in this checkout's venv. A
 # development extra, like the docs build: `make ci` runs without it, and CI runs
@@ -321,7 +317,7 @@ ci: check site-check
 # panel below.
 judge-score:
 	@test -n "$(SCORER)" || { echo 'SCORER=<id in data/scorers/> is required'; exit 1; }
-	$(PYTHON) scripts/judge_score.py --dataset-id $(if $(EXP),$(EXP),$(DATASET_ID)) --scorer $(SCORER) $(ARGS)
+	$(PYTHON) scripts/judge_score.py --dataset-id $(DATASET_ID) --scorer $(SCORER) $(ARGS)
 
 # The judge panel: promote -> judge -> aggregate -> report over candidate runs.
 # Keyless by default (FakeJudge).
