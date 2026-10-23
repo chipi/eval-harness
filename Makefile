@@ -114,7 +114,7 @@ spelling:
 
 shell:
 	git ls-files -z -- '*.sh' | xargs -0 $(BIN)/shellcheck
-	$(BIN)/actionlint
+	$(BIN)/actionlint -shellcheck $(BIN)/shellcheck
 
 complexity:
 	$(BIN)/radon cc harness/scripts harness/judges.py harness/runner.py -nc -s --total-average
