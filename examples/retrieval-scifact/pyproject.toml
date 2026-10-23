@@ -41,12 +41,17 @@ dependencies = [
 local = [
     "torch>=2.2,<2.3; sys_platform == 'darwin' and platform_machine == 'x86_64'",
     "torch>=2.6; sys_platform != 'darwin' or platform_machine != 'x86_64'",
-    "transformers>=4.40,<4.56",
+    "transformers>=4.40,<4.56; sys_platform == 'darwin' and platform_machine == 'x86_64'",
+    # Everywhere else, 5.10 or later: 4.55.4 carries ten published advisories (pip-audit,
+    # 2026-10-22). The ceiling above stays on the one platform torch caps at 2.2.
+    "transformers>=5.10; sys_platform != 'darwin' or platform_machine != 'x86_64'",
     # The bi-encoders. `sentence-transformers` rather than raw transformers because the
     # pooling strategy is part of the model -- mean-pooling a checkpoint that was trained
     # with CLS pooling silently produces worse embeddings and no error, which is exactly
     # the class of silent misconfiguration this repo fingerprints against.
-    "sentence-transformers>=2.7,<4",
+    "sentence-transformers>=2.7,<4; sys_platform == 'darwin' and platform_machine == 'x86_64'",
+    # 3.4.1 carries an advisory fixed in 5.6; 5.x needs the transformers 5 above.
+    "sentence-transformers>=5.6; sys_platform != 'darwin' or platform_machine != 'x86_64'",
 ]
 
 [tool.uv]

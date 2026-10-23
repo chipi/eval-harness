@@ -98,16 +98,13 @@ security:
 	$(BIN)/pip-audit --progress-spinner off -r harness/requirements.txt \
 		-r harness/requirements-browser.txt -r harness/requirements-dev.txt -r site/requirements-docs.txt
 
-# The examples' uv.lock files pin what the published runs were measured with, so a finding
-# there is reported, not failed: upgrading a pin changes the instrument. Needs uv.
+# The examples' uv.lock files, audited per platform (a plain pip-audit skips every fork but this
+# machine's). Reported, not failed: upgrading a pin changes the instrument. Needs uv.
 audit-locks:
-	@for d in examples/*/; do [ -f "$$d/uv.lock" ] || continue; \
-		echo "== $$d"; (cd "$$d" && uv export --frozen --all-extras --no-hashes --no-emit-project \
-		--format requirements-txt -q) | $(BIN)/pip-audit --progress-spinner off --no-deps --disable-pip \
-		-r /dev/stdin || true; done
+	$(PY) examples/audit_locks.py
 
 deadcode:
-	$(BIN)/vulture harness/scripts harness/judges.py harness/runner.py examples site --min-confidence 80
+	$(BIN)/vulture harness/scripts harness/judges.py harness/runner.py examples site --min-confidence 80 --exclude '*/.venv/*'
 
 docstrings:
 	cd harness && .venv/bin/interrogate scripts judges.py runner.py

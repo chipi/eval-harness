@@ -100,20 +100,70 @@ _PIPE: Any = None
 _PIPE_KEY: Optional[tuple] = None
 
 
+class _Summarizer:
+    """What transformers 4.x's `pipeline("summarization")` did, step for step; transformers 5
+    removed that task. The committed runs were made through it, so this keeps its behaviour:
+
+    - generation settings: the pipeline's default (max_new_tokens=256, num_beams=4), every value
+      the checkpoint's generation_config sets away from the library default laid over it, the
+      256 dropped when the checkpoint sets its own max_length, then the config's legacy
+      task_specific_params["summarization"] (its `prefix` goes before the text);
+    - one text, no padding, `token_type_ids` dropped; decoded skipping special tokens, without
+      clean_up_tokenization_spaces.
+
+    The reruns check it: every BART arm must score item for item what the pipeline scored.
+    """
+
+    def __init__(self, model: str, revision: Optional[str], device: Any) -> None:
+        import copy  # noqa: PLC0415
+
+        from transformers import AutoModelForSeq2SeqLM, AutoTokenizer, GenerationConfig  # noqa: PLC0415
+
+        kw = {"revision": revision} if revision else {}
+        self.tokenizer = AutoTokenizer.from_pretrained(model, **kw)  # reproduce.py pins the revision (local_models.json)  # nosec B615
+        self.model = AutoModelForSeq2SeqLM.from_pretrained(model, **kw)  # reproduce.py pins the revision (local_models.json)  # nosec B615
+        self.device = device
+        if device is not None:
+            self.model.to(device)
+        default, library = GenerationConfig(max_new_tokens=256, num_beams=4), GenerationConfig()
+        gen = copy.deepcopy(default)
+        for key, value in self.model.generation_config.__dict__.items():
+            if key.startswith("_") or key == "transformers_version":
+                continue
+            if getattr(gen, key, None) == getattr(library, key, None) and value != getattr(library, key, None):
+                setattr(gen, key, value)
+        if gen.max_new_tokens == default.max_new_tokens and gen.max_length not in (None, 20):
+            gen.max_new_tokens = None
+        self.prefix = getattr(self.model.config, "prefix", None) or ""
+        task = dict((getattr(self.model.config, "task_specific_params", None) or {}).get("summarization") or {})
+        if "prefix" in task:
+            self.prefix = task.pop("prefix") or ""
+        gen.update(**task)
+        if self.tokenizer.pad_token_id is not None and gen.pad_token_id is None:
+            gen.pad_token_id = self.tokenizer.pad_token_id
+        self.generation_config = gen
+
+    def __call__(self, text: str, truncation: bool = False, **generate_kwargs: Any) -> list:
+        """[{"summary_text": ...}] for one text, as the pipeline returned it."""
+        inputs = self.tokenizer(self.prefix + text, padding=False, truncation=truncation, return_tensors="pt")
+        inputs.pop("token_type_ids", None)
+        if self.device is not None:
+            inputs = inputs.to(self.device)
+        ids = self.model.generate(**inputs, generation_config=self.generation_config, **generate_kwargs)
+        summary = self.tokenizer.decode(ids[0], skip_special_tokens=True, clean_up_tokenization_spaces=False)
+        return [{"summary_text": summary}]
+
+
 def _local_pipeline(params: Dict[str, Any]) -> Any:
     global _PIPE, _PIPE_KEY
     key = (params.get("model"), params.get("revision"), params.get("device"))
     if _PIPE is not None and _PIPE_KEY == key:
         return _PIPE
     from hf_identity import apply_precision  # noqa: PLC0415
-    from transformers import pipeline  # noqa: PLC0415 - only when an arm asks
 
-    kwargs: Dict[str, Any] = {"model": params["model"]}
-    if params.get("revision"):
-        kwargs["revision"] = params["revision"]
-    if params.get("device"):
-        kwargs["device"] = params["device"]
-    _PIPE = apply_precision(pipeline("summarization", **kwargs), params.get("precision"))
+    _PIPE = apply_precision(
+        _Summarizer(params["model"], params.get("revision"), params.get("device")), params.get("precision")
+    )
     # TEACH THE TOKENIZER ITS OWN LIMIT. `truncation=True` truncates to the TOKENIZER's
     # model_max_length, and bart-large-cnn's tokenizer_config.json does not set one -- so
     # it reports HuggingFace's VERY_LARGE_INTEGER sentinel (~1e30) and "truncate" becomes a

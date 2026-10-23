@@ -18,9 +18,9 @@ pinned in `harness/requirements-dev.txt`, ruff's rules in `ruff.toml`, mypy and 
 | ruff (format) | 97 files reformatted | 0 | none; style only |
 | mypy | 329 errors (default mode, 65 files) | 0 | **the bundled adapter's `anthropic` provider raised TypeError on every call** with the installed SDK (1.x dropped `temperature=`); `runner.py` crashed without a primary judge; `validate_judge_goyal` returned None into a dict caller; two report-claims checks could crash instead of reporting |
 | bandit (medium+) | 21 | 0 | **`_fetch.fetch` read any URL scheme**, so a manifest row `file:///…` copied a local file into the item cache and pinned it; now refused, with a test |
-| pip-audit | harness requirements: 0 | 0 | none in what the package declares; see "Open" for the examples' locks |
+| pip-audit | harness requirements: 0 | 0 | none in what the package declares; the examples' locks: see "The example lock upgrade" |
 | vulture (80%) | 1 | 0 | dead code (removed); later, an unused parameter in a test written the same day |
-| interrogate | 53.5% | ratchet at 53% | none (a coverage measure, not a defect finder) |
+| interrogate | 53.5% | 100% (161 added later; see below) | none (a coverage measure, not a defect finder) |
 | codespell | 189 hits | 0 | none: every hit was a domain word, a variable name, a paper title or a deliberate test typo |
 | shellcheck | 7 findings in 3 scripts | 0 | unquoted paths in an evidence script; one `A && B \|\| C` in the deploy script that was correct but read as a bug (rewritten as `if !`, both forms checked to decide identically) |
 | actionlint | 1 at the first baseline | 0 | the baseline's one finding no longer reproduces; which change removed it was not traced |
@@ -74,15 +74,67 @@ holding two calls (`from_pretrained(...).eval()`), though without the `nosec` it
 there. mypy 2.x no longer type-checks for Python 3.9, so mypy targets 3.10; the 3.9 floor is
 held by CI's package job, which runs `evh self-test` on 3.9.
 
-## Open, for the owner
+## What followed (2026-10-22/23)
 
-- **The examples' `uv.lock` files carry advisories**: transformers 4.55.4 (13 in every
-  example), pillow 12.3.0 (34, scifact), aiohttp 3.14.3 (8, few-nerd), sentence-transformers
-  3.4.1, nltk 3.10.3 and certifi 2026.7.22. Those pins are the environment the published
-  numbers were measured in, so upgrading one changes the instrument. `make audit-locks`
-  reports them and does not fail. Whether to gate on them is a decision, not a fix.
-- **Docstrings**: podcast requires 100% with the same exemptions; this repo is at 53.5% (161
-  public functions without one). The gate is a ratchet that stops it falling.
-- **The `quality` CI job is not yet a required check on `main`.**
+The owner's decisions on the open items: docstrings to 100% (podcast's bar, now the gate;
+161 added, the code unchanged, checked by comparing each file's AST without docstrings);
+`quality` added to `main`'s required checks; the vulnerable example pins upgraded, on Linux.
+
+### The example lock upgrade
+
+| Package | Was | Now (Linux) | Advisories cleared |
+|---|---|---|---|
+| transformers | 4.55.4 | 5.20.2 (few-nerd: stays 4.55.4) | 13 |
+| torch | 2.14.0 | 2.14.0 | the Intel-Mac fork's 2.2.2 carries 23; that platform is out of scope |
+| sentence-transformers | 3.4.1 | 6.2.0 | 1 |
+| pillow | 12.3.0 | 13.0.0 | 34 |
+| aiohttp | 3.14.3 | 3.14.5 | 8 |
+| nltk | 3.10.3 | 3.10.4 | 1 |
+| certifi | 2026.7.22 | 2026.10.19 | 1 |
+
+`make audit-locks` (`examples/audit_locks.py`) resolves each lock per platform before
+auditing: a plain `pip-audit` evaluates the lock's markers against the machine it runs on, so on
+Linux it had silently skipped the Intel-Mac fork, torch 2.2.2 included. After the upgrade every
+lock is clean on Linux and Apple-silicon macOS except few-nerd's transformers, accepted below.
+
+### Every local arm re-run against the committed record (`make compare`)
+
+| Experiment | Arms | Result |
+|---|---|---|
+| ag-news | 6 | exact, 200/200 items each |
+| dbpedia | 4 | exact, 280/280 |
+| scifact | 7 | exact, 200/200 (sentence-transformers 3 to 6) |
+| few-nerd | 4 | exact, 280/280 (on transformers 4.55.4) |
+| summarization | 5 | 4 exact; bart_s 199/200, see below |
+| summeval | 9 | 7 exact; unieval 65/100 and unievalpub 63/100 items identical, means within 0.0002, paired p 0.42 and 0.49 |
+| summarization-dailymail | 5 | not re-run: the datasets-server answered HTTP 429 to every request from this machine for hours; scheduled to retry |
+
+Every committed separation and tie holds in every experiment that ran.
+
+What transformers 5 broke, and what was done:
+
+1. **The summarization pipeline is gone.** The summarization adapter's `pipeline("summarization")`
+   is replaced by `_Summarizer`, which repeats what transformers 4.55's pipeline did (its
+   generation-config assembly, `task_specific_params`, prefix, tokenisation, decoding), read from
+   the 4.55.4 source. Checked: on the same text the real 4.55.4 pipeline and `_Summarizer` give
+   the same summary, and the BART arms reproduce.
+2. **bart_s's one moved item is not the upgrade.** Its committed run (2026-09-30) predates the
+   2026-10-14 fix that made `precision: fp32` real, so it ran distilbart-cnn-6-6 in fp16 as
+   stored. The real 4.55.4 pipeline at fp16 reproduces the committed output; at fp32, the rerun's.
+3. **span-marker has no transformers 5 release.** 1.6 to 1.8.1 (the last) declare
+   transformers<5; forced onto 5.x, its config loses `num_labels` and its span attention mask is
+   a shape 5.x's RoBERTa masking rejects. The owner chose to keep few-nerd on transformers
+   4.55.4; its advisories are listed as accepted in `audit_locks.py`.
+4. **UniEval's tokenizer changed.** transformers 5 builds a different T5 tokenizer from the same
+   `spiece.model`: it drops the space token before each literal `</s>` in UniEval's prompts, which
+   moved one arm's tau by +0.0031. The tokenizer 4.55 built is now shipped
+   (`examples/summeval-judging/unieval_tokenizer/tokenizer.json`, sha256 pinned and checked at
+   load) and gives 4.55's token ids exactly. What remains is T5 arithmetic in 5.x differing by
+   about 1e-7 in P(Yes) (eager attention does not remove it), enough to reorder near-tied
+   summaries within an article, not to move a finding.
+
+## Still open
+
+- **The DailyMail slice** has not been re-run (see the table).
 - Three separate `spearman` implementations exist (`judging`, `rank_stability`,
   `summeval_analysis`). Not changed here.
