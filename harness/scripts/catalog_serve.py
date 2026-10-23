@@ -543,11 +543,12 @@ def warm(build_dir: Path) -> int:
     return len(links)
 
 
-def served(build_dir: Path, data_dir: Path) -> tuple:
-    """The URL prefixes readable over HTTP: the built catalog and the data tree, both under
-    the project root (the server's document root)."""
+def served(build_dir: Path, data_dir: Path, also: tuple = ()) -> tuple:
+    """The URL prefixes readable over HTTP: the built catalog, the data tree and any directory
+    the adapter names in `served_dirs` (a project whose pages link its reports), all under the
+    project root (the server's document root)."""
     out = []
-    for p in (build_dir, data_dir):
+    for p in (build_dir, data_dir, *also):
         try:
             out.append("/" + p.resolve().relative_to(ROOT.resolve()).as_posix().strip("/") + "/")
         except ValueError:
@@ -678,7 +679,7 @@ def main() -> int:
             raise SystemExit("--bind other than 127.0.0.1 needs --public (and a proxy in front)")
         if not (args.build_dir / "index.html").is_file():
             raise SystemExit(f"no catalog at {args.build_dir}: run `evh catalog` first")
-        Handler.prefixes = served(args.build_dir, A.data_dir)
+        Handler.prefixes = served(args.build_dir, A.data_dir, tuple(getattr(A, "served_dirs", ())))
     if args.warm:
         threading.Thread(
             target=lambda: print(f"warm: {warm(args.warm)} comparison(s) cached", flush=True), daemon=True

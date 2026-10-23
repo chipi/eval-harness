@@ -140,6 +140,12 @@ try:
         prefixes == ("/.build/catalog/", "/data/"),
         prefixes,
     )
+    (tmp / "docs").mkdir(exist_ok=True)
+    check(
+        "served: a directory the adapter names in served_dirs, and only that",
+        cs.served(out, data, (tmp / "docs",)) == ("/.build/catalog/", "/data/", "/docs/"),
+        cs.served(out, data, (tmp / "docs",)),
+    )
     cs.Handler.prefixes = prefixes
     srv = ThreadingHTTPServer(("127.0.0.1", 0), partial(cs.Handler, directory=str(tmp)))
     port = srv.server_address[1]

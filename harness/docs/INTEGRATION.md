@@ -203,6 +203,7 @@ which references exist, what one arm wrote for one item.
   | what each item is (optional) | `item_fields(dataset)`: `{"fieldset": <field set>, "values": {item_id: {field: value}}}` |
   | how big each dataset is (optional) | `dataset_items(dataset)`: its item count; without it the catalog shows the most items any arm scored |
   | words and places | `item_word` (e.g. `"episode"`), `data_dir` |
+  | more files the pages link (optional) | `served_dirs`: further directories under the project the inspector serves read-only, beside `data_dir` (a project's reports) |
 
   Item text is only ever returned by `item_view` and `reference_view`, which only the local
   inspector calls: the static pages never carry it, whatever the adapter.

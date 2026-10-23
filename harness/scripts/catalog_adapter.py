@@ -141,6 +141,8 @@ class Adapter(Protocol):
     # Optional (ADR-0003); `item_fields(A, dataset)` below answers for an adapter without it.
     # def item_fields(self, dataset: str) -> dict:
     #     {"fieldset": <fieldset.schema.json document> or None, "values": {item_id: {field: value}}}
+    # Optional: served_dirs, a tuple of further directories under the project the inspector
+    # may serve read-only (the catalog's links into a project's reports); none by default.
     # Optional: how many items a dataset has. Without it the catalog shows the most items any
     # arm scored, which undercounts a dataset no arm covered fully.
     # def dataset_items(self, dataset: str) -> Optional[int]: ...
