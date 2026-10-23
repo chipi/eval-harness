@@ -7,8 +7,24 @@ correctness bugs, not just missing features.
 
 ## From 0.3.0 to 0.4.0
 
-Change the pin to `@v0.4.0`. No dependency is added; nothing in your adapters, configs or
-runs has to change.
+Change the pin to `@v0.4.0`. No dependency is added. 0.4.0 reads only its own record
+format, so check these before you trust a `validate`:
+
+- **Derived runs** (rescore, judge-score) record `derived: {kind, from, at, with}`; the
+  0.3.0 fields (`rescored_*`, `judged_*`, `judge_label`, `primary_metric_asc`) are read by
+  nothing. Re-run `rescore` / `judge-score` on the runs you keep.
+- **Baselines** carry the run's reference tier, adapter and fingerprint hash, and V6 fails
+  one that does not: promote each again (`evh run-promote`).
+- **Configs** may hold only `config_id`, `dataset_id`, `params`, `adapter`, `goal` and
+  `format` (V1); anything else was read by nothing.
+- **Judge verdicts** need `output_sha256` and `output_withheld` (V1): the hash of the stored
+  reply, and false.
+- **`--resume`** takes a run made by 0.4.0 (rows with `_extra`); `--resume-unverified` is
+  gone.
+- **Your adapter**: put it at the project root as `adapter.py` and an arm with no `adapter:`
+  uses it. Code that imported `catalog_adapter.load_adapter` imports `load_catalog_adapter`;
+  a script that relied on importing the package to read `.env` loads it itself
+  (`evaluation_harness._common.load_dotenv()`).
 
 **What can move a number:**
 - **`pair-test` and `family-test` on 30 items or fewer** now count the exact p over all 2^n

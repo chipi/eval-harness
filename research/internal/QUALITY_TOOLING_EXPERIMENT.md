@@ -203,3 +203,34 @@ environment-variable prefixes.
 Kept on purpose, by the owner's call: `pair-test --family N` (Bonferroni for one
 pre-registered pair, which cannot run Holm) and `--out` meaning a runs directory in `rescore`
 and a site directory in `catalog` (published commands use both).
+
+### A second design review: architecture (2026-10-23)
+
+A second read-only review, of the architecture rather than the code: where a contract lived,
+who could reach what, and what a project pinning the package would meet. Five findings that
+could give a wrong reading, twelve structural ones. The owner's two decisions set its terms:
+no backward compatibility (nobody uses the harness yet), and one record per
+arm, the latest.
+
+| Finding | What was wrong | Now |
+|---|---|---|
+| The data root | the fingerprint read `<root>/data`, so a project with `EVAL_DATA_DIR` recorded no reference hash, and its own run output made the tree dirty | the data root everywhere |
+| Unchecked run directories | V1, V2, V3, V5 and V14 read `data/runs` alone; 68 committed derived runs were never validated | every committed directory |
+| Direction | a goal's direction ordered the goal page while every command read the name table | flag > goal > adapter (`METRIC_DIRECTIONS`) > name, one function; V14 holds goals to their runs |
+| Derived runs | rescore, judge-score and the re-parse each wrote their own provenance fields, and a derived run kept its source's `created_at` | `_record.py`: `derived: {kind, from, at, with}`; the derived directories folded into one record per arm |
+| Import side effects | importing the package read `.env` into the environment and fixed every path from the current directory | `.env` read by the commands; paths resolved on first use |
+
+The structural ones: run walks left in `_common` (now `_runs`), thirty `sys.path` inserts at
+import, the judge panel outside the package (now `evh judge`), checkout-only lookups taken in
+a pinned project, a cache key listing its dependencies by hand, the seam documented as an edit
+to the package's own `scripts/adapter.py` (now `<project>/adapter.py`), configs, scorers,
+judging sets and verdicts with no schema (V1 now checks 3023 documents), baselines that dropped
+the reference tier and fingerprint (V6 now checks them against the run), and three commands
+whose `main` ran to a cyclomatic complexity of 67 to 77 (rescore 77 → 26, experiment-run 67 →
+48, leaderboard 71 → 56), with one aggregation instead of three copies.
+
+Found on the way: `rescore` recorded `untyped_tp` as a dropped metric on 24 NER runs that
+report it (corrected in the data); the GUIDE quoted a file count the judge panel's kit file
+had moved; 2798 verdicts written before `output_sha256` existed (backfilled from the stored
+reply). Every leaderboard and run-compare reads the same before and after the refactors, and
+rescore writes the same 1337 files.

@@ -33,13 +33,18 @@ This repository now deploys the harness on its own example experiments:
 The deployment files are in `infra/` (runbook: `infra/README.md`). They are not part of the
 package.
 
+The example experiments keep one record per arm, the latest: the rescored and re-parsed runs
+are folded into `data/runs` as derived runs, and DailyMail's `bart_s` is its fp32 run
+(coverage 0.4048; the fp16 run read 0.4039). CNN's `bart_s` stays the fp16 run, the one the
+judge's verdicts were made on.
+
 ### Changed
 - **Exact p-values at 30 items or fewer.** `pair-test` and `family-test` now count the
   two-sided sign-flip p over all 2^n sign patterns when a pair shares 30 items or fewer, instead
   of estimating it from 20,000 seeded permutations. Above 30 items the estimate is unchanged,
   bit for bit, including `family-test`'s single stream across opponents. Near a threshold the
   estimate could land on either side of it; the count cannot. **This can move a result**:
-  - **in this repository's reports:** none moved. All 201 report claims re-derive unchanged,
+  - **in this repository's reports:** none moved. All 199 report claims re-derive unchanged,
     because every published pair and family test is on more than 30 items;
   - **in the tutorial** (6 items): `pair-test` reads 0.0312 (was 0.0330), and the family test
     0.0938 against `lead1` and 0.3125 against `author` (`lead2_noisy`'s is unseeded and moves
@@ -78,7 +83,7 @@ package.
   and "ahead", the leaderboard's order and significance block, `holdout` and `rank-stability`.
   `leaderboard --sort latency_ms` ranked the slowest arm first. p-values do not change (the
   tests are two-sided); `--asc` and `--desc` override. **This can move** a wins or "ahead"
-  count, and an order, on a lower-is-better metric; no published claim is on one (201/201
+  count, and an order, on a lower-is-better metric; no published claim is on one (199/199
   re-derive).
 - **`validate` checks the project's own run directories.** V7, V8 and V9 read this
   repository's six directory names, so a project's `data/runs-adjudicated` was never checked;
@@ -99,6 +104,31 @@ package.
 - **The bundled adapter refuses an unknown `provider:`** (a typo fell back to `echo` and
   recorded the echoed input as the model's output), and records what an OpenAI-compatible
   provider billed when the response carries it. One price rule for it and the judges.
+- **One run record, one format; a derived run says what it was derived from.** `rescore`,
+  `judge-score` and the SciFact re-parse write `derived: {kind, from, at, with}`, their own
+  `created_at`, and `source_created_at`. `rescored_from`, `rescored_with`, `judged_from`,
+  `judged_with`, `judge_label`, `reparsed_*` and `primary_metric_asc` are gone, and nothing
+  reads them: a 0.3.0 derived run is read as a measured one. Every field the harness writes
+  is declared in `metrics.schema.json`. `rescore` no longer records a metric it kept as
+  dropped (`rescore_dropped_metrics` named whichever key a loop ended on).
+- **`--resume-unverified` is gone.** `experiment-run --resume` refuses rows written before
+  0.4.0 (no `_extra`); experiment-run writes `_extra` on every row, so its own rows resume.
+- **The integration seam is `adapter.py` at the project root.** An arm whose config names no
+  `adapter:` uses it, recorded as `adapter.py`, and the bundled adapter only when there is
+  none. The docs lead with the pin and `evh init` rather than a copied `harness/`.
+- **Importing the package changes nothing.** `.env` is read when a harness command starts,
+  not on import, and the project's paths resolve on first use, so an adapter's tests or a
+  notebook can set `EVAL_HOME` after the import. `evaluation_harness.catalog_adapter` reads
+  no path at import, and its `load_adapter` is `load_catalog_adapter`.
+- **Configs, judge scorers, judging sets and verdicts have schemas, and `validate` V1 checks
+  them.** A config key other than `config_id`, `dataset_id`, `params`, `adapter`, `goal` and
+  `format` fails (a mistyped key was read by nothing and passed).
+- **A baseline carries what its number means**: `run-promote` records the run's reference
+  tier, adapter and fingerprint hash, `runs-list --baselines` prints the tier and adapter, and
+  V6 fails a baseline that no longer matches its run. A 0.3.0 baseline fails V6 until it is
+  promoted again.
+- **The judge panel is a command, `evh judge`** (it sat beside the package and could not run
+  from a pin); the tutorial kit ships `tutorial/judge_panel.yaml`.
 
 ### Fixed
 - **`evh rescore` and `evh silver-calibrate` in a project that pins the package.** A run
