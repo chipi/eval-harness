@@ -75,7 +75,7 @@ from _common import (  # noqa: E402
     die,
     item_selection,
 )
-from _labels import gold_labels, per_class, predictions  # noqa: E402
+from _labels import per_class, predictions, reference_labels  # noqa: E402
 from _runs import warn_on_ambiguous_runs  # noqa: E402
 from stats import holm  # noqa: E402 -- one Holm: p equal to its threshold is separated
 
@@ -111,7 +111,7 @@ def main() -> int:
     # saying so. See _runs.warn_on_ambiguous_runs.
     warn_on_ambiguous_runs(RUNS, args.dataset_id, label=RUNS.name)
 
-    gold = gold_labels(args.dataset_id)
+    gold = reference_labels(args.dataset_id, "gold")
     labels = sorted(set(gold.values()))
     # FOR CLASSIFICATION ONLY. Its gold is one label per item from a small set; a gold set of
     # free text (summaries, answers) makes every item its own "class", and macro-F1 over that

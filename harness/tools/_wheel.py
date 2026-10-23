@@ -11,7 +11,7 @@ checkout, so it leaves no build/ or *.egg-info behind and two tests can build at
 
 The deploy installs the inspector the same way, for the same reason:
 
-    python3 harness/tests/_wheel.py install <target-dir>
+    python3 harness/tools/_wheel.py install <target-dir>
 """
 
 from __future__ import annotations

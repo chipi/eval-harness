@@ -46,7 +46,7 @@ from _common import (  # noqa: E402
     die,
     item_path,
 )
-from _labels import UNPARSED, gold_labels, per_class, predictions  # noqa: E402
+from _labels import UNPARSED, per_class, predictions, reference_labels  # noqa: E402
 from _runs import warn_on_ambiguous_runs  # noqa: E402
 
 
@@ -114,7 +114,7 @@ def main() -> int:
     # saying so. See _runs.warn_on_ambiguous_runs.
     warn_on_ambiguous_runs(RUNS, args.dataset_id, label=RUNS.name)
 
-    gold = gold_labels(args.dataset_id)
+    gold = reference_labels(args.dataset_id, "gold")
     labels = sorted(set(gold.values()))
     preds = predictions(args.dataset_id, args.match)
     if not preds:

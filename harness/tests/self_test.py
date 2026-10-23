@@ -3089,6 +3089,7 @@ def test_hints_name_the_command_the_user_has() -> None:
 
     tmp = Path(tempfile.mkdtemp(prefix="harness-hints-"))
     try:
+        sys.path.insert(0, str(ROOT / "tools"))
         import _wheel  # noqa: PLC0415 — the real wheel, so package-data omissions fail here
 
         site = _wheel.install(tmp / "site-packages")
@@ -3167,6 +3168,7 @@ def test_rescore_finds_the_bundled_adapter_from_an_installed_package() -> None:
 
     tmp = Path(tempfile.mkdtemp(prefix="harness-installed-rescore-"))
     try:
+        sys.path.insert(0, str(ROOT / "tools"))
         import _wheel  # noqa: PLC0415 — the real wheel, so package-data omissions fail here
 
         site = _wheel.install(tmp / "site-packages")
@@ -3336,6 +3338,7 @@ def test_judge_score_runs_from_an_installed_package() -> None:
 
     tmp = Path(tempfile.mkdtemp(prefix="harness-installed-"))
     try:
+        sys.path.insert(0, str(ROOT / "tools"))
         import _wheel  # noqa: PLC0415 — the real wheel, so package-data omissions fail here
 
         site = _wheel.install(tmp / "site-packages")

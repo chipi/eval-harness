@@ -47,7 +47,7 @@ cp -a "$ROOT/site/public" "$OUT/sites/$SITE/public"
 # of scripts/ would hide anything package-data leaves out, the reason the tests install the
 # wheel too), and the data it reads, nothing else. A directory of files: nothing is
 # installed on the box.
-python3 "$ROOT/harness/tests/_wheel.py" install "$OUT/inspector/pkg"
+python3 "$ROOT/harness/tools/_wheel.py" install "$OUT/inspector/pkg"
 for d in "$ROOT"/harness/data/runs* "$ROOT"/harness/data/{references,datasets,goals}; do
   [ -d "$d" ] && cp -a "$d" "$OUT/inspector/data/"
 done

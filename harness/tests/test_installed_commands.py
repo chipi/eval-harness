@@ -30,6 +30,7 @@ HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tests/
 REPO = HERE.parent.parent  # the checkout (infra/ is not part of the package)
 sys.path.insert(0, str(HERE))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))  # _wheel, shared with the deploy
 import _wheel  # noqa: E402
 from _check import check, summary  # noqa: E402
 from cli import COMMANDS  # noqa: E402

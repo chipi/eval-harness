@@ -385,13 +385,12 @@ class HarnessAdapter:
     @_memo
     def item_fields(self, dataset: str) -> dict:
         """Return a dataset's declared fields and items' values."""
-        import yaml  # noqa: PLC0415
+        from _fields import load_fieldset  # noqa: PLC0415
 
         ds = _json(self.data_dir / "datasets" / f"{dataset}.json") or {}
-        f = self.data_dir / "fields" / f"{ds.get('fieldset', '')}.yaml"
-        fs = yaml.safe_load(f.read_text(encoding="utf-8")) if ds.get("fieldset") and f.is_file() else None
+        fs = load_fieldset(ds["fieldset"], self.data_dir / "fields") if ds.get("fieldset") else None
         return {
-            "fieldset": fs if isinstance(fs, dict) else None,
+            "fieldset": fs or None,
             "values": {it["item_id"]: it.get("fields") or {} for it in ds.get("items") or []},
         }
 

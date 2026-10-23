@@ -17,11 +17,11 @@ from _runs import item_rows, runs_on
 UNPARSED = "<unparsed>"
 
 
-def gold_labels(dataset_id: str) -> dict:
-    """item_id -> gold label, from the tracked gold reference files."""
-    root = _common.REFERENCES / "gold" / dataset_id
+def reference_labels(dataset_id: str, tier: str) -> dict:
+    """item_id -> label, from the reference files of one tier (`gold`, `silver`)."""
+    root = _common.REFERENCES / tier / dataset_id
     if not root.is_dir():
-        die(f"no gold references at {root}")
+        die(f"no {tier} references at {root}")
     return {p.stem: p.read_text(encoding="utf-8").strip() for p in root.glob("*.txt")}
 
 

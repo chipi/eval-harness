@@ -29,16 +29,16 @@ _CLOCK = re.compile(r"^(?:(\d+):)?(\d{1,2}):(\d{1,2}(?:\.\d+)?)$")
 _TRUE, _FALSE = {"true", "yes", "1", "y"}, {"false", "no", "0", "n"}
 
 
-def fieldset_path(fieldset_id: str) -> Path:
-    """Return the path to a field set file."""
-    return _common.FIELDS / f"{fieldset_id}.yaml"
+def fieldset_path(fieldset_id: str, fields_dir: Path | None = None) -> Path:
+    """Return the path to a field set file (in the project's `data/fields/` by default)."""
+    return (fields_dir or _common.FIELDS) / f"{fieldset_id}.yaml"
 
 
-def load_fieldset(fieldset_id: str) -> dict[str, Any] | None:
+def load_fieldset(fieldset_id: str, fields_dir: Path | None = None) -> dict[str, Any] | None:
     """The field set's document, or None when there is no such file."""
     import yaml  # noqa: PLC0415
 
-    p = fieldset_path(fieldset_id)
+    p = fieldset_path(fieldset_id, fields_dir)
     if not p.is_file():
         return None
     doc = yaml.safe_load(p.read_text(encoding="utf-8"))
