@@ -461,7 +461,11 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
         ("audience", (g.get("context") or {}).get("audience", "")),
         (
             "decides",
-            f"{measure}, {prim.get('direction', '')} is better"
+            (
+                f"{measure}, {prim['direction']} is better"
+                if prim.get("direction") in ("higher", "lower")
+                else f"{measure}, no significant drop against the baseline"
+            )
             + (f"; threshold {prim['threshold']}" if prim.get("threshold") is not None else ""),
         ),
         ("min items", crit.get("min_items", "")),

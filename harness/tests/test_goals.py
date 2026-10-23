@@ -154,6 +154,29 @@ try:
         "catalog: the goals index links it",
         "g/tickets_summary.html" in (proj / ".build/catalog/goals.html").read_text(),
     )
+
+    # An engineering goal checked by a gate: no dataset, and a guard, not a ranking direction.
+    (data / "goals" / "no_drop.yaml").write_text(
+        "goal_id: no_drop\ntitle: No regression\nstatement: Nothing drops between builds.\n"
+        "decision: Block a build.\ndatasets: []\n"
+        "success_criteria:\n  primary: {measure: score, direction: non_inferior}\n",
+        encoding="utf-8",
+    )
+    r, line = validate()
+    check(
+        "V14: a gate goal with no dataset and a non_inferior criterion is valid",
+        line.startswith("  ok"),
+        line,
+    )
+    r = evh("catalog")
+    gate = proj / ".build" / "catalog" / "g" / "no_drop.html"
+    check(
+        "catalog: its page says what non_inferior means, not 'non_inferior is better'",
+        gate.is_file()
+        and "no significant drop against the baseline" in gate.read_text()
+        and "non_inferior is better" not in gate.read_text(),
+        r.stderr[-300:],
+    )
 finally:
     shutil.rmtree(proj, ignore_errors=True)
 

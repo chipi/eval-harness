@@ -118,7 +118,8 @@ p 0.36, from the pre-fix run), and DBpedia's 56-item dev slice, over today's 28 
   is declared in `metrics.schema.json`, and V1 fails a run record with any other (0.3.0's
   `import-run --asc` wrote `primary_metric_asc`, which nothing read; 0.4.0 writes
   `metric_directions`, which every command reads). `EVAL_GOALS_DIR` reads goals from outside
-  the data root; `latency_s` is a speed metric, lower is better, as `latency_ms` is. `rescore` no longer records a metric it kept as
+  the data root; `latency_s` is a speed metric, lower is better, as `latency_ms` is. A goal may name no dataset (one checked by a gate) and may set
+  `direction: non_inferior`, a guard that ranks nothing (no significant drop against a baseline). `rescore` no longer records a metric it kept as
   dropped (`rescore_dropped_metrics` named whichever key a loop ended on).
 - **`--resume-unverified` is gone.** `experiment-run --resume` refuses rows written before
   0.4.0 (no `_extra`); experiment-run writes `_extra` on every row, so its own rows resume.
