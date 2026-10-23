@@ -17,10 +17,10 @@ import sys
 from pathlib import Path
 from typing import Any
 
+import _common
 from _common import (
     BUNDLED_ADAPTER_ID,
     CODE,
-    ROOT,
     ModuleNotLoadable,
     adapter_search_dirs,
     die,
@@ -218,7 +218,7 @@ def load_adapter(
     else:
         if config_path is not None:
             candidates.append(config_path.resolve().parent / path)
-        candidates.append(ROOT / path)
+        candidates.append(_common.ROOT / path)
     for candidate in candidates:
         if candidate.is_file():
             path = candidate

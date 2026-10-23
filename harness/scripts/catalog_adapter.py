@@ -35,10 +35,9 @@ from typing import Protocol
 
 HERE = Path(__file__).resolve().parent
 
+import _common  # noqa: E402
 from _common import (  # noqa: E402
     BOOKKEEPING_PREFIXES,
-    DATA,
-    ROOT,
     ModuleNotLoadable,
     is_descriptive,
     load_goals,
@@ -177,7 +176,7 @@ class HarnessAdapter:
     can_rescore = False
 
     def __init__(self, data_dir: Path | None = None):
-        self.data_dir = Path(data_dir or DATA)
+        self.data_dir = Path(data_dir or _common.DATA)
 
     # -- arms ---------------------------------------------------------------------------
     @_memo
@@ -397,11 +396,12 @@ class HarnessAdapter:
         }
 
 
-def load_adapter(spec: str | None = None) -> Adapter:
+def load_catalog_adapter(spec: str | None = None) -> Adapter:
     """`path/to/file.py:Class` or `module:Class`, relative to the project root; else the
     project's config.yaml `catalog.adapter`; else HarnessAdapter."""
+    root = _common.ROOT
     if not spec:
-        cfg = ROOT / "config.yaml"
+        cfg = root / "config.yaml"
         if cfg.is_file():
             import yaml  # noqa: PLC0415
 
@@ -414,10 +414,10 @@ def load_adapter(spec: str | None = None) -> Adapter:
     if not target or not cls:
         raise SystemExit(f"catalog adapter {spec!r}: expected 'path/to/file.py:Class' or 'module:Class'")
     # The project's root is importable while its adapter loads (it may import its own helpers).
-    if str(ROOT) not in sys.path:
-        sys.path.insert(0, str(ROOT))
+    if str(root) not in sys.path:
+        sys.path.insert(0, str(root))
     if target.endswith(".py"):
-        path = (ROOT / target).resolve()
+        path = (root / target).resolve()
         try:
             # A name of its own: registered under its stem, a project file called `adapter.py`
             # or `stats.py` replaced the harness's module of that name in sys.modules.

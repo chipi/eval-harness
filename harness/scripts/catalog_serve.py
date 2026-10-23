@@ -50,7 +50,7 @@ HERE = Path(__file__).resolve().parent
 import _fields  # noqa: E402
 import stats  # noqa: E402
 from _common import ROOT  # noqa: E402
-from catalog_adapter import Adapter, item_fields, load_adapter  # noqa: E402
+from catalog_adapter import Adapter, item_fields, load_catalog_adapter  # noqa: E402
 
 #: Every comparison ends in one of these, so a page can always say what it shows and why.
 STATES = ("compared", "average only", "no shared metric", "not scorable")
@@ -667,7 +667,7 @@ def main() -> int:
         help="answer every comparison this built catalog links to, in the background",
     )
     args = ap.parse_args()
-    set_adapter(load_adapter(args.adapter))
+    set_adapter(load_catalog_adapter(args.adapter))
     LIMITS["max_arms"] = args.max_arms
     if args.public:
         LIMITS["hosts"] = tuple(h.strip() for h in args.public.split(",") if h.strip())

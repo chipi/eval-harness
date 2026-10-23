@@ -20,7 +20,8 @@ import statistics
 from collections.abc import Iterable, Iterator
 from pathlib import Path
 
-from _common import RUNS, lower_is_better
+import _common
+from _common import lower_is_better
 
 Run = tuple[Path, dict]
 
@@ -45,7 +46,7 @@ def runs_on(
     """Every run in `runs_dir` (default: the runs directory) with a readable metrics.json and
     a config_id, in directory-name order; optionally only one dataset, config_ids containing
     `match`, or exactly `config_id`."""
-    base = runs_dir or RUNS
+    base = runs_dir or _common.RUNS
     out: list[Run] = []
     for d in sorted(base.iterdir()) if base.is_dir() else []:
         m = read_metrics(d) if d.is_dir() else None

@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import functools
 import hashlib
 import json
 import os
 import subprocess
+import sys
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
@@ -17,7 +19,8 @@ from typing import Any, NoReturn
 CODE = Path(__file__).resolve().parent
 
 
-def _project_root() -> Path:
+@functools.cache
+def project_root() -> Path:
     """Where the PROJECT lives: its data/, its .env, its git history.
 
     Run from a checkout of eval-harness, that is the harness/ directory beside this one,
@@ -25,9 +28,10 @@ def _project_root() -> Path:
     site-packages and the project is wherever the user is working: `EVAL_HOME` if set,
     else the current directory. Kept apart from CODE because a project that depends on the
     harness must never write its data into site-packages.
-    """
-    import os  # noqa: PLC0415
 
+    Resolved on first use, not at import: a program that imports the harness as a library
+    (an adapter, a notebook) can set `EVAL_HOME` or change directory first.
+    """
     home = os.environ.get("EVAL_HOME", "").strip()
     if home:
         return Path(home).expanduser().resolve()
@@ -37,31 +41,24 @@ def _project_root() -> Path:
     return Path.cwd().resolve()
 
 
-ROOT = _project_root()
-
-
 def how(evh: str, make: str) -> str:
     """The command a hint should name: `evh …` when the harness runs as the installed tool,
     the Makefile target in a checkout. A pinned project has no Makefile, so a `make …` hint
     sends its user to a command that does not exist."""
-    import os  # noqa: PLC0415
-
     return evh if os.environ.get("EVAL_VIA_EVH") else make
 
 
 def load_dotenv(path: Path | None = None) -> int:
     """Read `.env` into the environment. No dependency, no surprises.
 
-    Loaded by every script, so keys are never exported by hand and never pasted
-    into a command that lands in shell history. An already-exported variable
-    WINS — so `ANTHROPIC_API_KEY=... make experiment-run` overrides the file
-    for one call without editing it.
+    Loaded when a harness command starts (below), so keys are never exported by hand and
+    never pasted into a command that lands in shell history. An already-exported variable
+    WINS — so `ANTHROPIC_API_KEY=... make experiment-run` overrides the file for one call
+    without editing it.
 
     Copy `.env.example` to `.env` to start. `.env` is gitignored.
     """
-    import os  # noqa: PLC0415
-
-    env_path = path or (ROOT / ".env")
+    env_path = path or (project_root() / ".env")
     if not env_path.is_file():
         return 0
     loaded = 0
@@ -77,12 +74,19 @@ def load_dotenv(path: Path | None = None) -> int:
     return loaded
 
 
-DOTENV_LOADED = load_dotenv()
+def _is_harness_command() -> bool:
+    """Whether this process is one of the harness's own commands: a script in this directory
+    run directly (the Makefile) or through `evh` (which points argv[0] at the script before
+    running it). Importing the package from anything else changes no one's environment."""
+    return bool(sys.argv and sys.argv[0]) and Path(sys.argv[0]).resolve().parent == CODE
+
+
+#: How many variables `.env` set when this command started; 0 for a library import.
+DOTENV_LOADED = load_dotenv() if _is_harness_command() else 0
 
 
 def env_float(name: str, default: float | None = None) -> float | None:
     """Parse an environment variable as a float, or return the default."""
-    import os  # noqa: PLC0415
 
     raw = os.environ.get(name, "").strip()
     if not raw:
@@ -99,32 +103,63 @@ def env_int(name: str, default: int) -> int:
     return int(v) if v is not None else default
 
 
-# The data root. `EVAL_DATA_DIR` moves it, for a project whose own layout puts the
-# harness's records somewhere other than <project>/data (a relative path is taken from
-# the project root). Everything below is derived from it.
-_data_override = os.environ.get("EVAL_DATA_DIR", "").strip()
-DATA = (ROOT / Path(_data_override).expanduser()).resolve() if _data_override else ROOT / "data"
-SOURCES = DATA / "sources"
-DATASETS = DATA / "datasets"
-MATERIALIZED = DATA / "materialized"
-CONFIGS = DATA / "configs"
-# Where run artifacts land. Redirectable via EVAL_RUNS_DIR so a throwaway pass -- a
-# smoke check after a harness change -- cannot add repeats to the arms of a real sweep
-# and silently move numbers that have already been reported. ONLY runs are redirected:
-# sources, datasets and references stay shared, so a smoke run is scored against the
-# same references as the real thing and is therefore actually a check of the real path.
-_runs_override = os.environ.get("EVAL_RUNS_DIR", "").strip()
-# Relative to the PROJECT root, as EVAL_DATA_DIR is: it resolved against the current
-# directory, so with EVAL_HOME set a run written from one directory was read from another.
-RUNS = ROOT / Path(_runs_override).expanduser() if _runs_override else DATA / "runs"
-BASELINES = DATA / "baselines"
-REFERENCES = DATA / "references"
-#: What each evaluation is FOR (ADR-0002): one <goal_id>.yaml per goal, plus policy.yaml.
-GOALS = DATA / "goals"
-#: Field sets (ADR-0003): one <fieldset_id>.yaml each, declaring the fields items may carry.
-FIELDS = DATA / "fields"
-#: Items fetched from a source_url, by their sha256. Derived and gitignored, like materialized/.
-ITEM_CACHE = ROOT / ".cache" / "items"
+@functools.cache
+def _paths() -> dict[str, Path]:
+    root = project_root()
+    # The data root. `EVAL_DATA_DIR` moves it, for a project whose own layout puts the
+    # harness's records somewhere other than <project>/data (a relative path is taken from
+    # the project root). Everything below is derived from it.
+    data_override = os.environ.get("EVAL_DATA_DIR", "").strip()
+    data = (root / Path(data_override).expanduser()).resolve() if data_override else root / "data"
+    # Where run artifacts land. Redirectable via EVAL_RUNS_DIR so a throwaway pass -- a
+    # smoke check after a harness change -- cannot add repeats to the arms of a real sweep
+    # and silently move numbers that have already been reported. ONLY runs are redirected:
+    # sources, datasets and references stay shared, so a smoke run is scored against the
+    # same references as the real thing and is therefore actually a check of the real path.
+    # Relative to the PROJECT root, as EVAL_DATA_DIR is.
+    runs_override = os.environ.get("EVAL_RUNS_DIR", "").strip()
+    return {
+        "ROOT": root,
+        "DATA": data,
+        "SOURCES": data / "sources",
+        "DATASETS": data / "datasets",
+        "MATERIALIZED": data / "materialized",
+        "CONFIGS": data / "configs",
+        "RUNS": root / Path(runs_override).expanduser() if runs_override else data / "runs",
+        "BASELINES": data / "baselines",
+        "REFERENCES": data / "references",
+        # What each evaluation is FOR (ADR-0002): one <goal_id>.yaml per goal, plus policy.yaml.
+        "GOALS": data / "goals",
+        # Field sets (ADR-0003): one <fieldset_id>.yaml each, declaring the fields items may carry.
+        "FIELDS": data / "fields",
+        # Items fetched from a source_url, by their sha256. Derived and gitignored, like materialized/.
+        "ITEM_CACHE": root / ".cache" / "items",
+    }
+
+
+# The project's paths, read as module attributes (`_common.DATA`, `from _common import DATA`)
+# and resolved on the first read, after `.env` has had its say on EVAL_DATA_DIR/EVAL_RUNS_DIR.
+ROOT: Path
+DATA: Path
+SOURCES: Path
+DATASETS: Path
+MATERIALIZED: Path
+CONFIGS: Path
+RUNS: Path
+BASELINES: Path
+REFERENCES: Path
+GOALS: Path
+FIELDS: Path
+ITEM_CACHE: Path
+
+
+def __getattr__(name: str) -> Path:
+    # The name is checked before anything resolves: `from _common import x` probes
+    # `__path__` through here, and that probe must not fix the project's paths.
+    if not (name.isupper() and name in __annotations__):
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    return _paths()[name]
+
 
 #: The JSON Schemas the harness validates against. Inside the installed package they sit
 #: beside the code; in a checkout they are one level up, in harness/schemas.
@@ -137,7 +172,7 @@ def data_rel(path: Path) -> str:
     """`path` relative to the project root, as git and the run records spell it. Falls
     back to the absolute path when the data root sits outside the project."""
     try:
-        return Path(path).resolve().relative_to(ROOT).as_posix()
+        return Path(path).resolve().relative_to(project_root()).as_posix()
     except ValueError:
         return str(Path(path).resolve())
 
@@ -237,7 +272,6 @@ def build_info() -> dict[str, Any]:
     #     EVAL_BUILD_REF=$(pip show pkg …)   an installed version
     #
     # Falling back to this tree's git SHA only when nothing is declared.
-    import os  # noqa: PLC0415
 
     declared = os.environ.get("EVAL_BUILD_REF")
     if declared:
@@ -251,7 +285,9 @@ def build_info() -> dict[str, Any]:
 
     def git(*args: str) -> str | None:
         try:
-            out = subprocess.run(["git", *args], cwd=ROOT, capture_output=True, text=True, timeout=5)
+            out = subprocess.run(
+                ["git", *args], cwd=project_root(), capture_output=True, text=True, timeout=5
+            )
             return out.stdout.strip() if out.returncode == 0 else None
         except (OSError, subprocess.SubprocessError):
             return None
@@ -261,7 +297,7 @@ def build_info() -> dict[str, Any]:
     # previous run's directory no longer marks the next run dirty. One rule, one place.
     from _fingerprint import tree_dirt  # noqa: PLC0415
 
-    dirt = tree_dirt(ROOT, DATA)
+    dirt = tree_dirt(project_root(), _paths()["DATA"])
     return {
         "ref": ref or "unknown",
         "dirty": bool(dirt),
@@ -276,7 +312,7 @@ def load_goals(goals_dir: Path | None = None) -> dict[str, dict[str, Any]]:
     import yaml  # noqa: PLC0415
 
     out: dict[str, dict[str, Any]] = {}
-    base = goals_dir or GOALS
+    base = goals_dir or _paths()["GOALS"]
     for f in sorted(base.glob("*.yaml")) if base.is_dir() else []:
         if f.name != "policy.yaml":
             doc = yaml.safe_load(f.read_text(encoding="utf-8"))
@@ -291,14 +327,14 @@ def goal_policy() -> dict[str, Any]:
     sets the date."""
     import yaml  # noqa: PLC0415
 
-    f = GOALS / "policy.yaml"
+    f = _paths()["GOALS"] / "policy.yaml"
     doc = yaml.safe_load(f.read_text(encoding="utf-8")) if f.is_file() else None
     return doc if isinstance(doc, dict) else {}
 
 
 def load_dataset(dataset_id: str) -> dict[str, Any]:
     """Load a dataset by id from data/datasets, or raise SystemExit."""
-    path = DATASETS / f"{dataset_id}.json"
+    path = _paths()["DATASETS"] / f"{dataset_id}.json"
     if not path.is_file():
         raise SystemExit(
             f"no such dataset: {dataset_id}\n"
@@ -343,7 +379,7 @@ def item_path(dataset_id: str, item_id: str) -> Path | None:
     it = next((x for x in ds.get("items") or [] if x.get("item_id") == item_id), None)
     if it is None:
         return None
-    p = MATERIALIZED / dataset_id / (it.get("source_path") or item_id)
+    p = _paths()["MATERIALIZED"] / dataset_id / (it.get("source_path") or item_id)
     return p if p.is_file() else None
 
 
@@ -355,13 +391,14 @@ def in_checkout() -> bool:
     """Whether this is a checkout of the eval-harness repository with its own data, rather
     than the package installed in a project. Only then do `<root>/..` and `<root>/../examples`
     mean anything: in a project, the root's parent is whatever directory the project sits in."""
-    return (ROOT / "scripts").resolve() == CODE
+    return (project_root() / "scripts").resolve() == CODE
 
 
 def adapter_search_dirs() -> tuple[Path, ...]:
     """Where a recorded adapter id is looked for: the project, and in a checkout the
     repository root (the examples record `examples/<example>/adapter.py`)."""
-    return (ROOT, ROOT.parent) if in_checkout() else (ROOT,)
+    root = project_root()
+    return (root, root.parent) if in_checkout() else (root,)
 
 
 def resolve_adapter_path(spec: str | None) -> Path | None:

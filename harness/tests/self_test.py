@@ -72,6 +72,54 @@ def test_dotenv_does_not_override_exported() -> None:
     path.unlink()
 
 
+def test_import_reads_no_env_and_no_paths() -> None:
+    """Importing the harness from another program (an adapter, a notebook) leaves the
+    environment alone and resolves the project on first use, so EVAL_HOME set after the
+    import is honoured. A harness command still reads the project's .env."""
+    import os  # noqa: PLC0415
+
+    with tempfile.TemporaryDirectory() as d:
+        proj = Path(d)
+        (proj / ".env").write_text(
+            "EVAL_SELFTEST_IMPORT=from_file\nEVAL_DATA_DIR=elsewhere\n", encoding="utf-8"
+        )
+        probe = proj / "probe.py"
+        probe.write_text(
+            "import os, sys\n"
+            f"sys.path.insert(0, {str(HERE)!r})\n"
+            "import catalog_adapter, _common\n"
+            "os.environ['EVAL_HOME'] = sys.argv[1]\n"
+            "print(os.environ.get('EVAL_SELFTEST_IMPORT'), _common.DOTENV_LOADED, _common.DATA)\n",
+            encoding="utf-8",
+        )
+        env = {k: v for k, v in os.environ.items() if not k.startswith("EVAL_")}
+        lib = subprocess.run(
+            [sys.executable, str(probe), str(proj)],
+            cwd="/",
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+        check(
+            "import: a library import reads no .env and resolves paths on first use",
+            lib.stdout.split() == ["None", "0", str(proj.resolve() / "data")],
+            lib.stdout + lib.stderr,
+        )
+        cmd = subprocess.run(
+            [sys.executable, str(HERE / "env_check.py")],
+            env=dict(env, EVAL_HOME=str(proj)),
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+        check(
+            "import: a harness command reads the project's .env",
+            ".env: loaded 2 var(s)" in cmd.stdout,
+            cmd.stdout + cmd.stderr,
+        )
+
+
 def test_price_needs_all_four_inputs() -> None:
     sys.path.insert(0, str(HERE))
     from judging import price as _price  # noqa: PLC0415
@@ -3538,6 +3586,7 @@ def main() -> int:
     print("harness self-tests (no network, no keys)\n")
     for fn in (
         test_dotenv_does_not_override_exported,
+        test_import_reads_no_env_and_no_paths,
         test_price_needs_all_four_inputs,
         test_score_handles_absent_reference,
         test_compare_refuses_cross_dataset,

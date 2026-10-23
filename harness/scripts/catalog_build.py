@@ -30,7 +30,7 @@ HERE = Path(__file__).resolve().parent
 
 import _fields  # noqa: E402
 from _common import ROOT  # noqa: E402
-from catalog_adapter import Adapter, item_fields, load_adapter  # noqa: E402
+from catalog_adapter import Adapter, item_fields, load_catalog_adapter  # noqa: E402
 
 #: The front-end files every page loads: installed beside the package, or in a checkout.
 ASSET_DIR = next(p for p in (HERE / "catalog_assets", HERE.parent / "catalog_assets") if p.is_dir())
@@ -627,7 +627,7 @@ def main() -> int:
         if not url.startswith(("https://", "http://")):
             raise SystemExit(f"--link {spec!r}: expected LABEL=https://...")
         EXTRA_NAV.append((label.lower(), url, label))
-    counts = build(load_adapter(args.adapter), args.out)
+    counts = build(load_catalog_adapter(args.adapter), args.out)
     print(f"catalog: {args.out} — " + ", ".join(f"{v} {k}" for k, v in counts.items()))
     print("inspect: evh catalog-serve, then open the address it prints")
     return 0

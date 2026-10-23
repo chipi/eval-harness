@@ -531,7 +531,10 @@ run prints how many items it measured and how to resume.
 ## Environment variables
 
 Read from the environment or the project's `.env` (an exported value wins). `.env.example`
-carries the ones a project usually sets, with the reasoning.
+carries the ones a project usually sets, with the reasoning. The harness's commands read
+`.env` when they start; a program that only imports the harness (an adapter's own tests, a
+notebook) reads no `.env`, and the project's paths are resolved on first use, so it can set
+`EVAL_HOME` after the import.
 
 | Variable | What it does |
 |---|---|

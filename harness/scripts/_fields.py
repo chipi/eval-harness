@@ -19,7 +19,7 @@ import statistics
 from pathlib import Path
 from typing import Any
 
-from _common import FIELDS
+import _common
 
 TYPES = ("text", "number", "integer", "boolean", "date", "duration", "url", "choice")
 #: Types a comparison can be broken down by: a handful of named groups, never a continuum.
@@ -31,7 +31,7 @@ _TRUE, _FALSE = {"true", "yes", "1", "y"}, {"false", "no", "0", "n"}
 
 def fieldset_path(fieldset_id: str) -> Path:
     """Return the path to a field set file."""
-    return FIELDS / f"{fieldset_id}.yaml"
+    return _common.FIELDS / f"{fieldset_id}.yaml"
 
 
 def load_fieldset(fieldset_id: str) -> dict[str, Any] | None:

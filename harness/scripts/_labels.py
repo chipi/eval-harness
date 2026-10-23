@@ -6,8 +6,9 @@ from __future__ import annotations
 
 from collections import defaultdict
 
+import _common
 from _adapter import adapter_module
-from _common import REFERENCES, die
+from _common import die
 from _runs import item_rows, runs_on
 
 #: Predictions the adapter could not parse into a label are counted, never dropped. An arm
@@ -18,7 +19,7 @@ UNPARSED = "<unparsed>"
 
 def gold_labels(dataset_id: str) -> dict:
     """item_id -> gold label, from the tracked gold reference files."""
-    root = REFERENCES / "gold" / dataset_id
+    root = _common.REFERENCES / "gold" / dataset_id
     if not root.is_dir():
         die(f"no gold references at {root}")
     return {p.stem: p.read_text(encoding="utf-8").strip() for p in root.glob("*.txt")}
