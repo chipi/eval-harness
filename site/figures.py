@@ -67,14 +67,11 @@ def _runs(base: str, dataset: str, prefix: str, suffix: str) -> dict:
 
 
 def _billed(run_dir: Path) -> float:
-    total = 0.0
-    pj = run_dir / "predictions.jsonl"
-    if pj.is_file():
-        for line in pj.read_text(encoding="utf-8").splitlines():
-            if line.strip():
-                r = json.loads(line)
-                total += float(((r.get("_meta") or {}).get("usage") or {}).get("cost") or 0)
-    return total
+    """What the provider billed for one run (cost_report's sum, the one the reports use)."""
+    sys.path.insert(0, str(HARNESS / "scripts"))
+    from cost_report import billed_and_recorded  # noqa: PLC0415
+
+    return billed_and_recorded(run_dir)[0]
 
 
 def _weights() -> dict:

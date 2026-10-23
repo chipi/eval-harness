@@ -23,6 +23,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import stats as _stats
 from _common import AmbiguousRuns, runs_by_arm
+from cost_report import billed_and_recorded
 
 if "--help" in sys.argv[1:] or "-h" in sys.argv[1:]:
     # It used to fall through and run the whole check, so `--help`
@@ -196,7 +197,7 @@ def check(label: str, cond: object, detail: str = "") -> None:
 
 def score(base: Path, cid: str, metric: str):
     """Retrieve a metric score from a run by config_id."""
-    for d in glob.glob(str(base / f"{cid}_*")):
+    for d in sorted(glob.glob(str(base / f"{cid}_*"))):
         m = json.loads(Path(Path(d) / "metrics.json").read_text(encoding="utf-8"))
         if m.get("config_id") == cid:
             return m["scores"].get(metric)
@@ -270,20 +271,11 @@ def _first_arm_cell(cells):
 
 def _billed_and_recorded(prefix, dataset_id):
     out = {}
-    for f in _glob.glob(str(DATA / f"{prefix}*" / "metrics.json")):
+    for f in sorted(_glob.glob(str(DATA / f"{prefix}*" / "metrics.json"))):
         m = json.loads(Path(f).read_text(encoding="utf-8"))
-        if m.get("dataset_id") != dataset_id:
+        if m.get("dataset_id") != dataset_id or not (Path(f).parent / "predictions.jsonl").is_file():
             continue
-        pj = Path(f).parent / "predictions.jsonl"
-        if not pj.is_file():
-            continue
-        rec = bil = 0.0
-        for line in pj.read_text().splitlines():
-            if not line.strip():
-                continue
-            r = json.loads(line)
-            rec += float(r.get("cost_usd") or 0)
-            bil += float(((r.get("_meta") or {}).get("usage") or {}).get("cost") or 0)
+        bil, rec, _, _ = billed_and_recorded(Path(f).parent)
         out[_arm_name(m["config_id"], prefix)] = (bil, rec)
     return out
 
@@ -407,15 +399,7 @@ def _runs_for(base, dataset_id, prefix):
 
 def _billed_of(run_dir):
     """What the provider charged for this run, summed from _meta.usage.cost."""
-    pj = run_dir / "predictions.jsonl"
-    if not pj.is_file():
-        return 0.0
-    total = 0.0
-    for line in pj.read_text(encoding="utf-8").splitlines():
-        if line.strip():
-            r = json.loads(line)
-            total += float(((r.get("_meta") or {}).get("usage") or {}).get("cost") or 0)
-    return total
+    return billed_and_recorded(run_dir)[0]
 
 
 #: Column headers that mean "this cell is the arm's primary metric on this dataset".
@@ -701,22 +685,13 @@ check(
 def _arm_costs(prefix, dataset_id):
     """Billed cost per arm, excluding the 2026-09-29 re-runs (which duplicate arms)."""
     out = {}
-    for f in _glob.glob(str(DATA / f"{prefix}*" / "metrics.json")):
+    for f in sorted(_glob.glob(str(DATA / f"{prefix}*" / "metrics.json"))):
         if "20260929" in Path(f).parent.name:
             continue
         m = json.loads(Path(f).read_text(encoding="utf-8"))
-        if m.get("dataset_id") != dataset_id:
+        if m.get("dataset_id") != dataset_id or not (Path(f).parent / "predictions.jsonl").is_file():
             continue
-        pj = Path(f).parent / "predictions.jsonl"
-        if not pj.is_file():
-            continue
-        bil = rec = 0.0
-        for line in pj.read_text().splitlines():
-            if not line.strip():
-                continue
-            r = json.loads(line)
-            rec += float(r.get("cost_usd") or 0)
-            bil += float(((r.get("_meta") or {}).get("usage") or {}).get("cost") or 0)
+        bil, rec, _, _ = billed_and_recorded(Path(f).parent)
         out[_arm_name(m["config_id"], prefix)] = bil or rec
     return out
 
@@ -1753,7 +1728,7 @@ for dear, cheap in (("anthropic_m", "deepseek_m"), ("openai_l", "deepseek_m")):
 
 # Pareto frontier over the 24 HOSTED summarisation arms: quality, cost, latency.
 _cnn_q = {}
-for f in _glob.glob(str(DATA / "cnn_*" / "metrics.json")):
+for f in sorted(_glob.glob(str(DATA / "cnn_*" / "metrics.json"))):
     if "20260929" in Path(f).parent.name:
         continue
     m = json.loads(Path(f).read_text(encoding="utf-8"))

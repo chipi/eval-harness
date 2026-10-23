@@ -185,11 +185,20 @@ def write_text_atomic(path: Path, text: str) -> None:
     file or the whole new one and never a partial. The temp file is created in the
     same directory because rename is only atomic within a filesystem.
     """
+    _write_atomic(path, text, "w")
+
+
+def write_bytes_atomic(path: Path, data: bytes) -> None:
+    """`write_text_atomic` for bytes: a reader sees the old file or the whole new one."""
+    _write_atomic(path, data, "wb")
+
+
+def _write_atomic(path: Path, data: str | bytes, mode: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     fd, tmp = tempfile.mkstemp(dir=str(path.parent), prefix=f".{path.name}.", suffix=".tmp")
     try:
-        with os.fdopen(fd, "w", encoding="utf-8") as fh:
-            fh.write(text)
+        with os.fdopen(fd, mode, encoding=None if "b" in mode else "utf-8") as fh:
+            fh.write(data)
             fh.flush()
             os.fsync(fh.fileno())
         os.replace(tmp, path)

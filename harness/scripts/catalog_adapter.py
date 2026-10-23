@@ -35,7 +35,7 @@ from typing import Protocol
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-from _common import DATA, ROOT, ModuleNotLoadable, is_descriptive, load_module, lower_is_better  # noqa: E402  # noqa: E402
+from _common import DATA, ROOT, ModuleNotLoadable, is_descriptive, load_module, lower_is_better  # noqa: E402
 
 
 def _memo(fn):

@@ -38,7 +38,6 @@ import json
 import random
 import statistics
 import sys
-import urllib.request
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -69,11 +68,9 @@ def _norm(text: str) -> str:
 
 def main() -> int:
     ad = _adapter()
-    if not CACHE.is_file():
-        CACHE.parent.mkdir(parents=True, exist_ok=True)
-        with urllib.request.urlopen(URL, timeout=120) as r:  # a constant https URL  # nosec B310
-            CACHE.write_bytes(r.read())
-    raw = CACHE.read_bytes()
+    # The same file the adapter pins: fetched once and checked against its sha256 (this script
+    # used to download it unverified and only record the hash afterwards).
+    raw = ad._cached(CACHE, URL, ad.ORIGINAL_SHA256).read_bytes()
     original: dict = {}
     for line in raw.decode("utf-8").splitlines():
         if line.strip():

@@ -42,15 +42,15 @@ import re
 import statistics
 import sys
 import time
-import urllib.request
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
+import _fetch  # noqa: E402
 import judge_score as js  # noqa: E402
-from _common import ModuleNotLoadable, die, load_module, write_text_atomic  # noqa: E402  # noqa: E402
+from _common import ModuleNotLoadable, die, load_module, write_bytes_atomic, write_text_atomic  # noqa: E402
 from _retry import call_with_retries  # noqa: E402
 from judging import (  # noqa: E402,F401
     DIMS,
@@ -81,12 +81,12 @@ def load() -> dict[str, dict]:
     """{article_id: {"article": text, "systems": {model: {"summary", "ratings": [{dim: v}x3]}}}},
     CNN/DailyMail only. Downloads the pinned file if it is not present."""
     if not FILE.is_file():
+        try:
+            src, _ = _fetch.fetch(URL, PINNED)  # retried, checked against the pin
+        except _fetch.FetchError as exc:
+            die(str(exc))
         EXT.mkdir(parents=True, exist_ok=True)
-        with urllib.request.urlopen(URL, timeout=120) as r:  # a constant https URL  # nosec B310
-            blob = r.read()
-        if _sha(blob) != PINNED:
-            die(f"the download from {URL} has sha256 {_sha(blob)}, not the pinned {PINNED}")
-        write_text_atomic(FILE, blob.decode("utf-8"))
+        write_bytes_atomic(FILE, src.read_bytes())
     raw = FILE.read_bytes()
     if _sha(raw) != PINNED:
         die(f"{FILE} has sha256 {_sha(raw)}, not the pinned {PINNED}; refusing to use it")

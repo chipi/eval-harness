@@ -1083,6 +1083,15 @@ def test_writes_leave_no_partial_file() -> None:
             target.read_text() == "the new content",
             target.read_text()[:60],
         )
+        from _common import write_bytes_atomic  # noqa: PLC0415
+
+        blob = bytes(range(256)) * 4
+        write_bytes_atomic(target, blob)
+        check("atomic write: bytes land exactly, with no newline translation", target.read_bytes() == blob)
+        check(
+            "atomic write: bytes leave no temp file behind",
+            [f.name for f in pathlib.Path(td).iterdir() if f.name != "out.txt"] == [],
+        )
 
         # THE CONTRAST, so this test shows a difference rather than just asserting the
         # new behaviour. `write_text` truncates first: the same failure destroys the

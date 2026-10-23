@@ -39,7 +39,6 @@ import json
 import math
 import sys
 import time
-import urllib.request
 import zipfile
 from collections.abc import Sequence
 from pathlib import Path
@@ -47,8 +46,9 @@ from typing import Any
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
+import _fetch  # noqa: E402
 import judge_score as js  # noqa: E402
-from _common import die, write_text_atomic  # noqa: E402
+from _common import die, write_bytes_atomic, write_text_atomic  # noqa: E402
 from _retry import call_with_retries  # noqa: E402
 from judging import shingles, withheld_reason  # noqa: E402
 
@@ -85,15 +85,14 @@ def load() -> dict:
     data = load_local()
     if data is None:
         if not ZIP_PATH.is_file():
-            with urllib.request.urlopen(URL, timeout=60) as r:  # a constant https URL  # nosec B310
-                blob = r.read()
-            if _file_sha(blob) != ZIP_SHA256:
-                die(
-                    f"the download from {URL} has sha256 {_file_sha(blob)}, not the pinned "
-                    f"{ZIP_SHA256}; refusing to extract it"
-                )
+            # Retried, checked against the pin, and only a whole file ever lands: a download cut
+            # short used to leave a partial zip that every later run refused.
+            try:
+                src, _ = _fetch.fetch(URL, ZIP_SHA256)
+            except _fetch.FetchError as exc:
+                die(f"{exc}; refusing to extract it")
             EXT.mkdir(parents=True, exist_ok=True)
-            ZIP_PATH.write_bytes(blob)
+            write_bytes_atomic(ZIP_PATH, src.read_bytes())
         zipfile.ZipFile(io.BytesIO(ZIP_PATH.read_bytes())).extractall(EXT)
         data = load_local()
         if data is None:
