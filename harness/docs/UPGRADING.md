@@ -14,7 +14,8 @@ format, so check these before you trust a `validate`:
   0.3.0 fields (`rescored_*`, `judged_*`, `judge_label`, `primary_metric_asc`) are read by
   nothing. Re-run `rescore` / `judge-score` on the runs you keep.
 - **Baselines** carry the run's reference tier, adapter and fingerprint hash, and V6 fails
-  one that does not: promote each again (`evh run-promote`).
+  one that does not: promote each again (`evh run-promote`). `data/baselines/superseded/` is
+  no longer written; git keeps a replaced baseline.
 - **Configs** may hold only `config_id`, `dataset_id`, `params`, `adapter`, `goal` and
   `format` (V1); anything else was read by nothing.
 - **Judge verdicts** need `output_sha256` and `output_withheld` (V1): the hash of the stored

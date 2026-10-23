@@ -36,7 +36,11 @@ package.
 The example experiments keep one record per arm, the latest: the rescored and re-parsed runs
 are folded into `data/runs` as derived runs, and DailyMail's `bart_s` is its fp32 run
 (coverage 0.4048; the fp16 run read 0.4039). CNN's `bart_s` stays the fp16 run, the one the
-judge's verdicts were made on.
+judge's verdicts were made on. The reports state the current figures only; their correction
+logs are gone (git keeps them). Two published statements were stale and are restated:
+SciFact's `qwen_s` e5-first against the e5-first leader is +0.0178, p 0.10 (it read +0.0092,
+p 0.36, from the pre-fix run), and DBpedia's 56-item dev slice, over today's 28 arms, puts
+`bert_base_fy` alone at the top rather than 13 arms in a tie.
 
 ### Changed
 - **Exact p-values at 30 items or fewer.** `pair-test` and `family-test` now count the
@@ -126,7 +130,11 @@ judge's verdicts were made on.
 - **A baseline carries what its number means**: `run-promote` records the run's reference
   tier, adapter and fingerprint hash, `runs-list --baselines` prints the tier and adapter, and
   V6 fails a baseline that no longer matches its run. A 0.3.0 baseline fails V6 until it is
-  promoted again.
+  promoted again. Promoting replaces the baseline: the copy archived to
+  `data/baselines/superseded/` and the `supersedes` field are gone, and git keeps the old one.
+- **A command run from a project's subfolder finds the project**: without `EVAL_HOME`, the
+  root is the nearest directory up with a `data/` folder (it was the current directory, so
+  `evh validate` in a subfolder read an empty project).
 - **The judge panel is a command, `evh judge`** (it sat beside the package and could not run
   from a pin); the tutorial kit ships `tutorial/judge_panel.yaml`.
 

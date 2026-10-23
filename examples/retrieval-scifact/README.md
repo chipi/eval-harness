@@ -77,8 +77,7 @@ for f in ../examples/retrieval-scifact/configs/arm_*_n200.yaml; do
 done
 ```
 
-The whole 19-arm measurement sweep is **$1.94 as the provider billed it**, not by this
-repo's price table, which was wrong per arm in every example (see the report §7). The local arms are free; the dense ones cost time
+The whole 19-arm measurement sweep is **$1.94 as the provider billed it** (report §7). The local arms are free; the dense ones cost time
 instead, and that cost is reported rather than hidden.
 
 ---

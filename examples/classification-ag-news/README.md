@@ -4,7 +4,7 @@ One task — put a news article into one of four topics — measured across 24 h
 from 8 vendors, three fine-tuned classifiers (44 MB and 2 × 438 MB), a zero-shot NLI
 model, a hand-written rule set, and a constant.
 
-> **Result, updated 2026-09-30, corrected 2026-10-19:** the three fine-tunes lead on the
+> **Result:** the three fine-tunes lead on the
 > point estimate (`bert_base_ta` 0.9600, `bert_base_fy` 0.9500, `bert_mini` 0.9450) against
 > a hosted field of 0.835–0.910. Only `bert_base_ta` is separated from 26 of the 29 other
 > arms (not from the other two fine-tunes or `anthropic_m`); `bert_mini` is separated from 16

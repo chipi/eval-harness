@@ -979,21 +979,31 @@ def _cl_pilot(runs, dev_file, drop=()):
     return _stats.spearman(_dev, _all), _tied, len(_arms)
 
 
+def _cl_runner_up(runs, dev_file):
+    """How many arms share the dev slice's second-best accuracy."""
+    _ids = {
+        (_i if isinstance(_i, str) else (_i.get("item_id") or _i.get("id")))
+        for _i in json.loads((ROOT / "harness" / "data" / "datasets" / dev_file).read_text())["items"]
+    }
+    _acc = {a: statistics.fmean(runs[a][i]["correct"] for i in _ids) for a in runs}
+    _second = sorted(set(_acc.values()), reverse=True)[1]
+    return sum(1 for v in _acc.values() if v == _second)
+
+
 if "bert_mini" in _AG and "qwen_m" in _DB:
-    _r28, _t28, _n28 = _cl_pilot(_AG, "ag_news_20.json", drop=("bert_base_ta", "bert_base_fy"))
     _r30, _t30, _n30 = _cl_pilot(_AG, "ag_news_20.json")
-    _d27, _dt27, _dn27 = _cl_pilot(_DB, "dbpedia_56.json", drop=("bert_base_fy",))
     _d28, _dt28, _dn28 = _cl_pilot(_DB, "dbpedia_56.json")
     check(
         "classification: pilot rho (midranks) and the tie at the top of the dev slice",
-        (_n28, _n30, _dn27, _dn28) == (28, 30, 27, 28)
-        and f"AG News {_r28:.3f} at the 28 arms that existed then, {_r30:.3f} at today's 30" in _CLS
-        and f"DBpedia {_d27:.3f} at 27, {_d28:.3f} at 28" in _CLS
-        and f"{len(_t28)} of 28 arms ({len(_t30)} of 30)" in _CLS
-        and f"{len(_dt27)} of 27 arms tied at the top of the 56-item dev slice" in _CLS
-        and sorted(_t28)[0] == sorted(_dt27)[0] == "anthropic_l",
-        f"derived AG {_r28:.3f}/{_r30:.3f}, ties {len(_t28)}/{len(_t30)}; "
-        f"DB {_d27:.3f}/{_d28:.3f}, tie {len(_dt27)}, first {sorted(_dt27)[0]}",
+        (_n30, _dn28) == (30, 28)
+        and f"AG News {_r30:.3f} at 30 arms; DBpedia {_d28:.3f} at 28" in _CLS
+        and f"{len(_t30)} of 30 arms tied at the top of the 20-item dev slice" in _CLS
+        and _dt28 == ["bert_base_fy"]
+        and "`bert_base_fy` is alone at the top of the 56-item dev slice (56 of 56), with "
+        f"{_cl_runner_up(_DB, 'dbpedia_56.json')} arms tied one item behind it"
+        in _CLS
+        and sorted(_t30)[0] == "anthropic_l",
+        f"derived AG {_r30:.3f}, tie {len(_t30)}; DB {_d28:.3f}, tie {len(_dt28)}, first {sorted(_dt28)[0]}",
     )
 
     # AG News: the best paid arm's own family test, not the leader's.

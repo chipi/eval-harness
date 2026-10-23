@@ -94,8 +94,7 @@ done
 ```
 
 ~14 minutes per hosted arm; the two ML arms are free and run on CPU. The whole measurement
-sweep billed **$2.61** ($2.05 by the configs' price tables, which were wrong — see the
-report's Correction).
+sweep billed **$2.61**.
 
 Then the analysis — all of it $0, all of it from the stored runs:
 
@@ -104,9 +103,6 @@ python tools/extraction_report.py --dataset-id few_nerd_280 --match fn_
 python scripts/family_test.py --dataset-id few_nerd_280 --a fn_span_marker_n200_v1 \
     --against _n200_v1 --metric f1
 ```
-
-The committed NER runs were scored again with the current scorer (`rescore`, recorded in
-each run's `derived` block); a fresh run scores with it directly.
 
 ---
 
@@ -212,9 +208,7 @@ capitalized   0.1913   $0
 nothing       0.1250   $0        = the rate at which an empty answer is correct
 ```
 
-Costs are what the provider **billed** (`usage.cost`). An earlier version of this
-block used this repo's price table, which understated the cheap arms and inflated the
-spread to 121×.
+Costs are what the provider **billed** (`usage.cost`).
 
 Three things worth reading the report for:
 
