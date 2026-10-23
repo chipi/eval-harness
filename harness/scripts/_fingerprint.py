@@ -121,15 +121,47 @@ def tree_dirt(root: Path) -> list | None:
     return filter_dirt(status, data_rel)
 
 
+#: The commands that write a run, or a reference a run is scored against.
+_PRODUCERS = ("experiment_run.py", "rescore.py", "judge_score.py", "import_run.py", "reference_create.py")
+
+
+def measuring_modules(here: Path | None = None) -> list[Path]:
+    """The code a run's numbers can depend on: the run-writing commands and every module
+    beside them they import, at any depth, lazily or not, read from the source.
+
+    It was every .py file in the directory, tests and report checkers included, so editing a
+    test between two runs made run-compare call them "not a controlled comparison" over a
+    file that cannot touch a measurement. Derived rather than listed, so a new measuring
+    module is covered the day it is imported."""
+    import ast  # noqa: PLC0415
+
+    here = here or Path(__file__).resolve().parent
+    seen: set[str] = set()
+    todo = list(_PRODUCERS)
+    while todo:
+        name = todo.pop()
+        p = here / name
+        if name in seen or not p.is_file():
+            continue
+        seen.add(name)
+        for node in ast.walk(ast.parse(p.read_text(encoding="utf-8"))):
+            mods = []
+            if isinstance(node, ast.Import):
+                mods = [a.name.split(".")[0] for a in node.names]
+            elif isinstance(node, ast.ImportFrom) and node.module:
+                mods = [node.module.split(".")[0]]
+            todo += [f"{m}.py" for m in mods if (here / f"{m}.py").is_file()]
+    return sorted(here / n for n in seen)
+
+
 def harness_code_sha256() -> str:
-    """Content hash of the harness's own Python code: every module beside this file.
+    """Content hash of the harness code that can affect a measurement (`measuring_modules`).
 
     The identity that survives installation. A project that depends on the harness has
     no git history for it, and an edited site-packages copy would otherwise be invisible.
     """
-    here = Path(__file__).resolve().parent
     h = hashlib.sha256()
-    for f in sorted(here.glob("*.py")):
+    for f in measuring_modules():
         h.update(f.name.encode())
         h.update(b"\x00")
         h.update(f.read_bytes())

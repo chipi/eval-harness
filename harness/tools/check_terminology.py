@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Every "experiment" table cell must use the canonical `Task · Dataset` label. $0.
 
-    python scripts/check_terminology.py
+    python tools/check_terminology.py
 
 WHY THIS IS A CHECK AND NOT A CONVENTION. The five experiments were referred to by
 task name in some tables ("summarisation") and by dataset name in others ("AG News",
@@ -17,6 +17,7 @@ import pathlib
 import re
 import sys
 
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "scripts"))
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from _common import no_options
 

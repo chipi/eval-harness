@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Every command the docs show still exists and takes the flags they pass it.
 
-    python scripts/check_commands.py
+    python tests/check_commands.py
 
 The GUIDE is run end to end (check_guide.py). The other docs (the RUNBOOK, INTEGRATION, the
 READMEs) show commands with placeholders (`my_v1`, `<run_id>`), so they cannot be run, and
@@ -26,7 +26,8 @@ import sys
 from functools import cache
 from pathlib import Path
 
-HERE = Path(__file__).resolve().parent
+HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this file is in tests/)
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tests/
 HARNESS = HERE.parent
 REPO = HARNESS.parent
 sys.path.insert(0, str(HERE))

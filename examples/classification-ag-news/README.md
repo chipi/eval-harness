@@ -116,8 +116,8 @@ $PY scripts/experiment_run.py --config $CFG/arm_deepseek_m_n200.yaml --dry-run
 $PY scripts/experiment_run.py --config $CFG/arm_deepseek_m_n200.yaml
 
 $PY scripts/leaderboard.py --dataset-id ag_news_200
-$PY scripts/classification_report.py --dataset-id ag_news_200
-$PY scripts/classification_report.py --dataset-id ag_news_200 --arm ag_keyword_n200_v1
+$PY tools/classification_report.py --dataset-id ag_news_200
+$PY tools/classification_report.py --dataset-id ag_news_200 --arm ag_keyword_n200_v1
 ```
 
 The hosted arms need one `OPENROUTER_API_KEY` in `../../harness/.env` (copy
@@ -167,7 +167,7 @@ interpretation, and would sit in the leaderboard looking exactly as authoritativ
 real thing.
 
 So accuracy stays the per-item metric and the ranking metric, every prediction is recorded
-in `meta.predicted`, and `scripts/classification_report.py` builds the confusion matrix,
+in `meta.predicted`, and `tools/classification_report.py` builds the confusion matrix,
 macro-F1 and per-class precision/recall from the stored predictions. **This is a real
 limitation of the harness, written down rather than papered over.**
 

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Check a judge scorer against human preferences on MODERN news summaries.
 
-    python scripts/validate_judge_goyal.py --scorer judge-summ-v1 [--dry-run | --no-calls]
-    python scripts/validate_judge_goyal.py --scorer judge-summ-v1 --backfill-provenance --no-calls
+    python tools/validate_judge_goyal.py --scorer judge-summ-v1 [--dry-run | --no-calls]
+    python tools/validate_judge_goyal.py --scorer judge-summ-v1 --backfill-provenance --no-calls
 
 SummEval validates judges on 2019-era summarisers. Goyal, Li & Durrett (2022, "News
 Summarization and Evaluation in the Era of GPT-3", CC BY 4.0) released, for 100 CNN
@@ -44,7 +44,8 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
-HERE = Path(__file__).resolve().parent
+HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this file is in tools/)
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tools/
 sys.path.insert(0, str(HERE))
 import _fetch  # noqa: E402
 import judge_score as js  # noqa: E402

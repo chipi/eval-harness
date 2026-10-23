@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Assertions for the ranked-list scorer. No network, no models, no arguments.
 
-    python scripts/test_retrieval_scorer.py
+    python tests/test_retrieval_scorer.py
 
 Written BEFORE the first arm ran, which is the opposite of how the extraction scorer got
 its tests. That one shipped, paid an unreadable answer 1.0 on 12% of items, and only then
@@ -13,6 +13,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "examples" / "_shared"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))  # _check
 from _check import check, summary
 from retrieval import dcg, dedupe, parse_ranking, score_ranking, scorer_sha256
 

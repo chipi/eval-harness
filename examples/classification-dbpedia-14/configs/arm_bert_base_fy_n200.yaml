@@ -35,7 +35,7 @@
 #               rotation was needed. That is a fact about the checkpoint, not a config
 #               tweak to bury.
 #
-#     $PY scripts/classification_report.py --dataset-id dbpedia_280 \
+#     $PY tools/classification_report.py --dataset-id dbpedia_280 \
 #         --arm db_bert_base_fy_n200_v1
 config_id: db_bert_base_fy_n200_v1
 dataset_id: dbpedia_280

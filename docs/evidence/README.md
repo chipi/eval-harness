@@ -9,7 +9,7 @@ This directory removes that gap. `model_facts.json` is a verbatim capture of wha
 HuggingFace API returned for every model this repo cites, on **2026-09-29**.
 
 ```bash
-python harness/scripts/check_model_facts.py    # reports vs this snapshot, no network
+python harness/tools/check_model_facts.py    # reports vs this snapshot, no network
 ```
 
 ## What it holds

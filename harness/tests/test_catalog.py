@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Assertions for the catalog and the run inspector (catalog_build.py, catalog_serve.py).
 
-    python scripts/test_catalog.py
+    python tests/test_catalog.py
 
 On a small data tree written here: the build, that no item text reaches the static pages, the
 inspector's numbers against pair-test's, its refusals (mixed datasets, unknown arms), and the
@@ -21,7 +21,8 @@ from functools import partial
 from http.server import ThreadingHTTPServer
 from pathlib import Path
 
-HERE = Path(__file__).resolve().parent
+HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this file is in tests/)
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tests/
 sys.path.insert(0, str(HERE))
 
 import catalog_build as cb  # noqa: E402

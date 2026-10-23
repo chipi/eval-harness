@@ -80,7 +80,7 @@ adding members moves every Holm threshold.
 python scripts/family_test.py --dataset-id scifact_200 --a sf_glm_s_n200_v1 \
     --against _n200_v1 --metric ndcg_10
 # and re-run it for whichever arm leads, if the leader changes
-python scripts/retrieval_report.py --dataset-id scifact_200 --match sf_
+python tools/retrieval_report.py --dataset-id scifact_200 --match sf_
 python scripts/holdout_significance.py --dataset-id scifact_200 \
     --exclude-dataset scifact_40 --metric ndcg_10 --match sf_
 python scripts/rank_stability.py --dataset-id scifact_200 --metric ndcg_10 --match sf_

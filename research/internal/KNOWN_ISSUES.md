@@ -277,7 +277,7 @@ of us thought to check.
   entry said the gap was deliberate because "the table stops at 25 and guessing is
   worse". Guessing is worse; stopping was not the only alternative. The critical values
   are a one-dimensional integral over the studentised range, about thirty lines of
-  stdlib — [`scripts/nemenyi_table.py`](../../harness/scripts/nemenyi_table.py) computes
+  stdlib — [`tools/nemenyi_table.py`](../../harness/tools/nemenyi_table.py) computes
   them, reproduces all 24 of Demsar's published values to within 0.0007, and
   `test_nemenyi_table_is_computed_not_copied` asserts both that and that the table
   shipped in `leaderboard.py` is what the computation gives. All five experiments now

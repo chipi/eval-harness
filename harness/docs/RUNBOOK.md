@@ -303,13 +303,31 @@ make baselines-list
 make validate
 ```
 
-Thirteen checks (V1–V13): schema conformance, every run's `dataset_id` resolves, every run
+Fifteen checks (V1–V15): schema conformance, every run's `dataset_id` resolves, every run
 identifies its build, materialized copies still match their hashes, no two
 configs reporting byte-identical scores and per-item results, no baseline pointing at a
 deleted run, every committed run readable and present on disk, no two runs claiming one
 `config_id`, no derived run naming a scorer that is not the code in this tree, every judging
 set matching its stored hash, every judge verdict naming a real set, item, pass and block,
-and every judge scorer yaml loading and well-formed.
+every judge scorer yaml loading and well-formed, every goal well-formed and named by every
+run that must name one, and every item field declared, typed and matching its hash.
+
+What it holds *your* project to is yours to declare, in `data/validate.json` (all optional):
+
+```json
+{
+  "committed": ["runs", "runs-adjudicated"],
+  "floors": {"runs-adjudicated": 12},
+  "scorer_sources": [{"dir": "runs-adjudicated", "glob": "*", "path": ["rescored_with", "scorer"],
+                      "module": "../my_scorer.py", "callable": "scorer_id"}],
+  "duplicate_ok": [["my_v1", "smoke_arm_v1"]]
+}
+```
+
+`committed` is the run directories your reports cite; without it, every git-tracked
+`data/runs*` directory is checked. `floors` makes deleting cited runs fail. `scorer_sources`
+lets V10 check that derived runs carry the current scorer's hash (`module` is a path from the
+project root). `duplicate_ok` names the (dataset, config) pairs allowed to repeat.
 
 The duplicate-score check catches a specific and nasty failure: two
 independent arms do not agree to full float precision. When they do, one of them

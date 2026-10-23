@@ -41,7 +41,8 @@ services:
   inspector:
     # The run inspector's API (/api/* on catalog.evals.humancopilot.eu): the harness's own
     # catalog_serve.py in --public mode, standard library only, so the stock Python image runs
-    # the release's code from the read-only mount: nothing is built or installed on the box.
+    # the release's copy of the package (installed from its wheel by render.sh) from the
+    # read-only mount: nothing is built or installed on the box.
     # It reads the release's copy of the runs and references; it calls out to nothing.
     image: python:3.12.14-alpine3.23@sha256:d339953547bb5bc57eb5c1ff3224c40890ce56e494b13a52a574658e5a0f888a
     container_name: evals-inspector
@@ -54,7 +55,7 @@ services:
       PYTHONUNBUFFERED: "1"
     command:
       - python
-      - /srv/evals/current/inspector/scripts/catalog_serve.py
+      - /srv/evals/current/inspector/pkg/evaluation_harness/catalog_serve.py
       - --public
       - catalog.evals.humancopilot.eu
       - --bind

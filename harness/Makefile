@@ -101,7 +101,7 @@ browser-install:
 	$(VENV)/bin/python -m playwright install chromium $(ARGS)
 
 browser-check:
-	$(PYTHON) scripts/test_inspector_browser.py
+	$(PYTHON) tests/test_inspector_browser.py
 
 # A new project beside this checkout: make init DIR=../my-evals ARGS=--tutorial
 init:
@@ -281,12 +281,12 @@ smoke-fixture:
 	  $(PYTHON) scripts/materialize.py --dataset-id cnn_dailymail_200 >/dev/null 2>&1 || true
 
 test: smoke-fixture
-	$(PYTHON) scripts/self_test.py
+	$(PYTHON) tests/self_test.py
 
 # docs/GUIDE.md run in a fresh project, every quoted output compared: the onboarding path
 # a new reader follows cannot drift from what the commands print.
 guide-check:
-	$(PYTHON) scripts/check_guide.py
+	$(PYTHON) tests/check_guide.py
 
 check: validate test guide-check
 	@echo ""

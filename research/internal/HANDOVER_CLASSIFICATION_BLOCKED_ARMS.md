@@ -75,7 +75,7 @@ mistake. This is exactly why `label_order` is in the fingerprint for `hf_local` 
 | in between | read the confusion matrix |
 
 ```bash
-$PY scripts/classification_report.py --dataset-id ag_news_200 --arm ag_bert_base_ta_n200_v1
+$PY tools/classification_report.py --dataset-id ag_news_200 --arm ag_bert_base_ta_n200_v1
 ```
 
 A consistent off-diagonal band **is** a permutation. Rotate `label_order` until the
@@ -145,7 +145,7 @@ Unpack into `harness/data/runs/` on the other side. Each directory carries its o
 ## What to run when they arrive
 
 ```bash
-$PY scripts/classification_report.py --dataset-id ag_news_200
+$PY tools/classification_report.py --dataset-id ag_news_200
 $PY scripts/family_test.py --dataset-id ag_news_200 --a ag_bert_mini_n200_v1 \
      --against _n200_v1 --metric correct
 ```

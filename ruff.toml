@@ -73,4 +73,4 @@ ignore = [
 # Tests and checkers exercise the code from outside: magic values, asserts and broad
 # excepts are what they are made of.
 "**/test_*.py" = ["S105", "S106", "S108", "B011"]
-"harness/scripts/self_test.py" = ["S105", "S106", "S108", "B011"]
+"harness/tests/self_test.py" = ["S105", "S106", "S108", "B011"]

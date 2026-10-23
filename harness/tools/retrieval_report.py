@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Pipeline ceilings, rank movement and hallucination, for ranked-list tasks.
 
-    python scripts/retrieval_report.py --dataset-id scifact_200
-    python scripts/retrieval_report.py --dataset-id scifact_200 --arm sf_qwen_s_n200_v1
+    python tools/retrieval_report.py --dataset-id scifact_200
+    python tools/retrieval_report.py --dataset-id scifact_200 --arm sf_qwen_s_n200_v1
 
 WHY THIS IS A SCRIPT AND NOT A METRIC
 
@@ -31,7 +31,8 @@ import sys
 from collections import Counter
 from pathlib import Path
 
-HERE = Path(__file__).resolve().parent
+HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this file is in tools/)
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tools/
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parents[1] / "examples" / "_shared"))
 

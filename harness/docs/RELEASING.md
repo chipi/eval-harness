@@ -44,8 +44,8 @@ Pin a release tag:
    committed `data/judge-validation/<scorer>/<set>/report.json` only against its records (their
    hash, count, bill, unparsed and withheld counts) and the scorer's hash, not its figures.
    Before a release, with the human data downloaded (the scripts fetch it), run
-   `python scripts/validate_judge_goyal.py --scorer <scorer> --no-calls` and
-   `python scripts/validate_judge_zhang.py --scorer <scorer> --no-calls` for each scorer that
+   `python tools/validate_judge_goyal.py --scorer <scorer> --no-calls` and
+   `python tools/validate_judge_zhang.py --scorer <scorer> --no-calls` for each scorer that
    has the records; they recompute every figure for $0. Commit any change, and run `make ci`,
    which then recomputes the report's claims from the human data too.
 4. **Merge to `main`.** The `harness-package` workflow builds the package, installs it in

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Every relative markdown link and #anchor in the repo must resolve. $0.
 
-    python scripts/check_links.py
+    python tools/check_links.py
 
 Review found a broken anchor and four wrong command paths that had survived a
 rename -- the kind of rot no reader reports and no test catches. Slugs follow
@@ -15,6 +15,7 @@ import pathlib
 import re
 import sys
 
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "scripts"))
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from _common import no_options
 

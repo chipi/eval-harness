@@ -44,7 +44,7 @@ def main() -> int:
 
     no_options(__doc__)
     if in_checkout():
-        return subprocess.run([sys.executable, str(HERE / "self_test.py")]).returncode
+        return subprocess.run([sys.executable, str(HERE.parent / "tests" / "self_test.py")]).returncode
     print("evaluation-harness self-check (the installed package, in a scratch folder; $0, offline)\n")
     results = []
 

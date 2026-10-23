@@ -78,7 +78,7 @@ PY=../examples/classification-dbpedia-14/.venv/bin/python
 CFG=../examples/classification-dbpedia-14/configs
 
 $PY scripts/experiment_run.py --config $CFG/arm_qwen_m_n200.yaml --dry-run
-$PY scripts/classification_report.py --dataset-id dbpedia_280
+$PY tools/classification_report.py --dataset-id dbpedia_280
 $PY scripts/family_test.py --dataset-id dbpedia_280 --a db_qwen_m_n200_v1 \
      --against _n200_v1 --metric correct
 ```

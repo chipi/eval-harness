@@ -92,7 +92,7 @@ def _small_fractions(values: list[float]) -> bool:
 NEMENYI_Q05 = {
     # alpha = 0.05, nu = infinity: the studentised range divided by sqrt(2).
     #
-    # COMPUTED, NOT TRANSCRIBED -- see scripts/nemenyi_table.py, which solves
+    # COMPUTED, NOT TRANSCRIBED -- see tools/nemenyi_table.py, which solves
     #   P(R <= q) = k * INTEGRAL phi(z) [Phi(z) - Phi(z-q)]^(k-1) dz  =  1 - alpha
     # by Simpson plus bisection, in stdlib. It reproduces all 24 values Demsar (2006)
     # publishes for k = 2..25 to within 0.0007, which is below the precision Demsar

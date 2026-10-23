@@ -101,7 +101,7 @@ Then the analysis — all of it $0, all of it from stored outputs:
 
 ```bash
 python scripts/rescore.py --dataset-id few_nerd_280 --match fn_ --out data/runs-rescored
-EVAL_RUNS_DIR=data/runs-rescored python scripts/extraction_report.py --dataset-id few_nerd_280 --match fn_
+EVAL_RUNS_DIR=data/runs-rescored python tools/extraction_report.py --dataset-id few_nerd_280 --match fn_
 python scripts/family_test.py --dataset-id few_nerd_280 --a fn_span_marker_n200_v1 \
     --against _n200_v1 --metric f1 --runs-dir data/runs-rescored
 ```

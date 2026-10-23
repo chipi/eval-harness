@@ -11,6 +11,7 @@ from pathlib import Path
 
 NER = Path(__file__).resolve().parents[2] / "examples" / "ner-few-nerd"
 sys.path.insert(0, str(NER))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))  # _check, _common
 from _check import check, summary  # noqa: E402
 from _common import load_module  # noqa: E402
 

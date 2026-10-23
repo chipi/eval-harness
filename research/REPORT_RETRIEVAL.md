@@ -619,7 +619,7 @@ done
 # The record for every SciFact figure is data/runs-reparsed (corrected parser). Every script
 # reads it through EVAL_RUNS_DIR; data/runs holds the pre-fix qwen_s (0.7338).
 export EVAL_RUNS_DIR=data/runs-reparsed
-python scripts/retrieval_report.py --dataset-id scifact_200 --match sf_
+python tools/retrieval_report.py --dataset-id scifact_200 --match sf_
 python scripts/family_test.py --dataset-id scifact_200 --a sf_glm_s_n200_v1 \
     --against _n200_v1 --metric ndcg_10 --runs-dir data/runs-reparsed
 python scripts/holdout_significance.py --dataset-id scifact_200 \

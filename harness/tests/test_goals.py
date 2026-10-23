@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Assertions for goals (ADR-0002): config -> run -> baseline, validate V14, the goal pages.
 
-    python scripts/test_goals.py
+    python tests/test_goals.py
 
 In a throwaway project built from the tutorial ($0, offline): a config naming an unknown goal
 is refused before it runs; a known one is recorded on the run and carried to the baseline with
@@ -18,7 +18,9 @@ import sys
 import tempfile
 from pathlib import Path
 
-HERE = Path(__file__).resolve().parent
+HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this file is in tests/)
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tests/
+sys.path.insert(0, str(HERE))  # the core modules
 KIT = HERE.parent / "tutorial"
 from _check import check, summary  # noqa: E402
 

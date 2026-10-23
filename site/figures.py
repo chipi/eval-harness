@@ -296,6 +296,7 @@ def judged_summarisation(exps: list, scorer: str = "") -> dict:
     projected from its stored verdicts exactly as judge_figures does, with
     judge_figures' own figures (human check, Goyal, pointwise, agreement)."""
     sys.path.insert(0, str(HARNESS / "scripts"))
+    sys.path.insert(0, str(HARNESS / "tools"))  # judge_figures: the repository's, not the package's
     import judge_figures as jf  # noqa: PLC0415
     import judge_score as js  # noqa: PLC0415
 
@@ -380,6 +381,7 @@ def zhang_figures() -> dict:
     judge_figures.zhang: recomputed from the stored records when the ratings are downloaded,
     the committed report.json (checked against the records) when not."""
     sys.path.insert(0, str(HARNESS / "scripts"))
+    sys.path.insert(0, str(HARNESS / "tools"))  # judge_figures: the repository's, not the package's
     import judge_figures as jf  # noqa: PLC0415
 
     return {s: jf.zhang(s) for s in ("judge-summ-v1", "judge-summ-v2")}
@@ -410,7 +412,7 @@ def compute() -> dict:
     billed = sum(e["billed_total"] for e in exps)
     cal = calibration()
     claims = subprocess.run(
-        [sys.executable, str(HARNESS / "scripts" / "check_report_claims.py")],
+        [sys.executable, str(HARNESS / "tools" / "check_report_claims.py")],
         capture_output=True,
         text=True,
         cwd=HARNESS,

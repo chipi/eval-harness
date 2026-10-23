@@ -103,7 +103,7 @@ documented `EVAL_RUNS_DIR=data/runs-rescored make …` workflow pair-tests un-re
 *Fix:* default to `RUNS`, keep `--runs-dir` as override.
 
 **M5 ✔. `check_terminology.py` is vacuous off the author's machine.** CONFIRMED.
-`harness/scripts/check_terminology.py:16` hardcodes `/Users/claude/projects/eval-harness`;
+`harness/tools/check_terminology.py:16` hardcodes `/Users/claude/projects/eval-harness`;
 `rglob` yields nothing → success, exit 0. `self_test.py:85-92` runs it with `--help`, which
 this argparse-less script ignores. (Re-pointed at the tree it passes today.) Coverage is
 also narrow: only the first cell of tables headed `| experiment |`; prose, other headers

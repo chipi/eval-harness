@@ -187,7 +187,7 @@ per-item metric — which means the sign-flip permutation test works directly an
 bootstrap is needed. Corpus micro-F1 pools every tp/fp/fn into one figure. The mean is
 the ranking metric; this sentence used to say "both are reported" and no micro-F1 figure
 appeared anywhere. They do now
-(`EVAL_RUNS_DIR=data/runs-rescored scripts/extraction_report.py --dataset-id few_nerd_280`):
+(`EVAL_RUNS_DIR=data/runs-rescored tools/extraction_report.py --dataset-id few_nerd_280`):
 
 | arm | mean per-sentence F1 (ranking) | corpus micro-F1 | micro precision | micro recall |
 |---|---|---|---|---|
@@ -498,7 +498,7 @@ pairs distinguishable: 152 of 378
 > understated and more pairs called distinguishable than the test supports. Round 2 made
 > the tool refuse above k=25 and this block printed NOT AVAILABLE. A round-3 reviewer
 > pointed out the values are about thirty lines of stdlib, which they are:
-> [`scripts/nemenyi_table.py`](../harness/scripts/nemenyi_table.py) solves the
+> [`tools/nemenyi_table.py`](../harness/tools/nemenyi_table.py) solves the
 > studentised-range integral and reproduces all 24 of Demsar's published values to
 > within 0.0007.
 >
@@ -818,7 +818,7 @@ for f in ../examples/ner-few-nerd/configs/arm_*_n200.yaml; do
 done
 
 python scripts/rescore.py --dataset-id few_nerd_280 --match fn_ --out data/runs-rescored
-EVAL_RUNS_DIR=data/runs-rescored python scripts/extraction_report.py --dataset-id few_nerd_280 --match fn_
+EVAL_RUNS_DIR=data/runs-rescored python tools/extraction_report.py --dataset-id few_nerd_280 --match fn_
 python scripts/family_test.py --dataset-id few_nerd_280 --a fn_span_marker_n200_v1 \
     --against _n200_v1 --metric f1 --runs-dir data/runs-rescored
 EVAL_RUNS_DIR=data/runs-rescored python scripts/holdout_significance.py \

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Assertions for the judging pass. No network, no API key, no money: a fake judge.
 
-    python scripts/test_judge_score.py
+    python tests/test_judge_score.py
 
 Covers ADR-0001's controls: the validation gate, a hash-stable judging set, blinding,
 projection, resume, the mid-run cost cap with partial results kept, and that the prompt
@@ -19,7 +19,9 @@ import tempfile
 from pathlib import Path
 from types import SimpleNamespace
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tests/
+sys.path.insert(1, str(Path(__file__).resolve().parents[1] / "tools"))  # validate_judge_*
 import functools
 import operator
 
@@ -27,7 +29,7 @@ import judge_score as js
 import judging
 from _common import load_module
 
-HERE = Path(__file__).resolve().parent
+HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this file is in tests/)
 from _check import check, summary  # noqa: E402
 
 

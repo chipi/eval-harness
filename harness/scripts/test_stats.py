@@ -83,21 +83,7 @@ check(
     all(sep for _, sep in stats.holm({"a": 0.025, "b": 0.05}).values()),
 )
 _here = Path(__file__).resolve().parent
-import summeval_analysis as _sea  # noqa: E402
-
-_tied = {a: {f"i{k}": 1.0 for k in range(10)} for a in ("alpha", "beta")}
-_sh = _sea.split_half(_tied, list(_tied["alpha"]), 3, random.Random(1))
-check(
-    "split-half: a tied top is undecided, never 'the same winner' by name",
-    _sh["undecided"] == 1.0 and _sh["same_winner"] != _sh["same_winner"],
-    _sh,
-)
-_clear = {"top": {f"i{k}": 1.0 for k in range(10)}, "low": {f"i{k}": 0.0 for k in range(10)}}
-check(
-    "split-half: a unique winner in both halves is agreement",
-    _sea.split_half(_clear, list(_clear["top"]), 3, random.Random(1))["same_winner"] == 1.0,
-)
-for _script in ("family_test.py", "bootstrap_test.py", "summeval_analysis.py"):
+for _script in ("family_test.py", "bootstrap_test.py"):
     check(
         f"holm: {_script} uses stats.holm, so it cannot disagree with the inspector",
         "holm(" in (_here / _script).read_text() and "/ (m - i)" not in (_here / _script).read_text(),

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Every scoring hash must move when the code it claims to cover moves. $0, no network.
 
-    python scripts/test_code_hashes.py
+    python tests/test_code_hashes.py
 
 WHY. Every hash here was `sha256(inspect.getsource(fn))`, which covers the `def` block
 and nothing else. The regexes those parsers are driven by are module-level constants, so
@@ -15,7 +15,9 @@ import re
 import sys
 from pathlib import Path
 
-HERE = Path(__file__).resolve().parent
+HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this file is in tests/)
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tests/
+sys.path.insert(0, str(HERE))  # the core modules
 sys.path.insert(0, str(HERE.parents[1] / "examples" / "_shared"))
 
 import codehash  # noqa: E402

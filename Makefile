@@ -104,10 +104,10 @@ audit-locks:
 	$(PY) examples/audit_locks.py
 
 deadcode:
-	$(BIN)/vulture harness/scripts harness/judges.py harness/runner.py examples site --min-confidence 80 --exclude '*/.venv/*'
+	$(BIN)/vulture harness/scripts harness/tests harness/tools harness/judges.py harness/runner.py examples site --min-confidence 80 --exclude '*/.venv/*'
 
 docstrings:
-	cd harness && .venv/bin/interrogate scripts judges.py runner.py
+	cd harness && .venv/bin/interrogate scripts tests tools judges.py runner.py
 
 spelling:
 	git ls-files -z -- $(SPELLED) | xargs -0 $(BIN)/codespell
@@ -117,4 +117,4 @@ shell:
 	$(BIN)/actionlint -shellcheck $(BIN)/shellcheck
 
 complexity:
-	$(BIN)/radon cc harness/scripts harness/judges.py harness/runner.py -nc -s --total-average
+	$(BIN)/radon cc harness/scripts harness/tests harness/tools harness/judges.py harness/runner.py -nc -s --total-average

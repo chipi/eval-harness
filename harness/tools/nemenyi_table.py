@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """The Nemenyi critical values, computed rather than copied. Stdlib only, $0.
 
-    python scripts/nemenyi_table.py            # print the table and the check
-    python scripts/nemenyi_table.py --max 40   # extend it
+    python tools/nemenyi_table.py            # print the table and the check
+    python tools/nemenyi_table.py --max 40   # extend it
 
 WHY THIS EXISTS
 

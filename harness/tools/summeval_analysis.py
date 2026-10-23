@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """The derived SummEval figures, recomputed from the committed runs. $0, no network.
 
-    python scripts/summeval_analysis.py
+    python tools/summeval_analysis.py
 
 Everything REPORT_SUMMEVAL.md states that is not one run's own metric: the split-half
 stability of the judges' order, price against quality, the family ladders, the
@@ -18,11 +18,13 @@ import json
 import math
 import random
 import statistics
+import sys
 from pathlib import Path
 
-from stats import holm, sign_flip_p, spearman
+HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this file is in tools/)
+sys.path.insert(0, str(HERE))
+from stats import holm, sign_flip_p, spearman  # noqa: E402
 
-HERE = Path(__file__).resolve().parent
 RUNS = HERE.parent / "data" / "runs"
 DATASET, PREFIX, SUFFIX = "summeval_100", "se_", "_n100_v1"
 FREE = {"bartscore", "unieval", "unievalpub", "rouge1", "rouge2", "rougeL", "coverage", "length", "random"}

@@ -1348,12 +1348,12 @@ python scripts/family_test.py --dataset-id few_nerd_280 \
 python scripts/holdout_significance.py --dataset-id few_nerd_280 \
     --exclude-dataset few_nerd_56 --metric f1 --match fn_
 # §5 — gold errors
-python scripts/extraction_report.py --dataset-id few_nerd_280 --match fn_
-python scripts/classification_report.py --dataset-id dbpedia_280
+python tools/extraction_report.py --dataset-id few_nerd_280 --match fn_
+python tools/classification_report.py --dataset-id dbpedia_280
 # §7 — tie behaviour by metric shape
 python scripts/rank_stability.py --dataset-id dbpedia_280 --metric correct --match db_
 # SummEval's derived figures (split-half, price vs quality, ladders, dimensions)
-python scripts/summeval_analysis.py
+python tools/summeval_analysis.py
 ```
 
 Terms, models, datasets and tests are defined in

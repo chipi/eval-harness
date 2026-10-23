@@ -9,7 +9,8 @@ import sys
 import tempfile
 from pathlib import Path
 
-HERE = Path(__file__).resolve().parent
+HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this file is in tests/)
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tests/
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent))
 
@@ -171,5 +172,43 @@ check("billed: the provider's usage.cost is the cost", billed({"cost": 0.0123}) 
 check("billed: no cost reported is None, not 0", billed({"prompt_tokens": 5}) is None)
 check("price: unpriced is None, never free", price({}, 10, 10) is None)
 check("the adapter and the judges share one price rule", bundled.price is price and bundled.billed is billed)
+
+# The instrument's code hash: the code that can move a number, nothing else. Editing a test or
+# a report checker changed it, and run-compare then reported a confound that was not one.
+import shutil  # noqa: E402
+
+import _fingerprint  # noqa: E402
+
+hashed = {p.name for p in _fingerprint.measuring_modules()}
+check(
+    "code hash: the run-writing commands and the adapter are in it",
+    {"experiment_run.py", "rescore.py", "judge_score.py", "adapter.py", "_common.py"} <= hashed,
+    sorted(hashed),
+)
+check(
+    "code hash: no test, checker or read-only command is in it",
+    not hashed & {"test_stats.py", "self_check.py", "leaderboard.py", "catalog_serve.py", "validate_tree.py"},
+    sorted(hashed),
+)
+with tempfile.TemporaryDirectory() as tmp:
+    code = Path(tmp) / "scripts"
+    shutil.copytree(HERE, code, ignore=shutil.ignore_patterns("__pycache__"))
+    before = {p.name for p in _fingerprint.measuring_modules(code)}
+    (code / "_new_scorer.py").write_text("X = 1\n", encoding="utf-8")
+    (code / "rescore.py").write_text(
+        (code / "rescore.py").read_text(encoding="utf-8")
+        + "\n\ndef _late():\n    import _new_scorer  # noqa\n",
+        encoding="utf-8",
+    )
+    after = {p.name for p in _fingerprint.measuring_modules(code)}
+    check(
+        "code hash: a module a producer imports, even lazily, is covered the day it is",
+        after - before == {"_new_scorer.py"},
+    )
+    (code / "test_unrelated.py").write_text("check = 1\n", encoding="utf-8")
+    check(
+        "code hash: a new test file is not",
+        "test_unrelated.py" not in {p.name for p in _fingerprint.measuring_modules(code)},
+    )
 
 sys.exit(summary())

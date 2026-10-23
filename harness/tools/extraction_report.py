@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Corpus micro-F1, per-type breakdown, type confusion and annotation noise, for set tasks.
 
-    python scripts/extraction_report.py --dataset-id few_nerd_280
-    python scripts/extraction_report.py --dataset-id few_nerd_280 --arm fn_span_marker_n200_v1
+    python tools/extraction_report.py --dataset-id few_nerd_280
+    python tools/extraction_report.py --dataset-id few_nerd_280 --arm fn_span_marker_n200_v1
 
 WHY THIS IS A SCRIPT AND NOT A METRIC
 
@@ -54,7 +54,8 @@ import sys
 from collections import Counter, defaultdict
 from pathlib import Path
 
-HERE = Path(__file__).resolve().parent
+HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this file is in tools/)
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tools/
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parents[1] / "examples" / "_shared"))
 

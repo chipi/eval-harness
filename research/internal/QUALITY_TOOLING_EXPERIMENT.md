@@ -101,13 +101,13 @@ lock is clean on Linux and Apple-silicon macOS except few-nerd's transformers, a
 
 | Experiment | Arms | Result |
 |---|---|---|
-| ag-news | 6 | exact, 200/200 items each |
-| dbpedia | 4 | exact, 280/280 |
-| scifact | 7 | exact, 200/200 (sentence-transformers 3 to 6) |
-| few-nerd | 4 | exact, 280/280 (on transformers 4.55.4) |
-| summarization | 5 | 4 exact; bart_s 199/200, see below |
-| summeval | 9 | 7 exact; unieval 65/100 and unievalpub 63/100 items identical, means within 0.0002, paired p 0.42 and 0.49 |
-| summarization-dailymail | 5 | 4 exact; bart_s 187/200, mean +0.0009, paired p 0.52 (its committed run records `precision_not_applied`: it ran fp16) |
+| Classification · AG News | 6 | exact, 200/200 items each |
+| Classification · DBpedia | 4 | exact, 280/280 |
+| Retrieval · SciFact | 7 | exact, 200/200 (sentence-transformers 3 to 6) |
+| Extraction · Few-NERD | 4 | exact, 280/280 (on transformers 4.55.4) |
+| Summarisation · CNN/DM | 5 | 4 exact; bart_s 199/200, see below |
+| Judging · SummEval | 9 | 7 exact; unieval 65/100 and unievalpub 63/100 items identical, means within 0.0002, paired p 0.42 and 0.49 |
+| Summarisation · CNN/DM (DailyMail slice) | 5 | 4 exact; bart_s 187/200, mean +0.0009, paired p 0.52 (its committed run records `precision_not_applied`: it ran fp16) |
 
 Every committed separation and tie holds in all seven.
 

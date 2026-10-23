@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Every `evh` command, run the way a project that pins the package runs it.
 
-    python scripts/test_installed_commands.py
+    python tests/test_installed_commands.py
 
 The package is installed from its wheel (_wheel.py) beside a fresh project with the tutorial
 dataset, gold references and three arms. Each command in cli.COMMANDS has one case here: it
@@ -26,7 +26,8 @@ import tempfile
 import time
 from pathlib import Path
 
-HERE = Path(__file__).resolve().parent
+HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this file is in tests/)
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tests/
 REPO = HERE.parent.parent  # the checkout (infra/ is not part of the package)
 sys.path.insert(0, str(HERE))
 import _wheel  # noqa: E402

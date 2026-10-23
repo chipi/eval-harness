@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """The reports' model facts must match the captured evidence. $0, NO NETWORK.
 
-    python scripts/check_model_facts.py
+    python tools/check_model_facts.py
 
 WHY NO NETWORK. Three reviewers could not check a single model size or licence claim
 because HuggingFace and OpenRouter were blocked from their container. An offline check
@@ -18,12 +18,12 @@ import re
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _common import no_options
+HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this file is in tools/)
+sys.path.insert(0, str(HERE))
+from _common import no_options  # noqa: E402
 
 no_options(__doc__)  # --help prints this; anything else is refused
 
-HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 EV = ROOT / "docs" / "evidence" / "model_facts.json"
 

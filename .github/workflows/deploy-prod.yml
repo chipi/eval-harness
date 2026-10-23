@@ -26,6 +26,10 @@ on:
     paths:
       - "site/public/**"
       - "harness/scripts/**"
+      # The inspector is the package, installed from its wheel (render.sh): what builds it.
+      - "harness/pyproject.toml"
+      - "harness/schemas/**"
+      - "harness/tests/_wheel.py"
       - "harness/catalog_assets/**"
       - "harness/data/**"
       - "infra/**"

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Run docs/GUIDE.md in a fresh project and check every output it quotes.
 
-    python scripts/check_guide.py            # PASS / FAIL, exits non-zero on a mismatch
-    python scripts/check_guide.py --print    # also print what each command printed
+    python tests/check_guide.py            # PASS / FAIL, exits non-zero on a mismatch
+    python tests/check_guide.py --print    # also print what each command printed
 
 The GUIDE is the onboarding path: a new project, the harness installed, the tutorial kit
 copied in, then every step with `evh`. A quoted output that no longer matches what the
@@ -40,7 +40,8 @@ import tempfile
 import time
 from pathlib import Path
 
-HERE = Path(__file__).resolve().parent
+HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this file is in tests/)
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tests/
 HARNESS = HERE.parent
 sys.path.insert(0, str(HERE))
 import _wheel  # noqa: E402

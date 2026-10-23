@@ -202,7 +202,7 @@ they compare them.
   what the calibration rows use. A judge's prompt, decoding and one-call-per-article design
   are this repo's, so a judge's τ is comparable in kind, not as a reproduction of G-Eval.
 - **Reproduce.** `examples/summeval-judging/README.md`; calibration: `calibrate.py`;
-  the derived figures in its report: `harness/scripts/summeval_analysis.py`.
+  the derived figures in its report: `harness/tools/summeval_analysis.py`.
 
 ## What a number here does and does not support
 

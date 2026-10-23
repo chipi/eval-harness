@@ -18,6 +18,16 @@ runs has to change.
 - **`family-test`'s cache** recomputes once: its key includes the new `stats.py`.
 - **`validate` V4** now fails a materialized copy that has lost an item file, and names each
   dataset it could not check. A project whose copy is incomplete goes red where it was green.
+- **The direction of a metric is inferred.** On a cost, latency or token metric, or a primary
+  metric your runs recorded with `import-run --asc`, lower is now better without a flag:
+  `pair-test`'s "A wins", `family-test`'s wins and "ahead", the leaderboard's order and its
+  significance block, `holdout` and `rank-stability` all count the lower score. Before, they
+  counted the higher one unless you passed `--asc` (`holdout` and `rank-stability` had no flag).
+  p-values do not change: the tests are two-sided. `--asc` and `--desc` override.
+- **`validate` checks every committed `runs*` directory** (V7, V8, V9), read from git: it
+  checked only this repository's six directory names, so a project's own `data/runs-adjudicated`
+  was never validated. Declare the list, floors, scorer sources and duplicate exceptions in
+  `<data>/validate.json` (RUNBOOK §9); a `validate_floors.json` is still read for floors.
 
 **New, all optional:**
 - **The catalog and the run inspector** (`evh catalog`, `evh catalog-serve`). On the
@@ -36,6 +46,20 @@ runs has to change.
 primary metric your runs recorded when no `--metric` is given. They used to default to
 `coverage`, the summarisation example's metric, and said "no runs" or crashed in any project
 that does not score it. Pass `--metric` as before to choose another.
+
+Also:
+- A run's `instrument.harness.code_sha256` hashes only the code that can move a number (the
+  run-writing commands and what they import), not the package's tests and read-only
+  commands. Runs made on 0.4.0 record a different value from 0.3.0 runs, as any upgrade
+  does; `run-compare` names it.
+- The bundled adapter refuses an unknown `provider:` (it fell back to `echo`, so a typo
+  recorded the echoed input as the model's output) and records what an OpenAI-compatible
+  provider billed when the response says so.
+- Every command refuses with `ERROR: …` on stderr and exit 1, and refuses an argument it
+  does not take with exit 2 (`validate`, `self-test` ignored them). Exit codes: RUNBOOK.
+- `import evaluation_harness.judging` works, and the package's modules load once each.
+- The wheel holds the package's code only: this repository's tests and report checkers
+  moved to `harness/tests/` and `harness/tools/` in the checkout.
 
 **After upgrading:** `evh self-test` (in a project it checks that the installed harness
 works here: its paired test, and the tutorial end to end in a scratch folder), `evh

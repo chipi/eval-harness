@@ -8,6 +8,10 @@ interpreter running the test has them), into a directory the test puts on PYTHON
 
 The build runs on a copy of the packaging inputs in a temporary directory, never in the
 checkout, so it leaves no build/ or *.egg-info behind and two tests can build at once.
+
+The deploy installs the inspector the same way, for the same reason:
+
+    python3 harness/tests/_wheel.py install <target-dir>
 """
 
 from __future__ import annotations
@@ -73,3 +77,9 @@ def install(target: Path) -> Path:
     if r.returncode:
         raise SystemExit(f"installing the wheel failed:\n{r.stdout}{r.stderr}")
     return target
+
+
+if __name__ == "__main__":
+    if len(sys.argv) != 3 or sys.argv[1] != "install":
+        raise SystemExit("usage: _wheel.py install <target-dir>")
+    print(install(Path(sys.argv[2])))

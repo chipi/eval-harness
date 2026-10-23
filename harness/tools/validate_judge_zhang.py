@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Check a judge scorer against human ratings of LLM-written news summaries.
 
-    python scripts/validate_judge_zhang.py --scorer judge-summ-v1 [--dry-run | --no-calls]
+    python tools/validate_judge_zhang.py --scorer judge-summ-v1 [--dry-run | --no-calls]
 
 SummEval validates judges on 2019-era summarisers. Zhang, Ladhak, Durmus, Liang, McKeown &
 Hashimoto (2024, "Benchmarking Large Language Models for News Summarization", TACL 12)
@@ -46,7 +46,8 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
-HERE = Path(__file__).resolve().parent
+HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this file is in tools/)
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tools/
 sys.path.insert(0, str(HERE))
 import _fetch  # noqa: E402
 import judge_score as js  # noqa: E402

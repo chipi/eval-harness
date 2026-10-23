@@ -262,7 +262,7 @@ outside the dev slice: CD 3.48, **35 of 435**.
 first read "CD 3.01, 34 of 378", produced by silently reusing the k=25 critical value for a
 28-arm field. Round 2 made the tool refuse above k=25; a round-3 reviewer observed that the
 values are about thirty lines of stdlib, and
-[`scripts/nemenyi_table.py`](../harness/scripts/nemenyi_table.py) now solves the
+[`tools/nemenyi_table.py`](../harness/tools/nemenyi_table.py) now solves the
 studentised-range integral (all 24 of Demšar's published values reproduced to 0.0007). At
 k=28 that gave **CD 3.06, 33 of 378**; at k=30, with the two bert-base arms, it is the
 figure above.*
@@ -843,14 +843,14 @@ uv run fetch.py --n 280 && uv run fetch.py --n 56
 
 cd ../../harness
 PY=../examples/classification-dbpedia-14/.venv/bin/python
-$PY scripts/classification_report.py --dataset-id dbpedia_280
+$PY tools/classification_report.py --dataset-id dbpedia_280
 $PY scripts/family_test.py    --dataset-id dbpedia_280 --a db_qwen_m_n200_v1 --against _n200_v1 --metric correct
 $PY scripts/bootstrap_test.py --dataset-id dbpedia_280 --a db_qwen_m_n200_v1 --against _n200_v1 --metric macro_f1
 $PY scripts/rank_stability.py --dataset-id dbpedia_280 --metric correct
 $PY scripts/family_test.py    --dataset-id dbpedia_280 --a db_bert_base_fy_n200_v1 --against _n200_v1 --metric correct
 
 PY=../examples/classification-ag-news/.venv/bin/python
-$PY scripts/classification_report.py --dataset-id ag_news_200
+$PY tools/classification_report.py --dataset-id ag_news_200
 $PY scripts/family_test.py    --dataset-id ag_news_200 --a ag_bert_base_ta_n200_v1 --against _n200_v1 --metric correct
 $PY scripts/family_test.py    --dataset-id ag_news_200 --a ag_bert_mini_n200_v1    --against _n200_v1 --metric correct
 $PY scripts/bootstrap_test.py --dataset-id ag_news_200 --a ag_bert_base_ta_n200_v1 --against _n200_v1 --metric macro_f1

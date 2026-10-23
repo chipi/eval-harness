@@ -4,6 +4,7 @@ import json
 import sys
 
 sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parents[2] / "examples" / "_shared"))
+sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parents[1] / "scripts"))  # _check
 from extraction import as_members, prf, score_sets
 
 G = json.dumps([{"text": "Grill Room", "type": "building"}, {"text": "New York", "type": "location"}])

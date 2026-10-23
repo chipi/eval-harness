@@ -56,10 +56,11 @@ version = {attr = "evaluation_harness._version.__version__"}
 # held by CI's package job, which installs the wheel on 3.9 and runs `evh self-test`.
 python_version = "3.10"
 # The scripts import each other as top-level modules (`from _common import …`), the way they
-# run from a checkout; scripts/ has an __init__.py only for the installed package.
-mypy_path = "scripts"
+# run from a checkout; scripts/ has an __init__.py only for the installed package. tests/ and
+# tools/ are this repository's tests and report checks: not in the package, checked the same.
+mypy_path = "scripts,tests,tools"
 explicit_package_bases = true
-files = ["scripts", "judges.py", "runner.py"]
+files = ["scripts", "tests", "tools", "judges.py", "runner.py"]
 exclude = ['^scripts/__main__\.py$', '^scripts/__init__\.py$']
 ignore_missing_imports = true
 warn_unused_configs = true
@@ -76,5 +77,5 @@ ignore-private = true
 ignore-property-decorators = true
 ignore-module = true
 ignore-nested-functions = true
-exclude = ["scripts/test_*.py", "scripts/self_test.py"]
+exclude = ["scripts/test_*.py", "tests/test_*.py", "tests/self_test.py"]
 fail-under = 100

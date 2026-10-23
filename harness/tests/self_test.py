@@ -21,7 +21,8 @@ import sys
 import tempfile
 from pathlib import Path
 
-HERE = Path(__file__).resolve().parent
+HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this file is in tests/)
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tests/
 #: The harness root. HERE is scripts/, which is what the sys.path inserts below want — but
 #: a data check written against HERE scans scripts/data/, which does not exist, so it finds
 #: nothing and passes for the wrong reason. That is exactly how the first version of
@@ -29,6 +30,17 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 PY = sys.executable
 sys.path.insert(0, str(HERE))
+sys.path.insert(1, str(HERE.parent / "tools"))  # the report checks some tests exercise
+
+
+def at(script: str) -> str:
+    """A script's path from the harness root: the package's code is in scripts/, this
+    repository's tests in tests/ and its report and judge checks in tools/."""
+    for d in ("scripts", "tests", "tools"):
+        if (ROOT / d / script).is_file():
+            return f"{d}/{script}"
+    return f"scripts/{script}"
+
 
 from _check import check, results  # noqa: E402
 
@@ -133,7 +145,7 @@ def test_cli_help_works() -> None:
         "check_links",
         "check_model_facts",
     ):
-        r = run(f"scripts/{script}.py", "--help")
+        r = run(at(f"{script}.py"), "--help")
         check(f"{script}.py --help", r.returncode == 0, r.stderr.strip()[:80])
 
 
@@ -582,17 +594,19 @@ def test_example_scorer_suites_pass() -> None:
         ("test_runs_adapter.py", "run reading, direction, adapter loading, the judge panel"),
         ("check_report_claims.py", "report claims vs committed runs"),
         ("check_links.py", "markdown links and anchors"),
+        ("check_terminology.py", "experiment tables use the canonical Task · Dataset labels"),
+        ("test_summeval_analysis.py", "SummEval split-half: a tied top is undecided"),
         ("check_commands.py", "documented commands: every make target, evh command and flag exists"),
         ("check_model_facts.py", "model facts vs the evidence capture"),
     ):
-        path = HERE / script
+        path = ROOT / at(script)
         # A MISSING CHECKER IS A FAILURE, NOT A SKIP. `continue` here meant deleting
         # test_retrieval_scorer.py removed it from `make ci` silently -- the suite went
         # on reporting all-green over one fewer check. Found by external review.
         if not path.is_file():
             check(f"{subject}: its checker exists", False, f"{script} is missing")
             continue
-        r = run(f"scripts/{script}")
+        r = run(at(script))
         out = (r.stdout or "") + (r.stderr or "")
         # THE SKIP IS FOR AN EXAMPLE'S DEPENDENCIES, NOT FOR ANY IMPORT ERROR. Matching
         # bare "ModuleNotFoundError" meant a typo'd import inside a checker read as
@@ -1548,7 +1562,7 @@ def test_v8_and_v9_go_red_on_a_copied_or_gutted_run() -> None:
             r.returncode != 0 and "FAIL V8" in out,
             f"exit {r.returncode}",
         )
-        r2 = _run_in(shadow, "scripts/check_report_claims.py")
+        r2 = _run_in(shadow, "tools/check_report_claims.py")
         check(
             "...and the latency medians refuse it too, whichever name sorts last",
             r2.returncode != 0,
@@ -2220,14 +2234,14 @@ def test_the_checks_can_actually_fail() -> None:
         ),
     ]
     for script, what, rel, old, new_text in DEFECTS:
-        if not (HERE / script).is_file():
+        if not (ROOT / at(script)).is_file():
             check(f"checks can fail: {script} exists", False, "missing")
             continue
         with planted(rel, old, new_text) as ok:
             if not ok:
                 print(f"  --   checks can fail: {script} skipped ({what!r} anchor not found in {rel})")
                 continue
-            r = run_shadow(f"scripts/{script}")
+            r = run_shadow(at(script))
             out = (r.stdout or "") + (r.stderr or "")
             check(f"checks can fail: {script} catches {what}", r.returncode != 0, f"exit {r.returncode}")
             # AND IT MUST FAIL FOR THE RIGHT REASON. Exiting 1 on a traceback is how
@@ -2248,8 +2262,9 @@ def test_the_checks_can_actually_fail() -> None:
         (fake / "data" / "runs").mkdir(parents=True)
         (fake / "data" / "runs-rescored").mkdir(parents=True)
         shutil.copytree(HERE, fake / "scripts")
+        shutil.copytree(ROOT / "tools", fake / "tools")
         r = subprocess.run(
-            [PY, str(fake / "scripts" / "check_terminology.py")], cwd=fake, capture_output=True, text=True
+            [PY, str(fake / "tools" / "check_terminology.py")], cwd=fake, capture_output=True, text=True
         )
         check(
             "checks can fail: check_terminology with no markdown exits non-zero",

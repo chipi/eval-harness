@@ -55,14 +55,14 @@ The release notes so far are in [`harness/CHANGELOG.md`](../../harness/CHANGELOG
     front-end in `harness/catalog_assets/` (packaged).
   - API: `/api/compare`, `/api/item` (was `/api/episode` in the podcast repo), and
     `/api/health`.
-  - Tests: `scripts/test_catalog.py` (33).
+  - Tests: `tests/test_catalog.py` (33).
 - **Layer 3, goals:**
   - `schemas/goal.schema.json` and `data/goals/*.yaml` (the six experiments), plus
     `tutorial/goals/tickets_summary.yaml`.
   - `goal:` and `format:` on configs: `experiment-run` refuses an unknown goal and records
     both on the run; `run-promote` carries them onto the baseline.
   - validate V14, and the goal pages.
-  - Tests: `scripts/test_goals.py` (14).
+  - Tests: `tests/test_goals.py` (14).
 - **Layer 4b, VPS code** (see `infra/README.md`):
   - `infra/` follows the box's tenant pattern: `evals-nginx` on 127.0.0.1:8096, and
     `evals-inspector` on 127.0.0.1:8097 (stock `python:3.12.14-alpine3.23` by digest,

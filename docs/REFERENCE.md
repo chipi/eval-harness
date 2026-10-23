@@ -57,7 +57,7 @@ Implementation: [`google-research/rouge`](https://github.com/google-research/goo
 
 **Macro-F1 is not here, and that is deliberate.** Macro-F1 needs a confusion matrix over
 the whole run — there is no per-item number whose mean is macro-F1. It lives in
-`harness/scripts/classification_report.py` instead. See
+`harness/tools/classification_report.py` instead. See
 [scikit-learn's explanation of micro vs macro averaging](https://scikit-learn.org/stable/modules/model_evaluation.html#precision-recall-f-measure-metrics).
 
 ### Extraction (NER) — a set vs a set

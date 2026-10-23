@@ -17,8 +17,8 @@ shows one item's outputs beside its reference. A project on the harness's layout
 one with its own layout writes one adapter. Goals record what an evaluation is for; items carry
 the typed fields a project declares, and can live at a pinned URL. The paired test now lives in
 one place, `evaluation_harness.stats`, exact at 30 items or fewer.
-**Upgrading can move a result** only where `pair-test` or `family-test` ran on 30 items or fewer
-(below), and adds no dependency. Design:
+**Upgrading can move a result** only where `pair-test` or `family-test` ran on 30 items or fewer,
+or in a wins count or an order on a lower-is-better metric (both below), and adds no dependency. Design:
 [ADR-0002](https://github.com/chipi/eval-harness/blob/main/docs/adr/ADR-0002-catalog-inspector-goals.md),
 [ADR-0003](https://github.com/chipi/eval-harness/blob/main/docs/adr/ADR-0003-item-fields-and-url-items.md);
 how to upgrade: [UPGRADING](https://github.com/chipi/eval-harness/blob/main/harness/docs/UPGRADING.md).
@@ -70,6 +70,33 @@ package.
   rescore, validate, catalog). It used to run this repository's development suite, which
   checks this repository's reports and failed 52 checks in every project; in a checkout it
   still does.
+- **A metric's direction is inferred, not remembered by a flag.** On a cost, latency or token
+  metric, or a primary metric the runs recorded with `import-run --asc` (a field nothing read
+  until now), lower is better without `--asc`: `pair-test`'s "A wins", `family-test`'s wins
+  and "ahead", the leaderboard's order and significance block, `holdout` and `rank-stability`.
+  `leaderboard --sort latency_ms` ranked the slowest arm first. p-values do not change (the
+  tests are two-sided); `--asc` and `--desc` override. **This can move** a wins or "ahead"
+  count, and an order, on a lower-is-better metric; no published claim is on one (201/201
+  re-derive).
+- **`validate` checks the project's own run directories.** V7, V8 and V9 read this
+  repository's six directory names, so a project's `data/runs-adjudicated` was never checked;
+  V10's scorer sources were this repository's example paths. They are project policy in
+  `<data>/validate.json` (`committed`, `floors`, `scorer_sources`, `duplicate_ok`); without it
+  every git-tracked `runs*` directory is checked. `validate_floors.json` is still read.
+- **The package holds the harness, not this repository's tests.** The wheel shipped ~14,500
+  lines of tests and report checkers; they are in `harness/tests/` and `harness/tools/` in the
+  checkout. `self-test`'s own suite (`test_stats.py`) still ships. A run's `code_sha256` hashes
+  the code that can move a number (the run-writing commands and what they import, read from
+  the source), so editing a test no longer shows in `run-compare` as a confound; 0.4.0 runs
+  record a different value from 0.3.0 runs. The deploy installs the inspector from the wheel
+  too.
+- **Refusals and arguments.** Every command refuses with `ERROR: …` on stderr and exit 1 (four
+  printed to stdout); a command that takes no arguments refuses one with exit 2 (`validate`,
+  `self-test` and five checkers ignored them). RUNBOOK: exit codes and every environment
+  variable.
+- **The bundled adapter refuses an unknown `provider:`** (a typo fell back to `echo` and
+  recorded the echoed input as the model's output), and records what an OpenAI-compatible
+  provider billed when the response carries it. One price rule for it and the judges.
 
 ### Fixed
 - **`evh rescore` and `evh silver-calibrate` in a project that pins the package.** A run
@@ -120,6 +147,20 @@ package.
   `urlopen` accepts, so a `file:///…` row was copied into the item cache and pinned, although
   a dataset's schema allows only http(s). Every fetch now refuses other schemes before reading
   anything. Found by bandit.
+- **The judge panel judged placeholder text.** Every finalist, real runs included, was scored
+  on "Synthetic item i for <run>". It now reads each finalist's stored outputs, finds runs
+  where every command does (`EVAL_RUNS_DIR`, the project), ranks by their primary metric, and
+  refuses a lower-is-better one rather than promote the worst.
+- **`rescore` could record the bundled adapter's metric kinds** in a project's run: two
+  registries named loaded adapters differently, and the lookup fell back to the bundled one.
+  One loader (`_adapter.py`), keyed by the resolved file.
+- **`import evaluation_harness.judging` failed** in an installed package (`No module named
+  'stats'`), and importing `catalog_adapter` beside it loaded `_common` twice.
+- **`holdout`'s significance block had no direction**, so on a lower-is-better metric it ranked
+  the worst arm first.
+- **Checks that could not fail, or did not run:** `self-test`'s cost-cap control turned any
+  failure into a skip; `check_terminology` was failing and nothing ran it (it is in `make test`
+  now); `make -C harness docs` was a no-op (eight targets were not `.PHONY`).
 
 ### Added
 - **`evaluation_harness.stats`**. Standard library only, and the one place the paired test
@@ -176,7 +217,7 @@ package.
   - **CSP-clean:** no inline script or style. The theme script is a file, and the legend
     colours are set from JS.
 
-  Tests: `scripts/test_catalog.py` (53 assertions), run by `make test`.
+  Tests: `tests/test_catalog.py` (53 assertions), run by `make test`.
 - **Goals: what an evaluation is for** (`data/goals/<goal_id>.yaml`, `schemas/goal.schema.json`).
   - **What a goal says:** who uses the output, the decision it informs, the measure that
     decides (and which direction is better), the output formats it accepts, its datasets
@@ -203,7 +244,7 @@ package.
     tutorial (`tutorial/goals/tickets_summary.yaml`). No date is set here, so nothing
     already committed is held to one.
 
-  Tests: `scripts/test_goals.py` (14 assertions), run by `make test`.
+  Tests: `tests/test_goals.py` (14 assertions), run by `make test`.
 - **Item fields** (`data/fields/<fieldset_id>.yaml`, `schemas/fieldset.schema.json`, ADR-0003).
   The harness defines no field: a project declares its own in a field set, and any number of
   its datasets name it.
@@ -231,7 +272,7 @@ package.
   never on a redirect elsewhere, never written into a dataset). With `--update-fields`, an
   empty cell clears a value.
 
-  Tests: `scripts/test_fields.py` (46 assertions), run by `make test`; the catalog's in
+  Tests: `tests/test_fields.py` (46 assertions), run by `make test`; the catalog's in
   `test_catalog.py`.
 - **`evh init [DIR] [--tutorial]`** starts a project: `data/sources`, `data/configs`,
   `data/goals` and a `.gitignore` for what the harness derives. `--tutorial` copies the GUIDE's
@@ -240,7 +281,7 @@ package.
 - **`make guide-check`** (part of `make check`) runs `docs/GUIDE.md` in a fresh project, as a
   reader would, and fails when a quoted output no longer matches what the command prints.
   Lines that the unseeded `lead2_noisy` arm moves are marked in the GUIDE and not compared.
-- **The tests that run `evh` install the real wheel** (`scripts/_wheel.py`), built from
+- **The tests that run `evh` install the real wheel** (`tests/_wheel.py`), built from
   `pyproject.toml`, instead of copying folders. A file the package data leaves out now fails
   them, where a copy would have included it.
 - **`make browser-check`** drives the catalog and the inspector in headless Chromium: a
@@ -248,9 +289,9 @@ package.
   and no console error. A development extra (`requirements-browser.txt`, `make
   browser-install`), never a dependency of the package; CI runs it as its own job. The root
   `make browser-check` also drives the public site, served with production's headers.
-- **`scripts/test_installed_commands.py`** (in `make test`) runs every `evh` command in a
+- **`tests/test_installed_commands.py`** (in `make test`) runs every `evh` command in a
   project that pins the package; a command without a case fails it.
-- **`scripts/check_commands.py`** (in `make test`) checks every `make` target, `evh` command
+- **`tests/check_commands.py`** (in `make test`) checks every `make` target, `evh` command
   and flag shown in the current docs still exists: 262 of them across 27 docs today.
 - **The deploy's health check** also asks the inspector the question readers send most, a
   group of arms on one metric (`infra/deploy/probe_link.sh`), and rolls back without verdict

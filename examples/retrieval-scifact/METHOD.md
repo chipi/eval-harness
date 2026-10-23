@@ -107,7 +107,7 @@ is worth more than rank 10.
   With mostly one relevant document per query, nDCG@10 takes one of eleven values and is a
   disguised reciprocal rank. Recall@100 asks the different question: did the first stage
   put the answer anywhere the reranker could reach.
-- **The oracle ceiling** (in [`retrieval_report.py`](../../harness/scripts/retrieval_report.py))
+- **The oracle ceiling** (in [`retrieval_report.py`](../../harness/tools/retrieval_report.py))
   sorts an arm's own candidates perfectly and scores that. It reads the gold labels, so
   nobody can deploy it — it is the only honest denominator for *"how much better could this
   get without a better retriever"*. It is what produced this repo's first **pre-registered

@@ -6,8 +6,8 @@ is not read. The Goyal et al. comparison is recomputed from the stored per-artic
 plus the human data when data/external/goyal2022 is present; otherwise it falls back to the
 committed report.json and says so in `goyal_source`.
 
-    python scripts/judge_figures.py          # print the figures as JSON
-    python scripts/check_report_claims.py --print-judge-figures
+    python tools/judge_figures.py          # print the figures as JSON
+    python tools/check_report_claims.py --print-judge-figures
 """
 
 from __future__ import annotations
@@ -19,7 +19,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
-HERE = Path(__file__).resolve().parent
+HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this file is in tools/)
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tools/
 sys.path.insert(0, str(HERE))
 import judge_score as js  # noqa: E402
 import validate_judge_goyal as vg  # noqa: E402

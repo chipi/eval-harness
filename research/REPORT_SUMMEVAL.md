@@ -321,7 +321,7 @@ September and October prices respectively.
 ### 3.5 The order is stable, the winner is not
 
 Split-half stability among the 24 judges: two disjoint sets of *n* articles, the judges
-ranked independently on each, 400 seeded draws (`harness/scripts/summeval_analysis.py`,
+ranked independently on each, 400 seeded draws (`harness/tools/summeval_analysis.py`,
 from the committed runs):
 
 | articles per half | ρ (half A, half B) | 5th percentile | same unique winner |
@@ -544,10 +544,10 @@ make reproduce EXP=summeval LEVEL=local    # the nine free arms, $0
 make reproduce EXP=summeval LEVEL=hosted   # the 24 judges, one LiteLLM or OpenRouter key
 cd harness && make leaderboard DATASET_ID=summeval_100
 make family-test DATASET_ID=summeval_100 A=se_openai_l_n100_v1 AGAINST=se_ METRIC=tau
-python scripts/summeval_analysis.py            # §3.4–§3.6: split-half, price, ladders, dimensions
+python tools/summeval_analysis.py            # §3.4–§3.6: split-half, price, ladders, dimensions
 cd .. && examples/summeval-judging/.venv/bin/python examples/summeval-judging/calibrate.py   # §5
 examples/summeval-judging/.venv/bin/python examples/summeval-judging/human_ceiling.py       # §3.7
 ```
 
 `make ci` checks every figure in this report against those two scripts and the committed
-runs (`harness/scripts/check_report_claims.py`).
+runs (`harness/tools/check_report_claims.py`).

@@ -3,12 +3,12 @@
 #
 #   infra/deploy/render.sh <out-dir> <release-sha>
 #
-# Runs on the CI runner (python3 with pyyaml, for the catalog build). The output is what gets
+# Runs on the CI runner (python3 with pip and pyyaml: the wheel build, the catalog build). The output is what gets
 # rsynced to /srv/evals/releases/<sha>/ on the box:
 #
 #   sites/evals.humancopilot.eu/public/           the findings site (site/public, committed)
 #   sites/catalog.evals.humancopilot.eu/public/   the catalog, built here by catalog_build.py
-#   inspector/scripts/                            the harness's scripts (catalog_serve.py runs them)
+#   inspector/pkg/                                the harness package, installed from its wheel
 #   inspector/data/                               runs*, references, datasets, goals: what the
 #                                                 inspector reads (no corpora, no materialized text)
 #   nginx/  caddy/  observability/  deploy/  compose.yml  RELEASE
@@ -32,7 +32,7 @@ CATALOG=catalog.evals.humancopilot.eu
 [[ "$PORT" =~ ^[0-9]+$ && "$IPORT" =~ ^[0-9]+$ ]] || { echo "::error::ports must be numeric"; exit 1; }
 
 rm -rf "$OUT"
-mkdir -p "$OUT"/{sites,nginx,caddy,observability,deploy,inspector/scripts,inspector/data}
+mkdir -p "$OUT"/{sites,nginx,caddy,observability,deploy,inspector/pkg,inspector/data}
 cp -a "$ROOT/infra/nginx/." "$OUT/nginx/"
 cp -a "$ROOT/infra/caddy/." "$OUT/caddy/"
 cp -a "$ROOT/infra/observability/evals.alloy" "$OUT/observability/"
@@ -43,18 +43,21 @@ cp -a "$ROOT/infra/compose.yml" "$OUT/compose.yml"
 mkdir -p "$OUT/sites/$SITE"
 cp -a "$ROOT/site/public" "$OUT/sites/$SITE/public"
 
-# The inspector: the harness's own code and the data it reads, nothing else.
-cp -a "$ROOT"/harness/scripts/*.py "$OUT/inspector/scripts/"
-cp -a "$ROOT/harness/catalog_assets" "$OUT/inspector/catalog_assets"
+# The inspector: the harness PACKAGE, installed from the wheel pyproject.toml builds (a copy
+# of scripts/ would hide anything package-data leaves out, the reason the tests install the
+# wheel too), and the data it reads, nothing else. A directory of files: nothing is
+# installed on the box.
+python3 "$ROOT/harness/tests/_wheel.py" install "$OUT/inspector/pkg"
 for d in "$ROOT"/harness/data/runs* "$ROOT"/harness/data/{references,datasets,goals}; do
   [ -d "$d" ] && cp -a "$d" "$OUT/inspector/data/"
 done
-rm -rf "$OUT/inspector/scripts/__pycache__"
 
 # The catalog, built from that same copy of the data, so the pages and the API cannot disagree.
-EVAL_HOME="$OUT/inspector" python3 "$OUT/inspector/scripts/catalog_build.py" \
+EVAL_HOME="$OUT/inspector" python3 "$OUT/inspector/pkg/evaluation_harness/catalog_build.py" \
   --out "$OUT/sites/$CATALOG/public" \
   --link "Findings=https://$SITE/" --link "Docs=https://docs.$SITE/"
+# The build above ran the package's code; its bytecode is not part of the release.
+find "$OUT/inspector/pkg" -name __pycache__ -type d -prune -exec rm -rf {} +
 
 for site_dir in "$OUT"/sites/*/; do
   domain="$(basename "$site_dir")"

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Assertions for item fields and URL items (ADR-0003): create, update, materialize, V15.
 
-    python scripts/test_fields.py
+    python tests/test_fields.py
 
 In a throwaway project ($0; the URL items come from a server on 127.0.0.1): values are read
 from a CSV, typed by the project's field set, and refused when undeclared, mistyped, outside a
@@ -21,7 +21,8 @@ import tempfile
 import threading
 from pathlib import Path
 
-HERE = Path(__file__).resolve().parent
+HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this file is in tests/)
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tests/
 sys.path.insert(0, str(HERE))
 from _check import check, summary  # noqa: E402
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Every headline number in the reports must match the committed runs. $0, no network.
 
-    python scripts/check_report_claims.py
+    python tools/check_report_claims.py
 
 WHY THIS EXISTS. Three external reviewers could only check the reports against each
 other and against arithmetic, because no run was committed -- so a figure that had gone
@@ -20,7 +20,8 @@ import statistics
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tools/
 import stats as _stats
 from _common import (
     AmbiguousRuns,
@@ -31,7 +32,7 @@ from cost_report import billed_and_recorded
 
 _ARGS = no_options(__doc__, "--print-judge-figures")  # --help prints this; anything else is refused
 
-HERE = Path(__file__).resolve().parent
+HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this file is in tools/)
 ROOT = HERE.parents[1]
 
 if _ARGS.print_judge_figures:

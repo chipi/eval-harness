@@ -171,7 +171,7 @@ Two independent checks, both passed:
 
 ## What the harness gained
 
-- `scripts/classification_report.py` (+ registered in `self_test`'s CLI list) — confusion
+- `tools/classification_report.py` (+ registered in `self_test`'s CLI list) — confusion
   matrix, macro-F1, per-class precision/recall, built from `_meta.predicted`.
   **Macro-F1 cannot be a per-item metric**: accuracy can be scored per item and averaged,
   F1 needs a confusion matrix, which is not a property of any item. Written down as a
@@ -253,7 +253,7 @@ PY=../examples/classification-ag-news/.venv/bin/python
 PYTHON=$PY make dataset-create DATASET_ID=ag_news_200 ARGS='--source-dir data/sources/ag_news_200'
 PYTHON=$PY make dataset-materialize DATASET_ID=ag_news_200
 
-$PY scripts/classification_report.py --dataset-id ag_news_200
+$PY tools/classification_report.py --dataset-id ag_news_200
 $PY scripts/family_test.py --dataset-id ag_news_200 --a ag_bert_mini_n200_v1 \
      --against _n200_v1 --metric correct
 $PY scripts/holdout_significance.py --dataset-id ag_news_200 \
