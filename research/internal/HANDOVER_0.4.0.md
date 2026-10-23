@@ -143,63 +143,38 @@ operator's manual review of the docs, catalog and inspector; layer 4 (the podcas
 harness, including the read-only audit of its dataset registry that replaces the lost
 dataset-registry note) follows on main, and what it finds is fixed before 0.4.0 is tagged.
 
-### B. Layer 4: the podcast repo on the branch (the proof the split is right)
+### B. Layer 4: the podcast repo on the branch: done (2026-10-23)
 
-The podcast repo's own catalog and inspector must become an adapter over the harness. Its
-pages must stay the same, apart from intended changes.
+Branch `harness-0.4.0` of chipi/podcast-scraper-eval-data (private; master untouched), pinned at
+this branch's f0df7d01. Re-pin it to `v0.4.0` after the tag, and merge it there when the
+owner says.
 
-- **Pin** `evaluation-harness @ git+https://github.com/chipi/eval-harness@<branch head sha>#subdirectory=harness`
-  in its `pyproject.toml`.
-- **Turn `tools/catalog/podcast_adapter.py` into a class** implementing
-  `catalog_adapter.Adapter`. The mapping:
-
-  | protocol | podcast function |
-  |---|---|
-  | `arms()`, `arms_of(path)` | `arms_of` (paths are data/eval-relative; arm ids may carry `#engine`) |
-  | `describe` | `describe` (add `reference`, `goal`, `format` keys if present) |
-  | `scores(arm, rescore)` | `scores`; set `can_rescore = True` |
-  | `recorded_means`, `input_hashes`, `notes` | the same names |
-  | `lower_is_better`, `is_neutral` | the same names |
-  | `references()`, `reference_format(ref)` | the same names |
-  | `reference_archived(ref)` | `(_reference(ref) or {}).get("archived")` |
-  | `output_format(arm)` | `summary_format(EVAL / split_arm(arm)[0])` |
-  | `item_view(arm, item)` | `episode_view` |
-  | `reference_view(ref, item)` | the same name |
-  | `goals()`, `goal_of(arm)` | read `data/eval/goals/*.yaml` |
-  | attributes | `item_word = "episode"`, `data_dir = EVAL`, `shape_metrics = ("output words", "latency_s")`, `preferred_metrics` = the old `serve.PREFERRED` |
-- **Serve** with `evh catalog-serve --adapter tools/catalog/podcast_adapter.py:Adapter`,
-  pointing `--build-dir` at the podcast build. Then delete `tools/catalog/serve.py`,
-  `inspect_core.py` and the `assets/` copies.
-  - The harness server serves the build dir and `data_dir` only. The podcast build lives in
-    `.build/catalog`, and its "files" links point into `data/eval/`, so check they still open.
-  - The podcast `assets/inspect.js` used `/api/episode?ep=`; the harness's uses
-    `/api/item?item=`, with views keyed by arm id. Use the harness's assets.
-- **Move its second registry into item fields** (ADR-0003). The podcast datasets keep facts
-  about each episode (title, show, duration, links) in a registry beside the frozen dataset.
-  Not yet done; it is part of this switch:
-  - declare them in a field set, `data/eval/fields/<id>.yaml` (`schemas/fieldset.schema.json`),
-    marking `public` only what the public catalog may show;
-  - attach the values with `evh dataset-create --dataset-id <id> --update-fields --fields
-    <file>`: no run's fingerprint changes, because fields are not the identity;
-  - items published as audio at a URL come in through `--manifest` (`source_url` +
-    `source_sha256`), so `dataset-materialize` fetches and hash-checks them;
-  - give the adapter `item_fields(dataset)`, or let `HarnessAdapter` read the datasets, so
-    the catalog and inspector show, filter and break down by them;
-  - `evh validate` V15 passes, and the old registry is deleted.
-- **`tools/catalog/build.py` stays project-side** (its pages are podcast-specific).
-  - Swap its `page()` shell and its assets for the harness's: `catalog_build.page` takes
-    `nav`, `brand`, `item`, `serve` and `footer`, and `copy_assets`.
-  - Keep its podcast-only pages.
-  - `goals.py` can call the harness goal pages, or stay.
-- **Proof:**
-  - its full suite (1,212 passed and 4 skipped on 0.3.0) passes;
-  - `make catalog` gives the same pages: diff `.build/catalog` before and after; the only
-    changes are the intended ones (the API path, item vs episode wording only where the
-    harness assets changed it);
-  - `make validate` passes (its own A10 goals check can then defer to harness V14 or stay).
-- **Watch for:** the podcast repo's tests import `tools.catalog.inspect_core`
-  (`tests/unit/tools/test_inspect_core.py`) and `serve` (`test_inspect_server.py`). Port the
-  ones that test podcast behaviour; delete the ones the harness now tests.
+- **Records.** 69 data/eval/stats runs imported with 0.3.0's `--asc` carried
+  `primary_metric_asc` (read by no version); they record `metric_directions`, and V1 now
+  refuses unknown run fields. The 19 goals in data/eval/goals are read through
+  `EVAL_GOALS_DIR`; two needed the goal schema to allow a gate goal (`datasets: []`) and
+  `direction: non_inferior`.
+- **Catalog and inspector.** `podcast_adapter.Adapter` implements the protocol (no
+  `goal_of`: it left the protocol in review 2). `make catalog-serve` runs `evh catalog-serve`
+  over it with `--max-arms 200` (a baseline page compares up to 145 arms) and
+  `served_dirs = docs/` (113 catalog links into the reports). build.py keeps its pages in the
+  harness's shell, assets and inspector page; serve.py, inspect_core.py and assets/ are gone.
+  Proof: 27 recorded inspector queries answer the same, p for p; the catalog's 666 files differ
+  only in the shell and the harness's newer assets; runs.js is byte-identical.
+- **Item fields.** The registry (data/eval/datasets/<id>.episodes.json) STAYS (owner,
+  2026-10-23): it is part of the podcast_scraper mirror and 16 scripts read it.
+  `scripts/harness/fields_from_registry.py` attaches its facts to the harness dataset
+  (asr_human_gt_v1, field set asr_episode); V15 passes; the inspector filters and breaks down
+  by them.
+- **Harness changes it surfaced** (all on this branch): EVAL_GOALS_DIR, the strict metrics
+  schema, gate goals and non_inferior, served_dirs, nav classes, the inspector's serve hint,
+  latency_s as a speed metric, and a security fix: the inspector reads only arms and
+  references the catalog lists (`runs=../../.git` reached the podcast adapter's file reads).
+- **Its gate**, run by hand (it has no CI): `make ci` EXIT=0, 1242 passed and 6 skipped, with
+  markdownlint through npx. master's own gate was red (format, lint, one mypy error); the
+  branch fixes them.
+- **Not done:** fields for the other six registries' datasets (they have no harness dataset);
+  issue #7 (judging the dev paragraph summaries) is untouched.
 
 ### C. Layer 5: the release
 
