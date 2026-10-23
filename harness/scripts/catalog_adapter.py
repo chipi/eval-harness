@@ -35,8 +35,16 @@ from typing import Protocol
 
 HERE = Path(__file__).resolve().parent
 
-from _common import BOOKKEEPING_PREFIXES, DATA, ROOT, ModuleNotLoadable, is_descriptive, load_module  # noqa: E402
-from _runs import direction, item_rows, runs_on, score_of  # noqa: E402
+from _common import (  # noqa: E402
+    BOOKKEEPING_PREFIXES,
+    DATA,
+    ROOT,
+    ModuleNotLoadable,
+    is_descriptive,
+    load_goals,
+    load_module,
+)
+from _runs import item_rows, lower_is_better_on, runs_on, score_of  # noqa: E402
 
 
 def _memo(fn):
@@ -97,7 +105,7 @@ class Adapter(Protocol):
     def notes(self, arm: str) -> list[str]:
         """Why something could not be scored, in words."""
 
-    def lower_is_better(self, metric: str) -> bool:
+    def lower_is_better(self, metric: str, dataset: str | None = None) -> bool:
         """Whether a decrease in this metric is an improvement."""
         ...
 
@@ -136,6 +144,18 @@ class Adapter(Protocol):
     # Optional: how many items a dataset has. Without it the catalog shows the most items any
     # arm scored, which undercounts a dataset no arm covered fully.
     # def dataset_items(self, dataset: str) -> Optional[int]: ...
+
+
+def lower_is_better(A, metric: str, dataset: str | None = None) -> bool:
+    """The adapter's direction for `metric` on `dataset`. An adapter written before the dataset
+    argument (one positional `metric`) is asked without it."""
+    import inspect  # noqa: PLC0415
+
+    try:
+        takes = "dataset" in inspect.signature(A.lower_is_better).parameters
+    except (TypeError, ValueError):
+        takes = False
+    return A.lower_is_better(metric, dataset) if takes else A.lower_is_better(metric)
 
 
 def item_fields(A, dataset: str) -> dict:
@@ -274,12 +294,20 @@ class HarnessAdapter:
         return []
 
     @_memo
-    def lower_is_better(self, metric: str) -> bool:
+    def lower_is_better(self, metric: str, dataset: str | None = None) -> bool:
         """Whether a decrease in this metric is an improvement, by the rule every command uses
-        (`_runs.direction`): a cost, speed or token count, or a primary metric the runs declare
-        ascending."""
-        runs = [(d, _json(d / "metrics.json") or {}) for ds in self._index().values() for d in ds]
-        return direction(runs, metric)
+        (`_runs.lower_is_better_on`: the goal, then the adapter's declaration, then the name
+        table), over the runs on `dataset`. Over every dataset, a declaration on one flipped
+        the metric's direction on another."""
+        runs = [
+            (d, m)
+            for arm, ds in self._index().items()
+            if dataset is None or arm.rsplit("/", 2)[-2] == dataset
+            for d in ds
+            for m in [_json(d / "metrics.json") or {}]
+        ]
+        goals = {g["goal_id"]: g for g in self.goals()}
+        return lower_is_better_on(runs, metric, goals)
 
     @_memo
     def _descriptive(self) -> frozenset:
@@ -357,15 +385,8 @@ class HarnessAdapter:
     # -- goals --------------------------------------------------------------------------
     @_memo
     def goals(self) -> list[dict]:
-        """Return all goals: what the evaluations are for."""
-        import yaml  # noqa: PLC0415
-
-        out = []
-        for f in sorted((self.data_dir / "goals").glob("*.yaml")):
-            doc = yaml.safe_load(f.read_text(encoding="utf-8")) if f.name != "policy.yaml" else None
-            if isinstance(doc, dict):
-                out.append(dict(doc, goal_id=doc.get("goal_id") or f.stem))
-        return out
+        """Return all goals: what the evaluations are for (the loader every command uses)."""
+        return [dict(g, goal_id=gid) for gid, g in load_goals(self.data_dir / "goals").items() if g]
 
     def dataset_items(self, dataset: str) -> int | None:
         """Return how many items a dataset has, or None if not recorded."""

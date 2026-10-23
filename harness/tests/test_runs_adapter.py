@@ -263,4 +263,71 @@ import self_check  # noqa: E402
 check("checkout: in_checkout() is true here", _common.in_checkout())
 check("checkout: `evh self-test` finds the full suite in tests/", self_check.in_checkout())
 
+# ONE DIRECTION RULE: --asc/--desc, then the goal the runs name, then the adapter's declaration
+# recorded on the run, then the name table. A goal page and the inspector disagreed before.
+from _runs import lower_is_better_on  # noqa: E402
+
+wer_goal = {"g": {"success_criteria": {"primary": {"measure": "wer", "direction": "lower"}}}}
+plain = [(Path("."), {"config_id": "a", "goal": "g"})]
+check("direction: the goal the runs name decides (wer, lower)", lower_is_better_on(plain, "wer", wer_goal))
+check(
+    "direction: without a goal or a declaration, wer is not known to go down",
+    not lower_is_better_on(plain, "wer", {}),
+)
+declared = [(Path("."), {"config_id": "a", "metric_directions": {"wer": "lower"}})]
+check("direction: the adapter's declaration, recorded on the run", lower_is_better_on(declared, "wer", {}))
+both = [(Path("."), {"config_id": "a", "goal": "g", "metric_directions": {"wer": "higher"}})]
+check("direction: the goal outranks the recorded declaration", lower_is_better_on(both, "wer", wer_goal))
+check("direction: a flag outranks the goal", not direction(both, "wer", desc=True))
+with tempfile.TemporaryDirectory() as tmp:
+    ad = Path(tmp) / "wer_adapter.py"
+    ad.write_text(
+        "METRIC_DIRECTIONS = {'wer': 'lower', 'bad': 'sideways'}\n"
+        "def call_system(item, params):\n    return None\n"
+        "def score(output, reference):\n    return {}\n",
+        encoding="utf-8",
+    )
+    check(
+        "adapter: METRIC_DIRECTIONS is read, and only lower/higher are kept",
+        _adapter.metric_directions(ad) == {"wer": "lower"},
+        _adapter.metric_directions(ad),
+    )
+
+# V14 fails a goal that contradicts what its runs record.
+with tempfile.TemporaryDirectory() as tmp:
+    data = Path(tmp) / "data"
+    for sub in ("goals", "runs/r1", "datasets"):
+        (data / sub).mkdir(parents=True)
+    src = HERE.parent / "data" / "goals" / "entities_few_nerd.yaml"
+    (data / "goals" / "g1.yaml").write_text(
+        src.read_text(encoding="utf-8").replace("goal_id: entities_few_nerd", "goal_id: g1"), encoding="utf-8"
+    )
+    (data / "runs" / "r1" / "metrics.json").write_text(
+        json.dumps(
+            {
+                "run_id": "r1",
+                "config_id": "c",
+                "dataset_id": "few_nerd_280",
+                "goal": "g1",
+                "created_at": "2026-10-23",
+                "build": {"ref": "t"},
+                "scores": {"f1": 0.5},
+                "metric_directions": {"f1": "lower"},
+            }
+        ),
+        encoding="utf-8",
+    )
+    r = subprocess.run(
+        [sys.executable, str(HERE / "validate_tree.py")],
+        cwd=tmp,
+        env={**os.environ, "EVAL_HOME": tmp, "EVAL_DATA_DIR": "", "EVAL_RUNS_DIR": ""},
+        capture_output=True,
+        text=True,
+    )
+    check(
+        "V14: a goal saying higher while its runs record lower fails",
+        "FAIL V14" in r.stdout and "f1 is higher-is-better, its runs record lower-is-better" in r.stdout,
+        r.stdout[-400:],
+    )
+
 sys.exit(summary())

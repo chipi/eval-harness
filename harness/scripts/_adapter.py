@@ -100,6 +100,15 @@ def transient_markers(adapter_path: Path | None) -> tuple:
     return tuple(str(m) for m in markers) if isinstance(markers, (list, tuple)) else ()
 
 
+def metric_directions(adapter_path: Path | None) -> dict[str, str]:
+    """`METRIC_DIRECTIONS` from the adapter, {metric: "lower" | "higher"}: how an adapter says
+    a quality metric goes down (WER, error rate), which METRIC_KINDS cannot. {} when absent."""
+    declared = getattr(_module_or_none(adapter_path), "METRIC_DIRECTIONS", None)
+    if not isinstance(declared, dict):
+        return {}
+    return {str(k): str(v) for k, v in declared.items() if v in ("lower", "higher")}
+
+
 def primary_metric(adapter_path: Path | None) -> str | None:
     """`PRIMARY_METRIC` from the adapter, or None.
 

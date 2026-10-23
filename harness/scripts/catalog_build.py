@@ -30,7 +30,7 @@ HERE = Path(__file__).resolve().parent
 
 import _fields  # noqa: E402
 from _common import ROOT  # noqa: E402
-from catalog_adapter import Adapter, item_fields, load_adapter  # noqa: E402
+from catalog_adapter import Adapter, item_fields, load_adapter, lower_is_better  # noqa: E402
 
 #: The front-end files every page loads: installed beside the package, or in a checkout.
 ASSET_DIR = next(p for p in (HERE / "catalog_assets", HERE.parent / "catalog_assets") if p.is_dir())
@@ -202,7 +202,7 @@ def collect(A: Adapter) -> dict:
                 "metric": head,
                 "mean": statistics.fmean(values.values()) if values else None,
                 "n": len(values) or max((len(v["values"]) for v in sc.values()), default=0),
-                "lower": A.lower_is_better(head) if head else False,
+                "lower": lower_is_better(A, head, d["dataset"]) if head else False,
                 "reference": d.get("reference", ""),
                 "goal": d.get("goal", ""),
                 "format": d.get("format", ""),

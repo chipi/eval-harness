@@ -50,7 +50,7 @@ HERE = Path(__file__).resolve().parent
 import _fields  # noqa: E402
 import stats  # noqa: E402
 from _common import ROOT  # noqa: E402
-from catalog_adapter import Adapter, item_fields, load_adapter  # noqa: E402
+from catalog_adapter import Adapter, item_fields, load_adapter, lower_is_better  # noqa: E402
 
 #: Every comparison ends in one of these, so a page can always say what it shows and why.
 STATES = ("compared", "average only", "no shared metric", "not scorable")
@@ -135,12 +135,12 @@ def _one_dataset(by_run: dict, baseline: str):
     return arms, ds, aside, (known[0] if known else ""), None
 
 
-def _metric_rows(counts: Counter, per_arm: dict, baseline: str) -> list:
+def _metric_rows(counts: Counter, per_arm: dict, baseline: str, dataset: str | None = None) -> list:
     return [
         {
             "name": k,
             "arms": n,
-            "lower_is_better": A.lower_is_better(k),
+            "lower_is_better": lower_is_better(A, k, dataset),
             "neutral": A.is_neutral(k),
             "baseline_has": k in per_arm.get(baseline, {}),
             "format": A.reference_format(_ref_of(k)) if _ref_of(k) else "",
@@ -379,7 +379,7 @@ def compare(params: dict) -> dict:
             "state": "not scorable",
             "can_rescore": A.can_rescore,
             "arms": [A.describe(a) for a in arms],
-            "metrics": _metric_rows(counts, per_arm, asked),
+            "metrics": _metric_rows(counts, per_arm, asked, dataset),
             "warnings": [
                 *notes,
                 f"No score per {A.item_word} on record for these runs"
@@ -399,7 +399,7 @@ def compare(params: dict) -> dict:
     series, error = _filter(series, decl, fvalues, wheres)
     if error:
         return {"error": error}
-    higher, neutral = not A.lower_is_better(metric), A.is_neutral(metric)
+    higher, neutral = not lower_is_better(A, metric, dataset), A.is_neutral(metric)
     result = stats.compare(
         series,
         baseline,
@@ -440,7 +440,7 @@ def compare(params: dict) -> dict:
         "neutral": neutral,
         "baseline": baseline,
         "can_rescore": A.can_rescore,
-        "metrics": _metric_rows(counts, per_arm, baseline),
+        "metrics": _metric_rows(counts, per_arm, baseline, dataset),
         "arms": [dict(A.describe(a), source=per_arm[a].get(metric, {}).get("source", "")) for a in arms],
         "series": series,
         # every arm's shape metrics, for the scatter's x axis, whatever metric is chosen

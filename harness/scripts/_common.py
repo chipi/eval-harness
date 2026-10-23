@@ -269,15 +269,19 @@ def build_info() -> dict[str, Any]:
     }
 
 
-def load_goals() -> dict[str, dict[str, Any]]:
-    """{goal_id: goal} from data/goals/*.yaml (policy.yaml is the policy, not a goal)."""
+def load_goals(goals_dir: Path | None = None) -> dict[str, dict[str, Any]]:
+    """{goal_id: goal} from <data>/goals/*.yaml (policy.yaml is the policy, not a goal), keyed
+    by the goal's `goal_id`, the file stem when it names none. The catalog keyed them that way
+    and this by stem alone; V14 requires the two to agree."""
     import yaml  # noqa: PLC0415
 
     out: dict[str, dict[str, Any]] = {}
-    for f in sorted(GOALS.glob("*.yaml")):
+    base = goals_dir or GOALS
+    for f in sorted(base.glob("*.yaml")) if base.is_dir() else []:
         if f.name != "policy.yaml":
             doc = yaml.safe_load(f.read_text(encoding="utf-8"))
-            out[f.stem] = doc if isinstance(doc, dict) else {}
+            doc = doc if isinstance(doc, dict) else {}
+            out[str(doc.get("goal_id") or f.stem)] = doc
     return out
 
 

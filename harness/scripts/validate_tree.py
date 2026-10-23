@@ -58,10 +58,12 @@ from _common import (
     goal_policy,
     load_goals,
     load_module,
+    lower_is_better,
     no_options,
     read_json,
     sha256,
 )
+from _runs import recorded_direction
 
 try:
     import jsonschema
@@ -891,9 +893,12 @@ def v14_goals() -> None:
 
     goals, bad = load_goals(), []
     schema = json.loads((SCHEMAS / "goal.schema.json").read_text())
+    # The file name is the goal's id; read from the files, since load_goals keys by goal_id.
+    for f in sorted(GOALS.glob("*.yaml")):
+        doc = yaml.safe_load(f.read_text(encoding="utf-8")) if f.name != "policy.yaml" else None
+        if isinstance(doc, dict) and doc.get("goal_id") != f.stem:
+            bad.append(f"goals/{f.name}: goal_id {doc.get('goal_id')!r} is not its file name")
     for gid, g in goals.items():
-        if g.get("goal_id") != gid:
-            bad.append(f"goals/{gid}.yaml: goal_id {g.get('goal_id')!r} is not its file name")
         if jsonschema is not None:
             try:
                 jsonschema.validate(g, schema)
@@ -916,17 +921,37 @@ def v14_goals() -> None:
         named(f"configs/{f.name}", doc if isinstance(doc, dict) else {})
     since = str(goal_policy().get("required_from") or "")
     unnamed, n_runs = [], 0
+    filed: dict[str, list] = defaultdict(list)
     for label, run in all_runs():
         m = read_json(run / "metrics.json") if (run / "metrics.json").is_file() else None
         if not isinstance(m, dict):
             continue
         n_runs += 1
         named(f"runs/{label}", m)
+        if m.get("goal"):
+            filed[str(m["goal"])].append((run, m))
         if since and not m.get("goal") and str(m.get("created_at", ""))[:10] >= since:
             unnamed.append(label)
     for b in sorted(BASELINES.glob("*.json")):
         named(f"baselines/{b.name}", read_json(b))
     bad += [f"runs/{r}: created on or after {since} and names no goal" for r in unnamed]
+    # THE GOAL DECIDES DIRECTION (_runs.lower_is_better_on), so it must not contradict what its
+    # runs record (the adapter's METRIC_DIRECTIONS, import-run --asc) or a metric known to go
+    # down (cost, latency, tokens): the goal page and the inspector would rank opposite ways.
+    for gid, g in goals.items():
+        primary = (g.get("success_criteria") or {}).get("primary") or {}
+        measure, says = primary.get("measure"), primary.get("direction")
+        if not measure or says not in ("lower", "higher"):
+            continue
+        recorded = recorded_direction(filed.get(gid, []), measure)
+        if recorded and recorded != says:
+            bad.append(
+                f"goals/{gid}.yaml: {measure} is {says}-is-better, its runs record {recorded}-is-better"
+            )
+        elif not recorded and says == "higher" and lower_is_better(measure):
+            bad.append(
+                f"goals/{gid}.yaml: {measure} is a cost, speed or token count; higher-is-better contradicts it"
+            )
     for x in bad:
         print(f"       {x}")
     # min_items: a note, not a failure. A dataset smaller than the goal's minimum can still

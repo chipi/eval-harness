@@ -208,6 +208,7 @@ def main() -> int:
     }
     if args.asc:
         metrics_doc["primary_metric_asc"] = True
+        metrics_doc["metric_directions"] = {args.primary_metric: "lower"}
     if args.reference_tier:
         metrics_doc["reference_tier"] = args.reference_tier
     write_json(run_dir / "metrics.json", metrics_doc)

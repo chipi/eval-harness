@@ -34,7 +34,14 @@ import time
 from pathlib import Path
 from typing import Any
 
-from _adapter import load_adapter, metric_kinds, primary_metric, score_wants_source, transient_markers
+from _adapter import (
+    load_adapter,
+    metric_directions,
+    metric_kinds,
+    primary_metric,
+    score_wants_source,
+    transient_markers,
+)
 from _common import (
     DATA,
     GOALS,
@@ -692,6 +699,7 @@ def main() -> int:
             # The adapter's own reading of its metrics, carried on the run so a leaderboard
             # built later does not have to guess what `compression` is.
             "metric_kinds": dict(declared_kinds or {}),
+            "metric_directions": metric_directions(adapter_path),
             "providers_seen": result.get("providers_seen") or {},
             "primary_metric": primary_metric(adapter_path),
             # Outside `scores` on purpose: real, worth seeing, but not the arm's per-item

@@ -18,12 +18,14 @@ runs has to change.
 - **`family-test`'s cache** recomputes once: its key includes the new `stats.py`.
 - **`validate` V4** now fails a materialized copy that has lost an item file, and names each
   dataset it could not check. A project whose copy is incomplete goes red where it was green.
-- **The direction of a metric is inferred.** On a cost, latency or token metric, or a primary
-  metric your runs recorded with `import-run --asc`, lower is now better without a flag:
-  `pair-test`'s "A wins", `family-test`'s wins and "ahead", the leaderboard's order and its
-  significance block, `holdout` and `rank-stability` all count the lower score. Before, they
-  counted the higher one unless you passed `--asc` (`holdout` and `rank-stability` had no flag).
-  p-values do not change: the tests are two-sided. `--asc` and `--desc` override.
+- **The direction of a metric is decided once, for every command and the inspector:** a flag,
+  else the goal your runs name, else the adapter's new `METRIC_DIRECTIONS` (or `import-run
+  --asc`), else the name (costs, latencies and token counts go down). Before, `pair-test`'s
+  "A wins", `family-test`'s wins and "ahead", the leaderboard's order and its significance
+  block, `holdout` and `rank-stability` counted the higher score unless you passed `--asc`
+  (`holdout` and `rank-stability` had no flag), and a goal's direction was read by the goal
+  page alone. p-values do not change: the tests are two-sided. `--asc` and `--desc` override.
+  `validate` (V14) now fails a goal whose direction contradicts what its runs record.
 - **`validate` checks every committed `runs*` directory** (V7, V8, V9), read from git: it
   checked only this repository's six directory names, so a project's own `data/runs-adjudicated`
   was never validated. Declare the list, floors, scorer sources and duplicate exceptions in
@@ -106,7 +108,9 @@ runs after upgrading. Re-scoring from stored outputs costs nothing.
     weights' revision, prompt hash, scoring-code hash);
   - `PRIMARY_METRIC`: the metric the leaderboard ranks by;
   - `METRIC_KINDS`: `quality` vs `descriptive`, so diagnostics such as parse rate and
-    truncation are not ranked as if they were quality.
+    truncation are not ranked as if they were quality;
+  - `METRIC_DIRECTIONS` (0.4.0): `{"wer": "lower"}` for a quality metric that improves going
+    down, which a name cannot tell the harness.
 - **The run directory gained files written during the pass:** `run.json` (written before
   the first item) and `outputs/_rows.jsonl` (appended and fsynced per item). Old runs
   without them still read, but cannot be resumed safely.

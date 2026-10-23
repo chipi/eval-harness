@@ -25,6 +25,12 @@ output is) and **descriptive** (a diagnostic that must never be ranked). The spl
 enforced in code, not convention: `harness/scripts/leaderboard.py` will not rank a
 descriptive metric.
 
+Which way is better is decided once, the same for every command and the inspector: a
+`--asc`/`--desc` flag, else the goal the runs name (`success_criteria.primary.direction`),
+else the adapter's `METRIC_DIRECTIONS` (`{"wer": "lower"}`, recorded on each run), else the
+name: costs, latencies and token counts go down, everything else up. `validate` (V14) fails a
+goal that contradicts its runs.
+
 ### Summarisation — continuous overlap
 
 | metric | kind | what it is |

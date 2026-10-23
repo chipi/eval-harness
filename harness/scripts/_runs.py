@@ -130,20 +130,49 @@ def matrix(
     return {cid: items for cid, items in out.items() if items}
 
 
-def lower_is_better_on(runs: Iterable[Run], metric: str) -> bool:
-    """Whether a decrease in `metric` is an improvement: a cost, speed or token count, or a
-    primary metric the runs declare ascending (`import-run --asc` records
-    `primary_metric_asc`, which nothing read before)."""
-    if lower_is_better(metric):
-        return True
-    return any(m.get("primary_metric") == metric and m.get("primary_metric_asc") for _d, m in runs)
+def recorded_direction(runs: Iterable[Run], metric: str) -> str | None:
+    """ "lower" / "higher" as the runs record it for `metric`: the adapter's METRIC_DIRECTIONS
+    (`metric_directions` on the run), or `primary_metric_asc`, which `import-run --asc`
+    writes for the primary metric. None when no run says."""
+    for _d, m in runs:
+        declared = (m.get("metric_directions") or {}).get(metric)
+        if declared in ("lower", "higher"):
+            return str(declared)
+        if m.get("primary_metric") == metric and m.get("primary_metric_asc"):
+            return "lower"
+    return None
+
+
+def goal_direction(runs: Iterable[Run], metric: str, goals: dict | None = None) -> str | None:
+    """ "lower" / "higher" from a goal these runs name whose primary measure is `metric`."""
+    from _common import load_goals  # noqa: PLC0415
+
+    named = {str(m["goal"]) for _d, m in runs if m.get("goal")}
+    if not named:
+        return None
+    goals = load_goals() if goals is None else goals
+    for gid in sorted(named):
+        primary = ((goals.get(gid) or {}).get("success_criteria") or {}).get("primary") or {}
+        if primary.get("measure") == metric and primary.get("direction") in ("lower", "higher"):
+            return str(primary["direction"])
+    return None
+
+
+def lower_is_better_on(runs: Iterable[Run], metric: str, goals: dict | None = None) -> bool:
+    """Whether a decrease in `metric` is an improvement on these runs, by one precedence: the
+    goal they name, then what the adapter declared (recorded on the run), then the name table
+    (a cost, speed or token count). A goal and the runs could disagree, so the goal page
+    ranked lowest first while the inspector one click away counted the leader as losing; V14
+    now fails a goal that contradicts its runs."""
+    runs = list(runs)
+    said = goal_direction(runs, metric, goals) or recorded_direction(runs, metric)
+    return said == "lower" if said else lower_is_better(metric)
 
 
 def direction(runs: Iterable[Run], metric: str, asc: bool = False, desc: bool = False) -> bool:
     """True when lower is better for `metric` on these runs: `asc` / `desc` when the caller
-    passed one, else what `lower_is_better_on` reads from the metric and the runs. Every
-    command that counts wins or ranks arms asks this, so "A wins 180/200" on latency means
-    A was faster without anyone remembering --asc."""
+    passed one, else `lower_is_better_on`. Every command that counts wins or ranks arms asks
+    this, so "A wins 180/200" on latency means A was faster without anyone remembering --asc."""
     if asc and desc:
         raise SystemExit("ERROR: --asc and --desc contradict each other")
     if asc or desc:

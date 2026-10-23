@@ -70,9 +70,11 @@ package.
   rescore, validate, catalog). It used to run this repository's development suite, which
   checks this repository's reports and failed 52 checks in every project; in a checkout it
   still does.
-- **A metric's direction is inferred, not remembered by a flag.** On a cost, latency or token
-  metric, or a primary metric the runs recorded with `import-run --asc` (a field nothing read
-  until now), lower is better without `--asc`: `pair-test`'s "A wins", `family-test`'s wins
+- **A metric's direction is inferred, not remembered by a flag**, by one rule for every command
+  and the inspector: a flag, else the goal the runs name, else the adapter's `METRIC_DIRECTIONS`
+  (new, recorded on the run) or `import-run --asc` (a field nothing read until now), else the
+  name (cost, latency and token metrics go down); V14 fails a goal that contradicts its runs.
+  So lower is better without `--asc` for `pair-test`'s "A wins", `family-test`'s wins
   and "ahead", the leaderboard's order and significance block, `holdout` and `rank-stability`.
   `leaderboard --sort latency_ms` ranked the slowest arm first. p-values do not change (the
   tests are two-sided); `--asc` and `--desc` override. **This can move** a wins or "ahead"

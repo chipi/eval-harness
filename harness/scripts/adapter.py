@@ -104,6 +104,9 @@ def call_system(text: str, params: dict[str, Any]) -> Result:
 #: leaderboard ranks by, the catalog's headline number and the inspector's default. Name
 #: yours when you replace score(); without one they fall back to name order.
 PRIMARY_METRIC = "overlap_f1"
+#: A quality metric that improves going DOWN (WER, error rate) says so here, e.g.
+#: METRIC_DIRECTIONS = {"wer": "lower"}. Costs, latencies and token counts already do; anything
+#: else is taken to improve going up. Recorded on every run.
 
 
 def score(output: str, reference: str | None) -> dict[str, float]:
