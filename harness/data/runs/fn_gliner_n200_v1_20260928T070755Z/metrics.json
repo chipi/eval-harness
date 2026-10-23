@@ -44,7 +44,7 @@
       "references_sha256": "7cdd09fe0084ba29c616ab65fbfa08bf149e9006819641e9e91fe502ebe15a2b"
     },
     "hash": null,
-    "hash_invalid_because": "scores were recomputed by a different scorer than the one this fingerprint was built from; see rescored_with",
+    "hash_invalid_because": "scores were recomputed by a different scorer than the one this fingerprint was built from; see derived.with",
     "host": {
       "cpu_count": 12,
       "label": "mac-dev",

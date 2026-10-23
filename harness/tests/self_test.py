@@ -2910,6 +2910,48 @@ def test_family_test_cache_never_serves_a_stale_answer() -> None:
         check("family-test cache: changed scores miss the cache", after != first, after[-300:])
         check("family-test cache: the answer after a change is the recomputed one", after == fresh)
 
+    # A goal sets a metric's direction, so flipping it moves the wins: the cache must miss.
+    with _tf.TemporaryDirectory() as td:
+        proj = Path(td)
+        runs = proj / "data" / "runs"
+        for cid, scores in (("a_x", [1.0] * 6 + [0.0] * 2), ("b_x", [0.0] * 6 + [1.0] * 2)):
+            write(runs, cid, scores)
+            mj = runs / f"{cid}_20260101T000000Z" / "metrics.json"
+            mj.write_text(json.dumps({**json.loads(mj.read_text()), "goal": "g"}), encoding="utf-8")
+        goal = proj / "data" / "goals" / "g.yaml"
+        goal.parent.mkdir(parents=True)
+
+        def say(direction: str) -> None:
+            goal.write_text(
+                f"goal_id: g\nsuccess_criteria:\n  primary: {{measure: m, direction: {direction}}}\n",
+                encoding="utf-8",
+            )
+
+        env = {"EVAL_HOME": str(proj), "EVAL_DATA_DIR": "", "EVAL_RUNS_DIR": ""}
+        gargv = (
+            "scripts/family_test.py",
+            "--dataset-id",
+            "tds",
+            "--a",
+            "a_x",
+            "--against",
+            "_x",
+            "--metric",
+            "m",
+            "--permutations",
+            "200",
+        )
+        say("higher")
+        higher = run(*gargv, env=env).stdout
+        say("lower")
+        lower = run(*gargv, env=env).stdout
+        lower_fresh = run(*gargv, env={**env, "EVAL_NO_CACHE": "1"}).stdout
+        check(
+            "family-test cache: a goal's direction is part of the key",
+            lower == lower_fresh and lower != higher,
+            lower[-300:],
+        )
+
 
 def test_a_project_elsewhere_imports_runs_and_tests_them() -> None:
     """The harness as a dependency: data in ANOTHER project, scores from ANOTHER tool.

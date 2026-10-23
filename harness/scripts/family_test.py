@@ -46,6 +46,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 
 from _common import (  # noqa: E402
+    GOALS,
     ROOT,
     RUNS,
     dataset_item_ids,
@@ -70,9 +71,11 @@ CACHE = ROOT / ".cache" / "family_test"
 def _cache_key(argv: list[str], runs_dir: Path, args) -> str:
     """Everything the answer depends on: this script and every module it imports (read from
     the source, as the run code hash is: a hand-kept list missed an import added later), the exact
-    arguments, and the bytes of every run of this dataset (metrics.json + predictions.jsonl)
-    plus any --items / --exclude-dataset input. Change any of them and the key changes, so
-    a hit is the same computation, already done -- the test is seeded and deterministic."""
+    arguments, the bytes of every run of this dataset (metrics.json + predictions.jsonl),
+    the project's goals (a goal sets a metric's direction, so it moves the wins and "ahead"
+    counts), and any --items / --exclude-dataset input. Change any of them and the key
+    changes, so a hit is the same computation, already done -- the test is seeded and
+    deterministic."""
     h = hashlib.sha256()
     for f in measuring_modules(Path(__file__).resolve().parent, ("family_test.py",)):
         h.update(f.name.encode() + b"\0" + f.read_bytes())
@@ -80,6 +83,8 @@ def _cache_key(argv: list[str], runs_dir: Path, args) -> str:
     for d, _m in runs_on(args.dataset_id, runs_dir=runs_dir):
         mj, pj = d / "metrics.json", d / "predictions.jsonl"
         h.update(d.name.encode() + mj.read_bytes() + (pj.read_bytes() if pj.is_file() else b""))
+    for g in sorted(GOALS.glob("*.yaml")) if GOALS.is_dir() else []:
+        h.update(g.name.encode() + b"\0" + g.read_bytes())
     if args.items:
         h.update(args.items.read_bytes())
     if args.exclude_dataset:

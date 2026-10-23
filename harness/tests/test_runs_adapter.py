@@ -443,4 +443,31 @@ with tempfile.TemporaryDirectory() as tmp:
     check("V6: a baseline as promoted passes", as_promoted.startswith("  ok "), as_promoted)
     check("V6: a baseline whose tier no longer matches its run fails", edited.startswith("  FAIL "), edited)
 
+# rescore refuses to write over the directory it reads its runs from: it died with a
+# SameFileError traceback after creating directories there.
+with tempfile.TemporaryDirectory() as tmp:
+    runs_dir = Path(tmp) / "data" / "runs"
+    _run(
+        runs_dir,
+        "r1",
+        {"run_id": "r1", "config_id": "c", "dataset_id": "d", "scores": {}},
+        [{"item_id": "i1"}],
+    )
+    files_before = sorted(p_.relative_to(tmp) for p_ in Path(tmp).rglob("*"))
+    r = subprocess.run(
+        [sys.executable, str(HERE / "rescore.py"), "--dataset-id", "d", "--out", str(runs_dir)],
+        env={**os.environ, "EVAL_HOME": tmp, "EVAL_DATA_DIR": "", "EVAL_RUNS_DIR": ""},
+        capture_output=True,
+        text=True,
+    )
+    files_after = sorted(p_.relative_to(tmp) for p_ in Path(tmp).rglob("*"))
+    check(
+        "rescore: --out the runs' own directory is refused, and nothing is written",
+        r.returncode == 1
+        and "is where the runs being rescored are read from" in r.stderr
+        and "Traceback" not in r.stderr
+        and files_before == files_after,
+        r.stderr[-300:],
+    )
+
 sys.exit(summary())

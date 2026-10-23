@@ -314,6 +314,13 @@ def main() -> int:
     todo = runs_on(args.dataset_id, match=args.match)
     if not todo:
         die(f"no runs on {args.dataset_id!r}" + (f" matching {args.match!r}" if args.match else ""))
+    # A rescored run is its own record, derived from the run it reads: written into that run's
+    # directory it would overwrite the measurement (it died copying a file onto itself).
+    if any(d.parent.resolve() == args.out.resolve() for d, _m in todo):
+        die(
+            f"--out {args.out} is where the runs being rescored are read from; a rescore writes "
+            f"new records beside them, so give it another directory (the default is {DATA / 'runs-rescored'})"
+        )
 
     mat = MATERIALIZED / args.dataset_id
     item_source = _item_sources(args.dataset_id)
@@ -380,19 +387,19 @@ def main() -> int:
         # Provenance of the RESCORE itself: which run it came from, and which scorer
         # produced these numbers. Without this a rescored run is indistinguishable from
         # a measured one, which is the whole risk of having this script at all.
-        rescored_with: dict = {"adapter": adapter_id, "sha256": _sha(adapter_path)}
+        provenance: dict = {"adapter": adapter_id, "sha256": _sha(adapter_path)}
         # The adapter FILE's hash does not cover a scorer that lives in a shared module.
         # An adapter may expose `scorer_id()` -- no params, no network -- naming the
         # hashes that identify its scoring rule; without it, an extraction.py-only change
         # is invisible here and a rescored run cannot say what measured it.
         sid = getattr(sys.modules.get(getattr(score, "__module__", ""), None), "scorer_id", None)
         if callable(sid):
-            rescored_with["scorer"] = sid()
+            provenance["scorer"] = sid()
         new = derived_record(
             m,
             kind="rescore",
             source_dir=d.name,
-            with_=rescored_with,
+            with_=provenance,
             scores=scores,
             n_items=len(rows),
             metric_kinds=_kinds(adapter_path) or m.get("metric_kinds") or {},

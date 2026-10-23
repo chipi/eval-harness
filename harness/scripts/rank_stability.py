@@ -47,13 +47,10 @@ def load(dataset_id: str, metric: str, match: str | None):
 def ranks_on(M, arms, items):
     """Ranks by mean score, with TIED ARMS SHARING THE AVERAGE RANK.
 
-    The previous version handed every arm a distinct integer from `sorted`, which is
-    stable and therefore broke ties alphabetically. Two arms with identical scores got
-    different ranks decided by their names, and everything downstream -- rho, the median
-    rank move, P(same winner) -- measured that.
-
-    Average ranks (the standard midrank convention) are what makes the tie-correct rho
-    above meaningful: tied arms are now genuinely indistinguishable to it.
+    Distinct integers from `sorted` would break ties alphabetically (it is stable), so
+    two arms with identical scores would get ranks decided by their names, and rho, the
+    median rank move and P(same winner) would measure that. Average ranks (the standard
+    midrank convention) make tied arms indistinguishable to the tie-correct rho above.
     """
     mu = {a: statistics.fmean(M[a][i] for i in items) for a in arms}
     order = sorted(arms, key=lambda a: -mu[a])
@@ -185,9 +182,9 @@ def main() -> int:
     print("  often it was the same one. Draws where either half's top was tied are counted")
     print("  as undecided and excluded, never as agreement. 'rank move' = median")
     print("  positions an arm sits from its full-set rank, in a half of that size.")
-    print("  'arms tied 1st' = how many arms share the best score. `sorted` is stable and")
-    print("  arms are alphabetical, so ties are broken by NAME -- where this is large,")
-    print("  rho and P(same winner) are measuring the alphabet, not the data.")
+    print("  'arms tied 1st' = how many arms share the best score. Tied arms share a")
+    print("  midrank, so where this is large rho has little order to agree about and most")
+    print("  draws are undecided.")
     if worst_ties >= 2.0:
         print(f"\n  WARNING: up to {worst_ties:.1f} arms tie for first in a half. This")
         print("  metric is saturated at these sizes; read the tie column before rho.")
