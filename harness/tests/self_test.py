@@ -2556,7 +2556,9 @@ def test_rescore_can_move_runs_onto_a_new_reference_set() -> None:
     import shutil  # noqa: PLC0415
 
     base = HERE.parent / "data"
-    src = base / "runs" / "demo_v1_20260926T142947Z_r1"
+    # The worked example the repository ships: the run its demo baseline was promoted from.
+    shipped = _json.loads((base / "baselines" / "smoke_v1_baseline.json").read_text())["promoted_from"]
+    src = base / "runs" / shipped
     check("rescore/reference-id: the committed fixture run exists", src.is_dir())
     if not src.is_dir():
         return
