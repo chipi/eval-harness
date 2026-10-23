@@ -37,7 +37,7 @@ evh family-test --dataset-id my_v1 --a arm_a --against arm_
 ```
 
 The package is code and schemas; your data stays in your project (`EVAL_HOME`, default the
-current directory; `EVAL_DATA_DIR`, default `data`). Already have runs scored by your own
+nearest directory up from where you run with a `data/` folder; `EVAL_DATA_DIR`, default `data`). Already have runs scored by your own
 code? `evh import-run` brings their per-item scores in, so the significance tests
 can read them without re-running anything. Moving from a copied `harness/`:
 [docs/UPGRADING.md](docs/UPGRADING.md).

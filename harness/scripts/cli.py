@@ -6,7 +6,7 @@ import each other as top-level modules (`from _common import ...`), which is why
 directory goes on sys.path before one runs.
 
 Where the data lives is the PROJECT's business, not the package's:
-  EVAL_HOME       the project root (default: the current directory)
+  EVAL_HOME       the project root (default: the nearest directory up from here with data/)
   EVAL_DATA_DIR   the data root, relative to EVAL_HOME (default: data)
   EVAL_RUNS_DIR   runs only, for a throwaway pass (default: <data>/runs)
 """

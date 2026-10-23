@@ -145,8 +145,8 @@ one from last quarter without saying so.
 - a **one-word reason** — because *"why is this the baseline?"* must have an
   answer in six months
 
-Baselines are frozen. Promoting a new one archives the old under
-`superseded/` rather than overwriting it.
+A baseline is never edited. Promoting a new one replaces it, and git keeps the old one:
+the commit history is the record of what the baseline was, and when.
 
 ---
 

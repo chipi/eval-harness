@@ -668,8 +668,8 @@ def v8_no_duplicate_config_ids() -> None:
     """
     import re as _re  # noqa: PLC0415
 
-    #: The directories whose runs back a report. Scratch dirs (runs-smoke, runs-tune,
-    #: runs-superseded) are gitignored working artifacts where repeats are normal.
+    #: The directories whose runs back a report. Scratch dirs (runs-smoke, runs-tune)
+    #: are gitignored working artifacts where repeats are normal.
     # `runs-linux` was omitted when it was added, so the sixth committed directory was
     # the one place a duplicate config_id could still land -- and the latency claims read
     # it by filesystem order, so a duplicate changed the answer depending on how the

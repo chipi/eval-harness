@@ -292,8 +292,8 @@ baseline?"* must have an answer.
 
 The baseline carries what its number means, from the run: the reference tier it was scored
 against, the adapter that scored it, its fingerprint hash, and its goal and format
-(`validate` V6 fails a baseline that no longer matches its run). The previous baseline is
-archived under `data/baselines/superseded/`. A baseline is never edited, only superseded.
+(`validate` V6 fails a baseline that no longer matches its run). Promoting another run
+replaces the baseline, and git keeps the one it replaced; a baseline is never edited.
 
 ```bash
 make baselines-list
@@ -544,7 +544,7 @@ notebook) reads no `.env`, and the project's paths are resolved on first use, so
 
 | Variable | What it does |
 |---|---|
-| `EVAL_HOME` | the project root, when commands run from elsewhere |
+| `EVAL_HOME` | the project root (default: the nearest directory up from where you run that has `data/`) |
 | `EVAL_DATA_DIR` | the data root, when it is not `<project>/data` |
 | `EVAL_RUNS_DIR` | read and write runs here instead of `data/runs` (`validate` too) |
 | `EVAL_MAX_COST_USD` | per-run ceiling on billed spend; the run stops, keeps its results, resumes |

@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "baseline",
-  "description": "A promoted run. Frozen: a baseline is never edited, only superseded by a new one.",
+  "description": "A promoted run. Never edited: promoting another run replaces it, and git keeps the one it replaced.",
   "type": "object",
   "required": ["baseline_id", "dataset_id", "promoted_from", "promoted_at", "scores", "build"],
   "additionalProperties": false,
@@ -13,7 +13,6 @@
     "reason": {"type": "string", "description": "Why this run earned promotion. Required by the runbook, not by the schema."},
     "scores": {"type": "object", "additionalProperties": {"type": "number"}},
     "build": {"type": "object"},
-    "supersedes": {"type": ["string", "null"]},
     "goal": {"type": "string", "description": "The goal this answers, carried from the run: data/goals/<goal_id>.yaml (validate V14)."},
     "format": {"type": "string", "description": "The output format the run was asked for, carried from the run (validate V14)."},
     "reference_tier": {"enum": ["gold", "silver"], "description": "The tier of references the run was scored against, carried from it (validate V6)."},

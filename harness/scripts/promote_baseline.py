@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Promote a run to a baseline.
 
-A baseline is frozen: never edited, only superseded. It is the number future
-work is judged against, so promoting one is a decision, not a copy.
+A baseline is never edited: promoting another run replaces it, and git keeps the one it
+replaced. It is the number future work is judged against, so promoting one is a decision,
+not a copy.
 
 Two things are refused, because both produce a baseline nobody can act on:
 
@@ -105,13 +106,8 @@ def main() -> int:
 
     baseline_id = args.baseline_id or f"{m['dataset_id']}_baseline"
     out = BASELINES / f"{baseline_id}.json"
-    supersedes = None
     if out.is_file():
-        prev = read_json(out)
-        supersedes = prev.get("promoted_from")
-        archive = BASELINES / "superseded" / f"{baseline_id}_{prev['promoted_at'].replace(':', '')}.json"
-        write_json(archive, prev)
-        print(f"  previous baseline archived -> {archive.relative_to(BASELINES)}")
+        print(f"  replaces the baseline promoted from {read_json(out).get('promoted_from')} (git keeps it)")
 
     write_json(
         out,
@@ -123,7 +119,6 @@ def main() -> int:
             "reason": args.reason,
             "scores": m["scores"],
             "build": build,
-            "supersedes": supersedes,
             # Carried from the run: what the number means. A baseline is compared against, and
             # a silver baseline beside a gold run, or one scored by another adapter, is not the
             # same number.

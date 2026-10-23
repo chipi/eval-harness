@@ -48,7 +48,7 @@ needing one. Swapping in your own system is one function, covered
 | **arm** | one system under test: a config naming provider, model, prompt, settings | `data/configs/*.yaml` | a change is a new `config_id` |
 | **run** | one pass of an arm over a dataset: outputs, scores, fingerprint | `data/runs/<run_id>/` | never |
 | **reference** | the answer each item is scored against — **gold** (a person) or **silver** (a model) | `data/references/<tier>/<id>/` | never; a change is a new set |
-| **baseline** | the run you decided to measure future changes against, with why | `data/baselines/` | superseded, never edited |
+| **baseline** | the run you decided to measure future changes against, with why | `data/baselines/` | replaced by the next promotion, never edited |
 | **judge scorer** | optional: LLM judges, their prompt, the task they score, and the runs that validated them | `data/scorers/<id>.yaml` | a change is a new `scorer_id` |
 
 ## 0 · Set up
@@ -419,7 +419,7 @@ evh runs-list --baselines
 
 Refused if the run came from a dirty tree, if its build is unknown, or if the reason is a
 single word: six months from now, "why is this the baseline?" must have an answer. The
-previous baseline is archived, never edited.
+next promotion replaces this baseline, and git keeps it.
 
 ## 10 · Optional: re-measure with an LLM judge
 

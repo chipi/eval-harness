@@ -55,10 +55,10 @@ def main() -> int:
         for k in ("EVAL_HOME", "EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD"):
             env.pop(k, None)
 
-        def evh(*args: str, timeout: int = 600) -> subprocess.CompletedProcess:
+        def evh(*args: str, timeout: int = 600, cwd: Path | None = None) -> subprocess.CompletedProcess:
             return subprocess.run(
                 [sys.executable, "-m", "evaluation_harness", *args],
-                cwd=proj,
+                cwd=cwd or proj,
                 env=env,
                 capture_output=True,
                 text=True,
@@ -310,6 +310,15 @@ def main() -> int:
                     r.returncode != 0 and clean and expect in out,
                     f"exit {r.returncode}: {out.strip()[-300:]}",
                 )
+
+        # From a subfolder of the project, a command finds the project (the nearest directory
+        # up with data/): from the current directory it read an empty project.
+        at_root, below = evh("runs-list"), evh("runs-list", cwd=proj / "tutorial")
+        check(
+            "a command run from a subfolder finds the project",
+            below.returncode == 0 and "tickets_" in below.stdout and below.stdout == at_root.stdout,
+            below.stdout[-300:] + below.stderr[-300:],
+        )
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
     return summary()

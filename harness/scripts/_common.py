@@ -25,9 +25,11 @@ def project_root() -> Path:
 
     Run from a checkout of eval-harness, that is the harness/ directory beside this one,
     as it always was. Installed as a package (`pip install evaluation-harness @ git+...`), the code sits in
-    site-packages and the project is wherever the user is working: `EVAL_HOME` if set,
-    else the current directory. Kept apart from CODE because a project that depends on the
-    harness must never write its data into site-packages.
+    site-packages and the project is wherever the user is working: `EVAL_HOME` if set, else
+    the nearest directory from here up that has a `data/` folder (what `evh init` makes), so
+    a command run from a subfolder finds its project; else the current directory. Kept apart
+    from CODE because a project that depends on the harness must never write its data into
+    site-packages.
 
     Resolved on first use, not at import: a program that imports the harness as a library
     (an adapter, a notebook) can set `EVAL_HOME` or change directory first.
@@ -38,7 +40,8 @@ def project_root() -> Path:
     checkout = CODE.parent
     if (checkout / "data").is_dir() and (checkout / "scripts").resolve() == CODE:
         return checkout
-    return Path.cwd().resolve()
+    here = Path.cwd().resolve()
+    return next((d for d in (here, *here.parents) if (d / "data").is_dir()), here)
 
 
 def how(evh: str, make: str) -> str:
