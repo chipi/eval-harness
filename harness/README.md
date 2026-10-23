@@ -258,8 +258,9 @@ each finalist's stored outputs with an LLM judge, **aborts mid-run** if a cost c
 aggregates to per-dimension means, and flags finalists where two judges disagree.
 
 ```bash
-make judge                                  # FakeJudge — no API key
-ANTHROPIC_API_KEY=... python runner.py --config config.example.yaml
+evh judge --config tutorial/judge_panel.yaml --use-fake-judge   # no API key (`evh init --tutorial`)
+ANTHROPIC_API_KEY=... evh judge --config judge_panel.yaml        # your own config
+make judge                                                       # in a checkout: config.example.yaml, fake judge
 ```
 
 Use it when the cheap metric is known to be biased in your domain but you have
@@ -296,7 +297,7 @@ partial results preserved so a blown budget still yields a usable report.
 | `tools/` | this repository's report checks (`check_report_claims.py` and friends), judge validations and `*_report.py` tables; not in the package |
 | `tests/test_inspector_browser.py`, `requirements-browser.txt` | the catalog and the inspector in headless Chromium: `make browser-install`, then `make browser-check` |
 | `requirements-dev.txt` | the code-quality tools; from the repository root, `make quality-install`, then `make quality` |
-| `runner.py`, `judges.py` | the judge panel |
+| `scripts/judge_panel.py`, `scripts/panel_judges.py` | the judge panel (`evh judge`) |
 
 Bundled providers: `echo` (no network), `anthropic`, and anything
 OpenAI-compatible including OpenRouter. Most real integrations delete all three

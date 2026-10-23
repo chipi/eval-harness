@@ -322,7 +322,7 @@ judge-score:
 # The judge panel: promote -> judge -> aggregate -> report over candidate runs.
 # Keyless by default (FakeJudge).
 judge:
-	$(PYTHON) runner.py --config config.example.yaml --use-fake-judge $(ARGS)
+	$(PYTHON) scripts/judge_panel.py --config config.example.yaml --use-fake-judge $(ARGS)
 
 # ── housekeeping ────────────────────────────────────────────────────────────
 clean:

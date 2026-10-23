@@ -343,12 +343,14 @@ When the cheap metric is biased in your domain but you have an expensive judge
 you trust:
 
 ```bash
-make judge      # FakeJudge, keyless
+evh judge --config tutorial/judge_panel.yaml --use-fake-judge   # keyless; the kit's config
+make judge                                                       # in a checkout
 ```
 
 Triage on the cheap metric, decide with the judge, cost-capped with a mid-run
-abort that preserves partial results. Knobs in `config.example.yaml`; the
-reasoning is in the main README.
+abort that preserves partial results. Each finalist is judged on its stored outputs. Knobs
+in the config (`tutorial/judge_panel.yaml` from `evh init --tutorial`, or
+`config.example.yaml` in a checkout); the reasoning is in the harness README.
 
 ---
 

@@ -137,7 +137,7 @@ with tempfile.TemporaryDirectory() as tmp:
 
     # The judge panel: real runs are judged on their own outputs, found where every command looks.
     (base / "a" / "predictions.jsonl").write_text('{"item_id": "i1", "f1": 0.9}\n', encoding="utf-8")
-    import runner
+    import judge_panel as runner
 
     cands = runner._candidates_from({"runs_from": str(base), "dataset_id": "ds"})
     check(

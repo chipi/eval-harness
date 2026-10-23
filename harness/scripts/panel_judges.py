@@ -181,7 +181,7 @@ class LLMJudge:
 
 
 def build_judge(name: str | None, *, use_fake: bool = False) -> Judge | None:
-    """Factory used by runner.py.
+    """Factory used by judge_panel.py.
 
     `None` returns `None` (skip the cross-judge pass).
     `use_fake=True` returns a FakeJudge with the configured `name`.

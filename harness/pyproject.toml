@@ -46,7 +46,7 @@ package-dir = {"evaluation_harness" = "scripts", "evaluation_harness.schemas" = 
 "evaluation_harness.schemas" = ["*.json"]
 "evaluation_harness.catalog_assets" = ["*.css", "*.js", "*.svg"]
 # The GUIDE's kit: `evh init --tutorial` copies it into a new project.
-"evaluation_harness.tutorial" = ["*.md", "*.txt", "*.csv", "tickets/*.txt", "gold/*.txt", "configs/*.yaml", "goals/*.yaml", "fields/*.yaml", "scorers/*.yaml"]
+"evaluation_harness.tutorial" = ["*.md", "*.txt", "*.csv", "judge_panel.yaml", "tickets/*.txt", "gold/*.txt", "configs/*.yaml", "goals/*.yaml", "fields/*.yaml", "scorers/*.yaml"]
 
 [tool.setuptools.dynamic]
 version = {attr = "evaluation_harness._version.__version__"}
@@ -60,7 +60,7 @@ python_version = "3.10"
 # tools/ are this repository's tests and report checks: not in the package, checked the same.
 mypy_path = "scripts,tests,tools"
 explicit_package_bases = true
-files = ["scripts", "tests", "tools", "judges.py", "runner.py"]
+files = ["scripts", "tests", "tools"]
 exclude = ['^scripts/__main__\.py$', '^scripts/__init__\.py$']
 ignore_missing_imports = true
 warn_unused_configs = true

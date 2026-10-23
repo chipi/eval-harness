@@ -1,8 +1,10 @@
-"""Eval harness — promote, judge, aggregate, report.
+"""The judge panel: promote finalists on a cheap metric, judge their outputs, aggregate, report.
 
-Run:
-    python runner.py --config config.example.yaml                  # real Claude
-    python runner.py --config config.example.yaml --use-fake-judge # no API
+    evh judge --config judge_panel.yaml --use-fake-judge   # no API key
+    evh judge --config judge_panel.yaml                    # the judges in the config (Claude)
+
+`evh init --tutorial` puts an example config at tutorial/judge_panel.yaml; in a checkout,
+`make judge` runs harness/config.example.yaml with the fake judge.
 """
 
 from __future__ import annotations
@@ -19,13 +21,12 @@ from pathlib import Path
 from typing import Any
 
 import yaml
-from judges import ItemScore, build_judge
 
 # The harness's own run reading, so the panel finds runs where every command does (the
 # project, EVAL_RUNS_DIR) and picks the metric the same way.
-sys.path.insert(0, str(Path(__file__).resolve().parent / "scripts"))
 from _common import ROOT, RUNS
 from _runs import default_metric, direction, item_rows, runs_on
+from panel_judges import ItemScore, build_judge
 
 logger = logging.getLogger("eval-harness")
 
@@ -510,7 +511,8 @@ def main(argv: list[str]) -> int:
             logger.warning("Global cost cap hit after %d/%d finalists", len(aggregates), len(promoted))
             break
 
-    output_dir = Path(cfg["output_root"]) / cfg["tag"]
+    # The project's, as runs are: relative to the shell's directory it landed wherever evh ran.
+    output_dir = ROOT / cfg["output_root"] / cfg["tag"]
     write_report(
         output_dir=output_dir,
         finalists=aggregates,

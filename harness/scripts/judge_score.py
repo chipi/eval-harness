@@ -5,7 +5,7 @@
     make judge-score DATASET_ID=cnn_dailymail_200 SCORER=judge-summ-v1
     EVAL_RUNS_DIR=data/runs-judged/judge-summ-v1 make leaderboard DATASET_ID=cnn_dailymail_200
 
-`make judge` is the older judge PANEL (runner.py): pointwise, finalists only, verdicts not
+`evh judge` is the older judge PANEL (judge_panel.py): pointwise, finalists only, verdicts not
 stored. This is the judging PASS: listwise, every arm, verdicts stored as a frozen record.
 
 THE PASS, IN ORDER

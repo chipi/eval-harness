@@ -170,6 +170,7 @@ def main() -> int:
             ("silver-calibrate", ["--dataset-id", "tickets_v1"], "ok"),
             ("cost-report", ["--dataset-id", "tickets_v1"], "ok"),
             ("leaderboard", ["--dataset-id", "tickets_v1"], "ok"),
+            ("judge", ["--config", "tutorial/judge_panel.yaml", "--use-fake-judge"], "ok:Report written"),
             # No --metric: the default is the runs' recorded primary metric, not another project's.
             (
                 "pair-test",

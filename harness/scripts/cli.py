@@ -34,6 +34,10 @@ COMMANDS = {
     "sweep": ("sweep.py", "run several arms, then the leaderboard"),
     "runs-list": ("list_runs.py", "list runs (or baselines)"),
     "rescore": ("rescore.py", "re-score stored outputs against references, for $0"),
+    "judge": (
+        "judge_panel.py",
+        "the judge panel: promote finalists on a cheap metric, judge their stored outputs",
+    ),
     "judge-score": (
         "judge_score.py",
         "re-measure frozen outputs with a validated LLM judge (--dry-run first)",
