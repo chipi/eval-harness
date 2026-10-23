@@ -39,12 +39,10 @@ sys.path.insert(0, str(HERE))
 from _common import (  # noqa: E402
     RUNS,
     dataset_item_ids,
-    default_metric,
     die,
     read_item_ids,
-    warn_on_ambiguous_runs,
 )
-from _runs import direction, per_item, runs_on  # noqa: E402
+from _runs import default_metric, direction, per_item, runs_on, warn_on_ambiguous_runs  # noqa: E402  # noqa: E402
 from stats import EXACT_UP_TO, sign_flip_p  # noqa: E402
 
 
@@ -78,7 +76,7 @@ def main() -> int:
     # The directory read is the directory warned about: --runs-dir, else EVAL_RUNS_DIR.
     runs_dir = args.runs_dir or RUNS
     # Two runs sharing a config_id are averaged together below without
-    # saying so. See _common.warn_on_ambiguous_runs.
+    # saying so. See _runs.warn_on_ambiguous_runs.
     warn_on_ambiguous_runs(runs_dir, args.dataset_id, label=runs_dir.name)
     args.metric = args.metric or default_metric(args.dataset_id, runs_dir=runs_dir)
     runs = runs_on(args.dataset_id, runs_dir=runs_dir)

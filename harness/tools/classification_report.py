@@ -45,9 +45,9 @@ from _common import (  # noqa: E402
     RUNS,
     die,
     item_path,
-    warn_on_ambiguous_runs,
 )
 from _labels import UNPARSED, gold_labels, per_class, predictions  # noqa: E402
+from _runs import warn_on_ambiguous_runs  # noqa: E402
 
 
 def _report_consensus_misses(rows: list, gold: dict, dataset_id: str, threshold: float) -> None:
@@ -111,7 +111,7 @@ def main() -> int:
     )
     args = ap.parse_args()
     # Two runs sharing a config_id are averaged together below without
-    # saying so. See _common.warn_on_ambiguous_runs.
+    # saying so. See _runs.warn_on_ambiguous_runs.
     warn_on_ambiguous_runs(RUNS, args.dataset_id, label=RUNS.name)
 
     gold = gold_labels(args.dataset_id)

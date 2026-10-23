@@ -15,6 +15,7 @@ shared. It is now: every reader goes through these functions.
 from __future__ import annotations
 
 import json
+import re
 import statistics
 from collections.abc import Iterable, Iterator
 from pathlib import Path
@@ -148,3 +149,124 @@ def direction(runs: Iterable[Run], metric: str, asc: bool = False, desc: bool = 
     if asc or desc:
         return asc
     return lower_is_better_on(runs, metric)
+
+
+#: `--repeat N` writes `<id>_r1 .. <id>_rN`: one arm measured N times, not N arms.
+_REPEAT = re.compile(r"_r\d+$")
+
+
+def repeat_stem(run_name: str) -> str:
+    """The run name without its `_rN` repeat suffix."""
+    return _REPEAT.sub("", run_name)
+
+
+def is_repeat_set(run_names: list[str]) -> bool:
+    """Whether these runs are one `--repeat` set: every name `<stem>_rN` off one stem."""
+    return len({repeat_stem(n) for n in run_names}) == 1 and all(_REPEAT.search(n) for n in run_names)
+
+
+class AmbiguousRuns(Exception):
+    """Two runs claim the same config_id and nothing says which one to read."""
+
+
+def default_metric(dataset_id: str, match: str | None = None, runs_dir: Path | None = None) -> str:
+    """The metric a command reads when none is named: the primary metric the matching runs
+    on this dataset recorded, the most common one. It used to be `coverage`, the
+    summarisation example's metric, hard-coded: every other project got "no arms" or a
+    crash unless it passed --metric."""
+    from collections import Counter  # noqa: PLC0415
+
+    primary: Counter = Counter()
+    seen: set = set()
+    for _d, m in runs_on(dataset_id, runs_dir=runs_dir, match=match):
+        if m.get("primary_metric"):
+            primary[m["primary_metric"]] += 1
+        seen |= set((m.get("scores") or {}).keys())
+    if primary:
+        return primary.most_common(1)[0][0]
+    raise SystemExit(
+        f"ERROR: no run on {dataset_id} records a primary metric: pass --metric"
+        + (f" (recorded: {', '.join(sorted(seen))})" if seen else "")
+    )
+
+
+def runs_by_arm(base: Path, dataset_id: str, prefix: str = "", strip: str = "") -> dict[str, list[Path]]:
+    """config_id -> the run directories that produced it, deterministically ordered.
+
+    WHY THIS EXISTS RATHER THAN A GLOB AT EACH CALL SITE.
+
+    Five places in `check_report_claims.py` globbed for a run and took whichever came
+    back -- three took the last hit, two the first, and one of them had a different
+    exclusion rule from the others. That is fine while every config_id is unique. Three
+    SciFact arms were re-run, so three were not, and the checker's answer then depended
+    on the order the filesystem returned directories in: green on APFS, red on ext4.
+    `make ci` was reported green for a week on the only machine anyone had run it on.
+
+    REPEATS ARE NOT AMBIGUITY. `--repeat 3` writes `<id>_r1.._r3`, all one measurement
+    of one arm, and averaging them is the point. Those come back together. Anything
+    ELSE sharing a config_id is two different measurement occasions wearing one name,
+    and this raises rather than picking one, because there is no correct pick.
+    """
+    groups: dict[str, list[Path]] = {}
+    for d, m in runs_on(dataset_id, runs_dir=base):
+        cid = m["config_id"]
+        if prefix and not cid.startswith(prefix):
+            continue
+        key = cid[len(prefix) :] if prefix else cid
+        if strip and key.endswith(strip):
+            key = key[: -len(strip)]
+        groups.setdefault(key, []).append(d)
+
+    for key, dirs in groups.items():
+        if len(dirs) < 2:
+            continue
+        if is_repeat_set([d.name for d in dirs]):
+            continue
+        raise AmbiguousRuns(
+            f"{len(dirs)} runs under {base.name}/ claim config_id {key!r} on "
+            f"{dataset_id}: {sorted(d.name for d in dirs)}.\n"
+            f"  These are different measurement occasions sharing one name, so any "
+            f"tool reading them picks one by filesystem order.\n"
+            f"  Move the ones that are not the record out of this directory "
+            f"(data/runs-repeats/ is where the SciFact re-runs live)."
+        )
+    return {k: sorted(v) for k, v in sorted(groups.items())}
+
+
+def warn_on_ambiguous_runs(base: Path, dataset_id: str | None = None, label: str = "") -> int:
+    """Say loudly when two runs share a config_id for reasons other than --repeat.
+
+    Every loader in this repo groups runs by `config_id` and then averages or picks --
+    `leaderboard` printed `sf_llama_l_n200_v1 runs=2 0.683350`, the mean of 0.7281 and
+    0.6386, a number in no run and no report; `pair_test`, `family_test`,
+    `rank_stability` and `holdout_significance` averaged per item across both; the
+    report scripts silently took whichever the filesystem returned last. None of it
+    said anything. Found by external review.
+
+    `runs_by_arm` RAISES on this, which is right for a checker and wrong for a
+    leaderboard someone is reading interactively. This warns instead and returns the
+    count, so the number on screen is still explained.
+
+    A `--repeat N` set (`<id>_r1.._rN`) is one arm measured N times and is not
+    ambiguous; averaging those is the point.
+    """
+    groups: dict[str, list[str]] = {}
+    for d, m in runs_on(dataset_id or None, runs_dir=base):
+        groups.setdefault(m["config_id"], []).append(d.name)
+    bad = []
+    for cid, names in sorted(groups.items()):
+        if len(names) < 2:
+            continue
+        if is_repeat_set(names):
+            continue
+        bad.append((cid, sorted(names)))
+    for cid, names in bad:
+        print(
+            f"  WARNING: {len(names)} runs claim config_id {cid!r}"
+            f"{' in ' + label if label else ''} — {', '.join(names)}."
+        )
+        print(
+            f"           They are averaged together below. If they are different "
+            f"measurement occasions, move all but one out of {base.name}/."
+        )
+    return len(bad)

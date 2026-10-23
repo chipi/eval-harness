@@ -24,10 +24,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tools/
 import stats as _stats
 from _common import (
-    AmbiguousRuns,
     no_options,
-    runs_by_arm,
 )
+from _runs import AmbiguousRuns, runs_by_arm
 from cost_report import billed_and_recorded
 
 _ARGS = no_options(__doc__, "--print-judge-figures")  # --help prints this; anything else is refused
@@ -377,7 +376,7 @@ REPORT_DATASETS["REPORT_SYNTHESIS.md"] = list(PRIMARY_BY_DATASET)
 
 
 def _runs_for(base, dataset_id, prefix):
-    """One deterministic answer per arm, or a hard failure. See _common.runs_by_arm.
+    """One deterministic answer per arm, or a hard failure. See _runs.runs_by_arm.
 
     Every lookup in this file used to be its own glob -- three took the last hit, two
     the first, one had a different exclusion rule -- so with two runs sharing a

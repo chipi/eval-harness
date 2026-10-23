@@ -32,9 +32,8 @@ from _common import (
     classify_metrics,
     die,
     how,
-    warn_on_ambiguous_runs,
 )
-from _runs import by_arm, direction, runs_on
+from _runs import by_arm, direction, runs_on, warn_on_ambiguous_runs
 from _runs import matrix as matrix_of
 
 # COST_KEYS / SPEED_KEYS / DESCRIPTIVE_KEYS now live in _common, so that

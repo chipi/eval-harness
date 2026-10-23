@@ -50,13 +50,11 @@ from _common import (  # noqa: E402
     ROOT,
     RUNS,
     dataset_item_ids,
-    default_metric,
     die,
     item_selection,
-    warn_on_ambiguous_runs,
 )
 from _fingerprint import measuring_modules  # noqa: E402
-from _runs import direction, per_item, runs_on  # noqa: E402 -- one implementation of "score per item"
+from _runs import default_metric, direction, per_item, runs_on, warn_on_ambiguous_runs  # noqa: E402  # noqa: E402 -- one implementation of "score per item"
 from stats import holm, sign_flip_p  # noqa: E402 -- one implementation of the paired test
 
 
@@ -150,7 +148,7 @@ def _run(args) -> int:
     # The directory read is the directory warned about: --runs-dir, else EVAL_RUNS_DIR.
     runs_dir = args.runs_dir or RUNS
     # Two runs sharing a config_id are averaged together below without
-    # saying so. See _common.warn_on_ambiguous_runs.
+    # saying so. See _runs.warn_on_ambiguous_runs.
     warn_on_ambiguous_runs(runs_dir, args.dataset_id, label=runs_dir.name)
     args.metric = args.metric or default_metric(args.dataset_id, runs_dir=runs_dir)
     runs = runs_on(args.dataset_id, runs_dir=runs_dir)

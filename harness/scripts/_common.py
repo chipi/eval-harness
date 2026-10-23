@@ -5,7 +5,6 @@ from __future__ import annotations
 import hashlib
 import json
 import os
-import re
 import subprocess
 import tempfile
 from datetime import datetime, timezone
@@ -405,33 +404,6 @@ def load_module(path: Path, name: str) -> Any:
     return mod
 
 
-def default_metric(dataset_id: str, match: str | None = None, runs_dir: Path | None = None) -> str:
-    """The metric a command reads when none is named: the primary metric the matching runs
-    on this dataset recorded, the most common one. It used to be `coverage`, the
-    summarisation example's metric, hard-coded: every other project got "no arms" or a
-    crash unless it passed --metric."""
-    from collections import Counter  # noqa: PLC0415
-
-    primary: Counter = Counter()
-    seen: set = set()
-    base = runs_dir or RUNS
-    for d in sorted(base.iterdir()) if base.is_dir() else []:
-        m = read_json(d / "metrics.json") if (d / "metrics.json").is_file() else None
-        if not isinstance(m, dict) or m.get("dataset_id") != dataset_id:
-            continue
-        if match and match not in str(m.get("config_id", "")):
-            continue
-        if m.get("primary_metric"):
-            primary[m["primary_metric"]] += 1
-        seen |= set((m.get("scores") or {}).keys())
-    if primary:
-        return primary.most_common(1)[0][0]
-    raise SystemExit(
-        f"ERROR: no run on {dataset_id} records a primary metric: pass --metric"
-        + (f" (recorded: {', '.join(sorted(seen))})" if seen else "")
-    )
-
-
 def die(msg: str) -> NoReturn:
     """Refuse: `ERROR: msg` on stderr, exit 1. Every command refuses this way; four printed
     their refusal to stdout instead, where a caller reading stderr saw nothing."""
@@ -544,105 +516,3 @@ def classify_metrics(extra_kinds: dict[str, str] | None = None) -> dict[str, str
     if extra_kinds:
         kinds.update(extra_kinds)
     return kinds
-
-
-class AmbiguousRuns(Exception):
-    """Two runs claim the same config_id and nothing says which one to read."""
-
-
-def runs_by_arm(base: Path, dataset_id: str, prefix: str = "", strip: str = "") -> dict[str, list[Path]]:
-    """config_id -> the run directories that produced it, deterministically ordered.
-
-    WHY THIS EXISTS RATHER THAN A GLOB AT EACH CALL SITE.
-
-    Five places in `check_report_claims.py` globbed for a run and took whichever came
-    back -- three took the last hit, two the first, and one of them had a different
-    exclusion rule from the others. That is fine while every config_id is unique. Three
-    SciFact arms were re-run, so three were not, and the checker's answer then depended
-    on the order the filesystem returned directories in: green on APFS, red on ext4.
-    `make ci` was reported green for a week on the only machine anyone had run it on.
-
-    REPEATS ARE NOT AMBIGUITY. `--repeat 3` writes `<id>_r1.._r3`, all one measurement
-    of one arm, and averaging them is the point. Those come back together. Anything
-    ELSE sharing a config_id is two different measurement occasions wearing one name,
-    and this raises rather than picking one, because there is no correct pick.
-    """
-    groups: dict[str, list[Path]] = {}
-    for mj in sorted(base.glob("*/metrics.json")):
-        try:
-            m = json.loads(mj.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
-            continue
-        if m.get("dataset_id") != dataset_id:
-            continue
-        cid = m.get("config_id")
-        if not cid or (prefix and not cid.startswith(prefix)):
-            continue
-        key = cid[len(prefix) :] if prefix else cid
-        if strip and key.endswith(strip):
-            key = key[: -len(strip)]
-        groups.setdefault(key, []).append(mj.parent)
-
-    for key, dirs in groups.items():
-        if len(dirs) < 2:
-            continue
-        # A repeat set: every directory is "<something>_rN" off the same stem.
-        stems = {re.sub(r"_r\d+$", "", d.name) for d in dirs}
-        if len(stems) == 1 and all(re.search(r"_r\d+$", d.name) for d in dirs):
-            continue
-        raise AmbiguousRuns(
-            f"{len(dirs)} runs under {base.name}/ claim config_id {key!r} on "
-            f"{dataset_id}: {sorted(d.name for d in dirs)}.\n"
-            f"  These are different measurement occasions sharing one name, so any "
-            f"tool reading them picks one by filesystem order.\n"
-            f"  Move the ones that are not the record out of this directory "
-            f"(data/runs-repeats/ is where the SciFact re-runs live)."
-        )
-    return {k: sorted(v) for k, v in sorted(groups.items())}
-
-
-def warn_on_ambiguous_runs(base: Path, dataset_id: str | None = None, label: str = "") -> int:
-    """Say loudly when two runs share a config_id for reasons other than --repeat.
-
-    Every loader in this repo groups runs by `config_id` and then averages or picks --
-    `leaderboard` printed `sf_llama_l_n200_v1 runs=2 0.683350`, the mean of 0.7281 and
-    0.6386, a number in no run and no report; `pair_test`, `family_test`,
-    `rank_stability` and `holdout_significance` averaged per item across both; the
-    report scripts silently took whichever the filesystem returned last. None of it
-    said anything. Found by external review.
-
-    `runs_by_arm` RAISES on this, which is right for a checker and wrong for a
-    leaderboard someone is reading interactively. This warns instead and returns the
-    count, so the number on screen is still explained.
-
-    A `--repeat N` set (`<id>_r1.._rN`) is one arm measured N times and is not
-    ambiguous; averaging those is the point.
-    """
-    groups: dict[str, list[str]] = {}
-    for mj in sorted(base.glob("*/metrics.json")):
-        try:
-            m = json.loads(mj.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
-            continue
-        if dataset_id and m.get("dataset_id") != dataset_id:
-            continue
-        if m.get("config_id"):
-            groups.setdefault(m["config_id"], []).append(mj.parent.name)
-    bad = []
-    for cid, names in sorted(groups.items()):
-        if len(names) < 2:
-            continue
-        stems = {re.sub(r"_r\d+$", "", n) for n in names}
-        if len(stems) == 1 and all(re.search(r"_r\d+$", n) for n in names):
-            continue
-        bad.append((cid, sorted(names)))
-    for cid, names in bad:
-        print(
-            f"  WARNING: {len(names)} runs claim config_id {cid!r}"
-            f"{' in ' + label if label else ''} — {', '.join(names)}."
-        )
-        print(
-            f"           They are averaged together below. If they are different "
-            f"measurement occasions, move all but one out of {base.name}/."
-        )
-    return len(bad)

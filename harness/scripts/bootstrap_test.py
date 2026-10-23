@@ -76,9 +76,9 @@ from _common import (  # noqa: E402
     RUNS,
     die,
     item_selection,
-    warn_on_ambiguous_runs,
 )
 from _labels import gold_labels, per_class, predictions  # noqa: E402
+from _runs import warn_on_ambiguous_runs  # noqa: E402
 from stats import holm  # noqa: E402 -- one Holm: p equal to its threshold is separated
 
 
@@ -110,7 +110,7 @@ def main() -> int:
     ap.add_argument("--items", type=Path, help="file of item_ids; restrict to exactly these")
     args = ap.parse_args()
     # Two runs sharing a config_id are averaged together below without
-    # saying so. See _common.warn_on_ambiguous_runs.
+    # saying so. See _runs.warn_on_ambiguous_runs.
     warn_on_ambiguous_runs(RUNS, args.dataset_id, label=RUNS.name)
 
     gold = gold_labels(args.dataset_id)

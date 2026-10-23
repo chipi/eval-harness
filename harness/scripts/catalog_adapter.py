@@ -36,7 +36,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
 from _common import BOOKKEEPING_PREFIXES, DATA, ROOT, ModuleNotLoadable, is_descriptive, load_module  # noqa: E402
-from _runs import direction, item_rows, score_of  # noqa: E402
+from _runs import direction, item_rows, runs_on, score_of  # noqa: E402
 
 
 def _memo(fn):
@@ -178,9 +178,8 @@ class HarnessAdapter:
         bases = [p for p in sorted(self.data_dir.glob("runs*")) if p.is_dir() and p.name != "runs-judged"]
         bases += sorted(p for p in (self.data_dir / "runs-judged").glob("*") if p.is_dir())
         for base in bases:
-            for d in sorted(base.iterdir()):
-                m = _json(d / "metrics.json") if d.is_dir() else None
-                if not isinstance(m, dict) or not m.get("config_id") or not m.get("dataset_id"):
+            for d, m in runs_on(runs_dir=base):
+                if not m.get("dataset_id"):
                     continue
                 rel = base.relative_to(self.data_dir).as_posix()
                 out.setdefault(f"{rel}/{m['dataset_id']}/{m['config_id']}", []).append(d)

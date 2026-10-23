@@ -26,8 +26,8 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
 import leaderboard as lb  # noqa: E402
-from _common import RUNS, dataset_item_ids, default_metric, die, warn_on_ambiguous_runs  # noqa: E402
-from _runs import direction, matrix, runs_on  # noqa: E402
+from _common import RUNS, dataset_item_ids, die  # noqa: E402
+from _runs import default_metric, direction, matrix, runs_on, warn_on_ambiguous_runs  # noqa: E402  # noqa: E402
 
 
 def main() -> int:
@@ -41,7 +41,7 @@ def main() -> int:
     ap.add_argument("--desc", action="store_true", help="higher is better, whatever the runs declare")
     args = ap.parse_args()
     # Two runs sharing a config_id are averaged together below without
-    # saying so. See _common.warn_on_ambiguous_runs.
+    # saying so. See _runs.warn_on_ambiguous_runs.
     warn_on_ambiguous_runs(RUNS, args.dataset_id, label=RUNS.name)
 
     args.metric = args.metric or default_metric(args.dataset_id, args.match)

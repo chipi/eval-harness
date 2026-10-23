@@ -1787,7 +1787,7 @@ def test_two_runs_sharing_a_config_id_are_refused() -> None:
     import shutil  # noqa: PLC0415
 
     sys.path.insert(0, str(HERE))
-    from _common import AmbiguousRuns, runs_by_arm  # noqa: PLC0415
+    from _runs import AmbiguousRuns, runs_by_arm  # noqa: PLC0415
 
     src = next(
         (d for d in sorted((HERE.parent / "data" / "runs").glob("sf_*")) if (d / "metrics.json").is_file()),

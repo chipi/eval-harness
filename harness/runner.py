@@ -24,8 +24,8 @@ from judges import ItemScore, build_judge
 # The harness's own run reading, so the panel finds runs where every command does (the
 # project, EVAL_RUNS_DIR) and picks the metric the same way.
 sys.path.insert(0, str(Path(__file__).resolve().parent / "scripts"))
-from _common import ROOT, RUNS, default_metric
-from _runs import direction, item_rows, runs_on
+from _common import ROOT, RUNS
+from _runs import default_metric, direction, item_rows, runs_on
 
 logger = logging.getLogger("eval-harness")
 

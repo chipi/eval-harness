@@ -49,9 +49,8 @@ from _common import (
     RUNS,
     adapter_search_dirs,
     die,
-    read_json,
-    warn_on_ambiguous_runs,
 )
+from _runs import runs_on, warn_on_ambiguous_runs
 from stats import spearman
 
 
@@ -62,21 +61,16 @@ def _collect(dataset_id: str, match: str | None) -> dict[str, dict[str, Any]]:
     # filesystem's, not the run's: one author's rho moved 0.238 -> 0.391 purely by which
     # repeat the directory happened to list first. A result that changes when you copy the
     # directory is not a result.
-    for mp in sorted(glob.glob(str(RUNS / "*" / "metrics.json"))):
-        m = read_json(Path(mp))
-        if m.get("dataset_id") != dataset_id:
-            continue
-        cid = m.get("config_id", "")
-        if match and match not in cid:
-            continue
+    for d, m in runs_on(dataset_id, match=match):
+        cid = m["config_id"]
         # Strip ANY numeric version suffix, not a hardcoded three: `_v10` was kept while
         # `_v1` was stripped, so the same arm appeared twice under different names.
         arm = re.sub(r"_v\d+$", "", cid)
         entry = acc.setdefault(
             arm, {"texts": defaultdict(list), "params": m.get("params") or {}, "adapter": m.get("adapter")}
         )
-        for f in sorted(glob.glob(os.path.join(os.path.dirname(mp), "outputs", "*.txt"))):
-            entry["texts"][os.path.basename(f)[:-4]].append(Path(f).read_text(encoding="utf-8").strip())
+        for f in sorted((d / "outputs").glob("*.txt")):
+            entry["texts"][f.stem].append(f.read_text(encoding="utf-8").strip())
     return acc
 
 
@@ -94,7 +88,7 @@ def main() -> int:
     ap.add_argument("--group-by", default="family", help="params key for the sibling-bias report; '' to skip")
     args = ap.parse_args()
     # Two runs sharing a config_id are averaged together below without
-    # saying so. See _common.warn_on_ambiguous_runs.
+    # saying so. See _runs.warn_on_ambiguous_runs.
     warn_on_ambiguous_runs(RUNS, args.dataset_id, label=RUNS.name)
 
     refs_side = _collect(args.dataset_id, args.ref_match)
@@ -143,12 +137,11 @@ def main() -> int:
     if not ref_id and (REFERENCES / "gold" / args.dataset_id).is_dir():
         ref_id = f"gold/{args.dataset_id}"
     if not ref_id:
-        for mp in glob.glob(str(RUNS / "*" / "metrics.json")):
-            m = read_json(Path(mp))
-            if m.get("dataset_id") == args.dataset_id:
-                ref_id = ((m.get("fingerprint") or {}).get("data") or {}).get("reference_id")
-                if ref_id:
-                    break
+        # In run order, not the filesystem's: which run names the reference was unsorted.
+        for _d, m in runs_on(args.dataset_id):
+            ref_id = ((m.get("fingerprint") or {}).get("data") or {}).get("reference_id")
+            if ref_id:
+                break
     if not ref_id:
         die(
             "no trusted reference found — this measures a proxy AGAINST ground truth, "
