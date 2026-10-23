@@ -15,6 +15,7 @@ The split-half draw is seeded, so the same runs always give the same figures.
 from __future__ import annotations
 
 import json
+import math
 import random
 import statistics
 import sys
@@ -34,19 +35,35 @@ SEED, DRAWS, HALVES = 20261018, 400, (10, 20, 50)
 
 
 def split_half(scores: dict, items: list, n: int, rng: random.Random) -> dict:
-    """{rho, p5, same_winner} over DRAWS pairs of disjoint n-item halves.
-    scores: arm -> {item_id -> per-item score}."""
+    """{rho, p5, same_winner, undecided} over DRAWS pairs of disjoint n-item halves.
+    scores: arm -> {item_id -> per-item score}.
+
+    A winner counts only when it is unique in both halves, as in rank_stability.py: taking
+    the first of a tied top block picks by name, and two halves tied the same way would then
+    read as agreeing. A draw without a unique winner in both halves is `undecided`, never
+    agreement, and same_winner is over the decided draws."""
     names = sorted(scores)
-    rhos, same = [], 0
+    rhos, same, undecided = [], 0, 0
     for _ in range(DRAWS):
         pick = rng.sample(items, 2 * n)
         a_half, b_half = pick[:n], pick[n:]
         sa = [statistics.fmean(scores[a][i] for i in a_half) for a in names]
         sb = [statistics.fmean(scores[a][i] for i in b_half) for a in names]
         rhos.append(spearman(sa, sb))
-        same += names[sa.index(max(sa))] == names[sb.index(max(sb))]
+        wa = [a for a, v in zip(names, sa) if v == max(sa)]
+        wb = [a for a, v in zip(names, sb) if v == max(sb)]
+        if len(wa) == 1 and len(wb) == 1:
+            same += wa[0] == wb[0]
+        else:
+            undecided += 1
     rhos.sort()
-    return {"rho": statistics.fmean(rhos), "p5": rhos[DRAWS // 20], "same_winner": same / DRAWS}
+    decided = DRAWS - undecided
+    return {
+        "rho": statistics.fmean(rhos),
+        "p5": rhos[DRAWS // 20],
+        "same_winner": same / decided if decided else math.nan,
+        "undecided": undecided / DRAWS,
+    }
 
 
 def summarisation_hosted(n: int = 20) -> dict:
