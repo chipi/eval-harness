@@ -40,7 +40,11 @@ def module_at(path: Path) -> Any:
     (ModuleNotLoadable when the file has no import spec)."""
     key = Path(path).resolve()
     if key not in _LOADED:
-        if key == BUNDLED.resolve():
+        cached = sys.modules.get("adapter")
+        if key == BUNDLED.resolve() and (
+            cached is None or Path(getattr(cached, "__file__", "") or "").resolve() == key
+        ):
+            # The `adapter` module itself, so a test that patches `adapter` patches what runs.
             sys.path.insert(0, str(CODE))
             import adapter  # noqa: PLC0415
 

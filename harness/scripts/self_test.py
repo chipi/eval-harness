@@ -62,7 +62,7 @@ def test_dotenv_does_not_override_exported() -> None:
 
 def test_price_needs_all_four_inputs() -> None:
     sys.path.insert(0, str(HERE))
-    from adapter import _price  # noqa: PLC0415
+    from judging import price as _price  # noqa: PLC0415
 
     check("price: None when unpriced", _price({}, 1000, 1000) is None)
     check(

@@ -281,12 +281,9 @@ def withheld_reason(output: str | None, source: set) -> str | None:
 # ── routing ──────────────────────────────────────────────────────────────────
 def _models_table() -> dict[str, str]:
     """alias -> upstream id, from the first models file that exists; {} when none does."""
-    try:  # imported as evaluation_harness.judging, or as a script beside _common.py
-        from ._common import CODE, ROOT  # noqa: PLC0415
-    except ImportError:
-        from _common import CODE, ROOT  # noqa: PLC0415
+    from _common import CODE, ROOT  # noqa: PLC0415
 
-    cands = [os.environ.get("EVAL_MODELS_FILE", "").strip(), ROOT / "models.json"]
+    cands: list[str | Path] = [os.environ.get("EVAL_MODELS_FILE", "").strip(), ROOT / "models.json"]
     # The repository's own table, only in a checkout of it: in a project elsewhere,
     # ROOT.parent is whatever directory the project happens to sit in.
     if (ROOT / "scripts").resolve() == CODE:
@@ -416,7 +413,7 @@ def _reasoning_tokens(usage: Any) -> int | None:
     return None
 
 
-def _billed(usage: Any) -> float | None:
+def billed(usage: Any) -> float | None:
     """What the provider billed for this call; it outranks the price table, which has been
     wrong by 0.67x-3.21x per arm."""
     d = usage if isinstance(usage, dict) else (usage.model_dump() if hasattr(usage, "model_dump") else None)
@@ -431,7 +428,9 @@ def _billed(usage: Any) -> float | None:
         return None
 
 
-def _price(params: dict[str, Any], tin: int | None, tout: int | None) -> float | None:
+def price(params: dict[str, Any], tin: int | None, tout: int | None) -> float | None:
+    """Cost from the per-million-token prices a config declares; None when anything is
+    missing (unpriced, never free). The fallback for a call the provider did not bill."""
     pin, pout = params.get("usd_per_mtok_in"), params.get("usd_per_mtok_out")
     if pin is None or pout is None or tin is None or tout is None:
         return None
@@ -455,7 +454,7 @@ def _fake_call(message: str, params: dict[str, Any]) -> JudgeResult:
         output=out,
         tokens_in=tin,
         tokens_out=tout,
-        cost_usd=_price(params, tin, tout) or 0.0,
+        cost_usd=price(params, tin, tout) or 0.0,
         extra={"truncated": 0.0},
         meta={"finish_reason": "stop", "provider": FAKE, "response_model": model},
     )
@@ -483,12 +482,12 @@ def call_judge(message: str, params: dict[str, Any]) -> JudgeResult:
     # bad"; finish_reason says it was the token ceiling instead.
     truncated = finish == "length" or (to is not None and to >= max_tokens * 0.98)
     reasoning = _reasoning_tokens(usage)
-    billed = _billed(usage)
+    bill = billed(usage)
     return JudgeResult(
         output=(resp.choices[0].message.content or "").strip(),
         tokens_in=ti,
         tokens_out=to,
-        cost_usd=billed if billed is not None else _price(params, ti, to),
+        cost_usd=bill if bill is not None else price(params, ti, to),
         extra={
             "truncated": 1.0 if truncated else 0.0,
             **({"reasoning_tokens": float(reasoning)} if reasoning is not None else {}),

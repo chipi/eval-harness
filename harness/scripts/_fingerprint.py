@@ -144,10 +144,7 @@ def _harness_identity(root: Path) -> dict[str, Any]:
     that is the harness itself). `version` and `code_sha256` describe the harness code,
     and are the only reliable identity when the harness is an installed dependency.
     """
-    try:
-        from _version import __version__  # noqa: PLC0415
-    except ImportError:  # imported as evaluation_harness._fingerprint, not run as a script
-        from ._version import __version__  # type: ignore[no-redef]  # noqa: PLC0415
+    from _version import __version__  # noqa: PLC0415
 
     commit = _git(root, "rev-parse", "--short=12", "HEAD")
     dirt = tree_dirt(root)

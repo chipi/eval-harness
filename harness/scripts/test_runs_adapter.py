@@ -156,4 +156,20 @@ with tempfile.TemporaryDirectory() as tmp:
         refused = "lower-is-better" in str(exc)
     check("panel: promotion by a lower-is-better metric is refused, not ranked upside down", refused)
 
+# The bundled adapter: an unknown provider fell back to echo, so a typo recorded the echoed
+# input as the model's output; its cost now comes from the bill when there is one.
+try:
+    bundled.call_system("some text", {"provider": "anthropc"})
+    typo_refused = False
+except SystemExit as exc:
+    typo_refused = "unknown provider 'anthropc'" in str(exc)
+check("bundled adapter: an unknown provider is refused, not echoed", typo_refused)
+check("bundled adapter: echo still runs", bundled.call_system("a b. c d.", {"provider": "echo"}).output != "")
+from judging import billed, price  # noqa: E402
+
+check("billed: the provider's usage.cost is the cost", billed({"cost": 0.0123}) == 0.0123)
+check("billed: no cost reported is None, not 0", billed({"prompt_tokens": 5}) is None)
+check("price: unpriced is None, never free", price({}, 10, 10) is None)
+check("the adapter and the judges share one price rule", bundled.price is price and bundled.billed is billed)
+
 sys.exit(summary())

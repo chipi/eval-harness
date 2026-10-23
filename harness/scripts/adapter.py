@@ -28,6 +28,10 @@ from typing import Any, Callable
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+# One price rule and one bill reader, shared with the judges: what the provider billed when
+# the response carries it, else the config's declared prices, else unpriced (None).
+from judging import billed, price
+
 
 @dataclass
 class Result:
@@ -70,7 +74,11 @@ def call_system(text: str, params: dict[str, Any]) -> Result:
         return Result(output=summarise(text, model=params["model"]))
     """
     provider = params.get("provider", "echo")
-    fn: Callable[[str, dict[str, Any]], Result] = PROVIDERS.get(provider, _echo)
+    # An unknown provider is an error. It fell back to echo, so a typo in a config recorded
+    # the echoed input as that model's output.
+    if provider not in PROVIDERS:
+        raise SystemExit(f"unknown provider {provider!r}; this adapter knows {', '.join(sorted(PROVIDERS))}")
+    fn: Callable[[str, dict[str, Any]], Result] = PROVIDERS[provider]
     started = time.perf_counter()
     # No retry wrapper here: the core retries every adapter. See the note below.
     result = fn(text, params)
@@ -183,7 +191,7 @@ def _anthropic(text: str, params: dict[str, Any]) -> Result:
         output="".join(b.text for b in msg.content if b.type == "text"),
         tokens_in=ti,
         tokens_out=to,
-        cost_usd=_price(params, ti, to),
+        cost_usd=price(params, ti, to),
     )
 
 
@@ -228,30 +236,21 @@ def _openai_compatible(text: str, params: dict[str, Any]) -> Result:
         temperature=float(params.get("temperature", 0.0)),
         max_tokens=int(params.get("max_tokens", 600)),
         messages=[{"role": "user", "content": params.get("prompt", "Summarise:") + "\n\n" + text}],
+        # OpenRouter returns what it billed only when asked; the bill outranks the price table.
+        extra_body={"usage": {"include": True}} if params.get("provider") == "openrouter" else None,
     )
     u = getattr(resp, "usage", None)
     ti = getattr(u, "prompt_tokens", None)
     to = getattr(u, "completion_tokens", None)
+    bill = billed(u)
     return Result(
         output=resp.choices[0].message.content or "",
         tokens_in=ti,
         tokens_out=to,
-        cost_usd=_price(params, ti, to),
+        # Prices in the config, not in code: they change, and a run records what it was
+        # costed at. A bill, when the provider sends one, is the cost itself.
+        cost_usd=bill if bill is not None else price(params, ti, to),
     )
-
-
-def _price(params: dict[str, Any], tin: int | None, tout: int | None) -> float | None:
-    """Cost from per-million-token prices declared in the config.
-
-    Prices live in the experiment config, not in code, because they change and
-    because a run should record the price it was costed at. A number computed
-    from today's price list is not comparable to one computed from last
-    quarter's without saying so.
-    """
-    pin, pout = params.get("usd_per_mtok_in"), params.get("usd_per_mtok_out")
-    if pin is None or pout is None or tin is None or tout is None:
-        return None
-    return round(tin / 1e6 * float(pin) + tout / 1e6 * float(pout), 8)
 
 
 PROVIDERS: dict[str, Callable[[str, dict[str, Any]], Result]] = {

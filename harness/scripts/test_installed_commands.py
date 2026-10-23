@@ -63,6 +63,26 @@ def main() -> int:
                 timeout=timeout,
             )
 
+        # Importing the package's modules, as INTEGRATION.md documents: `evaluation_harness.judging`
+        # did not import at all, and catalog_adapter + judging loaded `_common` twice.
+        import_probe = (
+            "import sys, evaluation_harness.judging, evaluation_harness.catalog_adapter\n"
+            "print(sorted(m for m in sys.modules if m.rsplit('.', 1)[-1] == '_common'))\n"
+        )
+        r = subprocess.run(
+            [sys.executable, "-c", import_probe],
+            cwd=proj,
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=120,
+        )
+        check(
+            "import evaluation_harness.judging and .catalog_adapter: one _common",
+            r.returncode == 0 and r.stdout.strip() == "['_common']",
+            (r.stdout + r.stderr).strip()[-300:],
+        )
+
         def setup(*args: str) -> None:
             r = evh(*args)
             if r.returncode:
