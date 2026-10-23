@@ -129,7 +129,10 @@ def v1_schemas() -> None:
         return
     pairs = [
         (DATASETS.glob("*.json"), "dataset.schema.json"),
-        ((p / "metrics.json" for p in RUNS.iterdir()) if RUNS.is_dir() else [], "metrics.schema.json"),
+        (
+            (p / "metrics.json" for p in sorted(RUNS.iterdir())) if RUNS.is_dir() else [],
+            "metrics.schema.json",
+        ),
         ((p for p in BASELINES.glob("*.json")), "baseline.schema.json"),
     ]
     bad = 0
@@ -152,7 +155,7 @@ def v2_dataset_ids() -> None:
     """V2: every run's dataset_id resolves to an existing dataset."""
     known = {p.stem for p in DATASETS.glob("*.json")}
     dangling = []
-    for run in RUNS.iterdir() if RUNS.is_dir() else []:
+    for run in sorted(RUNS.iterdir()) if RUNS.is_dir() else []:
         m = run / "metrics.json"
         if m.is_file():
             did = read_json(m).get("dataset_id")
@@ -170,7 +173,7 @@ def v2_dataset_ids() -> None:
 def v3_provenance() -> None:
     """V3: every run identifies its build ref."""
     missing = []
-    for run in RUNS.iterdir() if RUNS.is_dir() else []:
+    for run in sorted(RUNS.iterdir()) if RUNS.is_dir() else []:
         m = run / "metrics.json"
         if m.is_file():
             b = read_json(m).get("build") or {}
@@ -258,7 +261,7 @@ def _per_item_signature(run_name: str) -> str:
 def v5_duplicate_scores() -> None:
     """V5: no two runs report byte-identical scores and per-item results."""
     by_key = defaultdict(list)
-    for run in RUNS.iterdir() if RUNS.is_dir() else []:
+    for run in sorted(RUNS.iterdir()) if RUNS.is_dir() else []:
         m = run / "metrics.json"
         if m.is_file():
             d = read_json(m)

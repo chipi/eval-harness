@@ -14,10 +14,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _common import (
     BASELINES,
-    RUNS,
     how,
     read_json,
 )
+from _runs import runs_on
 
 
 def main() -> int:
@@ -43,7 +43,7 @@ def main() -> int:
             print("    scores   " + "  ".join(f"{k}={v}" for k, v in sorted(b["scores"].items())))
         return 0
 
-    dirs = sorted(p for p in RUNS.iterdir() if (p / "metrics.json").is_file()) if RUNS.is_dir() else []
+    dirs = [d for d, _m in runs_on()]
     if not dirs:
         print(
             "no runs yet — "

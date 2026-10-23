@@ -8,7 +8,6 @@ import os
 import re
 import subprocess
 import tempfile
-from collections.abc import Iterable
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, NoReturn
@@ -412,13 +411,6 @@ def default_metric(dataset_id: str, match: str | None = None, runs_dir: Path | N
         f"ERROR: no run on {dataset_id} records a primary metric: pass --metric"
         + (f" (recorded: {', '.join(sorted(seen))})" if seen else "")
     )
-
-
-def iter_runs() -> Iterable[Path]:
-    """Iterate over all run directories with metrics.json, in sorted order."""
-    if not RUNS.is_dir():
-        return []
-    return sorted(p for p in RUNS.iterdir() if (p / "metrics.json").is_file())
 
 
 def die(msg: str) -> NoReturn:

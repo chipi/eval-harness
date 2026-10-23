@@ -40,7 +40,8 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-from _common import RUNS, die, read_json  # noqa: E402
+from _common import die  # noqa: E402
+from _runs import runs_on  # noqa: E402
 
 
 def billed_and_recorded(run_dir: Path) -> tuple[float, float, int, int]:
@@ -72,16 +73,8 @@ def main() -> int:
 
     rows = []
     no_bill = []
-    for d in sorted(RUNS.glob("*")):
-        mj = d / "metrics.json"
-        if not mj.is_file():
-            continue
-        m = read_json(mj)
-        if args.dataset_id and m.get("dataset_id") != args.dataset_id:
-            continue
-        cid = m.get("config_id", d.name)
-        if args.match and args.match not in cid:
-            continue
+    for d, m in runs_on(args.dataset_id or None, match=args.match):
+        cid = m["config_id"]
         billed, recorded, with_bill, total = billed_and_recorded(d)
         if total == 0:
             continue

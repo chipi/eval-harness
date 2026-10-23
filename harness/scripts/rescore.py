@@ -39,7 +39,6 @@ from _common import (
     MATERIALIZED,
     REFERENCES,
     ROOT,
-    RUNS,
     die,
     how,
     now,
@@ -48,6 +47,7 @@ from _common import (
     write_json,
 )
 from _fingerprint import references_digest
+from _runs import runs_on
 
 #: Carried across from the original run rather than recomputed: these describe the CALL,
 #: not the measurement. A rescore that recomputed a latency would be reporting a number
@@ -81,15 +81,7 @@ def main() -> int:
     if args.reference_id and not (REFERENCES / args.reference_id).is_dir():
         die(f"no reference set at data/references/{args.reference_id}")
 
-    srcs = [d for d in (RUNS.iterdir() if RUNS.is_dir() else []) if (d / "metrics.json").is_file()]
-    todo = []
-    for d in srcs:
-        m = read_json(d / "metrics.json")
-        if m.get("dataset_id") != args.dataset_id:
-            continue
-        if args.match and args.match not in m.get("config_id", ""):
-            continue
-        todo.append((d, m))
+    todo = runs_on(args.dataset_id, match=args.match)
     if not todo:
         die(f"no runs on {args.dataset_id!r}" + (f" matching {args.match!r}" if args.match else ""))
 

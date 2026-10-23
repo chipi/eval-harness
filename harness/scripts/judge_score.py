@@ -72,6 +72,7 @@ from _common import (
     write_text_atomic,
 )
 from _retry import call_with_retries
+from _runs import runs_on
 from judging import (
     DIMS,
     FAKE,
@@ -325,14 +326,13 @@ def pick_subset(item_ids: Sequence[str], frac: float, seed: Any, salt: str) -> l
 def discover_arms(dataset_id: str, match: str, runs_dir: Path = RUNS) -> list[dict[str, Any]]:
     """The primary run of every arm on the dataset: config_id contains `match`, latest wins."""
     latest: dict[str, tuple[str, Path, dict[str, Any]]] = {}
-    for mj in sorted(runs_dir.glob("*/metrics.json")):
-        m = read_json(mj)
-        cid = m.get("config_id", "")
-        if m.get("dataset_id") != dataset_id or match not in cid:
-            continue
-        key = m.get("created_at", "") + mj.parent.name
+    # One run per arm, the latest, on purpose: judging scores an arm's outputs, so repeats
+    # are not averaged as they are everywhere else (_runs.per_item).
+    for d, m in runs_on(dataset_id, runs_dir=runs_dir, match=match or None):
+        cid = m["config_id"]
+        key = m.get("created_at", "") + d.name
         if cid not in latest or key > latest[cid][0]:
-            latest[cid] = (key, mj.parent, m)
+            latest[cid] = (key, d, m)
     arms = []
     for cid, (_k, d, m) in sorted(latest.items()):
         arms.append(
