@@ -540,7 +540,7 @@ evh validate
   ok   V3 every run identifies its build
   ok   V4 materialized copies match their frozen hashes (1 of 1 datasets materialized here)
   ok   V5 no two configs report byte-identical scores
-  ok   V6 every baseline's source run still exists
+  ok   V6 every baseline's source run still exists and matches what the baseline carries
   ...
   ok   V8 no two runs share a config_id (outside a --repeat set)
   ...

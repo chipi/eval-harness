@@ -30,6 +30,23 @@ from _common import (
 )
 
 
+def carried(m: dict) -> dict:
+    """What a baseline keeps of its run beyond the scores: the reference tier, the adapter
+    that scored it, its fingerprint's hash, and the goal and format it answers. V6 checks
+    they still match the run."""
+    tier = m.get("reference_tier") or ((m.get("derived") or {}).get("with") or {}).get(
+        "source_reference_tier"
+    )
+    out = {
+        "reference_tier": tier,
+        "adapter": m.get("adapter"),
+        "fingerprint_hash": (m.get("fingerprint") or {}).get("hash"),
+        "goal": m.get("goal"),
+        "format": m.get("format"),
+    }
+    return {k: v for k, v in out.items() if v}
+
+
 def main() -> int:
     """Promote a run to baseline status."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
@@ -107,8 +124,10 @@ def main() -> int:
             "scores": m["scores"],
             "build": build,
             "supersedes": supersedes,
-            # carried from the run: the goal it answers and the format it was asked for
-            **{k: m[k] for k in ("goal", "format") if m.get(k)},
+            # Carried from the run: what the number means. A baseline is compared against, and
+            # a silver baseline beside a gold run, or one scored by another adapter, is not the
+            # same number.
+            **carried(m),
         },
     )
     print(f"{out}")

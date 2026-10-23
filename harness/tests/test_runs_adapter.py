@@ -387,4 +387,60 @@ with tempfile.TemporaryDirectory() as tmp:
     )
     check("adapter: no adapter named -> the project's adapter.py", own_id == "adapter.py", own_id)
 
+# B11: a baseline carries what its number means (reference tier, adapter, fingerprint), and
+# V6 fails a baseline that no longer says what its run records.
+with tempfile.TemporaryDirectory() as tmp:
+    run_dir = Path(tmp) / "data" / "runs" / "r1"
+    run_dir.mkdir(parents=True)
+    (run_dir / "metrics.json").write_text(
+        json.dumps(
+            {
+                "run_id": "r1",
+                "config_id": "c",
+                "dataset_id": "d",
+                "created_at": "2026-10-23",
+                "build": {"ref": "abc", "dirty": False},
+                "scores": {"f1": 0.5},
+                "reference_tier": "gold",
+                "adapter": "adapter.py",
+                "fingerprint": {"hash": "0" * 64},
+            }
+        ),
+        encoding="utf-8",
+    )
+    env = {**os.environ, "EVAL_HOME": tmp, "EVAL_DATA_DIR": "", "EVAL_RUNS_DIR": ""}
+    subprocess.run(
+        [
+            sys.executable,
+            str(HERE / "promote_baseline.py"),
+            "--run",
+            "r1",
+            "--reason",
+            "the test's own baseline",
+        ],
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+    bl_path = Path(tmp) / "data" / "baselines" / "d_baseline.json"
+    bl = json.loads(bl_path.read_text(encoding="utf-8")) if bl_path.is_file() else {}
+    check(
+        "promote: the baseline carries the run's tier, adapter and fingerprint hash",
+        (bl.get("reference_tier"), bl.get("adapter"), bl.get("fingerprint_hash"))
+        == ("gold", "adapter.py", "0" * 64),
+        bl,
+    )
+
+    def _v6() -> str:
+        r = subprocess.run(
+            [sys.executable, str(HERE / "validate_tree.py")], env=env, capture_output=True, text=True
+        )
+        return next((ln for ln in r.stdout.splitlines() if " V6 " in ln), r.stdout[-300:])
+
+    as_promoted = _v6()
+    bl_path.write_text(json.dumps({**bl, "reference_tier": "silver"}), encoding="utf-8")
+    edited = _v6()
+    check("V6: a baseline as promoted passes", as_promoted.startswith("  ok "), as_promoted)
+    check("V6: a baseline whose tier no longer matches its run fails", edited.startswith("  FAIL "), edited)
+
 sys.exit(summary())

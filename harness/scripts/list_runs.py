@@ -36,6 +36,7 @@ def main() -> int:
             print(f"{b['baseline_id']}")
             print(f"    dataset  {b['dataset_id']}")
             print(f"    from     {b['promoted_from']}   build={b['build'].get('ref', '?')[:12]}")
+            print(f"    scored   {b.get('reference_tier', '?')} references, adapter {b.get('adapter', '?')}")
             print(f"    why      {b.get('reason', '(none recorded)')}")
             print("    scores   " + "  ".join(f"{k}={v}" for k, v in sorted(b["scores"].items())))
         return 0

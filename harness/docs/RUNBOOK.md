@@ -290,8 +290,10 @@ Refused if the run came from a dirty tree, if its build is unknown, or if the
 reason is a single word. Those refusals exist for the same reason: in six months, *"why is this the
 baseline?"* must have an answer.
 
-The previous baseline is archived under `data/baselines/superseded/`. A baseline
-is never edited, only superseded.
+The baseline carries what its number means, from the run: the reference tier it was scored
+against, the adapter that scored it, its fingerprint hash, and its goal and format
+(`validate` V6 fails a baseline that no longer matches its run). The previous baseline is
+archived under `data/baselines/superseded/`. A baseline is never edited, only superseded.
 
 ```bash
 make baselines-list
@@ -309,7 +311,7 @@ Fifteen checks (V1–V15): schema conformance (datasets, runs, baselines, config
 scorers, judging sets, verdicts), every run's `dataset_id` resolves, every run
 identifies its build, materialized copies still match their hashes, no two
 configs reporting byte-identical scores and per-item results, no baseline pointing at a
-deleted run, every committed run readable and present on disk, no two runs claiming one
+deleted run or disagreeing with it, every committed run readable and present on disk, no two runs claiming one
 `config_id`, no derived run naming a scorer that is not the code in this tree, every judging
 set matching its stored hash, every judge verdict naming a real set, item, pass and block,
 every judge scorer yaml loading and well-formed, every goal well-formed and named by every

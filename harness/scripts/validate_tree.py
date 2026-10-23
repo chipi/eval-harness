@@ -324,15 +324,35 @@ def _v5_in(base: Path) -> list[list]:
 
 
 def v6_baselines() -> None:
-    """V6: every baseline's promoted_from run still exists."""
+    """V6: every baseline's promoted_from run still exists, and the baseline still says what
+    it says: the tier, adapter, fingerprint, goal and format it carried from that run."""
+    from promote_baseline import carried  # noqa: PLC0415
+
     broken = []
-    for b in BASELINES.glob("*.json"):
+    for b in sorted(BASELINES.glob("*.json")):
         d = read_json(b)
-        if not any((base / d.get("promoted_from", "")).is_dir() for base in run_bases()):
-            broken.append(f"{b.name} -> {d.get('promoted_from')}")
+        src = next(
+            (
+                base / d.get("promoted_from", "")
+                for base in run_bases()
+                if (base / d.get("promoted_from", "")).is_dir()
+            ),
+            None,
+        )
+        if src is None:
+            broken.append(f"{b.name} -> {d.get('promoted_from')}: no such run")
+            continue
+        m = read_json(src / "metrics.json") if (src / "metrics.json").is_file() else {}
+        for k, v in carried(m).items():
+            if d.get(k) != v:
+                broken.append(f"{b.name}: {k} is {d.get(k)!r}, its run records {v!r}")
     for x in broken:
         print(f"       {x}")
-    check("V6 every baseline's source run still exists", not broken, f"{len(broken)} broken")
+    check(
+        "V6 every baseline's source run still exists and matches what the baseline carries",
+        not broken,
+        f"{len(broken)} broken",
+    )
 
 
 def run_bases() -> list[Path]:
