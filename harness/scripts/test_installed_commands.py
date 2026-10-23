@@ -246,6 +246,24 @@ def main() -> int:
                         "," in q and "metric=" in q and '"rows": [{' in body and '"error"' not in body,
                         (q, body[:200]),
                     )
+                    q1 = subprocess.run(
+                        ["bash", str(probe), str(proj / ".build/catalog/d"), "one"],
+                        capture_output=True,
+                        text=True,
+                    ).stdout.strip()
+                    body1 = ""
+                    if q1:
+                        import urllib.request  # noqa: PLC0415
+
+                        with urllib.request.urlopen(  # the test's own server on 127.0.0.1  # nosec B310
+                            f"http://127.0.0.1:{port}/api/compare?{q1}", timeout=120
+                        ) as resp:
+                            body1 = resp.read().decode()
+                    check(
+                        "deploy probe: finds a single-arm link, and the inspector answers it",
+                        q1.startswith("runs=") and "," not in q1 and '"rows"' in body1,
+                        (q1, body1[:200]),
+                    )
                 if alive:
                     os.killpg(p.pid, signal.SIGTERM)
                     p.wait(timeout=10)

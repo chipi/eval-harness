@@ -88,8 +88,8 @@ done
 code="$(curl -s -o /dev/null -w '%{http_code}' -H "Host: $CATALOG_HOST" "http://127.0.0.1:$IPORT/api/health")"
 [ "$code" = 200 ] || rollback "health check failed: inspector /api/health returned $code"
 # A real question, one arm from a dataset page's own links: the inspector reads this release's
-# data. (sed -n 1p, not head: head closing the pipe early is a SIGPIPE under pipefail.)
-q="$(grep -ohE 'inspect\.html\?runs=[^",&]+"' "$REL/sites/$CATALOG_HOST/public/d/"*.html | sed -n '1{s/^inspect\.html?//; s/"$//; p}')"
+# data. probe_link.sh holds the extraction, so it is tested off the box (make -C harness test).
+q="$(bash "$REL/deploy/probe_link.sh" "$REL/sites/$CATALOG_HOST/public/d" one)"
 if [ -n "$q" ]; then
   body="$(curl -s -m 120 -H "Host: $CATALOG_HOST" "http://127.0.0.1:$IPORT/api/compare?$q")"
   grep -q '"rows"' <<<"$body" || rollback "health check failed: the inspector did not answer a comparison (${body:0:200})"

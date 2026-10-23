@@ -1930,4 +1930,55 @@ check(
     != functools.reduce(operator.iadd, vz.blocks("a2", [f"s{i:02d}" for i in range(19)], 16), []),
 )
 
+# ── the package's gateway is examples/_shared/gateway.py's, by test ─────────────────────
+# Two copies on purpose (the package cannot import the examples), so they are held to each
+# other here, as the judge prompt and parser are above: same route, same request body.
+sys.path.insert(0, str(HERE.parents[1] / "examples" / "_shared"))
+import gateway as _gw  # noqa: E402
+
+_gw_keys = ("LITELLM_BASE_URL", "LITELLM_API_KEY", "OPENROUTER_API_KEY")
+_gw_saved = {k: os.environ.pop(k, None) for k in _gw_keys}
+try:
+    _cases = [
+        ({"OPENROUTER_API_KEY": "sk-or-test"}, {"model": "eval-claude-haiku"}),
+        ({"OPENROUTER_API_KEY": "sk-or-test"}, {"model": "vendor/my-model"}),
+        (
+            {
+                "OPENROUTER_API_KEY": "sk-or-test",
+                "LITELLM_BASE_URL": "http://127.0.0.1:9",
+                "LITELLM_API_KEY": "k",
+            },
+            {"model": "eval-claude-haiku"},
+        ),
+        ({}, {"model": "eval-claude-haiku"}),
+    ]
+    for _env, _params in _cases:
+        for k in _gw_keys:
+            os.environ.pop(k, None)
+        os.environ.update(_env)
+        _got: list[tuple] = []
+        for _fn in (judging.route, _gw.route):
+            try:
+                _r = _fn(dict(_params))
+                _got.append(
+                    (
+                        "route",
+                        _r,
+                        judging.extra_body(dict(_params), _r)
+                        if _fn is judging.route
+                        else _gw.extra_body(dict(_params), _r),
+                    )
+                )
+            except SystemExit:
+                _got.append(("refused",))
+        check(
+            f"gateway parity: {sorted(_env) or 'no keys'} / {_params['model']}: same route and body",
+            _got[0] == _got[1],
+        )
+finally:
+    for k, v in _gw_saved.items():
+        os.environ.pop(k, None)
+        if v is not None:
+            os.environ[k] = v
+
 sys.exit(summary())
