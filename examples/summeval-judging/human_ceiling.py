@@ -32,7 +32,6 @@ WHAT IT MEASURES
 from __future__ import annotations
 
 import hashlib
-import importlib.util
 import itertools
 import json
 import random
@@ -42,6 +41,9 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
+sys.path.insert(0, str(HERE.parent / "_shared"))
+from modules import load_module  # noqa: E402
+
 URL = "https://storage.googleapis.com/sfr-summarization-repo-research/model_annotations.aligned.jsonl"
 CACHE = ROOT / "harness" / "data" / "sources" / "summeval_original" / "model_annotations.aligned.jsonl"
 GOLD = ROOT / "harness" / "data" / "references" / "gold" / "summeval_100"
@@ -51,11 +53,7 @@ OUT = ROOT / "docs" / "evidence" / "summeval_human_ceiling.json"
 
 
 def _adapter():
-    spec = importlib.util.spec_from_file_location("se_adapter", HERE / "adapter.py")
-    mod = importlib.util.module_from_spec(spec)
-    sys.modules["se_adapter"] = mod
-    spec.loader.exec_module(mod)
-    return mod
+    return load_module(HERE / "adapter.py", "se_adapter")
 
 
 def _article_key(item_id: str) -> str:

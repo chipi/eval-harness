@@ -16,7 +16,6 @@ $0, local, ~6 minutes. Needs torch >= 2.6. Writes docs/evidence/calibration/dbpe
 
 from __future__ import annotations
 
-import importlib.util
 import random
 import sys
 from pathlib import Path
@@ -26,6 +25,7 @@ import yaml
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent / "_shared"))
 import calibration as cal  # noqa: E402
+from modules import load_module  # noqa: E402
 
 PUBLISHED = {"published": 0.9903, "source": "model card, 'evaluation set' accuracy"}
 SEED, PAGES, SPLIT_ROWS = 20261014, 56, 70_000
@@ -33,10 +33,7 @@ TOLERANCE = 0.005
 
 
 def main() -> int:
-    spec = importlib.util.spec_from_file_location("db_adapter", HERE / "adapter.py")
-    adapter = importlib.util.module_from_spec(spec)
-    sys.modules["db_adapter"] = adapter
-    spec.loader.exec_module(adapter)
+    adapter = load_module(HERE / "adapter.py", "db_adapter")
     params = yaml.safe_load((HERE / "configs" / "arm_bert_base_fy_n200.yaml").read_text())["params"]
     labels = params["label_order"]
     offsets = sorted(random.Random(SEED).sample(range(0, SPLIT_ROWS, 100), PAGES))

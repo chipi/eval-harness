@@ -31,7 +31,6 @@ WHY AVERAGED OVER THE REFERENCES
 
 from __future__ import annotations
 
-import importlib.util
 import json
 import math
 import statistics
@@ -40,6 +39,9 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
+sys.path.insert(0, str(HERE.parent / "_shared"))
+from modules import load_module  # noqa: E402
+
 RUNS = ROOT / "harness" / "data" / "runs"
 SOURCE = "G-Eval (Liu et al. 2023), Table 1, tau averaged over the four dimensions"
 #: Kendall tau against the SummEval experts, as published: the four-dimension average, then
@@ -58,13 +60,7 @@ TOLERANCE = 0.02
 
 
 def _shared():
-    spec = importlib.util.spec_from_file_location(
-        "calibration", ROOT / "examples" / "_shared" / "calibration.py"
-    )
-    mod = importlib.util.module_from_spec(spec)
-    sys.modules["calibration"] = mod
-    spec.loader.exec_module(mod)
-    return mod
+    return load_module(ROOT / "examples" / "_shared" / "calibration.py", "calibration")
 
 
 def run_dir(arm: str) -> Path:
@@ -80,12 +76,7 @@ def per_article(arm: str, key: str = "tau") -> list:
 
 
 def _adapter():
-    if "se_adapter" not in sys.modules:
-        spec = importlib.util.spec_from_file_location("se_adapter", HERE / "adapter.py")
-        mod = importlib.util.module_from_spec(spec)
-        sys.modules["se_adapter"] = mod
-        spec.loader.exec_module(mod)
-    return sys.modules["se_adapter"]
+    return load_module(HERE / "adapter.py", "se_adapter", reuse=True)
 
 
 def unieval_inputs() -> dict:

@@ -27,7 +27,6 @@ WHAT IT MEASURES
 
 from __future__ import annotations
 
-import importlib.util
 import json
 import statistics as st
 import sys
@@ -35,6 +34,9 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
+sys.path.insert(0, str(HERE.parent / "_shared"))
+from modules import load_module  # noqa: E402
+
 OUT = ROOT / "docs" / "evidence" / "calibration" / "summarization.json"
 
 #: As published, ROUGE-1 / ROUGE-2 / ROUGE-L F1 x100, non-anonymised CNN/DailyMail test.
@@ -48,11 +50,7 @@ PUBLISHED = {
 
 
 def _load(path: Path, name: str):
-    spec = importlib.util.spec_from_file_location(name, path)
-    mod = importlib.util.module_from_spec(spec)
-    sys.modules[name] = mod
-    spec.loader.exec_module(mod)
-    return mod
+    return load_module(path, name)
 
 
 def main() -> int:

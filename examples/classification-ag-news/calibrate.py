@@ -17,7 +17,6 @@ for the two bert-base checkpoints). Writes docs/evidence/calibration/ag_news.jso
 
 from __future__ import annotations
 
-import importlib.util
 import sys
 from pathlib import Path
 
@@ -26,6 +25,7 @@ import yaml
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent / "_shared"))
 import calibration as cal  # noqa: E402
+from modules import load_module  # noqa: E402
 
 ARMS = {
     "bert_mini": {"published": 0.9339, "source": "model card, HF-verified test accuracy"},
@@ -40,10 +40,7 @@ TOLERANCE = 0.005
 
 
 def main() -> int:
-    spec = importlib.util.spec_from_file_location("ag_adapter", HERE / "adapter.py")
-    adapter = importlib.util.module_from_spec(spec)
-    sys.modules["ag_adapter"] = adapter
-    spec.loader.exec_module(adapter)
+    adapter = load_module(HERE / "adapter.py", "ag_adapter")
     labels = ["World", "Sports", "Business", "Sci/Tech"]
     test = cal.rows("fancyzhx/ag_news", "default", "test")
     out = {

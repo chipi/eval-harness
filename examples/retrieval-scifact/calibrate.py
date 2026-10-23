@@ -19,7 +19,6 @@ $0, local, ~1 minute after the fetch. Writes docs/evidence/calibration/scifact.j
 
 from __future__ import annotations
 
-import importlib.util
 import math
 import statistics as st
 import sys
@@ -30,6 +29,7 @@ import yaml
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent / "_shared"))
 import calibration as cal  # noqa: E402
+from modules import load_module  # noqa: E402
 
 DATA = cal.ROOT / "harness" / "data"
 DATASET = "scifact_test300"
@@ -39,10 +39,7 @@ TOLERANCE = 0.02
 
 
 def main() -> int:
-    spec = importlib.util.spec_from_file_location("sf_adapter", HERE / "adapter.py")
-    adapter = importlib.util.module_from_spec(spec)
-    sys.modules["sf_adapter"] = adapter
-    spec.loader.exec_module(adapter)
+    adapter = load_module(HERE / "adapter.py", "sf_adapter")
     params = yaml.safe_load((HERE / "configs" / "arm_bm25_n200.yaml").read_text())["params"]
     src, gold = DATA / "sources" / DATASET, DATA / "references" / "gold" / DATASET
     queries = sorted(src.glob("*.txt"))
