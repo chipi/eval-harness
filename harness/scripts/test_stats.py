@@ -10,7 +10,6 @@ import statistics
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
 import stats
 from _check import check, summary
 

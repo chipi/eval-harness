@@ -55,7 +55,6 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any, Callable
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _common import (
     BOOKKEEPING_PREFIXES,
     DATA,

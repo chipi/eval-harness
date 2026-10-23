@@ -125,8 +125,16 @@ def tree_dirt(root: Path, data_dir: Path | None = None) -> list | None:
     return filter_dirt(status, data_rel)
 
 
-#: The commands that write a run, or a reference a run is scored against.
-_PRODUCERS = ("experiment_run.py", "rescore.py", "judge_score.py", "import_run.py", "reference_create.py")
+#: The commands that write a run, or a reference a run is scored against, and the bundled
+#: adapter: _adapter loads it by path, so no import names it.
+_PRODUCERS = (
+    "experiment_run.py",
+    "rescore.py",
+    "judge_score.py",
+    "import_run.py",
+    "reference_create.py",
+    "adapter.py",
+)
 
 
 def measuring_modules(here: Path | None = None, producers: tuple[str, ...] = _PRODUCERS) -> list[Path]:

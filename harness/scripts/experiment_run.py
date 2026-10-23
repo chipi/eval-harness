@@ -34,7 +34,6 @@ import time
 from pathlib import Path
 from typing import Any
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _adapter import load_adapter, metric_kinds, primary_metric, score_wants_source, transient_markers
 from _common import (
     DATA,

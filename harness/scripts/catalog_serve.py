@@ -46,7 +46,6 @@ from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlparse
 
 HERE = Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE))
 
 import _fields  # noqa: E402
 import stats  # noqa: E402

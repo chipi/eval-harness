@@ -24,6 +24,7 @@ only the local inspector server calls. The static catalog never embeds it.
 
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import json
 import statistics
@@ -33,7 +34,6 @@ from pathlib import Path
 from typing import Protocol
 
 HERE = Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE))
 
 from _common import BOOKKEEPING_PREFIXES, DATA, ROOT, ModuleNotLoadable, is_descriptive, load_module  # noqa: E402
 from _runs import direction, item_rows, runs_on, score_of  # noqa: E402
@@ -403,14 +403,18 @@ def load_adapter(spec: str | None = None) -> Adapter:
     target, _, cls = spec.rpartition(":")
     if not target or not cls:
         raise SystemExit(f"catalog adapter {spec!r}: expected 'path/to/file.py:Class' or 'module:Class'")
+    # The project's root is importable while its adapter loads (it may import its own helpers).
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
     if target.endswith(".py"):
         path = (ROOT / target).resolve()
-        sys.path.insert(0, str(ROOT))
         try:
-            mod = load_module(path, path.stem)
+            # A name of its own: registered under its stem, a project file called `adapter.py`
+            # or `stats.py` replaced the harness's module of that name in sys.modules.
+            digest = hashlib.sha256(str(path).encode()).hexdigest()[:8]
+            mod = load_module(path, f"evh_catalog_adapter_{path.stem}_{digest}")
         except ModuleNotLoadable:
             raise SystemExit(f"catalog adapter: cannot load {path}") from None
     else:
-        sys.path.insert(0, str(ROOT))
         mod = importlib.import_module(target)
     return getattr(mod, cls)()

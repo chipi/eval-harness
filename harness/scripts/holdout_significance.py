@@ -19,11 +19,9 @@ WHY THIS EXISTS
 from __future__ import annotations
 
 import argparse
-import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE))
 
 import leaderboard as lb  # noqa: E402
 from _common import RUNS, dataset_item_ids, die  # noqa: E402

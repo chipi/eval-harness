@@ -31,7 +31,6 @@ import sys
 from pathlib import Path
 from typing import Any
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _adapter import load_recorded_adapter, score_wants_source
 from _common import (
     DATA,

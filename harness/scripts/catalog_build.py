@@ -27,7 +27,6 @@ from pathlib import Path
 from urllib.parse import quote
 
 HERE = Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE))
 
 import _fields  # noqa: E402
 from _common import ROOT  # noqa: E402

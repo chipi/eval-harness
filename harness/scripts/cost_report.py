@@ -34,11 +34,9 @@ from __future__ import annotations
 
 import argparse
 import json
-import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE))
 
 from _common import die  # noqa: E402
 from _runs import runs_on  # noqa: E402

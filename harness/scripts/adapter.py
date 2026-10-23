@@ -20,13 +20,9 @@ from __future__ import annotations
 
 import os
 import random
-import sys
 import time
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import Any, Callable
-
-sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 # One price rule and one bill reader, shared with the judges: what the provider billed when
 # the response carries it, else the config's declared prices, else unpriced (None).

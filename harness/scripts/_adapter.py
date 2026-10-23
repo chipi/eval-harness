@@ -45,11 +45,10 @@ def module_at(path: Path) -> Any:
         if key == BUNDLED.resolve() and (
             cached is None or Path(getattr(cached, "__file__", "") or "").resolve() == key
         ):
-            # The `adapter` module itself, so a test that patches `adapter` patches what runs.
-            sys.path.insert(0, str(CODE))
-            import adapter  # noqa: PLC0415
-
-            _LOADED[key] = adapter
+            # The `adapter` module itself, so a test that patches `adapter` patches what runs:
+            # loaded by its path under that name, not found on sys.path, where a project's own
+            # `adapter.py` may come first.
+            _LOADED[key] = cached if cached is not None else load_module(key, "adapter")
         else:
             digest = hashlib.sha256(str(key).encode()).hexdigest()[:8]
             _LOADED[key] = load_module(key, f"evh_adapter_{key.stem}_{digest}")

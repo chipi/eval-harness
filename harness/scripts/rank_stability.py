@@ -27,11 +27,9 @@ from __future__ import annotations
 import argparse
 import random
 import statistics
-import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE))
 
 from _common import RUNS, die  # noqa: E402
 from _runs import default_metric, direction, matrix, runs_on, warn_on_ambiguous_runs  # noqa: E402  # noqa: E402

@@ -19,10 +19,7 @@ to trust numbers that mean nothing:
 from __future__ import annotations
 
 import argparse
-import sys
-from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _adapter import adapter_module
 from _common import (
     RUNS,
