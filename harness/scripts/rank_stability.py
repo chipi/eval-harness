@@ -26,18 +26,17 @@ from __future__ import annotations
 
 import argparse
 import json
-import math
 import random
 import statistics
 import sys
 from collections import defaultdict
-from collections.abc import Sequence
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
 from _common import RUNS, default_metric, lower_is_better, read_json, warn_on_ambiguous_runs  # noqa: E402
+from stats import spearman  # noqa: E402 - midranks of midranks are the midranks: same rho
 
 #: The half sizes measured: two disjoint halves of n items each.
 SIZES = (10, 20, 50, 100)
@@ -62,33 +61,6 @@ def load(dataset_id: str, metric: str, match: str | None):
                 if metric in row:
                     acc[cid][row["item_id"]].append(float(row[metric]))
     return {a: {i: statistics.fmean(v) for i, v in it.items()} for a, it in acc.items()}
-
-
-def spearman(x: Sequence[float], y: Sequence[float]) -> float:
-    """Spearman's rho as Pearson correlation OF THE RANKS, which is tie-correct.
-
-    THE VERSION THIS REPLACES WAS WRONG IN THE PRESENCE OF TIES, not merely inflated.
-    `1 - 6*sum(d^2)/(n(n^2-1))` is an algebraic shortcut for Pearson-on-ranks that holds
-    ONLY when every rank is distinct. Feed it tied data and it does not approximate rho,
-    it computes a different quantity -- and because the caller broke ties by arm NAME,
-    what it correlated in those cells was the alphabet.
-
-    The shortcut and this agree exactly when there are no ties, which the self-test
-    asserts, so nothing changes on a continuous metric. What changes is every figure on a
-    metric that ties: accuracy on a saturated task, most of all.
-    """
-    n = len(x)
-    if n < 2:
-        return float("nan")
-    mx, my = statistics.fmean(x), statistics.fmean(y)
-    sxy = sum((a - mx) * (b - my) for a, b in zip(x, y))
-    sxx = sum((a - mx) ** 2 for a in x)
-    syy = sum((b - my) ** 2 for b in y)
-    if sxx <= 0 or syy <= 0:
-        # Every arm tied in one half: there is no ordering to correlate. NaN, not 0.0 --
-        # 0.0 would read as "no agreement" when the truth is "no question asked".
-        return float("nan")
-    return sxy / math.sqrt(sxx * syy)
 
 
 def ranks_on(M, arms, items):

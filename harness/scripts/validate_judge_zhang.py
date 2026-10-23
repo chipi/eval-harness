@@ -37,7 +37,6 @@ from __future__ import annotations
 
 import argparse
 import hashlib
-import importlib.util
 import json
 import re
 import statistics
@@ -51,7 +50,7 @@ from typing import Any
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import judge_score as js  # noqa: E402
-from _common import die, write_text_atomic  # noqa: E402
+from _common import ModuleNotLoadable, die, load_module, write_text_atomic  # noqa: E402  # noqa: E402
 from _retry import call_with_retries  # noqa: E402
 from judging import (  # noqa: E402,F401
     DIMS,
@@ -308,12 +307,10 @@ def free_metrics() -> dict:
 
     rs = rouge_scorer.RougeScorer(["rouge1"], use_stemmer=True)
     path = HERE.parents[1] / "examples" / "summarization-cnn-dailymail" / "adapter.py"
-    spec = importlib.util.spec_from_file_location("_summ_adapter", path)
-    if spec is None or spec.loader is None:
-        raise SystemExit(f"cannot load {path}")
-    mod = importlib.util.module_from_spec(spec)
-    sys.modules["_summ_adapter"] = mod
-    spec.loader.exec_module(mod)
+    try:
+        mod = load_module(path, "_summ_adapter")
+    except ModuleNotLoadable:
+        raise SystemExit(f"cannot load {path}") from None
     return {
         "rouge1": lambda s, r: rs.score(r, s)["rouge1"].fmeasure,
         "coverage": lambda s, r: mod.score(s, r)["coverage"],

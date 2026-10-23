@@ -84,6 +84,16 @@ check(
     "holm: a declared family larger than the p-values passed",
     stats.holm({"a": 0.02}, family=3)["a"] == (0.05 / 3, False),
 )
+check(
+    "holm: a p exactly at its threshold is separated (family_test and bootstrap_test said not)",
+    all(sep for _, sep in stats.holm({"a": 0.025, "b": 0.05}).values()),
+)
+_here = Path(__file__).resolve().parent
+for _script in ("family_test.py", "bootstrap_test.py", "summeval_analysis.py"):
+    check(
+        f"holm: {_script} uses stats.holm, so it cannot disagree with the inspector",
+        "holm(" in (_here / _script).read_text() and "/ (m - i)" not in (_here / _script).read_text(),
+    )
 
 arms = {
     "base": {f"e{i}": 0.5 for i in range(10)},

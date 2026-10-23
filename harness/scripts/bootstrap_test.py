@@ -74,6 +74,7 @@ sys.path.insert(0, str(HERE))
 
 from _common import RUNS, dataset_item_ids, die, warn_on_ambiguous_runs  # noqa: E402
 from classification_report import gold_labels, per_class, predictions  # noqa: E402
+from stats import holm  # noqa: E402 -- one Holm: p equal to its threshold is separated
 
 
 def _macro_f1(pairs: list, labels: list) -> float:
@@ -170,12 +171,9 @@ def main() -> int:
 
     m = len(rows)
     rows.sort(key=lambda r: r["p"])
-    still = True
-    for i, r in enumerate(rows):
-        r["thresh"] = args.alpha / (m - i)
-        if still and r["p"] >= r["thresh"]:
-            still = False
-        r["sep"] = still
+    verdicts = holm({r["opp"]: r["p"] for r in rows}, alpha=args.alpha)
+    for r in rows:
+        r["thresh"], r["sep"] = verdicts[r["opp"]]
 
     print(f"  {args.a}  vs family '{args.against}'   metric={args.metric}  {rows[0]['n']} items")
     print(f"  paired bootstrap, {args.draws} draws, seed {args.seed}")

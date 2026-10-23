@@ -30,11 +30,11 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _common import (
     RUNS,
+    adapter_module,
     classify_metrics,
     die,
     how,
     read_json,
-    resolve_adapter_path,
     warn_on_ambiguous_runs,
 )
 
@@ -396,23 +396,8 @@ def _adapter_kinds(adapter_spec: str) -> dict[str, str]:
     """
     if adapter_spec in _ADAPTER_KINDS_CACHE:
         return _ADAPTER_KINDS_CACHE[adapter_spec]
-    out: dict[str, str] = {}
-    try:
-        cand = resolve_adapter_path(adapter_spec)
-        if cand is not None:
-            import importlib.util  # noqa: PLC0415
-
-            spec = importlib.util.spec_from_file_location(f"lbkinds_{cand.stem}", cand)
-            if spec is None or spec.loader is None:
-                raise ImportError(f"cannot load {cand}")
-            mod = importlib.util.module_from_spec(spec)
-            sys.modules[spec.name] = mod
-            spec.loader.exec_module(mod)
-            kinds = getattr(mod, "METRIC_KINDS", None)
-            if isinstance(kinds, dict):
-                out = dict(kinds)
-    except Exception:  # noqa: BLE001 — an un-importable adapter is a fallback, not a crash
-        out = {}
+    kinds = getattr(adapter_module(adapter_spec), "METRIC_KINDS", None)
+    out: dict[str, str] = dict(kinds) if isinstance(kinds, dict) else {}
     _ADAPTER_KINDS_CACHE[adapter_spec] = out
     return out
 

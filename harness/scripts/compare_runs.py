@@ -25,10 +25,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _common import (
     RUNS,
+    adapter_module,
     die,
     how,
     read_json,
-    resolve_adapter_path,
     verdict_for,
 )
 
@@ -146,22 +146,9 @@ def main() -> int:
         spec = run.get("adapter")
         if not spec:
             continue
-        for cand in filter(None, [resolve_adapter_path(spec)]):
-            try:
-                import importlib.util  # noqa: PLC0415
-
-                ms = importlib.util.spec_from_file_location(f"cmpkinds_{cand.stem}", cand)
-                if ms is None or ms.loader is None:
-                    raise ImportError(f"cannot load {cand}")
-                mod = importlib.util.module_from_spec(ms)
-                sys.modules[ms.name] = mod
-                ms.loader.exec_module(mod)
-                cur = getattr(mod, "METRIC_KINDS", None)
-                if isinstance(cur, dict):
-                    kinds.update(cur)
-            except Exception:  # noqa: BLE001 — a stale adapter must not break a compare
-                pass
-            break
+        cur = getattr(adapter_module(spec), "METRIC_KINDS", None)  # None: a stale adapter
+        if isinstance(cur, dict):
+            kinds.update(cur)
 
     worth = 0
     for k in keys:

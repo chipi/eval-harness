@@ -20,6 +20,8 @@ import statistics
 import sys
 from pathlib import Path
 
+from stats import holm, sign_flip_p, spearman
+
 HERE = Path(__file__).resolve().parent
 RUNS = HERE.parent / "data" / "runs"
 DATASET, PREFIX, SUFFIX = "summeval_100", "se_", "_n100_v1"
@@ -29,29 +31,6 @@ FAMILIES = ("anthropic", "deepseek", "gemma", "glm", "llama", "mistral", "openai
 #: qwen_l's model was withdrawn before this run; qwen37max is the large Qwen judge here.
 LARGE = {"qwen": "qwen37max"}
 SEED, DRAWS, HALVES = 20261018, 400, (10, 20, 50)
-
-
-def _ranks(x: list) -> list:
-    order = sorted(range(len(x)), key=lambda i: x[i])
-    r = [0.0] * len(x)
-    i = 0
-    while i < len(x):
-        j = i
-        while j + 1 < len(x) and x[order[j + 1]] == x[order[i]]:
-            j += 1
-        for k in range(i, j + 1):
-            r[order[k]] = (i + j) / 2
-        i = j + 1
-    return r
-
-
-def spearman(a: list, b: list) -> float:
-    """Spearman rank correlation coefficient."""
-    ra, rb = _ranks(a), _ranks(b)
-    ma, mb = statistics.fmean(ra), statistics.fmean(rb)
-    num = sum((x - ma) * (y - mb) for x, y in zip(ra, rb))
-    den = (sum((x - ma) ** 2 for x in ra) * sum((y - mb) ** 2 for y in rb)) ** 0.5
-    return num / den if den else float("nan")
 
 
 def split_half(scores: dict, items: list, n: int, rng: random.Random) -> dict:
@@ -91,17 +70,6 @@ def summarisation_hosted(n: int = 20) -> dict:
     return {"n_arms": len(scores), **split_half(scores, items, n, random.Random(SEED))}
 
 
-def sign_flip(deltas: list, permutations: int, rng: random.Random) -> float:
-    """Two-sided paired sign-flip permutation p, as scripts/family_test.py computes it."""
-    obs = abs(statistics.fmean(deltas))
-    hits = sum(
-        1
-        for _ in range(permutations)
-        if abs(statistics.fmean(d if rng.random() < 0.5 else -d for d in deltas)) >= obs
-    )
-    return (hits + 1) / (permutations + 1)
-
-
 def tier_tests(per_item: dict, items: list, permutations: int = 20000) -> dict:
     """Large tier against small, per family: paired over articles, Holm over the eight."""
     rng = random.Random(SEED)
@@ -110,14 +78,10 @@ def tier_tests(per_item: dict, items: list, permutations: int = 20000) -> dict:
         lg, sm = LARGE.get(fam, f"{fam}_l"), f"{fam}_s"
         if lg in per_item and sm in per_item:
             d = [per_item[lg][i] - per_item[sm][i] for i in items]
-            out[fam] = {"delta": statistics.fmean(d), "p": sign_flip(d, permutations, rng)}
-    m = len(out)
-    for k, (_fam, v) in enumerate(sorted(out.items(), key=lambda kv: kv[1]["p"])):
-        v["holm_threshold"] = 0.05 / (m - k)
-    stop = False
-    for _fam, v in sorted(out.items(), key=lambda kv: kv[1]["p"]):
-        stop = stop or v["p"] > v["holm_threshold"]
-        v["separated"] = not stop
+            out[fam] = {"delta": statistics.fmean(d), "p": sign_flip_p(d, permutations, rng=rng)}
+    verdicts = holm({fam: v["p"] for fam, v in out.items()})
+    for fam, v in out.items():
+        v["holm_threshold"], v["separated"] = verdicts[fam]
     return out
 
 

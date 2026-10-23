@@ -44,32 +44,7 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _common import MATERIALIZED, REFERENCES, ROOT, RUNS, die, read_json, warn_on_ambiguous_runs
 from experiment_run import _score_wants_source, load_recorded_adapter
-
-
-def _ranks(vals: list[float]) -> list[float]:
-    """Ranks with ties sharing the average. A value->index dict silently gave tied values
-    one arbitrary rank each, which is wrong whenever two arms score the same."""
-    order = sorted(range(len(vals)), key=lambda i: vals[i])
-    out = [0.0] * len(vals)
-    i = 0
-    while i < len(order):
-        j = i
-        while j + 1 < len(order) and vals[order[j + 1]] == vals[order[i]]:
-            j += 1
-        shared = (i + j) / 2.0
-        for k in range(i, j + 1):
-            out[order[k]] = shared
-        i = j + 1
-    return out
-
-
-def _spearman(a: list[float], b: list[float]) -> float:
-    x = _ranks(a)
-    y = _ranks(b)
-    mx, my = statistics.fmean(x), statistics.fmean(y)
-    num = sum((xi - mx) * (yi - my) for xi, yi in zip(x, y))
-    den = (sum((xi - mx) ** 2 for xi in x) * sum((yi - my) ** 2 for yi in y)) ** 0.5
-    return num / den if den else 0.0
+from stats import spearman
 
 
 def _collect(dataset_id: str, match: str | None) -> dict[str, dict[str, Any]]:
@@ -209,7 +184,7 @@ def main() -> int:
     gold_arm = rank_against(trusted, arms_side, arms)
     gold_ref = rank_against(trusted, refs_side, arms)
     common = sorted(set(gold_arm) & set(gold_ref))
-    ceiling = _spearman([gold_ref[a] for a in common], [gold_arm[a] for a in common])
+    ceiling = spearman([gold_ref[a] for a in common], [gold_arm[a] for a in common], constant=0.0)
     print(
         f"\n  CEILING — the same arms scored against the same trusted reference, from two\n"
         f"  different sets of runs, agree at rho = {ceiling:+.3f}. No proxy can beat this."
@@ -226,7 +201,7 @@ def main() -> int:
         subject = sorted(set(silver) & set(gold_arm))
         if len(subject) < 3:
             continue
-        rho = _spearman([gold_arm[a] for a in subject], [silver[a] for a in subject])
+        rho = spearman([gold_arm[a] for a in subject], [silver[a] for a in subject], constant=0.0)
         g = {a: i for i, a in enumerate(sorted(subject, key=lambda x: -gold_arm[x]), 1)}
         s = {a: i for i, a in enumerate(sorted(subject, key=lambda x: -silver[x]), 1)}
         sibs = [a for a in subject if key and group[a] and group[a] == group[author]]

@@ -21,11 +21,11 @@ from types import SimpleNamespace
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import functools
-import importlib.util
 import operator
 
 import judge_score as js
 import judging
+from _common import load_module
 
 HERE = Path(__file__).resolve().parent
 ok: list = []
@@ -173,11 +173,7 @@ def summeval_adapter():
     """SummEval's own adapter, loaded only here: the package no longer depends on it, and this
     is where the package's copies are held to it."""
     path = HERE.parents[1] / "examples" / "summeval-judging" / "adapter.py"
-    spec = importlib.util.spec_from_file_location("summeval_judging_adapter", path)
-    mod = importlib.util.module_from_spec(spec)
-    sys.modules[spec.name] = mod
-    spec.loader.exec_module(mod)
-    return mod
+    return load_module(path, "summeval_judging_adapter")
 
 
 ad = summeval_adapter()

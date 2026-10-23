@@ -88,16 +88,12 @@ check(
 # hash was free to stop covering the NER parser -- which is exactly what happened when
 # round 2 moved the array extraction into `_balanced_arrays` and did not add it to the
 # digest. Gutting that function left the hash byte-identical. Found by external review.
-import importlib.util as _ilu  # noqa: E402
+from _common import load_module  # noqa: E402
 
 
 def _load(name, path):
-    spec = _ilu.spec_from_file_location(name, path)
-    mod = _ilu.module_from_spec(spec)
-    sys.modules[name] = mod
     try:
-        spec.loader.exec_module(mod)
-        return mod
+        return load_module(path, name)
     except Exception:  # noqa: BLE001 — an example whose deps are absent is a skip
         return None
 

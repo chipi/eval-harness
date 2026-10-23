@@ -26,7 +26,6 @@ half stays generic.
 from __future__ import annotations
 
 import argparse
-import importlib.util
 import json
 import os
 import statistics
@@ -43,12 +42,14 @@ from _common import (
     REFERENCES,
     ROOT,
     RUNS,
+    ModuleNotLoadable,
     build_info,
     die,
     env_float,
     how,
     load_dataset,
     load_goals,
+    load_module,
     now,
     read_json,
     resolve_adapter_path,
@@ -298,15 +299,10 @@ def load_adapter(
             break
     else:
         die(f"adapter not found: {spec}\n" + "".join(f"  looked in: {c}\n" for c in candidates))
-    module_spec = importlib.util.spec_from_file_location(f"eval_adapter_{path.stem}", path)
-    if module_spec is None or module_spec.loader is None:
+    try:
+        module = load_module(path, f"eval_adapter_{path.stem}")
+    except ModuleNotLoadable:
         die(f"adapter is not importable: {path}")
-    module = importlib.util.module_from_spec(module_spec)
-    # Register BEFORE exec: @dataclass resolves its own module via sys.modules[cls.__module__],
-    # and an unregistered module makes that None — the decorator then dies on a Result class
-    # that is perfectly valid. Any module-level dataclass in an adapter would hit this.
-    sys.modules[module_spec.name] = module
-    module_spec.loader.exec_module(module)
     for required in ("call_system", "score"):
         if not hasattr(module, required):
             die(f"adapter {spec} defines no {required}()")

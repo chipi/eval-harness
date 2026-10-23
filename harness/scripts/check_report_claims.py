@@ -21,6 +21,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import stats as _stats
 from _common import AmbiguousRuns, runs_by_arm
 
 if "--help" in sys.argv[1:] or "-h" in sys.argv[1:]:
@@ -1002,27 +1003,6 @@ if "qwen_m" in _DB and "anthropic_l" in _DB:
 import subprocess as _clsp  # noqa: E402
 
 
-def _cl_midranks(v):
-    o = sorted(range(len(v)), key=lambda i: -v[i])
-    r, i = [0.0] * len(v), 0
-    while i < len(o):
-        j = i
-        while j + 1 < len(o) and v[o[j + 1]] == v[o[i]]:
-            j += 1
-        for k in range(i, j + 1):
-            r[o[k]] = (i + j) / 2 + 1
-        i = j + 1
-    return r
-
-
-def _cl_pearson(a, b):
-    ma, mb = statistics.fmean(a), statistics.fmean(b)
-    return (
-        sum((x - ma) * (y - mb) for x, y in zip(a, b))
-        / (sum((x - ma) ** 2 for x in a) * sum((y - mb) ** 2 for y in b)) ** 0.5
-    )
-
-
 def _cl_pilot(runs, dev_file, drop=()):
     _ids = {
         (_i if isinstance(_i, str) else (_i.get("item_id") or _i.get("id")))
@@ -1033,7 +1013,7 @@ def _cl_pilot(runs, dev_file, drop=()):
     _all = [statistics.fmean(r["correct"] for r in runs[a].values()) for a in _arms]
     _top = max(_dev)
     _tied = [a for a, m in zip(_arms, _dev) if m == _top]
-    return _cl_pearson(_cl_midranks(_dev), _cl_midranks(_all)), _tied, len(_arms)
+    return _stats.spearman(_dev, _all), _tied, len(_arms)
 
 
 if "bert_mini" in _AG and "qwen_m" in _DB:
@@ -1625,22 +1605,9 @@ def _arm_means(scorer):
     }
 
 
-def _spearman(x, y):
-    def rk(v):
-        o = sorted(range(len(v)), key=lambda i: v[i])
-        r = [0.0] * len(v)
-        for k, i in enumerate(o):
-            r[i] = k
-        return r
-
-    rx, ry = rk(x), rk(y)
-    n = len(x)
-    return 1 - 6 * sum((p - q) ** 2 for p, q in zip(rx, ry)) / (n * (n * n - 1))
-
-
 _am1, _am2 = _arm_means("judge-summ-v1"), _arm_means("judge-summ-v2")
 _cids = sorted(_am1)
-_rho12 = _spearman([_am1[c] for c in _cids], [_am2[c] for c in _cids])
+_rho12 = _stats.spearman([_am1[c] for c in _cids], [_am2[c] for c in _cids])
 _cost_ratio = _JF2["billed_usd"] / _JF["billed_usd"]
 check(
     "summarisation, frontier judges: the two scorers' arm means at Spearman 0.85; 41x the cost (41.6, truncated)",
@@ -1839,27 +1806,6 @@ else:
 import math as _pqm  # noqa: E402
 
 
-def _pq_ranks(v):
-    o = sorted(range(len(v)), key=lambda i: v[i])
-    r = [0.0] * len(v)
-    i = 0
-    while i < len(o):
-        j = i
-        while j + 1 < len(o) and v[o[j + 1]] == v[o[i]]:
-            j += 1
-        for k in range(i, j + 1):
-            r[o[k]] = (i + j) / 2 + 1
-        i = j + 1
-    return r
-
-
-def _pq_pearson(x, y):
-    mx, my = statistics.fmean(x), statistics.fmean(y)
-    return sum((a - mx) * (b - my) for a, b in zip(x, y)) / _pqm.sqrt(
-        sum((a - mx) ** 2 for a in x) * sum((b - my) ** 2 for b in y)
-    )
-
-
 def _pq_sg(x, nd=2):
     return f"+{x:.{nd}f}" if x >= 0 else f"−{-x:.{nd}f}"
 
@@ -1869,15 +1815,15 @@ if len(_hq) == 24 and all(CNN.get(_a) for _a in _hq):
     _pn = sorted(_hq)
     _cov = [_hq[_a][0] for _a in _pn]
     _lcost = [_pqm.log10(CNN[_a]) for _a in _pn]
-    _r = _pq_pearson(_lcost, _cov)
+    _r = _stats.pearson(_lcost, _cov)
     _z, _se = _pqm.atanh(_r), 1 / _pqm.sqrt(len(_pn) - 3)
     _ci_lo, _ci_hi = _pqm.tanh(_z - 1.96 * _se), _pqm.tanh(_z + 1.96 * _se)
-    _sp = _pq_pearson(_pq_ranks(_lcost), _pq_ranks(_cov))
+    _rho_cov = _stats.spearman(_lcost, _cov)
     _slope = sum(
         (a - statistics.fmean(_lcost)) * (b - statistics.fmean(_cov)) for a, b in zip(_lcost, _cov)
     ) / sum((a - statistics.fmean(_lcost)) ** 2 for a in _lcost)
     _pct = 100 * _slope / statistics.fmean(_cov)
-    _stated = f"r = {_pq_sg(_r)} (95% CI {_pq_sg(_ci_lo)} to {_pq_sg(_ci_hi)}, Spearman {_pq_sg(_sp)}"
+    _stated = f"r = {_pq_sg(_r)} (95% CI {_pq_sg(_ci_lo)} to {_pq_sg(_ci_hi)}, Spearman {_pq_sg(_rho_cov)}"
     check(
         f"Summarisation price vs coverage: {_stated.replace('(', '').strip()}, "
         f"{_pq_sg(_pct, 1)}% per 10x, stated in the exec row and in section 4",
@@ -1942,8 +1888,8 @@ if len(_hq) == 24 and all(CNN.get(_a) for _a in _hq):
         _m20 = [statistics.fmean(_pi[_a][_i] for _i in _ids20) for _a in _pn]
         _m180 = [statistics.fmean(v for _i, v in _pi[_a].items() if _i not in _ids20) for _a in _pn]
         _m200 = [statistics.fmean(_pi[_a].values()) for _a in _pn]
-        _r180 = _pq_pearson(_pq_ranks(_m20), _pq_ranks(_m180))
-        _r200 = _pq_pearson(_pq_ranks(_m20), _pq_ranks(_m200))
+        _r180 = _stats.spearman(_m20, _m180)
+        _r200 = _stats.spearman(_m20, _m200)
         check(
             f"Summarisation pilot overlap: rho {_r180:.3f} on the 180 other articles, "
             f"{_r200:.3f} with the overlap",
@@ -2060,14 +2006,14 @@ else:
             _mac[_cid] = (statistics.fmean(_lat), statistics.median(_lat))
     if "cnn_bart_l_n200_v1" in _mac and "cnn_bart_l_n200_v1" in _medians:
         _ratio = _mac["cnn_bart_l_n200_v1"][1] / _medians["cnn_bart_l_n200_v1"]
-        _r = f"{_ratio:.1f}"
+        _ratio_s = f"{_ratio:.1f}"
         for _rep in ("REPORT_SUMMARIZATION.md", "REPORT_SYNTHESIS.md"):
             _t = (ROOT / "research" / _rep).read_text()
             check(
-                f"cross-machine: {_rep} says the Linux box ran bart_l {_r}x faster",
-                re.search(rf"{re.escape(_r)}\u00d7 (?:\*)?faster", _t) is not None,
+                f"cross-machine: {_rep} says the Linux box ran bart_l {_ratio_s}x faster",
+                re.search(rf"{re.escape(_ratio_s)}\u00d7 (?:\*)?faster", _t) is not None,
                 f"median/median is {_mac['cnn_bart_l_n200_v1'][1]:.1f} / "
-                f"{_medians['cnn_bart_l_n200_v1']:.1f} = {_r}x; the report says "
+                f"{_medians['cnn_bart_l_n200_v1']:.1f} = {_ratio_s}x; the report says "
                 f"something else",
             )
     if "cnn_bart_s_n200_v1" in _mac:

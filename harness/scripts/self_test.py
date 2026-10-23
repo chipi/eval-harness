@@ -2368,7 +2368,8 @@ def test_spearman_is_tie_correct() -> None:
     examples, where it did not approximate rho but computed a different quantity.
     """
     sys.path.insert(0, str(HERE))
-    from rank_stability import ranks_on, spearman  # noqa: PLC0415
+    from rank_stability import ranks_on  # noqa: PLC0415
+    from stats import spearman  # noqa: PLC0415
 
     def shortcut(x, y):
         n = len(x)

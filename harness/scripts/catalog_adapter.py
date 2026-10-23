@@ -35,7 +35,7 @@ from typing import Protocol
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-from _common import DATA, ROOT, is_descriptive, lower_is_better  # noqa: E402
+from _common import DATA, ROOT, ModuleNotLoadable, is_descriptive, load_module, lower_is_better  # noqa: E402  # noqa: E402
 
 
 def _memo(fn):
@@ -419,12 +419,10 @@ def load_adapter(spec: str | None = None) -> Adapter:
     if target.endswith(".py"):
         path = (ROOT / target).resolve()
         sys.path.insert(0, str(ROOT))
-        mod_spec = importlib.util.spec_from_file_location(path.stem, path)
-        if mod_spec is None or mod_spec.loader is None:
-            raise SystemExit(f"catalog adapter: cannot load {path}")
-        mod = importlib.util.module_from_spec(mod_spec)
-        sys.modules[path.stem] = mod
-        mod_spec.loader.exec_module(mod)
+        try:
+            mod = load_module(path, path.stem)
+        except ModuleNotLoadable:
+            raise SystemExit(f"catalog adapter: cannot load {path}") from None
     else:
         sys.path.insert(0, str(ROOT))
         mod = importlib.import_module(target)

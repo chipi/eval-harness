@@ -41,7 +41,15 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-from _common import REFERENCES, RUNS, die, item_path, read_json, resolve_adapter_path, warn_on_ambiguous_runs  # noqa: E402
+from _common import (  # noqa: E402
+    REFERENCES,
+    RUNS,
+    adapter_module,
+    die,
+    item_path,
+    read_json,
+    warn_on_ambiguous_runs,
+)
 
 #: Predictions the adapter could not parse into a label are counted, never dropped. An arm
 #: that returns prose on a fifth of the items has a real problem, and silently excluding
@@ -65,22 +73,8 @@ def _label_parser(adapter_spec: str | None):
     `_meta.predicted`. Degrading to the old behaviour is correct; silently reporting
     two different parsers in one table was not.
     """
-    cand = resolve_adapter_path(adapter_spec)
-    if cand is None:
-        return None
-    try:
-        import importlib.util  # noqa: PLC0415
-
-        spec = importlib.util.spec_from_file_location(f"clsrep_{cand.stem}", cand)
-        if spec is None or spec.loader is None:
-            raise ImportError(f"cannot load {cand}")
-        mod = importlib.util.module_from_spec(spec)
-        sys.modules[spec.name] = mod
-        spec.loader.exec_module(mod)
-        task = getattr(mod, "TASK", None)
-        return getattr(task, "parse_label", None) if task is not None else None
-    except Exception:  # noqa: BLE001 — an un-importable adapter is a fallback, not a crash
-        return None
+    task = getattr(adapter_module(adapter_spec), "TASK", None)
+    return getattr(task, "parse_label", None) if task is not None else None
 
 
 def predictions(dataset_id: str, match: str | None) -> dict:

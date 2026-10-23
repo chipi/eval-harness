@@ -41,6 +41,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+import stats as _stats
+
 DIMS = ("coherence", "consistency", "fluency", "relevance")
 OPENROUTER = "https://openrouter.ai/api/v1"
 FAKE = "fake"
@@ -191,33 +193,10 @@ def parse_block(
 
 
 # ── rank statistics ──────────────────────────────────────────────────────────
-def _ranks(x: Sequence[float]) -> list[float]:
-    order = sorted(range(len(x)), key=lambda i: x[i])
-    r = [0.0] * len(x)
-    i = 0
-    while i < len(order):
-        j = i
-        while j + 1 < len(order) and x[order[j + 1]] == x[order[i]]:
-            j += 1
-        for k in range(i, j + 1):
-            r[order[k]] = (i + j) / 2 + 1
-        i = j + 1
-    return r
-
-
-def _pearson(a: Sequence[float], b: Sequence[float]) -> float:
-    n = len(a)
-    ma, mb = sum(a) / n, sum(b) / n
-    va = sum((x - ma) ** 2 for x in a)
-    vb = sum((y - mb) ** 2 for y in b)
-    if va == 0 or vb == 0:
-        return 0.0
-    return sum((x - ma) * (y - mb) for x, y in zip(a, b)) / (va * vb) ** 0.5
-
-
 def spearman(a: Sequence[float], b: Sequence[float]) -> float:
-    """Spearman's rho with average ranks for ties; 0 when either side is constant."""
-    return _pearson(_ranks(a), _ranks(b))
+    """Spearman's rho (stats.spearman); 0.0 when either side is constant, as every judge report
+    has stated it."""
+    return _stats.spearman(a, b, constant=0.0)
 
 
 def kendall_tau_b(a: list[float], b: list[float]) -> float:

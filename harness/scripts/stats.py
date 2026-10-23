@@ -1,9 +1,11 @@
 """The harness's paired test, in one place: sign-flip on per-item deltas, Holm across a family.
+And its rank correlation: Spearman's rho, with ties.
 
-    from stats import sign_flip_p, holm, exact_ci, compare
+    from stats import sign_flip_p, holm, exact_ci, compare, spearman
 
 Used by pair_test.py, family_test.py and the catalog's run inspector, so the command line
-and the inspector cannot disagree (ADR-0002).
+and the inspector cannot disagree (ADR-0002). `spearman` is the one copy rank_stability,
+summeval_analysis, silver_calibrate and the judge scorer (judging.py) use.
 
 EXACT UP TO 30 ITEMS. The two-sided p is counted over all 2^n sign patterns (meet in the
 middle: two halves of at most 2^15 sums each, so it is instant). Before 0.4.0 the harness
@@ -27,6 +29,46 @@ SEED = 20260926
 ALPHA = 0.05
 EXACT_UP_TO = 30
 _EPS = 1e-12
+
+
+def ranks(xs) -> list:
+    """1-based ranks, ascending, tied values sharing the average of the ranks they span
+    (midranks). Ranking a list of midranks gives the same list back."""
+    order = sorted(range(len(xs)), key=lambda i: xs[i])
+    out = [0.0] * len(xs)
+    i = 0
+    while i < len(order):
+        j = i
+        while j + 1 < len(order) and xs[order[j + 1]] == xs[order[i]]:
+            j += 1
+        for k in range(i, j + 1):
+            out[order[k]] = (i + j) / 2 + 1
+        i = j + 1
+    return out
+
+
+def pearson(xs, ys, constant: float = math.nan) -> float:
+    """Pearson's r. When either side has no spread (or there are fewer than two values) there is
+    nothing to correlate and `constant` is returned: NaN by default, because 0.0 reads as "no
+    agreement" when nothing was asked. A caller that reports 0.0 there says so explicitly."""
+    if len(xs) != len(ys):
+        raise ValueError(f"correlation: {len(xs)} values against {len(ys)}")
+    if len(xs) < 2:
+        return constant
+    mx, my = statistics.fmean(xs), statistics.fmean(ys)
+    sxx = sum((a - mx) ** 2 for a in xs)
+    syy = sum((b - my) ** 2 for b in ys)
+    if sxx <= 0 or syy <= 0:
+        return constant
+    return sum((a - mx) * (b - my) for a, b in zip(xs, ys)) / math.sqrt(sxx * syy)
+
+
+def spearman(xs, ys, constant: float = math.nan) -> float:
+    """Spearman's rho: Pearson's r on the two lists' midranks, which is exact with ties (the
+    `1 - 6*sum(d^2)/(n(n^2-1))` shortcut is not). `constant` as for `pearson`."""
+    if len(xs) != len(ys):
+        raise ValueError(f"correlation: {len(xs)} values against {len(ys)}")
+    return pearson(ranks(xs), ranks(ys), constant)
 
 
 def _signed_sums(xs: list) -> list:

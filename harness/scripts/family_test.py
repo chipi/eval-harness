@@ -48,7 +48,7 @@ sys.path.insert(0, str(HERE))
 
 from _common import ROOT, RUNS, dataset_item_ids, default_metric, read_json, warn_on_ambiguous_runs  # noqa: E402
 from pair_test import per_item  # noqa: E402 -- one implementation of "score per item"
-from stats import sign_flip_p  # noqa: E402 -- one implementation of the paired test
+from stats import holm, sign_flip_p  # noqa: E402 -- one implementation of the paired test
 
 
 def _opponents(runs_dir: Path, dataset_id: str, against: str, exclude: str) -> list[str]:
@@ -195,12 +195,9 @@ def _run(args) -> int:
     # dropping it turns Holm into a per-test comparison with no family-wise guarantee.
     m = len(rows)
     rows.sort(key=lambda r: r["p"])
-    still_rejecting = True
-    for i, r in enumerate(rows):
-        r["thresh"] = args.alpha / (m - i)
-        if still_rejecting and r["p"] >= r["thresh"]:
-            still_rejecting = False
-        r["sep"] = still_rejecting
+    verdicts = holm({r["opp"]: r["p"] for r in rows}, alpha=args.alpha)
+    for r in rows:
+        r["thresh"], r["sep"] = verdicts[r["opp"]]
 
     n_items = rows[0]["n"]
     stratum = f"{n_items} items"
