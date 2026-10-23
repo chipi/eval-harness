@@ -1,12 +1,8 @@
 # Eval harness — the verbs. `make help` is the entry point.
 #
-# Drop this directory into a project, point `data/sources/` at your inputs, edit
-# ONE function in scripts/adapter.py, and the loop below works.
-#
-# Target names deliberately mirror the conventions of the project this pattern
-# came from, so muscle memory transfers: dataset-create, dataset-materialize,
-# experiment-dry-run, experiment-run, run-compare, run-promote, runs-list,
-# baselines-list, validate, check, ci.
+# Point `data/sources/` at your inputs, write adapter.py beside this Makefile (start from
+# a copy of scripts/adapter.py; call_system() is the one function to change), and the
+# loop below works.
 
 # Prefer the venv `make install` creates, so `make install` is not immediately followed by
 # having to pass PYTHON=.venv/bin/python to every other target. Overridable as before.
@@ -19,12 +15,13 @@ OUT ?= data/runs-rescored
 NOISE ?=
 TIER ?= silver
 
-.PHONY: help demo env-check install venv-init \
+.PHONY: help demo init env-check install venv-init catalog catalog-serve \
         dataset-create dataset-materialize reference-create \
         holdout pair-test rank-stability \
         experiment-dry-run experiment-run sweep \
         runs-list baselines-list run-compare leaderboard run-promote \
-        validate judge judge-score check ci test smoke-fixture cost-report clean clean-cache
+        validate judge judge-score check guide-check browser-install browser-check ci test smoke-fixture cost-report clean clean-cache \
+        bootstrap-test family-test import-run rescore silver-calibrate site site-check docs
 
 # ── getting started ─────────────────────────────────────────────────────────
 help:
@@ -40,7 +37,7 @@ help:
 	@echo "  2. cp .env.example .env       and fill in the keys you need"
 	@echo "  3. make dataset-create  DATASET_ID=my_v1"
 	@echo "  4. make dataset-materialize DATASET_ID=my_v1"
-	@echo "  5. edit scripts/adapter.py    call_system() -> YOUR system"
+	@echo "  5. write adapter.py           call_system() -> YOUR system (copy scripts/adapter.py)"
 	@echo "  6. make reference-create DATASET_ID=my_v1 CONFIG=<trusted model>"
 	@echo ""
 	@echo "MEASURE  (dry-run first — it costs nothing and tells you what the sweep will)"
@@ -66,8 +63,8 @@ help:
 	@echo "ASK ONE QUESTION  (free — no API calls)"
 	@echo "  make pair-test DATASET_ID=my_v1 A=<arm> B=<arm> [FAMILY=n]"
 	@echo "  make family-test DATASET_ID=my_v1 A=<arm> AGAINST=<substring> [ITEMS=f]"
-	@echo "      one arm vs a family named in advance; real Holm step-down"
-	@echo "      one pair you named BEFORE reading the table, sign-flip permutation"
+	@echo "      the pair: one pair you named BEFORE reading the table, sign-flip permutation"
+	@echo "      the family: one arm vs a family named in advance; real Holm step-down"
 	@echo "  make rank-stability DATASET_ID=my_200"
 	@echo "      how many items before the ordering stops moving? measured, not assumed"
 	@echo "  make holdout DATASET_ID=my_200 EXCLUDE=my_20"
@@ -80,12 +77,13 @@ help:
 	@echo ""
 	@echo "INSPECT / GATE"
 	@echo "  make runs-list | baselines-list | validate | judge (the panel)"
+	@echo "  make catalog | catalog-serve   pages over the runs; the run inspector on 127.0.0.1"
 	@echo ""
 	@echo "SCOPING  (a dataset accumulates arms across config versions)"
 	@echo "  make leaderboard DATASET_ID=my_v1 MATCH=_v2   only v2 arms"
 	@echo "  EVAL_RUNS_DIR=<dir>                           run/read elsewhere, e.g. a"
 	@echo "                                                smoke pass or a rescore"
-	@echo "  make check                    validate + test"
+	@echo "  make check                    validate + test + guide-check"
 	@echo ""
 	@echo "Read docs/INTEGRATION.md first, then docs/RUNBOOK.md."
 
@@ -93,7 +91,22 @@ install venv-init:
 	@test -d $(VENV) || $(PYTHON) -m venv $(VENV)
 	$(VENV)/bin/pip install -q --upgrade pip
 	$(VENV)/bin/pip install -q -r requirements.txt
-	@echo "$(VENV) ready. Use it with:  make <target> PYTHON=$(VENV)/bin/python"
+	@echo "$(VENV) ready; every target uses it."
+
+# The inspector's browser test: Playwright and its Chromium, in this checkout's venv. A
+# development extra, like the docs build: `make ci` runs without it, and CI runs
+# browser-check as its own job.
+browser-install:
+	@test -d $(VENV) || $(PYTHON) -m venv $(VENV)
+	$(VENV)/bin/pip install -q -r requirements-browser.txt
+	$(VENV)/bin/python -m playwright install chromium $(ARGS)
+
+browser-check:
+	$(PYTHON) tests/test_inspector_browser.py
+
+# A new project beside this checkout: make init DIR=../my-evals ARGS=--tutorial
+init:
+	$(PYTHON) scripts/init_project.py $(DIR) $(ARGS)
 
 env-check:
 	@$(PYTHON) scripts/env_check.py
@@ -241,6 +254,15 @@ run-promote:
 validate:
 	$(PYTHON) scripts/validate_tree.py
 
+# THE CATALOG AND THE RUN INSPECTOR (ADR-0002): static pages over the runs, by dataset, into
+# .build/catalog/ (counts and means only, never an item's text); then a server on 127.0.0.1
+# that tests any arms on one dataset against a baseline with the same paired test as pair-test.
+catalog:
+	$(PYTHON) scripts/catalog_build.py $(ARGS)
+
+catalog-serve: catalog
+	$(PYTHON) scripts/catalog_serve.py $(ARGS)
+
 # MATERIALIZE THE DEMO DATASET FIRST, or eleven assertions silently skip.
 #
 # `data/materialized/` is regenerated rather than committed, so in a FRESH CLONE
@@ -260,11 +282,16 @@ smoke-fixture:
 	  $(PYTHON) scripts/materialize.py --dataset-id cnn_dailymail_200 >/dev/null 2>&1 || true
 
 test: smoke-fixture
-	$(PYTHON) scripts/self_test.py
+	$(PYTHON) tests/self_test.py
 
-check: validate test
+# docs/GUIDE.md run in a fresh project, every quoted output compared: the onboarding path
+# a new reader follows cannot drift from what the commands print.
+guide-check:
+	$(PYTHON) tests/check_guide.py
+
+check: validate test guide-check
 	@echo ""
-	@echo "check: tree valid, self-tests pass"
+	@echo "check: tree valid, self-tests pass, the GUIDE runs as written"
 
 # THE SITE IS GENERATED FROM THE RUNS. A stale site/public -- a run added, a report
 # figure changed, the build script edited without rebuilding -- fails here, so the public
@@ -275,7 +302,7 @@ site:
 site-check:
 	$(PYTHON) ../site/build.py --check
 
-# The documentation site (published at /docs/ beside the findings site). Needs
+# The documentation site (published to GitHub Pages, docs.evals.humancopilot.eu). Needs
 # `pip install -r ../site/requirements-docs.txt`; not part of `make ci`, which must run
 # without it, but the Pages workflow builds it in strict mode on every deploy.
 docs:
@@ -291,12 +318,12 @@ ci: check site-check
 # panel below.
 judge-score:
 	@test -n "$(SCORER)" || { echo 'SCORER=<id in data/scorers/> is required'; exit 1; }
-	$(PYTHON) scripts/judge_score.py --dataset-id $(if $(EXP),$(EXP),$(DATASET_ID)) --scorer $(SCORER) $(ARGS)
+	$(PYTHON) scripts/judge_score.py --dataset-id $(DATASET_ID) --scorer $(SCORER) $(ARGS)
 
 # The judge panel: promote -> judge -> aggregate -> report over candidate runs.
 # Keyless by default (FakeJudge).
 judge:
-	$(PYTHON) runner.py --config config.example.yaml --use-fake-judge $(ARGS)
+	$(PYTHON) scripts/judge_panel.py --config config.example.yaml --use-fake-judge $(ARGS)
 
 # ── housekeeping ────────────────────────────────────────────────────────────
 clean:

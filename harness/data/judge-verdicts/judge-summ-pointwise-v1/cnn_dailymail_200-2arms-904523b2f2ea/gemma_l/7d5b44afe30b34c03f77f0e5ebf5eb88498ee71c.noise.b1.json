@@ -10,6 +10,8 @@
   "latency_ms": 4373.877,
   "n": 1,
   "output": "```json\n{\"coherence\": [5], \"consistency\": [5], \"fluency\": [5], \"relevance\": [4]}\n```",
+  "output_sha256": "7c4550e07860a6fc3dc3df6c62b7ca9e2ef3fb3b3889c0330e19a6266ee8bf7e",
+  "output_withheld": false,
   "pass": "noise",
   "prompt_sha256": "ae0ec497c6adc8b921826b6e4ab957c7ba2ad29b4f1d93da349e7d2ab7232ec4",
   "provider": "Parasail",

@@ -10,6 +10,8 @@
   "latency_ms": 3710.319,
   "n": 14,
   "output": "{\"coherence\": [5, 5, 5, 5, 2, 5, 4, 2, 5, 4, 2, 4, 5, 5], \"consistency\": [5, 5, 5, 5, 1, 5, 5, 2, 5, 3, 2, 5, 5, 5], \"fluency\": [5, 5, 5, 5, 3, 5, 4, 4, 5, 5, 3, 5, 5, 5], \"relevance\": [5, 4, 5, 5, 1, 4, 4, 2, 5, 3, 2, 4, 4, 5]}",
+  "output_sha256": "4e07ffdfb34d2ff224bd3b9cf12c481ebbe9f6a7d67eee47329cd6a3e4d56f88",
+  "output_withheld": false,
   "pass": "primary",
   "prompt_sha256": "d65773cf1848f552d2e7c3dd2b032a9dfe86a3884f17624b160f772d424d058f",
   "provider": "Claude Platform on AWS",

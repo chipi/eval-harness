@@ -2,7 +2,7 @@
 
 The changelog is the one record of what each release shipped. The GitHub Release for a tag
 takes its notes from the same section (harness-release.yml), the docs site shows the file
-itself, and this page shows it on the findings site, so the three cannot disagree.
+itself, and this page shows it on the harness site, so the three cannot disagree.
 
 Only the Markdown the changelog uses is rendered: `##`/`###` headings, `- ` bullets (wrapped
 lines continue them), paragraphs, **bold**, `code` and [links](url). Anything else stays as
@@ -30,6 +30,7 @@ def _inline(H, text: str, blob: str) -> str:
             # Relative links in the changelog are relative to harness/; point them at GitHub.
             url = f"{blob}/harness/{url}" if not url.startswith("../") else f"{blob}/{url[3:]}"
         return f'<a href="{url}">{label}</a>'
+
     return re.sub(r"\[([^\]]+)\]\(([^)\s]+)\)", link, out)
 
 
@@ -42,9 +43,15 @@ def releases(text: str) -> list:
         if line.startswith("## ") and not m:
             # A release written another way ('-' for the em dash, 'v0.3.0') would otherwise be
             # read into the release above it.
-            raise SystemExit(f"harness/CHANGELOG.md: {line!r} is not '## X.Y.Z', '## X.Y.Z — unreleased' or '## X.Y.Z — YYYY-MM-DD'")
+            raise SystemExit(
+                f"harness/CHANGELOG.md: {line!r} is not '## X.Y.Z', '## X.Y.Z — unreleased' or '## X.Y.Z — YYYY-MM-DD'"
+            )
         if m:
-            cur = {"version": m.group(1), "date": None if m.group(2) in (None, "unreleased") else m.group(2), "blocks": []}
+            cur = {
+                "version": m.group(1),
+                "date": None if m.group(2) in (None, "unreleased") else m.group(2),
+                "blocks": [],
+            }
             out.append(cur)
             para, item = [], None
             continue
@@ -90,18 +97,25 @@ def release_html(H, rel: dict, blob: str, repo: str) -> str:
         parts.append("</ul>")
     v = rel["version"]
     date = rel["date"] or "unreleased"
-    tag = (f'<p class="note"><a href="{repo}/releases/tag/v{v}">GitHub Release v{v} ↗</a></p>'
-           if rel["date"] else "")
-    return (f'<article class="release" id="v{v}" style="margin-bottom:72px"><div class="eyebrow"><span class="num">release</span>{H.e(date)}</div><h2>v{v}</h2>'
-            f'<div class="prose">{"".join(parts)}</div>{tag}</article>')
+    tag = (
+        f'<p class="note"><a href="{repo}/releases/tag/v{v}">GitHub Release v{v} ↗</a></p>'
+        if rel["date"]
+        else ""
+    )
+    return (
+        f'<article class="release" id="v{v}" style="margin-bottom:72px"><div class="eyebrow"><span class="num">release</span>{H.e(date)}</div><h2>v{v}</h2>'
+        f'<div class="prose">{"".join(parts)}</div>{tag}</article>'
+    )
 
 
 def releases_page(H) -> str:
     rels = releases(CHANGELOG.read_text(encoding="utf-8"))
     if not rels:
         raise SystemExit("harness/CHANGELOG.md has no '## X.Y.Z — date' section")
-    toc = "".join(f'<a href="#v{r["version"]}"><span>v{r["version"]}</span>{H.e(r["date"] or "unreleased")}</a>'
-                  for r in rels)
+    toc = "".join(
+        f'<a href="#v{r["version"]}"><span>v{r["version"]}</span>{H.e(r["date"] or "unreleased")}</a>'
+        for r in rels
+    )
     body = f"""
 <section class="hero"><div class="wrap">
   <div class="kicker"><b>Release notes</b> · the harness, version by version</div>
@@ -112,6 +126,10 @@ def releases_page(H) -> str:
 </div></section>
 <section class="block"><div class="wrap releases">{"".join(release_html(H, r, H.BLOB, H.REPO) for r in rels)}</div></section>
 {H.author("releases")}"""
-    return H.page("Release notes — eval-harness",
-                  "What each release of the harness shipped: new capabilities, changes that can move "
-                  "a result, and how to upgrade.", body, here="releases")
+    return H.page(
+        "Release notes — eval-harness",
+        "What each release of the harness shipped: new capabilities, changes that can move "
+        "a result, and how to upgrade.",
+        body,
+        here="releases",
+    )

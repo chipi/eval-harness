@@ -13,7 +13,7 @@ Pin a release tag:
 
 ```toml
 # pyproject.toml
-"evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.2.0#subdirectory=harness",
+"evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.4.0#subdirectory=harness",
 ```
 
 - **Pin a tag, never a branch.** A branch moves; a run recorded against it cannot be
@@ -37,15 +37,15 @@ Pin a release tag:
    Anything that can move a number goes under **Changed**, in words a consumer can act on.
    Open it with a short paragraph a reader can take in at once: what the release lets you do,
    and whether upgrading changes any result. The section is the release notes in three places:
-   the GitHub Release (the workflow copies it), the docs site and the findings site's release
+   the GitHub Release (the workflow copies it), the docs site and the harness site's release
    notes page. Use absolute links: the GitHub Release cannot resolve relative ones.
 3. **Rebuild the validation reports that CI cannot.** The Goyal et al. annotations and the
    Zhang et al. ratings are downloaded at run time and never committed, so CI checks each
    committed `data/judge-validation/<scorer>/<set>/report.json` only against its records (their
    hash, count, bill, unparsed and withheld counts) and the scorer's hash, not its figures.
    Before a release, with the human data downloaded (the scripts fetch it), run
-   `python scripts/validate_judge_goyal.py --scorer <scorer> --no-calls` and
-   `python scripts/validate_judge_zhang.py --scorer <scorer> --no-calls` for each scorer that
+   `python tools/validate_judge_goyal.py --scorer <scorer> --no-calls` and
+   `python tools/validate_judge_zhang.py --scorer <scorer> --no-calls` for each scorer that
    has the records; they recompute every figure for $0. Commit any change, and run `make ci`,
    which then recomputes the report's claims from the human data too.
 4. **Merge to `main`.** The `harness-package` workflow builds the package, installs it in

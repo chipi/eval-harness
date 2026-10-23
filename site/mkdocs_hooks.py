@@ -29,17 +29,24 @@ LINK = re.compile(r"(\]\()([^)\s]+?)(\))")
 
 def on_config(config):
     """The footer names the harness version (from _version.py) and the build, which the
-    deploy (pages.yml) replaces with the commit being served, as on the findings site."""
-    v = re.search(r'__version__ = "([^"]+)"',
-                  (ROOT / "harness" / "scripts" / "_version.py").read_text()).group(1)
+    deploy (pages.yml) replaces with the commit being served, as on the harness site."""
+    v = re.search(
+        r'__version__ = "([^"]+)"', (ROOT / "harness" / "scripts" / "_version.py").read_text()
+    ).group(1)
     config["copyright"] = f"{config['copyright']} · v{v} · build: local"
     return config
 
 
 def on_files(files, config):
     for dest, src in EXTRA.items():
-        files.append(File(dest, src_dir=str(src.parent.parent), dest_dir=config["site_dir"],
-                          use_directory_urls=config["use_directory_urls"]))
+        files.append(
+            File(
+                dest,
+                src_dir=str(src.parent.parent),
+                dest_dir=config["site_dir"],
+                use_directory_urls=config["use_directory_urls"],
+            )
+        )
         # File() derives src_uri from src_dir + path; point it at the real file.
         f = files.get_file_from_path(dest)
         f.abs_src_path = str(src)
@@ -81,9 +88,12 @@ def on_post_page(output, page, config):
     """3. The link-preview card, and the Umami tag from site/analytics.json when configured."""
     import json  # noqa: PLC0415
     from html import escape  # noqa: PLC0415
-    # The findings site's link-preview card, so a shared docs link is not a bare URL.
-    tag = ('<meta property="og:image" content="https://evals.humancopilot.eu/assets/social.png">'
-           '<meta name="twitter:card" content="summary_large_image">')
+
+    # The harness site's link-preview card, so a shared docs link is not a bare URL.
+    tag = (
+        '<meta property="og:image" content="https://evals.humancopilot.eu/assets/social.png">'
+        '<meta name="twitter:card" content="summary_large_image">'
+    )
     cfg = json.loads((ROOT / "site" / "analytics.json").read_text())
     if cfg.get("umami_src") and cfg.get("website_id"):
         domains = f' data-domains="{escape(cfg["domains"])}"' if cfg.get("domains") else ""

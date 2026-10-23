@@ -6,8 +6,22 @@
     "source": "git"
   },
   "config_id": "fn_mistral_m_n200_v1",
-  "created_at": "2026-09-28T13:29:36Z",
+  "created_at": "2026-10-01T16:13:59Z",
   "dataset_id": "few_nerd_280",
+  "derived": {
+    "at": "2026-10-01T16:13:59Z",
+    "from": "fn_mistral_m_n200_v1_20260928T132552Z",
+    "kind": "rescore",
+    "with": {
+      "adapter": "examples/ner-few-nerd/adapter.py",
+      "scorer": {
+        "normalizer_sha256": "10c4df840844e0c3e74965e43ae9cd4d91e8922d594abeff7ec23dfc19094cf2",
+        "parser_sha256": "6eafd853f71aa3c730b434e2eeb48737efe4827572c66d2dc1c6298a1991dd1d",
+        "scorer_sha256": "a19228c0272611ff2a3a4881002d2d2df08ca1cd03b0adbedbc4cbf48c51d83e"
+      },
+      "sha256": "6124a5a879fdbbe0adea4b2819864f1be8acb5f6902a60ae5e8ca8a4b59b1e3c"
+    }
+  },
   "fingerprint": {
     "arm": {
       "config_id": "fn_mistral_m_n200_v1",
@@ -31,9 +45,11 @@
       "items_sha256": "95a1b962707368cce0895143e73b63cd9884425502997ee1a93df99f97e2cad7",
       "n_items": 280,
       "reference_id": "gold/few_nerd_280",
-      "reference_tier": "gold"
+      "reference_tier": "gold",
+      "references_sha256": "7cdd09fe0084ba29c616ab65fbfa08bf149e9006819641e9e91fe502ebe15a2b"
     },
-    "hash": "420a28088e3cc24368ecbf6ab2c3b3bbce919288b8ed63e4de5c77b563f8e125",
+    "hash": null,
+    "hash_invalid_because": "scores were recomputed by a different scorer than the one this fingerprint was built from; see derived.with",
     "host": {
       "cpu_count": 12,
       "label": "mac-dev",
@@ -45,7 +61,7 @@
     "instrument": {
       "adapter": {
         "id": "examples/ner-few-nerd/adapter.py",
-        "sha256": "f560341e6226a8673302db46341785728a443ce1c903ebfa18f5d9221fb849cf"
+        "sha256": "6124a5a879fdbbe0adea4b2819864f1be8acb5f6902a60ae5e8ca8a4b59b1e3c"
       },
       "harness": {
         "commit": "146f7b11082e",
@@ -104,6 +120,7 @@
     "precision": "quality",
     "reasoning_tokens": "descriptive",
     "recall": "quality",
+    "resumed": "descriptive",
     "tp": "descriptive",
     "truncated": "descriptive",
     "type_penalty": "descriptive",
@@ -134,29 +151,30 @@
   "reference_tier": "gold",
   "run_id": "fn_mistral_m_n200_v1_20260928T132552Z",
   "scores": {
-    "cost_usd": 0.000165,
-    "f1": 0.591435,
-    "fn": 0.896429,
-    "fp": 1.389286,
+    "cost_usd": 0.0001650329,
+    "f1": 0.591435407,
+    "fn": 0.8964285714,
+    "fp": 1.3892857143,
     "latency_ms": 793.6648,
-    "n_gold": 2.735714,
-    "n_predicted": 3.228571,
+    "n_gold": 2.7357142857,
+    "n_predicted": 3.2285714286,
     "parsed": 1.0,
-    "precision": 0.561287,
+    "precision": 0.5612871008,
     "reasoning_tokens": 0.0,
-    "recall": 0.655246,
-    "tokens_in": 126.153571,
-    "tokens_out": 57.285714,
+    "recall": 0.65524589,
+    "tokens_in": 126.1535714286,
+    "tokens_out": 57.2857142857,
     "total_cost_usd": 0.0462092,
     "total_tokens_in": 35323.0,
     "total_tokens_out": 16040.0,
-    "tp": 1.839286,
+    "tp": 1.8392857143,
     "truncated": 0.0,
-    "type_penalty": 0.095572,
-    "untyped_f1": 0.687007,
-    "untyped_fn": 0.589286,
-    "untyped_fp": 1.082143,
-    "untyped_tp": 2.146429
+    "type_penalty": 0.0955718873,
+    "untyped_f1": 0.6870072943,
+    "untyped_fn": 0.5892857143,
+    "untyped_fp": 1.0821428571,
+    "untyped_tp": 2.1464285714
   },
+  "source_created_at": "2026-09-28T13:29:36Z",
   "warmup_ms": 1412.364
 }

@@ -29,15 +29,14 @@ from __future__ import annotations
 
 import argparse
 import shutil
-import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _common import (  # noqa: E402
+from _common import (
     MATERIALIZED,
     REFERENCES,
     ROOT,
     die,
+    how,
     load_dataset,
     now,
     write_json,
@@ -58,8 +57,7 @@ except ImportError:  # pragma: no cover
 # against a 37-word human reference — which was read as "Opus ignores instructions" when it
 # had simply never been given one. A reference is the thing everything else is scored
 # against; authoring it with different code than the arms run is not a small inconsistency.
-from experiment_run import load_adapter  # noqa: E402
-
+from _adapter import load_adapter
 
 
 def _repo_relative(path: object) -> str:
@@ -86,6 +84,7 @@ def _identity(hook: object, params: dict) -> object:
 
 
 def main() -> int:
+    """Create a reference (gold or silver) for a dataset."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", required=True)
     ap.add_argument("--config", required=True, type=Path, help="which model authors the reference")
@@ -103,14 +102,18 @@ def main() -> int:
     cfg = yaml.safe_load(args.config.read_text(encoding="utf-8")) or {}
     params = dict(cfg.get("params") or {})
     # Same adapter the arms would run, resolved the same way, relative to the same config.
-    call_system, _score, adapter_id, _path, warmup, fp_hook = load_adapter(
-        cfg.get("adapter"), args.config
-    )
+    call_system, _score, adapter_id, _path, warmup, fp_hook = load_adapter(cfg.get("adapter"), args.config)
     if warmup is not None:
         warmup(params)
     mat = MATERIALIZED / args.dataset_id
     if not mat.is_dir():
-        die(f"materialize first:  make dataset-materialize DATASET_ID={args.dataset_id}")
+        die(
+            "materialize first:  "
+            + how(
+                f"evh dataset-materialize --dataset-id {args.dataset_id}",
+                f"make dataset-materialize DATASET_ID={args.dataset_id}",
+            )
+        )
 
     out_dir = REFERENCES / args.tier / args.dataset_id
     if out_dir.exists() and not args.force:
@@ -143,8 +146,10 @@ def main() -> int:
         if res.cost_usd is not None:
             total_cost += res.cost_usd
             n_priced += 1
-        print(f"  [{i}/{len(items)}] {item['item_id']}  {len(res.output.split())} words"
-              + (f"  ${res.cost_usd:.5f}" if res.cost_usd is not None else ""))
+        print(
+            f"  [{i}/{len(items)}] {item['item_id']}  {len(res.output.split())} words"
+            + (f"  ${res.cost_usd:.5f}" if res.cost_usd is not None else "")
+        )
 
     write_json(
         out_dir / "manifest.json",
@@ -165,8 +170,14 @@ def main() -> int:
             "system_under_test": _identity(fp_hook, params),
             "params": {
                 k: params.get(k)
-                for k in ("temperature", "max_tokens", "reasoning", "reasoning_effort",
-                          "prompt_file", "provider")
+                for k in (
+                    "temperature",
+                    "max_tokens",
+                    "reasoning",
+                    "reasoning_effort",
+                    "prompt_file",
+                    "provider",
+                )
                 if params.get(k) is not None
             },
             "created_at": now(),
@@ -188,8 +199,11 @@ def main() -> int:
     out_dir.rename(final_dir)
     out_dir = final_dir
 
-    print(f"\n{out_dir}  ({len(items)} item(s), tier={args.tier}"
-          + (f", ${total_cost:.4f}" if n_priced else "") + ")")
+    print(
+        f"\n{out_dir}  ({len(items)} item(s), tier={args.tier}"
+        + (f", ${total_cost:.4f}" if n_priced else "")
+        + ")"
+    )
     print("Runs against this dataset will now be scored against it automatically.")
     return 0
 

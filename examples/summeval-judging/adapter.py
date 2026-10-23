@@ -270,8 +270,8 @@ def _bart(params: Dict[str, Any]) -> Any:
         from transformers import AutoTokenizer, BartForConditionalGeneration  # noqa: PLC0415
 
         kw = {"revision": params["revision"]} if params.get("revision") else {}
-        tok = AutoTokenizer.from_pretrained(params["model"], **kw)
-        model = BartForConditionalGeneration.from_pretrained(params["model"], **kw).eval()
+        tok = AutoTokenizer.from_pretrained(params["model"], **kw)  # every config that reaches this pins `revision`  # nosec B615
+        model = BartForConditionalGeneration.from_pretrained(params["model"], **kw).eval()  # every config that reaches this pins `revision`  # nosec B615
         _BART, _BART_KEY = (tok, model), key
     return _BART
 
@@ -325,6 +325,14 @@ UNIEVAL_INPUTS_SHA256 = "b109068754e58722f7e50f1bef70cf121eb34c9015fc3486f51bc5b
 ORIGINAL_SHA256 = "f0d4166e0cdeb439b387c4449634b067b7e9f721b9ef4c2b722f6b7550d3d6ab"
 #: Over punkt_tab/english, the one model sent_tokenize loads: sorted file names and bytes.
 PUNKT_ENGLISH_SHA256 = "158f5e4684a0852ae6a6e973c1e17978a4b1d780a8e353a18bc0c10a068aa07b"
+#: UniEval's tokenizer as transformers 4.55 built it from the checkpoint's spiece.model, saved
+#: once. transformers 5 builds a different one: it drops the "▁" token before every literal
+#: `</s>` separator in UniEval's prompts, so every input reaches the model one token shorter
+#: than UniEval as published (and as these runs were measured). Loading this file under 5.x
+#: gives 4.55's token ids exactly.
+UNIEVAL_TOKENIZER = HERE / "unieval_tokenizer" / "tokenizer.json"
+UNIEVAL_TOKENIZER_SHA256 = "1a1d3011daac8f04654823d46e09b2e0e760276be5ad2731d2ad8b9a0996ddf5"  # gitleaks:allow — a file's sha256, not a credential
+UNIEVAL_MODEL = "MingZhong/unieval-sum"
 _UE: Any = None
 _UE_KEY: Optional[tuple] = None
 _UE_PUBLISHED: Any = None
@@ -336,7 +344,7 @@ def _cached(path: Path, url: str, sha256: str) -> Path:
         import urllib.request  # noqa: PLC0415
 
         path.parent.mkdir(parents=True, exist_ok=True)
-        with urllib.request.urlopen(url, timeout=120) as r:
+        with urllib.request.urlopen(url, timeout=120) as r:  # noqa: S310 — a pinned https URL, its bytes checked by sha256  # nosec B310
             path.write_bytes(r.read())
     got = hashlib.sha256(path.read_bytes()).hexdigest()
     if got != sha256:
@@ -379,9 +387,17 @@ def _unieval_model(params: Dict[str, Any]) -> Any:
         from transformers import AutoModelForSeq2SeqLM, AutoTokenizer  # noqa: PLC0415
 
         kw = {"revision": params["revision"]} if params.get("revision") else {}
-        tok = AutoTokenizer.from_pretrained(params["model"], **kw)
-        model = AutoModelForSeq2SeqLM.from_pretrained(params["model"], **kw).eval()
-        _UE, _UE_KEY = (tok, model, tok("Yes")["input_ids"][0], tok("No")["input_ids"][0]), key
+        if params["model"] == UNIEVAL_MODEL:
+            from transformers import PreTrainedTokenizerFast  # noqa: PLC0415
+
+            if hashlib.sha256(UNIEVAL_TOKENIZER.read_bytes()).hexdigest() != UNIEVAL_TOKENIZER_SHA256:
+                raise SystemExit(f"{UNIEVAL_TOKENIZER}: not the pinned sha256 {UNIEVAL_TOKENIZER_SHA256}")
+            tok = PreTrainedTokenizerFast(tokenizer_file=str(UNIEVAL_TOKENIZER), eos_token="</s>",  # noqa: S106 — special tokens, not passwords
+                                          unk_token="<unk>", pad_token="<pad>", model_max_length=512)  # noqa: S106 — special tokens
+        else:
+            tok = AutoTokenizer.from_pretrained(params["model"], **kw)  # every config that reaches this pins `revision`  # nosec B615
+        model = AutoModelForSeq2SeqLM.from_pretrained(params["model"], **kw).eval()  # every config that reaches this pins `revision`  # nosec B615
+        _UE, _UE_KEY =(tok, model, tok("Yes")["input_ids"][0], tok("No")["input_ids"][0]), key
     return _UE
 
 

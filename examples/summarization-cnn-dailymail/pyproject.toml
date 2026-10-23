@@ -45,7 +45,10 @@ local = [
     #                     prints "PyTorch was not found. Models won't be available" -- then
     #                     fails at model load, not at install. A silent backend downgrade
     #                     is worse than a resolver error.
-    "transformers>=4.40,<4.56",
+    "transformers>=4.40,<4.56; sys_platform == 'darwin' and platform_machine == 'x86_64'",
+    # Everywhere else, 5.10 or later: 4.55.4 carries ten published advisories (pip-audit,
+    # 2026-10-22). The ceiling above stays on the one platform torch caps at 2.2.
+    "transformers>=5.10; sys_platform != 'darwin' or platform_machine != 'x86_64'",
     #
     # A NOTE ON WHAT THIS CAP DOES NOT BUY, because an earlier version of this comment
     # claimed it did. `research/internal/HANDOVER.md` records the pickle restriction as arriving in

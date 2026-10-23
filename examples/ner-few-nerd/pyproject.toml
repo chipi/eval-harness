@@ -40,6 +40,11 @@ dependencies = [
 local = [
     "torch>=2.2,<2.3; sys_platform == 'darwin' and platform_machine == 'x86_64'",
     "torch>=2.6; sys_platform != 'darwin' or platform_machine != 'x86_64'",
+    # Below 5 on every platform here, unlike the other examples, and knowingly: 4.55.4 carries
+    # ten published advisories (pip-audit, 2026-10-22), but span-marker has no release for
+    # transformers 5. 1.6 to 1.8.1 (the last) declare transformers<5, and forcing 5.x breaks
+    # the model: config.num_labels comes back None, and past that its span attention mask is
+    # a shape 5.x's RoBERTa masking rejects. Lift this when span-marker supports 5.x.
     "transformers>=4.40,<4.56",
     # GLiNER: zero-shot NER where the CALLER supplies the label set, so it can be
     # handed Few-NERD's eight types directly with no label mapping. Its own package

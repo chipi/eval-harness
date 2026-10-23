@@ -7,7 +7,7 @@
 # leave the documentation -- to the reports, the harness code, a PDF or a JSON capture --
 # are rewritten to GitHub, so nothing third-party is republished and nothing breaks.
 site_name: eval-harness · documentation
-site_url: https://evals.humancopilot.eu/docs/
+site_url: https://docs.evals.humancopilot.eu/
 site_description: Protocol, reference and harness documentation for eval-harness.
 repo_url: https://github.com/chipi/eval-harness
 copyright: eval-harness · every number on the site is checked against the runs in this repository · built by Marko Dragoljevic
@@ -36,10 +36,13 @@ nav:
       - Concepts: harness/CONCEPTS.md
       - Integration: harness/INTEGRATION.md
       - Runbook: harness/RUNBOOK.md
-      - "ADR-0001: Judge scorers": adr/ADR-0001-judge-scorers.md
       - Release notes: harness/CHANGELOG.md
       - Releasing: harness/RELEASING.md
       - Upgrading: harness/UPGRADING.md
+  - Architecture:
+      - Overview: architecture/ARCHITECTURE.md
+      - Decisions (ADRs): adr/index.md
+      - Proposals (RFCs): rfc/index.md
   - The experiments:
       - Reproduce it: REPRODUCE.md
       - Protocol: PROTOCOL.md
@@ -73,13 +76,13 @@ theme:
       toggle: { icon: material/weather-night, name: Dark mode }
   font: false
 
-# The findings site's tokens and type (docs/assets/docs.css), so /docs/ reads as part of
+# The harness site's tokens and type (docs/assets/docs.css), so /docs/ reads as part of
 # the same publication.
 extra_css:
   - assets/docs.css
 
 # The author's sites in the docs footer, UTM-tagged so humancopilot.eu sees where a visit
-# came from (the findings site also tags each click with an Umami event).
+# came from (the harness site also tags each click with an Umami event).
 extra:
   homepage: https://evals.humancopilot.eu/
   social:

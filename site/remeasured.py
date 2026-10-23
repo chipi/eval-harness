@@ -14,8 +14,18 @@ JUDGE = "research/REPORT_SUMMEVAL.md"
 
 
 # ── charts ──────────────────────────────────────────────────────────────────
-def rank_shift(H, rows: list, left: str, right: str, highlight: tuple, fmt1, fmt2,
-               width: int = 1000, height: int = 560, compact: bool = False) -> str:
+def rank_shift(
+    H,
+    rows: list,
+    left: str,
+    right: str,
+    highlight: tuple,
+    fmt1,
+    fmt2,
+    width: int = 1000,
+    height: int = 560,
+    compact: bool = False,
+) -> str:
     """Every arm's rank under the old measurement (left) and the new one (right). Lines are
     coloured by kind; the highlighted arms are drawn thick and labelled on both sides."""
     n = len(rows)
@@ -23,35 +33,43 @@ def rank_shift(H, rows: list, left: str, right: str, highlight: tuple, fmt1, fmt
         width, height = 400, 520
     top, bottom = 52, height - 18
     x0, x1 = (150, width - 150) if not compact else (128, width - 136)
-    fs = 14 if compact else 14
+    fs = 14
 
     def y(r):
         return top + (r - 1) * (bottom - top) / (n - 1)
 
-    out = [f'<svg viewBox="0 0 {width} {height}" role="img" aria-label="{H.e(left)} rank against {H.e(right)} rank">',
-           f'<text x="{x0}" y="22" text-anchor="middle" class="t-muted" font-size="{fs}">{H.e(left)}</text>',
-           f'<text x="{x1}" y="22" text-anchor="middle" class="t-muted" font-size="{fs}">{H.e(right)}</text>',
-           f'<text x="{x0}" y="40" text-anchor="middle" class="t-muted" font-size="{fs - 3}">rank 1 at the top</text>',
-           f'<text x="{x1}" y="40" text-anchor="middle" class="t-muted" font-size="{fs - 3}">rank 1 at the top</text>',
-           f'<line x1="{x0}" x2="{x0}" y1="{top - 6}" y2="{bottom + 6}" class="axis"/>',
-           f'<line x1="{x1}" x2="{x1}" y1="{top - 6}" y2="{bottom + 6}" class="axis"/>']
+    out = [
+        f'<svg viewBox="0 0 {width} {height}" role="img" aria-label="{H.e(left)} rank against {H.e(right)} rank">',
+        f'<text x="{x0}" y="22" text-anchor="middle" class="t-muted" font-size="{fs}">{H.e(left)}</text>',
+        f'<text x="{x1}" y="22" text-anchor="middle" class="t-muted" font-size="{fs}">{H.e(right)}</text>',
+        f'<text x="{x0}" y="40" text-anchor="middle" class="t-muted" font-size="{fs - 3}">rank 1 at the top</text>',
+        f'<text x="{x1}" y="40" text-anchor="middle" class="t-muted" font-size="{fs - 3}">rank 1 at the top</text>',
+        f'<line x1="{x0}" x2="{x0}" y1="{top - 6}" y2="{bottom + 6}" class="axis"/>',
+        f'<line x1="{x1}" x2="{x1}" y1="{top - 6}" y2="{bottom + 6}" class="axis"/>',
+    ]
     hi = [r for r in rows if r["arm"] in highlight]
     for r in sorted(rows, key=lambda r: r["arm"] in highlight):
         k = H.kind_of(r)
         on = r["arm"] in highlight
-        tip = (f'{r["arm"]}\n{left}: {fmt1(r["v1"])} (rank {r["r1"]} of {n})\n'
-               f'{right}: {fmt2(r["v2"])} (rank {r["r2"]} of {n})')
-        out.append(f'<line x1="{x0}" y1="{y(r["r1"]):.1f}" x2="{x1}" y2="{y(r["r2"]):.1f}" class="s-{k}" '
-                   f'stroke-width="{3.5 if on else 1.2}" opacity="{1 if on else 0.4}"/>'
-                   f'<circle cx="{x0}" cy="{y(r["r1"]):.1f}" r="{5.5 if on else 3.5}" class="dot k-{k}" data-tip="{H.e(tip)}"><title>{H.e(tip)}</title></circle>'
-                   f'<circle cx="{x1}" cy="{y(r["r2"]):.1f}" r="{5.5 if on else 3.5}" class="dot k-{k}" data-tip="{H.e(tip)}"><title>{H.e(tip)}</title></circle>')
+        tip = (
+            f"{r['arm']}\n{left}: {fmt1(r['v1'])} (rank {r['r1']} of {n})\n"
+            f"{right}: {fmt2(r['v2'])} (rank {r['r2']} of {n})"
+        )
+        out.append(
+            f'<line x1="{x0}" y1="{y(r["r1"]):.1f}" x2="{x1}" y2="{y(r["r2"]):.1f}" class="s-{k}" '
+            f'stroke-width="{3.5 if on else 1.2}" opacity="{1 if on else 0.4}"/>'
+            f'<circle cx="{x0}" cy="{y(r["r1"]):.1f}" r="{5.5 if on else 3.5}" class="dot k-{k}" data-tip="{H.e(tip)}"><title>{H.e(tip)}</title></circle>'
+            f'<circle cx="{x1}" cy="{y(r["r2"]):.1f}" r="{5.5 if on else 3.5}" class="dot k-{k}" data-tip="{H.e(tip)}"><title>{H.e(tip)}</title></circle>'
+        )
     ly = H.spread([(r["arm"], y(r["r1"])) for r in hi], 18)
     ry = H.spread([(r["arm"], y(r["r2"])) for r in hi], 18)
     for r in hi:
-        lab_l = f'{r["arm"]} {r["r1"]}' if compact else f'{r["arm"]} · {r["r1"]}'
-        lab_r = f'{r["r2"]} {r["arm"]}' if compact else f'{r["r2"]} · {r["arm"]}'
-        out.append(f'<text x="{x0 - 12}" y="{ly[r["arm"]] + 5:.1f}" text-anchor="end" class="t-ink" font-size="{fs}">{H.e(lab_l)}</text>'
-                   f'<text x="{x1 + 12}" y="{ry[r["arm"]] + 5:.1f}" class="t-ink" font-size="{fs}">{H.e(lab_r)}</text>')
+        lab_l = f"{r['arm']} {r['r1']}" if compact else f"{r['arm']} · {r['r1']}"
+        lab_r = f"{r['r2']} {r['arm']}" if compact else f"{r['r2']} · {r['arm']}"
+        out.append(
+            f'<text x="{x0 - 12}" y="{ly[r["arm"]] + 5:.1f}" text-anchor="end" class="t-ink" font-size="{fs}">{H.e(lab_l)}</text>'
+            f'<text x="{x1 + 12}" y="{ry[r["arm"]] + 5:.1f}" class="t-ink" font-size="{fs}">{H.e(lab_r)}</text>'
+        )
     out.append("</svg>")
     return "".join(out)
 
@@ -65,21 +83,31 @@ def tau_bars(H, items: list, width: int = 1000, compact: bool = False) -> str:
     x0, x1 = lab, width - (60 if compact else 90)
     height = top + row * len(items) + 24
     hi = 0.6
-    fs = 14 if compact else 14
+    fs = 14
 
     def x(v):
         return x0 + v / hi * (x1 - x0)
 
-    out = [f'<svg viewBox="0 0 {width} {height}" role="img" aria-label="Agreement with expert judgements, by instrument">']
+    out = [
+        f'<svg viewBox="0 0 {width} {height}" role="img" aria-label="Agreement with expert judgements, by instrument">'
+    ]
     for t in (0, 0.2, 0.4, 0.6):
-        out.append(f'<line x1="{x(t):.1f}" x2="{x(t):.1f}" y1="{top}" y2="{height - 22}" class="axis" opacity="0.5"/>'
-                   f'<text x="{x(t):.1f}" y="{height - 4}" text-anchor="middle" class="t-muted" font-size="{fs - 2}">{t:.1f}</text>')
+        out.append(
+            f'<line x1="{x(t):.1f}" x2="{x(t):.1f}" y1="{top}" y2="{height - 22}" class="axis" opacity="0.5"/>'
+            f'<text x="{x(t):.1f}" y="{height - 4}" text-anchor="middle" class="t-muted" font-size="{fs - 2}">{t:.1f}</text>'
+        )
     for i, (name, note, v, k) in enumerate(items):
         yy = top + i * row
-        out.append(f'<text x="{x0 - 12}" y="{yy + row / 2 + 1:.1f}" text-anchor="end" class="t-ink" font-size="{fs}">{H.e(name)}</text>'
-                   + (f'<text x="{x0 - 12}" y="{yy + row / 2 + 17:.1f}" text-anchor="end" class="t-muted" font-size="{fs - 3}">{H.e(note)}</text>' if note and not compact else "")
-                   + f'<rect x="{x0}" y="{yy + 8}" width="{x(v) - x0:.1f}" height="{row - 18}" rx="3" class="k-{k}"/>'
-                   f'<text x="{x(v) + 8:.1f}" y="{yy + row / 2 + 4:.1f}" class="t-ink" font-size="{fs}">{v:.2f}</text>')
+        out.append(
+            f'<text x="{x0 - 12}" y="{yy + row / 2 + 1:.1f}" text-anchor="end" class="t-ink" font-size="{fs}">{H.e(name)}</text>'
+            + (
+                f'<text x="{x0 - 12}" y="{yy + row / 2 + 17:.1f}" text-anchor="end" class="t-muted" font-size="{fs - 3}">{H.e(note)}</text>'
+                if note and not compact
+                else ""
+            )
+            + f'<rect x="{x0}" y="{yy + 8}" width="{x(v) - x0:.1f}" height="{row - 18}" rx="3" class="k-{k}"/>'
+            f'<text x="{x(v) + 8:.1f}" y="{yy + row / 2 + 4:.1f}" class="t-ink" font-size="{fs}">{v:.2f}</text>'
+        )
     out.append("</svg>")
     return "".join(out)
 
@@ -96,39 +124,65 @@ def figures_for(H, f: dict) -> dict:
     hosted_ag = [a for a in ag["arms"] if a["kind"] == "hosted"]
     hosted_sm = [a for a in sm["arms"] if a["kind"] == "hosted"]
     fig = sm["fig"]
-    H.require(min(a["v2"] for a in hosted_ag) > max(agr[a]["v2"] for a in fts),
-              "AG News v2: every hosted arm above every fine-tune")
-    H.require(min(a["v2"] for a in hosted_sm) > smr["bart_l"]["v2"],
-              "summarisation judged: every hosted arm above bart_l")
-    H.require(fig["human_check"]["judge_prefers_deepseek_m"] == fig["human_check"]["pairs"],
-              "the judges preferred deepseek_m on every human-check pair")
+    H.require(
+        min(a["v2"] for a in hosted_ag) > max(agr[a]["v2"] for a in fts),
+        "AG News v2: every hosted arm above every fine-tune",
+    )
+    H.require(
+        min(a["v2"] for a in hosted_sm) > smr["bart_l"]["v2"],
+        "summarisation judged: every hosted arm above bart_l",
+    )
+    H.require(
+        fig["human_check"]["judge_prefers_deepseek_m"] == fig["human_check"]["pairs"],
+        "the judges preferred deepseek_m on every human-check pair",
+    )
     # The headline ("a free model first or not separable from first") counts AG News and
     # summarisation today; on the re-measured scores the reports say the leader is hosted and
     # separated from every local arm there (q-quoted on the page), so both would leave it.
     for slug in ("ag-news", "summarization"):
         x = by[slug]
         H.require(x["top"]["kind"] == "local", f"{slug}: a local arm leads on the primary")
-    H.require(ag["arms"] and max(ag["arms"], key=lambda a: a["v2"])["kind"] == "hosted"
-              and max(sm["arms"], key=lambda a: a["v2"])["kind"] == "hosted",
-              "on the re-measured scores both leaders are hosted")
+    H.require(
+        ag["arms"]
+        and max(ag["arms"], key=lambda a: a["v2"])["kind"] == "hosted"
+        and max(sm["arms"], key=lambda a: a["v2"])["kind"] == "hosted",
+        "on the re-measured scores both leaders are hosted",
+    )
     # The same re-measurement moves the other headline too: in both experiments the dearest
     # hosted model is the re-measured leader.
     for slug, rows in (("ag-news", ag["arms"]), ("summarization", sm["arms"])):
-        H.require(by[slug]["dearest"]["arm"] == max(rows, key=lambda a: a["v2"])["arm"],
-                  f"{slug}: the dearest model leads on the re-measured score")
+        H.require(
+            by[slug]["dearest"]["arm"] == max(rows, key=lambda a: a["v2"])["arm"],
+            f"{slug}: the dearest model leads on the re-measured score",
+        )
     # "2 of 6" and "3 of 6" also need DBpedia, the third re-measured experiment, to stay put:
     # the dearest model not first there, and the top a crowd (q-quoted on the page).
-    H.require(by["dbpedia"]["dearest"]["arm"] != max(db["arms"], key=lambda a: a["v2"])["arm"],
-              "dbpedia: the dearest model is not first on the adjudicated labels")
-    H.require(by["dbpedia"]["dearest"]["arm"] != by["dbpedia"]["top"]["arm"],
-              "dbpedia: the dearest model is not first on the primary")
-    return {"ag": ag, "db": db, "sm": sm, "se": se, "fig": fig, "agr": agr, "smr": smr,
-            "dearest_first_remeasured": H.remeasured_counts(f)["dearest_first"], "dearest": by["ag-news"]["dearest"]["arm"],
-            "fts": fts, "headline_now": f["local_first_or_tied"],
-            "headline_remeasured": f["local_first_or_tied"] - H.remeasured_counts(f)["local_lost"], "n_exp": len(f["experiments"]),
-            "hosted_sm_range": (min(a["v2"] for a in hosted_sm), max(a["v2"] for a in hosted_sm)),
-            "sm_leader": max(sm["arms"], key=lambda a: a["v2"]),
-            "ag_leader": max(ag["arms"], key=lambda a: a["v2"])}
+    H.require(
+        by["dbpedia"]["dearest"]["arm"] != max(db["arms"], key=lambda a: a["v2"])["arm"],
+        "dbpedia: the dearest model is not first on the adjudicated labels",
+    )
+    H.require(
+        by["dbpedia"]["dearest"]["arm"] != by["dbpedia"]["top"]["arm"],
+        "dbpedia: the dearest model is not first on the primary",
+    )
+    return {
+        "ag": ag,
+        "db": db,
+        "sm": sm,
+        "se": se,
+        "fig": fig,
+        "agr": agr,
+        "smr": smr,
+        "dearest_first_remeasured": H.remeasured_counts(f)["dearest_first"],
+        "dearest": by["ag-news"]["dearest"]["arm"],
+        "fts": fts,
+        "headline_now": f["local_first_or_tied"],
+        "headline_remeasured": f["local_first_or_tied"] - H.remeasured_counts(f)["local_lost"],
+        "n_exp": len(f["experiments"]),
+        "hosted_sm_range": (min(a["v2"] for a in hosted_sm), max(a["v2"] for a in hosted_sm)),
+        "sm_leader": max(sm["arms"], key=lambda a: a["v2"]),
+        "ag_leader": max(ag["arms"], key=lambda a: a["v2"]),
+    }
 
 
 def judging_page(H, f: dict) -> str:
@@ -142,63 +196,131 @@ def judging_page(H, f: dict) -> str:
     noi_lo, noi_hi = fig["noise_mean_abs_diff_range"]
     by = {x["slug"]: x for x in f["experiments"]}
     se_arms = {a["arm"]: a for a in by["summeval"]["arms"]}
-    bars = [("coverage", "what summarisation ranks by", se["coverage"], "baseline"),
-            ("ROUGE-1", "the field's usual metric", se["rouge1"], "baseline"),
-            ("UniEval", "free, trained to judge", se["best_free_tau"], "local"),
-            ("qwen_s", "LLM judge used below", se["qwen_s"], H.kind_of(se_arms["qwen_s"])),
-            ("gemma_l", "LLM judge used below", se["gemma_l"], H.kind_of(se_arms["gemma_l"])),
-            (se["best_judge"], "the best of 24 LLM judges", se["best_judge_tau"],
-             H.kind_of(se_arms[se["best_judge"]]))]
-    ratio = se["gemma_l"] / se["coverage"]
+    bars = [
+        ("coverage", "what summarisation ranks by", se["coverage"], "baseline"),
+        ("ROUGE-1", "the field's usual metric", se["rouge1"], "baseline"),
+        ("UniEval", "free, trained to judge", se["best_free_tau"], "local"),
+        ("qwen_s", "LLM judge used below", se["qwen_s"], H.kind_of(se_arms["qwen_s"])),
+        ("gemma_l", "LLM judge used below", se["gemma_l"], H.kind_of(se_arms["gemma_l"])),
+        (
+            se["best_judge"],
+            "the best of 24 LLM judges",
+            se["best_judge_tau"],
+            H.kind_of(se_arms[se["best_judge"]]),
+        ),
+    ]
     fmt_cov = lambda v: f"coverage {v:.4f}"  # noqa: E731
     fmt_j = lambda v: f"judge score {v:.2f} of 5"  # noqa: E731
     fmt_acc = lambda v: f"accuracy {v:.4f}"  # noqa: E731
-    sm_chart = H.both(rank_shift(H, sm["arms"], "coverage (primary)", "SummEval-validated judges",
-                                 ("bart_l", "deepseek_m", "anthropic_l", "lead3"), fmt_cov, fmt_j),
-                      rank_shift(H, sm["arms"], "coverage", "judges",
-                                 ("bart_l", "deepseek_m", "anthropic_l"), fmt_cov, fmt_j, compact=True))
-    ag_chart = H.both(rank_shift(H, ag["arms"], "dataset gold (primary)", "adjudicated gold",
-                                 ("bert_base_ta", "bert_mini", "anthropic_l", "gemma_m"), fmt_acc, fmt_acc),
-                      rank_shift(H, ag["arms"], "dataset gold", "adjudicated",
-                                 ("bert_base_ta", "bert_mini", "anthropic_l"), fmt_acc, fmt_acc, compact=True))
+    sm_chart = H.both(
+        rank_shift(
+            H,
+            sm["arms"],
+            "coverage (primary)",
+            "SummEval-validated judges",
+            ("bart_l", "deepseek_m", "anthropic_l", "lead3"),
+            fmt_cov,
+            fmt_j,
+        ),
+        rank_shift(
+            H,
+            sm["arms"],
+            "coverage",
+            "judges",
+            ("bart_l", "deepseek_m", "anthropic_l"),
+            fmt_cov,
+            fmt_j,
+            compact=True,
+        ),
+    )
+    ag_chart = H.both(
+        rank_shift(
+            H,
+            ag["arms"],
+            "dataset gold (primary)",
+            "adjudicated gold",
+            ("bert_base_ta", "bert_mini", "anthropic_l", "gemma_m"),
+            fmt_acc,
+            fmt_acc,
+        ),
+        rank_shift(
+            H,
+            ag["arms"],
+            "dataset gold",
+            "adjudicated",
+            ("bert_base_ta", "bert_mini", "anthropic_l"),
+            fmt_acc,
+            fmt_acc,
+            compact=True,
+        ),
+    )
     fts = [agr[a] for a in g["fts"]]
     db_fy = next(a for a in db["arms"] if a["arm"] == "bert_base_fy")
-    facts = [("Re-measured", "3 experiments: summarisation by LLM judges; AG News and DBpedia "
-                             "against labels a person corrected"),
-             ("Re-run", "nothing: every model output is the one committed when it was measured"),
-             ("Cost", f'{H.money(fig["billed_usd"])} for the first judges, {H.money(f["remeasure"]["summ_v2"]["billed_usd"])} for the frontier judges, {fig["calls"]} calls each; {H.money(f["remeasure"]["validation_usd"])} checking all four against published human ratings; $0 for the labels'),
-             ("Primary metric", "unchanged in all three, by decision (below)")]
-    facts_html = "".join(f'<div class="fact"><div class="k">{e(k)}</div><div class="v">{e(v)}</div></div>'
-                         for k, v in facts)
+    facts = [
+        (
+            "Re-measured",
+            (
+                "3 experiments: summarisation by LLM judges; AG News and DBpedia "
+                "against labels a person corrected"
+            ),
+        ),
+        ("Re-run", "nothing: every model output is the one committed when it was measured"),
+        (
+            "Cost",
+            f"{H.money(fig['billed_usd'])} for the first judges, {H.money(f['remeasure']['summ_v2']['billed_usd'])} for the frontier judges, {fig['calls']} calls each; {H.money(f['remeasure']['validation_usd'])} checking all four against published human ratings; $0 for the labels",
+        ),
+        ("Primary metric", "unchanged in all three, by decision (below)"),
+    ]
+    facts_html = "".join(
+        f'<div class="fact"><div class="k">{e(k)}</div><div class="v">{e(v)}</div></div>' for k, v in facts
+    )
     sfg = sm["self_family_gap"]
     checklist = [
-        ("Validate it against people, on outputs like yours.",
-         "The gate refuses a judge with no committed validation run, and one below the scorer's floor if "
-         "the scorer sets one (set it to the best free scorer's score on the same human ratings). What it "
-         "cannot check is whether those ratings look like your outputs. Here the first validation was on "
-         "2019 summaries; a second, on crowd ratings of LLM-era summaries (§05), agrees with it, and "
-         "neither is this experiment's own outputs."),
-        ("Use two judges from different vendors, blind.",
-         "Each judge is reported, and how far they agree. Arm names are hidden and the order is shuffled "
-         "per article, so a preference for a name is impossible and a preference for a slot is spread "
-         "across the arms instead of following one. Arms from a judge's own vendor family are flagged: "
-         + "; ".join(f"{j} rated them {v:+.2f} against the others" for j, v in sfg.items())
-         + ", a raw gap, not a bias estimate, since families differ in real quality."),
-        ("Measure the judge's own noise and position bias.",
-         f"A second shuffle and a repeat on a subset. Here the reshuffle moved per-article scores by "
-         f"{pos_lo:.2f}–{pos_hi:.2f} and a repeat by {noi_lo:.2f}–{noi_hi:.2f}. Those are per-article "
-         "numbers; whether a gap between two arms' means is real is what the paired tests answer, run on "
-         "the judged scores like any other."),
-        ("Keep every verdict.",
-         "Each reply is stored with its scores, so the pass resumes, costs $0 to re-read, and anyone can "
-         "check what the judge said. A reply that is not bare JSON scores, which can carry the source's "
-         "text, is kept only as its hash."),
-        ("Read some yourself before you trust the ranking.",
-         f"Agreement between two judges is not agreement with people. Reading {hc['pairs']} pairs is what produced the "
-         "disagreement here; the primary metric changes only after a check like that agrees, and a check "
-         "worth that weight needs more than one reader."),
+        (
+            "Validate it against people, on outputs like yours.",
+            (
+                "The gate refuses a judge with no committed validation run, and one below the scorer's floor if "
+                "the scorer sets one (set it to the best free scorer's score on the same human ratings). What it "
+                "cannot check is whether those ratings look like your outputs. Here the first validation was on "
+                "2019 summaries; a second, on crowd ratings of LLM-era summaries (§05), agrees with it, and "
+                "neither is this experiment's own outputs."
+            ),
+        ),
+        (
+            "Use two judges from different vendors, blind.",
+            "Each judge is reported, and how far they agree. Arm names are hidden and the order is shuffled "
+            "per article, so a preference for a name is impossible and a preference for a slot is spread "
+            "across the arms instead of following one. Arms from a judge's own vendor family are flagged: "
+            + "; ".join(f"{j} rated them {v:+.2f} against the others" for j, v in sfg.items())
+            + ", a raw gap, not a bias estimate, since families differ in real quality.",
+        ),
+        (
+            "Measure the judge's own noise and position bias.",
+            (
+                f"A second shuffle and a repeat on a subset. Here the reshuffle moved per-article scores by "
+                f"{pos_lo:.2f}–{pos_hi:.2f} and a repeat by {noi_lo:.2f}–{noi_hi:.2f}. Those are per-article "
+                "numbers; whether a gap between two arms' means is real is what the paired tests answer, run on "
+                "the judged scores like any other."
+            ),
+        ),
+        (
+            "Keep every verdict.",
+            (
+                "Each reply is stored with its scores, so the pass resumes, costs $0 to re-read, and anyone can "
+                "check what the judge said. A reply that is not bare JSON scores, which can carry the source's "
+                "text, is kept only as its hash."
+            ),
+        ),
+        (
+            "Read some yourself before you trust the ranking.",
+            (
+                f"Agreement between two judges is not agreement with people. Reading {hc['pairs']} pairs is what produced the "
+                "disagreement here; the primary metric changes only after a check like that agrees, and a check "
+                "worth that weight needs more than one reader."
+            ),
+        ),
     ]
-    check_html = "".join(f'<li><div><h3>{e(h)}</h3><p>{e(p)}</p></div></li>' for h, p in checklist)
+    check_html = "".join(f"<li><div><h3>{e(h)}</h3><p>{e(p)}</p></div></li>" for h, p in checklist)
     frontier_html = frontier_section(H, f, sm)
     body = f"""
 <section class="hero"><div class="wrap">
@@ -277,55 +399,91 @@ def judging_page(H, f: dict) -> str:
     <div class="btns"><a class="btn primary" href="../docs/GUIDE/#10-optional-re-measure-with-an-llm-judge">Try it offline, $0</a><a class="btn" href="../docs/harness/RUNBOOK/#12-re-measure-with-a-validated-judge">The runbook</a><a class="btn" href="{H.BLOB}/docs/adr/ADR-0001-judge-scorers.md">The design</a><a class="btn" href="{H.BLOB}/{SUMM}">The summarisation report</a></div>
   </div>
 <pre class="term"><span class="c"># price it: builds the judging set, calls nothing</span>
-<span class="p">$ </span>make judge-score DATASET_ID=my_v1 SCORER=my-judge ARGS=--dry-run
+<span class="p">$ </span>evh judge-score --dataset-id my_v1 --scorer my-judge --dry-run
 <span class="c"># judge, capped and resumable; refused until validated</span>
-<span class="p">$ </span>make judge-score DATASET_ID=my_v1 SCORER=my-judge
+<span class="p">$ </span>evh judge-score --dataset-id my_v1 --scorer my-judge
 <span class="c"># rank and test on the judged scores</span>
-<span class="p">$ </span>EVAL_RUNS_DIR=data/runs-judged/my-judge make leaderboard DATASET_ID=my_v1</pre></div>
+<span class="p">$ </span>EVAL_RUNS_DIR=data/runs-judged/my-judge evh leaderboard --dataset-id my_v1</pre></div>
 </div></section>
 {H.author("judging")}"""
-    return H.page("Change the ruler, not the run — judging · eval-harness",
-                  "What re-measuring frozen experiments with SummEval-validated LLM judges and corrected labels "
-                  "changed, why a judge beat the metric on SummEval, and why one reader's check kept coverage primary.",
-                  body, depth=1, here="judging")
+    return H.page(
+        "Change the ruler, not the run — judging · eval-harness",
+        "What re-measuring frozen experiments with SummEval-validated LLM judges and corrected labels "
+        "changed, why a judge beat the metric on SummEval, and why one reader's check kept coverage primary.",
+        body,
+        depth=1,
+        here="judging",
+    )
 
 
 def frontier_section(H, f: dict, v1: dict) -> str:
     """Do larger, dearer judges side with the reader? judge-summ-v2 (the two highest-scoring
     SummEval judges from vendors not in judge-summ-v1) on the same judging set."""
     v2 = f["remeasure"]["summ_v2"]
-    se = f["remeasure"]["summeval"]
     by = {x["slug"]: x for x in f["experiments"]}
     se_tau = {a["arm"]: a["score"] for a in by["summeval"]["arms"]}
     r1 = {a["arm"]: a for a in v1["arms"]}
     r2 = {a["arm"]: a for a in v2["arms"]}
     hosted = [a for a in v2["arms"] if a["kind"] == "hosted"]
     barts = [a for a in v2["arms"] if a["arm"].startswith("bart")]
-    H.require(min(a["v2"] for a in hosted) > max(a["v2"] for a in barts),
-              "frontier judges: every hosted arm above every BART model")
+    H.require(
+        min(a["v2"] for a in hosted) > max(a["v2"] for a in barts),
+        "frontier judges: every hosted arm above every BART model",
+    )
     H.require(v2["items_scored"] == v2["items_total"], "frontier judges scored every article")
-    H.require(v2["prefers_deepseek_m"] == v2["human_pairs"], "frontier judges prefer deepseek_m on every pair")
+    H.require(
+        v2["prefers_deepseek_m"] == v2["human_pairs"], "frontier judges prefer deepseek_m on every pair"
+    )
     # Spearman between the two scorers' arm means.
     arms = sorted(r1)
     n = len(arms)
     d2 = sum((r1[a]["r2"] - r2[a]["r2"]) ** 2 for a in arms)
     rho = 1 - 6 * d2 / (n * (n * n - 1))
-    rows = [{"arm": a, "kind": r1[a]["kind"], "weights": r1[a]["weights"], "v1": r1[a]["v2"],
-             "v2": r2[a]["v2"], "r1": r1[a]["r2"], "r2": r2[a]["r2"]} for a in arms]
+    rows = [
+        {
+            "arm": a,
+            "kind": r1[a]["kind"],
+            "weights": r1[a]["weights"],
+            "v1": r1[a]["v2"],
+            "v2": r2[a]["v2"],
+            "r1": r1[a]["r2"],
+            "r2": r2[a]["r2"],
+        }
+        for a in arms
+    ]
     fmt = lambda v: f"judge score {v:.2f} of 5"  # noqa: E731
-    chart = H.both(rank_shift(H, rows, "judge-summ-v1 (gemma_l, qwen_s)", "judge-summ-v2 (openai_l, anthropic_l)",
-                              ("bart_l", "deepseek_m", "anthropic_l", "mistral_l"), fmt, fmt),
-                   rank_shift(H, rows, "v1 judges", "frontier judges",
-                              ("bart_l", "deepseek_m", "anthropic_l"), fmt, fmt, compact=True))
+    chart = H.both(
+        rank_shift(
+            H,
+            rows,
+            "judge-summ-v1 (gemma_l, qwen_s)",
+            "judge-summ-v2 (openai_l, anthropic_l)",
+            ("bart_l", "deepseek_m", "anthropic_l", "mistral_l"),
+            fmt,
+            fmt,
+        ),
+        rank_shift(
+            H,
+            rows,
+            "v1 judges",
+            "frontier judges",
+            ("bart_l", "deepseek_m", "anthropic_l"),
+            fmt,
+            fmt,
+            compact=True,
+        ),
+    )
     j1, j2 = v2["judges"]
     gap = v2["self_family_gap"]
     ratio = v2["billed_usd"] / v1["billed_usd"]
     bart = r2["bart_l"]
     ldr = max(v2["arms"], key=lambda a: a["v2"])
-    goyal = GOYAL_V2(H)
+    goyal = goyal_v2(H)
     v1j = v1["judges"]
-    H.require(min(se_tau[j1], se_tau[j2]) < max(se_tau[j] for j in v1j) < max(se_tau[j1], se_tau[j2]),
-              "frontier judges: a first-pair judge scores between them on SummEval")
+    H.require(
+        min(se_tau[j1], se_tau[j2]) < max(se_tau[j] for j in v1j) < max(se_tau[j1], se_tau[j2]),
+        "frontier judges: a first-pair judge scores between them on SummEval",
+    )
     return f"""<section class="block" id="frontier"><div class="wrap">
   <div class="eyebrow"><span class="num">04</span>Frontier judges</div>
   <h2>Same validation score, {H.times(ratio)} the price, the same verdict.</h2>
@@ -353,20 +511,31 @@ def zhang_section(H, f: dict) -> str:
     ahead_r = [p["vs_one_rater"]["a_ahead"] for p in paired.values()]
     ahead_c = [p["vs_coverage"]["a_ahead"] for p in paired.values()]
     faith = [r["non_reference_18"]["faithfulness"] for r in judges.values()]
-    H.require(all(r["non_reference_18"]["mean"] > hum["mean"] > fm["coverage"]["mean"] for r in judges.values()),
-              "Zhang: every judge above one rater, one rater above coverage")
-    H.require(all(p[k]["p_two_sided"] < 0.001 for p in paired.values() for k in ("vs_one_rater", "vs_coverage")),
-              "Zhang: every paired comparison p < 0.001")
+    H.require(
+        all(r["non_reference_18"]["mean"] > hum["mean"] > fm["coverage"]["mean"] for r in judges.values()),
+        "Zhang: every judge above one rater, one rater above coverage",
+    )
+    H.require(
+        all(p[k]["p_two_sided"] < 0.001 for p in paired.values() for k in ("vs_one_rater", "vs_coverage")),
+        "Zhang: every paired comparison p < 0.001",
+    )
     H.require(max(brio_j) < raters["brio"], "Zhang: the judges rank BRIO higher than the raters do")
     ref_j = sorted(rank[j]["judges"][j]["reference"] for j in rank)
-    H.require(max(ref_j) < raters["reference"], "Zhang: the judges rank the reference highlights higher than the raters do")
+    H.require(
+        max(ref_j) < raters["reference"],
+        "Zhang: the judges rank the reference highlights higher than the raters do",
+    )
     by = {x["slug"]: x for x in f["experiments"]}
     k = {a["arm"]: H.kind_of(a) for a in by["summeval"]["arms"]}
-    bars = [("coverage", "vs the reference highlights", fm["coverage"]["mean"], "baseline"),
-            ("ROUGE-1", "vs the reference highlights", fm["rouge1"]["mean"], "baseline"),
-            ("one rater", "vs the other two", hum["mean"], "baseline")]
-    bars += [(j, "LLM judge", judges[j]["non_reference_18"]["mean"], k.get(j, "open"))
-             for j in ("qwen_s", "gemma_l", "openai_l", "anthropic_l")]
+    bars = [
+        ("coverage", "vs the reference highlights", fm["coverage"]["mean"], "baseline"),
+        ("ROUGE-1", "vs the reference highlights", fm["rouge1"]["mean"], "baseline"),
+        ("one rater", "vs the other two", hum["mean"], "baseline"),
+    ]
+    bars += [
+        (j, "LLM judge", judges[j]["non_reference_18"]["mean"], k.get(j, "open"))
+        for j in ("qwen_s", "gemma_l", "openai_l", "anthropic_l")
+    ]
     cost1 = sum(r["billed_usd"] for r in v1["judges"].values())
     cost2 = sum(r["billed_usd"] for r in v2["judges"].values())
     return f"""<section class="block" id="zhang"><div class="wrap">
@@ -382,12 +551,15 @@ def zhang_section(H, f: dict) -> str:
 </div></section>"""
 
 
-def GOYAL_V2(H) -> str:
+def goyal_v2(H) -> str:
     """The Goyal comparison for the frontier judges, as REPORT_SUMMARIZATION §3.8 states it."""
-    return H.qv("On the Goyal et al. systems they score 0.466 (openai_l) and 0.488 (anthropic_l) against "
-               "one annotator, annotators against each other 0.454; on the articles both decided, openai_l "
-               "prefers the GPT-3 summary on 70.4% against the annotators' 61.7%, and anthropic_l on 64.2% "
-               "against 64.2%.", SUMM)
+    return H.qv(
+        "On the Goyal et al. systems they score 0.466 (openai_l) and 0.488 (anthropic_l) against "
+        "one annotator, annotators against each other 0.454; on the articles both decided, openai_l "
+        "prefers the GPT-3 summary on 70.4% against the annotators' 61.7%, and anthropic_l on 64.2% "
+        "against 64.2%.",
+        SUMM,
+    )
 
 
 def legend_html(H) -> str:

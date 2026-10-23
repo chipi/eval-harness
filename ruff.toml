@@ -1,0 +1,76 @@
+# ruff: lint, format and import order for the whole repository (`make lint`, `make format`).
+#
+# ruff stands where black + isort + flake8 (+ bugbear) stand in podcast_scraper: a deliberate
+# experiment in a different tool for the same outcome. The other checks (mypy, bandit,
+# pip-audit, radon, vulture, interrogate, codespell, shellcheck, actionlint) are the same as
+# there. Every rule turned off below says why; the rest is enforced in CI.
+
+target-version = "py39"   # requires-python = ">=3.9": never suggest syntax 3.9 cannot run
+line-length = 110         # the code was written to ~110; the formatter governs, not E501
+
+# FROZEN INSTRUMENT CODE. These files define how the experiments' committed runs were scored:
+# a scoring hash (codehash.code_digest, inspect.getsource) covers their source text, and
+# validate V10 fails every derived run when it moves. Reformatting them would mean re-deriving
+# committed runs for a whitespace change, so the formatter skips them. The linter still reads
+# them; a real finding there is a scorer change, made on purpose with a rescore.
+[format]
+exclude = [
+    "examples/_shared/classification.py",
+    "examples/_shared/extraction.py",
+    "examples/_shared/retrieval.py",
+    "examples/*/adapter.py",
+    # The code blocks in the docs are laid out by hand to read at a narrow width; the formatter
+    # would join them into 110-column lines.
+    "*.md",
+]
+
+[lint]
+select = [
+    "E", "W",   # pycodestyle
+    "F",        # pyflakes: undefined names, unused imports, the real bugs
+    "I",        # import order (isort's job)
+    "B",        # bugbear: likely bugs (flake8-bugbear's job)
+    "UP",       # pyupgrade, bounded by target-version
+    "S",        # bandit's rules, in the linter (bandit also runs on its own)
+    "C4",       # comprehensions
+    "SIM",      # simplifications
+    "RUF",      # ruff's own
+    "PLE",      # pylint errors
+    "PLW",      # pylint warnings
+    "PIE", "ISC", "T10", "EXE", "LOG", "G", "RSE",
+    "E402",     # imports after sys.path setup: each one marked where it is deliberate
+    "E731",     # lambda assignment
+    "BLE001",   # blind `except Exception`: each one marked where it is deliberate
+    "N802",     # function names
+    "PLC0415",  # imports inside functions: deliberate here (optional dependencies, start-up
+                # time), and every one is marked, so a new one is a decision, not a habit
+]
+ignore = [
+    "E501",     # line length: the formatter wraps code; long strings and URLs stay whole
+    "RUF001", "RUF002", "RUF003",  # "ambiguous" unicode: the prose uses —, …, × on purpose
+    "S101",     # assert: used in tests and as internal invariants, never for input checks
+    "S603", "S607",  # subprocess: running git, the CLI and the tools is these scripts' job
+    "S311",     # random: sampling and permutation tests, never security
+    "S110", "S112",  # try/except pass/continue: each is a documented best-effort path
+    "PLW1510",  # subprocess.run without check=: callers read returncode themselves
+    "PLW0603",  # global: the inspector's adapter and limits are module state by design
+    "PLW2901",  # loop variable overwritten: an idiom in the line parsers
+    "SIM105",   # contextlib.suppress: explicit try/except reads better in these scripts
+    "SIM108",   # ternary: not every if/else is clearer on one line
+    "ISC001",   # conflicts with the formatter
+]
+
+[lint.per-file-ignores]
+# The frozen instrument code (see [format] above): its style and modernization findings are
+# not fixed, because any edit moves the recorded scoring identity of committed runs. Every
+# other rule (undefined names, bugbear, security) still applies to these files.
+"examples/_shared/classification.py" = ["UP", "ISC004", "SIM300", "SIM113", "F401", "RUF022", "RUF100", "I001", "E741", "C420"]
+"examples/_shared/extraction.py" = ["UP", "ISC004", "SIM300", "SIM113", "F401", "RUF022", "RUF100", "I001", "E741", "C420"]
+"examples/_shared/retrieval.py" = ["UP", "ISC004", "SIM300", "SIM113", "F401", "RUF022", "RUF100", "I001", "E741", "C420"]
+# B020 here is `for body in (candidates or [body])`: correct (the iterable is built once),
+# and frozen with the parser it belongs to.
+"examples/*/adapter.py" = ["UP", "ISC004", "SIM300", "SIM113", "F401", "RUF022", "RUF100", "I001", "E741", "C420", "B020"]
+# Tests and checkers exercise the code from outside: magic values, asserts and broad
+# excepts are what they are made of.
+"**/test_*.py" = ["S105", "S106", "S108", "B011"]
+"harness/tests/self_test.py" = ["S105", "S106", "S108", "B011"]

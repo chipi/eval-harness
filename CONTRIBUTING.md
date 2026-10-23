@@ -33,4 +33,10 @@ It needs:
 
 ```bash
 cd harness && make ci      # validate the tree + self-tests, no network, no keys
+make quality               # from the root: lint, types, security, dead code, spelling, shell
 ```
+
+`make quality-install` installs the tools once (`harness/requirements-dev.txt`); `make format`
+applies ruff's formatting. The scorers whose source is hashed into every run
+(`examples/_shared/{classification,extraction,retrieval}.py`, `examples/*/adapter.py`) are
+excluded from the formatter: reformatting one would invalidate the committed runs.

@@ -1,0 +1,21 @@
+goal_id: news_topic_ag
+schema_version: "0.1"
+title: News topic classification (AG News)
+statement: Pick a classifier that labels a news headline and snippet with one of four topics, at a known cost per item.
+status: active
+context:
+  audience: a pipeline that routes news items by topic
+decision: Which classifiers can be told apart on accuracy, and what each costs and how fast it runs.
+output_contract:
+  - {id: label, format: label}
+success_criteria:
+  primary: {measure: correct, direction: higher}
+datasets:
+  - {dataset_id: ag_news_200, role: heldout, notes: first 50 per class from the first 1,600 test rows}
+  - {dataset_id: ag_news_20, role: dev}
+references:
+  - {reference_id: gold/ag_news_200, tier: gold, format: label}
+measures:
+  - {id: correct, kind: metric, validity: validated}
+links:
+  - {url: research/REPORT_CLASSIFICATION.md, note: the report}

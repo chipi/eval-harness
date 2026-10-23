@@ -18,10 +18,8 @@ import argparse
 import subprocess
 import sys
 from pathlib import Path
-from typing import List
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _common import CODE, ROOT, die  # noqa: E402
+from _common import CODE, ROOT, die
 
 try:
     import yaml
@@ -30,6 +28,7 @@ except ImportError:  # pragma: no cover
 
 
 def main() -> int:
+    """Generate a parameter sweep configuration."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--configs", nargs="+", required=True, type=Path)
     ap.add_argument("--repeat", type=int, default=1)
@@ -43,24 +42,26 @@ def main() -> int:
 
     # Every arm must sit on the SAME dataset, or the leaderboard is a list of
     # unrelated numbers. Refuse up front rather than producing one.
-    datasets = {}
+    datasets: dict = {}
     for c in configs:
         cfg = yaml.safe_load(c.read_text(encoding="utf-8")) or {}
         datasets.setdefault(cfg.get("dataset_id"), []).append(c.name)
     if len(datasets) != 1:
         lines = "\n".join(f"    {d or '(missing)'}: {', '.join(n)}" for d, n in datasets.items())
-        die("REFUSED — the arms do not share one dataset_id:\n" + lines +
-            "\n  A leaderboard across datasets ranks nothing. Re-run the odd ones out.")
+        die(
+            "REFUSED — the arms do not share one dataset_id:\n"
+            + lines
+            + "\n  A leaderboard across datasets ranks nothing. Re-run the odd ones out."
+        )
     dataset_id = next(iter(datasets))
 
     py = sys.executable
     print(f"sweep: {len(configs)} arm(s) on {dataset_id}, repeat={args.repeat}\n")
 
-    failed: List[str] = []
+    failed: list[str] = []
     for i, c in enumerate(configs, 1):
         print(f"── [{i}/{len(configs)}] {c.name} " + "─" * max(0, 50 - len(c.name)))
-        cmd = [py, str(CODE / "experiment_run.py"), "--config", str(c),
-               "--repeat", str(args.repeat)]
+        cmd = [py, str(CODE / "experiment_run.py"), "--config", str(c), "--repeat", str(args.repeat)]
         if args.dry_run:
             cmd.append("--dry-run")
         r = subprocess.run(cmd, cwd=ROOT)

@@ -1,20 +1,23 @@
 {
+  "adapter": "scripts/adapter.py",
   "baseline_id": "smoke_v1_baseline",
   "build": {
     "dirty": false,
-    "ref": "eval-harness-scenario",
-    "source": "EVAL_BUILD_REF"
+    "ref": "68dc55b45c826943e4a56870c488d97e0cf66bef",
+    "source": "git"
   },
   "dataset_id": "smoke_v1",
-  "promoted_at": "2026-09-25T07:09:32Z",
-  "promoted_from": "demo_v1_20260925T070923Z",
-  "reason": "The bundled worked example: the echo arm scored against the Opus silver reference for smoke_v1. Ships so a fresh checkout sees a complete loop \u2014 sources, dataset, config, reference, run, baseline \u2014 rather than an empty tree and a README describing one.",
+  "fingerprint_hash": "1335d7e120ddf4924b224eb6d8cc23215b3a403f2736292be1a490313cd435ca",
+  "promoted_at": "2026-10-23T14:23:35Z",
+  "promoted_from": "demo_v1_20261023T142324Z",
+  "reason": "The worked example a fresh clone ships: the bundled demo arm on smoke_v1, so V6 and the walked loop resolve inside the committed set.",
+  "reference_tier": "silver",
   "scores": {
     "cost_usd": 0.0,
-    "latency_ms": 0.0264,
+    "latency_ms": 0.009,
     "output_words": 34.8,
     "overlap_f1": 0.415895,
+    "resumed": 0.0,
     "total_cost_usd": 0.0
-  },
-  "supersedes": "demo_v1_20260925T070849Z"
+  }
 }

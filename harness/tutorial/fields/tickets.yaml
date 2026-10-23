@@ -1,0 +1,22 @@
+# The fields a support ticket carries (GUIDE step 1). The harness defines no field: a project
+# declares its own here, and any number of datasets can name this field set.
+fieldset_id: tickets
+description: Facts about a support ticket, written down when it was triaged.
+fields:
+  - name: area
+    type: choice
+    values: [account, billing, data, api, mobile]
+    label: Area
+    description: The part of the product the ticket is about.
+    required: true
+    public: true
+  - name: plan
+    type: choice
+    values: [business, enterprise]
+    label: Plan
+    description: The customer's plan, when the ticket states it.
+    public: true
+  - name: deadline
+    type: boolean
+    label: Names a deadline
+    description: The customer names a time by which they need an answer.

@@ -10,6 +10,8 @@
   "latency_ms": null,
   "n": 14,
   "output": "```json\n{\n  \"coherence\": [5, 5, 5, 5, 5, 1, 5, 5, 5, 5, 5, 5, 5, 5],\n  \"consistency\": [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5],\n  \"fluency\": [5, 5, 5, 5, 5, 2, 5, 5, 5, 5, 5, 5, 5, 5],\n  \"relevance\": [3, 4, 5, 3, 4, 2, 5, 5, 5, 5, 2, 5, 5, 4]\n}\n```",
+  "output_sha256": "fe93609f83ce7e0dc76283362d199e2cc6e8802b46c66b9f4ae31f3a34973103",
+  "output_withheld": false,
   "pass": "primary",
   "prompt_sha256": "e8362374df5a223ac802eef87af014059cbc0625ea45f918ce59f1ef1f8e74e7",
   "provider": "ModelRun",

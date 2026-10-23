@@ -48,7 +48,7 @@ Shared scoring code lives in [`_shared/`](_shared): `classification.py`, `extrac
 cross-cutting report. Seven findings, each tested in every experiment that could test it
 and computed from the stored runs rather than quoted: the dearest arm is never first (5 of 5 where the frontier models ran; on SciFact only the twelve cheapest hosted models ran),
 in five of six the leader is not separated from other arms (at 100–280 items, which
-is not the same as equal), a pilot with ρ ≈ 0.8 picked the wrong
+is not the same as equal), a pilot with ρ of 0.70–0.77 picked the wrong
 winner three times in the five experiments that ran one, and the scoring code moved single
 arms further than most model swaps did.
 
@@ -72,8 +72,8 @@ agree at only **ρ = 0.79**, and at 20 articles at **ρ = 0.44** (29 arms). Pric
 quality were uncorrelated across the 24 hosted arms (r −0.07, 95% interval −0.46 to +0.34),
 which does not exclude a moderate effect.
 
-Later, ML arms were added and BART took the lead — by **0.00008** over the best LLM across
-200 articles. Its lead at n=20 had been 0.0737. That illustrates the winner's curse, and it turns up twice: in the leaderboard, and in
+BART leads the best LLM by **0.00008** over 200 articles; on the 20-article dev slice its
+lead is 0.0737. That illustrates the winner's curse, and it turns up twice: in the leaderboard, and in
 `P(both halves crown the same arm)` collapsing to 0.01.
 
 Then the control: the same BART fine-tuned on **XSum** instead of CNN/DailyMail finishes
@@ -94,9 +94,9 @@ Three fine-tuned classifiers lead on the point estimate: `bert_base_ta` **0.9600
 separates from 26 of 29, not from `anthropic_m` (0.0500 behind); `bert_mini` is not
 separated from 11 hosted arms. The lead is concentrated in **17 items the hosted field
 mostly gets wrong** — the fine-tunes agree with the gold on 12–14 of them, `anthropic_l` on
-none — and on the other 183 there is no difference. Read by one person, about half follow a
-learnable AG News convention and half are mislabels: what fine-tuning bought here is
-reproducing the corpus's labelling. (The 17 are selected by the LLMs' own errors — see the
+none — and on the other 183 there is no difference. Adjudicated by topic by one reader shown the hosted
+answer, the gold was wrong on all 17, and on that gold every hosted LLM scores above every
+fine-tune: what fine-tuning bought here is reproducing the corpus's labelling. (The 17 are selected by the LLMs' own errors — see the
 report's §3.4.)
 
 The example also found that **the scoring code is a bigger lever than the model choice for
@@ -106,13 +106,12 @@ separating most of the field.
 ### DBpedia-14 — the same experiment, the opposite regime
 Deliberately paired with AG News, and **they should not be read one at a time.** Here the
 task is saturated: the leader separated from only **8 of 27**, and the top eleven arms are
-one group across a **115× price range**. The fine-tuned classifier — blocked for three days
-by a pickle checkpoint, run on 2026-09-30 — lands *inside* that group at 0.9857, $0:
+one group across a **115× price range**. The fine-tuned classifier lands *inside* that group at 0.9857, $0:
 where there is no headroom, training buys a tie, not a win.
 
 Both corpora carry systematic label noise, and on DBpedia it is the size of the signal —
 the top eleven are separated by four items, three of which 24–25 of the 26 learned arms
-dispute because the gold label is wrong.
+dispute; one reader, shown the hosted answer, judged the gold wrong on all three.
 
 ### Few-NERD — task-specific training, against a zero-shot control
 A 499 MB span tagger fine-tuned on the corpus scored above all 24 hosted LLMs as run here
@@ -201,7 +200,7 @@ done
 Each example's own README has the exact commands, its arms, and what its data licence
 permits. Costs are what the provider billed (`usage.cost`), not a price table — see
 [`REPORT_RETRIEVAL.md`](../research/REPORT_RETRIEVAL.md) §7 for why that distinction
-cost this repo four reports' worth of corrections.
+matters (a price table is wrong per arm by 0.67× to 3.76×).
 
 ## Unfinished work
 

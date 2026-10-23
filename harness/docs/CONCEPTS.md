@@ -17,7 +17,7 @@ Every run records three things:
 | **data** | `dataset_id` | you cannot compare anything to anything |
 
 `make validate` fails on a run missing any of them. `EVAL_BUILD_REF` sets the
-first when the harness lives outside a git repo — a version, an image digest, a
+first when the project is not the system under test, or is not a git repository — a version, an image digest, a
 pinned dependency ref, whatever actually identifies the thing being measured.
 
 **Pin it.** An eval against a moving target measures the target's movement, and
@@ -44,6 +44,21 @@ When data genuinely changes, that is a new version — `my_corpus_v2` — never 
 edit in place.
 
 ---
+
+## Fields describe an item; they do not identify it
+
+What you know about an item (the product area of a ticket, the show an episode came from,
+its length) belongs with the item, typed and checked, not in a spreadsheet beside the
+dataset that drifts from it. So a project declares its fields in a field set and the dataset
+carries the values. But a field is a description, not the bytes that were measured: correct
+a title and every run measured on that item is still a measurement of the same item. The
+fingerprint therefore hashes the items' bytes and ignores their fields, and the dataset
+records a separate hash of its fields, so a change to them is visible without invalidating
+anything.
+
+A field is also what makes "better on long episodes, worse on short ones" testable. Breaking a
+comparison into groups is several comparisons at once, though, so the per-group tests are
+corrected together: a group is held to a stricter threshold than it would be alone.
 
 ## Measure the arm's own noise before believing any delta
 
@@ -127,11 +142,11 @@ one from last quarter without saying so.
 - a run from a **dirty tree** — its `build.ref` does not describe what ran
 - a run whose **build is unknown** — a different and worse problem, so it takes
   its own flag
-- a **one-word reason** — because *"why is this the baseline?"* must have an
+- a **reason under three words** — because *"why is this the baseline?"* must have an
   answer in six months
 
-Baselines are frozen. Promoting a new one archives the old under
-`superseded/` rather than overwriting it.
+A baseline is never edited. Promoting a new one replaces it, and git keeps the old one:
+the commit history is the record of what the baseline was, and when.
 
 ---
 

@@ -19,12 +19,15 @@ to trust numbers that mean nothing:
 from __future__ import annotations
 
 import argparse
-import sys
-from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _common import RUNS, die, is_descriptive, read_json, verdict_for, ROOT  # noqa: E402
-
+from _adapter import recorded_metric_kinds
+from _common import (
+    RUNS,
+    die,
+    how,
+    read_json,
+    verdict_for,
+)
 
 
 def _report_fingerprint_delta(a: dict, b: dict) -> None:
@@ -41,13 +44,15 @@ def _report_fingerprint_delta(a: dict, b: dict) -> None:
     # send a reader looking for a change that is not there. Said out loud, because a
     # version field nothing reads is decoration.
     if fa and fb and fa.get("version") != fb.get("version"):
-        print(f"\n  NOTE: fingerprint versions differ (v{fa.get('version')} vs "
-              f"v{fb.get('version')}). v2 hashes the reference BYTES and v1 did not;\n"
-              f"  v3 widens that to every file in the reference directory, not just\n"
-              f"  *.txt, so\n"
-              "  the two hashes cannot be compared directly — the field-by-field list\n"
-              "  below is the comparison that still means something. Re-run the older\n"
-              "  arm to put both on the same version.")
+        print(
+            f"\n  NOTE: fingerprint versions differ (v{fa.get('version')} vs "
+            f"v{fb.get('version')}). v2 hashes the reference BYTES and v1 did not;\n"
+            f"  v3 widens that to every file in the reference directory, not just\n"
+            f"  *.txt, so\n"
+            "  the two hashes cannot be compared directly — the field-by-field list\n"
+            "  below is the comparison that still means something. Re-run the older\n"
+            "  arm to put both on the same version."
+        )
     if not (fa and fb):
         print(
             "\n  NOTE: at least one run predates fingerprinting, so what else changed"
@@ -76,7 +81,9 @@ def _report_fingerprint_delta(a: dict, b: dict) -> None:
             "\n  changed, so this is not a controlled comparison — it is two observations."
         )
 
+
 def load(run_id: str) -> dict:
+    """Load metrics.json for a run; die if not found."""
     p = RUNS / run_id / "metrics.json"
     if not p.is_file():
         die(f"no run {run_id!r} (looked for {p})")
@@ -84,6 +91,7 @@ def load(run_id: str) -> dict:
 
 
 def main() -> int:
+    """Load and summarize a single run."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--baseline", required=True)
     ap.add_argument("--candidate", required=True)
@@ -132,26 +140,7 @@ def main() -> int:
     # fixed this in leaderboard.py and not here. Found by external review.
     kinds = {**(a.get("metric_kinds") or {}), **(b.get("metric_kinds") or {})}
     for run in (a, b):
-        spec = run.get("adapter")
-        if not spec:
-            continue
-        for base in (ROOT, ROOT.parent, ROOT.parent / "examples"):
-            cand = Path(spec) if Path(spec).is_absolute() else base / spec
-            if not cand.is_file():
-                continue
-            try:
-                import importlib.util  # noqa: PLC0415
-
-                ms = importlib.util.spec_from_file_location(f"cmpkinds_{cand.stem}", cand)
-                mod = importlib.util.module_from_spec(ms)
-                sys.modules[ms.name] = mod
-                ms.loader.exec_module(mod)
-                cur = getattr(mod, "METRIC_KINDS", None)
-                if isinstance(cur, dict):
-                    kinds.update(cur)
-            except Exception:  # noqa: BLE001 — a stale adapter must not break a compare
-                pass
-            break
+        kinds.update(recorded_metric_kinds(run.get("adapter")) or {})
 
     worth = 0
     for k in keys:
@@ -180,7 +169,8 @@ def main() -> int:
     if args.noise is None:
         print(
             "\n  --noise was not given, so nothing was judged against the arm's own\n"
-            "  spread. Measure it first:  make experiment-run CONFIG=... REPEAT=3"
+            "  spread. Measure it first:  "
+            + how("evh experiment-run --config … --repeat 3", "make experiment-run CONFIG=... REPEAT=3")
         )
     print(f"\n  {worth} metric(s) moved beyond the stated noise floor")
     return 0

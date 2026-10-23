@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """How many items before a leaderboard stops moving? Measured, not assumed. $0.
 
-    python scripts/rank_stability.py --dataset-id cnn_dailymail_200 --metric coverage
+    python scripts/rank_stability.py --dataset-id cnn_dailymail_200 [--metric coverage]
 
 WHY
   "Is n big enough?" is normally answered from a power table, which needs an effect size
@@ -25,77 +25,32 @@ READING IT
 from __future__ import annotations
 
 import argparse
-import json
-import math
 import random
 import statistics
-import sys
-from collections import defaultdict
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE))
 
-from _common import RUNS, read_json, warn_on_ambiguous_runs  # noqa: E402
+from _common import RUNS, die  # noqa: E402
+from _runs import default_metric, direction, matrix, runs_on, warn_on_ambiguous_runs  # noqa: E402  # noqa: E402
+from stats import spearman  # noqa: E402 - midranks of midranks are the midranks: same rho
+
+#: The half sizes measured: two disjoint halves of n items each.
+SIZES = (10, 20, 50, 100)
 
 
 def load(dataset_id: str, metric: str, match: str | None):
-    acc: dict[str, dict[str, list[float]]] = defaultdict(lambda: defaultdict(list))
-    for d in sorted(RUNS.glob("*")):
-        mj, pj = d / "metrics.json", d / "predictions.jsonl"
-        if not (mj.is_file() and pj.is_file()):
-            continue
-        m = read_json(mj)
-        if m.get("dataset_id") != dataset_id:
-            continue
-        cid = m.get("config_id", d.name)
-        if match and match not in cid:
-            continue
-        for line in pj.read_text(encoding="utf-8").splitlines():
-            if line.strip():
-                row = json.loads(line)
-                if metric in row:
-                    acc[cid][row["item_id"]].append(float(row[metric]))
-    return {a: {i: statistics.fmean(v) for i, v in it.items()} for a, it in acc.items()}
-
-
-def spearman(x: list[float], y: list[float]) -> float:
-    """Spearman's rho as Pearson correlation OF THE RANKS, which is tie-correct.
-
-    THE VERSION THIS REPLACES WAS WRONG IN THE PRESENCE OF TIES, not merely inflated.
-    `1 - 6*sum(d^2)/(n(n^2-1))` is an algebraic shortcut for Pearson-on-ranks that holds
-    ONLY when every rank is distinct. Feed it tied data and it does not approximate rho,
-    it computes a different quantity -- and because the caller broke ties by arm NAME,
-    what it correlated in those cells was the alphabet.
-
-    The shortcut and this agree exactly when there are no ties, which the self-test
-    asserts, so nothing changes on a continuous metric. What changes is every figure on a
-    metric that ties: accuracy on a saturated task, most of all.
-    """
-    n = len(x)
-    if n < 2:
-        return float("nan")
-    mx, my = statistics.fmean(x), statistics.fmean(y)
-    sxy = sum((a - mx) * (b - my) for a, b in zip(x, y))
-    sxx = sum((a - mx) ** 2 for a in x)
-    syy = sum((b - my) ** 2 for b in y)
-    if sxx <= 0 or syy <= 0:
-        # Every arm tied in one half: there is no ordering to correlate. NaN, not 0.0 --
-        # 0.0 would read as "no agreement" when the truth is "no question asked".
-        return float("nan")
-    return sxy / math.sqrt(sxx * syy)
+    """All arms' per-item scores on this dataset; optionally filtered by config_id substring."""
+    return matrix(runs_on(dataset_id, match=match), metric)
 
 
 def ranks_on(M, arms, items):
     """Ranks by mean score, with TIED ARMS SHARING THE AVERAGE RANK.
 
-    The previous version handed every arm a distinct integer from `sorted`, which is
-    stable and therefore broke ties alphabetically. Two arms with identical scores got
-    different ranks decided by their names, and everything downstream -- rho, the median
-    rank move, P(same winner) -- measured that.
-
-    Average ranks (the standard midrank convention) are what makes the tie-correct rho
-    above meaningful: tied arms are now genuinely indistinguishable to it.
+    Distinct integers from `sorted` would break ties alphabetically (it is stable), so
+    two arms with identical scores would get ranks decided by their names, and rho, the
+    median rank move and P(same winner) would measure that. Average ranks (the standard
+    midrank convention) make tied arms indistinguishable to the tie-correct rho above.
     """
     mu = {a: statistics.fmean(M[a][i] for i in items) for a in arms}
     order = sorted(arms, key=lambda a: -mu[a])
@@ -105,7 +60,7 @@ def ranks_on(M, arms, items):
         j = i
         while j + 1 < len(order) and mu[order[j + 1]] == mu[order[i]]:
             j += 1
-        midrank = (i + j) / 2 + 1          # 1-indexed average of the tied block
+        midrank = (i + j) / 2 + 1  # 1-indexed average of the tied block
         for k in range(i, j + 1):
             out[order[k]] = midrank
         i = j + 1
@@ -138,33 +93,48 @@ def tied_at_top(M, arms, items) -> int:
 
 
 def main() -> int:
+    """Measure how many items it takes before the ranking stops moving."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", required=True)
-    ap.add_argument("--metric", default="coverage")
+    ap.add_argument("--metric", help="default: the primary metric the runs recorded")
     ap.add_argument("--match")
     ap.add_argument("--draws", type=int, default=400)
     ap.add_argument("--seed", type=int, default=20260926)
+    ap.add_argument("--asc", action="store_true", help="lower is better (default: inferred)")
+    ap.add_argument("--desc", action="store_true", help="higher is better, whatever the runs declare")
     args = ap.parse_args()
     # Two runs sharing a config_id are averaged together below without
-    # saying so. See _common.warn_on_ambiguous_runs.
+    # saying so. See _runs.warn_on_ambiguous_runs.
     warn_on_ambiguous_runs(RUNS, args.dataset_id, label=RUNS.name)
 
+    args.metric = args.metric or default_metric(args.dataset_id, args.match)
     M = load(args.dataset_id, args.metric, args.match)
+    if direction(runs_on(args.dataset_id, match=args.match), args.metric, args.asc, args.desc):
+        # Ranked best first, whichever way is better: for cost or latency the best is the
+        # lowest. Negating once here keeps every rank and "winner" below the right way up.
+        M = {a: {i: -v for i, v in s.items()} for a, s in M.items()}
     arms = sorted(M)
-    items = sorted(set.intersection(*(set(M[a]) for a in arms)))
     if len(arms) < 3:
-        print(f"  {len(arms)} arm(s) — need at least 3 to rank"); return 1
-    print(f"  {len(arms)} arms, {len(items)} items, metric={args.metric}, "
-          f"{args.draws} draws per size\n")
+        die(f"{len(arms)} arm(s) with per-item '{args.metric}' on {args.dataset_id}: need at least 3 to rank")
+    items = sorted(set.intersection(*(set(M[a]) for a in arms)))
+    if 2 * SIZES[0] > len(items):
+        print(
+            f"  {len(items)} items shared by the {len(arms)} arms: too few for two disjoint halves of "
+            f"{SIZES[0]}, the smallest size measured. Rank stability needs at least {2 * SIZES[0]}."
+        )
+        return 1
+    print(f"  {len(arms)} arms, {len(items)} items, metric={args.metric}, {args.draws} draws per size\n")
 
     full = ranks_on(M, arms, items)
     winner = min(arms, key=lambda a: full[a])
     rng = random.Random(args.seed)
 
-    print(f"  {'n per half':>11} {'rho(half A, half B)':>21} {'5th pct':>9} "
-          f"{'P(same winner)':>15} {'median |rank move|':>19} {'arms tied 1st':>14}")
+    print(
+        f"  {'n per half':>11} {'rho(half A, half B)':>21} {'5th pct':>9} "
+        f"{'P(same winner)':>15} {'median |rank move|':>19} {'arms tied 1st':>14}"
+    )
     worst_ties = 0.0
-    for n in (10, 20, 50, 100):
+    for n in SIZES:
         if 2 * n > len(items):
             continue
         rhos, same, moves, ties, undecided = [], 0, [], [], 0
@@ -200,19 +170,21 @@ def main() -> int:
         # unique best arm, how often was it the same one". Dividing by all draws would
         # mix "they disagreed" with "neither half had an answer".
         pw = (same / decided) if decided else float("nan")
-        print(f"  {n:>11} {rho_m:>21.3f} {rho_5:>9.3f} "
-              f"{pw:>15.2f} {statistics.fmean(moves):>19.2f} "
-              f"{mean_ties:>14.1f}{flag}"
-              + (f"   [{undecided}/{args.draws} draws undecided]" if undecided else ""))
+        print(
+            f"  {n:>11} {rho_m:>21.3f} {rho_5:>9.3f} "
+            f"{pw:>15.2f} {statistics.fmean(moves):>19.2f} "
+            f"{mean_ties:>14.1f}{flag}"
+            + (f"   [{undecided}/{args.draws} draws undecided]" if undecided else "")
+        )
         worst_ties = max(worst_ties, mean_ties)
     print(f"\n  full-{len(items)} ordering's leader: {winner}")
     print("  'P(same winner)' = of the draws where BOTH halves had a UNIQUE best arm, how")
     print("  often it was the same one. Draws where either half's top was tied are counted")
     print("  as undecided and excluded, never as agreement. 'rank move' = median")
     print("  positions an arm sits from its full-set rank, in a half of that size.")
-    print("  'arms tied 1st' = how many arms share the best score. `sorted` is stable and")
-    print("  arms are alphabetical, so ties are broken by NAME -- where this is large,")
-    print("  rho and P(same winner) are measuring the alphabet, not the data.")
+    print("  'arms tied 1st' = how many arms share the best score. Tied arms share a")
+    print("  midrank, so where this is large rho has little order to agree about and most")
+    print("  draws are undecided.")
     if worst_ties >= 2.0:
         print(f"\n  WARNING: up to {worst_ties:.1f} arms tie for first in a half. This")
         print("  metric is saturated at these sizes; read the tie column before rho.")

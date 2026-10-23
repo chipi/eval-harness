@@ -27,7 +27,6 @@ WHAT IT MEASURES
 
 from __future__ import annotations
 
-import importlib.util
 import json
 import statistics as st
 import sys
@@ -35,21 +34,23 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
+sys.path.insert(0, str(HERE.parent / "_shared"))
+from modules import load_module  # noqa: E402
+
 OUT = ROOT / "docs" / "evidence" / "calibration" / "summarization.json"
 
 #: As published, ROUGE-1 / ROUGE-2 / ROUGE-L F1 x100, non-anonymised CNN/DailyMail test.
 PUBLISHED = {
-    "lead3": {"rouge1": 40.34, "rouge2": 17.70, "source": "See et al. 2017, "
-              "'Get To The Point', Table 1 (lead-3 baseline, non-anonymised)"},
+    "lead3": {
+        "rouge1": 40.34,
+        "rouge2": 17.70,
+        "source": "See et al. 2017, 'Get To The Point', Table 1 (lead-3 baseline, non-anonymised)",
+    },
 }
 
 
 def _load(path: Path, name: str):
-    spec = importlib.util.spec_from_file_location(name, path)
-    mod = importlib.util.module_from_spec(spec)
-    sys.modules[name] = mod
-    spec.loader.exec_module(mod)
-    return mod
+    return load_module(path, name)
 
 
 def main() -> int:
@@ -74,23 +75,24 @@ def main() -> int:
             r1.append(s["rouge1"].fmeasure)
             r2.append(s["rouge2"].fmeasure)
         n = len(subset)
-        return {"n": n,
-                "rouge1": round(100 * st.mean(r1), 2),
-                "rouge1_ci95": round(196 * st.pstdev(r1) / n ** 0.5, 2),
-                "rouge2": round(100 * st.mean(r2), 2),
-                "rouge2_ci95": round(196 * st.pstdev(r2) / n ** 0.5, 2)}
+        return {
+            "n": n,
+            "rouge1": round(100 * st.mean(r1), 2),
+            "rouge1_ci95": round(196 * st.pstdev(r1) / n**0.5, 2),
+            "rouge2": round(100 * st.mean(r2), 2),
+            "rouge2_ci95": round(196 * st.pstdev(r2) / n**0.5, 2),
+        }
 
     by_id = {str(r["id"]): r for r in rows}
     slices = {}
     for ds in ("cnn_dailymail_200", "cnn_dailymail_dm200"):
-        items = json.loads((ROOT / "harness" / "data" / "datasets" / f"{ds}.json")
-                           .read_text())["items"]
+        items = json.loads((ROOT / "harness" / "data" / "datasets" / f"{ds}.json").read_text())["items"]
         ids = [Path(i["source_path"]).stem for i in items]
         slices[ds] = score([by_id[i] for i in ids if i in by_id])
 
     result = {
         "what": "lead3 (this repo's _lead_k) on abisee/cnn_dailymail 3.0.0 test, "
-                "rouge_score F1 x100, use_stemmer=True",
+        "rouge_score F1 x100, use_stemmer=True",
         "split_rows": len(rows),
         "full_test": score(rows),
         "by_outlet": {
@@ -103,8 +105,10 @@ def main() -> int:
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(result, indent=2) + "\n")
     f, p = result["full_test"], PUBLISHED["lead3"]
-    print(f"lead3 full test (n={f['n']}): R1 {f['rouge1']} ±{f['rouge1_ci95']}  "
-          f"R2 {f['rouge2']} ±{f['rouge2_ci95']}   published R1 {p['rouge1']} R2 {p['rouge2']}")
+    print(
+        f"lead3 full test (n={f['n']}): R1 {f['rouge1']} ±{f['rouge1_ci95']}  "
+        f"R2 {f['rouge2']} ±{f['rouge2_ci95']}   published R1 {p['rouge1']} R2 {p['rouge2']}"
+    )
     for k, v in {**result["by_outlet"], **slices}.items():
         print(f"  {k:22s} n={v['n']:5d}  R1 {v['rouge1']}  R2 {v['rouge2']}")
     print(f"wrote {OUT.relative_to(ROOT)}")

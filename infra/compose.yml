@@ -1,0 +1,90 @@
+# The `evals` stack on the prod VPS: the harness site, the catalog, and the run inspector of
+# this repository's example experiments. Lives at /srv/evals/current/compose.yml on the box
+# (infra/deploy/deploy.sh). Shares nothing with the other tenants: own compose project, own
+# containers, own loopback ports (127.0.0.1:8096 nginx, 127.0.0.1:8097 inspector), own files.
+# The only public entry is the shared Caddy edge (infra/caddy/). Template: chipi/humancopilot.eu
+# infra/compose.yml (the prod session's hardening, unchanged).
+name: evals
+
+services:
+  nginx:
+    # Static pages: evals.humancopilot.eu (site/public) and catalog.evals.humancopilot.eu (the
+    # built catalog). nginx-unprivileged stable line, pinned by digest; bump tag and digest together.
+    image: nginxinc/nginx-unprivileged:1.30.6-alpine@sha256:782bb89768cc87b7f95c18b95baa1af250e5d451f26794f59363540161147c01
+    container_name: evals-nginx
+    # Bypass the image's entrypoint scripts: they try to rewrite /etc/nginx on a read-only root.
+    # The config path goes through the `current` symlink, so a reload picks up a new release.
+    entrypoint: ["nginx", "-c", "/srv/evals/current/nginx/nginx.conf", "-g", "daemon off;"]
+    ports:
+      - "127.0.0.1:${EVALS_PORT:-8096}:8080"
+    volumes:
+      - /srv/evals:/srv/evals:ro
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,uid=101,gid=101,mode=0700
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 64m
+    cpus: 0.5
+    pids_limit: 64
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/healthz"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  inspector:
+    # The run inspector's API (/api/* on catalog.evals.humancopilot.eu): the harness's own
+    # catalog_serve.py in --public mode, standard library only, so the stock Python image runs
+    # the release's copy of the package (installed from its wheel by render.sh) from the
+    # read-only mount: nothing is built or installed on the box.
+    # It reads the release's copy of the runs and references; it calls out to nothing.
+    image: python:3.12.14-alpine3.23@sha256:d339953547bb5bc57eb5c1ff3224c40890ce56e494b13a52a574658e5a0f888a
+    container_name: evals-inspector
+    user: "65534:65534"
+    working_dir: /srv/evals/current/inspector
+    environment:
+      EVAL_HOME: /srv/evals/current/inspector
+      EVAL_BUILD_REF: deployed
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTHONUNBUFFERED: "1"
+    command:
+      - python
+      - /srv/evals/current/inspector/pkg/evaluation_harness/catalog_serve.py
+      - --public
+      - catalog.evals.humancopilot.eu
+      - --bind
+      - 0.0.0.0
+      - --port
+      - "8080"
+      - --rate
+      - "60"
+      - --warm
+      - /srv/evals/current/sites/catalog.evals.humancopilot.eu/public
+    ports:
+      - "127.0.0.1:${INSPECTOR_PORT:-8097}:8080"
+    volumes:
+      - /srv/evals:/srv/evals:ro
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,uid=65534,gid=65534,mode=0700
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 256m
+    cpus: 0.5
+    pids_limit: 64
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen(u.Request('http://127.0.0.1:8080/api/health', headers={'Host': 'catalog.evals.humancopilot.eu'}), timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }

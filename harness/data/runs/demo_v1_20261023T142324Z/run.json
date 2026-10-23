@@ -1,0 +1,7 @@
+{
+  "config_id": "demo_v1",
+  "dataset_id": "smoke_v1",
+  "note": "written before the first item so a crashed run can still be identified; metrics.json is written only on a clean exit",
+  "run_id": "demo_v1_20261023T142324Z",
+  "started_at": "2026-10-23T14:23:24Z"
+}

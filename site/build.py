@@ -27,19 +27,25 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
+import csp  # noqa: E402
 import figures  # noqa: E402
+import method  # noqa: E402
 import releases  # noqa: E402
 import remeasured  # noqa: E402
-import method  # noqa: E402
 
 ROOT = HERE.parent
 REPO = "https://github.com/chipi/eval-harness"
 BLOB = f"{REPO}/blob/main"
 SITE = "https://evals.humancopilot.eu"
+#: The docs (mkdocs, GitHub Pages) and the harness's own deployment for these experiments
+#: (catalog, goal pages, run inspector) live on their own subdomains, linked from the nav.
+DOCS = "https://docs.evals.humancopilot.eu/"
+CATALOG = "https://catalog.evals.humancopilot.eu/"
 OUT = HERE / "public"
 #: The harness version the site describes, from the one place it is set.
-VERSION = re.search(r'__version__ = "([^"]+)"',
-                    (ROOT / "harness" / "scripts" / "_version.py").read_text()).group(1)
+VERSION = re.search(
+    r'__version__ = "([^"]+)"', (ROOT / "harness" / "scripts" / "_version.py").read_text()
+).group(1)
 #: Replaced at deploy (pages.yml) with the commit being served; a local build says so.
 BUILD_MARK = "build: local"
 
@@ -75,7 +81,9 @@ def qv(sentence: str, report: str) -> str:
     if key not in _REPORT_TEXT:
         _REPORT_TEXT[key] = _plain((ROOT / report).read_text(encoding="utf-8"))
     if _plain(sentence) not in _REPORT_TEXT[key]:
-        raise SystemExit(f"site copy quotes, as {report}'s own words, a sentence it does not contain:\n  {sentence[:160]}")
+        raise SystemExit(
+            f"site copy quotes, as {report}'s own words, a sentence it does not contain:\n  {sentence[:160]}"
+        )
     return sentence
 
 
@@ -93,7 +101,7 @@ def times(x: float) -> str:
     return f"{math.floor(x)}×" if x >= 10 else f"{x:.1f}×"
 
 
-_WORDS = ("zero one two three four five six seven eight nine ten").split()
+_WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"]
 
 
 def word(n: int) -> str:
@@ -106,8 +114,12 @@ def ordinal(n: int) -> str:
 
 
 KIND = {"proprietary": "proprietary", "open": "open", "local": "local", "baseline": "baseline"}
-KIND_LABEL = {"proprietary": "hosted · proprietary", "open": "hosted · open weights",
-              "local": "local · free", "baseline": "baseline"}
+KIND_LABEL = {
+    "proprietary": "hosted · proprietary",
+    "open": "hosted · open weights",
+    "local": "local · free",
+    "baseline": "baseline",
+}
 
 
 def kind_of(a: dict) -> str:
@@ -132,8 +144,10 @@ def both(wide: str, narrow: str) -> str:
 # ── charts ──────────────────────────────────────────────────────────────────
 def dot(cx: float, cy: float, r: float, k: str, tip: str) -> str:
     """A data dot, plus a larger transparent circle on top so a fingertip can hit it."""
-    return (f'<circle cx="{cx:.1f}" cy="{cy:.1f}" r="{r}" class="dot k-{k}"><title>{e(tip)}</title></circle>'
-            f'<circle cx="{cx:.1f}" cy="{cy:.1f}" r="12" class="hit" data-tip="{e(tip)}"/>')
+    return (
+        f'<circle cx="{cx:.1f}" cy="{cy:.1f}" r="{r}" class="dot k-{k}"><title>{e(tip)}</title></circle>'
+        f'<circle cx="{cx:.1f}" cy="{cy:.1f}" r="12" class="hit" data-tip="{e(tip)}"/>'
+    )
 
 
 def off_scale(arms: list) -> tuple:
@@ -168,33 +182,54 @@ def strip(exp: dict, width: int = 1000, height: int = 92, title: bool = True, co
         return edge if v < lo else left + (v - lo) / (hi - lo) * (right - left)
 
     tied = [a for a in arms if a["arm"] in exp["tied"]] + [exp["leader_row"]]
-    out = [f'<svg viewBox="0 0 {width} {height}" role="img" aria-label="{e(exp["bench"])}: every learned arm by {e(exp["metric_label"])}">']
+    out = [
+        f'<svg viewBox="0 0 {width} {height}" role="img" aria-label="{e(exp["bench"])}: every learned arm by {e(exp["metric_label"])}">'
+    ]
     if title and compact:
-        out.append(f'<text x="0" y="20" class="t-head" font-size="20">{e(exp["bench"])}</text>'
-                   f'<text x="{width}" y="20" text-anchor="end" class="t-muted" font-size="14">{e(exp["task"].lower())} · {e(exp["metric_label"])}</text>')
+        out.append(
+            f'<text x="0" y="20" class="t-head" font-size="20">{e(exp["bench"])}</text>'
+            f'<text x="{width}" y="20" text-anchor="end" class="t-muted" font-size="14">{e(exp["task"].lower())} · {e(exp["metric_label"])}</text>'
+        )
     elif title:
-        out.append(f'<text x="0" y="{y - 6}" class="t-head" font-size="17">{e(exp["bench"])}</text>'
-                   f'<text x="0" y="{y + 14}" class="t-muted" font-size="11">{e(exp["task"].lower())} · {e(exp["metric_label"])}</text>')
+        out.append(
+            f'<text x="0" y="{y - 6}" class="t-head" font-size="17">{e(exp["bench"])}</text>'
+            f'<text x="0" y="{y + 14}" class="t-muted" font-size="11">{e(exp["task"].lower())} · {e(exp["metric_label"])}</text>'
+        )
     if len(tied) > 1:
         x0, x1 = x(min(a["score"] for a in tied)), x(max(a["score"] for a in tied))
-        out.append(f'<rect x="{x0 - 8:.1f}" y="{y - 22}" width="{x1 - x0 + 16:.1f}" height="44" rx="10" class="band"/>')
+        out.append(
+            f'<rect x="{x0 - 8:.1f}" y="{y - 22}" width="{x1 - x0 + 16:.1f}" height="44" rx="10" class="band"/>'
+        )
     out.append(f'<line x1="{left}" x2="{right}" y1="{y}" y2="{y}" class="axis"/>')
     if off:
-        out.append(f'<line x1="{edge}" x2="{edge + 14}" y1="{y}" y2="{y}" class="axis"/>'
-                   f'<text x="{edge + 23}" y="{y + 5}" text-anchor="middle" class="t-muted" font-size="{fs + 2}">⫽</text>')
+        out.append(
+            f'<line x1="{edge}" x2="{edge + 14}" y1="{y}" y2="{y}" class="axis"/>'
+            f'<text x="{edge + 23}" y="{y + 5}" text-anchor="middle" class="t-muted" font-size="{fs + 2}">⫽</text>'
+        )
     for a in sorted(arms, key=lambda a: a["arm"] == exp["dearest"]["arm"]):
         k = kind_of(a)
-        tip = (f'{a["arm"]} · {KIND_LABEL[k]}\n{exp["metric_label"]} {a["score"]:.4f} · rank {a["rank"]}/{exp["n_arms"]}'
-               + (f'\nbilled {money(a["cost"])} for {exp["n_items"]} items' if a["cost"] > 0 else "\nfree: runs locally, nothing billed") + ("\noff the scale: far below the field" if a in off else ""))
+        tip = (
+            f"{a['arm']} · {KIND_LABEL[k]}\n{exp['metric_label']} {a['score']:.4f} · rank {a['rank']}/{exp['n_arms']}"
+            + (
+                f"\nbilled {money(a['cost'])} for {exp['n_items']} items"
+                if a["cost"] > 0
+                else "\nfree: runs locally, nothing billed"
+            )
+            + ("\noff the scale: far below the field" if a in off else "")
+        )
         r = 7 if a["arm"] in (exp["top"]["arm"], exp["dearest"]["arm"]) else 5.5
         out.append(dot(x(a["score"]), y, r, k, tip))
     d, t = exp["dearest"], exp["top"]
     half = 100 if compact else 70  # keep the centred label inside the frame
     dx = min(max(x(d["score"]), left + half), right - half)
-    out.append(f'<circle cx="{x(d["score"]):.1f}" cy="{y}" r="11" class="ring"/>'
-               f'<text x="{dx:.1f}" y="{y - 18}" text-anchor="middle" class="t-ink" font-size="{fs}">dearest · {ordinal(d["rank"])} · {d["score"]:.3f}</text>')
+    out.append(
+        f'<circle cx="{x(d["score"]):.1f}" cy="{y}" r="11" class="ring"/>'
+        f'<text x="{dx:.1f}" y="{y - 18}" text-anchor="middle" class="t-ink" font-size="{fs}">dearest · {ordinal(d["rank"])} · {d["score"]:.3f}</text>'
+    )
     if t["arm"] != d["arm"]:
-        out.append(f'<text x="{min(x(t["score"]), right - 4):.1f}" y="{y + 30}" text-anchor="end" class="t-ink" font-size="{fs}">{e(t["arm"])} · 1st · {t["score"]:.3f}</text>')
+        out.append(
+            f'<text x="{min(x(t["score"]), right - 4):.1f}" y="{y + 30}" text-anchor="end" class="t-ink" font-size="{fs}">{e(t["arm"])} · 1st · {t["score"]:.3f}</text>'
+        )
     out.append("</svg>")
     return "".join(out)
 
@@ -211,25 +246,35 @@ def forest(rows: list, width: int = 1000, compact: bool = False) -> str:
     def x(v):
         return left + (v + span) / (2 * span) * (right - left)
 
-    out = [f'<svg viewBox="0 0 {width} {height}" role="img" aria-label="Calibration: this repo against published values">']
+    out = [
+        f'<svg viewBox="0 0 {width} {height}" role="img" aria-label="Calibration: this repo against published values">'
+    ]
     for t in (-4, -2, 0, 2, 4):
         cls = "axis" if t == 0 else "grid"
-        out.append(f'<line x1="{x(t):.1f}" x2="{x(t):.1f}" y1="{top - 8}" y2="{height - 26}" class="{cls}"/>'
-                   f'<text x="{x(t):.1f}" y="{height - 8}" text-anchor="middle" class="t-muted" font-size="10">{t:+d}</text>')
-    out.append(f'<text x="{x(0):.1f}" y="{top - 16}" text-anchor="middle" class="t-muted" font-size="10">published value</text>')
+        out.append(
+            f'<line x1="{x(t):.1f}" x2="{x(t):.1f}" y1="{top - 8}" y2="{height - 26}" class="{cls}"/>'
+            f'<text x="{x(t):.1f}" y="{height - 8}" text-anchor="middle" class="t-muted" font-size="10">{t:+d}</text>'
+        )
+    out.append(
+        f'<text x="{x(0):.1f}" y="{top - 16}" text-anchor="middle" class="t-muted" font-size="10">published value</text>'
+    )
     for i, r in enumerate(rows):
         y = top + i * row_h + row_h / 2
         lo, hi = max(-span, r["delta"] - r["ci"]), min(span, r["delta"] + r["ci"])
         fmt = (lambda v: f"{v:.2f}") if r["scale"] == 1 else (lambda v: f"{v / 100:.4f}")
-        tip = f'{r["bench"]} · {r["what"]}\nours {fmt(r["ours"])} ± {fmt(r["ci"])}\npublished {fmt(r["published"])}\nn = {r["n"]}'
-        out.append(f'<text x="0" y="{y - 3}" class="t-ink" font-size="13">{e(r["bench"])}</text>'
-                   f'<text x="0" y="{y + 13}" class="t-muted" font-size="11">{e(r["what"])}</text>'
-                   f'<line x1="{x(lo):.1f}" x2="{x(hi):.1f}" y1="{y}" y2="{y}" stroke="var(--ink-2)" stroke-width="2" stroke-linecap="round"/>'
-                   f'<circle cx="{x(r["delta"]):.1f}" cy="{y}" r="6.5" class="dot accent" data-tip="{e(tip)}"><title>{e(tip)}</title></circle>'
-                   f'<text x="{right + 18}" y="{y + 4}" class="t-ink" font-size="12">{fmt(r["ours"])}</text>'
-                   f'<text x="{right + 82}" y="{y + 4}" class="t-muted" font-size="12">{fmt(r["published"])}</text>')
-    out.append(f'<text x="{right + 18}" y="{top - 16}" class="t-muted" font-size="10">ours</text>'
-               f'<text x="{right + 82}" y="{top - 16}" class="t-muted" font-size="10">published</text></svg>')
+        tip = f"{r['bench']} · {r['what']}\nours {fmt(r['ours'])} ± {fmt(r['ci'])}\npublished {fmt(r['published'])}\nn = {r['n']}"
+        out.append(
+            f'<text x="0" y="{y - 3}" class="t-ink" font-size="13">{e(r["bench"])}</text>'
+            f'<text x="0" y="{y + 13}" class="t-muted" font-size="11">{e(r["what"])}</text>'
+            f'<line x1="{x(lo):.1f}" x2="{x(hi):.1f}" y1="{y}" y2="{y}" stroke="var(--ink-2)" stroke-width="2" stroke-linecap="round"/>'
+            f'<circle cx="{x(r["delta"]):.1f}" cy="{y}" r="6.5" class="dot accent" data-tip="{e(tip)}"><title>{e(tip)}</title></circle>'
+            f'<text x="{right + 18}" y="{y + 4}" class="t-ink" font-size="12">{fmt(r["ours"])}</text>'
+            f'<text x="{right + 82}" y="{y + 4}" class="t-muted" font-size="12">{fmt(r["published"])}</text>'
+        )
+    out.append(
+        f'<text x="{right + 18}" y="{top - 16}" class="t-muted" font-size="10">ours</text>'
+        f'<text x="{right + 82}" y="{top - 16}" class="t-muted" font-size="10">published</text></svg>'
+    )
     return "".join(out)
 
 
@@ -240,22 +285,30 @@ def _forest_compact(rows: list, span: float, width: int = 400) -> str:
     def x(v):
         return left + (v + span) / (2 * span) * (right - left)
 
-    out = [f'<svg viewBox="0 0 {width} {height}" role="img" aria-label="Calibration: this repo against published values">']
+    out = [
+        f'<svg viewBox="0 0 {width} {height}" role="img" aria-label="Calibration: this repo against published values">'
+    ]
     for t in (-4, -2, 0, 2, 4):
         cls = "axis" if t == 0 else "grid"
-        out.append(f'<line x1="{x(t):.1f}" x2="{x(t):.1f}" y1="{top - 6}" y2="{height - 26}" class="{cls}"/>'
-                   f'<text x="{x(t):.1f}" y="{height - 8}" text-anchor="middle" class="t-muted" font-size="14">{t:+d}</text>')
-    out.append(f'<text x="{x(0):.1f}" y="{top - 14}" text-anchor="middle" class="t-muted" font-size="14">published value</text>')
+        out.append(
+            f'<line x1="{x(t):.1f}" x2="{x(t):.1f}" y1="{top - 6}" y2="{height - 26}" class="{cls}"/>'
+            f'<text x="{x(t):.1f}" y="{height - 8}" text-anchor="middle" class="t-muted" font-size="14">{t:+d}</text>'
+        )
+    out.append(
+        f'<text x="{x(0):.1f}" y="{top - 14}" text-anchor="middle" class="t-muted" font-size="14">published value</text>'
+    )
     for i, r in enumerate(rows):
         y0 = top + i * row_h
         lo, hi = max(-span, r["delta"] - r["ci"]), min(span, r["delta"] + r["ci"])
         fmt = (lambda v: f"{v:.2f}") if r["scale"] == 1 else (lambda v: f"{v / 100:.4f}")
-        tip = f'{r["bench"]} · {r["what"]}\nours {fmt(r["ours"])} ± {fmt(r["ci"])}\npublished {fmt(r["published"])}\nn = {r["n"]}'
+        tip = f"{r['bench']} · {r['what']}\nours {fmt(r['ours'])} ± {fmt(r['ci'])}\npublished {fmt(r['published'])}\nn = {r['n']}"
         yb = y0 + 38
-        out.append(f'<text x="0" y="{y0 + 16}" class="t-ink" font-size="16">{e(r["bench"])} <tspan class="t-muted" font-size="14">{e(r["what"])}</tspan></text>'
-                   f'<text x="0" y="{y0 + 66}" class="t-muted" font-size="14">ours <tspan class="t-ink">{fmt(r["ours"])}</tspan> · published {fmt(r["published"])}</text>'
-                   f'<line x1="{x(lo):.1f}" x2="{x(hi):.1f}" y1="{yb}" y2="{yb}" stroke="var(--ink-2)" stroke-width="2" stroke-linecap="round"/>'
-                   f'<circle cx="{x(r["delta"]):.1f}" cy="{yb}" r="7" class="dot accent" data-tip="{e(tip)}"><title>{e(tip)}</title></circle>')
+        out.append(
+            f'<text x="0" y="{y0 + 16}" class="t-ink" font-size="16">{e(r["bench"])} <tspan class="t-muted" font-size="14">{e(r["what"])}</tspan></text>'
+            f'<text x="0" y="{y0 + 66}" class="t-muted" font-size="14">ours <tspan class="t-ink">{fmt(r["ours"])}</tspan> · published {fmt(r["published"])}</text>'
+            f'<line x1="{x(lo):.1f}" x2="{x(hi):.1f}" y1="{yb}" y2="{yb}" stroke="var(--ink-2)" stroke-width="2" stroke-linecap="round"/>'
+            f'<circle cx="{x(r["delta"]):.1f}" cy="{yb}" r="7" class="dot accent" data-tip="{e(tip)}"><title>{e(tip)}</title></circle>'
+        )
     out.append("</svg>")
     return "".join(out)
 
@@ -281,11 +334,13 @@ def slope(rows: list, width: int = 640, height: int = 420, compact: bool = False
     def y(v):
         return bottom - (v - lo) / (hi - lo) * (bottom - top)
 
-    out = [f'<svg viewBox="0 0 {width} {height}" role="img" aria-label="Local summarisers on CNN and on DailyMail">',
-           f'<text x="{x0}" y="20" text-anchor="middle" class="t-muted" font-size="{fs}">CNN slice</text>',
-           f'<text x="{x1}" y="20" text-anchor="middle" class="t-muted" font-size="{fs}">DailyMail slice</text>',
-           f'<line x1="{x0}" x2="{x0}" y1="{top - 8}" y2="{bottom + 8}" class="axis"/>',
-           f'<line x1="{x1}" x2="{x1}" y1="{top - 8}" y2="{bottom + 8}" class="axis"/>']
+    out = [
+        f'<svg viewBox="0 0 {width} {height}" role="img" aria-label="Local summarisers on CNN and on DailyMail">',
+        f'<text x="{x0}" y="20" text-anchor="middle" class="t-muted" font-size="{fs}">CNN slice</text>',
+        f'<text x="{x1}" y="20" text-anchor="middle" class="t-muted" font-size="{fs}">DailyMail slice</text>',
+        f'<line x1="{x0}" x2="{x0}" y1="{top - 8}" y2="{bottom + 8}" class="axis"/>',
+        f'<line x1="{x1}" x2="{x1}" y1="{top - 8}" y2="{bottom + 8}" class="axis"/>',
+    ]
     # Ties share one label ("bart_l, bart_m"); then labels are spread so none overlap.
     groups: dict = {}
     for r in rows:
@@ -293,16 +348,22 @@ def slope(rows: list, width: int = 640, height: int = 420, compact: bool = False
     right = _spread([(v, y(v)) for v in groups], 20)
     left = _spread([(r["arm"], y(r["cnn"])) for r in rows], 18)
     for v, names in groups.items():
-        out.append(f'<text x="{x1 + 16}" y="{right[v] + 5:.1f}" class="t-ink" font-size="{fs}">{e(", ".join(names))} {v:.3f}</text>')
+        out.append(
+            f'<text x="{x1 + 16}" y="{right[v] + 5:.1f}" class="t-ink" font-size="{fs}">{e(", ".join(names))} {v:.3f}</text>'
+        )
     for r in rows:
-        out.append(f'<text x="{x0 - 16}" y="{left[r["arm"]] + 5:.1f}" text-anchor="end" class="t-muted" font-size="{fs - 1}">{r["cnn"]:.3f}</text>')
+        out.append(
+            f'<text x="{x0 - 16}" y="{left[r["arm"]] + 5:.1f}" text-anchor="end" class="t-muted" font-size="{fs - 1}">{r["cnn"]:.3f}</text>'
+        )
     for r in rows:
         k = "baseline" if r["arm"] == "lead3" else "local"
         dash = ' stroke-dasharray="5 5"' if r["arm"] == "bart_l_xsum" else ""
-        tip = f'{r["arm"]}\ncoverage {r["cnn"]:.4f} on CNN → {r["dm"]:.4f} on DailyMail'
-        out.append(f'<line x1="{x0}" y1="{y(r["cnn"]):.1f}" x2="{x1}" y2="{y(r["dm"]):.1f}" class="s-{k}" stroke-width="2"{dash}/>'
-                   f'<circle cx="{x0}" cy="{y(r["cnn"]):.1f}" r="5.5" class="dot k-{k}" data-tip="{e(tip)}"><title>{e(tip)}</title></circle>'
-                   f'<circle cx="{x1}" cy="{y(r["dm"]):.1f}" r="6" class="dot k-{k}" data-tip="{e(tip)}"><title>{e(tip)}</title></circle>')
+        tip = f"{r['arm']}\ncoverage {r['cnn']:.4f} on CNN → {r['dm']:.4f} on DailyMail"
+        out.append(
+            f'<line x1="{x0}" y1="{y(r["cnn"]):.1f}" x2="{x1}" y2="{y(r["dm"]):.1f}" class="s-{k}" stroke-width="2"{dash}/>'
+            f'<circle cx="{x0}" cy="{y(r["cnn"]):.1f}" r="5.5" class="dot k-{k}" data-tip="{e(tip)}"><title>{e(tip)}</title></circle>'
+            f'<circle cx="{x1}" cy="{y(r["dm"]):.1f}" r="6" class="dot k-{k}" data-tip="{e(tip)}"><title>{e(tip)}</title></circle>'
+        )
     out.append("</svg>")
     return "".join(out)
 
@@ -336,31 +397,46 @@ def scatter(exp: dict, width: int = 1000, height: int = 440, compact: bool = Fal
     def y(v):
         return floor_y if v < lo else bottom - (v - lo) / (hi - lo) * (bottom - top)
 
-    out = [f'<svg viewBox="0 0 {width} {height}" role="img" aria-label="{e(exp["bench"])}: cost against quality">']
+    out = [
+        f'<svg viewBox="0 0 {width} {height}" role="img" aria-label="{e(exp["bench"])}: cost against quality">'
+    ]
     for p in range(clo, chi + 1):
-        out.append(f'<line x1="{x(10 ** p):.1f}" x2="{x(10 ** p):.1f}" y1="{top}" y2="{bottom}" class="grid"/>'
-                   f'<text x="{x(10 ** p):.1f}" y="{floor_y + 22}" text-anchor="middle" class="t-muted" font-size="{tick}">${10 ** p:g}</text>')
+        out.append(
+            f'<line x1="{x(10**p):.1f}" x2="{x(10**p):.1f}" y1="{top}" y2="{bottom}" class="grid"/>'
+            f'<text x="{x(10**p):.1f}" y="{floor_y + 22}" text-anchor="middle" class="t-muted" font-size="{tick}">${10**p:g}</text>'
+        )
     for t in (lo + pad, (lo + hi) / 2, hi - pad):
-        out.append(f'<line x1="{lane - 30}" x2="{right}" y1="{y(t):.1f}" y2="{y(t):.1f}" class="grid"/>'
-                   f'<text x="{lane - 36}" y="{y(t) + 4:.1f}" text-anchor="end" class="t-muted" font-size="{tick}">{t:.3f}</text>')
-    out.append(f'<text x="{(left + right) / 2:.0f}" y="{height - 6}" text-anchor="middle" class="t-muted" font-size="{fs}">{"cost per 1,000 items (log)" if compact else "billed cost per 1,000 items (log scale)"}</text>'
-               f'<text x="0" y="{top - 10}" class="t-muted" font-size="{fs}">↑ {e(exp["metric_label"])}</text>'
-               f'<text x="{lane + 6}" y="{floor_y + 22}" text-anchor="middle" class="t-muted" font-size="{tick}">free</text>'
-               f'<line x1="{left - 30}" x2="{left - 30}" y1="{top}" y2="{bottom}" class="axis"/>')
+        out.append(
+            f'<line x1="{lane - 30}" x2="{right}" y1="{y(t):.1f}" y2="{y(t):.1f}" class="grid"/>'
+            f'<text x="{lane - 36}" y="{y(t) + 4:.1f}" text-anchor="end" class="t-muted" font-size="{tick}">{t:.3f}</text>'
+        )
+    out.append(
+        f'<text x="{(left + right) / 2:.0f}" y="{height - 6}" text-anchor="middle" class="t-muted" font-size="{fs}">{"cost per 1,000 items (log)" if compact else "billed cost per 1,000 items (log scale)"}</text>'
+        f'<text x="0" y="{top - 10}" class="t-muted" font-size="{fs}">↑ {e(exp["metric_label"])}</text>'
+        f'<text x="{lane + 6}" y="{floor_y + 22}" text-anchor="middle" class="t-muted" font-size="{tick}">free</text>'
+        f'<line x1="{left - 30}" x2="{left - 30}" y1="{top}" y2="{bottom}" class="axis"/>'
+    )
     if off:
-        out.append(f'<text x="{left - 30}" y="{(bottom + floor_y) / 2 + 5:.1f}" text-anchor="middle" class="t-muted" font-size="{fs + 2}">⫽</text>')
+        out.append(
+            f'<text x="{left - 30}" y="{(bottom + floor_y) / 2 + 5:.1f}" text-anchor="middle" class="t-muted" font-size="{fs + 2}">⫽</text>'
+        )
     for a in free:
         k = kind_of(a)
-        tip = f'{a["arm"]} · {KIND_LABEL[k]}\n{exp["metric_label"]} {a["score"]:.4f} · $0' + ("\noff the scale: far below the field" if a in off else "")
+        tip = f"{a['arm']} · {KIND_LABEL[k]}\n{exp['metric_label']} {a['score']:.4f} · $0" + (
+            "\noff the scale: far below the field" if a in off else ""
+        )
         out.append(dot(lane + 6, y(a["score"]), 6, k, tip))
     for a in paid:
         k = kind_of(a)
-        tip = f'{a["arm"]} · {KIND_LABEL[k]}\n{exp["metric_label"]} {a["score"]:.4f}\n{money(per_k(a))} per 1,000 items' + ("\noff the scale: far below the field" if a in off else "")
+        tip = (
+            f"{a['arm']} · {KIND_LABEL[k]}\n{exp['metric_label']} {a['score']:.4f}\n{money(per_k(a))} per 1,000 items"
+            + ("\noff the scale: far below the field" if a in off else "")
+        )
         out.append(dot(x(per_k(a)), y(a["score"]), 6, k, tip))
     # Both labels sit centred above their dots; if they would overlap, the dearest's drops
     # below its ring.
     d, t = exp["dearest"], exp["top"]
-    dl, tl = f'{d["arm"]} · dearest', f'{t["arm"]} · 1st'
+    dl, tl = f"{d['arm']} · dearest", f"{t['arm']} · 1st"
     w = lambda s: len(s) * fs * 0.62  # noqa: E731 -- monospace advance, roughly
     dx = min(max(x(per_k(d)), lane + w(dl) / 2), right - w(dl) / 2)
     tx = lane + 6 if t["cost"] <= 0 else x(per_k(t))
@@ -368,10 +444,14 @@ def scatter(exp: dict, width: int = 1000, height: int = 440, compact: bool = Fal
     dy, ty = y(d["score"]) - 18, y(t["score"]) - 14
     if t["arm"] != d["arm"] and abs(dy - ty) < fs + 4 and abs(dx - tx) < (w(dl) + w(tl)) / 2 + 8:
         dy = y(d["score"]) + 11 + fs + 4
-    out.append(f'<circle cx="{x(per_k(d)):.1f}" cy="{y(d["score"]):.1f}" r="11" class="ring"/>'
-               f'<text x="{dx:.1f}" y="{dy:.1f}" text-anchor="middle" class="t-ink" font-size="{fs}">{e(dl)}</text>')
+    out.append(
+        f'<circle cx="{x(per_k(d)):.1f}" cy="{y(d["score"]):.1f}" r="11" class="ring"/>'
+        f'<text x="{dx:.1f}" y="{dy:.1f}" text-anchor="middle" class="t-ink" font-size="{fs}">{e(dl)}</text>'
+    )
     if t["arm"] != d["arm"]:
-        out.append(f'<text x="{tx:.1f}" y="{ty:.1f}" text-anchor="middle" class="t-ink" font-size="{fs}">{e(tl)}</text>')
+        out.append(
+            f'<text x="{tx:.1f}" y="{ty:.1f}" text-anchor="middle" class="t-ink" font-size="{fs}">{e(tl)}</text>'
+        )
     out.append("</svg>")
     return "".join(out)
 
@@ -423,7 +503,12 @@ DWO = "https://www.devwhateverops.com/"
 FAMILY = [
     ("https://www.orrerylearn.com/", "orrery", "Orrery", "A solar system explorer for the browser"),
     (HUMAN, "humancopilot", "Human Copilot", "Advisory for technology leaders"),
-    ("https://www.devwhateverops.com/", "devwhateverops", "DevWhateverOps", "A manifesto for engineers who build end to end"),
+    (
+        "https://www.devwhateverops.com/",
+        "devwhateverops",
+        "DevWhateverOps",
+        "A manifesto for engineers who build end to end",
+    ),
 ]
 ELSEWHERE = [
     ("https://www.linkedin.com/in/markodragoljevic", "linkedin", "LinkedIn"),
@@ -438,10 +523,13 @@ def footer(up: str) -> str:
     projects = "".join(
         f'<a href="{e(url + "?" + UTM)}" data-umami-event="outbound" '
         f'data-umami-event-target="{tgt}" rel="noopener"><b>{e(name)}</b><span>{e(line)}</span></a>'
-        for url, tgt, name, line in FAMILY)
+        for url, tgt, name, line in FAMILY
+    )
     elsewhere = "".join(
         f'<a href="{e(url)}" data-umami-event="outbound" data-umami-event-target="{tgt}" '
-        f'rel="noopener me">{e(label)}</a>' for url, tgt, label in ELSEWHERE)
+        f'rel="noopener me">{e(label)}</a>'
+        for url, tgt, label in ELSEWHERE
+    )
     return f"""<footer><div class="wrap foot">
   <div class="foot-grid">
     <div class="foot-brand">
@@ -467,8 +555,10 @@ def out(url: str, place: str, label: str, cls: str = "") -> str:
     site = "humancopilot" if "humancopilot" in url else "devwhateverops"
     href = f"{url}?utm_source=eval-harness&utm_medium=site&utm_campaign=launch&utm_content={place}"
     c = f' class="{cls}"' if cls else ""
-    return (f'<a href="{e(href)}"{c} data-umami-event="outbound-{site}" '
-            f'data-umami-event-placement="{place}" rel="noopener">{label}</a>')
+    return (
+        f'<a href="{e(href)}"{c} data-umami-event="outbound-{site}" '
+        f'data-umami-event-placement="{place}" rel="noopener">{label}</a>'
+    )
 
 
 def author(place: str) -> str:
@@ -487,14 +577,14 @@ def author(place: str) -> str:
 # The same file in both themes -- lime tile, black marks -- exactly as designed.
 
 
-def page(title: str, desc: str, body: str, depth: int = 0, here: str = "",
-         card: str = "social.png") -> str:
+def page(title: str, desc: str, body: str, depth: int = 0, here: str = "", card: str = "social.png") -> str:
     up = "../" * depth
 
     def nav(key: str, href: str, label: str, cls: str = "") -> str:
         cur = ' aria-current="page"' if key == here else ""
         c = f' class="{cls}"' if cls else ""
         return f'<a href="{href}"{c}{cur}>{label}</a>'
+
     return f"""<!doctype html>
 <html lang="en">
 <head>
@@ -520,7 +610,7 @@ def page(title: str, desc: str, body: str, depth: int = 0, here: str = "",
 <body>
 <header class="bar"><div class="wrap">
   <a class="brand" href="{up}index.html" aria-label="eval-harness home"><img class="mark" src="{up}assets/icon.svg" alt="" width="28" height="28"><span>eval-harness</span></a>
-  <nav class="nav">{nav("harness", f"{up}index.html", "Harness")}{nav("use", f"{up}use.html", "Use it")}{nav("method", f"{up}method.html", "Method", "hide-sm")}{nav("experiments", f"{up}experiments.html", "Experiments")}{nav("judging", f"{up}experiments/judging.html", "Judging", "hide-sm")}<a href="{up}docs/" class="hide-sm">Docs</a><a href="{REPO}" class="hide-sm">GitHub ↗</a><button id="theme" class="theme" aria-label="Toggle light and dark">◐</button></nav>
+  <nav class="nav">{nav("harness", f"{up}index.html", "Harness")}{nav("use", f"{up}use.html", "Use it")}{nav("method", f"{up}method.html", "Method", "hide-sm")}{nav("experiments", f"{up}experiments.html", "Experiments")}{nav("judging", f"{up}experiments/judging.html", "Judging", "hide-sm")}<a href="{CATALOG}" class="hide-sm">Catalog</a><a href="{up}docs/" class="hide-sm">Docs</a><a href="{REPO}" class="hide-sm">GitHub ↗</a><button id="theme" class="theme" aria-label="Toggle light and dark">◐</button></nav>
 </div></header>
 <main>
 {body}
@@ -534,8 +624,18 @@ def page(title: str, desc: str, body: str, depth: int = 0, here: str = "",
 
 
 #: The helpers method.py borrows, passed in rather than imported (no circular import).
-H = types.SimpleNamespace(q=q, qv=qv, e=e, page=page, times=times, money=money, word=word, REPO=REPO,
-                          author=author)
+H = types.SimpleNamespace(
+    q=q,
+    qv=qv,
+    e=e,
+    page=page,
+    times=times,
+    money=money,
+    word=word,
+    REPO=REPO,
+    VERSION=VERSION,
+    author=author,
+)
 
 
 # ── the landing page ────────────────────────────────────────────────────────
@@ -546,10 +646,13 @@ JUDGE = "research/REPORT_SUMMEVAL.md"
 def marks(k: int, n: int) -> str:
     """k of n as n small marks, k filled: the count itself as data."""
     gap = 14
-    dots = "".join(f'<circle cx="{6 + i * gap}" cy="6" r="4.5" class="{"on" if i < k else "off"}"/>'
-                   for i in range(n))
-    return (f'<svg class="marks" viewBox="0 0 {12 + (n - 1) * gap} 12" width="{12 + (n - 1) * gap}" '
-            f'height="12" aria-hidden="true">{dots}</svg>')
+    dots = "".join(
+        f'<circle cx="{6 + i * gap}" cy="6" r="4.5" class="{"on" if i < k else "off"}"/>' for i in range(n)
+    )
+    return (
+        f'<svg class="marks" viewBox="0 0 {12 + (n - 1) * gap} 12" width="{12 + (n - 1) * gap}" '
+        f'height="12" aria-hidden="true">{dots}</svg>'
+    )
 
 
 def sketch(exps: list, compact: bool = False) -> str:
@@ -568,29 +671,40 @@ def sketch(exps: list, compact: bool = False) -> str:
     out = [f'<svg viewBox="0 0 {width} {height}" role="img" aria-hidden="true" class="sketch">']
     for i, x in enumerate(exps):
         learned = [a for a in x["arms"] if a["kind"] != "baseline"]
-        on, off = off_scale(learned)
+        on, _off = off_scale(learned)
         lo, hi = min(a["score"] for a in on), max(a["score"] for a in on)
         y = top + row * i + (row - 14 if compact else row // 2)
 
         def px(v, lo=lo, hi=hi):
             return left if v <= lo else left + (v - lo) / (hi - lo) * (right - left)
+
         tied = [a for a in learned if a["arm"] in x["tied"]] + [x["leader_row"]]
-        tag = (f'leader + {x["n_tied"]}' if x["n_tied"] else "clear winner")
-        out.append(f'<a href="experiments/{x["slug"]}.html" class="sketch-row"><title>{e(x["bench"])}: '
-                   f'the experiment</title><rect x="0" y="{top + row * i}" width="{width}" height="{row}" class="hit-row"/>')
+        tag = f"leader + {x['n_tied']}" if x["n_tied"] else "clear winner"
+        out.append(
+            f'<a href="experiments/{x["slug"]}.html" class="sketch-row"><title>{e(x["bench"])}: '
+            f'the experiment</title><rect x="0" y="{top + row * i}" width="{width}" height="{row}" class="hit-row"/>'
+        )
         if compact:
-            out.append(f'<text x="{left}" y="{y - 14}" class="t-head" font-size="15">{e(x["bench"])}</text>'
-                       f'<text x="{right}" y="{y - 14}" text-anchor="end" class="t-muted" font-size="13">{tag}</text>')
+            out.append(
+                f'<text x="{left}" y="{y - 14}" class="t-head" font-size="15">{e(x["bench"])}</text>'
+                f'<text x="{right}" y="{y - 14}" text-anchor="end" class="t-muted" font-size="13">{tag}</text>'
+            )
         else:
-            out.append(f'<text x="0" y="{y + 5}" class="t-head" font-size="16">{e(x["bench"])}</text>'
-                       f'<text x="{width}" y="{y + 5}" text-anchor="end" class="t-muted" font-size="13">{tag}</text>')
+            out.append(
+                f'<text x="0" y="{y + 5}" class="t-head" font-size="16">{e(x["bench"])}</text>'
+                f'<text x="{width}" y="{y + 5}" text-anchor="end" class="t-muted" font-size="13">{tag}</text>'
+            )
         out.append(f'<line x1="{left}" x2="{right}" y1="{y}" y2="{y}" class="axis"/>')
         if len(tied) > 1:
             x0, x1 = px(min(a["score"] for a in tied)), px(max(a["score"] for a in tied))
-            out.append(f'<rect x="{x0 - 6:.1f}" y="{y - 9}" width="{x1 - x0 + 12:.1f}" height="18" rx="9" class="band"/>')
+            out.append(
+                f'<rect x="{x0 - 6:.1f}" y="{y - 9}" width="{x1 - x0 + 12:.1f}" height="18" rx="9" class="band"/>'
+            )
         for a in learned:
             if a["arm"] not in (x["top"]["arm"], x["dearest"]["arm"]):
-                out.append(f'<line x1="{px(a["score"]):.1f}" x2="{px(a["score"]):.1f}" y1="{y - 4}" y2="{y + 4}" class="tick"/>')
+                out.append(
+                    f'<line x1="{px(a["score"]):.1f}" x2="{px(a["score"]):.1f}" y1="{y - 4}" y2="{y + 4}" class="tick"/>'
+                )
         out.append(f'<circle cx="{px(x["dearest"]["score"]):.1f}" cy="{y}" r="7" class="ring"/>')
         out.append(f'<circle cx="{px(x["top"]["score"]):.1f}" cy="{y}" r="5" class="lead"/></a>')
     out.append("</svg>")
@@ -600,17 +714,23 @@ def sketch(exps: list, compact: bool = False) -> str:
 def hero_sketch(exps: list) -> str:
     ties = sum(x["n_tied"] > 0 for x in exps)
     dear_first = sum(x["dearest"]["arm"] == x["top"]["arm"] for x in exps)
-    finding = (f"In {ties} of {len(exps)} benchmarks the leader cannot be separated from a "
-               f"group of others; the most expensive model came first in "
-               f"{word(dear_first) if dear_first else 'none'}.")
-    key = ('<div class="legend sketch-key"><span><i class="lead-i"></i>the leader</span>'
-           '<span><i class="sw-band"></i>not separated from it</span>'
-           '<span><i class="ring-i"></i>the most expensive model</span>'
-           '<span class="read">each row: worst to best, on its own scale →</span></div>')
-    return (f'<figure class="chart hero-chart hero-sketch reveal" aria-label="{e(finding)}">'
-            f'{key}{both(sketch(exps), sketch(exps, compact=True))}'
-            f'<figcaption>{e(finding)} <a href="experiments.html#findings">See each one →</a>'
-            f'</figcaption></figure>')
+    finding = (
+        f"In {ties} of {len(exps)} benchmarks the leader cannot be separated from a "
+        f"group of others; the most expensive model came first in "
+        f"{word(dear_first) if dear_first else 'none'}."
+    )
+    key = (
+        '<div class="legend sketch-key"><span><i class="lead-i"></i>the leader</span>'
+        '<span><i class="sw-band"></i>not separated from it</span>'
+        '<span><i class="ring-i"></i>the most expensive model</span>'
+        '<span class="read">each row: worst to best, on its own scale →</span></div>'
+    )
+    return (
+        f'<figure class="chart hero-chart hero-sketch reveal" aria-label="{e(finding)}">'
+        f"{key}{both(sketch(exps), sketch(exps, compact=True))}"
+        f'<figcaption>{e(finding)} <a href="experiments.html#findings">See each one →</a>'
+        f"</figcaption></figure>"
+    )
 
 
 def dearest_note(f: dict, up: str = "") -> str:
@@ -619,13 +739,19 @@ def dearest_note(f: dict, up: str = "") -> str:
     r = f["remeasure"]
     by = {x["slug"]: x for x in f["experiments"]}
     pairs = (("ag-news", r["ag"]["arms"]), ("summarization", r["summ"]["arms"]))
-    leads = [by[s]["bench"] for s, rows in pairs if by[s]["dearest"]["arm"] == max(rows, key=lambda a: a["v2"])["arm"]]
+    leads = [
+        by[s]["bench"]
+        for s, rows in pairs
+        if by[s]["dearest"]["arm"] == max(rows, key=lambda a: a["v2"])["arm"]
+    ]
     if not leads:
         return ""
     names = sorted({by[s]["dearest"]["arm"] for s, _ in pairs})
-    return (f' The headline is on each experiment\'s primary metric. <a href="{up}experiments/judging.html">Re-measured</a>, '
-            f'against labels a person corrected and by LLM judges, the dearest model, {" / ".join(names)}, is first '
-            f'on the point estimate in {word(len(leads))}: {" and ".join(leads)}; neither re-measurement is confirmed.')
+    return (
+        f' The headline is on each experiment\'s primary metric. <a href="{up}experiments/judging.html">Re-measured</a>, '
+        f"against labels a person corrected and by LLM judges, the dearest model, {' / '.join(names)}, is first "
+        f"on the point estimate in {word(len(leads))}: {' and '.join(leads)}; neither re-measurement is confirmed."
+    )
 
 
 def remeasured_counts(f: dict) -> dict:
@@ -636,8 +762,10 @@ def remeasured_counts(f: dict) -> dict:
     by = {x["slug"]: x for x in f["experiments"]}
     pairs = (("ag-news", r["ag"]["arms"]), ("summarization", r["summ"]["arms"]))
     top = {s: max(rows, key=lambda a: a["v2"]) for s, rows in pairs}
-    return {"dearest_first": sum(by[s]["dearest"]["arm"] == top[s]["arm"] for s, _ in pairs),
-            "local_lost": sum(by[s]["top"]["kind"] == "local" and top[s]["kind"] == "hosted" for s, _ in pairs)}
+    return {
+        "dearest_first": sum(by[s]["dearest"]["arm"] == top[s]["arm"] for s, _ in pairs),
+        "local_lost": sum(by[s]["top"]["kind"] == "local" and top[s]["kind"] == "hosted" for s, _ in pairs),
+    }
 
 
 def home(f: dict) -> str:
@@ -649,73 +777,125 @@ def home(f: dict) -> str:
     cal_in = f["calibration_inside"]
     hosted_n = max(x["n_hosted"] for x in exps)
     ideas = [
-        ("01", "A frozen dataset",
-         "Items are hashed and every run records the hash. Change the data and you get a "
-         "different id — not a silently different number."),
-        ("02", "A fingerprint per run",
-         "The model behind the alias, the prompt, the scoring code, library versions, the "
-         "commit. So \u201cwe changed one thing\u201d is checkable, not asserted."),
-        ("03", "A leaderboard that argues with itself",
-         "Before it prints an order it tests every pair at once — a Friedman permutation test "
-         "and a Nemenyi critical difference — and says plainly when nothing is distinguishable."),
-        ("04", "Re-scoring for $0",
-         "Scores are recomputed from stored outputs. Checking a metric should never cost "
-         "another sweep of paid calls."),
+        (
+            "01",
+            "A frozen dataset",
+            (
+                "Items are hashed and every run records the hash. Change the data and you get a "
+                "different id — not a silently different number."
+            ),
+        ),
+        (
+            "02",
+            "A fingerprint per run",
+            (
+                "The model behind the alias, the prompt, the scoring code, library versions, the "
+                "commit. So \u201cwe changed one thing\u201d is checkable, not asserted."
+            ),
+        ),
+        (
+            "03",
+            "A leaderboard that argues with itself",
+            (
+                "Before it prints an order it tests every pair at once — a Friedman permutation test "
+                "and a Nemenyi critical difference — and says plainly when nothing is distinguishable."
+            ),
+        ),
+        (
+            "04",
+            "Re-scoring for $0",
+            (
+                "Scores are recomputed from stored outputs. Checking a metric should never cost "
+                "another sweep of paid calls."
+            ),
+        ),
     ]
     idea_html = "".join(
         f'<div class="habit-card"><span class="n">{n}</span><b>{e(t)}</b><span>{e(d)}</span></div>'
-        for n, t, d in ideas)
+        for n, t, d in ideas
+    )
     # Why it exists: the questions it was built to answer, each with what the experiments
     # found -- numbers computed, quoted prose checked by q(). How the harness answers them
     # is the method page's job.
     rc = remeasured_counts(f)
     why = [
-        ("Agentic AI can do months of work in days. How do I trust what it builds?",
-         f"This project was built that way, with AI agents. A checker re-verifies "
-         f"{f['claims_checked']} claims against the runs on every commit, and the lab notebook "
-         "keeps every finding that had to be retracted along the way.",
-         f"{REPO}/tree/main/research/internal", "The lab notebook"),
-        ("Which model is best for what I need — not for someone else's benchmark?",
-         f"On each experiment's primary metric the most expensive model was not the best in any of "
-         f"the {f['frontier_exps']} experiments where frontier models ran (the same model each time; "
-         f"SciFact ran only the twelve cheapest hosted models); re-measured, against corrected labels "
-         f"and by LLM judges, it is first on the point estimate in {word(rc['dearest_first'])}, "
-         f"neither re-measurement confirmed. In {ties} of {len(exps)} "
-         "the leader could not be separated from other arms — at 100–280 items, which "
-         "is not the same as equal.",
-         "experiments.html", "The experiments"),
-        ("Do I need an LLM — or a GPU — at all?",
-         f"A free model that needs no GPU was first, or not separable from first, in "
-         f"{f['local_first_or_tied']} of {len(exps)} on the primary metrics "
-         f"({f['local_first_or_tied'] - rc['local_lost']} of {len(exps)} on the re-measured scores, "
-         "unconfirmed), against LLMs run with one prompt and no "
-         "examples; the clearest wins were on text like the text it was trained on. On judging "
-         "summaries even a free model trained for the task lost, and an LLM judge scored above every "
-         "free scorer measured: "
-         + q("judging summaries, the best LLM judges reach 93% of a human expert's agreement "
-             "(the best of 24, chosen on the same articles; 92% held out), and UniEval, the best "
-             "free scorer, 64%.", JUDGE)
-         + " " + q("A no-model lookup of which system wrote each summary reaches 63%; the "
-                   "summaries are 2019-era and the judges ran with reasoning off.", JUDGE)
-         + " One task, so the direction, not the size.",
-         "experiments.html#experiments", "Per experiment"),
-        ("Own it or rent it?",
-         q("The best proprietary arm never separated from the best open-weight arm in any of the "
-           "six experiments", SYN) + ". At native precision the best model that fits a 64 GB machine matched the "
-         "unlimited-hardware answer on two of the six tasks, was not separated from it on two "
-         "more, and was separated below it on summarisation and SummEval — as the providers "
-         "served them: nothing was run on a 64 GB machine.",
-         f"{BLOB}/research/REPORT_SYNTHESIS.md", "The synthesis"),
+        (
+            "Agentic AI can do months of work in days. How do I trust what it builds?",
+            (
+                f"This project was built that way, with AI agents. A checker re-verifies "
+                f"{f['claims_checked']} claims against the runs on every commit, the lab notebook "
+                "records the findings that had to be retracted along the way, and git keeps every "
+                "earlier version of the reports."
+            ),
+            f"{REPO}/tree/main/research/internal",
+            "The lab notebook",
+        ),
+        (
+            "Which model is best for what I need — not for someone else's benchmark?",
+            (
+                f"On each experiment's primary metric the most expensive model was not the best in any of "
+                f"the {f['frontier_exps']} experiments where frontier models ran (the same model each time; "
+                f"SciFact ran only the twelve cheapest hosted models); re-measured, against corrected labels "
+                f"and by LLM judges, it is first on the point estimate in {word(rc['dearest_first'])}, "
+                f"neither re-measurement confirmed. In {ties} of {len(exps)} "
+                "the leader could not be separated from other arms — at 100–280 items, which "
+                "is not the same as equal."
+            ),
+            "experiments.html",
+            "The experiments",
+        ),
+        (
+            "Do I need an LLM — or a GPU — at all?",
+            f"A free model that needs no GPU was first, or not separable from first, in "
+            f"{f['local_first_or_tied']} of {len(exps)} on the primary metrics "
+            f"({f['local_first_or_tied'] - rc['local_lost']} of {len(exps)} on the re-measured scores, "
+            "unconfirmed), against LLMs run with one prompt and no "
+            "examples; the clearest wins were on text like the text it was trained on. On judging "
+            "summaries even a free model trained for the task lost, and an LLM judge scored above every "
+            "free scorer measured: "
+            + q(
+                "judging summaries, the best LLM judges reach 93% of a human expert's agreement "
+                "(the best of 24, chosen on the same articles; 92% held out), and UniEval, the best "
+                "free scorer, 64%.",
+                JUDGE,
+            )
+            + " "
+            + q(
+                "A no-model lookup of which system wrote each summary reaches 63%; the "
+                "summaries are 2019-era and the judges ran with reasoning off.",
+                JUDGE,
+            )
+            + " One task, so the direction, not the size.",
+            "experiments.html#experiments",
+            "Per experiment",
+        ),
+        (
+            "Own it or rent it?",
+            q(
+                "The best proprietary arm never separated from the best open-weight arm in any of the "
+                "six experiments",
+                SYN,
+            )
+            + ". At native precision the best model that fits a 64 GB machine matched the "
+            "unlimited-hardware answer on two of the six tasks, was not separated from it on two "
+            "more, and was separated below it on summarisation and SummEval — as the providers "
+            "served them: nothing was run on a 64 GB machine.",
+            f"{BLOB}/research/REPORT_SYNTHESIS.md",
+            "The synthesis",
+        ),
     ]
     why_html = "".join(
         f'<div class="why-q reveal"><span class="n">{i:02d}</span><h3>{e(qn)}</h3>'
-        f'<p><b>What it found</b>{found}</p>'
+        f"<p><b>What it found</b>{found}</p>"
         f'<a href="{href}">{e(label)} →</a></div>'
-        for i, (qn, found, href, label) in enumerate(why, 1))
+        for i, (qn, found, href, label) in enumerate(why, 1)
+    )
     # Step 2: each benchmark as its own field, the same strips as the experiments page.
     benches = "".join(
         f'<a class="bench-row reveal" href="experiments/{x["slug"]}.html" aria-label="{e(x["bench"])}: '
-        f'{e(CARD[x["slug"]])}">{both(strip(x), strip(x, compact=True))}</a>' for x in exps)
+        f'{e(CARD[x["slug"]])}">{both(strip(x), strip(x, compact=True))}</a>'
+        for x in exps
+    )
     body = f"""
 <section class="hero hero-grid"><div class="wrap">
   <div class="kicker"><b>eval-harness</b> · open source · MIT · by {out(HUMAN, "hero", "Marko Dragoljevic", "byline")}</div>
@@ -735,20 +915,23 @@ def home(f: dict) -> str:
 <section class="block" id="what"><div class="wrap">
   <div class="eyebrow"><span class="num">02</span>What it does</div>
   <h2>Four ideas, one adapter file.</h2>
-  <p class="lede">Most eval code answers \u201cwhich scored highest\u201d. That is the easy half; the hard half is whether the answer survives being asked again. The harness imports nothing domain-specific — everything about your system lives in one file, <code>adapter.py</code>, with four functions.</p>
+  <p class="lede">Most eval code answers \u201cwhich scored highest\u201d. That is the easy half; the hard half is whether the answer survives being asked again. The harness imports nothing domain-specific — everything about your system lives in one file, <code>adapter.py</code>, with two functions you write: <code>call_system()</code> and <code>score()</code>.</p>
   <div class="habits">{idea_html}</div>
   <div class="cols" style="margin-top:48px">
-    <div class="prose"><h3 style="font-size:28px;line-height:1.15;margin-bottom:16px">Try the whole loop in a minute.</h3><p>The demo runs on bundled synthetic data — no API key, no network. It freezes a dataset, runs an arm three times and checks the record; <code>make leaderboard</code> then shows the ranking and whether it is real.</p>
+    <div class="prose"><h3 style="font-size:28px;line-height:1.15;margin-bottom:16px">Try the whole loop.</h3><p>Install the pinned release in a new folder; <code>evh init --tutorial</code> writes the project's folders and a six-ticket tutorial kit, and the guide takes it from a frozen dataset to a promoted baseline in about twenty minutes — offline, no API key. From a checkout of this repository, <code>make demo</code> runs the loop on bundled synthetic data in a minute.</p>
       <div class="btns"><a class="btn primary" href="docs/GUIDE/">Your first evaluation — the guide</a></div></div>
-<pre class="term"><span class="p">$ </span>git clone {REPO}
+<pre class="term"><span class="p">$ </span>pip install "evaluation-harness @ git+{REPO}@v{VERSION}#subdirectory=harness"
+<span class="p">$ </span>evh init --tutorial
+<span class="c"># the guide walks the tutorial from here; then, on your own system</span>
+<span class="p">$ </span>evh dataset-create --dataset-id my_v1 --source-dir data/sources
+<span class="p">$ </span>evh experiment-run --config data/configs/arm_a.yaml --repeat 3
+<span class="p">$ </span>evh leaderboard --dataset-id my_v1
+<span class="c"># or, from a checkout: the bundled demo</span>
+<span class="p">$ </span>git clone {REPO}
 <span class="p">$ </span>cd eval-harness/harness
 <span class="p">$ </span>make install
 <span class="p">$ </span>make demo
-<span class="p">$ </span>make leaderboard
-<span class="c"># then, on your own system</span>
-<span class="p">$ </span>make dataset-create DATASET_ID=my_v1
-<span class="p">$ </span>make experiment-run CONFIG=data/configs/arm_a.yaml
-<span class="p">$ </span>make leaderboard DATASET_ID=my_v1</pre>
+<span class="p">$ </span>make leaderboard</pre>
   </div>
 </div></section>
 
@@ -771,11 +954,15 @@ def home(f: dict) -> str:
   <p class="note"><b>No figure on this site is typed in by hand.</b> Every figure is recomputed from the committed runs each time the site is built, and every number the prose quotes must appear in the report it comes from, or the build fails. Behind the reports, a checker verifies {f["claims_checked"]} claims against the runs on every commit.</p>
 </div></section>
 {author("home")}"""
-    return page("eval-harness — is the ranking real, or a lucky sample?",
-                "A drop-in harness for evaluating AI systems on your own data: frozen datasets, "
-                "fingerprinted runs, and significance tests before any leaderboard is printed — "
-                f"shown on 24 LLMs across {word(len(exps))} benchmarks.", body, here="harness",
-                card="social-home.png")
+    return page(
+        "eval-harness — is the ranking real, or a lucky sample?",
+        "A drop-in harness for evaluating AI systems on your own data: frozen datasets, "
+        "fingerprinted runs, and significance tests before any leaderboard is printed — "
+        f"shown on 24 LLMs across {word(len(exps))} benchmarks.",
+        body,
+        here="harness",
+        card="social-home.png",
+    )
 
 
 def landing(f: dict) -> str:
@@ -786,9 +973,12 @@ def landing(f: dict) -> str:
     cal_in = f["calibration_inside"]
     hosted_n = max(x["n_hosted"] for x in exps)
     local_n = sum(x["n_arms"] - x["n_hosted"] for x in exps)
-    billed_all = f'{f["total_billed"]:.2f}'
+    billed_all = f"{f['total_billed']:.2f}"
 
-    strips = "".join(f'<figure class="reveal" style="margin-bottom:10px">{both(strip(x), strip(x, compact=True))}</figure>' for x in exps)
+    strips = "".join(
+        f'<figure class="reveal" style="margin-bottom:10px">{both(strip(x), strip(x, compact=True))}</figure>'
+        for x in exps
+    )
     tie_rows = "".join(
         f'<tr><td class="exp"><a href="experiments/{x["slug"]}.html">{e(x["task"])} · {e(x["bench"])}</a></td>'
         f'<td class="num" data-label="first place">{e(x["top"]["arm"])}</td>'
@@ -797,36 +987,49 @@ def landing(f: dict) -> str:
         f'<td class="num" data-label="cheapest paid tie">{e(x["cheapest_tied"]["arm"]) if x["cheapest_tied"] else "—"}</td>'
         f'<td class="num" data-label="cheaper than dearest">{times(x["tied_ratio"]) if x["tied_ratio"] else "no paid model ties"}</td>'
         f'<td class="num" data-label="dearest model">{e(x["dearest"]["arm"])} · {ordinal(x["dearest"]["rank"])} of {x["n_arms"]}</td></tr>'
-        for x in exps)
+        for x in exps
+    )
     cards = "".join(
         f'<a class="card reveal" href="experiments/{x["slug"]}.html"><div class="task">{e(x["task"])}</div>'
-        f'<h3>{e(x["bench"])}</h3><p>{e(CARD[x["slug"]])}</p>'
+        f"<h3>{e(x['bench'])}</h3><p>{e(CARD[x['slug']])}</p>"
         f'<div class="meta"><span>{x["n_items"]} items · {x["n_arms"]} arms</span><span>1st <b>{e(x["top"]["arm"])}</b></span></div></a>'
-        for x in exps) + (
+        for x in exps
+    ) + (
         '<a class="card reveal" style="grid-column:1/-1" href="experiments/judging.html"><div class="task">Re-measured, not re-run · across experiments</div>'
-        '<h3>Judging</h3><p>Three experiments scored again without re-running a model: validated LLM '
-        'judges re-ranked summarisation, a person corrected AG News and DBpedia labels. Why a judge '
+        "<h3>Judging</h3><p>Three experiments scored again without re-running a model: validated LLM "
+        "judges re-ranked summarisation, a person corrected AG News and DBpedia labels. Why a judge "
         "beat the metric on SummEval, and why one reader's check kept coverage primary.</p>"
         f'<div class="meta"><span>3 experiments · {money(f["remeasure"]["summ"]["billed_usd"] + f["remeasure"]["summ_v2"]["billed_usd"])} of judging, '
-        f'{money(f["remeasure"]["validation_usd"])} checking the judges</span>'
-        '<span>primaries <b>unchanged</b></span></div></a>')
+        f"{money(f['remeasure']['validation_usd'])} checking the judges</span>"
+        "<span>primaries <b>unchanged</b></span></div></a>"
+    )
     s = by["summarization"]
     hw_rows = "".join(
         f'<tr><td class="exp">{e(m["name"])}</td><td data-label="what it is">{e(m["summary"])}</td>'
         f'<td class="num" data-label="committed runs">'
-        + (f'{m["local"] + m["hosted"]} ({m["local"]} local, {m["hosted"]} hosted)' if m["local"] + m["hosted"] else "none")
+        + (
+            f"{m['local'] + m['hosted']} ({m['local']} local, {m['hosted']} hosted)"
+            if m["local"] + m["hosted"]
+            else "none"
+        )
         + f'</td><td data-label="role">{e(m["role"])}</td></tr>'
-        for m in f["hardware"])
+        for m in f["hardware"]
+    )
     hw_date = json.loads((ROOT / "docs" / "evidence" / "hardware.json").read_text())["captured"]
-    require(sum(m["local"] + m["hosted"] for m in f["hardware"]) == f["total_arms"],
-            "every measured run is attributed to a documented machine")
+    require(
+        sum(m["local"] + m["hosted"] for m in f["hardware"]) == f["total_arms"],
+        "every measured run is attributed to a documented machine",
+    )
     dear_x = max(exps, key=lambda x: x["dearest"]["cost"])
     dear = dear_x["dearest"]
     n_exp = word(len(exps))
-    behind_cheaper = sum(any(a["cost"] < x["dearest"]["cost"] and a["rank"] < x["dearest"]["rank"]
-                             for a in x["arms"]) for x in exps)
-    behind_free = sum(any(a["kind"] != "hosted" and a["rank"] < x["dearest"]["rank"]
-                          for a in x["arms"]) for x in exps)
+    behind_cheaper = sum(
+        any(a["cost"] < x["dearest"]["cost"] and a["rank"] < x["dearest"]["rank"] for a in x["arms"])
+        for x in exps
+    )
+    behind_free = sum(
+        any(a["kind"] != "hosted" and a["rank"] < x["dearest"]["rank"] for a in x["arms"]) for x in exps
+    )
     in_all = "all " + n_exp if behind_cheaper == len(exps) else f"{word(behind_cheaper)} of {n_exp}"
 
     body = f"""
@@ -927,7 +1130,7 @@ def landing(f: dict) -> str:
         <a class="btn" href="docs/PROTOCOL/">The protocol</a>
         <a class="btn" href="docs/">Full documentation</a>
       </div>
-      <p class="note" style="margin-top:32px">Reviewed in adversarial rounds, every correction kept: the <a href="{REPO}/tree/main/research/internal">lab notebook</a> records what was wrong, how it was found, and what changed.</p>
+      <p class="note" style="margin-top:32px">Reviewed in adversarial rounds: the <a href="{REPO}/tree/main/research/internal">lab notebook</a> records what was wrong, how it was found, and what changed; the reports state today's figures, and git keeps every earlier version.</p>
     </div>
   </div>
 </div></section>
@@ -941,9 +1144,13 @@ def landing(f: dict) -> str:
     <figcaption>Hosted runs are API calls made from that machine; the model ran at the provider. Local runs ran on the machine's own CPU. The DGX Spark and the MacBook measured none of these runs. Captured {hw_date}: <a href="{BLOB}/docs/evidence/hardware.json">docs/evidence/hardware.json</a>.</figcaption></div>
 </div></section>
 {author("experiments")}"""
-    return page("The most expensive model never won — eval-harness",
-                f"24 LLMs, small fine-tuned models and baselines on {n_exp} public benchmarks, "
-                "with significance tests, billed costs and calibration against the literature.", body, here="experiments")
+    return page(
+        "The most expensive model never won — eval-harness",
+        f"24 LLMs, small fine-tuned models and baselines on {n_exp} public benchmarks, "
+        "with significance tests, billed costs and calibration against the literature.",
+        body,
+        here="experiments",
+    )
 
 
 CARD = {
@@ -965,83 +1172,171 @@ def require(cond: bool, claim: str) -> None:
 
 # What remeasured.py borrows beyond method.py's set (defined above this point, so added here).
 H.require, H.kind_of, H.both, H.legend, H.spread, H.ordinal, H.BLOB = (
-    require, kind_of, both, legend, _spread, ordinal, BLOB)
+    require,
+    kind_of,
+    both,
+    legend,
+    _spread,
+    ordinal,
+    BLOB,
+)
 H.remeasured_counts = remeasured_counts
 
 
 def findings_for(x: dict, f: dict) -> list:
-    rep = f'research/{x["report"]}'
+    rep = f"research/{x['report']}"
     d, t, b = x["dearest"], x["top"], x["best_hosted"]
     s = x["slug"]
-    require(s != "summarization" or (t["arm"] == "bart_l" and b["arm"] in x["tied"]),
-            "summarisation: bart_l first and tied with the best hosted arm")
-    require(s != "ag-news" or all(a["kind"] == "local" for a in x["arms"][:3]),
-            "AG News: the top three are local fine-tunes")
-    require(s != "dbpedia" or ("bert_base_fy" in x["tied"] and x["n_tied"] == 19),
-            "DBpedia: the leader plus nineteen others, including the fine-tune")
+    require(
+        s != "summarization" or (t["arm"] == "bart_l" and b["arm"] in x["tied"]),
+        "summarisation: bart_l first and tied with the best hosted arm",
+    )
+    require(
+        s != "ag-news" or all(a["kind"] == "local" for a in x["arms"][:3]),
+        "AG News: the top three are local fine-tunes",
+    )
+    require(
+        s != "dbpedia" or ("bert_base_fy" in x["tied"] and x["n_tied"] == 19),
+        "DBpedia: the leader plus nineteen others, including the fine-tune",
+    )
     require(s != "few-nerd" or x["n_tied"] == 0, "Few-NERD: span_marker separated from all")
-    require(s != "scifact" or ("e5_base" in x["tied"] and x["n_tied"] == 12),
-            "SciFact: twelve tied, including e5_base")
-    require(s != "summeval" or sum(a["rank"] < min(b["rank"] for b in x["arms"] if b["kind"] != "hosted")
-                                   for a in x["arms"] if a["kind"] == "hosted") == 23,
-            "SummEval: 23 of the 24 hosted judges rank above every free arm")
-    require(s != "summeval" or (x["cheapest_tied"] and x["cheapest_tied"]["weights"] == "open"),
-            "SummEval: the cheapest judge tied with the leader has open weights")
-    common = [(f"The dearest model finished {ordinal(d['rank'])} of {x['n_arms']}.",
-               f"{d['arm']} billed {money(d['cost'])} for {x['n_items']} items. "
-               + ("Only the twelve cheapest hosted models ran here, so this is the dearest of those; no Anthropic or OpenAI arm was run. " if s == "scifact" else "")
-               + (f"The cheapest model not separated from the leader, {x['cheapest_tied']['arm']}, cost {times(x['tied_ratio'])} less."
-                  if x["cheapest_tied"] else "The leader is separated from every paid model."))]
+    require(
+        s != "scifact" or ("e5_base" in x["tied"] and x["n_tied"] == 12),
+        "SciFact: twelve tied, including e5_base",
+    )
+    require(
+        s != "summeval"
+        or sum(
+            a["rank"] < min(b["rank"] for b in x["arms"] if b["kind"] != "hosted")
+            for a in x["arms"]
+            if a["kind"] == "hosted"
+        )
+        == 23,
+        "SummEval: 23 of the 24 hosted judges rank above every free arm",
+    )
+    require(
+        s != "summeval" or (x["cheapest_tied"] and x["cheapest_tied"]["weights"] == "open"),
+        "SummEval: the cheapest judge tied with the leader has open weights",
+    )
+    common = [
+        (
+            f"The dearest model finished {ordinal(d['rank'])} of {x['n_arms']}.",
+            f"{d['arm']} billed {money(d['cost'])} for {x['n_items']} items. "
+            + (
+                "Only the twelve cheapest hosted models ran here, so this is the dearest of those; no Anthropic or OpenAI arm was run. "
+                if s == "scifact"
+                else ""
+            )
+            + (
+                f"The cheapest model not separated from the leader, {x['cheapest_tied']['arm']}, cost {times(x['tied_ratio'])} less."
+                if x["cheapest_tied"]
+                else "The leader is separated from every paid model."
+            ),
+        )
+    ]
     if x["slug"] == "summarization":
         dm = {r["arm"]: r for r in f["dailymail"]}
         return [
-            ("A 1.6 GB model fine-tuned on this corpus is not separated from the best paid model.",
-             f"bart_l scores {t['score']:.4f} on coverage, {b['arm']} {b['score']:.4f} — "
-             + q("a gap of 0.0001.", rep) + f" It cannot be separated from {x['n_tied']} of the other {x['n_arms'] - 1} arms."),
+            (
+                "A 1.6 GB model fine-tuned on this corpus is not separated from the best paid model.",
+                f"bart_l scores {t['score']:.4f} on coverage, {b['arm']} {b['score']:.4f} — "
+                + q("a gap of 0.0001.", rep)
+                + f" It cannot be separated from {x['n_tied']} of the other {x['n_arms'] - 1} arms.",
+            ),
             *common,
-            ("The same architecture trained on another corpus finishes last.",
-             q("BART fine-tuned on XSum's one-sentence BBC summaries scores 0.2071 — 29th of 29, below lead-3.", rep)
-             + " bart_l's lead is consistent with learning CNN's house style; the XSum control also decodes shorter, so it does not isolate style."),
-            ("The winner depends on the metric.",
-             q("On ROUGE-2 the three CNN-trained BARTs take the top three places; on ROUGE-1 the LLMs lead and bart_l is 12th.", rep)),
-            ("Scope: these are CNN's articles.",
-             f"All 200 come from CNN's 9% of the test set. On 200 DailyMail articles the five local models kept every verdict "
-             f"(bart_l {dm['bart_l']['dm']:.4f}, lead-3 {dm['lead3']['dm']:.4f}); the paid models were not re-run."),
+            (
+                "The same architecture trained on another corpus finishes last.",
+                q(
+                    "BART fine-tuned on XSum's one-sentence BBC summaries scores 0.2071 — 29th of 29, below lead-3.",
+                    rep,
+                )
+                + " bart_l's lead is consistent with learning CNN's house style; the XSum control also decodes shorter, so it does not isolate style.",
+            ),
+            (
+                "The winner depends on the metric.",
+                q(
+                    "On ROUGE-2 the three CNN-trained BARTs take the top three places; on ROUGE-1 the LLMs lead and bart_l is 12th.",
+                    rep,
+                ),
+            ),
+            (
+                "Scope: these are CNN's articles.",
+                (
+                    f"All 200 come from CNN's 9% of the test set. On 200 DailyMail articles the five local models kept every verdict "
+                    f"(bart_l {dm['bart_l']['dm']:.4f}, lead-3 {dm['lead3']['dm']:.4f}); the paid models were not re-run."
+                ),
+            ),
         ]
     if x["slug"] == "ag-news":
         return [
-            ("Three small fine-tuned classifiers lead on the point estimate; only the first is separated from all but one paid arm.",
-             f"bert_base_ta leads at {t['score']:.4f}; the best hosted model, {b['arm']}, scores {b['score']:.4f}."),
+            (
+                "Three small fine-tuned classifiers lead on the point estimate; only the first is separated from all but one paid arm.",
+                f"bert_base_ta leads at {t['score']:.4f}; the best hosted model, {b['arm']}, scores {b['score']:.4f}.",
+            ),
             *common,
-            ("The lead is concentrated in 17 items the hosted field mostly gets wrong.",
-             q("17 items are labelled against the judgement of most of the hosted field — business news about technology companies filed as Sci/Tech, Olympic results filed as World. The fine-tunes agree with the gold on most of them.", rep)
-             + " " + q("On the other 183 items the arms cannot be told apart — anthropic_l 0.984, bert_base_ta 0.973 (discordant 3 vs 1, exact sign p = 0.625) — and that cut is selected by the hosted arms' own errors, so it flatters them.", rep)
-             + " " + q("Against gold adjudicated by topic by one reader, who was shown the hosted field's answer (29 items reviewed from both sides, 17 changed), every hosted LLM scores above every fine-tune: anthropic_l leads at 0.9850 and is separated from all three (tied at 0.9050).", rep)
-             + " The primary numbers stay on the dataset's own gold."),
+            (
+                "The lead is concentrated in 17 items the hosted field mostly gets wrong.",
+                q(
+                    "17 items are labelled against the judgement of most of the hosted field — business news about technology companies filed as Sci/Tech, Olympic results filed as World. The fine-tunes agree with the gold on most of them.",
+                    rep,
+                )
+                + " "
+                + q(
+                    "On the other 183 items the arms cannot be told apart — anthropic_l 0.984, bert_base_ta 0.973 (discordant 3 vs 1, exact sign p = 0.625) — and that cut is selected by the hosted arms' own errors, so it flatters them.",
+                    rep,
+                )
+                + " "
+                + q(
+                    "Against gold adjudicated by topic by one reader, who was shown the hosted field's answer (29 items reviewed from both sides, 17 changed), every hosted LLM scores above every fine-tune: anthropic_l leads at 0.9850 and is separated from all three (tied at 0.9050).",
+                    rep,
+                )
+                + " The primary numbers stay on the dataset's own gold.",
+            ),
         ]
     if x["slug"] == "dbpedia":
         return [
-            ("No winner: the leader and nineteen others.",
-             f"{t['arm']} leads at {t['score']:.4f}, not separated from {x['n_tied']} others, including the free fine-tune."),
+            (
+                "No winner: the leader and nineteen others.",
+                f"{t['arm']} leads at {t['score']:.4f}, not separated from {x['n_tied']} others, including the free fine-tune.",
+            ),
             *common,
-            ("The benchmark is saturated, and the gold is sometimes disputed.",
-             q("Three items are disputed by 24 to 25 of 26 arms. Adjudicated by one reader shown the hosted answer, the gold was wrong on all three; the dataset's own gold stays primary.", rep)),
+            (
+                "The benchmark is saturated, and the gold is sometimes disputed.",
+                q(
+                    "Three items are disputed by 24 to 25 of 26 arms. Adjudicated by one reader shown the hosted answer, the gold was wrong on all three; the dataset's own gold stays primary.",
+                    rep,
+                ),
+            ),
         ]
     if x["slug"] == "few-nerd":
         return [
-            ("The one separated win in the repo.",
-             f"span_marker, fine-tuned on Few-NERD's training split, scores {t['score']:.4f} and is separated from all {x['n_arms'] - 1} other arms."),
+            (
+                "The one separated win in the repo.",
+                f"span_marker, fine-tuned on Few-NERD's training split, scores {t['score']:.4f} and is separated from all {x['n_arms'] - 1} other arms.",
+            ),
             *common,
-            ("But its margin is partly the corpus's own conventions.",
-             q("Against openai_m, 57% of its margin is one entity type, other, which the prompt never defined (30–57% across the hosted arms), and up to 38% of its lead is agreement with annotation the rest of the field rejects.", rep)),
+            (
+                "But its margin is partly the corpus's own conventions.",
+                q(
+                    "Against openai_m, 57% of its margin is one entity type, other, which the prompt never defined (30–57% across the hosted arms), and up to 38% of its lead is agreement with annotation the rest of the field rejects.",
+                    rep,
+                ),
+            ),
         ]
     if x["slug"] == "scifact":
         return [
-            ("LLM rerankers lead — and cannot be separated from eleven or twelve others.",
-             f"{t['arm']} reranking BM25's top 20 scores {t['score']:.4f} nDCG@10; {x['n_tied']} arms cannot be separated from it, including the free retrievers e5_base and bge_small."),
+            (
+                "LLM rerankers lead — and cannot be separated from eleven or twelve others.",
+                f"{t['arm']} reranking BM25's top 20 scores {t['score']:.4f} nDCG@10; {x['n_tied']} arms cannot be separated from it, including the free retrievers e5_base and bge_small.",
+            ),
             *common,
-            ("The dev slice picked the wrong winner.",
-             q("Tuned on a 40-query dev slice, the leaderboard's winner there was not the winner on the 160 queries it never saw.", rep)),
+            (
+                "The dev slice's winner finished 10th — inside a tie.",
+                q(
+                    "Tuned on a 40-query dev slice, the leaderboard's winner there, llama_s, finished 10th of 19 on the 200-query measurement slice, 0.0265 behind the leader and not separated from it under Holm: a rank inside a tie, not a wrong pick shown at this n.",
+                    rep,
+                ),
+            ),
         ]
     if x["slug"] == "summeval":
         free = [a for a in x["arms"] if a["kind"] != "hosted"]
@@ -1049,44 +1344,84 @@ def findings_for(x: dict, f: dict) -> list:
         weakest = max((a for a in x["arms"] if a["kind"] == "hosted"), key=lambda a: a["rank"])
         ct = x["cheapest_tied"]
         return [
-            ("On mean τ, 23 of 24 LLM judges score above a free evaluator trained for the task.",
-             f"The best free scorer, {best_free['arm']} (UniEval, on its own inputs), scores "
-             f"{best_free['score']:.4f}; the weakest judge, {weakest['arm']}, {weakest['score']:.4f}. "
-             + q("In the paired test UniEval is separated below 23 of the 24 judges and cannot "
-                 "be separated from the weakest, on either set of inputs.", rep)
-             + " " + q("The judges rank all 16 summaries in one call while UniEval scores one at a time, "
-                       "and a pointwise LLM judge was not run.", rep)),
-            ("An open-weight judge is not separated from the leader.",
-             f"{ct['arm']} scores {ct['score']:.4f} against {t['arm']}'s {t['score']:.4f}, and "
-             f"the leader cannot be separated from it or from {x['n_tied'] - 1} others. "
-             + q("No provider was pinned: one judge, run once on each of two providers, scored 0.0113 apart and billed 3.7× apart.", rep)),
+            (
+                "On mean τ, 23 of 24 LLM judges score above a free evaluator trained for the task.",
+                f"The best free scorer, {best_free['arm']} (UniEval, on its own inputs), scores "
+                f"{best_free['score']:.4f}; the weakest judge, {weakest['arm']}, {weakest['score']:.4f}. "
+                + q(
+                    "In the paired test UniEval is separated below 23 of the 24 judges and cannot "
+                    "be separated from the weakest, on either set of inputs.",
+                    rep,
+                )
+                + " "
+                + q(
+                    "The judges rank all 16 summaries in one call while UniEval scores one at a time, "
+                    "and a pointwise LLM judge was not run.",
+                    rep,
+                ),
+            ),
+            (
+                "An open-weight judge is not separated from the leader.",
+                f"{ct['arm']} scores {ct['score']:.4f} against {t['arm']}'s {t['score']:.4f}, and "
+                f"the leader cannot be separated from it or from {x['n_tied'] - 1} others. "
+                + q(
+                    "No provider was pinned: one judge, run once on each of two providers, scored 0.0113 apart and billed 3.7× apart.",
+                    rep,
+                ),
+            ),
             *common,
-            ("The best judges come close to a single expert, and stay below one.",
-             q("Scored against the mean of two experts, as one expert is against the other two, "
-               "the best judge reaches 0.5195 — 93% of one expert's 0.5587 (95% interval 89–97%), "
-               "and the gap excludes zero. It is the best of 24, chosen on the same articles "
-               "(92% when chosen on half and scored on the other half). "
-               "UniEval reaches 64%, BARTScore 44%; a no-model lookup of which system wrote each "
-               "summary reaches 63%. The summaries are 2019-era and reasoning was off.", rep)),
-            ("The order is stable; the winner is not.",
-             q("Two disjoint 20-article halves agree at ρ = 0.90 on the order of the 24 judges, "
-               "but name the same unique winner only 21% of the time.", rep)),
-            ("This repository's own metric agrees with experts less than ROUGE does.",
-             q("coverage agrees with the experts at τ 0.1011, below ROUGE-1's 0.1487.", rep)),
+            (
+                "The best judges come close to a single expert, and stay below one.",
+                q(
+                    "Scored against the mean of two experts, as one expert is against the other two, "
+                    "the best judge reaches 0.5195 — 93% of one expert's 0.5587 (95% interval 89–97%), "
+                    "and the gap excludes zero. It is the best of 24, chosen on the same articles "
+                    "(92% when chosen on half and scored on the other half). "
+                    "UniEval reaches 64%, BARTScore 44%; a no-model lookup of which system wrote each "
+                    "summary reaches 63%. The summaries are 2019-era and reasoning was off.",
+                    rep,
+                ),
+            ),
+            (
+                "The order is stable; the winner is not.",
+                q(
+                    "Two disjoint 20-article halves agree at ρ = 0.90 on the order of the 24 judges, "
+                    "but name the same unique winner only 21% of the time.",
+                    rep,
+                ),
+            ),
+            (
+                "This repository's own metric agrees with experts less than ROUGE does.",
+                q("coverage agrees with the experts at τ 0.1011, below ROUGE-1's 0.1487.", rep),
+            ),
         ]
     return common
 
 
+def not_found_page() -> str:
+    body = f"""
+<section class="hero"><div class="wrap">
+  <h1>Not here.</h1>
+  <p class="dek">That page does not exist, or it moved. The documentation now lives at its own
+  address, and the catalog of runs at another.</p>
+  <div class="btns"><a class="btn primary" href="index.html">The harness</a><a class="btn" href="experiments.html">The experiments</a><a class="btn" href="docs/">Documentation</a><a class="btn" href="{CATALOG}">Catalog</a></div>
+</div></section>"""
+    return page("Not found — eval-harness", "This page does not exist.", body)
+
+
 def privacy_page() -> str:
-    """The family's standard privacy page, with this site's own facts: no cookies or forms,
-    Umami only (no Cloudflare: the site is served by GitHub Pages, not proxied), GitHub's own
-    request logs, and the theme choice kept in the browser."""
+    """The family's standard privacy page (humancopilot.eu's wording), with this site's own
+    facts: no cookies or forms; Umami, and Cloudflare Web Analytics because Cloudflare delivers
+    the site; the server's request logs, kept 30 days; the docs on GitHub Pages, which keeps its
+    own logs; and the theme choice kept in the browser."""
     gh = "https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement"
     umami = "https://umami.is/"
 
     def ext(url: str, label: str, tgt: str) -> str:
-        return (f'<a href="{e(url)}" data-umami-event="outbound" data-umami-event-target="{tgt}" '
-                f'rel="noopener">{label}</a>')
+        return (
+            f'<a href="{e(url)}" data-umami-event="outbound" data-umami-event-target="{tgt}" '
+            f'rel="noopener">{label}</a>'
+        )
 
     body = f"""
 <section class="hero"><div class="wrap">
@@ -1096,8 +1431,11 @@ def privacy_page() -> str:
 <section class="block"><div class="wrap prose">
   <h2>Analytics</h2>
   <p>Page views and clicks on links are counted with a self-hosted instance of {ext(umami, "Umami", "umami")}. It sets no cookies and stores no personal data. Counts are aggregate: pages, referrers, countries, browsers and devices.</p>
-  <h2>Hosting</h2>
-  <p>The site is hosted on GitHub Pages; there are no server logs of ours. GitHub keeps its own request logs under its {ext(gh, "privacy statement", "github-privacy")}.</p>
+  <p>Cloudflare, which delivers this site, also measures visits and page speed with its Web Analytics. It sets no cookies either.</p>
+  <h2>Server logs</h2>
+  <p>The web server records requests (time, page, IP address, browser) to keep the site running and secure. That includes the catalog and its run inspector, which answer from the same server. Searchable logs are deleted after 30 days. Copies on the server are size-capped and overwritten as new requests come in. Logs are not shared.</p>
+  <h2>Documentation</h2>
+  <p>The documentation is hosted on GitHub Pages. GitHub keeps its own request logs under its {ext(gh, "privacy statement", "github-privacy")}.</p>
   <h2>Your browser</h2>
   <p>The light/dark switch remembers your choice in your browser's local storage. It is not a cookie and is never sent anywhere.</p>
   <h2>Email</h2>
@@ -1112,18 +1450,24 @@ def privacy_page() -> str:
 #: before the findings that the pick rests on the primary measurement and what moved it.
 REMEASURED_NOTE = {
     "ag-news": "On labels one reader corrected, every hosted LLM has a higher accuracy than every "
-               "fine-tune, so the fine-tune pick holds only if your labels follow AG News's filing "
-               "convention.",
+    "fine-tune, so the fine-tune pick holds only if your labels follow AG News's filing "
+    "convention.",
     "dbpedia": "Three disputed labels were corrected; the top stays a crowd and the pick stands.",
     "summarization": "SummEval-validated LLM judges, cheap and frontier, rank every hosted LLM above every BART "
-                     "model; one reader's check went the other way. Neither is confirmed.",
+    "model; one reader's check went the other way. Neither is confirmed.",
 }
 
 
 def remeasured_note(x: dict) -> str:
     t = REMEASURED_NOTE.get(x["slug"])
-    return (f'\n  <p class="note"><b>Re-measured.</b> {e(t)} <a href="#remeasured">Below</a> · '
-            f'<a href="judging.html">what it teaches</a></p>') if t else ""
+    return (
+        (
+            f'\n  <p class="note"><b>Re-measured.</b> {e(t)} <a href="#remeasured">Below</a> · '
+            f'<a href="judging.html">what it teaches</a></p>'
+        )
+        if t
+        else ""
+    )
 
 
 def remeasured_block(x: dict, f: dict, num: int) -> str:
@@ -1135,73 +1479,100 @@ def remeasured_block(x: dict, f: dict, num: int) -> str:
         a = {z["arm"]: z for z in r["summ"]["arms"]}
         hc, hc2 = r["summ"]["fig"]["human_check"], r["summ_v2"]["fig"]["human_check"]
         head = "Re-measured by SummEval-validated LLM judges, and checked by a person."
-        text = (f"Scored again by two LLM judges validated on SummEval, every hosted LLM ranks above "
-                f"every BART model: bart_l falls from {ordinal(a['bart_l']['r1'])} to "
-                f"{ordinal(a['bart_l']['r2'])} of {r['summ']['n_arms']} (the hosted scores bunch near the "
-                f"top of the scale, so their own order is not a finding). One reader's blind check of "
-                f"{hc['pairs']} pairs on truncated articles went the other way, "
-                f"{hc['human_prefers_bart_l']} to {hc['human_prefers_deepseek_m']} for bart_l over "
-                f"deepseek_m, not significant either. Two frontier judges at "
-                f"{times(r['summ_v2']['billed_usd'] / r['summ']['billed_usd'])} the price agreed with the first pair, "
-                f"{hc2['judge_prefers_deepseek_m']} to {hc2['judge_prefers_bart_l']} on the same "
-                "pairs. On crowd ratings of 2022 LLM summaries the judges track people better than one, "
-                "noisy, rater does on coherence and relevance (not on faithfulness), while still ranking "
-                "systems differently in both directions; on these "
-                "outputs neither is confirmed, so coverage stays the primary metric.")
+        text = (
+            f"Scored again by two LLM judges validated on SummEval, every hosted LLM ranks above "
+            f"every BART model: bart_l falls from {ordinal(a['bart_l']['r1'])} to "
+            f"{ordinal(a['bart_l']['r2'])} of {r['summ']['n_arms']} (the hosted scores bunch near the "
+            f"top of the scale, so their own order is not a finding). One reader's blind check of "
+            f"{hc['pairs']} pairs on truncated articles went the other way, "
+            f"{hc['human_prefers_bart_l']} to {hc['human_prefers_deepseek_m']} for bart_l over "
+            f"deepseek_m, not significant either. Two frontier judges at "
+            f"{times(r['summ_v2']['billed_usd'] / r['summ']['billed_usd'])} the price agreed with the first pair, "
+            f"{hc2['judge_prefers_deepseek_m']} to {hc2['judge_prefers_bart_l']} on the same "
+            "pairs. On crowd ratings of 2022 LLM summaries the judges track people better than one, "
+            "noisy, rater does on coherence and relevance (not on faithfulness), while still ranking "
+            "systems differently in both directions; on these "
+            "outputs neither is confirmed, so coverage stays the primary metric."
+        )
     elif x["slug"] in ("ag-news", "dbpedia"):
         d = r["ag" if x["slug"] == "ag-news" else "db"]
         if x["slug"] == "ag-news":
             fts = [z for z in d["arms"] if z["arm"].startswith("bert_")]
             lead = max(d["arms"], key=lambda z: z["v2"])
             head = "Re-measured against labels a person corrected."
-            text = (f"One reader, the author, adjudicated by topic the {d['n_items']} disputed items, shown the hosted "
-                    f"answer, and judged the gold wrong on {d['changed']}. On that gold every hosted LLM has "
-                    f"a higher accuracy than every fine-tune: the fine-tunes fall from "
-                    f"{min(z['r1'] for z in fts)}–{max(z['r1'] for z in fts)} to "
-                    f"{min(z['r2'] for z in fts)}–{max(z['r2'] for z in fts)} of {d['n_arms']}, and "
-                    f"{lead['arm']} rises to first (separated from the fine-tunes, not from most hosted "
-                    "arms). The dataset's own gold stays primary.")
+            text = (
+                f"One reader, the author, adjudicated by topic {d['n_items']} items, shown the hosted answer: "
+                f"the {d['changed']} disputed ones, which at least 80% of the hosted LLMs got wrong, and the "
+                f"{d['n_items'] - d['changed']} others a fine-tune got wrong. The gold was wrong on all "
+                f"{d['changed']} disputed items and right on the {d['n_items'] - d['changed']}. On that gold "
+                "every hosted LLM has "
+                f"a higher accuracy than every fine-tune: the fine-tunes fall from "
+                f"{min(z['r1'] for z in fts)}–{max(z['r1'] for z in fts)} to "
+                f"{min(z['r2'] for z in fts)}–{max(z['r2'] for z in fts)} of {d['n_arms']}, and "
+                f"{lead['arm']} rises to first (separated from the fine-tunes, not from most hosted "
+                "arms). The dataset's own gold stays primary."
+            )
         else:
             fy = next(z for z in d["arms"] if z["arm"] == "bert_base_fy")
             head = "Re-measured against labels a person corrected."
-            text = (f"One reader, the author, adjudicated the {d['n_items']} disputed items, shown the hosted answer; "
-                    f"the gold was wrong on {d['changed']}. The top stays a crowd, and bert_base_fy moves "
-                    f"from {ordinal(fy['r1'])} to {ordinal(fy['r2'])} at an unchanged {fy['v1']:.4f}. "
-                    "The dataset's own gold stays primary.")
+            text = (
+                f"One reader, the author, adjudicated {d['n_items']} items, shown the hosted answer: the "
+                f"{d['changed']} disputed ones, which at least 90% of the hosted LLMs got wrong, and the "
+                f"{d['n_items'] - d['changed']} others bert_base_fy got wrong. The gold was wrong on all "
+                f"{d['changed']} disputed items and right on the {d['n_items'] - d['changed']}. The top "
+                "stays a crowd, and bert_base_fy moves "
+                f"from {ordinal(fy['r1'])} to {ordinal(fy['r2'])} at an unchanged {fy['v1']:.4f}. "
+                "The dataset's own gold stays primary."
+            )
     elif x["slug"] == "summeval":
         se = r["summeval"]
         head = "These judges, put to work."
-        text = (f"Two of these judges, gemma_l (τ {se['gemma_l']:.2f}) and qwen_s ({se['qwen_s']:.2f}), "
-                "re-measured the summarisation experiment's summaries, where its own metric agrees with "
-                f"the experts at τ {se['coverage']:.2f}. They re-ranked the field; one reader's blind check "
-                f"of {r['summ']['fig']['human_check']['pairs']} pairs went the other way, not significantly. "
-                "On crowd ratings of 2022 LLM summaries (Zhang et al.) the same judges track people better "
-                "than one rater does on coherence and relevance, trail on faithfulness, and do not rank the "
-                "systems the same way; on the summarisation experiment's own outputs neither is confirmed.")
+        text = (
+            f"Two of these judges, gemma_l (τ {se['gemma_l']:.2f}) and qwen_s ({se['qwen_s']:.2f}), "
+            "re-measured the summarisation experiment's summaries, where its own metric agrees with "
+            f"the experts at τ {se['coverage']:.2f}. They re-ranked the field; one reader's blind check "
+            f"of {r['summ']['fig']['human_check']['pairs']} pairs went the other way, not significantly. "
+            "On crowd ratings of 2022 LLM summaries (Zhang et al.) the same judges track people better "
+            "than one rater does on coherence and relevance, trail on faithfulness, and do not rank the "
+            "systems the same way; on the summarisation experiment's own outputs neither is confirmed."
+        )
     if not head:
         return ""
-    return (f'<section class="block" id="remeasured"><div class="wrap"><div class="eyebrow">'
-            f'<span class="num">{num:02d}</span>Re-measured</div><h2>{e(head)}</h2>'
-            f'<div class="prose"><p>{e(text)}</p></div><div class="btns">'
-            f'<a class="btn" href="judging.html">What re-measuring changed, and what it teaches →</a>'
-            f'</div></div></section>')
+    return (
+        f'<section class="block" id="remeasured"><div class="wrap"><div class="eyebrow">'
+        f'<span class="num">{num:02d}</span>Re-measured</div><h2>{e(head)}</h2>'
+        f'<div class="prose"><p>{e(text)}</p></div><div class="btns">'
+        f'<a class="btn" href="judging.html">What re-measuring changed, and what it teaches →</a>'
+        f"</div></div></section>"
+    )
 
 
 def experiment_page(x: dict, f: dict) -> str:
     cal = [r for r in f["calibration"] if r["bench"] == x["bench"]]
-    cal_txt = "; ".join(f'{r["what"]} {r["ours"] / r["scale"]:.4f} vs {r["published"] / r["scale"]:.4f} published'
-                        if r["scale"] == 100 else f'{r["what"]} {r["ours"]:.2f} vs {r["published"]:.2f} published'
-                        for r in cal)
+    cal_txt = "; ".join(
+        f"{r['what']} {r['ours'] / r['scale']:.4f} vs {r['published'] / r['scale']:.4f} published"
+        if r["scale"] == 100
+        else f"{r['what']} {r['ours']:.2f} vs {r['published']:.2f} published"
+        for r in cal
+    )
     facts = [
         ("Question", QUESTION[x["slug"]]),
-        ("Data", f'{x["n_items"]} items from the {x["bench"]} test split'),
-        ("Systems", f'{x["n_arms"]} compared: {x["n_hosted"]} hosted models billed per call; {x["n_arms"] - x["n_hosted"]} local models and baselines, free'),
-        ("Metric", f'{x["metric_label"]}' + METRIC_GLOSS.get(x["slug"], " — the field's standard; higher is better")),
+        ("Data", f"{x['n_items']} items from the {x['bench']} test split"),
+        (
+            "Systems",
+            f"{x['n_arms']} compared: {x['n_hosted']} hosted models billed per call; {x['n_arms'] - x['n_hosted']} local models and baselines, free",
+        ),
+        (
+            "Metric",
+            f"{x['metric_label']}" + METRIC_GLOSS.get(x["slug"], " — the field's standard; higher is better"),
+        ),
         ("Calibration", cal_txt or "—"),
-        ("Billed", f'{money(x["billed_total"])} for the whole sweep'),
+        ("Billed", f"{money(x['billed_total'])} for the whole sweep"),
     ]
-    facts_html = "".join(f'<div class="fact"><div class="k">{e(k)}</div><div class="v">{e(v)}</div></div>' for k, v in facts)
-    finds = "".join(f'<li><div><h3>{e(h)}</h3><p>{e(p)}</p></div></li>' for h, p in findings_for(x, f))
+    facts_html = "".join(
+        f'<div class="fact"><div class="k">{e(k)}</div><div class="v">{e(v)}</div></div>' for k, v in facts
+    )
+    finds = "".join(f"<li><div><h3>{e(h)}</h3><p>{e(p)}</p></div></li>" for h, p in findings_for(x, f))
     free = x["n_arms"] - x["n_hosted"]
     lesson = method.experiment_lesson(H, x)
     n = 4
@@ -1256,7 +1627,9 @@ def experiment_page(x: dict, f: dict) -> str:
 <span class="p">$ </span>make compare   EXP={x["slug"]}</pre>
   </div>
 </div></section>"""
-    return page(f'{x["task"]} · {x["bench"]} — eval-harness', CARD[x["slug"]], body, depth=1, here="experiments")
+    return page(
+        f"{x['task']} · {x['bench']} — eval-harness", CARD[x["slug"]], body, depth=1, here="experiments"
+    )
 
 
 OFF_NOTE = " A dot left of the ⫽ break sits far below the rest, off the scale; tap it for its score."
@@ -1277,12 +1650,30 @@ QUESTION = {
     "summeval": "Score 16 summaries of a news article on coherence, consistency, fluency and relevance, as three experts did.",
 }
 PICK = {
-    "summarization": q("Use bart_l if you can run a free 1.6 GB model on CPU and your text looks like CNN news; rent deepseek_m ($191 per 1M articles) if you need speed; do not buy anthropic_l.", "research/REPORT_SUMMARIZATION.md"),
-    "ag-news": q("If your labels follow a house convention, fine-tune on them, starting with bert_mini; if they mean what the words say, use a hosted LLM. If you rent, start with gemma_m ($8 per 1M items).", "research/REPORT_CLASSIFICATION.md"),
-    "dbpedia": q("Take the cheapest arm you can run at 0.9857: gemma_m (~$12 per 1M items), qwen_s (~$26) or the fine-tuned bert_base_fy.", "research/REPORT_CLASSIFICATION.md"),
-    "few-nerd": q("If you have labelled data in a fixed taxonomy, fine-tune a small tagger (span_marker); do not rent a zero-shot hosted LLM for this job. If you do rent, take the cheapest, gemma_m.", "research/REPORT_NER.md"),
-    "scifact": q("Build e5_base retrieval first (0.7191, $0 per query); add an LLM reranker on its top 20 only if about +0.07 nDCG@10 is worth about $732 per 1M queries. Only the twelve cheapest hosted LLMs were tried.", "research/REPORT_RETRIEVAL.md"),
-    "summeval": q("Use an LLM judge, and start with gemma_l; before relying on any judge, check it against a small set of human judgements on your own outputs.", "research/REPORT_SUMMEVAL.md"),
+    "summarization": q(
+        "Use bart_l if you can run a free 1.6 GB model on CPU and your text looks like CNN news; rent deepseek_m ($191 per 1M articles) if you need speed; do not buy anthropic_l.",
+        "research/REPORT_SUMMARIZATION.md",
+    ),
+    "ag-news": q(
+        "If your labels follow a house convention, fine-tune on them, starting with bert_mini; if they mean what the words say, use a hosted LLM. If you rent, start with gemma_m ($8 per 1M items).",
+        "research/REPORT_CLASSIFICATION.md",
+    ),
+    "dbpedia": q(
+        "Take the cheapest arm you can run at 0.9857: gemma_m (~$12 per 1M items), qwen_s (~$26) or the fine-tuned bert_base_fy.",
+        "research/REPORT_CLASSIFICATION.md",
+    ),
+    "few-nerd": q(
+        "If you have labelled data in a fixed taxonomy, fine-tune a small tagger (span_marker); do not rent a zero-shot hosted LLM for this job. If you do rent, take the cheapest, gemma_m.",
+        "research/REPORT_NER.md",
+    ),
+    "scifact": q(
+        "Build e5_base retrieval first (0.7191, $0 per query); add an LLM reranker on its top 20 only if about +0.07 nDCG@10 is worth about $732 per 1M queries. Only the twelve cheapest hosted LLMs were tried.",
+        "research/REPORT_RETRIEVAL.md",
+    ),
+    "summeval": q(
+        "Use an LLM judge, and start with gemma_l; before relying on any judge, check it against a small set of human judgements on your own outputs.",
+        "research/REPORT_SUMMEVAL.md",
+    ),
 }
 HEADLINE = {
     "summarization": "A free model not separated from the best paid one — on CNN's news.",
@@ -1301,7 +1692,6 @@ ROBOTS = f"""User-agent: *
 Allow: /
 
 Sitemap: {SITE}/sitemap.xml
-Sitemap: {SITE}/docs/sitemap.xml
 """
 
 
@@ -1309,16 +1699,20 @@ def sitemap_urls(out: Path) -> list:
     """Absolute URLs of every page this build writes, as Pages serves them. No lastmod:
     the build is deterministic and site-check compares it byte for byte, so a build date
     would make every day's check fail, and no other date here is reliable per page."""
-    pages = sorted((p.relative_to(out).as_posix() for p in out.rglob("*.html")),
-                   key=lambda p: (p != "index.html", p))
+    pages = sorted(
+        (p.relative_to(out).as_posix() for p in out.rglob("*.html") if p.name != "404.html"),
+        key=lambda p: (p != "index.html", p),
+    )
     return [f"{SITE}/" if p == "index.html" else f"{SITE}/{p}" for p in pages]
 
 
 def sitemap_xml(urls: list) -> str:
     rows = "".join(f"  <url><loc>{e(u)}</loc></url>\n" for u in urls)
-    return ('<?xml version="1.0" encoding="UTF-8"?>\n'
-            '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-            f"{rows}</urlset>\n")
+    return (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        f"{rows}</urlset>\n"
+    )
 
 
 def check_crawl_files(out: Path) -> list:
@@ -1335,14 +1729,27 @@ def check_crawl_files(out: Path) -> list:
         problems.append("sitemap.xml is missing")
         return problems
     import re  # noqa: PLC0415
+
     urls = re.findall(r"<loc>([^<]+)</loc>", smap.read_text(encoding="utf-8"))
     if not urls:
         problems.append("sitemap.xml lists no URLs")
     for u in urls:
-        rel = "index.html" if u == f"{SITE}/" else u[len(SITE) + 1:] if u.startswith(SITE + "/") else None
+        rel = "index.html" if u == f"{SITE}/" else u[len(SITE) + 1 :] if u.startswith(SITE + "/") else None
         if rel is None or not (out / rel).is_file():
             problems.append(f"sitemap URL with no page behind it: {u}")
     return problems
+
+
+def point_docs(out: Path) -> None:
+    """The templates link the docs as `docs/<page>/`, relative, from when the docs were served
+    under /docs/ on this host. They now live at DOCS: rewrite every such link there, in one
+    place. Old /docs/... URLs elsewhere on the web are redirected by the server (infra/nginx)."""
+    pat = re.compile(r'href="(?:\.\./)*docs/')
+    for page in out.rglob("*.html"):
+        text = page.read_text(encoding="utf-8")
+        new = pat.sub(f'href="{DOCS}', text)
+        if new != text:
+            page.write_text(new, encoding="utf-8")
 
 
 # ── build ───────────────────────────────────────────────────────────────────
@@ -1357,13 +1764,20 @@ def build(out: Path) -> None:
     (out / "method.html").write_text(method.method_page(H, f), encoding="utf-8")
     (out / "use.html").write_text(method.use_page(H, f), encoding="utf-8")
     (out / "privacy.html").write_text(privacy_page(), encoding="utf-8")
+    # Served for any missing path at any depth, so its relative links resolve from the root.
+    (out / "404.html").write_text(
+        not_found_page().replace("<head>", '<head>\n<base href="/">', 1), encoding="utf-8"
+    )
     (out / "releases.html").write_text(releases.releases_page(H), encoding="utf-8")
     (out / "experiments" / "judging.html").write_text(remeasured.judging_page(H, f), encoding="utf-8")
     for x in f["experiments"]:
-        (out / "experiments" / f'{x["slug"]}.html').write_text(experiment_page(x, f), encoding="utf-8")
+        (out / "experiments" / f"{x['slug']}.html").write_text(experiment_page(x, f), encoding="utf-8")
     (out / ".nojekyll").write_text("")
     (out / "sitemap.xml").write_text(sitemap_xml(sitemap_urls(out)), encoding="utf-8")
     (out / "robots.txt").write_text(ROBOTS, encoding="utf-8")
+    point_docs(out)
+    # Last: no inline script or style survives, so the prod CSP needs no 'unsafe-inline'.
+    csp.externalize(out)
 
 
 def main() -> int:
@@ -1384,6 +1798,7 @@ def main() -> int:
             stale.extend(f"{rel}{n}" for n in d.left_only + d.right_only + d.diff_files)
             for n, sub in d.subdirs.items():
                 walk(sub, f"{rel}{n}/")
+
         walk(diff)
         if stale:
             print("FAIL  site/public is stale; run `python site/build.py`:", *stale, sep="\n  ")

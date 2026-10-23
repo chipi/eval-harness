@@ -11,13 +11,22 @@ golden dataset. This page is the reference for each step.
 
 ## 0. Prove it works before you touch it
 
+In a project that pins the package:
+
+```bash
+evh self-test
+```
+
+That runs the paired test's own suite and the tutorial end to end in a scratch folder,
+offline and at $0. In a checkout of the harness:
+
 ```bash
 make demo
 ```
 
 That freezes a dataset from the bundled samples, materializes it, runs an
-experiment three times, and validates the tree. No API key. If that works, the
-skeleton is wired correctly and anything that breaks later is your change.
+experiment three times, and validates the tree. No API key. If either works, the
+harness is wired correctly and anything that breaks later is your change.
 
 ---
 
@@ -47,6 +56,42 @@ The `dataset_id` is the comparison contract. Every run records it, and
 *is* (`support_tickets_2026q1_v1`), not for what you were doing at the time
 (`test2`).
 
+**What you know about each item goes in fields** (ADR-0003). Declare them once in a
+field set, `data/fields/<fieldset_id>.yaml` (`schemas/fieldset.schema.json`): a name and
+a type for each (`text`, `number`, `integer`, `boolean`, `date`, `duration`, `url`, or
+`choice` with its `values`), optionally `required` and `public`. Then attach the values,
+one row per `item_id`, from a CSV or JSONL:
+
+```bash
+make dataset-create DATASET_ID=my_v1 ARGS="--fieldset tickets --fields fields.csv"
+make dataset-create DATASET_ID=my_v1 ARGS="--update-fields --fields fixes.csv"   # later
+```
+
+A column the field set does not declare, a value of the wrong type or outside a
+choice, and a required field left empty are refused. With `--update-fields`, a value in
+the file replaces that value, an empty cell clears it, and every column and item the file
+leaves out is kept. Fields are not the dataset's
+identity: runs hash the items' bytes, so correcting a field invalidates no run, and
+`fields_sha256` records that the fields changed. `make validate` (V15) checks every
+value. The catalog summarises a field's values only when it is `public`; the local
+inspector shows them all, filters a comparison by them, and breaks it down by a
+`choice` or `boolean` field.
+
+**Items that live at a URL** come in through a manifest, one row per item:
+`item_id`, `source_url` and `source_sha256` (leave the hash empty and the bytes are
+fetched and pinned now), plus any field columns:
+
+```bash
+make dataset-create DATASET_ID=episodes_v1 ARGS="--manifest items.csv --fieldset episodes"
+```
+
+`make dataset-materialize` downloads each one into `.cache/items/` and refuses bytes
+that hash to anything else, the same failure as a changed file under `sources/`. A
+transient failure (429, 5xx, a timeout) is retried like a provider call. A host that needs
+a header gets it from `EVAL_FETCH_HEADERS` in `.env`, a JSON object
+`{"media.example.com": {"Authorization": "Bearer …"}}`: only that host receives it, a
+redirect to another host does not, and it is never written into a dataset.
+
 ---
 
 ## 3. Materialize
@@ -66,7 +111,10 @@ rebuilds it. If something in there cannot be rebuilt, it is in the wrong place.
 
 ## 4. Point the harness at your system
 
-Edit **one function**, `call_system()` in `scripts/adapter.py`:
+Write **one function**, `call_system()`, in `adapter.py` at the project root. An arm whose
+config names no `adapter:` uses it (and records `adapter.py`); without one, the adapter
+bundled with the harness runs. A project with several tasks names one per arm,
+`adapter: adapters/ner.py`, relative to the config or the project:
 
 ```python
 def call_system(text, params):
@@ -188,9 +236,8 @@ Three things worth knowing:
   the first item** precisely so a crashed run can still answer the question
   (`metrics.json`, which a crashed run does not have, could not).
 
-  A directory with neither file is refused outright. `--resume-unverified` overrides
-  that, for runs made before `run.json` existed; it will record another arm's answers
-  under your config if you are wrong about whose outputs those are.
+  A directory with neither file is refused outright, as is one whose rows were not written
+  by this version of the harness.
 
 Exit codes: `0` complete, `2` stopped early by the cost cap with usable partial
 results, `1` nothing was measured at all.
@@ -249,11 +296,13 @@ make run-promote RUN=<run_id> REASON="beat prev baseline by 6% on my_v1 n=40, sp
 ```
 
 Refused if the run came from a dirty tree, if its build is unknown, or if the
-reason is a single word. Those refusals exist for the same reason: in six months, *"why is this the
+reason is under three words. Those refusals exist for the same reason: in six months, *"why is this the
 baseline?"* must have an answer.
 
-The previous baseline is archived under `data/baselines/superseded/`. A baseline
-is never edited, only superseded.
+The baseline carries what its number means, from the run: the reference tier it was scored
+against, the adapter that scored it, its fingerprint hash, and its goal and format
+(`validate` V6 fails a baseline that no longer matches its run). Promoting another run
+replaces the baseline, and git keeps the one it replaced; a baseline is never edited.
 
 ```bash
 make baselines-list
@@ -267,13 +316,32 @@ make baselines-list
 make validate
 ```
 
-Thirteen checks (V1–V13): schema conformance, every run's `dataset_id` resolves, every run
+Fifteen checks (V1–V15): schema conformance (datasets, runs, baselines, configs, judge
+scorers, judging sets, verdicts), every run's `dataset_id` resolves, every run
 identifies its build, materialized copies still match their hashes, no two
 configs reporting byte-identical scores and per-item results, no baseline pointing at a
-deleted run, every committed run readable and present on disk, no two runs claiming one
+deleted run or disagreeing with it, every committed run readable and present on disk, no two runs claiming one
 `config_id`, no derived run naming a scorer that is not the code in this tree, every judging
 set matching its stored hash, every judge verdict naming a real set, item, pass and block,
-and every judge scorer yaml loading and well-formed.
+every judge scorer yaml loading and well-formed, every goal well-formed and named by every
+run that must name one, and every item field declared, typed and matching its hash.
+
+What it holds *your* project to is yours to declare, in `data/validate.json` (all optional):
+
+```json
+{
+  "committed": ["runs", "runs-adjudicated"],
+  "floors": {"runs-adjudicated": 12},
+  "scorer_sources": [{"dir": "runs-adjudicated", "glob": "*", "path": ["derived", "with", "scorer"],
+                      "module": "../my_scorer.py", "callable": "scorer_id"}],
+  "duplicate_ok": [["my_v1", "smoke_arm_v1"]]
+}
+```
+
+`committed` is the run directories your reports cite; without it, every git-tracked
+`data/runs*` directory is checked. `floors` makes deleting cited runs fail. `scorer_sources`
+lets V10 check that derived runs carry the current scorer's hash (`module` is a path from the
+project root). `duplicate_ok` names the (dataset, config) pairs allowed to repeat.
 
 The duplicate-score check catches a specific and nasty failure: two
 independent arms do not agree to full float precision. When they do, one of them
@@ -289,12 +357,14 @@ When the cheap metric is biased in your domain but you have an expensive judge
 you trust:
 
 ```bash
-make judge      # FakeJudge, keyless
+evh judge --config tutorial/judge_panel.yaml --use-fake-judge   # keyless; the kit's config
+make judge                                                       # in a checkout
 ```
 
 Triage on the cheap metric, decide with the judge, cost-capped with a mid-run
-abort that preserves partial results. Knobs in `config.example.yaml`; the
-reasoning is in the main README.
+abort that preserves partial results. Each finalist is judged on its stored outputs. Knobs
+in the config (`tutorial/judge_panel.yaml` from `evh init --tutorial`, or
+`config.example.yaml` in a checkout); the reasoning is in the harness README.
 
 ---
 
@@ -375,7 +445,8 @@ and to the news-summary judge, so neither is an `evh` command.
      `--arms a,b,c` narrows it. A subset is its own judging set. If the arms mix config versions
      (`_v1` and `_v2` of one arm), the pass warns: each version is judged as its own arm.
    - **`prompt.file`** is looked up in this order, first hit wins: an absolute path as
-     written; the project root (`EVAL_HOME`, else the harness checkout); the directory of
+     written; the project root (`EVAL_HOME`; else, in a checkout, the checkout; else the nearest
+     directory up from where you run that has `data/`); the directory of
      the scorer file itself; and, only in a checkout of this repository, the repository root,
      which is where the committed scorers' `examples/summeval-judging/prompt.txt` points. A
      project keeps its prompt wherever it likes and names it relative to its root
@@ -458,18 +529,58 @@ own outputs.
 
 ---
 
+## Exit codes
+
+Every command, `make` target and `evh` subcommand, for scripts and CI that branch on them:
+
+| Exit | Meaning | From |
+|---|---|---|
+| `0` | done | every command |
+| `1` | refused, or nothing was measured: `ERROR: <why>` on stderr | every command |
+| `2` | a usage error: an unknown command or argument (the usage is printed) | `evh`, every command's argument parser |
+| `2` | stopped early by the cost cap; the partial results are kept and resumable | `experiment-run`, `judge-score` |
+| `3` | the judge scorer is not validated; `--unvalidated` runs it labelled as such | `judge-score` |
+
+The two meanings of `2` are told apart by stderr: a usage error prints the usage, a stopped
+run prints how many items it measured and how to resume.
+
+## Environment variables
+
+Read from the environment or the project's `.env` (an exported value wins). `.env.example`
+carries the ones a project usually sets, with the reasoning. The harness's commands read
+`.env` when they start; a program that only imports the harness (an adapter's own tests, a
+notebook) reads no `.env`, and the project's paths are resolved on first use, so it can set
+`EVAL_HOME` after the import.
+
+| Variable | What it does |
+|---|---|
+| `EVAL_HOME` | the project root (default: the nearest directory up from where you run that has `data/`) |
+| `EVAL_DATA_DIR` | the data root, when it is not `<project>/data` |
+| `EVAL_RUNS_DIR` | read and write runs here instead of `data/runs` (`validate` too) |
+| `EVAL_GOALS_DIR` | read goals here instead of `<data>/goals`, relative to the project (for goals kept outside the data root) |
+| `EVAL_MAX_COST_USD` | per-run ceiling on billed spend; the run stops, keeps its results, resumes |
+| `EVAL_MAX_RETRIES`, `EVAL_RETRY_MAX_DELAY` | retries around every provider call |
+| `EVAL_BUILD_REF` | the identity of the system under test (default: the git SHA) |
+| `EVAL_HOST_LABEL` | a name for this machine, so latency is comparable across runs |
+| `EVAL_FINGERPRINT_WEIGHTS` | `1`: hash a local model's weight files into the fingerprint |
+| `EVAL_MODELS_FILE` | the alias to upstream-model table judges are routed by |
+| `EVAL_FETCH_HEADERS` | JSON `{"host": {"Header": "value"}}` for URL items behind a login |
+| `EVAL_NO_CACHE` | `1`: `family-test` recomputes instead of replaying an identical earlier run |
+| `OPENROUTER_API_KEY`, `LITELLM_BASE_URL` + `LITELLM_API_KEY`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` | hosted models and judges |
+
+---
+
 ## Choosing what to evaluate against
 
-The **system under test** is recorded as `build.ref`. It defaults to this tree's
-git SHA, which is right only if this tree *is* the system — and a drop-in
-usually is not.
+The **system under test** is recorded as `build.ref`. It defaults to the project's
+git SHA, which is right only if the project *is* the system under test.
 
 Declare it instead. No code edit:
 
 ```bash
 EVAL_BUILD_REF=v2.3.1                make experiment-run CONFIG=...
 EVAL_BUILD_REF=sha256:ab12…          make experiment-run CONFIG=...   # image digest
-EVAL_BUILD_REF=$(git -C ../ rev-parse HEAD)   make experiment-run ...  # the parent repo
+EVAL_BUILD_REF=$(git -C ../my-system rev-parse HEAD)   make experiment-run ...  # the system's repo
 ```
 
 **Pin it.** An eval against a moving target measures the target's movement, and

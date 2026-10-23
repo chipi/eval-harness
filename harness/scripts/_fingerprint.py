@@ -37,7 +37,7 @@ import os
 import platform
 import subprocess
 from pathlib import Path
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable
 
 #: Reported when installed, WITHOUT importing them. importlib.metadata reads distribution
 #: metadata off disk, so the core can say "torch 2.2.2" while having no torch dependency
@@ -55,11 +55,11 @@ _WATCHED_DISTRIBUTIONS = (
 )
 
 
-def _installed_versions() -> Dict[str, str]:
+def _installed_versions() -> dict[str, str]:
     """Versions of anything watched that is installed. No imports of the packages."""
-    from importlib.metadata import PackageNotFoundError, version  # stdlib
+    from importlib.metadata import PackageNotFoundError, version  # stdlib  # noqa: PLC0415
 
-    out: Dict[str, str] = {}
+    out: dict[str, str] = {}
     for dist in _WATCHED_DISTRIBUTIONS:
         try:
             out[dist] = version(dist)
@@ -68,18 +68,16 @@ def _installed_versions() -> Dict[str, str]:
     return out
 
 
-def _git(root: Path, *args: str) -> Optional[str]:
+def _git(root: Path, *args: str) -> str | None:
     """A git command's stdout, or None when git/repo is absent. Never raises."""
     try:
-        r = subprocess.run(
-            ["git", *args], cwd=root, capture_output=True, text=True, timeout=10
-        )
+        r = subprocess.run(["git", *args], cwd=root, capture_output=True, text=True, timeout=10)
     except (OSError, subprocess.SubprocessError):
         return None
     return r.stdout.strip() if r.returncode == 0 else None
 
 
-def filter_dirt(status: str, data_rel: Optional[str]) -> list:
+def filter_dirt(status: str, data_rel: str | None) -> list:
     """`git status --porcelain` lines that make a tree dirty, minus untracked run output.
 
     EVERY RUN AFTER THE FIRST WAS RECORDED DIRTY. A finished run directory under
@@ -97,35 +95,86 @@ def filter_dirt(status: str, data_rel: Optional[str]) -> list:
     dirt = []
     for line in (status or "").splitlines():
         path = line[3:].strip().strip('"')
-        if (line.startswith("?? ") and data_rel and path.startswith(data_rel)
-                and path[len(data_rel):].startswith("runs")):
+        if (
+            line.startswith("?? ")
+            and data_rel
+            and path.startswith(data_rel)
+            and path[len(data_rel) :].startswith("runs")
+        ):
             continue
         dirt.append(line)
     return dirt
 
 
-def tree_dirt(root: Path) -> Optional[list]:
-    """The lines that make `root`'s git tree dirty, or None when git cannot say."""
+def tree_dirt(root: Path, data_dir: Path | None = None) -> list | None:
+    """The lines that make `root`'s git tree dirty, or None when git cannot say. Untracked
+    run output under `data_dir` (the project's data root, `EVAL_DATA_DIR`; default
+    `<root>/data`) does not count."""
     status = _git(root, "status", "--porcelain")
     if status is None:
         return None
     top = _git(root, "rev-parse", "--show-toplevel")
     try:
-        data_rel = (root / "data").resolve().relative_to(Path(top).resolve()).as_posix() + "/"
-    except (TypeError, ValueError):
+        data_rel = (
+            (data_dir or root / "data").resolve().relative_to(Path(top).resolve()).as_posix() + "/"
+            if top
+            else None
+        )
+    except ValueError:
         data_rel = None
     return filter_dirt(status, data_rel)
 
 
+#: The commands that write a run, or a reference a run is scored against, and the bundled
+#: adapter: _adapter loads it by path, so no import names it.
+_PRODUCERS = (
+    "experiment_run.py",
+    "rescore.py",
+    "judge_score.py",
+    "import_run.py",
+    "reference_create.py",
+    "adapter.py",
+)
+
+
+def measuring_modules(here: Path | None = None, producers: tuple[str, ...] = _PRODUCERS) -> list[Path]:
+    """The code a run's numbers can depend on: the run-writing commands and every module
+    beside them they import, at any depth, lazily or not, read from the source.
+
+    It was every .py file in the directory, tests and report checkers included, so editing a
+    test between two runs made run-compare call them "not a controlled comparison" over a
+    file that cannot touch a measurement. Derived rather than listed, so a new measuring
+    module is covered the day it is imported. `producers` names other roots: family-test
+    keys its result cache on its own closure the same way."""
+    import ast  # noqa: PLC0415
+
+    here = here or Path(__file__).resolve().parent
+    seen: set[str] = set()
+    todo = list(producers)
+    while todo:
+        name = todo.pop()
+        p = here / name
+        if name in seen or not p.is_file():
+            continue
+        seen.add(name)
+        for node in ast.walk(ast.parse(p.read_text(encoding="utf-8"))):
+            mods = []
+            if isinstance(node, ast.Import):
+                mods = [a.name.split(".")[0] for a in node.names]
+            elif isinstance(node, ast.ImportFrom) and node.module:
+                mods = [node.module.split(".")[0]]
+            todo += [f"{m}.py" for m in mods if (here / f"{m}.py").is_file()]
+    return sorted(here / n for n in seen)
+
+
 def harness_code_sha256() -> str:
-    """Content hash of the harness's own Python code: every module beside this file.
+    """Content hash of the harness code that can affect a measurement (`measuring_modules`).
 
     The identity that survives installation. A project that depends on the harness has
     no git history for it, and an edited site-packages copy would otherwise be invisible.
     """
-    here = Path(__file__).resolve().parent
     h = hashlib.sha256()
-    for f in sorted(here.glob("*.py")):
+    for f in measuring_modules():
         h.update(f.name.encode())
         h.update(b"\x00")
         h.update(f.read_bytes())
@@ -133,20 +182,17 @@ def harness_code_sha256() -> str:
     return h.hexdigest()
 
 
-def _harness_identity(root: Path) -> Dict[str, Any]:
+def _harness_identity(root: Path, data_dir: Path | None = None) -> dict[str, Any]:
     """The INSTRUMENT: this harness's own code state, and the project it ran in.
 
     `commit` and `dirty` describe the PROJECT's git tree (in a checkout of eval-harness,
     that is the harness itself). `version` and `code_sha256` describe the harness code,
     and are the only reliable identity when the harness is an installed dependency.
     """
-    try:
-        from _version import __version__
-    except ImportError:  # imported as evaluation_harness._fingerprint, not run as a script
-        from ._version import __version__  # type: ignore[no-redef]
+    from _version import __version__  # noqa: PLC0415
 
     commit = _git(root, "rev-parse", "--short=12", "HEAD")
-    dirt = tree_dirt(root)
+    dirt = tree_dirt(root, data_dir)
     here = Path(__file__).resolve().parent
     return {
         "commit": commit,
@@ -160,7 +206,7 @@ def _harness_identity(root: Path) -> Dict[str, Any]:
     }
 
 
-def sha256_file(path: Path) -> Optional[str]:
+def sha256_file(path: Path) -> str | None:
     """Content hash of one file, or None if unreadable."""
     try:
         h = hashlib.sha256()
@@ -172,7 +218,7 @@ def sha256_file(path: Path) -> Optional[str]:
         return None
 
 
-def _adapter_identity(adapter_path: Optional[Path], adapter_id: str) -> Dict[str, Any]:
+def _adapter_identity(adapter_path: Path | None, adapter_id: str) -> dict[str, Any]:
     """The INSTRUMENT's scoring half, by CONTENT rather than by path.
 
     A path is not an identity: the adapter holds `score()`, so editing it changes what
@@ -186,7 +232,7 @@ def _adapter_identity(adapter_path: Optional[Path], adapter_id: str) -> Dict[str
     }
 
 
-def _host_identity() -> Dict[str, Any]:
+def _host_identity() -> dict[str, Any]:
     """The machine. Wall-clock is machine-dependent, which makes the machine part of
     what a latency number MEANS — so it is recorded, not assumed.
 
@@ -204,8 +250,9 @@ def _host_identity() -> Dict[str, Any]:
     }
 
 
-def _model_identity(hook: Optional[Callable[[Dict[str, Any]], Dict[str, Any]]],
-                    params: Dict[str, Any]) -> Dict[str, Any]:
+def _model_identity(
+    hook: Callable[[dict[str, Any]], dict[str, Any]] | None, params: dict[str, Any]
+) -> dict[str, Any]:
     """Whatever the adapter says identifies its system under test.
 
     Absent hook -> `{"identity_declared": False}`. That is honest: an echo arm has no model,
@@ -227,7 +274,7 @@ def _model_identity(hook: Optional[Callable[[Dict[str, Any]], Dict[str, Any]]],
     # test is -- not the identity itself. It was called `declared`, which reads like it
     # holds a value, and it was identical across 24 different models because it means
     # "yes". The identity lives in the keys the adapter returns, beside it.
-    out: Dict[str, Any] = {"identity_declared": True, **declared}
+    out: dict[str, Any] = {"identity_declared": True, **declared}
     # Say the quiet part: no revision means no proof two runs used the same weights.
     if not declared.get("revision"):
         out.setdefault("revision", None)
@@ -238,23 +285,25 @@ def _model_identity(hook: Optional[Callable[[Dict[str, Any]], Dict[str, Any]]],
 def build_fingerprint(
     *,
     root: Path,
-    dataset: Dict[str, Any],
-    reference_id: Optional[str],
-    reference_tier: Optional[str],
+    dataset: dict[str, Any],
+    reference_id: str | None,
+    reference_tier: str | None,
     config_id: str,
-    params: Dict[str, Any],
+    params: dict[str, Any],
     adapter_id: str,
-    adapter_path: Optional[Path],
-    model_hook: Optional[Callable[[Dict[str, Any]], Dict[str, Any]]] = None,
-) -> Dict[str, Any]:
-    """The full fingerprint, plus one hash over all of it.
+    adapter_path: Path | None,
+    model_hook: Callable[[dict[str, Any]], dict[str, Any]] | None = None,
+    data_dir: Path | None = None,
+) -> dict[str, Any]:
+    """The full fingerprint, plus one hash over all of it. `data_dir` is the project's data
+    root (`_common.DATA`, which honours EVAL_DATA_DIR); it defaults to `<root>/data`.
 
     The hash is the point: comparing two runs field by field is work nobody does, and a
     single differing hash answers "did anything else move?" at a glance. If it matches,
     you varied one thing. If it does not, you have not run the experiment you think you
     have — and the fields say which part drifted.
     """
-    fp: Dict[str, Any] = {
+    fp: dict[str, Any] = {
         # v2 adds data.references_sha256. A v1 fingerprint cannot be compared to a v2
         # one on the hash alone, because v2 hashes strictly more -- the version says so
         # rather than leaving a reader to discover it from a mismatch.
@@ -267,7 +316,7 @@ def build_fingerprint(
         # review.
         "version": 3,
         "instrument": {
-            "harness": _harness_identity(root),
+            "harness": _harness_identity(root, data_dir),
             "adapter": _adapter_identity(adapter_path, adapter_id),
         },
         "system_under_test": {
@@ -278,7 +327,7 @@ def build_fingerprint(
             "dataset_id": dataset.get("dataset_id"),
             # The item hashes ARE the dataset's identity — dataset_id is a name, and a
             # name can be reused over different bytes.
-            "items_sha256": _items_digest(dataset),
+            "items_sha256": items_digest(dataset),
             "n_items": len(dataset.get("items") or []),
             "reference_id": reference_id,
             "reference_tier": reference_tier,
@@ -288,7 +337,7 @@ def build_fingerprint(
             # different measurements. That is the exact failure this whole structure
             # exists to prevent, and it applied to references for as long as the
             # comment two fields above has been telling you a name is not an identity.
-            "references_sha256": _references_digest(root, reference_id),
+            "references_sha256": references_digest(root, reference_id, data_dir),
         },
         "host": _host_identity(),
         "arm": {"config_id": config_id, "params": dict(params or {})},
@@ -297,15 +346,17 @@ def build_fingerprint(
     return fp
 
 
-def _references_digest(root: Path, reference_id: Optional[str]) -> Optional[str]:
-    """One hash over every reference file's bytes, by filename order.
+def references_digest(root: Path, reference_id: str | None, data_dir: Path | None = None) -> str | None:
+    """One hash over every reference file's bytes, by filename order. The references live
+    under `data_dir` (default `<root>/data`): hard-coding `<root>/data` recorded None, "not
+    scored against anything", for every run of a project that moves its data root.
 
     None when the run has no references -- distinguishable from a hash, so "not scored
     against anything" and "scored against these bytes" never look alike.
     """
     if not reference_id:
         return None
-    ref_dir = root / "data" / "references" / reference_id
+    ref_dir = (data_dir or root / "data") / "references" / reference_id
     if not ref_dir.is_dir():
         return None
     # EVERY FILE, not just *.txt. A silver reference directory also carries
@@ -324,7 +375,7 @@ def _references_digest(root: Path, reference_id: Optional[str]) -> Optional[str]
     return h.hexdigest()
 
 
-def _items_digest(dataset: Dict[str, Any]) -> Optional[str]:
+def items_digest(dataset: dict[str, Any]) -> str | None:
     """One hash over every item's frozen sha256, in item order."""
     items = dataset.get("items") or []
     if not items:
@@ -336,19 +387,17 @@ def _items_digest(dataset: Dict[str, Any]) -> Optional[str]:
     return h.hexdigest()
 
 
-def _hash_of(fingerprint: Dict[str, Any]) -> str:
+def _hash_of(fingerprint: dict[str, Any]) -> str:
     """SHA256 over the fingerprint, minus the hash field itself.
 
     sort_keys so field order cannot change the answer; default=str so an unexpected type
     from an adapter's hook degrades to a stable string instead of raising.
     """
     body = {k: v for k, v in fingerprint.items() if k != "hash"}
-    return hashlib.sha256(
-        json.dumps(body, sort_keys=True, default=str).encode()
-    ).hexdigest()
+    return hashlib.sha256(json.dumps(body, sort_keys=True, default=str).encode()).hexdigest()
 
 
-def differing_paths(a: Dict[str, Any], b: Dict[str, Any], _prefix: str = "") -> list[str]:
+def differing_paths(a: dict[str, Any], b: dict[str, Any], _prefix: str = "") -> list[str]:
     """Dotted paths where two fingerprints disagree — what `run-compare` should name.
 
     "The hashes differ" is true and useless. "system_under_test.model.revision differs"

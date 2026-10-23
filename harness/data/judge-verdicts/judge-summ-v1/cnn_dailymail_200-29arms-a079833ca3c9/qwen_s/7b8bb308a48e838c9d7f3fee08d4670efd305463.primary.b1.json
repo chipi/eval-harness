@@ -10,6 +10,8 @@
   "latency_ms": null,
   "n": 14,
   "output": "```json\n{\n  \"coherence\": [5, 4, 4, 5, 3, 4, 4, 4, 4, 2, 5, 3, 4, 4],\n  \"consistency\": [5, 5, 5, 5, 5, 4, 5, 5, 5, 5, 5, 5, 4, 4],\n  \"fluency\": [5, 5, 5, 5, 4, 5, 5, 5, 5, 4, 5, 5, 5, 5],\n  \"relevance\": [5, 4, 4, 5, 3, 4, 4, 4, 4, 3, 5, 2, 4, 4]\n}\n```",
+  "output_sha256": "ac665910f69b0c893473191502b8cd591466c8d499784baf7c7ddd67547f5df3",
+  "output_withheld": false,
   "pass": "primary",
   "prompt_sha256": "a8bef2b032e59a2903b4177252df006e85a02ba6e07162be91af9f089c183db6",
   "provider": "Alibaba",

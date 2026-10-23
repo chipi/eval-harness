@@ -32,17 +32,18 @@ WHAT IT MEASURES
 from __future__ import annotations
 
 import hashlib
-import importlib.util
 import itertools
 import json
 import random
 import statistics
 import sys
-import urllib.request
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
+sys.path.insert(0, str(HERE.parent / "_shared"))
+from modules import load_module  # noqa: E402
+
 URL = "https://storage.googleapis.com/sfr-summarization-repo-research/model_annotations.aligned.jsonl"
 CACHE = ROOT / "harness" / "data" / "sources" / "summeval_original" / "model_annotations.aligned.jsonl"
 GOLD = ROOT / "harness" / "data" / "references" / "gold" / "summeval_100"
@@ -52,11 +53,7 @@ OUT = ROOT / "docs" / "evidence" / "summeval_human_ceiling.json"
 
 
 def _adapter():
-    spec = importlib.util.spec_from_file_location("se_adapter", HERE / "adapter.py")
-    mod = importlib.util.module_from_spec(spec)
-    sys.modules["se_adapter"] = mod
-    spec.loader.exec_module(mod)
-    return mod
+    return load_module(HERE / "adapter.py", "se_adapter")
 
 
 def _article_key(item_id: str) -> str:
@@ -69,17 +66,16 @@ def _norm(text: str) -> str:
 
 def main() -> int:
     ad = _adapter()
-    if not CACHE.is_file():
-        CACHE.parent.mkdir(parents=True, exist_ok=True)
-        with urllib.request.urlopen(URL, timeout=120) as r:
-            CACHE.write_bytes(r.read())
-    raw = CACHE.read_bytes()
+    # The same file the adapter pins: fetched once and checked against its sha256 (this script
+    # used to download it unverified and only record the hash afterwards).
+    raw = ad._cached(CACHE, URL, ad.ORIGINAL_SHA256).read_bytes()
     original: dict = {}
     for line in raw.decode("utf-8").splitlines():
         if line.strip():
             row = json.loads(line)
             original.setdefault(_article_key(row["id"]), []).append(
-                (_norm(row["decoded"]), row["expert_annotations"]))
+                (_norm(row["decoded"]), row["expert_annotations"])
+            )
 
     # Each of our 16 summaries matched to its row in the original by its TEXT, not by
     # position: the two releases need not list an article's summaries in the same order.
@@ -110,10 +106,15 @@ def main() -> int:
                 # as a disagreement, and the file does not document its annotator order.
                 scored_differently += any(
                     any(abs(mean_of(a, d) - mean_of(theirs[0], d)) > 1e-9 for d in ad.DIMS)
-                    for a in theirs[1:])
-            fits = [perm for perm in itertools.permutations(theirs)
-                    if all(abs(mean_of(a, d) - gold_ref[d][i]) < 1e-6
-                           for i, a in zip(ours, perm) for d in ad.DIMS)]
+                    for a in theirs[1:]
+                )
+            fits = [
+                perm
+                for perm in itertools.permutations(theirs)
+                if all(
+                    abs(mean_of(a, d) - gold_ref[d][i]) < 1e-6 for i, a in zip(ours, perm) for d in ad.DIMS
+                )
+            ]
             if not fits:
                 raise SystemExit(f"{key}: no assignment of a duplicate group reproduces the gold")
             if len({json.dumps(f) for f in fits}) > 1:
@@ -131,8 +132,12 @@ def main() -> int:
 
     def rest_of(it, k):
         """The reference without expert k: the mean of the other two, in our order."""
-        return json.dumps({d: [statistics.fmean(s[j][d] for j in range(3) if j != k)
-                               for s in it["experts"]] for d in ad.DIMS})
+        return json.dumps(
+            {
+                d: [statistics.fmean(s[j][d] for j in range(3) if j != k) for s in it["experts"]]
+                for d in ad.DIMS
+            }
+        )
 
     per_expert = [[] for _ in range(3)]
     per_dim = {d: [] for d in ad.DIMS}
@@ -156,7 +161,7 @@ def main() -> int:
         m = json.loads(mj.read_text())
         if m.get("dataset_id") != "summeval_100":
             continue
-        arm = m["config_id"][len("se_"):-len("_n100_v1")]
+        arm = m["config_id"][len("se_") : -len("_n100_v1")]
         full, loo, loo_by_item = [], [], {}
         for stem, it in items.items():
             out = (mj.parent / "outputs" / f"{stem}.txt").read_text(encoding="utf-8")
@@ -164,10 +169,13 @@ def main() -> int:
             loo.append(statistics.fmean(ad.score(out, rest_of(it, k))["tau"] for k in range(3)))
             loo_by_item[stem] = loo[-1]
         if abs(statistics.fmean(full) - m["scores"]["tau"]) > 1e-6:
-            raise SystemExit(f"{arm}: re-scoring gives {statistics.fmean(full):.6f}, "
-                             f"the run says {m['scores']['tau']:.6f}")
-        arms[arm] = {"tau": round(m["scores"]["tau"], 4),
-                     "tau_vs_two_experts": round(statistics.fmean(loo), 4)}
+            raise SystemExit(
+                f"{arm}: re-scoring gives {statistics.fmean(full):.6f}, the run says {m['scores']['tau']:.6f}"
+            )
+        arms[arm] = {
+            "tau": round(m["scores"]["tau"], 4),
+            "tau_vs_two_experts": round(statistics.fmean(loo), 4),
+        }
         judge_by_item[arm] = loo_by_item
 
     ceiling = statistics.fmean(experts)
@@ -178,12 +186,22 @@ def main() -> int:
     stems_all = sorted(items)
     prior_by_item = []
     for stem in stems_all:
-        pred = json.dumps({d: [statistics.fmean(items[o]["gold"][d][i] for o in stems_all if o != stem)
-                               for i in range(ad.N_SUMMARIES)] for d in ad.DIMS})
-        prior_by_item.append(statistics.fmean(ad.score(pred, rest_of(items[stem], k))["tau"]
-                                              for k in range(3)))
-    position_prior = {"tau_vs_two_experts": round(statistics.fmean(prior_by_item), 4),
-                      "share_of_one_expert": round(statistics.fmean(prior_by_item) / ceiling, 4)}
+        pred = json.dumps(
+            {
+                d: [
+                    statistics.fmean(items[o]["gold"][d][i] for o in stems_all if o != stem)
+                    for i in range(ad.N_SUMMARIES)
+                ]
+                for d in ad.DIMS
+            }
+        )
+        prior_by_item.append(
+            statistics.fmean(ad.score(pred, rest_of(items[stem], k))["tau"] for k in range(3))
+        )
+    position_prior = {
+        "tau_vs_two_experts": round(statistics.fmean(prior_by_item), 4),
+        "share_of_one_expert": round(statistics.fmean(prior_by_item) / ceiling, 4),
+    }
 
     # How sure is "93%"? A paired bootstrap over articles (seeded), for the two best judges:
     # the ratio judge / expert and the gap expert - judge, resampling the same articles on
@@ -193,9 +211,25 @@ def main() -> int:
     expert_item = {st: statistics.fmean(expert_by_item[st]) for st in stems}
     rng = random.Random(20261018)
     draws = [[rng.choice(stems) for _ in stems] for _ in range(10000)]
-    top = sorted((a for a in arms if a not in ("bartscore", "unieval", "unievalpub", "rouge1",
-                                               "rouge2", "rougeL", "coverage", "length", "random")),
-                 key=lambda a: -arms[a]["tau_vs_two_experts"])[:2]
+    top = sorted(
+        (
+            a
+            for a in arms
+            if a
+            not in (
+                "bartscore",
+                "unieval",
+                "unievalpub",
+                "rouge1",
+                "rouge2",
+                "rougeL",
+                "coverage",
+                "length",
+                "random",
+            )
+        ),
+        key=lambda a: -arms[a]["tau_vs_two_experts"],
+    )[:2]
     for arm in top:
         ratios, gaps = [], []
         for d in draws:
@@ -210,8 +244,22 @@ def main() -> int:
     # And how much of "93%" is picking the best of 24 on these same articles? Split the
     # articles in half at random, pick the best judge on one half, and score it on the other:
     # the held-out share is what choosing on the same items cannot inflate.
-    judges = [a for a in arms if a not in ("bartscore", "unieval", "unievalpub", "rouge1", "rouge2",
-                                           "rougeL", "coverage", "length", "random")]
+    judges = [
+        a
+        for a in arms
+        if a
+        not in (
+            "bartscore",
+            "unieval",
+            "unievalpub",
+            "rouge1",
+            "rouge2",
+            "rougeL",
+            "coverage",
+            "length",
+            "random",
+        )
+    ]
     picked_in, picked_out = [], []
     for _ in range(2000):
         half = rng.sample(stems, len(stems) // 2)
@@ -220,24 +268,29 @@ def main() -> int:
         ea, eb = (statistics.fmean(expert_item[st] for st in h) for h in (half, rest))
         picked_in.append(statistics.fmean(judge_by_item[best][st] for st in half) / ea)
         picked_out.append(statistics.fmean(judge_by_item[best][st] for st in rest) / eb)
-    selection = {"splits": 2000, "share_in_sample": round(statistics.fmean(picked_in), 4),
-                 "share_held_out": round(statistics.fmean(picked_out), 4)}
+    selection = {
+        "splits": 2000,
+        "share_in_sample": round(statistics.fmean(picked_in), 4),
+        "share_held_out": round(statistics.fmean(picked_out), 4),
+    }
     result = {
         "selection_corrected_best_judge": selection,
         "what": "Kendall tau-b per article between one SummEval expert and the mean of the other "
-                "two (leave-one-out), averaged over the four dimensions and then over the 100 "
-                "articles; and every arm scored against the same two-expert references",
-        "source": URL, "source_sha256": hashlib.sha256(raw).hexdigest(),
-        "n_articles": len(items), "gold_reproduced": True, "arms_rescored_exactly": True,
+        "two (leave-one-out), averaged over the four dimensions and then over the 100 "
+        "articles; and every arm scored against the same two-expert references",
+        "source": URL,
+        "source_sha256": hashlib.sha256(raw).hexdigest(),
+        "n_articles": len(items),
+        "gold_reproduced": True,
+        "arms_rescored_exactly": True,
         "duplicate_summary_groups": duplicate_groups,
         "duplicate_groups_with_more_than_one_fitting_assignment": ambiguous_groups,
         "duplicate_groups_scored_differently": scored_differently,
-        "duplicate_articles": sum(1 for it in original.values()
-                                  if len({t for t, _ in it}) < len(it)),
+        "duplicate_articles": sum(1 for it in original.values() if len({t for t, _ in it}) < len(it)),
         "tau_per_position": [round(x, 4) for x in experts],
         "note": "tau_per_position is per position in each row's expert_annotations list; it is "
-                "per annotator only if the file keeps one annotator order, which its "
-                "documentation does not state. tau_mean does not depend on it.",
+        "per annotator only if the file keeps one annotator order, which its "
+        "documentation does not state. tau_mean does not depend on it.",
         "tau_mean": round(ceiling, 4),
         "tau_by_dimension": {d: round(statistics.fmean(v), 4) for d, v in per_dim.items()},
         "position_prior": position_prior,
@@ -245,21 +298,33 @@ def main() -> int:
     }
     OUT.write_text(json.dumps(result, indent=2) + "\n")
     print(f"gold reproduced, and every arm re-scored exactly, on all {len(items)} articles")
-    print(f"identical-text groups: {duplicate_groups} in {result['duplicate_articles']} articles, "
-          f"{scored_differently} scored differently by the experts; with more than one fitting "
-          f"assignment: {ambiguous_groups}")
-    print(f"one expert vs the other two: tau {ceiling:.4f} "
-          f"(by position in the file: {', '.join(f'{x:.4f}' for x in experts)})")
+    print(
+        f"identical-text groups: {duplicate_groups} in {result['duplicate_articles']} articles, "
+        f"{scored_differently} scored differently by the experts; with more than one fitting "
+        f"assignment: {ambiguous_groups}"
+    )
+    print(
+        f"one expert vs the other two: tau {ceiling:.4f} "
+        f"(by position in the file: {', '.join(f'{x:.4f}' for x in experts)})"
+    )
     for d, v in result["tau_by_dimension"].items():
         print(f"  {d:11s} {v:.4f}")
-    print(f"position prior (other 99 articles only): {position_prior['tau_vs_two_experts']:.4f} "
-          f"= {position_prior['share_of_one_expert']:.0%} of one expert")
+    print(
+        f"position prior (other 99 articles only): {position_prior['tau_vs_two_experts']:.4f} "
+        f"= {position_prior['share_of_one_expert']:.0%} of one expert"
+    )
     print("\narms against the same two-expert references (tau vs all three in brackets):")
     for arm, r in result["arms"].items():
-        extra = (f"  share 95% CI {r['share_ci95'][0]:.0%}-{r['share_ci95'][1]:.0%}, "
-                 f"gap {r['gap_ci95'][0]:+.4f} to {r['gap_ci95'][1]:+.4f}" if "share_ci95" in r else "")
-        print(f"  {arm:12s} {r['tau_vs_two_experts']:.4f}  ({r['tau']:.4f})"
-              f"  {r['tau_vs_two_experts'] / ceiling:.0%} of one expert{extra}")
+        extra = (
+            f"  share 95% CI {r['share_ci95'][0]:.0%}-{r['share_ci95'][1]:.0%}, "
+            f"gap {r['gap_ci95'][0]:+.4f} to {r['gap_ci95'][1]:+.4f}"
+            if "share_ci95" in r
+            else ""
+        )
+        print(
+            f"  {arm:12s} {r['tau_vs_two_experts']:.4f}  ({r['tau']:.4f})"
+            f"  {r['tau_vs_two_experts'] / ceiling:.0%} of one expert{extra}"
+        )
     print(f"wrote {OUT.relative_to(ROOT)}")
     return 0
 

@@ -14,27 +14,23 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="color-scheme" content="dark light">
-<script>
-(function(){var p=new URLSearchParams(location.search),t=p.get('theme');
-try{t=t||localStorage.getItem('theme');}catch(e){}
-if(t==='light'||t==='dark')document.documentElement.dataset.theme=t;
-if(!p.has('static'))document.documentElement.classList.add('js');})();
-</script><script defer src="https://analytics.closelistening.app/script.js" data-website-id="76169139-07c1-4806-bde6-f9014e803e7f" data-domains="evals.humancopilot.eu"></script>
+<script src="../assets/js/30a5128d39a2.js"></script><script defer src="https://analytics.humancopilot.eu/script.js" data-website-id="76169139-07c1-4806-bde6-f9014e803e7f" data-domains="evals.humancopilot.eu,docs.evals.humancopilot.eu"></script>
 <link rel="stylesheet" href="../assets/style.css">
 <link rel="icon" href="../assets/icon.svg" type="image/svg+xml">
 <link rel="icon" href="../assets/icon-32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+<link rel="stylesheet" href="../assets/inline.css">
 </head>
 <body>
 <header class="bar"><div class="wrap">
   <a class="brand" href="../index.html" aria-label="eval-harness home"><img class="mark" src="../assets/icon.svg" alt="" width="28" height="28"><span>eval-harness</span></a>
-  <nav class="nav"><a href="../index.html">Harness</a><a href="../use.html">Use it</a><a href="../method.html" class="hide-sm">Method</a><a href="../experiments.html" aria-current="page">Experiments</a><a href="../experiments/judging.html" class="hide-sm">Judging</a><a href="../docs/" class="hide-sm">Docs</a><a href="https://github.com/chipi/eval-harness" class="hide-sm">GitHub ↗</a><button id="theme" class="theme" aria-label="Toggle light and dark">◐</button></nav>
+  <nav class="nav"><a href="../index.html">Harness</a><a href="../use.html">Use it</a><a href="../method.html" class="hide-sm">Method</a><a href="../experiments.html" aria-current="page">Experiments</a><a href="../experiments/judging.html" class="hide-sm">Judging</a><a href="https://catalog.evals.humancopilot.eu/" class="hide-sm">Catalog</a><a href="https://docs.evals.humancopilot.eu/" class="hide-sm">Docs</a><a href="https://github.com/chipi/eval-harness" class="hide-sm">GitHub ↗</a><button id="theme" class="theme" aria-label="Toggle light and dark">◐</button></nav>
 </div></header>
 <main>
 
 <section class="hero"><div class="wrap">
   <div class="kicker"><b>Summarisation</b> · CNN/DailyMail</div>
-  <h1 style="max-width:16ch">A free model not separated from the best paid one — on CNN&#x27;s news.</h1>
+  <h1 class="s-9977b745">A free model not separated from the best paid one — on CNN&#x27;s news.</h1>
   <p class="dek">Summarise a news article in two or three sentences. A 1.6 GB fine-tune is not separated from the best paid model (0.0001 apart) — on CNN&#x27;s articles.</p>
   <p class="note"><b>The report's pick, as run here.</b> Use bart_l if you can run a free 1.6 GB model on CPU and your text looks like CNN news; rent deepseek_m ($191 per 1M articles) if you need speed; do not buy anthropic_l.</p>
   <p class="note"><b>Re-measured.</b> SummEval-validated LLM judges, cheap and frontier, rank every hosted LLM above every BART model; one reader&#x27;s check went the other way. Neither is confirmed. <a href="#remeasured">Below</a> · <a href="judging.html">what it teaches</a></p>
@@ -43,7 +39,7 @@ if(!p.has('static'))document.documentElement.classList.add('js');})();
 </div></section>
 <section class="block" id="field"><div class="wrap"><div class="eyebrow"><span class="num">01</span>The field</div>
   <h2>Every system, one axis.</h2>
-  <div class="chart"><div class="legend"><span><i style="background:var(--proprietary)"></i>hosted · proprietary</span><span><i style="background:var(--open)"></i>hosted · open weights</span><span><i style="background:var(--local)"></i>local · free</span><span><i class="sw-band"></i>not separated from the leader</span><span class="read">higher score: further right →</span></div><div class="vw"><svg viewBox="0 0 1000 80" role="img" aria-label="CNN/DailyMail: every learned arm by coverage"><rect x="428.2" y="28" width="506.4" height="44" rx="10" class="band"/><line x1="54" x2="976" y1="50" y2="50" class="axis"/><line x1="20" x2="34" y1="50" y2="50" class="axis"/><text x="43" y="55" text-anchor="middle" class="t-muted" font-size="13">⫽</text><circle cx="926.6" cy="50.0" r="7" class="dot k-local"><title>bart_l · local · free
+  <div class="chart"><div class="legend"><span><i class="s-f16d511a"></i>hosted · proprietary</span><span><i class="s-0435c850"></i>hosted · open weights</span><span><i class="s-e4dfe1fe"></i>local · free</span><span><i class="sw-band"></i>not separated from the leader</span><span class="read">higher score: further right →</span></div><div class="vw"><svg viewBox="0 0 1000 80" role="img" aria-label="CNN/DailyMail: every learned arm by coverage"><rect x="428.2" y="28" width="506.4" height="44" rx="10" class="band"/><line x1="54" x2="976" y1="50" y2="50" class="axis"/><line x1="20" x2="34" y1="50" y2="50" class="axis"/><text x="43" y="55" text-anchor="middle" class="t-muted" font-size="13">⫽</text><circle cx="926.6" cy="50.0" r="7" class="dot k-local"><title>bart_l · local · free
 coverage 0.3461 · rank 1/29
 free: runs locally, nothing billed</title></circle><circle cx="926.6" cy="50.0" r="12" class="hit" data-tip="bart_l · local · free
 coverage 0.3461 · rank 1/29
@@ -275,7 +271,7 @@ billed $1.97 for 200 items"/><circle cx="153.4" cy="48" r="11" class="ring"/><te
 </div></section>
 <section class="block" id="cost"><div class="wrap"><div class="eyebrow"><span class="num">02</span>Cost</div>
   <h2>What the money bought.</h2>
-  <div class="chart"><div class="legend"><span><i style="background:var(--proprietary)"></i>hosted · proprietary</span><span><i style="background:var(--open)"></i>hosted · open weights</span><span><i style="background:var(--local)"></i>local · free</span><span class="read">better: up · cheaper: left</span></div><div class="vw"><svg viewBox="0 0 1000 440" role="img" aria-label="CNN/DailyMail: cost against quality"><line x1="150.0" x2="150.0" y1="34" y2="360" class="grid"/><text x="150.0" y="412" text-anchor="middle" class="t-muted" font-size="10">$0.01</text><line x1="423.3" x2="423.3" y1="34" y2="360" class="grid"/><text x="423.3" y="412" text-anchor="middle" class="t-muted" font-size="10">$0.1</text><line x1="696.7" x2="696.7" y1="34" y2="360" class="grid"/><text x="696.7" y="412" text-anchor="middle" class="t-muted" font-size="10">$1</text><line x1="970.0" x2="970.0" y1="34" y2="360" class="grid"/><text x="970.0" y="412" text-anchor="middle" class="t-muted" font-size="10">$10</text><line x1="40" x2="970" y1="337.5" y2="337.5" class="grid"/><text x="34" y="341.5" text-anchor="end" class="t-muted" font-size="10">0.303</text><line x1="40" x2="970" y1="197.0" y2="197.0" class="grid"/><text x="34" y="201.0" text-anchor="end" class="t-muted" font-size="10">0.325</text><line x1="40" x2="970" y1="56.5" y2="56.5" class="grid"/><text x="34" y="60.5" text-anchor="end" class="t-muted" font-size="10">0.346</text><text x="560" y="434" text-anchor="middle" class="t-muted" font-size="11">billed cost per 1,000 items (log scale)</text><text x="0" y="24" class="t-muted" font-size="11">↑ coverage</text><text x="76" y="412" text-anchor="middle" class="t-muted" font-size="10">free</text><line x1="120" x2="120" y1="34" y2="360" class="axis"/><text x="120" y="380.0" text-anchor="middle" class="t-muted" font-size="13">⫽</text><circle cx="76.0" cy="56.5" r="6" class="dot k-local"><title>bart_l · local · free
+  <div class="chart"><div class="legend"><span><i class="s-f16d511a"></i>hosted · proprietary</span><span><i class="s-0435c850"></i>hosted · open weights</span><span><i class="s-e4dfe1fe"></i>local · free</span><span class="read">better: up · cheaper: left</span></div><div class="vw"><svg viewBox="0 0 1000 440" role="img" aria-label="CNN/DailyMail: cost against quality"><line x1="150.0" x2="150.0" y1="34" y2="360" class="grid"/><text x="150.0" y="412" text-anchor="middle" class="t-muted" font-size="10">$0.01</text><line x1="423.3" x2="423.3" y1="34" y2="360" class="grid"/><text x="423.3" y="412" text-anchor="middle" class="t-muted" font-size="10">$0.1</text><line x1="696.7" x2="696.7" y1="34" y2="360" class="grid"/><text x="696.7" y="412" text-anchor="middle" class="t-muted" font-size="10">$1</text><line x1="970.0" x2="970.0" y1="34" y2="360" class="grid"/><text x="970.0" y="412" text-anchor="middle" class="t-muted" font-size="10">$10</text><line x1="40" x2="970" y1="337.5" y2="337.5" class="grid"/><text x="34" y="341.5" text-anchor="end" class="t-muted" font-size="10">0.303</text><line x1="40" x2="970" y1="197.0" y2="197.0" class="grid"/><text x="34" y="201.0" text-anchor="end" class="t-muted" font-size="10">0.325</text><line x1="40" x2="970" y1="56.5" y2="56.5" class="grid"/><text x="34" y="60.5" text-anchor="end" class="t-muted" font-size="10">0.346</text><text x="560" y="434" text-anchor="middle" class="t-muted" font-size="11">billed cost per 1,000 items (log scale)</text><text x="0" y="24" class="t-muted" font-size="11">↑ coverage</text><text x="76" y="412" text-anchor="middle" class="t-muted" font-size="10">free</text><line x1="120" x2="120" y1="34" y2="360" class="axis"/><text x="120" y="380.0" text-anchor="middle" class="t-muted" font-size="13">⫽</text><circle cx="76.0" cy="56.5" r="6" class="dot k-local"><title>bart_l · local · free
 coverage 0.3461 · $0</title></circle><circle cx="76.0" cy="56.5" r="12" class="hit" data-tip="bart_l · local · free
 coverage 0.3461 · $0"/><circle cx="76.0" cy="118.1" r="6" class="dot k-local"><title>bart_m · local · free
 coverage 0.3367 · $0</title></circle><circle cx="76.0" cy="118.1" r="12" class="hit" data-tip="bart_m · local · free
@@ -495,7 +491,7 @@ $0.3307 per 1,000 items"/><circle cx="385.4" cy="241.8" r="11" class="ring"/><te
 </div></section>
 <section class="block" id="dailymail"><div class="wrap"><div class="eyebrow"><span class="num">04</span>Outside CNN</div>
 <h2>Does it hold on DailyMail?</h2><div class="cols"><div class="prose"><p>The committed sample is all CNN. On 200 DailyMail articles drawn at random, the five local summarisers keep every verdict among themselves. The hosted models were not re-run there.</p></div>
-<figure class="chart"><div class="vw"><svg viewBox="0 0 640 420" role="img" aria-label="Local summarisers on CNN and on DailyMail"><text x="120" y="20" text-anchor="middle" class="t-muted" font-size="14">CNN slice</text><text x="390" y="20" text-anchor="middle" class="t-muted" font-size="14">DailyMail slice</text><line x1="120" x2="120" y1="36" y2="398" class="axis"/><line x1="390" x2="390" y1="36" y2="398" class="axis"/><text x="406" y="75.7" class="t-ink" font-size="14">bart_l, bart_m 0.443</text><text x="406" y="114.3" class="t-ink" font-size="14">bart_s 0.404</text><text x="406" y="148.2" class="t-ink" font-size="14">lead3 0.370</text><text x="406" y="363.2" class="t-ink" font-size="14">bart_l_xsum 0.152</text><text x="104" y="171.5" text-anchor="end" class="t-muted" font-size="13">0.346</text><text x="104" y="189.5" text-anchor="end" class="t-muted" font-size="13">0.337</text><text x="104" y="207.5" text-anchor="end" class="t-muted" font-size="13">0.328</text><text x="104" y="244.9" text-anchor="end" class="t-muted" font-size="13">0.272</text><text x="104" y="308.9" text-anchor="end" class="t-muted" font-size="13">0.207</text><line x1="120" y1="166.5" x2="390" y2="70.7" class="s-local" stroke-width="2"/><circle cx="120" cy="166.5" r="5.5" class="dot k-local" data-tip="bart_l
+<figure class="chart"><div class="vw"><svg viewBox="0 0 640 420" role="img" aria-label="Local summarisers on CNN and on DailyMail"><text x="120" y="20" text-anchor="middle" class="t-muted" font-size="14">CNN slice</text><text x="390" y="20" text-anchor="middle" class="t-muted" font-size="14">DailyMail slice</text><line x1="120" x2="120" y1="36" y2="398" class="axis"/><line x1="390" x2="390" y1="36" y2="398" class="axis"/><text x="406" y="75.7" class="t-ink" font-size="14">bart_l, bart_m 0.443</text><text x="406" y="113.5" class="t-ink" font-size="14">bart_s 0.405</text><text x="406" y="148.2" class="t-ink" font-size="14">lead3 0.370</text><text x="406" y="363.2" class="t-ink" font-size="14">bart_l_xsum 0.152</text><text x="104" y="171.5" text-anchor="end" class="t-muted" font-size="13">0.346</text><text x="104" y="189.5" text-anchor="end" class="t-muted" font-size="13">0.337</text><text x="104" y="207.5" text-anchor="end" class="t-muted" font-size="13">0.328</text><text x="104" y="244.9" text-anchor="end" class="t-muted" font-size="13">0.272</text><text x="104" y="308.9" text-anchor="end" class="t-muted" font-size="13">0.207</text><line x1="120" y1="166.5" x2="390" y2="70.7" class="s-local" stroke-width="2"/><circle cx="120" cy="166.5" r="5.5" class="dot k-local" data-tip="bart_l
 coverage 0.3461 on CNN → 0.4430 on DailyMail"><title>bart_l
 coverage 0.3461 on CNN → 0.4430 on DailyMail</title></circle><circle cx="390" cy="70.7" r="6" class="dot k-local" data-tip="bart_l
 coverage 0.3461 on CNN → 0.4430 on DailyMail"><title>bart_l
@@ -503,11 +499,11 @@ coverage 0.3461 on CNN → 0.4430 on DailyMail</title></circle><line x1="120" y1
 coverage 0.3367 on CNN → 0.4430 on DailyMail"><title>bart_m
 coverage 0.3367 on CNN → 0.4430 on DailyMail</title></circle><circle cx="390" cy="70.7" r="6" class="dot k-local" data-tip="bart_m
 coverage 0.3367 on CNN → 0.4430 on DailyMail"><title>bart_m
-coverage 0.3367 on CNN → 0.4430 on DailyMail</title></circle><line x1="120" y1="184.8" x2="390" y2="109.4" class="s-local" stroke-width="2"/><circle cx="120" cy="184.8" r="5.5" class="dot k-local" data-tip="bart_s
-coverage 0.3276 on CNN → 0.4039 on DailyMail"><title>bart_s
-coverage 0.3276 on CNN → 0.4039 on DailyMail</title></circle><circle cx="390" cy="109.4" r="6" class="dot k-local" data-tip="bart_s
-coverage 0.3276 on CNN → 0.4039 on DailyMail"><title>bart_s
-coverage 0.3276 on CNN → 0.4039 on DailyMail</title></circle><line x1="120" y1="239.9" x2="390" y2="143.1" class="s-baseline" stroke-width="2"/><circle cx="120" cy="239.9" r="5.5" class="dot k-baseline" data-tip="lead3
+coverage 0.3367 on CNN → 0.4430 on DailyMail</title></circle><line x1="120" y1="184.8" x2="390" y2="108.5" class="s-local" stroke-width="2"/><circle cx="120" cy="184.8" r="5.5" class="dot k-local" data-tip="bart_s
+coverage 0.3276 on CNN → 0.4048 on DailyMail"><title>bart_s
+coverage 0.3276 on CNN → 0.4048 on DailyMail</title></circle><circle cx="390" cy="108.5" r="6" class="dot k-local" data-tip="bart_s
+coverage 0.3276 on CNN → 0.4048 on DailyMail"><title>bart_s
+coverage 0.3276 on CNN → 0.4048 on DailyMail</title></circle><line x1="120" y1="239.9" x2="390" y2="143.1" class="s-baseline" stroke-width="2"/><circle cx="120" cy="239.9" r="5.5" class="dot k-baseline" data-tip="lead3
 coverage 0.2718 on CNN → 0.3697 on DailyMail"><title>lead3
 coverage 0.2718 on CNN → 0.3697 on DailyMail</title></circle><circle cx="390" cy="143.1" r="6" class="dot k-baseline" data-tip="lead3
 coverage 0.2718 on CNN → 0.3697 on DailyMail"><title>lead3
@@ -515,7 +511,7 @@ coverage 0.2718 on CNN → 0.3697 on DailyMail</title></circle><line x1="120" y1
 coverage 0.2071 on CNN → 0.1522 on DailyMail"><title>bart_l_xsum
 coverage 0.2071 on CNN → 0.1522 on DailyMail</title></circle><circle cx="390" cy="358.2" r="6" class="dot k-local" data-tip="bart_l_xsum
 coverage 0.2071 on CNN → 0.1522 on DailyMail"><title>bart_l_xsum
-coverage 0.2071 on CNN → 0.1522 on DailyMail</title></circle></svg></div><div class="vn"><svg viewBox="0 0 400 380" role="img" aria-label="Local summarisers on CNN and on DailyMail"><text x="64" y="20" text-anchor="middle" class="t-muted" font-size="16">CNN slice</text><text x="196" y="20" text-anchor="middle" class="t-muted" font-size="16">DailyMail slice</text><line x1="64" x2="64" y1="36" y2="364" class="axis"/><line x1="196" x2="196" y1="36" y2="364" class="axis"/><text x="212" y="73.1" class="t-ink" font-size="16">bart_l, bart_m 0.443</text><text x="212" y="107.9" class="t-ink" font-size="16">bart_s 0.404</text><text x="212" y="138.4" class="t-ink" font-size="16">lead3 0.370</text><text x="212" y="332.3" class="t-ink" font-size="16">bart_l_xsum 0.152</text><text x="48" y="159.4" text-anchor="end" class="t-muted" font-size="15">0.346</text><text x="48" y="177.4" text-anchor="end" class="t-muted" font-size="15">0.337</text><text x="48" y="195.4" text-anchor="end" class="t-muted" font-size="15">0.328</text><text x="48" y="225.7" text-anchor="end" class="t-muted" font-size="15">0.272</text><text x="48" y="283.4" text-anchor="end" class="t-muted" font-size="15">0.207</text><line x1="64" y1="154.4" x2="196" y2="68.1" class="s-local" stroke-width="2"/><circle cx="64" cy="154.4" r="5.5" class="dot k-local" data-tip="bart_l
+coverage 0.2071 on CNN → 0.1522 on DailyMail</title></circle></svg></div><div class="vn"><svg viewBox="0 0 400 380" role="img" aria-label="Local summarisers on CNN and on DailyMail"><text x="64" y="20" text-anchor="middle" class="t-muted" font-size="16">CNN slice</text><text x="196" y="20" text-anchor="middle" class="t-muted" font-size="16">DailyMail slice</text><line x1="64" x2="64" y1="36" y2="364" class="axis"/><line x1="196" x2="196" y1="36" y2="364" class="axis"/><text x="212" y="73.1" class="t-ink" font-size="16">bart_l, bart_m 0.443</text><text x="212" y="107.1" class="t-ink" font-size="16">bart_s 0.405</text><text x="212" y="138.4" class="t-ink" font-size="16">lead3 0.370</text><text x="212" y="332.3" class="t-ink" font-size="16">bart_l_xsum 0.152</text><text x="48" y="159.4" text-anchor="end" class="t-muted" font-size="15">0.346</text><text x="48" y="177.4" text-anchor="end" class="t-muted" font-size="15">0.337</text><text x="48" y="195.4" text-anchor="end" class="t-muted" font-size="15">0.328</text><text x="48" y="225.7" text-anchor="end" class="t-muted" font-size="15">0.272</text><text x="48" y="283.4" text-anchor="end" class="t-muted" font-size="15">0.207</text><line x1="64" y1="154.4" x2="196" y2="68.1" class="s-local" stroke-width="2"/><circle cx="64" cy="154.4" r="5.5" class="dot k-local" data-tip="bart_l
 coverage 0.3461 on CNN → 0.4430 on DailyMail"><title>bart_l
 coverage 0.3461 on CNN → 0.4430 on DailyMail</title></circle><circle cx="196" cy="68.1" r="6" class="dot k-local" data-tip="bart_l
 coverage 0.3461 on CNN → 0.4430 on DailyMail"><title>bart_l
@@ -523,11 +519,11 @@ coverage 0.3461 on CNN → 0.4430 on DailyMail</title></circle><line x1="64" y1=
 coverage 0.3367 on CNN → 0.4430 on DailyMail"><title>bart_m
 coverage 0.3367 on CNN → 0.4430 on DailyMail</title></circle><circle cx="196" cy="68.1" r="6" class="dot k-local" data-tip="bart_m
 coverage 0.3367 on CNN → 0.4430 on DailyMail"><title>bart_m
-coverage 0.3367 on CNN → 0.4430 on DailyMail</title></circle><line x1="64" y1="171.0" x2="196" y2="103.0" class="s-local" stroke-width="2"/><circle cx="64" cy="171.0" r="5.5" class="dot k-local" data-tip="bart_s
-coverage 0.3276 on CNN → 0.4039 on DailyMail"><title>bart_s
-coverage 0.3276 on CNN → 0.4039 on DailyMail</title></circle><circle cx="196" cy="103.0" r="6" class="dot k-local" data-tip="bart_s
-coverage 0.3276 on CNN → 0.4039 on DailyMail"><title>bart_s
-coverage 0.3276 on CNN → 0.4039 on DailyMail</title></circle><line x1="64" y1="220.7" x2="196" y2="133.4" class="s-baseline" stroke-width="2"/><circle cx="64" cy="220.7" r="5.5" class="dot k-baseline" data-tip="lead3
+coverage 0.3367 on CNN → 0.4430 on DailyMail</title></circle><line x1="64" y1="171.0" x2="196" y2="102.2" class="s-local" stroke-width="2"/><circle cx="64" cy="171.0" r="5.5" class="dot k-local" data-tip="bart_s
+coverage 0.3276 on CNN → 0.4048 on DailyMail"><title>bart_s
+coverage 0.3276 on CNN → 0.4048 on DailyMail</title></circle><circle cx="196" cy="102.2" r="6" class="dot k-local" data-tip="bart_s
+coverage 0.3276 on CNN → 0.4048 on DailyMail"><title>bart_s
+coverage 0.3276 on CNN → 0.4048 on DailyMail</title></circle><line x1="64" y1="220.7" x2="196" y2="133.4" class="s-baseline" stroke-width="2"/><circle cx="64" cy="220.7" r="5.5" class="dot k-baseline" data-tip="lead3
 coverage 0.2718 on CNN → 0.3697 on DailyMail"><title>lead3
 coverage 0.2718 on CNN → 0.3697 on DailyMail</title></circle><circle cx="196" cy="133.4" r="6" class="dot k-baseline" data-tip="lead3
 coverage 0.2718 on CNN → 0.3697 on DailyMail"><title>lead3
@@ -545,7 +541,7 @@ coverage 0.2071 on CNN → 0.1522 on DailyMail</title></circle></svg></div></fig
     <div class="prose">
       <p>The 5 free arms rerun on a laptop CPU for $0, pinned to the weights that were measured. The 24 hosted arms billed <strong>$5.74</strong> when measured and rerun with one OpenRouter key.</p>
       <p><code>make compare</code> writes a replication card: each rerun against its committed run, item by item, and every separation and tie on this page re-tested with your reruns in place.</p>
-      <div class="btns"><a class="btn primary" href="../docs/REPRODUCE/">The guide</a><a class="btn" href="https://github.com/chipi/eval-harness/tree/main/examples/summarization-cnn-dailymail">This example's code</a></div>
+      <div class="btns"><a class="btn primary" href="https://docs.evals.humancopilot.eu/REPRODUCE/">The guide</a><a class="btn" href="https://github.com/chipi/eval-harness/tree/main/examples/summarization-cnn-dailymail">This example's code</a></div>
     </div>
 <pre class="term"><span class="p">$ </span>make plan      EXP=summarization
 <span class="p">$ </span>make data      EXP=summarization
@@ -572,24 +568,9 @@ coverage 0.2071 on CNN → 0.1522 on DailyMail</title></circle></svg></div></fig
       <a href="mailto:marko@humancopilot.eu" data-umami-event="cta-email" data-umami-event-position="footer">Email</a>
     </nav>
   </div>
-  <div class="foot-legal"><span>© Marko Dragoljevic · eval-harness <a href="../releases.html#v0.3.0">v0.3.0</a> · build: local · <a href="../docs/DATA/">Data &amp; licences</a> · <a href="../releases.html">Release notes</a></span><span>Cookieless, self-hosted analytics (Umami). No cookies, no tracking across sites. <a href="../privacy.html">Privacy</a></span></div>
+  <div class="foot-legal"><span>© Marko Dragoljevic · eval-harness <a href="../releases.html#v0.4.0">v0.4.0</a> · build: local · <a href="https://docs.evals.humancopilot.eu/DATA/">Data &amp; licences</a> · <a href="../releases.html">Release notes</a></span><span>Cookieless, self-hosted analytics (Umami). No cookies, no tracking across sites. <a href="../privacy.html">Privacy</a></span></div>
 </div></footer>
 <div id="tip" role="tooltip"></div>
-<script>
-document.getElementById('theme').addEventListener('click',()=>{const r=document.documentElement;
-const dark=r.dataset.theme?r.dataset.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches;
-r.dataset.theme=dark?'light':'dark';try{localStorage.setItem('theme',r.dataset.theme);}catch(e){}});
-const tip=document.getElementById('tip');
-function place(x,y){const w=tip.offsetWidth,h=tip.offsetHeight;tip.style.left=Math.max(8,Math.min(x+14,innerWidth-w-8))+'px';tip.style.top=(y+14+h>innerHeight?y-h-14:y+14)+'px';}
-document.addEventListener('pointerover',ev=>{if(ev.pointerType==='touch')return;const t=ev.target.closest('[data-tip]');if(!t)return;tip.textContent=t.dataset.tip;tip.classList.add('on');place(ev.clientX,ev.clientY);});
-document.addEventListener('pointermove',ev=>{if(ev.pointerType==='touch'||!tip.classList.contains('on'))return;place(ev.clientX,ev.clientY);});
-document.addEventListener('pointerout',ev=>{if(ev.pointerType!=='touch'&&ev.target.closest('[data-tip]'))tip.classList.remove('on');});
-// Touch: a tap shows the tip where the finger is; the next tap elsewhere, or a scroll, hides it.
-document.addEventListener('pointerdown',ev=>{if(ev.pointerType!=='touch')return;const t=ev.target.closest('[data-tip]');if(!t){tip.classList.remove('on');return;}tip.textContent=t.dataset.tip;tip.classList.add('on');place(ev.clientX,ev.clientY);});
-addEventListener('scroll',()=>tip.classList.remove('on'),{passive:true});
-const io=new IntersectionObserver(es=>es.forEach(x=>{if(x.isIntersecting){x.target.classList.add('in');io.unobserve(x.target);}}),{rootMargin:'0px 0px -8% 0px'});
-document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
-setTimeout(()=>document.querySelectorAll('.reveal').forEach(el=>el.classList.add('in')),2500);
-</script>
+<script src="../assets/js/2b3d1b9b2afe.js"></script>
 </body>
 </html>

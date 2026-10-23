@@ -6,8 +6,22 @@
     "source": "git"
   },
   "config_id": "fn_openai_l_n200_v1",
-  "created_at": "2026-09-28T13:48:13Z",
+  "created_at": "2026-10-01T16:14:00Z",
   "dataset_id": "few_nerd_280",
+  "derived": {
+    "at": "2026-10-01T16:14:00Z",
+    "from": "fn_openai_l_n200_v1_20260928T133917Z",
+    "kind": "rescore",
+    "with": {
+      "adapter": "examples/ner-few-nerd/adapter.py",
+      "scorer": {
+        "normalizer_sha256": "10c4df840844e0c3e74965e43ae9cd4d91e8922d594abeff7ec23dfc19094cf2",
+        "parser_sha256": "6eafd853f71aa3c730b434e2eeb48737efe4827572c66d2dc1c6298a1991dd1d",
+        "scorer_sha256": "a19228c0272611ff2a3a4881002d2d2df08ca1cd03b0adbedbc4cbf48c51d83e"
+      },
+      "sha256": "6124a5a879fdbbe0adea4b2819864f1be8acb5f6902a60ae5e8ca8a4b59b1e3c"
+    }
+  },
   "fingerprint": {
     "arm": {
       "config_id": "fn_openai_l_n200_v1",
@@ -31,9 +45,11 @@
       "items_sha256": "95a1b962707368cce0895143e73b63cd9884425502997ee1a93df99f97e2cad7",
       "n_items": 280,
       "reference_id": "gold/few_nerd_280",
-      "reference_tier": "gold"
+      "reference_tier": "gold",
+      "references_sha256": "7cdd09fe0084ba29c616ab65fbfa08bf149e9006819641e9e91fe502ebe15a2b"
     },
-    "hash": "58a526d3095e0240a5a584199db25f61304b86cd18724487ffbc41246ec91a7d",
+    "hash": null,
+    "hash_invalid_because": "scores were recomputed by a different scorer than the one this fingerprint was built from; see derived.with",
     "host": {
       "cpu_count": 12,
       "label": "mac-dev",
@@ -45,7 +61,7 @@
     "instrument": {
       "adapter": {
         "id": "examples/ner-few-nerd/adapter.py",
-        "sha256": "f560341e6226a8673302db46341785728a443ce1c903ebfa18f5d9221fb849cf"
+        "sha256": "6124a5a879fdbbe0adea4b2819864f1be8acb5f6902a60ae5e8ca8a4b59b1e3c"
       },
       "harness": {
         "commit": "146f7b11082e",
@@ -104,6 +120,7 @@
     "precision": "quality",
     "reasoning_tokens": "descriptive",
     "recall": "quality",
+    "resumed": "descriptive",
     "tp": "descriptive",
     "truncated": "descriptive",
     "type_penalty": "descriptive",
@@ -134,29 +151,30 @@
   "reference_tier": "gold",
   "run_id": "fn_openai_l_n200_v1_20260928T133917Z",
   "scores": {
-    "cost_usd": 0.000861,
-    "f1": 0.671591,
-    "fn": 0.717857,
-    "fp": 1.007143,
-    "latency_ms": 1903.190096,
-    "n_gold": 2.735714,
+    "cost_usd": 0.0006124857,
+    "f1": 0.6715905758,
+    "fn": 0.7178571429,
+    "fp": 1.0071428571,
+    "latency_ms": 1903.1900964286,
+    "n_gold": 2.7357142857,
     "n_predicted": 3.025,
     "parsed": 1.0,
-    "precision": 0.660193,
+    "precision": 0.6601933235,
     "reasoning_tokens": 0.0,
-    "recall": 0.704084,
-    "tokens_in": 115.367857,
+    "recall": 0.7040837585,
+    "tokens_in": 115.3678571429,
     "tokens_out": 38.175,
-    "total_cost_usd": 0.2410925,
+    "total_cost_usd": 0.171496,
     "total_tokens_in": 32303.0,
     "total_tokens_out": 10689.0,
-    "tp": 2.017857,
+    "tp": 2.0178571429,
     "truncated": 0.0,
-    "type_penalty": 0.097529,
-    "untyped_f1": 0.76912,
-    "untyped_fn": 0.446429,
-    "untyped_fp": 0.735714,
-    "untyped_tp": 2.289286
+    "type_penalty": 0.0975293174,
+    "untyped_f1": 0.7691198932,
+    "untyped_fn": 0.4464285714,
+    "untyped_fp": 0.7357142857,
+    "untyped_tp": 2.2892857143
   },
+  "source_created_at": "2026-09-28T13:48:13Z",
   "warmup_ms": 2249.941
 }

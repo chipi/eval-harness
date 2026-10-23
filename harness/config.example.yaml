@@ -1,19 +1,17 @@
 # Eval harness config — all knobs documented inline.
 #
-# Run:  python runner.py --config config.example.yaml
-# Demo: python runner.py --config config.example.yaml --use-fake-judge
+# Run:  evh judge --config config.example.yaml                  (in a checkout: make judge)
+# Demo: evh judge --config config.example.yaml --use-fake-judge
 
 # Where the harness writes its outputs. A subdir named <tag> is created
 # under this path. Stamped with config + git SHA at write time.
 output_root: out
 tag: demo
 
-# The candidate-pool definition.
-# Each entry is a "run" — a unit of work being evaluated. For the demo,
-# the harness synthesizes runs from this list; for real use, replace with
-# a glob of run dirs (see runner.py:load_run_candidate).
-# Read the runs this harness actually produced, instead of a hand-written list.
-# Comment this block out to go back to the literal `runs:` below.
+# The candidates: the runs the harness produced (`runs` is EVAL_RUNS_DIR, else data/runs;
+# any other path is the project's). Each finalist is judged on its stored outputs.
+# Without `runs_from`, the literal `runs:` list below is a demo of the promotion rule, judged
+# on placeholder items.
 runs_from: data/runs
 primary_metric: overlap_f1
 dataset_id: smoke_v1

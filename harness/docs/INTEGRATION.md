@@ -14,20 +14,22 @@ learn about this harness. The harness calls you.
 
 ## Where it goes
 
-Copy this directory into your project as `eval/`:
+Pin it into your project, and start the project's folders:
 
 ```bash
-cp -r eval-harness/harness /path/to/your-project/eval
-cd /path/to/your-project/eval
-make demo        # proves the plumbing, no API key
+cd /path/to/your-project
+pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.4.0#subdirectory=harness"
+evh init         # data/sources, data/configs, data/goals, data/fields, a .gitignore
 ```
 
-Keep `eval/data/materialized/` out of git (derived; the bundled `.gitignore` already does
-this) and decide whether to commit runs: the bundled rules keep each run's `metrics.json`,
-`predictions.jsonl` and `outputs/` so scores can be recomputed, and ignore the rest.
+Keep `data/materialized/` out of git (derived; the `.gitignore` `evh init` writes already
+does this) and decide whether to commit runs: keep each run's `metrics.json`,
+`predictions.jsonl` and `outputs/` so scores can be recomputed. A project whose own layout
+puts the harness's records elsewhere sets `EVAL_DATA_DIR`.
 
-It has **no dependency on your project** and your project has none on it. It
-shells out to nothing, imports nothing of yours until you tell it to. That
+Your project **does not depend on it at runtime**, and it has no dependency on your
+project: it shells out to nothing and imports nothing of yours until an arm names your
+adapter. That
 isolation is deliberate: an eval harness that requires a refactor does not get
 adopted, and one that entangles with the system it measures stops being able to
 measure it.
@@ -36,7 +38,10 @@ measure it.
 
 ## The one function
 
-`scripts/adapter.py`, `call_system()`. It receives one item's text and the
+`call_system()`, in `adapter.py` at your project's root (start from a copy of the bundled
+adapter, `evaluation_harness/adapter.py`, which also has `score()`;
+`python -c "import evaluation_harness, os; print(os.path.join(evaluation_harness.__path__[0], 'adapter.py'))"`
+prints where it is). It receives one item's text and the
 config's `params`, and returns what your system produced:
 
 ```python
@@ -121,24 +126,24 @@ Most projects do not have it. The sequence that works:
 
 1. **Pick your best model** and author references with it:
    ```bash
-   make reference-create DATASET_ID=my_v1 CONFIG=data/configs/sonnet.yaml
+   evh reference-create --dataset-id my_v1 --config data/configs/sonnet.yaml
    ```
    That writes **silver** — model-generated. It is not correct, it is
    *consistent*, which is enough to rank other arms against it.
 
 2. **Review a few by hand.** Where you agree with the output, you now have gold.
-   Re-run with `TIER=gold` once a human has actually checked them.
+   Re-run with `--tier gold` once a human has actually checked them.
 
 3. **Never let the distinction blur.** A run records which tier it scored
    against (`reference_tier` in its `metrics.json`). Silver-scored numbers are for
    ranking arms against each other; they are not a claim about correctness, and
    publishing them as one is how eval loses credibility internally.
 
-Cost control: `ARGS="--limit 10"`. Ten references is enough to rank four arms, and you
+Cost control: `--limit 10`. Ten references is enough to rank four arms, and you
 can extend later without re-authoring what you have.
 
 4. **Or score without references at all**, with LLM judges that read each item and rate
-   every arm's output (`make judge-score`, optional). A judge is a model's opinion too, so
+   every arm's output (`evh judge-score`, optional). A judge is a model's opinion too, so
    the harness refuses one until runs show it agrees with human ratings on outputs like
    yours; until then it runs only as `--unvalidated`, labelled. The judge's task (what an
    item is, what the outputs are, which dimensions, which scale) is declared in the scorer,
@@ -152,31 +157,81 @@ can extend later without re-authoring what you have.
 | --- | --- |
 | a frozen dataset | a `dataset_id` plus a sha256 per item — the thing that makes two numbers comparable |
 | provenance | every run records which build produced it |
-| noise floor | `REPEAT=3` reports the arm's own spread, so you stop promoting jitter |
+| noise floor | `--repeat 3` reports the arm's own spread, so you stop promoting jitter |
 | cost and speed | per item and totalled, alongside quality |
 | refusals | cross-dataset comparisons, dirty-tree promotions and unreasoned baselines are blocked, not warned about |
 | integrity | `make validate` fails CI on a tree that has drifted |
 | re-measurement | stored outputs scored again for a new reference or scorer at $0, or by validated LLM judges, without re-running an arm |
 | a judge panel | when the cheap metric is biased and you need an LLM to adjudicate |
+| goals | what each evaluation is for, named on every config and checked by `make validate` |
+| item fields | the facts you know about each item (typed, declared once in a field set), checked by `make validate`; items fetched from a pinned URL |
+| a catalog and an inspector | pages over your runs, and a local server that tests any arms against a baseline and shows outputs beside references |
+
+---
+
+## The catalog and the inspector
+
+`make catalog` (`evh catalog`) builds static pages over your runs; `make catalog-serve`
+(`evh catalog-serve`) serves them with the run inspector on 127.0.0.1. Both only ask an
+**adapter** questions: which arms exist, what each scored per item, which way is better,
+which references exist, what one arm wrote for one item.
+
+- **On the harness's layout, there is nothing to write.** The built-in `HarnessAdapter`
+  reads `data/runs*/`, `data/references/`, `data/datasets/` and `data/goals/`, and its arm is
+  one config on one dataset with its repeats averaged per item, exactly as `pair-test` reads
+  them, so the inspector gives the same p.
+- **With your own layout, write one adapter** and name it in your project's `config.yaml`:
+
+  ```yaml
+  catalog:
+    adapter: tools/catalog_adapter.py:Adapter    # a file path or a module, then the class
+  ```
+
+  The class implements the `evaluation_harness.catalog_adapter.Adapter` protocol. Subclassing
+  `HarnessAdapter` and overriding what differs is usually shorter than starting empty. The
+  questions, grouped:
+
+  | question | members |
+  |---|---|
+  | which arms, on which data | `arms()`, `arms_of(path)`, `describe(arm)`, `notes(arm)` |
+  | what each scored, per item | `scores(arm, rescore=False)`, `recorded_means(arm)`, `input_hashes(arm)`, `can_rescore` |
+  | which way is better | `lower_is_better(metric)`, `is_neutral(metric)`, `preferred_metrics`, `shape_metrics` |
+  | which references | `references()`, `reference_format(ref)`, `reference_archived(ref)` |
+  | what was asked, what came back | `output_format(arm)` |
+  | one item, side by side (the inspector only) | `item_view(arm, item)`, `reference_view(ref, item)` |
+  | what it is for | `goals()`; the goal an arm names is `describe(arm)["goal"]` |
+  | what each item is (optional) | `item_fields(dataset)`: `{"fieldset": <field set>, "values": {item_id: {field: value}}}` |
+  | how big each dataset is (optional) | `dataset_items(dataset)`: its item count; without it the catalog shows the most items any arm scored |
+  | words and places | `item_word` (e.g. `"episode"`), `data_dir` |
+  | more files the pages link (optional) | `served_dirs`: further directories under the project the inspector serves read-only, beside `data_dir` (a project's reports) |
+
+  Item text is only ever returned by `item_view` and `reference_view`, which only the local
+  inspector calls: the static pages never carry it, whatever the adapter.
+
+  `item_fields` is optional: without it the pages show no fields. With it, the dataset page
+  lists each field and its coverage, and summarises the values of a field marked `public`
+  only; the local inspector shows every value, filters a comparison by a field and breaks it
+  down by a `choice` or `boolean` one. A public deployment (`catalog-serve --public`) answers
+  with public fields only (ADR-0003).
 
 ---
 
 ## The first hour, concretely
 
 ```bash
-cp -r eval-harness/harness your-project/eval && cd your-project/eval
-make demo                                     # plumbing works
+cd your-project && pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.4.0#subdirectory=harness"
+evh init
 
-cp ../some/real/items/* data/sources/         # your data
-make dataset-create DATASET_ID=pilot_v1 ARGS="--limit 10"
-make dataset-materialize DATASET_ID=pilot_v1
+cp some/real/items/* data/sources/            # your data
+evh dataset-create --dataset-id pilot_v1 --limit 10
+evh dataset-materialize --dataset-id pilot_v1
 
-$EDITOR scripts/adapter.py                    # call_system() -> your code
-make reference-create DATASET_ID=pilot_v1 CONFIG=data/configs/best_model.yaml
+$EDITOR adapter.py                            # call_system() -> your code
+evh reference-create --dataset-id pilot_v1 --config data/configs/best_model.yaml
 
-make experiment-run CONFIG=data/configs/arm_a.yaml REPEAT=3   # + the noise floor
-make experiment-run CONFIG=data/configs/arm_b.yaml
-make run-compare BASE=<a> CAND=<b> NOISE=<the spread you just measured>
+evh experiment-run --config data/configs/arm_a.yaml --repeat 3   # + the noise floor
+evh experiment-run --config data/configs/arm_b.yaml
+evh run-compare --baseline <a> --candidate <b> --noise <the spread you just measured>
 ```
 
 Ten items keeps the first pass cheap. Widen the dataset once the loop works —

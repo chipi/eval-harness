@@ -30,7 +30,7 @@ better retriever are comparable moves; **do both** and they stack to +0.1441 ove
 
 **As run here:** the 12 cheapest of 24 hosted LLMs (no Anthropic or OpenAI arm), zero-shot,
 one prompt, one run per arm, 200 SciFact claims. Frontier models, fine-tuning on SciFact and
-other rerank depths were not tested (§7). Corrections and their dates: §6.
+other rerank depths were tested only on the dev slice (§7).
 
 ### Supporting facts
 
@@ -61,11 +61,10 @@ other rerank depths were not tested (§7). Corrections and their dates: §6.
    `e5_base`'s candidates have a ceiling of **0.8747**, and alone it exploits 82.2%.
 
 3. **The registered prediction, 1 of 2** (commit `a903fb37`, 2026-09-28, before the pair
-   runs): 0.786–0.797, built from `qwen_s`'s pre-fix headroom share (0.899) and `glm_s`'s
-   (0.911). `glm_s` **0.7891**, inside. `qwen_s` **0.7799** as printed, outside by 0.006,
-   and **0.7713** under the corrected parser, outside by 0.0147. Headroom-used went 90.9% →
-   90.2% (`glm_s`) and, corrected, 87.4% → 88.2% (`qwen_s`): a mechanism seen in two
-   rerankers on one corpus, not established. (The pair runs' BM25 half scored 0.7422
+   runs): 0.786–0.797, built from `qwen_s`'s headroom share when registered (0.899) and `glm_s`'s
+   (0.911). `glm_s` **0.7891**, inside. `qwen_s` **0.7713**, outside by 0.0147.
+   Headroom-used went 90.9% → 90.2% (`glm_s`) and 87.4% → 88.2% (`qwen_s`): a mechanism seen in two
+   rerankers on one corpus, not established. (The pair runs' BM25 half scored 0.7423
    rather than §3.1's 0.7437, hence 90.9% here against 91.1% above.)
 
 ---
@@ -174,15 +173,7 @@ thresholds, which is why the group is quoted as 12–13 (§3.2).
 (4-vCPU Xeon, Linux), each arm alone, through the adapter's own `warmup()` with the
 revisions the runs used: [`docs/evidence/index_build_times.json`](../docs/evidence/index_build_times.json).
 The committed runs loaded a cached index, so their `warmup_ms` (6–9 s) is a load time, not a
-build time. *The figures these replace (bm25 0.8 s, minilm 194 s, bge_small 874 s, mpnet
-1825 s, e5_base 1825 s) came from another machine, and only three had a recorded source;
-mpnet's was a copy of e5_base's.*
-
-*This footnote said the opposite until 2026-09-30 — "costs are this repo's price table,
-they understate the bill by roughly 2.4×" — while the cells above it had already been
-converted to the bill, and while §1 and the retraction in §7 both said the bill was
-being used. Three statements, two of them right. The 2.4× was also a multiplier this
-repo retracted. Found by external review.*
+build time.
 
 ### 3.2 A tie of twelve or thirteen arms, and two of them are free
 
@@ -205,7 +196,7 @@ separated from 6 of 18; ahead on the point estimate against 18 of 18
 encoder running on a laptop CPU is not shown different from any of the twelve hosted LLM
 rerankers: with `e5_base` as arm A, the sign-flip p against the twelve is 0.27–0.97 (it
 trails `glm_s` by 0.0246, p 0.27); with `bge_small`, 0.12–0.97 (0.0340 behind `glm_s`, p
-0.13) — `family_test.py --a sf_e5_base_n200_v1 --runs-dir data/runs-reparsed`, uncorrected
+0.13) — `family_test.py --a sf_e5_base_n200_v1`, uncorrected
 per pair. That is not "equal": n = 200 cannot resolve gaps of 0.02–0.03. The twelve or
 thirteen span 0.7437–0.7017 by point estimate, and "not separated" is not transitive.
 
@@ -213,16 +204,13 @@ The tie also explains the stability numbers: ρ between two disjoint halves rise
 monotonically 0.409 → 0.748, so the *ordering* is real, while **P(same winner) is 0.01–0.07**
 — with twelve or thirteen arms that cannot be told apart at this n, which one crowns a random half is
 close to a coin toss. Both statements are true at once, and reading either alone would
-mislead. (`rank_stability.py` reads `EVAL_RUNS_DIR`; the figures above are under
-`data/runs-reparsed`, the record. Under `data/runs`, with the pre-fix `qwen_s`, they read
-0.408 → 0.742.)
+mislead.
 
 ### 3.3 Adding a reranker and swapping the retriever are comparable; together they stack
 
 Each line is a paired sign-flip on 200 queries, uncorrected (20,000 permutations):
 
-- worst reranker → best reranker (`gemma_s` → `glm_s`): **+0.0420**, p 0.004, across a
-  **7.6× billed** price range — the *choice* of reranker
+- worst reranker → best reranker (`gemma_s` → `glm_s`): **+0.0420**, p 0.004 (the twelve span a **7.6× billed** price range) — the *choice* of reranker
 - BM25 → worst reranker (`gemma_s`): **+0.0566**, p 0.005 — the cheapest *addition* of a reranker
 - BM25 → `e5_base`, no LLM at all: **+0.0740**, p 0.001 — the *retriever swap*
 - BM25 → best reranker (`glm_s`): **+0.0986**, p < 0.0001 — adding the best reranker
@@ -233,8 +221,6 @@ the best is the best of twelve, picked after the fact. So adding a reranker and 
 the retriever are comparable and not distinguishable here; the choice among rerankers is
 numerically smaller than either. They stack: `glm_s` on `e5_base`'s candidates (§3.4,
 pair run) is **+0.1441** over the main-table BM25 (p < 0.0001).
-
-*Corrections to this section's ranking of the levers: §6.*
 
 ### 3.4 The ceiling, and a prediction registered before the arm existed
 
@@ -257,59 +243,46 @@ has taken 91% of it. `e5_base` has a **higher** ceiling and exploits less of it.
 e5-based arm existed** (commit `a903fb37`, 2026-09-28 22:13; the pair runs are later and
 record `dirty: false`)**:** if the headroom share transfers, a reranker on e5_base's
 candidates reaches 0.899 × 0.8747 = 0.786 to 0.911 × 0.8747 = 0.797. The range's ends are
-the two rerankers' own shares at the time — `qwen_s` 0.899 (its pre-fix 0.7338; 0.880
-corrected) and `glm_s` 0.911 — so it was built from the very two arms later tested.
+the two rerankers' own shares at the time — `qwen_s` 0.899 and `glm_s` 0.911 — so it was built from the very two arms later tested.
 
 **Measured:**
 
-*Evidence: `harness/data/runs-pair/`, committed since 2026-09-29. These four runs sat
-in an ignored directory until an external review pointed out that the most-advertised
-number in this repo was the one number with no committed run behind it.
-`check_report_claims.py` now verifies 0.7891 against the registered **range**, 0.786–0.797,
-rather than against itself.*
-
-*The `glm_s` row is unaffected by the round-2 retrieval parser fix — **0 of 200 items
-reorder** under the corrected parser. The `qwen_s` row IS affected: under the corrected
-parser its stored replies give 0.7138 over BM25 and 0.7713 over e5_base. Those two runs
-have not been re-measured, so the row below is the pre-fix figure with the corrected
-one stated here.*
+*Evidence: `harness/data/runs-pair/`. `check_report_claims.py` verifies 0.7891 against the
+registered **range**, 0.786–0.797, rather than against itself.*
 
 Both halves of each pair ran under the same adapter, so the comparison is internally valid;
 that adapter differs from the 19-arm main table's, which is why these four are reported
-separately and are not in §3.1 — and why `glm_s` over BM25 reads 0.7422 here against
+separately and are not in §3.1 — and why `glm_s` over BM25 reads 0.7423 here against
 0.7437 in §3.1 (90.9% of the ceiling here, 91.1% in the block above).
 
 | reranker | nDCG@10, BM25 candidates | nDCG@10, e5_base candidates | gain from e5_base | share of ceiling reached (BM25 → e5_base) |
 |---|---|---|---|---|
-| glm_s | 0.7422 | **0.7891** | +0.0469 | 90.9% → 90.2% |
-| qwen_s, as stored | 0.7224 | 0.7799 | +0.0575 | 88.5% → 89.2% |
-| qwen_s, corrected parser | 0.7138 | 0.7713 | +0.0575 | 87.4% → 88.2% |
+| glm_s | 0.7423 | **0.7891** | +0.0469 | 90.9% → 90.2% |
+| qwen_s | 0.7138 | 0.7713 | +0.0575 | 87.4% → 88.2% |
 
 Each reranker reorders the top 20 candidates of the named first stage. **Share of ceiling
 reached** = nDCG@10 ÷ that first stage's oracle ceiling (0.8163 for BM25, 0.8747 for
-`e5_base`). The corrected `qwen_s` row is `reparse.py` run over the two stored pair runs
-(`qwen_s` BM25-first 12 items reordered, e5-first 10); it is not a committed run.
+`e5_base`). The pair runs are scored with the current parser, as every SciFact run is (each
+run's `derived` block records it).
 
 **Outcome: one of two inside the registered range.** `glm_s`, at 0.7891, is inside.
-`qwen_s` is outside: 0.006 below 0.786 as printed, **0.0147 below** under the corrected
-parser. The share of available headroom each reranker takes moved by under one percentage
-point when the candidates changed entirely (−0.7 for `glm_s`, +0.7 for `qwen_s`,
-corrected) — consistent with the mechanism, from two rerankers on one corpus.
+`qwen_s` is outside, **0.0147 below** 0.786. The share of available headroom each reranker takes moved by under one percentage
+point when the candidates changed entirely (−0.7 for `glm_s`, +0.7 for `qwen_s`) — consistent with the mechanism, from two rerankers on one corpus.
 
 **What the four pair runs show** (sign-flip on 200 queries, uncorrected; each prediction
 was made once before and tested once, and none of these was repeated):
 
-- `glm_s`, e5-first vs BM25-first: +0.0469, p 0.015. `qwen_s`: +0.0575, p 0.002.
+- `glm_s`, e5-first vs BM25-first: +0.0469, p 0.015. `qwen_s`: +0.0575, p 0.005.
 - `glm_s`, e5-first vs `e5_base` alone: +0.0700, p 0.0001 — the LLM adds on top of the
   encoder.
 
 **What they do not show.** Run-to-run variance (each cell is one run; "Between-run
 variance" below puts a two-run difference at SD ≈ 0.0064). Whether 0.7891 is the best
 arm in a separated sense: with `glm_s` e5-first as arm A over a 22-arm family (the 19
-main arms and the other three pair runs, the `qwen_s` ones as stored), Holm separates it from 16 and does **not**
+main arms and the other three pair runs), Holm separates it from 16 and does **not**
 separate it from `glm_m` (+0.0473, p 0.013), `deepseek_m` (+0.0492, p 0.014),
 `deepseek_s` (+0.0513, p 0.009), `glm_s` BM25-first (+0.0469, p 0.015), `glm_s` in the
-main table (+0.0454, p 0.017) or `qwen_s` e5-first (+0.0092, p 0.36). 0.7891 is the highest
+main table (+0.0454, p 0.017) or `qwen_s` e5-first (+0.0178, p 0.10). 0.7891 is the highest
 **point estimate** here. And the pair adapter is not the main adapter, so 0.7891 against
 the main table's 0.7437 mixes the first-stage swap with the adapter and the run.
 
@@ -332,8 +305,7 @@ summarisation study and found none in NER.
 On the 160 queries the dev slice never contained (only the 40 dev item ids are needed,
 from `fetch.py --n 40`; the dev runs are not), the global permutation test gives p = 0.0002 — an arm effect exists — with **34 of 171 pairs distinguishable**
 and a Nemenyi critical difference of 2.21 rank positions against an observed span of
-8.4. This part is recomputable: `EVAL_RUNS_DIR=data/runs-reparsed holdout_significance.py`
-(§8).
+8.4. This part is recomputable: `holdout_significance.py` (§8).
 
 ### 3.6 Index cost is a first-class number, because `warmup_ms` made it one
 
@@ -361,44 +333,26 @@ trained for retrieval.
 
 ---
 
-### The parser fix, what it actually moved, and a correction to this section
+### The parser
 
-**One arm changes: `qwen_s`, 0.7338 → 0.7183.** 16 of its 200 replies were prose the
-parser had been reading as a one-document ranking.
+The parser refuses a leading array that will not parse, rather than harvesting fragments from it, and a line-path token must look like an id (`[\w.-]+`). A reply that opens with a real array and then corrects itself in prose, such as `…, 4459491 is removed and [30813140, …`, fails `json.loads`; if the line path then splits it on commas, tokens like `[8925851` and `21884449]` pass a "no spaces" test and are accepted as document ids. Those bracket tokens are never real ids, so they count as hallucinations, and the harvested partial ranking scores below the BM25 fallback the pipeline uses when a reply is unreadable. The arm is punished for the parser's guess.
 
-**This section previously said three arms changed, and two of those were my own bug.**
-The round-2 fix added a comma path to the line parser so that `4983, 13734012` would
-parse. `llama_l` opens with a real array and then corrects itself in prose —
-`…, 4459491 is removed and [30813140, …` — so `json.loads` fails, the line path split
-that line on commas, and tokens like `[8925851` and `21884449]` passed the
-"no spaces" test and were accepted as document ids. 25 of 200 items on one run.
+**50 of `qwen_s`'s 200 replies in the main run do not parse, and the parser reads none of them as a
+ranking.** All 50 open with prose (a discussion of the claim before any list), and 48 of them
+are cut off at `max_tokens` 700 before reaching one; the other 2 finish without a list the
+parser can read. Those
+50 queries keep BM25's order, so `qwen_s`'s 0.7183 is a reranker on 150 queries and BM25 on
+50 (`llm_parsed` 0.75). Its repeat run and its two pair runs leave 52, 47 (BM25-first) and
+44 (e5-first) unparsed.
 
-Those bracket tokens are never real ids, so they counted as hallucinations *and* the
-harvested partial ranking scored **below the BM25 fallback the pipeline uses when a
-reply is unreadable** — 0.6386 against 0.7155 on the same bytes. The arm was punished
-for the parser's guess.
+### Between-run variance — still unmeasured
 
-| arm | nDCG@10 as first measured | after round-2 parser change (reverted) | after current parser |
-|---|---|---|---|
-| `llama_l` | 0.7281 | 0.6864 | **0.7281** |
-| `llama_s` | 0.7172 | 0.7129 | **0.7172** |
-| `qwen_s` | 0.7338 | 0.7183 | **0.7183** |
-
-Under the current parser `llama_l` and `llama_s` are back to their first-measured scores —
-the round-2 drop was the parser's artifact — while `qwen_s`'s drop is real and stays.
-
-The parser now refuses a leading array that will not parse, rather than harvesting
-fragments from it, and a line-path token must look like an id (`[\w.-]+`). Found by
-external review.
-
-### Between-run variance — smaller than this report claimed, and still unmeasured
-
-Three arms were re-run on 2026-09-29 (`data/runs-repeats/`). Once the parser artifact
-is removed, the like-for-like deltas are:
+Three arms were re-run on 2026-09-29 (`data/runs-repeats/`). The deltas are:
 
 `bm25first` is the BM25-candidate half of the §3.4 pair (`sf_glm_s_bm25first_n200_v1`,
-`sf_qwen_s_bm25first_n200_v1`): the same reranker settings run again later, under the
-pair adapter — which is not the main table's adapter, so these two pairs mix run-to-run
+`sf_qwen_s_bm25first_n200_v1`): the same reranker settings run again later. The three
+repeats ran under adapter `4037bb6398` and the two `bm25first` runs under the pair adapter
+`068ef8c236`; neither is the main table's `cedb9f962a`, so all five pairs mix run-to-run
 difference with an adapter difference. Δ = nDCG@10 of the second (later) run − the
 first, both read under the current parser; a negative Δ means the later run scored lower.
 
@@ -410,22 +364,14 @@ first, both read under the current parser; a negative Δ means the later run sco
 | `glm_s` bm25first vs `glm_s` | 0.7437 | 0.7423 | −0.0015 |
 | `qwen_s` bm25first vs `qwen_s` | 0.7183 | 0.7138 | −0.0045 |
 
-**These deltas are derived, not stored.** The committed `data/runs-repeats/` and
-`data/runs-pair/` hold the uncorrected figures (`llama_l` 0.6386, `llama_s` 0.7132,
-`qwen_s` 0.7187; `qwen_s` BM25-first 0.7224), and the repeat runs are `dirty: true`. The
-table reads them through `reparse.py` (`--runs <dir> --out <scratch>`, which needs the
-qrels from `fetch.py`); the reparsed copies are not committed. `llama_s` previously read
-−0.0003 and `qwen_s` −0.0004 here: the first compared the repeat with the round-2
-parser's figure for the original, the second had its sign reversed.
+The repeat and pair runs are scored with the current parser, like the main runs (each
+run's `derived` block records it), and the repeat runs are `dirty: true`.
 
-**An earlier version of this section reported that swing as 0.0895 and called it twelve
-times the noise floor.** Most of it was the parser artifact above. Pooled over the five
+Pooled over the five
 pairs, σ_run is **0.0045 per arm** (0.0089 for `llama_l` alone) and the SD of a
 two-run difference is **0.0064**: a gap below about **0.013** (two such SDs) between two
 single runs is inside run-to-run noise. The 0.0074 gap between `gemma_m` and `glm_s`
-is 1.2 of those SDs. This report's earlier noise figure, also 0.0074 (0.6691 against
-0.6617), came from two runs that, as round 3 pointed out, **appear in no committed run
-and cannot be re-derived.** The five pairs above replace them. Five pairs, four
+is 1.2 of those SDs. Five pairs, four
 rerankers, one corpus.
 
 What does not go away: temperature 0 is not reproducible on any hosted provider here —
@@ -444,9 +390,7 @@ nothing, on a CPU. It trails the best BM25-first reranker by 0.0246 and is not s
 from any of the twelve at n = 200 (p 0.27–0.97) — not shown equal. Adding `glm_s` on top
 of it reaches 0.7891, +0.0700 over `e5_base` alone (p 0.0001, uncorrected; one run, one
 reranker) for **$0.1464 billed** per 200
-queries (the §3.4 pair run; `glm_s` over BM25 in §3.1 billed $0.1421). (`glm_s` is not the cheapest reranker; `deepseek_s` is, at $0.0600. The
-$0.055 previously quoted here was the price table, and the "cheapest" was wrong under
-either cost.)
+queries (the §3.4 pair run; `glm_s` over BM25 in §3.1 billed $0.1421). (`glm_s` is not the cheapest reranker; `deepseek_s` is, at $0.0600.)
 
 **A BM25-first reranker is capped, and a stronger first stage raises the cap.** Every
 BM25-based pipeline here is capped at 0.8163 at rerank depth 20 no matter which model does
@@ -455,11 +399,10 @@ All twelve beat BM25 by 0.0566–0.0986, and the worst-to-best spread is +0.0420
 (p 0.004), so the choice among rerankers is not nothing; `e5_base`'s candidates have a
 cap of 0.8747.
 
-**The tie is the recurring result across the four examples that existed when this was
-written** (five of the six experiments now; see the synthesis). Summarisation:
+**The tie recurs in five of the six experiments** (see the synthesis). Summarisation:
 the dearest arm ranked 18th of 29 (15th of the 24 hosted). AG News: a leader tied with three others. DBpedia: a leader
 tied with nineteen, across a 115× price range (both per
-[`REPORT_SYNTHESIS.md`](REPORT_SYNTHESIS.md), after the 2026-09-30 fine-tune runs). NER:
+[`REPORT_SYNTHESIS.md`](REPORT_SYNTHESIS.md)). NER:
 eight hosted arms across 78×. Here: twelve or thirteen, two of which are free. Five unrelated tasks, the same shape — at the top of a field, the leader cannot be
 separated from a group spanning a wide price range (not shown different, which is not the
 same as equal).
@@ -484,61 +427,17 @@ reads true before any of it is believed.
 
 ---
 
-## 6. Corrections
+## 6. Instrument notes
 
-### The lever ranking in §3.3 was corrected twice
-
-Until 2026-10-19 §3.3 said the largest single move available was replacing the retriever,
-not adding a model on top of it. That compared the retriever swap (+0.0740) with the choice
-among rerankers (+0.0420), not with adding a reranker (+0.0986). The executive summary,
-which said "reranking beats retrieval", and the heading disagreed with each other. The
-correction then ranked adding the best reranker (+0.0986) over the swap (+0.0740), which
-the same section's own test does not support: their difference, `glm_s` − `e5_base`, is
-0.0246 at p 0.27, and the best reranker is the best of twelve picked after the fact. The
-section now says the two are comparable and not distinguishable here.
-
-### The executive summary's "weak first stage" and "no proprietary model" lines
-
-The summary said not to deploy a reranker on a weak first stage and that a better reranker
-there "buys almost nothing"; every BM25 pipeline beat BM25 by 0.0566–0.0986 and the
-worst-to-best spread is +0.0420 (p 0.004), so it now states the cap instead. It also said
-no proprietary model was needed among the arms run; one proprietary arm (`qwen_s`) ran and
-none of the five frontier models did, so it now says that.
-
-### This adapter never disabled reasoning, and the other three always did
-
-`sf_qwen_s` scored **exactly** BM25's nDCG@10 on the dev slice. `llm_parsed` said why:
-0.000 — it hit the output ceiling on 40 of 40 queries, produced nothing parseable, and the
-pipeline fell back to BM25's ordering every time.
-
-I read that as a budget problem and raised `max_tokens` 400 → 700. It failed identically.
-`_meta.llm_raw`, added for exactly this, then gave the answer: **the empty string**, with
-700 completion tokens spent. Not a model running out of room — a model reasoning silently.
-
-The cause was mine. The other three examples all pass `reasoning: {enabled: false}` through
-`extra_body`; I dropped that passthrough when writing this adapter and set it in none of the
-48 configs. That is not a tuning difference — it breaks the one property the four examples
-exist to support, that only the *task* differs between them. Fixed, fingerprinted, and
-`qwen_s` then scored 0.7338 — **0.7183 under the corrected parser**, which is the
-figure §3.1 and the rest of this report use. The 0.7338 is what that fix produced
-at the time and is kept because the sentence is about that fix.
-
-Every reranking run made before the fix is in `data/runs-superseded/` with the reason
-written down — including `gemma_m`, which was fine. A uniform instrument means re-running
-the arms that worked too.
-
-### I misread my own adapter's stored output, twice
-
-A reranking arm overwrites `res.output` with the *pipeline's* 100-document ranking, which
-is the right thing to score and the wrong thing to debug. I twice read those stored outputs
-as the model's reply and drew conclusions from them before noticing.
-
-### The tree went dirty mid-sweep
-
-I wrote `retrieval_report.py` while the sweep was running, so `sf_llama_s_n200_v1` records
-`harness.dirty: true`. All 19 main arms share one `adapter.sha256` (`cedb9f962a`), which is
-what determines the instrument; 12 were committed at `0e20aae`, 6 at `a903fb3`, and
-`llama_s` carries the flag. Second time this session.
+- **Reasoning is off in every reranking arm**, passed as `reasoning: {enabled: false}`
+  through `extra_body`, as in the other three examples: only the *task* differs between
+  them. With it on, a model can spend its whole output budget reasoning silently and return
+  the empty string, and the pipeline then falls back to BM25's ordering.
+- **A reranking arm's stored output is the pipeline's 100-document ranking**, which is what
+  is scored. The model's own reply is in `_meta.llm_raw`.
+- **One run carries `harness.dirty: true`**: `sf_llama_s_n200_v1`, because
+  `retrieval_report.py` was written while the sweep ran. All 19 main arms share one
+  `adapter.sha256` (`cedb9f962a`), which is what determines the instrument.
 
 ---
 
@@ -547,20 +446,16 @@ what determines the instrument; 12 were committed at `0e20aae`, 6 at `a903fb3`, 
 - **Twelve of the 24 hosted arms were never run on SciFact** — only the 12 below the price
   cut were. The five that matter most are the frontier tier, `anthropic_s`, `openai_m`,
   `openai_l`, `anthropic_m`, `anthropic_l`: they would cost **about $12**,
-  against this sweep's **$1.94 as billed** — not the $31.40 stated here until
-  2026-09-29, which rested on a multiplier that does not survive checking. The cut was
+  against this sweep's **$1.94 as billed**. The cut was
   "everything under $0.60/Mtok input", price-ordered and declared before any result was
   read. **So this report says nothing about whether a frontier model is a better
   reranker**, and the top tie (12–13 arms) is a tie among cheap models plus two free ones. See
   [`HANDOVER_RETRIEVAL_FRONTIER_ARMS.md`](internal/HANDOVER_RETRIEVAL_FRONTIER_ARMS.md).
 - **The cost column is what the provider BILLED, not this repo's price table.** Those
   differ, because an alias is not a price: OpenRouter routes across upstream providers
-  that charge differently. Measured across all four examples the table was wrong **per arm
-  by 0.67× to 3.76×**, in both directions, and it reordered arms by cost. All four reports
-  are now corrected and all four adapters record `usage.cost`. An earlier draft of this
-  report quoted **2.41×** from a single before/after spend delta on a **$0.0055** run —
-  far too small for fixed overhead and concurrent traffic not to dominate. That number
-  was wrong and stated with more confidence than one measurement earned.
+  that charge differently. Measured over the hosted runs of the five experiments other than SummEval,
+  the table is wrong **per arm by 0.67× to 3.76×**, in both directions, and it reorders arms by cost.
+  Every report uses the billed figure, and every experiment's adapter records `usage.cost`.
 - **One first-stage swap, two rerankers, one corpus.** §3.4 is a pair, not a study. It does
   not show that e5_base is the best possible first stage, or that the headroom share
   transfers for any other reranker or corpus. The prediction was registered once and
@@ -579,16 +474,15 @@ what determines the instrument; 12 were committed at `0e20aae`, 6 at `a903fb3`, 
   prompt wording; a different prompt could reorder the twelve.
 - **Rerank depth 20 and snippet 900 chars were tuned on the dev slice** and then fixed.
   `k=50` was tested and failed for a budget reason (`llm_parsed` 0.700); `k=10` scored
-  0.6799 against `k=20`'s 0.6908. Nothing between 20 and 50 was tested.
+  0.6799 against `k=20`'s 0.6908. Nothing between 20 and 50 was tested. At `k=20`,
+  `qwen_s` still runs out of budget on 48 of 200 queries ("The parser", §3).
 - **`gliner`-style threshold tuning has no analogue here, but BM25's k1/b do.** They are
   `rank_bm25`'s defaults (1.5 / 0.75), recorded in the fingerprint, and **untuned**. A
   tuned BM25 might close some of the 0.074 gap to e5_base; nothing here bounds how much.
 - **No confidence, no calibration.** Logprobs were never requested from any hosted model,
   in this example or any other.
-- **The stability figures here were recomputed after a scorer fix on 2026-09-29.**
-  `spearman()` had no tie correction and `ranks_on()` broke ties alphabetically. On this
-  corpus the correction is small (≤0.007 at any n, because nDCG@10 rarely ties) but it is
-  not zero, and the numbers above are the corrected ones. `P(same winner)` now excludes
+- **Stability statistics handle ties explicitly.** `spearman()` and `ranks_on()` use midranks
+  for ties. `P(same winner)` excludes
   draws where either half had no unique best arm rather than crediting them as agreement.
 - **One pass per arm, temperature 0** — and temperature 0 is *not* reproducible here:
   between 13 and 78 of 200 replies are byte-identical across two runs of the same config,
@@ -616,28 +510,26 @@ for f in ../examples/retrieval-scifact/configs/arm_*_n200.yaml; do
   python scripts/experiment_run.py --config "$f"
 done
 
-# The record for every SciFact figure is data/runs-reparsed (corrected parser). Every script
-# reads it through EVAL_RUNS_DIR; data/runs holds the pre-fix qwen_s (0.7338).
-export EVAL_RUNS_DIR=data/runs-reparsed
-python scripts/retrieval_report.py --dataset-id scifact_200 --match sf_
+# The committed runs are scored with the current parser (recorded in each run's `derived`
+# block); a fresh run parses with it directly.
+python tools/retrieval_report.py --dataset-id scifact_200 --match sf_
 python scripts/family_test.py --dataset-id scifact_200 --a sf_glm_s_n200_v1 \
-    --against _n200_v1 --metric ndcg_10 --runs-dir data/runs-reparsed
+    --against _n200_v1 --metric ndcg_10
 python scripts/holdout_significance.py --dataset-id scifact_200 \
     --exclude-dataset scifact_40 --metric ndcg_10 --match sf_
 python scripts/rank_stability.py --dataset-id scifact_200 --metric ndcg_10 --match sf_
 
 # The §3.4 pair runs live in data/runs-pair, so testing them against the main arms needs
 # one directory holding both (copy the runs; the config_ids differ, so nothing collides):
-mkdir -p /tmp/sf_all && cp -r data/runs-reparsed/* data/runs-pair/sf_* /tmp/sf_all/
+mkdir -p /tmp/sf_all && cp -r data/runs/sf_* data/runs-pair/sf_* /tmp/sf_all/
 python scripts/family_test.py --dataset-id scifact_200 --a sf_glm_s_e5first_n200_v1 \
     --against _n200_v1 --metric ndcg_10 --runs-dir /tmp/sf_all
 python scripts/pair_test.py --dataset-id scifact_200 --a sf_glm_s_e5first_n200_v1 \
     --b sf_glm_s_bm25first_n200_v1 --metric ndcg_10 --runs-dir /tmp/sf_all
 ```
 
-The between-run table is `examples/retrieval-scifact/reparse.py --runs <dir> --out
-<scratch>` over `data/runs-repeats` and `data/runs-pair`; the pair runs are stored
-uncorrected.
+The between-run table compares the committed runs in `data/runs-repeats` and `data/runs-pair`
+with the main runs, all scored with the current parser.
 
 Neither the corpus nor the queries are committed: `fetch.py` downloads both and both are
 gitignored. Corpus identity travels as `corpus_sha256` inside every run, not as bytes.

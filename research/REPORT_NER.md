@@ -3,7 +3,7 @@
 **Dataset** `few_nerd_280` · 280 Wikipedia-derived sentences · 768 gold entities · 8 coarse types
 **Protocol** supervised test split, 280 of 37,648 sentences, seeded · metric is ours (mean per-sentence F1, coarse types, string match); standard micro-F1 in §2 (hosted arms never scored the standard way) · calibration: `span_marker` only, standard fine-type micro-F1, 0.7047 vs 0.7040 published, inside its own bootstrap 95% interval (±0.016) — [docs/PROTOCOL.md](../docs/PROTOCOL.md#extraction--few-nerd)
 **Arms** 24 hosted models (8 vendors × 3 price tiers) · 1 fine-tuned span tagger · 1 zero-shot span tagger · 2 non-learned baselines
-**Design** 1 pass per arm · one zero-shot prompt for every hosted arm (bare type names, no definitions, no examples), temperature 0, reasoning off, `max_tokens` 600, no provider pinned (OpenRouter routed the open-weight arms across many providers; `gemma_m` across 13) · Few-NERD is public, contamination unmeasured (§7) · **$2.61 billed** ($2.05 by the price table — see Correction)
+**Design** 1 pass per arm · one zero-shot prompt for every hosted arm (bare type names, no definitions, no examples), temperature 0, reasoning off, `max_tokens` 600, no provider pinned (OpenRouter routed the open-weight arms across many providers; `gemma_m` across 13) · Few-NERD is public, contamination unmeasured (§7) · **$2.61 billed**
 **Date** 2026-09-28 · **Harness** [`../harness`](../harness) · **Journal** [`NOTES.md`](internal/NOTES.md)
 
 > **The third metric shape.** Summarisation compares one text to one text and scores
@@ -37,7 +37,6 @@ lead falls from 0.0810 to 0.0503 and stays ahead (separation not retested). Not 
 labelling and training cost, an LLM given definitions or examples, and contamination of the
 hosted models (§5).
 
-Corrections and their dates: §6.
 
 ### Supporting facts
 
@@ -49,7 +48,7 @@ Corrections and their dates: §6.
 | **What not to deploy** | `anthropic_l`: the most expensive arm, $2,463/month per 1M items, 11.4% below `span_marker`. 0.0066 behind `openai_m` (p = 0.67, not separated, §3.3); 78× the price of `gemma_m` at the routed mix billed in this run for a +0.0065 point-estimate gap (not tested pairwise). |
 | **Does paying more help?** | A little, not enough. Across the 24 hosted arms, +0.0407 F1 per 10× in cost (r = 0.50, 95% Fisher interval 0.13 to 0.75): 5.9% of the best hosted F1, 5.3% of `span_marker`'s. A cross-vendor association confounded with vendor. The steepest absolute slope of the six experiments (SummEval's is larger as a share of its best score; [synthesis](REPORT_SYNTHESIS.md)). |
 | **What part of the lead is learned convention?** | Against `openai_m`: 57% on `other` (30–57% across the 24 hosted arms, for a prompt that defines no type) and up to 38% on 34 disputed labels (19–34% against the next three hosted arms; 7–53% across thresholds 90% to 70%; voters share zero-shot priors). They overlap. Lead after the bound: 0.0503. On `person`, three hosted arms edge it by 0.004–0.007 (untested). |
-| **Is a pilot enough?** | Here yes: ρ = 0.895 over the 27 arms measured at the time (0.903 with all 28, §3.8), right winner. In 3 of the 4 other experiments that ran a pilot it was wrong (a count from the [synthesis](REPORT_SYNTHESIS.md), not a result of this run). |
+| **Is a pilot enough?** | Here yes: ρ = 0.963 over the 28 arms, from the dev items inside the committed 280-item runs (§3.8), right winner. In 3 of the 4 other experiments that ran a pilot it was wrong (a count from the [synthesis](REPORT_SYNTHESIS.md), not a result of this run). |
 | **Fine-tune or pay?** | Fine-tune, if you have labelled data, as run here: 0.7674 against 0.6864 at $0 to run. The zero-shot control `gliner` (0.4540, +0.3134 behind) differs in training exposure and architecture, so that gap is both, split unmeasured (§3.5); the case rests on `span_marker` beating the LLMs, not on it. |
 
 *How to read this table.* Scores are **mean per-sentence F1** over 280 sentences (0–1,
@@ -64,8 +63,7 @@ Cross-cutting context for all six experiments: [`REPORT_SYNTHESIS.md`](REPORT_SY
 1. **A winner, not a group.** `span_marker` scored **0.7674** against a hosted field of
    0.524–0.686, separated from all 27 other arms (Holm step-down over a family declared in
    advance). Neither classification corpus produced this: AG News's leader is tied with three
-   other arms, DBpedia's with nineteen (counts per [`REPORT_SYNTHESIS.md`](REPORT_SYNTHESIS.md),
-   after the 2026-09-30 fine-tune runs).
+   other arms, DBpedia's with nineteen (counts per [`REPORT_SYNTHESIS.md`](REPORT_SYNTHESIS.md)).
 
 2. **Behind it, the familiar tie.** `openai_m` (0.6864) separates from 16 of the 23 other
    hosted arms (20 of the 27 opponents once `span_marker`, `gliner`, `capitalized` and
@@ -104,7 +102,7 @@ Cross-cutting context for all six experiments: [`REPORT_SYNTHESIS.md`](REPORT_SY
 
 6. **A scoring bug paid non-answers full marks, and no fingerprint could have caught it.**
    An unreadable output was indistinguishable from an empty prediction; on the 12% of
-   items with no gold entities that scored **1.0**. Found and fixed mid-sweep; see §6.
+   items with no gold entities that scored **1.0**. An unreadable reply scores 0; see §6.
 
 ---
 
@@ -170,8 +168,7 @@ Casefold, strip accents and punctuation, drop a leading article, squeeze whitesp
 Deliberately **not** stemming: "Olympics" and "Olympic" are surface forms a reader would
 judge differently, and a normaliser that collapses them is quietly grading a different task.
 
-The whole rule is hashed into `scorer_sha256` and carried on every run. §6 is about the
-version of this report that would have been wrong without it.
+The whole rule is hashed into `scorer_sha256` and carried on every run (§6).
 
 ### Typed and untyped are both reported, and they disagree
 
@@ -185,9 +182,8 @@ untyped 0.6191, typed **0.1913** — it finds spans well and types them almost a
 An item has its own gold set, so its F1 is well defined and the mean of those is an honest
 per-item metric — which means the sign-flip permutation test works directly and no
 bootstrap is needed. Corpus micro-F1 pools every tp/fp/fn into one figure. The mean is
-the ranking metric; this sentence used to say "both are reported" and no micro-F1 figure
-appeared anywhere. They do now
-(`EVAL_RUNS_DIR=data/runs-rescored scripts/extraction_report.py --dataset-id few_nerd_280`):
+the ranking metric; micro-F1 is reported alongside it
+(`tools/extraction_report.py --dataset-id few_nerd_280`):
 
 | arm | mean per-sentence F1 (ranking) | corpus micro-F1 | micro precision | micro recall |
 |---|---|---|---|---|
@@ -345,16 +341,12 @@ architecture and encoder (§3.5) and its 0.0000 comes mostly from almost never p
 the label. Since a definition was never offered to `openai_m`, how much of its 0.3017 a
 definition or examples would recover is not measured.
 
-*Until 2026-10-19 this section called `other` a label that "carries no semantics", "close to
-a pure measure of exposure to the corpus", with "the three arms line up exactly by
-exposure". `openai_m` gets 0.3017 from the label alone, so it is not meaningless to a
-model, and the `gliner` figure is confounded.*
+`openai_m` gets 0.3017 on `other` from the label alone, so the label is not meaningless to a
+model, and the `gliner` figure is confounded.
 
 **On `person`, three of the 24 hosted arms edge `span_marker`:** `openai_m` by 0.0067,
 `anthropic_l` by 0.0054, `openai_l` by 0.0040 — differences not tested, at n = 166 gold
 `person` entities. The other 21 trail it by 0.0007 (`gemma_l`) to 0.0894 (`mistral_s`).
-*Until 2026-10-19 this read "the frontier hosted model wins. That is the whole result in
-one row."*
 
 ### 3.5 Task-specific training, against a zero-shot control
 
@@ -362,8 +354,7 @@ one row."*
 of **+0.3134 F1**. It is not one variable. `span_marker` saw Few-NERD's training split and
 `gliner` did not, but they are also different models: a SpanMarker span classifier on a
 RoBERTa encoder (`numind/generic-entity_recognition-v1`, per its config) against GLiNER's
-label-prompted matcher on DeBERTa-v3-base. An earlier version of this section called them
-the same model class with exposure as "the one variable"; that was wrong. The gap is
+label-prompted matcher on DeBERTa-v3-base. The gap is
 exposure plus architecture, and how it splits is not measured.
 
 This is the question the summarisation and AG News examples kept running into, and
@@ -374,8 +365,8 @@ XSum, first and last of 29.
 
 34 of 768 gold entities (4.4%) carry a coarse type that at least 80% of the 26 learned
 arms (all 28 except the two baselines, `capitalized` and `nothing`) reject, agreeing on
-the same alternative type. The first 14 of the 34, as `extraction_report.py` prints them
-(count = arms that agree, out of 26):
+the same alternative type. The first 14 of the 34 (`extraction_report.py` prints the first
+10; count = arms that agree, out of 26):
 
 ```
 26/26  "georgia dome"                     gold location     -> arms building
@@ -393,10 +384,6 @@ the same alternative type. The first 14 of the 34, as `extraction_report.py` pri
 24/26  "sanitarium"                       gold building     -> arms organization
 24/26  "katolska bokforlaget"             gold art          -> arms organization
 ```
-
-*This block previously showed counts out of 25, printed before `mistral_l` joined the
-field; it is re-run here on the committed 28-arm runs. The re-run reproduces the count of
-34 and every figure in the table below.*
 
 Independent models do not agree on a hallucination, but they do share priors: all 24 hosted
 arms are zero-shot LLMs prompted with the same bare labels. Where 21 or more of 26 tag the
@@ -457,9 +444,6 @@ identical budget; the four that did not are the llama family (large / medium / s
 0.996 / 0.954 / 0.993) and `mistral_l` (0.996). Only `llama_m` hit the budget at all
 (0.025 truncated); the rest of their failures are malformed JSON, a different failure.
 
-*This paragraph read "0.836 parsed" for `glm_l` and 0.986 / 0.943 / 0.993 for the llama
-family — figures from before the §6 parser fix — while §3.1 carried the corrected ones.*
-
 It is not producing malformed JSON. It is producing no JSON. On item `0e88aabc` —
 *"Epsilon Centauri is a relatively young star, with an age of around 16 million years"* —
 it spent the entire budget reasoning aloud about which benchmark it was being evaluated on:
@@ -476,11 +460,14 @@ set. It is reported as a property of the arm.
 
 ### 3.8 The dev slice predicted the ranking, and the winner held
 
-Spearman ρ between the 56-item dev slice and the 280-item measurement slice, 28 arms:
-**0.903**. Dev leader and measurement leader are the same arm.
+Spearman ρ between the 56 dev items and the 280-item measurement slice, 28 arms:
+**0.963**, from the dev items inside the committed 280-item runs (`stats.spearman`, ties
+given midranks); the separate dev-slice runs were not committed. Dev leader and measurement
+leader are the same arm, `span_marker`.
 
-Mean |rank move| 2.36 positions; **max 11** — `glm_l`, rank 11 → 22, for the reason in §3.7:
-the dev slice sampled its truncation rate at 5.4% and the measurement slice found 11.4%, the 0.114 in §3.7. (This sentence said 16.4% until 2026-10-15: that is the share of its replies the original parser could not read, 1 − 0.836, not the share that was truncated.)
+Mean |rank move| 1.71 positions; **max 5** — `deepseek_l` (22nd on the dev items, 17th on
+the full slice) and `llama_m` (15th → 20th). `glm_l` is 21st on the dev items and 22nd on
+the full slice; it truncates 14.3% of the dev items against the 0.114 in §3.7.
 
 **No winner's curse.** On the 224 items the dev slice never contained:
 
@@ -492,21 +479,10 @@ pairs distinguishable: 152 of 378
   fn_span_marker_n200_v1   avg rank 8.98   P(1st) = 1.00
 ```
 
-> **Twice corrected, and the second correction is the interesting one.** This block first
-> read *"critical difference = 2.74; pairs distinguishable: 156 of 351"*, from silently
-> reusing the k=25 critical value for a 27-arm field — too small, so the CD was
-> understated and more pairs called distinguishable than the test supports. Round 2 made
-> the tool refuse above k=25 and this block printed NOT AVAILABLE. A round-3 reviewer
-> pointed out the values are about thirty lines of stdlib, which they are:
-> [`scripts/nemenyi_table.py`](../harness/scripts/nemenyi_table.py) solves the
+> The critical values come from [`tools/nemenyi_table.py`](../harness/tools/nemenyi_table.py), which solves the
 > studentised-range integral and reproduces all 24 of Demsar's published values to
-> within 0.0007.
->
-> Computed for k=27 the CD is **2.77** and **149 of 351** pairs separate — against the
-> 2.74 and 156 first published. So the original was biased in exactly the direction
-> stated, by seven pairs. **The global test is unaffected**, and so is every separation
-> claim here: those come from `family_test.py`'s Holm step-down, which never used this
-> table.
+> within 0.0007. Every separation claim here comes from `family_test.py`'s Holm step-down,
+> which does not use this table.
 
 This is the direct opposite of the summarisation result, where BART's 0.0737 lead at n=20
 collapsed to 0.00008 at n=200. A lead can be an artifact of a small slice; this one is not,
@@ -522,21 +498,17 @@ and the same machinery says so in both directions.
         100      0.878     0.823             1.00                 1.17             1.0
 ```
 
-Monotone in every column — which DBpedia's was not. There, P(same winner) *fell* from 0.94
-to 0.28 as n grew, because a saturated binary metric made most arms tie at the top and the
-tie was broken alphabetically. `arms tied 1st` = **1.0 at every size** here.
+Monotone in every column. On a saturated binary metric most arms tie at the top, as on
+DBpedia; `arms tied 1st` = **1.0 at every size** here.
 
 **The metric's shape decides whether this diagnostic can be read at all.** Per-item set F1
 takes many values, ties essentially never happen, and ρ measures the data. Binary accuracy
-on a saturated task ties constantly, and ρ measures the sort order. The tie column was
-added after DBpedia; Few-NERD is the case that shows what it looks like when nothing is
-wrong.
+on a saturated task ties constantly, and ρ measures the sort order. Few-NERD is the case
+that shows what the tie column looks like when nothing is wrong.
 
-The formula itself was fixed on 2026-09-29 — `spearman()` had no tie correction and
-`ranks_on()` broke ties alphabetically — and the table above is the corrected one. On this
-corpus the change is ≤0.008 at any n, which is the point: a metric that does not tie is
-not affected by how ties are handled. The two classification corpora moved by up to 0.115.
-See [`REPORT_CLASSIFICATION.md`](REPORT_CLASSIFICATION.md) §3.6.
+`spearman()` gives tied arms midranks. A metric that does not tie is not affected by how
+ties are handled; the classification corpora, whose metric does tie, are in
+[`REPORT_CLASSIFICATION.md`](REPORT_CLASSIFICATION.md) §3.6.
 
 ---
 
@@ -598,133 +570,30 @@ Neither half is wrong enough to change for one item: stripping punctuation is ri
 comparing entity mentions, and calling a currency sign an entity is the odd end of it. But
 the floor moves, and a 1/280 discrepancy between a baseline and its predicted value is
 exactly the kind of thing that gets explained away instead of opened. `extraction_report.py`
-now prints these, and `fetch.py` no longer claims the floor is *exactly* the empty-gold rate.
+prints these, and `fetch.py` does not claim the floor is *exactly* the empty-gold rate.
 
 ---
 
-## 6. Corrections
+## 6. How an answer is read
 
-### Executive summary reframed (2026-10-19)
-
-Until then the summary said: the winner "separated from 27 of 27" (24 hosted plus `gliner`,
-`capitalized`, `nothing`; `openai_m`'s "20 of 27" counts `span_marker` and those three, so 16
-of 23 other hosted arms); that `gliner` was the "same model class" and "the cleanest isolation
-of task-specific training" (it is a different architecture and emitted `other` 3 times,
-§3.4–3.5); that "57% of the margin is one type" (it is 57% against `openai_m`, the maximum;
-30–57% across the 24 hosted arms) whose meaning "has no inferable meaning" (`openai_m` gets
-0.3017 on it from the label alone); that "a frontier LLM wins" on `person` (three of 24 hosted
-arms edge it, by at most 0.0067, untested); that "38% of that lead is conformity to the
-annotator, not correctness" (up to 38%, selection-dependent, §3.6); and that 52 GB "fits a 64
-GB box natively" with "the same answer at every budget" (nothing was run on 64 GB; 52 GB is
-weights only). The numbers did not change; the claims around them were wider than the
-evidence.
-
-Rewritten again the same day as a decision-first summary. The "≈207× fewer parameters" figure
-was dropped from the headline: it used 25.8B total parameters for a mixture-of-experts model
-with about 4B active; the 103× download-size ratio is the headline. The "no reason to rent"
-and "$0" wording now states its precondition (a checkpoint trained on Few-NERD's own training
-split, evaluated in-distribution), and "stays separated" under the annotation bound was
-withdrawn: only "stays ahead" was computed.
-
-### Notes moved out of §3.6 and §4
-
-*Until 2026-10-19 this read "38% of that lead is agreeing with the annotator rather than
-being right". The bound cannot say which of the two it is.*
-
-*Until 2026-10-19 this paragraph opened "The hosted field is a commodity at the top" and
-said "Buying the expensive one bought 3.05 s/item of latency and nothing else measurable".
-3.05 s is `gemma_m`'s latency; `anthropic_l`'s is 2.76 s.*
-
-*This bullet said "~7%" for a week, from dividing span_marker's own 0.0060 gain by
-  the margin. That is the wrong quantity: a share of the margin is about how the margin
-  MOVES, and the margin moves by the difference between the two arms, not by one arm's
-  gain. §0 and §3.6 of this same report already said 38% and were right.*
-
-  *Worse, when round 3 flagged the inconsistency I recorded it here as a disagreement
-  and wrote that I "could not reproduce 38% from any pairing of the committed numbers".
-  It was my own figure, 350 lines up in the file I was editing. Round 4 had to point at
-  my own lines 34, 82 and 323 to show me. I was defending a number against myself.*
-
-### An unreadable answer was scoring 1.0
-
-`score_sets` took only the parsed set, so the caller could not distinguish *"the model
-answered `[]`"* from *"the model's output could not be read"*. Both arrived as an empty
-list. On the 12% of items whose gold is also empty, the empty-empty convention paid a
-non-answer the **full 1.0**.
-
-`glm_l` collected six of them. It was worth **+0.0214 f1** — 0.5484 as first measured,
-**0.5269** after that correction. It reordered nothing.
-
-### And then the parser was refusing answers that were there
-
-A second external review found the JSON parser's array matcher was `\[.*\]` with
-DOTALL — **greedy**, so it spanned from the first `[` in a reply to the last `]`
-anywhere in it. Two real answers died that way:
-
-- `[{...}] See [1]` became one span covering both brackets and the prose between them.
-  Not JSON, so a correct answer scored zero.
-- `llama_l` emitted a malformed array, wrote *"Here is the correct output:"*, then a
-  valid one. The greedy match swallowed both and parsed neither.
-
-Balanced spans are now scanned left to right and the first that reads as entities wins.
-**21 of the 68 items this experiment had scored unreadable were readable all along.**
-
-| arm | F1 before parser fix | F1 after parser fix | unreadable items before | unreadable items after |
-|---|---|---|---|---|
-| `glm_l` | 0.5269 | **0.5662** | 46 | **31** |
-| `llama_l` | 0.5911 | **0.5990** | 4 | **1** |
-| `llama_m` | 0.5704 | **0.5740** | 16 | **13** |
-| `deepseek_m` | 0.6122 | **0.6148** | 0 | 0 |
-
-F1 = mean per-sentence F1; unreadable items = replies, of 280, that the parser could not
-read (each scores 0). Only the four arms the fix moved are shown.
-
-`deepseek_m` moved without any item changing readability: it had answered `[[{...}]]`,
-doubly wrapped, and the old code dropped the inner list as a non-object and returned an
-**empty set** — scoring six found entities as *"correctly found nothing."*
-
-**My first version of the fix broke two answers to fix the others**, and only a
-before/after comparison of every arm caught it. Requiring *every* element of an array to
-be entity-shaped rejected `llama_s`'s otherwise-valid list that carried one stray bare
-string, and refused `deepseek_m`'s double wrap outright. The rule is now *at least one*
-entity-shaped element — enough to reject `[1]` from "See [1]", which is the case the
-shape test exists for, without demanding tidiness from an answer that has entities in it.
-
-**What is still refused, and should be:** prose, and arrays cut off mid-object. `glm_l`
-runs out of tokens on `[{"text": "Corfu International` with no closing bracket. There is
-no answer there, and mining one out of an explanation would be inventing it. 31 of its
-280 items are still unreadable and that is the model's behaviour, not the parser's.
-
-**The earlier claim that "both parser fixes change zero recorded numbers" was about the
-ROUND-1 fixes and remains true of them.** This is a different bug, found later, and it
-moves four arms.
-
-**No fingerprint could have caught it.** `normalizer_sha256` covered `normalize` and nothing
-else, on the reasoning that a normaliser has the most room to move a score. The reasoning
-was right and the scope was wrong — the bug lived in `prf`, which no hash covered. The
-scorer could change between two runs and neither fingerprint would say so. `scorer_sha256`
-now covers the whole rule.
-
-`rescore.py` was blind the same way: it re-records the *adapter file's* sha256, and the
-scoring rule lives in a shared module, so an extraction-only change — precisely this one —
-left the adapter hash identical. Adapters now expose `scorer_id()`.
-
-**No re-run was needed, and that was checked rather than assumed.** The 14 arms already
-finished were rescored from stored outputs and compared **per item** against the originals:
-13 differ on zero items, max |Δf1| = 0; `glm_l` differs on exactly 6, each by 1.0.
-
-### Consensus counted occurrences, not arms
-
-The first version of the consensus pass printed `25/17` — a consensus larger than the field
-— because one arm emitting the same span twice voted twice. The claim is "N independent
-arms agree", so the unit is the arm.
-
-### Every number here comes from one instrument
-
-All 27 measurement runs and all 28 dev runs were rescored into a single directory and
-verified to share one `items_sha256`, one adapter sha256, one `scorer_sha256` and one
-`parser_sha256`. The dev rescore changed **0 of 28** arms beyond 1e-6, as predicted (no dev
-arm had an unreadable item with empty gold).
+- **An unreadable answer scores 0.** The scorer is told whether the reply parsed, so *"the
+  model answered `[]`"* and *"the model's output could not be read"* are different results;
+  on the 12% of items whose gold is empty, only the first earns the empty-empty 1.0.
+- **The first balanced span that reads as entities wins**, scanned left to right, so
+  `[{...}] See [1]` and a malformed array followed by a valid one both yield the real answer.
+  A doubly wrapped answer, `[[{...}]]`, is read; an array counts when at least one element is
+  entity-shaped, which rejects `[1]` without demanding tidiness from an answer that has
+  entities in it.
+- **What is refused:** prose, and arrays cut off mid-object. `glm_l` runs out of tokens on
+  `[{"text": "Corfu International` with no closing bracket; 31 of its 280 items are
+  unreadable, and that is the model's behaviour, not the parser's.
+- **`scorer_sha256` covers the whole scoring rule**, not only the normaliser, and each
+  adapter exposes `scorer_id()`, so a rescored run records the rule that scored it.
+- **Consensus counts arms, not occurrences**: one arm emitting a span twice votes once.
+- **Every number here comes from one instrument**: all 28 measurement runs share one
+  `items_sha256` and one adapter sha256, and all 28 were rescored under one scoring rule
+  (`derived.with`: one `scorer_sha256`, one `parser_sha256`). The dev-slice runs were not
+  committed.
 
 ---
 
@@ -732,22 +601,10 @@ arm had an unreadable item with empty gold).
 
 This section is deliberately as detailed as the results.
 
-- ~~**`mistral_l` was never measured on the 280-item slice.**~~ **MEASURED 2026-10-01.**
-  It had been blocked for five review rounds: `mistralai/mistral-large-2512` is
-  rate-limited upstream on OpenRouter's shared pool
-  (`limit_source: upstream_provider_shared_pool`), litellm burns 6 internal retries per
-  call before returning 429, and the measured rate was **3 items in 7 minutes** — about
-  11 hours for the arm. Retried when the pool was quieter and it completed in ~2 h 20 m
-  at ~2 items/minute; the 429s never stopped (the proxy logged 70–134 per 10 minutes
-  throughout) and the retry ladder absorbed them, so this is "retried hard enough", not
-  "the limit lifted". **f1 0.5979**, parsed 279/280, $0.0419, `providers_seen`
-  `{Mistral: 280}`, fingerprint `dirty: false`.
-
-  It lands **13th of 28**, inside the `mistral_m` / `glm_m` / `llama_l` band the handover
-  predicted (0.591–0.594), slightly above it. The family is now **27**, so every Holm
-  threshold in §3.2 and §3.3 is stricter than it was: `span_marker` still separates from
-  **27 of 27** and `openai_m` from **20 of 27**, the same seven arms unseparated.
-  Its **dev** score on 56 items was **0.6005**; the measurement is 0.5979, a 0.0026 move.
+- **The pilot, from its own runs.** The 56-item dev-slice runs were never committed, so ρ,
+  the rank moves and the dev leader in §3.8 are computed from the dev items inside the
+  committed 280-item runs, the method the classification report uses. A separate dev-slice
+  run need not give the same figures.
 - **No confidence/calibration analysis.** Hosted arms have no `confidence`: logprobs were
   never requested. The classification report's calibration section has no counterpart here.
 - **Boundary errors are not separated from detection errors.** A prediction that overlaps a
@@ -817,13 +674,12 @@ for f in ../examples/ner-few-nerd/configs/arm_*_n200.yaml; do
   python scripts/experiment_run.py --config "$f"
 done
 
-python scripts/rescore.py --dataset-id few_nerd_280 --match fn_ --out data/runs-rescored
-EVAL_RUNS_DIR=data/runs-rescored python scripts/extraction_report.py --dataset-id few_nerd_280 --match fn_
+python tools/extraction_report.py --dataset-id few_nerd_280 --match fn_
 python scripts/family_test.py --dataset-id few_nerd_280 --a fn_span_marker_n200_v1 \
-    --against _n200_v1 --metric f1 --runs-dir data/runs-rescored
-EVAL_RUNS_DIR=data/runs-rescored python scripts/holdout_significance.py \
+    --against _n200_v1 --metric f1
+python scripts/holdout_significance.py \
     --dataset-id few_nerd_280 --exclude-dataset few_nerd_56 --metric f1 --match fn_
-EVAL_RUNS_DIR=data/runs-rescored python scripts/rank_stability.py \
+python scripts/rank_stability.py \
     --dataset-id few_nerd_280 --metric f1 --match fn_
 ```
 
@@ -832,30 +688,10 @@ gitignored. Dataset identity travels as `items_sha256`, not as bytes in the repo
 
 ---
 
-## Correction — every cost figure here was an estimate, and the estimate was wrong
+## Costs are what the provider billed
 
-**Added 2026-09-29.** The `$` figures originally published in this report were computed
-from `usd_per_mtok_in/out` in each arm's config: one price per model **alias**. An alias
-is not a price. OpenRouter routes each request to one of several upstream providers — a
-single run in this repo recorded Novita 262 times, Parasail 9, DeepInfra 6, Nebius 3 —
-and they charge differently, so the effective price is a routing-dependent mixture no
-config can state in advance.
+The `$` figures are what the provider reported charging, per call, in `usage.cost`, not a price computed from `usd_per_mtok_in/out` in each arm's config. A config holds one price per model **alias**, and an alias is not a price. OpenRouter routes each request to one of several upstream providers — a single run in this repo recorded Novita 262 times, Parasail 9, DeepInfra 6, Nebius 3 — and they charge differently, so the effective price is a routing-dependent mixture no config can state in advance. Across the 132 committed hosted runs of the six examples, the price table is wrong **per arm by 0.32× to 3.76×, in both directions** (0.67× to 3.76× in summarisation, classification and NER; the 0.32× is SummEval's `deepseek_l`).
 
-The provider reports what it actually charged, per call, in `usage.cost`. That was in
-every stored run all along and nothing read it. Measured across all four examples, the
-price table was wrong **per arm by 0.67× to 3.76×, in both directions**.
+**The error is not uniform, and that is what makes it matter.** `anthropic_l` and `anthropic_s` match the table exactly on every corpus, but one provider is not enough: `anthropic_m`, served by one, was billed 0.67× the table on every corpus, and the single-provider OpenAI and Qwen arms 0.71× to 3.76×. The cheap, multi-routed models are undercounted: 60 of the 66 multi-provider runs were billed at or above the table. So the table systematically **understates the cheap end of the field, and therefore inflates every price-ratio claim.** It also reorders arms by cost: on `few_nerd_280`, `glm_s` is the 3rd-cheapest arm by the table and the 10th by what was billed. Rankings by *quality* never depended on cost.
 
-**The error is not uniform, and that is what makes it matter.** Arms served by a single
-provider — the Anthropic models, notably — match the table exactly. The cheap,
-multi-routed models were undercounted. So the error systematically **understates the cheap
-end of the field, and therefore inflates every price-ratio claim.** It also reorders arms
-by cost: on `few_nerd_280`, `glm_s` is the 2nd-cheapest arm by the table and the 9th by
-what was billed.
-
-The figures above are corrected to what the provider billed. Rankings by *quality* are
-untouched — cost was never an input to them.
-
-**Fixed at cause:** all four adapters now record `usage.cost` when the provider supplies
-it and fall back to the table only when it is silent. Runs made before that fix keep the
-estimate in `cost_usd`; the billed figure is in `_meta.usage.cost` in each stored run, and
-these corrections were computed from it.
+The adapters of all six examples record `usage.cost` when the provider supplies it and fall back to the table only when it is silent. Runs made before the adapters recorded it keep the estimate in `cost_usd`; the billed figure is in `_meta.usage.cost` in each stored run.

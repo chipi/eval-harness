@@ -4,8 +4,7 @@
 
 *$19.07 is the 167 arms under `harness/data/runs/`. Including the six paired runs (four
 behind the registered prediction, $0.60; two on SummEval's text, $0.13) and the three hosted
-repeat runs ($0.43), the repo has spent $20.23. How the count grew, and every figure this
-report has corrected, is in [Corrections](#corrections).*
+repeat runs ($0.43), the repo has spent $20.23.*
 
 ---
 
@@ -36,8 +35,8 @@ a fine-tune does with fewer labels, were not measured.
 
 ### Supporting facts
 
-Every figure is as run here and computed from the stored runs; reproduction commands are at
-the end. The seven findings, each tested in every experiment that could test it, unpacked in
+Every figure is as run here and computed from the stored runs, except where the text says it
+is not; reproduction commands are at the end. The seven findings, each tested in every experiment that could test it, unpacked in
 §1–§7:
 
 | # | finding | evidence |
@@ -45,9 +44,9 @@ the end. The seven findings, each tested in every experiment that could test it,
 | **1** | **The dearest arm is never first** | `anthropic_l`, the dearest in five of six experiments, ranked 18th of 29 (summarisation), 5th of 30 (AG News), 2nd of 28 (DBpedia), 3rd of 28 (Few-NERD) and 3rd of 33 (SummEval), and was separated below the leader in three (summarisation, AG News, Few-NERD). SciFact had no frontier tier: its dearest, `glm_m`, is the dearest of twelve cheap models (2nd of 19). The dearest beat the cheapest in 5 of 6. All on each experiment's primary metric: re-measured against labels one reader corrected (AG News, [REPORT_CLASSIFICATION](REPORT_CLASSIFICATION.md)) and by SummEval-validated LLM judges (summarisation, [REPORT_SUMMARIZATION](REPORT_SUMMARIZATION.md) §3.8), `anthropic_l` is first on the point estimate in both; neither re-measurement is confirmed, and both primaries stand by decision. |
 | **2** | **The top is a group, not a podium** | The leader is separated from 100% (Few-NERD, 27 of 27), 90% (AG News), 84% (SummEval), 46% (summarisation), 33% (SciFact) and 30% (DBpedia) of its opponents. |
 | **3** | **Training exposure predicts who wins, not price — with one exception** | The best fine-tune ranked first in three of four experiments that had one and third-equal on DBpedia, two items behind; zero-shot models ranked last among learned arms; a BART trained on XSum finished 29th of 29 on CNN. Exception: on SummEval, UniEval, trained to judge, is separated below 23 of the 24 LLM judges (cause untested). |
-| **4** | **A pilot picks the wrong winner** | Pilot ρ was 0.68–0.90 where it can be recomputed, and the pilot's leader was not the full-run leader in 3 of the 5 experiments that ran one. |
+| **4** | **A pilot picks the wrong winner** | Pilot ρ was 0.70–0.96 where it can be recomputed, and the pilot's leader was not the full-run leader in 3 of the 5 experiments that ran one. |
 | **5** | **Some gold labels are disputed or noisy** | Where anyone checked: Few-NERD 34 of 768 gold types rejected by ≥80% of 26 learned arms; AG News 17 items most hosted arms miss: adjudicated by topic by one reader shown the hosted answer, the gold was wrong on all 17 and right on all 12 the fine-tunes missed, and on that gold every hosted LLM scores above every fine-tune; DBpedia's top eleven are separated by four items, three of them disputed, all three gold wrong on adjudication; SummEval's experts scored 41 of 44 groups of identical summaries differently. Candidates, not proven errors; two corpora were not checked. |
-| **6** | **The scorer is a model-sized lever** | Three of eight defects moved one arm further than the gap separating most of the field: DBpedia's label parser (8.6 accuracy points), Few-NERD's unparsed-as-empty rule (+0.0214 f1), SciFact's reasoning flag (0.6124 → 0.6991). |
+| **6** | **The scorer is a model-sized lever** | Three of eight defects moved one arm further than the gap separating most of the field: DBpedia's label parser (8.6 accuracy points), Few-NERD's unparsed-as-empty rule (+0.0214 f1), SciFact's reasoning flag (0.6124 → 0.6991); these impacts are not recomputed from the committed runs (§6). |
 | **7** | **Metric shape decides which diagnostics can be read** | On DBpedia at n = 10, 19.9 of 28 arms tied, so rank correlation measured arm names; the same tool is readable on Few-NERD. |
 
 The cross-cutting numbers behind the picks:
@@ -84,7 +83,7 @@ Two more facts about cost:
   the bert-base fine-tunes (76–90 ms) roughly 5×–140× faster, timed on a different machine, so
   good to about a factor of two. Generators run *slower*.
 - **The task shape sets the bill, not the model.** 104 input tokens per item for
-  classification against **3,926 for retrieval reranking** (38×); judging one article with its
+  classification (AG News; 153 on DBpedia) against **3,938 for retrieval reranking** (38×); judging one article with its
   16 summaries takes ~2,095.
 
 #### What to do with this
@@ -125,7 +124,8 @@ A cross-cutting report. Each of the five underlying reports answers *"which mode
 at this task"*; this one asks what is true in **all** of them, and it is written because
 several findings only became visible once there were several corpora to compare. Seven
 findings (§1–§7) and what they imply for **quality vs cost vs latency** in production (§8).
-Every number below is computed from the stored runs, not quoted from the reports.
+Every number below is computed from the stored runs, not quoted from the reports, except
+where the text says it is not.
 
 | dataset | task | primary metric (shape) | report |
 |---|---|---|---|
@@ -148,8 +148,8 @@ a gap such as "0.0071" is in the units of the row's own metric.
 
 *The rest of this report unpacks each finding with its full evidence, and
 [§8](#8-the-economics-what-money-actually-buys) has the complete economics. Each finding links
-to the experiment report it comes from; those reports carry the per-task detail, the
-corrections, and what each one could not measure. What this report cannot say is
+to the experiment report it comes from; those reports carry the per-task detail and
+what each one could not measure. What this report cannot say is
 [listed at the end](#what-this-cannot-say).*
 
 ---
@@ -233,7 +233,7 @@ arm in parentheses is a smaller alternative, with its own figures in parentheses
 | Classification · DBpedia | `bert_base_fy` | 0.9857 | 87 ms‡ | `qwen_m` | **0.9929** | $51 | 0.85 s |
 
 *‡ Timed on a 4-core Linux container. Every other figure in this table was timed on a
-12-core Intel Mac, and the Linux machine ran `bart_l` 1.7× faster than the Mac did
+12-thread (6-core) Intel Mac, and the Linux machine ran `bart_l` 1.7× faster than the Mac did
 (`harness/data/runs-linux/README.md`).*
 
 Better or equal quality, zero inference cost, and **10–270× lower latency** on the
@@ -470,7 +470,7 @@ the price of any one model:
 *SummEval adds $9,169 to the first and $61,085 to the second. An item there is a whole
 article with 16 summaries, the prompts are long (§8), and its bills are October's, after
 prices had moved in both directions
-([REPORT_SUMMEVAL §6](REPORT_SUMMEVAL.md#6-what-changed-while-measuring)). Without it the
+([REPORT_SUMMEVAL §6](REPORT_SUMMEVAL.md#6-conditions-of-this-run)). Without it the
 two tiers were $15,018 and $39,809.*
 
 For someone with a DGX, tier 2 collapses into tier 1 economically: **the marginal cost of
@@ -527,9 +527,10 @@ labelled data, the generalist is not a compromise — it is the only thing that 
    entity type**, `other` (30–57% across the 24 hosted arms, for a prompt that defines no
    type). AG News is starker: three
    fine-tunes agree with the gold on 12–14 of 17 items that ≥80% of the hosted field
-   disputes, the best hosted arms on 0–3, and that is almost the whole lead — 8 of the 17 a
-   learnable convention (tech-company business news filed as `Sci/Tech`), 7 plain
-   mislabels, 2 ambiguous. And summarisation shows the other face of it: BART trained on another
+   disputes, the best hosted arms on 0–3, and that is almost the whole lead. Adjudicated by topic by one reader shown the hosted
+   answer, the gold was wrong on all 17: the labels follow the source feed's section
+   (tech-desk company news filed as `Sci/Tech`, non-US news as `World`), not the article's
+   topic. And summarisation shows the other face of it: BART trained on another
    corpus's summaries finishes last. In production, *your* conventions are what you want
    — but the measured win does not transfer to a different labelling standard.
 3. **"Free" means zero inference cost and nothing else.** No labelling, no training
@@ -559,8 +560,8 @@ five experiments where it ran.
 
 | experiment | dearest paid arm | billed cost, whole run (N items) | its rank among all arms |
 |---|---|---|---|
-| Summarisation · CNN/DM | `anthropic_l` | $1.9652 (200) | **18 of 29** (16 of 25 before the distilled BARTs) |
-| Classification · AG News | `anthropic_l` | $0.1750 (200) | 5 of 30 (3 of 28 before the bert-base arms) |
+| Summarisation · CNN/DM | `anthropic_l` | $1.9652 (200) | **18 of 29** |
+| Classification · AG News | `anthropic_l` | $0.1750 (200) | 5 of 30 |
 | Classification · DBpedia | `anthropic_l` | $0.3784 (280) | 2 of 28 |
 | Extraction · Few-NERD | `anthropic_l` | $0.6897 (280) | 3 of 28 |
 | Retrieval · SciFact | `glm_m` | $0.4576 (200) | 2 of 19 |
@@ -628,10 +629,8 @@ column is the free arm's score minus the best paid arm's, in that experiment's m
 | Judging · SummEval | `unievalpub`, 3.1 GB (UniEval, trained for the task, on its own inputs) | 24 of 33 | −0.1680 vs `openai_l`, **separated**, and from 23 of 24 judges |
 
 Read the third row before the first two. **`bart_l` "wins" summarisation by 0.0001** — it
-is first on the leaderboard and tied with a hosted model in every sense that matters. An
-earlier draft of this table reported +0.0176 there, because it compared against
-`anthropic_l` rather than against the best paid arm; the corrected number turns an
-apparent win into the winner's-curse case of §4.
+is first on the leaderboard and tied with a hosted model in every sense that matters. The gap to the best paid arm is the
+winner's-curse case of §4.
 
 So: **one separated win (Few-NERD), four statistical ties — two led by the free arm (AG
 News, summarisation) and two trailed by it (SciFact, DBpedia) — and one loss, SummEval,
@@ -641,7 +640,7 @@ narrower and stronger than "small models win":
 > **A small model fine-tuned on your data wins or ties against every hosted LLM as run here
 > (one prompt, zero-shot), for $0** — a separated win on Few-NERD, a statistical tie everywhere else.
 > A small model trained for a different task, on a different corpus, or not at all loses
-> to the best LLMs on Few-NERD, AG News, DBpedia and SummEval — one trained for the same task
+> to the best LLMs on summarisation, Few-NERD, AG News, DBpedia and SummEval — one trained for the same task
 > on a different corpus, one trained on the same corpus for a different task (BARTScore on
 > SummEval, below all 24 judges), and the zero-shot models. **Two exceptions:** on SciFact
 > two encoders trained for retrieval but not on SciFact tie the paid arms, and UniEval,
@@ -661,7 +660,7 @@ large tier was the optimum once, and there it cannot be separated from five othe
 **The caveat the NER report insists on:** 57% of `span_marker`'s margin over `openai_m`
 comes from one entity type the prompt never defined (30–57% across the hosted arms), and up
 to 38% of its lead is agreement with annotation the rest of the field rejects (an upper
-bound). AG News now shows the same
+bound). AG News shows the same
 thing at larger scale: three fine-tunes agree with the gold on 12–14 of the 17 items that
 ≥80% of the hosted field rejects, and that is nearly their whole lead
 ([classification §3.4](REPORT_CLASSIFICATION.md)). Fine-tuned models partly learn *your
@@ -679,21 +678,18 @@ the full run (1 = identical order). ✓ marks a pilot that picked the true leade
 
 | experiment | ρ, dev-slice vs full ranking (Spearman) | dev slice (items) | dev leader | true leader | dev leader's rank on the full run |
 |---|---|---|---|---|---|
-| Extraction · Few-NERD | 0.895 over the 27 arms measured then (0.903 with all 28) | 56 | `span_marker` | `span_marker` | 1 of 28 ✓ |
-| Classification · AG News | 0.677 committed (0.852 uncommitted) | 20 | `anthropic_l` | `bert_base_ta` | **5 of 30** (3 of 28 before the bert-base arms) |
+| Extraction · Few-NERD | 0.963 committed | 56 | `span_marker` | `span_marker` | 1 of 28 ✓ |
+| Classification · DBpedia | 0.768 committed | 56 | `bert_base_fy` | `qwen_m` | **3rd= of 28**, 0.0071 behind, not separated |
 | Retrieval · SciFact | 0.756 (dev runs not committed) | 40 | `llama_s` | `glm_s` | **10 of 19**, 0.0265 behind, not separated |
-| Classification · DBpedia | 0.757 committed (0.728 uncommitted) | 56 | `anthropic_l` | `qwen_m` | 2 of 28 |
 | Summarisation · CNN/DM | 0.722 (hosted dev runs not committed) | 20 | `bart_l` | `bart_l` | 1 of 29 ✓, not separated from `deepseek_m` (0.0001) |
+| Classification · AG News | 0.701 committed | 20 | `anthropic_l` | `bert_base_ta` | **5 of 30** |
 
-*The ρ column is from dev-slice runs made before the six local arms existed, and those dev
-runs were never committed — so ρ cannot be extended to the new arms, and the AG News and
-DBpedia values cannot be re-derived from this repository. Recomputing the dev ranking from
-the dev items inside the committed full runs gives 0.677 and 0.757 on the field as it stood
-then (28 and 27 arms; 0.701 and 0.768 with today's), with a 10- to 13-way tie at the top of
-the dev slice; see
+*The Few-NERD, AG News and DBpedia values are recomputed from the dev items inside the
+committed full runs (28, 30 and 28 arms); the dev-slice runs themselves were never committed. The top of the
+AG News dev slice is a 12-way tie; DBpedia's is led by `bert_base_fy` alone, by one item; see
 [`KNOWN_ISSUES.md`](internal/KNOWN_ISSUES.md). The last two columns are from committed runs.*
 
-**ρ between 0.68 and 0.90 where it can be recomputed — and the pilot picked a different
+**ρ between 0.70 and 0.96 where it can be recomputed — and the pilot picked a different
 leader from the full run in three of the five experiments that ran one.** On SciFact it
 picked the tenth by point estimate, 0.0265 behind the leader and not separated from it: a
 wrong winner inside a tie, which is the point.
@@ -704,7 +700,7 @@ correlation says the *ordering* is broadly preserved. Selecting one arm depends 
 ordering at the very top, which is where the noise concentrates and where the field is
 tied (§2).
 
-Related, from the summarisation study: BART's lead over the best LLM was **0.0737 at n=20**
+Related, from the summarisation study: BART's lead over the best LLM was **0.0737 at n=20** (hosted dev runs not committed)
 and **0.00008 at n=200** — a 900× shrink. Same arms, same metric, more data.
 
 ### 5. Some gold labels are disputed or noisy, in every corpus that was checked
@@ -719,7 +715,7 @@ mistake, so those labels are suspect. It flags candidates, it does not prove an 
 |---|---|---|---|
 | Few-NERD | **34 of 768** gold entities (4.4%) | the span is found but ≥80% of the 26 learned arms give it another type | consensus pass |
 | DBpedia | 3 items | 24–25 of the 26 learned arms dispute the label; the top eleven arms are separated by four items. Adjudicated by one reader shown the hosted answer: the gold was wrong on all three | consensus pass |
-| AG News | 17 items | ≥80% of the hosted field disputes the label (19 at 75%, 20 at 70%) — the fine-tuned lead is concentrated in them; revised a published finding twice | consensus pass, hosted arms only |
+| AG News | 17 items | ≥80% of the hosted field disputes the label (19 at 75%, 20 at 70%) — the fine-tuned lead is concentrated in them. Adjudicated by one reader shown the hosted answer: the gold was wrong on all 17 | consensus pass, hosted arms only |
 | CNN/DailyMail | **not checked** | — | — |
 | SciFact | **not checked** (qrels incompleteness unmeasured) | — | — |
 | SummEval | 41 of 44 groups of word-for-word identical summaries | the copies received different expert mean scores (REPORT_SUMMEVAL §3.7) | identical-text check, not a consensus pass |
@@ -748,7 +744,7 @@ under-counts label errors — and a leaderboard that includes them over-counts t
 
 ### 6. The instrument was broken before the models got interesting — in five of six
 
-*Sources: the Corrections section of each report, and [`NOTES.md`](internal/NOTES.md), 70 entries*
+*Sources: each report's instrument notes, and [`NOTES.md`](internal/NOTES.md), 70 entries*
 
 Defects found **by** running the experiments, each of which changed published numbers or
 would have:
@@ -760,9 +756,11 @@ would have:
 | Classification · DBpedia | the **label parser** is worth **8.6 accuracy points** to one arm | wider than most of the field's spread |
 | Extraction · Few-NERD | an unreadable answer scored **1.0** on empty-gold items | +0.0214 f1 to one arm |
 | Extraction · Few-NERD | `normalizer_sha256` covered the normaliser, not the scorer | a scorer change was invisible in the fingerprint |
-| Retrieval · SciFact | the adapter never disabled reasoning, unlike the other three | one arm went **0.6124 → 0.6991** once fixed |
-| all | cost computed from a price table, not what was billed | wrong per arm by 0.67×–3.76× |
+| Retrieval · SciFact | the adapter never disabled reasoning, unlike the other examples | one arm went **0.6124 → 0.6991** once fixed |
+| all | cost computed from a price table, not what was billed | wrong per arm by 0.32×–3.76× |
 | all | Spearman had no tie correction; ranks broke ties **alphabetically** | ρ measured the alphabet on saturated tasks |
+
+*The impact column is not recomputed from the committed runs.*
 
 Three of these — the parser, the unparsed-as-empty rule, the reasoning flag — moved a
 single arm by **more than the gap separating most of the field**. SummEval adds none:
@@ -792,12 +790,10 @@ Not which model wins — which *tools* work.
 | ranked list (nDCG) | rarely | but **corpus ≠ items**, which breaks fingerprinting |
 | rank correlation per item (Kendall τ-b) | never here (no two of the 33 SummEval arms share a mean τ to four decimals) | the *judge's* scores tie constantly (integer 1–5), so the τ-b tie correction is part of the instrument; per-item τ makes the paired tests apply directly, and split-half rankings are readable (ρ 0.90 at 20 articles per half) |
 
-Concretely: on DBpedia at n=10, **19.9 of 28 arms tied** (19.8 of 27 before the fine-tuned arm), so the rank statistic was
+Concretely: on DBpedia at n=10, **19.9 of 28 arms tied**, so the rank statistic was
 correlating *arm names*. Requiring a unique winner, **354–399 of 400 resampling draws are
 undecided at every size tested, and in every decided draw the two halves crown different
-arms** — that corpus has no winner to agree about, and every earlier stability figure for
-it was an artifact of alphabetical tie-breaking. (At k=27 it was 400 of 400 undecided; the
-fine-tuned arm breaks a few ties without producing agreement.)
+arms** — that corpus has no winner to agree about.
 
 The same tool on Few-NERD reports `arms tied 1st = 1.0` at every size and is perfectly
 readable. **The tool was never wrong in general; it was wrong for a metric shape.**
@@ -828,8 +824,7 @@ metric; the percentage divides it by the best paid arm's score:
 | Classification · DBpedia | 24 | +0.0094 | +0.9% | r = 0.40 |
 | Summarisation · CNN/DM | 24 | −0.0013 | **−0.4%** | r = −0.07 |
 
-*Every fit uses the rescored Few-NERD runs and the corrected-parser SciFact runs. Every fit
-is recomputed from the committed runs and the billed costs by `check_report_claims.py` (SummEval: slope 0.03989 ÷ best paid score 0.5398 =
+*Every fit is recomputed from the committed runs and the billed costs by `check_report_claims.py` (SummEval: slope 0.03989 ÷ best paid score 0.5398 =
 7.39%).*
 
 **An order of magnitude more money buys between nothing and seven percent.** On
@@ -876,7 +871,7 @@ One row per experiment, since each says something different:
 
 - **Summarisation: $9,826/month buys −8.9%** against free, while the best paid arm, at
   **$191/month, gets within −0.0% of free.** The dearest arm is beaten by a model costing
-  51× less.
+  52× less.
 - **AG News: $875/month buys −6.3%** against free. The gap to the best paid arm
   ($351/month) is −5.2%, so here the money is buying a *deficit* either way — with the
   caveat that the free arms' lead is largely agreement with disputed gold labels.
@@ -917,9 +912,8 @@ Holm test between the two arms.
 | Classification · DBpedia | `bert_base_fy` 438 MB | 0.9857 | 3= | `qwen_m` | 0.9929 | $51 | paid wins +0.7%, **not separated** |
 | Judging · SummEval | `unievalpub` 3.1 GB | 0.3717 | 24 | `openai_l` | 0.5398 | $6,350 | **paid wins +45.2%**, separated |
 
-*The SciFact rank is 8th against the corrected-parser runs in `data/runs-reparsed/`, which
-are the retrieval report's record (`qwen_s` 0.7183). A plain `leaderboard.py` over
-`data/runs/` reads the original-parser `qwen_s` (0.7338) and puts `e5_base` 9th.*
+*The SciFact rank is over the committed runs (`qwen_s`
+0.7183).*
 
 **DBpedia has a zero-shot control at the same price:** `bart_mnli` scores **0.6286** and
 the fine-tuned `bert_base_fy` **0.9857** — **+0.357 from training exposure**, on a task where
@@ -1000,10 +994,10 @@ re-timed Linux figures for the BARTs, which are medians from `harness/data/runs-
 | Extraction · Few-NERD | **r = −0.19** | 0.79 – 10.25 s | `gliner` 0.17 s |
 | Summarisation · CNN/DM | r = −0.18 | 1.28 – 25.04 s | `bart_s` 3.39 s (`bart_l` 6.26 s), one Linux machine; `bart_l` 11.01 s on the Mac |
 | Classification · DBpedia | r = +0.02 | 0.44 – 12.35 s | `bert_base_fy` **0.087 s** |
-| Retrieval · SciFact | r = +0.03 | 1.14 – 17.48 s | `bge_small` 0.03 s |
+| Retrieval · SciFact | r = +0.03 | 1.14 – 17.48 s | `minilm` 0.017 s (`bm25` 0.022 s, `bge_small` 0.029 s) |
 | Classification · AG News | r = +0.20 | 0.44 – 7.66 s | `bert_mini` **0.007 s** |
 
-Essentially uncorrelated in five experiments, and negative twice. **Price is not a proxy
+Essentially uncorrelated in five experiments, and negative in three (−0.18, −0.19 and SummEval's −0.47). **Price is not a proxy
 for latency**, and the spread *within* the hosted field (up to 28×, on DBpedia) dwarfs
 anything cost predicts. The exception is SummEval, where the dearer judges were faster
 (r = −0.47); this report does not measure why, and its judges were called from a different
@@ -1025,16 +1019,16 @@ Cost per item varies more across *tasks* than across *models*:
 
 | task | input tokens per item | why |
 |---|---|---|
-| classification | ~104 | one snippet in, one word out |
+| classification | ~104 (AG News), ~153 (DBpedia) | one snippet in, one word out |
 | NER | ~125 | one sentence in, a short JSON array out |
-| summarisation | ~776 | a full news article in |
+| summarisation | ~780 | a full news article in |
 | LLM judging (SummEval) | ~2,095 | an article and its 16 summaries in, 64 scores out as JSON |
-| **retrieval reranking** | **~3,926** | the prompt carries **20 full abstracts** |
+| **retrieval reranking** | **~3,938** | the prompt carries **20 full abstracts** |
 
 A reranking prompt costs **38× more per item** than a classification prompt on the same
-model at the same price (3,926 vs 104 input tokens, measured). Before shopping for a
+model at the same price (3,938 vs 104 input tokens on AG News, measured). Before shopping for a
 cheaper model, check whether the *architecture* is what is expensive: on the SciFact dev
-slice, halving the rerank depth from 20 to 10 cut input tokens from 3,926 to 2,027 — a
+slice (dev-slice runs not committed), halving the rerank depth from 20 to 10 cut input tokens from 3,926 to 2,027 — a
 **48% bill reduction** — for 0.011 nDCG@10. Both halves of that comparison ran under the
 same (pre-reasoning-fix) instrument, so the delta is internally valid but is not
 comparable to the measurement table above.
@@ -1158,102 +1152,14 @@ something other than the leaderboard.
   They ignore volume discounts, batch pricing, caching, and rate limits — all of which a
   real deployment at that scale would negotiate or hit. Treat them as *ratios* that are
   sound, and absolute figures that are indicative.
-- **Prices are two snapshots**, taken 2026-09-28/29 for the first five experiments and
-  2026-10-18 for SummEval, through one reseller, and several had moved in between. Model
+- **Prices are two sets of bills**, what the provider billed per call when each run was made:
+  2026-09-25 to 2026-10-01 for the first five experiments and 2026-10-18 for SummEval, through one reseller, and several had moved in between. Model
   pricing moves fast and the ordering of vendors is the least durable finding here. The
   *structure* — that the dearest model tested is not the best, and that near the top the price
   range sits inside differences this much data cannot resolve — is what is expected to
   survive.
 
-## Corrections
-
-Every figure this report stated wrongly, or stated and later changed, kept here with its
-date so the sections above can describe only the present state. The append-only journal of
-how each finding arrived — including the ones that were retracted — is
-[`NOTES.md`](internal/NOTES.md).
-
-### 2026-09-29
-
-- **The open-weight split was 13/11 and is 14/10.** The first version of the tier section
-  inferred openness from OpenRouter's endpoint list — *many independent providers implies
-  distributable weights; one provider implies closed*. The first half holds; **the second
-  does not.** `mistral_l` is served only by Mistral and was filed as proprietary, but
-  `mistralai/Mistral-Large-3` is on HuggingFace under **Apache-2.0**. A vendor can publish
-  weights and still be the only one serving them. Found by review; every figure in that
-  section was recomputed.
-- **DeepSeek-V4.1-Flash's checkpoint is 510 GB; the ~765 GB first stated was derived, never measured.**
-  *This report said ~765 GB until 2026-09-29, and that number was never measured.* It
-  came from multiplying HuggingFace's per-dtype **element** counts by one byte for the
-  763B elements tagged `I8`. Those tensors are packed at roughly four bits: 763.2B
-  parameters occupy 510.3 GB across 48 safetensors shards, which is **0.67 bytes per
-  parameter**. The same mistake inflated DeepSeek-V4-Pro (1,602 → 865 GB) and
-  DeepSeek-V4-Flash (292 → 160 GB); the other 20 models in the capture are unaffected,
-  their derived and measured sizes agreeing to within 3%. The conclusion did not move —
-  510 GB is still far beyond one 128 GB box — but the figure was wrong by half again,
-  and it was wrong because it was computed rather than read. Found by external review;
-  the evidence capture now records measured bytes and `check_model_facts.py` reads the
-  claim out of this file rather than out of its own source.
-
-### 2026-09-30 — the six local arms that could not run on the original machine
-
-They need torch ≥ 2.6 and ran at $0. They changed two headline claims and several rows;
-no conclusion about price reversed.
-
-- **"Every model fine-tuned on its dataset ranked first" was 3 of 3.** With eight such arms
-  it is true of the best one per experiment in three of four and not of every one:
-  distillation costs `bart_m` and `bart_s` a few places without a separable loss, and
-  DBpedia's fine-tune is not separated from the top group and does not beat it. On AG News
-  the fine-tuned lead is now measured as concentrated in 17 items the hosted field mostly
-  gets wrong.
-- **The free-vs-paid summary read "two clear wins, two ties, one loss",** and the loss was
-  DBpedia — where the only free arm that had run was `bart_mnli`, a zero-shot NLI model,
-  because the fine-tuned checkpoint would not load. Run on a machine with torch ≥ 2.6, the
-  fine-tune is not separated from the top group.
-- **DBpedia's free row was `bart_mnli`, zero-shot, 25th, "paid wins +58%".** The fine-tuned
-  checkpoint is a pickle that `transformers` refuses below torch 2.6
-  ([CVE-2025-32434](https://github.com/advisories/GHSA-53q9-r3pm-6pq6)) and the original
-  machine had no newer torch. The §8 bullet likewise said "the one experiment where paying
-  beats free by a mile (+58%)"; that was against a zero-shot arm, because the fine-tuned one
-  had not run.
-- **DBpedia's row in the self-hosting table read "blocked — LLM by default".** The ML arm
-  loads on any machine with torch ≥ 2.6, and ties. DBpedia's $0 answer used to need a 52 GB
-  open-weight LLM; a 438 MB classifier on a CPU reaches the same score.
-- **The best open-weight vs best proprietary table had two errors, both found by external
-  review.** The summarisation row read **"yes — open wins"**. That rested on an UNCORRECTED
-  pair test of a pair nobody registered in advance — the winner's curse the rest of this
-  repo is built to avoid. Under Holm over `deepseek_m`'s declared family it is not
-  separated (the note then said p = 0.0070 against 0.0063; `family_test.py` gives
-  p = 0.0069 against 0.0050 on 2026-10-19, and neither separates). The point estimate
-  still favours the open-weight model by 0.0192. The SciFact row named `glm_m` as "best
-  proprietary"; **GLM is open-weight** — MIT. The genuine best proprietary reranker is
-  `qwen_s` at 0.7183, a gap of 0.0254 that its own test also cannot resolve (p = 0.0283
-  against a 0.0050 threshold). A line under the table then said "won outright on
-  summarisation" after the correction had retracted exactly that.
-- **AG News's cheapest-tied row read "9 arms, `gemma_s`, 82× cheaper",** around `bert_mini`.
-  The new leader, a bert-base fine-tune, is separated from every paid arm but `anthropic_m`,
-  the second-dearest, so the saving there is 2.5×. The separation table likewise read
-  `bert_mini`, 18 of 27, a group of 9; the new leader's group is two other fine-tunes and
-  `anthropic_m`, the last at p = 0.022 against a 0.0167 threshold.
-- **The `bert_mini` latency ratio read 44×–766×,** computed from 10 ms rather than the
-  measured 7.11 ms; it is 61×–1,078×.
-- **The SciFact rank in the free-vs-paid table read 9th,** from a plain `leaderboard.py` over
-  `data/runs/`, which reads the original-parser `qwen_s` (0.7338). It was changed to 8th,
-  against the corrected-parser runs, without a note.
-- **Local arms: 16 task-specific, 10 until 2026-09-30.**
-
-### 2026-10-01
-
-`fn_mistral_l`, the NER arm that had been rate-limited, finally got past its upstream rate
-limit for $0.0419.
-
-### Arm counts and the bill
-
-The report said 127 arms until 2026-09-30, when six local arms that need torch ≥ 2.6 were
-run at $0; 133 until 2026-10-01, when `fn_mistral_l` ran; 134 until SummEval's 31 arms were
-run for $7.03 (its free arms on 2026-10-15, its judges on 2026-10-18); and 165 until
-2026-10-19, when its two UniEval arms, run on 2026-10-18, were added at $0. That is 167.
-
-### 2026-10-14 — scope of the summarisation experiment
+## Scope of the summarisation experiment
 
 The summarisation experiment's 200 articles are the first 200 rows of the CNN/DailyMail test
 split, and the split puts CNN's articles first: they are **all CNN articles**, while the
@@ -1265,73 +1171,11 @@ conclusions travel
 among the five local arms **every comparison transfers**, including the house-style control
 (BART on XSum still last). The hosted arms were not re-run, so **the summarisation price
 verdicts are CNN-only**. Every other experiment was calibrated the same way and needed no
-correction: all seven calibration figures then, and all eleven with SummEval's four, agree
+correction: all eleven calibration figures (seven for the first five experiments, four for SummEval) agree
 with the published values on their averages within the protocol's allowance, and ten of the
 eleven inside their own interval; LEAD-3 is the exception, outside its interval and inside
 the allowance ([`docs/PROTOCOL.md`](../docs/PROTOCOL.md)), and SummEval's ROUGE-L agrees only
 within the allowance on one dimension (REPORT_SUMMEVAL §5).
-
-### 2026-10-15
-
-The SciFact leader's separation count read 7 of 18 and a group of 11; the default-setting
-figure, 6 of 18 and a group of 12, is the one §8's tie table uses.
-
-### 2026-10-18 — SummEval added as the sixth experiment
-
-Two figures stated with it were wrong and were corrected on 2026-10-19:
-
-- **A 64 GB machine matched the unlimited-hardware answer on "four of five" tasks.** That
-  was the 128 GB count; at 64 GB both summarisation and SciFact lose, so it was three of five.
-- **Few-NERD's cost slope read +0.0405 and r = 0.49.** It had been fitted to the un-rescored
-  runs in `data/runs/`, while every other Few-NERD figure here is the rescored one. Fitted to
-  the rescored runs it is +0.0407 and 0.50, and the percentage does not move.
-
-### 2026-10-19 — UniEval, and a review of this report against the five reports
-
-- **Finding 3 as worded — "a free arm trained for the task never loses" — was broken** by the
-  UniEval arms, run on 2026-10-18 and written in on 2026-10-19: on SummEval, UniEval is
-  separated below 23 of the 24 judges and ties only the weakest. The finding, the
-  free-vs-paid summary clause ("where no free arm measured was trained for the task") and
-  the table of the best free arm per experiment now say so (§3).
-- **The 64 GB column was rebuilt.** It had listed Llama at int4 for AG News and
-  summarisation and Gemma-4-31B at int8 for SummEval, each with its as-served score, which is
-  no evidence about the quantised build (REPORT_SUMMARIZATION says so for Llama at 4 bits;
-  REPORT_CLASSIFICATION marks AG News's 64 GB answer "Not measured"). It now lists the best
-  model that fits 54.4 GB at native precision. The headline "on four of the six tasks the
-  best model that fits a 64 GB machine scored the same as the unlimited-hardware answer"
-  became two of six, plus two where only an unrun int4 or int8 build would match; "five of
-  six ≤64 GB answers equal the ≤128 GB one" became two of six; and the cost of capping the
-  budget, "0.0078 and 0.0074", became 0.0205 on summarisation (separated; p = 0.0026 against
-  0.0042) and 0.0614 on SummEval (separated) as well as 0.0074 on SciFact and 0.0200 on AG
-  News (neither separated).
-- **"A proprietary model never separated from the best open-weight model" was false read
-  literally:** `anthropic_l` and `anthropic_m` are separated below `deepseek_m` on
-  summarisation. What the table shows, and what is now stated, is that the best proprietary
-  arm was never separated from the best open-weight arm.
-- **"The dearest arm is never first, six times out of six" and "never buy the most expensive
-  arm" are scoped.** SciFact's field had no frontier tier, so its dearest arm is the dearest
-  of twelve cheap models; the claim is about `anthropic_l` in the five experiments where it
-  ran, and the dearest beat the cheapest in 5 of 6.
-- **"If you can label a few thousand examples" and "It will be better, free, and faster" were
-  removed.** No report supports a label count (the public fine-tunes were trained on their
-  corpora's full training splits; fewer-label behaviour was not measured), and the fine-tune
-  was slower on summarisation (11.0 s against 1.6 s) and two items behind on DBpedia.
-- **The "71st percentile" (and "70th across the first five") could not be reproduced.** It
-  had no computation behind it. Recomputed from the committed runs it is the 67th percentile
-  with ties counted half and the 72nd with ties counted fully in `glm_m`'s favour.
-- **Finding 5 was titled "The gold is wrong or noisy".** The DBpedia disputes are one rater's
-  reading and unadjudicated; the finding now says disputed or noisy, candidates and not
-  proven errors.
-- **AG News's rented-API choice was framed around the fine-tune leader's tie group,** whose
-  only paid member is `anthropic_m`. The report's advice is the paid leader's group:
-  `anthropic_m` is separated from only 3 of the 23 other hosted arms, and the cheapest it is
-  not separated from is `gemma_m` ($8 per 1M items).
-- **SummEval's 93% and 64% were stated without their caveats:** the 93% is the best of 24
-  chosen on the same articles (92% held out), a no-model system-identity lookup reaches 63%,
-  the summaries are 2019-era, reasoning was off, and the judges ranked listwise where UniEval
-  scores pointwise.
-- **The executive summary was rewritten** as a decision and per-task picks; the dated update
-  banners that preceded it are the entries above.
 
 ---
 
@@ -1348,12 +1192,12 @@ python scripts/family_test.py --dataset-id few_nerd_280 \
 python scripts/holdout_significance.py --dataset-id few_nerd_280 \
     --exclude-dataset few_nerd_56 --metric f1 --match fn_
 # §5 — gold errors
-python scripts/extraction_report.py --dataset-id few_nerd_280 --match fn_
-python scripts/classification_report.py --dataset-id dbpedia_280
+python tools/extraction_report.py --dataset-id few_nerd_280 --match fn_
+python tools/classification_report.py --dataset-id dbpedia_280
 # §7 — tie behaviour by metric shape
 python scripts/rank_stability.py --dataset-id dbpedia_280 --metric correct --match db_
 # SummEval's derived figures (split-half, price vs quality, ladders, dimensions)
-python scripts/summeval_analysis.py
+python tools/summeval_analysis.py
 ```
 
 Terms, models, datasets and tests are defined in

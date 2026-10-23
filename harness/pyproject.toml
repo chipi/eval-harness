@@ -35,15 +35,47 @@ test = ["rouge-score"]
 evh = "evaluation_harness.cli:main"
 
 [project.urls]
-Homepage = "https://chipi.github.io/eval-harness/"
+Homepage = "https://evals.humancopilot.eu/"
 Source = "https://github.com/chipi/eval-harness"
 
 [tool.setuptools]
-packages = ["evaluation_harness", "evaluation_harness.schemas"]
-package-dir = {"evaluation_harness" = "scripts", "evaluation_harness.schemas" = "schemas"}
+packages = ["evaluation_harness", "evaluation_harness.schemas", "evaluation_harness.catalog_assets", "evaluation_harness.tutorial"]
+package-dir = {"evaluation_harness" = "scripts", "evaluation_harness.schemas" = "schemas", "evaluation_harness.catalog_assets" = "catalog_assets", "evaluation_harness.tutorial" = "tutorial"}
 
 [tool.setuptools.package-data]
 "evaluation_harness.schemas" = ["*.json"]
+"evaluation_harness.catalog_assets" = ["*.css", "*.js", "*.svg"]
+# The GUIDE's kit: `evh init --tutorial` copies it into a new project.
+"evaluation_harness.tutorial" = ["*.md", "*.txt", "*.csv", "judge_panel.yaml", "tickets/*.txt", "gold/*.txt", "configs/*.yaml", "goals/*.yaml", "fields/*.yaml", "scorers/*.yaml"]
 
 [tool.setuptools.dynamic]
 version = {attr = "evaluation_harness._version.__version__"}
+
+[tool.mypy]
+# 3.10, not the package's 3.9 floor: mypy 2.x no longer type-checks for 3.9. The 3.9 floor is
+# held by CI's package job, which installs the wheel on 3.9 and runs `evh self-test`.
+python_version = "3.10"
+# The scripts import each other as top-level modules (`from _common import …`), the way they
+# run from a checkout; scripts/ has an __init__.py only for the installed package. tests/ and
+# tools/ are this repository's tests and report checks: not in the package, checked the same.
+mypy_path = "scripts,tests,tools"
+explicit_package_bases = true
+files = ["scripts", "tests", "tools"]
+exclude = ['^scripts/__main__\.py$', '^scripts/__init__\.py$']
+ignore_missing_imports = true
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+
+[tool.interrogate]
+# podcast_scraper's exemptions and its bar: every public function, class and method has one.
+ignore-init-module = true
+ignore-init-method = true
+ignore-magic = true
+ignore-semiprivate = true
+ignore-private = true
+ignore-property-decorators = true
+ignore-module = true
+ignore-nested-functions = true
+exclude = ["scripts/test_*.py", "tests/test_*.py", "tests/self_test.py"]
+fail-under = 100

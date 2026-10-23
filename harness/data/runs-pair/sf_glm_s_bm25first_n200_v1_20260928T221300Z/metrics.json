@@ -6,8 +6,17 @@
     "source": "git"
   },
   "config_id": "sf_glm_s_bm25first_n200_v1",
-  "created_at": "2026-09-28T22:23:08Z",
+  "created_at": "2026-10-23T13:59:00Z",
   "dataset_id": "scifact_200",
+  "derived": {
+    "at": "2026-10-23T13:59:00Z",
+    "from": "sf_glm_s_bm25first_n200_v1_20260928T221300Z",
+    "kind": "reparse",
+    "with": {
+      "parser": "examples/_shared/retrieval.parse_ranking",
+      "scorer_sha256": "9eaf5c34160a937dcca20757f75ef3a41d8ec9ac7e0599477797cda368e7291d"
+    }
+  },
   "fingerprint": {
     "arm": {
       "config_id": "sf_glm_s_bm25first_n200_v1",
@@ -37,7 +46,8 @@
       "reference_id": "gold/scifact_200",
       "reference_tier": "gold"
     },
-    "hash": "403d0e656b1478757538b484048734c431912e602aeef0e1fc79b71ca8776a43",
+    "hash": null,
+    "hash_invalid_because": "rankings were rebuilt from stored LLM replies with a parser this fingerprint does not describe; see derived.with",
     "host": {
       "cpu_count": 12,
       "label": "mac-dev",
@@ -141,21 +151,21 @@
   "reference_tier": "gold",
   "run_id": "sf_glm_s_bm25first_n200_v1_20260928T221300Z",
   "scores": {
-    "cost_usd": 0.000274,
+    "cost_usd": 0.0002741932,
     "duplicate_ids": 0.0,
     "found_any": 0.865,
     "latency_ms": 3023.89413,
     "llm_named_unknown": 0.0,
     "llm_parsed": 1.0,
-    "mrr_10": 0.733554,
+    "mrr_10": 0.7335535714,
     "n_relevant": 1.135,
     "n_returned": 100.0,
-    "ndcg_10": 0.74225,
+    "ndcg_10": 0.7422502411,
     "parsed": 1.0,
     "rank_of_first": 2.51,
     "reasoning_tokens": 0.0,
     "recall_10": 0.81175,
-    "recall_100": 0.858583,
+    "recall_100": 0.8585833333,
     "tokens_in": 4036.955,
     "tokens_out": 145.345,
     "total_cost_usd": 0.05483864,
@@ -164,5 +174,6 @@
     "truncated": 0.0,
     "unknown_ids": 0.0
   },
+  "source_created_at": "2026-09-28T22:23:08Z",
   "warmup_ms": 2687.72
 }

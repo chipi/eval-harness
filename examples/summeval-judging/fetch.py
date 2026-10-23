@@ -32,34 +32,21 @@ import argparse
 import json
 import shutil
 import sys
-import time
-import urllib.parse
-import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2] / "harness"
-ROWS_API = "https://datasets-server.huggingface.co/rows"
 DATASET = "mteb/summeval"
 CONFIG, SPLIT = "default", "test"
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "_shared"))
+from hf_rows import page as _rows_page  # noqa: E402 - the one retry/pacing schedule
+
 DIMS = ("coherence", "consistency", "fluency", "relevance")
 
 
 def _rows() -> list[dict]:
     rows: list[dict] = []
     while True:
-        query = urllib.parse.urlencode({"dataset": DATASET, "config": CONFIG, "split": SPLIT,
-                                        "offset": len(rows), "length": 100})
-        page = None
-        for attempt in range(6):
-            try:
-                with urllib.request.urlopen(f"{ROWS_API}?{query}", timeout=60) as resp:
-                    page = [r["row"] for r in (json.loads(resp.read()).get("rows") or [])]
-                break
-            except Exception as exc:  # noqa: BLE001 - retried, then one message
-                last = exc
-                time.sleep(2 * (attempt + 1))
-        if page is None:
-            sys.exit(f"could not reach the datasets-server: {type(last).__name__}: {last}")
+        page = _rows_page(DATASET, CONFIG, SPLIT, len(rows), 100)
         if not page:
             return rows
         rows.extend(page)
@@ -90,21 +77,23 @@ def main() -> int:
         d.mkdir(parents=True)
     for r in rows:
         item = str(r["id"])
-        src = {"article": r["text"], "summaries": r["machine_summaries"],
-               "references": r["human_summaries"]}
+        src = {"article": r["text"], "summaries": r["machine_summaries"], "references": r["human_summaries"]}
         gold = {d: [round(float(v), 10) for v in r[d]] for d in DIMS}
-        (sources / f"{item}.txt").write_text(json.dumps(src, ensure_ascii=False, indent=1),
-                                             encoding="utf-8")
+        (sources / f"{item}.txt").write_text(json.dumps(src, ensure_ascii=False, indent=1), encoding="utf-8")
         (golds / f"{item}.txt").write_text(json.dumps(gold, indent=1), encoding="utf-8")
     refs = sum(len(r["human_summaries"]) for r in rows) / len(rows)
-    print(f"{len(rows)} articles written ({DATASET}, {SPLIT}): 16 summaries each, "
-          f"{refs:.1f} human references on average, expert scores on {len(DIMS)} dimensions")
+    print(
+        f"{len(rows)} articles written ({DATASET}, {SPLIT}): 16 summaries each, "
+        f"{refs:.1f} human references on average, expert scores on {len(DIMS)} dimensions"
+    )
     print(f"  sources    {sources}\n  gold       {golds}")
     if (ROOT / "data" / "datasets" / f"{args.dataset_id}.json").is_file():
         print(f"\nNext: cd {ROOT} && make dataset-materialize DATASET_ID={args.dataset_id}")
     else:
-        print(f"\nNext: make dataset-create DATASET_ID={args.dataset_id} "
-              f"ARGS='--source-dir data/sources/{args.dataset_id}'")
+        print(
+            f"\nNext: make dataset-create DATASET_ID={args.dataset_id} "
+            f"ARGS='--source-dir data/sources/{args.dataset_id}'"
+        )
         print(f"      make dataset-materialize DATASET_ID={args.dataset_id}")
     return 0
 

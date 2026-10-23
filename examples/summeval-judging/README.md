@@ -44,7 +44,7 @@ python examples/summeval-judging/fetch.py      # or, from the root: make data EX
 
 | arm | what it is |
 |---|---|
-| 24 hosted LLM judges | the same 24 models as the other experiments, with `qwen37max` in place of `qwen_l`, whose model is no longer served; one call per article; shown the article and the 16 summaries, **never the human references** ([prompt.txt](prompt.txt)) |
+| 24 hosted LLM judges | the same 24 models as the other experiments, with `qwen37max` in place of `qwen_l`, whose model OpenRouter does not serve; one call per article; shown the article and the 16 summaries, **never the human references** ([prompt.txt](prompt.txt)) |
 | `unieval`, `unievalpub` | [UniEval](https://arxiv.org/abs/2210.07197) (Zhong et al. 2022), a T5-large evaluator trained to answer one yes/no question per dimension, for exactly these four; `MingZhong/unieval-sum`, pinned, licence not stated on its model card; local, CPU. `unieval` scores the text every other arm saw, plus one human reference for relevance; `unievalpub` scores UniEval's own published SummEval inputs (the same articles, summaries and reference, cased and tokenised differently), the protocol behind its published figures |
 | `rouge1`, `rouge2`, `rougeL` | ROUGE F1 of each summary against each of the 11 human references, averaged |
 | `coverage` | this repository's summarisation metric, imported from that example's own scorer, averaged over the references |

@@ -1,0 +1,27 @@
+goal_id: news_summary_cnn
+schema_version: "0.1"
+title: Short news summaries (CNN)
+statement: Pick a model that writes a short summary of a CNN-style news article, at a known cost, for a reader who wants the story's main points.
+status: active
+context:
+  audience: a reader of news who wants the story's main points in a few sentences
+decision: Which models can be told apart on summary quality, and what each costs per article.
+output_contract:
+  - id: highlights
+    format: paragraph
+    length: about the reference highlights' length (coverage clips longer summaries)
+    language: en
+success_criteria:
+  primary: {measure: coverage, direction: higher}
+  secondary:
+    - {measure: rouge1, direction: higher}
+datasets:
+  - {dataset_id: cnn_dailymail_200, role: heldout, notes: first 200 test rows, all CNN; findings are scoped to CNN-style news}
+  - {dataset_id: cnn_dailymail_20, role: dev, notes: nested in the 200; prompts tuned here only}
+  - {dataset_id: cnn_dailymail_dm200, role: generalization, notes: 200 seeded DailyMail articles; a check that never decides}
+references:
+  - {reference_id: gold/cnn_dailymail_200, tier: gold, format: paragraph}
+measures:
+  - {id: coverage, kind: metric, validity: partial}
+links:
+  - {url: research/REPORT_SUMMARIZATION.md, note: the report}

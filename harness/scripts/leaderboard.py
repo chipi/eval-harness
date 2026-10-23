@@ -19,28 +19,23 @@ neighbour is not distinguishable from it, and the table says so.
 from __future__ import annotations
 
 import argparse
-import json
 import math
 import random
 import statistics
-import sys
-from collections import defaultdict
-from pathlib import Path
-from typing import Dict, List
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _common import (  # noqa: E402
-    ROOT,
-    warn_on_ambiguous_runs,
+from _adapter import recorded_metric_kinds
+from _common import (
     RUNS,
     classify_metrics,
     die,
-    read_json,
+    how,
 )
+from _record import derived_with
+from _runs import by_arm, direction, runs_on, warn_on_ambiguous_runs
+from _runs import matrix as matrix_of
 
 # COST_KEYS / SPEED_KEYS / DESCRIPTIVE_KEYS now live in _common, so that
 # compare_runs.py judges direction the same way this ranks it.
-
 
 
 # ── is the ordering above real? ──────────────────────────────────────────────
@@ -70,13 +65,7 @@ _TIE_TOL = 1e-9
 _MIN_TIE_DECIMALS = 8
 
 
-#: Raw per-item values as they came off disk, before any averaging. Precision has to be
-#: measured HERE: `fmean` returns full float precision whatever it was given, so checking
-#: the means reports 17 decimals for scores that were stored with 6.
-_RAW_SEEN: List[float] = []
-
-
-def _stored_decimals(values: List[float]) -> int:
+def _stored_decimals(values: list[float]) -> int:
     """How many decimal places the stored values actually carry."""
     best = 0
     for v in values[:500]:
@@ -92,16 +81,15 @@ def _stored_decimals(values: List[float]) -> int:
 _FRACTION_DENOM = 27720  # lcm(1..12)
 
 
-def _small_fractions(values: List[float]) -> bool:
+def _small_fractions(values: list[float]) -> bool:
     vals = values[:500]
-    return bool(vals) and all(abs(v * _FRACTION_DENOM - round(v * _FRACTION_DENOM)) < 1e-6
-                              for v in vals)
+    return bool(vals) and all(abs(v * _FRACTION_DENOM - round(v * _FRACTION_DENOM)) < 1e-6 for v in vals)
 
 
-_NEMENYI_Q05 = {
+NEMENYI_Q05 = {
     # alpha = 0.05, nu = infinity: the studentised range divided by sqrt(2).
     #
-    # COMPUTED, NOT TRANSCRIBED -- see scripts/nemenyi_table.py, which solves
+    # COMPUTED, NOT TRANSCRIBED -- see tools/nemenyi_table.py, which solves
     #   P(R <= q) = k * INTEGRAL phi(z) [Phi(z) - Phi(z-q)]^(k-1) dz  =  1 - alpha
     # by Simpson plus bisection, in stdlib. It reproduces all 24 values Demsar (2006)
     # publishes for k = 2..25 to within 0.0007, which is below the precision Demsar
@@ -112,50 +100,76 @@ _NEMENYI_Q05 = {
     # was right; the scope was not. Four of five experiments here have 26-28 arms, so
     # four of five had no pairwise verdict at all -- over roughly thirty lines of
     # arithmetic. Found by external review.
-    2: 1.9600, 3: 2.3437, 4: 2.5690, 5: 2.7278, 6: 2.8497, 7: 2.9483, 8: 3.0309, 9: 3.1017,
-    10: 3.1637, 11: 3.2187, 12: 3.2680, 13: 3.3127, 14: 3.3536, 15: 3.3912, 16: 3.4260, 17: 3.4584,
-    18: 3.4887, 19: 3.5171, 20: 3.5438, 21: 3.5690, 22: 3.5929, 23: 3.6156, 24: 3.6373, 25: 3.6579,
-    26: 3.6776, 27: 3.6964, 28: 3.7145, 29: 3.7319, 30: 3.7486, 31: 3.7647, 32: 3.7802, 33: 3.7952,
-    34: 3.8097, 35: 3.8237, 36: 3.8373, 37: 3.8504, 38: 3.8632, 39: 3.8756, 40: 3.8876,
+    2: 1.9600,
+    3: 2.3437,
+    4: 2.5690,
+    5: 2.7278,
+    6: 2.8497,
+    7: 2.9483,
+    8: 3.0309,
+    9: 3.1017,
+    10: 3.1637,
+    11: 3.2187,
+    12: 3.2680,
+    13: 3.3127,
+    14: 3.3536,
+    15: 3.3912,
+    16: 3.4260,
+    17: 3.4584,
+    18: 3.4887,
+    19: 3.5171,
+    20: 3.5438,
+    21: 3.5690,
+    22: 3.5929,
+    23: 3.6156,
+    24: 3.6373,
+    25: 3.6579,
+    26: 3.6776,
+    27: 3.6964,
+    28: 3.7145,
+    29: 3.7319,
+    30: 3.7486,
+    31: 3.7647,
+    32: 3.7802,
+    33: 3.7952,
+    34: 3.8097,
+    35: 3.8237,
+    36: 3.8373,
+    37: 3.8504,
+    38: 3.8632,
+    39: 3.8756,
+    40: 3.8876,
 }
 
 
-def _per_item(runs: List[dict], run_dirs: Dict[int, Path], metric: str) -> Dict[str, float]:
-    """One value per item for one arm: the mean over that arm's repeats."""
-    acc: Dict[str, List[float]] = defaultdict(list)
-    for r in runs:
-        d = run_dirs.get(id(r))
-        if not d:
-            continue
-        pj = d / "predictions.jsonl"
-        if not pj.is_file():
-            continue
-        for line in pj.read_text(encoding="utf-8").splitlines():
-            if not line.strip():
-                continue
-            row = json.loads(line)
-            if metric in row:
-                acc[row["item_id"]].append(float(row[metric]))
-                _RAW_SEEN.append(row[metric])
-    return {k: statistics.fmean(v) for k, v in acc.items() if v}
+def significance(
+    matrix: dict[str, dict[str, float]],
+    metric: str,
+    seed: int = 20260925,
+    asc: bool = False,
+    raw_values: list[float] | None = None,
+) -> None:
+    """Print the global test, the critical difference, and per-arm rank intervals.
 
-
-def _significance(matrix: Dict[str, Dict[str, float]], metric: str, seed: int = 20260925,
-                  asc: bool = False) -> None:
-    """Print the global test, the critical difference, and per-arm rank intervals."""
+    `raw_values` are the per-item values as they came off disk, before any averaging
+    (`_runs.per_item(raw=...)` collects them). Stored precision has to be measured on those:
+    `fmean` returns full float precision whatever it was given, so checking the means
+    reports 17 decimals for scores that were stored with 6."""
     arms = sorted(matrix)
     items = sorted(set.intersection(*(set(matrix[a]) for a in arms))) if arms else []
     k, N = len(arms), len(items)
     if k < 2 or N < 3:
-        print(f"\n  Not enough paired data for a significance test "
-              f"({k} arm(s), {N} shared item(s)). Ordering above is a mean, nothing more.")
+        print(
+            f"\n  Not enough paired data for a significance test "
+            f"({k} arm(s), {N} shared item(s)). Ordering above is a mean, nothing more."
+        )
         return
     V = {a: [matrix[a][i] for i in items] for a in arms}
 
     # Within-item ranks: 1 = best on THAT item. Ranking inside the item is what removes
     # the item effect -- on a real dataset most of the variance is "some items are hard
     # for everyone", and an unpaired comparison leaves all of it in the noise.
-    ranks: Dict[str, List[float]] = {a: [] for a in arms}
+    ranks: dict[str, list[float]] = {a: [] for a in arms}
     for j in range(N):
         # `asc` means lower is better for this metric (cost, latency). Without it the
         # within-item ranks were always "highest value = rank 1", so `--asc` produced a
@@ -171,10 +185,7 @@ def _significance(matrix: Dict[str, Dict[str, float]], metric: str, seed: int = 
             # item come back differing by ~1e-7 and get strictly ordered. Exact equality
             # found 179 tied pairs where 216 were real, and that alone moved one reported
             # p-value from 0.110 to 0.138. `fmean` adds its own ~5e-17 on top.
-            while (
-                grp[-1] + 1 < len(col)
-                and abs(col[grp[-1] + 1][0] - col[i][0]) <= _TIE_TOL
-            ):
+            while grp[-1] + 1 < len(col) and abs(col[grp[-1] + 1][0] - col[i][0]) <= _TIE_TOL:
                 grp.append(grp[-1] + 1)
             shared = statistics.fmean(x + 1 for x in grp)
             for x in grp:
@@ -182,12 +193,15 @@ def _significance(matrix: Dict[str, Dict[str, float]], metric: str, seed: int = 
             i = grp[-1] + 1
     avg_rank = {a: statistics.fmean(ranks[a]) for a in arms}
 
-    decimals = _stored_decimals(_RAW_SEEN)
-    if decimals and decimals < _MIN_TIE_DECIMALS and not _small_fractions(_RAW_SEEN):
-        print(f"\n  NOTE: these runs store scores to ~{decimals} decimals, so arms that\n"
-              f"        genuinely tie on an item can differ by rounding alone and be\n"
-              f"        ordered anyway — which inflates the p-value. `make rescore` "
-              f"regenerates\n        them at full precision.")
+    raw = raw_values or []
+    decimals = _stored_decimals(raw)
+    if decimals and decimals < _MIN_TIE_DECIMALS and not _small_fractions(raw):
+        print(
+            f"\n  NOTE: these runs store scores to ~{decimals} decimals, so arms that\n"
+            f"        genuinely tie on an item can differ by rounding alone and be\n"
+            f"        ordered anyway — which inflates the p-value. `{how('evh rescore', 'make rescore')}` "
+            f"regenerates\n        them at full precision."
+        )
 
     # Friedman, as a permutation test: shuffle which arm got which rank WITHIN each item
     # -- exactly the world where arms do not matter -- and see how often chance beats the
@@ -198,7 +212,7 @@ def _significance(matrix: Dict[str, Dict[str, float]], metric: str, seed: int = 
     by_item = [[ranks[a][j] for a in arms] for j in range(N)]
     B, hits = 5000, 0
     for _ in range(B):
-        perm: Dict[str, List[float]] = {a: [] for a in arms}
+        perm: dict[str, list[float]] = {a: [] for a in arms}
         for j in range(N):
             row = by_item[j][:]
             rng.shuffle(row)
@@ -214,32 +228,38 @@ def _significance(matrix: Dict[str, Dict[str, float]], metric: str, seed: int = 
     # experiments have 26-28 arms, so four of five published "pairs distinguishable"
     # counts were mildly anti-conservative. Guessing a critical value is worse than
     # declining to print one.
-    q = _NEMENYI_Q05.get(k)
+    q = NEMENYI_Q05.get(k)
     cd = q * math.sqrt(k * (k + 1) / (6.0 * N)) if q else None
     span = max(avg_rank.values()) - min(avg_rank.values())
-    pairs = ([(a, b) for a in arms for b in arms if avg_rank[b] - avg_rank[a] > cd]
-             if cd is not None else [])
+    pairs = [(a, b) for a in arms for b in arms if avg_rank[b] - avg_rank[a] > cd] if cd is not None else []
 
     print(f"\n  IS THE ORDERING REAL?   metric={metric}  k={k} arms  N={N} items")
-    print(f"    global test (permutation on within-item ranks): p = {p:.4f}"
-          f"  ->  {'an arm effect exists' if p < 0.05 else 'NO detectable arm effect'}")
+    print(
+        f"    global test (permutation on within-item ranks): p = {p:.4f}"
+        f"  ->  {'an arm effect exists' if p < 0.05 else 'NO detectable arm effect'}"
+    )
     if cd is None:
-        print(f"    Nemenyi critical difference: NOT AVAILABLE for k={k} arms — the\n"
-              f"    tabulated studentised range in this file stops at k={max(_NEMENYI_Q05)}.\n"
-              f"    No pairwise verdict is printed rather than reusing a smaller k's value,\n"
-              f"    which would understate the critical difference and overstate how many\n"
-              f"    pairs differ. Narrow the field with --match, or extend the table from a\n"
-              f"    source you trust.   observed rank span = {span:.2f}")
+        print(
+            f"    Nemenyi critical difference: NOT AVAILABLE for k={k} arms — the\n"
+            f"    tabulated studentised range in this file stops at k={max(NEMENYI_Q05)}.\n"
+            f"    No pairwise verdict is printed rather than reusing a smaller k's value,\n"
+            f"    which would understate the critical difference and overstate how many\n"
+            f"    pairs differ. Narrow the field with --match, or extend the table from a\n"
+            f"    source you trust.   observed rank span = {span:.2f}"
+        )
     else:
-        print(f"    Nemenyi critical difference = {cd:.2f} rank positions;"
-              f" observed span = {span:.2f}")
+        print(f"    Nemenyi critical difference = {cd:.2f} rank positions; observed span = {span:.2f}")
         print(f"    pairs distinguishable: {len(pairs)} of {k * (k - 1) // 2}")
     if p >= 0.05:
-        print("    The table above is sorted, but these runs do not show the arms differ.\n"
-              "    Do not report an ordering from it.")
+        print(
+            "    The table above is sorted, but these runs do not show the arms differ.\n"
+            "    Do not report an ordering from it."
+        )
     elif not pairs:
-        print("    An effect exists, but NO PAIR is distinguishable once all comparisons\n"
-              "    are accounted for. 'Which arm is better than which' has no answer here.")
+        print(
+            "    An effect exists, but NO PAIR is distinguishable once all comparisons\n"
+            "    are accounted for. 'Which arm is better than which' has no answer here."
+        )
 
     # Resample ITEMS, re-rank the whole table each time, and report PROBABILITIES rather
     # than an interval.
@@ -255,7 +275,7 @@ def _significance(matrix: Dict[str, Dict[str, float]], metric: str, seed: int = 
     # -- "is this one of the good ones" -- and cannot be misread as a pairwise verdict.
     R = 2000
     top_n = max(1, min(5, k // 4))
-    tally: Dict[str, List[int]] = {a: [] for a in arms}
+    tally: dict[str, list[float]] = {a: [] for a in arms}
     for _ in range(R):
         idx = [rng.randrange(N) for _ in range(N)]
         mu = {a: statistics.fmean(V[a][j] for j in idx) for a in arms}
@@ -277,26 +297,29 @@ def _significance(matrix: Dict[str, Dict[str, float]], metric: str, seed: int = 
                 tally[order[x]].append(shared)
             i = j2 + 1
     width = max(len(a) for a in arms) + 2
-    print(f"\n    {'arm':{width}} {'avg rank':>9} {'P(1st)':>8} "
-          f"{f'P(top {top_n})':>10} {f'P(bot {top_n})':>10}")
+    print(
+        f"\n    {'arm':{width}} {'avg rank':>9} {'P(1st)':>8} {f'P(top {top_n})':>10} {f'P(bot {top_n})':>10}"
+    )
     for a in sorted(arms, key=lambda x: avg_rank[x]):
         t = tally[a]
         p1 = sum(1 for x in t if x == 1) / R
         pt = sum(1 for x in t if x <= top_n) / R
         pb = sum(1 for x in t if x > k - top_n) / R
         print(f"    {a:{width}} {avg_rank[a]:9.2f} {p1:8.2f} {pt:10.2f} {pb:10.2f}")
-    print(f"    Probabilities over resampled items: how often this arm lands 1st, in the\n"
-          f"    top {top_n}, in the bottom {top_n}. NOT a pairwise claim -- the\n"
-          f"    critical-difference line above is the only pairwise verdict here.")
-    print("    P(1st) means UNIQUELY first: tied arms share a midrank, so a draw counts\n"
-          "    for nobody and the column can sum to less than 1. Ties used to be broken\n"
-          "    by arm NAME, which on a saturated metric made this a measure of the\n"
-          "    alphabet.")
+    print(
+        f"    Probabilities over resampled items: how often this arm lands 1st, in the\n"
+        f"    top {top_n}, in the bottom {top_n}. NOT a pairwise claim -- the\n"
+        f"    critical-difference line above is the only pairwise verdict here."
+    )
+    print(
+        "    P(1st) means UNIQUELY first: tied arms share a midrank, so a draw counts\n"
+        "    for nobody and the column can sum to less than 1. Ties used to be broken\n"
+        "    by arm NAME, which on a saturated metric made this a measure of the\n"
+        "    alphabet."
+    )
 
 
-
-def _frontier(rows: List[dict], quality: str, kinds: Dict[str, str],
-              asc: bool = False) -> None:
+def _frontier(rows: list[dict], quality: str, kinds: dict[str, str], asc: bool = False) -> None:
     """Which arms are on the menu at all, across quality, cost and speed together.
 
     An arm is DOMINATED when some other arm is at least as good on quality AND costs no
@@ -314,7 +337,7 @@ def _frontier(rows: List[dict], quality: str, kinds: Dict[str, str],
     if not (cost and speed):
         print("\n  No frontier: needs a cost and a speed metric alongside quality.")
         return
-    pts = {r["config_id"]: (r.get(quality), r.get(cost), r.get(speed)) for r in rows}
+    pts: dict[str, tuple] = {r["config_id"]: (r.get(quality), r.get(cost), r.get(speed)) for r in rows}
     pts = {a: v for a, v in pts.items() if None not in v}
     if len(pts) < 2:
         return
@@ -322,101 +345,26 @@ def _frontier(rows: List[dict], quality: str, kinds: Dict[str, str],
     def dominated(a: str) -> bool:
         qa, ca, la = pts[a]
         return any(
-            (qb <= qa if asc else qb >= qa) and cb <= ca and lb <= la
-            and (qb, -cb, -lb) != (qa, -ca, -la)
+            (qb <= qa if asc else qb >= qa) and cb <= ca and lb <= la and (qb, -cb, -lb) != (qa, -ca, -la)
             for b, (qb, cb, lb) in pts.items()
             if b != a
         )
 
-    front = sorted((a for a in pts if not dominated(a)),
-                   key=lambda a: pts[a][0] if asc else -pts[a][0])
+    front = sorted((a for a in pts if not dominated(a)), key=lambda a: pts[a][0] if asc else -pts[a][0])
     beaten = sorted(a for a in pts if dominated(a))
     w = max(len(a) for a in pts) + 2
     print(f"\n  FRONTIER on {quality} / {cost} / {speed} — {len(front)} of {len(pts)} arms")
     print(f"    {'arm':{w}} {quality:>12} {cost:>12} {speed:>12}")
     for a in front:
-        q, c, l = pts[a]
-        print(f"    {a:{w}} {q:12.6f} {c:12.6f} {l:12.1f}")
+        q, c, lat = pts[a]
+        print(f"    {a:{w}} {q:12.6f} {c:12.6f} {lat:12.1f}")
     if beaten:
         print(f"    dominated (worse on all three than some other arm): {', '.join(beaten)}")
 
 
-_ADAPTER_KINDS_CACHE: Dict[str, Dict[str, str]] = {}
-
-
-def _adapter_kinds(adapter_spec: str) -> Dict[str, str]:
-    """`METRIC_KINDS` as the adapter declares them TODAY, or {} if it cannot be imported.
-
-    Same shape as `classification_report._label_parser`, and for the same reason: a run
-    freezes what was declared when it was measured, and the current adapter is the
-    authority on what its metrics mean. Returning {} on any failure is deliberate --
-    a machine without the example's venv falls back to the run's own declaration, which
-    is the previous behaviour, rather than losing the table.
-    """
-    if adapter_spec in _ADAPTER_KINDS_CACHE:
-        return _ADAPTER_KINDS_CACHE[adapter_spec]
-    out: Dict[str, str] = {}
-    try:
-        cand = None
-        for base in (ROOT, ROOT.parent):
-            c = Path(adapter_spec) if Path(adapter_spec).is_absolute() else base / adapter_spec
-            if c.is_file():
-                cand = c
-                break
-        if cand is not None:
-            import importlib.util  # noqa: PLC0415
-
-            spec = importlib.util.spec_from_file_location(f"lbkinds_{cand.stem}", cand)
-            mod = importlib.util.module_from_spec(spec)
-            sys.modules[spec.name] = mod
-            spec.loader.exec_module(mod)
-            kinds = getattr(mod, "METRIC_KINDS", None)
-            if isinstance(kinds, dict):
-                out = dict(kinds)
-    except Exception:  # noqa: BLE001 — an un-importable adapter is a fallback, not a crash
-        out = {}
-    _ADAPTER_KINDS_CACHE[adapter_spec] = out
-    return out
-
-
-def main() -> int:
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--dataset-id", required=True)
-    ap.add_argument("--sort", help="metric to rank by (default: the first quality metric)")
-    ap.add_argument("--asc", action="store_true", help="lower is better for the sort metric")
-    # A dataset accumulates arms across config VERSIONS -- v1 and v2 of the same arm are
-    # different measurements and must not share a row, but they do share a dataset. Without
-    # a way to scope the table, the only ways to get a readable leaderboard are to delete
-    # the older runs or to read past them. Deleting paid-for results to tidy a table is how
-    # 18 arms were lost once; this is the alternative.
-    ap.add_argument("--match", help="only arms whose config_id contains this substring")
-    args = ap.parse_args()
-
-    by_config: Dict[str, List[dict]] = defaultdict(list)
-    # Where each run's artifacts live, so the significance test can reach its
-    # predictions.jsonl. Per-item scores are what make a PAIRED comparison possible, and
-    # a comparison that is not paired throws away the fact that every arm was graded on
-    # the same items.
-    run_dirs: Dict[int, Path] = {}
-    for run in (RUNS.iterdir() if RUNS.is_dir() else []):
-        m = run / "metrics.json"
-        if m.is_file():
-            d = read_json(m)
-            if d.get("dataset_id") == args.dataset_id and (
-                not args.match or args.match in d.get("config_id", "")
-            ):
-                by_config[d["config_id"]].append(d)
-                run_dirs[id(d)] = run
-
-    warn_on_ambiguous_runs(RUNS, args.dataset_id, label=RUNS.name)
-    if not by_config:
-        die(
-            f"no runs on dataset {args.dataset_id!r}"
-            + (f" matching {args.match!r}" if args.match else "")
-            + ".\n  make runs-list   to see what exists"
-        )
-
-    all_keys = sorted({k for runs in by_config.values() for r in runs for k in r["scores"]})
+def _metric_kinds(by_config: dict[str, list[dict]]) -> dict[str, str]:
+    """{metric: kind} for these runs: what they recorded, overridden by what their adapters
+    declare today; a disagreement no adapter settles is printed as a warning."""
     # An adapter may declare what ITS metrics mean; runs carry the declaration. Without
     # this the sort key falls to whatever sorts first among the unclassified, which ranked
     # a ten-model sweep by `compression` — a length ratio — and called it quality.
@@ -435,21 +383,15 @@ def main() -> int:
     # leaderboard built from runs that predate the fix. `llm_named_unknown` counts
     # document ids a reranker INVENTED; undeclared, it landed in the quality columns
     # where higher reads as better, so an arm that hallucinated more looked improved.
-    # It was corrected in the adapter and kept showing as quality here, because 19
-    # committed SciFact runs still carry the old declaration.
+    # It was corrected in the adapter and kept showing as quality here, because the runs
+    # measured before the fix carry the old declaration.
     #
     # The runs remain the fallback for an adapter that cannot be imported (a missing
     # dependency, a moved file), which is why they are read first and overridden second
     # rather than skipped.
     for runs in by_config.values():
         for r in runs:
-            spec = r.get("adapter")
-            if not spec:
-                continue
-            try:
-                current = _adapter_kinds(spec)
-            except Exception:  # noqa: BLE001 — a stale adapter must not break the table
-                continue
+            current = recorded_metric_kinds(r.get("adapter"))
             for k, v in (current or {}).items():
                 if k in declared and declared[k] != v:
                     disagree.pop(k, None)  # the adapter settles it; not a conflict
@@ -459,55 +401,103 @@ def main() -> int:
     # used to be resolved by dict ordering -- silently, by whichever run happened to be
     # read last. Say so instead.
     for k, vs in sorted(disagree.items()):
-        print(f"  WARNING: runs disagree on metric kind for {k!r}: {sorted(vs)} — "
-              f"no adapter could be imported to settle it")
+        print(
+            f"  WARNING: runs disagree on metric kind for {k!r}: {sorted(vs)} — "
+            f"no adapter could be imported to settle it"
+        )
+    return declared
+
+
+def main() -> int:
+    """Generate a leaderboard from run results."""
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("--dataset-id", required=True)
+    ap.add_argument("--sort", help="metric to rank by (default: the first quality metric)")
+    ap.add_argument(
+        "--asc", action="store_true", help="lower is better for the sort metric (default: inferred)"
+    )
+    ap.add_argument("--desc", action="store_true", help="higher is better, whatever the runs declare")
+    # A dataset accumulates arms across config VERSIONS -- v1 and v2 of the same arm are
+    # different measurements and must not share a row, but they do share a dataset. Without
+    # a way to scope the table, the only ways to get a readable leaderboard are to delete
+    # the older runs or to read past them. Deleting paid-for results to tidy a table is how
+    # 18 arms were lost once; this is the alternative.
+    ap.add_argument("--match", help="only arms whose config_id contains this substring")
+    args = ap.parse_args()
+
+    # Each run with its directory, so the significance test can reach its predictions.jsonl.
+    # Per-item scores are what make a PAIRED comparison possible, and a comparison that is
+    # not paired throws away the fact that every arm was graded on the same items.
+    found = runs_on(args.dataset_id, match=args.match)
+    arm_runs = by_arm(found)
+    by_config: dict[str, list[dict]] = {cid: [m for _d, m in rs] for cid, rs in arm_runs.items()}
+
+    warn_on_ambiguous_runs(RUNS, args.dataset_id, label=RUNS.name)
+    if not by_config:
+        die(
+            f"no runs on dataset {args.dataset_id!r}"
+            + (f" matching {args.match!r}" if args.match else "")
+            + ".\n  "
+            + how("evh runs-list", "make runs-list")
+            + "   to see what exists"
+        )
+
+    all_keys = sorted({k for runs in by_config.values() for r in runs for k in r["scores"]})
+    declared = _metric_kinds(by_config)
 
     kinds = classify_metrics(declared)
-    quality = [
-        k for k in all_keys
-        if kinds.get(k, "quality") == "quality" and not k.startswith("total_")
-    ]
+    quality = [k for k in all_keys if kinds.get(k, "quality") == "quality" and not k.startswith("total_")]
     descriptive = [k for k in all_keys if kinds.get(k) == "descriptive"]
     # The adapter's declared headline facet wins over alphabetical order. Explicit
     # --sort still overrides both.
     primary = next(
-        (r.get("primary_metric") for runs in by_config.values() for r in runs
-         if r.get("primary_metric") in all_keys),
+        (
+            r.get("primary_metric")
+            for runs in by_config.values()
+            for r in runs
+            if r.get("primary_metric") in all_keys
+        ),
         None,
     )
-    sort_key = args.sort or primary or (
-        quality[0] if quality else (descriptive[0] if descriptive else all_keys[0])
+    sort_key = (
+        args.sort or primary or (quality[0] if quality else (descriptive[0] if descriptive else all_keys[0]))
     )
+    asc = direction(found, sort_key, args.asc, args.desc)
     # SAY SO when the headline metric was picked alphabetically. Runs written before
     # adapters declared PRIMARY_METRIC carry none, so this falls through to whichever
     # quality metric sorts first by name -- for one set of runs here that is `grounding`,
     # an extractiveness measure, silently promoted to the ranking metric.
     if not args.sort and not primary:
-        print(f"  NOTE: no run declares a primary metric, so {sort_key!r} was chosen by\n"
-              f"        sort order, not by meaning. Pass --sort explicitly, or re-run with\n"
-              f"        an adapter that sets PRIMARY_METRIC.")
+        print(
+            f"  NOTE: no run declares a primary metric, so {sort_key!r} was chosen by\n"
+            f"        sort order, not by meaning. Pass --sort explicitly, or re-run with\n"
+            f"        an adapter that sets PRIMARY_METRIC."
+        )
     # SAY SO when the table mixes config versions. v1 and v2 of one arm are different
     # measurements -- often different scorers -- and listing them side by side reads as
     # 48 models. The fix is to scope the view, never to delete the older runs.
-    import re as _re
+    import re as _re  # noqa: PLC0415
+
     versions = {m.group(0) for c in by_config for m in [_re.search(r"_v\d+$", c)] if m}
     if len(versions) > 1:
-        print(f"  NOTE: this table mixes config versions ({', '.join(sorted(versions))}) —"
-              f" {len(by_config)} rows.\n"
-              f"        Those are different measurements, not repeats. Scope with"
-              f" --match <version>.")
+        print(
+            f"  NOTE: this table mixes config versions ({', '.join(sorted(versions))}) —"
+            f" {len(by_config)} rows.\n"
+            f"        Those are different measurements, not repeats. Scope with"
+            f" --match <version>."
+        )
     ranking_on_descriptive = kinds.get(sort_key) == "descriptive"
     if sort_key not in all_keys:
         die(f"no metric {sort_key!r} on these runs. Available: {', '.join(all_keys)}")
 
-    rows = []
+    rows: list[dict] = []
     for config_id, runs in by_config.items():
         # EVERY run's tier, not runs[0]'s. Taking the first one meant a config whose
         # earliest run predated the reference (reference_tier: None) suppressed the
         # SILVER warning below — while the quality column on that very row came only
         # from the silver-scored runs. A model-generated number, printed as if it were
         # ground truth, which is the one thing this table must never do.
-        tiers = {r.get("reference_tier") for r in runs if r.get("reference_tier")}
+        tiers: set[str] = {r["reference_tier"] for r in runs if r.get("reference_tier")}
         row = {
             "config_id": config_id,
             "n_runs": len(runs),
@@ -521,41 +511,40 @@ def main() -> int:
                 row[f"__spread_{k}"] = max(vals) - min(vals)
         rows.append(row)
 
-    rows.sort(key=lambda r: r.get(sort_key, float("inf") if args.asc else float("-inf")),
-              reverse=not args.asc)
+    rows.sort(key=lambda r: r.get(sort_key, float("inf") if asc else float("-inf")), reverse=not asc)
 
     show = quality + descriptive + [k for k in all_keys if kinds.get(k) in ("cost", "speed")]
     show = [k for k in show if k in all_keys]
     w = max(len(r["config_id"]) for r in rows) + 2
-    print(f"dataset: {args.dataset_id}   ranked by: {sort_key}"
-          f" ({'lower' if args.asc else 'higher'} is better)\n")
+    print(f"dataset: {args.dataset_id}   ranked by: {sort_key} ({'lower' if asc else 'higher'} is better)\n")
     header = f"  {'arm':{w}} {'runs':>4}  " + "  ".join(f"{k:>16}" for k in show)
     print(header)
     print("  " + "-" * (len(header) - 2))
-    for i, r in enumerate(rows, 1):
-        cells = "  ".join(
-            (f"{r[k]:16.6f}" if k in r else f"{'—':>16}") for k in show
-        )
+    for _i, r in enumerate(rows, 1):
+        cells = "  ".join((f"{r[k]:16.6f}" if k in r else f"{'—':>16}") for k in show)
         print(f"  {r['config_id']:{w}} {r['n_runs']:>4}  {cells}")
 
     if ranking_on_descriptive:
         print(
             f"\n  RANKED ON A DESCRIPTIVE METRIC ({sort_key}) — it measures what the output\n"
             "  WAS, not whether it was good, so this ordering rewards verbosity. Author\n"
-            "  references (make reference-create) so runs carry a quality score, or pass\n"
+            f"  references ({how('evh reference-create', 'make reference-create')}) so runs carry a quality score, or pass\n"
             "  --sort <metric> explicitly."
         )
 
-    matrix = {
-        cid: _per_item(runs, run_dirs, sort_key)
-        for cid, runs in by_config.items()
-    }
-    matrix = {c: v for c, v in matrix.items() if v}
+    raw: list[float] = []
+    matrix = matrix_of(found, sort_key, raw=raw)
     if matrix:
-        _significance(matrix, sort_key, asc=args.asc)
-    _frontier(rows, sort_key, kinds, asc=args.asc)
-    judged = sorted({f"{(r.get('judged_with') or {}).get('scorer_id')}, {r['judge_label']}"
-                     for runs in by_config.values() for r in runs if r.get("judge_label")})
+        significance(matrix, sort_key, asc=asc, raw_values=raw)
+    _frontier(rows, sort_key, kinds, asc=asc)
+    judged = sorted(
+        {
+            f"{derived_with(r, 'judge').get('scorer_id')}, {derived_with(r, 'judge').get('label')}"
+            for runs in by_config.values()
+            for r in runs
+            if derived_with(r, "judge").get("label")
+        }
+    )
     if judged:
         print(
             f"\n  Scored by an LLM judge, not against references: {'; '.join(judged)}.\n"

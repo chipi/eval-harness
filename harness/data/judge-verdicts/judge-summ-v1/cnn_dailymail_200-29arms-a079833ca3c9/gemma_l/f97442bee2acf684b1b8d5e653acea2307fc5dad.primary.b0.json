@@ -10,6 +10,8 @@
   "latency_ms": null,
   "n": 15,
   "output": "```json\n{\"coherence\": [5, 4, 5, 5, 4, 5, 5, 5, 5, 5, 4, 5, 5, 5, 5], \"consistency\": [5, 2, 5, 5, 2, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5], \"fluency\": [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5], \"relevance\": [3, 3, 4, 4, 2, 4, 4, 5, 5, 5, 4, 4, 4, 4, 5]}\n```",
+  "output_sha256": "27732d8f50726a69355c984ed3e8618efe6f5bf980df3297c879c28f3bae38fc",
+  "output_withheld": false,
   "pass": "primary",
   "prompt_sha256": "706020c26b9249af578d1eb41ff40213182db3511cb030c9f6448913e93c0e3b",
   "provider": "Venice",
