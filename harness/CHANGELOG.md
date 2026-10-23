@@ -145,6 +145,13 @@ p 0.36, from the pre-fix run), and DBpedia's 56-item dev slice, over today's 28 
   from a pin); the tutorial kit ships `tutorial/judge_panel.yaml`.
 
 ### Fixed
+- **The inspector reads only arms and references the catalog lists.** It asked the
+  adapter's `arms_of` about any path a request named; an adapter that maps a path to itself
+  (the podcast repo's did) let `compare` read outside the data tree (`runs=../../.git`). A
+  request may name an arm, or a path that selects arms (a run directory), but only arms the
+  adapter's `arms()` reach, and a reference `references()` lists.
+- A catalog nav entry may carry a CSS class as a fourth element (`hide-sm` hides it on a
+  phone), and the inspector page names the command that serves it (`serve`).
 - **`evh rescore` and `evh silver-calibrate` in a project that pins the package.** A run
   made with no `adapter:` uses the bundled adapter and records it as `scripts/adapter.py`, a
   path that exists only in a checkout, so both failed with "adapter not found" in every pinned

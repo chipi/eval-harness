@@ -131,6 +131,29 @@ try:
     )
     check("item: the reference's text", it["reference"]["view"]["text"] == SECRET + " reference")
     check("item: refuses an unknown arm", "error" in cs.item({"arms": ["../etc"], "item": ["i00"]}))
+    check(
+        "compare: a run directory selects its arm",
+        "error" not in cs.compare({"runs": ["runs/b_2,runs/ds1/arm_a"]}),
+        cs.compare({"runs": ["runs/b_2,runs/ds1/arm_a"]}).get("error"),
+    )
+
+    class Permissive(HarnessAdapter):
+        """An adapter whose arms_of accepts any path it is handed (the podcast one did)."""
+
+        def arms_of(self, path):
+            return super().arms_of(path) or [path]
+
+    cs.set_adapter(Permissive(data))
+    check(
+        "server: a path the catalog does not list is refused, whatever arms_of says",
+        "error" in cs.compare({"runs": ["../../.git"]})
+        and "error" in cs.item({"arms": ["../../.git"], "item": ["i00"]}),
+    )
+    check(
+        "server: an unknown reference is refused",
+        "error" in cs.item({"arms": ["runs/ds1/arm_a"], "item": ["i00"], "ref": ["../../etc"]}),
+    )
+    cs.set_adapter(A)
 
     # the server's document root is the project root: serve this temp tree as one
     cs.ROOT = tmp

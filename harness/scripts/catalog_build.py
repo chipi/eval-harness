@@ -78,8 +78,9 @@ def page(
     """Build a complete HTML page with header, nav, body, and footer."""
     up = "../" * depth
     links = "".join(
-        f'<a href="{href if "://" in href else up + href}"{" aria-current=page" if key == here else ""}>{label}</a>'
-        for key, href, label in nav
+        f'<a href="{href if "://" in href else up + href}"{" aria-current=page" if key == here else ""}'
+        f"{f' class={rest[0]}' if rest else ''}>{label}</a>"
+        for key, href, label, *rest in nav
     )
     built = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     foot = footer or (
@@ -530,7 +531,7 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
     )
 
 
-def render_inspect(A: Adapter, out: Path, page_fn=page, **page_kw) -> None:
+def render_inspect(A: Adapter, out: Path, page_fn=page, serve: str = "evh catalog-serve", **page_kw) -> None:
     """The inspector shell; assets/inspect.js fills it from the local server's /api/."""
     arms = {a: A.describe(a)["dataset"] for a in sorted(A.arms())}
     write(out, "runs.js", "window.RUNS=" + json.dumps(arms) + ";\n")
@@ -542,13 +543,22 @@ def render_inspect(A: Adapter, out: Path, page_fn=page, **page_kw) -> None:
         "Holm across the family). Click a row to see what each arm produced.</p>"
         '<div id="pick" class="pick"></div></div></section>'
         '<section class="block tight"><div class="wrap" id="app">'
-        '<p class="muted">Loading… (this page needs <code>evh catalog-serve</code>; opened '
+        f'<p class="muted">Loading… (this page needs <code>{e(serve)}</code>; opened '
         "from disk it cannot read runs.)</p></div></section>"
     )
     write(
         out,
         "inspect.html",
-        page_fn("Inspector", body, 0, "inspect", ("runs.js", "assets/inspect.js"), item=item, **page_kw),
+        page_fn(
+            "Inspector",
+            body,
+            0,
+            "inspect",
+            ("runs.js", "assets/inspect.js"),
+            item=item,
+            serve=serve,
+            **page_kw,
+        ),
     )
 
 

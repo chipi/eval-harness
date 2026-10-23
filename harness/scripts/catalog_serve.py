@@ -63,6 +63,23 @@ def set_adapter(adapter: Adapter) -> None:
     global A
     A = adapter
     _scores.cache_clear()
+    _known.cache_clear()
+
+
+@lru_cache(maxsize=1)
+def _known() -> tuple[frozenset, frozenset]:
+    """(every arm the catalog lists, every reference id). A request may name an arm or a path
+    that selects arms (a run directory), but only arms in this set: an adapter's arms_of may
+    accept any path it is handed, and `../../.git` reached the podcast adapter's file reads."""
+    listed = set(A.arms())
+    arms = listed | {x for a in listed for x in A.arms_of(a)}
+    return frozenset(arms), frozenset(str(r.get("id")) for r in A.references())
+
+
+def _arms_known(path: str) -> list:
+    """The arms `path` selects, or [] when it selects none or any the catalog does not list."""
+    got = A.arms_of(path)
+    return got if got and set(got) <= _known()[0] else []
 
 
 @lru_cache(maxsize=4096)
@@ -358,7 +375,7 @@ def compare(params: dict) -> dict:
     runs = [r.strip("/") for r in params.get("runs", [""])[0].split(",") if r.strip()]
     if len(runs) > LIMITS["max_arms"]:
         return {"error": f"{len(runs)} arms asked for; at most {LIMITS['max_arms']} in one comparison"}
-    by_run = {r: A.arms_of(r) for r in runs}
+    by_run = {r: _arms_known(r) for r in runs}
     bad = [r for r, xs in by_run.items() if not xs]
     if bad:
         return {"error": f"no arm known to the catalog: {', '.join(bad)}"}
@@ -468,7 +485,8 @@ def item(params: dict) -> dict:
     """Fetch one item's output from multiple arms and the reference."""
     arms = [a for a in params.get("arms", [""])[0].split(",") if a.strip()]
     it = params.get("item", [""])[0]
-    if not it or not arms or any(not A.arms_of(a) for a in arms):
+    refs = _known()[1]
+    if not it or not arms or any(not _arms_known(a) for a in arms):
         return {"error": "need arms=<arm>,... known to the catalog and item=<item_id>"}
     out = {"item": it, "views": {a: A.item_view(a, it) for a in arms}}
     decl, values = _fields_of(A.describe(A.arms_of(arms[0])[0]).get("dataset", ""))
@@ -478,6 +496,8 @@ def item(params: dict) -> dict:
         if f["name"] in values.get(it, {})
     ]
     ref = params.get("ref", [""])[0]
+    if ref and ref not in refs:
+        return {"error": f"no reference known to the catalog: {ref}"}
     if ref:
         out["reference"] = {"id": ref, "view": A.reference_view(ref, it)}
     return out
