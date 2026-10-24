@@ -9,7 +9,7 @@
   const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
   const fmt = v => v == null ? '—' : (Math.abs(v) >= 10 ? v.toFixed(1) : v.toFixed(3));
   // As every command prints a p (stats.fmt_p): four decimals, and "<0.0001" below that.
-  const fmtp = p => p == null ? '—' : (p < 0.0001 ? '<0.0001' : p.toFixed(4));
+  const fmtp = p => p == null ? '—' : (p.toFixed(4) === '0.0000' ? '<0.0001' : p.toFixed(4));
   const runs = () => (P.get('runs') || '').split(',').filter(Boolean);
   const go = () => { location.search = P.toString(); };
   const short = a => a.replace(/^runs\//, '');

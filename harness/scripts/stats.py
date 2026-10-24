@@ -126,8 +126,10 @@ def sign_flip_p(
 
 
 def fmt_p(p: float) -> str:
-    """A p-value as every command prints it: four decimals, and "<0.0001" below that."""
-    return "<0.0001" if p < 0.0001 else f"{p:.4f}"
+    """A p-value as every command prints it: four decimals, and "<0.0001" for what would print
+    as 0.0000 (a p is never zero). Every other value prints exactly as it always has."""
+    s = f"{p:.4f}"
+    return "<0.0001" if s == "0.0000" else s
 
 
 def holm(pvalues: dict, alpha: float = ALPHA, family: int | None = None) -> dict:

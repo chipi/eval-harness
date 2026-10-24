@@ -181,6 +181,11 @@ TOL = 5e-4
 ok: list = []
 
 
+def _pf(s: str) -> float:
+    """A printed p (stats.fmt_p) as a number: "<0.0001" reads as 0."""
+    return 0.0 if s.startswith("<") else float(s)
+
+
 def check(label: str, cond: object, detail: str = "") -> None:
     """Record and print a check result."""
     ok.append(cond)
@@ -1214,7 +1219,7 @@ if not _rows2:
 else:
     _sep2 = {r[0] for r in _rows2 if r[-1] == "SEPARATED"}
     _fts = ("ag_bert_mini_n200_v1", "ag_bert_base_ta_n200_v1", "ag_bert_base_fy_n200_v1")
-    _p_ft = [float(r[3]) for r in _rows2 if r[0] in _fts]
+    _p_ft = [_pf(r[3]) for r in _rows2 if r[0] in _fts]
     _ns2 = [r[0] for r in _rows2 if r[-1] == "--"]
     check(
         "classification: AG News v2, anthropic_l separated from 9 of 29 (all three fine-tunes, "
@@ -2296,7 +2301,7 @@ _bad_tie = []
 for _trow in _tied_rows:
     _arm = _trow[0][len("se_") : -len("_n100_v1")]
     _wins = _trow[2].split("/")[0]
-    _want = f"| `{_arm}` | {_signed(-float(_trow[1]))} | {_wins} of 100 | {float(_trow[3]):.4f} | {float(_trow[4]):.4f} |"
+    _want = f"| `{_arm}` | {_signed(-float(_trow[1]))} | {_wins} of 100 | {_pf(_trow[3]):.4f} | {float(_trow[4]):.4f} |"
     if _want not in _SEV:
         _bad_tie.append(_want)
 check(
@@ -2368,7 +2373,7 @@ for _u in ("unievalpub", "unieval"):
         text=True,
     )
     _ue[_u] = {
-        ln.split()[0][3:-8]: (float(ln.split()[1]), ln.split()[-1], ln.split()[2], float(ln.split()[3]))
+        ln.split()[0][3:-8]: (float(ln.split()[1]), ln.split()[-1], ln.split()[2], _pf(ln.split()[3]))
         for ln in _uft.stdout.splitlines()
         if ln.strip().endswith(("SEPARATED", "--")) and ln.split()[0].endswith("_n100_v1")
     }
