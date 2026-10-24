@@ -102,6 +102,12 @@ try:
         r.returncode == 0 and "tickets_author_v1" in r.stdout,
         out(r)[-300:],
     )
+    r = evh("inspect", "--round", "r1", "--goal", "tickets_summary")
+    check(
+        "evh inspect --round: the round's arms, tested against the first",
+        r.returncode == 0 and "run vs baseline" in r.stdout and "tickets_author_v1" in r.stdout,
+        out(r)[-300:],
+    )
 
     r = evh(
         "round-retire",

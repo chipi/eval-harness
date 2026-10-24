@@ -299,9 +299,10 @@ def inspect(argv) -> int:
     ap = argparse.ArgumentParser(
         prog="evh inspect", description="The inspector's comparison, in the terminal."
     )
-    ap.add_argument(
-        "--runs", required=True, help="arms: config ids (looked up under --from) or arm ids, comma-separated"
-    )
+    pick = ap.add_mutually_exclusive_group(required=True)
+    pick.add_argument("--runs", help="arms: config ids (looked up under --from) or arm ids, comma-separated")
+    pick.add_argument("--round", help="the arms in play in this round of a goal (rN; ADR-0004)")
+    ap.add_argument("--goal", help="the goal --round belongs to, when several goals have one")
     ap.add_argument("--baseline", help="the arm the others are tested against (default: the first)")
     ap.add_argument("--metric", help="default: the arms' primary metric")
     ap.add_argument(
@@ -322,7 +323,15 @@ def inspect(argv) -> int:
     args = ap.parse_args(argv)
     A = load_catalog_adapter(args.adapter)
     cs.set_adapter(A)
-    arms = _arm_ids(A, [t.strip() for t in args.runs.split(",") if t.strip()], args.from_dir)
+    if args.round:
+        from _rounds import arms_of, resolve  # noqa: PLC0415
+
+        tokens = arms_of(resolve(args.round, args.goal))
+        if not tokens:
+            die(f"round {args.round} has no arms in play yet")
+    else:
+        tokens = [t.strip() for t in args.runs.split(",") if t.strip()]
+    arms = _arm_ids(A, tokens, args.from_dir)
     base = _arm_ids(A, [args.baseline], args.from_dir)[0] if args.baseline else arms[0]
     label = {a: A.describe(a)["label"] for a in arms}
     if args.item:
