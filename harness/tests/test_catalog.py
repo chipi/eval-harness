@@ -176,7 +176,7 @@ try:
         mj = data4 / "runs" / rid / "metrics.json"
         m = json.loads(mj.read_text())
         m["fingerprint"] = {
-            "version": 3,
+            "version": 4,
             "host": {"platform": machine, "cpu_count": 8},
             "system_under_test": {"libraries": {"numpy": "2.0"}},
             "instrument": {

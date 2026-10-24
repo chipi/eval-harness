@@ -150,4 +150,29 @@ try:
 finally:
     retrieval.parse_ranking = _orig
 
+
+# ── documentation is not code: a docstring or a comment never moves a digest ──
+class _A:
+    def g(x):
+        return x + 1
+
+
+class _B:
+    def g(x):
+        """Add one, for the test."""
+        # a comment
+        return x + 1
+
+
+class _C:
+    def g(x):
+        return x + 2
+
+
+check(
+    "code_digest: a docstring, a comment and spacing do not move it",
+    codehash.code_digest(_A.g) == codehash.code_digest(_B.g),
+)
+check("code_digest: a changed expression moves it", codehash.code_digest(_A.g) != codehash.code_digest(_C.g))
+
 sys.exit(summary())

@@ -119,6 +119,16 @@ p 0.36, from the pre-fix run), and DBpedia's 56-item dev slice, over today's 28 
   runs it before the merge.
 
 ### Changed
+- **Documentation never moves a fingerprint (fingerprint version 4).** Code is hashed by what it
+  does: its syntax tree without docstrings, comments, formatting or `METRIC_DESCRIPTIONS`. That
+  holds for the adapter, the harness's measuring modules, judge_score's own hash and the examples'
+  `code_digest`. A judge scorer YAML is hashed by its parsed content, and a reference manifest's
+  `caveat` is outside the reference digest. Adding metric descriptions to an adapter used to make
+  run-compare and the inspector call every earlier run "not the same conditions". The tree is
+  serialised without empty fields, so one file hashes the same on Python 3.11, 3.12 and 3.14
+  (`ast.dump` does not). v3 and v4 digests are not comparable. The committed v3 runs here were
+  migrated: each recorded hash was matched to the code or reference state it came from (git
+  history, unreachable objects included) and recomputed. No score changed.
 - **One install calls hosted models.** `openai` and `anthropic` are core dependencies; the
   `[llm]` extra is gone. A newcomer's first hosted arm failed on the import, and only one RUNBOOK
   section named the extra.

@@ -26,7 +26,7 @@
       "reference_tier": "gold",
       "references_sha256": "7b5e618e23b7f2b222665d83e99006eb0e9a51066e63e2e5ff8c51ae3c696c21"
     },
-    "hash": "644f4af49f8ad325b8c03ba5e71766c1ffc5bd8ba777ff643079a44e233444ec",
+    "hash": "e019dcfacb9644082d17f1bd5a85908c4823d9f6c25adf8c518d4c6deeeb30c9",
     "host": {
       "cpu_count": 4,
       "label": null,
@@ -38,7 +38,7 @@
     "instrument": {
       "adapter": {
         "id": "examples/summeval-judging/adapter.py",
-        "sha256": "0894c70f87d48fa61b72c600a9b91b539e3127fe5cf204f97ed9b622fca92036"
+        "sha256": "b7d5e2e5ce84ea0fe683e3488ba09fbcc416464d2b8f5abc47956930bf0262eb"
       },
       "harness": {
         "commit": "605e549e67a4",
@@ -54,7 +54,7 @@
         "transformers": "4.55.4"
       },
       "model": {
-        "code_sha256": "5846350d3a15121a40dd385da05679248bdbb4f4826800c59bc2e1a5492e2bb0",
+        "code_sha256": "0540094750d5582566308b718723f7d9c639b7945ac6824475939b4a0e459358",
         "id": "rouge1",
         "identity_declared": false,
         "kind": "deterministic metric, no model and no network",
@@ -63,7 +63,7 @@
         "revision_source": "not-a-model"
       }
     },
-    "version": 3
+    "version": 4
   },
   "metric_kinds": {
     "input_truncated": "descriptive",

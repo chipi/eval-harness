@@ -22,9 +22,9 @@
       "n_items": 5,
       "reference_id": "silver/smoke_v1",
       "reference_tier": "silver",
-      "references_sha256": "2185847f7b943c885f4cfa71d9a70bba37c3ae51a26a11e6572f285e818121a3"
+      "references_sha256": "c39371e81eb882843608c1e9308787c941a70580bbe10e4434e38c37fbac7b3c"
     },
-    "hash": "1335d7e120ddf4924b224eb6d8cc23215b3a403f2736292be1a490313cd435ca",
+    "hash": "811ab8101b625baa4bfb50c8975710185e6ca5bff75f56dab727cffc353f8654",
     "host": {
       "cpu_count": 32,
       "label": null,
@@ -36,10 +36,10 @@
     "instrument": {
       "adapter": {
         "id": "scripts/adapter.py",
-        "sha256": "14d373a87d5191e1cd60ce5d0415e73950643328d556d348fb903eca7a97ef89"
+        "sha256": "7026de2eaed3f9e9d7f5fab59677f5201f74683d2ae6ed826f7d2d365a64835a"
       },
       "harness": {
-        "code_sha256": "932a6bf634a9e027a7e0952c2efad0a1bfc682e4dd20de13fe229c3badd83931",
+        "code_sha256": "57daa50689b238eb2f37f19b2fbeb2682f6482c80b982a17a34519a26de88086",
         "commit": "68dc55b45c82",
         "dirty": false,
         "installed": false,
@@ -57,7 +57,7 @@
         "identity_declared": false
       }
     },
-    "version": 3
+    "version": 4
   },
   "metric_directions": {},
   "metric_kinds": {

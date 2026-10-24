@@ -173,11 +173,14 @@ def harness_code_sha256() -> str:
     The identity that survives installation. A project that depends on the harness has
     no git history for it, and an edited site-packages copy would otherwise be invisible.
     """
+    from _codeid import file_sha256  # noqa: PLC0415
+
     h = hashlib.sha256()
     for f in measuring_modules():
         h.update(f.name.encode())
         h.update(b"\x00")
-        h.update(f.read_bytes())
+        # By behaviour (_codeid): a docstring or a comment in the harness is not a new instrument.
+        h.update((file_sha256(f) or "").encode())
         h.update(b"\x1e")
     return h.hexdigest()
 
@@ -224,11 +227,15 @@ def _adapter_identity(adapter_path: Path | None, adapter_id: str) -> dict[str, A
     A path is not an identity: the adapter holds `score()`, so editing it changes what
     every number means, and a run that recorded only `examples/x/adapter.py` would still
     claim a scorer that no longer exists as it was. A git commit would not catch an
-    uncommitted edit either. The file's sha256 does.
+    uncommitted edit either. Its code does, hashed by behaviour (_codeid): documentation (a
+    docstring, a comment, METRIC_DESCRIPTIONS) can change at any time without making it a new
+    scorer.
     """
+    from _codeid import file_sha256  # noqa: PLC0415
+
     return {
         "id": adapter_id,
-        "sha256": sha256_file(adapter_path) if adapter_path else None,
+        "sha256": file_sha256(adapter_path) if adapter_path else None,
     }
 
 
@@ -314,7 +321,11 @@ def build_fingerprint(
         # whenever a non-.txt file is present, so they are not comparable and the
         # version must say so. Left at 2 when the rule changed; found by external
         # review.
-        "version": 3,
+        # VERSION 4 as of 2026-10-24: code is hashed by behaviour (_codeid: the syntax tree
+        # without docstrings, comments, formatting or METRIC_DESCRIPTIONS), the adapter and the
+        # harness alike, and a reference manifest's caveat is outside the reference digest.
+        # Documentation never moves a fingerprint; v3 digests are not comparable with v4's.
+        "version": 4,
         "instrument": {
             "harness": _harness_identity(root, data_dir),
             "adapter": _adapter_identity(adapter_path, adapter_id),
@@ -366,11 +377,21 @@ def references_digest(root: Path, reference_id: str | None, data_dir: Path | Non
     # caveat is "these were written by a model, and which model matters", leaving the
     # statement of which model outside the hash is the wrong half to omit. Found by
     # external review.
+    # Except documentation: a manifest's `caveat` explains what the tier means and can be
+    # reworded without changing what anything was scored against.
     h = hashlib.sha256()
     for f in sorted(x for x in ref_dir.iterdir() if x.is_file()):
+        data = f.read_bytes()
+        if f.name == "manifest.json":
+            try:
+                doc = json.loads(data)
+                doc.pop("caveat", None)
+                data = json.dumps(doc, sort_keys=True).encode()
+            except ValueError:
+                pass
         h.update(f.name.encode())
         h.update(b"\x00")
-        h.update(f.read_bytes())
+        h.update(data)
         h.update(b"\x1e")
     return h.hexdigest()
 

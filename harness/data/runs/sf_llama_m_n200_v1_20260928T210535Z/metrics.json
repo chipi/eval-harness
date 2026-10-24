@@ -14,7 +14,7 @@
     "kind": "reparse",
     "with": {
       "parser": "examples/_shared/retrieval.parse_ranking",
-      "scorer_sha256": "9eaf5c34160a937dcca20757f75ef3a41d8ec9ac7e0599477797cda368e7291d"
+      "scorer_sha256": "a534747b2a5d9712a1965473ab8e1d60b82aa2f73cf385c789d0fb4e83a51cd3"
     }
   },
   "fingerprint": {

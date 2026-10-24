@@ -34,7 +34,7 @@
       "reference_tier": "gold",
       "references_sha256": "7b5e618e23b7f2b222665d83e99006eb0e9a51066e63e2e5ff8c51ae3c696c21"
     },
-    "hash": "e4c3656bc76fbc2e5a04b843a9d9525bccfef823972ba36a3b3f74d4c8739c99",
+    "hash": "2fe72a9c16f9946521d9c45cbc4321a08ad474a6093e31c9721f215180e95e22",
     "host": {
       "cpu_count": 32,
       "label": "omarchy",
@@ -46,7 +46,7 @@
     "instrument": {
       "adapter": {
         "id": "examples/summeval-judging/adapter.py",
-        "sha256": "e66dc38feb3e24674f62b48e61156d57a0d358f94bd718874849adb0a43c6537"
+        "sha256": "b757ca07e3388b96f6eeefc7033c421ca6b74ae836785f683787dd9edc870473"
       },
       "harness": {
         "commit": "90b88fd29bd7",
@@ -77,7 +77,7 @@
         "temperature": 0.0
       }
     },
-    "version": 3
+    "version": 4
   },
   "metric_kinds": {
     "input_truncated": "descriptive",

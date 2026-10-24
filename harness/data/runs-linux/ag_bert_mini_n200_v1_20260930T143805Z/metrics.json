@@ -34,7 +34,7 @@
       "reference_tier": "gold",
       "references_sha256": "e671b1a159664de82a0a5f35d36150d81abc99d45ac19e7df8ec1d66164bcc04"
     },
-    "hash": "5bef097b2a598d257fde96ee5fd2f087196cdad6d3c656731fc33caf4e93d187",
+    "hash": "62ea2ccb49723964babe2286d3153510c870eacac1e452a447c3e94089a741c0",
     "host": {
       "cpu_count": 4,
       "label": null,
@@ -46,7 +46,7 @@
     "instrument": {
       "adapter": {
         "id": "examples/classification-ag-news/adapter.py",
-        "sha256": "56489ac4d78f3cebce9cf321d0fea18726684ffe4434b7c7969dae21a12775ba"
+        "sha256": "a678930359b38e367bc29f20f4e886d0e8c91361f0963e6a038511fbc50546b8"
       },
       "harness": {
         "commit": "4068ea23007d",
@@ -78,7 +78,7 @@
           "Sci/Tech"
         ],
         "labels_sha256": "c7a1ee508b78c0e92f28d159d340a6537ac31ff70ff566430fe2507da58464a3",
-        "parser_sha256": "3a1ff6d4c5022ac09a66164b9752633fae93239b09ee6736d3e5e91ca219babb",
+        "parser_sha256": "f8adae1bc43c3446a7ba737f6d22c89f8f2685a18cadd64ecd79dec453260390",
         "precision": "fp32",
         "provider": "hf_local",
         "revision": "e94b474cce6f842ee5a90daa7352f5152fac4572",
@@ -88,7 +88,7 @@
         ]
       }
     },
-    "version": 3
+    "version": 4
   },
   "metric_kinds": {
     "answer_words": "descriptive",

@@ -42,7 +42,6 @@ from _common import (
     die,
     how,
     read_json,
-    sha256,
     write_json,
 )
 from _fingerprint import references_digest
@@ -448,7 +447,10 @@ def _descriptions(path):
 
 
 def _sha(path):
-    return sha256(Path(path)) if path else None
+    from _codeid import file_sha256  # noqa: PLC0415
+
+    # By behaviour: an adapter whose docstrings or METRIC_DESCRIPTIONS changed scores the same.
+    return file_sha256(Path(path)) if path else None
 
 
 if __name__ == "__main__":

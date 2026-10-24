@@ -29,7 +29,7 @@
       "reference_tier": "gold",
       "references_sha256": "7b5e618e23b7f2b222665d83e99006eb0e9a51066e63e2e5ff8c51ae3c696c21"
     },
-    "hash": "82b3e3de29260ef1c577a47c97a2a913344787dbebe1015a9dee091b2b6aa491",
+    "hash": "a0501d5c0519ea91942cd26fa6512fc11f25c53dfc129d407df46c80804d2df6",
     "host": {
       "cpu_count": 32,
       "label": "omarchy",
@@ -41,7 +41,7 @@
     "instrument": {
       "adapter": {
         "id": "examples/summeval-judging/adapter.py",
-        "sha256": "4a77c2c0755db4aebb830c807ca65fac815b8cb3108ac0017f6068468e98629b"
+        "sha256": "a962a8424980336b9c979c4d9d198f65ab160130cf0b92056cdfcb2addbb7004"
       },
       "harness": {
         "commit": "607e7e521f8a",
@@ -57,7 +57,7 @@
         "transformers": "4.55.4"
       },
       "model": {
-        "code_sha256": "a5209e0ff486b6997a9b17a86952e1271d6f904896c278f4f7582320ef4af739",
+        "code_sha256": "205321c4291e768e3f3d374af95a6f1e5db79a6573def4f542ca0adcedb839ed",
         "device": "cpu",
         "id": "MingZhong/unieval-sum",
         "identity_declared": true,
@@ -75,7 +75,7 @@
         "weights_licence": "not stated on the model card (MingZhong/unieval-sum)"
       }
     },
-    "version": 3
+    "version": 4
   },
   "metric_kinds": {
     "input_truncated": "descriptive",

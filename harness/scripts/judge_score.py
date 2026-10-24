@@ -54,6 +54,7 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any, Callable
 
+from _codeid import content_sha256, file_sha256
 from _common import (
     BOOKKEEPING_PREFIXES,
     DATA,
@@ -138,7 +139,8 @@ def load_scorer(path: Path) -> dict[str, Any]:
     if not path.is_file():
         die(f"no such scorer: {path}")
     sc = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
-    sc["_sha256"] = hashlib.sha256(path.read_bytes()).hexdigest()
+    # Its content, not its bytes: a comment in the YAML is documentation and changes no judgement.
+    sc["_sha256"] = content_sha256(sc)
     sc["_dir"] = str(path.resolve().parent)
     if sc.get("kind") != "judge":
         die(f"{path.name}: kind must be 'judge', got {sc.get('kind')!r}")
@@ -958,7 +960,8 @@ def write_scored_runs(
             fp = json.loads(json.dumps(fp))
             fp.setdefault("instrument", {})["adapter"] = {
                 "id": f"judge-score:{sc['scorer_id']}",
-                "sha256": hashlib.sha256(self_path.read_bytes()).hexdigest(),
+                # By behaviour (_codeid): documentation in judge_score.py is not a new scorer.
+                "sha256": file_sha256(self_path),
             }
             fp["hash"] = None
             fp["hash_invalid_because"] = (

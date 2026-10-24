@@ -44,7 +44,7 @@
       "reference_tier": "gold",
       "references_sha256": "e0564fe65fb011e37717e037a6ad662f44e796b7d7de8e62ed2344ba56fa7a8a"
     },
-    "hash": "4260ad168ef1d0911a54afae059f5dccd247b3d77aac50e7d274153ef80eb596",
+    "hash": "405af5dc63a9f05d67f9b51a46187af3b0a4d8df47c067f2c52b279f40a10b89",
     "host": {
       "cpu_count": 4,
       "label": null,
@@ -56,7 +56,7 @@
     "instrument": {
       "adapter": {
         "id": "examples/classification-dbpedia-14/adapter.py",
-        "sha256": "67a5bc27da0455c4f8bf21c03f399134838c72cfe861b282f56d7996c8432fcb"
+        "sha256": "58b55c964f8bb40746c359621beb25bfd0a071fca079961bdf15be1e7c0a77a8"
       },
       "harness": {
         "commit": "4068ea23007d",
@@ -108,14 +108,14 @@
           "WrittenWork"
         ],
         "labels_sha256": "d3a33437c1e2b2fe45fdb7a425b14796d89d31a0d8919d899149e27f5c6f899d",
-        "parser_sha256": "a185519a3ed6270ab6fe0e16898b2ade189d4ad29a7f7fe9e8dc65c4cd1b9f9f",
+        "parser_sha256": "4ad032219af088a127d97f358471c648a50d9665e3b32cd2f3e2f2dca7d8ded2",
         "precision": "fp32",
         "provider": "hf_local",
         "revision": null,
         "revision_source": "unavailable"
       }
     },
-    "version": 3
+    "version": 4
   },
   "metric_kinds": {
     "answer_words": "descriptive",

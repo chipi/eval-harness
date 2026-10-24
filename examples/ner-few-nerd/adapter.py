@@ -44,6 +44,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent / "_shared"))
 
 import gateway  # noqa: E402
+from codehash import code_digest  # noqa: E402
 from extraction import (  # noqa: E402
     METRIC_KINDS,
     PRIMARY_METRIC,
@@ -630,12 +631,8 @@ def fingerprint(params: Dict[str, Any]) -> Dict[str, Any]:
         return out
 
     if provider in ("capitalized", "nothing"):
-        import hashlib  # noqa: PLC0415
-        import inspect  # noqa: PLC0415
-
-        rules = inspect.getsource(_capitalized) + repr(sorted(_CAP_STOP)) + _CAP_RUN.pattern
         return {"id": provider,
-                "rules_sha256": hashlib.sha256(rules.encode()).hexdigest()
+                "rules_sha256": code_digest(_capitalized, consts={"_CAP_STOP": _CAP_STOP, "_CAP_RUN": _CAP_RUN})
                 if provider == "capitalized" else None,
                 "label": params.get("label"), **common}
 

@@ -651,6 +651,7 @@ def test_example_scorer_suites_pass() -> None:
         ("test_installed_commands.py", "every evh command in a project that pins the package"),
         ("test_judge_score.py", "judging pass"),
         ("test_code_hashes.py", "scoring-code hashes"),
+        ("test_codeid.py", "code identity: documentation never moves a hash"),
         ("test_hf_rows.py", "the examples' datasets-server fetcher: pacing, 429 and 5xx retries"),
         ("test_runs_adapter.py", "run reading, direction, adapter loading, the judge panel"),
         ("check_report_claims.py", "report claims vs committed runs"),
@@ -719,9 +720,9 @@ def test_fingerprint_version_is_read_somewhere() -> None:
         adapter_id="a",
         adapter_path=None,
     )
-    # v3 since 2026-09-30: the reference digest now covers every file in the directory,
-    # not just *.txt, so a v2 and a v3 hash over the same references can differ.
-    check("new fingerprints are version 3", fp.get("version") == 3, str(fp.get("version")))
+    # v4 since 2026-10-24: code hashed by behaviour (_codeid), a manifest's caveat outside the
+    # reference digest; documentation never moves a fingerprint.
+    check("new fingerprints are version 4", fp.get("version") == 4, str(fp.get("version")))
 
 
 def test_verdict_honours_declared_kinds() -> None:
