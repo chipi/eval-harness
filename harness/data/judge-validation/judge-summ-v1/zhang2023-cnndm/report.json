@@ -11,7 +11,7 @@
  "inputs": {
   "commit": "4e87890ed070c7db3dd5c1125adb5bde0ccd2eb1",
   "file_sha256": "5f9936bb9c09877f758605a1767031d547db8edfd45ab1f93608a0fd6f56b56c",
-  "scorer_sha256": "8193aa67b8922b1e72ca443b92939300ac3cc38f06b94ddc5f725df8884231e0"
+  "scorer_sha256": "d604095cace5f53746b513a43f3a5623d56bcffe67f228c96e390414a268bacc"
  },
  "human_baseline": {
   "all_19": {
