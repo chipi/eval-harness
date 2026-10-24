@@ -154,6 +154,20 @@ try:
         "catalog: the goals index links it",
         "g/tickets_summary.html" in (proj / ".build/catalog/goals.html").read_text(),
     )
+    answer = html.find("the answer so far")
+    check(
+        "catalog: the goal page leads with the answer, the promoted baseline and its reason, before what it is for",
+        0 <= answer < html.find("what it is for") and "lead2 answers the triage goal on six tickets" in html,
+    )
+    check(
+        "catalog: the goal page groups its arms by what they are scored against, with the baseline tagged",
+        "scored against gold/tickets_v1" in html and 'class="tag-base"' in html,
+    )
+    ds_page = (proj / ".build/catalog/d/tickets_v1.html").read_text()
+    check(
+        "catalog: the dataset page shows its baseline and reason, and tags the row",
+        "lead2 answers the triage goal on six tickets" in ds_page and 'class="tag-base"' in ds_page,
+    )
 
     # An engineering goal checked by a gate: no dataset, and a guard, not a ranking direction.
     (data / "goals" / "no_drop.yaml").write_text(

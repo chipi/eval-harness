@@ -92,6 +92,9 @@ def datasets(argv) -> int:
         print(f"made into {c}: " + ", ".join(f"{len(cl[k])} {k}" for k in ("added", "removed", "changed")))
     if v["refs"]:
         print("\nreferences: " + ", ".join(f"{r['id']} ({r['tier']})" for r in v["refs"]))
+    for b in v.get("baselines", [])[-1:]:
+        print(f"\nbaseline: {b.get('arm') or b['run']} (promoted {(b['promoted_at'] or '')[:10]})")
+        print(textwrap.fill(b["reason"], width=92, initial_indent="  ", subsequent_indent="  "))
     tiers = {r["id"]: r["tier"] for r in v["refs"]}
     arms = sorted(v["arms"], key=lambda a: (a["metric"], -(a["mean"] or 0) * (-1 if a["lower"] else 1)))
     print()
@@ -228,35 +231,43 @@ def goals(argv) -> int:
     print(
         f"\n  decision   {g.get('decision', '')}\n  decides    {prim.get('measure', '')}, {prim.get('direction', '')} is better"
     )
-    for ds, role, rows, leader in cb.goal_answers(g, by_ds):
+    print("\nthe answer so far:")
+    for d in g.get("datasets") or []:
+        ds = d.get("dataset_id", "")
+        bl = [
+            b
+            for b in (by_ds.get(ds) or {}).get("baselines", [])
+            if not b.get("goal") or b.get("goal") == g["goal_id"]
+        ]
+        if bl:
+            b = bl[-1]
+            print(f"  {ds}: baseline {b.get('arm') or b['run']} (promoted {(b['promoted_at'] or '')[:10]})")
+            print(textwrap.fill(b["reason"], width=92, initial_indent="    ", subsequent_indent="    "))
+        else:
+            print(f'  {ds}: no decision yet (evh run-promote --run <run_id> --reason "...")')
+    for ans in cb.goal_answers(g, by_ds):
+        ds = ans["dataset"]
         tiers = {r["id"]: r["tier"] for r in (by_ds.get(ds) or {}).get("refs", [])}
-        print(f"\n{ds}" + (f" · {role}" if role else ""))
-        if not rows:
+        print(f"\n{ds}" + (f" · {ans['role']}" if ans["role"] else ""))
+        if not ans["groups"]:
             print(f"  no arm records {prim.get('measure', '')}")
-            continue
-        _table(
-            [
-                "arm",
-                f"mean {prim.get('measure', '')}",
-                f"{A.item_word}s",
-                "scored against",
-                "row",
-                "flags",
-                "",
-            ],
-            [
+        for grp in ans["groups"]:
+            what = grp["key"]
+            print(f"\n  {'scored by ' + what if what.startswith('judge ') else 'scored against ' + what}")
+            _table(
+                ["arm", f"mean {prim.get('measure', '')}", f"{A.item_word}s", "row", "flags", ""],
                 [
-                    r["label"],
-                    _fmt(r["mean"]),
-                    r["n"],
-                    _scored(r),
-                    _kind(r, tiers),
-                    "; ".join(r["flags"]) or "—",
-                    "leader" if leader and r is leader else "",
-                ]
-                for r in rows
-            ],
-        )
+                    [
+                        r["label"] + (" [baseline]" if r.get("baseline") else ""),
+                        _fmt(r["mean"]),
+                        r["n"],
+                        _kind(r, tiers),
+                        "; ".join(r["flags"]) or "—",
+                        "leader" if grp["leader"] and r is grp["leader"] else "",
+                    ]
+                    for r in grp["rows"]
+                ],
+            )
     return 0
 
 

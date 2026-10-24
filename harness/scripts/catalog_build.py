@@ -310,6 +310,15 @@ def collect(A: Adapter) -> dict:
         )
     for r in A.references():
         by_ds.setdefault(r["dataset"], {"arms": [], "refs": [], "items": 0})["refs"].append(r)
+    bl = getattr(A, "baselines", None)
+    for b in bl() if callable(bl) else []:
+        v = by_ds.get(b["dataset"])
+        if v is None:
+            continue
+        v.setdefault("baselines", []).append(b)
+        for a in v["arms"]:
+            if a["arm"] == b["arm"]:
+                a["baseline"] = b
     _versions(A, by_ds)
     # The dataset's own size, from the ADAPTER: the harness's DATASETS path is not where a
     # project with its own layout keeps them. An adapter that cannot say falls back to the
@@ -448,6 +457,7 @@ def render_dataset(A: Adapter, ds: str, v: dict, out: Path, nav: list) -> None:
             "cls": row_kind(a, tiers),
             "cells": [
                 e(a["label"])
+                + (' <span class="tag-base">baseline</span>' if a.get("baseline") else "")
                 + (
                     f"<br><small>on {e(a['machine'])}</small>"
                     if len(machines) > 1 and a.get("machine")
@@ -494,6 +504,12 @@ def render_dataset(A: Adapter, ds: str, v: dict, out: Path, nav: list) -> None:
             + (f'<span class="muted small">{more}</span>' if more else "")
         )
     btn = f'<p class="btns">{"".join(btns)}</p>' if btns else ""
+    for b in v.get("baselines", [])[-1:]:
+        label = next((a["label"] for a in arms if a["arm"] == b.get("arm")), b["run"])
+        btn = (
+            f'<div class="answer"><p class="small muted">baseline, promoted {e((b["promoted_at"] or "")[:10])}</p>'
+            f'<p class="lead"><b>{e(label)}</b></p><p>{e(b["reason"])}</p></div>'
+        ) + btn
     refs = "".join(
         f'<li><a class="cell-link" href="../{reference_page(r["id"])}"><code>{e(r["id"])}</code></a> · {e(r["tier"])}'
         + (f" · written by <code>{e(r['author'])}</code>" if r.get("author") else "")
@@ -586,14 +602,61 @@ def render_fields(A: Adapter, ds: str) -> str:
     return intro + table("fields", ["field", "type", "filled", "description", "values"], rows)
 
 
+def _group_key(a: dict) -> str:
+    """What an arm's numbers are measured against: a judge, a reference, or nothing."""
+    return f"judge {a['judge']}" if a.get("judge") else (a.get("reference") or "no reference")
+
+
 def goal_answers(goal: dict, by_ds: dict) -> list:
-    """[(dataset, role, rows, leader)] for one goal: on each of its datasets, every arm that
-    records the goal's primary measure, best first. Only arms on the same dataset are ever
-    ranked together; an arm filed under the goal is marked, and so is one whose format the
-    goal does not accept or whose items are fewer than its min_items."""
+    """[{"dataset", "role", "notes", "groups": [{"key", "rows", "leader"}]}] for one goal: on each
+    of its datasets, every arm that records the goal's primary measure, grouped by what it is
+    scored against (gold first, then silver, then judges), best first within a group. Arms are
+    ranked only against arms on the same dataset scored against the same thing, and a group's
+    leader is never a flagged arm: fewer items than min_items, a format the goal does not accept,
+    or the arm that wrote the reference it is scored against."""
+    crit = goal.get("success_criteria") or {}
+    lower = (crit.get("primary") or {}).get("direction") == "lower"
+    out = []
+    for ds, role, notes, rows in _goal_rows(goal, by_ds):
+        groups: dict = {}
+        for r in rows:
+            groups.setdefault(_group_key(r), []).append(r)
+        ordered = sorted(
+            groups.items(), key=lambda kv: (kv[0].startswith("judge "), not kv[0].startswith("gold/"), kv[0])
+        )
+        out.append(
+            {
+                "dataset": ds,
+                "role": role,
+                "notes": notes,
+                "groups": [
+                    {
+                        "key": k,
+                        "rows": sorted(
+                            g,
+                            key=lambda r: (bool(r["flags"]), r["mean"] if lower else -r["mean"], r["label"]),
+                        ),
+                        "leader": next(
+                            (
+                                r
+                                for r in sorted(g, key=lambda r: r["mean"] if lower else -r["mean"])
+                                if not r["flags"]
+                            ),
+                            None,
+                        ),
+                    }
+                    for k, g in ordered
+                ],
+            }
+        )
+    return out
+
+
+def _goal_rows(goal: dict, by_ds: dict) -> list:
+    """[(dataset, role, notes, rows)]: the arms on each of the goal's datasets that record its
+    measure, each with its mean, items, whether it names the goal, and its flags."""
     crit = goal.get("success_criteria") or {}
     measure = (crit.get("primary") or {}).get("measure", "")
-    lower = (crit.get("primary") or {}).get("direction") == "lower"
     need = crit.get("min_items")
     formats = {c.get("format") for c in goal.get("output_contract") or [] if c.get("format")}
     out = []
@@ -612,9 +675,7 @@ def goal_answers(goal: dict, by_ds: dict) -> list:
             if a["wrote"]:
                 flags.append("wrote the reference it is scored against")
             rows.append(dict(a, mean=mean, n=n, filed=a["goal"] == goal["goal_id"], flags=flags))
-        rows.sort(key=lambda r: (bool(r["flags"]), r["mean"] if lower else -r["mean"], r["label"]))
-        leader = next((r for r in rows if not r["flags"]), None)
-        out.append((ds, d.get("role", ""), rows, leader))
+        out.append((ds, d.get("role", ""), d.get("notes", ""), rows))
     return out
 
 
@@ -652,8 +713,47 @@ def render_goals(A: Adapter, by_ds: dict, out: Path, nav: list) -> int:
     return len(goals)
 
 
+def _when(stamp: str) -> str:
+    return (stamp or "")[:10]
+
+
+def _answer(A: Adapter, g: dict, by_ds: dict, measure: str) -> str:
+    """The goal's answer so far: on each of its datasets, the promoted baseline and why, or that
+    nothing has been decided, with the command that decides it."""
+    parts = []
+    for d in g.get("datasets") or []:
+        ds = d.get("dataset_id", "")
+        v = by_ds.get(ds) or {}
+        bl = [b for b in v.get("baselines", []) if not b.get("goal") or b.get("goal") == g["goal_id"]]
+        label = {a["arm"]: a["label"] for a in v.get("arms", [])}
+        head = f'<a class="cell-link" href="../d/{slug(ds or "none")}.html">{e(ds)}</a>'
+        if bl:
+            b = bl[-1]
+            arm = label.get(b.get("arm") or "", b["run"])
+            parts.append(
+                f'<div class="answer"><p class="small muted">{head} · baseline promoted {e(_when(b["promoted_at"]))}'
+                + (f" · scored against {e(b['tier'])}" if b.get("tier") else "")
+                + f'</p><p class="lead"><b>{e(arm)}</b></p><p>{e(b["reason"])}</p>'
+                + (
+                    f'<p><a class="btn small" href="{inspect_url([b["arm"]], "../", metric=measure)}">inspect it</a></p>'
+                    if b.get("arm")
+                    else ""
+                )
+                + "</div>"
+            )
+        else:
+            parts.append(
+                f'<div class="answer"><p class="small muted">{head}</p><p>No decision yet. When the tests '
+                "separate an arm worth keeping, promote its run with the reason they give: "
+                '<code>evh run-promote --run &lt;run_id&gt; --reason "…"</code></p></div>'
+            )
+    return "".join(parts) or '<p class="muted">The goal names no dataset.</p>'
+
+
 def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
-    """Render a page for one goal showing which arms satisfy its criteria."""
+    """One goal: its answer so far (the promoted baselines) first, then what it is for, then on
+    each of its datasets the arms that record its measure, grouped by what they are scored
+    against, a leader chosen within each group."""
     crit = g.get("success_criteria") or {}
     prim = crit.get("primary") or {}
     measure = prim.get("measure", "")
@@ -681,58 +781,80 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
     ]
     dl = "".join(f"<dt>{e(k)}</dt><dd>{e(v)}</dd>" for k, v in facts if v not in ("", None))
     body = hero("goal", e(g.get("title") or g["goal_id"]), e(g.get("statement", "")))
-    body += block("01", "what it is for", f'<dl class="kv">{dl}</dl>')
-    n = 2
-    for ds, role, rows, leader in goal_answers(g, by_ds):
-        tiers = {r["id"]: r["tier"] for r in (by_ds.get(ds) or {}).get("refs", [])}
-        if not rows:
-            inner = f'<p class="muted">No arm on this dataset records <code>{e(measure)}</code>.</p>'
-        else:
-            trs = []
-            for r in rows:
-                link = (
-                    (
-                        f'<a class="btn small" href="{inspect_url([r["arm"], leader["arm"]], "../", baseline=leader["arm"], metric=measure)}">'
-                        "test vs leader</a>"
-                    )
-                    if leader and r["arm"] != leader["arm"]
-                    else ("leader" if leader and r is leader else "")
+    body += block("01", "the answer so far", _answer(A, g, by_ds, measure))
+    body += block("02", "what it is for", f'<dl class="kv">{dl}</dl>')
+    n = 3
+    for ans in goal_answers(g, by_ds):
+        ds, v = ans["dataset"], by_ds.get(ans["dataset"]) or {}
+        tiers = {r["id"]: r["tier"] for r in v.get("refs", [])}
+        lin = (v.get("parent") or {}).get("dataset_id")
+        about = (
+            f'<p><a class="cell-link" href="../d/{slug(ds or "none")}.html">{e(ds)}</a>: '
+            f"{v.get('items', 0)} {e(A.item_word)}s"
+            + (f" · {e(ans['role'])}" if ans["role"] else "")
+            + (f' · made from <a class="cell-link" href="../d/{slug(lin)}.html">{e(lin)}</a>' if lin else "")
+            + "</p>"
+            + (f'<p class="small muted">{e(ans["notes"])}</p>' if ans["notes"] else "")
+            + (
+                '<p class="small">references: '
+                + ", ".join(
+                    f'<a class="cell-link" href="../{reference_page(r["id"])}">{e(r["id"])}</a>'
+                    + (f" (written by {e(r['author'])})" if r.get("author") else "")
+                    for r in v.get("refs", [])
                 )
-                trs.append(
-                    {
-                        "cls": row_kind(r, tiers),
-                        "cells": [
-                            e(r["label"]) + (" <small>filed</small>" if r["filed"] else ""),
-                            f'<span data-v="{r["mean"]}">{fmt(r["mean"])}</span>',
-                            f'<span data-v="{r["n"]}">{r["n"]}</span>',
-                            scored_against(r, "../"),
-                            e("; ".join(r["flags"]) or "—"),
-                            link,
-                        ],
-                    }
-                )
-            arms = [r["arm"] for r in rows][:INSPECT_MAX]
-            all_link = (
-                (
-                    f'<p><a class="btn" href="{inspect_url(arms, "../", baseline=leader["arm"], metric=measure)}">'
-                    "Test every arm against the leader</a></p>"
-                )
-                if leader and len(arms) > 1
+                + "</p>"
+                if v.get("refs")
                 else ""
             )
-            inner = (
-                f'<p class="small muted">Mean {metric_link(measure, "../")} over each arm\'s {e(A.item_word)}s; '
-                "a mean is not a verdict: the inspector tests each arm against the leader (Holm across "
-                "them). Flagged arms are never the leader.</p>"
-                + all_link
-                + ROW_KEY
-                + table(
-                    f"ans{n}",
-                    ["arm", f"mean {e(measure)}", f"{e(A.item_word)}s", "scored against", "flags", ""],
+        )
+        if not ans["groups"]:
+            inner = about + f'<p class="muted">No arm on this dataset records <code>{e(measure)}</code>.</p>'
+        else:
+            inner = about + (
+                f'<p class="small muted">Mean {metric_link(measure, "../")} over each arm\'s {e(A.item_word)}s, '
+                "in groups by what each arm is scored against: numbers from different references, or "
+                "from a judge, are different measurements and are never ranked together. A mean is not a "
+                "verdict: the inspector tests each arm against its group's leader (Holm across them). "
+                "Flagged arms are never the leader.</p>"
+            )
+            for gi, grp in enumerate(ans["groups"]):
+                leader, rows = grp["leader"], grp["rows"]
+                trs = []
+                for r in rows:
+                    link = (
+                        f'<a class="btn small" href="{inspect_url([r["arm"], leader["arm"]], "../", baseline=leader["arm"], metric=measure)}">test vs leader</a>'
+                        if leader and r["arm"] != leader["arm"]
+                        else ("leader" if leader and r is leader else "")
+                    )
+                    tag = (
+                        ' <small title="its config names this goal">filed</small>' if r["filed"] else ""
+                    ) + (' <span class="tag-base">baseline</span>' if r.get("baseline") else "")
+                    trs.append(
+                        {
+                            "cls": row_kind(r, tiers),
+                            "cells": [
+                                e(r["label"]) + tag,
+                                f'<span data-v="{r["mean"]}">{fmt(r["mean"])}</span>',
+                                f'<span data-v="{r["n"]}">{r["n"]}</span>',
+                                e("; ".join(r["flags"]) or "—"),
+                                link,
+                            ],
+                        }
+                    )
+                arms = [r["arm"] for r in rows][:INSPECT_MAX]
+                what = grp["key"]
+                inner += f'<h3 class="sub">{"scored by " + e(what) if what.startswith("judge ") else "scored against " + e(what)}</h3>'
+                if leader and len(arms) > 1:
+                    inner += (
+                        f'<p><a class="btn" href="{inspect_url(arms, "../", baseline=leader["arm"], metric=measure)}">'
+                        "Test every arm in this group against its leader</a></p>"
+                    )
+                inner += table(
+                    f"ans{n}_{gi}",
+                    ["arm", f"mean {e(measure)}", f"{e(A.item_word)}s", "flags", ""],
                     trs,
                 )
-            )
-        body += block(f"{n:02d}", f"{ds}{' · ' + role if role else ''}", inner)
+        body += block(f"{n:02d}", f"{ds}{' · ' + ans['role'] if ans['role'] else ''}", inner)
         n += 1
     write(
         out,

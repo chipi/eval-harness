@@ -45,6 +45,12 @@ p 0.36, from the pre-fix run), and DBpedia's 56-item dev slice, over today's 28 
 `bert_base_fy` alone at the top rather than 13 arms in a tie.
 
 ### Added
+- **A goal page leads with its answer.** First the promoted baseline on each of its datasets and
+  why (or "no decision yet", with the command that makes one), then what the goal is for, then on
+  each dataset its references and its arms in groups by what they are scored against: gold,
+  silver, a judge. Arms are ranked only within a group, and a group's leader is never an arm graded
+  against its own outputs. A dataset page shows its baseline and reason, and the baseline's row is
+  tagged. `evh goals --goal` and `evh datasets --dataset-id` say the same.
 - **Everything the catalog and the inspector show is a command.** `evh datasets` (one dataset:
   its versions, references and arms), `evh references` (one: who wrote it, from which run, what
   is scored against it), `evh metrics`, `evh goals` (one: its arms per dataset) and

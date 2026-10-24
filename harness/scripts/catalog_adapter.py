@@ -158,6 +158,9 @@ class Adapter(Protocol):
     # "harness.version": ..., "scorer.sha256": ..., "data.items_sha256": ...,
     # "reference.sha256": ...}; the inspector lists what differs between the arms it compares.
     # def conditions(self, arm: str) -> dict[str, str]: ...
+    # Optional: the promoted baselines (run-promote), [{"baseline_id", "dataset", "run", "arm",
+    # "reason", "promoted_at", "tier", "goal"}]; the pages lead with them, the answer so far.
+    # def baselines(self) -> list[dict]: ...
     # Optional: every dataset id, including those no arm has run on yet.
     # def datasets(self) -> list[str]: ...
     # Optional: the version a dataset was made from, {"dataset_id", "added", "removed",
@@ -484,6 +487,32 @@ class HarnessAdapter:
                 if v not in seen.setdefault(k, []):
                     seen[k].append(v)
         return {k: vs[0] if len(vs) == 1 else "varies: " + " | ".join(vs) for k, vs in seen.items()}
+
+    @_memo
+    def baselines(self) -> list[dict]:
+        """The promoted baselines (data/baselines/*.json), each with the arm its run belongs to."""
+        out = []
+        for f in sorted((self.data_dir / "baselines").glob("*.json")):
+            b = _json(f) or {}
+            run = b.get("promoted_from")
+            if not run or not b.get("dataset_id"):
+                continue
+            # A rescored copy keeps its source's run name; run-promote reads data/runs.
+            hits = [a for a, ds in self._index().items() if any(d.name == run for d in ds)]
+            arm = next((a for a in hits if a.startswith("runs/")), hits[0] if hits else None)
+            out.append(
+                {
+                    "baseline_id": b.get("baseline_id", f.stem),
+                    "dataset": b["dataset_id"],
+                    "run": run,
+                    "arm": arm,
+                    "reason": b.get("reason", ""),
+                    "promoted_at": b.get("promoted_at", ""),
+                    "tier": b.get("reference_tier"),
+                    "goal": b.get("goal"),
+                }
+            )
+        return out
 
     def datasets(self) -> list[str]:
         """Every frozen dataset, run or not: a new version has a page before its first run."""
