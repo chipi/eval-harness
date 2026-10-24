@@ -80,9 +80,10 @@ with no `dataset_id` on record; arms with no score on this metric; average-only 
 because they recorded exactly the same average as an arm already shown; arms left out because they are on another
 dataset; arms not tested because they were scored against another reference than the baseline's
 ("Pick a baseline scored against the same reference to compare them."); arms with only an
-average; outputs that did not follow the asked format; a filter ("a subset is a smaller sample,
-so less can be separated"); a breakdown ("a group is held to a stricter threshold than it would
-be alone") and items in no group.
+average; outputs that did not follow the asked format; runs scored against references for only
+some items (reference_coverage); a filter ("a subset is a smaller sample, so less can be
+separated"); a breakdown ("a group is held to a stricter threshold than it would be alone") and
+items in no group.
 
 **Not scorable:** when no arm has a per-item score, the page says so and offers a button per
 metric it can compare (output length, latency) instead.
@@ -92,10 +93,11 @@ metric it can compare (output length, latency) instead.
 - Eyebrow "verdicts · <metric>", the metric linked to its row on the metrics page.
 - One row per arm against the baseline, smallest p first, tinted like the catalog's rows
   ([UXS-001](UXS-001-catalog.md#row-tints)). Columns: **run vs baseline**, **verdict** (second,
-  so a phone sees it), **items**, **mean**, **Δ vs baseline**, **wins–losses** (with ties),
-  **p (exact ≤30)**, **Holm threshold**. A p is printed as every command prints it: four
-  decimals, `<0.0001` for what would print as 0.0000. Arm labels keep their version (`_v1`) even
-  when every arm shares it; only a shared " · <scored by>" tail is cut.
+  so a phone sees it), **items**, **mean**, **Δ vs baseline**, **95% CI of Δ** (the confidence
+  interval of the difference: exact up to 30 items, a t interval above), **wins–losses** (with
+  ties), **p (exact ≤30)**, **Holm threshold**. A p is printed as every command prints it: four decimals, `<0.0001`
+  for what would print as 0.0000. Arm labels keep their version (`_v1`) even when every arm shares
+  it; only a shared " · <scored by>" tail is cut.
 - The verdict is a chip: ▲ `separated: better` (border `--open`), ▼ `separated: worse` (border
   `--local`), or plain `not separated`; on a neutral metric `separated: higher` / `lower`. When
   the number of items cannot reach p 0.05 at all, the row says "n items cannot reach 0.05".

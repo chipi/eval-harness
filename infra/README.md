@@ -32,15 +32,18 @@ infra/
   capability dropped, and is limited to 64 MB, half a CPU and 64 processes. It serves two hosts.
   Unknown hosts are closed (444). `/docs/...` redirects 301 to the same page on the docs host.
 - **evals-inspector:** the stock Python image (pinned by digest) running the release's copy of the package, installed from its wheel on the CI runner by
-  `render.sh`: `inspector/pkg/evaluation_harness/catalog_serve.py --public catalog.evals.humancopilot.eu`.
+  `render.sh`: `inspector/pkg/evaluation_harness/catalog_serve.py --public catalog.evals.humancopilot.eu --publish outputs --client-header CF-Connecting-IP`.
+  The `--publish outputs` flag exposes the arms' outputs (already public in the repo); the
+  `--client-header CF-Connecting-IP` rate-limits by the visitor's address: nginx accepts only
+  Cloudflare's ranges (origin lock), so the header is Cloudflare's.
   - **Nothing is built or installed on the box.** The server is standard library only and
     reads the release's copy of the runs from the read-only mount.
   - **Hardening:** it runs as nobody, read-only, every capability dropped, limited to 256 MB,
     half a CPU and 64 processes.
   - **Network:** it calls out to nothing.
-  - **What it answers:** only the catalog host, 60 requests a minute per client, at most 40
-    arms per comparison, two computations at a time, every answer cached. At start it
-    computes every comparison the catalog's own pages link to.
+  - **What it answers:** only the catalog host, 60 requests a minute per client (identified by the
+    `CF-Connecting-IP` header), at most 40 arms per comparison, two computations at a time, every
+    answer cached. At start it computes every comparison the catalog's own pages link to.
 
 ## What `deploy.sh` checks before a release counts as live
 

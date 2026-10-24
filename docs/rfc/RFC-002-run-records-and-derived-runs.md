@@ -48,7 +48,8 @@ exact `--resume` command.
   `primary_metric`, `metric_kinds`, `metric_directions` (read by every command's direction rule),
   `metric_descriptions` (the adapter's `METRIC_DESCRIPTIONS`, refreshed by `rescore`),
   `reference_tier`, `goal`, `format`, `round`, `repeat_index`, `resume`, `providers_seen`,
-  `warmup_ms`, `imported` (for `import-run`), and for derived runs `derived` and
+  `warmup_ms`, `imported` (for `import-run`), `reference_coverage` (when only some items have a
+  reference: `{items_with_reference, items}`), and for derived runs `derived` and
   `source_created_at`.
 - `validate` V1 fails a record carrying any field not declared.
 

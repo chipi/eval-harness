@@ -444,9 +444,11 @@ p. Above that the estimate is seeded, so it repeats, but `family-test` draws one
 for the whole family while `pair-test` and the inspector draw one per pair: the same pair's p can
 differ in the third decimal between them (32 items in the 2026-10-24 scenario: 0.0297 from
 `family-test`, 0.0327 from `pair-test` and the inspector). The verdicts are read against the same
-thresholds; a p that close to one is not a result either way. Every command prints p to four
-decimals, and `<0.0001` for what would print as 0.0000. `family-test`'s `A wins` column counts
-the items A wins; the inspector's `wins–losses` is each row's arm against the baseline.
+thresholds; a p that close to one is not a result either way. `pair-test` separates an arm from
+the baseline at `p ≤ threshold`, and `family-test` marks an estimated p with `~` when the family
+mixes exact and estimated rows. Every command prints p to four decimals, and `<0.0001` for what
+would print as 0.0000. `family-test`'s `A wins` column counts the items A wins; the inspector's
+`wins–losses` is each row's arm against the baseline.
 Without `--metric` they read the primary metric the runs recorded. Which way is better is
 inferred once for every command: a flag (`--asc`, `--desc`), else the goal the runs name, else
 the adapter's `METRIC_DIRECTIONS`, else the name (cost, latency and token metrics go down).
@@ -789,6 +791,41 @@ evh round-open --goal my_goal --dataset my_v1 --from r1 --change "what changed a
   `pair-test --round` tests the round's leader against the baseline it started from unless
   `--a`/`--b` say otherwise, and refuses an arm not in play. `validate` (V14) checks the round
   files; the catalog's goal page shows the rounds, newest first, each with an inspect button.
+
+---
+
+## 14. Browse the catalog and the inspector
+
+```bash
+evh catalog                                             # build static pages into .build/catalog/
+evh catalog-serve [--port 8765]                        # serve the catalog and inspector on 127.0.0.1
+evh catalog-serve --public catalog.example.com --publish outputs --client-header X-Real-IP  # public deployment
+```
+
+**The catalog** is static pages over runs: one per dataset and goal, one per reference, a
+metrics page, and a search. Every page carries counts and means only; item text is the local
+inspector only. Build it offline with `evh catalog`, or together with the inspector.
+
+**The run inspector** is a local server (`evh catalog-serve`) that tests chosen arms against a
+baseline with the same paired test as the command line, and shows outputs beside references.
+Its "re-score" box (shown when the adapter can re-score) scores what is not on record; `evh
+inspect --no-rescore` is the box unticked.
+
+**Public deployments** (`--public HOST`): the server answers only the named hosts, each client
+gets `--rate` requests per minute, and at most `--max-arms` arms per comparison. `--publish`
+names what text to serve besides numbers: `outputs`, `references`, or both. The item itself is
+never served publicly. `--client-header NAME` names the header that identifies each client (e.g.
+`CF-Connecting-IP` behind Cloudflare), trusted only when a reverse proxy you control sets it on
+requests from an origin no one else can reach.
+
+**Partial reference coverage:** `experiment-run` refuses, before a call, a reference with no
+file for any of the dataset's items, and warns when only some items have one. The run records
+`reference_coverage` (`{items_with_reference, items}`) and the leaderboard prints a NOTE for
+it: its quality columns are means over the items that have a reference.
+
+**In the terminal:** every view has a command. `evh inspect --runs …` (`--items` for the
+per-item table, `--analysis` for the charts, `--item <id>` for one item). `evh datasets`,
+`evh references`, `evh metrics` and `evh goals --goal …` for the pages.
 
 ---
 
