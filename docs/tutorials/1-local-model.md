@@ -68,8 +68,11 @@ def _lead(text: str, params: dict[str, Any]) -> Result:
 
 @lru_cache(maxsize=2)
 def _model(name: str):
+    import transformers
     from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 
+    transformers.logging.set_verbosity_error()   # its warnings stay out of the run's output
+    transformers.logging.disable_progress_bar()  # and so does its "Loading weights" bar
     return AutoTokenizer.from_pretrained(name), AutoModelForSeq2SeqLM.from_pretrained(name).eval()
 
 
@@ -117,6 +120,11 @@ before and after you have one. Do not round the scores: the paired tests read ti
 makes some. `PRIMARY_METRIC` is the metric that decides; `METRIC_DESCRIPTIONS` show on the
 catalog's metrics page. The harness times every call (`latency_ms`); `warmup(params)`, optional,
 runs once before the first item so a model's loading time is not counted as the first call's.
+The two `transformers.logging` lines keep the library's progress bar and warnings (flan-t5's
+"The tied weights mapping ... will NOT tie them") out of what `experiment-run` prints; they are
+your system's output, not the harness's. The first download from the Hugging Face Hub draws
+bars of its own: `HF_HUB_DISABLE_PROGRESS_BARS=1` in `.env` turns those off. (Checked with
+transformers 5.20.2 and huggingface_hub 2.3.0.)
 The whole contract, and how to wrap a system that is not a Python function:
 [INTEGRATION](../../harness/docs/INTEGRATION.md).
 
@@ -153,7 +161,9 @@ params:
 Add a goal (`data/goals/brief_summary.yaml`, the shape of the tutorial kit's
 `tutorial/goals/tickets_summary.yaml`, with `rouge_l` as its measure) and name it in each config
 (`goal: brief_summary`): it says what the summaries are for, and the catalog's goal page leads
-with its answer.
+with its answer. Every field and its allowed values (`output_contract`, `datasets[].role`,
+`references[].format`, `measures[].validity`, `success_criteria`):
+[RUNBOOK §4c](../../harness/docs/RUNBOOK.md#4c-the-goal-file-field-by-field).
 
 ## 4. Measure
 
@@ -184,7 +194,10 @@ evh run-promote --run <run_id> --reason "<what the tests showed, and what it cos
 ```
 
 `pair-test` is for the one pair you named in advance; once you are choosing the best of several,
-`family-test` corrects for every comparison you could have made. The leading sentence of a news
+`family-test` corrects for every comparison you could have made. An arm run with `--repeat 3` has
+three runs: promote any one of them (`_r1` will do). The baseline records that run's scores and,
+under `repeats`, all three and their mean, which is what the catalog, the inspector and the tests
+read; `run-promote` prints the two side by side. The leading sentence of a news
 brief is a strong baseline: in the scenario, on twenty briefs, the first sentence was not
 separated from the leading hosted LLM, and both small models were separated below that LLM. Find
 out which holds on your items before paying for a model.

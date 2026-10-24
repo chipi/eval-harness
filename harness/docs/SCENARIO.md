@@ -13,8 +13,10 @@ run as written. This covers what it cannot: real models, a project's own adapter
 one project, a frontier reference, real judges, rounds over real evidence, and what a newcomer
 has to guess.
 
-First run: 2026-10-24, on the 0.4.0 branch. It found 39 items; what is still open is listed at
-the end.
+First run: 2026-10-24, on the 0.4.0 branch; it found 39 items. Second run: the same day, on the
+0.4.0 candidate `e91ff94c`, through a LiteLLM proxy, for $0.17; its friction log found nothing
+that blocked, 8 items that needed a guess and 22 of noise or polish. What is still open is listed
+at the end.
 
 ## Rules for the run
 
@@ -26,7 +28,10 @@ the end.
 - **Your own key, your choice of provider.** Any provider the bundled adapter supports: OpenAI or
   any OpenAI-compatible endpoint, OpenRouter, Anthropic, or a LiteLLM proxy (tutorial 2 lists the
   variable each reads). Put the key in the project's `.env` with `EVAL_MAX_COST_USD=1`, and check
-  with `evh env-check`. Add up what each command prints it spent.
+  with `evh env-check`. Add up what each command prints it spent (`experiment-run`:
+  `spent $…`; `judge-score`: `spent this run $…`). What that figure is, the provider's bill
+  or the config's price table, depends on the provider
+  ([RUNBOOK §4](RUNBOOK.md#4-point-the-harness-at-your-system)).
 - **Screenshots of every catalog and inspector page** listed under step 11, at 1400 px wide.
 
 ## 0 · A project
@@ -59,10 +64,11 @@ evh dataset-materialize --dataset-id briefs_v1 && evh dataset-materialize --data
 
 ## 2 · Goals
 
-One per experiment in `data/goals/` (copy the shape from the tutorial kit's goal): who uses the
-output, the decision ("which system runs it, given that a frontier model is too expensive to run
-on every item"), the measure that decides (`rouge_l`; `accuracy`), the dataset, the references.
-Every config names its goal (`goal: …`).
+One per experiment in `data/goals/`, `brief_summary` and `intent_routing`
+([RUNBOOK §4c](RUNBOOK.md#4c-the-goal-file-field-by-field) has every field and its allowed
+values): who uses the output, the decision ("which system runs it, given that a frontier model is
+too expensive to run on every item"), the measure that decides (`rouge_l`; `accuracy`), the
+dataset, the references. Every config names its goal (`goal: …`).
 
 ## 3 · Adapters and arms
 
@@ -84,7 +90,9 @@ Every config names its goal (`goal: …`).
 | cheap hosted | `mistral_small` | `mistral_small`, `llama_scout` |
 | frontier | `opus` (an expensive model you would not run in production) | `opus` |
 
-Give the frontier arm room to finish: `max_tokens: 300`.
+Every arm's first config id ends `_v1` (the frontier summariser is `briefs_opus_v1`). Give the
+frontier arm room to finish: `max_tokens: 300`. Silence the model libraries' progress bars and
+warnings in the adapter as tutorial 1's does, so the run's output is the harness's.
 
 ## 4 · Measure
 
@@ -92,7 +100,7 @@ Give the frontier arm room to finish: `max_tokens: 300`.
 git add -A && git commit -qm "datasets, gold, goals, adapters, arms"
 evh experiment-run --config data/configs/briefs_mistral_small.yaml --dry-run    # price it first
 evh experiment-run --config data/configs/<arm>.yaml                              # every arm
-evh experiment-run --config data/configs/<hosted arm>.yaml --repeat 3            # the noise floor
+evh experiment-run --config data/configs/<hosted arm>.yaml --repeat 3            # the noise floor; prints "spent $…"
 evh leaderboard --dataset-id briefs_v1
 evh family-test --dataset-id briefs_v1 --a briefs_mistral_small_v1 --against briefs_ --metric rouge_l
 ```
@@ -102,9 +110,9 @@ The same for `intents_v1` (`--metric accuracy`).
 ## 5 · The frontier arm's run becomes the silver reference
 
 ```bash
-evh reference-create --dataset-id briefs_v1 --from-run <the briefs_opus run_id>
+evh reference-create --dataset-id briefs_v1 --from-run <the briefs_opus_v1 run_id>
 git add data/references && git commit -qm "silver/briefs_v1 from the frontier arm"
-evh reference-create --dataset-id intents_v1 --from-run <the intents_opus run_id>
+evh reference-create --dataset-id intents_v1 --from-run <the intents_opus_v1 run_id>
 git add data/references && git commit -qm "silver/intents_v1 from the frontier arm"
 evh rescore --dataset-id briefs_v1 --reference-id silver/briefs_v1 --out data/runs-silver
 evh rescore --dataset-id intents_v1 --reference-id silver/intents_v1 --out data/runs-silver
@@ -114,7 +122,9 @@ evh silver-calibrate --dataset-id briefs_v1                              # silve
 
 Commit each reference before the next run: an uncommitted reference makes every later run dirty,
 and `--from-run` refuses a dirty run. Gold outranks silver, so new runs keep scoring against
-gold; `data/runs-silver` holds the same runs scored against the frontier arm.
+gold; `data/runs-silver` holds the same runs scored against the frontier arm. On silver the
+frontier arm is the yardstick: the leaderboard marks its row and leaves it out of the ordering
+test and the frontier.
 
 ## 6 · Judge
 
@@ -129,12 +139,17 @@ evh judge-score --dataset-id briefs_v1 --scorer briefs-judge-v1 --unvalidated --
 EVAL_RUNS_DIR=data/runs-judged/briefs-judge-v1 evh leaderboard --dataset-id briefs_v1
 ```
 
-The same for `intents_v1` with its scorer.
+The same for `intents_v1` with its scorer. A reply that did not parse and is not bare JSON is
+committed only as its hash; its text is in the `.withheld/` file the log names, so read why it
+failed before `--retry-unparsed`. The judged leaderboard prints the judging pass's agreement and
+its position and noise checks under its table: read them before the ranking.
 
 ## 7 · Baselines
 
 Promote, per dataset, the cheap arm closest to the frontier on gold, with a reason that says
-what the family test showed and what it costs against the frontier arm:
+what the family test showed and what it costs against the frontier arm. For an arm run with
+`--repeat 3`, promote any of its repeats: the baseline records all three and their mean under
+`repeats`, the number the catalog, the inspector and the tests read.
 
 ```bash
 evh run-promote --run <run_id> --reason "<what the tests showed, and what it costs against the frontier arm>"
@@ -149,7 +164,7 @@ evidence ruled out, and close it with what it showed.
 ```bash
 evh round-open --goal brief_summary --dataset briefs_v1 \
     --hypothesis "which of five systems, from no model to a frontier LLM, best summarises a brief in one sentence" \
-    --keep briefs_lead1_v1,briefs_t5_small_v1,briefs_flan_t5_small_v1,briefs_mistral_small_v1,briefs_opus_v2
+    --keep briefs_lead1_v1,briefs_t5_small_v1,briefs_flan_t5_small_v1,briefs_mistral_small_v1,briefs_opus_v1
 git add data/rounds && git commit -qm "brief_summary r1: open"
 evh rounds --goal brief_summary                    # the evidence, and the suggested decisions
 evh round-retire --goal brief_summary --round r1 --arm briefs_flan_t5_small_v1 --reason "<what the test showed>"
@@ -158,8 +173,9 @@ evh round-close --goal brief_summary --round r1 --conclusion "<what r1 showed, a
 git add data/rounds && git commit -qm "brief_summary r1: closed"
 ```
 
-Use the commands `evh rounds` suggests (it prints each as the command that makes it), and check
-that its verdicts are `family-test`'s for the same arms against the same leader.
+The carried arms need no config change and no new run: `round-open` says so, and their runs
+already count. Use the commands `evh rounds` suggests (it prints each as the command that makes
+it), and check that its verdicts are `family-test`'s for the same arms against the same leader.
 
 ## 9 · Round 2: change one thing
 
@@ -167,7 +183,7 @@ that its verdicts are `family-test`'s for the same arms against the same leader.
 evh round-open --goal brief_summary --dataset briefs_v1 --from r1 \
     --hypothesis "a prompt that asks for the key facts brings mistral-small closer to the hand-written summaries" \
     --change "briefs_mistral_small_v2: the prompt asks for the news and its key facts, at most 25 words" \
-    --keep briefs_mistral_small_v1,briefs_opus_v2 \
+    --keep briefs_mistral_small_v1,briefs_opus_v1 \
     --retire briefs_lead1_v1 --reason "<why it is dropped>" --budget-usd 0.05
 # data/configs/briefs_mistral_small_v2.yaml: the new prompt, a new config_id, and `round: r2` beside `goal:`
 git add -A && git commit -qm "brief_summary r2: open; mistral-small v2"
@@ -176,6 +192,7 @@ git add data/runs && git commit -qm "brief_summary r2: runs"
 evh rounds --goal brief_summary                    # r2 against r1's best, the baseline, the budget
 evh inspect --round r2 --goal brief_summary --baseline briefs_mistral_small_v1
 evh leaderboard --dataset-id briefs_v1 --round r2
+evh catalog && evh catalog-serve                   # screenshot the goal page's rounds now: r2's suggestions show only while it is open
 evh round-close --goal brief_summary --round r2 --conclusion "<what r2 showed>" [--promote <run_id>]
 git add data/rounds data/baselines && git commit -qm "brief_summary r2: closed"
 evh experiment-run --config data/configs/briefs_mistral_small_v2.yaml --dry-run   # refused: r2 is closed
@@ -185,11 +202,16 @@ evh experiment-run --config data/configs/briefs_mistral_small_v2.yaml --dry-run 
 
 ## 10 · A new dataset version
 
-Add three briefs, and make `briefs_v2` from `briefs_v1`:
+The second version drops one brief and adds one, in a folder of its own, so `briefs_v1`'s sources
+stay as they were frozen. The trial's `data/sources/briefs_v2/` is `briefs/` without
+`b20_train.txt` and with a new `b21_ferry.txt`; make yours the same way:
 
 ```bash
-evh dataset-create --dataset-id briefs_v2 --source-dir data/sources/briefs --glob "*.txt" --from briefs_v1
-evh datasets --dataset-id briefs_v2                # made from briefs_v1: 3 added
+mkdir -p data/sources/briefs_v2 && cp data/sources/briefs/*.txt data/sources/briefs_v2/
+rm data/sources/briefs_v2/<one brief>.txt                       # the trial dropped b20_train
+$EDITOR data/sources/briefs_v2/<a new brief>.txt                # the trial added b21_ferry
+evh dataset-create --dataset-id briefs_v2 --source-dir data/sources/briefs_v2 --glob "*.txt" --from briefs_v1
+evh datasets --dataset-id briefs_v2                # made from briefs_v1: 1 added, 1 removed, 0 changed
 git add data/sources data/datasets && git commit -qm "briefs_v2 from briefs_v1"
 ```
 
@@ -201,7 +223,8 @@ evh catalog && evh catalog-serve
 ```
 
 Screenshot: the catalog index; the goals page and each goal's page (its answer, its arms grouped
-by what they are scored against, the rounds with r2's suggestions); each dataset page, and
+by what they are scored against, the closed rounds with their conclusions and retired arms; r2's
+suggestions were captured in step 9, while r2 was open); each dataset page, and
 `briefs_v1` ↔ `briefs_v2` linked both ways; each reference page and the metrics page; for each
 dataset, the inspector testing every arm on gold against the baseline, on silver against the
 frontier arm, and on the judge's score; one item opened in each (the item itself beside the
@@ -214,14 +237,16 @@ and check the numbers are the page's.
 
 - Every command either succeeds or refuses with a message that says what to do; no traceback
   from the harness.
-- The inspector's verdicts and p-values equal `family-test`'s for the same arms and baseline, and
-  `evh rounds`' equal the inspector's for the round's arms.
+- The inspector's verdicts and p-values equal `pair-test`'s for the same pair, and `evh rounds`'
+  equal the inspector's for the round's arms. `family-test`'s verdicts are the same; its p-values
+  are the same up to 30 items and may differ in the third decimal above that (it says "p: a
+  seeded estimate").
 - No console errors on any page.
 - A newcomer could tell from each page what the goal is, what was compared, against which
   reference, which run is the baseline and why, and what each round decided.
 - The spend stays under the cap and matches the sum of what each command printed.
 
-## Open after the 2026-10-24 run
+## Open after the 2026-10-24 runs
 
 Fixed on the 0.4.0 branch: `reference-create --from-run`; references refuse empty and cut-off
 outputs; the leaderboard marks the reference's author; reference-create's gold and commit notes;
@@ -247,11 +272,47 @@ the runs were scored rather than calling "no reference" a reference; `evh rounds
 against the reference most of its arms use and names the arms it does not compare; the
 `pair-test --metric` and `evh --help` texts describe `--round` and the inspect views.
 
+After the second run (0.4.0 candidate `e91ff94c`), fixed in code: `run-promote` of one of an
+arm's repeats records every repeat and their mean (`repeats`); `round-open --keep` says carried
+arms need no change and no new run; `evh rounds` no longer suggests promoting the run that is
+already the baseline; `leaderboard --round` no longer warns about two versions of an arm in a
+round that compares them; a judge reply that is not committed keeps its text, git-ignored, in
+`.withheld/` beside its record, and the log names the file; the judged leaderboard has a frontier
+and prints the judging pass's agreement and position and noise checks; the silver author is left
+out of the ordering test and the frontier; the dataset page and `evh datasets` sort arms by what
+they are scored against; the goal page and `evh goals --goal` show a judge's group, and `evh goals
+--goal` lists the rounds and marks retired arms; every command prints p the same way (four
+decimals, `<0.0001`), and `family-test` says whether its p is exact or a seeded estimate and
+labels its column `A wins`; `experiment-run` prints what it spent and calls the cost and speed
+spread what it is; `judge-score` says its spend is the provider's bill where one is reported,
+else the price table; `silver-calibrate` explains rho and sibling lift; the catalog counts the
+configs behind its arms; "filed" reads "filed under this goal"; the item view says it shows the
+latest of N repeats beside their mean; judged arms keep their version in the inspector; a heading
+scrolled to is not hidden under the header; `env-check` names example arms only in a checkout; the
+kit's judge scorer points at tutorial 3. Fixed in the docs: every goal field and its allowed
+values (RUNBOOK §4c); what each provider records as cost (RUNBOOK §4, tutorial 2); which repeat
+to promote; family-test's p against pair-test's above 30 items; tutorial 1's adapter silences the
+model library's bars and warnings; this page's config ids (`_v1` throughout), step 10's data and
+step 11's screenshots.
+
 Still open:
 
-- A judge reply that is not bare JSON is stored only as its hash, so why it failed cannot be read
-  without calling the judge again.
-- Not re-checked on this branch: the dataset page's order across arms with different primary
-  metrics, and whether the goal page's "filed" tag (now with a tooltip) reads clearly.
-- Not exercised by a run: the direct OpenAI, Anthropic and OpenRouter paths (the 2026-10-24 run
-  went through a LiteLLM proxy).
+- `evh cost-report` reads a run's bill from `_meta.usage.cost` in its predictions, and the
+  bundled providers do not keep `usage` there: it lists their runs as having no bill even when
+  their recorded `cost_usd` is the bill (in the second run, `briefs_mistral_small_v1`'s per-item
+  costs are not the config's prices × tokens, so the proxy billed them). A run also does not
+  record whether its cost came from a bill or from the price table.
+- `evh inspect --item` prints an arm's latest repeat without the page's "the latest of N repeats;
+  the score is the mean of all N" note, or the run it came from.
+- `evh datasets` counts arms per way of scoring (a config rescored against silver and judged is
+  three arms) without the config count the catalog's index now prints.
+- `family-test` and `pair-test`/the inspector read the same pair from different random streams
+  above 30 items, so their p can differ in the third decimal; documented, by design.
+- The inspector's `wins–losses` reads the row's arm against the baseline, `family-test`'s `A wins`
+  reads A against each opponent: labelled, still opposite directions.
+- Not re-checked by a person since the fix: whether "filed under this goal" reads clearly, and the
+  heading under the sticky header in a full-page screenshot.
+- Judged runs made before the fix have no frontier until they are rebuilt from their stored
+  verdicts (`evh judge-score … --no-calls`, $0).
+- Not exercised by a run: the direct OpenAI, Anthropic and OpenRouter paths (both runs went
+  through a LiteLLM proxy).

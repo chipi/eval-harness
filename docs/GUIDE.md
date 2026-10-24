@@ -124,7 +124,8 @@ system we have, which will write the reference.
 **Say what the evaluation is for.** A goal names who uses the output, the decision it informs,
 the measure that decides it and which direction is better, and the datasets it rests on. It is
 optional, and worth the minute: every run that names it records it, and the catalog's goal page
-leads with the decision.
+leads with the decision. Every field a goal file can have, and its allowed values:
+[RUNBOOK §4c](../harness/docs/RUNBOOK.md#4c-the-goal-file-field-by-field).
 
 ```bash
 cp tutorial/goals/tickets_summary.yaml data/goals/
@@ -221,8 +222,9 @@ and then `lead2_noisy`'s. **This is the step people skip.** The spread is how fa
 disagrees with *itself* on identical input. Any difference between two arms smaller than that
 is noise, whatever the table says. A deterministic arm (spread 0) makes every delta real; a
 real model at temperature 0 often is not deterministic. Your `lead2_noisy` numbers will differ
-from these: it is unseeded on purpose. (`latency_ms` has a spread too: the harness times every
-call.)
+from these: it is unseeded on purpose. (`latency_ms` has a spread too, since the harness times
+every call; its row says `speed, not a quality metric`, and cost rows `cost, not a quality
+metric`. A run that spent money prints `spent $…` after them.)
 
 ## 7 · Compare
 
@@ -287,15 +289,20 @@ evh family-test --dataset-id tickets_v1 --a tickets_lead2_v1 --against tickets_
 ```text
   family size m=2, declared before the p-values were read
   Holm step-down at alpha=0.05
-    opponent                     delta      wins        p   thresh   verdict
+  p: exact, over all 2^6 sign patterns
+
+    opponent                     delta    A wins        p   thresh   verdict
     tickets_lead1_v1           +0.2592    6/6      0.0312   0.0250   --
     tickets_lead2_noisy_v1     +0.1011    6/6      0.0312   0.0500   --
 
     separated from 0 of 2 opponents; ahead on the point estimate against 2 of 2
 ```
 
-Ahead of both on every ticket, and separated from neither: on six items the smallest p a
-paired test can reach is 0.0312, and with two comparisons the first must beat 0.025. Six items
+Ahead of both on every ticket (`A wins`: the items `lead2` wins), and separated from neither: on
+six items the smallest p a paired test can reach is 0.0312, and with two comparisons the first
+must beat 0.025. Up to 30 items the p is exact, and every command prints the same one; above
+that it is a seeded estimate, and the line under the header says which
+([RUNBOOK §7b](../harness/docs/RUNBOOK.md#7b-the-analysis-tools)). Six items
 are enough to learn the loop, not to pick a winner. `run-compare` diffs two runs' fingerprints
 and scores (`evh run-compare --baseline <run_id> --candidate <run_id> --noise <spread>`).
 
@@ -310,6 +317,11 @@ evh run-promote --run <the tickets_lead2_v1 run_id> \
 evh runs-list --baselines
 ```
 ```text
+  NOTE: tickets_lead2_v1 has 3 repeats; the catalog, the inspector and the tests read their mean.
+        The baseline records this run's own scores and, under `repeats`, the mean:
+    ...
+    overlap_f1     0.900088   (mean of 3: 0.900088)
+    ...
 tickets_v1_baseline
     dataset  tickets_v1
     ...
@@ -317,6 +329,8 @@ tickets_v1_baseline
     why      lead2 is closest to the author's silver on all six tickets but separates from neither arm at n=6; working baseline until the dataset grows
 ```
 
+`lead2` ran three times; any of its repeats can be promoted, and the baseline records every
+repeat and their mean under `repeats`, the number the catalog, the inspector and the tests read.
 Refused if the run came from a dirty tree, if its build is unknown, or if the reason is under
 three words: six months from now, "why is this the baseline?" must have an answer. The next
 promotion replaces this baseline, and git keeps it.

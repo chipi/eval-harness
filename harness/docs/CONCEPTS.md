@@ -134,9 +134,11 @@ that reports nothing still records its speed. "Model B scores higher" and "model
 B scores higher and costs 4× per item" are different findings, and only one of
 them is a decision.
 
-Prices live in the experiment config, not in code, so a run records the prices
-it was costed at. A figure computed from today's price list is not comparable to
-one from last quarter without saying so.
+A call's cost is the provider's bill when its response carries one (OpenRouter, and a LiteLLM
+proxy that passes `usage.cost` through), and otherwise the config's prices × tokens. Prices live
+in the experiment config, not in code, so a run records the prices it was costed at. A figure
+computed from today's price list is not comparable to one from last quarter without saying so.
+Which provider records which: [RUNBOOK §4](RUNBOOK.md#4-point-the-harness-at-your-system).
 
 ---
 
@@ -163,7 +165,9 @@ A number answers a question only if someone wrote the question down. A goal name
 output, the decision it informs, the measure that decides it and which way is better, and the
 datasets it rests on; each config names its goal, and every run records it. It is optional until
 a project sets a date from which every run must name one (`required_from`). The catalog's goal
-page leads with its answer, the promoted baseline and why, or "no decision yet".
+page leads with its answer, the promoted baseline and why, or "no decision yet". Every field of a
+goal file and its allowed values:
+[RUNBOOK §4c](RUNBOOK.md#4c-the-goal-file-field-by-field).
 
 ---
 

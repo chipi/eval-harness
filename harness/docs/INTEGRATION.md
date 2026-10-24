@@ -129,12 +129,16 @@ live in the config so an arm is reproducible and diffable; keeping them in code
 means "which settings produced this number?" has no answer.
 
 Prices live in the config too, deliberately: they change, and a run should
-record the prices it was costed at.
+record the prices it was costed at. They are the fallback: when a provider's response carries
+its bill (`usage.cost`), the run records the bill. Which provider does:
+[RUNBOOK §4](RUNBOOK.md#4-point-the-harness-at-your-system).
 
 A config holds `config_id`, `dataset_id`, `params`, and optionally `adapter` (a project with
 several tasks names one per arm, `adapter: adapters/ner.py`), `goal` (what the evaluation is
 for, `data/goals/<goal_id>.yaml`), `round` (an experiment round of that goal, `rN`) and
-`format`. Any other key is refused by `evh validate` (V1).
+`format` (the output's shape, one of its goal's `output_contract` formats:
+[RUNBOOK §4c](RUNBOOK.md#4c-the-goal-file-field-by-field)). Any other key is refused by
+`evh validate` (V1).
 
 ---
 

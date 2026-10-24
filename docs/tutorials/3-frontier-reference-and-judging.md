@@ -20,7 +20,7 @@ the newcomer scenario this release was tried on (a LiteLLM proxy's model name; a
 
 ```yaml
 # data/configs/briefs_opus.yaml
-config_id: briefs_opus_v2
+config_id: briefs_opus_v1
 dataset_id: briefs_v1
 params:
   provider: litellm
@@ -37,16 +37,18 @@ goal: brief_summary
 ```bash
 evh experiment-run --config data/configs/briefs_opus.yaml --dry-run     # price it first
 evh experiment-run --config data/configs/briefs_opus.yaml
-evh reference-create --dataset-id briefs_v1 --from-run <the briefs_opus_v2 run_id>
+evh reference-create --dataset-id briefs_v1 --from-run <the briefs_opus_v1 run_id>
 git add data/references && git commit -qm "silver/briefs_v1 from the frontier arm's run"
 ```
 
 What `reference-create --from-run` refuses, and why:
 
-- **An empty output, or one that stopped at `max_tokens`.** In that scenario a frontier arm at
-  `max_tokens: 80` wrote 19 of 20 summaries cut off mid-sentence; frozen as the reference, every
-  arm would have been graded against fragments. Raise `max_tokens` in a new `config_id` and run
-  again (`--allow-cut-off` is for outputs that end at the cap by design). `experiment-run`
+- **An empty output, or one that stopped at `max_tokens`.** In the scenario's first run a
+  frontier arm at `max_tokens: 80` wrote 19 of 20 summaries cut off mid-sentence; frozen as the
+  reference, every arm would have been graded against fragments. That is why the config above
+  has room to finish. If yours stops at the cap, raise `max_tokens` in a new `config_id`
+  (`briefs_opus_v2`) and run again (`--allow-cut-off` is for outputs that end at the cap by
+  design). `experiment-run`
   already warns, naming the items, when outputs stop at the cap.
 - **A run from a dirty tree, or of an unknown build** (as `run-promote` does), an unfinished run,
   a derived one (rescored or judged), or a run on another dataset.
@@ -112,10 +114,16 @@ EVAL_RUNS_DIR=data/runs-gold evh silver-calibrate --dataset-id tickets_v1
   tickets_lead2                   1.000             —   (0 sibling(s))
   tickets_lead2_noisy             1.000             —   (0 sibling(s))
   tickets_lead1                   0.500             —   (0 sibling(s))
+
+  rho: how far the arms' order on this author's silver agrees with their order on the
+  ...
 ```
 
 Your rows will differ from these: with four arms, `lead2_noisy`'s place in each ranking moves
-every rho. On six items these correlations are coarse, but the habit is the point: before you
+every rho. The command explains its columns under the table: rho is how far the arms' order on
+that author's silver agrees with their order on gold (1 is the same order); sibling lift is how
+many places the silver moves the author's own family up, "—" when no other arm shares it (here
+none does). Arms are named without their `_vN` suffix: an arm's versions are pooled. On six items these correlations are coarse, but the habit is the point: before you
 rank by silver, check it against a gold slice. How big a gold set must be is a measurement too:
 `evh rank-stability` shows how many items it takes before the order stops moving.
 
@@ -129,7 +137,9 @@ evh family-test --dataset-id tickets_v1 --a tickets_lead2_v1 --against tickets_ 
 ```text
   family size m=3, declared before the p-values were read
   Holm step-down at alpha=0.05
-    opponent                     delta      wins        p   thresh   verdict
+  p: exact, over all 2^6 sign patterns
+
+    opponent                     delta    A wins        p   thresh   verdict
     tickets_lead1_v1           +0.0424    5/6      0.0938   0.0167   --
     tickets_lead2_noisy_v1     +0.0146    4/6      0.1562   0.0250   --
     tickets_author_v1          +0.0122    4/6      0.3125   0.0500   --
@@ -230,10 +240,10 @@ verdict?) and a repeat on half (the **noise** check: does the judge agree with i
 evh judge-score --dataset-id tickets_v1 --scorer tickets-judge-v1 --unvalidated
 EVAL_RUNS_DIR=data/runs-judged/tickets-judge-v1 evh leaderboard --dataset-id tickets_v1
 ```
-<!-- guide-check: varies tickets_ global -->
+<!-- guide-check: varies tickets_ global FRONTIER agree reshuffled -->
 ```text
 4 scored run(s) -> .../data/runs-judged/tickets-judge-v1  (6/6 items, unvalidated judge)
-  calls 24, billed this run $0.0000, stored total $0.0000
+  calls 24, spent this run $0.0000, stored total $0.0000  (the provider's bill where it reports one, else the price table)
   ...
 dataset: tickets_v1   ranked by: judge_score_unvalidated (higher is better)
 
@@ -246,13 +256,26 @@ dataset: tickets_v1   ranked by: judge_score_unvalidated (higher is better)
   IS THE ORDERING REAL?   metric=judge_score_unvalidated  k=4 arms  N=6 items
     global test (permutation on within-item ranks): p = 0.3825  ->  NO detectable arm effect
   ...
+  FRONTIER on judge_score_unvalidated / total_cost_usd / latency_ms — 3 of 4 arms
+  ...
   Scored by an LLM judge, not against references: tickets-judge-v1, unvalidated judge.
+  ...
+  The judging pass (tickets-judge-v1, 6/6 items, unvalidated judge), from summary.json:
+    judges judge_a and judge_b agree: item tau 0.040, arm order spearman 0.400
+    judge_a: reshuffled outputs tau 1.000 (position), the same call repeated tau 1.000 (noise)
+  ...
 ```
 
 Your judging-set id, token counts, scores and p-value will differ from these: `lead2_noisy` is
 unseeded, so its outputs, and the set built from them, differ on every run. One judge scored
 every arm the same way, so all four share one table, `author` included: its run predates the
-reference, but the judge does not read one.
+reference, but the judge does not read one. A judged run keeps its source run's cost and speed,
+so the table has its frontier. Under it the leaderboard prints the judging pass's own checks,
+from the pass's `summary.json`: how far the two judges agree, and for each judge how much its
+verdict moves when the outputs are reshuffled (position) and when the same call is repeated
+(noise). Read them before the ranking: a difference between arms smaller than the noise check's
+is not one. ([RUNBOOK §12](../../harness/docs/RUNBOOK.md#12-re-measure-with-a-validated-judge),
+step 6.)
 
 Each judge's raw reply is stored under `data/judge-verdicts/`, so the same command again calls
 nothing, and `--no-calls` rebuilds the scored runs from the stored verdicts for $0. The judged
@@ -296,7 +319,14 @@ EVAL_RUNS_DIR=data/runs-judged/briefs-judge-v1 evh leaderboard --dataset-id brie
 ```
 
 Real judges sometimes reply with something that does not parse (reasoning aloud, a reply cut
-off); the pass stores and reports it, and `--retry-unparsed` calls again for those blocks only.
-An item counts only when all its blocks parsed. Validating a judge (the `validation` block, the
-runs it names, what the gate checks), the prompt's `{n}`, blocks and the cost cap:
+off); the pass reports it, and `--retry-unparsed` calls again for those blocks only. An item
+counts only when all its blocks parsed. In the scenario, 2 of 80 replies on the briefs and 15 of
+128 on the intents did not parse the first time. A reply that is not bare JSON (one JSON object,
+a `json` code fence allowed), or that repeats the item, is committed only as its hash, so
+an item's text never reaches git by accident. Its text is kept beside its record, git-ignored,
+in `data/judge-verdicts/<scorer>/<judging set>/<judge>/.withheld/<item>.<pass>.b<block>.txt`, and
+the log line names that file: read it before you retry, to see why the reply failed.
+
+Validating a judge (the `validation` block, the runs it names, what the gate checks), the
+prompt's `{n}`, blocks and the cost cap:
 [RUNBOOK §12](../../harness/docs/RUNBOOK.md#12-re-measure-with-a-validated-judge).

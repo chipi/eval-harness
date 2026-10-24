@@ -27,9 +27,13 @@ git add data/rounds && git commit -qm "tickets_summary r1: open"
 ```
 ```text
 data/rounds/tickets_summary/r1.yaml: round r1 of tickets_summary, open
-  Name it in each arm's config (round: r1, beside goal: tickets_summary), run them, then: evh rounds --goal tickets_summary
+  Carried in as they are, their runs already count: tickets_lead1_v1, tickets_lead2_v1, tickets_lead2_noisy_v1 (their configs need no change and they need not run again).
+  A NEW arm names the round in its config (round: r1, beside goal: tickets_summary) and runs; then: evh rounds --goal tickets_summary
   Commit the round file before the runs: an uncommitted file makes them dirty.
 ```
+
+The three arms are carried in as they are: their configs need no `round:` line and they do not
+run again. Only an arm that is new to the round names it in its config (step 4).
 
 A round belongs to a goal and one dataset, and is a file beside the goal,
 `data/rounds/<goal>/<round>.yaml`. The commands are its only writers.
@@ -54,8 +58,8 @@ r1 · open · tickets_v1
   suggested next:
     - 2 arm(s) tie with the leader (tickets_lead1_v1, tickets_lead2_noisy_v1): more items would separate them
         evh rank-stability --dataset-id tickets_v1
-    - close the round with what it showed
-        evh round-close --goal tickets_summary --round r1 --conclusion "..." --promote tickets_lead2_v1_...
+    - close the round with what it showed (tickets_lead2_v1 is already the baseline)
+        evh round-close --goal tickets_summary --round r1 --conclusion "..."
 ```
 
 `evh rounds` reads the evidence the way the inspector does (every arm in play against the
@@ -82,7 +86,8 @@ round r1 of tickets_summary closed
 ```
 
 `--promote <run_id>` on `round-close` would also promote that run to the dataset's baseline, with
-the conclusion as its reason; `lead2` already is the baseline, so there is nothing to promote.
+the conclusion as its reason; `lead2` already is the baseline, so `evh rounds` suggests closing
+without it.
 A closed round refuses new runs.
 
 ## 4. Round 2: change one thing
@@ -101,6 +106,8 @@ evh round-open --goal tickets_summary --dataset tickets_v1 --from r1 \
 ```
 ```text
 data/rounds/tickets_summary/r2.yaml: round r2 of tickets_summary, open
+  Carried in as they are, their runs already count: tickets_lead2_v1 (their configs need no change and they need not run again).
+  A NEW arm names the round in its config (round: r2, beside goal: tickets_summary) and runs; then: evh rounds --goal tickets_summary
 ```
 
 A new arm joins a round by naming it in its config, beside its goal:
@@ -151,7 +158,7 @@ r2 · open · tickets_v1 · from r1
   suggested next:
     - retire tickets_lead2_noisy_v2
         evh round-retire --goal tickets_summary --round r2 --arm tickets_lead2_noisy_v2 --reason "separated worse than tickets_lead2_v1 on overlap_f1 after Holm (p 0.0312)"
-    - close the round with what it showed
+    - close the round with what it showed (tickets_lead2_v1 is already the baseline)
   ...
 ```
 
@@ -217,7 +224,8 @@ ERROR: data/configs/tickets_lead2_noisy_v2.yaml: round r2 of tickets_summary is 
 
 `evh validate` (V14) checks the round files; `evh family-test --round r2` takes the opponents in
 play in a round, as `leaderboard --round` does. The catalog's goal page shows the rounds, newest
-first, with the open round's suggestions ([tutorial 5](5-catalog-and-inspector.md)).
+first, with the open round's suggestions ([tutorial 5](5-catalog-and-inspector.md)); `evh goals
+--goal tickets_summary` lists them too, one line each, and marks the arms they retired.
 
 ## 6. A new version of the dataset
 

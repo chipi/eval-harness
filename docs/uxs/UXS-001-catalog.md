@@ -125,8 +125,10 @@ The author tint wins over the others. The same classes tint the inspector's verd
 
 ## The home page
 
-- Hero: kicker `catalog`, title "Every run, by dataset", and "N arms on M datasets. An arm is one
-  config on one dataset, its repeats averaged per item, exactly as `pair-test` reads it."
+- Hero: kicker `catalog`, title "Every run, by dataset", and "N arms on M datasets, from K
+  configs. An arm is one config on one dataset scored one way, its repeats averaged per item,
+  exactly as `pair-test` reads it: a config rescored against silver or by a judge is an arm of its
+  own." `evh catalog` prints the same counts ("… arms, K configs, … references").
 - `01 datasets`: one row per dataset, most arms first: **dataset** (linked; "from `<parent>`"
   under a version), **items**, **arms**, **references** (each linked to its page). Filterable.
 - Command: `evh datasets`.
@@ -141,7 +143,9 @@ The author tint wins over the others. The same classes tint the inspector's verd
 - **Inspect buttons:** one per group of two or more arms with the same headline metric scored
   against the same reference: "Inspect the N arms on <metric>, scored against <reference>". A
   group larger than 40 links its first 40 and says to add others in the inspector.
-- `01 arms`: the row key, then one row per arm, grouped by metric and best first:
+- `01 arms`: the row key, then one row per arm, sorted first by what it is scored against
+  (gold, then silver, then each judge, then no reference), then by reference, then grouped by
+  metric and best first, so a silver mean and a gold mean never interleave:
   **arm** (with a `baseline` tag on the promoted one, and "on <machine>" when the arms ran on more
   than one machine), **metric** (linked to the metrics page), **mean** (↓ after it when lower is
   better), **items**, **runs** (repeats averaged), **scored against** (the reference, linked, or
@@ -212,14 +216,18 @@ The page answers first, then explains, then shows the evidence.
      group's leader (Holm across them). Flagged arms are never the leader.";
    - per group, gold first, then silver, then judges: a heading ("scored against
      gold/<id>" or "scored by judge <scorer>"), a **Test every arm in this group against its
-     leader** button, and a table: **arm** (tags: `filed` when its config names the goal,
+     leader** button, and a table. A judged arm records its judge's score, not the goal's
+     measure: its group's mean column and test buttons use that score
+     (`judge_score`, or `judge_score_unvalidated`). The table: **arm** (tags: `filed under this
+     goal` when its config names the goal, its meaning also in the tooltip,
      `baseline`, "retired in rN" in `--local` capitals; a retired arm's whole row is greyed out,
      `t-retired`), **mean**, **items**, **flags** ("n k <
      min_items m", "format f not in the contract", "wrote the reference it is scored against"),
      and **leader** on the leader's row or a **test vs leader** button on the others;
    - empty state: "No arm on this dataset records `<measure>`."
-6. Commands: `evh goals --goal <id>` (the answer and the groups) and `evh rounds --goal <id>` (the
-   rounds and suggestions).
+6. Commands: `evh goals --goal <id>` (the answer, the groups with `[baseline]` and `[retired in
+   rN]` marks, and one line per round: status, arms, retired, conclusion) and `evh rounds --goal
+   <id>` (the rounds' evidence and suggestions in full).
 
 The suggestions appear on the page only when the catalog is built with the harness's own adapter
 over the project's data; with a project adapter the rounds table and details still show.

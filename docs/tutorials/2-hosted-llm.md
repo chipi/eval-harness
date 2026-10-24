@@ -37,7 +37,9 @@ EVAL_MAX_COST_USD=1.00
 
 `EVAL_MAX_COST_USD` is a ceiling on what one run may spend. A run that reaches it stops, keeps
 everything it has, and prints the `--resume` command, so nothing is paid for twice. Then check
-what the harness sees (for each key: whether it is set, its length and its last four characters):
+what the harness sees (for each key: whether it is set, its length and its last four characters;
+in a checkout of this repository it also says where its example arms would be routed, a line a
+project of your own does not print):
 
 <!-- guide-check: skip -->
 ```bash
@@ -64,9 +66,22 @@ goal: brief_summary
 With a LiteLLM proxy the same arm is `provider: litellm` and `model:` the proxy's name for it
 (the newcomer scenario's was `eval-mistral-small`); with Anthropic directly, `provider:
 anthropic` and an Anthropic model id. Prices live in the config, not in code: they change, and a
-run records the prices it was costed at. When the provider's response says what it billed
-(OpenRouter does, when asked, and the `openrouter` provider asks), the run records the bill
-instead.
+run records the prices it was costed at.
+
+**What a run records as cost.** For each call, the provider's bill when the response carries one
+(`usage.cost`), else the config's price table (tokens × `usd_per_mtok_in` / `usd_per_mtok_out`);
+with neither, the cost is unknown, never zero:
+
+| `provider:` | the run's cost |
+|---|---|
+| `openrouter` | OpenRouter's bill (the provider asks for it on every call) |
+| `litellm` | the proxy's bill when it passes `usage.cost` through, as the newcomer scenario's proxy did; else the price table |
+| `openai` | the price table: OpenAI's API reports tokens, not a cost (an OpenAI-compatible endpoint that returns `usage.cost` is billed) |
+| `anthropic` | the price table |
+
+So set the prices even where a bill is expected: they are the fallback, and `--dry-run` estimates
+from them. The bill is what you paid; the price table is a guess, and in this repository's runs
+the two differed by 0.67× to 3.76× per arm.
 
 ## 3. Price it, then run it
 
@@ -85,8 +100,14 @@ its spread is not a difference. If outputs stop at `max_tokens`, `experiment-run
 the items: they are scored as if complete, so raise `max_tokens` in a new `config_id`.
 
 The leaderboard now shows each arm's quality, `total_cost_usd` and `latency_ms`, and its
-**frontier**: the arms no other arm beats on quality, cost and speed together. `cost-report`
-gives each arm's billed cost, with projections. Then compare and choose as
+**frontier**: the arms no other arm beats on quality, cost and speed together. `experiment-run`
+prints what the command spent over every repeat (`spent $0.001063 (price table x tokens, or the
+provider's bill where it sends one)`), and the repeat spread names cost and speed as what they
+are (`cost, not a quality metric`), not as determinism. `cost-report` sets each run's bill, read
+from `_meta.usage.cost` in its predictions, against the cost it recorded, and lists apart the runs
+with no bill there; the bundled providers do not keep `usage` in `_meta`, so it lists their runs
+as unbilled even when the recorded cost is the bill
+([RUNBOOK §4](../../harness/docs/RUNBOOK.md#4-point-the-harness-at-your-system)). Then compare and choose as
 before (`family-test`, `run-promote`), with the cost in the reason: "as good as X at a tenth of
 the price" is a decision; "scored higher" is not yet one.
 

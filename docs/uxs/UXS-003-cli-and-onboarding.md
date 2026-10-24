@@ -94,7 +94,7 @@ answer. Where the page has a `make` target in a checkout, it runs the same scrip
 | home: every dataset | `evh datasets` | `make datasets` |
 | a dataset page: arms, baseline, versions, references | `evh datasets --dataset-id <id>` | `make datasets DATASET_ID=<id>` |
 | the goals page | `evh goals` | `make goals` |
-| a goal page: the answer so far, arms per dataset and group | `evh goals --goal <id>` | `make goals GOAL=<id>` |
+| a goal page: the answer so far, arms per dataset and group (a judge's group on its score), retired marks, one line per round | `evh goals --goal <id>` | `make goals GOAL=<id>` |
 | a goal page: its rounds and suggestions (each suggestion's copy button copies its command) | `evh rounds --goal <id> [--round rN]` | `make rounds GOAL=<id>` |
 | a goal page: a round's **inspect** button | `evh inspect --round rN [--goal <id>]` | |
 | reference pages | `evh references [--reference-id <id>]` | `make references` |
@@ -107,7 +107,7 @@ answer. Where the page has a `make` target in a checkout, it runs the same scrip
 | the catalog's global search | `evh search <text>` | |
 | "promote its run" (a goal page with no decision) | `evh run-promote --run <run_id> --reason "…"` | `make run-promote` |
 | a suggested retirement | `evh round-retire --goal g --round rN --arm <config> --reason "…"` | `make round-retire` |
-| a suggested close | `evh round-close --goal g --round rN --conclusion "…" --promote <run_id>` | `make round-close` |
+| a suggested close | `evh round-close --goal g --round rN --conclusion "…" [--promote <run_id>]` | `make round-close` |
 | (no page action) opening a round | `evh round-open --goal g --dataset d …` | `make round-open` |
 | building and serving the pages | `evh catalog`, `evh catalog-serve` | `make catalog`, `make catalog-serve` |
 
@@ -128,13 +128,17 @@ evh round-retire --goal tickets_summary --round r1 --arm tickets_lead1_v1 --reas
 evh round-close --goal tickets_summary --round r1 --conclusion "…" --promote <run_id>
 ```
 
-- `round-open` prints the round file it wrote, then: "Name it in each arm's config (round: r1,
-  beside goal: tickets_summary), run them, then: evh rounds --goal tickets_summary" and "Commit
-  the round file before the runs: an uncommitted file makes them dirty."
+- `round-open` prints the round file it wrote, then, when it carried arms in: "Carried in as
+  they are, their runs already count: <arms> (their configs need no change and they need not run
+  again)", then "A NEW arm names the round in its config (round: r1, beside goal:
+  tickets_summary) and runs; then: evh rounds --goal tickets_summary" and "Commit the round file
+  before the runs: an uncommitted file makes them dirty."
 - `evh rounds --goal G` prints one line per round, then the open round in full: its hypothesis,
   "on <measure>: n arm(s) in play, leader <arm>", each other arm's verdict against the leader
-  with Δ and p, `NOTE:` lines (the spend against the budget), and **suggested next**, each
-  suggestion followed by its command, ready to paste.
+  with Δ and p (four decimals, as every command prints a p), `NOTE:` lines (the spend against
+  the budget), and **suggested next**, each suggestion followed by its command, ready to paste.
+  The close suggestion carries `--promote <run_id>` only when the leader is not already the
+  baseline ("close the round with what it showed (<arm> is already the baseline)").
 - A reason or a conclusion shorter than three words is refused: it must be a sentence.
 - `--promote` runs `run-promote` with the conclusion as the reason; if the promotion is refused,
   the round stays open.

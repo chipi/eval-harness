@@ -92,7 +92,9 @@ metric it can compare (output length, latency) instead.
 - One row per arm against the baseline, smallest p first, tinted like the catalog's rows
   ([UXS-001](UXS-001-catalog.md#row-tints)). Columns: **run vs baseline**, **verdict** (second,
   so a phone sees it), **items**, **mean**, **Δ vs baseline**, **wins–losses** (with ties),
-  **p (exact ≤30)**, **Holm threshold**.
+  **p (exact ≤30)**, **Holm threshold**. A p is printed as every command prints it: four
+  decimals, `<0.0001` for what would print as 0.0000. Arm labels keep their version (`_v1`) even
+  when every arm shares it; only a shared " · <scored by>" tail is cut.
 - The verdict is a chip: ▲ `separated: better` (border `--open`), ▼ `separated: worse` (border
   `--local`), or plain `not separated`; on a neutral metric `separated: higher` / `lower`. When
   the number of items cannot reach p 0.05 at all, the row says "n items cannot reach 0.05".
@@ -156,7 +158,8 @@ every catalog table. A row opens on click, Enter or Space.
 - a toggle to **mark what each run adds and drops against the baseline** (word-level), useful
   between near-identical outputs;
 - columns: the reference (when the metric names one, else the baseline's), then each arm's
-  output with its word count, the baseline's marked.
+  output with its word count, the baseline's marked. Above each output, the run it comes from;
+  for an arm with repeats, "the latest of N repeats; the score is the mean of all N".
 
 ## Checklist for a change to the inspector
 

@@ -40,7 +40,7 @@ tickets --fields …`); items that live at a URL come in through `--manifest`
 evh catalog
 ```
 ```text
-catalog: .../my-evals/.build/catalog — 1 goals, 1 datasets, 4 arms, 1 references
+catalog: .../my-evals/.build/catalog — 1 goals, 1 datasets, 4 arms, 4 configs, 1 references
 inspect: evh catalog-serve, then open the address it prints
 ```
 
@@ -93,10 +93,18 @@ tickets_v1 · dev
 
 It leads with its answer: the promoted baseline on each dataset and why (or "no decision yet",
 with the command that makes one), then what the goal is for, then the arms in groups by what
-they are scored against (gold, silver, a judge). Arms are ranked only within a group, and a
-group's leader is never an arm graded against its own outputs. When the goal has rounds, the
-page shows them newest first: each with an inspect button that opens its arms against its
-leader, the open round's suggestions each with a copy button, and retired arms greyed out.
+they are scored against: gold, silver, and one group per judge ("scored by judge <scorer>"). A
+judged arm records its judge's score rather than the goal's measure, so its group is read on that
+score, never ranked beside the others. Arms are ranked only within a group, and a group's leader
+is never an arm graded against its own outputs. An arm whose config names this goal is tagged
+"filed under this goal"; the others record the goal's measure on one of its datasets without
+naming it. When the goal has rounds, the page shows them newest first: each with an inspect
+button that opens its arms against its leader, the open round's suggestions each with a copy
+button, and retired arms greyed out, "retired in rN". `evh goals --goal` prints the same groups,
+marks a retired arm `[retired in rN]`, and ends with one line per round (its status, arms,
+retired and conclusion); `evh rounds --goal` has the evidence in full. (This project has no
+rounds yet; [tutorial 4](4-rounds-and-versions.md) makes them.) Every field a goal file can
+have: [RUNBOOK §4c](../../harness/docs/RUNBOOK.md#4c-the-goal-file-field-by-field).
 
 The search box on every page, in the terminal:
 
@@ -121,12 +129,19 @@ evh inspect --runs tickets_lead1_v1,tickets_lead2_v1
 ```text
 overlap_f1 (higher is better) · baseline tickets_lead1_v1 ×3: mean 0.641 · Holm across 1
   ...
-  tickets_lead2_v1 ×3  separated: better  6  0.900  0.259  6–0          0.03125  0.0500
+  tickets_lead2_v1 ×3  separated: better  6  0.900  0.259  6–0          0.0312  0.0500
 
 Same conditions: all ... recorded fields match (machine, libraries, harness, scorer, items, reference bytes).
 ```
 
-The same paired test as `pair-test`, from the same code, so the same p. The last line compares
+The same paired test as `pair-test`, from the same code, so the same p. `family-test` agrees with
+both up to 30 items, where every p is exact. Above 30 each is a seeded estimate, and
+`family-test` draws one random stream for its whole family where the inspector and `pair-test`
+draw one per pair, so its p can differ from theirs in the third decimal (on 32 items: 0.0297
+against 0.0327); `family-test` says which kind of p it printed. Every p is printed to four
+decimals, and `<0.0001` for what would print as 0.0000. `wins–losses` is each row's arm against
+the baseline; `family-test`'s column is `A wins`, the items its A wins against each opponent. The
+last line compares
 the runs' fingerprints: the machine, library versions, the harness, the scorer, the items and
 the reference's bytes. When they differ it names the fields, arm by arm, and warns when the
 scorer or the reference differs (different measurements) or latency is compared across machines.
@@ -143,8 +158,8 @@ NOTE: Broken down by deadline: 2 tests, Holm-corrected together, so a group is h
   ...
 by deadline (Holm across 2):
   deadline  run vs baseline      verdict        n  Δ      p
-  true      tickets_lead2_v1 ×3  not separated  2  0.285  0.5
-  false     tickets_lead2_v1 ×3  not separated  4  0.246  0.125
+  true      tickets_lead2_v1 ×3  not separated  2  0.285  0.5000
+  false     tickets_lead2_v1 ×3  not separated  4  0.246  0.1250
 ```
 
 Two tickets name a deadline and four do not, and on two tickets no test can reach 0.05: a
@@ -203,14 +218,21 @@ Customer reports they cannot log in since this morning.
 ## 4. What the pages show, and what they refuse
 
 - **The catalog** is static pages: one per dataset with every arm and its headline number, a
-  goals page and a page per goal, a page per reference, and a metrics page. Each arm's row says
-  what it is scored against; rows scored against silver, by a judge, or against the reference
-  the arm wrote itself are tinted. Counts and means only, never an item's text, so the pages can
+  goals page and a page per goal, a page per reference, and a metrics page. Its index counts the
+  arms and the configs behind them: an arm is one config on one dataset scored one way, so a
+  config rescored against silver or judged is an arm of its own ("N arms on M datasets, from K
+  configs"). Each arm's row says what it is scored against; rows scored against silver, by a
+  judge, or against the reference the arm wrote itself are tinted. The dataset page (and `evh
+  datasets --dataset-id`) sorts its arms by what they are scored against first, gold, then
+  silver, then each judge, then none, and only then by metric and mean, so a silver mean and a
+  gold one never interleave. Counts and means only, never an item's text, so the pages can
   be published. The dataset page lists its fields and how many tickets fill each; it summarises
   the values of a field marked `public` (Area, Plan) and no other (Names a deadline).
 - **The inspector** is the server behind them, on 127.0.0.1 only. Pick arms on one dataset and it
   tests each against a baseline, lists and charts the per-ticket scores, and for one ticket
-  shows the ticket, its fields and each arm's output beside the reference.
+  shows the ticket, its fields and each arm's output beside the reference. An arm run three
+  times shows its latest repeat's output, and the page says so ("the latest of 3 repeats; the
+  score is the mean of all 3"); `--item` prints the same output under the arm's name.
 - **Its refusals** are the tests' refusals: no comparison across two datasets, and on a metric
   scored against a reference, no arm scored against another reference than the baseline's (a
   silver-scored run against a gold-scored one).

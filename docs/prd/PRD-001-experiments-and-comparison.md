@@ -132,8 +132,10 @@ the [Runbook](../../harness/docs/RUNBOOK.md); the first evaluation, step by step
 - The GUIDE's walkthrough runs as written in a fresh project on every change (`make guide-check`).
 - Every claim in this repository's reports re-derives from the committed runs
   (`harness/tools/check_report_claims.py`, run by `make test`).
-- `pair-test`, `family-test` and the inspector give the same p on the same pair, because they
-  call the same module.
+- `pair-test`, `family-test` and the inspector give the same p on the same pair up to 30 items,
+  where it is exact, because they call the same module. Above 30 it is a seeded estimate:
+  `pair-test` and the inspector still agree, while `family-test` draws one random stream for its
+  family and can differ in the third decimal, and says which kind of p it printed.
 
 ## Related Documents
 

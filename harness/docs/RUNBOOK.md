@@ -38,7 +38,7 @@ further. This page is the reference for each step.
 | scores made elsewhere | `evh import-run --dataset-id … --config-id … --scores … --scorer-file …` |
 | billed cost | `evh cost-report` |
 | baseline | `evh run-promote --run … --reason "…"` · `evh runs-list --baselines` |
-| what it is for | `data/goals/<goal_id>.yaml`, and `goal:` on each config |
+| what it is for | `data/goals/<goal_id>.yaml` (every field: [§4c](#4c-the-goal-file-field-by-field)), and `goal:` on each config |
 | rounds (optional) | `evh round-open` · `evh round-retire` · `evh round-close` · `evh rounds --goal …` |
 | browse and inspect | `evh catalog` · `evh catalog-serve` |
 | the same, in the terminal | `evh datasets` · `evh references` · `evh metrics` · `evh goals` · `evh search …` · `evh inspect --runs …` (`--items`, `--analysis`, `--item …`) |
@@ -184,6 +184,26 @@ OpenAI-compatible endpoint, OpenRouter and a LiteLLM proxy, each with your own k
 Which variable each reads: [tutorial 2](../../docs/tutorials/2-hosted-llm.md#1-choose-a-provider).
 Full detail in [INTEGRATION.md](INTEGRATION.md).
 
+**What a run records as its cost.** Each call's `cost_usd` is the provider's bill when the
+response carries one (`usage.cost`), and otherwise the config's price table, tokens ×
+`usd_per_mtok_in` / `usd_per_mtok_out`. With no price table and no bill the cost is unknown, not
+zero. Per provider:
+
+| `provider:` | what the run records |
+|---|---|
+| `openrouter` | the bill: the provider asks OpenRouter for it on every call |
+| `litellm` | the proxy's bill, when the proxy passes `usage.cost` through (the 2026-10-24 scenario's proxy did); else the price table |
+| `openai` | the price table (OpenAI's API reports tokens, not a cost); an OpenAI-compatible endpoint that returns `usage.cost` is billed |
+| `anthropic` | the price table |
+| `echo`, your own adapter | what the adapter returns as `cost_usd` (tutorial 1's local model returns 0.0) |
+
+The bill is the measurement and the price table a guess: in this repository's runs they differed
+by 0.67× to 3.76× per arm. A run does not record which of the two its `cost_usd` came from.
+`evh cost-report` sets each run's bill (`_meta.usage.cost` in its predictions) against its
+recorded cost, and lists the runs with no bill there; the bundled adapter does not keep `usage`
+in `_meta`, so its runs are listed as having no bill even when their `cost_usd` is one. Judges
+follow the same rule (§12); their verdicts keep `usage`.
+
 ---
 
 ## 4b. Author ground truth — you cannot score quality without it
@@ -210,8 +230,10 @@ later run dirty.
 of their own, one call per item, without a run to read first.
 
 Scored against silver, the arm that wrote it is graded against its own outputs: the leaderboard
-marks its row (`arm *`). The others are measured by how close they come to it, the usual way to
-choose a cheaper system: pay for the expensive one once, then chase it.
+marks its row (`arm *`) and leaves it out of the ordering test and the frontier ("The ordering
+test and the frontier leave out <config> (it wrote the reference)"): it is the yardstick, not a
+contender. The others are measured by how close they come to it, the usual way to choose a
+cheaper system: pay for the expensive one once, then chase it.
 
 **Gold** is what a person wrote or checked: one `<item_id>.txt` per item under
 `data/references/gold/<dataset_id>/` — write them, or review silver ones and keep the
@@ -222,6 +244,67 @@ silver for new runs. Runs made before the gold set existed are re-scored against
 
 Every later run is scored against these automatically and records which tier it
 used. Ten items is enough to rank four arms; keep the first pass cheap.
+
+---
+
+## 4c. The goal file, field by field
+
+A goal says what the evaluation is for ([CONCEPTS](CONCEPTS.md#a-goal-says-what-the-evaluation-is-for)).
+It is optional: one YAML file per goal, `data/goals/<goal_id>.yaml`, and each config names it
+with `goal: <goal_id>` (every run and baseline then carries it). The schema is
+[`goal.schema.json`](../schemas/goal.schema.json); `evh validate` checks every goal against it
+(V1, V14). A goal for a classifier:
+
+```yaml
+# data/goals/intent_routing.yaml
+goal_id: intent_routing
+schema_version: "0.1"
+title: Route customer messages by intent
+statement: Label each customer message with its intent, so it reaches the right queue without a person reading it first.
+status: active
+context:
+  audience: the support team's routing rules
+decision: Which classifier routes the inbox.
+output_contract:
+  - {id: label, format: label, structure: "label: <intent> / reason: <one sentence>", language: en}
+success_criteria:
+  primary: {measure: accuracy, direction: higher}
+  min_items: 30
+datasets:
+  - {dataset_id: intents_v1, role: dev, notes: "32 hand-written messages, a few between two intents"}
+references:
+  - {reference_id: gold/intents_v1, tier: gold, format: label}
+measures:
+  - {id: accuracy, kind: metric, validity: unvalidated}
+```
+
+Required: `goal_id`, `title`, `statement`, `decision`, `success_criteria` (with `primary`) and
+`datasets`. Where the schema gives a field no fixed values it is free text, and the table says
+what reads it. A project may add fields of its own; the harness ignores them.
+
+| field | allowed values | what reads it |
+|---|---|---|
+| `goal_id` | lowercase letters, digits and `_`, starting with a letter or digit; **equals the file name** | V14 fails a file whose `goal_id` is not its name. Permanent: a materially different purpose is a new goal |
+| `schema_version` | any string (`"0.1"`) | nothing |
+| `title` | any string | the goal page's heading, `evh goals` |
+| `statement` | one sentence, "X for Y so that Z" | the goal page, `evh goals --goal` |
+| `status` | `active`, `draft`, `exploratory`, `dormant` or `superseded` | shown on the goal page |
+| `superseded_by` | the `goal_id` that replaces this one | nothing (for the reader) |
+| `context.audience`, `context.usage` | any string | `audience` is shown on the goal page |
+| `decision` | the decision an answer informs | the goal page and `evh goals --goal` lead with it |
+| `output_contract[]` | a list of shapes, each `{format}` (required) plus optional `id`, `length`, `structure`, `language` | A config may declare `format:` (any non-empty string); when the goal has a contract, that format must be one of its `format`s (V14 fails it, and the goal page flags the arm "format f not in the contract"). `format` is your own word for a shape (`paragraph`, `label`, `json`): the harness has no list of them. A config without `format:` is not checked |
+| `success_criteria.primary.measure` | a per-item metric as the runs record it (`rouge_l`, `accuracy`, `overlap_f1`) | the goal page, `evh goals --goal`, `evh rounds` and `inspect --round` read the arms on it; an arm that does not record it is not listed (a judged arm is shown in its judge's group, on the judge's score) |
+| `success_criteria.primary.direction` | `higher`, `lower` or `non_inferior` | `higher`/`lower` rank the arms. `non_inferior` is a guard (no significant drop against a baseline) and ranks nothing. V14 fails a direction that contradicts what the runs record, or `higher` on a cost, latency or token count |
+| `success_criteria.primary.threshold` | any value | shown beside the measure on the goal page |
+| `success_criteria.min_items` | an integer, at least 1 | The fewest items a winner-picking comparison may rest on: an arm with fewer is flagged "n k < min_items m" on the goal page and is never a group's leader; `evh validate` notes a goal dataset smaller than it (a note, not a failure) |
+| `success_criteria.secondary[]`, `.guardrails[]` | lists of objects, any shape | nothing (for the reader) |
+| `datasets[]` | `{dataset_id}` (required), `role`, `notes`. An empty list is a goal checked by a gate rather than measured on a dataset | Each dataset gets a section on the goal page and in `evh goals --goal`. `role` is free text (`dev`, `heldout`, `smoke`, `generalization`), shown beside the dataset; the harness attaches no rule to any value, so a "never decides" role is yours to honour. `notes` is shown under it |
+| `references[]` | `{reference_id, tier, format}`, all strings; `tier` is `gold` or `silver` by convention, `format` your word for the reference text's shape (`label` for a bare-label gold) | nothing: which reference an arm is scored against comes from its run, not from the goal |
+| `measures[]` | `{id, kind, validity}`, all strings; `validity` says how far the measure is trusted (`unvalidated`, or what it was validated against) | nothing (for the reader) |
+| `links[]` | `{url, note}` | nothing (for the reader) |
+
+`data/goals/policy.yaml` is not a goal: `required_from: YYYY-MM-DD` makes every run created on or
+after that date name a goal (V14). Without it, goals are optional.
 
 ---
 
@@ -244,7 +327,16 @@ byte-identical input** — wider than most of the deltas people were arguing
 about. Without knowing that, every one of those arguments was about noise.
 
 If the spread is `0.000000`, the arm is deterministic and any delta is real.
-Write the number down; you need it in step 7.
+Write the number down; you need it in step 7. Cost and speed have a spread too, and their rows
+say what they are (`latency_ms   spread=0.003833   speed, not a quality metric`): they move
+with the tokens and the machine, and say nothing about whether the arm is deterministic.
+
+When the command spent anything it prints the total over every run it wrote, so nobody adds
+up `total_cost_usd` by hand across repeats (§4 says where the number comes from):
+
+```text
+spent $0.001063 (price table x tokens, or the provider's bill where it sends one)
+```
 
 ---
 
@@ -339,11 +431,20 @@ into a *finding* is a separate verb: these are the tools behind the numbers in `
 | `evh rank-stability --dataset-id …` | how many items before the ordering stops moving — measured, not assumed from a power table |
 | `evh bootstrap-test --dataset-id … --a … --against …` | a percentile interval for a corpus-level metric that has no per-item value |
 | `evh rescore --dataset-id … --out …` | recompute every score from stored outputs under the current scorer — or, with `--reference-id gold/…`, against a reference set that arrived later. **$0, no API calls** |
-| `evh cost-report` | what each arm actually cost, from the provider's bill rather than a price table |
+| `evh cost-report` | what each arm actually cost, from the provider's bill (`_meta.usage.cost` in its predictions) against the cost the run recorded; runs with no bill there are listed apart (§4) |
 | `evh silver-calibrate --dataset-id …` | does a model-authored reference rank arms the way the trusted one does |
 
 `pair-test` and `family-test` count the exact p over all 2^n sign patterns when a pair shares 30
-items or fewer, and estimate it from 20,000 permutations above that; `pair-test` says which.
+items or fewer, and estimate it from 20,000 permutations above that; both say which (`family-test`:
+"p: exact, over all 2^6 sign patterns", or "p: a seeded estimate (20000 permutations, one random
+stream for the family)"). Up to 30 items every command, the inspector included, prints the same
+p. Above that the estimate is seeded, so it repeats, but `family-test` draws one random stream
+for the whole family while `pair-test` and the inspector draw one per pair: the same pair's p can
+differ in the third decimal between them (32 items in the 2026-10-24 scenario: 0.0297 from
+`family-test`, 0.0327 from `pair-test` and the inspector). The verdicts are read against the same
+thresholds; a p that close to one is not a result either way. Every command prints p to four
+decimals, and `<0.0001` for what would print as 0.0000. `family-test`'s `A wins` column counts
+the items A wins; the inspector's `wins–losses` is each row's arm against the baseline.
 Without `--metric` they read the primary metric the runs recorded. Which way is better is
 inferred once for every command: a flag (`--asc`, `--desc`), else the goal the runs name, else
 the adapter's `METRIC_DIRECTIONS`, else the name (cost, latency and token metrics go down).
@@ -378,6 +479,20 @@ The baseline carries what its number means, from the run: the reference tier it 
 against, the adapter that scored it, its fingerprint hash, and its goal and format
 (`validate` V6 fails a baseline that no longer matches its run). Promoting another run
 replaces the baseline, and git keeps the one it replaced; a baseline is never edited.
+
+**An arm run with `--repeat`.** You promote one run, and the arm has several. Promote any of
+its repeats (`_r1` is as good as `_r3`): the baseline records that run's own `scores` (V6 compares
+them with the run) and, under `repeats`, every repeat's run id and the mean of each score over
+them ([`baseline.schema.json`](../schemas/baseline.schema.json)). The catalog, the inspector and
+the tests read the arm as that mean, so the mean is the number to quote. `run-promote` prints
+the two side by side:
+
+```text
+  NOTE: tickets_lead2_v1 has 3 repeats; the catalog, the inspector and the tests read their mean.
+        The baseline records this run's own scores and, under `repeats`, the mean:
+    ...
+    overlap_f1     0.900088   (mean of 3: 0.900088)
+```
 
 ```bash
 evh runs-list --baselines
@@ -555,15 +670,33 @@ and to the news-summary judge, so neither is an `evh` command.
    shape, missing dimension, a score off the scale) is stored and reported as
    `unparsed reply: …`; an item counts only when every one of its primary blocks parsed. A
    reply that is not bare JSON scores (a judge reasoning aloud, a reply cut off) or that
-   repeats 8 consecutive words of the item or an output is stored only as its hash, so the
+   repeats 8 consecutive words of the item or an output is committed only as its hash, so the
    source's text is never committed by accident; `validate` V12 checks every committed reply.
-   Real judges do this: on the Zhang et al. validation `gemma_l` left 1 of its 200 replies
-   unparsed and `qwen_s` 2 (`data/judge-validation/judge-summ-v1/zhang2023-cnndm/report.json`).
-   `--retry-unparsed` calls again for those blocks only.
-6. **Read `data/runs-judged/<id>/summary.json` before the leaderboard:** per-judge columns,
-   inter-judge agreement, which arms share a judge's family, the position check (a second
-   shuffle on a subset) and the noise check (a repeat on a subset). A difference between arms
-   smaller than the noise check's is not a difference.
+   Its text is kept on your machine, git-ignored, beside its record:
+   `data/judge-verdicts/<scorer>/<judging set>/<judge>/.withheld/<item>.<pass>.b<block>.txt`
+   (the directory ignores itself). The log names the file ("reply not committed as text (…),
+   only its hash; readable, git-ignored, at …"), so you can read why a reply did not parse
+   before you retry. Real judges do this: on the Zhang et al. validation `gemma_l` left 1 of its
+   200 replies unparsed and `qwen_s` 2
+   (`data/judge-validation/judge-summ-v1/zhang2023-cnndm/report.json`). `--retry-unparsed` calls
+   again for those blocks only. The pass prints what it spent: "spent this run $…, stored total
+   $… (the provider's bill where it reports one, else the price table)", the same rule as an
+   arm's cost (§4).
+6. **Read the judging pass's checks before the ranking.** The judged leaderboard
+   (`EVAL_RUNS_DIR=data/runs-judged/<id> evh leaderboard …`) prints them under its table, from
+   `data/runs-judged/<id>/summary.json`: how far the judges agree (item tau, and the Spearman of
+   the arms' order), and per judge the position check (a second shuffle on a subset) and the
+   noise check (the same call repeated on a subset):
+
+   ```text
+     The judging pass (tickets-judge-v1, 6/6 items, unvalidated judge), from summary.json:
+       judges judge_a and judge_b agree: item tau 0.040, arm order spearman 0.400
+       judge_a: reshuffled outputs tau 1.000 (position), the same call repeated tau 1.000 (noise)
+   ```
+
+   A difference between arms smaller than the noise check's is not a difference.
+   `summary.json` also has the per-judge columns and which arms share a judge's family. A judged
+   run keeps its source run's cost and speed, so the judged leaderboard has its frontier.
 7. **Record the decision.** Changing an experiment's primary metric is a recorded decision
    with a reason; the old metric stays beside the new one (CONCEPTS: Re-measuring a frozen
    experiment).
@@ -627,8 +760,15 @@ evh round-open --goal my_goal --dataset my_v1 --from r1 --change "what changed a
     --keep arm_a_v1 --retire arm_c_v1 --reason "why" --budget-usd 0.50
 ```
 
-- **Arms join a round** by naming it in their config, `round: r2` beside `goal:`; every run
-  records it. Carried arms (`--keep`) are not run again. Commit the round file before the runs.
+- **A new arm joins a round** by naming it in its config, `round: r2` beside `goal:`; every run
+  records it. **Carried arms (`--keep`) need no config change and no new run:** their runs
+  already count, and `round-open` says so ("Carried in as they are, their runs already count: …
+  (their configs need no change and they need not run again)"). Commit the round file before
+  the runs.
+- **`evh rounds` never suggests promoting the run that already is the baseline**: its close
+  suggestion then reads "close the round with what it showed (<arm> is already the baseline)",
+  with no `--promote`. `leaderboard --round` does not warn about two versions of one arm (`_v1`,
+  `_v2`) in a round: comparing them is what the round is for.
 - **`evh rounds`** reads the evidence the way the inspector does (the round's arms against its
   leader, Holm-corrected; its leader against the previous round's best, the baseline it started
   from and the arm that wrote a silver reference of the dataset; its spend against `--budget-usd`,
