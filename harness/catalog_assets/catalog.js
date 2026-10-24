@@ -22,10 +22,13 @@ document.querySelectorAll('input[data-filter]').forEach(inp=>{const t=document.g
 inp.addEventListener('input',()=>{const w=inp.value.toLowerCase().split(/\s+/).filter(Boolean);let n=0;
 t.querySelectorAll('tbody tr').forEach(r=>{const ok=w.every(x=>r.textContent.toLowerCase().includes(x));r.hidden=!ok;n+=ok;});
 const c=document.querySelector(`[data-count="${inp.dataset.filter}"]`);if(c)c.textContent=n;});});
-document.querySelectorAll('table.sortable th').forEach((th,i)=>th.addEventListener('click',()=>{const tb=th.closest('table').tBodies[0];
-const dir=th.dataset.dir==='asc'?'desc':'asc';th.closest('tr').querySelectorAll('th').forEach(x=>delete x.dataset.dir);th.dataset.dir=dir;
+/* sort: a header is a button (click, or Enter/Space from the keyboard), and says how its column is sorted (aria-sort) */
+document.querySelectorAll('table.sortable th').forEach((th,i)=>{th.tabIndex=0;th.setAttribute('role','button');th.setAttribute('aria-sort','none');
+th.addEventListener('keydown',ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();th.click();}});
+th.addEventListener('click',()=>{const tb=th.closest('table').tBodies[0];
+const dir=th.dataset.dir==='asc'?'desc':'asc';th.closest('tr').querySelectorAll('th').forEach(x=>{delete x.dataset.dir;x.setAttribute('aria-sort','none');});th.dataset.dir=dir;th.setAttribute('aria-sort',dir==='asc'?'ascending':'descending');
 const key=r=>{const c=r.cells[i];const v=c.dataset.v??c.textContent.trim();const n=parseFloat(v);return isNaN(n)?v.toLowerCase():n;};
-[...tb.rows].sort((a,b)=>{const x=key(a),y=key(b);return (x>y?1:x<y?-1:0)*(dir==='asc'?1:-1);}).forEach(r=>tb.appendChild(r));}));
+[...tb.rows].sort((a,b)=>{const x=key(a),y=key(b);return (x>y?1:x<y?-1:0)*(dir==='asc'?1:-1);}).forEach(r=>tb.appendChild(r));});});
 /* paging: a long table shows 10 rows at a time, "show 10 more" and "show all" below it. It pages
    the rows the filter leaves (r.hidden), so filter and sort work over every row; a link to a row
    (#anchor) opens the table at it. window.paginate(table) for tables drawn later (the inspector). */

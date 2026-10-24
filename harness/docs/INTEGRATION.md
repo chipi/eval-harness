@@ -243,7 +243,7 @@ which references exist, what one arm wrote for one item.
   |---|---|
   | which arms, on which data | `arms()`, `arms_of(path)`, `describe(arm)`, `notes(arm)` |
   | what each scored, per item | `scores(arm, rescore=False)`, `recorded_means(arm)`, `input_hashes(arm)`, `can_rescore` |
-  | which way is better | `lower_is_better(metric)`, `is_neutral(metric)`, `preferred_metrics`, `shape_metrics` |
+  | which way is better | `lower_is_better(metric, dataset)`, `is_neutral(metric)`, `preferred_metrics`, `shape_metrics` |
   | which references | `references()`, `reference_format(ref)`, `reference_archived(ref)` |
   | what was asked, what came back | `output_format(arm)` |
   | one item, side by side (the inspector only) | `item_view(arm, item)`, `reference_view(ref, item)` |
@@ -271,7 +271,8 @@ which references exist, what one arm wrote for one item.
   lists each field and its coverage, and summarises the values of a field marked `public`
   only; the local inspector shows every value, filters a comparison by a field and breaks it
   down by a `choice` or `boolean` one. A public deployment (`catalog-serve --public`) answers
-  with public fields only (ADR-0003).
+  with public fields only (ADR-0003). To read a project's field set, use
+  `from evaluation_harness.catalog_adapter import load_fieldset, fieldset_problems`, not the private `_fields`.
 
 ---
 

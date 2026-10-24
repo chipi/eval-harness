@@ -279,6 +279,46 @@ p 0.36, from the pre-fix run), and DBpedia's 56-item dev slice, over today's 28 
   from a pin); the tutorial kit ships `tutorial/judge_panel.yaml`.
 
 ### Fixed
+- **From an external review of the core and the UI surfaces (0.4.0 candidate):**
+  - **A run scored against references for only some items says so.** experiment-run took a
+    reference directory as covering the dataset, so gold for 20 of 200 items gave a 20-item mean
+    recorded as a 200-item gold run. It now counts coverage before any call. With no file for any
+    item it refuses. With some, it warns, records `reference_coverage` on the run (schema), and
+    the leaderboard names the run. **This can move a result**: a run that was refused now stops.
+  - **A pair opened from a goal page's group is held to the group's family.** "test vs leader"
+    passes `family=<group size − 1>`, so it is not tested as if it were the only pair. The
+    inspector refuses a `family` smaller than the arms tested, and a `threshold` above alpha or
+    below what the family allows, instead of obeying a URL.
+  - **rescore and judge-score keep a project adapter's call-time extras** (named in the row's
+    `_extra`) and `resumed`; they were dropped and reported as metrics the scorer dropped.
+  - **The adapter contract:**
+    - INTEGRATION gives `lower_is_better(metric, dataset)`, as the code calls it;
+    - `catalog_adapter` re-exports `load_fieldset` and `fieldset_problems`, so an adapter needs
+      no private `_fields`;
+    - two new optional members: `arm_of(dataset, config_id)` (rounds, `inspect --round`; it
+      follows `EVAL_RUNS_DIR`) and `reference_free(metric)` (from the metric's kinds, not its
+      name);
+    - the structured view kinds (`insights`, `nodes`, `entities`) are documented;
+    - `evh rounds` reads the project's catalog adapter;
+    - the inspector's default baseline is the promoted baseline's arm.
+  - **The public server trusts no client header unless told** (`--client-header NAME`); a
+    spoofed `CF-Connecting-IP` no longer buys a fresh rate bucket. The deployment names
+    Cloudflare's header (origin lock).
+  - **The rest of the page features have commands:** `evh inspect --no-rescore` (the inspector's
+    box), its "Average only" table, and the dataset page's fields block in
+    `evh datasets --dataset-id`.
+  - **Statistics, consistently:**
+    - `family-test` marks an estimated p (~) when a family mixes exact and estimated rows;
+    - pair-test separates at `p <= threshold`, as Holm and the inspector do;
+    - the bootstrap ties ranks with the same tolerance as the within-item ranks;
+    - runs that disagree on a direction or a primary metric are named;
+    - rescore refreshes `metric_directions`;
+    - the inspector and `evh inspect` show each row's 95% interval of Δ (exact up to 30 items, a
+      t interval above, as its docstring now says).
+  - **Accessibility:** a sortable column's header works from the keyboard and states `aria-sort`;
+    every chart mark with a tooltip carries an SVG `<title>`.
+  - **Messages:** rescore's missing-reference message no longer sends a project to
+    `examples/`; RFC-002 tells `_extra` (adapter extras) from `_meta` (provider metadata).
 - **From the second newcomer run** (`/work/evh-scenario-040`; SCENARIO, 0.4.0 candidate):
   - **A baseline promoted from one of an arm's repeats** records every repeat and their mean
     under `repeats`, and `run-promote` prints the two side by side. The catalog, the inspector

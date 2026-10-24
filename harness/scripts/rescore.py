@@ -56,7 +56,8 @@ from _runs import runs_on
 #: new scorer does not produce is carried too — `truncated` and `reasoning_tokens` come
 #: from the adapter's `Result.extra` at call time and are unrecoverable afterwards, and a
 #: fixed list silently dropped them on the first run of this script.
-CARRY = ("latency_ms", "tokens_in", "tokens_out", "cost_usd")
+# `resumed` records whether the item was replayed from a stopped run: a fact about the call.
+CARRY = ("latency_ms", "tokens_in", "tokens_out", "cost_usd", "resumed")
 
 
 def _item_sources(dataset_id: str) -> dict[str, str]:
@@ -134,7 +135,9 @@ def _rescore_row(
         # leaderboard showed them as live quality columns beside the new ones.
         # A rescored run must not report a number the current scorer never
         # computed.
-        if k in CARRY or k in extra_keys or k.startswith("_"):
+        # The row's own `_extra` names what the adapter attached at call time (any adapter's
+        # extras, not only the examples' names): those describe the call too.
+        if k in CARRY or k in extra_keys or k in (old.get("_extra") or {}) or k.startswith("_"):
             row[k] = v
 
     # ...EXCEPT THE PARTS OF `_meta` THE PARSER PRODUCED.
@@ -215,9 +218,9 @@ def _check_references(
                 f"under {ref_dir}.\n"
                 f"  Scoring would silently treat every gold set as empty and report a "
                 f"plausible wrong number.\n"
-                f"  The corpora are gitignored, not committed: rebuild them with the "
-                f"example's fetcher, e.g.\n"
-                f"    python examples/<example>/fetch.py\n"
+                f"  References are often gitignored rather than committed: put them back (in a "
+                f"checkout of the harness, an example's fetcher: python examples/<example>/fetch.py),\n"
+                f"  or make them again:\n"
                 f"    "
                 + how(
                     f"evh dataset-create --dataset-id {m.get('dataset_id')} --source-dir …",
@@ -404,6 +407,7 @@ def main() -> int:
             metric_kinds=_kinds(adapter_path) or m.get("metric_kinds") or {},
             primary_metric=_primary(adapter_path) or m.get("primary_metric"),
             metric_descriptions=_descriptions(adapter_path) or m.get("metric_descriptions"),
+            metric_directions=_directions(adapter_path) or m.get("metric_directions"),
             reference_tier=tier if args.reference_id else None,
         )
         if isinstance(new.get("fingerprint"), dict):
@@ -438,6 +442,13 @@ def _primary(path):
     from _adapter import primary_metric  # noqa: PLC0415
 
     return primary_metric(path)
+
+
+def _directions(path):
+    """The rescoring adapter's METRIC_DIRECTIONS, refreshed on the run like its kinds."""
+    from _adapter import metric_directions  # noqa: PLC0415
+
+    return metric_directions(path)
 
 
 def _descriptions(path):

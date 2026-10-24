@@ -98,6 +98,7 @@ def datasets(argv) -> int:
         print(f"made into {c}: " + ", ".join(f"{len(cl[k])} {k}" for k in ("added", "removed", "changed")))
     if v["refs"]:
         print("\nreferences: " + ", ".join(f"{r['id']} ({r['tier']})" for r in v["refs"]))
+    _fields_block(A, args.dataset_id)
     for b in v.get("baselines", [])[-1:]:
         print(f"\nbaseline: {b.get('arm') or b['run']} (promoted {(b['promoted_at'] or '')[:10]})")
         print(textwrap.fill(b["reason"], width=92, initial_indent="  ", subsequent_indent="  "))
@@ -132,6 +133,42 @@ def datasets(argv) -> int:
         ],
     )
     return 0
+
+
+def _fields_block(A, dataset: str) -> None:
+    """The dataset page's item fields: each field, its coverage, and a summary of a public one."""
+    import _fields  # noqa: PLC0415
+    from catalog_adapter import item_fields  # noqa: PLC0415
+
+    fl = item_fields(A, dataset)
+    fs = fl.get("fieldset")
+    if not fs:
+        return
+    items = [{"item_id": i, "fields": f} for i, f in (fl.get("values") or {}).items()]
+    rows = []
+    for x in _fields.summary(fs, items):
+        if not x["public"]:
+            vals = "not public"
+        elif "counts" in x:
+            vals = " · ".join(f"{k} {c}" for k, c in sorted(x["counts"].items(), key=lambda kv: -kv[1]))
+        elif "median" in x:
+            vals = f"{x['min']} – {x['max']}, median {x['median']}"
+        elif "min" in x:
+            vals = f"{x['min']} – {x['max']}"
+        elif "distinct" in x:
+            vals = f"{x['distinct']} distinct"
+        else:
+            vals = "—"
+        rows.append(
+            [
+                x["name"],
+                x["type"] + (f" ({x['unit']})" if x.get("unit") else ""),
+                f"{x['filled']} of {x['of']}",
+                vals,
+            ]
+        )
+    print(f"\nfields (field set {fs.get('fieldset_id', '')}; values of public fields only):")
+    _table(["field", "type", "filled", "values"], rows)
 
 
 def references(argv) -> int:
@@ -361,6 +398,11 @@ def inspect(argv) -> int:
     ap.add_argument("--by", help="break the comparison down by a choice or yes/no field")
     ap.add_argument("--item", help="show one item: each arm's output beside the reference")
     ap.add_argument(
+        "--no-rescore",
+        action="store_true",
+        help="read only what is on record (the inspector's re-score box unticked; an adapter that can re-score)",
+    )
+    ap.add_argument(
         "--items", action="store_true", help="the per-item table: every item's score per arm, and Δ"
     )
     ap.add_argument(
@@ -391,7 +433,9 @@ def inspect(argv) -> int:
         if not args.metric and prim.get("measure"):
             args.metric = prim["measure"]
         known = set(A.arms())
-        in_play = [a for a in (f"runs/{rnd['dataset_id']}/{c}" for c in tokens) if a in known]
+        from rounds import _arm  # noqa: PLC0415
+
+        in_play = [a for a in (_arm(A, rnd["dataset_id"], c) for c in tokens) if a in known]
         unscored = [
             a.rsplit("/", 1)[-1] for a in in_play if not (A.scores(a).get(args.metric) or {}).get("values")
         ]
@@ -445,6 +489,7 @@ def inspect(argv) -> int:
         "metric": [args.metric or ""],
         "where": args.where,
         "by": [args.by or ""],
+        "rescore": ["0" if args.no_rescore else "1"],
     }
     d = cs.compare(params)
     if d.get("error"):
@@ -460,7 +505,7 @@ def inspect(argv) -> int:
         f"{d['metric']} ({better} is better) · baseline {label.get(d['baseline'], d['baseline'])}: mean {_fmt(statistics.fmean(vals) if vals else None)} · Holm across {d['family_size']}\n"
     )
     _table(
-        ["run vs baseline", "verdict", "n", "mean", "Δ", "wins–losses", "p", "Holm threshold"],
+        ["run vs baseline", "verdict", "n", "mean", "Δ", "95% CI of Δ", "wins–losses", "p", "Holm threshold"],
         [
             [
                 label.get(r["arm"], r["arm"]),
@@ -468,6 +513,7 @@ def inspect(argv) -> int:
                 r["n"],
                 _fmt(r["mean"]),
                 _fmt(r["delta"]),
+                "—" if not r.get("ci") else f"{r['ci'][0]:+.3f} to {r['ci'][1]:+.3f}",
                 f"{r['wins']}–{r['losses']}" + (f" ({r['ties']} tied)" if r.get("ties") else ""),
                 "—" if r.get("p") is None else fmt_p(r["p"]),
                 "—" if not r.get("threshold") else f"{r['threshold']:.4f}",
@@ -475,6 +521,20 @@ def inspect(argv) -> int:
             for r in sorted(d["rows"], key=lambda r: r.get("p") if r.get("p") is not None else 9)
         ],
     )
+    avgs = d.get("averages") or {}
+    if avgs:
+        base_vals = list((d.get("series") or {}).get(d["baseline"], {}).values())
+        base_mean = statistics.fmean(base_vals) if base_vals else None
+        print(f"\nAverage only · {len(avgs)}: no per-{A.item_word} scores, so no test")
+        _table(
+            ["run", "recorded average", "vs the baseline's mean"],
+            [
+                [label.get(a, a), _fmt(v), "—" if base_mean is None else f"{v - base_mean:+.3f}"]
+                for a, v in sorted(
+                    avgs.items(), key=lambda kv: -kv[1] if d.get("higher_is_better") else kv[1]
+                )
+            ],
+        )
     c = d.get("conditions")
     if c and c.get("fields"):
         if not c["differ"]:

@@ -293,7 +293,9 @@ def significance(
         i = 0
         while i < len(order):
             j2 = i
-            while j2 + 1 < len(order) and mu[order[j2 + 1]] == mu[order[i]]:
+            # The tolerance the within-item ranks use: float sums of equal scores can differ in
+            # the last bit and must still tie.
+            while j2 + 1 < len(order) and abs(mu[order[j2 + 1]] - mu[order[i]]) <= _TIE_TOL:
                 j2 += 1
             shared = (i + j2) / 2 + 1
             for x in range(i, j2 + 1):
@@ -649,6 +651,17 @@ def _table(args: argparse.Namespace, found: list) -> None:
         cells = "  ".join((f"{r[k]:16.6f}" if k in r else f"{'—':>16}") for k in show)
         name = r["config_id"] + (" *" if r["config_id"] in own else "")
         print(f"  {name:{w}} {r['n_runs']:>4}  {cells}")
+    # A run scored against references for only some of its items: its quality mean is over those.
+    partial = {
+        cid: (r["reference_coverage"]["items_with_reference"], r["reference_coverage"]["items"])
+        for cid, runs in by_config.items()
+        for r in runs
+        if r.get("reference_coverage")
+    }
+    for cid, (k, n) in sorted(partial.items()):
+        print(
+            f"\n  NOTE: {cid} had a reference for {k} of {n} items: its quality columns are means over {k}."
+        )
     for config_id, ref in sorted(own.items()):
         print(
             f"\n  * {config_id} wrote the reference {ref}: it is graded against its own outputs,\n"

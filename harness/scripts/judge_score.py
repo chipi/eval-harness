@@ -108,7 +108,7 @@ class JudgeCallFailed(Exception):
 
 #: Describe the CALL that made an arm's output, not how it was measured: carried across as
 #: rescore.py carries them.
-CARRY = ("latency_ms", "tokens_in", "tokens_out", "cost_usd", "truncated", "reasoning_tokens")
+CARRY = ("latency_ms", "tokens_in", "tokens_out", "cost_usd", "truncated", "reasoning_tokens", "resumed")
 #: Reply size per summary for the dry-run estimate: SummEval's gemma_l returned 217.5 tokens
 #: for 16 summaries x 4 dimensions (committed run se_gemma_l_n100_v1, scores.tokens_out).
 #: A task with other dimensions scales it by their number.
@@ -929,8 +929,10 @@ def write_scored_runs(
             for j in jids:
                 row[f"judge_{j}{sfx}"] = round(cell[j], 10)
                 row[f"self_family_{j}"] = 1.0 if a.get("family") == fam[j] else 0.0
-            for k, v in (old_rows.get(iid) or {}).items():
-                if k in CARRY or k.startswith("_"):
+            old_row = old_rows.get(iid) or {}
+            for k, v in old_row.items():
+                # The adapter's call-time extras (`_extra` names them) describe the call too.
+                if k in CARRY or k in (old_row.get("_extra") or {}) or k.startswith("_"):
                     row[k] = v
             rows.append(row)
         keys = sorted({k for r in rows for k in r if k != "item_id" and not k.startswith("_")})

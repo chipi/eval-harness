@@ -153,11 +153,11 @@ def min_attainable_p(n: int) -> float:
 
 
 def exact_ci(deltas: list, alpha: float = ALPHA):
-    """Interval for the mean paired difference that agrees with the paired test.
+    """A 95% interval for the mean paired difference.
 
-    The set of shifts d for which the sign-flip test on (delta - d) does not reject at
-    alpha: exact up to EXACT_UP_TO items (found by bisection on each side of the mean),
-    a t interval above that. None when no shift can be rejected at all (n=5 and below:
+    Up to EXACT_UP_TO items it agrees with the paired test: the set of shifts d for which the
+    sign-flip test on (delta - d) does not reject at alpha, found by bisection on each side of
+    the mean. Above that it is a t interval, which is close to the test but not derived from it. None when no shift can be rejected at all (n=5 and below:
     the smallest attainable p is over alpha), so there is no interval to draw.
     """
     n = len(deltas)

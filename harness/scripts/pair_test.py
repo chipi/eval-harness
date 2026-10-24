@@ -171,12 +171,13 @@ def main() -> int:
     )
     print(f"    sign-flip p        {fmt_p(p)}  ({how})")
     if args.family > 1:
-        verdict = "SEPARATED" if p < thresh else "NOT-SEPARATED"
+        # The same rule as Holm and the inspector: p at or below the threshold separates.
+        verdict = "SEPARATED" if p <= thresh else "NOT-SEPARATED"
         print(f"    Bonferroni/{args.family}     threshold {thresh:.4f} -> {verdict}")
-        if p >= thresh:
+        if p > thresh:
             print("    (conservative: Holm's later steps are looser — check the family)")
     else:
-        print(f"    verdict            {'SEPARATED' if p < 0.05 else 'NOT-SEPARATED'} at 0.05")
+        print(f"    verdict            {'SEPARATED' if p <= 0.05 else 'NOT-SEPARATED'} at 0.05")
         print("    (uncorrected: valid only if this pair was named before the table was read)")
     return 0
 

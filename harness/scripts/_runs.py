@@ -17,6 +17,7 @@ from __future__ import annotations
 import json
 import re
 import statistics
+import sys
 from collections.abc import Iterable, Iterator
 from pathlib import Path
 
@@ -134,11 +135,20 @@ def matrix(
 def recorded_direction(runs: Iterable[Run], metric: str) -> str | None:
     """ "lower" / "higher" as the runs record it for `metric` (`metric_directions`: the
     adapter's METRIC_DIRECTIONS, or `import-run --asc`). None when no run says."""
-    for _d, m in runs:
+    said: dict[str, str] = {}
+    for d, m in runs:
         declared = (m.get("metric_directions") or {}).get(metric)
         if declared in ("lower", "higher"):
-            return str(declared)
-    return None
+            said.setdefault(str(declared), d.name)
+    if len(said) > 1:
+        # Two runs, two answers: name them rather than take whichever was listed first.
+        print(
+            f"  NOTE: runs disagree on which way {metric} is better ("
+            + ", ".join(f"{v}: {k}" for k, v in said.items())
+            + "); using the first. Pass --asc or --desc to decide.",
+            file=sys.stderr,
+        )
+    return next(iter(said), None)
 
 
 def goal_direction(runs: Iterable[Run], metric: str, goals: dict | None = None) -> str | None:
@@ -222,6 +232,12 @@ def default_metric(dataset_id: str, match: str | None = None, runs_dir: Path | N
             primary[m["primary_metric"]] += 1
         seen |= set((m.get("scores") or {}).keys())
     if primary:
+        if len(primary) > 1:
+            print(
+                f"  NOTE: runs on {dataset_id} declare different primary metrics ({dict(primary)}); "
+                f"using the most common. Pass --metric to choose.",
+                file=sys.stderr,
+            )
         return primary.most_common(1)[0][0]
     raise SystemExit(
         f"ERROR: no run on {dataset_id} records a primary metric: pass --metric"

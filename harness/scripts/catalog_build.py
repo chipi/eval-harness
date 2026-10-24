@@ -36,6 +36,8 @@ from stats import fmt_p  # noqa: E402
 
 #: The front-end files every page loads: installed beside the package, or in a checkout.
 ASSET_DIR = next(p for p in (HERE / "catalog_assets", HERE.parent / "catalog_assets") if p.is_dir())
+# forest.js draws a baseline's answers chart; no page of the harness's own uses it, a project's
+# builder does (podcast_scraper's baseline pages), so it ships with the assets.
 ASSETS = ("style.css", "catalog.css", "catalog.js", "inspect.js", "forest.js", "icon.svg")
 #: Links that would put more arms than this in one inspector URL go to the picker instead.
 INSPECT_MAX = 40
@@ -975,7 +977,9 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
                 trs = []
                 for r in rows:
                     link = (
-                        f'<a class="btn small" href="{inspect_url([r["arm"], leader["arm"]], "../", baseline=leader["arm"], metric=gm)}">test vs leader</a>'
+                        # One pair picked from a group of many: held to the group's family (every
+                        # arm in it against the leader), never tested as if it were the only one.
+                        f'<a class="btn small" href="{inspect_url([r["arm"], leader["arm"]], "../", baseline=leader["arm"], metric=gm, family=max(len(rows) - 1, 1))}">test vs leader</a>'
                         if leader and r["arm"] != leader["arm"]
                         else ("leader" if leader and r is leader else "")
                     )

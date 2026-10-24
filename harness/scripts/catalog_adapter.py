@@ -43,6 +43,7 @@ from _common import (  # noqa: E402
     load_goals,
     load_module,
 )
+from _fields import fieldset_problems, load_fieldset  # noqa: E402 -- part of the adapter contract
 from _record import derived_with  # noqa: E402
 from _runs import item_rows, lower_is_better_on, runs_on, score_of  # noqa: E402
 
@@ -133,7 +134,11 @@ class Adapter(Protocol):
         """{"asked", "got", "how"}: the output format the arm was asked for and produced."""
 
     def item_view(self, arm: str, item: str) -> dict:
-        """One arm's output for one item: {"kind": "text", "text": ...} or {"kind": "none"}."""
+        """One arm's output for one item, as one of the inspector's view kinds:
+        {"kind": "text", "text": ...}; {"kind": "none", "note": ...}; or a structured output,
+        {"kind": "insights", "items": [{"text", "grounded"}], "quotes": n} (claims, each grounded
+        in the source or not), {"kind": "nodes", "groups": {name: [str]}} (named groups) or
+        {"kind": "entities", "items": [str]}. Any of them may carry "info": {label: value}."""
 
     def reference_view(self, ref: str, item: str) -> dict:
         """One reference's text for one item: {"kind": "text", "text": ...} or {"kind": "none"}."""
@@ -161,6 +166,13 @@ class Adapter(Protocol):
     # Optional: the promoted baselines (run-promote), [{"baseline_id", "dataset", "run", "arm",
     # "reason", "promoted_at", "tier", "goal"}]; the pages lead with them, the answer so far.
     # def baselines(self) -> list[dict]: ...
+    # Optional: the arm id of a config on a dataset (`evh rounds`, `evh inspect --round` and the
+    # round pages build arm ids with it): `runs/<dataset>/<config_id>` when absent.
+    # def arm_of(self, dataset: str, config_id: str) -> str: ...
+    # Optional: whether a metric needs no reference (the bill, the clock, token counts), so arms
+    # scored against different references can still be compared on it. When absent, a metric
+    # whose name contains cost, latency or tokens is taken to need none.
+    # def reference_free(self, metric: str) -> bool: ...
     # Optional: experiment rounds (ADR-0004), each round's record with "arms", the arm ids in play;
     # a goal page shows them as its history.
     # def rounds(self) -> list[dict]: ...
@@ -391,6 +403,29 @@ class HarnessAdapter:
         """Return whether this metric is descriptive (neither better nor worse)."""
         return is_descriptive(metric) or metric in self._descriptive()
 
+    def arm_of(self, dataset: str, config_id: str) -> str:
+        """The arm id of a config's runs on a dataset: `<runs dir>/<dataset>/<config_id>`, the
+        runs directory as this project names it (EVAL_RUNS_DIR), relative to its data."""
+        try:
+            base = _common.RUNS.resolve().relative_to(self.data_dir.resolve()).as_posix()
+        except ValueError:
+            base = "runs"
+        return f"{base}/{dataset}/{config_id}"
+
+    @_memo
+    def _kinds(self) -> dict:
+        out: dict = {}
+        for ds in self._index().values():
+            out.update((_json(ds[-1] / "metrics.json") or {}).get("metric_kinds") or {})
+        return out
+
+    def reference_free(self, metric: str) -> bool:
+        """A cost or speed metric (as the runs declare it, else by the harness's names) needs no
+        reference: it is measured off the bill and the clock."""
+        from _common import classify_metrics  # noqa: PLC0415
+
+        return classify_metrics(self._kinds()).get(metric) in ("cost", "speed")
+
     @property
     def shape_metrics(self) -> tuple:
         """Latency and the output's size (descriptive kinds measured in words or characters):
@@ -536,7 +571,7 @@ class HarnessAdapter:
             ran = {
                 arm.rsplit("/", 1)[-1]
                 for arm, dirs in self._index().items()
-                if arm.startswith(f"runs/{ds}/")
+                if arm.startswith(self.arm_of(ds, ""))
                 and any(
                     (m := _json(d / "metrics.json") or {}).get("round") == doc["round_id"]
                     and m.get("goal") == doc.get("goal")
@@ -546,7 +581,7 @@ class HarnessAdapter:
             retired = {r.get("config_id") for r in doc.get("retired") or []}
             in_play = sorted((ran | set(doc.get("carried") or [])) - retired)
             out.append(
-                dict(doc, arms=[f"runs/{ds}/{c}" for c in in_play if f"runs/{ds}/{c}" in self._index()])
+                dict(doc, arms=[self.arm_of(ds, c) for c in in_play if self.arm_of(ds, c) in self._index()])
             )
         return out
 
@@ -590,8 +625,6 @@ class HarnessAdapter:
     @_memo
     def item_fields(self, dataset: str) -> dict:
         """Return a dataset's declared fields and items' values."""
-        from _fields import fieldset_problems, load_fieldset  # noqa: PLC0415
-
         ds = _json(self.data_dir / "datasets" / f"{dataset}.json") or {}
         fid = ds.get("fieldset")
         fs = load_fieldset(fid, self.data_dir / "fields") if fid else None

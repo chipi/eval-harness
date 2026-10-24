@@ -98,11 +98,12 @@
     const vt = rows.map(r => `<tr class="${kind(r.arm)}"><td class="mono">${esc(label[r.arm] || r.arm)}</td>
       <td>${verdictChip(r.verdict)}${r.n && r.min_p > 0.05 ? ' <small class="muted">' + r.n + ' ' + ITEMS + ' cannot reach 0.05</small>' : ''}</td>
       <td class="num">${r.n}</td><td class="num">${fmt(r.mean)}</td><td class="num">${fmt(r.delta)}</td>
+      <td class="num">${r.ci ? (r.ci[0] >= 0 ? '+' : '') + r.ci[0].toFixed(3) + ' to ' + (r.ci[1] >= 0 ? '+' : '') + r.ci[1].toFixed(3) : '—'}</td>
       <td class="num">${r.wins}–${r.losses}${r.ties ? ' (' + r.ties + ' tied)' : ''}</td>
       <td class="num">${fmtp(r.p)}</td><td class="num">${r.threshold ? r.threshold.toFixed(4) : '—'}</td></tr>`).join('');
     const baseMean = d.items.length ? (() => { const v = Object.values(d.series[d.baseline]); return v.reduce((a, b) => a + b, 0) / v.length; })() : null;
-    const verdicts = `<div class="scroll-x"><table class="data" data-nopage><thead><tr><th>run vs baseline</th><th>verdict</th><th>${ITEMS}</th><th>mean</th><th>Δ vs baseline</th><th>wins–losses</th><th>p (exact ≤30)</th><th>Holm threshold</th></tr></thead>
-      <tbody>${vt || '<tr><td colspan="8" class="muted">Only the baseline has this metric.</td></tr>'}</tbody></table></div>
+    const verdicts = `<div class="scroll-x"><table class="data" data-nopage><thead><tr><th>run vs baseline</th><th>verdict</th><th>${ITEMS}</th><th>mean</th><th>Δ vs baseline</th><th>95% CI of Δ</th><th>wins–losses</th><th>p (exact ≤30)</th><th>Holm threshold</th></tr></thead>
+      <tbody>${vt || '<tr><td colspan="9" class="muted">Only the baseline has this metric.</td></tr>'}</tbody></table></div>
       <p class="small muted">Baseline ${esc(label[d.baseline] || d.baseline)}: mean ${fmt(baseMean)}. Holm across ${d.family_size} comparison(s)${P.get('threshold') ? ' (this row\'s threshold carried from the page you came from, so the verdict matches it)' : P.get('family') ? ' (family carried from the page you came from)' : ''}; ${esc(arrow)}. Scores come from: ${esc([...new Set(d.arms.map(a => a.source).filter(Boolean))].join('; '))}.</p>`;
 
     const arms = Object.keys(d.series), better = d.higher_is_better ? 1 : -1;
@@ -362,6 +363,10 @@
   function wireCharts(d, label) {
     app.querySelectorAll('i[data-swatch]').forEach(i => { i.style.background = i.dataset.swatch; });
     const tip = document.getElementById('ctip') || Object.assign(document.body.appendChild(document.createElement('div')), {id: 'ctip'});
+    // Every mark with a tooltip also has an SVG <title>: a screen reader names it, not only the pointer.
+    app.querySelectorAll('svg [data-tip]').forEach(el => {
+      if (!el.querySelector(':scope > title')) { const t = document.createElementNS('http://www.w3.org/2000/svg', 'title'); t.textContent = el.dataset.tip; el.prepend(t); }
+    });
     app.querySelectorAll('svg').forEach(svg => {
       svg.addEventListener('pointermove', ev => { const t = ev.target.closest('[data-tip]'); if (!t) { tip.classList.remove('on'); return; }
         tip.textContent = t.dataset.tip; tip.classList.add('on');

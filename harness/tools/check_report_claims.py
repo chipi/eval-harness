@@ -183,6 +183,7 @@ ok: list = []
 
 def _pf(s: str) -> float:
     """A printed p (stats.fmt_p) as a number: "<0.0001" reads as 0."""
+    s = s.lstrip("~")  # family-test marks an estimated p in a family that mixes exact and estimated
     return 0.0 if s.startswith("<") else float(s)
 
 

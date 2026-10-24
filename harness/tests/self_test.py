@@ -654,6 +654,14 @@ def test_example_scorer_suites_pass() -> None:
         ("test_codeid.py", "code identity: documentation never moves a hash"),
         ("test_providers.py", "hosted providers read their own key and address"),
         ("test_leaderboard_refs.py", "the leaderboard: one table per reference, never averaged across them"),
+        (
+            "test_reference_coverage.py",
+            "a run on partial references warns, records it, the leaderboard says so",
+        ),
+        (
+            "test_family_marks.py",
+            "family-test marks an estimated p in a family that mixes exact and estimated",
+        ),
         ("test_hf_rows.py", "the examples' datasets-server fetcher: pacing, 429 and 5xx retries"),
         ("test_runs_adapter.py", "run reading, direction, adapter loading, the judge panel"),
         ("check_report_claims.py", "report claims vs committed runs"),

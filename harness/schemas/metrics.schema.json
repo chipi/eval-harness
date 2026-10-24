@@ -48,6 +48,13 @@
     },
     "primary_metric": {"type": "string", "description": "The metric that answers 'which arm is better'."},
     "reference_tier": {"enum": ["gold", "silver"]},
+    "reference_coverage": {
+      "type": "object",
+      "description": "Recorded when only some items have a reference: quality metrics are means over items_with_reference, not items.",
+      "required": ["items_with_reference", "items"],
+      "additionalProperties": false,
+      "properties": {"items_with_reference": {"type": "integer", "minimum": 0}, "items": {"type": "integer", "minimum": 1}}
+    },
     "fingerprint": {"type": "object", "description": "What the number depended on, and one hash over it (scripts/_fingerprint.py)."},
     "warmup_ms": {"type": ["number", "null"], "description": "The adapter's warm-up, kept out of the per-item latency."},
     "providers_seen": {"type": "object", "description": "Which upstream providers answered, and how often."},

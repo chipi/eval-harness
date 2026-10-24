@@ -164,6 +164,25 @@ try:
     deltas = [vals[i] - 0.5 for i in sorted(vals)]
     check("compare: p is stats.sign_flip_p on the per-item deltas", row["p"] == stats.sign_flip_p(deltas))
     check("compare: verdict and direction", row["verdict"] == "separated: better" and row["wins"] == 10)
+    pair = {"runs": ["runs/ds1/arm_a,runs/ds1/arm_b"], "baseline": ["runs/ds1/arm_a"]}
+    check(
+        "compare: a threshold above alpha from the URL is refused, not obeyed",
+        "error" in cs.compare({**pair, "threshold": ["1.0"]}),
+    )
+    check(
+        "compare: family=1 for the one pair tested is accepted",
+        "error" not in cs.compare({**pair, "family": ["1"]}),
+    )
+    check(
+        "compare: a threshold below what the family allows (alpha/5 = 0.01) is refused",
+        "error" in cs.compare({**pair, "family": ["5"], "threshold": ["0.001"]}),
+    )
+    big = cs.compare({**pair, "family": ["5"]})
+    check(
+        "compare: a pair opened from a group is held to the group's family (alpha/5)",
+        "error" not in big and abs(big["rows"][0]["threshold"] - stats.ALPHA / 5) < 1e-12,
+        str(big.get("rows", [{}])[0].get("threshold")),
+    )
     check("compare: shape metrics feed the scatter", "words" in r["shape"])
 
     # Conditions: two arms measured on different machines, by different scorer code.
@@ -315,6 +334,26 @@ try:
         get("/api/item?arms=runs/ds1/arm_a&item=i00", H)[0] for _ in range(4)
     ]
     check("public: a client over --rate requests a minute gets 429", 429 in codes, codes)
+    # A header names the client only when --client-header says which: by default a new
+    # CF-Connecting-IP per request is ignored, so it cannot buy a fresh bucket.
+    import http.client
+
+    cs._HITS.clear()
+    spoofed = []
+    for n in range(7):
+        c = http.client.HTTPConnection("127.0.0.1", port, timeout=10)
+        c.request(
+            "GET",
+            "/api/item?arms=runs/ds1/arm_a&item=i00",
+            headers={"Host": H, "CF-Connecting-IP": f"10.0.0.{n}"},
+        )
+        spoofed.append(c.getresponse().status)
+        c.close()
+    check(
+        "public: a spoofed client header does not escape the limit (no --client-header)",
+        429 in spoofed,
+        spoofed,
+    )
     pub.shutdown()
     cs.LIMITS.update(hosts=(), rate=0, max_arms=40)
     cs._CACHE.clear()
@@ -403,6 +442,27 @@ try:
         and "0 – 11" not in page_f
         and "distinct" not in page_f,
         leaked or page_f.count("not public"),
+    )
+    # The dataset page's fields block, in the terminal (CLI parity): fields listed, a field not
+    # marked public shows no value there either.
+    import contextlib
+    import io
+
+    import catalog_views as cv
+
+    buf = io.StringIO()
+    real_loader = cv.load_catalog_adapter
+    cv.load_catalog_adapter = lambda spec=None: AF
+    try:
+        with contextlib.redirect_stdout(buf):
+            cv.datasets(["--dataset-id", "ds1"])
+    finally:
+        cv.load_catalog_adapter = real_loader
+    txt = buf.getvalue()
+    check(
+        "evh datasets --dataset-id: the fields block, with no value of a field not marked public",
+        "fields (field set" in txt and "product" in txt and HIDDEN not in txt and "not public" in txt,
+        txt[-600:],
     )
     two = ["runs/ds1/arm_a,runs/ds1/arm_b"]
     r = cs.compare({"runs": two, "baseline": ["runs/ds1/arm_a"], "where": ["product:x"]})
@@ -600,6 +660,73 @@ try:
         and "--port" in proc.stderr
         and "Traceback" not in proc.stderr,
         proc.stderr[-300:],
+    )
+
+    # The inspector's "Average only" table in the terminal (CLI parity): an arm that recorded
+    # only a run-level average is listed beside the comparison, never tested.
+    import contextlib
+    import io
+
+    import catalog_views as cv
+
+    data6 = tmp / "data6"
+    run("runs", "p_1", "ds6", "arm_p", [0.5] * 6, root=data6)
+    run("runs", "q_1", "ds6", "arm_q", [0.7] * 6, root=data6)
+    avg = data6 / "runs" / "z_1"
+    avg.mkdir(parents=True)
+    (avg / "metrics.json").write_text(
+        json.dumps(
+            {
+                "run_id": "z_1",
+                "dataset_id": "ds6",
+                "config_id": "arm_z",
+                "primary_metric": "acc",
+                "scores": {"acc": 0.9},
+            }
+        )
+    )
+    A6 = HarnessAdapter(data6)
+    real_loader = cv.load_catalog_adapter
+    cv.load_catalog_adapter = lambda spec=None: A6
+    buf = io.StringIO()
+    try:
+        with contextlib.redirect_stdout(buf):
+            cv.inspect(["--runs", "arm_p,arm_q,arm_z", "--no-rescore"])
+    finally:
+        cv.load_catalog_adapter = real_loader
+    txt = buf.getvalue()
+    check(
+        "evh inspect: the Average only table lists an arm with no per-item scores (and --no-rescore runs)",
+        "Average only · 1" in txt and "arm_z" in txt and "+0.400" in txt,
+        txt[-700:],
+    )
+
+    # Arm ids come from the adapter (arm_of), which names the runs directory as the project does:
+    # with EVAL_RUNS_DIR=data/runs-v2 a round's arms are runs-v2/..., not an empty runs/... list.
+    import os
+    import subprocess
+
+    proj7 = tmp / "proj7"
+    (proj7 / "data" / "runs-v2").mkdir(parents=True)
+    scripts_dir = str(Path(__file__).resolve().parents[1] / "scripts")
+    probe = (
+        f"import sys; sys.path.insert(0, {scripts_dir!r}); "
+        "from catalog_adapter import HarnessAdapter; print(HarnessAdapter().arm_of('ds', 'c'))"
+    )
+    pf = tmp / "probe_arm_of.py"
+    pf.write_text(probe)
+    env7 = {k: v for k, v in os.environ.items() if not k.startswith("EVAL_")}
+    out7 = subprocess.run(
+        [sys.executable, str(pf)],
+        cwd=proj7,
+        env={**env7, "EVAL_HOME": str(proj7), "EVAL_RUNS_DIR": "data/runs-v2"},
+        capture_output=True,
+        text=True,
+    )
+    check(
+        "arm_of names the runs directory as the project does (EVAL_RUNS_DIR)",
+        out7.stdout.strip() == "runs-v2/ds/c",
+        out7.stdout + out7.stderr[-300:],
     )
 finally:
     shutil.rmtree(tmp, ignore_errors=True)

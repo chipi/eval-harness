@@ -28,7 +28,7 @@ import _common
 import _rounds
 import catalog_serve as cs
 from _common import die, load_goals, now, read_json
-from catalog_adapter import HarnessAdapter
+from catalog_adapter import load_catalog_adapter
 from stats import fmt_p
 
 HERE = Path(__file__).resolve().parent
@@ -190,6 +190,18 @@ def _best(A, arms: list[str], metric: str, lower: bool) -> str | None:
     return (min if lower else max)(means, key=lambda a: means[a])
 
 
+def _arm(A, dataset: str, config_id: str) -> str:
+    """The adapter's arm id for a config (arm_of), else the harness's layout."""
+    fn = getattr(A, "arm_of", None)
+    return fn(dataset, config_id) if callable(fn) else f"runs/{dataset}/{config_id}"
+
+
+def _dirs(A, arm: str) -> list:
+    """The run directories behind an arm, where the adapter can say (HarnessAdapter)."""
+    fn = getattr(A, "_dirs", None)
+    return list(fn(arm)) if callable(fn) else []
+
+
 def _cost_per_item(A, arm: str) -> float | None:
     vals = (A.scores(arm).get("cost_usd") or {}).get("values") or {}
     return statistics.fmean(vals.values()) if vals else None
@@ -204,8 +216,8 @@ def _silver_authors(A, ds: str) -> list[tuple[str, str]]:
     for mf in sorted(root.glob("*/manifest.json")) if root.is_dir() else []:
         m = read_json(mf)
         cid = (m.get("from_run") or {}).get("config_id") or m.get("authored_by")
-        if m.get("dataset_id") == ds and cid and f"runs/{ds}/{cid}" in known:
-            out.append((f"silver/{mf.parent.name}", f"runs/{ds}/{cid}"))
+        if m.get("dataset_id") == ds and cid and _arm(A, ds, cid) in known:
+            out.append((f"silver/{mf.parent.name}", _arm(A, ds, cid)))
     return out
 
 
@@ -225,10 +237,11 @@ def evidence(goal: str, rnd: dict) -> dict:
     g = _goal(goal)
     prim = (g.get("success_criteria") or {}).get("primary") or {}
     metric, lower = prim.get("measure", ""), prim.get("direction") == "lower"
-    A = HarnessAdapter()
+    # The project's own catalog adapter (--adapter, else config.yaml), as the pages read it.
+    A = load_catalog_adapter(None)
     cs.set_adapter(A)
     ds = rnd["dataset_id"]
-    arm = {c: f"runs/{ds}/{c}" for c in _rounds.arms_of(rnd)}
+    arm = {c: _arm(A, ds, c) for c in _rounds.arms_of(rnd)}
     known = set(A.arms())
     arms = [a for a in arm.values() if a in known]
     out: dict[str, Any] = {
@@ -301,7 +314,7 @@ def evidence(goal: str, rnd: dict) -> dict:
             )
     prev = _rounds.find(goal, rnd["from"]) if rnd.get("from") else None
     if prev:
-        pbest = _best(A, [f"runs/{prev['dataset_id']}/{c}" for c in _rounds.arms_of(prev)], metric, lower)
+        pbest = _best(A, [_arm(A, prev["dataset_id"], c) for c in _rounds.arms_of(prev)], metric, lower)
         if pbest and pbest != leader and prev["dataset_id"] == ds:
             row = _against(A, f"{prev['round_id']}'s best", pbest, leader, metric)
             if row:
@@ -316,7 +329,11 @@ def evidence(goal: str, rnd: dict) -> dict:
     base_run = rnd.get("baseline")
     if base_run:
         barm = next(
-            (a for a in known if a.startswith(f"runs/{ds}/") and any(d.name == base_run for d in A._dirs(a))),
+            (
+                a
+                for a in known
+                if a.startswith(_arm(A, ds, "")) and any(d.name == base_run for d in _dirs(A, a))
+            ),
             None,
         )
         if barm and barm != leader:
@@ -337,9 +354,9 @@ def evidence(goal: str, rnd: dict) -> dict:
         out["notes"].append(
             "cost per item: " + ", ".join(f"{a.rsplit('/', 1)[-1]} ${c:.6f}" for a, c in priced.items())
         )
-    lead_run = sorted(d.name for d in A._dirs(leader))[0] if A._dirs(leader) else "<run_id>"
+    lead_run = sorted(d.name for d in _dirs(A, leader))[0] if _dirs(A, leader) else "<run_id>"
     # Promote only what is not already the baseline: the leader may be the run the round began from.
-    already = lead_run == rnd.get("baseline") or any(d.name == rnd.get("baseline") for d in A._dirs(leader))
+    already = lead_run == rnd.get("baseline") or any(d.name == rnd.get("baseline") for d in _dirs(A, leader))
     out["suggest"].append(
         (
             "close the round with what it showed"

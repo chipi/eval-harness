@@ -217,7 +217,14 @@ def _run(args) -> int:
     # SAY WHICH p. Up to EXACT_UP_TO items it is exact, and every command prints the same number.
     # Above that it is a seeded estimate drawn from one random stream for the whole family, so
     # pair-test or the inspector, which draw one per pair, can differ in the third decimal.
-    if n_items <= EXACT_UP_TO:
+    # Per row: opponents can share different numbers of items, so one family can hold both.
+    est = [r["n"] > EXACT_UP_TO for r in rows]
+    if any(est) and not all(est):
+        print(
+            f"  p: exact up to {EXACT_UP_TO} shared items, a seeded estimate above ({args.permutations} "
+            "permutations, one random stream for the family) -- marked ~\n"
+        )
+    elif n_items <= EXACT_UP_TO:
         print(f"  p: exact, over all 2^{n_items} sign patterns\n")
     else:
         print(
@@ -227,7 +234,7 @@ def _run(args) -> int:
     width = max(len(r["opp"]) for r in rows) + 2
     print(f"    {'opponent':{width}} {'delta':>9} {'A wins':>9} {'p':>8} {'thresh':>8}   verdict")
     for r in rows:
-        pv = fmt_p(r["p"])
+        pv = ("~" if any(est) and not all(est) and r["n"] > EXACT_UP_TO else "") + fmt_p(r["p"])
         print(
             f"    {r['opp']:{width}} {r['delta']:+9.4f} {r['wins']:>4}/{r['n']:<4} "
             f"{pv:>8} {r['thresh']:8.4f}   {'SEPARATED' if r['sep'] else '--'}"

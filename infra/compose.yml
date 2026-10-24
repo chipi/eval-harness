@@ -64,6 +64,10 @@ services:
       - "8080"
       - --rate
       - "60"
+      # Behind Cloudflare with origin lock (nginx allows Cloudflare's ranges only): the header is
+      # Cloudflare's, so it names the visitor.
+      - --client-header
+      - CF-Connecting-IP
       - --warm
       - /srv/evals/current/sites/catalog.evals.humancopilot.eu/public
     ports:

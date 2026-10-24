@@ -571,6 +571,26 @@ def main() -> int:
     base_id = args.run_id or f"{cfg['config_id']}_{stamp}"
     build = build_info()
     ref_dir, ref_tier = _reference_for(cfg["dataset_id"])
+    # HOW MANY ITEMS HAVE A REFERENCE, counted before any call. A metric scored against a
+    # missing reference is not computed, so with gold for 20 of 200 items the run's mean is a
+    # mean over 20, recorded as a 200-item gold run. None is a refusal (nothing would be
+    # scored and the calls would be paid for); some is a warning, and the count is recorded.
+    coverage = None
+    if ref_tier and ref_dir is not None:
+        ids = [it["item_id"] for it in ds.get("items") or []]
+        have = sum(1 for i in ids if (ref_dir / f"{i}.txt").is_file())
+        coverage = {"items_with_reference": have, "items": len(ids)}
+        if have == 0:
+            die(
+                f"{ref_tier} references for {cfg['dataset_id']} are at {ref_dir}, but none of its "
+                f"{len(ids)} items has a file there (<item_id>.txt): nothing would be scored.\n"
+                "  Check the file names against the dataset's item ids."
+            )
+        if have < len(ids):
+            print(
+                f"  WARNING: only {have} of {len(ids)} items have a {ref_tier} reference: quality is a "
+                f"mean over those {have}, and the run records that (reference_coverage)."
+            )
     if ref_tier:
         print(f"  scoring against {ref_tier.upper()} references for {cfg['dataset_id']}")
     else:
@@ -764,6 +784,9 @@ def main() -> int:
             round=cfg.get("round") or None,
             format=cfg.get("format") or None,
             reference_tier=result["reference_tier"] or None,
+            reference_coverage=coverage
+            if coverage and coverage["items_with_reference"] < coverage["items"]
+            else None,
             # What a resumed run carried from the pass it replayed, on the record rather
             # than only in the terminal: which extras came forward, and for how many
             # replayed items nothing could.

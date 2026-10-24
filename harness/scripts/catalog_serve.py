@@ -23,7 +23,8 @@ towards this machine.
 
 PUBLIC (--public HOST[,HOST]): the API only, behind a reverse proxy that serves the static
 catalog (infra/: nginx for the pages, Caddy in front). It answers only to the named Host(s);
-each client (CF-Connecting-IP, else the peer) gets --rate requests a minute; at most
+each client (the peer, or the header --client-header names, which only a proxy that sets it
+and an origin that only that proxy can reach make trustworthy) gets --rate requests a minute; at most
 --max-arms arms per comparison; two comparisons compute at once and the rest wait; every
 answer is cached by its exact question; errors say what was wrong with the request, never the
 server's internals. --warm DIR computes, in the background, every comparison the built catalog
@@ -109,6 +110,12 @@ def _ref_of(metric: str) -> str:
 _REFERENCE_FREE = ("cost", "latency", "tokens")
 
 
+def _reference_free(metric: str) -> bool:
+    """The adapter says (reference_free); else a metric named for the bill or the clock."""
+    fn = getattr(A, "reference_free", None)
+    return bool(fn(metric)) if callable(fn) else any(k in metric for k in _REFERENCE_FREE)
+
+
 def _other_reference(series: dict, baseline: str, metric: str, rescore: bool) -> list:
     """Arms whose `metric` was scored against another reference than the baseline's, which a
     paired test must not set against it: on one dataset, a silver-scored and a gold-scored run
@@ -120,7 +127,7 @@ def _other_reference(series: dict, baseline: str, metric: str, rescore: bool) ->
         or _ref_of(metric)
         or A.is_neutral(metric)
         or metric in A.shape_metrics
-        or any(k in metric for k in _REFERENCE_FREE)
+        or _reference_free(metric)
     ):
         return []
     ref = {a: A.describe(a).get("reference", "") for a in series}
@@ -195,7 +202,7 @@ def _default_metric(counts: Counter, per_arm: dict, arms: list, asked: str) -> s
         key=lambda k: (
             k in A.shape_metrics,
             A.is_neutral(k),
-            any(x in k for x in _REFERENCE_FREE),  # the bill and the clock: only when nothing is scored
+            _reference_free(k),  # the bill and the clock: only when nothing is scored
             k not in mine,
             mismatch(k),
             -counts[k],
@@ -406,7 +413,10 @@ def compare(params: dict) -> dict:
         }
     series = {a: s[metric]["values"] for a, s in per_arm.items() if metric in s}
     # With no baseline named, a promoted baseline is the natural reference point.
-    fallback = next((a for a in series if a.startswith("baselines/")), next(iter(series)))
+    # The arm of a promoted baseline when one is selected, else the first.
+    bfn = getattr(A, "baselines", None)
+    promoted = {b.get("arm") for b in (bfn() if callable(bfn) else []) if b.get("arm")}
+    fallback = next((a for a in series if a in promoted or a.startswith("baselines/")), next(iter(series)))
     baseline = asked if asked in series else fallback
     other_ref = _other_reference(series, baseline, metric, rescore)
     for a in other_ref:
@@ -417,13 +427,27 @@ def compare(params: dict) -> dict:
     if error:
         return {"error": error}
     higher, neutral = not A.lower_is_better(metric, dataset), A.is_neutral(metric)
+    # A family and a threshold come from the URL, so they are checked, not trusted: a family
+    # smaller than the arms tested here, or a threshold above alpha (or below what the family
+    # allows), would turn "not separated" into "separated" by editing a link.
+    family = _number(params, "family", int) or None
+    threshold = _number(params, "threshold", float)
+    tested = max(len(series) - 1, 1)
+    if family is not None and family < tested:
+        return {"error": f"family={family} is smaller than the {tested} arm(s) tested here"}
+    if threshold is not None and not (
+        0 < threshold <= stats.ALPHA and threshold >= stats.ALPHA / (family or tested)
+    ):
+        return {
+            "error": f"threshold={threshold} is not a Holm threshold for this family (alpha {stats.ALPHA})"
+        }
     result = stats.compare(
         series,
         baseline,
         higher_is_better=higher,
         neutral=neutral,
-        family=_number(params, "family", int) or None,
-        threshold=_number(params, "threshold", float),
+        family=family,
+        threshold=threshold,
     )
     by, breakdown, ungrouped = params.get("by", [""])[0], None, 0
     if by:
@@ -679,7 +703,11 @@ class Handler(SimpleHTTPRequestHandler):
         if url.path == "/api/health":
             return self._json(200, {"ok": True})
         if url.path in ("/api/compare", "/api/item"):
-            client = self.headers.get("CF-Connecting-IP") if LIMITS["hosts"] else None
+            # A client-supplied header is trusted only when named (--client-header): behind a
+            # proxy that sets it, with the origin reachable only through that proxy. Otherwise
+            # anyone can send a new value per request and never hit the limit.
+            hdr = LIMITS.get("client_header")
+            client = self.headers.get(hdr) if (LIMITS["hosts"] and hdr) else None
             if over_rate(client or self.client_address[0]):
                 return self._json(
                     429, {"error": f"more than {LIMITS['rate']} requests a minute; wait a moment"}
@@ -723,6 +751,12 @@ def main() -> int:
         help="address to listen on (0.0.0.0 inside a container whose port is published on loopback)",
     )
     ap.add_argument("--rate", type=int, default=30, help="public mode: API requests per client per minute")
+    ap.add_argument(
+        "--client-header",
+        metavar="NAME",
+        help="public mode: the header that names the client (e.g. CF-Connecting-IP), only behind a proxy "
+        "that sets it and an origin no one else can reach; default: the TCP peer",
+    )
     ap.add_argument("--max-arms", type=int, default=40, help="most arms in one comparison")
     ap.add_argument(
         "--warm",
@@ -736,6 +770,7 @@ def main() -> int:
     if args.public:
         LIMITS["hosts"] = tuple(h.strip() for h in args.public.split(",") if h.strip())
         LIMITS["rate"] = args.rate
+        LIMITS["client_header"] = args.client_header
         Handler.prefixes = ()
     else:
         if args.bind != "127.0.0.1":
