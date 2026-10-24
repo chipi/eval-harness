@@ -615,6 +615,13 @@ the runs when it starts, so after a new run, stop it and start it again.
   scored against a reference, no arm scored against another reference than the baseline's (a
   silver-scored run against a gold-scored one).
 
+**Everything the pages show is also a command**; the pages are a comfort. `evh datasets`
+(`--dataset-id` for one: its versions, references and arms), `evh references` (`--reference-id`:
+who wrote it, what is scored against it), `evh metrics`, `evh goals` (`--goal`), and
+`evh inspect --runs tickets_lead1_v1,tickets_lead2_v1` for the inspector's comparison, its
+conditions, `--where`/`--by` for fields, and `--item t01_login` for one ticket's outputs beside
+the reference. They compute with the same code as the pages, so the numbers match.
+
 **No code needed here**, because this project keeps its data in the harness's layout
 (`data/datasets/`, `data/runs*/`, `data/references/`, `data/goals/`). If your runs live in
 another layout, write one adapter that answers the catalog's
@@ -675,6 +682,7 @@ looked like) and name it in `config.yaml`: `catalog: {adapter: path/to/file.py:C
 | baseline | `evh run-promote --run … --reason "…"` · `evh runs-list --baselines` |
 | what it is for | `data/goals/<goal_id>.yaml`, and `goal:` on each config |
 | browse and inspect | `evh catalog` · `evh catalog-serve` |
+| the same, in the terminal | `evh datasets` · `evh references` · `evh metrics` · `evh goals` · `evh inspect --runs …` |
 | consistency | `evh validate` |
 
 In a checkout of this repository each is also a `make` target (`make pair-test DATASET_ID=…

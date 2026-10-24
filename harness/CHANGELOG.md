@@ -45,6 +45,12 @@ p 0.36, from the pre-fix run), and DBpedia's 56-item dev slice, over today's 28 
 `bert_base_fy` alone at the top rather than 13 arms in a tie.
 
 ### Added
+- **Everything the catalog and the inspector show is a command.** `evh datasets` (one dataset:
+  its versions, references and arms), `evh references` (one: who wrote it, from which run, what
+  is scored against it), `evh metrics`, `evh goals` (one: its arms per dataset) and
+  `evh inspect --runs …` (the inspector's verdicts, conditions, `--where`/`--by` on fields,
+  `--item` for one item's outputs beside the reference). Same adapter, same computation: the
+  numbers are the pages'. Each is also a `make` target.
 - **The catalog says what every number is measured against.** A metrics page (what each metric
   measures, which way is better, where it is recorded, which goals decide on it) and a page per
   reference (who wrote it, from which run, every arm scored against it); every metric and

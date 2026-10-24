@@ -221,6 +221,20 @@ def main() -> int:
                 ["--run", run_id, "--reason", "the tutorial's working baseline, for this test"],
                 "ok",
             ),
+            # The pages in the terminal: the same answers as the catalog and the inspector.
+            ("datasets", [], "ok:tickets_v1"),
+            ("datasets", ["--dataset-id", "tickets_v1"], "ok:runs/tickets_v1/tickets_lead2_v1"),
+            ("references", ["--reference-id", "gold/tickets_v1"], "ok:scored against it"),
+            ("metrics", [], "ok:overlap_f1"),
+            ("goals", [], "ok"),
+            # lead2 against lead1 on gold: the p of GUIDE step 8 (0.0938, exact over 2^6 sign patterns)
+            ("inspect", ["--runs", "tickets_lead1_v1,tickets_lead2_v1"], "ok:0.09375"),
+            ("inspect", ["--runs", "tickets_lead1_v1,no_such_v1"], "no arm with that id"),
+            (
+                "inspect",
+                ["--runs", "tickets_lead1_v1,tickets_lead2_v1", "--item", "t01_login"],
+                "ok:(baseline)",
+            ),
             ("catalog", [], "ok"),
             ("catalog-serve", [], "ok"),  # started, its address read, stopped
             ("validate", [], "ok"),

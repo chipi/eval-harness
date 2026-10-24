@@ -16,6 +16,7 @@ NOISE ?=
 TIER ?= silver
 
 .PHONY: help demo init env-check install venv-init catalog catalog-serve \
+        datasets references metrics goals inspect \
         dataset-create dataset-materialize reference-create \
         holdout pair-test rank-stability \
         experiment-dry-run experiment-run sweep \
@@ -262,6 +263,24 @@ catalog:
 
 catalog-serve: catalog
 	$(PYTHON) scripts/catalog_serve.py $(ARGS)
+
+# The catalog's pages and the inspector's comparison in the terminal (scripts/catalog_views.py):
+# the same adapter and the same computation, so a number here is the number on the page.
+datasets:
+	$(PYTHON) scripts/view_datasets.py $(if $(DATASET_ID),--dataset-id $(DATASET_ID),) $(ARGS)
+
+references:
+	$(PYTHON) scripts/view_references.py $(if $(REFERENCE),--reference-id $(REFERENCE),) $(ARGS)
+
+metrics:
+	$(PYTHON) scripts/view_metrics.py $(if $(DATASET_ID),--dataset-id $(DATASET_ID),) $(ARGS)
+
+goals:
+	$(PYTHON) scripts/view_goals.py $(if $(GOAL),--goal $(GOAL),) $(ARGS)
+
+inspect:
+	@test -n "$(RUNS)" || { echo "RUNS=<arm>,<arm>,... is required (config ids, or arm ids from make datasets)"; exit 1; }
+	$(PYTHON) scripts/view_inspect.py --runs $(RUNS) $(if $(BASELINE),--baseline $(BASELINE),) $(ARGS)
 
 # MATERIALIZE THE DEMO DATASET FIRST, or eleven assertions silently skip.
 #
