@@ -233,24 +233,28 @@ longer fails two different perfect arms; the goal page groups arms by what they 
 against and never makes the reference's author the leader; the catalog shows the promoted
 baseline and labels judged arms "judge"; the inspector's item view shows the item; `evh init`'s
 `.gitignore` has `__pycache__/`; the README and the RUNBOOK lead with `evh` for a pinned user.
+Since then: `dataset-create --help` (`--recursive`) and the bundled adapter's retry comment carry
+no development history;
+`evh env-check` and the `litellm` provider no longer mention `.env.example`; `provider:
+openrouter` reads `OPENROUTER_API_KEY` and calls OpenRouter's address by default; with no
+reference, `experiment-run` names `reference-create --from-run` first, and `evh --help` describes
+`reference-create` as making references from a run or with a config; `leaderboard` prints one
+table per reference and never averages across them; the bundled adapter stores `overlap_f1`
+unrounded, so the rounding note no longer fires for it; `run-promote` prints no `resumed`;
+`evh inspect --round` reads the goal's measure against the round's leader and names the arms it
+leaves out.
 
 Still open:
 
-- The bundled adapter's docstrings and `dataset-create --help` (`--recursive`) carry development
-  history.
-- `evh env-check` and the `litellm` provider's error say `cp .env.example .env`; a pinned project
-  has no `.env.example`.
-- `provider: openrouter` reads `OPENAI_API_KEY` and calls OpenAI's address unless the arm sets
-  `base_url: https://openrouter.ai/api/v1` and `api_key_env: OPENROUTER_API_KEY` (tutorial 2 says
-  so; the provider could default both).
-- Before any reference exists, `experiment-run` suggests only `reference-create --config`, and
-  `evh --help` describes `reference-create` as "draft silver references with a config"; neither
-  names `--from-run`.
-- `leaderboard` ranks runs scored against silver and runs scored against gold in one table, and
-  labels the table silver; with `--round`, `evh rounds` then shows no comparison for the round's
-  new arm and does not say why.
-- The bundled adapter rounds `overlap_f1` to 6 decimals, which the leaderboard's rounding note
-  then warns about; `run-promote` prints `resumed` among the baseline's scores.
+- When a round's arms were scored against different references (a carried arm on silver, a new
+  arm run after gold arrived), `evh rounds` picks the leader across them, shows no comparison for
+  the other arm and does not say why; `evh inspect --round` does say why
+  ("scored against another reference than the baseline's").
+- A judge's scored runs keep the reference recorded on the runs they were made from, so
+  `leaderboard` over `data/runs-judged/<scorer>` splits one judge's scores into a table per
+  source reference (tutorial 3: the author's run, made before any reference, sits alone under
+  "no reference"), although the judge scored every arm the same way. The NOTE above the tables
+  also counts "no reference" as one of the references.
 - A judge reply that is not bare JSON is stored only as its hash, so why it failed cannot be read
   without calling the judge again.
 - Not re-checked on this branch: the dataset page's order across arms with different primary

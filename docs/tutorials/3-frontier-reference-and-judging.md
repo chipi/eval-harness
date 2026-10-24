@@ -180,9 +180,13 @@ judges:                        # at least two, from different vendor families
   - {id: judge_b, params: {provider: fake, model: fake-b, family: vendor_b, ...}}
 prompt:
   file: tutorial/judge_prompt.txt   # "{n}" in it becomes the number of summaries per call
-protocol: {outputs_per_call: 16, blinding: true, order_seed: 0, ...}
+protocol: {outputs_per_call: 16, blinding: true, order_seed: 0,
+           position_check_fraction: 0.5, noise_check_fraction: 0.5}   # both required
 cost_cap_usd: 0.01
 ```
+
+The two check fractions are required: a scorer without them is refused. The noise check must be
+above 0, and so must the position check whenever a call sees more than one output.
 
 ```bash
 mkdir -p data/scorers && cp tutorial/scorers/tickets-judge-v1.yaml data/scorers/
@@ -230,23 +234,33 @@ EVAL_RUNS_DIR=data/runs-judged/tickets-judge-v1 evh leaderboard --dataset-id tic
 ```text
 4 scored run(s) -> .../data/runs-judged/tickets-judge-v1  (6/6 items, unvalidated judge)
   calls 24, billed this run $0.0000, stored total $0.0000
+  ...
+  NOTE: these runs are scored against 2 references; one table for each,
+        never averaged across them.
 
+=== scored against silver/tickets_v1 ===
 dataset: tickets_v1   ranked by: judge_score_unvalidated (higher is better)
 
   arm                      runs  judge_judge_a_unvalidated  judge_judge_b_unvalidated  judge_score_unvalidated
-  tickets_lead2_noisy_v1      1          3.833333          2.833333          3.333333
-  tickets_author_v1           1          3.000000          3.500000          3.250000
   tickets_lead2_v1            1          2.833333          3.000000          2.916667
+  tickets_lead2_noisy_v1      1          2.833333          2.333333          2.583333
   tickets_lead1_v1            1          2.333333          1.833333          2.083333
   ...
-  IS THE ORDERING REAL?   metric=judge_score_unvalidated  k=4 arms  N=6 items
-    global test (permutation on within-item ranks): p = 0.2096  ->  NO detectable arm effect
+  IS THE ORDERING REAL?   metric=judge_score_unvalidated  k=3 arms  N=6 items
+    global test (permutation on within-item ranks): p = 0.1752  ->  NO detectable arm effect
   ...
   Scored by an LLM judge, not against references: tickets-judge-v1, unvalidated judge.
+
+=== scored against no reference ===
+  ...
+  tickets_author_v1      1          3.000000          3.500000          3.250000
+  ...
 ```
 
 Your judging-set id, token counts, scores and p-value will differ from these: `lead2_noisy` is
-unseeded, so its outputs, and the set built from them, differ on every run.
+unseeded, so its outputs, and the set built from them, differ on every run. A judged run keeps
+the reference recorded on the run it was made from, so the leaderboard still splits by it:
+`author`'s run was made before there was a reference, and sits in a table of its own.
 
 Each judge's raw reply is stored under `data/judge-verdicts/`, so the same command again calls
 nothing, and `--no-calls` rebuilds the scored runs from the stored verdicts for $0. The judged

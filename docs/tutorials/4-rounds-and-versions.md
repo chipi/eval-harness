@@ -49,6 +49,7 @@ r1 · open · tickets_v1
   on overlap_f1: 3 arm(s) in play, leader tickets_lead2_v1
     tickets_lead1_v1                 not separated      Δ -0.2592  p 0.0312
     tickets_lead2_noisy_v1           not separated      Δ -0.1011  p 0.0312
+  NOTE: cost per item: tickets_lead2_v1 $0.000000
 
   suggested next:
     - 2 arm(s) tie with the leader (tickets_lead1_v1, tickets_lead2_noisy_v1): more items would separate them
@@ -145,6 +146,7 @@ r2 · open · tickets_v1 · from r1
   on overlap_f1: 2 arm(s) in play, leader tickets_lead2_v1
     tickets_lead2_noisy_v2           separated: worse   Δ -0.0207  p 0.0312
   NOTE: spent $0.0000 of $0.01
+  NOTE: cost per item: tickets_lead2_v1 $0.000000
 
   suggested next:
     - retire tickets_lead2_noisy_v2
@@ -158,7 +160,7 @@ is not separated, and the first suggestion goes. The same comparison, as the ins
 it, and the round's leaderboard:
 
 ```bash
-evh inspect --round r2 --baseline tickets_lead2_v1
+evh inspect --round r2
 evh leaderboard --dataset-id tickets_v1 --round r2
 ```
 <!-- guide-check: varies tickets_lead2_noisy_v2 -->
@@ -169,6 +171,28 @@ Same conditions: all 15 recorded fields match (machine, libraries, harness, scor
   ...
   tickets_lead2_v1            3          0.900088         28.500000
 ```
+
+`inspect --round` reads the round on the goal's measure, against the round's leader; `--metric` and
+`--baseline` choose otherwise. One pair you named before reading the table is a `pair-test` within
+the round: A defaults to its leader and B to the baseline the round started from. Here they are the
+same arm, so name B:
+
+```bash
+evh pair-test --dataset-id tickets_v1 --round r2 --b tickets_lead2_noisy_v2
+```
+<!-- guide-check: varies delta wins sign-flip verdict -->
+```text
+  round r2: tickets_lead2_v1 (its leader) against tickets_lead2_noisy_v2
+  tickets_lead2_v1  vs  tickets_lead2_noisy_v2    metric=overlap_f1  N=6
+    delta (A - B)      +0.0216
+    items A wins       6/6
+    sign-flip p        0.0312  (exact, all 2^6 sign patterns)
+    verdict            SEPARATED at 0.05
+    (uncorrected: valid only if this pair was named before the table was read)
+```
+
+The metric defaults to the goal's measure, and an arm that is not in play in the round is
+refused.
 
 Then close it, with what it showed:
 

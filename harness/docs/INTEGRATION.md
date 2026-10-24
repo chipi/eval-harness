@@ -254,8 +254,9 @@ which references exist, what one arm wrote for one item.
   | dataset versions (optional) | `datasets()`: every dataset id, run or not; `dataset_lineage(dataset)`: `{"dataset_id", "added", "removed", "changed"}` or None; the dataset pages link versions both ways |
 
   Every page and comparison is also a command that asks the same adapter the same questions:
-  `evh datasets`, `evh references`, `evh metrics`, `evh goals`, `evh rounds` and
-  `evh inspect --runs …` (with `--adapter` for a project adapter not named in `config.yaml`). The
+  `evh datasets`, `evh references`, `evh metrics`, `evh goals`, `evh rounds`, `evh search` and
+  `evh inspect --runs …` (`--items`, `--analysis`, `--item`; with `--adapter` for a project
+  adapter not named in `config.yaml`). The
   pages are a comfort; [tutorial 5](../../docs/tutorials/5-catalog-and-inspector.md#3-every-page-and-its-command)
   maps each page to its command.
 

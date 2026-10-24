@@ -170,8 +170,9 @@ every catalog table. A row opens on click, Enter or Space.
 | on the page | in the terminal |
 | --- | --- |
 | choose arms, baseline, metric | `evh inspect --runs a,b [--baseline a] [--metric m]` (config ids are looked up under `--from`, default `runs`) |
-| a round's arms | `evh inspect --round rN [--goal g]` (no page equivalent) |
+| a round's arms (the goal page's **inspect** button on a round) | `evh inspect --round rN [--goal g]`: the goal's measure, against the round's leader; arms with no score on it are named and left out |
 | filter, breakdown | `--where field:value` (repeatable), `--by field` |
 | notes, verdicts, conditions, breakdown | printed in that order (notes as `NOTE:` lines) |
 | the item view | `--item <item_id>`: fields, the item itself, the reference, each arm's output |
-| the per-item table and the analysis charts | no command draws them; the per-item scores are each run's `predictions.jsonl` |
+| the per-item table | `--items`: every item's score per arm, and each arm's Δ against the baseline |
+| the analysis charts | `--analysis`: the spread per arm and the difference from the baseline, per item, as numbers; `--x <metric>` adds each arm's mean on a second metric (the scatter) |

@@ -27,7 +27,7 @@ further. This page is the reference for each step.
 | list runs | `evh runs-list` |
 | rank, with the test | `evh leaderboard --dataset-id …` |
 | two runs | `evh run-compare --baseline … --candidate … --noise …` |
-| a pre-named pair | `evh pair-test --dataset-id … --a … --b …` |
+| a pre-named pair | `evh pair-test --dataset-id … --a … --b …` (or `--round rN`: A its leader, B the baseline it started from) |
 | a winner claim | `evh family-test --dataset-id … --a … --against …` |
 | re-score, $0 | `evh rescore --dataset-id … [--reference-id gold/…] --out …` |
 | re-measure with a judge (optional) | `evh judge-score --dataset-id … --scorer … [--dry-run]` |
@@ -41,7 +41,7 @@ further. This page is the reference for each step.
 | what it is for | `data/goals/<goal_id>.yaml`, and `goal:` on each config |
 | rounds (optional) | `evh round-open` · `evh round-retire` · `evh round-close` · `evh rounds --goal …` |
 | browse and inspect | `evh catalog` · `evh catalog-serve` |
-| the same, in the terminal | `evh datasets` · `evh references` · `evh metrics` · `evh goals` · `evh inspect --runs …` |
+| the same, in the terminal | `evh datasets` · `evh references` · `evh metrics` · `evh goals` · `evh search …` · `evh inspect --runs …` (`--items`, `--analysis`, `--item …`) |
 | consistency | `evh validate` |
 | does the installed harness work here | `evh self-test` |
 
@@ -347,7 +347,11 @@ items or fewer, and estimate it from 20,000 permutations above that; `pair-test`
 Without `--metric` they read the primary metric the runs recorded. Which way is better is
 inferred once for every command: a flag (`--asc`, `--desc`), else the goal the runs name, else
 the adapter's `METRIC_DIRECTIONS`, else the name (cost, latency and token metrics go down).
-`leaderboard`, `family-test` and `inspect` take `--round rN` for the arms in play in a round.
+`leaderboard`, `family-test`, `pair-test` and `inspect` take `--round rN` for the arms in play in
+a round (`pair-test --round` and `inspect --round` also default the metric to the goal's measure).
+When a dataset's runs were scored against more than one reference, `leaderboard` prints one table
+per reference (`=== scored against <ref> ===`, gold first), each with its own tests, and never
+averages across them; runs scored against none get a table of their own.
 
 Two that are easy to reach for and wrong:
 
@@ -495,7 +499,9 @@ and to the news-summary judge, so neither is an `evh` command.
 
 1. **The scorer** is `data/scorers/<id>.yaml`: two or more judges from different vendor
    families, the task, the prompt, the protocol, a `validation` block and a cost cap. The
-   command refuses a scorer whose validation does not name a committed run with the stated
+   protocol must state `position_check_fraction` and `noise_check_fraction`: the noise check
+   above 0, and the position check above 0 whenever `outputs_per_call` is above 1 (ADR-0001 §4);
+   a scorer without them is refused. The command refuses a scorer whose validation does not name a committed run with the stated
    value and the judge's model. `--unvalidated` overrides it and labels every number
    "unvalidated judge" (the primary metric becomes `judge_score_unvalidated`). Templates:
    [`judge-summ-v1.yaml`](../data/scorers/judge-summ-v1.yaml), real and validated, and
@@ -623,16 +629,21 @@ evh round-open --goal my_goal --dataset my_v1 --from r1 --change "what changed a
 - **Arms join a round** by naming it in their config, `round: r2` beside `goal:`; every run
   records it. Carried arms (`--keep`) are not run again. Commit the round file before the runs.
 - **`evh rounds`** reads the evidence the way the inspector does (the round's arms against its
-  leader, Holm-corrected; its best against the previous round's best and the baseline it started
-  from; its spend against `--budget-usd`) and suggests the next decision as the command that
-  makes it: retire an arm, measure more items, close the round. It decides nothing.
+  leader, Holm-corrected; its leader against the previous round's best, the baseline it started
+  from and the arm that wrote a silver reference of the dataset; its spend against `--budget-usd`,
+  and the cost per item) and suggests the next decision as the command that makes it: retire an
+  arm, measure more items, close the round. It never suggests retiring the arm that wrote the
+  silver reference: that arm is the yardstick, not a contender. It decides nothing.
 - **`round-close --promote <run_id>`** promotes that run to the dataset's baseline, with the
   conclusion as its reason. A closed round refuses new runs; one round per goal is open at a
   time.
 - A round compares arms scored against one reference: when gold arrives mid-way, new runs are
   scored against gold while carried arms were scored against silver, so re-score them first.
-- `leaderboard`, `family-test` and `inspect` take `--round rN`; `validate` (V14) checks the
-  round files; the catalog's goal page shows the rounds, newest first.
+- `leaderboard`, `family-test`, `pair-test` and `inspect` take `--round rN`. `inspect --round`
+  reads the goal's measure against the round's leader, and names the arms with no score on it;
+  `pair-test --round` tests the round's leader against the baseline it started from unless
+  `--a`/`--b` say otherwise, and refuses an arm not in play. `validate` (V14) checks the round
+  files; the catalog's goal page shows the rounds, newest first, each with an inspect button.
 
 ---
 
@@ -677,7 +688,7 @@ notebook) reads no `.env`, and the project's paths are resolved on first use, so
 | `EVAL_FETCH_HEADERS` | JSON `{"host": {"Header": "value"}}` for URL items behind a login |
 | `EVAL_NO_CACHE` | `1`: `family-test` recomputes instead of replaying an identical earlier run |
 | `OPENAI_API_KEY` (and `OPENAI_BASE_URL`) | `provider: openai`: OpenAI, or any OpenAI-compatible endpoint; an arm's `api_key_env` names another variable |
-| `OPENROUTER_API_KEY` | `provider: openrouter` (with `base_url` and `api_key_env: OPENROUTER_API_KEY` in the arm), and judges routed straight to OpenRouter |
+| `OPENROUTER_API_KEY` | `provider: openrouter` (OpenRouter's address by default; an arm's `base_url` or `api_key_env` overrides it), and judges routed straight to OpenRouter |
 | `ANTHROPIC_API_KEY` | `provider: anthropic` |
 | `LITELLM_BASE_URL` + `LITELLM_API_KEY` | `provider: litellm`, a LiteLLM proxy, and judges routed through it (a judge takes the proxy when both it and `OPENROUTER_API_KEY` are set) |
 

@@ -110,7 +110,8 @@ adapter file ([ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md),
 
 - **FR4.1**: Every page and comparison is also a command that asks the same adapter and computes
   with the same functions: `evh datasets`, `evh references`, `evh metrics`, `evh goals`,
-  `evh inspect` ([UXS-003](../uxs/UXS-003-cli-and-onboarding.md)).
+  `evh search`, `evh inspect` (its comparison, `--items`, `--analysis`, `--item`)
+  ([UXS-003](../uxs/UXS-003-cli-and-onboarding.md)).
 - **FR4.2**: New views and actions are added to both. A decision the pages suggest is shown as
   the command that makes it.
 

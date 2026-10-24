@@ -328,7 +328,8 @@ bundled adapter a pinned project has is `evaluation_harness/adapter.py`.
 | `scripts/judge_panel.py`, `scripts/panel_judges.py` | the judge panel (`evh judge`) |
 
 Bundled providers: `echo` (no network), `openai` (OpenAI or any OpenAI-compatible endpoint),
-`openrouter`, `anthropic` and `litellm` (a LiteLLM proxy). You choose one and bring your own key;
+`openrouter` (`OPENROUTER_API_KEY`, OpenRouter's address), `anthropic` and `litellm` (a LiteLLM
+proxy). You choose one and bring your own key;
 which variable each reads: [tutorial 2](../docs/tutorials/2-hosted-llm.md#1-choose-a-provider).
 Most real integrations replace them with one function that calls their own system.
 

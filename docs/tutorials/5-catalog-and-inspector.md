@@ -64,11 +64,15 @@ runs when it starts, so after a new run, stop it and start it again.
 | a dataset page: its versions, references and every arm with its headline number | `evh datasets --dataset-id tickets_v1` |
 | a reference page: who wrote it, from which run, every arm scored against it | `evh references --reference-id silver/tickets_v1` |
 | the metrics page: what each metric measures, which way is better, where it is recorded | `evh metrics` |
+| the search box on every catalog page | `evh search lead2` |
 | the goals page, and one goal's page: its answer (the baseline and why), its arms per dataset, its rounds | `evh goals`, `evh goals --goal tickets_summary`, `evh rounds --goal tickets_summary` |
+| a goal page's suggested next steps, each with a copy button | the commands `evh rounds --goal tickets_summary` prints |
+| a goal page's inspect button on a round: its arms against its leader ([tutorial 4](4-rounds-and-versions.md)) | `evh inspect --round r2` |
 | the inspector: arms tested against a baseline, and whether they ran under the same conditions | `evh inspect --runs tickets_lead1_v1,tickets_lead2_v1` |
 | the inspector, filtered by a field, or broken down by one | `--where area:account`, `--by deadline` |
+| the inspector's per-item table: every item's score per arm, and its Δ against the baseline | `--items` |
+| the inspector's analysis charts, as numbers: the spread per arm, the difference from the baseline, each arm's mean against a second metric | `--analysis`, `--analysis --x latency_ms` |
 | the inspector, one item: the item itself, its fields, each arm's output beside the reference | `--item t01_login` |
-| the inspector over a round's arms ([tutorial 4](4-rounds-and-versions.md)) | `evh inspect --round r2` |
 
 A goal's page, in the terminal:
 
@@ -90,7 +94,24 @@ tickets_v1 · dev
 It leads with its answer: the promoted baseline on each dataset and why (or "no decision yet",
 with the command that makes one), then what the goal is for, then the arms in groups by what
 they are scored against (gold, silver, a judge). Arms are ranked only within a group, and a
-group's leader is never an arm graded against its own outputs.
+group's leader is never an arm graded against its own outputs. When the goal has rounds, the
+page shows them newest first: each with an inspect button that opens its arms against its
+leader, the open round's suggestions each with a copy button, and retired arms greyed out.
+
+The search box on every page, in the terminal:
+
+```bash
+evh search lead2
+```
+```text
+  kind     name                       about                    see it with
+  arm      tickets_lead2_noisy_v1 ×3  tickets_v1 · overlap_f1  evh inspect --runs runs/tickets_v1/tickets_lead2_noisy_v1
+  arm      tickets_lead2_v1 ×3        tickets_v1 · overlap_f1  evh inspect --runs runs/tickets_v1/tickets_lead2_v1
+  dataset  tickets_v1                 4 arms                   evh datasets --dataset-id tickets_v1
+```
+
+It searches datasets, arms, references, metrics and goals, ranked as the catalog's search box
+ranks them, and each hit comes with the command that shows it.
 
 The inspector's comparison:
 
@@ -129,6 +150,38 @@ by deadline (Holm across 2):
 Two tickets name a deadline and four do not, and on two tickets no test can reach 0.05: a
 breakdown needs items in every group, and the page says when it has too few.
 
+**Item by item, and the charts as numbers.** `--items` is the inspector's per-item table, and
+`--analysis` its charts (`--x` adds each arm's mean on a second metric, the scatter):
+
+```bash
+evh inspect --runs tickets_lead1_v1,tickets_lead2_v1 --items
+evh inspect --runs tickets_lead1_v1,tickets_lead2_v1 --analysis --x latency_ms
+```
+<!-- guide-check: varies latency_ms -->
+```text
+per item (overlap_f1; Δ is each arm minus the baseline):
+  item         tickets_lead1_v1 ×3  tickets_lead2_v1 ×3  Δ tickets_lead2_v1 ×3
+  t01_login    0.450                0.873                +0.423
+  t02_invoice  0.457                0.851                +0.394
+  ...
+spread per run (overlap_f1, one line per arm):
+  arm                  mean   spread over the items
+  tickets_lead1_v1 ×3  0.641  min 0.450  p25 0.498  median 0.687  p75 0.766  max 0.795
+  tickets_lead2_v1 ×3  0.900  min 0.851  p25 0.880  median 0.906  p75 0.922  max 0.940
+
+difference from the baseline (tickets_lead1_v1 ×3), per item:
+  arm                  mean Δ  spread of Δ over the items
+  tickets_lead2_v1 ×3  0.259   min 0.140  p25 0.146  median 0.227  p75 0.372  max 0.423
+
+overlap_f1 against latency_ms, each arm's mean (the scatter's crosses):
+  arm                  overlap_f1  latency_ms  items
+  ...
+```
+
+Each command prints the comparison first, then its table or its charts. `--x` takes a metric the
+arms record per item; here that is `latency_ms` (a length such as `output_words` is not
+recorded per item, and the command names what is).
+
 **One item**, as every arm saw it and what each wrote:
 
 ```bash
@@ -156,8 +209,8 @@ Customer reports they cannot log in since this morning.
   be published. The dataset page lists its fields and how many tickets fill each; it summarises
   the values of a field marked `public` (Area, Plan) and no other (Names a deadline).
 - **The inspector** is the server behind them, on 127.0.0.1 only. Pick arms on one dataset and it
-  tests each against a baseline, charts the per-ticket scores, and for one ticket shows the
-  ticket, its fields and each arm's output beside the reference.
+  tests each against a baseline, lists and charts the per-ticket scores, and for one ticket
+  shows the ticket, its fields and each arm's output beside the reference.
 - **Its refusals** are the tests' refusals: no comparison across two datasets, and on a metric
   scored against a reference, no arm scored against another reference than the baseline's (a
   silver-scored run against a gold-scored one).

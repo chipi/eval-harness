@@ -70,7 +70,11 @@ open and be on the config's dataset.
 - `evh rounds --goal G [--round rN]`: every round, then one (the open one, else the last) in
   full with its evidence and suggestions.
 - `--round` (with `--goal` when several goals have that round) on `evh leaderboard`,
-  `evh family-test` (opponents in play) and `evh inspect` scopes to the arms in play.
+  `evh family-test` (opponents in play), `evh pair-test` and `evh inspect` scopes to the arms in
+  play. `evh inspect --round` reads the goal's measure against the round's leader (`--metric`,
+  `--baseline` override) and names the arms with no score on it, leaving them out.
+  `evh pair-test --round` defaults A to the round's leader, B to the baseline it started from and
+  the metric to the goal's measure, and refuses an arm not in play.
 
 ### The evidence (`rounds.evidence`)
 
@@ -81,13 +85,18 @@ For the open round, reading the goal's primary measure and direction:
    same call the inspector makes; its conditions warnings are carried into the notes.
 3. **Against the previous round**: its best against `from`'s best, on the same dataset.
 4. **Against the baseline it started from**, when there was one.
-5. **The spend** against `budget_usd` ("spent $x of $y", "over budget").
+5. **Against the arm that wrote a silver reference** of the dataset ("against the arm that wrote
+   silver/<id> (<arm>)"), scored on the same references as the round: how close the leader
+   comes to the arm whose outputs became the reference. That arm is a yardstick, not a contender:
+   no suggestion retires it.
+6. **The spend** against `budget_usd` ("spent $x of $y", "over budget"), and the **cost per
+   item** of the leader and of each arm it is compared against, where they record a cost.
 
 Suggestions, each a sentence and a command:
 
 | when | suggestion | command |
 | --- | --- | --- |
-| an arm is `separated: worse` than the leader after Holm | retire it, with the test as the reason | `evh round-retire … --reason "separated worse than <leader> on <measure> after Holm (p …)"` |
+| an arm is `separated: worse` than the leader after Holm, and did not write a silver reference | retire it, with the test as the reason | `evh round-retire … --reason "separated worse than <leader> on <measure> after Holm (p …)"` |
 | arms are `not separated` from the leader | more items would separate them | `evh rank-stability --dataset-id D` |
 | the round's best is not separated better than the previous round's | change course, or close | (none) |
 | always | close the round with what it showed | `evh round-close … --conclusion "..." --promote <leader's run>` |
@@ -95,9 +104,12 @@ Suggestions, each a sentence and a command:
 ### Pages
 
 The goal page shows the rounds newest first, and, for the open round, the suggestions with their
-commands ([UXS-001](../uxs/UXS-001-catalog.md#the-goal-page)). Suggestions are computed only when
-the catalog is built with `HarnessAdapter` over the project's data. Arms retired in a round carry
-a "retired in rN" label in the goal's tables.
+commands, each with a copy button ([UXS-001](../uxs/UXS-001-catalog.md#the-goal-page)).
+Suggestions are computed only when the catalog is built with `HarnessAdapter` over the project's
+data. Each round with a leader and two or more arms has an **inspect** button that opens the
+inspector on its arms against its leader, on the goal's measure (`evh inspect --round`). Arms
+retired in a round carry a "retired in rN" label in the goal's tables, and their rows are greyed
+out.
 
 ### Validation
 
@@ -108,14 +120,16 @@ not exist.
 
 ## Proposed in ADR-0004, not built in 0.4.0
 
-The proposal (2026-10-24) went further than the build. Not in 0.4.0:
+The proposal (2026-10-24) went further than the first build; most of it is now in 0.4.0:
+`pair-test --round`, the leader against the arm that wrote the silver reference, the cost per
+item, retired arms greyed out on the goal page, a copy button on each suggested command, and a
+way into the inspector for a round. Not in 0.4.0:
 
-- a round picker in the web inspector (`round=`); the terminal has `evh inspect --round`;
-- `--round` on `pair-test`;
-- comparing a round's best against the arm that wrote the silver reference;
-- a progress line per round with its cost per item;
-- retired arms greyed out on the goal page (they carry a "retired in rN" label instead);
-- a copy button on suggested commands (a code chip that selects whole on one click instead).
+- a round picker inside the web inspector (`round=`). The way in is the goal page's **inspect**
+  button on each round, which opens the inspector on that round's arms; the terminal has
+  `evh inspect --round`;
+- a progress line per round in the rounds overview (the cost per item is printed only with the
+  open round's evidence, by `evh rounds` and on the goal page).
 
 ## Alternatives Considered
 

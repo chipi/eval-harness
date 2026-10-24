@@ -17,8 +17,8 @@ The catalog builder and the inspector server never read a project's files direct
 better, which references exist, what one item looked like). The harness ships one adapter,
 `HarnessAdapter`, over its own layout, so a project on that layout writes no code; a project with
 another layout writes one class. The terminal views (`evh datasets`, `references`, `metrics`,
-`goals`, `inspect`) ask the same adapter and call the same functions, which is how command-line
-parity is kept.
+`goals`, `search`, `inspect`) ask the same adapter and call the same functions, which is how
+command-line parity is kept.
 
 ## Background
 
@@ -62,7 +62,9 @@ Optional members, each read with `getattr` so an adapter without them still work
 `baselines()`, `rounds()`, `datasets()`, `dataset_lineage(dataset)`, `served_dirs`, and on
 `HarnessAdapter` `item_text(dataset, item)` (the item itself, local inspector only).
 `describe(arm)` may carry `reference`, `judge`, `wrote_reference`, `goal`, `format`, `primary`
-and `runs`, which drive the row tints and the goal page.
+and `runs`, which drive the row tints and the goal page. `notes(arm)` says, in words, why
+something could not be scored, and which of the arm's runs were left out; the inspector's
+comparison prints it among its notes, and so does `evh inspect`.
 
 ### `HarnessAdapter`
 
@@ -70,7 +72,11 @@ Reads `<data>/runs*/<run_id>/{metrics.json, predictions.jsonl, outputs/}`,
 `<data>/runs-judged/<scorer_id>/`, `<data>/references/<tier>/<dataset_id>/`, `<data>/datasets/`,
 `<data>/goals/`, `<data>/baselines/` and `<data>/rounds/`. An arm id is
 `<runs dir>/<dataset_id>/<config_id>`: every repeat of a config on a dataset, averaged per item,
-as `pair-test` reads them, so the inspector gives the same p. `can_rescore` is false. Item scores
+as `pair-test` reads them, so the inspector gives the same p. An arm is read against one
+reference, the one its latest run (by `created_at`) was scored against: its runs scored against
+another reference are left out, never averaged in, and `notes(arm)` names them ("N earlier
+run(s) scored against <ref> left out: this arm is read against <ref>, the reference of its
+latest run"). `can_rescore` is false. Item scores
 are read with the same `score_of` the paired tests use.
 
 ### Loading a project adapter

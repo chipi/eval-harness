@@ -102,15 +102,18 @@ belonged together, why one was dropped, or what a round concluded. The newcomer 
   `experiment-run` refuses a config naming a round that does not exist, is closed, or is on
   another dataset.
 - **FR2.4**: `evh rounds --goal G [--round rN]` shows each round and, for the open one, the
-  arms against its leader, its best against the previous round's best, its spend against the
-  budget, and suggestions: retire an arm separated as worse (`evh round-retire …`), more items
+  arms against its leader, its leader against the previous round's best, the baseline it started
+  from and the arm that wrote a silver reference of the dataset, its spend against the budget and
+  the cost per item, and suggestions (never to retire the arm that wrote the silver reference): retire an arm separated as worse (`evh round-retire …`), more items
   where arms tie with the leader (`evh rank-stability …`), change course when the round's best
   is not separated from the previous round's, and close (`evh round-close …`).
 - **FR2.5**: `evh round-retire --goal G --round rN --arm C --reason "…"` and
   `evh round-close --goal G --round rN --conclusion "…" [--promote RUN_ID]` record decisions;
   a reason or conclusion must be a sentence. If the promotion is refused, the round stays open.
-- **FR2.6**: `evh leaderboard`, `evh family-test` and `evh inspect` take `--round` to scope to a
-  round's arms in play.
+- **FR2.6**: `evh leaderboard`, `evh family-test`, `evh pair-test` and `evh inspect` take
+  `--round` to scope to a round's arms in play; `inspect --round` and `pair-test --round` default
+  to the goal's measure and the round's leader (`pair-test`'s B: the baseline the round started
+  from).
 - **FR2.7**: `evh validate` (V14) checks round records: schema, file name, goal and dataset
   resolve, `from` exists, a closed round has a conclusion, every run naming a round names one
   that exists.

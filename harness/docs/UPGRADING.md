@@ -45,6 +45,11 @@ so check these before you trust a `validate`:
   `--asc` becomes unnecessary.
 - **Judge verdicts** need `output_sha256` and `output_withheld` (V1): the hash of the stored
   reply, and false.
+- **Judge scorers state both controls.** A scorer's `protocol` must set
+  `position_check_fraction` and `noise_check_fraction` (ADR-0001 §4): the noise check above 0,
+  and the position check above 0 when `outputs_per_call` is above 1. A scorer without them is
+  refused. Before, a scorer that left one out ran the pass with that check off. Add both (0.5
+  each is what the tutorial's scorer uses).
 - **`--resume`** takes a run made by 0.4.0 (rows with `_extra`); `--resume-unverified` is
   gone.
 - **`evh judge`** is the judge panel (it sat beside the package and could not run from a pin);
@@ -80,6 +85,19 @@ so check these before you trust a `validate`:
   column, and the leaderboard its cost/speed frontier.
 - **`validate` V5 no longer fails two different arms that are both perfect** on a binary metric:
   their outputs tell two measurements from a copy. A tree that failed only on that goes green.
+- **`provider: openrouter` calls OpenRouter by default**, with `OPENROUTER_API_KEY`. Before, an
+  arm that named it without `base_url` and `api_key_env` read `OPENAI_API_KEY` and called
+  OpenAI's address. An arm that sets either keeps its own; one that set neither now calls a
+  different endpoint, so treat its next run as a new measurement.
+- **`leaderboard` prints one table per reference.** When a dataset's runs were scored against
+  more than one reference (silver and gold, or runs made before any reference existed), each
+  reference gets its own table and tests, gold first, under `=== scored against <ref> ===`, and
+  nothing is averaged across them. Before, they were averaged into one row and one ranking. The
+  catalog and the inspector read an arm against the reference of its latest run and say which
+  earlier runs they leave out. With one reference the output is unchanged.
+- **The bundled adapter stores `overlap_f1` unrounded** (it rounded to 6 decimals); a new run's
+  mean can differ from an older one's in the sixth decimal, and the leaderboard's rounding note
+  no longer fires for it.
 - **`--exclude-dataset`** (`pair-test`, `family-test`, `holdout`, `bootstrap-test`) reads the
   excluded dataset's own item list. It read `data/sources/<id>/*.txt`, so a dataset whose items
   are not `.txt` files there was excluded wrongly, or not at all.
@@ -89,11 +107,15 @@ so check these before you trust a `validate`:
   harness's own data layout they need no code; with another layout, write one adapter
   ([tutorial 5](https://docs.evals.humancopilot.eu/tutorials/5-catalog-and-inspector/)). Every
   view is also a command: `evh datasets`, `evh references`, `evh metrics`, `evh goals`,
-  `evh inspect`.
+  `evh search`, `evh inspect` (with `--items` for the per-item table and `--analysis` for the
+  charts as numbers).
 - **Goals** (`data/goals/<goal_id>.yaml`, `goal:` on configs, validate V14). Nothing is
   required of an upgrading project until it sets `required_from` in `data/goals/policy.yaml`.
 - **Experiment rounds** (`evh round-open`, `evh round-retire`, `evh round-close`, `evh rounds`;
-  `round: rN` on configs; validate V14). A project that never opens a round sees none of it
+  `round: rN` on configs; validate V14). `--round rN` on `leaderboard`, `family-test`,
+  `pair-test` and `inspect`: `inspect --round` and `pair-test --round` default to the goal's
+  measure and the round's leader (`pair-test`'s B: the baseline the round started from). A
+  project that never opens a round sees none of it
   ([tutorial 4](https://docs.evals.humancopilot.eu/tutorials/4-rounds-and-versions/)).
 - **A run becomes a reference:** `evh reference-create --from-run <run_id>` copies a finished
   run's outputs and calls nothing; the reference records the run. `reference-create` now refuses

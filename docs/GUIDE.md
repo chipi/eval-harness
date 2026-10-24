@@ -165,12 +165,15 @@ evh experiment-run --config data/configs/tickets_author.yaml
 ```
 ```text
   no references for tickets_v1 — quality cannot be scored.
+  make them from a run of the arm you trust most (this one, if it is):
+    evh reference-create --dataset-id tickets_v1 --from-run <run_id>
+  or author them with a config:  evh reference-create --dataset-id tickets_v1 --config <a model you trust>
   ...
 wrote 1 run(s) to .../my-evals/data/runs
 ```
 
 With no reference it records only what needs none (the output's length, its cost, how long
-each call took).
+each call took), and it names the two ways to make one. The next step takes the first.
 
 ## 5 · Make its run the reference (optional)
 
@@ -230,11 +233,14 @@ evh leaderboard --dataset-id tickets_v1
 ```
 <!-- guide-check: varies lead2_noisy global distinguishable -->
 ```text
+  NOTE: these runs are scored against 2 references; one table for each,
+        never averaged across them.
+
+=== scored against silver/tickets_v1 ===
   arm                      runs        overlap_f1      output_words
   tickets_lead2_v1            3          0.900088         28.500000
   tickets_lead2_noisy_v1      3          0.798988         22.611111
-  tickets_lead1_v1            3          0.640917         16.000000
-  tickets_author_v1           1                 —         35.166667
+  tickets_lead1_v1            3          0.640916         16.000000
   ...
   IS THE ORDERING REAL?   metric=overlap_f1  k=3 arms  N=6 items
     global test (permutation on within-item ranks): p = 0.0002  ->  an arm effect exists
@@ -243,11 +249,19 @@ evh leaderboard --dataset-id tickets_v1
   ...
   Scored against SILVER references (model-generated). Good for ranking
   these arms against each other; not a claim that any of them is correct.
+
+=== scored against no reference ===
+  ...
+  arm                 runs      output_words
+  tickets_author_v1      1         35.166667
+  ...
 ```
 
 The leaderboard *sorts*; the block underneath says how much of the order is real. Read that
-block, not the row numbers. `author` has no score: it is the reference. The table also carries
-each arm's cost and speed (all zero here: `echo` is free and instant).
+block, not the row numbers. Runs scored against different references are never ranked
+together: the leaderboard prints one table for each. The `author` run was made before there
+was a reference, so it sits alone under "no reference", with no quality score. The table also
+carries each arm's cost and speed (all zero here: `echo` is free and instant).
 
 **One pair you named in advance**, tested item by item:
 

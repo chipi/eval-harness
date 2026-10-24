@@ -16,15 +16,15 @@ variables in its row, from the environment or from a `.env` file at the project 
 | `provider:` | what it calls | you set (`.env`) | in the arm's `params` |
 |---|---|---|---|
 | `openai` | OpenAI, or **any OpenAI-compatible endpoint** | `OPENAI_API_KEY`, or the variable `api_key_env` names | `model`; `base_url` for an endpoint other than OpenAI's (or `OPENAI_BASE_URL` in `.env`) |
-| `openrouter` | OpenRouter (OpenAI-compatible), asking it for what it billed | `OPENROUTER_API_KEY` | `model` (an OpenRouter id, `vendor/model`), `base_url: https://openrouter.ai/api/v1`, `api_key_env: OPENROUTER_API_KEY` |
+| `openrouter` | OpenRouter (OpenAI-compatible), asking it for what it billed | `OPENROUTER_API_KEY` | `model` (an OpenRouter id, `vendor/model`) |
 | `anthropic` | Anthropic | `ANTHROPIC_API_KEY` | `model` |
 | `litellm` | your own [LiteLLM](https://docs.litellm.ai/) proxy: one key, many providers, spend tracked centrally | `LITELLM_BASE_URL` (the proxy's address) and `LITELLM_API_KEY` | `model`: the proxy's model name, not the upstream id |
 | `echo` | nothing (offline, $0) | — | `sentences`, `noise` |
 
 Every provider also takes `temperature` (default 0), `max_tokens` (default 600) and `prompt` (the
-instruction put before each item). `openrouter` needs its `base_url` and `api_key_env` written in
-the config: without them it reads `OPENAI_API_KEY` and calls OpenAI's address. A provider name
-the adapter does not know is refused, never guessed.
+instruction put before each item). `openrouter` calls OpenRouter's address with `OPENROUTER_API_KEY`
+by default; an arm's own `base_url` or `api_key_env` overrides either. A provider name the
+adapter does not know is refused, never guessed.
 
 `.env` is yours: `evh init` gitignores it, so a key in it is never committed. An exported
 variable wins over the file. For example, with OpenRouter:
@@ -52,8 +52,6 @@ config_id: briefs_mistral_small_v1
 dataset_id: briefs_v1
 params:
   provider: openrouter
-  base_url: https://openrouter.ai/api/v1
-  api_key_env: OPENROUTER_API_KEY
   model: mistralai/mistral-small-3.2-24b-instruct
   temperature: 0.0
   max_tokens: 80

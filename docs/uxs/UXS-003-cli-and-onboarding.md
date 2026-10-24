@@ -46,20 +46,21 @@ on every change, comparing each quoted output. Its order is the order a newcomer
 | step | what the user does | commands |
 | --- | --- | --- |
 | 0 | set up a project with the tutorial kit | `pip install …`, `evh init --tutorial` |
-| 1 | freeze a dataset, with its fields | `evh dataset-create --dataset-id tickets_v1 --source-dir tutorial/tickets --fieldset tickets --fields tutorial/ticket_fields.csv` |
+| 1 | freeze a dataset | `evh dataset-create --dataset-id tickets_v1 --source-dir tutorial/tickets` |
 | 2 | materialize | `evh dataset-materialize --dataset-id tickets_v1` |
-| 3 | describe the arms, name the goal | copy configs, `goal: tickets_summary` |
-| 4 | author silver references | `evh reference-create --dataset-id tickets_v1 --config data/configs/tickets_author.yaml` |
-| 5 | commit, then measure | `evh experiment-run --config … --dry-run`, then `--repeat 3` |
-| 6 | compare | `evh leaderboard`, `evh run-compare`, `evh pair-test` |
-| 7 | make it golden | `evh rescore --reference-id gold/tickets_v1 --out data/runs-gold`, `evh silver-calibrate` |
-| 8 | decide: is the winner separated? | `evh family-test` |
-| 9 | promote a baseline | `evh run-promote --run … --reason "…"` |
-| 10 | optional: re-measure with an LLM judge | `evh judge-score --dataset-id tickets_v1 --scorer tickets-judge-v1` (refused), `--unvalidated --dry-run`, `--unvalidated` |
-| 11 | validate | `evh validate` |
-| 12 | browse | `evh catalog`, `evh catalog-serve` |
+| 3 | describe the arms, name the goal, commit | copy configs, `goal: tickets_summary` |
+| 4 | run the best arm first (a dry run prices it) | `evh experiment-run --config data/configs/tickets_author.yaml [--dry-run]` |
+| 5 | optional: make its run the reference | `evh reference-create --dataset-id tickets_v1 --from-run <run_id>` |
+| 6 | run the other arms, three times each | `evh experiment-run --config … --repeat 3` |
+| 7 | compare | `evh leaderboard`, `evh pair-test`, `evh family-test` |
+| 8 | choose: promote a baseline, then validate | `evh run-promote --run … --reason "…"`, `evh runs-list --baselines`, `evh validate` |
 
-Goals appear at step 3 and rounds not at all: a newcomer can ignore both. Deeper material is
+The [tutorials](../tutorials/1-local-model.md) take it on from there: a local model and its own
+adapter (1), a hosted model with the user's own key (2), gold, `silver-calibrate` and an LLM judge
+(3, run by `make guide-check`), rounds and dataset versions (4, run), and the catalog, the
+inspector and fields (5, run).
+
+Goals appear at step 3 and rounds only in tutorial 4: a newcomer can ignore both. Deeper material is
 tiered behind the GUIDE: [Concepts](../../harness/docs/CONCEPTS.md) (why),
 [Runbook](../../harness/docs/RUNBOOK.md) (every flag), [Integration](../../harness/docs/INTEGRATION.md)
 (your own system), [Scenario](../../harness/docs/SCENARIO.md) (a newcomer's trial with hosted
@@ -94,23 +95,23 @@ answer. Where the page has a `make` target in a checkout, it runs the same scrip
 | a dataset page: arms, baseline, versions, references | `evh datasets --dataset-id <id>` | `make datasets DATASET_ID=<id>` |
 | the goals page | `evh goals` | `make goals` |
 | a goal page: the answer so far, arms per dataset and group | `evh goals --goal <id>` | `make goals GOAL=<id>` |
-| a goal page: its rounds and suggestions | `evh rounds --goal <id> [--round rN]` | `make rounds GOAL=<id>` |
+| a goal page: its rounds and suggestions (each suggestion's copy button copies its command) | `evh rounds --goal <id> [--round rN]` | `make rounds GOAL=<id>` |
+| a goal page: a round's **inspect** button | `evh inspect --round rN [--goal <id>]` | |
 | reference pages | `evh references [--reference-id <id>]` | `make references` |
 | the metrics page | `evh metrics [--dataset-id <id>]` | `make metrics` |
 | inspector: a comparison | `evh inspect --runs a,b [--baseline a] [--metric m]` | `make inspect RUNS=a,b` |
 | inspector: filter, breakdown | `evh inspect --runs … --where field:value --by field` | |
 | inspector: one item | `evh inspect --runs … --item <item_id>` | |
-| inspector: a round's arms | `evh inspect --round rN` (the page has no round picker) | |
-| inspector: the per-item table and charts | no command; the scores are each run's `predictions.jsonl` | |
-| the catalog's global search | no command; `evh runs-list` lists runs | |
+| inspector: the per-item table | `evh inspect --runs … --items` | |
+| inspector: the analysis charts, as numbers | `evh inspect --runs … --analysis [--x <metric>]` | |
+| the catalog's global search | `evh search <text>` | |
 | "promote its run" (a goal page with no decision) | `evh run-promote --run <run_id> --reason "…"` | `make run-promote` |
 | a suggested retirement | `evh round-retire --goal g --round rN --arm <config> --reason "…"` | `make round-retire` |
 | a suggested close | `evh round-close --goal g --round rN --conclusion "…" --promote <run_id>` | `make round-close` |
 | (no page action) opening a round | `evh round-open --goal g --dataset d …` | `make round-open` |
 | building and serving the pages | `evh catalog`, `evh catalog-serve` | `make catalog`, `make catalog-serve` |
 
-Two rows have no command: the inspector's charts and per-item table, and the global search.
-Adding a view means adding its command in the same change, or recording the gap in this table.
+Every row has a command. Adding a view means adding its command in the same change.
 
 ## The round flow
 

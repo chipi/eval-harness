@@ -85,7 +85,8 @@ and step 10 of the [GUIDE](../GUIDE.md).
 - **FR3.2**: Every reply is stored; a rerun skips what is stored and `--no-calls` re-reads stored
   verdicts for $0. A cost cap stops it mid-run with what was bought kept.
 - **FR3.3**: A second shuffle on a subset measures position bias; a repeat on a subset measures
-  the judge's own noise.
+  the judge's own noise. Both are required: a scorer states both fractions, the noise check above
+  0 and the position check above 0 when a call sees more than one output, or it is refused.
 - **FR3.4**: Verdicts are projected to one score per arm per item and written as runs in
   `data/runs-judged/<scorer_id>/`; the originals are never touched.
 

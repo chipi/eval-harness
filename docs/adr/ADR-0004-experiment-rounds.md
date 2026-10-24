@@ -1,8 +1,9 @@
 # ADR-0004 — Experiment rounds, and a catalog that guides them (0.4.0)
 
-**Status:** Accepted (2026-10-24), as built. Parts of the proposal were not built in 0.4.0 (a round
-picker in the web inspector, `--round` on `pair-test`, comparing against the silver author's arm,
-a per-round cost line); [RFC-004](../rfc/RFC-004-experiment-rounds.md) lists them.
+**Status:** Accepted (2026-10-24), as built. Two parts of the proposal were not built in 0.4.0: a
+round picker inside the web inspector (the goal page's per-round **inspect** button opens a round's
+arms in it instead) and a progress line per round in the rounds overview;
+[RFC-004](../rfc/RFC-004-experiment-rounds.md) lists what was and was not built.
 **Date:** 2026-10-24
 **Detail:** [PRD-005](../prd/PRD-005-goals-and-rounds.md) (what and why),
 [RFC-004](../rfc/RFC-004-experiment-rounds.md) (records, commands, the evidence),

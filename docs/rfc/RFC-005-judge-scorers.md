@@ -56,8 +56,11 @@ and `cost_cap_usd`. The `task` block names what an item is (`source_label`), wha
 (`output_label`), the `dimensions` and the `scale`; without it the scorer judges SummEval's
 news-summary task (ARTICLE, SUMMARIES, coherence, consistency, fluency, relevance, 1–5). The
 protocol sets `outputs_per_call`, `blinding`, `order_seed`, `position_check_fraction`,
-`noise_check_fraction` and `contested_threshold`. Since 0.4.0 the YAML is hashed by its parsed
-content, so a comment is not a new scorer.
+`noise_check_fraction` and `contested_threshold`. The two check fractions are required, since the
+controls are part of the pass (ADR-0001 §4): a scorer that omits either is refused, as is a
+`noise_check_fraction` of 0, or a `position_check_fraction` of 0 when `outputs_per_call` is above 1
+(a call that sees several outputs has an order that can move a verdict). Since 0.4.0 the YAML is
+hashed by its parsed content, so a comment is not a new scorer.
 
 ### The gate
 

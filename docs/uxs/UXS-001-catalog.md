@@ -89,7 +89,8 @@ tables 15px.
 - **Search:** an index of every dataset, arm, reference, metric and goal. It opens from two
   characters, ranks title matches above description matches (goals first on ties), shows up to
   40 hits each with its kind, and follows the arrow keys; `/` focuses it and Escape closes it. An
-  arm hit opens the inspector on that arm.
+  arm hit opens the inspector on that arm. Command: `evh search <text>` (the same index and
+  ranking, each hit with the command that shows it).
 
 ## Tables
 
@@ -181,15 +182,23 @@ The page answers first, then explains, then shows the evidence.
    - a note: rounds are optional; decisions are made with `evh round-open`, `round-retire` and
      `round-close`; `evh rounds` says the same as the page;
    - a table, newest round first: **round** ("from rN" under it), **status**, **set out to
-     learn** (the hypothesis), **arms in play** ("(k retired)"), **best on <measure>** (the arm
+     learn** (the hypothesis), **arms in play** ("(k retired)", and an **inspect** button when the
+     round has a leader and two or more arms: it opens the inspector on the round's arms, at most
+     40, against its leader, on the goal's measure; its tooltip is `evh inspect --round rN --goal
+     <id>`), **best on <measure>** (the arm
      and its mean), **against the previous round** (a **vs rN's best** button opening the
      inspector with the previous best as baseline), **concluded** (the conclusion, or *open*).
      The open round's row carries the `--accent` tint (`t-open`);
    - one folded section per round (the open one unfolded) listing "changed: …", "retired
-     `<config>`: <reason>", "carried in unchanged: `<config>`", and, for the open round,
+     `<config>`: <reason>", "carried in unchanged: `<config>`", and, for the open round, the
+     leader against the previous round's best, the baseline it started from and the arm that
+     wrote a silver reference of the dataset ("against the arm that wrote silver/<id>
+     (`<config>`): <verdict>, Δ, p"), then
      **suggested next, each as the command that does it (the catalog only reads)**: each
-     suggestion with its command in a code chip that selects whole on one click, and notes such
-     as the spend against the budget.
+     suggestion with its command in a code chip that selects whole on one click and a **copy**
+     button beside it (it reads "copied" for a moment, or "selected" with the chip selected where
+     the browser refuses the clipboard), and notes such as the spend against the budget and the
+     cost per item.
 4. `what it is for`: decision, audience, decides ("<measure>, higher is better" or "no
    significant drop against the baseline" for `non_inferior`, with its threshold), min items,
    output contract, status.
@@ -203,7 +212,8 @@ The page answers first, then explains, then shows the evidence.
    - per group, gold first, then silver, then judges: a heading ("scored against
      gold/<id>" or "scored by judge <scorer>"), a **Test every arm in this group against its
      leader** button, and a table: **arm** (tags: `filed` when its config names the goal,
-     `baseline`, "retired in rN" in `--local` capitals), **mean**, **items**, **flags** ("n k <
+     `baseline`, "retired in rN" in `--local` capitals; a retired arm's whole row is greyed out,
+     `t-retired`), **mean**, **items**, **flags** ("n k <
      min_items m", "format f not in the contract", "wrote the reference it is scored against"),
      and **leader** on the leader's row or a **test vs leader** button on the others;
    - empty state: "No arm on this dataset records `<measure>`."
