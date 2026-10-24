@@ -404,6 +404,7 @@ def main() -> int:
             n_items=len(rows),
             metric_kinds=_kinds(adapter_path) or m.get("metric_kinds") or {},
             primary_metric=_primary(adapter_path) or m.get("primary_metric"),
+            metric_descriptions=_descriptions(adapter_path) or m.get("metric_descriptions"),
             reference_tier=tier if args.reference_id else None,
         )
         if isinstance(new.get("fingerprint"), dict):
@@ -438,6 +439,12 @@ def _primary(path):
     from _adapter import primary_metric  # noqa: PLC0415
 
     return primary_metric(path)
+
+
+def _descriptions(path):
+    from _adapter import metric_descriptions  # noqa: PLC0415
+
+    return metric_descriptions(path)
 
 
 def _sha(path):

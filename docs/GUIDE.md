@@ -594,7 +594,10 @@ Open the address it prints (if another program holds port 8765, add `--port 8766
 the runs when it starts, so after a new run, stop it and start it again.
 
 - **The catalog** is static pages: one per dataset with every arm and its headline number, a
-  goals page, and a page per goal ranking the arms that record its measure. Counts and means
+  goals page, a page per goal ranking the arms that record its measure, a page per reference
+  (who wrote it, every arm scored against it) and a metrics page (what each metric measures,
+  which way is better). Each arm's row says what it is scored against; rows scored against
+  silver, by a judge, or against the reference the arm wrote itself are tinted. Counts and means
   only, never an item's text, so the pages can be published. The dataset page lists its
   fields and how many tickets fill each; it summarises the values of a field marked `public`
   (Area, Plan) and no other (Names a deadline).

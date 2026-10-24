@@ -45,6 +45,17 @@ p 0.36, from the pre-fix run), and DBpedia's 56-item dev slice, over today's 28 
 `bert_base_fy` alone at the top rather than 13 arms in a tie.
 
 ### Added
+- **The catalog says what every number is measured against.** A metrics page (what each metric
+  measures, which way is better, where it is recorded, which goals decide on it) and a page per
+  reference (who wrote it, from which run, every arm scored against it); every metric and
+  reference on the pages links there. Each arm's row says what it is scored against, and rows
+  scored against silver, by a judge, or against the reference the arm wrote itself are tinted; a
+  judged arm reads "judge <scorer>", no longer "gold". A goal page flags the arm that wrote the
+  reference it is scored against, so it is never the leader. The inspector's charts section is
+  "analysis", and its verdict rows carry the same tints. Actions are compact and tinted.
+- **`METRIC_DESCRIPTIONS`** in an adapter, one sentence per metric, is recorded on every run
+  (`metric_descriptions` in metrics.json) and refreshed by `evh rescore`; the harness describes
+  its own metrics (cost, tokens, latency, judge scores).
 - **A run becomes a reference: `evh reference-create --from-run <run_id>`** (`make
   reference-create RUN=<run_id>`). The usual way to get references is to run the expensive
   model as an arm, read its results, and score the cheaper arms against what it wrote. Until now

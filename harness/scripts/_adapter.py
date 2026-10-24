@@ -121,6 +121,15 @@ def metric_directions(adapter_path: Path | None) -> dict[str, str]:
     return {str(k): str(v) for k, v in declared.items() if v in ("lower", "higher")}
 
 
+def metric_descriptions(adapter_path: Path | None) -> dict[str, str]:
+    """`METRIC_DESCRIPTIONS` from the adapter, {metric: what it measures}: recorded on every run,
+    and the catalog's metrics page reads it. {} when absent."""
+    declared = getattr(_module_or_none(adapter_path), "METRIC_DESCRIPTIONS", None)
+    if not isinstance(declared, dict):
+        return {}
+    return {str(k): str(v) for k, v in declared.items() if isinstance(v, str) and v.strip()}
+
+
 def primary_metric(adapter_path: Path | None) -> str | None:
     """`PRIMARY_METRIC` from the adapter, or None.
 

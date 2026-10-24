@@ -260,3 +260,33 @@ dl.kv { display: grid; grid-template-columns: minmax(120px, 180px) 1fr; gap: 10p
 dl.kv dt { font: 500 11px/1.9 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 dl.kv dd { margin: 0; }
 @media (max-width: 700px) { dl.kv { grid-template-columns: 1fr; gap: 2px; } dl.kv dd { margin-bottom: 10px; } }
+
+/* actions: compact, tinted with the accent, sized to sit in a table row */
+.btns { gap: 10px; }
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 14px; border-radius: 8px;
+  font: 600 12px/1.2 var(--mono); letter-spacing: .02em; color: var(--ink); white-space: nowrap;
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--accent) 38%, var(--hair)); transition: background .12s, border-color .12s; }
+a.btn::after { content: "→"; color: var(--accent); font-weight: 400; }
+.btn:hover { color: var(--ink); background: color-mix(in srgb, var(--accent) 24%, var(--surface)); border-color: var(--accent); }
+.btn.small { padding: 4px 10px; font-size: 11px; border-radius: 6px; }
+table.data td { vertical-align: middle; }
+
+/* links inside table cells: a metric's explanation, a reference's page */
+a.cell-link { text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  text-underline-offset: 3px; overflow-wrap: anywhere; }
+a.cell-link:hover { color: var(--accent); text-decoration-color: var(--accent); }
+
+/* rows by what their scores are measured against; gold rows stay plain */
+tr.t-silver td { background: color-mix(in srgb, var(--baseline) 12%, transparent); }
+tr.t-judged td { background: color-mix(in srgb, var(--proprietary) 10%, transparent); }
+tr.t-author td { background: color-mix(in srgb, var(--local) 12%, transparent); }
+tr.t-silver td:first-child { box-shadow: inset 3px 0 0 var(--baseline); padding-left: 10px; }
+tr.t-judged td:first-child { box-shadow: inset 3px 0 0 var(--proprietary); padding-left: 10px; }
+tr.t-author td:first-child { box-shadow: inset 3px 0 0 var(--local); padding-left: 10px; }
+.rowkey { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 0 0 14px; font: 12px var(--mono); }
+.rowkey .key { padding-left: 10px; box-shadow: inset 3px 0 0 var(--baseline); }
+.rowkey .key.t-judged { box-shadow: inset 3px 0 0 var(--proprietary); }
+.rowkey .key.t-author { box-shadow: inset 3px 0 0 var(--local); }
+.nowrap { white-space: nowrap; }
+.block code.nowrap { overflow-wrap: normal; }

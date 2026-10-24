@@ -34,6 +34,7 @@ from typing import Any
 
 from _adapter import (
     load_adapter,
+    metric_descriptions,
     metric_directions,
     metric_kinds,
     primary_metric,
@@ -667,6 +668,7 @@ def main() -> int:
             # built later does not have to guess what `compression` is.
             metric_kinds=dict(declared_kinds or {}),
             metric_directions=metric_directions(adapter_path),
+            metric_descriptions=metric_descriptions(adapter_path) or None,
             providers_seen=result.get("providers_seen") or {},
             primary_metric=primary_metric(adapter_path),
             # Outside `scores` on purpose: real, worth seeing, but not the arm's per-item

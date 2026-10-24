@@ -86,8 +86,11 @@
       + fieldControls(d);
 
     const rows = [...d.rows].sort((a, b) => (a.p ?? 9) - (b.p ?? 9));
+    // A row's tint says what its scores are measured against, as on the catalog's pages.
+    const kind = id => { const a = (d.arms || []).find(x => x.id === id) || {};
+      return a.wrote_reference ? 't-author' : a.judge ? 't-judged' : (a.reference || '').startsWith('silver/') ? 't-silver' : ''; };
     // The verdict is the second column, so a phone sees it without scrolling.
-    const vt = rows.map(r => `<tr><td class="mono">${esc(label[r.arm] || r.arm)}</td>
+    const vt = rows.map(r => `<tr class="${kind(r.arm)}"><td class="mono">${esc(label[r.arm] || r.arm)}</td>
       <td>${verdictChip(r.verdict)}${r.n && r.min_p > 0.05 ? ' <small class="muted">' + r.n + ' ' + ITEMS + ' cannot reach 0.05</small>' : ''}</td>
       <td class="num">${r.n}</td><td class="num">${fmt(r.mean)}</td><td class="num">${fmt(r.delta)}</td>
       <td class="num">${r.wins}–${r.losses}${r.ties ? ' (' + r.ties + ' tied)' : ''}</td>
@@ -113,9 +116,13 @@
     const avgTable = !avgs.length ? '' : `<h3 class="sub">Average only · ${avgs.length}: no per-${ITEM} scores, so no test</h3>
       <div class="scroll-x"><table class="data"><thead><tr><th>run</th><th>recorded average</th><th>vs the baseline's mean</th></tr></thead><tbody>${avgs.map(([a, v]) =>
         `<tr><td class="mono" title="${esc(a)}">${esc(label[a] || a)}</td><td class="num">${fmt(v)}</td><td class="num">${baseMean == null ? '—' : (v - baseMean >= 0 ? '+' : '') + fmt(v - baseMean)}</td></tr>`).join('')}</tbody></table></div>`;
-    app.innerHTML = controls + warn + `<p class="eyebrow"><span class="num">01</span>verdicts · ${esc(d.metric)}</p>` + verdicts + avgTable
+    const mslug = String(d.metric.split(' vs ')[0]).replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '') || 'x';
+    // Linked only where the catalog has a metrics page (a project's own builder may not).
+    const mlink = document.querySelector('nav.nav a[href$="metrics.html"]')
+      ? `<a class="cell-link" href="${document.body.dataset.up || ''}metrics.html#m-${mslug}">${esc(d.metric)}</a>` : esc(d.metric);
+    app.innerHTML = controls + warn + `<p class="eyebrow"><span class="num">01</span>verdicts · ${mlink}</p>` + verdicts + avgTable
       + breakdown(d, label)
-      + `<p class="eyebrow gap"><span class="num">02</span>charts</p>` + charts(d, label)
+      + `<p class="eyebrow gap"><span class="num">02</span>analysis</p>` + charts(d, label)
       + `<p class="eyebrow gap"><span class="num">03</span>per ${ITEM} · ${d.items.length}</p>` + eps;
     wireCharts(d, label);
     wireFields(d);

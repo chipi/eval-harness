@@ -105,6 +105,54 @@ try:
         "inspect.html?runs=runs/ds1/arm_b,runs/ds1/arm_a" in page_ds1,
     )
 
+    # Metrics and references: a silver set written by arm_s, arm_s and arm_t scored against it,
+    # and arm_t judged. Each row says what it is scored against; metric and reference link out.
+    data3 = tmp / "data3"
+    run("runs", "s_1", "ds3", "arm_s", [0.9] * 6, ref="silver/ds3", root=data3)
+    run("runs", "t_1", "ds3", "arm_t", [0.5] * 6, ref="silver/ds3", root=data3)
+    run("runs-judged/sc1", "t_1", "ds3", "arm_t", [3.0] * 6, ref="silver/ds3", root=data3)
+    for rid, extra in (
+        ("runs/s_1", {"metric_descriptions": {"acc": "share of items right"}}),
+        ("runs-judged/sc1/t_1", {"derived": {"kind": "judge", "with": {"scorer_id": "sc1"}}}),
+    ):
+        mj = data3 / rid / "metrics.json"
+        mj.write_text(json.dumps({**json.loads(mj.read_text()), **extra}))
+    silver = data3 / "references" / "silver" / "ds3"
+    silver.mkdir(parents=True)
+    (silver / "i00.txt").write_text("x")
+    (silver / "manifest.json").write_text(
+        json.dumps({"authored_by": "arm_s", "from_run": {"run_id": "s_1"}, "model": "m-1", "tier": "silver"})
+    )
+    out3 = tmp / ".build" / "catalog3"
+    cb.build(HarnessAdapter(data3), out3)
+    ds3 = (out3 / "d/ds3.html").read_text()
+    check(
+        "dataset page: rows tinted by what they are scored against",
+        re.search(r'<tr class="t-author"><td>arm_s<', ds3) is not None
+        and re.search(r'<tr class="t-silver"><td>arm_t<', ds3) is not None
+        and '<tr class="t-judged"><td>arm_t · judged/sc1' in ds3,
+        ds3[:0],
+    )
+    check(
+        "dataset page: the metric links to its explanation, the reference to its page, a judged row names its judge",
+        'href="../metrics.html#m-acc"' in ds3
+        and 'href="../r/silver-ds3.html"' in ds3
+        and "judge <code" in ds3,
+    )
+    metrics = (out3 / "metrics.html").read_text()
+    check(
+        "metrics page: the project's description, under the anchor every metric link uses; only recorded metrics listed",
+        'id="m-acc"' in metrics and "share of items right" in metrics and "Prompt tokens" not in metrics,
+    )
+    ref_page = (out3 / "r/silver-ds3.html").read_text()
+    check(
+        "reference page: who wrote it, from which run, and every arm scored against it (not the judged one)",
+        "arm_s" in ref_page
+        and "s_1" in ref_page
+        and "m-1" in ref_page
+        and ref_page.count('class="btn small"') == 2,
+    )
+
     cs.set_adapter(A)
     r = cs.compare({"runs": ["runs/ds1/arm_a,runs/ds1/arm_b"], "baseline": ["runs/ds1/arm_a"]})
     check(

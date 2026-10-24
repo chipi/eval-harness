@@ -87,7 +87,10 @@ class Adapter(Protocol):
         """The arm ids a path the caller selected yields (often [path] itself); [] if none."""
 
     def describe(self, arm: str) -> dict:
-        """{"id", "label", "dataset", "task"}; "dataset" is "" when none is recorded."""
+        """{"id", "label", "dataset", "task"}; "dataset" is "" when none is recorded. Optional
+        keys the pages use: "reference" (the reference id its scores are measured against),
+        "judge" (the judge scorer that scored it), "wrote_reference" (True when this arm wrote
+        the reference it is scored against), "goal", "format", "primary", "runs"."""
 
     def scores(self, arm: str, rescore: bool = False) -> dict[str, dict]:
         """{metric: {"source": str, "values": {item_id: float}}}."""
@@ -113,7 +116,9 @@ class Adapter(Protocol):
         """A measurement with no better direction (length, counts)."""
 
     def references(self) -> list[dict]:
-        """[{"id", "tier", "dataset", "task", "archived", "format"}]."""
+        """[{"id", "tier", "dataset", "task", "archived", "format"}]; optional, for the reference's
+        page: "items", "author" (the config that wrote it), "from_run", "model", "created_at",
+        "caveat"."""
 
     def reference_format(self, ref: str) -> str:
         """The output format a reference was written for, compared with the format an arm was asked
@@ -146,6 +151,9 @@ class Adapter(Protocol):
     # Optional: how many items a dataset has. Without it the catalog shows the most items any
     # arm scored, which undercounts a dataset no arm covered fully.
     # def dataset_items(self, dataset: str) -> Optional[int]: ...
+    # Optional: what each metric measures, for the metrics page. Without it the page shows the
+    # harness's own metrics' descriptions and the rest as undescribed.
+    # def metric_descriptions(self) -> dict[str, str]: ...
 
 
 def item_fields(A, dataset: str) -> dict:
@@ -233,6 +241,8 @@ class HarnessAdapter:
         if judged:  # a judged run's headline is the judge's score, not the source run's metric
             keys = set(self.scores(arm))
             primary = next((k for k in ("judge_score", "judge_score_unvalidated") if k in keys), primary)
+        ref = ((m.get("fingerprint") or {}).get("data") or {}).get("reference_id", "")
+        author = next((r.get("author") for r in self.references() if r["id"] == ref), None)
         return {
             "id": arm,
             "label": label,
@@ -242,7 +252,11 @@ class HarnessAdapter:
             "runs": n,
             "goal": m.get("goal", ""),
             "format": m.get("format", ""),
-            "reference": ((m.get("fingerprint") or {}).get("data") or {}).get("reference_id", ""),
+            "reference": ref,
+            # A judged run keeps its source run's reference_id, but its scores are the judges'.
+            "judge": judged or "",
+            # Graded against its own outputs: the arm whose run (or config) wrote the reference.
+            "wrote_reference": bool(author) and not judged and author == m.get("config_id"),
         }
 
     # -- scores -------------------------------------------------------------------------
@@ -323,11 +337,14 @@ class HarnessAdapter:
     # -- references and outputs -----------------------------------------------------------
     @_memo
     def references(self) -> list[dict]:
-        """Return all reference sets: {id, tier, dataset, task, archived, format}."""
+        """Return all reference sets: {id, tier, dataset, task, archived, format}, plus what
+        the set's manifest.json says (reference-create writes one): author, from_run, model,
+        created_at, n_items, caveat."""
         out = []
         for tier in ("gold", "silver"):
             for d in sorted((self.data_dir / "references" / tier).glob("*")):
                 if d.is_dir() and any(d.glob("*.txt")):
+                    mf = _json(d / "manifest.json") or {}
                     out.append(
                         {
                             "id": f"{tier}/{d.name}",
@@ -337,8 +354,24 @@ class HarnessAdapter:
                             "archived": False,
                             "format": "",
                             "dir": d,
+                            "items": len(list(d.glob("*.txt"))),
+                            "author": mf.get("authored_by"),
+                            "from_run": (mf.get("from_run") or {}).get("run_id"),
+                            "model": mf.get("model"),
+                            "created_at": mf.get("created_at"),
+                            "caveat": mf.get("caveat"),
                         }
                     )
+        return out
+
+    @_memo
+    def metric_descriptions(self) -> dict[str, str]:
+        """{metric: what it measures}, as the runs record it (the adapter's
+        METRIC_DESCRIPTIONS). Two runs that describe one metric differently: the one read last."""
+        out: dict[str, str] = {}
+        for ds in self._index().values():
+            for d in ds:
+                out.update((_json(d / "metrics.json") or {}).get("metric_descriptions") or {})
         return out
 
     def reference_format(self, ref: str) -> str:

@@ -48,8 +48,91 @@ document.documentElement.classList.add('js');})();
 NAV = [
     ("home", "index.html", "Catalog"),
     ("goals", "goals.html", "Goals"),
+    ("metrics", "metrics.html", "Metrics"),
     ("inspect", "inspect.html", "Inspector"),
 ]
+
+#: What the harness's own metrics measure; a project describes its own with METRIC_DESCRIPTIONS.
+BUILTIN_METRICS = {
+    "cost_usd": "What one item cost, in USD: the provider's bill when the response carries one, "
+    "else the tokens times the config's prices.",
+    "total_cost_usd": "What the whole run cost, in USD: the sum of cost_usd.",
+    "tokens_in": "Prompt tokens per item, as the provider counted them.",
+    "tokens_out": "Completion tokens per item, as the provider counted them.",
+    "total_tokens_in": "Prompt tokens over the whole run.",
+    "total_tokens_out": "Completion tokens over the whole run.",
+    "latency_ms": "Wall-clock time of one call, in milliseconds.",
+    "latency_s": "Wall-clock time of one call, in seconds.",
+    "judge_score": "The judges' mean score for the output on the scorer's scale, over its "
+    "dimensions and judges (evh judge-score). The judges were validated against human ratings.",
+    "judge_score_unvalidated": "The judges' mean score for the output on the scorer's scale, over "
+    "its dimensions and judges (evh judge-score). The judges were not validated against human "
+    "ratings: a trial, not a measurement.",
+    "overlap_f1": "Token-overlap F1 against the reference: the bundled adapter's placeholder, "
+    "enough to run the loop, not to defend a decision.",
+    "output_words": "How many words the output has: a description of the output, not a quality.",
+    "resumed": "1 when the item was replayed from a stopped run's stored output (--resume), "
+    "else 0: bookkeeping, not a score.",
+}
+
+
+def describe_metric(metric: str, project: dict) -> str:
+    """What a metric measures: the project's own words, else the harness's, else ""."""
+    if project.get(metric):
+        return project[metric]
+    if metric in BUILTIN_METRICS:
+        return BUILTIN_METRICS[metric]
+    m = re.fullmatch(r"judge_(.+?)(_unvalidated)?", metric)
+    if m and not metric.startswith("judge_score"):
+        return f"Judge {m.group(1)}'s mean score for the output, on the scorer's scale" + (
+            ", not validated against human ratings." if m.group(2) else "."
+        )
+    m = re.fullmatch(r"self_family_(.+)", metric)
+    if m:
+        return (
+            f"1 when judge {m.group(1)} is from the arm's own vendor family, else 0: context for its score."
+        )
+    return ""
+
+
+def metric_link(metric: str, up: str = "") -> str:
+    """A metric's name, linked to its row on the metrics page."""
+    if not metric:
+        return "—"
+    return f'<a class="cell-link" href="{up}metrics.html#m-{slug(metric)}">{e(metric)}</a>'
+
+
+def reference_page(ref: str) -> str:
+    """The reference's page, relative to the catalog root."""
+    return f"r/{slug(ref)}.html"
+
+
+def row_kind(a: dict, tiers: dict) -> str:
+    """The class of an arm's row: what its scores are measured against, when that is not gold."""
+    if a.get("wrote"):
+        return "t-author"
+    if a.get("judge"):
+        return "t-judged"
+    tier = tiers.get(a.get("reference", "")) or (a.get("reference") or "").split("/", 1)[0]
+    return "t-silver" if tier == "silver" else ""
+
+
+def scored_against(a: dict, up: str) -> str:
+    """The table cell that says what an arm was scored against: a judge, or a reference, linked."""
+    if a.get("judge"):
+        return f'judge <code class="small">{e(a["judge"])}</code>'
+    ref = a.get("reference")
+    if not ref:
+        return "—"
+    return f'<a class="cell-link" href="{up}{reference_page(ref)}">{e(ref)}</a>'
+
+
+ROW_KEY = (
+    '<p class="rowkey small muted"><span class="key t-silver">scored against silver</span>'
+    '<span class="key t-judged">scored by a judge</span>'
+    '<span class="key t-author">wrote the reference it is scored against</span>'
+    "<span>unmarked rows are scored against gold</span></p>"
+)
 
 
 def e(s) -> str:
@@ -140,7 +223,8 @@ def block(num: str, eyebrow: str, inner: str, anchor: str = "") -> str:
 
 
 def table(tid: str, heads: list, rows: list, filt: str = "") -> str:
-    """Build an HTML table with optional search filter."""
+    """Build an HTML table with optional search filter. A row is a list of cells, or
+    {"cells": [...], "cls": "...", "id": "..."} for a row with a class or an anchor."""
     th = "".join(f"<th>{h}</th>" for h in heads)
     f = ""
     if filt:
@@ -149,7 +233,15 @@ def table(tid: str, heads: list, rows: list, filt: str = "") -> str:
             f'aria-label="{e(filt)}"><span class="muted small"><span data-count="{tid}">{len(rows)}</span>'
             f" shown</span></div>"
         )
-    body = "".join("<tr>" + "".join(f"<td>{c}</td>" for c in r) + "</tr>" for r in rows)
+
+    def tr(r) -> str:
+        cells, attrs = (r["cells"], r) if isinstance(r, dict) else (r, {})
+        a = (f' class="{attrs["cls"]}"' if attrs.get("cls") else "") + (
+            f' id="{attrs["id"]}"' if attrs.get("id") else ""
+        )
+        return f"<tr{a}>" + "".join(f"<td>{c}</td>" for c in cells) + "</tr>"
+
+    body = "".join(tr(r) for r in rows)
     return (
         f'{f}<div class="scroll-x"><table id="{tid}" class="data sortable"><thead><tr>{th}</tr>'
         f"</thead><tbody>{body}</tbody></table></div>"
@@ -203,6 +295,8 @@ def collect(A: Adapter) -> dict:
                 "n": len(values) or max((len(v["values"]) for v in sc.values()), default=0),
                 "lower": A.lower_is_better(head, d["dataset"]) if head else False,
                 "reference": d.get("reference", ""),
+                "judge": d.get("judge", ""),
+                "wrote": bool(d.get("wrote_reference")),
                 "goal": d.get("goal", ""),
                 "format": d.get("format", ""),
                 # every metric's mean and item count, for the goal pages (numbers only)
@@ -235,7 +329,11 @@ def render_home(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
                 f'<a href="d/{slug(ds or "none")}.html">{e(ds or "(no dataset_id)")}</a>',
                 f'<span data-v="{v["items"]}">{v["items"]}</span>',
                 f'<span data-v="{len(v["arms"])}">{len(v["arms"])}</span>',
-                e(", ".join(r["id"] for r in v["refs"]) or "—"),
+                ", ".join(
+                    f'<a class="cell-link" href="{reference_page(r["id"])}">{e(r["id"])}</a>'
+                    for r in v["refs"]
+                )
+                or "—",
             ]
         )
     n_arms = sum(len(v["arms"]) for v in by_ds.values())
@@ -264,19 +362,23 @@ def render_dataset(A: Adapter, ds: str, v: dict, out: Path, nav: list) -> None:
             a["label"],
         ),
     )
+    tiers = {r["id"]: r["tier"] for r in v["refs"]}
     rows = [
-        [
-            e(a["label"]),
-            e(a["metric"] or "—"),
-            (
-                f'<span data-v="{a["mean"] if a["mean"] is not None else ""}">{fmt(a["mean"])}'
-                f"{' ↓' if a['lower'] else ''}</span>"
-            ),
-            f'<span data-v="{a["n"]}">{a["n"]}</span>',
-            str(a["runs"]),
-            e(a["reference"] or "—"),
-            f'<a class="btn small" href="{inspect_url([a["arm"]], "../")}">inspect</a>',
-        ]
+        {
+            "cls": row_kind(a, tiers),
+            "cells": [
+                e(a["label"]),
+                metric_link(a["metric"], "../"),
+                (
+                    f'<span data-v="{a["mean"] if a["mean"] is not None else ""}">{fmt(a["mean"])}'
+                    f"{' ↓' if a['lower'] else ''}</span>"
+                ),
+                f'<span data-v="{a["n"]}">{a["n"]}</span>',
+                str(a["runs"]),
+                scored_against(a, "../"),
+                f'<a class="btn small" href="{inspect_url([a["arm"]], "../")}">inspect</a>',
+            ],
+        }
         for a in arms
     ]
     # One button per group of arms that can be tested together: the same headline metric,
@@ -284,7 +386,9 @@ def render_dataset(A: Adapter, ds: str, v: dict, out: Path, nav: list) -> None:
     # the metric but measure different things, and the inspector sets such arms aside.
     groups: dict = {}
     for a in arms:
-        groups.setdefault((a["metric"] or "", a["reference"] or ""), []).append(a["arm"])
+        groups.setdefault((a["metric"] or "", "" if a["judge"] else a["reference"] or ""), []).append(
+            a["arm"]
+        )
     btns = []
     for (metric, ref), members in sorted(groups.items(), key=lambda kv: (-len(kv[1]), kv[0])):
         if len(members) < 2:
@@ -305,7 +409,12 @@ def render_dataset(A: Adapter, ds: str, v: dict, out: Path, nav: list) -> None:
             + (f'<span class="muted small">{more}</span>' if more else "")
         )
     btn = f'<p class="btns">{"".join(btns)}</p>' if btns else ""
-    refs = "".join(f"<li><code>{e(r['id'])}</code> · {e(r['tier'])}</li>" for r in v["refs"])
+    refs = "".join(
+        f'<li><a class="cell-link" href="../{reference_page(r["id"])}"><code>{e(r["id"])}</code></a> · {e(r["tier"])}'
+        + (f" · written by <code>{e(r['author'])}</code>" if r.get("author") else "")
+        + "</li>"
+        for r in v["refs"]
+    )
     body = hero(
         "dataset",
         e(ds or "(no dataset_id)"),
@@ -317,9 +426,10 @@ def render_dataset(A: Adapter, ds: str, v: dict, out: Path, nav: list) -> None:
     body += block(
         "01",
         "arms",
-        table(
+        ROW_KEY
+        + table(
             "arms",
-            ["arm", "metric", "mean", f"{e(A.item_word)}s", "runs", "reference", ""],
+            ["arm", "metric", "mean", f"{e(A.item_word)}s", "runs", "scored against", ""],
             rows,
             "filter arms",
         ),
@@ -411,6 +521,8 @@ def goal_answers(goal: dict, by_ds: dict) -> list:
                 flags.append(f"n {n} < min_items {need}")
             if a["format"] and formats and a["format"] not in formats:
                 flags.append(f"format {a['format']} not in the contract")
+            if a["wrote"]:
+                flags.append("wrote the reference it is scored against")
             rows.append(dict(a, mean=mean, n=n, filed=a["goal"] == goal["goal_id"], flags=flags))
         rows.sort(key=lambda r: (bool(r["flags"]), r["mean"] if lower else -r["mean"], r["label"]))
         leader = next((r for r in rows if not r["flags"]), None)
@@ -484,6 +596,7 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
     body += block("01", "what it is for", f'<dl class="kv">{dl}</dl>')
     n = 2
     for ds, role, rows, leader in goal_answers(g, by_ds):
+        tiers = {r["id"]: r["tier"] for r in (by_ds.get(ds) or {}).get("refs", [])}
         if not rows:
             inner = f'<p class="muted">No arm on this dataset records <code>{e(measure)}</code>.</p>'
         else:
@@ -498,13 +611,17 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
                     else ("leader" if leader and r is leader else "")
                 )
                 trs.append(
-                    [
-                        e(r["label"]) + (" <small>filed</small>" if r["filed"] else ""),
-                        f'<span data-v="{r["mean"]}">{fmt(r["mean"])}</span>',
-                        f'<span data-v="{r["n"]}">{r["n"]}</span>',
-                        e("; ".join(r["flags"]) or "—"),
-                        link,
-                    ]
+                    {
+                        "cls": row_kind(r, tiers),
+                        "cells": [
+                            e(r["label"]) + (" <small>filed</small>" if r["filed"] else ""),
+                            f'<span data-v="{r["mean"]}">{fmt(r["mean"])}</span>',
+                            f'<span data-v="{r["n"]}">{r["n"]}</span>',
+                            scored_against(r, "../"),
+                            e("; ".join(r["flags"]) or "—"),
+                            link,
+                        ],
+                    }
                 )
             arms = [r["arm"] for r in rows][:INSPECT_MAX]
             all_link = (
@@ -516,11 +633,16 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
                 else ""
             )
             inner = (
-                f'<p class="small muted">Mean {e(measure)} over each arm\'s {e(A.item_word)}s; a mean is not a '
-                "verdict: the inspector tests each arm against the leader (Holm across them). "
-                "Flagged arms are never the leader.</p>"
+                f'<p class="small muted">Mean {metric_link(measure, "../")} over each arm\'s {e(A.item_word)}s; '
+                "a mean is not a verdict: the inspector tests each arm against the leader (Holm across "
+                "them). Flagged arms are never the leader.</p>"
                 + all_link
-                + table(f"ans{n}", ["arm", f"mean {e(measure)}", f"{e(A.item_word)}s", "flags", ""], trs)
+                + ROW_KEY
+                + table(
+                    f"ans{n}",
+                    ["arm", f"mean {e(measure)}", f"{e(A.item_word)}s", "scored against", "flags", ""],
+                    trs,
+                )
             )
         body += block(f"{n:02d}", f"{ds}{' · ' + role if role else ''}", inner)
         n += 1
@@ -529,6 +651,132 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
         f"g/{slug(g['goal_id'])}.html",
         page(g.get("title") or g["goal_id"], body, 1, "goals", nav=nav, item=A.item_word),
     )
+
+
+def metric_index(A: Adapter, by_ds: dict) -> dict:
+    """{metric: {"datasets": {dataset: arms recording it}, "goals": [goal ids deciding on it]}}."""
+    out: dict = {}
+    for ds, v in by_ds.items():
+        for a in v["arms"]:
+            for m in a["means"]:
+                out.setdefault(m, {"datasets": {}, "goals": []})["datasets"].setdefault(ds, 0)
+                out[m]["datasets"][ds] += 1
+    for g in A.goals():
+        m = ((g.get("success_criteria") or {}).get("primary") or {}).get("measure")
+        if m:
+            out.setdefault(m, {"datasets": {}, "goals": []})["goals"].append(g)
+    return out
+
+
+def render_metrics(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
+    """One page, one row per metric: what it measures, which way is better, where it is recorded,
+    and which goals decide on it. A row's anchor is #m-<metric>, which every metric link uses."""
+    fn = getattr(A, "metric_descriptions", None)
+    project = fn() if callable(fn) else {}
+    idx = metric_index(A, by_ds)
+    rows = []
+    for m in sorted(idx, key=lambda k: (k.startswith(("total_", "self_family_", "resumed")), k)):
+        where = idx[m]
+        lower = any(A.lower_is_better(m, ds) for ds in where["datasets"]) if where["datasets"] else False
+        # Direction first: cost, tokens and latency are "neutral" to the tests but lower is better.
+        better = "lower" if lower else ("neutral: a description" if A.is_neutral(m) else "higher")
+        text = describe_metric(m, project)
+        rows.append(
+            {
+                "id": f"m-{slug(m)}",
+                "cells": [
+                    f'<code class="nowrap">{e(m)}</code>',
+                    e(text)
+                    if text
+                    else '<span class="muted">not described: add it to the adapter\'s '
+                    "<code>METRIC_DESCRIPTIONS</code></span>",
+                    e(better),
+                    "<br>".join(
+                        f'<span class="nowrap"><a class="cell-link" href="d/{slug(ds or "none")}.html">'
+                        f'{e(ds or "(none)")}</a> <span class="muted small">{n} arm{"s" if n != 1 else ""}</span></span>'
+                        for ds, n in sorted(where["datasets"].items())
+                    )
+                    or "—",
+                    "<br>".join(
+                        f'<a class="cell-link" href="g/{slug(g["goal_id"])}.html">{e(g.get("title") or g["goal_id"])}</a>'
+                        for g in where["goals"]
+                    )
+                    or "—",
+                ],
+            }
+        )
+    body = hero(
+        "metrics",
+        "Metrics",
+        "What each number on these pages measures, which way is better, where it is recorded, and "
+        "which goals decide on it. A project describes its own metrics with "
+        "<code>METRIC_DESCRIPTIONS</code> in its adapter; the harness describes its own.",
+    )
+    body += block(
+        "01",
+        "metrics",
+        table(
+            "metrics",
+            ["metric", "what it measures", "better", "recorded on", "decides"],
+            rows,
+            "filter metrics",
+        ),
+    )
+    write(out, "metrics.html", page("Metrics", body, 0, "metrics", nav=nav, item=A.item_word))
+
+
+TIER_WORDS = {
+    "gold": "Gold: written or checked by a person. Every arm scored against it is measured against "
+    "what a person signed.",
+    "silver": "Silver: written by a model. Consistent, not correct: good for ranking arms against "
+    "each other, never a claim that any of them is right. The arm that wrote it is graded against "
+    "its own outputs.",
+}
+
+
+def render_references(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
+    """One page per reference: what it is, who wrote it, and every arm scored against it."""
+    for ds, v in by_ds.items():
+        tiers = {r["id"]: r["tier"] for r in v["refs"]}
+        for r in v["refs"]:
+            scored = [a for a in v["arms"] if a["reference"] == r["id"] and not a["judge"]]
+            facts = [
+                ("tier", r["tier"]),
+                ("dataset", f'<a class="cell-link" href="../d/{slug(ds or "none")}.html">{e(ds)}</a>'),
+                (f"{A.item_word}s", e(r.get("items", "")) if r.get("items") is not None else ""),
+                ("written by", f"<code>{e(r['author'])}</code>" if r.get("author") else ""),
+                ("from the run", f"<code>{e(r['from_run'])}</code>" if r.get("from_run") else ""),
+                ("model", e(r.get("model") or "")),
+                ("created", e(r.get("created_at") or "")),
+            ]
+            dl = "".join(f"<dt>{e(k)}</dt><dd>{v_}</dd>" for k, v_ in facts if v_)
+            rows = [
+                {
+                    "cls": row_kind(a, tiers),
+                    "cells": [
+                        e(a["label"]),
+                        metric_link(a["metric"], "../"),
+                        f'<span data-v="{a["mean"] if a["mean"] is not None else ""}">{fmt(a["mean"])}</span>',
+                        f'<span data-v="{a["n"]}">{a["n"]}</span>',
+                        f'<a class="btn small" href="{inspect_url([a["arm"]], "../")}">inspect</a>',
+                    ],
+                }
+                for a in sorted(scored, key=lambda a: (a["metric"], -(a["mean"] or 0)))
+            ]
+            body = hero("reference", f"<code>{e(r['id'])}</code>", e(TIER_WORDS.get(r["tier"], "")))
+            body += block("01", "what it is", f'<dl class="kv">{dl}</dl>')
+            body += block(
+                "02",
+                f"scored against it · {len(rows)}",
+                (ROW_KEY + table("scored", ["arm", "metric", "mean", f"{e(A.item_word)}s", ""], rows))
+                if rows
+                else '<p class="muted">No arm is scored against it yet.</p>',
+            )
+            write(
+                out,
+                reference_page(r["id"]),
+                page(r["id"], body, 1, "", nav=nav, item=A.item_word),
+            )
 
 
 def render_inspect(A: Adapter, out: Path, page_fn=page, serve: str = "evh catalog-serve", **page_kw) -> None:
@@ -585,6 +833,18 @@ def write_search(A: Adapter, by_ds: dict, out: Path) -> None:
                     "s": f"{a['label']} {ds} {a['metric']}".lower(),
                 }
             )
+        for r in v["refs"]:
+            idx.append(
+                {
+                    "k": "reference",
+                    "t": r["id"],
+                    "d": f"{r['tier']} · {ds}",
+                    "u": reference_page(r["id"]),
+                    "s": f"{r['id']} {r['tier']} {ds} {r.get('author') or ''}".lower(),
+                }
+            )
+    for m in metric_index(A, by_ds):
+        idx.append({"k": "metric", "t": m, "d": "metric", "u": f"metrics.html#m-{slug(m)}", "s": m.lower()})
     for g in A.goals():
         idx.append(
             {
@@ -610,6 +870,8 @@ def build(A: Adapter, out: Path, links: tuple = ()) -> dict:
     for ds, v in by_ds.items():
         render_dataset(A, ds, v, out, nav)
     n_goals = render_goals(A, by_ds, out, nav)
+    render_metrics(A, by_ds, out, nav)
+    render_references(A, by_ds, out, nav)
     write_search(A, by_ds, out)
     render_inspect(A, out, nav=nav)
     return {

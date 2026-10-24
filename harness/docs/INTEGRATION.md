@@ -92,6 +92,12 @@ adapter works before and after you have references.
 loop run and rank arms crudely, not enough to defend a decision. Replace it
 with what your domain actually rewards.
 
+Beside `score()`, say what your metrics are: `PRIMARY_METRIC` (the one that decides),
+`METRIC_DIRECTIONS` (a quality metric that improves going down, `{"wer": "lower"}`) and
+`METRIC_DESCRIPTIONS` (one sentence each, `{"rouge_l": "ROUGE-L F1 against the reference"}`).
+Every run records them; the catalog's metrics page shows the descriptions. Added later, they
+reach existing runs through `evh rescore`, for $0.
+
 ---
 
 ## What an "arm" is
@@ -178,8 +184,12 @@ can extend later without re-authoring what you have.
 
 ## The catalog and the inspector
 
-`make catalog` (`evh catalog`) builds static pages over your runs; `make catalog-serve`
-(`evh catalog-serve`) serves them with the run inspector on 127.0.0.1. Both only ask an
+`make catalog` (`evh catalog`) builds static pages over your runs: one per dataset and per goal,
+one per reference (who wrote it, from which run, every arm scored against it), and a metrics page
+(what each metric measures, which way is better, where it is recorded). Every arm's row says what
+it is scored against, and rows scored against silver, scored by a judge, or scored against the
+reference the arm wrote itself are tinted apart from those scored against gold.
+`make catalog-serve` (`evh catalog-serve`) serves them with the run inspector on 127.0.0.1. Both only ask an
 **adapter** questions: which arms exist, what each scored per item, which way is better,
 which references exist, what one arm wrote for one item.
 
@@ -211,6 +221,8 @@ which references exist, what one arm wrote for one item.
   | how big each dataset is (optional) | `dataset_items(dataset)`: its item count; without it the catalog shows the most items any arm scored |
   | words and places | `item_word` (e.g. `"episode"`), `data_dir` |
   | more files the pages link (optional) | `served_dirs`: further directories under the project the inspector serves read-only, beside `data_dir` (a project's reports) |
+  | what each metric measures (optional) | `metric_descriptions()`: `{metric: sentence}`; without it the metrics page describes only the harness's own metrics |
+  | what a row is scored against (optional keys) | `describe(arm)`: `"reference"`, `"judge"`, `"wrote_reference"`; `references()`: `"items"`, `"author"`, `"from_run"`, `"model"`, `"created_at"` |
 
   Item text is only ever returned by `item_view` and `reference_view`, which only the local
   inspector calls: the static pages never carry it, whatever the adapter.
