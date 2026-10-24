@@ -229,8 +229,8 @@ def main() -> int:
             ("goals", [], "ok"),
             ("search", ["lead2"], "ok:evh inspect --runs runs/tickets_v1/tickets_lead2_v1"),
             ("search", ["no_such_thing"], "No match."),
-            # lead2 against lead1 on gold: the p of tutorial 3 step 4 (0.0938, exact over 2^6 sign patterns)
-            ("inspect", ["--runs", "tickets_lead1_v1,tickets_lead2_v1"], "ok:0.09375"),
+            # lead2 against lead1 on gold: the p of tutorial 3 step 4 (3/32 = 0.09375, printed 0.0938; exact over 2^6)
+            ("inspect", ["--runs", "tickets_lead1_v1,tickets_lead2_v1"], "ok:0.0938"),
             ("inspect", ["--runs", "tickets_lead1_v1,no_such_v1"], "no arm with that id"),
             (
                 "inspect",
