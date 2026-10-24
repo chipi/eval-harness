@@ -129,6 +129,12 @@ p 0.36, from the pre-fix run), and DBpedia's 56-item dev slice, over today's 28 
   (`ast.dump` does not). v3 and v4 digests are not comparable. The committed v3 runs here were
   migrated: each recorded hash was matched to the code or reference state it came from (git
   history, unreachable objects included) and recomputed. No score changed.
+- **import-run hashes the scoring code itself: `--scorer-file` replaces `--scorer-sha256`.**
+  Give the file (or several, repeated in a fixed order) and the harness hashes it by the same
+  rule, so a docstring in your scorer is not a new scorer. The hash is now the run's
+  `instrument.adapter.sha256`, inside the fingerprint hash: before, it sat only in `imported`,
+  outside the hash, so two imports scored by different versions of the code looked like the same
+  conditions.
 - **One install calls hosted models.** `openai` and `anthropic` are core dependencies; the
   `[llm]` extra is gone. A newcomer's first hosted arm failed on the import, and only one RUNBOOK
   section named the extra.

@@ -4,7 +4,7 @@
     evh import-run --dataset-id my_v1 --config-id arm_a \\
         --scores scores.jsonl --primary-metric wer --asc \\
         --build-ref <commit of the system that produced the outputs> \\
-        --source path/to/original/run --scorer-id my_scorer --scorer-sha256 <hash>
+        --source path/to/original/run --scorer-id my_scorer --scorer-file path/to/scorer.py
 
 WHY THIS EXISTS
   A project that already has runs -- made by its own pipeline, scored by its own scorers
@@ -36,6 +36,7 @@ INPUT
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
 from pathlib import Path
@@ -86,7 +87,14 @@ def main() -> int:
     )
     ap.add_argument("--source", required=True, help="where the outputs and scores came from")
     ap.add_argument("--scorer-id", required=True, help="the scoring code that produced the numbers")
-    ap.add_argument("--scorer-sha256", help="hash of that scoring code, if known")
+    ap.add_argument(
+        "--scorer-file",
+        type=Path,
+        action="append",
+        default=[],
+        help="a file of that scoring code (repeatable, in a fixed order); hashed by what it does, "
+        "docstrings and comments not counted, and recorded as the instrument",
+    )
     ap.add_argument("--reference-id", help="the references the scores are against, e.g. gold/my_v1")
     ap.add_argument("--reference-tier", choices=("gold", "silver"))
     ap.add_argument(
@@ -154,10 +162,22 @@ def main() -> int:
     if run_dir.exists():
         die(f"{run_dir} already exists")
 
+    scorer_sha256 = None
+    if args.scorer_file:
+        from _codeid import file_sha256  # noqa: PLC0415
+
+        parts = []
+        for f in args.scorer_file:
+            h = file_sha256(f)
+            if h is None:
+                die(f"cannot read --scorer-file {f}")
+            parts.append(h)
+        # One file: its own hash. Several: one hash over theirs, in the order given.
+        scorer_sha256 = parts[0] if len(parts) == 1 else hashlib.sha256("\n".join(parts).encode()).hexdigest()
     imported = {
         "source": args.source,
         "scorer_id": args.scorer_id,
-        "scorer_sha256": args.scorer_sha256,
+        "scorer_sha256": scorer_sha256,
         "scores_file": args.scores.name,
         # The exact bytes imported: a name can be reused, a hash cannot.
         "scores_sha256": sha256(args.scores),
@@ -175,6 +195,10 @@ def main() -> int:
         params=params,
         adapter_id=f"imported:{args.scorer_id}",
         adapter_path=None,
+        # The scoring code is the instrument: inside the hash, so two imports scored by different
+        # versions of it are not "the same conditions". `imported` (added below) stays outside:
+        # its scores_sha256 is the result, unique to every run.
+        adapter_sha256=scorer_sha256,
     )
     fingerprint["imported"] = imported
 

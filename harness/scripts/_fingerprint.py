@@ -221,7 +221,9 @@ def sha256_file(path: Path) -> str | None:
         return None
 
 
-def _adapter_identity(adapter_path: Path | None, adapter_id: str) -> dict[str, Any]:
+def _adapter_identity(
+    adapter_path: Path | None, adapter_id: str, sha256: str | None = None
+) -> dict[str, Any]:
     """The INSTRUMENT's scoring half, by CONTENT rather than by path.
 
     A path is not an identity: the adapter holds `score()`, so editing it changes what
@@ -229,13 +231,14 @@ def _adapter_identity(adapter_path: Path | None, adapter_id: str) -> dict[str, A
     claim a scorer that no longer exists as it was. A git commit would not catch an
     uncommitted edit either. Its code does, hashed by behaviour (_codeid): documentation (a
     docstring, a comment, METRIC_DESCRIPTIONS) can change at any time without making it a new
-    scorer.
+    scorer. With no file (an imported run), `sha256` is the scoring code's hash as the caller
+    states it.
     """
     from _codeid import file_sha256  # noqa: PLC0415
 
     return {
         "id": adapter_id,
-        "sha256": file_sha256(adapter_path) if adapter_path else None,
+        "sha256": file_sha256(adapter_path) if adapter_path else sha256,
     }
 
 
@@ -301,6 +304,7 @@ def build_fingerprint(
     adapter_path: Path | None,
     model_hook: Callable[[dict[str, Any]], dict[str, Any]] | None = None,
     data_dir: Path | None = None,
+    adapter_sha256: str | None = None,
 ) -> dict[str, Any]:
     """The full fingerprint, plus one hash over all of it. `data_dir` is the project's data
     root (`_common.DATA`, which honours EVAL_DATA_DIR); it defaults to `<root>/data`.
@@ -328,7 +332,7 @@ def build_fingerprint(
         "version": 4,
         "instrument": {
             "harness": _harness_identity(root, data_dir),
-            "adapter": _adapter_identity(adapter_path, adapter_id),
+            "adapter": _adapter_identity(adapter_path, adapter_id, adapter_sha256),
         },
         "system_under_test": {
             "model": _model_identity(model_hook, params),

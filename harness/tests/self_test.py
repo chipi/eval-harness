@@ -3109,6 +3109,36 @@ def test_a_project_elsewhere_imports_runs_and_tests_them() -> None:
         "import-run: the imported bytes are hashed on the record",
         m is not None and len(_json.loads(m.read_text())["imported"].get("scores_sha256") or "") == 64,
     )
+    hashes = {}
+    scorer_files = {}
+    for arm, body in (
+        ("arm_s1", "def score(o, r):\n    return o == r\n"),
+        (
+            "arm_s1doc",
+            'def score(o, r):\n    """Exact match."""\n    # documentation only\n    return o == r\n',
+        ),
+        ("arm_s2", "def score(o, r):\n    return o.strip() == r\n"),
+    ):
+        sf = Path(tempfile.gettempdir()) / f"{proj.name}-{arm}-scorer.py"
+        sf.write_text(body, encoding="utf-8")
+        scorer_files[arm] = sf
+    for arm, sf in scorer_files.items():
+        # The same arm and scores each time; only the scoring code differs.
+        imp("arm_s", scores("s", 0.2), "--scorer-file", str(sf), "--run-id", arm)
+        smj = next((data / "runs").glob(f"{arm}/metrics.json"), None)
+        fp_s = _json.loads(smj.read_text())["fingerprint"] if smj else {}
+        hashes[arm] = (fp_s.get("hash"), (fp_s.get("instrument") or {}).get("adapter", {}).get("sha256"))
+        shutil.rmtree(smj.parent, ignore_errors=True) if smj else None
+    check(
+        "import-run: the scoring code's hash is the adapter's, inside the fingerprint hash",
+        bool(hashes["arm_s1"][1]) and hashes["arm_s1"][0] != hashes["arm_s2"][0],
+        str(hashes),
+    )
+    check(
+        "import-run: a docstring or a comment in the scorer file is not another scorer",
+        hashes["arm_s1"] == hashes["arm_s1doc"],
+        str(hashes),
+    )
 
     pt = run(
         "scripts/pair_test.py",
