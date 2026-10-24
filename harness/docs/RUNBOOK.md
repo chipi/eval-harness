@@ -471,7 +471,7 @@ and to the news-summary judge, so neither is an `evh` command.
      `OPENROUTER_API_KEY` it goes straight to OpenRouter, so `model` must then be an
      OpenRouter id (`vendor/model`) or an alias in `$EVAL_MODELS_FILE` or `<project>/models.json`.
      Billed cost is read from the response; the scorer's price table is the fallback.
-     `pip install 'evaluation-harness[llm]'` for the `openai` client.
+     The `openai` client is installed with the harness.
    - **`provider: fake`** judges call nothing and cost nothing. They exist to try a scorer
      end to end and to test one; the gate refuses them whatever the `validation` block says,
      so they only run with `--unvalidated`.

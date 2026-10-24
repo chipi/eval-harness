@@ -321,6 +321,11 @@ def inspect(argv) -> int:
             die(got["error"])
         for f in got.get("fields") or []:
             print(f"  {f.get('label') or f['name']}: {f['value']}")
+        src = got.get("source") or {}
+        if src.get("kind") == "text":
+            print(f"\n== {args.item} (the {A.item_word} itself)\n{src['text'].rstrip()}")
+        elif src.get("note"):
+            print(f"\n({src['note']})")
         if got.get("reference"):
             print(f"\n== {ref} (reference)\n{(got['reference']['view'] or {}).get('text', '(none)')}")
         for a, view in got["views"].items():

@@ -1809,7 +1809,9 @@ with tempfile.TemporaryDirectory() as td_:
     check(
         "default arms: a mix of config versions is reported",
         js.config_versions(found) == ["_v1", "_v2"]
-        and js.config_versions([a for a in found if a["config_id"] != "a_v2"]) == ["_v1"],
+        and js.config_versions([a for a in found if a["config_id"] != "a_v2"]) == []
+        # different arms at different versions are not a mix (the newcomer trial's opus_v2 beside mistral_v1)
+        and js.config_versions([{"config_id": "opus_v2"}, {"config_id": "mistral_v1"}]) == [],
     )
 
 # A real judge is never handed the fake judge's task, whatever run_judging does.

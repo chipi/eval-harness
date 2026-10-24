@@ -502,9 +502,10 @@ DESCRIPTIVE_KEYS = ("output_words", "output_chars", "lines", "chars", "n_items")
 
 
 #: Per-item columns a run records that are bookkeeping, not a measurement: judge_score marks
-#: whether each judge shares the judged arm's model family (`self_family_<judge>`). The catalog
-#: lists no metric for them; the judging summary reads them.
-BOOKKEEPING_PREFIXES = ("self_family_",)
+#: whether each judge shares the judged arm's model family (`self_family_<judge>`), and
+#: experiment-run whether an item was replayed by --resume (`resumed`, whose mean is the share
+#: replayed). They stay in the record; no table, menu or spread lists them as metrics.
+BOOKKEEPING_PREFIXES = ("self_family_", "resumed")
 
 
 def lower_is_better(metric: str) -> bool:

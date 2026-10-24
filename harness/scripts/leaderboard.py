@@ -25,6 +25,7 @@ import statistics
 
 from _adapter import recorded_metric_kinds
 from _common import (
+    BOOKKEEPING_PREFIXES,
     REFERENCES,
     RUNS,
     classify_metrics,
@@ -33,7 +34,7 @@ from _common import (
     read_json,
 )
 from _record import derived_with
-from _runs import by_arm, direction, runs_on, warn_on_ambiguous_runs
+from _runs import by_arm, direction, mixed_versions, runs_on, warn_on_ambiguous_runs
 from _runs import matrix as matrix_of
 
 # COST_KEYS / SPEED_KEYS / DESCRIPTIVE_KEYS now live in _common, so that
@@ -199,10 +200,10 @@ def significance(
     decimals = _stored_decimals(raw)
     if decimals and decimals < _MIN_TIE_DECIMALS and not _small_fractions(raw):
         print(
-            f"\n  NOTE: these runs store scores to ~{decimals} decimals, so arms that\n"
+            f"\n  NOTE: these scores are rounded to ~{decimals} decimals, so arms that\n"
             f"        genuinely tie on an item can differ by rounding alone and be\n"
-            f"        ordered anyway — which inflates the p-value. `{how('evh rescore', 'make rescore')}` "
-            f"regenerates\n        them at full precision."
+            f"        ordered anyway — which inflates the p-value. If the adapter's score()\n"
+            f"        rounds, stop it rounding; then `{how('evh rescore', 'make rescore')}` regenerates them."
         )
 
     # Friedman, as a permutation test: shuffle which arm got which rank WITHIN each item
@@ -299,25 +300,34 @@ def significance(
                 tally[order[x]].append(shared)
             i = j2 + 1
     width = max(len(a) for a in arms) + 2
+    # With few arms the top is one place, and "top 1" would be P(1st) printed twice.
+    top_col = top_n > 1
     print(
-        f"\n    {'arm':{width}} {'avg rank':>9} {'P(1st)':>8} {f'P(top {top_n})':>10} {f'P(bot {top_n})':>10}"
+        f"\n    {'arm':{width}} {'avg rank':>9} {'P(1st)':>8}"
+        + (f" {f'P(top {top_n})':>10}" if top_col else "")
+        + f" {f'P(bot {top_n})':>10}"
     )
     for a in sorted(arms, key=lambda x: avg_rank[x]):
         t = tally[a]
         p1 = sum(1 for x in t if x == 1) / R
         pt = sum(1 for x in t if x <= top_n) / R
         pb = sum(1 for x in t if x > k - top_n) / R
-        print(f"    {a:{width}} {avg_rank[a]:9.2f} {p1:8.2f} {pt:10.2f} {pb:10.2f}")
+        print(
+            f"    {a:{width}} {avg_rank[a]:9.2f} {p1:8.2f}"
+            + (f" {pt:10.2f}" if top_col else "")
+            + f" {pb:10.2f}"
+        )
     print(
-        f"    Probabilities over resampled items: how often this arm lands 1st, in the\n"
-        f"    top {top_n}, in the bottom {top_n}. NOT a pairwise claim -- the\n"
-        f"    critical-difference line above is the only pairwise verdict here."
+        "    Probabilities over resampled items: how often this arm lands 1st"
+        + (f", in the top {top_n}" if top_col else "")
+        + f", in the bottom {top_n}.\n    NOT a pairwise claim -- the critical-difference line above is the only\n"
+        f"    pairwise verdict here."
     )
+    # Ties used to be broken by arm NAME, which on a saturated metric made P(1st) a measure of
+    # the alphabet; tied arms now share a midrank.
     print(
         "    P(1st) means UNIQUELY first: tied arms share a midrank, so a draw counts\n"
-        "    for nobody and the column can sum to less than 1. Ties used to be broken\n"
-        "    by arm NAME, which on a saturated metric made this a measure of the\n"
-        "    alphabet."
+        "    for nobody and the column can sum to less than 1."
     )
 
 
@@ -463,7 +473,15 @@ def main() -> int:
             + "   to see what exists"
         )
 
-    all_keys = sorted({k for runs in by_config.values() for r in runs for k in r["scores"]})
+    all_keys = sorted(
+        {
+            k
+            for runs in by_config.values()
+            for r in runs
+            for k in r["scores"]
+            if not k.startswith(BOOKKEEPING_PREFIXES)
+        }
+    )
     declared = _metric_kinds(by_config)
 
     kinds = classify_metrics(declared)
@@ -496,16 +514,14 @@ def main() -> int:
         )
     # SAY SO when the table mixes config versions. v1 and v2 of one arm are different
     # measurements -- often different scorers -- and listing them side by side reads as
-    # 48 models. The fix is to scope the view, never to delete the older runs.
-    import re as _re  # noqa: PLC0415
-
-    versions = {m.group(0) for c in by_config for m in [_re.search(r"_v\d+$", c)] if m}
-    if len(versions) > 1:
+    # 48 models. The fix is to scope the view, never to delete the older runs. Only an arm
+    # present at two versions is a mix; different arms at different versions are not.
+    mixed = mixed_versions(by_config)
+    if mixed:
         print(
-            f"  NOTE: this table mixes config versions ({', '.join(sorted(versions))}) —"
-            f" {len(by_config)} rows.\n"
-            f"        Those are different measurements, not repeats. Scope with"
-            f" --match <version>."
+            "  NOTE: this table has more than one version of "
+            + ", ".join(f"{b} ({' and '.join(v)})" for b, v in mixed.items())
+            + ".\n        Those are different measurements, not repeats. Scope with --match <version>."
         )
     ranking_on_descriptive = kinds.get(sort_key) == "descriptive"
     if sort_key not in all_keys:

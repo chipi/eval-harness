@@ -11,6 +11,7 @@ import argparse
 
 from _common import (
     BASELINES,
+    BOOKKEEPING_PREFIXES,
     how,
     read_json,
 )
@@ -38,7 +39,14 @@ def main() -> int:
             print(f"    from     {b['promoted_from']}   build={b['build'].get('ref', '?')[:12]}")
             print(f"    scored   {b.get('reference_tier', '?')} references, adapter {b.get('adapter', '?')}")
             print(f"    why      {b.get('reason', '(none recorded)')}")
-            print("    scores   " + "  ".join(f"{k}={v}" for k, v in sorted(b["scores"].items())))
+            print(
+                "    scores   "
+                + "  ".join(
+                    f"{k}={v}"
+                    for k, v in sorted(b["scores"].items())
+                    if not k.startswith(BOOKKEEPING_PREFIXES)
+                )
+            )
         return 0
 
     dirs = [d for d, _m in runs_on()]
@@ -51,7 +59,9 @@ def main() -> int:
     print(f"{'run_id':44} {'dataset_id':18} {'build':14} scores")
     for d in dirs:
         m = read_json(d / "metrics.json")
-        scores = "  ".join(f"{k}={v}" for k, v in sorted(m["scores"].items()))
+        scores = "  ".join(
+            f"{k}={v}" for k, v in sorted(m["scores"].items()) if not k.startswith(BOOKKEEPING_PREFIXES)
+        )
         dirty = "*" if m["build"].get("dirty") else " "
         print(f"{m['run_id']:44} {m['dataset_id']:18} {m['build'].get('ref', '?')[:12]}{dirty} {scores}")
     print("\n  * = produced by a dirty tree; its build ref does not describe what ran")

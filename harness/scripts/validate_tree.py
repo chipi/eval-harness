@@ -247,6 +247,18 @@ _V5_RUN_PROPERTIES = (
 )
 
 
+def _outputs_signature(run: Path) -> str:
+    """A digest of what a run wrote (outputs/<item>.txt, by name). Runs without outputs all
+    share one value: what they wrote cannot tell them apart, so it excuses nothing."""
+    outs = sorted((run / "outputs").glob("*.txt")) if (run / "outputs").is_dir() else []
+    if not outs:
+        return "<no-outputs>"
+    h = hashlib.sha256()
+    for f in outs:
+        h.update(f.name.encode() + b"\0" + f.read_bytes() + b"\x1e")
+    return h.hexdigest()
+
+
 def _per_item_signature(run_name: str | Path) -> str:
     """A stable digest of one run's per-item scores, for telling ties from copies.
 
@@ -326,6 +338,12 @@ def _v5_in(base: Path) -> list[list]:
             # two measurements. Two arms agreeing item by item are the case this check
             # exists for, and a low-cardinality metric cannot hide that.
             if len({_per_item_signature(n) for n, _, _ in known}) > 1:
+                continue
+            # A SATURATED METRIC AGREES ITEM BY ITEM TOO. Two different routers that both label
+            # all 32 messages right score 1.0 on every item; what tells them apart is what they
+            # wrote. Different outputs are two measurements; identical outputs from different
+            # params are the copied result or the inert knob this check is for.
+            if len({_outputs_signature(n) for n, _, _ in known}) > 1:
                 continue
             dupes.append([(f"{base.name}/{n.name}", c, p) for n, c, p in known])
     return dupes
@@ -435,7 +453,11 @@ def v7_committed_runs_are_readable() -> None:
         print(f"       {x}")
     if len(bad) > 10:
         print(f"       ... and {len(bad) - 10} more")
-    check("V7 every committed run has metrics.json", not bad, f"{len(bad)} run(s) committed as outputs only")
+    check(
+        "V7 every committed run has metrics.json",
+        not bad,
+        f"{len(bad)} run(s) stopped before they finished (outputs, no metrics.json): resume each with experiment-run --resume <run_id>, or delete it",
+    )
 
 
 def v9_no_committed_evidence_is_missing() -> None:

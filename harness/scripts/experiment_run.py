@@ -28,6 +28,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import sys
 import time
 from pathlib import Path
 from typing import Any
@@ -42,6 +43,7 @@ from _adapter import (
     transient_markers,
 )
 from _common import (
+    BOOKKEEPING_PREFIXES,
     DATA,
     GOALS,
     MATERIALIZED,
@@ -137,6 +139,45 @@ class _Resumed:
         self.meta["resumed_from_disk"] = True
 
 
+def _timed(call_system: Any) -> Any:
+    """`call_system`, timed by the core: latency_ms is the wall-clock of the attempt that
+    answered (not the retries' backoff), unless the adapter reported its own. Only the bundled
+    adapter timed itself, so a project's adapter written as INTEGRATION shows recorded no
+    latency, and the leaderboard silently had no speed to weigh against quality."""
+
+    def call(text: str, params: dict[str, Any]) -> Any:
+        started = time.perf_counter()
+        res = call_system(text, params)
+        if getattr(res, "latency_ms", None) is None:
+            try:
+                res.latency_ms = round((time.perf_counter() - started) * 1000, 3)
+            except (AttributeError, TypeError):  # a frozen result: it keeps what it has
+                pass
+        return res
+
+    return call
+
+
+def _say_stopped(run_dir: Path, n_items: int, config: Any, exc: BaseException) -> None:
+    """What a run that stopped mid-pass left, and the two ways on: resume it, or delete it.
+    A crash used to end in the adapter's traceback alone, the run directory stayed with no
+    metrics.json, and the next `validate` failed V7 with nothing having said why."""
+    done = len(list((run_dir / "outputs").glob("*.txt"))) if (run_dir / "outputs").is_dir() else 0
+    what = "interrupted" if isinstance(exc, KeyboardInterrupt) else f"{type(exc).__name__}: {str(exc)[:160]}"
+    print(
+        f"\nSTOPPED: run {run_dir.name} stopped after {done} of {n_items} item(s) ({what}).\n"
+        f"  Its outputs so far are in {run_dir}.\n"
+        "  Fix the cause, then either resume it (items already done are not called again):\n"
+        "    "
+        + how(
+            f"evh experiment-run --config {config} --resume {run_dir.name}",
+            f'make experiment-run CONFIG={config} ARGS="--resume {run_dir.name}"',
+        )
+        + f"\n  or delete {run_dir} (until one or the other, `validate` fails V7 on it).",
+        file=sys.stderr,
+    )
+
+
 def _reference_for(dataset_id: str) -> tuple[Path | None, str | None]:
     """Prefer gold over silver, and report which was used.
 
@@ -229,7 +270,7 @@ def one_pass(
             # single upstream 429 discarded an arm mid-sweep along with the items
             # already paid for.
             res = call_with_retries(
-                call_system,
+                _timed(call_system),
                 (source_text, params),
                 extra_transient=extra_transient,
                 label=f"item {item['item_id'][:8]}",
@@ -316,6 +357,26 @@ def one_pass(
         name = (pred.get("_meta") or {}).get("provider")
         if name:
             providers[name] = providers.get(name, 0) + 1
+    # CUT OFF AT max_tokens. An output that stopped at the cap is a truncated answer scored as
+    # if it were whole: a frontier arm at max_tokens 80 ended 19 of 20 summaries mid-sentence and
+    # the run said nothing. The provider's finish_reason says so when the adapter records it;
+    # tokens_out reaching the cap says so otherwise.
+    cap = params.get("max_tokens")
+    cut = [
+        p["item_id"]
+        for p in predictions
+        if not p.get("resumed")
+        and (
+            (p.get("_meta") or {}).get("finish_reason") == "length"
+            or (isinstance(cap, (int, float)) and cap > 0 and (p.get("tokens_out") or 0) >= cap)
+        )
+    ]
+    if cut:
+        print(
+            f"  WARNING: {len(cut)} of {len(predictions)} output(s) stopped at max_tokens={cap} "
+            f"({', '.join(cut[:6])}{' ...' if len(cut) > 6 else ''}).\n"
+            "    They are scored as if complete. Raise max_tokens (a new config_id) and run again."
+        )
     resume_note = None
     if n_replayed:
         resume_note = {
@@ -623,17 +684,21 @@ def main() -> int:
                 "identified; metrics.json is written only on a clean exit",
             },
         )
-        result = one_pass(
-            ds,
-            cfg,
-            i,
-            resume_dir=resume_dir,
-            prior_rows=prior_rows,
-            live_dir=run_dir / "outputs",
-            call_system=call_system,
-            score=score,
-            extra_transient=transient_markers(adapter_path),
-        )
+        try:
+            result = one_pass(
+                ds,
+                cfg,
+                i,
+                resume_dir=resume_dir,
+                prior_rows=prior_rows,
+                live_dir=run_dir / "outputs",
+                call_system=call_system,
+                score=score,
+                extra_transient=transient_markers(adapter_path),
+            )
+        except BaseException as exc:
+            _say_stopped(run_dir, len(ds.get("items") or []), args.config, exc)
+            raise
         run_dir.mkdir(parents=True, exist_ok=True)
         write_text_atomic(
             run_dir / "predictions.jsonl",
@@ -693,7 +758,12 @@ def main() -> int:
         write_json(run_dir / "metrics.json", metrics)
         made.append(run_dir)
         per_repeat.append(result["scores"])
-        print(f"  {run_id}  " + "  ".join(f"{k}={v}" for k, v in result["scores"].items()))
+        print(
+            f"  {run_id}  "
+            + "  ".join(
+                f"{k}={v}" for k, v in result["scores"].items() if not k.startswith(BOOKKEEPING_PREFIXES)
+            )
+        )
         if result["capped_at"]:
             capped = True
             print(
@@ -710,14 +780,15 @@ def main() -> int:
 
     if args.repeat > 1:
         print(f"\n  Arm spread over {args.repeat} repeats (max - min on identical input):")
-        w = max(len(k) for k in per_repeat[0])
-        for k in sorted(per_repeat[0]):
+        shown = sorted(k for k in per_repeat[0] if not k.startswith(BOOKKEEPING_PREFIXES))
+        w = max(len(k) for k in shown)
+        for k in shown:
             vals = [r[k] for r in per_repeat]
             spread = max(vals) - min(vals)
             verdict = "deterministic" if spread == 0 else f"treat deltas below {spread:.6f} as noise"
             print(f"    {k:{w}} spread={spread:.6f}   {verdict}")
 
-    print(f"\n{len(made)} run(s) under {RUNS}")
+    print(f"\nwrote {len(made)} run(s) to {RUNS}")
 
     # A CAPPED RUN IS NOT A SUCCESSFUL RUN, AND AN EMPTY ONE CERTAINLY IS NOT.
     #

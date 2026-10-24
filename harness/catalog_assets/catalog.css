@@ -297,3 +297,7 @@ p.conds { margin: 10px 0 0; }
 tr.paged-out { display: none; }
 .pager { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 12px 0 0; }
 .pager[hidden] { display: none; }
+/* the inspector's item view: the item itself, above the outputs */
+details.srcbox { margin: 12px 0 16px; padding: 10px 14px; border: 1px solid var(--hair); border-radius: 10px; background: var(--surface); }
+details.srcbox summary { cursor: pointer; font: 600 13px/1.4 var(--mono); }
+details.srcbox .outtext { margin-top: 10px; white-space: pre-wrap; max-height: 420px; overflow: auto; }

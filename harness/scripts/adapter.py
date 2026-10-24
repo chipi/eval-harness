@@ -191,6 +191,10 @@ def _anthropic(text: str, params: dict[str, Any]) -> Result:
         tokens_in=ti,
         tokens_out=to,
         cost_usd=price(params, ti, to),
+        # Anthropic's "max_tokens" is OpenAI's "length": the output stopped at the cap.
+        meta={"finish_reason": "length" if msg.stop_reason == "max_tokens" else msg.stop_reason}
+        if getattr(msg, "stop_reason", None)
+        else {},
     )
 
 
@@ -249,6 +253,8 @@ def _openai_compatible(text: str, params: dict[str, Any]) -> Result:
         # Prices in the config, not in code: they change, and a run records what it was
         # costed at. A bill, when the provider sends one, is the cost itself.
         cost_usd=bill if bill is not None else price(params, ti, to),
+        # "length" means the output stopped at max_tokens; experiment-run warns about it.
+        meta={"finish_reason": resp.choices[0].finish_reason} if resp.choices[0].finish_reason else {},
     )
 
 

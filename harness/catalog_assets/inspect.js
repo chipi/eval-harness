@@ -412,7 +412,10 @@
     const refcol = d.reference && d.reference.view && d.reference.view.kind !== 'none' ? `<div class="outcol refcol"><h3>${esc(d.reference.id)} <small class="muted">reference</small></h3>${view(d.reference.view, null)}</div>` : '';
     const hasText = Object.values(d.views).some(v => v && v.kind === 'text');
     const toggle = hasText ? `<label class="tick small"><input type="checkbox" id="difft" ${DIFF ? 'checked' : ''}> mark what each run <ins>adds</ins> and <del>drops</del> against the baseline (useful between near-identical outputs, noisy between independent ones)</label>` : '';
-    box.innerHTML = `<p class="eyebrow gap"><span class="num">04</span>${ITEM} · ${esc(ep)}</p>${fieldsTable(d.fields)}${toggle}<div class="outgrid">${refcol}${cols}</div>`;
+    // The item itself, what every arm read (the local inspector only); folded when it is long.
+    const src = d.source && d.source.kind !== 'none' && d.source.text
+      ? `<details class="srcbox"${d.source.text.length <= 1500 ? ' open' : ''}><summary>the ${ITEM} itself <small class="muted">${d.source.text.length.toLocaleString()} characters, what every arm read</small></summary><div class="outtext">${esc(d.source.text)}</div></details>` : '';
+    box.innerHTML = `<p class="eyebrow gap"><span class="num">04</span>${ITEM} · ${esc(ep)}</p>${fieldsTable(d.fields)}${src}${toggle}<div class="outgrid">${refcol}${cols}</div>`;
     const t = document.getElementById('difft');
     if (t) t.onchange = () => { DIFF = t.checked; drill(ep, arms, baseline, label, ref, tr); };
     box.scrollIntoView({behavior: 'smooth', block: 'start'});

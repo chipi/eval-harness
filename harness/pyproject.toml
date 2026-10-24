@@ -20,14 +20,18 @@ description = "Is the ranking real, or a lucky sample? Frozen datasets, run fing
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.9"
+# Everything works from one install: the bundled adapter's hosted providers and the LLM judges
+# call models through openai (any OpenAI-compatible endpoint: OpenAI, OpenRouter, a LiteLLM
+# proxy) and anthropic. They were an extra, `[llm]`, that only one RUNBOOK section named; a
+# newcomer's first hosted arm failed on the import.
 dependencies = [
     "pyyaml>=6.0",
     "jsonschema>=4.0",
+    "openai>=1.0",
+    "anthropic>=0.40",
 ]
 
 [project.optional-dependencies]
-# The bundled template adapter and judges call hosted models through these clients.
-llm = ["openai>=1.0", "anthropic>=0.40"]
 # The self-test's summarisation corpus checks.
 test = ["rouge-score"]
 

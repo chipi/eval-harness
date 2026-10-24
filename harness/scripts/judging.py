@@ -345,7 +345,7 @@ def client(params: dict[str, Any]) -> tuple[Any, dict[str, Any]]:
         from openai import OpenAI  # noqa: PLC0415 - hosted judges only
     except ImportError:
         raise SystemExit(
-            "a hosted judge needs the openai client: pip install 'evaluation-harness[llm]'"
+            "a hosted judge needs the openai client, which the harness installs: reinstall the harness's pin"
         ) from None
     r = route(params)
     return OpenAI(api_key=r["key"], base_url=r["base_url"]), r

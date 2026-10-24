@@ -443,6 +443,22 @@ class HarnessAdapter:
             return {"kind": "text", "text": f.read_text(encoding="utf-8", errors="replace")}
         return {"kind": "none"}
 
+    def item_text(self, dataset: str, item: str) -> dict:
+        """The item every arm read, from the dataset's materialized copy (the local inspector
+        only shows it)."""
+        ds = _json(self.data_dir / "datasets" / f"{dataset}.json") or {}
+        rel = next(
+            (it.get("source_path") or it["item_id"] for it in ds.get("items") or [] if it["item_id"] == item),
+            None,
+        )
+        f = self.data_dir / "materialized" / dataset / rel if rel else None
+        if f and f.is_file():
+            return {"kind": "text", "text": f.read_text(encoding="utf-8", errors="replace")}
+        return {
+            "kind": "none",
+            "note": f"Not on this machine: evh dataset-materialize --dataset-id {dataset}",
+        }
+
     # -- goals --------------------------------------------------------------------------
     @_memo
     def goals(self) -> list[dict]:

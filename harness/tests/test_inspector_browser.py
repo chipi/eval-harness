@@ -152,6 +152,11 @@ def drive(base: str) -> None:
             page.locator(".refcol").count() == 1 and page.locator(".outcol").count() == 4,
             page.locator(".outcol").count(),
         )
+        check(
+            "inspector: an item shows the item itself, what every arm read",
+            page.locator("details.srcbox").count() == 1
+            and "item itself" in page.locator("details.srcbox summary").inner_text(),
+        )
 
         page.goto(base + "d/tickets_v1.html")
         ftable = page.locator("table#fields").inner_text()

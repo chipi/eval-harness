@@ -637,6 +637,10 @@ def test_example_scorer_suites_pass() -> None:
         ("test_fields.py", "item fields and URL items: create, materialize, V15"),
         ("test_lineage.py", "dataset versions: --from, V2, the catalog's links"),
         (
+            "test_run_reports.py",
+            "a run with a project adapter: latency, cut-off outputs, a crash and its resume",
+        ),
+        (
             "test_reference_from_run.py",
             "a run's outputs as the reference: provenance, refusals, the author's row",
         ),
@@ -2595,6 +2599,30 @@ def test_v5_tells_a_tie_from_a_copy() -> None:
         check(
             "V5: same mean, same items, different params -> flagged", "FAIL V5" in r.stdout, r.stdout[-200:]
         )
+
+        # A saturated metric: both arms right on every item, so the items agree too. Different
+        # outputs are two systems (the newcomer trial's two routers at 32/32); the same outputs
+        # under different params are still the copy.
+        for name, text in (("arm_a", "label: billing"), ("arm_b", "label: billing\nreason: a refund")):
+            shutil.rmtree(root / name)
+            make(name, f"model-{name}", [1, 1, 1, 1])
+            (root / name / "outputs").mkdir()
+            for i in range(4):
+                (root / name / "outputs" / f"i{i}.txt").write_text(text)
+        r = subprocess.run(
+            [PY, "scripts/validate_tree.py"], cwd=ROOT, env=env, capture_output=True, text=True
+        )
+        check(
+            "V5: all items right, different outputs -> not flagged",
+            "FAIL V5" not in r.stdout,
+            r.stdout[-200:],
+        )
+        for i in range(4):
+            (root / "arm_b" / "outputs" / f"i{i}.txt").write_text("label: billing")
+        r = subprocess.run(
+            [PY, "scripts/validate_tree.py"], cwd=ROOT, env=env, capture_output=True, text=True
+        )
+        check("V5: all items right, the same outputs -> flagged", "FAIL V5" in r.stdout, r.stdout[-200:])
 
 
 def test_rescore_can_move_runs_onto_a_new_reference_set() -> None:

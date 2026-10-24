@@ -100,6 +100,28 @@ p 0.36, from the pre-fix run), and DBpedia's 56-item dev slice, over today's 28 
   runs it before the merge.
 
 ### Changed
+- **One install calls hosted models.** `openai` and `anthropic` are core dependencies; the
+  `[llm]` extra is gone. A newcomer's first hosted arm failed on the import, and only one RUNBOOK
+  section named the extra.
+- **The core times every call.** `latency_ms` is recorded for any adapter that does not report
+  its own (the attempt that answered, not the retries' backoff); only the bundled adapter used to
+  time itself, so a project's adapter recorded no speed. **This can move a result**: a project's
+  runs gain a latency column, and the leaderboard its cost/speed frontier.
+- **experiment-run warns when outputs stop at `max_tokens`**, by the provider's `finish_reason`
+  (the bundled OpenAI-compatible and Anthropic providers now record it) or tokens_out reaching the
+  cap, naming the items: they are scored as if complete.
+- **A run that stops mid-pass says what to do**: which run, after how many items, the exact
+  `--resume` command, or delete it; V7's failure says the same.
+- **validate V5 no longer fails two different arms that are both perfect.** On a saturated binary
+  metric their per-item scores agree too; different outputs now tell two measurements from a copy.
+- The inspector's item view shows the item itself (what every arm read), folded when long; the
+  local inspector only. `evh inspect --item` prints it.
+- Bookkeeping fields (`resumed`, the judge's `self_family_*`) stay in the record but are listed as
+  metrics nowhere (leaderboard, runs-list, the spread, the inspector).
+- The leaderboard's version note fires only for one arm at two versions, not for different arms at
+  different versions (judge-score's too); "P(top 1)" is no longer printed beside "P(1st)" when they
+  are the same; the rounding note names the scorer as what rounds.
+- `evh init`'s `.gitignore` ignores `__pycache__/`; experiment-run ends "wrote N run(s) to …".
 - **Exact p-values at 30 items or fewer.** `pair-test` and `family-test` now count the
   two-sided sign-flip p over all 2^n sign patterns when a pair shares 30 items or fewer, instead
   of estimating it from 20,000 seeded permutations. Above 30 items the estimate is unchanged,

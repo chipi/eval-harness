@@ -34,6 +34,7 @@ IGNORE = """\
 .build/
 .cache/
 data/materialized/
+__pycache__/
 """
 
 

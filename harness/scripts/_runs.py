@@ -182,6 +182,18 @@ def direction(runs: Iterable[Run], metric: str, asc: bool = False, desc: bool = 
 _REPEAT = re.compile(r"_r\d+$")
 
 
+def mixed_versions(config_ids: Iterable[str]) -> dict[str, list[str]]:
+    """{arm: its `_vN` endings} for each arm present at more than one version: v1 and v2 of one
+    arm are two measurements side by side. Different arms at different versions (opus_v2 beside
+    mistral_v1) are not a mix."""
+    seen: dict[str, set[str]] = {}
+    for c in config_ids:
+        m = re.search(r"_v\d+$", c)
+        if m:
+            seen.setdefault(c[: m.start()], set()).add(m.group(0))
+    return {base: sorted(v) for base, v in sorted(seen.items()) if len(v) > 1}
+
+
 def repeat_stem(run_name: str) -> str:
     """The run name without its `_rN` repeat suffix."""
     return _REPEAT.sub("", run_name)

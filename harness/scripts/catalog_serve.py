@@ -537,6 +537,12 @@ def item(params: dict) -> dict:
         return {"error": f"no reference known to the catalog: {ref}"}
     if ref:
         out["reference"] = {"id": ref, "view": A.reference_view(ref, it)}
+    # The item itself (the input every arm read), so an output can be checked against it. Only
+    # the local inspector shows it: a public deployment never serves a dataset's inputs, which a
+    # project may not be free to redistribute.
+    src = getattr(A, "item_text", None)
+    if callable(src) and not LIMITS["hosts"]:
+        out["source"] = src(A.describe(A.arms_of(arms[0])[0]).get("dataset", ""), it)
     return out
 
 

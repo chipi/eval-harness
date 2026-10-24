@@ -46,7 +46,6 @@ import argparse
 import hashlib
 import json
 import math
-import re
 import shutil
 import statistics
 import sys
@@ -73,7 +72,7 @@ from _common import (
 )
 from _record import aggregate_scores, derived_record
 from _retry import call_with_retries
-from _runs import runs_on
+from _runs import mixed_versions, runs_on
 from judging import (
     DIMS,
     FAKE,
@@ -349,8 +348,9 @@ def discover_arms(dataset_id: str, match: str, runs_dir: Path = RUNS) -> list[di
 
 
 def config_versions(arms: Sequence[dict[str, Any]]) -> list[str]:
-    """The distinct `_vN` endings of the arms' config_ids (leaderboard warns on the same mix)."""
-    return sorted({m.group(0) for a in arms for m in [re.search(r"_v\d+$", a["config_id"])] if m})
+    """The `_vN` endings of each arm present at more than one version (`_runs.mixed_versions`,
+    the leaderboard's rule): v1 and v2 of one arm, judged as two. [] when there is no such arm."""
+    return sorted({v for vs in mixed_versions(a["config_id"] for a in arms).values() for v in vs})
 
 
 def select_arms(arms: Sequence[dict[str, Any]], spec: str) -> list[dict[str, Any]]:
