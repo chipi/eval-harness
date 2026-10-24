@@ -510,16 +510,21 @@ def _judging_summary(found: list) -> None:
             f"\n  The judging pass ({f.parent.name}, {s.get('items_scored')}/{s.get('items_total')} items, "
             f"{s.get('label', '')}), from {f.name}:"
         )
+
+        def num(v: object) -> str:
+            # A check that did not run (no items in its subset), or a value it could not compute.
+            return f"{v:.3f}" if isinstance(v, (int, float)) else "—"
+
         for pair, a in (s.get("judge_agreement") or {}).items():
             print(
-                f"    judges {pair.replace('~', ' and ')} agree: item tau {a.get('mean_item_tau', 0):.3f}, "
-                f"arm order spearman {a.get('arm_mean_spearman', 0):.3f}"
+                f"    judges {pair.replace('~', ' and ')} agree: item tau {num(a.get('mean_item_tau'))}, "
+                f"arm order spearman {num(a.get('arm_mean_spearman'))}"
             )
         for j, c in (s.get("controls") or {}).items():
             pos, noi = c.get("position") or {}, c.get("noise") or {}
             print(
-                f"    {j}: reshuffled outputs tau {pos.get('mean_tau', float('nan')):.3f} (position), "
-                f"the same call repeated tau {noi.get('mean_tau', float('nan')):.3f} (noise)"
+                f"    {j}: reshuffled outputs tau {num(pos.get('mean_tau'))} (position), "
+                f"the same call repeated tau {num(noi.get('mean_tau'))} (noise)"
             )
 
 

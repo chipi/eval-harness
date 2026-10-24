@@ -129,4 +129,36 @@ check(
 check("a judged table is headed as scored by the judge", lb._heading("judge j1") == "scored by judge j1")
 check("runs with no reference are not called a reference", lb._heading(None) == "scored against no reference")
 
+# The judging pass's summary can hold checks that did not run (None): printed as —, never a crash.
+import contextlib  # noqa: E402
+import io  # noqa: E402
+import json  # noqa: E402
+
+with tempfile.TemporaryDirectory() as td:
+    run = Path(td) / "arm_a_1"
+    run.mkdir()
+    (Path(td) / "summary.json").write_text(
+        json.dumps(
+            {
+                "items_scored": 3,
+                "items_total": 3,
+                "label": "unvalidated judge",
+                "judge_agreement": {"a~b": {"mean_item_tau": None, "arm_mean_spearman": None}},
+                "controls": {"a": {"position": {"mean_tau": None}, "noise": {}}},
+            }
+        )
+    )
+    buf = io.StringIO()
+    try:
+        with contextlib.redirect_stdout(buf):
+            lb._judging_summary([(run, {})])
+        ok = True
+    except Exception as exc:  # noqa: BLE001
+        ok, buf = False, io.StringIO(repr(exc))
+    check(
+        "the judging-pass block prints a check that did not run as —, and does not crash",
+        ok and "item tau —" in buf.getvalue() and "(position)" in buf.getvalue(),
+        buf.getvalue()[-300:],
+    )
+
 sys.exit(summary())
