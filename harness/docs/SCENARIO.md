@@ -242,19 +242,13 @@ reference, `experiment-run` names `reference-create --from-run` first, and `evh 
 table per reference and never averages across them; the bundled adapter stores `overlap_f1`
 unrounded, so the rounding note no longer fires for it; `run-promote` prints no `resumed`;
 `evh inspect --round` reads the goal's measure against the round's leader and names the arms it
-leaves out.
+leaves out; judged runs are grouped by their judge, and the leaderboard's NOTE names each way
+the runs were scored rather than calling "no reference" a reference; `evh rounds` reads a round
+against the reference most of its arms use and names the arms it does not compare; the
+`pair-test --metric` and `evh --help` texts describe `--round` and the inspect views.
 
 Still open:
 
-- When a round's arms were scored against different references (a carried arm on silver, a new
-  arm run after gold arrived), `evh rounds` picks the leader across them, shows no comparison for
-  the other arm and does not say why; `evh inspect --round` does say why
-  ("scored against another reference than the baseline's").
-- A judge's scored runs keep the reference recorded on the runs they were made from, so
-  `leaderboard` over `data/runs-judged/<scorer>` splits one judge's scores into a table per
-  source reference (tutorial 3: the author's run, made before any reference, sits alone under
-  "no reference"), although the judge scored every arm the same way. The NOTE above the tables
-  also counts "no reference" as one of the references.
 - A judge reply that is not bare JSON is stored only as its hash, so why it failed cannot be read
   without calling the judge again.
 - Not re-checked on this branch: the dataset page's order across arms with different primary

@@ -233,8 +233,8 @@ evh leaderboard --dataset-id tickets_v1
 ```
 <!-- guide-check: varies lead2_noisy global distinguishable -->
 ```text
-  NOTE: these runs are scored against 2 references; one table for each,
-        never averaged across them.
+  NOTE: these runs are scored 2 different ways (scored against silver/tickets_v1, scored against no reference);
+        one table for each, never averaged across them.
 
 === scored against silver/tickets_v1 ===
   arm                      runs        overlap_f1      output_words
@@ -259,9 +259,9 @@ evh leaderboard --dataset-id tickets_v1
 
 The leaderboard *sorts*; the block underneath says how much of the order is real. Read that
 block, not the row numbers. Runs scored against different references are never ranked
-together: the leaderboard prints one table for each. The `author` run was made before there
-was a reference, so it sits alone under "no reference", with no quality score. The table also
-carries each arm's cost and speed (all zero here: `echo` is free and instant).
+together: the leaderboard prints one table for each way of scoring. The `author` run was made
+before there was a reference, so it sits alone under "no reference", with no quality score. The
+table also carries each arm's cost and speed (all zero here: `echo` is free and instant).
 
 **One pair you named in advance**, tested item by item:
 

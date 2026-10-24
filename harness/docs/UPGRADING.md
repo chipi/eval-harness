@@ -89,12 +89,13 @@ so check these before you trust a `validate`:
   arm that named it without `base_url` and `api_key_env` read `OPENAI_API_KEY` and called
   OpenAI's address. An arm that sets either keeps its own; one that set neither now calls a
   different endpoint, so treat its next run as a new measurement.
-- **`leaderboard` prints one table per reference.** When a dataset's runs were scored against
-  more than one reference (silver and gold, or runs made before any reference existed), each
-  reference gets its own table and tests, gold first, under `=== scored against <ref> ===`, and
-  nothing is averaged across them. Before, they were averaged into one row and one ranking. The
+- **`leaderboard` prints one table per way of scoring.** When a dataset's runs were scored more
+  than one way (silver and gold, a judge, or runs made before any reference existed), each gets
+  its own table and tests, gold first, under `=== scored against <ref> ===` (judged runs:
+  `=== scored by judge <scorer_id> ===`), and nothing is averaged across them. Before, they were averaged into one row and one ranking. The
   catalog and the inspector read an arm against the reference of its latest run and say which
-  earlier runs they leave out. With one reference the output is unchanged.
+  earlier runs they leave out; `evh rounds` reads a round against the reference most of its arms
+  use and names the arms it does not compare. With one reference the output is unchanged.
 - **The bundled adapter stores `overlap_f1` unrounded** (it rounded to 6 decimals); a new run's
   mean can differ from an older one's in the sixth decimal, and the leaderboard's rounding note
   no longer fires for it.

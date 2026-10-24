@@ -104,8 +104,10 @@ belonged together, why one was dropped, or what a round concluded. The newcomer 
 - **FR2.4**: `evh rounds --goal G [--round rN]` shows each round and, for the open one, the
   arms against its leader, its leader against the previous round's best, the baseline it started
   from and the arm that wrote a silver reference of the dataset, its spend against the budget and
-  the cost per item, and suggestions (never to retire the arm that wrote the silver reference): retire an arm separated as worse (`evh round-retire …`), more items
-  where arms tie with the leader (`evh rank-stability …`), change course when the round's best
+  the cost per item, all read against the reference most of its arms use (gold before silver on
+  a tie; arms scored against another are named, not compared), and suggestions (never to retire
+  the arm that wrote the silver reference): retire an arm separated as worse
+  (`evh round-retire …`), more items where arms tie with the leader (`evh rank-stability …`), change course when the round's best
   is not separated from the previous round's, and close (`evh round-close …`).
 - **FR2.5**: `evh round-retire --goal G --round rN --arm C --reason "…"` and
   `evh round-close --goal G --round rN --conclusion "…" [--promote RUN_ID]` record decisions;

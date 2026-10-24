@@ -197,8 +197,9 @@ The page answers first, then explains, then shows the evidence.
      **suggested next, each as the command that does it (the catalog only reads)**: each
      suggestion with its command in a code chip that selects whole on one click and a **copy**
      button beside it (it reads "copied" for a moment, or "selected" with the chip selected where
-     the browser refuses the clipboard), and notes such as the spend against the budget and the
-     cost per item.
+     the browser refuses the clipboard), and notes such as the spend against the budget, the
+     cost per item, and the reference the round is read against with the arms not compared
+     (scored against another).
 4. `what it is for`: decision, audience, decides ("<measure>, higher is better" or "no
    significant drop against the baseline" for `non_inferior`, with its threshold), min items,
    output contract, status.

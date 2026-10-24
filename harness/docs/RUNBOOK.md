@@ -349,9 +349,10 @@ inferred once for every command: a flag (`--asc`, `--desc`), else the goal the r
 the adapter's `METRIC_DIRECTIONS`, else the name (cost, latency and token metrics go down).
 `leaderboard`, `family-test`, `pair-test` and `inspect` take `--round rN` for the arms in play in
 a round (`pair-test --round` and `inspect --round` also default the metric to the goal's measure).
-When a dataset's runs were scored against more than one reference, `leaderboard` prints one table
-per reference (`=== scored against <ref> ===`, gold first), each with its own tests, and never
-averages across them; runs scored against none get a table of their own.
+When a dataset's runs were scored more than one way, `leaderboard` prints one table for each
+(`=== scored against <ref> ===`, gold first; `=== scored by judge <scorer_id> ===` for judged
+runs; runs scored against none get one too), each with its own tests, under a NOTE naming them
+all, and never averages across them.
 
 Two that are easy to reach for and wrong:
 
@@ -631,7 +632,9 @@ evh round-open --goal my_goal --dataset my_v1 --from r1 --change "what changed a
 - **`evh rounds`** reads the evidence the way the inspector does (the round's arms against its
   leader, Holm-corrected; its leader against the previous round's best, the baseline it started
   from and the arm that wrote a silver reference of the dataset; its spend against `--budget-usd`,
-  and the cost per item) and suggests the next decision as the command that makes it: retire an
+  and the cost per item), read against the reference most of its arms use (gold before silver on
+  a tie), naming the arms scored against another (`NOTE: read against <ref>; not compared: …`),
+  and suggests the next decision as the command that makes it: retire an
   arm, measure more items, close the round. It never suggests retiring the arm that wrote the
   silver reference: that arm is the yardstick, not a contender. It decides nothing.
 - **`round-close --promote <run_id>`** promotes that run to the dataset's baseline, with the

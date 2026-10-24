@@ -78,7 +78,11 @@ open and be on the config's dataset.
 
 ### The evidence (`rounds.evidence`)
 
-For the open round, reading the goal's primary measure and direction:
+For the open round, reading the goal's primary measure and direction, against one reference: the
+one most of its arms are scored against (gold before silver on a tie). Arms scored against
+another are named and not compared ("NOTE: read against <ref>; not compared: <arm> (scored against
+<ref>) — run them again to score them against it"), and `compare`'s own warnings are carried into
+the notes.
 
 1. **The leader**: the best mean among the arms in play.
 2. **The arms against the leader**: `catalog_serve.compare` with the leader as baseline, the
