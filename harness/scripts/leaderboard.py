@@ -476,23 +476,35 @@ def main() -> int:
         groups.setdefault(_reference_of(m), []).append((d, m))
     if not groups:
         groups[None] = []
-    order = sorted(groups, key=lambda r: ({"gold": 0, "silver": 1}.get((r or "").split("/")[0], 2), r or ""))
+    rank = {"gold": 0, "silver": 1, "judge": 3}
+    order = sorted(groups, key=lambda r: (rank.get((r or "").split("/")[0].split(" ")[0], 2), r or ""))
     if len(order) > 1:
+        what = ", ".join(_heading(r) for r in order)
         print(
-            f"  NOTE: these runs are scored against {len(order)} references; one table for each,\n"
-            "        never averaged across them.\n"
+            f"  NOTE: these runs are scored {len(order)} different ways ({what});\n"
+            "        one table for each, never averaged across them.\n"
         )
     for n, ref in enumerate(order):
         if len(order) > 1:
-            print(("\n" if n else "") + f"=== scored against {ref or 'no reference'} ===")
+            print(("\n" if n else "") + f"=== {_heading(ref)} ===")
         _table(args, groups[ref])
     return 0
 
 
 def _reference_of(m: dict) -> str | None:
-    """The reference a run was scored against: its id, else its tier, else None."""
+    """What a run was scored against: a judge (`judge <scorer>`) for a judged run, whatever its
+    source run's reference; else its reference id, else its tier, else None."""
+    judge = derived_with(m, "judge").get("scorer_id")
+    if judge:
+        return f"judge {judge}"
     data = (m.get("fingerprint") or {}).get("data") or {}
     return data.get("reference_id") or m.get("reference_tier") or None
+
+
+def _heading(ref: str | None) -> str:
+    if ref and ref.startswith("judge "):
+        return f"scored by {ref}"
+    return f"scored against {ref or 'no reference'}"
 
 
 def _table(args: argparse.Namespace, found: list) -> None:

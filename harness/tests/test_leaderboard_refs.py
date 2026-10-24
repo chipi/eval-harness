@@ -94,7 +94,39 @@ try:
         and "tickets_lead1_v1 ×" not in r.stdout,
         (r.stdout + r.stderr)[-800:],
     )
+
+    # A round whose arms are scored against different references is read against one of them;
+    # the others are named, never silently dropped or compared across references.
+    (data / "goals").mkdir(exist_ok=True)
+    shutil.copy(KIT / "goals" / "tickets_summary.yaml", data / "goals")
+    r = evh(
+        "round-open", "--goal", "tickets_summary", "--dataset", "tickets_v1",
+        "--hypothesis", "mixed references", "--keep", "tickets_lead1_v1,tickets_author_v1",
+    )  # fmt: skip
+    rs = evh("rounds", "--goal", "tickets_summary")
+    check(
+        "rounds: read against one reference; an arm scored against another is named",
+        r.returncode == 0
+        and "read against gold/tickets_v1; not compared: tickets_author_v1 (scored against no reference)"
+        in rs.stdout,
+        (r.stdout + r.stderr)[-300:] + rs.stdout[-800:],
+    )
 finally:
     shutil.rmtree(proj, ignore_errors=True)
+
+# A judged run is scored by its judge, not by its source run's reference: one group per judge.
+import leaderboard as lb  # noqa: E402
+
+judged_on_silver = {
+    "derived": {"kind": "judge", "with": {"scorer_id": "j1"}},
+    "fingerprint": {"data": {"reference_id": "silver/x"}},
+}
+judged_on_none = {"derived": {"kind": "judge", "with": {"scorer_id": "j1"}}, "fingerprint": {"data": {}}}
+check(
+    "a judged run is grouped by its judge, whatever its source run was scored against",
+    lb._reference_of(judged_on_silver) == lb._reference_of(judged_on_none) == "judge j1",
+)
+check("a judged table is headed as scored by the judge", lb._heading("judge j1") == "scored by judge j1")
+check("runs with no reference are not called a reference", lb._heading(None) == "scored against no reference")
 
 sys.exit(summary())

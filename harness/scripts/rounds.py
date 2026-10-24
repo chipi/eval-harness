@@ -231,6 +231,25 @@ def evidence(goal: str, rnd: dict) -> dict:
         "suggest": [],
         "notes": [],
     }
+    # ONE REFERENCE PER ROUND: a silver mean beside a gold mean is not a comparison. The round is
+    # read against the reference most of its arms are scored against (gold before silver on a
+    # tie); an arm on another one is named and left out, never silently.
+    ref_of = {a: A.describe(a).get("reference") or "" for a in arms}
+    if len(set(ref_of.values())) > 1:
+        from collections import Counter  # noqa: PLC0415
+
+        count = Counter(ref_of.values())
+        rank = {"gold": 0, "silver": 1}
+        ref = min(count, key=lambda r: (-count[r], rank.get(r.split("/")[0], 2), r))
+        off = [a for a in arms if ref_of[a] != ref]
+        out["notes"].append(
+            f"read against {ref or 'no reference'}; not compared: "
+            + ", ".join(f"{a.rsplit('/', 1)[-1]} (scored against {ref_of[a] or 'no reference'})" for a in off)
+            + " — run them again to score them against it"
+        )
+        arms = [a for a in arms if ref_of[a] == ref]
+        out["arms"] = arms
+        out["reference"] = ref
     spent = sum((m.get("scores") or {}).get("total_cost_usd") or 0 for _, m in _rounds.runs_of(rnd))
     out["spent"] = spent
     if rnd.get("budget_usd") is not None:
@@ -246,7 +265,11 @@ def evidence(goal: str, rnd: dict) -> dict:
     if len(arms) > 1:
         d = cs.compare({"runs": [",".join(arms)], "baseline": [leader], "metric": [metric]})
         out["rows"] = d.get("rows") or []
-        out["notes"] += list((d.get("conditions") or {}).get("warnings") or [])
+        out["notes"] += [
+            w
+            for w in [*(d.get("warnings") or []), *((d.get("conditions") or {}).get("warnings") or [])]
+            if w not in out["notes"]
+        ]
         # The arm that wrote a silver reference is the yardstick the leader is read against, not a
         # contender: losing to the leader is the finding, not a reason to drop it.
         authors = {a for _, a in _silver_authors(A, ds)}

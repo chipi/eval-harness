@@ -87,7 +87,10 @@ def main() -> int:
     )
     ap.add_argument("--round", help="test within this round of a goal (rN): arms must be in play in it")
     ap.add_argument("--goal", help="the goal --round belongs to, when several goals have one")
-    ap.add_argument("--metric", help="default: the primary metric the runs recorded")
+    ap.add_argument(
+        "--metric",
+        help="default: the round's goal measure with --round, else the primary metric the runs recorded",
+    )
     ap.add_argument("--runs-dir", type=Path, default=None, help="default: EVAL_RUNS_DIR, else data/runs")
     ap.add_argument("--exclude-dataset", help="drop items this dataset also contains")
     ap.add_argument(

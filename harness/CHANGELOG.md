@@ -283,7 +283,9 @@ p 0.36, from the pre-fix run), and DBpedia's 56-item dev slice, over today's 28 
   were scored against: a silver 0.90 next to a gold 0.24, in one table labelled silver. It now
   prints one table per reference, gold first, each with its own tests. The catalog, the
   inspector and `evh rounds` read an arm against the reference of its latest run (by
-  `created_at`), and they name the earlier runs they leave out. This repository's data, the
+  `created_at`), and they name the earlier runs they leave out. A judged run is grouped by its judge,
+  not by its source run's reference. `evh rounds` reads a round against the reference most
+  of its arms use and names any arm scored against another. This repository's data, the
   trial and the podcast project have no such arm.
 - **`provider: openrouter` uses OpenRouter.** It read `OPENAI_API_KEY` and called OpenAI's
   address unless the arm set both `base_url` and `api_key_env`. It now reads

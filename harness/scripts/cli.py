@@ -67,7 +67,7 @@ COMMANDS = {
     "search": ("view_search.py", "the catalog's search: datasets, arms, references, metrics, goals"),
     "inspect": (
         "view_inspect.py",
-        "the inspector's comparison in the terminal: verdicts, conditions, a breakdown, one item",
+        "the inspector in the terminal: verdicts, conditions, a breakdown, one item, the per-item table, the charts",
     ),
     "catalog": ("catalog_build.py", "build the catalog: static pages over the runs, by dataset"),
     "catalog-serve": ("catalog_serve.py", "serve the catalog and the run inspector on 127.0.0.1"),
