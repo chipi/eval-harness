@@ -31,6 +31,12 @@ imply a reproducibility they do not have.
 
 from __future__ import annotations
 
+import sys as _sys
+from pathlib import Path as _Path
+
+if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
+
 import hashlib
 import json
 import os
@@ -127,6 +133,7 @@ def tree_dirt(root: Path, data_dir: Path | None = None) -> list | None:
 
 #: The commands that write a run, or a reference a run is scored against, and the bundled
 #: adapter: _adapter loads it by path, so no import names it.
+_PACKAGE = "evaluation_harness"
 _PRODUCERS = (
     "experiment_run.py",
     "rescore.py",
@@ -158,11 +165,15 @@ def measuring_modules(here: Path | None = None, producers: tuple[str, ...] = _PR
             continue
         seen.add(name)
         for node in ast.walk(ast.parse(p.read_text(encoding="utf-8"))):
+            # The package's own modules, as they import each other: `from evaluation_harness._x
+            # import ...`, `from evaluation_harness import x`, `import evaluation_harness.x`.
             mods = []
             if isinstance(node, ast.Import):
-                mods = [a.name.split(".")[0] for a in node.names]
-            elif isinstance(node, ast.ImportFrom) and node.module:
-                mods = [node.module.split(".")[0]]
+                mods = [a.name.split(".")[1] for a in node.names if a.name.startswith(_PACKAGE + ".")]
+            elif isinstance(node, ast.ImportFrom) and node.module == _PACKAGE:
+                mods = [a.name for a in node.names]
+            elif isinstance(node, ast.ImportFrom) and (node.module or "").startswith(_PACKAGE + "."):
+                mods = [(node.module or "").split(".")[1]]
             todo += [f"{m}.py" for m in mods if (here / f"{m}.py").is_file()]
     return sorted(here / n for n in seen)
 
@@ -173,7 +184,7 @@ def harness_code_sha256() -> str:
     The identity that survives installation. A project that depends on the harness has
     no git history for it, and an edited site-packages copy would otherwise be invisible.
     """
-    from _codeid import file_sha256  # noqa: PLC0415
+    from evaluation_harness._codeid import file_sha256  # noqa: PLC0415
 
     h = hashlib.sha256()
     for f in measuring_modules():
@@ -192,7 +203,7 @@ def _harness_identity(root: Path, data_dir: Path | None = None) -> dict[str, Any
     that is the harness itself). `version` and `code_sha256` describe the harness code,
     and are the only reliable identity when the harness is an installed dependency.
     """
-    from _version import __version__  # noqa: PLC0415
+    from evaluation_harness._version import __version__  # noqa: PLC0415
 
     commit = _git(root, "rev-parse", "--short=12", "HEAD")
     dirt = tree_dirt(root, data_dir)
@@ -234,7 +245,7 @@ def _adapter_identity(
     scorer. With no file (an imported run), `sha256` is the scoring code's hash as the caller
     states it.
     """
-    from _codeid import file_sha256  # noqa: PLC0415
+    from evaluation_harness._codeid import file_sha256  # noqa: PLC0415
 
     return {
         "id": adapter_id,

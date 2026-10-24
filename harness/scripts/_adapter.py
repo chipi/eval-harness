@@ -6,19 +6,25 @@ stem plus path digest, and the metric-kind and primary-metric lookups read the f
 fell back to `import adapter`, the BUNDLED adapter. A process that loaded a project's
 adapter through the second registry and then asked for its metric kinds got the bundled
 adapter's, and rescore wrote them into new runs. Now there is one cache, keyed by the
-resolved file, and the bundled adapter is the `adapter` module itself, so a test that
-patches `adapter` patches what the harness runs.
+resolved file, and the bundled adapter is the `evaluation_harness.adapter` module itself, so
+a test that patches it patches what the harness runs.
 """
 
 from __future__ import annotations
 
+import sys as _sys
+from pathlib import Path as _Path
+
+if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
+
 import hashlib
-import sys
+import importlib
 from pathlib import Path
 from typing import Any
 
-import _common
-from _common import (
+from evaluation_harness import _common
+from evaluation_harness._common import (
     BUNDLED_ADAPTER_ID,
     CODE,
     ModuleNotLoadable,
@@ -41,14 +47,10 @@ def module_at(path: Path) -> Any:
     (ModuleNotLoadable when the file has no import spec)."""
     key = Path(path).resolve()
     if key not in _LOADED:
-        cached = sys.modules.get("adapter")
-        if key == BUNDLED.resolve() and (
-            cached is None or Path(getattr(cached, "__file__", "") or "").resolve() == key
-        ):
-            # The `adapter` module itself, so a test that patches `adapter` patches what runs:
-            # loaded by its path under that name, not found on sys.path, where a project's own
-            # `adapter.py` may come first.
-            _LOADED[key] = cached if cached is not None else load_module(key, "adapter")
+        if key == BUNDLED.resolve():
+            # The package's own module, so a test that patches `evaluation_harness.adapter`
+            # patches what runs; never registered as a bare `adapter`, which is a project's name.
+            _LOADED[key] = importlib.import_module("evaluation_harness.adapter")
         else:
             digest = hashlib.sha256(str(key).encode()).hexdigest()[:8]
             _LOADED[key] = load_module(key, f"evh_adapter_{key.stem}_{digest}")

@@ -16,7 +16,7 @@ from pathlib import Path
 import yaml
 
 sys.path.insert(0, ".")
-import adapter
+import adapter  # the example's own adapter.py, in the working directory (not the harness's)
 
 pins = json.loads(Path("../local_models.json").read_text(encoding="utf-8"))[
     "revisions"

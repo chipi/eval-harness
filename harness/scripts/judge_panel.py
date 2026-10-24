@@ -9,6 +9,12 @@
 
 from __future__ import annotations
 
+import sys as _sys
+from pathlib import Path as _Path
+
+if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
+
 import argparse
 import json
 import logging
@@ -24,9 +30,9 @@ import yaml
 
 # The harness's own run reading, so the panel finds runs where every command does (the
 # project, EVAL_RUNS_DIR) and picks the metric the same way.
-from _common import ROOT, RUNS
-from _runs import default_metric, direction, item_rows, runs_on
-from panel_judges import ItemScore, build_judge
+from evaluation_harness._common import ROOT, RUNS
+from evaluation_harness._runs import default_metric, direction, item_rows, runs_on
+from evaluation_harness.panel_judges import ItemScore, build_judge
 
 logger = logging.getLogger("eval-harness")
 

@@ -27,12 +27,17 @@ Items can carry fields a project declares (ADR-0003), and can live at a URL:
 
 from __future__ import annotations
 
+import sys as _sys
+from pathlib import Path as _Path
+
+if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
+
 import argparse
 from pathlib import Path
 
-import _fetch
-import _fields
-from _common import (
+from evaluation_harness import _fetch, _fields
+from evaluation_harness._common import (
     DATASETS,
     ROOT,
     SOURCES,

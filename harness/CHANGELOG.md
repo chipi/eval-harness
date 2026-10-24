@@ -308,6 +308,15 @@ p 0.36, from the pre-fix run), and DBpedia's 56-item dev slice, over today's 28 
     view says what it withholds. **This can change a deployment**: one that relied on the old
     behaviour adds `--publish`. This repository's own publishes outputs (already public in the
     repository), not references.
+  - **The harness imports itself as a package.** Its modules imported each other as bare
+    top-level names (`import stats`) with their own directory on `sys.path`, so a project's own
+    `stats.py` first on the path replaced the harness's paired test inside
+    `evaluation_harness.judging`. Under `evh`, the harness's `adapter`, `stats` or `rounds` could
+    also hide a project's module of that name. They now import `evaluation_harness.*`, and nothing
+    of the harness goes on `sys.path`. In a checkout `harness/evaluation_harness` links to
+    `scripts/`, and `python scripts/x.py` still runs. A project script that relied on the
+    harness's directory being on the path writes `from evaluation_harness.adapter import Result`,
+    as INTEGRATION documents.
   - **The public server trusts no client header unless told** (`--client-header NAME`); a
     spoofed `CF-Connecting-IP` no longer buys a fresh rate bucket. The deployment names
     Cloudflare's header (origin lock).

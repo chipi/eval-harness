@@ -10,10 +10,10 @@ import sys
 from pathlib import Path
 
 NER = Path(__file__).resolve().parents[2] / "examples" / "ner-few-nerd"
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
 sys.path.insert(0, str(NER))
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))  # _check, _common
-from _check import check, summary  # noqa: E402
-from _common import load_module  # noqa: E402
+from evaluation_harness._check import check, summary  # noqa: E402
+from evaluation_harness._common import load_module  # noqa: E402
 
 # By path: `import adapter` names the harness's bundled adapter as well as this example's.
 _parse_entities = load_module(NER / "adapter.py", "ner_few_nerd_adapter")._parse_entities

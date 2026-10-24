@@ -2,8 +2,8 @@
 
 Every command runs the same script `make <target>` runs in a checkout, with the same
 arguments, so the two cannot drift: this file only maps names to scripts. The scripts
-import each other as top-level modules (`from _common import ...`), which is why this
-directory goes on sys.path before one runs.
+import each other as the package (`from evaluation_harness._common import ...`), so
+nothing of theirs goes on sys.path and a project's own `stats.py` stays the project's.
 
 Where the data lives is the PROJECT's business, not the package's:
   EVAL_HOME       the project root (default: the nearest directory up from here with data/)
@@ -12,6 +12,12 @@ Where the data lives is the PROJECT's business, not the package's:
 """
 
 from __future__ import annotations
+
+import sys as _sys
+from pathlib import Path as _Path
+
+if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
 import os
 import runpy
@@ -80,7 +86,7 @@ COMMANDS = {
 
 
 def _usage() -> str:
-    from _version import __version__  # noqa: PLC0415
+    from evaluation_harness._version import __version__  # noqa: PLC0415
 
     width = max(map(len, COMMANDS))
     rows = "\n".join(f"  {name:<{width}}  {help_}" for name, (_, help_) in COMMANDS.items())
@@ -93,13 +99,14 @@ def _usage() -> str:
 
 def main(argv: list[str] | None = None) -> int:
     """Dispatch evh commands to their scripts."""
-    sys.path.insert(0, str(HERE))
+    # No script directory on sys.path: the scripts import the package (evaluation_harness.*), and a
+    # bare `stats` or `adapter` in a project is the project's own.
     argv = list(sys.argv[1:] if argv is None else argv)
     if not argv or argv[0] in ("-h", "--help", "help"):
         print(_usage())
         return 0
     if argv[0] in ("-V", "--version", "version"):
-        from _version import __version__  # noqa: PLC0415
+        from evaluation_harness._version import __version__  # noqa: PLC0415
 
         print(__version__)
         return 0

@@ -129,7 +129,7 @@ evh inspect --runs tickets_lead1_v1,tickets_lead2_v1
 ```text
 overlap_f1 (higher is better) · baseline tickets_lead1_v1 ×3: mean 0.641 · Holm across 1
   ...
-  tickets_lead2_v1 ×3  separated: better  6  0.900  0.259  6–0          0.0312  0.0500
+  tickets_lead2_v1 ×3  separated: better  6  0.900  0.259  +0.140 to +0.423  6–0          0.0312  0.0500
 
 Same conditions: all ... recorded fields match (machine, libraries, harness, scorer, items, reference bytes).
 ```

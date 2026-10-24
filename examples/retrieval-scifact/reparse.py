@@ -56,9 +56,9 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 sys.path.insert(0, str(ROOT / "examples" / "_shared"))
-sys.path.insert(0, str(ROOT / "harness" / "scripts"))
+sys.path.insert(0, str(ROOT / "harness"))  # the evaluation_harness package (a link to scripts/)
 
-from _record import derived_record  # noqa: E402
+from evaluation_harness._record import derived_record  # noqa: E402
 from retrieval import parse_ranking, score_ranking, scorer_sha256  # noqa: E402
 
 

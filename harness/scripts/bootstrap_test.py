@@ -64,20 +64,26 @@ THE HONESTY CONDITION IS THE SAME
 
 from __future__ import annotations
 
+import sys as _sys
+from pathlib import Path as _Path
+
+if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
+
 import argparse
 import random
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 
-from _common import (  # noqa: E402
+from evaluation_harness._common import (  # noqa: E402
     RUNS,
     die,
     item_selection,
 )
-from _labels import per_class, predictions, reference_labels  # noqa: E402
-from _runs import warn_on_ambiguous_runs  # noqa: E402
-from stats import holm  # noqa: E402 -- one Holm: p equal to its threshold is separated
+from evaluation_harness._labels import per_class, predictions, reference_labels  # noqa: E402
+from evaluation_harness._runs import warn_on_ambiguous_runs  # noqa: E402
+from evaluation_harness.stats import holm  # noqa: E402 -- one Holm: p equal to its threshold is separated
 
 
 def _macro_f1(pairs: list, labels: list) -> float:

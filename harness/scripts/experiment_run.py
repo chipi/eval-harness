@@ -25,6 +25,12 @@ half stays generic.
 
 from __future__ import annotations
 
+import sys as _sys
+from pathlib import Path as _Path
+
+if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
+
 import argparse
 import json
 import os
@@ -33,7 +39,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-from _adapter import (
+from evaluation_harness._adapter import (
     load_adapter,
     metric_descriptions,
     metric_directions,
@@ -42,7 +48,7 @@ from _adapter import (
     score_wants_source,
     transient_markers,
 )
-from _common import (
+from evaluation_harness._common import (
     BOOKKEEPING_PREFIXES,
     DATA,
     GOALS,
@@ -62,9 +68,9 @@ from _common import (
     write_json,
     write_text_atomic,
 )
-from _fingerprint import build_fingerprint
-from _record import aggregate_scores, run_record
-from _retry import call_with_retries
+from evaluation_harness._fingerprint import build_fingerprint
+from evaluation_harness._record import aggregate_scores, run_record
+from evaluation_harness._retry import call_with_retries
 
 try:
     import yaml
@@ -563,7 +569,7 @@ def main() -> int:
         )
     # A config may name a round of its goal (ADR-0004, optional): refused before a cent is spent
     # when the round does not exist, is closed, or runs on another dataset.
-    from _rounds import config_round  # noqa: PLC0415
+    from evaluation_harness._rounds import config_round  # noqa: PLC0415
 
     config_round(cfg, args.config)
     ds = load_dataset(cfg["dataset_id"])

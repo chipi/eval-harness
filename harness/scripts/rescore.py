@@ -23,6 +23,12 @@ inventing them.
 
 from __future__ import annotations
 
+import sys as _sys
+from pathlib import Path as _Path
+
+if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
+
 import argparse
 import inspect
 import json
@@ -31,8 +37,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from _adapter import load_recorded_adapter, score_wants_source
-from _common import (
+from evaluation_harness._adapter import load_recorded_adapter, score_wants_source
+from evaluation_harness._common import (
     DATA,
     DATASETS,
     MATERIALIZED,
@@ -44,9 +50,9 @@ from _common import (
     read_json,
     write_json,
 )
-from _fingerprint import references_digest
-from _record import aggregate_scores, derived_record
-from _runs import runs_on
+from evaluation_harness._fingerprint import references_digest
+from evaluation_harness._record import aggregate_scores, derived_record
+from evaluation_harness._runs import runs_on
 
 #: Carried across from the original run rather than recomputed: these describe the CALL,
 #: not the measurement. A rescore that recomputed a latency would be reporting a number
@@ -433,32 +439,32 @@ def main() -> int:
 
 
 def _kinds(path):
-    from _adapter import metric_kinds  # noqa: PLC0415
+    from evaluation_harness._adapter import metric_kinds  # noqa: PLC0415
 
     return metric_kinds(path)
 
 
 def _primary(path):
-    from _adapter import primary_metric  # noqa: PLC0415
+    from evaluation_harness._adapter import primary_metric  # noqa: PLC0415
 
     return primary_metric(path)
 
 
 def _directions(path):
     """The rescoring adapter's METRIC_DIRECTIONS, refreshed on the run like its kinds."""
-    from _adapter import metric_directions  # noqa: PLC0415
+    from evaluation_harness._adapter import metric_directions  # noqa: PLC0415
 
     return metric_directions(path)
 
 
 def _descriptions(path):
-    from _adapter import metric_descriptions  # noqa: PLC0415
+    from evaluation_harness._adapter import metric_descriptions  # noqa: PLC0415
 
     return metric_descriptions(path)
 
 
 def _sha(path):
-    from _codeid import file_sha256  # noqa: PLC0415
+    from evaluation_harness._codeid import file_sha256  # noqa: PLC0415
 
     # By behaviour: an adapter whose docstrings or METRIC_DESCRIPTIONS changed scores the same.
     return file_sha256(Path(path)) if path else None

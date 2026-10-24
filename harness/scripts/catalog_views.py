@@ -16,16 +16,22 @@ they show is here.
 
 from __future__ import annotations
 
+import sys as _sys
+from pathlib import Path as _Path
+
+if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
+
 import argparse
 import statistics
 import sys
 import textwrap
 
-import catalog_build as cb
-import catalog_serve as cs
-from _common import die
-from catalog_adapter import load_catalog_adapter
-from stats import fmt_p
+from evaluation_harness import catalog_build as cb
+from evaluation_harness import catalog_serve as cs
+from evaluation_harness._common import die
+from evaluation_harness.catalog_adapter import load_catalog_adapter
+from evaluation_harness.stats import fmt_p
 
 KINDS = {"t-silver": "silver", "t-judged": "judged", "t-author": "wrote its reference"}
 
@@ -137,8 +143,8 @@ def datasets(argv) -> int:
 
 def _fields_block(A, dataset: str) -> None:
     """The dataset page's item fields: each field, its coverage, and a summary of a public one."""
-    import _fields  # noqa: PLC0415
-    from catalog_adapter import item_fields  # noqa: PLC0415
+    from evaluation_harness import _fields  # noqa: PLC0415
+    from evaluation_harness.catalog_adapter import item_fields  # noqa: PLC0415
 
     fl = item_fields(A, dataset)
     fs = fl.get("fieldset")
@@ -419,8 +425,8 @@ def inspect(argv) -> int:
     cs.set_adapter(A)
     round_leader = None
     if args.round:
-        from _rounds import arms_of, resolve  # noqa: PLC0415
-        from rounds import _best, _goal  # noqa: PLC0415
+        from evaluation_harness._rounds import arms_of, resolve  # noqa: PLC0415
+        from evaluation_harness.rounds import _best, _goal  # noqa: PLC0415
 
         rnd = resolve(args.round, args.goal)
         tokens = arms_of(rnd)
@@ -433,7 +439,7 @@ def inspect(argv) -> int:
         if not args.metric and prim.get("measure"):
             args.metric = prim["measure"]
         known = set(A.arms())
-        from rounds import _arm  # noqa: PLC0415
+        from evaluation_harness.rounds import _arm  # noqa: PLC0415
 
         in_play = [a for a in (_arm(A, rnd["dataset_id"], c) for c in tokens) if a in known]
         unscored = [

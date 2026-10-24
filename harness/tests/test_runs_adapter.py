@@ -12,13 +12,13 @@ import tempfile
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this file is in tests/)
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tests/
-sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent))
 
-import _adapter  # noqa: E402
-from _check import check, summary  # noqa: E402
-from _runs import direction, item_rows, matrix, per_item, runs_on  # noqa: E402
+from evaluation_harness import _adapter  # noqa: E402
+from evaluation_harness._check import check, summary  # noqa: E402
+from evaluation_harness._runs import direction, item_rows, matrix, per_item, runs_on  # noqa: E402
 
 
 def _run(base: Path, name: str, metrics: dict, rows: list, outputs: dict | None = None) -> Path:
@@ -128,7 +128,7 @@ with tempfile.TemporaryDirectory() as tmp:
         _adapter.adapter_module(str(adapters[0])) is _adapter.module_at(adapters[0])
         and first[3] == adapters[0],
     )
-    import adapter as bundled
+    from evaluation_harness import adapter as bundled
 
     check(
         "adapter: the bundled adapter is the `adapter` module itself",
@@ -141,7 +141,7 @@ with tempfile.TemporaryDirectory() as tmp:
 
     # The judge panel: real runs are judged on their own outputs, found where every command looks.
     (base / "a" / "predictions.jsonl").write_text('{"item_id": "i1", "f1": 0.9}\n', encoding="utf-8")
-    import judge_panel as runner
+    from evaluation_harness import judge_panel as runner
 
     cands = runner._candidates_from({"runs_from": str(base), "dataset_id": "ds"})
     check(
@@ -171,7 +171,7 @@ except SystemExit as exc:
     typo_refused = "unknown provider 'anthropc'" in str(exc)
 check("bundled adapter: an unknown provider is refused, not echoed", typo_refused)
 check("bundled adapter: echo still runs", bundled.call_system("a b. c d.", {"provider": "echo"}).output != "")
-from judging import billed, price  # noqa: E402
+from evaluation_harness.judging import billed, price  # noqa: E402
 
 check("billed: the provider's usage.cost is the cost", billed({"cost": 0.0123}) == 0.0123)
 check("billed: no cost reported is None, not 0", billed({"prompt_tokens": 5}) is None)
@@ -182,7 +182,7 @@ check("the adapter and the judges share one price rule", bundled.price is price 
 # a report checker changed it, and run-compare then reported a confound that was not one.
 import shutil  # noqa: E402
 
-import _fingerprint  # noqa: E402
+from evaluation_harness import _fingerprint  # noqa: E402
 
 hashed = {p.name for p in _fingerprint.measuring_modules()}
 check(
@@ -202,7 +202,7 @@ with tempfile.TemporaryDirectory() as tmp:
     (code / "_new_scorer.py").write_text("X = 1\n", encoding="utf-8")
     (code / "rescore.py").write_text(
         (code / "rescore.py").read_text(encoding="utf-8")
-        + "\n\ndef _late():\n    import _new_scorer  # noqa\n",
+        + "\n\ndef _late():\n    from evaluation_harness import _new_scorer  # noqa\n",
         encoding="utf-8",
     )
     after = {p.name for p in _fingerprint.measuring_modules(code)}
@@ -221,9 +221,14 @@ with tempfile.TemporaryDirectory() as tmp:
 
 with tempfile.TemporaryDirectory() as proj, tempfile.TemporaryDirectory() as elsewhere:
     r = subprocess.run(
-        [sys.executable, "-c", "import _common; print(_common.RUNS.resolve())"],
+        [sys.executable, "-c", "from evaluation_harness import _common; print(_common.RUNS.resolve())"],
         cwd=elsewhere,
-        env={**os.environ, "PYTHONPATH": str(HERE), "EVAL_HOME": proj, "EVAL_RUNS_DIR": "data/runs-scratch"},
+        env={
+            **os.environ,
+            "PYTHONPATH": str(HERE.parent),
+            "EVAL_HOME": proj,
+            "EVAL_RUNS_DIR": "data/runs-scratch",
+        },
         capture_output=True,
         text=True,
     )
@@ -243,7 +248,7 @@ with tempfile.TemporaryDirectory() as top:
     (Path(top) / "examples" / "x").mkdir(parents=True)
     (Path(top) / "examples" / "x" / "adapter.py").write_text("STRAY = 2\n", encoding="utf-8")
     probe = (
-        "import _common as c\n"
+        "from evaluation_harness import _common as c\n"
         "print(c.in_checkout())\n"
         "print(c.resolve_adapter_path('scripts/adapter.py') == c.CODE / 'adapter.py')\n"
         "print(c.resolve_adapter_path('x/adapter.py'))\n"
@@ -251,7 +256,7 @@ with tempfile.TemporaryDirectory() as top:
     r = subprocess.run(
         [sys.executable, "-c", probe],
         cwd=pinned,
-        env={**os.environ, "PYTHONPATH": str(HERE), "EVAL_HOME": str(pinned)},
+        env={**os.environ, "PYTHONPATH": str(HERE.parent), "EVAL_HOME": str(pinned)},
         capture_output=True,
         text=True,
     )
@@ -260,15 +265,14 @@ with tempfile.TemporaryDirectory() as top:
         r.stdout.split() == ["False", "True", "None"],
         (r.stdout + r.stderr).strip()[-300:],
     )
-import _common  # noqa: E402
-import self_check  # noqa: E402
+from evaluation_harness import _common, self_check  # noqa: E402
 
 check("checkout: in_checkout() is true here", _common.in_checkout())
 check("checkout: `evh self-test` finds the full suite in tests/", self_check.in_checkout())
 
 # ONE DIRECTION RULE: --asc/--desc, then the goal the runs name, then the adapter's declaration
 # recorded on the run, then the name table. A goal page and the inspector disagreed before.
-from _runs import lower_is_better_on  # noqa: E402
+from evaluation_harness._runs import lower_is_better_on  # noqa: E402
 
 wer_goal = {"g": {"success_criteria": {"primary": {"measure": "wer", "direction": "lower"}}}}
 plain = [(Path("."), {"config_id": "a", "goal": "g"})]

@@ -15,9 +15,9 @@ import types
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parents[1] / "scripts"
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-sys.path.insert(0, str(HERE))
-from _check import check, summary  # noqa: E402
+from evaluation_harness._check import check, summary  # noqa: E402
 
 seen: dict = {}
 
@@ -51,7 +51,7 @@ class _OpenAI:
 fake = types.ModuleType("openai")
 fake.OpenAI = _OpenAI  # type: ignore[attr-defined]
 sys.modules["openai"] = fake
-import adapter  # noqa: E402
+from evaluation_harness import adapter  # noqa: E402
 
 for k in ("OPENAI_API_KEY", "OPENROUTER_API_KEY"):
     os.environ.pop(k, None)

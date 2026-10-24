@@ -33,6 +33,12 @@ in DIR links to, so the pages' own links answer from the cache.
 
 from __future__ import annotations
 
+import sys as _sys
+from pathlib import Path as _Path
+
+if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
+
 import argparse
 import errno
 import json
@@ -48,10 +54,9 @@ from urllib.parse import parse_qs, unquote, urlparse
 
 HERE = Path(__file__).resolve().parent
 
-import _fields  # noqa: E402
-import stats  # noqa: E402
-from _common import ROOT, SPEED_KEYS  # noqa: E402
-from catalog_adapter import Adapter, item_fields, load_catalog_adapter  # noqa: E402
+from evaluation_harness import _fields, stats  # noqa: E402
+from evaluation_harness._common import ROOT, SPEED_KEYS  # noqa: E402
+from evaluation_harness.catalog_adapter import Adapter, item_fields, load_catalog_adapter  # noqa: E402
 
 #: Every comparison ends in one of these, so a page can always say what it shows and why.
 STATES = ("compared", "average only", "no shared metric", "not scorable")

@@ -19,10 +19,10 @@ import time
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parents[1] / "scripts"
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-sys.path.insert(0, str(HERE))
 KIT = HERE.parent / "tutorial"
-from _check import check, summary  # noqa: E402
+from evaluation_harness._check import check, summary  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-lbrefs-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-lbrefs")
@@ -115,7 +115,7 @@ finally:
     shutil.rmtree(proj, ignore_errors=True)
 
 # A judged run is scored by its judge, not by its source run's reference: one group per judge.
-import leaderboard as lb  # noqa: E402
+from evaluation_harness import leaderboard as lb  # noqa: E402
 
 judged_on_silver = {
     "derived": {"kind": "judge", "with": {"scorer_id": "j1"}},

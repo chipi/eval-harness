@@ -18,10 +18,16 @@ to trust numbers that mean nothing:
 
 from __future__ import annotations
 
+import sys as _sys
+from pathlib import Path as _Path
+
+if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
+
 import argparse
 
-from _adapter import recorded_metric_kinds
-from _common import (
+from evaluation_harness._adapter import recorded_metric_kinds
+from evaluation_harness._common import (
     RUNS,
     die,
     how,
@@ -66,7 +72,7 @@ def _report_fingerprint_delta(a: dict, b: dict) -> None:
         )
         return
 
-    from _fingerprint import differing_paths  # noqa: PLC0415
+    from evaluation_harness._fingerprint import differing_paths  # noqa: PLC0415
 
     moved = differing_paths(fa, fb)
     # arm.params differing is the POINT of a comparison; everything else is a confound.

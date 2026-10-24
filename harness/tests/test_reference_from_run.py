@@ -19,10 +19,10 @@ import tempfile
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this file is in tests/)
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tests/
-sys.path.insert(0, str(HERE))  # the core modules
 KIT = HERE.parent / "tutorial"
-from _check import check, summary  # noqa: E402
+from evaluation_harness._check import check, summary  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-refrun-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-refrun")

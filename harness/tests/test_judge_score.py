@@ -19,18 +19,18 @@ import tempfile
 from pathlib import Path
 from types import SimpleNamespace
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tests/
 sys.path.insert(1, str(Path(__file__).resolve().parents[1] / "tools"))  # validate_judge_*
 import functools
 import operator
 
-import judge_score as js
-import judging
-from _common import load_module
+from evaluation_harness import judge_score as js
+from evaluation_harness import judging
+from evaluation_harness._common import load_module
 
 HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this file is in tests/)
-from _check import check, summary  # noqa: E402
+from evaluation_harness._check import check, summary  # noqa: E402
 
 
 def _exit(fn):
@@ -574,7 +574,7 @@ with tempfile.TemporaryDirectory() as tmp:
         "a bare-JSON reply that repeats 8 words of the article is stored as its hash",
         recs and all(r["output"] is None and r["withheld_reason"] == "repeats the source" for r in recs),
     )
-    import validate_tree as _vt
+    from evaluation_harness import validate_tree as _vt
 
     check(
         "V12's reply rule accepts a withheld record and bare JSON",
@@ -1395,7 +1395,7 @@ with tempfile.TemporaryDirectory() as tmp:
 # ── validate_tree V11-V13 each fail on a deliberately broken copy ────────────
 import shutil  # noqa: E402
 
-import validate_tree as vt  # noqa: E402
+from evaluation_harness import validate_tree as vt  # noqa: E402
 
 DATA = HERE.parent / "data"
 with tempfile.TemporaryDirectory() as tmp:
@@ -1724,7 +1724,7 @@ with tempfile.TemporaryDirectory() as td_:
         and js.judge_params(rel_sc, rel_sc["judges"][0])["_task"] == REL,
     )
 
-import validate_tree as vt  # noqa: E402
+from evaluation_harness import validate_tree as vt  # noqa: E402
 
 with tempfile.TemporaryDirectory() as td_:
     sdir = Path(td_)
@@ -1799,7 +1799,7 @@ check(
     js.validation_problems(tut) != [],
 )
 
-import leaderboard as lb  # noqa: E402
+from evaluation_harness import leaderboard as lb  # noqa: E402
 
 check(
     "leaderboard: judge means (quarters, sixths) are exact, so no precision note",

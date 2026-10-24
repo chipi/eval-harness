@@ -47,13 +47,19 @@ from pathlib import Path
 from typing import Any
 
 HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this file is in tools/)
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tools/
-sys.path.insert(0, str(HERE))
-import _fetch  # noqa: E402
-import judge_score as js  # noqa: E402
-from _common import ModuleNotLoadable, die, load_module, write_bytes_atomic, write_text_atomic  # noqa: E402
-from _retry import call_with_retries  # noqa: E402
-from judging import (  # noqa: E402,F401
+from evaluation_harness import _fetch  # noqa: E402
+from evaluation_harness import judge_score as js  # noqa: E402
+from evaluation_harness._common import (  # noqa: E402
+    ModuleNotLoadable,
+    die,
+    load_module,
+    write_bytes_atomic,
+    write_text_atomic,
+)
+from evaluation_harness._retry import call_with_retries  # noqa: E402
+from evaluation_harness.judging import (  # noqa: E402,F401
     DIMS,
     SHINGLE,
     kendall_tau_b,
@@ -239,7 +245,7 @@ def article_taus(get, refs: dict, systems: Sequence[str], aids: Sequence[str]) -
 def paired_test(a: dict[str, float], b: dict[str, float], n: int = 20000, seed: int = 0) -> dict:
     """a minus b over the articles both have: mean difference, articles where a is ahead, and a
     two-sided sign-flip permutation p (stats.sign_flip_p, seeded; the article is the unit)."""
-    from stats import sign_flip_p  # noqa: PLC0415
+    from evaluation_harness.stats import sign_flip_p  # noqa: PLC0415
 
     ids = sorted(set(a) & set(b))
     d = [a[i] - b[i] for i in ids]

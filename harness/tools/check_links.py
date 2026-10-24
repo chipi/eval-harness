@@ -15,9 +15,9 @@ import pathlib
 import re
 import sys
 
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "scripts"))
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))  # the evaluation_harness package
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-from _common import no_options
+from evaluation_harness._common import no_options
 
 no_options(__doc__)  # --help prints this; anything else is refused
 root = pathlib.Path(__file__).resolve().parents[2]

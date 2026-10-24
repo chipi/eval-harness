@@ -27,13 +27,13 @@ import time
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this file is in tests/)
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tests/
 REPO = HERE.parent.parent  # the checkout (infra/ is not part of the package)
-sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))  # _wheel, shared with the deploy
 import _wheel  # noqa: E402
-from _check import check, summary  # noqa: E402
-from cli import COMMANDS  # noqa: E402
+from evaluation_harness._check import check, summary  # noqa: E402
+from evaluation_harness.cli import COMMANDS  # noqa: E402
 
 
 def main() -> int:
@@ -81,7 +81,7 @@ def main() -> int:
         )
         check(
             "import evaluation_harness.judging and .catalog_adapter: one _common",
-            r.returncode == 0 and r.stdout.strip() == "['_common']",
+            r.returncode == 0 and r.stdout.strip() == "['evaluation_harness._common']",
             (r.stdout + r.stderr).strip()[-300:],
         )
 

@@ -20,14 +20,14 @@ import statistics
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tools/
-import stats as _stats
-from _common import (
+from evaluation_harness import stats as _stats
+from evaluation_harness._common import (
     no_options,
 )
-from _runs import AmbiguousRuns, runs_by_arm
-from cost_report import billed_and_recorded
+from evaluation_harness._runs import AmbiguousRuns, runs_by_arm
+from evaluation_harness.cost_report import billed_and_recorded
 
 _ARGS = no_options(__doc__, "--print-judge-figures")  # --help prints this; anything else is refused
 
@@ -1469,7 +1469,7 @@ def _judged_family(scorer, a):
     not). Returns the family test's stdout."""
     import tempfile as _tf  # noqa: PLC0415
 
-    import judge_score as _js  # noqa: PLC0415
+    from evaluation_harness import judge_score as _js  # noqa: PLC0415
 
     _m = json.loads(next((HERE.parent / "data" / "judging-sets").glob(_jfm.SET_GLOB)).read_text())
     _sc = _js.load_scorer(HERE.parent / "data" / "scorers" / f"{scorer}.yaml")
@@ -1573,7 +1573,7 @@ check(
 
 
 def _arm_means(scorer):
-    import judge_score as _js  # noqa: PLC0415
+    from evaluation_harness import judge_score as _js  # noqa: PLC0415
 
     _m = json.loads(next((HERE.parent / "data" / "judging-sets").glob(_jfm.SET_GLOB)).read_text())
     _sc = _js.load_scorer(HERE.parent / "data" / "scorers" / f"{scorer}.yaml")
@@ -1619,7 +1619,7 @@ check(
 
 
 def _self_gap(scorer):
-    import judge_score as _js  # noqa: PLC0415
+    from evaluation_harness import judge_score as _js  # noqa: PLC0415
 
     _m = json.loads(next((HERE.parent / "data" / "judging-sets").glob(_jfm.SET_GLOB)).read_text())
     _sc = _js.load_scorer(HERE.parent / "data" / "scorers" / f"{scorer}.yaml")

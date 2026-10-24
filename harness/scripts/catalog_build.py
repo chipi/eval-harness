@@ -15,6 +15,12 @@ the data tree only through the local inspector server (ADR-0002). The page shell
 
 from __future__ import annotations
 
+import sys as _sys
+from pathlib import Path as _Path
+
+if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
+
 import argparse
 import html
 import json
@@ -28,11 +34,10 @@ from urllib.parse import quote
 
 HERE = Path(__file__).resolve().parent
 
-import _common  # noqa: E402
-import _fields  # noqa: E402
-from _common import ROOT  # noqa: E402
-from catalog_adapter import Adapter, item_fields, load_catalog_adapter  # noqa: E402
-from stats import fmt_p  # noqa: E402
+from evaluation_harness import _common, _fields  # noqa: E402
+from evaluation_harness._common import ROOT  # noqa: E402
+from evaluation_harness.catalog_adapter import Adapter, item_fields, load_catalog_adapter  # noqa: E402
+from evaluation_harness.stats import fmt_p  # noqa: E402
 
 #: The front-end files every page loads: installed beside the package, or in a checkout.
 ASSET_DIR = next(p for p in (HERE / "catalog_assets", HERE.parent / "catalog_assets") if p.is_dir())
@@ -841,7 +846,7 @@ def _rounds_block(A: Adapter, g: dict, measure: str, lower: bool) -> str:
         sugg = ""
         if r.get("status") == "open" and getattr(A, "data_dir", None) == _common.DATA:
             try:
-                from rounds import evidence  # noqa: PLC0415
+                from evaluation_harness.rounds import evidence  # noqa: PLC0415
 
                 ev = evidence(g["goal_id"], r)
                 lines += [

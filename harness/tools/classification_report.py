@@ -38,16 +38,16 @@ from collections import Counter, defaultdict
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this file is in tools/)
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tools/
-sys.path.insert(0, str(HERE))
 
-from _common import (  # noqa: E402
+from evaluation_harness._common import (  # noqa: E402
     RUNS,
     die,
     item_path,
 )
-from _labels import UNPARSED, per_class, predictions, reference_labels  # noqa: E402
-from _runs import warn_on_ambiguous_runs  # noqa: E402
+from evaluation_harness._labels import UNPARSED, per_class, predictions, reference_labels  # noqa: E402
+from evaluation_harness._runs import warn_on_ambiguous_runs  # noqa: E402
 
 
 def _report_consensus_misses(rows: list, gold: dict, dataset_id: str, threshold: float) -> None:

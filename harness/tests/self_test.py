@@ -22,14 +22,14 @@ import tempfile
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this file is in tests/)
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tests/
-#: The harness root. HERE is scripts/, which is what the sys.path inserts below want — but
+#: The harness root. HERE is scripts/, where the scripts the tests run live — but
 #: a data check written against HERE scans scripts/data/, which does not exist, so it finds
 #: nothing and passes for the wrong reason. That is exactly how the first version of
 #: test_no_absolute_home_path_in_committed_data shipped green while checking nothing.
 ROOT = HERE.parent
 PY = sys.executable
-sys.path.insert(0, str(HERE))
 sys.path.insert(1, str(HERE.parent / "tools"))  # the report checks some tests exercise
 
 
@@ -42,7 +42,7 @@ def at(script: str) -> str:
     return f"scripts/{script}"
 
 
-from _check import check, results  # noqa: E402
+from evaluation_harness._check import check, results  # noqa: E402
 
 
 def run(*args: str, env: dict | None = None) -> subprocess.CompletedProcess:
@@ -58,8 +58,7 @@ def test_dotenv_does_not_override_exported() -> None:
     """An exported var must win, so a one-off override needs no file edit."""
     import os  # noqa: PLC0415
 
-    sys.path.insert(0, str(HERE))
-    from _common import load_dotenv  # noqa: PLC0415
+    from evaluation_harness._common import load_dotenv  # noqa: PLC0415
 
     with tempfile.NamedTemporaryFile("w", suffix=".env", delete=False) as fh:
         fh.write("EVAL_SELFTEST_A=from_file\nEVAL_SELFTEST_B=from_file\n")
@@ -121,8 +120,7 @@ def test_import_reads_no_env_and_no_paths() -> None:
 
 
 def test_price_needs_all_four_inputs() -> None:
-    sys.path.insert(0, str(HERE))
-    from judging import price as _price  # noqa: PLC0415
+    from evaluation_harness.judging import price as _price  # noqa: PLC0415
 
     check("price: None when unpriced", _price({}, 1000, 1000) is None)
     check(
@@ -134,8 +132,7 @@ def test_price_needs_all_four_inputs() -> None:
 
 
 def test_score_handles_absent_reference() -> None:
-    sys.path.insert(0, str(HERE))
-    from adapter import score  # noqa: PLC0415
+    from evaluation_harness.adapter import score  # noqa: PLC0415
 
     check("score: no reference -> no quality metric", "overlap_f1" not in score("a b c", None))
     check("score: identical output scores 1.0", score("a b c", "a b c")["overlap_f1"] == 1.0)
@@ -206,8 +203,7 @@ def test_metric_direction_is_not_always_up() -> None:
     what a number means is worse than either being wrong alone: whichever you read last
     is the one you believe.
     """
-    sys.path.insert(0, str(HERE / "scripts"))
-    from _common import verdict_for  # noqa: PLC0415
+    from evaluation_harness._common import verdict_for  # noqa: PLC0415
 
     check("direction: faster is better", verdict_for("latency_ms", -0.5) == "better")
     check("direction: slower is worse", verdict_for("latency_ms", 0.5) == "worse")
@@ -222,8 +218,7 @@ def test_metric_direction_is_not_always_up() -> None:
 
 def test_descriptive_metrics_get_no_verdict() -> None:
     """A longer output is not a better one, and the table must not imply it is."""
-    sys.path.insert(0, str(HERE / "scripts"))
-    from _common import verdict_for  # noqa: PLC0415
+    from evaluation_harness._common import verdict_for  # noqa: PLC0415
 
     check("descriptive: more words is 'changed'", verdict_for("output_words", 12) == "changed")
     check("descriptive: fewer words is 'changed'", verdict_for("output_words", -12) == "changed")
@@ -397,8 +392,7 @@ def test_fingerprint_core_imports_no_ml_framework() -> None:
 def test_fingerprint_reports_library_versions_without_importing_them() -> None:
     """importlib.metadata reads distribution metadata off disk. So the core can say
     "torch 2.2.2" while having no torch dependency and never loading it."""
-    sys.path.insert(0, str(HERE))
-    from _fingerprint import _installed_versions  # noqa: PLC0415
+    from evaluation_harness._fingerprint import _installed_versions  # noqa: PLC0415
 
     before = "torch" in sys.modules
     versions = _installed_versions()
@@ -413,8 +407,7 @@ def test_fingerprint_does_not_invent_a_revision() -> None:
     provably identical when nothing proved it. Same error as reporting 0.0 for a metric
     that was never measured.
     """
-    sys.path.insert(0, str(HERE))
-    from _fingerprint import _model_identity  # noqa: PLC0415
+    from evaluation_harness._fingerprint import _model_identity  # noqa: PLC0415
 
     no_rev = _model_identity(lambda _p: {"id": "some-local-blob"}, {})
     check("fingerprint: absent revision stays None", no_rev["revision"] is None)
@@ -430,8 +423,7 @@ def test_untracked_run_output_does_not_make_the_tree_dirty() -> None:
     run's directory was an untracked file. The rule is narrow on purpose: only UNTRACKED
     paths under data/runs* are ignored.
     """
-    sys.path.insert(0, str(HERE))
-    from _fingerprint import filter_dirt  # noqa: PLC0415
+    from evaluation_harness._fingerprint import filter_dirt  # noqa: PLC0415
 
     d = "harness/data/"
     check(
@@ -511,8 +503,7 @@ def test_fingerprint_records_what_was_loaded() -> None:
 
 def test_a_broken_fingerprint_hook_does_not_kill_the_run() -> None:
     """Fingerprinting describes a run; it is not a precondition for one."""
-    sys.path.insert(0, str(HERE))
-    from _fingerprint import _model_identity  # noqa: PLC0415
+    from evaluation_harness._fingerprint import _model_identity  # noqa: PLC0415
 
     def boom(_params):
         raise RuntimeError("no model here")
@@ -524,7 +515,7 @@ def test_a_broken_fingerprint_hook_does_not_kill_the_run() -> None:
     # Guarded here because the absence of these was invisible: EVAL_MAX_RETRIES was
     # honoured by one adapter and not by the one doing the work, and two sweeps each
     # lost a whole arm to one upstream 429 before anybody noticed.
-    from _retry import call_with_retries, is_transient  # noqa: PLC0415
+    from evaluation_harness._retry import call_with_retries, is_transient  # noqa: PLC0415
 
     waits: list = []
     calls = {"n": 0}
@@ -584,8 +575,7 @@ def test_a_broken_fingerprint_hook_does_not_kill_the_run() -> None:
 
 def test_fingerprint_hash_changes_when_anything_does() -> None:
     """The hash is the one-glance answer to "did anything else move?"."""
-    sys.path.insert(0, str(HERE))
-    from _fingerprint import build_fingerprint, differing_paths  # noqa: PLC0415
+    from evaluation_harness._fingerprint import build_fingerprint, differing_paths  # noqa: PLC0415
 
     ds = {"dataset_id": "d1", "items": [{"item_id": "i1", "source_sha256": "aaa"}]}
     kw: dict = {
@@ -662,6 +652,10 @@ def test_example_scorer_suites_pass() -> None:
             "test_family_marks.py",
             "family-test marks an estimated p in a family that mixes exact and estimated",
         ),
+        (
+            "test_no_shadowing.py",
+            "a project's stats.py or adapter.py never replaces the harness's, nor the reverse",
+        ),
         ("test_hf_rows.py", "the examples' datasets-server fetcher: pacing, 429 and 5xx retries"),
         ("test_runs_adapter.py", "run reading, direction, adapter loading, the judge panel"),
         ("check_report_claims.py", "report claims vs committed runs"),
@@ -718,7 +712,7 @@ def test_fingerprint_version_is_read_somewhere() -> None:
     check(
         "compare_runs notices a fingerprint version mismatch", 'fa.get("version") != fb.get("version")' in src
     )
-    from _fingerprint import build_fingerprint  # noqa: PLC0415
+    from evaluation_harness._fingerprint import build_fingerprint  # noqa: PLC0415
 
     fp = build_fingerprint(
         root=HERE.parent,
@@ -743,8 +737,7 @@ def test_verdict_honours_declared_kinds() -> None:
     its sign. `llm_named_unknown` counts hallucinated document ids, and more of them
     was reported as an improvement.
     """
-    sys.path.insert(0, str(HERE))
-    from _common import verdict_for  # noqa: PLC0415
+    from evaluation_harness._common import verdict_for  # noqa: PLC0415
 
     check(
         "verdict: unknown metric, no kinds -> judged by sign (the old behaviour)",
@@ -774,8 +767,7 @@ def test_fingerprint_covers_reference_bytes() -> None:
     """
     import tempfile  # noqa: PLC0415
 
-    sys.path.insert(0, str(HERE))
-    from _fingerprint import build_fingerprint  # noqa: PLC0415
+    from evaluation_harness._fingerprint import build_fingerprint  # noqa: PLC0415
 
     with tempfile.TemporaryDirectory() as td:
         root = Path(td)
@@ -1104,8 +1096,7 @@ def test_writes_leave_no_partial_file() -> None:
     """
     import tempfile as _tf  # noqa: PLC0415
 
-    sys.path.insert(0, str(HERE))
-    from _common import write_text_atomic  # noqa: PLC0415
+    from evaluation_harness._common import write_text_atomic  # noqa: PLC0415
 
     with _tf.TemporaryDirectory() as td:
         target = pathlib.Path(td) / "out.txt"
@@ -1151,7 +1142,7 @@ def test_writes_leave_no_partial_file() -> None:
             target.read_text() == "the new content",
             target.read_text()[:60],
         )
-        from _common import write_bytes_atomic  # noqa: PLC0415
+        from evaluation_harness._common import write_bytes_atomic  # noqa: PLC0415
 
         blob = bytes(range(256)) * 4
         write_bytes_atomic(target, blob)
@@ -1687,7 +1678,7 @@ def test_v4_neither_skips_a_missing_file_nor_hides_what_it_did_not_check() -> No
     import io  # noqa: PLC0415
     import tempfile as _tmp  # noqa: PLC0415
 
-    import validate_tree as vt  # noqa: PLC0415
+    from evaluation_harness import validate_tree as vt  # noqa: PLC0415
 
     def run_v4(tmp: pathlib.Path) -> tuple:
         saved = (vt.DATASETS, vt.MATERIALIZED, list(vt.problems))
@@ -1785,8 +1776,7 @@ def test_nemenyi_table_is_computed_not_copied() -> None:
     produces. Either alone would be worth little -- the first without the second means
     the shipped numbers could still be anything.
     """
-    sys.path.insert(0, str(HERE))
-    from leaderboard import NEMENYI_Q05  # noqa: PLC0415
+    from evaluation_harness.leaderboard import NEMENYI_Q05  # noqa: PLC0415
     from nemenyi_table import PUBLISHED, max_error_against_published, q_alpha  # noqa: PLC0415
 
     err = max_error_against_published()
@@ -1840,8 +1830,7 @@ def test_two_runs_sharing_a_config_id_are_refused() -> None:
     import json as _json  # noqa: PLC0415
     import shutil  # noqa: PLC0415
 
-    sys.path.insert(0, str(HERE))
-    from _runs import AmbiguousRuns, runs_by_arm  # noqa: PLC0415
+    from evaluation_harness._runs import AmbiguousRuns, runs_by_arm  # noqa: PLC0415
 
     src = next(
         (d for d in sorted((HERE.parent / "data" / "runs").glob("sf_*")) if (d / "metrics.json").is_file()),
@@ -2476,9 +2465,8 @@ def test_spearman_is_tie_correct() -> None:
     only when every rank is distinct; the repo shipped it against tied data for four
     examples, where it did not approximate rho but computed a different quantity.
     """
-    sys.path.insert(0, str(HERE))
-    from rank_stability import ranks_on  # noqa: PLC0415
-    from stats import spearman  # noqa: PLC0415
+    from evaluation_harness.rank_stability import ranks_on  # noqa: PLC0415
+    from evaluation_harness.stats import spearman  # noqa: PLC0415
 
     def shortcut(x, y):
         n = len(x)
@@ -2882,8 +2870,7 @@ def test_bundled_adapter_calls_the_installed_anthropic_sdk() -> None:
 
     client = types.SimpleNamespace(messages=types.SimpleNamespace(create=create))
     fake = types.SimpleNamespace(Anthropic=lambda **_kw: client)
-    sys.path.insert(0, str(HERE))
-    import adapter  # noqa: PLC0415
+    from evaluation_harness import adapter  # noqa: PLC0415
 
     real = sys.modules.get("anthropic")
     saved_key = os.environ.get("ANTHROPIC_API_KEY")

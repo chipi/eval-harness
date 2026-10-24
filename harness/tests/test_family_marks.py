@@ -18,9 +18,9 @@ import tempfile
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parents[1] / "scripts"
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-sys.path.insert(0, str(HERE))
-from _check import check, summary  # noqa: E402
+from evaluation_harness._check import check, summary  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-family-"))
 env = {k: v for k, v in os.environ.items() if not k.startswith("EVAL_")}
@@ -88,7 +88,7 @@ try:
     import contextlib
     import io
 
-    import _runs
+    from evaluation_harness import _runs
 
     err = io.StringIO()
     runs = [

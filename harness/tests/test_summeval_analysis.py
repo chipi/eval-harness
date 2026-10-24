@@ -8,10 +8,10 @@ import random
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))  # _check
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))  # summeval_analysis
 import summeval_analysis as _sea
-from _check import check, summary
+from evaluation_harness._check import check, summary
 
 _tied = {a: {f"i{k}": 1.0 for k in range(10)} for a in ("alpha", "beta")}
 _sh = _sea.split_half(_tied, list(_tied["alpha"]), 3, random.Random(1))

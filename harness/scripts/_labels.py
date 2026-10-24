@@ -4,12 +4,18 @@ the report, so a core command imported a showcase script."""
 
 from __future__ import annotations
 
+import sys as _sys
+from pathlib import Path as _Path
+
+if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
+
 from collections import defaultdict
 
-import _common
-from _adapter import adapter_module
-from _common import die
-from _runs import item_rows, runs_on
+from evaluation_harness import _common
+from evaluation_harness._adapter import adapter_module
+from evaluation_harness._common import die
+from evaluation_harness._runs import item_rows, runs_on
 
 #: Predictions the adapter could not parse into a label are counted, never dropped. An arm
 #: that returns prose on a fifth of the items has a real problem, and silently excluding

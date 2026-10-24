@@ -31,6 +31,12 @@ every number it produces is labelled "unvalidated judge".
 
 from __future__ import annotations
 
+import sys as _sys
+from pathlib import Path as _Path
+
+if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
+
 import hashlib
 import json
 import os
@@ -41,7 +47,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-import stats as _stats
+from evaluation_harness import stats as _stats
 
 DIMS = ("coherence", "consistency", "fluency", "relevance")
 OPENROUTER = "https://openrouter.ai/api/v1"
@@ -281,7 +287,7 @@ def withheld_reason(output: str | None, source: set) -> str | None:
 # ── routing ──────────────────────────────────────────────────────────────────
 def _models_table() -> dict[str, str]:
     """alias -> upstream id, from the first models file that exists; {} when none does."""
-    from _common import ROOT, in_checkout  # noqa: PLC0415
+    from evaluation_harness._common import ROOT, in_checkout  # noqa: PLC0415
 
     cands: list[str | Path] = [os.environ.get("EVAL_MODELS_FILE", "").strip(), ROOT / "models.json"]
     # The repository's own table, only in a checkout of it: in a project elsewhere,

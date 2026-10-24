@@ -18,13 +18,19 @@ neighbour is not distinguishable from it, and the table says so.
 
 from __future__ import annotations
 
+import sys as _sys
+from pathlib import Path as _Path
+
+if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
+
 import argparse
 import math
 import random
 import statistics
 
-from _adapter import recorded_metric_kinds
-from _common import (
+from evaluation_harness._adapter import recorded_metric_kinds
+from evaluation_harness._common import (
     BOOKKEEPING_PREFIXES,
     REFERENCES,
     RUNS,
@@ -33,9 +39,9 @@ from _common import (
     how,
     read_json,
 )
-from _record import derived_with
-from _runs import by_arm, direction, mixed_versions, runs_on, warn_on_ambiguous_runs
-from _runs import matrix as matrix_of
+from evaluation_harness._record import derived_with
+from evaluation_harness._runs import by_arm, direction, mixed_versions, runs_on, warn_on_ambiguous_runs
+from evaluation_harness._runs import matrix as matrix_of
 
 # COST_KEYS / SPEED_KEYS / DESCRIPTIVE_KEYS now live in _common, so that
 # compare_runs.py judges direction the same way this ranks it.
@@ -469,7 +475,7 @@ def main() -> int:
     # not paired throws away the fact that every arm was graded on the same items.
     found = runs_on(args.dataset_id, match=args.match)
     if args.round:
-        from _rounds import arms_of, resolve  # noqa: PLC0415
+        from evaluation_harness._rounds import arms_of, resolve  # noqa: PLC0415
 
         keep = set(arms_of(resolve(args.round, args.goal)))
         found = [(d, m) for d, m in found if m["config_id"] in keep]

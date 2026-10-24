@@ -45,13 +45,13 @@ from pathlib import Path
 from typing import Any
 
 HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this file is in tools/)
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tools/
-sys.path.insert(0, str(HERE))
-import _fetch  # noqa: E402
-import judge_score as js  # noqa: E402
-from _common import die, write_bytes_atomic, write_text_atomic  # noqa: E402
-from _retry import call_with_retries  # noqa: E402
-from judging import shingles, withheld_reason  # noqa: E402
+from evaluation_harness import _fetch  # noqa: E402
+from evaluation_harness import judge_score as js  # noqa: E402
+from evaluation_harness._common import die, write_bytes_atomic, write_text_atomic  # noqa: E402
+from evaluation_harness._retry import call_with_retries  # noqa: E402
+from evaluation_harness.judging import shingles, withheld_reason  # noqa: E402
 
 DATA = HERE.parent / "data"
 EXT = DATA / "external" / "goyal2022"

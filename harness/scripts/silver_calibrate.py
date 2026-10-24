@@ -31,6 +31,12 @@ kind.
 
 from __future__ import annotations
 
+import sys as _sys
+from pathlib import Path as _Path
+
+if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
+
 import argparse
 import glob
 import os
@@ -40,16 +46,16 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
-from _adapter import load_recorded_adapter, score_wants_source
-from _common import (
+from evaluation_harness._adapter import load_recorded_adapter, score_wants_source
+from evaluation_harness._common import (
     MATERIALIZED,
     REFERENCES,
     RUNS,
     adapter_search_dirs,
     die,
 )
-from _runs import runs_on, warn_on_ambiguous_runs
-from stats import spearman
+from evaluation_harness._runs import runs_on, warn_on_ambiguous_runs
+from evaluation_harness.stats import spearman
 
 
 def _collect(dataset_id: str, match: str | None) -> dict[str, dict[str, Any]]:
@@ -122,7 +128,7 @@ def main() -> int:
     wants_source = score_wants_source(score)
     metric = args.metric
     if not metric:
-        from _adapter import primary_metric  # noqa: PLC0415
+        from evaluation_harness._adapter import primary_metric  # noqa: PLC0415
 
         metric = primary_metric(adapter_path) or "overlap_f1"
 

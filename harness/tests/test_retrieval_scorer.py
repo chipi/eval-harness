@@ -12,9 +12,9 @@ import math
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "examples" / "_shared"))
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))  # _check
-from _check import check, summary
+from evaluation_harness._check import check, summary
 from retrieval import dcg, dedupe, parse_ranking, score_ranking, scorer_sha256
 
 Q1 = {"d1": 1}  # one relevant document, the SciFact majority case

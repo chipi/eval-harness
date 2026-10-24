@@ -32,14 +32,20 @@ WHAT IT CANNOT TELL YOU
 
 from __future__ import annotations
 
+import sys as _sys
+from pathlib import Path as _Path
+
+if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
+
 import argparse
 import json
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 
-from _common import die  # noqa: E402
-from _runs import runs_on  # noqa: E402
+from evaluation_harness._common import die  # noqa: E402
+from evaluation_harness._runs import runs_on  # noqa: E402
 
 
 def billed_and_recorded(run_dir: Path) -> tuple[float, float, int, int]:

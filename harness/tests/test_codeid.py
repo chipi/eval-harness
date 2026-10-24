@@ -12,10 +12,10 @@ import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this file is in tests/)
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tests/
-sys.path.insert(0, str(HERE))
-from _check import check, summary  # noqa: E402
-from _codeid import content_sha256, source_sha256  # noqa: E402
+from evaluation_harness._check import check, summary  # noqa: E402
+from evaluation_harness._codeid import content_sha256, source_sha256  # noqa: E402
 
 BASE = '''"""An adapter."""
 import re

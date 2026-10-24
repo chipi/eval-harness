@@ -26,6 +26,12 @@ an output can quote its input, and a reference can be a dataset's licensed text.
 
 from __future__ import annotations
 
+import sys as _sys
+from pathlib import Path as _Path
+
+if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
+
 import hashlib
 import importlib.util
 import json
@@ -37,17 +43,17 @@ from typing import Protocol
 
 HERE = Path(__file__).resolve().parent
 
-import _common  # noqa: E402
-from _common import (  # noqa: E402
+from evaluation_harness import _common  # noqa: E402
+from evaluation_harness._common import (  # noqa: E402
     BOOKKEEPING_PREFIXES,
     ModuleNotLoadable,
     is_descriptive,
     load_goals,
     load_module,
 )
-from _fields import fieldset_problems, load_fieldset  # noqa: E402 -- part of the adapter contract
-from _record import derived_with  # noqa: E402
-from _runs import item_rows, lower_is_better_on, runs_on, score_of  # noqa: E402
+from evaluation_harness._fields import fieldset_problems, load_fieldset  # noqa: E402 -- part of the adapter contract
+from evaluation_harness._record import derived_with  # noqa: E402
+from evaluation_harness._runs import item_rows, lower_is_better_on, runs_on, score_of  # noqa: E402
 
 
 def _memo(fn):
@@ -424,7 +430,7 @@ class HarnessAdapter:
     def reference_free(self, metric: str) -> bool:
         """A cost or speed metric (as the runs declare it, else by the harness's names) needs no
         reference: it is measured off the bill and the clock."""
-        from _common import classify_metrics  # noqa: PLC0415
+        from evaluation_harness._common import classify_metrics  # noqa: PLC0415
 
         return classify_metrics(self._kinds()).get(metric) in ("cost", "speed")
 

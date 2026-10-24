@@ -16,14 +16,14 @@ import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this file is in tests/)
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tests/
-sys.path.insert(0, str(HERE))  # the core modules
 sys.path.insert(0, str(HERE.parents[1] / "examples" / "_shared"))
 
 import codehash  # noqa: E402
 import extraction  # noqa: E402
 import retrieval  # noqa: E402
-from _check import check, summary  # noqa: E402
+from evaluation_harness._check import check, summary  # noqa: E402
 
 
 # ── the helper itself ────────────────────────────────────────────────────────
@@ -83,7 +83,7 @@ check(
 # hash was free to stop covering the NER parser -- which is exactly what happened when
 # round 2 moved the array extraction into `_balanced_arrays` and did not add it to the
 # digest. Gutting that function left the hash byte-identical. Found by external review.
-from _common import load_module  # noqa: E402
+from evaluation_harness._common import load_module  # noqa: E402
 
 
 def _load(name, path):

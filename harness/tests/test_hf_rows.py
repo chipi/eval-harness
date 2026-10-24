@@ -9,11 +9,11 @@ import sys
 import threading
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tests/
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "examples" / "_shared"))
 import hf_rows
-from _check import check, summary
+from evaluation_harness._check import check, summary
 
 script: list[int] = []  # status codes to answer with, in order; 200 when empty
 seen: list[str] = []

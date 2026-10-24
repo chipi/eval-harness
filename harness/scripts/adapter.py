@@ -18,6 +18,12 @@ decision.
 
 from __future__ import annotations
 
+import sys as _sys
+from pathlib import Path as _Path
+
+if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
+
 import os
 import random
 import time
@@ -26,7 +32,7 @@ from typing import Any, Callable
 
 # One price rule and one bill reader, shared with the judges: what the provider billed when
 # the response carries it, else the config's declared prices, else unpriced (None).
-from judging import billed, price
+from evaluation_harness.judging import billed, price
 
 
 @dataclass

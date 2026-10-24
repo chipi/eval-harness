@@ -2,6 +2,12 @@
 
 from __future__ import annotations
 
+import sys as _sys
+from pathlib import Path as _Path
+
+if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
+
 import functools
 import hashlib
 import json
@@ -306,7 +312,7 @@ def build_info() -> dict[str, Any]:
     ref = git("rev-parse", "HEAD")
     # The same rule as the instrument's flag: untracked run output is not code, so a
     # previous run's directory no longer marks the next run dirty. One rule, one place.
-    from _fingerprint import tree_dirt  # noqa: PLC0415
+    from evaluation_harness._fingerprint import tree_dirt  # noqa: PLC0415
 
     dirt = tree_dirt(project_root(), _paths()["DATA"])
     return {

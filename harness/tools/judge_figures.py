@@ -20,11 +20,11 @@ from pathlib import Path
 from typing import Any
 
 HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this file is in tools/)
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tools/
-sys.path.insert(0, str(HERE))
-import judge_score as js  # noqa: E402
 import validate_judge_goyal as vg  # noqa: E402
 import validate_judge_zhang as vz  # noqa: E402
+from evaluation_harness import judge_score as js  # noqa: E402
 
 REPO = HERE.parents[1]
 DATA = HERE.parent / "data"

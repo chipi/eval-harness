@@ -1,6 +1,6 @@
 """The test scripts' one `check` and their verdict.
 
-    from _check import check, summary
+    from evaluation_harness._check import check, summary
     check("what is claimed", condition, detail_shown_on_failure)
     sys.exit(summary())
 
@@ -10,6 +10,12 @@ or skipped every branch reported green while asserting nothing.
 """
 
 from __future__ import annotations
+
+import sys as _sys
+from pathlib import Path as _Path
+
+if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
 #: (label, passed) for every check this process made.
 results: list[tuple[str, bool]] = []

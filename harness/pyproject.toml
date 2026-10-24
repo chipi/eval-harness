@@ -59,13 +59,13 @@ version = {attr = "evaluation_harness._version.__version__"}
 # 3.10, not the package's 3.9 floor: mypy 2.x no longer type-checks for 3.9. The 3.9 floor is
 # held by CI's package job, which installs the wheel on 3.9 and runs `evh self-test`.
 python_version = "3.10"
-# The scripts import each other as top-level modules (`from _common import …`), the way they
-# run from a checkout; scripts/ has an __init__.py only for the installed package. tests/ and
-# tools/ are this repository's tests and report checks: not in the package, checked the same.
-mypy_path = "scripts,tests,tools"
+# The modules import each other as the package (`from evaluation_harness._common import …`);
+# in a checkout harness/evaluation_harness is a link to scripts/, so it is checked once, by that
+# name. tests/ and tools/ are this repository's tests and report checks: not in the package,
+# checked the same.
+mypy_path = ".,tests,tools"
 explicit_package_bases = true
-files = ["scripts", "tests", "tools"]
-exclude = ['^scripts/__main__\.py$', '^scripts/__init__\.py$']
+files = ["evaluation_harness", "tests", "tools"]
 ignore_missing_imports = true
 warn_unused_configs = true
 warn_redundant_casts = true

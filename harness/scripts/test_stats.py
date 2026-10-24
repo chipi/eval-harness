@@ -4,14 +4,20 @@
 python scripts/test_stats.py
 """
 
+import sys as _sys
+from pathlib import Path as _Path
+
+if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
+
 import itertools
 import random
 import statistics
 import sys
 from pathlib import Path
 
-import stats
-from _check import check, summary
+from evaluation_harness import stats
+from evaluation_harness._check import check, summary
 
 
 def brute_p(deltas):

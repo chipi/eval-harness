@@ -22,14 +22,14 @@ from http.server import ThreadingHTTPServer
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this file is in tests/)
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tests/
-sys.path.insert(0, str(HERE))
 
-import catalog_build as cb  # noqa: E402
-import catalog_serve as cs  # noqa: E402
-import stats  # noqa: E402
-from _check import check, summary  # noqa: E402
-from catalog_adapter import HarnessAdapter  # noqa: E402
+from evaluation_harness import catalog_build as cb  # noqa: E402
+from evaluation_harness import catalog_serve as cs  # noqa: E402
+from evaluation_harness import stats  # noqa: E402
+from evaluation_harness._check import check, summary  # noqa: E402
+from evaluation_harness.catalog_adapter import HarnessAdapter  # noqa: E402
 
 SECRET = "zebra-quokka-unique-output-text"
 tmp = Path(tempfile.mkdtemp(prefix="evh-catalog-"))
@@ -475,7 +475,7 @@ try:
     import contextlib
     import io
 
-    import catalog_views as cv
+    from evaluation_harness import catalog_views as cv
 
     buf = io.StringIO()
     real_loader = cv.load_catalog_adapter
@@ -694,7 +694,7 @@ try:
     import contextlib
     import io
 
-    import catalog_views as cv
+    from evaluation_harness import catalog_views as cv
 
     data6 = tmp / "data6"
     run("runs", "p_1", "ds6", "arm_p", [0.5] * 6, root=data6)
@@ -735,10 +735,11 @@ try:
 
     proj7 = tmp / "proj7"
     (proj7 / "data" / "runs-v2").mkdir(parents=True)
-    scripts_dir = str(Path(__file__).resolve().parents[1] / "scripts")
+    harness_dir = str(Path(__file__).resolve().parents[1])  # the evaluation_harness package
     probe = (
-        f"import sys; sys.path.insert(0, {scripts_dir!r}); "
-        "from catalog_adapter import HarnessAdapter; print(HarnessAdapter().arm_of('ds', 'c'))"
+        f"import sys; sys.path.insert(0, {harness_dir!r}); "
+        "from evaluation_harness.catalog_adapter import HarnessAdapter; "
+        "print(HarnessAdapter().arm_of('ds', 'c'))"
     )
     pf = tmp / "probe_arm_of.py"
     pf.write_text(probe)

@@ -42,6 +42,12 @@ position check tests it: its second shuffle re-forms the blocks.
 
 from __future__ import annotations
 
+import sys as _sys
+from pathlib import Path as _Path
+
+if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
+
 import argparse
 import hashlib
 import json
@@ -54,8 +60,8 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any, Callable
 
-from _codeid import content_sha256, file_sha256
-from _common import (
+from evaluation_harness._codeid import content_sha256, file_sha256
+from evaluation_harness._common import (
     BOOKKEEPING_PREFIXES,
     DATA,
     MATERIALIZED,
@@ -72,10 +78,10 @@ from _common import (
     write_json,
     write_text_atomic,
 )
-from _record import aggregate_scores, derived_record
-from _retry import call_with_retries
-from _runs import mixed_versions, runs_on
-from judging import (
+from evaluation_harness._record import aggregate_scores, derived_record
+from evaluation_harness._retry import call_with_retries
+from evaluation_harness._runs import mixed_versions, runs_on
+from evaluation_harness.judging import (
     DIMS,
     FAKE,
     build_message,

@@ -10,10 +10,16 @@ you a failed run halfway through.
 
 from __future__ import annotations
 
+import sys as _sys
+from pathlib import Path as _Path
+
+if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
+
 import argparse
 import os
 
-from _common import DOTENV_LOADED, ROOT, env_float, env_int, in_checkout
+from evaluation_harness._common import DOTENV_LOADED, ROOT, env_float, env_int, in_checkout
 
 PROVIDER_KEYS = ("ANTHROPIC_API_KEY", "OPENROUTER_API_KEY", "OPENAI_API_KEY")
 

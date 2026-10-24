@@ -7,13 +7,19 @@ the run), less the ones retired. A project that never opens a round has none of 
 
 from __future__ import annotations
 
+import sys as _sys
+from pathlib import Path as _Path
+
+if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
+
 import re
 from pathlib import Path
 from typing import Any
 
-import _common
-from _common import die
-from _runs import runs_on
+from evaluation_harness import _common
+from evaluation_harness._common import die
+from evaluation_harness._runs import runs_on
 
 try:
     import yaml
@@ -145,7 +151,7 @@ def problems() -> list[str]:
     base = _common.ROUNDS
     if not base.is_dir():
         return out
-    from _common import load_goals  # noqa: PLC0415
+    from evaluation_harness._common import load_goals  # noqa: PLC0415
 
     goals = set(load_goals())
     datasets = {p.stem for p in _common.DATASETS.glob("*.json")}

@@ -19,8 +19,8 @@ import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this file is in tools/)
-sys.path.insert(0, str(HERE))
-from _common import no_options  # noqa: E402
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
+from evaluation_harness._common import no_options  # noqa: E402
 
 no_options(__doc__)  # --help prints this; anything else is refused
 

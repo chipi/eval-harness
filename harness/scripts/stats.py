@@ -1,7 +1,7 @@
 """The harness's paired test, in one place: sign-flip on per-item deltas, Holm across a family.
 And its rank correlation: Spearman's rho, with ties.
 
-    from stats import sign_flip_p, holm, exact_ci, compare, spearman
+    from evaluation_harness.stats import sign_flip_p, holm, exact_ci, compare, spearman
 
 Used by pair_test.py, family_test.py and the catalog's run inspector, so the command line
 and the inspector cannot disagree (ADR-0002). `spearman` is the one copy rank_stability,
@@ -18,6 +18,12 @@ Standard library only.
 """
 
 from __future__ import annotations
+
+import sys as _sys
+from pathlib import Path as _Path
+
+if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
 import bisect
 import math

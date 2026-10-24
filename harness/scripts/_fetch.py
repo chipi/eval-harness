@@ -8,6 +8,12 @@ refused and deleted, never cached.
 
 from __future__ import annotations
 
+import sys as _sys
+from pathlib import Path as _Path
+
+if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
+
 import json
 import os
 import tempfile
@@ -15,9 +21,9 @@ import urllib.request
 from pathlib import Path
 from urllib.parse import urlparse
 
-from _common import ITEM_CACHE
-from _common import sha256 as _sha256  # `sha256` is fetch()'s parameter name
-from _retry import call_with_retries
+from evaluation_harness._common import ITEM_CACHE
+from evaluation_harness._common import sha256 as _sha256  # `sha256` is fetch()'s parameter name
+from evaluation_harness._retry import call_with_retries
 
 TIMEOUT_S = 60
 CHUNK = 1 << 20

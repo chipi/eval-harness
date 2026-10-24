@@ -19,10 +19,10 @@ import tempfile
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parents[1] / "scripts"
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-sys.path.insert(0, str(HERE))
 KIT = HERE.parent / "tutorial"
-from _check import check, summary  # noqa: E402
+from evaluation_harness._check import check, summary  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-coverage-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-coverage")
@@ -87,7 +87,7 @@ try:
     # rescore keeps what a project adapter attached at call time (`_extra` names it); it used
     # to drop any extra not named `truncated` or `reasoning_tokens` and call it a dropped metric.
     (proj / "adapter.py").write_text(
-        "from adapter import Result\n"
+        "from evaluation_harness.adapter import Result\n"
         'PRIMARY_METRIC = "overlap_f1"\n'
         "def call_system(text, params):\n"
         '    return Result(output=text.split(".")[0] + ".", cost_usd=0.0, extra={"my_extra": 1.0})\n'

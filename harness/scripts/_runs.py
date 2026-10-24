@@ -14,6 +14,12 @@ shared. It is now: every reader goes through these functions.
 
 from __future__ import annotations
 
+import sys as _sys
+from pathlib import Path as _Path
+
+if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
+
 import json
 import re
 import statistics
@@ -21,8 +27,8 @@ import sys
 from collections.abc import Iterable, Iterator
 from pathlib import Path
 
-import _common
-from _common import lower_is_better
+from evaluation_harness import _common
+from evaluation_harness._common import lower_is_better
 
 Run = tuple[Path, dict]
 
@@ -153,7 +159,7 @@ def recorded_direction(runs: Iterable[Run], metric: str) -> str | None:
 
 def goal_direction(runs: Iterable[Run], metric: str, goals: dict | None = None) -> str | None:
     """ "lower" / "higher" from a goal these runs name whose primary measure is `metric`."""
-    from _common import load_goals  # noqa: PLC0415
+    from evaluation_harness._common import load_goals  # noqa: PLC0415
 
     named = {str(m["goal"]) for _d, m in runs if m.get("goal")}
     if not named:

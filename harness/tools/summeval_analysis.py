@@ -22,8 +22,8 @@ import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this file is in tools/)
-sys.path.insert(0, str(HERE))
-from stats import holm, sign_flip_p, spearman  # noqa: E402
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
+from evaluation_harness.stats import holm, sign_flip_p, spearman  # noqa: E402
 
 RUNS = HERE.parent / "data" / "runs"
 DATASET, PREFIX, SUFFIX = "summeval_100", "se_", "_n100_v1"
@@ -173,7 +173,7 @@ def compute() -> dict:
 
 def main() -> int:
     """Print the derived SummEval figures."""
-    from _common import no_options  # noqa: PLC0415
+    from evaluation_harness._common import no_options  # noqa: PLC0415
 
     no_options(__doc__)
     f = compute()

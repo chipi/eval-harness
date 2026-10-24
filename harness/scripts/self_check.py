@@ -18,6 +18,12 @@ Every step must finish without a traceback. Exit 0 when all pass.
 
 from __future__ import annotations
 
+import sys as _sys
+from pathlib import Path as _Path
+
+if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
+
 import os
 import shutil
 import subprocess
@@ -39,8 +45,7 @@ def in_checkout() -> bool:
 
 def main() -> int:
     """Run a self-test of the installed harness."""
-    sys.path.insert(0, str(HERE))
-    from _common import no_options  # noqa: PLC0415
+    from evaluation_harness._common import no_options  # noqa: PLC0415
 
     no_options(__doc__)
     if in_checkout():

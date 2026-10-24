@@ -28,27 +28,33 @@ THE TEST
 
 from __future__ import annotations
 
+import sys as _sys
+from pathlib import Path as _Path
+
+if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
+
 import argparse
 import statistics
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 
-from _common import (  # noqa: E402
+from evaluation_harness._common import (  # noqa: E402
     RUNS,
     dataset_item_ids,
     die,
     read_item_ids,
 )
-from _runs import default_metric, direction, per_item, runs_on, warn_on_ambiguous_runs  # noqa: E402  # noqa: E402
-from stats import EXACT_UP_TO, fmt_p, sign_flip_p  # noqa: E402
+from evaluation_harness._runs import default_metric, direction, per_item, runs_on, warn_on_ambiguous_runs  # noqa: E402  # noqa: E402
+from evaluation_harness.stats import EXACT_UP_TO, fmt_p, sign_flip_p  # noqa: E402
 
 
 def _round_defaults(args: argparse.Namespace, runs: list) -> None:
     """--round: the round's goal measure, its leader as A and the baseline it started from as B,
     and a refusal for an arm that is not in play in it."""
-    import _common  # noqa: PLC0415
-    from _rounds import arms_of, resolve  # noqa: PLC0415
+    from evaluation_harness import _common  # noqa: PLC0415
+    from evaluation_harness._rounds import arms_of, resolve  # noqa: PLC0415
 
     rnd = resolve(args.round, args.goal)
     if rnd["dataset_id"] != args.dataset_id:

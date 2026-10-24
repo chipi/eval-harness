@@ -55,12 +55,12 @@ from collections import Counter, defaultdict
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this file is in tools/)
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tools/
-sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parents[1] / "examples" / "_shared"))
 
-from _common import REFERENCES, RUNS, die, item_path, read_json  # noqa: E402
-from _runs import warn_on_ambiguous_runs  # noqa: E402
+from evaluation_harness._common import REFERENCES, RUNS, die, item_path, read_json  # noqa: E402
+from evaluation_harness._runs import warn_on_ambiguous_runs  # noqa: E402
 
 try:
     from extraction import as_members, match_one_to_one, normalize

@@ -36,6 +36,12 @@ Exit 1 on any failure, so it can gate.
 
 from __future__ import annotations
 
+import sys as _sys
+from pathlib import Path as _Path
+
+if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
+
 import hashlib
 import json
 import subprocess
@@ -43,7 +49,7 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
-from _common import (
+from evaluation_harness._common import (
     BASELINES,
     CONFIGS,
     DATA,
@@ -63,7 +69,7 @@ from _common import (
     read_json,
     sha256,
 )
-from _runs import recorded_direction
+from evaluation_harness._runs import recorded_direction
 
 try:
     import jsonschema
@@ -352,7 +358,7 @@ def _v5_in(base: Path) -> list[list]:
 def v6_baselines() -> None:
     """V6: every baseline's promoted_from run still exists, and the baseline still says what
     it says: the tier, adapter, fingerprint, goal and format it carried from that run."""
-    from promote_baseline import carried  # noqa: PLC0415
+    from evaluation_harness.promote_baseline import carried  # noqa: PLC0415
 
     broken = []
     for b in sorted(BASELINES.glob("*.json")):
@@ -749,7 +755,7 @@ def v8_no_duplicate_config_ids() -> None:
 def judging_set_problems(sets_dir: Path) -> list[str]:
     """Every judging-set manifest: id matches its file name and the stored hash is the
     hash of the content. A set is frozen; an edit in place is what this catches."""
-    import judge_score as js  # noqa: PLC0415
+    from evaluation_harness import judge_score as js  # noqa: PLC0415
 
     bad = []
     for f in sorted(sets_dir.glob("*.json")):
@@ -823,7 +829,7 @@ def reply_problems(rec: dict) -> list[str]:
     """A committed judge reply is bare JSON scores, or withheld (no text, its hash kept).
     A reply that reasons aloud can copy the article or the outputs it scored; the writers
     withhold those (judging.withheld_reason), and this catches one that slipped through."""
-    from judging import json_only  # noqa: PLC0415
+    from evaluation_harness.judging import json_only  # noqa: PLC0415
 
     out = rec.get("output")
     if out is None:
@@ -852,7 +858,7 @@ def scorer_problems(scorers_dir: Path) -> list[str]:
     """Every scorer yaml loads and is structurally sound. Not the paid gate: whether a
     scorer is VALIDATED is judge_score's `validation_problems`, and an unvalidated
     experiment scorer is allowed to exist."""
-    import judge_score as js  # noqa: PLC0415
+    from evaluation_harness import judge_score as js  # noqa: PLC0415
 
     bad = []
     from yaml import YAMLError as yaml_error  # noqa: PLC0415
@@ -1005,8 +1011,8 @@ def v14_goals() -> None:
                     f"under its min_items {need}: it can measure, not pick a winner"
                 )
     # Rounds (ADR-0004, optional) are part of a goal: their records, and the runs that name one.
-    from _rounds import load_rounds  # noqa: PLC0415
-    from _rounds import problems as round_problems  # noqa: PLC0415
+    from evaluation_harness._rounds import load_rounds  # noqa: PLC0415
+    from evaluation_harness._rounds import problems as round_problems  # noqa: PLC0415
 
     for p in round_problems():
         print(f"       {p}")
@@ -1024,7 +1030,7 @@ def v14_goals() -> None:
 def v15_item_fields() -> None:
     """Item fields are declared, typed and hashed (ADR-0003). Undeclared means unchecked: a
     typo in a column name would be a new field nobody filters or groups by."""
-    import _fields  # noqa: PLC0415
+    from evaluation_harness import _fields  # noqa: PLC0415
 
     fieldsets = {p.stem: p for p in sorted(FIELDS.glob("*.yaml"))} if FIELDS.is_dir() else {}
     with_fields = []

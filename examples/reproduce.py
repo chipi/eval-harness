@@ -48,7 +48,7 @@ HARNESS = ROOT / "harness"
 DATA = HARNESS / "data"
 REPRO = DATA / "runs-repro"
 sys.path.insert(0, str(HERE / "_shared"))
-sys.path.insert(0, str(HARNESS / "scripts"))
+sys.path.insert(0, str(HARNESS))  # the evaluation_harness package (a link to scripts/)
 
 #: Arms that are not models -- floors that check the scorer. Free and deterministic.
 BASELINES = {"lead3", "keyword", "constant", "capitalized", "nothing", "random", "first_k", "length"}
@@ -61,7 +61,7 @@ def registry() -> dict:
 
 def _load_dotenv() -> None:
     """harness/.env, read by the harness's own loader -- an exported variable always wins."""
-    from _common import load_dotenv  # noqa: PLC0415 - harness/scripts is on sys.path above
+    from evaluation_harness._common import load_dotenv  # noqa: PLC0415 - harness/ is on sys.path above
 
     load_dotenv(HARNESS / ".env")
 
@@ -359,7 +359,7 @@ def _latest_repro(exp: dict) -> dict:
 
 def _paired_p(a: list, b: list, perms: int = 10000, seed: int = 20261014) -> float:
     """The harness's paired sign-flip p (stats.sign_flip_p) on the per-item differences."""
-    from stats import sign_flip_p  # noqa: PLC0415 - harness/scripts is on sys.path above
+    from evaluation_harness.stats import sign_flip_p  # noqa: PLC0415 - harness/ is on sys.path above
 
     return sign_flip_p([x - y for x, y in zip(a, b)], permutations=perms, seed=seed)
 

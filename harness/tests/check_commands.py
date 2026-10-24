@@ -28,11 +28,11 @@ from functools import cache
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this file is in tests/)
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tests/
 HARNESS = HERE.parent
 REPO = HARNESS.parent
-sys.path.insert(0, str(HERE))
-from cli import COMMANDS  # noqa: E402
+from evaluation_harness.cli import COMMANDS  # noqa: E402
 
 DOCS = [
     REPO / "README.md",

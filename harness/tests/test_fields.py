@@ -22,9 +22,9 @@ import threading
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this file is in tests/)
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tests/
-sys.path.insert(0, str(HERE))
-from _check import check, summary  # noqa: E402
+from evaluation_harness._check import check, summary  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-fields-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-fields")
@@ -61,7 +61,7 @@ fields:
 
 srv = None
 try:
-    import _fields
+    from evaluation_harness import _fields
 
     # ── the types ──────────────────────────────────────────────────────────────────────
     F = {f["name"]: f for f in __import__("yaml").safe_load(FIELDSET)["fields"]}
@@ -187,7 +187,7 @@ try:
     check("V15: a dataset with declared, typed fields passes", line.strip().startswith("ok"), line)
 
     # ── fields are not the identity ───────────────────────────────────────────────────
-    from _fingerprint import items_digest
+    from evaluation_harness._fingerprint import items_digest
 
     before_id, before_fields, before_at = items_digest(ds), ds["fields_sha256"], ds["created_at"]
     (proj / "fix.csv").write_text("item_id,product,priority\nt3,export,3\n")

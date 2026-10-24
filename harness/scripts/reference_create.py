@@ -31,12 +31,18 @@ answer every later run is scored against.
 
 from __future__ import annotations
 
+import sys as _sys
+from pathlib import Path as _Path
+
+if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
+
 import argparse
 import json
 import shutil
 from pathlib import Path
 
-from _common import (
+from evaluation_harness._common import (
     MATERIALIZED,
     REFERENCES,
     ROOT,
@@ -64,7 +70,7 @@ except ImportError:  # pragma: no cover
 # against a 37-word human reference — which was read as "Opus ignores instructions" when it
 # had simply never been given one. A reference is the thing everything else is scored
 # against; authoring it with different code than the arms run is not a small inconsistency.
-from _adapter import load_adapter
+from evaluation_harness._adapter import load_adapter
 
 
 def _repo_relative(path: object) -> str:

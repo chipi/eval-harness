@@ -68,8 +68,8 @@ def _runs(base: str, dataset: str, prefix: str, suffix: str) -> dict:
 
 def _billed(run_dir: Path) -> float:
     """What the provider billed for one run (cost_report's sum, the one the reports use)."""
-    sys.path.insert(0, str(HARNESS / "scripts"))
-    from cost_report import billed_and_recorded  # noqa: PLC0415
+    sys.path.insert(0, str(HARNESS))  # the evaluation_harness package
+    from evaluation_harness.cost_report import billed_and_recorded  # noqa: PLC0415
 
     return billed_and_recorded(run_dir)[0]
 
@@ -295,10 +295,10 @@ def judged_summarisation(exps: list, scorer: str = "") -> dict:
     """The summarisation arms on coverage (the primary) and on a judge scorer's score,
     projected from its stored verdicts exactly as judge_figures does, with
     judge_figures' own figures (human check, Goyal, pointwise, agreement)."""
-    sys.path.insert(0, str(HARNESS / "scripts"))
+    sys.path.insert(0, str(HARNESS))  # the evaluation_harness package
     sys.path.insert(0, str(HARNESS / "tools"))  # judge_figures: the repository's, not the package's
     import judge_figures as jf  # noqa: PLC0415
-    import judge_score as js  # noqa: PLC0415
+    from evaluation_harness import judge_score as js  # noqa: PLC0415
 
     scorer = scorer or jf.SCORER
     jfig = jf.compute(scorer)
@@ -380,7 +380,7 @@ def zhang_figures() -> dict:
     """Both scorers' judges against Zhang et al.'s crowd ratings of LLM-era summaries, through
     judge_figures.zhang: recomputed from the stored records when the ratings are downloaded,
     the committed report.json (checked against the records) when not."""
-    sys.path.insert(0, str(HARNESS / "scripts"))
+    sys.path.insert(0, str(HARNESS))  # the evaluation_harness package
     sys.path.insert(0, str(HARNESS / "tools"))  # judge_figures: the repository's, not the package's
     import judge_figures as jf  # noqa: PLC0415
 

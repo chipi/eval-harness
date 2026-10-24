@@ -35,13 +35,19 @@ INPUT
 
 from __future__ import annotations
 
+import sys as _sys
+from pathlib import Path as _Path
+
+if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
+
 import argparse
 import hashlib
 import json
 import math
 from pathlib import Path
 
-from _common import (
+from evaluation_harness._common import (
     DATA,
     DATASETS,
     ROOT,
@@ -53,8 +59,8 @@ from _common import (
     write_json,
     write_text_atomic,
 )
-from _fingerprint import build_fingerprint
-from _record import run_record
+from evaluation_harness._fingerprint import build_fingerprint
+from evaluation_harness._record import run_record
 
 
 def _rows(path: Path) -> list:
@@ -164,7 +170,7 @@ def main() -> int:
 
     scorer_sha256 = None
     if args.scorer_file:
-        from _codeid import file_sha256  # noqa: PLC0415
+        from evaluation_harness._codeid import file_sha256  # noqa: PLC0415
 
         parts = []
         for f in args.scorer_file:

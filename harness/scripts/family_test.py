@@ -32,6 +32,12 @@ THE HONESTY CONDITION
 
 from __future__ import annotations
 
+import sys as _sys
+from pathlib import Path as _Path
+
+if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
+
 import argparse
 import contextlib
 import hashlib
@@ -45,7 +51,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 
-from _common import (  # noqa: E402
+from evaluation_harness._common import (  # noqa: E402
     GOALS,
     ROOT,
     ROUNDS,
@@ -54,9 +60,9 @@ from _common import (  # noqa: E402
     die,
     item_selection,
 )
-from _fingerprint import measuring_modules  # noqa: E402
-from _runs import default_metric, direction, per_item, runs_on, warn_on_ambiguous_runs  # noqa: E402  # noqa: E402 -- one implementation of "score per item"
-from stats import EXACT_UP_TO, fmt_p, holm, sign_flip_p  # noqa: E402 -- one implementation of the paired test
+from evaluation_harness._fingerprint import measuring_modules  # noqa: E402
+from evaluation_harness._runs import default_metric, direction, per_item, runs_on, warn_on_ambiguous_runs  # noqa: E402  # noqa: E402 -- one implementation of "score per item"
+from evaluation_harness.stats import EXACT_UP_TO, fmt_p, holm, sign_flip_p  # noqa: E402 -- one implementation of the paired test
 
 
 def _opponents(runs: list, against: str, exclude: str) -> list[str]:
@@ -163,7 +169,7 @@ def _run(args) -> int:
     args.metric = args.metric or default_metric(args.dataset_id, runs_dir=runs_dir)
     runs = runs_on(args.dataset_id, runs_dir=runs_dir)
     if args.round:
-        from _rounds import arms_of, resolve  # noqa: PLC0415
+        from evaluation_harness._rounds import arms_of, resolve  # noqa: PLC0415
 
         keep_arms = set(arms_of(resolve(args.round, args.goal))) | {args.a}
         runs = [(d, m) for d, m in runs if m["config_id"] in keep_arms]
