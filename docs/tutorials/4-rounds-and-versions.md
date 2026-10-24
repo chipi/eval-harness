@@ -167,7 +167,7 @@ evh leaderboard --dataset-id tickets_v1 --round r2
 ```text
 overlap_f1 (higher is better) · baseline tickets_lead2_v1 ×3: mean 0.900 · Holm across 1
   ...
-Same conditions: all 15 recorded fields match (machine, libraries, harness, scorer, items, reference bytes).
+Same conditions: all ... recorded fields match (machine, libraries, harness, scorer, items, reference bytes).
   ...
   tickets_lead2_v1            3          0.900088         28.500000
 ```

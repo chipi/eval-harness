@@ -123,7 +123,7 @@ overlap_f1 (higher is better) · baseline tickets_lead1_v1 ×3: mean 0.641 · Ho
   ...
   tickets_lead2_v1 ×3  separated: better  6  0.900  0.259  6–0          0.03125  0.0500
 
-Same conditions: all 15 recorded fields match (machine, libraries, harness, scorer, items, reference bytes).
+Same conditions: all ... recorded fields match (machine, libraries, harness, scorer, items, reference bytes).
 ```
 
 The same paired test as `pair-test`, from the same code, so the same p. The last line compares
