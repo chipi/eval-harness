@@ -637,6 +637,10 @@ def test_example_scorer_suites_pass() -> None:
         ("test_fields.py", "item fields and URL items: create, materialize, V15"),
         ("test_lineage.py", "dataset versions: --from, V2, the catalog's links"),
         (
+            "test_rounds.py",
+            "experiment rounds: open, run, suggest, retire, close, the next, validate, the page",
+        ),
+        (
             "test_run_reports.py",
             "a run with a project adapter: latency, cut-off outputs, a crash and its resume",
         ),

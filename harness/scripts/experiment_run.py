@@ -560,6 +560,11 @@ def main() -> int:
             f"{args.config}: goal {cfg['goal']!r} is not in {GOALS} "
             f"(known: {', '.join(sorted(load_goals())) or 'none'})"
         )
+    # A config may name a round of its goal (ADR-0004, optional): refused before a cent is spent
+    # when the round does not exist, is closed, or runs on another dataset.
+    from _rounds import config_round  # noqa: PLC0415
+
+    config_round(cfg, args.config)
     ds = load_dataset(cfg["dataset_id"])
     stamp = now().replace(":", "").replace("-", "")
     base_id = args.run_id or f"{cfg['config_id']}_{stamp}"
@@ -747,6 +752,7 @@ def main() -> int:
             # What the run is FOR, and the output format it was asked for: outside the
             # fingerprint on purpose. Neither changes what was measured, only what it answers.
             goal=cfg.get("goal") or None,
+            round=cfg.get("round") or None,
             format=cfg.get("format") or None,
             reference_tier=result["reference_tier"] or None,
             # What a resumed run carried from the pass it replayed, on the record rather

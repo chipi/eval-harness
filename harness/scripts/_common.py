@@ -139,6 +139,8 @@ def _paths() -> dict[str, Path]:
         "GOALS": root / Path(goals_override).expanduser() if goals_override else data / "goals",
         # Field sets (ADR-0003): one <fieldset_id>.yaml each, declaring the fields items may carry.
         "FIELDS": data / "fields",
+        # Experiment rounds (ADR-0004), optional: data/rounds/<goal_id>/<round_id>.yaml.
+        "ROUNDS": data / "rounds",
         # Items fetched from a source_url, by their sha256. Derived and gitignored, like materialized/.
         "ITEM_CACHE": root / ".cache" / "items",
     }
@@ -157,6 +159,7 @@ BASELINES: Path
 REFERENCES: Path
 GOALS: Path
 FIELDS: Path
+ROUNDS: Path
 ITEM_CACHE: Path
 
 

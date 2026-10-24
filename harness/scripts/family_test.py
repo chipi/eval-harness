@@ -48,6 +48,7 @@ HERE = Path(__file__).resolve().parent
 from _common import (  # noqa: E402
     GOALS,
     ROOT,
+    ROUNDS,
     RUNS,
     dataset_item_ids,
     die,
@@ -85,6 +86,9 @@ def _cache_key(argv: list[str], runs_dir: Path, args) -> str:
         h.update(d.name.encode() + mj.read_bytes() + (pj.read_bytes() if pj.is_file() else b""))
     for g in sorted(GOALS.glob("*.yaml")) if GOALS.is_dir() else []:
         h.update(g.name.encode() + b"\0" + g.read_bytes())
+    # A round's record decides which arms --round keeps (its retirements, its carried arms).
+    for r in sorted(ROUNDS.glob("*/*.yaml")) if ROUNDS.is_dir() else []:
+        h.update(r.as_posix().encode() + b"\0" + r.read_bytes())
     if args.items:
         h.update(args.items.read_bytes())
     if args.exclude_dataset:
@@ -145,6 +149,8 @@ def _parser() -> argparse.ArgumentParser:
     )
     ap.add_argument("--desc", action="store_true", help="higher is better, whatever the runs declare")
     ap.add_argument("--seed", type=int, default=20260926)
+    ap.add_argument("--round", help="only opponents in play in this round of a goal (rN; ADR-0004)")
+    ap.add_argument("--goal", help="the goal --round belongs to, when several goals have one")
     return ap
 
 
@@ -156,6 +162,11 @@ def _run(args) -> int:
     warn_on_ambiguous_runs(runs_dir, args.dataset_id, label=runs_dir.name)
     args.metric = args.metric or default_metric(args.dataset_id, runs_dir=runs_dir)
     runs = runs_on(args.dataset_id, runs_dir=runs_dir)
+    if args.round:
+        from _rounds import arms_of, resolve  # noqa: PLC0415
+
+        keep_arms = set(arms_of(resolve(args.round, args.goal))) | {args.a}
+        runs = [(d, m) for d, m in runs if m["config_id"] in keep_arms]
     lower = direction(runs, args.metric, args.asc, args.desc)
     A = per_item([r for r in runs if r[1]["config_id"] == args.a], args.metric)
     if not A:

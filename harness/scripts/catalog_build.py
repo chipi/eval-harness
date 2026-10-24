@@ -28,6 +28,7 @@ from urllib.parse import quote
 
 HERE = Path(__file__).resolve().parent
 
+import _common  # noqa: E402
 import _fields  # noqa: E402
 from _common import ROOT  # noqa: E402
 from catalog_adapter import Adapter, item_fields, load_catalog_adapter  # noqa: E402
@@ -750,6 +751,109 @@ def _answer(A: Adapter, g: dict, by_ds: dict, measure: str) -> str:
     return "".join(parts) or '<p class="muted">The goal names no dataset.</p>'
 
 
+def _rounds_block(A: Adapter, g: dict, measure: str, lower: bool) -> str:
+    """A goal's rounds (ADR-0004), newest first: what each set out to learn, what changed, its arms
+    in play and those retired (with why), its best arm and how it compares with the previous
+    round's best, its conclusion; for the open round, what the evidence suggests next, each as the
+    command that does it. Empty when the goal has no rounds (they are optional)."""
+    fn = getattr(A, "rounds", None)
+    rounds = [r for r in (fn() if callable(fn) else []) if r.get("goal") == g["goal_id"]]
+    if not rounds:
+        return ""
+    by_id = {r["round_id"]: r for r in rounds}
+
+    def best(r):
+        means = {}
+        for a in r.get("arms") or []:
+            vals = (A.scores(a).get(measure) or {}).get("values") or {}
+            if vals:
+                means[a] = statistics.fmean(vals.values())
+        if not means:
+            return None, None
+        a = (min if lower else max)(means, key=lambda x: means[x])
+        return a, means[a]
+
+    rows, details = [], []
+    for r in sorted(rounds, key=lambda r: -int(r["round_id"][1:] or 0)):
+        arm, mean = best(r)
+        prev = by_id.get(r.get("from") or "")
+        prev_best, _ = best(prev) if prev else (None, None)
+        vs = (
+            f'<a class="btn small" href="{inspect_url([prev_best, arm], "../", baseline=prev_best, metric=measure)}">vs {e((prev or {}).get("round_id", ""))}\'s best</a>'
+            if arm and prev_best and prev_best != arm
+            else "—"
+        )
+        label = arm.rsplit("/", 1)[-1] if arm else "—"
+        concl = (r.get("conclusion") or {}).get("text", "")
+        rows.append(
+            {
+                "cls": "" if r.get("status") == "closed" else "t-open",
+                "cells": [
+                    f"<b>{e(r['round_id'])}</b>"
+                    + (f" <small>from {e(r['from'])}</small>" if r.get("from") else ""),
+                    e(r.get("status", "")),
+                    e(r.get("hypothesis", "") or "—"),
+                    f'<span data-v="{len(r.get("arms") or [])}">{len(r.get("arms") or [])}</span>'
+                    + (
+                        f" <small>({len(r.get('retired') or [])} retired)</small>" if r.get("retired") else ""
+                    ),
+                    (f"{e(label)} <small>{fmt(mean)}</small>" if arm else "—"),
+                    vs,
+                    e(concl) or ("<i>open</i>" if r.get("status") == "open" else "—"),
+                ],
+            }
+        )
+        lines = [f"<li>changed: {e(c)}</li>" for c in r.get("changes") or []]
+        lines += [
+            f"<li>retired <code>{e(x['config_id'])}</code>: {e(x['reason'])}</li>"
+            for x in r.get("retired") or []
+        ]
+        lines += [f"<li>carried in unchanged: <code>{e(c)}</code></li>" for c in r.get("carried") or []]
+        sugg = ""
+        if r.get("status") == "open" and getattr(A, "data_dir", None) == _common.DATA:
+            try:
+                from rounds import evidence  # noqa: PLC0415
+
+                ev = evidence(g["goal_id"], r)
+                sugg = "".join(
+                    f"<li>{e(what)}" + (f'<br><code class="cmd">{e(cmd)}</code>' if cmd else "") + "</li>"
+                    for what, cmd in ev["suggest"]
+                ) + "".join(f'<li class="muted">{e(n)}</li>' for n in ev["notes"])
+            except SystemExit:
+                sugg = ""
+        if lines or sugg:
+            details.append(
+                f'<details class="rounddetail"{" open" if r.get("status") == "open" else ""}><summary>{e(r["round_id"])}'
+                f" · {e(r.get('status', ''))}</summary><ul>{''.join(lines)}</ul>"
+                + (
+                    f'<p class="small"><b>suggested next</b>, each as the command that does it (the catalog only reads):</p><ul class="suggest">{sugg}</ul>'
+                    if sugg
+                    else ""
+                )
+                + "</details>"
+            )
+    return (
+        '<p class="small muted">Rounds are optional: each one sets out to learn something, changes a few '
+        "arms, drops what lost and says why, and ends in a conclusion. Decisions are made with "
+        "<code>evh round-open</code>, <code>round-retire</code> and <code>round-close</code>; "
+        "<code>evh rounds</code> says the same as this page.</p>"
+        + table(
+            "rounds",
+            [
+                "round",
+                "status",
+                "set out to learn",
+                "arms in play",
+                f"best on {e(measure)}",
+                "against the previous round",
+                "concluded",
+            ],
+            rows,
+        )
+        + "".join(details)
+    )
+
+
 def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
     """One goal: its answer so far (the promoted baselines) first, then what it is for, then on
     each of its datasets the arms that record its measure, grouped by what they are scored
@@ -782,8 +886,13 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
     dl = "".join(f"<dt>{e(k)}</dt><dd>{e(v)}</dd>" for k, v in facts if v not in ("", None))
     body = hero("goal", e(g.get("title") or g["goal_id"]), e(g.get("statement", "")))
     body += block("01", "the answer so far", _answer(A, g, by_ds, measure))
-    body += block("02", "what it is for", f'<dl class="kv">{dl}</dl>')
-    n = 3
+    n = 2
+    rounds_html = _rounds_block(A, g, measure, prim.get("direction") == "lower")
+    if rounds_html:
+        body += block(f"{n:02d}", "rounds", rounds_html, "rounds")
+        n += 1
+    body += block(f"{n:02d}", "what it is for", f'<dl class="kv">{dl}</dl>')
+    n += 1
     for ans in goal_answers(g, by_ds):
         ds, v = ans["dataset"], by_ds.get(ans["dataset"]) or {}
         tiers = {r["id"]: r["tier"] for r in v.get("refs", [])}

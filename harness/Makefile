@@ -16,7 +16,7 @@ NOISE ?=
 TIER ?= silver
 
 .PHONY: help demo init env-check install venv-init catalog catalog-serve \
-        datasets references metrics goals inspect \
+        datasets references metrics goals inspect round-open round-retire round-close rounds \
         dataset-create dataset-materialize reference-create \
         holdout pair-test rank-stability \
         experiment-dry-run experiment-run sweep \
@@ -281,6 +281,22 @@ goals:
 inspect:
 	@test -n "$(RUNS)" || { echo "RUNS=<arm>,<arm>,... is required (config ids, or arm ids from make datasets)"; exit 1; }
 	$(PYTHON) scripts/view_inspect.py --runs $(RUNS) $(if $(BASELINE),--baseline $(BASELINE),) $(ARGS)
+
+# EXPERIMENT ROUNDS (ADR-0004), optional: a round of a goal, its decisions as commands.
+# make round-open GOAL=g DATASET_ID=d ARGS='--from r1 --hypothesis "..." --keep a,b --retire c --reason "..."'
+round-open:
+	@test -n "$(GOAL)" -a -n "$(DATASET_ID)" || { echo "GOAL=<goal_id> DATASET_ID=<dataset> are required"; exit 1; }
+	$(PYTHON) scripts/round_open.py --goal $(GOAL) --dataset $(DATASET_ID) $(ARGS)
+
+round-retire:
+	$(PYTHON) scripts/round_retire.py --goal $(GOAL) --round $(ROUND) $(ARGS)
+
+round-close:
+	$(PYTHON) scripts/round_close.py --goal $(GOAL) --round $(ROUND) $(ARGS)
+
+rounds:
+	@test -n "$(GOAL)" || { echo "GOAL=<goal_id> is required"; exit 1; }
+	$(PYTHON) scripts/round_status.py --goal $(GOAL) $(if $(ROUND),--round $(ROUND),) $(ARGS)
 
 # MATERIALIZE THE DEMO DATASET FIRST, or eleven assertions silently skip.
 #

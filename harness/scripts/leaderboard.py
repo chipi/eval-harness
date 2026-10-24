@@ -454,12 +454,19 @@ def main() -> int:
     # the older runs or to read past them. Deleting paid-for results to tidy a table is how
     # 18 arms were lost once; this is the alternative.
     ap.add_argument("--match", help="only arms whose config_id contains this substring")
+    ap.add_argument("--round", help="only the arms in play in this round of a goal (rN; ADR-0004)")
+    ap.add_argument("--goal", help="the goal --round belongs to, when several goals have one")
     args = ap.parse_args()
 
     # Each run with its directory, so the significance test can reach its predictions.jsonl.
     # Per-item scores are what make a PAIRED comparison possible, and a comparison that is
     # not paired throws away the fact that every arm was graded on the same items.
     found = runs_on(args.dataset_id, match=args.match)
+    if args.round:
+        from _rounds import arms_of, resolve  # noqa: PLC0415
+
+        keep = set(arms_of(resolve(args.round, args.goal)))
+        found = [(d, m) for d, m in found if m["config_id"] in keep]
     arm_runs = by_arm(found)
     by_config: dict[str, list[dict]] = {cid: [m for _d, m in rs] for cid, rs in arm_runs.items()}
 

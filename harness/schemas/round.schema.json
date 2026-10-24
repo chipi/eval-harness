@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "round",
+  "description": "One round of an experiment (ADR-0004), optional: what it set out to learn, what changed against the round before, the arms it dropped and why, the baseline it started from, and what it concluded. data/rounds/<goal_id>/<round_id>.yaml, written by evh round-open / round-retire / round-close. Its arms are the configs whose runs name it (`round:` in the config, recorded on the run).",
+  "type": "object",
+  "required": ["round_id", "goal", "dataset_id", "status", "opened_at"],
+  "additionalProperties": false,
+  "properties": {
+    "round_id": {"type": "string", "pattern": "^r[0-9]+$", "description": "r1, r2, ...: equals the file name."},
+    "goal": {"type": "string", "description": "The goal_id it answers."},
+    "dataset_id": {"type": "string", "description": "The dataset its arms run on."},
+    "from": {"type": "string", "pattern": "^r[0-9]+$", "description": "The round it continues."},
+    "hypothesis": {"type": "string", "description": "What the round sets out to learn, in a sentence."},
+    "changes": {"type": "array", "items": {"type": "string"}, "description": "What changed against `from`, and why, one line each."},
+    "baseline": {"type": ["string", "null"], "description": "The run it starts from and is measured against: the dataset's promoted baseline when it opened."},
+    "carried": {"type": "array", "items": {"type": "string"}, "description": "Config ids from earlier rounds kept in this one unchanged, compared without being run again."},
+    "retired": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["config_id", "reason", "at"],
+        "additionalProperties": false,
+        "properties": {"config_id": {"type": "string"}, "reason": {"type": "string"}, "at": {"type": "string"}}
+      }
+    },
+    "budget_usd": {"type": "number", "minimum": 0, "description": "What the round may spend; its billed cost is shown against it."},
+    "status": {"enum": ["open", "closed"]},
+    "opened_at": {"type": "string"},
+    "closed_at": {"type": "string"},
+    "conclusion": {
+      "type": "object",
+      "required": ["text"],
+      "additionalProperties": false,
+      "properties": {"text": {"type": "string"}, "promoted_run": {"type": ["string", "null"]}}
+    }
+  }
+}

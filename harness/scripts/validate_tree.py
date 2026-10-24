@@ -1004,9 +1004,18 @@ def v14_goals() -> None:
                     f"V14 goal {gid}: dataset {d['dataset_id']} has {n} items, "
                     f"under its min_items {need}: it can measure, not pick a winner"
                 )
+    # Rounds (ADR-0004, optional) are part of a goal: their records, and the runs that name one.
+    from _rounds import load_rounds  # noqa: PLC0415
+    from _rounds import problems as round_problems  # noqa: PLC0415
+
+    for p in round_problems():
+        print(f"       {p}")
+        bad.append(p)
+    n_rounds = len(load_rounds())
+    rounds = f", {n_rounds} round(s)" if n_rounds else ""
     rule = f"; runs from {since} must name one" if since else "; optional (no required_from set)"
     check(
-        f"V14 goals — {len(goals)} goal(s), every goal named resolves{rule}",
+        f"V14 goals — {len(goals)} goal(s){rounds}, every goal named resolves{rule}",
         not bad,
         f"{len(bad)} problem(s)",
     )

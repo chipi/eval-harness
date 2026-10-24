@@ -45,6 +45,19 @@ p 0.36, from the pre-fix run), and DBpedia's 56-item dev slice, over today's 28 
 `bert_base_fy` alone at the top rather than 13 arms in a tie.
 
 ### Added
+- **Experiment rounds, optional** ([ADR-0004](https://github.com/chipi/eval-harness/blob/main/docs/adr/ADR-0004-experiment-rounds.md)).
+  Experiments go round on round: try some arms, keep what wins, drop what lost, change something,
+  compare again. `evh round-open --goal G --dataset D [--from rN]` records what a round sets out to
+  learn, what changed, the arms carried in unchanged (`--keep`) and those dropped with the reason
+  (`--retire ... --reason`); arms join by naming it in their config (`round: rN`, recorded on the
+  run). `evh rounds --goal G` reads the evidence the way the inspector does — the round's arms
+  against its leader, its best against the previous round's best and against the baseline it
+  started from, its spend against `budget_usd` — and suggests the next decision, each as the
+  command that makes it: `evh round-retire`, `evh rank-stability`, `evh round-close --conclusion
+  ... --promote <run>` (which promotes the baseline with the conclusion as its reason). A closed
+  round refuses new runs; validate (V14) checks the records; `leaderboard` and `family-test` take
+  `--round`. The goal page shows the rounds, newest first, with the open round's suggestions. The
+  catalog stays read-only: decisions are commands. A project that never opens a round sees none of it.
 - **A goal page leads with its answer.** First the promoted baseline on each of its datasets and
   why (or "no decision yet", with the command that makes one), then what the goal is for, then on
   each dataset its references and its arms in groups by what they are scored against: gold,

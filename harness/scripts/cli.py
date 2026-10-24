@@ -53,6 +53,13 @@ COMMANDS = {
     "import-run": ("import_run.py", "per-item scores from another tool, as a run the tests can read"),
     "run-compare": ("compare_runs.py", "diff two runs, fingerprint first"),
     "run-promote": ("promote_baseline.py", "promote a run to a baseline, with a reason"),
+    "round-open": (
+        "round_open.py",
+        "open a round of a goal (optional): its hypothesis, changes, arms kept or dropped",
+    ),
+    "round-retire": ("round_retire.py", "drop an arm from the open round, with the reason"),
+    "round-close": ("round_close.py", "close a round with its conclusion, promoting the run it chose"),
+    "rounds": ("round_status.py", "a goal's rounds, and what the evidence suggests next"),
     "datasets": ("view_datasets.py", "every dataset, or one: its versions, references and arms"),
     "references": ("view_references.py", "every reference, or one: who wrote it, what is scored against it"),
     "metrics": ("view_metrics.py", "what each metric measures, which way is better, where it is recorded"),

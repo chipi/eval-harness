@@ -161,6 +161,9 @@ class Adapter(Protocol):
     # Optional: the promoted baselines (run-promote), [{"baseline_id", "dataset", "run", "arm",
     # "reason", "promoted_at", "tier", "goal"}]; the pages lead with them, the answer so far.
     # def baselines(self) -> list[dict]: ...
+    # Optional: experiment rounds (ADR-0004), each round's record with "arms", the arm ids in play;
+    # a goal page shows them as its history.
+    # def rounds(self) -> list[dict]: ...
     # Optional: every dataset id, including those no arm has run on yet.
     # def datasets(self) -> list[str]: ...
     # Optional: the version a dataset was made from, {"dataset_id", "added", "removed",
@@ -487,6 +490,36 @@ class HarnessAdapter:
                 if v not in seen.setdefault(k, []):
                     seen[k].append(v)
         return {k: vs[0] if len(vs) == 1 else "varies: " + " | ".join(vs) for k, vs in seen.items()}
+
+    @_memo
+    def rounds(self) -> list[dict]:
+        """Experiment rounds (ADR-0004, optional): each round's record, plus "arms" (the arm ids in
+        play: configs whose runs in data/runs name it, and those carried in, less the retired)."""
+        import yaml  # noqa: PLC0415
+
+        out = []
+        base = self.data_dir / "rounds"
+        for f in sorted(base.glob("*/r*.yaml"), key=lambda p: (p.parent.name, int(p.stem[1:] or 0))):
+            doc = yaml.safe_load(f.read_text(encoding="utf-8")) or {}
+            if not isinstance(doc, dict) or not doc.get("round_id"):
+                continue
+            ds = doc.get("dataset_id", "")
+            ran = {
+                arm.rsplit("/", 1)[-1]
+                for arm, dirs in self._index().items()
+                if arm.startswith(f"runs/{ds}/")
+                and any(
+                    (m := _json(d / "metrics.json") or {}).get("round") == doc["round_id"]
+                    and m.get("goal") == doc.get("goal")
+                    for d in dirs
+                )
+            }
+            retired = {r.get("config_id") for r in doc.get("retired") or []}
+            in_play = sorted((ran | set(doc.get("carried") or [])) - retired)
+            out.append(
+                dict(doc, arms=[f"runs/{ds}/{c}" for c in in_play if f"runs/{ds}/{c}" in self._index()])
+            )
+        return out
 
     @_memo
     def baselines(self) -> list[dict]:

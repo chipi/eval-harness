@@ -235,6 +235,11 @@ def main() -> int:
                 ["--runs", "tickets_lead1_v1,tickets_lead2_v1", "--item", "t01_login"],
                 "ok:(baseline)",
             ),
+            # Rounds (optional; the flow is test_rounds.py): installed, each answers in words.
+            ("rounds", ["--goal", "no_such_goal"], "no goal 'no_such_goal'"),
+            ("round-open", ["--goal", "no_such_goal", "--dataset", "tickets_v1"], "no goal 'no_such_goal'"),
+            ("round-retire", ["--goal", "g", "--round", "r1", "--arm", "a", "--reason", "x y z"], "no round"),
+            ("round-close", ["--goal", "g", "--round", "r1", "--conclusion", "x y z"], "no round"),
             ("catalog", [], "ok"),
             ("catalog-serve", [], "ok"),  # started, its address read, stopped
             ("validate", [], "ok"),
