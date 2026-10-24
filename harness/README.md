@@ -13,28 +13,37 @@ comparisons that **refuse** to mislead you.
 ```bash
 cd your-project
 pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.4.0#subdirectory=harness"
-evh init --tutorial    # the data folders, a .gitignore, and the GUIDE's kit
+evh init --tutorial    # the data folders, a .gitignore, and the tutorial kit
 evh --help             # the verbs, in the order you need them
 ```
 
-It imports nothing from your project until an arm names your adapter, and your project
-imports nothing from it.
+One install is everything: hosted-model clients, judges, the catalog and the inspector. It
+imports nothing from your project until an arm names your adapter, and your project imports
+nothing from it.
 
----
+## The loop
 
-## Install it as a dependency
-
-Pin it into your project (above), or work from a checkout of this repository, where every
-`evh` command is a `make` target (`make demo` runs the whole loop on bundled data, no API
-key, no network):
+Create a dataset, materialize it, run your arms, make a reference if you have none (often from
+the best arm's run), compare, choose:
 
 ```bash
-pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.4.0#subdirectory=harness"
-evh --help                       # every make target, as a command
-evh dataset-create --dataset-id my_v1
-evh experiment-run --config data/configs/arm_a.yaml
-evh family-test --dataset-id my_v1 --a arm_a --against arm_
+evh dataset-create --dataset-id my_v1 --source-dir data/sources/my_v1
+evh dataset-materialize --dataset-id my_v1
+evh experiment-run --config data/configs/best_model.yaml          # the arm that writes the reference
+evh reference-create --dataset-id my_v1 --from-run <its run_id>    # optional: silver from that run
+evh experiment-run --config data/configs/arm_a.yaml --repeat 3     # + the arm's own noise
+evh leaderboard --dataset-id my_v1                                 # the ranking, and whether it is real
+evh family-test --dataset-id my_v1 --a arm_a_v1 --against arm_     # is the winner separated?
+evh run-promote --run <run_id> --reason "what the tests showed"    # the choice, with why
 ```
+
+**[Getting started](../docs/GUIDE.md)** walks it once, offline, in about fifteen minutes; the
+[tutorials](../docs/GUIDE.md#where-to-go-next) add a local model, a hosted LLM with your own
+key, a frontier reference and judges, experiment rounds and dataset versions, and the catalog.
+In a checkout of this repository every `evh` command is also a `make` target (`make demo` runs
+the whole loop on bundled data, no API key, no network).
+
+## Install it as a dependency
 
 The package is code and schemas; your data stays in your project (`EVAL_HOME`, default the
 nearest directory up from where you run with a `data/` folder; `EVAL_DATA_DIR`, default `data`). Already have runs scored by your own
@@ -50,7 +59,7 @@ what people thought:
 | what goes wrong | what this does about it |
 | --- | --- |
 | two numbers measured on different data, compared anyway | `run-compare` **refuses** across `dataset_id`s |
-| a delta smaller than the run-to-run jitter, called an improvement | `REPEAT=3` reports the arm's own spread; deltas below it are marked noise |
+| a delta smaller than the run-to-run jitter, called an improvement | `--repeat 3` reports the arm's own spread; deltas below it are marked noise |
 | nobody knows which code produced a number | every run records `build.ref`; `validate` fails without it |
 | a source file changed under a frozen dataset | every item is hashed; `materialize` re-verifies and fails loudly |
 | model-generated references quoted as ground truth | gold and silver are distinct; every run records which it used |
@@ -68,28 +77,29 @@ Five directories and a contract between them:
 
 ```text
 data/sources/        your raw inputs — IMMUTABLE, never edited in place
-      ↓  make dataset-create          freeze a selection + a sha256 per item
+      ↓  evh dataset-create          freeze a selection + a sha256 per item
 data/datasets/       the dataset_id — the thing that makes two numbers comparable
-      ↓  make dataset-materialize     rebuild run inputs, re-verify every hash
+      ↓  evh dataset-materialize     rebuild run inputs, re-verify every hash
 data/materialized/   derived, regenerable, disposable
-      ↓  make reference-create        ground truth to score against (gold | silver; RUN= a run's outputs)
-data/references/
-      ↓  make experiment-run          → scores + cost + speed + build provenance
+      ↓  evh experiment-run          → scores + cost + speed + build provenance
 data/runs/
-      ↓  make run-compare / make leaderboard
-data/baselines/      make run-promote — the number future work is judged against
+      ↓  evh reference-create        ground truth to score against (gold | silver; --from-run a run's outputs)
+data/references/
+      ↓  evh leaderboard / pair-test / family-test / run-compare
+data/baselines/      evh run-promote — the number future work is judged against
 
 optional, later, from the same frozen outputs (the originals are never touched):
-data/runs-rescored/  make rescore        new reference or new code scorer, $0
-data/runs-judged/    make judge-score    a validated LLM judge, billed and capped
+data/runs-rescored/  evh rescore        new reference or new code scorer, $0
+data/runs-judged/    evh judge-score    a validated LLM judge, billed and capped
 
 beside them, also optional:
 data/goals/          what each evaluation is for; configs name one with `goal:`
+data/rounds/         experiment rounds of a goal: evh round-open / rounds / round-close
 data/fields/         field sets: the typed facts a project's items carry (`--fieldset`)
-.build/catalog/      make catalog / make catalog-serve   pages over the runs, and the inspector
+.build/catalog/      evh catalog / evh catalog-serve   pages over the runs, and the inspector
 ```
 
-`make validate` checks the whole tree — fifteen integrity rules (V1–V15), exits non-zero,
+`evh validate` checks the whole tree — fifteen integrity rules (V1–V15), exits non-zero,
 so it can gate CI.
 
 ### The three inputs
@@ -111,6 +121,8 @@ config names no `adapter:` uses it; a project with several tasks names one per a
 (`adapter: adapters/ner.py`):
 
 ```python
+from evaluation_harness.adapter import Result
+
 def call_system(text, params):
     from myproject.summarise import summarise        # your existing code
     out = summarise(text, model=params["model"])
@@ -132,7 +144,7 @@ files sharing a `dataset_id`.
 ## Is the ranking real?
 
 A table sorted by a mean always produces an ordering. Whether that ordering survives
-re-running the experiment is a different question, and `make leaderboard` answers it
+re-running the experiment is a different question, and `evh leaderboard` answers it
 before it shows you anything else:
 
 ```
@@ -169,8 +181,8 @@ Scores are arithmetic over outputs, and outputs are the expensive part. So a met
 should not cost a sweep:
 
 ```
-make rescore DATASET_ID=my_v1 MATCH=_v2
-EVAL_RUNS_DIR=data/runs-rescored make leaderboard DATASET_ID=my_v1
+evh rescore --dataset-id my_v1 --match _v2 --out data/runs-rescored
+EVAL_RUNS_DIR=data/runs-rescored evh leaderboard --dataset-id my_v1
 ```
 
 Rescored runs go to a separate directory and record `derived: {kind: rescore, from, at, with}`:
@@ -186,9 +198,9 @@ The same frozen outputs can be measured again in three ways, and none of them is
 
 | kind | what changes | cost | command |
 | --- | --- | --- | --- |
-| new reference | what an output is scored against (gold a person adjudicated) | $0 | `make rescore REFERENCE=gold/<id>` |
-| new code scorer | the metric, as code | $0 | `make rescore` |
-| judge scorer | the metric, delivered by LLM judges validated against people | billed, capped | `make judge-score` / `evh judge-score` |
+| new reference | what an output is scored against (gold a person adjudicated) | $0 | `evh rescore --reference-id gold/<id>` |
+| new code scorer | the metric, as code | $0 | `evh rescore` |
+| judge scorer | the metric, delivered by LLM judges validated against people | billed, capped | `evh judge-score` |
 
 A **judge scorer** (`data/scorers/<id>.yaml`) names two or more judges from different vendor
 families, the task they score, the prompt, and the runs that validated each judge against
@@ -196,7 +208,7 @@ human ratings. The command refuses a judge nobody validated (`--unvalidated` run
 every number labelled), freezes a blinded, shuffled judging set, stores every verdict so a
 rerun costs $0, and writes scored runs that `leaderboard`, `pair-test` and `family-test`
 read unchanged. An experiment's primary metric changes only by a recorded decision.
-Walkthrough: [GUIDE step 10](../docs/GUIDE.md);
+Walkthrough: [tutorial 3](../docs/tutorials/3-frontier-reference-and-judging.md#5-re-measure-with-an-llm-judge-optional);
 reference: [RUNBOOK §12](docs/RUNBOOK.md#12-re-measure-with-a-validated-judge); why:
 [ADR-0001](../docs/adr/ADR-0001-judge-scorers.md).
 
@@ -207,7 +219,7 @@ you rank candidates against those. This asks whether that ranking matches the on
 ground truth would have given:
 
 ```
-make silver-calibrate DATASET_ID=my_v1 REF_MATCH=_v1 ARM_MATCH=_v2
+evh silver-calibrate --dataset-id my_v1 --ref-match _v1 --arm-match _v2
 ```
 
 It costs nothing, because "author silver with model X using the same prompt and settings as
@@ -233,8 +245,9 @@ A dataset accumulates arms across config versions, and v1 and v2 of one arm are 
 measurements that must not share a row:
 
 ```
-make leaderboard DATASET_ID=my_v1 MATCH=_v2     only the v2 arms
-EVAL_RUNS_DIR=<dir> make ...                    run or read somewhere else
+evh leaderboard --dataset-id my_v1 --match _v2    only the v2 arms
+evh leaderboard --dataset-id my_v1 --round r2     only the arms in play in a round
+EVAL_RUNS_DIR=<dir> evh leaderboard --dataset-id my_v1   run or read somewhere else
 ```
 
 `EVAL_RUNS_DIR` is how a smoke pass avoids adding repeats to a real sweep's arms and
@@ -248,8 +261,10 @@ how 18 arms of paid results were lost during this harness's own development.
 
 | | |
 | --- | --- |
+| **[Getting started](../docs/GUIDE.md)** | the loop once, offline, in about fifteen minutes |
+| **[Tutorials](../docs/GUIDE.md#where-to-go-next)** | a local model against a baseline; a hosted LLM with your own key; a frontier reference, gold and judging; rounds and dataset versions; the catalog and the inspector |
 | **[INTEGRATION.md](docs/INTEGRATION.md)** | plugging in an existing system; getting ground truth when you have none |
-| **[RUNBOOK.md](docs/RUNBOOK.md)** | the operational walk, step by step, with the reasoning |
+| **[RUNBOOK.md](docs/RUNBOOK.md)** | every command and flag, step by step, with the reasoning; environment variables and exit codes |
 | **[RELEASING.md](docs/RELEASING.md)** | pinning a release in your project, and cutting one: version, changelog, tag, GitHub Release |
 | **[SCENARIO.md](docs/SCENARIO.md)** | the newcomer scenario run before every release: two experiments, real models, under $1 |
 | **[UPGRADING.md](docs/UPGRADING.md)** | from one release to the next (what can move a number), and for a copy of the harness taken before October 2026 |
@@ -259,7 +274,7 @@ how 18 arms of paid results were lost during this harness's own development.
 
 ## The judge panel
 
-The harness this grew around, and not the same thing as `make judge-score` above: the
+The harness this grew around, and not the same thing as `evh judge-score` above: the
 panel judges finalists one at a time and keeps no verdicts; the judge scorer judges every
 arm, listwise and blind, behind a validation gate, and stores every verdict. Given many
 candidate runs (`runs_from:` reads them where every command does, ranked by their primary
@@ -270,7 +285,6 @@ aggregates to per-dimension means, and flags finalists where two judges disagree
 ```bash
 evh judge --config tutorial/judge_panel.yaml --use-fake-judge   # no API key (`evh init --tutorial`)
 ANTHROPIC_API_KEY=... evh judge --config judge_panel.yaml        # your own config
-make judge                                                       # in a checkout: config.example.yaml, fake judge
 ```
 
 Use it when the cheap metric is known to be biased in your domain but you have
@@ -283,6 +297,9 @@ partial results preserved so a blown budget still yields a usable report.
 ---
 
 ## Files
+
+In a checkout of this repository; the package installs `scripts/` as `evaluation_harness`, so the
+bundled adapter a pinned project has is `evaluation_harness/adapter.py`.
 
 | Path | What it is |
 | --- | --- |
@@ -304,15 +321,16 @@ partial results preserved so a blown budget still yields a usable report.
 | `scripts/catalog_build.py`, `scripts/catalog_serve.py`, `catalog_assets/` | the catalog's pages, and the run inspector |
 | `scripts/catalog_adapter.py` | what the catalog asks of a project's data, and `HarnessAdapter`, the answer for this layout |
 | `scripts/catalog_views.py`, `scripts/view_*.py` | the catalog and the inspector in the terminal: `evh datasets`, `references`, `metrics`, `goals`, `inspect` |
-| `tests/` | this repository's tests (`make test`, `tests/self_test.py`) and the GUIDE run in a fresh project (`make guide-check`); not in the package. The ones that run `evh` install the real wheel (`tools/_wheel.py`, which the deploy uses too). `scripts/test_stats.py` ships: `evh self-test` runs it |
+| `tests/` | this repository's tests (`make test`, `tests/self_test.py`) and the GUIDE and the offline tutorials run in a fresh project (`make guide-check`); not in the package. The ones that run `evh` install the real wheel (`tools/_wheel.py`, which the deploy uses too). `scripts/test_stats.py` ships: `evh self-test` runs it |
 | `tools/` | this repository's report checks (`check_report_claims.py` and friends), judge validations and `*_report.py` tables; not in the package |
 | `tests/test_inspector_browser.py`, `requirements-browser.txt` | the catalog and the inspector in headless Chromium: `make browser-install`, then `make browser-check` |
 | `requirements-dev.txt` | the code-quality tools; from the repository root, `make quality-install`, then `make quality` |
 | `scripts/judge_panel.py`, `scripts/panel_judges.py` | the judge panel (`evh judge`) |
 
-Bundled providers: `echo` (no network), `anthropic`, and anything
-OpenAI-compatible including OpenRouter. Most real integrations delete all three
-and call one function.
+Bundled providers: `echo` (no network), `openai` (OpenAI or any OpenAI-compatible endpoint),
+`openrouter`, `anthropic` and `litellm` (a LiteLLM proxy). You choose one and bring your own key;
+which variable each reads: [tutorial 2](../docs/tutorials/2-hosted-llm.md#1-choose-a-provider).
+Most real integrations replace them with one function that calls their own system.
 
 ---
 

@@ -328,7 +328,7 @@ def judging_page(H, f: dict) -> str:
   <h1>Change the ruler, <em>not the run.</em></h1>
   <p class="dek">Every model output in these experiments is frozen, so when a better way to score them arrives the experiment can be measured again for the price of the scoring alone. We did it twice: a person corrected disputed labels, and SummEval-validated LLM judges re-scored the summaries. Both moved a headline result. Then one reader's blind check went the other way from the judges, and judges at {H.times(f["remeasure"]["summ_v2"]["billed_usd"] / fig["billed_usd"])} the price agreed with the first ones, not with the reader. On SummEval's expert ratings and on crowd ratings of 2022 LLM summaries, judges agree with people far better than the metric this leaderboard used, though not system by system; on this experiment's own outputs, nobody has yet shown which of the two to believe. That is the lesson: a judge is worth having, and worth checking.</p>
   <div class="facts">{facts_html}</div>
-  <div class="btns"><a class="btn primary" href="#value">Why judge</a><a class="btn" href="#checklist">Judging, done right</a><a class="btn" href="../docs/GUIDE/#10-optional-re-measure-with-an-llm-judge">Try it, offline</a></div>
+  <div class="btns"><a class="btn primary" href="#value">Why judge</a><a class="btn" href="#checklist">Judging, done right</a><a class="btn" href="../docs/tutorials/3-frontier-reference-and-judging/#5-re-measure-with-an-llm-judge-optional">Try it, offline</a></div>
 </div></section>
 
 <section class="block" id="value"><div class="wrap">
@@ -396,7 +396,7 @@ def judging_page(H, f: dict) -> str:
   <h2>Re-measure what you already have.</h2>
   <div class="cols"><div class="prose">
     <p>A judge scorer is one file: two or more judges, the task they score (what an item is, what the outputs are, the dimensions, the scale), the prompt, and the runs that validated each judge against people. The harness refuses one that is not validated, freezes a blinded judging set, stores every verdict and writes scored runs the leaderboard and the paired tests read unchanged. It is optional: nothing else in the harness needs it.</p>
-    <div class="btns"><a class="btn primary" href="../docs/GUIDE/#10-optional-re-measure-with-an-llm-judge">Try it offline, $0</a><a class="btn" href="../docs/harness/RUNBOOK/#12-re-measure-with-a-validated-judge">The runbook</a><a class="btn" href="{H.BLOB}/docs/adr/ADR-0001-judge-scorers.md">The design</a><a class="btn" href="{H.BLOB}/{SUMM}">The summarisation report</a></div>
+    <div class="btns"><a class="btn primary" href="../docs/tutorials/3-frontier-reference-and-judging/#5-re-measure-with-an-llm-judge-optional">Try it offline, $0</a><a class="btn" href="../docs/harness/RUNBOOK/#12-re-measure-with-a-validated-judge">The runbook</a><a class="btn" href="{H.BLOB}/docs/adr/ADR-0001-judge-scorers.md">The design</a><a class="btn" href="{H.BLOB}/{SUMM}">The summarisation report</a></div>
   </div>
 <pre class="term"><span class="c"># price it: builds the judging set, calls nothing</span>
 <span class="p">$ </span>evh judge-score --dataset-id my_v1 --scorer my-judge --dry-run

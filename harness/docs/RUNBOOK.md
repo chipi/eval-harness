@@ -1,11 +1,49 @@
 # Runbook — from raw inputs to a defensible baseline
 
-Follow this top to bottom. It is the same path `make help` lists, with the
-reasoning attached. You should not need to open a script.
+Follow this top to bottom: every step, with the reasoning attached, as `evh` commands in a
+project that pins the package. You should not need to open a script. In a checkout of this
+repository each command is also a `make` target (`make pair-test DATASET_ID=… A=… B=…`, flags
+through `ARGS="…"`); `make help` lists them.
 
-New here? **[Use the harness](../../docs/GUIDE.md)** walks the whole path once on a
-bundled example, offline, with the real output of every command — including building a
-golden dataset. This page is the reference for each step.
+New here? **[Getting started](../../docs/GUIDE.md)** walks the loop once, offline, with the real
+output of every command, and the [tutorials](../../docs/GUIDE.md#where-to-go-next) take it
+further. This page is the reference for each step.
+
+## Every command
+
+| step | command |
+|---|---|
+| start a project | `evh init [--tutorial]` |
+| what is configured | `evh env-check` |
+| freeze | `evh dataset-create --dataset-id … --source-dir …` |
+| a new version | `evh dataset-create --dataset-id …_v2 --source-dir … --from …_v1` |
+| fields on an existing dataset | `evh dataset-create --dataset-id … --update-fields --fieldset … --fields …` |
+| materialize | `evh dataset-materialize --dataset-id …` |
+| silver references | `evh reference-create --dataset-id … --from-run <run_id>` (or `--config …`) |
+| gold references | files in `data/references/gold/<dataset_id>/<item_id>.txt` |
+| cost before spending | `evh experiment-run --config … --dry-run` |
+| measure (+ own noise) | `evh experiment-run --config … --repeat 3` |
+| many arms | `evh sweep --configs "data/configs/arm_*.yaml"` |
+| list runs | `evh runs-list` |
+| rank, with the test | `evh leaderboard --dataset-id …` |
+| two runs | `evh run-compare --baseline … --candidate … --noise …` |
+| a pre-named pair | `evh pair-test --dataset-id … --a … --b …` |
+| a winner claim | `evh family-test --dataset-id … --a … --against …` |
+| re-score, $0 | `evh rescore --dataset-id … [--reference-id gold/…] --out …` |
+| re-measure with a judge (optional) | `evh judge-score --dataset-id … --scorer … [--dry-run]` |
+| read the judged runs | `EVAL_RUNS_DIR=data/runs-judged/<scorer> evh leaderboard --dataset-id …` |
+| is silver good enough | `evh silver-calibrate --dataset-id …` |
+| how many items | `evh rank-stability --dataset-id …` |
+| dev-slice-free result | `evh holdout --dataset-id … --exclude-dataset …` |
+| scores made elsewhere | `evh import-run --dataset-id … --config-id … --scores … --scorer-file …` |
+| billed cost | `evh cost-report` |
+| baseline | `evh run-promote --run … --reason "…"` · `evh runs-list --baselines` |
+| what it is for | `data/goals/<goal_id>.yaml`, and `goal:` on each config |
+| rounds (optional) | `evh round-open` · `evh round-retire` · `evh round-close` · `evh rounds --goal …` |
+| browse and inspect | `evh catalog` · `evh catalog-serve` |
+| the same, in the terminal | `evh datasets` · `evh references` · `evh metrics` · `evh goals` · `evh inspect --runs …` |
+| consistency | `evh validate` |
+| does the installed harness work here | `evh self-test` |
 
 ---
 
@@ -18,15 +56,9 @@ evh self-test
 ```
 
 That runs the paired test's own suite and the tutorial end to end in a scratch folder,
-offline and at $0. In a checkout of the harness:
-
-```bash
-make demo
-```
-
-That freezes a dataset from the bundled samples, materializes it, runs an
-experiment three times, and validates the tree. No API key. If either works, the
-harness is wired correctly and anything that breaks later is your change.
+offline and at $0. (In a checkout of the harness, `make demo` freezes a dataset from the
+bundled samples, runs an experiment three times and validates the tree.) No API key. If it
+works, the harness is wired correctly and anything that breaks later is your change.
 
 ---
 
@@ -45,8 +77,8 @@ nothing will tell you.
 ## 2. Freeze a selection
 
 ```bash
-make dataset-create DATASET_ID=my_v1
-make dataset-create DATASET_ID=my_smoke_v1 ARGS="--limit 5"     # a fast cut
+evh dataset-create --dataset-id my_v1 --source-dir data/sources/my_v1
+evh dataset-create --dataset-id my_smoke_v1 --source-dir data/sources/my_v1 --limit 5   # a fast cut
 ```
 
 This writes `data/datasets/my_v1.json`: the item list plus a **sha256 per item**.
@@ -56,6 +88,11 @@ The `dataset_id` is the comparison contract. Every run records it, and
 *is* (`support_tickets_2026q1_v1`), not for what you were doing at the time
 (`test2`).
 
+**A new version** of a dataset names the one it came from: `--from my_v1` on `my_v2` records
+its parent and the item ids it adds, removes and changes (`derived_from` in the dataset file).
+`evh datasets --dataset-id my_v2` prints the lineage, the catalog links the versions both ways,
+and `validate` V2 fails a version whose parent is gone.
+
 **What you know about each item goes in fields** (ADR-0003). Declare them once in a
 field set, `data/fields/<fieldset_id>.yaml` (`schemas/fieldset.schema.json`): a name and
 a type for each (`text`, `number`, `integer`, `boolean`, `date`, `duration`, `url`, or
@@ -63,8 +100,8 @@ a type for each (`text`, `number`, `integer`, `boolean`, `date`, `duration`, `ur
 one row per `item_id`, from a CSV or JSONL:
 
 ```bash
-make dataset-create DATASET_ID=my_v1 ARGS="--fieldset tickets --fields fields.csv"
-make dataset-create DATASET_ID=my_v1 ARGS="--update-fields --fields fixes.csv"   # later
+evh dataset-create --dataset-id my_v1 --source-dir data/sources/my_v1 --fieldset tickets --fields fields.csv
+evh dataset-create --dataset-id my_v1 --update-fields --fields fixes.csv     # later
 ```
 
 A column the field set does not declare, a value of the wrong type or outside a
@@ -72,7 +109,8 @@ choice, and a required field left empty are refused. With `--update-fields`, a v
 the file replaces that value, an empty cell clears it, and every column and item the file
 leaves out is kept. Fields are not the dataset's
 identity: runs hash the items' bytes, so correcting a field invalidates no run, and
-`fields_sha256` records that the fields changed. `make validate` (V15) checks every
+`fields_sha256` records that the fields changed. `--update-fields --fieldset tickets` attaches
+a field set to a dataset that had none. `evh validate` (V15) checks every
 value. The catalog summarises a field's values only when it is `public`; the local
 inspector shows them all, filters a comparison by them, and breaks it down by a
 `choice` or `boolean` field.
@@ -82,10 +120,10 @@ inspector shows them all, filters a comparison by them, and breaks it down by a
 fetched and pinned now), plus any field columns:
 
 ```bash
-make dataset-create DATASET_ID=episodes_v1 ARGS="--manifest items.csv --fieldset episodes"
+evh dataset-create --dataset-id episodes_v1 --manifest items.csv --fieldset episodes
 ```
 
-`make dataset-materialize` downloads each one into `.cache/items/` and refuses bytes
+`evh dataset-materialize` downloads each one into `.cache/items/` and refuses bytes
 that hash to anything else, the same failure as a changed file under `sources/`. A
 transient failure (429, 5xx, a timeout) is retried like a provider call. A host that needs
 a header gets it from `EVAL_FETCH_HEADERS` in `.env`, a JSON object
@@ -97,14 +135,14 @@ redirect to another host does not, and it is never written into a dataset.
 ## 3. Materialize
 
 ```bash
-make dataset-materialize DATASET_ID=my_v1
+evh dataset-materialize --dataset-id my_v1
 ```
 
 Copies the items into `data/materialized/<dataset_id>/` and **re-verifies every
 hash**. If a source changed since the freeze, this fails loudly rather than
 quietly measuring different bytes than the dataset claims.
 
-`materialized/` is derived. Delete it any time; `make dataset-materialize`
+`materialized/` is derived. Delete it any time; `evh dataset-materialize`
 rebuilds it. If something in there cannot be rebuilt, it is in the wrong place.
 
 ---
@@ -117,6 +155,8 @@ bundled with the harness runs. A project with several tasks names one per arm,
 `adapter: adapters/ner.py`, relative to the config or the project:
 
 ```python
+from evaluation_harness.adapter import Result
+
 def call_system(text, params):
     from myproject.summarise import summarise      # your existing code
     out = summarise(text, model=params["model"])
@@ -139,6 +179,9 @@ params:
   usd_per_mtok_out: 15.0
 ```
 
+`provider: anthropic` is one choice: the bundled providers also call OpenAI or any
+OpenAI-compatible endpoint, OpenRouter and a LiteLLM proxy, each with your own key in `.env`.
+Which variable each reads: [tutorial 2](../../docs/tutorials/2-hosted-llm.md#1-choose-a-provider).
 Full detail in [INTEGRATION.md](INTEGRATION.md).
 
 ---
@@ -150,20 +193,21 @@ not run in production is the usual choice), read its results, then make its outp
 reference:
 
 ```bash
-make experiment-run CONFIG=data/configs/best_model.yaml
-make reference-create DATASET_ID=my_v1 RUN=<that run_id>
+evh experiment-run --config data/configs/best_model.yaml
+evh reference-create --dataset-id my_v1 --from-run <that run_id>
 ```
 
 That writes **silver** references — model-generated, therefore consistent
 rather than correct. Enough to rank arms against each other; not a claim about
 truth. It calls nothing, and its `manifest.json` names the run, config, fingerprint and build
 it came from. It refuses a run from a dirty tree or of an unknown build (as `run-promote`
-does), and an empty output or one that stopped at `max_tokens` (raise `max_tokens` in a new
-config_id; `ARGS=--allow-cut-off` for outputs that end at the cap by design). Commit the
-reference before the next run: an uncommitted one makes every later run dirty.
+does), an unfinished, derived or other-dataset run, and an empty output or one that stopped at
+`max_tokens` (raise `max_tokens` in a new config_id; `--allow-cut-off` for outputs that end at
+the cap by design). Commit the reference before the next run: an uncommitted one makes every
+later run dirty.
 
-`CONFIG=data/configs/best_model.yaml` instead of `RUN=` authors the references in a pass of their
-own, one call per item, without a run to read first.
+`--config data/configs/best_model.yaml` instead of `--from-run` authors the references in a pass
+of their own, one call per item, without a run to read first.
 
 Scored against silver, the arm that wrote it is graded against its own outputs: the leaderboard
 marks its row (`arm *`). The others are measured by how close they come to it, the usual way to
@@ -171,10 +215,10 @@ choose a cheaper system: pay for the expensive one once, then chase it.
 
 **Gold** is what a person wrote or checked: one `<item_id>.txt` per item under
 `data/references/gold/<dataset_id>/` — write them, or review silver ones and keep the
-ones you would sign (`TIER=gold` authors straight into gold, for a system whose output you
-have reviewed). Gold always wins over silver for new runs. Runs made before the gold set
-existed are re-scored against it for $0:
-`make rescore DATASET_ID=my_v1 REFERENCE=gold/my_v1 OUT=data/runs-gold`.
+ones you would sign (`reference-create --config … --tier gold` authors straight into gold, for a
+system whose output you have reviewed; `--from-run` refuses `--tier gold`). Gold always wins over
+silver for new runs. Runs made before the gold set existed are re-scored against it for $0:
+`evh rescore --dataset-id my_v1 --reference-id gold/my_v1 --out data/runs-gold`.
 
 Every later run is scored against these automatically and records which tier it
 used. Ten items is enough to rank four arms; keep the first pass cheap.
@@ -184,7 +228,7 @@ used. Ten items is enough to rank four arms; keep the first pass cheap.
 ## 5. Measure the arm's own noise — **before** you compare anything
 
 ```bash
-make experiment-run CONFIG=data/configs/my_config.yaml REPEAT=3
+evh experiment-run --config data/configs/my_config.yaml --repeat 3
 ```
 
 Output ends with:
@@ -207,17 +251,21 @@ Write the number down; you need it in step 7.
 ## 6. Run the arms you want to compare
 
 ```bash
-make experiment-run CONFIG=data/configs/arm_a.yaml
-make experiment-run CONFIG=data/configs/arm_b.yaml
-make runs-list
+evh experiment-run --config data/configs/arm_a.yaml
+evh experiment-run --config data/configs/arm_b.yaml
+evh runs-list
 ```
 
 A run is only attributable if it knows its build. `runs-list` marks runs from a
 dirty tree with `*` — their `build.ref` does not describe what actually ran.
 **Commit before you measure** — dataset, configs, references — so the runs you keep are
 clean the first time. Re-running an arm into `data/runs` after the fact leaves two
-measurements of one config, which `make validate` refuses (V8); explore in a scratch
+measurements of one config, which `evh validate` refuses (V8); explore in a scratch
 directory instead (`EVAL_RUNS_DIR=data/runs-scratch`).
+
+`experiment-run` warns, naming the items, when outputs stop at `max_tokens` (the provider's
+`finish_reason`, or tokens out reaching the cap): they are scored as if complete. The harness
+times every call (`latency_ms`) unless the adapter reports its own.
 
 ### When a run dies partway: `--resume`
 
@@ -226,11 +274,12 @@ A sweep that is interrupted — a crash, a 429 that outlasts the retries, or the
 **as each item is produced**, so what you already paid for survives.
 
 ```bash
-make experiment-run CONFIG=data/configs/arm_a.yaml ARGS="--resume arm_a_v1_20260929T101500Z"
+evh experiment-run --config data/configs/arm_a.yaml --resume arm_a_v1_20260929T101500Z
 ```
 
-The run id is the directory under `data/runs/`, and the cost cap prints the exact
-command when it stops you. A resumed pass **re-reads every finished output and scores
+The run id is the directory under `data/runs/`. A run that stops, whatever the cause, prints
+which run it was, after how many items, and the exact `--resume` command; or delete the
+directory (until one or the other, `validate` fails V7 on it). A resumed pass **re-reads every finished output and scores
 it again**, rather than skipping it — so the new run is complete, not a fragment — and
 calls the model only for the items that are missing.
 
@@ -261,7 +310,7 @@ results, `1` nothing was measured at all.
 ## 7. Compare, with the noise floor you measured
 
 ```bash
-make run-compare BASE=<run_id> CAND=<run_id> NOISE=0.043888
+evh run-compare --baseline <run_id> --candidate <run_id> --noise 0.043888
 ```
 
 Quality, cost and speed appear side by side — `overlap_f1` next to
@@ -269,7 +318,7 @@ Quality, cost and speed appear side by side — `overlap_f1` next to
 different findings, and only one of them is a decision.
 
 Read the verdict column, not the delta. A `+0.02` that is below your measured
-spread is **noise**, and the tool says so. Without `NOISE=` it nags, because a
+spread is **noise**, and the tool says so. Without `--noise` it nags, because a
 delta judged against nothing is not evidence.
 
 It refuses outright if the two runs used different `dataset_id`s.
@@ -283,15 +332,22 @@ into a *finding* is a separate verb: these are the tools behind the numbers in `
 
 | verb | answers |
 |---|---|
-| `make leaderboard DATASET_ID=…` | how do all the arms rank, on every metric at once |
-| `make family-test DATASET_ID=… A=… AGAINST=…` | is arm A separated from a **pre-declared family**, Holm step-down. This is what every separation claim in the reports rests on |
-| `make pair-test DATASET_ID=… A=… B=…` | are these two arms different — paired, per item. Uncorrected, so only legitimate for a pair named in advance |
-| `make holdout DATASET_ID=… EXCLUDE=…` | does the result survive on the items the dev slice never contained |
-| `make rank-stability DATASET_ID=…` | how many items before the ordering stops moving — measured, not assumed from a power table |
-| `make bootstrap-test DATASET_ID=… A=… AGAINST=…` | a percentile interval for a corpus-level metric that has no per-item value |
-| `make rescore DATASET_ID=…` | recompute every score from stored outputs under the current scorer — or, with `REFERENCE=gold/…`, against a reference set that arrived later. **$0, no API calls** |
-| `make cost-report` | what each arm actually cost, from the provider's bill rather than a price table |
-| `make silver-calibrate DATASET_ID=…` | does a model-authored reference rank arms the way the trusted one does |
+| `evh leaderboard --dataset-id …` | how do all the arms rank, on every metric at once |
+| `evh family-test --dataset-id … --a … --against …` | is arm A separated from a **pre-declared family**, Holm step-down. This is what every separation claim in the reports rests on |
+| `evh pair-test --dataset-id … --a … --b …` | are these two arms different — paired, per item. Uncorrected, so only legitimate for a pair named in advance |
+| `evh holdout --dataset-id … --exclude-dataset …` | does the result survive on the items the dev slice never contained |
+| `evh rank-stability --dataset-id …` | how many items before the ordering stops moving — measured, not assumed from a power table |
+| `evh bootstrap-test --dataset-id … --a … --against …` | a percentile interval for a corpus-level metric that has no per-item value |
+| `evh rescore --dataset-id … --out …` | recompute every score from stored outputs under the current scorer — or, with `--reference-id gold/…`, against a reference set that arrived later. **$0, no API calls** |
+| `evh cost-report` | what each arm actually cost, from the provider's bill rather than a price table |
+| `evh silver-calibrate --dataset-id …` | does a model-authored reference rank arms the way the trusted one does |
+
+`pair-test` and `family-test` count the exact p over all 2^n sign patterns when a pair shares 30
+items or fewer, and estimate it from 20,000 permutations above that; `pair-test` says which.
+Without `--metric` they read the primary metric the runs recorded. Which way is better is
+inferred once for every command: a flag (`--asc`, `--desc`), else the goal the runs name, else
+the adapter's `METRIC_DIRECTIONS`, else the name (cost, latency and token metrics go down).
+`leaderboard`, `family-test` and `inspect` take `--round rN` for the arms in play in a round.
 
 Two that are easy to reach for and wrong:
 
@@ -306,7 +362,7 @@ Two that are easy to reach for and wrong:
 ## 8. Promote — a decision, not a copy
 
 ```bash
-make run-promote RUN=<run_id> REASON="beat prev baseline by 6% on my_v1 n=40, spread 0.004"
+evh run-promote --run <run_id> --reason "beat prev baseline by 6% on my_v1 n=40, spread 0.004"
 ```
 
 Refused if the run came from a dirty tree, if its build is unknown, or if the
@@ -319,26 +375,32 @@ against, the adapter that scored it, its fingerprint hash, and its goal and form
 replaces the baseline, and git keeps the one it replaced; a baseline is never edited.
 
 ```bash
-make baselines-list
+evh runs-list --baselines
 ```
+
+`evh round-close --promote <run_id>` promotes too, with the round's conclusion as the reason
+(§13).
 
 ---
 
 ## 9. Validate before you trust anything
 
 ```bash
-make validate
+evh validate
 ```
 
 Fifteen checks (V1–V15): schema conformance (datasets, runs, baselines, configs, judge
 scorers, judging sets, verdicts), every run's `dataset_id` resolves, every run
 identifies its build, materialized copies still match their hashes, no two
-configs reporting byte-identical scores and per-item results, no baseline pointing at a
+configs reporting byte-identical scores and per-item results (two arms with different outputs
+that are both perfect are two measurements, not a copy), no baseline pointing at a
 deleted run or disagreeing with it, every committed run readable and present on disk, no two runs claiming one
 `config_id`, no derived run naming a scorer that is not the code in this tree, every judging
 set matching its stored hash, every judge verdict naming a real set, item, pass and block,
-every judge scorer yaml loading and well-formed, every goal well-formed and named by every
-run that must name one, and every item field declared, typed and matching its hash.
+every judge scorer yaml loading and well-formed, every goal and round well-formed and named by
+every run that must name one, and every item field declared, typed and matching its hash. V4
+checks only datasets materialized on this machine, and names each one it could not check (a CI
+job without the sources checks none: materialize first where the copy matters).
 
 What it holds *your* project to is yours to declare, in `data/validate.json` (all optional):
 
@@ -372,7 +434,6 @@ you trust:
 
 ```bash
 evh judge --config tutorial/judge_panel.yaml --use-fake-judge   # keyless; the kit's config
-make judge                                                       # in a checkout
 ```
 
 Triage on the cheap metric, decide with the judge, cost-capped with a mid-run
@@ -396,9 +457,8 @@ $0:
 
    ```bash
    python examples/_shared/adjudicate.py examples/<experiment>/adjudication.json
-   cd harness && python scripts/rescore.py --dataset-id <id> \
-       --reference-id gold/<id>_adj1 --out data/runs-adjudicated
-   EVAL_RUNS_DIR=data/runs-adjudicated make leaderboard DATASET_ID=<id>
+   evh rescore --dataset-id <id> --reference-id gold/<id>_adj1 --out data/runs-adjudicated
+   EVAL_RUNS_DIR=data/runs-adjudicated evh leaderboard --dataset-id <id>
    ```
 
 4. **Add a claim check** for every new number you report. It can recompute them from the
@@ -416,19 +476,18 @@ Worked example: `examples/classification-ag-news/adjudication.json`.
 When a better instrument exists than the metric the experiment ranks by (SummEval showed
 `coverage` agrees with experts at τ 0.10, a validated LLM judge at 0.52), measure the frozen
 outputs again, billed and capped. Design: [ADR-0001](../../docs/adr/ADR-0001-judge-scorers.md).
-This is not `make judge`, the older judge panel. **It is optional:** nothing else in the
+This is not `evh judge`, the older judge panel. **It is optional:** nothing else in the
 harness needs it, and it never changes a committed run. To see the whole pass offline and
-for $0 first, run the tutorial's [step 10](../../docs/GUIDE.md).
+for $0 first, run [tutorial 3, step 5](../../docs/tutorials/3-frontier-reference-and-judging.md#5-re-measure-with-an-llm-judge-optional).
 
 ```bash
-make judge-score DATASET_ID=cnn_dailymail_200 SCORER=judge-summ-v1 ARGS=--dry-run   # free
-make judge-score DATASET_ID=cnn_dailymail_200 SCORER=judge-summ-v1
-EVAL_RUNS_DIR=data/runs-judged/judge-summ-v1 make leaderboard DATASET_ID=cnn_dailymail_200
+evh judge-score --dataset-id my_v1 --scorer my-judge-v1 --dry-run   # free
+evh judge-score --dataset-id my_v1 --scorer my-judge-v1
+EVAL_RUNS_DIR=data/runs-judged/my-judge-v1 evh leaderboard --dataset-id my_v1
 ```
 
-From an installed package the same pass is `evh judge-score --dataset-id <id> --scorer <id>`
-(same flags), in a project that has only its own data directory, scorer, prompt and runs:
-the judging code, the prompt builder and the judge client are all in `evaluation_harness`.
+A project needs only its own data directory, scorer, prompt and runs: the judging code, the
+prompt builder and the judge client are all in `evaluation_harness`.
 `validate_judge_goyal.py` and `validate_judge_zhang.py`, which check a scorer against the Goyal
 et al. human preferences and the Zhang et al. crowd ratings (CNN/DailyMail articles), stay
 scripts of this repository: each is specific to its download
@@ -437,7 +496,7 @@ and to the news-summary judge, so neither is an `evh` command.
 1. **The scorer** is `data/scorers/<id>.yaml`: two or more judges from different vendor
    families, the task, the prompt, the protocol, a `validation` block and a cost cap. The
    command refuses a scorer whose validation does not name a committed run with the stated
-   value and the judge's model. `ARGS=--unvalidated` overrides it and labels every number
+   value and the judge's model. `--unvalidated` overrides it and labels every number
    "unvalidated judge" (the primary metric becomes `judge_score_unvalidated`). Templates:
    [`judge-summ-v1.yaml`](../data/scorers/judge-summ-v1.yaml), real and validated, and
    [`tickets-judge-v1.yaml`](../tutorial/scorers/tickets-judge-v1.yaml), fake, with a `task`.
@@ -455,8 +514,8 @@ and to the news-summary judge, so neither is an `evh` command.
      taken to be SummEval's, whose own count phrases are rewritten instead; a prompt with both
      is refused, since its fixed phrases would keep saying 16.
    - **Which arms.** Every arm on the dataset (its latest run per `config_id`) unless the
-     scorer sets `arms_match` (a `config_id` substring), or `ARGS="--match … "` or
-     `--arms a,b,c` narrows it. A subset is its own judging set. If the arms mix config versions
+     scorer sets `arms_match` (a `config_id` substring), or `--match …` or `--arms a,b,c`
+     narrows it. A subset is its own judging set. If the arms mix config versions
      (`_v1` and `_v2` of one arm), the pass warns: each version is judged as its own arm.
    - **`prompt.file`** is looked up in this order, first hit wins: an absolute path as
      written; the project root (`EVAL_HOME`; else, in a checkout, the checkout; else the nearest
@@ -471,7 +530,7 @@ and to the news-summary judge, so neither is an `evh` command.
      `OPENROUTER_API_KEY` it goes straight to OpenRouter, so `model` must then be an
      OpenRouter id (`vendor/model`) or an alias in `$EVAL_MODELS_FILE` or `<project>/models.json`.
      Billed cost is read from the response; the scorer's price table is the fallback.
-     The `openai` client is installed with the harness.
+     The `openai` client is installed with the harness: nothing to add.
    - **`provider: fake`** judges call nothing and cost nothing. They exist to try a scorer
      end to end and to test one; the gate refuses them whatever the `validation` block says,
      so they only run with `--unvalidated`.
@@ -484,7 +543,7 @@ and to the news-summary judge, so neither is an `evh` command.
    fewest blocks of at most `outputs_per_call`: 29 arms are 15 + 14. Scores are absolute on
    the task's scale per dimension, so blocks are pooled. Validate at the block size you run.
 5. **Verdicts** are stored per call in `data/judge-verdicts/`. A rerun skips what is
-   stored; `ARGS=--no-calls` projects from them for $0. At the cost cap the pass stops and
+   stored; `--no-calls` projects from them for $0. At the cost cap the pass stops and
    keeps everything bought; raise the cap to continue. A reply that does not parse (wrong
    shape, missing dimension, a score off the scale) is stored and reported as
    `unparsed reply: …`; an item counts only when every one of its primary blocks parsed. A
@@ -493,7 +552,7 @@ and to the news-summary judge, so neither is an `evh` command.
    source's text is never committed by accident; `validate` V12 checks every committed reply.
    Real judges do this: on the Zhang et al. validation `gemma_l` left 1 of its 200 replies
    unparsed and `qwen_s` 2 (`data/judge-validation/judge-summ-v1/zhang2023-cnndm/report.json`).
-   `ARGS="--retry-unparsed"` calls again for those blocks only.
+   `--retry-unparsed` calls again for those blocks only.
 6. **Read `data/runs-judged/<id>/summary.json` before the leaderboard:** per-judge columns,
    inter-judge agreement, which arms share a judge's family, the position check (a second
    shuffle on a subset) and the noise check (a repeat on a subset). A difference between arms
@@ -543,6 +602,40 @@ own outputs.
 
 ---
 
+## 13. Rounds of an experiment (optional)
+
+Experiments go round on round: try some arms, keep what wins, drop what lost, change something,
+compare again. A round records it, beside its goal, in `data/rounds/<goal>/<round>.yaml`; the
+commands are its only writers, and a project that never opens one sees none of it. Design:
+[ADR-0004](../../docs/adr/ADR-0004-experiment-rounds.md). Walkthrough, offline:
+[tutorial 4](../../docs/tutorials/4-rounds-and-versions.md).
+
+```bash
+evh round-open --goal my_goal --dataset my_v1 --hypothesis "what this round sets out to learn" \
+    --keep arm_a_v1,arm_b_v1                       # round 1: carry in arms already run
+evh rounds --goal my_goal                          # the evidence, and the next decisions as commands
+evh round-retire --goal my_goal --round r1 --arm arm_b_v1 --reason "why it is dropped"
+evh round-close --goal my_goal --round r1 --conclusion "what it showed" [--promote <run_id>]
+evh round-open --goal my_goal --dataset my_v1 --from r1 --change "what changed and why" \
+    --keep arm_a_v1 --retire arm_c_v1 --reason "why" --budget-usd 0.50
+```
+
+- **Arms join a round** by naming it in their config, `round: r2` beside `goal:`; every run
+  records it. Carried arms (`--keep`) are not run again. Commit the round file before the runs.
+- **`evh rounds`** reads the evidence the way the inspector does (the round's arms against its
+  leader, Holm-corrected; its best against the previous round's best and the baseline it started
+  from; its spend against `--budget-usd`) and suggests the next decision as the command that
+  makes it: retire an arm, measure more items, close the round. It decides nothing.
+- **`round-close --promote <run_id>`** promotes that run to the dataset's baseline, with the
+  conclusion as its reason. A closed round refuses new runs; one round per goal is open at a
+  time.
+- A round compares arms scored against one reference: when gold arrives mid-way, new runs are
+  scored against gold while carried arms were scored against silver, so re-score them first.
+- `leaderboard`, `family-test` and `inspect` take `--round rN`; `validate` (V14) checks the
+  round files; the catalog's goal page shows the rounds, newest first.
+
+---
+
 ## Exit codes
 
 Every command, `make` target and `evh` subcommand, for scripts and CI that branch on them:
@@ -560,8 +653,11 @@ run prints how many items it measured and how to resume.
 
 ## Environment variables
 
-Read from the environment or the project's `.env` (an exported value wins). `.env.example`
-carries the ones a project usually sets, with the reasoning. The harness's commands read
+Read from the environment or the project's `.env` (an exported value wins; `evh init`
+gitignores `.env`, so a key in it is never committed). Which provider you use is your choice,
+and the key is yours: [tutorial 2](../../docs/tutorials/2-hosted-llm.md#1-choose-a-provider).
+`evh env-check` reports what is set. In a checkout, `harness/.env.example` carries the ones a
+project usually sets, with the reasoning. The harness's commands read
 `.env` when they start; a program that only imports the harness (an adapter's own tests, a
 notebook) reads no `.env`, and the project's paths are resolved on first use, so it can set
 `EVAL_HOME` after the import.
@@ -580,7 +676,10 @@ notebook) reads no `.env`, and the project's paths are resolved on first use, so
 | `EVAL_MODELS_FILE` | the alias to upstream-model table judges are routed by |
 | `EVAL_FETCH_HEADERS` | JSON `{"host": {"Header": "value"}}` for URL items behind a login |
 | `EVAL_NO_CACHE` | `1`: `family-test` recomputes instead of replaying an identical earlier run |
-| `OPENROUTER_API_KEY`, `LITELLM_BASE_URL` + `LITELLM_API_KEY`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` | hosted models and judges |
+| `OPENAI_API_KEY` (and `OPENAI_BASE_URL`) | `provider: openai`: OpenAI, or any OpenAI-compatible endpoint; an arm's `api_key_env` names another variable |
+| `OPENROUTER_API_KEY` | `provider: openrouter` (with `base_url` and `api_key_env: OPENROUTER_API_KEY` in the arm), and judges routed straight to OpenRouter |
+| `ANTHROPIC_API_KEY` | `provider: anthropic` |
+| `LITELLM_BASE_URL` + `LITELLM_API_KEY` | `provider: litellm`, a LiteLLM proxy, and judges routed through it (a judge takes the proxy when both it and `OPENROUTER_API_KEY` are set) |
 
 ---
 
@@ -592,15 +691,15 @@ git SHA, which is right only if the project *is* the system under test.
 Declare it instead. No code edit:
 
 ```bash
-EVAL_BUILD_REF=v2.3.1                make experiment-run CONFIG=...
-EVAL_BUILD_REF=sha256:ab12…          make experiment-run CONFIG=...   # image digest
-EVAL_BUILD_REF=$(git -C ../my-system rev-parse HEAD)   make experiment-run ...  # the system's repo
+EVAL_BUILD_REF=v2.3.1                evh experiment-run --config ...
+EVAL_BUILD_REF=sha256:ab12…          evh experiment-run --config ...   # image digest
+EVAL_BUILD_REF=$(git -C ../my-system rev-parse HEAD)   evh experiment-run --config ...  # the system's repo
 ```
 
 **Pin it.** An eval against a moving target measures the target's movement, and
 you will spend a day attributing that to your change.
 
-`make validate` fails on any run whose build is `unknown`, and `make run-promote`
+`evh validate` fails on any run whose build is `unknown`, and `evh run-promote`
 refuses one — a baseline that names no system cannot be acted on.
 
 ---
@@ -609,13 +708,15 @@ refuses one — a baseline that names no system cannot be acted on.
 
 In order, because each is cheaper than the next:
 
-1. `make validate` — is the tree even consistent?
-2. `make runs-list` — was the run from a dirty tree?
-3. `REPEAT=3` — is the delta inside the arm's own spread?
+1. `evh validate` — is the tree even consistent?
+2. `evh runs-list` — was the run from a dirty tree?
+3. `--repeat 3` — is the delta inside the arm's own spread?
 4. Same `dataset_id` on both sides? (`run-compare` refuses, but check the ids)
 5. Scored against **silver**? A run's `metrics.json` records `reference_tier` — silver
    ranks arms, it does not establish correctness.
-6. Did a source change? `make dataset-materialize DATASET_ID=... ARGS=--force`
+6. Did a source change? `evh dataset-materialize --dataset-id ... --force`
    re-verifies every hash.
+7. Do the runs share their conditions? `evh inspect --runs a,b` names every fingerprint field
+   that differs (machine, libraries, harness, scorer, items, reference bytes).
 
 Most "regressions" are one of the first three.

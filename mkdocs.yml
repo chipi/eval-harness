@@ -31,7 +31,13 @@ nav:
   - Home: index.md
   - The harness ↗: https://evals.humancopilot.eu/
   - The experiments ↗: https://evals.humancopilot.eu/experiments.html
-  - Use the harness: GUIDE.md
+  - Getting started: GUIDE.md
+  - Tutorials:
+      - 1 · A local model against a baseline: tutorials/1-local-model.md
+      - 2 · A hosted LLM, with your own key: tutorials/2-hosted-llm.md
+      - 3 · A frontier reference, gold, and judging: tutorials/3-frontier-reference-and-judging.md
+      - 4 · Experiment rounds and dataset versions: tutorials/4-rounds-and-versions.md
+      - 5 · The catalog and the inspector: tutorials/5-catalog-and-inspector.md
   - The harness:
       - Concepts: harness/CONCEPTS.md
       - Integration: harness/INTEGRATION.md

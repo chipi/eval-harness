@@ -227,7 +227,7 @@ def main() -> int:
             ("references", ["--reference-id", "gold/tickets_v1"], "ok:scored against it"),
             ("metrics", [], "ok:overlap_f1"),
             ("goals", [], "ok"),
-            # lead2 against lead1 on gold: the p of GUIDE step 8 (0.0938, exact over 2^6 sign patterns)
+            # lead2 against lead1 on gold: the p of tutorial 3 step 4 (0.0938, exact over 2^6 sign patterns)
             ("inspect", ["--runs", "tickets_lead1_v1,tickets_lead2_v1"], "ok:0.09375"),
             ("inspect", ["--runs", "tickets_lead1_v1,no_such_v1"], "no arm with that id"),
             (

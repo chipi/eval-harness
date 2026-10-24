@@ -166,7 +166,7 @@ p 0.36, from the pre-fix run), and DBpedia's 56-item dev slice, over today's 28 
     because every published pair and family test is on more than 30 items;
   - **in the tutorial** (6 items): `pair-test` reads 0.0312 (was 0.0330), and the family test
     0.0938 against `lead1` and 0.3125 against `author` (`lead2_noisy`'s is unseeded and moves
-    with every run). The verdicts are the same (GUIDE steps 6 and 8);
+    with every run). The verdicts are the same (getting started step 7, tutorial 3 step 4);
   - **in your project:** re-run `pair-test` / `family-test` on any pair with 30 or fewer
     shared items. Whether a verdict near its threshold moves depends on your data.
 - `pair-test` says which it did: `(exact, all 2^n sign patterns)` or `(20000 permutations)`.
@@ -180,9 +180,15 @@ p 0.36, from the pre-fix run), and DBpedia's 56-item dev slice, over today's 28 
   on it record `primary_metric: overlap_f1`. The leaderboard already ranked them by it, first
   by name; it no longer prints that the metric was "chosen by sort order", and the catalog and
   the inspector open on it. Runs made before keep what they recorded.
-- **`docs/GUIDE.md` is a walkthrough in your own project**: install the package, `evh init
-  --tutorial`, then every step with `evh`. It used to run inside a checkout of this
-  repository, with `make`.
+- **`docs/GUIDE.md` is getting started, in your own project**: install the package, `evh init
+  --tutorial`, then the loop with `evh` (a dataset, arms, a reference from a run, a comparison, a
+  choice). It used to run inside a checkout of this repository, with `make`, and to hold every
+  step. The rest is in five tutorials (`docs/tutorials/`): a local model against a baseline, a
+  hosted LLM with your own key (which variable each provider reads), a frontier model's run as
+  the reference with gold and judging, experiment rounds and dataset versions, and the catalog
+  and the inspector with the command behind each view. `make guide-check` runs getting started
+  and the three offline tutorials, each from where getting started ends. The README and the
+  RUNBOOK lead with `evh`.
 - **The default metric is the one your runs recorded.** `pair-test`, `family-test`, `holdout`
   and `rank-stability` defaulted to `coverage`, the summarisation example's metric: in any
   project that does not score it they found no runs, or crashed. Without `--metric` they now

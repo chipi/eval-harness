@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run docs/GUIDE.md in a fresh project and check every output it quotes.
+"""Run docs/GUIDE.md and the offline tutorials in a fresh project and check every output they quote.
 
     python tests/check_guide.py            # PASS / FAIL, exits non-zero on a mismatch
     python tests/check_guide.py --print    # also print what each command printed
@@ -9,7 +9,8 @@ copied in, then every step with `evh`. A quoted output that no longer matches wh
 command prints is a GUIDE that lies to its first reader, so this runs each ```bash block in
 order in a scratch project, the way a reader would, and checks that every line of the
 ```text block after it appears in what was printed (spaces collapsed; a line with "..." is
-an elision and is not checked).
+an elision and is not checked). The tutorials that run offline (TUTORIALS) are run the same
+way, each in a copy of the project as the GUIDE leaves it.
 
 The package is built into its wheel and installed beside the project, with its own `evh` on
 PATH (_wheel.py): a file pyproject.toml leaves out of the package is missing here too. A one-line HTML comment before a block steers the
@@ -48,6 +49,17 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))  # _wheel
 import _wheel  # noqa: E402
 
 GUIDE = HARNESS.parent / "docs" / "GUIDE.md"
+#: Run after the GUIDE, each in its own copy of the project the GUIDE leaves. Tutorials 1 and 2
+#: are not here: they need a local model's libraries and a hosted model's key, so their blocks
+#: are checked by check_commands.py (every command and flag exists), not run.
+TUTORIALS = [
+    HARNESS.parent / "docs" / "tutorials" / name
+    for name in (
+        "3-frontier-reference-and-judging.md",
+        "4-rounds-and-versions.md",
+        "5-catalog-and-inspector.md",
+    )
+]
 FENCE = re.compile(r"^```(\w*)\s*$")
 MARK = re.compile(r"^<!--\s*guide-check:\s*(\w+)((?:\s+[\w.-]+)*)\s*-->\s*$")
 PLACEHOLDER = re.compile(r"<(?:a|the) ([A-Za-z0-9_]+) run_id>")
@@ -175,61 +187,75 @@ def run(cmd: str, proj: Path, env: dict, background: bool) -> tuple:
     return 0, log.read_text()
 
 
+def run_page(page: Path, proj: Path, env: dict, verbose: bool) -> tuple:
+    """Run one page's ```bash blocks in `proj`; (blocks run, [problems])."""
+    problems: list[str] = []
+    ran = 0
+    name = page.relative_to(HARNESS.parent).as_posix()
+    bs = blocks(page.read_text(encoding="utf-8"))
+    for n, (kind, body, (mark, _), line) in enumerate(bs):
+        if kind != "bash" or mark == "skip":
+            continue
+        cmd = fill(body, proj)
+        nxt = bs[n + 1] if n + 1 < len(bs) else None
+        want = nxt[1] if nxt and nxt[0] == "text" and nxt[3] - line <= len(body.splitlines()) + 3 else None
+        if mark == "background" and want and f"127.0.0.1:{PORT}" in want and not port_free(PORT):
+            # Another program on this machine holds the default port: not the page's to take.
+            free = free_port()
+            cmd, want = (
+                f"{cmd.strip()} --port {free}",
+                want.replace(f"127.0.0.1:{PORT}", f"127.0.0.1:{free}"),
+            )
+        code, out = run(cmd, proj, env, mark == "background")
+        ran += 1
+        if verbose:
+            print(f"\n=== {name} line {line} (exit {code}):\n{cmd}\n--- printed:\n{out.rstrip()}")
+        if want is None:
+            if code != 0:
+                problems.append(
+                    f"{name} line {line}: exited {code}, and the page quotes no output for it\n"
+                    f"    {out.strip()[-300:]}"
+                )
+            continue
+        assert nxt is not None  # `want` was read from it
+        vmark, vwords = nxt[2]
+        if vmark == "varies" and not vwords:
+            continue
+        got = norm(out)
+        lines_ = [x for x in expected_lines(want) if not (vmark == "varies" and any(w in x for w in vwords))]
+        missing = [x for x in lines_ if x not in got]
+        if missing:
+            problems.append(
+                f"{name} line {line}: {len(missing)} quoted line(s) not printed, e.g. {missing[0]!r}"
+            )
+    return ran, problems
+
+
 def main() -> int:
-    """Run the GUIDE.md walkthrough and check all quoted outputs match."""
+    """Run the GUIDE, then each checked tutorial from where the GUIDE ends; check every quoted output."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--print", action="store_true", help="print what each command printed")
     args = ap.parse_args()
     tmp = Path(tempfile.mkdtemp(prefix="guide-check-"))
-    problems, ran = [], 0
+    problems: list[str] = []
+    ran = 0
     try:
         proj, env = setup(tmp)
-        bs = blocks(GUIDE.read_text(encoding="utf-8"))
-        for n, (kind, body, (mark, _), line) in enumerate(bs):
-            if kind != "bash" or mark == "skip":
-                continue
-            cmd = fill(body, proj)
-            nxt = bs[n + 1] if n + 1 < len(bs) else None
-            want = (
-                nxt[1] if nxt and nxt[0] == "text" and nxt[3] - line <= len(body.splitlines()) + 3 else None
-            )
-            if mark == "background" and want and f"127.0.0.1:{PORT}" in want and not port_free(PORT):
-                # Another program on this machine holds the default port: not the GUIDE's to take.
-                free = free_port()
-                cmd, want = (
-                    f"{cmd.strip()} --port {free}",
-                    want.replace(f"127.0.0.1:{PORT}", f"127.0.0.1:{free}"),
-                )
-            code, out = run(cmd, proj, env, mark == "background")
-            ran += 1
-            if args.print:
-                print(f"\n=== GUIDE line {line} (exit {code}):\n{cmd}\n--- printed:\n{out.rstrip()}")
-            if want is None:
-                if code != 0:
-                    problems.append(
-                        f"line {line}: exited {code}, and the GUIDE quotes no output for it\n"
-                        f"    {out.strip()[-300:]}"
-                    )
-                continue
-            assert nxt is not None  # `want` was read from it
-            vmark, vwords = nxt[2]
-            if vmark == "varies" and not vwords:
-                continue
-            got = norm(out)
-            lines_ = [
-                x for x in expected_lines(want) if not (vmark == "varies" and any(w in x for w in vwords))
-            ]
-            missing = [x for x in lines_ if x not in got]
-            if missing:
-                problems.append(
-                    f"line {line}: {len(missing)} quoted line(s) not printed, e.g. {missing[0]!r}"
-                )
+        n, p = run_page(GUIDE, proj, env, args.print)
+        ran, problems = ran + n, problems + p
+        for i, page in enumerate(TUTORIALS):
+            # Each tutorial starts from the project as the GUIDE leaves it, not from another
+            # tutorial: a reader may take them in any order.
+            copy = tmp / f"tutorial-{i}" / proj.name
+            shutil.copytree(proj, copy, symlinks=True)
+            n, p = run_page(page, copy, env, args.print)
+            ran, problems = ran + n, problems + p
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
     for p in problems:
         print(f"  FAIL {p}")
     print(
-        f"GUIDE: {ran} command block(s) run in a fresh project, "
+        f"GUIDE and {len(TUTORIALS)} tutorial(s): {ran} command block(s) run in a fresh project, "
         + ("every quoted output matches" if not problems else f"{len(problems)} problem(s)")
     )
     return 1 if problems else 0

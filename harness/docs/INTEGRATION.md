@@ -22,6 +22,9 @@ pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.4
 evh init         # data/sources, data/configs, data/goals, data/fields, a .gitignore
 ```
 
+That one install is everything: the hosted-model clients (`openai`, `anthropic`), the judges, the
+catalog and the inspector. There is no extra to add.
+
 Keep `data/materialized/` out of git (derived; the `.gitignore` `evh init` writes already
 does this) and decide whether to commit runs: keep each run's `metrics.json`,
 `predictions.jsonl` and `outputs/` so scores can be recomputed. A project whose own layout
@@ -45,7 +48,9 @@ prints where it is). It receives one item's text and the
 config's `params`, and returns what your system produced:
 
 ```python
-def call_system(text: str, params: Dict[str, Any]) -> Result:
+from evaluation_harness.adapter import Result
+
+def call_system(text: str, params: dict) -> Result:
     from myproject.summarise import summarise          # your existing code
     out = summarise(text, model=params["model"], temperature=params["temperature"])
     return Result(output=out.text,
@@ -55,7 +60,9 @@ def call_system(text: str, params: Dict[str, Any]) -> Result:
 
 That is the integration. Everything else — freezing the dataset, hashing it,
 recording which build ran, timing the call, aggregating, refusing bad
-comparisons — is generic and already written.
+comparisons — is generic and already written. The harness times every call (`latency_ms`)
+unless your `Result` reports its own; an optional `warmup(params)` in the same file runs once
+before the first item (load a model, check a key), so it is not timed as the first call.
 
 **Return what you can, omit what you cannot.** Every field beyond `output` is
 optional. If your system cannot report token counts, leave them out; the
@@ -80,7 +87,7 @@ cannot measure, and that is a design finding, not an eval problem.
 for that item, and returns numbers:
 
 ```python
-def score(output: str, reference: Optional[str]) -> Dict[str, float]:
+def score(output: str, reference: str | None) -> dict[str, float]:
     return {"rouge_l": rouge_l(output, reference),
             "has_required_section": 1.0 if "Summary:" in output else 0.0}
 ```
@@ -123,6 +130,25 @@ means "which settings produced this number?" has no answer.
 
 Prices live in the config too, deliberately: they change, and a run should
 record the prices it was costed at.
+
+A config holds `config_id`, `dataset_id`, `params`, and optionally `adapter` (a project with
+several tasks names one per arm, `adapter: adapters/ner.py`), `goal` (what the evaluation is
+for, `data/goals/<goal_id>.yaml`), `round` (an experiment round of that goal, `rN`) and
+`format`. Any other key is refused by `evh validate` (V1).
+
+---
+
+## Hosted models: you choose the provider, and bring your own key
+
+`provider: anthropic` above is one choice. The bundled adapter, and any adapter of yours that
+dispatches to its `PROVIDERS` (`from evaluation_harness.adapter import PROVIDERS, Result`), also
+call OpenAI or any OpenAI-compatible endpoint (`provider: openai` with a `base_url`), OpenRouter
+(`provider: openrouter`), and a LiteLLM proxy (`provider: litellm`). Each reads its key from the
+environment or the project's `.env` (gitignored by `evh init`); the harness holds none.
+**Which variable each provider reads, and what goes in the arm's `params`:
+[tutorial 2](../../docs/tutorials/2-hosted-llm.md#1-choose-a-provider).** `evh env-check`
+reports which are set. LLM judges route the same way: through a LiteLLM proxy, or straight to
+OpenRouter with `OPENROUTER_API_KEY` ([RUNBOOK §12](RUNBOOK.md#12-re-measure-with-a-validated-judge)).
 
 ---
 
@@ -173,23 +199,24 @@ can extend later without re-authoring what you have.
 | noise floor | `--repeat 3` reports the arm's own spread, so you stop promoting jitter |
 | cost and speed | per item and totalled, alongside quality |
 | refusals | cross-dataset comparisons, dirty-tree promotions and unreasoned baselines are blocked, not warned about |
-| integrity | `make validate` fails CI on a tree that has drifted |
+| integrity | `evh validate` fails CI on a tree that has drifted |
 | re-measurement | stored outputs scored again for a new reference or scorer at $0, or by validated LLM judges, without re-running an arm |
 | a judge panel | when the cheap metric is biased and you need an LLM to adjudicate |
-| goals | what each evaluation is for, named on every config and checked by `make validate` |
-| item fields | the facts you know about each item (typed, declared once in a field set), checked by `make validate`; items fetched from a pinned URL |
-| a catalog and an inspector | pages over your runs, and a local server that tests any arms against a baseline and shows outputs beside references |
+| goals | what each evaluation is for, named on every config and checked by `evh validate` |
+| experiment rounds (optional) | round on round: what each round tried, what it kept and dropped and why, what it concluded ([tutorial 4](../../docs/tutorials/4-rounds-and-versions.md)) |
+| item fields | the facts you know about each item (typed, declared once in a field set), checked by `evh validate`; items fetched from a pinned URL |
+| a catalog and an inspector | pages over your runs, and a local server that tests any arms against a baseline and shows outputs beside references; every view is also an `evh` command |
 
 ---
 
 ## The catalog and the inspector
 
-`make catalog` (`evh catalog`) builds static pages over your runs: one per dataset and per goal,
+`evh catalog` builds static pages over your runs: one per dataset and per goal,
 one per reference (who wrote it, from which run, every arm scored against it), and a metrics page
 (what each metric measures, which way is better, where it is recorded). Every arm's row says what
 it is scored against, and rows scored against silver, scored by a judge, or scored against the
 reference the arm wrote itself are tinted apart from those scored against gold.
-`make catalog-serve` (`evh catalog-serve`) serves them with the run inspector on 127.0.0.1. Both only ask an
+`evh catalog-serve` serves them with the run inspector on 127.0.0.1. Both only ask an
 **adapter** questions: which arms exist, what each scored per item, which way is better,
 which references exist, what one arm wrote for one item.
 
@@ -227,8 +254,10 @@ which references exist, what one arm wrote for one item.
   | dataset versions (optional) | `datasets()`: every dataset id, run or not; `dataset_lineage(dataset)`: `{"dataset_id", "added", "removed", "changed"}` or None; the dataset pages link versions both ways |
 
   Every page and comparison is also a command that asks the same adapter the same questions:
-  `evh datasets`, `evh references`, `evh metrics`, `evh goals` and `evh inspect --runs …` (with
-  `--adapter` for a project adapter not named in `config.yaml`). The pages are a comfort.
+  `evh datasets`, `evh references`, `evh metrics`, `evh goals`, `evh rounds` and
+  `evh inspect --runs …` (with `--adapter` for a project adapter not named in `config.yaml`). The
+  pages are a comfort; [tutorial 5](../../docs/tutorials/5-catalog-and-inspector.md#3-every-page-and-its-command)
+  maps each page to its command.
 
   Item text is only ever returned by `item_view` and `reference_view`, which only the local
   inspector calls: the static pages never carry it, whatever the adapter.
@@ -266,5 +295,7 @@ Ten items keeps the first pass cheap. Widen the dataset once the loop works —
 and widen it *before* you trust any ranking, because ten items is a smoke test,
 not evidence.
 
-Then read [`RUNBOOK.md`](RUNBOOK.md) for the day-to-day, and
-[`CONCEPTS.md`](CONCEPTS.md) for why the refusals exist.
+New to the loop? [Getting started](../../docs/GUIDE.md) walks it once, offline, and the
+[tutorials](../../docs/GUIDE.md#where-to-go-next) take it to a local model, a hosted LLM, a
+frontier reference and judges, rounds, and the catalog. Then read [`RUNBOOK.md`](RUNBOOK.md) for
+every command and flag, and [`CONCEPTS.md`](CONCEPTS.md) for why the refusals exist.

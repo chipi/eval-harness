@@ -16,7 +16,7 @@ Every run records three things:
 | **instrument** | `config_id` | you cannot tell a config change from a code change |
 | **data** | `dataset_id` | you cannot compare anything to anything |
 
-`make validate` fails on a run missing any of them. `EVAL_BUILD_REF` sets the
+`evh validate` fails on a run missing any of them. `EVAL_BUILD_REF` sets the
 first when the project is not the system under test, or is not a git repository — a version, an image digest, a
 pinned dependency ref, whatever actually identifies the thing being measured.
 
@@ -30,18 +30,20 @@ you will lose a day attributing that to your change.
 > A metric compared across two different `dataset_id`s is not a comparison.
 > It is a coincidence.
 
-`make run-compare` refuses outright when the two runs disagree. Not a warning —
+`evh run-compare` refuses outright when the two runs disagree. Not a warning —
 a refusal, because a warning above a number that looks authoritative gets
 scrolled past.
 
 This is also why `sources/` is immutable and why a dataset records a sha256 per
 item. If an input changes under a frozen dataset, every number already reported
 against it is describing bytes that no longer exist.
-`make dataset-materialize` re-verifies every hash and fails loudly rather than
+`evh dataset-materialize` re-verifies every hash and fails loudly rather than
 quietly measuring something else.
 
 When data genuinely changes, that is a new version — `my_corpus_v2` — never an
-edit in place.
+edit in place. The new version names the one it came from (`--from my_corpus_v1`) and records
+the items it adds, removes and changes, so "what changed between v1 and v2?" has an answer
+that is not a diff someone has to remember to run.
 
 ---
 
@@ -63,7 +65,7 @@ corrected together: a group is held to a stricter threshold than it would be alo
 ## Measure the arm's own noise before believing any delta
 
 ```bash
-make experiment-run CONFIG=... REPEAT=3
+evh experiment-run --config ... --repeat 3
 ```
 
 ```text
@@ -76,10 +78,10 @@ spread on byte-identical input** — wider than most of the deltas people were
 arguing about. Every one of those arguments was about noise, and nobody knew,
 because nobody had measured the arm against itself.
 
-`run-compare` takes `NOISE=` and marks anything at or below it as noise. Omit it
+`run-compare` takes `--noise` and marks anything at or below it as noise. Omit it
 and the tool nags, because a delta judged against nothing is not evidence.
 
-`NOISE=0` is a real answer — it means the arm is deterministic — and is treated
+`--noise 0` is a real answer — it means the arm is deterministic — and is treated
 differently from omitting the flag.
 
 ---
@@ -96,9 +98,11 @@ other** today. It is not a claim about correctness, and a number scored against
 it must say so.
 
 Every run records `reference_tier`. The manifest beside the references carries
-the caveat in full. The failure this prevents is quiet: silver numbers get
-quoted in a decision six months later as though they were ground truth, and the
-model that authored them is the one being evaluated.
+the caveat in full, and a reference made from a run (`reference-create --from-run`) names the run
+it came from. The failure this prevents is quiet: silver numbers get quoted in a decision six
+months later as though they were ground truth, and the model that authored them is the one
+being evaluated. That is why the leaderboard marks the arm that wrote the reference it is scored
+against, and why a goal page never makes it the leader: its row measures agreement with itself.
 
 ---
 
@@ -110,9 +114,9 @@ instrument arrives. There are three kinds:
 
 | kind | what changes | cost | how |
 | --- | --- | --- | --- |
-| new reference | what an output is scored against, e.g. gold adjudicated by a person | $0 | `make rescore REFERENCE=…` |
-| new code scorer | the metric, written as code | $0 | `make rescore` with the new scorer |
-| judge scorer | the metric, delivered by a validated model | billed | `make judge-score` / `evh judge-score` ([ADR-0001](../../docs/adr/ADR-0001-judge-scorers.md), [RUNBOOK §12](RUNBOOK.md)) |
+| new reference | what an output is scored against, e.g. gold adjudicated by a person | $0 | `evh rescore --reference-id …` |
+| new code scorer | the metric, written as code | $0 | `evh rescore` with the new scorer |
+| judge scorer | the metric, delivered by a validated model | billed | `evh judge-score` ([ADR-0001](../../docs/adr/ADR-0001-judge-scorers.md), [RUNBOOK §12](RUNBOOK.md)) |
 
 Two rules hold for all three. The originals are never overwritten: a re-measurement is
 written to its own runs directory, and the leaderboard is pointed at it. And an
@@ -125,7 +129,8 @@ primary, because anyone can repeat it, and report the adjudicated gold beside it
 ## Cost and speed are part of quality
 
 A run records `latency_ms`, `tokens_in`, `tokens_out` and `cost_usd` per item,
-and totals for the ones you are billed for. "Model B scores higher" and "model
+and totals for the ones you are billed for. The harness times every call itself, so an adapter
+that reports nothing still records its speed. "Model B scores higher" and "model
 B scores higher and costs 4× per item" are different findings, and only one of
 them is a decision.
 
@@ -137,7 +142,7 @@ one from last quarter without saying so.
 
 ## A baseline is a decision
 
-`make run-promote` refuses three things:
+`evh run-promote` refuses three things:
 
 - a run from a **dirty tree** — its `build.ref` does not describe what ran
 - a run whose **build is unknown** — a different and worse problem, so it takes
@@ -146,16 +151,39 @@ one from last quarter without saying so.
   answer in six months
 
 A baseline is never edited. Promoting a new one replaces it, and git keeps the old one:
-the commit history is the record of what the baseline was, and when.
+the commit history is the record of what the baseline was, and when. It carries what its number
+means (the reference tier it was scored against, the adapter, the run's fingerprint), so a
+baseline scored against silver cannot pass for one scored against gold.
+
+---
+
+## A goal says what the evaluation is for
+
+A number answers a question only if someone wrote the question down. A goal names who uses the
+output, the decision it informs, the measure that decides it and which way is better, and the
+datasets it rests on; each config names its goal, and every run records it. It is optional until
+a project sets a date from which every run must name one (`required_from`). The catalog's goal
+page leads with its answer, the promoted baseline and why, or "no decision yet".
+
+---
+
+## A round records a decision, not just a result
+
+Experiments go round on round, and the reasons an arm was dropped are the first thing lost. An
+optional round ([ADR-0004](../../docs/adr/ADR-0004-experiment-rounds.md)) records what it set out
+to learn, what changed, which arms it carried in and which it dropped and why, and what it
+concluded. `evh rounds` suggests the next decision from the evidence, as a command; it never
+makes one. A closed round refuses new runs, so its evidence cannot grow after its conclusion.
 
 ---
 
 ## Two arms cannot agree to full precision
 
-`make validate` fails when two different configs report byte-identical scores and per-item results on
+`evh validate` fails when two different configs report byte-identical scores and per-item results on
 the same dataset. Independent arms do not agree to seventeen significant
 figures; when they do, one of them is not its own measurement — a copied number,
-a mis-wired arm, a cached result.
+a mis-wired arm, a cached result. Two arms that are both perfect on a binary metric agree on
+every score too, so their outputs decide: different outputs are two measurements, not a copy.
 
 This check exists because exactly that happened: a published figure for one
 model turned out to be another model's output, identical to the last digit,

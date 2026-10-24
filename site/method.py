@@ -18,6 +18,13 @@ RET = "research/REPORT_RETRIEVAL.md"
 SYN = "research/REPORT_SYNTHESIS.md"
 JUDGE = "research/REPORT_SUMMEVAL.md"
 GUIDE = "docs/GUIDE.md"
+TUTORIAL3 = "docs/tutorials/3-frontier-reference-and-judging.md"
+
+
+def doc_href(page: str, anchor: str) -> str:
+    """The docs site's address for a section of one of the docs' markdown pages."""
+    return f"docs/{page.removeprefix('docs/').removesuffix('.md')}/#{anchor}"
+
 
 # ── the lifecycle, shared by both pages ─────────────────────────────────────
 #: id, label, sub-label, what it is, where it lives, the command, the guide section
@@ -32,7 +39,7 @@ NODES = [
         ),
         "data/sources/ — or anywhere",
         "",
-        "1-freeze-a-dataset",
+        (GUIDE, "1-create-a-dataset"),
     ),
     (
         "dataset",
@@ -44,7 +51,7 @@ NODES = [
         ),
         "data/datasets/&lt;id&gt;.json",
         "evh dataset-create --dataset-id tickets_v1",
-        "1-freeze-a-dataset",
+        (GUIDE, "1-create-a-dataset"),
     ),
     (
         "materialized",
@@ -56,7 +63,7 @@ NODES = [
         ),
         "data/materialized/&lt;id&gt;/",
         "evh dataset-materialize --dataset-id tickets_v1",
-        "2-materialize",
+        (GUIDE, "2-materialize"),
     ),
     (
         "references",
@@ -70,7 +77,7 @@ NODES = [
         ),
         "data/references/&lt;tier&gt;/&lt;id&gt;/",
         "evh reference-create --dataset-id … --from-run …",
-        "4-author-silver-references",
+        (GUIDE, "5-make-its-run-the-reference-optional"),
     ),
     (
         "arms",
@@ -82,7 +89,7 @@ NODES = [
         ),
         "data/configs/*.yaml",
         "",
-        "3-describe-your-arms",
+        (GUIDE, "3-describe-your-arms"),
     ),
     (
         "runs",
@@ -94,7 +101,7 @@ NODES = [
         ),
         "data/runs/&lt;run_id&gt;/",
         "evh experiment-run --config … --repeat 3",
-        "5-commit-then-measure",
+        (GUIDE, "6-run-the-other-arms-three-times-each"),
     ),
     (
         "tests",
@@ -106,7 +113,7 @@ NODES = [
         ),
         "your terminal",
         "evh family-test --dataset-id … --a … --against …",
-        "8-decide-is-the-winner-separated",
+        (GUIDE, "7-compare"),
     ),
     (
         "baseline",
@@ -119,7 +126,7 @@ NODES = [
         ),
         "data/baselines/",
         'evh run-promote --run … --reason "…"',
-        "9-promote-a-baseline",
+        (GUIDE, "8-choose"),
     ),
     (
         "remeasure",
@@ -133,7 +140,7 @@ NODES = [
         ),
         "data/runs-rescored/ · data/runs-judged/&lt;scorer&gt;/",
         "evh judge-score --dataset-id … --scorer …",
-        "10-optional-re-measure-with-an-llm-judge",
+        (TUTORIAL3, "5-re-measure-with-an-llm-judge-optional"),
     ),
 ]
 
@@ -178,7 +185,7 @@ def lifecycle_panels(H) -> str:
             f'<div class="lc-panel" id="lc-{nid}" data-node="{nid}">'
             f'<div class="eyebrow"><span class="num">{label}</span>{sub}</div>'
             f'<p>{what}</p><div class="lc-where"><span>lives in</span> <code>{where}</code></div>'
-            f'{cmd_html}<a class="lc-more" href="docs/GUIDE/#{anchor}">In the guide →</a></div>'
+            f'{cmd_html}<a class="lc-more" href="{doc_href(*anchor)}">In the guide →</a></div>'
         )
     return "".join(out)
 
@@ -258,11 +265,10 @@ def chapters(H, f: dict) -> list:
             "story": (
                 "<p>"
                 + H.q(
-                    "In the tutorial, the system that wrote the silver references "
-                    "scores a perfect 1.000 against them and ranks first. Re-scored against six "
-                    "summaries a person wrote, it loses first place — and six items can almost "
-                    "never tell the arms apart.",
-                    GUIDE,
+                    "In the tutorial, the system that wrote the silver references, the one every "
+                    "other arm was measured against, is not first once six summaries a person "
+                    "wrote are the measure — and six items can almost never tell the arms apart.",
+                    TUTORIAL3,
                 )
                 + "</p>"
                 "<p>"
@@ -576,56 +582,64 @@ STEPS = [
         "A new folder, the harness pinned to a release, and the tutorial kit copied in.",
         'pip install "evaluation-harness @ git+{repo}@v{version}#subdirectory=harness"\nevh init --tutorial',
         "wrote    24 file(s), the tutorial kit under tutorial/",
+        GUIDE,
         "0-set-up",
     ),
     (
-        "Freeze a dataset",
+        "Create a dataset",
         "Your inputs become a contract: an item list with a hash per item.",
         "evh dataset-create --dataset-id tickets_v1 --source-dir tutorial/tickets",
         "data/datasets/tickets_v1.json  (6 item(s))",
-        "1-freeze-a-dataset",
+        GUIDE,
+        "1-create-a-dataset",
     ),
     (
         "Describe your arms",
         "One YAML per candidate. Change one thing; bump the id.",
         "cp tutorial/configs/tickets_*.yaml data/configs/",
         "",
+        GUIDE,
         "3-describe-your-arms",
     ),
     (
-        "Draft silver references",
-        "Let your best system write first answers — and label them silver.",
-        "evh reference-create --dataset-id tickets_v1 --config data/configs/tickets_author.yaml",
+        "Run the best arm; its run is the reference",
+        "Your best system answers first; the others are measured by how close they come — and the answers are labelled silver.",
+        "evh experiment-run --config data/configs/tickets_author.yaml\nevh reference-create --dataset-id tickets_v1 --from-run …",
         "data/references/silver/tickets_v1  (6 item(s), tier=silver, $0.0000)",
-        "4-author-silver-references",
+        GUIDE,
+        "5-make-its-run-the-reference-optional",
     ),
     (
-        "Commit, then measure — three times",
+        "Run the others — three times",
         "The spread is how far an arm disagrees with itself.",
         "evh experiment-run --config data/configs/tickets_lead2_noisy.yaml --repeat 3",
         "overlap_f1     spread=0.029372   treat deltas below 0.029372 as noise",
-        "5-commit-then-measure",
+        GUIDE,
+        "6-run-the-other-arms-three-times-each",
     ),
     (
         "Compare",
         "Read the significance block, not the row numbers.",
         "evh leaderboard --dataset-id tickets_v1",
-        "pairs distinguishable: 3 of 6",
-        "6-compare",
+        "pairs distinguishable: 1 of 3",
+        GUIDE,
+        "7-compare",
     ),
     (
-        "Make it golden",
+        "Choose, and record why",
+        "Promote with a reason that says what the tests showed; validate in CI.",
+        'evh run-promote --run … --reason "leads on silver but separates from neither arm at n=6"',
+        "VALIDATION PASSED",
+        GUIDE,
+        "8-choose",
+    ),
+    (
+        "Then: make it golden",
         "Add answers a person wrote; re-score every run against them for $0.",
         "evh rescore --dataset-id tickets_v1 --reference-id gold/tickets_v1 --out data/runs-gold",
         "NO detectable arm effect · pairs distinguishable: 0 of 6",
-        "7-make-it-golden",
-    ),
-    (
-        "Decide and record",
-        "Promote with a reason that says what the tests showed; validate in CI.",
-        'evh run-promote --run … --reason "leads on gold but separates from no arm"',
-        "VALIDATION PASSED",
-        "9-promote-a-baseline",
+        TUTORIAL3,
+        "2-make-it-golden",
     ),
     (
         "Optional: re-measure with a judge",
@@ -635,7 +649,8 @@ STEPS = [
         ),
         "evh judge-score --dataset-id tickets_v1 --scorer tickets-judge-v1 --unvalidated",
         "data/runs-judged/tickets-judge-v1  (6/6 items, unvalidated judge)",
-        "10-optional-re-measure-with-an-llm-judge",
+        TUTORIAL3,
+        "5-re-measure-with-an-llm-judge-optional",
     ),
 ]
 
@@ -653,15 +668,15 @@ def use_page(H, f: dict) -> str:
         for title, var, text, ex, metric in patterns(H, f)
     )
     steps = "".join(
-        f'<li class="reveal"><div><h3>{H.e(t)}</h3><p>{H.e(d)} <a href="docs/GUIDE/#{a}">Guide →</a></p>'
+        f'<li class="reveal"><div><h3>{H.e(t)}</h3><p>{H.e(d)} <a href="{doc_href(page, a)}">Guide →</a></p>'
         '<pre class="term">'
         + "\n".join(
             f'<span class="p">$ </span>{H.e(c)}'
             for c in cmd.format(repo=H.REPO, version=H.VERSION).split("\n")
         )
-        + (f'\n<span class="c">{H.e(H.q(out, GUIDE))}</span>' if out else "")
+        + (f'\n<span class="c">{H.e(H.q(out, page))}</span>' if out else "")
         + "</pre></div></li>"
-        for t, d, cmd, out, a in STEPS
+        for t, d, cmd, out, page, a in STEPS
     )
     body = f"""
 <section class="hero"><div class="wrap">

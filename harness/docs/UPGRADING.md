@@ -7,8 +7,28 @@ correctness bugs, not just missing features.
 
 ## From 0.3.0 to 0.4.0
 
-Change the pin to `@v0.4.0`. No dependency is added. 0.4.0 reads only its own record
-format, so check these before you trust a `validate`:
+Change the pin to `@v0.4.0`. **One install is everything:** `openai` and `anthropic`, the
+clients of the hosted providers and the judges, are core dependencies now, and the `[llm]` extra
+is gone. If your pin names it (`evaluation-harness[llm] @ git+…`), drop `[llm]`; pip warns about
+an extra that no longer exists. Nothing else is added. 0.4.0 reads only its own record format,
+so check these before you trust a `validate`:
+
+- **Fingerprints are version 4: documentation never moves a hash.** Code is hashed by what it
+  does, its syntax tree without docstrings, comments, formatting or `METRIC_DESCRIPTIONS`: your
+  adapter, the harness's measuring modules and a judge scorer's own hash. A judge scorer YAML is
+  hashed by its parsed content, and a reference manifest's `caveat` is outside the reference
+  digest. Before, adding metric descriptions to an adapter made `run-compare` and the inspector
+  call every earlier run "not the same conditions". **v3 and v4 digests are not comparable**:
+  a run made on 0.3.0 and one made on 0.4.0 differ in their adapter, scorer and reference hashes
+  even where nothing changed, and 0.4.0 ships no command that rewrites old runs' hashes (this
+  repository's own were migrated once, by matching each recorded hash to the code it came from).
+  Compare runs made under the same version, or re-run the arms you compare. No score changes.
+- **`import-run` hashes the scoring code itself: `--scorer-file` replaces `--scorer-sha256`.**
+  Pass the file (or several, repeated in a fixed order); the harness hashes it by the same rule,
+  so a docstring in your scorer is not a new scorer, and the hash is the run's
+  `instrument.adapter.sha256`, inside the fingerprint hash. Before, it sat in `imported`, outside
+  the hash, so two imports scored by different versions of the code looked like the same
+  conditions. A script that passed `--scorer-sha256` is refused (exit 2): pass the file.
 
 - **Derived runs** (rescore, judge-score) record `derived: {kind, from, at, with}`; the
   0.3.0 fields (`rescored_*`, `judged_*`, `judge_label`, `primary_metric_asc`) are read by
@@ -16,8 +36,8 @@ format, so check these before you trust a `validate`:
 - **Baselines** carry the run's reference tier, adapter and fingerprint hash, and V6 fails
   one that does not: promote each again (`evh run-promote`). `data/baselines/superseded/` is
   no longer written; git keeps a replaced baseline.
-- **Configs** may hold only `config_id`, `dataset_id`, `params`, `adapter`, `goal` and
-  `format` (V1); anything else was read by nothing.
+- **Configs** may hold only `config_id`, `dataset_id`, `params`, `adapter`, `goal`, `round`
+  and `format` (V1); anything else was read by nothing.
 - **Run records** may hold only the fields the harness writes (V1). A run imported with
   0.3.0's `import-run --asc` carries `primary_metric_asc`, which no version read: the metric
   was ranked higher-is-better unless every command passed `--asc`. Replace it with
@@ -27,6 +47,8 @@ format, so check these before you trust a `validate`:
   reply, and false.
 - **`--resume`** takes a run made by 0.4.0 (rows with `_extra`); `--resume-unverified` is
   gone.
+- **`evh judge`** is the judge panel (it sat beside the package and could not run from a pin);
+  the tutorial kit ships `tutorial/judge_panel.yaml`.
 - **Your adapter**: put it at the project root as `adapter.py` and an arm with no `adapter:`
   uses it. Code that imported `catalog_adapter.load_adapter` imports `load_catalog_adapter`;
   a script that relied on importing the package to read `.env` loads it itself
@@ -53,13 +75,31 @@ format, so check these before you trust a `validate`:
   was never validated. Declare the list, floors, scorer sources and duplicate exceptions in
   `<data>/validate.json` (RUNBOOK §9), which replaces `validate_floors.json`: move its
   `floors` there.
+- **The core times every call.** `latency_ms` is recorded for any adapter that does not report
+  its own (the attempt that answered, not the retries' backoff). A project's runs gain a latency
+  column, and the leaderboard its cost/speed frontier.
+- **`validate` V5 no longer fails two different arms that are both perfect** on a binary metric:
+  their outputs tell two measurements from a copy. A tree that failed only on that goes green.
+- **`--exclude-dataset`** (`pair-test`, `family-test`, `holdout`, `bootstrap-test`) reads the
+  excluded dataset's own item list. It read `data/sources/<id>/*.txt`, so a dataset whose items
+  are not `.txt` files there was excluded wrongly, or not at all.
 
 **New, all optional:**
 - **The catalog and the run inspector** (`evh catalog`, `evh catalog-serve`). On the
   harness's own data layout they need no code; with another layout, write one adapter
-  ([GUIDE step 12](https://docs.evals.humancopilot.eu/GUIDE/#12-browse-it-the-catalog-and-the-inspector)).
+  ([tutorial 5](https://docs.evals.humancopilot.eu/tutorials/5-catalog-and-inspector/)). Every
+  view is also a command: `evh datasets`, `evh references`, `evh metrics`, `evh goals`,
+  `evh inspect`.
 - **Goals** (`data/goals/<goal_id>.yaml`, `goal:` on configs, validate V14). Nothing is
   required of an upgrading project until it sets `required_from` in `data/goals/policy.yaml`.
+- **Experiment rounds** (`evh round-open`, `evh round-retire`, `evh round-close`, `evh rounds`;
+  `round: rN` on configs; validate V14). A project that never opens a round sees none of it
+  ([tutorial 4](https://docs.evals.humancopilot.eu/tutorials/4-rounds-and-versions/)).
+- **A run becomes a reference:** `evh reference-create --from-run <run_id>` copies a finished
+  run's outputs and calls nothing; the reference records the run. `reference-create` now refuses
+  an empty output and outputs that stopped at `max_tokens`, by either path (`--allow-cut-off`).
+- **Dataset versions keep their lineage:** `evh dataset-create --dataset-id x_v2 --from x_v1`
+  (`derived_from` in the dataset file; validate V2).
 - **Item fields and URL items** (`data/fields/<fieldset_id>.yaml`, `dataset-create --fieldset
   --fields`, `--manifest`, validate V15). The dataset schema only gains optional keys, so
   every 0.3.0 dataset is still valid; a dataset that uses them needs 0.4.0 to validate. If
