@@ -26,7 +26,16 @@ class _Resp:
     def __init__(self):
         msg = types.SimpleNamespace(content="ok")
         self.choices = [types.SimpleNamespace(message=msg, finish_reason="stop")]
-        self.usage = types.SimpleNamespace(prompt_tokens=3, completion_tokens=1)
+        self.usage = _Usage()
+
+
+class _Usage:
+    """Like the SDK's usage object: model_dump() is what billed() reads (OpenRouter's cost)."""
+
+    prompt_tokens, completion_tokens = 3, 1
+
+    def model_dump(self):
+        return {"prompt_tokens": 3, "completion_tokens": 1, "cost": 2.5e-06}
 
 
 class _OpenAI:
@@ -54,6 +63,11 @@ check(
     str({k: v for k, v in seen.items() if k != "kw"}),
 )
 check("openrouter: asks for the bill", (seen["kw"].get("extra_body") or {}).get("usage") == {"include": True})
+check(
+    "a reported bill is the cost, and is kept in meta where cost-report reads it",
+    r.cost_usd == 2.5e-06 and (r.meta or {}).get("usage") == {"cost": 2.5e-06},
+    f"{r.cost_usd} {r.meta}",
+)
 os.environ["OPENAI_API_KEY"] = "sk-openai-test-key"
 adapter.call_system("text", {"provider": "openrouter", "model": "m"})
 check(

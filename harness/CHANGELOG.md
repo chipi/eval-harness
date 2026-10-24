@@ -304,6 +304,11 @@ p 0.36, from the pre-fix run), and DBpedia's 56-item dev slice, over today's 28 
     - `evh rounds` does not suggest promoting the run that is already the baseline;
     - `leaderboard --round` does not warn about two versions of an arm in a round that compares
       them.
+  - **`evh cost-report` sees the bundled adapter's bills.** A provider's bill (OpenRouter, or a
+    LiteLLM proxy passing it through) was the run's cost but was not kept where cost-report reads
+    it, so every run read as "price table only". It is now kept in the item's `_meta.usage.cost`.
+  - **`evh inspect --item`** prints which run each output is from and, for a repeated arm, that it
+    is the latest of N repeats beside their mean (as the page does). `evh datasets` counts configs.
   - **Smaller items:**
     - `experiment-run` prints what the command spent, and its repeat spread calls cost and speed
       what they are, not "deterministic";

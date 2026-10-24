@@ -69,17 +69,21 @@ def datasets(argv) -> int:
                 ds,
                 v["items"],
                 len(v["arms"]),
+                cb._n_configs({ds: v}),
                 ", ".join(r["id"] for r in v["refs"]) or "—",
                 (v.get("parent") or {}).get("dataset_id", ""),
             ]
             for ds, v in sorted(by_ds.items())
         ]
-        _table(["dataset", f"{A.item_word}s", "arms", "references", "made from"], rows)
+        _table(["dataset", f"{A.item_word}s", "arms", "configs", "references", "made from"], rows)
         return 0
     v = by_ds.get(args.dataset_id)
     if v is None:
         die(f"no dataset {args.dataset_id!r} in the catalog: one of {', '.join(sorted(by_ds))}")
-    print(f"{args.dataset_id}: {v['items']} {A.item_word}s, {len(v['arms'])} arms\n")
+    print(
+        f"{args.dataset_id}: {v['items']} {A.item_word}s, {len(v['arms'])} arms from "
+        f"{cb._n_configs({args.dataset_id: v})} configs (a config rescored against silver or by a judge is an arm of its own)\n"
+    )
     lin = v.get("parent")
     if lin:
         print(
@@ -426,8 +430,13 @@ def inspect(argv) -> int:
         if got.get("reference"):
             print(f"\n== {ref} (reference)\n{(got['reference']['view'] or {}).get('text', '(none)')}")
         for a, view in got["views"].items():
+            # What the page prints above an output: which run it is, and for a repeated arm that
+            # it is one repeat beside the mean of all of them.
+            info = " · ".join(f"{k} {v}" for k, v in (view.get("info") or {}).items())
             print(
-                f"\n== {label[a]}{'  (baseline)' if a == base else ''}\n{view.get('text') or view.get('note', '(none)')}"
+                f"\n== {label[a]}{'  (baseline)' if a == base else ''}"
+                + (f"\n({info})" if info else "")
+                + f"\n{view.get('text') or view.get('note', '(none)')}"
             )
         return 0
     params = {
