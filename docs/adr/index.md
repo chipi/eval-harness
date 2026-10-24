@@ -18,6 +18,7 @@ For how the pieces fit together, read the [architecture overview](../architectur
 | [ADR-0001](ADR-0001-judge-scorers.md) | Judge scorers | Accepted | 0.3.0 | Re-measure frozen outputs with LLM judges, refused until validated against human ratings, at least two vendors, blind, every verdict stored | Yes |
 | [ADR-0002](ADR-0002-catalog-inspector-goals.md) | Catalog, run inspector and goals | Accepted | 0.4.0 | One paired test for the CLI and the inspector; the catalog and inspector as a generic core with a project adapter; goals first-class; this repository deployed as a full harness deployment | Partial |
 | [ADR-0003](ADR-0003-item-fields-and-url-items.md) | Item fields and URL items | Accepted | 0.4.0 | Items fetched from a pinned URL; typed fields declared in a reusable field set, outside the dataset identity, values public only by opt-in; filter and per-group tests in the inspector | Yes |
+| [ADR-0004](ADR-0004-experiment-rounds.md) | Experiment rounds, and a catalog that guides them | Proposed | 0.4.0 | Optional rounds per goal (hypothesis, changes, arms, retirements, conclusion) as files; decisions as local commands, the catalog read-only; comparisons round against round; suggestions computed from the evidence; the goal page leads with the answer. Dataset lineage and the conditions check, decided with it, are built | Partial |
 
 ADR-0002 is Partial until the project it came from runs on the harness's copy (its layer 4) and
 0.4.0 is released.
