@@ -259,10 +259,13 @@ evh leaderboard --dataset-id tickets_v1
 <!-- guide-check: varies lead2_noisy distinguishable -->
 ```text
   arm                      runs        overlap_f1      output_words
-  tickets_author_v1           3          1.000000         35.166667
+  tickets_author_v1 *         3          1.000000         35.166667
   tickets_lead2_v1            3          0.900088         28.500000
   tickets_lead2_noisy_v1      3          0.801971         22.611111
   tickets_lead1_v1            3          0.640917         16.000000
+
+  * tickets_author_v1 wrote the reference silver/tickets_v1: it is graded against its own outputs,
+    so its row measures agreement with itself, not quality. Compare the others to it.
 
   IS THE ORDERING REAL?   metric=overlap_f1  k=4 arms  N=6 items
     global test (permutation on within-item ranks): p = 0.0002  ->  an arm effect exists
@@ -270,7 +273,8 @@ evh leaderboard --dataset-id tickets_v1
 ```
 
 The leaderboard *sorts*; the block underneath says how much of the order is real. Read
-that block, not the row numbers.
+that block, not the row numbers. The star marks `author`: it wrote the silver references, so
+its 1.000 is agreement with itself (step 7 comes back to it).
 
 **Two runs, side by side, against the noise floor you measured:**
 

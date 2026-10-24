@@ -366,13 +366,14 @@ def _frontier(rows: list[dict], quality: str, kinds: dict[str, str], asc: bool =
 
 def _own_reference(by_config: dict[str, list[dict]]) -> dict[str, str]:
     """config_id -> the reference it is scored against that it wrote itself (its manifest's
-    `authored_by`): that row is graded against its own outputs."""
+    `authored_by`): that row is graded against its own outputs. A judged run is scored by its
+    judges, whatever reference its source run was measured against, so it is never marked."""
     authors: dict[str, object] = {}
     out: dict[str, str] = {}
     for config_id, runs in by_config.items():
         for r in runs:
             ref = ((r.get("fingerprint") or {}).get("data") or {}).get("reference_id")
-            if not ref:
+            if not ref or derived_with(r, "judge"):
                 continue
             if ref not in authors:
                 mf = REFERENCES / ref / "manifest.json"

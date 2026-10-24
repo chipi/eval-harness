@@ -284,7 +284,11 @@ def main() -> int:
     out_dir.rename(final_dir)
 
     cost = meta.get("cost_usd")
-    print(f"\n{final_dir}  ({len(rows)} item(s), tier={args.tier}" + (f", ${cost:.4f}" if cost else "") + ")")
+    print(
+        f"\n{final_dir}  ({len(rows)} item(s), tier={args.tier}"
+        + (f", ${cost:.4f}" if cost is not None else "")
+        + ")"
+    )
     gold = REFERENCES / "gold" / args.dataset_id
     if args.tier == "silver" and gold.is_dir():
         print(
