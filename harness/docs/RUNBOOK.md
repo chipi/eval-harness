@@ -198,10 +198,12 @@ zero. Per provider:
 | `echo`, your own adapter | what the adapter returns as `cost_usd` (tutorial 1's local model returns 0.0) |
 
 The bill is the measurement and the price table a guess: in this repository's runs they differed
-by 0.67× to 3.76× per arm. A run does not record which of the two its `cost_usd` came from.
-`evh cost-report` sets each run's bill (`_meta.usage.cost` in its predictions) against its
-recorded cost, and lists the runs with no bill there; the bundled adapter does not keep `usage`
-in `_meta`, so its runs are listed as having no bill even when their `cost_usd` is one. Judges
+by 0.67× to 3.76× per arm. When a response reported a bill, the bundled adapter also keeps it in
+the item's `_meta.usage.cost` (in `predictions.jsonl`), so an item with that key was billed and
+one without it was priced from the table. `evh cost-report` sets each run's bill, summed from
+`_meta.usage.cost`, against its recorded cost, and lists apart the runs with no bill there. Only
+runs made with harness 0.4.0 from commit `f0c2ed3c` on carry the key: older runs of the bundled
+adapter read in `cost-report` as price table only, even where their `cost_usd` was a bill. Judges
 follow the same rule (§12); their verdicts keep `usage`.
 
 ---

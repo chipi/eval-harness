@@ -128,7 +128,8 @@ The author tint wins over the others. The same classes tint the inspector's verd
 - Hero: kicker `catalog`, title "Every run, by dataset", and "N arms on M datasets, from K
   configs. An arm is one config on one dataset scored one way, its repeats averaged per item,
   exactly as `pair-test` reads it: a config rescored against silver or by a judge is an arm of its
-  own." `evh catalog` prints the same counts ("… arms, K configs, … references").
+  own." `evh catalog` prints the same counts ("… arms, K configs, … references"), and `evh
+  datasets` has a `configs` column beside `arms`.
 - `01 datasets`: one row per dataset, most arms first: **dataset** (linked; "from `<parent>`"
   under a version), **items**, **arms**, **references** (each linked to its page). Filterable.
 - Command: `evh datasets`.
@@ -161,7 +162,8 @@ The author tint wins over the others. The same classes tint the inspector's verd
   **description**, **values**: for a `public` field a summary (counts per value for a choice or
   yes/no field; min – max and median for numbers and durations; the range for dates; the number
   of distinct values for text and URLs), for any other field "not public".
-- Command: `evh datasets --dataset-id <id>`.
+- Command: `evh datasets --dataset-id <id>` ("<id>: N items, M arms from K configs (a config
+  rescored against silver or by a judge is an arm of its own)").
 
 ## The goals page
 

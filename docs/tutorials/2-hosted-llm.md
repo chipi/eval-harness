@@ -103,10 +103,10 @@ The leaderboard now shows each arm's quality, `total_cost_usd` and `latency_ms`,
 **frontier**: the arms no other arm beats on quality, cost and speed together. `experiment-run`
 prints what the command spent over every repeat (`spent $0.001063 (price table x tokens, or the
 provider's bill where it sends one)`), and the repeat spread names cost and speed as what they
-are (`cost, not a quality metric`), not as determinism. `cost-report` sets each run's bill, read
-from `_meta.usage.cost` in its predictions, against the cost it recorded, and lists apart the runs
-with no bill there; the bundled providers do not keep `usage` in `_meta`, so it lists their runs
-as unbilled even when the recorded cost is the bill
+are (`cost, not a quality metric`), not as determinism. Each item that was billed keeps the
+bill in its `_meta.usage.cost`, and `cost-report` sets each run's bill, summed from those, against
+the cost it recorded, listing apart the runs with no bill (priced from the table). Runs made
+before the bundled adapter kept the bill there (commit `f0c2ed3c`) read as price table only
 ([RUNBOOK §4](../../harness/docs/RUNBOOK.md#4-point-the-harness-at-your-system)). Then compare and choose as
 before (`family-test`, `run-promote`), with the cost in the reason: "as good as X at a tenth of
 the price" is a decision; "scored higher" is not yet one.

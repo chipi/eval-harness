@@ -287,7 +287,9 @@ labels its column `A wins`; `experiment-run` prints what it spent and calls the 
 spread what it is; `judge-score` says its spend is the provider's bill where one is reported,
 else the price table; `silver-calibrate` explains rho and sibling lift; the catalog counts the
 configs behind its arms; "filed" reads "filed under this goal"; the item view says it shows the
-latest of N repeats beside their mean; judged arms keep their version in the inspector; a heading
+latest of N repeats beside their mean, and `evh inspect --item` prints the run and the same note;
+`evh cost-report` sees the bundled adapter's bills (`_meta.usage.cost`); `evh datasets` counts the
+configs behind the arms; judged arms keep their version in the inspector; a heading
 scrolled to is not hidden under the header; `env-check` names example arms only in a checkout; the
 kit's judge scorer points at tutorial 3. Fixed in the docs: every goal field and its allowed
 values (RUNBOOK §4c); what each provider records as cost (RUNBOOK §4, tutorial 2); which repeat
@@ -297,15 +299,10 @@ step 11's screenshots.
 
 Still open:
 
-- `evh cost-report` reads a run's bill from `_meta.usage.cost` in its predictions, and the
-  bundled providers do not keep `usage` there: it lists their runs as having no bill even when
-  their recorded `cost_usd` is the bill (in the second run, `briefs_mistral_small_v1`'s per-item
-  costs are not the config's prices × tokens, so the proxy billed them). A run also does not
-  record whether its cost came from a bill or from the price table.
-- `evh inspect --item` prints an arm's latest repeat without the page's "the latest of N repeats;
-  the score is the mean of all N" note, or the run it came from.
-- `evh datasets` counts arms per way of scoring (a config rescored against silver and judged is
-  three arms) without the config count the catalog's index now prints.
+- The second run's own runs predate `f0c2ed3c`, so `evh cost-report` reads them as price table
+  only, although the proxy billed them (`briefs_mistral_small_v1`'s per-item costs are not the
+  config's prices × tokens). Runs made from `f0c2ed3c` on keep the bill in `_meta.usage.cost`;
+  not yet exercised by a paid run.
 - `family-test` and `pair-test`/the inspector read the same pair from different random streams
   above 30 items, so their p can differ in the third decimal; documented, by design.
 - The inspector's `wins–losses` reads the row's arm against the baseline, `family-test`'s `A wins`

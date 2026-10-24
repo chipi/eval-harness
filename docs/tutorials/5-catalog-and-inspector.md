@@ -212,6 +212,7 @@ evh inspect --runs tickets_lead1_v1,tickets_lead2_v1 --item t01_login
 == silver/tickets_v1 (reference)
   ...
 == tickets_lead1_v1 ×3  (baseline)
+(run tickets_lead1_v1_..._r3 · shown the latest of 3 repeats; the score is the mean of all 3)
 Customer reports they cannot log in since this morning.
 ```
 
@@ -221,7 +222,7 @@ Customer reports they cannot log in since this morning.
   goals page and a page per goal, a page per reference, and a metrics page. Its index counts the
   arms and the configs behind them: an arm is one config on one dataset scored one way, so a
   config rescored against silver or judged is an arm of its own ("N arms on M datasets, from K
-  configs"). Each arm's row says what it is scored against; rows scored against silver, by a
+  configs"; `evh datasets` has a `configs` column). Each arm's row says what it is scored against; rows scored against silver, by a
   judge, or against the reference the arm wrote itself are tinted. The dataset page (and `evh
   datasets --dataset-id`) sorts its arms by what they are scored against first, gold, then
   silver, then each judge, then none, and only then by metric and mean, so a silver mean and a
@@ -232,7 +233,8 @@ Customer reports they cannot log in since this morning.
   tests each against a baseline, lists and charts the per-ticket scores, and for one ticket
   shows the ticket, its fields and each arm's output beside the reference. An arm run three
   times shows its latest repeat's output, and the page says so ("the latest of 3 repeats; the
-  score is the mean of all 3"); `--item` prints the same output under the arm's name.
+  score is the mean of all 3"); `--item` prints the same, under each arm's heading, as
+  `(run <run_id> · shown the latest of 3 repeats; …)`, and `(run <run_id>)` for an arm run once.
 - **Its refusals** are the tests' refusals: no comparison across two datasets, and on a metric
   scored against a reference, no arm scored against another reference than the baseline's (a
   silver-scored run against a gold-scored one).

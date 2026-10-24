@@ -176,6 +176,6 @@ every catalog table. A row opens on click, Enter or Space.
 | a round's arms (the goal page's **inspect** button on a round) | `evh inspect --round rN [--goal g]`: the goal's measure, against the round's leader; arms with no score on it are named and left out |
 | filter, breakdown | `--where field:value` (repeatable), `--by field` |
 | notes, verdicts, conditions, breakdown | printed in that order (notes as `NOTE:` lines) |
-| the item view | `--item <item_id>`: fields, the item itself, the reference, each arm's output |
+| the item view | `--item <item_id>`: fields, the item itself, the reference, each arm's output under `(run <run_id>)`, or `(run <run_id> · shown the latest of N repeats; the score is the mean of all N)` for a repeated arm |
 | the per-item table | `--items`: every item's score per arm, and each arm's Δ against the baseline |
 | the analysis charts | `--analysis`: the spread per arm and the difference from the baseline, per item, as numbers; `--x <metric>` adds each arm's mean on a second metric (the scatter) |
