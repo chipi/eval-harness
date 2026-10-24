@@ -42,8 +42,10 @@ nav:
       - Upgrading: harness/UPGRADING.md
   - Architecture:
       - Overview: architecture/ARCHITECTURE.md
+      - Requirements (PRDs): prd/index.md
+      - Experience (UXS): uxs/index.md
+      - Designs (RFCs): rfc/index.md
       - Decisions (ADRs): adr/index.md
-      - Proposals (RFCs): rfc/index.md
   - The experiments:
       - Reproduce it: REPRODUCE.md
       - Protocol: PROTOCOL.md

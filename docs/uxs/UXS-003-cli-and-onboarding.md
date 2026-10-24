@@ -1,0 +1,139 @@
+# UXS-003: The command line and the first evaluation
+
+- **Status**: Active
+- **Authors**: Marko Dragoljevic
+- **Related PRDs**: [PRD-001](../prd/PRD-001-experiments-and-comparison.md) (experiments),
+  [PRD-007](../prd/PRD-007-packaging-and-providers.md) (one install), [PRD-004](../prd/PRD-004-catalog-and-inspector.md) (parity),
+  [PRD-005](../prd/PRD-005-goals-and-rounds.md) (rounds)
+- **Related RFC**: [RFC-004](../rfc/RFC-004-experiment-rounds.md) (the round commands)
+- **Related UX specs**: [UXS-001](UXS-001-catalog.md), [UXS-002](UXS-002-inspector.md)
+- **Implementation paths**: `harness/scripts/cli.py` (`COMMANDS`: every command, one line of
+  help each), `harness/Makefile` (the same scripts as `make` targets), `docs/GUIDE.md` (the
+  onboarding path, run as written by `make guide-check`)
+
+## Summary
+
+The harness's main surface is the terminal. One command, `evh`, with one subcommand per verb;
+`evh --help` lists them and `--help` after any command gives its flags. In a checkout of this
+repository each is also a `make` target running the same script. This spec covers the order in
+which a newcomer meets the commands, how every command speaks (refusals, hints, exit codes), the
+**parity table** that maps every catalog view and action to its command, and the flow of an
+experiment round.
+
+## Principles
+
+- **The terminal can do everything the pages can.** The pages are a comfort ([UXS index, rule
+  2](index.md#the-rules-every-surface-keeps)).
+- **Refuse loudly, then say what to do.** A refusal names what is wrong and, where there is one,
+  the command that fixes it.
+- **The next step is printed.** A command that leads somewhere ends with the command to run next,
+  in the form the user has: an evh command through `evh`, a make target in a checkout.
+- **Nothing billed by surprise.** Paid commands have a `--dry-run`, a cost cap, and a printed
+  `--resume`.
+
+## Scope
+
+**In scope:** the onboarding order, command conventions, the parity table, the round flow.
+
+**Non-goals:** a TUI or interactive prompts; shell completion; colour in the output.
+
+## The first evaluation (onboarding)
+
+The [GUIDE](../GUIDE.md) is the onboarding path, offline and keyless, in the user's own project.
+Every command in it was run as written, and `make guide-check` runs it again in a fresh project
+on every change, comparing each quoted output. Its order is the order a newcomer meets the ideas:
+
+| step | what the user does | commands |
+| --- | --- | --- |
+| 0 | set up a project with the tutorial kit | `pip install …`, `evh init --tutorial` |
+| 1 | freeze a dataset, with its fields | `evh dataset-create --dataset-id tickets_v1 --source-dir tutorial/tickets --fieldset tickets --fields tutorial/ticket_fields.csv` |
+| 2 | materialize | `evh dataset-materialize --dataset-id tickets_v1` |
+| 3 | describe the arms, name the goal | copy configs, `goal: tickets_summary` |
+| 4 | author silver references | `evh reference-create --dataset-id tickets_v1 --config data/configs/tickets_author.yaml` |
+| 5 | commit, then measure | `evh experiment-run --config … --dry-run`, then `--repeat 3` |
+| 6 | compare | `evh leaderboard`, `evh run-compare`, `evh pair-test` |
+| 7 | make it golden | `evh rescore --reference-id gold/tickets_v1 --out data/runs-gold`, `evh silver-calibrate` |
+| 8 | decide: is the winner separated? | `evh family-test` |
+| 9 | promote a baseline | `evh run-promote --run … --reason "…"` |
+| 10 | optional: re-measure with an LLM judge | `evh judge-score --dataset-id tickets_v1 --scorer tickets-judge-v1` (refused), `--unvalidated --dry-run`, `--unvalidated` |
+| 11 | validate | `evh validate` |
+| 12 | browse | `evh catalog`, `evh catalog-serve` |
+
+Goals appear at step 3 and rounds not at all: a newcomer can ignore both. Deeper material is
+tiered behind the GUIDE: [Concepts](../../harness/docs/CONCEPTS.md) (why),
+[Runbook](../../harness/docs/RUNBOOK.md) (every flag), [Integration](../../harness/docs/INTEGRATION.md)
+(your own system), [Scenario](../../harness/docs/SCENARIO.md) (a newcomer's trial with hosted
+models).
+
+## How a command speaks
+
+- **Refusals:** `ERROR: <why>` on stderr and exit 1, e.g.
+  `ERROR: no goal 'x': one of …` or "round r1 of g is still open: close it first (evh
+  round-close …)". An unknown command or argument prints the usage and exits 2.
+- **Exit codes** ([Runbook: exit codes](../../harness/docs/RUNBOOK.md#exit-codes)): 0 done; 1
+  refused or nothing measured; 2 a usage error, or a run stopped by the cost cap with its partial
+  results kept and resumable; 3 a judge scorer not validated.
+- **Hints:** a command that creates something ends with `Next: <command>`, e.g. after
+  `dataset-create`: `Next: evh dataset-materialize --dataset-id tickets_v1`. Through `evh` the
+  hint names an evh command; in a checkout, a make target.
+- **Notes:** caveats the user must read before the numbers are printed as `NOTE: …` lines (a
+  filtered comparison, a spend against a budget, a rounding warning).
+- **Tables:** plain aligned columns with a dashed rule, no colour, so output can be pasted and
+  diffed.
+- **Help:** `evh --help` lists every command with one line each (from `cli.py`'s `COMMANDS`);
+  `--help` after a command lists its flags. `evh --version` prints the version.
+
+## The parity table
+
+Every view and action in the catalog and the inspector, and the command that gives the same
+answer. Where the page has a `make` target in a checkout, it runs the same script.
+
+| in the catalog or inspector | command | make target |
+| --- | --- | --- |
+| home: every dataset | `evh datasets` | `make datasets` |
+| a dataset page: arms, baseline, versions, references | `evh datasets --dataset-id <id>` | `make datasets DATASET_ID=<id>` |
+| the goals page | `evh goals` | `make goals` |
+| a goal page: the answer so far, arms per dataset and group | `evh goals --goal <id>` | `make goals GOAL=<id>` |
+| a goal page: its rounds and suggestions | `evh rounds --goal <id> [--round rN]` | `make rounds GOAL=<id>` |
+| reference pages | `evh references [--reference-id <id>]` | `make references` |
+| the metrics page | `evh metrics [--dataset-id <id>]` | `make metrics` |
+| inspector: a comparison | `evh inspect --runs a,b [--baseline a] [--metric m]` | `make inspect RUNS=a,b` |
+| inspector: filter, breakdown | `evh inspect --runs … --where field:value --by field` | |
+| inspector: one item | `evh inspect --runs … --item <item_id>` | |
+| inspector: a round's arms | `evh inspect --round rN` (the page has no round picker) | |
+| inspector: the per-item table and charts | no command; the scores are each run's `predictions.jsonl` | |
+| the catalog's global search | no command; `evh runs-list` lists runs | |
+| "promote its run" (a goal page with no decision) | `evh run-promote --run <run_id> --reason "…"` | `make run-promote` |
+| a suggested retirement | `evh round-retire --goal g --round rN --arm <config> --reason "…"` | `make round-retire` |
+| a suggested close | `evh round-close --goal g --round rN --conclusion "…" --promote <run_id>` | `make round-close` |
+| (no page action) opening a round | `evh round-open --goal g --dataset d …` | `make round-open` |
+| building and serving the pages | `evh catalog`, `evh catalog-serve` | `make catalog`, `make catalog-serve` |
+
+Two rows have no command: the inspector's charts and per-item table, and the global search.
+Adding a view means adding its command in the same change, or recording the gap in this table.
+
+## The round flow
+
+Rounds are optional ([PRD-005](../prd/PRD-005-goals-and-rounds.md)). The commands, in the order
+a round goes:
+
+```bash
+evh round-open --goal tickets_summary --dataset tickets_v1 \
+    --hypothesis "how many leading sentences summarise a ticket best" \
+    --keep tickets_lead1_v1,tickets_lead2_v1 --budget-usd 1
+# add `round: r1` beside `goal:` in each new arm's config, commit, then run them
+evh rounds --goal tickets_summary
+evh round-retire --goal tickets_summary --round r1 --arm tickets_lead1_v1 --reason "…"
+evh round-close --goal tickets_summary --round r1 --conclusion "…" --promote <run_id>
+```
+
+- `round-open` prints the round file it wrote, then: "Name it in each arm's config (round: r1,
+  beside goal: tickets_summary), run them, then: evh rounds --goal tickets_summary" and "Commit
+  the round file before the runs: an uncommitted file makes them dirty."
+- `evh rounds --goal G` prints one line per round, then the open round in full: its hypothesis,
+  "on <measure>: n arm(s) in play, leader <arm>", each other arm's verdict against the leader
+  with Δ and p, `NOTE:` lines (the spend against the budget), and **suggested next**, each
+  suggestion followed by its command, ready to paste.
+- A reason or a conclusion shorter than three words is refused: it must be a sentence.
+- `--promote` runs `run-promote` with the conclusion as the reason; if the promotion is refused,
+  the round stays open.

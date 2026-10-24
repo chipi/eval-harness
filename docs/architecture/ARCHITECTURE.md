@@ -2,8 +2,10 @@
 
 How the harness is built, layer by layer, and why each layer refuses what it refuses. The
 rules themselves are in [Concepts](../../harness/docs/CONCEPTS.md); the commands in the
-[Runbook](../../harness/docs/RUNBOOK.md). The decisions behind the bigger pieces are recorded as
-[ADRs](../adr/index.md), and proposals still under discussion as [RFCs](../rfc/index.md).
+[Runbook](../../harness/docs/RUNBOOK.md). What each capability is for is in the
+[product requirements (PRDs)](../prd/index.md), what a user sees and types in the
+[UX specifications (UXS)](../uxs/index.md), the technical designs in the [RFCs](../rfc/index.md),
+and the key decisions, a few lines each, in the [ADRs](../adr/index.md).
 
 ## What it is
 
@@ -43,7 +45,7 @@ answers a different question (is there any order at all) and stays separate.
 
 ## Re-measuring with an LLM judge
 
-*The short version of [ADR-0001](../adr/ADR-0001-judge-scorers.md).*
+*The short version of [RFC-005](../rfc/RFC-005-judge-scorers.md) ([ADR-0001](../adr/ADR-0001-judge-scorers.md)).*
 
 A run's outputs are the expensive, frozen record; its scores can always be computed again.
 That makes three kinds of re-measurement possible on the same outputs:
@@ -69,7 +71,7 @@ decision.
 
 ## Catalog, inspector and goals
 
-*The short version of [ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md).*
+*The short version of [RFC-003](../rfc/RFC-003-catalog-adapter.md) ([ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md)); the pages are specified in [UXS-001](../uxs/UXS-001-catalog.md) and [UXS-002](../uxs/UXS-002-inspector.md).*
 
 These came from a project that pins the harness and built them for itself. In 0.4.0 the
 generic part moved into the harness; the project keeps one adapter.
@@ -91,7 +93,7 @@ generic part moved into the harness; the project keeps one adapter.
 
 ## Item fields and items at a URL
 
-*The short version of [ADR-0003](../adr/ADR-0003-item-fields-and-url-items.md).*
+*The short version of [RFC-006](../rfc/RFC-006-item-fields-and-url-items.md) ([ADR-0003](../adr/ADR-0003-item-fields-and-url-items.md)).*
 
 The harness defines no field. A project declares its own in a field set (a name and a type
 each), any number of its datasets name it, and each item carries values for those names.
@@ -120,8 +122,13 @@ release is deployed from `main` through a protected environment, health-checked 
 rolled back on failure. The runbook is
 [`infra/README.md`](https://github.com/chipi/eval-harness/blob/main/infra/README.md).
 
-## Decisions and proposals
+## Requirements, experience, designs and decisions
 
-- [Architecture decisions (ADRs)](../adr/index.md): what was chosen and why, one record per
-  decision, never edited once accepted except to mark it superseded.
-- [Proposals (RFCs)](../rfc/index.md): designs under discussion, before they become a decision.
+New work starts with a PRD, then a UXS when it has a surface, then an RFC; an ADR records the key
+decision in a few lines.
+
+- [Product requirements (PRDs)](../prd/index.md): what each capability does for a user, and why.
+- [UX specifications (UXS)](../uxs/index.md): the catalog, the inspector, and the command line.
+- [Designs (RFCs)](../rfc/index.md): fingerprints, run records, the adapter, rounds, judging, fields.
+- [Architecture decisions (ADRs)](../adr/index.md): the key decisions, never edited once
+  accepted except to mark them superseded.

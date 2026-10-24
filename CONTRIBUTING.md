@@ -29,6 +29,13 @@ It needs:
 - **When a check passes, ask what would make it fail.** If nothing would, it is not a check.
   Several assertions here were vacuous until someone mutation-tested them.
 
+## Changing the harness: PRD first
+
+A new capability starts with a [PRD](docs/prd/index.md) (what the user needs, and why), then a
+[UXS](docs/uxs/index.md) when it has a page or a command, then an [RFC](docs/rfc/index.md) for the
+design. A key architectural decision gets a few lines as an [ADR](docs/adr/index.md). A view added
+to the catalog or the inspector gets its `evh` command in the same change.
+
 ## Before you open a PR
 
 ```bash

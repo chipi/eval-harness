@@ -21,7 +21,7 @@ measured, every metric, model and test with its source, and how to rerun all of 
 
 [<span class="n">05</span><b>Release notes</b><span class="d">What each release shipped, what can move a result, and how to upgrade.</span>](../harness/CHANGELOG.md)
 
-[<span class="n">06</span><b>Architecture</b><span class="d">How the harness is built, layer by layer; the decisions behind it (ADRs) and the proposals under discussion (RFCs).</span>](architecture/ARCHITECTURE.md)
+[<span class="n">06</span><b>Architecture</b><span class="d">How the harness is built, layer by layer; what each part is for (PRDs), what you see and type (UXS), its designs (RFCs) and key decisions (ADRs).</span>](architecture/ARCHITECTURE.md)
 
 </div>
 
