@@ -96,7 +96,7 @@
       <td class="num">${r.wins}–${r.losses}${r.ties ? ' (' + r.ties + ' tied)' : ''}</td>
       <td class="num">${fmtp(r.p)}</td><td class="num">${r.threshold ? r.threshold.toFixed(4) : '—'}</td></tr>`).join('');
     const baseMean = d.items.length ? (() => { const v = Object.values(d.series[d.baseline]); return v.reduce((a, b) => a + b, 0) / v.length; })() : null;
-    const verdicts = `<div class="scroll-x"><table class="data"><thead><tr><th>run vs baseline</th><th>verdict</th><th>${ITEMS}</th><th>mean</th><th>Δ vs baseline</th><th>wins–losses</th><th>p (exact ≤30)</th><th>Holm threshold</th></tr></thead>
+    const verdicts = `<div class="scroll-x"><table class="data" data-nopage><thead><tr><th>run vs baseline</th><th>verdict</th><th>${ITEMS}</th><th>mean</th><th>Δ vs baseline</th><th>wins–losses</th><th>p (exact ≤30)</th><th>Holm threshold</th></tr></thead>
       <tbody>${vt || '<tr><td colspan="8" class="muted">Only the baseline has this metric.</td></tr>'}</tbody></table></div>
       <p class="small muted">Baseline ${esc(label[d.baseline] || d.baseline)}: mean ${fmt(baseMean)}. Holm across ${d.family_size} comparison(s)${P.get('threshold') ? ' (this row\'s threshold carried from the page you came from, so the verdict matches it)' : P.get('family') ? ' (family carried from the page you came from)' : ''}; ${esc(arrow)}. Scores come from: ${esc([...new Set(d.arms.map(a => a.source).filter(Boolean))].join('; '))}.</p>`;
 
@@ -126,6 +126,8 @@
       + `<p class="eyebrow gap"><span class="num">03</span>per ${ITEM} · ${d.items.length}</p>` + eps;
     wireCharts(d, label);
     wireFields(d);
+    // Long tables (the per-item one) page 10 at a time; the verdict tables stay whole (data-nopage).
+    if (window.paginate) app.querySelectorAll('table.data').forEach(t => window.paginate(t));
     document.getElementById('metric').onchange = ev => { P.set('metric', ev.target.value); go(); };
     document.getElementById('baseline').onchange = ev => { P.set('baseline', ev.target.value); go(); };
     const rs = document.getElementById('rescore');
@@ -208,7 +210,7 @@
       <td class="num">${fmt(r.delta)}</td><td class="num">${r.wins}–${r.losses}</td><td class="num">${fmtp(r.p)}</td>
       <td class="num">${r.threshold ? r.threshold.toFixed(4) : '—'}</td></tr>`)).join('');
     return `<h3 class="sub">By ${esc(f.label)} · ${b.groups.length} group(s)</h3>
-      <div class="scroll-x"><table class="data"><thead><tr><th>${esc(f.label)}</th><th>run vs baseline</th><th>verdict</th><th>${ITEMS}</th><th>Δ vs baseline</th><th>wins–losses</th><th>p</th><th>Holm threshold</th></tr></thead>
+      <div class="scroll-x"><table class="data" data-nopage><thead><tr><th>${esc(f.label)}</th><th>run vs baseline</th><th>verdict</th><th>${ITEMS}</th><th>Δ vs baseline</th><th>wins–losses</th><th>p</th><th>Holm threshold</th></tr></thead>
       <tbody>${rows || '<tr><td colspan="8" class="muted">No group has two arms to test.</td></tr>'}</tbody></table></div>
       <p class="small muted">The same paired test within each group, Holm-corrected over all ${b.family_size} tests together: each extra group is another chance of a false "separated", so the thresholds are stricter than for one group alone.</p>`;
   }

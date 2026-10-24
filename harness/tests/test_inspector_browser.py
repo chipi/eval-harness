@@ -165,6 +165,31 @@ def drive(base: str) -> None:
         check("dataset page: a public field summarised (account 2)", "account 2" in " ".join(ftable.split()))
         check("dataset page: the hidden field shows 'not public'", "not public" in ftable)
 
+        # Paging (catalog.js): a 23-row table shows 10, then 20, then all 23; a filter pages its matches.
+        paged = page.evaluate(
+            """() => {
+              const wrap = document.createElement('div'); wrap.className = 'scroll-x';
+              const t = document.createElement('table'); t.className = 'data'; t.id = 'pagetest';
+              t.innerHTML = '<thead><tr><th>n</th></tr></thead><tbody>'
+                + Array.from({length: 23}, (_, i) => `<tr><td>row ${i} ${i % 2 ? 'odd' : 'even'}</td></tr>`).join('')
+                + '</tbody>';
+              wrap.appendChild(t); document.querySelector('main').appendChild(wrap);
+              window.paginate(t);
+              const vis = () => [...t.tBodies[0].rows].filter(r => r.offsetParent !== null).length;
+              const out = [vis()];
+              wrap.nextElementSibling.querySelector('[data-more]').click(); out.push(vis());
+              wrap.nextElementSibling.querySelector('[data-all]').click(); out.push(vis());
+              [...t.tBodies[0].rows].forEach(r => { r.hidden = !r.textContent.includes('odd'); }); t._repage();
+              wrap.nextElementSibling.querySelector('[data-less]')?.click(); out.push(vis());
+              return out;
+            }"""
+        )
+        check(
+            "paging: 10, then 20, then all 23; 11 filtered matches page to 10",
+            paged == [10, 20, 23, 10],
+            paged,
+        )
+
         page.goto(f"{base}inspect.html?runs={arms}&baseline=runs/tickets_v1/tickets_lead1_v1")
         page.wait_for_selector("#wfield", timeout=15000)
         opts = page.locator("#wfield option").all_inner_texts()

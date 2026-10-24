@@ -26,3 +26,24 @@ document.querySelectorAll('table.sortable th').forEach((th,i)=>th.addEventListen
 const dir=th.dataset.dir==='asc'?'desc':'asc';th.closest('tr').querySelectorAll('th').forEach(x=>delete x.dataset.dir);th.dataset.dir=dir;
 const key=r=>{const c=r.cells[i];const v=c.dataset.v??c.textContent.trim();const n=parseFloat(v);return isNaN(n)?v.toLowerCase():n;};
 [...tb.rows].sort((a,b)=>{const x=key(a),y=key(b);return (x>y?1:x<y?-1:0)*(dir==='asc'?1:-1);}).forEach(r=>tb.appendChild(r));}));
+/* paging: a long table shows 10 rows at a time, "show 10 more" and "show all" below it. It pages
+   the rows the filter leaves (r.hidden), so filter and sort work over every row; a link to a row
+   (#anchor) opens the table at it. window.paginate(table) for tables drawn later (the inspector). */
+window.paginate=function(t,step){step=step||10;if(!t||!t.tBodies[0]||'nopage' in t.dataset||t._repage)return;
+let shown=step;const bar=document.createElement('p');bar.className='pager small muted';
+(t.closest('.scroll-x')||t).after(bar);
+const id=decodeURIComponent(location.hash.slice(1));
+if(id){const at=[...t.tBodies[0].rows].findIndex(r=>r.id===id);if(at>=step)shown=Infinity;}
+t._repage=function(){const live=[...t.tBodies[0].rows].filter(r=>!r.hidden);
+live.forEach((r,i)=>r.classList.toggle('paged-out',i>=shown));
+[...t.tBodies[0].rows].filter(r=>r.hidden).forEach(r=>r.classList.remove('paged-out'));
+const n=live.length,vis=Math.min(n,shown);
+if(n<=step){bar.hidden=true;return;}bar.hidden=false;
+bar.innerHTML=`Showing ${vis} of ${n}`+(vis<n?` <button type="button" class="btn small" data-more>show ${Math.min(step,n-vis)} more</button><button type="button" class="btn small" data-all>show all</button>`:` <button type="button" class="btn small" data-less>show ${step}</button>`);};
+bar.addEventListener('click',ev=>{const b=ev.target.closest('button');if(!b)return;
+shown='more' in b.dataset?shown+step:'all' in b.dataset?Infinity:step;t._repage();});
+t._repage();};
+document.querySelectorAll('table.data').forEach(t=>window.paginate(t));
+document.querySelectorAll('input[data-filter]').forEach(inp=>{const t=document.getElementById(inp.dataset.filter);
+inp.addEventListener('input',()=>{if(t&&t._repage)t._repage();});});
+document.querySelectorAll('table.sortable th').forEach(th=>th.addEventListener('click',()=>{const t=th.closest('table');if(t._repage)t._repage();}));

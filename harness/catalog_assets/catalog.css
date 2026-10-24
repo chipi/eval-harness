@@ -293,3 +293,7 @@ tr.t-author td:first-child { box-shadow: inset 3px 0 0 var(--local); padding-lef
 /* conditions: a field that differs from the baseline's value */
 table.conds td.diff { color: var(--ink); background: color-mix(in srgb, var(--local) 14%, transparent); }
 p.conds { margin: 10px 0 0; }
+/* paging (catalog.js): rows past the page are hidden, the bar says how many and offers more */
+tr.paged-out { display: none; }
+.pager { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 12px 0 0; }
+.pager[hidden] { display: none; }

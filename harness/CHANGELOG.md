@@ -53,6 +53,9 @@ p 0.36, from the pre-fix run), and DBpedia's 56-item dev slice, over today's 28 
   judged arm reads "judge <scorer>", no longer "gold". A goal page flags the arm that wrote the
   reference it is scored against, so it is never the leader. The inspector's charts section is
   "analysis", and its verdict rows carry the same tints. Actions are compact and tinted.
+- **Long tables page.** Every catalog table and the inspector's per-item table show 10 rows, with
+  "show 10 more" and "show all"; the filter and the sort work over every row, and a link to a row
+  opens the table at it. The verdict tables stay whole: their Holm thresholds are read together.
 - **Dataset versions keep their lineage.** `evh dataset-create --dataset-id x_v2 --from x_v1`
   records where a version came from and the item ids it adds, removes and changes
   (`derived_from` in the dataset file); `validate` V2 fails a version whose parent is gone. The
