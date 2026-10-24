@@ -139,6 +139,11 @@ def main() -> int:
                 ["--dataset-id", "tickets_v1", "--config", "data/configs/tickets_author.yaml"],
                 "ok",
             ),
+            (
+                "reference-create",
+                ["--dataset-id", "tickets_v1", "--from-run", run_id, "--force"],
+                "ok:no calls",
+            ),
             ("experiment-run", ["--config", "data/configs/tickets_lead1.yaml", "--dry-run"], "ok"),
             (
                 "sweep",

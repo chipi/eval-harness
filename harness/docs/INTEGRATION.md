@@ -124,15 +124,22 @@ record the prices it was costed at.
 
 Most projects do not have it. The sequence that works:
 
-1. **Pick your best model** and author references with it:
+1. **Run your best model as an arm**, usually an expensive one you would not run in
+   production, read its results, and make its outputs the reference:
    ```bash
-   evh reference-create --dataset-id my_v1 --config data/configs/sonnet.yaml
+   evh experiment-run --config data/configs/frontier.yaml
+   evh reference-create --dataset-id my_v1 --from-run <that run_id>
    ```
    That writes **silver** — model-generated. It is not correct, it is
-   *consistent*, which is enough to rank other arms against it.
+   *consistent*, which is enough to rank other arms against it: the cheaper arms are measured
+   by how close they come to the expensive one. It calls nothing, and the reference names the
+   run it came from. (`--config data/configs/frontier.yaml` instead of `--from-run` authors it
+   in a pass of its own.)
 
-2. **Review a few by hand.** Where you agree with the output, you now have gold.
-   Re-run with `--tier gold` once a human has actually checked them.
+2. **Review a few by hand.** Where you agree with the output, you now have gold: copy the
+   items you would sign into `data/references/gold/<dataset_id>/<item_id>.txt`. Gold outranks
+   silver for every new run; `evh rescore --reference-id gold/<dataset_id>` re-scores the runs
+   you have, for $0.
 
 3. **Never let the distinction blur.** A run records which tier it scored
    against (`reference_tier` in its `metrics.json`). Silver-scored numbers are for
@@ -227,7 +234,10 @@ evh dataset-create --dataset-id pilot_v1 --limit 10
 evh dataset-materialize --dataset-id pilot_v1
 
 $EDITOR adapter.py                            # call_system() -> your code
-evh reference-create --dataset-id pilot_v1 --config data/configs/best_model.yaml
+git add -A && git commit -m "pilot_v1, adapter, arms"   # a run from a dirty tree cannot become a reference
+evh experiment-run --config data/configs/best_model.yaml
+evh reference-create --dataset-id pilot_v1 --from-run <that run_id>
+git add data/references && git commit -m "pilot_v1: silver from best_model"
 
 evh experiment-run --config data/configs/arm_a.yaml --repeat 3   # + the noise floor
 evh experiment-run --config data/configs/arm_b.yaml

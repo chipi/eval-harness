@@ -72,7 +72,7 @@ data/sources/        your raw inputs — IMMUTABLE, never edited in place
 data/datasets/       the dataset_id — the thing that makes two numbers comparable
       ↓  make dataset-materialize     rebuild run inputs, re-verify every hash
 data/materialized/   derived, regenerable, disposable
-      ↓  make reference-create        ground truth to score against (gold | silver)
+      ↓  make reference-create        ground truth to score against (gold | silver; RUN= a run's outputs)
 data/references/
       ↓  make experiment-run          → scores + cost + speed + build provenance
 data/runs/
@@ -251,6 +251,7 @@ how 18 arms of paid results were lost during this harness's own development.
 | **[INTEGRATION.md](docs/INTEGRATION.md)** | plugging in an existing system; getting ground truth when you have none |
 | **[RUNBOOK.md](docs/RUNBOOK.md)** | the operational walk, step by step, with the reasoning |
 | **[RELEASING.md](docs/RELEASING.md)** | pinning a release in your project, and cutting one: version, changelog, tag, GitHub Release |
+| **[SCENARIO.md](docs/SCENARIO.md)** | the newcomer scenario run before every release: two experiments, real models, under $1 |
 | **[UPGRADING.md](docs/UPGRADING.md)** | from one release to the next (what can move a number), and for a copy of the harness taken before October 2026 |
 | **[CONCEPTS.md](docs/CONCEPTS.md)** | why each refusal exists, and the failure it prevents |
 
@@ -289,7 +290,7 @@ partial results preserved so a blown budget still yields a usable report.
 | `scripts/adapter.py` | the bundled adapter (token overlap, the worked example's), used when a project has no `adapter.py`; start yours from a copy |
 | `scripts/dataset_create.py` | freeze a selection into a `dataset_id` |
 | `scripts/materialize.py` | build run inputs, verifying every hash |
-| `scripts/reference_create.py` | author gold/silver ground truth |
+| `scripts/reference_create.py` | ground truth: a run's outputs as silver (`--from-run`), or authored with a config |
 | `scripts/experiment_run.py` | run an arm → scores, cost, speed, provenance |
 | `scripts/compare_runs.py` | compare two runs, or refuse |
 | `scripts/promote_baseline.py` | run → baseline, or refuse |

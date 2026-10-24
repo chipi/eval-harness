@@ -635,6 +635,10 @@ def test_example_scorer_suites_pass() -> None:
         ("test_catalog.py", "catalog and run inspector"),
         ("test_goals.py", "goals: config, run, baseline, V14, pages"),
         ("test_fields.py", "item fields and URL items: create, materialize, V15"),
+        (
+            "test_reference_from_run.py",
+            "a run's outputs as the reference: provenance, refusals, the author's row",
+        ),
         ("test_installed_commands.py", "every evh command in a project that pins the package"),
         ("test_judge_score.py", "judging pass"),
         ("test_code_hashes.py", "scoring-code hashes"),

@@ -25,10 +25,12 @@ import statistics
 
 from _adapter import recorded_metric_kinds
 from _common import (
+    REFERENCES,
     RUNS,
     classify_metrics,
     die,
     how,
+    read_json,
 )
 from _record import derived_with
 from _runs import by_arm, direction, runs_on, warn_on_ambiguous_runs
@@ -362,6 +364,24 @@ def _frontier(rows: list[dict], quality: str, kinds: dict[str, str], asc: bool =
         print(f"    dominated (worse on all three than some other arm): {', '.join(beaten)}")
 
 
+def _own_reference(by_config: dict[str, list[dict]]) -> dict[str, str]:
+    """config_id -> the reference it is scored against that it wrote itself (its manifest's
+    `authored_by`): that row is graded against its own outputs."""
+    authors: dict[str, object] = {}
+    out: dict[str, str] = {}
+    for config_id, runs in by_config.items():
+        for r in runs:
+            ref = ((r.get("fingerprint") or {}).get("data") or {}).get("reference_id")
+            if not ref:
+                continue
+            if ref not in authors:
+                mf = REFERENCES / ref / "manifest.json"
+                authors[ref] = read_json(mf).get("authored_by") if mf.is_file() else None
+            if authors[ref] == config_id:
+                out[config_id] = ref
+    return out
+
+
 def _metric_kinds(by_config: dict[str, list[dict]]) -> dict[str, str]:
     """{metric: kind} for these runs: what they recorded, overridden by what their adapters
     declare today; a disagreement no adapter settles is printed as a warning."""
@@ -515,14 +535,21 @@ def main() -> int:
 
     show = quality + descriptive + [k for k in all_keys if kinds.get(k) in ("cost", "speed")]
     show = [k for k in show if k in all_keys]
-    w = max(len(r["config_id"]) for r in rows) + 2
+    own = _own_reference(by_config)
+    w = max(len(r["config_id"]) + (2 if r["config_id"] in own else 0) for r in rows) + 2
     print(f"dataset: {args.dataset_id}   ranked by: {sort_key} ({'lower' if asc else 'higher'} is better)\n")
     header = f"  {'arm':{w}} {'runs':>4}  " + "  ".join(f"{k:>16}" for k in show)
     print(header)
     print("  " + "-" * (len(header) - 2))
     for _i, r in enumerate(rows, 1):
         cells = "  ".join((f"{r[k]:16.6f}" if k in r else f"{'—':>16}") for k in show)
-        print(f"  {r['config_id']:{w}} {r['n_runs']:>4}  {cells}")
+        name = r["config_id"] + (" *" if r["config_id"] in own else "")
+        print(f"  {name:{w}} {r['n_runs']:>4}  {cells}")
+    for config_id, ref in sorted(own.items()):
+        print(
+            f"\n  * {config_id} wrote the reference {ref}: it is graded against its own outputs,\n"
+            "    so its row measures agreement with itself, not quality. Compare the others to it."
+        )
 
     if ranking_on_descriptive:
         print(

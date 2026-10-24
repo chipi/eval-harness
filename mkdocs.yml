@@ -38,6 +38,7 @@ nav:
       - Runbook: harness/RUNBOOK.md
       - Release notes: harness/CHANGELOG.md
       - Releasing: harness/RELEASING.md
+      - Newcomer scenario: harness/SCENARIO.md
       - Upgrading: harness/UPGRADING.md
   - Architecture:
       - Overview: architecture/ARCHITECTURE.md

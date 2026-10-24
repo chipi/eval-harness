@@ -145,15 +145,29 @@ Full detail in [INTEGRATION.md](INTEGRATION.md).
 
 ## 4b. Author ground truth — you cannot score quality without it
 
-Most projects have none. Generate it with the best model you have:
+Most projects have none. Run the best model you have as an arm (an expensive one you would
+not run in production is the usual choice), read its results, then make its outputs the
+reference:
 
 ```bash
-make reference-create DATASET_ID=my_v1 CONFIG=data/configs/best_model.yaml ARGS="--limit 10"
+make experiment-run CONFIG=data/configs/best_model.yaml
+make reference-create DATASET_ID=my_v1 RUN=<that run_id>
 ```
 
 That writes **silver** references — model-generated, therefore consistent
 rather than correct. Enough to rank arms against each other; not a claim about
-truth.
+truth. It calls nothing, and its `manifest.json` names the run, config, fingerprint and build
+it came from. It refuses a run from a dirty tree or of an unknown build (as `run-promote`
+does), and an empty output or one that stopped at `max_tokens` (raise `max_tokens` in a new
+config_id; `ARGS=--allow-cut-off` for outputs that end at the cap by design). Commit the
+reference before the next run: an uncommitted one makes every later run dirty.
+
+`CONFIG=data/configs/best_model.yaml` instead of `RUN=` authors the references in a pass of their
+own, one call per item, without a run to read first.
+
+Scored against silver, the arm that wrote it is graded against its own outputs: the leaderboard
+marks its row (`arm *`). The others are measured by how close they come to it, the usual way to
+choose a cheaper system: pay for the expensive one once, then chase it.
 
 **Gold** is what a person wrote or checked: one `<item_id>.txt` per item under
 `data/references/gold/<dataset_id>/` — write them, or review silver ones and keep the

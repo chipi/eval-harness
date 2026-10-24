@@ -191,6 +191,13 @@ These are **silver**: consistent, cheap, and *not correct* — they encode the a
 opinion, mistakes included. Good enough to start ranking; every run scored against them
 says so. Step 7 shows exactly what they get wrong.
 
+`--config` authors the references in a pass of their own, which is free here because `echo`
+calls nothing. With a model that costs money, the usual way is the other one: run it as an
+arm, read its results, then `evh reference-create --dataset-id … --from-run <run_id>` makes that
+run's outputs the reference. Nothing is called twice, and the reference names the run it came
+from. An expensive model you would not run in production is the usual author; the cheaper arms
+are then measured by how close they come to it.
+
 ## 5 · Commit, then measure
 
 ```bash
@@ -639,7 +646,7 @@ looked like) and name it in `config.yaml`: `catalog: {adapter: path/to/file.py:C
 | start a project | `evh init [--tutorial]` |
 | freeze | `evh dataset-create --dataset-id … --source-dir …` |
 | materialize | `evh dataset-materialize --dataset-id …` |
-| silver references | `evh reference-create --dataset-id … --config …` |
+| silver references | `evh reference-create --dataset-id … --from-run <run_id>` (or `--config …`) |
 | gold references | files in `data/references/gold/<dataset_id>/<item_id>.txt` |
 | cost before spending | `evh experiment-run --config … --dry-run` |
 | measure (+ own noise) | `evh experiment-run --config … --repeat 3` |

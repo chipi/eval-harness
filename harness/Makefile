@@ -38,7 +38,7 @@ help:
 	@echo "  3. make dataset-create  DATASET_ID=my_v1"
 	@echo "  4. make dataset-materialize DATASET_ID=my_v1"
 	@echo "  5. write adapter.py           call_system() -> YOUR system (copy scripts/adapter.py)"
-	@echo "  6. make reference-create DATASET_ID=my_v1 CONFIG=<trusted model>"
+	@echo "  6. make reference-create DATASET_ID=my_v1 RUN=<run_id of your best arm>   (or CONFIG=<arm>)"
 	@echo ""
 	@echo "MEASURE  (dry-run first — it costs nothing and tells you what the sweep will)"
 	@echo "  make experiment-dry-run CONFIG=data/configs/arm_a.yaml"
@@ -133,8 +133,8 @@ dataset-materialize:
 # Author ground truth with a model you trust. SILVER by default (model-generated);
 # TIER=gold once a human has reviewed it.
 reference-create:
-	@test -n "$(CONFIG)" || { echo "CONFIG=<config naming the reference model> is required"; exit 1; }
-	$(PYTHON) scripts/reference_create.py --dataset-id $(DATASET_ID) --config $(CONFIG) --tier $(TIER) $(ARGS)
+	@test -n "$(RUN)$(CONFIG)" || { echo "RUN=<run_id whose outputs become the reference> or CONFIG=<config that authors it> is required"; exit 1; }
+	$(PYTHON) scripts/reference_create.py --dataset-id $(DATASET_ID) $(if $(RUN),--from-run $(RUN),--config $(CONFIG)) --tier $(TIER) $(ARGS)
 
 # ── experiments ─────────────────────────────────────────────────────────────
 experiment-dry-run:

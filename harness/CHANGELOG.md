@@ -44,6 +44,30 @@ SciFact's `qwen_s` e5-first against the e5-first leader is +0.0178, p 0.10 (it r
 p 0.36, from the pre-fix run), and DBpedia's 56-item dev slice, over today's 28 arms, puts
 `bert_base_fy` alone at the top rather than 13 arms in a tie.
 
+### Added
+- **A run becomes a reference: `evh reference-create --from-run <run_id>`** (`make
+  reference-create RUN=<run_id>`). The usual way to get references is to run the expensive
+  model as an arm, read its results, and score the cheaper arms against what it wrote. Until now
+  that took a second paid pass (`--config`), whose outputs could differ from the run you read,
+  and the reference did not say which run it came from. `--from-run` copies a finished run's
+  outputs and calls nothing; the manifest records the run, its config, fingerprint, build and
+  cost. It refuses what `run-promote` refuses (a dirty tree, an unknown build), an unfinished,
+  derived or other-dataset run, and `--tier gold` (gold is what a person wrote or checked).
+- **`reference-create` refuses an empty output, and outputs that stopped at `max_tokens`**, by
+  either path (`--allow-cut-off` for outputs that end at the cap by design). A frontier arm at
+  `max_tokens: 80` wrote 19 of 20 summaries cut off mid-sentence and one empty reply, and they
+  were frozen as the reference with no word.
+- **The leaderboard marks the arm that wrote the reference it is scored against** (`arm *`, and
+  a note): that row is graded against its own outputs.
+- `reference-create` says when gold exists (new runs keep scoring against gold; how to rescore
+  against the new silver), and to commit the reference before the next run: an uncommitted
+  reference makes every later run dirty.
+- **A newcomer scenario for every release**
+  ([SCENARIO](https://github.com/chipi/eval-harness/blob/main/harness/docs/SCENARIO.md)): a fresh
+  project, the published docs only, a summariser and a classifier with small CPU models, cheap
+  hosted LLMs, a frontier reference and a judge, browsed in the catalog, under $1. RELEASING
+  runs it before the merge.
+
 ### Changed
 - **Exact p-values at 30 items or fewer.** `pair-test` and `family-test` now count the
   two-sided sign-flip p over all 2^n sign patterns when a pair shares 30 items or fewer, instead

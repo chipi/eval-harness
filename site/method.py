@@ -63,11 +63,13 @@ NODES = [
         "References",
         "silver · gold",
         (
-            "What each item is scored against. Silver: a model wrote it — consistent, not correct. "
-            "Gold: a person wrote or checked it. Gold always wins, and every run says which it used."
+            "What each item is scored against. Silver: a model wrote it — consistent, not correct; "
+            "usually an expensive arm's run, promoted, so the cheaper arms are measured by how close "
+            "they come to it. Gold: a person wrote or checked it. Gold always wins, and every run "
+            "says which it used."
         ),
         "data/references/&lt;tier&gt;/&lt;id&gt;/",
-        "evh reference-create --dataset-id … --config …",
+        "evh reference-create --dataset-id … --from-run …",
         "4-author-silver-references",
     ),
     (
