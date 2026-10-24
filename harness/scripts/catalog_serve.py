@@ -290,7 +290,7 @@ def _warnings(ctx: dict) -> list:
             drift.append(f"{_label(a)} (asked {f['asked']}, got {f['got']})")
     if drift:
         w.append("Format not followed: " + "; ".join(drift) + ". The score compares what came back.")
-    w += [f"Re-scoring: {n}." for n in dict.fromkeys(n for a in ctx["arms"] for n in A.notes(a))]
+    w += [n.rstrip(".") + "." for n in dict.fromkeys(n for a in ctx["arms"] for n in A.notes(a))]
     if ctx.get("wheres"):
         n = len(series.get(ctx["baseline"], {}))
         w.append(
@@ -387,7 +387,7 @@ def compare(params: dict) -> dict:
         return {"error": error}
     per_arm = {a: _scores(a, rescore) for a in arms}
     counts = Counter(k for s in per_arm.values() for k in s)
-    notes = [f"Re-scoring: {n}." for n in dict.fromkeys(n for a in arms for n in A.notes(a))]
+    notes = [n.rstrip(".") + "." for n in dict.fromkeys(n for a in arms for n in A.notes(a))]
     metric = params.get("metric", [""])[0]
     if metric not in counts:
         metric = _default_metric(counts, per_arm, arms, asked) if counts else ""

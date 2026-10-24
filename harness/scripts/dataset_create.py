@@ -246,13 +246,8 @@ def main() -> int:
         "--recursive",
         action="store_true",
         help=(
-            "descend into subdirectories of --source-dir. OFF by default, and that default "
-            "is the fix for a silent merge: this used to always recurse, so once an example "
-            "had fetched its corpus into data/sources/<corpus>/, `make demo` — which takes "
-            "the default source dir — swallowed that corpus into the synthetic smoke "
-            "dataset. Ten items where five were expected, no error, and the failure "
-            "surfaced three steps later as a missing materialized file. Real corpora are "
-            "always created with an explicit --source-dir, so they never needed this."
+            "descend into subdirectories of --source-dir (off by default: a corpus fetched "
+            "into a subdirectory of the source dir is not swallowed into this dataset)"
         ),
     )
     ap.add_argument("--limit", type=int, help="take only the first N (sorted) — a smoke cut")

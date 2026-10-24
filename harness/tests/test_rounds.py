@@ -104,11 +104,70 @@ try:
     )
     r = evh("inspect", "--round", "r1", "--goal", "tickets_summary")
     check(
-        "evh inspect --round: the round's arms, tested against the first",
+        "evh inspect --round: the round's arms, tested against one of them",
         r.returncode == 0 and "run vs baseline" in r.stdout and "tickets_author_v1" in r.stdout,
         out(r)[-300:],
     )
+    check(
+        "evh inspect --round: on the goal's measure, against the round's leader (as evh rounds reads it)",
+        "overlap_f1 (higher is better) · baseline tickets_lead2_v1" in r.stdout,
+        out(r)[-400:],
+    )
 
+    r = evh(
+        "pair-test",
+        "--dataset-id",
+        "tickets_v1",
+        "--round",
+        "r1",
+        "--goal",
+        "tickets_summary",
+        "--b",
+        "tickets_lead1_v1",
+    )
+    check(
+        "pair-test --round: the round's leader by default, on the goal's measure",
+        r.returncode == 0
+        and "tickets_lead2_v1 (its leader) against tickets_lead1_v1" in r.stdout
+        and "metric=overlap_f1" in r.stdout,
+        out(r)[-400:],
+    )
+    r = evh(
+        "pair-test",
+        "--dataset-id",
+        "tickets_v1",
+        "--round",
+        "r1",
+        "--goal",
+        "tickets_summary",
+        "--a",
+        "tickets_nope_v1",
+    )
+    check(
+        "pair-test --round: an arm not in play is refused",
+        r.returncode != 0 and "not in play" in out(r),
+        out(r)[-300:],
+    )
+    # CLI parity: the inspector's per-item table and analysis charts, and the catalog's search.
+    r = evh("inspect", "--round", "r1", "--goal", "tickets_summary", "--items", "--analysis")
+    check(
+        "evh inspect --items: every item's score per arm, and each arm's Δ against the baseline",
+        r.returncode == 0
+        and "(overlap_f1; Δ is each arm minus the baseline)" in r.stdout
+        and "Δ tickets_" in r.stdout,
+        out(r)[-500:],
+    )
+    check(
+        "evh inspect --analysis: the charts' numbers (spread per run, difference from the baseline)",
+        "spread per run (overlap_f1" in r.stdout and "difference from the baseline" in r.stdout,
+        out(r)[-500:],
+    )
+    r = evh("search", "lead2")
+    check(
+        "evh search: the catalog's search, each hit with the command that shows it",
+        r.returncode == 0 and "evh inspect --runs runs/tickets_v1/tickets_lead2_v1" in r.stdout,
+        out(r)[-500:],
+    )
     # The author arm's outputs become a silver reference: the round's leader is then read against
     # the arm that wrote it, and that arm is never suggested for retirement (it is the yardstick).
     r = evh("reference-create", "--dataset-id", "tickets_v1", "--from-run", run.name if run else "")

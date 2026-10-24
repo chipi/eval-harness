@@ -794,8 +794,13 @@ def _rounds_block(A: Adapter, g: dict, measure: str, lower: bool) -> str:
                     e(r.get("status", "")),
                     e(r.get("hypothesis", "") or "—"),
                     f'<span data-v="{len(r.get("arms") or [])}">{len(r.get("arms") or [])}</span>'
+                    + (f" <small>({len(r.get('retired') or [])} retired)</small>" if r.get("retired") else "")
+                    # The round's arms in the inspector, against its leader: `evh inspect --round`.
                     + (
-                        f" <small>({len(r.get('retired') or [])} retired)</small>" if r.get("retired") else ""
+                        f' <a class="btn small" title="evh inspect --round {e(r["round_id"])} --goal {e(g["goal_id"])}" '
+                        f'href="{inspect_url((r.get("arms") or [])[:INSPECT_MAX], "../", baseline=arm, metric=measure)}">inspect</a>'
+                        if arm and len(r.get("arms") or []) > 1
+                        else ""
                     ),
                     (f"{e(label)} <small>{fmt(mean)}</small>" if arm else "—"),
                     vs,
@@ -821,7 +826,13 @@ def _rounds_block(A: Adapter, g: dict, measure: str, lower: bool) -> str:
                     for v in ev["against"]
                 ]
                 sugg = "".join(
-                    f"<li>{e(what)}" + (f'<br><code class="cmd">{e(cmd)}</code>' if cmd else "") + "</li>"
+                    f"<li>{e(what)}"
+                    + (
+                        f'<br><code class="cmd">{e(cmd)}</code> <button type="button" class="btn small copy" data-copy="{e(cmd)}">copy</button>'
+                        if cmd
+                        else ""
+                    )
+                    + "</li>"
                     for what, cmd in ev["suggest"]
                 ) + "".join(f'<li class="muted">{e(n)}</li>' for n in ev["notes"])
             except SystemExit:
@@ -955,7 +966,8 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
                         tag += f' <small class="retired" title="dropped in that round, with its reason">retired in {e(retired_in[cid])}</small>'
                     trs.append(
                         {
-                            "cls": row_kind(r, tiers),
+                            # A retired arm stays listed (its numbers are history) but reads as out of play.
+                            "cls": (row_kind(r, tiers) + (" t-retired" if cid in retired_in else "")).strip(),
                             "cells": [
                                 e(r["label"]) + tag,
                                 f'<span data-v="{r["mean"]}">{fmt(r["mean"])}</span>',
@@ -1146,6 +1158,16 @@ def render_inspect(A: Adapter, out: Path, page_fn=page, serve: str = "evh catalo
 
 def write_search(A: Adapter, by_ds: dict, out: Path) -> None:
     """Write the search index as a JavaScript file."""
+    write(
+        out,
+        "search.js",
+        "window.CATALOG=" + json.dumps(search_index(A, by_ds), separators=(",", ":")) + ";\n",
+    )
+
+
+def search_index(A: Adapter, by_ds: dict) -> list[dict]:
+    """What the search box searches: datasets, arms, references, metrics and goals, each with
+    a kind (k), a title (t), a description (d), a page (u) and the text matched (s)."""
     idx = []
     for ds, v in by_ds.items():
         idx.append(
@@ -1164,6 +1186,7 @@ def write_search(A: Adapter, by_ds: dict, out: Path) -> None:
                     "t": a["label"],
                     "d": f"{ds} · {a['metric']}",
                     "u": inspect_url([a["arm"]]),
+                    "id": a["arm"],
                     "s": f"{a['label']} {ds} {a['metric']}".lower(),
                 }
             )
@@ -1187,9 +1210,10 @@ def write_search(A: Adapter, by_ds: dict, out: Path) -> None:
                 "d": g.get("statement", "")[:120],
                 "u": f"g/{slug(g['goal_id'])}.html",
                 "s": f"{g['goal_id']} {g.get('title', '')} {g.get('statement', '')}".lower(),
+                "id": g["goal_id"],
             }
         )
-    write(out, "search.js", "window.CATALOG=" + json.dumps(idx, separators=(",", ":")) + ";\n")
+    return idx
 
 
 def build(A: Adapter, out: Path, links: tuple = ()) -> dict:

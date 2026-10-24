@@ -47,3 +47,9 @@ document.querySelectorAll('table.data').forEach(t=>window.paginate(t));
 document.querySelectorAll('input[data-filter]').forEach(inp=>{const t=document.getElementById(inp.dataset.filter);
 inp.addEventListener('input',()=>{if(t&&t._repage)t._repage();});});
 document.querySelectorAll('table.sortable th').forEach(th=>th.addEventListener('click',()=>{const t=th.closest('table');if(t._repage)t._repage();}));
+/* a suggested command's copy button: the clipboard where the browser allows it, else select it */
+document.addEventListener('click',ev=>{const b=ev.target.closest('button.copy');if(!b)return;
+const done=()=>{b.textContent='copied';setTimeout(()=>{b.textContent='copy';},1500);};
+const pick=()=>{const c=b.previousElementSibling;if(!c)return;const r=document.createRange();r.selectNodeContents(c);
+const sel=getSelection();sel.removeAllRanges();sel.addRange(r);b.textContent='selected';};
+try{navigator.clipboard.writeText(b.dataset.copy).then(done,pick);}catch(e){pick();}});

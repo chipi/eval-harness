@@ -574,8 +574,16 @@ def main() -> int:
         print(f"  scoring against {ref_tier.upper()} references for {cfg['dataset_id']}")
     else:
         print(f"  no references for {cfg['dataset_id']} — quality cannot be scored.")
+        print("  make them from a run of the arm you trust most (this one, if it is):")
         print(
-            "  "
+            "    "
+            + how(
+                f"evh reference-create --dataset-id {cfg['dataset_id']} --from-run <run_id>",
+                f"make reference-create DATASET_ID={cfg['dataset_id']} RUN=<run_id>",
+            )
+        )
+        print(
+            "  or author them with a config:  "
             + how(
                 f"evh reference-create --dataset-id {cfg['dataset_id']} --config <a model you trust>",
                 f"make reference-create DATASET_ID={cfg['dataset_id']} CONFIG=<a model you trust>",

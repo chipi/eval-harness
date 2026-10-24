@@ -29,7 +29,7 @@ COMMANDS = {
     "env-check": ("env_check.py", "check the Python environment and keys"),
     "dataset-create": ("dataset_create.py", "freeze a dataset: item list + per-item sha256"),
     "dataset-materialize": ("materialize.py", "hash-checked working copy of a dataset"),
-    "reference-create": ("reference_create.py", "draft silver references with a config"),
+    "reference-create": ("reference_create.py", "make references from a run (--from-run) or with a config"),
     "experiment-run": ("experiment_run.py", "run one arm over a dataset (--dry-run to cost it)"),
     "sweep": ("sweep.py", "run several arms, then the leaderboard"),
     "runs-list": ("list_runs.py", "list runs (or baselines)"),
@@ -64,6 +64,7 @@ COMMANDS = {
     "references": ("view_references.py", "every reference, or one: who wrote it, what is scored against it"),
     "metrics": ("view_metrics.py", "what each metric measures, which way is better, where it is recorded"),
     "goals": ("view_goals.py", "every goal, or one: its arms on each of its datasets"),
+    "search": ("view_search.py", "the catalog's search: datasets, arms, references, metrics, goals"),
     "inspect": (
         "view_inspect.py",
         "the inspector's comparison in the terminal: verdicts, conditions, a breakdown, one item",

@@ -467,6 +467,36 @@ def main() -> int:
 
         keep = set(arms_of(resolve(args.round, args.goal)))
         found = [(d, m) for d, m in found if m["config_id"] in keep]
+    # ONE TABLE PER REFERENCE. Runs scored against silver and against gold were averaged into
+    # one row and one ranking (0.90 silver beside 0.24 gold, the table labelled silver): two
+    # different measurements read as one. Each reference gets its own table and its own tests;
+    # nothing is averaged across them.
+    groups: dict[str | None, list] = {}
+    for d, m in found:
+        groups.setdefault(_reference_of(m), []).append((d, m))
+    if not groups:
+        groups[None] = []
+    order = sorted(groups, key=lambda r: ({"gold": 0, "silver": 1}.get((r or "").split("/")[0], 2), r or ""))
+    if len(order) > 1:
+        print(
+            f"  NOTE: these runs are scored against {len(order)} references; one table for each,\n"
+            "        never averaged across them.\n"
+        )
+    for n, ref in enumerate(order):
+        if len(order) > 1:
+            print(("\n" if n else "") + f"=== scored against {ref or 'no reference'} ===")
+        _table(args, groups[ref])
+    return 0
+
+
+def _reference_of(m: dict) -> str | None:
+    """The reference a run was scored against: its id, else its tier, else None."""
+    data = (m.get("fingerprint") or {}).get("data") or {}
+    return data.get("reference_id") or m.get("reference_tier") or None
+
+
+def _table(args: argparse.Namespace, found: list) -> None:
+    """The leaderboard over runs scored against one reference."""
     arm_runs = by_arm(found)
     by_config: dict[str, list[dict]] = {cid: [m for _d, m in rs] for cid, rs in arm_runs.items()}
 
@@ -612,7 +642,6 @@ def main() -> int:
             "\n  No cost recorded. Add usd_per_mtok_in / usd_per_mtok_out to the configs\n"
             "  so the ranking can weigh quality against price."
         )
-    return 0
 
 
 if __name__ == "__main__":

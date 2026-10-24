@@ -59,7 +59,8 @@ def load_dotenv(path: Path | None = None) -> int:
     WINS — so `ANTHROPIC_API_KEY=... make experiment-run` overrides the file for one call
     without editing it.
 
-    Copy `.env.example` to `.env` to start. `.env` is gitignored.
+    Create `.env` in the project with the keys your providers read (`evh env-check` lists
+    them). `evh init` gitignores it.
     """
     env_path = path or (project_root() / ".env")
     if not env_path.is_file():

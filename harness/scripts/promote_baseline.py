@@ -22,6 +22,7 @@ import os
 
 from _common import (
     BASELINES,
+    BOOKKEEPING_PREFIXES,
     RUNS,
     die,
     how,
@@ -126,8 +127,11 @@ def main() -> int:
         },
     )
     print(f"{out}")
-    w = max([len(k) for k in m["scores"]] + [6])
-    for k, v in sorted(m["scores"].items()):
+    # The scores it reads by, not the bookkeeping (`resumed`, `self_family_*`): the baseline file
+    # keeps every key, as its run has them (V6 compares the two).
+    shown = {k: v for k, v in m["scores"].items() if not k.startswith(BOOKKEEPING_PREFIXES)}
+    w = max([len(k) for k in shown] + [6])
+    for k, v in sorted(shown.items()):
         print(f"    {k:{w}} {v}")
     return 0
 

@@ -44,12 +44,49 @@ from _runs import default_metric, direction, per_item, runs_on, warn_on_ambiguou
 from stats import EXACT_UP_TO, sign_flip_p  # noqa: E402
 
 
+def _round_defaults(args: argparse.Namespace, runs: list) -> None:
+    """--round: the round's goal measure, its leader as A and the baseline it started from as B,
+    and a refusal for an arm that is not in play in it."""
+    import _common  # noqa: PLC0415
+    from _rounds import arms_of, resolve  # noqa: PLC0415
+
+    rnd = resolve(args.round, args.goal)
+    if rnd["dataset_id"] != args.dataset_id:
+        die(f"round {args.round} is on {rnd['dataset_id']}, not {args.dataset_id}")
+    in_play = arms_of(rnd)
+    goal = _common.load_goals().get(rnd["goal"]) or {}
+    prim = (goal.get("success_criteria") or {}).get("primary") or {}
+    args.metric = args.metric or prim.get("measure")
+    for x in (args.a, args.b):
+        if x and x not in in_play:
+            die(f"{x} is not in play in round {args.round} ({', '.join(in_play)})")
+    if not args.a:
+        means = {}
+        for c in in_play:
+            v = per_item([r for r in runs if r[1]["config_id"] == c], args.metric)
+            if v:
+                means[c] = statistics.fmean(v.values())
+        if not means:
+            die(f"no arm in round {args.round} records {args.metric} yet")
+        args.a = (min if prim.get("direction") == "lower" else max)(means, key=lambda c: means[c])
+    if not args.b:
+        base = rnd.get("baseline")
+        args.b = next((m["config_id"] for d, m in runs if d.name == base), None)
+        if not args.b or args.b == args.a:
+            die(f"round {args.round} records no other baseline run: name --b")
+    print(f"  round {args.round}: {args.a} (its leader) against {args.b}")
+
+
 def main() -> int:
     """Test a pre-registered pair with sign-flip permutation."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", required=True)
-    ap.add_argument("--a", required=True, help="config_id of the arm under test")
-    ap.add_argument("--b", required=True, help="config_id it is compared against")
+    ap.add_argument("--a", help="config_id of the arm under test (with --round: default its leader)")
+    ap.add_argument(
+        "--b", help="config_id it is compared against (with --round: default the baseline it started from)"
+    )
+    ap.add_argument("--round", help="test within this round of a goal (rN): arms must be in play in it")
+    ap.add_argument("--goal", help="the goal --round belongs to, when several goals have one")
     ap.add_argument("--metric", help="default: the primary metric the runs recorded")
     ap.add_argument("--runs-dir", type=Path, default=None, help="default: EVAL_RUNS_DIR, else data/runs")
     ap.add_argument("--exclude-dataset", help="drop items this dataset also contains")
@@ -76,8 +113,12 @@ def main() -> int:
     # Two runs sharing a config_id are averaged together below without
     # saying so. See _runs.warn_on_ambiguous_runs.
     warn_on_ambiguous_runs(runs_dir, args.dataset_id, label=runs_dir.name)
-    args.metric = args.metric or default_metric(args.dataset_id, runs_dir=runs_dir)
     runs = runs_on(args.dataset_id, runs_dir=runs_dir)
+    if args.round:
+        _round_defaults(args, runs)
+    elif not (args.a and args.b):
+        ap.error("--a and --b are required (or --round, which defaults them)")
+    args.metric = args.metric or default_metric(args.dataset_id, runs_dir=runs_dir)
     lower = direction(runs, args.metric, args.asc, args.desc)
     A = per_item([r for r in runs if r[1]["config_id"] == args.a], args.metric)
     B = per_item([r for r in runs if r[1]["config_id"] == args.b], args.metric)

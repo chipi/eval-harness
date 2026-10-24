@@ -85,18 +85,10 @@ def call_system(text: str, params: dict[str, Any]) -> Result:
 
 # RETRIES LIVE IN THE CORE, NOT HERE.
 #
-# This adapter used to carry its own `_with_retries` loop, and `experiment_run` wraps
-# every `call_system` in `call_with_retries` as well. Both read EVAL_MAX_RETRIES, both
-# default to 8 -- so a genuinely failing item was attempted 8 x 8 = 64 times, with both
-# backoffs compounding. On a paid provider that multiplies the bill for the one item
-# least likely to ever succeed.
-#
-# The core's loop is the one to keep: it applies to EVERY adapter whether or not its
-# author wrote retries, which was the reason it was added. An adapter that wants extra
-# retryable signatures declares `TRANSIENT_MARKERS` and the core honours them -- that is
-# the supported way to extend this, and it cannot multiply attempts.
-#
-# Found by external review.
+# `experiment_run` wraps every `call_system` in its own retry loop (EVAL_MAX_RETRIES), for
+# every adapter. Do not add a second loop in an adapter: the two multiply, and a failing item
+# on a paid provider is then attempted many times over. To make more errors retryable, declare
+# `TRANSIENT_MARKERS` (substrings of the error message); the core honours them.
 
 
 # ── 2. HOW GOOD WAS IT ───────────────────────────────────────────────────────
@@ -132,7 +124,7 @@ def score(output: str, reference: str | None) -> dict[str, float]:
     overlap = len(a & b)
     precision, recall = overlap / len(a), overlap / len(b)
     f1 = 0.0 if precision + recall == 0 else 2 * precision * recall / (precision + recall)
-    return {"output_words": out_len, "overlap_f1": round(f1, 6)}
+    return {"output_words": out_len, "overlap_f1": f1}
 
 
 # ── example adapters — delete the ones you do not use ────────────────────────
@@ -219,14 +211,27 @@ def _litellm(text: str, params: dict[str, Any]) -> Result:
     }
     if not params["base_url"].startswith("http"):
         raise SystemExit(
-            "LITELLM_BASE_URL is not set. Copy .env.example to .env and point it at "
-            "your proxy, e.g. http://127.0.0.1:4001"
+            "LITELLM_BASE_URL is not set: put it in the project's .env (or the environment), "
+            "pointing at your proxy, e.g. LITELLM_BASE_URL=http://127.0.0.1:4001"
         )
     return _openai_compatible(text, params)
 
 
+def _openrouter(text: str, params: dict[str, Any]) -> Result:
+    """OpenRouter with its own key: OPENROUTER_API_KEY and its address, unless the arm sets
+    `base_url` or `api_key_env`."""
+    return _openai_compatible(
+        text,
+        {
+            **params,
+            "base_url": params.get("base_url") or "https://openrouter.ai/api/v1",
+            "api_key_env": params.get("api_key_env", "OPENROUTER_API_KEY"),
+        },
+    )
+
+
 def _openai_compatible(text: str, params: dict[str, Any]) -> Result:
-    """OpenAI-shaped APIs, including OpenRouter — set `base_url` in params."""
+    """OpenAI's API, or any OpenAI-shaped one: `base_url` and `api_key_env` in params."""
     from openai import OpenAI  # lazy  # noqa: PLC0415
 
     env_key = params.get("api_key_env", "OPENAI_API_KEY")
@@ -262,6 +267,6 @@ PROVIDERS: dict[str, Callable[[str, dict[str, Any]], Result]] = {
     "echo": _echo,
     "anthropic": _anthropic,
     "openai": _openai_compatible,
-    "openrouter": _openai_compatible,
+    "openrouter": _openrouter,
     "litellm": _litellm,
 }

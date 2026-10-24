@@ -106,7 +106,7 @@ class Adapter(Protocol):
         """{item_id: hash of the input the arm read}, where recorded."""
 
     def notes(self, arm: str) -> list[str]:
-        """Why something could not be scored, in words."""
+        """Why something could not be scored, or which of its runs were left out, in words."""
 
     def lower_is_better(self, metric: str, dataset: str | None = None) -> bool:
         """Whether a decrease in this metric is an improvement."""
@@ -239,12 +239,33 @@ class HarnessAdapter:
         out: dict[str, list[Path]] = {}
         bases = [p for p in sorted(self.data_dir.glob("runs*")) if p.is_dir() and p.name != "runs-judged"]
         bases += sorted(p for p in (self.data_dir / "runs-judged").glob("*") if p.is_dir())
+        refs: dict[Path, str] = {}
+        made: dict[Path, str] = {}
         for base in bases:
             for d, m in runs_on(runs_dir=base):
                 if not m.get("dataset_id"):
                     continue
                 rel = base.relative_to(self.data_dir).as_posix()
                 out.setdefault(f"{rel}/{m['dataset_id']}/{m['config_id']}", []).append(d)
+                refs[d] = ((m.get("fingerprint") or {}).get("data") or {}).get("reference_id") or ""
+                made[d] = m.get("created_at") or ""
+        # ONE REFERENCE PER ARM: the one its latest run was scored against. An arm's runs were
+        # averaged whatever they were scored against, so a run on silver and a run on gold read
+        # as two repeats of one measurement. Runs on another reference are left out, and said so.
+        self._stale: dict[str, list[str]] = {}
+        for arm, dirs in out.items():
+            # Latest by when it was measured, not by its directory name (a --run-id can be anything).
+            ref = refs[max(dirs, key=lambda d: (made[d], d.name))]
+            old = [d for d in dirs if refs[d] != ref]
+            if old:
+                out[arm] = [d for d in dirs if refs[d] == ref]
+                was = sorted({refs[d] or "no reference" for d in old})
+                self._stale[arm] = [
+                    (
+                        f"{len(old)} earlier run(s) scored against {', '.join(was)} left out: this arm is read "
+                        f"against {ref or 'no reference'}, the reference of its latest run"
+                    )
+                ]
         return out
 
     def arms(self) -> list[str]:
@@ -338,8 +359,9 @@ class HarnessAdapter:
         return {}  # the dataset's per-item sha256 is the input, for every arm alike
 
     def notes(self, arm: str) -> list[str]:
-        """Return notes explaining why something could not be scored."""
-        return []
+        """Return notes explaining why something could not be scored, or what was left out."""
+        self._index()
+        return list(getattr(self, "_stale", {}).get(arm, []))
 
     @_memo
     def lower_is_better(self, metric: str, dataset: str | None = None) -> bool:

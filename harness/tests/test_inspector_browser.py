@@ -86,6 +86,13 @@ def project(tmp: Path) -> tuple:
     shutil.copytree(proj / "tutorial/gold", proj / "data/references/gold/tickets_v1")
     for arm in ("lead1", "lead2", "author"):
         evh("experiment-run", "--config", f"data/configs/tickets_{arm}.yaml")
+    # A goal with an open round: the goal page then carries its suggestions, each with a copy button.
+    shutil.copy(proj / "tutorial/goals/tickets_summary.yaml", proj / "data/goals/")
+    evh(
+        "round-open", "--goal", "tickets_summary", "--dataset", "tickets_v1",
+        "--hypothesis", "how many leading sentences summarise a ticket best",
+        "--keep", "tickets_lead1_v1,tickets_lead2_v1,tickets_author_v1",
+    )  # fmt: skip
     evh("catalog")
     return proj, env
 
@@ -117,7 +124,8 @@ def drive(base: str) -> None:
 
     with sync_playwright() as pw:
         browser = pw.chromium.launch()
-        page = browser.new_page()
+        ctx = browser.new_context(permissions=["clipboard-read", "clipboard-write"])
+        page = ctx.new_page()
         errors: list = []
         page.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)
         page.on("pageerror", lambda e: errors.append(str(e)))
@@ -126,6 +134,24 @@ def drive(base: str) -> None:
         check("home: the dataset is listed", "tickets_v1" in page.locator("table#datasets").inner_text())
         page.goto(base + "goals.html")
         check("goals page: loads", page.locator("main").count() == 1)
+        page.goto(base + "g/tickets_summary.html")
+        check(
+            "goal page: the open round opens in the inspector (evh inspect --round)",
+            page.locator('a[title^="evh inspect --round r1"]').count() == 1,
+        )
+        btn = page.locator("button.copy").first
+        cmd = btn.get_attribute("data-copy") if btn.count() else None
+        if cmd:
+            btn.click()
+            page.wait_for_function(
+                "document.querySelector('button.copy').textContent !== 'copy'", timeout=5000
+            )
+        got = page.evaluate("navigator.clipboard.readText()") if cmd else None
+        check(
+            "goal page: a suggested command's copy button puts the command on the clipboard",
+            bool(cmd) and got == cmd,
+            f"{cmd!r} -> {got!r}",
+        )
 
         arms = ",".join(f"runs/tickets_v1/tickets_{a}_v1" for a in ("lead1", "lead2", "author"))
         page.goto(f"{base}inspect.html?runs={arms}&baseline=runs/tickets_v1/tickets_lead1_v1")

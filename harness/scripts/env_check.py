@@ -44,7 +44,7 @@ def main() -> int:
         f"   ({env_file})"
     )
     if not env_file.is_file():
-        print("      cp .env.example .env   then fill in the keys you need\n")
+        print("      create it with the keys your providers read, one NAME=value per line\n")
 
     print("\nLiteLLM proxy (one key, many providers)")
     base = os.environ.get("LITELLM_BASE_URL", "")

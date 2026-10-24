@@ -45,6 +45,22 @@ p 0.36, from the pre-fix run), and DBpedia's 56-item dev slice, over today's 28 
 `bert_base_fy` alone at the top rather than 13 arms in a tie.
 
 ### Added
+- **The rest of the inspector and catalog in the terminal.** Every page and view now has a
+  command:
+  - `evh search TEXT` is the catalog's search box, ranked the same way, with the command that
+    shows each hit;
+  - `evh inspect --items` is the per-item table (each arm's score and its Δ against the
+    baseline);
+  - `evh inspect --analysis [--x METRIC]` gives the analysis charts as numbers: spread per run,
+    the difference from the baseline, and each arm's mean against a second metric.
+- **`pair-test --round rN`** tests within a round. A defaults to the round's leader, B to the
+  baseline the round started from, and the metric to the goal's measure. An arm that is not in
+  play is refused.
+- **On the goal page:**
+  - each round has an inspect button that opens its arms against its leader (`evh inspect
+    --round`);
+  - every suggested command has a copy button;
+  - a retired arm is greyed out.
 - **Experiment rounds, optional** ([ADR-0004](https://github.com/chipi/eval-harness/blob/main/docs/adr/ADR-0004-experiment-rounds.md)).
   Experiments go round on round: try some arms, keep what wins, drop what lost, change something,
   compare again. `evh round-open --goal G --dataset D [--from rN]` records what a round sets out to
@@ -263,6 +279,32 @@ p 0.36, from the pre-fix run), and DBpedia's 56-item dev slice, over today's 28 
   from a pin); the tutorial kit ships `tutorial/judge_panel.yaml`.
 
 ### Fixed
+- **One reference per table and per arm.** The leaderboard averaged an arm's runs whatever they
+  were scored against: a silver 0.90 next to a gold 0.24, in one table labelled silver. It now
+  prints one table per reference, gold first, each with its own tests. The catalog, the
+  inspector and `evh rounds` read an arm against the reference of its latest run (by
+  `created_at`), and they name the earlier runs they leave out. This repository's data, the
+  trial and the podcast project have no such arm.
+- **`provider: openrouter` uses OpenRouter.** It read `OPENAI_API_KEY` and called OpenAI's
+  address unless the arm set both `base_url` and `api_key_env`. It now reads
+  `OPENROUTER_API_KEY` and calls `https://openrouter.ai/api/v1`, and an arm's own values still
+  win.
+- **`evh inspect --round` reads the round as `evh rounds` does:** on the goal's measure, against
+  the round's leader. It defaulted to the first arm, so an arm with no score became the
+  baseline and the metric fell back to `cost_usd`. Arms with no score are named and left out.
+- **The bundled adapter stores `overlap_f1` as computed.** It rounded the value to 6 decimals,
+  which made ties that are not there (the leaderboard warned about its own example). **This can
+  move a result** only where two arms tied at the sixth decimal.
+- **Hints and messages:**
+  - with no reference, `experiment-run` names `reference-create --from-run` first;
+  - `evh --help` describes `reference-create` as "from a run or with a config";
+  - `env-check` and the `litellm` provider no longer tell a pinned project to copy a
+    `.env.example` it does not have;
+  - `run-promote` no longer prints `resumed` and `self_family_*` among the scores (the baseline
+    file still keeps them);
+  - inspector notes are no longer all labelled "Re-scoring";
+  - the bundled adapter and `dataset-create --help` describe what the code does now, not its
+    history.
 - **A judge scorer must state its position and noise checks.** ADR-0001 makes them part of the
   pass, not optional, but a scorer that left `protocol.position_check_fraction` or
   `noise_check_fraction` out ran with them off. Both are now required. The noise check must be

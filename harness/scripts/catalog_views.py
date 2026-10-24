@@ -5,7 +5,8 @@
     evh metrics    [--dataset-id ID]                 what each metric measures, which way is better, where it is recorded
     evh goals      [--goal ID]                       every goal, or one: its answer on each of its datasets
     evh inspect    --runs A,B,... [--baseline A]     the inspector's comparison: verdicts, conditions, a breakdown
-                   [--metric M] [--where F:V] [--by F] [--item ITEM]
+                   [--metric M] [--where F:V] [--by F] [--item ITEM] [--items] [--analysis [--x M]]
+    evh search     TEXT                              the catalog's search box: datasets, arms, references, metrics, goals
 
 They read the project through the same adapter as the pages (`--adapter`, else config.yaml's
 catalog.adapter, else the harness's layout) and compute with the same functions as the pages and
@@ -303,8 +304,11 @@ def inspect(argv) -> int:
     pick.add_argument("--runs", help="arms: config ids (looked up under --from) or arm ids, comma-separated")
     pick.add_argument("--round", help="the arms in play in this round of a goal (rN; ADR-0004)")
     ap.add_argument("--goal", help="the goal --round belongs to, when several goals have one")
-    ap.add_argument("--baseline", help="the arm the others are tested against (default: the first)")
-    ap.add_argument("--metric", help="default: the arms' primary metric")
+    ap.add_argument(
+        "--baseline",
+        help="the arm the others are tested against (default: a round's leader, else the first)",
+    )
+    ap.add_argument("--metric", help="default: a round's goal measure, else the arms' primary metric")
     ap.add_argument(
         "--from",
         dest="from_dir",
@@ -319,20 +323,60 @@ def inspect(argv) -> int:
     )
     ap.add_argument("--by", help="break the comparison down by a choice or yes/no field")
     ap.add_argument("--item", help="show one item: each arm's output beside the reference")
+    ap.add_argument(
+        "--items", action="store_true", help="the per-item table: every item's score per arm, and Δ"
+    )
+    ap.add_argument(
+        "--analysis",
+        action="store_true",
+        help="the analysis charts as numbers: spread per arm, difference from the baseline",
+    )
+    ap.add_argument(
+        "--x", dest="xmetric", help="with --analysis: each arm's mean on this metric too (the scatter)"
+    )
     ap.add_argument("--adapter", help="path/to/file.py:Class (default: the catalog's)")
     args = ap.parse_args(argv)
     A = load_catalog_adapter(args.adapter)
     cs.set_adapter(A)
+    round_leader = None
     if args.round:
         from _rounds import arms_of, resolve  # noqa: PLC0415
+        from rounds import _best, _goal  # noqa: PLC0415
 
-        tokens = arms_of(resolve(args.round, args.goal))
+        rnd = resolve(args.round, args.goal)
+        tokens = arms_of(rnd)
         if not tokens:
             die(f"round {args.round} has no arms in play yet")
+        # A round is read on its goal's measure, against its leader (as `evh rounds` reads it):
+        # defaulting to the first arm made an arm with no score the baseline and fell back to
+        # cost_usd.
+        prim = (_goal(rnd["goal"]).get("success_criteria") or {}).get("primary") or {}
+        if not args.metric and prim.get("measure"):
+            args.metric = prim["measure"]
+        known = set(A.arms())
+        in_play = [a for a in (f"runs/{rnd['dataset_id']}/{c}" for c in tokens) if a in known]
+        unscored = [
+            a.rsplit("/", 1)[-1] for a in in_play if not (A.scores(a).get(args.metric) or {}).get("values")
+        ]
+        if unscored:
+            print(f"NOTE: no {args.metric} recorded for {', '.join(unscored)}: left out of the comparison")
+            tokens = [t for t in tokens if t not in unscored]
+            if not tokens:
+                die(f"no arm of round {args.round} records {args.metric} yet")
+        round_leader = _best(
+            A,
+            [a for a in in_play if a.rsplit("/", 1)[-1] in tokens],
+            args.metric,
+            prim.get("direction") == "lower",
+        )
     else:
         tokens = [t.strip() for t in args.runs.split(",") if t.strip()]
     arms = _arm_ids(A, tokens, args.from_dir)
-    base = _arm_ids(A, [args.baseline], args.from_dir)[0] if args.baseline else arms[0]
+    base = (
+        _arm_ids(A, [args.baseline], args.from_dir)[0]
+        if args.baseline
+        else (round_leader if round_leader and round_leader in arms else arms[0])
+    )
     label = {a: A.describe(a)["label"] for a in arms}
     if args.item:
         ref = A.describe(base).get("reference", "")
@@ -404,6 +448,25 @@ def inspect(argv) -> int:
                 ["field", *[label.get(a, a) for a in order]],
                 [[f["name"], *[str(f["values"].get(a, "—"))[:16] for a in order]] for f in c["differ"]],
             )
+    if args.analysis:
+        _analysis(d, label, args.xmetric)
+    if args.items:
+        order = list(d["series"])
+        base_s = d["series"].get(d["baseline"], {})
+        others = [a for a in order if a != d["baseline"]]
+
+        def delta(a: str, i: str) -> str:
+            v = d["series"][a].get(i)
+            return "—" if v is None or i not in base_s else f"{v - base_s[i]:+.3f}"
+
+        print(f"\nper {A.item_word} ({d['metric']}; Δ is each arm minus the baseline):")
+        _table(
+            [A.item_word, *[label.get(a, a) for a in order], *[f"Δ {label.get(a, a)}" for a in others]],
+            [
+                [i, *[_fmt(d["series"][a].get(i)) for a in order], *[delta(a, i) for a in others]]
+                for i in d.get("items") or sorted(base_s)
+            ],
+        )
     br = d.get("breakdown")
     if br:
         print(f"\nby {args.by} (Holm across {br['family_size']}):")
@@ -425,12 +488,102 @@ def inspect(argv) -> int:
     return 0
 
 
+def _quantiles(vals: list) -> str:
+    v = sorted(vals)
+    q = statistics.quantiles(v, n=4, method="inclusive") if len(v) > 1 else [v[0]] * 3
+    return f"min {_fmt(v[0])}  p25 {_fmt(q[0])}  median {_fmt(q[1])}  p75 {_fmt(q[2])}  max {_fmt(v[-1])}"
+
+
+def _analysis(d: dict, label: dict, xmetric: str | None) -> None:
+    """The inspector's analysis charts as numbers: each arm's spread over the items, each arm's
+    per-item difference from the baseline, and (with --x) each arm's mean on a second metric."""
+    print(f"\nspread per run ({d['metric']}, one line per arm):")
+    _table(
+        ["arm", "mean", "spread over the items"],
+        [
+            [label.get(a, a), _fmt(statistics.fmean(s.values())), _quantiles(list(s.values()))]
+            for a, s in d["series"].items()
+            if s
+        ],
+    )
+    base = d["series"].get(d["baseline"], {})
+    rows = []
+    for a, s in d["series"].items():
+        if a == d["baseline"]:
+            continue
+        diffs = [s[i] - base[i] for i in s if i in base]
+        if diffs:
+            rows.append([label.get(a, a), _fmt(statistics.fmean(diffs)), _quantiles(diffs)])
+    if rows:
+        print(f"\ndifference from the baseline ({label.get(d['baseline'], d['baseline'])}), per item:")
+        _table(["arm", "mean Δ", "spread of Δ over the items"], rows)
+    shape = d.get("shape") or {}
+    xm = xmetric or next(iter(shape), None)
+    if xmetric and xmetric not in shape:
+        print(
+            f"\n(--x {xmetric}: not recorded per item on these arms; recorded: {', '.join(shape) or 'none'})"
+        )
+    elif xm:
+        # The scatter's crosses: each arm's mean over the items that have both numbers.
+        rows = []
+        for a, ys in d["series"].items():
+            pts = [(shape[xm].get(a, {})[i], y) for i, y in ys.items() if i in shape[xm].get(a, {})]
+            if pts:
+                rows.append(
+                    [
+                        label.get(a, a),
+                        _fmt(statistics.fmean(y for _, y in pts)),
+                        _fmt(statistics.fmean(x for x, _ in pts)),
+                        len(pts),
+                    ]
+                )
+        if rows:
+            print(f"\n{d['metric']} against {xm}, each arm's mean (the scatter's crosses):")
+            _table(["arm", d["metric"], xm, "items"], rows)
+
+
+def search(argv) -> int:
+    """evh search: the catalog's search box, with the command that shows each hit."""
+    ap = argparse.ArgumentParser(
+        prog="evh search", description="Search datasets, arms, references, metrics and goals."
+    )
+    ap.add_argument("text", nargs="+")
+    ap.add_argument("--adapter", help="path/to/file.py:Class (default: the catalog's)")
+    args = ap.parse_args(argv)
+    A, by_ds = _adapter(args)
+    words = " ".join(args.text).lower().split()
+
+    def score(x: dict) -> int:
+        # The page's ranking: a word in the title counts more than one in the description.
+        t = x["t"].lower()
+        return sum(
+            4 if t.startswith(w) else 3 if w in t else 1 if w in x["d"].lower() else 0 for w in words
+        ) + (x["k"] == "goal")
+
+    hits = sorted(
+        (x for x in cb.search_index(A, by_ds) if all(w in x["s"] for w in words)), key=score, reverse=True
+    )[:40]
+    if not hits:
+        print("No match.")
+        return 1
+    cmd = {
+        "dataset": lambda x: f"evh datasets --dataset-id {x['t']}",
+        "arm": lambda x: f"evh inspect --runs {x.get('id', x['t'])}",
+        "reference": lambda x: f"evh references --reference-id {x['t']}",
+        "metric": lambda x: "evh metrics",
+        "goal": lambda x: f"evh goals --goal {x.get('id', x['t'])}",
+    }
+    _table(["kind", "name", "about", "see it with"], [[x["k"], x["t"], x["d"], cmd[x["k"]](x)] for x in hits])
+    return 0
+
+
 VIEWS = {
     "datasets": datasets,
     "references": references,
     "metrics": metrics,
     "goals": goals,
     "inspect": inspect,
+    "search": search,
 }
 
 
