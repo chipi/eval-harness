@@ -165,6 +165,46 @@ try:
     check("compare: p is stats.sign_flip_p on the per-item deltas", row["p"] == stats.sign_flip_p(deltas))
     check("compare: verdict and direction", row["verdict"] == "separated: better" and row["wins"] == 10)
     check("compare: shape metrics feed the scatter", "words" in r["shape"])
+
+    # Conditions: two arms measured on different machines, by different scorer code.
+    data4 = tmp / "data4"
+    for rid, cfg, machine, scorer in (
+        ("p_1", "arm_p", "Linux/x86_64", "aa"),
+        ("q_1", "arm_q", "Darwin/arm64", "bb"),
+    ):
+        run("runs", rid, "ds4", cfg, [0.5] * 6, ref="gold/ds4", root=data4)
+        mj = data4 / "runs" / rid / "metrics.json"
+        m = json.loads(mj.read_text())
+        m["fingerprint"] = {
+            "version": 3,
+            "host": {"platform": machine, "cpu_count": 8},
+            "system_under_test": {"libraries": {"numpy": "2.0"}},
+            "instrument": {
+                "harness": {"version": "0.4.0"},
+                "adapter": {"id": "adapter.py", "sha256": scorer * 32},
+            },
+            "data": {"reference_id": "gold/ds4", "items_sha256": "c" * 64, "references_sha256": "d" * 64},
+        }
+        mj.write_text(json.dumps(m))
+    cs.set_adapter(HarnessAdapter(data4))
+    c4 = (
+        cs.compare({"runs": ["runs/ds4/arm_p,runs/ds4/arm_q"], "baseline": ["runs/ds4/arm_p"]}).get(
+            "conditions"
+        )
+        or {}
+    )
+    differ = {d["name"] for d in c4.get("differ", [])}
+    check(
+        "compare: the conditions that differ (machine, scorer), not those that match (library, items)",
+        differ == {"machine.platform", "scorer.sha256"} and c4.get("fields", 0) >= 8,
+        c4,
+    )
+    check(
+        "compare: a different scorer is named as making the numbers different measurements",
+        any("different scorers" in w for w in c4.get("warnings", [])),
+        c4.get("warnings"),
+    )
+    cs.set_adapter(A)
     bad = cs.compare({"runs": ["runs/ds1/arm_a,runs/ds2/arm_c"]})
     check("compare: refuses arms on different datasets", "different datasets" in bad.get("error", ""), bad)
     check(

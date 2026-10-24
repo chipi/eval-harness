@@ -97,7 +97,8 @@ on `tickets_v1` *means* those six byte strings: every run records the dataset's 
 `run-compare` refuses to compare runs across two different datasets. Name a dataset for
 what it is (`support_tickets_2026q1_v1`), not for what you are doing (`test2`). If an
 input changes, make `tickets_v2` — editing a frozen item silently invalidates every number
-measured on it.
+measured on it. `--from tickets_v1` on the new version records where it came from and which
+items it adds, removes and changes; the catalog links the versions both ways.
 
 **Fields describe an item; they are not what it is.** `data/fields/tickets.yaml` gives each
 field a type (`choice` with its values, `boolean`, `number`, `integer`, `duration`, `date`,
@@ -652,6 +653,7 @@ looked like) and name it in `config.yaml`: `catalog: {adapter: path/to/file.py:C
 |---|---|
 | start a project | `evh init [--tutorial]` |
 | freeze | `evh dataset-create --dataset-id … --source-dir …` |
+| a new version | `evh dataset-create --dataset-id …_v2 --source-dir … --from …_v1` |
 | materialize | `evh dataset-materialize --dataset-id …` |
 | silver references | `evh reference-create --dataset-id … --from-run <run_id>` (or `--config …`) |
 | gold references | files in `data/references/gold/<dataset_id>/<item_id>.txt` |

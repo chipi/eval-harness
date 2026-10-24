@@ -15,6 +15,18 @@
                  "description": "the field set (data/fields/<fieldset>.yaml) that declares the items' fields"},
     "fields_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$",
                       "description": "one hash over every item's fields, so a change to them is visible"},
+    "derived_from": {
+      "type": "object",
+      "description": "The dataset this version was made from (dataset-create --from), and what changed: the item ids added, removed, and kept with different bytes.",
+      "required": ["dataset_id", "added", "removed", "changed"],
+      "additionalProperties": false,
+      "properties": {
+        "dataset_id": {"type": "string", "pattern": "^[a-z0-9_]+$"},
+        "added": {"type": "array", "items": {"type": "string"}},
+        "removed": {"type": "array", "items": {"type": "string"}},
+        "changed": {"type": "array", "items": {"type": "string"}}
+      }
+    },
     "items": {
       "type": "array",
       "minItems": 1,

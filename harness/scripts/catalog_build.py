@@ -297,6 +297,7 @@ def collect(A: Adapter) -> dict:
                 "reference": d.get("reference", ""),
                 "judge": d.get("judge", ""),
                 "wrote": bool(d.get("wrote_reference")),
+                "machine": _machine(A, arm),
                 "goal": d.get("goal", ""),
                 "format": d.get("format", ""),
                 # every metric's mean and item count, for the goal pages (numbers only)
@@ -309,6 +310,7 @@ def collect(A: Adapter) -> dict:
         )
     for r in A.references():
         by_ds.setdefault(r["dataset"], {"arms": [], "refs": [], "items": 0})["refs"].append(r)
+    _versions(A, by_ds)
     # The dataset's own size, from the ADAPTER: the harness's DATASETS path is not where a
     # project with its own layout keeps them. An adapter that cannot say falls back to the
     # most items any arm scored.
@@ -319,14 +321,89 @@ def collect(A: Adapter) -> dict:
     return by_ds
 
 
+def _machine(A: Adapter, arm: str) -> str:
+    """The machine an arm ran on, in a few words (EVAL_HOST_LABEL when set), from its conditions."""
+    fn = getattr(A, "conditions", None)
+    c = fn(arm) if callable(fn) else {}
+    if c.get("machine.label"):
+        return c["machine.label"]
+    bits = [c.get("machine.platform"), c.get("machine.cpu_count") and f"{c['machine.cpu_count']} CPUs"]
+    return " · ".join(b for b in bits if b)
+
+
+def _versions(A: Adapter, by_ds: dict) -> None:
+    """Each dataset's "parent" (the lineage it was made from) and "children" (the versions made
+    from it). A version no arm has run on yet still gets a page when it is linked to one that
+    has, so the chain has no dead link; unlinked, unrun datasets stay off the pages."""
+    lin_of = getattr(A, "dataset_lineage", None)
+    if not callable(lin_of):
+        return
+    every = getattr(A, "datasets", None)
+    known = set(every() if callable(every) else []) | set(by_ds)
+    lineage = {ds: lin_of(ds) for ds in known}
+    linked = True
+    while linked:  # pull in each unrun version linked to a shown one, until nothing changes
+        linked = False
+        for ds, lin in lineage.items():
+            parent = (lin or {}).get("dataset_id")
+            if parent and (ds in by_ds) != (parent in by_ds) and parent in known:
+                by_ds.setdefault(ds, {"arms": [], "refs": [], "items": 0})
+                by_ds.setdefault(parent, {"arms": [], "refs": [], "items": 0})
+                linked = True
+    for ds, v in by_ds.items():
+        v["parent"] = lineage.get(ds)
+        v["children"] = sorted(
+            c for c, lin in lineage.items() if c in by_ds and (lin or {}).get("dataset_id") == ds
+        )
+
+
+def _version_links(by_ds: dict, ds: str, up: str) -> str:
+    """The dataset's place in its version chain, as links: made from, and made into."""
+    v = by_ds[ds]
+    parts = []
+    lin = v.get("parent")
+    if lin:
+        n = {k: len(lin.get(k) or []) for k in ("added", "removed", "changed")}
+        parts.append(
+            f'<p>Made from <a class="cell-link" href="{up}d/{slug(lin["dataset_id"])}.html">'
+            f"{e(lin['dataset_id'])}</a>: {n['added']} added, {n['removed']} removed, {n['changed']} changed."
+            + "".join(
+                f'<br><span class="small muted">{k}: {e(", ".join(lin[k][:12]))}'
+                f"{' …' if len(lin[k]) > 12 else ''}</span>"
+                for k in ("added", "removed", "changed")
+                if lin.get(k)
+            )
+            + "</p>"
+        )
+    for c in v.get("children") or []:
+        cl = by_ds[c]["parent"] or {}
+        n = {k: len(cl.get(k) or []) for k in ("added", "removed", "changed")}
+        parts.append(
+            f'<p>Made into <a class="cell-link" href="{up}d/{slug(c)}.html">{e(c)}</a>: '
+            f"{n['added']} added, {n['removed']} removed, {n['changed']} changed.</p>"
+        )
+    if parts:
+        parts.append(
+            '<p class="small muted">Runs on different versions measure different items, so they are '
+            "never tested against each other; compare each version's arms on its own page.</p>"
+        )
+    return "".join(parts)
+
+
 def render_home(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
     """Render the catalog home page with all datasets."""
     rows = []
     for ds in sorted(by_ds, key=lambda d: (-len(by_ds[d]["arms"]), d)):
         v = by_ds[ds]
+        parent = (v.get("parent") or {}).get("dataset_id")
         rows.append(
             [
-                f'<a href="d/{slug(ds or "none")}.html">{e(ds or "(no dataset_id)")}</a>',
+                f'<a href="d/{slug(ds or "none")}.html">{e(ds or "(no dataset_id)")}</a>'
+                + (
+                    f'<br><small>from <a class="cell-link" href="d/{slug(parent)}.html">{e(parent)}</a></small>'
+                    if parent
+                    else ""
+                ),
                 f'<span data-v="{v["items"]}">{v["items"]}</span>',
                 f'<span data-v="{len(v["arms"])}">{len(v["arms"])}</span>',
                 ", ".join(
@@ -363,11 +440,19 @@ def render_dataset(A: Adapter, ds: str, v: dict, out: Path, nav: list) -> None:
         ),
     )
     tiers = {r["id"]: r["tier"] for r in v["refs"]}
+    # The machine is named only when the arms ran on more than one: then latency and cost per
+    # second differ by machine, and the inspector's conditions say how.
+    machines = {a["machine"] for a in arms if a.get("machine")}
     rows = [
         {
             "cls": row_kind(a, tiers),
             "cells": [
-                e(a["label"]),
+                e(a["label"])
+                + (
+                    f"<br><small>on {e(a['machine'])}</small>"
+                    if len(machines) > 1 and a.get("machine")
+                    else ""
+                ),
                 metric_link(a["metric"], "../"),
                 (
                     f'<span data-v="{a["mean"] if a["mean"] is not None else ""}">{fmt(a["mean"])}'
@@ -435,6 +520,9 @@ def render_dataset(A: Adapter, ds: str, v: dict, out: Path, nav: list) -> None:
         ),
     )
     n = 1
+    if v.get("versions"):
+        n += 1
+        body += block(f"{n:02d}", "versions", v["versions"], "versions")
     if refs:
         n += 1
         body += block(f"{n:02d}", "references", f"<ul>{refs}</ul>")
@@ -868,6 +956,7 @@ def build(A: Adapter, out: Path, links: tuple = ()) -> dict:
     by_ds = collect(A)
     render_home(A, by_ds, out, nav)
     for ds, v in by_ds.items():
+        v["versions"] = _version_links(by_ds, ds, "../")
         render_dataset(A, ds, v, out, nav)
     n_goals = render_goals(A, by_ds, out, nav)
     render_metrics(A, by_ds, out, nav)

@@ -49,7 +49,7 @@ HERE = Path(__file__).resolve().parent
 
 import _fields  # noqa: E402
 import stats  # noqa: E402
-from _common import ROOT  # noqa: E402
+from _common import ROOT, SPEED_KEYS  # noqa: E402
 from catalog_adapter import Adapter, item_fields, load_catalog_adapter  # noqa: E402
 
 #: Every comparison ends in one of these, so a page can always say what it shows and why.
@@ -478,7 +478,44 @@ def compare(params: dict) -> dict:
         "where": wheres,
         "by": by,
         "breakdown": breakdown,
+        "conditions": _conditions(list(series), metric),
     }
+
+
+def _conditions(arms: list, metric: str) -> dict | None:
+    """What the compared arms were measured under, where it differs (A.conditions, from each
+    run's fingerprint). A different scorer or different reference bytes makes the scores
+    different measurements; a different machine makes latency one. None when the adapter
+    cannot say."""
+    fn = getattr(A, "conditions", None)
+    if not callable(fn) or not arms:
+        return None
+    got = {a: fn(a) or {} for a in arms}
+    keys = sorted({k for c in got.values() for k in c})
+    differ = [
+        {"name": k, "values": {a: got[a].get(k) for a in arms}}
+        for k in keys
+        if len({got[a].get(k) for a in arms}) > 1
+        or any(str(got[a].get(k, "")).startswith("varies:") for a in arms)
+    ]
+    names = {d["name"] for d in differ}
+    warnings = []
+    if names & {"scorer.id", "scorer.sha256"}:
+        warnings.append(
+            "Scored by different scorers (adapter code): these numbers are different measurements. "
+            "Re-score them with one adapter (evh rescore) before reading the test."
+        )
+    if "reference.sha256" in names:
+        warnings.append(
+            "Scored against different reference bytes: re-score against one reference before comparing."
+        )
+    if "data.items_sha256" in names:
+        warnings.append("Measured on different item bytes.")
+    if any(n.startswith("machine.") for n in names) and (metric in SPEED_KEYS or "latency" in metric):
+        warnings.append(
+            f"{metric} compared across machines: the difference may be the machine's, not the arm's."
+        )
+    return {"fields": len(keys), "differ": differ, "warnings": warnings}
 
 
 def item(params: dict) -> dict:

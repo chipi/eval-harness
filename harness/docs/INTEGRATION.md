@@ -223,6 +223,8 @@ which references exist, what one arm wrote for one item.
   | more files the pages link (optional) | `served_dirs`: further directories under the project the inspector serves read-only, beside `data_dir` (a project's reports) |
   | what each metric measures (optional) | `metric_descriptions()`: `{metric: sentence}`; without it the metrics page describes only the harness's own metrics |
   | what a row is scored against (optional keys) | `describe(arm)`: `"reference"`, `"judge"`, `"wrote_reference"`; `references()`: `"items"`, `"author"`, `"from_run"`, `"model"`, `"created_at"` |
+  | what an arm was measured under (optional) | `conditions(arm)`: `{"machine.platform": …, "library.torch": …, "harness.version": …, "scorer.sha256": …, "data.items_sha256": …, "reference.sha256": …}`; the inspector lists what differs between the arms it compares, and warns when it is the scorer, the reference or, for latency, the machine |
+  | dataset versions (optional) | `datasets()`: every dataset id, run or not; `dataset_lineage(dataset)`: `{"dataset_id", "added", "removed", "changed"}` or None; the dataset pages link versions both ways |
 
   Item text is only ever returned by `item_view` and `reference_view`, which only the local
   inspector calls: the static pages never carry it, whatever the adapter.

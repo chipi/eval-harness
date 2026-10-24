@@ -120,7 +120,7 @@
     // Linked only where the catalog has a metrics page (a project's own builder may not).
     const mlink = document.querySelector('nav.nav a[href$="metrics.html"]')
       ? `<a class="cell-link" href="${document.body.dataset.up || ''}metrics.html#m-${mslug}">${esc(d.metric)}</a>` : esc(d.metric);
-    app.innerHTML = controls + warn + `<p class="eyebrow"><span class="num">01</span>verdicts · ${mlink}</p>` + verdicts + avgTable
+    app.innerHTML = controls + warn + `<p class="eyebrow"><span class="num">01</span>verdicts · ${mlink}</p>` + verdicts + conditions(d, label) + avgTable
       + breakdown(d, label)
       + `<p class="eyebrow gap"><span class="num">02</span>analysis</p>` + charts(d, label)
       + `<p class="eyebrow gap"><span class="num">03</span>per ${ITEM} · ${d.items.length}</p>` + eps;
@@ -176,6 +176,26 @@
       const keep = P.getAll('where').filter(w => w !== b.dataset.unwhere); P.delete('where'); keep.forEach(w => P.append('where', w)); go(); });
     const by = document.getElementById('by');
     if (by) by.onchange = () => { by.value ? P.set('by', by.value) : P.delete('by'); go(); };
+  }
+
+  // What the compared runs were measured under, from their fingerprints: one line when it all
+  // matches, else the fields that differ, arm by arm, and what that does to the comparison.
+  function conditions(d, label) {
+    const c = d.conditions;
+    if (!c || !c.fields) return '';
+    const what = 'machine, library versions, harness, scorer, items, reference bytes';
+    if (!c.differ.length) return `<p class="small muted conds">Same conditions: all ${c.fields} recorded fields match across these runs (${what}).</p>`;
+    const arms = Object.keys(d.series);
+    const short = v => v == null ? '—' : /^[0-9a-f]{40,}$/.test(v) ? v.slice(0, 12) + '…' : v;
+    const head = arms.map(a => `<th>${esc(label[a] || a)}${a === d.baseline ? '<br><small>baseline</small>' : ''}</th>`).join('');
+    const body = c.differ.map(f => {
+      const base = f.values[d.baseline];
+      return `<tr><td class="mono">${esc(f.name)}</td>${arms.map(a => `<td class="mono${a !== d.baseline && f.values[a] !== base ? ' diff' : ''}" title="${esc(f.values[a] ?? '')}">${esc(short(f.values[a]))}</td>`).join('')}</tr>`;
+    }).join('');
+    const warns = (c.warnings || []).map(w => `<p class="note">${esc(w)}</p>`).join('');
+    return `<h3 class="sub">Conditions · ${c.differ.length} of ${c.fields} fields differ <small>(${what})</small></h3>`
+      + warns
+      + `<div class="scroll-x"><table class="data conds"><thead><tr><th>field</th>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
   }
 
   function breakdown(d, label) {

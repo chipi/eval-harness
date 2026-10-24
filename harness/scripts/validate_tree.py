@@ -157,7 +157,8 @@ def v1_schemas() -> None:
 
 
 def v2_dataset_ids() -> None:
-    """V2: every run's dataset_id resolves to an existing dataset."""
+    """V2: every run's dataset_id resolves to an existing dataset, and so does every dataset's
+    `derived_from` (the version it was made from)."""
     known = {p.stem for p in DATASETS.glob("*.json")}
     dangling = []
     for label, run in all_runs():
@@ -166,6 +167,13 @@ def v2_dataset_ids() -> None:
             did = read_json(m).get("dataset_id")
             if did not in known:
                 dangling.append(f"{label} -> {did}")
+    for p in sorted(DATASETS.glob("*.json")):
+        try:
+            parent = (read_json(p).get("derived_from") or {}).get("dataset_id")
+        except ValueError:
+            continue  # V1 names a file that does not parse
+        if parent and parent not in known:
+            dangling.append(f"dataset {p.stem} derived from {parent}, which does not exist")
     for d in dangling:
         print(f"       {d}")
     check(

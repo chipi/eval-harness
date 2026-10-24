@@ -53,6 +53,17 @@ p 0.36, from the pre-fix run), and DBpedia's 56-item dev slice, over today's 28 
   judged arm reads "judge <scorer>", no longer "gold". A goal page flags the arm that wrote the
   reference it is scored against, so it is never the leader. The inspector's charts section is
   "analysis", and its verdict rows carry the same tints. Actions are compact and tinted.
+- **Dataset versions keep their lineage.** `evh dataset-create --dataset-id x_v2 --from x_v1`
+  records where a version came from and the item ids it adds, removes and changes
+  (`derived_from` in the dataset file); `validate` V2 fails a version whose parent is gone. The
+  catalog links versions both ways with what changed, and a version no arm has run on yet gets
+  a page when it is linked to one that has.
+- **The inspector says whether the compared runs ran under the same conditions**, from their
+  fingerprints: the machine, library versions, the harness, the scorer (adapter code), the
+  items and the reference's bytes. One line when all match; otherwise the fields that differ,
+  arm by arm, with a warning when the scorer or the reference bytes differ (different
+  measurements) or latency is compared across machines. A dataset page names each arm's machine
+  when its arms ran on more than one.
 - **`METRIC_DESCRIPTIONS`** in an adapter, one sentence per metric, is recorded on every run
   (`metric_descriptions` in metrics.json) and refreshed by `evh rescore`; the harness describes
   its own metrics (cost, tokens, latency, judge scores).

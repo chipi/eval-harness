@@ -290,3 +290,6 @@ tr.t-author td:first-child { box-shadow: inset 3px 0 0 var(--local); padding-lef
 .rowkey .key.t-author { box-shadow: inset 3px 0 0 var(--local); }
 .nowrap { white-space: nowrap; }
 .block code.nowrap { overflow-wrap: normal; }
+/* conditions: a field that differs from the baseline's value */
+table.conds td.diff { color: var(--ink); background: color-mix(in srgb, var(--local) 14%, transparent); }
+p.conds { margin: 10px 0 0; }

@@ -170,8 +170,44 @@ def _from_manifest(path: Path, fieldset, source_dir: Path, tags: list) -> list:
     return items
 
 
+def _lineage(parent_id: str, dataset_id: str, items: list) -> dict:
+    """What a new version changes against the dataset it is made from (--from): the item ids
+    added, removed, and kept with different bytes."""
+    if parent_id == dataset_id:
+        die(f"--from {parent_id}: a dataset cannot be made from itself; name the new version (e.g. _v2)")
+    path = DATASETS / f"{parent_id}.json"
+    if not path.is_file():
+        die(f"--from {parent_id}: no dataset at {path}")
+    old = {it["item_id"]: it["source_sha256"] for it in read_json(path).get("items") or []}
+    new = {it["item_id"]: it["source_sha256"] for it in items}
+    return {
+        "dataset_id": parent_id,
+        "added": sorted(new.keys() - old.keys()),
+        "removed": sorted(old.keys() - new.keys()),
+        "changed": sorted(k for k in new.keys() & old.keys() if new[k] != old[k]),
+    }
+
+
+def _say_lineage(lin: dict | None) -> None:
+    if not lin:
+        return
+    n = {k: len(lin[k]) for k in ("added", "removed", "changed")}
+    print(
+        f"  derived from {lin['dataset_id']}: {n['added']} added, {n['removed']} removed, "
+        f"{n['changed']} changed"
+        + ("  (the same items: a new id for the same selection)" if not any(n.values()) else "")
+    )
+
+
 def _write(
-    out: Path, dataset_id: str, items: list, previous: dict, fieldset, description: str, source_dir: str
+    out: Path,
+    dataset_id: str,
+    items: list,
+    previous: dict,
+    fieldset,
+    description: str,
+    source_dir: str,
+    lineage: dict | None = None,
 ) -> None:
     # A re-create that selects the SAME items keeps its original created_at. Without this
     # the documented first command, `make demo`, rewrites a tracked file on every run and
@@ -194,6 +230,8 @@ def _write(
     if fieldset:
         doc["fieldset"] = fieldset["fieldset_id"]
         doc["fields_sha256"] = _fields.digest(items)
+    if lineage:
+        doc["derived_from"] = lineage
     doc["items"] = items
     write_json(out, doc)
 
@@ -226,6 +264,12 @@ def main() -> int:
         help="also treat README files as items (they are skipped by default)",
     )
     ap.add_argument("--force", action="store_true", help="overwrite an existing dataset")
+    ap.add_argument(
+        "--from",
+        dest="from_",
+        metavar="DATASET_ID",
+        help="the dataset this version is made from: recorded with the items added, removed and changed",
+    )
     ap.add_argument(
         "--fieldset", help="the field set (data/fields/<id>.yaml) that declares the items' fields"
     )
@@ -269,6 +313,7 @@ def main() -> int:
             fieldset,
             previous.get("description", ""),
             previous.get("source_dir", ""),
+            previous.get("derived_from"),
         )
         print(
             f"{out.relative_to(DATASETS.parents[1])}  fields updated on {len(items)} item(s); "
@@ -289,6 +334,7 @@ def main() -> int:
         if args.fields:
             _attach(items, fieldset, args.fields)
         desc = args.description or f"{len(items)} item(s) from {args.manifest.name}"
+        lineage = _lineage(args.from_, args.dataset_id, items) if args.from_ else None
         _write(
             out,
             args.dataset_id,
@@ -297,8 +343,10 @@ def main() -> int:
             fieldset,
             desc,
             _relative_source_dir(args.source_dir) if args.source_dir.is_dir() else "",
+            lineage,
         )
         print(f"{out.relative_to(DATASETS.parents[1])}  ({len(items)} item(s))")
+        _say_lineage(lineage)
         print(
             "Next: "
             + how(
@@ -344,6 +392,7 @@ def main() -> int:
     if args.fields:
         _attach(items, fieldset, args.fields)
 
+    lineage = _lineage(args.from_, args.dataset_id, items) if args.from_ else None
     _write(
         out,
         args.dataset_id,
@@ -357,8 +406,10 @@ def main() -> int:
         # it into a public repo, and makes the file describe a machine rather than a
         # selection. The item hashes are what freeze a dataset; this field is a label.
         _relative_source_dir(args.source_dir),
+        lineage,
     )
     print(f"{out.relative_to(DATASETS.parents[1])}  ({len(items)} item(s))")
+    _say_lineage(lineage)
     print(
         "Next: "
         + how(

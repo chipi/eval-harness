@@ -154,6 +154,15 @@ class Adapter(Protocol):
     # Optional: what each metric measures, for the metrics page. Without it the page shows the
     # harness's own metrics' descriptions and the rest as undescribed.
     # def metric_descriptions(self) -> dict[str, str]: ...
+    # Optional: what an arm was measured under, {"machine.platform": ..., "library.torch": ...,
+    # "harness.version": ..., "scorer.sha256": ..., "data.items_sha256": ...,
+    # "reference.sha256": ...}; the inspector lists what differs between the arms it compares.
+    # def conditions(self, arm: str) -> dict[str, str]: ...
+    # Optional: every dataset id, including those no arm has run on yet.
+    # def datasets(self) -> list[str]: ...
+    # Optional: the version a dataset was made from, {"dataset_id", "added", "removed",
+    # "changed"} (item id lists), or None; the dataset pages link the versions both ways.
+    # def dataset_lineage(self, dataset: str) -> Optional[dict]: ...
 
 
 def item_fields(A, dataset: str) -> dict:
@@ -162,6 +171,33 @@ def item_fields(A, dataset: str) -> dict:
     fn = getattr(A, "item_fields", None)
     got = fn(dataset) if callable(fn) else None
     return got if isinstance(got, dict) and got.get("fieldset") else {"fieldset": None, "values": {}}
+
+
+def _flat_conditions(fp: dict) -> dict[str, str]:
+    """A run fingerprint's conditions as {group.field: value} (see HarnessAdapter.conditions)."""
+    out: dict[str, str] = {}
+    for k, v in (fp.get("host") or {}).items():
+        if v is not None:
+            out[f"machine.{k}"] = str(v)
+    for k, v in ((fp.get("system_under_test") or {}).get("libraries") or {}).items():
+        out[f"library.{k}"] = str(v)
+    inst = fp.get("instrument") or {}
+    harness = inst.get("harness") or {}
+    for k in ("version", "code_sha256"):
+        if harness.get(k) is not None:
+            out[f"harness.{k}"] = str(harness[k])
+    adapter = inst.get("adapter") or {}
+    for k in ("id", "sha256"):
+        if adapter.get(k) is not None:
+            out[f"scorer.{k}"] = str(adapter[k])
+    data = fp.get("data") or {}
+    if data.get("items_sha256"):
+        out["data.items_sha256"] = str(data["items_sha256"])
+    if data.get("references_sha256"):
+        out["reference.sha256"] = str(data["references_sha256"])
+    if fp.get("version") is not None:
+        out["fingerprint.version"] = str(fp["version"])
+    return out
 
 
 def _json(p: Path):
@@ -417,6 +453,31 @@ class HarnessAdapter:
         """Return how many items a dataset has, or None if not recorded."""
         ds = _json(self.data_dir / "datasets" / f"{dataset}.json")
         return len(ds.get("items") or []) if isinstance(ds, dict) else None
+
+    @_memo
+    def conditions(self, arm: str) -> dict[str, str]:
+        """What the arm's runs were measured under, flattened from their fingerprints: the
+        machine, library versions, the harness, the scorer (adapter), the items and the
+        reference's bytes. Not the arm's own params or model: those are what an arm varies. A
+        field the arm's repeats disagree on reads "varies: a | b"."""
+        seen: dict[str, list[str]] = {}
+        for d in self._dirs(arm):
+            fp = (_json(d / "metrics.json") or {}).get("fingerprint") or {}
+            flat = _flat_conditions(fp)
+            for k, v in flat.items():
+                if v not in seen.setdefault(k, []):
+                    seen[k].append(v)
+        return {k: vs[0] if len(vs) == 1 else "varies: " + " | ".join(vs) for k, vs in seen.items()}
+
+    def datasets(self) -> list[str]:
+        """Every frozen dataset, run or not: a new version has a page before its first run."""
+        return sorted(p.stem for p in (self.data_dir / "datasets").glob("*.json"))
+
+    def dataset_lineage(self, dataset: str) -> dict | None:
+        """The version this dataset was made from (`derived_from`), or None."""
+        ds = _json(self.data_dir / "datasets" / f"{dataset}.json")
+        got = ds.get("derived_from") if isinstance(ds, dict) else None
+        return got if isinstance(got, dict) and got.get("dataset_id") else None
 
     # -- item fields (ADR-0003) -----------------------------------------------------------
     @_memo
