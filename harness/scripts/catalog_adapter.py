@@ -18,8 +18,10 @@ An ARM is a string id the adapter chooses. HarnessAdapter's is `<runs dir>/<data
 every repeat of a config on a dataset, averaged per item, exactly as `pair-test` and
 `family-test` read them, so the inspector and the command line give the same p.
 
-Item text (outputs, references) is only ever returned by item_view / reference_view, which
-only the local inspector server calls. The static catalog never embeds it.
+Item text (outputs, references) is only ever returned by item_view / reference_view. The static
+catalog never embeds it. The local inspector shows it; a public server (--public) serves it only for
+what the deployment names with --publish outputs / --publish references, and never the item itself:
+an output can quote its input, and a reference can be a dataset's licensed text.
 """
 
 from __future__ import annotations

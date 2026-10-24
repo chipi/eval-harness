@@ -549,7 +549,20 @@ def item(params: dict) -> dict:
     refs = _known()[1]
     if not it or not arms or any(not _arms_known(a) for a in arms):
         return {"error": "need arms=<arm>,... known to the catalog and item=<item_id>"}
-    out = {"item": it, "views": {a: A.item_view(a, it) for a in arms}}
+    # PUBLIC MODE PUBLISHES TEXT ONLY WHEN TOLD (--publish outputs,references). An arm's output
+    # can quote its input (an extractive arm returns the article's own sentences) and a reference
+    # can be a dataset's licensed text, so a public server serves numbers unless the deployment
+    # has decided to publish them. The local inspector shows everything, on this machine.
+    public = bool(LIMITS["hosts"])
+    published = LIMITS.get("publish") or ()
+    if public and "outputs" not in published:
+        withheld = {
+            "kind": "none",
+            "note": "this deployment does not publish outputs (catalog-serve --publish)",
+        }
+        out = {"item": it, "views": {a: dict(withheld) for a in arms}}
+    else:
+        out = {"item": it, "views": {a: A.item_view(a, it) for a in arms}}
     decl, values = _fields_of(A.describe(A.arms_of(arms[0])[0]).get("dataset", ""))
     out["fields"] = [
         dict(f, value=values.get(it, {})[f["name"]])
@@ -560,7 +573,17 @@ def item(params: dict) -> dict:
     if ref and ref not in refs:
         return {"error": f"no reference known to the catalog: {ref}"}
     if ref:
-        out["reference"] = {"id": ref, "view": A.reference_view(ref, it)}
+        out["reference"] = {
+            "id": ref,
+            "view": (
+                {
+                    "kind": "none",
+                    "note": "this deployment does not publish references (catalog-serve --publish)",
+                }
+                if public and "references" not in published
+                else A.reference_view(ref, it)
+            ),
+        }
     # The item itself (the input every arm read), so an output can be checked against it. Only
     # the local inspector shows it: a public deployment never serves a dataset's inputs, which a
     # project may not be free to redistribute.
@@ -752,6 +775,13 @@ def main() -> int:
     )
     ap.add_argument("--rate", type=int, default=30, help="public mode: API requests per client per minute")
     ap.add_argument(
+        "--publish",
+        default="",
+        metavar="WHAT",
+        help="public mode: text to serve besides the numbers, comma-separated: outputs, references "
+        "(default: none; the item itself is never served publicly)",
+    )
+    ap.add_argument(
         "--client-header",
         metavar="NAME",
         help="public mode: the header that names the client (e.g. CF-Connecting-IP), only behind a proxy "
@@ -771,6 +801,10 @@ def main() -> int:
         LIMITS["hosts"] = tuple(h.strip() for h in args.public.split(",") if h.strip())
         LIMITS["rate"] = args.rate
         LIMITS["client_header"] = args.client_header
+        LIMITS["publish"] = tuple(x.strip() for x in args.publish.split(",") if x.strip())
+        bad = set(LIMITS["publish"]) - {"outputs", "references"}
+        if bad:
+            raise SystemExit(f"--publish takes outputs and/or references, not {', '.join(sorted(bad))}")
         Handler.prefixes = ()
     else:
         if args.bind != "127.0.0.1":

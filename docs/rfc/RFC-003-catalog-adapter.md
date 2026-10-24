@@ -116,7 +116,8 @@ this repository's data (194 arms, 9 datasets) the build takes under a second
   pages; named hosts only; `--rate` requests per client per minute (`CF-Connecting-IP`, else the
   peer); `--max-arms` per comparison (40 by default, locally too); two computations at once;
   every answer cached by its exact question; errors without internals; only public fields; no
-  item text from `/api/item`. `--warm DIR` computes every comparison the built catalog links to.
+  item itself from `/api/item`, and outputs or reference text only for what `--publish outputs,references`
+  names (default: neither). `--warm DIR` computes every comparison the built catalog links to.
 - The server reads the runs once; a new run needs a restart.
 
 ### This repository's deployment

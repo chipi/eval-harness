@@ -330,6 +330,33 @@ try:
     )
     key = next(k for k in cs._CACHE if "arm_b" in k)
     check("public: an answer is cached by its exact question", cs._CACHE[key][0] == 200)
+    # Text is published only when the deployment names it: by default an item answer carries
+    # no output and no reference text, and says so.
+    item_q = "/api/item?arms=runs/ds1/arm_a&item=i00&ref=gold/ds1"
+    st, body = get(item_q, H)
+    j = json.loads(body) if st == 200 else {}
+    view = (j.get("views") or {}).get("runs/ds1/arm_a") or {}
+    check(
+        "public: no output or reference text unless --publish names it",
+        st == 200
+        and SECRET not in body
+        and view.get("kind") == "none"
+        and "does not publish outputs" in view.get("note", ""),
+        body[:300],
+    )
+    cs._CACHE.clear()
+    cs.LIMITS["publish"] = ("outputs",)
+    st, body = get(item_q, H)
+    j = json.loads(body) if st == 200 else {}
+    check(
+        "public: --publish outputs serves the outputs, still not the references",
+        st == 200
+        and SECRET in body
+        and ((j.get("reference") or {}).get("view") or {}).get("kind") in ("none", None),
+        body[:300],
+    )
+    cs.LIMITS["publish"] = ()
+    cs._CACHE.clear()
     codes = [get("/api/health", H)[0] for _ in range(2)] + [
         get("/api/item?arms=runs/ds1/arm_a&item=i00", H)[0] for _ in range(4)
     ]

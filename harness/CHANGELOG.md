@@ -301,6 +301,13 @@ p 0.36, from the pre-fix run), and DBpedia's 56-item dev slice, over today's 28 
     - the structured view kinds (`insights`, `nodes`, `entities`) are documented;
     - `evh rounds` reads the project's catalog adapter;
     - the inspector's default baseline is the promoted baseline's arm.
+  - **A public inspector publishes text only when told.** `catalog-serve --public` served every
+    arm's output and the reference text for any item, while INTEGRATION and the adapter contract
+    said that text never leaves the machine. It now serves numbers, adds outputs or reference text
+    only for what `--publish outputs,references` names, and never serves the item itself; the item
+    view says what it withholds. **This can change a deployment**: one that relied on the old
+    behaviour adds `--publish`. This repository's own publishes outputs (already public in the
+    repository), not references.
   - **The public server trusts no client header unless told** (`--client-header NAME`); a
     spoofed `CF-Connecting-IP` no longer buys a fresh rate bucket. The deployment names
     Cloudflare's header (origin lock).

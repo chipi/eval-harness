@@ -68,6 +68,10 @@ services:
       # Cloudflare's, so it names the visitor.
       - --client-header
       - CF-Connecting-IP
+      # The example runs' outputs are already public in the repository; their gold references
+      # are not committed, and are not published.
+      - --publish
+      - outputs
       - --warm
       - /srv/evals/current/sites/catalog.evals.humancopilot.eu/public
     ports:

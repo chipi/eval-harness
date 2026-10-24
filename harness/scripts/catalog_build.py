@@ -174,6 +174,8 @@ def page(
         f"Built {built} by <code>evh catalog</code>. The pages carry counts and means "
         f"only; {e(item)} text is fetched from the inspector when you open an {e(item)}."
     )
+    # noindex, deliberately: the catalog is a working view over runs, not a page to be found by a
+    # search engine; the findings site is what is indexed.
     return f"""<!doctype html>
 <html lang="en">
 <head>

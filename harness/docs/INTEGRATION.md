@@ -264,8 +264,13 @@ which references exist, what one arm wrote for one item.
   pages are a comfort; [tutorial 5](../../docs/tutorials/5-catalog-and-inspector.md#3-every-page-and-its-command)
   maps each page to its command.
 
-  Item text is only ever returned by `item_view` and `reference_view`, which only the local
-  inspector calls: the static pages never carry it, whatever the adapter.
+  Item text is only ever returned by `item_view` and `reference_view`, and the static pages
+  never carry it, whatever the adapter. The local inspector shows all of it. A public deployment
+  (`catalog-serve --public`) serves numbers, plus an arm's outputs or a reference's text only
+  when it names them (`--publish outputs`, `--publish references`, or both), and never the item
+  itself. An output can quote its input (an extractive arm returns the article's own sentences),
+  and a reference can be text a project may not redistribute, so a public deployment publishes
+  neither until it says so.
 
   `item_fields` is optional: without it the pages show no fields. With it, the dataset page
   lists each field and its coverage, and summarises the values of a field marked `public`

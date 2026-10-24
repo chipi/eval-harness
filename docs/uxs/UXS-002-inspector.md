@@ -28,8 +28,9 @@ Its state lives in the URL, so every link from the catalog opens a ready compari
   `evaluation_harness.stats`; `evh inspect` calls the same function.
 - **Refuse and say why.** Arms that cannot be tested against the baseline are set aside with a
   note, never tested anyway.
-- **Item text only here, only locally.** The static pages never carry it; a public deployment
-  never returns the item itself.
+- **Item text only here.** The static pages never carry it. A public deployment never returns the
+  item itself, and shows an arm's output or a reference's text only when it publishes them
+  (`catalog-serve --publish outputs,references`); otherwise the item view says which it withholds.
 
 ## Scope
 

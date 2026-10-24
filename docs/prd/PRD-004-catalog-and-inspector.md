@@ -103,8 +103,9 @@ adapter file ([ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md),
   serves the static pages, to the named hosts; each client gets `--rate` requests a minute and
   a comparison at most `--max-arms` arms; errors never show the server's internals; `--warm DIR`
   computes every comparison the built catalog links to.
-- **FR3.2**: In public mode the item view never returns the item itself, and only fields marked
-  public are filterable.
+- **FR3.2**: In public mode the item view never returns the item itself, returns outputs and
+  references only when the deployment publishes them (`--publish`), and only fields marked public
+  are filterable.
 
 ### FR4: Command-line parity
 
