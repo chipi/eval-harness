@@ -182,10 +182,38 @@ def _best(A, arms: list[str], metric: str, lower: bool) -> str | None:
     return (min if lower else max)(means, key=lambda a: means[a])
 
 
+def _cost_per_item(A, arm: str) -> float | None:
+    vals = (A.scores(arm).get("cost_usd") or {}).get("values") or {}
+    return statistics.fmean(vals.values()) if vals else None
+
+
+def _silver_authors(A, ds: str) -> list[tuple[str, str]]:
+    """(reference id, arm) for each silver reference of this dataset whose author is a run here:
+    the frontier arm whose outputs became the reference, read from its manifest."""
+    out = []
+    root = _common.REFERENCES / "silver"
+    known = set(A.arms())
+    for mf in sorted(root.glob("*/manifest.json")) if root.is_dir() else []:
+        m = read_json(mf)
+        cid = (m.get("from_run") or {}).get("config_id") or m.get("authored_by")
+        if m.get("dataset_id") == ds and cid and f"runs/{ds}/{cid}" in known:
+            out.append((f"silver/{mf.parent.name}", f"runs/{ds}/{cid}"))
+    return out
+
+
+def _against(A, label: str, other: str, leader: str, metric: str) -> dict | None:
+    d = cs.compare({"runs": [f"{other},{leader}"], "baseline": [other], "metric": [metric]})
+    row = next(iter(d.get("rows") or []), None)
+    if not row:
+        return None
+    return {"label": label, "other": other, "verdict": row["verdict"], "p": row["p"], "delta": row["delta"]}
+
+
 def evidence(goal: str, rnd: dict) -> dict:
     """What the evidence says about a round, read as the inspector reads it: its arms against its
-    leader, its leader against the previous round's best and the baseline it started from, its
-    spend, and the decisions that follow, each with its command."""
+    leader; its leader against the previous round's best, the baseline it started from and the arm
+    that wrote a silver reference of the dataset (`against`); spend and cost per item; and the
+    decisions that follow, each with its command."""
     g = _goal(goal)
     prim = (g.get("success_criteria") or {}).get("primary") or {}
     metric, lower = prim.get("measure", ""), prim.get("direction") == "lower"
@@ -195,7 +223,14 @@ def evidence(goal: str, rnd: dict) -> dict:
     arm = {c: f"runs/{ds}/{c}" for c in _rounds.arms_of(rnd)}
     known = set(A.arms())
     arms = [a for a in arm.values() if a in known]
-    out: dict[str, Any] = {"metric": metric, "arms": arms, "rows": [], "suggest": [], "notes": []}
+    out: dict[str, Any] = {
+        "metric": metric,
+        "arms": arms,
+        "rows": [],
+        "against": [],
+        "suggest": [],
+        "notes": [],
+    }
     spent = sum((m.get("scores") or {}).get("total_cost_usd") or 0 for _, m in _rounds.runs_of(rnd))
     out["spent"] = spent
     if rnd.get("budget_usd") is not None:
@@ -212,9 +247,12 @@ def evidence(goal: str, rnd: dict) -> dict:
         d = cs.compare({"runs": [",".join(arms)], "baseline": [leader], "metric": [metric]})
         out["rows"] = d.get("rows") or []
         out["notes"] += list((d.get("conditions") or {}).get("warnings") or [])
+        # The arm that wrote a silver reference is the yardstick the leader is read against, not a
+        # contender: losing to the leader is the finding, not a reason to drop it.
+        authors = {a for _, a in _silver_authors(A, ds)}
         for r in out["rows"]:
             cid = r["arm"].rsplit("/", 1)[-1]
-            if r["verdict"] == "separated: worse":
+            if r["verdict"] == "separated: worse" and r["arm"] not in authors:
                 reason = f"separated worse than {leader.rsplit('/', 1)[-1]} on {metric} after Holm (p {r['p']:.3g})"
                 out["suggest"].append(
                     (
@@ -234,15 +272,9 @@ def evidence(goal: str, rnd: dict) -> dict:
     if prev:
         pbest = _best(A, [f"runs/{prev['dataset_id']}/{c}" for c in _rounds.arms_of(prev)], metric, lower)
         if pbest and pbest != leader and prev["dataset_id"] == ds:
-            d = cs.compare({"runs": [f"{pbest},{leader}"], "baseline": [pbest], "metric": [metric]})
-            row = next(iter(d.get("rows") or []), None)
+            row = _against(A, f"{prev['round_id']}'s best", pbest, leader, metric)
             if row:
-                out["vs_previous"] = {
-                    "previous": pbest,
-                    "verdict": row["verdict"],
-                    "p": row["p"],
-                    "delta": row["delta"],
-                }
+                out["against"].append(row)
                 if row["verdict"] != "separated: better":
                     out["suggest"].append(
                         (
@@ -257,15 +289,23 @@ def evidence(goal: str, rnd: dict) -> dict:
             None,
         )
         if barm and barm != leader:
-            d = cs.compare({"runs": [f"{barm},{leader}"], "baseline": [barm], "metric": [metric]})
-            row = next(iter(d.get("rows") or []), None)
+            row = _against(A, "the baseline it started from", barm, leader, metric)
             if row:
-                out["vs_baseline"] = {
-                    "baseline": barm,
-                    "verdict": row["verdict"],
-                    "p": row["p"],
-                    "delta": row["delta"],
-                }
+                out["against"].append(row)
+    # The frontier arm whose outputs became a silver reference: how close the leader comes to it,
+    # scored on the same references as the round, and at what cost per item.
+    for ref_id, author in _silver_authors(A, ds):
+        if author != leader:
+            row = _against(A, f"the arm that wrote {ref_id}", author, leader, metric)
+            if row:
+                out["against"].append(row)
+    costs = {a: _cost_per_item(A, a) for a in [leader, *(r["other"] for r in out["against"])]}
+    priced = {a: c for a, c in costs.items() if c is not None}
+    if priced:
+        out["cost_per_item"] = priced
+        out["notes"].append(
+            "cost per item: " + ", ".join(f"{a.rsplit('/', 1)[-1]} ${c:.6f}" for a, c in priced.items())
+        )
     lead_run = sorted(d.name for d in A._dirs(leader))[0] if A._dirs(leader) else "<run_id>"
     out["suggest"].append(
         (
@@ -319,16 +359,10 @@ def status(argv: list[str]) -> int:
     )
     for r in ev["rows"]:
         print(f"    {r['arm'].rsplit('/', 1)[-1]:32} {r['verdict']:18} Δ {r['delta']:+.4f}  p {r['p']:.3g}")
-    for key, label in (
-        ("vs_previous", "previous round's best"),
-        ("vs_baseline", "the baseline it started from"),
-    ):
-        v = ev.get(key)
-        if v:
-            other = v.get("previous") or v.get("baseline")
-            print(
-                f"  against {label} ({other.rsplit('/', 1)[-1]}): {v['verdict']}, Δ {v['delta']:+.4f}, p {v['p']:.3g}"
-            )
+    for v in ev["against"]:
+        print(
+            f"  against {v['label']} ({v['other'].rsplit('/', 1)[-1]}): {v['verdict']}, Δ {v['delta']:+.4f}, p {v['p']:.3g}"
+        )
     for n in ev["notes"]:
         print(f"  NOTE: {n}")
     if rnd["status"] == "open" and ev["suggest"]:

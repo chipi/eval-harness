@@ -44,7 +44,7 @@
     },
     "protocol": {
       "type": "object",
-      "required": ["outputs_per_call"],
+      "required": ["outputs_per_call", "position_check_fraction", "noise_check_fraction"],
       "additionalProperties": false,
       "properties": {
         "outputs_per_call": {"type": "integer", "minimum": 1},
@@ -52,7 +52,7 @@
         "blinding": {"type": "boolean"},
         "order_seed": {"type": "integer"},
         "position_check_fraction": {"type": "number", "minimum": 0, "maximum": 1},
-        "noise_check_fraction": {"type": "number", "minimum": 0, "maximum": 1},
+        "noise_check_fraction": {"type": "number", "exclusiveMinimum": 0, "maximum": 1, "description": "Required and above 0: the judge's own noise is measured (ADR-0001 §4)."},
         "contested_threshold": {"type": "number", "minimum": 0}
       }
     },

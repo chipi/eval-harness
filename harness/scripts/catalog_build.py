@@ -815,6 +815,11 @@ def _rounds_block(A: Adapter, g: dict, measure: str, lower: bool) -> str:
                 from rounds import evidence  # noqa: PLC0415
 
                 ev = evidence(g["goal_id"], r)
+                lines += [
+                    f"<li>against {e(v['label'])} (<code>{e(v['other'].rsplit('/', 1)[-1])}</code>): "
+                    f"{e(v['verdict'])}, Δ {v['delta']:+.4f}, p {v['p']:.3g}</li>"
+                    for v in ev["against"]
+                ]
                 sugg = "".join(
                     f"<li>{e(what)}" + (f'<br><code class="cmd">{e(cmd)}</code>' if cmd else "") + "</li>"
                     for what, cmd in ev["suggest"]

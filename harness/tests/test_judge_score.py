@@ -744,6 +744,33 @@ with tempfile.TemporaryDirectory() as tmp:
 
     pth.write_text(yaml.safe_dump({k: v for k, v in one_family.items() if not k.startswith("_")}))
     check("a scorer whose judges share a vendor family is refused", raises_exit(lambda: js.load_scorer(pth)))
+    # The controls are not optional (ADR-0001 §4): a forgotten field cannot switch them off.
+    clean = {k: v for k, v in real.items() if not k.startswith("_")}
+    for label, proto, refused in (
+        ("no noise_check_fraction", {"outputs_per_call": 16, "position_check_fraction": 0.1}, True),
+        ("no position_check_fraction", {"outputs_per_call": 16, "noise_check_fraction": 0.1}, True),
+        (
+            "noise 0",
+            {"outputs_per_call": 16, "position_check_fraction": 0.1, "noise_check_fraction": 0},
+            True,
+        ),
+        (
+            "position 0 on 16 per call",
+            {"outputs_per_call": 16, "position_check_fraction": 0, "noise_check_fraction": 0.1},
+            True,
+        ),
+        (
+            "position 0 on 1 per call",
+            {"outputs_per_call": 1, "position_check_fraction": 0, "noise_check_fraction": 0.1},
+            False,
+        ),
+    ):
+        pc = Path(td) / "controls.yaml"
+        pc.write_text(yaml.safe_dump(dict(clean, protocol=proto)))
+        check(
+            f"controls: {label} {'is refused' if refused else 'is accepted (no order to check)'}",
+            raises_exit(lambda p=pc: js.load_scorer(p)) == refused,
+        )
     # the CLI: refuses an unvalidated scorer before reading data or calling anything
     pth2 = Path(td) / "judge-test-unval.yaml"
     pth2.write_text(
@@ -1716,7 +1743,7 @@ with tempfile.TemporaryDirectory() as td_:
                 },
             },
         ],
-        "protocol": {"outputs_per_call": 4},
+        "protocol": {"outputs_per_call": 4, "position_check_fraction": 0.25, "noise_check_fraction": 0.25},
         "task": {"dimensions": ["correct"]},
     }
     (sdir / "s-good.yaml").write_text(json.dumps({**base_, "scorer_id": "s-good"}))
@@ -1727,7 +1754,11 @@ with tempfile.TemporaryDirectory() as td_:
                 **base_,
                 "scorer_id": "s-bad",
                 "prompt": {"file": str(sdir / "bad.txt")},
-                "protocol": {"outputs_per_call": 16},
+                "protocol": {
+                    "outputs_per_call": 16,
+                    "position_check_fraction": 0.25,
+                    "noise_check_fraction": 0.25,
+                },
             }
         )
     )

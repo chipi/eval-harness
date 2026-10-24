@@ -153,6 +153,20 @@ def load_scorer(path: Path) -> dict[str, Any]:
             f"{path.name}: needs at least two judges from different vendor families "
             f"(ADR-0001 §4); got {sorted(map(str, fams))}"
         )
+    # The controls are part of the pass, not optional (ADR-0001 §4): a scorer states both, so a
+    # forgotten field cannot switch them off. Position needs an order, so it may be 0 only when
+    # every call sees one output.
+    pr = sc["protocol"]
+    for k in ("position_check_fraction", "noise_check_fraction"):
+        if k not in pr:
+            die(f"{path.name}: protocol.{k} is required (ADR-0001 §4: the controls are not optional)")
+    if not pr["noise_check_fraction"] > 0:
+        die(f"{path.name}: protocol.noise_check_fraction must be above 0: the judge's own noise is measured")
+    if int(pr.get("outputs_per_call", 1)) > 1 and not pr["position_check_fraction"] > 0:
+        die(
+            f"{path.name}: protocol.position_check_fraction must be above 0 when a call sees "
+            f"{pr['outputs_per_call']} outputs: their order can move a verdict"
+        )
     try:
         sc["_task"] = task_of(sc)
     except ValueError as exc:
@@ -430,10 +444,8 @@ def build_manifest(
         # Only a declared task is hashed, so a scorer without one keeps the set id it had.
         **({"task": task_for(sc)} if sc.get("task") else {}),
         "items": items,
-        "position_items": pick_subset(
-            list(item_ids), pr.get("position_check_fraction", 0), seed, "position-subset"
-        ),
-        "noise_items": pick_subset(list(item_ids), pr.get("noise_check_fraction", 0), seed, "noise-subset"),
+        "position_items": pick_subset(list(item_ids), pr["position_check_fraction"], seed, "position-subset"),
+        "noise_items": pick_subset(list(item_ids), pr["noise_check_fraction"], seed, "noise-subset"),
     }
     digest = _sha(_canon(body))
     return {

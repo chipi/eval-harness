@@ -109,6 +109,20 @@ try:
         out(r)[-300:],
     )
 
+    # The author arm's outputs become a silver reference: the round's leader is then read against
+    # the arm that wrote it, and that arm is never suggested for retirement (it is the yardstick).
+    r = evh("reference-create", "--dataset-id", "tickets_v1", "--from-run", run.name if run else "")
+    rs = evh("rounds", "--goal", "tickets_summary")
+    check(
+        "rounds: the leader against the arm that wrote a silver reference",
+        r.returncode == 0 and "against the arm that wrote silver/tickets_v1 (tickets_author_v1)" in rs.stdout,
+        out(r)[-300:] + rs.stdout[-600:],
+    )
+    check(
+        "rounds: the silver author is not suggested for retirement",
+        "retire tickets_author_v1" not in rs.stdout,
+        rs.stdout[-600:],
+    )
     r = evh(
         "round-retire",
         "--goal",

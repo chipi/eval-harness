@@ -257,6 +257,15 @@ p 0.36, from the pre-fix run), and DBpedia's 56-item dev slice, over today's 28 
   from a pin); the tutorial kit ships `tutorial/judge_panel.yaml`.
 
 ### Fixed
+- **A judge scorer must state its position and noise checks.** ADR-0001 makes them part of the
+  pass, not optional, but a scorer that left `protocol.position_check_fraction` or
+  `noise_check_fraction` out ran with them off. Both are now required. The noise check must be
+  above 0, and so must the position check whenever a call sees more than one output (a pointwise
+  scorer has no order to check). `judge-score` and V1 refuse a scorer that breaks this.
+- **A round is read against the arm that wrote its silver reference.** `evh rounds` and the goal
+  page now compare the leader with the previous round's best, the baseline and, new, the
+  frontier arm whose outputs became a silver reference of the dataset. Cost per item is shown
+  for each of those arms. That arm is the yardstick, so it is never suggested for retirement.
 - **The inspector reads only arms and references the catalog lists.** It asked the
   adapter's `arms_of` about any path a request named; an adapter that maps a path to itself
   (the podcast repo's did) let `compare` read outside the data tree (`runs=../../.git`). A
