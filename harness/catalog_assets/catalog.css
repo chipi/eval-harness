@@ -313,3 +313,4 @@ tr.t-open td:first-child { box-shadow: inset 3px 0 0 var(--accent); padding-left
 details.rounddetail { margin: 12px 0; padding: 8px 14px; border: 1px solid var(--hair); border-radius: 10px; background: var(--surface); }
 details.rounddetail summary { cursor: pointer; font: 600 13px/1.4 var(--mono); }
 ul.suggest code.cmd { display: inline-block; margin-top: 4px; padding: 4px 8px; border-radius: 6px; background: var(--surface-2); font-size: 12px; user-select: all; overflow-wrap: anywhere; }
+small.retired { color: var(--local); font: 600 10px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; }

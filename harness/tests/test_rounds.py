@@ -190,7 +190,11 @@ try:
     page = (proj / ".build/catalog/g/tickets_summary.html").read_text()
     check(
         "catalog: the goal page shows its rounds, the open one's suggestions as commands",
-        'id="rounds"' in page and "r1" in page and "r2" in page and "suggested next" in page,
+        'id="rounds"' in page
+        and "r1" in page
+        and "r2" in page
+        and "suggested next" in page
+        and "retired in r1" in page,
     )
 finally:
     shutil.rmtree(proj, ignore_errors=True)

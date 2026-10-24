@@ -893,6 +893,13 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
         n += 1
     body += block(f"{n:02d}", "what it is for", f'<dl class="kv">{dl}</dl>')
     n += 1
+    rfn = getattr(A, "rounds", None)
+    retired_in = {
+        x.get("config_id"): r["round_id"]
+        for r in (rfn() if callable(rfn) else [])
+        if r.get("goal") == g["goal_id"]
+        for x in r.get("retired") or []
+    }
     for ans in goal_answers(g, by_ds):
         ds, v = ans["dataset"], by_ds.get(ans["dataset"]) or {}
         tiers = {r["id"]: r["tier"] for r in v.get("refs", [])}
@@ -938,6 +945,9 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
                     tag = (
                         ' <small title="its config names this goal">filed</small>' if r["filed"] else ""
                     ) + (' <span class="tag-base">baseline</span>' if r.get("baseline") else "")
+                    cid = r["arm"].rsplit("/", 1)[-1]
+                    if cid in retired_in:
+                        tag += f' <small class="retired" title="dropped in that round, with its reason">retired in {e(retired_in[cid])}</small>'
                     trs.append(
                         {
                             "cls": row_kind(r, tiers),
