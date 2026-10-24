@@ -343,9 +343,13 @@ def _frontier(rows: list[dict], quality: str, kinds: dict[str, str], asc: bool =
     produced a completely different frontier once -- with the same runs. So the facet is
     named in the output, every time.
     """
-    cost = next((k for k in rows[0] if kinds.get(k) == "cost" and k.startswith("total_")), None)
-    cost = cost or next((k for k in rows[0] if kinds.get(k) == "cost"), None)
-    speed = next((k for k in rows[0] if kinds.get(k) == "speed"), None)
+    if not rows:
+        return
+    # Every row's keys, not the first row's: an arm with no latency (a rule) heads the table at times.
+    seen = {k for r in rows for k in r}
+    cost = next((k for k in sorted(seen) if kinds.get(k) == "cost" and k.startswith("total_")), None)
+    cost = cost or next((k for k in sorted(seen) if kinds.get(k) == "cost"), None)
+    speed = next((k for k in sorted(seen) if kinds.get(k) == "speed"), None)
     if not (cost and speed):
         print("\n  No frontier: needs a cost and a speed metric alongside quality.")
         return
@@ -491,6 +495,34 @@ def main() -> int:
     return 0
 
 
+def _judging_summary(found: list) -> None:
+    """The judging pass's own checks (its summary.json, beside the judged runs): how far the
+    judges agree, and how much a verdict moves with the order of the outputs (position) and
+    when the same call is repeated (noise). Read them before the ranking."""
+    seen = set()
+    for d, _m in found:
+        f = d.parent / "summary.json"
+        if f in seen or not f.is_file():
+            continue
+        seen.add(f)
+        s = read_json(f)
+        print(
+            f"\n  The judging pass ({f.parent.name}, {s.get('items_scored')}/{s.get('items_total')} items, "
+            f"{s.get('label', '')}), from {f.name}:"
+        )
+        for pair, a in (s.get("judge_agreement") or {}).items():
+            print(
+                f"    judges {pair.replace('~', ' and ')} agree: item tau {a.get('mean_item_tau', 0):.3f}, "
+                f"arm order spearman {a.get('arm_mean_spearman', 0):.3f}"
+            )
+        for j, c in (s.get("controls") or {}).items():
+            pos, noi = c.get("position") or {}, c.get("noise") or {}
+            print(
+                f"    {j}: reshuffled outputs tau {pos.get('mean_tau', float('nan')):.3f} (position), "
+                f"the same call repeated tau {noi.get('mean_tau', float('nan')):.3f} (noise)"
+            )
+
+
 def _reference_of(m: dict) -> str | None:
     """What a run was scored against: a judge (`judge <scorer>`) for a judged run, whatever its
     source run's reference; else its reference id, else its tier, else None."""
@@ -565,7 +597,8 @@ def _table(args: argparse.Namespace, found: list) -> None:
     # measurements -- often different scorers -- and listing them side by side reads as
     # 48 models. The fix is to scope the view, never to delete the older runs. Only an arm
     # present at two versions is a mix; different arms at different versions are not.
-    mixed = mixed_versions(by_config)
+    # A round that holds two versions of an arm exists to compare them: no warning there.
+    mixed = {} if args.round else mixed_versions(by_config)
     if mixed:
         print(
             "  NOTE: this table has more than one version of "
@@ -625,11 +658,18 @@ def _table(args: argparse.Namespace, found: list) -> None:
             "  --sort <metric> explicitly."
         )
 
+    # The arm that wrote the reference is graded against its own outputs: it is listed, but it
+    # is not a contender, so the ordering test and the frontier are over the others.
+    contenders = [(d, m) for d, m in found if m["config_id"] not in own]
+    if own:
+        print(
+            f"\n  The ordering test and the frontier leave out {', '.join(sorted(own))} (it wrote the reference)."
+        )
     raw: list[float] = []
-    matrix = matrix_of(found, sort_key, raw=raw)
+    matrix = matrix_of(contenders, sort_key, raw=raw)
     if matrix:
         significance(matrix, sort_key, asc=asc, raw_values=raw)
-    _frontier(rows, sort_key, kinds, asc=asc)
+    _frontier([r for r in rows if r["config_id"] not in own], sort_key, kinds, asc=asc)
     judged = sorted(
         {
             f"{derived_with(r, 'judge').get('scorer_id')}, {derived_with(r, 'judge').get('label')}"
@@ -644,6 +684,7 @@ def _table(args: argparse.Namespace, found: list) -> None:
             "  A judge's score is only as good as its validation; an unvalidated one is a\n"
             "  trial run, not a measurement."
         )
+        _judging_summary(found)
     if any("silver" in r["tiers"] for r in rows):
         print(
             "\n  Scored against SILVER references (model-generated). Good for ranking\n"

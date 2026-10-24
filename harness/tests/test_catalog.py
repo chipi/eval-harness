@@ -83,8 +83,8 @@ try:
     out = tmp / ".build" / "catalog"
     counts = cb.build(A, out)
     check(
-        "build: datasets, arms and references counted",
-        counts == {"goals": 0, "datasets": 2, "arms": 3, "references": 1},
+        "build: datasets, arms, configs and references counted",
+        counts == {"goals": 0, "datasets": 2, "arms": 3, "configs": 3, "references": 1},
         counts,
     )
     pages = {p.relative_to(out).as_posix() for p in out.rglob("*.html")}

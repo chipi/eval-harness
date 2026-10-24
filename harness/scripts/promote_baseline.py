@@ -32,6 +32,29 @@ from _common import (
 )
 
 
+def _repeats(m: dict) -> dict | None:
+    """The repeats of the promoted run's arm (same config, same base run id, `repeat_index` set):
+    their run ids and the mean of each score over them; None for a run that is not a repeat."""
+    import re  # noqa: PLC0415
+    import statistics  # noqa: PLC0415
+
+    if not m.get("repeat_index"):
+        return None
+    base = re.sub(r"_r\d+$", "", m["run_id"])
+    sibs = []
+    for d in sorted(RUNS.glob(f"{base}_r*")):
+        mm = read_json(d / "metrics.json") if (d / "metrics.json").is_file() else {}
+        if mm.get("config_id") == m["config_id"] and mm.get("repeat_index"):
+            sibs.append(mm)
+    if len(sibs) < 2:
+        return None
+    keys = set.intersection(*(set(x.get("scores") or {}) for x in sibs))
+    return {
+        "runs": [x["run_id"] for x in sibs],
+        "mean_scores": {k: statistics.fmean(x["scores"][k] for x in sibs) for k in sorted(keys)},
+    }
+
+
 def carried(m: dict) -> dict:
     """What a baseline keeps of its run beyond the scores: the reference tier, the adapter
     that scored it, its fingerprint's hash, and the goal and format it answers. V6 checks
@@ -105,6 +128,10 @@ def main() -> int:
             '"why is this the baseline?" in six months.'
         )
 
+    # AN ARM RUN WITH --repeat: the catalog, the inspector and every test read the mean of its
+    # repeats, while a baseline is promoted from one run. Record which runs the arm has and their
+    # mean beside the run's own scores (V6 keeps comparing `scores` with the run), and say so.
+    repeats = _repeats(m)
     baseline_id = args.baseline_id or f"{m['dataset_id']}_baseline"
     out = BASELINES / f"{baseline_id}.json"
     if out.is_file():
@@ -124,12 +151,25 @@ def main() -> int:
             # a silver baseline beside a gold run, or one scored by another adapter, is not the
             # same number.
             **carried(m),
+            **({"repeats": repeats} if repeats else {}),
         },
     )
     print(f"{out}")
     # The scores it reads by, not the bookkeeping (`resumed`, `self_family_*`): the baseline file
     # keeps every key, as its run has them (V6 compares the two).
     shown = {k: v for k, v in m["scores"].items() if not k.startswith(BOOKKEEPING_PREFIXES)}
+    if repeats:
+        print(
+            f"  NOTE: {m['config_id']} has {len(repeats['runs'])} repeats; the catalog, the inspector and the tests read"
+            f" their mean.\n        The baseline records this run's own scores and, under `repeats`, the mean:"
+        )
+        w0 = max([len(k) for k in shown] + [6])
+        for k in sorted(shown):
+            if k in repeats["mean_scores"]:
+                print(
+                    f"    {k:{w0}} {shown[k]}   (mean of {len(repeats['runs'])}: {repeats['mean_scores'][k]:.6g})"
+                )
+        return 0
     w = max([len(k) for k in shown] + [6])
     for k, v in sorted(shown.items()):
         print(f"    {k:{w}} {v}")

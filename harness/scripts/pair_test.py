@@ -41,7 +41,7 @@ from _common import (  # noqa: E402
     read_item_ids,
 )
 from _runs import default_metric, direction, per_item, runs_on, warn_on_ambiguous_runs  # noqa: E402  # noqa: E402
-from stats import EXACT_UP_TO, sign_flip_p  # noqa: E402
+from stats import EXACT_UP_TO, fmt_p, sign_flip_p  # noqa: E402
 
 
 def _round_defaults(args: argparse.Namespace, runs: list) -> None:
@@ -169,7 +169,7 @@ def main() -> int:
         if len(items) <= EXACT_UP_TO
         else f"{args.permutations} permutations"
     )
-    print(f"    sign-flip p        {p:.4f}  ({how})")
+    print(f"    sign-flip p        {fmt_p(p)}  ({how})")
     if args.family > 1:
         verdict = "SEPARATED" if p < thresh else "NOT-SEPARATED"
         print(f"    Bonferroni/{args.family}     threshold {thresh:.4f} -> {verdict}")

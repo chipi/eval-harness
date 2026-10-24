@@ -56,7 +56,7 @@ from _common import (  # noqa: E402
 )
 from _fingerprint import measuring_modules  # noqa: E402
 from _runs import default_metric, direction, per_item, runs_on, warn_on_ambiguous_runs  # noqa: E402  # noqa: E402 -- one implementation of "score per item"
-from stats import holm, sign_flip_p  # noqa: E402 -- one implementation of the paired test
+from stats import EXACT_UP_TO, fmt_p, holm, sign_flip_p  # noqa: E402 -- one implementation of the paired test
 
 
 def _opponents(runs: list, against: str, exclude: str) -> list[str]:
@@ -213,13 +213,24 @@ def _run(args) -> int:
         stratum += f" (excluding {args.exclude_dataset})"
     print(f"  {args.a}  vs family '{args.against}'   metric={args.metric}  {stratum}")
     print(f"  family size m={m}, declared before the p-values were read")
-    print(f"  Holm step-down at alpha={args.alpha}" + ("  (lower is better)" if lower else "") + "\n")
+    print(f"  Holm step-down at alpha={args.alpha}" + ("  (lower is better)" if lower else ""))
+    # SAY WHICH p. Up to EXACT_UP_TO items it is exact, and every command prints the same number.
+    # Above that it is a seeded estimate drawn from one random stream for the whole family, so
+    # pair-test or the inspector, which draw one per pair, can differ in the third decimal.
+    if n_items <= EXACT_UP_TO:
+        print(f"  p: exact, over all 2^{n_items} sign patterns\n")
+    else:
+        print(
+            f"  p: a seeded estimate ({args.permutations} permutations, one random stream for the family);\n"
+            "     pair-test and the inspector estimate one pair at a time and can differ in the third decimal\n"
+        )
     width = max(len(r["opp"]) for r in rows) + 2
-    print(f"    {'opponent':{width}} {'delta':>9} {'wins':>9} {'p':>8} {'thresh':>8}   verdict")
+    print(f"    {'opponent':{width}} {'delta':>9} {'A wins':>9} {'p':>8} {'thresh':>8}   verdict")
     for r in rows:
+        pv = fmt_p(r["p"])
         print(
             f"    {r['opp']:{width}} {r['delta']:+9.4f} {r['wins']:>4}/{r['n']:<4} "
-            f"{r['p']:8.4f} {r['thresh']:8.4f}   {'SEPARATED' if r['sep'] else '--'}"
+            f"{pv:>8} {r['thresh']:8.4f}   {'SEPARATED' if r['sep'] else '--'}"
         )
     sep = sum(1 for r in rows if r["sep"])
     ahead = sum(1 for r in rows if (r["delta"] < 0 if lower else r["delta"] > 0))

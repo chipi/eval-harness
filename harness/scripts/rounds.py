@@ -29,6 +29,7 @@ import _rounds
 import catalog_serve as cs
 from _common import die, load_goals, now, read_json
 from catalog_adapter import HarnessAdapter
+from stats import fmt_p
 
 HERE = Path(__file__).resolve().parent
 
@@ -97,8 +98,15 @@ def open_round(argv: list[str]) -> int:
     print(
         f"{p.relative_to(_common.ROOT) if p.is_relative_to(_common.ROOT) else p}: round {rid} of {args.goal}, open"
     )
+    carried = _ids(args.keep)
+    if carried:
+        print(
+            f"  Carried in as they are, their runs already count: {', '.join(carried)} "
+            "(their configs need no change and they need not run again)."
+        )
     print(
-        f"  Name it in each arm's config (round: {rid}, beside goal: {args.goal}), run them, then: evh rounds --goal {args.goal}"
+        f"  A NEW arm names the round in its config (round: {rid}, beside goal: {args.goal}) and runs;"
+        f" then: evh rounds --goal {args.goal}"
     )
     print("  Commit the round file before the runs: an uncommitted file makes them dirty.")
     return 0
@@ -276,7 +284,7 @@ def evidence(goal: str, rnd: dict) -> dict:
         for r in out["rows"]:
             cid = r["arm"].rsplit("/", 1)[-1]
             if r["verdict"] == "separated: worse" and r["arm"] not in authors:
-                reason = f"separated worse than {leader.rsplit('/', 1)[-1]} on {metric} after Holm (p {r['p']:.3g})"
+                reason = f"separated worse than {leader.rsplit('/', 1)[-1]} on {metric} after Holm (p {fmt_p(r['p'])})"
                 out["suggest"].append(
                     (
                         f"retire {cid}",
@@ -330,10 +338,14 @@ def evidence(goal: str, rnd: dict) -> dict:
             "cost per item: " + ", ".join(f"{a.rsplit('/', 1)[-1]} ${c:.6f}" for a, c in priced.items())
         )
     lead_run = sorted(d.name for d in A._dirs(leader))[0] if A._dirs(leader) else "<run_id>"
+    # Promote only what is not already the baseline: the leader may be the run the round began from.
+    already = lead_run == rnd.get("baseline") or any(d.name == rnd.get("baseline") for d in A._dirs(leader))
     out["suggest"].append(
         (
-            "close the round with what it showed",
-            f'evh round-close --goal {goal} --round {rnd["round_id"]} --conclusion "..." --promote {lead_run}',
+            "close the round with what it showed"
+            + (f" ({leader.rsplit('/', 1)[-1]} is already the baseline)" if already else ""),
+            f'evh round-close --goal {goal} --round {rnd["round_id"]} --conclusion "..."'
+            + ("" if already else f" --promote {lead_run}"),
         )
     )
     return out
@@ -381,10 +393,12 @@ def status(argv: list[str]) -> int:
         + (f", leader {ev['leader'].rsplit('/', 1)[-1]}" if ev.get("leader") else "")
     )
     for r in ev["rows"]:
-        print(f"    {r['arm'].rsplit('/', 1)[-1]:32} {r['verdict']:18} Δ {r['delta']:+.4f}  p {r['p']:.3g}")
+        print(
+            f"    {r['arm'].rsplit('/', 1)[-1]:32} {r['verdict']:18} Δ {r['delta']:+.4f}  p {fmt_p(r['p'])}"
+        )
     for v in ev["against"]:
         print(
-            f"  against {v['label']} ({v['other'].rsplit('/', 1)[-1]}): {v['verdict']}, Δ {v['delta']:+.4f}, p {v['p']:.3g}"
+            f"  against {v['label']} ({v['other'].rsplit('/', 1)[-1]}): {v['verdict']}, Δ {v['delta']:+.4f}, p {fmt_p(v['p'])}"
         )
     for n in ev["notes"]:
         print(f"  NOTE: {n}")

@@ -279,6 +279,44 @@ p 0.36, from the pre-fix run), and DBpedia's 56-item dev slice, over today's 28 
   from a pin); the tutorial kit ships `tutorial/judge_panel.yaml`.
 
 ### Fixed
+- **From the second newcomer run** (`/work/evh-scenario-040`; SCENARIO, 0.4.0 candidate):
+  - **A baseline promoted from one of an arm's repeats** records every repeat and their mean
+    under `repeats`, and `run-promote` prints the two side by side. The catalog, the inspector
+    and the tests read the mean; `scores` stays the run's own (V6).
+  - **A judged run keeps its source's cost and speed kinds**, so the judged leaderboard has its
+    frontier. That leaderboard also prints the judging pass's agreement and its position and
+    noise checks, from `summary.json`.
+  - **The arm that wrote a silver reference is left out of the ordering test and the frontier**,
+    and the leaderboard says so (its row measures agreement with itself).
+  - **A judge reply that is not committed** (not bare JSON, or repeating the source) keeps its
+    text in a git-ignored `.withheld/` beside its record, and the log names the file. An
+    unparsed reply's cause can then be read; the record keeps only the hash (V12).
+  - **The dataset page and `evh datasets`** sort arms by what they are scored against (gold,
+    silver, a judge, nothing) before the mean. A silver and a gold mean no longer interleave.
+  - **The goal page and `evh goals --goal`** show a judge's group, read on its own score. `evh
+    goals --goal` also lists the rounds and marks retired arms.
+  - **One p format everywhere** (`stats.fmt_p`: four decimals, `<0.0001` below that).
+    `family-test` says whether p is exact or a seeded estimate. Above 30 items it draws one
+    random stream for the family, so `pair-test` and the inspector, which estimate one pair at a
+    time, can differ in the third decimal. Its wins column is labelled `A wins`.
+  - **Round messages:**
+    - `round-open --keep` says carried arms need no change and no new run;
+    - `evh rounds` does not suggest promoting the run that is already the baseline;
+    - `leaderboard --round` does not warn about two versions of an arm in a round that compares
+      them.
+  - **Smaller items:**
+    - `experiment-run` prints what the command spent, and its repeat spread calls cost and speed
+      what they are, not "deterministic";
+    - `judge-score` says its spend is the provider's bill where one is reported, else the price
+      table;
+    - `silver-calibrate` explains rho and sibling lift;
+    - the catalog counts the configs behind its arms;
+    - "filed" reads "filed under this goal";
+    - the item view says it shows the latest of N repeats beside their mean;
+    - judged arms keep their version in the inspector;
+    - a heading scrolled to is not hidden under the header;
+    - `env-check` names the example arms only in a checkout;
+    - the tutorial scorer points at tutorial 3.
 - **One reference per table and per arm.** The leaderboard averaged an arm's runs whatever they
   were scored against: a silver 0.90 next to a gold 0.24, in one table labelled silver. It now
   prints one table per reference, gold first, each with its own tests. The catalog, the

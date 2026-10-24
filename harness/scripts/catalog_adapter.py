@@ -453,13 +453,20 @@ class HarnessAdapter:
 
     def item_view(self, arm: str, item: str) -> dict:
         """Return one arm's output for one item."""
-        for d in reversed(self._dirs(arm)):  # the latest repeat
+        dirs = self._dirs(arm)
+        for d in reversed(dirs):  # the latest repeat
             f = d / "outputs" / f"{item}.txt"
             if f.is_file():
+                info = {"run": d.name}
+                if len(dirs) > 1:
+                    # One output beside a score that is the mean of every repeat: say so.
+                    info["shown"] = (
+                        f"the latest of {len(dirs)} repeats; the score is the mean of all {len(dirs)}"
+                    )
                 return {
                     "kind": "text",
                     "text": f.read_text(encoding="utf-8", errors="replace"),
-                    "info": {"run": d.name},
+                    "info": info,
                 }
         return {"kind": "none", "note": "No stored output for this item (outputs/<item_id>.txt)."}
 

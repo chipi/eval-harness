@@ -316,3 +316,6 @@ tr.t-retired td { opacity: 0.55; }
 button.copy { margin-left: 6px; cursor: pointer; }
 ul.suggest code.cmd { display: inline-block; margin-top: 4px; padding: 4px 8px; border-radius: 6px; background: var(--surface-2); font-size: 12px; user-select: all; overflow-wrap: anywhere; }
 small.retired { color: var(--local); font: 600 10px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; }
+
+/* a heading scrolled to sits below the sticky header, not under it */
+[id] { scroll-margin-top: 84px; }

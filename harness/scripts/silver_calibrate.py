@@ -225,6 +225,13 @@ def main() -> int:
     for rho, lift, author, n in rows:
         lift_s = f"{lift:+.1f}" if lift is not None else "—"
         print(f"  {author:{w}}{rho:>16.3f}{lift_s:>14}   ({n} sibling(s))")
+    print(
+        "\n  rho: how far the arms' order on this author's silver agrees with their order on the\n"
+        "       trusted reference (1 = the same order).\n"
+        f"  sibling lift: rank positions the silver moves the author's own {args.group_by!r} up against the\n"
+        "       trusted order; — when no arm here shares it.\n"
+        "  Arms are named without their _vN suffix: an arm's versions are pooled."
+    )
 
     rr = [r[0] for r in rows]
     ll = [r[1] for r in rows if r[1] is not None]

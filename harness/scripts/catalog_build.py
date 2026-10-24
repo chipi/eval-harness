@@ -32,6 +32,7 @@ import _common  # noqa: E402
 import _fields  # noqa: E402
 from _common import ROOT  # noqa: E402
 from catalog_adapter import Adapter, item_fields, load_catalog_adapter  # noqa: E402
+from stats import fmt_p  # noqa: E402
 
 #: The front-end files every page loads: installed beside the package, or in a checkout.
 ASSET_DIR = next(p for p in (HERE / "catalog_assets", HERE.parent / "catalog_assets") if p.is_dir())
@@ -427,8 +428,9 @@ def render_home(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
     body = hero(
         "catalog",
         "Every run, by dataset",
-        f"{n_arms} arms on {len(by_ds)} datasets. An arm is one config on one dataset, its "
-        f"repeats averaged per {e(A.item_word)}, exactly as <code>pair-test</code> reads it. "
+        f"{n_arms} arms on {len(by_ds)} datasets, from {_n_configs(by_ds)} configs. An arm is one config on one "
+        f"dataset scored one way, its repeats averaged per {e(A.item_word)}, exactly as <code>pair-test</code> reads "
+        "it: a config rescored against silver or by a judge is an arm of its own. "
         "Open a dataset to compare its arms in the inspector.",
     )
     body += block(
@@ -439,17 +441,32 @@ def render_home(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
     write(out, "index.html", page("Catalog", body, 0, "home", nav=nav, item=A.item_word))
 
 
+def scored_by_rank(a: dict, tiers: dict) -> int:
+    """Where an arm sorts by what it is scored against: gold, silver, a judge, nothing. A silver
+    and a gold mean of the same metric are different numbers, so they never interleave."""
+    if a.get("judge"):
+        return 2
+    return {"gold": 0, "silver": 1}.get(tiers.get(a.get("reference") or "") or "", 3)
+
+
+def _n_configs(by_ds: dict) -> int:
+    """How many configs are behind the arms: an arm id ends in <dataset>/<config_id>."""
+    return len({tuple(a["arm"].rsplit("/", 2)[-2:]) for v in by_ds.values() for a in v["arms"]})
+
+
 def render_dataset(A: Adapter, ds: str, v: dict, out: Path, nav: list) -> None:
     """Render a page for one dataset with all its arms."""
+    tiers = {r["id"]: r["tier"] for r in v["refs"]}
     arms = sorted(
         v["arms"],
         key=lambda a: (
+            scored_by_rank(a, tiers),
+            a.get("reference") or "",
             a["metric"],
             (a["mean"] if a["mean"] is not None else -1e18) * (1 if a["lower"] else -1),
             a["label"],
         ),
     )
-    tiers = {r["id"]: r["tier"] for r in v["refs"]}
     # The machine is named only when the arms ran on more than one: then latency and cost per
     # second differ by machine, and the inspector's conditions say how.
     machines = {a["machine"] for a in arms if a.get("machine")}
@@ -665,9 +682,12 @@ def _goal_rows(goal: dict, by_ds: dict) -> list:
         ds = d.get("dataset_id", "")
         rows = []
         for a in (by_ds.get(ds) or {}).get("arms", []):
-            if measure not in a["means"]:
+            # A judged arm records its judge's score, not the goal's measure: it is shown in its
+            # judge's group, read on that score (never ranked with the reference-scored groups).
+            use = measure if measure in a["means"] else (a["metric"] if a.get("judge") else None)
+            if not use or use not in a["means"]:
                 continue
-            mean, n = a["means"][measure]
+            mean, n = a["means"][use]
             flags = []
             if need and n < need:
                 flags.append(f"n {n} < min_items {need}")
@@ -675,7 +695,7 @@ def _goal_rows(goal: dict, by_ds: dict) -> list:
                 flags.append(f"format {a['format']} not in the contract")
             if a["wrote"]:
                 flags.append("wrote the reference it is scored against")
-            rows.append(dict(a, mean=mean, n=n, filed=a["goal"] == goal["goal_id"], flags=flags))
+            rows.append(dict(a, mean=mean, n=n, measure=use, filed=a["goal"] == goal["goal_id"], flags=flags))
         out.append((ds, d.get("role", ""), d.get("notes", ""), rows))
     return out
 
@@ -822,7 +842,7 @@ def _rounds_block(A: Adapter, g: dict, measure: str, lower: bool) -> str:
                 ev = evidence(g["goal_id"], r)
                 lines += [
                     f"<li>against {e(v['label'])} (<code>{e(v['other'].rsplit('/', 1)[-1])}</code>): "
-                    f"{e(v['verdict'])}, Δ {v['delta']:+.4f}, p {v['p']:.3g}</li>"
+                    f"{e(v['verdict'])}, Δ {v['delta']:+.4f}, p {fmt_p(v['p'])}</li>"
                     for v in ev["against"]
                 ]
                 sugg = "".join(
@@ -951,15 +971,18 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
             )
             for gi, grp in enumerate(ans["groups"]):
                 leader, rows = grp["leader"], grp["rows"]
+                gm = rows[0].get("measure", measure) if rows else measure  # a judge's group: its score
                 trs = []
                 for r in rows:
                     link = (
-                        f'<a class="btn small" href="{inspect_url([r["arm"], leader["arm"]], "../", baseline=leader["arm"], metric=measure)}">test vs leader</a>'
+                        f'<a class="btn small" href="{inspect_url([r["arm"], leader["arm"]], "../", baseline=leader["arm"], metric=gm)}">test vs leader</a>'
                         if leader and r["arm"] != leader["arm"]
                         else ("leader" if leader and r is leader else "")
                     )
                     tag = (
-                        ' <small title="its config names this goal">filed</small>' if r["filed"] else ""
+                        ' <small title="its config names this goal">filed under this goal</small>'
+                        if r["filed"]
+                        else ""
                     ) + (' <span class="tag-base">baseline</span>' if r.get("baseline") else "")
                     cid = r["arm"].rsplit("/", 1)[-1]
                     if cid in retired_in:
@@ -982,12 +1005,12 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
                 inner += f'<h3 class="sub">{"scored by " + e(what) if what.startswith("judge ") else "scored against " + e(what)}</h3>'
                 if leader and len(arms) > 1:
                     inner += (
-                        f'<p><a class="btn" href="{inspect_url(arms, "../", baseline=leader["arm"], metric=measure)}">'
+                        f'<p><a class="btn" href="{inspect_url(arms, "../", baseline=leader["arm"], metric=gm)}">'
                         "Test every arm in this group against its leader</a></p>"
                     )
                 inner += table(
                     f"ans{n}_{gi}",
-                    ["arm", f"mean {e(measure)}", f"{e(A.item_word)}s", "flags", ""],
+                    ["arm", f"mean {e(gm)}", f"{e(A.item_word)}s", "flags", ""],
                     trs,
                 )
         body += block(f"{n:02d}", f"{ds}{' · ' + ans['role'] if ans['role'] else ''}", inner)
@@ -1237,6 +1260,7 @@ def build(A: Adapter, out: Path, links: tuple = ()) -> dict:
         "goals": n_goals,
         "datasets": len(by_ds),
         "arms": sum(len(v["arms"]) for v in by_ds.values()),
+        "configs": _n_configs(by_ds),
         "references": sum(len(v["refs"]) for v in by_ds.values()),
     }
 

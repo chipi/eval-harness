@@ -25,6 +25,7 @@ import catalog_build as cb
 import catalog_serve as cs
 from _common import die
 from catalog_adapter import load_catalog_adapter
+from stats import fmt_p
 
 KINDS = {"t-silver": "silver", "t-judged": "judged", "t-author": "wrote its reference"}
 
@@ -97,7 +98,15 @@ def datasets(argv) -> int:
         print(f"\nbaseline: {b.get('arm') or b['run']} (promoted {(b['promoted_at'] or '')[:10]})")
         print(textwrap.fill(b["reason"], width=92, initial_indent="  ", subsequent_indent="  "))
     tiers = {r["id"]: r["tier"] for r in v["refs"]}
-    arms = sorted(v["arms"], key=lambda a: (a["metric"], -(a["mean"] or 0) * (-1 if a["lower"] else 1)))
+    arms = sorted(
+        v["arms"],
+        key=lambda a: (
+            cb.scored_by_rank(a, tiers),
+            a.get("reference") or "",
+            a["metric"],
+            -(a["mean"] or 0) * (-1 if a["lower"] else 1),
+        ),
+    )
     print()
     if not arms:
         print("no arm has run on it yet")
@@ -227,6 +236,9 @@ def goals(argv) -> int:
     if g is None:
         die(f"no goal {args.goal!r}: one of {', '.join(x['goal_id'] for x in gs) or '(none)'}")
     prim = (g.get("success_criteria") or {}).get("primary") or {}
+    rfn = getattr(A, "rounds", None)
+    rounds = [r for r in (rfn() if callable(rfn) else []) if r.get("goal") == g["goal_id"]]
+    retired_in = {x.get("config_id"): r["round_id"] for r in rounds for x in r.get("retired") or []}
     print(f"{g.get('title') or g['goal_id']}\n")
     print(textwrap.fill(g.get("statement", ""), width=96))
     print(
@@ -256,10 +268,23 @@ def goals(argv) -> int:
             what = grp["key"]
             print(f"\n  {'scored by ' + what if what.startswith('judge ') else 'scored against ' + what}")
             _table(
-                ["arm", f"mean {prim.get('measure', '')}", f"{A.item_word}s", "row", "flags", ""],
+                [
+                    "arm",
+                    f"mean {(grp['rows'][0].get('measure') if grp['rows'] else None) or prim.get('measure', '')}",
+                    f"{A.item_word}s",
+                    "row",
+                    "flags",
+                    "",
+                ],
                 [
                     [
-                        r["label"] + (" [baseline]" if r.get("baseline") else ""),
+                        r["label"]
+                        + (" [baseline]" if r.get("baseline") else "")
+                        + (
+                            f" [retired in {retired_in[r['arm'].rsplit('/', 1)[-1]]}]"
+                            if r["arm"].rsplit("/", 1)[-1] in retired_in
+                            else ""
+                        ),
                         _fmt(r["mean"]),
                         r["n"],
                         _kind(r, tiers),
@@ -268,6 +293,14 @@ def goals(argv) -> int:
                     ]
                     for r in grp["rows"]
                 ],
+            )
+    # The goal page's rounds, as `evh rounds --goal` lists them (it has the evidence in full).
+    if rounds:
+        print("\nrounds (evh rounds --goal " + g["goal_id"] + " for the evidence):")
+        for r in rounds:
+            c = (r.get("conclusion") or {}).get("text", "")
+            print(
+                f"  {r['round_id']:4} {r.get('status', ''):7} {len(r.get('arms') or [])} arm(s), {len(r.get('retired') or [])} retired  {c[:70]}"
             )
     return 0
 
@@ -427,7 +460,7 @@ def inspect(argv) -> int:
                 _fmt(r["mean"]),
                 _fmt(r["delta"]),
                 f"{r['wins']}–{r['losses']}" + (f" ({r['ties']} tied)" if r.get("ties") else ""),
-                "—" if r.get("p") is None else f"{r['p']:.4g}",
+                "—" if r.get("p") is None else fmt_p(r["p"]),
                 "—" if not r.get("threshold") else f"{r['threshold']:.4f}",
             ]
             for r in sorted(d["rows"], key=lambda r: r.get("p") if r.get("p") is not None else 9)
@@ -479,7 +512,7 @@ def inspect(argv) -> int:
                     r["verdict"],
                     r["n"],
                     _fmt(r["delta"]),
-                    "—" if r.get("p") is None else f"{r['p']:.4g}",
+                    "—" if r.get("p") is None else fmt_p(r["p"]),
                 ]
                 for g in br["groups"]
                 for r in g["rows"]

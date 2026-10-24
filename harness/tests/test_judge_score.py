@@ -540,6 +540,14 @@ with tempfile.TemporaryDirectory() as tmp:
         and first["withheld_reason"] == "not bare JSON"
         and first["output_sha256"] == hashlib.sha256(b"I cannot do this.").hexdigest(),
     )
+    wrec = next(Path(td).glob("ja/*.json"))
+    wtext = wrec.parent / ".withheld" / f"{wrec.stem}.txt"
+    check(
+        "a withheld reply's text is kept beside it, out of git, so its cause can be read",
+        wtext.is_file()
+        and wtext.read_text() == "I cannot do this."
+        and (wrec.parent / ".withheld" / ".gitignore").read_text().strip() == "*",
+    )
     good = fake_judge()
     st2 = run_all(td, call=good)
     check("resume does not re-pay for unparsed replies unless asked", st2["calls"] == 0)
@@ -872,6 +880,11 @@ with tempfile.TemporaryDirectory() as tmp:
         and "coverage" not in mj["scores"],
     )
     check("metrics.json: kinds mark judge columns quality", mj["metric_kinds"]["judge_score"] == "quality")
+    check(
+        "metrics.json: the source's cost and speed keep their kinds (the judged leaderboard has a frontier)",
+        mj["metric_kinds"].get("cost_usd") == "cost" and mj["metric_kinds"].get("latency_ms") == "speed",
+        str(mj["metric_kinds"]),
+    )
     js.write_scored_runs(m1, sc, arms, proj, td / "unval", "unvalidated judge", False)
     mu = json.loads((td / "unval" / arms[0]["run"] / "metrics.json").read_text())
     check(

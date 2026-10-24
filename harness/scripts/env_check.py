@@ -13,7 +13,7 @@ from __future__ import annotations
 import argparse
 import os
 
-from _common import DOTENV_LOADED, ROOT, env_float, env_int
+from _common import DOTENV_LOADED, ROOT, env_float, env_int, in_checkout
 
 PROVIDER_KEYS = ("ANTHROPIC_API_KEY", "OPENROUTER_API_KEY", "OPENAI_API_KEY")
 
@@ -84,7 +84,9 @@ def main() -> int:
         if len(orkey) >= 20
         else "NONE — hosted example arms will refuse to start"
     )
-    print(f"\n  hosted example arms →  {route}")
+    # The worked examples live in a checkout of this repository; a pinned project has none.
+    if in_checkout():
+        print(f"\n  hosted example arms →  {route}")
 
     print("\nsystem under test")
     ref = os.environ.get("EVAL_BUILD_REF", "")

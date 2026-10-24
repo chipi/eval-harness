@@ -17,6 +17,16 @@
     "format": {"type": "string", "description": "The output format the run was asked for, carried from the run (validate V14)."},
     "reference_tier": {"enum": ["gold", "silver"], "description": "The tier of references the run was scored against, carried from it (validate V6)."},
     "adapter": {"type": "string", "description": "The adapter that scored the run, as the run records it (validate V6)."},
-    "fingerprint_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$", "description": "The run's fingerprint hash: what the number depended on (validate V6)."}
+    "fingerprint_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$", "description": "The run's fingerprint hash: what the number depended on (validate V6)."},
+    "repeats": {
+      "type": "object",
+      "description": "When the promoted run is one of an arm's repeats (--repeat): every repeat's run id and the mean of each score over them, the number the catalog, the inspector and the tests read.",
+      "required": ["runs", "mean_scores"],
+      "additionalProperties": false,
+      "properties": {
+        "runs": {"type": "array", "items": {"type": "string"}, "minItems": 2},
+        "mean_scores": {"type": "object", "additionalProperties": {"type": "number"}}
+      }
+    }
   }
 }

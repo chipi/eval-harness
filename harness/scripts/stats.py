@@ -125,6 +125,11 @@ def sign_flip_p(
     return (hits + 1) / (permutations + 1)
 
 
+def fmt_p(p: float) -> str:
+    """A p-value as every command prints it: four decimals, and "<0.0001" below that."""
+    return "<0.0001" if p < 0.0001 else f"{p:.4f}"
+
+
 def holm(pvalues: dict, alpha: float = ALPHA, family: int | None = None) -> dict:
     """{name: (threshold, separated)} by Holm step-down; stops at the first p over its threshold.
 

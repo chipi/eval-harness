@@ -62,6 +62,7 @@ from _common import (
     ROOT,
     RUNS,
     CostCapExceeded,
+    classify_metrics,
     die,
     env_float,
     how,
@@ -114,6 +115,17 @@ CARRY = ("latency_ms", "tokens_in", "tokens_out", "cost_usd", "truncated", "reas
 OUT_TOKENS_PER_SUMMARY = 14
 OUT_TOKENS_FIXED = 10
 CHARS_PER_TOKEN = 4
+
+
+def _keep_withheld(record: Path, text: str) -> Path:
+    """A withheld reply's text in `<record dir>/.withheld/<record>.txt`, a directory that
+    ignores itself in git: the record keeps only the hash, the text stays on this machine."""
+    d = record.parent / ".withheld"
+    d.mkdir(parents=True, exist_ok=True)
+    (d / ".gitignore").write_text("*\n", encoding="utf-8")
+    out = d / f"{record.stem}.txt"
+    out.write_text(text, encoding="utf-8")
+    return out
 
 
 def _sha(text: str) -> str:
@@ -675,8 +687,12 @@ def run_judging(
                         "the spend is unknown, so the cap cannot be enforced"
                     )
                 if why:
+                    # Kept out of git (V12: a committed reply is bare JSON and never repeats the
+                    # source), but readable here, so an unparsed reply's cause is not a guess.
+                    local = _keep_withheld(path, res.output or "")
                     log(
-                        f"    reply not stored as text ({why}), only its hash: "
+                        f"    reply not committed as text ({why}), only its hash; "
+                        f"readable, git-ignored, at {local}: "
                         f"{j['id']} {item['item_id'][:8]} {pass_name} b{block}"
                     )
                 if scores is None:
@@ -920,11 +936,14 @@ def write_scored_runs(
         keys = sorted({k for r in rows for k in r if k != "item_id" and not k.startswith("_")})
         scores = aggregate_scores(rows)
         kinds = {k: v for k, v in (m.get("metric_kinds") or {}).items() if k in scores}
+        # The source run's cost and speed are still the arm's cost and speed: known names keep
+        # their kind (cost_usd, latency_ms), so the judged leaderboard has its frontier.
+        known = classify_metrics()
         for k in keys:
             kinds[k] = (
                 "descriptive"
                 if k.startswith(BOOKKEEPING_PREFIXES)
-                else kinds.get(k, "quality" if k.startswith("judge_") else "descriptive")
+                else kinds.get(k) or known.get(k) or ("quality" if k.startswith("judge_") else "descriptive")
             )
         run_dir = out_root / src.name
         (run_dir / "outputs").mkdir(parents=True, exist_ok=True)
@@ -1179,8 +1198,8 @@ def main() -> int:
     write_json(out_root / "summary.json", summ)
     print(f"\n{len(written)} scored run(s) -> {out_root}  ({len(proj)}/{len(item_ids)} items, {label})")
     print(
-        f"  calls {stats['calls']}, billed this run ${stats['billed_this_run']:.4f}, "
-        f"stored total ${stats['spent_usd']:.4f}"
+        f"  calls {stats['calls']}, spent this run ${stats['billed_this_run']:.4f}, "
+        f"stored total ${stats['spent_usd']:.4f}  (the provider's bill where it reports one, else the price table)"
     )
     print(
         f"  EVAL_RUNS_DIR={out_root} "

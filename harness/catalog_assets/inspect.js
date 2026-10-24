@@ -8,7 +8,8 @@
   const P = new URLSearchParams(location.search);
   const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
   const fmt = v => v == null ? '—' : (Math.abs(v) >= 10 ? v.toFixed(1) : v.toFixed(3));
-  const fmtp = p => p == null ? '—' : (p < 0.001 ? p.toExponential(1) : p.toFixed(4));
+  // As every command prints a p (stats.fmt_p): four decimals, and "<0.0001" below that.
+  const fmtp = p => p == null ? '—' : (p < 0.0001 ? '<0.0001' : p.toFixed(4));
   const runs = () => (P.get('runs') || '').split(',').filter(Boolean);
   const go = () => { location.search = P.toString(); };
   const short = a => a.replace(/^runs\//, '');
@@ -41,7 +42,11 @@
     pre = names[0].slice(0, pre).search(/[_\/·][^_\/·]*$/) + 1;
     const rev = names.map(x => [...x].reverse().join(''));
     let suf = rev.reduce((n, x) => Math.min(n, cut(rev[0], x)), Infinity);
-    suf = suf ? rev[0].slice(0, suf).search(/[_\/·][^_\/·]*$/) + 1 : 0;
+    // A shared tail is cut only at a " · " (what they are scored by), never inside the config
+    // id: "_v1" is the arm's version, and it stays when every arm happens to share it.
+    const tail = suf ? names[0].slice(names[0].length - suf) : '';
+    const at = tail.indexOf(' · ');
+    suf = at >= 0 ? tail.length - at : 0;
     const out = {};
     ids.forEach((id, k) => { const s = names[k].slice(Math.max(pre, 0), names[k].length - suf) || names[k]; out[id] = s; });
     return out;

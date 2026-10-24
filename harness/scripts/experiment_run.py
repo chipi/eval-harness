@@ -51,6 +51,7 @@ from _common import (
     ROOT,
     RUNS,
     build_info,
+    classify_metrics,
     die,
     env_float,
     how,
@@ -796,13 +797,27 @@ def main() -> int:
         print(f"\n  Arm spread over {args.repeat} repeats (max - min on identical input):")
         shown = sorted(k for k in per_repeat[0] if not k.startswith(BOOKKEEPING_PREFIXES))
         w = max(len(k) for k in shown)
+        kinds = classify_metrics(
+            read_json(made[-1] / "metrics.json").get("metric_kinds") or {} if made else {}
+        )
         for k in shown:
-            vals = [r[k] for r in per_repeat]
+            vals = [r[k] for r in per_repeat if k in r]
             spread = max(vals) - min(vals)
-            verdict = "deterministic" if spread == 0 else f"treat deltas below {spread:.6f} as noise"
+            # Determinism is a property of what an arm OUTPUTS; cost and time vary with the
+            # tokens and the machine, and a stored per-item mean is rounded.
+            if kinds.get(k) in ("cost", "speed"):
+                verdict = f"{kinds[k]}, not a quality metric"
+            else:
+                verdict = "deterministic" if spread == 0 else f"treat deltas below {spread:.6f} as noise"
             print(f"    {k:{w}} spread={spread:.6f}   {verdict}")
 
     print(f"\nwrote {len(made)} run(s) to {RUNS}")
+    # What this command spent, so nobody adds up total_cost_usd by hand across repeats.
+    spent = sum(
+        float((read_json(d / "metrics.json").get("scores") or {}).get("total_cost_usd") or 0) for d in made
+    )
+    if spent:
+        print(f"spent ${spent:.6f} (price table x tokens, or the provider's bill where it sends one)")
 
     # A CAPPED RUN IS NOT A SUCCESSFUL RUN, AND AN EMPTY ONE CERTAINLY IS NOT.
     #
