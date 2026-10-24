@@ -48,10 +48,34 @@ nav:
       - Upgrading: harness/UPGRADING.md
   - Architecture:
       - Overview: architecture/ARCHITECTURE.md
-      - Requirements (PRDs): prd/index.md
-      - Experience (UXS): uxs/index.md
-      - Designs (RFCs): rfc/index.md
-      - Decisions (ADRs): adr/index.md
+      - Requirements (PRDs):
+          - Index: prd/index.md
+          - "PRD-001: Running experiments and comparing arms": prd/PRD-001-experiments-and-comparison.md
+          - "PRD-002: References: gold, silver, and a run as the reference": prd/PRD-002-references.md
+          - "PRD-003: Re-measuring with a validated LLM judge": prd/PRD-003-judging.md
+          - "PRD-004: The catalog and the run inspector": prd/PRD-004-catalog-and-inspector.md
+          - "PRD-005: Goals, and experiment rounds": prd/PRD-005-goals-and-rounds.md
+          - "PRD-006: Datasets, versions and item fields": prd/PRD-006-datasets-versions-fields.md
+          - "PRD-007: One install, your own keys": prd/PRD-007-packaging-and-providers.md
+      - Experience (UXS):
+          - Index: uxs/index.md
+          - "UXS-001: The catalog": uxs/UXS-001-catalog.md
+          - "UXS-002: The run inspector": uxs/UXS-002-inspector.md
+          - "UXS-003: The command line and the first evaluation": uxs/UXS-003-cli-and-onboarding.md
+      - Designs (RFCs):
+          - Index: rfc/index.md
+          - "RFC-001: The run fingerprint and code identity (version 4)": rfc/RFC-001-fingerprint-and-code-identity.md
+          - "RFC-002: Run records and derived runs": rfc/RFC-002-run-records-and-derived-runs.md
+          - "RFC-003: The catalog, the inspector server and the adapter protocol": rfc/RFC-003-catalog-adapter.md
+          - "RFC-004: Experiment rounds": rfc/RFC-004-experiment-rounds.md
+          - "RFC-005: Judge scorers and the judging pass": rfc/RFC-005-judge-scorers.md
+          - "RFC-006: Item fields and items at a URL": rfc/RFC-006-item-fields-and-url-items.md
+      - Decisions (ADRs):
+          - Index: adr/index.md
+          - "ADR-0001: Judge scorers: re-measuring frozen outputs with a validated LLM judge": adr/ADR-0001-judge-scorers.md
+          - "ADR-0002: Catalog, run inspector and goals in the harness (0.4.0)": adr/ADR-0002-catalog-inspector-goals.md
+          - "ADR-0003: Item fields and items fetched from a URL (0.4.0)": adr/ADR-0003-item-fields-and-url-items.md
+          - "ADR-0004: Experiment rounds, and a catalog that guides them (0.4.0)": adr/ADR-0004-experiment-rounds.md
   - The experiments:
       - Reproduce it: REPRODUCE.md
       - Protocol: PROTOCOL.md
