@@ -9,7 +9,7 @@ The version lives in `scripts/_version.py`; a release is the git tag `v<version>
 release workflow refuses a tag that disagrees with that file or has no section here. A change
 that can move a result is never a patch release without saying so under **Changed**.
 
-## 0.4.0 — unreleased
+## 0.4.0 — 2026-10-25
 
 See your runs, not only tables of them. `evh catalog` builds static pages over a project's
 runs, and `evh catalog-serve` runs an inspector that tests chosen arms against a baseline and

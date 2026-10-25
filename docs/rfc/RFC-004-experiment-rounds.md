@@ -1,6 +1,6 @@
 # RFC-004: Experiment rounds
 
-- **Status**: Completed (0.4.0, unreleased)
+- **Status**: Completed (v0.4.0)
 - **Authors**: Marko Dragoljevic
 - **Related PRD**: [PRD-005](../prd/PRD-005-goals-and-rounds.md)
 - **Related UX specs**: [UXS-001](../uxs/UXS-001-catalog.md#the-goal-page) (the rounds block),

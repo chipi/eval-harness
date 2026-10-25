@@ -251,6 +251,24 @@ def _against(A, label: str, other: str, leader: str, metric: str) -> dict | None
     return {"label": label, "other": other, "verdict": row["verdict"], "p": row["p"], "delta": row["delta"]}
 
 
+def _promote_hold(against: list[dict], prev_id: str | None) -> str:
+    """Why a round's leader is not to be promoted, from its `against` rows, or "" to promote it: it
+    must be separated better than the baseline the round started from, and not separated worse
+    than the previous round's best. A mean that leads by chance is no reason to promote."""
+    row_of = {r["label"]: r for r in against}
+    vs_base = row_of.get("the baseline it started from")
+    vs_prev = next((r for k, r in row_of.items() if k.endswith("'s best")), None)
+
+    def said(r: dict) -> str:
+        return f"{r['verdict']}, Δ {r['delta']:+.4f}, p {fmt_p(r['p'])}"
+
+    if vs_base is not None and vs_base["verdict"] != "separated: better":
+        return f"not ahead of the baseline it started from ({said(vs_base)})"
+    if prev_id and vs_prev is not None and vs_prev["verdict"] == "separated: worse":
+        return f"behind {prev_id}'s best ({said(vs_prev)})"
+    return ""
+
+
 def evidence(goal: str, rnd: dict) -> dict:
     """What the evidence says about a round, read as the inspector reads it: its arms against its
     leader; its leader against the previous round's best, the baseline it started from and the arm
@@ -293,6 +311,7 @@ def evidence(goal: str, rnd: dict) -> dict:
         arms = [a for a in arms if ref_of[a] == ref]
         out["arms"] = arms
         out["reference"] = ref
+    round_ref = out.get("reference") or next(iter(set(ref_of.values())), "")
     spent = sum((m.get("scores") or {}).get("total_cost_usd") or 0 for _, m in _rounds.runs_of(rnd))
     out["spent"] = spent
     if rnd.get("budget_usd") is not None:
@@ -305,6 +324,20 @@ def evidence(goal: str, rnd: dict) -> dict:
             f"no arm in {rnd['round_id']} records {metric} yet: run them (config: round: {rnd['round_id']})"
         )
         return out
+    # The arm the round started from: the goal's promoted baseline, never suggested for retirement.
+    base_run = rnd.get("baseline")
+    barm = (
+        next(
+            (
+                a
+                for a in known
+                if a.startswith(_arm(A, ds, "")) and any(d.name == base_run for d in _dirs(A, a))
+            ),
+            None,
+        )
+        if base_run
+        else None
+    )
     if len(arms) > 1:
         d = cs.compare({"runs": [",".join(arms)], "baseline": [leader], "metric": [metric]})
         out["rows"] = d.get("rows") or []
@@ -313,12 +346,14 @@ def evidence(goal: str, rnd: dict) -> dict:
             for w in [*(d.get("warnings") or []), *((d.get("conditions") or {}).get("warnings") or [])]
             if w not in out["notes"]
         ]
-        # The arm that wrote a silver reference is the yardstick the leader is read against, not a
-        # contender: losing to the leader is the finding, not a reason to drop it.
-        authors = {a for _, a in _silver_authors(A, ds)}
+        # Scored against its own silver, the arm that wrote it is the yardstick, not a contender:
+        # losing to the leader there is the finding, not a reason to drop it. Against gold it is an
+        # arm like any other. The baseline the round started from is the goal's, not the round's to
+        # retire: promoting the leader on close replaces it.
+        authors = {a for rid, a in _silver_authors(A, ds) if rid == round_ref}
         for r in out["rows"]:
             cid = r["arm"].rsplit("/", 1)[-1]
-            if r["verdict"] == "separated: worse" and r["arm"] not in authors:
+            if r["verdict"] == "separated: worse" and r["arm"] not in authors and r["arm"] != barm:
                 reason = f"separated worse than {leader.rsplit('/', 1)[-1]} on {metric} after Holm (p {fmt_p(r['p'])})"
                 out["suggest"].append(
                     (
@@ -342,26 +377,21 @@ def evidence(goal: str, rnd: dict) -> dict:
             if row:
                 out["against"].append(row)
                 if row["verdict"] != "separated: better":
+                    how = (
+                        "is separated worse than"
+                        if row["verdict"] == "separated: worse"
+                        else "is not separated from"
+                    )
                     out["suggest"].append(
                         (
-                            f"{rnd['round_id']}'s best is not separated from {prev['round_id']}'s ({pbest.rsplit('/', 1)[-1]}): change course, or close",
+                            f"{rnd['round_id']}'s best {how} {prev['round_id']}'s ({pbest.rsplit('/', 1)[-1]}): change course, or close",
                             "",
                         )
                     )
-    base_run = rnd.get("baseline")
-    if base_run:
-        barm = next(
-            (
-                a
-                for a in known
-                if a.startswith(_arm(A, ds, "")) and any(d.name == base_run for d in _dirs(A, a))
-            ),
-            None,
-        )
-        if barm and barm != leader:
-            row = _against(A, "the baseline it started from", barm, leader, metric)
-            if row:
-                out["against"].append(row)
+    if barm and barm != leader:
+        row = _against(A, "the baseline it started from", barm, leader, metric)
+        if row:
+            out["against"].append(row)
     # The frontier arm whose outputs became a silver reference: how close the leader comes to it,
     # scored on the same references as the round, and at what cost per item.
     for ref_id, author in _silver_authors(A, ds):
@@ -379,12 +409,17 @@ def evidence(goal: str, rnd: dict) -> dict:
     lead_run = sorted(d.name for d in _dirs(A, leader))[0] if _dirs(A, leader) else "<run_id>"
     # Promote only what is not already the baseline: the leader may be the run the round began from.
     already = lead_run == rnd.get("baseline") or any(d.name == rnd.get("baseline") for d in _dirs(A, leader))
+    # And only a leader the evidence puts ahead: separated better than the baseline it started from,
+    # and not behind the previous round's best. A mean that leads by chance is no reason to promote.
+    hold = _promote_hold(out["against"], prev["round_id"] if prev else None)
+    promote = not already and not hold
     out["suggest"].append(
         (
             "close the round with what it showed"
-            + (f" ({leader.rsplit('/', 1)[-1]} is already the baseline)" if already else ""),
+            + (f" ({leader.rsplit('/', 1)[-1]} is already the baseline)" if already else "")
+            + (f", promoting nothing: {leader.rsplit('/', 1)[-1]} is {hold}" if hold and not already else ""),
             f'evh round-close --goal {goal} --round {rnd["round_id"]} --conclusion "..."'
-            + ("" if already else f" --promote {lead_run}"),
+            + (f" --promote {lead_run}" if promote else ""),
         )
     )
     return out

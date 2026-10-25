@@ -1676,11 +1676,14 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
                 "(<code>goal:</code>); an arm without it is listed because it records the measure.</p>"
             )
             for gi, grp in enumerate(ans["groups"]):
-                leader, rows = grp["leader"], grp["rows"]
+                rows = grp["rows"]
                 gm = rows[0].get("measure", measure) if rows else measure  # a judge's group: its score
                 dec = group_decision(
                     A, g, ds, rows, gm, retired_in, gold_beside(tiers, ans["groups"], grp["key"])
                 )
+                # The decision's leader, as the glance has it: never a retired or flagged arm, so the
+                # table, its "test vs leader" links and the decision box name the same arm.
+                leader = next((r for r in rows if r["arm"] == dec["leader"]), None)
                 shown = shown_axes(dec)
                 trs = []
                 for r in rows:

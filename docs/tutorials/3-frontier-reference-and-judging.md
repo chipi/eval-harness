@@ -326,6 +326,12 @@ an item's text never reaches git by accident. Its text is kept beside its record
 in `data/judge-verdicts/<scorer>/<judging set>/<judge>/.withheld/<item>.<pass>.b<block>.txt`, and
 the log line names that file: read it before you retry, to see why the reply failed.
 
+Retry until a pass recovers nothing new (in the scenario, two passes took the intents from 26 of
+32 items to 31). An item still failing after that stays out of the judged table, which counts the
+items it holds; if it is a large share, change the judge's prompt or `max_tokens` rather than
+retrying again. The judged table is built from one run per arm, the latest, over the items that
+parsed, so an arm's cost and speed there can differ slightly from its row on gold.
+
 Validating a judge (the `validation` block, the runs it names, what the gate checks), the
 prompt's `{n}`, blocks and the cost cap:
 [RUNBOOK §12](../../harness/docs/RUNBOOK.md#12-re-measure-with-a-validated-judge).

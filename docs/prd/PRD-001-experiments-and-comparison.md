@@ -1,6 +1,6 @@
 # PRD-001: Running experiments and comparing arms
 
-- **Status**: Implemented (0.4.0, unreleased); the core since 0.1.0
+- **Status**: Implemented (v0.4.0); the core since 0.1.0
 - **Authors**: Marko Dragoljevic
 - **Related UX spec**: [UXS-003](../uxs/UXS-003-cli-and-onboarding.md) (the command line and the first evaluation)
 - **Related RFCs**: [RFC-001](../rfc/RFC-001-fingerprint-and-code-identity.md) (fingerprint and code identity),

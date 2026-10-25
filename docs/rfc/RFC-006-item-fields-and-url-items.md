@@ -1,6 +1,6 @@
 # RFC-006: Item fields and items at a URL
 
-- **Status**: Completed (0.4.0, unreleased)
+- **Status**: Completed (v0.4.0)
 - **Authors**: Marko Dragoljevic
 - **Related PRD**: [PRD-006](../prd/PRD-006-datasets-versions-fields.md)
 - **Related UX specs**: [UXS-001](../uxs/UXS-001-catalog.md#the-dataset-page) (the fields table),

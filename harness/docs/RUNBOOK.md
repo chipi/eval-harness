@@ -806,8 +806,12 @@ evh round-open --goal my_goal --dataset my_v1 --from r1 --change "what changed a
   and the cost per item), read against the reference most of its arms use (gold before silver on
   a tie), naming the arms scored against another (`NOTE: read against <ref>; not compared: …`),
   and suggests the next decision as the command that makes it: retire an
-  arm, measure more items, close the round. It never suggests retiring the arm that wrote the
-  silver reference: that arm is the yardstick, not a contender. It decides nothing.
+  arm, measure more items, close the round. It never suggests retiring the baseline the round
+  started from, nor, when the round is read against that arm's own silver, the arm that wrote
+  it: there it is the yardstick, not a contender (against gold it is an arm like any other). The
+  close suggestion carries `--promote` only for a leader separated better than the baseline it
+  started from and not behind the previous round's best; otherwise it says why it promotes
+  nothing. It decides nothing.
 - **`round-close --promote <run_id>`** promotes that run to the dataset's baseline, with the
   conclusion as its reason. A closed round refuses new runs; one round per goal is open at a
   time.

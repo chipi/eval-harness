@@ -646,6 +646,7 @@ def goals(argv) -> int:
                 A, g, ds, grp["rows"], gm, retired_in, cb.gold_beside(tiers, ans["groups"], what)
             )
             shown = cb.shown_axes(dec)
+            leader = dec["leader"]  # the decision's: never a retired or flagged arm
             print(f"\n  {'scored by ' + what if what.startswith('judge ') else 'scored against ' + what}")
             _table(
                 [
@@ -672,7 +673,7 @@ def goals(argv) -> int:
                         *(cell_text(ax, dec["rows"][r["arm"]][ax["name"]]) for ax in shown),
                         _kind(r, tiers),
                         "; ".join(r["flags"] + dec["out"].get(r["arm"], [])) or "—",
-                        "leader" if grp["leader"] and r is grp["leader"] else "",
+                        "leader" if r["arm"] == leader else "",
                     ]
                     for r in grp["rows"]
                 ],

@@ -15,8 +15,9 @@ has to guess.
 
 First run: 2026-10-24, on the 0.4.0 branch; it found 39 items. Second run: the same day, on the
 0.4.0 candidate `e91ff94c`, through a LiteLLM proxy, for $0.17; its friction log found nothing
-that blocked, 8 items that needed a guess and 22 of noise or polish. What is still open is listed
-at the end.
+that blocked, 8 items that needed a guess and 22 of noise or polish. Third run: 2026-10-25, on the
+release candidate `80e8f3f5`, through the proxy, for $0.17; nothing blocked, 10 items needed a guess,
+23 of noise or polish. What is still open is listed at the end.
 
 ## Rules for the run
 
@@ -231,7 +232,9 @@ group's recommendation with its reasons, the cost and speed columns and the trad
 closed rounds with their conclusions and retired arms; r2's suggestions were captured in step 9,
 while r2 was open); each reference page; the metrics page and a metric page (what it measures, its
 kind, the goals it decides, per-dataset strip chart); for each dataset, the inspector testing every
-arm on gold against the baseline, on silver against the frontier arm, and on the judge's score; one
+arm on gold against the baseline, on silver against the baseline too (the frontier arm wrote that
+reference, so against it every other arm reads as worse, as `evh inspect` notes), and on the
+judge's score; one
 item opened in each (the item itself beside the reference and every output); the inspector over r2's
 arms; and what a goal page's "test every arm against the leader" link opens. For each page, run its
 command (`evh overview`, `evh datasets`, `evh arms`, `evh references`, `evh metrics`, `evh goals
@@ -306,12 +309,20 @@ to promote; family-test's p against pair-test's above 30 items; tutorial 1's ada
 model library's bars and warnings; this page's config ids (`_v1` throughout), step 10's data and
 step 11's screenshots.
 
+After the third run (candidate `80e8f3f5`), fixed in code: `evh rounds` suggests retiring the arm
+that wrote a silver reference when the round is read against gold (only on its own silver is it the
+yardstick), never suggests retiring the baseline the round started from, says "separated worse
+than" r(n-1)'s best when it is, and suggests `--promote` only for a leader separated better than
+the baseline it started from and not behind the previous round's best (otherwise it says why it
+promotes nothing); the goal page's "leader" mark and its "test every arm against its leader" link
+use the decision's leader, never a retired arm. Fixed in the docs: how many `--retry-unparsed`
+passes, and that a judged table is built from each arm's latest run over the parsed items
+(tutorial 3); what `score()` returns with no reference (INTEGRATION); where a provider's model
+names come from (tutorial 2); step 11 tests silver against the baseline, not its author. The
+paid-run bills are confirmed: `evh cost-report` read 1.00× on all 14 paid runs.
+
 Still open:
 
-- The second run's own runs predate `f0c2ed3c`, so `evh cost-report` reads them as price table
-  only, although the proxy billed them (`briefs_mistral_small_v1`'s per-item costs are not the
-  config's prices × tokens). Runs made from `f0c2ed3c` on keep the bill in `_meta.usage.cost`;
-  not yet exercised by a paid run.
 - `family-test` and `pair-test`/the inspector read the same pair from different random streams
   above 30 items, so their p can differ in the third decimal; documented, by design.
 - The inspector's `wins–losses` reads the row's arm against the baseline, `family-test`'s `A wins`

@@ -1,6 +1,6 @@
 # PRD-002: References: gold, silver, and a run as the reference
 
-- **Status**: Implemented (0.4.0, unreleased); gold and silver since 0.1.0, a run as the reference in 0.4.0
+- **Status**: Implemented (v0.4.0); gold and silver since 0.1.0, a run as the reference in 0.4.0
 - **Authors**: Marko Dragoljevic
 - **Related UX specs**: [UXS-001](../uxs/UXS-001-catalog.md) (reference pages, row tints),
   [UXS-002](../uxs/UXS-002-inspector.md) (what the inspector refuses to compare)

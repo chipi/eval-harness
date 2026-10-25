@@ -1,6 +1,6 @@
 # RFC-001: The run fingerprint and code identity (version 4)
 
-- **Status**: Completed (0.4.0, unreleased)
+- **Status**: Completed (v0.4.0)
 - **Authors**: Marko Dragoljevic
 - **Related PRDs**: [PRD-001](../prd/PRD-001-experiments-and-comparison.md), [PRD-002](../prd/PRD-002-references.md)
 - **Related RFCs**: [RFC-002](RFC-002-run-records-and-derived-runs.md) (the record that carries it),

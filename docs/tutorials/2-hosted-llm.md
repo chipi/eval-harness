@@ -27,6 +27,9 @@ when judging shares the arms' credentials.
 
 Every provider takes `model`, `temperature` (default 0), `max_tokens`, `base_url` (an address
 that overrides the environment's) and `api_key_env` (another variable to read the key from).
+`model` is the provider's own name for it: on OpenRouter the id on the model's page; on an
+OpenAI-compatible endpoint or a LiteLLM proxy, an id its model list returns
+(`curl -s -H "Authorization: Bearer $LITELLM_API_KEY" "$LITELLM_BASE_URL/v1/models"`).
 The OpenAI-shaped ones (`openai`, `openrouter`, `litellm`) also send `reasoning`,
 `reasoning_effort` and `provider_routing` in the request body; `anthropic` refuses them. An arm
 also takes `prompt`, the instruction put before each item. A provider name the harness does not

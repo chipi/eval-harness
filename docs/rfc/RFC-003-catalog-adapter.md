@@ -1,6 +1,6 @@
 # RFC-003: The catalog, the inspector server and the adapter protocol
 
-- **Status**: Completed (0.4.0, unreleased); the podcast repository's move onto it (layer 4) is open
+- **Status**: Completed (v0.4.0); the podcast repository runs on it from its own `harness-0.4.0` branch (layer 4)
 - **Authors**: Marko Dragoljevic
 - **Related PRDs**: [PRD-004](../prd/PRD-004-catalog-and-inspector.md), [PRD-005](../prd/PRD-005-goals-and-rounds.md), [PRD-006](../prd/PRD-006-datasets-versions-fields.md)
 - **Related UX specs**: [UXS-001](../uxs/UXS-001-catalog.md), [UXS-002](../uxs/UXS-002-inspector.md), [UXS-003](../uxs/UXS-003-cli-and-onboarding.md)

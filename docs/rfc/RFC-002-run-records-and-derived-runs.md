@@ -1,6 +1,6 @@
 # RFC-002: Run records and derived runs
 
-- **Status**: Completed (0.4.0, unreleased)
+- **Status**: Completed (v0.4.0)
 - **Authors**: Marko Dragoljevic
 - **Related PRDs**: [PRD-001](../prd/PRD-001-experiments-and-comparison.md), [PRD-002](../prd/PRD-002-references.md), [PRD-003](../prd/PRD-003-judging.md)
 - **Related RFCs**: [RFC-001](RFC-001-fingerprint-and-code-identity.md) (the fingerprint inside the record)

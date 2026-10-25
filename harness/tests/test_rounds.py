@@ -306,4 +306,35 @@ try:
 finally:
     shutil.rmtree(proj, ignore_errors=True)
 
+# Promote only a leader the evidence puts ahead (the 2026-10-25 newcomer run: r2 suggested
+# promoting an arm not separated from the baseline, and r1's best was ahead of it).
+from evaluation_harness.rounds import _promote_hold  # noqa: E402
+
+
+def row(label, verdict, delta=0.01, p=0.5):
+    return {"label": label, "verdict": verdict, "delta": delta, "p": p}
+
+
+BASE, PREV = "the baseline it started from", "r1's best"
+check(
+    "promote: a leader separated better than the baseline, not behind r1's best, is promoted",
+    _promote_hold([row(BASE, "separated: better", p=0.01), row(PREV, "not separated")], "r1") == "",
+)
+check(
+    "promote: a leader not separated from the baseline is not, and the reason says so with its p",
+    _promote_hold([row(BASE, "not separated", 0.001, 0.9661)], "r1").startswith(
+        "not ahead of the baseline it started from (not separated, Δ +0.0010, p 0.9661"
+    ),
+)
+check(
+    "promote: a leader separated worse than the previous round's best is not",
+    _promote_hold(
+        [row(BASE, "separated: better", p=0.01), row(PREV, "separated: worse", -0.06, 0.03)], "r1"
+    ).startswith("behind r1's best (separated: worse"),
+)
+check(
+    "promote: a round with no baseline and no previous round promotes its leader",
+    _promote_hold([], None) == "",
+)
+
 sys.exit(summary())

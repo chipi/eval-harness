@@ -1,6 +1,6 @@
 # PRD-007: One install, your own keys
 
-- **Status**: Implemented (0.4.0, unreleased); installable since 0.2.0
+- **Status**: Implemented (v0.4.0); installable since 0.2.0
 - **Authors**: Marko Dragoljevic
 - **Related UX spec**: [UXS-003](../uxs/UXS-003-cli-and-onboarding.md) (the command line and the first evaluation)
 - **Related PRDs**: [PRD-001](PRD-001-experiments-and-comparison.md)

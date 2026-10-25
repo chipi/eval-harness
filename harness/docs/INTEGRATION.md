@@ -93,7 +93,9 @@ def score(output: str, reference: str | None) -> dict[str, float]:
 ```
 
 It is called with `reference=None` when no ground truth exists yet, so the same
-adapter works before and after you have references.
+adapter works before and after you have references. Return only what you can compute without a
+reference then (an output's length, a format check), or `{}`: the run still records its outputs,
+cost and latency, and `evh rescore` scores them once references exist.
 
 **The shipped default is a placeholder.** Token-overlap F1 — enough to make the
 loop run and rank arms crudely, not enough to defend a decision. Replace it

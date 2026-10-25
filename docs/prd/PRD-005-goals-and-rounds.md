@@ -1,6 +1,6 @@
 # PRD-005: Goals, and experiment rounds
 
-- **Status**: Implemented (0.4.0, unreleased)
+- **Status**: Implemented (v0.4.0)
 - **Authors**: Marko Dragoljevic
 - **Related UX specs**: [UXS-001](../uxs/UXS-001-catalog.md) (the goal page), [UXS-003](../uxs/UXS-003-cli-and-onboarding.md) (the round commands)
 - **Related RFC**: [RFC-004](../rfc/RFC-004-experiment-rounds.md) (rounds: files, commands, the evidence)
