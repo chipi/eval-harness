@@ -368,6 +368,17 @@ check(
     d["why"],
 )
 
+# The glance's group tier: the references listing first, else the reference id's own prefix.
+from evaluation_harness.catalog_build import ref_tier  # noqa: E402
+
+check(
+    "ref tier: listed tier wins; an unlisted gold/ or silver/ id names its tier; anything else has none",
+    ref_tier({"gold/x": "gold"}, "gold/x") == "gold"
+    and ref_tier({}, "gold/x") == "gold"
+    and ref_tier({}, "silver/x") == "silver"
+    and ref_tier({}, "no reference") == "",
+)
+
 # Chart labels: a name that would cover one already placed moves a line; a clear one stays.
 placed = [(100.0, 200.0, 50.0)]
 check("labels: a clear spot is kept", label_y(80.0, 100.0, 200.0, placed, 10, 200) == 80.0)

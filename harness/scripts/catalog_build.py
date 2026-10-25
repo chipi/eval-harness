@@ -722,6 +722,12 @@ def fmt_amount(v: float, unit: str) -> str:
     return f"${v:.4f}" if v < 1 else f"${v:.2f}"
 
 
+def ref_tier(tiers: dict, key: str) -> str:
+    """A group's reference tier: as the references listing says, else from its id (gold/<dataset>,
+    silver/<dataset>), for a reference this checkout does not hold (gold not redistributed)."""
+    return tiers.get(key) or (key.split("/", 1)[0] if key.startswith(("gold/", "silver/")) else "")
+
+
 def glance(A: Adapter, by_ds: dict) -> list[dict]:
     """Per goal and dataset: the deciding measure, the promoted baseline, the leader of the gold
     group, the paired test of the leader against the baseline (one test, threshold 0.05), and what
@@ -742,8 +748,9 @@ def glance(A: Adapter, by_ds: dict) -> list[dict]:
             # The gold group decides; without one, the first group scored against a reference,
             # named in the row so it is never read as gold.
             tiers = {r["id"]: r["tier"] for r in v.get("refs", [])}
+
             plain = [x for x in ans["groups"] if not x["key"].startswith("judge ")]
-            grp = next((x for x in plain if tiers.get(x["key"]) == "gold"), plain[0] if plain else None)
+            grp = next((x for x in plain if ref_tier(tiers, x["key"]) == "gold"), plain[0] if plain else None)
             leader = grp["leader"] if grp else None
             label = {x["arm"]: x["label"] for x in v.get("arms", [])}
             test = None
@@ -774,7 +781,7 @@ def glance(A: Adapter, by_ds: dict) -> list[dict]:
                     "leader_mean": leader["mean"] if leader else None,
                     "test": test,
                     "group": grp["key"] if grp else "",
-                    "gold": grp is not None and tiers.get(grp["key"]) == "gold",
+                    "gold": grp is not None and ref_tier(tiers, grp["key"]) == "gold",
                     "recommended": rec,
                     "recommended_label": label.get(rec, rec) if rec else "",
                     "strategy": strategy_of(dec["goal"]) if dec else strategy_of(g),
@@ -1681,13 +1688,13 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
                     ) + (' <span class="tag-base">baseline</span>' if r.get("baseline") else "")
                     if dec["recommended"] == r["arm"]:
                         tag += ' <span class="tag-rec">recommended</span>'
-                    cid = r["arm"].rsplit("/", 1)[-1]
-                    if cid in retired_in:
-                        tag += f' <small class="retired" title="dropped in that round, with its reason">retired in {e(retired_in[cid])}</small>'
+                    gone = retired_round(retired_in, r["arm"])
+                    if gone:
+                        tag += f' <small class="retired" title="dropped in that round, with its reason">retired in {e(gone)}</small>'
                     trs.append(
                         {
                             # A retired arm stays listed (its numbers are history) but reads as out of play.
-                            "cls": (row_kind(r, tiers) + (" t-retired" if cid in retired_in else "")).strip(),
+                            "cls": (row_kind(r, tiers) + (" t-retired" if gone else "")).strip(),
                             "cells": [
                                 arm_link(r["arm"], r["label"], "../") + tag,
                                 f'<span data-v="{r["mean"]}">{fmt(r["mean"])}</span>',
@@ -1732,14 +1739,28 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
 
 
 def retired_in_of(A: Adapter, g: dict) -> dict:
-    """{config_id: round_id} for every arm a round of this goal retired."""
+    """{arm id: round_id} for every arm a round of this goal retired. An adapter that gives no
+    arm ids (`retired_arms`) retires by config id: the key is then the config id."""
     rfn = getattr(A, "rounds", None)
-    return {
-        x.get("config_id"): r["round_id"]
-        for r in (rfn() if callable(rfn) else [])
-        if r.get("goal") == g["goal_id"]
-        for x in r.get("retired") or []
-    }
+    out: dict = {}
+    for r in rfn() if callable(rfn) else []:
+        if r.get("goal") != g["goal_id"]:
+            continue
+        keys = r.get("retired_arms")
+        for k in keys if keys is not None else [x.get("config_id") for x in r.get("retired") or []]:
+            out[k] = r["round_id"]
+    return out
+
+
+def retired_round(retired_in: dict, arm: str) -> str | None:
+    """The round that retired this arm: by its arm id, else by its config id."""
+    return retired_in.get(arm) or retired_in.get(arm.rsplit("/", 1)[-1])
+
+
+def _retired_arms(r: dict) -> set:
+    """The arm ids (or, from an adapter without them, config ids) a round retired."""
+    keys = r.get("retired_arms")
+    return set(keys if keys is not None else [x.get("config_id") for x in r.get("retired") or []])
 
 
 def axis_ratios(dec: dict, arm: str, base: str) -> list[str]:
@@ -1778,7 +1799,7 @@ def group_decision(A: Adapter, g: dict, ds: str, rows: list, gm: str, retired_in
     arms = {
         r["arm"]: {
             "label": r["label"],
-            "flags": list(r["flags"]) + (["retired"] if r["arm"].rsplit("/", 1)[-1] in retired_in else []),
+            "flags": list(r["flags"]) + (["retired"] if retired_round(retired_in, r["arm"]) else []),
             "scores": A.scores(r["arm"]),
         }
         for r in rows
@@ -2208,16 +2229,12 @@ def render_arm(A: Adapter, a: dict, ds: str, by_ds: dict, out: Path, nav: list) 
     rnds = [
         r
         for r in (rfn() if callable(rfn) else [])
-        if a["arm"] in (r.get("arms") or []) or cid in {x.get("config_id") for x in r.get("retired") or []}
+        if a["arm"] in (r.get("arms") or []) or {a["arm"], cid} & _retired_arms(r)
     ]
     if rnds:
         lis = "".join(
             f"<li>{e(r['round_id'])} of {goal_link(goals[r['goal']], '../') if r.get('goal') in goals else e(r.get('goal', ''))}"
-            + (
-                " · <b>retired</b>"
-                if cid in {x.get("config_id") for x in r.get("retired") or []}
-                else " · in play"
-            )
+            + (" · <b>retired</b>" if {a["arm"], cid} & _retired_arms(r) else " · in play")
             + f" · {e(r.get('status', ''))}</li>"
             for r in rnds
         )

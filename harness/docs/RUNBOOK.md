@@ -20,7 +20,7 @@ further. This page is the reference for each step.
 | fields on an existing dataset | `evh dataset-create --dataset-id … --update-fields --fieldset … --fields …` |
 | materialize | `evh dataset-materialize --dataset-id …` |
 | silver references | `evh reference-create --dataset-id … --from-run <run_id>` (or `--config …`) |
-| gold references | files in `data/references/gold/<dataset_id>/<item_id>.txt` |
+| gold references | files in `data/references/gold/<dataset_id>/<item_id>.txt`; built by a script: `evh reference-manifest --reference-id gold/… --source …` |
 | cost before spending | `evh experiment-run --config … --dry-run` |
 | measure (+ own noise) | `evh experiment-run --config … --repeat 3` |
 | many arms | `evh sweep --configs "data/configs/arm_*.yaml"` |
@@ -243,6 +243,13 @@ ones you would sign (`reference-create --config … --tier gold` authors straigh
 system whose output you have reviewed; `--from-run` refuses `--tier gold`). Gold always wins over
 silver for new runs. Runs made before the gold set existed are re-scored against it for $0:
 `evh rescore --dataset-id my_v1 --reference-id gold/my_v1 --out data/runs-gold`.
+
+Gold that a script builds (fetched from a public source, for example) gets a manifest: the
+checksum of every item's text and how to rebuild it, written by
+`evh reference-manifest --reference-id gold/my_v1 --source scripts/fetch.py`. Commit the
+manifest even when the texts may not be redistributed (`--not-redistributed`): `evh validate`
+(V16) then checks any rebuilt copy against it, and the catalog lists the reference as fetched.
+`reference-create` writes the manifest of the references it makes.
 
 Every later run is scored against these automatically and records which tier it
 used. Ten items is enough to rank four arms; keep the first pass cheap.
@@ -517,7 +524,7 @@ evh runs-list --baselines
 evh validate
 ```
 
-Fifteen checks (V1–V15): schema conformance (datasets, runs, baselines, configs, judge
+Sixteen checks (V1–V16): schema conformance (datasets, runs, baselines, configs, judge
 scorers, judging sets, verdicts), every run's `dataset_id` resolves, every run
 identifies its build, materialized copies still match their hashes, no two
 configs reporting byte-identical scores and per-item results (two arms with different outputs
@@ -526,7 +533,8 @@ deleted run or disagreeing with it, every committed run readable and present on 
 `config_id`, no derived run naming a scorer that is not the code in this tree, every judging
 set matching its stored hash, every judge verdict naming a real set, item, pass and block,
 every judge scorer yaml loading and well-formed, every goal and round well-formed and named by
-every run that must name one, and every item field declared, typed and matching its hash. V4
+every run that must name one, every item field declared, typed and matching its hash, and every
+reference's texts matching the checksums in its manifest. V4
 checks only datasets materialized on this machine, and names each one it could not check (a CI
 job without the sources checks none: materialize first where the copy matters).
 
@@ -771,6 +779,7 @@ evh round-open --goal my_goal --dataset my_v1 --hypothesis "what this round sets
     --keep arm_a_v1,arm_b_v1                       # round 1: carry in arms already run
 evh rounds --goal my_goal                          # the evidence, and the next decisions as commands
 evh round-retire --goal my_goal --round r1 --arm arm_b_v1 --reason "why it is dropped"
+evh round-retire --goal my_goal --round r1 --arm arm_b_v1 --runs-dir runs-linux --reason "..."  # one copy only
 evh round-close --goal my_goal --round r1 --conclusion "what it showed" [--promote <run_id>]
 evh round-open --goal my_goal --dataset my_v1 --from r1 --change "what changed and why" \
     --keep arm_a_v1 --retire arm_c_v1 --reason "why" --budget-usd 0.50

@@ -144,6 +144,11 @@ def main() -> int:
                 ["--dataset-id", "tickets_v1", "--from-run", run_id, "--force"],
                 "ok:no calls",
             ),
+            (
+                "reference-manifest",
+                ["--reference-id", "gold/tickets_v1", "--source", "tutorial/gold"],
+                "ok:6 item(s), tier=gold",
+            ),
             ("experiment-run", ["--config", "data/configs/tickets_lead1.yaml", "--dry-run"], "ok"),
             (
                 "sweep",

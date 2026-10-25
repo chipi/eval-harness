@@ -36,6 +36,10 @@ COMMANDS = {
     "dataset-create": ("dataset_create.py", "freeze a dataset: item list + per-item sha256"),
     "dataset-materialize": ("materialize.py", "hash-checked working copy of a dataset"),
     "reference-create": ("reference_create.py", "make references from a run (--from-run) or with a config"),
+    "reference-manifest": (
+        "reference_manifest.py",
+        "the checksummed manifest of a reference a fetch script built",
+    ),
     "experiment-run": ("experiment_run.py", "run one arm over a dataset (--dry-run to cost it)"),
     "sweep": ("sweep.py", "run several arms, then the leaderboard"),
     "runs-list": ("list_runs.py", "list runs (or baselines)"),

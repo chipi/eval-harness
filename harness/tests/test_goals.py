@@ -267,12 +267,13 @@ try:
         check(f"V14: fails {why}", "FAIL" in line, line)
     goal_path.write_text(original)
 
-    # No gold reference any more: the glance says which group it used, never "gold" by default.
+    # Gold this checkout does not hold (not redistributed): the group is still gold by its id, so
+    # the glance does not call it "no gold".
     shutil.move(str(data / "references" / "gold"), str(proj / "gold-aside"))
     r = evh("overview")
     check(
-        "evh overview: with no gold reference, the glance names the group it decided on",
-        "[no gold: gold/tickets_v1]" in r.stdout,
+        "evh overview: a gold reference the checkout does not hold is still read as gold",
+        r.returncode == 0 and "no gold" not in r.stdout and "tickets_summary" in r.stdout,
         r.stdout[:600] + r.stderr[-300:],
     )
     shutil.move(str(proj / "gold-aside"), str(data / "references" / "gold"))

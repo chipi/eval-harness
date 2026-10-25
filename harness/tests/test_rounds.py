@@ -265,6 +265,34 @@ try:
     )
     (data / "rounds/tickets_summary/r3.yaml").unlink()
 
+    # A re-timing of the same config on another machine (data/runs-linux) is its own arm in the
+    # catalog; a round retires that copy alone, by naming its runs directory.
+    assert run is not None, "a run of round r1 is needed to copy"
+    linux = data / "runs-linux" / run.name
+    shutil.copytree(run, linux)
+    m = json.loads((linux / "metrics.json").read_text())
+    m["round"] = "r2"
+    (linux / "metrics.json").write_text(json.dumps(m))
+    cfg_id = m["config_id"]
+    r = evh(
+        "round-retire", "--goal", "tickets_summary", "--round", "r2", "--arm", cfg_id,
+        "--runs-dir", "runs-linux", "--reason", "a re-timing of the same config on another machine",
+    )  # fmt: skip
+    doc2 = (data / "rounds/tickets_summary/r2.yaml").read_text()
+    check(
+        "round-retire --runs-dir: the retirement names the runs directory it applies to",
+        r.returncode == 0 and "runs_dir: runs-linux" in doc2,
+        out(r) + doc2,
+    )
+    r = evh("goals", "--goal", "tickets_summary")
+    rows = [ln for ln in r.stdout.splitlines() if cfg_id in ln]
+    check(
+        "the retired copy reads retired; the arm in data/runs does not",
+        any("linux" in ln and "[retired in r2]" in ln for ln in rows)
+        and any("linux" not in ln and "[retired in r2]" not in ln for ln in rows),
+        "\n".join(rows) or r.stdout[-800:],
+    )
+
     evh("catalog")
     page = (proj / ".build/catalog/g/tickets_summary.html").read_text()
     check(

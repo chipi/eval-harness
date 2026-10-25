@@ -2,7 +2,7 @@
 
     evh round-open   --goal G --dataset D [--from rN] [--hypothesis "..."] [--change "..."]...
                      [--keep cfg,...] [--retire cfg,... --reason "..."] [--budget-usd N]
-    evh round-retire --goal G --round rN --arm cfg --reason "..."
+    evh round-retire --goal G --round rN --arm cfg [--runs-dir DIR] --reason "..."
     evh round-close  --goal G --round rN --conclusion "..." [--promote <run_id>]
     evh rounds       --goal G [--round rN]
 
@@ -123,6 +123,11 @@ def retire(argv: list[str]) -> int:
     ap.add_argument("--goal", required=True)
     ap.add_argument("--round", required=True)
     ap.add_argument("--arm", required=True, help="its config id")
+    ap.add_argument(
+        "--runs-dir",
+        help="retire only the config's runs in this directory under data/ (runs-linux: a re-timing "
+        "of the same config on another machine); default: the project's runs directory",
+    )
     ap.add_argument("--reason", required=True)
     args = ap.parse_args(argv)
     rnd = _round(args.goal, args.round)
@@ -130,13 +135,25 @@ def retire(argv: list[str]) -> int:
         die(f"round {args.round} is closed")
     if len(args.reason.split()) < 3:
         die("--reason must be a sentence: what did the tests show?")
-    if args.arm not in _rounds.arms_of(rnd):
-        die(
-            f"{args.arm!r} is not in play in {args.round}: {', '.join(_rounds.arms_of(rnd)) or '(no arms yet)'}"
-        )
-    rnd.setdefault("retired", []).append({"config_id": args.arm, "reason": args.reason, "at": now()})
+    where = (_common.DATA / args.runs_dir) if args.runs_dir else None
+    if where is not None and not where.is_dir():
+        die(f"--runs-dir {args.runs_dir}: no such directory under {_common.DATA}")
+    in_play = _rounds.arms_of(rnd, where)
+    if args.arm not in in_play:
+        die(f"{args.arm!r} is not in play in {args.round}: {', '.join(in_play) or '(no arms yet)'}")
+    entry = {"config_id": args.arm, "reason": args.reason, "at": now()}
+    if args.runs_dir:
+        entry = {
+            "config_id": args.arm,
+            "runs_dir": _rounds.runs_dir_name(where),
+            "reason": args.reason,
+            "at": now(),
+        }
+    rnd.setdefault("retired", []).append(entry)
     _rounds.save(rnd)
-    print(f"{args.arm} retired from {args.round}: {args.reason}")
+    print(
+        f"{args.arm}{' in ' + args.runs_dir if args.runs_dir else ''} retired from {args.round}: {args.reason}"
+    )
     return 0
 
 

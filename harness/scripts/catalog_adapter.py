@@ -469,12 +469,14 @@ class HarnessAdapter:
     @_memo
     def references(self) -> list[dict]:
         """Return all reference sets: {id, tier, dataset, task, archived, format}, plus what
-        the set's manifest.json says (reference-create writes one): author, from_run, model,
-        created_at, n_items, caveat."""
+        the set's manifest.json says (reference-create and reference-manifest write one): author,
+        from_run, model, created_at, items, caveat, and "fetched" (its texts are not here: a
+        reference the project does not redistribute, listed from its manifest)."""
         out = []
         for tier in ("gold", "silver"):
             for d in sorted((self.data_dir / "references" / tier).glob("*")):
-                if d.is_dir() and any(d.glob("*.txt")):
+                texts = d.is_dir() and any(d.glob("*.txt"))
+                if d.is_dir() and (texts or (d / "manifest.json").is_file()):
                     mf = _json(d / "manifest.json") or {}
                     out.append(
                         {
@@ -485,7 +487,9 @@ class HarnessAdapter:
                             "archived": False,
                             "format": "",
                             "dir": d,
-                            "items": len(list(d.glob("*.txt"))),
+                            "items": len(list(d.glob("*.txt"))) if texts else mf.get("n_items"),
+                            "fetched": not texts,
+                            "source": mf.get("source"),
                             "author": mf.get("authored_by"),
                             "from_run": (mf.get("from_run") or {}).get("run_id"),
                             "model": mf.get("model"),
@@ -596,7 +600,9 @@ class HarnessAdapter:
     @_memo
     def rounds(self) -> list[dict]:
         """Experiment rounds (ADR-0004, optional): each round's record, plus "arms" (the arm ids in
-        play: configs whose runs in data/runs name it, and those carried in, less the retired)."""
+        play: runs in any runs directory that name it, and the configs carried in, less the retired)
+        and "retired_arms" (the arm ids it retired: a retirement names a runs directory, else the
+        project's)."""
         import yaml  # noqa: PLC0415
 
         out = []
@@ -607,20 +613,22 @@ class HarnessAdapter:
                 continue
             ds = doc.get("dataset_id", "")
             ran = {
-                arm.rsplit("/", 1)[-1]
+                arm
                 for arm, dirs in self._index().items()
-                if arm.startswith(self.arm_of(ds, ""))
+                if arm.split("/")[-2:-1] == [ds]
                 and any(
                     (m := _json(d / "metrics.json") or {}).get("round") == doc["round_id"]
                     and m.get("goal") == doc.get("goal")
                     for d in dirs
                 )
             }
-            retired = {r.get("config_id") for r in doc.get("retired") or []}
-            in_play = sorted((ran | set(doc.get("carried") or [])) - retired)
-            out.append(
-                dict(doc, arms=[self.arm_of(ds, c) for c in in_play if self.arm_of(ds, c) in self._index()])
-            )
+            home = self.arm_of(ds, "").split("/", 1)[0]
+            retired = {
+                f"{r.get('runs_dir') or home}/{ds}/{r.get('config_id')}" for r in doc.get("retired") or []
+            }
+            carried = {self.arm_of(ds, c) for c in doc.get("carried") or []}
+            in_play = sorted(a for a in (ran | carried) - retired if a in self._index())
+            out.append(dict(doc, arms=in_play, retired_arms=sorted(retired)))
         return out
 
     @_memo

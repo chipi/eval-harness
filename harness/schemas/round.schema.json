@@ -20,7 +20,12 @@
         "type": "object",
         "required": ["config_id", "reason", "at"],
         "additionalProperties": false,
-        "properties": {"config_id": {"type": "string"}, "reason": {"type": "string"}, "at": {"type": "string"}}
+        "properties": {
+          "config_id": {"type": "string"},
+          "runs_dir": {"type": "string", "description": "The runs directory, relative to data/, whose copy of the config is retired (runs-linux: a re-timing of the same config on another machine). Absent: the project's runs directory."},
+          "reason": {"type": "string"},
+          "at": {"type": "string"}
+        }
       }
     },
     "budget_usd": {"type": "number", "minimum": 0, "description": "What the round may spend; its billed cost is shown against it."},

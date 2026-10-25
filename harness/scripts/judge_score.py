@@ -1189,7 +1189,8 @@ def main() -> int:
     blocked = False
     for jid, where, found in judge_access(sc):
         print(f"  judge {jid:8s} {where}")
-        for p in found:
+        # --no-calls reads stored verdicts only: a key it never uses is not missing.
+        for p in [] if args.no_calls else found:
             print(f"    MISSING: {p}")
         blocked = blocked or bool(found)
 

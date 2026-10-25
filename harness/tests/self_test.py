@@ -173,6 +173,7 @@ def test_cli_help_works() -> None:
         "validate_tree",
         "list_runs",
         "reference_create",
+        "reference_manifest",
         "leaderboard",
         "sweep",
         "env_check",
@@ -625,6 +626,10 @@ def test_example_scorer_suites_pass() -> None:
         ("test_catalog.py", "catalog and run inspector"),
         ("test_goals.py", "goals: config, run, baseline, V14, pages"),
         ("test_axes.py", "a goal's axes and strategy: limits, the tie, the tie-break, the ratios"),
+        (
+            "test_references.py",
+            "reference manifests and V16: checksums committed, texts checked against them",
+        ),
         ("test_fields.py", "item fields and URL items: create, materialize, V15"),
         ("test_lineage.py", "dataset versions: --from, V2, the catalog's links"),
         (

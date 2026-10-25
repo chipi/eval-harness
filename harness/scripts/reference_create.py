@@ -52,8 +52,8 @@ from evaluation_harness._common import (
     load_dataset,
     now,
     read_json,
-    write_json,
 )
+from evaluation_harness._references import write_manifest
 
 try:
     import yaml
@@ -268,23 +268,7 @@ def main() -> int:
     out_dir.mkdir(parents=True, exist_ok=True)
     for item_id, text, _ in rows:
         (out_dir / f"{item_id}.txt").write_text(text, encoding="utf-8")
-    write_json(
-        out_dir / "manifest.json",
-        {
-            "dataset_id": args.dataset_id,
-            "tier": args.tier,
-            **meta,
-            "created_at": now(),
-            "n_items": len(rows),
-            "caveat": (
-                "GOLD: human-authored or human-reviewed."
-                if args.tier == "gold"
-                else "SILVER: model-generated. It encodes that model's opinion, including "
-                "its mistakes. Good enough to RANK arms against each other; not the same "
-                "thing as correct. Say so wherever a number scored against it is published."
-            ),
-        },
-    )
+    write_manifest(out_dir, args.tier, args.dataset_id, **meta, created_at=now())
     if final_dir.exists():
         shutil.rmtree(final_dir)
     out_dir.rename(final_dir)

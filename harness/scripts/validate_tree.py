@@ -28,6 +28,9 @@ Each check exists because its absence let a real defect through somewhere:
                      not exist, or carrying fields without one; a value of an undeclared field,
                      of the wrong type or outside its choices; a required field with no value;
                      a fields_sha256 that is not the hash of the fields
+  V16 references     a reference whose manifest breaks its schema, whose texts differ from the
+                     checksums it records, or whose committed texts are missing (a manifest
+                     with no texts and `redistributed: false` is a reference fetched elsewhere)
 
 Exit 1 on any failure, so it can gate.
 
@@ -1086,6 +1089,57 @@ def v15_item_fields() -> None:
     )
 
 
+def v16_references() -> None:
+    """A reference's texts match its manifest (schemas/reference.schema.json). The manifest is
+    committed even when the text is not, so a rebuilt copy proves it is the same reference."""
+    from evaluation_harness._references import drift  # noqa: PLC0415
+
+    base = DATA / "references"
+    dirs = [d for tier in ("gold", "silver") for d in sorted((base / tier).glob("*")) if d.is_dir()]
+    if not dirs:
+        print("  --   V16 references (none)")
+        return
+    schema = json.loads((SCHEMAS / "reference.schema.json").read_text()) if jsonschema else None
+    bad: list[str] = []
+    fetched = here = unchecked = 0
+    for d in dirs:
+        rel = d.relative_to(base).as_posix()
+        mf_path = d / "manifest.json"
+        texts = any(d.glob("*.txt"))
+        if not mf_path.is_file():
+            if texts:
+                unchecked += 1
+                notes.append(
+                    f"V16: {rel} has no manifest, so a rebuilt copy cannot be checked "
+                    f"(evh reference-manifest --reference-id {rel} --source <how it is built>)"
+                )
+            continue
+        mf = read_json(mf_path)
+        if schema is not None:
+            bad += [
+                f"{rel}/manifest.json: {e.message[:90]}"
+                for e in jsonschema.Draft202012Validator(schema).iter_errors(mf)
+            ]
+        if not texts:
+            if mf.get("redistributed", True):
+                bad.append(f"{rel}: its texts are committed (redistributed), and none is here")
+            else:
+                fetched += 1
+            continue
+        here += 1
+        for kind, ids in drift(d, mf).items():
+            if ids:
+                bad.append(f"{rel}: {len(ids)} item(s) {kind} against the manifest ({', '.join(ids[:3])})")
+    for x in bad[:30]:
+        print(f"       {x}")
+    check(
+        f"V16 references — {here} checked against their manifests, {fetched} fetched elsewhere"
+        + (f", {unchecked} with no manifest" if unchecked else ""),
+        not bad,
+        f"{len(bad)} problem(s)",
+    )
+
+
 def main() -> int:
     """Run all integrity checks over the eval tree; exit 1 if any fails."""
     # `--help` prints help. It used to fall through and run the whole validation, which
@@ -1112,6 +1166,7 @@ def main() -> int:
         v13_judge_scorers_are_well_formed,
         v14_goals,
         v15_item_fields,
+        v16_references,
     ):
         fn()
     for n in notes:

@@ -551,7 +551,7 @@ def arms(argv) -> int:
     rfn = getattr(A, "rounds", None)
     cid = a["arm"].rsplit("/", 1)[-1]
     for r in rfn() if callable(rfn) else []:
-        retired = cid in {x.get("config_id") for x in r.get("retired") or []}
+        retired = a["arm"] in cb._retired_arms(r) or cid in cb._retired_arms(r)
         if a["arm"] in (r.get("arms") or []) or retired:
             g = goals.get(r.get("goal", ""), {})
             print(
@@ -661,8 +661,8 @@ def goals(argv) -> int:
                         + (" [baseline]" if r.get("baseline") else "")
                         + (" [recommended]" if dec["recommended"] == r["arm"] else "")
                         + (
-                            f" [retired in {retired_in[r['arm'].rsplit('/', 1)[-1]]}]"
-                            if r["arm"].rsplit("/", 1)[-1] in retired_in
+                            f" [retired in {cb.retired_round(retired_in, r['arm'])}]"
+                            if cb.retired_round(retired_in, r["arm"])
                             else ""
                         ),
                         _fmt(r["mean"]),

@@ -113,9 +113,22 @@ def runs_of(rnd: dict[str, Any], runs_dir: Path | None = None) -> list[tuple[Pat
 def arms_of(rnd: dict[str, Any], runs_dir: Path | None = None) -> list[str]:
     """The round's arms still in play: configs whose runs name it, and those carried into it
     unchanged from an earlier round, less the retired."""
-    retired = {r["config_id"] for r in rnd.get("retired") or []}
+    here = runs_dir_name(runs_dir)
+    retired = {
+        r["config_id"] for r in rnd.get("retired") or [] if (r.get("runs_dir") or runs_dir_name(None)) == here
+    }
     ran = {m["config_id"] for _, m in runs_of(rnd, runs_dir)}
     return sorted((ran | set(rnd.get("carried") or [])) - retired)
+
+
+def runs_dir_name(runs_dir: Path | None) -> str:
+    """A runs directory as a retirement names it: relative to data/ (runs, runs-linux), or its
+    own name when it lies elsewhere."""
+    base = (runs_dir or _common.RUNS).resolve()
+    try:
+        return base.relative_to(_common.DATA.resolve()).as_posix()
+    except ValueError:
+        return base.name
 
 
 def config_round(cfg: dict[str, Any], config_path: Any) -> dict[str, Any] | None:

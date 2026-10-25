@@ -111,7 +111,7 @@ __pycache__/
 # cnn_dailymail_200, and a corpus whose exclusion depends on someone remembering to add a
 # line is one forgotten line away from being redistributed.
 data/sources/cnn_dailymail_*/
-data/references/gold/cnn_dailymail_*/
+data/references/gold/cnn_dailymail_*/*
 data/references/silver/cnn_dailymail_*/
 
 # AG News, same rule and a weaker licence than CNN/DailyMail's: the dataset card says
@@ -121,27 +121,27 @@ data/references/silver/cnn_dailymail_*/
 # downloading a third-party corpus and remembering to ignore it is the window in which it
 # gets committed to a public repo.
 data/sources/ag_news_*/
-data/references/gold/ag_news_*/
+data/references/gold/ag_news_*/*
 data/references/silver/ag_news_*/
 
 # DBpedia-14. Licence here is actually clean (CC-BY-SA 3.0 + GFDL, inherited from
 # Wikipedia) -- unlike AG News -- and it is still not ours to redistribute. Same rule,
 # same reason, same timing: these lines land before the first fetch.
 data/sources/dbpedia_*/
-data/references/gold/dbpedia_*/
+data/references/gold/dbpedia_*/*
 data/references/silver/dbpedia_*/
 
 # Few-NERD. CC BY-SA 4.0 -- the cleanest licence of the four corpora here -- and still
 # not ours to redistribute. Same rule, same timing: in before the first fetch.
 data/sources/few_nerd_*/
-data/references/gold/few_nerd_*/
+data/references/gold/few_nerd_*/*
 data/references/silver/few_nerd_*/
 
 # SummEval (MIT; the articles are CNN's). Its items carry the article, 16 machine summaries
 # and the human references, and its gold is the expert scores -- none of it ours to
 # redistribute. (These lines landed just after the first fetch, before any commit.)
 data/sources/summeval_*/
-data/references/gold/summeval_*/
+data/references/gold/summeval_*/*
 data/references/silver/summeval_*/
 
 # EVERY OTHER runs directory stays out, BY DEFAULT RATHER THAN BY NAME. Smoke passes,
@@ -222,7 +222,7 @@ data/runs-tune*/
 # BEIR SciFact. CC BY-SA 4.0, and still not ours to redistribute. Same rule, same timing:
 # in before the first fetch.
 data/sources/scifact_*/
-data/references/gold/scifact_*/
+data/references/gold/scifact_*/*
 data/references/silver/scifact_*/
 
 # ── the CORPUS, which is a new kind of thing in this tree ────────────────────
@@ -257,3 +257,6 @@ data/external/
 
 # the built catalog -- regenerate with `make catalog`
 .build/
+
+# A gold reference not redistributed keeps its manifest (checksums, how to rebuild it): validate V16.
+!data/references/gold/*/manifest.json
