@@ -308,6 +308,29 @@ p 0.36, from the pre-fix run), and DBpedia's 56-item dev slice, over today's 28 
     view says what it withholds. **This can change a deployment**: one that relied on the old
     behaviour adds `--publish`. This repository's own publishes outputs (already public in the
     repository), not references.
+  - **One provider layer for the systems under test and the judges, keys by role.** The bundled
+    adapter, judge-score's judges and the judge panel call hosted models through one module,
+    `_providers`: `openai` (OpenAI or any compatible endpoint), `anthropic`, `openrouter` and
+    `litellm`, each taking `model`, `base_url`, `api_key_env`, `temperature` and `max_tokens`.
+    - **A judge goes where its `provider:` says.** Judges ignored it and went to a LiteLLM
+      proxy if `LITELLM_BASE_URL` was set, else to OpenRouter with an alias looked up in
+      `models.json`, while the record said the declared provider. The scorer schema now
+      requires `provider` on every judge. **This can change a setup**: re-running the
+      committed scorers (`provider: litellm`) needs a LiteLLM proxy.
+    - **Judging can have its own keys.** A judge reads every variable as `EVAL_JUDGE_<NAME>`
+      first, then `<NAME>`, so it runs on separate keys, budgets and spend logs, or shares the
+      experiments' with no setting. `evh env-check` shows what each role reads.
+    - **A key is not identity.** `api_key_env` is left out of a run's fingerprint and a judge's;
+      no committed hash moved (all 2,800 committed verdicts keep their `judge_fp`).
+    - **judge-score names each judge's route and key**, dry run included, and stops before any
+      call when a key or address is missing.
+    - **The judge panel's judges are declared like judge-score's** (`id`, `provider`, `model`,
+      prices). It called only Anthropic, priced Sonnet in code, and ran the fake judge when
+      `ANTHROPIC_API_KEY` was missing; the fake judge now runs only with `--use-fake-judge`.
+    - **Anthropic takes `base_url` and `api_key_env`** like the others. **Arms pass `reasoning`,
+      `reasoning_effort` and `provider_routing`** to the request as judges did, and record
+      `reasoning_tokens` (descriptive, as every committed run declares it), the model and the
+      host that answered.
   - **The harness imports itself as a package.** Its modules imported each other as bare
     top-level names (`import stats`) with their own directory on `sys.path`, so a project's own
     `stats.py` first on the path replaced the harness's paired test inside

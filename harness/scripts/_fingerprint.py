@@ -45,6 +45,8 @@ import subprocess
 from pathlib import Path
 from typing import Any, Callable
 
+from evaluation_harness._providers import identity_params
+
 #: Reported when installed, WITHOUT importing them. importlib.metadata reads distribution
 #: metadata off disk, so the core can say "torch 2.2.2" while having no torch dependency
 #: and never loading it into the process. That distinction is the whole point of this file.
@@ -366,7 +368,8 @@ def build_fingerprint(
             "references_sha256": references_digest(root, reference_id, data_dir),
         },
         "host": _host_identity(),
-        "arm": {"config_id": config_id, "params": dict(params or {})},
+        # Which key paid for the calls (`api_key_env`) is not what was measured.
+        "arm": {"config_id": config_id, "params": identity_params(dict(params or {}))},
     }
     fp["hash"] = _hash_of(fp)
     return fp

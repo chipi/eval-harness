@@ -94,6 +94,10 @@ goes straight to OpenRouter. If you run a [LiteLLM](https://docs.litellm.ai/) pr
 `examples/litellm.config.yaml` serves the same aliases; set `LITELLM_BASE_URL` and
 `LITELLM_API_KEY` and the proxy route is used.
 
+Re-measuring with the committed judge scorers (`evh judge-score`, `harness/data/scorers/`) needs
+that proxy: their judges declare `provider: litellm`, and a judge goes where its provider says.
+A judge reads `EVAL_JUDGE_LITELLM_API_KEY` first, so judging can use its own key.
+
 Each hosted arm is capped at twice what it was billed when measured
 (`EVAL_MAX_COST_USD`, enforced on actual spend); a run that hits the cap stops, keeps what
 it has, and prints a `--resume` line so nothing is paid for twice.

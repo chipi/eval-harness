@@ -10,21 +10,27 @@ Nothing here is run by `make guide-check`: it calls a paid API.
 ## 1. Choose a provider
 
 The adapter bundled with the harness (what an arm uses when the project has no `adapter.py`, and
-what tutorial 1's adapter reaches through `PROVIDERS`) knows these providers. Each reads the
-variables in its row, from the environment or from a `.env` file at the project root:
+what tutorial 1's adapter reaches through `PROVIDERS`) knows these providers. The same providers
+are used by judges (in `judge-score` and the judge panel). Each provider reads the variables
+in its row, from the environment or from a `.env` file at the project root. Arms read `<NAME>`;
+judges read `EVAL_JUDGE_<NAME>` first (for their own keys or spending), then fall back to `<NAME>`
+when judging shares the arms' credentials.
 
-| `provider:` | what it calls | you set (`.env`) | in the arm's `params` |
+| `provider:` | what it calls | arms read | judges read |
 |---|---|---|---|
-| `openai` | OpenAI, or **any OpenAI-compatible endpoint** | `OPENAI_API_KEY`, or the variable `api_key_env` names | `model`; `base_url` for an endpoint other than OpenAI's (or `OPENAI_BASE_URL` in `.env`) |
-| `openrouter` | OpenRouter (OpenAI-compatible), asking it for what it billed | `OPENROUTER_API_KEY` | `model` (an OpenRouter id, `vendor/model`) |
-| `anthropic` | Anthropic | `ANTHROPIC_API_KEY` | `model` |
-| `litellm` | your own [LiteLLM](https://docs.litellm.ai/) proxy: one key, many providers, spend tracked centrally | `LITELLM_BASE_URL` (the proxy's address) and `LITELLM_API_KEY` | `model`: the proxy's model name, not the upstream id |
-| `echo` | nothing (offline, $0) | — | `sentences`, `noise` |
+| `openai` | OpenAI, or **any OpenAI-compatible endpoint** | `OPENAI_API_KEY`; `OPENAI_BASE_URL` (optional, else the default endpoint) | `EVAL_JUDGE_OPENAI_API_KEY` or `OPENAI_API_KEY`; `EVAL_JUDGE_OPENAI_BASE_URL` or `OPENAI_BASE_URL` |
+| `openrouter` | OpenRouter (OpenAI-compatible), asking it for what it billed | `OPENROUTER_API_KEY` | `EVAL_JUDGE_OPENROUTER_API_KEY` or `OPENROUTER_API_KEY` |
+| `anthropic` | Anthropic | `ANTHROPIC_API_KEY`; `ANTHROPIC_BASE_URL` (optional) | `EVAL_JUDGE_ANTHROPIC_API_KEY` or `ANTHROPIC_API_KEY`; `EVAL_JUDGE_ANTHROPIC_BASE_URL` or `ANTHROPIC_BASE_URL` |
+| `litellm` | your own [LiteLLM](https://docs.litellm.ai/) proxy: one key, many providers, spend tracked centrally | `LITELLM_API_KEY`; `LITELLM_BASE_URL` (required; the proxy's address) | `EVAL_JUDGE_LITELLM_API_KEY` or `LITELLM_API_KEY`; `EVAL_JUDGE_LITELLM_BASE_URL` or `LITELLM_BASE_URL` |
+| `echo` (arms only) | nothing (offline, $0) | — | — |
+| `fake` (judges only) | a stand-in for testing (offline, $0) | — | — |
 
-Every provider also takes `temperature` (default 0), `max_tokens` (default 600) and `prompt` (the
-instruction put before each item). `openrouter` calls OpenRouter's address with `OPENROUTER_API_KEY`
-by default; an arm's own `base_url` or `api_key_env` overrides either. A provider name the
-adapter does not know is refused, never guessed.
+Every provider takes `model`, `temperature` (default 0), `max_tokens`, `base_url` (an address
+that overrides the environment's) and `api_key_env` (another variable to read the key from).
+The OpenAI-shaped ones (`openai`, `openrouter`, `litellm`) also send `reasoning`,
+`reasoning_effort` and `provider_routing` in the request body; `anthropic` refuses them. An arm
+also takes `prompt`, the instruction put before each item. A provider name the harness does not
+know is refused, never guessed.
 
 `.env` is yours: `evh init` gitignores it, so a key in it is never committed. An exported
 variable wins over the file. For example, with OpenRouter:
@@ -32,18 +38,33 @@ variable wins over the file. For example, with OpenRouter:
 ```text
 # .env
 OPENROUTER_API_KEY=sk-or-...
+EVAL_JUDGE_OPENROUTER_API_KEY=sk-or-...    # judges' own key (optional; omit to share the arms')
 EVAL_MAX_COST_USD=1.00
 ```
 
 `EVAL_MAX_COST_USD` is a ceiling on what one run may spend. A run that reaches it stops, keeps
 everything it has, and prints the `--resume` command, so nothing is paid for twice. Then check
-what the harness sees (for each key: whether it is set, its length and its last four characters;
-in a checkout of this repository it also says where its example arms would be routed, a line a
-project of your own does not print):
+what the harness sees: for each provider and variable, whether arms can call it, which key
+judges use (their own EVAL_JUDGE_* key, the arms' key, or nothing):
 
 <!-- guide-check: skip -->
 ```bash
 evh env-check
+```
+
+With only the `.env` above (and the judges' own OpenRouter key), its provider table reads:
+
+```text
+  provider    variable             arms                               judges
+  openai      OPENAI_API_KEY       not set                            not set
+              OPENAI_BASE_URL      not set (the default address)      not set (the default address)
+  anthropic   ANTHROPIC_API_KEY    not set                            not set
+              ANTHROPIC_BASE_URL   not set (the default address)      not set (the default address)
+  openrouter  OPENROUTER_API_KEY   set (73 chars, ends …a1b2)         own: set (73 chars, ends …c3d4)
+  litellm     LITELLM_API_KEY      not set                            not set
+              LITELLM_BASE_URL     not set                            not set
+  arms can call: openrouter
+  judges can call: openrouter
 ```
 
 ## 2. The arm

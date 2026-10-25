@@ -151,8 +151,10 @@ call OpenAI or any OpenAI-compatible endpoint (`provider: openai` with a `base_u
 environment or the project's `.env` (gitignored by `evh init`); the harness holds none.
 **Which variable each provider reads, and what goes in the arm's `params`:
 [tutorial 2](../../docs/tutorials/2-hosted-llm.md#1-choose-a-provider).** `evh env-check`
-reports which are set. LLM judges route the same way: through a LiteLLM proxy, or straight to
-OpenRouter with `OPENROUTER_API_KEY` ([RUNBOOK §12](RUNBOOK.md#12-re-measure-with-a-validated-judge)).
+reports which are set. Judges use the same providers: each judge's `provider:` in the scorer
+decides where its calls go. Judges read their own keys (`EVAL_JUDGE_<VAR>`) or share the arms'
+credentials (`<VAR>`), so you can run judges on separate budgets or the same one
+([RUNBOOK §12](RUNBOOK.md#12-re-measure-with-a-validated-judge)).
 
 ---
 

@@ -1,10 +1,12 @@
-"""Judge protocol + two implementations.
+"""Judge protocol + two implementations, for the judge panel (`evh judge`).
 
 A judge takes a (run_id, item, dimensions) and returns a per-dimension
 score on a 1-5 scale plus a USD cost. Two implementations ship:
 
-- FakeJudge: deterministic, no API. Used for tests and the demo.
-- LLMJudge:  Anthropic-shaped. Adapt for OpenAI / Gemini / local vLLM.
+- FakeJudge:   deterministic, no API, $0. Only with `--use-fake-judge`.
+- HostedJudge: the model a judge spec names, called through `_providers` as every arm and
+               judge-score judge is: `provider`, `model` and the prices in the panel's config,
+               keys read as EVAL_JUDGE_<NAME> first, then <NAME>.
 """
 
 from __future__ import annotations
@@ -17,9 +19,10 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 
 import hashlib
 import json
-import os
 from dataclasses import dataclass, field
 from typing import Protocol
+
+from evaluation_harness import _providers
 
 
 @dataclass
@@ -90,31 +93,20 @@ class FakeJudge:
 # ---------------------------------------------------------------------------
 
 
-class LLMJudge:
-    """Anthropic-shaped judge.
+class HostedJudge:
+    """A hosted model scoring each item on the requested dimensions, 1-5, with one line of
+    rationale (logged by nobody; the score is the answer, the rationale is for spot checks)."""
 
-    Prompts Claude for a per-dimension 1-5 score with a brief justification.
-    Returns the score; the justification is logged but not used downstream
-    (the aggregate score is the answer; rationale is for spot-checking).
-
-    Adapt the `_build_prompt` and `_parse_response` methods for OpenAI /
-    Gemini / local vLLM — the I/O shape stays the same.
-    """
-
-    SYSTEM = (
+    INSTRUCTIONS = (
         "You are an evaluation judge. Score the candidate output on each "
         "requested dimension using a 1-5 scale (1 = poor, 5 = excellent). "
         'Return STRICT JSON only: {"scores": {"<dim>": <int>, ...}, '
         '"rationale": "<one sentence>"}. No prose outside the JSON.'
     )
 
-    def __init__(self, model: str = "claude-sonnet-4-6"):
-        self.name = model
-        self.model = model
-        # Lazy-import so the demo (FakeJudge only) doesn't require the SDK.
-        from anthropic import Anthropic  # noqa: PLC0415
-
-        self._client = Anthropic()
+    def __init__(self, spec: dict):
+        self.name = spec["id"]
+        self.params = {k: v for k, v in spec.items() if k != "id"}
 
     def score(
         self,
@@ -124,77 +116,63 @@ class LLMJudge:
         item_content: str,
         dimensions: list[str],
     ) -> ItemScore:
-        """Query the model and return a per-dimension 1-5 score and USD cost."""
-        prompt = self._build_prompt(item_content, dimensions)
+        """Ask the model, and return its per-dimension 1-5 score and what the call cost."""
+        prompt = (
+            f"{self.INSTRUCTIONS}\n\nDimensions to score: {', '.join(dimensions)}\n\n"
+            f"Candidate output:\n---\n{item_content}\n---"
+        )
         try:
-            response = self._client.messages.create(
-                model=self.model,
-                max_tokens=512,
-                system=[
-                    {
-                        "type": "text",
-                        "text": self.SYSTEM,
-                        # System prompt cached — it's stable across all items.
-                        "cache_control": {"type": "ephemeral"},
-                    }
-                ],
-                messages=[{"role": "user", "content": prompt}],
-            )
+            c = _providers.complete(prompt, self.params, role="judge", max_tokens=512)
         except Exception as exc:  # noqa: BLE001 — any provider error is this item's error, recorded
-            return ItemScore(
-                run_id=run_id,
-                item_id=item_id,
-                errors=[f"api: {type(exc).__name__}: {exc}"],
-            )
-
-        per_dim, error = self._parse_response(response, dimensions)
-        cost = self._estimate_cost(response)
+            return ItemScore(run_id=run_id, item_id=item_id, errors=[f"api: {type(exc).__name__}: {exc}"])
+        per_dim, error = self._parse(c.text, dimensions)
         return ItemScore(
             run_id=run_id,
             item_id=item_id,
             per_dimension=per_dim,
-            total_cost_usd=cost,
-            errors=[error] if error else [],
+            # Unpriced is not free: the spec's prices are required, so None means no tokens came back.
+            total_cost_usd=c.cost_usd if c.cost_usd is not None else 0.0,
+            errors=[error]
+            if error
+            else ([] if c.cost_usd is not None else ["cost: the reply carried no token counts"]),
         )
 
     @staticmethod
-    def _build_prompt(item_content: str, dimensions: list[str]) -> str:
-        dims_csv = ", ".join(dimensions)
-        return f"Dimensions to score: {dims_csv}\n\nCandidate output:\n---\n{item_content}\n---"
-
-    @staticmethod
-    def _parse_response(response, dimensions: list[str]):
+    def _parse(text: str, dimensions: list[str]) -> tuple[dict[str, int], str | None]:
+        t = text.strip()
+        if t.startswith("```"):
+            t = t.strip("`").removeprefix("json").strip()
         try:
-            text = response.content[0].text
-            payload = json.loads(text)
-            scores = payload.get("scores") or {}
+            scores = (json.loads(t) or {}).get("scores") or {}
             per_dim = {d: int(scores[d]) for d in dimensions if d in scores}
-            if not per_dim:
-                return {}, "parse: no scores in response"
-            return per_dim, None
-        except (json.JSONDecodeError, KeyError, ValueError, IndexError) as exc:
+        except (json.JSONDecodeError, AttributeError, TypeError, ValueError) as exc:
             return {}, f"parse: {type(exc).__name__}: {exc}"
-
-    @staticmethod
-    def _estimate_cost(response) -> float:
-        """Rough $ estimate from usage; replace with your project's pricing table."""
-        u = response.usage
-        # Default Sonnet pricing as of writing — update for current model.
-        input_tok = (u.input_tokens or 0) + (getattr(u, "cache_creation_input_tokens", 0) or 0)
-        cached_tok = getattr(u, "cache_read_input_tokens", 0) or 0
-        output_tok = u.output_tokens or 0
-        return input_tok * 3e-6 + cached_tok * 0.3e-6 + output_tok * 15e-6
+        return (per_dim, None) if per_dim else ({}, "parse: no scores in response")
 
 
-def build_judge(name: str | None, *, use_fake: bool = False) -> Judge | None:
-    """Factory used by judge_panel.py.
+#: What a judge spec in the panel's config must give: the same fields as a judge-score judge.
+SPEC_REQUIRED = ("id", "provider", "model", "usd_per_mtok_in", "usd_per_mtok_out")
 
-    `None` returns `None` (skip the cross-judge pass).
-    `use_fake=True` returns a FakeJudge with the configured `name`.
-    Otherwise returns an LLMJudge bound to that model.
+
+def build_judge(spec: dict | None, *, use_fake: bool = False) -> Judge | None:
+    """The judge a panel config's `primary_judge` / `cross_judge` spec names, or None for none.
+
+    `use_fake` gives a FakeJudge under the spec's id, and is the only way to get one: a hosted
+    judge whose key is missing stops here, before any call, naming what to set.
     """
-    if name is None:
+    if spec is None:
         return None
-    if use_fake or not os.environ.get("ANTHROPIC_API_KEY"):
-        return FakeJudge(name=name)
-    return LLMJudge(model=name)
+    if not isinstance(spec, dict) or any(spec.get(k) in (None, "") for k in SPEC_REQUIRED):
+        raise SystemExit(
+            f"a panel judge is a mapping with {', '.join(SPEC_REQUIRED)} "
+            "(and optionally temperature, max_tokens, base_url, api_key_env); got " + repr(spec)
+        )
+    if use_fake:
+        return FakeJudge(name=spec["id"])
+    found = _providers.problems({k: v for k, v in spec.items() if k != "id"}, "judge")
+    if found:
+        raise SystemExit(
+            f"judge {spec['id']}: " + "; ".join(found) + ". Nothing was called; `evh env-check` shows "
+            "what each role reads, and --use-fake-judge runs the panel offline."
+        )
+    return HostedJudge(spec)

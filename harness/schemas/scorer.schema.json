@@ -22,10 +22,13 @@
           "id": {"type": "string", "minLength": 1},
           "params": {
             "type": "object",
-            "required": ["model", "usd_per_mtok_in", "usd_per_mtok_out"],
-            "description": "A config's params for the judge model: routed, priced and recorded as an arm's are.",
+            "required": ["provider", "model", "usd_per_mtok_in", "usd_per_mtok_out"],
+            "description": "A config's params for the judge model: called, priced and recorded as an arm's are, through the provider it names. Its keys are read as EVAL_JUDGE_<NAME> first, then <NAME>.",
             "properties": {
+              "provider": {"enum": ["openai", "anthropic", "openrouter", "litellm", "fake"], "description": "Where the judge's calls go; fake calls nothing and can never be validated."},
               "model": {"type": "string", "minLength": 1},
+              "api_key_env": {"type": "string", "minLength": 1, "description": "Another variable to read the key from. A credential, not part of the judge's identity."},
+              "base_url": {"type": "string", "minLength": 1},
               "usd_per_mtok_in": {"type": "number", "minimum": 0},
               "usd_per_mtok_out": {"type": "number", "minimum": 0}
             }

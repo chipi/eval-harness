@@ -304,11 +304,10 @@ judges:
              reasoning: {enabled: false}, max_tokens: 400, usd_per_mtok_in: 0.05, usd_per_mtok_out: 0.2}
 ```
 
-Judges are called through an OpenAI-compatible client, routed by what your `.env` holds:
-`LITELLM_BASE_URL` + `LITELLM_API_KEY` (a proxy; `model` is sent as written), or else
-`OPENROUTER_API_KEY` (straight to OpenRouter; `model` is then an OpenRouter id, `vendor/model`).
-A judge's own `base_url` and `api_key_env` in its params send it to any other OpenAI-compatible
-endpoint instead ([tutorial 2](2-hosted-llm.md) lists the variables).
+Each judge's `provider:` names where its calls are routed ([tutorial 2](2-hosted-llm.md) lists
+the providers). A judge reads credentials by role: it reads `EVAL_JUDGE_<VAR>` first (so judges
+can have their own keys and budgets), then falls back to `<VAR>` (so judges can share the arms'
+credentials). A judge's own `base_url` or `api_key_env` in its params overrides the environment.
 
 <!-- guide-check: skip -->
 ```bash

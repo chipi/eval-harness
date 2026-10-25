@@ -89,6 +89,19 @@ so check these before you trust a `validate`:
   arm that named it without `base_url` and `api_key_env` read `OPENAI_API_KEY` and called
   OpenAI's address. An arm that sets either keeps its own; one that set neither now calls a
   different endpoint, so treat its next run as a new measurement.
+- **A judge goes where its `provider:` says, and every judge must declare one.** Judges used
+  to ignore it: a LiteLLM proxy when `LITELLM_BASE_URL` was set, else OpenRouter with the
+  model looked up in `$EVAL_MODELS_FILE` or `<project>/models.json`. Now the judge is called
+  through the same providers as an arm, with the model as written, and the harness reads no
+  models table. A scorer whose judges went to OpenRouter that way names `provider: openrouter`
+  and the OpenRouter id (`vendor/model`) the alias stood for; that is a new judge identity, so
+  its validation must be measured again. The committed scorers declare `provider: litellm`:
+  re-running them needs a LiteLLM proxy (`examples/litellm.config.yaml` serves their aliases).
+- **Judging can have its own keys.** A judge reads every variable as `EVAL_JUDGE_<NAME>` first,
+  then `<NAME>`; with no `EVAL_JUDGE_` variable set it shares the arms' keys, as before.
+- **The judge panel's judges are declared** (`id`, `provider`, `model`, `usd_per_mtok_in`,
+  `usd_per_mtok_out`) where its config named a model string, and the fake judge runs only with
+  `--use-fake-judge`: a missing `ANTHROPIC_API_KEY` used to swap it in silently.
 - **`leaderboard` prints one table per way of scoring.** When a dataset's runs were scored more
   than one way (silver and gold, a judge, or runs made before any reference existed), each gets
   its own table and tests, gold first, under `=== scored against <ref> ===` (judged runs:

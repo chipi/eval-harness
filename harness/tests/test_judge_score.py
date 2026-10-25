@@ -1521,51 +1521,75 @@ check(
     and r1.cost_usd is not None,
 )
 
-_keys = ("LITELLM_BASE_URL", "LITELLM_API_KEY", "OPENROUTER_API_KEY", "EVAL_MODELS_FILE", "MY_KEY")
+# A judge goes where its `provider:` says; its keys are EVAL_JUDGE_<NAME> first, then <NAME>.
+_keys = ("LITELLM_BASE_URL", "LITELLM_API_KEY", "OPENROUTER_API_KEY", "EVAL_JUDGE_LITELLM_API_KEY")
 _saved = {k: os.environ.pop(k, None) for k in _keys}
 try:
+    _lj = {"provider": "litellm", "model": "eval-x", "usd_per_mtok_in": 1.0, "usd_per_mtok_out": 1.0}
+    _sc_l = {"judges": [{"id": "lj", "params": _lj}]}
+    _acc = js.judge_access(_sc_l)
     check(
-        "routing: nothing configured is refused, naming both ways to fix it",
-        "OPENROUTER_API_KEY" in _exit(lambda: judging.route({"model": "a/b"}))
-        and "LITELLM_BASE_URL" in _exit(lambda: judging.route({"model": "a/b"})),
+        "judge access: a litellm judge with nothing set names both variables a judge may set",
+        _acc[0][2]
+        and any("EVAL_JUDGE_LITELLM_API_KEY or LITELLM_API_KEY" in p_ for p_ in _acc[0][2])
+        and any("LITELLM_BASE_URL" in p_ for p_ in _acc[0][2]),
+        str(_acc),
     )
-    os.environ["OPENROUTER_API_KEY"] = "k-or"
-    r_ = judging.route({"model": "vendor/model"})
+    os.environ["OPENROUTER_API_KEY"] = "sk-or-only"
     check(
-        "routing: OpenRouter alone goes direct, with the id as written and usage accounting",
-        r_["mode"] == "direct"
-        and r_["model"] == "vendor/model"
-        and judging.extra_body({}, r_) == {"usage": {"include": True}},
+        "judge access: an OpenRouter key does not reach a judge that names litellm",
+        js.judge_access(_sc_l)[0][2] != [],
+    )
+    os.environ.update(LITELLM_BASE_URL="http://proxy.invalid/", LITELLM_API_KEY="k-arms")
+    _acc = js.judge_access(_sc_l)
+    check(
+        "judge access: with the arms' proxy key and no judge key, the judge shares the arms'",
+        _acc[0][2] == []
+        and "key LITELLM_API_KEY (shared with the arms)" in _acc[0][1]
+        and "http://proxy.invalid/v1" in _acc[0][1],
+        str(_acc),
+    )
+    os.environ["EVAL_JUDGE_LITELLM_API_KEY"] = "k-judging"
+    _acc = js.judge_access(_sc_l)
+    check(
+        "judge access: EVAL_JUDGE_LITELLM_API_KEY is the judge's own key, used first",
+        "key EVAL_JUDGE_LITELLM_API_KEY (judging's own)" in _acc[0][1],
+        str(_acc),
     )
     check(
-        "routing: a bare alias with no models table is refused",
-        "neither an alias" in str(_exit(lambda: judging.route({"model": "bare-alias"}))),
+        "judge access: a fake judge calls nothing",
+        js.judge_access({"judges": [{"id": "f", "params": {"provider": "fake", "model": "m"}}]})[0][
+            1
+        ].startswith("fake"),
     )
-    os.environ["LITELLM_BASE_URL"] = "http://proxy.invalid/"
     check(
-        "routing: a proxy URL without its key is refused, not silently sent to OpenRouter",
-        "LITELLM_API_KEY" in str(_exit(lambda: judging.route({"model": "x"}))),
-    )
-    os.environ["LITELLM_API_KEY"] = "k-px"
-    r_ = judging.route({"model": "alias-x"})
-    check(
-        "routing: the proxy wins when both are set, with the model as written",
-        r_["mode"] == "proxy"
-        and r_["base_url"] == "http://proxy.invalid/v1"
-        and r_["model"] == "alias-x"
-        and judging.extra_body({}, r_) == {},
-    )
-    os.environ["MY_KEY"] = "k-own"
-    r_ = judging.route({"model": "m", "base_url": "http://own.invalid", "api_key_env": "MY_KEY"})
-    check(
-        "routing: a judge's own base_url and api_key_env override the environment's",
-        r_["base_url"] == "http://own.invalid/v1" and r_["key"] == "k-own",
+        "a judge's identity does not include which key pays for it",
+        js.judge_fingerprint({"id": "lj", "params": _lj})
+        == js.judge_fingerprint({"id": "lj", "params": {**_lj, "api_key_env": "OTHER_KEY"}})
+        != js.judge_fingerprint({"id": "lj", "params": {**_lj, "provider": "openrouter"}}),
     )
 finally:
     for k_, v_ in _saved.items():
         os.environ.pop(k_, None)
         if v_ is not None:
             os.environ[k_] = v_
+
+# The committed scorers' judges kept their identity: every committed verdict's judge_fp is the
+# fingerprint its scorer's judge has now.
+_vroot = HERE.parent / "data" / "judge-verdicts"
+_bad_fp = []
+for _sf in sorted((HERE.parent / "data" / "scorers").glob("*.yaml")):
+    _sc = js.load_scorer(_sf)
+    _want = {j["id"]: js.judge_fingerprint(j) for j in _sc["judges"]}
+    for _vf in (_vroot / _sc["scorer_id"]).glob("*/*/*.json") if (_vroot / _sc["scorer_id"]).is_dir() else []:
+        _v = json.loads(_vf.read_text())
+        if "judge_fp" in _v and _v.get("judge") in _want and _v["judge_fp"] != _want[_v["judge"]]:
+            _bad_fp.append(str(_vf.relative_to(_vroot)))
+check(
+    "every committed verdict's judge_fp still matches its scorer's judge",
+    not _bad_fp,
+    f"{len(_bad_fp)} differ, e.g. {_bad_fp[:3]}",
+)
 
 with tempfile.TemporaryDirectory() as td_:
     tdp = Path(td_)
@@ -1978,56 +2002,5 @@ check(
     and functools.reduce(operator.iadd, _bl, [])
     != functools.reduce(operator.iadd, vz.blocks("a2", [f"s{i:02d}" for i in range(19)], 16), []),
 )
-
-# ── the package's gateway is examples/_shared/gateway.py's, by test ─────────────────────
-# Two copies on purpose (the package cannot import the examples), so they are held to each
-# other here, as the judge prompt and parser are above: same route, same request body.
-sys.path.insert(0, str(HERE.parents[1] / "examples" / "_shared"))
-import gateway as _gw  # noqa: E402
-
-_gw_keys = ("LITELLM_BASE_URL", "LITELLM_API_KEY", "OPENROUTER_API_KEY")
-_gw_saved = {k: os.environ.pop(k, None) for k in _gw_keys}
-try:
-    _cases = [
-        ({"OPENROUTER_API_KEY": "sk-or-test"}, {"model": "eval-claude-haiku"}),
-        ({"OPENROUTER_API_KEY": "sk-or-test"}, {"model": "vendor/my-model"}),
-        (
-            {
-                "OPENROUTER_API_KEY": "sk-or-test",
-                "LITELLM_BASE_URL": "http://127.0.0.1:9",
-                "LITELLM_API_KEY": "k",
-            },
-            {"model": "eval-claude-haiku"},
-        ),
-        ({}, {"model": "eval-claude-haiku"}),
-    ]
-    for _env, _params in _cases:
-        for k in _gw_keys:
-            os.environ.pop(k, None)
-        os.environ.update(_env)
-        _got: list[tuple] = []
-        for _fn in (judging.route, _gw.route):
-            try:
-                _r = _fn(dict(_params))
-                _got.append(
-                    (
-                        "route",
-                        _r,
-                        judging.extra_body(dict(_params), _r)
-                        if _fn is judging.route
-                        else _gw.extra_body(dict(_params), _r),
-                    )
-                )
-            except SystemExit:
-                _got.append(("refused",))
-        check(
-            f"gateway parity: {sorted(_env) or 'no keys'} / {_params['model']}: same route and body",
-            _got[0] == _got[1],
-        )
-finally:
-    for k, v in _gw_saved.items():
-        os.environ.pop(k, None)
-        if v is not None:
-            os.environ[k] = v
 
 sys.exit(summary())

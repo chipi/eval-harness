@@ -60,6 +60,7 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any, Callable
 
+from evaluation_harness import _providers
 from evaluation_harness._codeid import content_sha256, file_sha256
 from evaluation_harness._common import (
     BOOKKEEPING_PREFIXES,
@@ -78,6 +79,7 @@ from evaluation_harness._common import (
     write_json,
     write_text_atomic,
 )
+from evaluation_harness._providers import identity_params
 from evaluation_harness._record import aggregate_scores, derived_record
 from evaluation_harness._retry import call_with_retries
 from evaluation_harness._runs import mixed_versions, runs_on
@@ -515,8 +517,9 @@ def freeze(manifest: dict[str, Any], sets_dir: Path = SETS) -> Path:
 
 # ── verdicts ─────────────────────────────────────────────────────────────────
 def judge_fingerprint(j: dict[str, Any]) -> str:
-    """Identity of a judge: its params. The cost cap and the controls are not part of it."""
-    return _sha(_canon({"id": j["id"], "params": j["params"]}))[:16]
+    """Identity of a judge: its params, without the credential that pays for its calls. The
+    cost cap and the controls are not part of it."""
+    return _sha(_canon({"id": j["id"], "params": identity_params(j["params"])}))[:16]
 
 
 def call_cost(res: Any, params: dict[str, Any]) -> tuple[float | None, bool]:
@@ -1056,6 +1059,26 @@ def effective_cap(sc: dict[str, Any]) -> float | None:
     return min(float(c) for c in caps) if caps else None
 
 
+def judge_access(sc: dict[str, Any]) -> list[tuple[str, str, list[str]]]:
+    """(judge id, where its calls go and which key pays, what is missing) for every judge,
+    resolved without a call: a judge reads EVAL_JUDGE_<NAME> first, then the arms' <NAME>."""
+    out: list[tuple[str, str, list[str]]] = []
+    for j in sc["judges"]:
+        p = j["params"]
+        if p.get("provider") == FAKE:
+            out.append((j["id"], "fake: no call, $0", []))
+            continue
+        found = _providers.problems(p, "judge")
+        if p.get("provider") not in _providers.SPECS:
+            out.append((j["id"], f"provider {p.get('provider')!r}", found))
+            continue
+        r = _providers.route(p, "judge")
+        whose = "judging's own" if r.key_var.startswith(_providers.JUDGE_PREFIX) else "shared with the arms"
+        at = f" at {r.base_url}" if r.base_url else ""
+        out.append((j["id"], f"{r.provider} {p.get('model')}{at}, key {r.key_var} ({whose})", found))
+    return out
+
+
 # ── main ─────────────────────────────────────────────────────────────────────
 def real_call(message: str, params: dict[str, Any]) -> Any:
     """Call a judge; the call_with_retries hook."""
@@ -1163,6 +1186,12 @@ def main() -> int:
         f"{manifest['protocol']['block_sizes']}, position items {len(manifest['position_items'])}, "
         f"noise items {len(manifest['noise_items'])}"
     )
+    blocked = False
+    for jid, where, found in judge_access(sc):
+        print(f"  judge {jid:8s} {where}")
+        for p in found:
+            print(f"    MISSING: {p}")
+        blocked = blocked or bool(found)
 
     if args.dry_run:
         est = estimate(manifest, sc, base, articles, outputs, vdir)
@@ -1188,8 +1217,12 @@ def main() -> int:
         )
         return 0
 
-    freeze(manifest)
     call = None if args.no_calls else real_call
+    if call and blocked:
+        die(
+            "a judge cannot be called (MISSING above): nothing was sent. `evh env-check` shows what each role reads."
+        )
+    freeze(manifest)
     if call and cap is None:
         die("no cost cap: set cost_cap_usd in the scorer or EVAL_MAX_COST_USD")
     stats = run_judging(

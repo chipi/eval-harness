@@ -171,12 +171,17 @@ except SystemExit as exc:
     typo_refused = "unknown provider 'anthropc'" in str(exc)
 check("bundled adapter: an unknown provider is refused, not echoed", typo_refused)
 check("bundled adapter: echo still runs", bundled.call_system("a b. c d.", {"provider": "echo"}).output != "")
-from evaluation_harness.judging import billed, price  # noqa: E402
+from evaluation_harness import _providers  # noqa: E402
+from evaluation_harness._providers import billed, price  # noqa: E402
 
 check("billed: the provider's usage.cost is the cost", billed({"cost": 0.0123}) == 0.0123)
 check("billed: no cost reported is None, not 0", billed({"prompt_tokens": 5}) is None)
 check("price: unpriced is None, never free", price({}, 10, 10) is None)
-check("the adapter and the judges share one price rule", bundled.price is price and bundled.billed is billed)
+check(
+    "the bundled adapter's hosted providers are the ones the judges call (one provider layer)",
+    set(bundled.PROVIDERS) == {"echo", *_providers.PROVIDERS},
+    sorted(bundled.PROVIDERS),
+)
 
 # The instrument's code hash: the code that can move a number, nothing else. Editing a test or
 # a report checker changed it, and run-compare then reported a confound that was not one.

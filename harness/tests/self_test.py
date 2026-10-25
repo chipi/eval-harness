@@ -120,7 +120,7 @@ def test_import_reads_no_env_and_no_paths() -> None:
 
 
 def test_price_needs_all_four_inputs() -> None:
-    from evaluation_harness.judging import price as _price  # noqa: PLC0415
+    from evaluation_harness._providers import price as _price  # noqa: PLC0415
 
     check("price: None when unpriced", _price({}, 1000, 1000) is None)
     check(
@@ -642,7 +642,7 @@ def test_example_scorer_suites_pass() -> None:
         ("test_judge_score.py", "judging pass"),
         ("test_code_hashes.py", "scoring-code hashes"),
         ("test_codeid.py", "code identity: documentation never moves a hash"),
-        ("test_providers.py", "hosted providers read their own key and address"),
+        ("test_providers.py", "hosted providers: one layer for arms and judges, keys by role"),
         ("test_leaderboard_refs.py", "the leaderboard: one table per reference, never averaged across them"),
         (
             "test_reference_coverage.py",
@@ -2879,7 +2879,9 @@ def test_bundled_adapter_calls_the_installed_anthropic_sdk() -> None:
     try:
         err = ""
         try:
-            adapter._anthropic("an article", {"model": "claude-x", "temperature": 0.0})
+            adapter.call_system(
+                "an article", {"provider": "anthropic", "model": "claude-x", "temperature": 0.0}
+            )
         except TypeError as exc:
             err = str(exc)
         check("anthropic adapter: the call fits the installed SDK's signature", not err, err)

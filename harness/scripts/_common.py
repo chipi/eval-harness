@@ -508,7 +508,9 @@ SPEED_KEYS = ("latency_ms", "latency_s")
 #: good. Ranking by one puts the most verbose arm on top — which is how a
 #: leaderboard ends up confidently answering the wrong question. Comparing two
 #: of them and calling the bigger one "better" is the same error, per-metric.
-DESCRIPTIVE_KEYS = ("output_words", "output_chars", "lines", "chars", "n_items")
+#: `reasoning_tokens` too, as every committed run that records it declares: how long a model
+#: thought, which its cost already counts.
+DESCRIPTIVE_KEYS = ("output_words", "output_chars", "lines", "chars", "n_items", "reasoning_tokens")
 
 
 #: Per-item columns a run records that are bookkeeping, not a measurement: judge_score marks

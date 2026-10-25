@@ -11,8 +11,9 @@ The harness is one Python package, `evaluation-harness`, with one command, `evh`
 a release from GitHub, runs `evh init`, and keeps all of its data in its own folder; an upgrade
 changes code and never touches results. One install enables every feature, including calling
 hosted models: the user brings their own keys (OpenAI, Anthropic, OpenRouter, or a LiteLLM
-proxy), and an offline `echo` provider runs the whole tutorial with no key at all. The system
-under test plugs in through one file, `adapter.py`, at the project root.
+proxy), and an offline `echo` provider runs the whole tutorial with no key at all. The same
+providers are used by experiment arms and by LLM judges, with optional separate keys for judging.
+The system under test plugs in through one file, `adapter.py`, at the project root.
 
 ## Background & Context
 
@@ -86,12 +87,15 @@ a walkthrough in the user's own project, not inside a checkout of this repositor
 - **FR3.1**: `adapter.py` at the project root is the default adapter for an arm with no
   `adapter:`; a config may name another; without either, the bundled adapter runs.
 - **FR3.2**: The bundled adapter's providers are `echo` (offline), `openai`, `openrouter`,
-  `anthropic` and `litellm`; an unknown `provider:` is refused.
+  `anthropic` and `litellm`; an unknown `provider:` is refused. Judges use the same providers
+  (plus `fake` offline), with `provider:` declared on each judge in the scorer.
 - **FR3.3**: Keys come from the environment (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`,
   `OPENROUTER_API_KEY`, `LITELLM_API_KEY` with `LITELLM_BASE_URL`); a config can name another
-  variable (`api_key_env`) and endpoint (`base_url`).
+  variable (`api_key_env`) and endpoint (`base_url`). Judges read `EVAL_JUDGE_<VAR>` first
+  (for their own keys and budgets), then fall back to `<VAR>` to share the arms' credentials.
 - **FR3.4**: `evh env-check` reports which keys are set by length and shape only, never the
-  key, and warns when a key is set and `EVAL_MAX_COST_USD` is not.
+  key, warns when a key is set and `EVAL_MAX_COST_USD` is not, and shows which providers
+  arms and judges can call.
 
 ## Success Criteria
 

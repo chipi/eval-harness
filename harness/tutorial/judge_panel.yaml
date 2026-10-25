@@ -1,8 +1,8 @@
 # The judge panel over the tutorial's runs (docs/GUIDE.md): promote the best arms on their
 # primary metric, judge each one's stored outputs, flag where two judges disagree.
 #
-#   evh judge --config tutorial/judge_panel.yaml --use-fake-judge   # no API key
-#   evh judge --config tutorial/judge_panel.yaml                    # Claude, billed and capped
+#   evh judge --config tutorial/judge_panel.yaml --use-fake-judge   # no API key, $0
+#   evh judge --config tutorial/judge_panel.yaml                    # the judge below, billed and capped
 
 # Outputs: <project>/<output_root>/<tag>/ (report.md, report.json, finalists.jsonl).
 output_root: out/judge-panel
@@ -19,7 +19,10 @@ promotion:
   carte_blanche: []             # config_ids judged whatever the cheap metric says
 
 judging:
-  primary_judge: claude-sonnet-4-6
+  # A judge is named as a judge-score judge is: provider (openai, anthropic, openrouter or
+  # litellm), model and prices; its key is read as EVAL_JUDGE_<NAME> first, then <NAME>.
+  primary_judge: {id: claude, provider: anthropic, model: claude-sonnet-4-6, usd_per_mtok_in: 3.0,
+                  usd_per_mtok_out: 15.0, temperature: 0.0, max_tokens: 512}
   cross_judge: null             # a second judge, for the disagreement flag
   cost_cap_usd: 1.0             # hard mid-run abort
   max_items_per_finalist: 6

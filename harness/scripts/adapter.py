@@ -24,15 +24,14 @@ from pathlib import Path as _Path
 if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
-import os
 import random
 import time
 from dataclasses import dataclass, field
 from typing import Any, Callable
 
-# One price rule and one bill reader, shared with the judges: what the provider billed when
-# the response carries it, else the config's declared prices, else unpriced (None).
-from evaluation_harness.judging import billed, price
+# The hosted providers, shared with the judges: one way to call them, read their keys and cost
+# a call (the bill when the response carries one, else the config's prices, else unpriced).
+from evaluation_harness import _providers
 
 
 @dataclass
@@ -66,9 +65,10 @@ def call_system(text: str, params: dict[str, Any]) -> Result:
     example adapters work out of the box:
 
         echo        no network, deterministic — proves the plumbing
-        litellm     a LiteLLM proxy: ONE key, many providers, central spend
-        anthropic   Claude via the official SDK
-        openai      anything OpenAI-compatible, including OpenRouter
+        openai      OpenAI, or any OpenAI-compatible endpoint (`base_url`)
+        anthropic   Anthropic
+        openrouter  OpenRouter, asked for what it billed
+        litellm     your own LiteLLM proxy: one key, many providers, central spend
 
     A real integration usually deletes all of this and calls one function:
 
@@ -165,118 +165,30 @@ def _echo(text: str, params: dict[str, Any]) -> Result:
     return Result(output=out, cost_usd=0.0)
 
 
-def _anthropic(text: str, params: dict[str, Any]) -> Result:
-    import anthropic  # imported lazily so the demo needs no SDK  # noqa: PLC0415
-
-    key = os.environ.get("ANTHROPIC_API_KEY")
-    if not key:
-        raise SystemExit("ANTHROPIC_API_KEY is not set")
-    client = anthropic.Anthropic(api_key=key)
-    model = params.get("model", "claude-sonnet-4-6")
-    msg = client.messages.create(
-        model=model,
-        max_tokens=int(params.get("max_tokens", 600)),
-        messages=[{"role": "user", "content": params.get("prompt", "Summarise:") + "\n\n" + text}],
-        # The SDK dropped the `temperature` keyword in 1.x; the body carries it, so the request
-        # is the same one every SDK version sends.
-        extra_body={"temperature": float(params.get("temperature", 0.0))},
+def _hosted(text: str, params: dict[str, Any]) -> Result:
+    """A hosted model, through the harness's providers (openai, anthropic, openrouter, litellm):
+    the arm's `prompt`, then the item. Keys, addresses and cost: `evaluation_harness._providers`."""
+    c = _providers.complete(
+        params.get("prompt", "Summarise:") + "\n\n" + text, params, role="arm", max_tokens=600
     )
-    usage = getattr(msg, "usage", None)
-    ti = getattr(usage, "input_tokens", None)
-    to = getattr(usage, "output_tokens", None)
     return Result(
-        output="".join(b.text for b in msg.content if b.type == "text"),
-        tokens_in=ti,
-        tokens_out=to,
-        cost_usd=price(params, ti, to),
-        # Anthropic's "max_tokens" is OpenAI's "length": the output stopped at the cap.
-        meta={"finish_reason": "length" if msg.stop_reason == "max_tokens" else msg.stop_reason}
-        if getattr(msg, "stop_reason", None)
-        else {},
-    )
-
-
-def _litellm(text: str, params: dict[str, Any]) -> Result:
-    """A LiteLLM proxy — one key, many providers, spend tracked centrally.
-
-    Usually the best answer for a sweep: the proxy already holds the provider
-    keys, so the harness carries ONE credential instead of four, and every call
-    lands in the proxy's spend log under this key's alias. Point `.env` at it:
-
-        LITELLM_BASE_URL=http://127.0.0.1:4001
-        LITELLM_API_KEY=sk-...
-
-    `model` is the proxy's model_name, not the upstream id — the mapping from
-    `eval-claude-sonnet` to `openrouter/anthropic/...` is the proxy's business,
-    which is the point of putting it there.
-    """
-    params = {
-        **params,
-        "base_url": (params.get("base_url") or os.environ.get("LITELLM_BASE_URL", "")).rstrip("/") + "/v1",
-        "api_key_env": params.get("api_key_env", "LITELLM_API_KEY"),
-    }
-    if not params["base_url"].startswith("http"):
-        raise SystemExit(
-            "LITELLM_BASE_URL is not set: put it in the project's .env (or the environment), "
-            "pointing at your proxy, e.g. LITELLM_BASE_URL=http://127.0.0.1:4001"
-        )
-    return _openai_compatible(text, params)
-
-
-def _openrouter(text: str, params: dict[str, Any]) -> Result:
-    """OpenRouter with its own key: OPENROUTER_API_KEY and its address, unless the arm sets
-    `base_url` or `api_key_env`."""
-    return _openai_compatible(
-        text,
-        {
-            **params,
-            "base_url": params.get("base_url") or "https://openrouter.ai/api/v1",
-            "api_key_env": params.get("api_key_env", "OPENROUTER_API_KEY"),
-        },
-    )
-
-
-def _openai_compatible(text: str, params: dict[str, Any]) -> Result:
-    """OpenAI's API, or any OpenAI-shaped one: `base_url` and `api_key_env` in params."""
-    from openai import OpenAI  # lazy  # noqa: PLC0415
-
-    env_key = params.get("api_key_env", "OPENAI_API_KEY")
-    key = os.environ.get(env_key)
-    if not key:
-        raise SystemExit(f"{env_key} is not set")
-    client = OpenAI(api_key=key, base_url=params.get("base_url") or None)
-    resp = client.chat.completions.create(
-        model=params["model"],
-        temperature=float(params.get("temperature", 0.0)),
-        max_tokens=int(params.get("max_tokens", 600)),
-        messages=[{"role": "user", "content": params.get("prompt", "Summarise:") + "\n\n" + text}],
-        # OpenRouter returns what it billed only when asked; the bill outranks the price table.
-        extra_body={"usage": {"include": True}} if params.get("provider") == "openrouter" else None,
-    )
-    u = getattr(resp, "usage", None)
-    ti = getattr(u, "prompt_tokens", None)
-    to = getattr(u, "completion_tokens", None)
-    bill = billed(u)
-    return Result(
-        output=resp.choices[0].message.content or "",
-        tokens_in=ti,
-        tokens_out=to,
-        # Prices in the config, not in code: they change, and a run records what it was
-        # costed at. A bill, when the provider sends one, is the cost itself.
-        cost_usd=bill if bill is not None else price(params, ti, to),
+        output=c.text,
+        tokens_in=c.tokens_in,
+        tokens_out=c.tokens_out,
+        cost_usd=c.cost_usd,
+        extra={**({"reasoning_tokens": float(c.reasoning_tokens)} if c.reasoning_tokens is not None else {})},
         # "length" means the output stopped at max_tokens; experiment-run warns about it. The bill,
         # when the provider sent one, is kept where cost-report and rescore read it.
         meta={
-            **({"finish_reason": resp.choices[0].finish_reason} if resp.choices[0].finish_reason else {}),
-            **({"usage": {"cost": bill}} if bill is not None else {}),
+            **({"finish_reason": c.finish_reason} if c.finish_reason else {}),
+            **({"usage": {"cost": c.cost_usd}} if c.billed else {}),
+            **({"response_model": c.response_model} if c.response_model else {}),
+            **({"provider": c.upstream_provider} if c.upstream_provider else {}),
         },
     )
 
 
 PROVIDERS: dict[str, Callable[[str, dict[str, Any]], Result]] = {
     "echo": _echo,
-    "anthropic": _anthropic,
-    "openai": _openai_compatible,
-    "openrouter": _openrouter,
-    "litellm": _litellm,
+    **dict.fromkeys(_providers.PROVIDERS, _hosted),
 }

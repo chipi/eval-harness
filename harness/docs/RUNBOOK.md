@@ -564,6 +564,11 @@ Triage on the cheap metric, decide with the judge, cost-capped with a mid-run
 abort that preserves partial results. Each finalist is judged on its stored outputs. Knobs
 in the config (`tutorial/judge_panel.yaml` from `evh init --tutorial`, or
 `config.example.yaml` in a checkout); the reasoning is in the harness README.
+`judging.primary_judge` (and `cross_judge`) is declared as a judge-score judge is: `id`,
+`provider`, `model`, `usd_per_mtok_in`, `usd_per_mtok_out`, and optionally `temperature`,
+`max_tokens`, `base_url`, `api_key_env`; its key is read as `EVAL_JUDGE_<NAME>` first. A judge
+whose key is missing stops the panel before any call; the fake judge runs only with
+`--use-fake-judge`.
 
 ---
 
@@ -651,12 +656,15 @@ and to the news-summary judge, so neither is an `evh` command.
      project keeps its prompt wherever it likes and names it relative to its root
      (`prompts/judge.txt`). `sha256_at_16` is the hash of the file's text rendered for 16
      summaries; the gate recomputes it.
-   - **Routing.** A judge's `model` is sent as written to `LITELLM_BASE_URL` (or the judge's
-     own `base_url`) with `LITELLM_API_KEY` (or its `api_key_env`); with only
-     `OPENROUTER_API_KEY` it goes straight to OpenRouter, so `model` must then be an
-     OpenRouter id (`vendor/model`) or an alias in `$EVAL_MODELS_FILE` or `<project>/models.json`.
-     Billed cost is read from the response; the scorer's price table is the fallback.
-     The `openai` client is installed with the harness: nothing to add.
+   - **Routing.** A judge's `provider:` in its `params` decides where its calls go. Each provider
+     reads environment variables: arms read `<VAR>`, judges read `EVAL_JUDGE_<VAR>` first (for
+     their own keys and budgets), then fall back to `<VAR>` to share the arms' credentials. A
+     judge's own `base_url` and `api_key_env` in params override the environment. See
+     [tutorial 2](../../docs/tutorials/2-hosted-llm.md) for the providers and their variables.
+     Billed cost is read from the response; the scorer's price table is the fallback. Before
+     anything is called (and in `--dry-run`), each judge's line says where its calls go and
+     which key pays ("judging's own" or "shared with the arms"); a missing key or address is
+     printed as `MISSING:` and the pass stops with nothing sent.
    - **`provider: fake`** judges call nothing and cost nothing. They exist to try a scorer
      end to end and to test one; the gate refuses them whatever the `validation` block says,
      so they only run with `--unvalidated`.

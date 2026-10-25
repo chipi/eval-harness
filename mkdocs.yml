@@ -76,6 +76,7 @@ nav:
           - "ADR-0002: Catalog, run inspector and goals in the harness (0.4.0)": adr/ADR-0002-catalog-inspector-goals.md
           - "ADR-0003: Item fields and items fetched from a URL (0.4.0)": adr/ADR-0003-item-fields-and-url-items.md
           - "ADR-0004: Experiment rounds, and a catalog that guides them (0.4.0)": adr/ADR-0004-experiment-rounds.md
+          - "ADR-0005: One provider layer; credentials per role, never identity (0.4.0)": adr/ADR-0005-credentials-per-role.md
   - The experiments:
       - Reproduce it: REPRODUCE.md
       - Protocol: PROTOCOL.md
