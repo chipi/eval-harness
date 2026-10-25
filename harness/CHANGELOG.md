@@ -165,7 +165,9 @@ p 0.36, from the pre-fix run), and DBpedia's 56-item dev slice, over today's 28 
   each item's text (`schemas/reference.schema.json`); `evh reference-manifest` writes it for gold a
   script builds, `reference-create` for the references it makes. It is committed even when the texts
   are not redistributed: `evh validate` (V16) checks a rebuilt copy against it, and the catalog lists
-  such a reference as fetched. This repository's twelve gold references now have one.
+  such a reference as fetched. The manifest names the dataset (`dataset_id`), so a second gold for
+  one dataset can have a name of its own (`reference-manifest --dataset-id`, e.g.
+  gold/ag_news_200_adj1 for ag_news_200). This repository's gold references now have one.
 - **`round-retire --runs-dir`** retires one copy of a config (its runs in another runs directory,
   such as a re-timing on another machine) and leaves the arm in the project's runs directory in play.
 

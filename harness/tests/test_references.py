@@ -91,6 +91,29 @@ try:
     line = v16()
     check("V16: committed (redistributed) texts that are missing fail", "FAIL" in line, line)
 
+    # A second gold for one dataset has a name of its own; its manifest names the dataset.
+    adj = proj / "data" / "references" / "gold" / "toy_v1_adj1"
+    adj.mkdir(parents=True)
+    (adj / "a.txt").write_text("shipping", encoding="utf-8")
+    r = evh(
+        "reference-manifest",
+        "--reference-id",
+        "gold/toy_v1_adj1",
+        "--dataset-id",
+        "toy_v1",
+        "--source",
+        "adj.py",
+    )
+    refs = HarnessAdapter(proj / "data").references()
+    check(
+        "--dataset-id: a reference named on its own is listed under the dataset its manifest names",
+        r.returncode == 0
+        and json.loads((adj / "manifest.json").read_text()).get("dataset_id") == "toy_v1"
+        and any(x["id"] == "gold/toy_v1_adj1" and x["dataset"] == "toy_v1" for x in refs),
+        str(refs) + r.stderr,
+    )
+    shutil.rmtree(adj)
+
     shutil.rmtree(gold)
     silver = proj / "data" / "references" / "silver" / "toy_v1"
     silver.mkdir(parents=True)

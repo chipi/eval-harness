@@ -38,11 +38,17 @@ def main() -> int:
         action="store_true",
         help="the text is not committed (its licence, or the project's choice); the manifest is",
     )
+    ap.add_argument(
+        "--dataset-id",
+        help="the dataset it is a reference for, when its name is not the dataset's (a second gold "
+        "for one dataset, e.g. gold/ag_news_200_adj1 for ag_news_200); default: the name",
+    )
     args = ap.parse_args()
-    tier, _, dataset_id = args.reference_id.partition("/")
-    if tier not in ("gold", "silver") or not dataset_id:
-        die(f"--reference-id {args.reference_id!r}: expected gold/<dataset_id> or silver/<dataset_id>")
-    ref_dir = _common.DATA / "references" / tier / dataset_id
+    tier, _, name = args.reference_id.partition("/")
+    if tier not in ("gold", "silver") or not name:
+        die(f"--reference-id {args.reference_id!r}: expected gold/<name> or silver/<name>")
+    dataset_id = args.dataset_id or name
+    ref_dir = _common.DATA / "references" / tier / name
     if not any(ref_dir.glob("*.txt")):
         die(f"{ref_dir} has no reference texts: build them first ({args.source})")
     doc = write_manifest(

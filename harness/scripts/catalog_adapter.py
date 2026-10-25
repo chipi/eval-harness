@@ -500,7 +500,9 @@ class HarnessAdapter:
                         {
                             "id": f"{tier}/{d.name}",
                             "tier": tier,
-                            "dataset": d.name,
+                            # The manifest names the dataset; the directory names the reference
+                            # (a second gold for one dataset has a name of its own).
+                            "dataset": mf.get("dataset_id") or d.name,
                             "task": "",
                             "archived": False,
                             "format": "",

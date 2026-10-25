@@ -6,7 +6,7 @@
   "required": ["dataset_id", "tier", "n_items", "items_sha256", "caveat"],
   "additionalProperties": false,
   "properties": {
-    "dataset_id": {"type": "string"},
+    "dataset_id": {"type": "string", "description": "The dataset it is a reference for: the directory's name, unless the dataset has a second reference of the tier under a name of its own (gold/ag_news_200_adj1 for ag_news_200)."},
     "tier": {"enum": ["gold", "silver"]},
     "n_items": {"type": "integer", "minimum": 0},
     "items_sha256": {
