@@ -15,9 +15,10 @@ success_criteria:
     - {"name": "licence", "rule": "AG News is licensed `unknown`, for research and non-commercial use; bert_base_ta and bert_mini state no licence.", "source": "examples/classification-ag-news/README.md"}
 datasets:
   - {dataset_id: ag_news_200, role: heldout, notes: first 50 per class from the first 1,600 test rows}
-  - {dataset_id: ag_news_20, decides: false, role: dev}
+  - {dataset_id: ag_news_20, decides: false, role: dev, notes: the pilot slice; all 20 of its items are in ag_news_200}
 references:
   - {reference_id: gold/ag_news_200, tier: gold, format: label}
+  - {reference_id: gold/ag_news_200_adj1, tier: gold, format: label}
 measures:
   - {id: correct, kind: metric, validity: validated}
 links:

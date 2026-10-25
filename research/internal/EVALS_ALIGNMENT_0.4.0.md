@@ -76,3 +76,10 @@ answer matched its report:
   ran on two, so speed is not compared there.
 - Harness changes found on the way: `decides: false` on a goal dataset; quality may be a
   tie-break axis; the glance's leader is the decision's (never a retired or flagged arm).
+- F settled differently from the plan (owner, 2026-10-25): a dev slice is no version of its
+  heldout set (the dates disagree: CNN's dev was made first, Few-NERD's after, three in the same
+  second), so no lineage; `decides: false` and a note that every item is in the heldout set.
+- AG News's adjudicated gold is a reference (gold/ag_news_200_adj1, built by
+  examples/_shared/adjudicate.py from the committed adjudication; manifest committed, labels not)
+  and data/runs-adjudicated holds the 30 runs re-scored against it ($0): anthropic_l 0.9850, the
+  three fine-tunes 0.9050, as the report says. The goal page shows it as a second gold group.

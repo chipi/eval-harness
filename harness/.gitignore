@@ -193,6 +193,17 @@ data/runs-linux/*/*
 data/runs-linux/*/outputs/_rows.jsonl
 !data/runs-linux/README.md
 
+# data/runs-adjudicated/ — AG News re-scored ($0) against gold/ag_news_200_adj1, the gold with
+# 17 labels changed by one reader (examples/classification-ag-news/adjudication.json, the
+# committed record): the report's main caveat, as a group on the goal page.
+!data/runs-adjudicated/
+data/runs-adjudicated/*/*
+!data/runs-adjudicated/*/metrics.json
+!data/runs-adjudicated/*/predictions.jsonl
+!data/runs-adjudicated/*/outputs
+!data/runs-adjudicated/*/outputs/**
+data/runs-adjudicated/*/outputs/_rows.jsonl
+
 # data/runs-judged/<scorer>/ — the CNN summaries re-measured by LLM judges (ADR-0001), each run
 # projected from the stored verdicts in data/judge-verdicts/ by `judge-score --no-calls` ($0).
 # Committed so the catalog shows a judge's group beside gold; rebuilt byte for byte from the

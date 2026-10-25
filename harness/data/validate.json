@@ -14,7 +14,8 @@
     "  duplicate_ok    V8: (dataset_id, config_id) pairs allowed to repeat, each one justified"
   ],
   "committed": ["runs", "runs-pair", "runs-repeats", "runs-linux",
-                "runs-judged/judge-summ-v1", "runs-judged/judge-summ-v2", "runs-judged/judge-summ-pointwise-v1"],
+                "runs-judged/judge-summ-v1", "runs-judged/judge-summ-v2", "runs-judged/judge-summ-pointwise-v1",
+                "runs-adjudicated"],
   "floors": {
     "runs": 174,
     "runs-pair": 6,
@@ -22,7 +23,8 @@
     "runs-linux": 9,
     "runs-judged/judge-summ-v1": 29,
     "runs-judged/judge-summ-v2": 29,
-    "runs-judged/judge-summ-pointwise-v1": 2
+    "runs-judged/judge-summ-pointwise-v1": 2,
+    "runs-adjudicated": 30
   },
   "scorer_sources": [
     {"dir": "runs", "glob": "fn_*", "path": ["derived", "with", "scorer"],

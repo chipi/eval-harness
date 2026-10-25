@@ -16,6 +16,6 @@ success_criteria:
     - {"name": "not shown is not ruled out", "rule": "At 280 items no gap under 10 items was separated: a gain of up to about 3 points from paying more is not ruled out, only not shown.", "source": "research/REPORT_CLASSIFICATION.md, executive summary"}
 datasets:
   - {dataset_id: dbpedia_280, role: heldout, notes: 20 per class, seeded}
-  - {dataset_id: dbpedia_56, decides: false, role: dev}
+  - {dataset_id: dbpedia_56, decides: false, role: dev, notes: the pilot slice; all 56 of its items are in dbpedia_280}
 measures:
   - {id: correct, kind: metric, validity: validated}
