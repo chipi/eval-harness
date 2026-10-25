@@ -809,6 +809,15 @@ def home(f: dict) -> str:
                 "another sweep of paid calls."
             ),
         ),
+        (
+            "05",
+            "A goal that recommends",
+            (
+                "A goal says what the evaluation is for: the measure that decides, limits on cost and "
+                "speed, how a tie is broken. Its rule recommends an arm and says why; a person promotes "
+                "the baseline. The catalog shows every goal, dataset and run."
+            ),
+        ),
     ]
     idea_html = "".join(
         f'<div class="habit-card"><span class="n">{n}</span><b>{e(t)}</b><span>{e(d)}</span></div>'
@@ -914,7 +923,7 @@ def home(f: dict) -> str:
 
 <section class="block" id="what"><div class="wrap">
   <div class="eyebrow"><span class="num">02</span>What it does</div>
-  <h2>Four ideas, one adapter file.</h2>
+  <h2>Five ideas, one adapter file.</h2>
   <p class="lede">Most eval code answers \u201cwhich scored highest\u201d. That is the easy half; the hard half is whether the answer survives being asked again. The harness imports nothing domain-specific — everything about your system lives in one file, <code>adapter.py</code>, with two functions you write: <code>call_system()</code> and <code>score()</code>.</p>
   <div class="habits">{idea_html}</div>
   <div class="cols" style="margin-top:48px">
@@ -1571,7 +1580,8 @@ def goal_note(x: dict) -> str:
             " ".join(short.sub(r"\1", w) for w in g["why"][1:]).rstrip(".")
         )
     base = (
-        f" The baseline a person promoted is <b>{e(g['baseline'])}</b>: {e(g['baseline_reason'])}"
+        f" The baseline a person promoted is <b>{e(g['baseline'])}</b>, with the reason recorded: "
+        f"\u201c{e(g['baseline_reason'])}\u201d"
         if g["baseline"] and rec != g["baseline"]
         else ""
     )
