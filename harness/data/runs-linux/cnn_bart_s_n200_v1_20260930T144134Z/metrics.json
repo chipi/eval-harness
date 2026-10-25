@@ -72,6 +72,7 @@
     },
     "version": 4
   },
+  "goal": "news_summary_cnn",
   "metric_kinds": {
     "compression": "descriptive",
     "concision": "quality",
@@ -111,6 +112,7 @@
   "primary_metric": "coverage",
   "providers_seen": {},
   "reference_tier": "gold",
+  "round": "r2",
   "run_id": "cnn_bart_s_n200_v1_20260930T144134Z",
   "scores": {
     "compression": 0.136119,

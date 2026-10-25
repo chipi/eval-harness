@@ -1,0 +1,22 @@
+round_id: r2
+goal: summary_judge_summeval
+dataset_id: summeval_100
+from: r1
+hypothesis: Does UniEval's text move the judge, and does the provider?
+status: closed
+opened_at: '2026-10-19T07:08:57Z'
+closed_at: '2026-10-19T07:22:24Z'
+retired:
+- config_id: se_gemma_l_pubtext_n100_v1
+  runs_dir: runs-pair
+  reason: a paired side run, not on the leaderboard; data/runs is the record
+  at: '2026-10-19T07:22:24Z'
+- config_id: se_gemma_l_pubtextcw_n100_v1
+  runs_dir: runs-pair
+  reason: a paired side run, not on the leaderboard; data/runs is the record
+  at: '2026-10-19T07:22:24Z'
+conclusion:
+  text: 'Pinned to CoreWeave on UniEval''s text, gemma_l scores 0.5397 against its 0.5384 (+0.0013, not
+    separated); routed to SambaNova it scored 0.5510 and billed 3.7× as much: consistent with a provider
+    effect, one run per provider. (REPORT_SUMMEVAL §3.3.)'
+  promoted_run: null

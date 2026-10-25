@@ -28,3 +28,4 @@ params:
   max_tokens: 200
   usd_per_mtok_in: 0.18
   usd_per_mtok_out: 0.6
+goal: news_topic_ag

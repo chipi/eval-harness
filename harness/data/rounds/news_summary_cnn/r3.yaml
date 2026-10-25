@@ -1,0 +1,17 @@
+round_id: r3
+goal: news_summary_cnn
+dataset_id: cnn_dailymail_200
+from: r2
+hypothesis: Does a local arm's output change when it is run again on the same machine?
+status: closed
+opened_at: '2026-09-30T09:12:12Z'
+closed_at: '2026-09-30T09:12:12Z'
+retired:
+- config_id: cnn_bart_s_n200_v1
+  runs_dir: runs-repeats
+  reason: a second run of the record's config; data/runs is the record
+  at: '2026-09-30T09:12:12Z'
+conclusion:
+  text: bart_s re-ran 200 of 200 outputs byte-identical on the same machine (three times, counting the
+    resumed run). (REPORT_SUMMARIZATION.)
+  promoted_run: null

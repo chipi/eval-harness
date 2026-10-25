@@ -87,6 +87,7 @@
     },
     "version": 4
   },
+  "goal": "news_topic_ag",
   "metric_kinds": {
     "answer_words": "descriptive",
     "confidence": "descriptive",
@@ -120,6 +121,7 @@
     "Parasail": 56
   },
   "reference_tier": "gold",
+  "round": "r1",
   "run_id": "ag_gemma_s_n200_v1_20260927T092138Z",
   "scores": {
     "answer_words": 1.0,

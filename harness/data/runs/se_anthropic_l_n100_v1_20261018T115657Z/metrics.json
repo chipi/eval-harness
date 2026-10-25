@@ -79,6 +79,7 @@
     },
     "version": 4
   },
+  "goal": "summary_judge_summeval",
   "metric_kinds": {
     "input_truncated": "descriptive",
     "parsed": "descriptive",
@@ -117,6 +118,7 @@
     "Claude Platform on AWS": 100
   },
   "reference_tier": "gold",
+  "round": "r1",
   "run_id": "se_anthropic_l_n100_v1_20261018T115657Z",
   "scores": {
     "cost_usd": 0.020077,

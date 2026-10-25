@@ -94,6 +94,7 @@
     },
     "version": 4
   },
+  "goal": "entity_topic_dbpedia",
   "metric_kinds": {
     "answer_words": "descriptive",
     "confidence": "descriptive",
@@ -127,6 +128,7 @@
     "Z.AI": 41
   },
   "reference_tier": "gold",
+  "round": "r1",
   "run_id": "db_glm_s_n200_v1_20260927T150359Z",
   "scores": {
     "answer_words": 0.996429,

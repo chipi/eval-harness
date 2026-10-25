@@ -10,9 +10,12 @@ output_contract:
   - {id: label, format: label}
 success_criteria:
   primary: {measure: correct, direction: higher}
+  guardrails:
+    - {"name": "labelling convention", "rule": "The fine-tunes' lead is AG News's filing convention: against gold adjudicated by topic, every hosted LLM scores above every fine-tune. Read section 3.4 before choosing.", "source": "research/REPORT_CLASSIFICATION.md §3.4"}
+    - {"name": "licence", "rule": "AG News is licensed `unknown`, for research and non-commercial use; bert_base_ta and bert_mini state no licence.", "source": "examples/classification-ag-news/README.md"}
 datasets:
   - {dataset_id: ag_news_200, role: heldout, notes: first 50 per class from the first 1,600 test rows}
-  - {dataset_id: ag_news_20, role: dev}
+  - {dataset_id: ag_news_20, decides: false, role: dev}
 references:
   - {reference_id: gold/ag_news_200, tier: gold, format: label}
 measures:

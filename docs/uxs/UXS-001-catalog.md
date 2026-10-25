@@ -133,10 +133,10 @@ The whole project at a glance, for the last 14 days of activity or for all time.
   metrics, measured runs, billed (USD) and tokens. Under them the period switch, **last 14 days**
   (shown first) or **all time**, with the dates each spans. Recent counts back 14 days from the
   newest thing recorded, so a quiet project still shows its last burst of work.
-- `01 goals at a glance`: one row per goal and dataset: **goal**, **dataset**, **decides** (the
+- `01 goals at a glance`: one row per goal and dataset it decides on (a dataset marked `decides: false` is left out): **goal**, **dataset**, **decides** (the
   measure, ↓ when lower is better), **baseline** (the promoted arm and its mean, or "none
-  promoted"), **leader** (the best unflagged arm scored against the gold group's reference, and
-  its mean; with no gold reference, the first group scored against a reference, and **decides**
+  promoted"), **leader** (the best arm the goal's decision may recommend, scored against the gold group's
+  reference: not flagged, over a limit or retired; and its mean; with no gold reference, the first group scored against a reference, and **decides**
   says "no gold: scored against <reference>"), **leader vs baseline** (the paired test of the two alone, threshold 0.05: verdict,
   Δ, p, and an **inspect** button; "the baseline leads" when they are the same arm),
   **recommended** (the arm the goal's strategy picks once limits and the tie-break are applied;

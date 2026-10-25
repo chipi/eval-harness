@@ -267,6 +267,20 @@ try:
         check(f"V14: fails {why}", "FAIL" in line, line)
     goal_path.write_text(original)
 
+    # A dataset the goal never decides on (a dev slice, a generalization check): its groups keep
+    # their leader, never a recommendation, and the home page's glance leaves it out.
+    goal_path.write_text(original.replace("role: dev,", "role: dev, decides: false,"))
+    r = evh("goals", "--goal", "tickets_summary")
+    check(
+        "decides: false: the goal page says it does not decide there, and recommends nothing",
+        "The goal does not decide on tickets_v1 (dev)" in r.stdout and "recommended:" not in r.stdout,
+        r.stdout[-700:],
+    )
+    r = evh("overview")
+    glance = r.stdout.split("goals at a glance", 1)[-1].split("activity", 1)[0]
+    check("decides: false: the glance leaves the dataset out", "tickets_v1" not in glance, glance)
+    goal_path.write_text(original)
+
     # Gold this checkout does not hold (not redistributed): the group is still gold by its id, so
     # the glance does not call it "no gold".
     shutil.move(str(data / "references" / "gold"), str(proj / "gold-aside"))

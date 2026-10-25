@@ -34,3 +34,4 @@ params:
   sentences: 3
   family: lead
   price_tier: free
+goal: news_summary_cnn

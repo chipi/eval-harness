@@ -21,3 +21,4 @@ params:
   price_tier: free
   device: cpu
   precision: fp32
+goal: entities_few_nerd

@@ -742,6 +742,8 @@ def glance(A: Adapter, by_ds: dict) -> list[dict]:
         retired_in = retired_in_of(A, g)
         for ans in goal_answers(g, by_ds):
             ds = ans["dataset"]
+            if not decides_on(g, ds):
+                continue  # a dev slice or a generalization check: on the goal page, not the glance
             v = by_ds.get(ds) or {}
             bl = [x for x in v.get("baselines", []) if not x.get("goal") or x.get("goal") == g["goal_id"]]
             base = bl[-1]["arm"] if bl and bl[-1].get("arm") else None
@@ -751,7 +753,11 @@ def glance(A: Adapter, by_ds: dict) -> list[dict]:
 
             plain = [x for x in ans["groups"] if not x["key"].startswith("judge ")]
             grp = next((x for x in plain if ref_tier(tiers, x["key"]) == "gold"), plain[0] if plain else None)
-            leader = grp["leader"] if grp else None
+            dec = group_decision(A, g, ds, grp["rows"], measure, retired_in) if grp else None
+            # The decision's leader: the best arm it may recommend, so never a retired or flagged one.
+            leader = (
+                next((r for r in grp["rows"] if dec and r["arm"] == dec["leader"]), None) if grp else None
+            )
             label = {x["arm"]: x["label"] for x in v.get("arms", [])}
             test = None
             if leader and base and leader["arm"] != base:
@@ -765,7 +771,6 @@ def glance(A: Adapter, by_ds: dict) -> list[dict]:
                     family=1,
                 )
                 test = (cmp.get("rows") or [None])[0]
-            dec = group_decision(A, g, ds, grp["rows"], measure, retired_in) if grp else None
             rec = dec["recommended"] if dec else None
             rows.append(
                 {
@@ -947,7 +952,7 @@ def _glance(A: Adapter, by_ds: dict) -> str:
     if not rows:
         return '<p class="muted">No goals yet: a goal says what an evaluation is for (<code>data/goals/</code>).</p>'
     return (
-        '<p class="small muted">The leader is the best unflagged arm scored against the gold group\'s '
+        '<p class="small muted">The leader is the best arm the goal may recommend (not flagged, over a limit or retired), scored against the gold group\'s '
         "reference; the test is the leader against the baseline alone (threshold 0.05). The goal "
         "page tests every arm, Holm across them. <b>recommended</b> is what the goal's strategy picks "
         "once limits and the tie-break on cost and speed are applied; its ratios are against the "
@@ -1805,9 +1810,26 @@ def group_decision(A: Adapter, g: dict, ds: str, rows: list, gm: str, retired_in
         for r in rows
     }
     machines = {r["arm"]: r.get("machine", "") for r in rows}
-    return axes.decide(goal, arms, lambda m: "lower" if A.lower_is_better(m, ds) else None, machines) | {
+    dec = axes.decide(goal, arms, lambda m: "lower" if A.lower_is_better(m, ds) else None, machines) | {
         "goal": goal
     }
+    if not decides_on(g, ds):
+        # The goal never decides here (a dev slice, a generalization check): the leader stands, the
+        # recommendation does not.
+        role = next((d.get("role") for d in g.get("datasets") or [] if d.get("dataset_id") == ds), "") or ""
+        dec["recommended"] = None
+        dec["why"] = [
+            *[w for w in dec["why"] if not w.startswith(("Recommended:", "Still tied"))],
+            f"The goal does not decide on {ds}"
+            + (f" ({role})" if role else "")
+            + ": shown, not recommended.",
+        ]
+    return dec
+
+
+def decides_on(g: dict, ds: str) -> bool:
+    """Whether the goal decides on this dataset (`decides: false` on a goal dataset: never)."""
+    return next((d.get("decides", True) for d in g.get("datasets") or [] if d.get("dataset_id") == ds), True)
 
 
 def baseline_gap(A: Adapter, dec: dict, rows: list, gm: str) -> str:

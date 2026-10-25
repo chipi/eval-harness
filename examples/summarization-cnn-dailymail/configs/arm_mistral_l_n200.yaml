@@ -31,3 +31,4 @@ params:
   max_tokens: 1200
   usd_per_mtok_in: 0.6
   usd_per_mtok_out: 1.8
+goal: news_summary_cnn

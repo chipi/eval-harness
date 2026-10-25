@@ -83,6 +83,7 @@
     },
     "version": 4
   },
+  "goal": "summary_judge_summeval",
   "metric_kinds": {
     "input_truncated": "descriptive",
     "parsed": "descriptive",
@@ -130,6 +131,7 @@
     "replayed_items": 99,
     "replayed_without_recorded_extra": 0
   },
+  "round": "r2",
   "run_id": "se_gemma_l_pubtext_n100_v1_20261019T070854Z",
   "scores": {
     "cost_usd": 0.001013,

@@ -87,6 +87,7 @@
     },
     "version": 4
   },
+  "goal": "news_topic_ag",
   "metric_kinds": {
     "answer_words": "descriptive",
     "confidence": "descriptive",
@@ -126,6 +127,7 @@
     "Together": 1
   },
   "reference_tier": "gold",
+  "round": "r1",
   "run_id": "ag_llama_m_n200_v1_20260927T094427Z",
   "scores": {
     "answer_words": 1.0,

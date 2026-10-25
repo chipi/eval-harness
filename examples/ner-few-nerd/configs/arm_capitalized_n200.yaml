@@ -16,3 +16,4 @@ params:
   label: location
   family: baseline
   price_tier: free
+goal: entities_few_nerd

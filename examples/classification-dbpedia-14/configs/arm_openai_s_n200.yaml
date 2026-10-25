@@ -27,3 +27,4 @@ params:
   max_tokens: 200
   usd_per_mtok_in: 0.25
   usd_per_mtok_out: 2.0
+goal: entity_topic_dbpedia

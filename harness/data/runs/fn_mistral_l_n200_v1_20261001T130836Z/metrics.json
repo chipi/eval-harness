@@ -109,6 +109,7 @@
     },
     "version": 4
   },
+  "goal": "entities_few_nerd",
   "metric_kinds": {
     "confidence": "descriptive",
     "f1": "quality",
@@ -152,6 +153,7 @@
   "rescore_dropped_metrics": [
     "resumed"
   ],
+  "round": "r1",
   "run_id": "fn_mistral_l_n200_v1_20261001T130836Z",
   "scores": {
     "cost_usd": 0.0001495089,

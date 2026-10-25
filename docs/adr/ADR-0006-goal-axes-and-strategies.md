@@ -49,12 +49,15 @@ set is not evidence that they are equally good.
   Identical per-item scores are tied in every strategy. A judge's group decides on the judge's
   score, so the goal's quality limit and margin (written for its own measure) do not apply there.
 - **A tie-break picks among the tied** (`success_criteria.tie_break`, default cost then speed,
-  any axis the goal weighs; validate's V14 refuses one it does not).
+  any axis the goal weighs, quality included: `frugal` with `[cost, quality]` is "the cheapest,
+  then the best of the equally cheap"; validate's V14 refuses an axis it does not weigh).
 - **What is not known is said.** A number an arm does not record is "not recorded", never 0,
   and is never a reason to drop it. An axis that some tied arm does not record cannot break the
   tie: it is skipped with the reason and the next axis decides (an unpriced hosted call must not
   lose on cost to a priced one). Speed is not compared, nor used to break a tie, between arms
   whose runs recorded different machines; arms that recorded none count as one machine.
+- **A goal decides only where it says so**: a dataset marked `decides: false` (a dev slice, a
+  generalization check) shows its groups and their leader, never a recommendation.
 - **Guardrails stay words** (`{name, rule, source}`): shown on the goal page and by
   `evh goals --goal`, never computed.
 - **`secondary` is removed**; its entries become axes.

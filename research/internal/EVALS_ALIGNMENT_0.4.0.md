@@ -65,3 +65,14 @@ answer matched its report:
 - Judged runs committed: CNN judge-summ-v1 (29 runs, 197/200 items), v2 (29, 200/200) and the
   unvalidated pointwise scorer (2), projected from the stored verdicts by `judge-score
   --no-calls` ($0; their judging cost was $13.33). Their output copies are blobs already in git.
+- Goals aligned (A, D, E): every run names its goal; each experiment's record is round r1 and
+  each side tree a closed round whose arms are retired by runs directory (13 rounds); every
+  config names its goal (343), but no round, so `make reproduce` still runs; each goal encodes
+  its report's rule (DBpedia, SciFact, SummEval `frugal`; SciFact `tie_break: [cost, quality]`),
+  dev and generalization datasets `decides: false`, guardrails from the reports; each report's
+  pick is the promoted baseline with the report's reason. The catalog now recommends the
+  report's pick for five goals. AG News reads "still tied" among its three BERTs: the report's
+  pick, `bert_mini`, rests on speed measured on one machine (round r2), and the record's BERTs
+  ran on two, so speed is not compared there.
+- Harness changes found on the way: `decides: false` on a goal dataset; quality may be a
+  tie-break axis; the glance's leader is the decision's (never a retired or flagged arm).

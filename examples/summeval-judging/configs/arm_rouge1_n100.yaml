@@ -9,3 +9,4 @@ params:
   metric: rouge1
   family: rouge
   price_tier: free
+goal: summary_judge_summeval

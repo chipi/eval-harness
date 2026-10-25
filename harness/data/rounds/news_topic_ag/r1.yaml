@@ -1,0 +1,15 @@
+round_id: r1
+goal: news_topic_ag
+dataset_id: ag_news_200
+hypothesis: Which of 24 hosted LLMs (8 vendors × 3 price tiers), three fine-tuned BERTs, a zero-shot NLI
+  model, regex rules and a constant labels AG News best, and at what cost?
+status: closed
+opened_at: '2026-09-27T08:48:44Z'
+closed_at: '2026-09-30T09:46:23Z'
+conclusion:
+  text: Against the dataset's gold, three public BERT fine-tunes (0.9600, 0.9500, 0.9450) score above
+    all 24 hosted LLMs (0.835–0.910); that lead is AG News's filing convention. If your labels follow
+    a house convention, fine-tune, starting with bert_mini (44 MB, $0 marginal); if they mean what the
+    words say, use a hosted LLM; if you rent, start with gemma_m ($8 per 1M items). (REPORT_CLASSIFICATION,
+    executive summary.)
+  promoted_run: ag_bert_mini_n200_v1_20260927T090317Z

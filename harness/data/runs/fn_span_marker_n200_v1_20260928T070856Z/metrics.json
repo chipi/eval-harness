@@ -100,6 +100,7 @@
     },
     "version": 4
   },
+  "goal": "entities_few_nerd",
   "metric_kinds": {
     "confidence": "descriptive",
     "f1": "quality",
@@ -133,6 +134,7 @@
   "primary_metric": "f1",
   "providers_seen": {},
   "reference_tier": "gold",
+  "round": "r1",
   "run_id": "fn_span_marker_n200_v1_20260928T070856Z",
   "scores": {
     "cost_usd": 0.0,

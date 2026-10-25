@@ -79,6 +79,7 @@
     },
     "version": 4
   },
+  "goal": "summary_judge_summeval",
   "metric_kinds": {
     "input_truncated": "descriptive",
     "parsed": "descriptive",
@@ -121,6 +122,7 @@
     "Parasail": 79
   },
   "reference_tier": "gold",
+  "round": "r1",
   "run_id": "se_llama_m_n100_v1_20261018T100452Z",
   "scores": {
     "cost_usd": 0.000517,

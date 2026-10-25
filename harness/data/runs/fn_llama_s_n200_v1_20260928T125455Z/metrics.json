@@ -109,6 +109,7 @@
     },
     "version": 4
   },
+  "goal": "entities_few_nerd",
   "metric_kinds": {
     "confidence": "descriptive",
     "f1": "quality",
@@ -150,6 +151,7 @@
     "Novita": 60
   },
   "reference_tier": "gold",
+  "round": "r1",
   "run_id": "fn_llama_s_n200_v1_20260928T125455Z",
   "scores": {
     "cost_usd": 3.69216e-05,

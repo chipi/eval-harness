@@ -1,0 +1,31 @@
+round_id: r2
+goal: scientific_retrieval_scifact
+dataset_id: scifact_200
+from: r1
+hypothesis: Does swapping only the first stage to e5_base move a reranking pipeline into the pre-registered
+  range 0.786–0.797?
+status: closed
+opened_at: '2026-09-28T22:23:08Z'
+closed_at: '2026-09-28T23:15:10Z'
+retired:
+- config_id: sf_glm_s_bm25first_n200_v1
+  runs_dir: runs-pair
+  reason: a paired side run, not on the leaderboard; data/runs is the record
+  at: '2026-09-28T23:15:10Z'
+- config_id: sf_glm_s_e5first_n200_v1
+  runs_dir: runs-pair
+  reason: a paired side run, not on the leaderboard; data/runs is the record
+  at: '2026-09-28T23:15:10Z'
+- config_id: sf_qwen_s_bm25first_n200_v1
+  runs_dir: runs-pair
+  reason: a paired side run, not on the leaderboard; data/runs is the record
+  at: '2026-09-28T23:15:10Z'
+- config_id: sf_qwen_s_e5first_n200_v1
+  runs_dir: runs-pair
+  reason: a paired side run, not on the leaderboard; data/runs is the record
+  at: '2026-09-28T23:15:10Z'
+conclusion:
+  text: 'glm_s reranking e5_base''s candidates scores 0.7891, inside the registered range and +0.0700
+    over e5_base alone (p 0.0001): one run, under a different adapter from the main table. (REPORT_RETRIEVAL
+    §3.4.)'
+  promoted_run: null

@@ -109,6 +109,7 @@
     },
     "version": 4
   },
+  "goal": "scientific_retrieval_scifact",
   "metric_kinds": {
     "confidence": "descriptive",
     "duplicate_ids": "descriptive",
@@ -147,6 +148,7 @@
   "primary_metric": "ndcg_10",
   "providers_seen": {},
   "reference_tier": "gold",
+  "round": "r1",
   "run_id": "sf_deepseek_s_n200_v1_20260928T205401Z",
   "scores": {
     "cost_usd": 0.0002997891,

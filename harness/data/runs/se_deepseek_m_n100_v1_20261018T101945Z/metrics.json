@@ -79,6 +79,7 @@
     },
     "version": 4
   },
+  "goal": "summary_judge_summeval",
   "metric_kinds": {
     "input_truncated": "descriptive",
     "parsed": "descriptive",
@@ -118,6 +119,7 @@
     "Together": 99
   },
   "reference_tier": "gold",
+  "round": "r1",
   "run_id": "se_deepseek_m_n100_v1_20261018T101945Z",
   "scores": {
     "cost_usd": 0.000771,

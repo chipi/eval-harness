@@ -269,6 +269,31 @@ check(
     d["why"],
 )
 
+# frugal + [cost, quality]: the cheapest of what the test cannot separate, then the best of those.
+ITEMS[:] = [f"q{k:02d}" for k in range(12)]
+lead = [0.9] * 12
+free_hi = [0.9] * 10 + [0.6] * 2
+free_lo = [0.9] * 9 + [0.6] * 3
+d = axes.decide(
+    {
+        "success_criteria": {
+            **GOAL["success_criteria"],
+            "strategy": "frugal",
+            "tie_break": ["cost", "quality"],
+        }
+    },
+    {
+        "lead": arm("Lead", lead, 0.01, 100),
+        "hi": arm("FreeHi", free_hi, 0.0, 300),
+        "lo": arm("FreeLo", free_lo, 0.0, 50),
+    },
+)
+check(
+    "tie_break [cost, quality]: among the equally cheap, the better quality wins (not the faster)",
+    d["recommended"] == "hi" and any(w.startswith("By quality") for w in d["why"]),
+    d["why"],
+)
+
 # Nobody eligible: the reason is named and counted, not a list of what might have happened.
 d = axes.decide(
     GOAL,

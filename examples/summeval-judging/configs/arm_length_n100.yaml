@@ -7,3 +7,4 @@ params:
   provider: length
   family: baseline
   price_tier: free
+goal: summary_judge_summeval

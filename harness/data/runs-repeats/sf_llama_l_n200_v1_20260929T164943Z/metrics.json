@@ -112,6 +112,7 @@
     },
     "version": 4
   },
+  "goal": "scientific_retrieval_scifact",
   "metric_kinds": {
     "confidence": "descriptive",
     "duplicate_ids": "descriptive",
@@ -153,6 +154,7 @@
   "primary_metric": "ndcg_10",
   "providers_seen": {},
   "reference_tier": "gold",
+  "round": "r3",
   "run_id": "sf_llama_l_n200_v1_20260929T164943Z",
   "scores": {
     "cost_usd": 0.0008458699,

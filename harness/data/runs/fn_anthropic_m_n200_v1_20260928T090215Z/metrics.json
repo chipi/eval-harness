@@ -108,6 +108,7 @@
     },
     "version": 4
   },
+  "goal": "entities_few_nerd",
   "metric_kinds": {
     "confidence": "descriptive",
     "f1": "quality",
@@ -149,6 +150,7 @@
     "Claude Platform on AWS": 277
   },
   "reference_tier": "gold",
+  "round": "r1",
   "run_id": "fn_anthropic_m_n200_v1_20260928T090215Z",
   "scores": {
     "cost_usd": 0.0010164929,

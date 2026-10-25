@@ -109,6 +109,7 @@
     },
     "version": 4
   },
+  "goal": "entities_few_nerd",
   "metric_kinds": {
     "confidence": "descriptive",
     "f1": "quality",
@@ -150,6 +151,7 @@
     "Venice": 261
   },
   "reference_tier": "gold",
+  "round": "r1",
   "run_id": "fn_mistral_s_n200_v1_20260928T132936Z",
   "scores": {
     "cost_usd": 2.73072e-05,

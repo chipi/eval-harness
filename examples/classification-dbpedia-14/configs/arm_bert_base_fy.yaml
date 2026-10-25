@@ -50,3 +50,4 @@ params:
   label_order: [Company, EducationalInstitution, Artist, Athlete, OfficeHolder,
                 MeanOfTransportation, Building, NaturalPlace, Village, Animal,
                 Plant, Album, Film, WrittenWork]
+goal: entity_topic_dbpedia

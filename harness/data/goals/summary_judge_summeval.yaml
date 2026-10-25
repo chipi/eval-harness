@@ -10,6 +10,10 @@ output_contract:
   - {id: scores, format: scores}
 success_criteria:
   primary: {measure: tau, direction: higher}
+  strategy: frugal
+  guardrails:
+    - {"name": "check against people", "rule": "Before relying on any judge, check it against a small set of human judgements on your own outputs.", "source": "research/REPORT_SUMMEVAL.md §4"}
+    - {"name": "provider", "rule": "No provider was pinned: gemma_l scored 0.0113 apart and billed 3.7× apart on two providers, one run each.", "source": "research/REPORT_SUMMEVAL.md §3.3"}
 datasets:
   - {dataset_id: summeval_100, role: heldout, notes: all 100 annotated articles, 16 summaries each; no dev slice}
 measures:

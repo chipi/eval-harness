@@ -79,6 +79,7 @@
     },
     "version": 4
   },
+  "goal": "summary_judge_summeval",
   "metric_kinds": {
     "input_truncated": "descriptive",
     "parsed": "descriptive",
@@ -117,6 +118,7 @@
     "Alibaba": 100
   },
   "reference_tier": "gold",
+  "round": "r1",
   "run_id": "se_qwen_m_n100_v1_20261018T104825Z",
   "scores": {
     "cost_usd": 0.001084,

@@ -94,6 +94,7 @@
     },
     "version": 4
   },
+  "goal": "entity_topic_dbpedia",
   "metric_kinds": {
     "answer_words": "descriptive",
     "confidence": "descriptive",
@@ -137,6 +138,7 @@
     "Venice": 3
   },
   "reference_tier": "gold",
+  "round": "r1",
   "run_id": "db_deepseek_l_n200_v1_20260927T141255Z",
   "scores": {
     "answer_words": 1.0,

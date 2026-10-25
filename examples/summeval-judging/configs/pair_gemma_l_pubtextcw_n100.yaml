@@ -24,3 +24,4 @@ params:
   provider_routing:
     order: [coreweave/fp4]
     allow_fallbacks: false
+goal: summary_judge_summeval

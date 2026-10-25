@@ -72,6 +72,7 @@
     },
     "version": 4
   },
+  "goal": "summary_judge_summeval",
   "metric_kinds": {
     "input_truncated": "descriptive",
     "parsed": "descriptive",
@@ -101,6 +102,7 @@
   "primary_metric": "tau",
   "providers_seen": {},
   "reference_tier": "gold",
+  "round": "r1",
   "run_id": "se_bartscore_n100_v1_20261015T131626Z",
   "scores": {
     "cost_usd": 0.0,

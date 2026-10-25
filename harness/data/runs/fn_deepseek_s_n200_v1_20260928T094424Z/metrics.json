@@ -108,6 +108,7 @@
     },
     "version": 4
   },
+  "goal": "entities_few_nerd",
   "metric_kinds": {
     "confidence": "descriptive",
     "f1": "quality",
@@ -161,6 +162,7 @@
     "Venice": 27
   },
   "reference_tier": "gold",
+  "round": "r1",
   "run_id": "fn_deepseek_s_n200_v1_20260928T094424Z",
   "scores": {
     "cost_usd": 3.24152e-05,

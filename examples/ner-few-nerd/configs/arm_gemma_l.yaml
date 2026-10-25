@@ -27,3 +27,4 @@ params:
   max_tokens: 600
   usd_per_mtok_in: 0.1
   usd_per_mtok_out: 0.2
+goal: entities_few_nerd

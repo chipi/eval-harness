@@ -112,6 +112,7 @@
     },
     "version": 4
   },
+  "goal": "scientific_retrieval_scifact",
   "metric_kinds": {
     "confidence": "descriptive",
     "duplicate_ids": "descriptive",
@@ -150,6 +151,7 @@
   "primary_metric": "ndcg_10",
   "providers_seen": {},
   "reference_tier": "gold",
+  "round": "r2",
   "run_id": "sf_glm_s_bm25first_n200_v1_20260928T221300Z",
   "scores": {
     "cost_usd": 0.0007406137,

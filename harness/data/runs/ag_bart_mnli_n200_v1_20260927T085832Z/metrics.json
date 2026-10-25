@@ -79,6 +79,7 @@
     },
     "version": 4
   },
+  "goal": "news_topic_ag",
   "metric_kinds": {
     "answer_words": "descriptive",
     "confidence": "descriptive",
@@ -103,6 +104,7 @@
   "primary_metric": "correct",
   "providers_seen": {},
   "reference_tier": "gold",
+  "round": "r1",
   "run_id": "ag_bart_mnli_n200_v1_20260927T085832Z",
   "scores": {
     "answer_words": 1.0,

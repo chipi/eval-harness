@@ -952,8 +952,8 @@ def v14_goals() -> None:
                 jsonschema.validate(g, schema)
             except jsonschema.ValidationError as exc:
                 bad.append(f"goals/{gid}.yaml: {exc.message[:90]}")
-        # The tie-break names axes the goal weighs: cost, speed or one of its own, not ignored.
-        weighed = {a["name"] for a in axes_of(g) if a["role"] != "ignore" and a["name"] != "quality"}
+        # The tie-break names axes the goal weighs: quality, cost, speed or one of its own, not ignored.
+        weighed = {a["name"] for a in axes_of(g) if a["role"] != "ignore"}
         for name in (g.get("success_criteria") or {}).get("tie_break") or []:
             if name not in weighed:
                 bad.append(

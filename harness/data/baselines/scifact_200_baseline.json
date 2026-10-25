@@ -1,0 +1,31 @@
+{
+  "adapter": "examples/retrieval-scifact/adapter.py",
+  "baseline_id": "scifact_200_baseline",
+  "build": {
+    "dirty": false,
+    "ref": "0e20aaeb3dcabfcb0f9832740764147ceb9bffff",
+    "source": "git"
+  },
+  "dataset_id": "scifact_200",
+  "goal": "scientific_retrieval_scifact",
+  "promoted_at": "2026-10-25T14:08:24Z",
+  "promoted_from": "sf_e5_base_n200_v1_20260928T174656Z",
+  "reason": "Build e5_base retrieval first: 0.7191 at $0 per query, not separated from any of the twelve BM25-then-rerank pipelines; add a reranker on its top 20 only if about +0.07 nDCG@10 is worth about $732 per 1M queries. REPORT_RETRIEVAL, executive summary.",
+  "reference_tier": "gold",
+  "scores": {
+    "cost_usd": 0.0,
+    "duplicate_ids": 0.0,
+    "found_any": 0.955,
+    "latency_ms": 59.415065,
+    "mrr_10": 0.688906746,
+    "n_relevant": 1.135,
+    "n_returned": 100.0,
+    "ndcg_10": 0.7190999949,
+    "parsed": 1.0,
+    "rank_of_first": 6.455,
+    "recall_10": 0.8305,
+    "recall_100": 0.954,
+    "total_cost_usd": 0.0,
+    "unknown_ids": 0.0
+  }
+}

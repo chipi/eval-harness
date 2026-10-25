@@ -10,8 +10,10 @@ output_contract:
   - {id: entities, format: entity_list}
 success_criteria:
   primary: {measure: f1, direction: higher}
+  guardrails:
+    - {"name": "what was not measured", "rule": "Labelling and training cost, an LLM given definitions or examples, and contamination of the hosted models were not measured.", "source": "research/REPORT_NER.md, executive summary"}
 datasets:
   - {dataset_id: few_nerd_280, role: heldout, notes: 280 sentences, seeded; at least 3 tokens}
-  - {dataset_id: few_nerd_56, role: dev}
+  - {dataset_id: few_nerd_56, decides: false, role: dev}
 measures:
   - {id: f1, kind: metric, validity: partial}

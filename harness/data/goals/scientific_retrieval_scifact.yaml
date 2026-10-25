@@ -10,8 +10,12 @@ output_contract:
   - {id: ranking, format: ranked_list}
 success_criteria:
   primary: {measure: ndcg_10, direction: higher}
+  strategy: frugal
+  tie_break: [cost, quality]
+  guardrails:
+    - {"name": "one run per arm", "rule": "Between-run variance is unmeasured: second runs moved nDCG@10 by up to 0.0126, each mixed with an adapter difference.", "source": "research/REPORT_RETRIEVAL.md, between-run variance"}
 datasets:
   - {dataset_id: scifact_200, role: heldout, notes: 200 seeded queries, full 5,183-document corpus}
-  - {dataset_id: scifact_40, role: dev}
+  - {dataset_id: scifact_40, decides: false, role: dev}
 measures:
   - {id: ndcg_10, kind: metric, validity: validated}

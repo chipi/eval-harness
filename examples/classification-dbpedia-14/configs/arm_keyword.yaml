@@ -16,3 +16,4 @@ params:
   provider: keyword
   family: baseline
   price_tier: free
+goal: entity_topic_dbpedia

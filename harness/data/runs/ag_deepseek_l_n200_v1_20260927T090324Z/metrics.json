@@ -87,6 +87,7 @@
     },
     "version": 4
   },
+  "goal": "news_topic_ag",
   "metric_kinds": {
     "answer_words": "descriptive",
     "confidence": "descriptive",
@@ -129,6 +130,7 @@
     "StreamLake": 67
   },
   "reference_tier": "gold",
+  "round": "r1",
   "run_id": "ag_deepseek_l_n200_v1_20260927T090324Z",
   "scores": {
     "answer_words": 1.0,

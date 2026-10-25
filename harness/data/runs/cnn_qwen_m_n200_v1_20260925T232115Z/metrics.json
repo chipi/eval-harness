@@ -77,6 +77,7 @@
     },
     "version": 4
   },
+  "goal": "news_summary_cnn",
   "metric_kinds": {
     "compression": "descriptive",
     "concision": "quality",
@@ -116,6 +117,7 @@
     "Alibaba": 200
   },
   "reference_tier": "gold",
+  "round": "r1",
   "run_id": "cnn_qwen_m_n200_v1_20260925T232115Z",
   "scores": {
     "compression": 0.14277,

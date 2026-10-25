@@ -8,3 +8,4 @@ params:
   seed: 20260928
   price_tier: free
   top_k: 100
+goal: scientific_retrieval_scifact

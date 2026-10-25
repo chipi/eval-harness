@@ -87,6 +87,7 @@
     },
     "version": 4
   },
+  "goal": "news_topic_ag",
   "metric_kinds": {
     "answer_words": "descriptive",
     "confidence": "descriptive",
@@ -117,6 +118,7 @@
   "primary_metric": "correct",
   "providers_seen": {},
   "reference_tier": "gold",
+  "round": "r2",
   "run_id": "ag_bert_base_fy_n200_v1_20260930T143928Z",
   "scores": {
     "answer_words": 1.0,

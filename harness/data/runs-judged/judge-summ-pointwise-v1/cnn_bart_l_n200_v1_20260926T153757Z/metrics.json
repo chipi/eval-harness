@@ -118,6 +118,7 @@
     },
     "version": 4
   },
+  "goal": "news_summary_cnn",
   "metric_kinds": {
     "cost_usd": "cost",
     "judge_gemma_l_unvalidated": "quality",

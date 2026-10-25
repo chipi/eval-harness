@@ -16,3 +16,4 @@ params:
   label: World
   family: baseline
   price_tier: free
+goal: news_topic_ag

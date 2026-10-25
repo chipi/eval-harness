@@ -12,3 +12,4 @@ params:
   provider: nothing
   family: baseline
   price_tier: free
+goal: entities_few_nerd
