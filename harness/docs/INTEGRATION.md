@@ -245,7 +245,7 @@ which references exist, what one arm wrote for one item.
   | question | members |
   |---|---|
   | which arms, on which data | `arms()`, `arms_of(path)`, `describe(arm)`, `notes(arm)` |
-  | what each scored, per item | `scores(arm, rescore=False)`, `recorded_means(arm)`, `input_hashes(arm)`, `can_rescore` |
+  | what each scored, per item | `scores(arm, rescore=False)`, `recorded_means(arm)`, `input_hashes(arm)`, `can_rescore`. A goal's axes read their per-item values here: `cost_usd`, `tokens_in` + `tokens_out`, `latency_ms`, and any metric a goal names as its own axis ([ADR-0006](../../docs/adr/ADR-0006-goal-axes-and-strategies.md)) |
   | which way is better | `lower_is_better(metric, dataset)`, `is_neutral(metric)`, `preferred_metrics`, `shape_metrics` |
   | which references | `references()`, `reference_format(ref)`, `reference_archived(ref)` |
   | what was asked, what came back | `output_format(arm)` |

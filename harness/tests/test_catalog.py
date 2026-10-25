@@ -716,7 +716,16 @@ try:
         )
         (d / "predictions.jsonl").write_text(
             "".join(
-                json.dumps({"item_id": f"i{i}", "overlap_f1": v, "cost_usd": 0.0, "latency_ms": 1.0 + i})
+                json.dumps(
+                    {
+                        "item_id": f"i{i}",
+                        "overlap_f1": v,
+                        "cost_usd": 0.0,
+                        "latency_ms": 1.0 + i,
+                        "tokens_in": 10 + i,
+                        "tokens_out": 5,
+                    }
+                )
                 + "\n"
                 for i, v in enumerate(accs)
             )
@@ -727,6 +736,13 @@ try:
         "compare: with no primary metric on record, a score is the default, never cost or latency",
         plain.get("metric") == "overlap_f1",
         plain.get("metric"),
+    )
+    shape = plain.get("shape") or {}
+    check(
+        "compare: the scatter's x axis offers latency, cost and tokens (in + out) per item",
+        {"latency_ms", "cost_usd", "tokens"} <= set(shape)
+        and shape["tokens"]["runs/ds1/arm_p"]["i0"] == 15.0,
+        sorted(shape),
     )
     cs.set_adapter(A)
 

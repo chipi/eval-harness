@@ -4,7 +4,7 @@
 - **Authors**: Marko Dragoljevic
 - **Related UX specs**: [UXS-001](../uxs/UXS-001-catalog.md) (the goal page), [UXS-003](../uxs/UXS-003-cli-and-onboarding.md) (the round commands)
 - **Related RFC**: [RFC-004](../rfc/RFC-004-experiment-rounds.md) (rounds: files, commands, the evidence)
-- **Related ADRs**: [ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md) (goals first-class), [ADR-0004](../adr/ADR-0004-experiment-rounds.md) (rounds)
+- **Related ADRs**: [ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md) (goals first-class), [ADR-0004](../adr/ADR-0004-experiment-rounds.md) (rounds), [ADR-0006](../adr/ADR-0006-goal-axes-and-strategies.md) (axes and strategies)
 - **Related PRDs**: [PRD-001](PRD-001-experiments-and-comparison.md), [PRD-004](PRD-004-catalog-and-inspector.md)
 
 ## Summary
@@ -88,6 +88,14 @@ belonged together, why one was dropped, or what a round concluded. The newcomer 
   arms grouped by what they are scored against (gold, silver, a judge), ranked within a group.
   An arm with fewer items than `min_items`, a format the goal does not accept, or that wrote the
   reference it is scored against is flagged and never a group's leader.
+- **FR1.6**: A goal weighs cost, quality and speed (cost and speed built in, with no
+  configuration) and may add its own per-item metrics as axes, each with an optional limit. Arms
+  over a limit, flagged arms and retired arms are never recommended. The goal's strategy
+  (`balanced` by default, `quality_first`, `frugal`) decides who is tied with the quality leader;
+  its tie-break (default cost, then speed) picks among them. Cost is shown in dollars and tokens
+  per item; speed as p50 and p95. The goal page names the recommended arm per group with the
+  reasons, and the home page's glance shows it with its cost and speed against the baseline;
+  the CLI says the same. Guardrails (rules in words) are shown, never computed.
 
 ### FR2: Rounds (optional)
 

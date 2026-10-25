@@ -496,11 +496,7 @@ def compare(params: dict) -> dict:
         "arms": [dict(A.describe(a), source=per_arm[a].get(metric, {}).get("source", "")) for a in arms],
         "series": series,
         # every arm's shape metrics, for the scatter's x axis, whatever metric is chosen
-        "shape": {
-            k: {a: s[k]["values"] for a, s in per_arm.items() if k in s}
-            for k in A.shape_metrics
-            if any(k in s for s in per_arm.values())
-        },
+        "shape": _shape(per_arm),
         "items": result["items"],
         "rows": result["rows"],
         "family_size": result["family_size"],
@@ -515,6 +511,22 @@ def compare(params: dict) -> dict:
         "breakdown": breakdown,
         "conditions": _conditions(list(series), metric),
     }
+
+
+def _shape(per_arm: dict) -> dict:
+    """{x metric: {arm: {item: value}}} for the scatter: the adapter's shape metrics (latency, the
+    output's size), then cost in dollars and in tokens (in + out), the goal pages' cost axis."""
+    from evaluation_harness._axes import tokens_per_item  # noqa: PLC0415
+
+    out = {
+        k: {a: s[k]["values"] for a, s in per_arm.items() if k in s}
+        for k in (*A.shape_metrics, "cost_usd")
+        if any(k in s for s in per_arm.values())
+    }
+    tok = {a: tokens_per_item(s) for a, s in per_arm.items()}
+    if any(tok.values()):
+        out["tokens"] = {a: t for a, t in tok.items() if t}
+    return out
 
 
 def _conditions(arms: list, metric: str) -> dict | None:

@@ -109,6 +109,31 @@ retired and conclusion); `evh rounds --goal` has the evidence in full. (This pro
 rounds yet; [tutorial 4](4-rounds-and-versions.md) makes them.) Every field a goal file can
 have: [RUNBOOK §4c](../../harness/docs/RUNBOOK.md#4c-the-goal-file-field-by-field).
 
+Each group also says what the goal recommends, and why. Beside quality, every goal weighs cost
+(dollars and tokens per item) and speed (latency p50 and p95): a column each, and a chart of
+quality against each. The rule ([ADR-0006](../adr/ADR-0006-goal-axes-and-strategies.md)): an
+arm past a limit is out; a flagged or retired arm is never recommended; the goal's strategy
+says who is tied with the quality leader (by default `balanced`: not separated by the paired
+test and within 2% of it); among the tied, the cheaper wins, then the faster. The reasons
+list each step, so the page says why it recommends what it does. A goal changes the rule in its
+`success_criteria`:
+
+```yaml
+success_criteria:
+  primary: {measure: overlap_f1, direction: higher}
+  axes:
+    speed: {limit: 500}                 # ms, on the p95: a slower arm is out
+    quality: {margin: 0.05}             # tied if within 0.05 and not separated
+  strategy: balanced                    # or quality_first, or frugal
+  tie_break: [cost, speed]
+  guardrails:
+    - {name: no PII, rule: a summary never quotes an email address}
+```
+
+`evh goals --goal tickets_summary` prints the same columns and the recommendation with its
+reasons; the home page's glance, and `evh overview`, show each goal's recommended arm with its
+cost and speed against the baseline.
+
 The search box on every page, in the terminal:
 
 ```bash

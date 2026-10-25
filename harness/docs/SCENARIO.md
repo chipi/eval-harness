@@ -226,7 +226,8 @@ Screenshot: the home page (the tiles, goals at a glance, activity and spend in U
 coverage, what was recorded; last 14 days and all time); the datasets page and each dataset page (its
 baseline with reason, arms grouped by what they are scored against, `briefs_v1` ↔ `briefs_v2`
 linked both ways); an arm page (its metrics table, runs, config, conditions, rounds); the goals
-page and each goal's page (its answer, its arms grouped by what they are scored against, the
+page and each goal's page (its answer, its arms grouped by what they are scored against, each
+group's recommendation with its reasons, the cost and speed columns and the trade-off charts, the
 closed rounds with their conclusions and retired arms; r2's suggestions were captured in step 9,
 while r2 was open); each reference page; the metrics page and a metric page (what it measures, its
 kind, the goals it decides, per-dataset strip chart); for each dataset, the inspector testing every
@@ -249,6 +250,10 @@ the page's.
 - A newcomer could tell from each page what the goal is, what was compared, against which
   reference, which run is the baseline and why, and what each round decided.
 - The spend stays under the cap and matches the sum of what each command printed.
+- Each goal group's recommendation follows its strategy and says why: on `intents_v1` the
+  keyword arm (0.875, free) is not separated from the frontier arm (1.000) but is further off
+  than the 2% margin, so `balanced` recommends the frontier arm; `evh goals --goal` and the
+  home page's glance say the same.
 
 ## Open after the 2026-10-24 runs
 

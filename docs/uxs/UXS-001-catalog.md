@@ -137,8 +137,10 @@ The whole project at a glance, for the last 14 days of activity or for all time.
   measure, ↓ when lower is better), **baseline** (the promoted arm and its mean, or "none
   promoted"), **leader** (the best unflagged arm scored against the gold group's reference, and
   its mean), **leader vs baseline** (the paired test of the two alone, threshold 0.05: verdict,
-  Δ, p, and an **inspect** button; "the baseline leads" when they are the same arm). A note says
-  the goal page tests every arm, Holm across them.
+  Δ, p, and an **inspect** button; "the baseline leads" when they are the same arm),
+  **recommended** (the arm the goal's strategy picks once limits and the tie-break are applied;
+  shown with cost and speed ratios against the baseline, e.g. "cost 212× · speed p95 1× vs
+  baseline"). A note says the goal page tests every arm, Holm across them.
 - `02 activity and spend`, side by side (one above the other on a phone): **activity**, measured
   runs per day as bars stacked by dataset (repeats counted one by one); **spend**, cumulative,
   one line for the systems under test and one for the judges, with a **USD / tokens** switch.
@@ -178,8 +180,10 @@ The whole project at a glance, for the last 14 days of activity or for all time.
   metric and best first, so a silver mean and a gold mean never interleave:
   **arm** (with a `baseline` tag on the promoted one, and "on <machine>" when the arms ran on more
   than one machine), **metric** (linked to the metrics page), **mean** (↓ after it when lower is
-  better), **items**, **runs** (repeats averaged), **scored against** (the reference, linked, or
-  "judge `<scorer>`"), and an **inspect** button. Tinted per [row tints](#row-tints). Filterable.
+  better), **items**, **cost per item** (USD and tokens per item, or "not recorded"), **speed
+  per item** (p50 and p95 latency in milliseconds, or "not recorded"), **runs** (repeats
+  averaged), **scored against** (the reference, linked, or "judge `<scorer>`"), and an
+  **inspect** button. Tinted per [row tints](#row-tints). Filterable.
 - `versions`, when the dataset has lineage: "Made from `<parent>`: a added, r removed, c changed"
   with the item ids (the first 12 of each, then …), and "Made into `<child>`: …" for each later
   version, then "Runs on different versions measure different items, so they are never tested
@@ -237,7 +241,10 @@ The page answers first, then explains, then shows the evidence.
      (scored against another).
 4. `what it is for`: decision, audience, decides ("<measure>, higher is better" or "no
    significant drop against the baseline" for `non_inferior`, with its threshold), min items,
-   output contract, status.
+   output contract, status. Then: weighs (the axes the goal measures, with limits shown in
+   column headers), strategy (balanced, quality_first, or frugal — how the rule decides who
+   ties with the quality leader), tie-break (the axes that break ties, in order; default: cost,
+   then speed), and guardrails (prose rules shown, never computed).
 5. **One section per dataset of the goal**, titled with the dataset and its role:
    - the dataset (linked), its size, role and "made from" link; its notes; its references
      (with "written by" for silver);
@@ -247,18 +254,33 @@ The page answers first, then explains, then shows the evidence.
      group's leader (Holm across them). Flagged arms are never the leader.";
    - per group, gold first, then silver, then judges: a heading ("scored against
      gold/<id>" or "scored by judge <scorer>"), a **Test every arm in this group against its
-     leader** button, and a table. A judged arm records its judge's score, not the goal's
-     measure: its group's mean column and test buttons use that score
-     (`judge_score`, or `judge_score_unvalidated`). The table: **arm** (linked to its page; tags:
-     `filed` when its config names the goal, said in words in the note above the tables and in the
-     tooltip,
-     `baseline`, "retired in rN" in `--local` capitals; a retired arm's whole row is greyed out,
-     `t-retired`), **mean**, **items**, **flags** ("n k <
-     min_items m", "format f not in the contract", "wrote the reference it is scored against"),
-     and **leader** on the leader's row or a **test vs leader** button on the others;
+     leader** button, the decision box, the table and the trade-off charts. A judged arm records
+     its judge's score, not the goal's measure: its group's mean column, test buttons and
+     decision use that score (`judge_score`, or `judge_score_unvalidated`).
+   - the **decision box** ([ADR-0006](../adr/ADR-0006-goal-axes-and-strategies.md)): "Recommended:
+     <arm>" (linked), or "No single arm recommended" ("yet", or ": no arm is eligible" when every
+     arm is over a limit, flagged or unscored); then the reasons, one per line: each arm that is
+     out and why ("speed p95 3,462 ms > limit 2,000 ms"), the strategy with the quality leader,
+     who is tied with it and, under `balanced`, who is not separated but further off, so not
+     tied; and how the tie-break picked. A muted footer names the strategy and its rule, what the
+     goal weighs, the tie-break order, and that promoting is `evh run-promote`.
+   - the table: **arm** (linked to its page; tags: `filed` when its config names the goal, said
+     in words in the note above the tables and in the tooltip, `baseline`, `recommended`,
+     "retired in rN" in `--local` capitals; a retired arm's whole row is greyed out,
+     `t-retired`), **mean <measure>**, **items**, then one column per axis that some arm in the
+     group records, headed with the axis and its limit ("speed per item · limit ≤ 2,000"): cost
+     as USD and tokens per item, speed as p50 and p95 in milliseconds, a project axis as its
+     statistic and unit, "not recorded" when the arm has no number, a value past its limit in
+     `--local`; then **flags** ("n k < min_items m", "format f not in the contract", "wrote the
+     reference it is scored against", and the reasons an arm is over a limit), and **leader** on
+     the leader's row or a **test vs leader** button on the others;
+   - the **trade-off charts**, two to a row: quality (vertical) against each axis some arm
+     records (horizontal), one labelled point per eligible arm (not flagged, retired or over a
+     limit), the frontier drawn, a limit as a dashed line;
    - empty state: "No arm on this dataset records `<measure>`."
-6. Commands: `evh goals --goal <id>` (the answer, the groups with `[baseline]` and `[retired in
-   rN]` marks, and one line per round: status, arms, retired, conclusion) and `evh rounds --goal
+6. Commands: `evh goals --goal <id>` (the answer, the strategy, tie-break and guardrails, the
+   groups with their axis columns, `[baseline]`, `[recommended]` and `[retired in rN]` marks and
+   each group's recommendation with its reasons, and one line per round: status, arms, retired, conclusion) and `evh rounds --goal
    <id>` (the rounds' evidence and suggestions in full).
 
 The suggestions appear on the page only when the catalog is built with the harness's own adapter
@@ -298,14 +320,17 @@ over the project's data; with a project adapter the rounds table and details sti
   same way), **With the N arms scored the same way**.
 - `01 metrics`: every metric it records, the headline first: **metric**, **mean**, **items**,
   **better**.
-- `02 runs`: **run**, **made**, **items**, **cost**, **how** (measured, or how it was derived:
+- `02 cost and speed`, when its runs record either: **cost per item** (USD and tokens per
+  item, or "not recorded"), **speed per item** (p50 and p95 latency in milliseconds); the
+  sections after it shift by one when it is absent.
+- `03 runs`: **run**, **made**, **items**, **cost**, **how** (measured, or how it was derived:
   rescore, judge, reparse).
-- `03 config`: the config id, the adapter, and the params; credentials are never shown.
-- `04 conditions`: what its runs were measured under (machine, libraries, harness, scorer, item
+- `04 config`: the config id, the adapter, and the params; credentials are never shown.
+- `05 conditions`: what its runs were measured under (machine, libraries, harness, scorer, item
   and reference checksums).
-- `05 the same config, scored other ways`: the same config on the same dataset scored against
+- `06 the same config, scored other ways`: the same config on the same dataset scored against
   another reference or by a judge, tinted as everywhere.
-- `06 rounds`: each round it was in, in play or retired, and the round's status.
+- `07 rounds`: each round it was in, in play or retired, and the round's status.
 - Notes, when the adapter has any (runs left out, and why).
 - Command: `evh arms --arm <arm id or config id>`; `evh arms [--dataset-id <id>]` lists them.
 

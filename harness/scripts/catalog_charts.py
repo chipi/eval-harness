@@ -186,6 +186,106 @@ def strip(groups: dict[str, list[tuple[float, str]]], label: str, lower: bool = 
     )
 
 
+def frontier(points: list[tuple[float, float]], lower_x: bool = True, higher_y: bool = True) -> set[int]:
+    """The indexes of the points no other point beats on both axes (at least as good on each,
+    better on one): the trade-offs worth considering, everything else is dominated."""
+
+    def better_eq(a, b, low):
+        return a <= b if low else a >= b
+
+    out = set()
+    for i, (x, y) in enumerate(points):
+        dominated = any(
+            j != i and better_eq(x2, x, lower_x) and better_eq(y2, y, not higher_y) and (x2 != x or y2 != y)
+            for j, (x2, y2) in enumerate(points)
+        )
+        if not dominated:
+            out.add(i)
+    return out
+
+
+def scatter(
+    points: list[tuple[float, float, str, str]],
+    x_label: str,
+    y_label: str,
+    lower_x: bool = True,
+    higher_y: bool = True,
+    x_limit: float | None = None,
+    y_limit: float | None = None,
+    fmt_x=None,
+    width: int = W,
+) -> str:
+    """One dot per (x, y, label, tooltip): quality against a cost or a speed, the frontier (no arm
+    better on both) drawn and named, a limit as a dashed line. The better corner is said."""
+    fmt_x = fmt_x or _num
+    if len(points) < 2:
+        return ""
+    h, left, bottom = 260, 70, 40
+    xs = [p[0] for p in points] + ([x_limit] if x_limit is not None else [])
+    ys = [p[1] for p in points] + ([y_limit] if y_limit is not None else [])
+    x_lo, x_hi, y_lo, y_hi = min(xs), max(xs), min(ys), max(ys)
+    if x_hi == x_lo:
+        x_lo, x_hi = x_lo - 1, x_hi + 1
+    if y_hi == y_lo:
+        y_lo, y_hi = y_lo - 1, y_hi + 1
+    pad_x, pad_y = (x_hi - x_lo) * 0.06, (y_hi - y_lo) * 0.08
+
+    def x_of(v: float) -> float:
+        return left + (width - left - RIGHT) * (v - x_lo + pad_x) / (x_hi - x_lo + 2 * pad_x)
+
+    def y_of(v: float) -> float:
+        return TOP + (h - TOP - bottom) * (1 - (v - y_lo + pad_y) / (y_hi - y_lo + 2 * pad_y))
+
+    front = frontier([(p[0], p[1]) for p in points], lower_x, higher_y)
+    marks = []
+    if x_limit is not None:
+        marks.append(
+            f'<line x1="{x_of(x_limit):.1f}" x2="{x_of(x_limit):.1f}" y1="{TOP}" y2="{h - bottom}" stroke="var(--local)" '
+            f'stroke-dasharray="4 4"><title>limit {_e(fmt_x(x_limit))}</title></line>'
+        )
+    if y_limit is not None:
+        marks.append(
+            f'<line x1="{left}" x2="{width - RIGHT}" y1="{y_of(y_limit):.1f}" y2="{y_of(y_limit):.1f}" '
+            f'stroke="var(--local)" stroke-dasharray="4 4"><title>limit {_e(_num(y_limit))}</title></line>'
+        )
+    line = sorted((points[i] for i in front), key=lambda p: p[0])
+    if len(line) > 1:
+        marks.append(
+            '<polyline fill="none" stroke="var(--accent)" stroke-width="1.5" points="'
+            + " ".join(f"{x_of(p[0]):.1f},{y_of(p[1]):.1f}" for p in line)
+            + '"/>'
+        )
+    for i, (x, y, lab, tip) in enumerate(points):
+        on = i in front
+        marks.append(
+            f'<circle cx="{x_of(x):.1f}" cy="{y_of(y):.1f}" r="{5 if on else 4}" '
+            f'fill="{"var(--s1)" if on else "var(--muted)"}"><title>{_e(tip)}</title></circle>'
+        )
+        if on:
+            # Named beside the dot, on its left when it sits in the right third (never cut off).
+            right = x_of(x) > left + (width - left - RIGHT) * 2 / 3
+            marks.append(
+                f'<text x="{x_of(x) + (-7 if right else 7):.1f}" y="{y_of(y) - 6:.1f}" class="tick"'
+                f"{' text-anchor=end' if right else ''}>{_e(lab)}</text>"
+            )
+    corner = ("left" if lower_x else "right") + (" top" if higher_y else " bottom")
+    frame = (
+        f'<line x1="{left}" x2="{width - RIGHT}" y1="{h - bottom}" y2="{h - bottom}" stroke="var(--axis)"/>'
+        f'<line x1="{left}" x2="{left}" y1="{TOP}" y2="{h - bottom}" stroke="var(--axis)"/>'
+        f'<text x="{x_of(x_lo):.1f}" y="{h - bottom + 16}" text-anchor="middle" class="tick">{_e(fmt_x(x_lo))}</text>'
+        f'<text x="{x_of(x_hi):.1f}" y="{h - bottom + 16}" text-anchor="middle" class="tick">{_e(fmt_x(x_hi))}</text>'
+        f'<text x="{(left + width) / 2:.0f}" y="{h - 6}" text-anchor="middle" class="tick">{_e(x_label)}</text>'
+        f'<text x="{left - 6}" y="{y_of(y_hi) + 4:.1f}" text-anchor="end" class="tick">{_e(_num(y_hi))}</text>'
+        f'<text x="{left - 6}" y="{y_of(y_lo) + 4:.1f}" text-anchor="end" class="tick">{_e(_num(y_lo))}</text>'
+    )
+    return (
+        f'<figure class="chart"><svg viewBox="0 0 {width} {h}" role="img" aria-label="{_e(y_label)} against {_e(x_label)}">'
+        f"{frame}{''.join(marks)}</svg>"
+        f'<figcaption class="small muted">{_e(y_label)} against {_e(x_label)}: better is {corner}. '
+        "Named and joined: the frontier, the arms no other arm beats on both.</figcaption></figure>"
+    )
+
+
 def _running(xs: list[float]) -> list[float]:
     out, s = [], 0.0
     for x in xs:

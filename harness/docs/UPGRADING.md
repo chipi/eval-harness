@@ -146,6 +146,25 @@ so check these before you trust a `validate`:
   you keep a second registry of facts about your items beside your datasets, this replaces
   it: declare the facts as fields and attach them with `--update-fields`, which changes no
   run's fingerprint.
+- **`success_criteria.secondary` is removed; goals weigh axes** (ADR-0006). A goal that
+  still has `secondary:` fails `evh validate` (V14). Move each entry to `axes:`, keyed by its
+  measure:
+
+  ```yaml
+  # before
+  secondary:
+    - {measure: rouge1, direction: higher}
+    - {measure: usd_per_min, direction: lower}
+  # after
+  axes:
+    rouge1: {direction: higher}
+    cost: {measure: usd_per_min, unit: USD per audio minute}   # a built-in, another measure
+  ```
+
+  A `threshold` becomes a `note` (shown), or a `limit` if an arm past it should be out of the
+  recommendation. An entry with no number to compare (a human review) belongs in
+  `guardrails` (`{name, rule, source}`), which are shown and never computed, as before. Cost
+  and speed need no entry. Without a `strategy` a goal is `balanced`.
 
 **Also changed:** `pair-test`, `family-test`, `holdout` and `rank-stability` read the
 primary metric your runs recorded when no `--metric` is given. They used to default to

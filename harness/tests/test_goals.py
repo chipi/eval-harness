@@ -169,6 +169,68 @@ try:
         "lead2 answers the triage goal on six tickets" in ds_page and 'class="tag-base"' in ds_page,
     )
 
+    # Cost, quality and speed (ADR-0006): the goal page decides, the CLI says the same.
+    check(
+        "catalog: the goal page says what the goal weighs, its strategy and its tie-break",
+        "<dt>weighs</dt>" in html
+        and "balanced: tied" in html
+        and "<dt>tie-break</dt><dd>cost, speed</dd>" in html,
+    )
+    check(
+        "catalog: each group carries the decision box and the cost and speed columns",
+        'class="decision"' in html and "cost per item" in html and "speed per item" in html,
+    )
+    check("catalog: the dataset page shows cost and speed per arm", "cost per item" in ds_page)
+    r = evh("goals", "--goal", "tickets_summary")
+    check(
+        "evh goals --goal: the strategy, the tie-break and the group's recommendation",
+        r.returncode == 0
+        and "strategy   balanced" in r.stdout
+        and "tie-break  cost, speed" in r.stdout
+        and ("recommended:" in r.stdout or "no single arm recommended" in r.stdout),
+        r.stdout[-600:] + r.stderr[-300:],
+    )
+    r = evh("overview")
+    check(
+        "evh overview: the glance has the recommended column", r.returncode == 0 and "recommended" in r.stdout
+    )
+
+    goal_path = data / "goals" / "tickets_summary.yaml"
+    original = goal_path.read_text()
+    goal_path.write_text(
+        original.replace(
+            "  min_items: 6\n",
+            "  min_items: 6\n  strategy: frugal\n  tie_break: [speed, cost]\n"
+            "  axes: {speed: {limit: 60000}}\n"
+            "  guardrails:\n    - {name: no PII, rule: summaries never quote an email address, source: privacy review}\n",
+        )
+    )
+    r, line = validate()
+    check(
+        "V14: a goal with axes, a strategy, a tie-break and guardrails is valid",
+        line.startswith("  ok"),
+        line,
+    )
+    evh("catalog")
+    html = page.read_text()
+    check(
+        "catalog: the goal page shows its guardrails in words, with their source",
+        "<dt>guardrails</dt>" in html and "never quote an email address" in html and "privacy review" in html,
+    )
+    check(
+        "catalog: the chosen strategy, the tie-break order and the limit are shown",
+        "frugal: tied" in html and "speed, cost" in html and "limit ≤ 60,000" in html,
+    )
+    for bad, why in (
+        ("  secondary:\n    - {measure: rouge1, direction: higher}\n", "the old secondary key (now axes)"),
+        ("  tie_break: [carbon]\n", "a tie-break naming an axis the goal does not weigh"),
+        ("  strategy: cheapest\n", "an unknown strategy"),
+    ):
+        goal_path.write_text(original.replace("  min_items: 6\n", "  min_items: 6\n" + bad))
+        r, line = validate()
+        check(f"V14: fails {why}", "FAIL" in line, line)
+    goal_path.write_text(original)
+
     # An engineering goal checked by a gate: no dataset, and a guard, not a ranking direction.
     (data / "goals" / "no_drop.yaml").write_text(
         "goal_id: no_drop\ntitle: No regression\nstatement: Nothing drops between builds.\n"

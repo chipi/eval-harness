@@ -35,6 +35,16 @@ from urllib.parse import quote
 HERE = Path(__file__).resolve().parent
 
 from evaluation_harness import _common, _fields  # noqa: E402
+from evaluation_harness._axes import (  # noqa: E402
+    STRATEGIES,
+    axes_of,
+    axis_title,
+    builtin_axes,
+    cell_of,
+    cell_text,
+    strategy_of,
+    tie_break_of,
+)
 from evaluation_harness._common import ROOT  # noqa: E402
 from evaluation_harness.catalog_adapter import Adapter, item_fields, load_catalog_adapter  # noqa: E402
 from evaluation_harness.stats import fmt_p  # noqa: E402
@@ -714,7 +724,8 @@ def fmt_amount(v: float, unit: str) -> str:
 
 def glance(A: Adapter, by_ds: dict) -> list[dict]:
     """Per goal and dataset: the deciding measure, the promoted baseline, the leader of the gold
-    group, and the paired test of the leader against the baseline (one test, threshold 0.05)."""
+    group, the paired test of the leader against the baseline (one test, threshold 0.05), and what
+    the goal's strategy recommends with its cost and speed against the baseline."""
     from evaluation_harness import stats  # noqa: PLC0415
 
     rows = []
@@ -722,6 +733,7 @@ def glance(A: Adapter, by_ds: dict) -> list[dict]:
         prim = (g.get("success_criteria") or {}).get("primary") or {}
         measure = prim.get("measure", "")
         lower = prim.get("direction") == "lower"
+        retired_in = retired_in_of(A, g)
         for ans in goal_answers(g, by_ds):
             ds = ans["dataset"]
             v = by_ds.get(ds) or {}
@@ -742,6 +754,8 @@ def glance(A: Adapter, by_ds: dict) -> list[dict]:
                     family=1,
                 )
                 test = (cmp.get("rows") or [None])[0]
+            dec = group_decision(A, g, ds, grp["rows"], measure, retired_in) if grp else None
+            rec = dec["recommended"] if dec else None
             rows.append(
                 {
                     "goal": g,
@@ -755,6 +769,11 @@ def glance(A: Adapter, by_ds: dict) -> list[dict]:
                     "leader_label": leader["label"] if leader else "",
                     "leader_mean": leader["mean"] if leader else None,
                     "test": test,
+                    "recommended": rec,
+                    "recommended_label": label.get(rec, rec) if rec else "",
+                    "strategy": strategy_of(dec["goal"]) if dec else strategy_of(g),
+                    # The recommendation against the baseline on cost, speed and the goal's own axes.
+                    "vs_baseline": axis_ratios(dec, rec, base) if dec and rec and base else [],
                 }
             )
     return rows
@@ -894,6 +913,16 @@ def _glance(A: Adapter, by_ds: dict) -> str:
                 if r["leader"]
                 else "—",
                 verdict,
+                (
+                    arm_link(r["recommended"], r["recommended_label"])
+                    + (
+                        f"<br><small>{e(' · '.join(r['vs_baseline']))} vs baseline</small>"
+                        if r["vs_baseline"]
+                        else ""
+                    )
+                )
+                if r["recommended"]
+                else '<span class="muted">none yet</span>',
             ]
         )
     if not rows:
@@ -901,8 +930,14 @@ def _glance(A: Adapter, by_ds: dict) -> str:
     return (
         '<p class="small muted">The leader is the best unflagged arm scored against the gold group\'s '
         "reference; the test is the leader against the baseline alone (threshold 0.05). The goal "
-        "page tests every arm, Holm across them.</p>"
-        + table("glance", ["goal", "dataset", "decides", "baseline", "leader", "leader vs baseline"], rows)
+        "page tests every arm, Holm across them. <b>recommended</b> is what the goal's strategy picks "
+        "once limits and the tie-break on cost and speed are applied; its ratios are against the "
+        "baseline (0.5× costs half).</p>"
+        + table(
+            "glance",
+            ["goal", "dataset", "decides", "baseline", "leader", "leader vs baseline", "recommended"],
+            rows,
+        )
     )
 
 
@@ -1067,6 +1102,9 @@ def render_dataset(A: Adapter, ds: str, v: dict, out: Path, nav: list) -> None:
     # The machine is named only when the arms ran on more than one: then latency and cost per
     # second differ by machine, and the inspector's conditions say how.
     machines = {a["machine"] for a in arms if a.get("machine")}
+    # Cost and speed per arm: the same numbers the goal pages decide with.
+    bax = builtin_axes()
+    cells = {a["arm"]: [cell_of(ax, A.scores(a["arm"])) for ax in bax] for a in arms}
     rows = [
         {
             "cls": row_kind(a, tiers),
@@ -1084,6 +1122,7 @@ def render_dataset(A: Adapter, ds: str, v: dict, out: Path, nav: list) -> None:
                     f"{' ↓' if a['lower'] else ''}</span>"
                 ),
                 f'<span data-v="{a["n"]}">{a["n"]}</span>',
+                *(axis_cell(ax, c) for ax, c in zip(bax, cells[a["arm"]])),
                 str(a["runs"]),
                 scored_against(a, "../"),
                 f'<a class="btn small" href="{inspect_url([a["arm"]], "../")}">inspect</a>',
@@ -1149,7 +1188,16 @@ def render_dataset(A: Adapter, ds: str, v: dict, out: Path, nav: list) -> None:
         ROW_KEY
         + table(
             "arms",
-            ["arm", "metric", "mean", f"{e(A.item_word)}s", "runs", "scored against", ""],
+            [
+                "arm",
+                "metric",
+                "mean",
+                f"{e(A.item_word)}s",
+                *(e(axis_title(ax)) for ax in bax),
+                "runs",
+                "scored against",
+                "",
+            ],
             rows,
             "filter arms",
         ),
@@ -1513,6 +1561,9 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
             + (f"; threshold {prim['threshold']}" if prim.get("threshold") is not None else ""),
         ),
         ("min items", crit.get("min_items", "")),
+        ("weighs", "; ".join(axis_title(x) for x in axes_of(g) if x["role"] != "ignore")),
+        ("strategy", f"{strategy_of(g)}: {STRATEGIES[strategy_of(g)]}"),
+        ("tie-break", ", ".join(tie_break_of(g))),
         (
             "output contract",
             "; ".join(
@@ -1523,6 +1574,15 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
         ("status", g.get("status", "")),
     ]
     dl = "".join(f"<dt>{e(k)}</dt><dd>{e(v)}</dd>" for k, v in facts if v not in ("", None))
+    # Rules in words no number checks: shown, never computed.
+    guard = "".join(
+        f"<li><b>{e(x['name'])}</b>: {e(x['rule'])}"
+        + (f' <small class="muted">({e(x["source"])})</small>' if x.get("source") else "")
+        + "</li>"
+        for x in crit.get("guardrails") or []
+    )
+    if guard:
+        dl += f'<dt>guardrails</dt><dd><ul class="small">{guard}</ul></dd>'
     body = hero("goal", e(g.get("title") or g["goal_id"]), e(g.get("statement", "")))
     body += block("01", "the answer so far", _answer(A, g, by_ds, measure))
     n = 2
@@ -1532,13 +1592,7 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
         n += 1
     body += block(f"{n:02d}", "what it is for", f'<dl class="kv">{dl}</dl>')
     n += 1
-    rfn = getattr(A, "rounds", None)
-    retired_in = {
-        x.get("config_id"): r["round_id"]
-        for r in (rfn() if callable(rfn) else [])
-        if r.get("goal") == g["goal_id"]
-        for x in r.get("retired") or []
-    }
+    retired_in = retired_in_of(A, g)
     for ans in goal_answers(g, by_ds):
         ds, v = ans["dataset"], by_ds.get(ans["dataset"]) or {}
         tiers = {r["id"]: r["tier"] for r in v.get("refs", [])}
@@ -1576,6 +1630,8 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
             for gi, grp in enumerate(ans["groups"]):
                 leader, rows = grp["leader"], grp["rows"]
                 gm = rows[0].get("measure", measure) if rows else measure  # a judge's group: its score
+                dec = group_decision(A, g, ds, rows, gm, retired_in)
+                shown = shown_axes(dec)
                 trs = []
                 for r in rows:
                     link = (
@@ -1590,6 +1646,8 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
                         if r["filed"]
                         else ""
                     ) + (' <span class="tag-base">baseline</span>' if r.get("baseline") else "")
+                    if dec["recommended"] == r["arm"]:
+                        tag += ' <span class="tag-rec">recommended</span>'
                     cid = r["arm"].rsplit("/", 1)[-1]
                     if cid in retired_in:
                         tag += f' <small class="retired" title="dropped in that round, with its reason">retired in {e(retired_in[cid])}</small>'
@@ -1601,7 +1659,8 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
                                 arm_link(r["arm"], r["label"], "../") + tag,
                                 f'<span data-v="{r["mean"]}">{fmt(r["mean"])}</span>',
                                 f'<span data-v="{r["n"]}">{r["n"]}</span>',
-                                e("; ".join(r["flags"]) or "—"),
+                                *(axis_cell(ax, dec["rows"][r["arm"]][ax["name"]]) for ax in shown),
+                                e("; ".join(r["flags"] + dec["out"].get(r["arm"], [])) or "—"),
                                 link,
                             ],
                         }
@@ -1614,11 +1673,20 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
                         f'<p><a class="btn" href="{inspect_url(arms, "../", baseline=leader["arm"], metric=gm)}">'
                         "Test every arm in this group against its leader</a></p>"
                     )
+                inner += decision_html(dec, {r["arm"]: r["label"] for r in rows}, g, "../")
                 inner += table(
                     f"ans{n}_{gi}",
-                    ["arm", f"mean {e(gm)}", f"{e(A.item_word)}s", "flags", ""],
+                    [
+                        "arm",
+                        f"mean {e(gm)}",
+                        f"{e(A.item_word)}s",
+                        *(e(axis_title(ax)) for ax in shown),
+                        "flags",
+                        "",
+                    ],
                     trs,
                 )
+                inner += tradeoff_charts(dec, {r["arm"]: r["label"] for r in rows}, gm)
         body += block(f"{n:02d}", f"{ds}{' · ' + ans['role'] if ans['role'] else ''}", inner)
         n += 1
     write(
@@ -1626,6 +1694,148 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
         f"g/{slug(g['goal_id'])}.html",
         page(g.get("title") or g["goal_id"], body, 1, "goals", nav=nav, item=A.item_word),
     )
+
+
+def retired_in_of(A: Adapter, g: dict) -> dict:
+    """{config_id: round_id} for every arm a round of this goal retired."""
+    rfn = getattr(A, "rounds", None)
+    return {
+        x.get("config_id"): r["round_id"]
+        for r in (rfn() if callable(rfn) else [])
+        if r.get("goal") == g["goal_id"]
+        for x in r.get("retired") or []
+    }
+
+
+def axis_ratios(dec: dict, arm: str, base: str) -> list[str]:
+    """The arm against the baseline on each axis beside quality, as ratios ("cost 0.1×"). An axis
+    either has no number for is left out; two zeros read "same"."""
+    out: list[str] = []
+    if arm == base or arm not in dec["rows"] or base not in dec["rows"]:
+        return out
+    for ax in shown_axes(dec):
+        a, b = dec["rows"][arm][ax["name"]]["value"], dec["rows"][base][ax["name"]]["value"]
+        stat = "" if ax["stat"] == "mean" else f" {ax['stat']}"
+        if a is None or b is None:
+            continue
+        if b == 0:
+            out.append(f"{ax['name']}{stat} same" if a == 0 else f"{ax['name']}{stat} from 0")
+        else:
+            r = a / b
+            out.append(f"{ax['name']}{stat} {r:,.0f}×" if r >= 10 else f"{ax['name']}{stat} {r:.2g}×")
+    return out
+
+
+def group_decision(A: Adapter, g: dict, ds: str, rows: list, gm: str, retired_in: dict) -> dict:
+    """The goal's decision over one group of arms on one dataset (_axes.decide): its axes, limits,
+    the quality leader, the tie and the tie-break. A judge's group decides on the judge's score;
+    an arm a round retired is shown, never recommended."""
+    from evaluation_harness import _axes  # noqa: PLC0415
+
+    crit = g.get("success_criteria") or {}
+    goal = g
+    if gm != (crit.get("primary") or {}).get("measure"):
+        goal = {**g, "success_criteria": {**crit, "primary": {"measure": gm, "direction": "higher"}}}
+    arms = {
+        r["arm"]: {
+            "label": r["label"],
+            "flags": list(r["flags"]) + (["retired"] if r["arm"].rsplit("/", 1)[-1] in retired_in else []),
+            "scores": A.scores(r["arm"]),
+        }
+        for r in rows
+    }
+    machines = {r["arm"]: r.get("machine", "") for r in rows}
+    return _axes.decide(goal, arms, lambda m: "lower" if A.lower_is_better(m, ds) else None, machines) | {
+        "goal": goal
+    }
+
+
+def shown_axes(dec: dict) -> list:
+    """The axes beside quality that some arm in the group records (cost counts its tokens too)."""
+    return [
+        ax
+        for ax in dec["axes"][1:]
+        if any(
+            row[ax["name"]]["n"] or (row[ax["name"]].get("tokens") or {}).get("n")
+            for row in dec["rows"].values()
+        )
+    ]
+
+
+def axis_cell(ax: dict, cell: dict) -> str:
+    """A table cell for one arm on one axis, sortable by its value, marked when past the limit."""
+    v = cell.get("value")
+    over = cell.get("within") is False
+    vs = (cell.get("vs_leader") or {}).get("verdict")
+    title = (f"vs the quality leader: {vs}" if vs else "") + ("; past the limit" if over else "")
+    attrs = f'data-v="{v if v is not None else ""}"' + (' class="over"' if over else "")
+    attrs += f' title="{e(title)}"' if title else ""
+    return f"<span {attrs}>{e(cell_text(ax, cell))}</span>"
+
+
+def decision_html(dec: dict, labels: dict, g: dict, up: str) -> str:
+    """What the goal's rule concludes for this group, and why, in the goal's own terms."""
+
+    if not dec["rows"]:
+        return ""
+    rec = dec["recommended"]
+    head = (
+        f"Recommended: <b>{arm_link(rec, labels[rec], up)}</b>"
+        if rec
+        else "No single arm recommended" + (" yet" if dec["leader"] else ": no arm is eligible")
+    )
+    weighs = "; ".join(axis_title(a) for a in dec["axes"])
+    why = "".join(f"<li>{e(w)}</li>" for w in dec["why"])
+    return (
+        f'<div class="decision"><p class="lead">{head}</p><ul class="small">{why}</ul>'
+        f'<p class="small muted">Strategy <b>{e(strategy_of(dec["goal"]))}</b> '
+        f"({e(STRATEGIES[strategy_of(dec['goal'])])}). Weighs {e(weighs)}. Among arms tied on quality, "
+        f"the tie-break is {e(', '.join(tie_break_of(dec['goal'])))}. The rule recommends; promoting "
+        "is <code>evh run-promote</code>; the goal chooses its strategy (<code>strategy:</code>).</p></div>"
+    )
+
+
+def tradeoff_charts(dec: dict, labels: dict, quality_name: str) -> str:
+    """Quality against each other axis, for the eligible arms, the frontier drawn: the trade-off at
+    a glance. Two to a row."""
+    from evaluation_harness import catalog_charts as ch  # noqa: PLC0415
+
+    q = dec["axes"][0]
+    # The arms the rule could recommend: not over a limit, not flagged (the reference's author,
+    # too few items, a format the goal does not take), not retired.
+    eligible = dec["eligible"]
+    charts = []
+    for ax in shown_axes(dec):
+        pts = [
+            (
+                dec["rows"][a][ax["name"]]["value"],
+                dec["rows"][a]["quality"]["value"],
+                labels[a],
+                (
+                    f"{labels[a]}: {quality_name} {fmt(dec['rows'][a]['quality']['value'])}, {ax['name']} "
+                    f"{fmt(dec['rows'][a][ax['name']]['value'])}"
+                ),
+            )
+            for a in eligible
+            if dec["rows"][a][ax["name"]]["value"] is not None
+            and dec["rows"][a]["quality"]["value"] is not None
+        ]
+        stat = "" if ax["stat"] == "mean" else f" {ax['stat']}"
+        unit = f" ({ax['unit']})" if ax.get("unit") else ""
+        svg = ch.scatter(
+            pts,
+            f"{ax['name']}{stat}{unit}",
+            quality_name,
+            lower_x=ax["direction"] == "lower",
+            higher_y=q["direction"] == "higher",
+            x_limit=ax.get("limit"),
+            y_limit=q.get("limit"),
+            fmt_x=(lambda v: f"${v:.4f}") if ax["name"] == "cost" and ax["measure"] == "cost_usd" else None,
+            width=HALF,
+        )
+        if svg:
+            charts.append(f"<div>{svg}</div>")
+    return f'<div class="duo">{"".join(charts)}</div>' if charts else ""
 
 
 def metric_index(A: Adapter, by_ds: dict) -> dict:
@@ -1839,6 +2049,19 @@ def render_arm(A: Adapter, a: dict, ds: str, by_ds: dict, out: Path, nav: list) 
         f"{n:02d}", "metrics", table("armmetrics", ["metric", "mean", f"{e(A.item_word)}s", "better"], rows)
     )
     n += 1
+    sc = A.scores(a["arm"])
+    cs = [(ax, cell_of(ax, sc)) for ax in builtin_axes()]
+    if any(c["n"] or (c.get("tokens") or {}).get("n") for _, c in cs):
+        kv = "".join(f"<dt>{e(axis_title(ax))}</dt><dd>{e(cell_text(ax, c))}</dd>" for ax, c in cs)
+        body += block(
+            f"{n:02d}",
+            "cost and speed",
+            f'<dl class="kv">{kv}</dl><p class="small muted">Per {e(A.item_word)}, over its '
+            f"{e(A.item_word)}s: cost as dollars and tokens (a local model is free but still uses "
+            "tokens), speed as the median and the slow tail (p95). A goal that names this arm weighs "
+            "them in its decision.</p>",
+        )
+        n += 1
     if a["run_list"]:
         rrows = [
             [

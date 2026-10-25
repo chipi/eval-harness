@@ -49,6 +49,7 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
+from evaluation_harness._axes import axes_of
 from evaluation_harness._common import (
     BASELINES,
     CONFIGS,
@@ -948,6 +949,13 @@ def v14_goals() -> None:
                 jsonschema.validate(g, schema)
             except jsonschema.ValidationError as exc:
                 bad.append(f"goals/{gid}.yaml: {exc.message[:90]}")
+        # The tie-break names axes the goal weighs: cost, speed or one of its own, not ignored.
+        weighed = {a["name"] for a in axes_of(g) if a["role"] != "ignore" and a["name"] != "quality"}
+        for name in (g.get("success_criteria") or {}).get("tie_break") or []:
+            if name not in weighed:
+                bad.append(
+                    f"goals/{gid}.yaml: tie_break names {name!r}, not an axis it weighs ({', '.join(sorted(weighed))})"
+                )
 
     def named(where: str, doc: dict) -> None:
         gid, fmt = doc.get("goal"), doc.get("format")

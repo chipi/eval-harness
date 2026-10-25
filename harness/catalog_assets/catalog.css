@@ -344,3 +344,9 @@ small.filed { font: 600 10px/1 var(--mono); letter-spacing: .04em; text-transfor
 @media (max-width: 900px) { .duo { grid-template-columns: 1fr; } }
 .unit-switch { display: flex; gap: 8px; margin: 0 0 6px; }
 .unit-switch button[aria-pressed="true"] { border-color: var(--accent); color: var(--ink); }
+.decision { padding: 12px 16px; margin: 6px 0 12px; border: 1px solid var(--hair); border-left: 3px solid var(--s1); border-radius: 10px; background: var(--surface); }
+.decision p { margin: 4px 0; }
+.decision ul { margin: 6px 0; padding-left: 18px; }
+span.tag-rec { font: 600 10px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--accent-ink); background: var(--s1); padding: 2px 5px; border-radius: 4px; }
+span.over { color: var(--local); font-weight: 600; }
+figure.chart figcaption { margin-top: 4px; }

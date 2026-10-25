@@ -341,7 +341,7 @@
     let g = ticks(x0, x1).map(t => `<line class="grid" x1="${x(t)}" x2="${x(t)}" y1="${top}" y2="${bottom}"/><text class="tick" x="${x(t)}" y="${bottom + 16}" text-anchor="middle">${tfmt(t)}</text>`).join('');
     g += ticks(y0, y1).map(t => `<line class="grid" x1="${L}" x2="${W - RIGHT}" y1="${y(t)}" y2="${y(t)}"/><text class="tick" x="${L - 8}" y="${y(t) + 4}" text-anchor="end">${tfmt(t)}</text>`).join('');
     g += '<g class="faded">' + pts.map(([a, ep, xv, yv]) => dot(x(xv), y(yv), col[a], `${label[a] || a} · ${ep}: ${tfmt(yv)} at ${tfmt(xv)} ${esc(xm)}`, 5)).join('') + '</g>';
-    // Each run's average position: the length/quality trade-off per run, the decision question.
+    // Each run's average position: its trade-off (length, speed, cost) against the score.
     Object.keys(d.series).forEach(a => {
       const mine = pts.filter(p => p[0] === a); if (!mine.length) return;
       const cx = x(mean(mine.map(p => p[2]))), cy = y(mean(mine.map(p => p[3])));
@@ -362,7 +362,7 @@
   function charts(d, label) {
     const col = colorOf(d), keys = Object.keys(d.shape || {});
     const xm = keys[0];
-    const sc = xm ? `<figure class="chart"><figcaption><b>${esc(d.metric)} against <select id="xmetric">${keys.map(k => `<option ${k === xm ? 'selected' : ''}>${esc(k)}</option>`).join('')}</select></b> · faded dots: one per run per ${ITEM}; cross: each run's average, the length/quality trade-off per run.</figcaption><div id="scatterbox">${scatter(d, label, col, xm)}</div></figure>` : '';
+    const sc = xm ? `<figure class="chart"><figcaption><b>${esc(d.metric)} against <select id="xmetric">${keys.map(k => `<option ${k === xm ? 'selected' : ''}>${esc(k)}</option>`).join('')}</select></b> · faded dots: one per run per ${ITEM}; cross: each run's average, its trade-off between the two.</figcaption><div id="scatterbox">${scatter(d, label, col, xm)}</div></figure>` : '';
     return legend(d, label, col) + spread(d, label, col) + deltas(d, label, col) + sc;
   }
 

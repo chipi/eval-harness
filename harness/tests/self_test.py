@@ -624,6 +624,7 @@ def test_example_scorer_suites_pass() -> None:
         ("test_stats.py", "paired test (stats.py)"),
         ("test_catalog.py", "catalog and run inspector"),
         ("test_goals.py", "goals: config, run, baseline, V14, pages"),
+        ("test_axes.py", "a goal's axes and strategy: limits, the tie, the tie-break, the ratios"),
         ("test_fields.py", "item fields and URL items: create, materialize, V15"),
         ("test_lineage.py", "dataset versions: --from, V2, the catalog's links"),
         (

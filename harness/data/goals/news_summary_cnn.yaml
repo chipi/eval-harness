@@ -13,8 +13,8 @@ output_contract:
     language: en
 success_criteria:
   primary: {measure: coverage, direction: higher}
-  secondary:
-    - {measure: rouge1, direction: higher}
+  axes:
+    rouge1: {direction: higher}
 datasets:
   - {dataset_id: cnn_dailymail_200, role: heldout, notes: first 200 test rows, all CNN; findings are scoped to CNN-style news}
   - {dataset_id: cnn_dailymail_20, role: dev, notes: nested in the 200; prompts tuned here only}

@@ -146,8 +146,9 @@ muted; the baseline `--baseline`) on every chart, never a colour by rank. A lege
   the mean difference, wins–losses, and ✓ better / ✗ worse in words when separated after Holm
   (words, because an up-arrow beside a negative number reads wrong on a lower-is-better metric).
 - **<metric> against <shape metric>:** a scatter of score against a per-item fact such as
-  output length or latency (a picker chooses which), one faded dot per arm per item and a cross
-  at each arm's average: the length or speed trade-off.
+  output length, latency, cost in USD, or tokens (in + out; a picker chooses which), one faded dot
+  per arm per item and a cross at each arm's average: the quality–length, quality–speed,
+  quality–cost or quality–tokens trade-off.
 
 Hovering a dot shows its arm, item and value. Below 700px the charts switch to a narrow layout
 (labels above each row) rather than scroll.

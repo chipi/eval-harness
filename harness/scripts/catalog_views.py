@@ -31,6 +31,7 @@ import textwrap
 
 from evaluation_harness import catalog_build as cb
 from evaluation_harness import catalog_serve as cs
+from evaluation_harness._axes import STRATEGIES, axis_title, cell_text, strategy_of, tie_break_of
 from evaluation_harness._common import die
 from evaluation_harness.catalog_adapter import load_catalog_adapter
 from evaluation_harness.stats import fmt_p
@@ -328,7 +329,7 @@ def overview(argv) -> int:
     rows = cb.glance(A, by_ds)
     if rows:
         _table(
-            ["goal", "dataset", "decides", "baseline", "leader", "leader vs baseline"],
+            ["goal", "dataset", "decides", "baseline", "leader", "leader vs baseline", "recommended"],
             [
                 [
                     r["goal"]["goal_id"],
@@ -337,9 +338,19 @@ def overview(argv) -> int:
                     f"{r['baseline_label']} {_fmt(r['baseline_mean'])}" if r["baseline"] else "none promoted",
                     f"{r['leader_label']} {_fmt(r['leader_mean'])}" if r["leader"] else "—",
                     cb.glance_verdict(r),
+                    (
+                        r["recommended_label"]
+                        + (f" ({' · '.join(r['vs_baseline'])} vs baseline)" if r["vs_baseline"] else "")
+                    )
+                    if r["recommended"]
+                    else "none yet",
                 ]
                 for r in rows
             ],
+        )
+        print(
+            "  recommended: what each goal's strategy picks once its limits and the tie-break (cost, then"
+            " speed, by default) are applied; evh goals --goal G says why."
         )
     else:
         print("  no goals yet")
@@ -543,12 +554,24 @@ def goals(argv) -> int:
     prim = (g.get("success_criteria") or {}).get("primary") or {}
     rfn = getattr(A, "rounds", None)
     rounds = [r for r in (rfn() if callable(rfn) else []) if r.get("goal") == g["goal_id"]]
-    retired_in = {x.get("config_id"): r["round_id"] for r in rounds for x in r.get("retired") or []}
+    retired_in = cb.retired_in_of(A, g)
     print(f"{g.get('title') or g['goal_id']}\n")
     print(textwrap.fill(g.get("statement", ""), width=96))
     print(
         f"\n  decision   {g.get('decision', '')}\n  decides    {prim.get('measure', '')}, {prim.get('direction', '')} is better"
     )
+    print(f"  strategy   {strategy_of(g)}: {STRATEGIES[strategy_of(g)]}")
+    print(f"  tie-break  {', '.join(tie_break_of(g))}")
+    for gr in (g.get("success_criteria") or {}).get("guardrails") or []:
+        src = f" ({gr['source']})" if gr.get("source") else ""
+        print(
+            textwrap.fill(
+                f"guardrail  {gr['name']}: {gr['rule']}{src}",
+                width=96,
+                initial_indent="  ",
+                subsequent_indent="             ",
+            )
+        )
     print("\nthe answer so far:")
     for d in g.get("datasets") or []:
         ds = d.get("dataset_id", "")
@@ -571,12 +594,16 @@ def goals(argv) -> int:
             print(f"  no arm records {prim.get('measure', '')}")
         for grp in ans["groups"]:
             what = grp["key"]
+            gm = (grp["rows"][0].get("measure") if grp["rows"] else None) or prim.get("measure", "")
+            dec = cb.group_decision(A, g, ds, grp["rows"], gm, retired_in)
+            shown = cb.shown_axes(dec)
             print(f"\n  {'scored by ' + what if what.startswith('judge ') else 'scored against ' + what}")
             _table(
                 [
                     "arm",
-                    f"mean {(grp['rows'][0].get('measure') if grp['rows'] else None) or prim.get('measure', '')}",
+                    f"mean {gm}",
                     f"{A.item_word}s",
+                    *(axis_title(ax) for ax in shown),
                     "row",
                     "flags",
                     "",
@@ -585,6 +612,7 @@ def goals(argv) -> int:
                     [
                         r["label"]
                         + (" [baseline]" if r.get("baseline") else "")
+                        + (" [recommended]" if dec["recommended"] == r["arm"] else "")
                         + (
                             f" [retired in {retired_in[r['arm'].rsplit('/', 1)[-1]]}]"
                             if r["arm"].rsplit("/", 1)[-1] in retired_in
@@ -592,13 +620,23 @@ def goals(argv) -> int:
                         ),
                         _fmt(r["mean"]),
                         r["n"],
+                        *(cell_text(ax, dec["rows"][r["arm"]][ax["name"]]) for ax in shown),
                         _kind(r, tiers),
-                        "; ".join(r["flags"]) or "—",
+                        "; ".join(r["flags"] + dec["out"].get(r["arm"], [])) or "—",
                         "leader" if grp["leader"] and r is grp["leader"] else "",
                     ]
                     for r in grp["rows"]
                 ],
             )
+            rec = dec["recommended"]
+            label = {r["arm"]: r["label"] for r in grp["rows"]}
+            print(
+                f"\n  recommended: {label[rec]}"
+                if rec
+                else "\n  no single arm recommended" + (" yet" if dec["leader"] else ": no arm is eligible")
+            )
+            for w in dec["why"]:
+                print(textwrap.fill(w, width=96, initial_indent="    - ", subsequent_indent="      "))
     # The goal page's rounds, as `evh rounds --goal` lists them (it has the evidence in full).
     if rounds:
         print("\nrounds (evh rounds --goal " + g["goal_id"] + " for the evidence):")

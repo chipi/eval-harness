@@ -133,8 +133,24 @@ p 0.36, from the pre-fix run), and DBpedia's 56-item dev slice, over today's 28 
   project, the published docs only, a summariser and a classifier with small CPU models, cheap
   hosted LLMs, a frontier reference and a judge, browsed in the catalog, under $1. RELEASING
   runs it before the merge.
+- **A goal weighs cost, quality and speed, and recommends**
+  ([ADR-0006](https://github.com/chipi/eval-harness/blob/main/docs/adr/ADR-0006-goal-axes-and-strategies.md)).
+  Cost (USD per item, tokens beside it) and speed (latency p50 and p95) are built in;
+  `success_criteria.axes` adds limits, another measure, `role: ignore`, or the project's own
+  per-item metric in one line. A `strategy` says who is tied with the quality leader
+  (`balanced`, the default: not separated by the paired test and within a margin, 2% of the
+  leader unless the goal sets one; `quality_first`; `frugal`) and `tie_break` (default cost,
+  then speed) picks among them. Limits come first; flagged and retired arms are never
+  recommended; a missing number is "not recorded"; speed is not compared across machines.
+  The goal page shows the decision with its reasons, an axis column per arm and quality
+  against each axis as charts; the home page's glance a **recommended** column with cost and
+  speed against the baseline; the dataset and arm pages cost and speed; the inspector's scatter
+  cost and tokens. `evh goals --goal` and `evh overview` print the same. Guardrails are shown
+  on the goal page and in the CLI.
 
 ### Changed
+- **`success_criteria.secondary` is removed**: its entries are `axes` (UPGRADING); a goal that
+  still has it fails V14.
 - **Documentation never moves a fingerprint (fingerprint version 4).** Code is hashed by what it
   does: its syntax tree without docstrings, comments, formatting or `METRIC_DESCRIPTIONS`. That
   holds for the adapter, the harness's measuring modules, judge_score's own hash and the examples'
