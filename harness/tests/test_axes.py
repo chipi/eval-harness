@@ -6,6 +6,7 @@ python tests/test_axes.py
 
 import sys
 from pathlib import Path
+from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
 from evaluation_harness import _axes
@@ -195,6 +196,20 @@ check(
     d["why"],
 )
 
+# Nobody eligible: the reason is named and counted, not a list of what might have happened.
+d = _axes.decide(
+    GOAL,
+    {
+        "a": arm("A", top, 0.0, 100, flags=["n 31 < min_items 32"]),
+        "b": arm("B", cheap, 0.0, 100, flags=["n 31 < min_items 32"]),
+    },
+)
+check(
+    "decide: with no eligible arm, the reason names the flag and how many arms carry it",
+    d["recommended"] is None and d["why"][-1] == "No arm is eligible: n 31 < min_items 32 (2 arms).",
+    d["why"],
+)
+
 # The home page's glance: the recommendation against the baseline, as ratios.
 from evaluation_harness.catalog_build import axis_ratios  # noqa: E402
 
@@ -211,5 +226,51 @@ check(
     str(axis_ratios(d, "a", "b")),
 )
 check("ratios: none for the baseline itself", axis_ratios(d, "b", "b") == [])
+
+# The goal page's line when the rule and the promoted baseline disagree (catalog_build.baseline_gap).
+from evaluation_harness.catalog_build import baseline_gap  # noqa: E402
+from evaluation_harness.catalog_charts import LABEL_H, label_y  # noqa: E402
+
+
+class Scores:
+    """Just enough of a catalog adapter for baseline_gap: per-item scores by arm."""
+
+    def __init__(self, arms):
+        self.arms = arms
+
+    def scores(self, arm):
+        return self.arms[arm]["scores"]
+
+
+ITEMS[:] = [f"g{k:02d}" for k in range(20)]
+v2 = [0.6] * 14 + [0.2] * 6
+v1 = [0.2] * 14 + [0.6] * 6
+pair = {"v2": arm("v2", v2, 0.0, 100), "v1": arm("v1", v1, 0.0, 100)}
+d = _axes.decide(GOAL, pair)
+rows = [{"arm": "v2", "label": "v2"}, {"arm": "v1", "label": "v1", "baseline": True}]
+fake: Any = Scores(pair)
+gap = baseline_gap(fake, d, rows, "q")
+check(
+    "baseline gap: when the rule recommends another arm than the baseline, the page says by how much and the test",
+    d["recommended"] == "v2"
+    and gap.startswith("Differs from the promoted baseline, v1: v2 is +0.160 on q")
+    and "(p " in gap,
+    gap,
+)
+check(
+    "baseline gap: nothing to say when the baseline is the recommendation",
+    baseline_gap(fake, d, [{"arm": "v2", "label": "v2", "baseline": True}, {"arm": "v1", "label": "v1"}], "q")
+    == "",
+)
+
+# Chart labels: a name that would cover one already placed moves a line; a clear one stays.
+placed = [(100.0, 200.0, 50.0)]
+check("labels: a clear spot is kept", label_y(80.0, 100.0, 200.0, placed, 10, 200) == 80.0)
+moved = label_y(52.0, 150.0, 260.0, placed, 10, 200)
+check("labels: an overlapping name moves at least a line away", abs(moved - 50.0) >= LABEL_H, moved)
+check(
+    "labels: names that do not overlap in x share a line",
+    label_y(50.0, 210.0, 300.0, placed, 10, 200) == 50.0,
+)
 
 sys.exit(summary())

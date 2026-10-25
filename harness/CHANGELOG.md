@@ -146,7 +146,11 @@ p 0.36, from the pre-fix run), and DBpedia's 56-item dev slice, over today's 28 
   against each axis as charts; the home page's glance a **recommended** column with cost and
   speed against the baseline; the dataset and arm pages cost and speed; the inspector's scatter
   cost and tokens. `evh goals --goal` and `evh overview` print the same. Guardrails are shown
-  on the goal page and in the CLI.
+  on the goal page and in the CLI. When the recommendation is not the promoted baseline, the
+  goal page and `evh goals --goal` say by how much and whether the test separates them; with no
+  eligible arm, they count the reasons. The goals page and `evh goals` count configs filed and
+  show each goal's recommendation. Cost and speed metrics are their own kinds, with the goals
+  that weigh them, and costs print to six places; chart names no longer overlap.
 
 ### Changed
 - **`success_criteria.secondary` is removed**: its entries are `axes` (UPGRADING); a goal that

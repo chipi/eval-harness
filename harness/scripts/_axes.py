@@ -217,7 +217,7 @@ def decide(
     for arm, reasons in out.items():
         why.append(f"{arms[arm]['label']} is out: {'; '.join(reasons)}.")
     if not eligible:
-        why.append("No arm is eligible: every arm is over a limit, flagged, or has no quality score.")
+        why.append(_none_eligible(arms, rows, out))
         return {
             "axes": axes,
             "rows": rows,
@@ -327,6 +327,27 @@ def decide(
         "recommended": recommended,
         "why": why,
     }
+
+
+def _none_eligible(arms: dict, rows: dict, out: dict) -> str:
+    """Why no arm can be recommended, counted by reason: "every arm is flagged: n 31 < min_items 32
+    (5 arms)", not a list of everything that could have happened."""
+    flagged: dict[str, int] = {}
+    unscored = 0
+    for a in arms:
+        if a in out:
+            continue
+        for f in arms[a].get("flags") or []:
+            flagged[f] = flagged.get(f, 0) + 1
+        if not arms[a].get("flags") and rows[a]["quality"]["value"] is None:
+            unscored += 1
+    parts = [f"{len(out)} over a limit (above)"] if out else []
+    parts += [
+        f"{f} ({n} arm{'s' if n > 1 else ''})" for f, n in sorted(flagged.items(), key=lambda kv: -kv[1])
+    ]
+    if unscored:
+        parts.append(f"no quality score ({unscored} arm{'s' if unscored > 1 else ''})")
+    return "No arm is eligible: " + "; ".join(parts) + "."
 
 
 def value_text(axis: dict, v: float | None) -> str:

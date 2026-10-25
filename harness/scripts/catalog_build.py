@@ -1352,10 +1352,22 @@ def _goal_rows(goal: dict, by_ds: dict) -> list:
 def render_goals(A: Adapter, by_ds: dict, out: Path, nav: list) -> int:
     """Render the goals page and one page per goal; return the number rendered."""
     goals = A.goals()
+    seen = glance(A, by_ds)
     rows = []
     for g in goals:
         prim = (g.get("success_criteria") or {}).get("primary") or {}
-        filed = sum(1 for v in by_ds.values() for a in v["arms"] if a["goal"] == g["goal_id"])
+        filed = configs_filed(by_ds, g)
+        rec = "<br>".join(
+            (dataset_link(r["dataset"]) + ": " if len(g.get("datasets") or []) > 1 else "")
+            + arm_link(r["recommended"], r["recommended_label"])
+            + (
+                f"<br><small>{e(' · '.join(r['vs_baseline']))} vs baseline</small>"
+                if r["vs_baseline"]
+                else ""
+            )
+            for r in seen
+            if r["goal"]["goal_id"] == g["goal_id"] and r["recommended"]
+        )
         rows.append(
             [
                 goal_link(g),
@@ -1364,6 +1376,7 @@ def render_goals(A: Adapter, by_ds: dict, out: Path, nav: list) -> int:
                 + (f" ({e(prim['direction'])})" if prim.get("direction") else ""),
                 "<br>".join(dataset_link(d.get("dataset_id", "")) for d in g.get("datasets") or []) or "—",
                 f'<span data-v="{filed}">{filed}</span>',
+                rec or '<span class="muted">none yet</span>',
             ]
         )
         render_goal(A, g, by_ds, out, nav)
@@ -1375,13 +1388,21 @@ def render_goals(A: Adapter, by_ds: dict, out: Path, nav: list) -> int:
     body += block(
         "01",
         "goals",
-        table("goals", ["goal", "statement", "decides", "datasets", "arms filed"], rows)
+        table("goals", ["goal", "statement", "decides", "datasets", "configs filed", "recommended"], rows)
         if rows
         else '<p class="muted">No goals yet: add <code>data/goals/&lt;goal_id&gt;.yaml</code> '
         "(schema: <code>goal.schema.json</code>).</p>",
     )
     write(out, "goals.html", page("Goals", body, 0, "goals", nav=nav, item=A.item_word))
     return len(goals)
+
+
+def configs_filed(by_ds: dict, g: dict) -> int:
+    """How many configs name this goal: the systems run for it, each counted once however many
+    ways it was scored (gold, silver, a judge)."""
+    return len(
+        {a["arm"].rsplit("/", 1)[-1] for v in by_ds.values() for a in v["arms"] if a["goal"] == g["goal_id"]}
+    )
 
 
 def _when(stamp: str) -> str:
@@ -1673,7 +1694,9 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
                         f'<p><a class="btn" href="{inspect_url(arms, "../", baseline=leader["arm"], metric=gm)}">'
                         "Test every arm in this group against its leader</a></p>"
                     )
-                inner += decision_html(dec, {r["arm"]: r["label"] for r in rows}, g, "../")
+                inner += decision_html(
+                    dec, {r["arm"]: r["label"] for r in rows}, g, "../", baseline_gap(A, dec, rows, gm)
+                )
                 inner += table(
                     f"ans{n}_{gi}",
                     [
@@ -1750,6 +1773,30 @@ def group_decision(A: Adapter, g: dict, ds: str, rows: list, gm: str, retired_in
     }
 
 
+def baseline_gap(A: Adapter, dec: dict, rows: list, gm: str) -> str:
+    """When the rule recommends another arm than the promoted baseline in this group: by how much
+    the recommended arm differs on quality, and whether the paired test separates them. Both can
+    be right: the rule follows the strategy, the baseline is a person's decision."""
+    from evaluation_harness import stats  # noqa: PLC0415
+
+    rec = dec["recommended"]
+    base = next((r for r in rows if r.get("baseline")), None)
+    if not rec or base is None or base["arm"] == rec:
+        return ""
+    labels = {r["arm"]: r["label"] for r in rows}
+    higher = dec["axes"][0]["direction"] == "higher"
+    series = {a: (A.scores(a).get(gm) or {}).get("values") or {} for a in (rec, base["arm"])}
+    row = (stats.compare(series, base["arm"], higher_is_better=higher, family=1).get("rows") or [None])[0]
+    if not row or row.get("p") is None:
+        return ""
+    return (
+        f"Differs from the promoted baseline, {labels[base['arm']]}: {labels[rec]} is "
+        f"{row['delta']:+.3f} on {gm} against it, {row.get('verdict', '')} (p {fmt_p(row['p'])}). "
+        "The rule recommends by the goal's strategy; the baseline is a person's decision "
+        "(evh run-promote)."
+    )
+
+
 def shown_axes(dec: dict) -> list:
     """The axes beside quality that some arm in the group records (cost counts its tokens too)."""
     return [
@@ -1773,8 +1820,9 @@ def axis_cell(ax: dict, cell: dict) -> str:
     return f"<span {attrs}>{e(cell_text(ax, cell))}</span>"
 
 
-def decision_html(dec: dict, labels: dict, g: dict, up: str) -> str:
-    """What the goal's rule concludes for this group, and why, in the goal's own terms."""
+def decision_html(dec: dict, labels: dict, g: dict, up: str, gap: str = "") -> str:
+    """What the goal's rule concludes for this group, and why, in the goal's own terms; `gap`
+    says how it differs from the promoted baseline (baseline_gap)."""
 
     if not dec["rows"]:
         return ""
@@ -1786,6 +1834,8 @@ def decision_html(dec: dict, labels: dict, g: dict, up: str) -> str:
     )
     weighs = "; ".join(axis_title(a) for a in dec["axes"])
     why = "".join(f"<li>{e(w)}</li>" for w in dec["why"])
+    if gap:
+        why += f'<li class="gap"><b>{e(gap)}</b></li>'
     return (
         f'<div class="decision"><p class="lead">{head}</p><ul class="small">{why}</ul>'
         f'<p class="small muted">Strategy <b>{e(strategy_of(dec["goal"]))}</b> '
@@ -1839,17 +1889,25 @@ def tradeoff_charts(dec: dict, labels: dict, quality_name: str) -> str:
 
 
 def metric_index(A: Adapter, by_ds: dict) -> dict:
-    """{metric: {"datasets": {dataset: arms recording it}, "goals": [goal ids deciding on it]}}."""
+    """{metric: {"datasets": {dataset: arms recording it}, "goals": [goals deciding on it],
+    "weighs": [goals weighing it as an axis: cost, speed or their own (ADR-0006)]}}."""
     out: dict = {}
+
+    def entry(m: str) -> dict:
+        return out.setdefault(m, {"datasets": {}, "goals": [], "weighs": []})
+
     for ds, v in by_ds.items():
         for a in v["arms"]:
             for m in a["means"]:
-                out.setdefault(m, {"datasets": {}, "goals": []})["datasets"].setdefault(ds, 0)
+                entry(m)["datasets"].setdefault(ds, 0)
                 out[m]["datasets"][ds] += 1
     for g in A.goals():
         m = ((g.get("success_criteria") or {}).get("primary") or {}).get("measure")
         if m:
-            out.setdefault(m, {"datasets": {}, "goals": []})["goals"].append(g)
+            entry(m)["goals"].append(g)
+        for ax in axes_of(g)[1:]:
+            if ax["role"] != "ignore" and ax["measure"] in out:
+                out[ax["measure"]]["weighs"].append(g)
     return out
 
 
@@ -1886,6 +1944,16 @@ def render_metrics(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
                         f'<a class="cell-link" href="g/{slug(g["goal_id"])}.html">{e(g.get("title") or g["goal_id"])}</a>'
                         for g in where["goals"]
                     )
+                    + (
+                        ("<br>" if where["goals"] else "")
+                        + '<span class="muted small">weighed by</span> '
+                        + ", ".join(
+                            f'<a class="cell-link" href="g/{slug(g["goal_id"])}.html">{e(g.get("title") or g["goal_id"])}</a>'
+                            for g in where["weighs"]
+                        )
+                        if where["weighs"]
+                        else ""
+                    )
                     or "—",
                 ],
             }
@@ -1902,7 +1970,7 @@ def render_metrics(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
         "metrics",
         table(
             "metrics",
-            ["metric", "what it measures", "better", "recorded on", "decides"],
+            ["metric", "what it measures", "better", "recorded on", "decides · weighs"],
             rows,
             "filter metrics",
         ),
@@ -2039,7 +2107,7 @@ def render_arm(A: Adapter, a: dict, ds: str, by_ds: dict, out: Path, nav: list) 
     rows = [
         [
             metric_link(m, "../"),
-            f'<span data-v="{mean}">{fmt(mean)}</span>',
+            f'<span data-v="{mean}">{metric_value(A, m, mean)}</span>',
             f'<span data-v="{k}">{k}</span>',
             "lower" if A.lower_is_better(m, ds) else ("neutral" if A.is_neutral(m) else "higher"),
         ]
@@ -2145,13 +2213,36 @@ def render_arm(A: Adapter, a: dict, ds: str, by_ds: dict, out: Path, nav: list) 
     write(out, arm_page(a["arm"]), page(a["label"], body, 1, "datasets", nav=nav, item=A.item_word))
 
 
+def cost_or_speed(A: Adapter, m: str) -> str | None:
+    """ "cost" or "speed" for a metric measured off the bill or the clock, else None. The
+    harness's own names first (cost_usd, latency_ms, tokens), then what the adapter says."""
+    from evaluation_harness._common import classify_metrics  # noqa: PLC0415
+
+    known = classify_metrics().get(m)
+    if known in ("cost", "speed"):
+        return known
+    fn = getattr(A, "reference_free", None)
+    if callable(fn) and fn(m):
+        return "speed" if any(k in m for k in ("latency", "time", "_ms", "_s")) else "cost"
+    return None
+
+
+def metric_value(A: Adapter, m: str, v) -> str:
+    """A metric's mean for a table: dollars to six places (a cheap model's $0.000012 is not
+    0.000), everything else as fmt."""
+    if v is not None and cost_or_speed(A, m) == "cost" and "usd" in m:
+        return f"${v:.6f}"
+    return fmt(v)
+
+
 def _kind_of(A: Adapter, m: str) -> str:
     """cost, speed, descriptive or quality, as the harness classifies it. Cost and speed first:
     the tests treat them as neutral (no quality verdict), yet lower is better."""
-    fn = getattr(A, "reference_free", None)
-    free = fn(m) if callable(fn) else any(k in m for k in ("cost", "latency", "tokens"))
-    if free:
-        return "cost or speed: measured off the bill or the clock, needs no reference"
+    cs = cost_or_speed(A, m)
+    if cs == "cost":
+        return "cost: what an item cost, from the bill or the tokens; needs no reference"
+    if cs == "speed":
+        return "speed: how long an item took, by the clock; needs no reference"
     if A.is_neutral(m):
         return "descriptive: says what the output was, never whether it was good"
     return "quality: measured against a reference or by a judge"
@@ -2170,6 +2261,7 @@ def render_metric(A: Adapter, m: str, where: dict, by_ds: dict, project: dict, o
         ("better", e(better)),
         ("kind", e(_kind_of(A, m))),
         ("decides", ", ".join(goal_link(g, "../") for g in where["goals"]) or "no goal"),
+        ("weighed by", ", ".join(goal_link(g, "../") for g in where["weighs"]) or "no goal"),
         ("recorded on", ", ".join(dataset_link(ds, "../") for ds in sorted(where["datasets"])) or "—"),
     ]
     dl = "".join(f"<dt>{e(k)}</dt><dd>{x}</dd>" for k, x in facts)
@@ -2204,7 +2296,7 @@ def render_metric(A: Adapter, m: str, where: dict, by_ds: dict, project: dict, o
                 "cls": row_kind(a, tiers),
                 "cells": [
                     arm_link(a["arm"], a["label"], "../"),
-                    f'<span data-v="{a["means"][m][0]}">{fmt(a["means"][m][0])}</span>',
+                    f'<span data-v="{a["means"][m][0]}">{metric_value(A, m, a["means"][m][0])}</span>',
                     f'<span data-v="{a["means"][m][1]}">{a["means"][m][1]}</span>',
                     scored_against(a, "../"),
                 ],

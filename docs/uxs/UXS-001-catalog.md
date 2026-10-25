@@ -203,7 +203,9 @@ The whole project at a glance, for the last 14 days of activity or for all time.
 - Hero: kicker `goals`, "What each evaluation is for: who uses the output, the decision it
   informs, and the measure that decides. Runs name their goal in their config (`goal:`)."
 - `01 goals`: **goal** (linked), **statement**, **decides** ("<measure> (<direction>)"),
-  **datasets**, **arms filed** (arms whose config names the goal).
+  **datasets**, **configs filed** (configs that name the goal, each counted once however many
+  ways it was scored), **recommended** (per dataset, the arm the goal's strategy picks, with its
+  cost and speed against the baseline, as on the home page; "none yet").
 - Empty state: "No goals yet: add `data/goals/<goal_id>.yaml` (schema: `goal.schema.json`)."
 - Command: `evh goals`.
 
@@ -258,12 +260,16 @@ The page answers first, then explains, then shows the evidence.
      its judge's score, not the goal's measure: its group's mean column, test buttons and
      decision use that score (`judge_score`, or `judge_score_unvalidated`).
    - the **decision box** ([ADR-0006](../adr/ADR-0006-goal-axes-and-strategies.md)): "Recommended:
-     <arm>" (linked), or "No single arm recommended" ("yet", or ": no arm is eligible" when every
-     arm is over a limit, flagged or unscored); then the reasons, one per line: each arm that is
-     out and why ("speed p95 3,462 ms > limit 2,000 ms"), the strategy with the quality leader,
-     who is tied with it and, under `balanced`, who is not separated but further off, so not
-     tied; and how the tie-break picked. A muted footer names the strategy and its rule, what the
-     goal weighs, the tie-break order, and that promoting is `evh run-promote`.
+     <arm>" (linked), or "No single arm recommended" ("yet", or ": no arm is eligible"); then the
+     reasons, one per line: each arm that is out and why ("speed p95 3,462 ms > limit 2,000 ms"),
+     the strategy with the quality leader, who is tied with it and, under `balanced`, who is not
+     separated but further off, so not tied; and how the tie-break picked. With no eligible arm the
+     line counts the reasons ("No arm is eligible: n 31 < min_items 32 (5 arms)."). When the
+     recommendation is not the promoted baseline, a bold last line says by how much and whether
+     the paired test separates them ("Differs from the promoted baseline, v1: v2 is +0.037 on
+     rouge_l against it, not separated (p 0.1246)…"): the rule follows the strategy, the baseline
+     is a person's decision. A muted footer names the strategy and its rule, what the goal weighs,
+     the tie-break order, and that promoting is `evh run-promote`.
    - the table: **arm** (linked to its page; tags: `filed` when its config names the goal, said
      in words in the note above the tables and in the tooltip, `baseline`, `recommended`,
      "retired in rN" in `--local` capitals; a retired arm's whole row is greyed out,
@@ -306,8 +312,9 @@ over the project's data; with a project adapter the rounds table and details sti
   metric's own page (each row keeps the anchor `#m-<metric>`): **metric**, **what it measures** (the
   adapter's `METRIC_DESCRIPTIONS`, else the harness's own description, else "not described: add
   it to the adapter's `METRIC_DESCRIPTIONS`"), **better** (lower, higher, or "neutral: a
-  description"), **recorded on** (each dataset, linked, with its arm count), **decides** (the
-  goals whose primary measure it is). Filterable.
+  description"), **recorded on** (each dataset, linked, with its arm count), **decides · weighs** (the
+  goals whose primary measure it is; then, muted, "weighed by" and the goals that weigh it as an
+  axis: cost, speed or their own). Filterable.
 - Command: `evh metrics [--dataset-id <id>]`.
 
 ## The arm page
@@ -337,8 +344,11 @@ over the project's data; with a project adapter the rounds table and details sti
 ## The metric page
 
 - Hero: kicker `metric`, the metric's name, then **better** (higher, lower, or "neutral: a
-  description"), **kind** (cost or speed, needing no reference; descriptive; or quality),
-  **decides** (the goals whose primary measure it is), **recorded on** (its datasets).
+  description"), **kind** ("cost: what an item cost, from the bill or the tokens; needs no
+  reference", "speed: how long an item took, by the clock; needs no reference", descriptive, or
+  quality), **decides** (the goals whose primary measure it is), **weighed by** (the goals that
+  weigh it as an axis), **recorded on** (its datasets). A cost in USD is shown to six places
+  ($0.000012) in its tables, here and on the arm page.
 - `01 what it measures, and how`: the one-line summary, then the longer explanation: the
   project's `METRIC_DESCRIPTIONS` `details`, else the harness's own for its metrics. A project
   metric with only one line says how to add the details.

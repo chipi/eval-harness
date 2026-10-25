@@ -194,6 +194,30 @@ try:
     check(
         "evh overview: the glance has the recommended column", r.returncode == 0 and "recommended" in r.stdout
     )
+    goals_page = (proj / ".build/catalog/goals.html").read_text()
+    check(
+        "catalog: the goals page counts configs, not scorings, and shows each goal's recommendation",
+        "configs filed" in goals_page and "arms filed" not in goals_page and ">recommended<" in goals_page,
+    )
+    r = evh("goals")
+    check(
+        "evh goals: configs filed and the recommendation",
+        "configs filed" in r.stdout and "recommended" in r.stdout,
+        r.stdout,
+    )
+    cost_page = proj / ".build/catalog/m/cost_usd.html"
+    cp = cost_page.read_text() if cost_page.is_file() else ""
+    check(
+        "catalog: cost is its own kind, and the page names the goals that weigh it",
+        "cost: what an item cost" in cp and "<dt>weighed by</dt>" in cp and "tickets_summary.html" in cp,
+        f"page exists: {cost_page.is_file()}",
+    )
+    r = evh("metrics", "--metric", "latency_ms")
+    check(
+        "evh metrics --metric: speed is its own kind, weighed by the goal",
+        "speed: how long an item took" in r.stdout and "weighed by   tickets_summary" in r.stdout,
+        r.stdout[-400:] + r.stderr[-300:],
+    )
 
     goal_path = data / "goals" / "tickets_summary.yaml"
     original = goal_path.read_text()

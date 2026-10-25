@@ -260,6 +260,8 @@ def metrics(argv) -> int:
         )
         if where["goals"]:
             print("    decides: " + ", ".join(g["goal_id"] for g in where["goals"]))
+        if where["weighs"]:
+            print("    weighed by: " + ", ".join(g["goal_id"] for g in where["weighs"]))
     return 0
 
 
@@ -280,6 +282,7 @@ def _metric(A, by_ds: dict, project: dict, idx: dict, m: str, only: str | None) 
     print(f"  better       {better}")
     print(f"  kind         {cb._kind_of(A, m)}")
     print("  decides      " + (", ".join(g["goal_id"] for g in where["goals"]) or "no goal"))
+    print("  weighed by   " + (", ".join(g["goal_id"] for g in where["weighs"]) or "no goal"))
     for ds in sorted(where["datasets"]):
         if only and ds != only:
             continue
@@ -297,7 +300,13 @@ def _metric(A, by_ds: dict, project: dict, idx: dict, m: str, only: str | None) 
         _table(
             ["arm", f"mean {m}", f"{A.item_word}s", "scored against", "row"],
             [
-                [a["label"], _fmt(a["means"][m][0]), a["means"][m][1], _scored(a), _kind(a, tiers)]
+                [
+                    a["label"],
+                    cb.metric_value(A, m, a["means"][m][0]),
+                    a["means"][m][1],
+                    _scored(a),
+                    _kind(a, tiers),
+                ]
                 for a in arms
             ],
         )
@@ -466,7 +475,7 @@ def arms(argv) -> int:
         [
             [
                 m,
-                _fmt(mean),
+                cb.metric_value(A, m, mean),
                 k,
                 "lower" if A.lower_is_better(m, ds) else ("neutral" if A.is_neutral(m) else "higher"),
             ]
@@ -535,13 +544,22 @@ def goals(argv) -> int:
     A, by_ds = _adapter(args)
     gs = A.goals()
     if not args.goal:
+        seen = cb.glance(A, by_ds)
         _table(
-            ["goal", "decides", "datasets", "title"],
+            ["goal", "decides", "datasets", "configs filed", "recommended", "title"],
             [
                 [
                     g["goal_id"],
                     ((g.get("success_criteria") or {}).get("primary") or {}).get("measure", ""),
                     ", ".join(d.get("dataset_id", "") for d in g.get("datasets") or []),
+                    cb.configs_filed(by_ds, g),
+                    "; ".join(
+                        r["recommended_label"]
+                        + (f" ({' · '.join(r['vs_baseline'])} vs baseline)" if r["vs_baseline"] else "")
+                        for r in seen
+                        if r["goal"]["goal_id"] == g["goal_id"] and r["recommended"]
+                    )
+                    or "none yet",
                     g.get("title", ""),
                 ]
                 for g in gs
@@ -635,8 +653,9 @@ def goals(argv) -> int:
                 if rec
                 else "\n  no single arm recommended" + (" yet" if dec["leader"] else ": no arm is eligible")
             )
-            for w in dec["why"]:
-                print(textwrap.fill(w, width=96, initial_indent="    - ", subsequent_indent="      "))
+            for w in [*dec["why"], cb.baseline_gap(A, dec, grp["rows"], gm)]:
+                if w:
+                    print(textwrap.fill(w, width=96, initial_indent="    - ", subsequent_indent="      "))
     # The goal page's rounds, as `evh rounds --goal` lists them (it has the evidence in full).
     if rounds:
         print("\nrounds (evh rounds --goal " + g["goal_id"] + " for the evidence):")

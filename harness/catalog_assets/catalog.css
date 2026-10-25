@@ -350,3 +350,5 @@ small.filed { font: 600 10px/1 var(--mono); letter-spacing: .04em; text-transfor
 span.tag-rec { font: 600 10px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--accent-ink); background: var(--s1); padding: 2px 5px; border-radius: 4px; }
 span.over { color: var(--local); font-weight: 600; }
 figure.chart figcaption { margin-top: 4px; }
+/* A point's name stays readable where a line crosses it: a halo in the chart's own colour. */
+svg text.name { paint-order: stroke; stroke: var(--surface); stroke-width: 6px; stroke-linejoin: round; }

@@ -255,6 +255,7 @@ def scatter(
             + " ".join(f"{x_of(p[0]):.1f},{y_of(p[1]):.1f}" for p in line)
             + '"/>'
         )
+    placed: list[tuple[float, float, float]] = []
     for i, (x, y, lab, tip) in enumerate(points):
         on = i in front
         marks.append(
@@ -262,10 +263,15 @@ def scatter(
             f'fill="{"var(--s1)" if on else "var(--muted)"}"><title>{_e(tip)}</title></circle>'
         )
         if on:
-            # Named beside the dot, on its left when it sits in the right third (never cut off).
+            # Named beside the dot, on its left when it sits in the right third (never cut off),
+            # moved up or down a line when it would cover a name already placed.
             right = x_of(x) > left + (width - left - RIGHT) * 2 / 3
+            tx = x_of(x) + (-7 if right else 7)
+            x0, x1 = (tx - LABEL_W * len(lab), tx) if right else (tx, tx + LABEL_W * len(lab))
+            ty = label_y(y_of(y) - 6, x0, x1, placed, TOP + 10, h - bottom - 4)
+            placed.append((x0, x1, ty))
             marks.append(
-                f'<text x="{x_of(x) + (-7 if right else 7):.1f}" y="{y_of(y) - 6:.1f}" class="tick"'
+                f'<text x="{tx:.1f}" y="{ty:.1f}" class="tick name"'
                 f"{' text-anchor=end' if right else ''}>{_e(lab)}</text>"
             )
     corner = ("left" if lower_x else "right") + (" top" if higher_y else " bottom")
@@ -284,6 +290,26 @@ def scatter(
         f'<figcaption class="small muted">{_e(y_label)} against {_e(x_label)}: better is {corner}. '
         "Named and joined: the frontier, the arms no other arm beats on both.</figcaption></figure>"
     )
+
+
+#: About one character of a tick label, in viewBox units: enough to tell when two names overlap.
+LABEL_W = 6.2
+#: The height of one label line.
+LABEL_H = 12.0
+
+
+def label_y(want: float, x0: float, x1: float, placed: list, top: float, bottom: float) -> float:
+    """Where a label spanning x0..x1 goes: at `want` if no label already placed covers it, else the
+    nearest line above or below that is clear, within top..bottom."""
+
+    def clear(y: float) -> bool:
+        return all(abs(y - py) >= LABEL_H or x1 <= px0 or x0 >= px1 for px0, px1, py in placed)
+
+    for k in range(12):
+        for y in (want,) if k == 0 else (want + k * LABEL_H, want - k * LABEL_H):
+            if top <= y <= bottom and clear(y):
+                return y
+    return want
 
 
 def _running(xs: list[float]) -> list[float]:
