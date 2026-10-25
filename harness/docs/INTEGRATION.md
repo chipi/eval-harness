@@ -103,8 +103,11 @@ Beside `score()`, say what your metrics are: `PRIMARY_METRIC` (the one that deci
 `METRIC_DIRECTIONS` (a quality metric that improves going down, `{"wer": "lower"}`) and
 `METRIC_DESCRIPTIONS` (one sentence each, `{"rouge_l": "ROUGE-L F1 against the reference"}`,
 or `{"summary": "one line", "details": "how it is computed and read"}`). Every run records
-them; the metrics page shows the summary and each metric's own page the details. Added later,
-they reach existing runs through `evh rescore`, for $0.
+them; the metrics page shows the summary and each metric's own page the details. A description
+is documentation: the catalog reads it from the adapter as it is today, over what a run recorded,
+so describing a metric later needs no new run and moves no fingerprint (`evh rescore` refreshes
+the record too, for $0). One metric name is described once across a project, so adapters that
+share a name share its sentence.
 
 ---
 
@@ -246,7 +249,7 @@ which references exist, what one arm wrote for one item.
   |---|---|
   | which arms, on which data | `arms()`, `arms_of(path)`, `describe(arm)`, `notes(arm)` |
   | what each scored, per item | `scores(arm, rescore=False)`, `recorded_means(arm)`, `input_hashes(arm)`, `can_rescore`. A goal's axes read their per-item values here: `cost_usd`, `tokens_in` + `tokens_out`, `latency_ms`, and any metric a goal names as its own axis ([ADR-0006](../../docs/adr/ADR-0006-goal-axes-and-strategies.md)); a project page that shows them imports `evaluation_harness.axes` (`axes_of`, `axis_title`, `decide`, `STRATEGIES`), the public module |
-  | which way is better | `lower_is_better(metric, dataset)`, `is_neutral(metric)`, `preferred_metrics`, `shape_metrics` |
+  | which way is better | `lower_is_better(metric, dataset)`, `is_neutral(metric, dataset)`, `preferred_metrics`, `shape_metrics` |
   | which references | `references()`, `reference_format(ref)`, `reference_archived(ref)` |
   | what was asked, what came back | `output_format(arm)` |
   | one item, side by side (the inspector only) | `item_view(arm, item)`, `reference_view(ref, item)` |

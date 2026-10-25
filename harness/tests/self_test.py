@@ -1675,6 +1675,20 @@ def test_v8_and_v9_go_red_on_a_copied_or_gutted_run() -> None:
     finally:
         _replace(pj, before)
 
+    # A git that cannot list what is committed lists nothing, and nothing listed once read as
+    # nothing missing: V9 passed a run with no rows. A committed directory behind a link that
+    # leaves the repository is how it happened (git: "outside repository"). It must fail.
+    repeats = shadow / "harness" / "data" / "runs-repeats"
+    shutil.rmtree(repeats)
+    repeats.symlink_to(HERE.parent / "data" / "runs-repeats")
+    r = _run_in(shadow, "scripts/validate_tree.py")
+    out = (r.stdout or "") + (r.stderr or "")
+    check(
+        "V9 fails when git cannot list the committed runs",
+        r.returncode != 0 and "git ls-files failed" in out,
+        f"exit {r.returncode}",
+    )
+
 
 def test_v4_neither_skips_a_missing_file_nor_hides_what_it_did_not_check() -> None:
     """V4 printed `ok` for a materialized copy that had lost a file, and for a dataset with
@@ -2022,8 +2036,9 @@ def _shadow_tree(copy_data: tuple = ()) -> pathlib.Path:
     is never written to: another process reading the reports or the runs mid-plant would
     otherwise see the defect (it happened). Code, reports and docs are copied; harness/data
     is a directory of links to the real one, except the subdirectories named in
-    `copy_data`, which are copied because the test writes into them. Removed at exit and on
-    the signals _restore_plants handles."""
+    `copy_data`, which are copied because the test writes into them, and the committed runs
+    directories (validate.json), which V9 lists through git: a link resolves outside the
+    shadow, where git refuses it. Removed at exit and on the signals _restore_plants handles."""
     import os  # noqa: PLC0415
     import shutil as _shutil  # noqa: PLC0415
     import tempfile as _tmp  # noqa: PLC0415
@@ -2040,8 +2055,10 @@ def _shadow_tree(copy_data: tuple = ()) -> pathlib.Path:
     )
     data = shadow / "harness" / "data"
     data.mkdir()
+    policy = json.loads((real / "harness" / "data" / "validate.json").read_text(encoding="utf-8"))
+    committed = {d.split("/")[0] for d in policy.get("committed") or []}
     for child in (real / "harness" / "data").iterdir():
-        if child.name in copy_data:
+        if child.name in copy_data or child.name in committed:
             # Hard links, not copies: instant and no extra space. A test must REPLACE a
             # file it changes (unlink, then write), or it would write through the link
             # into the real file. _replace() does that.

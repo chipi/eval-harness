@@ -127,7 +127,19 @@ def metric_descriptions(adapter_path: Path | None) -> dict[str, Any]:
     """`METRIC_DESCRIPTIONS` from the adapter, {metric: what it measures}: recorded on every run,
     and the catalog's metric pages read it. A value is one line, or {"summary": one line,
     "details": how it is computed and read} for the metric's own page. {} when absent."""
-    declared = getattr(_module_or_none(adapter_path), "METRIC_DESCRIPTIONS", None)
+    return _descriptions_of(_module_or_none(adapter_path))
+
+
+def recorded_metric_descriptions(adapter_spec: str | None) -> dict[str, Any] | None:
+    """`METRIC_DESCRIPTIONS` as the adapter a run recorded declares them TODAY, or None when it
+    cannot be found or imported. A description is documentation, so the current adapter's
+    overrides the one frozen on the run, as for metric kinds."""
+    module = adapter_module(adapter_spec)
+    return None if module is None else _descriptions_of(module)
+
+
+def _descriptions_of(module: Any) -> dict[str, Any]:
+    declared = getattr(module, "METRIC_DESCRIPTIONS", None)
     if not isinstance(declared, dict):
         return {}
     out: dict[str, Any] = {}

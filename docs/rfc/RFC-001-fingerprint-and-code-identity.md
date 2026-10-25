@@ -48,7 +48,9 @@ item ids and their `source_sha256` only ([RFC-006](RFC-006-item-fields-and-url-i
 ### Code identity (`_codeid`)
 
 - `source_sha256(text)`: parse the Python source, drop module, class and function docstrings and
-  any module-level assignment to `METRIC_DESCRIPTIONS`, and hash `tree_text(tree)`. Comments and
+  any module-level assignment to `METRIC_DESCRIPTIONS`, drop that name from a module-level
+  `from … import` (and the import, when it named nothing else), and hash `tree_text(tree)`. An
+  adapter that takes its descriptions from a shared module hashes as it did before. Comments and
   formatting are gone once parsed. Source that does not parse is hashed as bytes.
 - `tree_text(node)`: a serialisation of the syntax tree that leaves out empty and `None` fields,
   so one file hashes the same on Python 3.11, 3.12 and 3.14 (`ast.dump` does not).

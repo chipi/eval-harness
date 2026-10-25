@@ -301,7 +301,7 @@ def _metric(A, by_ds: dict, project: dict, idx: dict, m: str, only: str | None) 
         if text:
             print(textwrap.fill(text, width=96, initial_indent="  ", subsequent_indent="  ") + "\n")
     print(f"  better       {better}")
-    print(f"  kind         {cb._kind_of(A, m)}")
+    print(f"  kind         {cb._kind_of(A, m, where['datasets'])}")
     print("  decides      " + (", ".join(g["goal_id"] for g in where["goals"]) or "no goal"))
     print("  weighed by   " + (", ".join(g["goal_id"] for g in where["weighs"]) or "no goal"))
     for ds in sorted(where["datasets"]):
@@ -506,7 +506,7 @@ def arms(argv) -> int:
                 m,
                 cb.metric_value(A, m, mean),
                 k,
-                "lower" if A.lower_is_better(m, ds) else ("neutral" if A.is_neutral(m) else "higher"),
+                "lower" if A.lower_is_better(m, ds) else ("neutral" if A.is_neutral(m, ds) else "higher"),
             ]
             for m, (mean, k) in sorted(a["means"].items(), key=lambda kv: (kv[0] != a["metric"], kv[0]))
         ],

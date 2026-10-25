@@ -474,6 +474,29 @@ METRIC_KINDS = {
     "reasoning_tokens": "descriptive",
 }
 
+#: What each metric measures, for the catalog's metric pages. Documentation, so it never
+#: moves the adapter's code hash.
+METRIC_DESCRIPTIONS = {
+    "correct": {
+        "summary": "1 when the parsed label equals the gold label exactly, else 0: its mean is accuracy.",
+        "details": "parse_label strips markdown, quotes, trailing punctuation and a leading "
+        "\"Category:\", takes an exact match with a label's aliases, else the earliest alias "
+        "appearing as a whole word; that label is compared with the gold one. An unreadable "
+        "reply is wrong. correct_after_repair says how much of the accuracy the parser's "
+        "leniency contributed.",
+    },
+    "parsed": "Whether the reply could be read as an answer in the task's format: 1 or 0 per item, so its mean is the share readable (for the SummEval judges, the share of the four dimensions that came back readable). An unreadable reply scores 0 on the quality metrics, never skipped.",
+    "correct_after_repair": "1 when the answer is correct only because the parser read it: the "
+    "label was right but the reply was not exactly the label. A large share means the accuracy "
+    "partly measures the parser.",
+    "answer_words": "How many whitespace-separated words the reply had: a description, not a quality.",
+    "fmt_verbose": "1 when the reply ran past two words, where the prompt asks for the label alone.",
+    "fmt_markdown": "1 when the reply opens with markdown (bold, a heading, a quote) the prompt did not ask for.",
+    "confidence": "The local classifier's probability for the label it chose (the top score of the "
+    "fine-tune or the zero-shot NLI model). Not a quality: an input to calibration questions.",
+    "truncated": "1 when the provider cut the reply off at the token ceiling (finish_reason \"length\", and in most adapters a completion that reached 98% of max_tokens), else 0. An arm with truncated above 0 has scores that partly describe the ceiling, not the model.",
+}
+
 #: Extra failure shapes worth retrying, on top of the core's list.
 TRANSIENT_MARKERS = ("model is warming up", "no instances available", "upstream")
 

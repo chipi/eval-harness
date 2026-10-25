@@ -121,8 +121,9 @@ class Adapter(Protocol):
         """Whether a decrease in this metric is an improvement."""
         ...
 
-    def is_neutral(self, metric: str) -> bool:
-        """A measurement with no better direction (length, counts)."""
+    def is_neutral(self, metric: str, dataset: str | None = None) -> bool:
+        """A measurement with no better direction (length, counts), on `dataset`; with no
+        dataset, on every dataset that records it."""
 
     def references(self) -> list[dict]:
         """[{"id", "tier", "dataset", "task", "archived", "format"}]; optional, for the reference's
@@ -424,16 +425,33 @@ class HarnessAdapter:
         return lower_is_better_on(runs, metric, goals)
 
     @_memo
-    def _descriptive(self) -> frozenset:
-        kinds = set()
-        for ds in self._index().values():
+    @_memo
+    def _descriptive_by_dataset(self) -> dict:
+        """{dataset: {metric: whether a run there declares it descriptive}}, over each arm's
+        latest run."""
+        out: dict = {}
+        for arm, ds in self._index().items():
             m = _json(ds[-1] / "metrics.json") or {}
-            kinds |= {k for k, v in (m.get("metric_kinds") or {}).items() if v == "descriptive"}
-        return frozenset(kinds)
+            seen = out.setdefault(arm.rsplit("/", 2)[-2], {})
+            for k, v in (m.get("metric_kinds") or {}).items():
+                seen[k] = seen.get(k, False) or v == "descriptive"
+        return out
 
-    def is_neutral(self, metric: str) -> bool:
-        """Return whether this metric is descriptive (neither better nor worse)."""
-        return is_descriptive(metric) or metric in self._descriptive()
+    def _descriptive(self) -> frozenset:
+        return frozenset(k for seen in self._descriptive_by_dataset().values() for k, d in seen.items() if d)
+
+    def is_neutral(self, metric: str, dataset: str | None = None) -> bool:
+        """Whether this metric is descriptive (neither better nor worse) on `dataset`, as its
+        runs declare it, else by the harness's names. With no dataset: descriptive on every
+        dataset that declares it. One adapter's declaration made a metric neutral on every other
+        dataset: SummEval's descriptive `parsed` hid the classifiers' quality `parsed`."""
+        if is_descriptive(metric):
+            return True
+        by_ds = self._descriptive_by_dataset()
+        if dataset is not None:
+            return bool(by_ds.get(dataset, {}).get(metric))
+        declared = [seen[metric] for seen in by_ds.values() if metric in seen]
+        return bool(declared) and all(declared)
 
     def arm_of(self, dataset: str, config_id: str) -> str:
         """The arm id of a config's runs on a dataset: `<runs dir>/<dataset>/<config_id>`, the
@@ -501,12 +519,23 @@ class HarnessAdapter:
 
     @_memo
     def metric_descriptions(self) -> dict[str, str]:
-        """{metric: what it measures}, as the runs record it (the adapter's
-        METRIC_DESCRIPTIONS). Two runs that describe one metric differently: the one read last."""
+        """{metric: what it measures}: what the runs recorded (their adapter's METRIC_DESCRIPTIONS
+        then), overlaid by what each run's adapter says today, which is the authority on what its
+        metrics mean (as for metric kinds): a description is documentation, so it is read from the
+        code, not frozen with the measurement. An adapter that cannot be imported here leaves the
+        recorded one."""
+        from evaluation_harness._adapter import recorded_metric_descriptions  # noqa: PLC0415
+
         out: dict[str, str] = {}
+        adapters: set[str] = set()
         for ds in self._index().values():
             for d in ds:
-                out.update((_json(d / "metrics.json") or {}).get("metric_descriptions") or {})
+                m = _json(d / "metrics.json") or {}
+                out.update(m.get("metric_descriptions") or {})
+                if m.get("adapter"):
+                    adapters.add(m["adapter"])
+        for spec in sorted(adapters):
+            out.update(recorded_metric_descriptions(spec) or {})
         return out
 
     def reference_format(self, ref: str) -> str:

@@ -494,7 +494,7 @@ def v9_no_committed_evidence_is_missing() -> None:
     # missing-file and empty-rows checks still apply).
     FLOORS = policy().get("floors") or {}
 
-    tracked = subprocess.run(
+    listed = subprocess.run(
         [
             "git",
             "ls-files",
@@ -503,8 +503,24 @@ def v9_no_committed_evidence_is_missing() -> None:
         cwd=ROOT,
         capture_output=True,
         text=True,
-    ).stdout.split()
+    )
+    tracked = listed.stdout.split()
     missing, incomplete = [], []
+    # A git that refuses (a path outside the repository) lists nothing, and nothing listed
+    # read as nothing missing: V9 passed a run with no rows. Outside any repository nothing is
+    # committed, and that is said, not passed.
+    no_repo = False
+    if listed.returncode != 0:
+        no_repo = (
+            subprocess.run(
+                ["git", "rev-parse", "--git-dir"], cwd=ROOT, capture_output=True, text=True
+            ).returncode
+            != 0
+        )
+        if not no_repo:
+            incomplete.append(
+                f"git ls-files failed, so nothing committed was checked: {listed.stderr.strip()[:300]}"
+            )
     seen: dict = {}
     data_prefix = data_rel(DATA).rstrip("/") + "/"
     for f in tracked:
@@ -546,11 +562,14 @@ def v9_no_committed_evidence_is_missing() -> None:
         print(f"       {x}")
     if len(missing) > 5:
         print(f"       ... and {len(missing) - 5} more missing files")
-    check(
-        "V9 every committed run file is on disk, with its rows",
-        not missing and not incomplete,
-        f"{len(missing)} tracked file(s) missing, {len(incomplete)} run(s) incomplete",
-    )
+    if no_repo:
+        print("  --   V9 committed run files (not a git repository: nothing is committed)")
+    else:
+        check(
+            "V9 every committed run file is on disk, with its rows",
+            not missing and not incomplete,
+            f"{len(missing)} tracked file(s) missing, {len(incomplete)} run(s) incomplete",
+        )
 
     short = []
     for name, floor in sorted(FLOORS.items()):

@@ -713,3 +713,28 @@ METRIC_KINDS = {
     "parsed": "descriptive", "tie_rate": "descriptive", "truncated": "descriptive",
     "reasoning_tokens": "descriptive", "input_truncated": "descriptive",
 }
+
+#: What each metric measures, for the catalog's metric pages. Documentation, so it never
+#: moves the adapter's code hash.
+METRIC_DESCRIPTIONS = {
+    "tau": {
+        "summary": "Kendall's tau-b between the judge's scores and the experts' ratings of an "
+        "article's 16 summaries, averaged over the four dimensions.",
+        "details": "Per article the judge scores 16 summaries on coherence, consistency, fluency "
+        "and relevance. For each dimension its scores are correlated with the expert ratings by "
+        "tau-b, which corrects for ties on both sides (an LLM judge's integer scores tie often); "
+        "a dimension the judge did not return, or a constant side, counts 0. tau is the mean of "
+        "the four, then over articles: agreement with people on ordering summaries, not a summary's quality.",
+    },
+    "rho": "Spearman's rho between the judge's scores and the experts' ratings of an article's 16 "
+    "summaries, averaged over the four dimensions: kept for comparison with the literature.",
+    **{f"tau_{d}": f"Kendall's tau-b with the experts' {d} ratings across an article's 16 summaries "
+        f"(0 when the judge returned no {d} scores)." for d in DIMS},
+    **{f"rho_{d}": f"Spearman's rho with the experts' {d} ratings across an article's 16 summaries "
+        f"(0 when the judge returned no {d} scores)." for d in DIMS},
+    "tie_rate": "Share of the 120 summary pairs the judge scored equal, averaged over the dimensions "
+    "it returned: how often it could not tell two summaries apart.",
+    "parsed": "Whether the reply could be read as an answer in the task's format: 1 or 0 per item, so its mean is the share readable (for the SummEval judges, the share of the four dimensions that came back readable). An unreadable reply scores 0 on the quality metrics, never skipped.",
+    "truncated": "1 when the provider cut the reply off at the token ceiling (finish_reason \"length\", and in most adapters a completion that reached 98% of max_tokens), else 0. An arm with truncated above 0 has scores that partly describe the ceiling, not the model.",
+    "input_truncated": "1 when a local model saw only part of the article, because it was longer than the model's encoder window (1,024 tokens for BART) and was cut, else 0. Those items are a different task from the hosted arms' full-article ones.",
+}

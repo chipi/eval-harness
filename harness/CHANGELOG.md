@@ -109,8 +109,9 @@ p 0.36, from the pre-fix run), and DBpedia's 56-item dev slice, over today's 28 
   measurements) or latency is compared across machines. A dataset page names each arm's machine
   when its arms ran on more than one.
 - **`METRIC_DESCRIPTIONS`** in an adapter, one sentence per metric, is recorded on every run
-  (`metric_descriptions` in metrics.json) and refreshed by `evh rescore`; the harness describes
-  its own metrics (cost, tokens, latency, judge scores).
+  (`metric_descriptions` in metrics.json) and refreshed by `evh rescore`; the catalog reads the
+  adapter's current descriptions over the recorded ones, so describing a metric later needs no
+  new run. The harness describes its own metrics (cost, tokens, latency, judge scores).
 - **A run becomes a reference: `evh reference-create --from-run <run_id>`** (`make
   reference-create RUN=<run_id>`). The usual way to get references is to run the expensive
   model as an arm, read its results, and score the cheaper arms against what it wrote. Until now
@@ -170,7 +171,8 @@ p 0.36, from the pre-fix run), and DBpedia's 56-item dev slice, over today's 28 
 - **`success_criteria.secondary` is removed**: its entries are `axes` (UPGRADING); a goal that
   still has it fails V14.
 - **Documentation never moves a fingerprint (fingerprint version 4).** Code is hashed by what it
-  does: its syntax tree without docstrings, comments, formatting or `METRIC_DESCRIPTIONS`. That
+  does: its syntax tree without docstrings, comments, formatting or `METRIC_DESCRIPTIONS`
+  (assigned, or imported from a shared module). That
   holds for the adapter, the harness's measuring modules, judge_score's own hash and the examples'
   `code_digest`. A judge scorer YAML is hashed by its parsed content, and a reference manifest's
   `caveat` is outside the reference digest. Adding metric descriptions to an adapter used to make
@@ -313,6 +315,10 @@ p 0.36, from the pre-fix run), and DBpedia's 56-item dev slice, over today's 28 
   from a pin); the tutorial kit ships `tutorial/judge_panel.yaml`.
 
 ### Fixed
+- **V9 fails when git cannot list the committed runs.** A `git ls-files` that refused (a committed
+  directory behind a link that leaves the repository) listed nothing, and V9 read that as nothing
+  missing: a run with no rows passed. It now fails and quotes git's error; a project that is not a
+  git repository has nothing committed, and V9 says it was not checked.
 - **From an external review of the core and the UI surfaces (0.4.0 candidate):**
   - **A run scored against references for only some items says so.** experiment-run took a
     reference directory as covering the dataset, so gold for 20 of 200 items gave a 20-item mean

@@ -2168,7 +2168,7 @@ def render_arm(A: Adapter, a: dict, ds: str, by_ds: dict, out: Path, nav: list) 
             metric_link(m, "../"),
             f'<span data-v="{mean}">{metric_value(A, m, mean)}</span>',
             f'<span data-v="{k}">{k}</span>',
-            "lower" if A.lower_is_better(m, ds) else ("neutral" if A.is_neutral(m) else "higher"),
+            "lower" if A.lower_is_better(m, ds) else ("neutral" if A.is_neutral(m, ds) else "higher"),
         ]
         for m, (mean, k) in sorted(a["means"].items(), key=lambda kv: (kv[0] != a["metric"], kv[0]))
     ]
@@ -2290,9 +2290,10 @@ def metric_value(A: Adapter, m: str, v) -> str:
     return fmt(v)
 
 
-def _kind_of(A: Adapter, m: str) -> str:
+def _kind_of(A: Adapter, m: str, datasets=()) -> str:
     """cost, speed, descriptive or quality, as the harness classifies it. Cost and speed first:
-    the tests treat them as neutral (no quality verdict), yet lower is better."""
+    the tests treat them as neutral (no quality verdict), yet lower is better. A metric that is
+    a quality on some datasets and descriptive on others names the others."""
     cs = cost_or_speed(A, m)
     if cs == "cost":
         return "cost: what an item cost, from the bill or the tokens; needs no reference"
@@ -2300,7 +2301,10 @@ def _kind_of(A: Adapter, m: str) -> str:
         return "speed: how long an item took, by the clock; needs no reference"
     if A.is_neutral(m):
         return "descriptive: says what the output was, never whether it was good"
-    return "quality: measured against a reference or by a judge"
+    aside = sorted(ds for ds in datasets if A.is_neutral(m, ds))
+    return "quality: measured against a reference or by a judge" + (
+        f" (descriptive on {', '.join(aside)})" if aside else ""
+    )
 
 
 def render_metric(A: Adapter, m: str, where: dict, by_ds: dict, project: dict, out: Path, nav: list) -> None:
@@ -2314,7 +2318,7 @@ def render_metric(A: Adapter, m: str, where: dict, by_ds: dict, project: dict, o
     details = metric_details(m, project)
     facts = [
         ("better", e(better)),
-        ("kind", e(_kind_of(A, m))),
+        ("kind", e(_kind_of(A, m, where["datasets"]))),
         ("decides", ", ".join(goal_link(g, "../") for g in where["goals"]) or "no goal"),
         ("weighed by", ", ".join(goal_link(g, "../") for g in where["weighs"]) or "no goal"),
         ("recorded on", ", ".join(dataset_link(ds, "../") for ds in sorted(where["datasets"])) or "—"),

@@ -121,7 +121,7 @@ def _reference_free(metric: str) -> bool:
     return bool(fn(metric)) if callable(fn) else any(k in metric for k in _REFERENCE_FREE)
 
 
-def _other_reference(series: dict, baseline: str, metric: str, rescore: bool) -> list:
+def _other_reference(series: dict, baseline: str, metric: str, rescore: bool, dataset: str = "") -> list:
     """Arms whose `metric` was scored against another reference than the baseline's, which a
     paired test must not set against it: on one dataset, a silver-scored and a gold-scored run
     both record `overlap_f1`, but not of the same thing. Nothing is set aside when the scores
@@ -130,7 +130,7 @@ def _other_reference(series: dict, baseline: str, metric: str, rescore: bool) ->
     if (
         rescore
         or _ref_of(metric)
-        or A.is_neutral(metric)
+        or A.is_neutral(metric, dataset or None)
         or metric in A.shape_metrics
         or _reference_free(metric)
     ):
@@ -170,7 +170,7 @@ def _metric_rows(counts: Counter, per_arm: dict, baseline: str, dataset: str | N
             "name": k,
             "arms": n,
             "lower_is_better": A.lower_is_better(k, dataset),
-            "neutral": A.is_neutral(k),
+            "neutral": A.is_neutral(k, dataset or None),
             "baseline_has": k in per_arm.get(baseline, {}),
             "format": A.reference_format(_ref_of(k)) if _ref_of(k) else "",
             "archived": bool(_ref_of(k) and A.reference_archived(_ref_of(k))),
@@ -179,7 +179,7 @@ def _metric_rows(counts: Counter, per_arm: dict, baseline: str, dataset: str | N
     ]
 
 
-def _default_metric(counts: Counter, per_arm: dict, arms: list, asked: str) -> str:
+def _default_metric(counts: Counter, per_arm: dict, arms: list, asked: str, dataset: str = "") -> str:
     """The yardstick shown first.
 
     Order: never a shape metric (length, latency); scores before neutral counts and before
@@ -206,7 +206,7 @@ def _default_metric(counts: Counter, per_arm: dict, arms: list, asked: str) -> s
         pool,
         key=lambda k: (
             k in A.shape_metrics,
-            A.is_neutral(k),
+            A.is_neutral(k, dataset or None),
             _reference_free(k),  # the bill and the clock: only when nothing is scored
             k not in mine,
             mismatch(k),
@@ -408,7 +408,7 @@ def compare(params: dict) -> dict:
     notes = [n.rstrip(".") + "." for n in dict.fromkeys(n for a in arms for n in A.notes(a))]
     metric = params.get("metric", [""])[0]
     if metric not in counts:
-        metric = _default_metric(counts, per_arm, arms, asked) if counts else ""
+        metric = _default_metric(counts, per_arm, arms, asked, dataset) if counts else ""
     if not counts or (metric in A.shape_metrics and not params.get("metric", [""])[0]):
         return {
             "state": "not scorable",
@@ -429,7 +429,7 @@ def compare(params: dict) -> dict:
     promoted = {b.get("arm") for b in (bfn() if callable(bfn) else []) if b.get("arm")}
     fallback = next((a for a in series if a in promoted or a.startswith("baselines/")), next(iter(series)))
     baseline = asked if asked in series else fallback
-    other_ref = _other_reference(series, baseline, metric, rescore)
+    other_ref = _other_reference(series, baseline, metric, rescore, dataset)
     for a in other_ref:
         series.pop(a)
     decl, fvalues = _fields_of(dataset)
@@ -437,7 +437,7 @@ def compare(params: dict) -> dict:
     series, error = _filter(series, decl, fvalues, wheres)
     if error:
         return {"error": error}
-    higher, neutral = not A.lower_is_better(metric, dataset), A.is_neutral(metric)
+    higher, neutral = not A.lower_is_better(metric, dataset), A.is_neutral(metric, dataset or None)
     # A family and a threshold come from the URL, so they are checked, not trusted: a family
     # smaller than the arms tested here, or a threshold above alpha (or below what the family
     # allows), would turn "not separated" into "separated" by editing a link.

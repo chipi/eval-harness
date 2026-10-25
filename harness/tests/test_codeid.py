@@ -54,6 +54,13 @@ same(
 same("formatting", BASE.replace("1.0 if output", "1.0  if  output"))
 same("METRIC_DESCRIPTIONS edited", BASE.replace('"share right"', '"the share of items labelled right"'))
 same("METRIC_DESCRIPTIONS removed", BASE.replace('METRIC_DESCRIPTIONS = {"acc": "share right"}\n', ""))
+same(
+    "METRIC_DESCRIPTIONS imported instead",
+    BASE.replace(
+        'METRIC_DESCRIPTIONS = {"acc": "share right"}\n', "from shared import METRIC_DESCRIPTIONS\n"
+    ),
+)
+moves("another name imported", BASE + "\nfrom shared import THRESHOLDS\n")
 moves("an expression", BASE.replace("output.strip() ==", "output.strip().lower() =="))
 moves("a constant the code reads", BASE.replace("THRESHOLD = 0.5", "THRESHOLD = 0.6"))
 moves("the primary metric", BASE.replace('PRIMARY_METRIC = "acc"', 'PRIMARY_METRIC = "f1"'))

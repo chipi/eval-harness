@@ -50,7 +50,7 @@ A `typing.Protocol`; every method must be cheap to call twice.
 | --- | --- |
 | which arms, on which data | `arms()`, `arms_of(path)`, `describe(arm)`, `notes(arm)` |
 | what each scored, per item | `scores(arm, rescore=False)`, `recorded_means(arm)`, `input_hashes(arm)`, `can_rescore` |
-| which way is better | `lower_is_better(metric, dataset)`, `is_neutral(metric)`, `preferred_metrics`, `shape_metrics` |
+| which way is better | `lower_is_better(metric, dataset)`, `is_neutral(metric, dataset)`, `preferred_metrics`, `shape_metrics` |
 | which references | `references()`, `reference_format(ref)`, `reference_archived(ref)` |
 | what was asked, what came back | `output_format(arm)` → `{asked, got, how}` |
 | one item, side by side (the inspector only) | `item_view(arm, item)`, `reference_view(ref, item)` |

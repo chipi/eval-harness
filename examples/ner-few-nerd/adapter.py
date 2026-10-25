@@ -46,6 +46,7 @@ sys.path.insert(0, str(HERE.parent / "_shared"))
 import gateway  # noqa: E402
 from codehash import code_digest  # noqa: E402
 from extraction import (  # noqa: E402
+    METRIC_DESCRIPTIONS,
     METRIC_KINDS,
     PRIMARY_METRIC,
     normalizer_sha256,

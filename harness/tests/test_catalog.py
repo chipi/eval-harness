@@ -79,6 +79,21 @@ try:
     vals = A.scores("runs/ds1/arm_b")["acc"]["values"]
     check("scores: repeats averaged per item, as pair-test does", abs(vals["i00"] - 0.7) < 1e-12)
     check("descriptive metric kinds are neutral", A.is_neutral("words") and not A.is_neutral("acc"))
+    # One adapter's descriptive `parsed` must not make it neutral where another declares it quality.
+    kinds_tree = tmp / "mixed"
+    run("runs", "q_1", "dq", "arm_q", base, kinds={"acc": "quality", "parsed": "quality"}, root=kinds_tree)
+    run(
+        "runs", "d_1", "dd", "arm_d", base, kinds={"acc": "quality", "parsed": "descriptive"}, root=kinds_tree
+    )
+    M = HarnessAdapter(kinds_tree)
+    check(
+        "neutral per dataset: a quality on one, descriptive on another",
+        not M.is_neutral("parsed", "dq") and M.is_neutral("parsed", "dd") and not M.is_neutral("parsed"),
+    )
+    check(
+        "the metric page's kind names where it is descriptive",
+        "(descriptive on dd)" in cb._kind_of(M, "parsed", {"dq": 1, "dd": 1}),
+    )
 
     out = tmp / ".build" / "catalog"
     counts = cb.build(A, out)

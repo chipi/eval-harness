@@ -312,8 +312,9 @@ over the project's data; with a project adapter the rounds table and details sti
 - `01 metrics`: one row per metric (bookkeeping and totals last), its name linked to the
   metric's own page (each row keeps the anchor `#m-<metric>`): **metric**, **what it measures** (the
   adapter's `METRIC_DESCRIPTIONS`, else the harness's own description, else "not described: add
-  it to the adapter's `METRIC_DESCRIPTIONS`"), **better** (lower, higher, or "neutral: a
-  description"), **recorded on** (each dataset, linked, with its arm count), **decides · weighs** (the
+  it to the adapter's `METRIC_DESCRIPTIONS`"; the adapter as it is today, over what the runs
+  recorded), **better** (lower, higher, or "neutral: a description" when every dataset that
+  records it declares it descriptive), **recorded on** (each dataset, linked, with its arm count), **decides · weighs** (the
   goals whose primary measure it is; then, muted, "weighed by" and the goals that weigh it as an
   axis: cost, speed or their own). Filterable.
 - Command: `evh metrics [--dataset-id <id>]`.
@@ -349,7 +350,9 @@ over the project's data; with a project adapter the rounds table and details sti
 - Hero: kicker `metric`, the metric's name, then **better** (higher, lower, or "neutral: a
   description"), **kind** ("cost: what an item cost, from the bill or the tokens; needs no
   reference", "speed: how long an item took, by the clock; needs no reference", descriptive, or
-  quality), **decides** (the goals whose primary measure it is), **weighed by** (the goals that
+  quality; a metric declared quality on some datasets and descriptive on others is a quality
+  that names the others, "quality: … (descriptive on summeval_100)", and each dataset's tables
+  read it by that dataset's declaration), **decides** (the goals whose primary measure it is), **weighed by** (the goals that
   weigh it as an axis), **recorded on** (its datasets). A cost in USD is shown to six places
   ($0.000012) in its tables, here and on the arm page.
 - `01 what it measures, and how`: the one-line summary, then the longer explanation: the

@@ -808,3 +808,37 @@ METRIC_KINDS = {
     "fmt_paragraphs": "descriptive",
     "fmt_overlong": "descriptive",
 }
+
+#: What each metric measures, for the catalog's metric pages. Documentation, so it never
+#: moves the adapter's code hash.
+METRIC_DESCRIPTIONS = {
+    "coverage": {
+        "summary": "ROUGE-Lsum recall with the summary cut to the reference's length: did it carry the story.",
+        "details": "The summary is clipped to as many words as the gold summary has, then scored "
+        "for ROUGE-Lsum recall against it (sentences split here, stemming on). Writing more cannot "
+        "buy coverage; only putting the important facts first can. Read beside concision, which "
+        "rewards the opposite.",
+    },
+    "concision": "ROUGE-Lsum precision over the whole summary: the share of what was written that "
+    "matches the reference. Padding lowers it.",
+    "rouge1": "ROUGE-1 F1 against the reference, for comparison with published CNN/DailyMail "
+    "results. Rises with length; read after coverage and concision.",
+    "rougeLsum": "ROUGE-Lsum F1 against the reference (per-sentence longest common subsequence), "
+    "the CNN/DailyMail literature's figure. Rises with length.",
+    "grounding": "Share of the summary's distinct word bigrams that appear in the article: high "
+    "is extractive, low means the summary left the source (a paraphrase or a fabrication).",
+    "compression": "Summary words divided by article words: a description, not a quality.",
+    "length_vs_reference": "Summary words divided by reference words: 1 means as long as the "
+    "human's. A verbose winner shows here.",
+    "summary_words": "How many whitespace-separated words the summary had.",
+    "reference_words": "How many words the gold summary has.",
+    "fmt_narration": "1 when the output thinks out loud (\"the user wants\", \"let me draft\", "
+    "think tags) instead of only summarising: its quality numbers describe something else.",
+    "fmt_label": "1 when the output opens with a label such as \"Summary:\" the prompt did not ask for.",
+    "fmt_markdown": "1 when the output opens with markdown (bold, a heading, a quote) the prompt did not ask for.",
+    "fmt_bullets": "1 when the output has bullet lines where the prompt asks for sentences.",
+    "fmt_paragraphs": "1 when the output has more than one paragraph where the prompt asks for 2-3 short sentences.",
+    "fmt_overlong": "1 when the output runs past 90 words where the prompt asks for 2-3 short sentences.",
+    "truncated": "1 when the provider cut the reply off at the token ceiling (finish_reason \"length\", and in most adapters a completion that reached 98% of max_tokens), else 0. An arm with truncated above 0 has scores that partly describe the ceiling, not the model.",
+    "input_truncated": "1 when a local model saw only part of the article, because it was longer than the model's encoder window (1,024 tokens for BART) and was cut, else 0. Those items are a different task from the hosted arms' full-article ones.",
+}

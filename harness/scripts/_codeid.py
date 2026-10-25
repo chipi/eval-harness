@@ -38,6 +38,13 @@ def _strip(tree: ast.AST) -> ast.AST:
                 node.body = body[1:] or [ast.Pass()]
     if isinstance(tree, ast.Module):
         tree.body = [n for n in tree.body if not _is_doc_assignment(n)] or [ast.Pass()]
+        # Importing a documentation name is documentation too: an adapter that takes its
+        # METRIC_DESCRIPTIONS from a shared module hashes as it did before it did so.
+        for n in tree.body:
+            if isinstance(n, ast.ImportFrom):
+                n.names = [a for a in n.names if a.name not in DOC_NAMES]
+        emptied = [n for n in tree.body if isinstance(n, ast.ImportFrom) and not n.names]
+        tree.body = [n for n in tree.body if n not in emptied] or [ast.Pass()]
     return tree
 
 

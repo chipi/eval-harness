@@ -58,6 +58,7 @@ sys.path.insert(0, str(HERE.parent / "_shared"))
 import gateway  # noqa: E402
 
 from retrieval import (  # noqa: E402
+    METRIC_DESCRIPTIONS,
     METRIC_KINDS,
     PRIMARY_METRIC,
     parse_ranking,
