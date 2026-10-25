@@ -120,6 +120,9 @@ p 0.36, from the pre-fix run), and DBpedia's 56-item dev slice, over today's 28 
   outputs and calls nothing; the manifest records the run, its config, fingerprint, build and
   cost. It refuses what `run-promote` refuses (a dirty tree, an unknown build), an unfinished,
   derived or other-dataset run, and `--tier gold` (gold is what a person wrote or checked).
+  With `--not-redistributed` only the manifest is committed: it records the command that rebuilds
+  the texts from the run, and that command, on a checkout with the manifest alone, writes them
+  again and checks them against its checksums without touching it.
 - **`reference-create` refuses an empty output, and outputs that stopped at `max_tokens`**, by
   either path (`--allow-cut-off` for outputs that end at the cap by design). A frontier arm at
   `max_tokens: 80` wrote 19 of 20 summaries cut off mid-sentence and one empty reply, and they
@@ -319,6 +322,10 @@ p 0.36, from the pre-fix run), and DBpedia's 56-item dev slice, over today's 28 
   directory behind a link that leaves the repository) listed nothing, and V9 read that as nothing
   missing: a run with no rows passed. It now fails and quotes git's error; a project that is not a
   git repository has nothing committed, and V9 says it was not checked.
+- **`silver-calibrate` no longer prints a ceiling it did not measure.** With one set of runs
+  serving as both references and arms, it correlated a ranking with itself and printed "rho =
+  +1.000 … from two different sets of runs". The ceiling now counts only arms whose two sides are
+  different runs, and says "not measured" when fewer than three are.
 - **From an external review of the core and the UI surfaces (0.4.0 candidate):**
   - **A run scored against references for only some items says so.** experiment-run took a
     reference directory as covering the dataset, so gold for 20 of 200 items gave a 20-item mean

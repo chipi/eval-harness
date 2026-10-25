@@ -3449,6 +3449,12 @@ def test_rescore_finds_the_bundled_adapter_from_an_installed_package() -> None:
             and "rho vs trusted" in sc.stdout,
             (sc.stdout + sc.stderr)[-300:],
         )
+        # One set of runs on both sides agrees with itself at 1.000: that is no ceiling.
+        check(
+            "silver-calibrate: the same runs on both sides measure no ceiling, and it says so",
+            "CEILING — not measured" in sc.stdout and "ceiling not measured" in sc.stdout,
+            sc.stdout[-400:],
+        )
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 

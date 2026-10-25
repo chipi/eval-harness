@@ -21,7 +21,8 @@ and that artifact is not the interesting part.
 
 Read the output against the CEILING it prints. Two runs of the same arms against the
 same gold do not rank identically either, so the gold-vs-gold retest correlation is the
-best any proxy could score. A silver at rho 0.5 against a ceiling of 0.93 is not "fairly
+best any proxy could score. It needs two sets of runs (REF_MATCH and ARM_MATCH picking
+different runs); with one set it says the ceiling was not measured. A silver at rho 0.5 against a ceiling of 0.93 is not "fairly
 good"; it is about half of the available agreement.
 
 `--group-by` (default `family`) reports the bias that matters most and that excluding the
@@ -59,7 +60,7 @@ from evaluation_harness.stats import spearman
 
 
 def _collect(dataset_id: str, match: str | None) -> dict[str, dict[str, Any]]:
-    """arm -> {"texts": {item: [text, ...]}, "params": {...}, "adapter": str}"""
+    """arm -> {"texts": {item: [text, ...]}, "params": {...}, "adapter": str, "runs": {run dir}}"""
     acc: dict[str, dict[str, Any]] = {}
     # SORTED. The reference set is whichever repeat comes first, and glob order is the
     # filesystem's, not the run's: one author's rho moved 0.238 -> 0.391 purely by which
@@ -71,8 +72,15 @@ def _collect(dataset_id: str, match: str | None) -> dict[str, dict[str, Any]]:
         # `_v1` was stripped, so the same arm appeared twice under different names.
         arm = re.sub(r"_v\d+$", "", cid)
         entry = acc.setdefault(
-            arm, {"texts": defaultdict(list), "params": m.get("params") or {}, "adapter": m.get("adapter")}
+            arm,
+            {
+                "texts": defaultdict(list),
+                "params": m.get("params") or {},
+                "adapter": m.get("adapter"),
+                "runs": set(),
+            },
         )
+        entry["runs"].add(d.resolve())
         for f in sorted((d / "outputs").glob("*.txt")):
             entry["texts"][f.stem].append(f.read_text(encoding="utf-8").strip())
     return acc
@@ -190,12 +198,28 @@ def main() -> int:
 
     gold_arm = rank_against(trusted, arms_side, arms)
     gold_ref = rank_against(trusted, refs_side, arms)
-    common = sorted(set(gold_arm) & set(gold_ref))
-    ceiling = spearman([gold_ref[a] for a in common], [gold_arm[a] for a in common], constant=0.0)
-    print(
-        f"\n  CEILING — the same arms scored against the same trusted reference, from two\n"
-        f"  different sets of runs, agree at rho = {ceiling:+.3f}. No proxy can beat this."
+    # Only arms whose reference runs and arm runs are DIFFERENT runs measure a ceiling: the
+    # same runs on both sides agree at 1.000 with themselves, which was printed as a ceiling
+    # "from two different sets of runs" when one set was all there was.
+    common = sorted(
+        a for a in set(gold_arm) & set(gold_ref) if not refs_side[a]["runs"] & arms_side[a]["runs"]
     )
+    ceiling = (
+        spearman([gold_ref[a] for a in common], [gold_arm[a] for a in common], constant=0.0)
+        if len(common) >= 3
+        else None
+    )
+    if ceiling is None:
+        print(
+            "\n  CEILING — not measured: the reference side and the arm side are the same runs\n"
+            f"  ({len(common)} arm(s) with two different sets). Pick two sets of runs with --ref-match\n"
+            "  and --arm-match (two versions, or repeats) to learn the most a proxy could score."
+        )
+    else:
+        print(
+            f"\n  CEILING — {len(common)} arms scored against the same trusted reference, from two\n"
+            f"  different sets of runs, agree at rho = {ceiling:+.3f}. No proxy can beat this."
+        )
 
     key = args.group_by or None
     group = {a: (arms_side[a]["params"].get(key) if key else None) for a in arms}
@@ -243,7 +267,7 @@ def main() -> int:
     ll = [r[1] for r in rows if r[1] is not None]
     print(
         f"\n  rho: min {min(rr):+.3f}  mean {statistics.fmean(rr):+.3f}  max {max(rr):+.3f}"
-        f"   (ceiling {ceiling:+.3f})"
+        + (f"   (ceiling {ceiling:+.3f})" if ceiling is not None else "   (ceiling not measured)")
     )
     if ll:
         pos = sum(1 for x in ll if x > 0)

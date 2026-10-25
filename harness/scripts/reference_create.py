@@ -53,7 +53,7 @@ from evaluation_harness._common import (
     now,
     read_json,
 )
-from evaluation_harness._references import write_manifest
+from evaluation_harness._references import item_hashes, write_manifest
 
 try:
     import yaml
@@ -234,6 +234,12 @@ def main() -> int:
     ap.add_argument(
         "--allow-unknown-build", action="store_true", help="--from-run: a run whose build is unknown"
     )
+    ap.add_argument(
+        "--not-redistributed",
+        action="store_true",
+        help="the texts are not committed (the corpus's licence, or the project's choice); the "
+        "manifest is, and says how to rebuild them",
+    )
     args = ap.parse_args()
     if args.from_run and args.tier == "gold":
         die(
@@ -245,6 +251,8 @@ def main() -> int:
     ds = load_dataset(args.dataset_id)
     items = ds["items"][: args.limit] if args.limit else ds["items"]
     out_dir = REFERENCES / args.tier / args.dataset_id
+    if args.from_run and _rebuild(out_dir, args.from_run, args.dataset_id, items, args):
+        return 0
     if out_dir.exists() and not args.force:
         die(
             f"{out_dir} already exists.\n"
@@ -255,6 +263,12 @@ def main() -> int:
     if args.from_run:
         rows, meta = _from_run(args.from_run, args.dataset_id, items, args)
         print(f"{args.tier} reference(s) for {len(rows)} item(s) from run {args.from_run}: no calls")
+        # A run's outputs are the texts, so the command that made them rebuilds them for $0.
+        meta["source"] = (
+            f"evh reference-create --dataset-id {args.dataset_id} --from-run {args.from_run} --tier {args.tier}"
+            + (f" --limit {args.limit}" if args.limit else "")
+            + (" --not-redistributed" if args.not_redistributed else "")
+        )
     else:
         rows, meta = _author(args, items)
 
@@ -268,7 +282,14 @@ def main() -> int:
     out_dir.mkdir(parents=True, exist_ok=True)
     for item_id, text, _ in rows:
         (out_dir / f"{item_id}.txt").write_text(text, encoding="utf-8")
-    write_manifest(out_dir, args.tier, args.dataset_id, **meta, created_at=now())
+    write_manifest(
+        out_dir,
+        args.tier,
+        args.dataset_id,
+        **meta,
+        redistributed=not args.not_redistributed,
+        created_at=now(),
+    )
     if final_dir.exists():
         shutil.rmtree(final_dir)
     out_dir.rename(final_dir)
@@ -291,17 +312,52 @@ def main() -> int:
         )
     else:
         print("Runs against this dataset will now be scored against it automatically.")
-    print(
-        f"Commit it before the next run (git add {_repo_relative(final_dir)}): an uncommitted\n"
-        "reference makes every run after it dirty, and a dirty run cannot become a baseline or\n"
-        "a reference."
-    )
+    if args.not_redistributed:
+        print(
+            f"Commit its manifest (git add {_repo_relative(final_dir / 'manifest.json')}); keep the texts out\n"
+            "of git (ignore them): V16 checks any copy here against the manifest's checksums."
+            + (f"\nThey are rebuilt with:  {meta['source']}" if meta.get("source") else "")
+        )
+    else:
+        print(
+            f"Commit it before the next run (git add {_repo_relative(final_dir)}): an uncommitted\n"
+            "reference makes every run after it dirty, and a dirty run cannot become a baseline or\n"
+            "a reference."
+        )
     if meta.get("authored_by"):
         print(
             f"{meta['authored_by']} wrote it: scored against it, that arm is graded against its own\n"
             "outputs, and the leaderboard marks its row."
         )
     return 0
+
+
+def _rebuild(
+    out_dir: Path, run_id: str, dataset_id: str, items: list[dict], args: argparse.Namespace
+) -> bool:
+    """A committed manifest without its texts (a reference not redistributed): write the texts
+    from the run it names, check them against its checksums, and leave the manifest as it is.
+    False when this is not that case (no manifest, other files, another run)."""
+    manifest = out_dir / "manifest.json"
+    if not manifest.is_file() or any(f.name != "manifest.json" for f in out_dir.iterdir()):
+        return False
+    doc = json.loads(manifest.read_text(encoding="utf-8"))
+    if (doc.get("from_run") or {}).get("run_id") != run_id:
+        return False
+    rows, _meta = _from_run(run_id, dataset_id, items, args)
+    for item_id, text, _ in rows:
+        (out_dir / f"{item_id}.txt").write_text(text, encoding="utf-8")
+    got, want = item_hashes(out_dir), doc.get("items_sha256") or {}
+    if got != want:
+        for f in out_dir.glob("*.txt"):
+            f.unlink()
+        die(
+            f"REFUSED: the texts rebuilt from {run_id} do not match {manifest}'s checksums "
+            f"({sum(got.get(k) != v for k, v in want.items())} of {len(want)} differ): the run's outputs "
+            "changed since the reference was made. Nothing was kept."
+        )
+    print(f"{out_dir}: {len(got)} text(s) rebuilt from run {run_id}, matching the manifest (no calls)")
+    return True
 
 
 def _author(args: argparse.Namespace, items: list[dict]) -> tuple[list, dict]:

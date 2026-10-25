@@ -228,6 +228,12 @@ does), an unfinished, derived or other-dataset run, and an empty output or one t
 the cap by design). Commit the reference before the next run: an uncommitted one makes every
 later run dirty.
 
+When the texts may not be redistributed (the run's outputs quote a corpus you may not publish),
+add `--not-redistributed`: commit only the manifest and ignore the texts. The manifest records the
+command that rebuilds them; run on a checkout with the manifest alone, that command writes the
+texts from the run again, checks them against the manifest's checksums and leaves the manifest as
+it is (it refuses, keeping nothing, if the run's outputs changed since).
+
 `--config data/configs/best_model.yaml` instead of `--from-run` authors the references in a pass
 of their own, one call per item, without a run to read first.
 

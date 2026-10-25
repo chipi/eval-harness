@@ -137,14 +137,14 @@ length. The most "sensitive" metric available is a word count. An eval that pick
 headline facet by which one separates cleanest will pick a length measure and call it
 quality. This replicated exactly at ten times the sample size.
 
-**Two findings below are from the n=20 run and were not re-measured at n=200.** A
-model-authored reference ("silver") is biased, not merely noisy: silver rankings agree with
-gold at ρ = 0.33 against a retest ceiling of 0.92, and **silver authors promote models of
-their own family** — +7.4 rank positions on average, positive for 22 of 24 authors,
-p < 0.001. And **temperature 0 is not deterministic**: 9.8% of outputs were byte-identical
-across three repeats, 12 of 24 arms with none; this run is r=1 by design (with articles
-available, repeats are the wrong place to spend the same budget), so it does not re-measure
-it.
+**A model-authored reference ("silver") is biased, not merely noisy**, re-measured at n=200
+from the stored outputs ($0, §3.5): with each of the 24 hosted models as the silver author,
+the other arms' order agrees with gold's at ρ = 0.16 on average (at best 0.38, `llama_l`), and
+**every one of the 24 promotes models of its own family**, by +10.4 rank positions on average.
+The extractive `lead3` and the local BART models make better silver (ρ 0.58–0.72) than any
+LLM. **Temperature 0 is not deterministic** (from the n=20 run, not re-measured): 9.8% of
+outputs were byte-identical across three repeats, 12 of 24 arms with none; this run is r=1 by
+design (with articles available, repeats are the wrong place to spend the same budget).
 
 **Nine findings in this report's own history were retracted**, two caused by bugs in this
 harness's own scorer, and two more by the n=20 sample itself. §6 records them, because
@@ -536,7 +536,27 @@ even the point-estimate part of this report depends on the sample.
 
 ### 3.5 Can a model-authored reference be trusted?
 
-Every arm used in turn as the silver author, its own row excluded, ranking the other 23:
+At n=200, from the stored outputs ($0): every one of the 29 arms used in turn as the silver
+author, its own row excluded, ranking the other 28 by `coverage` against its outputs
+(`evh silver-calibrate --dataset-id cnn_dailymail_200 --ref-match _n200_v1 --arm-match _n200_v1`):
+
+| quantity | value |
+|---|---|
+| retest ceiling | **not measured**: one run per arm at n=200 |
+| silver agreement with gold, the 24 hosted models as authors | **−0.059 … +0.378**, mean **+0.163** |
+| silver agreement with gold, all 29 authors | **−0.059 … +0.719**, mean **+0.232** |
+| best authors | `lead3` (0.719), `bart_s` (0.614), `bart_l`, `bart_m`; best LLM `llama_l` (0.378) |
+| worst author | `qwen_s` (−0.059) |
+| sibling lift (own family promoted), the 24 hosted models | **+10.4** rank positions, positive for **24 of 24** |
+| sibling lift, all authors with a sibling | **+8.5**, positive for **27 of 28** (`bart_l_xsum`, −19.7, demotes the BARTs) |
+| ρ(author agreement, sibling lift) | **−0.74** |
+
+The lift is worst where the author is worst: the 3 authors above ρ 0.5 average +2.2
+positions, the 21 below ρ 0.3 average +10.0. The frontier arm's silver is committed as
+`silver/cnn_dailymail_200` (by `anthropic_l`, ρ 0.327, lift +12.5): its manifest only, since its
+texts quote the articles, with the command that rebuilds them from the run.
+
+The n=20 pilot, whose runs are not committed (24 hosted arms, two run sets):
 
 | quantity | value |
 |---|---|

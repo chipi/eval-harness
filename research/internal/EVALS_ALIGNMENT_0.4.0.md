@@ -83,3 +83,18 @@ answer matched its report:
   examples/_shared/adjudicate.py from the committed adjudication; manifest committed, labels not)
   and data/runs-adjudicated holds the 30 runs re-scored against it ($0): anthropic_l 0.9850, the
   three fine-tunes 0.9050, as the report says. The goal page shows it as a second gold group.
+- METRIC_DESCRIPTIONS for all 59 undescribed metrics, read from the scoring code; the catalog
+  reads the adapter's current descriptions over the recorded ones, and no code hash moved. Found
+  on the way: `is_neutral` was global (SummEval's descriptive `parsed` hid the others' quality
+  `parsed`), now per dataset; V9 passed when `git ls-files` failed, now it fails.
+- H, silver: silver-calibrate re-measured at n=200 from the stored outputs ($0): the 24 hosted
+  authors agree with gold at mean ρ 0.163 (best `llama_l` 0.378), every one promotes its own
+  family (+10.4 positions); `lead3` and the BARTs make better silver (0.58–0.72). No retest
+  ceiling at n=200 (one run per arm): silver-calibrate used to print 1.000 there, now it says
+  "not measured". The frontier arm's silver (`anthropic_l`) is `silver/cnn_dailymail_200`, manifest
+  only (its texts quote the articles), rebuilt by the command its manifest records
+  (`reference-create --from-run … --not-redistributed`, new). Report §3.5 and the CNN README
+  carry the n=200 numbers.
+- H, judge panel: dropped (owner, 2026-10-25). `evh judge` calls hosted or fake judges, has no
+  stored-verdict mode, and its verdicts never reach the catalog; SummEval already measures
+  judges against experts in fingerprinted runs.

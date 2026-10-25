@@ -212,27 +212,25 @@ length. A facet that resolves many pairs is not thereby the more informative one
 ## Can you trust a model-written reference?
 
 Usually there is no gold, so a strong model writes the references — "silver" — and you
-rank candidates against those. Here gold exists, so the proxy can be *measured*. This
-measurement is from the n=20 pilot, whose runs are not committed (not re-measured at n=200;
-REPORT_SUMMARIZATION §3.5):
+rank candidates against those. Here gold exists, so the proxy can be *measured*, at n=200 from
+the stored outputs (REPORT_SUMMARIZATION §3.5):
 
 ```bash
-make silver-calibrate DATASET_ID=cnn_dailymail_20 REF_MATCH=_v1 ARM_MATCH=_v2
+evh silver-calibrate --dataset-id cnn_dailymail_200 --ref-match _n200_v1 --arm-match _n200_v1
 ```
 
 It costs nothing: "author silver with model X using the same prompt and settings as the
-arms" is exactly what X already produced, so all 24 arms are tried as authors.
+arms" is exactly what X already produced, so all 29 arms are tried as authors.
 
 ```
-ceiling (same arms, same gold, two run sets):   rho = +0.924
-silver agreement with gold:   -0.013 .. +0.697, mean +0.326
-sibling lift:  +7.4 rank positions, positive for 22 of 24 authors
+silver agreement with gold, the 24 hosted models:   -0.059 .. +0.378, mean +0.163
+sibling lift, the 24 hosted models:   +10.4 rank positions, positive for 24 of 24
 ```
 
-Read against the **ceiling**, not against 1.0: two runs of the same arms against the same
-gold only agree at 0.92, so that is the most any proxy here could score.
+There is no retest ceiling at n=200: each arm ran once, and a ceiling needs two run sets (the
+n=20 pilot's was ρ 0.924, its mean agreement 0.326).
 
-The last line is the finding. **A silver author promotes models of its own family**, and
+The second line is the finding. **A silver author promotes models of its own family**, and
 excluding the author's own row does not remove it — the circularity is not a judge scoring
 *itself*, it is a judge rewarding its own kind's style. A silver-ranked leaderboard is not
 merely noisier than a gold one; it is wrong in a direction you can predict from who wrote
@@ -241,15 +239,23 @@ the references.
 Two caveats on that number, because a single mean hides them:
 
 - **The lift is worst where the author is worst.** ρ(author agreement, sibling lift) =
-  −0.70: the four authors above ρ 0.5 average **+4.2** positions, the twelve below ρ 0.3
-  average **+9.4**. "~7 positions" is an average dominated by authors you would not choose.
+  −0.74: the three authors above ρ 0.5 average **+2.2** positions, the 21 below ρ 0.3 average
+  **+10.0**.
 - **Family and output length are entangled** — models of a family write similar amounts —
   so part of this is length preference rather than "style". Not fully separated here.
 
-And the part that matters outside this example: **the best author was `llama_s`** (ρ 0.697,
-then `deepseek_m` and `llama_m`) and the worst `mistral_m` (−0.013). That spread is across
-authors drawn from the same 24 models, and in the case silver is actually *for*, no gold
-exists, so you cannot check which author you got.
+And the part that matters outside this example: **the best authors are not LLMs.** The
+extractive `lead3` (ρ 0.719) and the local BART models (0.58–0.61) make better silver than
+any hosted model; the best of those is `llama_l` (0.378), the worst `qwen_s` (−0.059). In the
+case silver is actually *for*, no gold exists, so you cannot check which author you got.
+
+The frontier arm's silver is kept as `silver/cnn_dailymail_200`, by `anthropic_l` (ρ 0.327,
+lift +12.5). Its texts quote the articles, so only its manifest is committed; it names the
+command that rebuilds them from the run:
+
+```bash
+evh reference-create --dataset-id cnn_dailymail_200 --from-run cnn_anthropic_l_n200_v1_20260926T063645Z --tier silver --not-redistributed
+```
 
 ## Files
 

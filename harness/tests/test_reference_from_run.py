@@ -171,6 +171,51 @@ try:
         board.stdout[-600:] + board.stderr[-300:],
     )
 
+    # Not redistributed: only the manifest is committed, and the run rebuilds the texts.
+    r = evh(
+        "reference-create",
+        "--dataset-id",
+        "tickets_v1",
+        "--from-run",
+        author,
+        "--force",
+        "--not-redistributed",
+    )
+    m = json.loads((SILVER / "manifest.json").read_text()) if (SILVER / "manifest.json").is_file() else {}
+    rebuild = m.get("source", "")
+    check(
+        "--not-redistributed: the manifest says so and records the command that rebuilds the texts",
+        r.returncode == 0
+        and m.get("redistributed") is False
+        and rebuild.startswith("evh reference-create --dataset-id tickets_v1 --from-run " + author)
+        and "Commit its manifest" in r.stdout,
+        (r.stdout + r.stderr)[-300:],
+    )
+    before = (SILVER / "manifest.json").read_bytes()
+    texts = {f.name: f.read_bytes() for f in SILVER.glob("*.txt")}
+    for f in SILVER.glob("*.txt"):
+        f.unlink()
+    r = evh(*rebuild.split()[1:])
+    check(
+        "the recorded command rebuilds the texts byte for byte and leaves the manifest as it is",
+        r.returncode == 0
+        and {f.name: f.read_bytes() for f in SILVER.glob("*.txt")} == texts
+        and (SILVER / "manifest.json").read_bytes() == before,
+        (r.stdout + r.stderr)[-300:],
+    )
+    for f in SILVER.glob("*.txt"):
+        f.unlink()
+    first = next(iter(sorted((src / "outputs").glob("t*.txt"))))
+    kept = first.read_bytes()
+    first.write_text("an output that changed after the reference was made")
+    r = evh(*rebuild.split()[1:])
+    check(
+        "a rebuild whose texts no longer match the manifest is refused, and keeps nothing",
+        refused(r, "do not match") and not list(SILVER.glob("*.txt")),
+        (r.stdout + r.stderr)[-300:],
+    )
+    first.write_bytes(kept)
+
     # --config: the same refusals apply after authoring, and nothing is frozen.
     shutil.rmtree(SILVER)
     (proj / "capped.py").write_text(
