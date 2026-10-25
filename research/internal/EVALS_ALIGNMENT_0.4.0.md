@@ -59,3 +59,6 @@ answer matched its report:
 - The reference digest counts only a manifest's authorship fields (who wrote the texts); a gold
   manifest adds nothing, so the 57 v4 gold-scored runs still match. The demo silver run moved
   with its manifest.
+- cost_usd is the bill where a reply carried one: 79 runs (17,473 items) moved from the price
+  table to `_meta.usage.cost`; their total $4.70 -> $7.06. Nothing else in those files changed
+  (semantic diff); reports already quoted bills (claims 200/200), the site's pages did not move.

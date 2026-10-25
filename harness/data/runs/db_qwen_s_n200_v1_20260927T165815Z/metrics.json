@@ -130,7 +130,7 @@
     "answer_words": 1.0,
     "correct": 0.985714,
     "correct_after_repair": 0.0,
-    "cost_usd": 9e-06,
+    "cost_usd": 2.6e-05,
     "fmt_markdown": 0.0,
     "fmt_verbose": 0.0,
     "latency_ms": 12349.095143,
@@ -138,7 +138,7 @@
     "reasoning_tokens": 0.0,
     "tokens_in": 164.939286,
     "tokens_out": 1.807143,
-    "total_cost_usd": 0.00241035,
+    "total_cost_usd": 0.00716527,
     "total_tokens_in": 46183.0,
     "total_tokens_out": 506.0,
     "truncated": 0.0

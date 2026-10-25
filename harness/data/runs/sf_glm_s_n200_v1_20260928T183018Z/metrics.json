@@ -149,7 +149,7 @@
   "reference_tier": "gold",
   "run_id": "sf_glm_s_n200_v1_20260928T183018Z",
   "scores": {
-    "cost_usd": 0.0002740337,
+    "cost_usd": 0.0007106856,
     "duplicate_ids": 0.0,
     "found_any": 0.865,
     "latency_ms": 3119.50657,
@@ -166,7 +166,7 @@
     "recall_100": 0.8585833333,
     "tokens_in": 4036.955,
     "tokens_out": 144.62,
-    "total_cost_usd": 0.05480674,
+    "total_cost_usd": 0.14213711,
     "total_tokens_in": 807391.0,
     "total_tokens_out": 28924.0,
     "truncated": 0.0,

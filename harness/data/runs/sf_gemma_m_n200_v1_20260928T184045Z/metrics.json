@@ -149,7 +149,7 @@
   "reference_tier": "gold",
   "run_id": "sf_gemma_m_n200_v1_20260928T184045Z",
   "scores": {
-    "cost_usd": 0.0003100505,
+    "cost_usd": 0.0003605582,
     "duplicate_ids": 0.0,
     "found_any": 0.865,
     "latency_ms": 5663.699455,
@@ -166,7 +166,7 @@
     "recall_100": 0.8585833333,
     "tokens_in": 3933.8,
     "tokens_out": 231.23,
-    "total_cost_usd": 0.0620101,
+    "total_cost_usd": 0.07211164,
     "total_tokens_in": 786760.0,
     "total_tokens_out": 46246.0,
     "truncated": 0.025,

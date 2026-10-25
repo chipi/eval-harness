@@ -120,7 +120,7 @@
   "scores": {
     "compression": 0.125628,
     "concision": 0.250762,
-    "cost_usd": 0.000311,
+    "cost_usd": 0.000836,
     "coverage": 0.317058,
     "fmt_bullets": 0.0,
     "fmt_label": 0.0,
@@ -138,7 +138,7 @@
     "summary_words": 48.08,
     "tokens_in": 728.66,
     "tokens_out": 64.365,
-    "total_cost_usd": 0.062179,
+    "total_cost_usd": 0.1672275,
     "total_tokens_in": 145732.0,
     "total_tokens_out": 12873.0,
     "truncated": 0.0

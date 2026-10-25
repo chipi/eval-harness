@@ -152,7 +152,7 @@
   "reference_tier": "gold",
   "run_id": "sf_glm_s_bm25first_n200_v1_20260928T221300Z",
   "scores": {
-    "cost_usd": 0.0002741932,
+    "cost_usd": 0.0007406137,
     "duplicate_ids": 0.0,
     "found_any": 0.865,
     "latency_ms": 3023.89413,
@@ -169,7 +169,7 @@
     "recall_100": 0.8585833333,
     "tokens_in": 4036.955,
     "tokens_out": 145.345,
-    "total_cost_usd": 0.05483864,
+    "total_cost_usd": 0.14812274,
     "total_tokens_in": 807391.0,
     "total_tokens_out": 29069.0,
     "truncated": 0.0,

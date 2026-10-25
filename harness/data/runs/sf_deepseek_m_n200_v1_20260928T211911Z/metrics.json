@@ -149,7 +149,7 @@
   "reference_tier": "gold",
   "run_id": "sf_deepseek_m_n200_v1_20260928T211911Z",
   "scores": {
-    "cost_usd": 0.000616614,
+    "cost_usd": 0.0011904547,
     "duplicate_ids": 0.0,
     "found_any": 0.865,
     "latency_ms": 1144.972355,
@@ -166,7 +166,7 @@
     "recall_100": 0.8585833333,
     "tokens_in": 3766.06,
     "tokens_out": 103.41,
-    "total_cost_usd": 0.1233228,
+    "total_cost_usd": 0.23809094,
     "total_tokens_in": 753212.0,
     "total_tokens_out": 20682.0,
     "truncated": 0.005,

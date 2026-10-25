@@ -149,7 +149,7 @@
   "reference_tier": "gold",
   "run_id": "sf_mistral_s_n200_v1_20260928T180610Z",
   "scores": {
-    "cost_usd": 0.0002333612,
+    "cost_usd": 0.0004261986,
     "duplicate_ids": 0.0,
     "found_any": 0.865,
     "latency_ms": 7223.75536,
@@ -166,7 +166,7 @@
     "recall_100": 0.8585833333,
     "tokens_in": 3953.57,
     "tokens_out": 237.885,
-    "total_cost_usd": 0.04667225,
+    "total_cost_usd": 0.08523973,
     "total_tokens_in": 790714.0,
     "total_tokens_out": 47577.0,
     "truncated": 0.02,

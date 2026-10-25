@@ -149,7 +149,7 @@
   "reference_tier": "gold",
   "run_id": "sf_llama_m_n200_v1_20260928T210535Z",
   "scores": {
-    "cost_usd": 0.0005110731,
+    "cost_usd": 0.0007169197,
     "duplicate_ids": 0.0,
     "found_any": 0.865,
     "latency_ms": 4063.973885,
@@ -166,7 +166,7 @@
     "recall_100": 0.8585833333,
     "tokens_in": 4009.505,
     "tokens_out": 99.775,
-    "total_cost_usd": 0.10221462,
+    "total_cost_usd": 0.14338393,
     "total_tokens_in": 801901.0,
     "total_tokens_out": 19955.0,
     "truncated": 0.0,
