@@ -1,0 +1,166 @@
+{
+  "adapter": "examples/summarization-cnn-dailymail/adapter.py",
+  "build": {
+    "dirty": false,
+    "ref": "fb7366a0a69479db793d52bd04e310e8a564b9f4",
+    "source": "git"
+  },
+  "config_id": "cnn_bart_l_n200_v1",
+  "created_at": "2026-10-25T13:39:56Z",
+  "dataset_id": "cnn_dailymail_200",
+  "derived": {
+    "at": "2026-10-25T13:39:56Z",
+    "from": "cnn_bart_l_n200_v1_20260926T153757Z",
+    "kind": "judge",
+    "with": {
+      "judges": [
+        {
+          "family": "openai",
+          "fp": "023fc9970ad55550",
+          "id": "openai_l",
+          "model": "eval-gpt-6sol"
+        },
+        {
+          "family": "anthropic",
+          "fp": "d65edda4f70a628c",
+          "id": "anthropic_l",
+          "model": "eval-opus-5"
+        }
+      ],
+      "judging_set_id": "cnn_dailymail_200-29arms-a079833ca3c9",
+      "judging_set_sha256": "a079833ca3c95369c648601dc9432f7fccb3e251ef86ebafcaeba0a541c8f9db",
+      "label": "validated on summeval_100 (provenance)",
+      "prompt_sha256_at_16": "6c02d00929048d9c3fea511af40c3ddf90fdf1550afb7713d3f5f4d86e44f5ee",
+      "protocol": {
+        "blinding": true,
+        "block_sizes": [
+          15,
+          14
+        ],
+        "order_seed": 0,
+        "outputs_per_call": 16
+      },
+      "scorer_id": "judge-summ-v2",
+      "scorer_sha256": "f4992082a4e0814b4437d183a752932564a1f6c7fa0e0a2b0971e325f9ceab2f",
+      "self_family": {
+        "anthropic_l": false,
+        "openai_l": false
+      },
+      "source_reference_tier": "gold",
+      "validated": true
+    }
+  },
+  "fingerprint": {
+    "arm": {
+      "config_id": "cnn_bart_l_n200_v1",
+      "params": {
+        "device": "cpu",
+        "early_stopping": true,
+        "family": "bart",
+        "length_penalty": 2.0,
+        "max_length": 142,
+        "min_length": 56,
+        "model": "facebook/bart-large-cnn",
+        "no_repeat_ngram_size": 3,
+        "num_beams": 4,
+        "precision": "fp32",
+        "price_tier": "free",
+        "provider": "hf_local"
+      }
+    },
+    "data": {
+      "dataset_id": "cnn_dailymail_200",
+      "items_sha256": "257feda902391b934b8cde940c15e91201096dbe96ec5a81337e9da007ce3ec7",
+      "n_items": 200,
+      "reference_id": "gold/cnn_dailymail_200",
+      "reference_tier": "gold",
+      "references_sha256": "5d0b02c3798017535572d24dd3ce0592332938a0c91e93684d163963a60a7cd9"
+    },
+    "hash": null,
+    "hash_invalid_because": "scores were produced by a judge scorer, not the adapter this fingerprint was built from; see derived.with",
+    "host": {
+      "cpu_count": 12,
+      "label": "mac-dev",
+      "platform": "Darwin/x86_64",
+      "processor": "i386",
+      "python": "3.11.8",
+      "release": "24.6.0"
+    },
+    "instrument": {
+      "adapter": {
+        "id": "judge-score:judge-summ-v2",
+        "sha256": "4b5440bf0599fd12fd2d69a2697f1b0cdf54871486ef228b60be554750e82887"
+      },
+      "harness": {
+        "commit": "fb7366a0a694",
+        "dirty": false
+      }
+    },
+    "system_under_test": {
+      "libraries": {
+        "numpy": "1.26.4",
+        "openai": "3.19.2",
+        "rouge-score": "0.1.2",
+        "torch": "2.2.2",
+        "transformers": "4.55.4"
+      },
+      "model": {
+        "device": "cpu",
+        "id": "facebook/bart-large-cnn",
+        "identity_declared": true,
+        "precision": "fp32",
+        "revision": "37f520fa929c961707657b28798b30c003dd100b",
+        "revision_source": "hf-snapshot",
+        "weight_files": [
+          "model.safetensors:1625222120"
+        ]
+      }
+    },
+    "version": 4
+  },
+  "metric_kinds": {
+    "cost_usd": "cost",
+    "judge_anthropic_l": "quality",
+    "judge_openai_l": "quality",
+    "judge_score": "quality",
+    "latency_ms": "speed",
+    "self_family_anthropic_l": "descriptive",
+    "self_family_openai_l": "descriptive",
+    "tokens_in": "cost",
+    "tokens_out": "cost"
+  },
+  "n_items": 200,
+  "params": {
+    "device": "cpu",
+    "early_stopping": true,
+    "family": "bart",
+    "length_penalty": 2.0,
+    "max_length": 142,
+    "min_length": 56,
+    "model": "facebook/bart-large-cnn",
+    "no_repeat_ngram_size": 3,
+    "num_beams": 4,
+    "precision": "fp32",
+    "price_tier": "free",
+    "provider": "hf_local"
+  },
+  "primary_metric": "judge_score",
+  "providers_seen": {},
+  "run_id": "cnn_bart_l_n200_v1_20260926T153757Z",
+  "scores": {
+    "cost_usd": 0.0,
+    "judge_anthropic_l": 3.7125,
+    "judge_openai_l": 3.92875,
+    "judge_score": 3.820625,
+    "latency_ms": 11009.559205,
+    "self_family_anthropic_l": 0.0,
+    "self_family_openai_l": 0.0,
+    "tokens_in": 697.25,
+    "tokens_out": 66.175,
+    "total_cost_usd": 0.0,
+    "total_tokens_in": 139450.0,
+    "total_tokens_out": 13235.0
+  },
+  "source_created_at": "2026-09-26T16:14:46Z",
+  "warmup_ms": 5146.059
+}

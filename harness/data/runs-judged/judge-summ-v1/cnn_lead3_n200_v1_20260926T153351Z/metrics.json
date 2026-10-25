@@ -1,0 +1,146 @@
+{
+  "adapter": "examples/summarization-cnn-dailymail/adapter.py",
+  "build": {
+    "dirty": false,
+    "ref": "fb7366a0a69479db793d52bd04e310e8a564b9f4",
+    "source": "git"
+  },
+  "config_id": "cnn_lead3_n200_v1",
+  "created_at": "2026-10-25T13:39:55Z",
+  "dataset_id": "cnn_dailymail_200",
+  "derived": {
+    "at": "2026-10-25T13:39:55Z",
+    "from": "cnn_lead3_n200_v1_20260926T153351Z",
+    "kind": "judge",
+    "with": {
+      "judges": [
+        {
+          "family": "gemma",
+          "fp": "5031d8671837eb80",
+          "id": "gemma_l",
+          "model": "eval-gemma-31b"
+        },
+        {
+          "family": "qwen",
+          "fp": "c0ecf5eb99cea0b5",
+          "id": "qwen_s",
+          "model": "eval-qwen-flash"
+        }
+      ],
+      "judging_set_id": "cnn_dailymail_200-29arms-a079833ca3c9",
+      "judging_set_sha256": "a079833ca3c95369c648601dc9432f7fccb3e251ef86ebafcaeba0a541c8f9db",
+      "label": "validated on summeval_100 (provenance)",
+      "prompt_sha256_at_16": "6c02d00929048d9c3fea511af40c3ddf90fdf1550afb7713d3f5f4d86e44f5ee",
+      "protocol": {
+        "blinding": true,
+        "block_sizes": [
+          15,
+          14
+        ],
+        "order_seed": 0,
+        "outputs_per_call": 16
+      },
+      "scorer_id": "judge-summ-v1",
+      "scorer_sha256": "d604095cace5f53746b513a43f3a5623d56bcffe67f228c96e390414a268bacc",
+      "self_family": {
+        "gemma_l": false,
+        "qwen_s": false
+      },
+      "source_reference_tier": "gold",
+      "validated": true
+    }
+  },
+  "fingerprint": {
+    "arm": {
+      "config_id": "cnn_lead3_n200_v1",
+      "params": {
+        "family": "lead",
+        "price_tier": "free",
+        "provider": "lead_k",
+        "sentences": 3
+      }
+    },
+    "data": {
+      "dataset_id": "cnn_dailymail_200",
+      "items_sha256": "257feda902391b934b8cde940c15e91201096dbe96ec5a81337e9da007ce3ec7",
+      "n_items": 200,
+      "reference_id": "gold/cnn_dailymail_200",
+      "reference_tier": "gold",
+      "references_sha256": "5d0b02c3798017535572d24dd3ce0592332938a0c91e93684d163963a60a7cd9"
+    },
+    "hash": null,
+    "hash_invalid_because": "scores were produced by a judge scorer, not the adapter this fingerprint was built from; see derived.with",
+    "host": {
+      "cpu_count": 12,
+      "label": "mac-dev",
+      "platform": "Darwin/x86_64",
+      "processor": "i386",
+      "python": "3.11.8",
+      "release": "24.6.0"
+    },
+    "instrument": {
+      "adapter": {
+        "id": "judge-score:judge-summ-v1",
+        "sha256": "4b5440bf0599fd12fd2d69a2697f1b0cdf54871486ef228b60be554750e82887"
+      },
+      "harness": {
+        "commit": "fb7366a0a694",
+        "dirty": false
+      }
+    },
+    "system_under_test": {
+      "libraries": {
+        "numpy": "1.26.4",
+        "openai": "3.19.2",
+        "rouge-score": "0.1.2",
+        "torch": "2.2.2",
+        "transformers": "4.55.4"
+      },
+      "model": {
+        "alias": null,
+        "endpoint": "http://127.0.0.1:4001",
+        "id": null,
+        "id_source": "alias-unresolved",
+        "identity_declared": true,
+        "prompt_sha256": "d98ecfbd4054a47476257c2a48ab9f9fc8731098afe4bc1093c69e89c0cbe2f0",
+        "provider_routing": null,
+        "reasoning": null,
+        "revision": null,
+        "revision_source": "api-model-string",
+        "temperature": null
+      }
+    },
+    "version": 4
+  },
+  "metric_kinds": {
+    "cost_usd": "cost",
+    "judge_gemma_l": "quality",
+    "judge_qwen_s": "quality",
+    "judge_score": "quality",
+    "latency_ms": "speed",
+    "self_family_gemma_l": "descriptive",
+    "self_family_qwen_s": "descriptive"
+  },
+  "n_items": 197,
+  "params": {
+    "family": "lead",
+    "price_tier": "free",
+    "provider": "lead_k",
+    "sentences": 3
+  },
+  "primary_metric": "judge_score",
+  "providers_seen": {},
+  "run_id": "cnn_lead3_n200_v1_20260926T153351Z",
+  "scores": {
+    "cost_usd": 0.0,
+    "judge_gemma_l": 3.7208121827,
+    "judge_qwen_s": 3.1218274112,
+    "judge_score": 3.421319797,
+    "latency_ms": 0.0649137056,
+    "self_family_gemma_l": 0.0,
+    "self_family_qwen_s": 0.0,
+    "total_cost_usd": 0.0
+  },
+  "source_created_at": "2026-09-26T15:33:53Z",
+  "warmup_ms": 290.995
+}

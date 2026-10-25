@@ -62,3 +62,6 @@ answer matched its report:
 - cost_usd is the bill where a reply carried one: 79 runs (17,473 items) moved from the price
   table to `_meta.usage.cost`; their total $4.70 -> $7.06. Nothing else in those files changed
   (semantic diff); reports already quoted bills (claims 200/200), the site's pages did not move.
+- Judged runs committed: CNN judge-summ-v1 (29 runs, 197/200 items), v2 (29, 200/200) and the
+  unvalidated pointwise scorer (2), projected from the stored verdicts by `judge-score
+  --no-calls` ($0; their judging cost was $13.33). Their output copies are blobs already in git.

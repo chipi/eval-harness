@@ -1,0 +1,9 @@
+The user wants a 2-3 sentence news wire style summary of this article. The article is about famous people performing the national anthem badly or well - Vince Neil's recent bad performance at a Las Vegas Outlaws AFL game, and historical examples: Whitney Houston's great performance at Super Bowl XXV in 1991, Roseanne Barr's disastrous one in 1990, Jimi Hendrix's controversial Woodstock version in 1969, and Michael Bolton forgetting the words in 2003.
+
+News wire style is terse - lead with the news (Vince Neil's performance), then context.
+
+Let me draft:
+
+"Mötley Crüe frontman Vince Neil drew criticism this week after a widely panned rendition of 'The Star-Spangled Banner' before a Las Vegas Outlaws Arena Football League game. The performance joins a long line of infamous anthem moments, including Roseanne Barr's 1990 disaster at a Padres game and Michael Bolton's 2003 crib-note flub. Whitney Houston's 1991 Super Bowl performance remains the gold standard."
+
+That's three sentences, terse, wireMötley Crüe frontman Vince Neil drew ridicule this week after a widely panned rendition of "The Star-Spangled Banner" before a Las Vegas Outlaws Arena Football League game. The performance joins a history of infamous anthem moments, from Roseanne Barr's booed 1990 version to Michael Bolton's 2003 crib-note flub. Whitney Houston's 1991 Super Bowl performance remains the gold standard.

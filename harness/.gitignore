@@ -193,6 +193,18 @@ data/runs-linux/*/*
 data/runs-linux/*/outputs/_rows.jsonl
 !data/runs-linux/README.md
 
+# data/runs-judged/<scorer>/ — the CNN summaries re-measured by LLM judges (ADR-0001), each run
+# projected from the stored verdicts in data/judge-verdicts/ by `judge-score --no-calls` ($0).
+# Committed so the catalog shows a judge's group beside gold; rebuilt byte for byte from the
+# verdicts, which are the evidence.
+!data/runs-judged/
+data/runs-judged/*/*/*
+!data/runs-judged/*/*/metrics.json
+!data/runs-judged/*/*/predictions.jsonl
+!data/runs-judged/*/*/outputs
+!data/runs-judged/*/*/outputs/**
+data/runs-judged/*/*/outputs/_rows.jsonl
+
 # EXCEPT data/runs-pair/, WHICH WAS NEVER A WORKING ARTIFACT. It holds the four runs
 # behind the pre-registered prediction -- the single most-advertised result in this
 # repo, that swapping only the first stage would move the pipeline from 0.74 to

@@ -1,0 +1,118 @@
+{
+  "controls": {
+    "gemma_l": {
+      "noise": {
+        "mean_abs_diff": 0.025,
+        "mean_tau": 0.95,
+        "n_items": 20
+      },
+      "position": {
+        "mean_abs_diff": null,
+        "mean_tau": null,
+        "n_items": 0
+      }
+    },
+    "qwen_s": {
+      "noise": {
+        "mean_abs_diff": 0.08125,
+        "mean_tau": 0.95,
+        "n_items": 20
+      },
+      "position": {
+        "mean_abs_diff": null,
+        "mean_tau": null,
+        "n_items": 0
+      }
+    }
+  },
+  "cost": {
+    "aborted": false,
+    "billed_this_run": 0.0,
+    "calls": 0,
+    "cap_usd": 0.25,
+    "missing": 0,
+    "skipped": 880,
+    "spent_usd": 0.09970319300000008
+  },
+  "items_scored": 200,
+  "items_total": 200,
+  "judge_agreement": {
+    "gemma_l~qwen_s": {
+      "arm_mean_abs_diff": 0.175625,
+      "arm_mean_spearman": null,
+      "mean_item_tau": 0.825,
+      "n_items": 200
+    }
+  },
+  "judging_set_id": "cnn_dailymail_200-2arms-904523b2f2ea",
+  "judging_set_sha256": "904523b2f2ea98ae6f08ec85ddeb9539eae12d05a09d455ed53ac9995db8ae0a",
+  "label": "unvalidated judge",
+  "notes": [
+    "Each judge scored each item's arms in blocks; scores are absolute 1-5 per dimension and block scores are pooled. The position control re-forms the blocks.",
+    "self_family: the arm and the judge are the same vendor family. own_minus_others is a raw gap, not a bias estimate: families differ in real quality.",
+    "contested: two judges' arm means differ by more than 0.5 (the judge panel's rule)."
+  ],
+  "partial": false,
+  "per_arm": {
+    "cnn_bart_l_n200_v1": {
+      "contested": false,
+      "family": "bart",
+      "judge_gemma_l": 4.3,
+      "judge_qwen_s": 4.06125,
+      "judge_score": 4.180625,
+      "self_family": {
+        "gemma_l": false,
+        "qwen_s": false
+      }
+    },
+    "cnn_deepseek_m_n200_v1": {
+      "contested": false,
+      "family": "deepseek",
+      "judge_gemma_l": 4.99625,
+      "judge_qwen_s": 4.88375,
+      "judge_score": 4.94,
+      "self_family": {
+        "gemma_l": false,
+        "qwen_s": false
+      }
+    }
+  },
+  "per_judge": {
+    "gemma_l": {
+      "billed_usd": 0.057277,
+      "cost_unknown": 0,
+      "truncated": 0,
+      "unparsed": 0,
+      "verdicts": 440
+    },
+    "qwen_s": {
+      "billed_usd": 0.042426,
+      "cost_unknown": 0,
+      "truncated": 0,
+      "unparsed": 0,
+      "verdicts": 440
+    }
+  },
+  "protocol": {
+    "blinding": true,
+    "block_sizes": [
+      1,
+      1
+    ],
+    "order_seed": 0,
+    "outputs_per_call": 1
+  },
+  "scorer_id": "judge-summ-pointwise-v1",
+  "scorer_sha256": "bf3259f700648c02da81f857aacdb4716406bc733907b4263031c1b4c2e9bd12",
+  "self_family_gap": {
+    "gemma_l": {
+      "own_family_arms": 0,
+      "own_minus_others": null
+    },
+    "qwen_s": {
+      "own_family_arms": 0,
+      "own_minus_others": null
+    }
+  },
+  "validated": false
+}
