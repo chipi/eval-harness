@@ -375,6 +375,10 @@ def build_fingerprint(
     return fp
 
 
+#: The manifest fields a reference's identity depends on: who (or what) authored its texts.
+AUTHORSHIP = ("authored_by", "authored_with", "model", "system_under_test", "params", "from_run")
+
+
 def references_digest(root: Path, reference_id: str | None, data_dir: Path | None = None) -> str | None:
     """One hash over every reference file's bytes, by filename order. The references live
     under `data_dir` (default `<root>/data`): hard-coding `<root>/data` recorded None, "not
@@ -395,18 +399,22 @@ def references_digest(root: Path, reference_id: str | None, data_dir: Path | Non
     # caveat is "these were written by a model, and which model matters", leaving the
     # statement of which model outside the hash is the wrong half to omit. Found by
     # external review.
-    # Except documentation: a manifest's `caveat` explains what the tier means and can be
-    # reworded without changing what anything was scored against.
+    # Of the manifest, only who authored the texts: the rest is documentation (the caveat, when
+    # and how it was made or fetched, what it cost), derived from the texts (their checksums and
+    # count) or the directory's own name (dataset, tier). A gold manifest then adds nothing, and
+    # rewording, re-dating or re-fetching a reference never moves a run's hash.
     h = hashlib.sha256()
     for f in sorted(x for x in ref_dir.iterdir() if x.is_file()):
         data = f.read_bytes()
         if f.name == "manifest.json":
             try:
-                doc = json.loads(data)
-                doc.pop("caveat", None)
-                data = json.dumps(doc, sort_keys=True).encode()
+                doc = {k: v for k, v in json.loads(data).items() if k in AUTHORSHIP}
             except ValueError:
-                pass
+                doc = None
+            if doc == {}:
+                continue
+            if doc is not None:
+                data = json.dumps(doc, sort_keys=True).encode()
         h.update(f.name.encode())
         h.update(b"\x00")
         h.update(data)

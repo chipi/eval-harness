@@ -31,9 +31,10 @@
       "items_sha256": "d7bf61eb3b27e79d492bbe5a445659813dfcacf6fadcae4d26255c45291bedd2",
       "n_items": 200,
       "reference_id": "gold/ag_news_200",
-      "reference_tier": "gold"
+      "reference_tier": "gold",
+      "references_sha256": "e671b1a159664de82a0a5f35d36150d81abc99d45ac19e7df8ec1d66164bcc04"
     },
-    "hash": "0b88696b72a3d4fbd6e5b94c06fa24faa0ccd1eccb8988f314b45da06c2b9e70",
+    "hash": "0525c1944af7833c45419023f2bfb168c018084e25bc9bd98793d2cfc921986e",
     "host": {
       "cpu_count": 12,
       "label": "mac-dev",
@@ -45,7 +46,7 @@
     "instrument": {
       "adapter": {
         "id": "examples/classification-ag-news/adapter.py",
-        "sha256": "668097eb04f061c04d590ec034aca96b3dc4420872f29451068c7d8b9c4dea17"
+        "sha256": "8e4dffce35059b76949a0c95860cbcb5bd372fbdb6bdf33e0e55f4df78045b94"
       },
       "harness": {
         "commit": "1e80be6531e2",
@@ -84,7 +85,7 @@
         "temperature": 0.0
       }
     },
-    "version": 1
+    "version": 4
   },
   "metric_kinds": {
     "answer_words": "descriptive",

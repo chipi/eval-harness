@@ -60,7 +60,7 @@
     "instrument": {
       "adapter": {
         "id": "examples/retrieval-scifact/adapter.py",
-        "sha256": "4037bb639877b5242c9535eafd487c3083b0b7b0c06a6a8b5f94c4b8c85ac060"
+        "sha256": "cd1ffd21ed850b315d8c2e0b8f61d11d0945e21c3c8c0d5b136247dedc285e9c"
       },
       "harness": {
         "commit": "ebd54b604241",
@@ -103,14 +103,14 @@
         "rerank_k": 20,
         "revision": null,
         "revision_source": "unavailable",
-        "scorer_sha256": "ada829012438c24e1cd33a4a7d315af065b098e59ff508a5479b72306c66db3c",
+        "scorer_sha256": "86a15248a8c36a0d13c41f5efe4f7e06134bfe84f0208066a2a2eebf3435d77f",
         "snippet_chars": 900,
         "temperature": 0.0,
-        "tokenizer_sha256": "df0d98df2f5edcb28dc0273eace58e3c07a2a66b31cd59027ccad31023eb2fa5",
+        "tokenizer_sha256": "4c9a8288e422f5165204b385f450ee91b6005919a3cb8b508c196850050ab8bf",
         "top_k": 100
       }
     },
-    "version": 2
+    "version": 4
   },
   "metric_kinds": {
     "confidence": "descriptive",

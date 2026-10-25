@@ -15,3 +15,12 @@ useDefault = true
 description = "GlitchTip public keys in CSP report URIs (public by design)"
 regexTarget = "line"
 regexes = ['''CSP_REPORT_URI=https://[A-Za-z0-9./-]+/api/[0-9]+/security/\?glitchtip_key=[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}''']
+
+# A run record's code checksums: `"tokenizer_sha256": "<64 hex>"` is the sha256 of a tokenizer's
+# code, not a token, but the generic-api-key rule reads the name. The allowance is a whole line of
+# exactly that shape (a JSON key ending in _sha256, a 64-hex value, an optional comma); a key
+# planted on such a line, or a _sha256 line of any other shape, is still reported.
+[[allowlists]]
+description = "sha256 checksums in run records (not secrets)"
+regexTarget = "line"
+regexes = ['''^\s*"[a-z0-9_]+_sha256": "[0-9a-f]{64}",?\s*$''']

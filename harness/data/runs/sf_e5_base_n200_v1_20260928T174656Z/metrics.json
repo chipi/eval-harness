@@ -39,7 +39,8 @@
       "items_sha256": "b97dfe735a78eb4978cde41e2ca9a0bff424de9e6a0a2bdada5d167e3423004d",
       "n_items": 200,
       "reference_id": "gold/scifact_200",
-      "reference_tier": "gold"
+      "reference_tier": "gold",
+      "references_sha256": "b522e08017ebc7dd71c5627bccfdd688c5124096df8a5e6454684141bc361d99"
     },
     "hash": null,
     "hash_invalid_because": "rankings were rebuilt from stored LLM replies with a parser this fingerprint does not describe; see derived.with",
@@ -54,7 +55,7 @@
     "instrument": {
       "adapter": {
         "id": "examples/retrieval-scifact/adapter.py",
-        "sha256": "cedb9f962aac9aef991ab83a63393769ed2976796bbfa2e7ecdf8e020dfd74f2"
+        "sha256": "46cd2bd89061c9f3bff0493cce7ab292dd6f9b1bae7c7e482af0aebdd1479cee"
       },
       "harness": {
         "commit": "0e20aaeb3dca",
@@ -92,7 +93,7 @@
         ]
       }
     },
-    "version": 1
+    "version": 4
   },
   "metric_kinds": {
     "confidence": "descriptive",

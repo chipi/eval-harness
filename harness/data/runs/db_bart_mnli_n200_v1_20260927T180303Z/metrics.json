@@ -26,9 +26,10 @@
       "items_sha256": "a7419dc6a5876490c3ed1f96eae9398969a2f8b794e744d45ace5790bc0146f2",
       "n_items": 280,
       "reference_id": "gold/dbpedia_280",
-      "reference_tier": "gold"
+      "reference_tier": "gold",
+      "references_sha256": "e0564fe65fb011e37717e037a6ad662f44e796b7d7de8e62ed2344ba56fa7a8a"
     },
-    "hash": "e1e5dac80811e925c1faa92823cf6a72e8f3c4f1a74409da34a0ea28b4de1264",
+    "hash": "16ae194a2514cfe8677192e0bd2f7d117bd7eb1d96fa11117ef976ed6ce48094",
     "host": {
       "cpu_count": 12,
       "label": "mac-dev",
@@ -40,7 +41,7 @@
     "instrument": {
       "adapter": {
         "id": "examples/classification-dbpedia-14/adapter.py",
-        "sha256": "67a5bc27da0455c4f8bf21c03f399134838c72cfe861b282f56d7996c8432fcb"
+        "sha256": "58b55c964f8bb40746c359621beb25bfd0a071fca079961bdf15be1e7c0a77a8"
       },
       "harness": {
         "commit": "73604a08b84a",
@@ -86,7 +87,7 @@
         ]
       }
     },
-    "version": 1
+    "version": 4
   },
   "metric_kinds": {
     "answer_words": "descriptive",

@@ -22,9 +22,9 @@
       "n_items": 5,
       "reference_id": "silver/smoke_v1",
       "reference_tier": "silver",
-      "references_sha256": "c39371e81eb882843608c1e9308787c941a70580bbe10e4434e38c37fbac7b3c"
+      "references_sha256": "53ea94646f17bf2867a8572696b30623563a2d09828989e56cd1d11f8b910ead"
     },
-    "hash": "811ab8101b625baa4bfb50c8975710185e6ca5bff75f56dab727cffc353f8654",
+    "hash": "09f9130688c1808660f4974780099de7e04b1808072a2db22c43eceea723a860",
     "host": {
       "cpu_count": 32,
       "label": null,

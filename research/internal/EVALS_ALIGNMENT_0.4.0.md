@@ -49,3 +49,13 @@ answer matched its report:
 - The datasets and gold were copied from the `harness-0.4.0` worktree (git-ignored);
   `evh validate` V4 found 13 of 14 materialized and matching their frozen hashes.
 - Gold licences and policy: docs/DATA.md (never committed; AG News is `unknown`, non-commercial).
+- B done: the 136 v1/v2 runs are fingerprint v4 (code digests mapped through git history,
+  none unresolved). The reference digest is today's gold: 131 of the 136 re-scored item by item
+  from their stored outputs exactly as recorded, on every dataset. The other 5 (SciFact
+  `qwen_s` and four side runs) are reparsed runs: their recorded scores come from re-parsing
+  the raw replies with the fixed parser (KNOWN_ISSUES, round 2), which a re-score of the
+  original output text cannot reproduce. They keep their recorded scores. A first pass replaced
+  them with the re-score and was reverted: that would have undone the parser fix.
+- The reference digest counts only a manifest's authorship fields (who wrote the texts); a gold
+  manifest adds nothing, so the 57 v4 gold-scored runs still match. The demo silver run moved
+  with its manifest.
