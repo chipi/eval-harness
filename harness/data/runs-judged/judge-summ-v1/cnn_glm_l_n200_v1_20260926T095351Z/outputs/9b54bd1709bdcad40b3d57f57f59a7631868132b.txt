@@ -1,0 +1,19 @@
+The user wants a 2-3 sentence news wire summary of this article. Let me identify the key facts:
+
+1. Shootings in Washington area - one at Census Bureau headquarters gates in Suitland, Maryland, another in Washington DC
+2. Connected incidents, began with domestic kidnapping
+3. Guard shot at Census Bureau, in extremely critical condition
+4. Suspect fled, police chase, fired at multiple locations
+5. Chase ended in crash on H Street, shootout followed
+6. Officer and suspect wounded, both conscious
+7. Kidnapping victim located, in good condition
+
+News wire style is terse, factual, front-loaded with key info. Let me draft:
+
+"A gunman shot a security guard at the U.S. Census Bureau headquarters in Maryland before leading police on a chase that ended in a shootout in Washington, authorities said. The incidents began with a domestic kidnapping; the victim was later found in good condition. The guard was in extremely critical condition, while an officer and the suspect were wounded but conscious."
+
+That's three sentences, terse, wire-style. Let me refine:
+
+"WASHINGTON - A gunman shot a security guard at the U.S. Census Bureau headquarters in Maryland Thursday before leading police on a chase that ended in a shootout in Washington, authorities said. The violence began with a domestic kidnapping; the victim was later found safe. The guard was in extremely critical condition, while a police officer and the suspect were wounded but conscious."
+
+That works well. The user said "Output only the summary" so I should just give the summary without preambleA gunman shot a security guard at the U.S. Census Bureau headquarters in Maryland Thursday before leading police on a chase that ended in a shootout in Washington, authorities said. The violence began with a domestic kidnapping; the victim was later found in good condition. The guard was in extremely critical condition, while a police officer and the suspect were wounded but conscious.

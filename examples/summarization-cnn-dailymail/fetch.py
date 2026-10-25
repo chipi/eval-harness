@@ -51,46 +51,28 @@ NOTHING IS COMMITTED
 from __future__ import annotations
 
 import argparse
-import json
 import random
 import re
 import shutil
 import sys
-import time
-import urllib.parse
-import urllib.request
 from pathlib import Path
 
 # parents[2] is the repo root, so this resolves to <root>/harness — the harness this
 # example feeds. Getting the level wrong silently creates a SECOND data tree somewhere
 # else and everything appears to work, which is exactly what it did the first time.
 ROOT = Path(__file__).resolve().parents[2] / "harness"
-ROWS_API = "https://datasets-server.huggingface.co/rows"
 DATASET = "abisee/cnn_dailymail"
 CONFIG = "1.0.0"
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "_shared"))
+from hf_rows import page as _rows_page  # noqa: E402 - the one retry/pacing schedule
 
 #: The API caps a single request; ask in pages rather than assuming one call is enough.
 PAGE = 100
 
 
 def _page(split: str, offset: int, length: int) -> list[dict]:
-    """One page of rows. Retried: the datasets-server returns transient 502s."""
-    query = urllib.parse.urlencode(
-        {"dataset": DATASET, "config": CONFIG, "split": split,
-         "offset": offset, "length": length}
-    )
-    last: Exception | None = None
-    for attempt in range(6):
-        try:
-            with urllib.request.urlopen(f"{ROWS_API}?{query}", timeout=60) as resp:
-                return [r["row"] for r in (json.loads(resp.read()).get("rows") or [])]
-        except Exception as exc:  # noqa: BLE001 - retried, then one message
-            last = exc
-            time.sleep(2 * (attempt + 1))
-    sys.exit(
-        f"could not reach the datasets-server: {type(last).__name__}: {last}\n"
-        "  it is an HTTPS API; check connectivity, then retry."
-    )
+    """One page of rows, paced, retried (hf_rows: the shared schedule)."""
+    return _rows_page(DATASET, CONFIG, split, offset, length)
 
 
 def fetch_rows(n: int, split: str) -> list[dict]:
@@ -114,8 +96,7 @@ def source_of(row: dict) -> str:
     DailyMail pool; three landed in the first draw of the DailyMail slice.
     """
     a = row["article"]
-    return ("cnn" if "(CNN)" in a[:300] or re.match(r"\s*\([^)]{2,40}\)", a)
-            else "dailymail")
+    return "cnn" if "(CNN)" in a[:300] or re.match(r"\s*\([^)]{2,40}\)", a) else "dailymail"
 
 
 def fetch_random(n: int, split: str, seed: int, source: str) -> list[dict]:
@@ -141,12 +122,20 @@ def main() -> int:
     ap.add_argument("--split", default="test", help="dataset split (default: test)")
     ap.add_argument("--dataset-id", default=None, help="harness dataset_id (default: cnn_dailymail_<n>)")
     ap.add_argument("--force", action="store_true", help="overwrite an existing slice")
-    ap.add_argument("--draw", choices=("head", "random"), default="head",
-                    help="head = the first n rows (default; the committed slice); "
-                         "random = a seeded uniform draw from the whole split")
+    ap.add_argument(
+        "--draw",
+        choices=("head", "random"),
+        default="head",
+        help="head = the first n rows (default; the committed slice); "
+        "random = a seeded uniform draw from the whole split",
+    )
     ap.add_argument("--seed", type=int, default=20261014, help="seed for --draw random")
-    ap.add_argument("--source", choices=("any", "cnn", "dailymail"), default="any",
-                    help="restrict --draw random to one outlet")
+    ap.add_argument(
+        "--source",
+        choices=("any", "cnn", "dailymail"),
+        default="any",
+        help="restrict --draw random to one outlet",
+    )
     args = ap.parse_args()
 
     dataset_id = args.dataset_id or f"cnn_dailymail_{args.n}"
@@ -158,10 +147,12 @@ def main() -> int:
         return 0
 
     if args.draw == "head" and args.source != "any":
-        sys.exit("--source needs --draw random: the first n rows are whatever the split "
-                 "starts with")
-    rows = (fetch_rows(args.n, args.split) if args.draw == "head"
-            else fetch_random(args.n, args.split, args.seed, args.source))
+        sys.exit("--source needs --draw random: the first n rows are whatever the split starts with")
+    rows = (
+        fetch_rows(args.n, args.split)
+        if args.draw == "head"
+        else fetch_random(args.n, args.split, args.seed, args.source)
+    )
     cnn = sum(source_of(r) == "cnn" for r in rows)
     print(f"  slice: {cnn} CNN, {len(rows) - cnn} DailyMail")
     if len(rows) < args.n:

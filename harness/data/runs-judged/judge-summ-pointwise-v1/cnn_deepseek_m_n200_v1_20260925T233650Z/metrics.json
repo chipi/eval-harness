@@ -1,0 +1,186 @@
+{
+  "adapter": "examples/summarization-cnn-dailymail/adapter.py",
+  "build": {
+    "dirty": null,
+    "ref": "eval-harness-scenario",
+    "source": "EVAL_BUILD_REF"
+  },
+  "config_id": "cnn_deepseek_m_n200_v1",
+  "created_at": "2026-10-25T13:39:56Z",
+  "dataset_id": "cnn_dailymail_200",
+  "derived": {
+    "at": "2026-10-25T13:39:56Z",
+    "from": "cnn_deepseek_m_n200_v1_20260925T233650Z",
+    "kind": "judge",
+    "with": {
+      "judges": [
+        {
+          "family": "gemma",
+          "fp": "5031d8671837eb80",
+          "id": "gemma_l",
+          "model": "eval-gemma-31b"
+        },
+        {
+          "family": "qwen",
+          "fp": "c0ecf5eb99cea0b5",
+          "id": "qwen_s",
+          "model": "eval-qwen-flash"
+        }
+      ],
+      "judging_set_id": "cnn_dailymail_200-2arms-904523b2f2ea",
+      "judging_set_sha256": "904523b2f2ea98ae6f08ec85ddeb9539eae12d05a09d455ed53ac9995db8ae0a",
+      "label": "unvalidated judge",
+      "prompt_sha256_at_16": "6c02d00929048d9c3fea511af40c3ddf90fdf1550afb7713d3f5f4d86e44f5ee",
+      "protocol": {
+        "blinding": true,
+        "block_sizes": [
+          1,
+          1
+        ],
+        "order_seed": 0,
+        "outputs_per_call": 1
+      },
+      "scorer_id": "judge-summ-pointwise-v1",
+      "scorer_sha256": "bf3259f700648c02da81f857aacdb4716406bc733907b4263031c1b4c2e9bd12",
+      "self_family": {
+        "gemma_l": false,
+        "qwen_s": false
+      },
+      "source_reference_tier": "gold",
+      "validated": false
+    }
+  },
+  "fingerprint": {
+    "arm": {
+      "config_id": "cnn_deepseek_m_n200_v1",
+      "params": {
+        "family": "deepseek",
+        "max_tokens": 1200,
+        "model": "eval-deepseek-41flash",
+        "price_tier": "mid",
+        "prompt_file": "prompt.txt",
+        "provider": "litellm",
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0,
+        "usd_per_mtok_in": 0.15,
+        "usd_per_mtok_out": 0.5
+      }
+    },
+    "data": {
+      "dataset_id": "cnn_dailymail_200",
+      "items_sha256": "257feda902391b934b8cde940c15e91201096dbe96ec5a81337e9da007ce3ec7",
+      "n_items": 200,
+      "reference_id": "gold/cnn_dailymail_200",
+      "reference_tier": "gold",
+      "references_sha256": "5d0b02c3798017535572d24dd3ce0592332938a0c91e93684d163963a60a7cd9"
+    },
+    "hash": null,
+    "hash_invalid_because": "scores were produced by a judge scorer, not the adapter this fingerprint was built from; see derived.with",
+    "host": {
+      "cpu_count": 12,
+      "label": null,
+      "platform": "Darwin/x86_64",
+      "processor": "i386",
+      "python": "3.11.8",
+      "release": "24.6.0"
+    },
+    "instrument": {
+      "adapter": {
+        "id": "judge-score:judge-summ-pointwise-v1",
+        "sha256": "4b5440bf0599fd12fd2d69a2697f1b0cdf54871486ef228b60be554750e82887"
+      },
+      "harness": {
+        "commit": "d9def7c7b0f9",
+        "dirty": true
+      }
+    },
+    "system_under_test": {
+      "libraries": {
+        "numpy": "2.4.6",
+        "openai": "3.19.2",
+        "rouge-score": "0.1.2"
+      },
+      "model": {
+        "alias": "eval-deepseek-41flash",
+        "endpoint": "http://127.0.0.1:4001",
+        "id": "openrouter/deepseek/deepseek-v4.1-flash",
+        "id_source": "proxy-model-info",
+        "identity_declared": true,
+        "prompt_sha256": "d98ecfbd4054a47476257c2a48ab9f9fc8731098afe4bc1093c69e89c0cbe2f0",
+        "provider_routing": null,
+        "reasoning": {
+          "enabled": false
+        },
+        "revision": null,
+        "revision_source": "api-model-string",
+        "temperature": 0.0
+      }
+    },
+    "version": 4
+  },
+  "goal": "news_summary_cnn",
+  "metric_kinds": {
+    "cost_usd": "cost",
+    "judge_gemma_l_unvalidated": "quality",
+    "judge_qwen_s_unvalidated": "quality",
+    "judge_score_unvalidated": "quality",
+    "latency_ms": "speed",
+    "reasoning_tokens": "descriptive",
+    "self_family_gemma_l": "descriptive",
+    "self_family_qwen_s": "descriptive",
+    "tokens_in": "cost",
+    "tokens_out": "cost",
+    "truncated": "descriptive"
+  },
+  "n_items": 200,
+  "params": {
+    "family": "deepseek",
+    "max_tokens": 1200,
+    "model": "eval-deepseek-41flash",
+    "price_tier": "mid",
+    "prompt_file": "prompt.txt",
+    "provider": "litellm",
+    "reasoning": {
+      "enabled": false
+    },
+    "temperature": 0.0,
+    "usd_per_mtok_in": 0.15,
+    "usd_per_mtok_out": 0.5
+  },
+  "primary_metric": "judge_score_unvalidated",
+  "providers_seen": {
+    "Alibaba": 2,
+    "DeepInfra": 122,
+    "DekaLLM": 1,
+    "GMICloud": 1,
+    "Makora": 2,
+    "Modal": 1,
+    "Novita": 33,
+    "OpenInference": 2,
+    "Relace": 2,
+    "Sail Research": 1,
+    "StreamLake": 1,
+    "Together": 32
+  },
+  "run_id": "cnn_deepseek_m_n200_v1_20260925T233650Z",
+  "scores": {
+    "cost_usd": 0.0001905418,
+    "judge_gemma_l_unvalidated": 4.99625,
+    "judge_qwen_s_unvalidated": 4.88375,
+    "judge_score_unvalidated": 4.94,
+    "latency_ms": 1595.415005,
+    "reasoning_tokens": 0.0,
+    "self_family_gemma_l": 0.0,
+    "self_family_qwen_s": 0.0,
+    "tokens_in": 736.075,
+    "tokens_out": 75.59,
+    "total_cost_usd": 0.03810836,
+    "total_tokens_in": 147215.0,
+    "total_tokens_out": 15118.0,
+    "truncated": 0.0
+  },
+  "source_created_at": "2026-09-25T23:42:13Z",
+  "warmup_ms": 1957.395
+}

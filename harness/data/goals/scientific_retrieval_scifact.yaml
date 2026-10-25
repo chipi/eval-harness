@@ -1,0 +1,21 @@
+goal_id: scientific_retrieval_scifact
+schema_version: "0.1"
+title: Evidence retrieval for scientific claims (SciFact)
+statement: Pick a retriever that ranks the abstracts supporting or refuting a scientific claim at the top, over the full corpus.
+status: active
+context:
+  audience: someone checking a scientific claim against the literature
+decision: Which retrievers and rerankers can be told apart on nDCG@10, and what each costs.
+output_contract:
+  - {id: ranking, format: ranked_list}
+success_criteria:
+  primary: {measure: ndcg_10, direction: higher}
+  strategy: frugal
+  tie_break: [cost, quality]
+  guardrails:
+    - {"name": "one run per arm", "rule": "Between-run variance is unmeasured: second runs moved nDCG@10 by up to 0.0126, each mixed with an adapter difference.", "source": "research/REPORT_RETRIEVAL.md, between-run variance"}
+datasets:
+  - {dataset_id: scifact_200, role: heldout, notes: 200 seeded queries, full 5,183-document corpus}
+  - {dataset_id: scifact_40, decides: false, role: dev, notes: the pilot slice; all 40 of its items are in scifact_200}
+measures:
+  - {id: ndcg_10, kind: metric, validity: validated}

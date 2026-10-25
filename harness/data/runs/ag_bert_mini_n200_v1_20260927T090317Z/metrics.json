@@ -31,9 +31,10 @@
       "items_sha256": "d7bf61eb3b27e79d492bbe5a445659813dfcacf6fadcae4d26255c45291bedd2",
       "n_items": 200,
       "reference_id": "gold/ag_news_200",
-      "reference_tier": "gold"
+      "reference_tier": "gold",
+      "references_sha256": "e671b1a159664de82a0a5f35d36150d81abc99d45ac19e7df8ec1d66164bcc04"
     },
-    "hash": "ae6289706b0b06706f06ee3f5536dbb730919bccf946e45ddbca9ac7f34de11d",
+    "hash": "40999a5baad0e078b1885415d85ce210ce62b9630bf2979b72da2b3750520b85",
     "host": {
       "cpu_count": 12,
       "label": "mac-dev",
@@ -45,7 +46,7 @@
     "instrument": {
       "adapter": {
         "id": "examples/classification-ag-news/adapter.py",
-        "sha256": "668097eb04f061c04d590ec034aca96b3dc4420872f29451068c7d8b9c4dea17"
+        "sha256": "8e4dffce35059b76949a0c95860cbcb5bd372fbdb6bdf33e0e55f4df78045b94"
       },
       "harness": {
         "commit": "1e80be6531e2",
@@ -87,8 +88,9 @@
         ]
       }
     },
-    "version": 1
+    "version": 4
   },
+  "goal": "news_topic_ag",
   "metric_kinds": {
     "answer_words": "descriptive",
     "confidence": "descriptive",
@@ -118,6 +120,7 @@
   "primary_metric": "correct",
   "providers_seen": {},
   "reference_tier": "gold",
+  "round": "r1",
   "run_id": "ag_bert_mini_n200_v1_20260927T090317Z",
   "scores": {
     "answer_words": 1.0,

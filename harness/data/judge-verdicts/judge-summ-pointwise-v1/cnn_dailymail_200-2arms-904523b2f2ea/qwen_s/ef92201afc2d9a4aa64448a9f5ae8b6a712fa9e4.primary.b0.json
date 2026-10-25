@@ -10,6 +10,8 @@
   "latency_ms": 1402.691,
   "n": 1,
   "output": "{\"coherence\": [4], \"consistency\": [5], \"fluency\": [3], \"relevance\": [4]}",
+  "output_sha256": "4e67ab4358333049c853dae73d09f90476a0a9e09911b65c9deddb42759fcee2",
+  "output_withheld": false,
   "pass": "primary",
   "prompt_sha256": "0e8131de444b009c8584a4a164d3970c45a7349a6231b857642956aec0dce6e7",
   "provider": "Alibaba",

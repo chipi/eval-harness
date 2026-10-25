@@ -20,18 +20,18 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
 OPENROUTER = "https://openrouter.ai/api/v1"
 MODELS_FILE = Path(__file__).resolve().parents[1] / "models.json"
 
 
-def models() -> Dict[str, str]:
+def models() -> dict[str, str]:
     """alias -> upstream id ("openrouter/<vendor>/<model>")."""
     return json.loads(MODELS_FILE.read_text())["aliases"]
 
 
-def _upstream_for(alias: Optional[str]) -> Optional[str]:
+def _upstream_for(alias: str | None) -> str | None:
     """An alias from the table, or -- to add a model of your own -- an OpenRouter id as-is."""
     if not alias:
         return None
@@ -40,11 +40,11 @@ def _upstream_for(alias: Optional[str]) -> Optional[str]:
     return f"openrouter/{alias}" if "/" in alias else None
 
 
-def _proxy_base(params: Dict[str, Any]) -> str:
+def _proxy_base(params: dict[str, Any]) -> str:
     return (params.get("base_url") or os.environ.get("LITELLM_BASE_URL", "")).rstrip("/")
 
 
-def route(params: Dict[str, Any]) -> Dict[str, Any]:
+def route(params: dict[str, Any]) -> dict[str, Any]:
     """{mode, base_url, key, model, endpoint} for this arm, or SystemExit saying how to fix it."""
     alias = params.get("model")
     base = _proxy_base(params)
@@ -52,27 +52,33 @@ def route(params: Dict[str, Any]) -> Dict[str, Any]:
         key_env = params.get("api_key_env", "LITELLM_API_KEY")
         key = os.environ.get(key_env)
         if not key:
-            raise SystemExit(f"{key_env} is not set (LITELLM_BASE_URL is, so the proxy route "
-                             "was chosen)")
-        return {"mode": "proxy", "base_url": f"{base}/v1", "key": key, "model": alias,
-                "endpoint": base}
+            raise SystemExit(f"{key_env} is not set (LITELLM_BASE_URL is, so the proxy route was chosen)")
+        return {"mode": "proxy", "base_url": f"{base}/v1", "key": key, "model": alias, "endpoint": base}
     key = os.environ.get("OPENROUTER_API_KEY")
     if key:
         upstream = _upstream_for(alias)
         if not upstream:
-            raise SystemExit(f"{alias!r} is neither an alias in examples/models.json nor an "
-                             "OpenRouter id (vendor/model), so it cannot be sent to "
-                             "OpenRouter directly")
-        return {"mode": "direct", "base_url": OPENROUTER, "key": key,
-                "model": upstream.removeprefix("openrouter/"), "endpoint": OPENROUTER}
+            raise SystemExit(
+                f"{alias!r} is neither an alias in examples/models.json nor an "
+                "OpenRouter id (vendor/model), so it cannot be sent to "
+                "OpenRouter directly"
+            )
+        return {
+            "mode": "direct",
+            "base_url": OPENROUTER,
+            "key": key,
+            "model": upstream.removeprefix("openrouter/"),
+            "endpoint": OPENROUTER,
+        }
     raise SystemExit(
         f"No route to hosted model {alias!r}. Set ONE of:\n"
         "  OPENROUTER_API_KEY=sk-or-...           one key, no proxy (docs/REPRODUCE.md)\n"
         "  LITELLM_BASE_URL + LITELLM_API_KEY     your own LiteLLM proxy\n"
-        "in harness/.env (copy harness/.env.example) or the environment.")
+        "in harness/.env (copy harness/.env.example) or the environment."
+    )
 
 
-def client(params: Dict[str, Any]) -> Tuple[Any, Dict[str, Any]]:
+def client(params: dict[str, Any]) -> tuple[Any, dict[str, Any]]:
     """An OpenAI-compatible client for this arm, and the route it was built for."""
     from openai import OpenAI  # noqa: PLC0415 - hosted arms only
 
@@ -80,7 +86,7 @@ def client(params: Dict[str, Any]) -> Tuple[Any, Dict[str, Any]]:
     return OpenAI(api_key=r["key"], base_url=r["base_url"]), r
 
 
-def extra_body(params: Dict[str, Any], r: Dict[str, Any]) -> Dict[str, Any]:
+def extra_body(params: dict[str, Any], r: dict[str, Any]) -> dict[str, Any]:
     """Provider knobs that must travel outside the OpenAI schema.
 
     `reasoning` is the one that matters: building requests from a fixed field list once
@@ -88,7 +94,7 @@ def extra_body(params: Dict[str, Any], r: Dict[str, Any]) -> Dict[str, Any]:
     also asks OpenRouter for usage accounting, which is where billed cost comes from --
     the proxy route already returned it.
     """
-    out: Dict[str, Any] = {}
+    out: dict[str, Any] = {}
     for passthrough in ("reasoning", "reasoning_effort"):
         if params.get(passthrough) is not None:
             out[passthrough] = params[passthrough]
@@ -100,10 +106,10 @@ def extra_body(params: Dict[str, Any], r: Dict[str, Any]) -> Dict[str, Any]:
     return out
 
 
-_UPSTREAM_CACHE: Dict[str, Tuple[Optional[str], str]] = {}
+_UPSTREAM_CACHE: dict[str, tuple[str | None, str]] = {}
 
 
-def resolve_upstream(alias: Optional[str]) -> Tuple[Optional[str], str]:
+def resolve_upstream(alias: str | None) -> tuple[str | None, str]:
     """(upstream id or None, how it was established) for the fingerprint.
 
     Proxy: asked of the proxy, once per process -- what it routes to NOW. A proxy that does
@@ -115,7 +121,7 @@ def resolve_upstream(alias: Optional[str]) -> Tuple[Optional[str], str]:
         return None, "alias-unresolved"
     if alias in _UPSTREAM_CACHE:
         return _UPSTREAM_CACHE[alias]
-    out: Tuple[Optional[str], str] = (None, "alias-unresolved")
+    out: tuple[str | None, str] = (None, "alias-unresolved")
     base = (os.environ.get("LITELLM_BASE_URL") or "").rstrip("/")
     key = os.environ.get("LITELLM_API_KEY")
     if base.startswith("http"):
@@ -123,10 +129,9 @@ def resolve_upstream(alias: Optional[str]) -> Tuple[Optional[str], str]:
             import urllib.request  # noqa: PLC0415
 
             try:
-                req = urllib.request.Request(base + "/model/info",
-                                             headers={"Authorization": "Bearer " + key})
-                with urllib.request.urlopen(req, timeout=15) as fh:
-                    for entry in (json.load(fh).get("data") or []):
+                req = urllib.request.Request(base + "/model/info", headers={"Authorization": "Bearer " + key})  # noqa: S310 — the operator's own gateway URL
+                with urllib.request.urlopen(req, timeout=15) as fh:  # noqa: S310 — the operator's own gateway URL  # nosec B310
+                    for entry in json.load(fh).get("data") or []:
                         if entry.get("model_name") == alias:
                             got = (entry.get("litellm_params") or {}).get("model")
                             out = (got, "proxy-model-info") if got else out
@@ -139,7 +144,7 @@ def resolve_upstream(alias: Optional[str]) -> Tuple[Optional[str], str]:
     return out
 
 
-def endpoint() -> Optional[str]:
+def endpoint() -> str | None:
     """The endpoint a hosted call goes to, for the fingerprint."""
     base = (os.environ.get("LITELLM_BASE_URL") or "").rstrip("/")
     if base.startswith("http"):

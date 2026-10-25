@@ -1,0 +1,157 @@
+{
+  "adapter": "examples/classification-ag-news/adapter.py",
+  "build": {
+    "dirty": false,
+    "ref": "1e80be6531e2f71118762f498b4493e946f0c944",
+    "source": "git"
+  },
+  "config_id": "ag_qwen_s_n200_v1",
+  "created_at": "2026-10-25T15:10:05Z",
+  "dataset_id": "ag_news_200",
+  "derived": {
+    "at": "2026-10-25T15:10:05Z",
+    "from": "ag_qwen_s_n200_v1_20260927T104930Z",
+    "kind": "rescore",
+    "with": {
+      "adapter": "examples/classification-ag-news/adapter.py",
+      "sha256": "ee92fea1f9920fd82b44a05ca1f35823d17f67adc3bf0bb73f07d357d0e583bd"
+    }
+  },
+  "fingerprint": {
+    "arm": {
+      "config_id": "ag_qwen_s_n200_v1",
+      "params": {
+        "family": "qwen",
+        "max_tokens": 200,
+        "model": "eval-qwen-flash",
+        "price_tier": "small",
+        "prompt_file": "prompt.txt",
+        "provider": "litellm",
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0,
+        "usd_per_mtok_in": 0.05,
+        "usd_per_mtok_out": 0.2
+      }
+    },
+    "data": {
+      "dataset_id": "ag_news_200",
+      "items_sha256": "d7bf61eb3b27e79d492bbe5a445659813dfcacf6fadcae4d26255c45291bedd2",
+      "n_items": 200,
+      "reference_id": "gold/ag_news_200_adj1",
+      "reference_id_at_measurement": "gold/ag_news_200",
+      "reference_tier": "gold",
+      "reference_tier_at_measurement": "gold",
+      "references_sha256": "636e963d2e500587d0642c40b48ac32040d237eb160bf00e20696ccea4649534",
+      "references_sha256_at_measurement": "e671b1a159664de82a0a5f35d36150d81abc99d45ac19e7df8ec1d66164bcc04"
+    },
+    "hash": null,
+    "hash_invalid_because": "scores were recomputed by a different scorer than the one this fingerprint was built from; see derived.with",
+    "host": {
+      "cpu_count": 12,
+      "label": "mac-dev",
+      "platform": "Darwin/x86_64",
+      "processor": "i386",
+      "python": "3.11.8",
+      "release": "24.6.0"
+    },
+    "instrument": {
+      "adapter": {
+        "id": "examples/classification-ag-news/adapter.py",
+        "sha256": "ee92fea1f9920fd82b44a05ca1f35823d17f67adc3bf0bb73f07d357d0e583bd"
+      },
+      "harness": {
+        "commit": "1e80be6531e2",
+        "dirty": false
+      }
+    },
+    "system_under_test": {
+      "libraries": {
+        "numpy": "1.26.4",
+        "openai": "3.19.2",
+        "torch": "2.2.2",
+        "transformers": "4.55.4"
+      },
+      "model": {
+        "alias": "eval-qwen-flash",
+        "endpoint": "http://127.0.0.1:4001",
+        "id": "openrouter/qwen/qwen3.8-flash",
+        "id_source": "proxy-model-info",
+        "identity_declared": true,
+        "labels": [
+          "World",
+          "Sports",
+          "Business",
+          "Sci/Tech"
+        ],
+        "labels_sha256": "c7a1ee508b78c0e92f28d159d340a6537ac31ff70ff566430fe2507da58464a3",
+        "parser_sha256": "87f75633ea16670ab5a3169fe3125c91107f84959e79c56dd2f17c66a418246d",
+        "prompt_sha256": "ed3aeed55a5b5645151d03d7a518e932ed6da520c4b49bfdc85660dfbf562229",
+        "provider": "litellm",
+        "provider_routing": null,
+        "reasoning": {
+          "enabled": false
+        },
+        "revision": null,
+        "revision_source": "api-model-string",
+        "temperature": 0.0
+      }
+    },
+    "version": 4
+  },
+  "goal": "news_topic_ag",
+  "metric_kinds": {
+    "answer_words": "descriptive",
+    "confidence": "descriptive",
+    "correct": "quality",
+    "correct_after_repair": "descriptive",
+    "fmt_markdown": "descriptive",
+    "fmt_verbose": "descriptive",
+    "parsed": "quality",
+    "reasoning_tokens": "descriptive",
+    "resumed": "descriptive",
+    "truncated": "descriptive"
+  },
+  "n_items": 200,
+  "params": {
+    "family": "qwen",
+    "max_tokens": 200,
+    "model": "eval-qwen-flash",
+    "price_tier": "small",
+    "prompt_file": "prompt.txt",
+    "provider": "litellm",
+    "reasoning": {
+      "enabled": false
+    },
+    "temperature": 0.0,
+    "usd_per_mtok_in": 0.05,
+    "usd_per_mtok_out": 0.2
+  },
+  "primary_metric": "correct",
+  "providers_seen": {
+    "Alibaba": 200
+  },
+  "reference_tier": "gold",
+  "round": "r1",
+  "run_id": "ag_qwen_s_n200_v1_20260927T104930Z",
+  "scores": {
+    "answer_words": 1.0,
+    "correct": 0.96,
+    "correct_after_repair": 0.0,
+    "cost_usd": 1.80447e-05,
+    "fmt_markdown": 0.0,
+    "fmt_verbose": 0.0,
+    "latency_ms": 1144.11955,
+    "parsed": 1.0,
+    "reasoning_tokens": 0.0,
+    "tokens_in": 116.005,
+    "tokens_out": 1.37,
+    "total_cost_usd": 0.00360893,
+    "total_tokens_in": 23201.0,
+    "total_tokens_out": 274.0,
+    "truncated": 0.0
+  },
+  "source_created_at": "2026-09-27T10:53:21Z",
+  "warmup_ms": 1977.757
+}

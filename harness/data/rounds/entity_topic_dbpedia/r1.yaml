@@ -1,0 +1,14 @@
+round_id: r1
+goal: entity_topic_dbpedia
+dataset_id: dbpedia_280
+hypothesis: Which of 24 hosted LLMs (8 vendors × 3 price tiers), a fine-tuned BERT, a zero-shot NLI model,
+  regex rules and a constant labels DBpedia-14 best, and at what cost?
+status: closed
+opened_at: '2026-09-27T13:57:11Z'
+closed_at: '2026-09-30T09:10:50Z'
+conclusion:
+  text: 'The top eleven arms (0.9786–0.9929) sit within 4 items of each other across a 115× price range;
+    the leader qwen_m is separated from only 8 of the 27 others. Take the cheapest arm you can run at
+    0.9857: gemma_m (~$12 per 1M items), qwen_s (~$26) or the fine-tuned bert_base_fy ($0 marginal). (REPORT_CLASSIFICATION,
+    executive summary.)'
+  promoted_run: db_bert_base_fy_n200_v1_20260930T091006Z

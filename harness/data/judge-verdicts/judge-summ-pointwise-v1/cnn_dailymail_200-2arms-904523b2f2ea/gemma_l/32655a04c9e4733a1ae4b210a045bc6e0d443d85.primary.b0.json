@@ -10,6 +10,8 @@
   "latency_ms": 858.083,
   "n": 1,
   "output": "```json\n{\"coherence\": [5], \"consistency\": [5], \"fluency\": [5], \"relevance\": [5]}\n```",
+  "output_sha256": "5f9223fa14adc56ed7c817bc32332149af6fd234b44a40944c024d6c7a886c68",
+  "output_withheld": false,
   "pass": "primary",
   "prompt_sha256": "1b1c3ff07394d8a469524daa6e719a2ded098a266136e46a6557b28a6eab3f52",
   "provider": "CoreWeave",

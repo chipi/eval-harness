@@ -250,3 +250,31 @@ METRIC_KINDS = {
     "reasoning_tokens": "descriptive",
     "confidence": "descriptive",
 }
+
+#: What each metric measures, for the catalog's metric pages. Documentation, so it never
+#: moves the adapter's code hash.
+METRIC_DESCRIPTIONS = {
+    "f1": {
+        "summary": "Typed entity F1 for the item: an entity counts when its text and its type both match a gold one.",
+        "details": "Texts are normalised (casefolded, accents and punctuation stripped, a leading "
+        "article dropped, no stemming) and matched one to one, so one prediction can satisfy one "
+        "gold entity at most. An item with no gold and no prediction scores 1; an unreadable reply "
+        "scores 0 and counts every gold entity as missed. The mean over items is a macro F1, not "
+        "the corpus micro F1, which tp, fp and fn let a report pool.",
+    },
+    "precision": "Typed precision: the share of the predicted entities that match a gold one in text and type.",
+    "recall": "Typed recall: the share of the gold entities found with the right type.",
+    "untyped_f1": "F1 on the entity texts alone, types ignored: did the arm find the entity at all.",
+    "type_penalty": "untyped_f1 minus f1: the credit lost only to mislabelling entities the arm did "
+    "find. Large means a typing problem, not a detection problem.",
+    "tp": "Typed true positives: predicted entities matched to a gold one (text and type).",
+    "fp": "Typed false positives: predicted entities that matched no gold one.",
+    "fn": "Typed false negatives: gold entities no prediction matched.",
+    "untyped_tp": "True positives on texts alone, types ignored.",
+    "untyped_fp": "False positives on texts alone, types ignored.",
+    "untyped_fn": "False negatives on texts alone, types ignored.",
+    "n_predicted": "How many entities the arm returned for the item, after normalisation.",
+    "n_gold": "How many gold entities the item has, after normalisation.",
+    "parsed": "Whether the reply could be read as an answer in the task's format: 1 or 0 per item, so its mean is the share readable (for the SummEval judges, the share of the four dimensions that came back readable). An unreadable reply scores 0 on the quality metrics, never skipped.",
+    "truncated": "1 when the provider cut the reply off at the token ceiling (finish_reason \"length\", and in most adapters a completion that reached 98% of max_tokens), else 0. An arm with truncated above 0 has scores that partly describe the ceiling, not the model.",
+}

@@ -31,9 +31,10 @@
       "items_sha256": "a7419dc6a5876490c3ed1f96eae9398969a2f8b794e744d45ace5790bc0146f2",
       "n_items": 280,
       "reference_id": "gold/dbpedia_280",
-      "reference_tier": "gold"
+      "reference_tier": "gold",
+      "references_sha256": "e0564fe65fb011e37717e037a6ad662f44e796b7d7de8e62ed2344ba56fa7a8a"
     },
-    "hash": "0cb6ed62fa8a13e53b25fdfa351f612f9d4aff9246be3b6dc14c1383eaf2597f",
+    "hash": "03a1e6c58e010c9fe642d405945f7af03cdc50d5eaf67a45f1c0ac12b5f6aee3",
     "host": {
       "cpu_count": 12,
       "label": "mac-dev",
@@ -45,7 +46,7 @@
     "instrument": {
       "adapter": {
         "id": "examples/classification-dbpedia-14/adapter.py",
-        "sha256": "67a5bc27da0455c4f8bf21c03f399134838c72cfe861b282f56d7996c8432fcb"
+        "sha256": "58b55c964f8bb40746c359621beb25bfd0a071fca079961bdf15be1e7c0a77a8"
       },
       "harness": {
         "commit": "73604a08b84a",
@@ -91,8 +92,9 @@
         "temperature": 0.0
       }
     },
-    "version": 1
+    "version": 4
   },
+  "goal": "entity_topic_dbpedia",
   "metric_kinds": {
     "answer_words": "descriptive",
     "confidence": "descriptive",
@@ -124,12 +126,13 @@
     "OpenAI": 280
   },
   "reference_tier": "gold",
+  "round": "r1",
   "run_id": "db_openai_s_n200_v1_20260927T164208Z",
   "scores": {
     "answer_words": 1.0,
     "correct": 0.975,
     "correct_after_repair": 0.0,
-    "cost_usd": 4.6e-05,
+    "cost_usd": 0.000128,
     "fmt_markdown": 0.0,
     "fmt_verbose": 0.0,
     "latency_ms": 909.7531,
@@ -137,7 +140,7 @@
     "reasoning_tokens": 0.0,
     "tokens_in": 136.910714,
     "tokens_out": 5.735714,
-    "total_cost_usd": 0.01279575,
+    "total_cost_usd": 0.03597825,
     "total_tokens_in": 38335.0,
     "total_tokens_out": 1606.0,
     "truncated": 0.0

@@ -36,6 +36,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent / "_shared"))
 
 from classification import (  # noqa: E402
+    METRIC_DESCRIPTIONS,
     METRIC_KINDS,
     PRIMARY_METRIC,
     TRANSIENT_MARKERS,

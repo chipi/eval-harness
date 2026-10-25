@@ -14,12 +14,7 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="color-scheme" content="dark light">
-<script>
-(function(){var p=new URLSearchParams(location.search),t=p.get('theme');
-try{t=t||localStorage.getItem('theme');}catch(e){}
-if(t==='light'||t==='dark')document.documentElement.dataset.theme=t;
-if(!p.has('static'))document.documentElement.classList.add('js');})();
-</script><script defer src="https://analytics.closelistening.app/script.js" data-website-id="76169139-07c1-4806-bde6-f9014e803e7f" data-domains="evals.humancopilot.eu"></script>
+<script src="assets/js/30a5128d39a2.js"></script><script defer src="https://analytics.humancopilot.eu/script.js" data-website-id="76169139-07c1-4806-bde6-f9014e803e7f" data-domains="evals.humancopilot.eu,docs.evals.humancopilot.eu"></script>
 <link rel="stylesheet" href="assets/style.css">
 <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
 <link rel="icon" href="assets/icon-32.png" sizes="32x32" type="image/png">
@@ -28,7 +23,7 @@ if(!p.has('static'))document.documentElement.classList.add('js');})();
 <body>
 <header class="bar"><div class="wrap">
   <a class="brand" href="index.html" aria-label="eval-harness home"><img class="mark" src="assets/icon.svg" alt="" width="28" height="28"><span>eval-harness</span></a>
-  <nav class="nav"><a href="index.html">Harness</a><a href="use.html">Use it</a><a href="method.html" class="hide-sm" aria-current="page">Method</a><a href="experiments.html">Experiments</a><a href="experiments/judging.html" class="hide-sm">Judging</a><a href="docs/" class="hide-sm">Docs</a><a href="https://github.com/chipi/eval-harness" class="hide-sm">GitHub ↗</a><button id="theme" class="theme" aria-label="Toggle light and dark">◐</button></nav>
+  <nav class="nav"><a href="index.html">Harness</a><a href="use.html">Use it</a><a href="method.html" class="hide-sm" aria-current="page">Method</a><a href="experiments.html">Experiments</a><a href="experiments/judging.html" class="hide-sm">Judging</a><a href="https://catalog.evals.humancopilot.eu/" class="hide-sm">Catalog</a><a href="https://docs.evals.humancopilot.eu/" class="hide-sm">Docs</a><a href="https://github.com/chipi/eval-harness" class="hide-sm">GitHub ↗</a><button id="theme" class="theme" aria-label="Toggle light and dark">◐</button></nav>
 </div></header>
 <main>
 
@@ -47,7 +42,7 @@ if(!p.has('static'))document.documentElement.classList.add('js');})();
   <h2>An eval is an experiment.</h2>
   <div class="story prose"><p>The same 24 hosted models (the cheapest twelve on SciFact) ran on six tasks with one prompt per task, at temperature 0 with reasoning off (on SummEval, Qwen's large slot is a stand-in, qwen37max) — so when a model's score differs between two tasks, the task is what changed, apart from what each report states: on SummEval a stand-in model, prices a month later and a different calling machine.</p><p>Every run carries a <strong>fingerprint</strong>: hashes of the data, the prompt and the scoring code, the model behind the alias, library versions, the commit. Before the harness shows a single delta between two runs, it lists the fields that moved.</p></div>
   <div class="habit"><b>The habit</b>Change one thing per arm, and record everything else — so “we only changed the prompt” is checkable rather than claimed.</div>
-  <div class="tool"><span class="k">In the harness</span><pre class="term"><span class="p">$ </span>make run-compare BASE=… CAND=…
+  <div class="tool"><span class="k">In the harness</span><pre class="term"><span class="p">$ </span>evh run-compare --baseline … --candidate …
 <span class="c">Fingerprints DIFFER. Fields that moved: arm.params.sentences</span></pre></div>
   <p class="yours"><b>In your project</b> Your arms are your candidates — prompts, models, retrieval settings, thresholds — one YAML file each.</p>
 </article>
@@ -56,16 +51,16 @@ if(!p.has('static'))document.documentElement.classList.add('js');})();
   <h2>The data is the instrument.</h2>
   <div class="story prose"><p>The summarisation sample was the first 200 articles of the CNN/DailyMail test set. The test set lists CNN's articles first, so every one was CNN's, while the benchmark is mostly DailyMail. Copying the first three sentences scored ROUGE-1 30.20 on that slice against 39.94 on the full test set.</p><p>No check in the harness could see it: every one compared the repository with itself. One <strong>calibration row</strong> — a known baseline against its published value — caught it. Now every experiment has one, and 11 of 11 agree with the literature, 10 of them inside their own interval.</p></div>
   <div class="habit"><b>The habit</b>Freeze the data and hash it, so a number always means the same items. Then check your sample against the population it claims to represent.</div>
-  <div class="tool"><span class="k">In the harness</span><pre class="term"><span class="p">$ </span>make dataset-create · make dataset-materialize
+  <div class="tool"><span class="k">In the harness</span><pre class="term"><span class="p">$ </span>evh dataset-create · evh dataset-materialize
 <span class="c">a changed input fails loudly instead of silently measuring different bytes</span></pre></div>
   <p class="yours"><b>In your project</b> Your dataset is a set of real inputs, frozen. Sample it on purpose — by date, by customer, by difficulty — and write down what it covers.</p>
 </article>
 <article class="chapter reveal" id="gold" data-nodes="references remeasure">
   <div class="eyebrow"><span class="num">03</span>Ground truth</div>
   <h2>Silver is not gold.</h2>
-  <div class="story prose"><p>In the tutorial, the system that wrote the silver references scores a perfect 1.000 against them and ranks first. Re-scored against six summaries a person wrote, it falls to second — and no arm can be told apart from any other (p = 0.2124).</p><p>On AG News, the lead of the three fine-tunes is concentrated in 17 items the hosted field mostly gets wrong. Adjudicated by topic by one reader shown the hosted answer, the gold was wrong on all 17, and on that gold every hosted LLM scores above every fine-tune. The dataset's own gold stays primary; the adjudicated one sits beside it. Disputed gold is a finding, not noise.</p><p>An AI judge is silver too, and SummEval measures how good: scored against the mean of two experts, as one expert is against the other two, the best judges reach 93% of a human's agreement (the best of 24, chosen on the same articles; 92% held out). The experts are not noiseless either: 41 of 44 groups of word-for-word identical summaries got different expert scores. Close to a person is not the same as a person.</p><p>Two of those judges re-measured the summarisation experiment and ranked every hosted LLM above every BART model. The one blind human check on those outputs, one non-expert reader on 20 pairs, preferred bart_l 14 to 6. That check is weak too (p = 0.115, truncated articles), so neither is confirmed on those outputs; on crowd ratings of 2022 LLM summaries the judges track people better than one rater does on coherence and relevance, not on faithfulness, and not system by system. So the harness refuses a judge until it is validated, and the summarisation experiment still ranks by coverage.</p></div>
+  <div class="story prose"><p>In the tutorial, the system that wrote the silver references, the one every other arm was measured against, is not first once six summaries a person wrote are the measure — and six items can almost never tell the arms apart.</p><p>On AG News, the lead of the three fine-tunes is concentrated in 17 items the hosted field mostly gets wrong. Adjudicated by topic by one reader shown the hosted answer, the gold was wrong on all 17, and on that gold every hosted LLM scores above every fine-tune. The dataset's own gold stays primary; the adjudicated one sits beside it. Disputed gold is a finding, not noise.</p><p>An AI judge is silver too, and SummEval measures how good: scored against the mean of two experts, as one expert is against the other two, the best judges reach 93% of a human's agreement (the best of 24, chosen on the same articles; 92% held out). The experts are not noiseless either: 41 of 44 groups of word-for-word identical summaries got different expert scores. Close to a person is not the same as a person.</p><p>Two of those judges re-measured the summarisation experiment and ranked every hosted LLM above every BART model. The one blind human check on those outputs, one non-expert reader on 20 pairs, preferred bart_l 14 to 6. That check is weak too (p = 0.115, truncated articles), so neither is confirmed on those outputs; on crowd ratings of 2022 LLM summaries the judges track people better than one rater does on coherence and relevance, not on faithfulness, and not system by system. So the harness refuses a judge until it is validated, and the summarisation experiment still ranks by coverage.</p></div>
   <div class="habit"><b>The habit</b>Silver gets you started; gold tells you the truth. Write a small gold set early, check silver — and any AI judge — against it, and read every item where strong systems agree against the gold.</div>
-  <div class="tool"><span class="k">In the harness</span><pre class="term"><span class="p">$ </span>make rescore REFERENCE=gold/… · make silver-calibrate · make judge-score
+  <div class="tool"><span class="k">In the harness</span><pre class="term"><span class="p">$ </span>evh rescore --reference-id gold/… · evh silver-calibrate · evh judge-score
 <span class="c">re-score old runs against new gold for $0, measure how far silver drifts, re-measure with judges you have validated</span></pre></div>
   <p class="yours"><b>In your project</b> A small set of answers written by someone who knows the domain is worth more than a large set a model generated: it is the only one that can tell you the model is wrong.</p>
 </article>
@@ -74,8 +69,8 @@ if(!p.has('static'))document.documentElement.classList.add('js');})();
   <h2>Measure the noise before the difference.</h2>
   <div class="story prose"><p>BART's apparent lead at n=20 was 0.0737; across 200 articles it was 0.00008. Two independent 100-article evals of the same models agree at only ρ = 0.79.</p><p>A pilot correlates beautifully and picks the wrong winner — in three of the five experiments here that ran one.</p></div>
   <div class="habit"><b>The habit</b>Run every arm more than once and measure how far it disagrees with itself. Tune on a small dev slice, report on the rest, and measure how many items a ranking needs instead of assuming it.</div>
-  <div class="tool"><span class="k">In the harness</span><pre class="term"><span class="p">$ </span>make experiment-run REPEAT=3 · make holdout · make rank-stability
-<span class="c">treat deltas below 0.044479 as noise</span></pre></div>
+  <div class="tool"><span class="k">In the harness</span><pre class="term"><span class="p">$ </span>evh experiment-run --repeat 3 · evh holdout · evh rank-stability
+<span class="c">treat deltas below 0.029372 as noise</span></pre></div>
   <p class="yours"><b>In your project</b> Before you believe the new prompt is a few points better, run the old one twice.</p>
 </article>
 <article class="chapter reveal" id="tested" data-nodes="tests">
@@ -83,16 +78,16 @@ if(!p.has('static'))document.documentElement.classList.add('js');})();
   <h2>Tested, not read.</h2>
   <div class="story prose"><p>A leaderboard sorts, so something is always first. In 5 of 6 experiments here the leader cannot be separated from a group of others — on summarisation, from 15 of them, the cheapest paid one 143× cheaper than the dearest model in the field.</p><p>Every separation claim on this site rests on a paired permutation test per item, with a Holm correction for the number of comparisons made at once. A tie means the test could not separate two arms at this many items, not that they are equal. Intervals elsewhere (the human ceiling) are bootstrapped, and the price slopes are fits, not tests.</p></div>
   <div class="habit"><b>The habit</b>Decide the comparisons before reading the table, correct for how many you made, and report a tie as a tie.</div>
-  <div class="tool"><span class="k">In the harness</span><pre class="term"><span class="p">$ </span>make family-test · make leaderboard
+  <div class="tool"><span class="k">In the harness</span><pre class="term"><span class="p">$ </span>evh family-test · evh leaderboard
 <span class="c">separated from 6 of 18 opponents   ← SciFact&#x27;s leader, glm_s</span></pre></div>
   <p class="yours"><b>In your project</b> When the answer is “tied”, look at the gap and the sample size first: if the gap is one you can live with, the cheapest member of the tie is the decision.</p>
 </article>
 <article class="chapter reveal" id="record" data-nodes="baseline">
   <div class="eyebrow"><span class="num">06</span>The record</div>
   <h2>Decide on the record.</h2>
-  <div class="story prose"><p>Running the experiments found eight defects in the harness's own instrument, each of which changed published numbers or would have. Three of these — the parser, the unparsed-as-empty rule, the reasoning flag — moved a single arm by more than the gap separating most of the field. The scoring code is a model-sized lever.</p><p>Every correction is kept: the lab notebook records the findings that were retracted along the way, several caused by this harness's own scorer.</p></div>
+  <div class="story prose"><p>Running the experiments found eight defects in the harness's own instrument, each of which changed published numbers or would have. Three of these — the parser, the unparsed-as-empty rule, the reasoning flag — moved a single arm by more than the gap separating most of the field. The scoring code is a model-sized lever.</p><p>The lab notebook records the findings that were retracted along the way, several caused by this harness's own scorer; the reports state today's figures, and git keeps every earlier version.</p></div>
   <div class="habit"><b>The habit</b>Hash and test the scorer, re-score stored outputs when it changes, and promote a baseline only with a reason that says what the tests showed.</div>
-  <div class="tool"><span class="k">In the harness</span><pre class="term"><span class="p">$ </span>make rescore · make run-promote REASON=&quot;…&quot; · make validate
+  <div class="tool"><span class="k">In the harness</span><pre class="term"><span class="p">$ </span>evh rescore · evh run-promote --reason &quot;…&quot; · evh validate
 <span class="c">re-scoring is $0; validation exits non-zero, so it belongs in CI</span></pre></div>
   <p class="yours"><b>In your project</b> Keep a journal. The mistakes you write down are the checks you add next.</p>
 </article></div>
@@ -104,7 +99,7 @@ if(!p.has('static'))document.documentElement.classList.add('js');})();
   <div class="cols">
     <div class="prose">
       <p>The approach in this repository builds on Chip Huyen's books. Their framing — evaluation is engineering work on <strong>your</strong> data, a model is chosen on a private leaderboard rather than a public one, the dataset is a design decision, every experiment is tracked and versioned — is the foundation this harness was built on. What this project adds is a tool that enforces it, and six experiments that show what skipping it costs.</p>
-      <p>The idea-by-idea mapping, with chapters, is in <a href="docs/INFLUENCES/">Influences</a>.</p>
+      <p>The idea-by-idea mapping, with chapters, is in <a href="https://docs.evals.humancopilot.eu/INFLUENCES/">Influences</a>.</p>
     </div>
     <ul class="reading">
       <li><b>Chip Huyen — <i>AI Engineering</i></b> (O'Reilly, 2025). Ch. 2: sampling makes models probabilistic, and so inconsistent — measured here at temperature 0. Ch. 3–4: why public benchmarks rarely pick the model for your application, private leaderboards, AI judges as subjective evaluation to be checked against exact and human evaluation. Ch. 8: dataset engineering — quality, coverage, quantity.</li>
@@ -115,14 +110,9 @@ if(!p.has('static'))document.documentElement.classList.add('js');})();
       <li>More, curated by Chip Huyen: <a href="https://huyenchip.com/mlops/">huyenchip.com/mlops</a></li>
     </ul>
   </div>
-  <div class="btns"><a class="btn primary" href="use.html">Use it on your problem →</a><a class="btn" href="docs/GUIDE/">The step-by-step guide</a><a class="btn" href="experiments.html">The experiments</a></div>
+  <div class="btns"><a class="btn primary" href="use.html">Use it on your problem →</a><a class="btn" href="https://docs.evals.humancopilot.eu/GUIDE/">The step-by-step guide</a><a class="btn" href="experiments.html">The experiments</a></div>
 </div></section>
-<script>
-(function(){const nodes=document.querySelectorAll('.method-aside .lc-node');
-const io=new IntersectionObserver(es=>es.forEach(x=>{if(!x.isIntersecting)return;
-const on=x.target.dataset.nodes.split(' ');nodes.forEach(n=>n.classList.toggle('on',on.includes(n.dataset.node)));}),{rootMargin:'-40% 0px -50% 0px'});
-document.querySelectorAll('.chapter').forEach(c=>io.observe(c));})();
-</script>
+<script src="assets/js/eaacaa4a2fe4.js"></script>
 <section class="block author" id="author"><div class="wrap">
   <div class="eyebrow">Who built this</div>
   <h2>Built by Marko Dragoljevic.</h2>
@@ -147,24 +137,9 @@ document.querySelectorAll('.chapter').forEach(c=>io.observe(c));})();
       <a href="mailto:marko@humancopilot.eu" data-umami-event="cta-email" data-umami-event-position="footer">Email</a>
     </nav>
   </div>
-  <div class="foot-legal"><span>© Marko Dragoljevic · eval-harness <a href="releases.html#v0.3.0">v0.3.0</a> · build: local · <a href="docs/DATA/">Data &amp; licences</a> · <a href="releases.html">Release notes</a></span><span>Cookieless, self-hosted analytics (Umami). No cookies, no tracking across sites. <a href="privacy.html">Privacy</a></span></div>
+  <div class="foot-legal"><span>© Marko Dragoljevic · eval-harness <a href="releases.html#v0.4.0">v0.4.0</a> · build: local · <a href="https://docs.evals.humancopilot.eu/DATA/">Data &amp; licences</a> · <a href="releases.html">Release notes</a></span><span>Cookieless, self-hosted analytics (Umami). No cookies, no tracking across sites. <a href="privacy.html">Privacy</a></span></div>
 </div></footer>
 <div id="tip" role="tooltip"></div>
-<script>
-document.getElementById('theme').addEventListener('click',()=>{const r=document.documentElement;
-const dark=r.dataset.theme?r.dataset.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches;
-r.dataset.theme=dark?'light':'dark';try{localStorage.setItem('theme',r.dataset.theme);}catch(e){}});
-const tip=document.getElementById('tip');
-function place(x,y){const w=tip.offsetWidth,h=tip.offsetHeight;tip.style.left=Math.max(8,Math.min(x+14,innerWidth-w-8))+'px';tip.style.top=(y+14+h>innerHeight?y-h-14:y+14)+'px';}
-document.addEventListener('pointerover',ev=>{if(ev.pointerType==='touch')return;const t=ev.target.closest('[data-tip]');if(!t)return;tip.textContent=t.dataset.tip;tip.classList.add('on');place(ev.clientX,ev.clientY);});
-document.addEventListener('pointermove',ev=>{if(ev.pointerType==='touch'||!tip.classList.contains('on'))return;place(ev.clientX,ev.clientY);});
-document.addEventListener('pointerout',ev=>{if(ev.pointerType!=='touch'&&ev.target.closest('[data-tip]'))tip.classList.remove('on');});
-// Touch: a tap shows the tip where the finger is; the next tap elsewhere, or a scroll, hides it.
-document.addEventListener('pointerdown',ev=>{if(ev.pointerType!=='touch')return;const t=ev.target.closest('[data-tip]');if(!t){tip.classList.remove('on');return;}tip.textContent=t.dataset.tip;tip.classList.add('on');place(ev.clientX,ev.clientY);});
-addEventListener('scroll',()=>tip.classList.remove('on'),{passive:true});
-const io=new IntersectionObserver(es=>es.forEach(x=>{if(x.isIntersecting){x.target.classList.add('in');io.unobserve(x.target);}}),{rootMargin:'0px 0px -8% 0px'});
-document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
-setTimeout(()=>document.querySelectorAll('.reveal').forEach(el=>el.classList.add('in')),2500);
-</script>
+<script src="assets/js/2b3d1b9b2afe.js"></script>
 </body>
 </html>

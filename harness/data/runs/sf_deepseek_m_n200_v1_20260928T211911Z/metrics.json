@@ -6,8 +6,17 @@
     "source": "git"
   },
   "config_id": "sf_deepseek_m_n200_v1",
-  "created_at": "2026-09-28T21:23:04Z",
+  "created_at": "2026-09-29T20:21:59+02:00",
   "dataset_id": "scifact_200",
+  "derived": {
+    "at": "2026-09-29T20:21:59+02:00",
+    "from": "sf_deepseek_m_n200_v1_20260928T211911Z",
+    "kind": "reparse",
+    "with": {
+      "parser": "examples/_shared/retrieval.parse_ranking",
+      "scorer_sha256": "a534747b2a5d9712a1965473ab8e1d60b82aa2f73cf385c789d0fb4e83a51cd3"
+    }
+  },
   "fingerprint": {
     "arm": {
       "config_id": "sf_deepseek_m_n200_v1",
@@ -35,9 +44,11 @@
       "items_sha256": "b97dfe735a78eb4978cde41e2ca9a0bff424de9e6a0a2bdada5d167e3423004d",
       "n_items": 200,
       "reference_id": "gold/scifact_200",
-      "reference_tier": "gold"
+      "reference_tier": "gold",
+      "references_sha256": "b522e08017ebc7dd71c5627bccfdd688c5124096df8a5e6454684141bc361d99"
     },
-    "hash": "80500f82fa0545ea504867b54ba8ce1ff93051483811bb162b689b19c15ec7f7",
+    "hash": null,
+    "hash_invalid_because": "rankings were rebuilt from stored LLM replies with a parser this fingerprint does not describe; see derived.with",
     "host": {
       "cpu_count": 12,
       "label": "mac-dev",
@@ -49,7 +60,7 @@
     "instrument": {
       "adapter": {
         "id": "examples/retrieval-scifact/adapter.py",
-        "sha256": "cedb9f962aac9aef991ab83a63393769ed2976796bbfa2e7ecdf8e020dfd74f2"
+        "sha256": "46cd2bd89061c9f3bff0493cce7ab292dd6f9b1bae7c7e482af0aebdd1479cee"
       },
       "harness": {
         "commit": "a903fb37b0f1",
@@ -96,8 +107,9 @@
         "top_k": 100
       }
     },
-    "version": 1
+    "version": 4
   },
+  "goal": "scientific_retrieval_scifact",
   "metric_kinds": {
     "confidence": "descriptive",
     "duplicate_ids": "descriptive",
@@ -136,30 +148,32 @@
   "primary_metric": "ndcg_10",
   "providers_seen": {},
   "reference_tier": "gold",
+  "round": "r1",
   "run_id": "sf_deepseek_m_n200_v1_20260928T211911Z",
   "scores": {
-    "cost_usd": 0.000617,
+    "cost_usd": 0.0011904547,
     "duplicate_ids": 0.0,
     "found_any": 0.865,
     "latency_ms": 1144.972355,
     "llm_named_unknown": 0.0,
     "llm_parsed": 0.995,
-    "mrr_10": 0.737347,
+    "mrr_10": 0.7373472222,
     "n_relevant": 1.135,
     "n_returned": 100.0,
-    "ndcg_10": 0.739899,
+    "ndcg_10": 0.7398986437,
     "parsed": 1.0,
     "rank_of_first": 2.55,
     "reasoning_tokens": 3.5,
     "recall_10": 0.78925,
-    "recall_100": 0.858583,
+    "recall_100": 0.8585833333,
     "tokens_in": 3766.06,
     "tokens_out": 103.41,
-    "total_cost_usd": 0.1233228,
+    "total_cost_usd": 0.23809094,
     "total_tokens_in": 753212.0,
     "total_tokens_out": 20682.0,
     "truncated": 0.005,
     "unknown_ids": 0.0
   },
+  "source_created_at": "2026-09-28T21:23:04Z",
   "warmup_ms": 3694.415
 }

@@ -1,0 +1,7 @@
+The task is to classify a news article into one of four categories: World, Sports, Business, Sci/Tech.
+
+The article is about US fighter squadron deployment in South Korea. This is about military/geopolitical news involving international relations between the US and South Korea.
+
+This is clearly a World news article - it deals with international military deployment, geopolitics, and foreign affairs.
+
+The instruction says to output only the category name withWorld

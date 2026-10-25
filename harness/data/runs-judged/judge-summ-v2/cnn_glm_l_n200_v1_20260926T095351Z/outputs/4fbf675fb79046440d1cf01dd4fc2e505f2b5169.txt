@@ -1,0 +1,13 @@
+The user wants a 2-3 sentence news wire style summary of this article about the Al-Shabaab attack on Garissa University College in Kenya.
+
+Key facts:
+- Al-Shabaab claimed attack on Garissa University College in eastern Kenya
+- Many killed, hostages taken
+- Somalia-based group, linked to al-Qaeda, has history of attacks in Kenya including Westgate 2013
+- Attack targeted Christians, part of broader regional instability
+
+News wire style is terse, factual, front-loads key info. Let me draft:
+
+"Somalia-based Al-Shabaab has claimed responsibility for an attack on Garissa University College in eastern Kenya that left many dead and others held hostage. The al-Qaeda-linked group, which has carried out a string of attacks in Kenya including the 2013 Westgate mall massacre, reportedly separated Christian from Muslim students during the assault. Analysts say the attack reflects deepening regional instability and warn that lasting security requires addressing underlying political and economic exclusion."
+
+That's 3 sentences, terse, wireSomalia-based Al-Shabaab has claimed responsibility for an attack on Garissa University College in eastern Kenya that left many dead and others taken hostage. The al-Qaeda-linked group, which has staged a string of attacks in Kenya including the 2013 Westgate mall massacre, reportedly separated Christian from Muslim students during the assault. Analysts say the attack underscores worsening regional instability and warn that lasting security requires addressing the political and economic exclusion that fuels the group's recruitment.

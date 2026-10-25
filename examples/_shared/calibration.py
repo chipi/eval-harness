@@ -15,11 +15,8 @@ from __future__ import annotations
 
 import json
 import math
-import time
-import urllib.parse
-import urllib.request
 from pathlib import Path
-from typing import Callable, Optional
+from typing import Callable
 
 ROOT = Path(__file__).resolve().parents[2]
 OUT_DIR = ROOT / "docs" / "evidence" / "calibration"
@@ -27,21 +24,13 @@ ROWS_API = "https://datasets-server.huggingface.co/rows"
 
 
 def page(dataset: str, config: str, split: str, offset: int, length: int = 100) -> list:
-    """One page of rows from the HF datasets-server, retried on transient errors."""
-    q = urllib.parse.urlencode({"dataset": dataset, "config": config, "split": split,
-                                "offset": offset, "length": length})
-    last: Optional[Exception] = None
-    for attempt in range(6):
-        try:
-            with urllib.request.urlopen(f"{ROWS_API}?{q}", timeout=60) as r:
-                return [x["row"] for x in (json.loads(r.read()).get("rows") or [])]
-        except Exception as exc:  # noqa: BLE001 - retried, then raised
-            last = exc
-            time.sleep(2 * (attempt + 1))
-    raise SystemExit(f"datasets-server unreachable at offset {offset}: {last}")
+    """One page of rows from the HF datasets-server (hf_rows: paced, retried, 429-aware)."""
+    from hf_rows import page as _rows_page  # noqa: PLC0415
+
+    return _rows_page(dataset, config, split, offset, length)
 
 
-def rows(dataset: str, config: str, split: str, limit: Optional[int] = None) -> list:
+def rows(dataset: str, config: str, split: str, limit: int | None = None) -> list:
     """Every row of a split (or the first `limit`), paged."""
     out: list = []
     while limit is None or len(out) < limit:
@@ -55,8 +44,7 @@ def rows(dataset: str, config: str, split: str, limit: Optional[int] = None) -> 
 def proportion(hits: int, n: int) -> dict:
     """A proportion with its normal-approximation 95% half-width, rounded for reading."""
     p = hits / n if n else float("nan")
-    return {"n": n, "value": round(p, 4),
-            "ci95": round(1.96 * math.sqrt(p * (1 - p) / n), 4) if n else None}
+    return {"n": n, "value": round(p, 4), "ci95": round(1.96 * math.sqrt(p * (1 - p) / n), 4) if n else None}
 
 
 def verdict(measured: float, ci95: float, published: float, tolerance: float) -> str:

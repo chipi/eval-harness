@@ -8,7 +8,12 @@ is the adjudicated set: this copies the local gold reference set and overwrites 
 adjudicated items. The adjudication file is the committed record: which items, who decided,
 what they were shown, and the verdict.
 
-Then re-score every run against it, $0:
+Then write its manifest (the copied one describes the base set) and re-score every run
+against it, $0:
+
+    evh reference-manifest --reference-id gold/ag_news_200_adj1 --dataset-id ag_news_200 \\
+        --source "examples/_shared/adjudicate.py examples/classification-ag-news/adjudication.json" \\
+        --not-redistributed
 
     cd harness && python scripts/rescore.py --dataset-id ag_news_200 \\
         --reference-id gold/ag_news_200_adj1 --out data/runs-adjudicated
@@ -31,8 +36,10 @@ def main() -> int:
     adj = json.loads(Path(sys.argv[1]).read_text())
     base, dest = REFS / adj["base_reference"], REFS / adj["reference_id"]
     if adj["reference_id"] == adj["base_reference"] or dest.resolve() == base.resolve():
-        print(f"reference_id {adj['reference_id']!r} is the base reference: "
-              "refusing, because the copy would delete the gold set it copies from")
+        print(
+            f"reference_id {adj['reference_id']!r} is the base reference: "
+            "refusing, because the copy would delete the gold set it copies from"
+        )
         return 1
     if not base.is_dir():
         print(f"no gold reference set at {base}: run the experiment's fetch.py first")
@@ -40,6 +47,9 @@ def main() -> int:
     if dest.exists():
         shutil.rmtree(dest)
     shutil.copytree(base, dest)
+    # The base set's manifest describes the base set's texts, not these: it goes, and the
+    # printed command writes this set's own.
+    (dest / "manifest.json").unlink(missing_ok=True)
     changed = 0
     for it in adj["items"]:
         f = dest / f"{it['item_id']}.txt"
@@ -47,12 +57,19 @@ def main() -> int:
             print(f"item {it['item_id']} is not in {base}")
             return 1
         if f.read_text().strip() != it["gold"]:
-            print(f"item {it['item_id']}: local gold is {f.read_text().strip()!r}, "
-                  f"the adjudication file says {it['gold']!r}")
+            print(
+                f"item {it['item_id']}: local gold is {f.read_text().strip()!r}, "
+                f"the adjudication file says {it['gold']!r}"
+            )
             return 1
         f.write_text(it["adjudicated"])
         changed += it["adjudicated"] != it["gold"]
     print(f"{dest.relative_to(REFS)}: {len(adj['items'])} adjudicated, {changed} changed")
+    print(
+        f"its manifest:  evh reference-manifest --reference-id {adj['reference_id']} "
+        f"--dataset-id {adj['base_reference'].split('/', 1)[1]} "
+        f'--source "examples/_shared/adjudicate.py {sys.argv[1]}" --not-redistributed'
+    )
     return 0
 
 

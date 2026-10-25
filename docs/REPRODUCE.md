@@ -6,7 +6,7 @@ commands from the repository root.
 
 | level | what you check | you need | costs |
 |---|---|---|---|
-| **0 · verify** | every number in every report, recomputed from the committed predictions | a clone | $0, ~15 min |
+| **0 · verify** | every number in every report, recomputed from the committed predictions | a clone | $0, ~20 min |
 | **1 · data** | the public data still matches what was measured, byte for byte | network | $0, minutes |
 | **2 · local** | rerun every local model and baseline on your own CPU | disk for models | $0, CPU hours |
 | **3 · hosted** | rerun the hosted LLMs (24 per experiment, 12 on SciFact) | one OpenRouter key | what `make plan` says, ≈ $0.58–$7.03 per experiment as billed when measured; prices move |
@@ -65,8 +65,7 @@ pinned (sizes in [REFERENCE](REFERENCE.md)). Five of them were measured from pic
 checkpoints (`pytorch_model.bin`), which execute code when loaded and which torch < 2.6
 refuses; for those a rerun loads the model's **safetensors conversion** instead, pinned by
 commit in `examples/local_models.json`. Each was rerun that way on 2026-10-15 and scored
-identically to its committed run on every item, all 200 or 280 (lab notebook entry 63; an
-earlier adapter-level check covered the two BARTs on 20 items only). The sixth pickle model,
+identically to its committed run on every item, all 200 or 280 (lab notebook entry 63). The sixth pickle model,
 `bart_s`, has no exact conversion; rerun at the fp32 its config declares, it matches 199 of
 200 items on CNN and 187 of 200 on DailyMail. On Linux, `uv` installs the CUDA build of
 PyTorch, about 5 GB; nothing here needs a GPU.
@@ -94,6 +93,10 @@ maps each alias to the OpenRouter model it named when the runs were made, and th
 goes straight to OpenRouter. If you run a [LiteLLM](https://docs.litellm.ai/) proxy instead,
 `examples/litellm.config.yaml` serves the same aliases; set `LITELLM_BASE_URL` and
 `LITELLM_API_KEY` and the proxy route is used.
+
+Re-measuring with the committed judge scorers (`evh judge-score`, `harness/data/scorers/`) needs
+that proxy: their judges declare `provider: litellm`, and a judge goes where its provider says.
+A judge reads `EVAL_JUDGE_LITELLM_API_KEY` first, so judging can use its own key.
 
 Each hosted arm is capped at twice what it was billed when measured
 (`EVAL_MAX_COST_USD`, enforced on actual spend); a run that hits the cap stops, keeps what

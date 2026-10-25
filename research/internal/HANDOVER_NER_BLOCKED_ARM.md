@@ -103,7 +103,7 @@ python scripts/family_test.py --dataset-id few_nerd_280 --a fn_openai_m_n200_v1 
 
 # 3. the consensus pass gains a 26th learned arm, so the 34 type disagreements
 #    and the upper bound in report §3.6 both move
-EVAL_RUNS_DIR=data/runs-rescored python scripts/extraction_report.py \
+EVAL_RUNS_DIR=data/runs-rescored python tools/extraction_report.py \
     --dataset-id few_nerd_280 --match fn_
 
 # 4. holdout and stability

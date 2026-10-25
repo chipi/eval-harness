@@ -1,0 +1,187 @@
+{
+  "adapter": "examples/summarization-cnn-dailymail/adapter.py",
+  "build": {
+    "dirty": null,
+    "ref": "eval-harness-scenario",
+    "source": "EVAL_BUILD_REF"
+  },
+  "config_id": "cnn_mistral_m_n200_v1",
+  "created_at": "2026-10-25T16:49:29Z",
+  "dataset_id": "cnn_dailymail_200",
+  "derived": {
+    "at": "2026-10-25T16:49:29Z",
+    "from": "cnn_mistral_m_n200_v1_20260926T111007Z",
+    "kind": "rescore",
+    "with": {
+      "adapter": "examples/summarization-cnn-dailymail/adapter.py",
+      "sha256": "3826aad41bf91e498b57f98536babef281452cd09b4eb793e20dec53fd9bc4f8"
+    }
+  },
+  "fingerprint": {
+    "arm": {
+      "config_id": "cnn_mistral_m_n200_v1",
+      "params": {
+        "family": "mistral",
+        "max_tokens": 1200,
+        "model": "eval-mistral-medium",
+        "price_tier": "mid",
+        "prompt_file": "prompt.txt",
+        "provider": "litellm",
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0,
+        "usd_per_mtok_in": 0.4,
+        "usd_per_mtok_out": 2.0
+      }
+    },
+    "data": {
+      "dataset_id": "cnn_dailymail_200",
+      "items_sha256": "257feda902391b934b8cde940c15e91201096dbe96ec5a81337e9da007ce3ec7",
+      "n_items": 200,
+      "reference_id": "silver/cnn_dailymail_200",
+      "reference_id_at_measurement": "gold/cnn_dailymail_200",
+      "reference_tier": "silver",
+      "reference_tier_at_measurement": "gold",
+      "references_sha256": "b7cd73d14c009e1ee5559a332cfc37143e24b4debcc75d1fdda9235a85b26f3d",
+      "references_sha256_at_measurement": "5d0b02c3798017535572d24dd3ce0592332938a0c91e93684d163963a60a7cd9"
+    },
+    "hash": null,
+    "hash_invalid_because": "scores were recomputed by a different scorer than the one this fingerprint was built from; see derived.with",
+    "host": {
+      "cpu_count": 12,
+      "label": null,
+      "platform": "Darwin/x86_64",
+      "processor": "i386",
+      "python": "3.11.8",
+      "release": "24.6.0"
+    },
+    "instrument": {
+      "adapter": {
+        "id": "examples/summarization-cnn-dailymail/adapter.py",
+        "sha256": "3826aad41bf91e498b57f98536babef281452cd09b4eb793e20dec53fd9bc4f8"
+      },
+      "harness": {
+        "commit": "e0810991f3fb",
+        "dirty": true
+      }
+    },
+    "system_under_test": {
+      "libraries": {
+        "numpy": "2.4.6",
+        "openai": "3.19.2",
+        "rouge-score": "0.1.2"
+      },
+      "model": {
+        "alias": "eval-mistral-medium",
+        "endpoint": "http://127.0.0.1:4001",
+        "id": "openrouter/mistralai/mistral-medium-3.1",
+        "id_source": "proxy-model-info",
+        "identity_declared": true,
+        "prompt_sha256": "d98ecfbd4054a47476257c2a48ab9f9fc8731098afe4bc1093c69e89c0cbe2f0",
+        "provider_routing": null,
+        "reasoning": {
+          "enabled": false
+        },
+        "revision": null,
+        "revision_source": "api-model-string",
+        "temperature": 0.0
+      }
+    },
+    "version": 4
+  },
+  "goal": "news_summary_cnn",
+  "metric_descriptions": {
+    "compression": "Summary words divided by article words: a description, not a quality.",
+    "concision": "ROUGE-Lsum precision over the whole summary: the share of what was written that matches the reference. Padding lowers it.",
+    "coverage": {
+      "details": "The summary is clipped to as many words as the gold summary has, then scored for ROUGE-Lsum recall against it (sentences split here, stemming on). Writing more cannot buy coverage; only putting the important facts first can. Read beside concision, which rewards the opposite.",
+      "summary": "ROUGE-Lsum recall with the summary cut to the reference's length: did it carry the story."
+    },
+    "fmt_bullets": "1 when the output has bullet lines where the prompt asks for sentences.",
+    "fmt_label": "1 when the output opens with a label such as \"Summary:\" the prompt did not ask for.",
+    "fmt_markdown": "1 when the output opens with markdown (bold, a heading, a quote) the prompt did not ask for.",
+    "fmt_narration": "1 when the output thinks out loud (\"the user wants\", \"let me draft\", think tags) instead of only summarising: its quality numbers describe something else.",
+    "fmt_overlong": "1 when the output runs past 90 words where the prompt asks for 2-3 short sentences.",
+    "fmt_paragraphs": "1 when the output has more than one paragraph where the prompt asks for 2-3 short sentences.",
+    "grounding": "Share of the summary's distinct word bigrams that appear in the article: high is extractive, low means the summary left the source (a paraphrase or a fabrication).",
+    "input_truncated": "1 when a local model saw only part of the article, because it was longer than the model's encoder window (1,024 tokens for BART) and was cut, else 0. Those items are a different task from the hosted arms' full-article ones.",
+    "length_vs_reference": "Summary words divided by reference words: 1 means as long as the human's. A verbose winner shows here.",
+    "reference_words": "How many words the gold summary has.",
+    "rouge1": "ROUGE-1 F1 against the reference, for comparison with published CNN/DailyMail results. Rises with length; read after coverage and concision.",
+    "rougeLsum": "ROUGE-Lsum F1 against the reference (per-sentence longest common subsequence), the CNN/DailyMail literature's figure. Rises with length.",
+    "summary_words": "How many whitespace-separated words the summary had.",
+    "truncated": "1 when the provider cut the reply off at the token ceiling (finish_reason \"length\", and in most adapters a completion that reached 98% of max_tokens), else 0. An arm with truncated above 0 has scores that partly describe the ceiling, not the model."
+  },
+  "metric_kinds": {
+    "compression": "descriptive",
+    "concision": "quality",
+    "coverage": "quality",
+    "fmt_bullets": "descriptive",
+    "fmt_label": "descriptive",
+    "fmt_markdown": "descriptive",
+    "fmt_narration": "descriptive",
+    "fmt_overlong": "descriptive",
+    "fmt_paragraphs": "descriptive",
+    "grounding": "quality",
+    "input_truncated": "descriptive",
+    "length_vs_reference": "descriptive",
+    "reasoning_tokens": "descriptive",
+    "reference_words": "descriptive",
+    "resumed": "descriptive",
+    "rouge1": "quality",
+    "rougeLsum": "quality",
+    "summary_words": "descriptive",
+    "truncated": "descriptive"
+  },
+  "n_items": 200,
+  "params": {
+    "family": "mistral",
+    "max_tokens": 1200,
+    "model": "eval-mistral-medium",
+    "price_tier": "mid",
+    "prompt_file": "prompt.txt",
+    "provider": "litellm",
+    "reasoning": {
+      "enabled": false
+    },
+    "temperature": 0.0,
+    "usd_per_mtok_in": 0.4,
+    "usd_per_mtok_out": 2.0
+  },
+  "primary_metric": "coverage",
+  "providers_seen": {
+    "Mistral": 200
+  },
+  "reference_tier": "silver",
+  "round": "r1",
+  "run_id": "cnn_mistral_m_n200_v1_20260926T111007Z",
+  "scores": {
+    "compression": 0.10907163,
+    "concision": 0.5443020536,
+    "cost_usd": 0.000435292,
+    "coverage": 0.3201398076,
+    "fmt_bullets": 0.0,
+    "fmt_label": 0.0,
+    "fmt_markdown": 0.0,
+    "fmt_narration": 0.01,
+    "fmt_overlong": 0.0,
+    "fmt_paragraphs": 0.0,
+    "grounding": 0.2709258117,
+    "latency_ms": 2653.687,
+    "length_vs_reference": 0.59421752,
+    "reasoning_tokens": 0.0,
+    "reference_words": 74.53,
+    "rouge1": 0.4534786917,
+    "rougeLsum": 0.3972365173,
+    "summary_words": 43.285,
+    "tokens_in": 767.73,
+    "tokens_out": 64.1,
+    "total_cost_usd": 0.0870584,
+    "total_tokens_in": 153546.0,
+    "total_tokens_out": 12820.0,
+    "truncated": 0.0
+  },
+  "source_created_at": "2026-09-26T11:19:01Z",
+  "warmup_ms": 2110.939
+}

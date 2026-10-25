@@ -10,6 +10,8 @@
   "latency_ms": 1102.111,
   "n": 1,
   "output": "```json\n{\"coherence\": [4], \"consistency\": [5], \"fluency\": [4], \"relevance\": [4]}\n```",
+  "output_sha256": "cc11fbd9c88738c71e17bd800eb6beced5149eb33e684f426b3b71b9b6aec8d6",
+  "output_withheld": false,
   "pass": "primary",
   "prompt_sha256": "954d4d13744d4cb092022f0c7176067f81fe8919b58358a9acacbed650729ffb",
   "provider": "Parasail",

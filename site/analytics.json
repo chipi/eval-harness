@@ -1,6 +1,6 @@
 {
-  "_comment": "Umami (cookieless, no personal data). Leave umami_src or website_id empty for no analytics. One website id covers the findings site and the docs, which share a domain; 'domains' stops local previews from being counted. All three values are public by design.",
-  "umami_src": "https://analytics.closelistening.app/script.js",
+  "_comment": "Umami (cookieless, no personal data). Leave umami_src or website_id empty for no analytics. One website id covers the findings site and the docs; 'domains' stops local previews from being counted. The script is served by the homelab Umami through analytics.humancopilot.eu, the host the prod CSP allows. All three values are public by design.",
+  "umami_src": "https://analytics.humancopilot.eu/script.js",
   "website_id": "76169139-07c1-4806-bde6-f9014e803e7f",
-  "domains": "evals.humancopilot.eu"
+  "domains": "evals.humancopilot.eu,docs.evals.humancopilot.eu"
 }

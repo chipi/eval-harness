@@ -4,7 +4,7 @@
     evh import-run --dataset-id my_v1 --config-id arm_a \\
         --scores scores.jsonl --primary-metric wer --asc \\
         --build-ref <commit of the system that produced the outputs> \\
-        --source path/to/original/run --scorer-id my_scorer --scorer-sha256 <hash>
+        --source path/to/original/run --scorer-id my_scorer --scorer-file path/to/scorer.py
 
 WHY THIS EXISTS
   A project that already has runs -- made by its own pipeline, scored by its own scorers
@@ -35,16 +35,32 @@ INPUT
 
 from __future__ import annotations
 
+import sys as _sys
+from pathlib import Path as _Path
+
+if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
+
 import argparse
+import hashlib
 import json
 import math
-import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-
-from _common import DATASETS, RUNS, ROOT, die, now, read_json, write_json, write_text_atomic  # noqa: E402
-from _fingerprint import build_fingerprint  # noqa: E402
+from evaluation_harness._common import (
+    DATA,
+    DATASETS,
+    ROOT,
+    RUNS,
+    die,
+    now,
+    read_json,
+    sha256,
+    write_json,
+    write_text_atomic,
+)
+from evaluation_harness._fingerprint import build_fingerprint
+from evaluation_harness._record import run_record
 
 
 def _rows(path: Path) -> list:
@@ -63,30 +79,51 @@ def _rows(path: Path) -> list:
 
 
 def main() -> int:
+    """Import external scores as a harness run."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", required=True)
     ap.add_argument("--config-id", required=True, help="the arm's name, as tests will refer to it")
     ap.add_argument("--scores", required=True, type=Path, help="JSONL: item_id + numeric metrics")
     ap.add_argument("--primary-metric", required=True)
     ap.add_argument("--asc", action="store_true", help="lower is better for the primary metric")
-    ap.add_argument("--build-ref", required=True,
-                    help="identity of the system that produced the outputs (commit, version, digest)")
+    ap.add_argument(
+        "--build-ref",
+        required=True,
+        help="identity of the system that produced the outputs (commit, version, digest)",
+    )
     ap.add_argument("--source", required=True, help="where the outputs and scores came from")
     ap.add_argument("--scorer-id", required=True, help="the scoring code that produced the numbers")
-    ap.add_argument("--scorer-sha256", help="hash of that scoring code, if known")
+    ap.add_argument(
+        "--scorer-file",
+        type=Path,
+        action="append",
+        default=[],
+        help="a file of that scoring code (repeatable, in a fixed order); hashed by what it does, "
+        "docstrings and comments not counted, and recorded as the instrument",
+    )
     ap.add_argument("--reference-id", help="the references the scores are against, e.g. gold/my_v1")
     ap.add_argument("--reference-tier", choices=("gold", "silver"))
-    ap.add_argument("--metric-kind", action="append", default=[], metavar="METRIC=KIND",
-                    help="quality | descriptive | cost | speed (repeatable)")
-    ap.add_argument("--allow-subset", action="store_true",
-                    help="accept scores for only part of the dataset, recorded as coverage")
+    ap.add_argument(
+        "--metric-kind",
+        action="append",
+        default=[],
+        metavar="METRIC=KIND",
+        help="quality | descriptive | cost | speed (repeatable)",
+    )
+    ap.add_argument(
+        "--allow-subset",
+        action="store_true",
+        help="accept scores for only part of the dataset, recorded as coverage",
+    )
     ap.add_argument("--run-id", help="default: <config-id>_<timestamp>")
     args = ap.parse_args()
 
     ds_file = DATASETS / f"{args.dataset_id}.json"
     if not ds_file.is_file():
-        die(f"dataset {args.dataset_id} is not frozen: {ds_file} does not exist. "
-            f"Freeze the items first (evh dataset-create).")
+        die(
+            f"dataset {args.dataset_id} is not frozen: {ds_file} does not exist. "
+            f"Freeze the items first (evh dataset-create)."
+        )
     dataset = read_json(ds_file)
     known = {it["item_id"] for it in dataset["items"]}
 
@@ -109,8 +146,10 @@ def main() -> int:
         die(f"--primary-metric {args.primary_metric!r} is not among the scored metrics: {sorted(metrics)}")
     missing = sorted(known - seen)
     if missing and not args.allow_subset:
-        die(f"{len(missing)} of {len(known)} items have no scores (first: {missing[0]}). "
-            f"Pass --allow-subset to import anyway; the coverage is recorded on the run.")
+        die(
+            f"{len(missing)} of {len(known)} items have no scores (first: {missing[0]}). "
+            f"Pass --allow-subset to import anyway; the coverage is recorded on the run."
+        )
 
     kinds = {}
     for spec in args.metric_kind:
@@ -128,42 +167,84 @@ def main() -> int:
     run_dir = RUNS / run_id
     if run_dir.exists():
         die(f"{run_dir} already exists")
-    import hashlib  # noqa: PLC0415
 
-    imported = {"source": args.source, "scorer_id": args.scorer_id,
-                "scorer_sha256": args.scorer_sha256, "scores_file": args.scores.name,
-                # The exact bytes imported: a name can be reused, a hash cannot.
-                "scores_sha256": hashlib.sha256(args.scores.read_bytes()).hexdigest(),
-                "items_scored": len(seen), "items_in_dataset": len(known)}
+    scorer_sha256 = None
+    if args.scorer_file:
+        from evaluation_harness._codeid import file_sha256  # noqa: PLC0415
+
+        parts = []
+        for f in args.scorer_file:
+            h = file_sha256(f)
+            if h is None:
+                die(f"cannot read --scorer-file {f}")
+            parts.append(h)
+        # One file: its own hash. Several: one hash over theirs, in the order given.
+        scorer_sha256 = parts[0] if len(parts) == 1 else hashlib.sha256("\n".join(parts).encode()).hexdigest()
+    imported = {
+        "source": args.source,
+        "scorer_id": args.scorer_id,
+        "scorer_sha256": scorer_sha256,
+        "scores_file": args.scores.name,
+        # The exact bytes imported: a name can be reused, a hash cannot.
+        "scores_sha256": sha256(args.scores),
+        "items_scored": len(seen),
+        "items_in_dataset": len(known),
+    }
     params = {"imported": True, "source": args.source}
     fingerprint = build_fingerprint(
-        root=ROOT, dataset=dataset, reference_id=args.reference_id,
-        reference_tier=args.reference_tier, config_id=args.config_id, params=params,
-        adapter_id=f"imported:{args.scorer_id}", adapter_path=None)
+        root=ROOT,
+        data_dir=DATA,
+        dataset=dataset,
+        reference_id=args.reference_id,
+        reference_tier=args.reference_tier,
+        config_id=args.config_id,
+        params=params,
+        adapter_id=f"imported:{args.scorer_id}",
+        adapter_path=None,
+        # The scoring code is the instrument: inside the hash, so two imports scored by different
+        # versions of it are not "the same conditions". `imported` (added below) stays outside:
+        # its scores_sha256 is the result, unique to every run.
+        adapter_sha256=scorer_sha256,
+    )
     fingerprint["imported"] = imported
 
     run_dir.mkdir(parents=True)
-    write_json(run_dir / "run.json", {"config_id": args.config_id, "dataset_id": args.dataset_id,
-                                      "run_id": run_id, "started_at": now(), "imported": True})
-    write_text_atomic(run_dir / "predictions.jsonl",
-                      "".join(json.dumps(r, sort_keys=True) + "\n" for r in rows))
-    metrics_doc = {
-        "run_id": run_id, "dataset_id": args.dataset_id, "config_id": args.config_id,
-        "created_at": now(),
-        "build": {"ref": args.build_ref, "dirty": None, "source": "import-run --build-ref"},
-        "params": params, "adapter": f"imported:{args.scorer_id}",
-        "metric_kinds": kinds, "primary_metric": args.primary_metric,
-        "fingerprint": fingerprint, "scores": scores, "n_items": len(rows),
-        "imported": imported,
-    }
-    if args.asc:
-        metrics_doc["primary_metric_asc"] = True
-    if args.reference_tier:
-        metrics_doc["reference_tier"] = args.reference_tier
+    write_json(
+        run_dir / "run.json",
+        {
+            "config_id": args.config_id,
+            "dataset_id": args.dataset_id,
+            "run_id": run_id,
+            "started_at": now(),
+            "imported": True,
+        },
+    )
+    write_text_atomic(
+        run_dir / "predictions.jsonl", "".join(json.dumps(r, sort_keys=True) + "\n" for r in rows)
+    )
+    metrics_doc = run_record(
+        run_id=run_id,
+        dataset_id=args.dataset_id,
+        config_id=args.config_id,
+        build={"ref": args.build_ref, "dirty": None, "source": "import-run --build-ref"},
+        scores=scores,
+        n_items=len(rows),
+        params=params,
+        adapter=f"imported:{args.scorer_id}",
+        metric_kinds=kinds,
+        # --asc is the importer's way of saying what an adapter says with METRIC_DIRECTIONS.
+        metric_directions={args.primary_metric: "lower"} if args.asc else None,
+        primary_metric=args.primary_metric,
+        fingerprint=fingerprint,
+        imported=imported,
+        reference_tier=args.reference_tier or None,
+    )
     write_json(run_dir / "metrics.json", metrics_doc)
     cover = f"{len(seen)}/{len(known)} items" + (" (subset)" if missing else "")
-    print(f"imported {run_id}: {cover}, {len(metrics)} metric(s), "
-          f"{args.primary_metric}={scores[args.primary_metric]}")
+    print(
+        f"imported {run_id}: {cover}, {len(metrics)} metric(s), "
+        f"{args.primary_metric}={scores[args.primary_metric]}"
+    )
     print(f"  {run_dir}")
     return 0
 

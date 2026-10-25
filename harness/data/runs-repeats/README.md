@@ -16,7 +16,7 @@ Two runs sharing a `config_id` make every loader pick one, and none of them said
 - `pair_test`, `family_test`, `rank_stability` and `holdout_significance` averaged them
   per item; the report scripts silently took the newer one.
 
-`runs_by_arm()` in `scripts/_common.py` now raises on this. A `--repeat N` set
+`runs_by_arm()` in `scripts/_runs.py` raises on this. A `--repeat N` set
 (`<id>_r1.._rN`) is one arm measured N times and still loads normally — that
 distinction is pinned by `test_two_runs_sharing_a_config_id_are_refused`.
 

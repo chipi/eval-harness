@@ -31,9 +31,10 @@
       "items_sha256": "d7bf61eb3b27e79d492bbe5a445659813dfcacf6fadcae4d26255c45291bedd2",
       "n_items": 200,
       "reference_id": "gold/ag_news_200",
-      "reference_tier": "gold"
+      "reference_tier": "gold",
+      "references_sha256": "e671b1a159664de82a0a5f35d36150d81abc99d45ac19e7df8ec1d66164bcc04"
     },
-    "hash": "e81f0b7c4a0b3478535331ab18b968ef9e6bf5adb0ae760b467ac82f7f7fe18f",
+    "hash": "8f8e8ff53d0ed56f4a46fe20d46ae34ca5a7049df24b305289f6c70f7caa2841",
     "host": {
       "cpu_count": 12,
       "label": "mac-dev",
@@ -45,7 +46,7 @@
     "instrument": {
       "adapter": {
         "id": "examples/classification-ag-news/adapter.py",
-        "sha256": "668097eb04f061c04d590ec034aca96b3dc4420872f29451068c7d8b9c4dea17"
+        "sha256": "8e4dffce35059b76949a0c95860cbcb5bd372fbdb6bdf33e0e55f4df78045b94"
       },
       "harness": {
         "commit": "1e80be6531e2",
@@ -84,8 +85,9 @@
         "temperature": 0.0
       }
     },
-    "version": 1
+    "version": 4
   },
+  "goal": "news_topic_ag",
   "metric_kinds": {
     "answer_words": "descriptive",
     "confidence": "descriptive",
@@ -126,12 +128,13 @@
     "Venice": 2
   },
   "reference_tier": "gold",
+  "round": "r1",
   "run_id": "ag_gemma_l_n200_v1_20260927T091617Z",
   "scores": {
     "answer_words": 1.0,
     "correct": 0.87,
     "correct_after_repair": 0.0,
-    "cost_usd": 1.1e-05,
+    "cost_usd": 1.4e-05,
     "fmt_markdown": 0.0,
     "fmt_verbose": 0.0,
     "latency_ms": 911.090875,
@@ -139,7 +142,7 @@
     "reasoning_tokens": 0.0,
     "tokens_in": 104.045,
     "tokens_out": 2.35,
-    "total_cost_usd": 0.0021749,
+    "total_cost_usd": 0.00279761,
     "total_tokens_in": 20809.0,
     "total_tokens_out": 470.0,
     "truncated": 0.0

@@ -1,0 +1,17 @@
+round_id: r2
+goal: entity_topic_dbpedia
+dataset_id: dbpedia_280
+from: r1
+hypothesis: How fast is the fine-tuned arm timed on the Linux machine?
+status: closed
+opened_at: '2026-09-30T14:41:30Z'
+closed_at: '2026-09-30T14:41:30Z'
+retired:
+- config_id: db_bert_base_fy_n200_v1
+  runs_dir: runs-linux
+  reason: a re-timing of the record's config on one Linux machine; data/runs is the record
+  at: '2026-09-30T14:41:30Z'
+conclusion:
+  text: bert_base_fy runs at 87 ms per item on a 4-core Linux CPU (438 MB, $0 marginal). (REPORT_CLASSIFICATION,
+    the decision table.)
+  promoted_run: null

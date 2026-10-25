@@ -1,0 +1,14 @@
+round_id: r1
+goal: summary_judge_summeval
+dataset_id: summeval_100
+hypothesis: Which of 24 hosted LLM judges and nine free scorers agrees best with SummEval's expert scores,
+  and at what cost?
+status: closed
+opened_at: '2026-10-15T13:04:33Z'
+closed_at: '2026-10-18T23:26:02Z'
+conclusion:
+  text: The best judges reach 0.5195, 93% of one expert's agreement with the other two (0.5587); every
+    free scorer is far behind (UniEval 64%, BARTScore 44%, ROUGE-1 26%). Use an LLM judge, and start with
+    gemma_l ($0.0278 for 100 articles), the cheapest judge the leader openai_l cannot be separated from.
+    (REPORT_SUMMEVAL, executive summary.)
+  promoted_run: se_gemma_l_n100_v1_20261018T094137Z

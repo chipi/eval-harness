@@ -1,0 +1,14 @@
+round_id: r1
+goal: news_summary_cnn
+dataset_id: cnn_dailymail_200
+hypothesis: Which of 24 hosted LLMs (8 vendors × 3 price tiers) and local BART summarisers covers a CNN
+  article's gold highlights best, and at what cost?
+status: closed
+opened_at: '2026-09-25T23:26:25Z'
+closed_at: '2026-09-30T09:45:18Z'
+conclusion:
+  text: 'On coverage, bart_l (BART-large-CNN, $0, 11.0 s per article on a 12-core Mac CPU) scores 0.3461
+    and the best hosted arm, deepseek_m ($191 per 1M articles, 1.6 s), 0.3460: not separated (p = 0.99).
+    Use bart_l if you can run a free 1.6 GB model on CPU and your text looks like CNN news; rent deepseek_m
+    if you need speed; do not buy anthropic_l. (REPORT_SUMMARIZATION, executive summary.)'
+  promoted_run: cnn_bart_l_n200_v1_20260926T153757Z

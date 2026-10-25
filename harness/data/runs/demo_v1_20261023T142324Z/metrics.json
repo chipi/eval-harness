@@ -1,0 +1,83 @@
+{
+  "adapter": "scripts/adapter.py",
+  "build": {
+    "dirty": false,
+    "ref": "68dc55b45c826943e4a56870c488d97e0cf66bef",
+    "source": "git"
+  },
+  "config_id": "demo_v1",
+  "created_at": "2026-10-23T14:23:24Z",
+  "dataset_id": "smoke_v1",
+  "fingerprint": {
+    "arm": {
+      "config_id": "demo_v1",
+      "params": {
+        "provider": "echo",
+        "sentences": 3
+      }
+    },
+    "data": {
+      "dataset_id": "smoke_v1",
+      "items_sha256": "d56cca0b6c3cea45f104e938e41b7ebdffa753e99e219bf15e1028f23a98a8e9",
+      "n_items": 5,
+      "reference_id": "silver/smoke_v1",
+      "reference_tier": "silver",
+      "references_sha256": "53ea94646f17bf2867a8572696b30623563a2d09828989e56cd1d11f8b910ead"
+    },
+    "hash": "09f9130688c1808660f4974780099de7e04b1808072a2db22c43eceea723a860",
+    "host": {
+      "cpu_count": 32,
+      "label": null,
+      "platform": "Linux/x86_64",
+      "processor": null,
+      "python": "3.11.17",
+      "release": "7.2.5-3-omarchy"
+    },
+    "instrument": {
+      "adapter": {
+        "id": "scripts/adapter.py",
+        "sha256": "7026de2eaed3f9e9d7f5fab59677f5201f74683d2ae6ed826f7d2d365a64835a"
+      },
+      "harness": {
+        "code_sha256": "57daa50689b238eb2f37f19b2fbeb2682f6482c80b982a17a34519a26de88086",
+        "commit": "68dc55b45c82",
+        "dirty": false,
+        "installed": false,
+        "version": "0.4.0"
+      }
+    },
+    "system_under_test": {
+      "libraries": {
+        "anthropic": "1.15.0",
+        "numpy": "2.4.6",
+        "openai": "3.33.0",
+        "rouge-score": "0.1.2"
+      },
+      "model": {
+        "identity_declared": false
+      }
+    },
+    "version": 4
+  },
+  "metric_directions": {},
+  "metric_kinds": {
+    "resumed": "descriptive"
+  },
+  "n_items": 5,
+  "params": {
+    "provider": "echo",
+    "sentences": 3
+  },
+  "primary_metric": "overlap_f1",
+  "providers_seen": {},
+  "reference_tier": "silver",
+  "run_id": "demo_v1_20261023T142324Z",
+  "scores": {
+    "cost_usd": 0.0,
+    "latency_ms": 0.009,
+    "output_words": 34.8,
+    "overlap_f1": 0.415895,
+    "resumed": 0.0,
+    "total_cost_usd": 0.0
+  }
+}

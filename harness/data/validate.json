@@ -1,0 +1,41 @@
+{
+  "_comment": [
+    "What `validate` holds THIS project to. Project policy, read by scripts/validate_tree.py;",
+    "a project without this file has its git-tracked runs* directories checked, no floors,",
+    "no scorer sources and only the bundled demo's duplicate exception.",
+    "",
+    "  committed       the run directories reports cite: V7 (every run has metrics.json),",
+    "                  V8 (no duplicate config_id) and V9 (every tracked file on disk)",
+    "  floors          V9: each directory must keep at least this many runs, so deleting",
+    "                  evidence fails; raising one is a deliberate edit",
+    "  scorer_sources  V10: runs that claim the current scorer, and the code that says what",
+    "                  the current scorer is. module is a .py path relative to this project's",
+    "                  root; callable returns a hash or a dict of named hashes",
+    "  duplicate_ok    V8: (dataset_id, config_id) pairs allowed to repeat, each one justified"
+  ],
+  "committed": ["runs", "runs-pair", "runs-repeats", "runs-linux",
+                "runs-judged/judge-summ-v1", "runs-judged/judge-summ-v2", "runs-judged/judge-summ-pointwise-v1",
+                "runs-adjudicated", "runs-silver"],
+  "floors": {
+    "runs": 174,
+    "runs-pair": 6,
+    "runs-repeats": 3,
+    "runs-linux": 9,
+    "runs-judged/judge-summ-v1": 29,
+    "runs-judged/judge-summ-v2": 29,
+    "runs-judged/judge-summ-pointwise-v1": 2,
+    "runs-adjudicated": 30,
+    "runs-silver": 29
+  },
+  "scorer_sources": [
+    {"dir": "runs", "glob": "fn_*", "path": ["derived", "with", "scorer"],
+     "module": "../examples/ner-few-nerd/adapter.py", "callable": "scorer_id"},
+    {"dir": "runs", "glob": "sf_*", "path": ["derived", "with", "scorer_sha256"],
+     "module": "../examples/_shared/retrieval.py", "callable": "scorer_sha256"},
+    {"dir": "runs-pair", "glob": "sf_*", "path": ["derived", "with", "scorer_sha256"],
+     "module": "../examples/_shared/retrieval.py", "callable": "scorer_sha256"},
+    {"dir": "runs-repeats", "glob": "sf_*", "path": ["derived", "with", "scorer_sha256"],
+     "module": "../examples/_shared/retrieval.py", "callable": "scorer_sha256"}
+  ],
+  "duplicate_ok": []
+}

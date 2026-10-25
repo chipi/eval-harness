@@ -21,3 +21,4 @@ params:
   prompt_file: prompt.txt
   max_tokens: 1500
   inputs: published
+goal: summary_judge_summeval

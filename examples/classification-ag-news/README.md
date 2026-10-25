@@ -4,7 +4,7 @@ One task — put a news article into one of four topics — measured across 24 h
 from 8 vendors, three fine-tuned classifiers (44 MB and 2 × 438 MB), a zero-shot NLI
 model, a hand-written rule set, and a constant.
 
-> **Result, updated 2026-09-30, corrected 2026-10-19:** the three fine-tunes lead on the
+> **Result:** the three fine-tunes lead on the
 > point estimate (`bert_base_ta` 0.9600, `bert_base_fy` 0.9500, `bert_mini` 0.9450) against
 > a hosted field of 0.835–0.910. Only `bert_base_ta` is separated from 26 of the 29 other
 > arms (not from the other two fine-tunes or `anthropic_m`); `bert_mini` is separated from 16
@@ -14,8 +14,10 @@ model, a hand-written rule set, and a constant.
 > models zero-shot, one prompt, no label definitions or examples, temperature 0, reasoning
 > off, no provider pinned. See
 > [`REPORT_CLASSIFICATION.md`](../../research/REPORT_CLASSIFICATION.md) §3.1 and §3.4. The
-> two bert-base arms need torch ≥ 2.6 (`uv sync --extra local` resolves it everywhere but
-> x86_64 macOS).
+> two bert-base arms' `main` revisions need torch ≥ 2.6 (`uv sync --extra local` resolves it
+> everywhere but x86_64 macOS); their safetensors conversion PRs (`refs/pr/1`) load on torch
+> 2.2.2 and give the same output on all 200 items
+> ([`docs/evidence/conversion_pr_check.json`](../../docs/evidence/conversion_pr_check.json)).
 
 It is the second worked example for [`../../harness`](../../harness), and it exists
 because classification breaks things the summarisation example never touched. The
@@ -116,8 +118,8 @@ $PY scripts/experiment_run.py --config $CFG/arm_deepseek_m_n200.yaml --dry-run
 $PY scripts/experiment_run.py --config $CFG/arm_deepseek_m_n200.yaml
 
 $PY scripts/leaderboard.py --dataset-id ag_news_200
-$PY scripts/classification_report.py --dataset-id ag_news_200
-$PY scripts/classification_report.py --dataset-id ag_news_200 --arm ag_keyword_n200_v1
+$PY tools/classification_report.py --dataset-id ag_news_200
+$PY tools/classification_report.py --dataset-id ag_news_200 --arm ag_keyword_n200_v1
 ```
 
 The hosted arms need one `OPENROUTER_API_KEY` in `../../harness/.env` (copy
@@ -167,7 +169,7 @@ interpretation, and would sit in the leaderboard looking exactly as authoritativ
 real thing.
 
 So accuracy stays the per-item metric and the ranking metric, every prediction is recorded
-in `meta.predicted`, and `scripts/classification_report.py` builds the confusion matrix,
+in `meta.predicted`, and `tools/classification_report.py` builds the confusion matrix,
 macro-F1 and per-class precision/recall from the stored predictions. **This is a real
 limitation of the harness, written down rather than papered over.**
 

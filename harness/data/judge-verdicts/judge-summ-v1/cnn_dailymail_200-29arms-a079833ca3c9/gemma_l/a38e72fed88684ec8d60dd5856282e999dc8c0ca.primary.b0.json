@@ -10,6 +10,8 @@
   "latency_ms": null,
   "n": 15,
   "output": "```json\n{\n  \"coherence\": [5, 5, 5, 3, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5],\n  \"consistency\": [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 4, 5, 5, 5, 5],\n  \"fluency\": [5, 5, 5, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5],\n  \"relevance\": [5, 5, 3, 3, 5, 5, 4, 4, 4, 5, 4, 4, 5, 4, 4]\n}\n```",
+  "output_sha256": "6172613230fff864a68efb4fad7860335635d4397b81ea967a4e0fa5e3e8614e",
+  "output_withheld": false,
   "pass": "primary",
   "prompt_sha256": "a12f0ec956655d066d640cede0811f33d1ea9b06245a1da38d7e2646a1f3d2ba",
   "provider": "CoreWeave",

@@ -1,0 +1,11 @@
+The user wants a 2-3 sentence news wire style summary of this article. The article is about people surviving being stranded at sea, featuring several examples: Louis Jordan (66 days adrift, rescued off NC coast), Jose Salvador Alvarenga (13-14 months adrift in Pacific), Ron Ingraham (12 days off Hawaii), Adrian Vasquez (26 days off Panama), and Hiromitsu Shinkawa (swept out to sea by the 2011 Japan tsunami).
+
+A news wire summary should be terse and capture the essence. The article's main point: rare cases of people surviving long stretches stranded at sea, relying on ingenuity and luck. Key examples include Jordan rescued after ~2 months, Alvarenga surviving over a year, etc.
+
+Let me draft:
+
+"The article recounts several remarkable tales of survival at sea, including Louis Jordan, rescued after 66 days adrift off the Carolinas, and Jose Salvador Alvarenga, who survived more than a year drifting across the Pacific. Other cases include Hawaiian fisherman Ron Ingraham, found after 12 days, Panamanian teenager Adrian Vasquez, rescued after 26 days, and Japanese man Hiromitsu Shinkawa, swept nine miles offshore by the 2011 tsunami. All survived through rationing, resourcefulness and luck."
+
+That's 3 sentences. Terse wire style. Maybe tighten it. Wire summaries often start with the news peg. The article is a feature, so the summary should convey it's a roundup of survival stories.
+
+Keep it 2-3 short sentences. OutputCNN rounds up remarkable real-life tales of survival at sea, including Louis Jordan, rescued after 66 days adrift off the Carolinas, and Jose Salvador Alvarenga, who drifted across the Pacific for over a year. Other survivors include Hawaiian fisherman Ron Ingraham, found after 12 days, and Panamanian teen Adrian Vasquez, rescued after 26 days. All endured by rationing scarce food and water and relying on ingenuity and luck.

@@ -12,7 +12,7 @@ each dataset's own page is what binds.*
 | | in this repository | you download |
 |---|---|---|
 | **The corpora** (articles, snippets, abstracts, sentences) | **no** | yes, with each example's `fetch.py`, from the public source |
-| **Gold and silver references** for the six experiments | **no** | rebuilt by `fetch.py`, byte for byte (seeded) |
+| **Gold and silver references** for the six experiments | **no**, only each gold reference's `manifest.json` (the checksum of every item) | rebuilt by `fetch.py`, byte for byte (seeded); `evh validate` checks the copy against the manifest |
 | **Run outputs** (`outputs/`, `predictions.jsonl`) | **yes**: what each system produced, and its scores | — |
 | **Scores, costs, fingerprints** (`metrics.json`) | yes | — |
 | **Demo and tutorial data** (`harness/data/sources`, `harness/tutorial/`) | yes: synthetic or invented, written for this repository | — |
@@ -79,7 +79,7 @@ carry use conditions. Each is listed, read from the publisher, in
 ## Your own data
 
 When you point the harness at your own system, your data stays where you put it: datasets,
-references and runs are files under `harness/data/`. It goes nowhere unless you configure
+references and runs are files under your project's `data/` directory (or `EVAL_HOME`). It goes nowhere unless you configure
 a hosted model, and then each item is sent to that provider (via OpenRouter or your own gateway),
 under that provider's terms. Read them before you send anything confidential, and prefer a
 local model for data that cannot leave your machine.

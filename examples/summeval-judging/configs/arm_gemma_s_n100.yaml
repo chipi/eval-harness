@@ -18,3 +18,4 @@ params:
   usd_per_mtok_out: 0.15
   prompt_file: prompt.txt
   max_tokens: 1500
+goal: summary_judge_summeval

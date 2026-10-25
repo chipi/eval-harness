@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "goal",
+  "description": "What an evaluation is FOR: who uses the output, the decision it informs, the measure that decides, and the data that stands for the use. One file per goal, data/goals/<goal_id>.yaml. Runs and baselines name it with `goal:`. Projects may add fields; these are the ones the harness reads.",
+  "type": "object",
+  "required": ["goal_id", "title", "statement", "decision", "success_criteria", "datasets"],
+  "properties": {
+    "goal_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9_]*$", "description": "Permanent; equals the file name. A materially different purpose is a new goal."},
+    "schema_version": {"type": "string"},
+    "title": {"type": "string"},
+    "statement": {"type": "string", "description": "One sentence: X for Y so that Z."},
+    "status": {"enum": ["active", "draft", "exploratory", "dormant", "superseded"]},
+    "superseded_by": {"type": "string"},
+    "context": {"type": "object", "properties": {"audience": {"type": "string"}, "usage": {"type": "string"}}},
+    "decision": {"type": "string", "description": "The decision an answer to this goal informs."},
+    "output_contract": {
+      "type": "array",
+      "description": "Every output shape the goal accepts. A run that declares a `format` must match one.",
+      "items": {"type": "object", "required": ["format"], "properties": {
+        "id": {"type": "string"}, "format": {"type": "string"}, "length": {"type": "string"},
+        "structure": {"type": "string"}, "language": {"type": "string"}}}
+    },
+    "success_criteria": {
+      "type": "object",
+      "required": ["primary"],
+      "properties": {
+        "primary": {"type": "object", "required": ["measure", "direction"], "properties": {
+          "measure": {"type": "string", "description": "The per-item metric that decides, as runs record it."},
+          "direction": {"enum": ["higher", "lower", "non_inferior"], "description": "higher or lower ranks the arms; non_inferior is a guard (no significant drop against a baseline) and ranks nothing."},
+          "threshold": {}}},
+        "axes": {
+          "type": "object",
+          "description": "What the goal weighs beside quality (ADR-0006). cost (cost_usd, tokens beside it) and speed (latency_ms on its p95) are built in and need no entry; an entry adds a limit, a role or another measure. Any other name is the project's own axis: a per-item metric its runs record. `quality` takes a limit only.",
+          "properties": {
+            "quality": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "The primary measure as an axis: it takes a limit and a margin only (its measure and direction are success_criteria.primary's).",
+              "properties": {
+                "limit": {"type": "number", "description": "An arm past it is out, with the reason."},
+                "margin": {"type": "number", "minimum": 0, "description": "How far from the leader an arm the paired test does not separate may be and still count as tied under balanced (default: 2% of the leader's mean; 2% of the group's range when the leader is 0)."},
+                "note": {"type": "string"}
+              }
+            }
+          },
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "measure": {"type": "string", "minLength": 1, "description": "The per-item metric, as runs record it. Built-ins default to cost_usd and latency_ms; a project axis defaults to its own name."},
+              "direction": {"enum": ["higher", "lower"], "description": "Which way is better; a project axis defaults to the adapter's METRIC_DIRECTIONS, else higher."},
+              "stat": {"enum": ["mean", "p50", "p95"], "description": "What a limit and the tie-break read: speed defaults to p95, everything else to mean."},
+              "limit": {"type": "number", "description": "An arm past it is out, with the reason (lower: above it; higher: below it)."},
+              "role": {"enum": ["show", "ignore"], "description": "ignore: the goal does not weigh it (an overnight batch: speed)."},
+              "unit": {"type": "string"},
+              "note": {"type": "string", "description": "What a reader needs to know about the axis, in words."}
+            }
+          }
+        },
+        "strategy": {"enum": ["balanced", "quality_first", "frugal"], "description": "How the axes become a recommendation (ADR-0006): who counts as tied with the quality leader. balanced (default): not separated AND within the quality margin; quality_first: the same quality only; frugal: anything the paired test cannot separate."},
+        "tie_break": {"type": "array", "items": {"type": "string"}, "description": "Among the arms tied with the quality leader, the axes that pick, in order (default: cost, then speed). `quality` may be one: [cost, quality] is the cheapest, then the best of the equally cheap."},
+        "guardrails": {
+          "type": "array",
+          "description": "Rules in words that no number checks (a deployment constraint, a gate run elsewhere): shown on the goal page with their source.",
+          "items": {"type": "object", "required": ["name", "rule"], "additionalProperties": false, "properties": {
+            "name": {"type": "string"}, "rule": {"type": "string"}, "source": {"type": "string"}}}
+        },
+        "min_items": {"type": "integer", "minimum": 1, "description": "The fewest shared items a winner-picking comparison may rest on."}
+      },
+      "additionalProperties": false
+    },
+    "datasets": {
+      "type": "array",
+      "description": "The data that stands for the use. Empty for a goal checked by a gate rather than measured on a dataset.",
+      "items": {"type": "object", "required": ["dataset_id"], "properties": {
+        "dataset_id": {"type": "string"},
+        "role": {"type": "string", "description": "dev, heldout, smoke, generalization, ...: shown beside the dataset."},
+        "decides": {"type": "boolean", "description": "false: the goal never decides on this dataset (a dev slice, a generalization check). Its groups are shown with their leader, never a recommendation, and the home page's glance leaves it out. Default true."},
+        "notes": {"type": "string"}}}
+    },
+    "references": {"type": "array", "items": {"type": "object", "properties": {
+      "reference_id": {"type": "string"}, "tier": {"type": "string"}, "format": {"type": "string"}}}},
+    "measures": {"type": "array", "items": {"type": "object", "properties": {
+      "id": {"type": "string"}, "kind": {"type": "string"}, "validity": {"type": "string"}}}},
+    "links": {"type": "array", "items": {"type": "object", "properties": {"url": {"type": "string"}, "note": {"type": "string"}}}}
+  }
+}

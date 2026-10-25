@@ -23,3 +23,4 @@ params:
   top_k: 100
   query_prefix: "Represent this sentence for searching relevant passages: "
   doc_prefix: ""
+goal: scientific_retrieval_scifact

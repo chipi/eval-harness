@@ -31,3 +31,4 @@ params:
   device: cpu
   precision: fp32
   hypothesis_template: "This text is about {}."
+goal: entity_topic_dbpedia

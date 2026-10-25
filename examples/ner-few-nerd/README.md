@@ -37,7 +37,7 @@ uv run fetch.py --n 56        # the dev slice, a strict PREFIX of the 280
 ```
 
 `uv sync` without `--extra local` provisions only the hosted arms, and the two ML arms then
-fail at import. That is how the DBpedia zero-shot arm was lost for a sweep.
+fail at import.
 
 Texts land in `../../harness/data/sources/few_nerd_<n>/`, gold in
 `../../harness/data/references/gold/few_nerd_<n>/`. A gold file holds a **JSON array of
@@ -94,16 +94,14 @@ done
 ```
 
 ~14 minutes per hosted arm; the two ML arms are free and run on CPU. The whole measurement
-sweep billed **$2.61** ($2.05 by the configs' price tables, which were wrong — see the
-report's Correction).
+sweep billed **$2.61**.
 
-Then the analysis — all of it $0, all of it from stored outputs:
+Then the analysis — all of it $0, all of it from the stored runs:
 
 ```bash
-python scripts/rescore.py --dataset-id few_nerd_280 --match fn_ --out data/runs-rescored
-EVAL_RUNS_DIR=data/runs-rescored python scripts/extraction_report.py --dataset-id few_nerd_280 --match fn_
+python tools/extraction_report.py --dataset-id few_nerd_280 --match fn_
 python scripts/family_test.py --dataset-id few_nerd_280 --a fn_span_marker_n200_v1 \
-    --against _n200_v1 --metric f1 --runs-dir data/runs-rescored
+    --against _n200_v1 --metric f1
 ```
 
 ---
@@ -124,8 +122,8 @@ python scripts/family_test.py --dataset-id few_nerd_280 --a fn_span_marker_n200_
 The first row is the one people get wrong by leaving precision undefined and dropping the
 item — which would delete exactly the items where a hallucinating arm should be punished.
 
-The last row exists because the first version did not have it, and an arm whose output
-could not be read arrived at the scorer as an empty list and collected the full 1.0. See
+The last row matters because an unreadable output would otherwise reach the scorer as an
+empty list and collect the full 1.0 on empty-gold items. See
 [the report](../../research/REPORT_NER.md) §6.
 
 ### Matching is one-to-one
@@ -153,10 +151,9 @@ detection problem. `capitalized` is the extreme: untyped **0.6191**, typed **0.1
 
 ### The scorer is fingerprinted, all of it
 
-`normalizer_sha256` covered only the string normaliser, on the reasoning that a normaliser
-has the most room to move a score. The reasoning was right and the scope was wrong — the
-bug above lived in the matcher. `scorer_sha256` now covers normalisation, member coercion,
-matching, the per-item rule and the metric block together.
+`scorer_sha256` covers normalisation, member coercion, matching, the per-item rule and the
+metric block together; `normalizer_sha256` alone would miss a change in the matcher, which
+is where the unreadable-output case above is decided.
 
 ---
 
@@ -188,9 +185,9 @@ as `person`, a football league as an `event`, a diuretic as `other`.
 a JSON array of ~2.7 objects rather than one word. One arm still ran out of it — see the
 report §3.7.
 
-**The GLiNER/SpanMarker pair is the control in this example, not a matched pair.** The
-DBpedia example could not run a fine-tuned ML arm at all, so its ML-vs-LLM question went
-unanswered. Here both load. They differ in exposure to Few-NERD's training split, and also
+**The GLiNER/SpanMarker pair is the control in this example, not a matched pair.** On
+DBpedia the fine-tuned arm joined the top group without leading it. Here both span taggers
+load. They differ in exposure to Few-NERD's training split, and also
 in architecture and encoder (a span classifier on RoBERTa against a label-prompted matcher
 on DeBERTa-v3), so the gap between them is exposure plus architecture; how it splits is
 not measured. The ML-vs-LLM answer rests on `span_marker` against the 24 hosted arms.
@@ -210,9 +207,7 @@ capitalized   0.1913   $0
 nothing       0.1250   $0        = the rate at which an empty answer is correct
 ```
 
-Costs are what the provider **billed** (`usage.cost`). An earlier version of this
-block used this repo's price table, which understated the cheap arms and inflated the
-spread to 121×.
+Costs are what the provider **billed** (`usage.cost`).
 
 Three things worth reading the report for:
 

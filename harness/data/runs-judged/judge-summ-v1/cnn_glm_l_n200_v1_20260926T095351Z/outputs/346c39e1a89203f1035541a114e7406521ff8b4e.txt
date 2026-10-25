@@ -1,0 +1,12 @@
+The user wants a 2-3 sentence news wire style summary of this article. Key facts:
+- UNRWA Commissioner-General Pierre Krähenbühl making emergency visit to Yarmouk Palestinian refugee camp in Syria on Saturday
+- 18,000 civilians remain, including 3,500 children
+- Camp controlled mostly by ISIS and Al-Nusra Front (90%)
+- Population dropped from 160,000 to 18,000
+- Cut off from aid since November 2013, reports of malnutrition
+
+Terse news wire style. Let me draft:
+
+"The head of the U.N. relief agency for Palestinian refugees will make an emergency visit Saturday to Syria's Yarmouk camp, where 18,000 civilians, including 3,500 children, remain amid fighting. ISIS and Al-Nusra Front militants control some 90% of the camp, which has been largely cut off from aid since November 2013. The camp's population has fallen from 160,000 to about 18,000 since the Syrian conflict began in 2011."
+
+That's three sentences, terse, wireThe head of the U.N. Palestinian refugee agency will make an emergency visit Saturday to Syria's Yarmouk camp, where 18,000 civilians, including 3,500 children, remain amid the conflict. ISIS and Al-Nusra Front militants control about 90% of the camp, which has been largely cut off from aid since November 2013. The camp's population has fallen from 160,000 to roughly 18,000 since fighting began in 2011.

@@ -1,0 +1,59 @@
+// evals.alloy — log rules for this repo's `evals-nginx` and `evals-inspector` containers, as a drop-in for the
+// prod VPS's shared node Alloy (/opt/vps-observability/config.d/, podcast_scraper ADR-121).
+// Installed by infra/deploy/install_alloy.sh (copied from chipi/humancopilot.eu), which validates the WHOLE config.d set with this
+// file before installing and rolls back if Alloy refuses the reload.
+//
+// References components that base.alloy defines (do not redefine them here):
+//   discovery.docker "app"  — the Docker-socket container discovery
+//   loki.write "logs_sink"  — the VictoriaLogs sink (sets environment/instance)
+// Everything else is self-contained (like orrery.alloy), so this file deploys independently.
+//
+// What ships: nginx's one-JSON-line-per-request access log (infra/nginx/nginx.conf `site_json`)
+// and its error log, and the inspector's own lines (one per /api/ request, plain text, so they
+// pass the json stage unchanged and carry no `site` label; `container` tells them apart). Labels: app=evals, surface=web, service=evals-web, and `site` = the
+// request's Host (a handful of domains, so a safe stream label). The edge's view of the same
+// requests is already shipped by base.alloy from /var/log/caddy/access.log (job=caddy).
+
+discovery.relabel "evals" {
+	targets = discovery.docker.app.targets
+	rule {
+		source_labels = ["__meta_docker_container_name"]
+		regex         = "/evals-(nginx|inspector)"
+		action        = "keep"
+	}
+	rule {
+		source_labels = ["__meta_docker_container_name"]
+		regex         = "/(.*)"
+		target_label  = "container"
+		replacement   = "$1"
+	}
+}
+
+loki.source.docker "evals" {
+	host       = "unix:///var/run/docker.sock"
+	targets    = discovery.relabel.evals.output
+	forward_to = [loki.process.evals.receiver]
+	labels     = {app = "evals", surface = "web"}
+}
+
+loki.process "evals" {
+	// Access lines are JSON; error-log lines are not and pass through unchanged.
+	stage.json {
+		expressions = {site = "host"}
+	}
+	stage.labels {
+		values = {site = ""}
+	}
+	forward_to = [loki.relabel.evals_naming.receiver]
+}
+
+// service = <app>-<surface>, the homelab LOG-STANDARD key shared with traces and metrics.
+loki.relabel "evals_naming" {
+	rule {
+		source_labels = ["app", "surface"]
+		separator     = "-"
+		regex         = "(.+-.+)"
+		target_label  = "service"
+	}
+	forward_to = [loki.write.logs_sink.receiver]
+}

@@ -353,3 +353,32 @@ METRIC_KINDS = {
     "llm_named_unknown": "descriptive",
     "llm_parsed": "descriptive",
 }
+
+#: What each metric measures, for the catalog's metric pages. Documentation, so it never
+#: moves the adapter's code hash.
+METRIC_DESCRIPTIONS = {
+    "ndcg_10": {
+        "summary": "nDCG@10: how high the relevant documents sit in the first 10, against the best possible order.",
+        "details": "Gain 2^grade − 1 per relevant document (grade above 0), discounted by log2 of "
+        "rank + 1, divided by the ideal ordering's DCG. Ids are normalised and duplicates "
+        "collapsed (first occurrence wins); an id that is not a corpus document keeps its slot "
+        "and earns nothing. An unreadable reply scores 0.",
+    },
+    "recall_10": "Share of the query's relevant documents found in the first 10.",
+    "recall_100": "Share of the query's relevant documents found in the first 100.",
+    "mrr_10": "Reciprocal rank of the first relevant document if it is in the first 10, else 0.",
+    "rank_of_first": "Rank of the first relevant document anywhere in the list, 0 when none was "
+    "returned. Descriptive: 0 means never found, so it must not be averaged as a rank.",
+    "found_any": "1 when any relevant document appears anywhere in the returned list.",
+    "n_returned": "How many distinct document ids the ranking returned.",
+    "n_relevant": "How many documents are judged relevant (grade above 0) for the query.",
+    "unknown_ids": "Ids in the ranking that are not corpus documents: an LLM inventing documents "
+    "rather than reordering them. They keep their slot.",
+    "duplicate_ids": "Ids the ranking repeated; only the first occurrence counts.",
+    "llm_parsed": "1 when the reranking LLM's reply was a readable ordering. The pipeline always "
+    "ranks (BM25's order stands when the LLM fails), so this says whether the LLM contributed.",
+    "llm_named_unknown": "Ids the reranking LLM named that were not among the candidates it was "
+    "shown: invented or out-of-list documents, which are dropped from its ordering.",
+    "parsed": "Whether the reply could be read as an answer in the task's format: 1 or 0 per item, so its mean is the share readable (for the SummEval judges, the share of the four dimensions that came back readable). An unreadable reply scores 0 on the quality metrics, never skipped.",
+    "truncated": "1 when the provider cut the reply off at the token ceiling (finish_reason \"length\", and in most adapters a completion that reached 98% of max_tokens), else 0. An arm with truncated above 0 has scores that partly describe the ceiling, not the model.",
+}

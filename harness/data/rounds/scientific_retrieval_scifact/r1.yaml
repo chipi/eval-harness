@@ -1,0 +1,14 @@
+round_id: r1
+goal: scientific_retrieval_scifact
+dataset_id: scifact_200
+hypothesis: Which first stage (BM25, four bi-encoders) and which of the 12 cheapest hosted LLMs reranking
+  BM25's top 20 retrieves the evidence for a scientific claim best, and at what cost?
+status: closed
+opened_at: '2026-09-28T17:46:06Z'
+closed_at: '2026-09-28T22:01:30Z'
+conclusion:
+  text: e5_base (e5-base-v2, MIT, 438 MB, CPU, $0 per query) scores 0.7191, +0.0740 over BM25, and is
+    not separated from any of the twelve BM25-then-rerank pipelines. Build e5_base retrieval first; add
+    an LLM reranker on its top 20 only if about +0.07 nDCG@10 is worth about $732 per 1M queries. (REPORT_RETRIEVAL,
+    executive summary.)
+  promoted_run: sf_e5_base_n200_v1_20260928T174656Z

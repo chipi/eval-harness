@@ -100,20 +100,70 @@ _PIPE: Any = None
 _PIPE_KEY: Optional[tuple] = None
 
 
+class _Summarizer:
+    """What transformers 4.x's `pipeline("summarization")` did, step for step; transformers 5
+    removed that task. The committed runs were made through it, so this keeps its behaviour:
+
+    - generation settings: the pipeline's default (max_new_tokens=256, num_beams=4), every value
+      the checkpoint's generation_config sets away from the library default laid over it, the
+      256 dropped when the checkpoint sets its own max_length, then the config's legacy
+      task_specific_params["summarization"] (its `prefix` goes before the text);
+    - one text, no padding, `token_type_ids` dropped; decoded skipping special tokens, without
+      clean_up_tokenization_spaces.
+
+    The reruns check it: every BART arm must score item for item what the pipeline scored.
+    """
+
+    def __init__(self, model: str, revision: Optional[str], device: Any) -> None:
+        import copy  # noqa: PLC0415
+
+        from transformers import AutoModelForSeq2SeqLM, AutoTokenizer, GenerationConfig  # noqa: PLC0415
+
+        kw = {"revision": revision} if revision else {}
+        self.tokenizer = AutoTokenizer.from_pretrained(model, **kw)  # reproduce.py pins the revision (local_models.json)  # nosec B615
+        self.model = AutoModelForSeq2SeqLM.from_pretrained(model, **kw)  # reproduce.py pins the revision (local_models.json)  # nosec B615
+        self.device = device
+        if device is not None:
+            self.model.to(device)
+        default, library = GenerationConfig(max_new_tokens=256, num_beams=4), GenerationConfig()
+        gen = copy.deepcopy(default)
+        for key, value in self.model.generation_config.__dict__.items():
+            if key.startswith("_") or key == "transformers_version":
+                continue
+            if getattr(gen, key, None) == getattr(library, key, None) and value != getattr(library, key, None):
+                setattr(gen, key, value)
+        if gen.max_new_tokens == default.max_new_tokens and gen.max_length not in (None, 20):
+            gen.max_new_tokens = None
+        self.prefix = getattr(self.model.config, "prefix", None) or ""
+        task = dict((getattr(self.model.config, "task_specific_params", None) or {}).get("summarization") or {})
+        if "prefix" in task:
+            self.prefix = task.pop("prefix") or ""
+        gen.update(**task)
+        if self.tokenizer.pad_token_id is not None and gen.pad_token_id is None:
+            gen.pad_token_id = self.tokenizer.pad_token_id
+        self.generation_config = gen
+
+    def __call__(self, text: str, truncation: bool = False, **generate_kwargs: Any) -> list:
+        """[{"summary_text": ...}] for one text, as the pipeline returned it."""
+        inputs = self.tokenizer(self.prefix + text, padding=False, truncation=truncation, return_tensors="pt")
+        inputs.pop("token_type_ids", None)
+        if self.device is not None:
+            inputs = inputs.to(self.device)
+        ids = self.model.generate(**inputs, generation_config=self.generation_config, **generate_kwargs)
+        summary = self.tokenizer.decode(ids[0], skip_special_tokens=True, clean_up_tokenization_spaces=False)
+        return [{"summary_text": summary}]
+
+
 def _local_pipeline(params: Dict[str, Any]) -> Any:
     global _PIPE, _PIPE_KEY
     key = (params.get("model"), params.get("revision"), params.get("device"))
     if _PIPE is not None and _PIPE_KEY == key:
         return _PIPE
     from hf_identity import apply_precision  # noqa: PLC0415
-    from transformers import pipeline  # noqa: PLC0415 - only when an arm asks
 
-    kwargs: Dict[str, Any] = {"model": params["model"]}
-    if params.get("revision"):
-        kwargs["revision"] = params["revision"]
-    if params.get("device"):
-        kwargs["device"] = params["device"]
-    _PIPE = apply_precision(pipeline("summarization", **kwargs), params.get("precision"))
+    _PIPE = apply_precision(
+        _Summarizer(params["model"], params.get("revision"), params.get("device")), params.get("precision")
+    )
     # TEACH THE TOKENIZER ITS OWN LIMIT. `truncation=True` truncates to the TOKENIZER's
     # model_max_length, and bart-large-cnn's tokenizer_config.json does not set one -- so
     # it reports HuggingFace's VERY_LARGE_INTEGER sentinel (~1e30) and "truncate" becomes a
@@ -757,4 +807,38 @@ METRIC_KINDS = {
     "fmt_bullets": "descriptive",
     "fmt_paragraphs": "descriptive",
     "fmt_overlong": "descriptive",
+}
+
+#: What each metric measures, for the catalog's metric pages. Documentation, so it never
+#: moves the adapter's code hash.
+METRIC_DESCRIPTIONS = {
+    "coverage": {
+        "summary": "ROUGE-Lsum recall with the summary cut to the reference's length: did it carry the story.",
+        "details": "The summary is clipped to as many words as the gold summary has, then scored "
+        "for ROUGE-Lsum recall against it (sentences split here, stemming on). Writing more cannot "
+        "buy coverage; only putting the important facts first can. Read beside concision, which "
+        "rewards the opposite.",
+    },
+    "concision": "ROUGE-Lsum precision over the whole summary: the share of what was written that "
+    "matches the reference. Padding lowers it.",
+    "rouge1": "ROUGE-1 F1 against the reference, for comparison with published CNN/DailyMail "
+    "results. Rises with length; read after coverage and concision.",
+    "rougeLsum": "ROUGE-Lsum F1 against the reference (per-sentence longest common subsequence), "
+    "the CNN/DailyMail literature's figure. Rises with length.",
+    "grounding": "Share of the summary's distinct word bigrams that appear in the article: high "
+    "is extractive, low means the summary left the source (a paraphrase or a fabrication).",
+    "compression": "Summary words divided by article words: a description, not a quality.",
+    "length_vs_reference": "Summary words divided by reference words: 1 means as long as the "
+    "human's. A verbose winner shows here.",
+    "summary_words": "How many whitespace-separated words the summary had.",
+    "reference_words": "How many words the gold summary has.",
+    "fmt_narration": "1 when the output thinks out loud (\"the user wants\", \"let me draft\", "
+    "think tags) instead of only summarising: its quality numbers describe something else.",
+    "fmt_label": "1 when the output opens with a label such as \"Summary:\" the prompt did not ask for.",
+    "fmt_markdown": "1 when the output opens with markdown (bold, a heading, a quote) the prompt did not ask for.",
+    "fmt_bullets": "1 when the output has bullet lines where the prompt asks for sentences.",
+    "fmt_paragraphs": "1 when the output has more than one paragraph where the prompt asks for 2-3 short sentences.",
+    "fmt_overlong": "1 when the output runs past 90 words where the prompt asks for 2-3 short sentences.",
+    "truncated": "1 when the provider cut the reply off at the token ceiling (finish_reason \"length\", and in most adapters a completion that reached 98% of max_tokens), else 0. An arm with truncated above 0 has scores that partly describe the ceiling, not the model.",
+    "input_truncated": "1 when a local model saw only part of the article, because it was longer than the model's encoder window (1,024 tokens for BART) and was cut, else 0. Those items are a different task from the hosted arms' full-article ones.",
 }

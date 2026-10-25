@@ -34,7 +34,7 @@
       "reference_tier": "gold",
       "references_sha256": "7b5e618e23b7f2b222665d83e99006eb0e9a51066e63e2e5ff8c51ae3c696c21"
     },
-    "hash": "9dad10943fe85932c5d0722c25146e3de994ce4a65cf562d544448226114fee5",
+    "hash": "8950c94ef9333e11fb3c23c55f18e23f03fb0d0b26d4a42d24f8adf2762bd92b",
     "host": {
       "cpu_count": 32,
       "label": "omarchy",
@@ -46,7 +46,7 @@
     "instrument": {
       "adapter": {
         "id": "examples/summeval-judging/adapter.py",
-        "sha256": "e66dc38feb3e24674f62b48e61156d57a0d358f94bd718874849adb0a43c6537"
+        "sha256": "b757ca07e3388b96f6eeefc7033c421ca6b74ae836785f683787dd9edc870473"
       },
       "harness": {
         "commit": "90b88fd29bd7",
@@ -77,8 +77,9 @@
         "temperature": 0.0
       }
     },
-    "version": 3
+    "version": 4
   },
+  "goal": "summary_judge_summeval",
   "metric_kinds": {
     "input_truncated": "descriptive",
     "parsed": "descriptive",
@@ -118,6 +119,7 @@
     "SiliconFlow": 1
   },
   "reference_tier": "gold",
+  "round": "r1",
   "run_id": "se_glm_s_n100_v1_20261018T093209Z",
   "scores": {
     "cost_usd": 0.000481,

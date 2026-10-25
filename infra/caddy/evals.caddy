@@ -1,0 +1,14 @@
+# evals.humancopilot.eu — the findings site. Tenant drop-in for the shared Caddy edge.
+#
+# The edge engine (base Caddyfile with the `hardened` snippet and `import /etc/caddy/sites/*.caddy`,
+# firewall, Cloudflare origin lock, the deploy@ reload grant) is owned by podcast_scraper
+# (its ADR-114). This file is ours: infra/deploy/install_vhosts.sh installs it into
+# /etc/caddy/sites/, gates the merged config with `caddy adapt`, then reloads.
+#
+# Installed only once listed in enabled.txt, after DNS points the name at the box: a vhost for
+# a name that does not resolve here makes Caddy retry ACME and burn Let's Encrypt's budget.
+# __EVALS_PORT__ is rendered at deploy time (127.0.0.1:8096, the evals-nginx container).
+evals.humancopilot.eu {
+	import hardened
+	reverse_proxy 127.0.0.1:__EVALS_PORT__
+}

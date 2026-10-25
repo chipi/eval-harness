@@ -39,3 +39,4 @@ params:
   length_penalty: 2.0
   no_repeat_ngram_size: 3
   early_stopping: true
+goal: news_summary_cnn

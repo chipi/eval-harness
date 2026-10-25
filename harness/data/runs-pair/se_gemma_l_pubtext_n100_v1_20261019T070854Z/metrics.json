@@ -35,7 +35,7 @@
       "reference_tier": "gold",
       "references_sha256": "7b5e618e23b7f2b222665d83e99006eb0e9a51066e63e2e5ff8c51ae3c696c21"
     },
-    "hash": "b5faed717b7f8aa976ae365f45e6294e55f9efa9e89555a1a32643388b4a4b70",
+    "hash": "8f49e15d4deda8fb0affd516a75bdd17018627f9efd407cf941b9ad79223ebc9",
     "host": {
       "cpu_count": 32,
       "label": "omarchy",
@@ -47,7 +47,7 @@
     "instrument": {
       "adapter": {
         "id": "examples/summeval-judging/adapter.py",
-        "sha256": "ccf8c1a7d1f661c891e513ddc48bb8aced0f32962669259d01d178538dd47ad8"
+        "sha256": "52000c5a06f5324e6803f9db340fab51cc132c7c671706f0df5f5fa06e513785"
       },
       "harness": {
         "commit": "b0df626e58f6",
@@ -81,8 +81,9 @@
         "unieval_inputs_sha256": "b109068754e58722f7e50f1bef70cf121eb34c9015fc3486f51bc5b8e3e3ec81"
       }
     },
-    "version": 3
+    "version": 4
   },
+  "goal": "summary_judge_summeval",
   "metric_kinds": {
     "input_truncated": "descriptive",
     "parsed": "descriptive",
@@ -130,6 +131,7 @@
     "replayed_items": 99,
     "replayed_without_recorded_extra": 0
   },
+  "round": "r2",
   "run_id": "se_gemma_l_pubtext_n100_v1_20261019T070854Z",
   "scores": {
     "cost_usd": 0.001013,

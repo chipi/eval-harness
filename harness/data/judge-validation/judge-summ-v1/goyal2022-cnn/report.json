@@ -1491,7 +1491,7 @@
  "inputs": {
   "zip_sha256": "0139228dd09f652865015495551685caf886e540f816f06d4fc7961b82124cf6",
   "cnn_human_sha256": "4e13a6eeb2aeb2c300b32e870360f0118d4855bcbb1ade8d8946976c4b203fe4",
-  "scorer_sha256": "8193aa67b8922b1e72ca443b92939300ac3cc38f06b94ddc5f725df8884231e0",
+  "scorer_sha256": "d604095cace5f53746b513a43f3a5623d56bcffe67f228c96e390414a268bacc",
   "chance_best_pick": 0.3333
  },
  "human_baseline": {

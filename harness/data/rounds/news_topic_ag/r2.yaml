@@ -1,0 +1,26 @@
+round_id: r2
+goal: news_topic_ag
+dataset_id: ag_news_200
+from: r1
+hypothesis: How fast is each local arm when the three are timed together on one Linux machine?
+status: closed
+opened_at: '2026-09-30T14:38:35Z'
+closed_at: '2026-09-30T14:40:24Z'
+retired:
+- config_id: ag_bert_base_fy_n200_v1
+  runs_dir: runs-linux
+  reason: a re-timing of the record's config on one Linux machine; data/runs is the record
+  at: '2026-09-30T14:40:24Z'
+- config_id: ag_bert_base_ta_n200_v1
+  runs_dir: runs-linux
+  reason: a re-timing of the record's config on one Linux machine; data/runs is the record
+  at: '2026-09-30T14:40:24Z'
+- config_id: ag_bert_mini_n200_v1
+  runs_dir: runs-linux
+  reason: a re-timing of the record's config on one Linux machine; data/runs is the record
+  at: '2026-09-30T14:40:24Z'
+conclusion:
+  text: 'Re-timed together on the Linux machine (medians): bert_base_ta 49 ms, bert_base_fy 55 ms, bert_mini
+    4.3 ms. bert_mini is 11× faster than bert_base_ta, at accuracy not separated from it (p = 0.55). (REPORT_CLASSIFICATION
+    §3.1.)'
+  promoted_run: null

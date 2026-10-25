@@ -92,7 +92,7 @@ the sign-flip permutation test works directly and no bootstrap is needed.
 What is still **not** per-item is corpus micro-F1 — pooling every tp/fp/fn into one figure.
 Mean-of-per-item-F1 and micro-F1 answer different questions ("how did it do on a typical
 sentence" vs "over all the entities"), so the raw counts ride along and micro-F1 lives in
-[`extraction_report.py`](../../harness/scripts/extraction_report.py).
+[`extraction_report.py`](../../harness/tools/extraction_report.py).
 
 **The typed/untyped pair is the design's core.** `untyped_f1` asks *did it find the entity
 at all*; `f1` asks *and did it label it right*; `type_penalty` is the difference. A

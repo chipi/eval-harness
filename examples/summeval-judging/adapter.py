@@ -270,8 +270,8 @@ def _bart(params: Dict[str, Any]) -> Any:
         from transformers import AutoTokenizer, BartForConditionalGeneration  # noqa: PLC0415
 
         kw = {"revision": params["revision"]} if params.get("revision") else {}
-        tok = AutoTokenizer.from_pretrained(params["model"], **kw)
-        model = BartForConditionalGeneration.from_pretrained(params["model"], **kw).eval()
+        tok = AutoTokenizer.from_pretrained(params["model"], **kw)  # every config that reaches this pins `revision`  # nosec B615
+        model = BartForConditionalGeneration.from_pretrained(params["model"], **kw).eval()  # every config that reaches this pins `revision`  # nosec B615
         _BART, _BART_KEY = (tok, model), key
     return _BART
 
@@ -325,6 +325,14 @@ UNIEVAL_INPUTS_SHA256 = "b109068754e58722f7e50f1bef70cf121eb34c9015fc3486f51bc5b
 ORIGINAL_SHA256 = "f0d4166e0cdeb439b387c4449634b067b7e9f721b9ef4c2b722f6b7550d3d6ab"
 #: Over punkt_tab/english, the one model sent_tokenize loads: sorted file names and bytes.
 PUNKT_ENGLISH_SHA256 = "158f5e4684a0852ae6a6e973c1e17978a4b1d780a8e353a18bc0c10a068aa07b"
+#: UniEval's tokenizer as transformers 4.55 built it from the checkpoint's spiece.model, saved
+#: once. transformers 5 builds a different one: it drops the "▁" token before every literal
+#: `</s>` separator in UniEval's prompts, so every input reaches the model one token shorter
+#: than UniEval as published (and as these runs were measured). Loading this file under 5.x
+#: gives 4.55's token ids exactly.
+UNIEVAL_TOKENIZER = HERE / "unieval_tokenizer" / "tokenizer.json"
+UNIEVAL_TOKENIZER_SHA256 = "1a1d3011daac8f04654823d46e09b2e0e760276be5ad2731d2ad8b9a0996ddf5"  # gitleaks:allow — a file's sha256, not a credential
+UNIEVAL_MODEL = "MingZhong/unieval-sum"
 _UE: Any = None
 _UE_KEY: Optional[tuple] = None
 _UE_PUBLISHED: Any = None
@@ -336,7 +344,7 @@ def _cached(path: Path, url: str, sha256: str) -> Path:
         import urllib.request  # noqa: PLC0415
 
         path.parent.mkdir(parents=True, exist_ok=True)
-        with urllib.request.urlopen(url, timeout=120) as r:
+        with urllib.request.urlopen(url, timeout=120) as r:  # noqa: S310 — a pinned https URL, its bytes checked by sha256  # nosec B310
             path.write_bytes(r.read())
     got = hashlib.sha256(path.read_bytes()).hexdigest()
     if got != sha256:
@@ -379,9 +387,17 @@ def _unieval_model(params: Dict[str, Any]) -> Any:
         from transformers import AutoModelForSeq2SeqLM, AutoTokenizer  # noqa: PLC0415
 
         kw = {"revision": params["revision"]} if params.get("revision") else {}
-        tok = AutoTokenizer.from_pretrained(params["model"], **kw)
-        model = AutoModelForSeq2SeqLM.from_pretrained(params["model"], **kw).eval()
-        _UE, _UE_KEY = (tok, model, tok("Yes")["input_ids"][0], tok("No")["input_ids"][0]), key
+        if params["model"] == UNIEVAL_MODEL:
+            from transformers import PreTrainedTokenizerFast  # noqa: PLC0415
+
+            if hashlib.sha256(UNIEVAL_TOKENIZER.read_bytes()).hexdigest() != UNIEVAL_TOKENIZER_SHA256:
+                raise SystemExit(f"{UNIEVAL_TOKENIZER}: not the pinned sha256 {UNIEVAL_TOKENIZER_SHA256}")
+            tok = PreTrainedTokenizerFast(tokenizer_file=str(UNIEVAL_TOKENIZER), eos_token="</s>",  # noqa: S106 — special tokens, not passwords
+                                          unk_token="<unk>", pad_token="<pad>", model_max_length=512)  # noqa: S106 — special tokens
+        else:
+            tok = AutoTokenizer.from_pretrained(params["model"], **kw)  # every config that reaches this pins `revision`  # nosec B615
+        model = AutoModelForSeq2SeqLM.from_pretrained(params["model"], **kw).eval()  # every config that reaches this pins `revision`  # nosec B615
+        _UE, _UE_KEY =(tok, model, tok("Yes")["input_ids"][0], tok("No")["input_ids"][0]), key
     return _UE
 
 
@@ -696,4 +712,29 @@ METRIC_KINDS = {
     # local model saw only part of the article.
     "parsed": "descriptive", "tie_rate": "descriptive", "truncated": "descriptive",
     "reasoning_tokens": "descriptive", "input_truncated": "descriptive",
+}
+
+#: What each metric measures, for the catalog's metric pages. Documentation, so it never
+#: moves the adapter's code hash.
+METRIC_DESCRIPTIONS = {
+    "tau": {
+        "summary": "Kendall's tau-b between the judge's scores and the experts' ratings of an "
+        "article's 16 summaries, averaged over the four dimensions.",
+        "details": "Per article the judge scores 16 summaries on coherence, consistency, fluency "
+        "and relevance. For each dimension its scores are correlated with the expert ratings by "
+        "tau-b, which corrects for ties on both sides (an LLM judge's integer scores tie often); "
+        "a dimension the judge did not return, or a constant side, counts 0. tau is the mean of "
+        "the four, then over articles: agreement with people on ordering summaries, not a summary's quality.",
+    },
+    "rho": "Spearman's rho between the judge's scores and the experts' ratings of an article's 16 "
+    "summaries, averaged over the four dimensions: kept for comparison with the literature.",
+    **{f"tau_{d}": f"Kendall's tau-b with the experts' {d} ratings across an article's 16 summaries "
+        f"(0 when the judge returned no {d} scores)." for d in DIMS},
+    **{f"rho_{d}": f"Spearman's rho with the experts' {d} ratings across an article's 16 summaries "
+        f"(0 when the judge returned no {d} scores)." for d in DIMS},
+    "tie_rate": "Share of the 120 summary pairs the judge scored equal, averaged over the dimensions "
+    "it returned: how often it could not tell two summaries apart.",
+    "parsed": "Whether the reply could be read as an answer in the task's format: 1 or 0 per item, so its mean is the share readable (for the SummEval judges, the share of the four dimensions that came back readable). An unreadable reply scores 0 on the quality metrics, never skipped.",
+    "truncated": "1 when the provider cut the reply off at the token ceiling (finish_reason \"length\", and in most adapters a completion that reached 98% of max_tokens), else 0. An arm with truncated above 0 has scores that partly describe the ceiling, not the model.",
+    "input_truncated": "1 when a local model saw only part of the article, because it was longer than the model's encoder window (1,024 tokens for BART) and was cut, else 0. Those items are a different task from the hosted arms' full-article ones.",
 }

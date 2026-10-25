@@ -16,3 +16,4 @@ params:
   top_k: 100
   query_prefix: "query: "
   doc_prefix: "passage: "
+goal: scientific_retrieval_scifact

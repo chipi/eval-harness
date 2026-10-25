@@ -42,3 +42,4 @@ params:
   first_stage_model: intfloat/e5-base-v2
   first_stage_query_prefix: "query: "
   first_stage_doc_prefix: "passage: "
+goal: scientific_retrieval_scifact

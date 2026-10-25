@@ -7,3 +7,4 @@ params:
   seed: 20261015
   family: baseline
   price_tier: free
+goal: summary_judge_summeval

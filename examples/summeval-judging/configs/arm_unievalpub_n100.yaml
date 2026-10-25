@@ -15,3 +15,4 @@ params:
   batch_size: 8
   family: unieval
   price_tier: free
+goal: summary_judge_summeval

@@ -7,7 +7,7 @@
 # leave the documentation -- to the reports, the harness code, a PDF or a JSON capture --
 # are rewritten to GitHub, so nothing third-party is republished and nothing breaks.
 site_name: eval-harness · documentation
-site_url: https://evals.humancopilot.eu/docs/
+site_url: https://docs.evals.humancopilot.eu/
 site_description: Protocol, reference and harness documentation for eval-harness.
 repo_url: https://github.com/chipi/eval-harness
 copyright: eval-harness · every number on the site is checked against the runs in this repository · built by Marko Dragoljevic
@@ -31,15 +31,53 @@ nav:
   - Home: index.md
   - The harness ↗: https://evals.humancopilot.eu/
   - The experiments ↗: https://evals.humancopilot.eu/experiments.html
-  - Use the harness: GUIDE.md
+  - Getting started: GUIDE.md
+  - Tutorials:
+      - 1 · A local model against a baseline: tutorials/1-local-model.md
+      - 2 · A hosted LLM, with your own key: tutorials/2-hosted-llm.md
+      - 3 · A frontier reference, gold, and judging: tutorials/3-frontier-reference-and-judging.md
+      - 4 · Experiment rounds and dataset versions: tutorials/4-rounds-and-versions.md
+      - 5 · The catalog and the inspector: tutorials/5-catalog-and-inspector.md
   - The harness:
       - Concepts: harness/CONCEPTS.md
       - Integration: harness/INTEGRATION.md
       - Runbook: harness/RUNBOOK.md
-      - "ADR-0001: Judge scorers": adr/ADR-0001-judge-scorers.md
       - Release notes: harness/CHANGELOG.md
       - Releasing: harness/RELEASING.md
+      - Newcomer scenario: harness/SCENARIO.md
       - Upgrading: harness/UPGRADING.md
+  - Architecture:
+      - Overview: architecture/ARCHITECTURE.md
+      - Requirements (PRDs):
+          - Index: prd/index.md
+          - "PRD-001: Running experiments and comparing arms": prd/PRD-001-experiments-and-comparison.md
+          - "PRD-002: References: gold, silver, and a run as the reference": prd/PRD-002-references.md
+          - "PRD-003: Re-measuring with a validated LLM judge": prd/PRD-003-judging.md
+          - "PRD-004: The catalog and the run inspector": prd/PRD-004-catalog-and-inspector.md
+          - "PRD-005: Goals, and experiment rounds": prd/PRD-005-goals-and-rounds.md
+          - "PRD-006: Datasets, versions and item fields": prd/PRD-006-datasets-versions-fields.md
+          - "PRD-007: One install, your own keys": prd/PRD-007-packaging-and-providers.md
+      - Experience (UXS):
+          - Index: uxs/index.md
+          - "UXS-001: The catalog": uxs/UXS-001-catalog.md
+          - "UXS-002: The run inspector": uxs/UXS-002-inspector.md
+          - "UXS-003: The command line and the first evaluation": uxs/UXS-003-cli-and-onboarding.md
+      - Designs (RFCs):
+          - Index: rfc/index.md
+          - "RFC-001: The run fingerprint and code identity (version 4)": rfc/RFC-001-fingerprint-and-code-identity.md
+          - "RFC-002: Run records and derived runs": rfc/RFC-002-run-records-and-derived-runs.md
+          - "RFC-003: The catalog, the inspector server and the adapter protocol": rfc/RFC-003-catalog-adapter.md
+          - "RFC-004: Experiment rounds": rfc/RFC-004-experiment-rounds.md
+          - "RFC-005: Judge scorers and the judging pass": rfc/RFC-005-judge-scorers.md
+          - "RFC-006: Item fields and items at a URL": rfc/RFC-006-item-fields-and-url-items.md
+      - Decisions (ADRs):
+          - Index: adr/index.md
+          - "ADR-0001: Judge scorers: re-measuring frozen outputs with a validated LLM judge": adr/ADR-0001-judge-scorers.md
+          - "ADR-0002: Catalog, run inspector and goals in the harness (0.4.0)": adr/ADR-0002-catalog-inspector-goals.md
+          - "ADR-0003: Item fields and items fetched from a URL (0.4.0)": adr/ADR-0003-item-fields-and-url-items.md
+          - "ADR-0004: Experiment rounds, and a catalog that guides them (0.4.0)": adr/ADR-0004-experiment-rounds.md
+          - "ADR-0005: One provider layer; credentials per role, never identity (0.4.0)": adr/ADR-0005-credentials-per-role.md
+          - "ADR-0006: A goal weighs cost, quality and speed; a strategy picks (0.4.0)": adr/ADR-0006-goal-axes-and-strategies.md
   - The experiments:
       - Reproduce it: REPRODUCE.md
       - Protocol: PROTOCOL.md
@@ -73,13 +111,13 @@ theme:
       toggle: { icon: material/weather-night, name: Dark mode }
   font: false
 
-# The findings site's tokens and type (docs/assets/docs.css), so /docs/ reads as part of
+# The harness site's tokens and type (docs/assets/docs.css), so /docs/ reads as part of
 # the same publication.
 extra_css:
   - assets/docs.css
 
 # The author's sites in the docs footer, UTM-tagged so humancopilot.eu sees where a visit
-# came from (the findings site also tags each click with an Umami event).
+# came from (the harness site also tags each click with an Umami event).
 extra:
   homepage: https://evals.humancopilot.eu/
   social:

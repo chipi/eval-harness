@@ -34,7 +34,7 @@
       "reference_tier": "gold",
       "references_sha256": "7fc293bc2d9661e3b23d2bb1af8981f5e4bab10e4ab3c83b36e03f571fcef8cc"
     },
-    "hash": "9ce2d3a5e06c17c989cd2a4dd3c29a36cb997e13cb1cad5eabc733ba9cebf762",
+    "hash": "16f96726ac0b535fcbda5aeb7362387ca8f3dfc2defdccc7e30db2cf8a7cb52b",
     "host": {
       "cpu_count": 4,
       "label": null,
@@ -46,7 +46,7 @@
     "instrument": {
       "adapter": {
         "id": "examples/summarization-cnn-dailymail/adapter.py",
-        "sha256": "fe4ffabfc753ebdc473f186614a31ac158b68d91ef7878202aadeb7d3551e8db"
+        "sha256": "2955537740425c943bf6eb342ebf0c2dac2379d13b4e32ec5005d27227be6f15"
       },
       "harness": {
         "commit": "a81669ca0511",
@@ -75,8 +75,9 @@
         ]
       }
     },
-    "version": 3
+    "version": 4
   },
+  "goal": "news_summary_cnn",
   "metric_kinds": {
     "compression": "descriptive",
     "concision": "quality",

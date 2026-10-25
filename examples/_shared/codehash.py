@@ -1,4 +1,4 @@
-"""Hash the code that decides a score — functions AND the constants they read.
+r"""Hash the code that decides a score — functions AND the constants they read.
 
 WHY THIS EXISTS AS A SHARED HELPER
 
@@ -26,13 +26,22 @@ USAGE
   includes builtins -- so it is declared, and a missed constant is a real hole. The
   compensating control is that `code_digest` is used in exactly one shape everywhere,
   so a reviewer can check the argument list against the function body in one glance.
+
+DOCUMENTATION IS NOT CODE
+
+  A function is hashed as its syntax tree with its docstrings removed, never as its text:
+  rewording a docstring, adding a comment or reformatting changes nothing a score depends
+  on, and a hash that moved on it would flag every comparison across the edit.
 """
 
 from __future__ import annotations
 
+import ast
 import hashlib
 import inspect
-from typing import Any, Callable, Dict, Iterable, Union
+import textwrap
+from collections.abc import Iterable
+from typing import Any, Callable
 
 
 def _stable(value: Any) -> str:
@@ -42,7 +51,7 @@ def _stable(value: Any) -> str:
     dicts are sorted, because their repr order is not guaranteed to be stable across
     versions and a hash that changes without the code changing is worse than no hash.
     """
-    import re as _re
+    import re as _re  # noqa: PLC0415
 
     if isinstance(value, _re.Pattern):
         return f"re({value.pattern!r},{value.flags})"
@@ -55,9 +64,41 @@ def _stable(value: Any) -> str:
     return repr(value)
 
 
-def code_digest(*fns: Union[Callable, Iterable[Callable]],
-                consts: Dict[str, Any] | None = None) -> str:
-    """sha256 over the source of every function plus every declared constant.
+def _behaviour(fn: Callable) -> str:
+    """A function's syntax tree without docstrings, comments or formatting."""
+    tree = ast.parse(textwrap.dedent(inspect.getsource(fn)))
+    for node in ast.walk(tree):
+        body = getattr(node, "body", None)
+        if isinstance(node, (ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)) and body:
+            first = body[0]
+            if (
+                isinstance(first, ast.Expr)
+                and isinstance(first.value, ast.Constant)
+                and isinstance(first.value.value, str)
+            ):
+                node.body = body[1:] or [ast.Pass()]
+    return _tree_text(tree)
+
+
+def _tree_text(node: Any) -> str:
+    """The tree as text that is the same on every Python version: empty and None fields are
+    left out (`ast.dump` prints them on 3.11 and not on 3.13+). The same rule as the harness's
+    `_codeid.tree_text`; examples do not import the harness's private modules."""
+    if isinstance(node, ast.AST):
+        fields = []
+        for name in node._fields:
+            value = getattr(node, name, None)
+            if value is None or value == []:
+                continue
+            fields.append(f"{name}={_tree_text(value)}")
+        return f"{type(node).__name__}({','.join(fields)})"
+    if isinstance(node, list):
+        return "[" + ",".join(_tree_text(x) for x in node) + "]"
+    return repr(node)
+
+
+def code_digest(*fns: Callable | Iterable[Callable], consts: dict[str, Any] | None = None) -> str:
+    """sha256 over the behaviour of every function plus every declared constant.
 
     Functions are hashed in the order given and constants by sorted name, so the digest
     depends on the code and not on how the call was written.
@@ -70,7 +111,7 @@ def code_digest(*fns: Union[Callable, Iterable[Callable]],
             flat.extend(f)
     h = hashlib.sha256()
     for f in flat:
-        h.update(inspect.getsource(f).encode())
+        h.update(_behaviour(f).encode())
         h.update(b"\x1e")
     for name in sorted(consts or {}):
         h.update(name.encode())

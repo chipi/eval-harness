@@ -94,7 +94,7 @@ data/runs/cnn_*_v[12]_2026092[56]T*_r[0-9]/**
 # judge panel output
 out/
 
-.venv/
+.venv
 __pycache__/
 
 # ── third-party corpus content: NEVER committed to this public repo ──────────
@@ -111,8 +111,8 @@ __pycache__/
 # cnn_dailymail_200, and a corpus whose exclusion depends on someone remembering to add a
 # line is one forgotten line away from being redistributed.
 data/sources/cnn_dailymail_*/
-data/references/gold/cnn_dailymail_*/
-data/references/silver/cnn_dailymail_*/
+data/references/gold/cnn_dailymail_*/*
+data/references/silver/cnn_dailymail_*/*
 
 # AG News, same rule and a weaker licence than CNN/DailyMail's: the dataset card says
 # `unknown` and the corpus's own description says non-commercial research use. We
@@ -121,36 +121,28 @@ data/references/silver/cnn_dailymail_*/
 # downloading a third-party corpus and remembering to ignore it is the window in which it
 # gets committed to a public repo.
 data/sources/ag_news_*/
-data/references/gold/ag_news_*/
-data/references/silver/ag_news_*/
+data/references/gold/ag_news_*/*
+data/references/silver/ag_news_*/*
 
 # DBpedia-14. Licence here is actually clean (CC-BY-SA 3.0 + GFDL, inherited from
 # Wikipedia) -- unlike AG News -- and it is still not ours to redistribute. Same rule,
 # same reason, same timing: these lines land before the first fetch.
 data/sources/dbpedia_*/
-data/references/gold/dbpedia_*/
-data/references/silver/dbpedia_*/
+data/references/gold/dbpedia_*/*
+data/references/silver/dbpedia_*/*
 
 # Few-NERD. CC BY-SA 4.0 -- the cleanest licence of the four corpora here -- and still
 # not ours to redistribute. Same rule, same timing: in before the first fetch.
 data/sources/few_nerd_*/
-data/references/gold/few_nerd_*/
-data/references/silver/few_nerd_*/
+data/references/gold/few_nerd_*/*
+data/references/silver/few_nerd_*/*
 
 # SummEval (MIT; the articles are CNN's). Its items carry the article, 16 machine summaries
 # and the human references, and its gold is the expert scores -- none of it ours to
 # redistribute. (These lines landed just after the first fetch, before any commit.)
 data/sources/summeval_*/
-data/references/gold/summeval_*/
-data/references/silver/summeval_*/
-
-# Rescored runs are derived -- but NOT regenerable by anyone else, which is the whole
-# point. `rescore.py` reads `outputs/`, and outputs are not committed (model
-# generations from copyrighted articles). So a reader who cannot rescore also cannot
-# check any number in REPORT_NER.md, whose figures ALL come from this directory: it is
-# the uniform instrument that report states, and data/runs still holds the pre-fix
-# glm_l. Scores and per-item rows are therefore committed here too, 8.7 MB, on the same
-# terms as data/runs -- no outputs, no article text, no home paths.
+data/references/gold/summeval_*/*
+data/references/silver/summeval_*/*
 
 # EVERY OTHER runs directory stays out, BY DEFAULT RATHER THAN BY NAME. Smoke passes,
 # tuning sweeps, superseded runs, self-test fixtures, one-off scopes: working
@@ -169,13 +161,6 @@ data/references/silver/summeval_*/
 # the two directories stayed tracked only because git ignores nothing already tracked,
 # and adding any NEW file to either (this README, for one) silently failed.
 data/runs-*/
-# `!data/runs-superseded/README.md` used to sit here and did nothing: git does
-# not descend into an excluded DIRECTORY, so a negation for a file inside one is
-# inert. Re-allow the directory first, then exclude its contents. Found by
-# external review.
-!data/runs-superseded/
-data/runs-superseded/*
-!data/runs-superseded/README.md
 
 # --- re-allowed, and only these ---------------------------------------------------
 
@@ -208,37 +193,39 @@ data/runs-linux/*/*
 data/runs-linux/*/outputs/_rows.jsonl
 !data/runs-linux/README.md
 
-# data/runs-fp32/ — bart_s re-measured at the precision its config always declared. It
-# was stored at fp16 and, before the 2026-10-14 instrument fix, RAN at fp16 under an fp32
-# label. The record in data/runs/ is that fp16 measurement and stays; these are beside it.
-!data/runs-fp32/
-data/runs-fp32/*/*
-!data/runs-fp32/*/metrics.json
-!data/runs-fp32/*/predictions.jsonl
-!data/runs-fp32/*/outputs
-!data/runs-fp32/*/outputs/**
-data/runs-fp32/*/outputs/_rows.jsonl
-!data/runs-fp32/README.md
+# data/runs-adjudicated/ — AG News re-scored ($0) against gold/ag_news_200_adj1, the gold with
+# 17 labels changed by one reader (examples/classification-ag-news/adjudication.json, the
+# committed record): the report's main caveat, as a group on the goal page.
+!data/runs-adjudicated/
+data/runs-adjudicated/*/*
+!data/runs-adjudicated/*/metrics.json
+!data/runs-adjudicated/*/predictions.jsonl
+!data/runs-adjudicated/*/outputs
+!data/runs-adjudicated/*/outputs/**
+data/runs-adjudicated/*/outputs/_rows.jsonl
 
+# data/runs-silver/ — the CNN arms re-scored ($0) against silver/cnn_dailymail_200, the frontier
+# arm's summaries: a silver group beside gold on the goal page, where silver's family bias shows.
+# Their outputs are the same bytes as the measured runs' in data/runs.
+!data/runs-silver/
+data/runs-silver/*/*
+!data/runs-silver/*/metrics.json
+!data/runs-silver/*/predictions.jsonl
+!data/runs-silver/*/outputs
+!data/runs-silver/*/outputs/**
+data/runs-silver/*/outputs/_rows.jsonl
 
-# data/runs-reparsed/ — the SciFact rankings rebuilt from each run's stored LLM reply
-# with the corrected parser. `rescore` cannot produce these: this adapter parses at
-# CALL time and writes the resulting ranking as its output, so the parser bug is baked
-# into every stored output and recomputing scores from them changes nothing. Committed
-# because REPORT_RETRIEVAL's §3.1 table quotes these figures, and round 2's H5 was
-# exactly a headline number with no committed run behind it.
-!data/runs-reparsed/
-data/runs-reparsed/*/*
-!data/runs-reparsed/*/metrics.json
-!data/runs-reparsed/*/predictions.jsonl
-!data/runs-reparsed/README.md
-
-!data/runs-rescored/
-data/runs-rescored/*/outputs/
-data/runs-rescored/*/*
-!data/runs-rescored/*/metrics.json
-!data/runs-rescored/*/predictions.jsonl
-!data/runs-rescored/README.md
+# data/runs-judged/<scorer>/ — the CNN summaries re-measured by LLM judges (ADR-0001), each run
+# projected from the stored verdicts in data/judge-verdicts/ by `judge-score --no-calls` ($0).
+# Committed so the catalog shows a judge's group beside gold; rebuilt byte for byte from the
+# verdicts, which are the evidence.
+!data/runs-judged/
+data/runs-judged/*/*/*
+!data/runs-judged/*/*/metrics.json
+!data/runs-judged/*/*/predictions.jsonl
+!data/runs-judged/*/*/outputs
+!data/runs-judged/*/*/outputs/**
+data/runs-judged/*/*/outputs/_rows.jsonl
 
 # EXCEPT data/runs-pair/, WHICH WAS NEVER A WORKING ARTIFACT. It holds the four runs
 # behind the pre-registered prediction -- the single most-advertised result in this
@@ -265,15 +252,12 @@ data/runs-tune*/
 # artifacts. `data/runs-tune/` was exactly that -- the comment above already said "any
 # other EVAL_RUNS_DIR" and only `runs-smoke*` was actually listed.
 !data/runs/
-# The superseded-runs README is the CONVENTION, not an artifact: runs whose
-# instrument changed are moved there rather than deleted. The runs stay ignored.
-!data/runs-superseded/README.md
 
 # BEIR SciFact. CC BY-SA 4.0, and still not ours to redistribute. Same rule, same timing:
 # in before the first fetch.
 data/sources/scifact_*/
-data/references/gold/scifact_*/
-data/references/silver/scifact_*/
+data/references/gold/scifact_*/*
+data/references/silver/scifact_*/*
 
 # ── the CORPUS, which is a new kind of thing in this tree ────────────────────
 # Retrieval is the first task here whose answer is not computable from the item alone. An
@@ -304,3 +288,13 @@ dist/
 
 # Third-party data fetched by scripts (e.g. validate_judge_goyal.py); never committed.
 data/external/
+
+# the built catalog -- regenerate with `make catalog`
+.build/
+
+# A gold reference not redistributed keeps its manifest (checksums, how to rebuild it): validate V16.
+!data/references/gold/*/manifest.json
+# A silver reference made from a committed run keeps its manifest the same way: its texts are
+# that run's outputs, rebuilt with `evh reference-create --from-run <run_id>` (the manifest
+# names the run).
+!data/references/silver/*/manifest.json

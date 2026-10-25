@@ -1,0 +1,34 @@
+round_id: r2
+goal: news_summary_cnn
+dataset_id: cnn_dailymail_200
+from: r1
+hypothesis: Do the local arms reproduce, and how fast are they, re-run on one Linux machine?
+status: closed
+opened_at: '2026-09-30T14:41:34Z'
+closed_at: '2026-09-30T15:48:17Z'
+retired:
+- config_id: cnn_bart_l_n200_v1
+  runs_dir: runs-linux
+  reason: a re-timing of the record's config on one Linux machine; data/runs is the record
+  at: '2026-09-30T15:48:17Z'
+- config_id: cnn_bart_l_xsum_n200_v1
+  runs_dir: runs-linux
+  reason: a re-timing of the record's config on one Linux machine; data/runs is the record
+  at: '2026-09-30T15:48:17Z'
+- config_id: cnn_bart_m_n200_v1
+  runs_dir: runs-linux
+  reason: a re-timing of the record's config on one Linux machine; data/runs is the record
+  at: '2026-09-30T15:48:17Z'
+- config_id: cnn_bart_s_n200_v1
+  runs_dir: runs-linux
+  reason: a re-timing of the record's config on one Linux machine; data/runs is the record
+  at: '2026-09-30T15:48:17Z'
+- config_id: cnn_lead3_n200_v1
+  runs_dir: runs-linux
+  reason: a re-timing of the record's config on one Linux machine; data/runs is the record
+  at: '2026-09-30T15:48:17Z'
+conclusion:
+  text: 'All five local arms reproduced 200 of 200 outputs byte-identically (bart_m, bart_s and bart_l_xsum
+    on the same Linux machine; bart_l and lead3 on a different one): their run-to-run variance is zero.
+    (REPORT_SUMMARIZATION, the local contrast.)'
+  promoted_run: null

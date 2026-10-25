@@ -4,6 +4,13 @@
   "cost_usd": 0.01211,
   "created_at": "2026-09-25T05:53:17Z",
   "dataset_id": "smoke_v1",
+  "items_sha256": {
+    "item_01": "9f530c2a647ca50928e078a54415695806b81d05efd09f9ee64f98b03c50390c",
+    "item_02": "7294042e5a9aff334c0640c5ccbe4eefc4c2606e029675128459e6f6d9b8a564",
+    "item_03": "197ce67244a5740c87e82dc2e3cbb1ff8bb988d67f4e1baa8b36ae1224434205",
+    "item_04": "95b9f3d32e05e53581490dbe85979f2028700bd59f3dc98a02ab675c38cd212c",
+    "item_05": "983fee0412a934a46592ebe64b50930a43d7664eaf3cbd6a26370b6b01aed829"
+  },
   "model": "eval-claude-opus",
   "n_items": 5,
   "tier": "silver"

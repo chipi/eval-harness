@@ -34,7 +34,7 @@
       "reference_tier": "gold",
       "references_sha256": "5d0b02c3798017535572d24dd3ce0592332938a0c91e93684d163963a60a7cd9"
     },
-    "hash": "4df5fbf57c726fa80846f16f94aa46ae6a664104458353b4c3230c97e82e686d",
+    "hash": "b56163eb7db87e79745897c4e9195d874e00706678ce457b59d6e31e29b6b753",
     "host": {
       "cpu_count": 4,
       "label": null,
@@ -46,7 +46,7 @@
     "instrument": {
       "adapter": {
         "id": "examples/summarization-cnn-dailymail/adapter.py",
-        "sha256": "9085b6648c69a89688c4797492703f83901c3a9e31150f8970ba5a511eef8289"
+        "sha256": "34afcfd48fa46f013ccf160f8f55175607831f419fff14536a0daa1061a5ed88"
       },
       "harness": {
         "commit": "798c63055ec1",
@@ -70,8 +70,9 @@
         "revision_source": "unavailable"
       }
     },
-    "version": 3
+    "version": 4
   },
+  "goal": "news_summary_cnn",
   "metric_kinds": {
     "compression": "descriptive",
     "concision": "quality",
@@ -111,6 +112,7 @@
   "primary_metric": "coverage",
   "providers_seen": {},
   "reference_tier": "gold",
+  "round": "r3",
   "run_id": "cnn_bart_s_n200_v1_20260930T085713Z",
   "scores": {
     "compression": 0.136119,

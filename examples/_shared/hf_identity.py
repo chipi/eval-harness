@@ -30,7 +30,8 @@ from __future__ import annotations
 import hashlib
 import os
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
+
 
 #: Mirrors huggingface_hub's default. Read rather than imported, so this helper works
 #: without huggingface_hub installed.
@@ -47,7 +48,7 @@ def _repo_dir(model_id: str) -> Path:
     return _hub_cache() / f"models--{model_id.replace('/', '--')}"
 
 
-def resolved_revision(model_id: str, revision: Optional[str] = None) -> Optional[str]:
+def resolved_revision(model_id: str, revision: str | None = None) -> str | None:
     """The revision actually on disk for `model_id`.
 
     With `revision` given, confirms that exact snapshot exists and returns it — so a
@@ -75,7 +76,7 @@ def weight_files(model_id: str, revision: str) -> list[Path]:
     return safes or sorted(snap.glob("*.bin"))
 
 
-def _weights_sha256(files: list[Path]) -> Optional[str]:
+def _weights_sha256(files: list[Path]) -> str | None:
     """One hash over the weight files, in name order. Minutes, hence opt-in."""
     if not files:
         return None
@@ -92,11 +93,17 @@ def _weights_sha256(files: list[Path]) -> Optional[str]:
 
 
 #: The `precision` values configs declare, as the torch dtype each one means.
-_PRECISION_DTYPE = {"fp32": "float32", "fp16": "float16", "bf16": "bfloat16",
-                    "float32": "float32", "float16": "float16", "bfloat16": "bfloat16"}
+_PRECISION_DTYPE = {
+    "fp32": "float32",
+    "fp16": "float16",
+    "bf16": "bfloat16",
+    "float32": "float32",
+    "float16": "float16",
+    "bfloat16": "bfloat16",
+}
 
 
-def apply_precision(model: Any, precision: Optional[str]) -> Any:
+def apply_precision(model: Any, precision: str | None) -> Any:
     """Make the loaded model compute in the precision its config declares.
 
     Until 2026-10-14 `precision` was a label: every local config said `fp32`, nothing passed
@@ -118,7 +125,7 @@ def apply_precision(model: Any, precision: Optional[str]) -> Any:
     return model
 
 
-def loaded_identity(model: Any) -> Dict[str, Any]:
+def loaded_identity(model: Any) -> dict[str, Any]:
     """What a LOADED model actually is: the commit it came from and the dtype it runs in.
 
     The cache can say which snapshots exist; only the loaded object can say which one was
@@ -138,7 +145,7 @@ def loaded_identity(model: Any) -> Dict[str, Any]:
     """
     obj = getattr(model, "model", None) if hasattr(model, "tokenizer") else None
     obj = obj if obj is not None else model
-    out: Dict[str, Any] = {}
+    out: dict[str, Any] = {}
     try:
         out["loaded_dtype"] = str(next(obj.parameters()).dtype).replace("torch.", "")
     except Exception:  # noqa: BLE001 - not a torch module, or no parameters
@@ -159,11 +166,11 @@ def loaded_identity(model: Any) -> Dict[str, Any]:
 def hf_model_fingerprint(
     model_id: str,
     *,
-    revision: Optional[str] = None,
-    device: Optional[str] = None,
-    precision: Optional[str] = None,
+    revision: str | None = None,
+    device: str | None = None,
+    precision: str | None = None,
     loaded_model: Any = None,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """The dict an adapter's `fingerprint()` should return for an HF model.
 
     `revision_source` says how the revision was determined, for whoever reads the run:
@@ -180,7 +187,7 @@ def hf_model_fingerprint(
     source = "hf-snapshot" if resolved else "unavailable"
     if not resolved and loaded.get("loaded_revision"):
         resolved, source = loaded["loaded_revision"], "loaded-model"
-    out: Dict[str, Any] = {
+    out: dict[str, Any] = {
         "id": model_id,
         "revision": resolved,
         "revision_source": source,

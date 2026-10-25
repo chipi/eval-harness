@@ -18,3 +18,4 @@ params:
   precision: fp32
   encode_batch: 64
   top_k: 100
+goal: scientific_retrieval_scifact

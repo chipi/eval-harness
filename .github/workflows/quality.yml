@@ -1,0 +1,37 @@
+# The code-quality gates, the same `make quality` a developer runs: ruff (lint and format),
+# mypy, bandit and pip-audit, vulture, interrogate, codespell, shellcheck and actionlint, with
+# radon's complexity report printed. Tools pinned in harness/requirements-dev.txt.
+#
+# No secrets, nothing paid: safe on pull requests from forks.
+name: quality
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: |
+            harness/requirements.txt
+            harness/requirements-dev.txt
+      - name: harness environment and the quality tools
+        run: make quality-install
+      - name: make quality
+        run: make quality

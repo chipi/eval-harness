@@ -1,8 +1,8 @@
 # Fourteen classes, a ceiling, and why one example is not enough
 
 One task — put a Wikipedia abstract into one of fourteen DBpedia ontology classes —
-measured across 24 hosted models, a zero-shot NLI model, a hand-written rule set and a
-constant.
+measured across 24 hosted models, a fine-tuned BERT classifier, a zero-shot NLI model, a
+hand-written rule set and a constant.
 
 It is the sibling of [`../classification-ag-news`](../classification-ag-news) and it
 exists to be the **opposite regime**. Read the two together; neither alone supports the
@@ -12,7 +12,7 @@ conclusion the pair does.
 | --- | --- | --- |
 | classes | 4 | 14 |
 | hosted field | 0.835 – 0.910 | 0.939 – 0.993 |
-| fine-tuned ML arm | ahead of all 24 on the point estimate; the best one is not separated from `anthropic_m`, the others from more | **0.9857 — in the top group, not above it** (needs torch ≥ 2.6) |
+| fine-tuned ML arm | ahead of all 24 on the point estimate; the best one is not separated from `anthropic_m`, the others from more | **0.9857 — in the top group, not above it** (`main` needs torch ≥ 2.6; its safetensors conversion PR loads on 2.2.2) |
 | licence | `unknown`, non-commercial | **CC-BY-SA 3.0 + GFDL** |
 | outcome | a leader separated from 26 of 29, not from two other fine-tunes and `anthropic_m` | no winner: the leader is not separated from 19 of the 27 others |
 
@@ -60,7 +60,7 @@ unrepresentative, and one arm read 0.35 there against 0.67 on the full set — a
 Here the same arm reads 0.625 and 0.707, which is 1.3 SE. Nested *and* representative.
 
 It also retries, with a separate backoff ladder for HTTP 429 and a `--delay` between
-requests. One transient 502 lost an entire 280-item draw before that existed.
+requests.
 
 ### Licence
 
@@ -78,12 +78,12 @@ PY=../examples/classification-dbpedia-14/.venv/bin/python
 CFG=../examples/classification-dbpedia-14/configs
 
 $PY scripts/experiment_run.py --config $CFG/arm_qwen_m_n200.yaml --dry-run
-$PY scripts/classification_report.py --dataset-id dbpedia_280
+$PY tools/classification_report.py --dataset-id dbpedia_280
 $PY scripts/family_test.py --dataset-id dbpedia_280 --a db_qwen_m_n200_v1 \
      --against _n200_v1 --metric correct
 ```
 
-The full 27-arm sweep is **$1.17 as billed**, dominated by the two most expensive arms —
+The 24 hosted arms bill **$1.17** in all, dominated by the two most expensive —
 which the result says you do not need.
 
 ---
@@ -103,21 +103,23 @@ benefit of paying of up to about 3 points cannot be ruled out.
 learned arms — a canal labelled `NaturalPlace`, a "historic school" labelled `Building`
 rather than `EducationalInstitution`, Bharhut labelled `Building`. Each has a dissenter that
 sides with the gold: the arm trained on DBpedia on the canal, `qwen_m` and zero-shot
-`bart_mnli` on Bharhut, `bart_mnli` on the school. On one rater's reading the field's answer is defensible on all
+`bart_mnli` on Bharhut, `bart_mnli` on the school. The field's answer is defensible on all
 three, and one reader who adjudicated them, shown the hosted answer, found the gold wrong on all three (REPORT_CLASSIFICATION §3.4; the dataset's gold stays primary). The leader's one-item lead over `anthropic_l` is Bharhut.
 The top eleven arms are separated by four items in total. Any ranking within that
 group ranks which model best reproduces DBpedia's ontology quirks; this data cannot say
 whether it also ranks which classifies better.
 
-**Fourteen CamelCase labels make the parser load-bearing.** On AG News one arm of 24 ever
-needed `_parse_label`; here it is worth 8.6 points to `glm_l`, 4.3 to `gemma_s`. And the
+**Fourteen CamelCase labels make the parser load-bearing.** On AG News the parser mattered
+materially to one arm of 24 (`glm_l`, 7.5 points; `gemma_s` and `mistral_s` gained one item
+each); here it is worth 8.6 points to `glm_l`, 4.3 to `gemma_s`. And the
 first unparseable answers in either example appear here — including one empty response.
 
-**The fine-tuned ML arm needs torch ≥ 2.6, so it does not run on x86_64 macOS.** Every
-credible DBpedia-14 fine-tune on the Hub ships `pytorch_model.bin` without safetensors;
-they predate safetensors becoming default, and `transformers` refuses a pickle below torch
-2.6. On Linux or Apple Silicon `uv sync --extra local` resolves torch 2.14 and it runs
-unmodified. Measured 2026-09-30: **0.9857 at $0 marginal, 87 ms/item on CPU — not separated
+**The fine-tuned ML arm's `main` revision needs torch ≥ 2.6, which x86_64 macOS does not
+have.** It ships `pytorch_model.bin` without safetensors, and `transformers` refuses a
+pickle below torch 2.6. On Linux or Apple Silicon `uv sync --extra local` resolves torch
+2.14 and it runs unmodified; its safetensors conversion PR (`refs/pr/1`) loads on torch
+2.2.2 with byte-identical outputs on all 280 items (see
+[`KNOWN_ISSUES.md`](../../research/internal/KNOWN_ISSUES.md)). **0.9857 at $0 marginal, 87 ms/item on CPU — not separated
 from the $0.0143 leader (p = 0.62), not above it.** AG News's fine-tuned lead does not
 carry over to a saturated task; a $0 marginal inference cost does (training and hosting cost were not measured).
 

@@ -1,0 +1,25 @@
+goal_id: news_topic_ag
+schema_version: "0.1"
+title: News topic classification (AG News)
+statement: Pick a classifier that labels a news headline and snippet with one of four topics, at a known cost per item.
+status: active
+context:
+  audience: a pipeline that routes news items by topic
+decision: Which classifiers can be told apart on accuracy, and what each costs and how fast it runs.
+output_contract:
+  - {id: label, format: label}
+success_criteria:
+  primary: {measure: correct, direction: higher}
+  guardrails:
+    - {"name": "labelling convention", "rule": "The fine-tunes' lead is AG News's filing convention: against gold adjudicated by topic, every hosted LLM scores above every fine-tune. Read section 3.4 before choosing.", "source": "research/REPORT_CLASSIFICATION.md §3.4"}
+    - {"name": "licence", "rule": "AG News is licensed `unknown`, for research and non-commercial use; bert_base_ta and bert_mini state no licence.", "source": "examples/classification-ag-news/README.md"}
+datasets:
+  - {dataset_id: ag_news_200, role: heldout, notes: first 50 per class from the first 1,600 test rows}
+  - {dataset_id: ag_news_20, decides: false, role: dev, notes: the pilot slice; all 20 of its items are in ag_news_200}
+references:
+  - {reference_id: gold/ag_news_200, tier: gold, format: label}
+  - {reference_id: gold/ag_news_200_adj1, tier: gold, format: label}
+measures:
+  - {id: correct, kind: metric, validity: validated}
+links:
+  - {url: research/REPORT_CLASSIFICATION.md, note: the report}

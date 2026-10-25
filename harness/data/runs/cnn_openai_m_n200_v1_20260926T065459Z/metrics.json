@@ -1,5 +1,5 @@
 {
-  "adapter": "summarization-cnn-dailymail/adapter.py",
+  "adapter": "examples/summarization-cnn-dailymail/adapter.py",
   "build": {
     "dirty": null,
     "ref": "eval-harness-scenario",
@@ -31,9 +31,10 @@
       "items_sha256": "257feda902391b934b8cde940c15e91201096dbe96ec5a81337e9da007ce3ec7",
       "n_items": 200,
       "reference_id": "gold/cnn_dailymail_200",
-      "reference_tier": "gold"
+      "reference_tier": "gold",
+      "references_sha256": "5d0b02c3798017535572d24dd3ce0592332938a0c91e93684d163963a60a7cd9"
     },
-    "hash": "bf0a9eefbe30aa95cc514f1b604c3081f5203505f2fad0497576e353ca5cfbb2",
+    "hash": "e2f8695b55a4fb69123634b86657798c533bf8c3c0ae5090c7abffda6be6ac69",
     "host": {
       "cpu_count": 12,
       "label": null,
@@ -44,8 +45,8 @@
     },
     "instrument": {
       "adapter": {
-        "id": "summarization-cnn-dailymail/adapter.py",
-        "sha256": "efb387bfca67b4b9f62b8c15f8e1ee8d6837c72a59d72284b6189fba75329bd7"
+        "id": "examples/summarization-cnn-dailymail/adapter.py",
+        "sha256": "2fd5227d666d5a1c3110afab4df0df63b3f3bf7f42dab7f5db7c16473efd191f"
       },
       "harness": {
         "commit": "e0810991f3fb",
@@ -74,8 +75,9 @@
         "temperature": 0.0
       }
     },
-    "version": 1
+    "version": 4
   },
+  "goal": "news_summary_cnn",
   "metric_kinds": {
     "compression": "descriptive",
     "concision": "quality",
@@ -115,11 +117,12 @@
     "OpenAI": 200
   },
   "reference_tier": "gold",
+  "round": "r1",
   "run_id": "cnn_openai_m_n200_v1_20260926T065459Z",
   "scores": {
     "compression": 0.106851,
     "concision": 0.278682,
-    "cost_usd": 0.001483,
+    "cost_usd": 0.005358,
     "coverage": 0.326806,
     "fmt_bullets": 0.0,
     "fmt_label": 0.0,
@@ -137,7 +140,7 @@
     "summary_words": 41.625,
     "tokens_in": 728.66,
     "tokens_out": 57.17,
-    "total_cost_usd": 0.296505,
+    "total_cost_usd": 1.07168,
     "total_tokens_in": 145732.0,
     "total_tokens_out": 11434.0,
     "truncated": 0.0

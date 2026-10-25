@@ -10,3 +10,4 @@ params:
   revision: 37f520fa929c961707657b28798b30c003dd100b
   family: bart
   price_tier: free
+goal: summary_judge_summeval

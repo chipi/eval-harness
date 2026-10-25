@@ -138,8 +138,7 @@ they compare them.
 - **Reference.** Dataset labels — gold, and disputed: 17 items are labelled against the
   judgement of ≥80% of the hosted field; they stay in the score and are analysed apart
   (REPORT_CLASSIFICATION §3.4); adjudicated by topic by one reader shown the hosted answer, the
-  gold was wrong on all 17 (an earlier reading had split them about half convention, half
-  mislabels). The dataset's own gold stays primary.
+  gold was wrong on all 17. The dataset's own gold stays primary.
 - **Metric.** Accuracy — the standard one.
 - **Comparability.** Comparable in kind to published accuracy; at n=200 a single figure
   carries ±0.03.
@@ -202,7 +201,7 @@ they compare them.
   what the calibration rows use. A judge's prompt, decoding and one-call-per-article design
   are this repo's, so a judge's τ is comparable in kind, not as a reproduction of G-Eval.
 - **Reproduce.** `examples/summeval-judging/README.md`; calibration: `calibrate.py`;
-  the derived figures in its report: `harness/scripts/summeval_analysis.py`.
+  the derived figures in its report: `harness/tools/summeval_analysis.py`.
 
 ## What a number here does and does not support
 

@@ -39,3 +39,4 @@ params:
   device: cpu
   precision: fp32
   label_order: [World, Sports, Business, "Sci/Tech"]
+goal: news_topic_ag

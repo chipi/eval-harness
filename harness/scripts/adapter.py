@@ -18,16 +18,20 @@ decision.
 
 from __future__ import annotations
 
-import os
+import sys as _sys
+from pathlib import Path as _Path
+
+if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
+
 import random
-import sys
 import time
 from dataclasses import dataclass, field
-from pathlib import Path
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _common import env_int  # noqa: E402
+# The hosted providers, shared with the judges: one way to call them, read their keys and cost
+# a call (the bill when the response carries one, else the config's prices, else unpriced).
+from evaluation_harness import _providers
 
 
 @dataclass
@@ -35,22 +39,22 @@ class Result:
     """What one call to your system produced, and what it cost."""
 
     output: str
-    tokens_in: Optional[int] = None
-    tokens_out: Optional[int] = None
-    cost_usd: Optional[float] = None
-    latency_ms: Optional[float] = None
-    extra: Dict[str, float] = field(default_factory=dict)
+    tokens_in: int | None = None
+    tokens_out: int | None = None
+    cost_usd: float | None = None
+    latency_ms: float | None = None
+    extra: dict[str, float] = field(default_factory=dict)
     # Raw provider metadata, kept verbatim and never averaged: the `usage` object,
     # `finish_reason`, the model string the provider actually reports back. Anything
     # numeric belongs in `extra` (it becomes a metric); anything you want preserved
     # for forensics belongs here. Without this the harness could not answer "were
     # reasoning tokens billed?" or "was this output cut off at max_tokens?" -- both
     # of which silently corrupt a comparison.
-    meta: Dict[str, Any] = field(default_factory=dict)
+    meta: dict[str, Any] = field(default_factory=dict)
 
 
 # ── 1. YOUR SYSTEM ───────────────────────────────────────────────────────────
-def call_system(text: str, params: Dict[str, Any]) -> Result:
+def call_system(text: str, params: dict[str, Any]) -> Result:
     """Run YOUR system over one item. Replace the body.
 
     `params` is whatever the experiment config put under `params:` — model name,
@@ -61,9 +65,10 @@ def call_system(text: str, params: Dict[str, Any]) -> Result:
     example adapters work out of the box:
 
         echo        no network, deterministic — proves the plumbing
-        litellm     a LiteLLM proxy: ONE key, many providers, central spend
-        anthropic   Claude via the official SDK
-        openai      anything OpenAI-compatible, including OpenRouter
+        openai      OpenAI, or any OpenAI-compatible endpoint (`base_url`)
+        anthropic   Anthropic
+        openrouter  OpenRouter, asked for what it billed
+        litellm     your own LiteLLM proxy: one key, many providers, central spend
 
     A real integration usually deletes all of this and calls one function:
 
@@ -71,7 +76,11 @@ def call_system(text: str, params: Dict[str, Any]) -> Result:
         return Result(output=summarise(text, model=params["model"]))
     """
     provider = params.get("provider", "echo")
-    fn: Callable[[str, Dict[str, Any]], Result] = PROVIDERS.get(provider, _echo)
+    # An unknown provider is an error. It fell back to echo, so a typo in a config recorded
+    # the echoed input as that model's output.
+    if provider not in PROVIDERS:
+        raise SystemExit(f"unknown provider {provider!r}; this adapter knows {', '.join(sorted(PROVIDERS))}")
+    fn: Callable[[str, dict[str, Any]], Result] = PROVIDERS[provider]
     started = time.perf_counter()
     # No retry wrapper here: the core retries every adapter. See the note below.
     result = fn(text, params)
@@ -82,22 +91,23 @@ def call_system(text: str, params: Dict[str, Any]) -> Result:
 
 # RETRIES LIVE IN THE CORE, NOT HERE.
 #
-# This adapter used to carry its own `_with_retries` loop, and `experiment_run` wraps
-# every `call_system` in `call_with_retries` as well. Both read EVAL_MAX_RETRIES, both
-# default to 8 -- so a genuinely failing item was attempted 8 x 8 = 64 times, with both
-# backoffs compounding. On a paid provider that multiplies the bill for the one item
-# least likely to ever succeed.
-#
-# The core's loop is the one to keep: it applies to EVERY adapter whether or not its
-# author wrote retries, which was the reason it was added. An adapter that wants extra
-# retryable signatures declares `TRANSIENT_MARKERS` and the core honours them -- that is
-# the supported way to extend this, and it cannot multiply attempts.
-#
-# Found by external review.
+# `experiment_run` wraps every `call_system` in its own retry loop (EVAL_MAX_RETRIES), for
+# every adapter. Do not add a second loop in an adapter: the two multiply, and a failing item
+# on a paid provider is then attempted many times over. To make more errors retryable, declare
+# `TRANSIENT_MARKERS` (substrings of the error message); the core honours them.
 
 
 # ── 2. HOW GOOD WAS IT ───────────────────────────────────────────────────────
-def score(output: str, reference: Optional[str]) -> Dict[str, float]:
+#: The metric that answers "which arm is better": recorded on every run, it is what the
+#: leaderboard ranks by, the catalog's headline number and the inspector's default. Name
+#: yours when you replace score(); without one they fall back to name order.
+PRIMARY_METRIC = "overlap_f1"
+#: A quality metric that improves going DOWN (WER, error rate) says so here, e.g.
+#: METRIC_DIRECTIONS = {"wer": "lower"}. Costs, latencies and token counts already do; anything
+#: else is taken to improve going up. Recorded on every run.
+
+
+def score(output: str, reference: str | None) -> dict[str, float]:
     """Score one output. Replace with whatever "good" means for you.
 
     Called with the golden reference when one exists for the item, and with
@@ -120,11 +130,11 @@ def score(output: str, reference: Optional[str]) -> Dict[str, float]:
     overlap = len(a & b)
     precision, recall = overlap / len(a), overlap / len(b)
     f1 = 0.0 if precision + recall == 0 else 2 * precision * recall / (precision + recall)
-    return {"output_words": out_len, "overlap_f1": round(f1, 6)}
+    return {"output_words": out_len, "overlap_f1": f1}
 
 
 # ── example adapters — delete the ones you do not use ────────────────────────
-def _echo(text: str, params: Dict[str, Any]) -> Result:
+def _echo(text: str, params: dict[str, Any]) -> Result:
     """No network. Returns the first N sentences — a stand-in 'summary'.
 
     Deterministic BY DEFAULT: `--repeat 3` reports spread 0.000000, which is the
@@ -155,105 +165,30 @@ def _echo(text: str, params: Dict[str, Any]) -> Result:
     return Result(output=out, cost_usd=0.0)
 
 
-def _anthropic(text: str, params: Dict[str, Any]) -> Result:
-    import anthropic  # imported lazily so the demo needs no SDK
-
-    key = os.environ.get("ANTHROPIC_API_KEY")
-    if not key:
-        raise SystemExit("ANTHROPIC_API_KEY is not set")
-    client = anthropic.Anthropic(api_key=key)
-    model = params.get("model", "claude-sonnet-4-6")
-    msg = client.messages.create(
-        model=model,
-        max_tokens=int(params.get("max_tokens", 600)),
-        temperature=float(params.get("temperature", 0.0)),
-        messages=[{"role": "user", "content": params.get("prompt", "Summarise:") + "\n\n" + text}],
+def _hosted(text: str, params: dict[str, Any]) -> Result:
+    """A hosted model, through the harness's providers (openai, anthropic, openrouter, litellm):
+    the arm's `prompt`, then the item. Keys, addresses and cost: `evaluation_harness._providers`."""
+    c = _providers.complete(
+        params.get("prompt", "Summarise:") + "\n\n" + text, params, role="arm", max_tokens=600
     )
-    usage = getattr(msg, "usage", None)
-    ti = getattr(usage, "input_tokens", None)
-    to = getattr(usage, "output_tokens", None)
     return Result(
-        output="".join(b.text for b in msg.content if getattr(b, "type", "") == "text"),
-        tokens_in=ti,
-        tokens_out=to,
-        cost_usd=_price(params, ti, to),
+        output=c.text,
+        tokens_in=c.tokens_in,
+        tokens_out=c.tokens_out,
+        cost_usd=c.cost_usd,
+        extra={**({"reasoning_tokens": float(c.reasoning_tokens)} if c.reasoning_tokens is not None else {})},
+        # "length" means the output stopped at max_tokens; experiment-run warns about it. The bill,
+        # when the provider sent one, is kept where cost-report and rescore read it.
+        meta={
+            **({"finish_reason": c.finish_reason} if c.finish_reason else {}),
+            **({"usage": {"cost": c.cost_usd}} if c.billed else {}),
+            **({"response_model": c.response_model} if c.response_model else {}),
+            **({"provider": c.upstream_provider} if c.upstream_provider else {}),
+        },
     )
 
 
-def _litellm(text: str, params: Dict[str, Any]) -> Result:
-    """A LiteLLM proxy — one key, many providers, spend tracked centrally.
-
-    Usually the best answer for a sweep: the proxy already holds the provider
-    keys, so the harness carries ONE credential instead of four, and every call
-    lands in the proxy's spend log under this key's alias. Point `.env` at it:
-
-        LITELLM_BASE_URL=http://127.0.0.1:4001
-        LITELLM_API_KEY=sk-...
-
-    `model` is the proxy's model_name, not the upstream id — the mapping from
-    `eval-claude-sonnet` to `openrouter/anthropic/...` is the proxy's business,
-    which is the point of putting it there.
-    """
-    params = {
-        **params,
-        "base_url": (params.get("base_url") or os.environ.get("LITELLM_BASE_URL", "")).rstrip("/")
-        + "/v1",
-        "api_key_env": params.get("api_key_env", "LITELLM_API_KEY"),
-    }
-    if not params["base_url"].startswith("http"):
-        raise SystemExit(
-            "LITELLM_BASE_URL is not set. Copy .env.example to .env and point it at "
-            "your proxy, e.g. http://127.0.0.1:4001"
-        )
-    return _openai_compatible(text, params)
-
-
-def _openai_compatible(text: str, params: Dict[str, Any]) -> Result:
-    """OpenAI-shaped APIs, including OpenRouter — set `base_url` in params."""
-    from openai import OpenAI  # lazy
-
-    env_key = params.get("api_key_env", "OPENAI_API_KEY")
-    key = os.environ.get(env_key)
-    if not key:
-        raise SystemExit(f"{env_key} is not set")
-    client = OpenAI(api_key=key, base_url=params.get("base_url") or None)
-    resp = client.chat.completions.create(
-        model=params["model"],
-        temperature=float(params.get("temperature", 0.0)),
-        max_tokens=int(params.get("max_tokens", 600)),
-        messages=[
-            {"role": "user", "content": params.get("prompt", "Summarise:") + "\n\n" + text}
-        ],
-    )
-    u = getattr(resp, "usage", None)
-    ti = getattr(u, "prompt_tokens", None)
-    to = getattr(u, "completion_tokens", None)
-    return Result(
-        output=resp.choices[0].message.content or "",
-        tokens_in=ti,
-        tokens_out=to,
-        cost_usd=_price(params, ti, to),
-    )
-
-
-def _price(params: Dict[str, Any], tin: Optional[int], tout: Optional[int]) -> Optional[float]:
-    """Cost from per-million-token prices declared in the config.
-
-    Prices live in the experiment config, not in code, because they change and
-    because a run should record the price it was costed at. A number computed
-    from today's price list is not comparable to one computed from last
-    quarter's without saying so.
-    """
-    pin, pout = params.get("usd_per_mtok_in"), params.get("usd_per_mtok_out")
-    if pin is None or pout is None or tin is None or tout is None:
-        return None
-    return round(tin / 1e6 * float(pin) + tout / 1e6 * float(pout), 8)
-
-
-PROVIDERS: Dict[str, Callable[[str, Dict[str, Any]], Result]] = {
+PROVIDERS: dict[str, Callable[[str, dict[str, Any]], Result]] = {
     "echo": _echo,
-    "anthropic": _anthropic,
-    "openai": _openai_compatible,
-    "openrouter": _openai_compatible,
-    "litellm": _litellm,
+    **dict.fromkeys(_providers.PROVIDERS, _hosted),
 }

@@ -60,19 +60,16 @@ from __future__ import annotations
 import argparse
 import collections
 import hashlib
-import json
 import sys
-import time
-import urllib.parse
-import urllib.request
 from pathlib import Path
 
 # parents[2] is the repo root -> <root>/harness, the harness this example feeds. Getting
 # the level wrong silently creates a SECOND data tree and everything appears to work.
 ROOT = Path(__file__).resolve().parents[2] / "harness"
-ROWS_API = "https://datasets-server.huggingface.co/rows"
 DATASET = "fancyzhx/ag_news"
 CONFIG = "default"
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "_shared"))
+from hf_rows import page as _rows_page  # noqa: E402 - the one retry/pacing schedule
 
 #: The API caps a single request; page rather than assume one call is enough.
 PAGE = 100
@@ -86,31 +83,10 @@ def fetch_rows(limit: int, split: str) -> list[dict]:
     """Up to `limit` rows from the datasets-server, paged."""
     rows: list[dict] = []
     while len(rows) < limit:
-        want = min(PAGE, limit - len(rows))
-        query = urllib.parse.urlencode(
-            {"dataset": DATASET, "config": CONFIG, "split": split,
-             "offset": len(rows), "length": want}
-        )
-        # Retried, as every other fetcher here is: the datasets-server returns transient
-        # 502s, and one failed CI's replication job on its first page (2026-10-18).
-        payload, last = None, None
-        for attempt in range(6):
-            try:
-                with urllib.request.urlopen(f"{ROWS_API}?{query}", timeout=60) as resp:
-                    payload = json.loads(resp.read())
-                break
-            except Exception as exc:  # noqa: BLE001 - retried, then one message
-                last = exc
-                time.sleep(2 * (attempt + 1))
-        if payload is None:
-            sys.exit(
-                f"could not reach the datasets-server: {type(last).__name__}: {last}\n"
-                "  it is an HTTPS API; check connectivity, then retry."
-            )
-        page = payload.get("rows") or []
+        page = _rows_page(DATASET, CONFIG, split, len(rows), min(PAGE, limit - len(rows)))
         if not page:
             break  # the split ran out before the pool filled; reported by the caller
-        rows.extend(r["row"] for r in page)
+        rows.extend(page)
     return rows
 
 
@@ -148,12 +124,14 @@ def item_id(text: str) -> str:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--n", type=int, default=200,
-                    help="total items; split evenly across the 4 classes (default: 200)")
+    ap.add_argument(
+        "--n", type=int, default=200, help="total items; split evenly across the 4 classes (default: 200)"
+    )
     ap.add_argument("--split", default="test", help="dataset split (default: test)")
     ap.add_argument("--dataset-id", default=None, help="harness dataset_id (default: ag_news_<n>)")
-    ap.add_argument("--pool", type=int, default=None,
-                    help="rows to scan for the stratified draw (default: 8x n, min 400)")
+    ap.add_argument(
+        "--pool", type=int, default=None, help="rows to scan for the stratified draw (default: 8x n, min 400)"
+    )
     ap.add_argument("--force", action="store_true", help="overwrite an existing slice")
     args = ap.parse_args()
 
@@ -200,8 +178,7 @@ def main() -> int:
     print(f"  gold refs  {golds}")
     print(f"  classes    {dict(sorted(got.items()))}")
     print(f"  words      min {words[0]}  median {words[len(words) // 2]}  max {words[-1]}")
-    print(f"\n  Balanced by construction, so the majority-class floor is exactly "
-          f"{1 / len(LABELS):.2f}.")
+    print(f"\n  Balanced by construction, so the majority-class floor is exactly {1 / len(LABELS):.2f}.")
     print("  Any arm below that is worse than a constant, which is worth knowing.")
     print("\nNext:")
     if (ROOT / "data" / "datasets" / f"{dataset_id}.json").is_file():

@@ -56,8 +56,9 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 sys.path.insert(0, str(ROOT / "examples" / "_shared"))
-sys.path.insert(0, str(ROOT / "harness" / "scripts"))
+sys.path.insert(0, str(ROOT / "harness"))  # the evaluation_harness package (a link to scripts/)
 
+from evaluation_harness._record import derived_record  # noqa: E402
 from retrieval import parse_ranking, score_ranking, scorer_sha256  # noqa: E402
 
 
@@ -65,9 +66,11 @@ def qrels_for(refs: Path, item_id: str):
     f = refs / f"{item_id}.txt"
     if not f.is_file():
         return None
-    return {str(x["doc_id"]): int(x.get("score", 1))
-            for x in json.loads(f.read_text(encoding="utf-8"))
-            if isinstance(x, dict) and x.get("doc_id") is not None}
+    return {
+        str(x["doc_id"]): int(x.get("score", 1))
+        for x in json.loads(f.read_text(encoding="utf-8"))
+        if isinstance(x, dict) and x.get("doc_id") is not None
+    }
 
 
 def main() -> int:
@@ -75,14 +78,15 @@ def main() -> int:
     ap.add_argument("--runs", type=Path, default=ROOT / "harness/data/runs")
     ap.add_argument("--out", type=Path, default=ROOT / "harness/data/runs-reparsed")
     ap.add_argument("--dataset-id", default="scifact_200")
-    ap.add_argument("--refs", type=Path,
-                    default=ROOT / "harness/data/references/gold/scifact_200")
+    ap.add_argument("--refs", type=Path, default=ROOT / "harness/data/references/gold/scifact_200")
     args = ap.parse_args()
 
     if not args.refs.is_dir() or not any(args.refs.glob("*.txt")):
-        sys.exit(f"no references under {args.refs}.\n"
-                 f"  The corpus is gitignored; rebuild it first:\n"
-                 f"    python examples/retrieval-scifact/fetch.py")
+        sys.exit(
+            f"no references under {args.refs}.\n"
+            f"  The corpus is gitignored; rebuild it first:\n"
+            f"    python examples/retrieval-scifact/fetch.py"
+        )
 
     args.out.mkdir(parents=True, exist_ok=True)
     changed_arms = 0
@@ -95,7 +99,7 @@ def main() -> int:
         if m.get("dataset_id") != args.dataset_id:
             continue
 
-        rows = [json.loads(l) for l in pj.read_text(encoding="utf-8").splitlines() if l.strip()]
+        rows = [json.loads(ln) for ln in pj.read_text(encoding="utf-8").splitlines() if ln.strip()]
         if not rows:
             continue
         has_llm = (rows[0].get("_meta") or {}).get("first_stage") is not None
@@ -111,7 +115,7 @@ def main() -> int:
             if head is None or full is None or q is None:
                 new_rows.append(r)
                 continue
-            tail = full[len(head):]
+            tail = full[len(head) :]
             order = parse_ranking(meta.get("llm_raw") or "")
             if order:
                 seen, reordered = set(), []
@@ -134,12 +138,17 @@ def main() -> int:
             nr["_meta"] = {**meta, "ranking": ranking, "llm_returned": order}
             new_rows.append(nr)
 
-        import statistics
-        keys = sorted({k for r in new_rows for k in r
-                       if k != "item_id" and not k.startswith("_")
-                       and isinstance(r[k], (int, float))})
-        scores = {k: round(statistics.fmean([float(r[k]) for r in new_rows if k in r]), 10)
-                  for k in keys}
+        import statistics  # noqa: PLC0415
+
+        keys = sorted(
+            {
+                k
+                for r in new_rows
+                for k in r
+                if k != "item_id" and not k.startswith("_") and isinstance(r[k], (int, float))
+            }
+        )
+        scores = {k: round(statistics.fmean([float(r[k]) for r in new_rows if k in r]), 10) for k in keys}
         for k in ("cost_usd", "tokens_in", "tokens_out"):
             vals = [float(r[k]) for r in new_rows if k in r]
             if vals:
@@ -148,25 +157,33 @@ def main() -> int:
         run_dir = args.out / d.name
         run_dir.mkdir(parents=True, exist_ok=True)
         (run_dir / "predictions.jsonl").write_text(
-            "".join(json.dumps(r, sort_keys=True) + "\n" for r in new_rows), encoding="utf-8")
-        new = dict(m)
-        new["scores"] = scores
-        new["reparsed_from"] = d.name
-        new["reparsed_with"] = {"parser": "examples/_shared/retrieval.parse_ranking",
-                                "scorer_sha256": scorer_sha256()}
+            "".join(json.dumps(r, sort_keys=True) + "\n" for r in new_rows), encoding="utf-8"
+        )
+        new = derived_record(
+            m,
+            kind="reparse",
+            source_dir=d.name,
+            with_={"parser": "examples/_shared/retrieval.parse_ranking", "scorer_sha256": scorer_sha256()},
+            scores=scores,
+            n_items=len(new_rows),
+        )
         fp = json.loads(json.dumps(new.get("fingerprint") or {}))
         if fp:
             fp["hash"] = None
             fp["hash_invalid_because"] = (
                 "rankings were rebuilt from stored LLM replies with a parser this "
-                "fingerprint does not describe; see reparsed_with")
+                "fingerprint does not describe; see derived.with"
+            )
             new["fingerprint"] = fp
-        (run_dir / "metrics.json").write_text(json.dumps(new, indent=2, sort_keys=True) + "\n",
-                                              encoding="utf-8")
+        (run_dir / "metrics.json").write_text(
+            json.dumps(new, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        )
         if moved:
             changed_arms += 1
-        print(f"  {d.name}  {'%3d items reordered' % moved if moved else 'unchanged'}"
-              f"   ndcg_10 {m['scores'].get('ndcg_10', 0):.4f} -> {scores.get('ndcg_10', 0):.4f}")
+        print(
+            f"  {d.name}  {f'{moved:3d} items reordered' if moved else 'unchanged'}"
+            f"   ndcg_10 {m['scores'].get('ndcg_10', 0):.4f} -> {scores.get('ndcg_10', 0):.4f}"
+        )
 
     print(f"\n  {changed_arms} arm(s) changed. Written to {args.out}")
     print(f"  EVAL_RUNS_DIR={args.out} make leaderboard DATASET_ID={args.dataset_id}")

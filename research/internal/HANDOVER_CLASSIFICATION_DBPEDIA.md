@@ -183,7 +183,7 @@ cd ../../harness
 PY=../examples/classification-dbpedia-14/.venv/bin/python
 PYTHON=$PY make dataset-materialize DATASET_ID=dbpedia_280
 
-$PY scripts/classification_report.py --dataset-id dbpedia_280
+$PY tools/classification_report.py --dataset-id dbpedia_280
 $PY scripts/family_test.py --dataset-id dbpedia_280 --a db_qwen_m_n200_v1 \
      --against _n200_v1 --metric correct
 $PY scripts/holdout_significance.py --dataset-id dbpedia_280 \

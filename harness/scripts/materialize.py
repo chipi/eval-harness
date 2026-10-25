@@ -14,13 +14,18 @@ failure, not a warning.
 
 from __future__ import annotations
 
+import sys as _sys
+from pathlib import Path as _Path
+
+if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
+
 import argparse
 import shutil
-import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _common import (  # noqa: E402
+from evaluation_harness import _fetch
+from evaluation_harness._common import (
     MATERIALIZED,
     die,
     load_dataset,
@@ -31,6 +36,7 @@ from _common import (  # noqa: E402
 
 
 def main() -> int:
+    """Materialize a dataset from sources and verify hashes."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", required=True)
     ap.add_argument("--force", action="store_true", help="rebuild even if it exists")
@@ -47,9 +53,22 @@ def main() -> int:
         shutil.rmtree(out)
     out.mkdir(parents=True)
 
-    drifted, missing = [], []
+    drifted, missing, unfetched = [], [], []
     for item in ds["items"]:
         rel = item.get("source_path") or item["item_id"]
+        if item.get("source_url"):
+            # A URL item (ADR-0003): fetched once into the cache, and refused unless its bytes
+            # are the pinned ones. A changed file at the URL is the same failure as a changed
+            # file under sources/.
+            try:
+                src, _ = _fetch.fetch(item["source_url"], item["source_sha256"])
+            except _fetch.FetchError as exc:
+                unfetched.append((rel, str(exc)))
+                continue
+            dst = out / rel
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(src, dst)
+            continue
         src = src_root / rel
         if not src.is_file():
             missing.append(rel)
@@ -62,13 +81,16 @@ def main() -> int:
         dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(src, dst)
 
-    if missing or drifted:
+    if missing or drifted or unfetched:
         for rel in missing:
             print(f"  MISSING  {rel}")
         for rel, was, now_ in drifted:
             print(f"  CHANGED  {rel}  frozen={was} actual={now_}")
+        for rel, why in unfetched:
+            print(f"  FETCH    {rel}  {why}")
         die(
-            f"{len(missing)} missing, {len(drifted)} changed since the dataset was frozen.\n"
+            f"{len(missing)} missing, {len(drifted)} changed, {len(unfetched)} not fetched as pinned "
+            "since the dataset was frozen.\n"
             "  sources/ is immutable. If an input genuinely changed, that is a NEW\n"
             "  dataset (_v2) — every number already published was measured on the old bytes."
         )

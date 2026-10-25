@@ -6,8 +6,17 @@
     "source": "git"
   },
   "config_id": "sf_llama_s_n200_v1",
-  "created_at": "2026-09-28T20:21:37Z",
+  "created_at": "2026-09-29T20:21:59+02:00",
   "dataset_id": "scifact_200",
+  "derived": {
+    "at": "2026-09-29T20:21:59+02:00",
+    "from": "sf_llama_s_n200_v1_20260928T192318Z",
+    "kind": "reparse",
+    "with": {
+      "parser": "examples/_shared/retrieval.parse_ranking",
+      "scorer_sha256": "a534747b2a5d9712a1965473ab8e1d60b82aa2f73cf385c789d0fb4e83a51cd3"
+    }
+  },
   "fingerprint": {
     "arm": {
       "config_id": "sf_llama_s_n200_v1",
@@ -35,9 +44,11 @@
       "items_sha256": "b97dfe735a78eb4978cde41e2ca9a0bff424de9e6a0a2bdada5d167e3423004d",
       "n_items": 200,
       "reference_id": "gold/scifact_200",
-      "reference_tier": "gold"
+      "reference_tier": "gold",
+      "references_sha256": "b522e08017ebc7dd71c5627bccfdd688c5124096df8a5e6454684141bc361d99"
     },
-    "hash": "d732a7b321d3f1f6a0944e7aed3a7c52db2e0033f4526eaefa59d051afc1f067",
+    "hash": null,
+    "hash_invalid_because": "rankings were rebuilt from stored LLM replies with a parser this fingerprint does not describe; see derived.with",
     "host": {
       "cpu_count": 12,
       "label": "mac-dev",
@@ -49,7 +60,7 @@
     "instrument": {
       "adapter": {
         "id": "examples/retrieval-scifact/adapter.py",
-        "sha256": "cedb9f962aac9aef991ab83a63393769ed2976796bbfa2e7ecdf8e020dfd74f2"
+        "sha256": "46cd2bd89061c9f3bff0493cce7ab292dd6f9b1bae7c7e482af0aebdd1479cee"
       },
       "harness": {
         "commit": "0e20aaeb3dca",
@@ -96,8 +107,9 @@
         "top_k": 100
       }
     },
-    "version": 1
+    "version": 4
   },
+  "goal": "scientific_retrieval_scifact",
   "metric_kinds": {
     "confidence": "descriptive",
     "duplicate_ids": "descriptive",
@@ -136,30 +148,32 @@
   "primary_metric": "ndcg_10",
   "providers_seen": {},
   "reference_tier": "gold",
+  "round": "r1",
   "run_id": "sf_llama_s_n200_v1_20260928T192318Z",
   "scores": {
-    "cost_usd": 0.000357,
+    "cost_usd": 0.0007292236,
     "duplicate_ids": 0.0,
     "found_any": 0.865,
     "latency_ms": 17481.64788,
     "llm_named_unknown": 0.2,
     "llm_parsed": 0.98,
-    "mrr_10": 0.70652,
+    "mrr_10": 0.7065198413,
     "n_relevant": 1.135,
     "n_returned": 100.0,
-    "ndcg_10": 0.717248,
+    "ndcg_10": 0.7172479713,
     "parsed": 1.0,
     "rank_of_first": 2.825,
     "reasoning_tokens": 0.0,
     "recall_10": 0.7855,
-    "recall_100": 0.858583,
+    "recall_100": 0.8585833333,
     "tokens_in": 3848.265,
     "tokens_out": 164.825,
-    "total_cost_usd": 0.07146174,
+    "total_cost_usd": 0.14584472,
     "total_tokens_in": 769653.0,
     "total_tokens_out": 32965.0,
     "truncated": 0.0,
     "unknown_ids": 0.0
   },
+  "source_created_at": "2026-09-28T20:21:37Z",
   "warmup_ms": 2071.192
 }

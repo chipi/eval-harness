@@ -21,11 +21,18 @@ and cause the next one.
 
 from __future__ import annotations
 
+import sys as _sys
+from pathlib import Path as _Path
+
+if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
+
 import os
 import random
 import re
 import time
-from typing import Any, Callable, Iterable, Optional, Sequence, Tuple
+from collections.abc import Iterable, Sequence
+from typing import Any, Callable
 
 #: Substrings that mark a failure as worth retrying. Matched case-insensitively against
 #: "TypeName: message", because provider SDKs disagree about everything else: some raise
@@ -34,22 +41,41 @@ from typing import Any, Callable, Iterable, Optional, Sequence, Tuple
 #: Status codes, matched as WHOLE NUMBERS rather than substrings. As a substring, "500"
 #: also matches "requested 15000 tokens" -- a permanent 400 that retried eight times over
 #: two minutes before failing anyway.
-TRANSIENT_CODES: Tuple[str, ...] = ("429", "500", "502", "503", "504")
+TRANSIENT_CODES: tuple[str, ...] = ("429", "500", "502", "503", "504")
 
-TRANSIENT: Tuple[str, ...] = (
-    "rate limit", "rate-limited", "ratelimit", "too many requests",
-    "overloaded", "capacity", "temporarily", "try again",
-    "timeout", "timed out", "connection", "reset by peer", "eof occurred",
+TRANSIENT: tuple[str, ...] = (
+    "rate limit",
+    "rate-limited",
+    "ratelimit",
+    "too many requests",
+    "overloaded",
+    "capacity",
+    "temporarily",
+    "try again",
+    "timeout",
+    "timed out",
+    "connection",
+    "reset by peer",
+    "eof occurred",
 )
 
 #: NOT retryable, whatever else the message says. A bad key or a malformed request fails
 #: identically on every attempt, so retrying only spends time — and, where a provider
 #: bills rejected requests, money — to fail more slowly. Checked BEFORE `TRANSIENT`,
 #: because "401 ... please try again later" should not be read as transient.
-FATAL: Tuple[str, ...] = (
-    "401", "403", "invalid api key", "authentication", "permission denied",
-    "not found", "404", "model_not_found", "does not exist",
-    "invalid_request", "context length", "max_tokens",
+FATAL: tuple[str, ...] = (
+    "401",
+    "403",
+    "invalid api key",
+    "authentication",
+    "permission denied",
+    "not found",
+    "404",
+    "model_not_found",
+    "does not exist",
+    "invalid_request",
+    "context length",
+    "max_tokens",
 )
 
 
@@ -75,8 +101,8 @@ def call_with_retries(
     args: Sequence[Any] = (),
     *,
     extra_transient: Iterable[str] = (),
-    attempts: Optional[int] = None,
-    max_delay: Optional[float] = None,
+    attempts: int | None = None,
+    max_delay: float | None = None,
     label: str = "",
     sleep: Callable[[float], None] = time.sleep,
 ) -> Any:
@@ -90,19 +116,20 @@ def call_with_retries(
     """
     tries = max(1, attempts if attempts is not None else _env_int("EVAL_MAX_RETRIES", 8))
     cap = max_delay if max_delay is not None else float(_env_int("EVAL_RETRY_MAX_DELAY", 60))
-    last: Optional[BaseException] = None
+    last: BaseException | None = None
     for attempt in range(1, tries + 1):
         try:
             return fn(*args)
         except SystemExit:
             raise
-        except Exception as exc:  # noqa: BLE001 — provider SDKs vary too much to enumerate
+        except Exception as exc:  # provider SDKs vary too much to enumerate
             if attempt == tries or not is_transient(exc, extra_transient):
                 raise
             last = exc
             delay = min(cap, 2.0 ** (attempt - 1)) + random.uniform(0, 0.5)
             where = f" {label}" if label else ""
-            print(f"      transient{where} ({type(exc).__name__}), "
-                  f"retry {attempt}/{tries - 1} in {delay:.1f}s")
+            print(
+                f"      transient{where} ({type(exc).__name__}), retry {attempt}/{tries - 1} in {delay:.1f}s"
+            )
             sleep(delay)
     raise last if last else RuntimeError("unreachable")

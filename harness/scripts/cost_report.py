@@ -32,15 +32,20 @@ WHAT IT CANNOT TELL YOU
 
 from __future__ import annotations
 
+import sys as _sys
+from pathlib import Path as _Path
+
+if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
+
 import argparse
 import json
-import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE))
 
-from _common import RUNS, read_json  # noqa: E402
+from evaluation_harness._common import die  # noqa: E402
+from evaluation_harness._runs import runs_on  # noqa: E402
 
 
 def billed_and_recorded(run_dir: Path) -> tuple[float, float, int, int]:
@@ -64,6 +69,7 @@ def billed_and_recorded(run_dir: Path) -> tuple[float, float, int, int]:
 
 
 def main() -> int:
+    """Report cost metrics for runs."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", help="only this dataset; default every dataset")
     ap.add_argument("--match", help="only runs whose config_id contains this")
@@ -71,16 +77,8 @@ def main() -> int:
 
     rows = []
     no_bill = []
-    for d in sorted(RUNS.glob("*")):
-        mj = d / "metrics.json"
-        if not mj.is_file():
-            continue
-        m = read_json(mj)
-        if args.dataset_id and m.get("dataset_id") != args.dataset_id:
-            continue
-        cid = m.get("config_id", d.name)
-        if args.match and args.match not in cid:
-            continue
+    for d, m in runs_on(args.dataset_id or None, match=args.match):
+        cid = m["config_id"]
         billed, recorded, with_bill, total = billed_and_recorded(d)
         if total == 0:
             continue
@@ -89,14 +87,12 @@ def main() -> int:
             continue
         if with_bill != total:
             # Half a bill is not a bill. Say so rather than summing a mixture.
-            no_bill.append((f"{cid} (only {with_bill}/{total} items billed)",
-                            recorded, m.get("dataset_id")))
+            no_bill.append((f"{cid} (only {with_bill}/{total} items billed)", recorded, m.get("dataset_id")))
             continue
         rows.append((billed, recorded, cid, m.get("dataset_id")))
 
     if not rows and not no_bill:
-        print("no runs matched")
-        return 1
+        die("no runs matched")
 
     rows.sort(key=lambda r: -r[0])
     w = max((len(r[2]) for r in rows), default=20) + 2
@@ -110,12 +106,13 @@ def main() -> int:
         tb += billed
         tr += recorded
     print("  " + "-" * (w + 31))
-    print(f"  {'TOTAL':{w}}{tb:>11.4f}{tr:>11.4f}"
-          f"{(tb / tr) if tr else float('nan'):>8.2f}x")
+    print(f"  {'TOTAL':{w}}{tb:>11.4f}{tr:>11.4f}{(tb / tr) if tr else float('nan'):>8.2f}x")
 
     if no_bill:
-        print(f"\n  {len(no_bill)} run(s) with NO provider bill — the price table is all "
-              f"there is, and they are NOT in the total above:")
+        print(
+            f"\n  {len(no_bill)} run(s) with NO provider bill — the price table is all "
+            f"there is, and they are NOT in the total above:"
+        )
         for cid, recorded, ds in no_bill:
             print(f"    {cid}  ${recorded:.4f}  ({ds})")
 

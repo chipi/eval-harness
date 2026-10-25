@@ -20,11 +20,17 @@ jobs:
   package:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # The oldest Python pyproject.toml allows, the one developed on, and the newest: the package
+    # claims >=3.9, and only a run on 3.9 can show that is true.
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.9", "3.11", "3.14"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: ${{ matrix.python }}
 
       - name: Build
         run: |
@@ -40,7 +46,10 @@ jobs:
           for n in 1 2 3; do echo "item $n" > data/sources/item_$n.txt; done
           /tmp/clean/bin/evh dataset-create --dataset-id ci_v1
           /tmp/clean/bin/evh validate
-          test ! -d /tmp/clean/lib/python3.11/site-packages/data
+          # In a project, self-test checks the installed package: its paired-test suite and the
+          # tutorial end to end (fields, runs, pair-test, rescore, validate, catalog).
+          /tmp/clean/bin/evh self-test
+          test -z "$(find /tmp/clean/lib -path '*site-packages/data' -maxdepth 4)"
 
       - name: The version has a CHANGELOG section
         run: |

@@ -1,21 +1,31 @@
 #!/usr/bin/env python3
 """List runs (or baselines) with the three things that make a number mean something.
 
-    python scripts/list_runs.py
-    python scripts/list_runs.py --baselines
+python scripts/list_runs.py
+python scripts/list_runs.py --baselines
 """
 
 from __future__ import annotations
 
-import argparse
-import sys
-from pathlib import Path
+import sys as _sys
+from pathlib import Path as _Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _common import BASELINES, RUNS, read_json  # noqa: E402
+if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
+
+import argparse
+
+from evaluation_harness._common import (
+    BASELINES,
+    BOOKKEEPING_PREFIXES,
+    how,
+    read_json,
+)
+from evaluation_harness._runs import runs_on
 
 
 def main() -> int:
+    """List the runs, or with --baselines the baselines."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--baselines", action="store_true")
     args = ap.parse_args()
@@ -23,27 +33,43 @@ def main() -> int:
     if args.baselines:
         files = sorted(BASELINES.glob("*.json"))
         if not files:
-            print("no baselines yet — promote a run:  make promote RUN=<id> REASON=\"...\"")
+            print(
+                "no baselines yet — promote a run:  "
+                + how('evh run-promote --run <id> --reason "..."', 'make run-promote RUN=<id> REASON="..."')
+            )
             return 0
         for f in files:
             b = read_json(f)
             print(f"{b['baseline_id']}")
             print(f"    dataset  {b['dataset_id']}")
             print(f"    from     {b['promoted_from']}   build={b['build'].get('ref', '?')[:12]}")
+            print(f"    scored   {b.get('reference_tier', '?')} references, adapter {b.get('adapter', '?')}")
             print(f"    why      {b.get('reason', '(none recorded)')}")
-            print("    scores   " + "  ".join(f"{k}={v}" for k, v in sorted(b["scores"].items())))
+            print(
+                "    scores   "
+                + "  ".join(
+                    f"{k}={v}"
+                    for k, v in sorted(b["scores"].items())
+                    if not k.startswith(BOOKKEEPING_PREFIXES)
+                )
+            )
         return 0
 
-    dirs = sorted(p for p in RUNS.iterdir() if (p / "metrics.json").is_file()) if RUNS.is_dir() else []
+    dirs = [d for d, _m in runs_on()]
     if not dirs:
-        print("no runs yet — try:  make demo")
+        print(
+            "no runs yet — "
+            + how("start with `evh experiment-run --config <arm>.yaml` (docs/GUIDE.md)", "try:  make demo")
+        )
         return 0
     print(f"{'run_id':44} {'dataset_id':18} {'build':14} scores")
     for d in dirs:
         m = read_json(d / "metrics.json")
-        scores = "  ".join(f"{k}={v}" for k, v in sorted(m["scores"].items()))
+        scores = "  ".join(
+            f"{k}={v}" for k, v in sorted(m["scores"].items()) if not k.startswith(BOOKKEEPING_PREFIXES)
+        )
         dirty = "*" if m["build"].get("dirty") else " "
-        print(f"{m['run_id']:44} {m['dataset_id']:18} {m['build'].get('ref','?')[:12]}{dirty} {scores}")
+        print(f"{m['run_id']:44} {m['dataset_id']:18} {m['build'].get('ref', '?')[:12]}{dirty} {scores}")
     print("\n  * = produced by a dirty tree; its build ref does not describe what ran")
     return 0
 

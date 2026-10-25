@@ -1,0 +1,41 @@
+{
+  "adapter": "examples/summarization-cnn-dailymail/adapter.py",
+  "baseline_id": "cnn_dailymail_200_baseline",
+  "build": {
+    "dirty": false,
+    "ref": "fb7366a0a69479db793d52bd04e310e8a564b9f4",
+    "source": "git"
+  },
+  "dataset_id": "cnn_dailymail_200",
+  "fingerprint_hash": "5816b44554594b9414b2d5aa50777c4ea8ad80dec945555993c356e50a79ad66",
+  "goal": "news_summary_cnn",
+  "promoted_at": "2026-10-25T14:08:24Z",
+  "promoted_from": "cnn_bart_l_n200_v1_20260926T153757Z",
+  "reason": "bart_l (BART-large-CNN, MIT, $0 on a CPU) leads on coverage at 0.3461, not separated from deepseek_m (0.3460, p = 0.99), for CNN-style text; rent deepseek_m if you need speed. REPORT_SUMMARIZATION, executive summary.",
+  "reference_tier": "gold",
+  "scores": {
+    "compression": 0.132142,
+    "concision": 0.260754,
+    "cost_usd": 0.0,
+    "coverage": 0.346121,
+    "fmt_bullets": 0.0,
+    "fmt_label": 0.0,
+    "fmt_markdown": 0.0,
+    "fmt_narration": 0.01,
+    "fmt_overlong": 0.0,
+    "fmt_paragraphs": 0.0,
+    "grounding": 0.883821,
+    "input_truncated": 0.23,
+    "latency_ms": 11009.559205,
+    "length_vs_reference": 1.579221,
+    "reference_words": 34.735,
+    "rouge1": 0.34773,
+    "rougeLsum": 0.316122,
+    "summary_words": 50.835,
+    "tokens_in": 697.25,
+    "tokens_out": 66.175,
+    "total_cost_usd": 0.0,
+    "total_tokens_in": 139450.0,
+    "total_tokens_out": 13235.0
+  }
+}

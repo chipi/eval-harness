@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Promote a run to a baseline.
 
-A baseline is frozen: never edited, only superseded. It is the number future
-work is judged against, so promoting one is a decision, not a copy.
+A baseline is never edited: promoting another run replaces it, and git keeps the one it
+replaced. It is the number future work is judged against, so promoting one is a decision,
+not a copy.
 
 Two things are refused, because both produce a baseline nobody can act on:
 
@@ -16,16 +17,69 @@ Two things are refused, because both produce a baseline nobody can act on:
 
 from __future__ import annotations
 
+import sys as _sys
+from pathlib import Path as _Path
+
+if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
+
 import argparse
 import os
-import sys
-from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _common import BASELINES, RUNS, die, now, read_json, write_json  # noqa: E402
+from evaluation_harness._common import (
+    BASELINES,
+    BOOKKEEPING_PREFIXES,
+    RUNS,
+    die,
+    how,
+    now,
+    read_json,
+    write_json,
+)
+
+
+def _repeats(m: dict) -> dict | None:
+    """The repeats of the promoted run's arm (same config, same base run id, `repeat_index` set):
+    their run ids and the mean of each score over them; None for a run that is not a repeat."""
+    import re  # noqa: PLC0415
+    import statistics  # noqa: PLC0415
+
+    if not m.get("repeat_index"):
+        return None
+    base = re.sub(r"_r\d+$", "", m["run_id"])
+    sibs = []
+    for d in sorted(RUNS.glob(f"{base}_r*")):
+        mm = read_json(d / "metrics.json") if (d / "metrics.json").is_file() else {}
+        if mm.get("config_id") == m["config_id"] and mm.get("repeat_index"):
+            sibs.append(mm)
+    if len(sibs) < 2:
+        return None
+    keys = set.intersection(*(set(x.get("scores") or {}) for x in sibs))
+    return {
+        "runs": [x["run_id"] for x in sibs],
+        "mean_scores": {k: statistics.fmean(x["scores"][k] for x in sibs) for k in sorted(keys)},
+    }
+
+
+def carried(m: dict) -> dict:
+    """What a baseline keeps of its run beyond the scores: the reference tier, the adapter
+    that scored it, its fingerprint's hash, and the goal and format it answers. V6 checks
+    they still match the run."""
+    tier = m.get("reference_tier") or ((m.get("derived") or {}).get("with") or {}).get(
+        "source_reference_tier"
+    )
+    out = {
+        "reference_tier": tier,
+        "adapter": m.get("adapter"),
+        "fingerprint_hash": (m.get("fingerprint") or {}).get("hash"),
+        "goal": m.get("goal"),
+        "format": m.get("format"),
+    }
+    return {k: v for k, v in out.items() if v}
 
 
 def main() -> int:
+    """Promote a run to baseline status."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--run", required=True)
     ap.add_argument("--reason", help="why this run earned promotion")
@@ -33,9 +87,12 @@ def main() -> int:
     # As a command-line argument interpolated by make, a backtick in the reason
     # executed and a double quote mangled it -- and this text is written into a
     # baseline, where it is the permanent record of why a number was promoted.
-    ap.add_argument("--reason-from-env", action="store_true",
-                    help="take the reason from $EVAL_PROMOTE_REASON (what `make "
-                         "run-promote` does, so the shell never re-parses it)")
+    ap.add_argument(
+        "--reason-from-env",
+        action="store_true",
+        help="take the reason from $EVAL_PROMOTE_REASON (what `make "
+        "run-promote` does, so the shell never re-parses it)",
+    )
     ap.add_argument("--baseline-id", help="default: <dataset_id>_baseline")
     ap.add_argument("--allow-dirty", action="store_true", help="promote from a dirty tree anyway")
     ap.add_argument(
@@ -48,8 +105,7 @@ def main() -> int:
     if args.reason_from_env:
         args.reason = os.environ.get("EVAL_PROMOTE_REASON", "")
     if not (args.reason or "").strip():
-        die("a reason is required: --reason \"...\" or --reason-from-env with "
-            "EVAL_PROMOTE_REASON set")
+        die('a reason is required: --reason "..." or --reason-from-env with EVAL_PROMOTE_REASON set')
 
     src = RUNS / args.run / "metrics.json"
     if not src.is_file():
@@ -61,7 +117,9 @@ def main() -> int:
         die(
             "REFUSED — this run does not identify its build.\n"
             "  A baseline whose build is unknown cannot be attributed to any code.\n"
-            "  Declare it and re-run:  EVAL_BUILD_REF=<version|digest|sha> make experiment-run ...\n"
+            "  Declare it and re-run:  EVAL_BUILD_REF=<version|digest|sha> "
+            + how("evh experiment-run ...", "make experiment-run ...")
+            + "\n"
             "  (--allow-unknown-build overrides, but then the baseline names no system.)"
         )
     if build.get("dirty") and not args.allow_dirty:
@@ -71,18 +129,19 @@ def main() -> int:
             "  Commit, re-run, and promote that — or --allow-dirty and say why in --reason."
         )
     if len(args.reason.split()) < 3:
-        die("REFUSED — --reason must be a sentence, not a word. It is the answer to "
-            '"why is this the baseline?" in six months.')
+        die(
+            "REFUSED — --reason must be a sentence, not a word. It is the answer to "
+            '"why is this the baseline?" in six months.'
+        )
 
+    # AN ARM RUN WITH --repeat: the catalog, the inspector and every test read the mean of its
+    # repeats, while a baseline is promoted from one run. Record which runs the arm has and their
+    # mean beside the run's own scores (V6 keeps comparing `scores` with the run), and say so.
+    repeats = _repeats(m)
     baseline_id = args.baseline_id or f"{m['dataset_id']}_baseline"
     out = BASELINES / f"{baseline_id}.json"
-    supersedes = None
     if out.is_file():
-        prev = read_json(out)
-        supersedes = prev.get("promoted_from")
-        archive = BASELINES / "superseded" / f"{baseline_id}_{prev['promoted_at'].replace(':', '')}.json"
-        write_json(archive, prev)
-        print(f"  previous baseline archived -> {archive.relative_to(BASELINES)}")
+        print(f"  replaces the baseline promoted from {read_json(out).get('promoted_from')} (git keeps it)")
 
     write_json(
         out,
@@ -94,12 +153,31 @@ def main() -> int:
             "reason": args.reason,
             "scores": m["scores"],
             "build": build,
-            "supersedes": supersedes,
+            # Carried from the run: what the number means. A baseline is compared against, and
+            # a silver baseline beside a gold run, or one scored by another adapter, is not the
+            # same number.
+            **carried(m),
+            **({"repeats": repeats} if repeats else {}),
         },
     )
     print(f"{out}")
-    w = max([len(k) for k in m["scores"]] + [6])
-    for k, v in sorted(m["scores"].items()):
+    # The scores it reads by, not the bookkeeping (`resumed`, `self_family_*`): the baseline file
+    # keeps every key, as its run has them (V6 compares the two).
+    shown = {k: v for k, v in m["scores"].items() if not k.startswith(BOOKKEEPING_PREFIXES)}
+    if repeats:
+        print(
+            f"  NOTE: {m['config_id']} has {len(repeats['runs'])} repeats; the catalog, the inspector and the tests read"
+            f" their mean.\n        The baseline records this run's own scores and, under `repeats`, the mean:"
+        )
+        w0 = max([len(k) for k in shown] + [6])
+        for k in sorted(shown):
+            if k in repeats["mean_scores"]:
+                print(
+                    f"    {k:{w0}} {shown[k]}   (mean of {len(repeats['runs'])}: {repeats['mean_scores'][k]:.6g})"
+                )
+        return 0
+    w = max([len(k) for k in shown] + [6])
+    for k, v in sorted(shown.items()):
         print(f"    {k:{w}} {v}")
     return 0
 

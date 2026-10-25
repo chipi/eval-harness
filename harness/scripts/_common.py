@@ -1,16 +1,23 @@
-"""Shared helpers. Deliberately tiny — the skeleton should be readable in one sitting."""
+"""Shared helpers: paths and environment, metric semantics, adapter resolution, run grouping."""
 
 from __future__ import annotations
 
+import sys as _sys
+from pathlib import Path as _Path
+
+if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
+
+import functools
 import hashlib
 import json
 import os
-import re
 import subprocess
+import sys
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, Iterable, Optional, List
+from typing import Any, NoReturn
 
 #: Where the harness CODE lives: this directory. Schemas and sibling scripts are found
 #: relative to it, so they travel with the code whether it runs from a checkout or from an
@@ -18,42 +25,50 @@ from typing import Any, Dict, Iterable, Optional, List
 CODE = Path(__file__).resolve().parent
 
 
-def _project_root() -> Path:
+@functools.cache
+def project_root() -> Path:
     """Where the PROJECT lives: its data/, its .env, its git history.
 
     Run from a checkout of eval-harness, that is the harness/ directory beside this one,
     as it always was. Installed as a package (`pip install evaluation-harness @ git+...`), the code sits in
-    site-packages and the project is wherever the user is working: `EVAL_HOME` if set,
-    else the current directory. Kept apart from CODE because a project that depends on the
-    harness must never write its data into site-packages.
-    """
-    import os
+    site-packages and the project is wherever the user is working: `EVAL_HOME` if set, else
+    the nearest directory from here up that has a `data/` folder (what `evh init` makes), so
+    a command run from a subfolder finds its project; else the current directory. Kept apart
+    from CODE because a project that depends on the harness must never write its data into
+    site-packages.
 
+    Resolved on first use, not at import: a program that imports the harness as a library
+    (an adapter, a notebook) can set `EVAL_HOME` or change directory first.
+    """
     home = os.environ.get("EVAL_HOME", "").strip()
     if home:
         return Path(home).expanduser().resolve()
     checkout = CODE.parent
     if (checkout / "data").is_dir() and (checkout / "scripts").resolve() == CODE:
         return checkout
-    return Path.cwd().resolve()
+    here = Path.cwd().resolve()
+    return next((d for d in (here, *here.parents) if (d / "data").is_dir()), here)
 
 
-ROOT = _project_root()
+def how(evh: str, make: str) -> str:
+    """The command a hint should name: `evh …` when the harness runs as the installed tool,
+    the Makefile target in a checkout. A pinned project has no Makefile, so a `make …` hint
+    sends its user to a command that does not exist."""
+    return evh if os.environ.get("EVAL_VIA_EVH") else make
 
 
-def load_dotenv(path: Optional[Path] = None) -> int:
+def load_dotenv(path: Path | None = None) -> int:
     """Read `.env` into the environment. No dependency, no surprises.
 
-    Loaded by every script, so keys are never exported by hand and never pasted
-    into a command that lands in shell history. An already-exported variable
-    WINS — so `ANTHROPIC_API_KEY=... make experiment-run` overrides the file
-    for one call without editing it.
+    Loaded when a harness command starts (below), so keys are never exported by hand and
+    never pasted into a command that lands in shell history. An already-exported variable
+    WINS — so `ANTHROPIC_API_KEY=... make experiment-run` overrides the file for one call
+    without editing it.
 
-    Copy `.env.example` to `.env` to start. `.env` is gitignored.
+    Create `.env` in the project with the keys your providers read (`evh env-check` lists
+    them). `evh init` gitignores it.
     """
-    import os
-
-    env_path = path or (ROOT / ".env")
+    env_path = path or (project_root() / ".env")
     if not env_path.is_file():
         return 0
     loaded = 0
@@ -69,11 +84,19 @@ def load_dotenv(path: Optional[Path] = None) -> int:
     return loaded
 
 
-DOTENV_LOADED = load_dotenv()
+def _is_harness_command() -> bool:
+    """Whether this process is one of the harness's own commands: a script in this directory
+    run directly (the Makefile) or through `evh` (which points argv[0] at the script before
+    running it). Importing the package from anything else changes no one's environment."""
+    return bool(sys.argv and sys.argv[0]) and Path(sys.argv[0]).resolve().parent == CODE
 
 
-def env_float(name: str, default: Optional[float] = None) -> Optional[float]:
-    import os
+#: How many variables `.env` set when this command started; 0 for a library import.
+DOTENV_LOADED = load_dotenv() if _is_harness_command() else 0
+
+
+def env_float(name: str, default: float | None = None) -> float | None:
+    """Parse an environment variable as a float, or return the default."""
 
     raw = os.environ.get(name, "").strip()
     if not raw:
@@ -81,42 +104,92 @@ def env_float(name: str, default: Optional[float] = None) -> Optional[float]:
     try:
         return float(raw)
     except ValueError:
-        raise SystemExit(f"ERROR: {name}={raw!r} is not a number")
+        raise SystemExit(f"ERROR: {name}={raw!r} is not a number") from None
 
 
 def env_int(name: str, default: int) -> int:
+    """Parse an environment variable as an integer, or return the default."""
     v = env_float(name, float(default))
     return int(v) if v is not None else default
-# The data root. `EVAL_DATA_DIR` moves it, for a project whose own layout puts the
-# harness's records somewhere other than <project>/data (a relative path is taken from
-# the project root). Everything below is derived from it.
-_data_override = os.environ.get("EVAL_DATA_DIR", "").strip()
-DATA = ((ROOT / Path(_data_override).expanduser()).resolve() if _data_override else ROOT / "data")
-SOURCES = DATA / "sources"
-DATASETS = DATA / "datasets"
-MATERIALIZED = DATA / "materialized"
-CONFIGS = DATA / "configs"
-# Where run artifacts land. Redirectable via EVAL_RUNS_DIR so a throwaway pass -- a
-# smoke check after a harness change -- cannot add repeats to the arms of a real sweep
-# and silently move numbers that have already been reported. ONLY runs are redirected:
-# sources, datasets and references stay shared, so a smoke run is scored against the
-# same references as the real thing and is therefore actually a check of the real path.
-_runs_override = os.environ.get("EVAL_RUNS_DIR", "").strip()
-RUNS = Path(_runs_override).expanduser() if _runs_override else DATA / "runs"
-BASELINES = DATA / "baselines"
-REFERENCES = DATA / "references"
+
+
+@functools.cache
+def _paths() -> dict[str, Path]:
+    root = project_root()
+    # The data root. `EVAL_DATA_DIR` moves it, for a project whose own layout puts the
+    # harness's records somewhere other than <project>/data (a relative path is taken from
+    # the project root). Everything below is derived from it.
+    data_override = os.environ.get("EVAL_DATA_DIR", "").strip()
+    data = (root / Path(data_override).expanduser()).resolve() if data_override else root / "data"
+    # Where run artifacts land. Redirectable via EVAL_RUNS_DIR so a throwaway pass -- a
+    # smoke check after a harness change -- cannot add repeats to the arms of a real sweep
+    # and silently move numbers that have already been reported. ONLY runs are redirected:
+    # sources, datasets and references stay shared, so a smoke run is scored against the
+    # same references as the real thing and is therefore actually a check of the real path.
+    # Relative to the PROJECT root, as EVAL_DATA_DIR is.
+    runs_override = os.environ.get("EVAL_RUNS_DIR", "").strip()
+    # Goals can live outside the data root: a project whose harness records sit in a
+    # subdirectory keeps one copy of its goals where the rest of its tooling reads them.
+    # Relative to the project root, as EVAL_RUNS_DIR is.
+    goals_override = os.environ.get("EVAL_GOALS_DIR", "").strip()
+    return {
+        "ROOT": root,
+        "DATA": data,
+        "SOURCES": data / "sources",
+        "DATASETS": data / "datasets",
+        "MATERIALIZED": data / "materialized",
+        "CONFIGS": data / "configs",
+        "RUNS": root / Path(runs_override).expanduser() if runs_override else data / "runs",
+        "BASELINES": data / "baselines",
+        "REFERENCES": data / "references",
+        # What each evaluation is FOR (ADR-0002): one <goal_id>.yaml per goal, plus policy.yaml.
+        "GOALS": root / Path(goals_override).expanduser() if goals_override else data / "goals",
+        # Field sets (ADR-0003): one <fieldset_id>.yaml each, declaring the fields items may carry.
+        "FIELDS": data / "fields",
+        # Experiment rounds (ADR-0004), optional: data/rounds/<goal_id>/<round_id>.yaml.
+        "ROUNDS": data / "rounds",
+        # Items fetched from a source_url, by their sha256. Derived and gitignored, like materialized/.
+        "ITEM_CACHE": root / ".cache" / "items",
+    }
+
+
+# The project's paths, read as module attributes (`_common.DATA`, `from _common import DATA`)
+# and resolved on the first read, after `.env` has had its say on EVAL_DATA_DIR/EVAL_RUNS_DIR.
+ROOT: Path
+DATA: Path
+SOURCES: Path
+DATASETS: Path
+MATERIALIZED: Path
+CONFIGS: Path
+RUNS: Path
+BASELINES: Path
+REFERENCES: Path
+GOALS: Path
+FIELDS: Path
+ROUNDS: Path
+ITEM_CACHE: Path
+
+
+def __getattr__(name: str) -> Path:
+    # The name is checked before anything resolves: `from _common import x` probes
+    # `__path__` through here, and that probe must not fix the project's paths.
+    if not (name.isupper() and name in __annotations__):
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    return _paths()[name]
+
 
 #: The JSON Schemas the harness validates against. Inside the installed package they sit
 #: beside the code; in a checkout they are one level up, in harness/schemas.
-SCHEMAS = next((p for p in (CODE / "schemas", CODE.parent / "schemas") if p.is_dir()),
-               CODE.parent / "schemas")
+SCHEMAS = next(
+    (p for p in (CODE / "schemas", CODE.parent / "schemas") if p.is_dir()), CODE.parent / "schemas"
+)
 
 
 def data_rel(path: Path) -> str:
     """`path` relative to the project root, as git and the run records spell it. Falls
     back to the absolute path when the data root sits outside the project."""
     try:
-        return Path(path).resolve().relative_to(ROOT).as_posix()
+        return Path(path).resolve().relative_to(project_root()).as_posix()
     except ValueError:
         return str(Path(path).resolve())
 
@@ -132,10 +205,12 @@ class CostCapExceeded(RuntimeError):
 
 
 def now() -> str:
+    """Return the current UTC time in ISO 8601 format."""
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def sha256(path: Path) -> str:
+    """Return the SHA-256 digest of a file's contents."""
     h = hashlib.sha256()
     with path.open("rb") as fh:
         for chunk in iter(lambda: fh.read(1 << 20), b""):
@@ -144,6 +219,7 @@ def sha256(path: Path) -> str:
 
 
 def read_json(path: Path) -> Any:
+    """Parse and return the JSON object from a file."""
     return json.loads(path.read_text(encoding="utf-8"))
 
 
@@ -161,11 +237,20 @@ def write_text_atomic(path: Path, text: str) -> None:
     file or the whole new one and never a partial. The temp file is created in the
     same directory because rename is only atomic within a filesystem.
     """
+    _write_atomic(path, text, "w")
+
+
+def write_bytes_atomic(path: Path, data: bytes) -> None:
+    """`write_text_atomic` for bytes: a reader sees the old file or the whole new one."""
+    _write_atomic(path, data, "wb")
+
+
+def _write_atomic(path: Path, data: str | bytes, mode: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     fd, tmp = tempfile.mkstemp(dir=str(path.parent), prefix=f".{path.name}.", suffix=".tmp")
     try:
-        with os.fdopen(fd, "w", encoding="utf-8") as fh:
-            fh.write(text)
+        with os.fdopen(fd, mode, encoding=None if "b" in mode else "utf-8") as fh:
+            fh.write(data)
             fh.flush()
             os.fsync(fh.fileno())
         os.replace(tmp, path)
@@ -178,10 +263,11 @@ def write_text_atomic(path: Path, text: str) -> None:
 
 
 def write_json(path: Path, obj: Any) -> None:
+    """Write an object as formatted JSON to a file atomically."""
     write_text_atomic(path, json.dumps(obj, indent=2, sort_keys=True) + "\n")
 
 
-def build_info() -> Dict[str, Any]:
+def build_info() -> dict[str, Any]:
     """Identify the SYSTEM UNDER TEST.
 
     Three inputs decide what an eval means: the system under test, the
@@ -203,7 +289,6 @@ def build_info() -> Dict[str, Any]:
     #     EVAL_BUILD_REF=$(pip show pkg …)   an installed version
     #
     # Falling back to this tree's git SHA only when nothing is declared.
-    import os
 
     declared = os.environ.get("EVAL_BUILD_REF")
     if declared:
@@ -215,10 +300,10 @@ def build_info() -> Dict[str, Any]:
         # things and appearing to contradict each other.
         return {"ref": declared, "dirty": None, "source": "EVAL_BUILD_REF"}
 
-    def git(*args: str) -> Optional[str]:
+    def git(*args: str) -> str | None:
         try:
             out = subprocess.run(
-                ["git", *args], cwd=ROOT, capture_output=True, text=True, timeout=5
+                ["git", *args], cwd=project_root(), capture_output=True, text=True, timeout=5
             )
             return out.stdout.strip() if out.returncode == 0 else None
         except (OSError, subprocess.SubprocessError):
@@ -227,9 +312,9 @@ def build_info() -> Dict[str, Any]:
     ref = git("rev-parse", "HEAD")
     # The same rule as the instrument's flag: untracked run output is not code, so a
     # previous run's directory no longer marks the next run dirty. One rule, one place.
-    from _fingerprint import tree_dirt  # noqa: PLC0415
+    from evaluation_harness._fingerprint import tree_dirt  # noqa: PLC0415
 
-    dirt = tree_dirt(ROOT)
+    dirt = tree_dirt(project_root(), _paths()["DATA"])
     return {
         "ref": ref or "unknown",
         "dirty": bool(dirt),
@@ -237,25 +322,163 @@ def build_info() -> Dict[str, Any]:
     }
 
 
-def load_dataset(dataset_id: str) -> Dict[str, Any]:
-    path = DATASETS / f"{dataset_id}.json"
+def load_goals(goals_dir: Path | None = None) -> dict[str, dict[str, Any]]:
+    """{goal_id: goal} from <data>/goals/*.yaml (policy.yaml is the policy, not a goal), keyed
+    by the goal's `goal_id`, the file stem when it names none. The catalog keyed them that way
+    and this by stem alone; V14 requires the two to agree."""
+    import yaml  # noqa: PLC0415
+
+    out: dict[str, dict[str, Any]] = {}
+    base = goals_dir or _paths()["GOALS"]
+    for f in sorted(base.glob("*.yaml")) if base.is_dir() else []:
+        if f.name != "policy.yaml":
+            doc = yaml.safe_load(f.read_text(encoding="utf-8"))
+            doc = doc if isinstance(doc, dict) else {}
+            out[str(doc.get("goal_id") or f.stem)] = doc
+    return out
+
+
+def goal_policy() -> dict[str, Any]:
+    """data/goals/policy.yaml: `required_from: YYYY-MM-DD`, the date from which every run must
+    name a goal. Absent, goals stay optional: a project upgrading changes nothing until it
+    sets the date."""
+    import yaml  # noqa: PLC0415
+
+    f = _paths()["GOALS"] / "policy.yaml"
+    doc = yaml.safe_load(f.read_text(encoding="utf-8")) if f.is_file() else None
+    return doc if isinstance(doc, dict) else {}
+
+
+def load_dataset(dataset_id: str) -> dict[str, Any]:
+    """Load a dataset by id from data/datasets, or raise SystemExit."""
+    path = _paths()["DATASETS"] / f"{dataset_id}.json"
     if not path.is_file():
         raise SystemExit(
             f"no such dataset: {dataset_id}\n"
             f"  expected {path}\n"
-            f"  create one with: make dataset-create DATASET_ID={dataset_id}"
+            f"  create one with: "
+            + how(
+                f"evh dataset-create --dataset-id {dataset_id} --source-dir …",
+                f"make dataset-create DATASET_ID={dataset_id}",
+            )
         )
     return read_json(path)
 
 
-def iter_runs() -> Iterable[Path]:
-    if not RUNS.is_dir():
-        return []
-    return sorted(p for p in RUNS.iterdir() if (p / "metrics.json").is_file())
+def dataset_item_ids(dataset_id: str) -> set:
+    """The item ids a dataset freezes, read from its dataset file.
+
+    Commands that exclude a dev slice (`--exclude-dataset`) used to glob
+    `data/sources/<id>/*.txt` instead: empty for an item that is not a .txt file, for a
+    dataset built from a manifest, and for a project whose sources live elsewhere, and
+    "nothing excluded" was then reported as if it were true."""
+    return {it["item_id"] for it in load_dataset(dataset_id).get("items") or []}
 
 
-def die(msg: str) -> "NoReturn":  # type: ignore[valid-type]
+def read_item_ids(path: Path) -> set[str]:
+    """The item ids an `--items` file lists, one per line (blank lines ignored)."""
+    return {ln.strip() for ln in path.read_text(encoding="utf-8").splitlines() if ln.strip()}
+
+
+def item_selection(exclude_dataset: str | None, items_file: Path | None) -> tuple[set[str], set[str] | None]:
+    """(drop, keep) for `--exclude-dataset` and `--items`: the ids another dataset contains, and
+    the only ids to use (None: no restriction)."""
+    drop = dataset_item_ids(exclude_dataset) if exclude_dataset else set()
+    return drop, (read_item_ids(items_file) if items_file else None)
+
+
+def item_path(dataset_id: str, item_id: str) -> Path | None:
+    """Where an item's materialized copy is, or None when it is not materialized here."""
+    try:
+        ds = load_dataset(dataset_id)
+    except SystemExit:
+        return None
+    it = next((x for x in ds.get("items") or [] if x.get("item_id") == item_id), None)
+    if it is None:
+        return None
+    p = _paths()["MATERIALIZED"] / dataset_id / (it.get("source_path") or item_id)
+    return p if p.is_file() else None
+
+
+#: The id a run records when it used the adapter bundled with the harness.
+BUNDLED_ADAPTER_ID = "scripts/adapter.py"
+
+
+def in_checkout() -> bool:
+    """Whether this is a checkout of the eval-harness repository with its own data, rather
+    than the package installed in a project. Only then do `<root>/..` and `<root>/../examples`
+    mean anything: in a project, the root's parent is whatever directory the project sits in."""
+    return (project_root() / "scripts").resolve() == CODE
+
+
+def adapter_search_dirs() -> tuple[Path, ...]:
+    """Where a recorded adapter id is looked for: the project, and in a checkout the
+    repository root (the examples record `examples/<example>/adapter.py`)."""
+    root = project_root()
+    return (root, root.parent) if in_checkout() else (root,)
+
+
+def resolve_adapter_path(spec: str | None) -> Path | None:
+    """The file a run's recorded adapter id names, or None.
+
+    Looked for under the project, its parent and `examples/` beside it (a checkout's
+    layout), and, for the bundled adapter's id, in the package itself: a project that pins
+    the package has no `scripts/adapter.py`, and every lookup that stopped at the project
+    failed for it (rescore, silver-calibrate, the leaderboard's metric kinds, run-compare,
+    the classification report's label parser)."""
+    if not spec:
+        return None
+    # The bundled id names the package's own copy wherever a project runs it; a stray
+    # `scripts/adapter.py` under the project is not the code that ran.
+    if spec == BUNDLED_ADAPTER_ID and not in_checkout() and (CODE / "adapter.py").is_file():
+        return CODE / "adapter.py"
+    for base in adapter_search_dirs():
+        cand = Path(spec) if Path(spec).is_absolute() else base / spec
+        if cand.is_file():
+            return cand
+    if spec == BUNDLED_ADAPTER_ID and (CODE / "adapter.py").is_file():
+        return CODE / "adapter.py"
+    return None
+
+
+class ModuleNotLoadable(ImportError):
+    """The file cannot be loaded as a module at all (no import spec for it)."""
+
+
+def load_module(path: Path, name: str) -> Any:
+    """Import the file at `path` as module `name`. It is registered in sys.modules BEFORE it
+    runs, because a module-level @dataclass resolves its own module through sys.modules and an
+    unregistered one makes that None. ModuleNotLoadable when there is no spec for the file;
+    anything the module raises while running propagates."""
+    import importlib.util  # noqa: PLC0415
+    import sys  # noqa: PLC0415
+
+    spec = importlib.util.spec_from_file_location(name, path)
+    if spec is None or spec.loader is None:
+        raise ModuleNotLoadable(f"cannot load {path}")
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[name] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def die(msg: str) -> NoReturn:
+    """Refuse: `ERROR: msg` on stderr, exit 1. Every command refuses this way; four printed
+    their refusal to stdout instead, where a caller reading stderr saw nothing."""
     raise SystemExit(f"ERROR: {msg}")
+
+
+def no_options(doc: str | None, *flags: str) -> Any:
+    """The command line of a command that takes no arguments but `flags` (each an on/off
+    switch): -h/--help prints `doc`, anything else is refused with exit 2. Seven commands
+    checked for --help by hand and ignored every other argument, so `evh validate --strict`
+    ran the plain validation and said nothing."""
+    import argparse  # noqa: PLC0415
+
+    ap = argparse.ArgumentParser(description=doc, formatter_class=argparse.RawDescriptionHelpFormatter)
+    for flag in flags:
+        ap.add_argument(flag, action="store_true")
+    return ap.parse_args()
 
 
 # ── what a metric MEANS ──────────────────────────────────────────────────────
@@ -280,12 +503,21 @@ COST_KEYS = (
     "tokens_out",
 )
 #: Lower is better. Wall time.
-SPEED_KEYS = ("latency_ms",)
+SPEED_KEYS = ("latency_ms", "latency_s")
 #: Neither better nor worse: they say what the output WAS, not whether it was
 #: good. Ranking by one puts the most verbose arm on top — which is how a
 #: leaderboard ends up confidently answering the wrong question. Comparing two
 #: of them and calling the bigger one "better" is the same error, per-metric.
-DESCRIPTIVE_KEYS = ("output_words", "output_chars", "lines", "chars", "n_items")
+#: `reasoning_tokens` too, as every committed run that records it declares: how long a model
+#: thought, which its cost already counts.
+DESCRIPTIVE_KEYS = ("output_words", "output_chars", "lines", "chars", "n_items", "reasoning_tokens")
+
+
+#: Per-item columns a run records that are bookkeeping, not a measurement: judge_score marks
+#: whether each judge shares the judged arm's model family (`self_family_<judge>`), and
+#: experiment-run whether an item was replayed by --resume (`resumed`, whose mean is the share
+#: replayed). They stay in the record; no table, menu or spread lists them as metrics.
+BOOKKEEPING_PREFIXES = ("self_family_", "resumed")
 
 
 def lower_is_better(metric: str) -> bool:
@@ -302,9 +534,8 @@ def is_descriptive(metric: str) -> bool:
     return metric in DESCRIPTIVE_KEYS
 
 
-def verdict_for(metric: str, delta: float,
-                kinds: Optional[Dict[str, str]] = None) -> str:
-    """"better" / "worse" / "changed" / "identical" for ``delta`` on ``metric``.
+def verdict_for(metric: str, delta: float, kinds: dict[str, str] | None = None) -> str:
+    """ "better" / "worse" / "changed" / "identical" for ``delta`` on ``metric``.
 
     The one place that decides what a movement MEANS. Descriptive metrics get
     "changed" on purpose: calling a longer output "better" is a claim the number
@@ -322,7 +553,7 @@ def verdict_for(metric: str, delta: float,
     return "better" if improved else "worse"
 
 
-def classify_metrics(extra_kinds: Optional[Dict[str, str]] = None) -> Dict[str, str]:
+def classify_metrics(extra_kinds: dict[str, str] | None = None) -> dict[str, str]:
     """metric -> "cost" | "speed" | "descriptive" | "quality", with adapter overrides.
 
     The built-in tuples only know the metrics the bundled adapter emits. An example that
@@ -336,7 +567,7 @@ def classify_metrics(extra_kinds: Optional[Dict[str, str]] = None) -> Dict[str, 
     leaderboard's own "you are ranking on a descriptive metric" warning stayed silent,
     because by its tuples compression was a quality metric.
     """
-    kinds: Dict[str, str] = {}
+    kinds: dict[str, str] = {}
     for k in COST_KEYS:
         kinds[k] = "cost"
     for k in SPEED_KEYS:
@@ -346,102 +577,3 @@ def classify_metrics(extra_kinds: Optional[Dict[str, str]] = None) -> Dict[str, 
     if extra_kinds:
         kinds.update(extra_kinds)
     return kinds
-
-class AmbiguousRuns(Exception):
-    """Two runs claim the same config_id and nothing says which one to read."""
-
-
-def runs_by_arm(base: Path, dataset_id: str, prefix: str = "",
-                strip: str = "") -> Dict[str, List[Path]]:
-    """config_id -> the run directories that produced it, deterministically ordered.
-
-    WHY THIS EXISTS RATHER THAN A GLOB AT EACH CALL SITE.
-
-    Five places in `check_report_claims.py` globbed for a run and took whichever came
-    back -- three took the last hit, two the first, and one of them had a different
-    exclusion rule from the others. That is fine while every config_id is unique. Three
-    SciFact arms were re-run, so three were not, and the checker's answer then depended
-    on the order the filesystem returned directories in: green on APFS, red on ext4.
-    `make ci` was reported green for a week on the only machine anyone had run it on.
-
-    REPEATS ARE NOT AMBIGUITY. `--repeat 3` writes `<id>_r1.._r3`, all one measurement
-    of one arm, and averaging them is the point. Those come back together. Anything
-    ELSE sharing a config_id is two different measurement occasions wearing one name,
-    and this raises rather than picking one, because there is no correct pick.
-    """
-    groups: Dict[str, List[Path]] = {}
-    for mj in sorted(base.glob("*/metrics.json")):
-        try:
-            m = json.loads(mj.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
-            continue
-        if m.get("dataset_id") != dataset_id:
-            continue
-        cid = m.get("config_id")
-        if not cid or (prefix and not cid.startswith(prefix)):
-            continue
-        key = cid[len(prefix):] if prefix else cid
-        if strip and key.endswith(strip):
-            key = key[: -len(strip)]
-        groups.setdefault(key, []).append(mj.parent)
-
-    for key, dirs in groups.items():
-        if len(dirs) < 2:
-            continue
-        # A repeat set: every directory is "<something>_rN" off the same stem.
-        stems = {re.sub(r"_r\d+$", "", d.name) for d in dirs}
-        if len(stems) == 1 and all(re.search(r"_r\d+$", d.name) for d in dirs):
-            continue
-        raise AmbiguousRuns(
-            f"{len(dirs)} runs under {base.name}/ claim config_id {key!r} on "
-            f"{dataset_id}: {sorted(d.name for d in dirs)}.\n"
-            f"  These are different measurement occasions sharing one name, so any "
-            f"tool reading them picks one by filesystem order.\n"
-            f"  Move the ones that are not the record out of this directory "
-            f"(data/runs-repeats/ is where the SciFact re-runs live)."
-        )
-    return {k: sorted(v) for k, v in sorted(groups.items())}
-
-def warn_on_ambiguous_runs(base: Path, dataset_id: Optional[str] = None,
-                           label: str = "") -> int:
-    """Say loudly when two runs share a config_id for reasons other than --repeat.
-
-    Every loader in this repo groups runs by `config_id` and then averages or picks --
-    `leaderboard` printed `sf_llama_l_n200_v1 runs=2 0.683350`, the mean of 0.7281 and
-    0.6386, a number in no run and no report; `pair_test`, `family_test`,
-    `rank_stability` and `holdout_significance` averaged per item across both; the
-    report scripts silently took whichever the filesystem returned last. None of it
-    said anything. Found by external review.
-
-    `runs_by_arm` RAISES on this, which is right for a checker and wrong for a
-    leaderboard someone is reading interactively. This warns instead and returns the
-    count, so the number on screen is still explained.
-
-    A `--repeat N` set (`<id>_r1.._rN`) is one arm measured N times and is not
-    ambiguous; averaging those is the point.
-    """
-    groups: Dict[str, List[str]] = {}
-    for mj in sorted(base.glob("*/metrics.json")):
-        try:
-            m = json.loads(mj.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
-            continue
-        if dataset_id and m.get("dataset_id") != dataset_id:
-            continue
-        if m.get("config_id"):
-            groups.setdefault(m["config_id"], []).append(mj.parent.name)
-    bad = []
-    for cid, names in sorted(groups.items()):
-        if len(names) < 2:
-            continue
-        stems = {re.sub(r"_r\d+$", "", n) for n in names}
-        if len(stems) == 1 and all(re.search(r"_r\d+$", n) for n in names):
-            continue
-        bad.append((cid, sorted(names)))
-    for cid, names in bad:
-        print(f"  WARNING: {len(names)} runs claim config_id {cid!r}"
-              f"{' in ' + label if label else ''} — {', '.join(names)}.")
-        print(f"           They are averaged together below. If they are different "
-              f"measurement occasions, move all but one out of {base.name}/.")
-    return len(bad)
-

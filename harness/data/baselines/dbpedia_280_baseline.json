@@ -1,0 +1,29 @@
+{
+  "adapter": "examples/classification-dbpedia-14/adapter.py",
+  "baseline_id": "dbpedia_280_baseline",
+  "build": {
+    "dirty": false,
+    "ref": "4068ea23007d6d8057a61f0abd54b08da3eaba40",
+    "source": "git"
+  },
+  "dataset_id": "dbpedia_280",
+  "fingerprint_hash": "405af5dc63a9f05d67f9b51a46187af3b0a4d8df47c067f2c52b279f40a10b89",
+  "goal": "entity_topic_dbpedia",
+  "promoted_at": "2026-10-25T14:08:24Z",
+  "promoted_from": "db_bert_base_fy_n200_v1_20260930T091006Z",
+  "reason": "The cheapest arm at 0.9857: bert_base_fy (438 MB, $0 marginal, 87 ms per item on a 4-core Linux CPU), two items behind the leader qwen_m and not separated from it, as gemma_m and qwen_s are. REPORT_CLASSIFICATION, executive summary.",
+  "reference_tier": "gold",
+  "scores": {
+    "answer_words": 1.0,
+    "confidence": 0.997399,
+    "correct": 0.985714,
+    "correct_after_repair": 0.0,
+    "cost_usd": 0.0,
+    "fmt_markdown": 0.0,
+    "fmt_verbose": 0.0,
+    "latency_ms": 86.720154,
+    "parsed": 1.0,
+    "resumed": 0.0,
+    "total_cost_usd": 0.0
+  }
+}

@@ -13,16 +13,41 @@ an edit in place — every number already published was measured on the old byte
 
     python scripts/dataset_create.py --dataset-id smoke_v1
     python scripts/dataset_create.py --dataset-id smoke_v1 --limit 3 --tag quick
+
+Items can carry fields a project declares (ADR-0003), and can live at a URL:
+
+    --fieldset tickets --fields fields.csv     values by item_id, typed by data/fields/tickets.yaml
+    --manifest items.csv                       one row per item: item_id, source_url (and
+                                               source_sha256 to pin it; without it the bytes are
+                                               fetched and pinned now); other columns are fields
+    --update-fields --fields fields.csv        new values on an existing dataset whose items are
+                                               unchanged: fields are not its identity, so no run
+                                               measured on it is invalidated
 """
 
 from __future__ import annotations
 
+import sys as _sys
+from pathlib import Path as _Path
+
+if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
+
 import argparse
-import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _common import DATASETS, ROOT, SOURCES, die, now, read_json, sha256, write_json  # noqa: E402
+from evaluation_harness import _fetch, _fields
+from evaluation_harness._common import (
+    DATASETS,
+    ROOT,
+    SOURCES,
+    die,
+    how,
+    now,
+    read_json,
+    sha256,
+    write_json,
+)
 
 
 def _relative_source_dir(source_dir: Path) -> str:
@@ -37,7 +62,187 @@ def _relative_source_dir(source_dir: Path) -> str:
         return source_dir.name
 
 
+def _identity(items: list) -> list:
+    """What freezes a dataset: each item's id, bytes and where they come from. Not its fields."""
+    keys = ("item_id", "source_path", "source_url", "source_sha256")
+    return [{k: it.get(k) for k in keys} for it in items]
+
+
+def _fieldset(fieldset_id):
+    """The named field set, checked against its schema; None when none is named."""
+    if not fieldset_id:
+        return None
+    fs = _fields.load_fieldset(fieldset_id)
+    if fs is None:
+        die(
+            f"no field set {fieldset_id!r}: expected {_fields.fieldset_path(fieldset_id)}\n"
+            "  Declare the fields there first (schemas/fieldset.schema.json, docs: CONCEPTS, item fields)."
+        )
+    problems = _fields.fieldset_problems(fieldset_id, fs)
+    if problems:
+        die(f"{_fields.fieldset_path(fieldset_id)}: {problems[0]}")
+    return fs
+
+
+def _attach(items: list, fieldset: dict, path: Path) -> None:
+    """Put the values in `path` (rows keyed by item_id) on the matching items, typed."""
+    if not path.is_file():
+        die(f"no fields file at {path}")
+    by_id = {it["item_id"]: it for it in items}
+    bad = []
+    for n, row in enumerate(_fields.read_rows(path), 1):
+        iid = str(row.get("item_id") or "").strip()
+        if iid not in by_id:
+            bad.append(f"row {n}: item_id {iid!r} is not an item of this dataset")
+            continue
+        vals, errs = _fields.values_from(fieldset, row, skip=("item_id",))
+        bad += [f"row {n} ({iid}): {e}" for e in errs]
+        # An empty cell in a declared column means "this item has no value": it clears one
+        # that was there (--update-fields), and on a new dataset leaves it absent.
+        cleared = {
+            c
+            for c, raw in row.items()
+            if c in _fields.declared(fieldset) and (raw is None or (isinstance(raw, str) and not raw.strip()))
+        }
+        merged = {k: v for k, v in by_id[iid].get("fields", {}).items() if k not in cleared}
+        merged.update(vals)
+        if merged:
+            by_id[iid]["fields"] = merged
+        else:
+            by_id[iid].pop("fields", None)
+    if bad:
+        die(f"{path}: {len(bad)} problem(s)\n  " + "\n  ".join(bad[:15]))
+
+
+def _from_manifest(path: Path, fieldset, source_dir: Path, tags: list) -> list:
+    """Items from a manifest: each row an item_id and its source_url (pinned by source_sha256,
+    or fetched and pinned now), or a source_path under --source-dir. Other columns are fields."""
+    if not path.is_file():
+        die(f"no manifest at {path}")
+    known = ("item_id", "source_url", "source_path", "source_sha256")
+    items, bad, pinned = [], [], 0
+    for n, row in enumerate(_fields.read_rows(path), 1):
+        iid = str(row.get("item_id") or "").strip()
+        url, rel = str(row.get("source_url") or "").strip(), str(row.get("source_path") or "").strip()
+        sha = str(row.get("source_sha256") or "").strip().lower()
+        if not iid:
+            bad.append(f"row {n}: no item_id")
+            continue
+        item: dict = {"item_id": iid}
+        if url:
+            # A pinned hash is taken as given: materialize fetches and checks it. Without one,
+            # the bytes are fetched now and their hash becomes the item's identity.
+            got = sha
+            if not got:
+                try:
+                    _, got = _fetch.fetch(url, None)
+                except _fetch.FetchError as exc:
+                    bad.append(f"row {n} ({iid}): {exc}")
+                    continue
+                pinned += 1
+            elif len(got) != 64 or any(c not in "0123456789abcdef" for c in got):
+                bad.append(f"row {n} ({iid}): source_sha256 {got!r} is not a sha256")
+                continue
+            item.update(source_path=rel or f"{iid}{_fetch.suffix_of(url)}", source_url=url, source_sha256=got)
+        elif rel:
+            p = source_dir / rel
+            if not p.is_file():
+                bad.append(f"row {n} ({iid}): no file {p}")
+                continue
+            item.update(source_path=rel, source_sha256=sha256(p))
+        else:
+            bad.append(f"row {n} ({iid}): neither source_url nor source_path")
+            continue
+        if tags:
+            item["tags"] = list(tags)
+        extra = {k: v for k, v in row.items() if k not in known}
+        if extra and not fieldset:
+            bad.append(f"row {n} ({iid}): columns {', '.join(sorted(extra))} need --fieldset to declare them")
+        elif fieldset:
+            vals, errs = _fields.values_from(fieldset, extra)
+            bad += [f"row {n} ({iid}): {e}" for e in errs]
+            if vals:
+                item["fields"] = vals
+        items.append(item)
+    if len({it["item_id"] for it in items}) != len(items):
+        bad.append("an item_id appears more than once")
+    if bad:
+        die(f"{path}: {len(bad)} problem(s)\n  " + "\n  ".join(bad[:15]))
+    if not items:
+        die(f"{path}: no items")
+    if pinned:
+        print(f"  pinned {pinned} item(s) now: fetched, and their sha256 recorded")
+    return items
+
+
+def _lineage(parent_id: str, dataset_id: str, items: list) -> dict:
+    """What a new version changes against the dataset it is made from (--from): the item ids
+    added, removed, and kept with different bytes."""
+    if parent_id == dataset_id:
+        die(f"--from {parent_id}: a dataset cannot be made from itself; name the new version (e.g. _v2)")
+    path = DATASETS / f"{parent_id}.json"
+    if not path.is_file():
+        die(f"--from {parent_id}: no dataset at {path}")
+    old = {it["item_id"]: it["source_sha256"] for it in read_json(path).get("items") or []}
+    new = {it["item_id"]: it["source_sha256"] for it in items}
+    return {
+        "dataset_id": parent_id,
+        "added": sorted(new.keys() - old.keys()),
+        "removed": sorted(old.keys() - new.keys()),
+        "changed": sorted(k for k in new.keys() & old.keys() if new[k] != old[k]),
+    }
+
+
+def _say_lineage(lin: dict | None) -> None:
+    if not lin:
+        return
+    n = {k: len(lin[k]) for k in ("added", "removed", "changed")}
+    print(
+        f"  derived from {lin['dataset_id']}: {n['added']} added, {n['removed']} removed, "
+        f"{n['changed']} changed"
+        + ("  (the same items: a new id for the same selection)" if not any(n.values()) else "")
+    )
+
+
+def _write(
+    out: Path,
+    dataset_id: str,
+    items: list,
+    previous: dict,
+    fieldset,
+    description: str,
+    source_dir: str,
+    lineage: dict | None = None,
+) -> None:
+    # A re-create that selects the SAME items keeps its original created_at. Without this
+    # the documented first command, `make demo`, rewrites a tracked file on every run and
+    # leaves a new clone with a dirty tree — a timestamp presented as a change when nothing
+    # about the selection changed. What freezes a dataset is the item hashes; created_at is
+    # a label, and it should move when the selection does, not when the clock does (nor when
+    # a field is corrected: fields are not the selection).
+    unchanged = (
+        _identity(previous.get("items") or []) == _identity(items)
+        and previous.get("dataset_id") == dataset_id
+    )
+    created_at = previous.get("created_at") if unchanged and previous.get("created_at") else now()
+    if fieldset:
+        bad = [p for it in items for p in _fields.problems(fieldset, it["item_id"], it.get("fields") or {})]
+        if bad:
+            die(f"{len(bad)} field problem(s)\n  " + "\n  ".join(bad[:15]))
+    doc = {"dataset_id": dataset_id, "version": "1.0", "description": description, "created_at": created_at}
+    if source_dir:
+        doc["source_dir"] = source_dir
+    if fieldset:
+        doc["fieldset"] = fieldset["fieldset_id"]
+        doc["fields_sha256"] = _fields.digest(items)
+    if lineage:
+        doc["derived_from"] = lineage
+    doc["items"] = items
+    write_json(out, doc)
+
+
 def main() -> int:
+    """Freeze a dataset from source items."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", required=True, help="lowercase_with_underscores")
     ap.add_argument("--source-dir", type=Path, default=SOURCES)
@@ -46,13 +251,8 @@ def main() -> int:
         "--recursive",
         action="store_true",
         help=(
-            "descend into subdirectories of --source-dir. OFF by default, and that default "
-            "is the fix for a silent merge: this used to always recurse, so once an example "
-            "had fetched its corpus into data/sources/<corpus>/, `make demo` — which takes "
-            "the default source dir — swallowed that corpus into the synthetic smoke "
-            "dataset. Ten items where five were expected, no error, and the failure "
-            "surfaced three steps later as a missing materialized file. Real corpora are "
-            "always created with an explicit --source-dir, so they never needed this."
+            "descend into subdirectories of --source-dir (off by default: a corpus fetched "
+            "into a subdirectory of the source dir is not swallowed into this dataset)"
         ),
     )
     ap.add_argument("--limit", type=int, help="take only the first N (sorted) — a smoke cut")
@@ -64,15 +264,97 @@ def main() -> int:
         help="also treat README files as items (they are skipped by default)",
     )
     ap.add_argument("--force", action="store_true", help="overwrite an existing dataset")
+    ap.add_argument(
+        "--from",
+        dest="from_",
+        metavar="DATASET_ID",
+        help="the dataset this version is made from: recorded with the items added, removed and changed",
+    )
+    ap.add_argument(
+        "--fieldset", help="the field set (data/fields/<id>.yaml) that declares the items' fields"
+    )
+    ap.add_argument("--fields", type=Path, help="a .csv or .jsonl of field values, one row per item_id")
+    ap.add_argument(
+        "--manifest",
+        type=Path,
+        help="a .csv or .jsonl of items: item_id, source_url [, source_sha256] [, field columns]",
+    )
+    ap.add_argument(
+        "--update-fields",
+        action="store_true",
+        help="replace the field values of an existing dataset; its items must be unchanged",
+    )
     args = ap.parse_args()
 
     out = DATASETS / f"{args.dataset_id}.json"
+    previous = {}
+    if out.exists():
+        try:
+            previous = read_json(out)
+        except Exception:  # noqa: BLE001 — an unreadable previous file is simply replaced
+            previous = {}
+    fieldset = _fieldset(args.fieldset or (previous.get("fieldset") if args.update_fields else None))
+    if args.fields and not fieldset:
+        die("field values need a field set: pass --fieldset <id> (data/fields/<id>.yaml declares them)")
+
+    if args.update_fields:
+        if not previous:
+            die(f"--update-fields: no dataset at {out} to update")
+        if not args.fields:
+            die("--update-fields needs --fields FILE")
+        # Merged: a value in the file replaces that value; every other value is kept.
+        items = [dict(it) for it in previous["items"]]
+        _attach(items, fieldset, args.fields)
+        _write(
+            out,
+            args.dataset_id,
+            items,
+            previous,
+            fieldset,
+            previous.get("description", ""),
+            previous.get("source_dir", ""),
+            previous.get("derived_from"),
+        )
+        print(
+            f"{out.relative_to(DATASETS.parents[1])}  fields updated on {len(items)} item(s); "
+            "the items, and so every run measured on them, are unchanged"
+        )
+        return 0
+
     if out.exists() and not args.force:
         die(
             f"{out} already exists.\n"
             "  A dataset is FROZEN — runs cite it by id and were measured on these bytes.\n"
-            "  Make a new version (e.g. _v2) instead, or pass --force if nothing cites it yet."
+            "  Make a new version (e.g. _v2) instead, or pass --force if nothing cites it yet.\n"
+            "  To correct its fields only, pass --update-fields --fields FILE."
         )
+
+    if args.manifest:
+        items = _from_manifest(args.manifest, fieldset, args.source_dir, args.tag)
+        if args.fields:
+            _attach(items, fieldset, args.fields)
+        desc = args.description or f"{len(items)} item(s) from {args.manifest.name}"
+        lineage = _lineage(args.from_, args.dataset_id, items) if args.from_ else None
+        _write(
+            out,
+            args.dataset_id,
+            items,
+            previous,
+            fieldset,
+            desc,
+            _relative_source_dir(args.source_dir) if args.source_dir.is_dir() else "",
+            lineage,
+        )
+        print(f"{out.relative_to(DATASETS.parents[1])}  ({len(items)} item(s))")
+        _say_lineage(lineage)
+        print(
+            "Next: "
+            + how(
+                f"evh dataset-materialize --dataset-id {args.dataset_id}",
+                f"make dataset-materialize DATASET_ID={args.dataset_id}",
+            )
+        )
+        return 0
 
     if not args.source_dir.is_dir():
         die(f"no source dir at {args.source_dir} — put your raw inputs there first")
@@ -107,39 +389,34 @@ def main() -> int:
         }
         for p in files
     ]
+    if args.fields:
+        _attach(items, fieldset, args.fields)
 
-    # A re-create that selects the SAME items keeps its original created_at. Without this
-    # the documented first command, `make demo`, rewrites a tracked file on every run and
-    # leaves a new clone with a dirty tree — a timestamp presented as a change when nothing
-    # about the selection changed. What freezes a dataset is the item hashes; created_at is
-    # a label, and it should move when the selection does, not when the clock does.
-    previous = {}
-    if out.exists():
-        try:
-            previous = read_json(out)
-        except Exception:  # noqa: BLE001 — an unreadable previous file is simply replaced
-            previous = {}
-    unchanged = previous.get("items") == items and previous.get("dataset_id") == args.dataset_id
-    created_at = previous.get("created_at") if unchanged and previous.get("created_at") else now()
-
-    write_json(
+    lineage = _lineage(args.from_, args.dataset_id, items) if args.from_ else None
+    _write(
         out,
-        {
-            "dataset_id": args.dataset_id,
-            "version": "1.0",
-            "description": args.description or f"{len(items)} item(s) from {args.source_dir.name}/",
-            "created_at": created_at,
-            # Relative to the harness root when it sits inside it. `as_posix()` on the
-            # resolved arg wrote an ABSOLUTE path into a committed file — every dataset in
-            # this repo carries "/Users/<name>/projects/..." today. That leaks whoever ran
-            # it into a public repo, and makes the file describe a machine rather than a
-            # selection. The item hashes are what freeze a dataset; this field is a label.
-            "source_dir": _relative_source_dir(args.source_dir),
-            "items": items,
-        },
+        args.dataset_id,
+        items,
+        previous,
+        fieldset,
+        args.description or f"{len(items)} item(s) from {args.source_dir.name}/",
+        # Relative to the harness root when it sits inside it. `as_posix()` on the
+        # resolved arg wrote an ABSOLUTE path into a committed file — every dataset in
+        # this repo carries "/Users/<name>/projects/..." today. That leaks whoever ran
+        # it into a public repo, and makes the file describe a machine rather than a
+        # selection. The item hashes are what freeze a dataset; this field is a label.
+        _relative_source_dir(args.source_dir),
+        lineage,
     )
     print(f"{out.relative_to(DATASETS.parents[1])}  ({len(items)} item(s))")
-    print("Next: make dataset-materialize DATASET_ID=" + args.dataset_id)
+    _say_lineage(lineage)
+    print(
+        "Next: "
+        + how(
+            f"evh dataset-materialize --dataset-id {args.dataset_id}",
+            f"make dataset-materialize DATASET_ID={args.dataset_id}",
+        )
+    )
     return 0
 
 

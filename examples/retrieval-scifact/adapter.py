@@ -58,6 +58,7 @@ sys.path.insert(0, str(HERE.parent / "_shared"))
 import gateway  # noqa: E402
 
 from retrieval import (  # noqa: E402
+    METRIC_DESCRIPTIONS,
     METRIC_KINDS,
     PRIMARY_METRIC,
     parse_ranking,
@@ -394,9 +395,12 @@ def _litellm(user: str, params: Dict[str, Any]) -> Result:
     # response already carries exactly. Measured across this repo, the table was wrong by
     # 0.67x to 3.21x per arm and reordered arms by cost.
     billed = _billed(usage)
+    pin, pout = params.get("usd_per_mtok_in"), params.get("usd_per_mtok_out")
+    # No bill and no declared price is UNPRICED (None), as in every other adapter: it read 0.0,
+    # a claim that the call was free. No committed run reached this; every hosted arm is billed.
     cost = billed if billed is not None else (
-        tin * float(params.get("usd_per_mtok_in", 0.0))
-        + tout * float(params.get("usd_per_mtok_out", 0.0))) / 1_000_000
+        None if pin is None or pout is None or tin is None or tout is None
+        else (tin * float(pin) + tout * float(pout)) / 1_000_000)
     extra = {"truncated": 1.0 if choice.finish_reason == "length" else 0.0}
     extra["reasoning_tokens"] = float(_reasoning_tokens(usage) or 0)
     return Result(output=text, cost_usd=cost, tokens_in=tin, tokens_out=tout,

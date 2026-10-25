@@ -64,26 +64,34 @@ from __future__ import annotations
 import argparse
 import collections
 import hashlib
-import json
 import random
 import sys
-import time
-import urllib.error
-import urllib.parse
-import urllib.request
 from pathlib import Path
 
 # parents[2] is the repo root -> <root>/harness, the harness this example feeds.
 ROOT = Path(__file__).resolve().parents[2] / "harness"
-ROWS_API = "https://datasets-server.huggingface.co/rows"
 DATASET = "fancyzhx/dbpedia_14"
 CONFIG = "dbpedia_14"
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "_shared"))
+from hf_rows import DEFAULT_DELAY  # noqa: E402
+from hf_rows import page as _rows_page  # noqa: E402 - the one retry/pacing schedule
 
 #: The dataset's own label order. Index IS the stored integer; do not reorder.
 LABELS = [
-    "Company", "EducationalInstitution", "Artist", "Athlete", "OfficeHolder",
-    "MeanOfTransportation", "Building", "NaturalPlace", "Village", "Animal",
-    "Plant", "Album", "Film", "WrittenWork",
+    "Company",
+    "EducationalInstitution",
+    "Artist",
+    "Athlete",
+    "OfficeHolder",
+    "MeanOfTransportation",
+    "Building",
+    "NaturalPlace",
+    "Village",
+    "Animal",
+    "Plant",
+    "Album",
+    "Film",
+    "WrittenWork",
 ]
 
 #: Verified at both ends of all 14 blocks on 2026-09-27. Checked again at fetch time.
@@ -93,58 +101,8 @@ PER_CLASS_IN_SPLIT = 5000
 PAGE = 100
 
 
-#: Retried rather than fatal. A 280-item draw is 280 sequential requests, so the chance of
-#: meeting at least one transient gateway error approaches certainty -- this fetcher died
-#: on a 502 two thirds of the way through its first real run, losing the whole draw. "Run
-#: it again" is not a fix when the failure rate scales with the thing you are fetching.
-_TRANSIENT_STATUS = frozenset({500, 502, 503, 504})
-_MAX_ATTEMPTS = 7
-
-#: 429 is not a glitch, it is the server saying SLOW DOWN, so it gets its own schedule.
-#: Backing off 2,4,8,16,30 — the transient ladder — exhausted six attempts at offset 11 of
-#: a 280-item draw and lost the whole fetch. The pause between requests is the actual fix;
-#: the longer ladder is what survives a limit that has already been tripped.
-_RATE_LIMIT_BACKOFF = (5, 15, 30, 60, 60, 60)
-
-#: A draw of n items is n requests, and the 56-item draw passed while the 280-item draw
-#: was refused — so the limiter is on request RATE, not volume. Roughly three per second
-#: is what a public API is entitled to expect from a batch job that has all day.
-DEFAULT_DELAY = 0.35
-
-
 def _get(offset: int, length: int, delay: float = DEFAULT_DELAY) -> list[dict]:
-    query = urllib.parse.urlencode(
-        {"dataset": DATASET, "config": CONFIG, "split": "test",
-         "offset": offset, "length": length}
-    )
-    last = ""
-    for attempt in range(1, _MAX_ATTEMPTS + 1):
-        try:
-            with urllib.request.urlopen(f"{ROWS_API}?{query}", timeout=60) as resp:
-                rows = [r["row"] for r in (json.loads(resp.read()).get("rows") or [])]
-            time.sleep(delay)
-            return rows
-        except urllib.error.HTTPError as exc:
-            last = f"HTTP {exc.code}"
-            if exc.code == 429:
-                wait = _RATE_LIMIT_BACKOFF[min(attempt - 1, len(_RATE_LIMIT_BACKOFF) - 1)]
-            elif exc.code in _TRANSIENT_STATUS:
-                wait = min(2 ** attempt, 30)
-            else:
-                # A 400 or 404 will not fix itself; retrying wastes a minute before
-                # printing the same message.
-                break
-        except Exception as exc:  # noqa: BLE001 - timeouts, resets, DNS
-            last = f"{type(exc).__name__}: {exc}"
-            wait = min(2 ** attempt, 30)
-        if attempt < _MAX_ATTEMPTS:
-            print(f"      {last} at offset {offset}; retry {attempt}/{_MAX_ATTEMPTS - 1} "
-                  f"in {wait}s", flush=True)
-            time.sleep(wait)
-    sys.exit(
-        f"datasets-server failed at offset {offset} after {_MAX_ATTEMPTS} attempt(s): {last}\n"
-        "  it is an HTTPS API; check connectivity, then retry — or raise --delay."
-    )
+    return _rows_page(DATASET, CONFIG, "test", offset, length, delay=delay)
 
 
 def fetch_class(label_index: int, wanted: list[int], delay: float = DEFAULT_DELAY) -> list[dict]:
@@ -157,7 +115,7 @@ def fetch_class(label_index: int, wanted: list[int], delay: float = DEFAULT_DELA
     base = label_index * PER_CLASS_IN_SPLIT
     out: list[dict] = []
     for start in range(0, len(wanted), PAGE):
-        for off in wanted[start:start + PAGE]:
+        for off in wanted[start : start + PAGE]:
             rows = _get(base + off, 1, delay)
             if not rows:
                 sys.exit(f"no row at offset {base + off} — the split is smaller than expected")
@@ -185,13 +143,22 @@ def item_id(text: str) -> str:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--n", type=int, default=280,
-                    help="total items; split evenly across the 14 classes (default: 280)")
+    ap.add_argument(
+        "--n", type=int, default=280, help="total items; split evenly across the 14 classes (default: 280)"
+    )
     ap.add_argument("--dataset-id", default=None, help="harness dataset_id (default: dbpedia_<n>)")
-    ap.add_argument("--seed", type=int, default=20260927,
-                    help="draw seed; the same --n and --seed reproduce the same items")
-    ap.add_argument("--delay", type=float, default=DEFAULT_DELAY,
-                    help=f"seconds between requests (default: {DEFAULT_DELAY}); raise it if 429s persist")
+    ap.add_argument(
+        "--seed",
+        type=int,
+        default=20260927,
+        help="draw seed; the same --n and --seed reproduce the same items",
+    )
+    ap.add_argument(
+        "--delay",
+        type=float,
+        default=DEFAULT_DELAY,
+        help=f"seconds between requests (default: {DEFAULT_DELAY}); raise it if 429s persist",
+    )
     ap.add_argument("--force", action="store_true", help="overwrite an existing slice")
     args = ap.parse_args()
 
@@ -237,11 +204,13 @@ def main() -> int:
     print(f"\n{len(rows)} item(s) written, {per_class} per class, seed {args.seed}")
     print(f"  texts      {sources}")
     print(f"  gold refs  {golds}")
-    print(f"  classes    {len(got)} distinct, all at {min(got.values())}"
-          if len(set(got.values())) == 1 else f"  classes    {dict(sorted(got.items()))}")
+    print(
+        f"  classes    {len(got)} distinct, all at {min(got.values())}"
+        if len(set(got.values())) == 1
+        else f"  classes    {dict(sorted(got.items()))}"
+    )
     print(f"  words      min {words[0]}  median {words[len(words) // 2]}  max {words[-1]}")
-    print(f"\n  Balanced by construction, so the majority-class floor is exactly "
-          f"{1 / len(LABELS):.4f}.")
+    print(f"\n  Balanced by construction, so the majority-class floor is exactly {1 / len(LABELS):.4f}.")
     print("\nNext:")
     if (ROOT / "data" / "datasets" / f"{dataset_id}.json").is_file():
         # Frozen and committed: check the fetched bytes against it, never re-create it.

@@ -1,14 +1,15 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "metrics",
-  "description": "One run's result. dataset_id and build are REQUIRED: a number without the data it measured and the build that produced it cannot be compared to anything.",
+  "description": "One run's result (metrics.json), as scripts/_record.py builds it. dataset_id and build are REQUIRED: a number without the data it measured and the build that produced it cannot be compared to anything. Every field the harness writes is declared here, and nothing else is accepted: a field from another version would otherwise pass silently while nothing reads it.",
   "type": "object",
-  "required": ["run_id", "dataset_id", "config_id", "build", "created_at", "scores"],
+  "additionalProperties": false,
+  "required": ["run_id", "dataset_id", "config_id", "build", "created_at", "scores", "n_items"],
   "properties": {
     "run_id": {"type": "string"},
     "dataset_id": {"type": "string"},
     "config_id": {"type": "string"},
-    "created_at": {"type": "string"},
+    "created_at": {"type": "string", "description": "When this record's scores were computed: the measurement, or for a derived run the derivation."},
     "build": {
       "type": "object",
       "description": "The SYSTEM UNDER TEST. Without this a delta cannot be attributed to a code change.",
@@ -27,7 +28,65 @@
       "description": "Aggregate metrics. Keys are yours; values must be numbers.",
       "additionalProperties": {"type": "number"}
     },
-    "n_items": {"type": "integer"},
+    "n_items": {"type": "integer", "minimum": 0},
+    "params": {"type": "object", "description": "The knobs the arm actually ran with."},
+    "adapter": {"type": "string", "description": "Which adapter scored these numbers: a path from the project (or the repository root in a checkout), `scripts/adapter.py` for the bundled one, `imported:<scorer>` for import-run."},
+    "metric_kinds": {
+      "type": "object",
+      "description": "The adapter's reading of its metrics.",
+      "additionalProperties": {"enum": ["quality", "descriptive", "cost", "speed"]}
+    },
+    "metric_directions": {
+      "type": "object",
+      "description": "Metrics that improve going down or up, as the adapter (METRIC_DIRECTIONS) or import-run --asc declared.",
+      "additionalProperties": {"enum": ["lower", "higher"]}
+    },
+    "metric_descriptions": {
+      "type": "object",
+      "description": "What each metric measures, as the adapter (METRIC_DESCRIPTIONS) declared: one line, or a summary and details for the metric's own catalog page.",
+      "additionalProperties": {
+        "oneOf": [
+          {"type": "string"},
+          {
+            "type": "object",
+            "required": ["summary"],
+            "additionalProperties": false,
+            "properties": {"summary": {"type": "string", "minLength": 1}, "details": {"type": "string"}}
+          }
+        ]
+      }
+    },
+    "primary_metric": {"type": "string", "description": "The metric that answers 'which arm is better'."},
+    "reference_tier": {"enum": ["gold", "silver"]},
+    "reference_coverage": {
+      "type": "object",
+      "description": "Recorded when only some items have a reference: quality metrics are means over items_with_reference, not items.",
+      "required": ["items_with_reference", "items"],
+      "additionalProperties": false,
+      "properties": {"items_with_reference": {"type": "integer", "minimum": 0}, "items": {"type": "integer", "minimum": 1}}
+    },
+    "fingerprint": {"type": "object", "description": "What the number depended on, and one hash over it (scripts/_fingerprint.py)."},
+    "warmup_ms": {"type": ["number", "null"], "description": "The adapter's warm-up, kept out of the per-item latency."},
+    "providers_seen": {"type": "object", "description": "Which upstream providers answered, and how often."},
+    "resume": {"type": "object", "description": "What a resumed run replayed from the pass it resumed."},
+    "imported": {"type": "object", "description": "import-run: the source file and its coverage of the dataset."},
+    "rescore_dropped_metrics": {"type": "array", "items": {"type": "string"}, "description": "rescore: metrics the source recorded and the current scorer no longer emits."},
+    "source_created_at": {"type": "string", "description": "A derived run: when the run it was derived from was measured."},
+    "derived": {
+      "type": "object",
+      "description": "A run computed from another run's stored outputs: what did it, from which run, when, with what.",
+      "required": ["kind", "from", "at", "with"],
+      "properties": {
+        "kind": {"enum": ["rescore", "judge", "reparse"]},
+        "from": {"type": "string", "description": "The source run's directory name."},
+        "at": {"type": "string"},
+        "with": {"type": "object", "description": "What computed it: the adapter and scorer hashes (rescore), the judge scorer (judge), the parser (reparse)."},
+        "source": {"type": "object", "description": "The source's own derived block, when it was itself derived."}
+      }
+    },
+    "goal": {"type": "string", "description": "The goal this run answers, from its config: data/goals/<goal_id>.yaml (validate V14)."},
+    "round": {"type": "string", "description": "The round of its goal this run belongs to, from its config (ADR-0004, optional)."},
+    "format": {"type": "string", "description": "The output format the config asked for; must be one the goal's output_contract accepts (validate V14)."},
     "repeat_index": {"type": "integer", "description": "Which repetition this is, when measuring an arm's own variance."}
   }
 }

@@ -1,0 +1,3 @@
+The article is about a U.S.-brokered cease-fire in Afghanistan between a militia leader and a provincial governor. This is international news about conflict/diplomacy in Afghanistan. This falls under "World" category.
+
+The instruction says to output only the category name withWorld

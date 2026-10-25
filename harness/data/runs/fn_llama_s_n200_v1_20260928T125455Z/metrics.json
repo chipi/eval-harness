@@ -6,8 +6,22 @@
     "source": "git"
   },
   "config_id": "fn_llama_s_n200_v1",
-  "created_at": "2026-09-28T13:07:16Z",
+  "created_at": "2026-10-01T16:13:56Z",
   "dataset_id": "few_nerd_280",
+  "derived": {
+    "at": "2026-10-01T16:13:56Z",
+    "from": "fn_llama_s_n200_v1_20260928T125455Z",
+    "kind": "rescore",
+    "with": {
+      "adapter": "examples/ner-few-nerd/adapter.py",
+      "scorer": {
+        "normalizer_sha256": "9664fa3cb17f6df87ffc7de387cb9ec20d6fa4988d6a3a400dadf0f415d0552d",
+        "parser_sha256": "23058c218b1c50eb679099082cd2df8150b0e33d8f707b38479caa4173f88769",
+        "scorer_sha256": "f3cf13af2b8fd609528a547c391b23422b5e3490304be0a7811f1faa6d9ba334"
+      },
+      "sha256": "6124a5a879fdbbe0adea4b2819864f1be8acb5f6902a60ae5e8ca8a4b59b1e3c"
+    }
+  },
   "fingerprint": {
     "arm": {
       "config_id": "fn_llama_s_n200_v1",
@@ -31,9 +45,11 @@
       "items_sha256": "95a1b962707368cce0895143e73b63cd9884425502997ee1a93df99f97e2cad7",
       "n_items": 280,
       "reference_id": "gold/few_nerd_280",
-      "reference_tier": "gold"
+      "reference_tier": "gold",
+      "references_sha256": "7cdd09fe0084ba29c616ab65fbfa08bf149e9006819641e9e91fe502ebe15a2b"
     },
-    "hash": "d5682cc21558479c06e55f20855f26b195b6c2c5a7e52e513ecd3310d6bb02eb",
+    "hash": null,
+    "hash_invalid_because": "scores were recomputed by a different scorer than the one this fingerprint was built from; see derived.with",
     "host": {
       "cpu_count": 12,
       "label": "mac-dev",
@@ -45,7 +61,7 @@
     "instrument": {
       "adapter": {
         "id": "examples/ner-few-nerd/adapter.py",
-        "sha256": "f560341e6226a8673302db46341785728a443ce1c903ebfa18f5d9221fb849cf"
+        "sha256": "d147da55107305786c21b75ac87d748b9ea4fb3e57ebdff622aafecd826559b1"
       },
       "harness": {
         "commit": "107aef1af2e4",
@@ -91,8 +107,9 @@
         "temperature": 0.0
       }
     },
-    "version": 1
+    "version": 4
   },
+  "goal": "entities_few_nerd",
   "metric_kinds": {
     "confidence": "descriptive",
     "f1": "quality",
@@ -104,6 +121,7 @@
     "precision": "quality",
     "reasoning_tokens": "descriptive",
     "recall": "quality",
+    "resumed": "descriptive",
     "tp": "descriptive",
     "truncated": "descriptive",
     "type_penalty": "descriptive",
@@ -133,31 +151,33 @@
     "Novita": 60
   },
   "reference_tier": "gold",
+  "round": "r1",
   "run_id": "fn_llama_s_n200_v1_20260928T125455Z",
   "scores": {
-    "cost_usd": 2.9e-05,
-    "f1": 0.568649,
-    "fn": 0.971429,
-    "fp": 1.467857,
-    "latency_ms": 2637.644668,
-    "n_gold": 2.735714,
-    "n_predicted": 3.232143,
-    "parsed": 0.992857,
-    "precision": 0.551098,
+    "cost_usd": 3.69216e-05,
+    "f1": 0.5686494764,
+    "fn": 0.9714285714,
+    "fp": 1.4678571429,
+    "latency_ms": 2637.6446678571,
+    "n_gold": 2.7357142857,
+    "n_predicted": 3.2321428571,
+    "parsed": 0.9928571429,
+    "precision": 0.5510975186,
     "reasoning_tokens": 0.0,
-    "recall": 0.61728,
-    "tokens_in": 119.482143,
-    "tokens_out": 65.510714,
-    "total_cost_usd": 0.0081793,
+    "recall": 0.6172796202,
+    "tokens_in": 119.4821428571,
+    "tokens_out": 65.5107142857,
+    "total_cost_usd": 0.01033805,
     "total_tokens_in": 33455.0,
     "total_tokens_out": 18343.0,
-    "tp": 1.764286,
+    "tp": 1.7642857143,
     "truncated": 0.0,
-    "type_penalty": 0.112501,
-    "untyped_f1": 0.681151,
-    "untyped_fn": 0.585714,
-    "untyped_fp": 1.082143,
+    "type_penalty": 0.1125011676,
+    "untyped_f1": 0.681150644,
+    "untyped_fn": 0.5857142857,
+    "untyped_fp": 1.0821428571,
     "untyped_tp": 2.15
   },
+  "source_created_at": "2026-09-28T13:07:16Z",
   "warmup_ms": 1943.952
 }

@@ -26,7 +26,7 @@
       "reference_tier": "gold",
       "references_sha256": "7b5e618e23b7f2b222665d83e99006eb0e9a51066e63e2e5ff8c51ae3c696c21"
     },
-    "hash": "9e14a68bc458e801220e2c6274caeec2e516ac0f23d3e2b67e3217b77dee9bfa",
+    "hash": "28723d344a3ac64bd7ee5a315cdb73ea728c28652a56ad308b1f733fb7af0c5d",
     "host": {
       "cpu_count": 4,
       "label": null,
@@ -38,7 +38,7 @@
     "instrument": {
       "adapter": {
         "id": "examples/summeval-judging/adapter.py",
-        "sha256": "0894c70f87d48fa61b72c600a9b91b539e3127fe5cf204f97ed9b622fca92036"
+        "sha256": "b7d5e2e5ce84ea0fe683e3488ba09fbcc416464d2b8f5abc47956930bf0262eb"
       },
       "harness": {
         "commit": "605e549e67a4",
@@ -54,7 +54,7 @@
         "transformers": "4.55.4"
       },
       "model": {
-        "code_sha256": "5f0b657b7d7c9192bd2e94d71376aa1a5972311a9f46c2b4b33fef401aacd6f6",
+        "code_sha256": "b255bb830e5865a770e0c205350dda86d61eb243da688a2e078781904b467578",
         "id": "random",
         "identity_declared": false,
         "kind": "deterministic metric, no model and no network",
@@ -63,8 +63,9 @@
         "revision_source": "not-a-model"
       }
     },
-    "version": 3
+    "version": 4
   },
+  "goal": "summary_judge_summeval",
   "metric_kinds": {
     "input_truncated": "descriptive",
     "parsed": "descriptive",
@@ -93,6 +94,7 @@
   "primary_metric": "tau",
   "providers_seen": {},
   "reference_tier": "gold",
+  "round": "r1",
   "run_id": "se_random_n100_v1_20261015T130521Z",
   "scores": {
     "cost_usd": 0.0,

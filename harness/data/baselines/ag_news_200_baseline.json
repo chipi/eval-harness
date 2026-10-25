@@ -1,0 +1,28 @@
+{
+  "adapter": "examples/classification-ag-news/adapter.py",
+  "baseline_id": "ag_news_200_baseline",
+  "build": {
+    "dirty": false,
+    "ref": "1e80be6531e2f71118762f498b4493e946f0c944",
+    "source": "git"
+  },
+  "dataset_id": "ag_news_200",
+  "fingerprint_hash": "40999a5baad0e078b1885415d85ce210ce62b9630bf2979b72da2b3750520b85",
+  "goal": "news_topic_ag",
+  "promoted_at": "2026-10-25T14:08:24Z",
+  "promoted_from": "ag_bert_mini_n200_v1_20260927T090317Z",
+  "reason": "bert_mini (44 MB, $0 marginal), for labels that follow AG News's house convention: 0.9450, not separated from bert_base_ta (0.9600, p = 0.55), and 11\u00d7 faster on one Linux machine (4.3 vs 49 ms median). REPORT_CLASSIFICATION, executive summary and \u00a73.1.",
+  "reference_tier": "gold",
+  "scores": {
+    "answer_words": 1.0,
+    "confidence": 0.957081,
+    "correct": 0.945,
+    "correct_after_repair": 0.0,
+    "cost_usd": 0.0,
+    "fmt_markdown": 0.0,
+    "fmt_verbose": 0.0,
+    "latency_ms": 7.110095,
+    "parsed": 1.0,
+    "total_cost_usd": 0.0
+  }
+}

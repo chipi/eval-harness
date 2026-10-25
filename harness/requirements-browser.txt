@@ -1,0 +1,3 @@
+# The inspector's browser test (tests/test_inspector_browser.py, `make browser-check`).
+# A development extra: the harness package needs none of it. Install with `make browser-install`.
+playwright==1.64.0

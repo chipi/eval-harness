@@ -1,5 +1,5 @@
 {
-  "adapter": "summarization-cnn-dailymail/adapter.py",
+  "adapter": "examples/summarization-cnn-dailymail/adapter.py",
   "build": {
     "dirty": null,
     "ref": "eval-harness-scenario",
@@ -31,9 +31,10 @@
       "items_sha256": "257feda902391b934b8cde940c15e91201096dbe96ec5a81337e9da007ce3ec7",
       "n_items": 200,
       "reference_id": "gold/cnn_dailymail_200",
-      "reference_tier": "gold"
+      "reference_tier": "gold",
+      "references_sha256": "5d0b02c3798017535572d24dd3ce0592332938a0c91e93684d163963a60a7cd9"
     },
-    "hash": "f3f42c82ae4c26093c305791392ef0649d47e01efc543e4595c3c2bac5ee7e36",
+    "hash": "53e46e10db99066ff16f4393b306741560ed25a6a32cf9adc4f61dd5243bc45a",
     "host": {
       "cpu_count": 12,
       "label": null,
@@ -44,8 +45,8 @@
     },
     "instrument": {
       "adapter": {
-        "id": "summarization-cnn-dailymail/adapter.py",
-        "sha256": "efb387bfca67b4b9f62b8c15f8e1ee8d6837c72a59d72284b6189fba75329bd7"
+        "id": "examples/summarization-cnn-dailymail/adapter.py",
+        "sha256": "2fd5227d666d5a1c3110afab4df0df63b3f3bf7f42dab7f5db7c16473efd191f"
       },
       "harness": {
         "commit": "d9def7c7b0f9",
@@ -74,8 +75,9 @@
         "temperature": 0.0
       }
     },
-    "version": 1
+    "version": 4
   },
+  "goal": "news_summary_cnn",
   "metric_kinds": {
     "compression": "descriptive",
     "concision": "quality",
@@ -115,11 +117,12 @@
     "Claude Platform on AWS": 200
   },
   "reference_tier": "gold",
+  "round": "r1",
   "run_id": "cnn_anthropic_m_n200_v1_20260926T002220Z",
   "scores": {
     "compression": 0.159945,
     "concision": 0.220676,
-    "cost_usd": 0.005609,
+    "cost_usd": 0.003739,
     "coverage": 0.323594,
     "fmt_bullets": 0.0,
     "fmt_label": 0.0,
@@ -137,7 +140,7 @@
     "summary_words": 64.37,
     "tokens_in": 1134.685,
     "tokens_out": 146.98,
-    "total_cost_usd": 1.121751,
+    "total_cost_usd": 0.747834,
     "total_tokens_in": 226937.0,
     "total_tokens_out": 29396.0,
     "truncated": 0.0

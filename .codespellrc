@@ -1,0 +1,5 @@
+[codespell]
+# Domain words and short names codespell reads as typos: ROUGE (the metric), "unparseable"
+# (a judge reply), nd/anc/ans/ue/summar (variables), "prodcut" (test_fields' deliberately
+# misspelt column), "heterogenous" (the BEIR paper's own title), "re-used" (English).
+ignore-words-list = rouge,unparseable,nd,anc,ans,ue,summar,prodcut,heterogenous,re-used

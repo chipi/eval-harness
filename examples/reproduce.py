@@ -33,7 +33,6 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import random
 import shutil
 import statistics as st
 import subprocess
@@ -49,7 +48,7 @@ HARNESS = ROOT / "harness"
 DATA = HARNESS / "data"
 REPRO = DATA / "runs-repro"
 sys.path.insert(0, str(HERE / "_shared"))
-sys.path.insert(0, str(HARNESS / "scripts"))
+sys.path.insert(0, str(HARNESS))  # the evaluation_harness package (a link to scripts/)
 
 #: Arms that are not models -- floors that check the scorer. Free and deterministic.
 BASELINES = {"lead3", "keyword", "constant", "capitalized", "nothing", "random", "first_k", "length"}
@@ -61,15 +60,10 @@ def registry() -> dict:
 
 
 def _load_dotenv() -> None:
-    """harness/.env, as the harness reads it -- an exported variable always wins."""
-    env = HARNESS / ".env"
-    if env.is_file():
-        for line in env.read_text().splitlines():
-            line = line.strip()
-            if line and not line.startswith("#") and "=" in line:
-                k, v = line.split("=", 1)
-                if v.strip() and k.strip() not in os.environ:
-                    os.environ[k.strip()] = v.strip().strip('"').strip("'")
+    """harness/.env, read by the harness's own loader -- an exported variable always wins."""
+    from evaluation_harness._common import load_dotenv  # noqa: PLC0415 - harness/ is on sys.path above
+
+    load_dotenv(HARNESS / ".env")
 
 
 # ── what was measured ───────────────────────────────────────────────────────────────────
@@ -81,30 +75,43 @@ def committed(exp: dict) -> dict:
         cid = m.get("config_id", "")
         if m.get("dataset_id") != exp["dataset"] or not cid.endswith(exp["suffix"]):
             continue
-        arm = cid[len(exp["prefix"]):-len(exp["suffix"])]
+        arm = cid[len(exp["prefix"]) : -len(exp["suffix"])]
         params = m.get("params") or {}
-        kind = ("baseline" if arm in BASELINES else
-                "hosted" if params.get("provider") in HOSTED_PROVIDERS else "local")
-        out[arm] = {"cid": cid, "dir": f.parent, "score": m["scores"][exp["metric"]],
-                    "kind": kind, "model": params.get("model"), "n": m.get("n_items")}
+        kind = (
+            "baseline"
+            if arm in BASELINES
+            else "hosted"
+            if params.get("provider") in HOSTED_PROVIDERS
+            else "local"
+        )
+        out[arm] = {
+            "cid": cid,
+            "dir": f.parent,
+            "score": m["scores"][exp["metric"]],
+            "kind": kind,
+            "model": params.get("model"),
+            "n": m.get("n_items"),
+        }
     # Cost and time come from data/runs, where the provider's response was recorded.
     table = json.loads((HERE / "local_models.json").read_text())
     pins, safe = table["revisions"], table.get("safetensors", {})
-    for arm, a in out.items():
+    for _arm, a in out.items():
         a["cost"], a["minutes"] = 0.0, None
         # A rerun loads the safetensors conversion where one was verified to give identical
         # outputs, so it never unpickles a checkpoint; otherwise the revision that was measured.
         a["safetensors"] = a["kind"] == "local" and a["model"] in safe
-        a["revision"] = ((safe[a["model"]]["revision"] if a["safetensors"] else pins.get(a["model"]))
-                         if a["kind"] == "local" else None)
+        a["revision"] = (
+            (safe[a["model"]]["revision"] if a["safetensors"] else pins.get(a["model"]))
+            if a["kind"] == "local"
+            else None
+        )
         for f in (DATA / "runs").glob(f"{a['cid']}_*/metrics.json"):
             m = json.loads(f.read_text())
             if m.get("dataset_id") != exp["dataset"]:
                 continue
             pj = f.parent / "predictions.jsonl"
             rows = [json.loads(x) for x in pj.read_text().splitlines() if x.strip()] if pj.is_file() else []
-            a["cost"] = sum(float((((r.get("_meta") or {}).get("usage") or {}).get("cost") or 0))
-                            for r in rows)
+            a["cost"] = sum(float(((r.get("_meta") or {}).get("usage") or {}).get("cost") or 0) for r in rows)
             lat = (m.get("scores") or {}).get("latency_ms")
             if lat is not None:
                 a["minutes"] = (lat * (m.get("n_items") or 0) + (m.get("warmup_ms") or 0)) / 60000
@@ -126,11 +133,17 @@ def select(arms: dict, level: str, only: str | None) -> list:
         names = [a.strip() for a in only.split(",") if a.strip()]
         unknown = [a for a in names if a not in arms]
         if unknown:
-            raise SystemExit(f"not a measured arm of this experiment: {', '.join(unknown)}\n"
-                             f"arms: {', '.join(sorted(arms))}")
+            raise SystemExit(
+                f"not a measured arm of this experiment: {', '.join(unknown)}\n"
+                f"arms: {', '.join(sorted(arms))}"
+            )
         return names
-    kinds = {"local": {"local", "baseline"}, "hosted": {"hosted"}, "baselines": {"baseline"},
-             "all": {"local", "baseline", "hosted"}}[level]
+    kinds = {
+        "local": {"local", "baseline"},
+        "hosted": {"hosted"},
+        "baselines": {"baseline"},
+        "all": {"local", "baseline", "hosted"},
+    }[level]
     return sorted(a for a, v in arms.items() if v["kind"] in kinds)
 
 
@@ -153,19 +166,23 @@ def plan(exp: dict, level: str, only: str | None) -> int:
     _load_dotenv()
     arms = committed(exp)
     chosen = select(arms, level, only)
-    print(f"\n{exp['bench']} · {exp['dataset']} · metric {exp['metric']} · "
-          f"{len(arms)} measured arms, committed record: harness/data/{exp['base']}/\n")
+    print(
+        f"\n{exp['bench']} · {exp['dataset']} · metric {exp['metric']} · "
+        f"{len(arms)} measured arms, committed record: harness/data/{exp['base']}/\n"
+    )
     print(f"  {'arm':16s} {'kind':9s} {'committed':>10s} {'billed':>9s} {'time':>9s}")
     for a in sorted(chosen, key=lambda a: (arms[a]["kind"], a)):
         v = arms[a]
         m = v["minutes"]
         t = "?" if m is None else "<1 min" if m < 1 else f"{m:.0f} min"
-        print(f"  {a:16s} {v['kind']:9s} {v['score']:10.4f} {'$%.3f' % v['cost']:>9s} {t:>9s}")
+        print(f"  {a:16s} {v['kind']:9s} {v['score']:10.4f} {'${:.3f}'.format(v['cost']):>9s} {t:>9s}")
     cost = sum(arms[a]["cost"] for a in chosen)
     mins = sum(arms[a]["minutes"] or 0 for a in chosen)
-    print(f"\n  {len(chosen)} arm(s): billed ${cost:.2f} when measured; about {mins/60:.1f} h of "
-          "compute on the machine that measured them\n  (local timings depend on the machine that measured them; "
-          "hosted timings are mostly waiting on the provider)")
+    print(
+        f"\n  {len(chosen)} arm(s): billed ${cost:.2f} when measured; about {mins / 60:.1f} h of "
+        "compute on the machine that measured them\n  (local timings depend on the machine that measured them; "
+        "hosted timings are mostly waiting on the provider)"
+    )
 
     venv = _venv_python(exp)
     have = {d: (DATA / "materialized" / d).is_dir() for d in exp["datasets"]}
@@ -180,10 +197,15 @@ def plan(exp: dict, level: str, only: str | None) -> int:
     if exp.get("note"):
         print(f"\n  note: {exp['note']}")
     if exp["slug"] == "summarization-dailymail":
-        print("\n  note: only the five local arms were measured on this slice; the hosted arms"
-              " were not, so there is nothing to compare them against")
-    print(f"\n  then:  make reproduce EXP={exp['slug']} LEVEL={level}"
-          + (f" ARMS={only}" if only else "") + f"\n         make compare EXP={exp['slug']}\n")
+        print(
+            "\n  note: only the five local arms were measured on this slice; the hosted arms"
+            " were not, so there is nothing to compare them against"
+        )
+    print(
+        f"\n  then:  make reproduce EXP={exp['slug']} LEVEL={level}"
+        + (f" ARMS={only}" if only else "")
+        + f"\n         make compare EXP={exp['slug']}\n"
+    )
     return 0
 
 
@@ -191,8 +213,10 @@ def plan(exp: dict, level: str, only: str | None) -> int:
 def data(exp: dict, light: bool = False) -> int:
     ex = HERE / exp["example"]
     if not shutil.which("uv"):
-        raise SystemExit("uv is not installed: https://docs.astral.sh/uv/ "
-                         "(curl -LsSf https://astral.sh/uv/install.sh | sh)")
+        raise SystemExit(
+            "uv is not installed: https://docs.astral.sh/uv/ "
+            "(curl -LsSf https://astral.sh/uv/install.sh | sh)"
+        )
     # --light: the base environment only -- hosted arms, BM25 and the baselines, no
     # PyTorch. What CI uses; a full rerun of the local models needs the extras.
     sync = ["uv", "sync"] + ([] if light else [f"--extra={x}" for x in exp.get("extras", [])])
@@ -225,8 +249,10 @@ def run(exp: dict, level: str, only: str | None, extra: str | None = None) -> in
     if missing:
         raise SystemExit(f"data not fetched ({', '.join(missing)}): make data EXP={exp['slug']}")
     if any(arms[a]["kind"] == "hosted" for a in chosen) and not _route():
-        raise SystemExit("hosted arms selected but no route: put OPENROUTER_API_KEY in "
-                         "harness/.env (see docs/REPRODUCE.md)")
+        raise SystemExit(
+            "hosted arms selected but no route: put OPENROUTER_API_KEY in "
+            "harness/.env (see docs/REPRODUCE.md)"
+        )
     out = REPRO / exp["slug"]
     out.mkdir(parents=True, exist_ok=True)
     for a in chosen:
@@ -239,8 +265,11 @@ def run(exp: dict, level: str, only: str | None, extra: str | None = None) -> in
             # provider route, not for a runaway loop.
             env["EVAL_MAX_COST_USD"] = f"{max(0.05, 2 * arms[a]['cost']):.2f}"
         print(f"\n── {a} ({arms[a]['kind']})", flush=True)
-        _run([str(venv), "scripts/experiment_run.py", "--config", str(_pinned(cfgs[cid], arms[a], out))],
-             cwd=HARNESS, env=env)
+        _run(
+            [str(venv), "scripts/experiment_run.py", "--config", str(_pinned(cfgs[cid], arms[a], out))],
+            cwd=HARNESS,
+            env=env,
+        )
     if extra:
         _run_new_arm(exp, arms, Path(extra).resolve(), venv, out)
     print(f"\nreruns are in {out.relative_to(ROOT)}/   next: make compare EXP={exp['slug']}")
@@ -262,13 +291,22 @@ def _pinned(cfg_path: Path, arm: dict, out: Path) -> Path:
     cfg.setdefault("params", {})["revision"] = arm["revision"]
     pinned = out / "configs" / cfg_path.name
     pinned.parent.mkdir(parents=True, exist_ok=True)
-    what = ("the verified safetensors conversion of the committed run's weights" if arm.get("safetensors")
-            else "the committed run's weights")
-    pinned.write_text(f"# {cfg_path.relative_to(ROOT)}, pinned to {what}\n"
-                      + yaml.safe_dump(cfg, sort_keys=False))
-    print(f"  weights pinned to {arm['revision'][:12]}"
-          + (" (the verified safetensors conversion of the committed weights)" if arm.get("safetensors")
-             else " (the committed revision)"))
+    what = (
+        "the verified safetensors conversion of the committed run's weights"
+        if arm.get("safetensors")
+        else "the committed run's weights"
+    )
+    pinned.write_text(
+        f"# {cfg_path.relative_to(ROOT)}, pinned to {what}\n" + yaml.safe_dump(cfg, sort_keys=False)
+    )
+    print(
+        f"  weights pinned to {arm['revision'][:12]}"
+        + (
+            " (the verified safetensors conversion of the committed weights)"
+            if arm.get("safetensors")
+            else " (the committed revision)"
+        )
+    )
     return pinned
 
 
@@ -281,15 +319,17 @@ def _run_new_arm(exp: dict, arms: dict, path: Path, venv: Path, out: Path) -> No
     if ds != exp["dataset"]:
         raise SystemExit(f"{path.name}: dataset_id must be {exp['dataset']} (got {ds})")
     if not (cid.startswith(exp["prefix"]) and cid.endswith(exp["suffix"])):
-        raise SystemExit(f"{path.name}: config_id must look like "
-                         f"{exp['prefix']}<name>{exp['suffix']} to join the comparison (got {cid})")
+        raise SystemExit(
+            f"{path.name}: config_id must look like "
+            f"{exp['prefix']}<name>{exp['suffix']} to join the comparison (got {cid})"
+        )
     if cid in {a["cid"] for a in arms.values()}:
         raise SystemExit(f"{cid} is a committed arm; give yours a new name")
     env = {**os.environ, "EVAL_RUNS_DIR": str(out)}
     if not env.get("EVAL_MAX_COST_USD"):
         env["EVAL_MAX_COST_USD"] = "1.00"
         print("  EVAL_MAX_COST_USD not set -- capping this arm at $1.00")
-    print(f"\n── {cid[len(exp['prefix']):-len(exp['suffix'])]} (yours)", flush=True)
+    print(f"\n── {cid[len(exp['prefix']) : -len(exp['suffix'])]} (yours)", flush=True)
     _run([str(venv), "scripts/experiment_run.py", "--config", str(path)], cwd=HARNESS, env=env)
 
 
@@ -311,38 +351,48 @@ def _latest_repro(exp: dict) -> dict:
         m = json.loads(f.read_text())
         cid = m.get("config_id", "")
         if m.get("dataset_id") == exp["dataset"] and cid.endswith(exp["suffix"]):
-            arm = cid[len(exp["prefix"]):-len(exp["suffix"])]
+            arm = cid[len(exp["prefix"]) : -len(exp["suffix"])]
             if arm not in out or m.get("created_at", "") >= out[arm][1]:
                 out[arm] = (f.parent, m.get("created_at", ""))
     return {a: d for a, (d, _) in out.items()}
 
 
 def _paired_p(a: list, b: list, perms: int = 10000, seed: int = 20261014) -> float:
-    d = [x - y for x, y in zip(a, b)]
-    obs = abs(sum(d))
-    if obs == 0:
-        return 1.0
-    rng = random.Random(seed)
-    hit = sum(abs(sum(x if rng.random() < 0.5 else -x for x in d)) >= obs - 1e-12
-              for _ in range(perms))
-    return (hit + 1) / (perms + 1)
+    """The harness's paired sign-flip p (stats.sign_flip_p) on the per-item differences."""
+    from evaluation_harness.stats import sign_flip_p  # noqa: PLC0415 - harness/ is on sys.path above
+
+    return sign_flip_p([x - y for x, y in zip(a, b)], permutations=perms, seed=seed)
 
 
 def _family(exp: dict, runs_dir: Path, arm: str | None = None) -> tuple[list, list]:
     """(not separated, separated) opponents of `arm` (the leader by default), Holm-corrected."""
     a_cid = f"{exp['prefix']}{arm or exp['leader']}{exp['suffix']}"
     r = subprocess.run(
-        [sys.executable, str(HARNESS / "scripts" / "family_test.py"), "--dataset-id",
-         exp["dataset"], "--a", a_cid, "--against",
-         exp["suffix"], "--metric", exp["metric"], "--runs-dir", str(runs_dir)],
-        capture_output=True, text=True, cwd=HARNESS)
+        [
+            sys.executable,
+            str(HARNESS / "scripts" / "family_test.py"),
+            "--dataset-id",
+            exp["dataset"],
+            "--a",
+            a_cid,
+            "--against",
+            exp["suffix"],
+            "--metric",
+            exp["metric"],
+            "--runs-dir",
+            str(runs_dir),
+        ],
+        capture_output=True,
+        text=True,
+        cwd=HARNESS,
+    )
     if r.returncode != 0:
         raise SystemExit(f"family test failed:\n{r.stderr[-800:]}")
     tied, sep = [], []
     for ln in r.stdout.splitlines():
         parts = ln.split()
         if parts and parts[0].endswith(exp["suffix"]) and parts[0] != a_cid:
-            arm = parts[0][len(exp["prefix"]):-len(exp["suffix"])]
+            arm = parts[0][len(exp["prefix"]) : -len(exp["suffix"])]
             (tied if ln.strip().endswith("--") else sep).append(arm)
     return tied, sep
 
@@ -351,13 +401,20 @@ def compare(exp: dict) -> int:
     arms = committed(exp)
     reruns = _latest_repro(exp)
     if not reruns:
-        raise SystemExit(f"no reruns yet under {(REPRO / exp['slug']).relative_to(ROOT)}: "
-                         f"make reproduce EXP={exp['slug']}")
-    lines = [f"# Replication card · {exp['bench']}", "",
-             f"Dataset `{exp['dataset']}`, metric `{exp['metric']}`. Committed record: "
-             f"`harness/data/{exp['base']}/`. Reruns: `harness/data/runs-repro/{exp['slug']}/`.", "",
-             "| arm | kind | committed | rerun | Δ | identical items | paired p | upstream | status |",
-             "|---|---|---:|---:|---:|---:|---:|---|---|"]
+        raise SystemExit(
+            f"no reruns yet under {(REPRO / exp['slug']).relative_to(ROOT)}: make reproduce EXP={exp['slug']}"
+        )
+    lines = [
+        f"# Replication card · {exp['bench']}",
+        "",
+        (
+            f"Dataset `{exp['dataset']}`, metric `{exp['metric']}`. Committed record: "
+            f"`harness/data/{exp['base']}/`. Reruns: `harness/data/runs-repro/{exp['slug']}/`."
+        ),
+        "",
+        "| arm | kind | committed | rerun | Δ | identical items | paired p | upstream | status |",
+        "|---|---|---:|---:|---:|---:|---:|---|---|",
+    ]
     statuses = {}
     for a in sorted(reruns):
         if a not in arms:
@@ -374,8 +431,11 @@ def compare(exp: dict) -> int:
         m_old = json.loads((arms[a]["dir"] / "metrics.json").read_text())
         up_new = ((m_new.get("fingerprint") or {}).get("system_under_test") or {}).get("model", {}).get("id")
         up_old = ((m_old.get("fingerprint") or {}).get("system_under_test") or {}).get("model", {}).get("id")
-        upstream = "—" if arms[a]["kind"] != "hosted" else (
-            "same" if up_new == up_old else f"`{up_old}` → `{up_new}`")
+        upstream = (
+            "—"
+            if arms[a]["kind"] != "hosted"
+            else ("same" if up_new == up_old else f"`{up_old}` → `{up_new}`")
+        )
         if len(common) < len(c):
             status = f"PARTIAL ({len(common)}/{len(c)} items)"
         elif same == len(common):
@@ -385,9 +445,11 @@ def compare(exp: dict) -> int:
         else:
             status = "DIFFERS"
         statuses[a] = status
-        lines.append(f"| `{a}` | {arms[a]['kind']} | {st.fmean(ca):.4f} | {st.fmean(ra):.4f} | "
-                     f"{st.fmean(ra) - st.fmean(ca):+.4f} | {same}/{len(common)} | {p:.3f} | "
-                     f"{upstream} | {status} |")
+        lines.append(
+            f"| `{a}` | {arms[a]['kind']} | {st.fmean(ca):.4f} | {st.fmean(ra):.4f} | "
+            f"{st.fmean(ra) - st.fmean(ca):+.4f} | {same}/{len(common)} | {p:.3f} | "
+            f"{upstream} | {status} |"
+        )
 
     # VERDICTS. Substitute every rerun for its committed run and re-test the leader against
     # the same family: the committed findings are statements about separations, so that is
@@ -406,15 +468,20 @@ def compare(exp: dict) -> int:
             for a in new:
                 with tempfile.TemporaryDirectory() as tmp2:
                     field = Path(tmp2)
-                    for b, v in arms.items():
+                    for _b, v in arms.items():
                         (field / v["dir"].name).symlink_to(v["dir"].resolve(), target_is_directory=True)
                     (field / reruns[a].name).symlink_to(reruns[a].resolve(), target_is_directory=True)
                     placed[a] = _family(exp, field, a)
     moved = sorted(set(tied_c) ^ set(tied_m))
-    lines += ["", f"## Verdicts: `{exp['leader']}` against the field, Holm-corrected", "",
-              f"With {len(reruns)} rerun arm(s) substituted for their committed runs:", "",
-              f"- not separated from the leader — committed: {len(tied_c)}, with reruns: {len(tied_m)}",
-              f"- separated — committed: {len(sep_c)}, with reruns: {len(sep_m)}"]
+    lines += [
+        "",
+        f"## Verdicts: `{exp['leader']}` against the field, Holm-corrected",
+        "",
+        f"With {len(reruns)} rerun arm(s) substituted for their committed runs:",
+        "",
+        f"- not separated from the leader — committed: {len(tied_c)}, with reruns: {len(tied_m)}",
+        f"- separated — committed: {len(sep_c)}, with reruns: {len(sep_m)}",
+    ]
     if moved:
         for a in moved:
             was = "tied" if a in tied_c else "separated"
@@ -423,20 +490,31 @@ def compare(exp: dict) -> int:
     else:
         lines.append("- **every committed separation and tie holds**")
     if placed:
-        lines += ["", "## Your arms, against the committed field", "",
-                  "| arm | score | rank | not separated from | separated from | vs the leader |",
-                  "|---|---:|---:|---|---:|---|"]
+        lines += [
+            "",
+            "## Your arms, against the committed field",
+            "",
+            "| arm | score | rank | not separated from | separated from | vs the leader |",
+            "|---|---:|---:|---|---:|---|",
+        ]
         for a, (tied, sep) in placed.items():
             score = st.fmean(_items(reruns[a], exp["metric"]).values())
             rank = 1 + sum(v["score"] > score for v in arms.values())
             vs = "not separated" if exp["leader"] in tied else "separated"
-            lines.append(f"| `{a}` | {score:.4f} | {rank} of {len(arms) + 1} | "
-                         f"{', '.join(f'`{t}`' for t in sorted(tied)) or '—'} | {len(sep)} | {vs} |")
-    lines += ["", "*exact*: every item scored identically. *consistent*: a hosted arm whose "
-              "rerun is not distinguishable from its committed run (paired permutation test, "
-              "p ≥ 0.05) — hosted models are not deterministic, so the digits are not expected "
-              "to match. *DIFFERS*: distinguishable; check the upstream column, the provider "
-              "that served it, and the fingerprint diff (`make run-compare`)."]
+            lines.append(
+                f"| `{a}` | {score:.4f} | {rank} of {len(arms) + 1} | "
+                f"{', '.join(f'`{t}`' for t in sorted(tied)) or '—'} | {len(sep)} | {vs} |"
+            )
+    lines += [
+        "",
+        (
+            "*exact*: every item scored identically. *consistent*: a hosted arm whose "
+            "rerun is not distinguishable from its committed run (paired permutation test, "
+            "p ≥ 0.05) — hosted models are not deterministic, so the digits are not expected "
+            "to match. *DIFFERS*: distinguishable; check the upstream column, the provider "
+            "that served it, and the fingerprint diff (`make run-compare`)."
+        ),
+    ]
     card = "\n".join(lines) + "\n"
     (REPRO / exp["slug"] / "REPLICATION.md").write_text(card)
     print(card)
@@ -452,23 +530,31 @@ def main() -> int:
     ap.add_argument("--level", default="local", choices=("local", "hosted", "baselines", "all"))
     ap.add_argument("--arms", help="comma-separated arm names; overrides --level")
     ap.add_argument("--config", help="run: also measure YOUR arm from this config")
-    ap.add_argument("--light", action="store_true",
-                    help="data: skip the local-model extras (no PyTorch); enough for hosted arms, "
-                         "BM25 and the baselines")
+    ap.add_argument(
+        "--light",
+        action="store_true",
+        help="data: skip the local-model extras (no PyTorch); enough for hosted arms, BM25 and the baselines",
+    )
     a = ap.parse_args()
     if a.command == "list" or not a.experiment:
         for e in reg.values():
             arms = committed(e)
             kinds = {k: sum(v["kind"] == k for v in arms.values()) for k in ("local", "baseline", "hosted")}
             cost = sum(v["cost"] for v in arms.values())
-            print(f"  {e['slug']:24s} {e['bench']:32s} {kinds['local']:2d} local, "
-                  f"{kinds['baseline']} baselines, {kinds['hosted']:2d} hosted   billed ${cost:.2f}")
+            print(
+                f"  {e['slug']:24s} {e['bench']:32s} {kinds['local']:2d} local, "
+                f"{kinds['baseline']} baselines, {kinds['hosted']:2d} hosted   billed ${cost:.2f}"
+            )
         return 0
     if a.experiment not in reg:
         raise SystemExit(f"unknown experiment {a.experiment!r}; one of: {', '.join(reg)}")
     exp = reg[a.experiment]
-    return {"plan": lambda: plan(exp, a.level, a.arms), "data": lambda: data(exp, a.light),
-            "run": lambda: run(exp, a.level, a.arms, a.config), "compare": lambda: compare(exp)}[a.command]()
+    return {
+        "plan": lambda: plan(exp, a.level, a.arms),
+        "data": lambda: data(exp, a.light),
+        "run": lambda: run(exp, a.level, a.arms, a.config),
+        "compare": lambda: compare(exp),
+    }[a.command]()
 
 
 if __name__ == "__main__":

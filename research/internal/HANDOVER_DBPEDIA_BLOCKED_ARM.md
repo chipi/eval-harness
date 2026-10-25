@@ -70,7 +70,7 @@ The model card publishes no accuracy, so the checks are:
 | in between | read the confusion matrix |
 
 ```bash
-$PY scripts/classification_report.py --dataset-id dbpedia_280 --arm db_bert_base_fy_n200_v1
+$PY tools/classification_report.py --dataset-id dbpedia_280 --arm db_bert_base_fy_n200_v1
 ```
 
 A consistent off-diagonal band **is** a permutation. Rotate `label_order` until the
@@ -129,7 +129,7 @@ full fingerprint.
 ## What to run when it arrives
 
 ```bash
-$PY scripts/classification_report.py --dataset-id dbpedia_280
+$PY tools/classification_report.py --dataset-id dbpedia_280
 $PY scripts/family_test.py --dataset-id dbpedia_280 --a db_bert_base_fy_n200_v1 \
      --against _n200_v1 --metric correct
 ```

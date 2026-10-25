@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "reference manifest",
+  "description": "data/references/<tier>/<dataset_id>/manifest.json: what a reference is and the checksum of each item's text. Written by evh reference-create (a reference made by the harness) or evh reference-manifest (one built by a fetch script). Committed even when the text is not redistributed: validate's V16 checks the text present against it.",
+  "type": "object",
+  "required": ["dataset_id", "tier", "n_items", "items_sha256", "caveat"],
+  "additionalProperties": false,
+  "properties": {
+    "dataset_id": {"type": "string", "description": "The dataset it is a reference for: the directory's name, unless the dataset has a second reference of the tier under a name of its own (gold/ag_news_200_adj1 for ag_news_200)."},
+    "tier": {"enum": ["gold", "silver"]},
+    "n_items": {"type": "integer", "minimum": 0},
+    "items_sha256": {
+      "type": "object",
+      "description": "{item_id: sha256 of the item's reference text, as stored}.",
+      "additionalProperties": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+    },
+    "caveat": {"type": "string", "description": "What the tier is, to show beside any number scored against it."},
+    "created_at": {"type": "string"},
+    "source": {"type": "string", "description": "How to rebuild the text, for a reference built outside the harness: the script that fetches it (examples/<example>/fetch.py)."},
+    "redistributed": {"type": "boolean", "description": "false: the text is not in the repository (its licence, or the project's choice); the manifest proves a rebuilt copy is the same."},
+    "authored_by": {"type": ["string", "null"], "description": "The config whose run or model wrote it (silver)."},
+    "authored_with": {"type": ["string", "null"], "description": "The adapter that wrote it: a reference written by other code than the arms use is a different measurement."},
+    "system_under_test": {"type": ["object", "string", "null"], "description": "The author's identity record, as a run writes it."},
+    "params": {"type": "object", "description": "The author's request options (credentials never)."},
+    "model": {"type": ["string", "null"]},
+    "cost_usd": {"type": ["number", "null"]},
+    "from_run": {"type": ["object", "null"], "description": "The run it was made from (reference-create --from-run)."}
+  }
+}

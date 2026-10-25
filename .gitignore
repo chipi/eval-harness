@@ -1,6 +1,6 @@
 # Repo-root ignores. The harness keeps its own .gitignore for data/, because those paths
 # are relative to it and it is meant to be liftable into another project unchanged.
-.venv/
+.venv
 __pycache__/
 *.pyc
 .DS_Store

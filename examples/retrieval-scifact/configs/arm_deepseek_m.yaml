@@ -36,3 +36,4 @@ params:
   max_tokens: 700
   usd_per_mtok_in: 0.15
   usd_per_mtok_out: 0.5
+goal: scientific_retrieval_scifact

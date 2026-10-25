@@ -77,8 +77,7 @@ for f in ../examples/retrieval-scifact/configs/arm_*_n200.yaml; do
 done
 ```
 
-The whole 19-arm measurement sweep is **$1.94 as the provider billed it**, not by this
-repo's price table, which was wrong per arm in every example (see the report §7). The local arms are free; the dense ones cost time
+The whole 19-arm measurement sweep is **$1.94 as the provider billed it** (report §7). The local arms are free; the dense ones cost time
 instead, and that cost is reported rather than hidden.
 
 ---
@@ -161,24 +160,21 @@ bm25                0.6451   $0        every reranker scores above it
 random              0.0005   $0
 
 glm_s   ⟳ e5_base   0.7891   $0.146    inside the registered range 0.786-0.797
-qwen_s  ⟳ e5_base   0.7713   —         outside it (0.7799 as printed, before the parser fix)
+qwen_s  ⟳ e5_base   0.7713   —         outside it
 ```
 
 All of it as run here (report §3.4): the 12
 cheapest of 24 hosted LLMs, zero-shot, one prompt, temperature 0, reasoning off, no
 provider pinned, on a public benchmark (contamination unmeasured).
 
-Four things worth reading the report for:
+Three things worth reading the report for:
 
 1. **A top group of twelve or thirteen arms the data cannot separate, and two of them are free.** `e5_base` and `bge_small` — local,
    CPU, $0 — are not separated from any of the twelve rerankers (p 0.27–0.97 and
    0.12–0.97, uncorrected); n = 200 cannot resolve their 0.0246 and 0.0340 deficits.
 2. **A prediction registered before the arm existed, and one of two hit.** The ceiling
    analysis said a reranker on `e5_base`'s candidates would reach 0.786–0.797. `glm_s`
-   reached **0.7891**, inside; `qwen_s` reached 0.7713 under the corrected parser (0.7799
-   as printed), outside. Headroom-used moved 90.9% → 90.2% for `glm_s` and 87.4% → 88.2%
+   reached **0.7891**, inside; `qwen_s` reached 0.7713, outside. Headroom-used moved 90.9% → 90.2% for `glm_s` and 87.4% → 88.2%
    for `qwen_s`.
 3. **The dev slice's leader finished 10th of 19** by point estimate, 0.0265 behind `glm_s`
    — not separated. The dev runs are not committed.
-4. **One arm looked broken and was misconfigured by me:** this adapter never disabled
-   reasoning, which the other three examples all do.

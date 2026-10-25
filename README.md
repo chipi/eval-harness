@@ -3,10 +3,10 @@
 # eval-harness
 
 [![verify](https://github.com/chipi/eval-harness/actions/workflows/reproduce.yml/badge.svg?branch=main)](https://github.com/chipi/eval-harness/actions/workflows/reproduce.yml)
-[![site](https://github.com/chipi/eval-harness/actions/workflows/pages.yml/badge.svg?branch=main)](https://evals.humancopilot.eu/)
-[![docs](https://img.shields.io/badge/docs-evals.humancopilot.eu-c8ff3d)](https://evals.humancopilot.eu/docs/)
-[![python](https://img.shields.io/badge/python-3.11%2B-3776ab)](harness/README.md)
-[![demo](https://img.shields.io/badge/demo-no%20API%20key-2ea44f)](#try-it-in-a-minute)
+[![site](https://github.com/chipi/eval-harness/actions/workflows/deploy-prod.yml/badge.svg?branch=main)](https://evals.humancopilot.eu/)
+[![docs](https://img.shields.io/badge/docs-docs.evals.humancopilot.eu-c8ff3d)](https://docs.evals.humancopilot.eu/)
+[![python](https://img.shields.io/badge/python-3.11%2B_(package_3.9%2B)-3776ab)](docs/REPRODUCE.md)
+[![demo](https://img.shields.io/badge/demo-no%20API%20key-2ea44f)](#try-it-in-a-checkout)
 [![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 **A drop-in harness for evaluating AI systems on your own data, built to ask the question
@@ -61,19 +61,66 @@ It was built to answer four questions anyone building with AI ends up asking:
 | you want to | go to |
 |---|---|
 | **see what it is** | **[evals.humancopilot.eu](https://evals.humancopilot.eu/)**: the harness, what it does, and what it found |
-| **measure your own system** | [**Use the harness**](docs/GUIDE.md): your first evaluation end to end in twenty minutes, offline. Freeze a dataset, build a golden reference set, measure, compare, promote. Or [**Use it on your problem**](https://evals.humancopilot.eu/use.html), the patterns and a walkthrough |
+| **measure your own system** | [**Getting started**](docs/GUIDE.md): the loop once, offline, in fifteen minutes: a dataset, arms, a reference from a run, a comparison, a choice. Then the [**tutorials**](docs/GUIDE.md#where-to-go-next): a local model, a hosted LLM with your own key, a frontier reference and judges, rounds, the catalog. Or [**Use it on your problem**](https://evals.humancopilot.eu/use.html), the patterns |
 | **learn the method** | [**The method**](https://evals.humancopilot.eu/method.html): six habits for measuring AI systems, as these experiments taught them |
 | **read what it found** | [**The experiments**](https://evals.humancopilot.eu/experiments.html): 24 LLMs, fine-tunes and baselines on six benchmarks, generated from the runs in this repository, so every number on it is checked |
 | **check it yourself** | [**Reproduce it**](docs/REPRODUCE.md): five levels, from recomputing every number ($0, one command) to rerunning every model with one OpenRouter key |
-| **read the full documentation** | [evals.humancopilot.eu/docs](https://evals.humancopilot.eu/docs/): guide, concepts, runbook, integration, protocol, reference |
+| **browse the runs, test any two** | [**The catalog**](https://catalog.evals.humancopilot.eu/): every run of the six experiments, with the run inspector; `evh catalog-serve` gives you the same over your own runs |
+| **read the full documentation** | [docs.evals.humancopilot.eu](https://docs.evals.humancopilot.eu/): guide, concepts, runbook, integration, architecture, protocol, reference |
 | **review or contribute** | [KNOWN_ISSUES](research/internal/KNOWN_ISSUES.md) (what is open), [CONTRIBUTING](CONTRIBUTING.md) |
+
+## The loop, on your system
+
+One install is everything (hosted-model clients, judges, the catalog and the inspector); which
+model provider you use is your choice, with your own key.
+
+```bash
+cd your-project
+pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.4.0#subdirectory=harness"
+evh init
+evh dataset-create --dataset-id my_v1 --source-dir data/sources/my_v1
+evh dataset-materialize --dataset-id my_v1
+# write adapter.py at the project root -> call_system() talks to YOUR system
+evh experiment-run --config data/configs/best_model.yaml           # the best system you have
+evh reference-create --dataset-id my_v1 --from-run <its run_id>     # optional: its outputs as the reference
+evh experiment-run --config data/configs/arm_a.yaml --repeat 3      # each arm, with its own noise
+evh leaderboard --dataset-id my_v1                                  # the ranking, and whether it is real
+evh family-test --dataset-id my_v1 --a arm_a_v1 --against arm_      # is the winner separated?
+evh run-promote --run <run_id> --reason "what the tests showed"     # the choice, recorded with why
+```
+
+**[Getting started](docs/GUIDE.md)** walks it once on a six-ticket kit (`evh init --tutorial`),
+offline, with the real output of every command. The tutorials take it further:
+[a local model against a baseline](docs/tutorials/1-local-model.md),
+[a hosted LLM with your own key](docs/tutorials/2-hosted-llm.md),
+[a frontier model's run as the reference, gold and judging](docs/tutorials/3-frontier-reference-and-judging.md),
+[experiment rounds and dataset versions](docs/tutorials/4-rounds-and-versions.md), and
+[the catalog and the inspector](docs/tutorials/5-catalog-and-inspector.md). Then
+[`harness/docs/INTEGRATION.md`](harness/docs/INTEGRATION.md) to drop it into your project and
+[`harness/docs/RUNBOOK.md`](harness/docs/RUNBOOK.md) for every command and flag.
+
+### Asking better questions of your results
+
+| command | answers |
+| --- | --- |
+| `evh leaderboard --dataset-id my_v1` | rank arms on quality, cost and speed, and whether the order is real |
+| `evh pair-test --dataset-id my_v1 --a … --b …` | one comparison you named in advance, without paying the multiplicity price for 275 you didn't |
+| `evh holdout --dataset-id my_v1 --exclude-dataset …` | the same test minus items a smaller dataset already contained |
+| `evh rank-stability --dataset-id my_v1` | how many items before the ordering stops moving: measured, not assumed |
+| `evh silver-calibrate --dataset-id my_v1` | is a model-authored reference usable? Read it against the ceiling it prints |
+| `evh rescore --dataset-id my_v1 --out data/runs-rescored` | recompute scores from stored outputs, no API calls |
+| `evh judge-score --dataset-id my_v1 --scorer …` | optional: re-measure stored outputs with LLM judges, refused until they are validated against people ([tutorial 3](docs/tutorials/3-frontier-reference-and-judging.md)) |
+| `evh catalog-serve` | browse every run and test any arms against a baseline, item by item; every view is also a command ([tutorial 5](docs/tutorials/5-catalog-and-inspector.md)) |
+
+`evh --help` lists every verb.
 
 ## What it is
 
 Most eval code answers "which scored highest". That is the easy half. The hard half is
 whether the answer survives being asked again, and this harness is built around that. It
 is deliberately small: it imports nothing domain-specific, and everything about your
-system lives in one file, `adapter.py`, with four functions.
+system lives in one file, `adapter.py`, with two functions, `call_system` and `score`
+(plus optional `warmup` and `fingerprint` hooks).
 
 - **A frozen dataset.** Items are hashed; a run records `items_sha256`. Change the data
   and you get a different id, not a silently different number.
@@ -83,16 +130,23 @@ system lives in one file, `adapter.py`, with four functions.
 - **A leaderboard that argues with itself.** Before printing an ordering it runs a
   Friedman permutation test and a Nemenyi critical difference over every pair at once, and
   says plainly when nothing is distinguishable.
-- **Re-scoring for $0.** `make rescore` recomputes metrics from stored outputs. Checking a
+- **Re-scoring for $0.** `evh rescore` recomputes metrics from stored outputs. Checking a
   metric should not cost another sweep; when it did, a broken metric survived two.
+- **A catalog and an inspector.** Pages over your runs, and a local server that tests any arms
+  against a baseline with the same paired test and shows outputs beside references. No code
+  on the harness's layout; one adapter on yours.
+- **Goals, and rounds if you want them.** Each config names what its evaluation is for, and
+  validation checks it; an optional round records what each iteration tried, kept, dropped and
+  concluded.
 
 And it **refuses** to mislead: it won't compare runs measured on different data, it won't
 promote a baseline from a dirty or unknown build, and it records whether a reference is
 gold (checked by a person) or silver (written by a model). The refusals are the product.
 
-## Try it in a minute
+## Try it in a checkout
 
-You need `git`, `make` and Python ≥ 3.11.
+You need `git`, `make` and Python ≥ 3.11 (the worked examples need it; the `evaluation-harness`
+package alone runs on 3.9).
 
 ```bash
 git clone https://github.com/chipi/eval-harness && cd eval-harness/harness
@@ -114,39 +168,12 @@ There are three separate environments. Install only the ones you need.
 `make docs` is the exception: it calls `mkdocs` from your `PATH`, which is why the venv
 has to be activated first.
 
-The demo, `make verify` and the local arms need no API key. To run hosted LLM arms, copy
-`harness/.env.example` to `harness/.env`, set `OPENROUTER_API_KEY` (or the LiteLLM or
-direct-provider keys listed there), and set `EVAL_MAX_COST_USD` to cap the spend. Then
-check with `make -C harness env-check`.
-
-## The loop, on your system
-
-```bash
-make dataset-create  DATASET_ID=my_v1 ARGS='--source-dir data/sources/my_v1'
-make dataset-materialize DATASET_ID=my_v1
-# edit scripts/adapter.py -> call_system() talks to YOUR system
-make experiment-dry-run CONFIG=data/configs/arm_a.yaml    # costs nothing, shapes the run
-make experiment-run     CONFIG=data/configs/arm_a.yaml
-make leaderboard DATASET_ID=my_v1
-```
-
-`make help` lists every verb. Start with [`docs/GUIDE.md`](docs/GUIDE.md) (a worked example,
-offline), then [`harness/docs/INTEGRATION.md`](harness/docs/INTEGRATION.md) to drop it into
-your project and [`harness/docs/RUNBOOK.md`](harness/docs/RUNBOOK.md) for every step.
-
-### Asking better questions of your results
-
-| command | answers |
-| --- | --- |
-| `make leaderboard DATASET_ID=my_v1` | rank arms on quality, cost and speed, and whether the order is real |
-| `make pair-test DATASET_ID=my_v1 A=… B=…` | one comparison you named in advance, without paying the multiplicity price for 275 you didn't |
-| `make holdout DATASET_ID=my_v1 EXCLUDE=…` | the same test minus items a smaller dataset already contained |
-| `make rank-stability DATASET_ID=my_v1` | how many items before the ordering stops moving: measured, not assumed |
-| `make silver-calibrate DATASET_ID=my_v1` | is a model-authored reference usable? Read it against the ceiling it prints |
-| `make rescore DATASET_ID=my_v1` | recompute scores from stored outputs, no API calls |
-| `make judge-score DATASET_ID=my_v1 SCORER=…` | optional: re-measure stored outputs with LLM judges, refused until they are validated against people ([GUIDE step 10](docs/GUIDE.md)) |
-
-Each needs `DATASET_ID`; without it the Makefile falls back to the demo dataset, `smoke_v1`.
+The demo, `make verify` and the local arms need no API key. To run the worked examples'
+hosted LLM arms in the checkout, copy `harness/.env.example` to `harness/.env`, set
+`OPENROUTER_API_KEY` (or the LiteLLM or direct-provider keys listed there), and set
+`EVAL_MAX_COST_USD` to cap the spend. Then check with `make -C harness env-check`. In the
+checkout every `evh` command is also a `make` target (`make pair-test DATASET_ID=my_v1 A=… B=…`);
+without `DATASET_ID` the Makefile falls back to the demo dataset, `smoke_v1`.
 
 ## Pointed at 24 LLMs: the experiments
 
@@ -252,13 +279,15 @@ the statistics it also stands on: [docs/INFLUENCES.md](docs/INFLUENCES.md).
 ## Layout
 
 ```
-harness/     the harness. Liftable into another project as-is (harness/README.md).
+harness/     the harness, installed into a project as the `evaluation-harness` package
+             (pip install, then evh init; harness/README.md)
 examples/    the six experiments, each with its own uv environment
 research/    the experiment reports and the synthesis; research/internal/ is the lab
              notebook: handovers, review rounds and an append-only journal
 site/        the public site, generated from the runs (make site; checked by make ci)
-docs/        the guide, REPRODUCE, PROTOCOL, REFERENCE, evidence/: published as the
-             documentation site by mkdocs.yml
+docs/        the guide, architecture, REPRODUCE, PROTOCOL, REFERENCE, evidence/: published
+             as the documentation site by mkdocs.yml
+infra/       how this repository is deployed: the site and the catalog on the prod VPS
 Makefile     verify / plan / data / reproduce / compare: the way in for a rerun
 ```
 

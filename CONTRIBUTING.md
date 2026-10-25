@@ -29,8 +29,21 @@ It needs:
 - **When a check passes, ask what would make it fail.** If nothing would, it is not a check.
   Several assertions here were vacuous until someone mutation-tested them.
 
+## Changing the harness: PRD first
+
+A new capability starts with a [PRD](docs/prd/index.md) (what the user needs, and why), then a
+[UXS](docs/uxs/index.md) when it has a page or a command, then an [RFC](docs/rfc/index.md) for the
+design. A key architectural decision gets a few lines as an [ADR](docs/adr/index.md). A view added
+to the catalog or the inspector gets its `evh` command in the same change.
+
 ## Before you open a PR
 
 ```bash
 cd harness && make ci      # validate the tree + self-tests, no network, no keys
+make quality               # from the root: lint, types, security, dead code, spelling, shell
 ```
+
+`make quality-install` installs the tools once (`harness/requirements-dev.txt`); `make format`
+applies ruff's formatting. The scorers whose source is hashed into every run
+(`examples/_shared/{classification,extraction,retrieval}.py`, `examples/*/adapter.py`) are
+excluded from the formatter: reformatting one would invalidate the committed runs.
