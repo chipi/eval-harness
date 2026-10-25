@@ -3,13 +3,14 @@ document.getElementById('theme').addEventListener('click',()=>{const r=document.
 const dark=r.dataset.theme?r.dataset.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches;
 r.dataset.theme=dark?'light':'dark';try{localStorage.setItem('theme',r.dataset.theme);}catch(e){}});
 (function(){const q=document.getElementById('q'),box=document.getElementById('hits'),up=document.body.dataset.up;
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"})[c]);
 if(!q||!window.CATALOG)return;
 function show(){const t=q.value.trim().toLowerCase();if(t.length<2){box.hidden=true;return;}
 const words=t.split(/\s+/);
 /* ranked: a word in the title counts more than one in the description; goals lead ties */
 const score=x=>{const ti=x.t.toLowerCase();return words.reduce((n,w)=>n+(ti.startsWith(w)?4:ti.includes(w)?3:x.d.toLowerCase().includes(w)?1:0),0)+(x.k==='goal'?1:0);};
 const hits=window.CATALOG.filter(x=>words.every(w=>x.s.includes(w))).map(x=>[score(x),x]).sort((a,b)=>b[0]-a[0]).slice(0,40).map(p=>p[1]);
-box.innerHTML=hits.length?hits.map(x=>`<a href="${up}${x.u}"><span class="k">${x.k}</span>${x.t.replace(/[<>&]/g,'')}<small>${x.d.replace(/[<>&]/g,'')}</small></a>`).join(''):'<p>No match.</p>';box.hidden=false;}
+box.innerHTML=hits.length?hits.map(x=>`<a href="${up}${x.u}"><span class="k">${x.k}</span>${esc(x.t)}<small>${esc(x.d)}</small></a>`).join(''):'<p>No match.</p>';box.hidden=false;}
 q.addEventListener('input',show);q.addEventListener('focus',show);
 /* arrow keys move through the results; Enter follows the focused one */
 document.addEventListener('keydown',ev=>{if(box.hidden||!['ArrowDown','ArrowUp'].includes(ev.key))return;

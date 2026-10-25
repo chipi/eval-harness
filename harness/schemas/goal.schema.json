@@ -31,6 +31,18 @@
         "axes": {
           "type": "object",
           "description": "What the goal weighs beside quality (ADR-0006). cost (cost_usd, tokens beside it) and speed (latency_ms on its p95) are built in and need no entry; an entry adds a limit, a role or another measure. Any other name is the project's own axis: a per-item metric its runs record. `quality` takes a limit only.",
+          "properties": {
+            "quality": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "The primary measure as an axis: it takes a limit and a margin only (its measure and direction are success_criteria.primary's).",
+              "properties": {
+                "limit": {"type": "number", "description": "An arm past it is out, with the reason."},
+                "margin": {"type": "number", "minimum": 0, "description": "How far from the leader an arm the paired test does not separate may be and still count as tied under balanced (default: 2% of the leader's mean; 2% of the group's range when the leader is 0)."},
+                "note": {"type": "string"}
+              }
+            }
+          },
           "additionalProperties": {
             "type": "object",
             "additionalProperties": false,
@@ -39,7 +51,6 @@
               "direction": {"enum": ["higher", "lower"], "description": "Which way is better; a project axis defaults to the adapter's METRIC_DIRECTIONS, else higher."},
               "stat": {"enum": ["mean", "p50", "p95"], "description": "What a limit and the tie-break read: speed defaults to p95, everything else to mean."},
               "limit": {"type": "number", "description": "An arm past it is out, with the reason (lower: above it; higher: below it)."},
-              "margin": {"type": "number", "minimum": 0, "description": "quality only: how far below the leader an arm the paired test does not separate may be and still count as tied (default: 2% of the leader's mean)."},
               "role": {"enum": ["show", "ignore"], "description": "ignore: the goal does not weigh it (an overnight batch: speed)."},
               "unit": {"type": "string"},
               "note": {"type": "string", "description": "What a reader needs to know about the axis, in words."}

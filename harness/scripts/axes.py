@@ -13,11 +13,14 @@ goal adds limits, a tie-break order and axes of its own under `success_criteria`
       faithfulness: {measure: grounded_rate, direction: higher, limit: 0.9}
     tie_break: [cost, speed]
 
-THE RULE (ADR-0006). An arm over a limit is out, with the reason. Among the rest, the leader is
-the best on quality; an arm the paired test does not separate from it (Holm across them) is tied
-with it. Among the tied, the tie-break axes pick in order: the lowest cost, then the lowest
-latency (or the best value of a project's axis). It recommends; promoting stays a command.
-A number an arm does not record is "not recorded": never 0, never a reason to drop it.
+THE RULE (ADR-0006). An arm over a limit is out, with the reason; so is an arm measured on fewer
+items than the group's most-measured arm, and one that shares fewer than two items with the
+leader. Among the rest, the leader is the best on quality, and the goal's strategy says who is
+tied with it (balanced: not separated by the paired test, Holm across them, and within the
+margin; identical scores are always tied). Among the tied, the tie-break axes pick in order: the
+lowest cost, then the lowest latency (or the best value of a project's axis). It recommends;
+promoting stays a command. A number an arm does not record is "not recorded": never 0, never a
+reason to drop it, and an axis some tied arm does not record cannot break the tie.
 """
 
 from __future__ import annotations
@@ -208,6 +211,13 @@ def decide(
                     f"limit {value_text(ax, float(ax['limit']))}"
                 )
         rows[arm] = row
+    # An arm measured on fewer items than the group's most-measured arm is out: its mean is over
+    # other items, so it could lead on a part of the set (a 0.95 on 4 items over a 0.8 on 20).
+    most = max((rows[x]["quality"]["n"] for x in arms), default=0)
+    for arm in arms:
+        n = rows[arm]["quality"]["n"]
+        if 0 < n < most:
+            out.setdefault(arm, []).append(f"n {n} of {most} items")
     eligible = [
         x
         for x in arms
@@ -229,7 +239,12 @@ def decide(
             "why": why,
         }
     better_high = quality["direction"] == "higher"
-    leader = max(eligible, key=lambda x: rows[x]["quality"]["value"] * (1 if better_high else -1))
+    # Equal quality: the first by label leads, so the order the arms come in never decides; the
+    # strategy then ties identical arms and the tie-break picks among them.
+    leader = max(
+        sorted(eligible, key=lambda x: arms[x]["label"]),
+        key=lambda x: rows[x]["quality"]["value"] * (1 if better_high else -1),
+    )
     # Every axis against the leader, paired per item; Holm across the eligible arms on quality.
     family = max(len(eligible) - 1, 1)
     for ax in axes:
@@ -247,28 +262,52 @@ def decide(
                 "p": r.get("p"),
                 "verdict": note or r.get("verdict"),
             }
+    for x in [
+        x for x in eligible if (rows[x]["quality"].get("vs_leader") or {}).get("verdict") == "untestable"
+    ]:
+        out.setdefault(x, []).append("shares fewer than 2 items with the leader")
+        why.append(f"{arms[x]['label']} is out: shares fewer than 2 items with the leader.")
+        eligible.remove(x)
     # WHO IS TIED WITH THE LEADER is the strategy's call (STRATEGIES); the tie-break then picks.
     strategy = strategy_of(goal)
     top = rows[leader]["quality"]["value"]
-    margin = float(quality["margin"]) if quality.get("margin") is not None else abs(top) * DEFAULT_MARGIN
+    values = [rows[x]["quality"]["value"] for x in eligible]
+    if quality.get("margin") is not None:
+        margin, margin_from = float(quality["margin"]), " (the goal's margin)"
+    elif top != 0:
+        margin, margin_from = abs(top) * DEFAULT_MARGIN, f" ({DEFAULT_MARGIN:.0%} of the leader)"
+    else:
+        # A perfect 0 on a lower-is-better measure: 2% of 0 ties nothing, so the share is of the
+        # spread between the best and the worst eligible arm.
+        margin = (max(values) - min(values)) * DEFAULT_MARGIN
+        margin_from = f" ({DEFAULT_MARGIN:.0%} of the group's range, the leader being 0)"
+        if len(eligible) == 2:
+            # With one other arm the range is the gap itself, so a share of it never ties: say how.
+            margin_from += "; with one other arm that ties nothing, so set axes.quality.margin"
+    # Identical per-item scores are tied in every strategy: there is nothing to separate.
     unseparated = [
         x
         for x in eligible
-        if x != leader and (rows[x]["quality"].get("vs_leader") or {}).get("verdict") == "not separated"
+        if x != leader
+        and (rows[x]["quality"].get("vs_leader") or {}).get("verdict") in ("not separated", "identical")
     ]
     if strategy == "frugal":
         close = unseparated
         rule = "not separated by the paired test"
     elif strategy == "quality_first":
-        close = [x for x in eligible if x != leader and rows[x]["quality"]["value"] == top]
+        close = [
+            x
+            for x in eligible
+            if x != leader
+            and (
+                rows[x]["quality"]["value"] == top
+                or (rows[x]["quality"].get("vs_leader") or {}).get("verdict") == "identical"
+            )
+        ]
         rule = "the same quality"
     else:
         close = [x for x in unseparated if abs(top - rows[x]["quality"]["value"]) <= margin]
-        rule = f"not separated by the paired test and within {_num(margin)}" + (
-            " (the goal's margin)"
-            if quality.get("margin") is not None
-            else f" ({DEFAULT_MARGIN:.0%} of the leader)"
-        )
+        rule = f"not separated by the paired test and within {_num(margin)}{margin_from}"
     tied = [leader, *close]
     why.append(
         f"Strategy {strategy}. Quality leader: {arms[leader]['label']} ({quality['measure']} {_num(top)}). "
@@ -291,23 +330,23 @@ def decide(
         if name == "speed" and not one_machine:
             why.append("Speed was not used to break the tie: the arms ran on different machines.")
             continue
-        known = [x for x in pick if rows[x][name]["value"] is not None]
-        if not known:
-            why.append(f"{name} is not recorded for the tied arms: it cannot break the tie.")
+        missing = [x for x in pick if rows[x][name]["value"] is None]
+        if missing:
+            # A number nobody has is not a win for the arm that has one: an unpriced hosted call
+            # must not lose on cost to a priced one.
+            why.append(
+                f"{name} is not recorded for {', '.join(arms[x]['label'] for x in missing)}: "
+                "it cannot break the tie."
+            )
             continue
-        best = (min if tb["direction"] == "lower" else max)(rows[x][name]["value"] for x in known)
-        keep = [x for x in known if rows[x][name]["value"] == best]
+        best = (min if tb["direction"] == "lower" else max)(rows[x][name]["value"] for x in pick)
+        keep = [x for x in pick if rows[x][name]["value"] == best]
         if len(keep) < len(pick):
             why.append(
                 f"By {name} ({tb['measure']}{' ' + tb['stat'] if tb['stat'] != 'mean' else ''}): "
                 + ", ".join(
                     f"{arms[x]['label']} {value_text(tb, rows[x][name]['value'])}"
-                    for x in sorted(known, key=lambda x: rows[x][name]["value"])
-                )
-                + (
-                    f"; not recorded for {', '.join(arms[x]['label'] for x in pick if x not in known)}"
-                    if len(known) < len(pick)
-                    else ""
+                    for x in sorted(pick, key=lambda x: rows[x][name]["value"])
                 )
                 + "."
             )

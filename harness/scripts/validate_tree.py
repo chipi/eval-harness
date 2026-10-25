@@ -49,7 +49,6 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
-from evaluation_harness._axes import axes_of
 from evaluation_harness._common import (
     BASELINES,
     CONFIGS,
@@ -71,6 +70,7 @@ from evaluation_harness._common import (
     sha256,
 )
 from evaluation_harness._runs import recorded_direction
+from evaluation_harness.axes import axes_of
 
 try:
     import jsonschema

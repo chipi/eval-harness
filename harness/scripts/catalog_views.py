@@ -31,8 +31,16 @@ import textwrap
 
 from evaluation_harness import catalog_build as cb
 from evaluation_harness import catalog_serve as cs
-from evaluation_harness._axes import STRATEGIES, axis_title, cell_text, strategy_of, tie_break_of
 from evaluation_harness._common import die
+from evaluation_harness.axes import (
+    STRATEGIES,
+    axis_title,
+    builtin_axes,
+    cell_of,
+    cell_text,
+    strategy_of,
+    tie_break_of,
+)
 from evaluation_harness.catalog_adapter import load_catalog_adapter
 from evaluation_harness.stats import fmt_p
 
@@ -125,14 +133,27 @@ def datasets(argv) -> int:
     if not arms:
         print("no arm has run on it yet")
         return 0
+    # Cost and speed per arm, as the dataset page shows them (the goal pages decide with them).
+    bax = builtin_axes()
     _table(
-        ["arm", "metric", "mean", f"{A.item_word}s", "runs", "scored against", "row", "arm id (for inspect)"],
+        [
+            "arm",
+            "metric",
+            "mean",
+            f"{A.item_word}s",
+            *(axis_title(ax) for ax in bax),
+            "runs",
+            "scored against",
+            "row",
+            "arm id (for inspect)",
+        ],
         [
             [
                 a["label"],
                 a["metric"] or "—",
                 _fmt(a["mean"]),
                 a["n"],
+                *(cell_text(ax, cell_of(ax, A.scores(a["arm"]))) for ax in bax),
                 a["runs"],
                 _scored(a),
                 _kind(a, tiers),
@@ -343,7 +364,9 @@ def overview(argv) -> int:
                 [
                     r["goal"]["goal_id"],
                     r["dataset"],
-                    r["measure"] + (" (lower)" if r["lower"] else ""),
+                    r["measure"]
+                    + (" (lower)" if r["lower"] else "")
+                    + (f" [no gold: {r['group']}]" if r["group"] and not r["gold"] else ""),
                     f"{r['baseline_label']} {_fmt(r['baseline_mean'])}" if r["baseline"] else "none promoted",
                     f"{r['leader_label']} {_fmt(r['leader_mean'])}" if r["leader"] else "—",
                     cb.glance_verdict(r),
@@ -469,6 +492,12 @@ def arms(argv) -> int:
         print(
             "  note            wrote the reference it is scored against: its row measures agreement with itself"
         )
+    sc = A.scores(a["arm"])
+    cs = [(ax, cell_of(ax, sc)) for ax in builtin_axes()]
+    if any(c["n"] or (c.get("tokens") or {}).get("n") for _, c in cs):
+        print("\ncost and speed, per " + A.item_word + ":")
+        for ax, c in cs:
+            print(f"  {axis_title(ax):16} {cell_text(ax, c)}")
     print("\nmetrics:")
     _table(
         ["metric", "mean", f"{A.item_word}s", "better"],

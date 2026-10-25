@@ -516,7 +516,7 @@ def compare(params: dict) -> dict:
 def _shape(per_arm: dict) -> dict:
     """{x metric: {arm: {item: value}}} for the scatter: the adapter's shape metrics (latency, the
     output's size), then cost in dollars and in tokens (in + out), the goal pages' cost axis."""
-    from evaluation_harness._axes import tokens_per_item  # noqa: PLC0415
+    from evaluation_harness.axes import tokens_per_item  # noqa: PLC0415
 
     out = {
         k: {a: s[k]["values"] for a, s in per_arm.items() if k in s}

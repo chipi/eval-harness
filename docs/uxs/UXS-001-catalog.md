@@ -136,7 +136,8 @@ The whole project at a glance, for the last 14 days of activity or for all time.
 - `01 goals at a glance`: one row per goal and dataset: **goal**, **dataset**, **decides** (the
   measure, ↓ when lower is better), **baseline** (the promoted arm and its mean, or "none
   promoted"), **leader** (the best unflagged arm scored against the gold group's reference, and
-  its mean), **leader vs baseline** (the paired test of the two alone, threshold 0.05: verdict,
+  its mean; with no gold reference, the first group scored against a reference, and **decides**
+  says "no gold: scored against <reference>"), **leader vs baseline** (the paired test of the two alone, threshold 0.05: verdict,
   Δ, p, and an **inspect** button; "the baseline leads" when they are the same arm),
   **recommended** (the arm the goal's strategy picks once limits and the tie-break are applied;
   shown with cost and speed ratios against the baseline, e.g. "cost 212× · speed p95 1× vs
@@ -332,7 +333,9 @@ over the project's data; with a project adapter the rounds table and details sti
   sections after it shift by one when it is absent.
 - `03 runs`: **run**, **made**, **items**, **cost**, **how** (measured, or how it was derived:
   rescore, judge, reparse).
-- `04 config`: the config id, the adapter, and the params; credentials are never shown.
+- `04 config`: the config id, the adapter, and the params; credentials are never shown
+  (`api_key_env` is left out; a param named like a key, token, secret or password reads
+  "(hidden)", and `experiment-run` refuses such a config in the first place).
 - `05 conditions`: what its runs were measured under (machine, libraries, harness, scorer, item
   and reference checksums).
 - `06 the same config, scored other ways`: the same config on the same dataset scored against

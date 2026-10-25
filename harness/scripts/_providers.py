@@ -34,6 +34,7 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
 import os
+import re
 from dataclasses import dataclass, field
 from typing import Any, Callable, NamedTuple
 
@@ -96,6 +97,30 @@ class Route(NamedTuple):
     key: str | None
     base_var: str | None
     base_url: str | None
+
+
+#: A param whose name says it holds a secret: api_key, apikey, access_token, client_secret,
+#: password, auth, bearer, credential. `max_tokens` and `tokens_*` are counts, not secrets.
+_SECRET_NAME = re.compile(
+    r"(^|_)(api_?key|secret|password|passwd|token|auth(orization)?|bearer|credentials?)($|_)", re.IGNORECASE
+)
+
+
+def secret_params(params: dict[str, Any]) -> list[str]:
+    """The params that look like a credential written into the config (a literal key), not the
+    name of the variable that holds one (`api_key_env`)."""
+    return sorted(
+        k
+        for k, v in params.items()
+        if k not in CREDENTIAL_PARAMS and _SECRET_NAME.search(k) and isinstance(v, str) and v
+    )
+
+
+def shown_params(params: dict[str, Any]) -> dict[str, Any]:
+    """`params` as a page or the CLI may show them: no `api_key_env`, and a literal credential
+    replaced by "(hidden)"."""
+    hidden = set(secret_params(params))
+    return {k: ("(hidden)" if k in hidden else v) for k, v in identity_params(params).items()}
 
 
 def identity_params(params: dict[str, Any]) -> dict[str, Any]:

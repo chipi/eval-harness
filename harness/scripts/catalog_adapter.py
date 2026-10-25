@@ -678,13 +678,14 @@ class HarnessAdapter:
         return sorted(out, key=lambda r: (r["created_at"], r["run_id"]))
 
     def arm_config(self, arm: str) -> dict:
-        """The config behind the arm, as its latest run recorded it; params without credentials."""
-        from evaluation_harness._providers import identity_params  # noqa: PLC0415
+        """The config behind the arm, as its latest run recorded it; params without credentials
+        (`api_key_env` left out, a literal key shown as "(hidden)")."""
+        from evaluation_harness._providers import shown_params  # noqa: PLC0415
 
         m = self._metrics(arm)
         return {
             "config_id": m.get("config_id") or arm.rsplit("/", 1)[-1],
-            "params": identity_params(m.get("params") or {}),
+            "params": shown_params(m.get("params") or {}),
             "adapter": m.get("adapter") or "",
         }
 

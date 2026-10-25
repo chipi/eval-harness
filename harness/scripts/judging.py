@@ -306,7 +306,7 @@ def _fake_call(message: str, params: dict[str, Any]) -> JudgeResult:
         output=out,
         tokens_in=tin,
         tokens_out=tout,
-        cost_usd=_providers.price(params, tin, tout) or 0.0,
+        cost_usd=_providers.price(params, tin, tout),
         extra={"truncated": 0.0},
         meta={"finish_reason": "stop", "provider": FAKE, "response_model": model},
     )

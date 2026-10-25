@@ -31,19 +31,30 @@ set is not evidence that they are equally good.
   an overnight batch does not weigh speed), another measure for a built-in (`usd_per_min`), or
   a **project axis**: any per-item metric its runs record, one entry and nothing else.
 - **Limits first.** An arm past an axis's limit is out, with the reason (a speed limit reads
-  the p95). A flagged arm (it wrote the reference, too few items, a format the goal does not
-  take) and an arm a round retired are shown and never recommended.
+  the p95). So is an arm measured on fewer items than the group's most-measured arm ("n 4 of 20
+  items": its mean is over other items, so it could lead on a part of the set), and one that
+  shares fewer than two items with the leader (the paired test cannot run). A flagged arm (it
+  wrote the reference, too few items for `min_items`, a format the goal does not take) and an
+  arm a round retired are shown and never recommended.
+- **The leader** is the best eligible arm on quality; among equal values the first by label,
+  so the order the arms come in never decides.
 - **A strategy says who is tied with the quality leader** (`success_criteria.strategy`):
   - `balanced` (the default): not separated by the paired test AND within the quality margin
-    (`axes.quality.margin`, default 2% of the leader's mean, so it means the same on a 0-1 rate
-    and a 1-5 score);
+    (`axes.quality.margin`; by default 2% of the leader's mean, so it means the same on a 0-1
+    rate and a 1-5 score, and 2% of the group's range when the leader is 0, where a share of
+    the leader would tie nothing. With only two arms that range is their gap, so a 0 leader
+    needs the goal's own margin, and the reasons say so);
   - `quality_first`: the same quality only;
   - `frugal`: anything the paired test cannot separate.
+  Identical per-item scores are tied in every strategy. A judge's group decides on the judge's
+  score, so the goal's quality limit and margin (written for its own measure) do not apply there.
 - **A tie-break picks among the tied** (`success_criteria.tie_break`, default cost then speed,
   any axis the goal weighs; validate's V14 refuses one it does not).
 - **What is not known is said.** A number an arm does not record is "not recorded", never 0,
-  and is never a reason to drop it. Speed is not compared, nor used to break a tie, between arms
-  that ran on different machines.
+  and is never a reason to drop it. An axis that some tied arm does not record cannot break the
+  tie: it is skipped with the reason and the next axis decides (an unpriced hosted call must not
+  lose on cost to a priced one). Speed is not compared, nor used to break a tie, between arms
+  whose runs recorded different machines; arms that recorded none count as one machine.
 - **Guardrails stay words** (`{name, rule, source}`): shown on the goal page and by
   `evh goals --goal`, never computed.
 - **`secondary` is removed**; its entries become axes.

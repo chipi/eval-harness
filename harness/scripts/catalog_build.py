@@ -35,7 +35,8 @@ from urllib.parse import quote
 HERE = Path(__file__).resolve().parent
 
 from evaluation_harness import _common, _fields  # noqa: E402
-from evaluation_harness._axes import (  # noqa: E402
+from evaluation_harness._common import ROOT  # noqa: E402
+from evaluation_harness.axes import (  # noqa: E402
     STRATEGIES,
     axes_of,
     axis_title,
@@ -45,7 +46,6 @@ from evaluation_harness._axes import (  # noqa: E402
     strategy_of,
     tie_break_of,
 )
-from evaluation_harness._common import ROOT  # noqa: E402
 from evaluation_harness.catalog_adapter import Adapter, item_fields, load_catalog_adapter  # noqa: E402
 from evaluation_harness.stats import fmt_p  # noqa: E402
 
@@ -739,7 +739,11 @@ def glance(A: Adapter, by_ds: dict) -> list[dict]:
             v = by_ds.get(ds) or {}
             bl = [x for x in v.get("baselines", []) if not x.get("goal") or x.get("goal") == g["goal_id"]]
             base = bl[-1]["arm"] if bl and bl[-1].get("arm") else None
-            grp = next((x for x in ans["groups"] if not x["key"].startswith("judge ")), None)
+            # The gold group decides; without one, the first group scored against a reference,
+            # named in the row so it is never read as gold.
+            tiers = {r["id"]: r["tier"] for r in v.get("refs", [])}
+            plain = [x for x in ans["groups"] if not x["key"].startswith("judge ")]
+            grp = next((x for x in plain if tiers.get(x["key"]) == "gold"), plain[0] if plain else None)
             leader = grp["leader"] if grp else None
             label = {x["arm"]: x["label"] for x in v.get("arms", [])}
             test = None
@@ -769,6 +773,8 @@ def glance(A: Adapter, by_ds: dict) -> list[dict]:
                     "leader_label": leader["label"] if leader else "",
                     "leader_mean": leader["mean"] if leader else None,
                     "test": test,
+                    "group": grp["key"] if grp else "",
+                    "gold": grp is not None and tiers.get(grp["key"]) == "gold",
                     "recommended": rec,
                     "recommended_label": label.get(rec, rec) if rec else "",
                     "strategy": strategy_of(dec["goal"]) if dec else strategy_of(g),
@@ -905,7 +911,13 @@ def _glance(A: Adapter, by_ds: dict) -> str:
             [
                 goal_link(r["goal"]),
                 dataset_link(r["dataset"]),
-                metric_link(r["measure"]) + (" ↓" if r["lower"] else ""),
+                metric_link(r["measure"])
+                + (" ↓" if r["lower"] else "")
+                + (
+                    f'<br><small class="muted">no gold: scored against {e(r["group"])}</small>'
+                    if r["group"] and not r["gold"]
+                    else ""
+                ),
                 (arm_link(r["baseline"], r["baseline_label"]) + f" <small>{fmt(r['baseline_mean'])}</small>")
                 if r["baseline"]
                 else '<span class="muted">none promoted</span>',
@@ -1658,7 +1670,7 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
                     link = (
                         # One pair picked from a group of many: held to the group's family (every
                         # arm in it against the leader), never tested as if it were the only one.
-                        f'<a class="btn small" href="{inspect_url([r["arm"], leader["arm"]], "../", baseline=leader["arm"], metric=gm, family=max(len(rows) - 1, 1))}">test vs leader</a>'
+                        f'<a class="btn small" href="{inspect_url([r["arm"], leader["arm"]], "../", baseline=leader["arm"], metric=gm, family=max(len(dec["eligible"]) - 1, 1))}">test vs leader</a>'
                         if leader and r["arm"] != leader["arm"]
                         else ("leader" if leader and r is leader else "")
                     )
@@ -1750,15 +1762,19 @@ def axis_ratios(dec: dict, arm: str, base: str) -> list[str]:
 
 
 def group_decision(A: Adapter, g: dict, ds: str, rows: list, gm: str, retired_in: dict) -> dict:
-    """The goal's decision over one group of arms on one dataset (_axes.decide): its axes, limits,
+    """The goal's decision over one group of arms on one dataset (axes.decide): its axes, limits,
     the quality leader, the tie and the tie-break. A judge's group decides on the judge's score;
     an arm a round retired is shown, never recommended."""
-    from evaluation_harness import _axes  # noqa: PLC0415
+    from evaluation_harness import axes  # noqa: PLC0415
 
     crit = g.get("success_criteria") or {}
     goal = g
     if gm != (crit.get("primary") or {}).get("measure"):
-        goal = {**g, "success_criteria": {**crit, "primary": {"measure": gm, "direction": "higher"}}}
+        own = {k: v for k, v in (crit.get("axes") or {}).items() if k != "quality"}
+        goal = {
+            **g,
+            "success_criteria": {**crit, "primary": {"measure": gm, "direction": "higher"}, "axes": own},
+        }
     arms = {
         r["arm"]: {
             "label": r["label"],
@@ -1768,7 +1784,7 @@ def group_decision(A: Adapter, g: dict, ds: str, rows: list, gm: str, retired_in
         for r in rows
     }
     machines = {r["arm"]: r.get("machine", "") for r in rows}
-    return _axes.decide(goal, arms, lambda m: "lower" if A.lower_is_better(m, ds) else None, machines) | {
+    return axes.decide(goal, arms, lambda m: "lower" if A.lower_is_better(m, ds) else None, machines) | {
         "goal": goal
     }
 

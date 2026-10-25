@@ -69,6 +69,7 @@ from evaluation_harness._common import (
     write_text_atomic,
 )
 from evaluation_harness._fingerprint import build_fingerprint
+from evaluation_harness._providers import secret_params
 from evaluation_harness._record import aggregate_scores, run_record
 from evaluation_harness._retry import call_with_retries
 
@@ -559,6 +560,15 @@ def main() -> int:
     for required in ("config_id", "dataset_id"):
         if required not in cfg:
             die(f"{args.config} is missing required key: {required}")
+    # A key written into the config would be copied into every run record (metrics.json), and
+    # from there onto pages: refused, with the way that keeps it out.
+    secrets = secret_params(dict(cfg.get("params") or {}))
+    if secrets:
+        die(
+            f"{args.config}: params {', '.join(secrets)} look like a credential written into the config. "
+            "Put the key in the environment (.env) and name the variable with api_key_env, or let the "
+            "provider read its usual variable; a key in a config is copied into every run record."
+        )
 
     # A config names the goal it answers (data/goals/<goal_id>.yaml). Refused before a cent is
     # spent when the goal does not exist: a run filed under a typo answers nothing.

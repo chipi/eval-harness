@@ -93,12 +93,12 @@ answer. Where the page has a `make` target in a checkout, it runs the same scrip
 | --- | --- | --- |
 | home: goals at a glance, activity and spend, coverage, what was recorded | `evh overview [--all]` | `make overview` |
 | the datasets page | `evh datasets` | `make datasets` |
-| a dataset page: arms, baseline, versions, references | `evh datasets --dataset-id <id>` | `make datasets DATASET_ID=<id>` |
+| a dataset page: arms with their cost and speed, baseline, versions, references | `evh datasets --dataset-id <id>` | `make datasets DATASET_ID=<id>` |
 | the goals page | `evh goals` | `make goals` |
 | a goal page: the answer so far, arms per dataset and group (a judge's group on its score), retired marks, one line per round | `evh goals --goal <id>` | `make goals GOAL=<id>` |
 | a goal page: its rounds and suggestions (each suggestion's copy button copies its command) | `evh rounds --goal <id> [--round rN]` | `make rounds GOAL=<id>` |
 | a goal page: a round's **inspect** button | `evh inspect --round rN [--goal <id>]` | |
-| an arm page: metrics, runs, config, conditions, rounds | `evh arms --arm <arm id or config id>` | `make arms ARM=<id>` |
+| an arm page: metrics, cost and speed, runs, config, conditions, rounds | `evh arms --arm <arm id or config id>` | `make arms ARM=<id>` |
 | reference pages | `evh references [--reference-id <id>]` | `make references` |
 | the metrics page | `evh metrics [--dataset-id <id>]` | `make metrics` |
 | a metric page: summary, details, goals, per-dataset strip chart and arms | `evh metrics --metric <metric>` | `make metrics METRIC=<metric>` |

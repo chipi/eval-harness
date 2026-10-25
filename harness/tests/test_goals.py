@@ -62,6 +62,16 @@ try:
         (r.stdout + r.stderr)[-200:],
     )
     (data / "configs" / "bad.yaml").unlink()
+    (data / "configs" / "keyed.yaml").write_text(
+        cfg.replace("params:\n", "params:\n  api_key: sk-LITERAL-0001\n", 1)
+    )
+    r = evh("experiment-run", "--config", str(data / "configs" / "keyed.yaml"))
+    check(
+        "run: a config with a key written into its params is refused before it runs, and says how instead",
+        r.returncode != 0 and "api_key_env" in (r.stdout + r.stderr) and not (data / "runs").exists(),
+        (r.stdout + r.stderr)[-300:],
+    )
+    (data / "configs" / "keyed.yaml").unlink()
 
     (data / "configs" / "lead2.yaml").write_text(cfg + "goal: tickets_summary\nformat: paragraph\n")
     r = evh("experiment-run", "--config", str(data / "configs" / "lead2.yaml"))
@@ -249,11 +259,23 @@ try:
         ("  secondary:\n    - {measure: rouge1, direction: higher}\n", "the old secondary key (now axes)"),
         ("  tie_break: [carbon]\n", "a tie-break naming an axis the goal does not weigh"),
         ("  strategy: cheapest\n", "an unknown strategy"),
+        ("  axes: {quality: {measure: x}}\n", "a quality axis given a measure (it is the primary)"),
+        ("  axes: {cost: {margin: 0.1}}\n", "a margin on an axis other than quality"),
     ):
         goal_path.write_text(original.replace("  min_items: 6\n", "  min_items: 6\n" + bad))
         r, line = validate()
         check(f"V14: fails {why}", "FAIL" in line, line)
     goal_path.write_text(original)
+
+    # No gold reference any more: the glance says which group it used, never "gold" by default.
+    shutil.move(str(data / "references" / "gold"), str(proj / "gold-aside"))
+    r = evh("overview")
+    check(
+        "evh overview: with no gold reference, the glance names the group it decided on",
+        "[no gold: gold/tickets_v1]" in r.stdout,
+        r.stdout[:600] + r.stderr[-300:],
+    )
+    shutil.move(str(proj / "gold-aside"), str(data / "references" / "gold"))
 
     # An engineering goal checked by a gate: no dataset, and a guard, not a ranking direction.
     (data / "goals" / "no_drop.yaml").write_text(

@@ -331,5 +331,19 @@ check(
     f"{seen} {sc}",
 )
 
+# A key written into a config is never shown, and is named so experiment-run can refuse it.
+params = {"api_key": "sk-1", "api_key_env": "X", "max_tokens": 300, "authorization": "Bearer x", "model": "m"}
+check(
+    "secret params: a literal key is named; max_tokens and the variable's name are not",
+    _providers.secret_params(params) == ["api_key", "authorization"],
+    str(_providers.secret_params(params)),
+)
+shown = _providers.shown_params(params)
+check(
+    "shown params: literal keys read (hidden), api_key_env is left out, the rest is kept",
+    shown == {"api_key": "(hidden)", "max_tokens": 300, "authorization": "(hidden)", "model": "m"},
+    str(shown),
+)
+
 clear()
 sys.exit(summary())
