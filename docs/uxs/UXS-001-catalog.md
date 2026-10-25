@@ -14,9 +14,10 @@
 
 ## Summary
 
-`evh catalog` builds static pages over a project's runs into `.build/catalog/`: a home page of
-datasets, a page per dataset, a goals page and a page per goal, a page per reference, a metrics
-page, and the shell of the inspector. Every page is read-only and carries counts and means only,
+`evh catalog` builds static pages over a project's runs into `.build/catalog/`: a home page with
+the whole project at a glance, a datasets page and a page per dataset, a page per arm, a goals
+page and a page per goal, a references page and a page per reference, a metrics page and a page
+per metric, and the shell of the inspector. Every page is read-only and carries counts and means only,
 so the pages can be published. This spec describes the pages as built at 0.4.0, checked by
 building the catalog on this repository's data (6 goals, 9 datasets, 194 arms, 1 reference) and
 on a tutorial project with gold, silver and an open round.
@@ -79,8 +80,8 @@ tables 15px.
 ## The shell (every page)
 
 - **Header bar:** the brand ("eval catalog" and its icon, linking home); the global search
-  ("Search everything ( / )"); the nav: **Catalog**, **Goals**, **Metrics**, **Inspector**, plus
-  any `--link LABEL=URL` entries; the theme toggle.
+  ("Search everything ( / )"); the nav: **Home**, **Goals**, **Datasets**, **References**,
+  **Metrics**, **Inspector**, plus any `--link LABEL=URL` entries; the theme toggle.
 - **Page anatomy:** a slim hero (a kicker such as `dataset` or `goal`, the title, a one-paragraph
   dek), then numbered sections (`01`, `02`, ...) each with an eyebrow.
 - **Footer:** "Built <date> by `evh catalog`. The pages carry counts and means only; item text
@@ -125,13 +126,41 @@ The author tint wins over the others. The same classes tint the inspector's verd
 
 ## The home page
 
-- Hero: kicker `catalog`, title "Every run, by dataset", and "N arms on M datasets, from K
-  configs. An arm is one config on one dataset scored one way, its repeats averaged per item,
-  exactly as `pair-test` reads it: a config rescored against silver or by a judge is an arm of its
-  own." `evh catalog` prints the same counts ("… arms, K configs, … references"), and `evh
-  datasets` has a `configs` column beside `arms`.
-- `01 datasets`: one row per dataset, most arms first: **dataset** (linked; "from `<parent>`"
-  under a version), **items**, **arms**, **references** (each linked to its page). Filterable.
+The whole project at a glance, for the last 14 days of activity or for all time.
+
+- Hero: kicker `catalog`, title "Every evaluation, at a glance", a dek saying every name is a
+  link, then **tiles**, each linking to its page: goals, datasets, configs, arms, references,
+  metrics, measured runs, billed (USD) and tokens. Under them the period switch, **last 14 days**
+  (shown first) or **all time**, with the dates each spans. Recent counts back 14 days from the
+  newest thing recorded, so a quiet project still shows its last burst of work.
+- `01 goals at a glance`: one row per goal and dataset: **goal**, **dataset**, **decides** (the
+  measure, ↓ when lower is better), **baseline** (the promoted arm and its mean, or "none
+  promoted"), **leader** (the best unflagged arm scored against the gold group's reference, and
+  its mean), **leader vs baseline** (the paired test of the two alone, threshold 0.05: verdict,
+  Δ, p, and an **inspect** button; "the baseline leads" when they are the same arm). A note says
+  the goal page tests every arm, Holm across them.
+- `02 activity and spend`, side by side (one above the other on a phone): **activity**, measured
+  runs per day as bars stacked by dataset (repeats counted one by one); **spend**, cumulative,
+  one line for the systems under test and one for the judges, with a **USD / tokens** switch.
+  Tokens are tokens in plus out as each call reported them, so a local model's use counts when
+  its adapter or server reports usage. The charts start at the first day anything was recorded.
+- `03 coverage`: one row per dataset: **dataset**, **items**, **arms scored against** (gold,
+  silver and judged counts), **references**, **metrics** (a count that opens to the list),
+  **goals**, **last run**.
+- `04 recorded`: everything recorded, newest first: **when**, **what** (ran or rescored or judged
+  an arm on a dataset, one line per arm and day; a reference made, with its author; a baseline
+  promoted; a round opened or closed; every name linked), **kind**. Paged.
+- Command: `evh overview [--all]`.
+
+## The datasets page
+
+- Hero: kicker `datasets`, "Every run, by dataset", and "N arms on M datasets, from K configs. An
+  arm is one config on one dataset scored one way, its repeats averaged per item, exactly as
+  `pair-test` reads it: a config rescored against silver or by a judge is an arm of its own."
+  `evh catalog` prints the same counts, and `evh datasets` has a `configs` column beside `arms`.
+- `01 datasets`: one row per dataset, most arms first: **dataset** ("from `<parent>`" under a
+  version), **items**, **arms**, **references**, **goals**, **baseline** (the promoted arm),
+  **last run**. Filterable.
 - Command: `evh datasets`.
 
 ## The dataset page
@@ -220,8 +249,9 @@ The page answers first, then explains, then shows the evidence.
      gold/<id>" or "scored by judge <scorer>"), a **Test every arm in this group against its
      leader** button, and a table. A judged arm records its judge's score, not the goal's
      measure: its group's mean column and test buttons use that score
-     (`judge_score`, or `judge_score_unvalidated`). The table: **arm** (tags: `filed under this
-     goal` when its config names the goal, its meaning also in the tooltip,
+     (`judge_score`, or `judge_score_unvalidated`). The table: **arm** (linked to its page; tags:
+     `filed` when its config names the goal, said in words in the note above the tables and in the
+     tooltip,
      `baseline`, "retired in rN" in `--local` capitals; a retired arm's whole row is greyed out,
      `t-retired`), **mean**, **items**, **flags** ("n k <
      min_items m", "format f not in the contract", "wrote the reference it is scored against"),
@@ -250,13 +280,61 @@ over the project's data; with a project adapter the rounds table and details sti
 
 - Hero: kicker `metrics`, "What each number on these pages measures, which way is better, where
   it is recorded, and which goals decide on it."
-- `01 metrics`: one row per metric (bookkeeping and totals last), each with the anchor
-  `#m-<metric>` every metric link on the pages uses: **metric**, **what it measures** (the
+- `01 metrics`: one row per metric (bookkeeping and totals last), its name linked to the
+  metric's own page (each row keeps the anchor `#m-<metric>`): **metric**, **what it measures** (the
   adapter's `METRIC_DESCRIPTIONS`, else the harness's own description, else "not described: add
   it to the adapter's `METRIC_DESCRIPTIONS`"), **better** (lower, higher, or "neutral: a
   description"), **recorded on** (each dataset, linked, with its arm count), **decides** (the
   goals whose primary measure it is). Filterable.
 - Command: `evh metrics [--dataset-id <id>]`.
+
+## The arm page
+
+- Hero: kicker `arm`, the arm's label (with the baseline tag when promoted), "One config on
+  `<dataset>`, scored one way; its repeats averaged per item.", then its facts: **dataset**,
+  **scored against** (the reference, or the judge), **goal**, **runs**, **headline** (its primary
+  metric and mean), **last run**, and when it applies "wrote the reference it is scored against".
+  Buttons: **Inspect it**, **Against the baseline** (when the dataset's baseline is scored the
+  same way), **With the N arms scored the same way**.
+- `01 metrics`: every metric it records, the headline first: **metric**, **mean**, **items**,
+  **better**.
+- `02 runs`: **run**, **made**, **items**, **cost**, **how** (measured, or how it was derived:
+  rescore, judge, reparse).
+- `03 config`: the config id, the adapter, and the params; credentials are never shown.
+- `04 conditions`: what its runs were measured under (machine, libraries, harness, scorer, item
+  and reference checksums).
+- `05 the same config, scored other ways`: the same config on the same dataset scored against
+  another reference or by a judge, tinted as everywhere.
+- `06 rounds`: each round it was in, in play or retired, and the round's status.
+- Notes, when the adapter has any (runs left out, and why).
+- Command: `evh arms --arm <arm id or config id>`; `evh arms [--dataset-id <id>]` lists them.
+
+## The metric page
+
+- Hero: kicker `metric`, the metric's name, then **better** (higher, lower, or "neutral: a
+  description"), **kind** (cost or speed, needing no reference; descriptive; or quality),
+  **decides** (the goals whose primary measure it is), **recorded on** (its datasets).
+- `01 what it measures, and how`: the one-line summary, then the longer explanation: the
+  project's `METRIC_DESCRIPTIONS` `details`, else the harness's own for its metrics. A project
+  metric with only one line says how to add the details.
+- One section per dataset, `on <dataset>`: a strip chart of the arms' means, a row per thing
+  they are scored against (better end marked), then the arms best first: **arm**, **mean**,
+  **items**, **scored against**, tinted.
+- Command: `evh metrics --metric <metric> [--dataset-id <id>]`.
+
+## The references page
+
+- Hero: kicker `references`, and what gold and silver mean.
+- `01 references`: **reference**, **tier**, **dataset**, **items**, **written by** (linked to the
+  author's arm), **created**, **arms scored**. Filterable.
+- Command: `evh references`.
+
+### Links everywhere
+
+Every arm, metric, dataset, reference and goal named on a page links to its page: in every table,
+in the answers and the facts, a reference's author to its arm, a round's configs to their arms,
+and in the search box. In the inspector (when the catalog was built by `evh catalog`), the arm
+names and the verdicts' metric open their pages.
 
 ## Key states
 

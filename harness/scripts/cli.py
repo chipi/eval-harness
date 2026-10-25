@@ -66,9 +66,14 @@ COMMANDS = {
     "round-retire": ("round_retire.py", "drop an arm from the open round, with the reason"),
     "round-close": ("round_close.py", "close a round with its conclusion, promoting the run it chose"),
     "rounds": ("round_status.py", "a goal's rounds, and what the evidence suggests next"),
+    "overview": (
+        "view_overview.py",
+        "the catalog's home page: goals at a glance, activity, spend, coverage, what was recorded",
+    ),
     "datasets": ("view_datasets.py", "every dataset, or one: its versions, references and arms"),
+    "arms": ("view_arms.py", "every arm, or one: its metrics, runs, config, conditions and rounds"),
     "references": ("view_references.py", "every reference, or one: who wrote it, what is scored against it"),
-    "metrics": ("view_metrics.py", "what each metric measures, which way is better, where it is recorded"),
+    "metrics": ("view_metrics.py", "what each metric measures, or one in full with the arms recording it"),
     "goals": ("view_goals.py", "every goal, or one: its arms on each of its datasets"),
     "search": ("view_search.py", "the catalog's search: datasets, arms, references, metrics, goals"),
     "inspect": (

@@ -189,6 +189,17 @@ class Adapter(Protocol):
     # Optional: the version a dataset was made from, {"dataset_id", "added", "removed",
     # "changed"} (item id lists), or None; the dataset pages link the versions both ways.
     # def dataset_lineage(self, dataset: str) -> Optional[dict]: ...
+    # Optional: an arm's runs, oldest first, [{"run_id", "created_at", "items", "cost_usd",
+    # "derived"}] ("derived": "" for a measured run, else how it was made: rescore, judge,
+    # reparse); the arm page lists them and the home page's activity counts them.
+    # def arm_runs(self, arm: str) -> list[dict]: ...
+    # Optional: what an arm was asked to do, {"config_id", "params", "adapter"}, params without
+    # credentials; the arm page shows it.
+    # def arm_config(self, arm: str) -> dict: ...
+    # Optional: what was spent and when, [{"at", "usd", "tokens", "kind": "arm" | "judge",
+    # "dataset", "what"}] (usd or tokens None when unknown), each measured run and each judging
+    # day once; the home page's spend chart, in USD or in tokens.
+    # def spend(self) -> list[dict]: ...
 
 
 def item_fields(A, dataset: str) -> dict:
@@ -226,6 +237,16 @@ def _flat_conditions(fp: dict) -> dict[str, str]:
     return out
 
 
+def _number(v) -> float | None:
+    return float(v) if isinstance(v, (int, float)) and not isinstance(v, bool) else None
+
+
+def _tokens(tin, tout) -> int | None:
+    """Tokens in plus out, or None when neither was reported (unknown is not 0)."""
+    vals = [_number(x) for x in (tin, tout)]
+    return int(sum(x for x in vals if x is not None)) if any(x is not None for x in vals) else None
+
+
 def _json(p: Path):
     try:
         return json.loads(p.read_text(encoding="utf-8"))
@@ -261,11 +282,14 @@ class HarnessAdapter:
         bases += sorted(p for p in (self.data_dir / "runs-judged").glob("*") if p.is_dir())
         refs: dict[Path, str] = {}
         made: dict[Path, str] = {}
+        # Every run seen, before any is set aside below: what was billed counts them all.
+        self._every: list[tuple[str, Path, dict]] = []
         for base in bases:
             for d, m in runs_on(runs_dir=base):
                 if not m.get("dataset_id"):
                     continue
                 rel = base.relative_to(self.data_dir).as_posix()
+                self._every.append((m["dataset_id"], d, m))
                 out.setdefault(f"{rel}/{m['dataset_id']}/{m['config_id']}", []).append(d)
                 refs[d] = ((m.get("fingerprint") or {}).get("data") or {}).get("reference_id") or ""
                 made[d] = m.get("created_at") or ""
@@ -506,6 +530,12 @@ class HarnessAdapter:
                     info["shown"] = (
                         f"the latest of {len(dirs)} repeats; the score is the mean of all {len(dirs)}"
                     )
+                # A judged arm: what each judge gave this output, beside it (the replies themselves
+                # are under data/judge-verdicts/, withheld ones in their .withheld/).
+                if derived_with(self._metrics(arm), "judge"):
+                    for k, v in sorted(self.scores(arm).items()):
+                        if k.startswith("judge_") and item in v["values"]:
+                            info[k.removeprefix("judge_")] = f"{v['values'][item]:.3g}"
                 return {
                     "kind": "text",
                     "text": f.read_text(encoding="utf-8", errors="replace"),
@@ -628,6 +658,85 @@ class HarnessAdapter:
         ds = _json(self.data_dir / "datasets" / f"{dataset}.json")
         got = ds.get("derived_from") if isinstance(ds, dict) else None
         return got if isinstance(got, dict) and got.get("dataset_id") else None
+
+    # -- runs, configs and spend ---------------------------------------------------------
+    def arm_runs(self, arm: str) -> list[dict]:
+        """The arm's runs, oldest first: when each was made, its items, what it cost, and how
+        it was derived ("" for a measured run)."""
+        out = []
+        for d in self._dirs(arm):
+            m = _json(d / "metrics.json") or {}
+            out.append(
+                {
+                    "run_id": m.get("run_id") or d.name,
+                    "created_at": m.get("created_at") or "",
+                    "items": m.get("n_items"),
+                    "cost_usd": (m.get("scores") or {}).get("total_cost_usd"),
+                    "derived": (m.get("derived") or {}).get("kind", ""),
+                }
+            )
+        return sorted(out, key=lambda r: (r["created_at"], r["run_id"]))
+
+    def arm_config(self, arm: str) -> dict:
+        """The config behind the arm, as its latest run recorded it; params without credentials."""
+        from evaluation_harness._providers import identity_params  # noqa: PLC0415
+
+        m = self._metrics(arm)
+        return {
+            "config_id": m.get("config_id") or arm.rsplit("/", 1)[-1],
+            "params": identity_params(m.get("params") or {}),
+            "adapter": m.get("adapter") or "",
+        }
+
+    @_memo
+    def spend(self) -> list[dict]:
+        """What was spent and when, in USD and in tokens: every measured run (a derived run re-reads
+        stored outputs and calls nothing), and the judges' calls per judging set and day, from the
+        stored verdicts. Either may be None: a local model bills nothing but still counts tokens
+        when its adapter reports them; an unpriced call has tokens and no USD."""
+        self._index()
+        out = []
+        for ds, d, m in self._every:
+            sc = m.get("scores") or {}
+            usd = _number(sc.get("total_cost_usd"))
+            tokens = _tokens(sc.get("total_tokens_in"), sc.get("total_tokens_out"))
+            if m.get("derived") or (usd is None and tokens is None):
+                continue
+            out.append(
+                {
+                    "at": m.get("created_at") or "",
+                    "usd": usd,
+                    "tokens": tokens,
+                    "kind": "arm",
+                    "dataset": ds,
+                    "what": d.name,
+                }
+            )
+        sets = self.data_dir / "judging-sets"
+        days: dict[tuple, list] = {}
+        for f in sorted((self.data_dir / "judge-verdicts").glob("*/*/*/*.json")):
+            v = _json(f) or {}
+            usd = _number(v.get("cost_usd"))
+            tokens = _tokens(v.get("tokens_in"), v.get("tokens_out"))
+            if usd is None and tokens is None:
+                continue
+            key = ((v.get("created_at") or "")[:10], f.parts[-4], f.parts[-3])
+            acc = days.setdefault(key, [None, None])
+            acc[0] = usd if acc[0] is None else acc[0] + (usd or 0.0)
+            acc[1] = tokens if acc[1] is None else acc[1] + (tokens or 0)
+        for (day, scorer, set_id), (usd, tokens) in sorted(days.items()):
+            ds = (_json(sets / f"{set_id}.json") or {}).get("dataset_id", "")
+            out.append(
+                {
+                    "at": day,
+                    "usd": round(usd, 8) if usd is not None else None,
+                    "tokens": tokens,
+                    "kind": "judge",
+                    "dataset": ds,
+                    "what": scorer,
+                }
+            )
+        return sorted(out, key=lambda x: x["at"])
 
     # -- item fields (ADR-0003) -----------------------------------------------------------
     @_memo

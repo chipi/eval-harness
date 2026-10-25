@@ -43,8 +43,18 @@
     },
     "metric_descriptions": {
       "type": "object",
-      "description": "What each metric measures, as the adapter (METRIC_DESCRIPTIONS) declared; the catalog's metrics page shows it.",
-      "additionalProperties": {"type": "string"}
+      "description": "What each metric measures, as the adapter (METRIC_DESCRIPTIONS) declared: one line, or a summary and details for the metric's own catalog page.",
+      "additionalProperties": {
+        "oneOf": [
+          {"type": "string"},
+          {
+            "type": "object",
+            "required": ["summary"],
+            "additionalProperties": false,
+            "properties": {"summary": {"type": "string", "minLength": 1}, "details": {"type": "string"}}
+          }
+        ]
+      }
     },
     "primary_metric": {"type": "string", "description": "The metric that answers 'which arm is better'."},
     "reference_tier": {"enum": ["gold", "silver"]},

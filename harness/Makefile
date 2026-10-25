@@ -16,7 +16,7 @@ NOISE ?=
 TIER ?= silver
 
 .PHONY: help demo init env-check install venv-init catalog catalog-serve \
-        datasets references metrics goals inspect round-open round-retire round-close rounds \
+        overview datasets arms references metrics goals inspect round-open round-retire round-close rounds \
         dataset-create dataset-materialize reference-create \
         holdout pair-test rank-stability \
         experiment-dry-run experiment-run sweep \
@@ -266,6 +266,12 @@ catalog-serve: catalog
 
 # The catalog's pages and the inspector's comparison in the terminal (scripts/catalog_views.py):
 # the same adapter and the same computation, so a number here is the number on the page.
+overview:
+	$(PYTHON) scripts/view_overview.py $(ARGS)
+
+arms:
+	$(PYTHON) scripts/view_arms.py $(if $(DATASET_ID),--dataset-id $(DATASET_ID),) $(if $(ARM),--arm $(ARM),) $(ARGS)
+
 datasets:
 	$(PYTHON) scripts/view_datasets.py $(if $(DATASET_ID),--dataset-id $(DATASET_ID),) $(ARGS)
 
@@ -273,7 +279,7 @@ references:
 	$(PYTHON) scripts/view_references.py $(if $(REFERENCE),--reference-id $(REFERENCE),) $(ARGS)
 
 metrics:
-	$(PYTHON) scripts/view_metrics.py $(if $(DATASET_ID),--dataset-id $(DATASET_ID),) $(ARGS)
+	$(PYTHON) scripts/view_metrics.py $(if $(DATASET_ID),--dataset-id $(DATASET_ID),) $(if $(METRIC),--metric $(METRIC),) $(ARGS)
 
 goals:
 	$(PYTHON) scripts/view_goals.py $(if $(GOAL),--goal $(GOAL),) $(ARGS)

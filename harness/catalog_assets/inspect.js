@@ -52,6 +52,11 @@
     return out;
   }
   const tip = (full, id) => `title="${esc(full[id] || id)}"`;
+  // The catalog's own pages, as catalog_build.slug names them: an arm's and a metric's.
+  const slug = s => String(s).replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '') || 'x';
+  const UP = document.body.dataset.up || '';
+  const armName = (id, text) => window.CATALOG_PAGES
+    ? `<a class="cell-link" href="${UP}a/${slug(id)}.html" title="${esc(id)}">${esc(text)}</a>` : esc(text);
 
   function verdictChip(v) {
     const cls = v.startsWith('separated: better') ? 'v-better' : v.startsWith('separated: worse') ? 'v-worse' : 'v-none';
@@ -95,7 +100,7 @@
     const kind = id => { const a = (d.arms || []).find(x => x.id === id) || {};
       return a.wrote_reference ? 't-author' : a.judge ? 't-judged' : (a.reference || '').startsWith('silver/') ? 't-silver' : ''; };
     // The verdict is the second column, so a phone sees it without scrolling.
-    const vt = rows.map(r => `<tr class="${kind(r.arm)}"><td class="mono">${esc(label[r.arm] || r.arm)}</td>
+    const vt = rows.map(r => `<tr class="${kind(r.arm)}"><td class="mono">${armName(r.arm, label[r.arm] || r.arm)}</td>
       <td>${verdictChip(r.verdict)}${r.n && r.min_p > 0.05 ? ' <small class="muted">' + r.n + ' ' + ITEMS + ' cannot reach 0.05</small>' : ''}</td>
       <td class="num">${r.n}</td><td class="num">${fmt(r.mean)}</td><td class="num">${fmt(r.delta)}</td>
       <td class="num">${r.ci ? (r.ci[0] >= 0 ? '+' : '') + r.ci[0].toFixed(3) + ' to ' + (r.ci[1] >= 0 ? '+' : '') + r.ci[1].toFixed(3) : '—'}</td>
@@ -104,7 +109,7 @@
     const baseMean = d.items.length ? (() => { const v = Object.values(d.series[d.baseline]); return v.reduce((a, b) => a + b, 0) / v.length; })() : null;
     const verdicts = `<div class="scroll-x"><table class="data" data-nopage><thead><tr><th>run vs baseline</th><th>verdict</th><th>${ITEMS}</th><th>mean</th><th>Δ vs baseline</th><th>95% CI of Δ</th><th>wins–losses</th><th>p (exact ≤30)</th><th>Holm threshold</th></tr></thead>
       <tbody>${vt || '<tr><td colspan="9" class="muted">Only the baseline has this metric.</td></tr>'}</tbody></table></div>
-      <p class="small muted">Baseline ${esc(label[d.baseline] || d.baseline)}: mean ${fmt(baseMean)}. Holm across ${d.family_size} comparison(s)${P.get('threshold') ? ' (this row\'s threshold carried from the page you came from, so the verdict matches it)' : P.get('family') ? ' (family carried from the page you came from)' : ''}; ${esc(arrow)}. Scores come from: ${esc([...new Set(d.arms.map(a => a.source).filter(Boolean))].join('; '))}.</p>`;
+      <p class="small muted">Baseline ${armName(d.baseline, label[d.baseline] || d.baseline)}: mean ${fmt(baseMean)}. Holm across ${d.family_size} comparison(s)${P.get('threshold') ? ' (this row\'s threshold carried from the page you came from, so the verdict matches it)' : P.get('family') ? ' (family carried from the page you came from)' : ''}; ${esc(arrow)}. Scores come from: ${esc([...new Set(d.arms.map(a => a.source).filter(Boolean))].join('; '))}.</p>`;
 
     const arms = Object.keys(d.series), better = d.higher_is_better ? 1 : -1;
     const head = arms.map(a => `<th class="${a === d.baseline ? 'isbase' : ''}">${esc(label[a] || a)}${a === d.baseline ? '<br><small>baseline</small>' : ''}</th>`).join('');
@@ -121,11 +126,12 @@
     const avgs = Object.entries(d.averages || {}).sort((a, b) => (d.higher_is_better ? b[1] - a[1] : a[1] - b[1]));
     const avgTable = !avgs.length ? '' : `<h3 class="sub">Average only · ${avgs.length}: no per-${ITEM} scores, so no test</h3>
       <div class="scroll-x"><table class="data"><thead><tr><th>run</th><th>recorded average</th><th>vs the baseline's mean</th></tr></thead><tbody>${avgs.map(([a, v]) =>
-        `<tr><td class="mono" title="${esc(a)}">${esc(label[a] || a)}</td><td class="num">${fmt(v)}</td><td class="num">${baseMean == null ? '—' : (v - baseMean >= 0 ? '+' : '') + fmt(v - baseMean)}</td></tr>`).join('')}</tbody></table></div>`;
-    const mslug = String(d.metric.split(' vs ')[0]).replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '') || 'x';
-    // Linked only where the catalog has a metrics page (a project's own builder may not).
-    const mlink = document.querySelector('nav.nav a[href$="metrics.html"]')
-      ? `<a class="cell-link" href="${document.body.dataset.up || ''}metrics.html#m-${mslug}">${esc(d.metric)}</a>` : esc(d.metric);
+        `<tr><td class="mono">${armName(a, label[a] || a)}</td><td class="num">${fmt(v)}</td><td class="num">${baseMean == null ? '—' : (v - baseMean >= 0 ? '+' : '') + fmt(v - baseMean)}</td></tr>`).join('')}</tbody></table></div>`;
+    const mslug = slug(d.metric.split(' vs ')[0]);
+    // The metric's own page where the catalog has one; else its row on a metrics page; else plain.
+    const mlink = window.CATALOG_PAGES ? `<a class="cell-link" href="${UP}m/${mslug}.html">${esc(d.metric)}</a>`
+      : document.querySelector('nav.nav a[href$="metrics.html"]')
+      ? `<a class="cell-link" href="${UP}metrics.html#m-${mslug}">${esc(d.metric)}</a>` : esc(d.metric);
     app.innerHTML = controls + warn + `<p class="eyebrow"><span class="num">01</span>verdicts · ${mlink}</p>` + verdicts + conditions(d, label) + avgTable
       + breakdown(d, label)
       + `<p class="eyebrow gap"><span class="num">02</span>analysis</p>` + charts(d, label)
@@ -212,7 +218,7 @@
     const f = (d.fields || []).find(x => x.name === d.by) || {label: d.by};
     const name = g => f.type === 'boolean' ? (g === 'true' ? 'yes' : 'no') : g;
     const rows = b.groups.flatMap(g => g.rows.map(r => `<tr><td>${esc(name(g.group))} <small class="muted">${g.items} ${ITEMS}</small></td>
-      <td class="mono">${esc(label[r.arm] || r.arm)}</td><td>${verdictChip(r.verdict)}${r.n && r.min_p > 0.05 ? ' <small class="muted">' + r.n + ' ' + ITEMS + ' cannot reach 0.05</small>' : ''}</td><td class="num">${r.n}</td>
+      <td class="mono">${armName(r.arm, label[r.arm] || r.arm)}</td><td>${verdictChip(r.verdict)}${r.n && r.min_p > 0.05 ? ' <small class="muted">' + r.n + ' ' + ITEMS + ' cannot reach 0.05</small>' : ''}</td><td class="num">${r.n}</td>
       <td class="num">${fmt(r.delta)}</td><td class="num">${r.wins}–${r.losses}</td><td class="num">${fmtp(r.p)}</td>
       <td class="num">${r.threshold ? r.threshold.toFixed(4) : '—'}</td></tr>`)).join('');
     return `<h3 class="sub">By ${esc(f.label)} · ${b.groups.length} group(s)</h3>

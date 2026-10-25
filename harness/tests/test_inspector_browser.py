@@ -131,7 +131,37 @@ def drive(base: str) -> None:
         page.on("pageerror", lambda e: errors.append(str(e)))
 
         page.goto(base + "index.html")
-        check("home: the dataset is listed", "tickets_v1" in page.locator("table#datasets").inner_text())
+        check(
+            "home: the dataset is in the coverage table",
+            "tickets_v1" in page.locator("table#coverage").inner_text(),
+        )
+        check(
+            "home: activity and spend side by side, recent shown first",
+            page.locator(".duo #activity figure.chart").first.is_visible()
+            and page.locator('.duo #spend [data-period="recent"]').is_visible(),
+        )
+        page.click('.period-switch button[data-show="all"]')
+        check(
+            "home: 'all time' shows every period's panel and hides the recent one",
+            page.locator('#spend [data-period="all"]').is_visible()
+            and not page.locator('#spend [data-period="recent"]').is_visible(),
+        )
+        page.locator('#spend [data-period="all"] button[data-unit-show="tokens"]').click()
+        check(
+            "home: spend in tokens (what a free local model still uses)",
+            page.locator('#spend [data-period="all"] [data-unit="tokens"]').is_visible()
+            and not page.locator('#spend [data-period="all"] [data-unit="usd"]').is_visible(),
+        )
+        page.goto(base + "datasets.html")
+        check(
+            "datasets page: the dataset is listed",
+            "tickets_v1" in page.locator("table#datasets").inner_text(),
+        )
+        page.goto(base + "a/runs-tickets_v1-tickets_lead2_v1.html")
+        check(
+            "arm page: its metrics link to their pages",
+            page.locator('a[href="../m/overlap_f1.html"]').count() >= 1,
+        )
         page.goto(base + "goals.html")
         check("goals page: loads", page.locator("main").count() == 1)
         page.goto(base + "g/tickets_summary.html")
@@ -163,6 +193,11 @@ def drive(base: str) -> None:
         )
         verdicts = page.locator("table.data").first.locator("tbody tr").count()
         check("inspector: a verdict row per arm against the baseline", verdicts == 2, verdicts)
+        check(
+            "inspector: an arm's name opens its page, the metric its page",
+            page.locator('table.data a[href="a/runs-tickets_v1-tickets_lead2_v1.html"]').count() == 1
+            and page.locator('p.eyebrow a[href="m/overlap_f1.html"]').count() == 1,
+        )
         check("inspector: the charts are drawn", page.locator("figure.chart svg").count() >= 2)
         with page.expect_navigation():
             page.select_option("#baseline", "runs/tickets_v1/tickets_lead2_v1")

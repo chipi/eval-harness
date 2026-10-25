@@ -128,21 +128,118 @@ try:
     ds3 = (out3 / "d/ds3.html").read_text()
     check(
         "dataset page: rows tinted by what they are scored against",
-        re.search(r'<tr class="t-author"><td>arm_s<', ds3) is not None
-        and re.search(r'<tr class="t-silver"><td>arm_t<', ds3) is not None
-        and '<tr class="t-judged"><td>arm_t · judged/sc1' in ds3,
+        re.search(r'<tr class="t-author"><td><a class="cell-link" href="\.\./a/[^"]+">arm_s<', ds3)
+        is not None
+        and re.search(r'<tr class="t-silver"><td><a class="cell-link" href="\.\./a/[^"]+">arm_t<', ds3)
+        is not None
+        and re.search(
+            r'<tr class="t-judged"><td><a class="cell-link" href="\.\./a/[^"]+">arm_t · judged/sc1', ds3
+        )
+        is not None,
         ds3[:0],
     )
     check(
-        "dataset page: the metric links to its explanation, the reference to its page, a judged row names its judge",
-        'href="../metrics.html#m-acc"' in ds3
-        and 'href="../r/silver-ds3.html"' in ds3
-        and "judge <code" in ds3,
+        "dataset page: the metric links to its page, the reference to its page, a judged row names its judge",
+        'href="../m/acc.html"' in ds3 and 'href="../r/silver-ds3.html"' in ds3 and "judge <code" in ds3,
     )
     metrics = (out3 / "metrics.html").read_text()
     check(
         "metrics page: the project's description, under the anchor every metric link uses; only recorded metrics listed",
         'id="m-acc"' in metrics and "share of items right" in metrics and "Prompt tokens" not in metrics,
+    )
+    home = (out3 / "index.html").read_text()
+    check(
+        "home: the catalog at a glance (counts, goals, activity and spend, coverage, what was recorded)",
+        all(
+            x in home
+            for x in ('class="tiles"', "goals at a glance", "activity and spend", "coverage", "recorded")
+        )
+        and 'href="datasets.html"' in home
+        and 'href="references.html"' in home,
+    )
+    check(
+        "nav: Home, Goals, Datasets, References, Metrics, Inspector",
+        re.findall(r'<nav class="nav">(.*?)</nav>', home)[0].count("<a ") == 6
+        and all(x in home for x in (">Datasets<", ">References<", ">Home<")),
+    )
+    dsp = (out3 / "datasets.html").read_text()
+    check("datasets page: every dataset, linked", 'href="d/ds3.html"' in dsp)
+    refs_idx = (out3 / "references.html").read_text()
+    check(
+        "references page: every reference, its tier, dataset and author linked to the author's arm",
+        'href="r/silver-ds3.html"' in refs_idx
+        and 'href="d/ds3.html"' in refs_idx
+        and ">arm_s</a>" in refs_idx,
+    )
+    arm_pages = sorted(p.name for p in (out3 / "a").glob("*.html"))
+    arm_s_page = next((out3 / "a" / n for n in arm_pages if n.endswith("arm_s.html")), None)
+    check(
+        "arm pages: one per arm",
+        len(arm_pages) == len(HarnessAdapter(data3).arms()) and arm_s_page is not None,
+        str(arm_pages),
+    )
+    if arm_s_page:
+        ap_ = arm_s_page.read_text()
+        check(
+            "arm page: dataset, what it is scored against, its metrics linked, its runs, its config, and the note that it wrote its reference",
+            'href="../d/ds3.html"' in ap_
+            and 'href="../r/silver-ds3.html"' in ap_
+            and 'href="../m/acc.html"' in ap_
+            and "runs" in ap_
+            and "wrote the reference it is scored against" in ap_,
+        )
+    mpage = (out3 / "m" / "acc.html").read_text()
+    check(
+        "metric page: its description, which way is better, and the arms recording it, linked",
+        "share of items right" in mpage and "higher" in mpage and 'href="../a/' in mpage,
+    )
+    check("metrics page: each metric links to its own page", 'href="m/acc.html"' in metrics)
+    # The same pages in the terminal (CLI parity): one adapter, one computation.
+    import contextlib as _cl
+    import io as _io
+
+    from evaluation_harness import catalog_views as _cv
+
+    def _view(fn, argv):
+        buf = _io.StringIO()
+        real = _cv.load_catalog_adapter
+        _cv.load_catalog_adapter = lambda spec=None: HarnessAdapter(data3)
+        try:
+            with _cl.redirect_stdout(buf):
+                fn(argv)
+        finally:
+            _cv.load_catalog_adapter = real
+        return buf.getvalue()
+
+    ov = _view(_cv.overview, ["--all"])
+    tiles = cb.home_counts(
+        HarnessAdapter(data3), cb.collect(HarnessAdapter(data3)), HarnessAdapter(data3).spend()
+    )
+    check(
+        "evh overview: the home page's counts, then its sections",
+        ov.splitlines()[0] == "  ".join(f"{n} {k}" for k, n, _ in tiles)
+        and all(x in ov for x in ("goals at a glance", "activity", "coverage:")),
+        ov[:400],
+    )
+    arm_id = next(a for a in HarnessAdapter(data3).arms() if a.endswith("/arm_s"))
+    ar = _view(_cv.arms, ["--arm", arm_id])
+    check(
+        "evh arms --arm: the arm page's facts, its metrics and the note that it wrote its reference",
+        "scored against  silver/ds3" in ar and "metrics:" in ar and "wrote the reference" in ar,
+        ar[:500],
+    )
+    cs.set_adapter(HarnessAdapter(data3))
+    r_ = cs.compare({"runs": ["runs/ds3/arm_s,runs/ds3/arm_t"], "baseline": ["runs/ds3/arm_s"]})
+    check(
+        "inspector: a baseline that wrote the reference is called out",
+        any("wrote the reference these arms are scored against" in w for w in r_.get("warnings", [])),
+        r_.get("error") or r_.get("warnings"),
+    )
+    mt = _view(_cv.metrics, ["--metric", "acc"])
+    check(
+        "evh metrics --metric: the metric page's description and the arms recording it",
+        "share of items right" in mt and "on ds3:" in mt,
+        mt[:400],
     )
     ref_page = (out3 / "r/silver-ds3.html").read_text()
     check(

@@ -72,14 +72,27 @@ adapter file ([ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md),
 
 - **FR1.1**: `evh catalog [--out DIR] [--adapter …] [--link LABEL=URL]` builds the pages into
   `.build/catalog/` by default.
-- **FR1.2**: Pages: home (every dataset), one per dataset, goals and one per goal, one per
-  reference, a metrics page, and the inspector's shell ([UXS-001](../uxs/UXS-001-catalog.md)).
+- **FR1.2**: Pages: home (the dashboard, FR1.8), datasets and one per dataset, goals and one per
+  goal, references and one per reference, one per arm, metrics and one per metric, and the
+  inspector's shell ([UXS-001](../uxs/UXS-001-catalog.md)).
 - **FR1.3**: The pages carry counts and means only, never an item's text, an output or a
   reference; a field's values appear only when the project marks the field `public`.
 - **FR1.4**: Every arm's row says what it is scored against; rows scored against silver, by a
   judge, or against the reference the arm wrote itself are tinted.
 - **FR1.5**: Long tables show 10 rows with "show 10 more" and "show all"; the filter and the sort
   work over every row.
+- **FR1.6**: Every arm name, metric name, dataset, reference and goal link to their pages from
+  every page. A round's configs link to their arm pages.
+- **FR1.7**: An arm's page shows its metrics, runs, config without credentials, conditions, the
+  same config scored other ways, and rounds it joined. A metric's page shows what it measures
+  (summary and details from `METRIC_DESCRIPTIONS`), which way is better, its kind, the goals it
+  decides, and per-dataset a strip chart and table of arms.
+- **FR1.8**: The home page shows tiles for the counts (goals, datasets, configs, arms,
+  references, metrics, measured runs, USD billed, tokens); each goal's baseline and gold-group
+  leader with their paired test (threshold 0.05); activity (measured runs per day by dataset)
+  beside spend (cumulative, systems under test and judges, in USD or tokens); coverage per
+  dataset; and everything recorded, newest first; each for the last 14 days of activity or all
+  time.
 
 ### FR2: The inspector (local server)
 
@@ -110,9 +123,9 @@ adapter file ([ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md),
 ### FR4: Command-line parity
 
 - **FR4.1**: Every page and comparison is also a command that asks the same adapter and computes
-  with the same functions: `evh datasets`, `evh references`, `evh metrics`, `evh goals`,
-  `evh search`, `evh inspect` (its comparison, `--items`, `--analysis`, `--item`)
-  ([UXS-003](../uxs/UXS-003-cli-and-onboarding.md)).
+  with the same functions: `evh overview` (the home dashboard), `evh datasets`, `evh arms`,
+  `evh references`, `evh metrics`, `evh goals`, `evh search`, `evh inspect` (its comparison,
+  `--items`, `--analysis`, `--item`) ([UXS-003](../uxs/UXS-003-cli-and-onboarding.md)).
 - **FR4.2**: New views and actions are added to both. A decision the pages suggest is shown as
   the command that makes it.
 

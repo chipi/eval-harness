@@ -246,6 +246,12 @@ def _warnings(ctx: dict) -> list:
             f"{_label(ctx['asked'])} has no '{metric}' scores, so "
             f"{_label(ctx['baseline'])} is the baseline instead."
         )
+    if ctx["baseline"] and A.describe(ctx["baseline"]).get("wrote_reference"):
+        w.append(
+            f"{_label(ctx['baseline'])} wrote the reference these arms are scored against: it is graded "
+            "against its own outputs, so every other arm reads as worse. Compare the others to each "
+            "other with another baseline."
+        )
     hashes = {a: A.input_hashes(a) for a in series}
     base_h = hashes.get(ctx["baseline"], {})
     for a, h in hashes.items():

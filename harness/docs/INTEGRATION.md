@@ -101,9 +101,10 @@ with what your domain actually rewards.
 
 Beside `score()`, say what your metrics are: `PRIMARY_METRIC` (the one that decides),
 `METRIC_DIRECTIONS` (a quality metric that improves going down, `{"wer": "lower"}`) and
-`METRIC_DESCRIPTIONS` (one sentence each, `{"rouge_l": "ROUGE-L F1 against the reference"}`).
-Every run records them; the catalog's metrics page shows the descriptions. Added later, they
-reach existing runs through `evh rescore`, for $0.
+`METRIC_DESCRIPTIONS` (one sentence each, `{"rouge_l": "ROUGE-L F1 against the reference"}`,
+or `{"summary": "one line", "details": "how it is computed and read"}`). Every run records
+them; the metrics page shows the summary and each metric's own page the details. Added later,
+they reach existing runs through `evh rescore`, for $0.
 
 ---
 
@@ -254,11 +255,13 @@ which references exist, what one arm wrote for one item.
   | how big each dataset is (optional) | `dataset_items(dataset)`: its item count; without it the catalog shows the most items any arm scored |
   | words and places | `item_word` (e.g. `"episode"`), `data_dir` |
   | more files the pages link (optional) | `served_dirs`: further directories under the project the inspector serves read-only, beside `data_dir` (a project's reports) |
-  | what each metric measures (optional) | `metric_descriptions()`: `{metric: sentence}`; without it the metrics page describes only the harness's own metrics |
+  | what each metric measures (optional) | `metric_descriptions()`: `{metric: sentence}` or `{metric: {"summary": sentence, "details": explanation}}`; without it the metrics page describes only the harness's own metrics |
   | what a row is scored against (optional keys) | `describe(arm)`: `"reference"`, `"judge"`, `"wrote_reference"`; `references()`: `"items"`, `"author"`, `"from_run"`, `"model"`, `"created_at"` |
   | what an arm was measured under (optional) | `conditions(arm)`: `{"machine.platform": …, "library.torch": …, "harness.version": …, "scorer.sha256": …, "data.items_sha256": …, "reference.sha256": …}`; the inspector lists what differs between the arms it compares, and warns when it is the scorer, the reference or, for latency, the machine |
   | dataset versions (optional) | `datasets()`: every dataset id, run or not; `dataset_lineage(dataset)`: `{"dataset_id", "added", "removed", "changed"}` or None; the dataset pages link versions both ways |
   | rounds: a config's arm id (optional) | `arm_of(dataset, config_id)`: `evh rounds` and `inspect --round` use it; `runs/<dataset>/<config_id>` when absent |
+  | arm page: runs and details (optional) | `arm_runs(arm)`: `[{"run_id", "created_at", "items", "cost_usd", "derived"}]`; `arm_config(arm)`: `{"config_id", "params" (credentials removed), "adapter"}`; an arm page shows them when present |
+  | spend in USD and tokens (optional) | `spend()`: `[{"at", "usd", "tokens", "kind": "arm"\|"judge", "dataset", "what"}]` (usd or tokens None when unknown; measured runs and judging per set and day); the home page's spend section and `evh overview` use it |
   | metrics that need no reference (optional) | `reference_free(metric)`: True when the metric is measured off the bill or the clock, so arms scored against different references can still be compared on it; when absent, a metric whose name contains cost, latency or tokens |
   | the inspector's view kinds | `item_view` returns `{"kind": "text", "text"}`, `{"kind": "none", "note"}`, or a structured `insights` (`items` of `{text, grounded}`, `quotes`), `nodes` (`groups`) or `entities` (`items`); any may carry `info` |
 

@@ -222,16 +222,20 @@ evh validate
 evh catalog && evh catalog-serve
 ```
 
-Screenshot: the catalog index; the goals page and each goal's page (its answer, its arms grouped
-by what they are scored against, the closed rounds with their conclusions and retired arms; r2's
-suggestions were captured in step 9, while r2 was open); each dataset page, and
-`briefs_v1` ↔ `briefs_v2` linked both ways; each reference page and the metrics page; for each
-dataset, the inspector testing every arm on gold against the baseline, on silver against the
-frontier arm, and on the judge's score; one item opened in each (the item itself beside the
-reference and every output); the inspector over r2's arms; and what a goal page's "test every arm
-against the leader" link opens. For each page, run its command (`evh datasets`, `evh references`,
-`evh metrics`, `evh goals --goal …`, `evh rounds --goal …`, `evh inspect --runs …`, `--item …`)
-and check the numbers are the page's.
+Screenshot: the home page (the tiles, goals at a glance, activity and spend in USD and in tokens,
+coverage, what was recorded; last 14 days and all time); the datasets page and each dataset page (its
+baseline with reason, arms grouped by what they are scored against, `briefs_v1` ↔ `briefs_v2`
+linked both ways); an arm page (its metrics table, runs, config, conditions, rounds); the goals
+page and each goal's page (its answer, its arms grouped by what they are scored against, the
+closed rounds with their conclusions and retired arms; r2's suggestions were captured in step 9,
+while r2 was open); each reference page; the metrics page and a metric page (what it measures, its
+kind, the goals it decides, per-dataset strip chart); for each dataset, the inspector testing every
+arm on gold against the baseline, on silver against the frontier arm, and on the judge's score; one
+item opened in each (the item itself beside the reference and every output); the inspector over r2's
+arms; and what a goal page's "test every arm against the leader" link opens. For each page, run its
+command (`evh overview`, `evh datasets`, `evh arms`, `evh references`, `evh metrics`, `evh goals
+--goal …`, `evh rounds --goal …`, `evh inspect --runs …`, `--item …`) and check the numbers are
+the page's.
 
 ## What to check
 
@@ -307,8 +311,8 @@ Still open:
   above 30 items, so their p can differ in the third decimal; documented, by design.
 - The inspector's `wins–losses` reads the row's arm against the baseline, `family-test`'s `A wins`
   reads A against each opponent: labelled, still opposite directions.
-- Not re-checked by a person since the fix: whether "filed under this goal" reads clearly, and the
-  heading under the sticky header in a full-page screenshot.
+- Changed: "filed under this goal" now reads "filed" with the explanation in the text above each
+  table (UXS-001 §goal page). Not re-checked by a person since this change: whether it reads clearly, and the heading under the sticky header in a full-page screenshot.
 - Judged runs made before the fix have no frontier until they are rebuilt from their stored
   verdicts (`evh judge-score … --no-calls`, $0).
 - Not exercised by a run: the direct OpenAI, Anthropic and OpenRouter paths (both runs went

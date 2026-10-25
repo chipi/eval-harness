@@ -60,10 +60,13 @@ runs when it starts, so after a new run, stop it and start it again.
 
 | what you look at | in the terminal |
 |---|---|
-| the catalog's index: every dataset, its items, arms and references | `evh datasets` |
+| the home page: goals at a glance, activity and spend, coverage, what was recorded | `evh overview` |
+| the catalog's datasets page: every dataset, its items, arms and references | `evh datasets` |
 | a dataset page: its versions, references and every arm with its headline number | `evh datasets --dataset-id tickets_v1` |
+| an arm page: its metrics, runs, config, conditions, rounds | `evh arms --arm tickets_lead1_v1` |
 | a reference page: who wrote it, from which run, every arm scored against it | `evh references --reference-id silver/tickets_v1` |
 | the metrics page: what each metric measures, which way is better, where it is recorded | `evh metrics` |
+| a metric page: what it measures, its kind, the goals it decides, per-dataset strip chart | `evh metrics --metric overlap_f1` |
 | the search box on every catalog page | `evh search lead2` |
 | the goals page, and one goal's page: its answer (the baseline and why), its arms per dataset, its rounds | `evh goals`, `evh goals --goal tickets_summary`, `evh rounds --goal tickets_summary` |
 | a goal page's suggested next steps, each with a copy button | the commands `evh rounds --goal tickets_summary` prints |
@@ -218,17 +221,22 @@ Customer reports they cannot log in since this morning.
 
 ## 4. What the pages show, and what they refuse
 
-- **The catalog** is static pages: one per dataset with every arm and its headline number, a
-  goals page and a page per goal, a page per reference, and a metrics page. Its index counts the
-  arms and the configs behind them: an arm is one config on one dataset scored one way, so a
-  config rescored against silver or judged is an arm of its own ("N arms on M datasets, from K
-  configs"; `evh datasets` has a `configs` column). Each arm's row says what it is scored against; rows scored against silver, by a
-  judge, or against the reference the arm wrote itself are tinted. The dataset page (and `evh
-  datasets --dataset-id`) sorts its arms by what they are scored against first, gold, then
-  silver, then each judge, then none, and only then by metric and mean, so a silver mean and a
-  gold one never interleave. Counts and means only, never an item's text, so the pages can
-  be published. The dataset page lists its fields and how many tickets fill each; it summarises
-  the values of a field marked `public` (Area, Plan) and no other (Names a deadline).
+- **The catalog** is static pages: a home dashboard with counts, goals at a glance, activity and
+  spend charts, and everything recorded; a datasets page and one per dataset with every arm and
+  its headline number; one per arm showing its metrics, runs, config and conditions; a goals
+  page and one per goal; one per reference; a metrics page and one per metric. The datasets
+  page counts the arms and the configs behind them: an arm is one config on one dataset scored
+  one way, so a config rescored against silver or judged is an arm of its own ("N arms on M
+  datasets, from K configs"; `evh datasets` has a `configs` column). Each arm's row says what it is scored
+  against; rows scored against silver, by a judge, or against the reference the arm wrote itself
+  are tinted. The dataset page (and `evh datasets --dataset-id`) sorts its arms by what they are
+  scored against first, gold, then silver, then each judge, then none, and only then by metric
+  and mean, so a silver mean and a gold one never interleave. Counts and means only, never an
+  item's text, so the pages can be published. The dataset page lists its fields and how many
+  tickets fill each; it summarises the values of a field marked `public` (Area, Plan) and no
+  other (Names a deadline). A metric page shows what the metric measures (from the adapter's
+  `METRIC_DESCRIPTIONS`, with summary and details when present), which way is better, which
+  goals decide on it, and every arm's mean on each dataset in a strip chart and table.
 - **The inspector** is the server behind them, on 127.0.0.1 only. Pick arms on one dataset and it
   tests each against a baseline, lists and charts the per-ticket scores, and for one ticket
   shows the ticket, its fields and each arm's output beside the reference. An arm run three

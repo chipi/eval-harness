@@ -55,11 +55,15 @@ document.documentElement.classList.add('js');})();
 """
 
 NAV = [
-    ("home", "index.html", "Catalog"),
+    ("home", "index.html", "Home"),
     ("goals", "goals.html", "Goals"),
+    ("datasets", "datasets.html", "Datasets"),
+    ("references", "references.html", "References"),
     ("metrics", "metrics.html", "Metrics"),
     ("inspect", "inspect.html", "Inspector"),
 ]
+#: How far back "recent" reaches on the home page, counted from the newest thing recorded.
+RECENT_DAYS = 14
 
 #: What the harness's own metrics measure; a project describes its own with METRIC_DESCRIPTIONS.
 BUILTIN_METRICS = {
@@ -82,13 +86,73 @@ BUILTIN_METRICS = {
     "output_words": "How many words the output has: a description of the output, not a quality.",
     "resumed": "1 when the item was replayed from a stopped run's stored output (--resume), "
     "else 0: bookkeeping, not a score.",
+    "reasoning_tokens": "Tokens a reasoning model spent thinking before it answered, as the provider "
+    "reported them: a description of the call, not a quality.",
 }
+
+#: How the harness's own metrics are computed and read: each metric page's longer text. A
+#: project gives its own with METRIC_DESCRIPTIONS = {"metric": {"summary": ..., "details": ...}}.
+BUILTIN_DETAILS = {
+    "cost_usd": "Recorded for every item. When the provider's response carries what it billed "
+    "(OpenRouter always, a LiteLLM proxy that passes usage.cost through, any OpenAI-compatible "
+    "endpoint that returns it), that bill is the cost. Otherwise it is tokens_in × usd_per_mtok_in "
+    "plus tokens_out × usd_per_mtok_out from the arm's config, per million tokens. With neither the "
+    "cost is unknown and left empty, never 0. Lower is better, and it needs no reference, so arms "
+    "scored against different references can still be compared on it. evh cost-report shows how "
+    "far the bills and the price tables differ.",
+    "total_cost_usd": "The run's cost: the sum of cost_usd over its items, not a mean. An arm's "
+    "repeats are separate runs, each with its own total.",
+    "tokens_in": "Counted by the provider, not the harness: an adapter that reports none leaves it "
+    "empty. Together with the config's prices it is the fallback cost when no bill comes back.",
+    "tokens_out": "Counted by the provider, not the harness. Most providers bill a reasoning "
+    "model's thinking as completion tokens; reasoning_tokens says how many of them it was.",
+    "latency_ms": "The wall-clock time of one call. When an adapter reports none, the core times "
+    "the call itself; a model's first call, which loads it (the warm-up), is excluded. It depends "
+    "on the machine, the provider's load and the network: compare it between arms measured under "
+    "the same conditions, which the inspector's conditions line checks. Lower is better, and it "
+    "needs no reference.",
+    "judge_score": "evh judge-score shows each item and the outputs of several arms to two or more "
+    "judges from different vendor families, blinded and in a seeded order, in blocks. Each judge "
+    "scores every output on each of the scorer's dimensions; an arm's judge_score for an item is "
+    "the mean over the dimensions and the judges. The scorer's validation names the committed runs "
+    "and the agreement with people they reached; the pass also re-asks a fraction of items in "
+    "another order (position) and again (noise), and reports how much the scores moved.",
+    "judge_score_unvalidated": "Computed as judge_score is, by judges that were never compared "
+    "with human ratings for this use. It ranks arms by what the judges prefer, which may not be "
+    "what people prefer: read it as a trial. A validated scorer turns it into judge_score.",
+    "overlap_f1": "The bundled adapter's score: the output and the reference as sets of lowercased "
+    "words, precision is the share of the output's words in the reference, recall the share of the "
+    "reference's words in the output, and F1 their harmonic mean. Word order, synonyms and "
+    "repetition do not count. Replace score() with what your task rewards.",
+    "output_words": "The number of whitespace-separated words in the output. It says how long the "
+    "output was, never whether it was good: ranking by it rewards verbosity, and the leaderboard "
+    "says so when a table is sorted by it.",
+    "reasoning_tokens": "Read from the provider's usage (completion_tokens_details.reasoning_tokens "
+    "or its equivalent). Empty when the provider does not report it, never 0. Billed with the "
+    "completion tokens, so cost_usd already includes it.",
+    "resumed": "A run stopped by a cost cap or a crash prints its --resume command; the resumed "
+    "run replays the items already done from their stored outputs instead of paying for them "
+    "again. The mean of resumed is the share of the run that was replayed.",
+}
+
+
+def _summary(value) -> str:
+    """A METRIC_DESCRIPTIONS value's one-line summary: the string, or its "summary"."""
+    return value.get("summary", "") if isinstance(value, dict) else str(value or "")
+
+
+def metric_details(metric: str, project: dict) -> str:
+    """How a metric is computed and read, for its page: the project's details, else the harness's."""
+    own = project.get(metric)
+    if isinstance(own, dict) and own.get("details"):
+        return own["details"]
+    return BUILTIN_DETAILS.get(metric, "")
 
 
 def describe_metric(metric: str, project: dict) -> str:
     """What a metric measures: the project's own words, else the harness's, else ""."""
-    if project.get(metric):
-        return project[metric]
+    if _summary(project.get(metric)):
+        return _summary(project[metric])
     if metric in BUILTIN_METRICS:
         return BUILTIN_METRICS[metric]
     m = re.fullmatch(r"judge_(.+?)(_unvalidated)?", metric)
@@ -104,16 +168,58 @@ def describe_metric(metric: str, project: dict) -> str:
     return ""
 
 
+def metric_page(metric: str) -> str:
+    """The metric's page, relative to the catalog root."""
+    return f"m/{slug(metric)}.html"
+
+
 def metric_link(metric: str, up: str = "") -> str:
-    """A metric's name, linked to its row on the metrics page."""
+    """A metric's name, linked to its page."""
     if not metric:
         return "—"
-    return f'<a class="cell-link" href="{up}metrics.html#m-{slug(metric)}">{e(metric)}</a>'
+    return f'<a class="cell-link" href="{up}{metric_page(metric)}">{e(metric)}</a>'
 
 
 def reference_page(ref: str) -> str:
     """The reference's page, relative to the catalog root."""
     return f"r/{slug(ref)}.html"
+
+
+def reference_link(ref: str, up: str = "") -> str:
+    """A reference's id, linked to its page."""
+    return f'<a class="cell-link" href="{up}{reference_page(ref)}">{e(ref)}</a>' if ref else "—"
+
+
+def arm_page(arm: str) -> str:
+    """The arm's page, relative to the catalog root: one per arm id (runs dir, dataset, config)."""
+    return f"a/{slug(arm)}.html"
+
+
+def arm_link(arm: str, label: str, up: str = "") -> str:
+    """An arm's label, linked to its page."""
+    return f'<a class="cell-link" href="{up}{arm_page(arm)}">{e(label)}</a>'
+
+
+def dataset_page(ds: str) -> str:
+    """The dataset's page, relative to the catalog root."""
+    return f"d/{slug(ds or 'none')}.html"
+
+
+def dataset_link(ds: str, up: str = "") -> str:
+    """A dataset's id, linked to its page."""
+    return f'<a class="cell-link" href="{up}{dataset_page(ds)}">{e(ds or "(no dataset_id)")}</a>'
+
+
+def goal_page(goal_id: str) -> str:
+    """The goal's page, relative to the catalog root."""
+    return f"g/{slug(goal_id)}.html"
+
+
+def goal_link(g: dict, up: str = "") -> str:
+    """A goal's title, linked to its page."""
+    return (
+        f'<a class="cell-link" href="{up}{goal_page(g["goal_id"])}">{e(g.get("title") or g["goal_id"])}</a>'
+    )
 
 
 def row_kind(a: dict, tiers: dict) -> str:
@@ -291,9 +397,11 @@ def fmt(v) -> str:
 def collect(A: Adapter) -> dict:
     """{dataset: {"arms": [row], "refs": [ref], "items": n}}: what every page needs, read once."""
     by_ds: dict = {}
+    runs_of = getattr(A, "arm_runs", None)
     for arm in A.arms():
         d = A.describe(arm)
         sc = A.scores(arm)
+        runs = runs_of(arm) if callable(runs_of) else []
         head = d.get("primary") or d.get("task") or ""
         values = (sc.get(head) or {}).get("values") or {}
         by_ds.setdefault(d["dataset"], {"arms": [], "refs": [], "items": 0})["arms"].append(
@@ -311,6 +419,8 @@ def collect(A: Adapter) -> dict:
                 "machine": _machine(A, arm),
                 "goal": d.get("goal", ""),
                 "format": d.get("format", ""),
+                "run_list": runs,
+                "last": max((r.get("created_at") or "" for r in runs), default=""),
                 # every metric's mean and item count, for the goal pages (numbers only)
                 "means": {
                     k: (statistics.fmean(v["values"].values()), len(v["values"]))
@@ -410,32 +520,39 @@ def _version_links(by_ds: dict, ds: str, up: str) -> str:
     return "".join(parts)
 
 
-def render_home(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
-    """Render the catalog home page with all datasets."""
+def _goals_of(A: Adapter) -> dict:
+    """{dataset: [goal]} for every goal naming the dataset."""
+    out: dict = {}
+    for g in A.goals():
+        for d in g.get("datasets") or []:
+            out.setdefault(d.get("dataset_id", ""), []).append(g)
+    return out
+
+
+def render_datasets(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
+    """The datasets page: every dataset, its versions, arms, references, goals and baseline."""
+    goals = _goals_of(A)
     rows = []
     for ds in sorted(by_ds, key=lambda d: (-len(by_ds[d]["arms"]), d)):
         v = by_ds[ds]
         parent = (v.get("parent") or {}).get("dataset_id")
+        bl = (v.get("baselines") or [None])[-1]
+        label = {a["arm"]: a["label"] for a in v["arms"]}
+        last = max((a["last"] for a in v["arms"]), default="")
         rows.append(
             [
-                f'<a href="d/{slug(ds or "none")}.html">{e(ds or "(no dataset_id)")}</a>'
-                + (
-                    f'<br><small>from <a class="cell-link" href="d/{slug(parent)}.html">{e(parent)}</a></small>'
-                    if parent
-                    else ""
-                ),
+                dataset_link(ds) + (f"<br><small>from {dataset_link(parent)}</small>" if parent else ""),
                 f'<span data-v="{v["items"]}">{v["items"]}</span>',
                 f'<span data-v="{len(v["arms"])}">{len(v["arms"])}</span>',
-                ", ".join(
-                    f'<a class="cell-link" href="{reference_page(r["id"])}">{e(r["id"])}</a>'
-                    for r in v["refs"]
-                )
-                or "—",
+                ", ".join(reference_link(r["id"]) for r in v["refs"]) or "—",
+                "<br>".join(goal_link(g) for g in goals.get(ds, [])) or "—",
+                arm_link(bl["arm"], label.get(bl["arm"], bl["run"])) if bl and bl.get("arm") else "—",
+                f'<span data-v="{e(last)}">{e(last[:10]) or "—"}</span>',
             ]
         )
     n_arms = sum(len(v["arms"]) for v in by_ds.values())
     body = hero(
-        "catalog",
+        "datasets",
         "Every run, by dataset",
         f"{n_arms} arms on {len(by_ds)} datasets, from {_n_configs(by_ds)} configs. An arm is one config on one "
         f"dataset scored one way, its repeats averaged per {e(A.item_word)}, exactly as <code>pair-test</code> reads "
@@ -445,9 +562,480 @@ def render_home(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
     body += block(
         "01",
         "datasets",
-        table("datasets", ["dataset", f"{e(A.item_word)}s", "arms", "references"], rows, "filter datasets"),
+        table(
+            "datasets",
+            ["dataset", f"{e(A.item_word)}s", "arms", "references", "goals", "baseline", "last run"],
+            rows,
+            "filter datasets",
+        ),
     )
-    write(out, "index.html", page("Catalog", body, 0, "home", nav=nav, item=A.item_word))
+    write(out, "datasets.html", page("Datasets", body, 0, "datasets", nav=nav, item=A.item_word))
+
+
+def plain(fragment: str) -> str:
+    """An HTML fragment as text, for the terminal: tags dropped, entities read."""
+    return html.unescape(re.sub(r"<[^>]+>", "", fragment))
+
+
+def events(A: Adapter, by_ds: dict) -> list[dict]:
+    """Everything the project recorded, newest first: {"at", "kind", "dataset", "html"}. Runs are
+    one event per arm and day, so three repeats read as one."""
+    out = []
+    for ds, v in by_ds.items():
+        for a in v["arms"]:
+            days: dict = {}
+            for r in a["run_list"]:
+                if r.get("created_at"):
+                    days.setdefault(r["created_at"][:10], []).append(r)
+            for rs in days.values():
+                how = rs[0].get("derived") or "run"
+                verb = {"run": "ran", "rescore": "rescored", "judge": "judged", "reparse": "re-parsed"}.get(
+                    how, how
+                )
+                out.append(
+                    {
+                        "at": max(r["created_at"] for r in rs),
+                        "kind": how,
+                        "dataset": ds,
+                        "html": f"{verb} {arm_link(a['arm'], a['label'])}"
+                        + (f" ({len(rs)} runs)" if len(rs) > 1 and "×" not in a["label"] else "")
+                        + f" on {dataset_link(ds)}",
+                    }
+                )
+        for r in v["refs"]:
+            if r.get("created_at"):
+                out.append(
+                    {
+                        "at": r["created_at"],
+                        "kind": "reference",
+                        "dataset": ds,
+                        "html": f"{e(r['tier'])} reference {reference_link(r['id'])}"
+                        + (f" written by {_author_link(r, v, '')}" if r.get("author") else ""),
+                    }
+                )
+        label = {x["arm"]: x["label"] for x in v["arms"]}
+        for bl in v.get("baselines") or []:
+            if bl.get("promoted_at"):
+                who = (
+                    arm_link(bl["arm"], label.get(bl["arm"], bl["run"]))
+                    if bl.get("arm")
+                    else f"<code>{e(bl['run'])}</code>"
+                )
+                out.append(
+                    {
+                        "at": bl["promoted_at"],
+                        "kind": "baseline",
+                        "dataset": ds,
+                        "html": f"promoted {who} as the baseline on {dataset_link(ds)}",
+                    }
+                )
+    goals = {g["goal_id"]: g for g in A.goals()}
+    fn = getattr(A, "rounds", None)
+    for r in fn() if callable(fn) else []:
+        g = goals.get(r.get("goal", ""))
+        where = goal_link(g) if g else f"<code>{e(r.get('goal', ''))}</code>"
+        for stamp, verb in (("opened_at", "opened"), ("closed_at", "closed")):
+            if r.get(stamp):
+                out.append(
+                    {
+                        "at": r[stamp],
+                        "kind": "round",
+                        "dataset": r.get("dataset_id", ""),
+                        "html": f"{verb} round {e(r['round_id'])} of {where}",
+                    }
+                )
+    return sorted(out, key=lambda x: x["at"], reverse=True)
+
+
+def window(A: Adapter, by_ds: dict) -> dict:
+    """What "recent" and "all" span: {"events", "spend", "since", "first", "until", "chart_since"}.
+    Recent is RECENT_DAYS back from the newest thing recorded, so a quiet project still shows its
+    last burst of work; a chart starts at the first day anything happened."""
+    from datetime import date, timedelta  # noqa: PLC0415
+
+    ev = events(A, by_ds)
+    fn = getattr(A, "spend", None)
+    sp = fn() if callable(fn) else []
+    stamps = [x["at"][:10] for x in ev if x["at"]] + [(x.get("at") or "")[:10] for x in sp if x.get("at")]
+    until = max(stamps, default="")
+    first = min(stamps, default="")
+    since = (date.fromisoformat(until) - timedelta(days=RECENT_DAYS - 1)).isoformat() if until else ""
+    return {
+        "events": ev,
+        "spend": sp,
+        "since": since,
+        "first": first,
+        "until": until,
+        "chart_since": max(since, first),
+    }
+
+
+def activity_counts(by_ds: dict, since: str) -> dict:
+    """{dataset: {day: measured runs}} from `since` on; repeats count one by one."""
+    counts: dict = {}
+    for ds, v in by_ds.items():
+        for a in v["arms"]:
+            for r in a["run_list"]:
+                day = (r.get("created_at") or "")[:10]
+                if day and day >= since and not r.get("derived"):
+                    counts.setdefault(ds, {}).setdefault(day, 0)
+                    counts[ds][day] += 1
+    return counts
+
+
+#: The spend chart's series: what kind of call was billed, and its name on the page.
+SPEND_KINDS = (("arm", "systems under test"), ("judge", "judges"))
+
+
+#: What spend is counted in: money, or tokens (what a free local model still uses).
+SPEND_UNITS = ("usd", "tokens")
+
+
+def spend_by_day(spend: list[dict], since: str, unit: str = "usd") -> dict:
+    """{series name: {day: amount}} from `since` on, in USD or in tokens; an event with no amount
+    in that unit (a local model's USD, an unreported token count) adds nothing."""
+    out: dict = {}
+    for kind, name in SPEND_KINDS:
+        for x in spend:
+            day = (x.get("at") or "")[:10]
+            amount = x.get(unit)
+            if x["kind"] == kind and day >= since and isinstance(amount, (int, float)):
+                out.setdefault(name, {}).setdefault(day, 0.0)
+                out[name][day] += float(amount)
+    return out
+
+
+def fmt_amount(v: float, unit: str) -> str:
+    """An amount of spend: dollars to four decimals under one, tokens whole with separators."""
+    if unit == "tokens":
+        return f"{round(v):,} tokens"
+    return f"${v:.4f}" if v < 1 else f"${v:.2f}"
+
+
+def glance(A: Adapter, by_ds: dict) -> list[dict]:
+    """Per goal and dataset: the deciding measure, the promoted baseline, the leader of the gold
+    group, and the paired test of the leader against the baseline (one test, threshold 0.05)."""
+    from evaluation_harness import stats  # noqa: PLC0415
+
+    rows = []
+    for g in A.goals():
+        prim = (g.get("success_criteria") or {}).get("primary") or {}
+        measure = prim.get("measure", "")
+        lower = prim.get("direction") == "lower"
+        for ans in goal_answers(g, by_ds):
+            ds = ans["dataset"]
+            v = by_ds.get(ds) or {}
+            bl = [x for x in v.get("baselines", []) if not x.get("goal") or x.get("goal") == g["goal_id"]]
+            base = bl[-1]["arm"] if bl and bl[-1].get("arm") else None
+            grp = next((x for x in ans["groups"] if not x["key"].startswith("judge ")), None)
+            leader = grp["leader"] if grp else None
+            label = {x["arm"]: x["label"] for x in v.get("arms", [])}
+            test = None
+            if leader and base and leader["arm"] != base:
+                cmp = stats.compare(
+                    {
+                        leader["arm"]: (A.scores(leader["arm"]).get(measure) or {}).get("values") or {},
+                        base: (A.scores(base).get(measure) or {}).get("values") or {},
+                    },
+                    base,
+                    higher_is_better=not lower,
+                    family=1,
+                )
+                test = (cmp.get("rows") or [None])[0]
+            rows.append(
+                {
+                    "goal": g,
+                    "dataset": ds,
+                    "measure": measure,
+                    "lower": lower,
+                    "baseline": base,
+                    "baseline_label": label.get(base, base) if base else "",
+                    "baseline_mean": _mean(v, base, measure) if base else None,
+                    "leader": leader["arm"] if leader else None,
+                    "leader_label": leader["label"] if leader else "",
+                    "leader_mean": leader["mean"] if leader else None,
+                    "test": test,
+                }
+            )
+    return rows
+
+
+def _mean(v: dict, arm: str, measure: str):
+    a = next((x for x in v.get("arms", []) if x["arm"] == arm), None)
+    return a["means"][measure][0] if a and measure in a["means"] else None
+
+
+def glance_verdict(r: dict) -> str:
+    """A glance row's verdict in words: the test, or why there is none."""
+    t = r["test"]
+    if t and t.get("p") is not None:
+        return f"{t.get('verdict', '')} · Δ {t['delta']:+.3f} · p {fmt_p(t['p'])}"
+    if r["leader"] and r["baseline"] and r["leader"] == r["baseline"]:
+        return "the baseline leads"
+    if not r["baseline"]:
+        return "no baseline promoted"
+    return "—"
+
+
+def coverage(A: Adapter, by_ds: dict) -> list[dict]:
+    """Per dataset: its arms by what they are scored against, its references, the metrics its arms
+    record, the goals that use it and its last run."""
+    goals = _goals_of(A)
+    rows = []
+    for ds in sorted(by_ds, key=lambda d: (-len(by_ds[d]["arms"]), d)):
+        v = by_ds[ds]
+        tiers = {r["id"]: r["tier"] for r in v["refs"]}
+        kinds = {"gold": 0, "silver": 0, "judged": 0, "none": 0}
+        for a in v["arms"]:
+            k = (
+                "judged"
+                if a["judge"]
+                else (
+                    tiers.get(a["reference"])
+                    or ("none" if not a["reference"] else a["reference"].split("/", 1)[0])
+                )
+            )
+            kinds[k if k in kinds else "none"] += 1
+        rows.append(
+            {
+                "dataset": ds,
+                "parent": (v.get("parent") or {}).get("dataset_id", ""),
+                "items": v["items"],
+                "scored": {k: n for k, n in kinds.items() if n},
+                "references": [r["id"] for r in v["refs"]],
+                "metrics": sorted(
+                    {
+                        m
+                        for a in v["arms"]
+                        for m in a["means"]
+                        if not m.startswith(("self_family_", "resumed", "total_"))
+                    }
+                ),
+                "goals": goals.get(ds, []),
+                "last": max((a["last"] for a in v["arms"]), default=""),
+            }
+        )
+    return rows
+
+
+def _period(recent: str, every: str) -> str:
+    """A panel in two versions; the home page's switch shows one (recent, until a click)."""
+    return f'<div data-period="recent">{recent}</div><div data-period="all" hidden>{every}</div>'
+
+
+def _activity_chart(by_ds: dict, since: str, until: str) -> str:
+    from evaluation_harness import catalog_charts as ch  # noqa: PLC0415
+
+    counts = activity_counts(by_ds, since)
+    if not counts:
+        return '<p class="muted">No measured run in this period.</p>'
+    days = ch.day_range(since, until)
+    series = {ds: [counts[ds].get(d, 0) for d in days] for ds in sorted(counts)}
+    total = sum(sum(x) for x in series.values())
+    return (
+        f'<p class="small muted">{total} measured runs (repeats counted one by one), by day and dataset.</p>'
+        + ch.stacked_bars(days, series, "measured runs per day, by dataset", " runs", width=HALF)
+    )
+
+
+#: The width of a chart that shares its row with another (catalog_charts draws at this scale).
+HALF = 560
+
+
+def _spend_chart(spend: list[dict], since: str, until: str, unit: str = "usd") -> str:
+    from evaluation_harness import catalog_charts as ch  # noqa: PLC0415
+
+    per = spend_by_day(spend, since, unit)
+    if not per:
+        return (
+            f'<p class="muted">No {"cost" if unit == "usd" else "token count"} recorded in this period.</p>'
+        )
+    days = ch.day_range(since, until)
+    series = {n: [d.get(x, 0.0) for x in days] for n, d in per.items()}
+    tot = {n: sum(v) for n, v in series.items()}
+    line = " · ".join(f"{e(n)} <b>{e(fmt_amount(t, unit))}</b>" for n, t in tot.items())
+    label = "cumulative spend in USD" if unit == "usd" else "cumulative tokens (in plus out)"
+    return (
+        f'<p class="small">{line} · total <b>{e(fmt_amount(sum(tot.values()), unit))}</b></p>'
+        + ch.cumulative(
+            days, series, label, fmt=lambda v: fmt_amount(v, unit).replace(" tokens", ""), width=HALF
+        )
+    )
+
+
+def _spend_panel(spend: list[dict], since: str, until: str) -> str:
+    """The spend chart in both units; the panel's own switch picks one (USD first)."""
+    return (
+        '<p class="unit-switch" role="group" aria-label="unit">'
+        '<button type="button" class="btn small" data-unit-show="usd" aria-pressed="true">USD</button>'
+        '<button type="button" class="btn small" data-unit-show="tokens" aria-pressed="false">tokens</button></p>'
+        + "".join(
+            f'<div data-unit="{u}"{"" if u == "usd" else " hidden"}>{_spend_chart(spend, since, until, u)}</div>'
+            for u in SPEND_UNITS
+        )
+    )
+
+
+def _glance(A: Adapter, by_ds: dict) -> str:
+    rows = []
+    for r in glance(A, by_ds):
+        verdict = e(glance_verdict(r))
+        if r["test"] and r["test"].get("p") is not None:
+            verdict += f' <a class="btn small" href="{inspect_url([r["leader"], r["baseline"]], baseline=r["baseline"], metric=r["measure"])}">inspect</a>'
+        rows.append(
+            [
+                goal_link(r["goal"]),
+                dataset_link(r["dataset"]),
+                metric_link(r["measure"]) + (" ↓" if r["lower"] else ""),
+                (arm_link(r["baseline"], r["baseline_label"]) + f" <small>{fmt(r['baseline_mean'])}</small>")
+                if r["baseline"]
+                else '<span class="muted">none promoted</span>',
+                (arm_link(r["leader"], r["leader_label"]) + f" <small>{fmt(r['leader_mean'])}</small>")
+                if r["leader"]
+                else "—",
+                verdict,
+            ]
+        )
+    if not rows:
+        return '<p class="muted">No goals yet: a goal says what an evaluation is for (<code>data/goals/</code>).</p>'
+    return (
+        '<p class="small muted">The leader is the best unflagged arm scored against the gold group\'s '
+        "reference; the test is the leader against the baseline alone (threshold 0.05). The goal "
+        "page tests every arm, Holm across them.</p>"
+        + table("glance", ["goal", "dataset", "decides", "baseline", "leader", "leader vs baseline"], rows)
+    )
+
+
+def _coverage(A: Adapter, by_ds: dict) -> str:
+    rows = [
+        [
+            dataset_link(c["dataset"])
+            + (f"<br><small>from {dataset_link(c['parent'])}</small>" if c["parent"] else ""),
+            f'<span data-v="{c["items"]}">{c["items"]}</span>',
+            " · ".join(f"{k} <b>{n}</b>" for k, n in c["scored"].items()) or "—",
+            ", ".join(reference_link(r) for r in c["references"]) or "—",
+            f'<details class="inline"><summary>{len(c["metrics"])}</summary>{", ".join(metric_link(m) for m in c["metrics"])}</details>'
+            if c["metrics"]
+            else "—",
+            "<br>".join(goal_link(g) for g in c["goals"]) or "—",
+            e(c["last"][:10]) or "—",
+        ]
+        for c in coverage(A, by_ds)
+    ]
+    return table(
+        "coverage",
+        [
+            "dataset",
+            f"{e(A.item_word)}s",
+            "arms scored against",
+            "references",
+            "metrics",
+            "goals",
+            "last run",
+        ],
+        rows,
+    )
+
+
+def _feed(ev: list[dict], since: str) -> str:
+    ev = [x for x in ev if x["at"][:10] >= since]
+    if not ev:
+        return '<p class="muted">Nothing recorded in this period.</p>'
+    return table(
+        f"feed{'r' if since else 'a'}",
+        ["when", "what", "kind"],
+        [
+            [
+                f'<span data-v="{e(x["at"])}">{e(x["at"][:16].replace("T", " "))}</span>',
+                x["html"],
+                e(x["kind"]),
+            ]
+            for x in ev
+        ],
+    )
+
+
+def home_counts(A: Adapter, by_ds: dict, spend: list[dict]) -> list[tuple]:
+    """The home page's tiles: (what, how many, page)."""
+    billed = sum(float(x["usd"]) for x in spend if isinstance(x.get("usd"), (int, float)))
+    tokens = int(sum(x["tokens"] for x in spend if isinstance(x.get("tokens"), (int, float))))
+    return [
+        ("goals", len(A.goals()), "goals.html"),
+        ("datasets", len(by_ds), "datasets.html"),
+        ("configs", _n_configs(by_ds), "datasets.html"),
+        ("arms", sum(len(v["arms"]) for v in by_ds.values()), "datasets.html"),
+        ("references", sum(len(v["refs"]) for v in by_ds.values()), "references.html"),
+        ("metrics", len(metric_index(A, by_ds)), "metrics.html"),
+        (
+            "measured runs",
+            sum(1 for v in by_ds.values() for a in v["arms"] for r in a["run_list"] if not r.get("derived")),
+            "#activity",
+        ),
+        ("billed", fmt_amount(billed, "usd"), "#spend"),
+        ("tokens", f"{tokens:,}", "#spend"),
+    ]
+
+
+def render_home(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
+    """The home page: the whole catalog at a glance. Counts, then what each goal concludes, when
+    work happened and what it cost, what each dataset covers, and everything recorded, each for
+    the last RECENT_DAYS days of activity or for all time (`evh overview` prints the same)."""
+    w = window(A, by_ds)
+    since, first, until = w["since"], w["first"], w["until"]
+    tile_html = (
+        '<div class="tiles">'
+        + "".join(
+            f'<a class="tile" href="{href}"><b>{e(n)}</b><span>{e(k)}</span></a>'
+            for k, n, href in home_counts(A, by_ds, w["spend"])
+        )
+        + "</div>"
+    )
+    switch = (
+        '<p class="period-switch" role="group" aria-label="period">'
+        f'<button type="button" class="btn small" data-show="recent" aria-pressed="true">last {RECENT_DAYS} days</button>'
+        '<button type="button" class="btn small" data-show="all" aria-pressed="false">all time</button>'
+        + (
+            f'<span class="muted small">recent: {e(since)} to {e(until)} · all: since {e(first)}</span>'
+            if since
+            else ""
+        )
+        + "</p>"
+    )
+    body = hero(
+        "catalog",
+        "Every evaluation, at a glance",
+        "What each goal concludes so far, when the work happened and what it cost, what each dataset "
+        "covers, and everything recorded. Every name is a link: goals, datasets, arms, references and "
+        "metrics each have a page.",
+        tile_html + switch,
+    )
+    body += block("01", "goals at a glance", _glance(A, by_ds), "glance")
+    activity = (
+        _period(_activity_chart(by_ds, w["chart_since"], until), _activity_chart(by_ds, first, until))
+        if since
+        else '<p class="muted">No runs yet.</p>'
+    )
+    spending = (
+        _period(_spend_panel(w["spend"], w["chart_since"], until), _spend_panel(w["spend"], first, until))
+        if since and w["spend"]
+        else '<p class="muted">Nothing spent is recorded.</p>'
+    )
+    body += block(
+        "02",
+        "activity and spend",
+        f'<div class="duo"><div id="activity"><h3 class="sub">activity</h3>{activity}</div>'
+        f'<div id="spend"><h3 class="sub">spend</h3>{spending}</div></div>',
+    )
+    body += block("03", "coverage", _coverage(A, by_ds), "coverage")
+    body += block(
+        "04",
+        "recorded",
+        _period(_feed(w["events"], since), _feed(w["events"], ""))
+        if w["events"]
+        else '<p class="muted">Nothing recorded yet.</p>',
+        "recorded",
+    )
+    write(out, "index.html", page("Home", body, 0, "home", nav=nav, item=A.item_word))
 
 
 def scored_by_rank(a: dict, tiers: dict) -> int:
@@ -483,7 +1071,7 @@ def render_dataset(A: Adapter, ds: str, v: dict, out: Path, nav: list) -> None:
         {
             "cls": row_kind(a, tiers),
             "cells": [
-                e(a["label"])
+                arm_link(a["arm"], a["label"], "../")
                 + (' <span class="tag-base">baseline</span>' if a.get("baseline") else "")
                 + (
                     f"<br><small>on {e(a['machine'])}</small>"
@@ -533,13 +1121,17 @@ def render_dataset(A: Adapter, ds: str, v: dict, out: Path, nav: list) -> None:
     btn = f'<p class="btns">{"".join(btns)}</p>' if btns else ""
     for b in v.get("baselines", [])[-1:]:
         label = next((a["label"] for a in arms if a["arm"] == b.get("arm")), b["run"])
+        who = arm_link(b["arm"], label, "../") if b.get("arm") else e(label)
         btn = (
             f'<div class="answer"><p class="small muted">baseline, promoted {e((b["promoted_at"] or "")[:10])}</p>'
-            f'<p class="lead"><b>{e(label)}</b></p><p>{e(b["reason"])}</p></div>'
+            f'<p class="lead"><b>{who}</b></p><p>{e(b["reason"])}</p></div>'
         ) + btn
+    goals = _goals_of(A).get(ds, [])
+    if goals:
+        btn += '<p class="small">goals: ' + ", ".join(goal_link(g, "../") for g in goals) + "</p>"
     refs = "".join(
-        f'<li><a class="cell-link" href="../{reference_page(r["id"])}"><code>{e(r["id"])}</code></a> · {e(r["tier"])}'
-        + (f" · written by <code>{e(r['author'])}</code>" if r.get("author") else "")
+        f"<li>{reference_link(r['id'], '../')} · {e(r['tier'])}"
+        + (f" · written by {_author_link(r, v, '../')}" if r.get("author") else "")
         + "</li>"
         for r in v["refs"]
     )
@@ -718,10 +1310,11 @@ def render_goals(A: Adapter, by_ds: dict, out: Path, nav: list) -> int:
         filed = sum(1 for v in by_ds.values() for a in v["arms"] if a["goal"] == g["goal_id"])
         rows.append(
             [
-                f'<a href="g/{slug(g["goal_id"])}.html">{e(g.get("title") or g["goal_id"])}</a>',
+                goal_link(g),
                 e(g.get("statement", "")),
-                e(f"{prim.get('measure', '')} ({prim.get('direction', '')})"),
-                e(", ".join(d.get("dataset_id", "") for d in g.get("datasets") or [])),
+                metric_link(prim.get("measure", ""))
+                + (f" ({e(prim['direction'])})" if prim.get("direction") else ""),
+                "<br>".join(dataset_link(d.get("dataset_id", "")) for d in g.get("datasets") or []) or "—",
                 f'<span data-v="{filed}">{filed}</span>',
             ]
         )
@@ -756,14 +1349,15 @@ def _answer(A: Adapter, g: dict, by_ds: dict, measure: str) -> str:
         v = by_ds.get(ds) or {}
         bl = [b for b in v.get("baselines", []) if not b.get("goal") or b.get("goal") == g["goal_id"]]
         label = {a["arm"]: a["label"] for a in v.get("arms", [])}
-        head = f'<a class="cell-link" href="../d/{slug(ds or "none")}.html">{e(ds)}</a>'
+        head = dataset_link(ds, "../")
         if bl:
             b = bl[-1]
             arm = label.get(b.get("arm") or "", b["run"])
+            who = arm_link(b["arm"], arm, "../") if b.get("arm") else e(arm)
             parts.append(
                 f'<div class="answer"><p class="small muted">{head} · baseline promoted {e(_when(b["promoted_at"]))}'
                 + (f" · scored against {e(b['tier'])}" if b.get("tier") else "")
-                + f'</p><p class="lead"><b>{e(arm)}</b></p><p>{e(b["reason"])}</p>'
+                + f'</p><p class="lead"><b>{who}</b></p><p>{e(b["reason"])}</p>'
                 + (
                     f'<p><a class="btn small" href="{inspect_url([b["arm"]], "../", metric=measure)}">inspect it</a></p>'
                     if b.get("arm")
@@ -831,7 +1425,7 @@ def _rounds_block(A: Adapter, g: dict, measure: str, lower: bool) -> str:
                         if arm and len(r.get("arms") or []) > 1
                         else ""
                     ),
-                    (f"{e(label)} <small>{fmt(mean)}</small>" if arm else "—"),
+                    (f"{arm_link(arm, label, '../')} <small>{fmt(mean)}</small>" if arm else "—"),
                     vs,
                     e(concl) or ("<i>open</i>" if r.get("status") == "open" else "—"),
                 ],
@@ -839,10 +1433,10 @@ def _rounds_block(A: Adapter, g: dict, measure: str, lower: bool) -> str:
         )
         lines = [f"<li>changed: {e(c)}</li>" for c in r.get("changes") or []]
         lines += [
-            f"<li>retired <code>{e(x['config_id'])}</code>: {e(x['reason'])}</li>"
+            f"<li>retired {_config_link(A, r, x['config_id'])}: {e(x['reason'])}</li>"
             for x in r.get("retired") or []
         ]
-        lines += [f"<li>carried in unchanged: <code>{e(c)}</code></li>" for c in r.get("carried") or []]
+        lines += [f"<li>carried in unchanged: {_config_link(A, r, c)}</li>" for c in r.get("carried") or []]
         sugg = ""
         if r.get("status") == "open" and getattr(A, "data_dir", None) == _common.DATA:
             try:
@@ -950,17 +1544,17 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
         tiers = {r["id"]: r["tier"] for r in v.get("refs", [])}
         lin = (v.get("parent") or {}).get("dataset_id")
         about = (
-            f'<p><a class="cell-link" href="../d/{slug(ds or "none")}.html">{e(ds)}</a>: '
+            f"<p>{dataset_link(ds, '../')}: "
             f"{v.get('items', 0)} {e(A.item_word)}s"
             + (f" · {e(ans['role'])}" if ans["role"] else "")
-            + (f' · made from <a class="cell-link" href="../d/{slug(lin)}.html">{e(lin)}</a>' if lin else "")
+            + (f" · made from {dataset_link(lin, '../')}" if lin else "")
             + "</p>"
             + (f'<p class="small muted">{e(ans["notes"])}</p>' if ans["notes"] else "")
             + (
                 '<p class="small">references: '
                 + ", ".join(
-                    f'<a class="cell-link" href="../{reference_page(r["id"])}">{e(r["id"])}</a>'
-                    + (f" (written by {e(r['author'])})" if r.get("author") else "")
+                    reference_link(r["id"], "../")
+                    + (f" (written by {_author_link(r, v, '../')})" if r.get("author") else "")
                     for r in v.get("refs", [])
                 )
                 + "</p>"
@@ -976,7 +1570,8 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
                 "in groups by what each arm is scored against: numbers from different references, or "
                 "from a judge, are different measurements and are never ranked together. A mean is not a "
                 "verdict: the inspector tests each arm against its group's leader (Holm across them). "
-                "Flagged arms are never the leader.</p>"
+                "Flagged arms are never the leader. <b>filed</b>: the arm's config names this goal "
+                "(<code>goal:</code>); an arm without it is listed because it records the measure.</p>"
             )
             for gi, grp in enumerate(ans["groups"]):
                 leader, rows = grp["leader"], grp["rows"]
@@ -991,7 +1586,7 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
                         else ("leader" if leader and r is leader else "")
                     )
                     tag = (
-                        ' <small title="its config names this goal">filed under this goal</small>'
+                        ' <small class="filed" title="its config names this goal (goal: in the config)">filed</small>'
                         if r["filed"]
                         else ""
                     ) + (' <span class="tag-base">baseline</span>' if r.get("baseline") else "")
@@ -1003,7 +1598,7 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
                             # A retired arm stays listed (its numbers are history) but reads as out of play.
                             "cls": (row_kind(r, tiers) + (" t-retired" if cid in retired_in else "")).strip(),
                             "cells": [
-                                e(r["label"]) + tag,
+                                arm_link(r["arm"], r["label"], "../") + tag,
                                 f'<span data-v="{r["mean"]}">{fmt(r["mean"])}</span>',
                                 f'<span data-v="{r["n"]}">{r["n"]}</span>',
                                 e("; ".join(r["flags"]) or "—"),
@@ -1065,7 +1660,7 @@ def render_metrics(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
             {
                 "id": f"m-{slug(m)}",
                 "cells": [
-                    f'<code class="nowrap">{e(m)}</code>',
+                    f'<a class="cell-link nowrap" href="{metric_page(m)}"><code>{e(m)}</code></a>',
                     e(text)
                     if text
                     else '<span class="muted">not described: add it to the adapter\'s '
@@ -1124,7 +1719,7 @@ def render_references(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
                 ("tier", r["tier"]),
                 ("dataset", f'<a class="cell-link" href="../d/{slug(ds or "none")}.html">{e(ds)}</a>'),
                 (f"{A.item_word}s", e(r.get("items", "")) if r.get("items") is not None else ""),
-                ("written by", f"<code>{e(r['author'])}</code>" if r.get("author") else ""),
+                ("written by", _author_link(r, v, "../") if r.get("author") else ""),
                 ("from the run", f"<code>{e(r['from_run'])}</code>" if r.get("from_run") else ""),
                 ("model", e(r.get("model") or "")),
                 ("created", e(r.get("created_at") or "")),
@@ -1134,7 +1729,7 @@ def render_references(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
                 {
                     "cls": row_kind(a, tiers),
                     "cells": [
-                        e(a["label"]),
+                        arm_link(a["arm"], a["label"], "../"),
                         metric_link(a["metric"], "../"),
                         f'<span data-v="{a["mean"] if a["mean"] is not None else ""}">{fmt(a["mean"])}</span>',
                         f'<span data-v="{a["n"]}">{a["n"]}</span>',
@@ -1159,10 +1754,314 @@ def render_references(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
             )
 
 
-def render_inspect(A: Adapter, out: Path, page_fn=page, serve: str = "evh catalog-serve", **page_kw) -> None:
-    """The inspector shell; assets/inspect.js fills it from the local server's /api/."""
+def _author_link(r: dict, v: dict, up: str) -> str:
+    """The config that wrote a reference, linked to its arm on the reference's dataset when the
+    catalog has one (its measured run, not a rescored copy)."""
+    author = r.get("author") or ""
+    arms = [a for a in v.get("arms", []) if a["arm"].rsplit("/", 1)[-1] == author]
+    arms.sort(key=lambda a: (bool(a["judge"]), a["arm"].split("/", 1)[0] != "runs"))
+    return arm_link(arms[0]["arm"], author, up) if arms else f"<code>{e(author)}</code>"
+
+
+def _config_link(A: Adapter, r: dict, config_id: str) -> str:
+    """A config named in a round, linked to its arm on the round's dataset when it has one."""
+    fn = getattr(A, "arm_of", None)
+    arm = (
+        fn(r.get("dataset_id", ""), config_id)
+        if callable(fn)
+        else f"runs/{r.get('dataset_id', '')}/{config_id}"
+    )
+    return arm_link(arm, config_id, "../") if arm in set(A.arms()) else f"<code>{e(config_id)}</code>"
+
+
+def _siblings(by_ds: dict, a: dict, ds: str) -> list:
+    """The same config on the same dataset, scored other ways (gold, silver, a judge)."""
+    cid = a["arm"].rsplit("/", 1)[-1]
+    return [x for x in by_ds[ds]["arms"] if x["arm"] != a["arm"] and x["arm"].rsplit("/", 1)[-1] == cid]
+
+
+def render_arm(A: Adapter, a: dict, ds: str, by_ds: dict, out: Path, nav: list) -> None:
+    """One arm: what it is scored against and for which goal, every metric it records, its runs,
+    its config, the conditions it ran under, and the same config scored other ways."""
+    v = by_ds[ds]
+    tiers = {r["id"]: r["tier"] for r in v["refs"]}
+    goals = {g["goal_id"]: g for g in A.goals()}
+    facts = [
+        ("dataset", dataset_link(ds, "../")),
+        ("scored against", scored_against(a, "../")),
+        ("goal", goal_link(goals[a["goal"]], "../") if a.get("goal") in goals else e(a.get("goal") or "")),
+        ("runs", str(a["runs"])),
+        (
+            "headline",
+            metric_link(a["metric"], "../") + (f" {fmt(a['mean'])}" if a["mean"] is not None else ""),
+        ),
+        ("last run", e(a["last"][:16].replace("T", " "))),
+    ]
+    if a.get("wrote"):
+        facts.append(
+            ("note", "wrote the reference it is scored against: its row measures agreement with itself")
+        )
+    dl = "".join(f"<dt>{e(k)}</dt><dd>{x}</dd>" for k, x in facts if x)
+    base = (v.get("baselines") or [None])[-1]
+    btns = [f'<a class="btn" href="{inspect_url([a["arm"]], "../")}">Inspect it</a>']
+    group = [
+        x["arm"]
+        for x in v["arms"]
+        if x["metric"] == a["metric"]
+        and bool(x["judge"]) == bool(a["judge"])
+        and (x["judge"] or x["reference"]) == (a["judge"] or a["reference"])
+    ]
+    if base and base.get("arm") and base["arm"] != a["arm"] and base["arm"] in group:
+        btns.append(
+            f'<a class="btn" href="{inspect_url([a["arm"], base["arm"]], "../", baseline=base["arm"], metric=a["metric"])}">Against the baseline</a>'
+        )
+    if len(group) > 1:
+        btns.append(
+            f'<a class="btn" href="{inspect_url(group[:INSPECT_MAX], "../", metric=a["metric"])}">With the {len(group)} arms scored the same way</a>'
+        )
+    body = hero(
+        "arm",
+        e(a["label"]) + (' <span class="tag-base">baseline</span>' if a.get("baseline") else ""),
+        f"One config on {dataset_link(ds, '../')}, scored one way; its repeats averaged per {e(A.item_word)}.",
+        f'<dl class="kv">{dl}</dl><p class="btns">{"".join(btns)}</p>',
+    )
+    n = 1
+    rows = [
+        [
+            metric_link(m, "../"),
+            f'<span data-v="{mean}">{fmt(mean)}</span>',
+            f'<span data-v="{k}">{k}</span>',
+            "lower" if A.lower_is_better(m, ds) else ("neutral" if A.is_neutral(m) else "higher"),
+        ]
+        for m, (mean, k) in sorted(a["means"].items(), key=lambda kv: (kv[0] != a["metric"], kv[0]))
+    ]
+    body += block(
+        f"{n:02d}", "metrics", table("armmetrics", ["metric", "mean", f"{e(A.item_word)}s", "better"], rows)
+    )
+    n += 1
+    if a["run_list"]:
+        rrows = [
+            [
+                f"<code>{e(r['run_id'])}</code>",
+                f'<span data-v="{e(r.get("created_at") or "")}">{e((r.get("created_at") or "")[:16].replace("T", " "))}</span>',
+                f'<span data-v="{r.get("items") or ""}">{r.get("items") if r.get("items") is not None else "—"}</span>',
+                f'<span data-v="{r.get("cost_usd") if r.get("cost_usd") is not None else ""}">'
+                + (f"${r['cost_usd']:.6f}" if isinstance(r.get("cost_usd"), (int, float)) else "—")
+                + "</span>",
+                e(r.get("derived") or "measured"),
+            ]
+            for r in a["run_list"]
+        ]
+        body += block(
+            f"{n:02d}", "runs", table("armruns", ["run", "made", f"{e(A.item_word)}s", "cost", "how"], rrows)
+        )
+        n += 1
+    cfg_fn = getattr(A, "arm_config", None)
+    cfg = cfg_fn(a["arm"]) if callable(cfg_fn) else {}
+    if cfg.get("params"):
+        kv = "".join(
+            f"<dt>{e(k)}</dt><dd><code>{e(json.dumps(x) if not isinstance(x, str) else x)}</code></dd>"
+            for k, x in sorted(cfg["params"].items())
+        )
+        extra = (
+            f'<p class="small muted">config <code>{e(cfg.get("config_id", ""))}</code>'
+            + (f" · adapter <code>{e(cfg['adapter'])}</code>" if cfg.get("adapter") else "")
+            + " · credentials are never shown</p>"
+        )
+        body += block(f"{n:02d}", "config", extra + f'<dl class="kv">{kv}</dl>')
+        n += 1
+    cond_fn = getattr(A, "conditions", None)
+    cond = cond_fn(a["arm"]) if callable(cond_fn) else {}
+    if cond:
+        kv = "".join(f"<dt>{e(k)}</dt><dd><code>{e(x)}</code></dd>" for k, x in sorted(cond.items()))
+        body += block(f"{n:02d}", "conditions", f'<dl class="kv">{kv}</dl>')
+        n += 1
+    sib = _siblings(by_ds, a, ds)
+    if sib:
+        srows = [
+            {
+                "cls": row_kind(x, tiers),
+                "cells": [
+                    arm_link(x["arm"], x["label"], "../"),
+                    scored_against(x, "../"),
+                    metric_link(x["metric"], "../"),
+                    fmt(x["mean"]),
+                ],
+            }
+            for x in sib
+        ]
+        body += block(
+            f"{n:02d}",
+            "the same config, scored other ways",
+            ROW_KEY + table("siblings", ["arm", "scored against", "headline", "mean"], srows),
+        )
+        n += 1
+    rfn = getattr(A, "rounds", None)
+    cid = a["arm"].rsplit("/", 1)[-1]
+    rnds = [
+        r
+        for r in (rfn() if callable(rfn) else [])
+        if a["arm"] in (r.get("arms") or []) or cid in {x.get("config_id") for x in r.get("retired") or []}
+    ]
+    if rnds:
+        lis = "".join(
+            f"<li>{e(r['round_id'])} of {goal_link(goals[r['goal']], '../') if r.get('goal') in goals else e(r.get('goal', ''))}"
+            + (
+                " · <b>retired</b>"
+                if cid in {x.get("config_id") for x in r.get("retired") or []}
+                else " · in play"
+            )
+            + f" · {e(r.get('status', ''))}</li>"
+            for r in rnds
+        )
+        body += block(f"{n:02d}", "rounds", f"<ul>{lis}</ul>")
+        n += 1
+    notes = A.notes(a["arm"]) if callable(getattr(A, "notes", None)) else []
+    if notes:
+        body += block(f"{n:02d}", "notes", "<ul>" + "".join(f"<li>{e(x)}</li>" for x in notes) + "</ul>")
+    write(out, arm_page(a["arm"]), page(a["label"], body, 1, "datasets", nav=nav, item=A.item_word))
+
+
+def _kind_of(A: Adapter, m: str) -> str:
+    """cost, speed, descriptive or quality, as the harness classifies it. Cost and speed first:
+    the tests treat them as neutral (no quality verdict), yet lower is better."""
+    fn = getattr(A, "reference_free", None)
+    free = fn(m) if callable(fn) else any(k in m for k in ("cost", "latency", "tokens"))
+    if free:
+        return "cost or speed: measured off the bill or the clock, needs no reference"
+    if A.is_neutral(m):
+        return "descriptive: says what the output was, never whether it was good"
+    return "quality: measured against a reference or by a judge"
+
+
+def render_metric(A: Adapter, m: str, where: dict, by_ds: dict, project: dict, out: Path, nav: list) -> None:
+    """One metric: what it measures and how, which way is better, the goals that decide on it,
+    and on every dataset the arms that record it, best first, with their spread."""
+    from evaluation_harness import catalog_charts as ch  # noqa: PLC0415
+
+    lower = any(A.lower_is_better(m, ds) for ds in where["datasets"]) if where["datasets"] else False
+    better = "lower" if lower else ("neutral: a description" if A.is_neutral(m) else "higher")
+    summary = describe_metric(m, project)
+    details = metric_details(m, project)
+    facts = [
+        ("better", e(better)),
+        ("kind", e(_kind_of(A, m))),
+        ("decides", ", ".join(goal_link(g, "../") for g in where["goals"]) or "no goal"),
+        ("recorded on", ", ".join(dataset_link(ds, "../") for ds in sorted(where["datasets"])) or "—"),
+    ]
+    dl = "".join(f"<dt>{e(k)}</dt><dd>{x}</dd>" for k, x in facts)
+    about = (
+        f'<p class="lead">{e(summary)}</p>'
+        if summary
+        else '<p class="muted">Not described: add it to the adapter\'s <code>METRIC_DESCRIPTIONS</code>.</p>'
+    )
+    if details:
+        about += f"<p>{e(details)}</p>"
+    elif summary and m not in BUILTIN_DETAILS:
+        about += (
+            '<p class="small muted">A project explains its own metric at length with '
+            '<code>METRIC_DESCRIPTIONS = {"' + e(m) + '": {"summary": "…", "details": "…"}}</code>.</p>'
+        )
+    body = hero("metric", f"<code>{e(m)}</code>", "", f'<dl class="kv">{dl}</dl>')
+    body += block("01", "what it measures, and how", about)
+    n = 2
+    for ds in sorted(where["datasets"]):
+        v = by_ds[ds]
+        tiers = {r["id"]: r["tier"] for r in v["refs"]}
+        arms = [a for a in v["arms"] if m in a["means"]]
+        arms.sort(
+            key=lambda a: (
+                scored_by_rank(a, tiers),
+                a.get("reference") or "",
+                a["means"][m][0] * (1 if lower else -1),
+            )
+        )
+        rows = [
+            {
+                "cls": row_kind(a, tiers),
+                "cells": [
+                    arm_link(a["arm"], a["label"], "../"),
+                    f'<span data-v="{a["means"][m][0]}">{fmt(a["means"][m][0])}</span>',
+                    f'<span data-v="{a["means"][m][1]}">{a["means"][m][1]}</span>',
+                    scored_against(a, "../"),
+                ],
+            }
+            for a in arms
+        ]
+        groups: dict = {}
+        for a in arms:
+            key = f"judge {a['judge']}" if a["judge"] else (a.get("reference") or "no reference")
+            groups.setdefault(key, []).append((a["means"][m][0], a["label"]))
+        chart = (
+            ch.strip(groups, f"{m} per arm on {ds}, by what each is scored against", lower=lower)
+            if len(arms) > 1
+            else ""
+        )
+        body += block(
+            f"{n:02d}",
+            f"on {ds}",
+            chart
+            + ROW_KEY
+            + table(f"on{n}", ["arm", f"mean {e(m)}", f"{e(A.item_word)}s", "scored against"], rows),
+        )
+        n += 1
+    write(out, metric_page(m), page(m, body, 1, "metrics", nav=nav, item=A.item_word))
+
+
+def render_reference_index(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
+    """Every reference: its tier, dataset, author, when it was made and how many arms it scores."""
+    rows = []
+    for ds, v in sorted(by_ds.items()):
+        for r in v["refs"]:
+            n = sum(1 for a in v["arms"] if a["reference"] == r["id"] and not a["judge"])
+            rows.append(
+                {
+                    "cls": "t-silver" if r["tier"] == "silver" else "",
+                    "cells": [
+                        reference_link(r["id"]),
+                        e(r["tier"]),
+                        dataset_link(ds),
+                        f'<span data-v="{r.get("items") or ""}">{r.get("items") if r.get("items") is not None else "—"}</span>',
+                        _author_link(r, v, "") if r.get("author") else "—",
+                        e((r.get("created_at") or "")[:10]) or "—",
+                        f'<span data-v="{n}">{n}</span>',
+                    ],
+                }
+            )
+    body = hero(
+        "references",
+        "References",
+        "What arms are scored against. Gold is written or checked by a person; silver is written by "
+        "a model, consistent rather than correct, and its author is graded against its own outputs.",
+    )
+    body += block(
+        "01",
+        "references",
+        table(
+            "references",
+            ["reference", "tier", "dataset", f"{e(A.item_word)}s", "written by", "created", "arms scored"],
+            rows,
+            "filter references",
+        )
+        if rows
+        else '<p class="muted">No references yet: gold goes in <code>data/references/gold/&lt;dataset&gt;/</code>, '
+        "or make one from a run with <code>evh reference-create --from-run</code>.</p>",
+    )
+    write(out, "references.html", page("References", body, 0, "references", nav=nav, item=A.item_word))
+
+
+def render_inspect(
+    A: Adapter, out: Path, page_fn=page, serve: str = "evh catalog-serve", *, pages: bool = False, **page_kw
+) -> None:
+    """The inspector shell; assets/inspect.js fills it from the local server's /api/. `pages`: the
+    catalog beside it has a page per arm and per metric (the harness's own build), so the
+    inspector links to them; a project's own builder without them leaves it False."""
     arms = {a: A.describe(a)["dataset"] for a in sorted(A.arms())}
-    write(out, "runs.js", "window.RUNS=" + json.dumps(arms) + ";\n")
+    write(
+        out,
+        "runs.js",
+        "window.RUNS=" + json.dumps(arms) + ";\n" + ("window.CATALOG_PAGES=true;\n" if pages else ""),
+    )
     item = A.item_word
     body = (
         '<section class="hero slim"><div class="wrap"><p class="kicker">inspector</p>'
@@ -1219,7 +2118,7 @@ def search_index(A: Adapter, by_ds: dict) -> list[dict]:
                     "k": "arm",
                     "t": a["label"],
                     "d": f"{ds} · {a['metric']}",
-                    "u": inspect_url([a["arm"]]),
+                    "u": arm_page(a["arm"]),
                     "id": a["arm"],
                     "s": f"{a['label']} {ds} {a['metric']}".lower(),
                 }
@@ -1235,7 +2134,7 @@ def search_index(A: Adapter, by_ds: dict) -> list[dict]:
                 }
             )
     for m in metric_index(A, by_ds):
-        idx.append({"k": "metric", "t": m, "d": "metric", "u": f"metrics.html#m-{slug(m)}", "s": m.lower()})
+        idx.append({"k": "metric", "t": m, "d": "metric", "u": metric_page(m), "s": m.lower()})
     for g in A.goals():
         idx.append(
             {
@@ -1259,14 +2158,22 @@ def build(A: Adapter, out: Path, links: tuple = ()) -> dict:
     copy_assets(out)
     by_ds = collect(A)
     render_home(A, by_ds, out, nav)
+    render_datasets(A, by_ds, out, nav)
     for ds, v in by_ds.items():
         v["versions"] = _version_links(by_ds, ds, "../")
         render_dataset(A, ds, v, out, nav)
+        for a in v["arms"]:
+            render_arm(A, a, ds, by_ds, out, nav)
     n_goals = render_goals(A, by_ds, out, nav)
     render_metrics(A, by_ds, out, nav)
+    fn = getattr(A, "metric_descriptions", None)
+    project = fn() if callable(fn) else {}
+    for m, where in metric_index(A, by_ds).items():
+        render_metric(A, m, where, by_ds, project, out, nav)
     render_references(A, by_ds, out, nav)
+    render_reference_index(A, by_ds, out, nav)
     write_search(A, by_ds, out)
-    render_inspect(A, out, nav=nav)
+    render_inspect(A, out, nav=nav, pages=True)
     return {
         "goals": n_goals,
         "datasets": len(by_ds),

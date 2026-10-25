@@ -56,3 +56,12 @@ const done=()=>{b.textContent='copied';setTimeout(()=>{b.textContent='copy';},15
 const pick=()=>{const c=b.previousElementSibling;if(!c)return;const r=document.createRange();r.selectNodeContents(c);
 const sel=getSelection();sel.removeAllRanges();sel.addRange(r);b.textContent='selected';};
 try{navigator.clipboard.writeText(b.dataset.copy).then(done,pick);}catch(e){pick();}});
+// The home page's period switch: every [data-period] panel shows the period its button names.
+document.querySelectorAll('.period-switch button[data-show]').forEach(b=>b.addEventListener('click',()=>{
+const want=b.dataset.show;document.querySelectorAll('.period-switch button[data-show]').forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.show===want)));
+document.querySelectorAll('[data-period]').forEach(p=>{p.hidden=p.dataset.period!==want;const t=p.querySelector('table.data');if(t&&t._repage)t._repage();});}));
+// A spend panel's unit switch: USD or tokens, within its own panel.
+document.querySelectorAll('.unit-switch button[data-unit-show]').forEach(b=>b.addEventListener('click',()=>{
+const box=b.closest('[data-period]')||document,want=b.dataset.unitShow;
+box.querySelectorAll('.unit-switch button[data-unit-show]').forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.unitShow===want)));
+box.querySelectorAll('[data-unit]').forEach(p=>{p.hidden=p.dataset.unit!==want;});}));

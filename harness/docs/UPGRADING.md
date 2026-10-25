@@ -120,9 +120,13 @@ so check these before you trust a `validate`:
 - **The catalog and the run inspector** (`evh catalog`, `evh catalog-serve`). On the
   harness's own data layout they need no code; with another layout, write one adapter
   ([tutorial 5](https://docs.evals.humancopilot.eu/tutorials/5-catalog-and-inspector/)). Every
-  view is also a command: `evh datasets`, `evh references`, `evh metrics`, `evh goals`,
-  `evh search`, `evh inspect` (with `--items` for the per-item table and `--analysis` for the
-  charts as numbers).
+  view is also a command: `evh overview`, `evh datasets`, `evh arms`, `evh references`,
+  `evh metrics`, `evh goals`, `evh search`, `evh inspect` (with `--items` for the per-item table
+  and `--analysis` for the charts as numbers). **The home page** is now a dashboard (index.html
+  moved, the datasets table is datasets.html). **Metric links** now go to m/<metric>.html pages
+  (metrics.html#m-<metric> anchors still exist for compatibility). A project's own catalog
+  builder that reuses `render_inspect` gets the arm and metric links only when the built pages
+  exist (`pages=True` parameter).
 - **Goals** (`data/goals/<goal_id>.yaml`, `goal:` on configs, validate V14). Nothing is
   required of an upgrading project until it sets `required_from` in `data/goals/policy.yaml`.
 - **Experiment rounds** (`evh round-open`, `evh round-retire`, `evh round-close`, `evh rounds`;

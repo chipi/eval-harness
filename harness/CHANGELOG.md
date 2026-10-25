@@ -308,6 +308,27 @@ p 0.36, from the pre-fix run), and DBpedia's 56-item dev slice, over today's 28 
     view says what it withholds. **This can change a deployment**: one that relied on the old
     behaviour adds `--publish`. This repository's own publishes outputs (already public in the
     repository), not references.
+  - **The catalog opens on the whole project, and every name is a link.**
+    - **Home is a dashboard:** counts (goals, datasets, configs, arms, references, metrics, runs,
+      USD billed, tokens), each goal's answer at a glance (its baseline, the leader of the gold
+      group and the paired test between them), activity and spend side by side (spend in USD or
+      in tokens, so a free local model's use is tracked too), what each dataset covers, and
+      everything recorded; each for the last 14 days of activity or all time. `evh overview`
+      prints the same.
+    - **New pages:** Datasets (what the home page listed) and References in the menu; a page per
+      arm (its metrics, runs, config without credentials, conditions, the same config scored other
+      ways, its rounds; `evh arms --arm`) and per metric (what it measures and how, which way is
+      better, its kind, the goals it decides, every arm recording it with a strip chart;
+      `evh metrics --metric`).
+    - **Links everywhere:** arms, metrics, datasets, references and goals link to their pages
+      from every page and table, a reference's author to its arm, a round's configs to theirs; in
+      the inspector, arm names and the metric open their pages.
+    - **Metric explanations:** the harness explains its own metrics at length; a project's
+      `METRIC_DESCRIPTIONS` value may be `{"summary": ..., "details": ...}` for its metric pages.
+    - **The catalog adapter** gains optional `arm_runs`, `arm_config` and `spend`.
+    - **From the second newcomer run:** the inspector warns when the baseline wrote the reference
+      the arms are scored against; a judged arm's item shows each judge's score beside the output;
+      the goal page says what "filed" means.
   - **One provider layer for the systems under test and the judges, keys by role.** The bundled
     adapter, judge-score's judges and the judge panel call hosted models through one module,
     `_providers`: `openai` (OpenAI or any compatible endpoint), `anthropic`, `openrouter` and

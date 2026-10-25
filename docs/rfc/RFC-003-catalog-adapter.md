@@ -60,14 +60,17 @@ A `typing.Protocol`; every method must be cheap to call twice.
 Optional members, each read with `getattr` so an adapter without them still works:
 `item_fields(dataset)`, `dataset_items(dataset)`, `metric_descriptions()`, `conditions(arm)`,
 `baselines()`, `arm_of(dataset, config_id)`, `reference_free(metric)`, `rounds()`, `datasets()`,
-`dataset_lineage(dataset)`, `served_dirs`, and on `HarnessAdapter` `item_text(dataset, item)`
-(the item itself, local inspector only). `item_view(arm, item)` returns one of the inspector's
-view kinds: `text`, `none`, or a structured `insights`, `nodes` or `entities`, each optionally
-with `info`. `describe(arm)` may carry `reference`,
-`judge`, `wrote_reference`, `goal`, `format`, `primary` and `runs`, which drive the row tints
-and the goal page. `notes(arm)` says, in words, why something could not be scored, and which of
-the arm's runs were left out; the inspector's comparison prints it among its notes, and so does
-`evh inspect`.
+`dataset_lineage(dataset)`, `served_dirs`, `arm_runs(arm)` → `[{"run_id", "created_at", "items",
+"cost_usd", "derived"}]`, `arm_config(arm)` → `{"config_id", "params" (credentials removed),
+"adapter"}`, `spend()` → `[{"at", "usd", "tokens", "kind": "arm"|"judge", "dataset", "what"}]`
+(usd or tokens None when unknown; measured runs and judging per set and day), and on
+`HarnessAdapter` `item_text(dataset, item)` (the item itself, local inspector only).
+`item_view(arm, item)` returns one of the inspector's view kinds: `text`, `none`, or a
+structured `insights`, `nodes` or `entities`, each optionally with `info`. `describe(arm)` may
+carry `reference`, `judge`, `wrote_reference`, `goal`, `format`, `primary` and `runs`, which
+drive the row tints and the goal page. `notes(arm)` says, in words, why something could not be
+scored, and which of the arm's runs were left out; the inspector's comparison prints it among its
+notes, and so does `evh inspect`.
 
 ### `HarnessAdapter`
 

@@ -91,14 +91,17 @@ answer. Where the page has a `make` target in a checkout, it runs the same scrip
 
 | in the catalog or inspector | command | make target |
 | --- | --- | --- |
-| home: every dataset | `evh datasets` | `make datasets` |
+| home: goals at a glance, activity and spend, coverage, what was recorded | `evh overview [--all]` | `make overview` |
+| the datasets page | `evh datasets` | `make datasets` |
 | a dataset page: arms, baseline, versions, references | `evh datasets --dataset-id <id>` | `make datasets DATASET_ID=<id>` |
 | the goals page | `evh goals` | `make goals` |
 | a goal page: the answer so far, arms per dataset and group (a judge's group on its score), retired marks, one line per round | `evh goals --goal <id>` | `make goals GOAL=<id>` |
 | a goal page: its rounds and suggestions (each suggestion's copy button copies its command) | `evh rounds --goal <id> [--round rN]` | `make rounds GOAL=<id>` |
 | a goal page: a round's **inspect** button | `evh inspect --round rN [--goal <id>]` | |
+| an arm page: metrics, runs, config, conditions, rounds | `evh arms --arm <arm id or config id>` | `make arms ARM=<id>` |
 | reference pages | `evh references [--reference-id <id>]` | `make references` |
 | the metrics page | `evh metrics [--dataset-id <id>]` | `make metrics` |
+| a metric page: summary, details, goals, per-dataset strip chart and arms | `evh metrics --metric <metric>` | `make metrics METRIC=<metric>` |
 | inspector: a comparison | `evh inspect --runs a,b [--baseline a] [--metric m]` | `make inspect RUNS=a,b` |
 | inspector: filter, breakdown | `evh inspect --runs … --where field:value --by field` | |
 | inspector: one item | `evh inspect --runs … --item <item_id>` | |

@@ -1,8 +1,10 @@
 """The catalog and the inspector, in the terminal: every page and comparison as a command.
 
+    evh overview   [--all]                           the home page: counts, goals at a glance, activity, spend, coverage, what was recorded
     evh datasets   [--dataset-id ID]                 every dataset, or one: arms, references, versions
+    evh arms       [--dataset-id ID] [--arm ID]      every arm, or one: its metrics, runs, config, conditions, rounds
     evh references [--reference-id ID]               every reference, or one: who wrote it, what is scored against it
-    evh metrics    [--dataset-id ID]                 what each metric measures, which way is better, where it is recorded
+    evh metrics    [--dataset-id ID] [--metric M]    what each metric measures, or one in full with the arms recording it
     evh goals      [--goal ID]                       every goal, or one: its answer on each of its datasets
     evh inspect    --runs A,B,... [--baseline A]     the inspector's comparison: verdicts, conditions, a breakdown
                    [--metric M] [--where F:V] [--by F] [--item ITEM] [--items] [--analysis [--x M]]
@@ -232,12 +234,17 @@ def metrics(argv) -> int:
         prog="evh metrics", description="What each metric measures, and where it is recorded."
     )
     ap.add_argument("--dataset-id", help="only the metrics recorded on this dataset")
+    ap.add_argument(
+        "--metric", help="one metric in full: how it is computed, and the arms recording it, best first"
+    )
     ap.add_argument("--adapter", help="path/to/file.py:Class (default: the catalog's)")
     args = ap.parse_args(argv)
     A, by_ds = _adapter(args)
     fn = getattr(A, "metric_descriptions", None)
     project = fn() if callable(fn) else {}
     idx = cb.metric_index(A, by_ds)
+    if args.metric:
+        return _metric(A, by_ds, project, idx, args.metric, args.dataset_id)
     for m in sorted(idx, key=lambda k: (k.startswith(("total_", "self_family_", "resumed")), k)):
         where = idx[m]
         if args.dataset_id and args.dataset_id not in where["datasets"]:
@@ -252,6 +259,257 @@ def metrics(argv) -> int:
         )
         if where["goals"]:
             print("    decides: " + ", ".join(g["goal_id"] for g in where["goals"]))
+    return 0
+
+
+def _metric(A, by_ds: dict, project: dict, idx: dict, m: str, only: str | None) -> int:
+    """One metric, as its page shows it."""
+    where = idx.get(m)
+    if where is None:
+        die(f"no metric {m!r} is recorded: one of {', '.join(sorted(idx))}")
+    lower = any(A.lower_is_better(m, ds) for ds in where["datasets"])
+    better = "lower" if lower else ("neutral: a description" if A.is_neutral(m) else "higher")
+    print(m)
+    for text in (
+        cb.describe_metric(m, project) or "not described: add it to the adapter's METRIC_DESCRIPTIONS",
+        cb.metric_details(m, project),
+    ):
+        if text:
+            print(textwrap.fill(text, width=96, initial_indent="  ", subsequent_indent="  ") + "\n")
+    print(f"  better       {better}")
+    print(f"  kind         {cb._kind_of(A, m)}")
+    print("  decides      " + (", ".join(g["goal_id"] for g in where["goals"]) or "no goal"))
+    for ds in sorted(where["datasets"]):
+        if only and ds != only:
+            continue
+        v = by_ds[ds]
+        tiers = {r["id"]: r["tier"] for r in v["refs"]}
+        arms = [a for a in v["arms"] if m in a["means"]]
+        arms.sort(
+            key=lambda a: (
+                cb.scored_by_rank(a, tiers),
+                a.get("reference") or "",
+                a["means"][m][0] * (1 if lower else -1),
+            )
+        )
+        print(f"\non {ds}:")
+        _table(
+            ["arm", f"mean {m}", f"{A.item_word}s", "scored against", "row"],
+            [
+                [a["label"], _fmt(a["means"][m][0]), a["means"][m][1], _scored(a), _kind(a, tiers)]
+                for a in arms
+            ],
+        )
+    return 0
+
+
+def overview(argv) -> int:
+    """evh overview: the catalog's home page in the terminal."""
+    ap = argparse.ArgumentParser(
+        prog="evh overview", description="The whole catalog at a glance, as the home page."
+    )
+    ap.add_argument(
+        "--all", action="store_true", help=f"all time, not the last {cb.RECENT_DAYS} days of activity"
+    )
+    ap.add_argument("--adapter", help="path/to/file.py:Class (default: the catalog's)")
+    args = ap.parse_args(argv)
+    A, by_ds = _adapter(args)
+    w = cb.window(A, by_ds)
+    since = w["first"] if args.all else w["since"]
+    span = (
+        f"all time, since {w['first']}"
+        if args.all
+        else f"the last {cb.RECENT_DAYS} days, {w['since']} to {w['until']}"
+    )
+    print("  ".join(f"{n} {k}" for k, n, _ in cb.home_counts(A, by_ds, w["spend"])))
+    print(
+        "\ngoals at a glance (the leader of the gold group against the baseline, one test, threshold 0.05):"
+    )
+    rows = cb.glance(A, by_ds)
+    if rows:
+        _table(
+            ["goal", "dataset", "decides", "baseline", "leader", "leader vs baseline"],
+            [
+                [
+                    r["goal"]["goal_id"],
+                    r["dataset"],
+                    r["measure"] + (" (lower)" if r["lower"] else ""),
+                    f"{r['baseline_label']} {_fmt(r['baseline_mean'])}" if r["baseline"] else "none promoted",
+                    f"{r['leader_label']} {_fmt(r['leader_mean'])}" if r["leader"] else "—",
+                    cb.glance_verdict(r),
+                ]
+                for r in rows
+            ],
+        )
+    else:
+        print("  no goals yet")
+    if since:
+        print(f"\nactivity, {span}: measured runs per day")
+        counts = cb.activity_counts(by_ds, since)
+        days = sorted({d for c in counts.values() for d in c})
+        if days:
+            _table(
+                ["day", *sorted(counts), "total"],
+                [
+                    [
+                        d,
+                        *(counts[x].get(d, 0) for x in sorted(counts)),
+                        sum(counts[x].get(d, 0) for x in counts),
+                    ]
+                    for d in days
+                ],
+            )
+        else:
+            print("  none")
+        for unit in cb.SPEND_UNITS:
+            per = cb.spend_by_day(w["spend"], since, unit)
+            print(f"\nspend in {'USD' if unit == 'usd' else 'tokens'}, {span}:")
+            if not per:
+                print("  none recorded")
+                continue
+            for name, d in per.items():
+                print(f"  {name:20} {cb.fmt_amount(sum(d.values()), unit)}")
+    else:
+        print("\nactivity and spend: nothing is recorded with a date yet")
+    print("\ncoverage:")
+    _table(
+        ["dataset", f"{A.item_word}s", "arms scored against", "references", "metrics", "goals", "last run"],
+        [
+            [
+                c["dataset"] + (f" (from {c['parent']})" if c["parent"] else ""),
+                c["items"],
+                " · ".join(f"{k} {n}" for k, n in c["scored"].items()) or "—",
+                ", ".join(c["references"]) or "—",
+                len(c["metrics"]),
+                ", ".join(g["goal_id"] for g in c["goals"]) or "—",
+                c["last"][:10] or "—",
+            ]
+            for c in cb.coverage(A, by_ds)
+        ],
+    )
+    if since:
+        ev = [x for x in w["events"] if x["at"][:10] >= since]
+        print(f"\nrecorded, {span}: {len(ev)}")
+        _table(
+            ["when", "what", "kind"],
+            [[x["at"][:16].replace("T", " "), cb.plain(x["html"]), x["kind"]] for x in ev],
+        )
+    return 0
+
+
+def arms(argv) -> int:
+    """evh arms: every arm, or one in full as its page shows it."""
+    ap = argparse.ArgumentParser(prog="evh arms", description="Every arm, or one in full.")
+    ap.add_argument("--dataset-id", help="only the arms on this dataset")
+    ap.add_argument("--arm", help="one arm in full: its arm id, or a config id (its arm under runs/)")
+    ap.add_argument("--adapter", help="path/to/file.py:Class (default: the catalog's)")
+    args = ap.parse_args(argv)
+    A, by_ds = _adapter(args)
+    every = [
+        (ds, a)
+        for ds, v in sorted(by_ds.items())
+        for a in v["arms"]
+        if not args.dataset_id or ds == args.dataset_id
+    ]
+    if not args.arm:
+        _table(
+            ["arm id", "dataset", "headline", "mean", "runs", "scored against", "last run"],
+            [
+                [
+                    a["arm"],
+                    ds,
+                    a["metric"] or "—",
+                    _fmt(a["mean"]),
+                    a["runs"],
+                    _scored(a),
+                    a["last"][:10] or "—",
+                ]
+                for ds, a in every
+            ],
+        )
+        return 0
+    want = _arm_ids(A, [args.arm], "runs")[0]
+    hit = next(((ds, a) for ds, v in by_ds.items() for a in v["arms"] if a["arm"] == want), None)
+    if hit is None:
+        die(f"no arm {args.arm!r}: `evh arms` lists them")
+    ds, a = hit
+    v = by_ds[ds]
+    goals = {g["goal_id"]: g for g in A.goals()}
+    print(a["label"] + ("  [baseline]" if a.get("baseline") else ""))
+    for k, x in (
+        ("dataset", ds),
+        ("scored against", _scored(a)),
+        ("goal", a.get("goal") or "—"),
+        ("runs", a["runs"]),
+        ("headline", f"{a['metric']} {_fmt(a['mean'])}"),
+        ("last run", a["last"][:16].replace("T", " ") or "—"),
+    ):
+        print(f"  {k:15} {x}")
+    if a.get("wrote"):
+        print(
+            "  note            wrote the reference it is scored against: its row measures agreement with itself"
+        )
+    print("\nmetrics:")
+    _table(
+        ["metric", "mean", f"{A.item_word}s", "better"],
+        [
+            [
+                m,
+                _fmt(mean),
+                k,
+                "lower" if A.lower_is_better(m, ds) else ("neutral" if A.is_neutral(m) else "higher"),
+            ]
+            for m, (mean, k) in sorted(a["means"].items(), key=lambda kv: (kv[0] != a["metric"], kv[0]))
+        ],
+    )
+    if a["run_list"]:
+        print("\nruns:")
+        _table(
+            ["run", "made", f"{A.item_word}s", "cost", "how"],
+            [
+                [
+                    r["run_id"],
+                    (r.get("created_at") or "")[:16].replace("T", " "),
+                    r.get("items") if r.get("items") is not None else "—",
+                    f"${r['cost_usd']:.6f}" if isinstance(r.get("cost_usd"), (int, float)) else "—",
+                    r.get("derived") or "measured",
+                ]
+                for r in a["run_list"]
+            ],
+        )
+    cfg_fn = getattr(A, "arm_config", None)
+    cfg = cfg_fn(a["arm"]) if callable(cfg_fn) else {}
+    if cfg.get("params"):
+        print(
+            f"\nconfig {cfg.get('config_id', '')} (adapter {cfg.get('adapter') or '—'}; credentials are never shown):"
+        )
+        for k, x in sorted(cfg["params"].items()):
+            print(f"  {k:20} {x}")
+    cond_fn = getattr(A, "conditions", None)
+    cond = cond_fn(a["arm"]) if callable(cond_fn) else {}
+    if cond:
+        print("\nconditions:")
+        for k, x in sorted(cond.items()):
+            print(f"  {k:28} {x}")
+    sib = cb._siblings(by_ds, a, ds)
+    if sib:
+        tiers = {r["id"]: r["tier"] for r in v["refs"]}
+        print("\nthe same config, scored other ways:")
+        _table(
+            ["arm id", "scored against", "headline", "mean", "row"],
+            [[x["arm"], _scored(x), x["metric"], _fmt(x["mean"]), _kind(x, tiers)] for x in sib],
+        )
+    rfn = getattr(A, "rounds", None)
+    cid = a["arm"].rsplit("/", 1)[-1]
+    for r in rfn() if callable(rfn) else []:
+        retired = cid in {x.get("config_id") for x in r.get("retired") or []}
+        if a["arm"] in (r.get("arms") or []) or retired:
+            g = goals.get(r.get("goal", ""), {})
+            print(
+                f"round {r['round_id']} of {g.get('goal_id', r.get('goal', ''))}: {'retired' if retired else 'in play'}, {r.get('status', '')}"
+            )
+    for note in A.notes(a["arm"]):
+        print(f"note: {note}")
     return 0
 
 
@@ -686,6 +944,8 @@ def search(argv) -> int:
 
 
 VIEWS = {
+    "overview": overview,
+    "arms": arms,
     "datasets": datasets,
     "references": references,
     "metrics": metrics,

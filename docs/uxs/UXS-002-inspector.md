@@ -117,6 +117,13 @@ reference bytes):
   rescore) before reading the test."), different reference bytes, different item bytes, and
   latency compared across machines.
 
+## The baseline that wrote the reference
+
+Among the comparison's warnings, above the verdicts: when the baseline is the arm that wrote the
+reference the arms are scored against, "<baseline> wrote the reference these arms are scored
+against: it is graded against its own outputs, so every other arm reads as worse. Compare the
+others to each other with another baseline." `evh inspect` prints the same.
+
 ## Average only
 
 Arms that recorded only a run-level average: a table "Average only · n: no per-item scores, so
@@ -162,7 +169,10 @@ every catalog table. A row opens on click, Enter or Space.
   between near-identical outputs;
 - columns: the reference (when the metric names one, else the baseline's), then each arm's
   output with its word count, the baseline's marked. Above each output, the run it comes from;
-  for an arm with repeats, "the latest of N repeats; the score is the mean of all N".
+  for an arm with repeats, "the latest of N repeats; the score is the mean of all N". For a
+  judged arm, the same line gives each judge's score for that item.
+- In a catalog built by `evh catalog`, arm names (verdicts, the baseline line, average-only and
+  breakdown rows) and the verdicts' metric link to their pages.
 
 ## Checklist for a change to the inspector
 

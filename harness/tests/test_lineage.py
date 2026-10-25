@@ -88,6 +88,7 @@ try:
     v1 = (out / "d/tickets_v1.html").read_text() if (out / "d/tickets_v1.html").is_file() else ""
     v2 = (out / "d/tickets_v2.html").read_text() if (out / "d/tickets_v2.html").is_file() else ""
     home = (out / "index.html").read_text() if (out / "index.html").is_file() else ""
+    dsets = (out / "datasets.html").read_text() if (out / "datasets.html").is_file() else ""
     check(
         "catalog: v1 links forward to v2, v2 back to v1 with what changed",
         'Made into <a class="cell-link" href="../d/tickets_v2.html">' in v1
@@ -95,8 +96,9 @@ try:
         and "1 added, 1 removed, 1 changed" in v2,
     )
     check(
-        "catalog: the home page says which version a dataset came from",
-        'from <a class="cell-link" href="d/tickets_v1.html">' in home,
+        "catalog: the datasets page and the home page's coverage say which version a dataset came from",
+        'from <a class="cell-link" href="d/tickets_v1.html">' in dsets
+        and 'from <a class="cell-link" href="d/tickets_v1.html">' in home,
     )
 
     (data / "datasets" / "tickets_v1.json").unlink()
