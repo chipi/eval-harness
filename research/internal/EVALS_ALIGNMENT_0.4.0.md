@@ -103,3 +103,14 @@ answer matched its report:
   recommends (gold decides); the author's siblings rank 1st and 3rd, the gold leader `bart_l`
   24th of 28. Found on the way: the unvalidated pointwise judge's group recommended an arm; such
   groups, and `decides: false` datasets, now read "Shown, not recommended" with the reason.
+- Step 2 (catalog against reports), 2026-10-25: every goal's catalog decision matches its report:
+  Few-NERD span_marker, DBpedia bert_base_fy, CNN bart_l, SciFact e5_base, SummEval gemma_l, each
+  the promoted baseline; AG News recommends none (bert_base_ta, bert_base_fy and bert_mini stay
+  tied, speed not compared across machines), its baseline bert_mini. Found on the way: gold/
+  ag_news_200_adj1 listed under a dataset of its own name (the manifest now names the dataset).
+- Step 4 (I), in part: each experiment page says what its goal decides, read from the catalog
+  (harness/tools/goal_decisions.py), and links its goal page; the build stops if the site's
+  leader is not the catalog's gold leader or the report's pick does not name the recommendation.
+  `site/build.py --check` checks every link (built files, anchors, the catalog's goal pages).
+  Not done: the site's description of what 0.4.0 adds (goals and strategies, rounds,
+  baselines, the catalog and inspector); then step 5, the review document.

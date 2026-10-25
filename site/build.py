@@ -1547,6 +1547,40 @@ def remeasured_block(x: dict, f: dict, num: int) -> str:
     )
 
 
+def goal_note(x: dict) -> str:
+    """What the experiment's goal decides, as the catalog computes it (figures.goal_decisions),
+    linked to its goal page. The build stops if the site's leader or the report's pick disagrees
+    with the catalog."""
+    g = x["goal"]
+    require(
+        g["leader"] == x["leader"],
+        f"{x['slug']}: the site's leader {x['leader']} is the catalog's gold leader ({g['leader']})",
+    )
+    rec = g["recommended"]
+    require(
+        rec is None or re.search(rf"\b{re.escape(rec)}\b", PICK[x["slug"]]) is not None,
+        f"{x['slug']}: the report's pick names the catalog's recommendation {rec}",
+    )
+    if rec:
+        says = f"recommends <b>{e(rec)}</b>" + (", the promoted baseline" if rec == g["baseline"] else "")
+    else:
+        # The reasons after the strategy line (what broke the tie, or why nothing could), with
+        # config ids shortened to the arm names this page uses.
+        short = re.compile(rf"\b{re.escape(x['prefix'])}(\w+?){re.escape(x['suffix'])}\b")
+        says = "recommends no single arm yet. " + e(
+            " ".join(short.sub(r"\1", w) for w in g["why"][1:]).rstrip(".")
+        )
+    base = (
+        f" The baseline a person promoted is <b>{e(g['baseline'])}</b>: {e(g['baseline_reason'])}"
+        if g["baseline"] and rec != g["baseline"]
+        else ""
+    )
+    return (
+        f'<p class="note"><b>The goal\'s rule, in the catalog.</b> {e(g["goal_title"])} ({e(g["strategy"])}, on '
+        f'{e(g["measure"])}) {says}.{base} <a href="{CATALOG}{g["goal_page"]}">The goal page, with its reasons →</a></p>'
+    )
+
+
 def experiment_page(x: dict, f: dict) -> str:
     cal = [r for r in f["calibration"] if r["bench"] == x["bench"]]
     cal_txt = "; ".join(
@@ -1591,7 +1625,7 @@ def experiment_page(x: dict, f: dict) -> str:
   <div class="kicker"><b>{e(x["task"])}</b> · {e(x["bench"])}</div>
   <h1 style="max-width:16ch">{e(HEADLINE[x["slug"]])}</h1>
   <p class="dek">{e(CARD[x["slug"]])}</p>
-  <p class="note"><b>The report's pick, as run here.</b> {e(PICK[x["slug"]])}</p>{remeasured_note(x)}
+  <p class="note"><b>The report's pick, as run here.</b> {e(PICK[x["slug"]])}</p>{goal_note(x)}{remeasured_note(x)}
   <div class="facts">{facts_html}</div>
   <div class="btns"><a class="btn primary" href="{BLOB}/research/{x["report"]}">Read the full report</a><a class="btn" href="{BLOB}/docs/PROTOCOL.md">Protocol</a><a class="btn" href="../experiments.html#experiments">All experiments</a></div>
 </div></section>
@@ -1740,6 +1774,40 @@ def check_crawl_files(out: Path) -> list:
     return problems
 
 
+def check_links(out: Path, goal_pages: set) -> list:
+    """What is broken among the built pages' links: a relative href or src naming no built file,
+    a #anchor its page does not have, a catalog link that is neither the catalog's home nor the
+    page of a goal it builds (goal_pages). The docs check their own (mkdocs build --strict)."""
+    problems = []
+    ids: dict = {}
+    for page in sorted(out.rglob("*.html")):
+        text = page.read_text(encoding="utf-8")
+        ids[page] = set(re.findall(r'\sid="([^"]+)"', text))
+    for page, _ in ids.items():
+        text = page.read_text(encoding="utf-8")
+        base = out if page.name == "404.html" else page.parent  # 404 resolves from the root (<base>)
+        for link in re.findall(r'(?:href|src)="([^"]+)"', text):
+            if link.startswith(CATALOG):
+                rest = link[len(CATALOG) :]
+                if rest and rest not in goal_pages:
+                    problems.append(f"{page.relative_to(out)}: {link} is no goal page the catalog builds")
+                continue
+            if re.match(r"^[a-z]+:", link) or link.startswith("//"):
+                continue  # another site (or mailto:)
+            path, _, anchor = link.partition("#")
+            # A root-relative path ("/", the 404 page's base) is the site's root.
+            target = (
+                (out / path.lstrip("/") if path.startswith("/") else base / path).resolve() if path else page
+            )
+            if path and target.is_dir():
+                target = target / "index.html"
+            if not target.is_file():
+                problems.append(f"{page.relative_to(out)}: {link} names no built file")
+            elif anchor and target in ids and anchor not in ids[target]:
+                problems.append(f"{page.relative_to(out)}: {link} has no #{anchor} there")
+    return problems
+
+
 def point_docs(out: Path) -> None:
     """The templates link the docs as `docs/<page>/`, relative, from when the docs were served
     under /docs/ on this host. They now live at DOCS: rewrite every such link there, in one
@@ -1753,7 +1821,8 @@ def point_docs(out: Path) -> None:
 
 
 # ── build ───────────────────────────────────────────────────────────────────
-def build(out: Path) -> None:
+def build(out: Path) -> dict:
+    """Write the site into `out`; return the figures it was built from."""
     f = figures.compute()
     if out.exists():
         shutil.rmtree(out)
@@ -1778,6 +1847,7 @@ def build(out: Path) -> None:
     point_docs(out)
     # Last: no inline script or style survives, so the prod CSP needs no 'unsafe-inline'.
     csp.externalize(out)
+    return f
 
 
 def main() -> int:
@@ -1790,7 +1860,7 @@ def main() -> int:
         return 0
     with tempfile.TemporaryDirectory() as tmp:
         fresh = Path(tmp) / "public"
-        build(fresh)
+        f = build(fresh)
         diff = filecmp.dircmp(fresh, OUT)
         stale = []
 
@@ -1808,6 +1878,11 @@ def main() -> int:
         print("FAIL  robots.txt / sitemap.xml:", *crawl, sep="\n  ")
         return 1
     print("ok    robots.txt and sitemap.xml present; every sitemap URL is a built page")
+    broken = check_links(OUT, {x["goal"]["goal_page"] for x in f["experiments"]})
+    if broken:
+        print("FAIL  links:", *broken, sep="\n  ")
+        return 1
+    print("ok    every link resolves: built files, their anchors, the catalog's goal pages")
     print("ok    site/public matches a fresh build")
     return 0
 

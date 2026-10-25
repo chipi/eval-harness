@@ -780,6 +780,7 @@ def glance(A: Adapter, by_ds: dict) -> list[dict]:
                     "lower": lower,
                     "baseline": base,
                     "baseline_label": label.get(base, base) if base else "",
+                    "baseline_reason": bl[-1].get("reason", "") if bl else "",
                     "baseline_mean": _mean(v, base, measure) if base else None,
                     "leader": leader["arm"] if leader else None,
                     "leader_label": leader["label"] if leader else "",
@@ -792,6 +793,8 @@ def glance(A: Adapter, by_ds: dict) -> list[dict]:
                     "strategy": strategy_of(dec["goal"]) if dec else strategy_of(g),
                     # The recommendation against the baseline on cost, speed and the goal's own axes.
                     "vs_baseline": axis_ratios(dec, rec, base) if dec and rec and base else [],
+                    # The decision's reasons, as the goal page lists them.
+                    "why": list(dec["why"]) if dec else [],
                 }
             )
     return rows

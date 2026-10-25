@@ -405,9 +405,43 @@ def instrument_check(exps: list) -> dict:
     }
 
 
+def goal_decisions(exps: list) -> None:
+    """Each experiment's goal decision, as the catalog computes it (tools/goal_decisions.py): the
+    gold leader, the promoted baseline and its reason, the recommendation and its reasons, with
+    arm ids shortened to the site's arm names. Added to each experiment as `goal`."""
+    rows = json.loads(
+        subprocess.run(
+            [sys.executable, str(HARNESS / "tools" / "goal_decisions.py")],
+            capture_output=True,
+            text=True,
+            cwd=HARNESS,
+            check=True,
+        ).stdout
+    )
+    by_ds = {r["dataset"]: r for r in rows}
+    for x in exps:
+        r = by_ds.get(x["dataset"])
+        if r is None:
+            raise SystemExit(
+                f"no goal decides on {x['dataset']}: the catalog has nothing to say for {x['slug']}"
+            )
+
+        def short(arm, x=x):
+            config = (arm or "").rsplit("/", 1)[-1]
+            return config[len(x["prefix"]) : -len(x["suffix"])] if config.startswith(x["prefix"]) else config
+
+        x["goal"] = {
+            **r,
+            "leader": short(r["leader"]),
+            "baseline": short(r["baseline"]),
+            "recommended": short(r["recommended"]) if r["recommended"] else None,
+        }
+
+
 def compute() -> dict:
     weights = _weights()
     exps = [experiment(e, weights) for e in EXPERIMENTS]
+    goal_decisions(exps)
     all_arms = sum(e["n_arms"] for e in exps)
     billed = sum(e["billed_total"] for e in exps)
     cal = calibration()
