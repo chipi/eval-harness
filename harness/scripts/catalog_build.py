@@ -1675,7 +1675,9 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
             for gi, grp in enumerate(ans["groups"]):
                 leader, rows = grp["leader"], grp["rows"]
                 gm = rows[0].get("measure", measure) if rows else measure  # a judge's group: its score
-                dec = group_decision(A, g, ds, rows, gm, retired_in)
+                dec = group_decision(
+                    A, g, ds, rows, gm, retired_in, gold_beside(tiers, ans["groups"], grp["key"])
+                )
                 shown = shown_axes(dec)
                 trs = []
                 for r in rows:
@@ -1787,10 +1789,14 @@ def axis_ratios(dec: dict, arm: str, base: str) -> list[str]:
     return out
 
 
-def group_decision(A: Adapter, g: dict, ds: str, rows: list, gm: str, retired_in: dict) -> dict:
+def group_decision(
+    A: Adapter, g: dict, ds: str, rows: list, gm: str, retired_in: dict, gold: str | None = None
+) -> dict:
     """The goal's decision over one group of arms on one dataset (axes.decide): its axes, limits,
     the quality leader, the tie and the tie-break. A judge's group decides on the judge's score;
-    an arm a round retired is shown, never recommended."""
+    an arm a round retired is shown, never recommended. `gold`: this group is scored against
+    silver and that gold reference's group is on the same dataset, so gold decides and this group
+    only shows its leader; so does a group measured by unvalidated judges."""
     from evaluation_harness import axes  # noqa: PLC0415
 
     crit = g.get("success_criteria") or {}
@@ -1818,13 +1824,42 @@ def group_decision(A: Adapter, g: dict, ds: str, rows: list, gm: str, retired_in
         # recommendation does not.
         role = next((d.get("role") for d in g.get("datasets") or [] if d.get("dataset_id") == ds), "") or ""
         dec["recommended"] = None
+        dec["shown_only"] = True
         dec["why"] = [
             *[w for w in dec["why"] if not w.startswith(("Recommended:", "Still tied"))],
             f"The goal does not decide on {ds}"
             + (f" ({role})" if role else "")
             + ": shown, not recommended.",
         ]
+    elif gold:
+        dec["recommended"] = None
+        dec["shown_only"] = True
+        dec["why"] = [
+            *[w for w in dec["why"] if not w.startswith(("Recommended:", "Still tied"))],
+            (
+                f"Scored against silver, beside {gold}: gold decides on {ds}; this group is shown, not "
+                "recommended. Silver is a model's opinion, and its author's family ranks higher on it."
+            ),
+        ]
+    elif gm.endswith("_unvalidated"):
+        dec["recommended"] = None
+        dec["shown_only"] = True
+        dec["why"] = [
+            *[w for w in dec["why"] if not w.startswith(("Recommended:", "Still tied"))],
+            (
+                f"{gm}: judges never compared with people for this use, a trial rather than a "
+                "measurement; this group is shown, not recommended."
+            ),
+        ]
     return dec
+
+
+def gold_beside(tiers: dict, groups: list, key: str) -> str | None:
+    """The gold reference a silver-scored group sits beside on its dataset, or None: a silver group
+    with a gold one next to it never recommends (group_decision's `gold`)."""
+    if ref_tier(tiers, key) != "silver":
+        return None
+    return next((x["key"] for x in groups if ref_tier(tiers, x["key"]) == "gold"), None)
 
 
 def decides_on(g: dict, ds: str) -> bool:
@@ -1889,6 +1924,8 @@ def decision_html(dec: dict, labels: dict, g: dict, up: str, gap: str = "") -> s
     head = (
         f"Recommended: <b>{arm_link(rec, labels[rec], up)}</b>"
         if rec
+        else "Shown, not recommended"
+        if dec.get("shown_only")
         else "No single arm recommended" + (" yet" if dec["leader"] else ": no arm is eligible")
     )
     weighs = "; ".join(axis_title(a) for a in dec["axes"])

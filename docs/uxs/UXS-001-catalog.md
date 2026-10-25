@@ -261,8 +261,10 @@ The page answers first, then explains, then shows the evidence.
      its judge's score, not the goal's measure: its group's mean column, test buttons and
      decision use that score (`judge_score`, or `judge_score_unvalidated`).
    - the **decision box** ([ADR-0006](../adr/ADR-0006-goal-axes-and-strategies.md)): "Recommended:
-     <arm>" (linked), or "No single arm recommended" ("yet", or ": no arm is eligible"); then the
-     reasons, one per line: each arm that is out and why ("speed p95 3,462 ms > limit 2,000 ms"),
+     <arm>" (linked), or "No single arm recommended" ("yet", or ": no arm is eligible"), or
+     "Shown, not recommended" for a group that never recommends, with the reason as its last line: a
+     dataset the goal does not decide on (`decides: false`), a silver group beside a gold one (gold
+     decides), and a group measured by unvalidated judges (a trial); then the reasons, one per line: each arm that is out and why ("speed p95 3,462 ms > limit 2,000 ms"),
      the strategy with the quality leader, who is tied with it and, under `balanced`, who is not
      separated but further off, so not tied; and how the tie-break picked. With no eligible arm the
      line counts the reasons ("No arm is eligible: n 31 < min_items 32 (5 arms)."). When the

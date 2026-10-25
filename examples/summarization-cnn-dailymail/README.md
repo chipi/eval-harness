@@ -250,8 +250,10 @@ any hosted model; the best of those is `llama_l` (0.378), the worst `qwen_s` (‚à
 case silver is actually *for*, no gold exists, so you cannot check which author you got.
 
 The frontier arm's silver is kept as `silver/cnn_dailymail_200`, by `anthropic_l` (œÅ 0.327,
-lift +12.5). Its texts quote the articles, so only its manifest is committed; it names the
-command that rebuilds them from the run:
+lift +12.5). Ranked against it (the 29 arms re-scored for $0 into `data/runs-silver`, a group on
+the goal page that never recommends), the author's siblings `anthropic_m` and `anthropic_s` come
+1st and 3rd of 28, and `bart_l`, the gold leader, 24th. Its texts quote the articles, so only its
+manifest is committed; it names the command that rebuilds them from the run:
 
 ```bash
 evh reference-create --dataset-id cnn_dailymail_200 --from-run cnn_anthropic_l_n200_v1_20260926T063645Z --tier silver --not-redistributed

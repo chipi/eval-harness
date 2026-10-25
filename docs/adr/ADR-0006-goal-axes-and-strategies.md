@@ -57,7 +57,9 @@ set is not evidence that they are equally good.
   lose on cost to a priced one). Speed is not compared, nor used to break a tie, between arms
   whose runs recorded different machines; arms that recorded none count as one machine.
 - **A goal decides only where it says so**: a dataset marked `decides: false` (a dev slice, a
-  generalization check) shows its groups and their leader, never a recommendation.
+  generalization check) shows its groups and their leader, never a recommendation. So does a
+  group scored against silver beside a gold group on its dataset (gold decides; silver favours
+  its author's family), and a group measured by unvalidated judges (a trial, not a measurement).
 - **Guardrails stay words** (`{name, rule, source}`): shown on the goal page and by
   `evh goals --goal`, never computed.
 - **`secondary` is removed**; its entries become axes.

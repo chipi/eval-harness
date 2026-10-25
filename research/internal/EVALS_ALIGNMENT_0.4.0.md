@@ -98,3 +98,8 @@ answer matched its report:
 - H, judge panel: dropped (owner, 2026-10-25). `evh judge` calls hosted or fake judges, has no
   stored-verdict mode, and its verdicts never reach the catalog; SummEval already measures
   judges against experts in fingerprinted runs.
+- H, silver runs (owner, 2026-10-25): the 29 CNN arms re-scored against the silver into
+  data/runs-silver ($0, committed). The goal page shows them as a silver group that never
+  recommends (gold decides); the author's siblings rank 1st and 3rd, the gold leader `bart_l`
+  24th of 28. Found on the way: the unvalidated pointwise judge's group recommended an arm; such
+  groups, and `decides: false` datasets, now read "Shown, not recommended" with the reason.

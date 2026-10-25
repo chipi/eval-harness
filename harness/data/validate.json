@@ -15,7 +15,7 @@
   ],
   "committed": ["runs", "runs-pair", "runs-repeats", "runs-linux",
                 "runs-judged/judge-summ-v1", "runs-judged/judge-summ-v2", "runs-judged/judge-summ-pointwise-v1",
-                "runs-adjudicated"],
+                "runs-adjudicated", "runs-silver"],
   "floors": {
     "runs": 174,
     "runs-pair": 6,
@@ -24,7 +24,8 @@
     "runs-judged/judge-summ-v1": 29,
     "runs-judged/judge-summ-v2": 29,
     "runs-judged/judge-summ-pointwise-v1": 2,
-    "runs-adjudicated": 30
+    "runs-adjudicated": 30,
+    "runs-silver": 29
   },
   "scorer_sources": [
     {"dir": "runs", "glob": "fn_*", "path": ["derived", "with", "scorer"],

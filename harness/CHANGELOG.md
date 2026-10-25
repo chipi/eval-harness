@@ -147,8 +147,10 @@ p 0.36, from the pre-fix run), and DBpedia's 56-item dev slice, over today's 28 
   then speed) picks among them. Limits come first; flagged and retired arms are never
   recommended, nor is an arm measured on fewer items than the rest of its group; identical
   scores are always tied; a missing number is "not recorded", and an axis a tied arm does not
-  record cannot break the tie; speed is not compared across machines the runs recorded. The
-  helpers are public as `evaluation_harness.axes`.
+  record cannot break the tie; speed is not compared across machines the runs recorded. Some
+  groups show their leader and never recommend: a dataset marked `decides: false`, a silver
+  group beside a gold one, and a group measured by unvalidated judges ("Shown, not
+  recommended", with the reason). The helpers are public as `evaluation_harness.axes`.
   The goal page shows the decision with its reasons, an axis column per arm and quality
   against each axis as charts; the home page's glance a **recommended** column with cost and
   speed against the baseline; the dataset and arm pages cost and speed; the inspector's scatter

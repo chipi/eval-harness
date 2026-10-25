@@ -642,7 +642,9 @@ def goals(argv) -> int:
         for grp in ans["groups"]:
             what = grp["key"]
             gm = (grp["rows"][0].get("measure") if grp["rows"] else None) or prim.get("measure", "")
-            dec = cb.group_decision(A, g, ds, grp["rows"], gm, retired_in)
+            dec = cb.group_decision(
+                A, g, ds, grp["rows"], gm, retired_in, cb.gold_beside(tiers, ans["groups"], what)
+            )
             shown = cb.shown_axes(dec)
             print(f"\n  {'scored by ' + what if what.startswith('judge ') else 'scored against ' + what}")
             _table(
@@ -680,6 +682,8 @@ def goals(argv) -> int:
             print(
                 f"\n  recommended: {label[rec]}"
                 if rec
+                else "\n  shown, not recommended"
+                if dec.get("shown_only")
                 else "\n  no single arm recommended" + (" yet" if dec["leader"] else ": no arm is eligible")
             )
             for w in [*dec["why"], cb.baseline_gap(A, dec, grp["rows"], gm)]:

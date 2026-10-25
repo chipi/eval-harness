@@ -393,6 +393,32 @@ check(
     d["why"],
 )
 
+# A silver group beside a gold one shows its leader and never recommends: gold decides.
+from evaluation_harness.catalog_build import gold_beside  # noqa: E402
+
+tiers = {"gold/ds": "gold", "silver/ds": "silver"}
+groups = [{"key": "gold/ds"}, {"key": "silver/ds"}]
+check(
+    "gold beside: a silver group names the gold group on its dataset; gold, or silver alone, names none",
+    gold_beside(tiers, groups, "silver/ds") == "gold/ds"
+    and gold_beside(tiers, groups, "gold/ds") is None
+    and gold_beside(tiers, [{"key": "silver/ds"}], "silver/ds") is None,
+)
+d = group_decision(jfake, goal, "ds", rows_j, "judge_score", {}, gold="gold/ds")
+check(
+    "silver beside gold: the leader stands, nothing is recommended, and the reason says gold decides",
+    d["leader"] == "x" and d["recommended"] is None and any("gold decides" in w for w in d["why"]),
+    d,
+)
+for a in judged.values():
+    a["scores"]["judge_score_unvalidated"] = a["scores"].pop("judge_score")
+d = group_decision(jfake, goal, "ds", rows_j, "judge_score_unvalidated", {})
+check(
+    "unvalidated judges: the leader stands, nothing is recommended, and the reason says it is a trial",
+    d["leader"] == "x" and d["recommended"] is None and any("a trial" in w for w in d["why"]),
+    d,
+)
+
 # The glance's group tier: the references listing first, else the reference id's own prefix.
 from evaluation_harness.catalog_build import ref_tier  # noqa: E402
 

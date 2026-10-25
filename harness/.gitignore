@@ -204,6 +204,17 @@ data/runs-adjudicated/*/*
 !data/runs-adjudicated/*/outputs/**
 data/runs-adjudicated/*/outputs/_rows.jsonl
 
+# data/runs-silver/ — the CNN arms re-scored ($0) against silver/cnn_dailymail_200, the frontier
+# arm's summaries: a silver group beside gold on the goal page, where silver's family bias shows.
+# Their outputs are the same bytes as the measured runs' in data/runs.
+!data/runs-silver/
+data/runs-silver/*/*
+!data/runs-silver/*/metrics.json
+!data/runs-silver/*/predictions.jsonl
+!data/runs-silver/*/outputs
+!data/runs-silver/*/outputs/**
+data/runs-silver/*/outputs/_rows.jsonl
+
 # data/runs-judged/<scorer>/ — the CNN summaries re-measured by LLM judges (ADR-0001), each run
 # projected from the stored verdicts in data/judge-verdicts/ by `judge-score --no-calls` ($0).
 # Committed so the catalog shows a judge's group beside gold; rebuilt byte for byte from the

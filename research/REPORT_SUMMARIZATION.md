@@ -554,7 +554,10 @@ author, its own row excluded, ranking the other 28 by `coverage` against its out
 The lift is worst where the author is worst: the 3 authors above ρ 0.5 average +2.2
 positions, the 21 below ρ 0.3 average +10.0. The frontier arm's silver is committed as
 `silver/cnn_dailymail_200` (by `anthropic_l`, ρ 0.327, lift +12.5): its manifest only, since its
-texts quote the articles, with the command that rebuilds them from the run.
+texts quote the articles, with the command that rebuilds them from the run. The 29 arms
+re-scored against it ($0, `data/runs-silver`) are a silver group on the goal page, shown and
+never recommended: there `anthropic_m` and `anthropic_s`, the author's siblings, rank 1st and 3rd
+of 28, and `bart_l`, the gold leader and the goal's pick, ranks 24th.
 
 The n=20 pilot, whose runs are not committed (24 hosted arms, two run sets):
 
