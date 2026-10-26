@@ -4,7 +4,8 @@
 - **Authors**: Marko Dragoljevic
 - **Related UX specs**: [UXS-003](../uxs/UXS-003-cli-and-onboarding.md) (the commands), a new UXS
   for the tools and skills, to be written
-- **Related RFC**: RFC-013 (the command manifest, the MCP server, the skills), to be written
+- **Related RFCs**: [RFC-013](../rfc/RFC-013-machine-surface.md) (declarations, JSON, exit codes, refusals, the actor,
+  the config), [RFC-016](../rfc/RFC-016-mcp-server-and-skills.md) (the MCP server, the skills, llms.txt, the glossary)
 - **Related PRDs**: every 0.5.0 PRD ([PRD-008](PRD-008-pipelines-and-any-language.md) to
   [PRD-013](PRD-013-identity-and-ties.md)) is held to this one
 
