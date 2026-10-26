@@ -118,10 +118,10 @@ the power), scoring each candidate rule on the same draws (`bootstrap_rule_eval.
 | 30 | 0.016 | 0.525; 0.275, 0.086, 0.018, 0.004 |
 | 50 | 0.025 | 0.785; 0.570, 0.415, 0.424, 0.407 |
 | 100 | 0.026 | 0.980; 0.917, 0.848, 0.753, 0.686 |
+| 200 | 0.023 | 1.000; 0.999, 0.992, 0.967, 0.917 |
 
 The worst error is within the Monte Carlo error (about ±0.005 at 1000 simulations) of the level. The price is power:
-on skewed differences below 50 items nothing can be shown, and between 30 and 50 items little. 200-item cells, run to
-check the large-sample end, are in the README when they finish. The validation suite (Testing) reruns a fixed, smaller
+on skewed differences below 50 items nothing can be shown, and between 30 and 50 items little. The validation suite (Testing) reruns a fixed, smaller
 grid on every change to `stats.py`.
 
 ### Verdicts

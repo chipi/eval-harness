@@ -390,6 +390,18 @@ always a/2, any n<30 inc
 worst error 0.039
 ```
 
+- The rule marked CHOSEN at n = 200 (`bootstrap_rule_eval.py` on the n = 200 file alone):
+
+```text
+   n           shape  error  power
+ 200  lognormal 0.25  0.013  0.999
+ 200   lognormal 0.5  0.012  0.992
+ 200  lognormal 0.75  0.011  0.967
+ 200   lognormal 1.0  0.019  0.917
+ 200          normal  0.023  1.000
+worst error 0.023
+```
+
 - RFC-015 adopts the rule marked CHOSEN: below 30 items no continuous non-inferiority test; when g1 < −0.5,
   inconclusive below 50 items, α/4 from 50 to 99, α/2 from 100. Its worst error, 0.026, is within the Monte Carlo
   error (about ±0.005 at 1000 simulations) of 0.025.
