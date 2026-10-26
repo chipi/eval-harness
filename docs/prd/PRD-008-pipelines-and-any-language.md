@@ -3,8 +3,7 @@
 - **Status**: Draft (0.5.0), final review round
 - **Authors**: Marko Dragoljevic
 - **Related UX specs**: [UXS-002](../uxs/UXS-002-inspector.md) (the inspector, to gain a stage view)
-- **Related RFCs**: RFC-007 (stages and stage references), RFC-008 (the process protocol), both
-  to be written
+- **Related RFCs**: [RFC-007](../rfc/RFC-007-stages-and-stage-references.md) (stages and stage references), [RFC-008](../rfc/RFC-008-process-protocol.md) (the process protocol)
 - **Related PRDs**: [PRD-001](PRD-001-experiments-and-comparison.md),
   [PRD-007](PRD-007-packaging-and-providers.md) (the adapter seam),
   [PRD-012](PRD-012-agent-ready.md) (every capability for people and agents alike)
@@ -115,7 +114,7 @@ HTTP address, with the harness keeping the scoring and the statistics.
 
 - **FR2.1**: A reference may hold a reference per stage beside the end-result one; scoring passes
   each stage's scorer its stage's reference. A dataset's reference manifest says which stages it
-  covers. (Design in RFC-007.)
+  covers. (Design in [RFC-007](../rfc/RFC-007-stages-and-stage-references.md).)
 - **FR2.2**: A stage with no reference can still be measured by reference-free metrics (cost,
   time, length, a judge without a reference).
 
@@ -124,7 +123,7 @@ HTTP address, with the harness keeping the scoring and the statistics.
 - **FR3.1**: An output (end or stage) may be JSON; scorers receive it parsed; the inspector shows
   it readably and diffs it by field; resume stores and reads it back exactly.
 - **FR3.2**: The adapter may receive an item's declared fields beside its text; an adapter says
-  which form it takes, and a 0.4.0 adapter keeps receiving the text only (RFC-007).
+  which form it takes, and a 0.4.0 adapter keeps receiving the text only ([RFC-007](../rfc/RFC-007-stages-and-stage-references.md)).
 - **FR3.3**: **Batch mode**: an adapter may take the whole dataset (or a batch) and return a
   result per item, for pipelines that work per feed or across items; cost and time are then
   apportioned as the adapter reports, resume works per batch, and the cost cap is checked before each
@@ -136,7 +135,7 @@ HTTP address, with the harness keeping the scoring and the statistics.
   started once and kept alive, speaking **JSON-RPC 2.0 over stdio**, newline-delimited, one request
   per item or batch, with only protocol messages on stdout and its logs on stderr (as MCP's stdio
   transport does), and trace context passed in the request; or an HTTP address
-  (`adapter: {url: ...}`) speaking the same messages. Specified and versioned in RFC-008, with an
+  (`adapter: {url: ...}`) speaking the same messages. Specified and versioned in [RFC-008](../rfc/RFC-008-process-protocol.md), with an
   example client in a second language.
 - **FR4.2**: Scoring may stay in a Python adapter beside a process `call_system`, or be done by
   the process; either way the harness records the metrics.
@@ -176,5 +175,5 @@ HTTP address, with the harness keeping the scoring and the statistics.
 
 ## Related Documents
 
-- RFC-007, RFC-008 (to be written); [INTEGRATION](../../harness/docs/INTEGRATION.md);
+- [RFC-007](../rfc/RFC-007-stages-and-stage-references.md), [RFC-008](../rfc/RFC-008-process-protocol.md) (); [INTEGRATION](../../harness/docs/INTEGRATION.md);
   OpenTelemetry GenAI semantic conventions; JSON-RPC 2.0.

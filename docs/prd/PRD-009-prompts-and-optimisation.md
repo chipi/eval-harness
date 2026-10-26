@@ -4,8 +4,8 @@
 - **Authors**: Marko Dragoljevic
 - **Related UX specs**: [UXS-001](../uxs/UXS-001-catalog.md) (the goal page, to show a study),
   [UXS-003](../uxs/UXS-003-cli-and-onboarding.md) (the commands)
-- **Related RFCs**: RFC-009 (prompt versions), RFC-010 (studies: types, trials, samplers, the
-  statistics), both to be written; [RFC-004](../rfc/RFC-004-experiment-rounds.md) (rounds)
+- **Related RFCs**: [RFC-009](../rfc/RFC-009-prompt-versions.md) (prompt versions), [RFC-010](../rfc/RFC-010-studies.md) (studies: types, trials, samplers, the
+  statistics); [RFC-004](../rfc/RFC-004-experiment-rounds.md) (rounds)
 - **Related PRDs**: [PRD-001](PRD-001-experiments-and-comparison.md) and
   [PRD-005](PRD-005-goals-and-rounds.md) (whose Non-Goals this PRD amends),
   [PRD-010](PRD-010-runners.md), [PRD-013](PRD-013-identity-and-ties.md) (non-inferiority, intervals,
@@ -226,7 +226,7 @@ dropped by the study's declared rule, as search; nothing is promoted automatical
   against the starting arm at their limits, in the same Holm family as the primary measure; with several
   tracks, the first decides and the others are guardrails.
 - **FR4.3**: The outcome, with Δ = best − start and α the look's level, is **superior**, **non-inferior**,
-  **worse** or **inconclusive**, decided by RFC-015's fixed sequence (non-inferiority first when a margin
+  **worse** or **inconclusive**, decided by [RFC-015](../rfc/RFC-015-noninferiority-looks-power.md)'s fixed sequence (non-inferiority first when a margin
   is declared, then superiority) and its tests. A failed guardrail makes the outcome at
   best inconclusive. The effect, its interval and p are shown beside the validation effect of the same
   trial, so the optimizer's curse is visible. Promotion is suggested only on an outcome that meets the
@@ -271,7 +271,7 @@ dropped by the study's declared rule, as search; nothing is promoted automatical
 
 ## Related Documents
 
-- RFC-009, RFC-010 (to be written); [RFC-004](../rfc/RFC-004-experiment-rounds.md),
+- [RFC-009](../rfc/RFC-009-prompt-versions.md), [RFC-010](../rfc/RFC-010-studies.md) (); [RFC-004](../rfc/RFC-004-experiment-rounds.md),
   [ADR-0006](../adr/ADR-0006-goal-axes-and-strategies.md).
 - References ([INFLUENCES](../INFLUENCES.md)): Karpathy's autoresearch; Optuna (study, trial, ask/tell);
   MLflow Prompt Registry; DSPy optimizers, OPRO, APE; Dwork et al. 2015; Smith and Winkler 2006; Lakens

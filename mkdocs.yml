@@ -84,6 +84,9 @@ nav:
           - "RFC-009: Prompt versions": rfc/RFC-009-prompt-versions.md
           - "RFC-007: Stages, stage references, structured outputs, item fields, batch mode": rfc/RFC-007-stages-and-stage-references.md
           - "RFC-008: The process protocol: systems in any language": rfc/RFC-008-process-protocol.md
+          - "RFC-011: Job sets and runners: local and ssh": rfc/RFC-011-job-sets-and-runners.md
+          - "RFC-010: Studies: exploratory and confirmatory, trials, samplers, the test check": rfc/RFC-010-studies.md
+          - "RFC-012: The evidence registry: champions' evidence, the export, the check": rfc/RFC-012-evidence-registry.md
       - Decisions (ADRs):
           - Index: adr/index.md
           - "ADR-0001: Judge scorers: re-measuring frozen outputs with a validated LLM judge": adr/ADR-0001-judge-scorers.md

@@ -3,8 +3,9 @@
 - **Status**: Draft (0.5.0), final review round
 - **Authors**: Marko Dragoljevic
 - **Related RFCs**: [RFC-001](../rfc/RFC-001-fingerprint-and-code-identity.md) (the fingerprint, to gain
-  version 5), [RFC-004](../rfc/RFC-004-experiment-rounds.md) (rounds and baselines); RFC-014 (these changes
-  and the migration script), to be written
+  version 5), [RFC-004](../rfc/RFC-004-experiment-rounds.md) (rounds and baselines); [RFC-014](../rfc/RFC-014-identity-champions-migration.md) (these changes
+  and the migration script), [RFC-015](../rfc/RFC-015-noninferiority-looks-power.md) (non-inferiority, verdicts, test
+  looks, power)
 - **Related ADRs**: [ADR-0006](../adr/ADR-0006-goal-axes-and-strategies.md) (goal ties, superseded in part by
   this PRD)
 - **Related PRDs**: [PRD-001](PRD-001-experiments-and-comparison.md),
@@ -121,7 +122,7 @@ project (the two projects known to use the harness), not a permanent command.
     paired proportions (Tango); for continuous measures the studentized bootstrap, at half the level when
     the paired differences have a long tail of losses, and inconclusive in that case below 50 items. The
     shifted sign-flip test is not used: simulation showed it invalid for 0/1 measures and for skewed
-    continuous ones (RFC-015 has the tables; Tango and the guarded bootstrap hold the level there).
+    continuous ones ([RFC-015](../rfc/RFC-015-noninferiority-looks-power.md) has the tables; Tango and the guarded bootstrap hold the level there).
     **Inconclusive**: the test does not reject, or cannot (too few items).
     **Equivalent** (used only for a claim of "no difference"): both one-sided tests at ±margin reject at
     2.5%.
@@ -221,7 +222,7 @@ project (the two projects known to use the harness), not a permanent command.
 
 ## Related Documents
 
-- RFC-014 (to be written); [ADR-0006](../adr/ADR-0006-goal-axes-and-strategies.md).
+- [RFC-014](../rfc/RFC-014-identity-champions-migration.md) (); [ADR-0006](../adr/ADR-0006-goal-axes-and-strategies.md).
   References ([INFLUENCES](../INFLUENCES.md)): Schuirmann 1987 and Lakens 2017 (equivalence and
   non-inferiority), Tango 1998 (paired proportions), Tian and Ramdas (online familywise error control),
   Dwork et al. 2015 (reusable holdout), Miller 2024 (error bars), Card et al. 2020 (power).

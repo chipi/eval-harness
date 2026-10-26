@@ -3,7 +3,7 @@
 - **Status**: Draft (0.5.0), final review round
 - **Authors**: Marko Dragoljevic
 - **Related UX specs**: [UXS-001](../uxs/UXS-001-catalog.md) (the catalog, to show champions)
-- **Related RFC**: RFC-012 (champion versions, the export, the check), to be written
+- **Related RFC**: [RFC-012](../rfc/RFC-012-evidence-registry.md) (champion versions, the export, the check)
 - **Related PRDs**: [PRD-005](PRD-005-goals-and-rounds.md) (goals, baselines),
   [PRD-009](PRD-009-prompts-and-optimisation.md) (what a recipe includes),
   [PRD-013](PRD-013-identity-and-ties.md) (baselines per goal and dataset),
@@ -107,5 +107,5 @@ run or a report, because a production registry also records options that were re
 
 ## Related Documents
 
-- RFC-012 (to be written); [PRD-005](PRD-005-goals-and-rounds.md). References: MLflow Model
+- [RFC-012](../rfc/RFC-012-evidence-registry.md) (); [PRD-005](PRD-005-goals-and-rounds.md). References: MLflow Model
   Registry (versions, aliases, champion/challenger), model cards (Mitchell et al., 2019).

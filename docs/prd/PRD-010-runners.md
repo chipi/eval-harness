@@ -3,7 +3,7 @@
 - **Status**: Draft (0.5.0), final review round
 - **Authors**: Marko Dragoljevic
 - **Related UX specs**: [UXS-003](../uxs/UXS-003-cli-and-onboarding.md) (the commands)
-- **Related RFC**: RFC-011 (job sets, the runner interface, local and ssh), to be written
+- **Related RFC**: [RFC-011](../rfc/RFC-011-job-sets-and-runners.md) (job sets, the runner interface, local and ssh)
 - **Related PRDs**: [PRD-001](PRD-001-experiments-and-comparison.md),
   [PRD-009](PRD-009-prompts-and-optimisation.md) (studies run their trials through runners),
   [PRD-012](PRD-012-agent-ready.md), [PRD-013](PRD-013-identity-and-ties.md) (unique run ids, the
@@ -148,6 +148,6 @@ switched. The run directory is the contract, so every later runner only moves on
 
 ## Related Documents
 
-- RFC-011 (to be written). References: Slurm job states, Kubernetes Jobs (`backoffLimit`,
+- [RFC-011](../rfc/RFC-011-job-sets-and-runners.md) (). References: Slurm job states, Kubernetes Jobs (`backoffLimit`,
   `activeDeadlineSeconds`), Ray Jobs (submit, status, logs, stop), GitHub self-hosted runners
   (labels, secrets kept on the host), Inspect eval sets (a log directory as resumable state).
