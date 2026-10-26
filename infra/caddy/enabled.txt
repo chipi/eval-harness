@@ -5,3 +5,5 @@
 # health check is the gate. Then the DNS moves (infra/README.md, "Cutover"), and the names are
 # added here: evals, catalog. A listed vhost is installed only once all its names resolve
 # (install_vhosts.sh), but the guard cannot tell WHERE a name resolves, so move DNS first.
+evals
+catalog
