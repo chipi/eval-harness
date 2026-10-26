@@ -31,6 +31,7 @@ None.
 
 | RFC | Title | Related PRD | Description |
 | --- | ----- | ----------- | ----------- |
+| [RFC-009](RFC-009-prompt-versions.md) | Prompt versions | [PRD-009](../prd/PRD-009-prompts-and-optimisation.md) | Declared prompt files or a prompt root; versions as snapshots in data/prompts, resolved at run time; arm.prompts in the fingerprint; a per-run overlay; prompt commands and pages |
 | [RFC-016](RFC-016-mcp-server-and-skills.md) | The MCP server, the skills, llms.txt and the glossary | [PRD-012](../prd/PRD-012-agent-ready.md) | evh mcp on the official SDK, tools from the manifest, resources, job ids for long work, elicitation consent, a limits file; skills in the Agent Skills format; llms.txt; a glossary |
 | [RFC-013](RFC-013-machine-surface.md) | The machine surface: declarations, JSON, exit codes, refusals, the actor, the config | [PRD-012](../prd/PRD-012-agent-ready.md) | One declaration per command (help, manifest, MCP tools); --json and output schemas; exit codes; RFC 9457 refusals; actor and consent; config.yaml; Python 3.10 |
 | [RFC-015](RFC-015-noninferiority-looks-power.md) | The statistics of 0.5.0: non-inferiority, verdicts, test looks, power | [PRD-013](../prd/PRD-013-identity-and-ties.md), [PRD-009](../prd/PRD-009-prompts-and-optimisation.md) | Tests chosen by simulation (Tango for 0/1, guarded bootstrap-t for continuous), the verdict sequence, Holm across candidates, K looks per item set, attainable p and MDE |
