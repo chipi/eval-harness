@@ -1,0 +1,39 @@
+# ADR-0016 — An MCP server, skills and llms.txt for agents (0.5.0)
+
+**Status:** Accepted (2026-10-26), design; not yet built
+**Date:** 2026-10-26
+**Detail:** [PRD-012](../prd/PRD-012-agent-ready.md) FR4, FR5, FR6, FR8,
+[RFC-016](../rfc/RFC-016-mcp-server-and-skills.md)
+
+## Context
+
+The test for 0.5.0 is that an agent in a project, given a goal, sets up and runs a study, and the
+catalog looks as if a careful person did it. Agents work best through tools with schemas and
+through short procedures they can load, and an agent's client is not to be trusted for who is
+acting.
+
+## Decision
+
+- **`evh mcp`** is a stdio MCP server for one project, built on the official Python SDK (the
+  owner's decision; it brings its own dependencies, listed in the release notes). Its tools are
+  generated from the command declarations, each run as a child `evh … --json` with a timeout,
+  killed on cancel, its output capped. Records are also resources.
+- **Long work returns a job id** followed with `jobs-status`; MCP tasks when the SDK implements the
+  extension.
+- **The server never decides who acts or consents**: the actor is fixed when it starts; actor and
+  consent flags are never tool arguments; consent comes from a grant the person makes, or an
+  elicitation answer for the kinds their limits allow. Limits live in a tracked file the server
+  never writes and reads only when committed, so every change has an author. Path arguments
+  cannot reach it.
+- **Spending is reserved in a ledger under a lock** before a call runs; detached work records its
+  spend as it happens and stops at the limit.
+- **Skills ship with the package** in the Agent Skills format, installed by a command, their
+  commands tested in CI, and every command covered by one.
+- **`llms.txt` is generated with the documentation**, and a glossary maps the harness's terms to
+  other tools'.
+
+## Consequences
+
+An agent can do everything a person can through tools and skills, and every decision with
+consequences still reaches the person. The server cannot stop an agent that also has a shell; the
+records and the skills are the defence there.

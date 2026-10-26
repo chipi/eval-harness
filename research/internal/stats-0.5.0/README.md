@@ -46,7 +46,7 @@ time. Monte Carlo error is about ±0.003 at 3000 runs and ±0.004 at 1500.
   30    left  0.1270
 ```
 
-`ttest_bootstrap_continuous.py` (first run, from the same code before it was copied here):
+`ttest_bootstrap_continuous.py` (first run before it was copied here; re-run from this copy on 2026-10-26, identical):
 
 ```text
    n   shape  t-test  boot-t
@@ -67,7 +67,7 @@ time. Monte Carlo error is about ±0.003 at 3000 runs and ±0.004 at 1500.
  100    left  0.0773  0.0500
 ```
 
-`bootstrap_skew_guard.py` (first run, from the same code before it was copied here):
+`bootstrap_skew_guard.py` (first run before it was copied here; re-run from this copy on 2026-10-26, identical):
 
 ```text
    n   shape  type I  guard fired
@@ -88,7 +88,309 @@ time. Monte Carlo error is about ±0.003 at 3000 runs and ±0.004 at 1500.
 - The shifted sign-flip test is invalid for 0/1 measures (up to 0.299) and for continuous measures with a long
   tail of losses (up to 0.151); it is fine for symmetric continuous differences.
 - Tango's score test holds the level for 0/1 measures everywhere tried (conservative at small n).
-- No test tried holds the level on a long tail of losses below 50 items; the studentized bootstrap at half the
-  level does from 50 items on. RFC-015 therefore calls that case inconclusive below 50 items.
-- "Long tail of losses" here is a centred lognormal with shape 1 (strongly skewed); milder skew fares better. The
-  validation suite in `harness/tests/test_stats_validity.py` (RFC-015, Testing) reruns a smaller fixed grid.
+- The first skew guard (g1 < −1, α/2, inconclusive below 50 items), chosen on the shape-1 tail alone, does not
+  hold across tail weights: `bootstrap_spec_check.py` runs RFC-015's exact specification (p = (1 + #{t* ≥ T})/(B + 1),
+  resamples with s* = 0 dropped, B = 999) on normal differences and lognormal loss tails of σ 0.25 to 1.0:
+
+```text
+type I at the margin, nominal 0.025, 1000 simulations, B = 999
+   n           shape  type I guard fired  inconclusive (guard, n<50)
+  10          normal   0.023          6%                          6%
+  10  lognormal 0.25   0.019         14%                         14%
+  10   lognormal 0.5   0.049         32%                         32%
+  10  lognormal 0.75   0.066         50%                         50%
+  10   lognormal 1.0   0.075         62%                         62%
+  20          normal   0.035          2%                          2%
+  20  lognormal 0.25   0.034         17%                         17%
+  20   lognormal 0.5   0.046         45%                         45%
+  20  lognormal 0.75   0.044         71%                         71%
+  20   lognormal 1.0   0.043         83%                         83%
+  30          normal   0.026          1%                          1%
+  30  lognormal 0.25   0.029         17%                         17%
+  30   lognormal 0.5   0.022         55%                         55%
+  30  lognormal 0.75   0.025         80%                         80%
+  30   lognormal 1.0   0.014         94%                         94%
+  50          normal   0.028          0%                          0%
+  50  lognormal 0.25   0.029         18%                          0%
+  50   lognormal 0.5   0.027         64%                          0%
+  50  lognormal 0.75   0.034         94%                          0%
+  50   lognormal 1.0   0.042         99%                          0%
+ 100          normal   0.029          0%                          0%
+ 100  lognormal 0.25   0.026         17%                          0%
+ 100   lognormal 0.5   0.023         82%                          0%
+ 100  lognormal 0.75   0.018         99%                          0%
+ 100   lognormal 1.0   0.023        100%                          0%
+```
+
+- `bootstrap_rule_grid.py N OUT.jsonl` records, per simulation, g1 and p at the margin (null) and at no difference
+  (power), 1000 simulations per cell, for n in 10, 20, 30, 50, 100 (and 200, run to check the large-sample end).
+  `bootstrap_rule_eval.py` scores candidate rules on those same draws. The raw files are not committed (about 10,000
+  lines per n); the grid reproduces them from its seeds (`1000 + n`). Output for n = 10 to 100:
+
+```text
+RFC draft: g1<-1 -> a/2, n<50 inconclusive
+   n           shape  error  power
+  10  lognormal 0.25  0.038  0.206
+  10   lognormal 0.5  0.040  0.185
+  10  lognormal 0.75  0.053  0.216
+  10   lognormal 1.0  0.092  0.220
+  10          normal  0.015  0.204
+  20  lognormal 0.25  0.035  0.344
+  20   lognormal 0.5  0.034  0.260
+  20  lognormal 0.75  0.033  0.198
+  20   lognormal 1.0  0.042  0.114
+  20          normal  0.036  0.387
+  30  lognormal 0.25  0.029  0.451
+  30   lognormal 0.5  0.024  0.282
+  30  lognormal 0.75  0.029  0.139
+  30   lognormal 1.0  0.018  0.061
+  30          normal  0.015  0.555
+  50  lognormal 0.25  0.024  0.692
+  50   lognormal 0.5  0.021  0.548
+  50  lognormal 0.75  0.028  0.532
+  50   lognormal 1.0  0.038  0.490
+  50          normal  0.016  0.804
+ 100  lognormal 0.25  0.028  0.941
+ 100   lognormal 0.5  0.022  0.850
+ 100  lognormal 0.75  0.025  0.753
+ 100   lognormal 1.0  0.019  0.686
+ 100          normal  0.019  0.980
+worst error 0.092
+
+CHOSEN: g1<-0.5 -> n<50 inc, a/4 below 100, a/2 from 100; any n<30 inc
+   n           shape  error  power
+  10  lognormal 0.25  0.000  0.000
+  10   lognormal 0.5  0.000  0.000
+  10  lognormal 0.75  0.000  0.000
+  10   lognormal 1.0  0.000  0.000
+  10          normal  0.000  0.000
+  20  lognormal 0.25  0.000  0.000
+  20   lognormal 0.5  0.000  0.000
+  20  lognormal 0.75  0.000  0.000
+  20   lognormal 1.0  0.000  0.000
+  20          normal  0.000  0.000
+  30  lognormal 0.25  0.016  0.275
+  30   lognormal 0.5  0.007  0.086
+  30  lognormal 0.75  0.005  0.018
+  30   lognormal 1.0  0.000  0.004
+  30          normal  0.014  0.525
+  50  lognormal 0.25  0.013  0.570
+  50   lognormal 0.5  0.009  0.415
+  50  lognormal 0.75  0.017  0.424
+  50   lognormal 1.0  0.025  0.407
+  50          normal  0.016  0.785
+ 100  lognormal 0.25  0.026  0.917
+ 100   lognormal 0.5  0.015  0.848
+ 100  lognormal 0.75  0.023  0.753
+ 100   lognormal 1.0  0.019  0.686
+ 100          normal  0.019  0.980
+worst error 0.026
+
+g1<-0.5 -> a/2, n<50 inconclusive
+   n           shape  error  power
+  10  lognormal 0.25  0.037  0.168
+  10   lognormal 0.5  0.035  0.132
+  10  lognormal 0.75  0.041  0.134
+  10   lognormal 1.0  0.066  0.114
+  10          normal  0.014  0.189
+  20  lognormal 0.25  0.027  0.258
+  20   lognormal 0.5  0.019  0.133
+  20  lognormal 0.75  0.016  0.065
+  20   lognormal 1.0  0.007  0.023
+  20          normal  0.036  0.352
+  30  lognormal 0.25  0.016  0.275
+  30   lognormal 0.5  0.007  0.086
+  30  lognormal 0.75  0.005  0.018
+  30   lognormal 1.0  0.000  0.004
+  30          normal  0.014  0.525
+  50  lognormal 0.25  0.016  0.640
+  50   lognormal 0.5  0.016  0.525
+  50  lognormal 0.75  0.024  0.530
+  50   lognormal 1.0  0.036  0.489
+  50          normal  0.016  0.793
+ 100  lognormal 0.25  0.026  0.917
+ 100   lognormal 0.5  0.015  0.848
+ 100  lognormal 0.75  0.023  0.753
+ 100   lognormal 1.0  0.019  0.686
+ 100          normal  0.019  0.980
+worst error 0.066
+
+g1<-0.5 -> a/2, n<50 inc; any n<30 inc
+   n           shape  error  power
+  10  lognormal 0.25  0.000  0.000
+  10   lognormal 0.5  0.000  0.000
+  10  lognormal 0.75  0.000  0.000
+  10   lognormal 1.0  0.000  0.000
+  10          normal  0.000  0.000
+  20  lognormal 0.25  0.000  0.000
+  20   lognormal 0.5  0.000  0.000
+  20  lognormal 0.75  0.000  0.000
+  20   lognormal 1.0  0.000  0.000
+  20          normal  0.000  0.000
+  30  lognormal 0.25  0.016  0.275
+  30   lognormal 0.5  0.007  0.086
+  30  lognormal 0.75  0.005  0.018
+  30   lognormal 1.0  0.000  0.004
+  30          normal  0.014  0.525
+  50  lognormal 0.25  0.016  0.640
+  50   lognormal 0.5  0.016  0.525
+  50  lognormal 0.75  0.024  0.530
+  50   lognormal 1.0  0.036  0.489
+  50          normal  0.016  0.793
+ 100  lognormal 0.25  0.026  0.917
+ 100   lognormal 0.5  0.015  0.848
+ 100  lognormal 0.75  0.023  0.753
+ 100   lognormal 1.0  0.019  0.686
+ 100          normal  0.019  0.980
+worst error 0.036
+
+g1<-0.5 -> a/4, n<50 inc; any n<30 inc
+   n           shape  error  power
+  10  lognormal 0.25  0.000  0.000
+  10   lognormal 0.5  0.000  0.000
+  10  lognormal 0.75  0.000  0.000
+  10   lognormal 1.0  0.000  0.000
+  10          normal  0.000  0.000
+  20  lognormal 0.25  0.000  0.000
+  20   lognormal 0.5  0.000  0.000
+  20  lognormal 0.75  0.000  0.000
+  20   lognormal 1.0  0.000  0.000
+  20          normal  0.000  0.000
+  30  lognormal 0.25  0.016  0.275
+  30   lognormal 0.5  0.007  0.086
+  30  lognormal 0.75  0.005  0.018
+  30   lognormal 1.0  0.000  0.004
+  30          normal  0.014  0.525
+  50  lognormal 0.25  0.013  0.570
+  50   lognormal 0.5  0.009  0.415
+  50  lognormal 0.75  0.017  0.424
+  50   lognormal 1.0  0.025  0.407
+  50          normal  0.016  0.785
+ 100  lognormal 0.25  0.019  0.876
+ 100   lognormal 0.5  0.008  0.778
+ 100  lognormal 0.75  0.014  0.683
+ 100   lognormal 1.0  0.008  0.621
+ 100          normal  0.019  0.980
+worst error 0.025
+
+g1<-0.25 -> a/2, n<50 inc; any n<30 inc
+   n           shape  error  power
+  10  lognormal 0.25  0.000  0.000
+  10   lognormal 0.5  0.000  0.000
+  10  lognormal 0.75  0.000  0.000
+  10   lognormal 1.0  0.000  0.000
+  10          normal  0.000  0.000
+  20  lognormal 0.25  0.000  0.000
+  20   lognormal 0.5  0.000  0.000
+  20  lognormal 0.75  0.000  0.000
+  20   lognormal 1.0  0.000  0.000
+  20          normal  0.000  0.000
+  30  lognormal 0.25  0.013  0.144
+  30   lognormal 0.5  0.001  0.032
+  30  lognormal 0.75  0.001  0.004
+  30   lognormal 1.0  0.000  0.001
+  30          normal  0.014  0.438
+  50  lognormal 0.25  0.013  0.617
+  50   lognormal 0.5  0.016  0.524
+  50  lognormal 0.75  0.024  0.530
+  50   lognormal 1.0  0.036  0.489
+  50          normal  0.015  0.778
+ 100  lognormal 0.25  0.021  0.911
+ 100   lognormal 0.5  0.015  0.848
+ 100  lognormal 0.75  0.023  0.753
+ 100   lognormal 1.0  0.019  0.686
+ 100          normal  0.017  0.977
+worst error 0.036
+
+g1<-0.5 -> a/2, n<100 inc; any n<30 inc
+   n           shape  error  power
+  10  lognormal 0.25  0.000  0.000
+  10   lognormal 0.5  0.000  0.000
+  10  lognormal 0.75  0.000  0.000
+  10   lognormal 1.0  0.000  0.000
+  10          normal  0.000  0.000
+  20  lognormal 0.25  0.000  0.000
+  20   lognormal 0.5  0.000  0.000
+  20  lognormal 0.75  0.000  0.000
+  20   lognormal 1.0  0.000  0.000
+  20          normal  0.000  0.000
+  30  lognormal 0.25  0.016  0.275
+  30   lognormal 0.5  0.007  0.086
+  30  lognormal 0.75  0.005  0.018
+  30   lognormal 1.0  0.000  0.004
+  30          normal  0.014  0.525
+  50  lognormal 0.25  0.012  0.313
+  50   lognormal 0.5  0.004  0.036
+  50  lognormal 0.75  0.000  0.006
+  50   lognormal 1.0  0.000  0.000
+  50          normal  0.015  0.754
+ 100  lognormal 0.25  0.026  0.917
+ 100   lognormal 0.5  0.015  0.848
+ 100  lognormal 0.75  0.023  0.753
+ 100   lognormal 1.0  0.019  0.686
+ 100          normal  0.019  0.980
+worst error 0.026
+
+g1<-0.5 -> a/2, no skew floor; any n<30 inc
+   n           shape  error  power
+  10  lognormal 0.25  0.000  0.000
+  10   lognormal 0.5  0.000  0.000
+  10  lognormal 0.75  0.000  0.000
+  10   lognormal 1.0  0.000  0.000
+  10          normal  0.000  0.000
+  20  lognormal 0.25  0.000  0.000
+  20   lognormal 0.5  0.000  0.000
+  20  lognormal 0.75  0.000  0.000
+  20   lognormal 1.0  0.000  0.000
+  20          normal  0.000  0.000
+  30  lognormal 0.25  0.021  0.427
+  30   lognormal 0.5  0.021  0.338
+  30  lognormal 0.75  0.030  0.337
+  30   lognormal 1.0  0.039  0.351
+  30          normal  0.015  0.546
+  50  lognormal 0.25  0.016  0.640
+  50   lognormal 0.5  0.016  0.525
+  50  lognormal 0.75  0.024  0.530
+  50   lognormal 1.0  0.036  0.489
+  50          normal  0.016  0.793
+ 100  lognormal 0.25  0.026  0.917
+ 100   lognormal 0.5  0.015  0.848
+ 100  lognormal 0.75  0.023  0.753
+ 100   lognormal 1.0  0.019  0.686
+ 100          normal  0.019  0.980
+worst error 0.039
+
+always a/2, any n<30 inc
+   n           shape  error  power
+  10  lognormal 0.25  0.000  0.000
+  10   lognormal 0.5  0.000  0.000
+  10  lognormal 0.75  0.000  0.000
+  10   lognormal 1.0  0.000  0.000
+  10          normal  0.000  0.000
+  20  lognormal 0.25  0.000  0.000
+  20   lognormal 0.5  0.000  0.000
+  20  lognormal 0.75  0.000  0.000
+  20   lognormal 1.0  0.000  0.000
+  20          normal  0.000  0.000
+  30  lognormal 0.25  0.017  0.383
+  30   lognormal 0.5  0.017  0.325
+  30  lognormal 0.75  0.027  0.335
+  30   lognormal 1.0  0.039  0.351
+  30          normal  0.006  0.419
+  50  lognormal 0.25  0.011  0.599
+  50   lognormal 0.5  0.016  0.524
+  50  lognormal 0.75  0.024  0.530
+  50   lognormal 1.0  0.036  0.489
+  50          normal  0.007  0.688
+ 100  lognormal 0.25  0.020  0.910
+ 100   lognormal 0.5  0.015  0.848
+ 100  lognormal 0.75  0.023  0.753
+ 100   lognormal 1.0  0.019  0.686
+ 100          normal  0.010  0.951
+worst error 0.039
+```
+
+- RFC-015 adopts the rule marked CHOSEN: below 30 items no continuous non-inferiority test; when g1 < −0.5,
+  inconclusive below 50 items, α/4 from 50 to 99, α/2 from 100. Its worst error, 0.026, is within the Monte Carlo
+  error (about ±0.005 at 1000 simulations) of 0.025.
+- The validation suite in `harness/tests/test_stats_validity.py` (RFC-015, Testing) reruns a smaller fixed grid.

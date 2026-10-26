@@ -193,3 +193,34 @@ every catalog table. A row opens on click, Enter or Space.
 | the item view | `--item <item_id>`: fields, the item itself, the reference, each arm's output under `(run <run_id>)`, or `(run <run_id> · shown the latest of N repeats; the score is the mean of all N)` for a repeated arm |
 | the per-item table | `--items`: every item's score per arm, and each arm's Δ against the baseline |
 | the analysis charts | `--analysis`: the spread per arm and the difference from the baseline, per item, as numbers; `--x <metric>` adds each arm's mean on a second metric (the scatter) |
+
+## 0.5.0 changes (draft)
+
+Draft until 0.5.0 is built; then they are folded into the sections above. Words and chips are
+[UXS-004](UXS-004-studies-champions-prompts.md#words-and-marks)'s.
+
+- **Metric picker**: stage metrics appear grouped under their stage (`asr · wer`, `summary · rouge_l`),
+  after the end result's metrics; a composite of the goal (`summary_blend`) appears with its weights in
+  the tooltip.
+- **01 verdicts** with a margin: when the goal declares a margin for the metric, the table answers the
+  goal's question rather than "separated": the **verdict** column takes UXS-004's chips (`superior`,
+  `non-inferior`, `non-inferior · worse within margin`, `worse`, `inconclusive` with its reason), a
+  **margin** line sits under the table ("margin 0.01 on rouge_l, declared by news_summary_cnn"), and the
+  **p** column shows the non-inferiority p, with the superiority p in the row's tooltip. The method is
+  named under the table ("Tango's score test, 0/1 measure", or "bootstrap-t: from 30 items; stricter when the differences lean
+  towards losses"). Without a margin the table is as in 0.4.0.
+- **On a test dataset**: a note above the verdicts, "This is a test dataset of <goal>: these results are
+  nominal, not a look. A decision on them is recorded by `run-promote` or a study's check, which takes
+  look 3 at 0.17%."
+- **Failed items**: a note, "arm X: 3 items failed and are left out; the comparison uses the items both
+  arms measured".
+- **Machine and parallel**: the conditions table shows `machine.*` fields as "different machine"
+  (affects speed and cost only) and marks runs made in parallel.
+- **04 the item view, stages**: under the outputs, a **stages** panel for arms whose runs have stages:
+  one column per arm, one row per stage (by name, in pipeline order; a nested stage indented under its
+  parent): the stage's output (text, or JSON formatted and folded beyond 40 lines), its time, cost and
+  tokens, and its scores. The row where two arms' stage scores differ most is marked "largest
+  difference". A stage reference, when there is one, is a first column. Structured (JSON) outputs are
+  compared field by field: a field that differs is marked in both columns.
+- **Parity** additions: `evh inspect … --stages --item <id>` prints the stages panel; `--metric
+  asr.wer` works as any metric.

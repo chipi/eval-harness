@@ -84,7 +84,7 @@ per repeat, so each can be retried and resumed on its own (`experiment-run` refu
 - The supervisor runs each job as `evh experiment-run --config … --run-id <attempt run id> --actor …` (with
   `--resume <previous attempt>` when retrying an interrupted attempt), capturing output to the attempt's log.
 - **States**: queued, running, succeeded (with the run id), failed (reason), cancelled, timed_out, skipped, lost.
-  `jobs-status <id> [--json]` reads `state.json`; `jobs-logs <id> [--job J] [--follow]`; `jobs-stop <id>` sends SIGTERM to
+  `jobs-status <id> [--json]` reads `state.json` (and adds `next_check_s`, a suggested wait for a caller polling it); `jobs-logs <id> [--job J] [--follow]`; `jobs-stop <id>` sends SIGTERM to
   the supervisor, which stops running jobs (their process groups) and runs the pending `after` commands, then marks them
   cancelled. When the supervisor is already gone, `jobs-stop` runs the pending `after` commands itself, from the state
   `state.json` kept.

@@ -552,3 +552,47 @@ names and the verdicts' metric open their pages.
   twice.
 - A table that shows the period keeps the new badge, the row chips and the trends' form.
 - `make browser-check` and `harness/tests/test_catalog.py` pass.
+
+## 0.5.0 changes (draft)
+
+Draft until 0.5.0 is built; then they are folded into the sections above. New pages (studies, champions,
+prompts) are in [UXS-004](UXS-004-studies-champions-prompts.md), with the words and marks every page shares.
+
+- **Header**: the nav gains **Studies**, **Champions** and **Prompts** ([UXS-004](UXS-004-studies-champions-prompts.md#the-header)).
+- **"Baseline" becomes "champion"** everywhere: the home page's `baseline` column, the datasets page,
+  the dataset page's answer box (one box per goal that has a champion on the dataset: "champion of
+  <goal>, version n, promoted <date> by <actor>"), the arm page's tag, the `baseline` tag in tables
+  (`champion`). The champion links to its page.
+- **The goal page**:
+  - `01 the answer so far`: per dataset, the champion's id and version, "promoted <date> by <actor>",
+    the reason, its evidence in one line (the verdict chip and the look label, UXS-004), and
+    **inspect it** / **history** buttons. Without one: "No champion yet", and the command.
+  - **Test looks**, under the answer, one line per dataset in the `test` role: "test looks: 2 taken ·
+    next at 0.17% · limit 10 · used by 29 configurations before 0.5.0", linked to `evh goals --goal
+    <id> --looks`. A dataset at its limit: "limit reached: the next look needs your consent".
+  - **The decision box** uses non-inferiority (RFC-015): the reasons say "non-inferior to the leader
+    (margin 0.01 on rouge_l; p 0.003, nominal · not a look)" or "inconclusive against the leader (too few
+    items)" instead of "tied"; an inconclusive arm is never recommended on a tie-break, and the box says
+    so. A goal with no margin declared: "No margin declared for rouge_l: the recommendation is the quality
+    leader. Declare `success_criteria.margins` to allow tie-breaks." On a test dataset every result is
+    labelled `nominal · not a look`.
+  - `what it is for` gains **margins** (per measure, in its units) and **test looks** (the limit per
+    test dataset).
+  - `02 rounds`: a study's round has a `study` tag and links to the study's page; its row reads "study
+    s2 · confirmatory · 12 trials" in **set out to learn**; its details fold to the study's outcome box.
+  - Dataset roles read `validation` and `test` (0.4.0's `dev` and `heldout`).
+- **The arm page**:
+  - **build**: "commit 1a2b3c4d, verified (sent by the ssh runner, manifest checked)", "declared, not
+    verified (EVAL_BUILD_REF)", or "unknown";
+  - **machine** (its label, CPUs) beside the conditions, and "ran with 2 other jobs in parallel (set
+    round3-cnn): latency is not comparable with runs made alone" when marked;
+  - **failed items**: "3 of 200 items failed (2 transient, 1 not): left out of every mean and test",
+    folded to the reasons;
+  - `stages`, when its runs have stages: one row per stage: **stage**, its metrics' means, **latency
+    p50/p95**, **cost per item**, **tokens**, **model** (response model);
+  - `prompts`, when its config declares them: each name, version (linked to the prompt's page) and hash;
+  - **system**, for a process adapter: its declared name, version and code ref, and what was hashed
+    ("files: build/libs/*.jar, 14 files" or "launcher only: not identified");
+  - the actor of its runs ("run by agent:claude for person:marko").
+- **The metrics page**: stage metrics are listed under their stage ("asr · wer"); the harness's
+  reserved `judge.cost_usd` is listed with the bookkeeping metrics.

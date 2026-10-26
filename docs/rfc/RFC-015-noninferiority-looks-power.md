@@ -20,8 +20,8 @@ the leader by more than a declared margin (non-inferiority); has a **test item s
 often; and **can** these items show anything at all. The 0.4.0 question, is one arm **better**, keeps its
 test (the paired sign-flip test with Holm), which is exact for it. Non-inferiority is a different question
 with no exact permutation test, so this RFC chooses tests by simulation: for 0/1 measures, Tango's score test
-for paired proportions; for continuous measures, the studentized bootstrap, at half the level when the paired
-differences have a long tail of losses, and "inconclusive" below 50 items in that case. Verdicts are decided
+for paired proportions; for continuous measures, the studentized bootstrap, never below 30 items, and at a stricter
+level, or "inconclusive" below 50 items, when the paired differences lean towards losses. Verdicts are decided
 by p, in a fixed order. Each test dataset spends its one-sided α = 2.5% over its looks, front-loaded: the first look
 at 1.52%, the second at 0.38%, the tenth at 0.015%; only commands that write a decision take a look. The smallest
 attainable p and the minimum detectable effect are computed before anything is spent.
@@ -81,39 +81,48 @@ attainable p and the minimum detectable effect are computed before anything is s
     comparison has its own resamples and the same comparison always gives the same p.
   - s = 0 (every difference equal): no test is possible; the verdict is **inconclusive (no variation)**, and the
     catalog says the arms measured the same on every item.
-- **The skew guard**: g1 = mean(((d − m)/σ)³), σ the population standard deviation. For the lower test (non-inferiority),
-  when g1 < −1 (a long tail of losses) the test uses α/2, and when that holds and n < 50, the verdict is
-  **inconclusive (too few items for a skewed measure)**, whatever p says. The upper test of an equivalence claim is the
-  mirror image: guarded when g1 > +1. A long tail in the other direction makes the test conservative and needs no
-  guard.
+- **Too few items**: below 30 items no continuous non-inferiority test runs; the verdict is **inconclusive (too few
+  items for this test)**. Even on normal differences the bootstrap-t's error was 0.035 at 20 items and 0.019 to 0.075
+  at 10 items across tails.
+- **The skew guard**: g1 = mean(((d − m)/σ)³), σ the population standard deviation. For the lower test
+  (non-inferiority), when g1 < −0.5 (the differences lean towards losses): below 50 items the verdict is
+  **inconclusive (too few items for a skewed measure)**, whatever p says; from 50 to 99 items the test uses α/4; from
+  100 items α/2. The upper test of an equivalence claim is the mirror image (g1 > +0.5). A lean the other way makes the
+  test conservative and needs no guard.
 - **Margins** are in the measure's units, declared by the goal per measure in `success_criteria.margins: {measure:
   value}` (PRD-013 FR3.1); the 0.4.0 `axes.<axis>.margin` (a tie band defaulting to 2% of the leader) is removed, and
   the migration (RFC-014) moves a declared one into `margins` and lists it, since its meaning changes. With no margin,
   no non-inferiority test runs, and `validate` notes the goal. The `non_inferior` direction of PRD-005's goal axes uses
   this test.
 
-**Evidence** (one-sided 2.5%, true difference at −margin; Monte Carlo error about ±0.003 at 3000 runs, ±0.004 at
-1500):
+**Evidence for Tango** (one-sided 2.5%, true difference at −margin; Monte Carlo error about ±0.003 at 3000 runs):
 
-| items | 0/1, P(−1) .12 P(+1) .02: Tango | continuous, long loss tail: bootstrap-t (with guard) | continuous, normal: bootstrap-t |
-| --- | --- | --- | --- |
-| 10 | — | 0.083 (guard fired in 62%) → inconclusive | 0.023 |
-| 16 | 0.016 (P(−1) .15, P(+1) .05) | — | — |
-| 24 | 0.000 (P(−1) .05, P(+1) 0) | — | — |
-| 30 | 0.011 | 0.048 (93%) → inconclusive | 0.033 |
-| 50 | 0.014 | 0.030 (99%) | 0.029 |
-| 100 | 0.024 | 0.027 (100%) | 0.021 |
-| 200 | 0.023 | — | — |
+| items | 0/1 differences | Tango's error |
+| --- | --- | --- |
+| 16 | P(−1) .15, P(+1) .05 | 0.016 |
+| 24 | P(−1) .05, P(+1) 0 | 0.000 |
+| 30, 50, 100, 200 | P(−1) .12, P(+1) .02 | 0.011, 0.014, 0.024, 0.023 |
 
-Tango is at or below the level everywhere (conservative at small n). The bootstrap-t is slightly above the level:
-0.033 at 30 items on normal data, 0.030 at 50 items on a long loss tail with the guard, against 0.025 nominal, about
-twice the Monte Carlo error; it is within it from 100 items. It is reported as **slightly anti-conservative below 100
-items**, and the dry run and verdicts say so beside the method. Below 50 items on a long loss tail the guard turns the
-case into "inconclusive". These simulations used B = 400 resamples per test and a decision by the interval's quantile;
-`research/internal/stats-0.5.0/bootstrap_spec_check.py` reruns the exact specification above (p as defined, the
-mirrored guard) on normal data and on lognormal loss tails of σ ∈ {0.25, 0.5, 0.75, 1.0}, so the −1 threshold is
-checked across tail weights, not one shape. The validation suite (Testing) reruns a fixed, smaller grid on every
-change to `stats.py`.
+Tango is at or below the level everywhere (conservative at small n).
+
+**Evidence for the bootstrap-t and its rule.** An earlier draft guarded at g1 < −1 with α/2 and "inconclusive" below
+50 items, on one tail shape. Re-run with the exact specification on normal differences and lognormal tails of losses
+of σ ∈ {0.25, 0.5, 0.75, 1.0} (`bootstrap_spec_check.py`), it failed: 0.049 to 0.075 at 10 items for σ ≥ 0.5, 0.043 to
+0.046 at 20, and 0.042 at 50 items for σ = 1.0. The rule above was then chosen on one grid of simulations
+(`bootstrap_rule_grid.py`: 1000 simulations per cell, B = 999, at the margin for the error and at no difference for
+the power), scoring each candidate rule on the same draws (`bootstrap_rule_eval.py`, its output in the README):
+
+| items | worst error over the five shapes | power at no difference (normal; lognormal σ 0.25 to 1.0) |
+| --- | --- | --- |
+| 10, 20 | 0 (inconclusive) | 0 |
+| 30 | 0.016 | 0.525; 0.275, 0.086, 0.018, 0.004 |
+| 50 | 0.025 | 0.785; 0.570, 0.415, 0.424, 0.407 |
+| 100 | 0.026 | 0.980; 0.917, 0.848, 0.753, 0.686 |
+
+The worst error is within the Monte Carlo error (about ±0.005 at 1000 simulations) of the level. The price is power:
+on skewed differences below 50 items nothing can be shown, and between 30 and 50 items little. 200-item cells, run to
+check the large-sample end, are in the README when they finish. The validation suite (Testing) reruns a fixed, smaller
+grid on every change to `stats.py`.
 
 ### Verdicts
 
@@ -192,7 +201,8 @@ it is below 2.5%.
   had runs on it in the test role before 0.5.0. Pages show it beside the looks ("used by 29 configurations before
   0.5.0; levels from 0.5.0 do not account for that").
 - **Where it shows.** Goal pages and `evh goals` show per test dataset: looks taken, the next look's level, the protective
-  limit, and the prior use.
+  limit, and the prior use; `evh goals --goal G --looks` lists every look of its test datasets (key, level, actor,
+  what, verdict).
 
 ### Can these items show anything
 
@@ -244,8 +254,8 @@ margin before release (the owner sets each; RFC-014's plan prints the goals with
 ## Testing
 
 - `harness/tests/test_stats_validity.py` (seeded, under a minute): Tango's error at the margin ≤ 0.03 on a fixed
-  0/1 grid; the bootstrap-t with the guard ≤ 0.035 on normal data and at 50 items on a long loss tail; the guard
-  turns the 10-item long-tail case inconclusive; superiority unchanged against the 0.4.0 values (bit for bit).
+  0/1 grid; the bootstrap-t with its rule ≤ 0.035 on normal data and on a σ = 1.0 loss tail at 50 and 100 items;
+  below 30 items, and a skewed case below 50, inconclusive; superiority unchanged against the 0.4.0 values (bit for bit).
 - `harness/tests/test_stats.py`: `verdict` order (each outcome, and "non-inferior (worse, within margin)"); the p
   definition and B for small levels; s = 0 inconclusive; the seed differs per arm pair and repeats per comparison;
   the mirrored guard; the serial gatekeeping family; Holm across candidates; attainable p with zeros; the MDE formula
@@ -261,10 +271,11 @@ margin before release (the owner sets each; RFC-014's plan prints the goals with
 1. Tie-breaks are non-inferiority tests against a goal-declared margin, decided by p in a fixed verdict order;
    supersedes ADR-0006's tie rule.
 2. Tests by question and measure: sign-flip for superiority (unchanged); Tango for 0/1 non-inferiority;
-   bootstrap-t with a skew guard for continuous non-inferiority, inconclusive below 50 items on a long loss tail.
+   bootstrap-t for continuous non-inferiority from 30 items, with a skew guard (g1 < −0.5: inconclusive below 50
+   items, α/4 below 100, α/2 from 100).
 3. Test datasets spend α = 2.5% one-sided over their looks, front-loaded (γ_k = 6/(π²k²)), with a protective limit of K
    looks; only commands that write a decision take a look; subsets spend their dataset's budget; prior use is shown,
    not counted.
 4. Power is stated before spending: attainable p from the items that can contribute, and an MDE from data.
 5. Families: serial gatekeeping (non-inferiority family by Holm, then superiority) for a test check; the bootstrap-t is
-   specified exactly (p, B, seed, ties, the mirrored guard) and reported as slightly anti-conservative below 100 items.
+   specified exactly (p, B, seed, ties, the mirrored guard), its rule chosen on a simulation grid of tail weights.

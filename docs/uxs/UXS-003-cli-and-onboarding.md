@@ -149,3 +149,85 @@ evh round-close --goal tickets_summary --round r1 --conclusion "…" --promote <
 - A reason or a conclusion shorter than three words is refused: it must be a sentence.
 - `--promote` runs `run-promote` with the conclusion as the reason; if the promotion is refused,
   the round stays open.
+
+## 0.5.0 changes (draft)
+
+Draft until 0.5.0 is built; then they replace the sections above they name.
+
+### How a command speaks (replaces the section above)
+
+- **Results on stdout, everything else on stderr.** Progress, notes, hints and warnings go to stderr;
+  stdout holds the result: the table, or with `--json` the envelope `{"command", "version", "result"}`.
+  `evh <command> --json | jq .result` always works.
+- **Refusals**: on stderr, `REFUSED (<code>): <title>` then the detail and `fix: <command>` indented;
+  with `--json`, the problem details object on stdout. The code is stable and listed on the refusals
+  page. A consent refusal adds the grant command a person runs:
+
+  ```text
+  REFUSED (consent-required): This needs the person's consent
+    Promoting run:runs/cnn_bart_l_v1_20261026T153757.123Z_7f3a to champion of news_summary_cnn on
+    cnn_dailymail_200 (replacing version 2).
+    fix: evh consent grant --kind promote --command "evh run-promote --run run:runs/… --reason '…'"
+  ```
+
+  A person at a terminal running `run-promote` is asked to add `--confirm`, not to make a grant.
+- **Exit codes**: 0 done; 1 refused; 2 usage; 3 nothing measured; 4 stopped by a budget or the cost cap,
+  partial results kept; 5 partly failed (some jobs or trials); 6 a check found problems (`validate`,
+  `evidence-check`, `adapter-check`, `skills-check`); 65–78 operational errors (75: try again later);
+  130 interrupted. The table is printed by `evh --help` and in the Runbook.
+- **Who acted**: a command that writes prints, on stderr, "recorded as person:marko" (or "agent:claude
+  for person:marko", or "unknown:marko: set EVH_ACTOR to name yourself"), once.
+- **`--dry-run`** on every command that writes or spends prints the plan and "nothing was written or
+  called".
+- **Help**: `evh --help` lists every command with its purpose and effects; `evh <command> --help`
+  prints `usage: evh <command> …`, the purpose, the full description, the examples and the effects;
+  `evh commands --json` is the manifest.
+- Hints and notes as in 0.4.0, on stderr.
+
+### The parity table (rows added)
+
+| in the catalog or inspector | command |
+| --- | --- |
+| the champions page | `evh champions` |
+| a champion's page | `evh champions --goal G --dataset D [--all-versions]` |
+| (no page: a file) the champions export | `evh champions-export --out FILE` |
+| the studies page | `evh studies [--goal G]` |
+| a study's page | `evh study-status <study> [--trials]` |
+| the prompts page, a prompt's page, its changes | `evh prompts [<name>]`, `evh prompt-diff <a> <b>` |
+| the goal page's test looks | `evh goals --goal <id> --looks` |
+| the arm page's stages, prompts, build, failed items | `evh arms --arm <id>` (the same sections) |
+| the inspector's stages panel | `evh inspect … --stages --item <id>` |
+| a study page's suggested promotion | `evh run-promote --run <run> --reason "…" --confirm` |
+| (no page) jobs | `evh jobs-status <id>`, `evh jobs-logs <id>`, `evh jobs-stop <id>` |
+
+### The study flow
+
+```bash
+evh study-run data/studies/news_summary_cnn/s2.yaml --dry-run   # the plan, the cost, the possible evidence
+evh study-run data/studies/news_summary_cnn/s2.yaml             # returns the study id at once
+evh study-status study:news_summary_cnn/s2            # trials so far, budget, stop rule
+evh study-stop study:news_summary_cnn/s2              # if needed
+evh run-promote --run <the suggested run> --reason "…" --confirm # the person's decision
+```
+
+- `--dry-run` prints: the largest number of trials, the items per trial, the estimated cost per role
+  (system, judge, sampler), the test items left after exclusions, the smallest p they can reach and the
+  look's level, and whether the study would be refused (`no-possible-evidence`).
+- `study-status` prints the outcome first (UXS-004's box, as lines), then the trials table, the budget
+  and the stop rule.
+- With `sampler: {kind: agent}`: `evh study-ask study:news_summary_cnn/s2` prints the state as JSON and an `ask_id`; `evh
+  study-tell study:news_summary_cnn/s2 --ask <ask_id> --proposal proposal.json` runs the trial and prints kept or dropped and
+  why. A person can drive a study this way too.
+
+### Jobs
+
+- `evh jobs-run set.yaml` prints "job set round3-cnn started: 6 jobs, 3 at a time, on local. Follow:
+  evh jobs-status round3-cnn" and returns.
+- `evh jobs-status <id>` prints one line per job (state, attempts, run id, time) and the phases ("generate:
+  entered, mode before: prod; after pending" when the supervisor is gone).
+- `--wait` follows until the set ends, printing each job as it finishes, and exits with the set's code.
+
+### Onboarding
+
+Unchanged: the GUIDE's eight steps do not meet studies, stages, jobs or the server. A tutorial 6
+(a study, first driven by a built-in sampler, then by an agent through the server) follows tutorial 5.

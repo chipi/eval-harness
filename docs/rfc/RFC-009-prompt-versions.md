@@ -126,7 +126,10 @@ change to an unvaried file in the root still shows. The default `include` is eve
 
 A prompts page (every name, its versions, aliases) and a page per name: the versions as a lineage list with notes and
 authors, the diff between consecutive versions, and per version the runs and their scores. Arm pages link the prompt
-versions they used. Every view has its command (above).
+versions they used. Every view has its command (above). Prompt text (the diffs) is written into the static pages only
+when the project publishes it (`catalog: {publish: [prompts]}` in `config.yaml`), since a project's prompts may be
+private and the pages may be published; otherwise the pages show hashes and sizes, and the diff is `evh prompt-diff`
+([UXS-004](../uxs/UXS-004-studies-champions-prompts.md#a-prompts-page)).
 
 ### Validation (V19)
 
@@ -164,7 +167,7 @@ run records version 1 of each.
 ## Decisions (ADR candidates)
 
 1. The harness versions declared prompt files (content snapshots in `data/prompts/`), resolved automatically at run
-   time; prompts stay where the project keeps them (amends PRD-001's "not a prompt library").
+   time; prompts stay where the project keeps them (amends PRD-001's "not a prompt store").
 2. Prompts and a root's digest are part of the arm in the fingerprint.
 3. A per-run overlay directory gives the system its prompts without writing a tracked file.
 4. The harness's record directories do not make a build dirty; their integrity is checked by validation instead.

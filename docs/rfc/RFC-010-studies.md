@@ -212,7 +212,8 @@ continuous measure under non-inferiority the check is by power (RFC-015) and run
 ### Commands
 
 `study-run <spec> [--runner R] [--wait] [--dry-run] [--resume <id>]`, `study-status`, `study-logs`, `study-stop`,
-`study-ask`, `study-tell`, `study-confirm`, `studies [--goal G]`, `study-import`, each with `--json`. `--dry-run` writes and calls nothing:
+`study-ask`, `study-tell`, `study-confirm`, `studies [--goal G]`, `study-import`, each with `--json`. A study is named as
+`study:<goal>/<study_id>`, or by its bare id when only one goal has a study by that name. `--dry-run` writes and calls nothing:
 it prints the plan (the largest number of trials, the items per trial, the estimated cost per role, the attainable p and
 the look's level), and calls neither the system, the judges nor the sampler.
 

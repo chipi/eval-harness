@@ -137,7 +137,8 @@ maps to 70. A refusal prints, without `--json`, `REFUSED (<code>): <title>\n  <d
 `type` is the identity (a page listing every code, generated from a registry in `_refusals.py`, so a code cannot be
 used without its entry); `code` is its last segment and `exit_code` the process's exit code, both extension members.
 RFC 9457's `status` member means an HTTP status code, so it is not used. A refusal that needs consent carries
-`consent: {kind, command, amount, args_sha256}` (below).
+`consent: {kind, command, amount, args_sha256}` (below) and `for_the_agent`, one sentence telling an agent to ask the
+person to run the fix command and not to run it itself ([UXS-005](../uxs/UXS-005-agents.md#consent-from-both-sides)).
 
 ### Who acted (PRD-012 FR3)
 
@@ -180,7 +181,7 @@ runs `consent grant` itself in a shell. The records show what was claimed and ho
 data_dir: data            # EVAL_DATA_DIR wins
 runs_dir: data/runs       # EVAL_RUNS_DIR wins
 goals_dir: data/goals     # EVAL_GOALS_DIR wins
-catalog: {adapter: tools/my_adapter.py:Adapter}
+catalog: {adapter: tools/my_adapter.py:Adapter, publish: [prompts]}   # publish: what static pages may carry (RFC-009)
 runners: {dgx: {type: ssh, host: dgx-llm-1, …}}      # RFC-011
 limits: evh-limits.yaml                               # RFC-016: tracked, so git records who changed it
 ```

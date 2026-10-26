@@ -96,7 +96,7 @@ decision.
 - No Bayesian or evolutionary optimiser of the harness's own; ask/tell admits Optuna's.
 - No harness-side scorer: the project's `score` stays the instrument, judges included.
 
-**Amends**: [PRD-001](PRD-001-experiments-and-comparison.md)'s "not a prompt library" and "no automatic
+**Amends**: [PRD-001](PRD-001-experiments-and-comparison.md)'s "not a prompt store" and "no automatic
 choice of a winner", and [PRD-005](PRD-005-goals-and-rounds.md)'s "no automatic retirement", as
 recorded in those PRDs: the harness versions declared prompt files; inside a study, trials are kept or
 dropped by the study's declared rule, as search; nothing is promoted automatically.

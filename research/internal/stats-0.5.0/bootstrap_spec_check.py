@@ -53,8 +53,13 @@ def p_value(d, rng):
 
 def main():
     rng = random.Random(20261026)
-    shapes = [("normal", None), ("lognormal 0.25", 0.25), ("lognormal 0.5", 0.5), ("lognormal 0.75", 0.75),
-              ("lognormal 1.0", 1.0)]
+    shapes = [
+        ("normal", None),
+        ("lognormal 0.25", 0.25),
+        ("lognormal 0.5", 0.5),
+        ("lognormal 0.75", 0.75),
+        ("lognormal 1.0", 1.0),
+    ]
     print(f"type I at the margin, nominal {ALPHA}, {N_SIM} simulations, B = {B}")
     print(f"{'n':>4} {'shape':>15} {'type I':>7} {'guard fired':>11} {'inconclusive (guard, n<50)':>27}")
     for n in (10, 20, 30, 50, 100):
@@ -70,7 +75,10 @@ def main():
                 p = p_value(d, rng)
                 if p is not None and p <= (ALPHA / 2 if guard else ALPHA):
                     rej += 1
-            print(f"{n:>4} {name:>15} {rej / N_SIM:>7.3f} {fired / N_SIM:>11.0%} {inconc / N_SIM:>27.0%}", flush=True)
+            print(
+                f"{n:>4} {name:>15} {rej / N_SIM:>7.3f} {fired / N_SIM:>11.0%} {inconc / N_SIM:>27.0%}",
+                flush=True,
+            )
 
 
 if __name__ == "__main__":

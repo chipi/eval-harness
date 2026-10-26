@@ -76,7 +76,8 @@ never taken from the client. The harness also ships skills in the Agent Skills f
 ### Long work
 
 - A command declared `long_running` (`experiment-run`, `sweep`, `judge`, `rescore`) is started as a one-job set (RFC-011):
-  the tool returns at once with `{"job_set": id, "status": "queued"}`, and the agent follows it with the `jobs-status`,
+  the tool returns at once with `{"job_set": id, "status": "queued", "follow": "jobs-status", "stop": "jobs-stop"}`, and
+  the agent follows it with the `jobs-status`,
   `jobs-logs` and `jobs-stop` tools (the protocol's pattern for stateful tools). Commands that detach by themselves
   (`jobs-run`, `study-run`) are called directly: they return an id at once and are never wrapped in a second set. A
   `rescore` of one run is declared long-running like any rescore: one rule per command, no guessing from arguments.

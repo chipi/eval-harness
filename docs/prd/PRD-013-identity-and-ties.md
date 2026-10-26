@@ -119,8 +119,9 @@ project (the two projects known to use the harness), not a permanent command.
     is the quality leader, and `validate` notes the missing margin.
   - **FR3.2**: An arm is **non-inferior** to a reference when a one-sided test of H0: Δ ≤ −margin rejects at
     the level in force (2.5%, or a look's share, FR9). For 0/1 measures the test is the score test for
-    paired proportions (Tango); for continuous measures the studentized bootstrap, at half the level when
-    the paired differences have a long tail of losses, and inconclusive in that case below 50 items. The
+    paired proportions (Tango); for continuous measures the studentized bootstrap, from 30 items, at a
+    stricter level when the paired differences lean towards losses, and inconclusive in that case below 50
+    items (RFC-015 has the rule and its simulations). The
     shifted sign-flip test is not used: simulation showed it invalid for 0/1 measures and for skewed
     continuous ones ([RFC-015](../rfc/RFC-015-noninferiority-looks-power.md) has the tables; Tango and the guarded bootstrap hold the level there).
     **Inconclusive**: the test does not reject, or cannot (too few items).
