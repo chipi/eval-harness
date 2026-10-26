@@ -350,6 +350,9 @@ def block(num: str, eyebrow: str, inner: str, anchor: str = "") -> str:
     )
 
 
+PROSE = re.compile(r"[A-Za-z]{2,}(?=\s)")
+
+
 def table(tid: str, heads: list, rows: list, filt: str = "") -> str:
     """Build an HTML table with optional search filter. A row is a list of cells, or
     {"cells": [...], "cls": "...", "id": "..."} for a row with a class or an anchor."""
@@ -367,7 +370,11 @@ def table(tid: str, heads: list, rows: list, filt: str = "") -> str:
         a = (f' class="{attrs["cls"]}"' if attrs.get("cls") else "") + (
             f' id="{attrs["id"]}"' if attrs.get("id") else ""
         )
-        return f"<tr{a}>" + "".join(f"<td>{c}</td>" for c in cells) + "</tr>"
+        return f"<tr{a}>" + "".join(td(c) for c in cells) + "</tr>"
+
+    def td(c) -> str:
+        # Running text gets a readable minimum width on phones; identifiers keep their own width.
+        return f'<td class="prose">{c}</td>' if len(PROSE.findall(plain(str(c)))) >= 6 else f"<td>{c}</td>"
 
     body = "".join(tr(r) for r in rows)
     return (
@@ -2624,7 +2631,7 @@ def main() -> int:
         action="append",
         default=[],
         metavar="LABEL=URL",
-        help="add a link to the nav, e.g. Findings=https://evals.example.org/ (repeatable)",
+        help="add a link to the nav, e.g. Harness=https://evals.example.org/ (repeatable)",
     )
     ap.add_argument(
         "--api",

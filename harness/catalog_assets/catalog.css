@@ -123,7 +123,11 @@ footer code { font: .9em var(--mono); }
 .md code { overflow-wrap: anywhere; }
 .md p, .md li { overflow-wrap: break-word; }
 .mentions .chip { white-space: normal; overflow-wrap: anywhere; max-width: 100%; }
-@media (max-width: 760px) { table.data td.mono { min-width: 180px; } }
+/* table cells break between words, never inside an id: a narrow screen scrolls the table sideways
+   instead of squeezing a name to a letter per line; running text keeps a readable width */
+.scroll-x > table.data td, .scroll-x > table.data td.mono, .scroll-x > table.data a.cell-link,
+.block .scroll-x > table.data code { overflow-wrap: normal; }
+@media (max-width: 760px) { table.data td.prose { min-width: 24ch; } }
 
 .derived { font: 500 10.5px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted);
   border: 1px dashed var(--axis); border-radius: 999px; padding: 3px 7px; vertical-align: middle; white-space: nowrap; }

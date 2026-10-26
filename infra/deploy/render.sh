@@ -80,7 +80,7 @@ if c.get("umami_src") and c.get("website_id"):
 PY
 EVAL_HOME="$OUT/inspector" python3 "$OUT/inspector/pkg/evaluation_harness/catalog_build.py" \
   --out "$OUT/sites/$SITE/public/catalog" \
-  --link "Findings=https://$SITE/" --link "Docs=https://$SITE/docs/" --api /catalog/api/ \
+  --link "Harness=https://$SITE/" --link "Docs=https://$SITE/docs/" --api /catalog/api/ \
   --head "$OUT/catalog-head.html"
 rm -rf "$OUT/inspector/examples" "$OUT/catalog-head.html"
 # The build above ran the package's code; its bytecode is not part of the release.

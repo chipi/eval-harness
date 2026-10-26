@@ -103,6 +103,15 @@ try:
         counts,
     )
     html_pages = list(out.rglob("*.html"))
+    t = cb.table(
+        "t",
+        ["a", "b"],
+        [["<a>gold/ag_news_200</a>", "Pick a classifier that labels each news headline with its topic."]],
+    )
+    check(
+        "table: a sentence cell is prose (a readable width on phones); an id cell is not",
+        '<td class="prose">Pick' in t and "<td><a>gold/ag_news_200" in t,
+    )
     check(
         "build: no page carries a style attribute (a deployment's policy forbids them)",
         not [p.name for p in html_pages if 'style="' in p.read_text()],
