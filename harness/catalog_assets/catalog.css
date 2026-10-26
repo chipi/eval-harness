@@ -366,3 +366,14 @@ span.over { color: var(--local); font-weight: 600; }
 figure.chart figcaption { margin-top: 4px; }
 /* A point's name stays readable where a line crosses it: a halo in the chart's own colour. */
 svg text.name { paint-order: stroke; stroke: var(--surface); stroke-width: 6px; stroke-linejoin: round; }
+
+/* The legend's swatches, one class per series slot (catalog_charts.swatch): no inline styles. */
+.legend i.sw1 { background: var(--s1); }
+.legend i.sw2 { background: var(--s2); }
+.legend i.sw3 { background: var(--s3); }
+.legend i.sw4 { background: var(--s4); }
+.legend i.sw5 { background: var(--s5); }
+.legend i.sw6 { background: var(--s6); }
+.legend i.sw7 { background: var(--s7); }
+.legend i.sw8 { background: var(--s8); }
+.legend i.swm { background: var(--muted); }

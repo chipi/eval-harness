@@ -102,6 +102,26 @@ try:
         counts == {"goals": 0, "datasets": 2, "arms": 3, "configs": 3, "references": 1},
         counts,
     )
+    html_pages = list(out.rglob("*.html"))
+    check(
+        "build: no page carries a style attribute (a deployment's policy forbids them)",
+        not [p.name for p in html_pages if 'style="' in p.read_text()],
+    )
+    check(
+        "build: the harness adds nothing to a page's head of its own (no analytics)",
+        all("<script defer" not in p.read_text() for p in html_pages),
+    )
+    # --head: a deployment's own HTML (its analytics, a tag) in every page's head.
+    cb.HEAD = '<meta name="deploy-tag" content="ours">\n'
+    head_out = tmp / ".build" / "catalog-head"
+    cb.build(A, head_out)
+    cb.HEAD = ""
+    head_pages = list(head_out.rglob("*.html"))
+    check(
+        "--head: its HTML is in every page's head",
+        head_pages
+        and all('<meta name="deploy-tag" content="ours">\n</head>' in p.read_text() for p in head_pages),
+    )
     pages = {p.relative_to(out).as_posix() for p in out.rglob("*.html")}
     check(
         "build: home, a page per dataset, the inspector",

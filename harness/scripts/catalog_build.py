@@ -309,7 +309,7 @@ def page(
 <link rel="stylesheet" href="{up}assets/style.css">
 <link rel="stylesheet" href="{up}assets/catalog.css">
 <link rel="icon" href="{up}assets/icon.svg" type="image/svg+xml">
-</head>
+{HEAD}</head>
 <body data-up="{up}" data-item="{e(item)}" data-serve="{e(serve)}" data-api="{e(API)}">
 <header class="bar"><div class="wrap">
   <a class="brand" href="{up}index.html"><img class="mark" src="{up}assets/icon.svg"
@@ -2605,11 +2605,14 @@ def build(A: Adapter, out: Path, links: tuple = ()) -> dict:
 #: /api/ under `evh catalog-serve`; a deployment that serves the catalog under a path says so
 #: with --api (this repository's: /catalog/api/ on evals.humancopilot.eu).
 API = "/api/"
+#: HTML a deployment adds to every page's <head> (--head FILE): its analytics, a verification
+#: tag. The harness adds none of its own.
+HEAD = ""
 
 
 def main() -> int:
     """Build the catalog and write static pages to output directory."""
-    global API
+    global API, HEAD
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--out", type=Path, default=ROOT / ".build" / "catalog")
     ap.add_argument(
@@ -2628,12 +2631,22 @@ def main() -> int:
         default=API,
         help="where the inspector's API answers, for pages served under a path (default: /api/)",
     )
+    ap.add_argument(
+        "--head",
+        type=Path,
+        metavar="FILE",
+        help="HTML added to every page's <head>, for a deployment's own analytics or tags (none by default)",
+    )
     args = ap.parse_args()
     if not args.api.startswith("/") or not args.api.endswith("/"):
         raise SystemExit(
             f"--api {args.api!r}: expected a path that starts and ends with /, e.g. /catalog/api/"
         )
     API = args.api
+    if args.head:
+        if not args.head.is_file():
+            raise SystemExit(f"--head {args.head}: no such file")
+        HEAD = args.head.read_text(encoding="utf-8").strip() + "\n"
     links = []
     for spec in args.link:
         label, _, url = spec.partition("=")

@@ -69,10 +69,20 @@ python3 -m mkdocs build --strict --quiet -f "$ROOT/mkdocs.yml" -d "$OUT/sites/$S
 # The runs name their adapters (examples/<example>/adapter.py), whose METRIC_DESCRIPTIONS and
 # METRIC_KINDS the metric pages read: they sit beside the data for the build only, not shipped.
 cp -a "$ROOT/examples" "$OUT/inspector/examples"
+# This deployment's analytics in the catalog's pages (the harness adds none): the site's Umami tag,
+# from the same site/analytics.json, through catalog_build's --head.
+python3 - "$ROOT/site/analytics.json" > "$OUT/catalog-head.html" <<'PY'
+import html, json, sys
+c = json.load(open(sys.argv[1]))
+if c.get("umami_src") and c.get("website_id"):
+    d = f' data-domains="{html.escape(c["domains"])}"' if c.get("domains") else ""
+    print(f'<script defer src="{html.escape(c["umami_src"])}" data-website-id="{html.escape(c["website_id"])}"{d}></script>')
+PY
 EVAL_HOME="$OUT/inspector" python3 "$OUT/inspector/pkg/evaluation_harness/catalog_build.py" \
   --out "$OUT/sites/$SITE/public/catalog" \
-  --link "Findings=https://$SITE/" --link "Docs=https://$SITE/docs/" --api /catalog/api/
-rm -rf "$OUT/inspector/examples"
+  --link "Findings=https://$SITE/" --link "Docs=https://$SITE/docs/" --api /catalog/api/ \
+  --head "$OUT/catalog-head.html"
+rm -rf "$OUT/inspector/examples" "$OUT/catalog-head.html"
 # The build above ran the package's code; its bytecode is not part of the release.
 find "$OUT/inspector/pkg" -name __pycache__ -type d -prune -exec rm -rf {} +
 

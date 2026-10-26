@@ -27,6 +27,12 @@ def colour(i: int) -> str:
     return f"var(--s{i + 1})" if i < SLOTS else "var(--muted)"
 
 
+def swatch(i: int) -> str:
+    """The i-th series' swatch class (catalog.css: .sw1 to .sw8, then .swm): a class, never a
+    style="" attribute, which the deployed pages' Content-Security-Policy forbids."""
+    return f"sw{i + 1}" if i < SLOTS else "swm"
+
+
 def day_range(first: str, last: str) -> list[str]:
     """Every day from first to last inclusive (ISO dates)."""
     a, b = date.fromisoformat(first[:10]), date.fromisoformat(last[:10])
@@ -70,7 +76,7 @@ def legend(names: list[str]) -> str:
     """The series' names in their colours."""
     return (
         '<p class="legend">'
-        + "".join(f'<span><i style="background:{colour(i)}"></i>{_e(n)}</span>' for i, n in enumerate(names))
+        + "".join(f'<span><i class="{swatch(i)}"></i>{_e(n)}</span>' for i, n in enumerate(names))
         + "</p>"
     )
 
