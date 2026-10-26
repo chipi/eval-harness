@@ -83,7 +83,9 @@ tables 15px.
   default, linking to the overview); the global search ("Search ( / )"); the nav:
   **Overview**, **Goals**, **Datasets**, **References**, **Metrics**, **Inspector**; the theme
   toggle. On a phone the nav is a ☰ menu at the left of the bar, the name gives way to the
-  icon, and the search takes its own row.
+  icon, and the search is a round button beside the theme toggle that opens the search box on a
+  row below the bar. The bar has the site's and the docs' geometry: 56 px high, 36 px round buttons
+  (34 px under 375 px), 8 px apart, the same icons.
 - **Switcher (with `--link`):** the parts of the publication the catalog belongs to, in the
   order given, e.g. **Harness · Catalog · Docs**, the catalog marked, after the brand; the brand
   then opens the first part. The same control heads the deployment's site and docs, ☰ at the

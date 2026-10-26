@@ -64,6 +64,19 @@ if(t==='light'||t==='dark')document.documentElement.dataset.theme=t;
 document.documentElement.classList.add('js');})();
 """
 
+# The bar's icons, drawn the same as on the eval-harness site and its docs: a glyph like ☰ or ◐
+# renders differently per font.
+_SVG = (
+    '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" '
+    'stroke="currentColor" stroke-width="2" stroke-linecap="round">'
+)
+ICON = {
+    "menu": _SVG + '<path d="M4 7h16M4 12h16M4 17h16"/></svg>',
+    "search": _SVG + '<circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg>',
+    "theme": _SVG
+    + '<circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg>',
+}
+
 NAV = [
     ("home", "index.html", "Overview"),
     ("goals", "goals.html", "Goals"),
@@ -332,8 +345,9 @@ def page(
   <div class="search"><input id="q" type="search" placeholder="Search  ( / )"
     autocomplete="off" aria-label="Search the catalog"><div id="hits" hidden></div></div>
   <nav class="nav">{links}</nav>
-  <details class="menu"><summary aria-label="Menu">☰</summary><nav class="menu-links">{links}</nav></details>
-  <button id="theme" class="theme" aria-label="Toggle light and dark">◐</button>
+  <details class="menu"><summary class="hbtn" aria-label="Menu">{ICON["menu"]}</summary><nav class="menu-links">{links}</nav></details>
+  <button class="hbtn search-btn" type="button" aria-label="Search" aria-expanded="false" aria-controls="q">{ICON["search"]}</button>
+  <button id="theme" class="theme hbtn" aria-label="Toggle light and dark">{ICON["theme"]}</button>
 </div></header>
 <main>
 {body}

@@ -1,43 +1,20 @@
 {#-
-  Material 9.7.7's partials/header.html (pinned in site/requirements-docs.txt), with one addition:
-  the Harness · Catalog · Docs switcher from mkdocs.yml extra.sections, after the title, the docs
-  marked -- the same control that heads the site and the catalog. On a Material upgrade, copy
-  the new partial and re-add the block marked "sections".
+  The docs bar, laid out as the site's and the catalog's (site/build.py, catalog_build.py): ☰ (the
+  drawer, on narrow screens), the logo and name, the Harness · Catalog · Docs switcher from
+  mkdocs.yml extra.sections with the docs marked, then search and the light/dark toggle -- the
+  same icons, sizes and spacing (docs/assets/docs.css). Material 9.7.7's own pieces stay: the
+  drawer and search toggles (labels for __drawer and __search), its search panel, the repository
+  box. Its palette toggle is replaced by the site's: the choice is stored as the site's own
+  "theme" (same origin), so the site, the catalog and the docs share it, and with none stored
+  the docs follow the system. On a Material upgrade, compare with its partials/header.html.
 -#}
-{% set class = "md-header" %}
-{% if "navigation.tabs.sticky" in features %}
-  {% set class = class ~ " md-header--shadow md-header--lifted" %}
-{% elif "navigation.tabs" not in features %}
-  {% set class = class ~ " md-header--shadow" %}
-{% endif %}
-<header class="{{ class }}" data-md-component="header">
-  <nav class="md-header__inner md-grid" aria-label="{{ lang.t('header') }}">
-    <a href="{{ config.extra.homepage | d(nav.homepage.url, true) | url }}" title="{{ config.site_name | e }}" class="md-header__button md-logo" aria-label="{{ config.site_name }}" data-md-component="logo">
-      {% include "partials/logo.html" %}
+{% set svg = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">' %}
+<header class="md-header md-header--shadow eh-header" data-md-component="header">
+  <nav class="md-header__inner md-grid eh-bar" aria-label="{{ lang.t('header') }}">
+    <label class="hbtn eh-menu" for="__drawer" aria-label="Menu">{{ svg }}<path d="M4 7h16M4 12h16M4 17h16"/></svg></label>
+    <a class="eh-brand" href="{{ config.extra.homepage | d(nav.homepage.url, true) | url }}" aria-label="{{ config.site_name | e }}">
+      <img src="{{ config.theme.logo | url }}" alt="" width="28" height="28"><span>eval-harness</span>
     </a>
-    <label class="md-header__button md-icon" for="__drawer">
-      {% set icon = config.theme.icon.menu or "material/menu" %}
-      {% include ".icons/" ~ icon ~ ".svg" %}
-    </label>
-    <div class="md-header__title" data-md-component="header-title">
-      <div class="md-header__ellipsis">
-        <div class="md-header__topic">
-          <span class="md-ellipsis">
-            {{ config.site_name }}
-          </span>
-        </div>
-        <div class="md-header__topic" data-md-component="header-topic">
-          <span class="md-ellipsis">
-            {% if page.meta and page.meta.title %}
-              {{ page.meta.title }}
-            {% else %}
-              {{ page.title }}
-            {% endif %}
-          </span>
-        </div>
-      </div>
-    </div>
-    {#- sections -#}
     {% if config.extra.sections %}
       <nav class="sections" aria-label="Sections">
         {%- for s in config.extra.sections -%}
@@ -49,36 +26,34 @@
         {%- endfor -%}
       </nav>
     {% endif %}
-    {% if config.theme.palette %}
-      {% if not config.theme.palette is mapping %}
-        {% include "partials/palette.html" %}
-      {% endif %}
-    {% endif %}
-    {% if not config.theme.palette is mapping %}
-      {% include "partials/javascripts/palette.html" %}
-    {% endif %}
-    {% if config.extra.alternate %}
-      {% include "partials/alternate.html" %}
-    {% endif %}
     {% if "material/search" in config.plugins %}
       {% set search = config.plugins["material/search"] | attr("config") %}
       {% if search.enabled %}
-        <label class="md-header__button md-icon" for="__search">
-          {% set icon = config.theme.icon.search or "material/magnify" %}
-          {% include ".icons/" ~ icon ~ ".svg" %}
-        </label>
+        <label class="hbtn eh-search" for="__search" aria-label="Search">{{ svg }}<circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg></label>
         {% include "partials/search.html" %}
       {% endif %}
     {% endif %}
+    <button class="hbtn eh-theme" type="button" aria-label="Toggle light and dark">{{ svg }}<circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg></button>
     {% if config.repo_url %}
       <div class="md-header__source">
         {% include "partials/source.html" %}
       </div>
     {% endif %}
   </nav>
-  {% if "navigation.tabs.sticky" in features %}
-    {% if "navigation.tabs" in features %}
-      {% include "partials/tabs.html" %}
-    {% endif %}
-  {% endif %}
 </header>
+<script>
+(function () {
+  var body = document.body, dark = matchMedia("(prefers-color-scheme: dark)");
+  function chosen() {
+    var t; try { t = localStorage.getItem("theme"); } catch (e) {}
+    return t === "light" || t === "dark" ? t : (dark.matches ? "dark" : "light");
+  }
+  function apply() { body.setAttribute("data-md-color-scheme", chosen() === "dark" ? "slate" : "default"); }
+  apply();
+  dark.addEventListener("change", apply);
+  document.querySelector(".eh-theme").addEventListener("click", function () {
+    try { localStorage.setItem("theme", chosen() === "dark" ? "light" : "dark"); } catch (e) {}
+    apply();
+  });
+})();
+</script>

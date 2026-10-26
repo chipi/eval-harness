@@ -27,7 +27,8 @@ A catalog that works on a phone and sits inside a deployment's own site. No resu
   the links head every page in order, the catalog marked (`LABEL=.` places it; without one it
   comes first as Catalog), and the logo opens the first. The catalog's own pages stay in its nav
   (a ☰ menu at the left of the bar on phones), and its front page is called Overview. The search
-  box reads "Search ( / )"; a long count on the overview shows in short form on a phone (19.5M).
+  box reads "Search ( / )", and on a phone it is a round search button in the bar that opens it below; a long
+  count on the overview shows in short form on a phone (19.5M). The bar's buttons are SVG icons.
 - **Tables on a phone**: a cell breaks between words, never inside a name, so a narrow screen
   scrolls a wide table sideways; running text keeps a readable width; a long item id is
   shortened in the inspector's per-item table (the whole id is its title); no catalog or

@@ -1,7 +1,6 @@
 /* eval catalog — what only the catalog needs, on the eval-harness site's tokens (style.css). */
 
 /* header search */
-.bar .wrap { gap: 20px; }
 .search { position: relative; flex: 1; max-width: 420px; }
 .search input { width: 100%; font: 500 13px/1 var(--mono); color: var(--ink); background: var(--surface);
   border: 1px solid var(--hair); border-radius: 999px; padding: 10px 16px; outline: none; }
@@ -102,8 +101,6 @@ footer code { font: .9em var(--mono); }
 .sections a { padding: 7px 11px; border-radius: 999px; text-decoration: none; color: var(--ink-2); white-space: nowrap; }
 .sections a:hover { color: var(--ink); background: var(--surface-2); }
 .sections a[aria-current="page"] { color: var(--page); background: var(--ink); }
-@media (max-width: 360px) { .sections a { padding: 7px 8px; } }
-@media (max-width: 1080px) { .bar:has(.sections) .brand span { display: none; } }
 
 /* Phones: the catalog's pages in a ☰ dropdown (<details>, no script), every link in it. */
 .menu { display: none; position: relative; }
@@ -118,15 +115,20 @@ footer code { font: .9em var(--mono); }
   font: 500 14px/1.2 var(--mono); }
 .menu-links a:hover, .menu-links a[aria-current="page"] { background: var(--surface-2); }
 
-/* phones: logo, switcher, ☰ and theme on one row, search full width below; the pages in ☰ */
+/* phones: ☰, the logo, the switcher, search and the theme on one row (as on the site); the
+   search button opens the search on a row below it (catalog.js) */
+.bar .search-btn { display: none; }
 @media (max-width: 760px) {
-  .bar .wrap { flex-wrap: wrap; height: auto; padding-top: 10px; padding-bottom: 10px; gap: 10px; }
-  .search { order: 3; flex: 1 0 100%; }
+  .bar .wrap { flex-wrap: wrap; height: auto; padding-top: 10px; padding-bottom: 10px; row-gap: 10px; }
+  .bar .search { display: none; order: 9; flex: 1 0 100%; max-width: none; }
+  .bar.searching .search { display: block; }
   .bar .nav { display: none; }
   .bar .menu { display: block; order: -1; }
   .bar .menu .menu-links { left: 0; right: auto; }
-  .nav .theme, .bar .theme { flex: none; }
-  .bar .theme { order: 2; margin-left: auto; }
+  .bar .sections { margin-right: auto; }
+  .bar .search-btn { display: grid; order: 2; }
+  .bar.searching .search-btn { color: var(--accent); border-color: var(--accent); }
+  .bar .theme { flex: none; order: 3; margin-left: 0; }
   .hero.slim { padding: 40px 0 32px; }
 }
 
@@ -363,6 +365,8 @@ small.retired { color: var(--local); font: 600 10px/1 var(--mono); letter-spacin
 /* a long count (19,534,609) in short form (19.5M) where three tiles share a phone's row */
 .tile .short { display: none; }
 @media (max-width: 560px) { .tile .full { display: none; } .tile .short { display: inline; } }
+/* the number's own type, not the tile's label's (.tile span) */
+.tile b span { font: inherit; letter-spacing: inherit; text-transform: none; color: inherit; }
 .tile span { font: 500 11px/1.4 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
 .period-switch { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin: 14px 0 0; }
 .period-switch button[aria-pressed="true"] { border-color: var(--accent); color: var(--ink); }
@@ -404,3 +408,25 @@ svg text.name { paint-order: stroke; stroke: var(--surface); stroke-width: 6px; 
 /* a legend entry's tag ("baseline") stays one word; the entry wraps around it */
 .legend small { overflow-wrap: normal; white-space: nowrap; }
 .legend span { flex-wrap: wrap; max-width: 100%; }
+
+/* ── the bar: one geometry on the site, in the catalog and in the docs ──────────────────
+   (site/assets/style.css, harness/catalog_assets/catalog.css and docs/assets/docs.css carry the
+   same numbers): 56 px high; ☰ on narrow screens, the logo, the switcher, then search and the
+   theme as 36 px round buttons, 8 px apart, so moving between the three moves nothing. */
+.bar .wrap { height: 56px; gap: 8px; }
+.hbtn, .menu > summary.hbtn { box-sizing: border-box; flex: none; width: 36px; height: 36px; display: grid;
+  place-items: center; margin: 0; padding: 0; border: 1px solid var(--hair); border-radius: 50%;
+  background: none; color: var(--ink); cursor: pointer; text-decoration: none; font-size: 0; }
+.hbtn:hover { color: var(--accent); border-color: var(--accent); }
+.hbtn svg { display: block; width: 16px; height: 16px; }
+.menu[open] > summary.hbtn { color: var(--accent); border-color: var(--accent); }
+.bar .sections { gap: 2px; padding: 3px; font: 500 12px/1 var(--mono); letter-spacing: .03em; }
+.bar .sections a { padding: 8px 10px; }
+.bar .brand { gap: 10px; }
+@media (max-width: 1080px) { .bar:has(.sections) .brand span { display: none; } }
+@media (max-width: 760px) { .bar .sections a { padding: 8px 6px; } }
+@media (max-width: 374px) {
+  .bar .wrap { gap: 6px; }
+  .hbtn, .menu > summary.hbtn { width: 34px; height: 34px; }
+  .bar .sections a { padding: 8px 4px; }
+}

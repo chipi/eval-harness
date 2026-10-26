@@ -17,8 +17,12 @@ document.addEventListener('keydown',ev=>{if(box.hidden||!['ArrowDown','ArrowUp']
 const ls=[...box.querySelectorAll('a')];if(!ls.length)return;ev.preventDefault();
 const i=ls.indexOf(document.activeElement);const n=ev.key==='ArrowDown'?Math.min(i+1,ls.length-1):i-1;
 (n<0?q:ls[n]).focus();});
-document.addEventListener('keydown',ev=>{if(ev.key==='/'&&document.activeElement!==q){ev.preventDefault();q.focus();}if(ev.key==='Escape'){box.hidden=true;q.blur();}});
-document.addEventListener('click',ev=>{if(!ev.target.closest('.search'))box.hidden=true;});})();
+document.addEventListener('keydown',ev=>{if(ev.key==='/'&&document.activeElement!==q){ev.preventDefault();document.querySelector('.bar').classList.add('searching');q.focus();}if(ev.key==='Escape'){box.hidden=true;q.blur();}});
+document.addEventListener('click',ev=>{if(!ev.target.closest('.search'))box.hidden=true;});
+/* phones: the search is a button in the bar; it opens the search row under it and focuses it */
+const sb=document.querySelector('.search-btn'),bar=document.querySelector('.bar');
+if(sb)sb.addEventListener('click',()=>{const on=bar.classList.toggle('searching');sb.setAttribute('aria-expanded',on);
+if(on)q.focus();else{box.hidden=true;q.blur();}});})();
 document.querySelectorAll('input[data-filter]').forEach(inp=>{const t=document.getElementById(inp.dataset.filter);
 inp.addEventListener('input',()=>{const w=inp.value.toLowerCase().split(/\s+/).filter(Boolean);let n=0;
 t.querySelectorAll('tbody tr').forEach(r=>{const ok=w.every(x=>r.textContent.toLowerCase().includes(x));r.hidden=!ok;n+=ok;});

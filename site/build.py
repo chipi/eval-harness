@@ -41,6 +41,15 @@ SITE = "https://evals.humancopilot.eu"
 #: (catalog, goal pages, run inspector) live on their own subdomains, linked from the nav.
 DOCS = "https://evals.humancopilot.eu/docs/"
 CATALOG = "https://evals.humancopilot.eu/catalog/"
+# The bar's icons, drawn the same on the site, in the catalog (catalog_build.ICON) and in the
+# docs (site/docs_theme/partials/header.html): a glyph like ☰ or ◐ renders differently per font.
+_SVG = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">'
+ICON = {
+    "menu": _SVG + '<path d="M4 7h16M4 12h16M4 17h16"/></svg>',
+    "search": _SVG + '<circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg>',
+    "theme": _SVG
+    + '<circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg>',
+}
 OUT = HERE / "public"
 #: The harness version the site describes, from the one place it is set.
 VERSION = re.search(
@@ -626,8 +635,8 @@ def page(title: str, desc: str, body: str, depth: int = 0, here: str = "", card:
 <header class="bar"><div class="wrap">
   <a class="brand" href="{up}index.html" aria-label="eval-harness home"><img class="mark" src="{up}assets/icon.svg" alt="" width="28" height="28"><span>eval-harness</span></a>
   <nav class="sections" aria-label="Harness, catalog and docs">{sections}</nav>
-  <details class="menu"><summary aria-label="Menu">☰</summary><nav class="menu-links">{links}</nav></details>
-  <nav class="nav">{links}<button id="theme" class="theme" aria-label="Toggle light and dark">◐</button></nav>
+  <details class="menu"><summary class="hbtn" aria-label="Menu">{ICON["menu"]}</summary><nav class="menu-links">{links}</nav></details>
+  <nav class="nav">{links}<a class="hbtn search-btn" href="{up}docs/?q=" aria-label="Search the docs">{ICON["search"]}</a><button id="theme" class="theme hbtn" aria-label="Toggle light and dark">{ICON["theme"]}</button></nav>
 </div></header>
 <main>
 {body}

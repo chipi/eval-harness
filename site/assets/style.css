@@ -411,7 +411,6 @@ footer .wrap.foot { display: block; }
 .sections a[aria-current="page"] { color: var(--page); background: var(--ink); }
 .bar .brand + .sections { margin-right: auto; }
 @media (max-width: 1080px) { .bar .brand span { display: none; } }
-@media (max-width: 360px) { .sections a { padding: 7px 8px; } }
 
 /* Phones: the part's own pages in a ☰ dropdown (<details>, no script), every link in it. */
 .menu { display: none; position: relative; }
@@ -428,5 +427,31 @@ footer .wrap.foot { display: block; }
 @media (max-width: 760px) {
   .bar .menu { display: block; order: -1; }
   .bar .menu .menu-links { left: 0; right: auto; }
-  .bar .nav > a { display: none; }
+  .bar .nav > a:not(.search-btn) { display: none; }
 }
+
+/* ── the bar: one geometry on the site, in the catalog and in the docs ──────────────────
+   (site/assets/style.css, harness/catalog_assets/catalog.css and docs/assets/docs.css carry the
+   same numbers): 56 px high; ☰ on narrow screens, the logo, the switcher, then search and the
+   theme as 36 px round buttons, 8 px apart, so moving between the three moves nothing. */
+.bar .wrap { height: 56px; gap: 8px; }
+.hbtn, .menu > summary.hbtn { box-sizing: border-box; flex: none; width: 36px; height: 36px; display: grid;
+  place-items: center; margin: 0; padding: 0; border: 1px solid var(--hair); border-radius: 50%;
+  background: none; color: var(--ink); cursor: pointer; text-decoration: none; font-size: 0; }
+.hbtn:hover { color: var(--accent); border-color: var(--accent); }
+.hbtn svg { display: block; width: 16px; height: 16px; }
+.menu[open] > summary.hbtn { color: var(--accent); border-color: var(--accent); }
+.bar .sections { gap: 2px; padding: 3px; font: 500 12px/1 var(--mono); letter-spacing: .03em; }
+.bar .sections a { padding: 8px 10px; }
+.bar .brand { gap: 10px; }
+@media (max-width: 1080px) { .bar .brand span { display: none; } }
+@media (max-width: 760px) { .bar .sections a { padding: 8px 6px; } }
+@media (max-width: 374px) {
+  .bar .wrap { gap: 6px; }
+  .hbtn, .menu > summary.hbtn { width: 34px; height: 34px; }
+  .bar .sections a { padding: 8px 4px; }
+}
+.bar .nav { align-items: center; }
+@media (max-width: 760px) { .bar .nav { gap: 8px; } }
+@media (max-width: 374px) { .bar .nav { gap: 6px; } }
+.bar .nav a.hbtn { padding: 0; }

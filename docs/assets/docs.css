@@ -53,6 +53,9 @@
 body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
 
 /* ── header: the site's bar ─────────────────────────────── */
+/* The same bar as the site's and the catalog's (site/assets/style.css, catalog.css): 56 px high,
+   the site's width and gutters, ☰ (narrow screens), the logo and name, the switcher, then search
+   and the theme as 36 px round buttons 8 px apart. In px, since Material's rem is not the site's. */
 .md-header {
   background: color-mix(in srgb, var(--eh-page) 80%, transparent);
   backdrop-filter: blur(12px);
@@ -60,36 +63,41 @@ body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; 
   box-shadow: none;
 }
 .md-header[data-md-state="shadow"], .md-header--shadow { box-shadow: none; }
-.md-header__title { font-family: var(--eh-mono); font-weight: 600; font-size: .7rem; letter-spacing: .04em; }
-/* The project mark (icon.svg, as on the site) before the title; Material's own logo slot
-   stays hidden so the header shows it once. */
-.md-header__topic:first-child .md-ellipsis::before {
-  content: ""; display: inline-block; width: 1rem; height: 1rem; margin-right: .5rem;
-  background: url("icon.svg") center / contain no-repeat; vertical-align: -.25rem;
+.md-header__inner.eh-bar { box-sizing: border-box; max-width: 1180px; height: 56px; padding: 0 24px;
+  display: flex; align-items: center; gap: 8px; }
+.eh-bar .hbtn { box-sizing: border-box; flex: none; width: 36px; height: 36px; display: grid; place-items: center;
+  margin: 0; padding: 0; border: 1px solid var(--eh-hair); border-radius: 50%; background: none;
+  color: var(--eh-ink); cursor: pointer; }
+.eh-bar .hbtn:hover { color: var(--eh-accent); border-color: var(--eh-accent); }
+.eh-bar .hbtn svg { display: block; width: 16px; height: 16px; }
+.eh-brand { display: flex; align-items: center; gap: 10px; flex: none; color: var(--eh-ink);
+  font: 600 14px/1 var(--eh-mono); letter-spacing: .04em; white-space: nowrap; }
+.eh-brand:hover { color: var(--eh-ink); }
+.eh-brand img { display: block; width: 28px; height: 28px; }
+.eh-bar .sections { display: inline-flex; flex: none; gap: 2px; padding: 3px; margin-right: auto;
+  border: 1px solid var(--eh-hair); border-radius: 999px; font: 500 12px/1 var(--eh-mono); letter-spacing: .03em; }
+.eh-bar .sections a { padding: 8px 10px; border-radius: 999px; color: var(--eh-ink-2); white-space: nowrap; }
+.eh-bar .sections a:hover { color: var(--eh-ink); background: var(--eh-surface-2); }
+.eh-bar .sections a[aria-current="page"] { color: var(--eh-page); background: var(--eh-ink); }
+.eh-bar .md-header__source { margin-left: 8px; }
+/* ☰ opens the drawer where Material shows no sidebar; the search box is inline on wide screens */
+@media screen and (min-width: 76.25em) { .eh-bar .eh-menu { display: none; } }
+@media screen and (min-width: 60em) { .eh-bar .eh-search { display: none; } }
+@media (max-width: 1080px) { .eh-brand span { display: none; } }
+@media (max-width: 640px) { .md-header__inner.eh-bar { padding: 0 16px; } }
+@media (max-width: 760px) { .eh-bar .sections a { padding: 8px 6px; } }
+@media (max-width: 374px) {
+  .md-header__inner.eh-bar { gap: 6px; }
+  .eh-bar .hbtn { width: 34px; height: 34px; }
+  .eh-bar .sections a { padding: 8px 4px; }
 }
-.md-header__button.md-logo { display: none; }
-/* Harness · Catalog · Docs, as on the site and in the catalog: after the title, the docs marked.
-   Phones keep the switcher and leave the title to the drawer and the page's own heading. */
-.md-header__title { flex: 0 1 16rem; }
-.md-header .sections { display: inline-flex; flex: none; gap: 2px; padding: 3px; margin: 0 auto 0 .8rem;
-  border: 1px solid var(--eh-hair); border-radius: 999px; font: 500 .6rem/1 var(--eh-mono); letter-spacing: .03em; }
-.md-header .sections a { padding: .35rem .55rem; border-radius: 999px; color: var(--eh-ink-2); white-space: nowrap; }
-.md-header .sections a:hover { color: var(--eh-ink); background: var(--eh-surface-2); }
-.md-header .sections a[aria-current="page"] { color: var(--eh-page); background: var(--eh-ink); }
-@media screen and (max-width: 59.984375em) {
-  .md-header__title { display: none; }
-  .md-header .sections { margin-left: .2rem; }
-  .md-header .sections a { padding: .35rem .45rem; }
-  /* as on the site and in the catalog: ☰, then the logo, then the switcher */
-  .md-header__inner > label.md-header__button[for="__drawer"] { order: -2; }
-  .md-header .md-header__button.md-logo { display: inline-block; order: -1; margin: .2rem 0; padding: .4rem .2rem; }
-}
-/* the narrowest phones (360 px): a little less air, so search still fits */
-@media screen and (max-width: 24em) {
-  .md-header .sections a { padding: .35rem .3rem; }
-  .md-header .md-header__button.md-logo { padding: .4rem 0; }
-  .md-header__button { margin-left: .1rem; margin-right: .1rem; }
-}
+/* Material's search panel sits in the row but takes no room on narrow screens: undo its gap; the
+   theme goes last, at the right edge, as on the site and in the catalog */
+@media screen and (max-width: 59.984375em) { .eh-bar > .md-search { margin-left: -8px; } }
+@media (max-width: 374px) { .eh-bar > .md-search { margin-left: -6px; } }
+.eh-bar .eh-theme { order: 10; }
+/* the sidebars stick under the taller bar */
+@media screen and (min-width: 60em) { .md-sidebar { top: 56px; } }
 .md-tabs { background: transparent; border-bottom: 1px solid var(--eh-hair); }
 .md-search__form { background: var(--eh-surface); border: 1px solid var(--eh-hair); border-radius: 999px; }
 .md-search__input::placeholder { color: var(--eh-muted); }
