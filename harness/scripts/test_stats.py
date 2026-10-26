@@ -175,4 +175,33 @@ flipped = [
 check("compare_by: a group tested alone can separate where the joint correction does not", bool(flipped))
 check("compare_by: items per group", [g["items"] for g in by["groups"]] == [10, 10, 10])
 
+
+# The estimate's fast path (signs drawn once per item count, sums in C) must give the p the
+# straightforward loop gives, bit for bit: it made the catalog build 7x faster and may move nothing.
+def _loop_p(deltas, permutations=stats.PERMUTATIONS, seed=stats.SEED):
+    obs = statistics.fmean(deltas)
+    rng = random.Random(seed)
+    hits = sum(
+        1
+        for _ in range(permutations)
+        if abs(statistics.fmean(d if rng.random() < 0.5 else -d for d in deltas)) >= abs(obs)
+    )
+    return (hits + 1) / (permutations + 1)
+
+
+gen = random.Random(7)
+cases = [
+    [gen.choice([-1.0, 0.0, 0.0, 1.0]) for _ in range(60)],  # 0/1 accuracy: ties at the threshold
+    [round(gen.gauss(0.01, 0.05), 6) for _ in range(45)],
+    [gen.uniform(-0.3, 0.2) for _ in range(31)],
+]
+check(
+    "sign_flip_p: the fast estimate is the loop's p, bit for bit (ties, rounded and raw deltas)",
+    all(stats.sign_flip_p(c, permutations=2000) == _loop_p(c, permutations=2000) for c in cases),
+)
+check(
+    "sign_flip_p: the same deltas again come from the cache with the same p",
+    stats.sign_flip_p(cases[1], permutations=2000) == _loop_p(cases[1], permutations=2000),
+)
+
 sys.exit(summary())

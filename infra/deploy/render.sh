@@ -36,7 +36,8 @@ mkdir -p "$OUT"/{sites,nginx,caddy,observability,deploy,inspector/pkg,inspector/
 cp -a "$ROOT/infra/nginx/." "$OUT/nginx/"
 cp -a "$ROOT/infra/caddy/." "$OUT/caddy/"
 cp -a "$ROOT/infra/observability/evals.alloy" "$OUT/observability/"
-cp -a "$ROOT/infra/deploy/deploy.sh" "$ROOT/infra/deploy/install_vhosts.sh" "$ROOT/infra/deploy/install_alloy.sh" "$OUT/deploy/"
+cp -a "$ROOT/infra/deploy/deploy.sh" "$ROOT/infra/deploy/install_vhosts.sh" "$ROOT/infra/deploy/install_alloy.sh" \
+  "$ROOT/infra/deploy/probe_link.sh" "$OUT/deploy/"
 cp -a "$ROOT/infra/compose.yml" "$OUT/compose.yml"
 
 # The findings site, as committed (`make ci` fails when site/public is stale).
@@ -45,17 +46,31 @@ cp -a "$ROOT/site/public" "$OUT/sites/$SITE/public"
 
 # The inspector: the harness PACKAGE, installed from the wheel pyproject.toml builds (a copy
 # of scripts/ would hide anything package-data leaves out, the reason the tests install the
-# wheel too), and the data it reads, nothing else. A directory of files: nothing is
+# wheel too), and the data the catalog and the inspector read (runs, references, datasets,
+# goals, baselines, rounds, configs, scorers, judging sets and verdicts), nothing else: without
+# baselines and rounds the goal pages showed neither. A directory of files: nothing is
 # installed on the box.
 python3 "$ROOT/harness/tools/_wheel.py" install "$OUT/inspector/pkg"
-for d in "$ROOT"/harness/data/runs* "$ROOT"/harness/data/{references,datasets,goals}; do
+# The inspector reads the goals (YAML) and runs on the stock Python image, which has no PyYAML:
+# its pure-Python package goes beside the harness. The compiled extension is dropped, so it runs
+# on any architecture (PyYAML falls back to Python without it). Without it every comparison
+# answered 500 while /api/health stayed 200.
+python3 -m pip install --quiet --no-deps --target "$OUT/inspector/.pyyaml" "pyyaml==6.0.2"
+cp -a "$OUT/inspector/.pyyaml/yaml" "$OUT/inspector/pkg/yaml"
+rm -rf "$OUT/inspector/.pyyaml"
+find "$OUT/inspector/pkg/yaml" -name '_yaml*.so' -delete
+for d in "$ROOT"/harness/data/runs* "$ROOT"/harness/data/{references,datasets,goals,baselines,rounds,configs,scorers,judging-sets,judge-verdicts}; do
   [ -d "$d" ] && cp -a "$d" "$OUT/inspector/data/"
 done
 
 # The catalog, built from that same copy of the data, so the pages and the API cannot disagree.
+# The runs name their adapters (examples/<example>/adapter.py), whose METRIC_DESCRIPTIONS and
+# METRIC_KINDS the metric pages read: they sit beside the data for the build only, not shipped.
+cp -a "$ROOT/examples" "$OUT/inspector/examples"
 EVAL_HOME="$OUT/inspector" python3 "$OUT/inspector/pkg/evaluation_harness/catalog_build.py" \
   --out "$OUT/sites/$CATALOG/public" \
   --link "Findings=https://$SITE/" --link "Docs=https://docs.$SITE/"
+rm -rf "$OUT/inspector/examples"
 # The build above ran the package's code; its bytecode is not part of the release.
 find "$OUT/inspector/pkg" -name __pycache__ -type d -prune -exec rm -rf {} +
 

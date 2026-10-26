@@ -27,6 +27,7 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 
 import bisect
 import math
+import operator
 import random
 import statistics
 
@@ -122,13 +123,44 @@ def sign_flip_p(
     if len(deltas) <= EXACT_UP_TO:
         return exact_p(deltas)
     obs = statistics.fmean(deltas)
-    rng = rng or random.Random(seed)
+    if rng is None:
+        # A fresh generator seeded with `seed` draws the same signs for every call with as many
+        # items, so they are drawn once (_signs) and each permutation's mean is summed in C. The
+        # same draws in the same order, a sign applied by multiplying by ±1.0 (exact) and fsum
+        # (exactly rounded whatever it reads): the same p, bit for bit, many times faster.
+        key = (tuple(deltas), permutations, seed)
+        if key not in _P:
+            n, a = len(deltas), abs(obs)
+            hits = sum(
+                1
+                for signs in _signs(n, permutations, seed)
+                if abs(math.fsum(map(operator.mul, deltas, signs)) / n) >= a
+            )
+            _P[key] = (hits + 1) / (permutations + 1)
+        return _P[key]
     hits = sum(
         1
         for _ in range(permutations)
         if abs(statistics.fmean(d if rng.random() < 0.5 else -d for d in deltas)) >= abs(obs)
     )
     return (hits + 1) / (permutations + 1)
+
+
+#: Estimated p by (deltas, permutations, seed): a page and the glance test the same pairs.
+_P: dict = {}
+_SIGNS: dict = {}
+
+
+def _signs(n: int, permutations: int, seed: int) -> list:
+    """The ±1.0 signs a fresh random.Random(seed) gives `permutations` passes over n items, in the
+    order sign_flip_p draws them (a draw below 0.5 keeps an item's sign). Kept per (n, seed)."""
+    key = (n, permutations, seed)
+    if key not in _SIGNS:
+        rng = random.Random(seed)
+        _SIGNS[key] = [
+            tuple(1.0 if rng.random() < 0.5 else -1.0 for _ in range(n)) for _ in range(permutations)
+        ]
+    return _SIGNS[key]
 
 
 def fmt_p(p: float) -> str:
