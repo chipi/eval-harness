@@ -585,6 +585,16 @@ def page(title: str, desc: str, body: str, depth: int = 0, here: str = "", card:
         c = f' class="{cls}"' if cls else ""
         return f'<a href="{href}"{c}{cur}>{label}</a>'
 
+    # Phones get these in the Menu dropdown: every section, none hidden.
+    menu_links = (
+        nav("harness", f"{up}index.html", "Harness")
+        + nav("use", f"{up}use.html", "Use it")
+        + nav("method", f"{up}method.html", "Method")
+        + nav("experiments", f"{up}experiments.html", "Experiments")
+        + nav("judging", f"{up}experiments/judging.html", "Judging")
+        + f'<a href="{CATALOG}">Catalog</a><a href="{up}docs/">Docs</a><a href="{REPO}">GitHub ↗</a>'
+    )
+
     return f"""<!doctype html>
 <html lang="en">
 <head>
@@ -610,6 +620,7 @@ def page(title: str, desc: str, body: str, depth: int = 0, here: str = "", card:
 <body>
 <header class="bar"><div class="wrap">
   <a class="brand" href="{up}index.html" aria-label="eval-harness home"><img class="mark" src="{up}assets/icon.svg" alt="" width="28" height="28"><span>eval-harness</span></a>
+  <details class="menu"><summary>Menu</summary><nav class="menu-links">{menu_links}</nav></details>
   <nav class="nav">{nav("harness", f"{up}index.html", "Harness")}{nav("use", f"{up}use.html", "Use it")}{nav("method", f"{up}method.html", "Method", "hide-sm")}{nav("experiments", f"{up}experiments.html", "Experiments")}{nav("judging", f"{up}experiments/judging.html", "Judging", "hide-sm")}<a href="{CATALOG}" class="hide-sm">Catalog</a><a href="{up}docs/" class="hide-sm">Docs</a><a href="{REPO}" class="hide-sm">GitHub ↗</a><button id="theme" class="theme" aria-label="Toggle light and dark">◐</button></nav>
 </div></header>
 <main>

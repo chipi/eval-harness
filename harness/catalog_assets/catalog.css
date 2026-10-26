@@ -95,12 +95,26 @@ footer code { font: .9em var(--mono); }
 .replist li span { flex: none; }
 .search { min-width: 0; }
 
-/* phones: brand + theme on one row, search full width, the sections as a scrolling strip */
+/* Phones: the sections in a Menu dropdown (<details>, no script), every link in it. */
+.menu { display: none; position: relative; }
+.menu > summary { list-style: none; cursor: pointer; font: 500 13px/1 var(--mono); letter-spacing: .03em;
+  color: var(--ink); padding: 9px 14px; border: 1px solid var(--hair); border-radius: 999px; white-space: nowrap; }
+.menu > summary::-webkit-details-marker { display: none; }
+.menu > summary::after { content: " \25BE"; }
+.menu[open] > summary::after { content: " \25B4"; }
+.menu-links { position: absolute; right: 0; top: calc(100% + 8px); z-index: 30; display: flex;
+  flex-direction: column; min-width: 200px; padding: 6px; background: var(--surface);
+  border: 1px solid var(--hair); border-radius: 12px; box-shadow: 0 8px 24px rgba(0, 0, 0, .18); }
+.menu-links a { padding: 12px 14px; border-radius: 8px; text-decoration: none; color: var(--ink);
+  font: 500 14px/1.2 var(--mono); }
+.menu-links a:hover, .menu-links a[aria-current="page"] { background: var(--surface-2); }
+
+/* phones: brand, Menu and theme on one row, search full width below; the sections in the Menu */
 @media (max-width: 760px) {
   .bar .wrap { flex-wrap: wrap; height: auto; padding-top: 10px; padding-bottom: 10px; gap: 10px; }
   .search { order: 3; flex: 1 0 100%; }
-  .nav { order: 2; flex: 1; min-width: 0; overflow-x: auto; gap: 16px; scrollbar-width: none; }
-  .nav .hide-sm { display: inline; }
+  .bar .nav { display: none; }
+  .bar .menu { display: block; order: 2; margin-left: auto; }
   .nav .theme, .bar .theme { flex: none; }
   .bar .theme { order: 2; }
   .hero.slim { padding: 40px 0 32px; }

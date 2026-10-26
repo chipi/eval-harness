@@ -2,9 +2,8 @@
    server (catalog_serve.py) for per-item scores, verdicts and item outputs. What an item is
    called comes from <body data-item>, the command that starts the server from <body data-serve>. */
 (function () {
-  // The API sits beside the catalog's root (assets/ is in that root): /api/ when the catalog is
-  // served at a host's root (evh catalog-serve), /catalog/api/ under evals.humancopilot.eu.
-  const API = new URL('../api/', document.currentScript.src).href;
+  // Where the API answers: the page says (catalog_build --api), /api/ under evh catalog-serve.
+  const API = document.body.dataset.api || '/api/';
   const ITEM = document.body.dataset.item || 'item', ITEMS = ITEM + 's';
   const SERVE = document.body.dataset.serve || 'evh catalog-serve';
   const app = document.getElementById('app'), pick = document.getElementById('pick');

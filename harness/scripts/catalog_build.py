@@ -310,13 +310,14 @@ def page(
 <link rel="stylesheet" href="{up}assets/catalog.css">
 <link rel="icon" href="{up}assets/icon.svg" type="image/svg+xml">
 </head>
-<body data-up="{up}" data-item="{e(item)}" data-serve="{e(serve)}">
+<body data-up="{up}" data-item="{e(item)}" data-serve="{e(serve)}" data-api="{e(API)}">
 <header class="bar"><div class="wrap">
   <a class="brand" href="{up}index.html"><img class="mark" src="{up}assets/icon.svg"
     alt="" width="28" height="28"><span>{e(brand)}</span></a>
   <div class="search"><input id="q" type="search" placeholder="Search everything  ( / )"
     autocomplete="off" aria-label="Search the catalog"><div id="hits" hidden></div></div>
   <nav class="nav">{links}</nav>
+  <details class="menu"><summary>Menu</summary><nav class="menu-links">{links}</nav></details>
   <button id="theme" class="theme" aria-label="Toggle light and dark">◐</button>
 </div></header>
 <main>
@@ -2600,8 +2601,15 @@ def build(A: Adapter, out: Path, links: tuple = ()) -> dict:
     }
 
 
+#: Where the run inspector's API answers, written into every page (data-api) for its scripts:
+#: /api/ under `evh catalog-serve`; a deployment that serves the catalog under a path says so
+#: with --api (this repository's: /catalog/api/ on evals.humancopilot.eu).
+API = "/api/"
+
+
 def main() -> int:
     """Build the catalog and write static pages to output directory."""
+    global API
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--out", type=Path, default=ROOT / ".build" / "catalog")
     ap.add_argument(
@@ -2615,7 +2623,17 @@ def main() -> int:
         metavar="LABEL=URL",
         help="add a link to the nav, e.g. Findings=https://evals.example.org/ (repeatable)",
     )
+    ap.add_argument(
+        "--api",
+        default=API,
+        help="where the inspector's API answers, for pages served under a path (default: /api/)",
+    )
     args = ap.parse_args()
+    if not args.api.startswith("/") or not args.api.endswith("/"):
+        raise SystemExit(
+            f"--api {args.api!r}: expected a path that starts and ends with /, e.g. /catalog/api/"
+        )
+    API = args.api
     links = []
     for spec in args.link:
         label, _, url = spec.partition("=")

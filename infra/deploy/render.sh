@@ -71,7 +71,7 @@ python3 -m mkdocs build --strict --quiet -f "$ROOT/mkdocs.yml" -d "$OUT/sites/$S
 cp -a "$ROOT/examples" "$OUT/inspector/examples"
 EVAL_HOME="$OUT/inspector" python3 "$OUT/inspector/pkg/evaluation_harness/catalog_build.py" \
   --out "$OUT/sites/$SITE/public/catalog" \
-  --link "Findings=https://$SITE/" --link "Docs=https://$SITE/docs/"
+  --link "Findings=https://$SITE/" --link "Docs=https://$SITE/docs/" --api /catalog/api/
 rm -rf "$OUT/inspector/examples"
 # The build above ran the package's code; its bytecode is not part of the release.
 find "$OUT/inspector/pkg" -name __pycache__ -type d -prune -exec rm -rf {} +
