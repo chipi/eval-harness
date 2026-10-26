@@ -7,7 +7,7 @@
 # rsynced to /srv/evals/releases/<sha>/ on the box:
 #
 #   sites/evals.humancopilot.eu/public/           the findings site (site/public, committed)
-#   sites/catalog.evals.humancopilot.eu/public/   the catalog, built here by catalog_build.py
+#   sites/evals.humancopilot.eu/catalog/public/   the catalog, built here by catalog_build.py
 #   inspector/pkg/                                the harness package, installed from its wheel
 #   inspector/data/                               runs*, references, datasets, goals: what the
 #                                                 inspector reads (no corpora, no materialized text)
@@ -26,7 +26,6 @@ IPORT="${INSPECTOR_PORT:-8097}"
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 RELEASE_DIR="/srv/evals/releases/${SHA}"
 SITE=evals.humancopilot.eu
-CATALOG=catalog.evals.humancopilot.eu
 
 [[ "$SHA" =~ ^[0-9a-f]{7,40}$ ]] || { echo "::error::release sha must be hex: $SHA"; exit 1; }
 [[ "$PORT" =~ ^[0-9]+$ && "$IPORT" =~ ^[0-9]+$ ]] || { echo "::error::ports must be numeric"; exit 1; }
@@ -63,13 +62,16 @@ for d in "$ROOT"/harness/data/runs* "$ROOT"/harness/data/{references,datasets,go
   [ -d "$d" ] && cp -a "$d" "$OUT/inspector/data/"
 done
 
+# The documentation, under /docs/ on the site (mkdocs.yml, site_url .../docs/).
+python3 -m mkdocs build --strict --quiet -f "$ROOT/mkdocs.yml" -d "$OUT/sites/$SITE/public/docs"
+
 # The catalog, built from that same copy of the data, so the pages and the API cannot disagree.
 # The runs name their adapters (examples/<example>/adapter.py), whose METRIC_DESCRIPTIONS and
 # METRIC_KINDS the metric pages read: they sit beside the data for the build only, not shipped.
 cp -a "$ROOT/examples" "$OUT/inspector/examples"
 EVAL_HOME="$OUT/inspector" python3 "$OUT/inspector/pkg/evaluation_harness/catalog_build.py" \
-  --out "$OUT/sites/$CATALOG/public" \
-  --link "Findings=https://$SITE/" --link "Docs=https://docs.$SITE/"
+  --out "$OUT/sites/$SITE/public/catalog" \
+  --link "Findings=https://$SITE/" --link "Docs=https://$SITE/docs/"
 rm -rf "$OUT/inspector/examples"
 # The build above ran the package's code; its bytecode is not part of the release.
 find "$OUT/inspector/pkg" -name __pycache__ -type d -prune -exec rm -rf {} +
@@ -88,13 +90,15 @@ for site_dir in "$OUT"/sites/*/; do
   find "$site_dir/public" -name '*.html' -exec \
     sed -i -E "s#((href|src)=\"(/|(\.\./)*)assets/[^\"?]+)\"#\\1?v=${SHA}\"#g" {} +
 
-  snippet="$OUT/nginx/snippets/${domain}-headers.conf"
-  if [ -n "$CSP_REPORT_URI" ]; then
-    [[ "$CSP_REPORT_URI" =~ ^https://[A-Za-z0-9./?=_-]+$ ]] || { echo "::error::$domain CSP_REPORT_URI has unexpected characters"; exit 1; }
-    sed -i "s#__CSP_REPORT__#report-uri ${CSP_REPORT_URI};#" "$snippet"
-  else
-    sed -i 's#; __CSP_REPORT__#;#; s#__CSP_REPORT__##' "$snippet"
-  fi
+  # The site's header snippets: its own, its docs' and its catalog's (<domain>-*-headers.conf).
+  for snippet in "$OUT/nginx/snippets/${domain}"*-headers.conf; do
+    if [ -n "$CSP_REPORT_URI" ]; then
+      [[ "$CSP_REPORT_URI" =~ ^https://[A-Za-z0-9./?=_-]+$ ]] || { echo "::error::$domain CSP_REPORT_URI has unexpected characters"; exit 1; }
+      sed -i "s#__CSP_REPORT__#report-uri ${CSP_REPORT_URI};#" "$snippet"
+    else
+      sed -i 's#; __CSP_REPORT__#;#; s#__CSP_REPORT__##' "$snippet"
+    fi
+  done
 done
 
 find "$OUT/nginx" -type f -exec sed -i "s#__RELEASE_DIR__#${RELEASE_DIR}#g" {} +
@@ -102,7 +106,8 @@ find "$OUT/caddy" -type f -name '*.caddy' -exec sed -i "s#__EVALS_PORT__#${PORT}
 printf '%s\n' "$SHA" > "$OUT/RELEASE"
 
 # Any token left means a placeholder nobody filled: never ship it.
-if left="$(grep -rnoE '__[A-Z][A-Z0-9_]+__' "$OUT/nginx" "$OUT/caddy" "$OUT/sites" "$OUT/compose.yml" 2>/dev/null | grep -v '__pycache__')"; then
+# JavaScript and source maps are skipped: the docs theme's bundles carry __PURE__ annotations.
+if left="$(grep -rnoE --exclude='*.js' --exclude='*.map' '__[A-Z][A-Z0-9_]+__' "$OUT/nginx" "$OUT/caddy" "$OUT/sites" "$OUT/compose.yml" 2>/dev/null | grep -v '__pycache__')"; then
   echo "::error::unrendered tokens in the release:"; echo "$left"; exit 1
 fi
 echo "rendered release $SHA into $OUT (nginx $PORT, inspector $IPORT)"

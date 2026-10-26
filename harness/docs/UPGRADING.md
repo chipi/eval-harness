@@ -119,7 +119,7 @@ so check these before you trust a `validate`:
 **New, all optional:**
 - **The catalog and the run inspector** (`evh catalog`, `evh catalog-serve`). On the
   harness's own data layout they need no code; with another layout, write one adapter
-  ([tutorial 5](https://docs.evals.humancopilot.eu/tutorials/5-catalog-and-inspector/)). Every
+  ([tutorial 5](https://evals.humancopilot.eu/docs/tutorials/5-catalog-and-inspector/)). Every
   view is also a command: `evh overview`, `evh datasets`, `evh arms`, `evh references`,
   `evh metrics`, `evh goals`, `evh search`, `evh inspect` (with `--items` for the per-item table
   and `--analysis` for the charts as numbers). **The home page** is now a dashboard (index.html
@@ -134,7 +134,7 @@ so check these before you trust a `validate`:
   `pair-test` and `inspect`: `inspect --round` and `pair-test --round` default to the goal's
   measure and the round's leader (`pair-test`'s B: the baseline the round started from). A
   project that never opens a round sees none of it
-  ([tutorial 4](https://docs.evals.humancopilot.eu/tutorials/4-rounds-and-versions/)).
+  ([tutorial 4](https://evals.humancopilot.eu/docs/tutorials/4-rounds-and-versions/)).
 - **A run becomes a reference:** `evh reference-create --from-run <run_id>` copies a finished
   run's outputs and calls nothing; the reference records the run. `reference-create` now refuses
   an empty output and outputs that stopped at `max_tokens`, by either path (`--allow-cut-off`).

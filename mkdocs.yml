@@ -7,7 +7,7 @@
 # leave the documentation -- to the reports, the harness code, a PDF or a JSON capture --
 # are rewritten to GitHub, so nothing third-party is republished and nothing breaks.
 site_name: eval-harness · documentation
-site_url: https://docs.evals.humancopilot.eu/
+site_url: https://evals.humancopilot.eu/docs/
 site_description: Protocol, reference and harness documentation for eval-harness.
 repo_url: https://github.com/chipi/eval-harness
 copyright: eval-harness · every number on the site is checked against the runs in this repository · built by Marko Dragoljevic

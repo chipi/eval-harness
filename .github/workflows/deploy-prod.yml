@@ -85,7 +85,7 @@ jobs:
       - name: Render the release
         run: |
           set -euo pipefail
-          python -m pip install --quiet "pyyaml==6.0.2"
+          python -m pip install --quiet "pyyaml==6.0.2" -r site/requirements-docs.txt
           echo "SHA=${GITHUB_SHA::12}" >> "$GITHUB_ENV"
           bash infra/deploy/render.sh _release "${GITHUB_SHA::12}"
 
@@ -138,10 +138,11 @@ jobs:
             curl -fsS "$1" | grep -q "$2" || { echo "::error::$1 is not this release"; exit 1; }
             echo "public $1 OK"
           }
-          if grep -qx evals <<<"$enabled"; then probe https://evals.humancopilot.eu/ "?v=$SHA"; fi
-          if grep -qx catalog <<<"$enabled"; then
-            probe https://catalog.evals.humancopilot.eu/ "?v=$SHA"
-            curl -fsS https://catalog.evals.humancopilot.eu/api/health | grep -q '"ok": true' \
+          if grep -qx evals <<<"$enabled"; then
+            probe https://evals.humancopilot.eu/ "?v=$SHA"
+            probe https://evals.humancopilot.eu/catalog/ "?v=$SHA"
+            probe https://evals.humancopilot.eu/docs/ "?v=$SHA"
+            curl -fsS https://evals.humancopilot.eu/catalog/api/health | grep -q '"ok": true' \
               || { echo "::error::the inspector API does not answer on the public host"; exit 1; }
           fi
           [ -n "$enabled" ] || echo "no vhost enabled yet; the on-box loopback health check is the gate"

@@ -14,7 +14,7 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="color-scheme" content="dark light">
-<script src="../assets/js/30a5128d39a2.js"></script><script defer src="https://analytics.humancopilot.eu/script.js" data-website-id="76169139-07c1-4806-bde6-f9014e803e7f" data-domains="evals.humancopilot.eu,docs.evals.humancopilot.eu"></script>
+<script src="../assets/js/30a5128d39a2.js"></script><script defer src="https://analytics.humancopilot.eu/script.js" data-website-id="76169139-07c1-4806-bde6-f9014e803e7f" data-domains="evals.humancopilot.eu"></script>
 <link rel="stylesheet" href="../assets/style.css">
 <link rel="icon" href="../assets/icon.svg" type="image/svg+xml">
 <link rel="icon" href="../assets/icon-32.png" sizes="32x32" type="image/png">
@@ -24,7 +24,7 @@
 <body>
 <header class="bar"><div class="wrap">
   <a class="brand" href="../index.html" aria-label="eval-harness home"><img class="mark" src="../assets/icon.svg" alt="" width="28" height="28"><span>eval-harness</span></a>
-  <nav class="nav"><a href="../index.html">Harness</a><a href="../use.html">Use it</a><a href="../method.html" class="hide-sm">Method</a><a href="../experiments.html" aria-current="page">Experiments</a><a href="../experiments/judging.html" class="hide-sm">Judging</a><a href="https://catalog.evals.humancopilot.eu/" class="hide-sm">Catalog</a><a href="https://docs.evals.humancopilot.eu/" class="hide-sm">Docs</a><a href="https://github.com/chipi/eval-harness" class="hide-sm">GitHub ↗</a><button id="theme" class="theme" aria-label="Toggle light and dark">◐</button></nav>
+  <nav class="nav"><a href="../index.html">Harness</a><a href="../use.html">Use it</a><a href="../method.html" class="hide-sm">Method</a><a href="../experiments.html" aria-current="page">Experiments</a><a href="../experiments/judging.html" class="hide-sm">Judging</a><a href="https://evals.humancopilot.eu/catalog/" class="hide-sm">Catalog</a><a href="https://evals.humancopilot.eu/docs/" class="hide-sm">Docs</a><a href="https://github.com/chipi/eval-harness" class="hide-sm">GitHub ↗</a><button id="theme" class="theme" aria-label="Toggle light and dark">◐</button></nav>
 </div></header>
 <main>
 
@@ -32,7 +32,7 @@
   <div class="kicker"><b>Classification</b> · AG News</div>
   <h1 class="s-9977b745">Small models lead, largely on disputed labels.</h1>
   <p class="dek">Four-way topic labels. Three small fine-tunes lead on the point estimate, LLMs as run here; the lead is concentrated in 17 items the hosted field mostly gets wrong.</p>
-  <p class="note"><b>The report's pick, as run here.</b> If your labels follow a house convention, fine-tune on them, starting with bert_mini; if they mean what the words say, use a hosted LLM. If you rent, start with gemma_m ($8 per 1M items).</p><p class="note"><b>The goal's rule, in the catalog.</b> News topic classification (AG News) (balanced, on correct) recommends no single arm yet. Speed was not used to break the tie: the arms ran on different machines. Still tied after the tie-break: bert_base_ta, bert_base_fy, bert_mini. The baseline a person promoted is <b>bert_mini</b>, with the reason recorded: “bert_mini (44 MB, $0 marginal), for labels that follow AG News&#x27;s house convention: 0.9450, not separated from bert_base_ta (0.9600, p = 0.55), and 11× faster on one Linux machine (4.3 vs 49 ms median). REPORT_CLASSIFICATION, executive summary and §3.1.” <a href="https://catalog.evals.humancopilot.eu/g/news_topic_ag.html">The goal page, with its reasons →</a></p>
+  <p class="note"><b>The report's pick, as run here.</b> If your labels follow a house convention, fine-tune on them, starting with bert_mini; if they mean what the words say, use a hosted LLM. If you rent, start with gemma_m ($8 per 1M items).</p><p class="note"><b>The goal's rule, in the catalog.</b> News topic classification (AG News) (balanced, on correct) recommends no single arm yet. Speed was not used to break the tie: the arms ran on different machines. Still tied after the tie-break: bert_base_ta, bert_base_fy, bert_mini. The baseline a person promoted is <b>bert_mini</b>, with the reason recorded: “bert_mini (44 MB, $0 marginal), for labels that follow AG News&#x27;s house convention: 0.9450, not separated from bert_base_ta (0.9600, p = 0.55), and 11× faster on one Linux machine (4.3 vs 49 ms median). REPORT_CLASSIFICATION, executive summary and §3.1.” <a href="https://evals.humancopilot.eu/catalog/g/news_topic_ag.html">The goal page, with its reasons →</a></p>
   <p class="note"><b>Re-measured.</b> On labels one reader corrected, every hosted LLM has a higher accuracy than every fine-tune, so the fine-tune pick holds only if your labels follow AG News&#x27;s filing convention. <a href="#remeasured">Below</a> · <a href="judging.html">what it teaches</a></p>
   <div class="facts"><div class="fact"><div class="k">Question</div><div class="v">Label a news snippet World, Sports, Business or Sci/Tech.</div></div><div class="fact"><div class="k">Data</div><div class="v">200 items from the AG News test split</div></div><div class="fact"><div class="k">Systems</div><div class="v">30 compared: 24 hosted models billed per call; 6 local models and baselines, free</div></div><div class="fact"><div class="k">Metric</div><div class="v">accuracy — the field&#x27;s standard; higher is better</div></div><div class="fact"><div class="k">Calibration</div><div class="v">bert_mini 0.9338 vs 0.9339 published; bert_base_ta 0.9514 vs 0.9514 published; bert_base_fy 0.9375 vs 0.9375 published</div></div><div class="fact"><div class="k">Billed</div><div class="v">$0.5808 for the whole sweep</div></div></div>
   <div class="btns"><a class="btn primary" href="https://github.com/chipi/eval-harness/blob/main/research/REPORT_CLASSIFICATION.md">Read the full report</a><a class="btn" href="https://github.com/chipi/eval-harness/blob/main/docs/PROTOCOL.md">Protocol</a><a class="btn" href="../experiments.html#experiments">All experiments</a></div>
@@ -491,7 +491,7 @@ $0.0127 per 1,000 items"/><circle cx="381.2" cy="124.9" r="11" class="ring"/><te
     <div class="prose">
       <p>The 6 free arms rerun on a laptop CPU for $0, pinned to the weights that were measured. The 24 hosted arms billed <strong>$0.58</strong> when measured and rerun with one OpenRouter key.</p>
       <p><code>make compare</code> writes a replication card: each rerun against its committed run, item by item, and every separation and tie on this page re-tested with your reruns in place.</p>
-      <div class="btns"><a class="btn primary" href="https://docs.evals.humancopilot.eu/REPRODUCE/">The guide</a><a class="btn" href="https://github.com/chipi/eval-harness/tree/main/examples/classification-ag-news">This example's code</a></div>
+      <div class="btns"><a class="btn primary" href="https://evals.humancopilot.eu/docs/REPRODUCE/">The guide</a><a class="btn" href="https://github.com/chipi/eval-harness/tree/main/examples/classification-ag-news">This example's code</a></div>
     </div>
 <pre class="term"><span class="p">$ </span>make plan      EXP=ag-news
 <span class="p">$ </span>make data      EXP=ag-news
@@ -518,7 +518,7 @@ $0.0127 per 1,000 items"/><circle cx="381.2" cy="124.9" r="11" class="ring"/><te
       <a href="mailto:marko@humancopilot.eu" data-umami-event="cta-email" data-umami-event-position="footer">Email</a>
     </nav>
   </div>
-  <div class="foot-legal"><span>© Marko Dragoljevic · eval-harness <a href="../releases.html#v0.4.0">v0.4.0</a> · build: local · <a href="https://docs.evals.humancopilot.eu/DATA/">Data &amp; licences</a> · <a href="../releases.html">Release notes</a></span><span>Cookieless, self-hosted analytics (Umami). No cookies, no tracking across sites. <a href="../privacy.html">Privacy</a></span></div>
+  <div class="foot-legal"><span>© Marko Dragoljevic · eval-harness <a href="../releases.html#v0.4.0">v0.4.0</a> · build: local · <a href="https://evals.humancopilot.eu/docs/DATA/">Data &amp; licences</a> · <a href="../releases.html">Release notes</a></span><span>Cookieless, self-hosted analytics (Umami). No cookies, no tracking across sites. <a href="../privacy.html">Privacy</a></span></div>
 </div></footer>
 <div id="tip" role="tooltip"></div>
 <script src="../assets/js/2b3d1b9b2afe.js"></script>

@@ -5,8 +5,8 @@ Three addresses, one repository:
 | address | what | served by |
 |---|---|---|
 | `evals.humancopilot.eu` | the harness site: the harness and its findings (`site/public`, built by `make site`) | prod VPS: `evals-nginx` |
-| `catalog.evals.humancopilot.eu` | the harness deployed on these example experiments: the catalog, goal pages and run inspector | prod VPS: `evals-nginx` (pages) + `evals-inspector` (`/api/*`) |
-| `docs.evals.humancopilot.eu` | the documentation (mkdocs) | GitHub Pages (`.github/workflows/pages.yml`) |
+| `evals.humancopilot.eu/catalog` | the harness deployed on these example experiments: the catalog, goal pages and run inspector | prod VPS: `evals-nginx` (pages) + `evals-inspector` (`/api/*`) |
+| `evals.humancopilot.eu/docs` | the documentation (mkdocs) | GitHub Pages (`.github/workflows/pages.yml`) |
 
 Everything on the VPS follows the box's tenant pattern, copied from chipi/humancopilot.eu
 (owner of the edge: podcast_scraper, its ADR-114):
@@ -32,7 +32,7 @@ infra/
   capability dropped, and is limited to 64 MB, half a CPU and 64 processes. It serves two hosts.
   Unknown hosts are closed (444). `/docs/...` redirects 301 to the same page on the docs host.
 - **evals-inspector:** the stock Python image (pinned by digest) running the release's copy of the package, installed from its wheel on the CI runner by
-  `render.sh`: `inspector/pkg/evaluation_harness/catalog_serve.py --public catalog.evals.humancopilot.eu --publish outputs --client-header CF-Connecting-IP`.
+  `render.sh`: `inspector/pkg/evaluation_harness/catalog_serve.py --public evals.humancopilot.eu/catalog --publish outputs --client-header CF-Connecting-IP`.
   The `--publish outputs` flag exposes the arms' outputs (already public in the repo); the
   `--client-header CF-Connecting-IP` rate-limits by the visitor's address: nginx accepts only
   Cloudflare's ranges (origin lock), so the header is Cloudflare's.
@@ -96,7 +96,7 @@ p-value as `pair-test`; a browser passed both hosts with zero violations of the 
 reports, through the shared `telemetry.humancopilot.eu` ingest vhost; `infra/sites/*.cfg` holds
 the report URI, and a probe report proved the path end to end. To point it elsewhere: create
 the project (the handbook's superuser recipe), and put its security endpoint in
-`infra/sites/evals.humancopilot.eu.cfg` and `infra/sites/catalog.evals.humancopilot.eu.cfg` as
+`infra/sites/evals.humancopilot.eu.cfg` and `infra/sites/evals.humancopilot.eu/catalog.cfg` as
 `CSP_REPORT_URI`. An empty value turns reporting off; the CSP is enforced either way.
 
 ## Cutover, in this order
@@ -143,30 +143,30 @@ always runs.
    - *If it fails:* nothing public has changed and the box rolled itself back. Read the run's
      log, fix, dispatch again.
 4. **DNS in Cloudflare** (operator).
-   - `evals.humancopilot.eu` and `catalog.evals.humancopilot.eu`: A + AAAA to the VPS (the
+   - `evals.humancopilot.eu` and `evals.humancopilot.eu/catalog`: A + AAAA to the VPS (the
      same addresses as the box's other sites; the prod session has them), proxied.
-   - `docs.evals.humancopilot.eu`: CNAME `chipi.github.io`, DNS only.
-   - *Confirm:* `dig +short docs.evals.humancopilot.eu` names `chipi.github.io`; the two proxied
+   - `evals.humancopilot.eu/docs`: CNAME `chipi.github.io`, DNS only.
+   - *Confirm:* `dig +short evals.humancopilot.eu/docs` names `chipi.github.io`; the two proxied
      names resolve to Cloudflare addresses.
    - From here `evals.humancopilot.eu` reaches the VPS, which has no vhost for it yet: go
      straight on.
 5. **Docs on their own domain** (operator or this repo's session).
-   - `gh api -X PUT repos/chipi/eval-harness/pages -f cname=docs.evals.humancopilot.eu`
+   - `gh api -X PUT repos/chipi/eval-harness/pages -f cname=evals.humancopilot.eu/docs`
    - `gh workflow run pages.yml -R chipi/eval-harness`
    - `gh variable set DOCS_ON_OWN_DOMAIN --body true -R chipi/eval-harness`
    - *Confirm:* the `pages` run's crawl check is green (robots.txt, sitemap.xml and every
-     sitemap URL answer on `docs.evals.humancopilot.eu`).
+     sitemap URL answer on `evals.humancopilot.eu/docs`).
 6. **Enable the vhosts** (this repo's session, with the operator's go; tell the prod session, it
    watches certificate issuance). Add `evals` and `catalog` to `infra/caddy/enabled.txt` and
    push. The deploy installs both vhosts; Caddy gets their certificates over HTTP-01 through
    Cloudflare's proxy. Never before step 4: `install_vhosts.sh` checks that a name resolves, not
    where, and Caddy would burn Let's Encrypt attempts on a name that still points at GitHub.
    - *Confirm:* `curl -sI https://evals.humancopilot.eu/` and `curl -sI
-     https://catalog.evals.humancopilot.eu/` answer 200;
-     `curl -s https://catalog.evals.humancopilot.eu/api/health` answers.
+     https://evals.humancopilot.eu/catalog/` answer 200;
+     `curl -s https://evals.humancopilot.eu/catalog/api/health` answers.
 7. **Check** (anyone).
    - `curl -sI https://evals.humancopilot.eu/docs/GUIDE/ | grep -i '^location'` names
-     `https://docs.evals.humancopilot.eu/GUIDE/`.
+     `https://evals.humancopilot.eu/docs/GUIDE/`.
    - The catalog's pages open and a group "Inspect" link answers with verdicts.
    - GlitchTip `evals-web` stays empty in normal use: an issue there is a page loading
      something the CSP blocks.

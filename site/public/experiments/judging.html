@@ -14,7 +14,7 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="color-scheme" content="dark light">
-<script src="../assets/js/30a5128d39a2.js"></script><script defer src="https://analytics.humancopilot.eu/script.js" data-website-id="76169139-07c1-4806-bde6-f9014e803e7f" data-domains="evals.humancopilot.eu,docs.evals.humancopilot.eu"></script>
+<script src="../assets/js/30a5128d39a2.js"></script><script defer src="https://analytics.humancopilot.eu/script.js" data-website-id="76169139-07c1-4806-bde6-f9014e803e7f" data-domains="evals.humancopilot.eu"></script>
 <link rel="stylesheet" href="../assets/style.css">
 <link rel="icon" href="../assets/icon.svg" type="image/svg+xml">
 <link rel="icon" href="../assets/icon-32.png" sizes="32x32" type="image/png">
@@ -24,7 +24,7 @@
 <body>
 <header class="bar"><div class="wrap">
   <a class="brand" href="../index.html" aria-label="eval-harness home"><img class="mark" src="../assets/icon.svg" alt="" width="28" height="28"><span>eval-harness</span></a>
-  <nav class="nav"><a href="../index.html">Harness</a><a href="../use.html">Use it</a><a href="../method.html" class="hide-sm">Method</a><a href="../experiments.html">Experiments</a><a href="../experiments/judging.html" class="hide-sm" aria-current="page">Judging</a><a href="https://catalog.evals.humancopilot.eu/" class="hide-sm">Catalog</a><a href="https://docs.evals.humancopilot.eu/" class="hide-sm">Docs</a><a href="https://github.com/chipi/eval-harness" class="hide-sm">GitHub ↗</a><button id="theme" class="theme" aria-label="Toggle light and dark">◐</button></nav>
+  <nav class="nav"><a href="../index.html">Harness</a><a href="../use.html">Use it</a><a href="../method.html" class="hide-sm">Method</a><a href="../experiments.html">Experiments</a><a href="../experiments/judging.html" class="hide-sm" aria-current="page">Judging</a><a href="https://evals.humancopilot.eu/catalog/" class="hide-sm">Catalog</a><a href="https://evals.humancopilot.eu/docs/" class="hide-sm">Docs</a><a href="https://github.com/chipi/eval-harness" class="hide-sm">GitHub ↗</a><button id="theme" class="theme" aria-label="Toggle light and dark">◐</button></nav>
 </div></header>
 <main>
 
@@ -33,7 +33,7 @@
   <h1>Change the ruler, <em>not the run.</em></h1>
   <p class="dek">Every model output in these experiments is frozen, so when a better way to score them arrives the experiment can be measured again for the price of the scoring alone. We did it twice: a person corrected disputed labels, and SummEval-validated LLM judges re-scored the summaries. Both moved a headline result. Then one reader's blind check went the other way from the judges, and judges at 41× the price agreed with the first ones, not with the reader. On SummEval's expert ratings and on crowd ratings of 2022 LLM summaries, judges agree with people far better than the metric this leaderboard used, though not system by system; on this experiment's own outputs, nobody has yet shown which of the two to believe. That is the lesson: a judge is worth having, and worth checking.</p>
   <div class="facts"><div class="fact"><div class="k">Re-measured</div><div class="v">3 experiments: summarisation by LLM judges; AG News and DBpedia against labels a person corrected</div></div><div class="fact"><div class="k">Re-run</div><div class="v">nothing: every model output is the one committed when it was measured</div></div><div class="fact"><div class="k">Cost</div><div class="v">$0.3109 for the first judges, $12.92 for the frontier judges, 960 calls each; $5.71 checking all four against published human ratings; $0 for the labels</div></div><div class="fact"><div class="k">Primary metric</div><div class="v">unchanged in all three, by decision (below)</div></div></div>
-  <div class="btns"><a class="btn primary" href="#value">Why judge</a><a class="btn" href="#checklist">Judging, done right</a><a class="btn" href="https://docs.evals.humancopilot.eu/tutorials/3-frontier-reference-and-judging/#5-re-measure-with-an-llm-judge-optional">Try it, offline</a></div>
+  <div class="btns"><a class="btn primary" href="#value">Why judge</a><a class="btn" href="#checklist">Judging, done right</a><a class="btn" href="https://evals.humancopilot.eu/docs/tutorials/3-frontier-reference-and-judging/#5-re-measure-with-an-llm-judge-optional">Try it, offline</a></div>
 </div></section>
 
 <section class="block" id="value"><div class="wrap">
@@ -1528,7 +1528,7 @@ adjudicated: accuracy 0.9850 (rank 1 of 30)</title></circle><text x="116" y="57.
   <h2>Re-measure what you already have.</h2>
   <div class="cols"><div class="prose">
     <p>A judge scorer is one file: two or more judges, the task they score (what an item is, what the outputs are, the dimensions, the scale), the prompt, and the runs that validated each judge against people. The harness refuses one that is not validated, freezes a blinded judging set, stores every verdict and writes scored runs the leaderboard and the paired tests read unchanged. It is optional: nothing else in the harness needs it.</p>
-    <div class="btns"><a class="btn primary" href="https://docs.evals.humancopilot.eu/tutorials/3-frontier-reference-and-judging/#5-re-measure-with-an-llm-judge-optional">Try it offline, $0</a><a class="btn" href="https://docs.evals.humancopilot.eu/harness/RUNBOOK/#12-re-measure-with-a-validated-judge">The runbook</a><a class="btn" href="https://github.com/chipi/eval-harness/blob/main/docs/adr/ADR-0001-judge-scorers.md">The design</a><a class="btn" href="https://github.com/chipi/eval-harness/blob/main/research/REPORT_SUMMARIZATION.md">The summarisation report</a></div>
+    <div class="btns"><a class="btn primary" href="https://evals.humancopilot.eu/docs/tutorials/3-frontier-reference-and-judging/#5-re-measure-with-an-llm-judge-optional">Try it offline, $0</a><a class="btn" href="https://evals.humancopilot.eu/docs/harness/RUNBOOK/#12-re-measure-with-a-validated-judge">The runbook</a><a class="btn" href="https://github.com/chipi/eval-harness/blob/main/docs/adr/ADR-0001-judge-scorers.md">The design</a><a class="btn" href="https://github.com/chipi/eval-harness/blob/main/research/REPORT_SUMMARIZATION.md">The summarisation report</a></div>
   </div>
 <pre class="term"><span class="c"># price it: builds the judging set, calls nothing</span>
 <span class="p">$ </span>evh judge-score --dataset-id my_v1 --scorer my-judge --dry-run
@@ -1562,7 +1562,7 @@ adjudicated: accuracy 0.9850 (rank 1 of 30)</title></circle><text x="116" y="57.
       <a href="mailto:marko@humancopilot.eu" data-umami-event="cta-email" data-umami-event-position="footer">Email</a>
     </nav>
   </div>
-  <div class="foot-legal"><span>© Marko Dragoljevic · eval-harness <a href="../releases.html#v0.4.0">v0.4.0</a> · build: local · <a href="https://docs.evals.humancopilot.eu/DATA/">Data &amp; licences</a> · <a href="../releases.html">Release notes</a></span><span>Cookieless, self-hosted analytics (Umami). No cookies, no tracking across sites. <a href="../privacy.html">Privacy</a></span></div>
+  <div class="foot-legal"><span>© Marko Dragoljevic · eval-harness <a href="../releases.html#v0.4.0">v0.4.0</a> · build: local · <a href="https://evals.humancopilot.eu/docs/DATA/">Data &amp; licences</a> · <a href="../releases.html">Release notes</a></span><span>Cookieless, self-hosted analytics (Umami). No cookies, no tracking across sites. <a href="../privacy.html">Privacy</a></span></div>
 </div></footer>
 <div id="tip" role="tooltip"></div>
 <script src="../assets/js/2b3d1b9b2afe.js"></script>

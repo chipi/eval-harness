@@ -39,8 +39,8 @@ BLOB = f"{REPO}/blob/main"
 SITE = "https://evals.humancopilot.eu"
 #: The docs (mkdocs, GitHub Pages) and the harness's own deployment for these experiments
 #: (catalog, goal pages, run inspector) live on their own subdomains, linked from the nav.
-DOCS = "https://docs.evals.humancopilot.eu/"
-CATALOG = "https://catalog.evals.humancopilot.eu/"
+DOCS = "https://evals.humancopilot.eu/docs/"
+CATALOG = "https://evals.humancopilot.eu/catalog/"
 OUT = HERE / "public"
 #: The harness version the site describes, from the one place it is set.
 VERSION = re.search(
@@ -1736,6 +1736,7 @@ ROBOTS = f"""User-agent: *
 Allow: /
 
 Sitemap: {SITE}/sitemap.xml
+Sitemap: {SITE}/docs/sitemap.xml
 """
 
 

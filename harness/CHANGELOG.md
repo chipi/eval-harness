@@ -27,9 +27,9 @@ how to upgrade: [UPGRADING](https://github.com/chipi/eval-harness/blob/main/harn
 
 This repository now deploys the harness on its own example experiments:
 - the catalog and run inspector are public at
-  [catalog.evals.humancopilot.eu](https://catalog.evals.humancopilot.eu/);
+  [evals.humancopilot.eu/catalog](https://evals.humancopilot.eu/catalog/);
 - the public site, the harness and its findings, moves from GitHub Pages to the same server;
-- the docs move to [docs.evals.humancopilot.eu](https://docs.evals.humancopilot.eu/), and old
+- the docs move to [evals.humancopilot.eu/docs](https://evals.humancopilot.eu/docs/), and old
   `/docs/` links redirect there.
 
 The deployment files are in `infra/` (runbook: `infra/README.md`). They are not part of the

@@ -1,15 +1,15 @@
-# Publish the DOCUMENTATION to GitHub Pages, at docs.evals.humancopilot.eu:
+# Publish the DOCUMENTATION to GitHub Pages, at evals.humancopilot.eu/docs:
 #
 #   /   mkdocs.yml   the documentation (docs/ + harness/docs/), built here
 #
 # The harness site (evals.humancopilot.eu) and the catalog with its run inspector
-# (catalog.evals.humancopilot.eu) are served from the prod VPS by deploy-prod.yml; only the
+# (evals.humancopilot.eu/catalog) are served from the prod VPS by deploy-prod.yml; only the
 # docs stay here. The docs are built in strict mode, so a broken link fails the deploy instead
 # of shipping, and on every pull request too, so it fails the PR's checks before the merge
 # rather than the deploy after it. A pull request only builds; only a push to main deploys.
 #
 # One-time setup: Settings -> Pages -> Source: "GitHub Actions", custom domain
-# docs.evals.humancopilot.eu (DNS: a CNAME to chipi.github.io, not proxied).
+# evals.humancopilot.eu/docs (DNS: a CNAME to chipi.github.io, not proxied).
 name: pages
 
 on:
@@ -81,7 +81,7 @@ jobs:
           path: _site
 
   # A push publishes only once the repository variable DOCS_ON_OWN_DOMAIN is "true", set when
-  # Pages serves docs.evals.humancopilot.eu. Until then Pages still serves the harness site on
+  # Pages serves evals.humancopilot.eu/docs. Until then Pages still serves the harness site on
   # evals.humancopilot.eu, and publishing the docs there would replace it; a merge therefore
   # changes nothing public by itself (infra/README.md, "Cutover"). A dispatch always publishes.
   deploy:
@@ -107,7 +107,7 @@ jobs:
     steps:
       - name: robots.txt, sitemap.xml and every sitemap URL, on the live domain
         run: |
-          site=https://docs.evals.humancopilot.eu
+          site=https://evals.humancopilot.eu/docs
           for _ in 1 2 3 4 5 6; do
             code=$(curl -s -o /dev/null -w '%{http_code}' "$site/sitemap.xml")
             [ "$code" = 200 ] && break; sleep 20

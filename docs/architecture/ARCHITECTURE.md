@@ -113,8 +113,8 @@ cache, and refused when the bytes there are not the pinned ones.
 | address | what | where |
 |---|---|---|
 | `evals.humancopilot.eu` | the public site: the harness and its findings | prod VPS, nginx |
-| `catalog.evals.humancopilot.eu` | the harness deployed on these experiments: catalog, goal pages, run inspector | prod VPS, nginx and the inspector |
-| `docs.evals.humancopilot.eu` | these docs | GitHub Pages |
+| `evals.humancopilot.eu/catalog` | the harness deployed on these experiments: catalog, goal pages, run inspector | prod VPS, nginx and the inspector |
+| `evals.humancopilot.eu/docs` | these docs | GitHub Pages |
 
 Both sites on the VPS sit behind the box's shared Caddy edge, each container read-only with
 every capability dropped, under a content security policy with no inline script or style. A

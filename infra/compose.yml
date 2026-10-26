@@ -8,7 +8,7 @@ name: evals
 
 services:
   nginx:
-    # Static pages: evals.humancopilot.eu (site/public) and catalog.evals.humancopilot.eu (the
+    # Static pages: evals.humancopilot.eu (site/public) and evals.humancopilot.eu/catalog (the
     # built catalog). nginx-unprivileged stable line, pinned by digest; bump tag and digest together.
     image: nginxinc/nginx-unprivileged:1.30.6-alpine@sha256:782bb89768cc87b7f95c18b95baa1af250e5d451f26794f59363540161147c01
     container_name: evals-nginx
@@ -39,7 +39,7 @@ services:
       options: { max-size: "10m", max-file: "3" }
 
   inspector:
-    # The run inspector's API (/api/* on catalog.evals.humancopilot.eu): the harness's own
+    # The run inspector's API (/catalog/api/* on evals.humancopilot.eu): the harness's own
     # catalog_serve.py in --public mode. The stock Python image runs the release's copy of the
     # package (installed from its wheel by render.sh, with PyYAML's pure-Python package beside it
     # for the goals) from the read-only mount: nothing is built or installed on the box.
@@ -57,7 +57,7 @@ services:
       - python
       - /srv/evals/current/inspector/pkg/evaluation_harness/catalog_serve.py
       - --public
-      - catalog.evals.humancopilot.eu
+      - evals.humancopilot.eu
       - --bind
       - 0.0.0.0
       - --port
@@ -73,7 +73,7 @@ services:
       - --publish
       - outputs
       - --warm
-      - /srv/evals/current/sites/catalog.evals.humancopilot.eu/public
+      - /srv/evals/current/sites/evals.humancopilot.eu/public/catalog
     ports:
       - "127.0.0.1:${INSPECTOR_PORT:-8097}:8080"
     volumes:
@@ -88,7 +88,7 @@ services:
     pids_limit: 64
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen(u.Request('http://127.0.0.1:8080/api/health', headers={'Host': 'catalog.evals.humancopilot.eu'}), timeout=3)"]
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen(u.Request('http://127.0.0.1:8080/api/health', headers={'Host': 'evals.humancopilot.eu'}), timeout=3)"]
       interval: 30s
       timeout: 5s
       retries: 3

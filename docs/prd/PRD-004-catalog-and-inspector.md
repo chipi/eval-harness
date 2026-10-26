@@ -25,7 +25,7 @@ inspector and goals for itself. In 0.4.0 the generic part moved into the harness
 paired test in one module, so the inspector and the CLI cannot disagree; the project keeps one
 adapter file ([ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md),
 [RFC-003](../rfc/RFC-003-catalog-adapter.md)). This repository publishes its own catalog at
-[catalog.evals.humancopilot.eu](https://catalog.evals.humancopilot.eu/).
+[evals.humancopilot.eu/catalog](https://evals.humancopilot.eu/catalog/).
 
 ## Goals
 

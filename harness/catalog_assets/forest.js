@@ -3,6 +3,9 @@
 // them). The interval is the one that agrees with the paired test; below 6 items no interval
 // exists, so the range of per-item differences is drawn instead. Reads /api/compare.
 (function () {
+  // The API sits beside the catalog's root (assets/ is in that root): /api/ when the catalog is
+  // served at a host's root (evh catalog-serve), /catalog/api/ under evals.humancopilot.eu.
+  const API = new URL('../api/', document.currentScript.src).href;
   const ITEM = document.body.dataset.item || 'item', ITEMS = ITEM + 's';
   const SERVE = document.body.dataset.serve || 'evh catalog-serve';
   const box = document.getElementById('forest');
@@ -22,7 +25,7 @@
     const q = new URLSearchParams({runs: [...runs, base].join(','), baseline: base, rescore: '1'});
     if (metric) q.set('metric', metric);
     let d;
-    try { d = await (await fetch('/api/compare?' + q)).json(); }
+    try { d = await (await fetch(API + 'compare?' + q)).json(); }
     catch (e) { box.innerHTML = `<p class="note"><b>No inspector server.</b> This chart is computed live: run <code>${esc(SERVE)}</code> and open the page from the address it prints.</p>`; return; }
     if (d.error) { box.innerHTML = `<p class="note"><b>${esc(d.error)}</b></p>`; return; }
     const warn = (d.warnings || []).map(w => `<li>${esc(w)}</li>`).join('');

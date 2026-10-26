@@ -343,7 +343,7 @@ site:
 site-check:
 	$(PYTHON) ../site/build.py --check
 
-# The documentation site (published to GitHub Pages, docs.evals.humancopilot.eu). Needs
+# The documentation site (published to GitHub Pages, evals.humancopilot.eu/docs). Needs
 # `pip install -r ../site/requirements-docs.txt`; not part of `make ci`, which must run
 # without it, but the Pages workflow builds it in strict mode on every deploy.
 docs:

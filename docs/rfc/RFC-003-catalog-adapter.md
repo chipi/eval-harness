@@ -128,7 +128,7 @@ this repository's data (194 arms, 9 datasets) the build takes under a second
 
 ### This repository's deployment
 
-`catalog.evals.humancopilot.eu` serves this repository's catalog and a public-mode inspector on
+`evals.humancopilot.eu/catalog` serves this repository's catalog and a public-mode inspector on
 the prod VPS behind Caddy, beside the public site; the docs are on GitHub Pages. Runbook:
 [`infra/README.md`](https://github.com/chipi/eval-harness/blob/main/infra/README.md).
 

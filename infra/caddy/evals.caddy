@@ -7,8 +7,16 @@
 #
 # Installed only once listed in enabled.txt, after DNS points the name at the box: a vhost for
 # a name that does not resolve here makes Caddy retry ACME and burn Let's Encrypt's budget.
-# __EVALS_PORT__ is rendered at deploy time (127.0.0.1:8096, the evals-nginx container).
+# __EVALS_PORT__ is rendered at deploy time (127.0.0.1:8096, the evals-nginx container), and
+# __INSPECTOR_PORT__ (127.0.0.1:8097, evals-inspector): the catalog lives under /catalog/ on this
+# host, and its API under /catalog/api/, which the inspector answers as /api/.
 evals.humancopilot.eu {
 	import hardened
-	reverse_proxy 127.0.0.1:__EVALS_PORT__
+	handle /catalog/api/* {
+		uri strip_prefix /catalog
+		reverse_proxy 127.0.0.1:__INSPECTOR_PORT__
+	}
+	handle {
+		reverse_proxy 127.0.0.1:__EVALS_PORT__
+	}
 }

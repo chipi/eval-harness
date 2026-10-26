@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://docs.evals.humancopilot.eu/sitemap.xml
+Sitemap: https://evals.humancopilot.eu/docs/sitemap.xml

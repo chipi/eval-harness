@@ -27,7 +27,7 @@ PORT="${EVALS_PORT:-8096}"
 IPORT="${INSPECTOR_PORT:-8097}"
 NGINX=evals-nginx
 INSPECTOR=evals-inspector
-CATALOG_HOST=catalog.evals.humancopilot.eu
+SITE_HOST=evals.humancopilot.eu
 IMAGE="$(sed -n 's/^ *image: *\(nginxinc\/.*\)/\1/p;T;q' "$REL/compose.yml")"
 COMPOSE=(docker compose -p evals -f "$BASE/current/compose.yml")
 export EVALS_PORT="$PORT" INSPECTOR_PORT="$IPORT"
@@ -85,21 +85,27 @@ for site in "$REL"/sites/*/; do
   [ "$code" = 404 ] || rollback "health check failed: $host 404 page returned $code"
   echo "  $host ok"
 done
-code="$(curl -s -o /dev/null -w '%{http_code}' -H "Host: $CATALOG_HOST" "http://127.0.0.1:$IPORT/api/health")"
+# The catalog's pages and the docs, under /catalog/ and /docs/ on the site's host.
+for path in catalog docs; do
+  code="$(curl -s -o /dev/null -w '%{http_code}' -H "Host: $SITE_HOST" "http://127.0.0.1:$PORT/$path/")"
+  [ "$code" = 200 ] || rollback "health check failed: $SITE_HOST/$path/ returned $code"
+  echo "  $SITE_HOST/$path/ ok"
+done
+code="$(curl -s -o /dev/null -w '%{http_code}' -H "Host: $SITE_HOST" "http://127.0.0.1:$IPORT/api/health")"
 [ "$code" = 200 ] || rollback "health check failed: inspector /api/health returned $code"
 # A real question, one arm from a dataset page's own links: the inspector reads this release's
 # data. probe_link.sh holds the extraction, so it is tested off the box (make -C harness test).
-q="$(bash "$REL/deploy/probe_link.sh" "$REL/sites/$CATALOG_HOST/public/d" one)"
+q="$(bash "$REL/deploy/probe_link.sh" "$REL/sites/$SITE_HOST/public/catalog/d" one)"
 if [ -n "$q" ]; then
-  body="$(curl -s -m 120 -H "Host: $CATALOG_HOST" "http://127.0.0.1:$IPORT/api/compare?$q")"
+  body="$(curl -s -m 120 -H "Host: $SITE_HOST" "http://127.0.0.1:$IPORT/api/compare?$q")"
   grep -q '"rows"' <<<"$body" || rollback "health check failed: the inspector did not answer a comparison (${body:0:200})"
 fi
 # And the question readers send most: a dataset page's group button, several arms on one
 # metric (its URL carries `,` and `&metric=`). It must come back with verdict rows, not an
 # error. probe_link.sh holds the extraction, so it is tested off the box (make -C harness test).
-q2="$(bash "$REL/deploy/probe_link.sh" "$REL/sites/$CATALOG_HOST/public/d")"
+q2="$(bash "$REL/deploy/probe_link.sh" "$REL/sites/$SITE_HOST/public/catalog/d")"
 if [ -n "$q2" ]; then
-  body="$(curl -s -m 180 -H "Host: $CATALOG_HOST" "http://127.0.0.1:$IPORT/api/compare?$q2")"
+  body="$(curl -s -m 180 -H "Host: $SITE_HOST" "http://127.0.0.1:$IPORT/api/compare?$q2")"
   if ! { grep -q '"rows": \[{' <<<"$body" && ! grep -q '"error"' <<<"$body"; }; then
     rollback "health check failed: the inspector did not test a group of arms (${body:0:200})"
   fi

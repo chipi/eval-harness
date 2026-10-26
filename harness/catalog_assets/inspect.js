@@ -2,6 +2,9 @@
    server (catalog_serve.py) for per-item scores, verdicts and item outputs. What an item is
    called comes from <body data-item>, the command that starts the server from <body data-serve>. */
 (function () {
+  // The API sits beside the catalog's root (assets/ is in that root): /api/ when the catalog is
+  // served at a host's root (evh catalog-serve), /catalog/api/ under evals.humancopilot.eu.
+  const API = new URL('../api/', document.currentScript.src).href;
   const ITEM = document.body.dataset.item || 'item', ITEMS = ITEM + 's';
   const SERVE = document.body.dataset.serve || 'evh catalog-serve';
   const app = document.getElementById('app'), pick = document.getElementById('pick');
@@ -69,7 +72,7 @@
     if (!runs().length) { app.innerHTML = '<p class="muted">Pick runs from an experiment or dataset page in the catalog ("Inspect runs"), or add them above.</p>'; return; }
     let d;
     try {
-      const r = await fetch('/api/compare?' + P.toString());
+      const r = await fetch(API + 'compare?' + P.toString());
       d = await r.json();
     } catch (e) {
       app.innerHTML = `<p class="note"><b>No inspector server.</b> Start it with <code>${esc(SERVE)}</code> and open this page from the address it prints.</p>`;
@@ -421,7 +424,7 @@
     box.innerHTML = '<p class="muted">Loading outputs…</p>';
     const q = new URLSearchParams({arms: arms.join(','), item: ep});
     if (ref) q.set('ref', ref);
-    const d = await (await fetch('/api/item?' + q)).json();
+    const d = await (await fetch(API + 'item?' + q)).json();
     if (d.error) { box.innerHTML = `<p class="note">${esc(d.error)}</p>`; return; }
     const base = d.views[baseline];
     const cols = Object.entries(d.views).map(([a, v]) => `<div class="outcol"><h3>${esc(label[a] || a)}${a === baseline ? ' <small class="muted">baseline</small>' : ''}</h3>${view(v, a === baseline ? null : base)}</div>`).join('');

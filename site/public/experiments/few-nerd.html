@@ -14,7 +14,7 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="color-scheme" content="dark light">
-<script src="../assets/js/30a5128d39a2.js"></script><script defer src="https://analytics.humancopilot.eu/script.js" data-website-id="76169139-07c1-4806-bde6-f9014e803e7f" data-domains="evals.humancopilot.eu,docs.evals.humancopilot.eu"></script>
+<script src="../assets/js/30a5128d39a2.js"></script><script defer src="https://analytics.humancopilot.eu/script.js" data-website-id="76169139-07c1-4806-bde6-f9014e803e7f" data-domains="evals.humancopilot.eu"></script>
 <link rel="stylesheet" href="../assets/style.css">
 <link rel="icon" href="../assets/icon.svg" type="image/svg+xml">
 <link rel="icon" href="../assets/icon-32.png" sizes="32x32" type="image/png">
@@ -24,7 +24,7 @@
 <body>
 <header class="bar"><div class="wrap">
   <a class="brand" href="../index.html" aria-label="eval-harness home"><img class="mark" src="../assets/icon.svg" alt="" width="28" height="28"><span>eval-harness</span></a>
-  <nav class="nav"><a href="../index.html">Harness</a><a href="../use.html">Use it</a><a href="../method.html" class="hide-sm">Method</a><a href="../experiments.html" aria-current="page">Experiments</a><a href="../experiments/judging.html" class="hide-sm">Judging</a><a href="https://catalog.evals.humancopilot.eu/" class="hide-sm">Catalog</a><a href="https://docs.evals.humancopilot.eu/" class="hide-sm">Docs</a><a href="https://github.com/chipi/eval-harness" class="hide-sm">GitHub ↗</a><button id="theme" class="theme" aria-label="Toggle light and dark">◐</button></nav>
+  <nav class="nav"><a href="../index.html">Harness</a><a href="../use.html">Use it</a><a href="../method.html" class="hide-sm">Method</a><a href="../experiments.html" aria-current="page">Experiments</a><a href="../experiments/judging.html" class="hide-sm">Judging</a><a href="https://evals.humancopilot.eu/catalog/" class="hide-sm">Catalog</a><a href="https://evals.humancopilot.eu/docs/" class="hide-sm">Docs</a><a href="https://github.com/chipi/eval-harness" class="hide-sm">GitHub ↗</a><button id="theme" class="theme" aria-label="Toggle light and dark">◐</button></nav>
 </div></header>
 <main>
 
@@ -32,7 +32,7 @@
   <div class="kicker"><b>Extraction</b> · Few-NERD</div>
   <h1 class="s-9977b745">The one clean win.</h1>
   <p class="dek">Find and type entities in a sentence. The only clean winner in the repo: a fine-tuned tagger, separated from every rival.</p>
-  <p class="note"><b>The report's pick, as run here.</b> If you have labelled data in a fixed taxonomy, fine-tune a small tagger (span_marker); do not rent a zero-shot hosted LLM for this job. If you do rent, take the cheapest, gemma_m.</p><p class="note"><b>The goal's rule, in the catalog.</b> Named-entity extraction (Few-NERD) (balanced, on f1) recommends <b>span_marker</b>, the promoted baseline. <a href="https://catalog.evals.humancopilot.eu/g/entities_few_nerd.html">The goal page, with its reasons →</a></p>
+  <p class="note"><b>The report's pick, as run here.</b> If you have labelled data in a fixed taxonomy, fine-tune a small tagger (span_marker); do not rent a zero-shot hosted LLM for this job. If you do rent, take the cheapest, gemma_m.</p><p class="note"><b>The goal's rule, in the catalog.</b> Named-entity extraction (Few-NERD) (balanced, on f1) recommends <b>span_marker</b>, the promoted baseline. <a href="https://evals.humancopilot.eu/catalog/g/entities_few_nerd.html">The goal page, with its reasons →</a></p>
   <div class="facts"><div class="fact"><div class="k">Question</div><div class="v">Find every named entity in a sentence and give it one of 8 types.</div></div><div class="fact"><div class="k">Data</div><div class="v">280 items from the Few-NERD test split</div></div><div class="fact"><div class="k">Systems</div><div class="v">28 compared: 24 hosted models billed per call; 4 local models and baselines, free</div></div><div class="fact"><div class="k">Metric</div><div class="v">F1 — entities found with the right type, set-matched per sentence and averaged, on 8 coarse types; this repo&#x27;s own, see the protocol. Higher is better</div></div><div class="fact"><div class="k">Calibration</div><div class="v">span_marker 0.7047 vs 0.7040 published</div></div><div class="fact"><div class="k">Billed</div><div class="v">$2.61 for the whole sweep</div></div></div>
   <div class="btns"><a class="btn primary" href="https://github.com/chipi/eval-harness/blob/main/research/REPORT_NER.md">Read the full report</a><a class="btn" href="https://github.com/chipi/eval-harness/blob/main/docs/PROTOCOL.md">Protocol</a><a class="btn" href="../experiments.html#experiments">All experiments</a></div>
 </div></section>
@@ -466,7 +466,7 @@ $0.0273 per 1,000 items"/><circle cx="336.1" cy="138.9" r="11" class="ring"/><te
     <div class="prose">
       <p>The 4 free arms rerun on a laptop CPU for $0, pinned to the weights that were measured. The 24 hosted arms billed <strong>$2.61</strong> when measured and rerun with one OpenRouter key.</p>
       <p><code>make compare</code> writes a replication card: each rerun against its committed run, item by item, and every separation and tie on this page re-tested with your reruns in place.</p>
-      <div class="btns"><a class="btn primary" href="https://docs.evals.humancopilot.eu/REPRODUCE/">The guide</a><a class="btn" href="https://github.com/chipi/eval-harness/tree/main/examples/ner-few-nerd">This example's code</a></div>
+      <div class="btns"><a class="btn primary" href="https://evals.humancopilot.eu/docs/REPRODUCE/">The guide</a><a class="btn" href="https://github.com/chipi/eval-harness/tree/main/examples/ner-few-nerd">This example's code</a></div>
     </div>
 <pre class="term"><span class="p">$ </span>make plan      EXP=few-nerd
 <span class="p">$ </span>make data      EXP=few-nerd
@@ -493,7 +493,7 @@ $0.0273 per 1,000 items"/><circle cx="336.1" cy="138.9" r="11" class="ring"/><te
       <a href="mailto:marko@humancopilot.eu" data-umami-event="cta-email" data-umami-event-position="footer">Email</a>
     </nav>
   </div>
-  <div class="foot-legal"><span>© Marko Dragoljevic · eval-harness <a href="../releases.html#v0.4.0">v0.4.0</a> · build: local · <a href="https://docs.evals.humancopilot.eu/DATA/">Data &amp; licences</a> · <a href="../releases.html">Release notes</a></span><span>Cookieless, self-hosted analytics (Umami). No cookies, no tracking across sites. <a href="../privacy.html">Privacy</a></span></div>
+  <div class="foot-legal"><span>© Marko Dragoljevic · eval-harness <a href="../releases.html#v0.4.0">v0.4.0</a> · build: local · <a href="https://evals.humancopilot.eu/docs/DATA/">Data &amp; licences</a> · <a href="../releases.html">Release notes</a></span><span>Cookieless, self-hosted analytics (Umami). No cookies, no tracking across sites. <a href="../privacy.html">Privacy</a></span></div>
 </div></footer>
 <div id="tip" role="tooltip"></div>
 <script src="../assets/js/2b3d1b9b2afe.js"></script>

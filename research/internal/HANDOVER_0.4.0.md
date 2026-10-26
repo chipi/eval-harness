@@ -32,9 +32,9 @@ The release notes so far are in [`harness/CHANGELOG.md`](../../harness/CHANGELOG
 4. **No intermediate releases.** One branch, layer by layer, one 0.4.0 release.
 5. **Hosting:**
    - `evals.humancopilot.eu`: the findings site, moving to the prod VPS;
-   - `catalog.evals.humancopilot.eu`: the catalog and inspector of the example experiments,
+   - `evals.humancopilot.eu/catalog`: the catalog and inspector of the example experiments,
      treated as a full deployment of the harness, item outputs shown;
-   - `docs.evals.humancopilot.eu`: the docs, on GitHub Pages.
+   - `evals.humancopilot.eu/docs`: the docs, on GitHub Pages.
 6. **CSP reports:** GlitchTip project `evals-web` (id 36), created 2026-10-22, through the
    shared `telemetry.humancopilot.eu` vhost; `infra/sites/*.cfg` holds the report URI.
 7. **Branch names:** meaningful, never `claude/...`.
@@ -130,7 +130,7 @@ the key's fingerprint). Step 3 is done too
      `PROD_AUTO_DEPLOY`;
    - Cloudflare: `evals.` and `catalog.evals.` get A + AAAA to the VPS, proxied;
      `docs.evals.` gets a CNAME to `chipi.github.io`, DNS only;
-   - set the Pages custom domain to `docs.evals.humancopilot.eu`, dispatch `pages`, set
+   - set the Pages custom domain to `evals.humancopilot.eu/docs`, dispatch `pages`, set
      `DOCS_ON_OWN_DOMAIN`;
    - add `evals` and `catalog` to `infra/caddy/enabled.txt` and push.
 
