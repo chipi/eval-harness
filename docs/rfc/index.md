@@ -27,6 +27,12 @@ Other statuses: **Rejected** and **Withdrawn**, each with the reason kept.
 
 None.
 
+## Draft RFCs (0.5.0)
+
+| RFC | Title | Related PRD | Description |
+| --- | ----- | ----------- | ----------- |
+| [RFC-014](RFC-014-identity-champions-migration.md) | Identity in 0.5.0: champions, fingerprint v5, run ids, one grammar, the migration | [PRD-013](../prd/PRD-013-identity-and-ties.md), [PRD-011](../prd/PRD-011-evidence-registry.md) | Champion versions per goal and dataset; machine outside the hash; unique run ids; kind:path/n; the one-time migration script |
+
 ## Completed RFCs
 
 | RFC | Title | Related PRD | Version | Description |

@@ -92,7 +92,7 @@ project (the two projects known to use the harness), not a permanent command.
   leader by the goal's declared margin; otherwise it says "inconclusive" and why._
 - _As a team lead, I see that our CNN test set has been looked at 7 times of its 10, and that the next
   comparison on it is tested at its smaller share._
-- _As a project, I run `python harness/tools/migrate_0_5_0.py --dry-run`, read what will change, what it refuses and what its tag
+- _As a project, I run `python -m evaluation_harness.migrate_0_5_0 --dry-run`, read what will change, what it refuses and what its tag
   cannot restore, run it, and `evh validate` proves every hash._
 
 ## Functional Requirements
@@ -165,9 +165,10 @@ project (the two projects known to use the harness), not a permanent command.
   Prompt aliases are set by a command and never moved by promotion. Champions are stored as
   `data/champions/<goal>/<dataset>/<n>.json`, with the current pointer in that directory's `index.json`
   (no symlinks).
-- **FR8: The 0.5.0 migration script.** A one-time release script, `harness/tools/migrate_0_5_0.py` (run with Python,
-  not an `evh` command: no manifest entry, MCP tool or skill), migrates a project's committed data to
-  the 0.5.0 format; `UPGRADING.md` documents it, and it is removed in a later release, staying in git
+- **FR8: The 0.5.0 migration script.** A one-time release script, `harness/scripts/migrate_0_5_0.py`,
+  shipped in the package (a project that installs the harness has it) and run as
+  `python -m evaluation_harness.migrate_0_5_0` (not an `evh` command: no manifest entry, MCP tool or
+  skill), migrates a project's committed data to the 0.5.0 format; `UPGRADING.md` documents it, and it is removed in a later release, staying in git
   history. It runs in this order:
   1. Pre-flight (read-only): a clean tree for the data it touches, the harness version, the directories in
      effect, and `evh validate` passing on the 0.4.0 data.
