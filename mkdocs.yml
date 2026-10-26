@@ -58,6 +58,11 @@ nav:
           - "PRD-005: Goals, and experiment rounds": prd/PRD-005-goals-and-rounds.md
           - "PRD-006: Datasets, versions and item fields": prd/PRD-006-datasets-versions-fields.md
           - "PRD-007: One install, your own keys": prd/PRD-007-packaging-and-providers.md
+          - "PRD-008: Pipelines, stages, and systems in any language": prd/PRD-008-pipelines-and-any-language.md
+          - "PRD-009: Prompts as data, and an optimisation loop": prd/PRD-009-prompts-and-optimisation.md
+          - "PRD-010: Runners: where experiments run": prd/PRD-010-runners.md
+          - "PRD-011: The evidence registry": prd/PRD-011-evidence-registry.md
+          - "PRD-012: Agent-ready: every capability for people and agents alike": prd/PRD-012-agent-ready.md
       - Experience (UXS):
           - Index: uxs/index.md
           - "UXS-001: The catalog": uxs/UXS-001-catalog.md
