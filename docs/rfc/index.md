@@ -31,6 +31,8 @@ None.
 
 | RFC | Title | Related PRD | Description |
 | --- | ----- | ----------- | ----------- |
+| [RFC-008](RFC-008-process-protocol.md) | The process protocol: systems in any language | [PRD-008](../prd/PRD-008-pipelines-and-any-language.md) | JSON-RPC 2.0 over stdio or HTTP (evh-adapter/1), wrapped as an ordinary adapter; declared identity plus the executable's hash; a Node example; adapter-check |
+| [RFC-007](RFC-007-stages-and-stage-references.md) | Stages, stage references, structured outputs, item fields, batch mode | [PRD-008](../prd/PRD-008-pipelines-and-any-language.md) | Span-shaped stages beside outputs, <stage>.<metric> scores, per-stage references, JSON outputs, call forms, batch mode with the cost cap, the wrapping recipe, OTLP import |
 | [RFC-009](RFC-009-prompt-versions.md) | Prompt versions | [PRD-009](../prd/PRD-009-prompts-and-optimisation.md) | Declared prompt files or a prompt root; versions as snapshots in data/prompts, resolved at run time; arm.prompts in the fingerprint; a per-run overlay; prompt commands and pages |
 | [RFC-016](RFC-016-mcp-server-and-skills.md) | The MCP server, the skills, llms.txt and the glossary | [PRD-012](../prd/PRD-012-agent-ready.md) | evh mcp on the official SDK, tools from the manifest, resources, job ids for long work, elicitation consent, a limits file; skills in the Agent Skills format; llms.txt; a glossary |
 | [RFC-013](RFC-013-machine-surface.md) | The machine surface: declarations, JSON, exit codes, refusals, the actor, the config | [PRD-012](../prd/PRD-012-agent-ready.md) | One declaration per command (help, manifest, MCP tools); --json and output schemas; exit codes; RFC 9457 refusals; actor and consent; config.yaml; Python 3.10 |

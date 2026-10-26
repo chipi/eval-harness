@@ -82,6 +82,8 @@ nav:
           - "RFC-013: The machine surface: declarations, JSON, exit codes, refusals, the actor, the config": rfc/RFC-013-machine-surface.md
           - "RFC-016: The MCP server, the skills, llms.txt and the glossary": rfc/RFC-016-mcp-server-and-skills.md
           - "RFC-009: Prompt versions": rfc/RFC-009-prompt-versions.md
+          - "RFC-007: Stages, stage references, structured outputs, item fields, batch mode": rfc/RFC-007-stages-and-stage-references.md
+          - "RFC-008: The process protocol: systems in any language": rfc/RFC-008-process-protocol.md
       - Decisions (ADRs):
           - Index: adr/index.md
           - "ADR-0001: Judge scorers: re-measuring frozen outputs with a validated LLM judge": adr/ADR-0001-judge-scorers.md
