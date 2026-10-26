@@ -1,6 +1,6 @@
 # PRD-011: The evidence registry
 
-- **Status**: Draft (0.5.0), round 3
+- **Status**: Draft (0.5.0), final review round
 - **Authors**: Marko Dragoljevic
 - **Related UX specs**: [UXS-001](../uxs/UXS-001-catalog.md) (the catalog, to show champions)
 - **Related RFC**: RFC-012 (champion versions, the export, the check), to be written
@@ -79,7 +79,7 @@ run or a report, because a production registry also records options that were re
 - **FR1**: A champion is the current baseline of a goal on a dataset. Each promotion makes a new
   fixed version `champion:<goal>/<dataset>/<n>`; `champion:<goal>/<dataset>@current` points at the
   current one; former versions stay in the tree (not only in git) with when, why and by whom they
-  were replaced.
+  were replaced, stored as [PRD-013](PRD-013-identity-and-ties.md) FR7 says.
 - **FR2**: At promotion, the harness freezes into the champion's record the comparison of the
   challenger with the champion it replaces, on the champion's dataset: the paired result on the
   goal's measure (effect, interval, p) and the goal's axes. A first promotion records that there

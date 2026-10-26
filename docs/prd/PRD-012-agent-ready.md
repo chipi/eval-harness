@@ -1,6 +1,6 @@
 # PRD-012: Agent-ready: every capability for people and agents alike
 
-- **Status**: Draft (0.5.0), round 3
+- **Status**: Draft (0.5.0), final review round
 - **Authors**: Marko Dragoljevic
 - **Related UX specs**: [UXS-003](../uxs/UXS-003-cli-and-onboarding.md) (the commands), a new UXS
   for the tools and skills, to be written

@@ -1,6 +1,6 @@
 # PRD-010: Runners: where experiments run
 
-- **Status**: Draft (0.5.0), round 3
+- **Status**: Draft (0.5.0), final review round
 - **Authors**: Marko Dragoljevic
 - **Related UX specs**: [UXS-003](../uxs/UXS-003-cli-and-onboarding.md) (the commands)
 - **Related RFC**: RFC-011 (job sets, the runner interface, local and ssh), to be written

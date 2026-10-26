@@ -101,6 +101,11 @@ belonged together, why one was dropped, or what a round concluded. The newcomer 
   reasons, and the home page's glance shows it with its cost and speed against the baseline;
   the CLI says the same. Guardrails (rules in words) are shown, never computed.
 
+- **Amended in 0.5.0** ([PRD-013](PRD-013-identity-and-ties.md) FR3, FR8): dataset roles `dev` and
+  `heldout` become `validation` and `test` (other roles are kept); `non_inferior` and the goal's
+  tie-breaks use a one-sided non-inferiority test against a margin the goal declares; baselines
+  become per goal and dataset.
+
 ### FR2: Rounds (optional)
 
 - **FR2.1**: A round is `data/rounds/<goal_id>/<round_id>.yaml` (`r1`, `r2`, ...), validated by
@@ -131,6 +136,10 @@ belonged together, why one was dropped, or what a round concluded. The newcomer 
 - **FR2.7**: `evh validate` (V14) checks round records: schema, file name, goal and dataset
   resolve, `from` exists, a closed round has a conclusion, every run naming a round names one
   that exists.
+
+- **Amended in 0.5.0** ([PRD-013](PRD-013-identity-and-ties.md) FR3.5, FR9): round suggestions about
+  arms "tied with the leader" use non-inferiority, and a round summary computed on a test dataset
+  counts as a look at its items.
 
 ## Success Criteria
 

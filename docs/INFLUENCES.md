@@ -48,6 +48,28 @@ The 0.5.0 designs ([PRD-008 to PRD-013](prd/index.md)) take their vocabulary and
 from these, so a reader who knows one of them recognises the flow. Each link was checked on
 2026-10-26.
 
+**Optimisation studies: inspired by Andrej Karpathy's autoresearch**
+
+The studies in [PRD-009](prd/PRD-009-prompts-and-optimisation.md) take their shape directly from
+Andrej Karpathy's [autoresearch](https://github.com/karpathy/autoresearch) (2026): a person writes the
+direction in plain words (its `program.md`), an agent tries one change at a time against an evaluation
+it cannot touch (its `prepare.py`), keeps what improved and discards the rest, and logs every try (its
+`results.tsv`). We say so plainly: that is the loop, and its idea that the person "programs the program"
+while the agent does the trying is why the harness lets an agent drive a study, takes its directions as
+written, and imports its `results.tsv`. The podcast project this harness grew up with adapted it first,
+for prompts and for pipeline parameters, and its experience shaped what the harness adds.
+
+What is different, deliberately, and why:
+
+- **What changes.** autoresearch edits code (`train.py`); a study changes prompts, parameters, models
+  and pipeline settings, never code, and the harness never writes git (a winner leaves as files).
+- **What "better" means.** autoresearch keeps any improvement on its validation measure; a study
+  calls that search (an *exploratory* study is exactly autoresearch's loop), and a claim that the winner
+  is better needs a *confirmatory* check on test items the search never saw, declared beforehand and
+  paid for (the statistics below).
+- **When it stops.** autoresearch runs until interrupted; a study can too, always under a hard cap on
+  money and time, and it asks the person before anything with consequences.
+
 **Statistics of choosing among many candidates**
 
 - **Searching is not proving: one counted check on held-out items** — Dwork et al.,
@@ -62,7 +84,11 @@ from these, so a reader who knows one of them recognises the flow. Each link was
   (Statistical Science, 2023).
 - **A tie is an equivalence claim** — Schuirmann, the two one-sided tests
   ([1987](https://doi.org/10.1007/BF01068419)); Lakens,
-  [*Equivalence tests*](https://doi.org/10.1177/1948550617697177) (2017).
+  [*Equivalence tests*](https://doi.org/10.1177/1948550617697177) (2017). For 0/1 measures, Tango's
+  score test for the difference of paired proportions
+  ([Statistics in Medicine, 1998](https://doi.org/10.1002/%28SICI%291097-0258%2819980430%2917%3A8%3C891%3A%3AAID-SIM780%3E3.0.CO%3B2-B)).
+- **Each look at test items costs part of the level** — Tian and Ramdas,
+  [*Online control of the familywise error rate*](https://arxiv.org/abs/1910.04900).
 - **Intervals and power beside every verdict** — Miller,
   [*Adding error bars to evals*](https://arxiv.org/abs/2411.00640) (2024); Card et al.,
   [*With little power comes great responsibility*](https://doi.org/10.18653/v1/2020.emnlp-main.745)

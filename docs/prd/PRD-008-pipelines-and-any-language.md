@@ -1,6 +1,6 @@
 # PRD-008: Pipelines, stages, and systems in any language
 
-- **Status**: Draft (0.5.0), round 3
+- **Status**: Draft (0.5.0), final review round
 - **Authors**: Marko Dragoljevic
 - **Related UX specs**: [UXS-002](../uxs/UXS-002-inspector.md) (the inspector, to gain a stage view)
 - **Related RFCs**: RFC-007 (stages and stage references), RFC-008 (the process protocol), both
