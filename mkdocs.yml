@@ -122,6 +122,7 @@ extra_css:
 # came from (the harness site also tags each click with an Umami event). `sections`: the
 # switcher that heads the site, the catalog and the docs alike; "." is the docs.
 extra:
+  generator: false  # no "Made with Material for MkDocs" line in the footer
   sections:
     - { label: Harness, url: "https://evals.humancopilot.eu/" }
     - { label: Catalog, url: "https://evals.humancopilot.eu/catalog/" }

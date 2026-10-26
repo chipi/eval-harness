@@ -79,14 +79,17 @@ tables 15px.
 
 ## The shell (every page)
 
-- **Header bar:** the brand ("eval catalog" and its icon, linking to the overview); the global
-  search ("Search everything ( / )"); the nav: **Overview**, **Goals**, **Datasets**,
-  **References**, **Metrics**, **Inspector**; the theme toggle. On a phone the nav is a ☰ menu
-  and the search takes its own row.
+- **Header bar:** the brand (the icon and the product's name, `--brand`, "eval catalog" by
+  default, linking to the overview); the global search ("Search ( / )"); the nav:
+  **Overview**, **Goals**, **Datasets**, **References**, **Metrics**, **Inspector**; the theme
+  toggle. On a phone the nav is a ☰ menu at the left of the bar, the name gives way to the
+  icon, and the search takes its own row.
 - **Switcher (with `--link`):** the parts of the publication the catalog belongs to, in the
-  order given, e.g. **Harness · Catalog · Docs**, the catalog marked; it takes the brand's place
-  after the icon, and the icon opens the first part. The same control heads the deployment's
-  site and docs, so each part keeps its own navigation and any other is one tap away.
+  order given, e.g. **Harness · Catalog · Docs**, the catalog marked, after the brand; the brand
+  then opens the first part. The same control heads the deployment's site and docs, ☰ at the
+  left in all three, so each part keeps its own navigation and any other is one tap away.
+- **Counts on the overview:** a count longer than 7 characters shows in short form on a phone
+  (19.5M); the tile's title keeps the exact number.
 - **Tables:** a cell breaks between words, never inside a name; a table wider than the screen
   scrolls sideways; a cell of running text keeps a readable width on a phone.
 - **Page anatomy:** a slim hero (a kicker such as `dataset` or `goal`, the title, a one-paragraph

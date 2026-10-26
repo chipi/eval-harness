@@ -278,13 +278,14 @@ def page(
     scripts: tuple = (),
     *,
     nav: list = NAV,
-    brand: str = "eval catalog",
+    brand: str = "",
     item: str = "item",
     serve: str = "evh catalog-serve",
     footer: str = "",
 ) -> str:
     """Build a complete HTML page with header, nav, body, and footer."""
     up = "../" * depth
+    brand = brand or BRAND
     links = "".join(
         f'<a href="{href if "://" in href else up + href}"{" aria-current=page" if key == here else ""}'
         f"{f' class={rest[0]}' if rest else ''}>{label}</a>"
@@ -303,7 +304,7 @@ def page(
         else ""
     )
     logo_href = e(parts[0][1]) if parts else here_href
-    brand_text = "" if parts else f"<span>{e(brand)}</span>"
+    brand_text = f"<span>{e(brand)}</span>"
     built = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     foot = footer or (
         f"Built {built} by <code>evh catalog</code>. The pages carry counts and means "
@@ -328,7 +329,7 @@ def page(
 <header class="bar"><div class="wrap">
   <a class="brand" href="{logo_href}" aria-label="{e(parts[0][0] if parts else brand)}"><img class="mark"
     src="{up}assets/icon.svg" alt="" width="28" height="28">{brand_text}</a>{sections}
-  <div class="search"><input id="q" type="search" placeholder="Search everything  ( / )"
+  <div class="search"><input id="q" type="search" placeholder="Search  ( / )"
     autocomplete="off" aria-label="Search the catalog"><div id="hits" hidden></div></div>
   <nav class="nav">{links}</nav>
   <details class="menu"><summary aria-label="Menu">☰</summary><nav class="menu-links">{links}</nav></details>
@@ -1060,6 +1061,20 @@ def home_counts(A: Adapter, by_ds: dict, spend: list[dict]) -> list[tuple]:
     ]
 
 
+def tile_value(n) -> str:
+    """A tile's number. A count over 7 characters also carries a short form (19.5M), which a
+    phone's narrow tile shows instead; the tile's title keeps the exact count."""
+    s = str(n)
+    digits = s.replace(",", "")
+    if len(s) <= 7 or not digits.isdigit():
+        return e(s)
+    v = int(digits)
+    short = next(
+        f"{v / d:.1f}".rstrip("0").rstrip(".") + u for d, u in ((1e9, "B"), (1e6, "M"), (1e3, "k")) if v >= d
+    )
+    return f'<span class="full">{e(s)}</span><span class="short">{short}</span>'
+
+
 def render_home(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
     """The home page: the whole catalog at a glance. Counts, then what each goal concludes, when
     work happened and what it cost, what each dataset covers, and everything recorded, each for
@@ -1069,7 +1084,7 @@ def render_home(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
     tile_html = (
         '<div class="tiles">'
         + "".join(
-            f'<a class="tile" href="{href}"><b>{e(n)}</b><span>{e(k)}</span></a>'
+            f'<a class="tile" href="{href}" title="{e(n)} {e(k)}"><b>{tile_value(n)}</b><span>{e(k)}</span></a>'
             for k, n, href in home_counts(A, by_ds, w["spend"])
         )
         + "</div>"
@@ -2634,11 +2649,13 @@ HEAD = ""
 #: The parts of the publication this catalog belongs to (--link), (label, url) each, "." for the
 #: catalog itself: one switcher heads every page, the catalog marked. None by default.
 SECTIONS: tuple = ()
+#: The product's name beside the logo (--brand): the deployment's own, else "eval catalog".
+BRAND = "eval catalog"
 
 
 def main() -> int:
     """Build the catalog and write static pages to output directory."""
-    global API, HEAD
+    global API, HEAD, BRAND
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--out", type=Path, default=ROOT / ".build" / "catalog")
     ap.add_argument(
@@ -2654,6 +2671,7 @@ def main() -> int:
         "(repeatable); URL . is the catalog itself, else it comes first as Catalog. "
         "E.g. --link Site=https://evals.example.org/ --link Catalog=. --link Docs=https://evals.example.org/docs/",
     )
+    ap.add_argument("--brand", default=BRAND, help='the name beside the logo (default: "eval catalog")')
     ap.add_argument(
         "--api",
         default=API,
@@ -2671,6 +2689,7 @@ def main() -> int:
             f"--api {args.api!r}: expected a path that starts and ends with /, e.g. /catalog/api/"
         )
     API = args.api
+    BRAND = args.brand
     if args.head:
         if not args.head.is_file():
             raise SystemExit(f"--head {args.head}: no such file")

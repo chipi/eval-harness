@@ -425,4 +425,8 @@ footer .wrap.foot { display: block; }
 .menu-links a { padding: 12px 14px; border-radius: 8px; text-decoration: none; color: var(--ink);
   font: 500 14px/1.2 var(--mono); }
 .menu-links a:hover, .menu-links a[aria-current="page"] { background: var(--surface-2); }
-@media (max-width: 760px) { .bar .menu { display: block; margin-left: auto; } .bar .nav > a { display: none; } }
+@media (max-width: 760px) {
+  .bar .menu { display: block; order: -1; }
+  .bar .menu .menu-links { left: 0; right: auto; }
+  .bar .nav > a { display: none; }
+}

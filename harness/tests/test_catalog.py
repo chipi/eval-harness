@@ -143,7 +143,14 @@ try:
         and re.findall(r'<nav class="sections"[^>]*>(.*?)</nav>', ds_page)[0]
         == '<a href="https://s.example/">Site</a><a href="../index.html" aria-current=page>Catalog</a>'
         '<a href="https://s.example/docs/">Docs</a>'
-        and '<a class="brand" href="https://s.example/"' in ds_page,
+        and '<a class="brand" href="https://s.example/"' in ds_page
+        and "<span>eval catalog</span></a>" in ds_page,
+    )
+    check(
+        "overview tiles: a long count also in short form for a phone, a short one as it is",
+        cb.tile_value("19,534,609") == '<span class="full">19,534,609</span><span class="short">19.5M</span>'
+        and cb.tile_value(140) == "140"
+        and cb.tile_value("$27.98") == "$27.98",
     )
     pages = {p.relative_to(out).as_posix() for p in out.rglob("*.html")}
     check(

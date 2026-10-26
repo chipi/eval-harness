@@ -19,13 +19,15 @@ A catalog that works on a phone and sits inside a deployment's own site. No resu
   analytics or tags. The harness adds none of its own.
 - **`evh catalog --api PATH`**: where the inspector's API answers, for a catalog served under a
   path (default `/api/`; e.g. `/catalog/api/`).
+- **`evh catalog --brand NAME`**: the product's name beside the logo (default "eval catalog").
 
 ### Changed
 
 - **`--link LABEL=URL` is a switcher between the parts of a publication**, not extra nav entries:
   the links head every page in order, the catalog marked (`LABEL=.` places it; without one it
   comes first as Catalog), and the logo opens the first. The catalog's own pages stay in its nav
-  (a ☰ menu on phones), and its front page is called Overview.
+  (a ☰ menu at the left of the bar on phones), and its front page is called Overview. The search
+  box reads "Search ( / )"; a long count on the overview shows in short form on a phone (19.5M).
 - **Tables on a phone**: a cell breaks between words, never inside a name, so a narrow screen
   scrolls a wide table sideways; running text keeps a readable width; a long item id is
   shortened in the inspector's per-item table (the whole id is its title); no catalog or
