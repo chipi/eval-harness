@@ -79,9 +79,16 @@ tables 15px.
 
 ## The shell (every page)
 
-- **Header bar:** the brand ("eval catalog" and its icon, linking home); the global search
-  ("Search everything ( / )"); the nav: **Home**, **Goals**, **Datasets**, **References**,
-  **Metrics**, **Inspector**, plus any `--link LABEL=URL` entries; the theme toggle.
+- **Header bar:** the brand ("eval catalog" and its icon, linking to the overview); the global
+  search ("Search everything ( / )"); the nav: **Overview**, **Goals**, **Datasets**,
+  **References**, **Metrics**, **Inspector**; the theme toggle. On a phone the nav is a ☰ menu
+  and the search takes its own row.
+- **Switcher (with `--link`):** the parts of the publication the catalog belongs to, in the
+  order given, e.g. **Harness · Catalog · Docs**, the catalog marked; it takes the brand's place
+  after the icon, and the icon opens the first part. The same control heads the deployment's
+  site and docs, so each part keeps its own navigation and any other is one tap away.
+- **Tables:** a cell breaks between words, never inside a name; a table wider than the screen
+  scrolls sideways; a cell of running text keeps a readable width on a phone.
 - **Page anatomy:** a slim hero (a kicker such as `dataset` or `goal`, the title, a one-paragraph
   dek), then numbered sections (`01`, `02`, ...) each with an eyebrow.
 - **Footer:** "Built <date> by `evh catalog`. The pages carry counts and means only; item text

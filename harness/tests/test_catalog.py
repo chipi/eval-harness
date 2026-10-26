@@ -131,6 +131,20 @@ try:
         head_pages
         and all('<meta name="deploy-tag" content="ours">\n</head>' in p.read_text() for p in head_pages),
     )
+    # --link: the parts of the publication, one switcher on every page, the catalog marked.
+    parts_out = tmp / ".build" / "catalog-parts"
+    cb.build(
+        A, parts_out, (("Site", "https://s.example/"), ("Catalog", "."), ("Docs", "https://s.example/docs/"))
+    )
+    ds_page = next((parts_out / "d").glob("*.html")).read_text()
+    check(
+        "--link: Site · Catalog · Docs in order on every page, the catalog marked, the logo opens the first",
+        all('class="sections"' in p.read_text() for p in parts_out.rglob("*.html"))
+        and re.findall(r'<nav class="sections"[^>]*>(.*?)</nav>', ds_page)[0]
+        == '<a href="https://s.example/">Site</a><a href="../index.html" aria-current=page>Catalog</a>'
+        '<a href="https://s.example/docs/">Docs</a>'
+        and '<a class="brand" href="https://s.example/"' in ds_page,
+    )
     pages = {p.relative_to(out).as_posix() for p in out.rglob("*.html")}
     check(
         "build: home, a page per dataset, the inspector",
@@ -202,10 +216,11 @@ try:
         and 'href="references.html"' in home,
     )
     check(
-        "nav: Home, Goals, Datasets, References, Metrics, Inspector",
+        "nav: Overview, Goals, Datasets, References, Metrics, Inspector",
         re.findall(r'<nav class="nav">(.*?)</nav>', home)[0].count("<a ") == 6
-        and all(x in home for x in (">Datasets<", ">References<", ">Home<")),
+        and all(x in home for x in (">Datasets<", ">References<", ">Overview<")),
     )
+    check("no switcher without --link: a catalog on its own", 'class="sections"' not in home)
     dsp = (out3 / "datasets.html").read_text()
     check("datasets page: every dataset, linked", 'href="d/ds3.html"' in dsp)
     refs_idx = (out3 / "references.html").read_text()

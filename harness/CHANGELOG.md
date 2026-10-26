@@ -9,6 +9,30 @@ The version lives in `scripts/_version.py`; a release is the git tag `v<version>
 release workflow refuses a tag that disagrees with that file or has no section here. A change
 that can move a result is never a patch release without saying so under **Changed**.
 
+## 0.4.1 — unreleased
+
+A catalog that works on a phone and sits inside a deployment's own site. No result moves.
+
+### Added
+
+- **`evh catalog --head FILE`**: HTML added to every page's `<head>`, for a deployment's own
+  analytics or tags. The harness adds none of its own.
+- **`evh catalog --api PATH`**: where the inspector's API answers, for a catalog served under a
+  path (default `/api/`; e.g. `/catalog/api/`).
+
+### Changed
+
+- **`--link LABEL=URL` is a switcher between the parts of a publication**, not extra nav entries:
+  the links head every page in order, the catalog marked (`LABEL=.` places it; without one it
+  comes first as Catalog), and the logo opens the first. The catalog's own pages stay in its nav
+  (a ☰ menu on phones), and its front page is called Overview.
+- **Tables on a phone**: a cell breaks between words, never inside a name, so a narrow screen
+  scrolls a wide table sideways; running text keeps a readable width; a long item id is
+  shortened in the inspector's per-item table (the whole id is its title); no catalog or
+  inspector page is wider than the screen.
+- **No inline styles**: the charts' legend colours are classes, so a deployment's content
+  security policy can forbid `style` attributes.
+
 ## 0.4.0 — 2026-10-25
 
 See your runs, not only tables of them. `evh catalog` builds static pages over a project's

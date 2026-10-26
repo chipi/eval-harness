@@ -6,7 +6,8 @@
    capture, anything outside the built pages -- into a GitHub URL, resolved from the page's
    REAL location in the repo. The docs were written to be read on GitHub; this keeps every
    one of their links working on the site without editing them.
-3. Add the link-preview card, and the analytics tag from site/analytics.json when configured.
+3. Mark a table cell of running text as prose, so a phone gives it a readable width.
+4. Add the link-preview card, and the analytics tag from site/analytics.json when configured.
 """
 
 from __future__ import annotations
@@ -84,8 +85,25 @@ def on_page_markdown(markdown, page, config, files):
     return LINK.sub(fix, markdown)
 
 
+TD = re.compile(r"<td((?: [^>]*)?)>(.*?)</td>", re.S)
+WORD = re.compile(r"[A-Za-z]{2,}(?=\s)")
+
+
+def on_page_content(html, page, config, files):
+    """3. A table cell of running text is marked prose, so a phone gives it a readable width
+    (docs/assets/docs.css), the way the catalog's tables do."""
+
+    def mark(m: re.Match) -> str:
+        text = re.sub(r"<code>.*?</code>|<[^>]+>", " ", m.group(2), flags=re.S)
+        if len(WORD.findall(text + " ")) < 6 or "class=" in m.group(1):
+            return m.group(0)
+        return f'<td class="prose"{m.group(1)}>{m.group(2)}</td>'
+
+    return TD.sub(mark, html)
+
+
 def on_post_page(output, page, config):
-    """3. The link-preview card, and the Umami tag from site/analytics.json when configured."""
+    """4. The link-preview card, and the Umami tag from site/analytics.json when configured."""
     import json  # noqa: PLC0415
     from html import escape  # noqa: PLC0415
 

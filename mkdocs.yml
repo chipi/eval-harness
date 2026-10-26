@@ -91,6 +91,8 @@ nav:
 
 theme:
   name: material
+  # The header with the Harness · Catalog · Docs switcher (extra.sections below).
+  custom_dir: site/docs_theme
   logo: assets/icon.svg
   favicon: assets/icon.svg
   features:
@@ -117,8 +119,13 @@ extra_css:
   - assets/docs.css
 
 # The author's sites in the docs footer, UTM-tagged so humancopilot.eu sees where a visit
-# came from (the harness site also tags each click with an Umami event).
+# came from (the harness site also tags each click with an Umami event). `sections`: the
+# switcher that heads the site, the catalog and the docs alike; "." is the docs.
 extra:
+  sections:
+    - { label: Harness, url: "https://evals.humancopilot.eu/" }
+    - { label: Catalog, url: "https://evals.humancopilot.eu/catalog/" }
+    - { label: Docs, url: "." }
   homepage: https://evals.humancopilot.eu/
   social:
     - icon: fontawesome/solid/compass

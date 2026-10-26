@@ -167,6 +167,9 @@ table.data td { padding: 14px 12px 14px 0; border-bottom: 1px solid var(--hair);
 table.data td.num { font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
 table.data td.big { font: 700 22px/1 var(--display); letter-spacing: -0.02em; }
 .scroll-x { overflow-x: auto; }
+table.data td.num small { font-family: var(--text); color: var(--muted); font-size: 12px; }
+/* running text keeps a readable width on phones; the table scrolls sideways instead */
+@media (max-width: 760px) { table.data td.prose { min-width: 24ch; } }
 
 /* ── finding list ──────────────────────────────────────── */
 .findings { list-style: none; padding: 0; margin: 0; counter-reset: f; display: grid; gap: 0; }
@@ -316,19 +319,20 @@ section[id] { scroll-margin-top: 72px; }
 @media (max-width: 420px) { .nav { gap: 10px; font-size: 12px; } .brand { gap: 7px; font-size: 13px; } }
 .method-grid > *, .lc-explorer > *, .cols > *, .byo > *, .findings li > * { min-width: 0; }
 
-/* ── the ties table: cards on narrow screens ────────────── */
+/* ── tables of a few long fields (ties, hardware): cards on narrow screens ── */
 .chart figcaption b { color: var(--ink-2); font-weight: 600; }
 @media (max-width: 700px) {
-  .chart.scroll-x:has(table.ties) { overflow-x: visible; }
-  table.data.ties thead { display: none; }
-  table.data.ties, table.data.ties tbody { display: block; }
-  table.data.ties tr { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; padding: 18px 0;
+  .chart.scroll-x:has(table.cards) { overflow-x: visible; }
+  table.data.cards thead { display: none; }
+  table.data.cards, table.data.cards tbody { display: block; }
+  table.data.cards tr { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; padding: 18px 0;
     border-bottom: 1px solid var(--hair); }
-  table.data.ties td { display: flex; flex-direction: column; gap: 4px; padding: 0; border: 0; white-space: normal; }
-  table.data.ties td.exp { grid-column: 1 / -1; font-size: 17px; font-weight: 600; }
-  table.data.ties td[data-label]::before { content: attr(data-label); font: 500 10.5px/1.2 var(--mono);
+  table.data.cards td { display: flex; flex-direction: column; gap: 4px; padding: 0; border: 0; white-space: normal; }
+  table.data.cards td.exp { grid-column: 1 / -1; font-size: 17px; font-weight: 600; }
+  table.data.cards td[data-label]::before { content: attr(data-label); font: 500 10.5px/1.2 var(--mono);
     letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
-  table.data.ties td.big { font-size: 26px; }
+  table.data.cards td.big { font-size: 26px; }
+  table.data.cards td.prose { grid-column: 1 / -1; min-width: 0; }
 }
 
 /* charts: a phone layout of each, swapped in under 700px */
@@ -398,13 +402,23 @@ footer .wrap.foot { display: block; }
    phone (the releases page quotes field names and install lines). Only where it would overflow. */
 :not(pre) > code { overflow-wrap: anywhere; }
 
-/* Phones: the sections in a Menu dropdown (<details>, no script), every link in it. */
+/* Harness · Catalog · Docs: the same switcher heads the site, the catalog and the docs, the part
+   you are in marked; each part's own pages stay in its nav (the ☰ menu on phones). */
+.sections { display: inline-flex; flex: none; gap: 2px; padding: 3px; border: 1px solid var(--hair);
+  border-radius: 999px; font: 500 12px/1 var(--mono); letter-spacing: .03em; }
+.sections a { padding: 7px 11px; border-radius: 999px; text-decoration: none; color: var(--ink-2); white-space: nowrap; }
+.sections a:hover { color: var(--ink); background: var(--surface-2); }
+.sections a[aria-current="page"] { color: var(--page); background: var(--ink); }
+.bar .brand + .sections { margin-right: auto; }
+@media (max-width: 1080px) { .bar .brand span { display: none; } }
+@media (max-width: 360px) { .sections a { padding: 7px 8px; } }
+
+/* Phones: the part's own pages in a ☰ dropdown (<details>, no script), every link in it. */
 .menu { display: none; position: relative; }
-.menu > summary { list-style: none; cursor: pointer; font: 500 13px/1 var(--mono); letter-spacing: .03em;
-  color: var(--ink); padding: 9px 14px; border: 1px solid var(--hair); border-radius: 999px; white-space: nowrap; }
+.menu > summary { list-style: none; cursor: pointer; font: 400 17px/1 var(--mono); color: var(--ink);
+  width: 38px; height: 38px; display: grid; place-items: center; border: 1px solid var(--hair); border-radius: 50%; }
 .menu > summary::-webkit-details-marker { display: none; }
-.menu > summary::after { content: " \25BE"; }
-.menu[open] > summary::after { content: " \25B4"; }
+.menu[open] > summary { border-color: var(--accent); }
 .menu-links { position: absolute; right: 0; top: calc(100% + 8px); z-index: 30; display: flex;
   flex-direction: column; min-width: 200px; padding: 6px; background: var(--surface);
   border: 1px solid var(--hair); border-radius: 12px; box-shadow: 0 8px 24px rgba(0, 0, 0, .18); }

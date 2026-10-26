@@ -65,7 +65,7 @@ document.documentElement.classList.add('js');})();
 """
 
 NAV = [
-    ("home", "index.html", "Home"),
+    ("home", "index.html", "Overview"),
     ("goals", "goals.html", "Goals"),
     ("datasets", "datasets.html", "Datasets"),
     ("references", "references.html", "References"),
@@ -290,6 +290,20 @@ def page(
         f"{f' class={rest[0]}' if rest else ''}>{label}</a>"
         for key, href, label, *rest in nav
     )
+    # The parts of the publication (--link), this catalog marked: the logo opens the first.
+    here_href = f"{up}index.html"
+    parts = [(label, here_href if href == "." else href, href == ".") for label, href in SECTIONS]
+    sections = (
+        '<nav class="sections" aria-label="Sections">'
+        + "".join(
+            f'<a href="{e(h)}"{" aria-current=page" if cur else ""}>{e(lb)}</a>' for lb, h, cur in parts
+        )
+        + "</nav>"
+        if parts
+        else ""
+    )
+    logo_href = e(parts[0][1]) if parts else here_href
+    brand_text = "" if parts else f"<span>{e(brand)}</span>"
     built = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     foot = footer or (
         f"Built {built} by <code>evh catalog</code>. The pages carry counts and means "
@@ -312,12 +326,12 @@ def page(
 {HEAD}</head>
 <body data-up="{up}" data-item="{e(item)}" data-serve="{e(serve)}" data-api="{e(API)}">
 <header class="bar"><div class="wrap">
-  <a class="brand" href="{up}index.html"><img class="mark" src="{up}assets/icon.svg"
-    alt="" width="28" height="28"><span>{e(brand)}</span></a>
+  <a class="brand" href="{logo_href}" aria-label="{e(parts[0][0] if parts else brand)}"><img class="mark"
+    src="{up}assets/icon.svg" alt="" width="28" height="28">{brand_text}</a>{sections}
   <div class="search"><input id="q" type="search" placeholder="Search everything  ( / )"
     autocomplete="off" aria-label="Search the catalog"><div id="hits" hidden></div></div>
   <nav class="nav">{links}</nav>
-  <details class="menu"><summary>Menu</summary><nav class="menu-links">{links}</nav></details>
+  <details class="menu"><summary aria-label="Menu">☰</summary><nav class="menu-links">{links}</nav></details>
   <button id="theme" class="theme" aria-label="Toggle light and dark">◐</button>
 </div></header>
 <main>
@@ -1105,7 +1119,7 @@ def render_home(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
         else '<p class="muted">Nothing recorded yet.</p>',
         "recorded",
     )
-    write(out, "index.html", page("Home", body, 0, "home", nav=nav, item=A.item_word))
+    write(out, "index.html", page("Overview", body, 0, "home", nav=nav, item=A.item_word))
 
 
 def scored_by_rank(a: dict, tiers: dict) -> int:
@@ -2574,10 +2588,12 @@ def search_index(A: Adapter, by_ds: dict) -> list[dict]:
     return idx
 
 
-def build(A: Adapter, out: Path, links: tuple = ()) -> dict:
-    """Build all catalog pages and return statistics. `links` are extra nav entries,
-    (key, url, label) each."""
-    nav = NAV + list(links)
+def build(A: Adapter, out: Path, sections: tuple = ()) -> dict:
+    """Build all catalog pages and return statistics. `sections` are the parts of the publication
+    the catalog belongs to, (label, url) each, "." for the catalog itself: the header's switcher."""
+    global SECTIONS
+    SECTIONS = tuple(sections)
+    nav = NAV
     if out.exists():
         shutil.rmtree(out)
     copy_assets(out)
@@ -2615,6 +2631,9 @@ API = "/api/"
 #: HTML a deployment adds to every page's <head> (--head FILE): its analytics, a verification
 #: tag. The harness adds none of its own.
 HEAD = ""
+#: The parts of the publication this catalog belongs to (--link), (label, url) each, "." for the
+#: catalog itself: one switcher heads every page, the catalog marked. None by default.
+SECTIONS: tuple = ()
 
 
 def main() -> int:
@@ -2631,7 +2650,9 @@ def main() -> int:
         action="append",
         default=[],
         metavar="LABEL=URL",
-        help="add a link to the nav, e.g. Harness=https://evals.example.org/ (repeatable)",
+        help="a part of the publication the catalog belongs to, for the header's switcher, in order "
+        "(repeatable); URL . is the catalog itself, else it comes first as Catalog. "
+        "E.g. --link Site=https://evals.example.org/ --link Catalog=. --link Docs=https://evals.example.org/docs/",
     )
     ap.add_argument(
         "--api",
@@ -2654,13 +2675,15 @@ def main() -> int:
         if not args.head.is_file():
             raise SystemExit(f"--head {args.head}: no such file")
         HEAD = args.head.read_text(encoding="utf-8").strip() + "\n"
-    links = []
+    sections = []
     for spec in args.link:
         label, _, url = spec.partition("=")
-        if not url.startswith(("https://", "http://")):
-            raise SystemExit(f"--link {spec!r}: expected LABEL=https://...")
-        links.append((label.lower(), url, label))
-    counts = build(load_catalog_adapter(args.adapter), args.out, tuple(links))
+        if not label or not (url == "." or url.startswith(("https://", "http://"))):
+            raise SystemExit(f"--link {spec!r}: expected LABEL=https://... or LABEL=. for the catalog")
+        sections.append((label, url))
+    if sections and not any(u == "." for _, u in sections):
+        sections.insert(0, ("Catalog", "."))
+    counts = build(load_catalog_adapter(args.adapter), args.out, tuple(sections))
     print(f"catalog: {args.out} — " + ", ".join(f"{v} {k}" for k, v in counts.items()))
     print("inspect: evh catalog-serve, then open the address it prints")
     return 0

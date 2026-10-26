@@ -95,13 +95,21 @@ footer code { font: .9em var(--mono); }
 .replist li span { flex: none; }
 .search { min-width: 0; }
 
-/* Phones: the sections in a Menu dropdown (<details>, no script), every link in it. */
+/* The parts of the publication (--link): one switcher, the catalog marked. The same control heads
+   the site and the docs of a deployment that has them. */
+.sections { display: inline-flex; flex: none; gap: 2px; padding: 3px; border: 1px solid var(--hair);
+  border-radius: 999px; font: 500 12px/1 var(--mono); letter-spacing: .03em; }
+.sections a { padding: 7px 11px; border-radius: 999px; text-decoration: none; color: var(--ink-2); white-space: nowrap; }
+.sections a:hover { color: var(--ink); background: var(--surface-2); }
+.sections a[aria-current="page"] { color: var(--page); background: var(--ink); }
+@media (max-width: 360px) { .sections a { padding: 7px 8px; } }
+
+/* Phones: the catalog's pages in a ☰ dropdown (<details>, no script), every link in it. */
 .menu { display: none; position: relative; }
-.menu > summary { list-style: none; cursor: pointer; font: 500 13px/1 var(--mono); letter-spacing: .03em;
-  color: var(--ink); padding: 9px 14px; border: 1px solid var(--hair); border-radius: 999px; white-space: nowrap; }
+.menu > summary { list-style: none; cursor: pointer; font: 400 17px/1 var(--mono); color: var(--ink);
+  width: 38px; height: 38px; display: grid; place-items: center; border: 1px solid var(--hair); border-radius: 50%; }
 .menu > summary::-webkit-details-marker { display: none; }
-.menu > summary::after { content: " \25BE"; }
-.menu[open] > summary::after { content: " \25B4"; }
+.menu[open] > summary { border-color: var(--accent); }
 .menu-links { position: absolute; right: 0; top: calc(100% + 8px); z-index: 30; display: flex;
   flex-direction: column; min-width: 200px; padding: 6px; background: var(--surface);
   border: 1px solid var(--hair); border-radius: 12px; box-shadow: 0 8px 24px rgba(0, 0, 0, .18); }
@@ -109,7 +117,7 @@ footer code { font: .9em var(--mono); }
   font: 500 14px/1.2 var(--mono); }
 .menu-links a:hover, .menu-links a[aria-current="page"] { background: var(--surface-2); }
 
-/* phones: brand, Menu and theme on one row, search full width below; the sections in the Menu */
+/* phones: logo, switcher, ☰ and theme on one row, search full width below; the pages in ☰ */
 @media (max-width: 760px) {
   .bar .wrap { flex-wrap: wrap; height: auto; padding-top: 10px; padding-bottom: 10px; gap: 10px; }
   .search { order: 3; flex: 1 0 100%; }
@@ -161,6 +169,11 @@ tr.eprow { cursor: pointer; } tr.eprow:hover td { background: var(--surface); } 
 .outlist { font-size: 14px; line-height: 1.5; color: var(--ink-2); padding-left: 20px; }
 .outlist li { margin-bottom: 6px; overflow-wrap: anywhere; }
 table.eps td:first-child, table.eps th:first-child { white-space: nowrap; }
+/* phones: a long item id (a 40-character hash) shows its start, so the scores stay on screen;
+   the whole id is the cell's title and heads the outputs when the row is opened */
+@media (max-width: 760px) { table.eps td:first-child { max-width: 15ch; overflow: hidden; text-overflow: ellipsis; } }
+/* an eyebrow that names an item can carry a long id: it wraps instead of widening the page */
+.eyebrow { overflow-wrap: anywhere; min-width: 0; }
 .pickchip { white-space: normal; overflow-wrap: anywhere; max-width: 100%; }
 footer code { padding: 0 4px; margin: 0; display: inline; letter-spacing: 0; }
 
@@ -286,6 +299,8 @@ dl.kv dd { margin: 0; }
   background: color-mix(in srgb, var(--accent) 12%, var(--surface));
   border: 1px solid color-mix(in srgb, var(--accent) 38%, var(--hair)); transition: background .12s, border-color .12s; }
 a.btn::after { content: "→"; color: var(--accent); font-weight: 400; }
+/* a long action outside a table row wraps instead of widening a phone's page */
+p > .btn, .btns > .btn { white-space: normal; max-width: 100%; }
 .btn:hover { color: var(--ink); background: color-mix(in srgb, var(--accent) 24%, var(--surface)); border-color: var(--accent); }
 .btn.small { padding: 4px 10px; font-size: 11px; border-radius: 6px; }
 table.data td { vertical-align: middle; }
@@ -381,3 +396,6 @@ svg text.name { paint-order: stroke; stroke: var(--surface); stroke-width: 6px; 
 .legend i.sw7 { background: var(--s7); }
 .legend i.sw8 { background: var(--s8); }
 .legend i.swm { background: var(--muted); }
+/* a legend entry's tag ("baseline") stays one word; the entry wraps around it */
+.legend small { overflow-wrap: normal; white-space: nowrap; }
+.legend span { flex-wrap: wrap; max-width: 100%; }

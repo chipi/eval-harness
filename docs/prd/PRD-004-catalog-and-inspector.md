@@ -70,8 +70,11 @@ adapter file ([ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md),
 
 ### FR1: The catalog (static)
 
-- **FR1.1**: `evh catalog [--out DIR] [--adapter …] [--link LABEL=URL]` builds the pages into
-  `.build/catalog/` by default.
+- **FR1.1**: `evh catalog [--out DIR] [--adapter …] [--link LABEL=URL] [--api PATH] [--head FILE]`
+  builds the pages into `.build/catalog/` by default. `--link` names the parts of the publication
+  the catalog belongs to (a switcher on every page, `LABEL=.` for the catalog itself); `--api` is
+  where the inspector's API answers when the catalog is served under a path; `--head` adds a
+  deployment's own HTML (analytics) to every page.
 - **FR1.2**: Pages: home (the dashboard, FR1.8), datasets and one per dataset, goals and one per
   goal, references and one per reference, one per arm, metrics and one per metric, and the
   inspector's shell ([UXS-001](../uxs/UXS-001-catalog.md)).

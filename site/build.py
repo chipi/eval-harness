@@ -585,14 +585,19 @@ def page(title: str, desc: str, body: str, depth: int = 0, here: str = "", card:
         c = f' class="{cls}"' if cls else ""
         return f'<a href="{href}"{c}{cur}>{label}</a>'
 
-    # Phones get these in the Menu dropdown: every section, none hidden.
-    menu_links = (
-        nav("harness", f"{up}index.html", "Harness")
+    # The site's own pages: the bar on wide screens, the ☰ menu on phones.
+    links = (
+        nav("harness", f"{up}index.html", "Overview")
         + nav("use", f"{up}use.html", "Use it")
         + nav("method", f"{up}method.html", "Method")
         + nav("experiments", f"{up}experiments.html", "Experiments")
         + nav("judging", f"{up}experiments/judging.html", "Judging")
-        + f'<a href="{CATALOG}">Catalog</a><a href="{up}docs/">Docs</a><a href="{REPO}">GitHub ↗</a>'
+        + f'<a href="{REPO}">GitHub ↗</a>'
+    )
+    # Harness · Catalog · Docs, the same switcher in all three, this one marked.
+    sections = (
+        f'<a href="{up}index.html" aria-current="page">Harness</a>'
+        f'<a href="{CATALOG}">Catalog</a><a href="{up}docs/">Docs</a>'
     )
 
     return f"""<!doctype html>
@@ -620,8 +625,9 @@ def page(title: str, desc: str, body: str, depth: int = 0, here: str = "", card:
 <body>
 <header class="bar"><div class="wrap">
   <a class="brand" href="{up}index.html" aria-label="eval-harness home"><img class="mark" src="{up}assets/icon.svg" alt="" width="28" height="28"><span>eval-harness</span></a>
-  <details class="menu"><summary>Menu</summary><nav class="menu-links">{menu_links}</nav></details>
-  <nav class="nav">{nav("harness", f"{up}index.html", "Harness")}{nav("use", f"{up}use.html", "Use it")}{nav("method", f"{up}method.html", "Method", "hide-sm")}{nav("experiments", f"{up}experiments.html", "Experiments")}{nav("judging", f"{up}experiments/judging.html", "Judging", "hide-sm")}<a href="{CATALOG}" class="hide-sm">Catalog</a><a href="{up}docs/" class="hide-sm">Docs</a><a href="{REPO}" class="hide-sm">GitHub ↗</a><button id="theme" class="theme" aria-label="Toggle light and dark">◐</button></nav>
+  <nav class="sections" aria-label="Harness, catalog and docs">{sections}</nav>
+  <details class="menu"><summary aria-label="Menu">☰</summary><nav class="menu-links">{links}</nav></details>
+  <nav class="nav">{links}<button id="theme" class="theme" aria-label="Toggle light and dark">◐</button></nav>
 </div></header>
 <main>
 {body}
@@ -1025,14 +1031,14 @@ def landing(f: dict) -> str:
     )
     s = by["summarization"]
     hw_rows = "".join(
-        f'<tr><td class="exp">{e(m["name"])}</td><td data-label="what it is">{e(m["summary"])}</td>'
+        f'<tr><td class="exp">{e(m["name"])}</td><td class="prose" data-label="what it is">{e(m["summary"])}</td>'
         f'<td class="num" data-label="committed runs">'
         + (
-            f"{m['local'] + m['hosted']} ({m['local']} local, {m['hosted']} hosted)"
+            f"{m['local'] + m['hosted']}<br><small>{m['local']} local, {m['hosted']} hosted</small>"
             if m["local"] + m["hosted"]
             else "none"
         )
-        + f'</td><td data-label="role">{e(m["role"])}</td></tr>'
+        + f'</td><td class="prose" data-label="role">{e(m["role"])}</td></tr>'
         for m in f["hardware"]
     )
     hw_date = json.loads((ROOT / "docs" / "evidence" / "hardware.json").read_text())["captured"]
@@ -1082,7 +1088,7 @@ def landing(f: dict) -> str:
       <p>In {ties} of {len(exps)} experiments the leader <strong>cannot be told apart</strong> from a group of others — on summarisation, from {s["n_tied"]} of them. The cheapest paid model inside that group cost a fraction of the dearest: {times(s["tied_ratio"])} less on summarisation.</p>
       <p>The one clean winner is a 499 MB tagger fine-tuned on Few-NERD's own training data, separated from all {by["few-nerd"]["n_arms"] - 1} rivals.</p>
     </div>
-    <div class="chart scroll-x reveal"><table class="data ties">
+    <div class="chart scroll-x reveal"><table class="data ties cards">
       <thead><tr><th>experiment</th><th>first place</th><th>tied with 1st</th><th>…of which paid</th><th>cheapest paid tie</th><th>cheaper than dearest</th><th>dearest model</th></tr></thead>
       <tbody>{tie_rows}</tbody></table>
       <figcaption><b>Tied with 1st</b>: other systems the leader cannot be statistically separated from (paired permutation test, Holm-corrected). <b>…of which paid</b>: how many of those are hosted models that bill per call; the rest are free. <b>Cheapest paid tie</b>: the cheapest of them, and how many times less it cost than the most expensive model in the field. <b>0 tied</b> means a clean winner: separated from every rival.</figcaption></div>
@@ -1158,7 +1164,7 @@ def landing(f: dict) -> str:
   <div class="eyebrow"><span class="num">07</span>The hardware</div>
   <h2>Where the runs were made.</h2>
   <p class="lede">Every run on this site records the machine it ran on; the counts below are read from those records, and each machine's description from the machine itself. Most of it is a 2018 Mac mini. No open-weight LLM was run on any of these machines for these results: the "own it" figures elsewhere are provider-served scores, set against what would fit a given memory budget.</p>
-  <div class="chart scroll-x reveal"><table class="data">
+  <div class="chart scroll-x reveal"><table class="data cards">
     <thead><tr><th>machine</th><th>what it is</th><th>runs on this site it measured</th><th>role</th></tr></thead>
     <tbody>{hw_rows}</tbody></table>
     <figcaption>Hosted runs are API calls made from that machine; the model ran at the provider. Local runs ran on the machine's own CPU. The DGX Spark and the MacBook measured none of these runs. Captured {hw_date}: <a href="{BLOB}/docs/evidence/hardware.json">docs/evidence/hardware.json</a>.</figcaption></div>

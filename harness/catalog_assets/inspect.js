@@ -115,7 +115,7 @@
 
     const arms = Object.keys(d.series), better = d.higher_is_better ? 1 : -1;
     const head = arms.map(a => `<th class="${a === d.baseline ? 'isbase' : ''}">${esc(label[a] || a)}${a === d.baseline ? '<br><small>baseline</small>' : ''}</th>`).join('');
-    const body = d.items.map(ep => `<tr data-ep="${esc(ep)}" class="eprow" tabindex="0" aria-label="open ${ITEM} ${esc(ep)}"><td class="mono">${esc(ep)}</td>${arms.map(a => {
+    const body = d.items.map(ep => `<tr data-ep="${esc(ep)}" class="eprow" tabindex="0" aria-label="open ${ITEM} ${esc(ep)}"><td class="mono" title="${esc(ep)}">${esc(ep)}</td>${arms.map(a => {
       const v = d.series[a][ep], b = d.series[d.baseline][ep];
       if (v == null) return '<td class="num muted">—</td>';
       let mark = '';

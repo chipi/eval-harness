@@ -68,6 +68,18 @@ body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; 
   background: url("icon.svg") center / contain no-repeat; vertical-align: -.25rem;
 }
 .md-header__button.md-logo { display: none; }
+/* Harness · Catalog · Docs, as on the site and in the catalog: after the title, the docs marked.
+   Phones keep the switcher and leave the title to the drawer and the page's own heading. */
+.md-header__title { flex: 0 1 16rem; }
+.md-header .sections { display: inline-flex; flex: none; gap: 2px; padding: 3px; margin: 0 auto 0 .8rem;
+  border: 1px solid var(--eh-hair); border-radius: 999px; font: 500 .6rem/1 var(--eh-mono); letter-spacing: .03em; }
+.md-header .sections a { padding: .35rem .55rem; border-radius: 999px; color: var(--eh-ink-2); white-space: nowrap; }
+.md-header .sections a:hover { color: var(--eh-ink); background: var(--eh-surface-2); }
+.md-header .sections a[aria-current="page"] { color: var(--eh-page); background: var(--eh-ink); }
+@media screen and (max-width: 59.984375em) {
+  .md-header__title { display: none; }
+  .md-header .sections { margin-left: .2rem; }
+}
 .md-tabs { background: transparent; border-bottom: 1px solid var(--eh-hair); }
 .md-search__form { background: var(--eh-surface); border: 1px solid var(--eh-hair); border-radius: 999px; }
 .md-search__input::placeholder { color: var(--eh-muted); }
@@ -123,6 +135,10 @@ body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; 
   border-top: 1px solid var(--eh-hair); padding: .8em 1em .8em 0; vertical-align: top;
 }
 .md-typeset table:not([class]) tr:hover { background: color-mix(in srgb, var(--eh-surface) 70%, transparent); }
+/* A cell breaks between words, never inside a name or a variable: a narrow screen scrolls the
+   table sideways instead of cutting ANTHROPIC_API_KEY in two; running text keeps a readable width. */
+.md-typeset table:not([class]) td, .md-typeset table:not([class]) td code { word-break: normal; overflow-wrap: normal; }
+@media (max-width: 760px) { .md-typeset table:not([class]) td.prose { min-width: 24ch; } }
 
 /* ── quotes and admonitions: the site's note ────────────── */
 .md-typeset blockquote {
