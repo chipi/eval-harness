@@ -28,7 +28,7 @@ New work starts with a PRD. From 0.4.0 on, the order is:
    ([decisions](../adr/index.md)).
 
 PRD-001 to PRD-007 were written for 0.4.0 from the code as it is, so each describes shipped
-behaviour. PRD-008 to PRD-012 are the 0.5.0 drafts, held together by PRD-012: every capability
+behaviour. PRD-008 to PRD-013 are the 0.5.0 drafts, held together by PRD-012: every capability
 for people and agents alike. The release notes ([CHANGELOG](../../harness/CHANGELOG.md)) say what changed when.
 
 ## PRDs
@@ -42,11 +42,12 @@ for people and agents alike. The release notes ([CHANGELOG](../../harness/CHANGE
 | [PRD-005](PRD-005-goals-and-rounds.md) | Goals, and experiment rounds | Implemented (v0.4.0) | [RFC-004](../rfc/RFC-004-experiment-rounds.md), [UXS-001](../uxs/UXS-001-catalog.md), [ADR-0004](../adr/ADR-0004-experiment-rounds.md) | What an evaluation is for and the measure that decides; optional rounds with a hypothesis, retirements and a conclusion |
 | [PRD-006](PRD-006-datasets-versions-fields.md) | Datasets, versions and item fields | Implemented (v0.4.0) | [RFC-006](../rfc/RFC-006-item-fields-and-url-items.md), [ADR-0003](../adr/ADR-0003-item-fields-and-url-items.md) | Versions with lineage, typed item fields outside the identity, items at a pinned URL |
 | [PRD-007](PRD-007-packaging-and-providers.md) | One install, your own keys | Implemented (v0.4.0) | [UXS-003](../uxs/UXS-003-cli-and-onboarding.md) | The `evh` package, the project's own data, the adapter seam, hosted providers with keys you bring |
-| [PRD-008](PRD-008-pipelines-and-any-language.md) | Pipelines, stages, and systems in any language | Draft (0.5.0) | RFC-007, RFC-008 (to write) | Stages with their own output, cost and scores; structured outputs; a process adapter for any language |
-| [PRD-009](PRD-009-prompts-and-optimisation.md) | Prompts as data, and an optimisation loop | Draft (0.5.0) | RFC-009, RFC-010 (to write) | Versioned prompts in the fingerprint; one loop for prompts and parameters, pluggable proposers, held-out confirmation |
-| [PRD-010](PRD-010-runners.md) | Runners: where experiments run | Draft (0.5.0) | RFC-011 (to write) | Plans of jobs; a local runner in parallel with a lock; a simple ssh runner |
-| [PRD-011](PRD-011-evidence-registry.md) | The evidence registry | Draft (0.5.0) | RFC-012 (to write) | Champions per goal with their recipe and evidence, exported and checkable from a project's own registry |
-| [PRD-012](PRD-012-agent-ready.md) | Agent-ready: every capability for people and agents alike | Draft (0.5.0) | RFC-013 (to write) | JSON output, an MCP server, skills, the 0.4.0 gaps; the test every 0.5.0 feature must pass |
+| [PRD-008](PRD-008-pipelines-and-any-language.md) | Pipelines, stages, and systems in any language | Draft (0.5.0) | RFC-007, RFC-008 (to write) | Span-shaped stages with their own references and scores; batch mode; JSON-RPC process adapter for any language |
+| [PRD-009](PRD-009-prompts-and-optimisation.md) | Prompt versions, and an optimisation loop | Draft (0.5.0) | RFC-009, RFC-010 (to write) | Versions of declared prompt files; one loop (a study of trials) for prompts and parameters, ask/tell samplers, a counted test-set check |
+| [PRD-010](PRD-010-runners.md) | Runners: where experiments run | Draft (0.5.0) | RFC-011 (to write) | Detached job sets with standard states, retries and logs; a local runner in parallel; a simple ssh runner with phases |
+| [PRD-011](PRD-011-evidence-registry.md) | The evidence registry | Draft (0.5.0) | RFC-012 (to write) | Champion versions per goal and dataset with frozen evidence, an export, and a check for a project's citations |
+| [PRD-012](PRD-012-agent-ready.md) | Agent-ready: every capability for people and agents alike | Draft (0.5.0) | RFC-013 (to write) | Command manifest, --json, CLI conventions, who acted, an MCP server on the official SDK, skills; the test every 0.5.0 feature must pass |
+| [PRD-013](PRD-013-identity-and-ties.md) | Baselines per goal, the host beside the hash, ties as equivalence | Draft (0.5.0) | RFC-014 (to write), [ADR-0006](../adr/ADR-0006-goal-axes-and-strategies.md) | 0.4.0 corrections with migrations: baselines per goal and dataset, fingerprint v5, ties by interval, unique run ids, intervals beside verdicts |
 
 ## Adding one
 

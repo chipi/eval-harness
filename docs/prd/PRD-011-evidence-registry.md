@@ -1,94 +1,106 @@
 # PRD-011: The evidence registry
 
-- **Status**: Draft (0.5.0)
+- **Status**: Draft (0.5.0), round 2
 - **Authors**: Marko Dragoljevic
 - **Related UX specs**: [UXS-001](../uxs/UXS-001-catalog.md) (the catalog, to show champions)
-- **Related RFC**: RFC-012 (the champion export and the reference check), to be written
+- **Related RFC**: RFC-012 (champion versions, the export, the check), to be written
 - **Related PRDs**: [PRD-005](PRD-005-goals-and-rounds.md) (goals, baselines),
-  [PRD-009](PRD-009-prompts-and-optimisation.md) (what a champion's recipe includes),
+  [PRD-009](PRD-009-prompts-and-optimisation.md) (what a recipe includes),
+  [PRD-013](PRD-013-identity-and-ties.md) (baselines per goal and dataset),
   [PRD-012](PRD-012-agent-ready.md)
 
 ## Summary
 
-Every project keeps its own registry of what runs in production: which model, which settings,
-which prompt. What a project lacks is a stable, checkable link from each of those choices to
-the evidence that chose it. The harness already holds that evidence (goals, baselines with a
-reason, rounds and their conclusions, the references and datasets they were judged on), spread
-over several kinds of record. This PRD gathers it into an **evidence registry**: per goal, the
-**champion** and its full recipe (params, prompt versions, model identity, pipeline settings),
-how it became champion and what it replaced, exported as one versioned file with a stable id per
-champion. A project's own registry cites those ids, and a check says when a cited champion has
-been replaced or no longer exists.
+Every project keeps its own registry of what runs in production. What it lacks is a stable,
+checkable link from those choices to the evidence that made them. The harness holds that evidence
+(goals, baselines promoted with a reason, rounds and their conclusions, the references and
+datasets they were judged on) across several kinds of record. This PRD gives each promotion a
+**champion version** (`news_summary@champion` is the moving pointer, `news_summary/cnn_200/3` a
+fixed version, as in MLflow's model registry), keeps every former champion with why it was
+replaced, freezes the comparison that justified each promotion when it is made, and exports the
+lot in a documented file a project can read and cite. A **check** tells a project when something
+it cites has been replaced, retired or never existed; a citation may name a champion, a round, a
+run or a report, because a production registry also records options that were rejected.
 
 ## Background & Context
 
-- `run-promote` makes a run a goal's baseline on a dataset, with a reason; rounds record
-  conclusions; the catalog's goal page leads with the answer so far. There is no single record a
-  production system can read, and no stable id for "the winner of goal G on dataset D".
-- The podcast project's registry is about 3,000 lines of Python in its public library (modes,
-  stage options, presets), recording for a winner where it was promoted from and a metrics
-  summary. Its links to evidence are kept by hand in `registry_refs.yaml`, checked by its own
-  script; its promote command cannot run from the evaluation repository.
-- A registry kept in code drifts from the evidence the moment someone edits one side.
+- `run-promote` makes a run a **dataset's** baseline (`<dataset_id>_baseline`,
+  `promote_baseline.py:141`) with a reason; the goal is carried from the run, so two goals on one
+  dataset share one baseline ([PRD-013](PRD-013-identity-and-ties.md) makes baselines per goal and
+  dataset). Former baselines are kept only in git history; the comparison against the previous
+  baseline is not recorded at promotion.
+- The podcast project's registry is about 3,000 lines of Python in its pipeline library (modes,
+  stage options, presets), recording for an option where it was promoted from and a metrics
+  summary. `registry_refs.yaml` maps registry options (including demoted and rejected ones) to
+  evaluation reports and rationale files, checked by its own script (`check_research_refs.py`);
+  it cites reports and options, not only winners.
+- The MLflow registry is the common reference: integer versions, moving aliases (`@champion`),
+  and champion/challenger as the names of the two sides of a promotion. Model cards (Mitchell et
+  al., 2019) are the reference for what a published model record says about intended use.
 
 ## Goals
 
-- Per goal and dataset, one champion with a stable id, its recipe and its evidence.
-- The recipe is enough to reproduce the champion's runs: config, params, prompt versions with
-  hashes, model identity, adapter and harness versions.
-- The export is a file a project's production code can read, in a documented, versioned schema.
-- A project's registry can cite champion ids and check them, in CI or by hand.
-- The history is kept: every former champion, when and why it was replaced.
-- The same registry is readable by a person (catalog, command) and an agent (JSON, MCP).
+- Per goal and dataset, a champion with a fixed version number, its recipe and its evidence, and
+  a moving `@champion` pointer.
+- The comparison that justified a promotion is frozen when it is made, not recomputed later.
+- The recipe reproduces the champion's runs: config and params, prompt versions with hashes,
+  model identity, adapter and harness versions, dataset and reference with their hashes, stages.
+- The export is a documented, versioned file a project's production code can read.
+- A project's own registry can cite champions, rounds, runs or reports and check them, in CI or
+  by hand.
+- Readable by a person (catalog, command) and an agent (JSON, MCP resources).
 
 ## Non-Goals
 
-- Not a production registry: the harness does not serve models, hold deployment state, or know
-  what is live. The project decides what to deploy.
-- Not a model artifact store: weights stay where they are; the recipe identifies them.
+- Not a production registry: the harness does not serve models, hold deployment state or know what
+  is live.
+- Not an artifact store: weights stay where they are; the recipe identifies them.
 - No write-back into a project's code.
 
 ## Personas
 
 - **The team lead** asking "what is our current best for this, and why".
-- **The production engineer** who wants the deployed settings to come from the evidence, not
-  from a copy.
-- **The auditor or reviewer** checking that a deployed choice was actually the winner.
+- **The production engineer** who wants deployed settings to come from the evidence.
+- **The reviewer** checking that a deployed choice was the winner, and that a rejected option was
+  rejected for a recorded reason.
 
 ## User Stories
 
-- _As a team lead, I run `evh champions` and get, per goal and dataset, the champion, its score
-  against the previous one, and the round that chose it._
-- _As a production engineer, I export the registry to `registry/champions.json` and my service
-  reads the recipe of `summary-cnn@3` from it._
-- _As a reviewer, CI runs `evh champions-check registry_refs.yaml` and fails because the
-  project still cites a champion that was replaced last week._
+- _As a team lead, I run `evh champions` and get, per goal and dataset, the champion, the
+  challenger it beat with the frozen result, and the round that chose it._
+- _As a production engineer, I export to `registry/champions.json` and my service reads the recipe
+  of `news_summary@champion`._
+- _As a reviewer, CI runs `evh evidence-check registry_refs.yaml` and fails because the project
+  still cites `news_summary/cnn_200/2`, replaced last week by version 3._
 
 ## Functional Requirements
 
-- **FR1**: A champion is the current baseline of a goal on a dataset (as promoted today), with a
-  stable id `<goal>@<n>` that increases on each promotion; former champions keep theirs.
-- **FR2**: `evh champions [--goal G] [--json]` lists champions with recipe, evidence (the run,
-  the tests against the previous champion, the round and its conclusion, the loop when there was
-  one) and history.
-- **FR3**: `evh champions-export --out FILE` writes all of it in a versioned schema; the export is
+- **FR1**: A champion is the current baseline of a goal on a dataset. Each promotion makes a new
+  fixed version `<goal>/<dataset>/<n>`; `<goal>@champion` (per dataset) points at the current one;
+  former versions stay in the tree with when and why they were replaced.
+- **FR2**: At promotion, the harness freezes the comparison of the challenger with the champion it
+  replaces (the paired result on the goal's measure and the goal's axes) into the champion's
+  record.
+- **FR3**: `evh champions [--goal G] [--json]` lists champions with recipe, evidence (the run, the
+  frozen comparison, the round and its conclusion, the loop and its test check when there was one)
+  and history.
+- **FR4**: `evh champions-export --out FILE` writes them in a versioned schema, with the goal's
+  intended use (who uses the output, the decision it informs) as a model card's intended use;
   deterministic (same records, same bytes).
-- **FR4**: The recipe includes config id and params, prompt ids, versions and hashes
-  ([PRD-009](PRD-009-prompts-and-optimisation.md)), the model identity from the fingerprint, the
-  adapter and harness versions, dataset and reference with their hashes, and stages when the arm
-  has them ([PRD-008](PRD-008-pipelines-and-any-language.md)).
-- **FR5**: `evh champions-check FILE` reads a project's list of cited champion ids and fails on
-  an id that does not exist or is no longer current, naming the current one.
-- **FR6**: The catalog's goal page shows the champion's id and history; a champions page lists
+- **FR5**: `evh evidence-check FILE` reads a project's citations (champion versions or pointers,
+  round ids, run ids, report paths) and fails on one that does not exist, a champion version that
+  is no longer current (naming the current one), or a retired arm cited as chosen.
+- **FR6**: The catalog's goal page shows the champion's version and history; a champions page lists
   them all.
 - **FR7**: `evh validate` checks that every champion's evidence resolves.
 
 ## Success Criteria
 
-- The podcast project's `registry_refs.yaml` can be replaced by champion ids and
-  `champions-check` (the review with that project decides whether it is).
-- An export of the example project is byte-identical across two runs with no new promotion.
+- The podcast project's `registry_refs.yaml` can be checked by `evidence-check` (its option-to-report
+  links included), replacing its own check script (to be confirmed with that project).
+- An export of the example project is byte-identical across two exports with no new promotion.
 
 ## Related Documents
 
-- RFC-012 (to be written); [PRD-005](PRD-005-goals-and-rounds.md) (baselines and promotion).
+- RFC-012 (to be written); [PRD-005](PRD-005-goals-and-rounds.md). References: MLflow Model
+  Registry (versions, aliases, champion/challenger), model cards (Mitchell et al., 2019).

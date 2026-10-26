@@ -43,7 +43,10 @@ belonged together, why one was dropped, or what a round concluded. The newcomer 
 - Goals are not required until a project opts in (`required_from`).
 - Rounds are not required at all.
 - No rounds across goals; a round answers one goal on one dataset.
-- No automatic retirement or promotion: suggestions only.
+- No automatic retirement or promotion: suggestions only. (From 0.5.0, inside an optimisation
+  loop, trials are kept or dropped by the loop's declared rule; promotion stays a person's, or an
+  agent's after asking: [PRD-009](PRD-009-prompts-and-optimisation.md),
+  [PRD-012](PRD-012-agent-ready.md).)
 - The catalog never writes a round; there is no "retire" button.
 
 ## Personas
