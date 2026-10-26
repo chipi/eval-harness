@@ -1,6 +1,6 @@
 # PRD-011: The evidence registry
 
-- **Status**: Draft (0.5.0), round 2
+- **Status**: Draft (0.5.0), round 3
 - **Authors**: Marko Dragoljevic
 - **Related UX specs**: [UXS-001](../uxs/UXS-001-catalog.md) (the catalog, to show champions)
 - **Related RFC**: RFC-012 (champion versions, the export, the check), to be written
@@ -15,8 +15,9 @@ Every project keeps its own registry of what runs in production. What it lacks i
 checkable link from those choices to the evidence that made them. The harness holds that evidence
 (goals, baselines promoted with a reason, rounds and their conclusions, the references and
 datasets they were judged on) across several kinds of record. This PRD gives each promotion a
-**champion version** (`news_summary@champion` is the moving pointer, `news_summary/cnn_200/3` a
-fixed version, as in MLflow's model registry), keeps every former champion with why it was
+**champion version** (`champion:news_summary/cnn_200/3` a fixed version,
+`champion:news_summary/cnn_200@current` the moving pointer, in the one grammar of
+[PRD-013](PRD-013-identity-and-ties.md) FR7, after MLflow's versions and aliases), keeps every former champion with why it was
 replaced, freezes the comparison that justified each promotion when it is made, and exports the
 lot in a documented file a project can read and cite. A **check** tells a project when something
 it cites has been replaced, retired or never existed; a citation may name a champion, a round, a
@@ -41,7 +42,7 @@ run or a report, because a production registry also records options that were re
 ## Goals
 
 - Per goal and dataset, a champion with a fixed version number, its recipe and its evidence, and
-  a moving `@champion` pointer.
+  a moving `@current` pointer.
 - The comparison that justified a promotion is frozen when it is made, not recomputed later.
 - The recipe reproduces the champion's runs: config and params, prompt versions with hashes,
   model identity, adapter and harness versions, dataset and reference with their hashes, stages.
@@ -69,20 +70,24 @@ run or a report, because a production registry also records options that were re
 - _As a team lead, I run `evh champions` and get, per goal and dataset, the champion, the
   challenger it beat with the frozen result, and the round that chose it._
 - _As a production engineer, I export to `registry/champions.json` and my service reads the recipe
-  of `news_summary@champion`._
+  of `champion:news_summary/cnn_200@current`._
 - _As a reviewer, CI runs `evh evidence-check registry_refs.yaml` and fails because the project
-  still cites `news_summary/cnn_200/2`, replaced last week by version 3._
+  still cites `champion:news_summary/cnn_200/2`, replaced last week by version 3._
 
 ## Functional Requirements
 
 - **FR1**: A champion is the current baseline of a goal on a dataset. Each promotion makes a new
-  fixed version `<goal>/<dataset>/<n>`; `<goal>@champion` (per dataset) points at the current one;
-  former versions stay in the tree with when and why they were replaced.
-- **FR2**: At promotion, the harness freezes the comparison of the challenger with the champion it
-  replaces (the paired result on the goal's measure and the goal's axes) into the champion's
-  record.
+  fixed version `champion:<goal>/<dataset>/<n>`; `champion:<goal>/<dataset>@current` points at the
+  current one; former versions stay in the tree (not only in git) with when, why and by whom they
+  were replaced.
+- **FR2**: At promotion, the harness freezes into the champion's record the comparison of the
+  challenger with the champion it replaces, on the champion's dataset: the paired result on the
+  goal's measure (effect, interval, p) and the goal's axes. A first promotion records that there
+  was no champion. A study's winner also carries the study's test check
+  ([PRD-009](PRD-009-prompts-and-optimisation.md) FR4) beside it; the two are different evidence
+  and both are kept.
 - **FR3**: `evh champions [--goal G] [--json]` lists champions with recipe, evidence (the run, the
-  frozen comparison, the round and its conclusion, the loop and its test check when there was one)
+  frozen comparison, the round and its conclusion, the study and its test check when there was one)
   and history.
 - **FR4**: `evh champions-export --out FILE` writes them in a versioned schema, with the goal's
   intended use (who uses the output, the decision it informs) as a model card's intended use;

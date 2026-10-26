@@ -1,6 +1,6 @@
 # PRD-008: Pipelines, stages, and systems in any language
 
-- **Status**: Draft (0.5.0), round 2
+- **Status**: Draft (0.5.0), round 3
 - **Authors**: Marko Dragoljevic
 - **Related UX specs**: [UXS-002](../uxs/UXS-002-inspector.md) (the inspector, to gain a stage view)
 - **Related RFCs**: RFC-007 (stages and stage references), RFC-008 (the process protocol), both
@@ -92,10 +92,12 @@ HTTP address, with the harness keeping the scoring and the statistics.
 ### FR1: Stages
 
 - **FR1.1**: A result may carry an ordered list of stages. Each is span-shaped: a name, an id, an
-  optional parent id, start and end times, an output (text or JSON), and token, model and cost
-  attributes named as in the OpenTelemetry GenAI conventions (`gen_ai.usage.input_tokens`,
-  `gen_ai.request.model`, ...), plus its own `extra` and `meta`. The end result stays the
-  result's `output`.
+  optional parent id, start and end times, an output (text or JSON), token and model attributes
+  named as in the OpenTelemetry GenAI conventions (`gen_ai.usage.input_tokens`,
+  `gen_ai.usage.output_tokens`, `gen_ai.request.model`, `gen_ai.response.model`,
+  `gen_ai.provider.name`, `gen_ai.operation.name`), cost under the harness's own name (the
+  conventions define none), plus its own `extra` and `meta`. The record names the conventions'
+  version it follows (they are in development). The end result stays the result's `output`.
 - **FR1.2**: The run records each item's stages and the run's totals per stage. The run's cost and
   time are the sum of its stages unless the adapter reports them.
 - **FR1.3**: Stage scores are metrics named `<stage>.<metric>`; end-result metrics keep their
@@ -105,7 +107,9 @@ HTTP address, with the harness keeping the scoring and the statistics.
   a stage metric whose stage the run lacks.
 - **FR1.6**: A 0.4.0 adapter with no stages needs no change, and its records gain no fields.
 - **FR1.7**: Stage records can also be imported as OpenTelemetry (OTLP JSON) traces, so a
-  pipeline that already emits traces needs no second instrumentation.
+  pipeline that already emits traces needs no second instrumentation; stage scores map to the
+  conventions' evaluation event (`gen_ai.evaluation.result`) on import and export.
+- **FR1.8**: Resume restores an item's stages, their outputs and their costs exactly as recorded.
 
 ### FR2: Stage references
 
@@ -119,22 +123,28 @@ HTTP address, with the harness keeping the scoring and the statistics.
 
 - **FR3.1**: An output (end or stage) may be JSON; scorers receive it parsed; the inspector shows
   it readably and diffs it by field; resume stores and reads it back exactly.
-- **FR3.2**: The adapter may receive an item's declared fields beside its text.
+- **FR3.2**: The adapter may receive an item's declared fields beside its text; an adapter says
+  which form it takes, and a 0.4.0 adapter keeps receiving the text only (RFC-007).
 - **FR3.3**: **Batch mode**: an adapter may take the whole dataset (or a batch) and return a
   result per item, for pipelines that work per feed or across items; cost and time are then
-  apportioned as the adapter reports, and resume works per batch.
+  apportioned as the adapter reports, resume works per batch, and the cost cap is checked before each
+  batch (a batch never starts when the cap would be passed by its estimate).
 
 ### FR4: Systems in any language
 
 - **FR4.1**: A config may name a **process adapter**: a command (`adapter: {command: [...]}`)
-  started once and kept alive, speaking **JSON-RPC 2.0 over stdio** (one request per item or
-  batch), or an HTTP address (`adapter: {url: ...}`) speaking the same messages. Specified and
-  versioned in RFC-008, with an example client in a second language.
+  started once and kept alive, speaking **JSON-RPC 2.0 over stdio**, newline-delimited, one request
+  per item or batch, with only protocol messages on stdout and its logs on stderr (as MCP's stdio
+  transport does), and trace context passed in the request; or an HTTP address
+  (`adapter: {url: ...}`) speaking the same messages. Specified and versioned in RFC-008, with an
+  example client in a second language.
 - **FR4.2**: Scoring may stay in a Python adapter beside a process `call_system`, or be done by
   the process; either way the harness records the metrics.
 - **FR4.3**: The process declares its identity (name, version, a digest of its artifact) and the
-  harness records it with the protocol version. A process that declares none is recorded as
-  unidentified, and `run-promote` refuses it as it refuses an unknown build.
+  harness records it with the protocol version; for a command, the harness also hashes the
+  executable it started; for an HTTP address the identity is only what the service declares, and
+  the record says so. A process that declares none is recorded as unidentified, and `run-promote`
+  refuses it as it refuses an unknown build.
 - **FR4.4**: Every adapter, Python or process, may declare the code ref of the system it calls
   (for example the git commit of the project's pipeline library), recorded with the system's
   identity.
@@ -159,7 +169,8 @@ HTTP address, with the harness keeping the scoring and the statistics.
 - The same pipeline as a process adapter in a second language gives the same metrics to the
   stated float precision.
 - A batch-mode example reproduces per-item results of the per-item version.
-- The podcast project's summary → insights → knowledge-graph chain runs through the harness via
+- The podcast project's summary → insights → knowledge-graph stages (run today by its
+  `run_experiment.py` tasks; its per-feed runner turns those stages off) run through the harness via
   the wrapping recipe, with per-stage scores (to be confirmed with that project).
 - Every 0.4.0 adapter runs and every 0.4.0 run validates (after the 0.5.0 migrations).
 

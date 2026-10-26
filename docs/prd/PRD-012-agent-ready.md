@@ -1,6 +1,6 @@
 # PRD-012: Agent-ready: every capability for people and agents alike
 
-- **Status**: Draft (0.5.0), round 2
+- **Status**: Draft (0.5.0), round 3
 - **Authors**: Marko Dragoljevic
 - **Related UX specs**: [UXS-003](../uxs/UXS-003-cli-and-onboarding.md) (the commands), a new UXS
   for the tools and skills, to be written
@@ -48,7 +48,9 @@ commands.
   person it acted for.
 - Decisions with consequences (promotion, retiring arms, spending over a budget, touching a shared
   host) stay explicit: an agent makes them only after asking, and the record says who decided.
-- Limits an agent works within are set by a person; an agent cannot widen its own.
+- Limits an agent works within are set by a person; through the MCP server an agent cannot widen
+  its own. An agent with a shell can edit files and run commands; the harness cannot stop that, says
+  so, records who acted, and its skills steer agents to the MCP server.
 - Skills are versioned with the harness and work in any agent harness that reads skills.
 
 ## Non-Goals
@@ -67,10 +69,10 @@ commands.
 ## User Stories
 
 - _As a person, I tell my agent "run an optimisation loop on the summary prompt for goal
-  news_summary_cnn, $10 and two GPU hours"; it reads the goal, writes the loop spec, dry-runs it,
+  news_summary_cnn, $10 and two GPU hours"; it reads the goal, writes the study spec, dry-runs it,
   tells me the smallest effect it can detect, runs it, and reports the result of the test check,
   asking me before it promotes._
-- _As a person, I open the catalog afterwards and the goal page shows the loop's round, each trial
+- _As a person, I open the catalog afterwards and the goal page shows the study's round, each trial
   with its hypothesis, change, test against the incumbent and reason, the test check and the cost,
   and that the agent ran it on my instruction._
 - _As an agent, every tool returns JSON matching its declared schema, and a refusal returns its
@@ -93,15 +95,20 @@ commands.
 
 - **FR2.1**: Results on stdout, everything else (progress, notes, warnings) on stderr.
   (`experiment-run` has 35 `print` calls, one of them to stderr.)
-- **FR2.2**: Exit codes are documented and stable: 0 success; 1 refusal; 2 usage error; 3 the
-  system under test failed; 4 stopped by a budget or cost cap (today's 2 moves here); 130
-  interrupted; codes from 64 to 78 (sysexits) for the remaining operational errors.
-- **FR2.3**: A refusal has a stable code, a title, a detail and, when there is one, the command
-  that resolves it, shaped as RFC 9457 problem details; with `--json` it is printed as JSON.
+- **FR2.2**: Exit codes are documented and stable: 0 success; 1 refusal; 2 usage error (argparse's
+  convention, kept rather than sysexits' 64); 3 the system under test failed (today `experiment-run`
+  returns 1 when nothing was measured); 4 stopped by a budget or cost cap (today 2); 130
+  interrupted; 65 to 78 (sysexits) for the remaining operational errors. This is a breaking change,
+  listed in the release notes with each old code and its new one.
+- **FR2.3**: A refusal is an RFC 9457 problem details object: a stable `type` URI (its identity),
+  `title`, `detail`, and the extension member `fix_command` when a command resolves it; with
+  `--json` it is printed as JSON.
 - **FR2.4**: Every command that writes a record or spends money takes `--dry-run`, which writes and
   calls nothing (no system, judge or sampler call) and prints what it would do and cost. Today only
   `experiment-run`, `judge-score` and `sweep` have it.
-- **FR2.5**: `--no-input` everywhere: no command ever waits for a person on a terminal.
+- **FR2.5**: No command ever waits for a person on a terminal. A command that needs consent (FR4.5)
+  refuses without it, with the command a person runs to give it (`--confirm`, or a consent recorded
+  beforehand); the record names who confirmed.
 - **FR2.6**: Every command's help names it as `evh <command>` (some scripts print their file name,
   e.g. `usage: promote_baseline.py`), gives its purpose, and shows at least one example. Today 23
   of the 28 commands that build their own parser show only the first line of their docstring, so
@@ -109,40 +116,52 @@ commands.
 
 ### FR3: Who acted
 
-- **FR3.1**: Every record a command writes (run, round, trial, loop, promotion, prompt version)
-  records the actor: a person, or an agent and the person it acted for (`--actor` or
-  `EVH_ACTOR`; the MCP server sets it from the client), beside the reason, never instead of it.
+- **FR3.1**: Every record a command writes (run, round, trial, study, promotion, prompt version)
+  records the actor: a person, or an agent and the person it acted for (PROV's
+  `actedOnBehalfOf`), beside the reason, never instead of it; and, for work an agent was asked to do,
+  the instruction verbatim (`--instruction`). The CLI takes them from `--actor` or `EVH_ACTOR`; the
+  MCP server from the project's limits file and the person's answers, never from the client's
+  self-reported name, which the protocol says not to trust.
 
 ### FR4: The MCP server
 
 - **FR4.1**: `evh mcp` starts an MCP server (stdio) for the project, built on the official MCP
-  Python SDK, installed by default. It reads the project's configuration (data, runs and goals
-  directories) as the CLI does.
+  Python SDK, installed by default. It reads the project's `config.yaml` (FR10) as the CLI does.
 - **FR4.2**: Its tools are the manifest's commands. Each carries annotations from the manifest:
-  read-only, destructive, idempotent, open-world (calls a paid service). Results are
+  read-only, destructive, idempotent, open-world (reaches outside the project, such as a provider);
+  spending is the manifest's own flag, and annotations are hints, never what consent rests on. Results are
   `structuredContent` with the command's output schema; a refusal is a tool result marked as an
   error with the RFC 9457 body.
 - **FR4.3**: Records are also **resources** with URI templates (`evh://runs/{run_id}`,
   `evh://goals/{goal_id}`, `evh://champions/{goal}`), so an agent can read without calling a
   command.
-- **FR4.4**: Long work (a run, a job set, a loop) is an MCP **task**: the call returns at once and
-  the agent follows it with the protocol's task operations.
-- **FR4.5**: **Consent**: promotion, retiring arms, spending beyond the budget the person gave, and
-  `before` commands that touch a shared host ([PRD-010](PRD-010-runners.md)) ask the person through
-  the protocol before acting; the record names who answered.
+- **FR4.4**: Long work (a run, a job set, a study) is an MCP **task** when the client asks for one
+  (the tasks extension is opt-in per request); otherwise the call returns a job id at once and the
+  agent follows it with the `jobs-status` tool, the protocol's own pattern for stateful tools.
+- **FR4.5**: **Consent**: promotion, retiring arms, spending beyond the budget the person gave,
+  overriding a protective refusal ([PRD-009](PRD-009-prompts-and-optimisation.md) FR4.4, FR4.5),
+  sending private data out ([PRD-009](PRD-009-prompts-and-optimisation.md) FR3.5) and phase commands
+  that touch a shared host ([PRD-010](PRD-010-runners.md) FR1.7) ask the person before acting: for a
+  short call through the protocol's input-required result with an elicitation, for long work through
+  the task's input-required state. The question shows the exact command, host and amount. One
+  answer may cover a whole study or job set, with a count. The record names who answered.
 - **FR4.6**: **Limits**: which tools are enabled, spending and time budgets, and what needs consent
   are set by the person in a file the server will not write and an agent's tools cannot change; a
   change to it is recorded with who made it.
 
 ### FR5: Skills
 
-- **FR5.1**: The harness ships skills in the Agent Skills format: evaluate a system for the first
-  time, compare arms and read the result, run a round, run an optimisation loop, promote with
-  evidence, evaluate a pipeline, bring in runs from elsewhere, follow a long job.
+- **FR5.1**: The harness ships skills in the Agent Skills format (a lowercase name matching its
+  directory, a description saying when to use it, under 500 lines, the harness version in its
+  metadata): evaluate a system for the first time, compare arms and read the result, run a round,
+  run an optimisation study (including as its sampler, through `study-ask` and `study-tell`),
+  promote with evidence, evaluate a pipeline, bring in runs from elsewhere, follow a long job, and
+  migrate a project.
 - **FR5.2**: Skills say when to stop and ask (promotion, spending, shared hosts), whatever a
   project's own instructions say.
 - **FR5.3**: `evh skills-install [--target DIR]` copies them into a project or an agent's skill
-  directory; they name the harness version they describe.
+  directory; they name the harness version they describe. When MCP's skills extension settles, the
+  server also offers them.
 - **FR5.4**: Each skill's commands are run against the example project in CI.
 
 ### FR6: Docs an agent can find
@@ -168,8 +187,16 @@ commands.
 
 ### FR9: Gaps found later
 
-New agent-readiness gaps found anywhere in the harness are added to this PRD and fixed in the
-release that finds them.
+New agent-readiness gaps found anywhere in the harness are added to this PRD, each as a numbered
+requirement with what was found, and fixed in the release that finds them.
+
+### FR10: One project configuration
+
+- **FR10.1**: The project's `config.yaml` (today read only for `catalog.adapter`) holds the data,
+  runs and goals directories, the runners ([PRD-010](PRD-010-runners.md)), the path of the limits
+  file (FR4.6) and the catalog's adapter. The CLI and the MCP server both read it; an environment
+  variable still wins over it, as `EVAL_DATA_DIR` and its siblings do today.
+- **FR10.2**: `evh config --json` prints the configuration in effect and where each value came from.
 
 ## Success Criteria
 
