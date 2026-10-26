@@ -155,8 +155,7 @@ commands.
   directory, a description saying when to use it, under 500 lines, the harness version in its
   metadata): evaluate a system for the first time, compare arms and read the result, run a round,
   run an optimisation study (including as its sampler, through `study-ask` and `study-tell`),
-  promote with evidence, evaluate a pipeline, bring in runs from elsewhere, follow a long job, and
-  migrate a project.
+  promote with evidence, evaluate a pipeline, bring in runs from elsewhere, and follow a long job.
 - **FR5.2**: Skills say when to stop and ask (promotion, spending, shared hosts), whatever a
   project's own instructions say.
 - **FR5.3**: `evh skills-install [--target DIR]` copies them into a project or an agent's skill

@@ -47,7 +47,7 @@ for people and agents alike. The release notes ([CHANGELOG](../../harness/CHANGE
 | [PRD-010](PRD-010-runners.md) | Runners: where experiments run | Draft (0.5.0) | RFC-011 (to write) | Detached job sets with standard states, retries and logs; a local runner in parallel; a simple ssh runner with phases |
 | [PRD-011](PRD-011-evidence-registry.md) | The evidence registry | Draft (0.5.0) | RFC-012 (to write) | Champion versions per goal and dataset with frozen evidence, an export, and a check for a project's citations |
 | [PRD-012](PRD-012-agent-ready.md) | Agent-ready: every capability for people and agents alike | Draft (0.5.0) | RFC-013 (to write) | Command manifest, --json, CLI conventions, who acted, an MCP server on the official SDK, skills; the test every 0.5.0 feature must pass |
-| [PRD-013](PRD-013-identity-and-ties.md) | Baselines per goal, the host beside the hash, non-inferiority, test looks, one grammar | Draft (0.5.0) | RFC-014 (to write), [ADR-0006](../adr/ADR-0006-goal-axes-and-strategies.md) | 0.4.0 corrections: baselines per goal and dataset, fingerprint v5, non-inferiority by a valid test against a declared margin, test looks as a budget, unique run ids, effects and power beside verdicts, one identifier grammar, `evh migrate` |
+| [PRD-013](PRD-013-identity-and-ties.md) | Baselines per goal, the host beside the hash, non-inferiority, test looks, one grammar | Draft (0.5.0) | RFC-014 (to write), [ADR-0006](../adr/ADR-0006-goal-axes-and-strategies.md) | 0.4.0 corrections: baselines per goal and dataset, fingerprint v5, non-inferiority by a valid test against a declared margin, test looks as a budget, unique run ids, effects and power beside verdicts, one identifier grammar, a one-time migration script |
 
 ## Adding one
 

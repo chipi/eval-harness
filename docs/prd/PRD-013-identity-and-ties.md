@@ -4,7 +4,7 @@
 - **Authors**: Marko Dragoljevic
 - **Related RFCs**: [RFC-001](../rfc/RFC-001-fingerprint-and-code-identity.md) (the fingerprint, to gain
   version 5), [RFC-004](../rfc/RFC-004-experiment-rounds.md) (rounds and baselines); RFC-014 (these changes
-  and `evh migrate`), to be written
+  and the migration script), to be written
 - **Related ADRs**: [ADR-0006](../adr/ADR-0006-goal-axes-and-strategies.md) (goal ties, superseded in part by
   this PRD)
 - **Related PRDs**: [PRD-001](PRD-001-experiments-and-comparison.md),
@@ -22,7 +22,8 @@ the goal **declares**, decided by p, with a test that is valid for the measure (
 measures, where the sign-flip test's error rate was measured at up to 30% for a nominal 2.5%). **Test
 items** become a budgeted resource: each look at them spends part of the level, counted per item set.
 Two runs started in the same second share a **run directory**. Versioned things need **one grammar**. And
-the committed data needs **`evh migrate`**, for this repository and for every project on the harness.
+the committed data needs a **migration**: a one-time release script, run here and in the podcast
+project (the two projects known to use the harness), not a permanent command.
 
 ## Background & Context
 
@@ -67,7 +68,7 @@ the committed data needs **`evh migrate`**, for this repository and for every pr
 - One grammar names every versioned thing.
 - Every verdict says how large the difference is and how precisely it is known; a test that cannot
   separate anything says so before it runs.
-- Every project migrates with one command, a dry run, a stated way back, and a check that proves it.
+- Both projects migrate with one script, a dry run, a stated way back, and a check that proves it.
 
 ## Non-Goals
 
@@ -91,7 +92,7 @@ the committed data needs **`evh migrate`**, for this repository and for every pr
   leader by the goal's declared margin; otherwise it says "inconclusive" and why._
 - _As a team lead, I see that our CNN test set has been looked at 7 times of its 10, and that the next
   comparison on it is tested at its smaller share._
-- _As a project, I run `evh migrate --dry-run`, read what will change, what it refuses and what its tag
+- _As a project, I run `python harness/tools/migrate_0_5_0.py --dry-run`, read what will change, what it refuses and what its tag
   cannot restore, run it, and `evh validate` proves every hash._
 
 ## Functional Requirements
@@ -164,7 +165,10 @@ the committed data needs **`evh migrate`**, for this repository and for every pr
   Prompt aliases are set by a command and never moved by promotion. Champions are stored as
   `data/champions/<goal>/<dataset>/<n>.json`, with the current pointer in that directory's `index.json`
   (no symlinks).
-- **FR8: `evh migrate`.** One command migrates a project's committed data to the 0.5.0 format, in this order:
+- **FR8: The 0.5.0 migration script.** A one-time release script, `harness/tools/migrate_0_5_0.py` (run with Python,
+  not an `evh` command: no manifest entry, MCP tool or skill), migrates a project's committed data to
+  the 0.5.0 format; `UPGRADING.md` documents it, and it is removed in a later release, staying in git
+  history. It runs in this order:
   1. Pre-flight (read-only): a clean tree for the data it touches, the harness version, the directories in
      effect, and `evh validate` passing on the 0.4.0 data.
   2. Every stored hash is checked against the version-4 rule from the stored body only (never by re-reading
@@ -204,7 +208,7 @@ the committed data needs **`evh migrate`**, for this repository and for every pr
 
 ## Success Criteria
 
-- `evh migrate` runs cleanly on this repository and on the podcast project's data; goal pages show the same
+- The migration script runs cleanly on this repository and on the podcast project's data; goal pages show the same
   baselines as before; `validate` recomputes every hash and passes.
 - A test shows two goals on one dataset with different baselines; a run pair differing only in host label
   compares as controlled on quality; a pair differing in Python version does not.
