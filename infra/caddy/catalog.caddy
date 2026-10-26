@@ -1,0 +1,4 @@
+# RETIRED (2026-10-26): the catalog moved to evals.humancopilot.eu/catalog/ (see evals.caddy).
+# Kept, and never listed in enabled.txt, only so the next deploy removes the installed copy from
+# /etc/caddy/sites/ (install_vhosts.sh removes the vhosts it owns, the basenames here, that are
+# not enabled). Delete this file once that deploy has run.

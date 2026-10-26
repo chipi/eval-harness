@@ -135,14 +135,18 @@ jobs:
               sleep 10
             done
             [ "$code" = 200 ] || { echo "::error::$1 returned $code"; exit 1; }
-            curl -fsS "$1" | grep -q "$2" || { echo "::error::$1 is not this release"; exit 1; }
+            # Read the page whole, then search it: `curl | grep -q` under pipefail fails on a match
+            # (grep closes the pipe early, curl exits 23).
+            page="$(curl -fsS "$1")"
+            grep -qF "$2" <<<"$page" || { echo "::error::$1 is not this release"; exit 1; }
             echo "public $1 OK"
           }
           if grep -qx evals <<<"$enabled"; then
             probe https://evals.humancopilot.eu/ "?v=$SHA"
             probe https://evals.humancopilot.eu/catalog/ "?v=$SHA"
             probe https://evals.humancopilot.eu/docs/ "?v=$SHA"
-            curl -fsS https://evals.humancopilot.eu/catalog/api/health | grep -q '"ok": true' \
+            health="$(curl -fsS https://evals.humancopilot.eu/catalog/api/health)"
+            grep -qF '"ok": true' <<<"$health" \
               || { echo "::error::the inspector API does not answer on the public host"; exit 1; }
           fi
           [ -n "$enabled" ] || echo "no vhost enabled yet; the on-box loopback health check is the gate"
