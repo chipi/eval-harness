@@ -149,10 +149,12 @@ project (the two projects known to use the harness), not a permanent command.
   threshold; intervals are shown, never used to decide.**
 - **FR6: Power before spending.**
   - **FR6.1**: The smallest p a set of items can reach: for superiority 1/2^n′ one-sided, n′ counting items
-    whose paired difference is not zero; for non-inferiority 1/2^n″, n″ counting items whose difference is
-    not exactly −margin; "at best" (all items) before any run. It is compared with the level of the next
-    look divided by the size of the family tested.
-  - **FR6.2**: The minimum detectable effect at 80% power: (z₁₋α/m + z₀.₈₀) · σ_d / √n′, with σ_d the
+    whose paired difference is not zero; for non-inferiority of a 0/1 measure, the score test's p at its best
+    case (every discordant item favouring the arm); "at best" (all items) before any run. It is compared with
+    the level of the next look divided by the size of the family tested. For non-inferiority of a continuous
+    measure, possibility is judged by power instead (FR6.2: the smallest provable margin against the goal's
+    margin), since a bootstrap p can reach its floor on any data.
+  - **FR6.2**: The minimum detectable effect at 80% power: (z₁₋α/m + z₀.₈₀) · σ_d / √n, with σ_d the
     standard deviation of paired differences taken as the upper quartile over existing arm pairs on the
     dataset, or from a pilot pair (for 0/1 measures σ_d² = p₊ + p₋ − (p₊ − p₋)²). For non-inferiority the
     same formula gives the smallest margin provable at 80% power when Δ = 0. At 30 items or fewer, or with
@@ -173,7 +175,8 @@ project (the two projects known to use the harness), not a permanent command.
   skill), migrates a project's committed data to the 0.5.0 format; `UPGRADING.md` documents it, and it is removed in a later release, staying in git
   history. It runs in this order:
   1. Pre-flight (read-only): a clean tree for the data it touches, the harness version, the directories in
-     effect, and `evh validate` passing on the 0.4.0 data.
+     effect, and the shapes of the files it rewrites; `evh validate` is run with 0.4.0 before the pin moves
+     (the upgrade guide says so). The script can be run again: it skips what is done.
   2. Every stored hash is checked against the version-4 rule from the stored body only (never by re-reading
      items, references or code, which may be absent or changed). Any mismatch other than a derived run's
      null refuses the migration.
@@ -188,26 +191,31 @@ project (the two projects known to use the harness), not a permanent command.
      the old `baselines/` folder is removed.
   7. Goal dataset roles: `dev` → `validation`, `heldout` → `test`; other roles are kept as they are; only
      the datasets' `role` is touched (never a link's).
-  8. Test-look counts are seeded per item set (FR9).
+  8. Each test dataset's use before 0.5.0 is recorded beside its looks, not counted as looks (FR9.4).
   9. A silver reference's record of the run it came from keeps its version-4 hash (it is part of the
-     reference's identity) and gains the version that hash follows.
+     reference's identity), and the manifest records the version that hash follows outside that record, so
+     the reference's digest does not move.
   10. `evh validate` (with the hash recomputation of FR2.3) and a catalog build run after it; the pages show
       the same baselines as before.
   It refuses only real ambiguity among baselines (a custom baseline id; two goals sharing one baseline; a
   goal-less baseline on a dataset a goal uses), never runs in general. This repository migrates first, then
   the podcast project after its pin moves to 0.5.0.
 - **FR9: Test looks are a budget.**
-  - **FR9.1**: A **look** is any recorded comparison on test items that involves an arm not yet compared
-    there: a confirmatory study's check, a confirmation, `run-promote`, `round-close --promote`, and round
-    summaries computed on a test dataset. Showing a recorded comparison again is not a look.
-  - **FR9.2**: Looks are counted per **item set** (the items, by content hash), across goals: two goals that
-    share test items share their budget.
-  - **FR9.3**: Each item set has a budget of K looks (default 10, declarable per goal); look k is tested at
-    α/K (online Bonferroni); several comparisons within one look share it by Holm. When the budget is spent
-    the set needs fresh items; overriding needs the person's consent.
-  - **FR9.4**: At migration the count is seeded with the number of distinct non-baseline configurations that
-    have runs on the item set in the test role; the plan prints that count and the promotion count.
-  - **FR9.5**: Goal pages and `evh goals` show each test set's looks used and remaining.
+  - **FR9.1**: A **look** is a decision recorded on test items by a command that writes one: a confirmatory
+    study's check, a confirmation, `run-promote`, `round-close --promote`. A recorded look with the same two
+    arms, measure and rule is reused, not repeated. Pages and read commands never take a look: on test data
+    they show the nominal result labelled as not a look.
+  - **FR9.2**: Looks are counted per **test dataset** (its items, by content hash, in any order), across goals:
+    two goals that share a test dataset share its budget, and any subset of it spends the dataset's budget.
+  - **FR9.3**: Each test dataset spends a one-sided α of 2.5% over all its looks, front-loaded (the owner's
+    decision): look k is tested at α · 6/(π²k²), so the first at 1.52%, the second at 0.38%, the tenth at
+    0.015%; several comparisons within one look share it by Holm. Past a protective limit of K looks (default
+    10, declarable per goal) a look needs the person's consent; its level continues the series.
+  - **FR9.4**: At migration no looks are counted (the owner's decision): each test dataset starts at look 0,
+    and the number of distinct configurations that had runs on it in the test role before 0.5.0 is recorded
+    and shown beside its looks.
+  - **FR9.5**: Goal pages and `evh goals` show each test dataset's looks taken, the next look's level, the
+    protective limit and its use before 0.5.0.
 
 ## Success Criteria
 
@@ -218,7 +226,8 @@ project (the two projects known to use the harness), not a permanent command.
 - The score test's error rate at the margin, on the review's simulation grid, is at or below the nominal
   level; a planted cheaper arm equal in quality is non-inferior at 200 items and inconclusive at 10; a
   planted worse arm is never recommended.
-- A test item set looked at K times refuses an eleventh look without consent.
+- A test dataset looked at K times refuses look K + 1 without consent, and tests it at the next level of the
+  series when consent is given.
 
 ## Related Documents
 

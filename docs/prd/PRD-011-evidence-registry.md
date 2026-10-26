@@ -101,8 +101,10 @@ run or a report, because a production registry also records options that were re
 
 ## Success Criteria
 
-- The podcast project's `registry_refs.yaml` can be checked by `evidence-check` (its option-to-report
-  links included), replacing its own check script (to be confirmed with that project).
+- The podcast project's `registry_refs.yaml` can be checked by `evidence-check`: every report and rationale
+  file it cites resolves, and every harness id in it. Its own script keeps only the joins with its
+  production registry (every option has evidence and a claim), which need the project's vocabulary
+  (to be confirmed with that project).
 - An export of the example project is byte-identical across two exports with no new promotion.
 
 ## Related Documents

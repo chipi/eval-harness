@@ -4,12 +4,14 @@
 - **Authors**: Marko Dragoljevic
 - **Related PRDs**: [PRD-013](../prd/PRD-013-identity-and-ties.md) (FR3, FR5, FR6, FR9),
   [PRD-009](../prd/PRD-009-prompts-and-optimisation.md) (FR3.2, FR4: acceptance and the test check)
-- **Related RFCs**: RFC-014 (identity; the migration seeds the look counts), RFC-010 (studies),
+- **Related RFCs**: RFC-014 (identity; the migration records prior use), RFC-010 (studies),
   [RFC-004](RFC-004-experiment-rounds.md) (rounds)
 - **Related ADRs**: [ADR-0006](../adr/ADR-0006-goal-axes-and-strategies.md) (goal ties, superseded in part)
 - **Code**: `harness/scripts/stats.py` (new functions), `catalog_views.py` and `catalog_build.py` (goal
-  pages), `rounds.py`, `pair_test.py`, `family_test.py`, `rank_stability.py`; new `harness/scripts/_looks.py`;
-  validation suite `harness/tests/test_stats_validity.py`
+  pages), `rounds.py`, `pair_test.py`, `family_test.py`, `rank_stability.py`, `holdout_significance.py`,
+  `validate_tree.py` (margins, looks); new `harness/scripts/_looks.py`; `schemas/goal.schema.json`
+  (`success_criteria.margins`, `test_looks`), `schemas/look.schema.json`; validation suite
+  `harness/tests/test_stats_validity.py`
 
 ## Abstract
 
@@ -20,7 +22,8 @@ test (the paired sign-flip test with Holm), which is exact for it. Non-inferiori
 with no exact permutation test, so this RFC chooses tests by simulation: for 0/1 measures, Tango's score test
 for paired proportions; for continuous measures, the studentized bootstrap, at half the level when the paired
 differences have a long tail of losses, and "inconclusive" below 50 items in that case. Verdicts are decided
-by p, in a fixed order. Each test item set gets a budget of looks, each at its share of α. The smallest
+by p, in a fixed order. Each test dataset spends its one-sided α = 2.5% over its looks, front-loaded: the first look
+at 1.52%, the second at 0.38%, the tenth at 0.015%; only commands that write a decision take a look. The smallest
 attainable p and the minimum detectable effect are computed before anything is spent.
 
 ## Problem Statement
@@ -56,8 +59,8 @@ attainable p and the minimum detectable effect are computed before anything is s
 | --- | --- | --- | --- |
 | better (superiority), H0: arms exchangeable | any | paired sign-flip, exact ≤ 30 items, Monte Carlo above (unchanged) | α of the family, Holm |
 | not worse (non-inferiority), H0: Δ ≤ −margin | 0/1 | Tango's score test for paired proportions | one-sided α (2.5%, or a look's share) |
-| not worse, H0: Δ ≤ −margin | continuous | studentized bootstrap (bootstrap-t), B = 4000, seeded by the items' digest | one-sided α; α/2 when the skew guard fires |
-| no difference (equivalence) | either | both one-sided non-inferiority tests, at −margin and at +margin | one-sided α each |
+| not worse, H0: Δ ≤ −margin | continuous | studentized bootstrap (bootstrap-t), specified below | one-sided α; α/2 when the skew guard fires |
+| no difference (equivalence) | either | both one-sided tests, at −margin and at +margin (the upper one mirrored, guard included) | one-sided α each |
 
 - **0/1 or continuous**: a measure is 0/1 when every per-item value of both arms is 0 or 1, or when the adapter
   declares it in `METRIC_SCALES = {"correct": "binary"}`; otherwise continuous. Repeats are averaged per item
@@ -67,14 +70,27 @@ attainable p and the minimum detectable effect are computed before anything is s
   restricted estimate q21 = (√(B² − 4AC) − B)/(2A), and Z = (x12 − x21 − n·d0)/√(n·(2·q21 + d0·(1 − d0))); p =
   1 − Φ(Z). Valid with zero off-diagonal cells, where McNemar-type tests are not. Its interval for Δ is the
   score interval (Tango 1998, the same restricted estimate inverted).
-- **Bootstrap-t**. For differences d (n items), t* over B resamples of (mean* − mean)/(sd*/√n); p = the share of
-  t* ≥ (mean + margin)/(sd/√n). Seeded by the item set's digest, so a verdict is reproducible.
-- **The skew guard**: when the sample skewness of the paired differences is below −1 (a long tail of losses),
-  the test uses α/2; when that holds and n < 50, the verdict is **inconclusive (too few items for a skewed
-  measure)**, whatever p says. A right skew (a long tail of gains) needs no guard: the tests are conservative
-  there.
-- **Margins** are in the measure's units, declared by the goal per measure (PRD-013 FR3.1). With no margin, no
-  non-inferiority test runs.
+- **Bootstrap-t**, exactly:
+  - d = the n paired differences (arm − reference, in the quality direction; repeats averaged per item first);
+    m = mean(d), s = the sample standard deviation (n − 1). T = (m + margin)/(s/√n).
+  - B resamples of n items with replacement; for each, t* = (m* − m)/(s*/√n). A resample with s* = 0 is dropped and
+    counted; B counts the kept ones. p = (1 + #{t* ≥ T})/(B + 1).
+  - B = 9999, raised to ⌈20/level⌉ − 1 (at most 199,999) when the level in force is below 0.002, so that at least
+    about 20 resamples fall beyond the threshold; a Monte Carlo p near the level is then not decided by noise.
+  - The seed is the first 16 hex digits of sha256(`<test dataset digest>|<arm a>|<arm b>|<measure>|<margin>`), so each
+    comparison has its own resamples and the same comparison always gives the same p.
+  - s = 0 (every difference equal): no test is possible; the verdict is **inconclusive (no variation)**, and the
+    catalog says the arms measured the same on every item.
+- **The skew guard**: g1 = mean(((d − m)/σ)³), σ the population standard deviation. For the lower test (non-inferiority),
+  when g1 < −1 (a long tail of losses) the test uses α/2, and when that holds and n < 50, the verdict is
+  **inconclusive (too few items for a skewed measure)**, whatever p says. The upper test of an equivalence claim is the
+  mirror image: guarded when g1 > +1. A long tail in the other direction makes the test conservative and needs no
+  guard.
+- **Margins** are in the measure's units, declared by the goal per measure in `success_criteria.margins: {measure:
+  value}` (PRD-013 FR3.1); the 0.4.0 `axes.<axis>.margin` (a tie band defaulting to 2% of the leader) is removed, and
+  the migration (RFC-014) moves a declared one into `margins` and lists it, since its meaning changes. With no margin,
+  no non-inferiority test runs, and `validate` notes the goal. The `non_inferior` direction of PRD-005's goal axes uses
+  this test.
 
 **Evidence** (one-sided 2.5%, true difference at −margin; Monte Carlo error about ±0.003 at 3000 runs, ±0.004 at
 1500):
@@ -89,9 +105,15 @@ attainable p and the minimum detectable effect are computed before anything is s
 | 100 | 0.024 | 0.027 (100%) | 0.021 |
 | 200 | 0.023 | — | — |
 
-Tango is at or below the level everywhere (conservative at small n). The bootstrap-t is at the level on normal
-data and, with the guard, from 50 items on a long loss tail; below 50 the guard turns that case into
-"inconclusive". The validation suite (Testing) reruns a fixed, smaller grid on every change to `stats.py`.
+Tango is at or below the level everywhere (conservative at small n). The bootstrap-t is slightly above the level:
+0.033 at 30 items on normal data, 0.030 at 50 items on a long loss tail with the guard, against 0.025 nominal, about
+twice the Monte Carlo error; it is within it from 100 items. It is reported as **slightly anti-conservative below 100
+items**, and the dry run and verdicts say so beside the method. Below 50 items on a long loss tail the guard turns the
+case into "inconclusive". These simulations used B = 400 resamples per test and a decision by the interval's quantile;
+`research/internal/stats-0.5.0/bootstrap_spec_check.py` reruns the exact specification above (p as defined, the
+mirrored guard) on normal data and on lognormal loss tails of σ ∈ {0.25, 0.5, 0.75, 1.0}, so the −1 threshold is
+checked across tail weights, not one shape. The validation suite (Testing) reruns a fixed, smaller grid on every
+change to `stats.py`.
 
 ### Verdicts
 
@@ -109,9 +131,23 @@ The tests run as a fixed sequence at one level:
    superiority test alone decides **superior** / **worse** / **inconclusive**.
 
 Testing in a fixed sequence (non-inferiority, then superiority), each at the full level, needs no correction for
-the pair: the second is tested only when the first has rejected (the closed-testing argument). In a study's test
-check the tests are one-sided; in a family (a round, a goal page) superiority keeps today's Holm-adjusted
-two-sided test. The verdict is decided by p; the interval shown is the unadjusted 95% interval of
+the pair: the second is tested only when the first has rejected (the closed-testing argument). It holds for one chain;
+where several measures are tested together, the families are:
+
+- **A study's test check and a confirmation**: with `test_rule: noninferiority`, F1 = {the primary measure's
+  non-inferiority, each guardrail's non-inferiority against the start at its limit}, Holm at the look's level; the
+  primary's superiority is tested, at the look's level, only when every hypothesis of F1 rejects (serial
+  gatekeeping, which keeps the family's error at the level). With `test_rule: superiority`, F = {the primary's
+  superiority, each guardrail's non-inferiority}, Holm at the look's level; no non-inferiority test of the primary runs.
+  All tests are one-sided.
+- **`run-promote`**: the challenger against the current champion on the goal's measure, the fixed sequence at the
+  look's level.
+- **Goal pages**: the candidates' non-inferiority tests against the leader are one family (below); "worse" there is
+  descriptive (shown with its nominal p), not a tested claim. Superiority in a round keeps today's Holm-adjusted
+  two-sided test at 5% on validation data.
+
+`stats.verdict(…, rule)` takes the rule (`noninferiority`, `superiority`), and `stats.family_verdicts(…)` applies the
+families above. The verdict is decided by p; the interval shown is the unadjusted 95% interval of
 the test that decided (the sign-flip inversion `exact_ci` up to 30 items and its t interval above for
 superiority; the score interval for Tango; the bootstrap-t interval otherwise), and at the look's level too when
 it is below 2.5%.
@@ -127,28 +163,50 @@ it is below 2.5%.
 
 ### Test looks (`_looks.py`)
 
-- **What is counted.** An item set is identified by its items' content digest (`items_sha256`). A look is a
-  recorded comparison on that item set, in a test role, that involves an arm not compared there before: a
-  confirmatory study's check, a confirmation, `run-promote`, `round-close --promote`, a round summary computed on
-  a test dataset. Showing a recorded comparison again is not a look.
-- **Storage.** `data/looks/<items_sha256 first 16>.json`: `{items_sha256, budget, looks: [{n, at, actor, what,
-  goal, arms, level}]}`; one file per item set, shared by every goal that tests on it.
-- **Budget.** K looks per item set (default 10; a goal may declare `test_looks: K` for a test dataset, and the
-  smallest K of the goals sharing an item set applies). Look k is tested at α/K (online Bonferroni: Σ α/K = α).
-  Comparisons within one look share α/K by Holm. When k > K, the comparison is refused unless the person
-  consents (PRD-012 FR4.5), and the record says so.
-- **Seeding** (the migration, RFC-014 step 8): the number of distinct non-baseline configurations with runs on
-  the item set in the test role; the plan prints it beside the promotion count.
-- **Where it shows.** Goal pages and `evh goals` show "test looks: used / budget" per test dataset.
+- **What owns the budget.** A test **dataset**, identified by the digest of its items (sorted item ids with their
+  content hashes, so order does not matter). Any subset of it that a comparison uses (the test check's items minus
+  validation and shown items, the items two runs share, a slice) spends the dataset's budget, never a fresh one, so a
+  budget cannot be dodged by dropping an item. Two goals that test on one dataset share its budget; two datasets that
+  share items are counted separately, and `validate` notes the overlap.
+- **What is a look.** Only commands that write a decision take one: a confirmatory study's test check, a confirmation
+  (`study-confirm`, RFC-010), `run-promote`, `round-close --promote`. A look is keyed by (dataset, the two arms'
+  fingerprint hashes, the measure, the rule): a writing command that finds a recorded look with the same key reuses
+  its verdict and takes none (promoting a study's confirmed winner against the same champion is not a second look).
+  Read commands and pages (goal pages, `rounds`, `pair-test`, the catalog) never take one: on a test dataset they
+  show the nominal result labelled "not a look: nominal", and beside it the dataset's next look level. Their output
+  depends only on the records, so it stays deterministic.
+- **Levels.** One-sided α = 2.5% per dataset, spent front-loaded: look k is tested at α·γ_k with γ_k = 6/(π²k²)
+  (Σγ_k = 1, so the total over every look ever taken is α): look 1 at 1.52%, 2 at 0.38%, 3 at 0.17%, 4 at 0.095%,
+  5 at 0.061%, 10 at 0.015%. Comparisons within one look share its level by the families above.
+- **Budget.** The series never runs out, but each look is stricter than the last, so a dataset wears out. K (default
+  10; a goal may declare `test_looks: K`, and the smallest K of the goals sharing a dataset applies) is a protective
+  limit: look K + 1 and later are refused unless the person consents (PRD-012 FR4.5), and their levels continue the
+  series, so consent never inflates the error.
+- **Storage and races.** `data/looks/<dataset>/<k>.json` (`schemas/look.schema.json`: key, level, actor, what, goal,
+  arms, state, verdict). A command reserves look k by creating the file with an exclusive create (`O_EXCL`) in state
+  `reserved` before it tests, and writes the verdict into it after (`recorded`). Two commands can never take one k;
+  a command that dies between the two leaves a `reserved` look, which stays spent (the items were looked at) and is
+  shown as "no result recorded".
+- **History before 0.5.0** (the owner's decision): the migration (RFC-014) does not count earlier use as looks;
+  each test dataset starts at look 0, and `data/looks/<dataset>/prior.json` records how many distinct configurations
+  had runs on it in the test role before 0.5.0. Pages show it beside the looks ("used by 29 configurations before
+  0.5.0; levels from 0.5.0 do not account for that").
+- **Where it shows.** Goal pages and `evh goals` show per test dataset: looks taken, the next look's level, the protective
+  limit, and the prior use.
 
 ### Can these items show anything
 
-- **Smallest attainable p**: superiority 1/2^n′ one-sided (n′ = items whose paired difference is not zero);
-  non-inferiority with the sign-flip family is not used, so for Tango the attainable p at the best case (every
-  discordant item favouring the arm) is computed from the formula with x21 = 0, and for bootstrap-t the dry run
-  states that a p below the level needs at least the items the MDE (below) requires. Before any run, "at best"
-  uses all items. `stats.min_attainable_p(deltas, test)` replaces `min_attainable_p(n)`.
-- **Minimum detectable effect** at 80% power: (z₁₋α/m + z₀.₈₀)·σ_d/√n, σ_d the standard deviation of paired
+- **Smallest attainable p**: superiority 1/2^n′ one-sided (n′ = items whose paired difference is not zero); for
+  Tango, the p at the best case (every discordant item favouring the arm, x21 = 0) from the formula. Before any run,
+  "at best" uses all items. `stats.min_attainable_p(deltas, test)` replaces `min_attainable_p(n)`. It is compared
+  with the next look's level divided by the family's size.
+- **Continuous non-inferiority** has no useful attainable p (a bootstrap p reaches 1/(B + 1) on any data), so
+  possibility is judged by power: the study is refused when the smallest margin provable at 80% power (the MDE below,
+  at the look's level) exceeds the goal's margin. The check runs at the start with σ_d from existing arm pairs on the
+  test dataset, and again before the test check with σ_d from the study's own validation trials; with no σ_d at the
+  start, the dry run says "cannot tell yet" and the check before the test look decides.
+- **Minimum detectable effect** at 80% power: (z₁₋α/m + z₀.₈₀)·σ_d/√n (n all items; PRD-013 FR6.2's √n′ is amended to
+  √n, since σ_d already counts the zero differences), σ_d the standard deviation of paired
   differences: the upper quartile over existing arm pairs on the dataset, or a pilot pair; for 0/1, σ_d² = p₊ + p₋ −
   (p₊ − p₋)². For non-inferiority it is the smallest margin provable at 80% power when Δ = 0. At 30 items or fewer,
   or fewer than 20 discordant items, it is simulated (resample the pilot's differences, shift them, run the
@@ -156,7 +214,8 @@ it is below 2.5%.
 
 ## Migration
 
-No data changes for the statistics themselves. The look counts are seeded by the migration script (RFC-014). Goal
+No data changes for the statistics themselves. The migration script (RFC-014) records each test dataset's prior use
+and moves declared `axes.*.margin` values into `margins`. Goal
 recommendations change where an arm was "tied" and is now inconclusive or not tested (no margin declared); the
 release notes list each change on this repository's goals with its reason, and every goal here gains a declared
 margin before release (the owner sets each; RFC-014's plan prints the goals without one).
@@ -171,6 +230,12 @@ margin before release (the owner sets each; RFC-014's plan prints the goals with
   falls outside the band; the question is "not worse".
 - **Alpha-spending (Lan–DeMets) across looks.** Rejected: it plans one comparison on growing data to a fixed end,
   not different arms on a fixed set without an end.
+- **Equal shares, α/K per look.** Rejected by the owner: every look, the first included, would be tested at 0.25%;
+  the front-loaded series gives the first look 1.52% and still spends at most α in total.
+- **Count 0.4.0's use as looks.** Rejected by the owner: every test set here (23 to 35 configurations each) would be
+  spent on the first day; prior use is shown instead.
+- **Every comparison on test data is a look, pages included.** Rejected: a page's level would change when another
+  goal records a look, and a read command would write records.
 - **Thresholdout (Dwork et al.) for test looks.** Deferred: it allows more looks, but adds noise to every reported
   number; a fixed budget is simpler to read.
 - **Betting confidence sequences for bounded means** (valid for any distribution of a bounded measure). Deferred:
@@ -181,10 +246,14 @@ margin before release (the owner sets each; RFC-014's plan prints the goals with
 - `harness/tests/test_stats_validity.py` (seeded, under a minute): Tango's error at the margin ≤ 0.03 on a fixed
   0/1 grid; the bootstrap-t with the guard ≤ 0.035 on normal data and at 50 items on a long loss tail; the guard
   turns the 10-item long-tail case inconclusive; superiority unchanged against the 0.4.0 values (bit for bit).
-- `harness/tests/test_stats.py`: `verdict` order (each outcome, and "non-inferior (worse, within margin)"); Holm
-  across candidates; attainable p with zeros; the MDE formula against a simulation on a fixed pilot.
-- `harness/tests/test_looks.py`: counting, sharing across goals, the α/K level, refusal at K + 1 without consent,
-  seeding from configurations.
+- `harness/tests/test_stats.py`: `verdict` order (each outcome, and "non-inferior (worse, within margin)"); the p
+  definition and B for small levels; s = 0 inconclusive; the seed differs per arm pair and repeats per comparison;
+  the mirrored guard; the serial gatekeeping family; Holm across candidates; attainable p with zeros; the MDE formula
+  against a simulation on a fixed pilot.
+- `harness/tests/test_looks.py`: γ_k levels; a subset spends its dataset's budget; item order does not change the
+  dataset; sharing across goals; reuse of a recorded look with the same key; read commands take none; two concurrent
+  reservations get different k; a `reserved` look stays spent; refusal at K + 1 without consent and the level
+  continuing the series; prior use recorded and shown, not counted.
 - Goal-page tests in `test_catalog.py`: strategies under the new rule; an inconclusive arm never recommended.
 
 ## Decisions (ADR candidates)
@@ -193,5 +262,9 @@ margin before release (the owner sets each; RFC-014's plan prints the goals with
    supersedes ADR-0006's tie rule.
 2. Tests by question and measure: sign-flip for superiority (unchanged); Tango for 0/1 non-inferiority;
    bootstrap-t with a skew guard for continuous non-inferiority, inconclusive below 50 items on a long loss tail.
-3. Test items are a budget: K looks per item set at α/K, shared across goals, seeded from past configurations.
+3. Test datasets spend α = 2.5% one-sided over their looks, front-loaded (γ_k = 6/(π²k²)), with a protective limit of K
+   looks; only commands that write a decision take a look; subsets spend their dataset's budget; prior use is shown,
+   not counted.
 4. Power is stated before spending: attainable p from the items that can contribute, and an MDE from data.
+5. Families: serial gatekeeping (non-inferiority family by Holm, then superiority) for a test check; the bootstrap-t is
+   specified exactly (p, B, seed, ties, the mirrored guard) and reported as slightly anti-conservative below 100 items.

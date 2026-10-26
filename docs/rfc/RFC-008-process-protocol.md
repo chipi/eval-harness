@@ -5,7 +5,9 @@
 - **Related PRDs**: [PRD-008](../prd/PRD-008-pipelines-and-any-language.md) (FR4)
 - **Related RFCs**: RFC-007 (the result and stages it carries), [RFC-001](RFC-001-fingerprint-and-code-identity.md)
   (identity), RFC-013 (exit codes, refusals)
-- **Code**: new `harness/scripts/_process_adapter.py`, `_adapter.py` (loading a process adapter),
+- **Code**: new `harness/scripts/_process_adapter.py`, `_adapter.py` (`_find_adapter`, `load_adapter`,
+  `load_recorded_adapter` and the declaration readers `metric_kinds` … `primary_metric` accept a process adapter),
+  `_retry.py` (`TransientError`), `_fingerprint.py` (`arm.system`), `compare_runs.py`,
   `schemas/protocol/` (the messages), `harness/examples/process-adapter-node/`, `harness/docs/ADAPTER-PROTOCOL.md` (the specification)
 
 ## Abstract
@@ -29,54 +31,93 @@ with it.
 ### Configuration
 
 ```yaml
-adapter:
-  command: ["java", "-jar", "build/pipeline.jar", "--eval"]   # or: url: http://localhost:8800/rpc
-  cwd: services/pipeline         # optional, relative to the project
-  env: [PIPELINE_API_KEY]        # names passed through; values never recorded
-  timeout_s: 120                 # per request
-  score: process                 # or: a Python adapter for score() beside the process (score: adapters/score.py)
+adapter: adapters/pipeline.process.yaml     # a string, as today; a file ending .process.yaml is a process adapter
 ```
+
+```yaml
+# adapters/pipeline.process.yaml
+name: pipeline                                # the id is process:pipeline
+command: ["java", "-cp", "build/libs/*", "eval.Main"]   # or: url: http://localhost:8800/rpc
+cwd: services/pipeline         # optional, relative to the project
+env: [PIPELINE_API_KEY]        # names passed through; values never recorded
+timeout_s: 120                 # per request
+identity_files: ["services/pipeline/build/libs/*.jar"]  # what the harness hashes as the system (below)
+score: process                 # or: a Python file whose score() is used (score: adapters/score.py)
+```
+
+`adapter:` stays a string, so every place that resolves it (`_find_adapter`, `load_recorded_adapter` for `rescore`,
+`silver-calibrate` and the catalog) keeps working: the recorded id of a process adapter is the path of its
+`.process.yaml`, portable as a Python adapter's is. `schemas/process-adapter.schema.json` validates the file.
 
 ### Messages (protocol version `evh-adapter/1`)
 
 | method | from → to | params | result |
 | --- | --- | --- | --- |
-| `initialize` | harness → system | `{protocol: "evh-adapter/1", harness_version, params}` | `{protocol, identity: {name, version, artifact_sha256?}, capabilities: {call_form: "text"\|"item", batch: bool, score: bool, stages: bool}}` |
+| `initialize` | harness → system | `{protocol: "evh-adapter/1.0", harness_version, params}` | `{protocol, identity: {name, version, artifact_sha256?, code_ref?, scorer?: {version, sha256?}}, capabilities: {call_form: "text"\|"item", batch: bool, batch_key?: str, score: bool, stages: bool, estimate: bool}, metrics?: {name: {kind, direction, description}}, primary_metric?, transient_markers?: [str]}` |
 | `call` | harness → system | `{item: {id, text, fields?}, params, _meta?: {traceparent}}` | a result: `{output, stages?, tokens_in?, tokens_out?, cost_usd?, latency_ms?, extra?, meta?}` (RFC-007's fields) |
 | `call_batch` | harness → system | `{items: [...], params, _meta?}` | `{results: {item_id: result}}` |
 | `score` | harness → system | `{output, reference?, source?, stage?}` | `{metrics: {name: number}}` |
+| `estimate` | harness → system | `{items: [...], params}` | `{cost_usd}` (RFC-007's cost cap) |
 | `shutdown` | harness → system | `{}` | `{}`; then the process exits |
 
-- Errors are JSON-RPC errors; `error.data.transient: true` marks a failure the harness retries (as the Python adapter's
-  transient markers do); anything else fails the item, recorded.
+- `initialize` returns what a Python adapter declares as module attributes (`METRIC_KINDS`, `METRIC_DIRECTIONS`,
+  `METRIC_DESCRIPTIONS`, `PRIMARY_METRIC`, `TRANSIENT_MARKERS`); the harness caches it in
+  `.evh/adapters/<name>.json` keyed by the identity, so commands that read declarations without running the system
+  (`rescore`, the catalog) read the cache, and `adapter-check` refreshes it.
+- Errors are JSON-RPC errors. `error.data.transient: true` raises `_retry.TransientError`, which `is_transient` treats
+  as transient by type, not by message; anything else is an item failure (RFC-007), recorded with the error's message.
 - One request at a time per process (the harness does not pipeline); `id`s increase.
 - The messages are JSON Schemas in `schemas/protocol/`; `harness/docs/ADAPTER-PROTOCOL.md` is the specification, versioned.
-- Numbers are IEEE doubles in JSON; metrics are compared across implementations within 1e-12 relative.
+- Numbers are IEEE doubles in JSON; metrics are compared across implementations with
+  `abs(a - b) <= 1e-12 * max(1, abs(a), abs(b))`, so a metric of 0 compares too.
+- **Versions**: the protocol is `evh-adapter/<major>.<minor>`. A different major is refused; a newer minor from either
+  side is accepted, and fields a side does not know are ignored (never an error). Optional features are announced in
+  `capabilities`, never inferred from the minor.
 
 ### Lifecycle
 
-The harness starts the command once per run (or per job, RFC-011), sends `initialize`, refuses (code
-`adapter-protocol`) a different protocol major version, calls per item or batch, and sends `shutdown` at the end. A
-process that exits early fails the remaining items with its last stderr lines in the record. For `url`, `initialize` is
-sent once per run and `shutdown` is not.
+- The harness starts the command once per pass (each `--repeat` is a pass with its own process, so repeats are
+  independent), in its own process group, sends `initialize`, refuses (code `adapter-protocol`) a different protocol
+  major version, calls per item or batch, and sends `shutdown` at the end, then waits 10 s and kills the group.
+- A request past `timeout_s` kills the process group; the item fails as transient, and the next item starts a new
+  process.
+- A process that exits or is killed is restarted for the next item (a retry included): the harness sends `initialize`
+  again and compares the identity with the first one. A different identity stops the pass (code `identity-changed`):
+  the run would otherwise measure two systems. After 3 restarts in a pass, the remaining items fail with the last
+  stderr lines recorded.
+- `--resume` starts a process, and refuses (code `identity-changed`) when its identity differs from the one the resumed
+  run recorded.
+- For `url`, `initialize` is sent once per pass and `shutdown` is not; there is no process to restart.
 
 ### Identity (PRD-008 FR4.3)
 
-- The fingerprint's `instrument.adapter` becomes `{"id": "process:<name>", "protocol": "evh-adapter/1", "declared":
-  {name, version, artifact_sha256}, "executable_sha256": …}` for a command: the harness resolves the command's first
-  argument (through `PATH`) and, for a known runtime (`java`, `node`, `python`, `dotnet`), the first path argument it
-  runs (`build/pipeline.jar`), and hashes that file. For `url`: only the declared identity, with `"declared_only": true`.
-- With no `artifact_sha256` declared and no executable hashed, the adapter is unidentified; `run-promote` refuses it
-  (code `unidentified-system`), as it refuses an unknown build.
-- The adapter's own code ref (PRD-008 FR4.4) may be declared in `identity.code_ref`.
+- **The system is the arm.** A process system's identity is what is being compared (jar v1 against jar v2), so it goes
+  under `arm.system`, inside the hash: `{"process": "process:<name>", "protocol": "evh-adapter/1.0", "declared": {name,
+  version, artifact_sha256, code_ref}, "files_sha256": …}`. `run-compare` reads every `arm.*` difference as the
+  variable, so two versions of the system compare as a controlled comparison. A Python adapter that declares a system
+  through `fingerprint(params)` (`{"system": {...}}`) records it in the same place.
+- **What is hashed**: `files_sha256` is the digest (sorted relative paths and their sha256) of the files matched by
+  `identity_files`. Hashing the command's first argument identifies the launcher (`java`, `node`, `uv`, `./gradlew`, a
+  shell wrapper), not the program, and a jar's hash misses its dependency jars, so the harness does not guess; with no
+  `identity_files` it records the resolved command's sha256 as `launcher_sha256`, labelled as the launcher.
+- **Identified** means a declared `artifact_sha256` or a `files_sha256`. Otherwise the system is unidentified;
+  `run-promote` refuses it (code `unidentified-system`), as it refuses an unknown build. For `url`: only the declared
+  identity, with `"declared_only": true`, which counts as identified only with `artifact_sha256`.
+- **The scorer is the instrument.** `instrument.adapter` stays the scorer: with `score: adapters/score.py`, that file's
+  id and hash as today; with `score: process`, `{"id": "process:<name>", "scorer": identity.scorer}` when the process
+  declares its scorer's version, and otherwise the system's `files_sha256`. In that last case a new system version also
+  moves the instrument; `run-compare` names it ("the scorer is part of the system and changed with it"), and the
+  wrapping recipe recommends `score:` in a separate file.
+- The system's code ref (PRD-008 FR4.4) is `identity.code_ref`.
 
 ### The example and the conformance check
 
 - `harness/examples/process-adapter-node/`: a single-file Node.js client (no dependencies) implementing `initialize`, `call`,
   `score` and `shutdown` for the example dataset, mirroring the Python example adapter.
-- `evh adapter-check [--config C]`: starts the configured process adapter, runs `initialize` and one `call` and `score`
-  on the dataset's first item, validates every message against the schemas, and reports (a read command, no records
-  written).
+- `evh adapter-check [--config C] [--json]`: starts the configured process adapter, runs `initialize` and one `call`
+  and `score` on the dataset's first item, validates every message against the schemas, refreshes the declarations
+  cache, and reports. It writes no records. It exits 0 when every message conforms, and 6 (a check found problems, RFC-013)
+  when one does not, with each failure listed.
 
 ## Migration
 
@@ -96,12 +137,16 @@ None.
 
 - `harness/tests/test_process_adapter.py`: the Node example (when `node` is installed; skipped with a reason otherwise)
   and a Python implementation of the protocol give the same metrics as the Python example adapter within 1e-12; a
-  transient error is retried; an early exit fails the rest with stderr recorded; a protocol version mismatch is refused;
-  an unidentified process is refused by `run-promote`; `adapter-check` validates the messages.
+  transient error is retried; a killed process restarts and a changed identity stops the pass; `--resume` with a
+  changed identity is refused; a timeout kills the process group; a protocol major mismatch is refused and an unknown
+  field from a newer minor is ignored; an unidentified process is refused by `run-promote`; two jar versions compare
+  with only `arm.system` moved; `rescore` of a process run reads the declarations cache; `adapter-check` validates the
+  messages.
 
 ## Decisions (ADR candidates)
 
 1. Systems in any language plug in through a long-lived process speaking JSON-RPC 2.0 over stdio (or the same messages
    over HTTP), wrapped as an ordinary adapter.
-2. A process system's identity is what it declares plus the hash of the executable the harness started; an unidentified
-   system cannot be promoted.
+2. A process system's identity is what it declares plus the hash of the files it names, recorded as part of the arm
+   (`arm.system`); the scorer stays the instrument. An unidentified system cannot be promoted.
+3. A process restarts after a crash and must declare the same identity; repeats each get their own process.

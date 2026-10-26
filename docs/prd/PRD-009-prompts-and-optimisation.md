@@ -218,8 +218,8 @@ dropped by the study's declared rule, as search; nothing is promoted automatical
 ### FR4: The test check (confirmatory studies and confirmations)
 
 - **FR4.1**: The test rule is declared before the study runs: superiority, or non-inferiority by the
-  goal's margin, one-sided, at the level of the look it will spend (FR4.4; 2.5% for a first look of a
-  set with no other use). It is never switched afterwards.
+  goal's margin, one-sided, at the level of the look it will spend (FR4.4; 1.52% for a test dataset's
+  first look, PRD-013 FR9.3). It is never switched afterwards.
 - **FR4.2**: The best trial and the starting arm run once on the test items. Any test item also in the
   validation set, or seen by a sampler in an earlier study on the goal, is excluded, and the count used is
   stated; if none remain, the study is refused (FR4.5). Guardrails are tested there too, as non-inferiority

@@ -6,9 +6,12 @@
 - **Related RFCs**: RFC-008 (the process protocol carries the same result), RFC-013 (`--json`, schemas),
   [RFC-002](RFC-002-run-records-and-derived-runs.md) (run records), [RFC-006](RFC-006-item-fields-and-url-items.md)
   (item fields)
-- **Code**: `harness/scripts/adapter.py` (`Result`, new `Stage`, `Item`), `experiment_run.py` (`one_pass`), new
-  `_stages.py`, `import_run.py` (`--otlp`), `catalog_views.py` and `inspect.js` (the stage view), `validate_tree.py`,
-  `schemas/prediction.schema.json`, `harness/docs/INTEGRATION.md`, `harness/examples/wrapping/`
+- **Code**: `harness/scripts/adapter.py` (`Result`, new `Stage`, `Item`), `experiment_run.py` (`one_pass`, `_Resumed`,
+  the reference coverage check), new `_stages.py` and `_outputs.py` (one reader for an item's output, `.txt` or
+  `.json`), `import_run.py` (`--otlp`), `export_otlp.py`, `catalog_views.py` and `inspect.js` (the stage view),
+  `validate_tree.py`; every reader of `outputs/<item>.txt` or `<ref>/<item>.txt` moves to `_outputs.py`: `rescore.py`,
+  `judge_score.py`, `_references.py`, `reference_create.py`, `silver_calibrate.py`, `catalog_adapter.py`,
+  `validate_tree.py`; `schemas/prediction.schema.json`, `harness/docs/INTEGRATION.md`, `harness/examples/wrapping/`
 
 ## Abstract
 
@@ -20,10 +23,14 @@ of items at once. A recipe and an example show how to wrap an existing runner. N
 
 ## Problem Statement
 
-- `one_pass` (`experiment_run.py:250-345`) calls `call_system(text, params)` per item, writes the output as
-  `<item_id>.txt`, reads the reference `<item_id>.txt`, scores, and writes a row; resume reads the `.txt` back. There is
-  no place for intermediate outputs (they end up in `_meta`, unshaped), no stage reference, no JSON output, no item
-  fields, and no way to run a pipeline that works on a whole feed.
+- `one_pass` (`experiment_run.py:202-403`) calls `call_system(text, params)` per item, writes the output as
+  `<item_id>.txt`, reads the reference `<item_id>.txt`, scores, and writes a row; resume takes the presence of the `.txt`
+  as "done" (`:259-260`) and reads it back. There is no place for intermediate outputs (they end up in `_meta`,
+  unshaped), no stage reference, no JSON output, no item fields, and no way to run a pipeline that works on a whole feed.
+- An item cannot fail on its own: once `call_with_retries` gives up, the exception stops the whole run
+  (`experiment_run.py:280-285`, `:749-751`). A pipeline that fails on one feed loses every feed.
+- Seven other modules read `outputs/<item>.txt` or `<ref>/<item>.txt` directly (listed under Code); `rescore` copies
+  `*.txt` only (`rescore.py:390`).
 
 ## Design
 
@@ -32,7 +39,7 @@ of items at once. A recipe and an example show how to wrap an existing runner. N
 ```python
 @dataclass
 class Stage:
-    name: str                      # "asr", "summary", "insights" (grammar segment)
+    name: str                      # "asr", "summary", "insights": [a-z0-9_-]+, no "." (see below)
     output: str | dict | list      # text or JSON
     id: str | None = None          # span id; default f"{name}" (or name#k when repeated)
     parent: str | None = None      # parent span id: a nested pipeline recorded faithfully, never traversed
@@ -49,21 +56,39 @@ class Stage:
     meta: dict[str, Any] = field(default_factory=dict)
 ```
 
-`Result` gains `stages: list[Stage] = []`; its `output` stays the end result. `_stages.SEMCONV` names the version of the
+`Result` gains `stages: list[Stage] = []`; its `output` stays the end result. A stage name matches `[a-z0-9_-]+`: no
+`.`, so `<stage>.<metric>` splits at its first `.` without ambiguity, and the names `judge` and `harness` are reserved
+(the harness's own metrics, RFC-010). `_stages.SEMCONV` names the version of the
 OpenTelemetry GenAI conventions the attribute names follow (a commit of
 `open-telemetry/semantic-conventions-genai`, updated deliberately), and every run records it.
 
 ### Records
 
 - **Outputs**: the end output is `outputs/<item_id>.txt` (text) or `outputs/<item_id>.json` (JSON); the stages are
-  `outputs/<item_id>.stages.json` (a list of the stage records, outputs included), each written atomically, as today.
+  `outputs/<item_id>.stages.json` (a list of the stage records, outputs included). Each file is written atomically, and
+  in this order: the stages first, the end output last. The end output is the commit marker: resume treats an item as
+  done only when its `.txt` or `.json` exists, so a crash between the two files re-runs the item instead of resuming it
+  without its stages.
 - **The prediction row** gains `_stages`: per stage, the record without its output (`name, id, parent, start_ms,
   end_ms, input_tokens, output_tokens, request_model, response_model, cost_usd`), and metrics `<stage>.latency_ms`,
   `<stage>.cost_usd`, `<stage>.tokens_in`, `<stage>.tokens_out` (when known) beside the stage's scores. The run's
   `cost_usd` and `latency_ms` are the sums over stages unless the result sets them.
-- **Resume** reads `.txt` or `.json` and `.stages.json` back exactly (a replayed item carries its stages' costs, as
-  today it carries its own).
+- **Resume** reads `.txt` or `.json` and `.stages.json` back exactly; `_Resumed` carries the stages, the stage metrics
+  (`<stage>.latency_ms`, cost, tokens) are recomputed from `.stages.json`, and the stages are re-scored as the end
+  output is (a replayed item carries its stages' costs, as today it carries its own).
+- **Rescore and judging** read and copy outputs through `_outputs.py`, so `.json` outputs and `.stages.json` survive a
+  rescore and stage scores are recomputed, not dropped.
 - `schemas/prediction.schema.json` describes the row, stages included.
+
+### Item failures
+
+An item can fail without stopping the run: when retries are exhausted, or a batch result lacks the item, or a process
+adapter returns a non-transient error (RFC-008), the item gets a row `{"item_id": …, "_failed": {"reason": …,
+"transient": bool, "attempts": n}}` and no output file. Failed items are left out of every mean and every paired test
+(the pair needs both arms), and `metrics.json` records `n_failed` beside `n`. `experiment-run` exits 0 when at least one
+item was measured (the count is printed and recorded), 3 when none was, and 75 when none was and the last failure was
+transient (RFC-013's table). `--resume` retries failed items. `run-promote` refuses a run with failed items unless
+`--allow-failed` and a reason; the catalog shows the count on the run.
 
 ### Scoring stages
 
@@ -93,12 +118,20 @@ sort_keys=True)`).
 
 - An adapter declares how it is called: `CALL_FORM = "text"` (default, 0.4.0: `call_system(text, params)`) or `"item"`
   (`call_system(item: Item, params)`, `Item(id, text, fields)`, the fields RFC-006 declares).
-- `BATCH = True` with `call_batch(items: list[Item], params) -> dict[str, Result]` (keyed by item id): the harness passes
-  batches of `params.get("batch_size")` items (default: the whole dataset), in dataset order. A missing item id in the
-  returned mapping fails that item (recorded, not skipped). Retries apply to the batch.
-- **Cost cap with batches**: before a batch, the estimate is the mean cost per item of the batches so far times the batch
-  size (none before the first batch); a batch never starts when the estimate would pass the cap; the first batch starts
-  only when `--dry-run`'s estimate (from the config's prices) is under the cap, or no cap is set.
+- `BATCH = True` with `call_batch(items: list[Item], params) -> dict[str, Result]` (keyed by item id). The batch unit is
+  `BATCH_KEY` (an item field, such as `feed`: one batch per distinct value, in dataset order) or `params["batch_size"]`
+  items; the default is one item, so a batch adapter never risks the whole dataset by default. The harness writes each
+  returned item's files as soon as the batch returns, so a crash loses at most the batch in flight. A missing item id in
+  the returned mapping fails that item (an item failure, above). A transient failure of the whole batch is retried; a
+  retry sends only the items still without an output.
+- **Times and costs in a batch**: an item's `latency_ms` and `cost_usd` are what the adapter reports for it (PRD-008
+  FR3.3, "as the adapter reports"); when it reports none, the harness records the batch's wall time and cost on the
+  batch (`_batch: {id, items, latency_ms, cost_usd}` on each row) and leaves the item's own fields empty, never an even
+  split it did not measure. Means of latency then use only items with their own; the catalog says how many.
+- **Cost cap with batches**: the adapter may define `estimate(items, params) -> {"cost_usd": float}`; before each batch
+  the estimate is that, or else the mean cost per item of the batches so far times the batch size. A batch never starts
+  when the estimate would pass the cap. Under a cap, the first batch of an adapter with no `estimate` and no prices in the
+  config is refused with the reason (`no-estimate`), not started blind.
 - **Resume per batch**: items with outputs on disk are left out of the next batch.
 
 ### Wrapping a runner (PRD-008 FR5)
@@ -109,12 +142,19 @@ names), reads them back as `Result`s with stages, and, where the system needs it
 overlay (RFC-009). It also shows declaring the system's code ref (PRD-008 FR4.4) through the adapter's
 `fingerprint(params)` hook: `{"code_ref": {"repo": …, "commit": …}}`.
 
-### Importing traces (PRD-008 FR1.7)
+### Importing and exporting traces (PRD-008 FR1.7)
 
-`evh import-run --otlp FILE.json …` reads OTLP JSON: spans with the attribute `evh.item_id` group into items; each span
-becomes a stage (names from `gen_ai.*` where present); `gen_ai.evaluation.result` events become stage scores
-(`gen_ai.evaluation.name` → the metric, `gen_ai.evaluation.score.value` → the value). The rest of `import-run` is
-unchanged.
+- `evh import-run --otlp-traces FILE.json [--otlp-logs FILE.json] --dataset-id D --config-id C --source S` reads OTLP
+  JSON. Spans with the attribute `evh.item_id` group into items; each span becomes a stage (names from `gen_ai.*` where
+  present); the root span's output, when recorded, is the end output. `gen_ai.evaluation.result` is an event in the logs
+  data model, parented to a span, not a span attribute, so evaluation results come from the logs file, joined to stages
+  on span id (`gen_ai.evaluation.name` → the metric, `gen_ai.evaluation.score.value` → the value).
+- With `--otlp-*`, `--scores` is not needed (the scores come from the logs), and `--primary-metric` and `--scorer-id` are
+  required only when the logs carry scores; the scorer id defaults to `otlp:<the events' evaluator name>`. Without
+  `--otlp-*`, `import-run` is unchanged.
+- `evh export-otlp --run R --out DIR` writes the run's stages as OTLP JSON traces and its stage scores as
+  `gen_ai.evaluation.result` log records, so a project's tracing tool can show them; an import of the export gives the
+  same stages and scores.
 
 ### The stage view
 
@@ -123,7 +163,8 @@ row highlighted where two arms' stage scores differ most; `evh inspect --stages 
 
 ### Validation
 
-`validate` notes a run whose items do not all have the same stage names, and refuses a stage metric whose stage the run
+`validate` notes a run whose items do not all have the same stage names, and refuses a stage metric (other than the
+reserved `judge.` and `harness.` prefixes) whose stage the run
 lacks; every row validates against `prediction.schema.json`.
 
 ## Migration
@@ -145,7 +186,10 @@ None: a run without stages has no new fields.
 - `harness/tests/test_stages.py`: a three-stage example adapter (one stage with a reference, one calling a fake provider)
   records stages, stage metrics, sums; resume restores stages exactly; `pair-test --metric summary.rouge_l` works; a
   missing stage reference leaves reference-free stage metrics; JSON outputs round-trip; `CALL_FORM="item"` receives
-  fields; a batch adapter matches the per-item adapter's results; the cap stops before a batch; an OTLP file imports.
+  fields; a batch adapter matches the per-item adapter's results; the cap stops before a batch and refuses a first
+  batch with no estimate; a crash between the stage file and the end output re-runs the item on resume; resume restores
+  stage metrics; rescore keeps `.json` outputs and stages; an item that fails is recorded and the run goes on; a stage
+  name with `.` is refused; OTLP traces and logs import, and export → import round-trips.
 - Inspector browser check: the stage panel for two arms.
 
 ## Decisions (ADR candidates)
@@ -153,4 +197,7 @@ None: a run without stages has no new fields.
 1. Stages are span-shaped records on the result (OpenTelemetry GenAI names, a pinned conventions version, the harness's
    own cost field), stored beside outputs; stage scores are ordinary metrics named `<stage>.<metric>`.
 2. A reference may hold per-stage references, inside the reference digest.
-3. Adapters declare their call form (text, item) and whether they batch; 0.4.0 adapters are unchanged.
+3. Adapters declare their call form (text, item) and whether they batch (by a key field, default one item); 0.4.0
+   adapters are unchanged.
+4. An item can fail without stopping the run; failed items are recorded, counted and left out of means and tests.
+5. The end output file is written last and is the commit marker for resume.

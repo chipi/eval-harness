@@ -6,7 +6,7 @@
 - **Related RFCs**: RFC-014 (the grammar; fingerprint v5), RFC-010 (studies create versions), RFC-013 (commands,
   schemas, the actor), [RFC-001](RFC-001-fingerprint-and-code-identity.md)
 - **Code**: new `harness/scripts/_prompts.py`; `experiment_run.py` (resolve, overlay, fingerprint),
-  `_fingerprint.py` (`arm.prompts`), new commands `prompt_version.py`, `view_prompts.py` (`evh prompts`),
+  `_fingerprint.py` (`arm.prompts`; `filter_dirt` ignores the harness's record directories), new commands `prompt_version.py`, `view_prompts.py` (`evh prompts`),
   `prompt_diff.py`, `prompt_export.py`; `catalog_build.py` (prompt pages); `validate_tree.py` (V19);
   `schemas/prompt-version.schema.json`, `config.schema.json`
 
@@ -25,9 +25,15 @@ create a version without touching a tracked file. Names follow RFC-014's grammar
 - A prompt inside `params` is hashed as text; a prompt in a file reaches the fingerprint only if the adapter's
   `fingerprint(params)` hook hashes it, under `system_under_test.model`, where `run-compare` reads it as a different
   system, not a different arm.
-- The podcast project's prompts live in its installed pipeline library (`podcast_scraper/prompts/`, 204 files), loaded
-  from one directory the library can be pointed at (`set_prompt_dir`); a trial cannot write into an installed package,
-  and writing into a tracked checkout makes the build dirty (`run-promote` refuses dirty builds).
+- The podcast project's prompts live in its pipeline library (`podcast_scraper/prompts/`: 204 `.j2` files among 209,
+  the rest code, a README and `__pycache__`), loaded from one directory the library can be pointed at (`set_prompt_dir`,
+  or the `PROMPT_DIR` environment variable, which wins: `store.py:68-72`). Templates are cached by name
+  (`lru_cache`), and only `set_prompt_dir` or `clear_cache()` clears the cache. The whole-pipeline runner runs the
+  library from a separate checkout (`PYTHONPATH=<checkout>/src`, `run_dataset_through_pipeline.py:349-396`), not the
+  installed copy. A trial cannot write into an installed package, and writing into a tracked checkout makes the build
+  dirty (`run-promote` refuses dirty builds).
+- The podcast project also varies prompts by choosing a different file (`long_v1` against `long_v2`,
+  `run_experiment.py:847-905`), not only by editing one.
 
 ## Design
 
@@ -40,14 +46,25 @@ prompts:
   summary/user:   {file: prompts/summary_user.j2}            # a file in the project
   summary/system: {file: "pkg:podcast_scraper/prompts/openai/summarization/system_v1.j2"}   # in an installed package
 prompt_root:                                                  # or: the directory the system loads from
-  path: "pkg:podcast_scraper/prompts"
+  name: podcast                                               # the root's name (required)
+  path: cache/podcast_scraper/src/podcast_scraper/prompts     # the directory the system reads (here a checkout)
+  include: ["**/*.j2"]                                        # what the root's digest covers (default below)
   vary: [openai/summarization/long_v1.j2, openai/summarization/system_v1.j2]
 params: {provider: openai, model: gpt-5-mini}
 ```
 
-- `pkg:<distribution>/<path>` resolves through `importlib.resources`; other paths are relative to the project root.
-- A name is a path in the grammar (lowercase segments, `/` allowed, no all-digit segment). For a root, each varied
-  file's name is `<root name>/<relative path without extension>` unless the config names it.
+- `pkg:<distribution>/<path>` resolves through `importlib.resources` **in the harness's environment**; use it only when
+  the system runs in that environment. A system run from another checkout or environment (the podcast pipeline) declares
+  the path it actually reads, or the harness would hash bytes that do not run.
+- A name is a path in the grammar (RFC-014: lowercase segments, `/` allowed, no all-digit segment). For a root, each
+  varied file's name is `<root name>/<relative path without extension>`, lowercased, with any other character than
+  `[a-z0-9_-]` replaced by `_`, unless the config names it (`vary: [{file: …, name: …}]`); two files that map to one
+  name are refused.
+- A varied file must exist in the root; the overlay never adds a file. A system with fallbacks (the podcast library reads
+  `shared/summarization/X` when `<provider>/summarization/X` is missing, `store.py:81-96`) could otherwise change which
+  file it reads. The root's digest (below) covers the fallback files, so a change to one shows.
+- Choosing a different file (`long_v1` against `long_v2`) is a different prompt name, each with its own versions; the
+  arm records which names it used.
 - `schemas/config.schema.json` gains `prompts` and `prompt_root`.
 
 ### Versions (`data/prompts/<name>/`)
@@ -57,13 +74,23 @@ params: {provider: openai, model: gpt-5-mini}
   (the declared path, or `study:<goal>/<id>` with the trial for a sampler's version), `extension` (to export with the
   right name). `index.json`: `{"versions": [...], "aliases": {"production": 3}}`.
 - **Resolving at run time** (`_prompts.resolve(config) -> {name: Version}`): hash the declared file; if a version with
-  that hash exists, use it; otherwise record a new version (parent = the latest, note = "recorded by run <run id>",
-  actor = the run's actor), so every run's prompts are in the history without a separate step.
+  that hash exists, use it; otherwise record a new version (parent = null, `source` = the path and, when it is in a git
+  tree, its commit; note = "recorded by run <run id>", actor = the run's actor), so every run's prompts are in the
+  history without a separate step. Lineage is recorded only when someone states it (`prompt-version --parent`, a
+  study's sampler): bytes seen at a path do not say which earlier bytes they came from.
+- **Concurrent runs** (RFC-011 runs jobs in parallel): a version is allocated under an exclusive lock on
+  `data/prompts/<name>/.lock`; inside it the harness re-reads the index, reuses a version with the same hash if one
+  appeared meanwhile, and creates `<n>.json` with `O_EXCL`, so two runs never get one number for different bytes.
+- **The tree stays clean**: the harness's record directories (`data/prompts/`, `data/studies/`, `data/looks/`,
+  `data/champions/`) are records, not code, as run output is. `filter_dirt` (`_fingerprint.py:98-112`) ignores changes
+  under them, tracked or not, so recording a version never makes the next run `dirty`; validation (V19) guards their
+  integrity instead.
 - **Aliases** are set only by `evh prompt-alias <name> <alias> <n>`; promotion never moves them (RFC-014).
 
 ### What the adapter receives
 
-`call_system(text, params)` is unchanged; `params` gains, when the config declares prompts:
+`call_system(text, params)` is unchanged; `params` gains, when the config declares prompts (added after the fingerprint
+and the run record are made, so no per-run path enters `arm.params`; the warm-up call gets them too):
 
 - `params["prompts"]`: `{name: {"text": …, "path": …, "version": n, "sha256": …}}`;
 - `params["prompt_root"]`: the path of a **per-run overlay directory**: a copy of the root with the varied files
@@ -71,15 +98,18 @@ params: {provider: openai, model: gpt-5-mini}
   versions). The overlay lives under the run's own temporary directory and is removed after the run; no tracked file is
   written, so the build stays clean.
 
-A 0.4.0 adapter that ignores these keys behaves as before. The wrapping recipe (RFC-007) shows a system that needs its
-prompt directory set (`set_prompt_dir(params["prompt_root"])`).
+A 0.4.0 adapter that ignores these keys behaves as before. The wrapping recipe (RFC-007) shows both ways a system takes
+the overlay: a subprocess gets `PROMPT_DIR=<overlay>` in its environment (the podcast runner); an in-process library is
+pointed at it and its template cache cleared (`set_prompt_dir(params["prompt_root"])`, which clears it, or
+`clear_cache()`), because a cached template would otherwise be served from the previous trial.
 
 ### The fingerprint
 
 `arm.prompts`: `{name: {"version": n, "sha256": …}}`, inside the hash, so two runs that differ only in a prompt
 version differ only there, and `run-compare` names `arm.prompts.<name>` as the variable. For a root, also
-`arm.prompt_root_sha256`: the digest of every file in the root (sorted relative paths and their sha256), so a change to
-an unvaried file in the root still shows. Credentials never enter (`identity_params` unchanged).
+`arm.prompt_root_sha256`: the digest of the files `include` matches (sorted relative paths and their sha256), so a
+change to an unvaried file in the root still shows. The default `include` is every file except `__pycache__/`, `*.pyc`,
+`*.pyo` and dotfiles, which differ between Python versions and machines and are not prompts. Credentials never enter (`identity_params` unchanged).
 
 ### Commands
 
@@ -116,15 +146,19 @@ run records version 1 of each.
   reads them.
 - **Write the trial's file into the project's tree.** Rejected: the build becomes dirty and promotion refuses it; an
   installed package cannot be written at all.
-- **Symlink overlays.** Rejected: Windows and `core.symlinks=false`; a copy is small (the podcast root is 204 files).
+- **Symlink overlays.** Rejected: Windows and `core.symlinks=false`; a copy is small (the podcast root is 209 files,
+  848 KB measured with `du`).
 - **Templating in the harness.** Rejected: the project renders; the harness hashes bytes.
 
 ## Testing
 
-- `harness/tests/test_prompts.py`: declare, run, version 1 recorded; edit the file, run, version 2 with parent 1;
-  unchanged bytes reuse the version; a `pkg:` path resolves; the overlay holds the varied files and is removed; the tree
-  stays clean; two arms differing only in a prompt differ only in `arm.prompts`; export refuses `site-packages`; V19
-  catches a tampered snapshot.
+- `harness/tests/test_prompts.py`: declare, run, version 1 recorded; edit the file, run, version 2,
+  with parent null; unchanged bytes reuse the version; a `pkg:` path resolves; the overlay holds the varied files and is
+  removed; a varied file missing from the root is refused; the tree stays clean (the run after a recorded version is
+  not dirty); two arms differing only in a prompt differ only in `arm.prompts`; `__pycache__` does not enter the root
+  digest; eight parallel runs recording the same new bytes get one version, and different bytes get distinct numbers;
+  no overlay path enters `arm.params`; an in-process library with a template cache serves the overlay's text; export
+  refuses `site-packages`; V19 catches a tampered snapshot.
 - Catalog and command tests for the prompt pages and `--json` outputs.
 
 ## Decisions (ADR candidates)
@@ -133,3 +167,4 @@ run records version 1 of each.
    time; prompts stay where the project keeps them (amends PRD-001's "not a prompt library").
 2. Prompts and a root's digest are part of the arm in the fingerprint.
 3. A per-run overlay directory gives the system its prompts without writing a tracked file.
+4. The harness's record directories do not make a build dirty; their integrity is checked by validation instead.
