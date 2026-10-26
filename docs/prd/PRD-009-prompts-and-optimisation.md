@@ -225,9 +225,9 @@ dropped by the study's declared rule, as search; nothing is promoted automatical
   stated; if none remain, the study is refused (FR4.5). Guardrails are tested there too, as non-inferiority
   against the starting arm at their limits, in the same Holm family as the primary measure; with several
   tracks, the first decides and the others are guardrails.
-- **FR4.3**: The outcome, with Δ = best − start and α the look's level: **superior** if H0: Δ ≤ 0 is
-  rejected at α; else **non-inferior** if H0: Δ ≤ −margin is rejected (only when a margin is declared);
-  else **worse** if H0: Δ ≥ 0 is rejected; else **inconclusive**. A failed guardrail makes the outcome at
+- **FR4.3**: The outcome, with Δ = best − start and α the look's level, is **superior**, **non-inferior**,
+  **worse** or **inconclusive**, decided by RFC-015's fixed sequence (non-inferiority first when a margin
+  is declared, then superiority) and its tests. A failed guardrail makes the outcome at
   best inconclusive. The effect, its interval and p are shown beside the validation effect of the same
   trial, so the optimizer's curse is visible. Promotion is suggested only on an outcome that meets the
   declared rule.

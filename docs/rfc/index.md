@@ -31,6 +31,7 @@ None.
 
 | RFC | Title | Related PRD | Description |
 | --- | ----- | ----------- | ----------- |
+| [RFC-015](RFC-015-noninferiority-looks-power.md) | The statistics of 0.5.0: non-inferiority, verdicts, test looks, power | [PRD-013](../prd/PRD-013-identity-and-ties.md), [PRD-009](../prd/PRD-009-prompts-and-optimisation.md) | Tests chosen by simulation (Tango for 0/1, guarded bootstrap-t for continuous), the verdict sequence, Holm across candidates, K looks per item set, attainable p and MDE |
 | [RFC-014](RFC-014-identity-champions-migration.md) | Identity in 0.5.0: champions, fingerprint v5, run ids, one grammar, the migration | [PRD-013](../prd/PRD-013-identity-and-ties.md), [PRD-011](../prd/PRD-011-evidence-registry.md) | Champion versions per goal and dataset; machine outside the hash; unique run ids; kind:path/n; the one-time migration script |
 
 ## Completed RFCs

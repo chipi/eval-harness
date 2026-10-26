@@ -78,6 +78,7 @@ nav:
           - "RFC-005: Judge scorers and the judging pass": rfc/RFC-005-judge-scorers.md
           - "RFC-006: Item fields and items at a URL": rfc/RFC-006-item-fields-and-url-items.md
           - "RFC-014: Identity in 0.5.0: champions, fingerprint v5, run ids, one grammar, the migration": rfc/RFC-014-identity-champions-migration.md
+          - "RFC-015: The statistics of 0.5.0: non-inferiority, verdicts, test looks, power": rfc/RFC-015-noninferiority-looks-power.md
       - Decisions (ADRs):
           - Index: adr/index.md
           - "ADR-0001: Judge scorers: re-measuring frozen outputs with a validated LLM judge": adr/ADR-0001-judge-scorers.md
