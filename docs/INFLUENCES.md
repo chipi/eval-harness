@@ -42,4 +42,82 @@ so each line can be checked.
 - **Offline gains are not real gains** — Bernardi et al., *150 Successful Machine Learning
   Models* (KDD 2019, Booking.com).
 
+## The standards 0.5.0 follows
+
+The 0.5.0 designs ([PRD-008 to PRD-013](prd/index.md)) take their vocabulary and their methods
+from these, so a reader who knows one of them recognises the flow. Each link was checked on
+2026-10-26.
+
+**Statistics of choosing among many candidates**
+
+- **Searching is not proving: one counted check on held-out items** — Dwork et al.,
+  [*The reusable holdout*](https://doi.org/10.1126/science.aaa9375) (Science, 2015); Blum and
+  Hardt, [*The Ladder*](https://arxiv.org/abs/1502.04585) (2015); Cawley and Talbot,
+  [*On over-fitting in model selection*](https://www.jmlr.org/papers/v11/cawley10a.html)
+  (JMLR, 2010); Smith and Winkler, [*The optimizer's curse*](https://doi.org/10.1287/mnsc.1050.0451)
+  (Management Science, 2006).
+- **Monitoring as results arrive** — Johari et al.,
+  [*Always valid inference*](https://arxiv.org/abs/1512.04922); Ramdas et al.,
+  [*Game-theoretic statistics and safe anytime-valid inference*](https://doi.org/10.1214/23-STS894)
+  (Statistical Science, 2023).
+- **A tie is an equivalence claim** — Schuirmann, the two one-sided tests
+  ([1987](https://doi.org/10.1007/BF01068419)); Lakens,
+  [*Equivalence tests*](https://doi.org/10.1177/1948550617697177) (2017).
+- **Intervals and power beside every verdict** — Miller,
+  [*Adding error bars to evals*](https://arxiv.org/abs/2411.00640) (2024); Card et al.,
+  [*With little power comes great responsibility*](https://doi.org/10.18653/v1/2020.emnlp-main.745)
+  (EMNLP 2020).
+- **A goal's measure and its guardrail metrics; rounds as declared intent** — Kohavi, Tang and Xu,
+  [*Trustworthy Online Controlled Experiments*](https://doi.org/10.1017/9781108653985) (2020);
+  Nosek et al., [*The preregistration revolution*](https://doi.org/10.1073/pnas.1708274114)
+  (PNAS, 2018).
+- **Judges' biases** — Zheng et al., [*Judging LLM-as-a-judge*](https://arxiv.org/abs/2306.05685)
+  (2023); Panickssery et al.,
+  [*LLM evaluators recognize and favor their own generations*](https://arxiv.org/abs/2404.13076)
+  (2024).
+
+**Prompt and parameter optimisation**
+
+- **Study, trial, ask and tell** — Optuna's
+  [ask-and-tell interface](https://optuna.readthedocs.io/en/stable/tutorial/20_recipes/009_ask_and_tell.html).
+- **Optimising prompts** — DSPy's [optimizers](https://dspy.ai/current/api/optimizers/); Yang et
+  al., [OPRO](https://arxiv.org/abs/2309.03409); Zhou et al., [APE](https://arxiv.org/abs/2211.01910);
+  Yuksekgonul et al., [TextGrad](https://arxiv.org/abs/2406.07496).
+
+**Records, registries and provenance**
+
+- **Versions are fixed, aliases move (`name/3`, `name@champion`)** — the MLflow
+  [Model Registry](https://mlflow.org/docs/latest/ml/model-registry/) and
+  [Prompt Registry](https://mlflow.org/docs/latest/genai/prompt-registry/).
+- **Who acted, and for whom** — W3C [PROV-O](https://www.w3.org/TR/prov-o/); runs, jobs and
+  datasets as events: [OpenLineage](https://openlineage.io/docs/spec/object-model/).
+- **What a published model or dataset record says** — Mitchell et al.,
+  [*Model cards*](https://arxiv.org/abs/1810.03993) (2019); Gebru et al.,
+  [*Datasheets for datasets*](https://arxiv.org/abs/1803.09010).
+
+**Evaluation tools and traces**
+
+- **Tasks, solvers, scorers, epochs, eval sets** — the UK AI Security Institute's
+  [Inspect](https://inspect.aisi.org.uk/).
+- **Stages as spans with standard attribute names** — OpenTelemetry's
+  [GenAI semantic conventions](https://github.com/open-telemetry/semantic-conventions-genai)
+  (status: development).
+
+**Running jobs**
+
+- **Job states, retries, deadlines, logs** —
+  [Kubernetes Jobs](https://kubernetes.io/docs/concepts/workloads/controllers/job/), Slurm's
+  [job state codes](https://slurm.schedmd.com/squeue.html), the
+  [Ray Jobs CLI](https://docs.ray.io/en/latest/cluster/running-applications/job-submission/cli.html).
+
+**For agents and machines**
+
+- **Tools, resources, long-running tasks, asking the person** — the
+  [Model Context Protocol](https://modelcontextprotocol.io/specification/2026-07-28) (2026-07-28)
+  and its [tasks extension](https://modelcontextprotocol.io/extensions/tasks/overview).
+- **Skills** — the [Agent Skills specification](https://agentskills.io/specification).
+- **Docs an agent can find** — [llms.txt](https://llmstxt.org/) (v2).
+- **Commands a machine can call** — the [Command Line Interface Guidelines](https://clig.dev/);
+  errors as [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457.html) problem details.
+
 More, curated by Chip Huyen: [huyenchip.com/mlops](https://huyenchip.com/mlops/).
