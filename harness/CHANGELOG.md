@@ -36,6 +36,14 @@ A catalog that works on a phone and sits inside a deployment's own site. No resu
 - **No inline styles**: the charts' legend colours are classes, so a deployment's content
   security policy can forbid `style` attributes.
 
+### Fixed
+
+- **The inspector no longer runs out of memory.** The paired test kept the signs it draws for
+  every item count it met (~31 MB each), so `--warm` on a large catalog grew past a 256 MiB
+  container limit and the server was killed every few minutes. At most two sign tables are kept
+  now, stored as bytes, and at most 4096 estimates; a warmed inspector settles at ~150 MB. The
+  p-values are the same, bit for bit.
+
 ## 0.4.0 — 2026-10-25
 
 See your runs, not only tables of them. `evh catalog` builds static pages over a project's

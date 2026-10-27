@@ -27,9 +27,10 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 
 import bisect
 import math
-import operator
 import random
 import statistics
+from collections import OrderedDict
+from itertools import chain, compress
 
 PERMUTATIONS = 20000
 SEED = 20260926
@@ -126,17 +127,23 @@ def sign_flip_p(
     if rng is None:
         # A fresh generator seeded with `seed` draws the same signs for every call with as many
         # items, so they are drawn once (_signs) and each permutation's mean is summed in C. The
-        # same draws in the same order, a sign applied by multiplying by ±1.0 (exact) and fsum
-        # (exactly rounded whatever it reads): the same p, bit for bit, many times faster.
+        # same draws in the same order; an item keeps its delta or takes its negation (both
+        # exact), and fsum is exactly rounded whatever order it reads the values in: the same
+        # p, bit for bit, many times faster.
         key = (tuple(deltas), permutations, seed)
-        if key not in _P:
-            n, a = len(deltas), abs(obs)
-            hits = sum(
-                1
-                for signs in _signs(n, permutations, seed)
-                if abs(math.fsum(map(operator.mul, deltas, signs)) / n) >= a
-            )
-            _P[key] = (hits + 1) / (permutations + 1)
+        if key in _P:
+            _P.move_to_end(key)
+            return _P[key]
+        n, a = len(deltas), abs(obs)
+        neg = [-d for d in deltas]
+        hits = sum(
+            1
+            for keep in _signs(n, permutations, seed)
+            if abs(math.fsum(chain(compress(deltas, keep), compress(neg, keep.translate(_FLIP)))) / n) >= a
+        )
+        _P[key] = (hits + 1) / (permutations + 1)
+        while len(_P) > _P_MAX:
+            _P.popitem(last=False)
         return _P[key]
     hits = sum(
         1
@@ -147,19 +154,29 @@ def sign_flip_p(
 
 
 #: Estimated p by (deltas, permutations, seed): a page and the glance test the same pairs.
-_P: dict = {}
-_SIGNS: dict = {}
+#: Both caches are bounded, least recently used out first, and a sign is one byte. As tuples of
+#: ±1.0 a table was ~31 MB at n=200 and was kept for every item count ever seen: a long-running
+#: inspector meets many, and grew past its 256 MiB limit until the kernel killed it every few
+#: minutes. A dropped table is drawn again from the same seed, so a p never changes, only speed.
+_P: OrderedDict = OrderedDict()
+_P_MAX = 4096
+_SIGNS: OrderedDict = OrderedDict()
+_SIGNS_MAX = 2
+_FLIP = bytes.maketrans(b"\x00\x01", b"\x01\x00")
 
 
 def _signs(n: int, permutations: int, seed: int) -> list:
-    """The ±1.0 signs a fresh random.Random(seed) gives `permutations` passes over n items, in the
-    order sign_flip_p draws them (a draw below 0.5 keeps an item's sign). Kept per (n, seed)."""
+    """The signs a fresh random.Random(seed) gives `permutations` passes over n items, in the
+    order sign_flip_p draws them: one bytes per pass, 1 where a draw below 0.5 keeps the item's
+    sign and 0 where it flips. Kept for the last _SIGNS_MAX (n, permutations, seed)."""
     key = (n, permutations, seed)
-    if key not in _SIGNS:
-        rng = random.Random(seed)
-        _SIGNS[key] = [
-            tuple(1.0 if rng.random() < 0.5 else -1.0 for _ in range(n)) for _ in range(permutations)
-        ]
+    if key in _SIGNS:
+        _SIGNS.move_to_end(key)
+        return _SIGNS[key]
+    rng = random.Random(seed)
+    _SIGNS[key] = [bytes(rng.random() < 0.5 for _ in range(n)) for _ in range(permutations)]
+    while len(_SIGNS) > _SIGNS_MAX:
+        _SIGNS.popitem(last=False)
     return _SIGNS[key]
 
 

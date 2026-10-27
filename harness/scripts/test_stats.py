@@ -204,4 +204,29 @@ check(
     stats.sign_flip_p(cases[1], permutations=2000) == _loop_p(cases[1], permutations=2000),
 )
 
+# The caches behind the fast estimate are bounded. They were not: the drawn signs are kept per
+# item count (PERMUTATIONS tuples of n floats, ~33 MB at n=200), and the inspector's warm-up meets
+# many item counts, so a long-running server grew past its 256 MiB limit and was OOM-killed on
+# prod every ~5 minutes (2026-10-26/27).
+_SIGNS_MAX = stats._SIGNS_MAX
+_P_MAX = stats._P_MAX
+for n in range(31, 31 + 3 * _SIGNS_MAX):
+    stats.sign_flip_p([gen.uniform(-1, 1) for _ in range(n)], permutations=200)
+check(
+    f"sign_flip_p: at most {_SIGNS_MAX} sign tables are kept, however many item counts are seen",
+    len(stats._SIGNS) <= _SIGNS_MAX,
+    str(len(stats._SIGNS)),
+)
+for _ in range(_P_MAX + 50):
+    stats.sign_flip_p([gen.uniform(-1, 1) for _ in range(31)], permutations=20)
+check(
+    f"sign_flip_p: at most {_P_MAX} estimates are kept",
+    len(stats._P) <= _P_MAX,
+    str(len(stats._P)),
+)
+check(
+    "sign_flip_p: an item count whose table was dropped gives the same p again, bit for bit",
+    all(stats.sign_flip_p(c, permutations=2000) == _loop_p(c, permutations=2000) for c in cases),
+)
+
 sys.exit(summary())
