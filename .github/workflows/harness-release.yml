@@ -53,11 +53,13 @@ jobs:
           # merge finds main's CI on the commit still running.
           for _ in $(seq 80); do
             pending=0; bad=""
-            for wf in reproduce.yml quality.yml guards.yml; do
-              runs=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow "$wf" --commit "$GITHUB_SHA" \
-                --event push --branch main --json status,conclusion --jq '.[] | "\(.status) \(.conclusion)"')
+            all=$(gh run list --repo "$GITHUB_REPOSITORY" --commit "$GITHUB_SHA" --event push --branch main \
+              --limit 100 --json workflowName,status,conclusion \
+              --jq '.[] | "\(.workflowName)\t\(.status) \(.conclusion)"')
+            for wf in reproduce quality guards; do
+              runs=$(printf '%s\n' "$all" | awk -F '\t' -v w="$wf" '$1 == w {print $2}')
               if [ -z "$runs" ]; then
-                [ "$wf" = guards.yml ] && continue   # path-filtered: no run when no checker changed
+                [ "$wf" = guards ] && continue   # path-filtered: no run when no checker changed
                 bad="$bad $wf:no-run-on-main"; continue
               fi
               echo "$runs" | grep -qv '^completed' && { pending=1; continue; }

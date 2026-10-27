@@ -60,7 +60,7 @@ def ask(port: int, query: str) -> tuple:
         f"http://127.0.0.1:{port}/api/compare?{query}", headers={"Host": "localhost"}
     )
     t0 = time.perf_counter()
-    with urllib.request.urlopen(req, timeout=120) as r:  # noqa: S310 -- http to 127.0.0.1 only
+    with urllib.request.urlopen(req, timeout=120) as r:  # noqa: S310 — http to 127.0.0.1 only  # nosec B310
         r.read()
         return r.status, time.perf_counter() - t0
 
@@ -119,7 +119,7 @@ def main() -> int:
     try:
         for _ in range(300):
             try:
-                urllib.request.urlopen(
+                urllib.request.urlopen(  # nosec B310 — http to 127.0.0.1 only
                     urllib.request.Request(
                         f"http://127.0.0.1:{port}/api/health", headers={"Host": "localhost"}
                     ),

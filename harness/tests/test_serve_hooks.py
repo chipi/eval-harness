@@ -94,7 +94,7 @@ def serve(tmp: Path, hooks: bool, **env) -> tuple:
 def get(p: int, path: str, host: str = "localhost") -> tuple:
     req = urllib.request.Request(f"http://127.0.0.1:{p}{path}", headers={"Host": host})
     try:
-        with urllib.request.urlopen(req, timeout=10) as r:  # noqa: S310 -- http to 127.0.0.1 only
+        with urllib.request.urlopen(req, timeout=10) as r:  # noqa: S310 — http to 127.0.0.1 only  # nosec B310
             return r.status, r.read()
     except urllib.error.HTTPError as e:
         return e.code, e.read()

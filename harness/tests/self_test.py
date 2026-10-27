@@ -1567,6 +1567,20 @@ def test_a_rescored_run_carries_the_current_parse() -> None:
     )
 
 
+def test_every_planted_defect_still_anchors() -> None:
+    """`make guard-check` plants its defects by replacing a string in a report or a scorer, and
+    CI runs it only when a checker changes. A report edit that moves one of those strings would
+    go unnoticed until then, so every pull request checks here, in milliseconds, that each
+    still occurs exactly once."""
+    import test_checks_can_fail as guards  # noqa: PLC0415
+
+    for _script, what, rel, old, _new, _says in guards.PLANTS:
+        n = (guards.REPO / rel).read_text(encoding="utf-8").count(old)
+        check(
+            f"guard-check's plant still anchors: {what} ({rel})", n == 1, f"{n} matches — update the anchor"
+        )
+
+
 def test_v4_neither_skips_a_missing_file_nor_hides_what_it_did_not_check() -> None:
     """V4 printed `ok` for a materialized copy that had lost a file, and for a dataset with
     no materialized copy at all (CI never has one): green for things it never checked."""
@@ -3265,6 +3279,7 @@ def main() -> int:
         test_a_run_that_measured_nothing_is_not_a_success,
         test_adapter_declaration_beats_a_stale_run,
         test_a_rescored_run_carries_the_current_parse,
+        test_every_planted_defect_still_anchors,
         test_v4_neither_skips_a_missing_file_nor_hides_what_it_did_not_check,
         test_v10_fails_when_a_derived_run_states_no_scorer,
         test_nemenyi_table_is_computed_not_copied,

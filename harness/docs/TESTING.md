@@ -17,7 +17,8 @@ CI runs each tier on every pull request: `make verify` (unit and integration, th
 recomputed, the site rebuilt), `browser`, `budget` and `rerun` (`.github/workflows/reproduce.yml`),
 and `make quality` (lint, types, security, dead code, spelling). `make guard-check`
 (`.github/workflows/guards.yml`) runs only when a checker or the harness code it reads changes:
-it proves the checkers, and a change to the reports or the runs leaves them as they were. A
+it proves the checkers, and a change to the reports or the runs leaves them as they were
+(`make ci` still checks that every string it plants is in its file). A
 release does not re-run any of it; it requires CI on the tagged commit to be green on main
 (`.github/workflows/harness-release.yml`).
 

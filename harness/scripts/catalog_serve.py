@@ -844,9 +844,9 @@ class Handler(SimpleHTTPRequestHandler):
 
     def _get(self):
         url = urlparse(self.path)
-        extra = _hook_routes().get(url.path)
-        if extra is not None:
-            code, ctype, data = extra(url.query)
+        hook_route = _hook_routes().get(url.path)
+        if hook_route is not None:
+            code, ctype, data = hook_route(url.query)
             self.send_response(code)
             self.send_header("Content-Type", ctype)
             self.send_header("Content-Length", str(len(data)))
