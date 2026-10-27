@@ -168,7 +168,7 @@ def drive(base: str, overview: str = "") -> None:
         for d in days:
             ms = int((d - date(1970, 1, 1)).total_seconds() * 1000)
             for k, *_ in cp.PERIODS:
-                js = page.evaluate("([k,t])=>window.HOME_PERIOD.bounds(k,t,'2025-06-01')", [k, ms])
+                js = page.evaluate("([k,t])=>window.Period.bounds(k,t,'2025-06-01')", [k, ms])
                 py = cp.bounds(k, d, "2025-06-01")
                 if (js["since"], js["until"], js["prev"]) != (
                     py["since"],

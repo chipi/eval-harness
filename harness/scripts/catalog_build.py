@@ -53,7 +53,16 @@ from evaluation_harness.stats import fmt_p  # noqa: E402
 ASSET_DIR = next(p for p in (HERE / "catalog_assets", HERE.parent / "catalog_assets") if p.is_dir())
 # forest.js draws a baseline's answers chart; no page of the harness's own uses it, a project's
 # builder does (podcast_scraper's baseline pages), so it ships with the assets.
-ASSETS = ("style.css", "catalog.css", "catalog.js", "inspect.js", "forest.js", "overview.js", "icon.svg")
+ASSETS = (
+    "style.css",
+    "catalog.css",
+    "catalog.js",
+    "inspect.js",
+    "forest.js",
+    "period.js",
+    "overview.js",
+    "icon.svg",
+)
 #: Links that would put more arms than this in one inspector URL go to the picker instead.
 INSPECT_MAX = 40
 
@@ -214,6 +223,11 @@ def reference_link(ref: str, up: str = "") -> str:
 def arm_page(arm: str) -> str:
     """The arm's page, relative to the catalog root: one per arm id (runs dir, dataset, config)."""
     return f"a/{slug(arm)}.html"
+
+
+def _label_of(by_ds: dict, ds: str, arm: str) -> str:
+    """An arm's label on its dataset, or its id when the catalog does not list it."""
+    return next((a["label"] for a in (by_ds.get(ds) or {}).get("arms", []) if a["arm"] == arm), arm)
 
 
 def arm_link(arm: str, label: str, up: str = "") -> str:
@@ -380,9 +394,11 @@ def block(num: str, eyebrow: str, inner: str, anchor: str = "") -> str:
 PROSE = re.compile(r"[A-Za-z]{2,}(?=\s)")
 
 
-def table(tid: str, heads: list, rows: list, filt: str = "") -> str:
+def table(tid: str, heads: list, rows: list, filt: str = "", period: bool = False) -> str:
     """Build an HTML table with optional search filter. A row is a list of cells, or
-    {"cells": [...], "cls": "...", "id": "..."} for a row with a class or an anchor."""
+    {"cells": [...], "cls": "...", "id": "...", "key": "...", "made": "..."} for a row with a
+    class, an anchor, or a place in the period (`period`: catalog_assets/period.js reads the
+    row's key and the day it was made, and fills its `data-flow` cells)."""
     th = "".join(f"<th>{h}</th>" for h in heads)
     f = ""
     if filt:
@@ -394,8 +410,11 @@ def table(tid: str, heads: list, rows: list, filt: str = "") -> str:
 
     def tr(r) -> str:
         cells, attrs = (r["cells"], r) if isinstance(r, dict) else (r, {})
-        a = (f' class="{attrs["cls"]}"' if attrs.get("cls") else "") + (
-            f' id="{attrs["id"]}"' if attrs.get("id") else ""
+        a = (
+            (f' class="{attrs["cls"]}"' if attrs.get("cls") else "")
+            + (f' id="{attrs["id"]}"' if attrs.get("id") else "")
+            + (f' data-key="{e(attrs["key"])}"' if attrs.get("key") else "")
+            + (f' data-made="{e(attrs["made"])}"' if attrs.get("made") else "")
         )
         return f"<tr{a}>" + "".join(td(c) for c in cells) + "</tr>"
 
@@ -405,7 +424,7 @@ def table(tid: str, heads: list, rows: list, filt: str = "") -> str:
 
     body = "".join(tr(r) for r in rows)
     return (
-        f'{f}<div class="scroll-x"><table id="{tid}" class="data sortable"><thead><tr>{th}</tr>'
+        f'{f}<div class="scroll-x"><table id="{tid}" class="data sortable"{" data-period-rows" if period else ""}><thead><tr>{th}</tr>'
         f"</thead><tbody>{body}</tbody></table></div>"
     )
 
@@ -415,6 +434,32 @@ def write(out: Path, rel: str, content: str) -> None:
     p = out / rel
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(content, encoding="utf-8")
+
+
+def write_periods(A: Adapter, by_ds: dict, out: Path) -> None:
+    """periods.js: the periods every page's chips offer, and the first day anything happened."""
+    from evaluation_harness import catalog_periods as cp  # noqa: PLC0415
+
+    w = window(A, by_ds)
+    write(
+        out,
+        "periods.js",
+        "window.PERIOD="
+        + json.dumps(
+            {"periods": cp.PERIODS, "default": cp.DEFAULT, "first": w["first"]}, separators=(",", ":")
+        )
+        + ";\n",
+    )
+
+
+def write_period_rows(out: Path, name: str, rows: dict) -> None:
+    """<name>-rows.js: each row's dated runs ([[day, arm number]]) and spend ([[day, usd]])."""
+    write(out, f"{name}-rows.js", "window.PERIOD_ROWS=" + json.dumps(rows, separators=(",", ":")) + ";\n")
+
+
+def PERIOD_SCRIPTS(name: str = "") -> tuple:  # noqa: N802
+    """What a page with the period loads after the catalog's own script, in order."""
+    return ("periods.js", *((f"{name}-rows.js",) if name else ()), "assets/period.js")
 
 
 def inspect_url(arms: list, up: str = "", **params) -> str:
@@ -576,25 +621,40 @@ def _goals_of(A: Adapter) -> dict:
 
 def render_datasets(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
     """The datasets page: every dataset, its versions, arms, references, goals and baseline."""
+    from evaluation_harness import catalog_periods as cp  # noqa: PLC0415
+
     goals = _goals_of(A)
-    rows = []
+    w = window(A, by_ds)
+    idx, made = cp.arm_index(by_ds), cp.first_dates(A, by_ds)["datasets"]
+    rows, period_rows = [], {}
     for ds in sorted(by_ds, key=lambda d: (-len(by_ds[d]["arms"]), d)):
         v = by_ds[ds]
         parent = (v.get("parent") or {}).get("dataset_id")
         bl = (v.get("baselines") or [None])[-1]
         label = {a["arm"]: a["label"] for a in v["arms"]}
         last = max((a["last"] for a in v["arms"]), default="")
+        runs = cp.runs_of(v["arms"], idx)
+        usd = cp.spend_of(w["spend"], lambda x, ds=ds: x.get("dataset") == ds)
+        period_rows[ds] = {"runs": runs, "usd": usd}
         rows.append(
-            [
-                dataset_link(ds) + (f"<br><small>from {dataset_link(parent)}</small>" if parent else ""),
-                f'<span data-v="{v["items"]}">{v["items"]}</span>',
-                f'<span data-v="{len(v["arms"])}">{len(v["arms"])}</span>',
-                ", ".join(reference_link(r["id"]) for r in v["refs"]) or "—",
-                "<br>".join(goal_link(g) for g in goals.get(ds, [])) or "—",
-                arm_link(bl["arm"], label.get(bl["arm"], bl["run"])) if bl and bl.get("arm") else "—",
-                f'<span data-v="{e(last)}">{e(last[:10]) or "—"}</span>',
-            ]
+            {
+                "key": ds,
+                "made": made.get(ds, ""),
+                "cells": [
+                    dataset_link(ds) + (f"<br><small>from {dataset_link(parent)}</small>" if parent else ""),
+                    f'<span data-v="{v["items"]}">{v["items"]}</span>',
+                    f'<span data-v="{len(v["arms"])}">{len(v["arms"])}</span>',
+                    f'<span data-flow="runs">{len(runs)}</span>',
+                    '<span data-flow="line"></span>',
+                    f'<span data-flow="usd">{e(fmt_amount(sum(x[1] for x in usd), "usd")) if usd else "—"}</span>',
+                    ", ".join(reference_link(r["id"]) for r in v["refs"]) or "—",
+                    "<br>".join(goal_link(g) for g in goals.get(ds, [])) or "—",
+                    arm_link(bl["arm"], label.get(bl["arm"], bl["run"])) if bl and bl.get("arm") else "—",
+                    f'<span data-v="{e(last)}">{e(last[:10]) or "—"}</span>',
+                ],
+            }
         )
+    write_period_rows(out, "datasets", period_rows)
     n_arms = sum(len(v["arms"]) for v in by_ds.values())
     body = hero(
         "datasets",
@@ -603,18 +663,36 @@ def render_datasets(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
         f"dataset scored one way, its repeats averaged per {e(A.item_word)}, exactly as <code>pair-test</code> reads "
         "it: a config rescored against silver or by a judge is an arm of its own. "
         "Open a dataset to compare its arms in the inspector.",
+        cp.bar(w["first"], w["until"]),
     )
     body += block(
         "01",
         "datasets",
-        table(
+        cp.row_chips("datasets", "datasets")
+        + table(
             "datasets",
-            ["dataset", f"{e(A.item_word)}s", "arms", "references", "goals", "baseline", "last run"],
+            [
+                "dataset",
+                f"{e(A.item_word)}s",
+                "arms",
+                "runs in period",
+                "runs per day",
+                "spend in period",
+                "references",
+                "goals",
+                "baseline",
+                "last run",
+            ],
             rows,
             "filter datasets",
+            period=True,
         ),
     )
-    write(out, "datasets.html", page("Datasets", body, 0, "datasets", nav=nav, item=A.item_word))
+    write(
+        out,
+        "datasets.html",
+        page("Datasets", body, 0, "datasets", PERIOD_SCRIPTS("datasets"), nav=nav, item=A.item_word),
+    )
 
 
 def plain(fragment: str) -> str:
@@ -1103,7 +1181,7 @@ def render_home(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
     tile_html = (
         '<div class="tiles">'
         + "".join(
-            f'<a class="tile" href="{href}" data-tile="{i}" data-group="{cp.TILES[i][3]}" title="{e(n)} {e(k)}"><b>{tile_value(n)}</b>'
+            f'<a class="tile" href="{href}" data-tile="{i}" data-group="{cp.TILES[i][3]}"{" data-period-link" if href.endswith(".html") else ""} title="{e(n)} {e(k)}"><b>{tile_value(n)}</b>'
             f'<span>{e(k)}</span><small class="trend"></small></a>'
             for i, (k, n, href) in enumerate(home_counts(A, by_ds, w["spend"]))
         )
@@ -1120,18 +1198,7 @@ def render_home(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
         )
         + "</p>"
     )
-    # The chips need the script; without it the note says the page shows all time.
-    switch = (
-        '<div class="period-switch"><div class="chips" id="period" role="group" aria-label="period" hidden>'
-        + "".join(
-            f'<button type="button" class="chip" data-period="{k}" aria-pressed="false" title="{e(label)}">'
-            f"{e(cp.chip(label))}</button>"
-            for k, label, _ in cp.PERIODS
-        )
-        + '</div><p class="period-note" id="period-span">'
-        + (f"all time, {e(first)} to {e(until)}" if first else "")
-        + "</p></div>"
-    )
+    switch = cp.bar(first, until)
     body = hero(
         "catalog",
         "Every evaluation, at a glance",
@@ -1165,7 +1232,15 @@ def render_home(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
     write(
         out,
         "index.html",
-        page("Overview", body, 0, "home", ("home.js", "assets/overview.js"), nav=nav, item=A.item_word),
+        page(
+            "Overview",
+            body,
+            0,
+            "home",
+            (*PERIOD_SCRIPTS(), "home.js", "assets/overview.js"),
+            nav=nav,
+            item=A.item_word,
+        ),
     )
 
 
@@ -1447,10 +1522,38 @@ def _goal_rows(goal: dict, by_ds: dict) -> list:
 
 def render_goals(A: Adapter, by_ds: dict, out: Path, nav: list) -> int:
     """Render the goals page and one page per goal; return the number rendered."""
+    from evaluation_harness import catalog_periods as cp  # noqa: PLC0415
+
     goals = A.goals()
     seen = glance(A, by_ds)
-    rows = []
+    w = window(A, by_ds)
+    idx, ds_made = cp.arm_index(by_ds), cp.first_dates(A, by_ds)["datasets"]
+    fn = getattr(A, "rounds", None)
+    rounds = fn() if callable(fn) else []
+    rows, period_rows = [], {}
     for g in goals:
+        on = [d.get("dataset_id", "") for d in g.get("datasets") or [] if isinstance(d, dict)]
+        opened = [(r.get("opened_at") or "")[:10] for r in rounds if r.get("goal") == g["goal_id"]]
+        made = min([x for x in opened + [ds_made.get(d, "") for d in on] if x], default="")
+        arms = [a for d in on if d in by_ds for a in by_ds[d]["arms"]]
+        period_rows[g["goal_id"]] = {
+            "runs": cp.runs_of(arms, idx),
+            "usd": cp.spend_of(w["spend"], lambda x, on=on: x.get("dataset") in on),
+            # What happened to the goal, said short: the row already names the goal and its datasets.
+            "events": [
+                [bl["promoted_at"][:10], "baseline " + arm_link(bl["arm"], _label_of(by_ds, d, bl["arm"]))]
+                for d in on
+                for bl in (by_ds.get(d) or {}).get("baselines") or []
+                if bl.get("promoted_at") and bl.get("arm")
+            ]
+            + [
+                [r[stamp][:10], f"round {e(r['round_id'])} {verb}"]
+                for r in rounds
+                if r.get("goal") == g["goal_id"]
+                for stamp, verb in (("opened_at", "opened"), ("closed_at", "closed"))
+                if r.get(stamp)
+            ],
+        }
         prim = (g.get("success_criteria") or {}).get("primary") or {}
         filed = configs_filed(by_ds, g)
         rec = "<br>".join(
@@ -1465,31 +1568,78 @@ def render_goals(A: Adapter, by_ds: dict, out: Path, nav: list) -> int:
             if r["goal"]["goal_id"] == g["goal_id"] and r["recommended"]
         )
         rows.append(
-            [
-                goal_link(g),
-                e(g.get("statement", "")),
-                metric_link(prim.get("measure", ""))
-                + (f" ({e(prim['direction'])})" if prim.get("direction") else ""),
-                "<br>".join(dataset_link(d.get("dataset_id", "")) for d in g.get("datasets") or []) or "—",
-                f'<span data-v="{filed}">{filed}</span>',
-                rec or '<span class="muted">none yet</span>',
-            ]
+            {
+                "key": g["goal_id"],
+                "made": made,
+                "cells": [
+                    goal_link(g),
+                    e(g.get("statement", "")),
+                    metric_link(prim.get("measure", ""))
+                    + (f" ({e(prim['direction'])})" if prim.get("direction") else ""),
+                    "<br>".join(dataset_link(d.get("dataset_id", "")) for d in g.get("datasets") or [])
+                    or "—",
+                    f'<span data-v="{filed}">{filed}</span>',
+                    f'<span data-flow="runs">{len(period_rows[g["goal_id"]]["runs"])}</span>',
+                    '<span data-flow="usd">—</span>',
+                    f'<span data-flow="events">{len(period_rows[g["goal_id"]]["events"])}</span>',
+                    rec or '<span class="muted">none yet</span>',
+                ],
+            }
         )
         render_goal(A, g, by_ds, out, nav)
+    write_period_rows(out, "goals", period_rows)
+    # What happened, one row per change; the period keeps the rows of its own days.
+    feed = sorted(
+        ([day, g, html_] for g in goals for day, html_ in period_rows[g["goal_id"]]["events"]),
+        key=lambda x: x[0],
+        reverse=True,
+    )
     dek = (
         "What each evaluation is for: who uses the output, the decision it informs, and the "
         "measure that decides. Runs name their goal in their config (<code>goal:</code>)."
     )
-    body = hero("goals", "Goals", dek)
+    body = hero("goals", "Goals", dek, cp.bar(w["first"], w["until"]))
     body += block(
         "01",
         "goals",
-        table("goals", ["goal", "statement", "decides", "datasets", "configs filed", "recommended"], rows)
+        cp.row_chips("goals", "goals")
+        + table(
+            "goals",
+            [
+                "goal",
+                "statement",
+                "decides",
+                "datasets",
+                "configs filed",
+                "runs in period",
+                "spend in period",
+                "changes in period",
+                "recommended",
+            ],
+            rows,
+            period=True,
+        )
         if rows
         else '<p class="muted">No goals yet: add <code>data/goals/&lt;goal_id&gt;.yaml</code> '
         "(schema: <code>goal.schema.json</code>).</p>",
     )
-    write(out, "goals.html", page("Goals", body, 0, "goals", nav=nav, item=A.item_word))
+    if feed:
+        body += block(
+            "02",
+            "what happened in the period",
+            '<p class="muted pempty" data-feed-empty="goalfeed" hidden>Nothing happened to a goal in this period.</p>'
+            + table(
+                "goalfeed",
+                ["when", "goal", "what"],
+                [
+                    {"made": day, "cells": [f'<span data-v="{e(day)}">{e(day)}</span>', goal_link(g), h]}
+                    for day, g, h in feed
+                ],
+            ).replace('class="data sortable"', 'class="data sortable" data-period-feed', 1),
+        )
+    write(
+        out, "goals.html", page("Goals", body, 0, "goals", PERIOD_SCRIPTS("goals"), nav=nav, item=A.item_word)
+    )
     return len(goals)
 
 
@@ -2085,21 +2235,33 @@ def metric_index(A: Adapter, by_ds: dict) -> dict:
 def render_metrics(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
     """One page, one row per metric: what it measures, which way is better, where it is recorded,
     and which goals decide on it. A row's anchor is #m-<metric>, which every metric link uses."""
+    from evaluation_harness import catalog_periods as cp  # noqa: PLC0415
+
     fn = getattr(A, "metric_descriptions", None)
     project = fn() if callable(fn) else {}
     idx = metric_index(A, by_ds)
-    rows = []
+    w, arm_i = window(A, by_ds), cp.arm_index(by_ds)
+    rows, period_rows = [], {}
     for m in sorted(idx, key=lambda k: (k.startswith(("total_", "self_family_", "resumed")), k)):
         where = idx[m]
         lower = any(A.lower_is_better(m, ds) for ds in where["datasets"]) if where["datasets"] else False
         # Direction first: cost, tokens and latency are "neutral" to the tests but lower is better.
         better = "lower" if lower else ("neutral: a description" if A.is_neutral(m) else "higher")
         text = describe_metric(m, project)
+        recording = [a for v in by_ds.values() for a in v["arms"] if m in a["means"]]
+        runs = cp.runs_of(recording, arm_i)
+        period_rows[m] = {"runs": runs}
+        # What the metric is for: a goal decides on it, weighs it as an axis, or nobody uses it to
+        # choose and it describes (the table sorts and filters on this word).
+        role = "decides" if where["goals"] else "weighs" if where["weighs"] else "describes"
         rows.append(
             {
                 "id": f"m-{slug(m)}",
+                "key": m,
+                "made": min((r[0] for r in runs), default=""),
                 "cells": [
                     f'<a class="cell-link nowrap" href="{metric_page(m)}"><code>{e(m)}</code></a>',
+                    e(role),
                     e(text)
                     if text
                     else '<span class="muted">not described: add it to the adapter\'s '
@@ -2126,27 +2288,44 @@ def render_metrics(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
                         else ""
                     )
                     or "—",
+                    f'<span data-flow="arms">{len({x[1] for x in runs})}</span>',
                 ],
             }
         )
+    write_period_rows(out, "metrics", period_rows)
     body = hero(
         "metrics",
         "Metrics",
         "What each number on these pages measures, which way is better, where it is recorded, and "
         "which goals decide on it. A project describes its own metrics with "
         "<code>METRIC_DESCRIPTIONS</code> in its adapter; the harness describes its own.",
+        cp.bar(w["first"], w["until"]),
     )
     body += block(
         "01",
         "metrics",
-        table(
+        cp.row_chips("metrics", "metrics")
+        + table(
             "metrics",
-            ["metric", "what it measures", "better", "recorded on", "decides · weighs"],
+            [
+                "metric",
+                "role",
+                "what it measures",
+                "better",
+                "recorded on",
+                "decides · weighs",
+                "arms recording it in period",
+            ],
             rows,
-            "filter metrics",
+            "filter metrics (decides, weighs, describes…)",
+            period=True,
         ),
     )
-    write(out, "metrics.html", page("Metrics", body, 0, "metrics", nav=nav, item=A.item_word))
+    write(
+        out,
+        "metrics.html",
+        page("Metrics", body, 0, "metrics", PERIOD_SCRIPTS("metrics"), nav=nav, item=A.item_word),
+    )
 
 
 TIER_WORDS = {
@@ -2495,14 +2674,21 @@ def render_metric(A: Adapter, m: str, where: dict, by_ds: dict, project: dict, o
 
 
 def render_reference_index(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
-    """Every reference: its tier, dataset, author, when it was made and how many arms it scores."""
-    rows = []
+    """Every reference: its tier, dataset, author, when it was made, how many arms it scores, and
+    how many it scored in the period."""
+    from evaluation_harness import catalog_periods as cp  # noqa: PLC0415
+
+    w, idx = window(A, by_ds), cp.arm_index(by_ds)
+    rows, period_rows = [], {}
     for ds, v in sorted(by_ds.items()):
         for r in v["refs"]:
-            n = sum(1 for a in v["arms"] if a["reference"] == r["id"] and not a["judge"])
+            scored = [a for a in v["arms"] if a["reference"] == r["id"] and not a["judge"]]
+            period_rows[r["id"]] = {"runs": cp.runs_of(scored, idx)}
             rows.append(
                 {
                     "cls": "t-silver" if r["tier"] == "silver" else "",
+                    "key": r["id"],
+                    "made": (r.get("created_at") or "")[:10],
                     "cells": [
                         reference_link(r["id"]),
                         e(r["tier"]),
@@ -2510,30 +2696,50 @@ def render_reference_index(A: Adapter, by_ds: dict, out: Path, nav: list) -> Non
                         f'<span data-v="{r.get("items") or ""}">{r.get("items") if r.get("items") is not None else "—"}</span>',
                         _author_link(r, v, "") if r.get("author") else "—",
                         e((r.get("created_at") or "")[:10]) or "—",
-                        f'<span data-v="{n}">{n}</span>',
+                        f'<span data-v="{len(scored)}">{len(scored)}</span>',
+                        f'<span data-flow="arms">{len({x[1] for x in period_rows[r["id"]]["runs"]})}</span>',
+                        f'<span data-flow="runs">{len(period_rows[r["id"]]["runs"])}</span>',
                     ],
                 }
             )
+    write_period_rows(out, "references", period_rows)
     body = hero(
         "references",
         "References",
         "What arms are scored against. Gold is written or checked by a person; silver is written by "
         "a model, consistent rather than correct, and its author is graded against its own outputs.",
+        cp.bar(w["first"], w["until"]),
     )
     body += block(
         "01",
         "references",
-        table(
+        cp.row_chips("references", "references")
+        + table(
             "references",
-            ["reference", "tier", "dataset", f"{e(A.item_word)}s", "written by", "created", "arms scored"],
+            [
+                "reference",
+                "tier",
+                "dataset",
+                f"{e(A.item_word)}s",
+                "written by",
+                "created",
+                "arms scored",
+                "arms scored in period",
+                "runs in period",
+            ],
             rows,
             "filter references",
+            period=True,
         )
         if rows
         else '<p class="muted">No references yet: gold goes in <code>data/references/gold/&lt;dataset&gt;/</code>, '
         "or make one from a run with <code>evh reference-create --from-run</code>.</p>",
     )
-    write(out, "references.html", page("References", body, 0, "references", nav=nav, item=A.item_word))
+    write(
+        out,
+        "references.html",
+        page("References", body, 0, "references", PERIOD_SCRIPTS("references"), nav=nav, item=A.item_word),
+    )
 
 
 def render_inspect(
@@ -2645,6 +2851,7 @@ def build(A: Adapter, out: Path, sections: tuple = ()) -> dict:
         shutil.rmtree(out)
     copy_assets(out)
     by_ds = collect(A)
+    write_periods(A, by_ds, out)
     render_home(A, by_ds, out, nav)
     render_datasets(A, by_ds, out, nav)
     for ds, v in by_ds.items():

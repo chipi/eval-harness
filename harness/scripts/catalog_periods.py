@@ -224,3 +224,97 @@ def tiles(data: dict, key: str, today: date) -> list[dict]:
             t["spark"] = [_flow(data, what, (x, x)) for x in days]
         out.append(t)
     return out
+
+
+# -- the period on the other pages: one bar, a row's dates, its runs and spend ------------------
+
+
+def bar(first: str, until: str) -> str:
+    """The period chips and the line under them (catalog_assets/period.js fills both). Without
+    the script the chips stay hidden and the line says the page shows all time."""
+    import html  # noqa: PLC0415
+
+    e = html.escape
+    return (
+        '<div class="period-switch"><div class="chips" id="period" role="group" aria-label="period" hidden>'
+        + "".join(
+            f'<button type="button" class="chip" data-period="{k}" aria-pressed="false" title="{e(label)}">'
+            f"{e(chip(label))}</button>"
+            for k, label, _ in PERIODS
+        )
+        + '</div><p class="period-note" id="period-span">'
+        + (f"all time, {e(first)} to {e(until)}" if first else "")
+        + "</p></div>"
+    )
+
+
+def row_chips(table_id: str, noun: str) -> str:
+    """All / new in the period / active in the period, over a table of dated rows."""
+    return (
+        f'<p class="row-chips" data-for="{table_id}" role="group" aria-label="which {noun}">'
+        f'<button type="button" class="chip" data-rows="all" aria-pressed="true">all {noun}</button>'
+        '<button type="button" class="chip" data-rows="new" aria-pressed="false">new in period <b>0</b></button>'
+        '<button type="button" class="chip" data-rows="active" aria-pressed="false">active in period <b>0</b></button>'
+        "</p>"
+    )
+
+
+def arm_index(by_ds: dict) -> dict:
+    """Every arm's number, the same on every page (rows name arms by it to count them)."""
+    return {a: i for i, a in enumerate(sorted(a["arm"] for v in by_ds.values() for a in v["arms"]))}
+
+
+def runs_of(arms: list[dict], idx: dict) -> list[list]:
+    """[[day, arm number]] for every measured run of these arms (repeats one by one)."""
+    return sorted(
+        [(r.get("created_at") or "")[:10], idx[a["arm"]]]
+        for a in arms
+        for r in a["run_list"]
+        if r.get("created_at") and not r.get("derived")
+    )
+
+
+def spend_of(spend: list[dict], keep) -> list[list]:
+    """[[day, usd]] for the spend events `keep(event)` accepts."""
+    return sorted(
+        [(x.get("at") or "")[:10], round(float(x["usd"]), 6)]
+        for x in spend
+        if x.get("at") and isinstance(x.get("usd"), (int, float)) and keep(x)
+    )
+
+
+def first_dates(A, by_ds: dict) -> dict:
+    """When each dataset and arm is new: {"datasets": {ds: day}, "arms": {arm: day}} (a
+    dataset's `created_at`, else its first run; an arm's first run)."""
+    arm_first = {
+        a["arm"]: min(
+            ((r.get("created_at") or "")[:10] for r in a["run_list"] if r.get("created_at")), default=""
+        )
+        for v in by_ds.values()
+        for a in v["arms"]
+    }
+    made = getattr(A, "dataset_created", None)
+    ds = {
+        d: ((made(d) if callable(made) else "") or "")[:10]
+        or min((arm_first[a["arm"]] for a in v["arms"] if arm_first[a["arm"]]), default="")
+        for d, v in by_ds.items()
+    }
+    return {"datasets": ds, "arms": arm_first}
+
+
+def in_period(rows: dict, key: str, today: date, first: str = "") -> dict:
+    """{row: {"runs", "arms", "usd", and each "<x>_prev" or None}} for a period: what the page's
+    in-period columns show (`evh <page> --period`)."""
+    b = bounds(key, today, first)
+    span, prev = (b["since"], b["until"]), b["prev"]
+
+    def one(r, s):
+        rs = [x for x in r.get("runs", []) if _within(x[0], s)]
+        return len(rs), len({x[1] for x in rs}), sum(x[1] for x in r.get("usd", []) if _within(x[0], s))
+
+    out = {}
+    for k, r in rows.items():
+        n, a, u = one(r, span)
+        p = one(r, prev) if prev else (None, None, None)
+        out[k] = {"runs": n, "arms": a, "usd": u, "runs_prev": p[0], "arms_prev": p[1], "usd_prev": p[2]}
+    return out

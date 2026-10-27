@@ -54,11 +54,33 @@ tiles open the datasets page, which lists datasets only. One system, not one das
   lists every arm; `evh activity`.
 - **No personalisation for now** (owner): the period is not remembered between visits; only the
   link carries it.
-- To do first: the arms page's design (below), then UXS-001 sections for each page.
+- **Order (owner, 2026-10-27):** the shared parts first (chips on any page, the period in the
+  link, the new badge, the row chips), then goals, datasets, references, metrics and activity,
+  with screenshots for review as each lands; the arms page (1c) last. UXS-001 follows each.
 
-### 1c. The arms page: what it holds besides the table (to discuss)
+### 1c. The arms page (owner: all six, 2026-10-27)
 
-To be decided with the owner before it is built.
+The arms page is one of the six pages a tile opens (goals, datasets, references, metrics, arms
+and configs, activity), so it carries everything in 1b like the others: the period chips, the
+period in the link, the **new** badge, the **all / new / active in period** chips, runs and spend
+in the period with ▲▼. On top of that, all from data the catalog already reads:
+
+1. **The table of every arm**, grouped by dataset, config, model, provider or what it is scored
+   against (gold / silver / judge). Per row: role badges (baseline, recommended, leader, retired
+   in a round, over a goal's limit), the goal's deciding metric and value, repeats, cost per
+   item, latency, first and last run, runs in the period with ▲▼.
+2. **Configs view:** one row per config across every dataset it ran on: model, provider, its
+   arms, total spend, its rank on each goal. Where 0.5.0's prompt versions and studies land.
+3. **Derived arms under their source:** a rescored or judged arm nested under the arm it came
+   from, with how its number moved.
+4. **Facets** as filter chips on the table: local / hosted, open / proprietary, cost and quality.
+5. **What changed in the period:** new arms, retirements, baselines promoted, rescores (the
+   feed's events, filtered to arms).
+6. **Comparison actions:** tick arms and open them in the inspector; pick a goal and see its arms
+   on a cost × quality scatter.
+
+`evh arms` lists every arm with the same grouping (`--by dataset|config|model|provider|scored`)
+and `--period`; `evh arms --configs` the configs view.
 
 ## 2. Observability of the prod inspector (homelab session's request, 2026-10-27)
 
@@ -102,3 +124,9 @@ Decided with the owner when it comes up.
 
 - The deployment layer stays in `infra/` of this repo (owner, 2026-10-27): outside the package (the wheel ships only `harness/`), no secrets in it (DSNs and endpoints from the box's env); the harness gets generic hooks only.
 - (Decided 2026-10-27: the official SDKs, sentry-sdk and opentelemetry-sdk with the OTLP/HTTP exporter, as dependencies of the deployed inspector only, not of the evh package; their memory measured against the 256 MiB limit.)
+
+### Open from the owner (2026-10-27, not started)
+
+- Fewer period chips (e.g. 7 days, 30 days, this month, all time) and a "more" dropdown with the rest; the message was cut off after "And then".
+- Goals page: check the restored wide statement column, the changes count and the new "what happened in the period" table (screenshot not yet reviewed).
+- Still to do before arms: the activity page, then screenshots of all five pages for review.

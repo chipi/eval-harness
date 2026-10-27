@@ -3,30 +3,10 @@
    (home.js); scripts/catalog_periods.py computes the same for `evh overview --period`, and the
    charts are drawn as scripts/catalog_charts.py draws them. Without this script the page shows
    all time. */
-(function(){const H=window.HOME,pick=document.getElementById('period');if(!H||!pick)return;
-const DAY=864e5,iso=t=>new Date(t).toISOString().slice(0,10),at=s=>Date.parse(s+'T00:00:00Z');
-const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"})[c]);
-const today=(()=>{const d=new Date();return Date.UTC(d.getFullYear(),d.getMonth(),d.getDate());})();
-const mStart=(t,back)=>{const d=new Date(t);return Date.UTC(d.getUTCFullYear(),d.getUTCMonth()-(back||0),1);};
-const mEnd=t=>mStart(t,-1)-DAY;
-const sameDay=(first,day)=>Math.min(first+(day-1)*DAY,mEnd(first));
-function bounds(key,t,first){const m=/^(\d+)d$/.exec(key);
-if(m){const n=+m[1],s=t-(n-1)*DAY;return {since:iso(s),until:iso(t),prev:[iso(s-n*DAY),iso(s-DAY)]};}
-const wd=(new Date(t).getUTCDay()+6)%7;
-if(key==='week'){const s=t-wd*DAY;return {since:iso(s),until:iso(t),prev:[iso(s-7*DAY),iso(t-7*DAY)]};}
-if(key==='lastweek'){const s=t-(wd+7)*DAY;return {since:iso(s),until:iso(s+6*DAY),prev:[iso(s-7*DAY),iso(s-DAY)]};}
-if(key==='month'){const p=mStart(t,1);return {since:iso(mStart(t)),until:iso(t),prev:[iso(p),iso(sameDay(p,new Date(t).getUTCDate()))]};}
-if(key==='lastmonth'){const s=mStart(t,1),p=mStart(t,2);return {since:iso(s),until:iso(mEnd(s)),prev:[iso(p),iso(mEnd(p))]};}
-if(key==='year'){const d=new Date(t),y=d.getUTCFullYear(),mo=d.getUTCMonth(),da=d.getUTCDate();
-const last=Date.UTC(y-1,mo,(mo===1&&da===29)?28:da);return {since:iso(Date.UTC(y,0,1)),until:iso(t),prev:[iso(Date.UTC(y-1,0,1)),iso(last)]};}
-return {since:(first||iso(t)).slice(0,10),until:iso(t),prev:null};}
-const within=(d,s)=>!!d&&s[0]<=d&&d<=s[1];
+(function(){const H=window.HOME,Pd=window.Period;if(!H||!Pd)return;
+const {DAY,iso,at,esc,within,trend,daysOf,amount,label}=Pd;
 function flow(what,s){if(what==='measured runs')return Object.entries(H.runs).filter(([d])=>within(d,s)).reduce((n,[,p])=>n+Object.values(p).reduce((a,b)=>a+b,0),0);
 const i=what==='billed'?0:1;return Object.entries(H.spend).filter(([d])=>within(d,s)).reduce((n,[,p])=>n+Object.values(p).reduce((a,x)=>a+(x[i]||0),0),0);}
-function trend(now,before){if(before===null)return '';if(!before)return now?'new: nothing in the previous period':'none in either period';
-const pct=(now-before)/before*100;return (pct>0?'▲':pct<0?'▼':'=')+' '+Math.abs(pct).toFixed(0)+'%';}
-const daysOf=(a,b)=>{const out=[];for(let t=at(a);t<=at(b);t+=DAY)out.push(iso(t));return out;};
-const amount=(v,unit)=>unit==='tokens'?Math.round(v).toLocaleString('en-US')+' tokens':v<1?'$'+v.toFixed(4):'$'+v.toFixed(2);
 function tileValue(s){s=String(s);const dg=s.replace(/,/g,'');if(s.length<=7||!/^\d+$/.test(dg))return esc(s);const v=+dg;
 const [d,u]=[[1e9,'B'],[1e6,'M'],[1e3,'k']].find(([d])=>v>=d);return `<span class="full">${esc(s)}</span><span class="short">${(v/d).toFixed(1).replace(/\.0$/,'')}${u}</span>`;}
 /* a tile's line in its own colour (--c, catalog.css), with a faint area under it */
@@ -69,22 +49,17 @@ return `<p class="small">${names.map(n=>`${esc(n)} <b>${esc(amount(tot[n],u))}</
 +cumulative(days,series,u==='usd'?'cumulative spend in USD':'cumulative tokens (in plus out)',v=>amount(v,u).replace(' tokens',''));}
 function spend(s){return '<p class="unit-switch" role="group" aria-label="unit">'+H.units.map(u=>`<button type="button" class="btn small" data-unit-show="${u}" aria-pressed="${u===unit}">${u==='usd'?'USD':'tokens'}</button>`).join('')+'</p>'
 +H.units.map(u=>`<div data-unit="${u}"${u===unit?'':' hidden'}>${spendChart(s,u)}</div>`).join('');}
-const label=Object.fromEntries(H.periods.map(([k,l,c])=>[k,[l,c]]));
-function show(key){const b=bounds(key,today,H.first),s=[b.since,b.until],days=daysOf(b.since,b.until);
+function show(key,b){const s=[b.since,b.until],days=daysOf(b.since,b.until);
 document.querySelectorAll('.tile[data-tile]').forEach(el=>{const [what,,kind]=H.tiles[+el.dataset.tile],tr=el.querySelector('.trend');
 /* the tile says it short (▲ 12%, new); its title says it in full */
 let v,line='',full='';el.querySelector('.spark')?.remove();
 if(kind==='stock'){const ds=H.dates[what];v=ds.length;const n=ds.filter(d=>within(d,s)).length;line=full=n?`+${n} new`:'none new';
 el.insertAdjacentHTML('beforeend',spark(days.map(d=>ds.filter(x=>x&&x<=d).length)));}
-else{v=flow(what,s);if(b.prev){full=trend(v,flow(what,b.prev));line=/%$/.test(full)?full:full.startsWith('new')?'new':'none';
+else{v=flow(what,s);if(b.prev){full=trend(v,flow(what,b.prev));line=Pd.short(full);
 if(/%$/.test(full))full+=` vs ${label[key][1]}`;}
 el.insertAdjacentHTML('beforeend',spark(days.map(d=>flow(what,[d,d]))));
 v=what==='billed'?amount(v,'usd'):Math.round(v).toLocaleString('en-US');}
 el.querySelector('b').innerHTML=tileValue(v);el.title=`${v} ${what}`+(full?` · ${full}`:'');if(tr)tr.textContent=line;});
-/* the note says it in words; its title carries the dates */
-const sp=document.getElementById('period-span');if(sp){sp.textContent=b.prev?`▲▼ compared with ${label[key][1]}`:`since ${b.since}`;
-sp.title=`${label[key][0]}: ${b.since} to ${b.until}`+(b.prev?`; compared with ${b.prev[0]} to ${b.prev[1]}`:'');}
-pick.querySelectorAll('.chip').forEach(c=>c.setAttribute('aria-pressed',String(c.dataset.period===key)));
 const a=document.querySelector('[data-chart="activity"]');if(a&&H.first)a.innerHTML=activity(s);
 const p=document.querySelector('[data-chart="spend"]');if(p&&Object.keys(H.spend).length)p.innerHTML=spend(s);
 const feed=document.getElementById('feeda');if(feed){let n=0;[...feed.tBodies[0].rows].forEach(r=>{const ok=within((r.cells[0].dataset.v||'').slice(0,10),s);r.hidden=!ok;n+=ok;});
@@ -92,6 +67,4 @@ const none=document.querySelector('[data-feed-empty]');if(none)none.hidden=n>0;f
 document.addEventListener('click',ev=>{const btn=ev.target.closest('.unit-switch button[data-unit-show]');if(!btn)return;unit=btn.dataset.unitShow;
 const box=btn.closest('[data-chart]')||document;box.querySelectorAll('.unit-switch button').forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.unitShow===unit)));
 box.querySelectorAll('[data-unit]').forEach(x=>{x.hidden=x.dataset.unit!==unit;});});
-window.HOME_PERIOD={bounds,show,today:iso(today)};
-pick.hidden=false;pick.addEventListener('click',ev=>{const c=ev.target.closest('.chip');if(c)show(c.dataset.period);});
-show(H.default);})();
+Pd.on(show);})();

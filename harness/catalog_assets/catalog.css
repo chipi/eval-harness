@@ -393,7 +393,18 @@ small.retired { color: var(--local); font: 600 10px/1 var(--mono); letter-spacin
 .period-note { margin: 0; font: 12px var(--mono); color: var(--muted); }
 .period-switch + .tiles { margin-top: 14px; }
 /* a phone: the chips scroll sideways in one row instead of taking four */
-@media (max-width: 560px) { .chips { flex-wrap: nowrap; overflow-x: auto; max-width: 100%; scrollbar-width: none; padding-bottom: 2px; } }
+@media (max-width: 560px) { .chips, .row-chips { flex-wrap: nowrap; overflow-x: auto; max-width: 100%; scrollbar-width: none; padding-bottom: 2px; } }
+/* the period on a table: its rows' subject colour (the home tiles' groups), the new badge, a trend
+   beside an in-period number, and the all / new / active chips over it */
+#datasets, #references { --c: var(--s1); }
+#goals { --c: var(--s7); }
+#metrics, #arms, #configs { --c: var(--s3); }
+.row-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 12px; }
+.row-chips .chip b { font-weight: 600; margin-left: 4px; color: var(--ink); }
+.row-chips .chip[aria-pressed="true"] b { color: inherit; }
+span.new { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 999px; font: 600 10px/1.6 var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--ink-2); background: color-mix(in srgb, var(--c, var(--accent)) 22%, transparent); vertical-align: 1px; }
+table.data small.trend { margin-left: 4px; padding: 0 6px; border-radius: 999px; font: 500 11px/1.5 var(--mono); color: var(--ink-2); background: color-mix(in srgb, var(--c, var(--accent)) 14%, transparent); white-space: nowrap; }
+tr.pout { display: none; }
 figure.chart { margin: 8px 0 16px; overflow-x: auto; }
 figure.chart svg { width: 100%; min-width: 420px; height: auto; display: block; }
 figure.chart svg .tick { font: 11px var(--mono); fill: var(--muted); }
@@ -454,3 +465,5 @@ svg text.name { paint-order: stroke; stroke: var(--surface); stroke-width: 6px; 
   .hbtn, .menu > summary.hbtn { width: 34px; height: 34px; }
   .bar .sections a { padding: 8px 4px; }
 }
+.rowline { display: block; width: 96px; height: 18px; }
+#goals td:nth-child(2) { min-width: 34ch; }
