@@ -499,6 +499,126 @@ def PERIOD_SCRIPTS(name: str = "") -> tuple:  # noqa: N802
     return ("periods.js", *((f"{name}-rows.js",) if name else ()), "assets/period.js")
 
 
+# -- each page's rows in the period: one builder, read by the page (period.js) and by evh ----------
+# A row is {"runs": [[day, arm number]], "usd": [[day, usd]], "tokens": [[day, n]],
+# "events": [[day, html]], "made": day}, keyed as the page's table keys its rows.
+
+
+def period_datasets(A: Adapter, by_ds: dict) -> dict:
+    """{dataset: row}: its measured runs and what was billed on it; new from `created_at` or its
+    first run."""
+    from evaluation_harness import catalog_periods as cp  # noqa: PLC0415
+
+    w, idx, made = window(A, by_ds), cp.arm_index(by_ds), cp.first_dates(A, by_ds)["datasets"]
+    return {
+        ds: {
+            "runs": cp.runs_of(v["arms"], idx),
+            "usd": cp.spend_of(w["spend"], lambda x, ds=ds: x.get("dataset") == ds),
+            "made": made.get(ds, ""),
+        }
+        for ds, v in by_ds.items()
+    }
+
+
+def period_goals(A: Adapter, by_ds: dict) -> dict:
+    """{goal id: row}: runs and spend on its datasets, and what happened to it (a baseline
+    promoted, a round opened or closed), said short; new from its first round or the first day of
+    its datasets."""
+    from evaluation_harness import catalog_periods as cp  # noqa: PLC0415
+
+    w, idx, ds_made = window(A, by_ds), cp.arm_index(by_ds), cp.first_dates(A, by_ds)["datasets"]
+    fn = getattr(A, "rounds", None)
+    rounds = fn() if callable(fn) else []
+    out = {}
+    for g in A.goals():
+        on = [d.get("dataset_id", "") for d in g.get("datasets") or [] if isinstance(d, dict)]
+        opened = [(r.get("opened_at") or "")[:10] for r in rounds if r.get("goal") == g["goal_id"]]
+        out[g["goal_id"]] = {
+            "runs": cp.runs_of([a for d in on if d in by_ds for a in by_ds[d]["arms"]], idx),
+            "usd": cp.spend_of(w["spend"], lambda x, on=on: x.get("dataset") in on),
+            "events": [
+                [bl["promoted_at"][:10], "baseline " + arm_link(bl["arm"], _label_of(by_ds, d, bl["arm"]))]
+                for d in on
+                for bl in (by_ds.get(d) or {}).get("baselines") or []
+                if bl.get("promoted_at") and bl.get("arm")
+            ]
+            + [
+                [r[stamp][:10], f"round {e(r['round_id'])} {verb}"]
+                for r in rounds
+                if r.get("goal") == g["goal_id"]
+                for stamp, verb in (("opened_at", "opened"), ("closed_at", "closed"))
+                if r.get(stamp)
+            ],
+            "made": min([x for x in opened + [ds_made.get(d, "") for d in on] if x], default=""),
+        }
+    return out
+
+
+def period_references(A: Adapter, by_ds: dict) -> dict:
+    """{reference id: row}: the measured runs of the arms scored against it; new from its
+    `created_at`."""
+    from evaluation_harness import catalog_periods as cp  # noqa: PLC0415
+
+    idx = cp.arm_index(by_ds)
+    return {
+        r["id"]: {
+            "runs": cp.runs_of([a for a in v["arms"] if a["reference"] == r["id"] and not a["judge"]], idx),
+            "made": (r.get("created_at") or "")[:10],
+        }
+        for v in by_ds.values()
+        for r in v["refs"]
+    }
+
+
+def period_metrics(A: Adapter, by_ds: dict) -> dict:
+    """{metric: row}: the measured runs of the arms recording it; new from the first of them."""
+    from evaluation_harness import catalog_periods as cp  # noqa: PLC0415
+
+    idx = cp.arm_index(by_ds)
+    out = {}
+    for m in metric_index(A, by_ds):
+        runs = cp.runs_of([a for v in by_ds.values() for a in v["arms"] if m in a["means"]], idx)
+        out[m] = {"runs": runs, "made": min((r[0] for r in runs), default="")}
+    return out
+
+
+def period_activity(A: Adapter, by_ds: dict) -> dict:
+    """{"d:<dataset>" | "a:<arm>" | "k:<kind>": row}: runs, spend and tokens by dataset, by arm,
+    and by kind of call billed (systems under test, judges)."""
+    from evaluation_harness import catalog_periods as cp  # noqa: PLC0415
+
+    w, idx = window(A, by_ds), cp.arm_index(by_ds)
+
+    def tok(keep) -> list:
+        return sorted(
+            [(x.get("at") or "")[:10], int(x["tokens"])]
+            for x in w["spend"]
+            if x.get("at") and isinstance(x.get("tokens"), (int, float)) and keep(x)
+        )
+
+    out: dict = {}
+    for ds, v in by_ds.items():
+        mine = lambda x, ds=ds: x.get("dataset") == ds  # noqa: E731
+        out[f"d:{ds}"] = {
+            "runs": cp.runs_of(v["arms"], idx),
+            "usd": cp.spend_of(w["spend"], mine),
+            "tokens": tok(mine),
+        }
+        for a in v["arms"]:
+            runs = cp.runs_of([a], idx)
+            mine = lambda x, arm=a["arm"]: x["kind"] == "arm" and x.get("arm") == arm  # noqa: E731
+            out[f"a:{a['arm']}"] = {
+                "runs": runs,
+                "usd": cp.spend_of(w["spend"], mine),
+                "tokens": tok(mine),
+                "made": min((r[0] for r in runs), default=""),
+            }
+    for kind, _name in SPEND_KINDS:
+        mine = lambda x, kind=kind: x["kind"] == kind  # noqa: E731
+        out[f"k:{kind}"] = {"usd": cp.spend_of(w["spend"], mine), "tokens": tok(mine)}
+    return out
+
+
 def inspect_url(arms: list, up: str = "", **params) -> str:
     """Build a URL for the inspector with arms and optional query parameters."""
     q = "&".join(f"{k}={quote(str(v), safe='')}" for k, v in params.items() if v)
@@ -662,21 +782,19 @@ def render_datasets(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
 
     goals = _goals_of(A)
     w = window(A, by_ds)
-    idx, made = cp.arm_index(by_ds), cp.first_dates(A, by_ds)["datasets"]
-    rows, period_rows = [], {}
+    period_rows = period_datasets(A, by_ds)
+    rows = []
     for ds in sorted(by_ds, key=lambda d: (-len(by_ds[d]["arms"]), d)):
         v = by_ds[ds]
         parent = (v.get("parent") or {}).get("dataset_id")
         bl = (v.get("baselines") or [None])[-1]
         label = {a["arm"]: a["label"] for a in v["arms"]}
         last = max((a["last"] for a in v["arms"]), default="")
-        runs = cp.runs_of(v["arms"], idx)
-        usd = cp.spend_of(w["spend"], lambda x, ds=ds: x.get("dataset") == ds)
-        period_rows[ds] = {"runs": runs, "usd": usd}
+        runs, usd = period_rows[ds]["runs"], period_rows[ds]["usd"]
         rows.append(
             {
                 "key": ds,
-                "made": made.get(ds, ""),
+                "made": period_rows[ds]["made"],
                 "cells": [
                     dataset_link(ds) + (f"<br><small>from {dataset_link(parent)}</small>" if parent else ""),
                     f'<span data-v="{v["items"]}">{v["items"]}</span>',
@@ -1291,25 +1409,12 @@ def render_activity(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
     The measured runs, billed and tokens tiles open it. home.js feeds the charts."""
     from evaluation_harness import catalog_periods as cp  # noqa: PLC0415
 
-    w, idx = window(A, by_ds), cp.arm_index(by_ds)
+    w = window(A, by_ds)
     first, until = w["first"], w["until"]
-    rows: dict = {}
-
-    def tok(keep) -> list:
-        return sorted(
-            [(x.get("at") or "")[:10], int(x["tokens"])]
-            for x in w["spend"]
-            if x.get("at") and isinstance(x.get("tokens"), (int, float)) and keep(x)
-        )
-
+    rows = period_activity(A, by_ds)
     ds_rows, arm_rows, kind_rows = [], [], []
     for ds, v in sorted(by_ds.items()):
         key = f"d:{ds}"
-        rows[key] = {
-            "runs": cp.runs_of(v["arms"], idx),
-            "usd": cp.spend_of(w["spend"], lambda x, ds=ds: x.get("dataset") == ds),
-            "tokens": tok(lambda x, ds=ds: x.get("dataset") == ds),
-        }
         ds_rows.append(
             {
                 "key": key,
@@ -1324,17 +1429,10 @@ def render_activity(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
         )
         for a in v["arms"]:
             key = f"a:{a['arm']}"
-            rows[key] = {
-                "runs": cp.runs_of([a], idx),
-                "usd": cp.spend_of(
-                    w["spend"], lambda x, arm=a["arm"]: x["kind"] == "arm" and x.get("arm") == arm
-                ),
-                "tokens": tok(lambda x, arm=a["arm"]: x["kind"] == "arm" and x.get("arm") == arm),
-            }
             arm_rows.append(
                 {
                     "key": key,
-                    "made": min((r[0] for r in rows[key]["runs"]), default=""),
+                    "made": rows[key]["made"],
                     "cells": [
                         arm_link(a["arm"], a["label"]),
                         dataset_link(ds),
@@ -1346,10 +1444,6 @@ def render_activity(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
             )
     for kind, name in SPEND_KINDS:
         key = f"k:{kind}"
-        rows[key] = {
-            "usd": cp.spend_of(w["spend"], lambda x, kind=kind: x["kind"] == kind),
-            "tokens": tok(lambda x, kind=kind: x["kind"] == kind),
-        }
         kind_rows.append(
             {
                 "key": key,
@@ -1702,33 +1796,10 @@ def render_goals(A: Adapter, by_ds: dict, out: Path, nav: list) -> int:
     goals = A.goals()
     seen = glance(A, by_ds)
     w = window(A, by_ds)
-    idx, ds_made = cp.arm_index(by_ds), cp.first_dates(A, by_ds)["datasets"]
-    fn = getattr(A, "rounds", None)
-    rounds = fn() if callable(fn) else []
-    rows, period_rows = [], {}
+    period_rows = period_goals(A, by_ds)
+    rows = []
     for g in goals:
-        on = [d.get("dataset_id", "") for d in g.get("datasets") or [] if isinstance(d, dict)]
-        opened = [(r.get("opened_at") or "")[:10] for r in rounds if r.get("goal") == g["goal_id"]]
-        made = min([x for x in opened + [ds_made.get(d, "") for d in on] if x], default="")
-        arms = [a for d in on if d in by_ds for a in by_ds[d]["arms"]]
-        period_rows[g["goal_id"]] = {
-            "runs": cp.runs_of(arms, idx),
-            "usd": cp.spend_of(w["spend"], lambda x, on=on: x.get("dataset") in on),
-            # What happened to the goal, said short: the row already names the goal and its datasets.
-            "events": [
-                [bl["promoted_at"][:10], "baseline " + arm_link(bl["arm"], _label_of(by_ds, d, bl["arm"]))]
-                for d in on
-                for bl in (by_ds.get(d) or {}).get("baselines") or []
-                if bl.get("promoted_at") and bl.get("arm")
-            ]
-            + [
-                [r[stamp][:10], f"round {e(r['round_id'])} {verb}"]
-                for r in rounds
-                if r.get("goal") == g["goal_id"]
-                for stamp, verb in (("opened_at", "opened"), ("closed_at", "closed"))
-                if r.get(stamp)
-            ],
-        }
+        made = period_rows[g["goal_id"]]["made"]
         prim = (g.get("success_criteria") or {}).get("primary") or {}
         filed = configs_filed(by_ds, g)
         rec = "<br>".join(
@@ -2415,17 +2486,15 @@ def render_metrics(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
     fn = getattr(A, "metric_descriptions", None)
     project = fn() if callable(fn) else {}
     idx = metric_index(A, by_ds)
-    w, arm_i = window(A, by_ds), cp.arm_index(by_ds)
-    rows, period_rows = [], {}
+    w = window(A, by_ds)
+    rows, period_rows = [], period_metrics(A, by_ds)
     for m in sorted(idx, key=lambda k: (k.startswith(("total_", "self_family_", "resumed")), k)):
         where = idx[m]
         lower = any(A.lower_is_better(m, ds) for ds in where["datasets"]) if where["datasets"] else False
         # Direction first: cost, tokens and latency are "neutral" to the tests but lower is better.
         better = "lower" if lower else ("neutral: a description" if A.is_neutral(m) else "higher")
         text = describe_metric(m, project)
-        recording = [a for v in by_ds.values() for a in v["arms"] if m in a["means"]]
-        runs = cp.runs_of(recording, arm_i)
-        period_rows[m] = {"runs": runs}
+        runs = period_rows[m]["runs"]
         # What the metric is for: a goal decides on it, weighs it as an axis, or nobody uses it to
         # choose and it describes (the table sorts and filters on this word).
         role = "decides" if where["goals"] else "weighs" if where["weighs"] else "describes"
@@ -2433,7 +2502,7 @@ def render_metrics(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
             {
                 "id": f"m-{slug(m)}",
                 "key": m,
-                "made": min((r[0] for r in runs), default=""),
+                "made": period_rows[m]["made"],
                 "cells": [
                     f'<a class="cell-link nowrap" href="{metric_page(m)}"><code>{e(m)}</code></a>',
                     e(role),
@@ -2853,12 +2922,11 @@ def render_reference_index(A: Adapter, by_ds: dict, out: Path, nav: list) -> Non
     how many it scored in the period."""
     from evaluation_harness import catalog_periods as cp  # noqa: PLC0415
 
-    w, idx = window(A, by_ds), cp.arm_index(by_ds)
-    rows, period_rows = [], {}
+    w = window(A, by_ds)
+    rows, period_rows = [], period_references(A, by_ds)
     for ds, v in sorted(by_ds.items()):
         for r in v["refs"]:
             scored = [a for a in v["arms"] if a["reference"] == r["id"] and not a["judge"]]
-            period_rows[r["id"]] = {"runs": cp.runs_of(scored, idx)}
             rows.append(
                 {
                     "cls": "t-silver" if r["tier"] == "silver" else "",

@@ -167,23 +167,44 @@ def config_rows(A, by_ds: dict, rows: list[dict], spend: list[dict]) -> list[dic
     return out
 
 
+def period_arms(A, by_ds: dict, rows: list[dict]) -> dict:
+    """{arm id | "c:<config>": row} in the shape catalog_build's period builders give: an arm's or
+    a config's measured runs and what it was billed; new from its first run."""
+    from evaluation_harness import catalog_build as cb  # noqa: PLC0415
+    from evaluation_harness import catalog_periods as cp  # noqa: PLC0415
+
+    w, idx = cb.window(A, by_ds), cp.arm_index(by_ds)
+    by_arm = {a["arm"]: a for v in by_ds.values() for a in v["arms"]}
+    out = {}
+    for r in rows:
+        runs = cp.runs_of([by_arm[r["arm"]]], idx)
+        out[r["arm"]] = {
+            "runs": runs,
+            "usd": cp.spend_of(
+                w["spend"], lambda x, arm=r["arm"]: x.get("kind") == "arm" and x.get("arm") == arm
+            ),
+            "made": r["first"],
+        }
+    for cid in {r["config"] for r in rows}:
+        ids = {r["arm"] for r in rows if r["config"] == cid}
+        runs = cp.runs_of([by_arm[a] for a in ids], idx)
+        out[f"c:{cid}"] = {
+            "runs": runs,
+            "usd": cp.spend_of(w["spend"], lambda x, ids=ids: x.get("kind") == "arm" and x.get("arm") in ids),
+            "made": min((x[0] for x in runs), default=""),
+        }
+    return out
+
+
 def render_arms(A, by_ds: dict, out, nav: list) -> None:
     """Write arms.html."""
     from evaluation_harness import catalog_build as cb  # noqa: PLC0415
     from evaluation_harness import catalog_periods as cp  # noqa: PLC0415
 
-    w, idx = cb.window(A, by_ds), cp.arm_index(by_ds)
+    w = cb.window(A, by_ds)
     rows = arm_rows(A, by_ds)
-    by_arm = {a["arm"]: a for v in by_ds.values() for a in v["arms"]}
-    period_rows, trs = {}, []
+    period_rows, trs = period_arms(A, by_ds, rows), []
     for r in rows:
-        a = by_arm[r["arm"]]
-        period_rows[r["arm"]] = {
-            "runs": cp.runs_of([a], idx),
-            "usd": cp.spend_of(
-                w["spend"], lambda x, arm=r["arm"]: x.get("kind") == "arm" and x.get("arm") == arm
-            ),
-        }
         latency = f"{r['latency']:.0f} ms" if r["latency"] else "—"
         badges = "".join(f'<span class="role">{e(x)}</span>' for x in dict.fromkeys(r["roles"]))
         attrs = {
@@ -224,19 +245,11 @@ def render_arms(A, by_ds: dict, out, nav: list) -> None:
     cfgs = config_rows(A, by_ds, rows, w["spend"])
     crs = []
     for c in cfgs:
-        mine = [by_arm[r["arm"]] for r in rows if r["config"] == c["config"]]
         key = f"c:{c['config']}"
-        period_rows[key] = {
-            "runs": cp.runs_of(mine, idx),
-            "usd": cp.spend_of(
-                w["spend"],
-                lambda x, ids={a["arm"] for a in mine}: x.get("kind") == "arm" and x.get("arm") in ids,
-            ),
-        }
         crs.append(
             {
                 "key": key,
-                "made": min((r[0] for r in period_rows[key]["runs"]), default=""),
+                "made": period_rows[key]["made"],
                 "cells": [
                     f"<code>{e(c['config'])}</code>",
                     (f"<code>{e(c['model'])}</code>" if c["model"] else "—")

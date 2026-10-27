@@ -308,19 +308,38 @@ def first_dates(A, by_ds: dict) -> dict:
     return {"datasets": ds, "arms": arm_first}
 
 
+#: What a row's period numbers are, in the order `evh` prints them.
+FLOWS = ("runs", "arms", "usd", "tokens", "events")
+
+
 def in_period(rows: dict, key: str, today: date, first: str = "") -> dict:
-    """{row: {"runs", "arms", "usd", and each "<x>_prev" or None}} for a period: what the page's
-    in-period columns show (`evh <page> --period`)."""
+    """{row: {"new", and each of FLOWS with "<flow>_prev" (None for all time)}} for a period: what
+    a page's in-period columns show, as period.js computes them (`evh <page> --period`). A row is
+    {"runs": [[day, arm]], "usd": [[day, usd]], "tokens": [[day, n]], "events": [[day, html]],
+    "made": day}; any may be missing."""
     b = bounds(key, today, first)
     span, prev = (b["since"], b["until"]), b["prev"]
 
-    def one(r, s):
+    def one(r, s) -> dict:
         rs = [x for x in r.get("runs", []) if _within(x[0], s)]
-        return len(rs), len({x[1] for x in rs}), sum(x[1] for x in r.get("usd", []) if _within(x[0], s))
+        return {
+            "runs": len(rs),
+            "arms": len({x[1] for x in rs}),
+            "usd": sum(x[1] for x in r.get("usd", []) if _within(x[0], s)),
+            "tokens": sum(x[1] for x in r.get("tokens", []) if _within(x[0], s)),
+            "events": sum(1 for x in r.get("events", []) if _within(x[0], s)),
+        }
 
     out = {}
     for k, r in rows.items():
-        n, a, u = one(r, span)
-        p = one(r, prev) if prev else (None, None, None)
-        out[k] = {"runs": n, "arms": a, "usd": u, "runs_prev": p[0], "arms_prev": p[1], "usd_prev": p[2]}
+        now = one(r, span)
+        before = one(r, prev) if prev else dict.fromkeys(FLOWS)
+        out[k] = {"new": _within(r.get("made", ""), span), **now, **{f"{f}_prev": before[f] for f in FLOWS}}
     return out
+
+
+def cell(now, before, fmt=str) -> str:
+    """An in-period number with its trend, as a table cell shows it: "5 ▼ 82%", "35 ▲ from 0"."""
+    t = "" if before is None else trend(now, before)["text"]
+    short = t if t.endswith("%") else "▲ from 0" if t.startswith("new") else ""
+    return f"{fmt(now)} {short}".rstrip()
