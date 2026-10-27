@@ -29,6 +29,7 @@ GROUPS = (
 
 
 def e(s) -> str:
+    """`s` escaped for HTML text and attributes."""
     return html.escape(str(s), quote=True)
 
 
@@ -298,7 +299,8 @@ def render_arms(A, by_ds: dict, out, nav: list) -> None:
     cb.write_period_rows(out, "arms", period_rows)
 
     # Each goal's arms on its trade-off charts, one goal at a time (the select picks).
-    charts, options = [], []
+    charts: list = []
+    options: list = []
     for gr in cb.glance(A, by_ds):
         if not gr["dec"]:
             continue

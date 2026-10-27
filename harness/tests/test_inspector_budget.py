@@ -103,7 +103,7 @@ def main() -> int:
             cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, env=os.environ.copy()
         )
         lines: list = []
-        threading.Thread(target=lambda: lines.extend(proc.stdout), daemon=True).start()
+        threading.Thread(target=lambda: lines.extend(proc.stdout or ()), daemon=True).start()
         return proc, port, lines
 
     def stop(proc) -> None:

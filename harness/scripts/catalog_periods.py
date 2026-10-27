@@ -124,11 +124,11 @@ def home_data(A, by_ds: dict, spend: list[dict], goals: list[dict], rounds: list
             for day, v in per.items():
                 out_spend.setdefault(day, {}).setdefault(kind, [None, None])[i] = round(v, 6)
 
-    def day(s) -> str:
+    def day_of(s) -> str:
         return (s or "")[:10]
 
     arm_first = {
-        a["arm"]: min((day(r.get("created_at")) for r in a["run_list"] if r.get("created_at")), default="")
+        a["arm"]: min((day_of(r.get("created_at")) for r in a["run_list"] if r.get("created_at")), default="")
         for v in by_ds.values()
         for a in v["arms"]
     }
@@ -138,7 +138,7 @@ def home_data(A, by_ds: dict, spend: list[dict], goals: list[dict], rounds: list
 
     made = getattr(A, "dataset_created", None)
     ds_dates = {
-        ds: day(made(ds) if callable(made) else "") or earliest(arm_first[a["arm"]] for a in v["arms"])
+        ds: day_of(made(ds) if callable(made) else "") or earliest(arm_first[a["arm"]] for a in v["arms"])
         for ds, v in by_ds.items()
     }
     configs: dict = {}
@@ -154,7 +154,7 @@ def home_data(A, by_ds: dict, spend: list[dict], goals: list[dict], rounds: list
                 metrics[m] = earliest([metrics.get(m, ""), arm_first[a["arm"]]])
     goal_dates = []
     for g in goals:
-        opened = [day(r.get("opened_at")) for r in rounds if r.get("goal") == g.get("goal_id")]
+        opened = [day_of(r.get("opened_at")) for r in rounds if r.get("goal") == g.get("goal_id")]
         on = [
             ds_dates.get(d.get("dataset_id", ""), "") for d in g.get("datasets") or [] if isinstance(d, dict)
         ]
@@ -171,7 +171,7 @@ def home_data(A, by_ds: dict, spend: list[dict], goals: list[dict], rounds: list
             "datasets": list(ds_dates.values()),
             "configs": list(configs.values()),
             "arms": list(arm_first.values()),
-            "references": [day(r.get("created_at")) for v in by_ds.values() for r in v["refs"]],
+            "references": [day_of(r.get("created_at")) for v in by_ds.values() for r in v["refs"]],
             "metrics": list(metrics.values()),
         },
     }
@@ -214,7 +214,7 @@ def tiles(data: dict, key: str, today: date) -> list[dict]:
         d += timedelta(days=1)
     out = []
     for what, href, kind, group in TILES:
-        t = {"what": what, "href": href, "kind": kind, "group": group}
+        t: dict = {"what": what, "href": href, "kind": kind, "group": group}
         if kind == "stock":
             dates = data["dates"][what]
             t["value"] = len(dates)

@@ -744,8 +744,10 @@ def load_hooks(spec: str):
         if not path.is_file():
             raise SystemExit(f"--hooks: no file {target}")
         mod_spec = importlib.util.spec_from_file_location(f"evh_hooks_{path.stem}", path)
+        if mod_spec is None or mod_spec.loader is None:
+            raise SystemExit(f"--hooks: cannot load {target}")
         mod = importlib.util.module_from_spec(mod_spec)
-        mod_spec.loader.exec_module(mod)  # type: ignore[union-attr]
+        mod_spec.loader.exec_module(mod)
     else:
         try:
             mod = importlib.import_module(target)
@@ -781,6 +783,7 @@ class Handler(SimpleHTTPRequestHandler):
     prefixes: tuple = ()
 
     def send_response(self, code, message=None):
+        """Send the status line, remembering the status for the hooks."""
         self._status = code
         super().send_response(code, message)
 

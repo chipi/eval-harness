@@ -142,7 +142,7 @@ def drive(base: str, overview: str = "") -> None:
             and page.get_attribute('#period .chip[data-period="14d"]', "aria-pressed") == "true",
         )
         shown = {
-            t.locator("span").first.inner_text().lower(): t.get_attribute("title").split(" ")[0]
+            t.locator("span").first.inner_text().lower(): (t.get_attribute("title") or "").split(" ")[0]
             for t in page.locator(".tile[data-tile]").all()
         }
         cli = {
@@ -185,8 +185,8 @@ def drive(base: str, overview: str = "") -> None:
         check(
             "home: 'all time' has no trend; the note says since when, its title the dates to today",
             page.locator("#period-span").inner_text().startswith("since ")
-            and page.get_attribute("#period-span", "title").endswith(date.today().isoformat())
-            and "compared" not in page.get_attribute("#period-span", "title")
+            and (page.get_attribute("#period-span", "title") or "").endswith(date.today().isoformat())
+            and "compared" not in (page.get_attribute("#period-span", "title") or "")
             and page.locator(".tile[data-tile='6'] .trend").inner_text() == "",
         )
         page.locator('#spend button[data-unit-show="tokens"]').click()
