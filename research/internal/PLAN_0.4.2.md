@@ -125,8 +125,25 @@ Decided with the owner when it comes up.
 - The deployment layer stays in `infra/` of this repo (owner, 2026-10-27): outside the package (the wheel ships only `harness/`), no secrets in it (DSNs and endpoints from the box's env); the harness gets generic hooks only.
 - (Decided 2026-10-27: the official SDKs, sentry-sdk and opentelemetry-sdk with the OTLP/HTTP exporter, as dependencies of the deployed inspector only, not of the evh package; their memory measured against the 256 MiB limit.)
 
-### Open from the owner (2026-10-27, not started)
+## Status (2026-10-27)
 
-- Fewer period chips (e.g. 7 days, 30 days, this month, all time) and a "more" dropdown with the rest; the message was cut off after "And then".
-- Goals page: check the restored wide statement column, the changes count and the new "what happened in the period" table (screenshot not yet reviewed).
-- Still to do before arms: the activity page, then screenshots of all five pages for review.
+- Done on 042: 1 (home, the five pages, the arms page, the grouped menu), `--period` on every
+  list, `evh arms --by/--configs`, `evh activity`, the docs (UXS-001/003, PRD-004, RFC-003,
+  INTEGRATION, ADR-0018, CHANGELOG), 2's code (`--hooks` in the harness; `infra/inspector/`,
+  render.sh, compose, evals.alloy) proven locally against stand-ins, and the dashboard's rows
+  (chipi/humancopilot.eu, worktree `evals-dashboard-obs`, commit cc297aa, not pushed).
+- Then: 4 (tests), then 3 (the long runs).
+
+## At the 0.4.2 deploy (owner, 2026-10-27: wait until then)
+
+In this order, each its own approval:
+
+1. Create the GlitchTip project `evals-inspector` (platform python) on the mini, separate from
+   evals-web's CSP project; read its DSN; tell the homelab session the slug (projects.json).
+2. The prod session writes `/srv/evals/observability.env` (mode 644): `SENTRY_DSN=<dsn via the
+   tailnet TLS node>`, `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=https://vtraces.<tailnet>/insert/opentelemetry/v1/traces`.
+3. Merge 042, deploy; check the start line (`hooks: sha-…; GlitchTip on, traces on`), the
+   inspector's memory under 256 MiB after `--warm`, `up{job="evals-inspector"}` = 1, a span in
+   VictoriaTraces, and prove GlitchTip with one test event (telemetry-probe), then delete it.
+4. Push chipi/humancopilot.eu `evals-dashboard-obs`, PR, then import the dashboards on the mini
+   (`import.sh`).
