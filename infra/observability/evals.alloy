@@ -6,6 +6,7 @@
 // References components that base.alloy defines (do not redefine them here):
 //   discovery.docker "app"  — the Docker-socket container discovery
 //   loki.write "logs_sink"  — the VictoriaLogs sink (sets environment/instance)
+//   prometheus.remote_write "sink" — the VictoriaMetrics sink
 // Everything else is self-contained (like orrery.alloy), so this file deploys independently.
 //
 // What ships: nginx's one-JSON-line-per-request access log (infra/nginx/nginx.conf `site_json`)
@@ -56,4 +57,49 @@ loki.relabel "evals_naming" {
 		target_label  = "service"
 	}
 	forward_to = [loki.write.logs_sink.receiver]
+}
+
+// The inspector's own metrics (infra/inspector/hooks.py serves /metrics; the harness's --hooks
+// route): requests and latency per route and status, its caches, its memory. Scraped on the
+// container's bridge IP:8080 like base.alloy's api scrape, so it survives a recreated container;
+// Caddy forwards only /catalog/api/ to the inspector, so /metrics is never public. deploy.sh
+// starts the inspector (step 3) before it installs this file (step 5): the route exists before
+// the scrape does.
+discovery.relabel "evals_metrics" {
+	targets = discovery.docker.app.targets
+	rule {
+		source_labels = ["__meta_docker_container_name"]
+		regex         = "/evals-inspector"
+		action        = "keep"
+	}
+	rule {
+		source_labels = ["__meta_docker_network_ip_address"]
+		regex         = "(.+)"
+		target_label  = "__address__"
+		replacement   = "${1}:8080"
+	}
+	rule {
+		target_label = "instance"
+		replacement  = "prod-podcast"
+	}
+	rule {
+		target_label = "service"
+		replacement  = "evals-inspector"
+	}
+	rule {
+		target_label = "namespace"
+		replacement  = "evals"
+	}
+	rule {
+		target_label = "environment"
+		replacement  = "prod"
+	}
+}
+
+prometheus.scrape "evals_inspector" {
+	targets         = discovery.relabel.evals_metrics.output
+	forward_to      = [prometheus.remote_write.sink.receiver]
+	job_name        = "evals-inspector"
+	metrics_path    = "/metrics"
+	scrape_interval = "60s"
 }

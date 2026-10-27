@@ -718,10 +718,104 @@ def allowed(path: str, host: str, port: int, prefixes: tuple) -> int:
     return 0
 
 
+#: A deployment's hooks (--hooks), or None. The harness calls them and knows nothing of what they
+#: do: error reporting, tracing and metrics belong to the deployment, not to the harness.
+HOOKS = None
+
+
+def load_hooks(spec: str):
+    """The hooks --hooks names: `path/to/file.py`, `path/to/file.py:NAME`, `module` or
+    `module:NAME`. Without NAME the module itself is the hooks. Each part is optional:
+
+        start(info)          once, before serving: {"bind", "port", "public", "version"}
+        request(info)        after each request: {"method", "path", "route", "status", "ms"}
+        error(exc, info)     a request raised: it is then answered 500 (info as for request)
+        routes               {path: fn(query) -> (status, content_type, body bytes)}, extra GET
+                             paths answered before the host check: serve on them only what
+                             anyone who can reach the port may read (a deployment's /metrics)
+
+    A hook that raises is reported on stderr and never breaks the request."""
+    import importlib  # noqa: PLC0415
+    import importlib.util  # noqa: PLC0415
+
+    target, _, name = spec.partition(":")
+    if target.endswith(".py"):
+        path = Path(target).resolve()
+        if not path.is_file():
+            raise SystemExit(f"--hooks: no file {target}")
+        mod_spec = importlib.util.spec_from_file_location(f"evh_hooks_{path.stem}", path)
+        mod = importlib.util.module_from_spec(mod_spec)
+        mod_spec.loader.exec_module(mod)  # type: ignore[union-attr]
+    else:
+        try:
+            mod = importlib.import_module(target)
+        except ImportError as exc:
+            raise SystemExit(f"--hooks: cannot import {target}: {exc}") from exc
+    obj = getattr(mod, name) if name else mod
+    return obj() if isinstance(obj, type) else obj
+
+
+def _hook(name: str, *args) -> None:
+    fn = getattr(HOOKS, name, None) if HOOKS is not None else None
+    if callable(fn):
+        try:
+            fn(*args)
+        except Exception as exc:  # noqa: BLE001 -- a hook never breaks the request it observes
+            print(f"hooks.{name} failed: {type(exc).__name__}: {exc}", file=sys.stderr, flush=True)
+
+
+def _hook_routes() -> dict:
+    r = getattr(HOOKS, "routes", None) if HOOKS is not None else None
+    r = r() if callable(r) else r
+    return r if isinstance(r, dict) else {}
+
+
+def _route(path: str) -> str:
+    """A request's route for the hooks: the API endpoint, a hook's own path, or "static"."""
+    return path if path.startswith("/api/") or path in _hook_routes() else "static"
+
+
 class Handler(SimpleHTTPRequestHandler):
     """HTTP request handler for catalog serving and API endpoints."""
 
     prefixes: tuple = ()
+
+    def send_response(self, code, message=None):
+        self._status = code
+        super().send_response(code, message)
+
+    def _observed(self, serve) -> None:
+        """Serve the request, then tell the hooks how it went; on an unhandled error answer 500
+        and tell them that too (without hooks the error propagates as before)."""
+        t0, self._status = time.monotonic(), 0
+        path = urlparse(self.path).path
+        try:
+            serve()
+        except Exception as exc:
+            if HOOKS is None:
+                raise
+            _hook(
+                "error",
+                exc,
+                {"method": self.command, "path": path, "route": _route(path), "status": 500, "ms": 0.0},
+            )
+            if not self._status:
+                try:
+                    self._json(500, {"error": "the server failed on this request"})
+                except OSError:
+                    pass
+        finally:
+            if HOOKS is not None:
+                _hook(
+                    "request",
+                    {
+                        "method": self.command,
+                        "path": path,
+                        "route": _route(path),
+                        "status": self._status or 500,
+                        "ms": round((time.monotonic() - t0) * 1000, 2),
+                    },
+                )
 
     def _refuse(self) -> bool:
         if urlparse(self.path).path in ("", "/") and self.prefixes:
@@ -742,10 +836,23 @@ class Handler(SimpleHTTPRequestHandler):
             super().do_HEAD()
 
     def do_GET(self):
-        """Handle GET requests for static files and API endpoints."""
+        """Handle GET requests for static files and API endpoints (observed by the hooks)."""
+        self._observed(self._get)
+
+    def _get(self):
+        url = urlparse(self.path)
+        extra = _hook_routes().get(url.path)
+        if extra is not None:
+            code, ctype, data = extra(url.query)
+            self.send_response(code)
+            self.send_header("Content-Type", ctype)
+            self.send_header("Content-Length", str(len(data)))
+            self.send_header("Cache-Control", "no-store")
+            self.end_headers()
+            self.wfile.write(data)
+            return
         if self._refuse():
             return
-        url = urlparse(self.path)
         if url.path == "/api/health":
             return self._json(200, {"ok": True})
         if url.path in ("/api/compare", "/api/item"):
@@ -812,12 +919,19 @@ def main() -> int:
     )
     ap.add_argument("--max-arms", type=int, default=40, help="most arms in one comparison")
     ap.add_argument(
+        "--hooks",
+        metavar="FILE.py[:NAME]|MODULE[:NAME]",
+        help="a deployment's hooks: start, request, error, routes (load_hooks says what each is); default none",
+    )
+    ap.add_argument(
         "--warm",
         type=Path,
         metavar="CATALOG_DIR",
         help="answer every comparison this built catalog links to, in the background",
     )
     args = ap.parse_args()
+    global HOOKS
+    HOOKS = load_hooks(args.hooks) if args.hooks else None
     set_adapter(load_catalog_adapter(args.adapter))
     LIMITS["max_arms"] = args.max_arms
     if args.public:
@@ -848,6 +962,11 @@ def main() -> int:
             else f"{exc.strerror}. Pass --port N, or check --bind."
         )
         raise SystemExit(f"cannot listen on {args.bind}:{args.port}: {why}") from exc
+    from evaluation_harness._version import __version__  # noqa: PLC0415
+
+    _hook(
+        "start", {"bind": args.bind, "port": args.port, "public": bool(args.public), "version": __version__}
+    )
     if args.public:
         print(
             f"inspector API on {args.bind}:{args.port} for {', '.join(LIMITS['hosts'])} "

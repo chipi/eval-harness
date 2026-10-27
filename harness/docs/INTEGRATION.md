@@ -292,6 +292,24 @@ which references exist, what one arm wrote for one item.
   with public fields only (ADR-0003). To read a project's field set, use
   `from evaluation_harness.catalog_adapter import load_fieldset, fieldset_problems`, not the private `_fields`.
 
+- **Observing a served inspector (optional): `--hooks`.** The harness reports to nothing and
+  depends on no error tracker, tracer or metrics library. A deployment that wants them passes
+  `evh catalog-serve --hooks path/to/hooks.py` (or `module`, either with `:NAME`), an object or
+  module with any of:
+
+  | part | called | with |
+  |---|---|---|
+  | `start(info)` | once, before serving | `{"bind", "port", "public", "version"}` |
+  | `request(info)` | after each request | `{"method", "path", "route", "status", "ms"}`; `route` is the API endpoint, a hook route, or `static` |
+  | `error(exc, info)` | when a request raised; it is then answered 500 | the exception, and `info` as for `request` |
+  | `routes` | GET paths of the deployment's own, answered before the host check | `{path: fn(query) -> (status, content_type, body_bytes)}` |
+
+  A hook that raises is printed to stderr and never breaks the request; without `--hooks`
+  nothing changes. A hook route is answered to any Host: serve on it only what anyone who can
+  reach the port may read (a `/metrics` behind a proxy that forwards only `/api/`). This
+  repository's own deployment is an example: `infra/inspector/hooks.py` (Sentry, OpenTelemetry,
+  `/metrics`), with its SDKs vendored by its deploy, not installed with the harness.
+
 ---
 
 ## The first hour, concretely

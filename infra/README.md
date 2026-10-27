@@ -40,7 +40,25 @@ infra/
     reads the release's copy of the runs from the read-only mount.
   - **Hardening:** it runs as nobody, read-only, every capability dropped, limited to 256 MB,
     half a CPU and 64 processes.
-  - **Network:** it calls out to nothing.
+  - **Observability (0.4.2), this deployment's layer, not the harness's:**
+    `inspector/hooks.py` (from `infra/inspector/hooks.py`) is passed as `--hooks`, the
+    harness's generic hook point. It reports errors to GlitchTip through the Sentry SDK
+    (environment `prod`, release `sha-<7>` from `RELEASE`), sends one OpenTelemetry span per API
+    request to VictoriaTraces (service `evals-inspector`, namespace `evals`), and serves
+    `/metrics` (requests and latency per route and status, the caches, resident memory) on the
+    container's port, which only the box's Alloy scrapes (`observability/evals.alloy`): Caddy
+    forwards nothing but `/catalog/api/` to the inspector. The SDKs
+    (`infra/inspector/requirements.txt`, pinned, pure-Python wheels) are vendored by `render.sh`
+    into `inspector/vendor/` and found through `PYTHONPATH`; together they cost about 20 MB of the
+    256 MB (measured locally 2026-10-27: 27 MB idle without, 44 MB with).
+  - **Settings, on the box, never in the repository:** `/srv/evals/observability.env`, mode 644
+    (the container runs as nobody), `KEY=VALUE` lines: `SENTRY_DSN` (the GlitchTip project's
+    DSN, through the tailnet's TLS node) and `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT`
+    (`https://vtraces.<tailnet>/insert/opentelemetry/v1/traces`). Without the file, or without a
+    key, that part is off and the inspector serves as before; the start line says which parts are
+    on (`hooks: sha-…; GlitchTip on, traces on, /metrics on`).
+  - **Network:** without the settings it calls out to nothing; with them, to GlitchTip and
+    VictoriaTraces only.
   - **What it answers:** only the catalog host, 60 requests a minute per client (identified by the
     `CF-Connecting-IP` header), at most 40 arms per comparison, two computations at a time, every
     answer cached. At start it computes every comparison the catalog's own pages link to.

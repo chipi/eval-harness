@@ -42,6 +42,10 @@ page. No result moves.
 - **Adapter:** `dataset_created(dataset)`, optional: the day a dataset counts as new (else its
   first run). `spend()` events may name a measured run's `arm`, which the arms and activity pages
   bill it to; `HarnessAdapter` does.
+- **`evh catalog-serve --hooks FILE.py|MODULE`**: a deployment's error reporting, tracing or
+  metrics, on a generic hook point (`start`, `request`, `error`, extra `routes` such as
+  `/metrics`). The harness ships no tracker and depends on none; without `--hooks` nothing
+  changes. This repository's deployment uses it (`infra/inspector/hooks.py`).
 
 ### Changed
 
