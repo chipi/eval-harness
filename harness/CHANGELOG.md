@@ -9,6 +9,24 @@ The version lives in `scripts/_version.py`; a release is the git tag `v<version>
 release workflow refuses a tag that disagrees with that file or has no section here. A change
 that can move a result is never a patch release without saying so under **Changed**.
 
+## 0.4.2 — unreleased
+
+A home page that says what changed. No result moves.
+
+### Changed
+
+- **The home page's tiles carry trends, for a period picked from today.** Measured runs, billed
+  and tokens show the period's total, ▲/▼ % against the period before it (or "new" when that one
+  had none) and a line per day; goals, datasets, configs, arms, references and metrics show the
+  total and how many are new in the period, each tile in its own colour (never red or green: up
+  is neither good nor bad). Chips pick the period: the last 7, 14, 30 and 90
+  days, this and last week, this and last month, this year and all time; the browser works it
+  out from the viewer's date, so a catalog built days ago still shows this week. The charts and
+  the feed follow it. A dataset counts as new from its `created_at`
+  (`dataset_created()`, a new optional adapter method), else from its first run.
+- **`evh overview --period P`** prints the same tiles and trends; `--all` is gone
+  (`--period all`).
+
 ## 0.4.1 — 2026-10-27
 
 A catalog that works on a phone and sits inside a deployment's own site, and an inspector that

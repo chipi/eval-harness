@@ -277,15 +277,50 @@ try:
             _cv.load_catalog_adapter = real
         return buf.getvalue()
 
-    ov = _view(_cv.overview, ["--all"])
+    ov = _view(_cv.overview, ["--period", "all"])
     tiles = cb.home_counts(
         HarnessAdapter(data3), cb.collect(HarnessAdapter(data3)), HarnessAdapter(data3).spend()
     )
+    lines = {ln.split()[0]: ln.split()[1] for ln in ov.splitlines()[1:10] if ln.startswith("  ")}
     check(
-        "evh overview: the home page's counts, then its sections",
-        ov.splitlines()[0] == "  ".join(f"{n} {k}" for k, n, _ in tiles)
+        "evh overview --period all: every stock tile is the page's count, then the sections",
+        all(lines.get(k) == str(n) for k, n, _ in tiles[:6])
         and all(x in ov for x in ("goals at a glance", "activity", "coverage:")),
-        ov[:400],
+        ov[:600],
+    )
+    from datetime import date as _date
+
+    from evaluation_harness import catalog_periods as cp
+
+    def _b(k, d):
+        b = cp.bounds(k, _date.fromisoformat(d), "2025-01-01")
+        return b["since"], b["until"], b["prev"]
+
+    check(
+        "periods: a month to date is against the same days of the month before, clamped to its end",
+        _b("month", "2026-03-31") == ("2026-03-01", "2026-03-31", ("2026-02-01", "2026-02-28")),
+    )
+    check(
+        "periods: weeks start on Monday; last week is whole, against the week before",
+        _b("week", "2026-10-28") == ("2026-10-26", "2026-10-28", ("2026-10-19", "2026-10-21"))
+        and _b("lastweek", "2026-10-26") == ("2026-10-19", "2026-10-25", ("2026-10-12", "2026-10-18")),
+    )
+    check(
+        "periods: last month across a new year, and a year to date on 29 February",
+        _b("lastmonth", "2026-01-15") == ("2025-12-01", "2025-12-31", ("2025-11-01", "2025-11-30"))
+        and _b("year", "2028-02-29") == ("2028-01-01", "2028-02-29", ("2027-01-01", "2027-02-28")),
+    )
+    check(
+        "periods: the last N days against the N before; all time has no trend",
+        _b("7d", "2026-10-27") == ("2026-10-21", "2026-10-27", ("2026-10-14", "2026-10-20"))
+        and _b("all", "2026-10-27") == ("2025-01-01", "2026-10-27", None),
+    )
+    check(
+        "trends: a percent, 'new' when the period before had none, nothing to say when neither has",
+        cp.trend(150, 100)["text"] == "▲ 50%"
+        and cp.trend(50, 100)["text"] == "▼ 50%"
+        and cp.trend(5, 0)["text"].startswith("new")
+        and cp.trend(0, 0)["pct"] is None,
     )
     arm_id = next(a for a in HarnessAdapter(data3).arms() if a.endswith("/arm_s"))
     ar = _view(_cv.arms, ["--arm", arm_id])

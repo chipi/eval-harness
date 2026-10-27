@@ -224,7 +224,7 @@ evh catalog && evh catalog-serve
 ```
 
 Screenshot: the home page (the tiles, goals at a glance, activity and spend in USD and in tokens,
-coverage, what was recorded; last 14 days and all time); the datasets page and each dataset page (its
+coverage, what was recorded; the period picker and the tiles' trends); the datasets page and each dataset page (its
 baseline with reason, arms grouped by what they are scored against, `briefs_v1` ↔ `briefs_v2`
 linked both ways); an arm page (its metrics table, runs, config, conditions, rounds); the goals
 page and each goal's page (its answer, its arms grouped by what they are scored against, each

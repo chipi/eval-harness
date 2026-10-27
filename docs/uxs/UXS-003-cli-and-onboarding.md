@@ -91,7 +91,7 @@ answer. Where the page has a `make` target in a checkout, it runs the same scrip
 
 | in the catalog or inspector | command | make target |
 | --- | --- | --- |
-| home: goals at a glance, activity and spend, coverage, what was recorded | `evh overview [--all]` | `make overview` |
+| home: goals at a glance, activity and spend, coverage, what was recorded | `evh overview [--period P]` | `make overview` |
 | the datasets page | `evh datasets` | `make datasets` |
 | a dataset page: arms with their cost and speed, baseline, versions, references | `evh datasets --dataset-id <id>` | `make datasets DATASET_ID=<id>` |
 | the goals page | `evh goals` | `make goals` |

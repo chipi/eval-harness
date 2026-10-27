@@ -28,8 +28,10 @@ import argparse
 import statistics
 import sys
 import textwrap
+from datetime import date
 
 from evaluation_harness import catalog_build as cb
+from evaluation_harness import catalog_periods as cp
 from evaluation_harness import catalog_serve as cs
 from evaluation_harness._common import die
 from evaluation_harness.axes import (
@@ -340,19 +342,33 @@ def overview(argv) -> int:
         prog="evh overview", description="The whole catalog at a glance, as the home page."
     )
     ap.add_argument(
-        "--all", action="store_true", help=f"all time, not the last {cb.RECENT_DAYS} days of activity"
+        "--period",
+        default=cp.DEFAULT,
+        choices=[k for k, *_ in cp.PERIODS],
+        help="counted from today: "
+        + ", ".join(f"{k} ({label})" for k, label, _ in cp.PERIODS)
+        + f"; default {cp.DEFAULT}",
     )
     ap.add_argument("--adapter", help="path/to/file.py:Class (default: the catalog's)")
     args = ap.parse_args(argv)
     A, by_ds = _adapter(args)
     w = cb.window(A, by_ds)
-    since = w["first"] if args.all else w["since"]
-    span = (
-        f"all time, since {w['first']}"
-        if args.all
-        else f"the last {cb.RECENT_DAYS} days, {w['since']} to {w['until']}"
-    )
-    print("  ".join(f"{n} {k}" for k, n, _ in cb.home_counts(A, by_ds, w["spend"])))
+    rounds_fn = getattr(A, "rounds", None)
+    data = cp.home_data(A, by_ds, w["spend"], A.goals(), rounds_fn() if callable(rounds_fn) else [])
+    today = date.today()
+    b = cp.bounds(args.period, today, data["first"])
+    since, until = b["since"], b["until"]
+    label, against = next((lb, ag) for k, lb, ag in cp.PERIODS if k == args.period)
+    span = f"{label}, {since} to {until}"
+    print(f"{span}" + (f"; trends against {against}, {b['prev'][0]} to {b['prev'][1]}" if b["prev"] else ""))
+    for t in cp.tiles(data, args.period, today):
+        if t["kind"] == "stock":
+            line = f"+{t['new']} new" if t["new"] else "none new"
+            value = str(t["value"])
+        else:
+            line = t["trend"]["text"] + (f" vs {against}" if t["trend"]["pct"] is not None else "")
+            value = cb.fmt_amount(t["value"], "usd") if t["what"] == "billed" else f"{round(t['value']):,}"
+        print(f"  {t['what']:15} {value:>16}  {line}".rstrip())
     print(
         "\ngoals at a glance (the leader of the gold group against the baseline, one test, threshold 0.05):"
     )
@@ -386,9 +402,13 @@ def overview(argv) -> int:
         )
     else:
         print("  no goals yet")
-    if since:
+    if data["first"]:
         print(f"\nactivity, {span}: measured runs per day")
-        counts = cb.activity_counts(by_ds, since)
+        counts = {
+            ds: {d: n for d, n in per.items() if d <= until}
+            for ds, per in cb.activity_counts(by_ds, since).items()
+            if any(d <= until for d in per)
+        }
         days = sorted({d for c in counts.values() for d in c})
         if days:
             _table(
@@ -405,7 +425,11 @@ def overview(argv) -> int:
         else:
             print("  none")
         for unit in cb.SPEND_UNITS:
-            per = cb.spend_by_day(w["spend"], since, unit)
+            per = {
+                name: {d: v for d, v in days_.items() if d <= until}
+                for name, days_ in cb.spend_by_day(w["spend"], since, unit).items()
+                if any(d <= until for d in days_)
+            }
             print(f"\nspend in {'USD' if unit == 'usd' else 'tokens'}, {span}:")
             if not per:
                 print("  none recorded")

@@ -119,7 +119,7 @@ def serve(proj: Path, env: dict, log: Path) -> tuple:
     return p, f"http://127.0.0.1:{port}/.build/catalog/"
 
 
-def drive(base: str) -> None:
+def drive(base: str, overview: str = "") -> None:
     from playwright.sync_api import sync_playwright  # noqa: PLC0415
 
     with sync_playwright() as pw:
@@ -136,21 +136,71 @@ def drive(base: str) -> None:
             "tickets_v1" in page.locator("table#coverage").inner_text(),
         )
         check(
-            "home: activity and spend side by side, recent shown first",
+            "home: activity and spend side by side, the last 14 days first",
             page.locator(".duo #activity figure.chart").first.is_visible()
-            and page.locator('.duo #spend [data-period="recent"]').is_visible(),
+            and page.locator("#spend [data-unit='usd']").is_visible()
+            and page.get_attribute('#period .chip[data-period="14d"]', "aria-pressed") == "true",
         )
-        page.click('.period-switch button[data-show="all"]')
+        shown = {
+            t.locator("span").first.inner_text().lower(): t.get_attribute("title").split(" ")[0]
+            for t in page.locator(".tile[data-tile]").all()
+        }
+        cli = {
+            ln[:17].strip(): ln[17:35].strip()
+            for ln in (overview or "").splitlines()[1:10]
+            if ln.startswith("  ")
+        }
         check(
-            "home: 'all time' shows every period's panel and hides the recent one",
-            page.locator('#spend [data-period="all"]').is_visible()
-            and not page.locator('#spend [data-period="recent"]').is_visible(),
+            "home: every tile is what `evh overview` prints for the same period, from today",
+            bool(cli) and all(shown.get(k) == v for k, v in cli.items()),
+            f"page {shown} cli {cli}",
         )
-        page.locator('#spend [data-period="all"] button[data-unit-show="tokens"]').click()
+        from datetime import date, timedelta  # noqa: PLC0415
+
+        from evaluation_harness import catalog_periods as cp  # noqa: PLC0415
+
+        days = [date(2026, 1, 1) + timedelta(days=i) for i in range(0, 800, 7)] + [
+            date(2028, 2, 29),
+            date(2026, 3, 31),
+            date(2026, 12, 31),
+        ]
+        bad = []
+        for d in days:
+            ms = int((d - date(1970, 1, 1)).total_seconds() * 1000)
+            for k, *_ in cp.PERIODS:
+                js = page.evaluate("([k,t])=>window.HOME_PERIOD.bounds(k,t,'2025-06-01')", [k, ms])
+                py = cp.bounds(k, d, "2025-06-01")
+                if (js["since"], js["until"], js["prev"]) != (
+                    py["since"],
+                    py["until"],
+                    list(py["prev"] or []) or None,
+                ):
+                    bad.append((d.isoformat(), k, js, py))
+        check(
+            f"home: the browser's periods are evh overview's, on {len(days)} days and every period",
+            not bad,
+            str(bad[:3]),
+        )
+        page.click('#period .chip[data-period="all"]')
+        check(
+            "home: 'all time' has no trend; the note says since when, its title the dates to today",
+            page.locator("#period-span").inner_text().startswith("since ")
+            and page.get_attribute("#period-span", "title").endswith(date.today().isoformat())
+            and "compared" not in page.get_attribute("#period-span", "title")
+            and page.locator(".tile[data-tile='6'] .trend").inner_text() == "",
+        )
+        page.locator('#spend button[data-unit-show="tokens"]').click()
         check(
             "home: spend in tokens (what a free local model still uses)",
-            page.locator('#spend [data-period="all"] [data-unit="tokens"]').is_visible()
-            and not page.locator('#spend [data-period="all"] [data-unit="usd"]').is_visible(),
+            page.locator('#spend [data-unit="tokens"]').is_visible()
+            and not page.locator('#spend [data-unit="usd"]').is_visible(),
+        )
+        page.click('#period .chip[data-period="lastmonth"]')
+        check(
+            "home: last month (the tutorial ran today) is empty, and the feed and activity say so",
+            page.locator("[data-feed-empty]").is_visible()
+            and not page.locator("#feeda").is_visible()
+            and "No measured run in this period" in page.locator("#activity").inner_text(),
         )
         page.goto(base + "datasets.html")
         check(
@@ -334,7 +384,11 @@ def main() -> int:
     try:
         proj, env = project(tmp)
         server, base = serve(proj, env, tmp / "serve.log")
-        drive(base)
+        ov = subprocess.run(
+            [sys.executable, "-m", "evaluation_harness", "overview", "--period", "14d"],
+            cwd=proj, env=env, capture_output=True, text=True,
+        )  # fmt: skip
+        drive(base, ov.stdout)
     finally:
         if server is not None:
             os.killpg(server.pid, signal.SIGTERM)

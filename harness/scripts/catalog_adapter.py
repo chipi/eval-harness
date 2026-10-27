@@ -190,6 +190,9 @@ class Adapter(Protocol):
     # Optional: the version a dataset was made from, {"dataset_id", "added", "removed",
     # "changed"} (item id lists), or None; the dataset pages link the versions both ways.
     # def dataset_lineage(self, dataset: str) -> Optional[dict]: ...
+    # Optional: when a dataset was frozen (ISO); the home page counts it new from that day, and
+    # from its first run when this is absent or "".
+    # def dataset_created(self, dataset: str) -> str: ...
     # Optional: an arm's runs, oldest first, [{"run_id", "created_at", "items", "cost_usd",
     # "derived"}] ("derived": "" for a measured run, else how it was made: rescore, judge,
     # reparse); the arm page lists them and the home page's activity counts them.
@@ -697,6 +700,12 @@ class HarnessAdapter:
         ds = _json(self.data_dir / "datasets" / f"{dataset}.json")
         got = ds.get("derived_from") if isinstance(ds, dict) else None
         return got if isinstance(got, dict) and got.get("dataset_id") else None
+
+    def dataset_created(self, dataset: str) -> str:
+        """When the dataset was frozen (`created_at`), or "" when its file does not say."""
+        ds = _json(self.data_dir / "datasets" / f"{dataset}.json")
+        got = ds.get("created_at") if isinstance(ds, dict) else None
+        return got if isinstance(got, str) else ""
 
     # -- runs, configs and spend ---------------------------------------------------------
     def arm_runs(self, arm: str) -> list[dict]:

@@ -94,8 +94,9 @@ adapter file ([ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md),
   references, metrics, measured runs, USD billed, tokens); each goal's baseline and gold-group
   leader with their paired test (threshold 0.05); activity (measured runs per day by dataset)
   beside spend (cumulative, systems under test and judges, in USD or tokens); coverage per
-  dataset; and everything recorded, newest first; each for the last 14 days of activity or all
-  time.
+  dataset; and everything recorded, newest first; each for a period counted from today (the last
+  14, 7, 30 or 90 days, this or last week or month, this year, all time), the counts with their
+  trends against the period before.
 
 ### FR2: The inspector (local server)
 

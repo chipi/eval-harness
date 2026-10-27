@@ -53,7 +53,7 @@ from evaluation_harness.stats import fmt_p  # noqa: E402
 ASSET_DIR = next(p for p in (HERE / "catalog_assets", HERE.parent / "catalog_assets") if p.is_dir())
 # forest.js draws a baseline's answers chart; no page of the harness's own uses it, a project's
 # builder does (podcast_scraper's baseline pages), so it ships with the assets.
-ASSETS = ("style.css", "catalog.css", "catalog.js", "inspect.js", "forest.js", "icon.svg")
+ASSETS = ("style.css", "catalog.css", "catalog.js", "inspect.js", "forest.js", "overview.js", "icon.svg")
 #: Links that would put more arms than this in one inspector URL go to the picker instead.
 INSPECT_MAX = 40
 
@@ -85,8 +85,6 @@ NAV = [
     ("metrics", "metrics.html", "Metrics"),
     ("inspect", "inspect.html", "Inspector"),
 ]
-#: How far back "recent" reaches on the home page, counted from the newest thing recorded.
-RECENT_DAYS = 14
 
 #: What the harness's own metrics measure; a project describes its own with METRIC_DESCRIPTIONS.
 BUILTIN_METRICS = {
@@ -695,26 +693,14 @@ def events(A: Adapter, by_ds: dict) -> list[dict]:
 
 
 def window(A: Adapter, by_ds: dict) -> dict:
-    """What "recent" and "all" span: {"events", "spend", "since", "first", "until", "chart_since"}.
-    Recent is RECENT_DAYS back from the newest thing recorded, so a quiet project still shows its
-    last burst of work; a chart starts at the first day anything happened."""
-    from datetime import date, timedelta  # noqa: PLC0415
-
+    """Everything recorded and spent, and the days it spans: {"events", "spend", "first", "until"}.
+    The page without a script shows all of it; the period switch is the browser's
+    (catalog_periods.py)."""
     ev = events(A, by_ds)
     fn = getattr(A, "spend", None)
     sp = fn() if callable(fn) else []
     stamps = [x["at"][:10] for x in ev if x["at"]] + [(x.get("at") or "")[:10] for x in sp if x.get("at")]
-    until = max(stamps, default="")
-    first = min(stamps, default="")
-    since = (date.fromisoformat(until) - timedelta(days=RECENT_DAYS - 1)).isoformat() if until else ""
-    return {
-        "events": ev,
-        "spend": sp,
-        "since": since,
-        "first": first,
-        "until": until,
-        "chart_since": max(since, first),
-    }
+    return {"events": ev, "spend": sp, "first": min(stamps, default=""), "until": max(stamps, default="")}
 
 
 def activity_counts(by_ds: dict, since: str) -> dict:
@@ -895,11 +881,6 @@ def coverage(A: Adapter, by_ds: dict) -> list[dict]:
     return rows
 
 
-def _period(recent: str, every: str) -> str:
-    """A panel in two versions; the home page's switch shows one (recent, until a click)."""
-    return f'<div data-period="recent">{recent}</div><div data-period="all" hidden>{every}</div>'
-
-
 def _activity_chart(by_ds: dict, since: str, until: str) -> str:
     from evaluation_harness import catalog_charts as ch  # noqa: PLC0415
 
@@ -1055,24 +1036,25 @@ def _feed(ev: list[dict], since: str) -> str:
 
 
 def home_counts(A: Adapter, by_ds: dict, spend: list[dict]) -> list[tuple]:
-    """The home page's tiles: (what, how many, page)."""
+    """The home page's tiles, in catalog_periods.TILES' order: (what, how many, page)."""
+    from evaluation_harness.catalog_periods import TILES  # noqa: PLC0415
+
     billed = sum(float(x["usd"]) for x in spend if isinstance(x.get("usd"), (int, float)))
     tokens = int(sum(x["tokens"] for x in spend if isinstance(x.get("tokens"), (int, float))))
-    return [
-        ("goals", len(A.goals()), "goals.html"),
-        ("datasets", len(by_ds), "datasets.html"),
-        ("configs", _n_configs(by_ds), "datasets.html"),
-        ("arms", sum(len(v["arms"]) for v in by_ds.values()), "datasets.html"),
-        ("references", sum(len(v["refs"]) for v in by_ds.values()), "references.html"),
-        ("metrics", len(metric_index(A, by_ds)), "metrics.html"),
-        (
-            "measured runs",
-            sum(1 for v in by_ds.values() for a in v["arms"] for r in a["run_list"] if not r.get("derived")),
-            "#activity",
+    n = {
+        "goals": len(A.goals()),
+        "datasets": len(by_ds),
+        "configs": _n_configs(by_ds),
+        "arms": sum(len(v["arms"]) for v in by_ds.values()),
+        "references": sum(len(v["refs"]) for v in by_ds.values()),
+        "metrics": len(metric_index(A, by_ds)),
+        "measured runs": sum(
+            1 for v in by_ds.values() for a in v["arms"] for r in a["run_list"] if not r.get("derived")
         ),
-        ("billed", fmt_amount(billed, "usd"), "#spend"),
-        ("tokens", f"{tokens:,}", "#spend"),
-    ]
+        "billed": fmt_amount(billed, "usd"),
+        "tokens": f"{tokens:,}",
+    }
+    return [(what, n[what], href) for what, href, *_ in TILES]
 
 
 def tile_value(n) -> str:
@@ -1090,29 +1072,65 @@ def tile_value(n) -> str:
 
 
 def render_home(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
-    """The home page: the whole catalog at a glance. Counts, then what each goal concludes, when
-    work happened and what it cost, what each dataset covers, and everything recorded, each for
-    the last RECENT_DAYS days of activity or for all time (`evh overview` prints the same)."""
+    """The home page: the whole catalog at a glance. Counts with their trends, then what each goal
+    concludes, when work happened and what it cost, what each dataset covers, and everything
+    recorded, for the period picked (from today, in the browser; `evh overview --period` prints
+    the same)."""
+
+    from evaluation_harness import catalog_periods as cp  # noqa: PLC0415
+
     w = window(A, by_ds)
-    since, first, until = w["since"], w["first"], w["until"]
+    first, until = w["first"], w["until"]
+    rounds_fn = getattr(A, "rounds", None)
+    data = cp.home_data(A, by_ds, w["spend"], A.goals(), rounds_fn() if callable(rounds_fn) else [])
+    write(
+        out,
+        "home.js",
+        "window.HOME="
+        + json.dumps(
+            {
+                **data,
+                "periods": cp.PERIODS,
+                "default": cp.DEFAULT,
+                "tiles": cp.TILES,
+                "units": list(SPEND_UNITS),
+            },
+            separators=(",", ":"),
+        )
+        + ";\n",
+    )
+    # Without a script the page shows all time; with one, the period picked below (from today).
     tile_html = (
         '<div class="tiles">'
         + "".join(
-            f'<a class="tile" href="{href}" title="{e(n)} {e(k)}"><b>{tile_value(n)}</b><span>{e(k)}</span></a>'
-            for k, n, href in home_counts(A, by_ds, w["spend"])
+            f'<a class="tile" href="{href}" data-tile="{i}" data-group="{cp.TILES[i][3]}" title="{e(n)} {e(k)}"><b>{tile_value(n)}</b>'
+            f'<span>{e(k)}</span><small class="trend"></small></a>'
+            for i, (k, n, href) in enumerate(home_counts(A, by_ds, w["spend"]))
         )
         + "</div>"
-    )
-    switch = (
-        '<p class="period-switch" role="group" aria-label="period">'
-        f'<button type="button" class="btn small" data-show="recent" aria-pressed="true">last {RECENT_DAYS} days</button>'
-        '<button type="button" class="btn small" data-show="all" aria-pressed="false">all time</button>'
-        + (
-            f'<span class="muted small">recent: {e(since)} to {e(until)} · all: since {e(first)}</span>'
-            if since
-            else ""
+        + '<p class="legend groups">'
+        + "".join(
+            f'<span data-group="{g}"><i></i>{e(name)}</span>'
+            for g, name in (
+                ("goals", "goals"),
+                ("data", "data"),
+                ("experiments", "experiments"),
+                ("work", "work and spend"),
+            )
         )
         + "</p>"
+    )
+    # The chips need the script; without it the note says the page shows all time.
+    switch = (
+        '<div class="period-switch"><div class="chips" id="period" role="group" aria-label="period" hidden>'
+        + "".join(
+            f'<button type="button" class="chip" data-period="{k}" aria-pressed="false" title="{e(label)}">'
+            f"{e(cp.chip(label))}</button>"
+            for k, label, _ in cp.PERIODS
+        )
+        + '</div><p class="period-note" id="period-span">'
+        + (f"all time, {e(first)} to {e(until)}" if first else "")
+        + "</p></div>"
     )
     body = hero(
         "catalog",
@@ -1120,35 +1138,35 @@ def render_home(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
         "What each goal concludes so far, when the work happened and what it cost, what each dataset "
         "covers, and everything recorded. Every name is a link: goals, datasets, arms, references and "
         "metrics each have a page.",
-        tile_html + switch,
+        switch + tile_html,
     )
     body += block("01", "goals at a glance", _glance(A, by_ds), "glance")
-    activity = (
-        _period(_activity_chart(by_ds, w["chart_since"], until), _activity_chart(by_ds, first, until))
-        if since
-        else '<p class="muted">No runs yet.</p>'
-    )
+    activity = _activity_chart(by_ds, first, until) if first else '<p class="muted">No runs yet.</p>'
     spending = (
-        _period(_spend_panel(w["spend"], w["chart_since"], until), _spend_panel(w["spend"], first, until))
-        if since and w["spend"]
+        _spend_panel(w["spend"], first, until)
+        if first and w["spend"]
         else '<p class="muted">Nothing spent is recorded.</p>'
     )
     body += block(
         "02",
         "activity and spend",
-        f'<div class="duo"><div id="activity"><h3 class="sub">activity</h3>{activity}</div>'
-        f'<div id="spend"><h3 class="sub">spend</h3>{spending}</div></div>',
+        f'<div class="duo"><div id="activity"><h3 class="sub">activity</h3><div data-chart="activity">{activity}</div></div>'
+        f'<div id="spend"><h3 class="sub">spend</h3><div data-chart="spend">{spending}</div></div></div>',
     )
     body += block("03", "coverage", _coverage(A, by_ds), "coverage")
     body += block(
         "04",
         "recorded",
-        _period(_feed(w["events"], since), _feed(w["events"], ""))
+        f'<p class="muted" data-feed-empty hidden>Nothing recorded in this period.</p>{_feed(w["events"], "")}'
         if w["events"]
         else '<p class="muted">Nothing recorded yet.</p>',
         "recorded",
     )
-    write(out, "index.html", page("Overview", body, 0, "home", nav=nav, item=A.item_word))
+    write(
+        out,
+        "index.html",
+        page("Overview", body, 0, "home", ("home.js", "assets/overview.js"), nav=nav, item=A.item_word),
+    )
 
 
 def scored_by_rank(a: dict, tiers: dict) -> int:

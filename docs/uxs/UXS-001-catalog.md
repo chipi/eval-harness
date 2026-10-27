@@ -138,13 +138,33 @@ The author tint wins over the others. The same classes tint the inspector's verd
 
 ## The home page
 
-The whole project at a glance, for the last 14 days of activity or for all time.
+The whole project at a glance, for a period counted from today.
 
 - Hero: kicker `catalog`, title "Every evaluation, at a glance", a dek saying every name is a
-  link, then **tiles**, each linking to its page: goals, datasets, configs, arms, references,
-  metrics, measured runs, billed (USD) and tokens. Under them the period switch, **last 14 days**
-  (shown first) or **all time**, with the dates each spans. Recent counts back 14 days from the
-  newest thing recorded, so a quiet project still shows its last burst of work.
+  link, then the **period chips**: 7, 14, 30 and 90 days, this week, last week, this month, last
+  month, this year, all time; 14 days is picked first (on a phone the chips scroll sideways in
+  one row). Under them one line says what the trends compare with ("▲▼ compared with the 30 days
+  before"; for all time "since <first day>"); its title gives the dates. The period is worked
+  out in the browser from the viewer's date, so "this week" is this week even when the catalog
+  was built days ago. A trend compares with the same days of the period before (this month to
+  date against the same days of last month, clamped to its end; weeks start on Monday). All
+  time has no trend. Everything below follows the period; without a script the page shows all
+  time and no chips.
+- Then the **tiles**, each linking to its page: goals, datasets, configs, arms, references,
+  metrics, measured runs, billed (USD) and tokens. Each has its own colour from the charts'
+  palette (a band on top, its trend badge, its line): it tells the tiles apart and means
+  nothing more.
+  - A **stock** tile (goals to metrics) shows the total so far, "+N new" in the period (or "none
+    new") and a line of the total growing over the period. Something is new on the day it was
+    made: a dataset on its `created_at`, or its first run when it has none; an arm, config or
+    metric on its first run; a reference on its `created_at`; a goal on its first round or the
+    first day of its datasets.
+  - A **flow** tile (measured runs, billed, tokens) shows the period's total, its change against
+    the period before, as **▲ 12%**, **▼ 31%**, **new** (nothing the period before) or **none**,
+    and a line of the amount per day. The badge is in the tile's colour whichever way it goes,
+    never red or green: up is neither good nor bad. The tile's title says it in full ("▲ 173%
+    vs the 30 days before").
+  - A long number is shortened (13.7M) wherever its tile is narrow; the title keeps it exact.
 - `01 goals at a glance`: one row per goal and dataset it decides on (a dataset marked `decides: false` is left out): **goal**, **dataset**, **decides** (the
   measure, ↓ when lower is better), **baseline** (the promoted arm and its mean, or "none
   promoted"), **leader** (the best arm the goal's decision may recommend, scored against the gold group's
@@ -158,14 +178,16 @@ The whole project at a glance, for the last 14 days of activity or for all time.
   runs per day as bars stacked by dataset (repeats counted one by one); **spend**, cumulative,
   one line for the systems under test and one for the judges, with a **USD / tokens** switch.
   Tokens are tokens in plus out as each call reported them, so a local model's use counts when
-  its adapter or server reports usage. The charts start at the first day anything was recorded.
+  its adapter or server reports usage. The charts span the period (all time starts at the first
+  day anything was recorded); a period with nothing in it says so.
 - `03 coverage`: one row per dataset: **dataset**, **items**, **arms scored against** (gold,
   silver and judged counts), **references**, **metrics** (a count that opens to the list),
   **goals**, **last run**.
 - `04 recorded`: everything recorded, newest first: **when**, **what** (ran or rescored or judged
   an arm on a dataset, one line per arm and day; a reference made, with its author; a baseline
-  promoted; a round opened or closed; every name linked), **kind**. Paged.
-- Command: `evh overview [--all]`.
+  promoted; a round opened or closed; every name linked), **kind**. Paged. Only the period's.
+- Command: `evh overview [--period 14d|7d|30d|90d|week|lastweek|month|lastmonth|year|all]`: the
+  tiles with the same numbers and trends, then the sections, for the period from today.
 
 ## The datasets page
 

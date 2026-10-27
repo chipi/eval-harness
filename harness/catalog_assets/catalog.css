@@ -368,8 +368,32 @@ small.retired { color: var(--local); font: 600 10px/1 var(--mono); letter-spacin
 /* the number's own type, not the tile's label's (.tile span) */
 .tile b span { font: inherit; letter-spacing: inherit; text-transform: none; color: inherit; }
 .tile span { font: 500 11px/1.4 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
-.period-switch { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin: 14px 0 0; }
-.period-switch button[aria-pressed="true"] { border-color: var(--accent); color: var(--ink); }
+/* A tile's colour (--c) is its subject's (catalog_periods.TILES): goals, data, experiments, work
+   and spend. It says what a tile is about, never a judgement: a trend is tinted in it whichever
+   way it goes. The legend under the tiles names the four. */
+.tile { --c: var(--muted); border-top: 3px solid var(--c); }
+[data-group="goals"] { --c: var(--s7); }
+[data-group="data"] { --c: var(--s1); }
+[data-group="experiments"] { --c: var(--s3); }
+[data-group="work"] { --c: var(--s4); }
+.legend.groups i { background: var(--c); }
+.tile:hover, .tile:focus-visible { border-color: var(--c); }
+.tile small.trend { align-self: flex-start; margin-top: 4px; padding: 1px 7px; border-radius: 999px; font: 500 11px/1.5 var(--mono); color: var(--ink-2); background: color-mix(in srgb, var(--c) 16%, transparent); }
+.tile small.trend:empty { display: none; }
+.tile svg.spark { width: 100%; height: 22px; margin-top: auto; padding-top: 8px; display: block; }
+/* a long count in short form wherever its tile is narrow, not only on phones */
+.tile { container-type: inline-size; }
+@container (max-width: 150px) { .tile .full { display: none; } .tile .short { display: inline; } }
+/* the period: chips, then one line saying what the trends compare with (its title has the dates) */
+.period-switch { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin: 22px 0 0; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font: 500 12px/1 var(--mono); padding: 7px 11px; border: 1px solid var(--hair); border-radius: 999px; background: var(--surface); color: var(--muted); cursor: pointer; white-space: nowrap; }
+.chip:hover, .chip:focus-visible { color: var(--ink); border-color: var(--accent); }
+.chip[aria-pressed="true"] { color: var(--accent-ink); background: var(--accent); border-color: var(--accent); }
+.period-note { margin: 0; font: 12px var(--mono); color: var(--muted); }
+.period-switch + .tiles { margin-top: 14px; }
+/* a phone: the chips scroll sideways in one row instead of taking four */
+@media (max-width: 560px) { .chips { flex-wrap: nowrap; overflow-x: auto; max-width: 100%; scrollbar-width: none; padding-bottom: 2px; } }
 figure.chart { margin: 8px 0 16px; overflow-x: auto; }
 figure.chart svg { width: 100%; min-width: 420px; height: auto; display: block; }
 figure.chart svg .tick { font: 11px var(--mono); fill: var(--muted); }
