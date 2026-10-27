@@ -6,7 +6,7 @@ Three addresses, one repository:
 |---|---|---|
 | `evals.humancopilot.eu` | the harness site: the harness and its findings (`site/public`, built by `make site`) | prod VPS: `evals-nginx` |
 | `evals.humancopilot.eu/catalog` | the harness deployed on these example experiments: the catalog, goal pages and run inspector | prod VPS: `evals-nginx` (pages) + `evals-inspector` (`/api/*`) |
-| `evals.humancopilot.eu/docs` | the documentation (mkdocs) | GitHub Pages (`.github/workflows/pages.yml`) |
+| `evals.humancopilot.eu/docs` | the documentation (mkdocs) | prod VPS: `evals-nginx` (built into each release by `render.sh`) |
 
 Everything on the VPS follows the box's tenant pattern, copied from chipi/humancopilot.eu
 (owner of the edge: podcast_scraper, its ADR-114):
@@ -33,14 +33,20 @@ infra/
 
 - **evals-nginx:** the template's nginx unchanged. It is unprivileged, read-only, has every
   capability dropped, and is limited to 64 MB, half a CPU and 64 processes. It serves two hosts.
-  Unknown hosts are closed (444). `/docs/...` redirects 301 to the same page on the docs host.
+  Unknown hosts are closed (444). `/docs/` serves the documentation, with its own headers.
 - **evals-inspector:** the stock Python image (pinned by digest) running the release's copy of the package, installed from its wheel on the CI runner by
-  `render.sh`: `inspector/pkg/evaluation_harness/catalog_serve.py --public evals.humancopilot.eu/catalog --publish outputs --client-header CF-Connecting-IP`.
+  `render.sh`: `inspector/pkg/evaluation_harness/catalog_serve.py --public evals.humancopilot.eu --publish outputs --client-header CF-Connecting-IP` (the full command is in `compose.yml`).
   The `--publish outputs` flag exposes the arms' outputs (already public in the repo); the
-  `--client-header CF-Connecting-IP` rate-limits by the visitor's address: nginx accepts only
-  Cloudflare's ranges (origin lock), so the header is Cloudflare's.
-  - **Nothing is built or installed on the box.** The server is standard library only and
-    reads the release's copy of the runs from the read-only mount.
+  `--client-header CF-Connecting-IP` rate-limits by the header Cloudflare sets. It names the
+  visitor only because every request comes through Cloudflare, and nothing in this repository
+  enforces that: nginx has no allowlist, and the edge's Caddy passes the header through as
+  sent. The origin lock is the hosting provider's firewall, owned by the box's infra
+  repository (its ADR-118, `CLOUDFLARE_ORIGIN_LOCK`): port 443 accepts only Cloudflare's
+  ranges, and port 80 only redirects. The prod session checked it on 2026-10-27: straight to the
+  origin from a non-Cloudflare address, 443 timed out and 80 answered 308. Not checked: IPv6.
+  - **Nothing is built or installed on the box.** The server's code, and the Sentry and
+    OpenTelemetry SDKs its hooks use, come in the release, vendored by `render.sh` on the
+    runner; it reads the release's copy of the runs from the read-only mount.
   - **Hardening:** it runs as nobody, read-only, every capability dropped, limited to 256 MB,
     half a CPU and 64 processes.
   - **Observability (0.4.2), this deployment's layer, not the harness's:**
@@ -198,12 +204,17 @@ always runs.
    - GlitchTip `evals-web` stays empty in normal use: an issue there is a page loading
      something the CSP blocks.
 
-Later deploys need none of this: a push to `main` that touches what ships redeploys.
+Later deploys need none of this: a push to `main` that touches what ships redeploys, docs and
+site changes included, once CI on that commit is green.
+
+**What happened instead of steps 4 and 5:** the docs were never moved to Pages under this
+domain. `render.sh` builds them into each release, so `evals.humancopilot.eu/docs` is served by
+the VPS. The Pages site has no custom domain (`gh api repos/chipi/eval-harness/pages`: `cname`
+null) and is published, at `chipi.github.io/eval-harness`, only when `pages.yml` is dispatched
+by hand; `DOCS_ON_OWN_DOMAIN` is unset.
 
 **Rollback:**
 - a bad release: re-run an older successful `deploy-prod` run (it redeploys that sha), or
   `git revert` on `main`;
 - one host off the edge: remove its name from `enabled.txt` and push;
-- the docs back off their domain: set the Pages custom domain back and unset
-  `DOCS_ON_OWN_DOMAIN`;
 - stop pushes deploying: `gh variable delete PROD_AUTO_DEPLOY -R chipi/eval-harness`.

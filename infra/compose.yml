@@ -82,8 +82,8 @@ services:
       - "8080"
       - --rate
       - "60"
-      # Behind Cloudflare with origin lock (nginx allows Cloudflare's ranges only): the header is
-      # Cloudflare's, so it names the visitor.
+      # The header Cloudflare sets. It names the visitor because the provider's firewall lets only
+      # Cloudflare reach 443; nothing here enforces that (infra/README.md, evals-inspector).
       - --client-header
       - CF-Connecting-IP
       # The example runs' outputs are already public in the repository; their gold references

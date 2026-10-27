@@ -27,7 +27,15 @@ on:
   push:
     branches: [main]
     paths:
-      - "site/public/**"
+      # The site, its build hooks and analytics tag; the docs (built into the release by
+      # render.sh and served from the VPS at /docs/), the changelog they include, and the
+      # examples whose METRIC_DESCRIPTIONS the catalog's metric pages read.
+      - "site/**"
+      - "docs/**"
+      - "harness/docs/**"
+      - "harness/CHANGELOG.md"
+      - "mkdocs.yml"
+      - "examples/**"
       - "harness/scripts/**"
       # The inspector is the package, installed from its wheel (render.sh): what builds it.
       - "harness/pyproject.toml"

@@ -1,15 +1,10 @@
-# Publish the DOCUMENTATION to GitHub Pages, at evals.humancopilot.eu/docs:
+# The DOCUMENTATION (docs/ + harness/docs/ through mkdocs.yml), built in strict mode on every
+# pull request and push that touches it, so a broken link fails the checks before the merge.
 #
-#   /   mkdocs.yml   the documentation (docs/ + harness/docs/), built here
-#
-# The harness site (evals.humancopilot.eu) and the catalog with its run inspector
-# (evals.humancopilot.eu/catalog) are served from the prod VPS by deploy-prod.yml; only the
-# docs stay here. The docs are built in strict mode, so a broken link fails the deploy instead
-# of shipping, and on every pull request too, so it fails the PR's checks before the merge
-# rather than the deploy after it. A pull request only builds; only a push to main deploys.
-#
-# One-time setup: Settings -> Pages -> Source: "GitHub Actions", custom domain
-# evals.humancopilot.eu/docs (DNS: a CNAME to chipi.github.io, not proxied).
+# evals.humancopilot.eu/docs is NOT served from here: infra/deploy/render.sh builds the docs
+# into each prod release and deploy-prod.yml ships them with the site and the catalog. This
+# workflow publishes to GitHub Pages (chipi.github.io/eval-harness, no custom domain) only when
+# dispatched by hand, or on a push once DOCS_ON_OWN_DOMAIN is "true" (it is unset).
 name: pages
 
 on:
