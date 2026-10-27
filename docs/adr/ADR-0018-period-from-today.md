@@ -24,8 +24,8 @@ this decision carries, ADR-0018, follows the 0.5.0 drafts on the `050` branch.)
   a period is fixed in the build.
 - **One builder per page.** `catalog_build.period_datasets`, `period_goals`,
   `period_references`, `period_metrics`, `period_activity` and `catalog_arms.period_arms` give
-  each page's rows; the page writes them, and `evh <page> --period P` reads the same ones and
-  computes the period with `catalog_periods` (the same periods and trends). The browser check
+  each page's rows; the page writes them, and the list commands (`evh datasets --period P`, `evh goals`, `evh arms`, ...) read the same ones and
+  compute the period with `catalog_periods` (the same periods and trends). The browser check
   holds the two to the same bounds on 118 days and the same tile numbers.
 - **The period travels in the link** (`#p30d`), never in storage: nothing is remembered between
   visits.
