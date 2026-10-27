@@ -16,12 +16,12 @@ NOISE ?=
 TIER ?= silver
 
 .PHONY: help demo init env-check install venv-init catalog catalog-serve \
-        overview datasets arms references metrics goals inspect round-open round-retire round-close rounds \
+        overview activity datasets arms references metrics goals inspect round-open round-retire round-close rounds \
         dataset-create dataset-materialize reference-create \
         holdout pair-test rank-stability \
         experiment-dry-run experiment-run sweep \
         runs-list baselines-list run-compare leaderboard run-promote \
-        validate judge judge-score check guide-check browser-install browser-check ci test smoke-fixture cost-report clean clean-cache \
+        validate judge judge-score check guide-check browser-install browser-check budget-check browser-real-check guard-check commands-check coverage ci test smoke-fixture cost-report clean clean-cache \
         bootstrap-test family-test import-run rescore silver-calibrate site site-check docs
 
 # ── getting started ─────────────────────────────────────────────────────────
@@ -102,8 +102,43 @@ browser-install:
 	$(VENV)/bin/pip install -q -r requirements-browser.txt
 	$(VENV)/bin/python -m playwright install chromium $(ARGS)
 
+# The inspector's budgets on this repository's runs: memory under --warm (prod's limit is 256 MiB)
+# and how long an answer takes, cached and cold (tests/test_inspector_budget.py).
+budget-check:
+	$(PYTHON) tests/test_inspector_budget.py $(ARGS)
+
 browser-check:
 	$(PYTHON) tests/test_inspector_browser.py
+
+# The catalog of this repository's own runs in Chromium (tests/test_catalog_real_browser.py): the
+# pages at the size the deployment serves. Reuses budget-check's catalog, else builds it.
+browser-real-check:
+	@test -f .build/budget-catalog/index.html || $(PYTHON) scripts/catalog_build.py --out .build/budget-catalog
+	$(PYTHON) tests/test_catalog_real_browser.py --catalog .build/budget-catalog
+
+# The checks can fail: every checker, run once over a copy of the repository with all its planted
+# defects, must name each one (tests/test_checks_can_fail.py). Not in `make ci`: it proves the
+# checkers' code, so CI runs it when that code changes (.github/workflows/guards.yml).
+guard-check:
+	$(PYTHON) tests/test_checks_can_fail.py
+
+# The report tools and the operational commands, run as a user runs them, on data where the answer
+# is known (tests/test_report_tools.py, tests/test_ops_commands.py). A few minutes, so not in
+# `make ci`: CI runs it as its own job, beside verify.
+commands-check:
+	$(PYTHON) tests/test_report_tools.py
+	$(PYTHON) tests/test_ops_commands.py
+
+# Line coverage under the whole self-test and commands-check, subprocesses included (pyproject.toml's
+# [tool.coverage.*]): which code no test runs. Needs `coverage` (requirements-dev.txt). Measured on
+# demand, not a gate; harness/docs/TESTING.md records the last result.
+coverage:
+	rm -rf .build/coverage && mkdir -p .build/coverage
+	-HARNESS=$(CURDIR) COVERAGE_FILE=$(CURDIR)/.build/coverage/data $(PYTHON) -m coverage run tests/self_test.py > .build/coverage/self_test.log 2>&1
+	-HARNESS=$(CURDIR) COVERAGE_FILE=$(CURDIR)/.build/coverage/data $(PYTHON) -m coverage run tests/test_report_tools.py > .build/coverage/report_tools.log 2>&1
+	-HARNESS=$(CURDIR) COVERAGE_FILE=$(CURDIR)/.build/coverage/data $(PYTHON) -m coverage run tests/test_ops_commands.py > .build/coverage/ops_commands.log 2>&1
+	HARNESS=$(CURDIR) COVERAGE_FILE=$(CURDIR)/.build/coverage/data $(PYTHON) -m coverage combine -q
+	HARNESS=$(CURDIR) COVERAGE_FILE=$(CURDIR)/.build/coverage/data $(PYTHON) -m coverage report
 
 # A new project beside this checkout: make init DIR=../my-evals ARGS=--tutorial
 init:
@@ -268,6 +303,9 @@ catalog-serve: catalog
 # the same adapter and the same computation, so a number here is the number on the page.
 overview:
 	$(PYTHON) scripts/view_overview.py $(ARGS)
+
+activity:
+	$(PYTHON) scripts/view_activity.py $(ARGS)
 
 arms:
 	$(PYTHON) scripts/view_arms.py $(if $(DATASET_ID),--dataset-id $(DATASET_ID),) $(if $(ARM),--arm $(ARM),) $(ARGS)

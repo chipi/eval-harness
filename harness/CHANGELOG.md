@@ -9,6 +9,78 @@ The version lives in `scripts/_version.py`; a release is the git tag `v<version>
 release workflow refuses a tag that disagrees with that file or has no section here. A change
 that can move a result is never a patch release without saying so under **Changed**.
 
+## 0.4.2 — 2026-10-27
+
+A catalog that says what changed, and where: every count on the home page has a trend and opens a
+page that shows the rows behind it, for the same period. An activity page and an arms and configs
+page. No result moves.
+
+### Added
+
+- **A period on every page, counted from today.** Four chips (14 days, 30 days, this month, all
+  time) and a list with the rest (7 and 90 days, this and last week, last month, this year); the
+  browser works it out from the viewer's date, so a catalog built days ago still shows this week.
+  A trend compares with the same days of the period before. The period travels in the link
+  (`datasets.html#p30d`). On the goals, datasets, arms, references and metrics pages a row made
+  in the period has a **new** badge, chips keep only the new or the active rows, and in-period
+  columns give the runs and spend with their trend (▲ 12%, ▼ 31%, ▲ from 0) and a line of runs
+  per day. The goals page lists what happened to each goal (baselines, rounds).
+- **The activity page** (`activity.html`, `evh activity`): the home page's charts at full width,
+  and the period's runs, spend and tokens by dataset, by arm and by kind of call, the busiest
+  first. The measured runs, billed and tokens tiles open it.
+- **The arms and configs page** (`arms.html`): every arm, saying how it was measured (measured,
+  rescored against a reference, judged by a scorer, re-parsed, run again), grouped by dataset,
+  config, model, provider or what it is scored against, filtered to local or hosted arms or a
+  price tier, with its role in each goal's decision; tick arms on one dataset to open them in the
+  inspector. Every config across the datasets it ran on, with its rank on each goal. What changed
+  for arms in the period, and each goal's trade-off charts. The arms tile opens it; the configs
+  tile opens it grouped by config.
+- **`--period P` on every list**: `evh datasets`, `goals`, `references`, `metrics`, `arms` print
+  the page's period columns. `evh arms` lists the arms page's rows (`--by`, `--where`, `--tier`)
+  and `--configs` the configs. Each page's period numbers come from one builder the page and the
+  command both read.
+- **Adapter:** `dataset_created(dataset)`, optional: the day a dataset counts as new (else its
+  first run). `spend()` events may name a measured run's `arm`, which the arms and activity pages
+  bill it to; `HarnessAdapter` does.
+- **Grouping on the datasets page (by goal) and the metrics page (by role: decides, weighs,
+  describes)**, as the arms page groups; one script (`group.js`) groups and filters all three.
+- **The arms page filters on quality and on weights:** ties the leader or below it (the arm's place
+  in a goal's decision), and open weights or proprietary. `evh arms --quality ties|below` and
+  `--weights open|proprietary` list the same.
+- **`data/models.yaml`** (optional, `schemas/models.schema.json`, validate V1): each model's
+  weights, open or proprietary, and licence, keyed by the model a run records. The adapter's
+  optional `model_facts()` reads it.
+- **A derived arm says how far it moved** from the config's measured arm on the same dataset
+  (rescored, re-parsed, run again: "0.712 → 0.745 (+0.033) vs measured", in `evh arms` too).
+- **An arm a goal leaves out for a limit it breaks is badged "over a limit"**, not "not eligible".
+- **`evh catalog-serve --hooks FILE.py|MODULE`**: a deployment's error reporting, tracing or
+  metrics, on a generic hook point (`start`, `request`, `error`, extra `routes` such as
+  `/metrics`). The harness ships no tracker and depends on none; without `--hooks` nothing
+  changes. This repository's deployment uses it (`infra/inspector/hooks.py`).
+
+### Changed
+
+- **The home page's tiles carry trends.** Measured runs, billed and tokens show the period's
+  total, ▲/▼ % against the period before and a line per day; goals, datasets, configs, arms,
+  references and metrics show the total and how many are new. The tiles are grouped and coloured
+  by subject (goals; data; experiments; work and spend), with a legend; never red or green for a
+  direction. The charts and the feed follow the period.
+- **The menu is grouped by the same subjects:** Overview, Goals, Data (Datasets, References),
+  Experiments (Arms, Configs, Metrics), Activity, Inspector; a phone's menu lists every page.
+- **`evh overview --period P`** prints the tiles and trends; `--all` is gone (`--period all`).
+- **The activity page and `evh activity` list what moved most first** against the period before
+  (up or down), then the busiest; for all time, the busiest.
+- **"What changed in the period" on the arms page folds** three or more arms of one dataset
+  re-measured the same way on one day into one line ("12 arms on `<dataset>`").
+- **A period select never makes a page wider than a phone**, however long its options.
+
+### Fixed
+
+- **`evh bootstrap-test` and this repository's report tools refuse when the gold references are
+  not on the machine** (the repository commits their checksums only): they name the fetch step.
+  The extraction and retrieval reports printed tables of zeros instead, as if they were results,
+  and the classification report died with a traceback.
+
 ## 0.4.1 — 2026-10-27
 
 A catalog that works on a phone and sits inside a deployment's own site, and an inspector that

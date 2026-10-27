@@ -1,0 +1,61 @@
+# The checks can fail: every checker, run once over a copy of the repository with all of its
+# planted defects, must name each one (harness/tests/test_checks_can_fail.py, `make guard-check`).
+#
+# It proves the checkers' code, so it runs the guard only when that code changes: the checkers
+# (harness/tools/, harness/scripts/validate_tree.py), the harness package they import
+# (harness/scripts/), the validation policy and schemas, or this test. A change to the reports,
+# the runs or the docs is checked by `make verify` in reproduce.yml and does not need it.
+#
+# The workflow itself runs on every pull request and push, and passes at once when nothing it
+# guards changed, so `guards` always reports and can be a required check (a path-filtered
+# workflow that does not run leaves a required check waiting forever).
+#
+# No secrets, nothing paid: safe on pull requests from forks.
+name: guards
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: guards-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  guards:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Did a checker change?
+        id: changed
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          guarded='^(harness/(tools|scripts|schemas)/|harness/data/validate\.json$|harness/tests/test_checks_can_fail\.py$|\.github/workflows/guards\.yml$)'
+          if [ -z "$BASE" ] || ! git cat-file -e "${BASE}^{commit}" 2>/dev/null; then
+            echo "no base to compare with (a dispatch, a new branch): the guard runs"
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          elif git diff --name-only "$BASE" HEAD | grep -E "$guarded"; then
+            echo "^ guarded files changed: the guard runs"
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "no checker or harness code changed since ${BASE:0:7}: nothing for the guard to prove"
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/setup-python@v5
+        if: steps.changed.outputs.run == 'true'
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: harness/requirements.txt
+      - name: make guard-check
+        if: steps.changed.outputs.run == 'true'
+        run: make guard-check

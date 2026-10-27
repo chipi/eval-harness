@@ -255,6 +255,26 @@ try:
         "catalog: the chosen strategy, the tie-break order and the limit are shown",
         "frugal: tied" in html and "speed, cost" in html and "limit ≤ 60,000" in html,
     )
+    # A limit an arm breaks: the arms page badges it "over a limit", not "not eligible", and evh arms
+    # says the same. No arm in this repository's own data breaks a limit, so this is the proof.
+    r = evh("arms", "--quality", "ties")
+    check(
+        "evh arms --quality ties: the goal's quality leader, and no arm it ranks below",
+        r.returncode == 0 and "leader" in r.stdout and "no arm matches" not in r.stdout,
+        r.stdout[-500:] + r.stderr[-300:],
+    )
+    goal_path.write_text(
+        original.replace("  min_items: 6\n", "  min_items: 6\n  axes: {quality: {limit: 0.99}}\n")
+    )
+    evh("catalog")
+    arms_page = (proj / ".build/catalog/arms.html").read_text()
+    r = evh("arms")
+    check(
+        "catalog: an arm below the goal's quality limit is badged over a limit, on the page and in evh arms",
+        '<span class="role">over a limit</span>' in arms_page and "over a limit" in r.stdout,
+        r.stdout[-500:] + r.stderr[-300:],
+    )
+    goal_path.write_text(original)
     for bad, why in (
         ("  secondary:\n    - {measure: rouge1, direction: higher}\n", "the old secondary key (now axes)"),
         ("  tie_break: [carbon]\n", "a tie-break naming an axis the goal does not weigh"),

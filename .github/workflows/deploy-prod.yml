@@ -11,8 +11,11 @@ name: Deploy evals to prod VPS
 #   secrets.PROD_SSH_PRIVATE_KEY   CI-only ed25519 key; public half in deploy@'s authorized_keys
 #   secrets.TS_OAUTH_CLIENT_ID     Tailscale OAuth client (tag:gha-deployer)
 #   secrets.TS_OAUTH_SECRET
-#   vars.PROD_TAILNET_FQDN         MagicDNS name of the VPS
+#   vars.PROD_TAILNET_FQDN         MagicDNS name of the VPS; its domain part also names the tailnet's
+#                                  VictoriaTraces node, so no tailnet name is committed
 #   vars.PROD_SSH_HOST_KEY         the VPS's host key, pinned
+#   secrets.EVALS_SENTRY_DSN_INSPECTOR  optional: the inspector's GlitchTip DSN (without it, no
+#                                  error reporting; traces and /metrics still on)
 # This repository is public: nothing here runs for a pull request, the job only runs on
 # refs/heads/main, and the environment's branch rule keeps the secrets from any other ref.
 #
@@ -114,6 +117,55 @@ jobs:
           rsync -a --delete --mkpath --link-dest=/srv/evals/current/ \
             -e "ssh -i $SSH_PROD_IDENTITY -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o BatchMode=yes" \
             _release/ "$TARGET:/srv/evals/releases/$SHA/"
+
+      # The inspector's observability settings, rendered from the environment on every deploy, as
+      # podcast_scraper renders its .env (#841): nothing is committed and nothing is left on the box
+      # by hand. Two keys only. Written in /dev/shm, copied to a staged file, moved into place (the
+      # rename is atomic: /srv/evals is deploy's). Mode 640, deploy:deploy; the inspector reads it
+      # through group_add 1001 (infra/compose.yml), so no other account on the box can. A dry run
+      # changes nothing on the box, so it skips this.
+      - name: Stage the inspector's observability settings
+        if: ${{ !inputs.dry_run }}
+        env:
+          TARGET: deploy@${{ vars.PROD_TAILNET_FQDN }}
+          PROD_TAILNET_FQDN: ${{ vars.PROD_TAILNET_FQDN }}
+          SENTRY_DSN_INSPECTOR: ${{ secrets.EVALS_SENTRY_DSN_INSPECTOR }}
+        run: |
+          set -euo pipefail
+          set +x
+          domain="${PROD_TAILNET_FQDN#*.}"
+          if [ -z "$domain" ] || [ "$domain" = "$PROD_TAILNET_FQDN" ]; then
+            echo "::error::cannot build the traces endpoint: PROD_TAILNET_FQDN has no domain part"
+            exit 1
+          fi
+          case "$SENTRY_DSN_INSPECTOR" in
+            *$'\n'* | *$'\r'*) echo "::error::EVALS_SENTRY_DSN_INSPECTOR holds a line break"; exit 1 ;;
+          esac
+          tmp="$(mktemp -p /dev/shm evals-obs.XXXXXX)"
+          trap 'shred -u "$tmp" 2>/dev/null || rm -f "$tmp"' EXIT
+          chmod 600 "$tmp"
+          {
+            if [ -n "$SENTRY_DSN_INSPECTOR" ]; then
+              printf '%s=%s\n' SENTRY_DSN "$SENTRY_DSN_INSPECTOR"
+            fi
+            printf '%s=%s\n' OTEL_EXPORTER_OTLP_TRACES_ENDPOINT "https://vtraces.${domain}/insert/opentelemetry/v1/traces"
+          } > "$tmp"
+          [ -n "$SENTRY_DSN_INSPECTOR" ] \
+            || echo "::warning::EVALS_SENTRY_DSN_INSPECTOR is not set: the inspector reports no errors to GlitchTip"
+          opts=(-i "$SSH_PROD_IDENTITY" -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o BatchMode=yes)
+          # Born 640 (umask 027), never readable by others even for a moment: scp would create it with
+          # deploy's default mode and chmod it after.
+          ssh "${opts[@]}" "$TARGET" 'umask 027 && cat > /srv/evals/.observability.env.staged' < "$tmp"
+          # The check prints the mode, the owner and the key names, never a value; it fails when the
+          # file's group is not the one infra/compose.yml's group_add names (1001), or the inspector
+          # would silently lose its settings.
+          ssh "${opts[@]}" "$TARGET" 'set -eu
+            mv -f /srv/evals/.observability.env.staged /srv/evals/observability.env
+            stat -c "observability.env: %a %U:%G" /srv/evals/observability.env
+            echo "keys: $(cut -d= -f1 /srv/evals/observability.env | tr "\n" " ")"
+            [ "$(stat -c %a /srv/evals/observability.env)" = 640 ] || { echo "::error::observability.env is not mode 640"; exit 1; }
+            [ "$(stat -c %g /srv/evals/observability.env)" = 1001 ] \
+              || { echo "::error::observability.env gid is not 1001 (group_add in infra/compose.yml)"; exit 1; }'
 
       - name: Activate on the VPS
         env:

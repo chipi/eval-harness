@@ -182,6 +182,9 @@ class Adapter(Protocol):
     # scored against different references can still be compared on it. When absent, a metric
     # whose name contains cost, latency or tokens is taken to need none.
     # def reference_free(self, metric: str) -> bool: ...
+    # Optional: what each model's weights are, {model: {"weights": "open" | "proprietary",
+    # "licence": ...}}, keyed by the model a run records; the arms page filters on it.
+    # def model_facts(self) -> dict[str, dict]: ...
     # Optional: experiment rounds (ADR-0004), each round's record with "arms", the arm ids in play;
     # a goal page shows them as its history.
     # def rounds(self) -> list[dict]: ...
@@ -190,6 +193,9 @@ class Adapter(Protocol):
     # Optional: the version a dataset was made from, {"dataset_id", "added", "removed",
     # "changed"} (item id lists), or None; the dataset pages link the versions both ways.
     # def dataset_lineage(self, dataset: str) -> Optional[dict]: ...
+    # Optional: when a dataset was frozen (ISO); the home page counts it new from that day, and
+    # from its first run when this is absent or "".
+    # def dataset_created(self, dataset: str) -> str: ...
     # Optional: an arm's runs, oldest first, [{"run_id", "created_at", "items", "cost_usd",
     # "derived"}] ("derived": "" for a measured run, else how it was made: rescore, judge,
     # reparse); the arm page lists them and the home page's activity counts them.
@@ -198,8 +204,8 @@ class Adapter(Protocol):
     # credentials; the arm page shows it.
     # def arm_config(self, arm: str) -> dict: ...
     # Optional: what was spent and when, [{"at", "usd", "tokens", "kind": "arm" | "judge",
-    # "dataset", "what"}] (usd or tokens None when unknown), each measured run and each judging
-    # day once; the home page's spend chart, in USD or in tokens.
+    # "dataset", "what", "arm" (a measured run's arm, optional)}] (usd or tokens None when unknown), each measured run and each judging
+    # day once; the home page's spend chart, in USD or in tokens, and the activity page per arm.
     # def spend(self) -> list[dict]: ...
 
 
@@ -284,14 +290,15 @@ class HarnessAdapter:
         refs: dict[Path, str] = {}
         made: dict[Path, str] = {}
         # Every run seen, before any is set aside below: what was billed counts them all.
-        self._every: list[tuple[str, Path, dict]] = []
+        self._every: list[tuple[str, Path, dict, str]] = []
         for base in bases:
             for d, m in runs_on(runs_dir=base):
                 if not m.get("dataset_id"):
                     continue
                 rel = base.relative_to(self.data_dir).as_posix()
-                self._every.append((m["dataset_id"], d, m))
-                out.setdefault(f"{rel}/{m['dataset_id']}/{m['config_id']}", []).append(d)
+                arm = f"{rel}/{m['dataset_id']}/{m['config_id']}"
+                self._every.append((m["dataset_id"], d, m, arm))
+                out.setdefault(arm, []).append(d)
                 refs[d] = ((m.get("fingerprint") or {}).get("data") or {}).get("reference_id") or ""
                 made[d] = m.get("created_at") or ""
         # ONE REFERENCE PER ARM: the one its latest run was scored against. An arm's runs were
@@ -629,6 +636,15 @@ class HarnessAdapter:
         return {k: vs[0] if len(vs) == 1 else "varies: " + " | ".join(vs) for k, vs in seen.items()}
 
     @_memo
+    def model_facts(self) -> dict[str, dict]:
+        """data/models.yaml's models (models.schema.json), {} without it."""
+        import yaml  # noqa: PLC0415
+
+        f = self.data_dir / "models.yaml"
+        doc = yaml.safe_load(f.read_text(encoding="utf-8")) if f.is_file() else None
+        return (doc or {}).get("models") or {} if isinstance(doc, dict) else {}
+
+    @_memo
     def rounds(self) -> list[dict]:
         """Experiment rounds (ADR-0004, optional): each round's record, plus "arms" (the arm ids in
         play: runs in any runs directory that name it, and the configs carried in, less the retired)
@@ -698,6 +714,12 @@ class HarnessAdapter:
         got = ds.get("derived_from") if isinstance(ds, dict) else None
         return got if isinstance(got, dict) and got.get("dataset_id") else None
 
+    def dataset_created(self, dataset: str) -> str:
+        """When the dataset was frozen (`created_at`), or "" when its file does not say."""
+        ds = _json(self.data_dir / "datasets" / f"{dataset}.json")
+        got = ds.get("created_at") if isinstance(ds, dict) else None
+        return got if isinstance(got, str) else ""
+
     # -- runs, configs and spend ---------------------------------------------------------
     def arm_runs(self, arm: str) -> list[dict]:
         """The arm's runs, oldest first: when each was made, its items, what it cost, and how
@@ -736,7 +758,7 @@ class HarnessAdapter:
         when its adapter reports them; an unpriced call has tokens and no USD."""
         self._index()
         out = []
-        for ds, d, m in self._every:
+        for ds, d, m, arm in self._every:
             sc = m.get("scores") or {}
             usd = _number(sc.get("total_cost_usd"))
             tokens = _tokens(sc.get("total_tokens_in"), sc.get("total_tokens_out"))
@@ -750,6 +772,7 @@ class HarnessAdapter:
                     "kind": "arm",
                     "dataset": ds,
                     "what": d.name,
+                    "arm": arm,
                 }
             )
         sets = self.data_dir / "judging-sets"

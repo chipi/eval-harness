@@ -1,11 +1,17 @@
 """The catalog and the inspector, in the terminal: every page and comparison as a command.
 
-    evh overview   [--all]                           the home page: counts, goals at a glance, activity, spend, coverage, what was recorded
+    evh overview   [--period P]                      the home page: tiles with trends, goals at a glance, activity, spend, coverage
     evh datasets   [--dataset-id ID]                 every dataset, or one: arms, references, versions
     evh arms       [--dataset-id ID] [--arm ID]      every arm, or one: its metrics, runs, config, conditions, rounds
+                   [--by G] [--where W] [--tier T] [--weights K] [--quality Q] [--configs]
+                                                     the arms page: grouped, filtered; the configs
     evh references [--reference-id ID]               every reference, or one: who wrote it, what is scored against it
     evh metrics    [--dataset-id ID] [--metric M]    what each metric measures, or one in full with the arms recording it
     evh goals      [--goal ID]                       every goal, or one: its answer on each of its datasets
+    evh activity   [--period P]                      runs, spend and tokens by dataset, arm and kind, against the period before
+
+Every list (datasets, arms, references, metrics, goals) takes --period P too: the page's columns
+for that period, counted from today, with their trends against the period before.
     evh inspect    --runs A,B,... [--baseline A]     the inspector's comparison: verdicts, conditions, a breakdown
                    [--metric M] [--where F:V] [--by F] [--item ITEM] [--items] [--analysis [--x M]]
     evh search     TEXT                              the catalog's search box: datasets, arms, references, metrics, goals
@@ -28,8 +34,10 @@ import argparse
 import statistics
 import sys
 import textwrap
+from datetime import date
 
 from evaluation_harness import catalog_build as cb
+from evaluation_harness import catalog_periods as cp
 from evaluation_harness import catalog_serve as cs
 from evaluation_harness._common import die
 from evaluation_harness.axes import (
@@ -73,14 +81,61 @@ def _adapter(args):
     return A, cb.collect(A)
 
 
+def _period_option(ap) -> None:
+    """--period: the page's period columns, counted from today (catalog_periods.PERIODS)."""
+    ap.add_argument(
+        "--period",
+        choices=[k for k, *_ in cp.PERIODS],
+        help="add the page's columns for a period counted from today: "
+        + ", ".join(f"{k} ({label})" for k, label, _ in cp.PERIODS),
+    )
+
+
+def _period(A, by_ds: dict, rows: dict, key: str | None) -> tuple:
+    """(each row's period numbers, a line saying the period and what trends compare with), or
+    ({}, "") without --period."""
+    if not key:
+        return {}, ""
+    first = cb.window(A, by_ds)["first"]
+    b = cp.bounds(key, date.today(), first)
+    label, against = next((lb, ag) for k, lb, ag in cp.PERIODS if k == key)
+    line = f"{label}, {b['since']} to {b['until']}" + (
+        f"; ▲▼ against {against}, {b['prev'][0]} to {b['prev'][1]}" if b["prev"] else ""
+    )
+    return cp.in_period(rows, key, date.today(), first), line
+
+
+def _pcells(p: dict, flows: tuple) -> list:
+    """A row's period cells: new, then each flow with its trend (usd as money, tokens with commas)."""
+    fmts = {
+        "usd": lambda v: cb.fmt_amount(v, "usd") if v else "—",
+        "tokens": lambda v: f"{round(v):,}" if v else "—",
+    }
+    return ["new" if p["new"] else ""] + [cp.cell(p[f], p[f"{f}_prev"], fmts.get(f, str)) for f in flows]
+
+
+PERIOD_HEADS = {
+    "runs": "runs in period",
+    "arms": "arms in period",
+    "usd": "spend in period",
+    "tokens": "tokens in period",
+    "events": "changes in period",
+}
+
+
 def datasets(argv) -> int:
     """evh datasets: every dataset, or one with its versions, references and arms."""
     ap = argparse.ArgumentParser(prog="evh datasets", description="Every dataset, or one in full.")
     ap.add_argument("--dataset-id", help="one dataset: its versions, references and arms")
+    _period_option(ap)
     ap.add_argument("--adapter", help="path/to/file.py:Class (default: the catalog's)")
     args = ap.parse_args(argv)
     A, by_ds = _adapter(args)
     if not args.dataset_id:
+        per, line = _period(A, by_ds, cb.period_datasets(A, by_ds), args.period)
+        flows = ("runs", "usd")
+        if line:
+            print(line)
         rows = [
             [
                 ds,
@@ -89,10 +144,12 @@ def datasets(argv) -> int:
                 cb._n_configs({ds: v}),
                 ", ".join(r["id"] for r in v["refs"]) or "—",
                 (v.get("parent") or {}).get("dataset_id", ""),
+                *(_pcells(per[ds], flows) if per else []),
             ]
             for ds, v in sorted(by_ds.items())
         ]
-        _table(["dataset", f"{A.item_word}s", "arms", "configs", "references", "made from"], rows)
+        heads = ["dataset", f"{A.item_word}s", "arms", "configs", "references", "made from"]
+        _table(heads + (["", *(PERIOD_HEADS[f] for f in flows)] if per else []), rows)
         return 0
     v = by_ds.get(args.dataset_id)
     if v is None:
@@ -207,15 +264,28 @@ def references(argv) -> int:
     ap.add_argument(
         "--reference-id", help="one reference: who wrote it, from which run, what is scored against it"
     )
+    _period_option(ap)
     ap.add_argument("--adapter", help="path/to/file.py:Class (default: the catalog's)")
     args = ap.parse_args(argv)
     A, by_ds = _adapter(args)
     refs = [(ds, r) for ds, v in by_ds.items() for r in v["refs"]]
     if not args.reference_id:
+        per, line = _period(A, by_ds, cb.period_references(A, by_ds), args.period)
+        flows = ("arms", "runs")
+        if line:
+            print(line)
         _table(
-            ["reference", "tier", "dataset", f"{A.item_word}s", "written by"],
+            ["reference", "tier", "dataset", f"{A.item_word}s", "written by"]
+            + (["", *(PERIOD_HEADS[f] for f in flows)] if per else []),
             [
-                [r["id"], r["tier"], ds, r.get("items", "—"), r.get("author") or "—"]
+                [
+                    r["id"],
+                    r["tier"],
+                    ds,
+                    r.get("items", "—"),
+                    r.get("author") or "—",
+                    *(_pcells(per[r["id"]], flows) if per else []),
+                ]
                 for ds, r in sorted(refs, key=lambda x: x[1]["id"])
             ],
         )
@@ -259,6 +329,7 @@ def metrics(argv) -> int:
     ap.add_argument(
         "--metric", help="one metric in full: how it is computed, and the arms recording it, best first"
     )
+    _period_option(ap)
     ap.add_argument("--adapter", help="path/to/file.py:Class (default: the catalog's)")
     args = ap.parse_args(argv)
     A, by_ds = _adapter(args)
@@ -267,6 +338,9 @@ def metrics(argv) -> int:
     idx = cb.metric_index(A, by_ds)
     if args.metric:
         return _metric(A, by_ds, project, idx, args.metric, args.dataset_id)
+    per, line = _period(A, by_ds, cb.period_metrics(A, by_ds), args.period)
+    if line:
+        print(line + "\n")
     for m in sorted(idx, key=lambda k: (k.startswith(("total_", "self_family_", "resumed")), k)):
         where = idx[m]
         if args.dataset_id and args.dataset_id not in where["datasets"]:
@@ -283,6 +357,12 @@ def metrics(argv) -> int:
             print("    decides: " + ", ".join(g["goal_id"] for g in where["goals"]))
         if where["weighs"]:
             print("    weighed by: " + ", ".join(g["goal_id"] for g in where["weighs"]))
+        if per:
+            p = per[m]
+            print(
+                f"    in the period: {cp.cell(p['arms'], p['arms_prev'])} arms recording it"
+                + ("  [new]" if p["new"] else "")
+            )
     return 0
 
 
@@ -340,19 +420,33 @@ def overview(argv) -> int:
         prog="evh overview", description="The whole catalog at a glance, as the home page."
     )
     ap.add_argument(
-        "--all", action="store_true", help=f"all time, not the last {cb.RECENT_DAYS} days of activity"
+        "--period",
+        default=cp.DEFAULT,
+        choices=[k for k, *_ in cp.PERIODS],
+        help="counted from today: "
+        + ", ".join(f"{k} ({label})" for k, label, _ in cp.PERIODS)
+        + f"; default {cp.DEFAULT}",
     )
     ap.add_argument("--adapter", help="path/to/file.py:Class (default: the catalog's)")
     args = ap.parse_args(argv)
     A, by_ds = _adapter(args)
     w = cb.window(A, by_ds)
-    since = w["first"] if args.all else w["since"]
-    span = (
-        f"all time, since {w['first']}"
-        if args.all
-        else f"the last {cb.RECENT_DAYS} days, {w['since']} to {w['until']}"
-    )
-    print("  ".join(f"{n} {k}" for k, n, _ in cb.home_counts(A, by_ds, w["spend"])))
+    rounds_fn = getattr(A, "rounds", None)
+    data = cp.home_data(A, by_ds, w["spend"], A.goals(), rounds_fn() if callable(rounds_fn) else [])
+    today = date.today()
+    b = cp.bounds(args.period, today, data["first"])
+    since, until = b["since"], b["until"]
+    label, against = next((lb, ag) for k, lb, ag in cp.PERIODS if k == args.period)
+    span = f"{label}, {since} to {until}"
+    print(f"{span}" + (f"; trends against {against}, {b['prev'][0]} to {b['prev'][1]}" if b["prev"] else ""))
+    for t in cp.tiles(data, args.period, today):
+        if t["kind"] == "stock":
+            line = f"+{t['new']} new" if t["new"] else "none new"
+            value = str(t["value"])
+        else:
+            line = t["trend"]["text"] + (f" vs {against}" if t["trend"]["pct"] is not None else "")
+            value = cb.fmt_amount(t["value"], "usd") if t["what"] == "billed" else f"{round(t['value']):,}"
+        print(f"  {t['what']:15} {value:>16}  {line}".rstrip())
     print(
         "\ngoals at a glance (the leader of the gold group against the baseline, one test, threshold 0.05):"
     )
@@ -386,9 +480,13 @@ def overview(argv) -> int:
         )
     else:
         print("  no goals yet")
-    if since:
+    if data["first"]:
         print(f"\nactivity, {span}: measured runs per day")
-        counts = cb.activity_counts(by_ds, since)
+        counts = {
+            ds: {d: n for d, n in per.items() if d <= until}
+            for ds, per in cb.activity_counts(by_ds, since).items()
+            if any(d <= until for d in per)
+        }
         days = sorted({d for c in counts.values() for d in c})
         if days:
             _table(
@@ -405,7 +503,11 @@ def overview(argv) -> int:
         else:
             print("  none")
         for unit in cb.SPEND_UNITS:
-            per = cb.spend_by_day(w["spend"], since, unit)
+            per = {
+                name: {d: v for d, v in days_.items() if d <= until}
+                for name, days_ in cb.spend_by_day(w["spend"], since, unit).items()
+                if any(d <= until for d in days_)
+            }
             print(f"\nspend in {'USD' if unit == 'usd' else 'tokens'}, {span}:")
             if not per:
                 print("  none recorded")
@@ -443,33 +545,109 @@ def overview(argv) -> int:
 def arms(argv) -> int:
     """evh arms: every arm, or one in full as its page shows it."""
     ap = argparse.ArgumentParser(prog="evh arms", description="Every arm, or one in full.")
+    from evaluation_harness import catalog_arms as ca  # noqa: PLC0415
+
     ap.add_argument("--dataset-id", help="only the arms on this dataset")
     ap.add_argument("--arm", help="one arm in full: its arm id, or a config id (its arm under runs/)")
+    ap.add_argument(
+        "--by",
+        choices=[k for k, _ in ca.GROUPS if k],
+        help="group the arms, as the arms page does (scored: what each is scored against)",
+    )
+    ap.add_argument("--where", choices=("local", "hosted"), help="only arms run locally, or only hosted ones")
+    ap.add_argument("--tier", help="only arms of this price tier (free, small, mid, large, ...)")
+    ap.add_argument(
+        "--weights",
+        choices=("open", "proprietary"),
+        help="only arms whose model's weights are open, or proprietary (data/models.yaml)",
+    )
+    ap.add_argument(
+        "--quality",
+        choices=("ties", "below"),
+        help="only arms a goal ties with its quality leader, or only those it ranks below the leader",
+    )
+    ap.add_argument(
+        "--configs",
+        action="store_true",
+        help="one row per config across the datasets it ran on, with its rank on each goal",
+    )
+    _period_option(ap)
     ap.add_argument("--adapter", help="path/to/file.py:Class (default: the catalog's)")
     args = ap.parse_args(argv)
     A, by_ds = _adapter(args)
-    every = [
-        (ds, a)
-        for ds, v in sorted(by_ds.items())
-        for a in v["arms"]
-        if not args.dataset_id or ds == args.dataset_id
-    ]
     if not args.arm:
-        _table(
-            ["arm id", "dataset", "headline", "mean", "runs", "scored against", "last run"],
-            [
+        rows = [
+            r
+            for r in ca.arm_rows(A, by_ds)
+            if (not args.dataset_id or r["dataset"] == args.dataset_id)
+            and (not args.where or r["local"] == (args.where == "local"))
+            and (not args.tier or r["tier"] == args.tier)
+            and (not args.weights or r["weights"] == args.weights)
+            and (not args.quality or r["quality"] == f"{args.quality} the leader")
+        ]
+        if not rows:
+            why = []
+            if args.weights:
+                why.append("an arm's weights come from data/models.yaml (the adapter's model_facts)")
+            if args.quality:
+                why.append("only arms a goal's decision weighs have a place against its quality leader")
+            print("no arm matches" + (f": {'; '.join(why)}" if why else ""))
+            return 0
+        per, line = _period(A, by_ds, ca.period_arms(A, by_ds, rows), args.period)
+        flows = ("runs", "usd")
+        if line:
+            print(line)
+        heads_p = ["", *(PERIOD_HEADS[f] for f in flows)] if per else []
+        if args.configs:
+            _table(
+                ["config", "model", "provider", "datasets", "arms", "spend", "rank on each goal", *heads_p],
                 [
-                    a["arm"],
-                    ds,
-                    a["metric"] or "—",
-                    _fmt(a["mean"]),
-                    a["runs"],
-                    _scored(a),
-                    a["last"][:10] or "—",
-                ]
-                for ds, a in every
-            ],
-        )
+                    [
+                        c["config"],
+                        c["model"] or "—",
+                        c["provider"] or "—",
+                        ", ".join(c["datasets"]),
+                        c["arms"],
+                        cb.fmt_amount(c["usd"], "usd") if c["usd"] else "—",
+                        "; ".join(f"{g['goal_id']} #{i} of {n}" for g, _d, i, n in c["ranks"]) or "—",
+                        *(_pcells(per[f"c:{c['config']}"], flows) if per else []),
+                    ]
+                    for c in ca.config_rows(A, by_ds, rows, cb.window(A, by_ds)["spend"])
+                ],
+            )
+            return 0
+        key = {"scored": "scored"}.get(args.by or "", args.by or "")
+        groups: dict = {}
+        for r in rows:
+            groups.setdefault(r[key] if key else "", []).append(r)
+        for name in sorted(groups):
+            if key:
+                print(f"\n{dict(ca.GROUPS)[key]} {name or '—'} ({len(groups[name])} arms)")
+            _table(
+                [
+                    "arm id",
+                    "how measured",
+                    "dataset",
+                    "model",
+                    "provider",
+                    "role",
+                    "deciding measure",
+                    *heads_p,
+                ],
+                [
+                    [
+                        r["arm"],
+                        r["how"] + (f" ({r['moved']:+.3f} vs measured)" if r["moved"] is not None else ""),
+                        r["dataset"],
+                        r["model"] or "—",
+                        (r["provider"] or "—") + (" (local)" if r["local"] else ""),
+                        ", ".join(dict.fromkeys(r["roles"])) or "—",
+                        f"{r['measure']} {_fmt(r['value'])}" if r["measure"] else "—",
+                        *(_pcells(per[r["arm"]], flows) if per else []),
+                    ]
+                    for r in groups[name]
+                ],
+            )
         return 0
     want = _arm_ids(A, [args.arm], "runs")[0]
     hit = next(((ds, a) for ds, v in by_ds.items() for a in v["arms"] if a["arm"] == want), None)
@@ -568,14 +746,21 @@ def goals(argv) -> int:
         prog="evh goals", description="Every goal, or one with its answer per dataset."
     )
     ap.add_argument("--goal", help="one goal: what it is for, and its arms on each dataset")
+    _period_option(ap)
     ap.add_argument("--adapter", help="path/to/file.py:Class (default: the catalog's)")
     args = ap.parse_args(argv)
     A, by_ds = _adapter(args)
     gs = A.goals()
     if not args.goal:
         seen = cb.glance(A, by_ds)
+        rows_p = cb.period_goals(A, by_ds)
+        per, line = _period(A, by_ds, rows_p, args.period)
+        flows = ("runs", "usd", "events")
+        if line:
+            print(line)
         _table(
-            ["goal", "decides", "datasets", "configs filed", "recommended", "title"],
+            ["goal", "decides", "datasets", "configs filed", "recommended", "title"]
+            + (["", *(PERIOD_HEADS[f] for f in flows)] if per else []),
             [
                 [
                     g["goal_id"],
@@ -590,10 +775,27 @@ def goals(argv) -> int:
                     )
                     or "none yet",
                     g.get("title", ""),
+                    *(_pcells(per[g["goal_id"]], flows) if per else []),
                 ]
                 for g in gs
             ],
         )
+        if per:
+            b = cp.bounds(args.period, date.today(), cb.window(A, by_ds)["first"])
+            happened = sorted(
+                (
+                    (day, g["goal_id"], cb.plain(h))
+                    for g in gs
+                    for day, h in rows_p[g["goal_id"]]["events"]
+                    if b["since"] <= day <= b["until"]
+                ),
+                reverse=True,
+            )
+            print("\nwhat happened in the period:")
+            if happened:
+                _table(["when", "goal", "what"], [list(x) for x in happened])
+            else:
+                print("  nothing")
         return 0
     g = next((x for x in gs if x["goal_id"] == args.goal), None)
     if g is None:
@@ -999,6 +1201,71 @@ def _analysis(d: dict, label: dict, xmetric: str | None) -> None:
             _table(["arm", d["metric"], xm, "items"], rows)
 
 
+def activity(argv) -> int:
+    """evh activity: the activity page in the terminal."""
+    ap = argparse.ArgumentParser(
+        prog="evh activity",
+        description="Runs, spend and tokens in a period, by dataset, by arm and by kind, against the period before.",
+    )
+    ap.add_argument(
+        "--period",
+        default=cp.DEFAULT,
+        choices=[k for k, *_ in cp.PERIODS],
+        help=f"counted from today; default {cp.DEFAULT}",
+    )
+    ap.add_argument(
+        "--arms",
+        type=int,
+        default=20,
+        help="how many arms to list, what moved most against the period before first (default 20)",
+    )
+    ap.add_argument("--adapter", help="path/to/file.py:Class (default: the catalog's)")
+    args = ap.parse_args(argv)
+    A, by_ds = _adapter(args)
+    rows = cb.period_activity(A, by_ds)
+    per, line = _period(A, by_ds, rows, args.period)
+    print(line)
+    flows = ("runs", "usd", "tokens")
+
+    def busy(prefix: str) -> list:
+        # What moved most against the period before first, up or down (as the page sorts), then the
+        # busiest; for all time, with no period before, the busiest.
+        ks = [k for k in per if k.startswith(prefix)]
+
+        def moved(k: str) -> int:
+            prev = per[k]["runs_prev"]
+            return 0 if prev is None else abs(per[k]["runs"] - prev)
+
+        return sorted(ks, key=lambda k: (-moved(k), -per[k]["runs"], -per[k]["usd"], k))
+
+    print("\nby dataset:")
+    _table(
+        ["dataset", "", *(PERIOD_HEADS[f] for f in flows)],
+        [[k[2:], *_pcells(per[k], flows)] for k in busy("d:")],
+    )
+    active = [k for k in busy("a:") if per[k]["runs"] or per[k]["usd"] or per[k]["tokens"]]
+    print(
+        f"\nby arm ({len(active)} active in the period; the {min(args.arms, len(active))} that moved most):"
+    )
+    if active:
+        _table(
+            ["arm", "", *(PERIOD_HEADS[f] for f in flows)],
+            [[k[2:], *_pcells(per[k], flows)] for k in active[: args.arms]],
+        )
+    else:
+        print("  none")
+    print("\nby kind:")
+    names = dict(cb.SPEND_KINDS)
+    _table(
+        ["what was billed", "", *(PERIOD_HEADS[f] for f in ("usd", "tokens"))],
+        [
+            [names[k[2:]], *_pcells(per[k], ("usd", "tokens"))]
+            for k in sorted(k for k in per if k.startswith("k:"))
+        ],
+    )
+    return 0
+
+
 def search(argv) -> int:
     """evh search: the catalog's search box, with the command that shows each hit."""
     ap = argparse.ArgumentParser(
@@ -1043,6 +1310,7 @@ VIEWS = {
     "goals": goals,
     "inspect": inspect,
     "search": search,
+    "activity": activity,
 }
 
 

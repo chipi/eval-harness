@@ -9,18 +9,24 @@
 - **Related UX specs**: [UXS-002](UXS-002-inspector.md) (the inspector, linked from every page),
   [UXS-003](UXS-003-cli-and-onboarding.md) (the same views as commands)
 - **Implementation paths**: `harness/scripts/catalog_build.py` (pages),
+  `harness/scripts/catalog_periods.py` (the periods, the tiles' trends, each row's period
+  numbers), `harness/scripts/catalog_arms.py` (the arms page),
   `harness/catalog_assets/style.css` and `catalog.css` (tokens and components),
-  `harness/catalog_assets/catalog.js` (theme, search, filter, sort, paging)
+  `harness/catalog_assets/catalog.js` (theme, search, filter, sort, paging),
+  `period.js` (the period on every page), `overview.js` (the home tiles and the charts),
+  `arms.js` (the arms page's grouping, filters and picking)
 
 ## Summary
 
 `evh catalog` builds static pages over a project's runs into `.build/catalog/`: a home page with
-the whole project at a glance, a datasets page and a page per dataset, a page per arm, a goals
-page and a page per goal, a references page and a page per reference, a metrics page and a page
-per metric, and the shell of the inspector. Every page is read-only and carries counts and means only,
-so the pages can be published. This spec describes the pages as built at 0.4.0, checked by
-building the catalog on this repository's data (6 goals, 9 datasets, 194 arms, 1 reference) and
-on a tutorial project with gold, silver and an open round.
+the whole project at a glance, an activity page, a datasets page and a page per dataset, an arms
+and configs page and a page per arm, a goals page and a page per goal, a references page and a
+page per reference, a metrics page and a page per metric, and the shell of the inspector. Every
+page is read-only and carries counts and means only, so the pages can be published. The pages a
+home tile opens carry the same period and trends as the tile ([the period](#the-period-every-listing-page)).
+This spec describes the pages as built at 0.4.2, checked by building the catalog on this
+repository's data (6 goals, 13 datasets, 313 arms, 181 configs, 15 references) and on a tutorial
+project with gold, silver and an open round.
 
 ## Principles
 
@@ -31,12 +37,17 @@ on a tutorial project with gold, silver and an open round.
 - **Rank only like with like.** Arms are ranked within a group scored against the same thing;
   a mean is never presented as a verdict.
 - **Read-only.** A decision is shown as the command that makes it.
-- **Dense, quiet, both themes.** Tables carry the data; colour marks meaning, never decoration.
+- **Dense, quiet, both themes.** Tables carry the data; colour marks meaning, never decoration:
+  a subject (goals, data, experiments, work and spend), a row's tint, a series. Never red or
+  green for a direction: a count that went up is neither good nor bad.
+- **A tile is a door.** Whatever a home tile counts, the page it opens shows in more detail, for
+  the same period.
 
 ## Scope
 
-**In scope:** the shared shell, home, dataset, goals, goal, reference and metrics pages, global
-search, table filter, sort and paging, row tints.
+**In scope:** the shared shell, the period, the home, activity, datasets, dataset, arms, arm,
+goals, goal, references, reference and metrics pages, global search, table filter, sort and
+paging, row tints.
 
 **Non-goals:** the inspector's own page (UXS-002); report rendering (the catalog renders none);
 any control that writes.
@@ -80,11 +91,14 @@ tables 15px.
 ## The shell (every page)
 
 - **Header bar:** the brand (the icon and the product's name, `--brand`, "eval catalog" by
-  default, linking to the overview); the global search ("Search ( / )"); the nav:
-  **Overview**, **Goals**, **Datasets**, **References**, **Metrics**, **Inspector**; the theme
-  toggle. On a phone the nav is a ☰ menu at the left of the bar, the name gives way to the
-  icon, and the search is a round button beside the theme toggle that opens the search box on a
-  row below the bar. The bar has the site's and the docs' geometry: 56 px high, 36 px round buttons
+  default, linking to the overview); the global search ("Search ( / )"); the nav, by the
+  subjects of the home tiles: **Overview**, **Goals**, **Data ▾** (Datasets, References),
+  **Experiments ▾** (Arms, Configs, Metrics), **Activity**, **Inspector**; the theme toggle. A
+  group opens a short list under its name and closes on a click elsewhere; the group a page
+  belongs to is underlined like a current page. On a phone the nav is a ☰ menu at the left of
+  the bar listing every page, a group's under its name; the name gives way to the icon, and the
+  search is a round button beside the theme toggle that opens the search box on a row below the
+  bar. The bar has the site's and the docs' geometry: 56 px high, 36 px round buttons
   (34 px under 375 px), 8 px apart, the same icons.
 - **Switcher (with `--link`):** the parts of the publication the catalog belongs to, in the
   order given, e.g. **Harness · Catalog · Docs**, the catalog marked, after the brand; the brand
@@ -136,15 +150,58 @@ out: "scored against silver", "scored by a judge", "wrote the reference it is sc
 The author tint wins over the others. The same classes tint the inspector's verdict rows, and
 `evh datasets --dataset-id` prints the same kind in a `row` column.
 
+## The period (every listing page)
+
+The home page, the activity page and the goals, datasets, arms, references and metrics pages
+show the same period, and the home tiles open those pages at the period picked.
+
+- **The bar, in the hero:** four chips, **14 days** (picked first), **30 days**, **this month**,
+  **all time**, then a **more…** list with the rest: last 7 and 90 days, this week, last week,
+  last month, this year. A period picked from the list shows in it, marked like a chip. Beside
+  them one line says what the trends compare with ("▲▼ compared with the 30 days before"; for all
+  time "since <first day>"); its title gives the dates. On a phone the chips scroll sideways in
+  one row.
+- **From today:** the period is worked out in the browser from the viewer's date, so "this week"
+  is this week even when the catalog was built days ago. A trend compares with the same days of
+  the period before (this month to date against the same days of last month, clamped to its end;
+  weeks start on Monday). All time has no trend.
+- **In the link:** `page.html#p30d`; a page opens at the period its link names, and every link a
+  tile or a page gives to another period page carries it. Nothing is remembered between visits.
+- **On a table of dated rows:** a **new** badge, in the colour of the table's subject, on the
+  row's name when it was made in the period (on the name's line: a long name wraps, the badge
+  never sits alone); chips over the table, **all / new in period N / active in period N**, that
+  keep only those rows (with the text filter, the paging and the sort); and in-period columns:
+  the number, its trend as **▲ 12%**, **▼ 31%**, **▲ from 0** (nothing the period before) or
+  nothing when both are zero, and under the runs a line of runs per day. A filter that leaves
+  nothing says so ("Nothing new in the last 30 days.").
+- **New** means: a dataset on its `created_at` (else its first run); an arm, a config or a metric
+  on its first run; a reference on its `created_at`; a goal on its first round or the first day
+  of its datasets.
+- **Without a script:** the chips stay hidden, the line says the page shows all time, and the
+  in-period columns hold all-time counts.
+- **Commands:** every list takes `--period P` (`evh datasets`, `goals`, `references`,
+  `metrics`, `arms`, `overview`, `activity`), with the same numbers: each page's rows in the
+  period come from one builder that the page and the command both read.
+
 ## The home page
 
-The whole project at a glance, for the last 14 days of activity or for all time.
+The whole project at a glance, for the period picked ([the period](#the-period-every-listing-page)).
 
 - Hero: kicker `catalog`, title "Every evaluation, at a glance", a dek saying every name is a
-  link, then **tiles**, each linking to its page: goals, datasets, configs, arms, references,
-  metrics, measured runs, billed (USD) and tokens. Under them the period switch, **last 14 days**
-  (shown first) or **all time**, with the dates each spans. Recent counts back 14 days from the
-  newest thing recorded, so a quiet project still shows its last burst of work.
+  link, then the period bar and the **tiles**, in four subjects, one colour each (a band on
+  top, its trend badge, its line), named in a legend under them: **goals** (goals); **data**
+  (datasets, references); **experiments** (configs, arms, metrics); **work and spend**
+  (measured runs, billed in USD, tokens). The colour says what a tile is about and nothing
+  more. Each tile opens its page at the period picked: goals, datasets, references and metrics
+  their pages; arms the arms page; configs the arms page grouped by config; measured runs,
+  billed and tokens the activity page.
+  - A **stock** tile (goals to metrics) shows the total so far, "+N new" in the period (or "none
+    new") and a line of the total growing over the period.
+  - A **flow** tile (measured runs, billed, tokens) shows the period's total, its change against
+    the period before (**▲ 12%**, **▼ 31%**, **▲ from 0**) and a line of the amount per day. The
+    badge is in the tile's colour whichever way it goes, never red or green: up is neither good
+    nor bad. The tile's title says it in full ("▲ 173% vs the 30 days before").
+  - A long number is shortened (13.7M) wherever its tile is narrow; the title keeps it exact.
 - `01 goals at a glance`: one row per goal and dataset it decides on (a dataset marked `decides: false` is left out): **goal**, **dataset**, **decides** (the
   measure, ↓ when lower is better), **baseline** (the promoted arm and its mean, or "none
   promoted"), **leader** (the best arm the goal's decision may recommend, scored against the gold group's
@@ -158,14 +215,35 @@ The whole project at a glance, for the last 14 days of activity or for all time.
   runs per day as bars stacked by dataset (repeats counted one by one); **spend**, cumulative,
   one line for the systems under test and one for the judges, with a **USD / tokens** switch.
   Tokens are tokens in plus out as each call reported them, so a local model's use counts when
-  its adapter or server reports usage. The charts start at the first day anything was recorded.
+  its adapter or server reports usage. The charts span the period (all time starts at the first
+  day anything was recorded); a period with nothing in it says so. A button under them opens the
+  activity page.
 - `03 coverage`: one row per dataset: **dataset**, **items**, **arms scored against** (gold,
   silver and judged counts), **references**, **metrics** (a count that opens to the list),
   **goals**, **last run**.
 - `04 recorded`: everything recorded, newest first: **when**, **what** (ran or rescored or judged
   an arm on a dataset, one line per arm and day; a reference made, with its author; a baseline
-  promoted; a round opened or closed; every name linked), **kind**. Paged.
-- Command: `evh overview [--all]`.
+  promoted; a round opened or closed; every name linked), **kind**. Paged. Only the period's.
+- Command: `evh overview [--period 14d|7d|30d|90d|week|lastweek|month|lastmonth|year|all]`: the
+  tiles with the same numbers and trends, then the sections, for the period from today.
+
+## The activity page
+
+When the work happened and what it cost, in the period; the measured runs, billed and tokens
+tiles open it.
+
+- Hero: kicker `activity`, "Activity and spend", a dek saying what is counted (measured runs,
+  repeats one by one; what was billed, in USD and in tokens, to the systems under test and the
+  judges), then the period bar.
+- `01 activity` and `02 spend`: the home page's two charts, each the page's full width.
+- `03 by dataset`: **dataset**, **runs in period**, **runs per day**, **spend in period**,
+  **tokens in period**; what moved most against the period before first (up or down, by runs),
+  then the busiest; for all time, which has no period before, the busiest.
+- `04 by arm`: the all / new / active chips, then **arm**, **dataset**, **runs in period** (with
+  its line), **spend in period**, **tokens in period**, in the same order. Filterable.
+- `05 by kind`: systems under test and judges: **spend in period**, **tokens in period**.
+- Command: `evh activity [--period P] [--arms N]`: the same three tables, in the same order (the N
+  arms that moved most).
 
 ## The datasets page
 
@@ -173,10 +251,14 @@ The whole project at a glance, for the last 14 days of activity or for all time.
   arm is one config on one dataset scored one way, its repeats averaged per item, exactly as
   `pair-test` reads it: a config rescored against silver or by a judge is an arm of its own."
   `evh catalog` prints the same counts, and `evh datasets` has a `configs` column beside `arms`.
-- `01 datasets`: one row per dataset, most arms first: **dataset** ("from `<parent>`" under a
-  version), **items**, **arms**, **references**, **goals**, **baseline** (the promoted arm),
-  **last run**. Filterable.
-- Command: `evh datasets`.
+- The period bar in the hero.
+- `01 datasets`: **group by** chips (no grouping, goal: a dataset under several goals is a group
+  named after all of them, one under none is "no goal"), the all / new / active chips, then one
+  row per dataset, most arms first:
+  **dataset** ("from `<parent>`" under a version; the new badge), **items**, **arms**, **runs in
+  period** (with its trend), **runs per day** (a line), **spend in period**, **references**,
+  **goals**, **baseline** (the promoted arm), **last run**. Filterable.
+- Command: `evh datasets [--period P]`.
 
 ## The dataset page
 
@@ -215,12 +297,19 @@ The whole project at a glance, for the last 14 days of activity or for all time.
 
 - Hero: kicker `goals`, "What each evaluation is for: who uses the output, the decision it
   informs, and the measure that decides. Runs name their goal in their config (`goal:`)."
-- `01 goals`: **goal** (linked), **statement**, **decides** ("<measure> (<direction>)"),
-  **datasets**, **configs filed** (configs that name the goal, each counted once however many
-  ways it was scored), **recommended** (per dataset, the arm the goal's strategy picks, with its
-  cost and speed against the baseline, as on the home page; "none yet").
+- The period bar in the hero.
+- `01 goals`: the all / new / active chips, then **goal** (linked; the new badge), **statement**
+  (a column wide enough that a row stays two or three lines), **decides** ("<measure>
+  (<direction>)"), **datasets**, **configs filed** (configs that name the goal, each counted once
+  however many ways it was scored), **runs in period** (with its line), **spend in period**,
+  **changes in period** (a count: baselines promoted, rounds opened or closed), **recommended**
+  (per dataset, the arm the goal's strategy picks, with its cost and speed against the baseline,
+  as on the home page; "none yet").
+- `02 what happened in the period`: one row per change, newest first: **when**, **goal**,
+  **what** ("baseline `<arm>`", "round r2 opened"), only the period's; "Nothing happened to a
+  goal in this period." The changes are a table of their own, not a cell: a list is not a value.
 - Empty state: "No goals yet: add `data/goals/<goal_id>.yaml` (schema: `goal.schema.json`)."
-- Command: `evh goals`.
+- Command: `evh goals [--period P]` (then "what happened in the period" under the table).
 
 ## The goal page
 
@@ -322,16 +411,69 @@ over the project's data; with a project adapter the rounds table and details sti
 ## The metrics page
 
 - Hero: kicker `metrics`, "What each number on these pages measures, which way is better, where
-  it is recorded, and which goals decide on it."
-- `01 metrics`: one row per metric (bookkeeping and totals last), its name linked to the
-  metric's own page (each row keeps the anchor `#m-<metric>`): **metric**, **what it measures** (the
+  it is recorded, and which goals decide on it.", then the period bar.
+- `01 metrics`: **group by** chips (no grouping, role), the all / new / active chips, then one
+  row per metric (bookkeeping and totals
+  last), its name linked to the metric's own page (each row keeps the anchor `#m-<metric>`; the
+  new badge): **metric**, **role** ("decides" when a goal decides on it, "weighs" when a goal
+  weighs it as an axis, else "describes"; sortable, and the filter box takes the word), **what it measures** (the
   adapter's `METRIC_DESCRIPTIONS`, else the harness's own description, else "not described: add
   it to the adapter's `METRIC_DESCRIPTIONS`"; the adapter as it is today, over what the runs
   recorded), **better** (lower, higher, or "neutral: a description" when every dataset that
   records it declares it descriptive), **recorded on** (each dataset, linked, with its arm count), **decides · weighs** (the
   goals whose primary measure it is; then, muted, "weighed by" and the goals that weigh it as an
-  axis: cost, speed or their own). Filterable.
-- Command: `evh metrics [--dataset-id <id>]`.
+  axis: cost, speed or their own), **arms recording it in period** (with its trend and line).
+  Filterable.
+- Command: `evh metrics [--dataset-id <id>] [--period P]`.
+
+## The arms and configs page
+
+Every arm, and every config across the datasets it ran on. The arms tile opens it; the configs
+tile opens it grouped by config (`arms.html?group=config`).
+
+- Hero: kicker `arms`, "Arms and configs", "N arms from K configs on M datasets. An arm is one
+  config on one dataset scored one way: measured, rescored against another reference, judged, or
+  run again (the how column says which; group by config to see them together). Pick arms on one
+  dataset to open them in the inspector.", then the period bar.
+- `01 every arm`:
+  - **group by** chips: no grouping, dataset, config, model, provider, scored against. A group
+    has a heading row with its name and arm count; a column's sort holds inside each group.
+  - **only** chips: local, hosted (hosted when it runs through a provider that bills per call,
+    litellm, openai, anthropic and the like, or its config prices tokens), then each price tier
+    the configs declare (free, small, mid, large); ties the leader, below the leader (the arm's
+    place in a goal's decision: tied with its quality leader, the leader included, or weighed and
+    not tied; an arm no decision weighs is in neither); open weights, proprietary (the model's
+    weights, from the project's `data/models.yaml`; an unlisted model is in neither; the chips
+    show only when the file lists a model an arm ran). Within one kind any chip picked keeps a
+    row; across kinds all must.
+  - the all / new / active chips; a compare bar once an arm is ticked: "N picked", **open in the
+    inspector** (only when the picked arms share a dataset, else "the inspector compares arms on
+    one dataset: pick arms of one"), **clear**.
+  - the table, flat: a tick box, **arm** (linked; the new badge; under it the role badges:
+    baseline, leader, recommended, retired in a round, over a limit (a goal leaves it out for a
+    limit it breaks), not eligible (left out for another reason)), **how measured** (measured;
+    rescored against `<reference>`; judged by `<scorer>`; re-parsed; run again (`<runs dir>`);
+    under a derived arm, how its deciding measure moved from the config's measured arm, "0.712 →
+    0.745 (+0.033) vs measured", when both are on the same measure: a judge scores its own),
+    **dataset**, **model · provider** (provider muted, "· local" for a local
+    one), **deciding measure** (the goal's measure and the arm's mean on it, else its own
+    headline), **repeats**, **cost / item**, **latency**, **runs in period** (with its line),
+    **spend in period**. Filterable. An arm measured several ways is several rows, one per way,
+    said by **how measured**; group by config to read them together. No nesting.
+- `02 configs`: the all / new / active chips, then one row per config: **config**, **model ·
+  provider**, **datasets** (each linked), **arms**, **spend**, **rank on each goal** (its best
+  arm's place among the arms the goal's decision weighs, "#3 of 33"), **runs in period**,
+  **spend in period**. Filterable.
+- `03 what changed in the period`: **when**, **arm**, **what** (first run, how it was measured,
+  promoted as the baseline, retired in a round and why), only the period's. Three or more arms of
+  one dataset re-measured the same way on one day (a rescore of every arm) are one line, "N arms
+  on `<dataset>`", so they do not bury the rest.
+- `04 cost and quality, by goal`: a goal list; the goal's trade-off charts (its quality against
+  cost and against speed, the frontier drawn), as on its goal page, one goal at a time.
+- Command: `evh arms [--dataset-id <id>] [--by dataset|config|model|provider|scored]
+  [--where local|hosted] [--tier <tier>] [--weights open|proprietary] [--quality ties|below]
+  [--period P]`, and `evh arms --configs` for `02`. A derived arm's **how measured** carries its
+  move, "(+0.033 vs measured)".
 
 ## The arm page
 
@@ -379,10 +521,11 @@ over the project's data; with a project adapter the rounds table and details sti
 
 ## The references page
 
-- Hero: kicker `references`, and what gold and silver mean.
-- `01 references`: **reference**, **tier**, **dataset**, **items**, **written by** (linked to the
-  author's arm), **created**, **arms scored**. Filterable.
-- Command: `evh references`.
+- Hero: kicker `references`, and what gold and silver mean, then the period bar.
+- `01 references`: the all / new / active chips, then **reference** (the new badge),
+  **tier**, **dataset**, **items**, **written by** (linked to the author's arm), **created**,
+  **arms scored**, **arms scored in period**, **runs in period** (with its line). Filterable.
+- Command: `evh references [--period P]`.
 
 ### Links everywhere
 
@@ -404,5 +547,8 @@ names and the verdicts' metric open their pages.
 - The page still carries counts and means only.
 - Every arms table keeps the row key and the tints.
 - The same view is still a command, with the same numbers (`evh datasets`, `goals`,
-  `references`, `metrics`), or the command gains it in the same change.
+  `references`, `metrics`, `arms`, `activity`), or the command gains it in the same change; a
+  page's period numbers come from its builder in `catalog_build.py` (`period_*`), never computed
+  twice.
+- A table that shows the period keeps the new badge, the row chips and the trends' form.
 - `make browser-check` and `harness/tests/test_catalog.py` pass.

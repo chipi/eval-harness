@@ -20,7 +20,10 @@ infra/
   nginx/                 nginx.conf, one server block per host, the security headers
   caddy/                 evals.caddy, catalog.caddy, enabled.txt (which ones are live)
   sites/<host>.cfg       per-host public settings (the CSP report address)
-  observability/         evals.alloy: both containers' logs to VictoriaLogs, app=evals
+  observability/         evals.alloy: both containers' logs to VictoriaLogs (app=evals; service
+                         evals-web for nginx, evals-inspector for the inspector; `release` and,
+                         on nginx's error lines, `level` as structured metadata), and the
+                         inspector's /metrics scrape
   deploy/                render.sh (CI), deploy.sh + install_vhosts.sh + install_alloy.sh (box)
 .github/workflows/deploy-prod.yml   render, upload, activate, probe
 .github/actions/prod-ssh-key/       the CI key and the pinned host key
@@ -40,7 +43,31 @@ infra/
     reads the release's copy of the runs from the read-only mount.
   - **Hardening:** it runs as nobody, read-only, every capability dropped, limited to 256 MB,
     half a CPU and 64 processes.
-  - **Network:** it calls out to nothing.
+  - **Observability (0.4.2), this deployment's layer, not the harness's:**
+    `inspector/hooks.py` (from `infra/inspector/hooks.py`) is passed as `--hooks`, the
+    harness's generic hook point. It reports errors to GlitchTip through the Sentry SDK
+    (environment `prod`, release `sha-<7>` from `RELEASE`), sends one OpenTelemetry span per API
+    request to VictoriaTraces (service `evals-inspector`, namespace `evals`), and serves
+    `/metrics` (requests and latency per route and status, the caches, resident memory) on the
+    container's port, which only the box's Alloy scrapes (`observability/evals.alloy`): Caddy
+    forwards nothing but `/catalog/api/` to the inspector. The SDKs
+    (`infra/inspector/requirements.txt`, pinned, pure-Python wheels) are vendored by `render.sh`
+    into `inspector/vendor/` and found through `PYTHONPATH`; together they cost about 20 MB of the
+    256 MB (measured locally 2026-10-27: 27 MB idle without, 44 MB with).
+  - **Settings, never in the repository and never placed on the box by hand:**
+    `/srv/evals/observability.env`, rendered by the deploy workflow on every deploy (as
+    podcast_scraper renders its `.env`): `SENTRY_DSN` from the environment secret
+    `EVALS_SENTRY_DSN_INSPECTOR` (the GlitchTip project's DSN, through the tailnet's TLS node), and
+    `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` built from `vars.PROD_TAILNET_FQDN` (the tailnet's
+    VictoriaTraces node, `/insert/opentelemetry/v1/traces`), so no tailnet name is committed. Two
+    keys only, written through /dev/shm and moved into place; mode 640, `deploy:deploy`, which the
+    inspector reads through `group_add` 1001 in `compose.yml` and no other account on the box can.
+    The workflow prints the mode, owner and key names, never a value. Without the secret,
+    GlitchTip is off and the rest is on; without the file, or a key, that part is off and the
+    inspector serves as before; the start line says which parts are on (`hooks: sha-…; GlitchTip
+    on, traces on, /metrics on`).
+  - **Network:** without the settings it calls out to nothing; with them, to GlitchTip and
+    VictoriaTraces only.
   - **What it answers:** only the catalog host, 60 requests a minute per client (identified by the
     `CF-Connecting-IP` header), at most 40 arms per comparison, two computations at a time, every
     answer cached. At start it computes every comparison the catalog's own pages link to.

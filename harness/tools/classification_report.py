@@ -144,6 +144,8 @@ def main() -> int:
                 "items": [i for i in by_item if i in gold],
             }
         )
+    if not rows:
+        die(f"no run on {args.dataset_id} scored an item the gold references have")
     rows.sort(key=lambda r: -r[args.sort])
 
     width = max(len(r["arm"]) for r in rows) + 2

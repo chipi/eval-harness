@@ -11,11 +11,9 @@ are tested rather than asserted in a README.
 
 from __future__ import annotations
 
-import atexit
 import json
 import pathlib
 import re
-import signal
 import subprocess
 import sys
 import tempfile
@@ -623,7 +621,9 @@ def test_example_scorer_suites_pass() -> None:
         ("test_ner_parser.py", "NER JSON parser"),
         ("test_retrieval_scorer.py", "ranked-list scorer"),
         ("test_stats.py", "paired test (stats.py)"),
+        ("test_stat_commands.py", "compare-runs, bootstrap-test, holdout: their numbers and refusals"),
         ("test_catalog.py", "catalog and run inspector"),
+        ("test_serve_hooks.py", "catalog-serve --hooks: called, never breaking a request, off by default"),
         ("test_goals.py", "goals: config, run, baseline, V14, pages"),
         ("test_axes.py", "a goal's axes and strategy: limits, the tie, the tie-break, the ratios"),
         (
@@ -1568,126 +1568,18 @@ def test_a_rescored_run_carries_the_current_parse() -> None:
     )
 
 
-def test_validate_checks_every_committed_run_directory() -> None:
-    """V1, V2 and V3 read data/runs alone: the derived directories the reports cite were
-    never schema- or integrity-checked. A broken run in runs-pair must fail all three."""
-    import json as _json  # noqa: PLC0415
+def test_every_planted_defect_still_anchors() -> None:
+    """`make guard-check` plants its defects by replacing a string in a report or a scorer, and
+    CI runs it only when a checker changes. A report edit that moves one of those strings would
+    go unnoticed until then, so every pull request checks here, in milliseconds, that each
+    still occurs exactly once."""
+    import test_checks_can_fail as guards  # noqa: PLC0415
 
-    shadow = _shadow_tree(copy_data=("runs-pair",))
-    run = next(iter(sorted((shadow / "harness" / "data" / "runs-pair").glob("*/metrics.json"))), None)
-    if run is None:
-        print("  --   validate over committed dirs: data/runs-pair is empty — skipped")
-        return
-    m = _json.loads(run.read_text(encoding="utf-8"))
-    m["dataset_id"] = "no_such_dataset"
-    m["build"] = {**(m.get("build") or {}), "ref": "unknown"}
-    m.pop("scores", None)
-    _replace(run, _json.dumps(m))
-    out = "".join(
-        x or "" for x in (lambda r: (r.stdout, r.stderr))(_run_in(shadow, "scripts/validate_tree.py"))
-    )
-    where = f"runs-pair/{run.parent.name}"
-    check("validate: V1 checks the schema of a run in runs-pair", "FAIL V1" in out, out[-300:])
-    check(
-        "validate: V2 names the dangling dataset in runs-pair",
-        "FAIL V2" in out and where in out,
-        out[-300:],
-    )
-    check("validate: V3 names the run in runs-pair with no build ref", "FAIL V3" in out and where in out)
-
-
-def test_v8_and_v9_go_red_on_a_copied_or_gutted_run() -> None:
-    """V8 and V9 are the two gates the planted-string guard cannot reach.
-
-    `DEFECTS` swaps a string in a file. V8 fires on a DIRECTORY that duplicates a
-    config_id and V9 on a run whose rows are gone, so neither has ever been exercised
-    by the guard that exists to prove checks can fail -- and round 5 found a hole in
-    each: `runs-linux` was outside V8's list, and V9 read presence while a truncated
-    `predictions.jsonl` left `make ci` green and 53/53 printing.
-
-    `runs-linux` is the directory used here on purpose. It is the one that was missing.
-    """
-    import shutil  # noqa: PLC0415
-
-    # In a shadow tree with its own copy of runs-linux: the test empties a committed run's
-    # predictions and adds a duplicate run, which another process must never see.
-    shadow = _shadow_tree(
-        copy_data=(
-            "runs",
-            "runs-pair",
-            "runs-repeats",
-            "runs-linux",
-        )
-    )
-    linux = shadow / "harness" / "data" / "runs-linux"
-    src = next(iter(sorted(linux.glob("cnn_bart_s_*/"))), None)
-    if src is None:
-        print("  --   V8/V9: data/runs-linux/cnn_bart_s_* absent — skipped")
-        return
-
-    # V8: a second directory with the same config_id, in the sixth committed directory.
-    dup = linux / (src.name + "b")
-    # A leftover from an interrupted earlier run would make copytree raise, and the
-    # suite would die here rather than report anything. Clear it, then register the
-    # copy so a kill cannot leave it behind again.
-    shutil.rmtree(dup, ignore_errors=True)
-    shutil.copytree(src, dup)
-    _TEMP_DIRS.add(dup)
-    try:
-        r = _run_in(shadow, "scripts/validate_tree.py")
-        out = (r.stdout or "") + (r.stderr or "")
+    for _script, what, rel, old, _new, _says in guards.PLANTS:
+        n = (guards.REPO / rel).read_text(encoding="utf-8").count(old)
         check(
-            "V8 refuses a duplicate config_id in runs-linux",
-            r.returncode != 0 and "FAIL V8" in out,
-            f"exit {r.returncode}",
+            f"guard-check's plant still anchors: {what} ({rel})", n == 1, f"{n} matches — update the anchor"
         )
-        r2 = _run_in(shadow, "tools/check_report_claims.py")
-        check(
-            "...and the latency medians refuse it too, whichever name sorts last",
-            r2.returncode != 0,
-            f"exit {r2.returncode}",
-        )
-    finally:
-        shutil.rmtree(dup, ignore_errors=True)
-        _TEMP_DIRS.discard(dup)
-
-    # V9: the rows gone, the file still tracked and present.
-    pj = src / "predictions.jsonl"
-    before = pj.read_text(encoding="utf-8")
-    try:
-        _replace(pj, "")
-        r = _run_in(shadow, "scripts/validate_tree.py")
-        out = (r.stdout or "") + (r.stderr or "")
-        check(
-            "V9 refuses a run whose predictions.jsonl is empty",
-            r.returncode != 0 and "is empty" in out,
-            f"exit {r.returncode}",
-        )
-        # ...and a PARTIAL one, which is the shape a crash leaves behind.
-        _replace(pj, "".join(before.splitlines(keepends=True)[:-3]))
-        r = _run_in(shadow, "scripts/validate_tree.py")
-        out = (r.stdout or "") + (r.stderr or "")
-        check(
-            "V9 refuses a run with fewer rows than its own n_items",
-            r.returncode != 0 and "prediction rows" in out,
-            f"exit {r.returncode}",
-        )
-    finally:
-        _replace(pj, before)
-
-    # A git that cannot list what is committed lists nothing, and nothing listed once read as
-    # nothing missing: V9 passed a run with no rows. A committed directory behind a link that
-    # leaves the repository is how it happened (git: "outside repository"). It must fail.
-    repeats = shadow / "harness" / "data" / "runs-repeats"
-    shutil.rmtree(repeats)
-    repeats.symlink_to(HERE.parent / "data" / "runs-repeats")
-    r = _run_in(shadow, "scripts/validate_tree.py")
-    out = (r.stdout or "") + (r.stderr or "")
-    check(
-        "V9 fails when git cannot list the committed runs",
-        r.returncode != 0 and "git ls-files failed" in out,
-        f"exit {r.returncode}",
-    )
 
 
 def test_v4_neither_skips_a_missing_file_nor_hides_what_it_did_not_check() -> None:
@@ -1996,374 +1888,6 @@ def test_the_reports_separation_counts_are_real() -> None:
         "boundary" in report.lower(),
         "two arms sit on their Holm thresholds and the report does not say so",
     )
-
-
-#: Files a `planted()` block has mutated and not yet restored. A kill skips `finally`,
-#: so this is the only thing standing between an interrupted `make ci` and a working
-#: tree with a fabricated number in it.
-_PLANTS: dict = {}
-
-#: Directories a test has copied into the repo and not yet removed. See _restore_plants.
-_TEMP_DIRS: set = set()
-
-
-def _restore_plants(*_args) -> None:
-    import shutil as _shutil  # noqa: PLC0415
-
-    for f, text in list(_PLANTS.items()):
-        try:
-            f.write_text(text, encoding="utf-8")
-        except OSError:
-            pass
-        _PLANTS.pop(f, None)
-    # Directories a test COPIED into the tree. The V8 case copies a run directory to
-    # create a duplicate config_id; a killed run left
-    # `runs-linux/cnn_bart_s_..._Zb` behind, which then made the next `make ci` die
-    # with FileExistsError instead of running. Same defect as the plants, different
-    # shape, so it lives in the same registry.
-    for d in list(_TEMP_DIRS):
-        try:
-            _shutil.rmtree(d, ignore_errors=True)
-        except OSError:
-            pass
-        _TEMP_DIRS.discard(d)
-    if _args:  # reached via a signal: do not swallow it
-        sys.exit(130)
-
-
-def _shadow_tree(copy_data: tuple = ()) -> pathlib.Path:
-    """A private copy of the repository for a test that plants a defect, so the real tree
-    is never written to: another process reading the reports or the runs mid-plant would
-    otherwise see the defect (it happened). Code, reports and docs are copied; harness/data
-    is a directory of links to the real one, except the subdirectories named in
-    `copy_data`, which are copied because the test writes into them, and the committed runs
-    directories (validate.json), which V9 lists through git: a link resolves outside the
-    shadow, where git refuses it. Removed at exit and on the signals _restore_plants handles."""
-    import os  # noqa: PLC0415
-    import shutil as _shutil  # noqa: PLC0415
-    import tempfile as _tmp  # noqa: PLC0415
-
-    real = HERE.parents[1]
-    shadow = pathlib.Path(_tmp.mkdtemp(prefix="selftest-shadow-"))
-    _TEMP_DIRS.add(shadow)
-    _shutil.copytree(
-        real,
-        shadow,
-        dirs_exist_ok=True,
-        symlinks=True,
-        ignore=_shutil.ignore_patterns(".git", ".venv", "build", "__pycache__", "data"),
-    )
-    data = shadow / "harness" / "data"
-    data.mkdir()
-    policy = json.loads((real / "harness" / "data" / "validate.json").read_text(encoding="utf-8"))
-    committed = {d.split("/")[0] for d in policy.get("committed") or []}
-    for child in (real / "harness" / "data").iterdir():
-        if child.name in copy_data or child.name in committed:
-            # Hard links, not copies: instant and no extra space. A test must REPLACE a
-            # file it changes (unlink, then write), or it would write through the link
-            # into the real file. _replace() does that.
-            def _link_or_copy(s, d, _copy=_shutil.copy2):
-                try:
-                    os.link(s, d)
-                except OSError:  # another filesystem: copy instead
-                    _copy(s, d)
-
-            _shutil.copytree(child, data / child.name, symlinks=True, copy_function=_link_or_copy)
-        else:
-            (data / child.name).symlink_to(child)
-    return shadow
-
-
-def _replace(f: pathlib.Path, text: str) -> None:
-    """Write `text` to a shadow file as a NEW file: a hard-linked file written in place
-    would change the real one too."""
-    f.unlink()
-    f.write_text(text, encoding="utf-8")
-
-
-def _run_in(shadow: pathlib.Path, script: str) -> subprocess.CompletedProcess:
-    """`run`, inside a shadow tree: its own copy of the script, with the shadow as root."""
-    import os  # noqa: PLC0415
-
-    # V7 and V9 read what is COMMITTED from the git index: the real repository's, read
-    # only, with the shadow as the work tree, so they compare the real index with the copy.
-    gitdir = subprocess.run(
-        ["git", "rev-parse", "--absolute-git-dir"], cwd=HERE.parents[1], capture_output=True, text=True
-    ).stdout.strip()
-    # GIT_OPTIONAL_LOCKS=0: a status-like command must never take the real index lock.
-    env = {**os.environ, "GIT_DIR": gitdir, "GIT_WORK_TREE": str(shadow), "GIT_OPTIONAL_LOCKS": "0"}
-    return subprocess.run(
-        [PY, str(shadow / "harness" / script)],
-        cwd=shadow / "harness",
-        capture_output=True,
-        text=True,
-        env=env,
-    )
-
-
-atexit.register(_restore_plants)
-for _sig in (signal.SIGTERM, signal.SIGINT, signal.SIGHUP):
-    try:
-        signal.signal(_sig, _restore_plants)
-    except (OSError, ValueError):  # not every signal is settable everywhere
-        pass
-
-
-def test_the_checks_can_actually_fail() -> None:
-    """Every checker must FAIL on the defect it exists to catch. Not on an empty tree.
-
-    The first version of this test pointed three checkers at a directory containing
-    nothing and asserted a non-zero exit. Round 3 showed what that was worth:
-
-      - it covered 3 of 9 checkers, and only their missing-input path;
-      - `check_report_claims` did not even reach its own guard there -- the fixture had
-        no `research/`, so it died with FileNotFoundError and exited 1 for a reason
-        that has nothing to do with the check. Deleting its 0/0 guard would not have
-        been noticed;
-      - and a checker that prints FAIL and exits 0 satisfied all of it.
-
-    So this plants the REAL defect in a COPY of the real tree, one at a time, and runs the
-    checker there. A checker that cannot see a wrong number in the file it is pointed at
-    is not checking that file, whatever it prints.
-
-    A COPY, NOT THE TREE ITSELF. Planting in the working tree, even with a restore on exit
-    and on signals, let any other process that read the reports mid-plant see the defect:
-    a second check run in the same worktree did, and reported a 0.9999 that nobody had
-    committed. The copy holds everything a checker reads except harness/data, which is
-    linked (read-only, and 338 MB), so the real tree is never written to.
-    """
-    import contextlib  # noqa: PLC0415
-
-    shadow = _shadow_tree()
-
-    def run_shadow(script: str) -> subprocess.CompletedProcess:
-        return _run_in(shadow, script)
-
-    @contextlib.contextmanager
-    def planted(rel: str, old: str, new: str):
-        """Swap a string in the copy's file, then put it back."""
-        f = shadow / rel
-        before = f.read_text(encoding="utf-8")
-        if before.count(old) != 1:
-            # AN ANCHOR THAT NO LONGER MATCHES IS A FAILURE, NOT A SKIP. This used to
-            # `yield False`, which printed "skipped (anchor not found)" and left the
-            # suite green -- so bolding a cell in the anchored row, or a rescore that
-            # moves the number, silently turned that checker's guard into a no-op.
-            # The guard exists because checks stop working quietly; it cannot itself
-            # stop working quietly. Found by external review.
-            check(
-                f"checks can fail: the planted defect still anchors in {rel}",
-                False,
-                f"{before.count(old)} matches for {old[:60]!r} — update the anchor",
-            )
-            yield False
-            return
-        try:
-            f.write_text(before.replace(old, new), encoding="utf-8")
-            yield True
-        finally:
-            f.write_text(before, encoding="utf-8")
-
-    #: (checker, label, file, the defect, what the string becomes)
-    DEFECTS = [
-        # A TABLE ROW, because prose is not covered -- see KNOWN_ISSUES. Pointing this
-        # at the same number in a sentence FAILS, and that failure is a true statement
-        # about the checker rather than a bug in this test.
-        (
-            "check_report_claims.py",
-            "a wrong number in a leaderboard row",
-            "research/REPORT_NER.md",
-            "| **span_marker** | 0.7674 | 0.8370 |",
-            "| **span_marker** | 0.9999 | 0.8370 |",
-        ),
-        (
-            "check_links.py",
-            "a link to a file that does not exist",
-            "research/internal/KNOWN_ISSUES.md",
-            "# Known issues — read before reviewing",
-            "# Known issues — read before reviewing\n\n[x](./_no_such_file_.md)",
-        ),
-        (
-            "check_terminology.py",
-            "a non-canonical experiment label",
-            "docs/REFERENCE.md",
-            "| Retrieval · SciFact |",
-            "| Retrieval on SciFact |",
-        ),
-        (
-            "check_model_facts.py",
-            "a licence the evidence contradicts",
-            "docs/REFERENCE.md",
-            "[`facebook/bart-large-cnn`](https://huggingface.co/facebook/bart-large-cnn) | MIT |",
-            "[`facebook/bart-large-cnn`](https://huggingface.co/facebook/bart-large-cnn) | GPL-3.0 |",
-        ),
-        # ONE DEFECT PER ASSERTION FAMILY, not one per checker. The claims checker has
-        # five independent families and the guard exercised a table row only -- so the
-        # cost scan, the code-block scan, the ratio checks and the Pareto count were
-        # each unguarded, and R4-H1 (a cost family blind to most arms) survived
-        # precisely there. Found by external review.
-        (
-            "check_report_claims.py",
-            "a wrong COST in a table cell",
-            "research/REPORT_RETRIEVAL.md",
-            "| glm_s ⟳ | **0.7437** | 0.8067 | 0.8586 | 0.7364 | 1.2 s | $0.1421 |",
-            "| glm_s ⟳ | **0.7437** | 0.8067 | 0.8586 | 0.7364 | 1.2 s | $0.5000 |",
-        ),
-        (
-            "check_report_claims.py",
-            "a wrong number in a CODE BLOCK",
-            "research/REPORT_CLASSIFICATION.md",
-            "bert_mini ◆          0.9450",
-            "bert_mini ◆          0.9999",
-        ),
-        (
-            "check_report_claims.py",
-            "a wrong CHEAPNESS RATIO",
-            "research/REPORT_SYNTHESIS.md",
-            "| Classification · DBpedia | 19 arms (18 paid) | `gemma_m` | $0.012 | **115× cheaper** |",
-            "| Classification · DBpedia | 19 arms (18 paid) | `gemma_m` | $0.012 | **250× cheaper** |",
-        ),
-        (
-            "check_report_claims.py",
-            "a wrong PARETO count",
-            "research/REPORT_SUMMARIZATION.md",
-            "| **8 of 24** | three arms' quality",
-            "| **5 of 24** | three arms' quality",
-        ),
-        # V10 GUARDS CODE, NOT A REPORT, so the defect is planted in the scorer. It
-        # must be a constant `code_digest` actually covers: appending an unreferenced
-        # name to the file changes nothing and V10 stays green, correctly. The first
-        # version of this guard used exactly that mutation, saw three green lines, and
-        # would have shipped a V10 that could not fail if the probe had not been run.
-        # ROUND 5: the guard exercised six of the claim families and two scorers, and
-        # the families it did NOT exercise are where round 5's findings were. One row
-        # per family is the rule; these are the families that had none.
-        (
-            "check_report_claims.py",
-            "a wrong figure in PROSE",
-            "research/REPORT_NER.md",
-            "`span_marker` scored **0.7674**",
-            "`span_marker` scored **0.9999**",
-        ),
-        (
-            "check_report_claims.py",
-            "a wrong TIE GROUP size",
-            "research/REPORT_SYNTHESIS.md",
-            "| Classification · DBpedia | 19 arms (18 paid)",
-            "| Classification · DBpedia | 18 arms (17 paid)",
-        ),
-        # The band between "equals the bill" and "2% off" used to be silent, so this
-        # plant is deliberately a NEAR miss (1.7%), not an obvious one.
-        (
-            "check_report_claims.py",
-            "a cost cell 1.7% off the bill",
-            "research/REPORT_RETRIEVAL.md",
-            "| 0.7364 | 1.2 s | $0.1421 |",
-            "| 0.7364 | 1.2 s | $0.1445 |",
-        ),
-        (
-            "check_report_claims.py",
-            "a wrong CROSS-MACHINE ratio",
-            "research/REPORT_SUMMARIZATION.md",
-            "ran `bart_l` itself 1.7\u00d7 faster",
-            "ran `bart_l` itself 2.7\u00d7 faster",
-        ),
-        (
-            "check_report_claims.py",
-            "a falsified CONVERSION-PR result",
-            "docs/evidence/conversion_pr_check.json",
-            (
-                '"recorded_run": "ag_bert_base_ta_n200_v1_20260930T094555Z",\n'
-                '      "loaded_dtype": null,\n      "byte_identical": 200,'
-            ),
-            (
-                '"recorded_run": "ag_bert_base_ta_n200_v1_20260930T094555Z",\n'
-                '      "loaded_dtype": null,\n      "byte_identical": 150,'
-            ),
-        ),
-        (
-            "check_model_facts.py",
-            "an OPEN-WEIGHT count the licence table contradicts",
-            "research/REPORT_SYNTHESIS.md",
-            "**14 of the 24** \u2014 DeepSeek",
-            "**13 of the 24** \u2014 DeepSeek",
-        ),
-        # V10 AGAINST THE PARSER, not the set scorer. The two rows below plant in
-        # `_shared/extraction.py` and `_shared/retrieval.py`; neither touches the NER
-        # PARSER, which is the component every round's bugs have been in and which V10
-        # was blind to until round 5 said so. A guard that plants only where the check
-        # already looks proves nothing about where it does not.
-        (
-            "validate_tree.py",
-            "a NER PARSER change the rescored runs predate",
-            "examples/ner-few-nerd/adapter.py",
-            '_BARE_KEY = re.compile(r"([{,]\\s*)',
-            '_BARE_KEY = re.compile(r"(?:ZZ)?([{,]\\s*)',
-        ),
-        (
-            "validate_tree.py",
-            "a SCORER CHANGE the rescored runs predate",
-            "examples/_shared/extraction.py",
-            '_ARTICLES = ("the ", "a ", "an ")',
-            '_ARTICLES = ("z ", "the ", "a ", "an ")',
-        ),
-        # The sixth claims family, added reviewing the merged ML-arm work. The plant is
-        # on a WRAPPED continuation line on purpose: the first version of this check
-        # scoped to the line citing `runs-linux` and missed exactly this, and the
-        # version before that scoped to the whole file and missed a wrong figure on the
-        # citing line itself, because an unrelated sentence repeats the number.
-        (
-            "check_report_claims.py",
-            "a wrong RE-TIMED LATENCY in prose",
-            "research/REPORT_SUMMARIZATION.md",
-            "and `bart_s` (460 MB, 0.3276) **3.4 s**",
-            "and `bart_s` (460 MB, 0.3276) **1.1 s**",
-        ),
-        (
-            "validate_tree.py",
-            "a PARSER CHANGE the reparsed runs predate",
-            "examples/_shared/retrieval.py",
-            '_ID_TOKEN = re.compile(r"^[\\w.\\-]+$")',
-            '_ID_TOKEN = re.compile(r"^[Z\\w.\\-]+$")',
-        ),
-    ]
-    for script, what, rel, old, new_text in DEFECTS:
-        if not (ROOT / at(script)).is_file():
-            check(f"checks can fail: {script} exists", False, "missing")
-            continue
-        with planted(rel, old, new_text) as ok:
-            if not ok:
-                print(f"  --   checks can fail: {script} skipped ({what!r} anchor not found in {rel})")
-                continue
-            r = run_shadow(at(script))
-            out = (r.stdout or "") + (r.stderr or "")
-            check(f"checks can fail: {script} catches {what}", r.returncode != 0, f"exit {r.returncode}")
-            # AND IT MUST FAIL FOR THE RIGHT REASON. Exiting 1 on a traceback is how
-            # the previous version of this test passed while proving nothing.
-            check(
-                f"checks can fail: ...by failing, not by crashing ({script})",
-                "Traceback" not in out,
-                out.strip().splitlines()[-1][:120] if out.strip() else "",
-            )
-
-    # The no-input path is still worth pinning -- it is the original
-    # check_terminology bug -- but it is now one case among several, not the whole test.
-    import shutil  # noqa: PLC0415
-    import tempfile as _tf  # noqa: PLC0415
-
-    with _tf.TemporaryDirectory() as td:
-        fake = pathlib.Path(td) / "repo" / "harness"
-        (fake / "data" / "runs").mkdir(parents=True)
-        shutil.copytree(HERE, fake / "scripts")
-        shutil.copytree(ROOT / "tools", fake / "tools")
-        r = subprocess.run(
-            [PY, str(fake / "tools" / "check_terminology.py")], cwd=fake, capture_output=True, text=True
-        )
-        check(
-            "checks can fail: check_terminology with no markdown exits non-zero",
-            r.returncode != 0,
-            f"exit {r.returncode}",
-        )
 
 
 def test_promote_reads_its_reason_from_the_env() -> None:
@@ -3756,14 +3280,12 @@ def main() -> int:
         test_a_run_that_measured_nothing_is_not_a_success,
         test_adapter_declaration_beats_a_stale_run,
         test_a_rescored_run_carries_the_current_parse,
-        test_validate_checks_every_committed_run_directory,
-        test_v8_and_v9_go_red_on_a_copied_or_gutted_run,
+        test_every_planted_defect_still_anchors,
         test_v4_neither_skips_a_missing_file_nor_hides_what_it_did_not_check,
         test_v10_fails_when_a_derived_run_states_no_scorer,
         test_nemenyi_table_is_computed_not_copied,
         test_two_runs_sharing_a_config_id_are_refused,
         test_the_reports_separation_counts_are_real,
-        test_the_checks_can_actually_fail,
         test_promote_reads_its_reason_from_the_env,
         test_rescore_refuses_a_missing_reference_set,
         test_spearman_is_tie_correct,

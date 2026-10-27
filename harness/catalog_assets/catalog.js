@@ -25,7 +25,7 @@ if(sb)sb.addEventListener('click',()=>{const on=bar.classList.toggle('searching'
 if(on)q.focus();else{box.hidden=true;q.blur();}});})();
 document.querySelectorAll('input[data-filter]').forEach(inp=>{const t=document.getElementById(inp.dataset.filter);
 inp.addEventListener('input',()=>{const w=inp.value.toLowerCase().split(/\s+/).filter(Boolean);let n=0;
-t.querySelectorAll('tbody tr').forEach(r=>{const ok=w.every(x=>r.textContent.toLowerCase().includes(x));r.hidden=!ok;n+=ok;});
+t.querySelectorAll('tbody tr').forEach(r=>{if(r.classList.contains('grouphead'))return;const ok=w.every(x=>r.textContent.toLowerCase().includes(x));const show=ok&&!r.classList.contains('pout')&&!r.classList.contains('fout');r.hidden=!show;n+=show;});
 const c=document.querySelector(`[data-count="${inp.dataset.filter}"]`);if(c)c.textContent=n;});});
 /* sort: a header is a button (click, or Enter/Space from the keyboard), and says how its column is sorted (aria-sort) */
 document.querySelectorAll('table.sortable th').forEach((th,i)=>{th.tabIndex=0;th.setAttribute('role','button');th.setAttribute('aria-sort','none');
@@ -42,7 +42,7 @@ let shown=step;const bar=document.createElement('p');bar.className='pager small 
 (t.closest('.scroll-x')||t).after(bar);
 const id=decodeURIComponent(location.hash.slice(1));
 if(id){const at=[...t.tBodies[0].rows].findIndex(r=>r.id===id);if(at>=step)shown=Infinity;}
-t._repage=function(){const live=[...t.tBodies[0].rows].filter(r=>!r.hidden);
+t._repage=function(){const live=[...t.tBodies[0].rows].filter(r=>!r.hidden&&!r.classList.contains('grouphead'));
 live.forEach((r,i)=>r.classList.toggle('paged-out',i>=shown));
 [...t.tBodies[0].rows].filter(r=>r.hidden).forEach(r=>r.classList.remove('paged-out'));
 const n=live.length,vis=Math.min(n,shown);
@@ -61,12 +61,5 @@ const done=()=>{b.textContent='copied';setTimeout(()=>{b.textContent='copy';},15
 const pick=()=>{const c=b.previousElementSibling;if(!c)return;const r=document.createRange();r.selectNodeContents(c);
 const sel=getSelection();sel.removeAllRanges();sel.addRange(r);b.textContent='selected';};
 try{navigator.clipboard.writeText(b.dataset.copy).then(done,pick);}catch(e){pick();}});
-// The home page's period switch: every [data-period] panel shows the period its button names.
-document.querySelectorAll('.period-switch button[data-show]').forEach(b=>b.addEventListener('click',()=>{
-const want=b.dataset.show;document.querySelectorAll('.period-switch button[data-show]').forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.show===want)));
-document.querySelectorAll('[data-period]').forEach(p=>{p.hidden=p.dataset.period!==want;const t=p.querySelector('table.data');if(t&&t._repage)t._repage();});}));
-// A spend panel's unit switch: USD or tokens, within its own panel.
-document.querySelectorAll('.unit-switch button[data-unit-show]').forEach(b=>b.addEventListener('click',()=>{
-const box=b.closest('[data-period]')||document,want=b.dataset.unitShow;
-box.querySelectorAll('.unit-switch button[data-unit-show]').forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.unitShow===want)));
-box.querySelectorAll('[data-unit]').forEach(p=>{p.hidden=p.dataset.unit!==want;});}));
+/* the menu's groups: one open at a time, and a click elsewhere closes it */
+document.addEventListener('click',ev=>{document.querySelectorAll('details.navgroup[open]').forEach(d=>{if(!d.contains(ev.target))d.open=false;});});

@@ -16,3 +16,5 @@ radon==6.0.1
 codespell==2.4.3
 shellcheck-py==0.11.0.1
 actionlint-py==1.7.12.25
+# Line coverage, measured on demand (`make -C harness coverage`), not a gate.
+coverage==7.17.0

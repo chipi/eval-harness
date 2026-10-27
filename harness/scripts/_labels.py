@@ -14,7 +14,6 @@ from collections import defaultdict
 
 from evaluation_harness import _common
 from evaluation_harness._adapter import adapter_module
-from evaluation_harness._common import die
 from evaluation_harness._runs import item_rows, runs_on
 
 #: Predictions the adapter could not parse into a label are counted, never dropped. An arm
@@ -26,9 +25,9 @@ UNPARSED = "<unparsed>"
 def reference_labels(dataset_id: str, tier: str) -> dict:
     """item_id -> label, from the reference files of one tier (`gold`, `silver`)."""
     root = _common.REFERENCES / tier / dataset_id
-    if not root.is_dir():
-        die(f"no {tier} references at {root}")
-    return {p.stem: p.read_text(encoding="utf-8").strip() for p in root.glob("*.txt")}
+    return {
+        p.stem: p.read_text(encoding="utf-8").strip() for p in _common.reference_texts(root, dataset_id, tier)
+    }
 
 
 def label_parser(adapter_spec: str | None):

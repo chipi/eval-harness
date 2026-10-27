@@ -36,7 +36,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the ev
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tools/
 sys.path.insert(0, str(HERE.parents[1] / "examples" / "_shared"))
 
-from evaluation_harness._common import REFERENCES, RUNS, die, read_json  # noqa: E402
+from evaluation_harness._common import REFERENCES, RUNS, die, read_json, reference_texts  # noqa: E402
 from evaluation_harness._runs import warn_on_ambiguous_runs  # noqa: E402
 
 try:
@@ -47,11 +47,8 @@ except ImportError:  # pragma: no cover
 
 def qrels(dataset_id: str) -> dict:
     """Load gold relevance judgments for a dataset; die if not found."""
-    root = REFERENCES / "gold" / dataset_id
-    if not root.is_dir():
-        die(f"no gold references at {root}")
     out = {}
-    for p in root.glob("*.txt"):
+    for p in reference_texts(REFERENCES / "gold" / dataset_id, dataset_id):
         judged = json.loads(p.read_text(encoding="utf-8"))
         out[p.stem] = {str(j["doc_id"]): int(j.get("score", 1)) for j in judged}
     return out

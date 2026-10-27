@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "models",
+  "description": "What each model's weights are, optional: data/models.yaml. Keyed by the model a run records (params.model). The arms page filters on it (open / proprietary) and `evh arms --weights` lists by it; a model not listed is unknown.",
+  "type": "object",
+  "required": ["models"],
+  "additionalProperties": false,
+  "properties": {
+    "models": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["weights"],
+        "additionalProperties": false,
+        "properties": {
+          "weights": {"enum": ["open", "proprietary"], "description": "open: the weights can be downloaded; proprietary: only its vendor serves it."},
+          "licence": {"type": "string", "description": "The licence of open weights, as its publisher states it."}
+        }
+      }
+    }
+  }
+}

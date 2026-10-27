@@ -5,6 +5,16 @@ change the pin, then check what it says can move. **If you copied `harness/` int
 repository** before October 2026, read the rest of this page first: your copy has
 correctness bugs, not just missing features.
 
+## From 0.4.1 to 0.4.2
+
+Change the pin to `@v0.4.2`. No record, hash or p-value moves. One command line changes:
+**`evh overview` no longer takes `--all`**: `evh overview --period all` says the same (`--period P` on every list now,
+counted from today). Everything else is added and optional: an adapter may answer
+`dataset_created(dataset)` and `model_facts()` (each model's weights, open or proprietary; the
+harness's own adapter reads an optional `data/models.yaml`), `spend()` events may name an `arm`,
+and `catalog-serve --hooks` takes a deployment's error reporting, tracing or metrics. `evh
+bootstrap-test` now refuses when the gold references are not on the machine, where it read none.
+
 ## From 0.4.0 to 0.4.1
 
 Change the pin to `@v0.4.1`. Nothing moves: the same records, hashes and p-values. The inspector

@@ -40,6 +40,7 @@ to the catalog or the inspector gets its `evh` command in the same change.
 
 ```bash
 cd harness && make ci      # validate the tree + self-tests, no network, no keys
+make budget-check          # from the root: the inspector's memory and answer times (harness/docs/TESTING.md)
 make quality               # from the root: lint, types, security, dead code, spelling, shell
 ```
 

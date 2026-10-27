@@ -59,7 +59,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the ev
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tools/
 sys.path.insert(0, str(HERE.parents[1] / "examples" / "_shared"))
 
-from evaluation_harness._common import REFERENCES, RUNS, die, item_path, read_json  # noqa: E402
+from evaluation_harness._common import REFERENCES, RUNS, die, item_path, read_json, reference_texts  # noqa: E402
 from evaluation_harness._runs import warn_on_ambiguous_runs  # noqa: E402
 
 try:
@@ -74,11 +74,8 @@ _BASELINES = ("_nothing", "_capitalized")
 
 def gold_sets(dataset_id: str) -> dict:
     """item_id -> the gold list of {text, type}, from the tracked gold references."""
-    root = REFERENCES / "gold" / dataset_id
-    if not root.is_dir():
-        die(f"no gold references at {root}")
     out = {}
-    for p in root.glob("*.txt"):
+    for p in reference_texts(REFERENCES / "gold" / dataset_id, dataset_id):
         try:
             out[p.stem] = json.loads(p.read_text(encoding="utf-8"))
         except ValueError:

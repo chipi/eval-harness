@@ -1,0 +1,480 @@
+"""The arms page: every arm, and every config across the datasets it ran on.
+
+    arms.html   the table of every arm (grouped by dataset, config, model, provider or what it is
+                scored against; a derived arm under the arm it came from), the configs, what changed
+                in the period, and each goal's arms on its trade-off charts
+
+`evh arms` prints the same rows (`arm_rows`, `config_rows`). The period parts are the shared ones
+(catalog_periods.py, catalog_assets/period.js); the grouping, facets and comparison are
+catalog_assets/group.js and arms.js.
+"""
+
+from __future__ import annotations
+
+import html
+
+#: Providers that bill per call over the network. An arm is hosted when it runs through one of
+#: these or its config prices tokens; every other provider runs on the machine that ran the arm.
+HOSTED_PROVIDERS = ("litellm", "openai", "anthropic", "openrouter", "together", "groq", "mistral", "gemini")
+
+#: How many arms of one dataset re-measured the same way on one day make one line of "what
+#: changed" instead of one each.
+FEED_FOLD = 3
+
+#: How a table of arms can be grouped: (key, the chip's name).
+GROUPS = (
+    ("", "no grouping"),
+    ("dataset", "dataset"),
+    ("config", "config"),
+    ("model", "model"),
+    ("provider", "provider"),
+    ("scored", "scored against"),
+)
+
+
+def e(s) -> str:
+    """`s` escaped for HTML text and attributes."""
+    return html.escape(str(s), quote=True)
+
+
+def _base(arm: str) -> str:
+    """The runs directory an arm's id starts with (runs, runs-silver, runs-judged/<scorer>, ...)."""
+    parts = arm.split("/")
+    return "/".join(parts[:-2])
+
+
+def arm_rows(A, by_ds: dict) -> list[dict]:
+    """One row per arm, by dataset, then config, the config's own measurement first:
+    {"arm", "label", "dataset", "config", "model", "provider", "family", "tier", "local",
+    "weights", "quality", "scored", "how", "roles", "goal", "measure", "value", "lower", "repeats",
+    "cost", "latency", "first", "last"}. `weights` is "open", "proprietary" or "" (unknown: the
+    adapter's model_facts does not list the model). `quality` is "ties the leader" when a goal's
+    decision ties the arm with its quality leader (the leader too), "below the leader" when it
+    weighs the arm and does not, "" when no decision weighs it. A role "over a limit" is an arm a
+    goal leaves out for a limit it breaks; "not eligible" one it leaves out for another reason.
+    `how` says what the arm is beside the config's other arms: measured, rescored against a
+    reference, judged by a scorer, re-parsed, or run again.
+    `source` and `moved`: for an arm derived from the config's measured arm on the same dataset
+    (rescored, re-parsed, run again), that arm and how far the deciding measure moved from it; None
+    when there is none, or the two are not on the same measure (a judge scores its own)."""
+    from evaluation_harness import catalog_build as cb  # noqa: PLC0415
+
+    cfg = getattr(A, "arm_config", None)
+    fn = getattr(A, "model_facts", None)
+    facts = (fn() if callable(fn) else None) or {}
+    roles: dict = {}
+    quality: dict = {}
+    measure_of: dict = {}
+    for r in cb.glance(A, by_ds):
+        g, dec = r["goal"], r["dec"]
+        for arm, word in (
+            (r["baseline"], "baseline"),
+            (r["leader"], "leader"),
+            (r["recommended"], "recommended"),
+        ):
+            if arm:
+                roles.setdefault(arm, []).append(word)
+        for arm, rnd in (r.get("retired") or {}).items():
+            roles.setdefault(arm, []).append(f"retired in {rnd}")
+        if dec:
+            for arm in dec["rows"]:
+                measure_of.setdefault(arm, (g, r["measure"], r["lower"]))
+                if arm in (dec.get("tied") or []):
+                    quality[arm] = "ties the leader"
+                elif arm in dec["eligible"]:
+                    quality.setdefault(arm, "below the leader")
+                if arm not in dec["eligible"] and arm not in (r.get("retired") or {}):
+                    over = any(" limit " in why for why in (dec.get("out") or {}).get(arm) or [])
+                    roles.setdefault(arm, []).append("over a limit" if over else "not eligible")
+    out = []
+    for ds, v in sorted(by_ds.items()):
+        tiers = {x["id"]: x["tier"] for x in v["refs"]}
+        arms = sorted(
+            v["arms"], key=lambda a: (a["arm"].rsplit("/", 1)[-1], _base(a["arm"]) != "runs", a["arm"])
+        )
+        for a in arms:
+            c = cfg(a["arm"]) if callable(cfg) else {}
+            p = (c or {}).get("params") or {}
+            cid = (c or {}).get("config_id") or a["arm"].rsplit("/", 1)[-1]
+            derived = next((r.get("derived") for r in a["run_list"] if r.get("derived")), "")
+            base = _base(a["arm"])
+            if a["judge"]:
+                how = f"judged by {a['judge']}"
+            elif derived == "rescore":
+                how = f"rescored against {a['reference'] or 'no reference'}"
+            elif derived:
+                how = {"reparse": "re-parsed"}.get(derived, derived)
+            elif base == "runs":
+                how = "measured"
+            else:
+                how = f"run again ({base.removeprefix('runs-')})"
+            g, m, lower = measure_of.get(a["arm"], (None, a["metric"], a["lower"]))
+            value = (a["means"].get(m) or (None,))[0] if m else None
+            dated = [r.get("created_at") or "" for r in a["run_list"] if r.get("created_at")]
+            out.append(
+                {
+                    "arm": a["arm"],
+                    "label": a["label"],
+                    "dataset": ds,
+                    "config": cid,
+                    "model": p.get("model") or "",
+                    "provider": p.get("provider") or "",
+                    "family": p.get("family") or "",
+                    "tier": p.get("price_tier") or "",
+                    "local": not (
+                        (p.get("provider") or "") in HOSTED_PROVIDERS or p.get("usd_per_mtok_in") is not None
+                    ),
+                    "weights": (facts.get(p.get("model") or "") or {}).get("weights") or "",
+                    "quality": quality.get(a["arm"], ""),
+                    "scored": "judge" if a["judge"] else (tiers.get(a["reference"]) or "none"),
+                    "how": how,
+                    "roles": roles.get(a["arm"], []),
+                    "goal": g,
+                    "measure": m,
+                    "value": value,
+                    "lower": lower,
+                    "repeats": a["runs"],
+                    "cost": (a["means"].get("cost_usd") or (None,))[0],
+                    "latency": (a["means"].get("latency_ms") or (None,))[0],
+                    "first": min(dated, default="")[:10],
+                    "last": max(dated, default="")[:10],
+                    "source": None,
+                    "moved": None,
+                }
+            )
+    measured = {(r["dataset"], r["config"]): r for r in out if r["how"] == "measured"}
+    for r in out:
+        src = measured.get((r["dataset"], r["config"]))
+        if r["how"] == "measured" or src is None:
+            continue
+        r["source"] = src["arm"]
+        if r["measure"] and r["measure"] == src["measure"] and None not in (r["value"], src["value"]):
+            r["moved"] = r["value"] - src["value"]
+    return out
+
+
+def config_rows(A, by_ds: dict, rows: list[dict], spend: list[dict]) -> list[dict]:
+    """One row per config across every dataset it ran on: {"config", "model", "provider",
+    "family", "datasets", "arms", "usd", "ranks": [(goal, dataset, rank, of)]}. A rank is the
+    config's best arm on the goal's deciding measure among the arms the goal's decision weighs."""
+    from evaluation_harness import catalog_build as cb  # noqa: PLC0415
+
+    by_cfg: dict = {}
+    for r in rows:
+        by_cfg.setdefault(r["config"], []).append(r)
+    arm_cfg = {r["arm"]: r["config"] for r in rows}
+    usd: dict = {}
+    for x in spend:
+        if x.get("kind") == "arm" and isinstance(x.get("usd"), (int, float)) and x.get("arm") in arm_cfg:
+            usd[arm_cfg[x["arm"]]] = usd.get(arm_cfg[x["arm"]], 0.0) + float(x["usd"])
+    ranks: dict = {}
+    for gr in cb.glance(A, by_ds):
+        dec = gr["dec"]
+        if not dec:
+            continue
+        vals = {a: (dec["rows"][a]["quality"]["value"]) for a in dec["rows"]}
+        ordered = sorted(
+            (a for a in vals if vals[a] is not None), key=lambda a: vals[a], reverse=not gr["lower"]
+        )
+        best: dict = {}
+        for i, a in enumerate(ordered, 1):
+            best.setdefault(arm_cfg.get(a, a.rsplit("/", 1)[-1]), i)
+        for cid, i in best.items():
+            ranks.setdefault(cid, []).append((gr["goal"], gr["dataset"], i, len(ordered)))
+    out = []
+    for cid, rs in sorted(by_cfg.items()):
+        out.append(
+            {
+                "config": cid,
+                "model": rs[0]["model"],
+                "provider": rs[0]["provider"],
+                "family": rs[0]["family"],
+                "tier": rs[0]["tier"],
+                "local": rs[0]["local"],
+                "datasets": sorted({r["dataset"] for r in rs}),
+                "arms": len(rs),
+                "usd": usd.get(cid),
+                "ranks": ranks.get(cid, []),
+            }
+        )
+    return out
+
+
+def period_arms(A, by_ds: dict, rows: list[dict]) -> dict:
+    """{arm id | "c:<config>": row} in the shape catalog_build's period builders give: an arm's or
+    a config's measured runs and what it was billed; new from its first run."""
+    from evaluation_harness import catalog_build as cb  # noqa: PLC0415
+    from evaluation_harness import catalog_periods as cp  # noqa: PLC0415
+
+    w, idx = cb.window(A, by_ds), cp.arm_index(by_ds)
+    by_arm = {a["arm"]: a for v in by_ds.values() for a in v["arms"]}
+    out = {}
+    for r in rows:
+        runs = cp.runs_of([by_arm[r["arm"]]], idx)
+        out[r["arm"]] = {
+            "runs": runs,
+            "usd": cp.spend_of(
+                w["spend"], lambda x, arm=r["arm"]: x.get("kind") == "arm" and x.get("arm") == arm
+            ),
+            "made": r["first"],
+        }
+    for cid in {r["config"] for r in rows}:
+        ids = {r["arm"] for r in rows if r["config"] == cid}
+        runs = cp.runs_of([by_arm[a] for a in ids], idx)
+        out[f"c:{cid}"] = {
+            "runs": runs,
+            "usd": cp.spend_of(w["spend"], lambda x, ids=ids: x.get("kind") == "arm" and x.get("arm") in ids),
+            "made": min((x[0] for x in runs), default=""),
+        }
+    return out
+
+
+def render_arms(A, by_ds: dict, out, nav: list) -> None:
+    """Write arms.html."""
+    from evaluation_harness import catalog_build as cb  # noqa: PLC0415
+    from evaluation_harness import catalog_periods as cp  # noqa: PLC0415
+
+    w = cb.window(A, by_ds)
+    rows = arm_rows(A, by_ds)
+    period_rows, trs = period_arms(A, by_ds, rows), []
+    for r in rows:
+        latency = f"{r['latency']:.0f} ms" if r["latency"] else "—"
+        badges = "".join(f'<span class="role">{e(x)}</span>' for x in dict.fromkeys(r["roles"]))
+        attrs = {
+            "dataset": r["dataset"],
+            "config": r["config"],
+            "model": r["model"] or "—",
+            "provider": r["provider"] or "—",
+            "scored": r["scored"],
+            "where": "local" if r["local"] else "hosted",
+            "tier": r["tier"] or "—",
+            "weights": r["weights"] or "unknown",
+            "quality": r["quality"] or "not decided",
+        }
+        trs.append(
+            {
+                "key": r["arm"],
+                "made": r["first"],
+                "data": attrs,
+                "cells": [
+                    f'<input type="checkbox" class="pick" aria-label="pick {e(r["label"])}" data-arm="{e(r["arm"])}" data-ds="{e(r["dataset"])}">',
+                    cb.arm_link(r["arm"], r["label"]) + (f"<br>{badges}" if badges else ""),
+                    e(r["how"])
+                    + (
+                        f'<br><small class="muted nowrap">{cb.fmt(r["value"] - r["moved"])} → {cb.fmt(r["value"])} '
+                        f"({r['moved']:+.3f}) vs measured</small>"
+                        if r["moved"] is not None
+                        else ""
+                    ),
+                    cb.dataset_link(r["dataset"]),
+                    (f"<code>{e(r['model'])}</code>" if r["model"] else "—")
+                    + f'<br><small class="muted">{e(r["provider"] or "—")}{" · local" if r["local"] else ""}</small>',
+                    (
+                        cb.metric_link(r["measure"])
+                        + f' <span data-v="{r["value"]}">{cb.fmt(r["value"])}</span>'
+                    )
+                    if r["measure"] and r["value"] is not None
+                    else "—",
+                    f'<span data-v="{r["repeats"]}">{r["repeats"]}</span>',
+                    f'<span data-v="{r["cost"] if r["cost"] is not None else ""}">{cb.fmt_amount(r["cost"], "usd") if r["cost"] else "—"}</span>',
+                    f'<span data-v="{r["latency"] if r["latency"] is not None else ""}">{latency}</span>',
+                    f'<span data-flow="runs" data-line>{len(period_rows[r["arm"]]["runs"])}</span>',
+                    '<span data-flow="usd">—</span>',
+                ],
+            }
+        )
+    cfgs = config_rows(A, by_ds, rows, w["spend"])
+    crs = []
+    for c in cfgs:
+        key = f"c:{c['config']}"
+        crs.append(
+            {
+                "key": key,
+                "made": period_rows[key]["made"],
+                "cells": [
+                    f"<code>{e(c['config'])}</code>",
+                    (f"<code>{e(c['model'])}</code>" if c["model"] else "—")
+                    + f'<br><small class="muted">{e(c["provider"] or "—")}{" · local" if c["local"] else ""}</small>',
+                    "<br>".join(cb.dataset_link(d) for d in c["datasets"]),
+                    f'<span data-v="{c["arms"]}">{c["arms"]}</span>',
+                    f'<span data-v="{c["usd"] or 0}">{cb.fmt_amount(c["usd"], "usd") if c["usd"] else "—"}</span>',
+                    "<br>".join(
+                        f'{cb.goal_link(g)} <span class="nowrap">#{i} of {n}</span>'
+                        for g, _ds, i, n in c["ranks"]
+                    )
+                    or "—",
+                    f'<span data-flow="runs" data-line>{len(period_rows[key]["runs"])}</span>',
+                    '<span data-flow="usd">—</span>',
+                ],
+            }
+        )
+    # What changed for arms in the period: first runs, re-measurements, baselines, retirements.
+    # A dataset's arms re-measured the same way on one day (a rescore of every arm) are one change,
+    # not one row each: they would bury everything else in the list.
+    feed = []
+    same: dict = {}
+    for r in rows:
+        if r["first"]:
+            same.setdefault((r["first"], r["dataset"], r["how"]), []).append(r["arm"])
+    for (day, ds, how), arms in same.items():
+        if how != "measured" and len(arms) >= FEED_FOLD:
+            feed.append([day, ("dataset", ds, len(arms)), how])
+        else:
+            feed.extend([day, a, how] for a in arms)
+    for v in by_ds.values():
+        for bl in v.get("baselines") or []:
+            if bl.get("promoted_at") and bl.get("arm"):
+                feed.append([bl["promoted_at"][:10], bl["arm"], "promoted as the baseline"])
+    fn = getattr(A, "rounds", None)
+    for rnd in fn() if callable(fn) else []:
+        for x in rnd.get("retired") or []:
+            day = (rnd.get("closed_at") or rnd.get("opened_at") or "")[:10]
+            match = [
+                r["arm"]
+                for r in rows
+                if r["config"] == x.get("config_id") and r["dataset"] == rnd.get("dataset_id")
+            ]
+            for arm in match[:1]:
+                feed.append([day, arm, f"retired in {rnd['round_id']}: {x.get('reason', '')}"])
+    feed.sort(key=lambda x: x[0], reverse=True)
+    labels = {r["arm"]: r["label"] for r in rows}
+    cb.write_period_rows(out, "arms", period_rows)
+
+    # Each goal's arms on its trade-off charts, one goal at a time (the select picks).
+    charts: list = []
+    options: list = []
+    for gr in cb.glance(A, by_ds):
+        if not gr["dec"]:
+            continue
+        svg = cb.tradeoff_charts(gr["dec"], labels, gr["measure"])
+        if svg:
+            k = cb.slug(f"{gr['goal']['goal_id']}-{gr['dataset']}")
+            options.append(
+                f'<option value="{k}">{e(gr["goal"].get("title") or gr["goal"]["goal_id"])} · {e(gr["dataset"])}</option>'
+            )
+            charts.append(f'<div data-tradeoff="{k}"{"" if not charts else " hidden"}>{svg}</div>')
+
+    facet_chips = "".join(
+        f'<button type="button" class="chip" data-facet="{f}" data-value="{v}" aria-pressed="false">{e(n)}</button>'
+        for f, v, n in (("where", "local", "local"), ("where", "hosted", "hosted"))
+    ) + "".join(
+        f'<button type="button" class="chip" data-facet="tier" data-value="{e(t)}" aria-pressed="false">{e(t)}</button>'
+        for t in sorted({r["tier"] for r in rows if r["tier"]})
+    )
+    if any(r["quality"] for r in rows):
+        facet_chips += "".join(
+            f'<button type="button" class="chip" data-facet="quality" data-value="{v}" aria-pressed="false">{v}</button>'
+            for v in ("ties the leader", "below the leader")
+        )
+    if any(r["weights"] for r in rows):
+        facet_chips += "".join(
+            f'<button type="button" class="chip" data-facet="weights" data-value="{v}" aria-pressed="false">{n}</button>'
+            for v, n in (("open", "open weights"), ("proprietary", "proprietary"))
+        )
+    n_cfg = len(cfgs)
+    body = cb.hero(
+        "arms",
+        "Arms and configs",
+        f"{len(rows)} arms from {n_cfg} configs on {len(by_ds)} datasets. An arm is one config on one dataset "
+        "scored one way: measured, rescored against another reference, judged, or run again (the how column "
+        "says which; group by config to see them together). Pick arms on one dataset to open them in the inspector.",
+        cp.bar(w["first"], w["until"]),
+    )
+    body += cb.block(
+        "01",
+        "every arm",
+        '<div class="arm-tools">'
+        + cb.group_chips("arms", GROUPS)
+        + f'<p class="row-chips facet-chips" data-for="arms" role="group" aria-label="only"><span class="muted small">only</span>{facet_chips}</p>'
+        + "</div>"
+        + cp.row_chips("arms", "arms")
+        + '<p class="compare-bar" hidden><span data-picked>0 picked</span> <a class="btn small" data-compare href="#">open in the inspector</a> <button type="button" class="btn small" data-unpick>clear</button> <small class="muted" data-why></small></p>'
+        + cb.table(
+            "arms",
+            [
+                "",
+                "arm",
+                "how measured",
+                "dataset",
+                "model · provider",
+                "deciding measure",
+                "repeats",
+                "cost / item",
+                "latency",
+                "runs in period",
+                "spend in period",
+            ],
+            trs,
+            "filter arms (name, model, provider…)",
+            period=True,
+            noun="arm",
+        ),
+        "every",
+    )
+    body += cb.block(
+        "02",
+        "configs",
+        '<p class="small muted">One row per config, across every dataset it ran on: where it ranks on each '
+        "goal is its best arm among the arms the goal's decision weighs.</p>"
+        + cp.row_chips("configs", "configs")
+        + cb.table(
+            "configs",
+            [
+                "config",
+                "model · provider",
+                "datasets",
+                "arms",
+                "spend",
+                "rank on each goal",
+                "runs in period",
+                "spend in period",
+            ],
+            crs,
+            "filter configs",
+            period=True,
+        ),
+        "configs",
+    )
+    if feed:
+        body += cb.block(
+            "03",
+            "what changed in the period",
+            '<p class="muted pempty" data-feed-empty="armfeed" hidden>Nothing changed for an arm in this period.</p>'
+            + cb.table(
+                "armfeed",
+                ["when", "arm", "what"],
+                [
+                    {
+                        "made": d,
+                        "cells": [
+                            f'<span data-v="{e(d)}">{e(d)}</span>',
+                            f"{a[2]} arms on {cb.dataset_link(a[1])}"
+                            if isinstance(a, tuple)
+                            else cb.arm_link(a, labels.get(a, a)),
+                            e(w_),
+                        ],
+                    }
+                    for d, a, w_ in feed
+                ],
+            ).replace('class="data sortable"', 'class="data sortable" data-period-feed', 1),
+        )
+    if charts:
+        body += cb.block(
+            "04",
+            "cost and quality, by goal",
+            f'<p><select id="tradeoff-goal" class="chip more" aria-label="goal">{"".join(options)}</select></p>'
+            + "".join(charts),
+        )
+    cb.write(
+        out,
+        "arms.html",
+        cb.page(
+            "Arms",
+            body,
+            0,
+            "arms",
+            (*cb.PERIOD_SCRIPTS("arms"), "assets/group.js", "assets/arms.js"),
+            nav=nav,
+            item=A.item_word,
+        ),
+    )

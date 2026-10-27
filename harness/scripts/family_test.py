@@ -106,9 +106,8 @@ def main() -> int:
     """Run the family test, or replay its output when the exact same test has already run.
 
     Each run is ~20,000 seeded permutations per opponent in pure Python (~18 s for a family
-    of 29), and the report checker, the self-test (which re-runs the checker once per
-    planted defect) and the site build ask the same questions dozens of times per `make
-    ci`. EVAL_NO_CACHE=1 forces a recomputation."""
+    of 29), and the report checker, the self-test and the site build ask the same questions
+    dozens of times per `make ci`. EVAL_NO_CACHE=1 forces a recomputation."""
     args = _parser().parse_args()
     runs_dir = args.runs_dir or RUNS
     use_cache = not os.environ.get("EVAL_NO_CACHE") and runs_dir.is_dir()

@@ -119,7 +119,7 @@ def serve(proj: Path, env: dict, log: Path) -> tuple:
     return p, f"http://127.0.0.1:{port}/.build/catalog/"
 
 
-def drive(base: str) -> None:
+def drive(base: str, overview: str = "") -> None:
     from playwright.sync_api import sync_playwright  # noqa: PLC0415
 
     with sync_playwright() as pw:
@@ -136,26 +136,123 @@ def drive(base: str) -> None:
             "tickets_v1" in page.locator("table#coverage").inner_text(),
         )
         check(
-            "home: activity and spend side by side, recent shown first",
+            "home: activity and spend side by side, the last 14 days first",
             page.locator(".duo #activity figure.chart").first.is_visible()
-            and page.locator('.duo #spend [data-period="recent"]').is_visible(),
+            and page.locator("#spend [data-unit='usd']").is_visible()
+            and page.get_attribute('#period .chip[data-period="14d"]', "aria-pressed") == "true",
         )
-        page.click('.period-switch button[data-show="all"]')
+        shown = {
+            t.locator("span").first.inner_text().lower(): (t.get_attribute("title") or "").split(" ")[0]
+            for t in page.locator(".tile[data-tile]").all()
+        }
+        cli = {
+            ln[:17].strip(): ln[17:35].strip()
+            for ln in (overview or "").splitlines()[1:10]
+            if ln.startswith("  ")
+        }
         check(
-            "home: 'all time' shows every period's panel and hides the recent one",
-            page.locator('#spend [data-period="all"]').is_visible()
-            and not page.locator('#spend [data-period="recent"]').is_visible(),
+            "home: every tile is what `evh overview` prints for the same period, from today",
+            bool(cli) and all(shown.get(k) == v for k, v in cli.items()),
+            f"page {shown} cli {cli}",
         )
-        page.locator('#spend [data-period="all"] button[data-unit-show="tokens"]').click()
+        from datetime import date, timedelta  # noqa: PLC0415
+
+        from evaluation_harness import catalog_periods as cp  # noqa: PLC0415
+
+        days = [date(2026, 1, 1) + timedelta(days=i) for i in range(0, 800, 7)] + [
+            date(2028, 2, 29),
+            date(2026, 3, 31),
+            date(2026, 12, 31),
+        ]
+        bad = []
+        for d in days:
+            ms = int((d - date(1970, 1, 1)).total_seconds() * 1000)
+            for k, *_ in cp.PERIODS:
+                js = page.evaluate("([k,t])=>window.Period.bounds(k,t,'2025-06-01')", [k, ms])
+                py = cp.bounds(k, d, "2025-06-01")
+                if (js["since"], js["until"], js["prev"]) != (
+                    py["since"],
+                    py["until"],
+                    list(py["prev"] or []) or None,
+                ):
+                    bad.append((d.isoformat(), k, js, py))
+        check(
+            f"home: the browser's periods are evh overview's, on {len(days)} days and every period",
+            not bad,
+            str(bad[:3]),
+        )
+        page.click('#period .chip[data-period="all"]')
+        check(
+            "home: 'all time' has no trend; the note says since when, its title the dates to today",
+            page.locator("#period-span").inner_text().startswith("since ")
+            and (page.get_attribute("#period-span", "title") or "").endswith(date.today().isoformat())
+            and "compared" not in (page.get_attribute("#period-span", "title") or "")
+            and page.locator(".tile[data-tile='6'] .trend").inner_text() == "",
+        )
+        page.locator('#spend button[data-unit-show="tokens"]').click()
         check(
             "home: spend in tokens (what a free local model still uses)",
-            page.locator('#spend [data-period="all"] [data-unit="tokens"]').is_visible()
-            and not page.locator('#spend [data-period="all"] [data-unit="usd"]').is_visible(),
+            page.locator('#spend [data-unit="tokens"]').is_visible()
+            and not page.locator('#spend [data-unit="usd"]').is_visible(),
         )
-        page.goto(base + "datasets.html")
+        page.select_option("#period select.more", "lastmonth")
+        check(
+            "home: last month (the tutorial ran today) is empty, and the feed and activity say so",
+            page.locator("[data-feed-empty]").is_visible()
+            and not page.locator("#feeda").is_visible()
+            and "No measured run in this period" in page.locator("#activity").inner_text(),
+        )
+        page.goto(base + "datasets.html#p30d")
         check(
             "datasets page: the dataset is listed",
             "tickets_v1" in page.locator("table#datasets").inner_text(),
+        )
+        check(
+            "datasets page: opens at the period its link names; the tutorial's dataset is new and active in it",
+            page.get_attribute('#period button.chip[data-period="30d"]', "aria-pressed") == "true"
+            and page.locator("table#datasets span.new").count() == 1
+            and page.locator('.row-chips [data-rows="active"] b').inner_text() == "1",
+        )
+        page.click('#period button.chip[data-period="all"]')
+        page.goto(base + "datasets.html#plastmonth")
+        page.click('.row-chips [data-rows="active"]')
+        check(
+            "datasets page: last month (the tutorial ran today) has no active dataset, and says so",
+            page.locator("p.pempty").first.is_visible() and not page.locator("table#datasets").is_visible(),
+        )
+        page.goto(base + "index.html")
+        page.click('.nav details.navgroup[data-group="experiments"] > summary')
+        check(
+            "menu: Experiments opens Arms, Configs and Metrics",
+            page.locator('.nav details.navgroup[data-group="experiments"] .navlist a').all_inner_texts()
+            == ["Arms", "Configs", "Metrics"],
+        )
+        page.goto(base + "arms.html#p30d")
+        rows = page.locator("table#arms tbody tr:not(.grouphead)")
+        check(
+            "arms page: every arm a row, each saying how it was measured",
+            rows.count() >= 3 and "measured" in page.locator("table#arms").inner_text(),
+        )
+        page.click('.group-chips [data-group-by="dataset"]')
+        check(
+            "arms page: grouped by dataset, one heading naming it and its arms",
+            page.locator("table#arms tr.grouphead").count() == 1
+            and "tickets_v1" in page.locator("table#arms tr.grouphead").inner_text(),
+        )
+        page.locator("table#arms input.pick").nth(0).check()
+        page.locator("table#arms input.pick").nth(1).check()
+        link = page.locator(".compare-bar [data-compare]")
+        check(
+            "arms page: two arms on one dataset picked open in the inspector",
+            page.locator(".compare-bar").is_visible()
+            and link.get_attribute("aria-disabled") == "false"
+            and "inspect.html?runs=" in (link.get_attribute("href") or ""),
+        )
+        page.goto(base + "activity.html#pall")
+        check(
+            "activity page: the charts and the period's tables",
+            page.locator("#activity figure.chart").first.is_visible()
+            and "tickets_v1" in page.locator("table#actds").inner_text(),
         )
         page.goto(base + "a/runs-tickets_v1-tickets_lead2_v1.html")
         check(
@@ -312,6 +409,8 @@ def drive(base: str) -> None:
         phone = browser.new_page(viewport={"width": 390, "height": 844})
         phone.on("pageerror", lambda e: errors.append(str(e)))
         for path, ready in (
+            *((p, "main") for p in ("index.html", "goals.html", "datasets.html", "references.html")),
+            *((p, "main") for p in ("metrics.html", "arms.html", "activity.html", "g/tickets_summary.html")),
             ("d/tickets_v1.html", "table#fields"),
             (f"inspect.html?runs={arms}&by=deadline", "h3.sub"),
         ):
@@ -334,7 +433,11 @@ def main() -> int:
     try:
         proj, env = project(tmp)
         server, base = serve(proj, env, tmp / "serve.log")
-        drive(base)
+        ov = subprocess.run(
+            [sys.executable, "-m", "evaluation_harness", "overview", "--period", "14d"],
+            cwd=proj, env=env, capture_output=True, text=True,
+        )  # fmt: skip
+        drive(base, ov.stdout)
     finally:
         if server is not None:
             os.killpg(server.pid, signal.SIGTERM)

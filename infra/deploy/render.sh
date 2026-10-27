@@ -9,6 +9,7 @@
 #   sites/evals.humancopilot.eu/public/           the findings site (site/public, committed)
 #   sites/evals.humancopilot.eu/catalog/public/   the catalog, built here by catalog_build.py
 #   inspector/pkg/                                the harness package, installed from its wheel
+#   inspector/hooks.py, inspector/vendor/         the observability layer and its SDKs (infra/inspector/)
 #   inspector/data/                               runs*, references, datasets, goals: what the
 #                                                 inspector reads (no corpora, no materialized text)
 #   nginx/  caddy/  observability/  deploy/  compose.yml  RELEASE
@@ -58,6 +59,13 @@ python3 -m pip install --quiet --no-deps --target "$OUT/inspector/.pyyaml" "pyya
 cp -a "$OUT/inspector/.pyyaml/yaml" "$OUT/inspector/pkg/yaml"
 rm -rf "$OUT/inspector/.pyyaml"
 find "$OUT/inspector/pkg/yaml" -name '_yaml*.so' -delete
+# The observability layer (infra/inspector/hooks.py, the harness's --hooks): this deployment's, not
+# the harness's. Its SDKs as pure-Python wheels only, pinned, beside the package (PYTHONPATH in
+# compose.yml), so the stock image runs them; nothing is installed on the box.
+python3 -m pip install --quiet --no-deps --no-compile --target "$OUT/inspector/vendor" \
+  --only-binary=:all: --platform any --implementation py --python-version 3.12 \
+  -r "$ROOT/infra/inspector/requirements.txt"
+cp -a "$ROOT/infra/inspector/hooks.py" "$OUT/inspector/hooks.py"
 for d in "$ROOT"/harness/data/runs* "$ROOT"/harness/data/{references,datasets,goals,baselines,rounds,configs,scorers,judging-sets,judge-verdicts}; do
   [ -d "$d" ] && cp -a "$d" "$OUT/inspector/data/"
 done
@@ -114,6 +122,9 @@ done
 find "$OUT/nginx" -type f -exec sed -i "s#__RELEASE_DIR__#${RELEASE_DIR}#g" {} +
 find "$OUT/caddy" -type f -name '*.caddy' -exec sed -i "s#__EVALS_PORT__#${PORT}#g; s#__INSPECTOR_PORT__#${IPORT}#g" {} +
 printf '%s\n' "$SHA" > "$OUT/RELEASE"
+# The containers' `release` label, as the hooks name it (sha-<7>): one string in the logs, GlitchTip
+# and the traces.
+sed -i "s#__RELEASE__#sha-${SHA:0:7}#g" "$OUT/compose.yml"
 
 # Any token left means a placeholder nobody filled: never ship it.
 # JavaScript and source maps are skipped: the docs theme's bundles carry __PURE__ annotations.

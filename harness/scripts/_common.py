@@ -468,6 +468,23 @@ def die(msg: str) -> NoReturn:
     raise SystemExit(f"ERROR: {msg}")
 
 
+def reference_texts(root: Path, dataset_id: str, tier: str = "gold") -> list[Path]:
+    """A reference directory's item files, sorted. Refuses when the directory is missing, or holds
+    only its manifest.json: a repository may commit a reference's checksums and not its texts
+    (V16), which come with the public data. Read as empty, every arm matched nothing and the
+    report tools printed zeros as if they were results."""
+    if not root.is_dir():
+        die(f"no {tier} references at {root}")
+    files = sorted(root.glob("*.txt"))
+    if not files and (root / "manifest.json").is_file():
+        die(
+            f"the {tier} references for {dataset_id} are not on this machine: {root} holds their "
+            "checksums only (manifest.json). Fetch the dataset first, as the experiment's README and "
+            "docs/REPRODUCE.md say (`make data EXP=<experiment>`, or the example's fetch.py)."
+        )
+    return files
+
+
 def no_options(doc: str | None, *flags: str) -> Any:
     """The command line of a command that takes no arguments but `flags` (each an on/off
     switch): -h/--help prints `doc`, anything else is refused with exit 2. Seven commands

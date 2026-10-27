@@ -79,6 +79,10 @@ COMMANDS = {
     "references": ("view_references.py", "every reference, or one: who wrote it, what is scored against it"),
     "metrics": ("view_metrics.py", "what each metric measures, or one in full with the arms recording it"),
     "goals": ("view_goals.py", "every goal, or one: its arms on each of its datasets"),
+    "activity": (
+        "view_activity.py",
+        "the activity page: runs, spend and tokens by dataset, arm and kind, in a period",
+    ),
     "search": ("view_search.py", "the catalog's search: datasets, arms, references, metrics, goals"),
     "inspect": (
         "view_inspect.py",

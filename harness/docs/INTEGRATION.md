@@ -263,10 +263,11 @@ which references exist, what one arm wrote for one item.
   | what each metric measures (optional) | `metric_descriptions()`: `{metric: sentence}` or `{metric: {"summary": sentence, "details": explanation}}`; without it the metrics page describes only the harness's own metrics |
   | what a row is scored against (optional keys) | `describe(arm)`: `"reference"`, `"judge"`, `"wrote_reference"`; `references()`: `"items"`, `"author"`, `"from_run"`, `"model"`, `"created_at"` |
   | what an arm was measured under (optional) | `conditions(arm)`: `{"machine.platform": …, "library.torch": …, "harness.version": …, "scorer.sha256": …, "data.items_sha256": …, "reference.sha256": …}`; the inspector lists what differs between the arms it compares, and warns when it is the scorer, the reference or, for latency, the machine |
-  | dataset versions (optional) | `datasets()`: every dataset id, run or not; `dataset_lineage(dataset)`: `{"dataset_id", "added", "removed", "changed"}` or None; the dataset pages link versions both ways |
+  | dataset versions (optional) | `datasets()`: every dataset id, run or not; `dataset_lineage(dataset)`: `{"dataset_id", "added", "removed", "changed"}` or None; the dataset pages link versions both ways; `dataset_created(dataset)`: when it was frozen (ISO), the day the home page counts it new (else its first run) |
   | rounds: a config's arm id (optional) | `arm_of(dataset, config_id)`: `evh rounds` and `inspect --round` use it; `runs/<dataset>/<config_id>` when absent |
   | arm page: runs and details (optional) | `arm_runs(arm)`: `[{"run_id", "created_at", "items", "cost_usd", "derived"}]`; `arm_config(arm)`: `{"config_id", "params" (credentials removed), "adapter"}`; an arm page shows them when present |
-  | spend in USD and tokens (optional) | `spend()`: `[{"at", "usd", "tokens", "kind": "arm"\|"judge", "dataset", "what"}]` (usd or tokens None when unknown; measured runs and judging per set and day); the home page's spend section and `evh overview` use it |
+  | spend in USD and tokens (optional) | `spend()`: `[{"at", "usd", "tokens", "kind": "arm"\|"judge", "dataset", "what", "arm"}]` (usd or tokens None when unknown; measured runs and judging per set and day; `arm`, optional, names a measured run's arm); the home page's spend, the activity page and the arms page's spend columns, and `evh overview` and `evh activity` use it |
+  | what each model's weights are (optional) | `model_facts()`: `{model: {"weights": "open" \| "proprietary", "licence": …}}`, keyed by the model a run records (`params.model`); the arms page's open-weights and proprietary filters and `evh arms --weights` read it. The harness's own adapter reads `data/models.yaml` (`schemas/models.schema.json`, validate V1); a model not listed is in neither |
   | metrics that need no reference (optional) | `reference_free(metric)`: True when the metric is measured off the bill or the clock, so arms scored against different references can still be compared on it; when absent, a metric whose name contains cost, latency or tokens |
   | the inspector's view kinds | `item_view` returns `{"kind": "text", "text"}`, `{"kind": "none", "note"}`, or a structured `insights` (`items` of `{text, grounded}`, `quotes`), `nodes` (`groups`) or `entities` (`items`); any may carry `info` |
 
@@ -291,6 +292,24 @@ which references exist, what one arm wrote for one item.
   down by a `choice` or `boolean` one. A public deployment (`catalog-serve --public`) answers
   with public fields only (ADR-0003). To read a project's field set, use
   `from evaluation_harness.catalog_adapter import load_fieldset, fieldset_problems`, not the private `_fields`.
+
+- **Observing a served inspector (optional): `--hooks`.** The harness reports to nothing and
+  depends on no error tracker, tracer or metrics library. A deployment that wants them passes
+  `evh catalog-serve --hooks path/to/hooks.py` (or `module`, either with `:NAME`), an object or
+  module with any of:
+
+  | part | called | with |
+  |---|---|---|
+  | `start(info)` | once, before serving | `{"bind", "port", "public", "version"}` |
+  | `request(info)` | after each request | `{"method", "path", "route", "status", "ms"}`; `route` is the API endpoint, a hook route, or `static` |
+  | `error(exc, info)` | when a request raised; it is then answered 500 | the exception, and `info` as for `request` |
+  | `routes` | GET paths of the deployment's own, answered before the host check | `{path: fn(query) -> (status, content_type, body_bytes)}` |
+
+  A hook that raises is printed to stderr and never breaks the request; without `--hooks`
+  nothing changes. A hook route is answered to any Host: serve on it only what anyone who can
+  reach the port may read (a `/metrics` behind a proxy that forwards only `/api/`). This
+  repository's own deployment is an example: `infra/inspector/hooks.py` (Sentry, OpenTelemetry,
+  `/metrics`), with its SDKs vendored by its deploy, not installed with the harness.
 
 ---
 
