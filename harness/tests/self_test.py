@@ -621,6 +621,7 @@ def test_example_scorer_suites_pass() -> None:
         ("test_ner_parser.py", "NER JSON parser"),
         ("test_retrieval_scorer.py", "ranked-list scorer"),
         ("test_stats.py", "paired test (stats.py)"),
+        ("test_stat_commands.py", "compare-runs, bootstrap-test, holdout: their numbers and refusals"),
         ("test_catalog.py", "catalog and run inspector"),
         ("test_serve_hooks.py", "catalog-serve --hooks: called, never breaking a request, off by default"),
         ("test_goals.py", "goals: config, run, baseline, V14, pages"),

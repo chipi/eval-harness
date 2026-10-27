@@ -20,7 +20,10 @@ infra/
   nginx/                 nginx.conf, one server block per host, the security headers
   caddy/                 evals.caddy, catalog.caddy, enabled.txt (which ones are live)
   sites/<host>.cfg       per-host public settings (the CSP report address)
-  observability/         evals.alloy: both containers' logs to VictoriaLogs, app=evals
+  observability/         evals.alloy: both containers' logs to VictoriaLogs (app=evals; service
+                         evals-web for nginx, evals-inspector for the inspector; `release` and,
+                         on nginx's error lines, `level` as structured metadata), and the
+                         inspector's /metrics scrape
   deploy/                render.sh (CI), deploy.sh + install_vhosts.sh + install_alloy.sh (box)
 .github/workflows/deploy-prod.yml   render, upload, activate, probe
 .github/actions/prod-ssh-key/       the CI key and the pinned host key
@@ -51,12 +54,18 @@ infra/
     (`infra/inspector/requirements.txt`, pinned, pure-Python wheels) are vendored by `render.sh`
     into `inspector/vendor/` and found through `PYTHONPATH`; together they cost about 20 MB of the
     256 MB (measured locally 2026-10-27: 27 MB idle without, 44 MB with).
-  - **Settings, on the box, never in the repository:** `/srv/evals/observability.env`, mode 644
-    (the container runs as nobody), `KEY=VALUE` lines: `SENTRY_DSN` (the GlitchTip project's
-    DSN, through the tailnet's TLS node) and `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT`
-    (`https://vtraces.<tailnet>/insert/opentelemetry/v1/traces`). Without the file, or without a
-    key, that part is off and the inspector serves as before; the start line says which parts are
-    on (`hooks: sha-…; GlitchTip on, traces on, /metrics on`).
+  - **Settings, never in the repository and never placed on the box by hand:**
+    `/srv/evals/observability.env`, rendered by the deploy workflow on every deploy (as
+    podcast_scraper renders its `.env`): `SENTRY_DSN` from the environment secret
+    `EVALS_SENTRY_DSN_INSPECTOR` (the GlitchTip project's DSN, through the tailnet's TLS node), and
+    `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` built from `vars.PROD_TAILNET_FQDN` (the tailnet's
+    VictoriaTraces node, `/insert/opentelemetry/v1/traces`), so no tailnet name is committed. Two
+    keys only, written through /dev/shm and moved into place; mode 640, `deploy:deploy`, which the
+    inspector reads through `group_add` 1001 in `compose.yml` and no other account on the box can.
+    The workflow prints the mode, owner and key names, never a value. Without the secret,
+    GlitchTip is off and the rest is on; without the file, or a key, that part is off and the
+    inspector serves as before; the start line says which parts are on (`hooks: sha-…; GlitchTip
+    on, traces on, /metrics on`).
   - **Network:** without the settings it calls out to nothing; with them, to GlitchTip and
     VictoriaTraces only.
   - **What it answers:** only the catalog host, 60 requests a minute per client (identified by the

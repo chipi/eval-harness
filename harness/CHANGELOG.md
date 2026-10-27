@@ -9,7 +9,7 @@ The version lives in `scripts/_version.py`; a release is the git tag `v<version>
 release workflow refuses a tag that disagrees with that file or has no section here. A change
 that can move a result is never a patch release without saying so under **Changed**.
 
-## 0.4.2 — unreleased
+## 0.4.2 — 2026-10-27
 
 A catalog that says what changed, and where: every count on the home page has a trend and opens a
 page that shows the rows behind it, for the same period. An activity page and an arms and configs
@@ -73,6 +73,13 @@ page. No result moves.
 - **"What changed in the period" on the arms page folds** three or more arms of one dataset
   re-measured the same way on one day into one line ("12 arms on `<dataset>`").
 - **A period select never makes a page wider than a phone**, however long its options.
+
+### Fixed
+
+- **`evh bootstrap-test` and this repository's report tools refuse when the gold references are
+  not on the machine** (the repository commits their checksums only): they name the fetch step.
+  The extraction and retrieval reports printed tables of zeros instead, as if they were results,
+  and the classification report died with a traceback.
 
 ## 0.4.1 — 2026-10-27
 

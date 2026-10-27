@@ -11,7 +11,10 @@
 //
 // What ships: nginx's one-JSON-line-per-request access log (infra/nginx/nginx.conf `site_json`)
 // and its error log, and the inspector's own lines (one per /api/ request, plain text, so they
-// pass the json stage unchanged and carry no `site` label; `container` tells them apart). Labels: app=evals, surface=web, service=evals-web, and `site` = the
+// pass the json stage unchanged and carry no `site` label). Labels: app=evals; surface=web and
+// service=evals-web for nginx, surface=inspector and service=evals-inspector for the inspector
+// (`service` is each one's OTel service.name, as LOG-STANDARD has it, so the inspector's logs, its
+// traces, its /metrics and its GlitchTip project share one name); `container`; and `site` = the
 // request's Host (a handful of domains, so a safe stream label). The edge's view of the same
 // requests is already shipped by base.alloy from /var/log/caddy/access.log (job=caddy).
 
@@ -28,13 +31,34 @@ discovery.relabel "evals" {
 		target_label  = "container"
 		replacement   = "$1"
 	}
+	// The surface, and so the service below, per container: nginx serves the web, the inspector is
+	// its own service.
+	rule {
+		source_labels = ["__meta_docker_container_name"]
+		regex         = "/evals-nginx"
+		target_label  = "surface"
+		replacement   = "web"
+	}
+	rule {
+		source_labels = ["__meta_docker_container_name"]
+		regex         = "/evals-inspector"
+		target_label  = "surface"
+		replacement   = "inspector"
+	}
+	// The deployed release (compose label `release: sha-<7>`); loki.process moves it into the
+	// `release` field and drops it as a stream label (LOG-STANDARD: one value per deploy, not a
+	// stream). Absent on a container started before the label existed.
+	rule {
+		source_labels = ["__meta_docker_container_label_release"]
+		target_label  = "release"
+	}
 }
 
 loki.source.docker "evals" {
 	host       = "unix:///var/run/docker.sock"
 	targets    = discovery.relabel.evals.output
 	forward_to = [loki.process.evals.receiver]
-	labels     = {app = "evals", surface = "web"}
+	labels     = {app = "evals"}
 }
 
 loki.process "evals" {
@@ -44,6 +68,29 @@ loki.process "evals" {
 	}
 	stage.labels {
 		values = {site = ""}
+	}
+	// level (LOG-STANDARD), only where the line states one: nginx's error log
+	// (`2026/10/27 12:00:00 [warn] 29#29: ...`), mapped to debug / info / warning / error /
+	// critical. Scoped to those lines, so every other line carries no level at all (absent, not
+	// empty); the inspector's lines are access lines with no level.
+	stage.match {
+		selector = "{container=\"evals-nginx\"} |~ \"^[0-9]{4}/[0-9]{2}/[0-9]{2} [0-9:]{8} \\\\[[a-z]+\\\\]\""
+
+		stage.regex {
+			expression = "^\\d{4}/\\d{2}/\\d{2} \\d{2}:\\d{2}:\\d{2} \\[(?P<nginx_level>[a-z]+)\\]"
+		}
+
+		stage.template {
+			source   = "level"
+			template = "{{ if eq .nginx_level \"warn\" }}warning{{ else if or (eq .nginx_level \"crit\") (eq .nginx_level \"alert\") (eq .nginx_level \"emerg\") }}critical{{ else if eq .nginx_level \"notice\" }}info{{ else }}{{ .nginx_level }}{{ end }}"
+		}
+	}
+
+	stage.structured_metadata {
+		values = {level = "", release = ""}
+	}
+	stage.label_drop {
+		values = ["release"]
 	}
 	forward_to = [loki.relabel.evals_naming.receiver]
 }

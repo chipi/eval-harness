@@ -12,6 +12,11 @@ services:
     # built catalog). nginx-unprivileged stable line, pinned by digest; bump tag and digest together.
     image: nginxinc/nginx-unprivileged:1.30.6-alpine@sha256:782bb89768cc87b7f95c18b95baa1af250e5d451f26794f59363540161147c01
     container_name: evals-nginx
+    # The deployed release (sha-<7>, rendered by render.sh): Alloy copies it into each log line's
+    # `release` field (LOG-STANDARD), the same value as GlitchTip's release and the traces'
+    # service.version.
+    labels:
+      release: __RELEASE__
     # Bypass the image's entrypoint scripts: they try to rewrite /etc/nginx on a read-only root.
     # The config path goes through the `current` symlink, so a reload picks up a new release.
     entrypoint: ["nginx", "-c", "/srv/evals/current/nginx/nginx.conf", "-g", "daemon off;"]
@@ -47,6 +52,10 @@ services:
     image: python:3.12.14-alpine3.23@sha256:d339953547bb5bc57eb5c1ff3224c40890ce56e494b13a52a574658e5a0f888a
     container_name: evals-inspector
     user: "65534:65534"
+    # deploy's group (gid 1001 on the VPS): /srv/evals/observability.env is deploy:deploy, mode 640,
+    # rendered by the deploy workflow, so the inspector can read it and no other account on the box
+    # can. Inside the container the group reaches only what is mounted: /srv/evals, read-only.
+    group_add: ["1001"]
     working_dir: /srv/evals/current/inspector
     environment:
       EVAL_HOME: /srv/evals/current/inspector
@@ -60,6 +69,8 @@ services:
       telemetry.service: evals-inspector
       telemetry.namespace: evals
       telemetry.environment: prod
+      # As on evals-nginx: the release into each log line's `release` field.
+      release: __RELEASE__
     command:
       - python
       - /srv/evals/current/inspector/pkg/evaluation_harness/catalog_serve.py

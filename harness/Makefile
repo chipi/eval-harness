@@ -21,7 +21,7 @@ TIER ?= silver
         holdout pair-test rank-stability \
         experiment-dry-run experiment-run sweep \
         runs-list baselines-list run-compare leaderboard run-promote \
-        validate judge judge-score check guide-check browser-install browser-check budget-check browser-real-check guard-check coverage ci test smoke-fixture cost-report clean clean-cache \
+        validate judge judge-score check guide-check browser-install browser-check budget-check browser-real-check guard-check commands-check coverage ci test smoke-fixture cost-report clean clean-cache \
         bootstrap-test family-test import-run rescore silver-calibrate site site-check docs
 
 # ── getting started ─────────────────────────────────────────────────────────
@@ -122,12 +122,21 @@ browser-real-check:
 guard-check:
 	$(PYTHON) tests/test_checks_can_fail.py
 
-# Line coverage under the whole self-test, subprocesses included (pyproject.toml's
+# The report tools and the operational commands, run as a user runs them, on data where the answer
+# is known (tests/test_report_tools.py, tests/test_ops_commands.py). A few minutes, so not in
+# `make ci`: CI runs it as its own job, beside verify.
+commands-check:
+	$(PYTHON) tests/test_report_tools.py
+	$(PYTHON) tests/test_ops_commands.py
+
+# Line coverage under the whole self-test and commands-check, subprocesses included (pyproject.toml's
 # [tool.coverage.*]): which code no test runs. Needs `coverage` (requirements-dev.txt). Measured on
 # demand, not a gate; harness/docs/TESTING.md records the last result.
 coverage:
 	rm -rf .build/coverage && mkdir -p .build/coverage
 	-HARNESS=$(CURDIR) COVERAGE_FILE=$(CURDIR)/.build/coverage/data $(PYTHON) -m coverage run tests/self_test.py > .build/coverage/self_test.log 2>&1
+	-HARNESS=$(CURDIR) COVERAGE_FILE=$(CURDIR)/.build/coverage/data $(PYTHON) -m coverage run tests/test_report_tools.py > .build/coverage/report_tools.log 2>&1
+	-HARNESS=$(CURDIR) COVERAGE_FILE=$(CURDIR)/.build/coverage/data $(PYTHON) -m coverage run tests/test_ops_commands.py > .build/coverage/ops_commands.log 2>&1
 	HARNESS=$(CURDIR) COVERAGE_FILE=$(CURDIR)/.build/coverage/data $(PYTHON) -m coverage combine -q
 	HARNESS=$(CURDIR) COVERAGE_FILE=$(CURDIR)/.build/coverage/data $(PYTHON) -m coverage report
 

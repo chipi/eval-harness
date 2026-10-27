@@ -144,7 +144,16 @@ Decided with the owner when it comes up.
   (`make browser-real-check`, in the budget job); `guards` always reports; line coverage
   measured (81%, harness/docs/TESTING.md); prod's memory read (145 MiB peak on 0.4.1: the
   235 MB once quoted was the 0.4.0 container) and its answer times.
-- Still to do: "At the 0.4.2 deploy" below (the owner said wait for the deploy).
+- Last round (2026-10-27, done on 042): tests for the least-covered code (the report tools on
+  hand-worked fixtures, the statistics and operational commands; `make commands-check`, its own CI
+  job); the report tools and `bootstrap-test` refuse when gold is not fetched instead of printing
+  zeros; coverage counts the installed copy too; `guards` is a required check; the inspector's
+  observability settings rendered by the deploy from the `prod` environment (secret
+  `EVALS_SENTRY_DSN_INSPECTOR`, set by the prod session), as podcast does; evals.alloy names the
+  inspector's logs `service=evals-inspector` and carries `release` and `level` as structured
+  metadata (LOG-STANDARD); the dashboard PR (chipi/humancopilot.eu#1). Version 0.4.2.
+- Then, with the owner's go (2026-10-27): merge PR #23 and the dashboard PR, tag v0.4.2, deploy,
+  the checks below, then branch 043 for 0.4.3.
 
 ## At the 0.4.2 deploy (owner, 2026-10-27: wait until then)
 
@@ -152,8 +161,11 @@ In this order, each its own approval:
 
 1. Create the GlitchTip project `evals-inspector` (platform python) on the mini, separate from
    evals-web's CSP project; read its DSN; tell the homelab session the slug (projects.json).
-2. The prod session writes `/srv/evals/observability.env` (mode 644): `SENTRY_DSN=<dsn via the
-   tailnet TLS node>`, `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=https://vtraces.<tailnet>/insert/opentelemetry/v1/traces`.
+2. Done 2026-10-27: the prod session wrote `/srv/evals/observability.env` by hand (640,
+   deploy:nogroup). The owner then asked for the podcast way: the deploy workflow renders the file
+   on every deploy from the `prod` environment's secret `EVALS_SENTRY_DSN_INSPECTOR` and
+   `vars.PROD_TAILNET_FQDN` (deploy:deploy, 640; the inspector reads it through `group_add` 1001),
+   designed with the prod session. The prod session sets the secret with the owner's go.
 3. Merge 042, deploy; check the start line (`hooks: sha-…; GlitchTip on, traces on`), the
    inspector's memory under 256 MiB after `--warm`, `up{job="evals-inspector"}` = 1, a span in
    VictoriaTraces, and prove GlitchTip with one test event (telemetry-probe), then delete it.

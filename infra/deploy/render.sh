@@ -122,6 +122,9 @@ done
 find "$OUT/nginx" -type f -exec sed -i "s#__RELEASE_DIR__#${RELEASE_DIR}#g" {} +
 find "$OUT/caddy" -type f -name '*.caddy' -exec sed -i "s#__EVALS_PORT__#${PORT}#g; s#__INSPECTOR_PORT__#${IPORT}#g" {} +
 printf '%s\n' "$SHA" > "$OUT/RELEASE"
+# The containers' `release` label, as the hooks name it (sha-<7>): one string in the logs, GlitchTip
+# and the traces.
+sed -i "s#__RELEASE__#sha-${SHA:0:7}#g" "$OUT/compose.yml"
 
 # Any token left means a placeholder nobody filled: never ship it.
 # JavaScript and source maps are skipped: the docs theme's bundles carry __PURE__ annotations.

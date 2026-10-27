@@ -57,7 +57,7 @@
   <div class="eyebrow"><span class="num">03</span>Step by step</div>
   <h2>Eight steps and an optional ninth, on a real example.</h2>
   <p class="lede">The tutorial kit ships six support tickets and summaries a person wrote. Every output below is what the command printed.</p>
-  <ol class="findings steps"><li class="reveal"><div><h3>Set up</h3><p>A new folder, the harness pinned to a release, and the tutorial kit copied in. <a href="https://evals.humancopilot.eu/docs/GUIDE/#0-set-up">Guide →</a></p><pre class="term"><span class="p">$ </span>pip install &quot;evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.4.1#subdirectory=harness&quot;
+  <ol class="findings steps"><li class="reveal"><div><h3>Set up</h3><p>A new folder, the harness pinned to a release, and the tutorial kit copied in. <a href="https://evals.humancopilot.eu/docs/GUIDE/#0-set-up">Guide →</a></p><pre class="term"><span class="p">$ </span>pip install &quot;evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.4.2#subdirectory=harness&quot;
 <span class="p">$ </span>evh init --tutorial
 <span class="c">wrote    24 file(s), the tutorial kit under tutorial/</span></pre></div></li><li class="reveal"><div><h3>Create a dataset</h3><p>Your inputs become a contract: an item list with a hash per item. <a href="https://evals.humancopilot.eu/docs/GUIDE/#1-create-a-dataset">Guide →</a></p><pre class="term"><span class="p">$ </span>evh dataset-create --dataset-id tickets_v1 --source-dir tutorial/tickets
 <span class="c">data/datasets/tickets_v1.json  (6 item(s))</span></pre></div></li><li class="reveal"><div><h3>Describe your arms</h3><p>One YAML per candidate. Change one thing; bump the id. <a href="https://evals.humancopilot.eu/docs/GUIDE/#3-describe-your-arms">Guide →</a></p><pre class="term"><span class="p">$ </span>cp tutorial/configs/tickets_*.yaml data/configs/</pre></div></li><li class="reveal"><div><h3>Run the best arm; its run is the reference</h3><p>Your best system answers first; the others are measured by how close they come — and the answers are labelled silver. <a href="https://evals.humancopilot.eu/docs/GUIDE/#5-make-its-run-the-reference-optional">Guide →</a></p><pre class="term"><span class="p">$ </span>evh experiment-run --config data/configs/tickets_author.yaml
@@ -137,7 +137,7 @@
       <a href="mailto:marko@humancopilot.eu" data-umami-event="cta-email" data-umami-event-position="footer">Email</a>
     </nav>
   </div>
-  <div class="foot-legal"><span>© Marko Dragoljevic · eval-harness <a href="releases.html#v0.4.1">v0.4.1</a> · build: local · <a href="https://evals.humancopilot.eu/docs/DATA/">Data &amp; licences</a> · <a href="releases.html">Release notes</a></span><span>Cookieless, self-hosted analytics (Umami). No cookies, no tracking across sites. <a href="privacy.html">Privacy</a></span></div>
+  <div class="foot-legal"><span>© Marko Dragoljevic · eval-harness <a href="releases.html#v0.4.2">v0.4.2</a> · build: local · <a href="https://evals.humancopilot.eu/docs/DATA/">Data &amp; licences</a> · <a href="releases.html">Release notes</a></span><span>Cookieless, self-hosted analytics (Umami). No cookies, no tracking across sites. <a href="privacy.html">Privacy</a></span></div>
 </div></footer>
 <div id="tip" role="tooltip"></div>
 <script src="assets/js/2b3d1b9b2afe.js"></script>

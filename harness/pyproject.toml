@@ -73,13 +73,19 @@ warn_unused_ignores = true
 
 [tool.coverage.run]
 # `make coverage`: line coverage of the harness's code (scripts/, the package) and this repository's
-# report checks (tools/) under the whole self-test. Most tests run the code in a subprocess (the
-# commands as a user runs them), so subprocesses are measured too. HARNESS is set by the make
-# target: a test's subprocess often runs in another directory.
+# report checks (tools/) under the self-test and commands-check. Most tests run the code in a
+# subprocess (the commands as a user runs them), so subprocesses are measured too. Files are chosen
+# by pattern, not by `source`: many tests run the copy installed from the wheel (a temporary
+# site-packages), and `evh` runs each command's file by path (runpy), which neither a source
+# directory nor a package import catches. [tool.coverage.paths] maps the installed copy back onto
+# scripts/, so code only the installed tests reach counts as reached.
 patch = ["subprocess"]
 parallel = true
-source = ["${HARNESS}/scripts", "${HARNESS}/tools"]
-omit = ["*/test_*.py"]
+include = ["${HARNESS}/scripts/*", "${HARNESS}/tools/*", "*/evaluation_harness/*"]
+omit = ["*/test_*.py", "*/tutorial/*"]
+
+[tool.coverage.paths]
+package = ["${HARNESS}/scripts", "*/evaluation_harness"]
 
 [tool.coverage.report]
 skip_empty = true
