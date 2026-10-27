@@ -51,11 +51,12 @@ concurrency:
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     environment: prod
     # A push deploys only once the repository variable PROD_AUTO_DEPLOY is "true". It is unset
     # until the first deploy has been dispatched (a dry run, then a real one) and has passed, so
@@ -80,6 +81,35 @@ jobs:
             if [ -z "${!v}" ]; then echo "::error::$v is not set in the prod environment"; missing=1; fi
           done
           exit $missing
+
+      # NOTHING DEPLOYS BEFORE CI HAS PASSED ON THE SAME COMMIT. A push to main used to deploy at
+      # once while reproduce was still running: c91d48b0 deployed at 11:01Z on 2026-10-27, its
+      # verify failed at 11:32Z (a stale releases.html), and prod served it until the next deploy.
+      # Same rule as harness-release.yml: reproduce, quality and guards completed and green, waiting
+      # up to 40 minutes. A run cancelled by a newer push fails this deploy; the newer commit's own
+      # deploy then runs after its CI.
+      - name: CI on this commit is green
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for _ in $(seq 80); do
+            pending=0; bad=""
+            all=$(gh run list --repo "$GITHUB_REPOSITORY" --commit "$GITHUB_SHA" --event push --branch main \
+              --limit 100 --json workflowName,status,conclusion \
+              --jq '.[] | "\(.workflowName)\t\(.status) \(.conclusion)"')
+            for wf in reproduce quality guards; do
+              runs=$(printf '%s\n' "$all" | awk -F '\t' -v w="$wf" '$1 == w {print $2}')
+              if [ -z "$runs" ]; then
+                bad="$bad $wf:no-run-on-main"; continue
+              fi
+              echo "$runs" | grep -qv '^completed' && { pending=1; continue; }
+              echo "$runs" | grep -qx 'completed success' || bad="$bad $wf:$(echo "$runs" | head -1)"
+            done
+            [ -n "$bad" ] && { echo "::error::CI on $GITHUB_SHA is not green:$bad; nothing deployed"; exit 1; }
+            [ "$pending" = 0 ] && { echo "CI on $GITHUB_SHA is green"; exit 0; }
+            sleep 30
+          done
+          echo "::error::CI on $GITHUB_SHA did not finish within 40 minutes; nothing deployed"; exit 1
 
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
