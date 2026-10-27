@@ -7,8 +7,11 @@ business, not the harness's (a project that runs the harness locally uses none o
 
   - errors to GlitchTip, through the Sentry SDK, environment prod, release sha-<7> (ADR-0010 in
     agentic-ai-homelab), when SENTRY_DSN is set;
-  - one OpenTelemetry span per request to the homelab's trace store over OTLP/HTTP, service
-    evals-inspector, namespace evals, when OTEL_EXPORTER_OTLP_TRACES_ENDPOINT is set;
+  - one OpenTelemetry span per reader's request to the homelab's trace store over OTLP/HTTP,
+    service evals-inspector, namespace evals, when OTEL_EXPORTER_OTLP_TRACES_ENDPOINT is set. Not
+    for static files, Docker's health check (/api/health, every 30 s) or the collector's scrape
+    (/metrics, every 60 s): ~4,300 spans a day that would bury the readers' comparisons and tell
+    nothing the health status, the scrape's `up` and the logs do not; /metrics still counts them;
   - /metrics, always: requests and their latency per route and status, the inspector's caches,
     the process's memory, in the Prometheus text format, for the box's collector to scrape. Only
     127.0.0.1:8097 serves it: Caddy forwards nothing but /catalog/api/ to the inspector.
@@ -31,6 +34,8 @@ SERVICE, NAMESPACE, ENVIRONMENT = "evals-inspector", "evals", "prod"
 #: The latency histogram's upper bounds, in seconds (an answer from the cache is a few ms; a
 #: comparison computed cold, seconds).
 BUCKETS = (0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0)
+#: Routes counted in /metrics but never traced: static files, and the machines' own requests.
+UNTRACED = ("static", "/api/health", "/metrics")
 
 _lock = threading.Lock()
 _count: dict = {}  # (route, status) -> requests
@@ -132,7 +137,7 @@ def request(info: dict) -> None:
         h[len(BUCKETS)] += 1
         h[-1] += secs
     tracer = _state["tracer"]
-    if tracer is not None and route != "static":
+    if tracer is not None and route not in UNTRACED:
         end = time.time_ns()
         span = tracer.start_span(f"{info['method']} {route}", start_time=end - int(info["ms"] * 1e6))
         span.set_attribute("http.request.method", info["method"])

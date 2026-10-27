@@ -86,6 +86,8 @@ budget-check: $(PY)
 	  -r infra/inspector/requirements.txt
 	printf 'SENTRY_DSN=http://k@127.0.0.1:9/1\nOTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://127.0.0.1:9/v1/traces\n' > harness/.build/obs-unreachable.env
 	cd harness && PYTHONPATH=.build/vendor EVALS_OBS_ENV=.build/obs-unreachable.env $(abspath $(PY)) tests/test_inspector_budget.py --catalog .build/budget-catalog --hooks ../infra/inspector/hooks.py
+	# This deployment's hooks with the same SDKs: which requests become traces.
+	PYTHONPATH=harness/.build/vendor $(abspath $(PY)) infra/inspector/test_hooks.py
 
 docs:
 	mkdocs build --strict

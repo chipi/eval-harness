@@ -7,14 +7,15 @@
 # Steps, each one a gate (template: chipi/humancopilot.eu infra/deploy/deploy.sh):
 #   1. Preflight: both loopback ports are free or already ours.
 #   2. `nginx -t` on the NEW release's config, in a throwaway container, before anything moves.
+#   2b. Ship the Alloy drop-in (install_alloy.sh: validates the whole set, confirms the reload),
+#      BEFORE the containers are recreated, so their log tailers start under this release's rules.
 #   3. Switch the `current` symlink atomically, `compose up` (both containers are recreated: the
 #      inspector loads the new release's code and data, and each gets a new Alloy log tailer with the
 #      release's labels), reload nginx.
 #   4. Health: every site answers 200 on / and 404 on a missing page, on the loopback port with
 #      its own Host header; the inspector answers /api/health and a real comparison.
 #      On any failure in 3 or 4: point `current` back at the previous release, `compose up` its
-#      compose.yml (undoes an image bump) and reload. Steps 5-6 have their own restore.
-#   5. Ship the Alloy drop-in (install_alloy.sh: validates the whole set, confirms the reload).
+#      compose.yml (undoes an image bump) and reload. Steps 2b and 6 have their own restore.
 #   6. Install/remove our Caddy vhosts per caddy/enabled.txt (install_vhosts.sh).
 #   7. Keep the last 5 releases.
 #
@@ -52,6 +53,15 @@ docker run --rm --read-only --tmpfs /tmp:uid=101,gid=101 -v "$BASE:$BASE:ro" \
 echo "  nginx config valid"
 if [ "${DRY_RUN:-false}" = "true" ]; then echo "  DRY-RUN: stopping before the switch"; exit 0; fi
 
+# 2b. Logs: our Alloy drop-in (evals-nginx, evals-inspector), validated with the whole set (it
+# restores the previous set itself if Alloy refuses). BEFORE the containers are recreated: Alloy
+# keeps a running container's log tailer on the label set it started with across a reload, so a
+# container started before a changed drop-in loads ships without the new labels until it is
+# recreated (0.4.2: evals-nginx without `release`; homelab reproduced it). Recreated after this
+# step, both get tailers under this release's rules. The inspector's /metrics scrape reads up=0
+# for the seconds until step 3 has it running.
+bash "$REL/deploy/install_alloy.sh" "$REL/observability/evals.alloy"
+
 # 3. Switch. From here on any failure rolls back the WHOLE release: content, configs, and the
 # containers themselves (compose.yml of the previous release, so an image bump is undone too).
 prev="$(readlink "$BASE/current" 2>/dev/null || true)"
@@ -71,9 +81,7 @@ rollback() {
 }
 ln -sfn "$REL" "$BASE/current.new" && mv -T "$BASE/current.new" "$BASE/current"
 # Recreated on every release too, not only when compose sees a change: a new container is a new
-# log tailer in Alloy, which takes the release's labels (`release`) from the start. On 0.4.2 nginx
-# was recreated before Alloy's reload and its tailer kept the label set it started with, so its
-# lines shipped without `release` while the inspector's carried it (prod, Alloy's component API).
+# log tailer in Alloy, under the rules step 2b installed, so its lines carry this release's labels.
 "${COMPOSE[@]}" up -d --wait --wait-timeout 60 --force-recreate nginx || rollback "compose up of nginx ($SHA) failed"
 # The inspector keeps its code, data and caches in memory: recreate it on every release.
 "${COMPOSE[@]}" up -d --wait --wait-timeout 90 --force-recreate inspector || rollback "compose up of the inspector ($SHA) failed"
@@ -116,9 +124,6 @@ if [ -n "$q2" ]; then
   fi
 fi
 echo "  inspector ok"
-
-# 5. Logs: our Alloy drop-in (evals-nginx, evals-inspector), validated with the whole set.
-bash "$REL/deploy/install_alloy.sh" "$REL/observability/evals.alloy"
 
 # 6. Edge vhosts.
 bash "$REL/deploy/install_vhosts.sh" "$REL/caddy"
