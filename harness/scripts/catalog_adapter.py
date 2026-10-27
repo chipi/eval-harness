@@ -182,6 +182,9 @@ class Adapter(Protocol):
     # scored against different references can still be compared on it. When absent, a metric
     # whose name contains cost, latency or tokens is taken to need none.
     # def reference_free(self, metric: str) -> bool: ...
+    # Optional: what each model's weights are, {model: {"weights": "open" | "proprietary",
+    # "licence": ...}}, keyed by the model a run records; the arms page filters on it.
+    # def model_facts(self) -> dict[str, dict]: ...
     # Optional: experiment rounds (ADR-0004), each round's record with "arms", the arm ids in play;
     # a goal page shows them as its history.
     # def rounds(self) -> list[dict]: ...
@@ -631,6 +634,15 @@ class HarnessAdapter:
                 if v not in seen.setdefault(k, []):
                     seen[k].append(v)
         return {k: vs[0] if len(vs) == 1 else "varies: " + " | ".join(vs) for k, vs in seen.items()}
+
+    @_memo
+    def model_facts(self) -> dict[str, dict]:
+        """data/models.yaml's models (models.schema.json), {} without it."""
+        import yaml  # noqa: PLC0415
+
+        f = self.data_dir / "models.yaml"
+        doc = yaml.safe_load(f.read_text(encoding="utf-8")) if f.is_file() else None
+        return (doc or {}).get("models") or {} if isinstance(doc, dict) else {}
 
     @_memo
     def rounds(self) -> list[dict]:

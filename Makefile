@@ -22,7 +22,7 @@ ARMS ?=
 CONFIG ?=
 
 .DEFAULT_GOAL := help
-.PHONY: help setup verify list plan data reproduce compare site docs browser-check budget-check guard-check \
+.PHONY: help setup verify list plan data reproduce compare site docs browser-check browser-real-check budget-check guard-check \
 	quality-install quality lint format type security audit-locks deadcode docstrings spelling shell complexity
 
 help:
@@ -70,6 +70,9 @@ browser-check: $(PY)
 
 guard-check: $(PY)
 	$(MAKE) -C harness guard-check
+
+browser-real-check: $(PY)
+	$(MAKE) -C harness browser-real-check
 
 # The inspector's budgets: the harness alone, then with this deployment's hooks and their SDKs
 # (infra/inspector/), vendored into .build/vendor as render.sh vendors them for prod.

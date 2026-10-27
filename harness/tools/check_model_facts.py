@@ -18,6 +18,8 @@ import re
 import sys
 from pathlib import Path
 
+import yaml
+
 HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this file is in tools/)
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
 from evaluation_harness._common import no_options  # noqa: E402
@@ -255,6 +257,34 @@ check(
     "mistral_l is tabulated as open in REFERENCE.md",
     re.search(r"\| `mistral_l` \|[^|]*\|[^|]*\| \*\*open\*\*", (ROOT / "docs" / "REFERENCE.md").read_text())
     is not None,
+)
+
+# data/models.yaml says the same as the hosted table, alias by alias: the arms page's open /
+# proprietary filter reads that file, so a model marked differently there would put an arm on the
+# wrong side of the filter while REFERENCE.md says otherwise. The replacement arm (qwen37max) is
+# stated in REFERENCE.md's note under the table, not in it.
+
+_ref = (ROOT / "docs" / "REFERENCE.md").read_text()
+_by_alias = {
+    alias: ("proprietary" if kind == "proprietary" else "open")
+    for alias, kind in re.findall(
+        r"^\| `[a-z0-9_]+` \| `([^`]+)` \|[^|]*\| (\*\*open\*\*|proprietary)", _ref, re.M
+    )
+}
+for alias, kind in re.findall(r"alias `([^`]+)` → \[[^\]]+\]\([^)]+\), weights: (open|proprietary)", _ref):
+    _by_alias[alias] = kind
+_models = (yaml.safe_load((ROOT / "harness" / "data" / "models.yaml").read_text(encoding="utf-8")) or {}).get(
+    "models"
+) or {}
+_differ = [
+    f"{a}: models.yaml {(_models.get(a) or {}).get('weights')}, REFERENCE.md {k}"
+    for a, k in sorted(_by_alias.items())
+    if (_models.get(a) or {}).get("weights") != k
+]
+check(
+    f"data/models.yaml marks each of REFERENCE.md's {len(_by_alias)} hosted aliases open or proprietary as it does",
+    len(_by_alias) >= 25 and not _differ,
+    "; ".join(_differ[:4]) or f"read {len(_by_alias)} aliases",
 )
 
 for n in notes:

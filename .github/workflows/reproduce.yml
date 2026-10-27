@@ -16,7 +16,9 @@
 #              its memory under --warm below 200 MB (prod's container has 256 MiB; the 0.4.0
 #              inspector peaked at 260 MB and was OOM-killed every ~5 minutes), a cached answer in
 #              milliseconds, a cold one in seconds; then the same with this deployment's hooks and
-#              their SDKs (infra/inspector/), as prod runs it.
+#              their SDKs (infra/inspector/), as prod runs it. Then the pages of that same catalog
+#              in Chromium (harness/tests/test_catalog_real_browser.py): hundreds of arms, not a
+#              tutorial's three.
 #
 # No secrets: nothing here calls a paid model, so it is safe on pull requests from forks.
 name: reproduce
@@ -57,11 +59,17 @@ jobs:
         with:
           python-version: "3.11"
           cache: pip
-          cache-dependency-path: harness/requirements.txt
+          cache-dependency-path: |
+            harness/requirements.txt
+            harness/requirements-browser.txt
       - name: harness environment
         run: make -C harness install
       - name: make budget-check
         run: make budget-check
+      - name: Playwright and Chromium, cached
+        uses: ./.github/actions/install-playwright
+      - name: make browser-real-check (the pages, on the catalog budget-check built)
+        run: make browser-real-check
 
   browser:
     runs-on: ubuntu-latest

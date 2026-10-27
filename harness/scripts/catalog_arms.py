@@ -6,7 +6,7 @@
 
 `evh arms` prints the same rows (`arm_rows`, `config_rows`). The period parts are the shared ones
 (catalog_periods.py, catalog_assets/period.js); the grouping, facets and comparison are
-catalog_assets/arms.js.
+catalog_assets/group.js and arms.js.
 """
 
 from __future__ import annotations
@@ -16,6 +16,10 @@ import html
 #: Providers that bill per call over the network. An arm is hosted when it runs through one of
 #: these or its config prices tokens; every other provider runs on the machine that ran the arm.
 HOSTED_PROVIDERS = ("litellm", "openai", "anthropic", "openrouter", "together", "groq", "mistral", "gemini")
+
+#: How many arms of one dataset re-measured the same way on one day make one line of "what
+#: changed" instead of one each.
+FEED_FOLD = 3
 
 #: How a table of arms can be grouped: (key, the chip's name).
 GROUPS = (
@@ -42,13 +46,24 @@ def _base(arm: str) -> str:
 def arm_rows(A, by_ds: dict) -> list[dict]:
     """One row per arm, by dataset, then config, the config's own measurement first:
     {"arm", "label", "dataset", "config", "model", "provider", "family", "tier", "local",
-    "scored", "how", "roles", "goal", "measure", "value", "lower", "repeats", "cost",
-    "latency", "first", "last"}. `how` says what the arm is beside the config's other arms:
-    measured, rescored against a reference, judged by a scorer, re-parsed, or run again."""
+    "weights", "quality", "scored", "how", "roles", "goal", "measure", "value", "lower", "repeats",
+    "cost", "latency", "first", "last"}. `weights` is "open", "proprietary" or "" (unknown: the
+    adapter's model_facts does not list the model). `quality` is "ties the leader" when a goal's
+    decision ties the arm with its quality leader (the leader too), "below the leader" when it
+    weighs the arm and does not, "" when no decision weighs it. A role "over a limit" is an arm a
+    goal leaves out for a limit it breaks; "not eligible" one it leaves out for another reason.
+    `how` says what the arm is beside the config's other arms: measured, rescored against a
+    reference, judged by a scorer, re-parsed, or run again.
+    `source` and `moved`: for an arm derived from the config's measured arm on the same dataset
+    (rescored, re-parsed, run again), that arm and how far the deciding measure moved from it; None
+    when there is none, or the two are not on the same measure (a judge scores its own)."""
     from evaluation_harness import catalog_build as cb  # noqa: PLC0415
 
     cfg = getattr(A, "arm_config", None)
+    fn = getattr(A, "model_facts", None)
+    facts = (fn() if callable(fn) else None) or {}
     roles: dict = {}
+    quality: dict = {}
     measure_of: dict = {}
     for r in cb.glance(A, by_ds):
         g, dec = r["goal"], r["dec"]
@@ -64,8 +79,13 @@ def arm_rows(A, by_ds: dict) -> list[dict]:
         if dec:
             for arm in dec["rows"]:
                 measure_of.setdefault(arm, (g, r["measure"], r["lower"]))
+                if arm in (dec.get("tied") or []):
+                    quality[arm] = "ties the leader"
+                elif arm in dec["eligible"]:
+                    quality.setdefault(arm, "below the leader")
                 if arm not in dec["eligible"] and arm not in (r.get("retired") or {}):
-                    roles.setdefault(arm, []).append("not eligible")
+                    over = any(" limit " in why for why in (dec.get("out") or {}).get(arm) or [])
+                    roles.setdefault(arm, []).append("over a limit" if over else "not eligible")
     out = []
     for ds, v in sorted(by_ds.items()):
         tiers = {x["id"]: x["tier"] for x in v["refs"]}
@@ -104,6 +124,8 @@ def arm_rows(A, by_ds: dict) -> list[dict]:
                     "local": not (
                         (p.get("provider") or "") in HOSTED_PROVIDERS or p.get("usd_per_mtok_in") is not None
                     ),
+                    "weights": (facts.get(p.get("model") or "") or {}).get("weights") or "",
+                    "quality": quality.get(a["arm"], ""),
                     "scored": "judge" if a["judge"] else (tiers.get(a["reference"]) or "none"),
                     "how": how,
                     "roles": roles.get(a["arm"], []),
@@ -116,8 +138,18 @@ def arm_rows(A, by_ds: dict) -> list[dict]:
                     "latency": (a["means"].get("latency_ms") or (None,))[0],
                     "first": min(dated, default="")[:10],
                     "last": max(dated, default="")[:10],
+                    "source": None,
+                    "moved": None,
                 }
             )
+    measured = {(r["dataset"], r["config"]): r for r in out if r["how"] == "measured"}
+    for r in out:
+        src = measured.get((r["dataset"], r["config"]))
+        if r["how"] == "measured" or src is None:
+            continue
+        r["source"] = src["arm"]
+        if r["measure"] and r["measure"] == src["measure"] and None not in (r["value"], src["value"]):
+            r["moved"] = r["value"] - src["value"]
     return out
 
 
@@ -216,6 +248,8 @@ def render_arms(A, by_ds: dict, out, nav: list) -> None:
             "scored": r["scored"],
             "where": "local" if r["local"] else "hosted",
             "tier": r["tier"] or "—",
+            "weights": r["weights"] or "unknown",
+            "quality": r["quality"] or "not decided",
         }
         trs.append(
             {
@@ -225,7 +259,13 @@ def render_arms(A, by_ds: dict, out, nav: list) -> None:
                 "cells": [
                     f'<input type="checkbox" class="pick" aria-label="pick {e(r["label"])}" data-arm="{e(r["arm"])}" data-ds="{e(r["dataset"])}">',
                     cb.arm_link(r["arm"], r["label"]) + (f"<br>{badges}" if badges else ""),
-                    e(r["how"]),
+                    e(r["how"])
+                    + (
+                        f'<br><small class="muted nowrap">{cb.fmt(r["value"] - r["moved"])} → {cb.fmt(r["value"])} '
+                        f"({r['moved']:+.3f}) vs measured</small>"
+                        if r["moved"] is not None
+                        else ""
+                    ),
                     cb.dataset_link(r["dataset"]),
                     (f"<code>{e(r['model'])}</code>" if r["model"] else "—")
                     + f'<br><small class="muted">{e(r["provider"] or "—")}{" · local" if r["local"] else ""}</small>',
@@ -269,16 +309,18 @@ def render_arms(A, by_ds: dict, out, nav: list) -> None:
             }
         )
     # What changed for arms in the period: first runs, re-measurements, baselines, retirements.
+    # A dataset's arms re-measured the same way on one day (a rescore of every arm) are one change,
+    # not one row each: they would bury everything else in the list.
     feed = []
+    same: dict = {}
     for r in rows:
         if r["first"]:
-            feed.append(
-                [
-                    r["first"],
-                    r["arm"],
-                    r["how"],
-                ]
-            )
+            same.setdefault((r["first"], r["dataset"], r["how"]), []).append(r["arm"])
+    for (day, ds, how), arms in same.items():
+        if how != "measured" and len(arms) >= FEED_FOLD:
+            feed.append([day, ("dataset", ds, len(arms)), how])
+        else:
+            feed.extend([day, a, how] for a in arms)
     for v in by_ds.values():
         for bl in v.get("baselines") or []:
             if bl.get("promoted_at") and bl.get("arm"):
@@ -312,10 +354,6 @@ def render_arms(A, by_ds: dict, out, nav: list) -> None:
             )
             charts.append(f'<div data-tradeoff="{k}"{"" if not charts else " hidden"}>{svg}</div>')
 
-    group_chips = "".join(
-        f'<button type="button" class="chip" data-group-by="{k}" aria-pressed="{str(not k).lower()}">{e(n)}</button>'
-        for k, n in GROUPS
-    )
     facet_chips = "".join(
         f'<button type="button" class="chip" data-facet="{f}" data-value="{v}" aria-pressed="false">{e(n)}</button>'
         for f, v, n in (("where", "local", "local"), ("where", "hosted", "hosted"))
@@ -323,6 +361,16 @@ def render_arms(A, by_ds: dict, out, nav: list) -> None:
         f'<button type="button" class="chip" data-facet="tier" data-value="{e(t)}" aria-pressed="false">{e(t)}</button>'
         for t in sorted({r["tier"] for r in rows if r["tier"]})
     )
+    if any(r["quality"] for r in rows):
+        facet_chips += "".join(
+            f'<button type="button" class="chip" data-facet="quality" data-value="{v}" aria-pressed="false">{v}</button>'
+            for v in ("ties the leader", "below the leader")
+        )
+    if any(r["weights"] for r in rows):
+        facet_chips += "".join(
+            f'<button type="button" class="chip" data-facet="weights" data-value="{v}" aria-pressed="false">{n}</button>'
+            for v, n in (("open", "open weights"), ("proprietary", "proprietary"))
+        )
     n_cfg = len(cfgs)
     body = cb.hero(
         "arms",
@@ -336,9 +384,9 @@ def render_arms(A, by_ds: dict, out, nav: list) -> None:
         "01",
         "every arm",
         '<div class="arm-tools">'
-        f'<p class="row-chips group-chips" role="group" aria-label="group by"><span class="muted small">group by</span>{group_chips}</p>'
-        f'<p class="row-chips facet-chips" role="group" aria-label="only"><span class="muted small">only</span>{facet_chips}</p>'
-        "</div>"
+        + cb.group_chips("arms", GROUPS)
+        + f'<p class="row-chips facet-chips" data-for="arms" role="group" aria-label="only"><span class="muted small">only</span>{facet_chips}</p>'
+        + "</div>"
         + cp.row_chips("arms", "arms")
         + '<p class="compare-bar" hidden><span data-picked>0 picked</span> <a class="btn small" data-compare href="#">open in the inspector</a> <button type="button" class="btn small" data-unpick>clear</button> <small class="muted" data-why></small></p>'
         + cb.table(
@@ -359,6 +407,7 @@ def render_arms(A, by_ds: dict, out, nav: list) -> None:
             trs,
             "filter arms (name, model, provider…)",
             period=True,
+            noun="arm",
         ),
         "every",
     )
@@ -399,7 +448,9 @@ def render_arms(A, by_ds: dict, out, nav: list) -> None:
                         "made": d,
                         "cells": [
                             f'<span data-v="{e(d)}">{e(d)}</span>',
-                            cb.arm_link(a, labels.get(a, a)),
+                            f"{a[2]} arms on {cb.dataset_link(a[1])}"
+                            if isinstance(a, tuple)
+                            else cb.arm_link(a, labels.get(a, a)),
                             e(w_),
                         ],
                     }
@@ -422,7 +473,7 @@ def render_arms(A, by_ds: dict, out, nav: list) -> None:
             body,
             0,
             "arms",
-            (*cb.PERIOD_SCRIPTS("arms"), "assets/arms.js"),
+            (*cb.PERIOD_SCRIPTS("arms"), "assets/group.js", "assets/arms.js"),
             nav=nav,
             item=A.item_word,
         ),

@@ -237,11 +237,13 @@ tiles open it.
   judges), then the period bar.
 - `01 activity` and `02 spend`: the home page's two charts, each the page's full width.
 - `03 by dataset`: **dataset**, **runs in period**, **runs per day**, **spend in period**,
-  **tokens in period**, the busiest first.
+  **tokens in period**; what moved most against the period before first (up or down, by runs),
+  then the busiest; for all time, which has no period before, the busiest.
 - `04 by arm`: the all / new / active chips, then **arm**, **dataset**, **runs in period** (with
-  its line), **spend in period**, **tokens in period**, the busiest first. Filterable.
+  its line), **spend in period**, **tokens in period**, in the same order. Filterable.
 - `05 by kind`: systems under test and judges: **spend in period**, **tokens in period**.
-- Command: `evh activity [--period P] [--arms N]`: the same three tables (the busiest N arms).
+- Command: `evh activity [--period P] [--arms N]`: the same three tables, in the same order (the N
+  arms that moved most).
 
 ## The datasets page
 
@@ -250,7 +252,9 @@ tiles open it.
   `pair-test` reads it: a config rescored against silver or by a judge is an arm of its own."
   `evh catalog` prints the same counts, and `evh datasets` has a `configs` column beside `arms`.
 - The period bar in the hero.
-- `01 datasets`: the all / new / active chips, then one row per dataset, most arms first:
+- `01 datasets`: **group by** chips (no grouping, goal: a dataset under several goals is a group
+  named after all of them, one under none is "no goal"), the all / new / active chips, then one
+  row per dataset, most arms first:
   **dataset** ("from `<parent>`" under a version; the new badge), **items**, **arms**, **runs in
   period** (with its trend), **runs per day** (a line), **spend in period**, **references**,
   **goals**, **baseline** (the promoted arm), **last run**. Filterable.
@@ -408,7 +412,8 @@ over the project's data; with a project adapter the rounds table and details sti
 
 - Hero: kicker `metrics`, "What each number on these pages measures, which way is better, where
   it is recorded, and which goals decide on it.", then the period bar.
-- `01 metrics`: the all / new / active chips, then one row per metric (bookkeeping and totals
+- `01 metrics`: **group by** chips (no grouping, role), the all / new / active chips, then one
+  row per metric (bookkeeping and totals
   last), its name linked to the metric's own page (each row keeps the anchor `#m-<metric>`; the
   new badge): **metric**, **role** ("decides" when a goal decides on it, "weighs" when a goal
   weighs it as an axis, else "describes"; sortable, and the filter box takes the word), **what it measures** (the
@@ -435,15 +440,22 @@ tile opens it grouped by config (`arms.html?group=config`).
     has a heading row with its name and arm count; a column's sort holds inside each group.
   - **only** chips: local, hosted (hosted when it runs through a provider that bills per call,
     litellm, openai, anthropic and the like, or its config prices tokens), then each price tier
-    the configs declare (free, small, mid, large). Within one kind any chip picked keeps a row;
-    across kinds all must.
+    the configs declare (free, small, mid, large); ties the leader, below the leader (the arm's
+    place in a goal's decision: tied with its quality leader, the leader included, or weighed and
+    not tied; an arm no decision weighs is in neither); open weights, proprietary (the model's
+    weights, from the project's `data/models.yaml`; an unlisted model is in neither; the chips
+    show only when the file lists a model an arm ran). Within one kind any chip picked keeps a
+    row; across kinds all must.
   - the all / new / active chips; a compare bar once an arm is ticked: "N picked", **open in the
     inspector** (only when the picked arms share a dataset, else "the inspector compares arms on
     one dataset: pick arms of one"), **clear**.
   - the table, flat: a tick box, **arm** (linked; the new badge; under it the role badges:
-    baseline, leader, recommended, retired in a round, not eligible), **how measured**
-    (measured; rescored against `<reference>`; judged by `<scorer>`; re-parsed; run again
-    (`<runs dir>`)), **dataset**, **model · provider** (provider muted, "· local" for a local
+    baseline, leader, recommended, retired in a round, over a limit (a goal leaves it out for a
+    limit it breaks), not eligible (left out for another reason)), **how measured** (measured;
+    rescored against `<reference>`; judged by `<scorer>`; re-parsed; run again (`<runs dir>`);
+    under a derived arm, how its deciding measure moved from the config's measured arm, "0.712 →
+    0.745 (+0.033) vs measured", when both are on the same measure: a judge scores its own),
+    **dataset**, **model · provider** (provider muted, "· local" for a local
     one), **deciding measure** (the goal's measure and the arm's mean on it, else its own
     headline), **repeats**, **cost / item**, **latency**, **runs in period** (with its line),
     **spend in period**. Filterable. An arm measured several ways is several rows, one per way,
@@ -453,12 +465,15 @@ tile opens it grouped by config (`arms.html?group=config`).
   arm's place among the arms the goal's decision weighs, "#3 of 33"), **runs in period**,
   **spend in period**. Filterable.
 - `03 what changed in the period`: **when**, **arm**, **what** (first run, how it was measured,
-  promoted as the baseline, retired in a round and why), only the period's.
+  promoted as the baseline, retired in a round and why), only the period's. Three or more arms of
+  one dataset re-measured the same way on one day (a rescore of every arm) are one line, "N arms
+  on `<dataset>`", so they do not bury the rest.
 - `04 cost and quality, by goal`: a goal list; the goal's trade-off charts (its quality against
   cost and against speed, the frontier drawn), as on its goal page, one goal at a time.
-- Not shown: whether a model is open or proprietary (no run records it).
 - Command: `evh arms [--dataset-id <id>] [--by dataset|config|model|provider|scored]
-  [--where local|hosted] [--tier <tier>] [--period P]`, and `evh arms --configs` for `02`.
+  [--where local|hosted] [--tier <tier>] [--weights open|proprietary] [--quality ties|below]
+  [--period P]`, and `evh arms --configs` for `02`. A derived arm's **how measured** carries its
+  move, "(+0.033 vs measured)".
 
 ## The arm page
 

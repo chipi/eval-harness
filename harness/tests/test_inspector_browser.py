@@ -409,6 +409,8 @@ def drive(base: str, overview: str = "") -> None:
         phone = browser.new_page(viewport={"width": 390, "height": 844})
         phone.on("pageerror", lambda e: errors.append(str(e)))
         for path, ready in (
+            *((p, "main") for p in ("index.html", "goals.html", "datasets.html", "references.html")),
+            *((p, "main") for p in ("metrics.html", "arms.html", "activity.html", "g/tickets_summary.html")),
             ("d/tickets_v1.html", "table#fields"),
             (f"inspect.html?runs={arms}&by=deadline", "h3.sub"),
         ):

@@ -42,6 +42,17 @@ page. No result moves.
 - **Adapter:** `dataset_created(dataset)`, optional: the day a dataset counts as new (else its
   first run). `spend()` events may name a measured run's `arm`, which the arms and activity pages
   bill it to; `HarnessAdapter` does.
+- **Grouping on the datasets page (by goal) and the metrics page (by role: decides, weighs,
+  describes)**, as the arms page groups; one script (`group.js`) groups and filters all three.
+- **The arms page filters on quality and on weights:** ties the leader or below it (the arm's place
+  in a goal's decision), and open weights or proprietary. `evh arms --quality ties|below` and
+  `--weights open|proprietary` list the same.
+- **`data/models.yaml`** (optional, `schemas/models.schema.json`, validate V1): each model's
+  weights, open or proprietary, and licence, keyed by the model a run records. The adapter's
+  optional `model_facts()` reads it.
+- **A derived arm says how far it moved** from the config's measured arm on the same dataset
+  (rescored, re-parsed, run again: "0.712 → 0.745 (+0.033) vs measured", in `evh arms` too).
+- **An arm a goal leaves out for a limit it breaks is badged "over a limit"**, not "not eligible".
 - **`evh catalog-serve --hooks FILE.py|MODULE`**: a deployment's error reporting, tracing or
   metrics, on a generic hook point (`start`, `request`, `error`, extra `routes` such as
   `/metrics`). The harness ships no tracker and depends on none; without `--hooks` nothing
@@ -57,6 +68,11 @@ page. No result moves.
 - **The menu is grouped by the same subjects:** Overview, Goals, Data (Datasets, References),
   Experiments (Arms, Configs, Metrics), Activity, Inspector; a phone's menu lists every page.
 - **`evh overview --period P`** prints the tiles and trends; `--all` is gone (`--period all`).
+- **The activity page and `evh activity` list what moved most first** against the period before
+  (up or down), then the busiest; for all time, the busiest.
+- **"What changed in the period" on the arms page folds** three or more arms of one dataset
+  re-measured the same way on one day into one line ("12 arms on `<dataset>`").
+- **A period select never makes a page wider than a phone**, however long its options.
 
 ## 0.4.1 — 2026-10-27
 

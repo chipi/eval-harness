@@ -71,6 +71,20 @@ warn_unused_configs = true
 warn_redundant_casts = true
 warn_unused_ignores = true
 
+[tool.coverage.run]
+# `make coverage`: line coverage of the harness's code (scripts/, the package) and this repository's
+# report checks (tools/) under the whole self-test. Most tests run the code in a subprocess (the
+# commands as a user runs them), so subprocesses are measured too. HARNESS is set by the make
+# target: a test's subprocess often runs in another directory.
+patch = ["subprocess"]
+parallel = true
+source = ["${HARNESS}/scripts", "${HARNESS}/tools"]
+omit = ["*/test_*.py"]
+
+[tool.coverage.report]
+skip_empty = true
+sort = "cover"
+
 [tool.interrogate]
 # podcast_scraper's exemptions and its bar: every public function, class and method has one.
 ignore-init-module = true

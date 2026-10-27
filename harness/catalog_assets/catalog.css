@@ -487,7 +487,7 @@ svg text.name { paint-order: stroke; stroke: var(--surface); stroke-width: 6px; 
 /* "runs in period" and its kind wrap rather than push the table wider than the page */
 table[data-period-rows] th { white-space: normal; min-width: 7ch; }
 select.chip.more.on { color: var(--accent-ink); background-color: var(--accent); border-color: var(--accent); }
-select.chip.more { padding-right: 8px; }
+select.chip.more { padding-right: 8px; max-width: 100%; text-overflow: ellipsis; }
 #actds, #actarms, #actkinds { --c: var(--s4); }
 /* the arms page: a derived arm under the arm it came from, the role badges, group headings, the compare bar */
 span.role { display: inline-block; margin: 0 4px 2px 0; padding: 0 6px; border-radius: 999px; font: 500 10px/1.6 var(--mono); color: var(--ink-2); background: color-mix(in srgb, var(--s3) 18%, transparent); white-space: nowrap; }

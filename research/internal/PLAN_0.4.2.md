@@ -132,7 +132,19 @@ Decided with the owner when it comes up.
   INTEGRATION, ADR-0018, CHANGELOG), 2's code (`--hooks` in the harness; `infra/inspector/`,
   render.sh, compose, evals.alloy) proven locally against stand-ins, and the dashboard's rows
   (chipi/humancopilot.eu, worktree `evals-dashboard-obs`, commit cc297aa, not pushed).
-- Then: 4 (tests), then 3 (the long runs).
+- Then (2026-10-27, done on 042): 4, the tests (budget, hooks, TESTING.md); 3, the long runs (the
+  checks-can-fail tests once per checker and only when a checker changes, the release reusing
+  main's CI, Chromium from the Actions cache: `verify` 37 min 52 s on v0.4.1, 12 min 21 s on
+  042). PR #23.
+- After the owner's gap review (2026-10-27, done on 042): datasets grouped by goal, metrics by
+  role; the arms page's quality (ties the leader / below) and weights (open / proprietary,
+  `data/models.yaml`) filters and `evh arms --quality/--weights`; a derived arm's move against
+  its measured arm; "over a limit" badge; activity ordered by what moved most; "what changed"
+  folds a day's rescores; every menu page at phone width and on the real catalog in Chromium
+  (`make browser-real-check`, in the budget job); `guards` always reports; line coverage
+  measured (81%, harness/docs/TESTING.md); prod's memory read (145 MiB peak on 0.4.1: the
+  235 MB once quoted was the 0.4.0 container) and its answer times.
+- Still to do: "At the 0.4.2 deploy" below (the owner said wait for the deploy).
 
 ## At the 0.4.2 deploy (owner, 2026-10-27: wait until then)
 

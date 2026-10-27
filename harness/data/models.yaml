@@ -1,0 +1,47 @@
+# What each model's weights are, for the arms page's open / proprietary filter (`evh arms
+# --weights`): open (downloadable) or proprietary (served only by its vendor), and the licence
+# where it is known. Keyed by the model a run records (params.model). A model not listed here
+# shows as unknown. The hosted aliases follow docs/REFERENCE.md's hosted table (checked by
+# tools/check_model_facts.py); the local models downloaded their weights from HuggingFace.
+models:
+  BAAI/bge-small-en-v1.5: {weights: open, licence: MIT}
+  MingZhong/unieval-sum: {weights: open}
+  eval-claude-haiku: {weights: proprietary}
+  eval-claude-sonnet: {weights: proprietary}
+  eval-deepseek-41flash: {weights: open, licence: MIT}
+  eval-deepseek-flash: {weights: open, licence: MIT}
+  eval-deepseek-pro: {weights: open, licence: MIT}
+  eval-gemma-26b: {weights: open, licence: Apache-2.0}
+  eval-gemma-3-27b: {weights: open, licence: "Gemma, gated"}
+  eval-gemma-31b: {weights: open, licence: Apache-2.0}
+  eval-glm-45-air: {weights: open, licence: MIT}
+  eval-glm-46: {weights: open, licence: MIT}
+  eval-glm-5: {weights: open, licence: MIT}
+  eval-gpt-55: {weights: proprietary}
+  eval-gpt-6sol: {weights: proprietary}
+  eval-gpt-mini: {weights: proprietary}
+  eval-llama-70b: {weights: open, licence: "Llama 3.3, gated"}
+  eval-llama-maverick: {weights: open, licence: "Llama, gated"}
+  eval-llama-scout: {weights: open, licence: "Llama, gated"}
+  eval-mistral-large: {weights: open, licence: Apache-2.0}
+  eval-mistral-medium: {weights: proprietary}
+  eval-mistral-small: {weights: open, licence: Apache-2.0}
+  eval-opus-5: {weights: proprietary}
+  eval-qwen-37plus: {weights: proprietary}
+  eval-qwen-37max: {weights: proprietary}
+  eval-qwen-3max: {weights: proprietary}
+  eval-qwen-flash: {weights: proprietary}
+  fabriceyhc/bert-base-uncased-ag_news: {weights: open}
+  fabriceyhc/bert-base-uncased-dbpedia_14: {weights: open}
+  facebook/bart-large-cnn: {weights: open, licence: MIT}
+  facebook/bart-large-mnli: {weights: open, licence: MIT}
+  facebook/bart-large-xsum: {weights: open}
+  guishe/span-marker-generic-ner-v1-fewnerd-fine-super: {weights: open, licence: cc-by-sa-4.0}
+  intfloat/e5-base-v2: {weights: open, licence: MIT}
+  mrm8488/bert-mini-finetuned-age_news-classification: {weights: open}
+  sentence-transformers/all-MiniLM-L6-v2: {weights: open, licence: apache-2.0}
+  sentence-transformers/all-mpnet-base-v2: {weights: open, licence: apache-2.0}
+  sshleifer/distilbart-cnn-12-6: {weights: open}
+  sshleifer/distilbart-cnn-6-6: {weights: open}
+  textattack/bert-base-uncased-ag-news: {weights: open}
+  urchade/gliner_medium-v2.1: {weights: open, licence: apache-2.0}

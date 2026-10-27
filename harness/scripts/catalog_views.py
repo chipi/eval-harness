@@ -3,7 +3,8 @@
     evh overview   [--period P]                      the home page: tiles with trends, goals at a glance, activity, spend, coverage
     evh datasets   [--dataset-id ID]                 every dataset, or one: arms, references, versions
     evh arms       [--dataset-id ID] [--arm ID]      every arm, or one: its metrics, runs, config, conditions, rounds
-                   [--by G] [--where W] [--tier T] [--configs]   the arms page: grouped, filtered; the configs
+                   [--by G] [--where W] [--tier T] [--weights K] [--quality Q] [--configs]
+                                                     the arms page: grouped, filtered; the configs
     evh references [--reference-id ID]               every reference, or one: who wrote it, what is scored against it
     evh metrics    [--dataset-id ID] [--metric M]    what each metric measures, or one in full with the arms recording it
     evh goals      [--goal ID]                       every goal, or one: its answer on each of its datasets
@@ -556,6 +557,16 @@ def arms(argv) -> int:
     ap.add_argument("--where", choices=("local", "hosted"), help="only arms run locally, or only hosted ones")
     ap.add_argument("--tier", help="only arms of this price tier (free, small, mid, large, ...)")
     ap.add_argument(
+        "--weights",
+        choices=("open", "proprietary"),
+        help="only arms whose model's weights are open, or proprietary (data/models.yaml)",
+    )
+    ap.add_argument(
+        "--quality",
+        choices=("ties", "below"),
+        help="only arms a goal ties with its quality leader, or only those it ranks below the leader",
+    )
+    ap.add_argument(
         "--configs",
         action="store_true",
         help="one row per config across the datasets it ran on, with its rank on each goal",
@@ -571,7 +582,17 @@ def arms(argv) -> int:
             if (not args.dataset_id or r["dataset"] == args.dataset_id)
             and (not args.where or r["local"] == (args.where == "local"))
             and (not args.tier or r["tier"] == args.tier)
+            and (not args.weights or r["weights"] == args.weights)
+            and (not args.quality or r["quality"] == f"{args.quality} the leader")
         ]
+        if not rows:
+            why = []
+            if args.weights:
+                why.append("an arm's weights come from data/models.yaml (the adapter's model_facts)")
+            if args.quality:
+                why.append("only arms a goal's decision weighs have a place against its quality leader")
+            print("no arm matches" + (f": {'; '.join(why)}" if why else ""))
+            return 0
         per, line = _period(A, by_ds, ca.period_arms(A, by_ds, rows), args.period)
         flows = ("runs", "usd")
         if line:
@@ -616,7 +637,7 @@ def arms(argv) -> int:
                 [
                     [
                         r["arm"],
-                        r["how"],
+                        r["how"] + (f" ({r['moved']:+.3f} vs measured)" if r["moved"] is not None else ""),
                         r["dataset"],
                         r["model"] or "—",
                         (r["provider"] or "—") + (" (local)" if r["local"] else ""),
@@ -1193,7 +1214,10 @@ def activity(argv) -> int:
         help=f"counted from today; default {cp.DEFAULT}",
     )
     ap.add_argument(
-        "--arms", type=int, default=20, help="how many arms to list, the busiest first (default 20)"
+        "--arms",
+        type=int,
+        default=20,
+        help="how many arms to list, what moved most against the period before first (default 20)",
     )
     ap.add_argument("--adapter", help="path/to/file.py:Class (default: the catalog's)")
     args = ap.parse_args(argv)
@@ -1204,8 +1228,15 @@ def activity(argv) -> int:
     flows = ("runs", "usd", "tokens")
 
     def busy(prefix: str) -> list:
+        # What moved most against the period before first, up or down (as the page sorts), then the
+        # busiest; for all time, with no period before, the busiest.
         ks = [k for k in per if k.startswith(prefix)]
-        return sorted(ks, key=lambda k: (-per[k]["runs"], -per[k]["usd"], k))
+
+        def moved(k: str) -> int:
+            prev = per[k]["runs_prev"]
+            return 0 if prev is None else abs(per[k]["runs"] - prev)
+
+        return sorted(ks, key=lambda k: (-moved(k), -per[k]["runs"], -per[k]["usd"], k))
 
     print("\nby dataset:")
     _table(
@@ -1213,7 +1244,9 @@ def activity(argv) -> int:
         [[k[2:], *_pcells(per[k], flows)] for k in busy("d:")],
     )
     active = [k for k in busy("a:") if per[k]["runs"] or per[k]["usd"] or per[k]["tokens"]]
-    print(f"\nby arm ({len(active)} active in the period; the busiest {min(args.arms, len(active))}):")
+    print(
+        f"\nby arm ({len(active)} active in the period; the {min(args.arms, len(active))} that moved most):"
+    )
     if active:
         _table(
             ["arm", "", *(PERIOD_HEADS[f] for f in flows)],

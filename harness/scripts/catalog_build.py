@@ -62,6 +62,7 @@ ASSETS = (
     "period.js",
     "overview.js",
     "arms.js",
+    "group.js",
     "icon.svg",
 )
 #: Links that would put more arms than this in one inspector URL go to the picker instead.
@@ -430,11 +431,12 @@ def block(num: str, eyebrow: str, inner: str, anchor: str = "") -> str:
 PROSE = re.compile(r"[A-Za-z]{2,}(?=\s)")
 
 
-def table(tid: str, heads: list, rows: list, filt: str = "", period: bool = False) -> str:
+def table(tid: str, heads: list, rows: list, filt: str = "", period: bool = False, noun: str = "") -> str:
     """Build an HTML table with optional search filter. A row is a list of cells, or
-    {"cells": [...], "cls": "...", "id": "...", "key": "...", "made": "..."} for a row with a
-    class, an anchor, or a place in the period (`period`: catalog_assets/period.js reads the
-    row's key and the day it was made, and fills its `data-flow` cells)."""
+    {"cells": [...], "cls": "...", "id": "...", "key": "...", "made": "...", "data": {...}} for a
+    row with a class, an anchor, a place in the period (`period`: catalog_assets/period.js reads
+    the row's key and the day it was made, and fills its `data-flow` cells), or attributes
+    group.js groups and filters on (`data`; `noun` names a row in a group's heading)."""
     th = "".join(f"<th>{h}</th>" for h in heads)
     f = ""
     if filt:
@@ -461,8 +463,23 @@ def table(tid: str, heads: list, rows: list, filt: str = "", period: bool = Fals
 
     body = "".join(tr(r) for r in rows)
     return (
-        f'{f}<div class="scroll-x"><table id="{tid}" class="data sortable"{" data-period-rows" if period else ""}><thead><tr>{th}</tr>'
+        f'{f}<div class="scroll-x"><table id="{tid}" class="data sortable"{" data-period-rows" if period else ""}'
+        f"{f' data-noun={chr(34)}{e(noun)}{chr(34)}' if noun else ''}><thead><tr>{th}</tr>"
         f"</thead><tbody>{body}</tbody></table></div>"
+    )
+
+
+def group_chips(tid: str, groups: tuple) -> str:
+    """The "group by" chips over table `tid` (catalog_assets/group.js): (row attribute, name) pairs,
+    the first ("", "no grouping") pressed."""
+    chips = "".join(
+        f'<button type="button" class="chip" data-group-by="{k}" data-label="{e(n)}" '
+        f'aria-pressed="{str(not k).lower()}">{e(n)}</button>'
+        for k, n in groups
+    )
+    return (
+        f'<p class="row-chips group-chips" data-for="{tid}" role="group" aria-label="group by">'
+        f'<span class="muted small">group by</span>{chips}</p>'
     )
 
 
@@ -791,10 +808,13 @@ def render_datasets(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
         label = {a["arm"]: a["label"] for a in v["arms"]}
         last = max((a["last"] for a in v["arms"]), default="")
         runs, usd = period_rows[ds]["runs"], period_rows[ds]["usd"]
+        # A dataset under several goals is a group of its own, named after all of them.
+        its_goals = " · ".join(g.get("title") or g["goal_id"] for g in goals.get(ds, [])) or "no goal"
         rows.append(
             {
                 "key": ds,
                 "made": period_rows[ds]["made"],
+                "data": {"goal": its_goals},
                 "cells": [
                     dataset_link(ds) + (f"<br><small>from {dataset_link(parent)}</small>" if parent else ""),
                     f'<span data-v="{v["items"]}">{v["items"]}</span>',
@@ -823,7 +843,8 @@ def render_datasets(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
     body += block(
         "01",
         "datasets",
-        cp.row_chips("datasets", "datasets")
+        group_chips("datasets", (("", "no grouping"), ("goal", "goal")))
+        + cp.row_chips("datasets", "datasets")
         + table(
             "datasets",
             [
@@ -841,12 +862,21 @@ def render_datasets(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
             rows,
             "filter datasets",
             period=True,
+            noun="dataset",
         ),
     )
     write(
         out,
         "datasets.html",
-        page("Datasets", body, 0, "datasets", PERIOD_SCRIPTS("datasets"), nav=nav, item=A.item_word),
+        page(
+            "Datasets",
+            body,
+            0,
+            "datasets",
+            (*PERIOD_SCRIPTS("datasets"), "assets/group.js"),
+            nav=nav,
+            item=A.item_word,
+        ),
     )
 
 
@@ -1405,7 +1435,8 @@ def render_home(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
 
 def render_activity(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
     """The activity page: the home page's two charts at full width, then the period's runs and
-    spend by dataset, by arm and by kind, each against the period before, the busiest first.
+    spend by dataset, by arm and by kind, each against the period before, what moved most first
+    (then the busiest; for all time, which has no period before, the busiest).
     The measured runs, billed and tokens tiles open it. home.js feeds the charts."""
     from evaluation_harness import catalog_periods as cp  # noqa: PLC0415
 
@@ -1462,7 +1493,7 @@ def render_activity(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
         "Activity and spend",
         "When the work happened and what it cost, in the period: measured runs (repeats counted one by "
         "one), and what was billed, in USD and in tokens, to the systems under test and the judges. "
-        "Each number is against the period before; the busiest come first.",
+        "Each number is against the period before, and what moved most comes first, up or down.",
         cp.bar(first, until),
     )
     body += block(
@@ -2503,6 +2534,7 @@ def render_metrics(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
                 "id": f"m-{slug(m)}",
                 "key": m,
                 "made": period_rows[m]["made"],
+                "data": {"role": role},
                 "cells": [
                     f'<a class="cell-link nowrap" href="{metric_page(m)}"><code>{e(m)}</code></a>',
                     e(role),
@@ -2548,7 +2580,8 @@ def render_metrics(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
     body += block(
         "01",
         "metrics",
-        cp.row_chips("metrics", "metrics")
+        group_chips("metrics", (("", "no grouping"), ("role", "role")))
+        + cp.row_chips("metrics", "metrics")
         + table(
             "metrics",
             [
@@ -2563,12 +2596,21 @@ def render_metrics(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
             rows,
             "filter metrics (decides, weighs, describes…)",
             period=True,
+            noun="metric",
         ),
     )
     write(
         out,
         "metrics.html",
-        page("Metrics", body, 0, "metrics", PERIOD_SCRIPTS("metrics"), nav=nav, item=A.item_word),
+        page(
+            "Metrics",
+            body,
+            0,
+            "metrics",
+            (*PERIOD_SCRIPTS("metrics"), "assets/group.js"),
+            nav=nav,
+            item=A.item_word,
+        ),
     )
 
 

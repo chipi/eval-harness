@@ -40,7 +40,7 @@ const evIn=(k,s)=>(R[k]&&R[k].events||[]).filter(x=>within(x[0],s)).sort((a,b)=>
 const usdIn=(k,s)=>(R[k]&&R[k].usd||[]).filter(x=>within(x[0],s)).reduce((a,x)=>a+x[1],0);
 const tokIn=(k,s)=>(R[k]&&R[k].tokens||[]).filter(x=>within(x[0],s)).reduce((a,x)=>a+x[1],0);
 function cell(el,now,before,fmt){const t=before===null?'':short(trend(now,before));
-el.dataset.v=now;el.innerHTML='<span class="nowrap">'+esc(fmt(now))+(t&&t!=='none'?` <small class="trend">${esc(t)}</small>`:'')+'</span>';}
+el.dataset.v=now;if(before===null)delete el.dataset.prev;else el.dataset.prev=before;el.innerHTML='<span class="nowrap">'+esc(fmt(now))+(t&&t!=='none'?` <small class="trend">${esc(t)}</small>`:'')+'</span>';}
 /* a row's runs per day over the period, in its table's colour; nothing when it had none */
 function line(xs){if(xs.length<2||!xs.some(Boolean))return '';const top=Math.max(...xs),step=100/(xs.length-1);
 const pts=xs.map((v,i)=>`${(i*step).toFixed(1)},${(17-15*v/top).toFixed(1)}`).join(' ');
@@ -64,10 +64,12 @@ else if(f==='line')c.innerHTML=line(daysOf(b.since,b.until).map(d=>runsIn(k,[d,d
 else if(f==='events')cell(c,ev.length,pv?evIn(k,pv).length:null,v=>String(v));
 else if(f==='tokens')cell(c,tokIn(k,s),pv?tokIn(k,pv):null,v=>v?Math.round(v).toLocaleString('en-US'):'—');});
 r.classList.toggle('pout',rowShow==='new'?!isNew:rowShow==='active'?!act:false);});
-/* data-period-sort: the busiest rows first, by that column's value in the period */
-const by=t.dataset.periodSort;if(by){const val=r=>+((r.querySelector(`[data-flow="${by}"]`)||{}).dataset||{}).v||0;
-[...t.tBodies[0].rows].sort((x,y)=>val(y)-val(x)).forEach(r=>t.tBodies[0].appendChild(r));}
-const bar=document.querySelector(`.row-chips[data-for="${t.id}"]`);
+/* data-period-sort: what moved most against the period before first (up or down), then the busiest;
+   with no period before (all time), the busiest */
+const by=t.dataset.periodSort;if(by){const ds=r=>((r.querySelector(`[data-flow="${by}"]`)||{}).dataset||{});
+const val=r=>+ds(r).v||0,moved=r=>ds(r).prev===undefined?0:Math.abs(val(r)-(+ds(r).prev||0));
+[...t.tBodies[0].rows].sort((x,y)=>moved(y)-moved(x)||val(y)-val(x)).forEach(r=>t.tBodies[0].appendChild(r));}
+const bar=document.querySelector(`.row-chips[data-for="${t.id}"] [data-rows]`)?.closest('.row-chips');
 if(bar){bar.querySelector('[data-rows="new"] b').textContent=nNew;bar.querySelector('[data-rows="active"] b').textContent=nAct;}
 /* a filter that leaves nothing says so, in words, where the table was */
 const box=t.closest('.scroll-x'),none=rowShow==='new'?!nNew:rowShow==='active'?!nAct:false;

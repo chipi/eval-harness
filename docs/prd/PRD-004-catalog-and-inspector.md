@@ -105,7 +105,7 @@ adapter file ([ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md),
   rows new in the period, keep only the new or the active ones on request, and show the period's
   runs and spend against the period before; the goals page lists what happened to each goal.
 - **FR1.10** (0.4.2): An activity page shows the period's runs, spend and tokens by dataset, by
-  arm and by kind of call, against the period before, the busiest first.
+  arm and by kind of call, against the period before, what moved most first.
 - **FR1.11** (0.4.2): An arms and configs page lists every arm, each saying how it was measured
   (measured, rescored, judged, re-parsed, run again), grouped by dataset, config, model, provider
   or what it is scored against, filtered to local or hosted arms or a price tier, with its role
