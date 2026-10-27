@@ -5,6 +5,12 @@ change the pin, then check what it says can move. **If you copied `harness/` int
 repository** before October 2026, read the rest of this page first: your copy has
 correctness bugs, not just missing features.
 
+## From 0.4.2 to 0.4.3
+
+Change the pin to `@v0.4.3`. No record, hash or p-value moves. `evh catalog-serve` answers 404 to
+any `/api/` path that is not one of its endpoints, where 0.4.2 could serve a file through it. A
+`--hooks` module now sees such requests as the route `/api/other`.
+
 ## From 0.4.1 to 0.4.2
 
 Change the pin to `@v0.4.2`. No record, hash or p-value moves. One command line changes:
