@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Study page</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Inter+Tight:wght@600;700&amp;display=swap">
+<style>
+body{margin:0;background:#0b0b0a}
+a{color:#c8ff3d}a:hover{color:#e2ff8f}
+table{border-collapse:collapse;width:100%}
+th{text-align:left;font-weight:500;color:#8a8880;font-size:13px;padding:10px 12px;border-bottom:1px solid #2a2a27;white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid #2a2a27;font-size:14px;vertical-align:top}
+</style>
+</helmet>
+<div style="min-height: 100vh; background: #0b0b0a; color: #f0efec; font-family: Inter, system-ui, sans-serif; font-size: 16px; line-height: 1.5">
+  <header style="height: 56px; border-bottom: 1px solid #2a2a27; display: flex; align-items: center">
+    <div style="max-width: 1180px; width: 100%; margin: 0 auto; padding: 0 24px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap">
+      <a href="Main.dc.html" style="display: flex; align-items: center; gap: 8px; color: #f0efec; text-decoration: none; font-family: 'Inter Tight', Inter, sans-serif; font-weight: 700">
+        <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><rect x="2" y="2" width="18" height="18" rx="4" fill="none" stroke="#c8ff3d" stroke-width="2"></rect><path d="M6 14l4-6 3 4 3-5" fill="none" stroke="#c8ff3d" stroke-width="2"></path></svg>
+        eval harness
+      </a>
+      <nav aria-label="Catalog" style="display: flex; gap: 16px; font-size: 14px; margin-left: auto; flex-wrap: wrap">
+        <a href="#" style="color: #b9b7ad; text-decoration: none">Overview</a>
+        <a href="Main.dc.html" style="color: #b9b7ad; text-decoration: none">Goals</a>
+        <a href="#" style="color: #f0efec; text-decoration: none">Studies</a>
+        <a href="#" style="color: #b9b7ad; text-decoration: none">Datasets</a>
+        <a href="Prompt.dc.html" style="color: #b9b7ad; text-decoration: none">Prompts</a>
+        <a href="#" style="color: #b9b7ad; text-decoration: none">References</a>
+        <a href="#" style="color: #b9b7ad; text-decoration: none">Metrics</a>
+        <a href="Inspector.dc.html" style="color: #b9b7ad; text-decoration: none">Inspector</a>
+      </nav>
+    </div>
+  </header>
+
+  <main style="max-width: 1180px; margin: 0 auto; padding: 40px 24px 80px; display: flex; flex-direction: column; gap: 48px">
+    <section style="display: flex; flex-direction: column; gap: 8px">
+      <p style="margin: 0; font-family: ui-monospace, monospace; font-size: 13px; color: #8a8880; letter-spacing: 0.06em; text-transform: uppercase">study · research</p>
+      <h1 style="margin: 0; font-family: 'Inter Tight', Inter, sans-serif; font-size: 40px; line-height: 1.1">s1: a free local model as good as the hosted one</h1>
+      <p style="margin: 0; color: #b9b7ad">Goal <a href="Main.dc.html">news_summary_cnn</a> · dev cnn_dailymail_20 · sampler <span style="font-family: ui-monospace, monospace">agent:claude</span> · closed: patience, 3 trials without a kept one</p>
+      <p style="margin: 0; color: #8a8880; font-size: 14px">Started 2026-11-02 by <span style="font-family: ui-monospace, monospace">agent:claude for person:marko</span> · instruction: “Find a setting of bart_l that keeps coverage and costs nothing.”</p>
+    </section>
+
+    <section style="display: flex; flex-direction: column; gap: 16px">
+      <p style="margin: 0; font-family: ui-monospace, monospace; font-size: 13px; color: #8a8880; letter-spacing: 0.06em; text-transform: uppercase">01 the outcome</p>
+      <div style="background: #141413; border: 1px solid #2a2a27; border-radius: 12px; padding: 24px; display: flex; flex-direction: column; gap: 14px">
+        <p style="margin: 0; font-family: ui-monospace, monospace; font-size: 12px; color: #8a8880; text-transform: uppercase; letter-spacing: 0.06em">confirmation · evh study-confirm · rule noninferiority, given 2026-11-04 before the heldout items were looked at</p>
+        <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap">
+          <span style="border: 1px solid #199e70; border-radius: 999px; padding: 2px 10px; font-family: ui-monospace, monospace; font-size: 13px">≈ non-inferior</span>
+          <span style="font-size: 15px">trial 7 against the baseline on 180 heldout items</span>
+          <span style="font-size: 14px; color: #8a8880">(20 excluded: 12 in the dev set, 8 shown to the sampler)</span>
+        </div>
+        <div style="display: flex; gap: 32px; flex-wrap: wrap">
+          <div style="display: flex; flex-direction: column; gap: 2px">
+            <span style="font-size: 12px; color: #8a8880; font-family: ui-monospace, monospace">heldout · evidence</span>
+            <span style="font-size: 28px; font-family: 'Inter Tight', Inter, sans-serif; font-weight: 700">−0.004</span>
+            <span style="font-size: 13px; color: #b9b7ad">[−0.011, 0.003] · p 0.004 · margin 0.01</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 2px">
+            <span style="font-size: 12px; color: #8a8880; font-family: ui-monospace, monospace">research · dev</span>
+            <span style="font-size: 28px; font-family: 'Inter Tight', Inter, sans-serif; font-weight: 700; color: #8a8880">+0.012</span>
+            <span style="font-size: 13px; color: #8a8880">the same trial on 20 dev items</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px; justify-content: center">
+            <span style="font-family: ui-monospace, monospace; font-size: 12px; color: #c8ff3d; border: 1px solid #3d5c00; border-radius: 6px; padding: 2px 8px; align-self: flex-start">look 1 · cnn_dailymail_200 · at 1.52%</span>
+            <span style="font-size: 13px; color: #b9b7ad; max-width: 44ch">The drop from +0.012 on dev to −0.004 on heldout is the winner's curse: the best of 14 trials looked better on the items it was picked on.</span>
+          </div>
+        </div>
+        <div style="border-top: 1px solid #2a2a27; padding-top: 14px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap">
+          <span style="font-size: 14px">Suggested: promote trial 7's run</span>
+          <code style="background: #1c1c1a; border-radius: 6px; padding: 6px 10px; font-size: 13px">evh run-promote --run run:runs/s1-t7_20261104T091233.410Z_c02e --reason "…" --confirm</code>
+          <button type="button" style="font-family: ui-monospace, monospace; font-size: 13px; color: #f0efec; background: transparent; border: 1px solid #2a2a27; border-radius: 999px; padding: 6px 14px">copy</button>
+        </div>
+      </div>
+    </section>
+
+    <section style="display: flex; flex-direction: column; gap: 16px">
+      <p style="margin: 0; font-family: ui-monospace, monospace; font-size: 13px; color: #8a8880; letter-spacing: 0.06em; text-transform: uppercase">02 trials · 14: 4 kept, 9 dropped, 1 failed</p>
+      <div style="background: #141413; border: 1px solid #2a2a27; border-radius: 12px; padding: 20px 24px">
+        <svg viewBox="0 0 1000 220" width="100%" role="img" aria-label="Coverage on dev per trial, with the best so far as a step line">
+          <line x1="40" y1="190" x2="980" y2="190" stroke="#2a2a27"></line>
+          <text x="40" y="210" fill="#8a8880" font-size="12" font-family="ui-monospace, monospace">trial 1</text>
+          <text x="930" y="210" fill="#8a8880" font-size="12" font-family="ui-monospace, monospace">trial 14</text>
+          <text x="0" y="40" fill="#8a8880" font-size="12" font-family="ui-monospace, monospace">0.36</text>
+          <text x="0" y="185" fill="#8a8880" font-size="12" font-family="ui-monospace, monospace">0.33</text>
+          <path d="M40 150 H185 V120 H329 V100 H474 V75 H980" fill="none" stroke="#c8ff3d" stroke-width="2"></path>
+          <g fill="#66645e"><circle cx="112" cy="165" r="5"></circle><circle cx="257" cy="140" r="5"></circle><circle cx="401" cy="135" r="5"></circle><circle cx="546" cy="95" r="5"></circle><circle cx="618" cy="110" r="5"></circle><circle cx="691" cy="88" r="5"></circle><circle cx="835" cy="102" r="5"></circle><circle cx="908" cy="92" r="5"></circle><circle cx="980" cy="118" r="5"></circle></g>
+          <g fill="#c8ff3d"><circle cx="40" cy="150" r="6"></circle><circle cx="185" cy="120" r="6"></circle><circle cx="329" cy="100" r="6"></circle><circle cx="474" cy="75" r="6"></circle></g>
+          <path d="M758 83 l10 10 m0 -10 l-10 10" stroke="#d95926" stroke-width="2"></path>
+        </svg>
+        <p style="margin: 8px 0 0; font-size: 13px; color: #8a8880">Coverage on dev per trial (research · dev): lime dots kept, grey dropped, the cross failed; the line is the best so far.</p>
+      </div>
+      <div style="overflow-x: auto">
+        <table>
+          <thead><tr><th>k</th><th>change</th><th>hypothesis</th><th>outcome</th><th>Δ vs best so far</th><th>limits</th><th>cost</th></tr></thead>
+          <tbody>
+            <sc-for list="{{trials}}" as="t" hint-placeholder-count="6">
+              <tr>
+                <td style="font-family: ui-monospace, monospace">{{t.k}}</td>
+                <td style="font-family: ui-monospace, monospace; min-width: 22ch">{{t.change}}</td>
+                <td style="color: #b9b7ad; min-width: 26ch">{{t.hyp}}</td>
+                <td style="font-family: ui-monospace, monospace">{{t.outcome}}</td>
+                <td style="font-family: ui-monospace, monospace; white-space: nowrap">{{t.delta}} <span style="color: #8a8880; font-size: 11px">research · dev</span></td>
+                <td style="font-size: 13px; color: #b9b7ad">{{t.limits}}</td>
+                <td style="font-family: ui-monospace, monospace">{{t.cost}}</td>
+              </tr>
+            </sc-for>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px">
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <p style="margin: 0; font-family: ui-monospace, monospace; font-size: 13px; color: #8a8880; letter-spacing: 0.06em; text-transform: uppercase">03 money and stop</p>
+        <p style="margin: 0; font-size: 15px">$1.84 of the $5.00 cap · system $1.31, judges $0.53</p>
+        <p style="margin: 0; font-size: 15px">GPU 0.0 h · wall 3 h 12 min</p>
+        <p style="margin: 0; font-size: 15px; color: #b9b7ad">Stopped by patience: 3 trials without a kept one.</p>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <p style="margin: 0; font-family: ui-monospace, monospace; font-size: 13px; color: #8a8880; letter-spacing: 0.06em; text-transform: uppercase">04 the spec</p>
+        <pre style="margin: 0; background: #141413; border: 1px solid #2a2a27; border-radius: 8px; padding: 12px; font-size: 12px; color: #b9b7ad; overflow-x: auto">dev: cnn_dailymail_20
+baseline: baseline:news_summary_cnn/cnn_dailymail_200@current
+measure: coverage
+sampler: agent
+accept: {point: {min_gain: 0}}
+limits: [{metric: grounding, direction: higher, limit: 0.02}]
+stop: {trials: 20, usd: 5, patience: 3}</pre>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <p style="margin: 0; font-family: ui-monospace, monospace; font-size: 13px; color: #8a8880; letter-spacing: 0.06em; text-transform: uppercase">05 items shown</p>
+        <p style="margin: 0; font-size: 15px">8 items from cnn_dailymail_20 shown to the sampler (its worst outputs).</p>
+        <p style="margin: 0; font-size: 14px; color: #b9b7ad">They are excluded from every confirmation on news_summary_cnn.</p>
+      </div>
+    </section>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":2000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      trials: [
+        { k: '1', change: 'num_beams 4 → 2', hyp: 'fewer beams, same coverage, faster', outcome: 'kept', delta: '+0.000', limits: 'ok', cost: '$0.11' },
+        { k: '3', change: 'length_penalty 1.0 → 1.4', hyp: 'longer summaries cover more', outcome: 'kept', delta: '+0.004', limits: 'ok', cost: '$0.12' },
+        { k: '5', change: 'summary/user v3 → v4', hyp: 'ask for the three main facts', outcome: 'kept', delta: '+0.003', limits: 'ok', cost: '$0.14' },
+        { k: '6', change: 'max_new_tokens 142 → 96', hyp: 'shorter is enough', outcome: 'dropped', delta: '−0.006', limits: 'grounding −0.031 vs baseline (limit 0.02)', cost: '$0.10' },
+        { k: '7', change: 'no_repeat_ngram_size 3 → 4', hyp: 'less repetition, more distinct facts', outcome: 'kept', delta: '+0.005', limits: 'ok', cost: '$0.13' },
+        { k: '11', change: 'summary/user v5 → v6', hyp: 'quote the headline first', outcome: 'failed', delta: '—', limits: '—', cost: '$0.02' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

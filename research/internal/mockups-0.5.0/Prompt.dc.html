@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Prompt page</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Inter+Tight:wght@600;700&amp;display=swap">
+<style>
+body{margin:0;background:#0b0b0a}
+a{color:#c8ff3d}a:hover{color:#e2ff8f}
+table{border-collapse:collapse;width:100%}
+th{text-align:left;font-weight:500;color:#8a8880;font-size:13px;padding:10px 12px;border-bottom:1px solid #2a2a27;white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid #2a2a27;font-size:14px;vertical-align:top}
+</style>
+</helmet>
+<div style="min-height: 100vh; background: #0b0b0a; color: #f0efec; font-family: Inter, system-ui, sans-serif; font-size: 16px; line-height: 1.5">
+  <header style="height: 56px; border-bottom: 1px solid #2a2a27; display: flex; align-items: center">
+    <div style="max-width: 1180px; width: 100%; margin: 0 auto; padding: 0 24px; display: flex; align-items: center; gap: 16px">
+      <a href="Main.dc.html" style="color: #f0efec; text-decoration: none; font-family: 'Inter Tight', Inter, sans-serif; font-weight: 700">eval harness</a>
+      <span style="font-family: ui-monospace, monospace; font-size: 13px; color: #8a8880">catalog · prompts</span>
+    </div>
+  </header>
+
+  <main style="max-width: 1180px; margin: 0 auto; padding: 40px 24px 80px; display: flex; flex-direction: column; gap: 40px">
+    <section style="display: flex; flex-direction: column; gap: 8px">
+      <p style="margin: 0; font-family: ui-monospace, monospace; font-size: 13px; color: #8a8880; letter-spacing: 0.06em; text-transform: uppercase">prompt</p>
+      <h1 style="margin: 0; font-family: 'Inter Tight', Inter, sans-serif; font-size: 32px; line-height: 1.15; word-break: break-word">podcast/openai/summarization/long_v1.j2</h1>
+      <p style="margin: 0; color: #b9b7ad">Lives at <span style="font-family: ui-monospace, monospace">cache/podcast_scraper/src/podcast_scraper/prompts/openai/summarization/long_v1.j2</span> (the file the pipeline reads). Used by the baseline of podcast_summaries on curated_5feeds_heldout_v1: v4.</p>
+    </section>
+
+    <section style="display: flex; flex-direction: column; gap: 12px">
+      <p style="margin: 0; font-family: ui-monospace, monospace; font-size: 13px; color: #8a8880; letter-spacing: 0.06em; text-transform: uppercase">01 versions</p>
+      <div style="overflow-x: auto">
+        <table>
+          <thead><tr><th>version</th><th>created</th><th>source</th><th>parent</th><th>note</th><th>sha256</th><th>used by</th></tr></thead>
+          <tbody>
+            <sc-for list="{{versions}}" as="v" hint-placeholder-count="4">
+              <tr>
+                <td style="font-family: ui-monospace, monospace">{{v.v}}</td>
+                <td style="white-space: nowrap">{{v.created}}</td>
+                <td style="color: #b9b7ad; min-width: 20ch">{{v.source}}</td>
+                <td style="font-family: ui-monospace, monospace; color: #b9b7ad">{{v.parent}}</td>
+                <td style="color: #b9b7ad; min-width: 20ch">{{v.note}}</td>
+                <td style="font-family: ui-monospace, monospace; color: #8a8880">{{v.sha}}</td>
+                <td style="min-width: 18ch">{{v.used}}</td>
+              </tr>
+            </sc-for>
+          </tbody>
+        </table>
+      </div>
+      <p style="margin: 0; font-size: 13px; color: #8a8880">Each version is its bytes, stored once under their hash (data/prompts/podcast/…/long_v1.j2/3f9a0c21b7e4d5a8.txt); "v4" is its place in time. A parent is shown only when someone stated it.</p>
+    </section>
+
+    <section style="display: flex; flex-direction: column; gap: 12px">
+      <p style="margin: 0; font-family: ui-monospace, monospace; font-size: 13px; color: #8a8880; letter-spacing: 0.06em; text-transform: uppercase">02 changes · v4 against v3 (its parent)</p>
+      <pre style="margin: 0; background: #141413; border: 1px solid #2a2a27; border-radius: 10px; padding: 16px; font-size: 13px; line-height: 1.6; overflow-x: auto"><span style="color: #8a8880">@@ -3,4 +3,5 @@</span>
+ Summarize the episode for a listener who missed it.
+<span style="color: #f0b8a0; background: rgba(217,89,38,0.15)">-Write a long summary covering every topic discussed.</span>
+<span style="color: #b7f0d6; background: rgba(25,158,112,0.15)">+Write a summary of the three main stories, in order of time spent.</span>
+<span style="color: #b7f0d6; background: rgba(25,158,112,0.15)">+Name each speaker the first time they are quoted.</span>
+ Do not add facts that are not in the transcript.</pre>
+      <p style="margin: 0; font-size: 13px; color: #8a8880">Shown because this project publishes prompts (catalog: publish: [prompts]). Otherwise the page shows hashes and sizes and says: see the diff with evh prompt-diff.</p>
+    </section>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1050}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      versions: [
+        { v: 'v4', created: '2026-11-05 · agent:claude for person:marko', source: 'study s3, trial 9', parent: 'v3', note: 'three main stories, speakers named', sha: '3f9a0c21b7e4d5a8', used: '6 runs · baseline ✓' },
+        { v: 'v3', created: '2026-11-05 · agent:claude for person:marko', source: 'study s3, trial 4', parent: 'v2', note: 'name each speaker', sha: 'c7d01e95a2f84b36', used: '3 runs · 0.591' },
+        { v: 'v2', created: '2026-10-30 · person:marko', source: 'the file at commit 51932d15', parent: '—', note: 'recorded by run …T101500.123Z_7f3a', sha: '0e44b8a913cd7f20', used: '12 runs · 0.586' },
+        { v: 'v1', created: '2026-10-28 · person:marko', source: 'the file at commit 2b9d90af', parent: '—', note: 'recorded by run …T090112.004Z_41c9', sha: 'a1f3c85d06e297b4', used: '8 runs · 0.574' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

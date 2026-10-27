@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Arm page</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Inter+Tight:wght@600;700&amp;display=swap">
+<style>
+body{margin:0;background:#0b0b0a}
+a{color:#c8ff3d}a:hover{color:#e2ff8f}
+table{border-collapse:collapse;width:100%}
+th{text-align:left;font-weight:500;color:#8a8880;font-size:13px;padding:10px 12px;border-bottom:1px solid #2a2a27;white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid #2a2a27;font-size:14px;vertical-align:top}
+</style>
+</helmet>
+<div style="min-height: 100vh; background: #0b0b0a; color: #f0efec; font-family: Inter, system-ui, sans-serif; font-size: 16px; line-height: 1.5">
+  <header style="height: 56px; border-bottom: 1px solid #2a2a27; display: flex; align-items: center">
+    <div style="max-width: 1180px; width: 100%; margin: 0 auto; padding: 0 24px; display: flex; align-items: center; gap: 16px">
+      <a href="Main.dc.html" style="color: #f0efec; text-decoration: none; font-family: 'Inter Tight', Inter, sans-serif; font-weight: 700">eval harness</a>
+      <span style="font-family: ui-monospace, monospace; font-size: 13px; color: #8a8880">catalog · arm</span>
+    </div>
+  </header>
+
+  <main style="max-width: 1180px; margin: 0 auto; padding: 40px 24px 80px; display: flex; flex-direction: column; gap: 40px">
+    <section style="display: flex; flex-direction: column; gap: 12px">
+      <p style="margin: 0; font-family: ui-monospace, monospace; font-size: 13px; color: #8a8880; letter-spacing: 0.06em; text-transform: uppercase">arm</p>
+      <h1 style="margin: 0; font-family: 'Inter Tight', Inter, sans-serif; font-size: 36px; line-height: 1.1">pipeline_parakeet_qwen_v1</h1>
+      <p style="margin: 0; color: #b9b7ad">One config on curated_5feeds_heldout_v1, scored one way; its repeats averaged per item. Run by <span style="font-family: ui-monospace, monospace">agent:claude for person:marko</span>.</p>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px">
+        <sc-for list="{{facts}}" as="f" hint-placeholder-count="6">
+          <div style="background: #141413; border: 1px solid #2a2a27; border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 2px">
+            <span style="font-size: 12px; color: #8a8880; font-family: ui-monospace, monospace">{{f.label}}</span>
+            <span style="font-size: 14px">{{f.value}}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="background: #141413; border: 1px solid #5c2a14; border-radius: 10px; padding: 12px 14px; font-size: 14px; display: flex; flex-direction: column; gap: 4px">
+        <p style="margin: 0"><strong>3 of 100 items failed</strong> (2 transient, 1 not): left out of every mean and test. ▸</p>
+        <p style="margin: 0; color: #8a8880; font-size: 13px">ep_0233: ConnectError after 5 attempts (transient) · ep_0291: rate limit 429 after 5 attempts (transient) · ep_0358: feed has no audio enclosure</p>
+      </div>
+    </section>
+
+    <section style="display: flex; flex-direction: column; gap: 12px">
+      <p style="margin: 0; font-family: ui-monospace, monospace; font-size: 13px; color: #8a8880; letter-spacing: 0.06em; text-transform: uppercase">stages</p>
+      <div style="overflow-x: auto">
+        <table>
+          <thead><tr><th>stage</th><th>metrics (mean)</th><th>latency p50 / p95 ms</th><th>cost per item</th><th>tokens per item</th><th>model</th></tr></thead>
+          <tbody>
+            <sc-for list="{{stages}}" as="s" hint-placeholder-count="3">
+              <tr>
+                <td style="font-family: ui-monospace, monospace">{{s.name}}</td>
+                <td style="font-family: ui-monospace, monospace">{{s.metrics}}</td>
+                <td style="font-family: ui-monospace, monospace">{{s.latency}}</td>
+                <td style="font-family: ui-monospace, monospace">{{s.cost}}</td>
+                <td style="font-family: ui-monospace, monospace">{{s.tokens}}</td>
+                <td style="font-family: ui-monospace, monospace; color: #b9b7ad">{{s.model}}</td>
+              </tr>
+            </sc-for>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px">
+      <div style="display: flex; flex-direction: column; gap: 10px">
+        <p style="margin: 0; font-family: ui-monospace, monospace; font-size: 13px; color: #8a8880; letter-spacing: 0.06em; text-transform: uppercase">prompts</p>
+        <sc-for list="{{prompts}}" as="p" hint-placeholder-count="2">
+          <p style="margin: 0; font-size: 14px"><a href="Prompt.dc.html" style="font-family: ui-monospace, monospace">{{p.name}}</a> <span style="color: #8a8880">· {{p.v}} · {{p.sha}}</span></p>
+        </sc-for>
+        <p style="margin: 0; font-size: 13px; color: #8a8880">Also in the fingerprint: the prompt root's digest (204 .j2 files), so a change to any of them shows.</p>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 10px">
+        <p style="margin: 0; font-family: ui-monospace, monospace; font-size: 13px; color: #8a8880; letter-spacing: 0.06em; text-transform: uppercase">conditions</p>
+        <p style="margin: 0; font-size: 14px">host: Linux x86_64 · Python 3.11.9 · accelerator cuda 12.4, torch 2.5.1 <span style="color: #8a8880">(in the hash)</span></p>
+        <p style="margin: 0; font-size: 14px">machine: dgx-llm-1 · 20 CPUs <span style="color: #8a8880">(beside the hash: a different machine changes speed, not quality)</span></p>
+        <p style="margin: 0; font-size: 14px; color: #d95926">Ran with 2 other jobs in parallel (set round5-podcast): latency is not comparable with runs made alone.</p>
+      </div>
+    </section>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1250}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      facts: [
+        { label: 'goal', value: 'podcast_summaries' },
+        { label: 'scored against', value: 'gold/curated_5feeds_heldout_v1, with per-stage references (asr, summary)' },
+        { label: 'headline', value: 'summary_blend 0.598' },
+        { label: 'build', value: 'commit 7d1c09ab, from git on the ssh host (runner dgx)' },
+        { label: 'system', value: 'podcast_scraper 2.6.0 · code ref 3f2e9c1 · declared by the adapter' },
+        { label: 'runs', value: '1 · 2026-11-06' }
+      ],
+      stages: [
+        { name: 'asr', metrics: 'wer 0.094', latency: '18,400 / 31,900', cost: '$0.0000', tokens: '—', model: 'parakeet-tdt-0.6b (local)' },
+        { name: 'summary', metrics: 'rouge_l 0.364 · judge_a 3.4 · judge_b 3.3', latency: '1,920 / 3,800', cost: '$0.0000', tokens: '6,120', model: 'qwen2.5-14b (local)' },
+        { name: 'insights', metrics: 'grounded 0.82', latency: '930 / 1,700', cost: '$0.0000', tokens: '2,040', model: 'qwen2.5-14b (local)' }
+      ],
+      prompts: [
+        { name: 'podcast/openai/summarization/long_v1.j2', v: 'v4', sha: 'sha 3f9a0c21b7e4d5a8' },
+        { name: 'podcast/openai/summarization/system_v1.j2', v: 'v2', sha: 'sha 91be0a7c4d2e1f03' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

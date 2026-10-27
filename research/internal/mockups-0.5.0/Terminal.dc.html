@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Terminal and agent</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 1280px; height: 1050px; box-sizing: border-box; background: #0b0b0a; color: #f0efec; font-family: Inter, system-ui, sans-serif; padding: 32px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px">
+  <section aria-label="The agent's session" style="background: #141413; border: 1px solid #2a2a27; border-radius: 12px; display: flex; flex-direction: column; overflow: hidden">
+    <div style="padding: 10px 16px; border-bottom: 1px solid #2a2a27; font-size: 13px; color: #8a8880">agent (Claude Code, with evh mcp) · acting for person:marko</div>
+    <div style="padding: 16px; display: flex; flex-direction: column; gap: 12px; font-size: 14px; line-height: 1.5">
+      <p style="margin: 0; color: #b9b7ad"><strong style="color: #f0efec">You:</strong> Make the CNN summaries as good as now but free. You have $5.</p>
+      <div style="background: #0b0b0a; border-radius: 8px; padding: 10px 12px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; color: #b9b7ad; white-space: pre-wrap">tool study-run  {spec: data/studies/news_summary_cnn/s1.yaml, dry_run: true}
+→ up to 20 trials · 20 items each · about $1.90</div>
+      <div style="background: #0b0b0a; border-radius: 8px; padding: 10px 12px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; color: #b9b7ad; white-space: pre-wrap">tool study-ask  {study: s1}
+→ ask_id a7 · best so far t5 0.3401 · 8 items shown
+tool study-tell  {study: s1, ask: a7, proposal: {params: {no_repeat_ngram_size: 4},
+  hypothesis: "less repetition, more distinct facts"}}
+→ trial 7 kept: +0.005 on dev (research · dev)</div>
+      <p style="margin: 0; color: #b9b7ad">… 14 trials, stopped by patience. Best: trial 7.</p>
+      <div style="background: #0b0b0a; border-radius: 8px; padding: 10px 12px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; color: #b9b7ad; white-space: pre-wrap">tool study-confirm  {study: s1, heldout: cnn_dailymail_200, rule: noninferiority}
+→ ≈ non-inferior · Δ −0.004 [−0.011, 0.003] · p 0.004
+  look 1 · cnn_dailymail_200 · at 1.52% · on dev it was +0.012</div>
+      <div style="background: #0b0b0a; border: 1px solid #5c2a14; border-radius: 8px; padding: 10px 12px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; color: #f0b8a0; white-space: pre-wrap">tool run-promote  {run: run:runs/s1-t7_…, reason: "…"}
+✗ consent-required: This needs the person's consent
+  fix_command: evh run-promote --run run:runs/s1-t7_20261104T091233.410Z_c02e
+               --reason '…' --confirm</div>
+      <p style="margin: 0"><strong>Claude:</strong> Trial 7 is non-inferior to the baseline on 180 heldout items, at no API cost. Promoting it is your call; if you want it, run this in your terminal:</p>
+      <code style="background: #1c1c1a; border-radius: 6px; padding: 8px 10px; font-size: 12px; font-family: 'JetBrains Mono', ui-monospace, monospace">evh run-promote --run run:runs/s1-t7_20261104T091233.410Z_c02e --reason "…" --confirm</code>
+    </div>
+  </section>
+
+  <section aria-label="The person's terminal" style="background: #050505; border: 1px solid #2a2a27; border-radius: 12px; display: flex; flex-direction: column; overflow: hidden">
+    <div style="padding: 10px 16px; border-bottom: 1px solid #2a2a27; font-size: 13px; color: #8a8880">terminal · person:marko</div>
+    <pre style="margin: 0; padding: 16px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; line-height: 1.6; color: #d6d4cc; white-space: pre-wrap"><span style="color: #c8ff3d">$</span> evh study-status s1
+research: no evidence until confirmed · confirmed once
+  confirmation  ≈ non-inferior  trial 7 vs baseline  180 heldout items
+                look 1 · cnn_dailymail_200 · at 1.52%   dev +0.012 → heldout −0.004
+k   change                        outcome   Δ vs best so far
+1   num_beams 4 → 2               kept      +0.000
+5   summary/user v3 → v4          kept      +0.003
+6   max_new_tokens 142 → 96       dropped   −0.006  grounding over its limit
+7   no_repeat_ngram_size 3 → 4    kept      +0.005
+… 10 more (evh study-status s1 --trials)
+$1.84 of $5.00 · stopped by patience (3 without a kept one)
+
+<span style="color: #c8ff3d">$</span> evh run-promote --run run:runs/s1-t7_20261104T091233.410Z_c02e \
+    --reason "Non-inferior to v2 on 180 heldout items at no API cost." --confirm
+<span style="color: #8a8880">recorded as person:marko, confirmed</span>
+baseline news_summary_cnn on cnn_dailymail_200: version 3
+  evidence  ≈ non-inferior  look 1 (reused from study s1's confirmation)
+
+<span style="color: #c8ff3d">$</span> evh run-promote --run run:runs/s1-t7_… --reason "…" --json
+<span style="color: #8a8880">(as an agent, without --confirm, stdout:)</span>
+{"type": "https://evals.humancopilot.eu/docs/refusals/#consent-required",
+ "code": "consent-required", "exit_code": 1, ...}
+<span style="color: #8a8880">exit 1</span>
+
+<span style="color: #c8ff3d">$</span> evh jobs-status round5-podcast
+generate  entered (gpu)       before: gpu_phase.sh enter code   ok
+  job 1  succeeded  run …T121044.207Z_a19c   38 min
+  job 2  running    attempt 2 of 3            12 min
+  job 3  queued
+next check in 60 s</pre>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1050}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

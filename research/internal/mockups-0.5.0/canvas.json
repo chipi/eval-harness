@@ -1,0 +1,20 @@
+{
+  "v": 3,
+  "createdOnFiles": {"v": 1, "at": "2026-10-27T12:00:00Z"},
+  "title": "Eval harness 0.5.0 mockups",
+  "launch": {"view": "canvas"},
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {"x": 0, "y": 0, "w": 1280, "h": 1900, "title": "Goal page: baselines with evidence, looks, a study's round", "expand": "fill"},
+    "Study.dc.html": {"x": 1360, "y": 0, "w": 1280, "h": 2000, "title": "Study page: research, then a confirmation", "expand": "fill"},
+    "Inspector.dc.html": {"x": 0, "y": 2120, "w": 1280, "h": 1450, "title": "Inspector: verdicts with a margin, the stages panel", "expand": "fill"},
+    "Arm.dc.html": {"x": 1360, "y": 2120, "w": 1280, "h": 1250, "title": "Arm page: build, stages, prompts, failed items", "expand": "fill"},
+    "Prompt.dc.html": {"x": 0, "y": 3690, "w": 1280, "h": 1050, "title": "Prompt page: content-addressed versions", "expand": "fill"},
+    "Terminal.dc.html": {"x": 1360, "y": 3690, "w": 1280, "h": 1050, "title": "Terminal and agent: a study, a confirmation, a refusal"}
+  },
+  "order": ["Main.dc.html", "Study.dc.html", "Inspector.dc.html", "Arm.dc.html", "Prompt.dc.html", "Terminal.dc.html"],
+  "notes": {
+    "title": {"x": 0, "y": -320, "text": "Eval harness 0.5.0: what the catalog, the inspector and the terminal look like (draft; numbers illustrative)", "kind": "title1", "maxW": 2640}
+  },
+  "designSystems": []
+}

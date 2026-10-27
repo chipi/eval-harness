@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Inspector</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Inter+Tight:wght@600;700&amp;display=swap">
+<style>
+body{margin:0;background:#0b0b0a}
+a{color:#c8ff3d}a:hover{color:#e2ff8f}
+table{border-collapse:collapse;width:100%}
+th{text-align:left;font-weight:500;color:#8a8880;font-size:13px;padding:10px 12px;border-bottom:1px solid #2a2a27;white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid #2a2a27;font-size:14px;vertical-align:top}
+</style>
+</helmet>
+<div style="min-height: 100vh; background: #0b0b0a; color: #f0efec; font-family: Inter, system-ui, sans-serif; font-size: 16px; line-height: 1.5">
+  <header style="height: 56px; border-bottom: 1px solid #2a2a27; display: flex; align-items: center">
+    <div style="max-width: 1180px; width: 100%; margin: 0 auto; padding: 0 24px; display: flex; align-items: center; gap: 16px">
+      <a href="Main.dc.html" style="color: #f0efec; text-decoration: none; font-family: 'Inter Tight', Inter, sans-serif; font-weight: 700">eval harness</a>
+      <span style="font-family: ui-monospace, monospace; font-size: 13px; color: #8a8880">inspector</span>
+    </div>
+  </header>
+
+  <main style="max-width: 1180px; margin: 0 auto; padding: 32px 24px 80px; display: flex; flex-direction: column; gap: 32px">
+    <section style="display: flex; flex-direction: column; gap: 12px">
+      <div style="display: flex; gap: 8px; flex-wrap: wrap">
+        <span style="border: 1px solid #2a2a27; border-radius: 999px; padding: 4px 12px; font-size: 13px; font-family: ui-monospace, monospace">pipeline_whisper_gpt5mini_v2 · baseline ×</span>
+        <span style="border: 1px solid #2a2a27; border-radius: 999px; padding: 4px 12px; font-size: 13px; font-family: ui-monospace, monospace">pipeline_whisper_qwen_v1 ×</span>
+        <span style="border: 1px solid #2a2a27; border-radius: 999px; padding: 4px 12px; font-size: 13px; font-family: ui-monospace, monospace">pipeline_parakeet_qwen_v1 ×</span>
+      </div>
+      <div style="display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-end">
+        <label style="display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: #8a8880">metric
+          <select style="background: #141413; color: #f0efec; border: 1px solid #2a2a27; border-radius: 8px; padding: 8px 10px; font-size: 14px; min-width: 280px">
+            <option>summary_blend ↑ (composite: rouge_l 0.4, judge_a 0.3, judge_b 0.3)</option>
+            <option>asr · wer ↓</option>
+            <option>summary · rouge_l ↑</option>
+            <option>insights · grounded ↑</option>
+          </select>
+        </label>
+        <label style="display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: #8a8880">baseline
+          <select style="background: #141413; color: #f0efec; border: 1px solid #2a2a27; border-radius: 8px; padding: 8px 10px; font-size: 14px"><option>pipeline_whisper_gpt5mini_v2</option></select>
+        </label>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 4px; font-size: 14px; color: #b9b7ad">
+        <p style="margin: 0">NOTE: This is a heldout dataset of podcast_summaries: these results are nominal, not a look. A decision on them is recorded by run-promote or a study's confirmation, which takes look 2 at 0.38%.</p>
+        <p style="margin: 0">NOTE: pipeline_parakeet_qwen_v1: 3 items failed and are left out; the comparison uses the items both arms measured.</p>
+      </div>
+    </section>
+
+    <section style="display: flex; flex-direction: column; gap: 12px">
+      <p style="margin: 0; font-family: ui-monospace, monospace; font-size: 13px; color: #8a8880; letter-spacing: 0.06em; text-transform: uppercase">01 verdicts · summary_blend</p>
+      <div style="overflow-x: auto">
+        <table>
+          <thead><tr><th>run vs baseline</th><th>verdict</th><th>items</th><th>mean</th><th>Δ vs baseline</th><th>95% CI of Δ</th><th>wins–losses</th><th>p (non-inferiority)</th><th>Holm threshold</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>pipeline_whisper_qwen_v1</td>
+              <td><span style="border: 1px solid #199e70; border-radius: 999px; padding: 2px 10px; font-family: ui-monospace, monospace; font-size: 12px; white-space: nowrap">≈ non-inferior</span></td>
+              <td>120</td><td style="font-family: ui-monospace, monospace">0.612</td><td style="font-family: ui-monospace, monospace">−0.006</td><td style="font-family: ui-monospace, monospace">[−0.019, 0.007]</td><td style="font-family: ui-monospace, monospace">51–57 (12)</td><td style="font-family: ui-monospace, monospace">0.0021</td><td style="font-family: ui-monospace, monospace">0.0125</td>
+            </tr>
+            <tr>
+              <td>pipeline_parakeet_qwen_v1</td>
+              <td><span style="border: 1px solid #2a2a27; border-radius: 999px; padding: 2px 10px; font-family: ui-monospace, monospace; font-size: 12px; white-space: nowrap">inconclusive · fewer than 100 items</span></td>
+              <td>97</td><td style="font-family: ui-monospace, monospace">0.598</td><td style="font-family: ui-monospace, monospace">−0.019</td><td style="font-family: ui-monospace, monospace">[−0.035, −0.003]</td><td style="font-family: ui-monospace, monospace">38–52 (7)</td><td style="font-family: ui-monospace, monospace">—</td><td style="font-family: ui-monospace, monospace">0.0250</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="margin: 0; font-size: 13px; color: #8a8880">Baseline pipeline_whisper_gpt5mini_v2: mean 0.618. Margin 0.01 on summary_blend, declared by podcast_summaries. Holm across 2 comparisons, one-sided. Method: bootstrap-t at half the level, from 100 items (a continuous measure). The superiority p of each row is in its tooltip.</p>
+    </section>
+
+    <section style="display: flex; flex-direction: column; gap: 12px">
+      <p style="margin: 0; font-family: ui-monospace, monospace; font-size: 13px; color: #8a8880; letter-spacing: 0.06em; text-transform: uppercase">04 item · ep_0417 (The Daily, 2026-09-12) · stages</p>
+      <div style="display: grid; grid-template-columns: 160px repeat(2, minmax(0, 1fr)); gap: 1px; background: #2a2a27; border: 1px solid #2a2a27; border-radius: 12px; overflow: hidden">
+        <div style="background: #141413; padding: 12px; font-size: 12px; color: #8a8880">stage</div>
+        <div style="background: #141413; padding: 12px; font-size: 13px; font-family: ui-monospace, monospace">pipeline_whisper_gpt5mini_v2 · baseline</div>
+        <div style="background: #141413; padding: 12px; font-size: 13px; font-family: ui-monospace, monospace">pipeline_whisper_qwen_v1</div>
+        <sc-for list="{{stages}}" as="s" hint-placeholder-count="3">
+          <div style="background: {{s.bg}}; padding: 12px; font-family: ui-monospace, monospace; font-size: 13px">{{s.name}}<br><span style="color: #8a8880; font-size: 11px">{{s.mark}}</span></div>
+          <div style="background: {{s.bg}}; padding: 12px; display: flex; flex-direction: column; gap: 6px">
+            <p style="margin: 0; font-size: 13px; color: #b9b7ad; white-space: pre-line">{{s.a}}</p>
+            <p style="margin: 0; font-family: ui-monospace, monospace; font-size: 12px; color: #8a8880">{{s.aMeta}}</p>
+          </div>
+          <div style="background: {{s.bg}}; padding: 12px; display: flex; flex-direction: column; gap: 6px">
+            <p style="margin: 0; font-size: 13px; color: #b9b7ad; white-space: pre-line">{{s.b}}</p>
+            <p style="margin: 0; font-family: ui-monospace, monospace; font-size: 12px; color: #8a8880">{{s.bMeta}}</p>
+          </div>
+        </sc-for>
+      </div>
+      <p style="margin: 0; font-size: 13px; color: #8a8880">The row where the two arms' stage scores differ most is marked. JSON outputs are shown formatted, and a field that differs is marked in both columns. Terminal: <span style="font-family: ui-monospace, monospace">evh inspect … --stages --item ep_0417</span></p>
+    </section>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1450}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      stages: [
+        { name: 'asr', mark: 'reference: gold transcript', bg: '#0b0b0a',
+          a: 'Good morning. Today on the show, the vote that split the committee and what comes next…',
+          aMeta: 'wer 0.081 · 41,200 ms · $0.0310 · whisper-1',
+          b: 'Good morning. Today on the show, the vote that split the committee and what comes next…',
+          bMeta: 'wer 0.081 · 40,900 ms · $0.0310 · whisper-1' },
+        { name: 'summary', mark: 'largest difference', bg: 'rgba(200,255,61,0.06)',
+          a: 'The committee split 7–6 on the bill; the chair delayed the floor vote to next week.',
+          aMeta: 'rouge_l 0.412 · judge_a 4 · judge_b 4 · 2,310 ms · $0.0021 · gpt-5-mini',
+          b: 'The committee voted on the bill; members disagreed and a vote is planned.',
+          bMeta: 'rouge_l 0.371 · judge_a 3 · judge_b 3 · 1,880 ms · $0.0000 · qwen2.5-14b (local)' },
+        { name: 'insights', mark: 'JSON', bg: '#0b0b0a',
+          a: '{\n  "claims": 4,\n  "grounded": 4,\n  "speakers": ["host", "Sen. Ruiz"]\n}',
+          aMeta: 'grounded 1.00 · 1,140 ms · $0.0009',
+          b: '{\n  "claims": 5,\n  "grounded": 4,   ← differs\n  "speakers": ["host"]   ← differs\n}',
+          bMeta: 'grounded 0.80 · 900 ms · $0.0000' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

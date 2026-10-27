@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Goal page</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Inter+Tight:wght@600;700&amp;display=swap">
+<style>
+body{margin:0;background:#0b0b0a}
+a{color:#c8ff3d}a:hover{color:#e2ff8f}
+table{border-collapse:collapse;width:100%}
+th{text-align:left;font-weight:500;color:#8a8880;font-size:13px;padding:10px 12px;border-bottom:1px solid #2a2a27;white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid #2a2a27;font-size:15px;vertical-align:top}
+</style>
+</helmet>
+<div style="min-height: 100vh; background: #0b0b0a; color: #f0efec; font-family: Inter, system-ui, sans-serif; font-size: 16px; line-height: 1.5">
+  <header style="height: 56px; border-bottom: 1px solid #2a2a27; display: flex; align-items: center">
+    <div style="max-width: 1180px; width: 100%; margin: 0 auto; padding: 0 24px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap">
+      <a href="#" style="display: flex; align-items: center; gap: 8px; color: #f0efec; text-decoration: none; font-family: 'Inter Tight', Inter, sans-serif; font-weight: 700">
+        <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><rect x="2" y="2" width="18" height="18" rx="4" fill="none" stroke="#c8ff3d" stroke-width="2"></rect><path d="M6 14l4-6 3 4 3-5" fill="none" stroke="#c8ff3d" stroke-width="2"></path></svg>
+        eval harness
+      </a>
+      <nav aria-label="Parts" style="display: flex; gap: 6px; font-size: 13px; font-family: ui-monospace, monospace">
+        <a href="#" style="color: #b9b7ad; text-decoration: none">Harness</a><span style="color: #66645e">·</span>
+        <span style="color: #c8ff3d">Catalog</span><span style="color: #66645e">·</span>
+        <a href="#" style="color: #b9b7ad; text-decoration: none">Docs</a>
+      </nav>
+      <nav aria-label="Catalog" style="display: flex; gap: 16px; font-size: 14px; margin-left: auto; flex-wrap: wrap">
+        <a href="#" style="color: #b9b7ad; text-decoration: none">Overview</a>
+        <a href="#" style="color: #f0efec; text-decoration: none">Goals</a>
+        <a href="#" style="color: #b9b7ad; text-decoration: none">Studies <span style="font-size: 10px; color: #0b0b0a; background: #c8ff3d; border-radius: 4px; padding: 0 4px">new</span></a>
+        <a href="#" style="color: #b9b7ad; text-decoration: none">Datasets</a>
+        <a href="#" style="color: #b9b7ad; text-decoration: none">Prompts <span style="font-size: 10px; color: #0b0b0a; background: #c8ff3d; border-radius: 4px; padding: 0 4px">new</span></a>
+        <a href="#" style="color: #b9b7ad; text-decoration: none">References</a>
+        <a href="#" style="color: #b9b7ad; text-decoration: none">Metrics</a>
+        <a href="#" style="color: #b9b7ad; text-decoration: none">Inspector</a>
+      </nav>
+      <button type="button" aria-label="Search" style="width: 36px; height: 36px; border-radius: 18px; border: 1px solid #2a2a27; background: transparent; color: #b9b7ad">
+        <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="5" fill="none" stroke="currentColor" stroke-width="1.6"></circle><path d="M11 11l3.5 3.5" stroke="currentColor" stroke-width="1.6"></path></svg>
+      </button>
+    </div>
+  </header>
+
+  <main style="max-width: 1180px; margin: 0 auto; padding: 40px 24px 80px; display: flex; flex-direction: column; gap: 48px">
+    <section style="display: flex; flex-direction: column; gap: 8px">
+      <p style="margin: 0; font-family: ui-monospace, monospace; font-size: 13px; color: #8a8880; letter-spacing: 0.06em; text-transform: uppercase">goal</p>
+      <h1 style="margin: 0; font-family: 'Inter Tight', Inter, sans-serif; font-size: 40px; line-height: 1.1">Short news summaries (CNN)</h1>
+      <p style="margin: 0; color: #b9b7ad; max-width: 68ch">Pick a model that writes a short summary of a CNN-style news article, at a known cost, for a reader who wants the story's main points.</p>
+    </section>
+
+    <section style="display: flex; flex-direction: column; gap: 16px">
+      <p style="margin: 0; font-family: ui-monospace, monospace; font-size: 13px; color: #8a8880; letter-spacing: 0.06em; text-transform: uppercase">01 the answer so far</p>
+      <div style="background: #141413; border: 1px solid #2a2a27; border-radius: 12px; padding: 24px; display: flex; flex-direction: column; gap: 16px">
+        <div style="display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; align-items: baseline">
+          <p style="margin: 0; font-size: 14px; color: #b9b7ad"><a href="#">cnn_dailymail_200</a> · heldout · baseline <strong style="color: #f0efec">version 3</strong>, promoted 2026-11-04 by <span style="font-family: ui-monospace, monospace">person:marko</span> (confirmed), study run by <span style="font-family: ui-monospace, monospace">agent:claude for person:marko</span> · scored against gold</p>
+          <span style="font-family: ui-monospace, monospace; font-size: 12px; color: #8a8880">baseline:news_summary_cnn/cnn_dailymail_200/20261104T101500.123Z_7f3a</span>
+        </div>
+        <p style="margin: 0; font-size: 22px; font-weight: 600">cnn_bart_l_v1</p>
+        <p style="margin: 0; color: #b9b7ad; max-width: 80ch">Same coverage as version 2 within the declared margin, at no API cost; slower on a CPU. Study s1's trial 7, confirmed on 180 heldout items.</p>
+        <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; border-top: 1px solid #2a2a27; padding-top: 16px">
+          <span style="border: 1px solid #199e70; border-radius: 999px; padding: 2px 10px; font-family: ui-monospace, monospace; font-size: 13px">≈ non-inferior</span>
+          <span style="font-size: 14px; color: #b9b7ad">against version 2 on coverage · Δ −0.004 [−0.011, 0.003] · p 0.004 · n 180 of 200</span>
+          <span style="font-family: ui-monospace, monospace; font-size: 12px; color: #c8ff3d; border: 1px solid #3d5c00; border-radius: 6px; padding: 2px 8px">look 1 · cnn_dailymail_200 · at 1.52%</span>
+        </div>
+        <p style="margin: 0; font-size: 14px; color: #8a8880">cost per item $0.0000 against $0.0024 · speed p50 11,010 ms against 2,410 ms · frozen when promoted with harness 0.5.0; <span style="font-family: ui-monospace, monospace">evh pair-test</span> recomputes it today, as a new comparison</p>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap">
+          <a href="#" style="font-family: ui-monospace, monospace; font-size: 13px; color: #0b0b0a; background: #c8ff3d; border-radius: 999px; padding: 6px 14px; text-decoration: none">inspect it</a>
+          <a href="#" style="font-family: ui-monospace, monospace; font-size: 13px; color: #f0efec; border: 1px solid #2a2a27; border-radius: 999px; padding: 6px 14px; text-decoration: none">against version 2</a>
+          <a href="#" style="font-family: ui-monospace, monospace; font-size: 13px; color: #f0efec; border: 1px solid #2a2a27; border-radius: 999px; padding: 6px 14px; text-decoration: none">▸ how to reproduce it</a>
+          <a href="#" style="font-family: ui-monospace, monospace; font-size: 13px; color: #f0efec; border: 1px solid #2a2a27; border-radius: 999px; padding: 6px 14px; text-decoration: none">▸ history · 3 versions</a>
+        </div>
+        <div style="background: #0b0b0a; border-radius: 8px; padding: 12px 16px; display: flex; flex-direction: column; gap: 4px; font-size: 14px">
+          <p style="margin: 0; color: #8a8880; font-family: ui-monospace, monospace; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em">history (unfolded)</p>
+          <sc-for list="{{history}}" as="h" hint-placeholder-count="3">
+            <p style="margin: 0; color: #b9b7ad"><strong style="color: #f0efec">{{h.v}}</strong> · {{h.when}} · {{h.by}} · {{h.why}}</p>
+          </sc-for>
+        </div>
+      </div>
+      <p style="margin: 0; font-size: 14px; color: #b9b7ad; font-family: ui-monospace, monospace">heldout looks on cnn_dailymail_200: 1 taken · next at 0.38% · limit 10 · used by 29 configurations before 0.5.0 <a href="#" style="font-size: 13px">(evh goals --goal news_summary_cnn --looks)</a></p>
+      <div style="background: #141413; border: 1px solid #2a2a27; border-radius: 12px; padding: 20px 24px; display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap">
+        <a href="#">cnn_dailymail_20</a><span style="color: #8a8880">· dev ·</span><span style="color: #b9b7ad">No baseline yet. When a confirmation separates an arm worth keeping, promote its run:</span>
+        <code style="background: #1c1c1a; border-radius: 6px; padding: 4px 8px; font-size: 13px">evh run-promote --run &lt;run&gt; --reason "…"</code>
+      </div>
+    </section>
+
+    <section style="display: flex; flex-direction: column; gap: 16px">
+      <p style="margin: 0; font-family: ui-monospace, monospace; font-size: 13px; color: #8a8880; letter-spacing: 0.06em; text-transform: uppercase">02 rounds</p>
+      <div style="overflow-x: auto">
+        <table>
+          <thead><tr><th>round</th><th>status</th><th>set out to learn</th><th>arms in play</th><th>best on coverage</th><th>concluded</th></tr></thead>
+          <tbody>
+            <sc-for list="{{rounds}}" as="r" hint-placeholder-count="4">
+              <tr style="{{r.rowStyle}}">
+                <td style="font-family: ui-monospace, monospace">{{r.id}} <sc-if value="{{r.study}}" hint-placeholder-val="{{false}}"><a href="Study.dc.html" style="font-size: 11px; color: #0b0b0a; background: #c8ff3d; border-radius: 4px; padding: 1px 6px; text-decoration: none">study {{r.study}}</a></sc-if></td>
+                <td>{{r.status}}</td>
+                <td style="color: #b9b7ad; min-width: 24ch">{{r.learn}}</td>
+                <td>{{r.arms}}</td>
+                <td style="font-family: ui-monospace, monospace">{{r.best}}</td>
+                <td style="color: #b9b7ad; min-width: 22ch">{{r.concluded}}</td>
+              </tr>
+            </sc-for>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section style="display: flex; flex-direction: column; gap: 16px">
+      <p style="margin: 0; font-family: ui-monospace, monospace; font-size: 13px; color: #8a8880; letter-spacing: 0.06em; text-transform: uppercase">cnn_dailymail_200 · heldout · scored against gold/cnn_dailymail_200</p>
+      <div style="background: #141413; border: 1px solid #2a2a27; border-radius: 12px; padding: 20px 24px; display: flex; flex-direction: column; gap: 6px; font-size: 15px">
+        <p style="margin: 0; font-weight: 600">Recommended: <a href="Arm.dc.html">cnn_bart_l_v1</a></p>
+        <p style="margin: 0; color: #b9b7ad">Strategy balanced: the quality leader cnn_deepseek_m_v1 (coverage 0.3466); the cheapest arm non-inferior to it wins.</p>
+        <p style="margin: 0; color: #b9b7ad">cnn_bart_l_v1: non-inferior to the leader (margin 0.01 on coverage; p 0.003, nominal · not a look), cost $0.0000 per item.</p>
+        <p style="margin: 0; color: #b9b7ad">cnn_qwen_m_v1: inconclusive against the leader (fewer than 100 items for a continuous measure on its group): never recommended on a tie-break.</p>
+        <p style="margin: 0; color: #8a8880; font-size: 13px">On a heldout dataset every result here is nominal, not a look. A decision is recorded by run-promote or a study's confirmation.</p>
+      </div>
+      <div style="overflow-x: auto">
+        <table>
+          <thead><tr><th>arm</th><th>mean coverage</th><th>items</th><th>cost per item</th><th>speed per item · p50 / p95 ms</th><th>flags</th><th>vs leader</th></tr></thead>
+          <tbody>
+            <sc-for list="{{arms}}" as="a" hint-placeholder-count="4">
+              <tr>
+                <td><a href="Arm.dc.html">{{a.name}}</a> <span style="font-family: ui-monospace, monospace; font-size: 11px; color: #8a8880">{{a.tag}}</span></td>
+                <td style="font-family: ui-monospace, monospace">{{a.mean}}</td>
+                <td style="font-family: ui-monospace, monospace">{{a.items}}</td>
+                <td style="font-family: ui-monospace, monospace">{{a.cost}}</td>
+                <td style="font-family: ui-monospace, monospace">{{a.speed}}</td>
+                <td style="color: #d95926; font-size: 13px">{{a.flags}}</td>
+                <td style="font-family: ui-monospace, monospace; font-size: 13px">{{a.verdict}}</td>
+              </tr>
+            </sc-for>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section style="display: flex; flex-direction: column; gap: 8px; font-size: 15px">
+      <p style="margin: 0; font-family: ui-monospace, monospace; font-size: 13px; color: #8a8880; letter-spacing: 0.06em; text-transform: uppercase">what it is for</p>
+      <p style="margin: 0; color: #b9b7ad">decides: coverage, higher is better · margin: 0.01 on coverage (<span style="font-family: ui-monospace, monospace">axes.quality.margin</span>) · heldout looks: limit 10 · strategy: balanced · tie-break: cost, then speed · guardrails (words, never computed): 2</p>
+    </section>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      history: [
+        { v: 'version 3', when: '2026-11-04', by: 'person:marko', why: 'non-inferior to v2 at no API cost (study s1, trial 7)' },
+        { v: 'version 2', when: '2026-10-25', by: 'person:marko', why: 'promoted in 0.4.0: evidence not recorded' },
+        { v: 'version 1', when: '2026-09-27', by: 'person:marko', why: 'first baseline: nothing to compare' }
+      ],
+      rounds: [
+        { id: 'r4', study: 's2', status: 'running', learn: 'shorter summaries without losing facts', arms: '14 (9 retired)', best: 't7 · 0.3512', concluded: 'open', rowStyle: 'background: rgba(200,255,61,0.06)' },
+        { id: 'r3', study: 's1', status: 'closed', learn: 'a free local model as good as the hosted one', arms: '22 (17 retired)', best: 't7 · 0.3461', concluded: 'bart_l confirmed non-inferior; promoted', rowStyle: '' },
+        { id: 'r2', study: '', status: 'closed', learn: 'which hosted models can be told apart', arms: '6 (2 retired)', best: 'deepseek_m · 0.3466', concluded: 'not separated from bart_l', rowStyle: '' },
+        { id: 'r1', study: '', status: 'closed', learn: 'a first comparison', arms: '4', best: 'bart_l · 0.3461', concluded: 'bart_l leads', rowStyle: '' }
+      ],
+      arms: [
+        { name: 'cnn_deepseek_m_v1', tag: 'leader', mean: '0.3466', items: '200', cost: '$0.0024', speed: '2,410 / 4,980', flags: '', verdict: 'leader' },
+        { name: 'cnn_bart_l_v1', tag: 'baseline · recommended', mean: '0.3461', items: '200', cost: '$0.0000', speed: '11,010 / 19,200', flags: '', verdict: '≈ non-inferior' },
+        { name: 'cnn_anthropic_l_v1', tag: '', mean: '0.3398', items: '200', cost: '$0.0061', speed: '3,120 / 6,040', flags: '', verdict: '▼ separated: worse' },
+        { name: 'cnn_qwen_m_v1', tag: '', mean: '0.3420', items: '80', cost: '$0.0009', speed: '1,880 / 3,300', flags: 'n 80 < min_items 100', verdict: 'inconclusive' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
