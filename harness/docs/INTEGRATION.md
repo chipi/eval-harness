@@ -18,7 +18,7 @@ Pin it into your project, and start the project's folders:
 
 ```bash
 cd /path/to/your-project
-pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.4.0#subdirectory=harness"
+pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.4.1#subdirectory=harness"
 evh init         # data/sources, data/configs, data/goals, data/fields, a .gitignore
 ```
 
@@ -297,7 +297,7 @@ which references exist, what one arm wrote for one item.
 ## The first hour, concretely
 
 ```bash
-cd your-project && pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.4.0#subdirectory=harness"
+cd your-project && pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.4.1#subdirectory=harness"
 evh init
 
 cp some/real/items/* data/sources/            # your data

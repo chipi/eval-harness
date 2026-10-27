@@ -49,7 +49,7 @@ everything: the hosted-model clients, the judges, the catalog. Nothing else to a
 ```bash
 mkdir my-evals && cd my-evals
 python3 -m venv .venv && . .venv/bin/activate
-pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.4.0#subdirectory=harness"
+pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.4.1#subdirectory=harness"
 ```
 
 Then the project's folders and the tutorial kit, under version control from the start:

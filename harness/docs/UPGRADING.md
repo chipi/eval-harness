@@ -5,6 +5,12 @@ change the pin, then check what it says can move. **If you copied `harness/` int
 repository** before October 2026, read the rest of this page first: your copy has
 correctness bugs, not just missing features.
 
+## From 0.4.0 to 0.4.1
+
+Change the pin to `@v0.4.1`. Nothing moves: the same records, hashes and p-values. The inspector
+fits in a 256 MiB container again after `--warm` on a large catalog, and `evh catalog` gains `--head`,
+`--api` and `--brand`.
+
 ## From 0.3.0 to 0.4.0
 
 Change the pin to `@v0.4.0`. **One install is everything:** `openai` and `anthropic`, the

@@ -12,7 +12,7 @@ comparisons that **refuse** to mislead you.
 
 ```bash
 cd your-project
-pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.4.0#subdirectory=harness"
+pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.4.1#subdirectory=harness"
 evh init --tutorial    # the data folders, a .gitignore, and the tutorial kit
 evh --help             # the verbs, in the order you need them
 ```
