@@ -60,7 +60,9 @@ runs when it starts, so after a new run, stop it and start it again.
 
 | what you look at | in the terminal |
 |---|---|
-| the home page: goals at a glance, activity and spend, coverage, what was recorded | `evh overview` |
+| the home page: the tiles with their trends, goals at a glance, activity and spend, coverage, what was recorded | `evh overview` |
+| the activity page: runs, spend and tokens by dataset, arm and kind | `evh activity` |
+| the arms and configs page: every arm, grouped and filtered; every config with its rank on each goal | `evh arms --by config`, `evh arms --configs` |
 | the catalog's datasets page: every dataset, its items, arms and references | `evh datasets` |
 | a dataset page: its versions, references and every arm with its headline number | `evh datasets --dataset-id tickets_v1` |
 | an arm page: its metrics, runs, config, conditions, rounds | `evh arms --arm tickets_lead1_v1` |
@@ -69,6 +71,7 @@ runs when it starts, so after a new run, stop it and start it again.
 | a metric page: what it measures, its kind, the goals it decides, per-dataset strip chart | `evh metrics --metric overlap_f1` |
 | the search box on every catalog page | `evh search lead2` |
 | the goals page, and one goal's page: its answer (the baseline and why), its arms per dataset, its rounds | `evh goals`, `evh goals --goal tickets_summary`, `evh rounds --goal tickets_summary` |
+| the period chips on any of these pages: what is new and what changed in the last 30 days, this week, … | `--period 30d` (or `week`, `month`, `all`, …) on `evh overview`, `activity`, `datasets`, `goals`, `references`, `metrics`, `arms` |
 | a goal page's suggested next steps, each with a copy button | the commands `evh rounds --goal tickets_summary` prints |
 | a goal page's inspect button on a round: its arms against its leader ([tutorial 4](4-rounds-and-versions.md)) | `evh inspect --round r2` |
 | the inspector: arms tested against a baseline, and whether they ran under the same conditions | `evh inspect --runs tickets_lead1_v1,tickets_lead2_v1` |

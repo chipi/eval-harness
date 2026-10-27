@@ -78,6 +78,7 @@ nav:
           - "ADR-0004: Experiment rounds, and a catalog that guides them (0.4.0)": adr/ADR-0004-experiment-rounds.md
           - "ADR-0005: One provider layer; credentials per role, never identity (0.4.0)": adr/ADR-0005-credentials-per-role.md
           - "ADR-0006: A goal weighs cost, quality and speed; a strategy picks (0.4.0)": adr/ADR-0006-goal-axes-and-strategies.md
+          - "ADR-0018: The catalog's period is counted from today, in the browser (0.4.2)": adr/ADR-0018-period-from-today.md
   - The experiments:
       - Reproduce it: REPRODUCE.md
       - Protocol: PROTOCOL.md

@@ -41,7 +41,7 @@ further. This page is the reference for each step.
 | what it is for | `data/goals/<goal_id>.yaml` (every field: [§4c](#4c-the-goal-file-field-by-field)), and `goal:` on each config |
 | rounds (optional) | `evh round-open` · `evh round-retire` · `evh round-close` · `evh rounds --goal …` |
 | browse and inspect | `evh catalog` · `evh catalog-serve` |
-| the same, in the terminal | `evh overview [--period P]` · `evh datasets` · `evh arms --arm …` · `evh references` · `evh metrics --metric …` · `evh goals` · `evh search …` · `evh inspect --runs …` (`--items`, `--analysis`, `--item …`) |
+| the same, in the terminal | `evh overview [--period P]` · `evh activity` · `evh datasets` · `evh arms` (`--by …`, `--configs`, `--arm …`) · `evh references` · `evh metrics --metric …` · `evh goals` · `evh search …` · `evh inspect --runs …` (`--items`, `--analysis`, `--item …`); every list takes `--period P` |
 | consistency | `evh validate` |
 | does the installed harness work here | `evh self-test` |
 
@@ -855,6 +855,7 @@ file for any of the dataset's items, and warns when only some items have one. Th
 it: its quality columns are means over the items that have a reference.
 
 **In the terminal:** every view has a command. `evh overview [--period P]` for the home page,
+`evh activity` for the activity page, `evh arms` (`--by config`, `--configs`) for the arms page,
 `evh datasets`, `evh arms --arm …`, `evh references`, `evh metrics --metric …` and
 `evh goals --goal …` for the others, `evh inspect --runs …` (`--items` for the per-item table,
 `--analysis` for the charts, `--item <id>` for one item) for the inspector.

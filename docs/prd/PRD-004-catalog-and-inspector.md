@@ -63,8 +63,10 @@ adapter file ([ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md),
 - _As a reviewer, I am told when the arms I compare ran under different conditions (scorer,
   reference bytes, machine), before I read the test._
 - _As a terminal user, I can get the inspector's comparison with
-  `evh inspect --runs a,b`, and every page with `evh datasets`, `evh references`, `evh metrics`
-  and `evh goals`._
+  `evh inspect --runs a,b`, and every page with `evh datasets`, `evh references`, `evh metrics`,
+  `evh goals`, `evh arms` and `evh activity`._
+- _As a maintainer of an evaluation, I can see what is new and what moved this week or this
+  month on every page, and follow a count on the home page to the rows behind it._
 
 ## Functional Requirements
 
@@ -96,7 +98,22 @@ adapter file ([ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md),
   beside spend (cumulative, systems under test and judges, in USD or tokens); coverage per
   dataset; and everything recorded, newest first; each for a period counted from today (the last
   14, 7, 30 or 90 days, this or last week or month, this year, all time), the counts with their
-  trends against the period before.
+  trends against the period before. The tiles are grouped and coloured by subject (goals; data;
+  experiments; work and spend), never red or green for a direction.
+- **FR1.9** (0.4.2): A tile is a door: the page it opens shows what it counts, for the same
+  period, carried in the link. The goals, datasets, arms, references and metrics pages mark the
+  rows new in the period, keep only the new or the active ones on request, and show the period's
+  runs and spend against the period before; the goals page lists what happened to each goal.
+- **FR1.10** (0.4.2): An activity page shows the period's runs, spend and tokens by dataset, by
+  arm and by kind of call, against the period before, the busiest first.
+- **FR1.11** (0.4.2): An arms and configs page lists every arm, each saying how it was measured
+  (measured, rescored, judged, re-parsed, run again), grouped by dataset, config, model, provider
+  or what it is scored against, filtered to local or hosted arms or a price tier, with its role
+  in each goal's decision; picks arms on one dataset to open in the inspector; lists every config
+  across the datasets it ran on with its rank on each goal; and shows each goal's trade-off
+  charts.
+- **FR1.12** (0.4.2): The menu groups the pages by the same subjects as the tiles, so it fits a
+  desktop bar; a phone's menu lists every page.
 
 ### FR2: The inspector (local server)
 
@@ -127,9 +144,11 @@ adapter file ([ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md),
 ### FR4: Command-line parity
 
 - **FR4.1**: Every page and comparison is also a command that asks the same adapter and computes
-  with the same functions: `evh overview` (the home dashboard), `evh datasets`, `evh arms`,
-  `evh references`, `evh metrics`, `evh goals`, `evh search`, `evh inspect` (its comparison,
-  `--items`, `--analysis`, `--item`) ([UXS-003](../uxs/UXS-003-cli-and-onboarding.md)).
+  with the same functions: `evh overview` (the home dashboard), `evh activity`, `evh datasets`,
+  `evh arms` (`--by`, `--where`, `--tier`, `--configs`), `evh references`, `evh metrics`,
+  `evh goals`, `evh search`, `evh inspect` (its comparison, `--items`, `--analysis`, `--item`)
+  ([UXS-003](../uxs/UXS-003-cli-and-onboarding.md)); every list takes `--period P` and prints the
+  page's period columns, from the same builder the page reads.
 - **FR4.2**: New views and actions are added to both. A decision the pages suggest is shown as
   the command that makes it.
 

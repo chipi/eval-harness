@@ -60,10 +60,12 @@ A `typing.Protocol`; every method must be cheap to call twice.
 Optional members, each read with `getattr` so an adapter without them still works:
 `item_fields(dataset)`, `dataset_items(dataset)`, `metric_descriptions()`, `conditions(arm)`,
 `baselines()`, `arm_of(dataset, config_id)`, `reference_free(metric)`, `rounds()`, `datasets()`,
-`dataset_lineage(dataset)`, `served_dirs`, `arm_runs(arm)` → `[{"run_id", "created_at", "items",
+`dataset_lineage(dataset)`, `dataset_created(dataset)` (when it was frozen; the period pages count it
+new from that day, else from its first run), `served_dirs`, `arm_runs(arm)` → `[{"run_id", "created_at", "items",
 "cost_usd", "derived"}]`, `arm_config(arm)` → `{"config_id", "params" (credentials removed),
-"adapter"}`, `spend()` → `[{"at", "usd", "tokens", "kind": "arm"|"judge", "dataset", "what"}]`
-(usd or tokens None when unknown; measured runs and judging per set and day), and on
+"adapter"}`, `spend()` → `[{"at", "usd", "tokens", "kind": "arm"|"judge", "dataset", "what", "arm"}]`
+(usd or tokens None when unknown; measured runs and judging per set and day; `arm` names a
+measured run's arm, which the arms and activity pages bill it to), and on
 `HarnessAdapter` `item_text(dataset, item)` (the item itself, local inspector only).
 `item_view(arm, item)` returns one of the inspector's view kinds: `text`, `none`, or a
 structured `insights`, `nodes` or `entities`, each optionally with `info`. `describe(arm)` may

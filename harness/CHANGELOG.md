@@ -11,21 +11,48 @@ that can move a result is never a patch release without saying so under **Change
 
 ## 0.4.2 — unreleased
 
-A home page that says what changed. No result moves.
+A catalog that says what changed, and where: every count on the home page has a trend and opens a
+page that shows the rows behind it, for the same period. An activity page and an arms and configs
+page. No result moves.
+
+### Added
+
+- **A period on every page, counted from today.** Four chips (14 days, 30 days, this month, all
+  time) and a list with the rest (7 and 90 days, this and last week, last month, this year); the
+  browser works it out from the viewer's date, so a catalog built days ago still shows this week.
+  A trend compares with the same days of the period before. The period travels in the link
+  (`datasets.html#p30d`). On the goals, datasets, arms, references and metrics pages a row made
+  in the period has a **new** badge, chips keep only the new or the active rows, and in-period
+  columns give the runs and spend with their trend (▲ 12%, ▼ 31%, ▲ from 0) and a line of runs
+  per day. The goals page lists what happened to each goal (baselines, rounds).
+- **The activity page** (`activity.html`, `evh activity`): the home page's charts at full width,
+  and the period's runs, spend and tokens by dataset, by arm and by kind of call, the busiest
+  first. The measured runs, billed and tokens tiles open it.
+- **The arms and configs page** (`arms.html`): every arm, saying how it was measured (measured,
+  rescored against a reference, judged by a scorer, re-parsed, run again), grouped by dataset,
+  config, model, provider or what it is scored against, filtered to local or hosted arms or a
+  price tier, with its role in each goal's decision; tick arms on one dataset to open them in the
+  inspector. Every config across the datasets it ran on, with its rank on each goal. What changed
+  for arms in the period, and each goal's trade-off charts. The arms tile opens it; the configs
+  tile opens it grouped by config.
+- **`--period P` on every list**: `evh datasets`, `goals`, `references`, `metrics`, `arms` print
+  the page's period columns. `evh arms` lists the arms page's rows (`--by`, `--where`, `--tier`)
+  and `--configs` the configs. Each page's period numbers come from one builder the page and the
+  command both read.
+- **Adapter:** `dataset_created(dataset)`, optional: the day a dataset counts as new (else its
+  first run). `spend()` events may name a measured run's `arm`, which the arms and activity pages
+  bill it to; `HarnessAdapter` does.
 
 ### Changed
 
-- **The home page's tiles carry trends, for a period picked from today.** Measured runs, billed
-  and tokens show the period's total, ▲/▼ % against the period before it (or "new" when that one
-  had none) and a line per day; goals, datasets, configs, arms, references and metrics show the
-  total and how many are new in the period, each tile in its own colour (never red or green: up
-  is neither good nor bad). Chips pick the period: the last 7, 14, 30 and 90
-  days, this and last week, this and last month, this year and all time; the browser works it
-  out from the viewer's date, so a catalog built days ago still shows this week. The charts and
-  the feed follow it. A dataset counts as new from its `created_at`
-  (`dataset_created()`, a new optional adapter method), else from its first run.
-- **`evh overview --period P`** prints the same tiles and trends; `--all` is gone
-  (`--period all`).
+- **The home page's tiles carry trends.** Measured runs, billed and tokens show the period's
+  total, ▲/▼ % against the period before and a line per day; goals, datasets, configs, arms,
+  references and metrics show the total and how many are new. The tiles are grouped and coloured
+  by subject (goals; data; experiments; work and spend), with a legend; never red or green for a
+  direction. The charts and the feed follow the period.
+- **The menu is grouped by the same subjects:** Overview, Goals, Data (Datasets, References),
+  Experiments (Arms, Configs, Metrics), Activity, Inspector; a phone's menu lists every page.
+- **`evh overview --period P`** prints the tiles and trends; `--all` is gone (`--period all`).
 
 ## 0.4.1 — 2026-10-27
 

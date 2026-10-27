@@ -16,7 +16,7 @@ NOISE ?=
 TIER ?= silver
 
 .PHONY: help demo init env-check install venv-init catalog catalog-serve \
-        overview datasets arms references metrics goals inspect round-open round-retire round-close rounds \
+        overview activity datasets arms references metrics goals inspect round-open round-retire round-close rounds \
         dataset-create dataset-materialize reference-create \
         holdout pair-test rank-stability \
         experiment-dry-run experiment-run sweep \
@@ -268,6 +268,9 @@ catalog-serve: catalog
 # the same adapter and the same computation, so a number here is the number on the page.
 overview:
 	$(PYTHON) scripts/view_overview.py $(ARGS)
+
+activity:
+	$(PYTHON) scripts/view_activity.py $(ARGS)
 
 arms:
 	$(PYTHON) scripts/view_arms.py $(if $(DATASET_ID),--dataset-id $(DATASET_ID),) $(if $(ARM),--arm $(ARM),) $(ARGS)
