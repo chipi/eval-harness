@@ -222,11 +222,35 @@ try:
         and 'href="datasets.html"' in home
         and 'href="references.html"' in home,
     )
+    nav = re.findall(r'<nav class="nav">(.*?)</nav>', home)[0]
     check(
-        "nav: Overview, Goals, Datasets, References, Metrics, Inspector",
-        re.findall(r'<nav class="nav">(.*?)</nav>', home)[0].count("<a ") == 6
-        and all(x in home for x in (">Datasets<", ">References<", ">Overview<")),
+        "nav: Overview, Goals, Data (Datasets, References), Experiments (Arms, Configs, Metrics), Activity, Inspector",
+        nav.count("<a ") == 9
+        and re.findall(r"<summary[^>]*>([^<]+)</summary>", nav) == ["Data", "Experiments"]
+        and all(
+            x in nav for x in (">Datasets<", ">References<", ">Arms<", ">Configs<", ">Metrics<", ">Activity<")
+        ),
+        nav[:300],
     )
+    menu = re.findall(r'<nav class="menu-links">(.*?)</nav>', home)[0]
+    check(
+        "the phone's menu lists every page, a group's under its name",
+        menu.count("<a ") == 9 and menu.count('class="menu-group"') == 2,
+    )
+    check(
+        "the home tiles open their pages: activity, arms, configs grouped by config",
+        all(
+            x in home
+            for x in (
+                'href="activity.html"',
+                'href="arms.html"',
+                'href="arms.html?group=config"',
+                'class="legend groups"',
+            )
+        ),
+    )
+    for name in ("activity.html", "arms.html"):
+        check(f"build: {name}", (out3 / name).is_file())
     check("no switcher without --link: a catalog on its own", 'class="sections"' not in home)
     dsp = (out3 / "datasets.html").read_text()
     check("datasets page: every dataset, linked", 'href="d/ds3.html"' in dsp)
@@ -321,6 +345,74 @@ try:
         and cp.trend(50, 100)["text"] == "▼ 50%"
         and cp.trend(5, 0)["text"].startswith("new")
         and cp.trend(0, 0)["pct"] is None,
+    )
+    check(
+        "a table cell's trend: ▲/▼ %, '▲ from 0' when the period before had none, nothing when neither",
+        cp.cell(5, 10) == "5 ▼ 50%"
+        and cp.cell(5, 0) == "5 ▲ from 0"
+        and cp.cell(0, 0) == "0"
+        and cp.cell(3, None) == "3",
+    )
+
+    # The period on the other pages: one builder per page, read by the page and by evh.
+    from evaluation_harness import catalog_arms as ca
+
+    A3 = HarnessAdapter(data3)
+    by3 = cb.collect(A3)
+    first3 = cb.window(A3, by3)["first"]
+    pds = cb.period_datasets(A3, by3)
+    per = cp.in_period(pds, "all", _date.today(), first3)
+    page_keys = set(re.findall(r'<tr[^>]* data-key="([^"]+)"', (out3 / "datasets.html").read_text()))
+    check(
+        "datasets page: one dated row per dataset, keyed as its builder keys it",
+        page_keys == set(pds) and "window.PERIOD_ROWS=" in (out3 / "datasets-rows.js").read_text(),
+        f"{page_keys} {set(pds)}",
+    )
+    dl = next(
+        ln for ln in _view(_cv.datasets, ["--period", "all"]).splitlines() if ln.strip().startswith("ds3")
+    )
+    check(
+        "evh datasets --period all: the builder's runs for the dataset (all time: no trend)",
+        re.split(r"\s{2,}", dl.strip())[-2] == str(per["ds3"]["runs"])
+        and per["ds3"]["runs"]
+        == sum(
+            1
+            for a in by3["ds3"]["arms"]
+            for r in a["run_list"]
+            if r.get("created_at") and not r.get("derived")
+        ),
+        dl,
+    )
+    rows3 = {r["arm"]: r for r in ca.arm_rows(A3, by3)}
+    check(
+        "arms page: each arm says how it was measured",
+        rows3["runs/ds3/arm_s"]["how"] == "measured"
+        and rows3["runs-judged/sc1/ds3/arm_t"]["how"] == "judged by sc1",
+        str({k: v["how"] for k, v in rows3.items()}),
+    )
+    arms_html = (out3 / "arms.html").read_text()
+    check(
+        "arms page: every arm a row, with what the grouping and the filters read",
+        len(re.findall(r'<tr[^>]* data-key="runs', arms_html)) == len(rows3)
+        and 'data-config="arm_t"' in arms_html
+        and 'data-scored="judge"' in arms_html
+        and "judged by sc1" in arms_html,
+    )
+    grouped = _view(_cv.arms, ["--by", "config"])
+    check(
+        "evh arms --by config: a heading per config, its arms under it",
+        "config arm_t (2 arms)" in grouped and "config arm_s (1 arms)" in grouped,
+        grouped[:400],
+    )
+    check(
+        "evh arms --configs: one row per config across its datasets",
+        all(x in _view(_cv.arms, ["--configs"]) for x in ("arm_s", "arm_t", "rank on each goal")),
+    )
+    act = _view(_cv.activity, ["--period", "all"])
+    check(
+        "evh activity: by dataset, by arm, by kind, from the activity page's builder",
+        all(x in act for x in ("by dataset:", "by arm (", "by kind:", "ds3")),
+        act[:400],
     )
     arm_id = next(a for a in HarnessAdapter(data3).arms() if a.endswith("/arm_s"))
     ar = _view(_cv.arms, ["--arm", arm_id])

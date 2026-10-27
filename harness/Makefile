@@ -21,7 +21,7 @@ TIER ?= silver
         holdout pair-test rank-stability \
         experiment-dry-run experiment-run sweep \
         runs-list baselines-list run-compare leaderboard run-promote \
-        validate judge judge-score check guide-check browser-install browser-check ci test smoke-fixture cost-report clean clean-cache \
+        validate judge judge-score check guide-check browser-install browser-check budget-check ci test smoke-fixture cost-report clean clean-cache \
         bootstrap-test family-test import-run rescore silver-calibrate site site-check docs
 
 # ── getting started ─────────────────────────────────────────────────────────
@@ -101,6 +101,11 @@ browser-install:
 	@test -d $(VENV) || $(PYTHON) -m venv $(VENV)
 	$(VENV)/bin/pip install -q -r requirements-browser.txt
 	$(VENV)/bin/python -m playwright install chromium $(ARGS)
+
+# The inspector's budgets on this repository's runs: memory under --warm (prod's limit is 256 MiB)
+# and how long an answer takes, cached and cold (tests/test_inspector_budget.py).
+budget-check:
+	$(PYTHON) tests/test_inspector_budget.py $(ARGS)
 
 browser-check:
 	$(PYTHON) tests/test_inspector_browser.py

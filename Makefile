@@ -21,7 +21,7 @@ ARMS ?=
 CONFIG ?=
 
 .DEFAULT_GOAL := help
-.PHONY: help setup verify list plan data reproduce compare site docs browser-check \
+.PHONY: help setup verify list plan data reproduce compare site docs browser-check budget-check \
 	quality-install quality lint format type security audit-locks deadcode docstrings spelling shell complexity
 
 help:
@@ -66,6 +66,16 @@ site: $(PY)
 browser-check: $(PY)
 	$(MAKE) -C harness browser-check
 	$(PY) site/test_browser.py
+
+# The inspector's budgets: the harness alone, then with this deployment's hooks and their SDKs
+# (infra/inspector/), vendored into .build/vendor as render.sh vendors them for prod.
+budget-check: $(PY)
+	$(MAKE) -C harness budget-check
+	$(PY) -m pip install --quiet --no-deps --no-compile --target harness/.build/vendor --upgrade \
+	  --only-binary=:all: --platform any --implementation py --python-version 3.12 \
+	  -r infra/inspector/requirements.txt
+	printf 'SENTRY_DSN=http://k@127.0.0.1:9/1\nOTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://127.0.0.1:9/v1/traces\n' > harness/.build/obs-unreachable.env
+	cd harness && PYTHONPATH=.build/vendor EVALS_OBS_ENV=.build/obs-unreachable.env $(abspath $(PY)) tests/test_inspector_budget.py --catalog .build/budget-catalog --hooks ../infra/inspector/hooks.py
 
 docs:
 	mkdocs build --strict

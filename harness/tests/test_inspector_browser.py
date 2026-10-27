@@ -202,10 +202,57 @@ def drive(base: str, overview: str = "") -> None:
             and not page.locator("#feeda").is_visible()
             and "No measured run in this period" in page.locator("#activity").inner_text(),
         )
-        page.goto(base + "datasets.html")
+        page.goto(base + "datasets.html#p30d")
         check(
             "datasets page: the dataset is listed",
             "tickets_v1" in page.locator("table#datasets").inner_text(),
+        )
+        check(
+            "datasets page: opens at the period its link names; the tutorial's dataset is new and active in it",
+            page.get_attribute('#period button.chip[data-period="30d"]', "aria-pressed") == "true"
+            and page.locator("table#datasets span.new").count() == 1
+            and page.locator('.row-chips [data-rows="active"] b').inner_text() == "1",
+        )
+        page.click('#period button.chip[data-period="all"]')
+        page.goto(base + "datasets.html#plastmonth")
+        page.click('.row-chips [data-rows="active"]')
+        check(
+            "datasets page: last month (the tutorial ran today) has no active dataset, and says so",
+            page.locator("p.pempty").first.is_visible() and not page.locator("table#datasets").is_visible(),
+        )
+        page.goto(base + "index.html")
+        page.click('.nav details.navgroup[data-group="experiments"] > summary')
+        check(
+            "menu: Experiments opens Arms, Configs and Metrics",
+            page.locator('.nav details.navgroup[data-group="experiments"] .navlist a').all_inner_texts()
+            == ["Arms", "Configs", "Metrics"],
+        )
+        page.goto(base + "arms.html#p30d")
+        rows = page.locator("table#arms tbody tr:not(.grouphead)")
+        check(
+            "arms page: every arm a row, each saying how it was measured",
+            rows.count() >= 3 and "measured" in page.locator("table#arms").inner_text(),
+        )
+        page.click('.group-chips [data-group-by="dataset"]')
+        check(
+            "arms page: grouped by dataset, one heading naming it and its arms",
+            page.locator("table#arms tr.grouphead").count() == 1
+            and "tickets_v1" in page.locator("table#arms tr.grouphead").inner_text(),
+        )
+        page.locator("table#arms input.pick").nth(0).check()
+        page.locator("table#arms input.pick").nth(1).check()
+        link = page.locator(".compare-bar [data-compare]")
+        check(
+            "arms page: two arms on one dataset picked open in the inspector",
+            page.locator(".compare-bar").is_visible()
+            and link.get_attribute("aria-disabled") == "false"
+            and "inspect.html?runs=" in (link.get_attribute("href") or ""),
+        )
+        page.goto(base + "activity.html#pall")
+        check(
+            "activity page: the charts and the period's tables",
+            page.locator("#activity figure.chart").first.is_visible()
+            and "tickets_v1" in page.locator("table#actds").inner_text(),
         )
         page.goto(base + "a/runs-tickets_v1-tickets_lead2_v1.html")
         check(

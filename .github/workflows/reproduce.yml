@@ -12,6 +12,11 @@
 #              them (harness/tests/test_inspector_browser.py, site/test_browser.py): a tutorial project built from
 #              the package's wheel and the site served with production's headers, any console error or
 #              CSP violation a failure. The same make targets a developer runs.
+#   budget     the run inspector's budgets on this repository's runs (harness/tests/test_inspector_budget.py):
+#              its memory under --warm below 200 MB (prod's container has 256 MiB; the 0.4.0
+#              inspector peaked at 260 MB and was OOM-killed every ~5 minutes), a cached answer in
+#              milliseconds, a cold one in seconds; then the same with this deployment's hooks and
+#              their SDKs (infra/inspector/), as prod runs it.
 #
 # No secrets: nothing here calls a paid model, so it is safe on pull requests from forks.
 name: reproduce
@@ -42,6 +47,21 @@ jobs:
           cache-dependency-path: harness/requirements.txt
       - name: make verify
         run: make verify
+
+  budget:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: harness/requirements.txt
+      - name: harness environment
+        run: make -C harness install
+      - name: make budget-check
+        run: make budget-check
 
   browser:
     runs-on: ubuntu-latest

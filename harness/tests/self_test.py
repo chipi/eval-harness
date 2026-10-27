@@ -624,6 +624,7 @@ def test_example_scorer_suites_pass() -> None:
         ("test_retrieval_scorer.py", "ranked-list scorer"),
         ("test_stats.py", "paired test (stats.py)"),
         ("test_catalog.py", "catalog and run inspector"),
+        ("test_serve_hooks.py", "catalog-serve --hooks: called, never breaking a request, off by default"),
         ("test_goals.py", "goals: config, run, baseline, V14, pages"),
         ("test_axes.py", "a goal's axes and strategy: limits, the tie, the tie-break, the ratios"),
         (

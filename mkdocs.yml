@@ -46,6 +46,7 @@ nav:
       - Releasing: harness/RELEASING.md
       - Newcomer scenario: harness/SCENARIO.md
       - Upgrading: harness/UPGRADING.md
+      - Testing: harness/TESTING.md
   - Architecture:
       - Overview: architecture/ARCHITECTURE.md
       - Requirements (PRDs):

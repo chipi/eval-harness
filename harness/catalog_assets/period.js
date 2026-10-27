@@ -93,4 +93,6 @@ rows(b);feeds(b);links();listeners.forEach(fn=>fn(key,b));}
 window.Period={DAY,iso,at,esc,today,bounds,within,trend,short,daysOf,amount,label,on:fn=>{listeners.push(fn);fn(key,bounds(key,today,P.first));},get key(){return key;}};
 pick.hidden=false;pick.addEventListener('click',ev=>{const c=ev.target.closest('button.chip');if(c)show(c.dataset.period);});
 pick.querySelector('select.more')?.addEventListener('change',ev=>{if(ev.target.value)show(ev.target.value);});
+/* a link to the same page with another period (#p30d) changes only the hash: follow it */
+addEventListener("hashchange",()=>{const k=fromHash();if(k&&k!==key)show(k,false);});
 show(fromHash()||P.default,false);})();
