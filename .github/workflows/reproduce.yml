@@ -77,8 +77,8 @@ jobs:
             harness/requirements-browser.txt
       - name: harness environment
         run: make -C harness install
-      - name: Playwright and Chromium (with the system libraries it needs)
-        run: make -C harness browser-install ARGS=--with-deps
+      - name: Playwright and Chromium (with the system libraries it needs), cached
+        uses: ./.github/actions/install-playwright
       - name: make browser-check
         run: make browser-check
 
