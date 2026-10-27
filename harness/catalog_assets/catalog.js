@@ -42,7 +42,7 @@ let shown=step;const bar=document.createElement('p');bar.className='pager small 
 (t.closest('.scroll-x')||t).after(bar);
 const id=decodeURIComponent(location.hash.slice(1));
 if(id){const at=[...t.tBodies[0].rows].findIndex(r=>r.id===id);if(at>=step)shown=Infinity;}
-t._repage=function(){const live=[...t.tBodies[0].rows].filter(r=>!r.hidden);
+t._repage=function(){const live=[...t.tBodies[0].rows].filter(r=>!r.hidden&&!r.classList.contains('grouphead'));
 live.forEach((r,i)=>r.classList.toggle('paged-out',i>=shown));
 [...t.tBodies[0].rows].filter(r=>r.hidden).forEach(r=>r.classList.remove('paged-out'));
 const n=live.length,vis=Math.min(n,shown);

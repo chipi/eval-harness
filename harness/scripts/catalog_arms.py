@@ -39,10 +39,11 @@ def _base(arm: str) -> str:
 
 
 def arm_rows(A, by_ds: dict) -> list[dict]:
-    """One row per arm, in the page's order (a derived arm right after the arm it came from):
+    """One row per arm, by dataset, then config, the config's own measurement first:
     {"arm", "label", "dataset", "config", "model", "provider", "family", "tier", "local",
-    "scored", "source", "derived", "roles", "goal", "measure", "value", "lower", "repeats",
-    "cost", "latency", "first", "last"}."""
+    "scored", "how", "roles", "goal", "measure", "value", "lower", "repeats", "cost",
+    "latency", "first", "last"}. `how` says what the arm is beside the config's other arms:
+    measured, rescored against a reference, judged by a scorer, re-parsed, or run again."""
     from evaluation_harness import catalog_build as cb  # noqa: PLC0415
 
     cfg = getattr(A, "arm_config", None)
@@ -70,13 +71,22 @@ def arm_rows(A, by_ds: dict) -> list[dict]:
         arms = sorted(
             v["arms"], key=lambda a: (a["arm"].rsplit("/", 1)[-1], _base(a["arm"]) != "runs", a["arm"])
         )
-        ids = {a["arm"] for a in arms}
         for a in arms:
             c = cfg(a["arm"]) if callable(cfg) else {}
             p = (c or {}).get("params") or {}
             cid = (c or {}).get("config_id") or a["arm"].rsplit("/", 1)[-1]
-            source = f"runs/{ds}/{cid}"
             derived = next((r.get("derived") for r in a["run_list"] if r.get("derived")), "")
+            base = _base(a["arm"])
+            if a["judge"]:
+                how = f"judged by {a['judge']}"
+            elif derived == "rescore":
+                how = f"rescored against {a['reference'] or 'no reference'}"
+            elif derived:
+                how = {"reparse": "re-parsed"}.get(derived, derived)
+            elif base == "runs":
+                how = "measured"
+            else:
+                how = f"run again ({base.removeprefix('runs-')})"
             g, m, lower = measure_of.get(a["arm"], (None, a["metric"], a["lower"]))
             value = (a["means"].get(m) or (None,))[0] if m else None
             dated = [r.get("created_at") or "" for r in a["run_list"] if r.get("created_at")]
@@ -94,8 +104,7 @@ def arm_rows(A, by_ds: dict) -> list[dict]:
                         (p.get("provider") or "") in HOSTED_PROVIDERS or p.get("usd_per_mtok_in") is not None
                     ),
                     "scored": "judge" if a["judge"] else (tiers.get(a["reference"]) or "none"),
-                    "source": source if source != a["arm"] and source in ids else "",
-                    "derived": derived if source != a["arm"] else "",
+                    "how": how,
                     "roles": roles.get(a["arm"], []),
                     "goal": g,
                     "measure": m,
@@ -175,12 +184,6 @@ def render_arms(A, by_ds: dict, out, nav: list) -> None:
                 w["spend"], lambda x, arm=r["arm"]: x.get("kind") == "arm" and x.get("arm") == arm
             ),
         }
-        src = by_arm.get(r["source"]) if r["source"] else None
-        moved = ""
-        if src and r["measure"] and r["value"] is not None:
-            before = (src["means"].get(r["measure"]) or (None,))[0]
-            if before is not None:
-                moved = f'<br><small class="muted">{e(r["derived"] or "derived")} from the arm above: {r["value"] - before:+.3f}</small>'
         latency = f"{r['latency']:.0f} ms" if r["latency"] else "—"
         badges = "".join(f'<span class="role">{e(x)}</span>' for x in dict.fromkeys(r["roles"]))
         attrs = {
@@ -196,16 +199,14 @@ def render_arms(A, by_ds: dict, out, nav: list) -> None:
             {
                 "key": r["arm"],
                 "made": r["first"],
-                "cls": "fromarm" if r["source"] else "",
                 "data": attrs,
                 "cells": [
                     f'<input type="checkbox" class="pick" aria-label="pick {e(r["label"])}" data-arm="{e(r["arm"])}" data-ds="{e(r["dataset"])}">',
-                    cb.arm_link(r["arm"], r["label"]) + moved,
+                    cb.arm_link(r["arm"], r["label"]) + (f"<br>{badges}" if badges else ""),
+                    e(r["how"]),
                     cb.dataset_link(r["dataset"]),
                     (f"<code>{e(r['model'])}</code>" if r["model"] else "—")
                     + f'<br><small class="muted">{e(r["provider"] or "—")}{" · local" if r["local"] else ""}</small>',
-                    e(r["scored"]),
-                    badges or "—",
                     (
                         cb.metric_link(r["measure"])
                         + f' <span data-v="{r["value"]}">{cb.fmt(r["value"])}</span>'
@@ -215,7 +216,6 @@ def render_arms(A, by_ds: dict, out, nav: list) -> None:
                     f'<span data-v="{r["repeats"]}">{r["repeats"]}</span>',
                     f'<span data-v="{r["cost"] if r["cost"] is not None else ""}">{cb.fmt_amount(r["cost"], "usd") if r["cost"] else "—"}</span>',
                     f'<span data-v="{r["latency"] if r["latency"] is not None else ""}">{latency}</span>',
-                    f'<span data-v="{e(r["last"])}">{e(r["last"]) or "—"}</span>',
                     f'<span data-flow="runs" data-line>{len(period_rows[r["arm"]]["runs"])}</span>',
                     '<span data-flow="usd">—</span>',
                 ],
@@ -262,7 +262,7 @@ def render_arms(A, by_ds: dict, out, nav: list) -> None:
                 [
                     r["first"],
                     r["arm"],
-                    "derived: " + (r["derived"] or "derived") if r["source"] else "first run",
+                    r["how"],
                 ]
             )
     for v in by_ds.values():
@@ -313,8 +313,8 @@ def render_arms(A, by_ds: dict, out, nav: list) -> None:
         "arms",
         "Arms and configs",
         f"{len(rows)} arms from {n_cfg} configs on {len(by_ds)} datasets. An arm is one config on one dataset "
-        "scored one way; a rescored or judged arm sits under the arm it came from, with how its number "
-        "moved. Pick arms on one dataset to open them in the inspector.",
+        "scored one way: measured, rescored against another reference, judged, or run again (the how column "
+        "says which; group by config to see them together). Pick arms on one dataset to open them in the inspector.",
         cp.bar(w["first"], w["until"]),
     )
     body += cb.block(
@@ -331,15 +331,13 @@ def render_arms(A, by_ds: dict, out, nav: list) -> None:
             [
                 "",
                 "arm",
+                "how measured",
                 "dataset",
                 "model · provider",
-                "scored against",
-                "role",
                 "deciding measure",
                 "repeats",
                 "cost / item",
                 "latency",
-                "last run",
                 "runs in period",
                 "spend in period",
             ],

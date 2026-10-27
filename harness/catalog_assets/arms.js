@@ -39,8 +39,9 @@ link&&link.addEventListener('click',ev=>{if(link.getAttribute('aria-disabled')==
 /* one goal's trade-off charts at a time */
 const sel=document.getElementById('tradeoff-goal');
 sel&&sel.addEventListener('change',()=>document.querySelectorAll('[data-tradeoff]').forEach(d=>{d.hidden=d.dataset.tradeoff!==sel.value;}));
-/* a group whose arms are all filtered out loses its heading too */
+/* a group whose arms are all filtered or paged out loses its heading too (paging counts arms only) */
 function heads(){let h=null,any=false;const end=()=>{if(h)h.hidden=!any;};
-[...body.rows].forEach(r=>{if(r.classList.contains('grouphead')){end();h=r;any=false;}else if(!r.hidden)any=true;});end();}
+[...body.rows].forEach(r=>{if(r.classList.contains('grouphead')){end();h=r;any=false;}else if(!r.hidden&&!r.classList.contains('paged-out'))any=true;});end();}
+const repage=t._repage;if(repage)t._repage=function(){repage();heads();};
 document.querySelector('input[data-filter="arms"]')?.addEventListener('input',()=>setTimeout(heads,0));
 if(by)regroup();})();
