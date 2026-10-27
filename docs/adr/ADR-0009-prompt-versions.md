@@ -1,6 +1,6 @@
 # ADR-0009 — The harness versions declared prompt files (0.5.0)
 
-**Status:** Accepted (2026-10-26), design; not yet built. Amends [PRD-001](../prd/PRD-001-experiments-and-comparison.md)'s
+**Status:** Accepted (2026-10-26), design; not yet built. Revision 2 (2026-10-27): content-addressed versions, no numbers, index, lock or aliases.. Amends [PRD-001](../prd/PRD-001-experiments-and-comparison.md)'s
 "not a prompt store" (already noted there).
 **Date:** 2026-10-26
 **Detail:** [PRD-009](../prd/PRD-009-prompts-and-optimisation.md) FR1,
@@ -19,9 +19,11 @@ touching an installed package.
 - **A config declares the prompt files its system uses**, by name, wherever they live, or a prompt
   root directory and the files in it that may vary. Prompts stay where the project keeps them; the
   owner rejected a store the project moves them into.
-- **Versions are content snapshots** in `data/prompts/<name>/`, recorded automatically when a run
-  sees new bytes (no invented lineage: a parent only when someone states it), allocated under a
-  lock so parallel runs agree.
+- **Versions are content snapshots named by their hash** in `data/prompts/<name>/`, recorded
+  automatically when a run sees new bytes (no invented lineage: a parent only when someone states it).
+  Two runs or two clones that see the same bytes write the same record, so no lock, number or index is
+  needed; "v3" is a display number. There are no aliases: the baseline records which version production
+  uses.
 - **Prompts and the root's digest are part of the arm** in the fingerprint.
 - **A per-run overlay directory** gives the system its prompts (a copy of the root with the varied
   files replaced), so no tracked file is written; the system takes it by its own mechanism

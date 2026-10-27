@@ -402,7 +402,45 @@ worst error 0.039
 worst error 0.023
 ```
 
-- RFC-015 adopts the rule marked CHOSEN: below 30 items no continuous non-inferiority test; when g1 < −0.5,
-  inconclusive below 50 items, α/4 from 50 to 99, α/2 from 100. Its worst error, 0.026, is within the Monte Carlo
-  error (about ±0.005 at 1000 simulations) of 0.025.
+- The first version of RFC-015 adopted the rule marked CHOSEN (below 30 items no continuous non-inferiority test;
+  when g1 < −0.5, inconclusive below 50 items, α/4 from 50 to 99, α/2 from 100; worst error 0.026). Revision 2
+  (2026-10-27) replaced it with one rule a reader can apply without a skewness threshold tuned on these shapes: the
+  bootstrap-t at half the level, from 100 items, inconclusive below. On the same simulations, n = 10 to 200:
+
+```text
+ADOPTED (revision 2): always a/2, any n<100 inc
+   n           shape  error  power
+  10  lognormal 0.25  0.000  0.000
+  10   lognormal 0.5  0.000  0.000
+  10  lognormal 0.75  0.000  0.000
+  10   lognormal 1.0  0.000  0.000
+  10          normal  0.000  0.000
+  20  lognormal 0.25  0.000  0.000
+  20   lognormal 0.5  0.000  0.000
+  20  lognormal 0.75  0.000  0.000
+  20   lognormal 1.0  0.000  0.000
+  20          normal  0.000  0.000
+  30  lognormal 0.25  0.000  0.000
+  30   lognormal 0.5  0.000  0.000
+  30  lognormal 0.75  0.000  0.000
+  30   lognormal 1.0  0.000  0.000
+  30          normal  0.000  0.000
+  50  lognormal 0.25  0.000  0.000
+  50   lognormal 0.5  0.000  0.000
+  50  lognormal 0.75  0.000  0.000
+  50   lognormal 1.0  0.000  0.000
+  50          normal  0.000  0.000
+ 100  lognormal 0.25  0.020  0.910
+ 100   lognormal 0.5  0.015  0.848
+ 100  lognormal 0.75  0.023  0.753
+ 100   lognormal 1.0  0.019  0.686
+ 100          normal  0.010  0.951
+ 200  lognormal 0.25  0.012  0.999
+ 200   lognormal 0.5  0.012  0.992
+ 200  lognormal 0.75  0.011  0.967
+ 200   lognormal 1.0  0.019  0.917
+ 200          normal  0.012  1.000
+worst error 0.023
+```
+
 - The validation suite in `harness/tests/test_stats_validity.py` (RFC-015, Testing) reruns a smaller fixed grid.

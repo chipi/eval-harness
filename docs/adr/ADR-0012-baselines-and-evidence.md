@@ -1,6 +1,6 @@
 # ADR-0012 — Baselines per goal, with the evidence frozen at promotion (0.5.0)
 
-**Status:** Accepted (2026-10-26), design; not yet built
+**Status:** Accepted (2026-10-26), design; not yet built. Revision 2 (2026-10-27): write-once versions, the newest current; no index, pointer or lock.
 **Date:** 2026-10-26
 **Detail:** [PRD-011](../prd/PRD-011-evidence-registry.md), [PRD-013](../prd/PRD-013-identity-and-ties.md)
 FR7, [RFC-014](../rfc/RFC-014-identity-baselines-migration.md) (storage, commands),
@@ -15,8 +15,9 @@ when a cited result has been replaced.
 
 ## Decision
 
-- **A baseline belongs to a goal on a dataset**, stored as numbered versions
-  with a pointer (no symlinks), written under a lock; a rollback is a recorded history entry.
+- **A baseline belongs to a goal on a dataset**, stored as write-once versions with collision-free
+  ids; the current one is the newest; a rollback is a new version that re-promotes an earlier run. No
+  index, pointer or lock file ([ADR-0017](ADR-0017-record-store.md)).
 - **The comparison that justified a promotion is frozen into the version** when it is made (the
   verdict against the baseline it replaces, the axes, the round or study). It is a heldout look only
   on a heldout dataset; elsewhere it is recorded as nominal; runs that cannot be compared record no

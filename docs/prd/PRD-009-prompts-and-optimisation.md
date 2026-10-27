@@ -1,6 +1,7 @@
 # PRD-009: Prompt versions, and optimisation studies
 
-- **Status**: Draft (0.5.0), final review round
+- **Status**: Draft (0.5.0), revision 2 (2026-10-27): studies cut to one dev dataset, three samplers (grid, a
+  command, the agent), no contested-judgement policies, Karpathy-only import; the rest deferred (FR6)
 - **Authors**: Marko Dragoljevic
 - **Related UX specs**: [UXS-001](../uxs/UXS-001-catalog.md) (the goal page, to show a study),
   [UXS-003](../uxs/UXS-003-cli-and-onboarding.md) (the commands)
@@ -22,8 +23,8 @@ the direction, the evaluation stays fixed, each try is kept or discarded, everyt
 recorded in the terms Optuna and Vizier use, a **study** of **trials**. From the best so far, a
 **sampler** proposes a trial (a new prompt version, a parameter value, a model, a pipeline setting); the
 harness runs it on **dev** items and keeps or drops it; every trial is recorded in a round. A
-study is driven by the harness (with a built-in grid, one-at-a-time, random or **LLM** sampler) or by
-the user's **agent** (which proposes each trial itself). It is **exploratory** (search only, as
+study is driven by the harness (a built-in grid over the space, or any optimiser plugged in as a command,
+Optuna for one) or by the user's **agent** (which proposes each trial itself). It is **exploratory** (search only, as
 autoresearch is: no heldout items, no evidence, no promotion) or **confirmatory** (the best trial is
 checked once against the baseline on **heldout** items, with a rule declared before the study, and
 the outcome is stated as separated: better, non-inferior, inconclusive or separated: worse). Promotion stays a person's
@@ -86,8 +87,7 @@ decision.
   never edit the system's code. (autoresearch edits `train.py`; this harness deliberately does not.)
 - **No git writes.** The harness reads git (the build) and never commits, branches or resets; a winner
   leaves as files (`prompt-export`, the trial's parameters) for a person to commit.
-- The harness does not write prompts itself; its LLM sampler asks a model the study names, with the
-  study's key and budget.
+- The harness does not write prompts itself: the agent, or an optimiser the project plugs in, proposes them.
 - No prompt store the project must move into: prompts stay where the project keeps them.
 - No templating engine: a prompt is a file the project renders; the harness hashes and versions its
   bytes.
@@ -115,11 +115,11 @@ dropped by the study's declared rule, as search; nothing is promoted automatical
 - _As an engineer, I make version 4 of that prompt from version 3 with a note, and see its lineage, the
   runs that used each version and their scores._
 - _As an ML engineer, I write a search space (`reduce_params.num_beams` 1..4, then `max_new_tokens`
-  256/512/1024) starting from last round's best trial, and run a one-at-a-time study with a $5 and
+  256/512/1024) starting from last round's best trial, and run a grid study, a value at a time, with a $5 and
   two-GPU-hour budget, detached._
-- _As an engineer, I run an exploratory study overnight with the built-in LLM sampler, which sees the
-  current prompt and the scores and writes the next version; in the morning I read every trial on the
-  goal page, then run a confirmation on heldout items for the best one._
+- _As an engineer, I let my agent run an exploratory study overnight; it sees the current prompt and the
+  scores and writes the next version; in the morning I read every trial on the goal page, then run a
+  confirmation on heldout items for the best one._
 - _As an agent, I drive the study myself, as in autoresearch: I ask for the best so far and the history,
   propose the next prompt with my hypothesis, and the harness runs, scores, keeps or drops, and records
   it._
@@ -159,11 +159,9 @@ dropped by the study's declared rule, as search; nothing is promoted automatical
   - **confirmatory**: as exploratory, plus a test rule declared before it starts (FR4); its outcome is
     evidence.
   A **confirmation** turns an exploratory study's best trial into evidence: a confirmatory check of that
-  one trial against its starting arm on heldout items the search never saw (FR4), counted as one look.
+  one trial against its baseline on heldout items the search never saw (FR4), counted as one look.
 - **FR2.2**: The spec declares:
   - the goal; the **dev** dataset and, for a confirmatory study, the **heldout** dataset;
-  - one or more **tracks** (config, dataset, reference) every trial runs on, the first one deciding and
-    the others guarding;
   - the baseline: a baseline, a run, or a prior study's best trial;
   - the search space: parameters with nested paths, in groups, each enabled with a reason, with a
     move-on rule per group (after N trials without a kept one) and an optional cap on candidates; or the
@@ -172,7 +170,6 @@ dropped by the study's declared rule, as search; nothing is promoted automatical
     `program.md`), what it may see (scores only, plus outputs, plus inputs; never heldout items) and
     whether that data may leave the machine;
   - the acceptance rule and the limits (metric, direction, limit; the goal's guardrails stay words);
-  - the contested-judgement policy: drop the item, drop the trial, or fall back to a named measure;
   - the test rule (FR4), stop rules, budgets, repeats per trial (repeats are averaged per item before any
     paired comparison), the keys per role, and the files that must not change (rubrics, judge configs).
 - **FR2.3**: The spec is hashed when the study starts; a change to it, or to any file it freezes, the
@@ -184,31 +181,30 @@ dropped by the study's declared rule, as search; nothing is promoted automatical
 ### FR3: Running a study
 
 - **FR3.1**: `evh study-run <spec>` opens a round and repeats ask/tell: the sampler proposes a trial with
-  its hypothesis and rationale; the harness runs it on every track (through a runner,
-  [PRD-010](PRD-010-runners.md), with `--runner`); compares it with the best so far and with the starting
-  arm; keeps or drops it with the reason; until a stop rule fires. Generated arms are stored with the
-  study and resolved by `validate` and `run-compare` like configs.
+  its hypothesis and rationale; the harness runs it on the dev dataset (through a runner,
+  [PRD-010](PRD-010-runners.md), with `--runner`); compares it with the best so far and with the
+  baseline; keeps or drops it with the reason; until a stop rule fires. A trial's config is the
+  baseline's with the trial's changes, recorded in the study's log and resolved by `validate` and the
+  catalog like a config.
 - **FR3.2**: **Acceptance on dev items is search, declared and labelled heuristic**, by one of: a point
   rule (the trial's mean beats the best so far's by at least a stated amount, relative or absolute; zero is
   autoresearch's "improved"), or a test rule (separated as better). In both: no limited metric may drop
-  beyond its limit **relative to the baseline** on any track, so losses on limited metrics cannot accumulate;
+  beyond its limit **relative to the baseline**, so losses on limited metrics cannot accumulate;
   and a trial accepted on a tie-break (cheaper or faster, not better) must be **non-inferior to the
-  starting arm** by the goal's declared margin ([PRD-013](PRD-013-identity-and-ties.md) FR3), never only to
+  baseline** by the goal's declared margin ([PRD-013](PRD-013-identity-and-ties.md) FR3), never only to
   the best so far. With today's dev set sizes that test is usually inconclusive, so tie-break acceptance
   is usually refused: expected, not a fault. Per-trial p values are shown as nominal.
 - **FR3.3**: Stop rules: trials, dollars, wall time, GPU time (wall time of `gpu`-labelled jobs between a
   phase's `before` and `after`, [PRD-010](PRD-010-runners.md)), no kept trial in N, the space exhausted,
   or **until interrupted** (autoresearch's "never stop"), always under a hard dollar and time cap.
-  Budgets count the system, the judges and the sampler separately; `score` reports the judges' cost.
+  Budgets count the system and the judges separately; `score` reports the judges' cost.
 - **FR3.4**: **Samplers**:
-  - built in, with no LLM: grid, one-at-a-time from the best so far, random;
-  - built in, **LLM**: the harness asks a model the spec names, through the provider layer it already has
-    for judges (no new dependency), with a prompt that carries the directions, the best so far, the history
-    and, if allowed, the worst outputs; it returns the next trial with its hypothesis (in the manner of
-    OPRO and APE); off unless a study names it;
+  - built in: a grid over the space's groups, in order, a value at a time from the best so far (the
+    podcast project's greedy sweep);
   - **agent-driven**: the user's agent proposes each trial through `study-ask` and `study-tell` (MCP tools
     or CLI commands, [PRD-012](PRD-012-agent-ready.md)); the study waits for it;
-  - plug-in: any command speaking ask/tell; an Optuna adapter ships as an example.
+  - plug-in: any command speaking ask/tell (an optimiser, or an LLM the project chooses, in the manner of
+    OPRO and APE); an Optuna adapter ships as an example.
 - **FR3.5**: **Data egress**: a sampler that would send outputs or inputs to a service outside the machine
   is refused unless the spec allows it for those datasets, and the record says what was sent where.
 - **FR3.6**: A study is detachable (it runs as a job set, [PRD-010](PRD-010-runners.md)); `study-status`,
@@ -222,18 +218,17 @@ dropped by the study's declared rule, as search; nothing is promoted automatical
   first look, PRD-013 FR9.3). It is never switched afterwards.
 - **FR4.2**: The best trial and the baseline run once on the heldout items. Any heldout item also in the
   dev set, or seen by a sampler in an earlier study on the goal, is excluded, and the count used is
-  stated; if none remain, the study is refused (FR4.5). Guardrails are tested there too, as non-inferiority
-  against the baseline at their limits, in the same Holm family as the primary measure; with several
-  tracks, the first decides and the others are limits.
+  stated; if none remain, the study is refused (FR4.5). Limits are tested there too, as non-inferiority
+  against the baseline at their limits, in the same Holm family as the primary measure.
 - **FR4.3**: The outcome, with Δ = best − baseline and α the look's level, is **separated: better**, **non-inferior**,
   **worse** or **inconclusive**, decided by [RFC-015](../rfc/RFC-015-noninferiority-looks-power.md)'s fixed sequence (non-inferiority first when a margin
   is declared, then superiority) and its tests. A failed limit makes the outcome at
   best inconclusive. The effect, its interval and p are shown beside the dev effect of the same
   trial, so the optimizer's curse is visible. Promotion is suggested only on an outcome that meets the
   declared rule.
-- **FR4.4**: **Heldout looks are paid for**, as [PRD-013](PRD-013-identity-and-ties.md) FR9 defines: each test
-  item set has a budget of looks; a look is tested at its share of α; when the budget is spent the set
-  needs fresh items. Overriding needs the person's consent, never only an agent's
+- **FR4.4**: **Heldout looks are paid for**, as [PRD-013](PRD-013-identity-and-ties.md) FR9 defines: each heldout
+  dataset spends its level over its looks, each stricter than the last; past a protective limit a look needs
+  consent, and fresh items are the way out. Overriding needs the person's consent, never only an agent's
   ([PRD-012](PRD-012-agent-ready.md) FR4.5).
 - **FR4.5**: **No confirmatory study without possible evidence**: the dry run and the start state the
   smallest p the heldout items can reach (PRD-013 FR6) against the look's level, and refuse a study whose
@@ -244,26 +239,32 @@ dropped by the study's declared rule, as search; nothing is promoted automatical
 ### FR5: Records
 
 - **FR5.1**: **A trial**: hypothesis, sampler rationale, the change (a prompt diff or parameter values),
-  per track the comparison with the best so far and the baseline (n, effect, interval, nominal p), kept,
-  dropped, contested or failed with the reason (a crash, timeout or truncation is recorded, never
+  the comparison with the best so far and the baseline (n, effect, interval, nominal p), kept, dropped
+  or failed with the reason (a crash, timeout or truncation is recorded, never
   skipped), cost per role, wall and GPU time.
 - **FR5.2**: **A study**: its type, the directions and the instruction verbatim and who gave them, who ran
   it (person or agent, acting for whom), the spec's hash, the baseline's provenance, budget used, the
   stop reason, the heldout check (FR4.3) or "exploratory: no evidence", and a summary: what helped, what hurt,
   what to try next.
 - **FR5.3**: `evh study-import` brings past loops in as closed exploratory rounds, marked imported: Karpathy's
-  `results.tsv` (commit, val_bpb, memory_gb, status, description), and the podcast project's TSV,
-  parameter-space and best-config files; trials with aggregates only are shown as untestable.
+  `results.tsv` (commit, val_bpb, memory_gb, status, description); trials with aggregates only are shown
+  as untestable. Other formats are converted to it by the project that has them.
+
+### FR6: Deferred (revision 2)
+
+Several datasets per study (tracks: a second dataset guarding the first), a built-in LLM sampler, contested-judgement
+policies (drop an item or a trial, or fall back to a named measure, when judges disagree on too many items) and imports
+through a column map. Each adds fields to the spec and the log without changing their shape.
 
 ## Success Criteria
 
 - autoresearch's loop runs as an exploratory, agent-driven study with a point rule of zero, an aggregate
   metric and "until interrupted" under a cap, and its `results.tsv` imports.
 - The podcast project's prompt loop and its parameter sweep can each be written as a study spec: the blend
-  as a composite, the shared-prompt limit as a second track, the 40%-contested fallback as the judgement
-  policy, the user-then-system order as a move-on rule, the nested parameters and the previous round's best
+  as a composite, the user-then-system order as a move-on rule, the nested parameters and the previous round's best
   as the baseline (to be confirmed with that project; its blend weights differ between its goal and its
-  scorer and must be settled first).
+  scorer and must be settled first). Its shared-prompt guard on a second dataset and its 40%-contested fallback
+  wait for the deferred tracks and contested policies (FR6).
 - A test confirmatory study on the example project keeps a planted real gain, drops a planted chance gain,
   refuses a heldout set that cannot reach its rule, excludes overlapping items, stops on budget, resumes, and
   reports separated: better on a planted gain and non-inferior on a planted cheaper equal arm.

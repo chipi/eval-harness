@@ -161,16 +161,16 @@ Draft until 0.5.0 is built; then they replace the sections above they name.
   `evh <command> --json | jq .result` always works.
 - **Refusals**: on stderr, `ERROR (<code>): <title>` then the detail and `fix: <command>` indented;
   with `--json`, the problem details object on stdout. The code is stable and listed on the refusals
-  page. A consent refusal adds the grant command a person runs:
+  page. A consent refusal names the exact command the person runs, with `--confirm`:
 
   ```text
   ERROR (consent-required): This needs the person's consent
     Promoting run:runs/cnn_bart_l_v1_20261026T153757.123Z_7f3a to baseline of news_summary_cnn on
     cnn_dailymail_200 (replacing version 2).
-    fix: evh consent grant --kind promote --command "evh run-promote --run run:runs/… --reason '…'"
+    fix: evh run-promote --run run:runs/cnn_bart_l_v1_20261026T153757.123Z_7f3a --reason '…' --confirm
   ```
 
-  A person at a terminal running `run-promote` is asked to add `--confirm`, not to make a grant.
+  The person running that command is the consent; nothing is stored in between.
 - **Exit codes**: 0 done; 1 refused; 2 usage; 3 a judge scorer not validated (as in 0.4.0); 4 stopped by a
   budget or the cost cap, partial results kept; 5 partly failed (some jobs or trials); 6 a check found problems (`validate`,
   `evidence-check`, `adapter-check`, `skills-check`); 7 nothing measured; 65–78 operational errors (75: try again later);

@@ -1,6 +1,6 @@
 # ADR-0015 — Ties are non-inferiority; heldout datasets spend their level over looks (0.5.0)
 
-**Status:** Accepted (2026-10-26), design; not yet built. Supersedes the tie rule of
+**Status:** Accepted (2026-10-26), design; not yet built. Revision 2 (2026-10-27): continuous non-inferiority from 100 items at half the level; looks counted from decisions.. Supersedes the tie rule of
 [ADR-0006](ADR-0006-goal-axes-and-strategies.md).
 **Date:** 2026-10-26
 **Detail:** [PRD-013](../prd/PRD-013-identity-and-ties.md) FR3, FR5, FR6, FR9,
@@ -23,17 +23,18 @@ many arms on the same heldout items, which inflates errors in a way a fixed Holm
   worse but within the margin is eligible, labelled "non-inferior (worse, within margin)".
 - **Tests by question and measure**: superiority keeps the exact paired sign-flip test; non-inferiority
   of a 0/1 measure uses Tango's score test; of a continuous measure, a studentized bootstrap specified
-  exactly, never below 30 items, and with a stricter level, or "inconclusive" below 50 items, when the
-  paired differences lean towards losses; the rule was chosen on simulations across tail weights after the
-  first draft's guard failed them. Verdicts are decided by p in a fixed order (non-inferiority,
+  exactly, at half the level, from 100 items (one rule, chosen on simulations across tail weights after
+  the first draft's skew guard failed them). Verdicts are decided by p in a fixed order (non-inferiority,
   then superiority); a heldout check's families use serial gatekeeping.
 - **Each heldout dataset spends a one-sided 2.5% over all its looks, front-loaded** (the owner's choice):
   look k at 2.5% · 6/(π²k²), so 1.52%, 0.38%, 0.17%, …; after a protective limit (10 by default) a look
   needs the person's consent. Only commands that record a decision take a look (a study's check, a
-  confirmation, a promotion); pages show nominal results labelled as not a look. Any subset of a test
-  dataset spends the dataset's budget.
+  confirmation, a promotion), counted from those records with no look file; pages show nominal results
+  labelled as not a look. Any subset of a heldout dataset spends the dataset's budget. Two decisions that
+  took one look number (two machines, two branches) are reported by `validate`; a database store will
+  prevent it.
 - **Use before 0.5.0 is shown, not counted** (the owner's choice): each heldout dataset starts at look 0,
-  with the number of configurations that used it before 0.5.0 recorded beside it.
+  with the number of configurations that used it before 0.5.0, computed from the runs, shown beside it.
 - **Power before spending**: the smallest attainable p (0/1) or the smallest provable margin (continuous)
   is compared with the next look's level before anything runs; a study that cannot produce evidence is
   refused unless the person overrides it.
@@ -42,5 +43,5 @@ many arms on the same heldout items, which inflates errors in a way a fixed Holm
 
 Recommendations change where an arm was "tied" and is now inconclusive or untested; the release notes
 list each, and every goal here declares its margins before release. Small heldout sets yield
-"inconclusive" more often, which is the honest answer: below 30 items a continuous measure cannot show
-non-inferiority at all.
+"inconclusive" more often, which is the honest answer: below 100 items a continuous measure cannot be
+shown non-inferior, only better.

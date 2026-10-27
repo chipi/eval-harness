@@ -1,16 +1,17 @@
 # RFC-015: The statistics of 0.5.0: non-inferiority, verdicts, heldout looks, power
 
-- **Status**: Draft (0.5.0)
+- **Status**: Draft (0.5.0), revision 2 (2026-10-27): continuous non-inferiority from 100 items at half the level
+  (one rule instead of a skew guard); looks counted from recorded decisions, with no look files
 - **Authors**: Marko Dragoljevic
 - **Related PRDs**: [PRD-013](../prd/PRD-013-identity-and-ties.md) (FR3, FR5, FR6, FR9),
   [PRD-009](../prd/PRD-009-prompts-and-optimisation.md) (FR3.2, FR4: acceptance and the heldout check)
-- **Related RFCs**: RFC-014 (identity; the migration records prior use), RFC-010 (studies),
+- **Related RFCs**: RFC-014 (identity), RFC-017 (the record store: nothing derivable is stored), RFC-010 (studies),
   [RFC-004](RFC-004-experiment-rounds.md) (rounds)
 - **Related ADRs**: [ADR-0006](../adr/ADR-0006-goal-axes-and-strategies.md) (goal ties, superseded in part)
 - **Code**: `harness/scripts/stats.py` (new functions), `catalog_views.py` and `catalog_build.py` (goal
   pages), `rounds.py`, `pair_test.py`, `family_test.py`, `rank_stability.py`, `holdout_significance.py`,
-  `validate_tree.py` (margins, looks); new `harness/scripts/_looks.py`; `schemas/goal.schema.json`
-  (`axes.<axis>.margin` without a default, `heldout_looks`), `schemas/look.schema.json`; validation suite
+  `validate_tree.py` (margins, looks); new `harness/scripts/_looks.py` (counts looks from the records);
+  `schemas/goal.schema.json` (`axes.<axis>.margin` without a default, `heldout_looks`); validation suite
   `harness/tests/test_stats_validity.py`
 
 ## Abstract
@@ -20,8 +21,7 @@ the leader by more than a declared margin (non-inferiority); has a **heldout ite
 often; and **can** these items show anything at all. The 0.4.0 question, is one arm **better**, keeps its
 test (the paired sign-flip test with Holm), which is exact for it. Non-inferiority is a different question
 with no exact permutation test, so this RFC chooses tests by simulation: for 0/1 measures, Tango's score test
-for paired proportions; for continuous measures, the studentized bootstrap, never below 30 items, and at a stricter
-level, or "inconclusive" below 50 items, when the paired differences lean towards losses. Verdicts are decided
+for paired proportions; for continuous measures, the studentized bootstrap at half the level, from 100 items. Verdicts are decided
 by p, in a fixed order. Each heldout dataset spends its one-sided α = 2.5% over its looks, front-loaded: the first look
 at 1.52%, the second at 0.38%, the tenth at 0.015%; only commands that write a decision take a look. The smallest
 attainable p and the minimum detectable effect are computed before anything is spent.
@@ -59,8 +59,8 @@ attainable p and the minimum detectable effect are computed before anything is s
 | --- | --- | --- | --- |
 | better (superiority), H0: arms exchangeable | any | paired sign-flip, exact ≤ 30 items, Monte Carlo above (unchanged) | α of the family, Holm |
 | not worse (non-inferiority), H0: Δ ≤ −margin | 0/1 | Tango's score test for paired proportions | one-sided α (2.5%, or a look's share) |
-| not worse, H0: Δ ≤ −margin | continuous | studentized bootstrap (bootstrap-t), specified below | one-sided α; α/2 when the skew guard fires |
-| no difference (equivalence) | either | both one-sided tests, at −margin and at +margin (the upper one mirrored, guard included) | one-sided α each |
+| not worse, H0: Δ ≤ −margin | continuous | studentized bootstrap (bootstrap-t), specified below, from 100 items | one-sided α/2 |
+| no difference (equivalence) | either | both one-sided tests, at −margin and at +margin | one-sided α each (α/2 each for a continuous measure) |
 
 - **0/1 or continuous**: a measure is 0/1 when every per-item value of both arms is 0 or 1, or when the adapter
   declares it in `METRIC_SCALES = {"correct": "binary"}`; otherwise continuous. Repeats are averaged per item
@@ -81,14 +81,10 @@ attainable p and the minimum detectable effect are computed before anything is s
     comparison has its own resamples and the same comparison always gives the same p.
   - s = 0 (every difference equal): no test is possible; the verdict is **inconclusive (no variation)**, and the
     catalog says the arms measured the same on every item.
-- **Too few items**: below 30 items no continuous non-inferiority test runs; the verdict is **inconclusive (too few
-  items for this test)**. Even on normal differences the bootstrap-t's error was 0.035 at 20 items and 0.019 to 0.075
-  at 10 items across tails.
-- **The skew guard**: g1 = mean(((d − m)/σ)³), σ the population standard deviation. For the lower test
-  (non-inferiority), when g1 < −0.5 (the differences lean towards losses): below 50 items the verdict is
-  **inconclusive (too few items for a skewed measure)**, whatever p says; from 50 to 99 items the test uses α/4; from
-  100 items α/2. The upper test of an equivalence claim is the mirror image (g1 > +0.5). A lean the other way makes the
-  test conservative and needs no guard.
+- **One rule for continuous measures**: the test runs from 100 items, at half the level in force; below 100 items
+  the verdict is **inconclusive (fewer than 100 items for a continuous measure)**. It is one sentence a reader can
+  apply, and it holds the level on every shape simulated, with or without a tail of losses (below). Below 100 items
+  a continuous measure can still be shown **separated: better** by the sign-flip test, which is exact at any size.
 - **Margins** are in the measure's units, declared by the goal per measure in the field 0.4.0 already has,
   `success_criteria.axes.<axis>.margin` (`axes.quality.margin` for the primary measure; a project axis for another
   measure) (PRD-013 FR3.1). What changes is its meaning and its default: in 0.4.0 it was a tie band defaulting to 2%
@@ -107,24 +103,22 @@ attainable p and the minimum detectable effect are computed before anything is s
 
 Tango is at or below the level everywhere (conservative at small n).
 
-**Evidence for the bootstrap-t and its rule.** An earlier draft guarded at g1 < −1 with α/2 and "inconclusive" below
-50 items, on one tail shape. Re-run with the exact specification on normal differences and lognormal tails of losses
-of σ ∈ {0.25, 0.5, 0.75, 1.0} (`bootstrap_spec_check.py`), it failed: 0.049 to 0.075 at 10 items for σ ≥ 0.5, 0.043 to
-0.046 at 20, and 0.042 at 50 items for σ = 1.0. The rule above was then chosen on one grid of simulations
-(`bootstrap_rule_grid.py`: 1000 simulations per cell, B = 999, at the margin for the error and at no difference for
-the power), scoring each candidate rule on the same draws (`bootstrap_rule_eval.py`, its output in the README):
+**Evidence for the bootstrap-t and its rule.** The bootstrap-t at the full level is anti-conservative on small
+samples and on tails of losses (0.035 at 20 items on normal differences; 0.049 to 0.075 at 10 items on lognormal tails
+of σ ≥ 0.5; 0.042 at 50 items for σ = 1.0: `bootstrap_spec_check.py`). Candidate rules were scored on one grid of
+simulations (`bootstrap_rule_grid.py`: normal differences and lognormal tails of losses of σ 0.25 to 1.0, 1000
+simulations per cell, B = 999, at the margin for the error and at no difference for the power; `bootstrap_rule_eval.py`,
+its output in the README). A skew guard (inconclusive below 50 items, α/4 below 100, α/2 from 100) also held the level,
+but needed a skewness threshold tuned on these shapes and could not be explained in a sentence. The rule adopted:
 
 | items | worst error over the five shapes | power at no difference (normal; lognormal σ 0.25 to 1.0) |
 | --- | --- | --- |
-| 10, 20 | 0 (inconclusive) | 0 |
-| 30 | 0.016 | 0.525; 0.275, 0.086, 0.018, 0.004 |
-| 50 | 0.025 | 0.785; 0.570, 0.415, 0.424, 0.407 |
-| 100 | 0.026 | 0.980; 0.917, 0.848, 0.753, 0.686 |
-| 200 | 0.023 | 1.000; 0.999, 0.992, 0.967, 0.917 |
+| below 100 | 0 (inconclusive) | 0 |
+| 100 | 0.023 | 0.951; 0.910, 0.848, 0.753, 0.686 |
+| 200 | 0.019 | 1.000; 0.999, 0.992, 0.967, 0.917 |
 
-The worst error is within the Monte Carlo error (about ±0.005 at 1000 simulations) of the level. The price is power:
-on skewed differences below 50 items nothing can be shown, and between 30 and 50 items little. The validation suite (Testing) reruns a fixed, smaller
-grid on every change to `stats.py`.
+The worst error is below the level. The price is power: below 100 items a continuous measure cannot be shown not worse,
+only better. The validation suite (Testing) reruns a fixed, smaller grid on every change to `stats.py`.
 
 ### Verdicts
 
@@ -138,7 +132,7 @@ The tests run as a fixed sequence at one level:
    **non-inferior (worse, within margin)**.
 2. When non-inferiority does not reject: **separated: better** is not available after a failed non-inferiority
    test; **separated: worse** if the superiority test in the other direction rejects; else **inconclusive**, with the
-   reason (the test did not reject; too few items; the skew guard). With no margin declared, the superiority test
+   reason (the test did not reject; too few items). With no margin declared, the superiority test
    alone decides, exactly as in 0.4.0: **separated: better** / **separated: worse** / **not separated**.
 
 Testing in a fixed sequence (non-inferiority, then superiority), each at the full level, needs no correction for
@@ -193,15 +187,18 @@ it is below 2.5%.
   10; a goal may declare `heldout_looks: K`, and the smallest K of the goals sharing a dataset applies) is a protective
   limit: look K + 1 and later are refused unless the person consents (PRD-012 FR4.5), and their levels continue the
   series, so consent never inflates the error.
-- **Storage and races.** `data/looks/<dataset>/<k>.json` (`schemas/look.schema.json`: key, level, actor, what, goal,
-  arms, state, verdict). A command reserves look k by creating the file with an exclusive create (`O_EXCL`) in state
-  `reserved` before it tests, and writes the verdict into it after (`recorded`). Two commands can never take one k;
-  a command that dies between the two leaves a `reserved` look, which stays spent (the items were looked at) and is
-  shown as "no result recorded".
-- **History before 0.5.0** (the owner's decision): the migration (RFC-014) does not count earlier use as looks;
-  each heldout dataset starts at look 0, and `data/looks/<dataset>/prior.json` records how many distinct configurations
-  had runs on it in the heldout role before 0.5.0. Pages show it beside the looks ("used by 29 configurations before
-  0.5.0; levels from 0.5.0 do not account for that").
+- **Counted, not stored** ([RFC-017](RFC-017-record-store.md)). A look is a decision recorded on a heldout dataset:
+  a baseline version whose evidence was computed there (RFC-012), or a study's `heldout_check` line (RFC-010). The next
+  look's number is one more than the decisions recorded on the dataset; there is no look file and no reservation.
+- **Two decisions at once.** Two commands on one machine, or two people on two branches, can take the same number,
+  and both are then tested at that look's level, which is too generous for the second. The files provider cannot
+  prevent it without a centre; `validate` reports a **double-spent look** (two decisions with one number on one
+  dataset), naming both, and every page shows it beside the dataset. The database provider will hand out the number in
+  a transaction.
+- **History before 0.5.0** (the owner's decision): earlier use is not counted as looks; each heldout dataset starts at
+  look 0. How many distinct configurations had runs on it in the heldout role before 0.5.0 is computed from the runs
+  (their fingerprints name a harness before 0.5.0), and pages show it beside the looks ("used by 29 configurations
+  before 0.5.0; levels from 0.5.0 do not account for that").
 - **Where it shows.** Goal pages and `evh goals` show per heldout dataset: looks taken, the next look's level, the protective
   limit, and the prior use; `evh goals --goal G --looks` lists every look of its heldout datasets (key, level, actor,
   what, verdict).
@@ -212,11 +209,12 @@ it is below 2.5%.
   Tango, the p at the best case (every discordant item favouring the arm, x21 = 0) from the formula. Before any run,
   "at best" uses all items. `stats.min_attainable_p(deltas, test)` replaces `min_attainable_p(n)`. It is compared
   with the next look's level divided by the family's size.
-- **Continuous non-inferiority** has no useful attainable p (a bootstrap p reaches 1/(B + 1) on any data), so
-  possibility is judged by power: the study is refused when the smallest margin provable at 80% power (the MDE below,
-  at the look's level) exceeds the goal's margin. The check runs at the start with σ_d from existing arm pairs on the
-  heldout dataset, and again before the heldout check with σ_d from the study's own dev trials; with no σ_d at the
-  start, the dry run says "cannot tell yet" and the check before the heldout look decides.
+- **Continuous non-inferiority** cannot be shown below 100 items, which the dry run says at once. From 100 items it
+  has no useful attainable p (a bootstrap p reaches 1/(B + 1) on any data), so possibility is judged by power: the
+  study is refused when the smallest margin provable at 80% power (the MDE below, at half the look's level) exceeds
+  the goal's margin. The check runs at the start with σ_d from existing arm pairs on the heldout dataset, and again
+  before the heldout check with σ_d from the study's own dev trials; with no σ_d at the start, the dry run says
+  "cannot tell yet" and the check before the heldout look decides.
 - **Minimum detectable effect** at 80% power: (z₁₋α/m + z₀.₈₀)·σ_d/√n (n all items; PRD-013 FR6.2's √n′ is amended to
   √n, since σ_d already counts the zero differences), σ_d the standard deviation of paired
   differences: the upper quartile over existing arm pairs on the dataset, or a pilot pair; for 0/1, σ_d² = p₊ + p₋ −
@@ -226,8 +224,8 @@ it is below 2.5%.
 
 ## Migration
 
-No data changes for the statistics themselves. The migration script (RFC-014) records each heldout dataset's prior use
-and moves declared `axes.*.margin` values into `margins`. Goal
+No data changes for the statistics themselves: looks and prior use are computed, and declared `axes.*.margin` values
+stay where they are (the migration lists them, since their meaning changes). Goal
 recommendations change where an arm was "tied" and is now inconclusive or not tested (no margin declared); the
 release notes list each change on this repository's goals with its reason, and every goal here gains a declared
 margin before release (the owner sets each; RFC-014's plan prints the goals without one).
@@ -256,16 +254,17 @@ margin before release (the owner sets each; RFC-014's plan prints the goals with
 ## Testing
 
 - `harness/tests/test_stats_validity.py` (seeded, under a minute): Tango's error at the margin ≤ 0.03 on a fixed
-  0/1 grid; the bootstrap-t with its rule ≤ 0.035 on normal data and on a σ = 1.0 loss tail at 50 and 100 items;
-  below 30 items, and a skewed case below 50, inconclusive; superiority unchanged against the 0.4.0 values (bit for bit).
+  0/1 grid; the bootstrap-t at half the level ≤ 0.035 on normal data and on a σ = 1.0 loss tail at 100 items;
+  below 100 items inconclusive; superiority unchanged against the 0.4.0 values (bit for bit).
 - `harness/tests/test_stats.py`: `verdict` order (each outcome, and "non-inferior (worse, within margin)"); the p
   definition and B for small levels; s = 0 inconclusive; the seed differs per arm pair and repeats per comparison;
-  the mirrored guard; the serial gatekeeping family; Holm across candidates; attainable p with zeros; the MDE formula
+  the serial gatekeeping family; Holm across candidates; attainable p with zeros; the MDE formula
   against a simulation on a fixed pilot.
-- `harness/tests/heldout_looks.py`: γ_k levels; a subset spends its dataset's budget; item order does not change the
-  dataset; sharing across goals; reuse of a recorded look with the same key; read commands take none; two concurrent
-  reservations get different k; a `reserved` look stays spent; refusal at K + 1 without consent and the level
-  continuing the series; prior use recorded and shown, not counted.
+- `harness/tests/test_looks.py`: γ_k levels; looks counted from baseline versions and heldout checks; a subset
+  spends its dataset's budget; item order does not change the dataset; sharing across goals; reuse of a recorded look
+  with the same key; read commands take none; two decisions with one number are reported as a double-spent look;
+  refusal at K + 1 without consent and the level continuing the series; prior use computed from runs and shown, not
+  counted.
 - Goal-page tests in `test_catalog.py`: strategies under the new rule; an inconclusive arm never recommended.
 
 ## Decisions (ADR candidates)
@@ -273,11 +272,10 @@ margin before release (the owner sets each; RFC-014's plan prints the goals with
 1. Tie-breaks are non-inferiority tests against a goal-declared margin, decided by p in a fixed verdict order;
    supersedes ADR-0006's tie rule.
 2. Tests by question and measure: sign-flip for superiority (unchanged); Tango for 0/1 non-inferiority;
-   bootstrap-t for continuous non-inferiority from 30 items, with a skew guard (g1 < −0.5: inconclusive below 50
-   items, α/4 below 100, α/2 from 100).
+   bootstrap-t at half the level for continuous non-inferiority, from 100 items.
 3. Heldout datasets spend α = 2.5% one-sided over their looks, front-loaded (γ_k = 6/(π²k²)), with a protective limit of K
-   looks; only commands that write a decision take a look; subsets spend their dataset's budget; prior use is shown,
-   not counted.
+   looks; only commands that write a decision take a look, counted from the recorded decisions; subsets spend their
+   dataset's budget; prior use is shown, not counted; a double-spent look is reported by `validate`.
 4. Power is stated before spending: attainable p from the items that can contribute, and an MDE from data.
 5. Families: serial gatekeeping (non-inferiority family by Holm, then superiority) for a heldout check; the bootstrap-t is
-   specified exactly (p, B, seed, ties, the mirrored guard), its rule chosen on a simulation grid of tail weights.
+   specified exactly (p, B, seed, ties), its rule chosen on a simulation grid of tail weights.

@@ -1,6 +1,6 @@
 # ADR-0011 — Long work runs as job sets, locally or over ssh (0.5.0)
 
-**Status:** Accepted (2026-10-26), design; not yet built
+**Status:** Accepted (2026-10-26), design; not yet built. Revision 2 (2026-10-27): the ssh host checks out the pushed commit with git; no manifest or build file.
 **Date:** 2026-10-26
 **Detail:** [PRD-010](../prd/PRD-010-runners.md), [RFC-011](../rfc/RFC-011-job-sets-and-runners.md)
 (state, phases, the ssh runner, build identity)
@@ -22,11 +22,11 @@ one.
 - **Phases** run a check, a `before` that can hand state (a GPU mode to restore) to an `after`,
   and the `after` always: its state is recorded, so it still runs after a crash. A phase on a
   shared host needs the person's consent.
-- **Runners**: local (parallel workers) and ssh. The ssh runner sends the commit's files and the
-  ignored data the jobs need with a manifest, only what changed, verifies them on the host, runs
-  the same supervisor there, and brings the runs back to validate here.
-- **A remote build is verified, not declared**: the host writes the build record after the
-  manifest check, and the run's identity comes from that file, never from an environment variable.
+- **Runners**: local (parallel workers) and ssh. The ssh host is a git clone that checks out the pushed
+  commit; rsync carries the ignored data the jobs need; the same supervisor runs there, and the runs come
+  back to be validated here.
+- **A remote build is a real checkout**: git transfers and verifies the code, and the run's identity is
+  read from the host's git as it is locally, never from an environment variable.
 
 ## Consequences
 

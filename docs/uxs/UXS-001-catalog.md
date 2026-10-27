@@ -581,7 +581,7 @@ prompts) are in [UXS-004](UXS-004-studies-baselines-prompts.md), with the words 
   - `02 rounds`: a study's round has a `study` tag and links to the study's page; its row reads "study
     s2 · confirmatory · 12 trials" in **set out to learn**; its details fold to the study's outcome box.
 - **The arm page**:
-  - **build**: "commit 1a2b3c4d, verified (sent by the ssh runner, manifest checked)", "declared, not
+  - **build**: "commit 1a2b3c4d" (from git, here or in the ssh host's checkout), "declared, not
     verified (EVAL_BUILD_REF)", or "unknown";
   - **machine** (its label, CPUs) beside the conditions, and "ran with 2 other jobs in parallel (set
     round3-cnn): latency is not comparable with runs made alone" when marked;

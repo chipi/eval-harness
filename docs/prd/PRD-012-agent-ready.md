@@ -1,6 +1,7 @@
 # PRD-012: Agent-ready: every capability for people and agents alike
 
-- **Status**: Draft (0.5.0), final review round
+- **Status**: Draft (0.5.0), revision 2 (2026-10-27): consent is the person's own command, or an elicitation
+  the person's limits allow; budgets read the spend the runs record
 - **Authors**: Marko Dragoljevic
 - **Related UX specs**: [UXS-003](../uxs/UXS-003-cli-and-onboarding.md) (the commands), a new UXS
   for the tools and skills
@@ -108,8 +109,8 @@ commands.
   calls nothing (no system, judge or sampler call) and prints what it would do and cost. Today only
   `experiment-run`, `judge-score` and `sweep` have it.
 - **FR2.5**: No command ever waits for a person on a terminal. A command that needs consent (FR4.5)
-  refuses without it, with the command a person runs to give it (`--confirm`, or a consent recorded
-  beforehand); the record names who confirmed.
+  refuses without it, with the exact command a person runs to give it (`--confirm`, in their own
+  terminal); the record names who confirmed.
 - **FR2.6**: Every command's help names it as `evh <command>` (some scripts print their file name,
   e.g. `usage: promote_baseline.py`), gives its purpose, and shows at least one example. Today 23
   of the 28 commands that build their own parser show only the first line of their docstring, so
@@ -144,8 +145,10 @@ commands.
   sending private data out ([PRD-009](PRD-009-prompts-and-optimisation.md) FR3.5) and phase commands
   that touch a shared host ([PRD-010](PRD-010-runners.md) FR1.7) ask the person before acting: for a
   short call through the protocol's input-required result with an elicitation, for long work through
-  the task's input-required state. The question shows the exact command, host and amount. One
-  answer may cover a whole study or job set, with a count. The record names who answered.
+  the task's input-required state, for the kinds of decision the person's limits allow that way; for the
+  others, by the person running the command themselves. The question shows the exact command, host and
+  amount. One answer may cover a whole study or job set, with a count. The record names who answered
+  and how. Budgets are checked against the spend the runs record, not a separate ledger.
 - **FR4.6**: **Limits**: which tools are enabled, spending and time budgets, and what needs consent
   are set by the person in a file the server will not write and an agent's tools cannot change; a
   change to it is recorded with who made it.

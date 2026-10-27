@@ -1,6 +1,7 @@
 # RFC-009: Prompt versions
 
-- **Status**: Draft (0.5.0)
+- **Status**: Draft (0.5.0), revision 2 (2026-10-27): versions are content-addressed (no numbers, no index, no
+  lock, no aliases), written through the record store ([RFC-017](RFC-017-record-store.md))
 - **Authors**: Marko Dragoljevic
 - **Related PRDs**: [PRD-009](../prd/PRD-009-prompts-and-optimisation.md) (FR1)
 - **Related RFCs**: RFC-014 (the grammar; fingerprint v5), RFC-010 (studies create versions), RFC-013 (commands,
@@ -15,10 +16,10 @@
 A config declares the prompt files its system uses, wherever they live, by name; or a prompt **root** directory and
 the files in it that may vary. When a run starts, the harness hashes each declared file, finds or records the version
 those bytes are, passes the text (and, for a root, a per-run overlay directory) to the adapter, and records name,
-version and hash under the fingerprint's `arm`. Versions live in `data/prompts/<name>/` as content snapshots with a
-manifest each (parent, note, author, date), so any version can be read, diffed or exported later, and a study can
-create a version without touching a tracked file. Names follow RFC-014's grammar (`prompt:summary/system/3`,
-`@production`).
+version and hash under the fingerprint's `arm`. Versions live in `data/prompts/<name>/` as content snapshots named by
+their hash, each with a small record (parent, note, author, date), so any version can be read, diffed or exported later,
+and a study can create a version without touching a tracked file. Ids follow RFC-014's grammar
+(`prompt:summary/system/3f9a0c21b7e4d5a8`); "v3" is a display number.
 
 ## Problem Statement
 
@@ -69,30 +70,30 @@ params: {provider: openai, model: gpt-5-mini}
 
 ### Versions (`data/prompts/<name>/`)
 
-- `<n>.txt` (the bytes, as read) and `<n>.json` (`schemas/prompt-version.schema.json`): `id`
-  (`prompt:<name>/<n>`), `sha256`, `parent` (a version id or null), `note`, `actor` (RFC-013), `created_at`, `source`
-  (the declared path, or `study:<goal>/<id>` with the trial for a sampler's version), `extension` (to export with the
-  right name). `index.json`: `{"versions": [...], "aliases": {"production": 3}}`.
+- `<sha16>.txt` (the bytes, as read; `<sha16>` is the first 16 hex digits of their sha256) and `<sha16>.json`
+  (`schemas/prompt-version.schema.json`): `id` (`prompt:<name>/<sha16>`), `sha256`, `parent` (a version id or null),
+  `note`, `actor` (RFC-013), `created_at`, `source` (the declared path, or the study and trial for a sampler's
+  version), `extension` (to export with the right name). There is no index: the versions of a name are the files in
+  its directory, sorted by `created_at`, and "v3" is a display number (RFC-017).
 - **Resolving at run time** (`_prompts.resolve(config) -> {name: Version}`): hash the declared file; if a version with
   that hash exists, use it; otherwise record a new version (parent = null, `source` = the path and, when it is in a git
   tree, its commit; note = "recorded by run <run id>", actor = the run's actor), so every run's prompts are in the
   history without a separate step. Lineage is recorded only when someone states it (`prompt-version --parent`, a
   study's sampler): bytes seen at a path do not say which earlier bytes they came from.
-- **Concurrent runs** (RFC-011 runs jobs in parallel): a version is allocated under an exclusive lock on
-  `data/prompts/<name>/.lock`; inside it the harness re-reads the index, reuses a version with the same hash if one
-  appeared meanwhile, and creates `<n>.json` with `O_EXCL`, so two runs never get one number for different bytes.
-- **The tree stays clean**: the harness's record directories (`data/prompts/`, `data/studies/`, `data/looks/`,
+- **Concurrent runs and clones**: the file name is the content's hash, so two runs (or two people on two branches)
+  that record the same bytes write the same record, which the store's create-if-absent keeps once; different bytes
+  can never share a name. No lock is needed (RFC-017).
+- **The tree stays clean**: the harness's record directories (`data/prompts/`, `data/studies/`,
   `data/baselines/`) are records, not code, as run output is. `filter_dirt` (`_fingerprint.py:98-112`) ignores changes
   under them, tracked or not, so recording a version never makes the next run `dirty`; validation (V19) guards their
   integrity instead.
-- **Aliases** are set only by `evh prompt-alias <name> <alias> <n>`; promotion never moves them (RFC-014).
 
 ### What the adapter receives
 
 `call_system(text, params)` is unchanged; `params` gains, when the config declares prompts (added after the fingerprint
 and the run record are made, so no per-run path enters `arm.params`; the warm-up call gets them too):
 
-- `params["prompts"]`: `{name: {"text": …, "path": …, "version": n, "sha256": …}}`;
+- `params["prompts"]`: `{name: {"text": …, "path": …, "version": <sha16>, "sha256": …}}`;
 - `params["prompt_root"]`: the path of a **per-run overlay directory**: a copy of the root with the varied files
   replaced by the versions this run uses (for a plain run, the files as they are; for a study's trial, the trial's
   versions). The overlay lives under the run's own temporary directory and is removed after the run; no tracked file is
@@ -105,7 +106,7 @@ pointed at it and its template cache cleared (`set_prompt_dir(params["prompt_roo
 
 ### The fingerprint
 
-`arm.prompts`: `{name: {"version": n, "sha256": …}}`, inside the hash, so two runs that differ only in a prompt
+`arm.prompts`: `{name: {"sha256": …}}`, inside the hash, so two runs that differ only in a prompt
 version differ only there, and `run-compare` names `arm.prompts.<name>` as the variable. For a root, also
 `arm.prompt_root_sha256`: the digest of the files `include` matches (sorted relative paths and their sha256), so a
 change to an unvaried file in the root still shows. The default `include` is every file except `__pycache__/`, `*.pyc`,
@@ -115,16 +116,16 @@ change to an unvaried file in the root still shows. The default `include` is eve
 
 - `evh prompt-version <name> (--from-file F | --text T) [--parent <id>] --note "…"`: records a version (refuses a
   duplicate hash, naming the existing version); `--dry-run`.
-- `evh prompts [<name>] [--json]`: names, versions, lineage, aliases, and per version the runs that used it with their
-  scores on the goal's measure.
+- `evh prompts [<name>] [--json]`: names, versions (with display numbers), lineage, and per version the runs that
+  used it with their scores on the goal's measure. Which version production uses is what the goal's baseline records
+  (RFC-014), so there are no aliases.
 - `evh prompt-diff <a> <b> [--json]`: a unified diff, and the runs of each.
 - `evh prompt-export <id> --to PATH [--force]`: writes the version's bytes; refuses a path inside an installed package
   (`site-packages`, `dist-packages`, or not writable) and a tracked file with uncommitted changes; the person commits it.
-- `evh prompt-alias <name> <alias> <n>`: moves an alias; records who and why (`--reason`).
 
 ### The catalog
 
-A prompts page (every name, its versions, aliases) and a page per name: the versions as a lineage list with notes and
+A prompts page (every name, its versions, the baseline that uses it) and a page per name: the versions as a lineage list with notes and
 authors, the diff between consecutive versions, and per version the runs and their scores. Arm pages link the prompt
 versions they used. Every view has its command (above). Prompt text (the diffs) is written into the static pages only
 when the project publishes it (`catalog: {publish: [prompts]}` in `config.yaml`), since a project's prompts may be
@@ -133,8 +134,8 @@ private and the pages may be published; otherwise the pages show hashes and size
 
 ### Validation (V19)
 
-Every `<n>.txt` hashes to its `<n>.json` `sha256`; parents exist; `index.json` lists exactly the versions present;
-every run's `arm.prompts.<name>` names an existing version with that hash; aliases point at existing versions.
+Every `<sha16>.txt` hashes to its name and to its `.json` `sha256`; parents exist; every run's
+`arm.prompts.<name>` names an existing version with that hash.
 
 ## Migration
 
@@ -159,15 +160,16 @@ run records version 1 of each.
   with parent null; unchanged bytes reuse the version; a `pkg:` path resolves; the overlay holds the varied files and is
   removed; a varied file missing from the root is refused; the tree stays clean (the run after a recorded version is
   not dirty); two arms differing only in a prompt differ only in `arm.prompts`; `__pycache__` does not enter the root
-  digest; eight parallel runs recording the same new bytes get one version, and different bytes get distinct numbers;
+  digest; eight parallel runs recording the same new bytes get one version, and different bytes get distinct ids;
   no overlay path enters `arm.params`; an in-process library with a template cache serves the overlay's text; export
   refuses `site-packages`; V19 catches a tampered snapshot.
 - Catalog and command tests for the prompt pages and `--json` outputs.
 
 ## Decisions (ADR candidates)
 
-1. The harness versions declared prompt files (content snapshots in `data/prompts/`), resolved automatically at run
-   time; prompts stay where the project keeps them (amends PRD-001's "not a prompt store").
+1. The harness versions declared prompt files (content-addressed snapshots in `data/prompts/`, no numbers, index or
+   aliases), resolved automatically at run time; prompts stay where the project keeps them (amends PRD-001's "not a
+   prompt store").
 2. Prompts and a root's digest are part of the arm in the fingerprint.
 3. A per-run overlay directory gives the system its prompts without writing a tracked file.
 4. The harness's record directories do not make a build dirty; their integrity is checked by validation instead.

@@ -1,6 +1,7 @@
 # RFC-012: The evidence registry: baselines' evidence, the export, the check
 
-- **Status**: Draft (0.5.0)
+- **Status**: Draft (0.5.0), revision 2 (2026-10-27): baselines and looks per [RFC-017](RFC-017-record-store.md)
+  (write-once versions, looks counted from decisions)
 - **Authors**: Marko Dragoljevic
 - **Related PRDs**: [PRD-011](../prd/PRD-011-evidence-registry.md)
 - **Related RFCs**: RFC-014 (baseline storage and ids), RFC-015 (the verdict frozen at promotion), RFC-010 (a study's test
@@ -40,12 +41,12 @@ replaced baseline, a missing round or a deleted report fails in CI.
   "measure": "rouge_l",
   "items_sha256": "…", "n": 200,
   "verdict": {"outcome": "better", "p": 0.0012, "effect": 0.021, "interval": [0.009, 0.033],
-              "method": "sign-flip", "rule": "noninferiority", "level": 0.0152, "look": "look:cnn_dailymail_200/1"},
+              "method": "sign-flip", "rule": "noninferiority", "level": 0.0152, "look": 1},
   "axes": {"cost_usd_per_item": {"promoted run": 0.0011, "baseline": 0.0024},
            "latency_p50_ms": {"promoted run": 1830, "baseline": 2410}},
   "round": "round:news_summary_cnn/r3",
   "study": {"id": "study:news_summary_cnn/s2", "heldout_check": {"outcome": "better", "n": 180,
-            "look": "look:cnn_dailymail_200/1"}},
+            "look": 1}},
   "computed_with": {"harness_version": "0.5.0", "stats_sha256": "…"}
 }
 ```
@@ -120,8 +121,9 @@ command.
 
 ### Validation
 
-`validate` checks that each baseline version's `evidence.compared_to` is the version the index's history shows as
-current when it was promoted, its round, run, study and look resolve, and its `items_sha256` is the dataset's.
+`validate` checks that each baseline version's `evidence.compared_to` is the version that was current when it was
+promoted (the newest one before it), that its round, run and study resolve, that its look number is not also taken by
+another decision on the dataset (a double-spent look, RFC-015), and that its `items_sha256` is the dataset's.
 
 ## Migration
 

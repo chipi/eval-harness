@@ -1,6 +1,7 @@
 # PRD-013: Baselines per goal, the host beside the hash, non-inferiority, heldout looks, one grammar
 
-- **Status**: Draft (0.5.0), final review round
+- **Status**: Draft (0.5.0), revision 2 (2026-10-27): versions are collision-free ids, not numbers; looks are
+  counted from decisions; continuous non-inferiority from 100 items at half the level
 - **Authors**: Marko Dragoljevic
 - **Related RFCs**: [RFC-001](../rfc/RFC-001-fingerprint-and-code-identity.md) (the fingerprint, to gain
   version 5), [RFC-004](../rfc/RFC-004-experiment-rounds.md) (rounds and baselines); [RFC-014](../rfc/RFC-014-identity-baselines-migration.md) (these changes
@@ -119,11 +120,10 @@ project (the two projects known to use the harness), not a permanent command.
     is the quality leader, and `validate` notes the missing margin.
   - **FR3.2**: An arm is **non-inferior** to a reference when a one-sided test of H0: Δ ≤ −margin rejects at
     the level in force (2.5%, or a look's share, FR9). For 0/1 measures the test is the score test for
-    paired proportions (Tango); for continuous measures the studentized bootstrap, from 30 items, at a
-    stricter level when the paired differences lean towards losses, and inconclusive in that case below 50
-    items (RFC-015 has the rule and its simulations). The
+    paired proportions (Tango); for continuous measures the studentized bootstrap at half the level,
+    from 100 items, inconclusive below (RFC-015 has the rule and its simulations). The
     shifted sign-flip test is not used: simulation showed it invalid for 0/1 measures and for skewed
-    continuous ones ([RFC-015](../rfc/RFC-015-noninferiority-looks-power.md) has the tables; Tango and the guarded bootstrap hold the level there).
+    continuous ones ([RFC-015](../rfc/RFC-015-noninferiority-looks-power.md) has the tables; Tango, and the bootstrap at half the level from 100 items, hold the level there).
     **Inconclusive**: the test does not reject, or cannot (too few items).
     **Equivalent** (used only for a claim of "no difference"): both one-sided tests at ±margin reject at
     2.5%.
@@ -162,14 +162,15 @@ project (the two projects known to use the harness), not a permanent command.
     fewer than 20 discordant items, it is computed by simulation (resample the pilot's differences, shift
     them to the effect, run the exact test). `rank-stability` reports it; a dry run reports it when such
     data exists.
-- **FR7: One grammar.** Every versioned thing is `<kind>:<path>/<n>` (a fixed version) or
-  `<kind>:<path>@<alias>` (a moving pointer); kinds are a closed list (`prompt`, `baseline`, `run`,
-  `study`, `round`, `reference`, `dataset`, `goal`). A baseline names its goal and dataset
-  (`baseline:news_summary/cnn_200/3`, `baseline:news_summary/cnn_200@current`; goal-less `baseline:_/smoke_v1/1`).
-  A run is named with its runs directory (`run:runs-silver/<run_id>`), since derived copies share ids.
-  Prompt aliases are set by a command and never moved by promotion. Baselines are stored as
-  `data/baselines/<goal>/<dataset>/<n>.json`, with the current pointer in that directory's `index.json`
-  (no symlinks).
+- **FR7: One grammar.** Every versioned thing is `<kind>:<path>/<version>` (a fixed version) or, for a
+  baseline, `<kind>:<path>@current` (the newest); a version is a collision-free id (a time-and-suffix id or
+  a content hash), never a sequential number, so two clones cannot make the same one; "version 3" is a
+  display number. Kinds are a closed list (`prompt`, `baseline`, `run`, `study`, `trial`, `round`,
+  `reference`, `dataset`, `goal`, `jobset`). A baseline names its goal and dataset
+  (`baseline:news_summary/cnn_200/<version>`, `baseline:news_summary/cnn_200@current`; goal-less
+  `baseline:_/smoke_v1/<version>`). A run is named with its runs directory (`run:runs-silver/<run_id>`), since
+  derived copies share ids. Baselines are stored as `data/baselines/<goal>/<dataset>/<version>.json`, written
+  once, with no index or pointer file (RFC-017).
 - **FR8: The 0.5.0 migration script.** A one-time release script, `harness/scripts/migrate_0_5_0.py`,
   shipped in the package (a project that installs the harness has it) and run as
   `python -m evaluation_harness.migrate_0_5_0` (not an `evh` command: no manifest entry, MCP tool or
@@ -182,7 +183,7 @@ project (the two projects known to use the harness), not a permanent command.
      items, references or code, which may be absent or changed). Any mismatch other than a derived run's
      null refuses the migration.
   3. `--dry-run` prints the plan: every file and field to change, every refusal with the command that
-     resolves it, the look counts it will seed and how, and the files a tag cannot restore.
+     resolves it, each heldout dataset's use before 0.5.0 (shown, not counted), and the files a tag cannot restore.
   4. A tag per repository (`pre-0.5.0-migrate`) records the starting point; the plan lists what it does not
      cover (files git ignores, such as run files and caches; other repositories; the published site), and
      the migration refuses when those files would be touched.
@@ -191,7 +192,7 @@ project (the two projects known to use the harness), not a permanent command.
   6. Each per-dataset baseline becomes its goal's baseline on that dataset, version 1 (recording the old id and the version-5 fingerprint hash);
      the old `baselines/` folder is removed.
   7. Dataset roles are not renamed: `dev` and `heldout` stay.
-  8. Each heldout dataset's use before 0.5.0 is recorded beside its looks, not counted as looks (FR9.4).
+  8. Each heldout dataset's use before 0.5.0 is computed from the runs and shown beside its looks, not counted as looks (FR9.4); nothing is written for looks.
   9. A silver reference's record of the run it came from keeps its version-4 hash (it is part of the
      reference's identity), and the manifest records the version that hash follows outside that record, so
      the reference's digest does not move.
@@ -212,9 +213,11 @@ project (the two projects known to use the harness), not a permanent command.
     0.015%; several comparisons within one look share it by Holm. Past a protective limit of K looks (default
     10, declarable per goal) a look needs the person's consent; its level continues the series.
   - **FR9.4**: At migration no looks are counted (the owner's decision): each heldout dataset starts at look 0,
-    and the number of distinct configurations that had runs on it in the heldout role before 0.5.0 is recorded
+    and the number of distinct configurations that had runs on it in the heldout role before 0.5.0 is computed
     and shown beside its looks.
-  - **FR9.5**: Goal pages and `evh goals` show each heldout dataset's looks taken, the next look's level, the
+  - **FR9.5**: Looks are counted from the recorded decisions, never stored apart; two decisions that took
+    the same look number (on two machines, or two branches) are reported by `validate` after a merge.
+  - **FR9.6**: Goal pages and `evh goals` show each heldout dataset's looks taken, the next look's level, the
     protective limit and its use before 0.5.0.
 
 ## Success Criteria

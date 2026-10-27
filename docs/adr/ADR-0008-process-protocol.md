@@ -1,6 +1,6 @@
 # ADR-0008 — Systems in any language through a JSON-RPC process (0.5.0)
 
-**Status:** Accepted (2026-10-26), design; not yet built
+**Status:** Accepted (2026-10-26), design; not yet built. Revision 2 (2026-10-27): stdio only.
 **Date:** 2026-10-26
 **Detail:** [PRD-008](../prd/PRD-008-pipelines-and-any-language.md) FR4,
 [RFC-008](../rfc/RFC-008-process-protocol.md) (messages, lifecycle, identity)
@@ -14,7 +14,7 @@ wrapper around a subprocess, whose code hash then identified the wrapper, not th
 ## Decision
 
 - **A process adapter** is a command the harness starts and talks to with JSON-RPC 2.0,
-  newline-delimited over stdio (or the same messages over HTTP): `initialize`, `call`,
+  newline-delimited over stdio (an HTTP transport is deferred): `initialize`, `call`,
   `call_batch`, `score`, `estimate`, `shutdown`. It is wrapped as an ordinary adapter, so resume,
   retries, the cost cap and refusals are the existing code. `adapter:` stays a path (a
   `.process.yaml` file).

@@ -1,6 +1,6 @@
 # ADR-0007 — A result carries its stages; items fail alone (0.5.0)
 
-**Status:** Accepted (2026-10-26), design; not yet built
+**Status:** Accepted (2026-10-26), design; not yet built. Revision 2 (2026-10-27): OTLP export deferred.
 **Date:** 2026-10-26
 **Detail:** [PRD-008](../prd/PRD-008-pipelines-and-any-language.md) (what and why),
 [RFC-007](../rfc/RFC-007-stages-and-stage-references.md) (records, resume, batches, traces)
@@ -27,10 +27,11 @@ the whole run.
   tests; a run with failures cannot be promoted without a reason.
 - **The end output is written last** and is resume's marker, so a crash never resumes an item
   without its stages.
-- Traces come in and go out as OTLP (spans and evaluation-result log records).
+- Traces come in as OTLP (spans and evaluation-result log records); export is deferred, the records already
+  using the conventions' names.
 
 ## Consequences
 
 A pipeline is measured stage by stage with the same tests as any metric, and its traces can come
-from or go to a tracing tool. Every module that read `outputs/<item>.txt` moves to one reader. The
+from a tracing tool. Every module that read `outputs/<item>.txt` moves to one reader. The
 harness still never schedules a pipeline: the project runs it (PRD-008 Non-Goals).

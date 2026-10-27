@@ -1,6 +1,6 @@
 # UXS-005: The harness for agents: tools, consent, skills, llms.txt
 
-- **Status**: Draft (0.5.0)
+- **Status**: Draft (0.5.0), revision 2 (2026-10-27): consent is the person's own command; no grants
 - **Authors**: Marko Dragoljevic
 - **Related PRDs**: [PRD-012](../prd/PRD-012-agent-ready.md)
 - **Related RFCs**: [RFC-013](../rfc/RFC-013-machine-surface.md) (declarations, JSON, exit codes, refusals,
@@ -110,9 +110,9 @@ promotion, retiring an arm, an extra look, an override, sending data out):
 {"type": "https://evals.humancopilot.eu/docs/refusals/#consent-required", "code": "consent-required",
  "title": "This needs the person's consent", "exit_code": 1,
  "detail": "Promoting run:runs/cnn_bart_l_v1_20261026T153757.123Z_7f3a to baseline of news_summary_cnn on cnn_dailymail_200 (replacing version 2).",
- "consent": {"kind": "promote", "args_sha256": "9f2c…"},
- "fix_command": "evh consent grant --kind promote --command \"evh run-promote --run run:runs/cnn_bart_l_v1_20261026T153757.123Z_7f3a --reason '…'\"",
- "for_the_agent": "Ask the person to run the fix_command in their own terminal, then call this tool again with the same arguments. Do not run it yourself."}
+ "consent": {"kind": "promote"},
+ "fix_command": "evh run-promote --run run:runs/cnn_bart_l_v1_20261026T153757.123Z_7f3a --reason '…' --confirm",
+ "for_the_agent": "Ask the person to run the fix_command in their own terminal: their run is the promotion. Do not run it yourself, and do not call this tool again for it."}
 ```
 
 **What the person sees** when the kind is one their limits let an elicitation answer (by default
@@ -142,7 +142,7 @@ default). Each skill is a `SKILL.md` an agent loads when its description matches
 | `evh-run-a-study` | optimising prompts or parameters toward a goal | the spec, `--dry-run`, `study-run` or `study-ask`/`study-tell`, `study-status`, the outcome | a remote sampler seeing data; a shared host; an extra look; promotion |
 | `evh-promote-with-evidence` | asked to make an arm the baseline | the evidence, the look, the command | always: promotion is the person's |
 | `evh-evaluate-a-pipeline` | the system has stages, or is not in Python | stages, stage references, batches, the process adapter, wrapping a runner | a shared host |
-| `evh-bring-runs-in` | results exist from elsewhere | `import-run`, OTLP, `study-import` with a map | never: it writes records only |
+| `evh-bring-runs-in` | results exist from elsewhere | `import-run`, OTLP, `study-import` of a `results.tsv` | never: it writes records only |
 | `evh-follow-a-job` | something runs in the background | `jobs-status`, `jobs-logs`, `jobs-stop`, consent while waiting | consent while waiting |
 
 Every skill: says to prefer the MCP tools when the server is configured and the commands otherwise; says
@@ -164,7 +164,7 @@ The order an agent follows, as the `evh-run-a-study` skill and PRD-012's first u
 4. When a stop rule fires the study runs its heldout check (confirmatory) and the agent reports the outcome
    in UXS-004's words, including the drop from dev to heldout.
 5. If the outcome meets the rule, the agent tells the person the suggested promotion command. It does
-   not run it: a promotion is refused without the person's grant, and the skill says so.
+   not run it: a promotion needs the person to run it, and the skill says so.
 
 ## llms.txt and the glossary
 

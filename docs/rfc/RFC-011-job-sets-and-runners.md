@@ -1,13 +1,14 @@
 # RFC-011: Job sets and runners: local and ssh
 
-- **Status**: Draft (0.5.0)
+- **Status**: Draft (0.5.0), revision 2 (2026-10-27): the ssh host checks out the pushed commit with git and rsync
+  carries the ignored data; no manifest, delta sync or build file
 - **Authors**: Marko Dragoljevic
 - **Related PRDs**: [PRD-010](../prd/PRD-010-runners.md), [PRD-012](../prd/PRD-012-agent-ready.md) (FR4.4, FR4.5)
 - **Related RFCs**: RFC-014 (run ids), RFC-013 (config, exit codes, consent), RFC-016 (jobs as MCP job ids), RFC-010
   (studies run their trials as jobs)
 - **Code**: new `harness/scripts/_jobs.py`, `jobs_supervisor.py`, `jobs_run.py` (`evh jobs-run`), `jobs_status.py`,
   `jobs_logs.py`, `jobs_stop.py`, `_runner_local.py`, `_runner_ssh.py`, `_detach.py` (shared with RFC-010's study
-  supervisor); `sweep.py` (a job set); `_common.build_info` and `_fingerprint._harness_identity` (the verified build);
+  supervisor); `sweep.py` (a job set); `_common.build_info` and `_fingerprint._harness_identity` (unchanged: the host is a git checkout);
   `experiment_run.py` (exit 75); `schemas/job-set.schema.json`, `job-state.schema.json`
 
 ## Abstract
@@ -132,7 +133,7 @@ runners:
   dgx:
     type: ssh
     host: dgx-llm-1
-    workdir: ~/evh/podcast-eval
+    workdir: ~/evh/podcast-eval                          # a git clone of the project, made once
     install: "uv sync --frozen && uv pip install -e ."   # makes the project's environment, system under test included
     install_check: "uv pip check"                          # exit 0 when the environment is current
     also_send: [cache/podcast_scraper]                     # gitignored paths the jobs need (the system's checkout)
@@ -145,23 +146,22 @@ runners:
   the check again); the host's `evh --version` equals the project's pinned harness version; each name in `env` is set on
   the host (`test -n "$NAME"`); each phase's `check`. Any failure refuses the set with the reason (code
   `runner-preflight`).
-- **What is sent**: the files of the local commit as git stores them (`git archive <commit>`, never the working tree),
-  the frozen data the jobs' configs need that git ignores (their materialized datasets and reference texts), and the
-  runner's `also_send` paths (a system's checkout that the project keeps out of git), with a manifest of every file's
-  path and sha256. A dirty tree is refused unless `--allow-dirty`, which sends the working tree and records the build
-  as dirty.
-- **Only what changed**: the host keeps the last manifest it verified (`<workdir>/.evh/manifest.json`); the runner sends
-  only files whose sha256 differs, as one tar stream over ssh, and removes files the new manifest no longer has. The
-  podcast project's tracked tree is 1.8 GB in 9,164 files, so the first set sends it once and later sets send the
-  change.
-- The remote supervisor verifies every file against the manifest before running anything and refuses on a mismatch.
-- **Build identity**: after the check, the remote supervisor writes `<workdir>/.evh/build.json` (`{"ref": commit,
-  "dirty": false|true, "manifest_sha256": …, "source": "runner:ssh"}`). `build_info` and `_harness_identity` read that
-  file when it exists, and only then report a verified build (`"verified": manifest_sha256`); `instrument.harness.commit`
-  comes from the same file, so a remote run's fingerprint equals a local run's of the same arm. Identity is never taken
-  from an environment variable here: a variable can be set by hand, a file written after a check cannot be confused
-  with one. `EVAL_BUILD_REF` keeps its 0.4.0 meaning (a declared, unverified ref), and the catalog labels such builds
-  "declared, not verified".
+- **The code is a git checkout.** The host's `workdir` is a clone of the project. The runner refuses a dirty local tree
+  and a commit the project's remote does not have (it must be pushed), then runs on the host `git fetch origin <commit>`
+  and `git checkout --detach <commit>`, and checks that `git rev-parse HEAD` is the commit and `git status --porcelain`
+  is empty. Git does the transfer (only what changed) and the verification (the commit's hash covers every tracked
+  file), so the harness sends no manifest of its own.
+- **The ignored data**: the frozen data the jobs' configs need that git ignores (their materialized datasets and
+  reference texts) and the runner's `also_send` paths (a system's checkout the project keeps out of git) go by `rsync
+  -a --checksum --delete` of exactly those paths. They are verified where they are used, as they are locally: a
+  materialized item is checked against the dataset's sha256 for it, a reference against its digest, and the run's
+  fingerprint records both. The system's own checkout is identified by the code ref its adapter declares (PRD-008
+  FR4.4).
+- **Build identity**: the host's tree is a real git checkout at the local commit, so `build_info` and
+  `_harness_identity` read git there exactly as they do locally (`{"ref": commit, "dirty": false, "source": "git"}`),
+  and a remote run's fingerprint equals a local run's of the same arm. Nothing is taken from an environment variable:
+  `EVAL_BUILD_REF` keeps its 0.4.0 meaning (a declared, unverified ref), and the catalog labels such builds "declared,
+  not verified".
 - **Running**: the remote supervisor runs under `flock <host_lock>`, so two sets never prepare one host at once; the
   local `jobs-status` reads the remote `state.json` over ssh; if ssh drops, running jobs are shown as lost until the next
   status read reconciles them from the remote state.
@@ -179,8 +179,9 @@ None. `sweep` keeps its command line.
   0.5.0 needs local and ssh.
 - **Run remote jobs over one long ssh session.** Rejected: a dropped connection would kill them; a remote supervisor in its
   own session survives it.
-- **Trust the remote tree's git state.** Rejected: the copy has no history; a verified manifest of the sent files is
-  stronger evidence than a remote `git status`.
+- **Copy the files with a manifest of hashes and send only the changes** (the first draft). Rejected in revision 2:
+  it rebuilds what git already does (transfer of changes, a hash over every tracked file), and needs a build file to
+  carry the identity a checkout has by itself. The price: the commit must be pushed before a remote set runs.
 
 ## Testing
 
@@ -192,9 +193,9 @@ None. `sweep` keeps its command line.
 - `harness/tests/test_phases.py`: `check` gates, state passed from `before` to `after`, `after` on failure, `after` run by
   `jobs-stop` and by `--resume` after a SIGKILL, GPU time counted once for parallel jobs.
 - `harness/tests/test_runner_ssh.py` (CI, a container with sshd): pre-flight refusals (no host, missing variable, version
-  mismatch, a dirty tree); a set runs, runs come back and validate, the build is the local commit and verified and the
-  fingerprint equals a local run's; a second set sends only changed files; a tampered file on the host is refused; a
-  dropped connection shows lost and reconciles.
+  mismatch, a dirty tree, an unpushed commit); a set runs, runs come back and validate, the build is the local commit
+  and the fingerprint equals a local run's; a changed file in the host's checkout is refused; a tampered materialized
+  item fails its sha256; a dropped connection shows lost and reconciles.
 
 ## Decisions (ADR candidates)
 
@@ -202,5 +203,5 @@ None. `sweep` keeps its command line.
    and retries; every attempt is a new run.
 2. Phases with a check, a before that can hand state to an after, recorded so the after runs even after a crash, and
    consent for shared hosts.
-3. The ssh runner sends the commit's files and the needed ignored data with a manifest, sends only changes, verifies them
-   on the host, and records the build from a file written after the check, never from the environment.
+3. The ssh runner checks out the pushed commit with git on the host and carries the ignored data with rsync; the build
+   is the host's git checkout, read as it is locally, never taken from the environment.

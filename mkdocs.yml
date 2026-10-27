@@ -89,6 +89,7 @@ nav:
           - "RFC-014: Identity in 0.5.0: baselines, fingerprint v5, run ids, one grammar, the migration": rfc/RFC-014-identity-baselines-migration.md
           - "RFC-015: The statistics of 0.5.0: non-inferiority, verdicts, test looks, power": rfc/RFC-015-noninferiority-looks-power.md
           - "RFC-016: The MCP server, the skills, llms.txt and the glossary": rfc/RFC-016-mcp-server-and-skills.md
+          - "RFC-017: The record store: records, ids and one store contract": rfc/RFC-017-record-store.md
       - Decisions (ADRs):
           - Index: adr/index.md
           - "ADR-0001: Judge scorers: re-measuring frozen outputs with a validated LLM judge": adr/ADR-0001-judge-scorers.md
@@ -107,6 +108,7 @@ nav:
           - "ADR-0014: Fingerprint version 5, run ids, one grammar, a one-time migration (0.5.0)": adr/ADR-0014-identity-v5-and-migration.md
           - "ADR-0015: Ties are non-inferiority; test datasets spend their level over looks (0.5.0)": adr/ADR-0015-noninferiority-and-test-looks.md
           - "ADR-0016: An MCP server, skills and llms.txt for agents (0.5.0)": adr/ADR-0016-mcp-server-and-skills.md
+          - "ADR-0017: Write-once records with collision-free ids, through one store contract (0.5.0)": adr/ADR-0017-record-store.md
           - "ADR-0018: The catalog's period is counted from today, in the browser (0.4.2)": adr/ADR-0018-period-from-today.md
   - The experiments:
       - Reproduce it: REPRODUCE.md

@@ -1,6 +1,6 @@
 # ADR-0010 — Studies: an ask/tell loop that searches, and one test that is evidence (0.5.0)
 
-**Status:** Accepted (2026-10-26), design; not yet built
+**Status:** Accepted (2026-10-26), design; not yet built. Revision 2 (2026-10-27): one dev dataset per study; grid, command and agent samplers; a spec and an event log. Several datasets per study, a built-in LLM sampler, contested-judgement policies and column-map imports are deferred.
 **Date:** 2026-10-26
 **Detail:** [PRD-009](../prd/PRD-009-prompts-and-optimisation.md) FR2 to FR5,
 [RFC-010](../rfc/RFC-010-studies.md) (files, the loop, samplers, the heldout check, imports),
@@ -19,11 +19,13 @@ nothing protects the items used to claim the winner is better.
   confirmatory (a test rule declared before it starts). Each owns a round, which does not block
   other rounds.
 - **The loop is ask/tell**: a sampler proposes a trial (parameters or prompt versions, with a
-  hypothesis); the harness runs it on every track, compares it with the best so far and the baseline,
+  hypothesis); the harness runs it on the study's dev dataset, compares it with the best so far and the baseline,
   and keeps or drops it by the declared rule. Code is never in the search space.
-- **Samplers are pluggable**: grid, one at a time, random, an LLM through the existing providers, an
-  external command (Optuna through ask/tell), or the calling agent through `study-ask` and
-  `study-tell`, which is how autoresearch's loop runs here.
+- **Samplers are pluggable**: a grid over the space, an external command (Optuna, or any optimiser,
+  through ask/tell), or the calling agent through `study-ask` and `study-tell`, which is how
+  autoresearch's loop runs here.
+- **A study is a spec and one append-only event log**, the typed form of autoresearch's `results.tsv`;
+  its state and its trials' configs are read from the log, never stored apart.
 - **Guardrails and tie-break acceptance are judged against the baseline**, so concessions
   cannot accumulate.
 - **Keeping a trial is search; the single counted heldout check is evidence**, on heldout items the
@@ -34,6 +36,6 @@ nothing protects the items used to claim the winner is better.
 
 ## Consequences
 
-Past loops can be imported (Karpathy's `results.tsv`, other TSVs through a column map) and shown as
+Past loops can be imported (Karpathy's `results.tsv`; other formats are converted to it) and shown as
 closed, untestable studies. A study on small dev sets mostly ends "inconclusive"; that is
 the honest outcome, not a defect.

@@ -1,6 +1,7 @@
 # RFC-016: The MCP server, the skills, llms.txt and the glossary
 
-- **Status**: Draft (0.5.0)
+- **Status**: Draft (0.5.0), revision 2 (2026-10-27): no grant store and no spend ledger; a budget is checked against
+  the spend the runs record
 - **Authors**: Marko Dragoljevic
 - **Related PRDs**: [PRD-012](../prd/PRD-012-agent-ready.md) (FR4, FR5, FR6, FR8)
 - **Related RFCs**: RFC-013 (the command declarations this is generated from), RFC-011 (jobs), RFC-010 (studies:
@@ -45,8 +46,7 @@ never taken from the client. The harness also ships skills in the Agent Skills f
 - **Tools** are generated from `evh commands --json` (RFC-013): name = the command (`run-promote`), description =
   purpose + effects + examples, `inputSchema` from its arguments, `outputSchema` = the envelope schema with the
   command's result schema inside (`{command, version, result}`, what stdout carries).
-- **Not tools**: commands that never return (`catalog-serve`, `mcp`), and the ones only a person runs: `consent`
-  (grants), `skills-install` (it writes the instructions agents follow) and `init`. The server's own `limits` tool
+- **Not tools**: commands that never return (`catalog-serve`, `mcp`), and the ones only a person runs: `skills-install` (it writes the instructions agents follow) and `init`. The server's own `limits` tool
   is read-only.
 - **What the input schema leaves out**: `--actor`, `--on-behalf-of` and `--confirm`. The server sets the actor itself;
   consent comes from the person (below), never from an argument. `--instruction` stays, recorded as the agent reported
@@ -60,8 +60,8 @@ never taken from the client. The harness also ships skills in the Agent Skills f
   JSON result) becomes `structuredContent`, capped at 1 MB (beyond it the tool returns an error naming the command's
   `--limit`/`--offset` paging, which list commands declare); stderr is kept as the tool's log text, its last 64 KB; a
   refusal (exit 1) becomes a result with `isError: true` and the problem details body.
-- **Parallel calls** write records through the same lock helper as the commands do (RFC-014 `_lock.py`), so two tools
-  promoting, recording a look or a prompt version at once cannot collide.
+- **Parallel calls** write records through the record store, as the commands do (RFC-017): every record is written once
+  with an id two calls cannot share, so two tools promoting or recording a prompt version at once cannot collide.
 - **Annotations** from the declaration: `readOnlyHint` when the command only reads; `destructiveHint` when it writes;
   `idempotentHint` and `openWorldHint` from the declaration's `idempotent` and `open_world`. They are hints for the
   client; the server's own checks (below) do not rest on them.
@@ -83,9 +83,10 @@ never taken from the client. The harness also ships skills in the Agent Skills f
   `rescore` of one run is declared long-running like any rescore: one rule per command, no guessing from arguments.
 - **Consent during long work.** The tasks extension's input-required state is not available, so a detached set or
   study that needs consent part-way (a budget crossed, a look past the limit) stops that step and enters
-  `waiting_consent` with the question in `state.json`. The next `jobs-status` or `study-status` tool call on it returns
-  the elicitation (the same question and amount); the answer becomes a grant bound to that set or study, and the
-  supervisor continues. Without an answer the step stays waiting, and nothing is spent.
+  `waiting_consent` with the question in its state. The next `jobs-status` or `study-status` tool call on it returns
+  the elicitation (the same question and amount) when the limits allow that kind by elicitation, and the supervisor
+  continues on the answer; otherwise it returns the command the person runs (`… --resume <id> --confirm`). Without
+  an answer the step stays waiting, and nothing is spent.
 - When the SDK implements the tasks extension and the client asks for a task, the same call returns a task instead;
   the job set's states map to task states as RFC-011 lists, and `waiting_consent` to `input_required`.
 
@@ -98,7 +99,7 @@ never taken from the client. The harness also ships skills in the Agent Skills f
   tools: {disabled: [run-promote], read_only: false}
   budgets: {usd_per_day: 10, gpu_hours_per_day: 2, usd_per_study: 5}
   consent: [promote, retire, spend_over_budget, extra_look, override_refusal, data_egress, shared_host]
-  elicitation_counts_as_consent: [spend_over_budget, shared_host]   # the kinds an elicitation answer may grant
+  elicitation_counts_as_consent: [spend_over_budget, shared_host]   # the kinds an elicitation answer may give
   ```
 - **Who changed it** (PRD-012 FR4.6): the file is tracked, and the server reads it from the committed tree. It reads the
   path from `config.yaml` once, at start; if the file has uncommitted changes, the server refuses to start (and, when
@@ -112,17 +113,17 @@ never taken from the client. The harness also ships skills in the Agent Skills f
     documentation notes that an agent client may answer an elicitation itself, so an answer is recorded as `via:
     elicitation (client-reported)`, and only the kinds the person listed accept it;
   - for every other kind (by default promotion, retiring, an extra look, an override, data egress), refuses
-    (`consent-required`) with the exact `evh consent grant …` command a person runs in their own terminal; the agent
-    retries the call after, and the grant is consumed.
-  The person's answer or grant is turned into a grant bound to the call's `args_sha256` before the child runs; the
-  child consumes it. The server never passes `--confirm`.
-- **Budgets**: the server keeps a ledger (`.evh/spend.jsonl`, `schemas/spend-ledger.schema.json`). Under a lock, a call
-  reserves its `--dry-run` estimate before it runs (refused without consent if the reservation would cross a limit) and
-  the reservation is replaced by the recorded spend after; so two concurrent calls cannot both pass a limit one of them
-  would cross. The child gets `EVAL_MAX_COST_USD` set to the budget left, so `experiment-run`'s own cost cap stops it
-  at the limit even when the estimate was low. Detached work spends after the tool returns, so the job and study
-  supervisors write their spend into the same ledger as it happens, and stop at the limit. A sampler or judge with no
-  estimate counts against the study's per-role cap (RFC-010), which a study under a server budget must declare.
+    (`consent-required`) with the exact command a person runs in their own terminal, with `--confirm`; the person's
+    run is the action, so the agent does not retry it.
+  On an elicitation answer the server runs the child with `EVH_CONSENT=<kind>:elicitation`, which the command records
+  as the consent's route; the server never passes `--confirm`.
+- **Budgets**: nothing is stored apart from the runs (RFC-017). The spend of a day is the sum of the cost the runs
+  record (`metrics.json`, and `outputs/_rows.jsonl` for a run in progress), plus the `--dry-run` estimates of the jobs
+  still queued or running. A call whose estimate would cross a limit needs consent. The child gets
+  `EVAL_MAX_COST_USD` set to the budget left, so `experiment-run`'s own cost cap stops it at the limit even when the
+  estimate was low; the job and study supervisors pass the same cap to every job they start. Two calls started at the
+  same moment can both pass the check; the cost caps still stop each at what was left when it started. A shared
+  budget for a team is the database provider's.
 - What the server cannot stop: an agent with a shell can run `evh` directly or edit files. The records say who acted;
   the skills tell agents to use the server.
 
@@ -183,12 +184,12 @@ None. The server and skills are new; `UPGRADING.md` says how to add `evh mcp` to
 
 - `harness/tests/test_mcp_server.py` (an in-memory client from the SDK): the tool list equals the manifest; a read tool's
   `structuredContent` validates against the envelope schema; a refusal is `isError` with a problem details body; a
-  long-running tool returns a job set id; a promotion is refused with a grant command and passes after the grant, and
-  an elicitation does not grant it unless the limits list the kind; a kind the limits list is granted by elicitation;
+  long-running tool returns a job set id; a promotion is refused with the command a person runs, and an elicitation
+  does not give it unless the limits list the kind; a kind the limits list is given by elicitation;
   `--actor` and `--confirm` are not in any input schema; a path argument into `.evh/` or the limits file is refused;
-  uncommitted limits refuse; two concurrent calls cannot both pass a budget; a cancelled call kills its child; output
+  uncommitted limits refuse; a call over the budget the runs record needs consent; a cancelled call kills its child; output
   over 1 MB is refused with paging named; a set waiting for consent returns an elicitation from `jobs-status`;
-  `catalog-serve`, `mcp`, `consent`, `skills-install` and `init` are not tools; a disabled tool is absent; the actor
+  `catalog-serve`, `mcp`, `skills-install` and `init` are not tools; a disabled tool is absent; the actor
   recorded is the server's `--agent` acting for the limits file's person.
 - `harness/tests/test_skills.py`: front matter valid and matching directories; under 500 lines; every `evh` block runs on
   the example project.
@@ -198,10 +199,11 @@ None. The server and skills are new; `UPGRADING.md` says how to add `evh mcp` to
 
 1. `evh mcp` on the official SDK; tools generated from the manifest, each run as a child `evh … --json`.
 2. Long work returns a job id followed with `jobs-status`; MCP tasks when the SDK supports them.
-3. Consent is a person's: a grant from their terminal, or an elicitation answer only for the kinds their limits allow;
+3. Consent is a person's: their own command run with `--confirm`, or an elicitation answer only for the kinds their
+   limits allow;
    limits in a tracked file the server never writes and reads only when committed; the actor fixed at start, never
    from the client; actor and consent flags are never tool arguments.
 4. Skills ship with the package in the Agent Skills format, installed by a command, and their commands are tested.
 5. `llms.txt` generated with the documentation; a glossary maps terms to other tools'.
-6. Tools run as child processes with a timeout, killed on cancel, with capped output; spending is reserved in a ledger
-   under a lock, and detached work writes its spend as it happens.
+6. Tools run as child processes with a timeout, killed on cancel, with capped output; a budget is checked against the
+   spend the runs record, and every job runs under a cost cap of what is left.

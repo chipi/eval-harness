@@ -1,6 +1,6 @@
 # RFC-007: Stages, stage references, structured outputs, item fields, batch mode, wrapping a runner
 
-- **Status**: Draft (0.5.0)
+- **Status**: Draft (0.5.0), revision 2 (2026-10-27): OTLP import only; export is deferred
 - **Authors**: Marko Dragoljevic
 - **Related PRDs**: [PRD-008](../prd/PRD-008-pipelines-and-any-language.md) (FR1, FR2, FR3, FR5, FR6)
 - **Related RFCs**: RFC-008 (the process protocol carries the same result), RFC-013 (`--json`, schemas),
@@ -8,7 +8,7 @@
   (item fields)
 - **Code**: `harness/scripts/adapter.py` (`Result`, new `Stage`, `Item`), `experiment_run.py` (`one_pass`, `_Resumed`,
   the reference coverage check), new `_stages.py` and `_outputs.py` (one reader for an item's output, `.txt` or
-  `.json`), `import_run.py` (`--otlp`), `export_otlp.py`, `catalog_views.py` and `inspect.js` (the stage view),
+  `.json`), `import_run.py` (`--otlp`), `catalog_views.py` and `inspect.js` (the stage view),
   `validate_tree.py`; every reader of `outputs/<item>.txt` or `<ref>/<item>.txt` moves to `_outputs.py`: `rescore.py`,
   `judge_score.py`, `_references.py`, `reference_create.py`, `silver_calibrate.py`, `catalog_adapter.py`,
   `validate_tree.py`; `schemas/prediction.schema.json`, `harness/docs/INTEGRATION.md`, `harness/examples/wrapping/`
@@ -142,7 +142,7 @@ names), reads them back as `Result`s with stages, and, where the system needs it
 overlay (RFC-009). It also shows declaring the system's code ref (PRD-008 FR4.4) through the adapter's
 `fingerprint(params)` hook: `{"code_ref": {"repo": …, "commit": …}}`.
 
-### Importing and exporting traces (PRD-008 FR1.7)
+### Importing traces (PRD-008 FR1.7)
 
 - `evh import-run --otlp-traces FILE.json [--otlp-logs FILE.json] --dataset-id D --config-id C --source S` reads OTLP
   JSON. Spans with the attribute `evh.item_id` group into items; each span becomes a stage (names from `gen_ai.*` where
@@ -152,9 +152,8 @@ overlay (RFC-009). It also shows declaring the system's code ref (PRD-008 FR4.4)
 - With `--otlp-*`, `--scores` is not needed (the scores come from the logs), and `--primary-metric` and `--scorer-id` are
   required only when the logs carry scores; the scorer id defaults to `otlp:<the events' evaluator name>`. Without
   `--otlp-*`, `import-run` is unchanged.
-- `evh export-otlp --run R --out DIR` writes the run's stages as OTLP JSON traces and its stage scores as
-  `gen_ai.evaluation.result` log records, so a project's tracing tool can show them; an import of the export gives the
-  same stages and scores.
+- Exporting a run's stages and stage scores as OTLP (so a tracing tool can show them) is deferred (revision 2): the
+  stage records already use the OpenTelemetry GenAI names, so an exporter can be added later without changing them.
 
 ### The stage view
 
@@ -189,7 +188,7 @@ None: a run without stages has no new fields.
   fields; a batch adapter matches the per-item adapter's results; the cap stops before a batch and refuses a first
   batch with no estimate; a crash between the stage file and the end output re-runs the item on resume; resume restores
   stage metrics; rescore keeps `.json` outputs and stages; an item that fails is recorded and the run goes on; a stage
-  name with `.` is refused; OTLP traces and logs import, and export → import round-trips.
+  name with `.` is refused; OTLP traces and logs import.
 - Inspector browser check: the stage panel for two arms.
 
 ## Decisions (ADR candidates)

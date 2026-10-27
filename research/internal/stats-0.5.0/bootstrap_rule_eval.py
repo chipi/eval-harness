@@ -29,6 +29,7 @@ RULES = [
     ("g1<-0.5 -> a/2, n<100 inc; any n<30 inc", -0.5, 0.5, 100, 30),
     ("g1<-0.5 -> a/2, no skew floor; any n<30 inc", -0.5, 0.5, 0, 30),
     ("always a/2, any n<30 inc", 99.0, 0.5, 0, 30),
+    ("ADOPTED (revision 2): always a/2, any n<100 inc", 99.0, 0.5, 0, 100),
 ]
 
 

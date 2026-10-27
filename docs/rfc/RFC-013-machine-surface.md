@@ -1,6 +1,7 @@
 # RFC-013: The machine surface: one declaration per command, JSON, exit codes, refusals, the actor, the project config
 
-- **Status**: Draft (0.5.0)
+- **Status**: Draft (0.5.0), revision 2 (2026-10-27): consent is a person running the command, or an elicitation the
+  person's limits allow; no grant store
 - **Authors**: Marko Dragoljevic
 - **Related PRDs**: [PRD-012](../prd/PRD-012-agent-ready.md) (FR1, FR2, FR3, FR7, FR10), and every 0.5.0 PRD
   through PRD-012 FR8
@@ -138,7 +139,7 @@ maps to 70. A refusal prints, without `--json`, `ERROR (<code>): <title>\n  <det
 `type` is the identity (a page listing every code, generated from a registry in `_refusals.py`, so a code cannot be
 used without its entry); `code` is its last segment and `exit_code` the process's exit code, both extension members.
 RFC 9457's `status` member means an HTTP status code, so it is not used. A refusal that needs consent carries
-`consent: {kind, command, amount, args_sha256}` (below) and `for_the_agent`, one sentence telling an agent to ask the
+`consent: {kind, command, amount}` (below) and `for_the_agent`, one sentence telling an agent to ask the
 person to run the fix command and not to run it itself ([UXS-005](../uxs/UXS-005-agents.md#consent-from-both-sides)).
 
 ### Who acted (PRD-012 FR3)
@@ -160,19 +161,18 @@ calls `_consent.require(kind, detail, amount)` when one applies (a promotion; a 
 override flag used; a phase on a shared host; a remote sampler that sees data). Consent is **a person's, never only an
 agent's**:
 
-- a **person actor** consents by running the command; `--confirm` is that person's acknowledgement for the commands
-  that ask it (a promotion), recorded as `confirmed_by: <person>, via: cli`;
-- a **grant**: `evh consent grant --kind K --command "<exact command>" [--count N] [--expires 1h]`, run by a person actor
-  (refused for `agent:` and `unknown:`), records a one-use (or N-use) consent bound to the hash of the command's
-  arguments (`args_sha256`) or to a study or job set id, with an expiry, in `.evh/consent/`
-  (`schemas/consent-grant.schema.json`). The command that asked consumes it and records `via: grant`;
-- an **MCP elicitation** answer, when the person's limits file allows it (RFC-016), recorded `via: elicitation
-  (client-reported)`.
+- a **person actor** consents by running the command: the refusal an agent gets carries the exact command
+  (`fix_command`), and the person runs it in their own terminal with `--confirm`, recorded as `confirmed_by:
+  <person>, via: cli`. Detached work waiting for consent (RFC-011, RFC-010) is continued the same way: `evh
+  jobs-run --resume <id> --confirm` or `evh study-run --resume <id> --confirm`;
+- an **MCP elicitation** answer, only for the kinds the person's limits file lists (RFC-016), recorded `via:
+  elicitation (client-reported)`.
 
-`--confirm` from an `agent:` or `unknown:` actor is refused (`consent-required`), and the refusal names the grant command
-a person runs. What the harness cannot do: tell a person from an agent that claims to be one (`EVH_ACTOR=person:…`) or
-runs `consent grant` itself in a shell. The records show what was claimed and how; the skills tell agents never to; and
-`validate` lists every consent with its route so a person can audit them.
+`--confirm` from an `agent:` or `unknown:` actor is refused (`consent-required`). Nothing is stored between asking and
+consenting: the person's own command is the consent. What the harness cannot do: tell a person from an agent that
+claims to be one (`EVH_ACTOR=person:…`). The records show what was claimed and how; the skills tell agents never to;
+and `validate` lists every consent with its route so a person can audit them. Real permissions (who may promote)
+come with the database provider (RFC-017).
 
 ### The project config (PRD-012 FR10)
 
@@ -194,11 +194,11 @@ from; `evh config --json` prints that. `schemas/config.schema.json` validates it
 
 New, versioned with the harness (`$id` carries the version): `run.schema.json` (`run.json`), `metrics.schema.json`
 (exists; gains the v5 fingerprint), `fingerprint.schema.json` (v5), `prediction.schema.json` (a `predictions.jsonl`
-line, stages included, RFC-007), `baseline.schema.json` and `baseline-index.schema.json` (RFC-014), `look.schema.json`
+line, stages included, RFC-007), `baseline.schema.json` (RFC-014)
 (RFC-015), `study.schema.json` and `trial.schema.json` (RFC-010), `job-set.schema.json` (RFC-011),
 `prompt-version.schema.json` (RFC-009), `study-spec.schema.json` (RFC-010), `baselines-export.schema.json` (RFC-012),
 `job-state.schema.json` (RFC-011), `process-adapter.schema.json` and `schemas/protocol/` (RFC-008),
-`limits.schema.json`, `consent-grant.schema.json`, `spend-ledger.schema.json` (RFC-016), `config.schema.json`,
+`limits.schema.json` (RFC-016), `study-event.schema.json` (RFC-010), `config.schema.json`,
 `refusal.schema.json`, `envelope.schema.json`, and one output schema per command. `validate` checks every record
 against its schema.
 
@@ -238,8 +238,8 @@ pin moves.
   `_common.py`.
 - `harness/tests/test_dry_run.py`: every command with `--dry-run` writes nothing and calls no provider.
 - `harness/tests/test_actor.py`: records carry the actor and instruction; without `EVH_ACTOR` and no terminal the actor is
-  `unknown:`; a person's `--confirm` passes and an agent's is refused; a grant is bound to its arguments, consumed once,
-  expires, and is refused when an agent makes it.
+  `unknown:`; a person's `--confirm` passes and an agent's is refused; the refusal carries the exact command,
+  and nothing is stored between the refusal and the person's run.
 - `harness/tests/test_config.py`: precedence environment > config > default; `evh config --json` names the source.
 
 ## Decisions (ADR candidates)
@@ -252,5 +252,5 @@ pin moves.
 5. Every record says who acted and for whom (PROV); an actor that does not name itself off a terminal is `unknown`.
 6. One project `config.yaml` for directories, runners and limits; environment variables still win.
 7. Python 3.10 or later, so the official MCP SDK can be a default dependency.
-8. Consent is asked at run time by kind, and is a person's: their own command, a grant bound to the arguments, or an
+8. Consent is asked at run time by kind, and is a person's: their own command (`--confirm`), or an
    elicitation the person's limits allow; an agent's own `--confirm` is refused.

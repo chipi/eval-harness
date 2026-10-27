@@ -1,6 +1,6 @@
 # ADR-0013 — One declaration per command; JSON, exit codes, refusals, actors, consent (0.5.0)
 
-**Status:** Accepted (2026-10-26), design; not yet built
+**Status:** Accepted (2026-10-26), design; not yet built. Revision 2 (2026-10-27): no grant store: consent is the person's own command.
 **Date:** 2026-10-26
 **Detail:** [PRD-012](../prd/PRD-012-agent-ready.md), [RFC-013](../rfc/RFC-013-machine-surface.md)
 
@@ -26,8 +26,9 @@ consequences (a promotion) was the same whether a person or an agent made it.
   not on a terminal is recorded as `unknown`, never as a person.
 - **Consent is a person's, never only an agent's**: asked at run time by kind (promotion, an extra
   look, an override, spending, a shared host, sending data out) and given by the person running the
-  command, by a grant they make bound to the exact arguments, or by an elicitation answer for the
-  kinds their limits allow. An agent's own `--confirm` is refused.
+  command (the refusal an agent gets names the exact command, which the person runs with `--confirm`),
+  or by an elicitation answer for the kinds their limits allow. Nothing is stored between asking and
+  consenting. An agent's own `--confirm` is refused.
 - **One project `config.yaml`** for directories, runners and limits; environment variables win.
 - **Python 3.10 or later**, so the official MCP SDK can be a default dependency.
 

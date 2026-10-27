@@ -1,6 +1,6 @@
 # PRD-010: Runners: where experiments run
 
-- **Status**: Draft (0.5.0), final review round
+- **Status**: Draft (0.5.0), revision 2 (2026-10-27): the ssh host runs a git checkout of the pushed commit
 - **Authors**: Marko Dragoljevic
 - **Related UX specs**: [UXS-003](../uxs/UXS-003-cli-and-onboarding.md) (the commands)
 - **Related RFC**: [RFC-011](../rfc/RFC-011-job-sets-and-runners.md) (job sets, the runner interface, local and ssh)
@@ -16,9 +16,9 @@ later a container platform or CI. Today `experiment-run` and `sweep` run in the 
 after another, holding the terminal. This PRD adds **job sets** (arm × dataset × repeat, each a
 job) handed to a named **runner**, which runs them, detached, and brings back ordinary run
 directories. Jobs have the states, retries, timeouts and logs that Slurm, Kubernetes Jobs and Ray
-Jobs use. 0.5.0 ships the **local** runner (jobs in parallel, a lease lock, resume) and a simple
-**ssh** runner (copy the project to a host, run the same command there, follow its log, bring the
-run back, validate it here), with per-phase preparation commands for hosts whose GPU must be
+Jobs use. 0.5.0 ships the **local** runner (jobs in parallel, a lock per job set, resume) and a simple
+**ssh** runner (check out the project's pushed commit on a host, run the same command there, follow its
+log, bring the run back, validate it here), with per-phase preparation commands for hosts whose GPU must be
 switched. The run directory is the contract, so every later runner only moves one.
 
 ## Background & Context
@@ -111,8 +111,8 @@ switched. The run directory is the contract, so every later runner only moves on
 
 ### FR2: The local runner
 
-- **FR2.1**: Runs jobs in parallel up to `--jobs`; each run is held by a lease (a lock with a
-  heartbeat) that lapses when its job dies.
+- **FR2.1**: Runs jobs in parallel up to `--jobs`; one supervisor holds each job set, and a job whose
+  supervisor died is shown as lost and resumed as a new attempt, never written into again.
 - **FR2.2**: Is the default; a project with no runner configuration behaves as today, detaching
   only when asked.
 
@@ -124,9 +124,9 @@ switched. The run directory is the contract, so every later runner only moves on
   under test's dependencies included), `env` (names of variables the host must already have; their
   values are never sent).
 - **FR3.2**: A host-wide lock, so two job sets never prepare one host at once (FR1.7 for phases).
-- **FR3.3**: Sends the project's code at the local commit and the frozen data a job needs, and
-  records the local commit as the run's build (the copy on the host has no git history of its own,
-  and is verified against the sent files); runs `install` when the environment is missing or stale;
+- **FR3.3**: Checks out the local commit, which must be pushed, in a git clone on the host, and copies
+  the frozen data a job needs that git ignores; the run's build is that checkout, read as git reads it
+  locally; runs `install` when the environment is missing or stale;
   runs `evh experiment-run` there with a log; follows it; brings the run directory back; runs
   `evh validate` on it here.
 - **FR3.4**: A pre-flight runs before anything is spent, and in `--dry-run`: ssh reaches the host,

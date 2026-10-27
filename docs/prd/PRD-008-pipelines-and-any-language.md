@@ -1,6 +1,6 @@
 # PRD-008: Pipelines, stages, and systems in any language
 
-- **Status**: Draft (0.5.0), final review round
+- **Status**: Draft (0.5.0), final review round, revision 2 (2026-10-27): stdio only (HTTP deferred), OTLP import only (export deferred)
 - **Authors**: Marko Dragoljevic
 - **Related UX specs**: [UXS-002](../uxs/UXS-002-inspector.md) (the inspector, to gain a stage view)
 - **Related RFCs**: [RFC-007](../rfc/RFC-007-stages-and-stage-references.md) (stages and stage references), [RFC-008](../rfc/RFC-008-process-protocol.md) (the process protocol)
@@ -18,8 +18,8 @@ tracing tool uses (OpenTelemetry's GenAI conventions), each with its output, cos
 time; lets a stage be scored against its **own reference**; and makes every stage measure an
 ordinary metric (`asr.wer`), so the tests, goals and the catalog work per stage unchanged. It
 adds a **batch** mode for pipelines that process a whole dataset at once, and opens the seam to
-systems **not written in Python**: a long-lived process that speaks JSON-RPC over stdio, or an
-HTTP address, with the harness keeping the scoring and the statistics.
+systems **not written in Python**: a long-lived process that speaks JSON-RPC over stdio, with the
+harness keeping the scoring and the statistics.
 
 ## Background & Context
 
@@ -107,7 +107,8 @@ HTTP address, with the harness keeping the scoring and the statistics.
 - **FR1.6**: A 0.4.0 adapter with no stages needs no change, and its records gain no fields.
 - **FR1.7**: Stage records can also be imported as OpenTelemetry (OTLP JSON) traces, so a
   pipeline that already emits traces needs no second instrumentation; stage scores map to the
-  conventions' evaluation event (`gen_ai.evaluation.result`) on import and export.
+  conventions' evaluation event (`gen_ai.evaluation.result`) on import. Exporting them as OTLP is
+  deferred: the stage records already use the conventions' names, so an exporter can follow.
 - **FR1.8**: Resume restores an item's stages, their outputs and their costs exactly as recorded.
 
 ### FR2: Stage references
@@ -131,18 +132,17 @@ HTTP address, with the harness keeping the scoring and the statistics.
 
 ### FR4: Systems in any language
 
-- **FR4.1**: A config may name a **process adapter**: a command (`adapter: {command: [...]}`)
+- **FR4.1**: A config may name a **process adapter** (a small file naming the command), a command
   started once and kept alive, speaking **JSON-RPC 2.0 over stdio**, newline-delimited, one request
   per item or batch, with only protocol messages on stdout and its logs on stderr (as MCP's stdio
-  transport does), and trace context passed in the request; or an HTTP address
-  (`adapter: {url: ...}`) speaking the same messages. Specified and versioned in [RFC-008](../rfc/RFC-008-process-protocol.md), with an
+  transport does), and trace context passed in the request. A service reached over HTTP is deferred;
+  a small command can forward the messages to one. Specified and versioned in [RFC-008](../rfc/RFC-008-process-protocol.md), with an
   example client in a second language.
 - **FR4.2**: Scoring may stay in a Python adapter beside a process `call_system`, or be done by
   the process; either way the harness records the metrics.
 - **FR4.3**: The process declares its identity (name, version, a digest of its artifact) and the
-  harness records it with the protocol version; for a command, the harness also hashes the
-  executable it started; for an HTTP address the identity is only what the service declares, and
-  the record says so. A process that declares none is recorded as unidentified, and `run-promote`
+  harness records it with the protocol version, and hashes the files the adapter file names as the
+  system (a command line names a launcher, not the program, so the harness does not guess). A process that declares none is recorded as unidentified, and `run-promote`
   refuses it as it refuses an unknown build.
 - **FR4.4**: Every adapter, Python or process, may declare the code ref of the system it calls
   (for example the git commit of the project's pipeline library), recorded with the system's

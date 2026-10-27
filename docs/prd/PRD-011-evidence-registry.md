@@ -1,6 +1,7 @@
 # PRD-011: The evidence registry
 
-- **Status**: Draft (0.5.0), final review round
+- **Status**: Draft (0.5.0), revision 2 (2026-10-27): baseline versions are write-once with collision-free ids,
+  the newest current, no aliases ([RFC-017](../rfc/RFC-017-record-store.md))
 - **Authors**: Marko Dragoljevic
 - **Related UX specs**: [UXS-001](../uxs/UXS-001-catalog.md) (the catalog, to show baselines)
 - **Related RFC**: [RFC-012](../rfc/RFC-012-evidence-registry.md) (baseline versions, the export, the check)
@@ -15,9 +16,9 @@ Every project keeps its own registry of what runs in production. What it lacks i
 checkable link from those choices to the evidence that made them. The harness holds that evidence
 (goals, baselines promoted with a reason, rounds and their conclusions, the references and
 datasets they were judged on) across several kinds of record. This PRD gives each promotion a
-**baseline version** (`baseline:news_summary/cnn_200/3` a fixed version,
-`baseline:news_summary/cnn_200@current` the moving pointer, in the one grammar of
-[PRD-013](PRD-013-identity-and-ties.md) FR7, after MLflow's versions and aliases), keeps every former baseline with why it was
+**baseline version** (a fixed version with a collision-free id, `baseline:news_summary/cnn_200/20261027T101500.123Z_7f3a`,
+shown as "version 3"; `baseline:news_summary/cnn_200@current` the newest one, in the one grammar of
+[PRD-013](PRD-013-identity-and-ties.md) FR7, after MLflow's versions), keeps every former baseline with why it was
 replaced, freezes the comparison that justified each promotion when it is made, and exports the
 lot in a documented file a project can read and cite. A **check** tells a project when something
 it cites has been replaced, retired or never existed; a citation may name a baseline, a round, a
@@ -35,8 +36,9 @@ run or a report, because a production registry also records options that were re
   summary. `registry_refs.yaml` maps registry options (including demoted and rejected ones) to
   evaluation reports and rationale files, checked by its own script (`check_research_refs.py`);
   it cites reports and options, not only winners.
-- The MLflow registry is the common reference: integer versions, moving aliases (`@baseline`),
-  and baseline/promoted run as the names of the two sides of a promotion. Model cards (Mitchell et
+- The MLflow registry is the common reference: versions, and a pointer to the one in use, with the
+  baseline and the promoted run as the two sides of a promotion. The harness's versions are not integers,
+  since two clones could make the same one (RFC-017). Model cards (Mitchell et
   al., 2019) are the reference for what a published model record says about intended use.
 
 ## Goals
@@ -76,10 +78,11 @@ run or a report, because a production registry also records options that were re
 
 ## Functional Requirements
 
-- **FR1**: A baseline is the current baseline of a goal on a dataset. Each promotion makes a new
-  fixed version `baseline:<goal>/<dataset>/<n>`; `baseline:<goal>/<dataset>@current` points at the
-  current one; former versions stay in the tree (not only in git) with when, why and by whom they
-  were replaced, stored as [PRD-013](PRD-013-identity-and-ties.md) FR7 says.
+- **FR1**: A baseline belongs to a goal on a dataset. Each promotion writes a new fixed version
+  `baseline:<goal>/<dataset>/<version>`, written once; `baseline:<goal>/<dataset>@current` is the newest;
+  former versions stay in the tree (not only in git) with when, why and by whom they were replaced, stored
+  as [PRD-013](PRD-013-identity-and-ties.md) FR7 says. A rollback is a new version that re-promotes an
+  earlier run.
 - **FR2**: At promotion, the harness freezes into the baseline's record the comparison of the
   promoted run with the baseline it replaces, on the baseline's dataset: the paired result on the
   goal's measure (effect, interval, p) and the goal's axes. A first promotion records that there
@@ -110,4 +113,4 @@ run or a report, because a production registry also records options that were re
 ## Related Documents
 
 - [RFC-012](../rfc/RFC-012-evidence-registry.md) (); [PRD-005](PRD-005-goals-and-rounds.md). References: MLflow Model
-  Registry (versions, aliases, baseline/promoted run), model cards (Mitchell et al., 2019).
+  Registry (versions, baseline/promoted run), model cards (Mitchell et al., 2019).

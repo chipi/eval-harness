@@ -1,6 +1,7 @@
 # UXS-004: Studies, baselines and prompts
 
-- **Status**: Draft (0.5.0)
+- **Status**: Draft (0.5.0), revision 2 (2026-10-27): studies on one dev dataset with grid, command and agent
+  samplers; baseline versions written once; prompt versions by content, without aliases; consent without grants
 - **Authors**: Marko Dragoljevic
 - **Related PRDs**: [PRD-009](../prd/PRD-009-prompts-and-optimisation.md) (prompts, studies),
   [PRD-011](../prd/PRD-011-evidence-registry.md) (baselines, evidence), [PRD-013](../prd/PRD-013-identity-and-ties.md)
@@ -72,8 +73,8 @@ These words and chips are the same on every page, in the inspector and in the co
 | an agent acting for a person | `agent:claude for person:marko` |
 | unnamed, not at a terminal | `unknown:marko`, muted, with the title "not named: an agent or a script" |
 
-A consent is shown with its route beside the actor: "confirmed by person:marko (grant)", "(at the
-terminal)", "(elicitation, reported by the client)".
+A consent is shown with its route beside the actor: "confirmed by person:marko (at the terminal)" or
+"(elicitation, reported by the client)".
 
 ## The baselines page
 
@@ -104,7 +105,8 @@ terminal)", "(elicitation, reported by the client)".
   declared code ref, accelerator), the adapter, the harness, the dataset with its items digest, the
   reference with its digest, the stages.
 - `04 history`: every version, newest first: **version**, **when**, **by**, **why**, **replaced**, and
-  marks: "rolled back from 4: <reason>", "interrupted: never current". Paged.
+  marks: "rollback of version 2: <reason>", and "fork: promoted on two branches" when two versions replaced the
+  same one (RFC-017). Paged. Version numbers are display numbers, in order of promotion.
 - Command: `evh baselines --goal G --dataset D [--all-versions]`; the export is `evh baselines-export
   --out FILE` (no page: it is a file for a production system).
 
@@ -119,7 +121,7 @@ the baseline, each heldout dataset shows its looks, and the rounds table shows a
 - Hero: kicker `studies`, "Optimisation loops: what each tried and what it found. A kept trial is a
   search result; only a heldout check is evidence."
 - `01 studies`: **study** (linked), **goal**, **type** (`exploratory` or `confirmatory` chip), **sampler**
-  ("agent:claude", "llm anthropic/<model>", "grid", "one at a time", "random", "command", "imported"),
+  ("agent:claude", "grid", "command: optuna_sampler.py", "imported"),
   **trials** ("12: 3 kept, 8 dropped, 1 failed"), **status** (running, waiting for consent, stopped:
   <reason>, closed), **outcome** (the heldout check's chip and look label; "exploratory: no evidence";
   "imported: untestable"), **started**, **by**. Filterable, paged.
@@ -150,18 +152,18 @@ the baseline, each heldout dataset shows its looks, and the rounds table shows a
      shows the trial's change and hypothesis. Below 700px, a list instead.
    - **The table**, one row per trial, newest first: **k**, **change** (parameters as `num_beams 2 → 3`;
      prompts as `summary/user v3 → v4`, linked to the diff on the prompt's page), **hypothesis**,
-     **outcome** (`kept`, `dropped`, `contested`, `failed`, `no effect`; the reason in the tooltip and the
-     folded row), **Δ vs best so far** (on the decisive track, with `search · dev`), **limits**
-     ("ok", or the limit that failed and by how much, against the baseline), **cost** (system, judge,
-     sampler), **runs** (links to the trial's arms). A row unfolds to the trial's rationale, its tracks
-     one by one, the generated config, and what was sent to the sampler and where. Paged.
-4. `03 budget and stop`: per role (system, judge, sampler): spent against the cap; GPU hours; wall time;
+     **outcome** (`kept`, `dropped`, `failed`, `no effect`; the reason in the tooltip and the
+     folded row), **Δ vs best so far** (with `search · dev`), **limits**
+     ("ok", or the limit that failed and by how much, against the baseline), **cost** (system, judge),
+     **runs** (links to the trial's arms). A row unfolds to the trial's rationale, its config (the baseline's
+     with the trial's changes), and what was shown to the sampler and where. Paged.
+4. `03 budget and stop`: per role (system, judge): spent against the cap; GPU hours; wall time;
    the stop rule that fired ("patience: 3 trials without a kept one"; "budget: system $5.00 reached";
    "stopped by person:marko"). A study waiting for consent shows the question it is waiting on and
-   "answer with `evh consent grant …`" (the exact command).
-5. `04 the spec`: the spec as locked when the study started, with its hash; tracks (config, dataset,
-   reference; the decisive one first); the acceptance rule ("point: +0.5% relative", or "test"); the
-   limits; the contested policy; the test rule; the stop rules; the frozen files with their hashes;
+   "answer with `evh study-run --resume <id> --confirm`" (the exact command).
+5. `04 the spec`: the spec as it was when the study started, with its hash; the dev dataset and, for a
+   confirmatory study, the heldout one; the acceptance rule ("point: +0.5% relative", or "test"); the
+   limits; the test rule; the stop rules; the frozen files with their hashes;
    the search space as groups in order, each with its reason and move-on rule.
 6. `05 data sent out`: per trial, what was shown to a sampler outside the machine (item count, which
    datasets, the endpoint), the consent that allowed it, and the items now excluded from heldout checks on
@@ -172,13 +174,13 @@ the baseline, each heldout dataset shows its looks, and the rounds table shows a
 
 - Hero: kicker `prompts`, "The prompt files the arms declare, each version a snapshot of its bytes. The
   prompts stay where the project keeps them; these are their versions."
-- `01 prompts`: **prompt** (the name, linked), **versions**, **aliases** (`production → v3`), **latest**
+- `01 prompts`: **prompt** (the name, linked), **versions**, **used by the baseline** (`v3`, for each goal whose baseline uses it), **latest**
   (version, date, by), **used by** (runs, and the best score on each goal that decides on one). Filterable.
 - Command: `evh prompts`.
 
 ## A prompt's page
 
-- Hero: kicker `prompt`, the name, where it lives (the declared path), and its aliases.
+- Hero: kicker `prompt`, the name, where it lives (the declared path), and the baselines that use one of its versions.
 - `01 versions`: one row per version, newest first: **version**, **created** (date, actor), **source**
   (the path and commit it was recorded from, or the study and trial that proposed it), **parent** (when
   someone stated one; empty otherwise, not guessed), **note**, **size**, **sha256** (short), **used by**
