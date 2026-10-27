@@ -1,6 +1,7 @@
 # ADR-0014 — Fingerprint version 5, run ids, one grammar, a one-time migration (0.5.0)
 
-**Status:** Accepted (2026-10-26), design; not yet built. Revision 2 (2026-10-27): versions are collision-free ids; records through the record store.
+**Status:** Accepted (2026-10-26), design; not yet built. Revision 3 (2026-10-27): the grammar only for versioned things and runs. Revision 2:
+versions are collision-free ids; records through the record store.
 **Date:** 2026-10-26
 **Detail:** [PRD-013](../prd/PRD-013-identity-and-ties.md) FR1, FR2, FR4, FR8,
 [RFC-014](../rfc/RFC-014-identity-baselines-migration.md), [RFC-001](../rfc/RFC-001-fingerprint-and-code-identity.md)
@@ -21,8 +22,9 @@ different ways. 0.4.0's data changes were one-off scripts kept outside the repos
   fields are an explicit list per version, and `validate` recomputes every hash.
 - **Run ids gain milliseconds and a random suffix**; creating a run refuses an existing directory.
 - **One identifier grammar**, `kind:path/<version>` for a fixed version (a collision-free id, never a
-  sequential number) and `kind:path@current` for a baseline's newest version, with a closed list of
-  kinds; segments admit the existing run ids.
+  sequential number) and `kind:path@current` for a baseline's newest version, for versioned things and runs
+  only (baseline, prompt, study, trial, run); goals, datasets, references, rounds and job sets keep their
+  plain 0.4.0 ids; segments admit the existing run ids.
 - **New records go through the record store** ([ADR-0017](ADR-0017-record-store.md)).
 - **The migration is a one-time, re-runnable script** shipped in the package
   (`python -m evaluation_harness.migrate_0_5_0`), not an `evh` command (the owner's decision: two

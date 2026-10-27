@@ -1,6 +1,7 @@
 # PRD-013: Baselines per goal, the host beside the hash, non-inferiority, heldout looks, one grammar
 
-- **Status**: Draft (0.5.0), revision 2 (2026-10-27): versions are collision-free ids, not numbers; looks are
+- **Status**: Draft (0.5.0), revision 3 (2026-10-27): the grammar only for versioned things and runs; no equivalence
+  claim; the MDE is the formula. Revision 2 (2026-10-27): versions are collision-free ids, not numbers; looks are
   counted from decisions; continuous non-inferiority from 100 items at half the level
 - **Authors**: Marko Dragoljevic
 - **Related RFCs**: [RFC-001](../rfc/RFC-001-fingerprint-and-code-identity.md) (the fingerprint, to gain
@@ -124,9 +125,8 @@ project (the two projects known to use the harness), not a permanent command.
     from 100 items, inconclusive below (RFC-015 has the rule and its simulations). The
     shifted sign-flip test is not used: simulation showed it invalid for 0/1 measures and for skewed
     continuous ones ([RFC-015](../rfc/RFC-015-noninferiority-looks-power.md) has the tables; Tango, and the bootstrap at half the level from 100 items, hold the level there).
-    **Inconclusive**: the test does not reject, or cannot (too few items).
-    **Equivalent** (used only for a claim of "no difference"): both one-sided tests at ±margin reject at
-    2.5%.
+    **Inconclusive**: the test does not reject, or cannot (too few items). No claim of "no difference"
+    (equivalence) is made: nothing decides on it.
   - **FR3.3**: Strategies: `balanced` and `frugal` recommend, among arms non-inferior to the leader, the best
     on the tie-break (default cost, then speed), `frugal` with the goal's wider declared margin for cost if
     it has one; `quality_first` recommends the leader only. The non-inferiority tests of the candidate arms
@@ -159,14 +159,13 @@ project (the two projects known to use the harness), not a permanent command.
     standard deviation of paired differences taken as the upper quartile over existing arm pairs on the
     dataset, or from a pilot pair (for 0/1 measures σ_d² = p₊ + p₋ − (p₊ − p₋)²). For non-inferiority the
     same formula gives the smallest margin provable at 80% power when Δ = 0. At 30 items or fewer, or with
-    fewer than 20 discordant items, it is computed by simulation (resample the pilot's differences, shift
-    them to the effect, run the exact test). `rank-stability` reports it; a dry run reports it when such
-    data exists.
+    fewer than 20 discordant items, it is labelled approximate. `rank-stability` reports it; a dry run
+    reports it when such data exists.
 - **FR7: One grammar.** Every versioned thing is `<kind>:<path>/<version>` (a fixed version) or, for a
   baseline, `<kind>:<path>@current` (the newest); a version is a collision-free id (a time-and-suffix id or
   a content hash), never a sequential number, so two clones cannot make the same one; "version 3" is a
-  display number. Kinds are a closed list (`prompt`, `baseline`, `run`, `study`, `trial`, `round`,
-  `reference`, `dataset`, `goal`, `jobset`). A baseline names its goal and dataset
+  display number. Kinds are a closed list of the versioned things and runs (`baseline`, `prompt`, `study`,
+  `trial`, `run`); goals, datasets, references, rounds and job sets keep their plain 0.4.0 ids. A baseline names its goal and dataset
   (`baseline:news_summary/cnn_200/<version>`, `baseline:news_summary/cnn_200@current`; goal-less
   `baseline:_/smoke_v1/<version>`). A run is named with its runs directory (`run:runs-silver/<run_id>`), since
   derived copies share ids. Baselines are stored as `data/baselines/<goal>/<dataset>/<version>.json`, written
@@ -202,8 +201,8 @@ project (the two projects known to use the harness), not a permanent command.
   goal-less baseline on a dataset a goal uses), never runs in general. This repository migrates first, then
   the podcast project after its pin moves to 0.5.0.
 - **FR9: Heldout looks are a budget.**
-  - **FR9.1**: A **look** is a decision recorded on heldout items by a command that writes one: a confirmatory
-    study's check, a confirmation, `run-promote`, `round-close --promote`. A recorded look with the same two
+  - **FR9.1**: A **look** is a decision recorded on heldout items by a command that writes one: a confirmation
+    (`study-confirm`), `run-promote`, `round-close --promote`. A recorded look with the same two
     arms, measure and rule is reused, not repeated. Pages and read commands never take a look: on heldout data
     they show the nominal result labelled as not a look.
   - **FR9.2**: Looks are counted per **heldout dataset** (its items, by content hash, in any order), across goals:
@@ -234,7 +233,7 @@ project (the two projects known to use the harness), not a permanent command.
 
 ## Related Documents
 
-- [RFC-014](../rfc/RFC-014-identity-baselines-migration.md) (); [ADR-0006](../adr/ADR-0006-goal-axes-and-strategies.md).
+- [RFC-014](../rfc/RFC-014-identity-baselines-migration.md), [RFC-015](../rfc/RFC-015-noninferiority-looks-power.md); [ADR-0006](../adr/ADR-0006-goal-axes-and-strategies.md).
   References ([INFLUENCES](../INFLUENCES.md)): Schuirmann 1987 and Lakens 2017 (equivalence and
   non-inferiority), Tango 1998 (paired proportions), Tian and Ramdas (online familywise error control),
   Dwork et al. 2015 (reusable holdout), Miller 2024 (error bars), Card et al. 2020 (power).

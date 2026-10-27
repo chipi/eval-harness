@@ -82,7 +82,7 @@ nav:
           - "RFC-007: Stages, stage references, structured outputs, item fields, batch mode": rfc/RFC-007-stages-and-stage-references.md
           - "RFC-008: The process protocol: systems in any language": rfc/RFC-008-process-protocol.md
           - "RFC-009: Prompt versions": rfc/RFC-009-prompt-versions.md
-          - "RFC-010: Studies: exploratory and confirmatory, trials, samplers, the test check": rfc/RFC-010-studies.md
+          - "RFC-010: Studies: search, trials, samplers, and the confirmation that is evidence": rfc/RFC-010-studies.md
           - "RFC-011: Job sets and runners: local and ssh": rfc/RFC-011-job-sets-and-runners.md
           - "RFC-012: The evidence registry: baselines' evidence, the export, the check": rfc/RFC-012-evidence-registry.md
           - "RFC-013: The machine surface: declarations, JSON, exit codes, refusals, the actor, the config": rfc/RFC-013-machine-surface.md

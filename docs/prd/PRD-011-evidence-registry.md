@@ -1,10 +1,11 @@
 # PRD-011: The evidence registry
 
-- **Status**: Draft (0.5.0), revision 2 (2026-10-27): baseline versions are write-once with collision-free ids,
+- **Status**: Draft (0.5.0), revision 3 (2026-10-27): `evh baselines --json` is the export; baselines are read on
+  their goal's page. Revision 2 (2026-10-27): baseline versions are write-once with collision-free ids,
   the newest current, no aliases ([RFC-017](../rfc/RFC-017-record-store.md))
 - **Authors**: Marko Dragoljevic
 - **Related UX specs**: [UXS-001](../uxs/UXS-001-catalog.md) (the catalog, to show baselines)
-- **Related RFC**: [RFC-012](../rfc/RFC-012-evidence-registry.md) (baseline versions, the export, the check)
+- **Related RFC**: [RFC-012](../rfc/RFC-012-evidence-registry.md) (baseline versions, `evh baselines --json`, the check)
 - **Related PRDs**: [PRD-005](PRD-005-goals-and-rounds.md) (goals, baselines),
   [PRD-009](PRD-009-prompts-and-optimisation.md) (what how to reproduce a baseline includes),
   [PRD-013](PRD-013-identity-and-ties.md) (baselines per goal and dataset),
@@ -19,8 +20,8 @@ datasets they were judged on) across several kinds of record. This PRD gives eac
 **baseline version** (a fixed version with a collision-free id, `baseline:news_summary/cnn_200/20261027T101500.123Z_7f3a`,
 shown as "version 3"; `baseline:news_summary/cnn_200@current` the newest one, in the one grammar of
 [PRD-013](PRD-013-identity-and-ties.md) FR7, after MLflow's versions), keeps every former baseline with why it was
-replaced, freezes the comparison that justified each promotion when it is made, and exports the
-lot in a documented file a project can read and cite. A **check** tells a project when something
+replaced, freezes the comparison that justified each promotion when it is made, and prints the
+lot as a documented JSON document (`evh baselines --json`) a project can read and cite. A **check** tells a project when something
 it cites has been replaced, retired or never existed; a citation may name a baseline, a round, a
 run or a report, because a production registry also records options that were rejected.
 
@@ -48,10 +49,10 @@ run or a report, because a production registry also records options that were re
 - The comparison that justified a promotion is frozen when it is made, not recomputed later.
 - How to reproduce it reproduces the baseline's runs: config and params, prompt versions with hashes,
   model identity, adapter and harness versions, dataset and reference with their hashes, stages.
-- The export is a documented, versioned file a project's production code can read.
+- `evh baselines --json` is a documented, versioned document a project's production code can read.
 - A project's own registry can cite baselines, rounds, runs or reports and check them, in CI or
   by hand.
-- Readable by a person (catalog, command) and an agent (JSON, MCP resources).
+- Readable by a person (catalog, command) and an agent (JSON, MCP tools).
 
 ## Non-Goals
 
@@ -71,7 +72,7 @@ run or a report, because a production registry also records options that were re
 
 - _As a team lead, I run `evh baselines` and get, per goal and dataset, the baseline, the
   promoted run it beat with the frozen result, and the round that chose it._
-- _As a production engineer, I export to `registry/baselines.json` and my service reads how to reproduce it
+- _As a production engineer, I save `evh baselines --json` to `registry/baselines.json` and my service reads how to reproduce it
   of `baseline:news_summary/cnn_200@current`._
 - _As a reviewer, CI runs `evh evidence-check registry_refs.yaml` and fails because the project
   still cites `baseline:news_summary/cnn_200/2`, replaced last week by version 3._
@@ -86,20 +87,20 @@ run or a report, because a production registry also records options that were re
 - **FR2**: At promotion, the harness freezes into the baseline's record the comparison of the
   promoted run with the baseline it replaces, on the baseline's dataset: the paired result on the
   goal's measure (effect, interval, p) and the goal's axes. A first promotion records that there
-  was no baseline. A study's winner also carries the study's heldout check
+  was no baseline. A study's winner also carries the study's confirmation
   ([PRD-009](PRD-009-prompts-and-optimisation.md) FR4) beside it; the two are different evidence
   and both are kept.
-- **FR3**: `evh baselines [--goal G] [--json]` lists baselines with recipe, evidence (the run, the
-  frozen comparison, the round and its conclusion, the study and its heldout check when there was one)
+- **FR3**: `evh baselines [--goal G] [--json]` lists baselines with how to reproduce them, evidence (the run, the
+  frozen comparison, the round and its conclusion, the study and its confirmation when there was one)
   and history.
-- **FR4**: `evh baselines-export --out FILE` writes them in a versioned schema, with the goal's
-  intended use (who uses the output, the decision it informs) as a model card's intended use;
-  deterministic (same records, same bytes).
+- **FR4**: With `--json`, `evh baselines` prints them in a versioned schema, with the goal's intended
+  use (who uses the output, the decision it informs) as a model card's intended use; deterministic
+  (same records, same bytes). There is no separate export command.
 - **FR5**: `evh evidence-check FILE` reads a project's citations (baseline versions or pointers,
   round ids, run ids, report paths) and fails on one that does not exist, a baseline version that
   is no longer current (naming the current one), or a retired arm cited as chosen.
-- **FR6**: The catalog's goal page shows the baseline's version and history; a baselines page lists
-  them all.
+- **FR6**: The catalog's goal page shows each baseline: its version, evidence, how to reproduce it and
+  its history. There is no separate baselines page.
 - **FR7**: `evh validate` checks that every baseline's evidence resolves.
 
 ## Success Criteria
@@ -108,7 +109,7 @@ run or a report, because a production registry also records options that were re
   file it cites resolves, and every harness id in it. Its own script keeps only the joins with its
   production registry (every option has evidence and a claim), which need the project's vocabulary
   (to be confirmed with that project).
-- An export of the example project is byte-identical across two exports with no new promotion.
+- `evh baselines --json` on the example project is byte-identical across two runs with no new promotion.
 
 ## Related Documents
 

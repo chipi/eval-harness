@@ -1,6 +1,6 @@
 # ADR-0011 — Long work runs as job sets, locally or over ssh (0.5.0)
 
-**Status:** Accepted (2026-10-26), design; not yet built. Revision 2 (2026-10-27): the ssh host checks out the pushed commit with git; no manifest or build file.
+**Status:** Accepted (2026-10-26), design; not yet built. Revision 3 (2026-10-27): phases are a before and an after only. Revision 2: the ssh host checks out the pushed commit with git; no manifest or build file.
 **Date:** 2026-10-26
 **Detail:** [PRD-010](../prd/PRD-010-runners.md), [RFC-011](../rfc/RFC-011-job-sets-and-runners.md)
 (state, phases, the ssh runner, build identity)
@@ -15,12 +15,13 @@ one.
 
 ## Decision
 
-- **A job set** lists jobs (config, dataset, repeat, labels, phase). `jobs-run` starts a detached
+- **A job set** lists jobs (config, dataset, repeat, phase). `jobs-run` starts a detached
   supervisor that holds the set's lock and returns the id at once; `jobs-status`, `jobs-logs` and
   `jobs-stop` follow it. Jobs have standard states, timeouts and retries on transient exits;
   every attempt is a new run.
-- **Phases** run a check, a `before` that can hand state (a GPU mode to restore) to an `after`,
-  and the `after` always: its state is recorded, so it still runs after a crash. A phase on a
+- **Phases** run a `before` (which may refuse, when the host is busy) and an `after`, always: the
+  phase's state is recorded, so the `after` still runs after a crash. Anything the two share is the
+  project's commands' own. A phase marked `gpu` counts as GPU time. A phase on a
   shared host needs the person's consent.
 - **Runners**: local (parallel workers) and ssh. The ssh host is a git clone that checks out the pushed
   commit; rsync carries the ignored data the jobs need; the same supervisor runs there, and the runs come

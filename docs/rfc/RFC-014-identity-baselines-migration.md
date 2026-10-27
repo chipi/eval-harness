@@ -1,6 +1,7 @@
 # RFC-014: Identity in 0.5.0: baselines, fingerprint version 5, run ids, one grammar, the migration
 
-- **Status**: Draft (0.5.0), revision 2 (2026-10-27): baselines as write-once versions with collision-free ids, no
+- **Status**: Draft (0.5.0), revision 3 (2026-10-27): the grammar only for versioned things and runs (baseline,
+  prompt, study, trial, run); everything else keeps its plain 0.4.0 id. Revision 2 (2026-10-27): baselines as write-once versions with collision-free ids, no
   index, pointer or lock files ([RFC-017](RFC-017-record-store.md)); the grammar's versions are those ids
 - **Authors**: Marko Dragoljevic
 - **Related PRDs**: [PRD-013](../prd/PRD-013-identity-and-ties.md) (FR1, FR2, FR4, FR7, FR8),
@@ -153,23 +154,24 @@ when it is queued; a resumed job's next attempt resumes from the last attempt's 
 newest version, computed); `<kind>:<path>` a thing that is not versioned. A version is a collision-free id
 (a version id or a content id, RFC-017), never a sequential number.
 
-- **Kinds** (closed): `prompt`, `baseline`, `run`, `study`, `trial`, `round`, `reference`, `dataset`, `goal`,
-  `jobset`.
+- **Kinds** (closed): `baseline`, `prompt`, `study`, `trial`, `run`: the versioned things, and runs (whose ids repeat
+  across runs directories). Goals, datasets, references, rounds and job sets keep their plain 0.4.0 ids
+  (`news_summary_cnn`, `cnn_dailymail_200`, `gold/cnn_dailymail_200`, `r3`), which are already unique where they
+  are used.
 - **Path**: one or more segments joined by `/`. A segment is `_` or `[A-Za-z0-9][A-Za-z0-9_.-]*`, compared
   case-sensitively, and never all digits (so the version is unambiguous); `_` is the goal-less goal. Upper case
   and `.` are allowed because every existing run id has them (`…T153757Z`, 256 of 259 run directories here);
-  names the harness derives itself (prompt names, RFC-009) are lower case. A segment that is a version id or a
+  prompt names are the paths the project already uses (RFC-009). A segment that is a version id or a
   content id is never all digits, so it never reads as a number.
 - `baseline:<goal>/<dataset>/<version>` and `baseline:<goal>/<dataset>@current`; `prompt:<name…>/<sha16>`; `run:<runs dir>/<run_id>`, where `<runs dir>` is the runs directory's own name
   (`runs`, `runs-linux`, `runs-silver`; the directory is part of the path, since derived copies share run ids;
   `config.yaml` maps names to paths, so a runs directory outside the data directory has a name too);
-  `round:<goal>/<round_id>`; `study:<goal>/<study_id>`; `trial:<goal>/<study_id>/<k>` (k is the trial's number
-  within its study, unique because one study runs in one place; `validate` reports a duplicate after a merge);
-  `reference:<tier>/<dataset>`; `jobset:<set id>`.
+  `study:<goal>/<study_id>`; `trial:<goal>/<study_id>/<k>` (k is the trial's number within its study, unique
+  because one study runs in one place; `validate` reports a duplicate after a merge).
 - `_ids.parse(text) -> Id(kind, path, version, current)` and `Id.__str__`. `validate` V18 checks the fields listed in
   `_ids.ID_FIELDS` (each record type's fields that hold an id), not every string. A run's own `run_id` in
-  `metrics.json` is its name, not a reference, and stays bare. The migration converts the references that were
-  bare (rounds' `baseline` and `conclusion.promoted_run`) to ids. Existing dataset and goal ids already fit.
+  `metrics.json` is its name, not a reference, and stays bare, as do the run ids 0.4.0 records already hold (rounds'
+  `baseline` and `conclusion.promoted_run`): nothing is converted.
   Strings that only look like ids and are not (`imported:<scorer>` in an adapter id, a judge's `judge:<scorer>`)
   are fields of their own and are not parsed as ids.
 
@@ -213,8 +215,8 @@ already points at the commit the migration started from; otherwise the script re
    baseline on a dataset a goal uses. None occurs in this repository's 7 baselines; the podcast project has
    none.
 7. **Goals and rounds**: dataset roles are not renamed (`dev` and `heldout` stay). A declared
-   `axes.<axis>.margin` stays where it is and is listed in the plan, because its meaning changes (RFC-015);
-   rounds' bare `baseline` and `conclusion.promoted_run` become `run:` ids.
+   `axes.<axis>.margin` stays where it is and is listed in the plan, because its meaning changes (RFC-015); rounds
+   are not touched.
 8. **Heldout looks**: nothing to write. Looks are counted from decisions recorded from 0.5.0 on, and use before
    0.5.0 is computed from the runs (RFC-015, the owner's decision); the plan prints both per heldout dataset.
 9. **The silver reference manifests**: `from_run.fingerprint_hash` stays as recorded, and the manifest gains
@@ -266,8 +268,8 @@ distinct version-4 hashes to 135 distinct version-5 hashes, and 242 to 242.
   directory is refused; the suffix never matches `_REPEAT`.
 - `harness/tests/test_migrate_0_5_0.py`: on a copy of the example project with a v4 fixture: the dry run's
   plan, each refusal, the ten steps, idempotence (a second run changes nothing), a run killed after step 5
-  finished by a second run, the tag reused, reference digests unchanged, and the baselines page equal to the
-  old baselines page.
+  finished by a second run, the tag reused, reference digests unchanged, and the goal pages' baselines equal to the
+  0.4.0 baselines they showed before.
 - Run on this repository and the podcast project's data before release; both validate.
 
 ## Decisions (ADR candidates)
@@ -277,7 +279,8 @@ distinct version-4 hashes to 135 distinct version-5 hashes, and 242 to 242.
 2. Fingerprint version 5: `machine` outside the hash, `host` (platform, Python, accelerator) inside, an
    explicit exclusion list per version, hashes recomputed by `validate`.
 3. Run ids with milliseconds and a random suffix; creating a run never reuses a directory.
-4. One identifier grammar with a closed list of kinds; segments allow the existing run ids' upper case and dots.
+4. One identifier grammar for versioned things and runs (baseline, prompt, study, trial, run); segments allow the
+   existing run ids' upper case and dots; everything else keeps its plain id.
 5. The 0.5.0 migration is a one-time, re-runnable script, not a command; it trusts only stored bodies.
 6. Baselines are write-once versions with collision-free ids; the current one is the newest; no index, pointer
    or lock file ([RFC-017](RFC-017-record-store.md)).

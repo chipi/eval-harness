@@ -1,7 +1,9 @@
 # UXS-004: Studies, baselines and prompts
 
-- **Status**: Draft (0.5.0), revision 2 (2026-10-27): studies on one dev dataset with grid, command and agent
-  samplers; baseline versions written once; prompt versions by content, without aliases; consent without grants
+- **Status**: Draft (0.5.0), revision 3 (2026-10-27): no baselines pages (the goal page shows each baseline); one
+  kind of study, evidence from a confirmation; consent only by the person's own command. Revision 2: studies on one dev
+  dataset with grid, command and agent samplers; baseline versions written once; prompt versions by content, without
+  aliases
 - **Authors**: Marko Dragoljevic
 - **Related PRDs**: [PRD-009](../prd/PRD-009-prompts-and-optimisation.md) (prompts, studies),
   [PRD-011](../prd/PRD-011-evidence-registry.md) (baselines, evidence), [PRD-013](../prd/PRD-013-identity-and-ties.md)
@@ -17,15 +19,15 @@
 
 ## Summary
 
-0.5.0 adds three kinds of page to the catalog: a **study** (an optimisation loop and what it found), a
-**baseline** (what a goal runs on a dataset now, the evidence for each change, and its history) and a
-**prompt** (the versions of a prompt file and where each was used). Each is also a command. They use
+0.5.0 adds two kinds of page to the catalog, a **study** (an optimisation loop and what it found) and a **prompt**
+(the versions of a prompt file and where each was used), and a section to the goal page: each **baseline** (what the
+goal runs on a dataset now, the evidence for each change, and its history). Each is also a command. They use
 UXS-001's shell, tokens, tables and row tints unchanged.
 
 ## Principles
 
 - **Search is not evidence, and the page says which is which.** A study's trials are shown as search
-  (nominal numbers on dev items); only a heldout check or a confirmation is evidence, shown apart
+  (nominal numbers on dev items); only a confirmation or a confirmation is evidence, shown apart
   and labelled with its look.
 - **Every verdict says what it spent.** "look 2 of cnn_dailymail_200, at 0.38%", or "nominal: not
   tested on held-out items". A number from a page that is not a look says so.
@@ -36,17 +38,17 @@ UXS-001's shell, tokens, tables and row tints unchanged.
 
 ## Scope
 
-**In scope:** the baselines page and a baseline's page; the studies page and a study's page; the
-prompts page and a prompt's page; the header's new links.
+**In scope:** a baseline as the goal page shows it; the studies page and a study's page; the prompts page and a
+prompt's page; the header's new links.
 
 **Non-goals:** job progress (live state under `.evh/`, not committed: `evh jobs-status`, UXS-003); any
 control that writes; showing prompt text on public pages unless the project publishes it (below).
 
 ## The header
 
-The nav gains **Studies**, **Baselines** and **Prompts**: Overview, Goals, Studies, Baselines,
-Datasets, Prompts, References, Metrics, Inspector. Below 760px, as today, the ☰ menu holds them all.
-Search indexes studies (by id, goal and hypothesis), baselines (by goal and dataset) and prompt names.
+The nav gains **Studies** and **Prompts**: Overview, Goals, Studies, Datasets, Prompts, References, Metrics,
+Inspector. Below 760px, as today, the ☰ menu holds them all. Search indexes studies (by id, goal and hypothesis) and
+prompt names; a baseline is found through its goal.
 
 ## Words and marks
 
@@ -73,79 +75,68 @@ These words and chips are the same on every page, in the inspector and in the co
 | an agent acting for a person | `agent:claude for person:marko` |
 | unnamed, not at a terminal | `unknown:marko`, muted, with the title "not named: an agent or a script" |
 
-A consent is shown with its route beside the actor: "confirmed by person:marko (at the terminal)" or
-"(elicitation, reported by the client)".
+A consent is shown beside the actor: "confirmed by person:marko".
 
-## The baselines page
+## A baseline, on the goal page
 
-- Hero: kicker `baselines`, "What each goal runs on each dataset now, and why. A baseline changes
-  only when a person promotes a run; every change keeps the comparison that justified it."
-- `01 baselines`: one row per goal and dataset: **goal**, **dataset**, **baseline** (the id with its
-  version, `baseline:news_summary_cnn/cnn_dailymail_200/3`, linked to its page), **arm** (linked),
-  **promoted** (date, actor), **evidence** (the verdict chip and look label; "first baseline: nothing
-  to compare"; "promoted in 0.4.0: evidence not recorded"; "not comparable: the reference differs"),
-  **versions**. Filterable, paged.
-- Empty state: "No baselines yet. Promote a run with `evh run-promote --run <run> --reason "…"`."
-- Command: `evh baselines [--goal G] [--dataset D]`.
+There is no separate baselines page: a baseline belongs to a goal on a dataset, and the goal page is where it is read
+([UXS-001](UXS-001-catalog.md#050-changes-draft)). Per dataset of the goal, the page shows:
 
-## A baseline's page
+- **now**: an answer box: "version 3, promoted <date> by <actor> · scored against <tier>", the arm in bold, the
+  reason, **inspect it** and **against version 2** buttons (the inspector, with version 2's run as baseline);
+  "No baseline yet" and the command otherwise.
+- **the evidence**: the frozen comparison, never recomputed: "against version 2 on rouge_l", the verdict chip, Δ with
+  its interval, p and the level, the look label, the items (n, and "of 200" when fewer were shared); the axes side by
+  side ("cost per item $0.0011 against $0.0024; speed p50 1,830 ms against 2,410 ms"); the round or study it came
+  from, linked; for a study's winner, its confirmation; "first baseline: nothing to compare", "promoted in 0.4.0:
+  evidence not recorded" or "not comparable: the reference differs" when that is the case. A muted line: "Frozen
+  when promoted on <date> with harness 0.5.0. `evh pair-test` recomputes it today; that is a new comparison, not this
+  evidence."
+- **how to reproduce it**, folded: config id and params (credentials never shown, as on the arm page), prompts (each
+  name, version and hash, linked to the prompt's page), the system (model, declared code ref, accelerator), the
+  adapter, the harness, the dataset with its items digest, the reference with its digest, the stages.
+- **history**, folded: every version, newest first: **version**, **when**, **by**, **why**, **replaced**, and marks:
+  "rollback of version 2: <reason>", and "fork: promoted on two branches" when two versions replaced the same one
+  (RFC-017). Version numbers are display numbers, in order of promotion.
+- Command: `evh baselines --goal G --dataset D [--all-versions]`; `evh baselines --json` is what a production system
+  reads (no page: it is a document).
 
-- Hero: kicker `baseline`, "<goal> on <dataset>", and the current version's id.
-- `01 now`: an answer box: "version 3, promoted <date> by <actor> · scored against <tier>", the arm in
-  bold, the reason, **inspect it** and **against version 2** buttons (the inspector, with version 2's run
-  as baseline).
-- `02 the evidence`: the frozen comparison, never recomputed: "against version 2 on rouge_l", the
-  verdict chip, Δ with its interval, p and the level, the look label, the items (n, and "of 200" when
-  fewer were shared); the axes side by side ("cost per item $0.0011 against $0.0024; speed p50 1,830 ms
-  against 2,410 ms"); the round or study it came from, linked; for a study's winner, its heldout check.
-  A muted line: "Frozen when promoted on <date> with harness 0.5.0. `evh pair-test` recomputes it today;
-  that is a new comparison, not this evidence."
-- `03 how to reproduce it`: what to run to reproduce it: config id and params (credentials never shown, as on the
-  arm page), prompts (each name, version and hash, linked to the prompt's page), the system (model,
-  declared code ref, accelerator), the adapter, the harness, the dataset with its items digest, the
-  reference with its digest, the stages.
-- `04 history`: every version, newest first: **version**, **when**, **by**, **why**, **replaced**, and
-  marks: "rollback of version 2: <reason>", and "fork: promoted on two branches" when two versions replaced the
-  same one (RFC-017). Paged. Version numbers are display numbers, in order of promotion.
-- Command: `evh baselines --goal G --dataset D [--all-versions]`; the export is `evh baselines-export
-  --out FILE` (no page: it is a file for a production system).
+## The goal page, with studies
 
-## The goal page, with studies and baselines
-
-UXS-001's goal page changes as [UXS-001](UXS-001-catalog.md#050-changes-draft) lists: the answer box names
-the baseline, each heldout dataset shows its looks, and the rounds table shows a study's round with a
-`study` tag linking to the study's page.
+UXS-001's goal page changes as [UXS-001](UXS-001-catalog.md#050-changes-draft) lists: each dataset shows its baseline
+(above), each heldout dataset shows its looks, and the rounds table shows a study's round with a `study` tag linking to
+the study's page.
 
 ## The studies page
 
 - Hero: kicker `studies`, "Optimisation loops: what each tried and what it found. A kept trial is a
-  search result; only a heldout check is evidence."
-- `01 studies`: **study** (linked), **goal**, **type** (`exploratory` or `confirmatory` chip), **sampler**
+  search result; only a confirmation is evidence."
+- `01 studies`: **study** (linked), **goal**, **sampler**
   ("agent:claude", "grid", "command: optuna_sampler.py", "imported"),
   **trials** ("12: 3 kept, 8 dropped, 1 failed"), **status** (running, waiting for consent, stopped:
-  <reason>, closed), **outcome** (the heldout check's chip and look label; "exploratory: no evidence";
-  "imported: untestable"), **started**, **by**. Filterable, paged.
+  <reason>, closed), **outcome** (its confirmation's chip and look label; "search: no evidence" when there
+  is none; "imported: cannot be confirmed"), **started**, **by**. Filterable, paged.
 - Command: `evh studies [--goal G]`.
 
 ## A study's page
 
-1. **Hero:** kicker `study`, the study id, its goal (linked), the type chip, the sampler, and its status;
+1. **Hero:** kicker `study`, the study id, its goal (linked), the sampler, and its status;
    "started <date> by <actor>", and the instruction when given ("Make the summaries shorter without
    losing facts").
 2. `01 the outcome`, the answer first:
-   - **confirmatory, checked:** a box with the heldout check: the verdict chip, "trial 7 against the baseline
+   - **confirmed:** a box per confirmation (`evh study-confirm`): the rule, the verdict chip, "trial 7 against the baseline
      on 180 heldout items (20 excluded: 12 in the dev set, 8 shown to the sampler)", Δ with its interval, p,
      the look label, and beside it "on dev the same trial was +0.034": the drop from dev to
-     test is the optimizer's curse, and the line names it. When the outcome meets the declared rule:
+     heldout is the optimizer's curse, and the line names it. When the outcome meets the declared rule:
      "Suggested: promote trial 7's run", with the command in a code chip and a **copy** button
      ([UXS-001](UXS-001-catalog.md#the-goal-page)'s chip). Otherwise the reason ("inconclusive: the rule
      was not met; the study does not suggest a promotion").
-   - **confirmatory, refused:** "No study without possible evidence: the smallest p these 10 items can
-     reach is 0.001, the look's level is 0.0004" and, when the person overrode it, "run anyway at
+   - **a confirmation refused:** "No confirmation without possible evidence: the smallest p these 10 items
+     can reach is 0.001, the look's level is 0.0004" and, when the person overrode it, "run anyway at
      <actor>'s consent; its outcome is labelled inconclusive".
-   - **exploratory:** "Exploratory: no evidence. Best trial 7 on dev: +0.034 (search)." and, when
-     a confirmation was run, the confirmation's box as above, labelled `confirmation`.
-   - **imported:** "Imported from <file> on <date>: a record of a past loop, untestable."
+   - **not confirmed:** "Search: no evidence. Best trial 7 on dev: +0.034." and the command that would
+     confirm it (`evh study-confirm … --heldout <dataset> --rule …`), in a code chip.
+   - **imported:** "Imported from <file> on <date>: a record of a past loop; its trials cannot be confirmed."
 3. `02 trials`: a chart, then the table.
    - **The chart**: the decisive score of each trial (one dot, `--muted` when dropped, `--accent` when
      kept, a cross when failed) against its number, and the best so far as a step line. Hovering a dot
@@ -157,17 +148,15 @@ the baseline, each heldout dataset shows its looks, and the rounds table shows a
      ("ok", or the limit that failed and by how much, against the baseline), **cost** (system, judge),
      **runs** (links to the trial's arms). A row unfolds to the trial's rationale, its config (the baseline's
      with the trial's changes), and what was shown to the sampler and where. Paged.
-4. `03 budget and stop`: per role (system, judge): spent against the cap; GPU hours; wall time;
+4. `03 money and stop`: spent against the dollar cap (system and judges, each shown); GPU hours; wall time;
    the stop rule that fired ("patience: 3 trials without a kept one"; "budget: system $5.00 reached";
    "stopped by person:marko"). A study waiting for consent shows the question it is waiting on and
    "answer with `evh study-run --resume <id> --confirm`" (the exact command).
-5. `04 the spec`: the spec as it was when the study started, with its hash; the dev dataset and, for a
-   confirmatory study, the heldout one; the acceptance rule ("point: +0.5% relative", or "test"); the
+5. `04 the spec`: the spec as it was when the study started, with its hash; the dev dataset; the acceptance rule ("point: +0.5% relative", or "test"); the
    limits; the test rule; the stop rules; the frozen files with their hashes;
    the search space as groups in order, each with its reason and move-on rule.
-6. `05 data sent out`: per trial, what was shown to a sampler outside the machine (item count, which
-   datasets, the endpoint), the consent that allowed it, and the items now excluded from heldout checks on
-   the goal. "Nothing left the machine" when that holds.
+6. `05 items shown`: per trial, how many items were shown to the sampler and from which dataset, and the items
+   now excluded from confirmations on the goal.
 7. Commands: `evh study-status <study> [--trials] [--json]` (the same sections in order), `evh studies`.
 
 ## The prompts page

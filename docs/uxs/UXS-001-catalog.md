@@ -558,7 +558,8 @@ names and the verdicts' metric open their pages.
 Draft until 0.5.0 is built; then they are folded into the sections above. New pages (studies, baselines,
 prompts) are in [UXS-004](UXS-004-studies-baselines-prompts.md), with the words and marks every page shares.
 
-- **Header**: the nav gains **Studies**, **Baselines** and **Prompts** ([UXS-004](UXS-004-studies-baselines-prompts.md#the-header)).
+- **Header**: the nav gains **Studies** and **Prompts** ([UXS-004](UXS-004-studies-baselines-prompts.md#the-header)); a
+  baseline is read on its goal's page.
 - **Baselines are per goal and dataset, with versions**: the home page's `baseline` column and the
   datasets page show each goal's baseline; the dataset page's answer box becomes one box per goal that has
   a baseline on the dataset ("baseline of <goal>, version n, promoted <date> by <actor>"). The word stays
@@ -579,7 +580,7 @@ prompts) are in [UXS-004](UXS-004-studies-baselines-prompts.md), with the words 
   - `what it is for` gains **margins** (per measure, in its units) and **heldout looks** (the limit per
     heldout dataset).
   - `02 rounds`: a study's round has a `study` tag and links to the study's page; its row reads "study
-    s2 · confirmatory · 12 trials" in **set out to learn**; its details fold to the study's outcome box.
+    s2 · 12 trials" in **set out to learn**; its details fold to the study's outcome box.
 - **The arm page**:
   - **build**: "commit 1a2b3c4d" (from git, here or in the ssh host's checkout), "declared, not
     verified (EVAL_BUILD_REF)", or "unknown";

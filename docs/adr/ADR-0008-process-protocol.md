@@ -1,6 +1,7 @@
 # ADR-0008 — Systems in any language through a JSON-RPC process (0.5.0)
 
-**Status:** Accepted (2026-10-26), design; not yet built. Revision 2 (2026-10-27): stdio only.
+**Status:** Accepted (2026-10-26), design; not yet built. Revision 3 (2026-10-27): the metric declarations live in the adapter file. Revision 2:
+stdio only.
 **Date:** 2026-10-26
 **Detail:** [PRD-008](../prd/PRD-008-pipelines-and-any-language.md) FR4,
 [RFC-008](../rfc/RFC-008-process-protocol.md) (messages, lifecycle, identity)
@@ -17,7 +18,8 @@ wrapper around a subprocess, whose code hash then identified the wrapper, not th
   newline-delimited over stdio (an HTTP transport is deferred): `initialize`, `call`,
   `call_batch`, `score`, `estimate`, `shutdown`. It is wrapped as an ordinary adapter, so resume,
   retries, the cost cap and refusals are the existing code. `adapter:` stays a path (a
-  `.process.yaml` file).
+  `.process.yaml` file), and that file declares the metrics (kind, direction, description), the primary
+  metric and the transient markers a Python adapter declares as module attributes, so nothing is cached.
 - **The protocol is `evh-adapter/<major>.<minor>`**: a different major is refused; unknown fields
   are ignored; optional features are announced as capabilities.
 - **The system's identity is the arm**: what it declares, plus the hash of the files it names

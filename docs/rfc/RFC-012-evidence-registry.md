@@ -1,20 +1,22 @@
-# RFC-012: The evidence registry: baselines' evidence, the export, the check
+# RFC-012: The evidence registry: baselines' evidence, `evh baselines --json`, the check
 
-- **Status**: Draft (0.5.0), revision 2 (2026-10-27): baselines and looks per [RFC-017](RFC-017-record-store.md)
-  (write-once versions, looks counted from decisions)
+- **Status**: Draft (0.5.0), revision 3 (2026-10-27): `evh baselines --json` is the export (no separate command or
+  schema); no baselines pages (the goal page shows them). Revision 2: baselines and looks per
+  [RFC-017](RFC-017-record-store.md)
 - **Authors**: Marko Dragoljevic
 - **Related PRDs**: [PRD-011](../prd/PRD-011-evidence-registry.md)
 - **Related RFCs**: RFC-014 (baseline storage and ids), RFC-015 (the verdict frozen at promotion), RFC-010 (a study's test
   check), RFC-009 (prompt versions in how to reproduce it), RFC-013 (commands, schemas)
-- **Code**: `promote_baseline.py` (freezing evidence), new `view_baselines.py` (`evh baselines`), `baselines_export.py`,
-  `evidence_check.py`; catalog baseline pages; `schemas/baseline.schema.json` (`evidence`), `baselines-export.schema.json`
+- **Code**: `promote_baseline.py` (freezing evidence), new `view_baselines.py` (`evh baselines`), `evidence_check.py`;
+  the catalog's goal page; `schemas/baseline.schema.json` (`evidence`), `schemas/baselines.schema.json` (the output of
+  `evh baselines --json`)
 
 ## Abstract
 
 At promotion, the harness freezes into the new baseline version the evidence that justified it: the RFC-015 verdict of
 the promoted run against the baseline it replaces on the goal's measure, the goal's axes, the round and, for a study's
-winner, its heldout check. `evh baselines` lists baselines with how to reproduce them, evidence and history; `evh baselines-export`
-writes them in a versioned, deterministic file a production system can read, with the goal's intended use; and
+winner, its confirmation. `evh baselines` lists baselines with how to reproduce them, evidence and history; with
+`--json` it is a versioned, deterministic document a production system can read, with the goal's intended use; and
 `evh evidence-check FILE` checks every harness id and every file path a project's own registry cites, so a citation of a
 replaced baseline, a missing round or a deleted report fails in CI.
 
@@ -44,8 +46,8 @@ replaced baseline, a missing round or a deleted report fails in CI.
               "method": "sign-flip", "rule": "noninferiority", "level": 0.0152, "look": 1},
   "axes": {"cost_usd_per_item": {"promoted run": 0.0011, "baseline": 0.0024},
            "latency_p50_ms": {"promoted run": 1830, "baseline": 2410}},
-  "round": "round:news_summary_cnn/r3",
-  "study": {"id": "study:news_summary_cnn/s2", "heldout_check": {"outcome": "better", "n": 180,
+  "round": "r3",
+  "study": {"id": "study:news_summary_cnn/s2", "confirm": {"outcome": "better", "n": 180,
             "look": 1}},
   "computed_with": {"harness_version": "0.5.0", "stats_sha256": "…"}
 }
@@ -55,7 +57,7 @@ replaced baseline, a missing round or a deleted report fails in CI.
   `"compared_to": null` and no verdict.
 - **When the dataset is a heldout dataset of the goal**, the comparison is a look (RFC-015): it reserves the next look,
   and when the protective limit is passed, promotion's own consent must also cover the extra look (one question
-  naming both). A study's winner promoted against the baseline its heldout check compared it with reuses that look's
+  naming both). A study's winner promoted against the baseline its confirmation compared it with reuses that look's
   verdict (the same key) and takes no new one.
 - **When it is not a heldout dataset** (a dev dataset, a goal with no heldout role), the verdict is computed at
   the nominal one-sided 2.5% and recorded with `"look": null, "nominal": true`; the catalog labels it "not tested on
@@ -67,8 +69,8 @@ replaced baseline, a missing round or a deleted report fails in CI.
 
 ### `evh baselines [--goal G] [--dataset D] [--all-versions] [--json]`
 
-Per goal and dataset: the current version, how to reproduce it (below), its evidence, and the history (each version, when, by whom,
-why, what it replaced). `--all-versions` lists every version.
+Per goal and dataset: the current version, how to reproduce it (below), its evidence, and the history (each version,
+when, by whom, why, what it replaced). `--all-versions` lists every version.
 
 ### How to reproduce it (`reproduce`)
 
@@ -77,30 +79,32 @@ versions, hashes; RFC-009), the system's identity (`system_under_test.model`, de
 (id and hash), the harness (version, code hash), the dataset (id, `items_sha256`), the reference (id, tier, digest), and the
 stages (names, RFC-007).
 
-### `evh baselines-export --out FILE`
+### `--json` is the export
 
-`schemas/baselines-export.schema.json`, `"schema": "evh-baselines/1"`:
+`evh baselines --json` prints `schemas/baselines.schema.json`, `"schema": "evh-baselines/1"`, and a production system
+reads it, or the command's output saved to a file (`evh baselines --json > registry/baselines.json`):
 
 ```json
 {"schema": "evh-baselines/1",
- "baselines": [{"id": "baseline:news_summary_cnn/cnn_dailymail_200/3",
-                "pointer": "baseline:news_summary_cnn/cnn_dailymail_200@current",
+ "baselines": [{"id": "baseline:news_summary_cnn/cnn_dailymail_200/20261027T101500.123Z_7f3a",
+                "current": "baseline:news_summary_cnn/cnn_dailymail_200@current",
                 "goal": {"id": "news_summary_cnn", "title": "…", "intended_use": {"audience": "…", "decision": "…"}},
                 "dataset": "cnn_dailymail_200", "reproduce": {…}, "evidence": {…}, "history": […]}]}
 ```
 
-Deterministic: baselines sorted by id, keys sorted, no export timestamp (each version carries its own dates) and no
-harness version in the header (how to reproduce each carries the harness version of its run; the file's format is
-`schema`), so two exports with no new promotion are byte-identical, across harness upgrades too. The goal's
-`context` and `decision` become the model card's intended use (Mitchell et al., 2019).
+It is deterministic: baselines sorted by id, keys sorted, no timestamp of its own (each version carries its own dates)
+and no harness version in the header (how to reproduce each carries the harness version of its run; the format is
+`schema`), so two outputs with no new promotion are byte-identical, across harness upgrades too. The goal's `context`
+and `decision` become the model card's intended use (Mitchell et al., 2019). Unlike the envelope every other `--json`
+prints (RFC-013), this command's output is the document itself, so it can be saved and read as it is.
 
 ### `evh evidence-check FILE [--root DIR] [--key-paths KEY=DIR …] [--allow-replaced] [--json]`
 
 Reads a project's citation file (YAML or JSON, any shape) and checks every string value (PRD-011 FR5):
 - a harness id (RFC-014's grammar, one of its kinds): it must resolve. A fixed baseline version that is no longer
   current is an error naming the current one; `--allow-replaced` makes it a warning, for files that cite history on
-  purpose. A run of a retired arm is an error ("retired in round r3: <reason>"). A round, run, study, trial or prompt
-  version must exist.
+  purpose. A run of a retired arm is an error ("retired in round r3: <reason>"). A run, study, trial or prompt version
+  must exist.
 - a string with a kind the grammar does not have (`option:…`, `preset:…`, `stage:…`: the project's own vocabulary) is
   not a harness id; it is listed as not checked, never as an error.
 - a relative path with an extension (`docs/…/REPORT.md`): it must exist under `--root` (default: the project root).
@@ -115,9 +119,9 @@ never confused with a refusal (exit 1).
 
 ### The catalog
 
-The goal page names each dataset's baseline by id with its evidence (the frozen verdict, the axes, the round or study), and
-links its history; a baselines page lists every goal's baselines with the key fields of how to reproduce them. Every view has its
-command.
+The goal page names each dataset's baseline with its evidence (the frozen verdict, the axes, the round or study), how to
+reproduce it, and its history. There is no separate baselines page: a baseline belongs to a goal, and the goal page is
+where it is read. Every view has its command.
 
 ### Validation
 
@@ -142,11 +146,11 @@ The migration script (RFC-014 step 6) writes version 1 of each migrated baseline
 ## Testing
 
 - `harness/tests/test_baselines_evidence.py`: promotion on a heldout dataset freezes the verdict and takes a look; on a
-  dev dataset it is nominal and takes none; a first promotion has none; a study's winner reuses its heldout check's
+  dev dataset it is nominal and takes none; a first promotion has none; a study's winner reuses its confirmation's
   look; non-comparable runs record `verdict: null` with the reason; `compared_to` after a rollback; `evh baselines
   --json` validates against its schema.
-- `harness/tests/test_baselines_export.py`: two exports are byte-identical, and stay so when the harness version
-  changes; how to reproduce it has every field above; intended use from the goal.
+- `harness/tests/test_baselines_export.py`: two `evh baselines --json` outputs are byte-identical, and stay so when the
+  harness version changes; how to reproduce it has every field above; intended use from the goal.
 - `harness/tests/test_evidence_check.py`: a file shaped like the podcast project's `registry_refs.yaml` passes with present
   reports and rationale files (`--key-paths`) and fails (exit 6) on a missing one; `option:` values are listed as not
   checked; a replaced baseline version errors, and warns with `--allow-replaced`; a retired arm's run errors; a
@@ -155,7 +159,8 @@ The migration script (RFC-014 step 6) writes version 1 of each migrated baseline
 ## Decisions (ADR candidates)
 
 1. The evidence for a promotion is frozen into the baseline version when it is made, and counts as a heldout look.
-2. Baselines export as a deterministic, versioned file with how to reproduce it and the goal's intended use.
+2. `evh baselines --json` is the export: a deterministic, versioned document with how to reproduce each baseline and
+   the goal's intended use.
 3. `evidence-check` checks the harness's ids and the cited files in any citation file (keys only where named), fails on
    replaced baselines and retired arms, and leaves project vocabulary and registry joins to the project.
 4. A promotion's comparison is a look only on a heldout dataset; elsewhere it is recorded as nominal, and non-comparable

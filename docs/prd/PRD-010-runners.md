@@ -1,6 +1,7 @@
 # PRD-010: Runners: where experiments run
 
-- **Status**: Draft (0.5.0), revision 2 (2026-10-27): the ssh host runs a git checkout of the pushed commit
+- **Status**: Draft (0.5.0), revision 3 (2026-10-27): phases are a `before` and an always-run `after`, marked `gpu`;
+  no labels, status check or state passed between them. Revision 2 (2026-10-27): the ssh host runs a git checkout of the pushed commit
 - **Authors**: Marko Dragoljevic
 - **Related UX specs**: [UXS-003](../uxs/UXS-003-cli-and-onboarding.md) (the commands)
 - **Related RFC**: [RFC-011](../rfc/RFC-011-job-sets-and-runners.md) (job sets, the runner interface, local and ssh)
@@ -82,8 +83,7 @@ switched. The run directory is the contract, so every later runner only moves on
 
 ### FR1: Job sets and jobs
 
-- **FR1.1**: A job set lists jobs: config, dataset, repeat, optional runner, optional labels
-  (`gpu`), optional phase. `sweep`, a round's arms and a study's trials
+- **FR1.1**: A job set lists jobs: config, dataset, repeat, optional phase; the set names its runner. `sweep`, a round's arms and a study's trials
   ([PRD-009](PRD-009-prompts-and-optimisation.md)) produce job sets; `sweep` becomes a job set run
   locally one at a time.
 - **FR1.2**: `evh jobs-run <file> [--runner NAME] [--jobs N]` starts it detached and prints its id
@@ -102,12 +102,12 @@ switched. The run directory is the contract, so every later runner only moves on
   alone (a speed axis flags it). Load the harness cannot see (another job set, production on a
   shared host) is not detected; a host may declare itself shared, and its runs are flagged.
 - **FR1.7**: **Phases**, on every runner: a job set may declare `before` and `after` commands per
-  phase, run once per phase where the jobs run (locally or on the host). `before` may capture state
-  that `after` restores (a GPU mode); `after` always runs, on success, failure, cancellation and
-  timeout. A command marked as touching a shared resource needs consent; one consent covers a whole
-  job set or study, and says how many times the command will run
-  ([PRD-012](PRD-012-agent-ready.md) FR4.5). A phase may declare an external status check (the host's
-  own lock or mode) that must pass before it starts, so a lock the harness does not own is respected.
+  phase, run once per phase where the jobs run (locally or on the host). A failing `before` fails the
+  phase (so a host that is busy, by its own lock or mode, is respected); `after` always runs, on success,
+  failure, cancellation and timeout, even after a crash. State the two share (a GPU mode to restore) is
+  the project's commands' own. A phase marked `gpu` counts as GPU time. A command marked as touching a
+  shared resource needs consent; one consent covers a whole job set or study, and says how many times the
+  command will run ([PRD-012](PRD-012-agent-ready.md) FR4.5).
 
 ### FR2: The local runner
 
@@ -120,7 +120,7 @@ switched. The run directory is the contract, so every later runner only moves on
 
 - **FR3.1**: Configured in the project's `config.yaml` ([PRD-012](PRD-012-agent-ready.md) FR10) under
   `runners:`: `type: ssh`, host, working
-  directory, labels, `install` (the command that installs the project's environment, the system
+  directory, `install` (the command that installs the project's environment, the system
   under test's dependencies included), `env` (names of variables the host must already have; their
   values are never sent).
 - **FR3.2**: A host-wide lock, so two job sets never prepare one host at once (FR1.7 for phases).
@@ -131,7 +131,7 @@ switched. The run directory is the contract, so every later runner only moves on
   `evh validate` on it here.
 - **FR3.4**: A pre-flight runs before anything is spent, and in `--dry-run`: ssh reaches the host,
   `install --check` passes, the host's harness version is the project's, every declared variable
-  exists there, and each phase's status check passes. Any failure refuses the job set with the
+  exists there. Any failure refuses the job set with the
   reason.
 - **FR3.5**: The run records the host it ran on (beside the hash, [PRD-013](PRD-013-identity-and-ties.md))
   and the job set records the runner, the phases and their commands' output.

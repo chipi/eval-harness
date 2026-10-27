@@ -1,6 +1,7 @@
 # UXS-005: The harness for agents: tools, consent, skills, llms.txt
 
-- **Status**: Draft (0.5.0), revision 2 (2026-10-27): consent is the person's own command; no grants
+- **Status**: Draft (0.5.0), revision 3 (2026-10-27): tools only (no resources); consent only by the person running
+  the command (no elicitation); three skills; studies confirmed with `study-confirm`. Revision 2: no grants
 - **Authors**: Marko Dragoljevic
 - **Related PRDs**: [PRD-012](../prd/PRD-012-agent-ready.md)
 - **Related RFCs**: [RFC-013](../rfc/RFC-013-machine-surface.md) (declarations, JSON, exit codes, refusals,
@@ -13,7 +14,7 @@
 
 ## Summary
 
-An agent meets the harness in three ways: as **MCP tools and resources** (`evh mcp`), as **skills** it
+An agent meets the harness in three ways: as **MCP tools** (`evh mcp`), as **skills** it
 loads when a task matches, and as **documentation** it reads through `llms.txt`. This spec says what
 the agent sees in each: the names, descriptions, results, refusals, the questions put to the person,
 and the order of a study driven by an agent. The test of all of it is PRD-012's: an agent in a
@@ -32,11 +33,11 @@ project, given a goal, sets up and runs a study, and the catalog looks as if a c
 
 ## Scope
 
-**In scope:** the server's tools and resources as an agent sees them; refusals and consent from the
+**In scope:** the server's tools as an agent sees them; refusals and consent from the
 agent's side and the person's; long work; the skills; `llms.txt` and the glossary; the agent-driven
 study.
 
-**Non-goals:** a chat interface; the agent's own client UI (how a client renders an elicitation is the
+**Non-goals:** a chat interface; the agent's own client UI (how a client renders a result is the
 client's); hosting the server remotely (stdio only in 0.5.0).
 
 ## Starting the server
@@ -50,7 +51,7 @@ A person adds the server to their agent's MCP configuration, once per project:
 On start it reads `evh-limits.yaml`. If the file is missing or has uncommitted changes, it does not
 start, and says on stderr: "ERROR (limits-uncommitted): evh-limits.yaml has uncommitted changes.
 Commit them, so the change has an author, then start the server again." `UPGRADING.md` and the
-`evh-evaluate-a-system` skill show a starting limits file.
+`evh-evaluate-and-compare` skill show a starting limits file.
 
 ## Tools
 
@@ -78,13 +79,10 @@ Commit them, so the change has an author, then start the server again." `UPGRADI
 - **Not tools**: `catalog-serve`, `mcp`, `consent`, `skills-install`, `init` (a person runs them).
 - A tool the limits disable is absent from the list.
 
-## Resources
+## Reading records
 
-`evh://goals/{goal_id}`, `evh://baselines/{goal}`, `evh://baselines/{goal}/{dataset}`,
-`evh://studies/{goal}/{study_id}`, `evh://runs/{+run}` (`runs/<run_id>`), `evh://prompts/{+name}`,
-`evh://looks/{dataset}`, `evh://datasets/{dataset_id}`. Each returns the JSON of the matching read
-command, so reading a goal costs no tool call. Listing a template's resources returns the ids the
-matching command lists.
+Every record is read through a read tool, the same command a person runs (`goals`, `baselines`, `study-status`,
+`arms`, `prompts`). There are no MCP resources: each one would have duplicated a read tool.
 
 ## Long work
 
@@ -103,8 +101,8 @@ matching command lists.
 
 ## Consent, from both sides
 
-**What the agent sees** when a call needs consent that an elicitation cannot give (by default:
-promotion, retiring an arm, an extra look, an override, sending data out):
+**What the agent sees** when a call needs consent (a promotion, retiring an arm, an extra look, an override, spending
+over the budget, a shared host):
 
 ```json
 {"type": "https://evals.humancopilot.eu/docs/refusals/#consent-required", "code": "consent-required",
@@ -115,19 +113,14 @@ promotion, retiring an arm, an extra look, an override, sending data out):
  "for_the_agent": "Ask the person to run the fix_command in their own terminal: their run is the promotion. Do not run it yourself, and do not call this tool again for it."}
 ```
 
-**What the person sees** when the kind is one their limits let an elicitation answer (by default
-`spend_over_budget` and `shared_host`): their client shows a form with the server's message, which is
-always the exact command, host and amount, and one question:
+**What the person sees**: the agent passes on the command, and the person runs it in their own terminal. Its output
+is the command's own, with "recorded as person:marko, confirmed" on stderr. For a study or job set waiting part-way
+(RFC-011), the command is `evh study-run --resume <id> --confirm` or `evh jobs-run --resume <id> --confirm`, and its
+consent covers what the waiting step said, with the count ("switch dgx-llm-1 to `code` mode and back up to 12
+times").
 
-> **evh: spend over the budget?** `experiment-run --config data/configs/cnn_qwen_m.yaml` would spend
-> about $3.40; $1.20 is left of today's $10.00. Allow this one call? (Yes / No)
-
-A study or job set asks once for the whole of it, with the count: "The study will switch dgx-llm-1 to
-`code` mode and back up to 12 times. Allow?" A **No** refuses the call with `consent-declined`; nothing
-runs.
-
-**What the record shows**: "confirmed by person:marko (grant)" or "(elicitation, reported by the
-client)" beside the actor, on the page and in the command's output (UXS-004).
+**What the record shows**: "confirmed by person:marko" beside the actor, on the page and in the command's output
+(UXS-004).
 
 ## Skills
 
@@ -136,14 +129,9 @@ default). Each skill is a `SKILL.md` an agent loads when its description matches
 
 | skill | its description says to use it when | it walks through | it stops and asks when |
 | --- | --- | --- | --- |
-| `evh-evaluate-a-system` | evaluating a system for the first time | dataset, materialize, run, reference, compare, choose | promotion; spending past the budget |
-| `evh-compare-and-read` | asked which arm is better, or what a result means | `goals`, `inspect`, verdicts, looks, what not to conclude | never: it reads |
-| `evh-run-a-round` | trying a set of arms against a hypothesis | `round-open`, runs, `rounds`, retire, close | retiring; promotion |
-| `evh-run-a-study` | optimising prompts or parameters toward a goal | the spec, `--dry-run`, `study-run` or `study-ask`/`study-tell`, `study-status`, the outcome | a remote sampler seeing data; a shared host; an extra look; promotion |
-| `evh-promote-with-evidence` | asked to make an arm the baseline | the evidence, the look, the command | always: promotion is the person's |
-| `evh-evaluate-a-pipeline` | the system has stages, or is not in Python | stages, stage references, batches, the process adapter, wrapping a runner | a shared host |
-| `evh-bring-runs-in` | results exist from elsewhere | `import-run`, OTLP, `study-import` of a `results.tsv` | never: it writes records only |
-| `evh-follow-a-job` | something runs in the background | `jobs-status`, `jobs-logs`, `jobs-stop`, consent while waiting | consent while waiting |
+| `evh-evaluate-and-compare` | evaluating a system, reading a result, running a round, a pipeline or a system in another language, or bringing results in | dataset, materialize, run, reference, compare, choose; `goals`, `inspect`, verdicts, looks, what not to conclude; rounds; stages, batches, the process adapter, wrapping a runner; `import-run`, OTLP, `study-import` | promotion; retiring; spending past the budget; a shared host |
+| `evh-run-a-study` | optimising prompts or parameters toward a goal | the spec, `--dry-run`, `study-run` or `study-ask`/`study-tell`, `study-status`, `study-confirm`, promotion with its evidence | an extra look; a shared host; promotion, always |
+| `evh-follow-a-job` | something runs in the background | `jobs-status`, `jobs-logs`, `jobs-stop`, a job waiting for consent | consent while waiting |
 
 Every skill: says to prefer the MCP tools when the server is configured and the commands otherwise; says
 in its first lines when to stop and ask, whatever the project's own instructions say; links the
@@ -153,16 +141,16 @@ documentation pages it relies on; is under 500 lines; carries `metadata: {harnes
 
 The order an agent follows, as the `evh-run-a-study` skill and PRD-012's first user story set it:
 
-1. Read the goal (`evh://goals/<id>`) and its baseline; read the looks of the heldout dataset.
+1. Read the goal and its baseline (the `goals` and `baselines` tools); read the looks of the heldout dataset.
 2. Write the spec (`data/studies/<goal>/<id>.yaml`) with `sampler: {kind: agent}`; run `study-run` with
-   `dry_run: true` and show the person the plan: the trials it may take, the cost per role, the
-   smallest p the heldout items can reach against the look's level. A refusal `no-possible-evidence` is
-   reported to the person as it is, never worked around.
+   `dry_run: true` and show the person the plan: the trials it may take and their cost.
 3. `study-run` opens the study. Then, in a loop: `study-ask` returns the state and an `ask_id`; the
    agent proposes one change with its hypothesis (`study-tell` with the `ask_id`); the result says kept or
    dropped and why; `trial-running` means wait and ask again.
-4. When a stop rule fires the study runs its heldout check (confirmatory) and the agent reports the outcome
-   in UXS-004's words, including the drop from dev to heldout.
+4. When a stop rule fires, the agent reports what the search found and, when the person agrees, runs
+   `study-confirm` with the rule the person chooses (`dry_run: true` first, to show the smallest p the
+   heldout items can reach); it reports the outcome in UXS-004's words, including the drop from dev to
+   heldout.
 5. If the outcome meets the rule, the agent tells the person the suggested promotion command. It does
    not run it: a promotion needs the person to run it, and the skill says so.
 

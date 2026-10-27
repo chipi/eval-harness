@@ -173,7 +173,7 @@ Draft until 0.5.0 is built; then they replace the sections above they name.
   The person running that command is the consent; nothing is stored in between.
 - **Exit codes**: 0 done; 1 refused; 2 usage; 3 a judge scorer not validated (as in 0.4.0); 4 stopped by a
   budget or the cost cap, partial results kept; 5 partly failed (some jobs or trials); 6 a check found problems (`validate`,
-  `evidence-check`, `adapter-check`, `skills-check`); 7 nothing measured; 65–78 operational errors (75: try again later);
+  `evidence-check`, `adapter-check`, `skills-check`); 7 nothing measured; 70 an internal error; 75 try again later;
   130 interrupted. The table is printed by `evh --help` and in the Runbook.
 - **Who acted**: a command that writes prints, on stderr, "recorded as person:marko" (or "agent:claude
   for person:marko", or "unknown:marko: set EVH_ACTOR to name yourself"), once.
@@ -188,34 +188,36 @@ Draft until 0.5.0 is built; then they replace the sections above they name.
 
 | in the catalog or inspector | command |
 | --- | --- |
-| the baselines page | `evh baselines` |
-| a baseline's page | `evh baselines --goal G --dataset D [--all-versions]` |
-| (no page: a file) the baselines export | `evh baselines-export --out FILE` |
+| a goal page's baselines (now, evidence, how to reproduce, history) | `evh baselines --goal G [--dataset D] [--all-versions]` |
+| (no page: a document) what a production system reads | `evh baselines --json` |
 | the studies page | `evh studies [--goal G]` |
 | a study's page | `evh study-status <study> [--trials]` |
 | the prompts page, a prompt's page, its changes | `evh prompts [<name>]`, `evh prompt-diff <a> <b>` |
 | the goal page's heldout looks | `evh goals --goal <id> --looks` |
 | the arm page's stages, prompts, build, failed items | `evh arms --arm <id>` (the same sections) |
 | the inspector's stages panel | `evh inspect … --stages --item <id>` |
+| a study page's confirmation | `evh study-confirm <study> --heldout <dataset> --rule <rule>` |
 | a study page's suggested promotion | `evh run-promote --run <run> --reason "…" --confirm` |
 | (no page) jobs | `evh jobs-status <id>`, `evh jobs-logs <id>`, `evh jobs-stop <id>` |
 
 ### The study flow
 
 ```bash
-evh study-run data/studies/news_summary_cnn/s2.yaml --dry-run   # the plan, the cost, the possible evidence
+evh study-run data/studies/news_summary_cnn/s2.yaml --dry-run   # the plan and the cost
 evh study-run data/studies/news_summary_cnn/s2.yaml             # returns the study id at once
-evh study-status study:news_summary_cnn/s2            # trials so far, budget, stop rule
+evh study-status study:news_summary_cnn/s2            # trials so far, money spent, stop rule
 evh study-stop study:news_summary_cnn/s2              # if needed
+evh study-confirm study:news_summary_cnn/s2 --heldout cnn_dailymail_200 --rule noninferiority --dry-run
+evh study-confirm study:news_summary_cnn/s2 --heldout cnn_dailymail_200 --rule noninferiority
 evh run-promote --run <the suggested run> --reason "…" --confirm # the person's decision
 ```
 
-- `--dry-run` prints: the largest number of trials, the items per trial, the estimated cost per role
-  (system, judge, sampler), the heldout items left after exclusions, the smallest p they can reach and the
-  look's level, and whether the study would be refused (`no-possible-evidence`).
-- `study-status` prints the outcome first (UXS-004's box, as lines), then the trials table, the budget
+- `study-run --dry-run` prints the largest number of trials, the items per trial and the estimated cost.
+- `study-status` prints the outcome first (UXS-004's box, as lines), then the trials table, the money spent
   and the stop rule.
-- With `sampler: {kind: agent}`: `evh study-ask study:news_summary_cnn/s2` prints the state as JSON and an `ask_id`; `evh
+- `study-confirm --dry-run` prints the heldout items left after exclusions, the smallest p they can reach,
+  the look's level and its cost, and whether it would be refused (`no-possible-evidence`).
+- With `sampler: agent`: `evh study-ask study:news_summary_cnn/s2` prints the state as JSON and an `ask_id`; `evh
   study-tell study:news_summary_cnn/s2 --ask <ask_id> --proposal proposal.json` runs the trial and prints kept or dropped and
   why. A person can drive a study this way too.
 
@@ -224,7 +226,7 @@ evh run-promote --run <the suggested run> --reason "…" --confirm # the person'
 - `evh jobs-run set.yaml` prints "job set round3-cnn started: 6 jobs, 3 at a time, on local. Follow:
   evh jobs-status round3-cnn" and returns.
 - `evh jobs-status <id>` prints one line per job (state, attempts, run id, time) and the phases ("generate:
-  entered, mode before: prod; after pending" when the supervisor is gone).
+  entered; after pending" when the supervisor is gone).
 - `--wait` follows until the set ends, printing each job as it finishes, and exits with the set's code.
 
 ### Onboarding

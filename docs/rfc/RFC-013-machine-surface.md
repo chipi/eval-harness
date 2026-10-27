@@ -1,7 +1,7 @@
 # RFC-013: The machine surface: one declaration per command, JSON, exit codes, refusals, the actor, the project config
 
-- **Status**: Draft (0.5.0), revision 2 (2026-10-27): consent is a person running the command, or an elicitation the
-  person's limits allow; no grant store
+- **Status**: Draft (0.5.0), revision 3 (2026-10-27): exit codes 0–7, 70, 75 and 130 only; consent only by the person
+  running the command. Revision 2: no grant store
 - **Authors**: Marko Dragoljevic
 - **Related PRDs**: [PRD-012](../prd/PRD-012-agent-ready.md) (FR1, FR2, FR3, FR7, FR10), and every 0.5.0 PRD
   through PRD-012 FR8
@@ -112,17 +112,18 @@ COMMANDS = [Command(
 | 5 | partly failed: a job set (`jobs-run --wait`) or a study in which some jobs or trials failed; results kept | — |
 | 6 | a check found problems: `validate`, `evidence-check`, `adapter-check`, `skills-check` | 1 |
 | 7 | the system under test failed: nothing measured | 1 (`experiment_run.py:879`) |
-| 65 to 78 | operational errors, sysexits meanings (65 bad input data, 66 missing input, 69 unavailable service, 70 internal error, 73 cannot create output, 74 I/O error, 75 temporary failure, 77 permission, 78 configuration) | 1 |
+| 70 | an internal error (a bug in the harness): a traceback on stderr | 1 |
+| 75 | try again later: a transient failure (a provider's rate limit, a trial still running) | 1 |
 | 130 | interrupted | 130 (SIGINT), with a traceback on stderr |
 
 An unknown command becomes 2 (a usage error), which it already is. Ctrl-C keeps 130 and loses the traceback. The
 release notes list each change.
 
-**Converting the 0.4.0 exits.** Each of the 153 `die(` calls and the 29 raw `SystemExit("…")` sites is classified as
-it is converted: a refusal of a request (`refuse(code, …)`, exit 1, with a registry entry), bad or missing input data
-(65, 66), a configuration error (78), a service that is not there (69), or an internal error (`die`, 70). The
-conversion is mechanical but each call is read once; a test fails on any `die(` or `SystemExit("…")` left outside
-`_common.py`.
+**Converting the 0.4.0 exits.** Each of the 153 `die(` calls and the 29 raw `SystemExit("…")` sites becomes a refusal
+(`refuse(code, …)`, exit 1, with a registry entry naming what is wrong: bad input, a missing file, a configuration
+error, a service that is not there) or, for a harness bug, an internal error (`die`, 70). The distinctions sysexits
+draws between kinds of failure are carried by the refusal's code, which a script reads from the JSON, not by more exit
+numbers. A test fails on any `die(` or `SystemExit("…")` left outside `_common.py`.
 
 ### Refusals (RFC 9457)
 
@@ -156,22 +157,18 @@ person to run the fix command and not to run it itself ([UXS-005](../uxs/UXS-005
 ### Consent (PRD-012 FR4.5, PRD-009 FR4.4)
 
 Consent is asked for at run time, when the condition arises, not by a fixed flag: a command declares the kinds it may
-ask for (`promote`, `retire`, `spend_over_budget`, `extra_look`, `override_refusal`, `data_egress`, `shared_host`) and
-calls `_consent.require(kind, detail, amount)` when one applies (a promotion; a look past the protective limit; an
-override flag used; a phase on a shared host; a remote sampler that sees data). Consent is **a person's, never only an
-agent's**:
-
-- a **person actor** consents by running the command: the refusal an agent gets carries the exact command
-  (`fix_command`), and the person runs it in their own terminal with `--confirm`, recorded as `confirmed_by:
-  <person>, via: cli`. Detached work waiting for consent (RFC-011, RFC-010) is continued the same way: `evh
-  jobs-run --resume <id> --confirm` or `evh study-run --resume <id> --confirm`;
-- an **MCP elicitation** answer, only for the kinds the person's limits file lists (RFC-016), recorded `via:
-  elicitation (client-reported)`.
+ask for (`promote`, `retire`, `spend_over_budget`, `extra_look`, `override_refusal`, `shared_host`) and calls
+`_consent.require(kind, detail, amount)` when one applies (a promotion; a look past the protective limit; an override
+flag used; a phase on a shared host). Consent is **a person's, never only an agent's**, and has one path: a **person
+actor** consents by running the command. The refusal an agent gets carries the exact command (`fix_command`), and the
+person runs it in their own terminal with `--confirm`, recorded as `confirmed_by: <person>`. Detached work waiting for
+consent (RFC-011, RFC-010) is continued the same way: `evh jobs-run --resume <id> --confirm` or `evh study-run
+--resume <id> --confirm`.
 
 `--confirm` from an `agent:` or `unknown:` actor is refused (`consent-required`). Nothing is stored between asking and
 consenting: the person's own command is the consent. What the harness cannot do: tell a person from an agent that
 claims to be one (`EVH_ACTOR=person:…`). The records show what was claimed and how; the skills tell agents never to;
-and `validate` lists every consent with its route so a person can audit them. Real permissions (who may promote)
+and `validate` lists every consent so a person can audit them. Real permissions (who may promote)
 come with the database provider (RFC-017).
 
 ### The project config (PRD-012 FR10)
@@ -196,7 +193,7 @@ New, versioned with the harness (`$id` carries the version): `run.schema.json` (
 (exists; gains the v5 fingerprint), `fingerprint.schema.json` (v5), `prediction.schema.json` (a `predictions.jsonl`
 line, stages included, RFC-007), `baseline.schema.json` (RFC-014)
 (RFC-015), `study.schema.json` and `trial.schema.json` (RFC-010), `job-set.schema.json` (RFC-011),
-`prompt-version.schema.json` (RFC-009), `study-spec.schema.json` (RFC-010), `baselines-export.schema.json` (RFC-012),
+`prompt-version.schema.json` (RFC-009), `study-spec.schema.json` (RFC-010), `baselines.schema.json` (RFC-012),
 `job-state.schema.json` (RFC-011), `process-adapter.schema.json` and `schemas/protocol/` (RFC-008),
 `limits.schema.json` (RFC-016), `study-event.schema.json` (RFC-010), `config.schema.json`,
 `refusal.schema.json`, `envelope.schema.json`, and one output schema per command. `validate` checks every record
@@ -247,10 +244,11 @@ pin moves.
 1. Each command declares itself once beside its `argparse` parser; help, the manifest and the MCP tools are generated.
 2. Results on stdout, everything else on stderr; `--json` everywhere, with an output schema per command.
 3. A documented exit-code table (0, 1 refusal, 2 usage, 3 judge not validated, 4 budget, 5 partly failed, 6 check
-   failed, 7 nothing measured, 65–78, 130); splitting 1 and 2 is a breaking change, and no code changes meaning.
+   failed, 7 nothing measured, 70 internal error, 75 try again later, 130); splitting 1 and 2 is a breaking change, and
+   no code changes meaning; kinds of refusal are told apart by the refusal's code.
 4. Refusals are RFC 9457 problem details with a stable `type`, a registry, and `exit_code` as an extension member.
 5. Every record says who acted and for whom (PROV); an actor that does not name itself off a terminal is `unknown`.
 6. One project `config.yaml` for directories, runners and limits; environment variables still win.
 7. Python 3.10 or later, so the official MCP SDK can be a default dependency.
-8. Consent is asked at run time by kind, and is a person's: their own command (`--confirm`), or an
-   elicitation the person's limits allow; an agent's own `--confirm` is refused.
+8. Consent is asked at run time by kind, and is a person's: their own command run with `--confirm`; an agent's own
+   `--confirm` is refused.

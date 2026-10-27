@@ -1,6 +1,7 @@
 # RFC-009: Prompt versions
 
-- **Status**: Draft (0.5.0), revision 2 (2026-10-27): versions are content-addressed (no numbers, no index, no
+- **Status**: Draft (0.5.0), revision 3 (2026-10-27): paths are the paths the system reads (no `pkg:`); a name is
+  the root's name and the file's relative path as written. Revision 2 (2026-10-27): versions are content-addressed (no numbers, no index, no
   lock, no aliases), written through the record store ([RFC-017](RFC-017-record-store.md))
 - **Authors**: Marko Dragoljevic
 - **Related PRDs**: [PRD-009](../prd/PRD-009-prompts-and-optimisation.md) (FR1)
@@ -45,7 +46,7 @@ config_id: summary_qwen_v3
 dataset_id: curated_5feeds_dev_v1
 prompts:
   summary/user:   {file: prompts/summary_user.j2}            # a file in the project
-  summary/system: {file: "pkg:podcast_scraper/prompts/openai/summarization/system_v1.j2"}   # in an installed package
+  summary/system: {file: cache/podcast_scraper/src/podcast_scraper/prompts/openai/summarization/system_v1.j2}
 prompt_root:                                                  # or: the directory the system loads from
   name: podcast                                               # the root's name (required)
   path: cache/podcast_scraper/src/podcast_scraper/prompts     # the directory the system reads (here a checkout)
@@ -54,13 +55,12 @@ prompt_root:                                                  # or: the director
 params: {provider: openai, model: gpt-5-mini}
 ```
 
-- `pkg:<distribution>/<path>` resolves through `importlib.resources` **in the harness's environment**; use it only when
-  the system runs in that environment. A system run from another checkout or environment (the podcast pipeline) declares
-  the path it actually reads, or the harness would hash bytes that do not run.
-- A name is a path in the grammar (RFC-014: lowercase segments, `/` allowed, no all-digit segment). For a root, each
-  varied file's name is `<root name>/<relative path without extension>`, lowercased, with any other character than
-  `[a-z0-9_-]` replaced by `_`, unless the config names it (`vary: [{file: …, name: …}]`); two files that map to one
-  name are refused.
+- A path is the path the system reads, relative to the project (or absolute): the file whose bytes run. A prompt
+  inside an installed package is declared by its path there; the harness does not resolve package names, since its own
+  environment need not be the system's.
+- A name is a path in the grammar (RFC-014: segments joined by `/`, no all-digit segment). For a root, each varied
+  file's name is `<root name>/<relative path>`, as written (`podcast/openai/summarization/long_v1.j2`); a path the
+  grammar cannot hold (a space in it) is refused with the reason.
 - A varied file must exist in the root; the overlay never adds a file. A system with fallbacks (the podcast library reads
   `shared/summarization/X` when `<provider>/summarization/X` is missing, `store.py:81-96`) could otherwise change which
   file it reads. The root's digest (below) covers the fallback files, so a change to one shows.
@@ -157,7 +157,7 @@ run records version 1 of each.
 ## Testing
 
 - `harness/tests/test_prompts.py`: declare, run, version 1 recorded; edit the file, run, version 2,
-  with parent null; unchanged bytes reuse the version; a `pkg:` path resolves; the overlay holds the varied files and is
+  with parent null; unchanged bytes reuse the version; the overlay holds the varied files and is
   removed; a varied file missing from the root is refused; the tree stays clean (the run after a recorded version is
   not dirty); two arms differing only in a prompt differ only in `arm.prompts`; `__pycache__` does not enter the root
   digest; eight parallel runs recording the same new bytes get one version, and different bytes get distinct ids;

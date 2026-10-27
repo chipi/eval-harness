@@ -1,6 +1,7 @@
 # ADR-0015 — Ties are non-inferiority; heldout datasets spend their level over looks (0.5.0)
 
-**Status:** Accepted (2026-10-26), design; not yet built. Revision 2 (2026-10-27): continuous non-inferiority from 100 items at half the level; looks counted from decisions.. Supersedes the tie rule of
+**Status:** Accepted (2026-10-26), design; not yet built. Revision 3 (2026-10-27): no equivalence claim; the MDE is the formula. Revision 2:
+continuous non-inferiority from 100 items at half the level; looks counted from decisions. Supersedes the tie rule of
 [ADR-0006](ADR-0006-goal-axes-and-strategies.md).
 **Date:** 2026-10-26
 **Detail:** [PRD-013](../prd/PRD-013-identity-and-ties.md) FR3, FR5, FR6, FR9,
@@ -25,10 +26,10 @@ many arms on the same heldout items, which inflates errors in a way a fixed Holm
   of a 0/1 measure uses Tango's score test; of a continuous measure, a studentized bootstrap specified
   exactly, at half the level, from 100 items (one rule, chosen on simulations across tail weights after
   the first draft's skew guard failed them). Verdicts are decided by p in a fixed order (non-inferiority,
-  then superiority); a heldout check's families use serial gatekeeping.
+  then superiority); a confirmation's families use serial gatekeeping.
 - **Each heldout dataset spends a one-sided 2.5% over all its looks, front-loaded** (the owner's choice):
   look k at 2.5% · 6/(π²k²), so 1.52%, 0.38%, 0.17%, …; after a protective limit (10 by default) a look
-  needs the person's consent. Only commands that record a decision take a look (a study's check, a
+  needs the person's consent. Only commands that record a decision take a look (a study's
   confirmation, a promotion), counted from those records with no look file; pages show nominal results
   labelled as not a look. Any subset of a heldout dataset spends the dataset's budget. Two decisions that
   took one look number (two machines, two branches) are reported by `validate`; a database store will

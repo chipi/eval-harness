@@ -210,7 +210,7 @@ Draft until 0.5.0 is built; then they are folded into the sections above. Words 
   named under the table ("Tango's score test, 0/1 measure", or "bootstrap-t: from 30 items; stricter when the differences lean
   towards losses"). Without a margin the table is as in 0.4.0.
 - **On a heldout dataset**: a note above the verdicts, "This is a heldout dataset of <goal>: these results are
-  nominal, not a look. A decision on them is recorded by `run-promote` or a study's check, which takes
+  nominal, not a look. A decision on them is recorded by `run-promote` or a study's confirmation, which takes
   look 3 at 0.17%."
 - **Failed items**: a note, "arm X: 3 items failed and are left out; the comparison uses the items both
   arms measured".

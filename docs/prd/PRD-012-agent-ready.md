@@ -1,7 +1,7 @@
 # PRD-012: Agent-ready: every capability for people and agents alike
 
-- **Status**: Draft (0.5.0), revision 2 (2026-10-27): consent is the person's own command, or an elicitation
-  the person's limits allow; budgets read the spend the runs record
+- **Status**: Draft (0.5.0), revision 3 (2026-10-27): consent only by the person running the command; tools without
+  resources; three skills; a smaller exit-code table. Revision 2: budgets read the spend the runs record
 - **Authors**: Marko Dragoljevic
 - **Related UX specs**: [UXS-003](../uxs/UXS-003-cli-and-onboarding.md) (the commands), a new UXS
   for the tools and skills
@@ -19,7 +19,7 @@ as the work of a careful person, with who acted recorded. This PRD makes that th
 0.5.0 feature and adds: a **command manifest** and **structured output** on every command, the
 CLI conventions machines rely on (results on stdout, messages on stderr, meaningful exit codes,
 refusals in a standard shape); an **MCP server** built on the official SDK and the protocol's own
-features (tools with annotations, resources, long-running tasks, asking the person); and
+features (tools with annotations, long-running work, refusing decisions to the person); and
 **skills** a project imports into its agent setup, teaching workflows rather than listing
 commands.
 
@@ -43,7 +43,7 @@ commands.
 ## Goals
 
 - Everything a person can do with the CLI or see in the catalog, an agent can do and read through
-  tools and resources, with structured input and output.
+  tools, with structured input and output.
 - An agent given a goal and a budget finds the tools, sets up the work and runs it, without
   guessing at syntax.
 - The records do not depend on who acted, and always say who: the person, or the agent and the
@@ -72,10 +72,10 @@ commands.
 
 - _As a person, I tell my agent "run an optimisation loop on the summary prompt for goal
   news_summary_cnn, $10 and two GPU hours"; it reads the goal, writes the study spec, dry-runs it,
-  tells me the smallest effect it can detect, runs it, and reports the result of the heldout check,
+  tells me the smallest effect it can detect, runs it, and reports the result of the confirmation,
   asking me before it promotes._
 - _As a person, I open the catalog afterwards and the goal page shows the study's round, each trial
-  with its hypothesis, change, test against the best so far and reason, the heldout check and the cost,
+  with its hypothesis, change, test against the best so far and reason, the confirmation and the cost,
   and that the agent ran it on my instruction._
 - _As an agent, every tool returns JSON matching its declared schema, and a refusal returns its
   code, its explanation and the command that resolves it._
@@ -97,11 +97,12 @@ commands.
 
 - **FR2.1**: Results on stdout, everything else (progress, notes, warnings) on stderr.
   (`experiment-run` has 35 `print` calls, one of them to stderr.)
-- **FR2.2**: Exit codes are documented and stable: 0 success; 1 refusal; 2 usage error (argparse's
-  convention, kept rather than sysexits' 64); 3 the system under test failed (today `experiment-run`
-  returns 1 when nothing was measured); 4 stopped by a budget or cost cap (today 2); 130
-  interrupted; 65 to 78 (sysexits) for the remaining operational errors. This is a breaking change,
-  listed in the release notes with each old code and its new one.
+- **FR2.2**: Exit codes are documented and stable, and none changes its 0.4.0 meaning: 0 success;
+  1 refusal (its kind is the refusal's code, FR2.3); 2 usage error (argparse's convention); 3 a judge
+  scorer not validated (as in 0.4.0); 4 stopped by a budget or cost cap (today 2); 5 partly failed;
+  6 a check found problems; 7 the system under test failed, nothing measured (today 1); 70 an
+  internal error; 75 try again later; 130 interrupted. Splitting today's 1 and 2 is a breaking
+  change, listed in the release notes with each old code and its new one.
 - **FR2.3**: A refusal is an RFC 9457 problem details object: a stable `type` URI (its identity),
   `title`, `detail`, and the extension member `fix_command` when a command resolves it; with
   `--json` it is printed as JSON.
@@ -134,21 +135,19 @@ commands.
   spending is the manifest's own flag, and annotations are hints, never what consent rests on. Results are
   `structuredContent` with the command's output schema; a refusal is a tool result marked as an
   error with the RFC 9457 body.
-- **FR4.3**: Records are also **resources** with URI templates (`evh://runs/{run_id}`,
-  `evh://goals/{goal_id}`, `evh://baselines/{goal}`), so an agent can read without calling a
-  command.
+- **FR4.3**: Every record is read through a read tool (`goals`, `baselines`, `study-status`, `arms`,
+  …). MCP resources, which would duplicate them, are deferred (revision 3).
 - **FR4.4**: Long work (a run, a job set, a study) is an MCP **task** when the client asks for one
   (the tasks extension is opt-in per request); otherwise the call returns a job id at once and the
   agent follows it with the `jobs-status` tool, the protocol's own pattern for stateful tools.
 - **FR4.5**: **Consent**: promotion, retiring arms, spending beyond the budget the person gave,
-  overriding a protective refusal ([PRD-009](PRD-009-prompts-and-optimisation.md) FR4.4, FR4.5),
-  sending private data out ([PRD-009](PRD-009-prompts-and-optimisation.md) FR3.5) and phase commands
-  that touch a shared host ([PRD-010](PRD-010-runners.md) FR1.7) ask the person before acting: for a
-  short call through the protocol's input-required result with an elicitation, for long work through
-  the task's input-required state, for the kinds of decision the person's limits allow that way; for the
-  others, by the person running the command themselves. The question shows the exact command, host and
-  amount. One answer may cover a whole study or job set, with a count. The record names who answered
-  and how. Budgets are checked against the spend the runs record, not a separate ledger.
+  overriding a protective refusal ([PRD-009](PRD-009-prompts-and-optimisation.md) FR4.4, FR4.5) and phase
+  commands that touch a shared host ([PRD-010](PRD-010-runners.md) FR1.7) are refused to an agent with the
+  exact command, host and amount, and the person runs that command themselves (`--confirm`); their run is
+  the consent, and the record names them. One path, nothing stored in between. Long work that needs
+  consent part-way waits, and its status names the command that continues it. Budgets are checked against
+  the spend the runs record. (MCP's elicitation was considered and left out: an agent client may answer it
+  itself.)
 - **FR4.6**: **Limits**: which tools are enabled, spending and time budgets, and what needs consent
   are set by the person in a file the server will not write and an agent's tools cannot change; a
   change to it is recorded with who made it.
@@ -157,9 +156,10 @@ commands.
 
 - **FR5.1**: The harness ships skills in the Agent Skills format (a lowercase name matching its
   directory, a description saying when to use it, under 500 lines, the harness version in its
-  metadata): evaluate a system for the first time, compare arms and read the result, run a round,
-  run an optimisation study (including as its sampler, through `study-ask` and `study-tell`),
-  promote with evidence, evaluate a pipeline, bring in runs from elsewhere, and follow a long job.
+  metadata), three of them: evaluate and compare (a first evaluation, reading a result, rounds,
+  pipelines and other languages, bringing runs in); run an optimisation study (including as its
+  sampler, through `study-ask` and `study-tell`, its confirmation and promotion with evidence); and
+  follow a long job.
 - **FR5.2**: Skills say when to stop and ask (promotion, spending, shared hosts), whatever a
   project's own instructions say.
 - **FR5.3**: `evh skills-install [--target DIR]` copies them into a project or an agent's skill
@@ -183,7 +183,7 @@ commands.
 ### FR8: The test for every feature
 
 - **FR8.1**: A 0.5.0 feature is done when a person can do it (CLI, catalog), an agent can do it
-  (MCP tool or resource, a skill that covers it), and the catalog shows the same thing either way.
+  (an MCP tool, a skill that covers it), and the catalog shows the same thing either way.
 - **FR8.2**: A scenario test runs the first user story with an agent end to end on the example
   project, with a dollar cap, before each release (not on every push), and checks the catalog
   afterwards.

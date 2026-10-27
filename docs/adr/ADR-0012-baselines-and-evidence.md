@@ -1,10 +1,10 @@
 # ADR-0012 — Baselines per goal, with the evidence frozen at promotion (0.5.0)
 
-**Status:** Accepted (2026-10-26), design; not yet built. Revision 2 (2026-10-27): write-once versions, the newest current; no index, pointer or lock.
+**Status:** Accepted (2026-10-26), design; not yet built. Revision 3 (2026-10-27): `evh baselines --json` is the export; no baselines pages. Revision 2: write-once versions, the newest current; no index, pointer or lock.
 **Date:** 2026-10-26
 **Detail:** [PRD-011](../prd/PRD-011-evidence-registry.md), [PRD-013](../prd/PRD-013-identity-and-ties.md)
 FR7, [RFC-014](../rfc/RFC-014-identity-baselines-migration.md) (storage, commands),
-[RFC-012](../rfc/RFC-012-evidence-registry.md) (evidence, export, the check)
+[RFC-012](../rfc/RFC-012-evidence-registry.md) (evidence, `evh baselines --json`, the check)
 
 ## Context
 
@@ -22,8 +22,9 @@ when a cited result has been replaced.
   verdict against the baseline it replaces, the axes, the round or study). It is a heldout look only
   on a heldout dataset; elsewhere it is recorded as nominal; runs that cannot be compared record no
   verdict and why.
-- **Baselines export** as a deterministic, versioned file with how to reproduce each and the goal's intended
-  use, for a production system to read.
+- **`evh baselines --json` is the export**: a deterministic, versioned document with how to reproduce each
+  baseline and the goal's intended use, for a production system to read. No separate export command, and no
+  separate baselines page: the goal page shows each baseline.
 - **`evidence-check`** fails a citation file that names a missing id or file, a replaced baseline
   or a retired arm. It checks the harness's ids and the files cited; the project's own vocabulary
   and the joins with its registry stay the project's.

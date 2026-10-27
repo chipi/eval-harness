@@ -36,7 +36,7 @@ contract with transactions, so the commands do not change when it comes.
 | baseline version | `run-promote`, `round-close --promote` | `data/baselines/<goal>/<dataset>/<version>.json` | `baseline:<goal>/<dataset>/<version>` |
 | prompt version | a run that sees new bytes, `prompt-version` | `data/prompts/<name>/<sha16>.txt` and `.json` | `prompt:<name>/<sha16>` |
 | study | `study-run` (the spec is the person's file) | `data/studies/<goal>/<study>.yaml` | `study:<goal>/<study>` |
-| study event | the study loop, `study-tell`, the heldout check | `data/studies/<goal>/<study>.events.jsonl` (append) | `trial:<goal>/<study>/<k>` for a trial |
+| study event | the study loop, `study-tell`, `study-confirm` | `data/studies/<goal>/<study>.events.jsonl` (append) | `trial:<goal>/<study>/<k>` for a trial |
 | run | `experiment-run`, `import-run` | `data/<runs dir>/<run id>/` (as today) | `run:<runs dir>/<run id>` |
 
 Runs, goals, configs, datasets, references and rounds keep their 0.4.0 files.
@@ -55,7 +55,7 @@ Runs, goals, configs, datasets, references and rounds keep their 0.4.0 files.
   earlier version's run, with `rollback_of` naming it; it is newer, so it is current.
 - **Versions of a prompt**: the files in its directory, sorted by `created_at`.
 - **Heldout looks**: counted from the decisions recorded on a heldout dataset (baseline versions with evidence on
-  it, studies' heldout checks) (RFC-015).
+  it, studies' confirmations) (RFC-015).
 - **Use before 0.5.0**: counted from runs whose fingerprint names a harness before 0.5.0.
 - **Spend**: summed from the runs' recorded cost.
 

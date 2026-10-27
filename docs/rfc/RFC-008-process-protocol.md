@@ -1,6 +1,7 @@
 # RFC-008: The process protocol: systems in any language
 
-- **Status**: Draft (0.5.0), revision 2 (2026-10-27): stdio only; the HTTP transport is deferred
+- **Status**: Draft (0.5.0), revision 3 (2026-10-27): the metric declarations live in the adapter file, not in
+  `initialize`, so nothing is cached. Revision 2: stdio only; the HTTP transport is deferred
 - **Authors**: Marko Dragoljevic
 - **Related PRDs**: [PRD-008](../prd/PRD-008-pipelines-and-any-language.md) (FR4)
 - **Related RFCs**: RFC-007 (the result and stages it carries), [RFC-001](RFC-001-fingerprint-and-code-identity.md)
@@ -43,27 +44,31 @@ env: [PIPELINE_API_KEY]        # names passed through; values never recorded
 timeout_s: 120                 # per request
 identity_files: ["services/pipeline/build/libs/*.jar"]  # what the harness hashes as the system (below)
 score: process                 # or: a Python file whose score() is used (score: adapters/score.py)
+metrics:                       # what a Python adapter declares as module attributes
+  wer: {kind: quality, direction: lower, description: "word error rate against the reference"}
+  latency_ms: {kind: speed}
+primary_metric: wer
+transient_markers: ["503", "rate limit"]
 ```
 
 `adapter:` stays a string, so every place that resolves it (`_find_adapter`, `load_recorded_adapter` for `rescore`,
 `silver-calibrate` and the catalog) keeps working: the recorded id of a process adapter is the path of its
-`.process.yaml`, portable as a Python adapter's is. `schemas/process-adapter.schema.json` validates the file.
+`.process.yaml`, portable as a Python adapter's is. `schemas/process-adapter.schema.json` validates the file. The
+declarations a Python adapter makes as module attributes (`METRIC_KINDS`, `METRIC_DIRECTIONS`, `METRIC_DESCRIPTIONS`,
+`PRIMARY_METRIC`, `TRANSIENT_MARKERS`) are written in the file by the person, so every command that reads them without
+running the system (`rescore`, the catalog) reads the file, and nothing is cached.
 
 ### Messages (protocol version `evh-adapter/1`)
 
 | method | from → to | params | result |
 | --- | --- | --- | --- |
-| `initialize` | harness → system | `{protocol: "evh-adapter/1.0", harness_version, params}` | `{protocol, identity: {name, version, artifact_sha256?, code_ref?, scorer?: {version, sha256?}}, capabilities: {call_form: "text"\|"item", batch: bool, batch_key?: str, score: bool, stages: bool, estimate: bool}, metrics?: {name: {kind, direction, description}}, primary_metric?, transient_markers?: [str]}` |
+| `initialize` | harness → system | `{protocol: "evh-adapter/1.0", harness_version, params}` | `{protocol, identity: {name, version, artifact_sha256?, code_ref?, scorer?: {version, sha256?}}, capabilities: {call_form: "text"\|"item", batch: bool, batch_key?: str, score: bool, stages: bool, estimate: bool}}` |
 | `call` | harness → system | `{item: {id, text, fields?}, params, _meta?: {traceparent}}` | a result: `{output, stages?, tokens_in?, tokens_out?, cost_usd?, latency_ms?, extra?, meta?}` (RFC-007's fields) |
 | `call_batch` | harness → system | `{items: [...], params, _meta?}` | `{results: {item_id: result}}` |
 | `score` | harness → system | `{output, reference?, source?, stage?}` | `{metrics: {name: number}}` |
 | `estimate` | harness → system | `{items: [...], params}` | `{cost_usd}` (RFC-007's cost cap) |
 | `shutdown` | harness → system | `{}` | `{}`; then the process exits |
 
-- `initialize` returns what a Python adapter declares as module attributes (`METRIC_KINDS`, `METRIC_DIRECTIONS`,
-  `METRIC_DESCRIPTIONS`, `PRIMARY_METRIC`, `TRANSIENT_MARKERS`); the harness caches it in
-  `.evh/adapters/<name>.json` keyed by the identity, so commands that read declarations without running the system
-  (`rescore`, the catalog) read the cache, and `adapter-check` refreshes it.
 - Errors are JSON-RPC errors. `error.data.transient: true` raises `_retry.TransientError`, which `is_transient` treats
   as transient by type, not by message; anything else is an item failure (RFC-007), recorded with the error's message.
 - One request at a time per process (the harness does not pipeline); `id`s increase.
@@ -113,8 +118,8 @@ score: process                 # or: a Python file whose score() is used (score:
 - `harness/examples/process-adapter-node/`: a single-file Node.js client (no dependencies) implementing `initialize`, `call`,
   `score` and `shutdown` for the example dataset, mirroring the Python example adapter.
 - `evh adapter-check [--config C] [--json]`: starts the configured process adapter, runs `initialize` and one `call`
-  and `score` on the dataset's first item, validates every message against the schemas, refreshes the declarations
-  cache, and reports. It writes no records. It exits 0 when every message conforms, and 6 (a check found problems, RFC-013)
+  and `score` on the dataset's first item, validates every message against the schemas, checks that the metrics it
+  scores are the ones the file declares, and reports. It writes no records. It exits 0 when every message conforms, and 6 (a check found problems, RFC-013)
   when one does not, with each failure listed.
 
 ## Migration
@@ -139,7 +144,7 @@ None.
   transient error is retried; a killed process restarts and a changed identity stops the pass; `--resume` with a
   changed identity is refused; a timeout kills the process group; a protocol major mismatch is refused and an unknown
   field from a newer minor is ignored; an unidentified process is refused by `run-promote`; two jar versions compare
-  with only `arm.system` moved; `rescore` of a process run reads the declarations cache; `adapter-check` validates the
+  with only `arm.system` moved; `rescore` of a process run reads the declarations from the file; `adapter-check` validates the
   messages.
 
 ## Decisions (ADR candidates)
