@@ -238,5 +238,23 @@ jobs:
             health="$(curl -fsS https://evals.humancopilot.eu/catalog/api/health)"
             grep -qF '"ok": true' <<<"$health" \
               || { echo "::error::the inspector API does not answer on the public host"; exit 1; }
+            # The docs, as a crawler finds them: robots.txt and sitemap.xml with the right types,
+            # robots.txt pointing at the sitemap, and every sitemap URL answering 200.
+            docs=https://evals.humancopilot.eu/docs
+            type_of() { curl -sI "$1" | tr -d '\r' | awk -F': ' 'tolower($1)=="content-type"{print $2}'; }
+            rt="$(type_of "$docs/robots.txt")"; st="$(type_of "$docs/sitemap.xml")"
+            case "$rt" in text/plain*) ;; *) echo "::error::$docs/robots.txt is '$rt', not text/plain"; exit 1;; esac
+            case "$st" in application/xml*|text/xml*) ;; *) echo "::error::$docs/sitemap.xml is '$st', not XML"; exit 1;; esac
+            robots="$(curl -fsS "$docs/robots.txt")"
+            grep -qF "Sitemap: $docs/sitemap.xml" <<<"$robots" \
+              || { echo "::error::$docs/robots.txt does not point to the sitemap"; exit 1; }
+            sitemap="$(curl -fsS "$docs/sitemap.xml")"
+            bad=0; n=0
+            while read -r u; do
+              n=$((n + 1)); c="$(curl -s -o /dev/null -w '%{http_code}' "$u")"
+              [ "$c" = 200 ] || { echo "::error::$c $u"; bad=1; }
+            done < <(grep -o '<loc>[^<]*</loc>' <<<"$sitemap" | sed 's/<[^>]*>//g')
+            [ "$bad" = 0 ] || exit 1
+            echo "public docs: robots.txt, sitemap.xml and its $n URLs OK"
           fi
           [ -n "$enabled" ] || echo "no vhost enabled yet; the on-box loopback health check is the gate"

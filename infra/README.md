@@ -6,7 +6,7 @@ Three addresses, one repository:
 |---|---|---|
 | `evals.humancopilot.eu` | the harness site: the harness and its findings (`site/public`, built by `make site`) | prod VPS: `evals-nginx` |
 | `evals.humancopilot.eu/catalog` | the harness deployed on these example experiments: the catalog, goal pages and run inspector | prod VPS: `evals-nginx` (pages) + `evals-inspector` (`/api/*`) |
-| `evals.humancopilot.eu/docs` | the documentation (mkdocs) | prod VPS: `evals-nginx` (built into each release by `render.sh`) |
+| `evals.humancopilot.eu/docs` | the documentation (mkdocs) | prod VPS: `evals-nginx` (built into each release by `render.sh`); the same docs are also on GitHub Pages, `chipi.github.io/eval-harness` (`.github/workflows/pages.yml`) |
 
 Everything on the VPS follows the box's tenant pattern, copied from chipi/humancopilot.eu
 (owner of the edge: podcast_scraper, its ADR-114):
@@ -209,9 +209,8 @@ site changes included, once CI on that commit is green.
 
 **What happened instead of steps 4 and 5:** the docs were never moved to Pages under this
 domain. `render.sh` builds them into each release, so `evals.humancopilot.eu/docs` is served by
-the VPS. The Pages site has no custom domain (`gh api repos/chipi/eval-harness/pages`: `cname`
-null) and is published, at `chipi.github.io/eval-harness`, only when `pages.yml` is dispatched
-by hand; `DOCS_ON_OWN_DOMAIN` is unset.
+the VPS. The docs are also published to GitHub Pages, at `chipi.github.io/eval-harness` with no
+custom domain, by `pages.yml` on every push to `main` that touches them.
 
 **Rollback:**
 - a bad release: re-run an older successful `deploy-prod` run (it redeploys that sha), or
