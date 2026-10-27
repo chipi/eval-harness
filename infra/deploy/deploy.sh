@@ -7,8 +7,9 @@
 # Steps, each one a gate (template: chipi/humancopilot.eu infra/deploy/deploy.sh):
 #   1. Preflight: both loopback ports are free or already ours.
 #   2. `nginx -t` on the NEW release's config, in a throwaway container, before anything moves.
-#   3. Switch the `current` symlink atomically, `compose up` (the inspector is recreated, so it
-#      loads the new release's code and data), reload nginx.
+#   3. Switch the `current` symlink atomically, `compose up` (both containers are recreated: the
+#      inspector loads the new release's code and data, and each gets a new Alloy log tailer with the
+#      release's labels), reload nginx.
 #   4. Health: every site answers 200 on / and 404 on a missing page, on the loopback port with
 #      its own Host header; the inspector answers /api/health and a real comparison.
 #      On any failure in 3 or 4: point `current` back at the previous release, `compose up` its
@@ -59,7 +60,7 @@ rollback() {
   if [ -n "$prev" ] && [ -d "$prev" ]; then
     ln -sfn "$prev" "$BASE/current.new" && mv -T "$BASE/current.new" "$BASE/current"
     "${COMPOSE[@]}" up -d --wait --wait-timeout 90 --force-recreate inspector || echo "::error::compose up of $prev failed too"
-    "${COMPOSE[@]}" up -d --wait --wait-timeout 60 nginx || true
+    "${COMPOSE[@]}" up -d --wait --wait-timeout 60 --force-recreate nginx || true
     docker exec "$NGINX" nginx -c "$BASE/current/nginx/nginx.conf" -s reload || true
     echo "  rolled back: current -> $prev (containers and config)"
   else
@@ -69,7 +70,11 @@ rollback() {
   exit 1
 }
 ln -sfn "$REL" "$BASE/current.new" && mv -T "$BASE/current.new" "$BASE/current"
-"${COMPOSE[@]}" up -d --wait --wait-timeout 60 nginx || rollback "compose up of nginx ($SHA) failed"
+# Recreated on every release too, not only when compose sees a change: a new container is a new
+# log tailer in Alloy, which takes the release's labels (`release`) from the start. On 0.4.2 nginx
+# was recreated before Alloy's reload and its tailer kept the label set it started with, so its
+# lines shipped without `release` while the inspector's carried it (prod, Alloy's component API).
+"${COMPOSE[@]}" up -d --wait --wait-timeout 60 --force-recreate nginx || rollback "compose up of nginx ($SHA) failed"
 # The inspector keeps its code, data and caches in memory: recreate it on every release.
 "${COMPOSE[@]}" up -d --wait --wait-timeout 90 --force-recreate inspector || rollback "compose up of the inspector ($SHA) failed"
 docker exec "$NGINX" nginx -c "$BASE/current/nginx/nginx.conf" -s reload || rollback "nginx reload of $SHA failed"
