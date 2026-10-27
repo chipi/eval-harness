@@ -7,7 +7,7 @@
   consent), [RFC-016](../rfc/RFC-016-mcp-server-and-skills.md) (the server, skills, llms.txt), [RFC-011](../rfc/RFC-011-job-sets-and-runners.md)
   (jobs), [RFC-010](../rfc/RFC-010-studies.md) (`study-ask`, `study-tell`)
 - **Related UX specs**: [UXS-003](UXS-003-cli-and-onboarding.md) (the same commands for a person),
-  [UXS-004](UXS-004-studies-champions-prompts.md) (words and marks)
+  [UXS-004](UXS-004-studies-baselines-prompts.md) (words and marks)
 - **Implementation paths**: `harness/scripts/mcp_server.py`, `_command.py`, `_consent.py`,
   `harness/skills/`, `site/mkdocs_hooks.py`, `docs/GLOSSARY.md`
 
@@ -48,7 +48,7 @@ A person adds the server to their agent's MCP configuration, once per project:
 ```
 
 On start it reads `evh-limits.yaml`. If the file is missing or has uncommitted changes, it does not
-start, and says on stderr: "REFUSED (limits-uncommitted): evh-limits.yaml has uncommitted changes.
+start, and says on stderr: "ERROR (limits-uncommitted): evh-limits.yaml has uncommitted changes.
 Commit them, so the change has an author, then start the server again." `UPGRADING.md` and the
 `evh-evaluate-a-system` skill show a starting limits file.
 
@@ -80,7 +80,7 @@ Commit them, so the change has an author, then start the server again." `UPGRADI
 
 ## Resources
 
-`evh://goals/{goal_id}`, `evh://champions/{goal}`, `evh://champions/{goal}/{dataset}`,
+`evh://goals/{goal_id}`, `evh://baselines/{goal}`, `evh://baselines/{goal}/{dataset}`,
 `evh://studies/{goal}/{study_id}`, `evh://runs/{+run}` (`runs/<run_id>`), `evh://prompts/{+name}`,
 `evh://looks/{dataset}`, `evh://datasets/{dataset_id}`. Each returns the JSON of the matching read
 command, so reading a goal costs no tool call. Listing a template's resources returns the ids the
@@ -109,7 +109,7 @@ promotion, retiring an arm, an extra look, an override, sending data out):
 ```json
 {"type": "https://evals.humancopilot.eu/docs/refusals/#consent-required", "code": "consent-required",
  "title": "This needs the person's consent", "exit_code": 1,
- "detail": "Promoting run:runs/cnn_bart_l_v1_20261026T153757.123Z_7f3a to champion of news_summary_cnn on cnn_dailymail_200 (replacing version 2).",
+ "detail": "Promoting run:runs/cnn_bart_l_v1_20261026T153757.123Z_7f3a to baseline of news_summary_cnn on cnn_dailymail_200 (replacing version 2).",
  "consent": {"kind": "promote", "args_sha256": "9f2c…"},
  "fix_command": "evh consent grant --kind promote --command \"evh run-promote --run run:runs/cnn_bart_l_v1_20261026T153757.123Z_7f3a --reason '…'\"",
  "for_the_agent": "Ask the person to run the fix_command in their own terminal, then call this tool again with the same arguments. Do not run it yourself."}
@@ -140,7 +140,7 @@ default). Each skill is a `SKILL.md` an agent loads when its description matches
 | `evh-compare-and-read` | asked which arm is better, or what a result means | `goals`, `inspect`, verdicts, looks, what not to conclude | never: it reads |
 | `evh-run-a-round` | trying a set of arms against a hypothesis | `round-open`, runs, `rounds`, retire, close | retiring; promotion |
 | `evh-run-a-study` | optimising prompts or parameters toward a goal | the spec, `--dry-run`, `study-run` or `study-ask`/`study-tell`, `study-status`, the outcome | a remote sampler seeing data; a shared host; an extra look; promotion |
-| `evh-promote-with-evidence` | asked to make an arm the champion | the evidence, the look, the command | always: promotion is the person's |
+| `evh-promote-with-evidence` | asked to make an arm the baseline | the evidence, the look, the command | always: promotion is the person's |
 | `evh-evaluate-a-pipeline` | the system has stages, or is not in Python | stages, stage references, batches, the process adapter, wrapping a runner | a shared host |
 | `evh-bring-runs-in` | results exist from elsewhere | `import-run`, OTLP, `study-import` with a map | never: it writes records only |
 | `evh-follow-a-job` | something runs in the background | `jobs-status`, `jobs-logs`, `jobs-stop`, consent while waiting | consent while waiting |
@@ -153,16 +153,16 @@ documentation pages it relies on; is under 500 lines; carries `metadata: {harnes
 
 The order an agent follows, as the `evh-run-a-study` skill and PRD-012's first user story set it:
 
-1. Read the goal (`evh://goals/<id>`) and its champion; read the looks of the test dataset.
+1. Read the goal (`evh://goals/<id>`) and its baseline; read the looks of the heldout dataset.
 2. Write the spec (`data/studies/<goal>/<id>.yaml`) with `sampler: {kind: agent}`; run `study-run` with
    `dry_run: true` and show the person the plan: the trials it may take, the cost per role, the
-   smallest p the test items can reach against the look's level. A refusal `no-possible-evidence` is
+   smallest p the heldout items can reach against the look's level. A refusal `no-possible-evidence` is
    reported to the person as it is, never worked around.
 3. `study-run` opens the study. Then, in a loop: `study-ask` returns the state and an `ask_id`; the
    agent proposes one change with its hypothesis (`study-tell` with the `ask_id`); the result says kept or
    dropped and why; `trial-running` means wait and ask again.
-4. When a stop rule fires the study runs its test check (confirmatory) and the agent reports the outcome
-   in UXS-004's words, including the drop from validation to test.
+4. When a stop rule fires the study runs its heldout check (confirmatory) and the agent reports the outcome
+   in UXS-004's words, including the drop from dev to heldout.
 5. If the outcome meets the rule, the agent tells the person the suggested promotion command. It does
    not run it: a promotion is refused without the person's grant, and the skill says so.
 

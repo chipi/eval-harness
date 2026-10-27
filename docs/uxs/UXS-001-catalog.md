@@ -555,32 +555,31 @@ names and the verdicts' metric open their pages.
 
 ## 0.5.0 changes (draft)
 
-Draft until 0.5.0 is built; then they are folded into the sections above. New pages (studies, champions,
-prompts) are in [UXS-004](UXS-004-studies-champions-prompts.md), with the words and marks every page shares.
+Draft until 0.5.0 is built; then they are folded into the sections above. New pages (studies, baselines,
+prompts) are in [UXS-004](UXS-004-studies-baselines-prompts.md), with the words and marks every page shares.
 
-- **Header**: the nav gains **Studies**, **Champions** and **Prompts** ([UXS-004](UXS-004-studies-champions-prompts.md#the-header)).
-- **"Baseline" becomes "champion"** everywhere: the home page's `baseline` column, the datasets page,
-  the dataset page's answer box (one box per goal that has a champion on the dataset: "champion of
-  <goal>, version n, promoted <date> by <actor>"), the arm page's tag, the `baseline` tag in tables
-  (`champion`). The champion links to its page.
+- **Header**: the nav gains **Studies**, **Baselines** and **Prompts** ([UXS-004](UXS-004-studies-baselines-prompts.md#the-header)).
+- **Baselines are per goal and dataset, with versions**: the home page's `baseline` column and the
+  datasets page show each goal's baseline; the dataset page's answer box becomes one box per goal that has
+  a baseline on the dataset ("baseline of <goal>, version n, promoted <date> by <actor>"). The word stays
+  `baseline` everywhere; the baseline links to its page.
 - **The goal page**:
-  - `01 the answer so far`: per dataset, the champion's id and version, "promoted <date> by <actor>",
+  - `01 the answer so far`: per dataset, the baseline's id and version, "promoted <date> by <actor>",
     the reason, its evidence in one line (the verdict chip and the look label, UXS-004), and
-    **inspect it** / **history** buttons. Without one: "No champion yet", and the command.
-  - **Test looks**, under the answer, one line per dataset in the `test` role: "test looks: 2 taken ·
+    **inspect it** / **history** buttons. Without one: "No baseline yet", and the command.
+  - **Heldout looks**, under the answer, one line per dataset in the `heldout` role: "heldout looks: 2 taken ·
     next at 0.17% · limit 10 · used by 29 configurations before 0.5.0", linked to `evh goals --goal
     <id> --looks`. A dataset at its limit: "limit reached: the next look needs your consent".
   - **The decision box** uses non-inferiority (RFC-015): the reasons say "non-inferior to the leader
     (margin 0.01 on rouge_l; p 0.003, nominal · not a look)" or "inconclusive against the leader (too few
     items)" instead of "tied"; an inconclusive arm is never recommended on a tie-break, and the box says
     so. A goal with no margin declared: "No margin declared for rouge_l: the recommendation is the quality
-    leader. Declare `success_criteria.margins` to allow tie-breaks." On a test dataset every result is
+    leader. Declare `axes.quality.margin` to allow tie-breaks." On a heldout dataset every result is
     labelled `nominal · not a look`.
-  - `what it is for` gains **margins** (per measure, in its units) and **test looks** (the limit per
-    test dataset).
+  - `what it is for` gains **margins** (per measure, in its units) and **heldout looks** (the limit per
+    heldout dataset).
   - `02 rounds`: a study's round has a `study` tag and links to the study's page; its row reads "study
     s2 · confirmatory · 12 trials" in **set out to learn**; its details fold to the study's outcome box.
-  - Dataset roles read `validation` and `test` (0.4.0's `dev` and `heldout`).
 - **The arm page**:
   - **build**: "commit 1a2b3c4d, verified (sent by the ssh runner, manifest checked)", "declared, not
     verified (EVAL_BUILD_REF)", or "unknown";

@@ -53,7 +53,7 @@ def _render(result: dict) -> str: ...           # the table a person reads (opti
 
 COMMANDS = [Command(
     name="run-promote",
-    purpose="make a run the current champion of its goal on its dataset",
+    purpose="make a run the current baseline of its goal on its dataset",
     parser=_parser, run=_run, render=_render,
     effects={Effect.WRITES},          # READS (default), WRITES, SPENDS; SPENDS implies a cost estimate in --dry-run
     long_running=False,               # True: may run long; detached as a job (RFC-011), an MCP job in RFC-016
@@ -62,7 +62,7 @@ COMMANDS = [Command(
     open_world=False,                 # it calls outside the project (a provider, a runner host)
     consent=[Consent.PROMOTE, Consent.EXTRA_LOOK],   # the kinds it may ask for, at run time (below)
     override_flags=["--allow-dirty", "--allow-unknown-build", "--allow-failed"],  # each needs consent when used
-    output="champion-version",        # a schema in schemas/ (by name)
+    output="baseline-version",        # a schema in schemas/ (by name)
     examples=['evh run-promote --run run:runs/cnn_bart_l_v1_20261026T153757.123Z_7f3a --reason "best ROUGE-L, half the cost"'],
 )]
 ```
@@ -106,10 +106,11 @@ COMMANDS = [Command(
 | 0 | success | 0 |
 | 1 | refusal (a problem details object on stderr, or as JSON with `--json`) | 1 |
 | 2 | usage error (argparse) | 2, also the cost cap and an unknown command |
-| 3 | the system under test failed: nothing measured | 1 (`experiment_run.py:879`) |
+| 3 | a judge scorer not validated (unchanged) | 3 |
 | 4 | stopped by a budget or the cost cap; partial results kept | 2 (`experiment_run.py:884`) |
 | 5 | partly failed: a job set (`jobs-run --wait`) or a study in which some jobs or trials failed; results kept | — |
 | 6 | a check found problems: `validate`, `evidence-check`, `adapter-check`, `skills-check` | 1 |
+| 7 | the system under test failed: nothing measured | 1 (`experiment_run.py:879`) |
 | 65 to 78 | operational errors, sysexits meanings (65 bad input data, 66 missing input, 69 unavailable service, 70 internal error, 73 cannot create output, 74 I/O error, 75 temporary failure, 77 permission, 78 configuration) | 1 |
 | 130 | interrupted | 130 (SIGINT), with a traceback on stderr |
 
@@ -125,7 +126,7 @@ conversion is mechanical but each call is read once; a test fails on any `die(` 
 ### Refusals (RFC 9457)
 
 `_common.refuse(code, title, detail, fix=None, **extra)` raises `Refusal`; `die(msg)` stays for internal errors and
-maps to 70. A refusal prints, without `--json`, `REFUSED (<code>): <title>\n  <detail>\n  fix: <fix>` on stderr; with
+maps to 70. A refusal prints, without `--json`, `ERROR (<code>): <title>\n  <detail>\n  fix: <fix>` on stderr; with
 `--json`, on stdout:
 
 ```json
@@ -193,9 +194,9 @@ from; `evh config --json` prints that. `schemas/config.schema.json` validates it
 
 New, versioned with the harness (`$id` carries the version): `run.schema.json` (`run.json`), `metrics.schema.json`
 (exists; gains the v5 fingerprint), `fingerprint.schema.json` (v5), `prediction.schema.json` (a `predictions.jsonl`
-line, stages included, RFC-007), `champion.schema.json` and `champion-index.schema.json` (RFC-014), `look.schema.json`
+line, stages included, RFC-007), `baseline.schema.json` and `baseline-index.schema.json` (RFC-014), `look.schema.json`
 (RFC-015), `study.schema.json` and `trial.schema.json` (RFC-010), `job-set.schema.json` (RFC-011),
-`prompt-version.schema.json` (RFC-009), `study-spec.schema.json` (RFC-010), `champions-export.schema.json` (RFC-012),
+`prompt-version.schema.json` (RFC-009), `study-spec.schema.json` (RFC-010), `baselines-export.schema.json` (RFC-012),
 `job-state.schema.json` (RFC-011), `process-adapter.schema.json` and `schemas/protocol/` (RFC-008),
 `limits.schema.json`, `consent-grant.schema.json`, `spend-ledger.schema.json` (RFC-016), `config.schema.json`,
 `refusal.schema.json`, `envelope.schema.json`, and one output schema per command. `validate` checks every record
@@ -232,7 +233,7 @@ pin moves.
   validates against its schema.
 - `harness/tests/test_json_outputs.py`: each read command's `--json` on the example project validates against its
   output schema; stdout equals the rendered result without `--json`.
-- `harness/tests/test_exit_codes.py`: a refusal exits 1 with a problem details body; a usage error 2; nothing measured 3;
+- `harness/tests/test_exit_codes.py`: a refusal exits 1 with a problem details body; a usage error 2; a judge not validated 3; nothing measured 7;
   the cost cap 4; a partly failed job set 5; a failed `validate` 6; Ctrl-C 130; no `die(` or `SystemExit("…")` outside
   `_common.py`.
 - `harness/tests/test_dry_run.py`: every command with `--dry-run` writes nothing and calls no provider.
@@ -245,8 +246,8 @@ pin moves.
 
 1. Each command declares itself once beside its `argparse` parser; help, the manifest and the MCP tools are generated.
 2. Results on stdout, everything else on stderr; `--json` everywhere, with an output schema per command.
-3. A documented exit-code table (0, 1 refusal, 2 usage, 3 system failed, 4 budget, 5 partly failed, 6 check failed,
-   65–78, 130), a breaking change.
+3. A documented exit-code table (0, 1 refusal, 2 usage, 3 judge not validated, 4 budget, 5 partly failed, 6 check
+   failed, 7 nothing measured, 65–78, 130); splitting 1 and 2 is a breaking change, and no code changes meaning.
 4. Refusals are RFC 9457 problem details with a stable `type`, a registry, and `exit_code` as an extension member.
 5. Every record says who acted and for whom (PROV); an actor that does not name itself off a terminal is `unknown`.
 6. One project `config.yaml` for directories, runners and limits; environment variables still win.

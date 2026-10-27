@@ -66,8 +66,8 @@ never taken from the client. The harness also ships skills in the Agent Skills f
   `idempotentHint` and `openWorldHint` from the declaration's `idempotent` and `open_world`. They are hints for the
   client; the server's own checks (below) do not rest on them.
 - **Resources** (templates, RFC 6570 with `{+var}` where a value holds `/`): `evh://runs/{+run}` (`runs/<run_id>`, the
-  runs directory and id as in RFC-014's `run:` ids), `evh://goals/{goal_id}`, `evh://champions/{goal}` (every dataset's
-  champion of the goal) and `evh://champions/{goal}/{dataset}`, `evh://studies/{goal}/{study_id}`,
+  runs directory and id as in RFC-014's `run:` ids), `evh://goals/{goal_id}`, `evh://baselines/{goal}` (every dataset's
+  baseline of the goal) and `evh://baselines/{goal}/{dataset}`, `evh://studies/{goal}/{study_id}`,
   `evh://prompts/{+name}`, `evh://looks/{dataset}`, `evh://datasets/{dataset_id}`. These include PRD-012 FR4.3's three
   (`evh://runs/{run_id}` there; a run id alone is ambiguous across runs directories, so the template takes the
   directory too, and a bare id resolves as `run-promote --run` does). Each returns the JSON a command would (`evh goals
@@ -152,7 +152,7 @@ never taken from the client. The harness also ships skills in the Agent Skills f
   page with its title, URL and first sentence, grouped by the navigation's sections (llms.txt v2). The site root links
   it.
 - `docs/GLOSSARY.md`: each harness term (arm, run, adapter, reference, gold, silver, goal, round, study, trial, sampler,
-  champion, look, separated, non-inferior, inconclusive) with its meaning and the word other tools use (Inspect,
+  baseline, look, separated, non-inferior, inconclusive) with its meaning and the word other tools use (Inspect,
   LangSmith, promptfoo, HELM, Optuna, MLflow), and where the meaning differs, how.
 
 ### The scenario test (PRD-012 FR8.2)

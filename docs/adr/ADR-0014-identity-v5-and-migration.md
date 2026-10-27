@@ -3,7 +3,7 @@
 **Status:** Accepted (2026-10-26), design; not yet built
 **Date:** 2026-10-26
 **Detail:** [PRD-013](../prd/PRD-013-identity-and-ties.md) FR1, FR2, FR4, FR8,
-[RFC-014](../rfc/RFC-014-identity-champions-migration.md), [RFC-001](../rfc/RFC-001-fingerprint-and-code-identity.md)
+[RFC-014](../rfc/RFC-014-identity-baselines-migration.md), [RFC-001](../rfc/RFC-001-fingerprint-and-code-identity.md)
 (version 4)
 
 ## Context

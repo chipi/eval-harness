@@ -1,9 +1,9 @@
-# RFC-010: Studies: exploratory and confirmatory, trials, samplers, the test check
+# RFC-010: Studies: exploratory and confirmatory, trials, samplers, the heldout check
 
 - **Status**: Draft (0.5.0)
 - **Authors**: Marko Dragoljevic
 - **Related PRDs**: [PRD-009](../prd/PRD-009-prompts-and-optimisation.md) (FR2 to FR5)
-- **Related RFCs**: RFC-009 (prompt versions), RFC-011 (job sets), RFC-015 (verdicts, non-inferiority, test looks),
+- **Related RFCs**: RFC-009 (prompt versions), RFC-011 (job sets), RFC-015 (verdicts, non-inferiority, heldout looks),
   RFC-013 (commands, actor, consent), RFC-016 (`study-ask`/`study-tell` as tools), [RFC-004](RFC-004-experiment-rounds.md)
   (rounds)
 - **Code**: new `harness/scripts/_study.py` (the loop), `_samplers/` (`grid.py`, `one_at_a_time.py`, `random_.py`,
@@ -18,9 +18,9 @@
 
 A study is a spec file and a directory of records. `evh study-run` opens a round for it and runs an ask/tell loop: a
 **sampler** proposes a **trial** (parameter values or prompt versions, with a hypothesis), the harness builds the trial's
-config, runs it on every **track** as a job set, compares it with the incumbent and the starting arm, keeps or drops it
+config, runs it on every **track** as a job set, compares it with the best so far and the baseline, keeps or drops it
 by the spec's declared rule, tells the sampler, and repeats until a stop rule fires. An **exploratory** study ends there
-("no evidence"); a **confirmatory** one then runs its single **test check**: the best trial against the start on test
+("no evidence"); a **confirmatory** one then runs its single **heldout check**: the best trial against the baseline on heldout
 items the search never saw, at its look's level (RFC-015). Samplers are built in (grid, one at a time, random, an LLM),
 an external command, or the calling **agent** through `study-ask` and `study-tell`, which is how Karpathy's autoresearch
 loop runs here. Every trial and the study itself are records the catalog shows.
@@ -29,31 +29,31 @@ loop runs here. Every trial and the study itself are records the catalog shows.
 
 PRD-009's loops exist today only as scripts outside the harness (the podcast project's `program_*.md` agents and
 `ml_param_tuning/sweep.py`), with results in TSV files the catalog cannot show, acceptance by a fixed 1% on the tuning
-items, and no protected test check.
+items, and no protected heldout check.
 
 ## Design
 
 ### Files
 
 - **The spec**: `data/studies/<goal>/<study_id>.yaml` (`schemas/study-spec.schema.json`), PRD-009 FR2.2's fields:
-  `type: exploratory|confirmatory`, `validation`, `test`, `tracks` (config, dataset, reference; the first decides),
-  `start` (`champion:<goal>/<dataset>@current`, a run, or a trial of an earlier study, `trial:<goal>/<study>/<k>`),
+  `type: exploratory|confirmatory`, `dev`, `heldout`, `tracks` (config, dataset, reference; the first decides),
+  `baseline` (`baseline:<goal>/<dataset>@current`, a run, or a trial of an earlier study, `trial:<goal>/<study>/<k>`),
   `measure` (a metric or a composite of the goal, below), `space` (below), `sampler` (below), `accept`
-  (`point: {min_gain, relative}` or `test`), `guardrails` (`[{metric, direction, limit}]`), `contested` (`{policy:
+  (`point: {min_gain, relative}` or `test`), `limits` (`[{metric, direction, limit}]`; the goal's guardrails stay words, never computed), `contested` (`{policy:
   drop_item|drop_trial|fallback, metric: <fallback metric>, when_share_over: 0.4}`), `test_rule`
   (`superiority|noninferiority|none`), `stop`
   (`trials`, `usd`, `wall_h`, `gpu_h`, `patience`, `until_interrupted`), `budgets` (per role: `system`, `judge`,
   `sampler`), `repeats`, `keys` (env names per role), `frozen` (paths), `directions` (free text), `instruction`.
 - **Records**: `data/studies/<goal>/<study_id>/`: `spec.lock.json` (the spec as run, its hash, the frozen files' hashes,
-  the scorer's adapter hash, the references' digest, the judges' hashes), `study.json` (state, incumbent, budget used
-  per role, stop reason, test check, summary, actor, instruction), `trials/<k>.json` (`schemas/trial.schema.json`:
+  the scorer's adapter hash, the references' digest, the judges' hashes), `study.json` (state, best so far, budget used
+  per role, stop reason, heldout check, summary, actor, instruction), `trials/<k>.json` (`schemas/trial.schema.json`:
   PRD-009 FR5.1's fields), `trials/<k>/<track>.config.yaml` (one generated config per track, and `test.config.yaml`
-  for the test check: the starting config with the trial's parameter overrides and prompt versions, the track's
+  for the heldout check: the starting config with the trial's parameter overrides and prompt versions, the track's
   `dataset_id` and its `reference`; config id `<study_id>-t<k>-<track>`). `_common.find_config` looks in
   `data/studies/*/*/trials/` after `data/configs/`, so `validate`, the catalog, the round checks and the commands that
   take a config id resolve them like any config; `run-compare` compares their runs as usual.
 - **A config's reference**: a config may name its reference (`reference: gold/<dataset>` or `silver/<id>`); without one,
-  `experiment-run` picks gold, then silver, as today (`experiment_run.py:189-199`). Tracks and the test check use it, so
+  `experiment-run` picks gold, then silver, as today (`experiment_run.py:189-199`). Tracks and the heldout check use it, so
   no command-line override is needed.
 - **Shown items**: `data/studies/<goal>/shown.jsonl`, append-only, one line per item content hash shown to a sampler
   (with the study and trial), written before the sampler is called.
@@ -61,11 +61,11 @@ items, and no protected test check.
   (`round.schema.json` gains both); its `dataset_id` is the decisive track's. The round belongs to the study: it opens
   when the study starts and closes when it ends, never by hand. The one-open-round rule (`rounds.py:77-81`) counts only
   rounds without `study`, so a study blocks no other round, and several studies may run on a goal at once (their test
-  looks share the test dataset's budget, RFC-015). The config-to-round check (`_rounds.py:150-155`) accepts, for a study's
+  looks share the heldout dataset's budget, RFC-015). The config-to-round check (`_rounds.py:150-155`) accepts, for a study's
   round, a config on any of its tracks' datasets. Each kept or dropped trial is an arm of the round, dropped trials
   retired with the study's reason, so `evh rounds` and the goal page show the study as they show a round.
 - **Duplicates (V5)**: a trial that changes nothing the system reads gives the same per-item results as its
-  incumbent, which is a finding, not a copied run. V5 reports two runs of trials of one study with different configs as
+  best so far, which is a finding, not a copied run. V5 reports two runs of trials of one study with different configs as
   a note ("trial 7 measured the same as trial 4: no effect"), not an error, and the trial records `no_effect: true`.
 
 ### The search space
@@ -110,27 +110,27 @@ passes the threshold, the trial is decided on the fallback metric, and the trial
 ### The loop (`_study.run`)
 
 ```text
-open the study's round; lock the spec (spec.lock.json); incumbent = start
+open the study's round; lock the spec (spec.lock.json); best so far = baseline
 while no stop rule fires:
     verify the lock (spec, frozen files, scorer, references, judges); a change stops the study
     proposal = sampler.ask(state)            # params and/or prompt texts, hypothesis, rationale
     record new prompt versions (RFC-009, author = the sampler and whom it acts for)
     write trials/<k>.config.yaml and trials/<k>.json (state: proposed)
-    run it: a job set of the tracks × repeats on the validation dataset (RFC-011)
-    per track: verdicts against the incumbent and against the start (RFC-015, nominal p)
+    run it: a job set of the tracks × repeats on the dev dataset (RFC-011)
+    per track: verdicts against the best so far and against the baseline (RFC-015, nominal p)
     decide (below); record kept / dropped / contested / failed with the reason
     sampler.tell(trial)
-    if kept: incumbent = trial
-if confirmatory: the test check (below)
+    if kept: best so far = trial
+if confirmatory: the heldout check (below)
 write the summary and close the round
 ```
 
 **Deciding a trial.** Repeats are averaged per item first.
-- **Point rule**: the decisive track's mean beats the incumbent's by `min_gain` (relative or absolute; 0 is "improved").
-- **Test rule**: the trial is separated as better than the incumbent on the decisive track.
-- In both: every guardrail metric, on every track, is no worse than the **start** by more than its limit.
-- **A tie-break acceptance** (not better, but cheaper or faster) needs the trial to be non-inferior to the **start** by the
-  goal's margin (RFC-015), so concessions cannot accumulate. With small validation sets this is usually inconclusive and
+- **Point rule**: the decisive track's mean beats the best so far's mean by `min_gain` (relative or absolute; 0 is "improved").
+- **Test rule**: the trial is separated as better than the best so far on the decisive track.
+- In both: every limited metric, on every track, is no worse than the **baseline** by more than its limit.
+- **A tie-break acceptance** (not better, but cheaper or faster) needs the trial to be non-inferior to the **baseline** by the
+  goal's margin (RFC-015), so concessions cannot accumulate. With small dev sets this is usually inconclusive and
   refused: expected.
 - **Contested judgements** follow the spec's policy, by the scorer's per-item `contested` flag (a 0/1 metric).
 - **Aggregate-only metrics** (one number per run, as autoresearch's val_bpb), in exploratory studies only, allow the point
@@ -152,10 +152,10 @@ age, and closes a lapsed study or ask with the time it lapsed.
 
 ### Samplers (`_samplers/`)
 
-`class Sampler: ask(state) -> Proposal; tell(trial) -> None`. `state` is the incumbent, the start, the history (trials
-with their changes, outcomes and the decisive scores), the space, the budget left and the directions; never test items.
+`class Sampler: ask(state) -> Proposal; tell(trial) -> None`. `state` is the best so far, the baseline, the history (trials
+with their changes, outcomes and the decisive scores), the space, the budget left and the directions; never heldout items.
 
-- `grid`, `one_at_a_time` (from the incumbent, a parameter at a time, groups in order), `random` (seeded by the spec's
+- `grid`, `one_at_a_time` (from the best so far, a parameter at a time, groups in order), `random` (seeded by the spec's
   hash).
 - `llm`: a model named in the spec (`sampler: {kind: llm, provider: anthropic, model: …}`) through the provider layer
   the judges use. `_providers.ROLES` gains `sampler` (`_providers.py:41`), so its key is read from the `EVAL_SAMPLER_`
@@ -180,34 +180,34 @@ with their changes, outcomes and the decisive scores), the space, the budget lef
 **Data egress** (PRD-009 FR3.5): a sampler is remote unless its endpoint is local (a localhost or tailnet address the
 config marks local); a remote sampler that `sees` outputs or inputs needs `allow_egress: [<dataset>, …]` in the spec and
 consent (RFC-013/016); each trial records what was sent where. Items shown to a sampler are appended to the goal's
-`shown.jsonl` before the call, so a later study's test check can exclude them.
+`shown.jsonl` before the call, so a later study's heldout check can exclude them.
 
-### The test check (confirmatory)
+### The heldout check (confirmatory)
 
-1. The test items: the test dataset's items minus any in the validation dataset (by content hash) and minus any in the
+1. The heldout items: the heldout dataset's items minus any in the dev dataset (by content hash) and minus any in the
    goal's `shown.jsonl`; the count is recorded; none left refuses the check (`no-test-items`). An imported study has no
    record of what its loop showed, so the items of the datasets it names are excluded too; an imported study that names
-   no dataset adds a caveat to every later test check on the goal ("study X was imported; what it showed is unknown").
-2. The look: `_looks.reserve(test dataset, key)` (RFC-015) creates the look exclusively before anything runs and
+   no dataset adds a caveat to every later heldout check on the goal ("study X was imported; what it showed is unknown").
+2. The look: `_looks.reserve(heldout dataset, key)` (RFC-015) creates the look exclusively before anything runs and
    returns its level; past the protective limit it needs the person's consent (kind `extra_look`). A check that dies
    after this leaves the look reserved and spent.
-3. Run the best trial and the start once on those items (a job set; repeats as the spec says).
-4. The verdict: RFC-015's fixed sequence at the look's level, for the declared `test_rule`; guardrails as non-inferiority
-   against the start in the same Holm family; a failed guardrail caps the outcome at inconclusive.
-5. Write the verdict into the reserved look; write the outcome beside the trial's validation effect; suggest promotion
+3. Run the best trial and the baseline once on those items (a job set; repeats as the spec says).
+4. The verdict: RFC-015's fixed sequence at the look's level, for the declared `test_rule`; limits as non-inferiority
+   against the baseline in the same Holm family; a failed limit caps the outcome at inconclusive.
+5. Write the verdict into the reserved look; write the outcome beside the trial's dev effect; suggest promotion
    only on an outcome that meets the rule (`evh run-promote …` as the suggestion, never run). Promoting that trial
-   against the same champion reuses this look (RFC-012).
+   against the same baseline reuses this look (RFC-012).
 
 **A confirmation** (PRD-009 FR2.1) turns an exploratory study's best trial into evidence after the fact:
 `evh study-confirm <study> --test <dataset> --rule superiority|noninferiority [--trial k]` runs the same five steps on
-a closed exploratory study (its best trial, or trial k, against its start), recorded in the study as its test check
+a closed exploratory study (its best trial, or trial k, against its baseline), recorded in the study as its heldout check
 and labelled a confirmation. The rule is given on the command line before anything runs, and the study's search had
-no access to those items (the shown items and the validation dataset are excluded, as above).
+no access to those items (the shown items and the dev dataset are excluded, as above).
 
 **No study without possible evidence**: before the first trial, a confirmatory study computes the smallest attainable p on
-its test items and the look's level (RFC-015) and refuses (`no-possible-evidence`) when the rule can never be met; the
+its heldout items and the look's level (RFC-015) and refuses (`no-possible-evidence`) when the rule can never be met; the
 person may override (consent of kind `override_refusal`, RFC-013), and the outcome is then labelled inconclusive. For a
-continuous measure under non-inferiority the check is by power (RFC-015) and runs again before the test look.
+continuous measure under non-inferiority the check is by power (RFC-015) and runs again before the heldout look.
 
 ### Commands
 
@@ -230,7 +230,7 @@ the look's level), and calls neither the system, the judges nor the sampler.
   trial: experiment_id            # the column naming the trial
   metrics: {score: score}         # harness metric <- column; non-numeric cells ("—") are empty
   hypothesis: notes
-  status: {baseline: start, kept: kept, kept-CHAMPION: kept, discard: dropped, crash: failed}
+  status: {baseline: baseline, kept: kept, kept-CHAMPION: kept, discard: dropped, crash: failed}
   dataset: dataset_ref            # optional
   code_ref: commit_sha            # optional
   ```
@@ -243,7 +243,7 @@ the look's level), and calls neither the system, the judges nor the sampler.
 ### The catalog
 
 The goal page's round section shows a study's trials as a table (k, change, hypothesis, outcome, the decisive score
-against the incumbent, cost), the stop reason, the test check with its look count, and the summary; each trial links its
+against the best so far, cost), the stop reason, the heldout check with its look count, and the summary; each trial links its
 generated config, its runs and its prompt diff. Every view has its command.
 
 ## Migration
@@ -261,9 +261,9 @@ None. A project's old loops can be brought in with `study-import`.
 
 ## Testing
 
-- `harness/tests/test_study.py` (fake adapter, fake provider): a planted real gain is kept and confirmed superior; a planted
-  chance gain on a tiny validation set is dropped or fails the test check; a cheaper equal arm is non-inferior to the
-  start; a chain of small concessions cannot pass the start's margin; overlapping and sampler-seen test items are excluded;
+- `harness/tests/test_study.py` (fake adapter, fake provider): a planted real gain is kept and confirmed separated: better; a planted
+  chance gain on a tiny dev set is dropped or fails the heldout check; a cheaper equal arm is non-inferior to the
+  start; a chain of small concessions cannot pass the baseline's margin; overlapping and sampler-seen heldout items are excluded;
   a spec or scorer change mid-study stops it; budgets per role stop it; resume continues without re-running trials;
   `--dry-run` calls nothing (asserted by a provider that fails if called); a study with no possible evidence is refused.
 - `harness/tests/test_samplers.py`: grid, one-at-a-time with groups and move-on rules, random seeded; the LLM sampler's
@@ -280,11 +280,11 @@ None. A project's old loops can be brought in with `study-import`.
 ## Decisions (ADR candidates)
 
 1. Studies are rounds driven by an ask/tell loop, exploratory or confirmatory; keeping a trial is search, the single
-   counted test check is evidence, and a study never promotes.
+   counted heldout check is evidence, and a study never promotes.
 2. Samplers are pluggable through one ask/tell interface: built-in (including an LLM through the existing providers), a
    command, or the calling agent; code is never in the search space.
-3. Guardrails and tie-break acceptance are judged against the starting arm, so concessions cannot accumulate.
-4. Items shown to a sampler and items in the validation set are excluded from the test check.
+3. Guardrails and tie-break acceptance are judged against the baseline, so concessions cannot accumulate.
+4. Items shown to a sampler and items in the dev set are excluded from the heldout check.
 5. A study owns its round, which does not count against the one-open-round rule; trials are generated configs per track,
    each naming its dataset and reference.
 6. The loop runs in a detached study supervisor; the agent sampler is driven by `study-ask`/`study-tell` with an ask id.

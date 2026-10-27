@@ -18,8 +18,9 @@ consequences (a promotion) was the same whether a person or an agent made it.
   from it.
 - **Results on stdout, everything else on stderr**; `--json` everywhere with an output schema per
   command; `--dry-run` writes and calls nothing.
-- **Exit codes are a table**: 0, 1 refusal, 2 usage, 3 nothing measured, 4 budget, 5 partly failed,
-  6 a check found problems, 65–78 operational (sysexits), 130 interrupted. A breaking change.
+- **Exit codes are a table**: 0, 1 refusal, 2 usage, 3 judge not validated (unchanged), 4 budget, 5 partly failed,
+  6 a check found problems, 7 nothing measured, 65–78 operational (sysexits), 130 interrupted. Splitting
+  1 and 2 is a breaking change; no code changes its 0.4.0 meaning.
 - **Refusals are RFC 9457 problem details** with a stable `type` from a registry.
 - **Every record says who acted and for whom** (PROV); an actor that does not name itself and is
   not on a terminal is recorded as `unknown`, never as a person.

@@ -86,7 +86,7 @@ An item can fail without stopping the run: when retries are exhausted, or a batc
 adapter returns a non-transient error (RFC-008), the item gets a row `{"item_id": …, "_failed": {"reason": …,
 "transient": bool, "attempts": n}}` and no output file. Failed items are left out of every mean and every paired test
 (the pair needs both arms), and `metrics.json` records `n_failed` beside `n`. `experiment-run` exits 0 when at least one
-item was measured (the count is printed and recorded), 3 when none was, and 75 when none was and the last failure was
+item was measured (the count is printed and recorded), 7 when none was, and 75 when none was and the last failure was
 transient (RFC-013's table). `--resume` retries failed items. `run-promote` refuses a run with failed items unless
 `--allow-failed` and a reason; the catalog shows the count on the run.
 

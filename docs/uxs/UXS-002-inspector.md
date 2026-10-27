@@ -197,19 +197,19 @@ every catalog table. A row opens on click, Enter or Space.
 ## 0.5.0 changes (draft)
 
 Draft until 0.5.0 is built; then they are folded into the sections above. Words and chips are
-[UXS-004](UXS-004-studies-champions-prompts.md#words-and-marks)'s.
+[UXS-004](UXS-004-studies-baselines-prompts.md#words-and-marks)'s.
 
 - **Metric picker**: stage metrics appear grouped under their stage (`asr · wer`, `summary · rouge_l`),
   after the end result's metrics; a composite of the goal (`summary_blend`) appears with its weights in
   the tooltip.
 - **01 verdicts** with a margin: when the goal declares a margin for the metric, the table answers the
-  goal's question rather than "separated": the **verdict** column takes UXS-004's chips (`superior`,
-  `non-inferior`, `non-inferior · worse within margin`, `worse`, `inconclusive` with its reason), a
+  goal's question: the **verdict** column takes UXS-004's chips (`separated: better`,
+  `non-inferior`, `non-inferior · worse within margin`, `separated: worse`, `inconclusive` with its reason), a
   **margin** line sits under the table ("margin 0.01 on rouge_l, declared by news_summary_cnn"), and the
   **p** column shows the non-inferiority p, with the superiority p in the row's tooltip. The method is
   named under the table ("Tango's score test, 0/1 measure", or "bootstrap-t: from 30 items; stricter when the differences lean
   towards losses"). Without a margin the table is as in 0.4.0.
-- **On a test dataset**: a note above the verdicts, "This is a test dataset of <goal>: these results are
+- **On a heldout dataset**: a note above the verdicts, "This is a heldout dataset of <goal>: these results are
   nominal, not a look. A decision on them is recorded by `run-promote` or a study's check, which takes
   look 3 at 0.17%."
 - **Failed items**: a note, "arm X: 3 items failed and are left out; the comparison uses the items both

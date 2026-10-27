@@ -1,21 +1,21 @@
-# RFC-012: The evidence registry: champions' evidence, the export, the check
+# RFC-012: The evidence registry: baselines' evidence, the export, the check
 
 - **Status**: Draft (0.5.0)
 - **Authors**: Marko Dragoljevic
 - **Related PRDs**: [PRD-011](../prd/PRD-011-evidence-registry.md)
-- **Related RFCs**: RFC-014 (champion storage and ids), RFC-015 (the verdict frozen at promotion), RFC-010 (a study's test
-  check), RFC-009 (prompt versions in the recipe), RFC-013 (commands, schemas)
-- **Code**: `promote_baseline.py` (freezing evidence), new `view_champions.py` (`evh champions`), `champions_export.py`,
-  `evidence_check.py`; catalog champion pages; `schemas/champion.schema.json` (`evidence`), `champions-export.schema.json`
+- **Related RFCs**: RFC-014 (baseline storage and ids), RFC-015 (the verdict frozen at promotion), RFC-010 (a study's test
+  check), RFC-009 (prompt versions in how to reproduce it), RFC-013 (commands, schemas)
+- **Code**: `promote_baseline.py` (freezing evidence), new `view_baselines.py` (`evh baselines`), `baselines_export.py`,
+  `evidence_check.py`; catalog baseline pages; `schemas/baseline.schema.json` (`evidence`), `baselines-export.schema.json`
 
 ## Abstract
 
-At promotion, the harness freezes into the new champion version the evidence that justified it: the RFC-015 verdict of
-the challenger against the champion it replaces on the goal's measure, the goal's axes, the round and, for a study's
-winner, its test check. `evh champions` lists champions with their recipe, evidence and history; `evh champions-export`
+At promotion, the harness freezes into the new baseline version the evidence that justified it: the RFC-015 verdict of
+the promoted run against the baseline it replaces on the goal's measure, the goal's axes, the round and, for a study's
+winner, its heldout check. `evh baselines` lists baselines with how to reproduce them, evidence and history; `evh baselines-export`
 writes them in a versioned, deterministic file a production system can read, with the goal's intended use; and
 `evh evidence-check FILE` checks every harness id and every file path a project's own registry cites, so a citation of a
-replaced champion, a missing round or a deleted report fails in CI.
+replaced baseline, a missing round or a deleted report fails in CI.
 
 ## Problem Statement
 
@@ -36,15 +36,15 @@ replaced champion, a missing round or a deleted report fails in CI.
 
 ```json
 "evidence": {
-  "compared_to": "champion:news_summary_cnn/cnn_dailymail_200/2",
+  "compared_to": "baseline:news_summary_cnn/cnn_dailymail_200/2",
   "measure": "rouge_l",
   "items_sha256": "…", "n": 200,
-  "verdict": {"outcome": "superior", "p": 0.0012, "effect": 0.021, "interval": [0.009, 0.033],
+  "verdict": {"outcome": "better", "p": 0.0012, "effect": 0.021, "interval": [0.009, 0.033],
               "method": "sign-flip", "rule": "noninferiority", "level": 0.0152, "look": "look:cnn_dailymail_200/1"},
-  "axes": {"cost_usd_per_item": {"challenger": 0.0011, "champion": 0.0024},
-           "latency_p50_ms": {"challenger": 1830, "champion": 2410}},
+  "axes": {"cost_usd_per_item": {"promoted run": 0.0011, "baseline": 0.0024},
+           "latency_p50_ms": {"promoted run": 1830, "baseline": 2410}},
   "round": "round:news_summary_cnn/r3",
-  "study": {"id": "study:news_summary_cnn/s2", "test_check": {"outcome": "superior", "n": 180,
+  "study": {"id": "study:news_summary_cnn/s2", "heldout_check": {"outcome": "better", "n": 180,
             "look": "look:cnn_dailymail_200/1"}},
   "computed_with": {"harness_version": "0.5.0", "stats_sha256": "…"}
 }
@@ -52,11 +52,11 @@ replaced champion, a missing round or a deleted report fails in CI.
 
 - `compared_to` is the version current at promotion (after a rollback, not n − 1). A first promotion has
   `"compared_to": null` and no verdict.
-- **When the dataset is a test dataset of the goal**, the comparison is a look (RFC-015): it reserves the next look,
+- **When the dataset is a heldout dataset of the goal**, the comparison is a look (RFC-015): it reserves the next look,
   and when the protective limit is passed, promotion's own consent must also cover the extra look (one question
-  naming both). A study's winner promoted against the champion its test check compared it with reuses that look's
+  naming both). A study's winner promoted against the baseline its heldout check compared it with reuses that look's
   verdict (the same key) and takes no new one.
-- **When it is not a test dataset** (a validation dataset, a goal with no test role), the verdict is computed at
+- **When it is not a heldout dataset** (a dev dataset, a goal with no heldout role), the verdict is computed at
   the nominal one-sided 2.5% and recorded with `"look": null, "nominal": true`; the catalog labels it "not tested on
   held-out items".
 - **When the two runs are not comparable** (a different reference digest, scorer or item set), the record has
@@ -64,39 +64,39 @@ replaced champion, a missing round or a deleted report fails in CI.
 - The record never changes afterwards; a later re-computation is a different thing (`evh pair-test`), not the
   evidence.
 
-### `evh champions [--goal G] [--dataset D] [--all-versions] [--json]`
+### `evh baselines [--goal G] [--dataset D] [--all-versions] [--json]`
 
-Per goal and dataset: the current version, its recipe (below), its evidence, and the history (each version, when, by whom,
+Per goal and dataset: the current version, how to reproduce it (below), its evidence, and the history (each version, when, by whom,
 why, what it replaced). `--all-versions` lists every version.
 
-### The recipe
+### How to reproduce it (`reproduce`)
 
-From the champion's run: config id and `params` (credentials removed, `identity_params`), prompts (`arm.prompts`: names,
+From the baseline's run: config id and `params` (credentials removed, `identity_params`), prompts (`arm.prompts`: names,
 versions, hashes; RFC-009), the system's identity (`system_under_test.model`, declared code ref, accelerator), the adapter
 (id and hash), the harness (version, code hash), the dataset (id, `items_sha256`), the reference (id, tier, digest), and the
 stages (names, RFC-007).
 
-### `evh champions-export --out FILE`
+### `evh baselines-export --out FILE`
 
-`schemas/champions-export.schema.json`, `"schema": "evh-champions/1"`:
+`schemas/baselines-export.schema.json`, `"schema": "evh-baselines/1"`:
 
 ```json
-{"schema": "evh-champions/1",
- "champions": [{"id": "champion:news_summary_cnn/cnn_dailymail_200/3",
-                "pointer": "champion:news_summary_cnn/cnn_dailymail_200@current",
+{"schema": "evh-baselines/1",
+ "baselines": [{"id": "baseline:news_summary_cnn/cnn_dailymail_200/3",
+                "pointer": "baseline:news_summary_cnn/cnn_dailymail_200@current",
                 "goal": {"id": "news_summary_cnn", "title": "…", "intended_use": {"audience": "…", "decision": "…"}},
-                "dataset": "cnn_dailymail_200", "recipe": {…}, "evidence": {…}, "history": […]}]}
+                "dataset": "cnn_dailymail_200", "reproduce": {…}, "evidence": {…}, "history": […]}]}
 ```
 
-Deterministic: champions sorted by id, keys sorted, no export timestamp (each version carries its own dates) and no
-harness version in the header (each recipe carries the harness version of its run; the file's format is
+Deterministic: baselines sorted by id, keys sorted, no export timestamp (each version carries its own dates) and no
+harness version in the header (how to reproduce each carries the harness version of its run; the file's format is
 `schema`), so two exports with no new promotion are byte-identical, across harness upgrades too. The goal's
 `context` and `decision` become the model card's intended use (Mitchell et al., 2019).
 
 ### `evh evidence-check FILE [--root DIR] [--key-paths KEY=DIR …] [--allow-replaced] [--json]`
 
 Reads a project's citation file (YAML or JSON, any shape) and checks every string value (PRD-011 FR5):
-- a harness id (RFC-014's grammar, one of its kinds): it must resolve. A fixed champion version that is no longer
+- a harness id (RFC-014's grammar, one of its kinds): it must resolve. A fixed baseline version that is no longer
   current is an error naming the current one; `--allow-replaced` makes it a warning, for files that cite history on
   purpose. A run of a retired arm is an error ("retired in round r3: <reason>"). A round, run, study, trial or prompt
   version must exist.
@@ -114,47 +114,47 @@ never confused with a refusal (exit 1).
 
 ### The catalog
 
-The goal page names each dataset's champion by id with its evidence (the frozen verdict, the axes, the round or study), and
-links its history; a champions page lists every goal's champions with their recipes' key fields. Every view has its
+The goal page names each dataset's baseline by id with its evidence (the frozen verdict, the axes, the round or study), and
+links its history; a baselines page lists every goal's baselines with the key fields of how to reproduce them. Every view has its
 command.
 
 ### Validation
 
-`validate` checks that each champion version's `evidence.compared_to` is the version the index's history shows as
+`validate` checks that each baseline version's `evidence.compared_to` is the version the index's history shows as
 current when it was promoted, its round, run, study and look resolve, and its `items_sha256` is the dataset's.
 
 ## Migration
 
-The migration script (RFC-014 step 6) writes version 1 of each migrated champion with `migrated_from` and no evidence
+The migration script (RFC-014 step 6) writes version 1 of each migrated baseline with `migrated_from` and no evidence
 (the 0.4.0 baselines recorded none); the catalog says "promoted in 0.4.0, evidence not recorded".
 
 ## Alternatives Considered
 
 - **Recompute the evidence on demand.** Rejected: it drifts with new runs and rules; promotion is the moment the decision
   was made.
-- **Export every run.** Rejected: a production system needs the current champions and their recipes, not the history of
+- **Export every run.** Rejected: a production system needs the current baselines and how to reproduce them, not the history of
   every arm.
 - **Interpret project option ids.** Rejected: they are the project's vocabulary; the harness checks what it owns (its ids
   and the files cited).
 
 ## Testing
 
-- `harness/tests/test_champions_evidence.py`: promotion on a test dataset freezes the verdict and takes a look; on a
-  validation dataset it is nominal and takes none; a first promotion has none; a study's winner reuses its test check's
-  look; non-comparable runs record `verdict: null` with the reason; `compared_to` after a rollback; `evh champions
+- `harness/tests/test_baselines_evidence.py`: promotion on a heldout dataset freezes the verdict and takes a look; on a
+  dev dataset it is nominal and takes none; a first promotion has none; a study's winner reuses its heldout check's
+  look; non-comparable runs record `verdict: null` with the reason; `compared_to` after a rollback; `evh baselines
   --json` validates against its schema.
-- `harness/tests/test_champions_export.py`: two exports are byte-identical, and stay so when the harness version
-  changes; the recipe has every field above; intended use from the goal.
+- `harness/tests/test_baselines_export.py`: two exports are byte-identical, and stay so when the harness version
+  changes; how to reproduce it has every field above; intended use from the goal.
 - `harness/tests/test_evidence_check.py`: a file shaped like the podcast project's `registry_refs.yaml` passes with present
   reports and rationale files (`--key-paths`) and fails (exit 6) on a missing one; `option:` values are listed as not
-  checked; a replaced champion version errors, and warns with `--allow-replaced`; a retired arm's run errors; a
+  checked; a replaced baseline version errors, and warns with `--allow-replaced`; a retired arm's run errors; a
   missing round fails.
 
 ## Decisions (ADR candidates)
 
-1. The evidence for a promotion is frozen into the champion version when it is made, and counts as a test look.
-2. Champions export as a deterministic, versioned file with the recipe and the goal's intended use.
+1. The evidence for a promotion is frozen into the baseline version when it is made, and counts as a heldout look.
+2. Baselines export as a deterministic, versioned file with how to reproduce it and the goal's intended use.
 3. `evidence-check` checks the harness's ids and the cited files in any citation file (keys only where named), fails on
-   replaced champions and retired arms, and leaves project vocabulary and registry joins to the project.
-4. A promotion's comparison is a look only on a test dataset; elsewhere it is recorded as nominal, and non-comparable
+   replaced baselines and retired arms, and leaves project vocabulary and registry joins to the project.
+4. A promotion's comparison is a look only on a heldout dataset; elsewhere it is recorded as nominal, and non-comparable
    runs record no verdict.

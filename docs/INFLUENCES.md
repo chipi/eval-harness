@@ -65,7 +65,7 @@ What is different, deliberately, and why:
   and pipeline settings, never code, and the harness never writes git (a winner leaves as files).
 - **What "better" means.** autoresearch keeps any improvement on its validation measure; a study
   calls that search (an *exploratory* study is exactly autoresearch's loop), and a claim that the winner
-  is better needs a *confirmatory* check on test items the search never saw, declared beforehand and
+  is better needs a *confirmatory* check on heldout items the search never saw, declared beforehand and
   paid for (the statistics below).
 - **When it stops.** autoresearch runs until interrupted; a study can too, always under a hard cap on
   money and time, and it asks the person before anything with consequences.
@@ -87,7 +87,7 @@ What is different, deliberately, and why:
   [*Equivalence tests*](https://doi.org/10.1177/1948550617697177) (2017). For 0/1 measures, Tango's
   score test for the difference of paired proportions
   ([Statistics in Medicine, 1998](https://doi.org/10.1002/%28SICI%291097-0258%2819980430%2917%3A8%3C891%3A%3AAID-SIM780%3E3.0.CO%3B2-B)).
-- **Each look at test items costs part of the level** — Tian and Ramdas,
+- **Each look at heldout items costs part of the level** — Tian and Ramdas,
   [*Online control of the familywise error rate*](https://arxiv.org/abs/1910.04900).
 - **Intervals and power beside every verdict** — Miller,
   [*Adding error bars to evals*](https://arxiv.org/abs/2411.00640) (2024); Card et al.,
@@ -112,7 +112,7 @@ What is different, deliberately, and why:
 
 **Records, registries and provenance**
 
-- **Versions are fixed, aliases move (`name/3`, `name@champion`)** — the MLflow
+- **Versions are fixed, aliases move (`name/3`, `name@current`)** — the MLflow
   [Model Registry](https://mlflow.org/docs/latest/ml/model-registry/) and
   [Prompt Registry](https://mlflow.org/docs/latest/genai/prompt-registry/).
 - **Who acted, and for whom** — W3C [PROV-O](https://www.w3.org/TR/prov-o/); runs, jobs and

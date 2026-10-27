@@ -1,23 +1,23 @@
-# RFC-014: Identity in 0.5.0: champions, fingerprint version 5, run ids, one grammar, the migration
+# RFC-014: Identity in 0.5.0: baselines, fingerprint version 5, run ids, one grammar, the migration
 
 - **Status**: Draft (0.5.0)
 - **Authors**: Marko Dragoljevic
 - **Related PRDs**: [PRD-013](../prd/PRD-013-identity-and-ties.md) (FR1, FR2, FR4, FR7, FR8),
-  [PRD-011](../prd/PRD-011-evidence-registry.md) (FR1, the champion record)
+  [PRD-011](../prd/PRD-011-evidence-registry.md) (FR1, the baseline record)
 - **Related RFCs**: [RFC-001](RFC-001-fingerprint-and-code-identity.md) (the fingerprint, version 4),
   [RFC-002](RFC-002-run-records-and-derived-runs.md) (run records), [RFC-003](RFC-003-catalog-adapter.md)
   (the catalog adapter's `baselines()`), [RFC-004](RFC-004-experiment-rounds.md) (rounds),
-  RFC-012 (champion evidence and export), RFC-015 (the statistics, and the prior use of test datasets the migration records)
+  RFC-012 (baseline evidence and export), RFC-015 (the statistics, and the prior use of heldout datasets the migration records)
 - **Code**: `harness/scripts/_fingerprint.py`, `promote_baseline.py`, `rounds.py`, `experiment_run.py`,
   `import_run.py`, `compare_runs.py`, `validate_tree.py`, `catalog_adapter.py`, `catalog_serve.py`,
   `catalog_build.py`, `list_runs.py`, `_common.py`, `site/figures.py`; new `harness/scripts/_ids.py`,
   `_lock.py` (one exclusive-create lock helper for every record that parallel commands write),
-  `champion_rollback.py`, `harness/scripts/migrate_0_5_0.py`
+  `baseline_rollback.py`, `harness/scripts/migrate_0_5_0.py`
 
 ## Abstract
 
 Four identity changes, and the one-time script that moves committed data to them. A **baseline** becomes
-the current **champion** of a goal on a dataset, stored as numbered versions with a pointer to the
+the current **baseline** of a goal on a dataset, stored as numbered versions with a pointer to the
 current one. The fingerprint becomes **version 5**: the host's label, kernel, processor string and CPU
 count move to a `machine` block outside the hash, while what can change a result (platform, Python,
 accelerator stack) stays inside; an imported run's whole host block moves outside; the fields the hash
@@ -43,10 +43,10 @@ migrates this repository and the podcast project in ten checked steps.
 
 ## Design
 
-### Champions (replacing baselines)
+### Baselines per goal and dataset
 
-**Storage.** `data/champions/<goal>/<dataset>/<n>.json`, one file per version (n = 1, 2, …), and
-`data/champions/<goal>/<dataset>/index.json`:
+**Storage.** `data/baselines/<goal>/<dataset>/<n>.json`, one file per version (n = 1, 2, …), and
+`data/baselines/<goal>/<dataset>/index.json`:
 
 ```json
 {"goal": "news_summary_cnn", "dataset": "cnn_dailymail_200", "current": 3,
@@ -54,12 +54,12 @@ migrates this repository and the podcast project in ten checked steps.
              {"version": 3, "at": "...", "by": "...", "replaces": 2}]}
 ```
 
-The goal is `_` for a goal-less run's champion (`data/champions/_/smoke_v1/`). No symlinks (Windows,
+The goal is `_` for a goal-less run's baseline (`data/baselines/_/smoke_v1/`). No symlinks (Windows,
 `core.symlinks=false`); the pointer is a field, so moving it back to an earlier version is a recorded
 history entry (`{"version": 2, "at": …, "by": …, "rollback_from": 3, "reason": …}`), not a file rename.
 
-**A version's record** (`schemas/champion.schema.json`, replacing `baseline.schema.json`): `id`
-(`champion:<goal>/<dataset>/<n>`), `goal`, `dataset`, `version`, `promoted_from` (the run, named with its
+**A version's record** (`schemas/baseline.schema.json`, replacing `baseline.schema.json`): `id`
+(`baseline:<goal>/<dataset>/<n>`), `goal`, `dataset`, `version`, `promoted_from` (the run, named with its
 runs directory, `run:runs/<run_id>`), `promoted_at`, `actor` (PRD-012 FR3), `reason`, `scores`, `build`,
 the fields `carried()` keeps today (`reference_tier`, `adapter`, `fingerprint_hash` (version 5), `format`),
 `repeats` when the arm has them, `replaces` (the version current at promotion, absent for a first; after a
@@ -73,31 +73,31 @@ also has `migrated_from` (the 0.4.0 baseline id and its version-4 `fingerprint_h
   promotes to `_`; `--baseline-id` is removed (a custom id was the one ambiguity the data model allowed).
   `--run` takes an id (`run:runs/<run_id>`), a runs directory and id (`runs/<run_id>`), or a bare run id,
   which must name exactly one run across the runs directories (else refused, `ambiguous-run`, listing them).
-- **Writing a version** (`_lock.py`): under an exclusive lock on `data/champions/<goal>/<dataset>/.lock`
+- **Writing a version** (`_lock.py`): under an exclusive lock on `data/baselines/<goal>/<dataset>/.lock`
   (created with `O_EXCL`, holding the pid and host; a lock older than 60 s whose pid is gone is taken over),
   n = 1 + the largest version among the files on disk and the index's history; `<n>.json` is created with an
   exclusive create, then `index.json` is rewritten atomically (temp file and rename) with `current: n`. Two
   promotions never get one n, and an interruption leaves the old pointer valid. A version file missing from
   the history is an interrupted promotion: `validate` reports it, and the next promotion records it in the
   history as `{"version": n, "interrupted": true}` and never makes it current.
-- `champion-rollback --goal G --dataset D --to N --reason "…"` moves `current` back to an existing version
+- `baseline-rollback --goal G --dataset D --to N --reason "…"` moves `current` back to an existing version
   under the same lock, recorded as a history entry. It needs consent as promotion does (RFC-013).
 - The checks `run-promote` has today (unknown build, dirty tree, a reason that is a sentence) are
   unchanged.
 - `round-close --promote` calls the promotion in-process (not as a subprocess, so the goal, the actor and
-  consent pass through as they are), then saves the round. The champion version records its `round`; a
+  consent pass through as they are), then saves the round. The baseline version records its `round`; a
   `round-close` re-run after a failure between the two finds the version naming this round and does not
   promote again.
-- `evh champions` (RFC-012) lists them.
+- `evh baselines` (RFC-012) lists them.
 
-**Readers.** One function, `_common.champion(goal, dataset) -> record | None` (and `champions()` for all),
+**Readers.** One function, `_common.baseline(goal, dataset) -> record | None` (and `baselines()` for all),
 replaces every direct read of `baselines/`: `rounds.py:86-95` (the baseline a round starts from: the
-round's goal and dataset), `validate_tree.py:143, 368, 1009` (schema and V6, now over champion versions),
-`list_runs.py:34` (`runs-list --baselines` lists current champions), `catalog_adapter.py:666-690`
+round's goal and dataset), `validate_tree.py:143, 368, 1009` (schema and V6, now over baseline versions),
+`list_runs.py:34` (`runs-list --baselines` lists current baselines), `catalog_adapter.py:666-690`
 (`baselines()` keeps its name and shape for the adapter protocol and gains `version` and `id`; it returns
 current versions), the harness Makefile's `run-promote` target. The catalog's "last baseline for a dataset"
 reads (`catalog_build.py:586, 664, 1239, 2236`, `catalog_views.py:119`, `catalog_serve.py:428-431`) filter by
-goal; a page without a goal (a dataset page) shows each goal's champion on that dataset.
+goal; a page without a goal (a dataset page) shows each goal's baseline on that dataset.
 
 ### Fingerprint version 5
 
@@ -156,13 +156,13 @@ when it is queued; a resumed job's next attempt resumes from the last attempt's 
 `<kind>:<path>/<n>` names a fixed version; `<kind>:<path>@<alias>` a moving pointer; `<kind>:<path>` a thing
 that is not versioned.
 
-- **Kinds** (closed): `prompt`, `champion`, `run`, `study`, `trial`, `round`, `reference`, `dataset`, `goal`,
+- **Kinds** (closed): `prompt`, `baseline`, `run`, `study`, `trial`, `round`, `reference`, `dataset`, `goal`,
   `jobset`, `look`.
 - **Path**: one or more segments joined by `/`. A segment is `_` or `[A-Za-z0-9][A-Za-z0-9_.-]*`, compared
   case-sensitively, and never all digits (so the version is unambiguous); `_` is the goal-less goal. Upper case
   and `.` are allowed because every existing run id has them (`…T153757Z`, 256 of 259 run directories here);
   names the harness derives itself (prompt names, RFC-009) are lower case.
-- `champion:<goal>/<dataset>/<n>` and `champion:<goal>/<dataset>@current`; `prompt:<name…>/<n>` and
+- `baseline:<goal>/<dataset>/<n>` and `baseline:<goal>/<dataset>@current`; `prompt:<name…>/<n>` and
   `prompt:<name…>@<alias>`; `run:<runs dir>/<run_id>`, where `<runs dir>` is the runs directory's own name
   (`runs`, `runs-linux`, `runs-silver`; the directory is part of the path, since derived copies share run ids;
   `config.yaml` maps names to paths, so a runs directory outside the data directory has a name too);
@@ -182,8 +182,8 @@ Shipped in the package (so a project that installs the harness has it) and run w
 (`python -m evaluation_harness.migrate_0_5_0 [--dry-run] [--yes]`), not an `evh` command. It reads the
 project's directories as the CLI does (`config.yaml`, `EVAL_*`).
 
-**Re-runnable.** Each step detects, per record, whether it is already done (a version-5 fingerprint, a champion
-version with `migrated_from`, a `validation` role, a `prior.json`) and skips it, so a run that crashed half-way is
+**Re-runnable.** Each step detects, per record, whether it is already done (a version-5 fingerprint, a baseline
+version with `migrated_from`, a `prior.json`) and skips it, so a run that crashed half-way is
 finished by running it again, and a second run on migrated data changes nothing. The tag is reused when it
 already points at the commit the migration started from; otherwise the script refuses with both commits.
 
@@ -198,7 +198,7 @@ already points at the commit the migration started from; otherwise the script re
    adapters change, imported runs have none. A mismatch refuses the migration; a derived run's null hash
    with `hash_invalid_because` is expected.
 3. **Plan** (`--dry-run` stops here): every file and field to change; every refusal with the command that
-   resolves it; the prior use it will record per test dataset (RFC-015); the margins it moves;
+   resolves it; the prior use it will record per heldout dataset (RFC-015); the margins it moves;
    the files a tag cannot restore.
 4. **Tag** `pre-0.5.0-migrate` in the repository; the plan lists what it does not cover: gitignored run
    files (`data/runs/*/run.json`, `outputs/_rows.jsonl`), `materialized/`, `.cache/`, `.build/`, other
@@ -207,26 +207,25 @@ already points at the commit the migration started from; otherwise the script re
    `accelerator: {recorded: false}`; `machine` takes `label`, `release`, `processor`, `cpu_count` (all six
    for an imported run, whose `libraries` and `instrument.harness` move to `imported_by`); the version-4 hash
    moves to `hash_v4`; the version-5 hash is computed. Derived runs keep `hash: null` and get the same split.
-6. **Baselines to champions**: each `baselines/<dataset>_baseline.json` becomes
-   `champions/<goal or _>/<dataset>/1.json` with `migrated_from`, the version-5 `fingerprint_hash` of its run
+6. **Baselines per goal**: each `baselines/<dataset>_baseline.json` becomes
+   `baselines/<goal or _>/<dataset>/1.json` with `migrated_from`, the version-5 `fingerprint_hash` of its run
    (absent when the run's hash is null), `promoted_from` resolved to `run:runs/<run_id>` (the `runs/` copy,
    as `catalog_adapter.py:675-676` already prefers); `index.json` with `current: 1`; `baselines/` is removed.
    Refusals: a baseline id that is not `<dataset>_baseline`; two goals sharing one baseline; a goal-less
    baseline on a dataset a goal uses. None occurs in this repository's 7 baselines; the podcast project has
    none.
-7. **Goals**: in every goal's `datasets[].role`, `dev` → `validation`, `heldout` → `test`; nothing else
-   (other roles stay; a link's `role` is never touched). A declared `axes.<axis>.margin` moves to
-   `success_criteria.margins`, listed in the plan because its meaning changes (RFC-015); rounds' bare
-   `baseline` and `conclusion.promoted_run` become `run:` ids.
-8. **Prior use of test datasets** (after step 7, so roles are the new ones): per test dataset,
+7. **Goals and rounds**: dataset roles are not renamed (`dev` and `heldout` stay). A declared
+   `axes.<axis>.margin` stays where it is and is listed in the plan, because its meaning changes (RFC-015);
+   rounds' bare `baseline` and `conclusion.promoted_run` become `run:` ids.
+8. **Prior use of heldout datasets**: per heldout dataset,
    `data/looks/<dataset>/prior.json` with the number of distinct configurations that had runs on it in the
-   test role, and no looks (RFC-015, the owner's decision).
+   heldout role, and no looks (RFC-015, the owner's decision).
 9. **The silver reference manifests**: `from_run.fingerprint_hash` stays as recorded, and the manifest gains
    a top-level `from_run_fingerprint_version: 4`. It goes at the top level, not inside `from_run`: `from_run`
    is one of the `AUTHORSHIP` keys the reference digest hashes (`_fingerprint.py:378, 407-416`), so a field
    inside it would move the digest of every reference made from a run and contradict every run scored
    against it.
-10. **Check**: `evh validate` with V17 and V18 passes; the catalog builds; the champions it shows are the 7
+10. **Check**: `evh validate` with V17 and V18 passes; the catalog builds; the baselines it shows are the 7
     baselines it showed before; every reference digest is unchanged.
 
 It writes nothing unless the dry run was clean and `--yes` is given. This repository migrates first; the
@@ -256,7 +255,7 @@ distinct version-4 hashes to 135 distinct version-5 hashes, and 242 to 242.
 
 ## Testing
 
-- `harness/tests/test_champions.py`: promote twice on one dataset for two goals; versions and pointer;
+- `harness/tests/test_baselines.py`: promote twice on one dataset for two goals; versions and pointer;
   goal-less `_`; an interrupted promotion leaves the old pointer valid and is recorded as interrupted by the
   next; two concurrent promotions get different versions; rollback moves the pointer and records it;
   `round-close --promote` re-run after a failed round save does not promote twice; `run-promote` refuses a
@@ -270,18 +269,18 @@ distinct version-4 hashes to 135 distinct version-5 hashes, and 242 to 242.
   directory is refused; the suffix never matches `_REPEAT`.
 - `harness/tests/test_migrate_0_5_0.py`: on a copy of the example project with a v4 fixture: the dry run's
   plan, each refusal, the ten steps, idempotence (a second run changes nothing), a run killed after step 5
-  finished by a second run, the tag reused, reference digests unchanged, and the champions page equal to the
+  finished by a second run, the tag reused, reference digests unchanged, and the baselines page equal to the
   old baselines page.
 - Run on this repository and the podcast project's data before release; both validate.
 
 ## Decisions (ADR candidates)
 
-1. Baselines become versioned champions per goal and dataset, with a pointer file, no symlinks
+1. Baselines become versioned baselines per goal and dataset, with a pointer file, no symlinks
    (no earlier ADR decided the per-dataset baseline; ADR-0002 only carries the goal on it).
 2. Fingerprint version 5: `machine` outside the hash, `host` (platform, Python, accelerator) inside, an
    explicit exclusion list per version, hashes recomputed by `validate`.
 3. Run ids with milliseconds and a random suffix; creating a run never reuses a directory.
 4. One identifier grammar with a closed list of kinds; segments allow the existing run ids' upper case and dots.
 5. The 0.5.0 migration is a one-time, re-runnable script, not a command; it trusts only stored bodies.
-6. Records that parallel commands write (champions, looks, prompt versions, round files) are written under one
+6. Records that parallel commands write (baselines, looks, prompt versions, round files) are written under one
    exclusive-create lock helper; version files are created exclusively and pointers rewritten atomically.

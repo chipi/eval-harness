@@ -1,28 +1,28 @@
-# RFC-015: The statistics of 0.5.0: non-inferiority, verdicts, test looks, power
+# RFC-015: The statistics of 0.5.0: non-inferiority, verdicts, heldout looks, power
 
 - **Status**: Draft (0.5.0)
 - **Authors**: Marko Dragoljevic
 - **Related PRDs**: [PRD-013](../prd/PRD-013-identity-and-ties.md) (FR3, FR5, FR6, FR9),
-  [PRD-009](../prd/PRD-009-prompts-and-optimisation.md) (FR3.2, FR4: acceptance and the test check)
+  [PRD-009](../prd/PRD-009-prompts-and-optimisation.md) (FR3.2, FR4: acceptance and the heldout check)
 - **Related RFCs**: RFC-014 (identity; the migration records prior use), RFC-010 (studies),
   [RFC-004](RFC-004-experiment-rounds.md) (rounds)
 - **Related ADRs**: [ADR-0006](../adr/ADR-0006-goal-axes-and-strategies.md) (goal ties, superseded in part)
 - **Code**: `harness/scripts/stats.py` (new functions), `catalog_views.py` and `catalog_build.py` (goal
   pages), `rounds.py`, `pair_test.py`, `family_test.py`, `rank_stability.py`, `holdout_significance.py`,
   `validate_tree.py` (margins, looks); new `harness/scripts/_looks.py`; `schemas/goal.schema.json`
-  (`success_criteria.margins`, `test_looks`), `schemas/look.schema.json`; validation suite
+  (`axes.<axis>.margin` without a default, `heldout_looks`), `schemas/look.schema.json`; validation suite
   `harness/tests/test_stats_validity.py`
 
 ## Abstract
 
 0.5.0 asks three statistical questions the harness did not ask before: is a cheaper arm **not worse** than
-the leader by more than a declared margin (non-inferiority); has a **test item set** been looked at too
+the leader by more than a declared margin (non-inferiority); has a **heldout item set** been looked at too
 often; and **can** these items show anything at all. The 0.4.0 question, is one arm **better**, keeps its
 test (the paired sign-flip test with Holm), which is exact for it. Non-inferiority is a different question
 with no exact permutation test, so this RFC chooses tests by simulation: for 0/1 measures, Tango's score test
 for paired proportions; for continuous measures, the studentized bootstrap, never below 30 items, and at a stricter
 level, or "inconclusive" below 50 items, when the paired differences lean towards losses. Verdicts are decided
-by p, in a fixed order. Each test dataset spends its one-sided α = 2.5% over its looks, front-loaded: the first look
+by p, in a fixed order. Each heldout dataset spends its one-sided α = 2.5% over its looks, front-loaded: the first look
 at 1.52%, the second at 0.38%, the tenth at 0.015%; only commands that write a decision take a look. The smallest
 attainable p and the minimum detectable effect are computed before anything is spent.
 
@@ -46,7 +46,7 @@ attainable p and the minimum detectable effect are computed before anything is s
   It is invalid for 0/1 measures and for skewed continuous ones.
 - The superiority test is not affected: its null is that the two arms are exchangeable item by item, and the
   sign-flip test is exact for that null.
-- Repeated comparisons on the same test items, choosing what to compare after seeing earlier results, inflate
+- Repeated comparisons on the same heldout items, choosing what to compare after seeing earlier results, inflate
   errors in a way Holm over a fixed family does not correct (Dwork et al., 2015).
 - `min_attainable_p(len(shared))` counts zero differences, which cannot contribute to a superiority test, so it
   overstates what small sets can reach.
@@ -77,7 +77,7 @@ attainable p and the minimum detectable effect are computed before anything is s
     counted; B counts the kept ones. p = (1 + #{t* ≥ T})/(B + 1).
   - B = 9999, raised to ⌈20/level⌉ − 1 (at most 199,999) when the level in force is below 0.002, so that at least
     about 20 resamples fall beyond the threshold; a Monte Carlo p near the level is then not decided by noise.
-  - The seed is the first 16 hex digits of sha256(`<test dataset digest>|<arm a>|<arm b>|<measure>|<margin>`), so each
+  - The seed is the first 16 hex digits of sha256(`<heldout dataset digest>|<arm a>|<arm b>|<measure>|<margin>`), so each
     comparison has its own resamples and the same comparison always gives the same p.
   - s = 0 (every difference equal): no test is possible; the verdict is **inconclusive (no variation)**, and the
     catalog says the arms measured the same on every item.
@@ -89,10 +89,12 @@ attainable p and the minimum detectable effect are computed before anything is s
   **inconclusive (too few items for a skewed measure)**, whatever p says; from 50 to 99 items the test uses α/4; from
   100 items α/2. The upper test of an equivalence claim is the mirror image (g1 > +0.5). A lean the other way makes the
   test conservative and needs no guard.
-- **Margins** are in the measure's units, declared by the goal per measure in `success_criteria.margins: {measure:
-  value}` (PRD-013 FR3.1); the 0.4.0 `axes.<axis>.margin` (a tie band defaulting to 2% of the leader) is removed, and
-  the migration (RFC-014) moves a declared one into `margins` and lists it, since its meaning changes. With no margin,
-  no non-inferiority test runs, and `validate` notes the goal. The `non_inferior` direction of PRD-005's goal axes uses
+- **Margins** are in the measure's units, declared by the goal per measure in the field 0.4.0 already has,
+  `success_criteria.axes.<axis>.margin` (`axes.quality.margin` for the primary measure; a project axis for another
+  measure) (PRD-013 FR3.1). What changes is its meaning and its default: in 0.4.0 it was a tie band defaulting to 2%
+  of the leader's mean; from 0.5.0 it is the non-inferiority margin and has no default. The migration (RFC-014) leaves
+  declared values where they are and lists them, since their meaning changes. With no margin, no non-inferiority test
+  runs, and `validate` notes the goal. The `non_inferior` direction of PRD-005's goal axes uses
   this test.
 
 **Evidence for Tango** (one-sided 2.5%, true difference at −margin; Monte Carlo error about ±0.003 at 3000 runs):
@@ -131,29 +133,29 @@ note)`, with Δ = arm − reference in the quality direction:
 
 The tests run as a fixed sequence at one level:
 
-1. With a margin declared, the non-inferiority test first. If it rejects, the superiority test next: **superior**
+1. With a margin declared, the non-inferiority test first. If it rejects, the superiority test next: **separated: better**
    if that rejects too, else **non-inferior**; an arm that is non-inferior and separated as worse is
    **non-inferior (worse, within margin)**.
-2. With no margin, or when non-inferiority does not reject: **superior** is not available after a failed
-   non-inferiority test; **worse** if the superiority test in the other direction rejects; else **inconclusive**,
-   with the reason (the test did not reject; too few items; the skew guard). With no margin declared, the
-   superiority test alone decides **superior** / **worse** / **inconclusive**.
+2. When non-inferiority does not reject: **separated: better** is not available after a failed non-inferiority
+   test; **separated: worse** if the superiority test in the other direction rejects; else **inconclusive**, with the
+   reason (the test did not reject; too few items; the skew guard). With no margin declared, the superiority test
+   alone decides, exactly as in 0.4.0: **separated: better** / **separated: worse** / **not separated**.
 
 Testing in a fixed sequence (non-inferiority, then superiority), each at the full level, needs no correction for
 the pair: the second is tested only when the first has rejected (the closed-testing argument). It holds for one chain;
 where several measures are tested together, the families are:
 
-- **A study's test check and a confirmation**: with `test_rule: noninferiority`, F1 = {the primary measure's
-  non-inferiority, each guardrail's non-inferiority against the start at its limit}, Holm at the look's level; the
+- **A study's heldout check and a confirmation**: with `test_rule: noninferiority`, F1 = {the primary measure's
+  non-inferiority, each limit's non-inferiority against the baseline}, Holm at the look's level; the
   primary's superiority is tested, at the look's level, only when every hypothesis of F1 rejects (serial
   gatekeeping, which keeps the family's error at the level). With `test_rule: superiority`, F = {the primary's
-  superiority, each guardrail's non-inferiority}, Holm at the look's level; no non-inferiority test of the primary runs.
+  superiority, each limit's non-inferiority}, Holm at the look's level; no non-inferiority test of the primary runs.
   All tests are one-sided.
-- **`run-promote`**: the challenger against the current champion on the goal's measure, the fixed sequence at the
+- **`run-promote`**: the promoted run against the current baseline on the goal's measure, the fixed sequence at the
   look's level.
 - **Goal pages**: the candidates' non-inferiority tests against the leader are one family (below); "worse" there is
   descriptive (shown with its nominal p), not a tested claim. Superiority in a round keeps today's Holm-adjusted
-  two-sided test at 5% on validation data.
+  two-sided test at 5% on dev data.
 
 `stats.verdict(…, rule)` takes the rule (`noninferiority`, `superiority`), and `stats.family_verdicts(…)` applies the
 families above. The verdict is decided by p; the interval shown is the unadjusted 95% interval of
@@ -164,31 +166,31 @@ it is below 2.5%.
 ### Goal pages and strategies
 
 - `quality_first`: the quality leader only.
-- `balanced` and `frugal`: among arms whose verdict against the leader is non-inferior (or superior), the best on
+- `balanced` and `frugal`: among arms whose verdict against the leader is non-inferior (or separated: better), the best on
   the tie-break (cost, then speed); `frugal` uses the goal's cost margin when it declares a wider one.
 - The candidates' non-inferiority tests against the leader are one family: Holm at the one-sided level. The
   leader is chosen from the same data, which biases arm − leader downwards: conservative, noted, not corrected.
 - An inconclusive arm is never recommended on a tie-break.
 
-### Test looks (`_looks.py`)
+### Heldout looks (`_looks.py`)
 
 - **What owns the budget.** A test **dataset**, identified by the digest of its items (sorted item ids with their
-  content hashes, so order does not matter). Any subset of it that a comparison uses (the test check's items minus
-  validation and shown items, the items two runs share, a slice) spends the dataset's budget, never a fresh one, so a
+  content hashes, so order does not matter). Any subset of it that a comparison uses (the heldout check's items minus
+  dev and shown items, the items two runs share, a slice) spends the dataset's budget, never a fresh one, so a
   budget cannot be dodged by dropping an item. Two goals that test on one dataset share its budget; two datasets that
   share items are counted separately, and `validate` notes the overlap.
-- **What is a look.** Only commands that write a decision take one: a confirmatory study's test check, a confirmation
+- **What is a look.** Only commands that write a decision take one: a confirmatory study's heldout check, a confirmation
   (`study-confirm`, RFC-010), `run-promote`, `round-close --promote`. A look is keyed by (dataset, the two arms'
   fingerprint hashes, the measure, the rule): a writing command that finds a recorded look with the same key reuses
-  its verdict and takes none (promoting a study's confirmed winner against the same champion is not a second look).
-  Read commands and pages (goal pages, `rounds`, `pair-test`, the catalog) never take one: on a test dataset they
+  its verdict and takes none (promoting a study's confirmed winner against the same baseline is not a second look).
+  Read commands and pages (goal pages, `rounds`, `pair-test`, the catalog) never take one: on a heldout dataset they
   show the nominal result labelled "not a look: nominal", and beside it the dataset's next look level. Their output
   depends only on the records, so it stays deterministic.
 - **Levels.** One-sided α = 2.5% per dataset, spent front-loaded: look k is tested at α·γ_k with γ_k = 6/(π²k²)
   (Σγ_k = 1, so the total over every look ever taken is α): look 1 at 1.52%, 2 at 0.38%, 3 at 0.17%, 4 at 0.095%,
   5 at 0.061%, 10 at 0.015%. Comparisons within one look share its level by the families above.
 - **Budget.** The series never runs out, but each look is stricter than the last, so a dataset wears out. K (default
-  10; a goal may declare `test_looks: K`, and the smallest K of the goals sharing a dataset applies) is a protective
+  10; a goal may declare `heldout_looks: K`, and the smallest K of the goals sharing a dataset applies) is a protective
   limit: look K + 1 and later are refused unless the person consents (PRD-012 FR4.5), and their levels continue the
   series, so consent never inflates the error.
 - **Storage and races.** `data/looks/<dataset>/<k>.json` (`schemas/look.schema.json`: key, level, actor, what, goal,
@@ -197,11 +199,11 @@ it is below 2.5%.
   a command that dies between the two leaves a `reserved` look, which stays spent (the items were looked at) and is
   shown as "no result recorded".
 - **History before 0.5.0** (the owner's decision): the migration (RFC-014) does not count earlier use as looks;
-  each test dataset starts at look 0, and `data/looks/<dataset>/prior.json` records how many distinct configurations
-  had runs on it in the test role before 0.5.0. Pages show it beside the looks ("used by 29 configurations before
+  each heldout dataset starts at look 0, and `data/looks/<dataset>/prior.json` records how many distinct configurations
+  had runs on it in the heldout role before 0.5.0. Pages show it beside the looks ("used by 29 configurations before
   0.5.0; levels from 0.5.0 do not account for that").
-- **Where it shows.** Goal pages and `evh goals` show per test dataset: looks taken, the next look's level, the protective
-  limit, and the prior use; `evh goals --goal G --looks` lists every look of its test datasets (key, level, actor,
+- **Where it shows.** Goal pages and `evh goals` show per heldout dataset: looks taken, the next look's level, the protective
+  limit, and the prior use; `evh goals --goal G --looks` lists every look of its heldout datasets (key, level, actor,
   what, verdict).
 
 ### Can these items show anything
@@ -213,8 +215,8 @@ it is below 2.5%.
 - **Continuous non-inferiority** has no useful attainable p (a bootstrap p reaches 1/(B + 1) on any data), so
   possibility is judged by power: the study is refused when the smallest margin provable at 80% power (the MDE below,
   at the look's level) exceeds the goal's margin. The check runs at the start with σ_d from existing arm pairs on the
-  test dataset, and again before the test check with σ_d from the study's own validation trials; with no σ_d at the
-  start, the dry run says "cannot tell yet" and the check before the test look decides.
+  heldout dataset, and again before the heldout check with σ_d from the study's own dev trials; with no σ_d at the
+  start, the dry run says "cannot tell yet" and the check before the heldout look decides.
 - **Minimum detectable effect** at 80% power: (z₁₋α/m + z₀.₈₀)·σ_d/√n (n all items; PRD-013 FR6.2's √n′ is amended to
   √n, since σ_d already counts the zero differences), σ_d the standard deviation of paired
   differences: the upper quartile over existing arm pairs on the dataset, or a pilot pair; for 0/1, σ_d² = p₊ + p₋ −
@@ -224,7 +226,7 @@ it is below 2.5%.
 
 ## Migration
 
-No data changes for the statistics themselves. The migration script (RFC-014) records each test dataset's prior use
+No data changes for the statistics themselves. The migration script (RFC-014) records each heldout dataset's prior use
 and moves declared `axes.*.margin` values into `margins`. Goal
 recommendations change where an arm was "tied" and is now inconclusive or not tested (no margin declared); the
 release notes list each change on this repository's goals with its reason, and every goal here gains a declared
@@ -242,11 +244,11 @@ margin before release (the owner sets each; RFC-014's plan prints the goals with
   not different arms on a fixed set without an end.
 - **Equal shares, α/K per look.** Rejected by the owner: every look, the first included, would be tested at 0.25%;
   the front-loaded series gives the first look 1.52% and still spends at most α in total.
-- **Count 0.4.0's use as looks.** Rejected by the owner: every test set here (23 to 35 configurations each) would be
+- **Count 0.4.0's use as looks.** Rejected by the owner: every heldout set here (23 to 35 configurations each) would be
   spent on the first day; prior use is shown instead.
-- **Every comparison on test data is a look, pages included.** Rejected: a page's level would change when another
+- **Every comparison on heldout data is a look, pages included.** Rejected: a page's level would change when another
   goal records a look, and a read command would write records.
-- **Thresholdout (Dwork et al.) for test looks.** Deferred: it allows more looks, but adds noise to every reported
+- **Thresholdout (Dwork et al.) for heldout looks.** Deferred: it allows more looks, but adds noise to every reported
   number; a fixed budget is simpler to read.
 - **Betting confidence sequences for bounded means** (valid for any distribution of a bounded measure). Deferred:
   valid at every n, but wide at the sample sizes evaluations use; a candidate for a later release.
@@ -260,7 +262,7 @@ margin before release (the owner sets each; RFC-014's plan prints the goals with
   definition and B for small levels; s = 0 inconclusive; the seed differs per arm pair and repeats per comparison;
   the mirrored guard; the serial gatekeeping family; Holm across candidates; attainable p with zeros; the MDE formula
   against a simulation on a fixed pilot.
-- `harness/tests/test_looks.py`: γ_k levels; a subset spends its dataset's budget; item order does not change the
+- `harness/tests/heldout_looks.py`: γ_k levels; a subset spends its dataset's budget; item order does not change the
   dataset; sharing across goals; reuse of a recorded look with the same key; read commands take none; two concurrent
   reservations get different k; a `reserved` look stays spent; refusal at K + 1 without consent and the level
   continuing the series; prior use recorded and shown, not counted.
@@ -273,9 +275,9 @@ margin before release (the owner sets each; RFC-014's plan prints the goals with
 2. Tests by question and measure: sign-flip for superiority (unchanged); Tango for 0/1 non-inferiority;
    bootstrap-t for continuous non-inferiority from 30 items, with a skew guard (g1 < −0.5: inconclusive below 50
    items, α/4 below 100, α/2 from 100).
-3. Test datasets spend α = 2.5% one-sided over their looks, front-loaded (γ_k = 6/(π²k²)), with a protective limit of K
+3. Heldout datasets spend α = 2.5% one-sided over their looks, front-loaded (γ_k = 6/(π²k²)), with a protective limit of K
    looks; only commands that write a decision take a look; subsets spend their dataset's budget; prior use is shown,
    not counted.
 4. Power is stated before spending: attainable p from the items that can contribute, and an MDE from data.
-5. Families: serial gatekeeping (non-inferiority family by Holm, then superiority) for a test check; the bootstrap-t is
+5. Families: serial gatekeeping (non-inferiority family by Holm, then superiority) for a heldout check; the bootstrap-t is
    specified exactly (p, B, seed, ties, the mirrored guard), its rule chosen on a simulation grid of tail weights.

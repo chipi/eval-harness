@@ -1,4 +1,4 @@
-# ADR-0015 — Ties are non-inferiority; test datasets spend their level over looks (0.5.0)
+# ADR-0015 — Ties are non-inferiority; heldout datasets spend their level over looks (0.5.0)
 
 **Status:** Accepted (2026-10-26), design; not yet built. Supersedes the tie rule of
 [ADR-0006](ADR-0006-goal-axes-and-strategies.md).
@@ -14,7 +14,7 @@ difference was within a margin, by default 2% of the leader's mean: absence of e
 margin taken from the data being judged. The obvious non-inferiority test, the sign-flip test on the
 shifted differences, was simulated and found invalid for 0/1 measures (error up to 0.299 at a nominal
 0.025) and for continuous measures with a tail of losses (up to 0.151). Studies (ADR-0010) will compare
-many arms on the same test items, which inflates errors in a way a fixed Holm family does not correct.
+many arms on the same heldout items, which inflates errors in a way a fixed Holm family does not correct.
 
 ## Decision
 
@@ -26,13 +26,13 @@ many arms on the same test items, which inflates errors in a way a fixed Holm fa
   exactly, never below 30 items, and with a stricter level, or "inconclusive" below 50 items, when the
   paired differences lean towards losses; the rule was chosen on simulations across tail weights after the
   first draft's guard failed them. Verdicts are decided by p in a fixed order (non-inferiority,
-  then superiority); a test check's families use serial gatekeeping.
-- **Each test dataset spends a one-sided 2.5% over all its looks, front-loaded** (the owner's choice):
+  then superiority); a heldout check's families use serial gatekeeping.
+- **Each heldout dataset spends a one-sided 2.5% over all its looks, front-loaded** (the owner's choice):
   look k at 2.5% · 6/(π²k²), so 1.52%, 0.38%, 0.17%, …; after a protective limit (10 by default) a look
   needs the person's consent. Only commands that record a decision take a look (a study's check, a
   confirmation, a promotion); pages show nominal results labelled as not a look. Any subset of a test
   dataset spends the dataset's budget.
-- **Use before 0.5.0 is shown, not counted** (the owner's choice): each test dataset starts at look 0,
+- **Use before 0.5.0 is shown, not counted** (the owner's choice): each heldout dataset starts at look 0,
   with the number of configurations that used it before 0.5.0 recorded beside it.
 - **Power before spending**: the smallest attainable p (0/1) or the smallest provable margin (continuous)
   is compared with the next look's level before anything runs; a study that cannot produce evidence is
@@ -41,6 +41,6 @@ many arms on the same test items, which inflates errors in a way a fixed Holm fa
 ## Consequences
 
 Recommendations change where an arm was "tied" and is now inconclusive or untested; the release notes
-list each, and every goal here declares its margins before release. Small test sets yield
+list each, and every goal here declares its margins before release. Small heldout sets yield
 "inconclusive" more often, which is the honest answer: below 30 items a continuous measure cannot show
 non-inferiority at all.

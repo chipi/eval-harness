@@ -159,21 +159,21 @@ Draft until 0.5.0 is built; then they replace the sections above they name.
 - **Results on stdout, everything else on stderr.** Progress, notes, hints and warnings go to stderr;
   stdout holds the result: the table, or with `--json` the envelope `{"command", "version", "result"}`.
   `evh <command> --json | jq .result` always works.
-- **Refusals**: on stderr, `REFUSED (<code>): <title>` then the detail and `fix: <command>` indented;
+- **Refusals**: on stderr, `ERROR (<code>): <title>` then the detail and `fix: <command>` indented;
   with `--json`, the problem details object on stdout. The code is stable and listed on the refusals
   page. A consent refusal adds the grant command a person runs:
 
   ```text
-  REFUSED (consent-required): This needs the person's consent
-    Promoting run:runs/cnn_bart_l_v1_20261026T153757.123Z_7f3a to champion of news_summary_cnn on
+  ERROR (consent-required): This needs the person's consent
+    Promoting run:runs/cnn_bart_l_v1_20261026T153757.123Z_7f3a to baseline of news_summary_cnn on
     cnn_dailymail_200 (replacing version 2).
     fix: evh consent grant --kind promote --command "evh run-promote --run run:runs/… --reason '…'"
   ```
 
   A person at a terminal running `run-promote` is asked to add `--confirm`, not to make a grant.
-- **Exit codes**: 0 done; 1 refused; 2 usage; 3 nothing measured; 4 stopped by a budget or the cost cap,
-  partial results kept; 5 partly failed (some jobs or trials); 6 a check found problems (`validate`,
-  `evidence-check`, `adapter-check`, `skills-check`); 65–78 operational errors (75: try again later);
+- **Exit codes**: 0 done; 1 refused; 2 usage; 3 a judge scorer not validated (as in 0.4.0); 4 stopped by a
+  budget or the cost cap, partial results kept; 5 partly failed (some jobs or trials); 6 a check found problems (`validate`,
+  `evidence-check`, `adapter-check`, `skills-check`); 7 nothing measured; 65–78 operational errors (75: try again later);
   130 interrupted. The table is printed by `evh --help` and in the Runbook.
 - **Who acted**: a command that writes prints, on stderr, "recorded as person:marko" (or "agent:claude
   for person:marko", or "unknown:marko: set EVH_ACTOR to name yourself"), once.
@@ -188,13 +188,13 @@ Draft until 0.5.0 is built; then they replace the sections above they name.
 
 | in the catalog or inspector | command |
 | --- | --- |
-| the champions page | `evh champions` |
-| a champion's page | `evh champions --goal G --dataset D [--all-versions]` |
-| (no page: a file) the champions export | `evh champions-export --out FILE` |
+| the baselines page | `evh baselines` |
+| a baseline's page | `evh baselines --goal G --dataset D [--all-versions]` |
+| (no page: a file) the baselines export | `evh baselines-export --out FILE` |
 | the studies page | `evh studies [--goal G]` |
 | a study's page | `evh study-status <study> [--trials]` |
 | the prompts page, a prompt's page, its changes | `evh prompts [<name>]`, `evh prompt-diff <a> <b>` |
-| the goal page's test looks | `evh goals --goal <id> --looks` |
+| the goal page's heldout looks | `evh goals --goal <id> --looks` |
 | the arm page's stages, prompts, build, failed items | `evh arms --arm <id>` (the same sections) |
 | the inspector's stages panel | `evh inspect … --stages --item <id>` |
 | a study page's suggested promotion | `evh run-promote --run <run> --reason "…" --confirm` |
@@ -211,7 +211,7 @@ evh run-promote --run <the suggested run> --reason "…" --confirm # the person'
 ```
 
 - `--dry-run` prints: the largest number of trials, the items per trial, the estimated cost per role
-  (system, judge, sampler), the test items left after exclusions, the smallest p they can reach and the
+  (system, judge, sampler), the heldout items left after exclusions, the smallest p they can reach and the
   look's level, and whether the study would be refused (`no-possible-evidence`).
 - `study-status` prints the outcome first (UXS-004's box, as lines), then the trials table, the budget
   and the stop rule.

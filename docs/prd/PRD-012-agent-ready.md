@@ -71,10 +71,10 @@ commands.
 
 - _As a person, I tell my agent "run an optimisation loop on the summary prompt for goal
   news_summary_cnn, $10 and two GPU hours"; it reads the goal, writes the study spec, dry-runs it,
-  tells me the smallest effect it can detect, runs it, and reports the result of the test check,
+  tells me the smallest effect it can detect, runs it, and reports the result of the heldout check,
   asking me before it promotes._
 - _As a person, I open the catalog afterwards and the goal page shows the study's round, each trial
-  with its hypothesis, change, test against the incumbent and reason, the test check and the cost,
+  with its hypothesis, change, test against the best so far and reason, the heldout check and the cost,
   and that the agent ran it on my instruction._
 - _As an agent, every tool returns JSON matching its declared schema, and a refusal returns its
   code, its explanation and the command that resolves it._
@@ -134,7 +134,7 @@ commands.
   `structuredContent` with the command's output schema; a refusal is a tool result marked as an
   error with the RFC 9457 body.
 - **FR4.3**: Records are also **resources** with URI templates (`evh://runs/{run_id}`,
-  `evh://goals/{goal_id}`, `evh://champions/{goal}`), so an agent can read without calling a
+  `evh://goals/{goal_id}`, `evh://baselines/{goal}`), so an agent can read without calling a
   command.
 - **FR4.4**: Long work (a run, a job set, a study) is an MCP **task** when the client asks for one
   (the tasks extension is opt-in per request); otherwise the call returns a job id at once and the

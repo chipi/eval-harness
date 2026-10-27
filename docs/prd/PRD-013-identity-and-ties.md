@@ -1,9 +1,9 @@
-# PRD-013: Baselines per goal, the host beside the hash, non-inferiority, test looks, one grammar
+# PRD-013: Baselines per goal, the host beside the hash, non-inferiority, heldout looks, one grammar
 
 - **Status**: Draft (0.5.0), final review round
 - **Authors**: Marko Dragoljevic
 - **Related RFCs**: [RFC-001](../rfc/RFC-001-fingerprint-and-code-identity.md) (the fingerprint, to gain
-  version 5), [RFC-004](../rfc/RFC-004-experiment-rounds.md) (rounds and baselines); [RFC-014](../rfc/RFC-014-identity-champions-migration.md) (these changes
+  version 5), [RFC-004](../rfc/RFC-004-experiment-rounds.md) (rounds and baselines); [RFC-014](../rfc/RFC-014-identity-baselines-migration.md) (these changes
   and the migration script), [RFC-015](../rfc/RFC-015-noninferiority-looks-power.md) (non-inferiority, verdicts, test
   looks, power)
 - **Related ADRs**: [ADR-0006](../adr/ADR-0006-goal-axes-and-strategies.md) (goal ties, superseded in part by
@@ -52,19 +52,19 @@ project (the two projects known to use the harness), not a permanent command.
   is built for this case.
 - Goal dataset roles are free text: here `heldout` (6), `dev` (5), `generalization` (1); in the podcast
   project also `smoke`, `prod_sample` and others, and one dataset is test for four goals and validation
-  for a fifth. Every validation slice in this repository is nested in its test set. All 13 closed rounds
-  here compared arms on test items; 6 promoted.
+  for a fifth. Every dev slice in this repository is nested in its heldout set. All 13 closed rounds
+  here compared arms on heldout items; 6 promoted.
 - Run ids are the config id and a timestamp to the second (`experiment_run.py:586`), directories created
   with `exist_ok=True`; derived copies keep their source's id, so 59 ids appear in more than one directory.
 - No migration command exists.
 
 ## Goals
 
-- A baseline answers one goal on one dataset; promotion, rounds, studies and champions agree on it.
+- A baseline answers one goal on one dataset; promotion, rounds, studies and baselines agree on it.
 - The same arm on two hosts compares as controlled on quality when only the host label differs; a
   difference that can change results still shows.
 - A tie-break is a claim the data supports, by a valid test, against a margin chosen before the data.
-- Test items are spent knowingly: every look is counted and costs part of the level.
+- Heldout items are spent knowingly: every look is counted and costs part of the level.
 - No two runs share a directory, and a job's run id is known before it starts.
 - One grammar names every versioned thing.
 - Every verdict says how large the difference is and how precisely it is known; a test that cannot
@@ -91,14 +91,14 @@ project (the two projects known to use the harness), not a permanent command.
   controlled, and the page says the host label differs and flags the speed comparison._
 - _As a reader, a goal page recommends a cheaper arm only when a valid test shows it non-inferior to the
   leader by the goal's declared margin; otherwise it says "inconclusive" and why._
-- _As a team lead, I see that our CNN test set has been looked at 7 times of its 10, and that the next
+- _As a team lead, I see that our CNN heldout set has been looked at 7 times of its 10, and that the next
   comparison on it is tested at its smaller share._
 - _As a project, I run `python -m evaluation_harness.migrate_0_5_0 --dry-run`, read what will change, what it refuses and what its tag
   cannot restore, run it, and `evh validate` proves every hash._
 
 ## Functional Requirements
 
-- **FR1: Baselines per goal and dataset.** A baseline is the current champion of a goal on a dataset
+- **FR1: Baselines per goal and dataset.** A baseline is the current baseline of a goal on a dataset
   ([PRD-011](PRD-011-evidence-registry.md)); `run-promote`, `round-close --promote` and every command or page
   that reads a baseline use it, filtering by goal. A run with no goal promotes to the dataset's goal-less
   baseline (goal `_` in the grammar of FR7).
@@ -136,7 +136,7 @@ project (the two projects known to use the harness), not a permanent command.
   - **FR3.4**: An arm separated as worse than the leader but shown non-inferior is reported **non-inferior
     (worse, within margin)** and is eligible for a tie-break.
   - **FR3.5**: ADR-0006 is superseded in part by an ADR that records this. [PRD-005](PRD-005-goals-and-rounds.md)
-    is amended: its dataset roles become `validation` and `test` (others kept), its `non_inferior` direction
+    is amended: its `non_inferior` direction
     uses this test, and its round suggestions about arms "tied with the leader" use non-inferiority. The
     recommendations that change on this repository's goals are listed in the release notes, each with its
     reason.
@@ -163,12 +163,12 @@ project (the two projects known to use the harness), not a permanent command.
     them to the effect, run the exact test). `rank-stability` reports it; a dry run reports it when such
     data exists.
 - **FR7: One grammar.** Every versioned thing is `<kind>:<path>/<n>` (a fixed version) or
-  `<kind>:<path>@<alias>` (a moving pointer); kinds are a closed list (`prompt`, `champion`, `run`,
-  `study`, `round`, `reference`, `dataset`, `goal`). A champion names its goal and dataset
-  (`champion:news_summary/cnn_200/3`, `champion:news_summary/cnn_200@current`; goal-less `champion:_/smoke_v1/1`).
+  `<kind>:<path>@<alias>` (a moving pointer); kinds are a closed list (`prompt`, `baseline`, `run`,
+  `study`, `round`, `reference`, `dataset`, `goal`). A baseline names its goal and dataset
+  (`baseline:news_summary/cnn_200/3`, `baseline:news_summary/cnn_200@current`; goal-less `baseline:_/smoke_v1/1`).
   A run is named with its runs directory (`run:runs-silver/<run_id>`), since derived copies share ids.
-  Prompt aliases are set by a command and never moved by promotion. Champions are stored as
-  `data/champions/<goal>/<dataset>/<n>.json`, with the current pointer in that directory's `index.json`
+  Prompt aliases are set by a command and never moved by promotion. Baselines are stored as
+  `data/baselines/<goal>/<dataset>/<n>.json`, with the current pointer in that directory's `index.json`
   (no symlinks).
 - **FR8: The 0.5.0 migration script.** A one-time release script, `harness/scripts/migrate_0_5_0.py`,
   shipped in the package (a project that installs the harness has it) and run as
@@ -188,11 +188,10 @@ project (the two projects known to use the harness), not a permanent command.
      the migration refuses when those files would be touched.
   5. Fingerprints are restructured to version 5 from the stored body; the version-4 hash is kept beside the
      new one; derived runs keep a null hash with the same host split.
-  6. Baselines become champions, version 1 each (recording the old id and the version-5 fingerprint hash);
+  6. Each per-dataset baseline becomes its goal's baseline on that dataset, version 1 (recording the old id and the version-5 fingerprint hash);
      the old `baselines/` folder is removed.
-  7. Goal dataset roles: `dev` → `validation`, `heldout` → `test`; other roles are kept as they are; only
-     the datasets' `role` is touched (never a link's).
-  8. Each test dataset's use before 0.5.0 is recorded beside its looks, not counted as looks (FR9.4).
+  7. Dataset roles are not renamed: `dev` and `heldout` stay.
+  8. Each heldout dataset's use before 0.5.0 is recorded beside its looks, not counted as looks (FR9.4).
   9. A silver reference's record of the run it came from keeps its version-4 hash (it is part of the
      reference's identity), and the manifest records the version that hash follows outside that record, so
      the reference's digest does not move.
@@ -201,21 +200,21 @@ project (the two projects known to use the harness), not a permanent command.
   It refuses only real ambiguity among baselines (a custom baseline id; two goals sharing one baseline; a
   goal-less baseline on a dataset a goal uses), never runs in general. This repository migrates first, then
   the podcast project after its pin moves to 0.5.0.
-- **FR9: Test looks are a budget.**
-  - **FR9.1**: A **look** is a decision recorded on test items by a command that writes one: a confirmatory
+- **FR9: Heldout looks are a budget.**
+  - **FR9.1**: A **look** is a decision recorded on heldout items by a command that writes one: a confirmatory
     study's check, a confirmation, `run-promote`, `round-close --promote`. A recorded look with the same two
-    arms, measure and rule is reused, not repeated. Pages and read commands never take a look: on test data
+    arms, measure and rule is reused, not repeated. Pages and read commands never take a look: on heldout data
     they show the nominal result labelled as not a look.
-  - **FR9.2**: Looks are counted per **test dataset** (its items, by content hash, in any order), across goals:
-    two goals that share a test dataset share its budget, and any subset of it spends the dataset's budget.
-  - **FR9.3**: Each test dataset spends a one-sided α of 2.5% over all its looks, front-loaded (the owner's
+  - **FR9.2**: Looks are counted per **heldout dataset** (its items, by content hash, in any order), across goals:
+    two goals that share a heldout dataset share its budget, and any subset of it spends the dataset's budget.
+  - **FR9.3**: Each heldout dataset spends a one-sided α of 2.5% over all its looks, front-loaded (the owner's
     decision): look k is tested at α · 6/(π²k²), so the first at 1.52%, the second at 0.38%, the tenth at
     0.015%; several comparisons within one look share it by Holm. Past a protective limit of K looks (default
     10, declarable per goal) a look needs the person's consent; its level continues the series.
-  - **FR9.4**: At migration no looks are counted (the owner's decision): each test dataset starts at look 0,
-    and the number of distinct configurations that had runs on it in the test role before 0.5.0 is recorded
+  - **FR9.4**: At migration no looks are counted (the owner's decision): each heldout dataset starts at look 0,
+    and the number of distinct configurations that had runs on it in the heldout role before 0.5.0 is recorded
     and shown beside its looks.
-  - **FR9.5**: Goal pages and `evh goals` show each test dataset's looks taken, the next look's level, the
+  - **FR9.5**: Goal pages and `evh goals` show each heldout dataset's looks taken, the next look's level, the
     protective limit and its use before 0.5.0.
 
 ## Success Criteria
@@ -227,12 +226,12 @@ project (the two projects known to use the harness), not a permanent command.
 - The score test's error rate at the margin, on the review's simulation grid, is at or below the nominal
   level; a planted cheaper arm equal in quality is non-inferior at 200 items and inconclusive at 10; a
   planted worse arm is never recommended.
-- A test dataset looked at K times refuses look K + 1 without consent, and tests it at the next level of the
+- A heldout dataset looked at K times refuses look K + 1 without consent, and tests it at the next level of the
   series when consent is given.
 
 ## Related Documents
 
-- [RFC-014](../rfc/RFC-014-identity-champions-migration.md) (); [ADR-0006](../adr/ADR-0006-goal-axes-and-strategies.md).
+- [RFC-014](../rfc/RFC-014-identity-baselines-migration.md) (); [ADR-0006](../adr/ADR-0006-goal-axes-and-strategies.md).
   References ([INFLUENCES](../INFLUENCES.md)): Schuirmann 1987 and Lakens 2017 (equivalence and
   non-inferiority), Tango 1998 (paired proportions), Tian and Ramdas (online familywise error control),
   Dwork et al. 2015 (reusable holdout), Miller 2024 (error bars), Card et al. 2020 (power).

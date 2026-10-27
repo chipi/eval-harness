@@ -73,7 +73,7 @@ per repeat, so each can be retried and resumed on its own (`experiment-run` refu
   `/dev/null`, stdout and stderr to `supervisor.log`, `close_fds=True`), prints the id and returns. Detaching the
   descriptors matters: a caller that captures `jobs-run`'s output (RFC-016's tools) would otherwise wait until the
   supervisor closed the pipe, which is when the set ends. With `--wait` it follows until the set ends and exits with
-  the set's outcome: 0 when every job succeeded, 3 when none did, 4 when a budget stopped it, and 5 (partly failed,
+  the set's outcome: 0 when every job succeeded, 7 when none did, 4 when a budget stopped it, and 5 (partly failed,
   RFC-013) when some failed. `--dry-run` prints the jobs, where each runs, the phases' commands, the estimated cost and
   time, and starts nothing.
 - **One supervisor per set**: the supervisor holds an exclusive `flock` on `supervisor.lock` for its whole life. The
@@ -93,7 +93,7 @@ per repeat, so each can be retried and resumed on its own (`experiment-run` refu
 - **Timeouts and retries**: a job past `timeout_s` is killed (its process group) and marked timed_out; a job whose
   attempt exits with a transient code (69, 75: RFC-013) is retried up to `max_retries`, each retry a new attempt resuming
   from the last. `experiment-run` exits 75 when its items failed only on transient errors after retries (RFC-007's item
-  failures), so the code is produced, not assumed. Exit 3 (nothing measured), 1 (refused), 4 (budget) and 70 (an
+  failures), so the code is produced, not assumed. Exit 7 (nothing measured), 3 (a judge not validated), 1 (refused), 4 (budget) and 70 (an
   internal error) are not retried.
 - **Re-running a set**: `jobs-run --resume <set id>` runs pending `after` commands first, then skips succeeded jobs and
   continues the others from their last attempts.

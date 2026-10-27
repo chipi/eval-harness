@@ -82,7 +82,7 @@ params: {provider: openai, model: gpt-5-mini}
   `data/prompts/<name>/.lock`; inside it the harness re-reads the index, reuses a version with the same hash if one
   appeared meanwhile, and creates `<n>.json` with `O_EXCL`, so two runs never get one number for different bytes.
 - **The tree stays clean**: the harness's record directories (`data/prompts/`, `data/studies/`, `data/looks/`,
-  `data/champions/`) are records, not code, as run output is. `filter_dirt` (`_fingerprint.py:98-112`) ignores changes
+  `data/baselines/`) are records, not code, as run output is. `filter_dirt` (`_fingerprint.py:98-112`) ignores changes
   under them, tracked or not, so recording a version never makes the next run `dirty`; validation (V19) guards their
   integrity instead.
 - **Aliases** are set only by `evh prompt-alias <name> <alias> <n>`; promotion never moves them (RFC-014).
@@ -129,7 +129,7 @@ authors, the diff between consecutive versions, and per version the runs and the
 versions they used. Every view has its command (above). Prompt text (the diffs) is written into the static pages only
 when the project publishes it (`catalog: {publish: [prompts]}` in `config.yaml`), since a project's prompts may be
 private and the pages may be published; otherwise the pages show hashes and sizes, and the diff is `evh prompt-diff`
-([UXS-004](../uxs/UXS-004-studies-champions-prompts.md#a-prompts-page)).
+([UXS-004](../uxs/UXS-004-studies-baselines-prompts.md#a-prompts-page)).
 
 ### Validation (V19)
 
