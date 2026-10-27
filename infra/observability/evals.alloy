@@ -110,8 +110,8 @@ loki.relabel "evals_naming" {
 // route): requests and latency per route and status, its caches, its memory. Scraped on the
 // container's bridge IP:8080 like base.alloy's api scrape, so it survives a recreated container;
 // Caddy forwards only /catalog/api/ to the inspector, so /metrics is never public. deploy.sh
-// starts the inspector (step 3) before it installs this file (step 5): the route exists before
-// the scrape does.
+// installs this file (step 2b) before it recreates the inspector (step 3), so each container's log
+// tailer starts under these rules; the scrape reads up=0 for the seconds until the inspector runs.
 discovery.relabel "evals_metrics" {
 	targets = discovery.docker.app.targets
 	rule {

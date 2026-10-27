@@ -9,7 +9,22 @@ The version lives in `scripts/_version.py`; a release is the git tag `v<version>
 release workflow refuses a tag that disagrees with that file or has no section here. A change
 that can move a result is never a patch release without saying so under **Changed**.
 
-## 0.4.2 — 2026-10-27
+## 0.4.3 — 2026-10-27
+
+A security fix to the inspector: `evh catalog-serve` no longer serves files through `/api/`.
+Upgrade if you run it where anyone else can reach it. No result moves.
+
+### Fixed
+
+- **Nothing is read through `/api/`.** A path under `/api/` skipped the server's path checks
+  and fell through to the file server, so `/api/../.env`, encoded or not, returned files from
+  the project root, keys included. This happened in local and in `--public` mode. Now a `..`
+  anywhere in a path is refused first, and only the API's three endpoints (`/api/health`,
+  `/api/compare`, `/api/item`) answer under `/api/`. Any other `/api/` path is 404. In
+  `--public` mode no path outside the API serves a file.
+- **`--hooks` see one route for every unknown `/api/` path.** It is named `/api/other`, so
+  someone asking for many made-up paths cannot create a metric series for each.
+
 
 A catalog that says what changed, and where: every count on the home page has a trend and opens a
 page that shows the rows behind it, for the same period. An activity page and an arms and configs

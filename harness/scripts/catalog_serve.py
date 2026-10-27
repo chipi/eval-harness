@@ -695,21 +695,27 @@ def served(build_dir: Path, data_dir: Path, also: tuple = ()) -> tuple:
     return tuple(out)
 
 
+#: The API's endpoints. Anything else under /api/ is 404: it is not a way into the files.
+API_ROUTES = ("/api/health", "/api/compare", "/api/item")
+
+
 def allowed(path: str, host: str, port: int, prefixes: tuple) -> int:
     """0 if the request may be served, else the HTTP status to refuse it with.
 
     Binding to 127.0.0.1 does not stop a web page from reaching the server through DNS
-    rebinding, so the Host header must name this machine. Only the served trees are readable,
-    and no dot-folder inside them (.git and the like) ever is.
+    rebinding, so the Host header must name this machine. Only the API's endpoints and the
+    served trees are readable, and no dot-folder inside them (.git and the like) ever is.
+    `..` is refused first, for every path: /api/../.env once skipped the checks and was served
+    from the project root, keys included.
     """
     local = (f"127.0.0.1:{port}", f"localhost:{port}", "127.0.0.1", "localhost")
     if host not in (LIMITS["hosts"] or local):
         return 403
     p = unquote(urlparse(path).path)
-    if p.startswith("/api/"):
-        return 0
     if ".." in p.split("/"):
         return 404
+    if p.startswith("/api/"):
+        return 0 if p in API_ROUTES else 404
     prefix = next((x for x in prefixes if p.startswith(x)), None)
     if prefix is None:
         return 404
@@ -773,8 +779,12 @@ def _hook_routes() -> dict:
 
 
 def _route(path: str) -> str:
-    """A request's route for the hooks: the API endpoint, a hook's own path, or "static"."""
-    return path if path.startswith("/api/") or path in _hook_routes() else "static"
+    """A request's route for the hooks: the API endpoint, a hook's own path, "/api/other" for any
+    other /api/ path (one name, however many paths are asked: a route is a metric series), or
+    "static"."""
+    if path in API_ROUTES or path in _hook_routes():
+        return path
+    return "/api/other" if path.startswith("/api/") else "static"
 
 
 class Handler(SimpleHTTPRequestHandler):
@@ -870,6 +880,9 @@ class Handler(SimpleHTTPRequestHandler):
                 )
             code, body = answer(url.path, url.query)
             return self._json(code, body)
+        if not self.prefixes:  # public mode: the API only, never a file
+            self.send_error(404)
+            return
         super().do_GET()
 
     def _json(self, code: int, body: dict) -> None:

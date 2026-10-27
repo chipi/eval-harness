@@ -94,6 +94,15 @@ rm -rf "$OUT/inspector/examples" "$OUT/catalog-head.html"
 # The build above ran the package's code; its bytecode is not part of the release.
 find "$OUT/inspector/pkg" -name __pycache__ -type d -prune -exec rm -rf {} +
 
+# The site's and the docs' footers say "build: local" (a commit cannot hold its own hash): the
+# release names the commit it was built from. A page left saying "build: local" fails the render.
+link="build: <a href=\"https://github.com/${GITHUB_REPOSITORY:-chipi/eval-harness}/commit/${SHA}\">${SHA:0:7}</a>"
+{ grep -rlF --include='*.html' 'build: local' "$OUT/sites" || true; } | xargs -r sed -i "s#build: local#${link}#g"
+left="$({ grep -rlF --include='*.html' 'build: local' "$OUT/sites" || true; } | wc -l)"
+[ "$left" -eq 0 ] || { echo "::error::$left page(s) still say 'build: local'"; exit 1; }
+{ grep -rlF --include='*.html' "${SHA:0:7}</a>" "$OUT/sites" || true; } | grep -q . \
+  || { echo "::error::no page names the commit ${SHA:0:7}"; exit 1; }
+
 for site_dir in "$OUT"/sites/*/; do
   domain="$(basename "$site_dir")"
   [ -f "$ROOT/infra/nginx/sites/${domain}.conf" ] || { echo "::error::sites/$domain has no infra/nginx/sites/${domain}.conf"; exit 1; }
