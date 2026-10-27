@@ -147,7 +147,7 @@ The order an agent follows, as the `evh-run-a-study` skill and PRD-012's first u
 3. `study-run` opens the study. Then, in a loop: `study-ask` returns the state and an `ask_id`; the
    agent proposes one change with its hypothesis (`study-tell` with the `ask_id`); the result says kept or
    dropped and why; `trial-running` means wait and ask again.
-4. When a stop rule fires, the agent reports what the search found and, when the person agrees, runs
+4. When a stop rule fires, the agent reports what the study found and, when the person agrees, runs
    `study-confirm` with the rule the person chooses (`dry_run: true` first, to show the smallest p the
    heldout items can reach); it reports the outcome in UXS-004's words, including the drop from dev to
    heldout.

@@ -26,8 +26,8 @@ UXS-001's shell, tokens, tables and row tints unchanged.
 
 ## Principles
 
-- **Search is not evidence, and the page says which is which.** A study's trials are shown as search
-  (nominal numbers on dev items); only a confirmation or a confirmation is evidence, shown apart
+- **Research is not evidence, and the page says which is which.** A study's trials are shown as research
+  (nominal numbers on dev items); only a confirmation is evidence, shown apart
   and labelled with its look.
 - **Every verdict says what it spent.** "look 2 of cnn_dailymail_200, at 0.38%", or "nominal: not
   tested on held-out items". A number from a page that is not a look says so.
@@ -67,7 +67,7 @@ These words and chips are the same on every page, in the inspector and in the co
 | `look k · <dataset> · at 0.38%` | a decision recorded on a heldout dataset (the level is the look's) |
 | `nominal · not a look` | a comparison shown by a page or a read command on heldout items |
 | `nominal · not tested on held-out items` | a comparison on a dev dataset |
-| `search · dev` | a study's trial against its best so far |
+| `research · dev` | a study's trial against its best so far |
 
 | actor | shown as |
 | --- | --- |
@@ -109,12 +109,12 @@ the study's page.
 
 ## The studies page
 
-- Hero: kicker `studies`, "Optimisation loops: what each tried and what it found. A kept trial is a
-  search result; only a confirmation is evidence."
+- Hero: kicker `studies`, "Optimisation loops: what each tried and what it found. A kept trial is
+  research; only a confirmation is evidence."
 - `01 studies`: **study** (linked), **goal**, **sampler**
   ("agent:claude", "grid", "command: optuna_sampler.py", "imported"),
   **trials** ("12: 3 kept, 8 dropped, 1 failed"), **status** (running, waiting for consent, stopped:
-  <reason>, closed), **outcome** (its confirmation's chip and look label; "search: no evidence" when there
+  <reason>, closed), **outcome** (its confirmation's chip and look label; "research: no evidence" when there
   is none; "imported: cannot be confirmed"), **started**, **by**. Filterable, paged.
 - Command: `evh studies [--goal G]`.
 
@@ -134,7 +134,7 @@ the study's page.
    - **a confirmation refused:** "No confirmation without possible evidence: the smallest p these 10 items
      can reach is 0.001, the look's level is 0.0004" and, when the person overrode it, "run anyway at
      <actor>'s consent; its outcome is labelled inconclusive".
-   - **not confirmed:** "Search: no evidence. Best trial 7 on dev: +0.034." and the command that would
+   - **not confirmed:** "Research: no evidence. Best trial 7 on dev: +0.034." and the command that would
      confirm it (`evh study-confirm … --heldout <dataset> --rule …`), in a code chip.
    - **imported:** "Imported from <file> on <date>: a record of a past loop; its trials cannot be confirmed."
 3. `02 trials`: a chart, then the table.
@@ -144,7 +144,7 @@ the study's page.
    - **The table**, one row per trial, newest first: **k**, **change** (parameters as `num_beams 2 → 3`;
      prompts as `summary/user v3 → v4`, linked to the diff on the prompt's page), **hypothesis**,
      **outcome** (`kept`, `dropped`, `failed`, `no effect`; the reason in the tooltip and the
-     folded row), **Δ vs best so far** (with `search · dev`), **limits**
+     folded row), **Δ vs best so far** (with `research · dev`), **limits**
      ("ok", or the limit that failed and by how much, against the baseline), **cost** (system, judge),
      **runs** (links to the trial's arms). A row unfolds to the trial's rationale, its config (the baseline's
      with the trial's changes), and what was shown to the sampler and where. Paged.
@@ -154,7 +154,7 @@ the study's page.
    "answer with `evh study-run --resume <id> --confirm`" (the exact command).
 5. `04 the spec`: the spec as it was when the study started, with its hash; the dev dataset; the acceptance rule ("point: +0.5% relative", or "test"); the
    limits; the test rule; the stop rules; the frozen files with their hashes;
-   the search space as groups in order, each with its reason and move-on rule.
+   the space of changes as groups in order, each with its reason and move-on rule.
 6. `05 items shown`: per trial, how many items were shown to the sampler and from which dataset, and the items
    now excluded from confirmations on the goal.
 7. Commands: `evh study-status <study> [--trials] [--json]` (the same sections in order), `evh studies`.

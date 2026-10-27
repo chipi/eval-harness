@@ -1,6 +1,6 @@
 # PRD-009: Prompt versions, and optimisation studies
 
-- **Status**: Draft (0.5.0), revision 3 (2026-10-27): one kind of study (search); evidence only from a confirmation;
+- **Status**: Draft (0.5.0), revision 3 (2026-10-27): one kind of study (research); evidence only from a confirmation;
   one dollar cap; no data-egress settings. Revision 2: one dev dataset, three samplers (grid, a command, the agent), no
   contested-judgement policies, Karpathy-only import; the rest deferred (FR6)
 - **Authors**: Marko Dragoljevic
@@ -25,7 +25,7 @@ recorded in the terms Optuna and Vizier use, a **study** of **trials**. From the
 **sampler** proposes a trial (a new prompt version, a parameter value, a model, a pipeline setting); the
 harness runs it on **dev** items and keeps or drops it; every trial is recorded in a round. A
 study is driven by the harness (a built-in grid over the space, or any optimiser plugged in as a command,
-Optuna for one) or by the user's **agent** (which proposes each trial itself). A study is a search, as
+Optuna for one) or by the user's **agent** (which proposes each trial itself). A study is research, as
 autoresearch is: no heldout items, no evidence, no promotion. Evidence is one explicit step afterwards, a
 **confirmation**: the best trial checked once against the baseline on **heldout** items, with a rule given before
 those items are looked at, and the outcome stated as separated: better, non-inferior, inconclusive or separated:
@@ -39,7 +39,7 @@ worse. Promotion stays a person's decision.
   never stops until interrupted and never asks; `prepare.py` (data and evaluation) is read-only. It has
   no held-out test. This PRD keeps its shape and departs where the harness's purpose requires: studies
   change prompts and settings, not code; the record is the harness's, not git; and a claim that a
-  winner is better needs a confirmation on items the search never saw.
+  winner is better needs a confirmation on items the study never saw.
 - The fingerprint records an arm's params, so an inline prompt counts. A prompt kept in a file can be
   hashed today only through the adapter's `fingerprint(params)` hook, where it lands under the system's
   model identity rather than the arm, so `run-compare` cannot name a prompt change as the variable.
@@ -72,10 +72,10 @@ worse. Promotion stays a person's decision.
 - A prompt version is identified by its bytes; two arms that differ only by prompt version are provably
   that, and every run says which versions it used, wherever the files live.
 - One kind of study serves prompts, parameters, models and pipeline settings; what changes is the
-  sampler and the search space.
+  sampler and the space of changes it may try.
 - A project that wants autoresearch's loop gets it, agent-driven, with a complete record.
 - A claim that a study's winner is better rests on one check on heldout items, declared before the study,
-  counted, and paid for; searching is labelled search.
+  counted, and paid for; research is labelled research.
 - A study's winner cannot drift below where it started through a chain of small concessions
   ("biocreep").
 - A study is resumable, budgeted (dollars and time), detachable, and readable afterwards.
@@ -84,7 +84,7 @@ worse. Promotion stays a person's decision.
 
 ## Non-Goals
 
-- **No code as a search space.** Trials change prompts, parameters, models and pipeline settings; they
+- **No code among the changes.** Trials change prompts, parameters, models and pipeline settings; they
   never edit the system's code. (autoresearch edits `train.py`; this harness deliberately does not.)
 - **No git writes.** The harness reads git (the build) and never commits, branches or resets; a winner
   leaves as files (`prompt-export`, the trial's parameters) for a person to commit.
@@ -100,7 +100,7 @@ worse. Promotion stays a person's decision.
 **Amends**: [PRD-001](PRD-001-experiments-and-comparison.md)'s "not a prompt store" and "no automatic
 choice of a winner", and [PRD-005](PRD-005-goals-and-rounds.md)'s "no automatic retirement", as
 recorded in those PRDs: the harness versions declared prompt files; inside a study, trials are kept or
-dropped by the study's declared rule, as search; nothing is promoted automatically.
+dropped by the study's declared rule, as research; nothing is promoted automatically.
 
 ## Personas
 
@@ -115,7 +115,7 @@ dropped by the study's declared rule, as search; nothing is promoted automatical
   the file, its version and its hash._
 - _As an engineer, I make version 4 of that prompt from version 3 with a note, and see its lineage, the
   runs that used each version and their scores._
-- _As an ML engineer, I write a search space (`reduce_params.num_beams` 1..4, then `max_new_tokens`
+- _As an ML engineer, I write the space of changes (`reduce_params.num_beams` 1..4, then `max_new_tokens`
   256/512/1024) starting from last round's best trial, and run a grid study, a value at a time, with a $5 and
   two-GPU-hour budget, detached._
 - _As an engineer, I let my agent run a study overnight; it sees the current prompt and the
@@ -152,15 +152,15 @@ dropped by the study's declared rule, as search; nothing is promoted automatical
 
 ### FR2: Studies and the spec
 
-- **FR2.1**: A study is a search: it never reads heldout items, counts no look, and states no evidence; its
+- **FR2.1**: A study is research: it never reads heldout items, counts no look, and states no evidence; its
   dev effects are labelled as selected; promotion is never suggested from it alone. Its metric may be an
   aggregate (one number per run, as autoresearch's val_bpb), in which case trials are kept or dropped by a
   point rule and cannot be confirmed. A **confirmation** (FR4) turns a study's best trial into evidence: one
-  check of that trial against its baseline on heldout items the search never saw, counted as one look.
+  check of that trial against its baseline on heldout items the study never saw, counted as one look.
 - **FR2.2**: The spec declares:
   - the goal and the **dev** dataset;
   - the baseline: a baseline, a run, or a prior study's best trial;
-  - the search space: parameters with nested paths, in groups, each enabled with a reason, with a
+  - the space of changes: parameters with nested paths, in groups, each enabled with a reason, with a
     move-on rule per group (after N trials without a kept one) and an optional cap on candidates; or the
     prompt names that may change, in order;
   - the sampler (FR3.4) and its free-text **directions** (the person's instructions, autoresearch's
@@ -182,7 +182,7 @@ dropped by the study's declared rule, as search; nothing is promoted automatical
   baseline; keeps or drops it with the reason; until a stop rule fires. A trial's config is the
   baseline's with the trial's changes, recorded in the study's log and resolved by `validate` and the
   catalog like a config.
-- **FR3.2**: **Acceptance on dev items is search, declared and labelled heuristic**, by one of: a point
+- **FR3.2**: **Acceptance on dev items is research, declared and labelled heuristic**, by one of: a point
   rule (the trial's mean beats the best so far's by at least a stated amount, relative or absolute; zero is
   autoresearch's "improved"), or a test rule (separated as better). In both: no limited metric may drop
   beyond its limit **relative to the baseline**, so losses on limited metrics cannot accumulate;
@@ -240,7 +240,7 @@ dropped by the study's declared rule, as search; nothing is promoted automatical
   skipped), cost, wall and GPU time.
 - **FR5.2**: **A study**: the directions and the instruction verbatim and who gave them, who ran
   it (person or agent, acting for whom), the spec's hash, the baseline's provenance, budget used, the
-  stop reason, its confirmations (FR4.3) or "search: no evidence", and a summary: what helped, what hurt,
+  stop reason, its confirmations (FR4.3) or "research: no evidence", and a summary: what helped, what hurt,
   what to try next.
 - **FR5.3**: `evh study-import` brings past loops in as closed studies, marked imported: Karpathy's
   `results.tsv` (commit, val_bpb, memory_gb, status, description); trials with aggregates only are shown

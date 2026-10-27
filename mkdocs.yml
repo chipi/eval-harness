@@ -82,7 +82,7 @@ nav:
           - "RFC-007: Stages, stage references, structured outputs, item fields, batch mode": rfc/RFC-007-stages-and-stage-references.md
           - "RFC-008: The process protocol: systems in any language": rfc/RFC-008-process-protocol.md
           - "RFC-009: Prompt versions": rfc/RFC-009-prompt-versions.md
-          - "RFC-010: Studies: search, trials, samplers, and the confirmation that is evidence": rfc/RFC-010-studies.md
+          - "RFC-010: Studies: research, trials, samplers, and the confirmation that is evidence": rfc/RFC-010-studies.md
           - "RFC-011: Job sets and runners: local and ssh": rfc/RFC-011-job-sets-and-runners.md
           - "RFC-012: The evidence registry: baselines' evidence, the export, the check": rfc/RFC-012-evidence-registry.md
           - "RFC-013: The machine surface: declarations, JSON, exit codes, refusals, the actor, the config": rfc/RFC-013-machine-surface.md
@@ -101,7 +101,7 @@ nav:
           - "ADR-0007: A result carries its stages; items fail alone (0.5.0)": adr/ADR-0007-stages-and-pipelines.md
           - "ADR-0008: Systems in any language through a JSON-RPC process (0.5.0)": adr/ADR-0008-process-protocol.md
           - "ADR-0009: The harness versions declared prompt files (0.5.0)": adr/ADR-0009-prompt-versions.md
-          - "ADR-0010: Studies: an ask/tell loop that searches, and one test that is evidence (0.5.0)": adr/ADR-0010-studies.md
+          - "ADR-0010: Studies: research by an ask/tell loop, and one test that is evidence (0.5.0)": adr/ADR-0010-studies.md
           - "ADR-0011: Long work runs as job sets, locally or over ssh (0.5.0)": adr/ADR-0011-job-sets-and-runners.md
           - "ADR-0012: Baselines per goal, with the evidence frozen at promotion (0.5.0)": adr/ADR-0012-baselines-and-evidence.md
           - "ADR-0013: One declaration per command; JSON, exit codes, refusals, actors, consent (0.5.0)": adr/ADR-0013-machine-surface-and-consent.md

@@ -1,6 +1,6 @@
-# RFC-010: Studies: search, trials, samplers, and the confirmation that is evidence
+# RFC-010: Studies: research, trials, samplers, and the confirmation that is evidence
 
-- **Status**: Draft (0.5.0), revision 3 (2026-10-27): one kind of study (search); evidence is always a separate
+- **Status**: Draft (0.5.0), revision 3 (2026-10-27): one kind of study (research); evidence is always a separate
   confirmation (`study-confirm`); one dollar cap; no data-egress settings. Revision 2: one dev dataset, three samplers
   (grid, a command, the agent), a spec and one append-only event log ([RFC-017](RFC-017-record-store.md))
 - **Authors**: Marko Dragoljevic
@@ -17,12 +17,12 @@
 
 ## Abstract
 
-A study is a search: a spec file and an event log. `evh study-run` opens a round for it and runs an ask/tell loop: a
+A study is research: a spec file and an event log. `evh study-run` opens a round for it and runs an ask/tell loop: a
 **sampler** proposes a **trial** (parameter values or prompt versions, with a hypothesis), the harness runs the baseline
 config with the trial's changes on the study's dev dataset, compares it with the best so far and the baseline, keeps or
 drops it by the spec's declared rule, tells the sampler, and repeats until a stop rule fires. A study's results are
-search, never evidence. Evidence is one explicit step afterwards: **`evh study-confirm`** tests the best trial against
-the baseline on heldout items the search never saw, with a rule given before those items are looked at, at its look's
+research, never evidence. Evidence is one explicit step afterwards: **`evh study-confirm`** tests the best trial against
+the baseline on heldout items the study never saw, with a rule given before those items are looked at, at its look's
 level (RFC-015). Samplers are a grid over the space, an external command (Optuna through ask/tell), or the calling
 **agent** through `study-ask` and `study-tell`, which is how Karpathy's autoresearch loop runs here. Every step is a
 line in the study's log; the catalog and the commands read the study's state from it.
@@ -70,7 +70,7 @@ items, and no protected heldout check.
   far, which is a finding, not a copied run. V5 reports it as a note ("trial 7 measured the same as trial 4: no
   effect"), not an error.
 
-### The search space
+### The space of changes
 
 ```yaml
 space:
@@ -255,10 +255,10 @@ None. A project's old loops can be brought in with `study-import`.
 
 ## Decisions (ADR candidates)
 
-1. A study is a search driven by an ask/tell loop; keeping a trial is search, a confirmation on heldout items is the only
+1. A study is research driven by an ask/tell loop; keeping a trial is research, a confirmation on heldout items is the only
    evidence, and a study never promotes.
 2. Samplers are pluggable through one ask/tell interface: a grid, a command, or the calling agent; code is never in the
-   search space.
+   space of changes.
 3. Limits and tie-break acceptance are judged against the baseline, so concessions cannot accumulate.
 4. Items shown to a sampler and items in the dev set are excluded from a confirmation.
 5. A study is a spec and one append-only event log; its state and its trials' configs are read from the log.

@@ -64,15 +64,15 @@ What is different, deliberately, and why:
 - **What changes.** autoresearch edits code (`train.py`); a study changes prompts, parameters, models
   and pipeline settings, never code, and the harness never writes git (a winner leaves as files).
 - **What "better" means.** autoresearch keeps any improvement on its validation measure; a study
-  calls that search (an *exploratory* study is exactly autoresearch's loop), and a claim that the winner
-  is better needs a *confirmatory* check on heldout items the search never saw, declared beforehand and
-  paid for (the statistics below).
+  calls that research (a study is exactly autoresearch's loop), and a claim that
+  the winner is better needs a confirmation on heldout items the study never saw, its rule declared
+  before they are looked at, and paid for (the statistics below).
 - **When it stops.** autoresearch runs until interrupted; a study can too, always under a hard cap on
   money and time, and it asks the person before anything with consequences.
 
 **Statistics of choosing among many candidates**
 
-- **Searching is not proving: one counted check on held-out items** — Dwork et al.,
+- **Research is not proof: one counted check on held-out items** — Dwork et al.,
   [*The reusable holdout*](https://doi.org/10.1126/science.aaa9375) (Science, 2015); Blum and
   Hardt, [*The Ladder*](https://arxiv.org/abs/1502.04585) (2015); Cawley and Talbot,
   [*On over-fitting in model selection*](https://www.jmlr.org/papers/v11/cawley10a.html)
