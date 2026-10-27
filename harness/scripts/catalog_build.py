@@ -61,6 +61,7 @@ ASSETS = (
     "forest.js",
     "period.js",
     "overview.js",
+    "arms.js",
     "icon.svg",
 )
 #: Links that would put more arms than this in one inspector URL go to the picker instead.
@@ -96,7 +97,15 @@ NAV = [
         [("datasets", "datasets.html", "Datasets"), ("references", "references.html", "References")],
         "Data",
     ),
-    ("experiments", [("metrics", "metrics.html", "Metrics")], "Experiments"),
+    (
+        "experiments",
+        [
+            ("arms", "arms.html", "Arms"),
+            ("configs", "arms.html#configs", "Configs"),
+            ("metrics", "metrics.html", "Metrics"),
+        ],
+        "Experiments",
+    ),
     ("activity", "activity.html", "Activity"),
     ("inspect", "inspect.html", "Inspector"),
 ]
@@ -442,6 +451,7 @@ def table(tid: str, heads: list, rows: list, filt: str = "", period: bool = Fals
             + (f' id="{attrs["id"]}"' if attrs.get("id") else "")
             + (f' data-key="{e(attrs["key"])}"' if attrs.get("key") else "")
             + (f' data-made="{e(attrs["made"])}"' if attrs.get("made") else "")
+            + "".join(f' data-{k}="{e(v)}"' for k, v in (attrs.get("data") or {}).items())
         )
         return f"<tr{a}>" + "".join(td(c) for c in cells) + "</tr>"
 
@@ -923,6 +933,9 @@ def glance(A: Adapter, by_ds: dict) -> list[dict]:
                     "vs_baseline": axis_ratios(dec, rec, base) if dec and rec and base else [],
                     # The decision's reasons, as the goal page lists them.
                     "why": list(dec["why"]) if dec else [],
+                    # The decision itself (the arms page reads its eligible arms and draws its trade-off).
+                    "dec": dec,
+                    "retired": retired_in,
                 }
             )
     return rows
@@ -1325,7 +1338,7 @@ def render_activity(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
                     "cells": [
                         arm_link(a["arm"], a["label"]),
                         dataset_link(ds),
-                        f'<span data-flow="runs">{len(rows[key]["runs"])}</span>',
+                        f'<span data-flow="runs" data-line>{len(rows[key]["runs"])}</span>',
                         '<span data-flow="usd">—</span>',
                         '<span data-flow="tokens">—</span>',
                     ],
@@ -1741,7 +1754,7 @@ def render_goals(A: Adapter, by_ds: dict, out: Path, nav: list) -> int:
                     "<br>".join(dataset_link(d.get("dataset_id", "")) for d in g.get("datasets") or [])
                     or "—",
                     f'<span data-v="{filed}">{filed}</span>',
-                    f'<span data-flow="runs">{len(period_rows[g["goal_id"]]["runs"])}</span>',
+                    f'<span data-flow="runs" data-line>{len(period_rows[g["goal_id"]]["runs"])}</span>',
                     '<span data-flow="usd">—</span>',
                     f'<span data-flow="events">{len(period_rows[g["goal_id"]]["events"])}</span>',
                     rec or '<span class="muted">none yet</span>',
@@ -2450,7 +2463,7 @@ def render_metrics(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
                         else ""
                     )
                     or "—",
-                    f'<span data-flow="arms">{len({x[1] for x in runs})}</span>',
+                    f'<span data-flow="arms" data-line>{len({x[1] for x in runs})}</span>',
                 ],
             }
         )
@@ -2860,7 +2873,7 @@ def render_reference_index(A: Adapter, by_ds: dict, out: Path, nav: list) -> Non
                         e((r.get("created_at") or "")[:10]) or "—",
                         f'<span data-v="{len(scored)}">{len(scored)}</span>',
                         f'<span data-flow="arms">{len({x[1] for x in period_rows[r["id"]]["runs"]})}</span>',
-                        f'<span data-flow="runs">{len(period_rows[r["id"]]["runs"])}</span>',
+                        f'<span data-flow="runs" data-line>{len(period_rows[r["id"]]["runs"])}</span>',
                     ],
                 }
             )
@@ -3016,6 +3029,9 @@ def build(A: Adapter, out: Path, sections: tuple = ()) -> dict:
     write_periods(A, by_ds, out)
     render_home(A, by_ds, out, nav)
     render_activity(A, by_ds, out, nav)
+    from evaluation_harness.catalog_arms import render_arms  # noqa: PLC0415
+
+    render_arms(A, by_ds, out, nav)
     render_datasets(A, by_ds, out, nav)
     for ds, v in by_ds.items():
         v["versions"] = _version_links(by_ds, ds, "../")

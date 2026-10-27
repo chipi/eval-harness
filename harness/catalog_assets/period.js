@@ -50,12 +50,15 @@ function rows(b){const s=[b.since,b.until];
 document.querySelectorAll('table[data-period-rows]').forEach(t=>{let nNew=0,nAct=0;
 [...t.tBodies[0].rows].forEach(r=>{const k=r.dataset.key,made=r.dataset.made||'',isNew=within(made,s);
 /* the badge is tied to the name's last word by a no-break space: a long name still wraps, the badge never lands alone */
-const first=r.cells[0];first.querySelectorAll('.new,.newgap').forEach(x=>x.remove());
-if(isNew){const a=first.querySelector('a');const html='<span class="newgap">\u00a0</span><span class="new">new</span>';if(a)a.insertAdjacentHTML('afterend',html);else first.insertAdjacentHTML('beforeend',html);}
+const first=r.cells[0];r.querySelectorAll('.new,.newgap').forEach(x=>x.remove());
+if(isNew){const a=first.querySelector('a')||r.querySelector('td a');const html='<span class="newgap">\u00a0</span><span class="new">new</span>';if(a)a.insertAdjacentHTML('afterend',html);else first.insertAdjacentHTML('beforeend',html);}
 const rs=runsIn(k,s),ev=evIn(k,s),act=rs.length>0||usdIn(k,s)>0||tokIn(k,s)>0||ev.length>0;nNew+=isNew;nAct+=act;r.classList.toggle('active',act);r.classList.toggle('isnew',isNew);
 r.querySelectorAll('[data-flow]').forEach(c=>{const f=c.dataset.flow,pv=b.prev;
-if(f==='runs')cell(c,rs.length,pv?runsIn(k,pv).length:null,v=>String(v));
-else if(f==='arms')cell(c,new Set(rs.map(x=>x[1])).size,pv?new Set(runsIn(k,pv).map(x=>x[1])).size:null,v=>String(v));
+if(f==='runs'){cell(c,rs.length,pv?runsIn(k,pv).length:null,v=>String(v));
+/* data-line: the runs per day under the number, as the datasets table draws them in a column */
+if(c.hasAttribute('data-line'))c.insertAdjacentHTML('beforeend',line(daysOf(b.since,b.until).map(d=>runsIn(k,[d,d]).length)));}
+else if(f==='arms'){cell(c,new Set(rs.map(x=>x[1])).size,pv?new Set(runsIn(k,pv).map(x=>x[1])).size:null,v=>String(v));
+if(c.hasAttribute('data-line'))c.insertAdjacentHTML('beforeend',line(daysOf(b.since,b.until).map(d=>runsIn(k,[d,d]).length)));}
 else if(f==='usd')cell(c,usdIn(k,s),pv?usdIn(k,pv):null,v=>v?amount(v,'usd'):'—');
 else if(f==='line')c.innerHTML=line(daysOf(b.since,b.until).map(d=>runsIn(k,[d,d]).length));
 else if(f==='events')cell(c,ev.length,pv?evIn(k,pv).length:null,v=>String(v));

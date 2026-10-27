@@ -25,7 +25,7 @@ if(sb)sb.addEventListener('click',()=>{const on=bar.classList.toggle('searching'
 if(on)q.focus();else{box.hidden=true;q.blur();}});})();
 document.querySelectorAll('input[data-filter]').forEach(inp=>{const t=document.getElementById(inp.dataset.filter);
 inp.addEventListener('input',()=>{const w=inp.value.toLowerCase().split(/\s+/).filter(Boolean);let n=0;
-t.querySelectorAll('tbody tr').forEach(r=>{const ok=w.every(x=>r.textContent.toLowerCase().includes(x));const show=ok&&!r.classList.contains('pout');r.hidden=!show;n+=show;});
+t.querySelectorAll('tbody tr').forEach(r=>{if(r.classList.contains('grouphead'))return;const ok=w.every(x=>r.textContent.toLowerCase().includes(x));const show=ok&&!r.classList.contains('pout')&&!r.classList.contains('fout');r.hidden=!show;n+=show;});
 const c=document.querySelector(`[data-count="${inp.dataset.filter}"]`);if(c)c.textContent=n;});});
 /* sort: a header is a button (click, or Enter/Space from the keyboard), and says how its column is sorted (aria-sort) */
 document.querySelectorAll('table.sortable th').forEach((th,i)=>{th.tabIndex=0;th.setAttribute('role','button');th.setAttribute('aria-sort','none');
