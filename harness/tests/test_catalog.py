@@ -592,6 +592,41 @@ try:
     check("http: nothing outside the two trees", get("/scripts/catalog_serve.py")[0] == 404)
     check("http: no dot-folder inside them", get("/data/runs/.hidden/x.txt")[0] == 404)
     check("http: no climbing out", get("/data/../secret")[0] == 404)
+    # THROUGH /api/: a path under /api/ skipped every rule above and fell through to the file
+    # server, so /api/../.env read a project's keys (found reviewing 0.4.2). Sent as-is: urllib
+    # would leave `..` alone too, but http.client says so.
+    import http.client
+
+    def raw(path, host=None):
+        c = http.client.HTTPConnection("127.0.0.1", port, timeout=10)
+        c.request("GET", path, headers={"Host": host or f"127.0.0.1:{port}"})
+        r = c.getresponse()
+        body = r.read().decode(errors="replace")
+        c.close()
+        return r.status, body
+
+    (tmp / ".env").write_text("OPENAI_API_KEY=sk-test-not-served\n")
+    leaks = {
+        p: raw(p)
+        for p in (
+            "/api/../.env",
+            "/api/%2e%2e/.env",
+            "/api/../data/runs/a_1/metrics.json",
+            "/api/x/../../.env",
+        )
+    }
+    check(
+        "http: nothing is read through /api/ (`..`, encoded or not, and data paths)",
+        all(st == 404 and "sk-test" not in body for st, body in leaks.values()),
+        {p: st for p, (st, _b) in leaks.items()},
+    )
+    check("http: an /api/ path that is no endpoint is 404", raw("/api/nope")[0] == 404)
+    check(
+        "http: every /api/ path that is no endpoint has one route name for the hooks",
+        cs._route("/api/nope") == cs._route("/api/../x") == "/api/other"
+        and cs._route("/api/compare") == "/api/compare",
+        (cs._route("/api/nope"), cs._route("/api/compare")),
+    )
     srv.shutdown()
 
     # PUBLIC mode: the API only, to the named host, rate-limited, arms capped, answers cached
@@ -609,6 +644,11 @@ try:
         "public: serves no files, catalog or data",
         get("/.build/catalog/index.html", H)[0] == 404 and get("/data/runs/a_1/metrics.json", H)[0] == 404,
     )
+    pub_leaks = {
+        p: raw(p, H)[0]
+        for p in ("/api/../.env", "/api/../data/runs/a_1/metrics.json", "/api/%2e%2e/data/", "/api/../")
+    }
+    check("public: serves no files through /api/ either", set(pub_leaks.values()) == {404}, pub_leaks)
     st, body = get("/api/compare?runs=runs/ds1/arm_a,runs/ds1/arm_b", H)
     check("public: compares", st == 200 and json.loads(body)["metric"] == "acc", st)
     st, body = get("/api/compare?runs=runs/ds1/arm_a,runs/ds1/arm_b,runs/ds2/arm_c", H)
@@ -653,7 +693,6 @@ try:
     check("public: a client over --rate requests a minute gets 429", 429 in codes, codes)
     # A header names the client only when --client-header says which: by default a new
     # CF-Connecting-IP per request is ignored, so it cannot buy a fresh bucket.
-    import http.client
 
     cs._HITS.clear()
     spoofed = []
