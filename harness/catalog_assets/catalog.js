@@ -61,3 +61,5 @@ const done=()=>{b.textContent='copied';setTimeout(()=>{b.textContent='copy';},15
 const pick=()=>{const c=b.previousElementSibling;if(!c)return;const r=document.createRange();r.selectNodeContents(c);
 const sel=getSelection();sel.removeAllRanges();sel.addRange(r);b.textContent='selected';};
 try{navigator.clipboard.writeText(b.dataset.copy).then(done,pick);}catch(e){pick();}});
+/* the menu's groups: one open at a time, and a click elsewhere closes it */
+document.addEventListener('click',ev=>{document.querySelectorAll('details.navgroup[open]').forEach(d=>{if(!d.contains(ev.target))d.open=false;});});

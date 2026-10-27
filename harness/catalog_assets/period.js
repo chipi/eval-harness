@@ -40,7 +40,7 @@ const evIn=(k,s)=>(R[k]&&R[k].events||[]).filter(x=>within(x[0],s)).sort((a,b)=>
 const usdIn=(k,s)=>(R[k]&&R[k].usd||[]).filter(x=>within(x[0],s)).reduce((a,x)=>a+x[1],0);
 const tokIn=(k,s)=>(R[k]&&R[k].tokens||[]).filter(x=>within(x[0],s)).reduce((a,x)=>a+x[1],0);
 function cell(el,now,before,fmt){const t=before===null?'':short(trend(now,before));
-el.dataset.v=now;el.innerHTML=esc(fmt(now))+(t&&t!=='none'?` <small class="trend">${esc(t)}</small>`:'');}
+el.dataset.v=now;el.innerHTML='<span class="nowrap">'+esc(fmt(now))+(t&&t!=='none'?` <small class="trend">${esc(t)}</small>`:'')+'</span>';}
 /* a row's runs per day over the period, in its table's colour; nothing when it had none */
 function line(xs){if(xs.length<2||!xs.some(Boolean))return '';const top=Math.max(...xs),step=100/(xs.length-1);
 const pts=xs.map((v,i)=>`${(i*step).toFixed(1)},${(17-15*v/top).toFixed(1)}`).join(' ');
@@ -49,7 +49,9 @@ let rowShow='all';
 function rows(b){const s=[b.since,b.until];
 document.querySelectorAll('table[data-period-rows]').forEach(t=>{let nNew=0,nAct=0;
 [...t.tBodies[0].rows].forEach(r=>{const k=r.dataset.key,made=r.dataset.made||'',isNew=within(made,s);
-const first=r.cells[0];first.querySelector('.new')?.remove();if(isNew)first.insertAdjacentHTML('beforeend',' <span class="new">new</span>');
+/* the badge is tied to the name's last word by a no-break space: a long name still wraps, the badge never lands alone */
+const first=r.cells[0];first.querySelectorAll('.new,.newgap').forEach(x=>x.remove());
+if(isNew){const a=first.querySelector('a');const html='<span class="newgap">\u00a0</span><span class="new">new</span>';if(a)a.insertAdjacentHTML('afterend',html);else first.insertAdjacentHTML('beforeend',html);}
 const rs=runsIn(k,s),ev=evIn(k,s),act=rs.length>0||usdIn(k,s)>0||tokIn(k,s)>0||ev.length>0;nNew+=isNew;nAct+=act;r.classList.toggle('active',act);r.classList.toggle('isnew',isNew);
 r.querySelectorAll('[data-flow]').forEach(c=>{const f=c.dataset.flow,pv=b.prev;
 if(f==='runs')cell(c,rs.length,pv?runsIn(k,pv).length:null,v=>String(v));

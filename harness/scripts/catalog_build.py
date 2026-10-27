@@ -86,12 +86,17 @@ ICON = {
     + '<circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg>',
 }
 
+#: The catalog's menu, by the home tiles' subjects. An entry is (key, page, label), or a group
+#: (key, [entries], label) that opens a short list; on a phone the ☰ menu lists every page.
 NAV = [
     ("home", "index.html", "Overview"),
     ("goals", "goals.html", "Goals"),
-    ("datasets", "datasets.html", "Datasets"),
-    ("references", "references.html", "References"),
-    ("metrics", "metrics.html", "Metrics"),
+    (
+        "data",
+        [("datasets", "datasets.html", "Datasets"), ("references", "references.html", "References")],
+        "Data",
+    ),
+    ("experiments", [("metrics", "metrics.html", "Metrics")], "Experiments"),
     ("activity", "activity.html", "Activity"),
     ("inspect", "inspect.html", "Inspector"),
 ]
@@ -312,10 +317,31 @@ def page(
     """Build a complete HTML page with header, nav, body, and footer."""
     up = "../" * depth
     brand = brand or BRAND
-    links = "".join(
-        f'<a href="{href if "://" in href else up + href}"{" aria-current=page" if key == here else ""}'
-        f"{f' class={rest[0]}' if rest else ''}>{label}</a>"
-        for key, href, label, *rest in nav
+
+    def link(key, href, label, *rest) -> str:
+        return (
+            f'<a href="{href if "://" in href else up + href}"{" aria-current=page" if key == here else ""}'
+            f"{f' class={rest[0]}' if rest else ''}>{label}</a>"
+        )
+
+    def group(key, items, label) -> str:
+        cur = any(k == here for k, *_ in items)
+        return (
+            f'<details class="navgroup" data-group="{e(key)}"><summary{" aria-current=page" if cur else ""}>'
+            f'{label}</summary><div class="navlist">{"".join(link(*x) for x in items)}</div></details>'
+        )
+
+    links = "".join(group(*x) if isinstance(x[1], list) else link(*x) for x in nav)
+    # the phone's ☰ menu: every page, a group's under its name
+    flat = "".join(
+        (
+            f'<span class="menu-group">{x[2]}</span><span class="menu-sub">'
+            + "".join(link(*y) for y in x[1])
+            + "</span>"
+        )
+        if isinstance(x[1], list)
+        else link(*x)
+        for x in nav
     )
     # The parts of the publication (--link), this catalog marked: the logo opens the first.
     here_href = f"{up}index.html"
@@ -358,7 +384,7 @@ def page(
   <div class="search"><input id="q" type="search" placeholder="Search  ( / )"
     autocomplete="off" aria-label="Search the catalog"><div id="hits" hidden></div></div>
   <nav class="nav">{links}</nav>
-  <details class="menu"><summary class="hbtn" aria-label="Menu">{ICON["menu"]}</summary><nav class="menu-links">{links}</nav></details>
+  <details class="menu"><summary class="hbtn" aria-label="Menu">{ICON["menu"]}</summary><nav class="menu-links">{flat}</nav></details>
   <button class="hbtn search-btn" type="button" aria-label="Search" aria-expanded="false" aria-controls="q">{ICON["search"]}</button>
   <button id="theme" class="theme hbtn" aria-label="Toggle light and dark">{ICON["theme"]}</button>
 </div></header>
