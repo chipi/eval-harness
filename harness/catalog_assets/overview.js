@@ -15,6 +15,8 @@ const pts=xs.map((v,i)=>`${(i*step).toFixed(1)},${(22-20*v/top).toFixed(1)}`).jo
 return `<svg class="spark" viewBox="0 0 100 24" preserveAspectRatio="none" aria-hidden="true"><polygon points="0,24 ${pts} 100,24" fill="var(--c)" fill-opacity="0.14"/><polyline points="${pts}" fill="none" stroke="var(--c)" stroke-width="1.75" vector-effect="non-scaling-stroke"/></svg>`;}
 /* the charts, as catalog_charts.py draws them */
 const SLOTS=8,LEFT=84,RIGHT=16,TOP=12,BOTTOM=28,HALF=560,Hh=200;
+/* the drawing's width: half a page beside another chart, or data-width on a chart that has the row */
+let CW=HALF;
 const colour=i=>i<SLOTS?`var(--s${i+1})`:'var(--muted)',swatch=i=>i<SLOTS?`sw${i+1}`:'swm';
 function num(v){if(v===Math.trunc(v)&&Math.abs(v)>=1)return String(v);if(Math.abs(v)>=10)return v.toFixed(1);
 if(Math.abs(v)>=0.01||v===0)return v?v.toFixed(3).replace(/0+$/,'').replace(/\.$/,''):'0';return v.toPrecision(2);}
@@ -23,18 +25,18 @@ const axis=(top,fmt,w)=>[0,.5,1].map(f=>{const y=TOP+(Hh-TOP-BOTTOM)*(1-f);retur
 function dayLabels(days,x){const p=[...new Set([0,days.length-1].concat(days.length>6?[Math.floor(days.length/2)]:[]))].sort((a,b)=>a-b);
 return p.map(i=>`<text x="${x(i).toFixed(1)}" y="${Hh-8}" text-anchor="middle" class="tick">${esc(days[i].slice(5))}</text>`).join('');}
 const legend=names=>'<p class="legend">'+names.map((n,i)=>`<span><i class="${swatch(i)}"></i>${esc(n)}</span>`).join('')+'</p>';
-const fig=(label,inner,names)=>`<figure class="chart"><svg viewBox="0 0 ${HALF} ${Hh}" role="img" aria-label="${esc(label)}">${inner}</svg>${legend(names)}</figure>`;
+const fig=(label,inner,names)=>`<figure class="chart"><svg viewBox="0 0 ${CW} ${Hh}" role="img" aria-label="${esc(label)}">${inner}</svg>${legend(names)}</figure>`;
 function bars(days,series,label,unit){const names=Object.keys(series),tot=days.map((_,i)=>names.reduce((a,n)=>a+series[n][i],0));
-const top=nice(Math.max(0,...tot)),bw=(HALF-LEFT-RIGHT)/Math.max(days.length,1),x=i=>LEFT+bw*(i+.5),y=v=>TOP+(Hh-TOP-BOTTOM)*(1-v/top);
+const top=nice(Math.max(0,...tot)),bw=(CW-LEFT-RIGHT)/Math.max(days.length,1),x=i=>LEFT+bw*(i+.5),y=v=>TOP+(Hh-TOP-BOTTOM)*(1-v/top);
 let out='';days.forEach((d,i)=>{let base=0;names.forEach((n,k)=>{const v=series[n][i];if(!v)return;const y0=y(base),y1=y(base+v),w=Math.min(Math.max(bw*.76,1),48);
 out+=`<rect x="${(x(i)-w/2).toFixed(1)}" y="${y1.toFixed(1)}" width="${w.toFixed(1)}" height="${Math.max(y0-y1,.5).toFixed(1)}" fill="${colour(k)}"><title>${esc(d)} · ${esc(n)}: ${esc(num(v))}${esc(unit)}</title></rect>`;base+=v;});});
-return fig(label,axis(top,num,HALF)+out+dayLabels(days,x),names);}
+return fig(label,axis(top,num,CW)+out+dayLabels(days,x),names);}
 function cumulative(days,series,label,fmt){const names=Object.keys(series),runs={};names.forEach(n=>{let s=0;runs[n]=series[n].map(v=>s+=v);});
-const top=nice(Math.max(0,...names.map(n=>runs[n].at(-1)||0))),pw=HALF-LEFT-RIGHT,step=pw/Math.max(days.length-1,1);
+const top=nice(Math.max(0,...names.map(n=>runs[n].at(-1)||0))),pw=CW-LEFT-RIGHT,step=pw/Math.max(days.length-1,1);
 const x=i=>days.length>1?LEFT+step*i:LEFT+pw/2,y=v=>TOP+(Hh-TOP-BOTTOM)*(1-v/top);
 const lines=names.map((n,k)=>`<polyline points="${runs[n].map((v,i)=>`${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ')}" fill="none" stroke="${colour(k)}" stroke-width="2"><title>${esc(n)}: ${esc(fmt(runs[n].at(-1)||0))} by ${esc(days.at(-1)||'')}</title></polyline>`
 +runs[n].map((v,i)=>series[n][i]?`<circle cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="2.5" fill="${colour(k)}"><title>${esc(days[i])} · ${esc(n)}: ${esc(fmt(v))} so far</title></circle>`:'').join('')).join('');
-return fig(label,axis(top,fmt,HALF)+lines+(days.length?dayLabels(days,x):''),names);}
+return fig(label,axis(top,fmt,CW)+lines+(days.length?dayLabels(days,x):''),names);}
 function activity(s){const days=daysOf(s[0],s[1]),series={};
 H.datasets.forEach(ds=>{const xs=days.map(d=>(H.runs[d]||{})[ds]||0);if(xs.some(Boolean))series[ds]=xs;});
 const total=Object.values(series).reduce((a,xs)=>a+xs.reduce((p,q)=>p+q,0),0);
@@ -60,8 +62,8 @@ if(/%$/.test(full))full+=` vs ${label[key][1]}`;}
 el.insertAdjacentHTML('beforeend',spark(days.map(d=>flow(what,[d,d]))));
 v=what==='billed'?amount(v,'usd'):Math.round(v).toLocaleString('en-US');}
 el.querySelector('b').innerHTML=tileValue(v);el.title=`${v} ${what}`+(full?` · ${full}`:'');if(tr)tr.textContent=line;});
-const a=document.querySelector('[data-chart="activity"]');if(a&&H.first)a.innerHTML=activity(s);
-const p=document.querySelector('[data-chart="spend"]');if(p&&Object.keys(H.spend).length)p.innerHTML=spend(s);
+const a=document.querySelector('[data-chart="activity"]');if(a&&H.first){CW=+(a.dataset.width||HALF);a.innerHTML=activity(s);}
+const p=document.querySelector('[data-chart="spend"]');if(p&&Object.keys(H.spend).length){CW=+(p.dataset.width||HALF);p.innerHTML=spend(s);}
 const feed=document.getElementById('feeda');if(feed){let n=0;[...feed.tBodies[0].rows].forEach(r=>{const ok=within((r.cells[0].dataset.v||'').slice(0,10),s);r.hidden=!ok;n+=ok;});
 const none=document.querySelector('[data-feed-empty]');if(none)none.hidden=n>0;feed.closest('.scroll-x').hidden=!n;if(feed._repage)feed._repage();}}
 document.addEventListener('click',ev=>{const btn=ev.target.closest('.unit-switch button[data-unit-show]');if(!btn)return;unit=btn.dataset.unitShow;

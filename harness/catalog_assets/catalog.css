@@ -466,4 +466,10 @@ svg text.name { paint-order: stroke; stroke: var(--surface); stroke-width: 6px; 
   .bar .sections a { padding: 8px 4px; }
 }
 .rowline { display: block; width: 96px; height: 18px; }
-#goals td:nth-child(2) { min-width: 34ch; }
+#goals td:first-child { min-width: 18ch; }
+#goals td:nth-child(2) { min-width: 26ch; }
+/* "runs in period" and its kind wrap rather than push the table wider than the page */
+table[data-period-rows] th { white-space: normal; min-width: 7ch; }
+select.chip.more.on { color: var(--accent-ink); background-color: var(--accent); border-color: var(--accent); }
+select.chip.more { padding-right: 8px; }
+#actds, #actarms, #actkinds { --c: var(--s4); }

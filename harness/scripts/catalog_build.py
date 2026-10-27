@@ -92,6 +92,7 @@ NAV = [
     ("datasets", "datasets.html", "Datasets"),
     ("references", "references.html", "References"),
     ("metrics", "metrics.html", "Metrics"),
+    ("activity", "activity.html", "Activity"),
     ("inspect", "inspect.html", "Inspector"),
 ]
 
@@ -1181,7 +1182,7 @@ def render_home(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
     tile_html = (
         '<div class="tiles">'
         + "".join(
-            f'<a class="tile" href="{href}" data-tile="{i}" data-group="{cp.TILES[i][3]}"{" data-period-link" if href.endswith(".html") else ""} title="{e(n)} {e(k)}"><b>{tile_value(n)}</b>'
+            f'<a class="tile" href="{href}" data-tile="{i}" data-group="{cp.TILES[i][3]}"{" data-period-link" if ".html" in href else ""} title="{e(n)} {e(k)}"><b>{tile_value(n)}</b>'
             f'<span>{e(k)}</span><small class="trend"></small></a>'
             for i, (k, n, href) in enumerate(home_counts(A, by_ds, w["spend"]))
         )
@@ -1218,7 +1219,8 @@ def render_home(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
         "02",
         "activity and spend",
         f'<div class="duo"><div id="activity"><h3 class="sub">activity</h3><div data-chart="activity">{activity}</div></div>'
-        f'<div id="spend"><h3 class="sub">spend</h3><div data-chart="spend">{spending}</div></div></div>',
+        f'<div id="spend"><h3 class="sub">spend</h3><div data-chart="spend">{spending}</div></div></div>'
+        '<p><a class="btn small" href="activity.html" data-period-link>every dataset, arm and kind of spend in the period →</a></p>',
     )
     body += block("03", "coverage", _coverage(A, by_ds), "coverage")
     body += block(
@@ -1238,6 +1240,140 @@ def render_home(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
             0,
             "home",
             (*PERIOD_SCRIPTS(), "home.js", "assets/overview.js"),
+            nav=nav,
+            item=A.item_word,
+        ),
+    )
+
+
+def render_activity(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
+    """The activity page: the home page's two charts at full width, then the period's runs and
+    spend by dataset, by arm and by kind, each against the period before, the busiest first.
+    The measured runs, billed and tokens tiles open it. home.js feeds the charts."""
+    from evaluation_harness import catalog_periods as cp  # noqa: PLC0415
+
+    w, idx = window(A, by_ds), cp.arm_index(by_ds)
+    first, until = w["first"], w["until"]
+    rows: dict = {}
+
+    def tok(keep) -> list:
+        return sorted(
+            [(x.get("at") or "")[:10], int(x["tokens"])]
+            for x in w["spend"]
+            if x.get("at") and isinstance(x.get("tokens"), (int, float)) and keep(x)
+        )
+
+    ds_rows, arm_rows, kind_rows = [], [], []
+    for ds, v in sorted(by_ds.items()):
+        key = f"d:{ds}"
+        rows[key] = {
+            "runs": cp.runs_of(v["arms"], idx),
+            "usd": cp.spend_of(w["spend"], lambda x, ds=ds: x.get("dataset") == ds),
+            "tokens": tok(lambda x, ds=ds: x.get("dataset") == ds),
+        }
+        ds_rows.append(
+            {
+                "key": key,
+                "cells": [
+                    dataset_link(ds),
+                    f'<span data-flow="runs">{len(rows[key]["runs"])}</span>',
+                    '<span data-flow="line"></span>',
+                    '<span data-flow="usd">—</span>',
+                    '<span data-flow="tokens">—</span>',
+                ],
+            }
+        )
+        for a in v["arms"]:
+            key = f"a:{a['arm']}"
+            rows[key] = {
+                "runs": cp.runs_of([a], idx),
+                "usd": cp.spend_of(
+                    w["spend"], lambda x, arm=a["arm"]: x["kind"] == "arm" and x.get("arm") == arm
+                ),
+                "tokens": tok(lambda x, arm=a["arm"]: x["kind"] == "arm" and x.get("arm") == arm),
+            }
+            arm_rows.append(
+                {
+                    "key": key,
+                    "made": min((r[0] for r in rows[key]["runs"]), default=""),
+                    "cells": [
+                        arm_link(a["arm"], a["label"]),
+                        dataset_link(ds),
+                        f'<span data-flow="runs">{len(rows[key]["runs"])}</span>',
+                        '<span data-flow="usd">—</span>',
+                        '<span data-flow="tokens">—</span>',
+                    ],
+                }
+            )
+    for kind, name in SPEND_KINDS:
+        key = f"k:{kind}"
+        rows[key] = {
+            "usd": cp.spend_of(w["spend"], lambda x, kind=kind: x["kind"] == kind),
+            "tokens": tok(lambda x, kind=kind: x["kind"] == kind),
+        }
+        kind_rows.append(
+            {
+                "key": key,
+                "cells": [e(name), '<span data-flow="usd">—</span>', '<span data-flow="tokens">—</span>'],
+            }
+        )
+    write_period_rows(out, "activity", rows)
+    activity = _activity_chart(by_ds, first, until) if first else '<p class="muted">No runs yet.</p>'
+    spending = (
+        _spend_panel(w["spend"], first, until)
+        if first and w["spend"]
+        else '<p class="muted">Nothing spent is recorded.</p>'
+    )
+    body = hero(
+        "activity",
+        "Activity and spend",
+        "When the work happened and what it cost, in the period: measured runs (repeats counted one by "
+        "one), and what was billed, in USD and in tokens, to the systems under test and the judges. "
+        "Each number is against the period before; the busiest come first.",
+        cp.bar(first, until),
+    )
+    body += block(
+        "01",
+        "activity",
+        f'<div id="activity"><div data-chart="activity" data-width="1100">{activity}</div></div>',
+    )
+    body += block(
+        "02", "spend", f'<div id="spend"><div data-chart="spend" data-width="1100">{spending}</div></div>'
+    )
+    heads_flow = ["runs in period", "runs per day", "spend in period", "tokens in period"]
+    body += block(
+        "03",
+        "by dataset",
+        table("actds", ["dataset", *heads_flow], ds_rows, period=True).replace(
+            "data-period-rows", 'data-period-rows data-period-sort="runs"', 1
+        ),
+    )
+    body += block(
+        "04",
+        "by arm",
+        cp.row_chips("actarms", "arms")
+        + table(
+            "actarms",
+            ["arm", "dataset", "runs in period", "spend in period", "tokens in period"],
+            arm_rows,
+            "filter arms",
+            period=True,
+        ).replace("data-period-rows", 'data-period-rows data-period-sort="runs"', 1),
+    )
+    body += block(
+        "05",
+        "by kind",
+        table("actkinds", ["what was billed", "spend in period", "tokens in period"], kind_rows, period=True),
+    )
+    write(
+        out,
+        "activity.html",
+        page(
+            "Activity",
+            body,
+            0,
+            "activity",
+            (*PERIOD_SCRIPTS("activity"), "home.js", "assets/overview.js"),
             nav=nav,
             item=A.item_word,
         ),
@@ -2853,6 +2989,7 @@ def build(A: Adapter, out: Path, sections: tuple = ()) -> dict:
     by_ds = collect(A)
     write_periods(A, by_ds, out)
     render_home(A, by_ds, out, nav)
+    render_activity(A, by_ds, out, nav)
     render_datasets(A, by_ds, out, nav)
     for ds, v in by_ds.items():
         v["versions"] = _version_links(by_ds, ds, "../")

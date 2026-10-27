@@ -29,6 +29,8 @@ PERIODS = (
 )
 #: The period the page and `evh overview` open on.
 DEFAULT = "14d"
+#: The periods shown as chips; the others are in the "more" list beside them.
+CHIPS = ("14d", "30d", "month", "all")
 
 
 def chip(label: str) -> str:
@@ -45,9 +47,9 @@ TILES = (
     ("configs", "datasets.html", "stock", "experiments"),
     ("arms", "datasets.html", "stock", "experiments"),
     ("metrics", "metrics.html", "stock", "experiments"),
-    ("measured runs", "#activity", "flow", "work"),
-    ("billed", "#spend", "flow", "work"),
-    ("tokens", "#spend", "flow", "work"),
+    ("measured runs", "activity.html", "flow", "work"),
+    ("billed", "activity.html#spend", "flow", "work"),
+    ("tokens", "activity.html#spend", "flow", "work"),
 )
 
 
@@ -241,7 +243,11 @@ def bar(first: str, until: str) -> str:
             f'<button type="button" class="chip" data-period="{k}" aria-pressed="false" title="{e(label)}">'
             f"{e(chip(label))}</button>"
             for k, label, _ in PERIODS
+            if k in CHIPS
         )
+        + '<select class="chip more" aria-label="more periods"><option value="">more…</option>'
+        + "".join(f'<option value="{k}">{e(label)}</option>' for k, label, _ in PERIODS if k not in CHIPS)
+        + "</select>"
         + '</div><p class="period-note" id="period-span">'
         + (f"all time, {e(first)} to {e(until)}" if first else "")
         + "</p></div>"

@@ -38,6 +38,7 @@ const R=window.PERIOD_ROWS||{};
 const runsIn=(k,s)=>(R[k]&&R[k].runs||[]).filter(x=>within(x[0],s));
 const evIn=(k,s)=>(R[k]&&R[k].events||[]).filter(x=>within(x[0],s)).sort((a,b)=>a[0]<b[0]?1:-1);
 const usdIn=(k,s)=>(R[k]&&R[k].usd||[]).filter(x=>within(x[0],s)).reduce((a,x)=>a+x[1],0);
+const tokIn=(k,s)=>(R[k]&&R[k].tokens||[]).filter(x=>within(x[0],s)).reduce((a,x)=>a+x[1],0);
 function cell(el,now,before,fmt){const t=before===null?'':short(trend(now,before));
 el.dataset.v=now;el.innerHTML=esc(fmt(now))+(t&&t!=='none'?` <small class="trend">${esc(t)}</small>`:'');}
 /* a row's runs per day over the period, in its table's colour; nothing when it had none */
@@ -49,14 +50,18 @@ function rows(b){const s=[b.since,b.until];
 document.querySelectorAll('table[data-period-rows]').forEach(t=>{let nNew=0,nAct=0;
 [...t.tBodies[0].rows].forEach(r=>{const k=r.dataset.key,made=r.dataset.made||'',isNew=within(made,s);
 const first=r.cells[0];first.querySelector('.new')?.remove();if(isNew)first.insertAdjacentHTML('beforeend',' <span class="new">new</span>');
-const rs=runsIn(k,s),ev=evIn(k,s),act=rs.length>0||usdIn(k,s)>0||ev.length>0;nNew+=isNew;nAct+=act;r.classList.toggle('active',act);r.classList.toggle('isnew',isNew);
+const rs=runsIn(k,s),ev=evIn(k,s),act=rs.length>0||usdIn(k,s)>0||tokIn(k,s)>0||ev.length>0;nNew+=isNew;nAct+=act;r.classList.toggle('active',act);r.classList.toggle('isnew',isNew);
 r.querySelectorAll('[data-flow]').forEach(c=>{const f=c.dataset.flow,pv=b.prev;
 if(f==='runs')cell(c,rs.length,pv?runsIn(k,pv).length:null,v=>String(v));
 else if(f==='arms')cell(c,new Set(rs.map(x=>x[1])).size,pv?new Set(runsIn(k,pv).map(x=>x[1])).size:null,v=>String(v));
 else if(f==='usd')cell(c,usdIn(k,s),pv?usdIn(k,pv):null,v=>v?amount(v,'usd'):'—');
 else if(f==='line')c.innerHTML=line(daysOf(b.since,b.until).map(d=>runsIn(k,[d,d]).length));
-else if(f==='events')cell(c,ev.length,pv?evIn(k,pv).length:null,v=>String(v));});
+else if(f==='events')cell(c,ev.length,pv?evIn(k,pv).length:null,v=>String(v));
+else if(f==='tokens')cell(c,tokIn(k,s),pv?tokIn(k,pv):null,v=>v?Math.round(v).toLocaleString('en-US'):'—');});
 r.classList.toggle('pout',rowShow==='new'?!isNew:rowShow==='active'?!act:false);});
+/* data-period-sort: the busiest rows first, by that column's value in the period */
+const by=t.dataset.periodSort;if(by){const val=r=>+((r.querySelector(`[data-flow="${by}"]`)||{}).dataset||{}).v||0;
+[...t.tBodies[0].rows].sort((x,y)=>val(y)-val(x)).forEach(r=>t.tBodies[0].appendChild(r));}
 const bar=document.querySelector(`.row-chips[data-for="${t.id}"]`);
 if(bar){bar.querySelector('[data-rows="new"] b').textContent=nNew;bar.querySelector('[data-rows="active"] b').textContent=nAct;}
 /* a filter that leaves nothing says so, in words, where the table was */
@@ -74,11 +79,13 @@ document.querySelectorAll('.row-chips button[data-rows]').forEach(x=>x.setAttrib
 function feeds(b){const s=[b.since,b.until];document.querySelectorAll("table[data-period-feed]").forEach(t=>{let n=0;[...t.tBodies[0].rows].forEach(r=>{const ok=within(r.dataset.made||"",s);r.hidden=!ok;n+=ok;});const none=document.querySelector(`[data-feed-empty="${t.id}"]`);if(none)none.hidden=n>0;t.closest(".scroll-x").hidden=!n;if(t._repage)t._repage();});}
 function links(){document.querySelectorAll('a[data-period-link]').forEach(a=>{a.href=a.getAttribute('href').replace(/#.*$/,'')+'#p'+key;});}
 function show(k,push){key=k;const b=bounds(key,today,P.first);
-pick.querySelectorAll('.chip').forEach(c=>c.setAttribute('aria-pressed',String(c.dataset.period===key)));
+pick.querySelectorAll('button.chip').forEach(c=>c.setAttribute('aria-pressed',String(c.dataset.period===key)));
+const more=pick.querySelector('select.more');if(more){const inMore=[...more.options].some(o=>o.value===key);more.value=inMore?key:'';more.classList.toggle('on',inMore);}
 const sp=document.getElementById('period-span');if(sp){sp.textContent=b.prev?`▲▼ compared with ${label[key][1]}`:`since ${b.since}`;
 sp.title=`${label[key][0]}: ${b.since} to ${b.until}`+(b.prev?`; compared with ${b.prev[0]} to ${b.prev[1]}`:'');}
 if(push!==false&&history.replaceState)history.replaceState(null,'','#p'+key);
 rows(b);feeds(b);links();listeners.forEach(fn=>fn(key,b));}
 window.Period={DAY,iso,at,esc,today,bounds,within,trend,short,daysOf,amount,label,on:fn=>{listeners.push(fn);fn(key,bounds(key,today,P.first));},get key(){return key;}};
-pick.hidden=false;pick.addEventListener('click',ev=>{const c=ev.target.closest('.chip');if(c)show(c.dataset.period);});
+pick.hidden=false;pick.addEventListener('click',ev=>{const c=ev.target.closest('button.chip');if(c)show(c.dataset.period);});
+pick.querySelector('select.more')?.addEventListener('change',ev=>{if(ev.target.value)show(ev.target.value);});
 show(fromHash()||P.default,false);})();

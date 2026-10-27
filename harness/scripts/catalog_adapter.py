@@ -201,8 +201,8 @@ class Adapter(Protocol):
     # credentials; the arm page shows it.
     # def arm_config(self, arm: str) -> dict: ...
     # Optional: what was spent and when, [{"at", "usd", "tokens", "kind": "arm" | "judge",
-    # "dataset", "what"}] (usd or tokens None when unknown), each measured run and each judging
-    # day once; the home page's spend chart, in USD or in tokens.
+    # "dataset", "what", "arm" (a measured run's arm, optional)}] (usd or tokens None when unknown), each measured run and each judging
+    # day once; the home page's spend chart, in USD or in tokens, and the activity page per arm.
     # def spend(self) -> list[dict]: ...
 
 
@@ -287,14 +287,15 @@ class HarnessAdapter:
         refs: dict[Path, str] = {}
         made: dict[Path, str] = {}
         # Every run seen, before any is set aside below: what was billed counts them all.
-        self._every: list[tuple[str, Path, dict]] = []
+        self._every: list[tuple[str, Path, dict, str]] = []
         for base in bases:
             for d, m in runs_on(runs_dir=base):
                 if not m.get("dataset_id"):
                     continue
                 rel = base.relative_to(self.data_dir).as_posix()
-                self._every.append((m["dataset_id"], d, m))
-                out.setdefault(f"{rel}/{m['dataset_id']}/{m['config_id']}", []).append(d)
+                arm = f"{rel}/{m['dataset_id']}/{m['config_id']}"
+                self._every.append((m["dataset_id"], d, m, arm))
+                out.setdefault(arm, []).append(d)
                 refs[d] = ((m.get("fingerprint") or {}).get("data") or {}).get("reference_id") or ""
                 made[d] = m.get("created_at") or ""
         # ONE REFERENCE PER ARM: the one its latest run was scored against. An arm's runs were
@@ -745,7 +746,7 @@ class HarnessAdapter:
         when its adapter reports them; an unpriced call has tokens and no USD."""
         self._index()
         out = []
-        for ds, d, m in self._every:
+        for ds, d, m, arm in self._every:
             sc = m.get("scores") or {}
             usd = _number(sc.get("total_cost_usd"))
             tokens = _tokens(sc.get("total_tokens_in"), sc.get("total_tokens_out"))
@@ -759,6 +760,7 @@ class HarnessAdapter:
                     "kind": "arm",
                     "dataset": ds,
                     "what": d.name,
+                    "arm": arm,
                 }
             )
         sets = self.data_dir / "judging-sets"

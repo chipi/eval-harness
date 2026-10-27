@@ -195,7 +195,7 @@ def drive(base: str, overview: str = "") -> None:
             page.locator('#spend [data-unit="tokens"]').is_visible()
             and not page.locator('#spend [data-unit="usd"]').is_visible(),
         )
-        page.click('#period .chip[data-period="lastmonth"]')
+        page.select_option("#period select.more", "lastmonth")
         check(
             "home: last month (the tutorial ran today) is empty, and the feed and activity say so",
             page.locator("[data-feed-empty]").is_visible()
