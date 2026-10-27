@@ -184,7 +184,7 @@ One finding, and it is the same shape as the one round 4 found one directory ove
   defect: whole-file scope passed "9.9 s" on the citing line, because an unrelated
   sentence repeats 6.3 s; line scope then missed a wrong figure on a wrapped continuation
   line. The paragraph is the sentence's actual extent. A row in
-  `test_the_checks_can_actually_fail` now plants exactly that continuation-line case.
+  `harness/tests/test_checks_can_fail.py` now plants exactly that continuation-line case.
 
 ## What round 3 says about round 2
 
@@ -341,9 +341,10 @@ n=20 half therefore cannot be recomputed from this repo.
 ## What the automated checks do NOT cover
 
 `make ci` verifies 65 report claims, 39 model facts, every arm row in every leaderboard
-table and code block, every relative link and anchor, and that each checker still fails
-on the defect it exists to catch — 21 planted defects across 11 claim families, 3
-scorers, V8, V9 and V10. The gaps below are known and are the ones a reviewer should
+table and code block, and every relative link and anchor. `make guard-check` proves each
+checker still fails on the defects it exists to catch, each named in its output: planted
+defects across 11 claim families, 3 scorers and parsers, V1-V3, V8, V9 and V10. CI runs it
+when a checker or the harness code it reads changes, not on every pull request. The gaps below are known and are the ones a reviewer should
 spend time on.
 
 - **Numbers in PROSE are only NARROWLY checked, and the boundary is measured.** A

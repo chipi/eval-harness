@@ -11,10 +11,15 @@ reproduces it.
 | **integration** | the modules together on files: a run made and read back, a catalog built from fixture runs and its pages read, every `evh` command in a project that pins the installed wheel, `catalog-serve` answering over HTTP, `--hooks` called | `tests/test_catalog.py`, `tests/test_goals.py`, `tests/test_installed_commands.py`, `tests/test_serve_hooks.py`, `tests/self_test.py` (runs them all) | `make test`, `make ci` |
 | **end to end** | what a reader sees: a tutorial project built from the wheel, its catalog and the inspector in headless Chromium (charts, filters, the period chips, the tiles against `evh overview`, the period bounds against Python's on 118 days, no console error, no page wider than a phone); the GUIDE and the tutorials run as written; the public site with production's headers | `tests/test_inspector_browser.py`, `tests/check_guide.py`, `site/test_browser.py` | `make browser-check`, `make guide-check` |
 | **resources** | the inspector on this repository's real runs, as the deployment runs it: memory under `--warm` below 200 MB (prod's container has 256 MiB), a cached answer in milliseconds, a cold one in seconds; again with the deployment's hooks and SDKs | `tests/test_inspector_budget.py` | `make budget-check` (from the root, with the hooks) |
+| **the checks can fail** | every checker goes red on the defects it exists to catch: a wrong number in a report row, a cell, a code block or prose, a wrong ratio, count or latency, a broken link, a wrong licence, a scorer or parser change the runs predate, a broken, duplicated or truncated run. All of a checker's defects are planted at once in a copy of the repository and it runs once; its output must name each | `tests/test_checks_can_fail.py` | `make guard-check` |
 
 CI runs each tier on every pull request: `make verify` (unit and integration, the reports
 recomputed, the site rebuilt), `browser`, `budget` and `rerun` (`.github/workflows/reproduce.yml`),
-and `make quality` (lint, types, security, dead code, spelling).
+and `make quality` (lint, types, security, dead code, spelling). `make guard-check`
+(`.github/workflows/guards.yml`) runs only when a checker or the harness code it reads changes:
+it proves the checkers, and a change to the reports or the runs leaves them as they were. A
+release does not re-run any of it; it requires CI on the tagged commit to be green on main
+(`.github/workflows/harness-release.yml`).
 
 ## How a test earns its place
 

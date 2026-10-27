@@ -8,6 +8,7 @@
 #   make compare   EXP=scifact           the replication card: does every finding hold?
 #   make reproduce EXP=scifact CONFIG=path/to/your_arm.yaml    add a model of your own
 #   make browser-check                   the inspector and the public site in headless Chromium
+#   make guard-check                     the checks can fail: each checker catches its planted defects
 #   make quality                         lint, types, security, dead code, docstrings, spelling, shell
 #
 # docs/REPRODUCE.md walks through it. The harness's own verbs live in harness/Makefile
@@ -21,7 +22,7 @@ ARMS ?=
 CONFIG ?=
 
 .DEFAULT_GOAL := help
-.PHONY: help setup verify list plan data reproduce compare site docs browser-check budget-check \
+.PHONY: help setup verify list plan data reproduce compare site docs browser-check budget-check guard-check \
 	quality-install quality lint format type security audit-locks deadcode docstrings spelling shell complexity
 
 help:
@@ -66,6 +67,9 @@ site: $(PY)
 browser-check: $(PY)
 	$(MAKE) -C harness browser-check
 	$(PY) site/test_browser.py
+
+guard-check: $(PY)
+	$(MAKE) -C harness guard-check
 
 # The inspector's budgets: the harness alone, then with this deployment's hooks and their SDKs
 # (infra/inspector/), vendored into .build/vendor as render.sh vendors them for prod.

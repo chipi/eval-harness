@@ -21,7 +21,7 @@ TIER ?= silver
         holdout pair-test rank-stability \
         experiment-dry-run experiment-run sweep \
         runs-list baselines-list run-compare leaderboard run-promote \
-        validate judge judge-score check guide-check browser-install browser-check budget-check ci test smoke-fixture cost-report clean clean-cache \
+        validate judge judge-score check guide-check browser-install browser-check budget-check guard-check ci test smoke-fixture cost-report clean clean-cache \
         bootstrap-test family-test import-run rescore silver-calibrate site site-check docs
 
 # ── getting started ─────────────────────────────────────────────────────────
@@ -109,6 +109,12 @@ budget-check:
 
 browser-check:
 	$(PYTHON) tests/test_inspector_browser.py
+
+# The checks can fail: every checker, run once over a copy of the repository with all its planted
+# defects, must name each one (tests/test_checks_can_fail.py). Not in `make ci`: it proves the
+# checkers' code, so CI runs it when that code changes (.github/workflows/guards.yml).
+guard-check:
+	$(PYTHON) tests/test_checks_can_fail.py
 
 # A new project beside this checkout: make init DIR=../my-evals ARGS=--tutorial
 init:

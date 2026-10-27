@@ -2,7 +2,9 @@
 #
 #   1. refuse the tag unless it equals harness/scripts/_version.py and CHANGELOG.md has a
 #      section for it -- a release that disagrees with its own version is not a release;
-#   2. run the harness's own gate (make ci in harness/);
+#   2. refuse it unless CI on the tagged commit is green on main: reproduce and quality, and
+#      guards when it ran (it runs only when the checkers change). The release does not
+#      re-run them: a tag is made on a commit main has already verified;
 #   3. build the wheel and sdist, install the wheel into a clean venv, and check the
 #      installed `evh --version` is the tag;
 #   4. create the GitHub Release, notes from the CHANGELOG section, package attached.
@@ -19,11 +21,12 @@ on:
 
 permissions:
   contents: write
+  actions: read
 
 jobs:
   release:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 55
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -42,8 +45,29 @@ jobs:
           grep -qxE "## $v_re — [0-9]{4}-[0-9]{2}-[0-9]{2}" harness/CHANGELOG.md || {
             echo "harness/CHANGELOG.md does not date $ver ('## $ver — YYYY-MM-DD'); date it before tagging"; exit 1; }
 
-      - name: The harness's own gate
-        run: make verify
+      - name: CI on the tagged commit is green on main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Waits while a run is still going (up to 40 minutes); a tag pushed right after the
+          # merge finds main's CI on the commit still running.
+          for _ in $(seq 80); do
+            pending=0; bad=""
+            for wf in reproduce.yml quality.yml guards.yml; do
+              runs=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow "$wf" --commit "$GITHUB_SHA" \
+                --event push --branch main --json status,conclusion --jq '.[] | "\(.status) \(.conclusion)"')
+              if [ -z "$runs" ]; then
+                [ "$wf" = guards.yml ] && continue   # path-filtered: no run when no checker changed
+                bad="$bad $wf:no-run-on-main"; continue
+              fi
+              echo "$runs" | grep -qv '^completed' && { pending=1; continue; }
+              echo "$runs" | grep -qx 'completed success' || bad="$bad $wf:$(echo "$runs" | head -1)"
+            done
+            [ -n "$bad" ] && { echo "CI on $GITHUB_SHA is not green on main:$bad"; exit 1; }
+            [ "$pending" = 0 ] && { echo "CI on $GITHUB_SHA is green on main"; exit 0; }
+            sleep 30
+          done
+          echo "CI on $GITHUB_SHA did not finish within 40 minutes"; exit 1
 
       - name: Build
         run: |
