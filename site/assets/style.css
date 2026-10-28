@@ -67,7 +67,8 @@ a:hover { color: var(--accent); }
 @media (max-width: 760px) { .nav .hide-sm { display: none; } }
 /* a tablet's bar holds every page link on one row ("Re-measured" is the longest) */
 @media (min-width: 761px) and (max-width: 1000px) { .bar .nav { gap: 14px; } }
-@media (min-width: 761px) and (max-width: 900px) { .bar .nav { gap: 7px; font-size: 12px; letter-spacing: 0; } .bar .sections a { padding: 8px 5px; } }
+@media (min-width: 761px) and (max-width: 850px) { .bar .nav { gap: 9px; } }
+@media (min-width: 761px) and (max-width: 800px) { .bar .nav { gap: 8px; font-size: 12px; letter-spacing: 0; } }
 
 /* theme toggle */
 .theme { background: none; border: 1px solid var(--hair); color: var(--ink-2); width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-size: 14px; line-height: 1; }
