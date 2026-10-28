@@ -276,6 +276,7 @@ section[id] { scroll-margin-top: 72px; }
 .lc-where { font: 500 13px/1.5 var(--mono); color: var(--ink-2); margin-bottom: 14px; }
 .lc-where span { color: var(--muted); text-transform: uppercase; letter-spacing: .12em; font-size: 11px; margin-right: 6px; }
 .lc-more { display: inline-block; margin-top: 12px; font: 600 13px/1 var(--mono); text-decoration: none; color: var(--accent); }
+.lc-links { display: flex; flex-wrap: wrap; column-gap: 20px; }
 .lc-explorer.live .lc-panel { display: none; }
 .lc-explorer.live .lc-panel.on { display: block; border-top: 0; padding-top: 4px; position: sticky; top: 88px; }
 .lc-explorer.live .lc-panel.on .eyebrow { font-size: 14px; }

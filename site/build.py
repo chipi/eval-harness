@@ -661,6 +661,8 @@ H = types.SimpleNamespace(
     REPO=REPO,
     VERSION=VERSION,
     author=author,
+    CATALOG=CATALOG,
+    catalog_inspect=lambda x: catalog_inspect(x),  # defined below; resolved when called
 )
 
 
@@ -1972,7 +1974,8 @@ def main() -> int:
         OUT,
         {x["goal"]["goal_page"] for x in f["experiments"]}
         | {catalog_dataset(x) for x in f["experiments"]}
-        | {catalog_inspect(x).replace("&amp;", "&") for x in f["experiments"]},
+        | {catalog_inspect(x).replace("&amp;", "&") for x in f["experiments"]}
+        | method.CATALOG_PAGES,
     )
     if broken:
         print("FAIL  links:", *broken, sep="\n  ")
