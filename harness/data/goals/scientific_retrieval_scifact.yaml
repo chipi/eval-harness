@@ -19,3 +19,5 @@ datasets:
   - {dataset_id: scifact_40, decides: false, role: dev, notes: the pilot slice; all 40 of its items are in scifact_200}
 measures:
   - {id: ndcg_10, kind: metric, validity: validated}
+links:
+  - {url: https://evals.humancopilot.eu/experiments/scifact.html, note: the findings on the site}

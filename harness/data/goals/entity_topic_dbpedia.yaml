@@ -19,3 +19,5 @@ datasets:
   - {dataset_id: dbpedia_56, decides: false, role: dev, notes: the pilot slice; all 56 of its items are in dbpedia_280}
 measures:
   - {id: correct, kind: metric, validity: validated}
+links:
+  - {url: https://evals.humancopilot.eu/experiments/dbpedia.html, note: the findings on the site}

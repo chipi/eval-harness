@@ -22,4 +22,5 @@ references:
 measures:
   - {id: correct, kind: metric, validity: validated}
 links:
+  - {url: https://evals.humancopilot.eu/experiments/ag-news.html, note: the findings on the site}
   - {url: research/REPORT_CLASSIFICATION.md, note: the report}

@@ -9,6 +9,22 @@ The version lives in `scripts/_version.py`; a release is the git tag `v<version>
 release workflow refuses a tag that disagrees with that file or has no section here. A change
 that can move a result is never a patch release without saying so under **Changed**.
 
+## 0.4.4 — unreleased
+
+### Added
+
+- **`evh catalog --about FILE`**: a deployment's own paragraph on the overview, under its
+  description. It says which project the catalog shows and where its findings are. None by
+  default.
+- **A goal's `links` on its page and in `evh goals --goal G`.** The field was in the goal
+  schema but shown nowhere. A web address opens; a path in the project is named as text, because
+  the static pages cannot know where the project is hosted.
+
+### Changed
+
+- **The overview says what the catalog is**: "pages the harness builds from this project's
+  committed runs", and that the inspector tests any arms against a baseline, item by item.
+
 ## 0.4.3 — 2026-10-27
 
 A security fix to the inspector: `evh catalog-serve` no longer serves files through `/api/`.

@@ -27,4 +27,5 @@ references:
 measures:
   - {id: coverage, kind: metric, validity: partial}
 links:
+  - {url: https://evals.humancopilot.eu/experiments/summarization.html, note: the findings on the site}
   - {url: research/REPORT_SUMMARIZATION.md, note: the report}

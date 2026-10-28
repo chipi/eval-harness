@@ -456,3 +456,5 @@ footer .wrap.foot { display: block; }
 @media (max-width: 760px) { .bar .nav { gap: 8px; } }
 @media (max-width: 374px) { .bar .nav { gap: 6px; } }
 .bar .nav a.hbtn { padding: 0; }
+/* the smallest phones (320 px): the bar stays on one row */
+@media (max-width: 359px) { .bar .wrap { gap: 4px; } .hbtn, .menu > summary.hbtn { width: 32px; height: 32px; } .bar .nav { gap: 4px; } .bar .sections { letter-spacing: 0; } .bar .sections a { padding: 8px 3px; } }

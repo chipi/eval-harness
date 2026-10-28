@@ -19,4 +19,5 @@ datasets:
 measures:
   - {id: tau, kind: metric, validity: validated}
 links:
+  - {url: https://evals.humancopilot.eu/experiments/summeval.html, note: the findings on the site}
   - {url: research/REPORT_SUMMEVAL.md, note: the report}

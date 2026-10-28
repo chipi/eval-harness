@@ -152,10 +152,21 @@ try:
     m["goal"] = "tickets_summary"
     runs[0].write_text(json.dumps(m))
 
+    gy = data / "goals" / "tickets_summary.yaml"
+    gy.write_text(
+        gy.read_text().rstrip("\n")
+        + "\nlinks:\n  - {url: https://findings.example/tickets.html, note: the findings}\n"
+        + "  - {url: notes/TRIAGE.md, note: the notes}\n"
+    )
     r = evh("catalog")
     page = proj / ".build" / "catalog" / "g" / "tickets_summary.html"
     html = page.read_text() if page.is_file() else ""
     check("catalog: a page per goal", r.returncode == 0 and page.is_file(), r.stderr[-300:])
+    check(
+        "catalog: the goal page shows its links, a web address as a link and a project path as text",
+        '<a href="https://findings.example/tickets.html">the findings</a>' in html
+        and "the notes: <code>notes/TRIAGE.md</code>" in html,
+    )
     check(
         "catalog: the goal page lists the arm, marked as filed under the goal",
         "tickets_lead2_v1" in html and "filed" in html,
@@ -197,6 +208,7 @@ try:
         r.returncode == 0
         and "strategy   balanced" in r.stdout
         and "tie-break  cost, speed" in r.stdout
+        and "link       the findings: https://findings.example/tickets.html" in r.stdout
         and ("recommended:" in r.stdout or "no single arm recommended" in r.stdout),
         r.stdout[-600:] + r.stderr[-300:],
     )

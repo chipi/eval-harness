@@ -131,6 +131,21 @@ try:
         head_pages
         and all('<meta name="deploy-tag" content="ours">\n</head>' in p.read_text() for p in head_pages),
     )
+    # --about: a deployment's paragraph on the overview only.
+    cb.ABOUT = '<p id="deploy-about">Our six experiments.</p>'
+    about_out = tmp / ".build" / "catalog-about"
+    cb.build(A, about_out)
+    cb.ABOUT = ""
+    check(
+        "--about: its HTML is on the overview, under the description, and on no other page",
+        '<div class="about"><p id="deploy-about">Our six experiments.</p></div>'
+        in (about_out / "index.html").read_text()
+        and not [p.name for p in about_out.rglob("*.html") if p.name != "index.html" and "deploy-about" in p.read_text()],
+    )
+    check(
+        "build: without --about the overview has no about block",
+        'class="about"' not in (out / "index.html").read_text(),
+    )
     # --link: the parts of the publication, one switcher on every page, the catalog marked.
     parts_out = tmp / ".build" / "catalog-parts"
     cb.build(

@@ -1390,10 +1390,11 @@ def render_home(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
     body = hero(
         "catalog",
         "Every evaluation, at a glance",
-        "What each goal concludes so far, when the work happened and what it cost, what each dataset "
-        "covers, and everything recorded. Every name is a link: goals, datasets, arms, references and "
-        "metrics each have a page.",
-        switch + tile_html,
+        "Pages the harness builds from this project's committed runs: what each goal concludes so far, "
+        "when the work happened and what it cost, what each dataset covers, and everything recorded. "
+        "Every name is a link: goals, datasets, arms, references and metrics each have a page, and the "
+        "inspector tests any arms against a baseline, item by item.",
+        (f'<div class="about">{ABOUT}</div>' if ABOUT else "") + switch + tile_html,
     )
     body += block("01", "goals at a glance", _glance(A, by_ds), "glance")
     activity = _activity_chart(by_ds, first, until) if first else '<p class="muted">No runs yet.</p>'
@@ -2127,6 +2128,21 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
     )
     if guard:
         dl += f'<dt>guardrails</dt><dd><ul class="small">{guard}</ul></dd>'
+    # The goal's own links (its report, a deployment's findings page): a web address opens; a path
+    # in the project is named, since the static pages cannot know where the project is hosted.
+    see = "".join(
+        "<li>"
+        + (
+            f'<a href="{e(x["url"])}">{e(x.get("note") or x["url"])}</a>'
+            if str(x.get("url", "")).startswith(("https://", "http://"))
+            else f"{e(x.get('note') or '')}{': ' if x.get('note') else ''}<code>{e(x.get('url', ''))}</code>"
+        )
+        + "</li>"
+        for x in g.get("links") or []
+        if x.get("url")
+    )
+    if see:
+        dl += f'<dt>links</dt><dd><ul class="small">{see}</ul></dd>'
     body = hero("goal", e(g.get("title") or g["goal_id"]), e(g.get("statement", "")))
     body += block("01", "the answer so far", _answer(A, g, by_ds, measure))
     n = 2
@@ -3174,6 +3190,9 @@ API = "/api/"
 #: HTML a deployment adds to every page's <head> (--head FILE): its analytics, a verification
 #: tag. The harness adds none of its own.
 HEAD = ""
+#: HTML a deployment puts on the overview, under its description (--about FILE): which project
+#: this catalog shows and where its findings are. None by default.
+ABOUT = ""
 #: The parts of the publication this catalog belongs to (--link), (label, url) each, "." for the
 #: catalog itself: one switcher heads every page, the catalog marked. None by default.
 SECTIONS: tuple = ()
@@ -3183,7 +3202,7 @@ BRAND = "eval catalog"
 
 def main() -> int:
     """Build the catalog and write static pages to output directory."""
-    global API, HEAD, BRAND
+    global API, HEAD, BRAND, ABOUT
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--out", type=Path, default=ROOT / ".build" / "catalog")
     ap.add_argument(
@@ -3211,6 +3230,13 @@ def main() -> int:
         metavar="FILE",
         help="HTML added to every page's <head>, for a deployment's own analytics or tags (none by default)",
     )
+    ap.add_argument(
+        "--about",
+        type=Path,
+        metavar="FILE",
+        help="HTML shown on the overview, under its description: which project this catalog shows, "
+        "and where its findings are (none by default)",
+    )
     args = ap.parse_args()
     if not args.api.startswith("/") or not args.api.endswith("/"):
         raise SystemExit(
@@ -3222,6 +3248,10 @@ def main() -> int:
         if not args.head.is_file():
             raise SystemExit(f"--head {args.head}: no such file")
         HEAD = args.head.read_text(encoding="utf-8").strip() + "\n"
+    if args.about:
+        if not args.about.is_file():
+            raise SystemExit(f"--about {args.about}: no such file")
+        ABOUT = args.about.read_text(encoding="utf-8").strip()
     sections = []
     for spec in args.link:
         label, _, url = spec.partition("=")

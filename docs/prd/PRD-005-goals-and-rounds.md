@@ -73,7 +73,8 @@ belonged together, why one was dropped, or what a round concluded. The newcomer 
   and its direction: `higher`, `lower`, or `non_inferior`, a guard that ranks nothing) and
   `datasets` (each with an optional role: dev, heldout, ...; empty for a goal checked by a gate
   rather than measured on a dataset). Optional: `context` (its audience), `output_contract`,
-  `references`, `measures`, `min_items` (in `success_criteria`), `links`, `status`.
+  `references`, `measures`, `min_items` (in `success_criteria`), `links` (shown on the goal
+  page and by `evh goals --goal`: a web address as a link, a project path as text), `status`.
 - **FR1.2**: A config names its goal (`goal:`) and may declare its `format`; `experiment-run`
   refuses an unknown goal before it spends anything. The run records both outside the
   fingerprint; `run-promote` carries both onto the baseline.
