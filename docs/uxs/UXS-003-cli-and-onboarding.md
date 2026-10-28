@@ -190,9 +190,11 @@ Draft until 0.5.0 is built; then they replace the sections above they name.
 | --- | --- |
 | a goal page's baselines (now, evidence, how to reproduce, history) | `evh baselines --goal G [--dataset D] [--all-versions]` |
 | (no page: a document) what a production system reads | `evh baselines --json` |
-| the studies page | `evh studies [--goal G]` |
+| the studies page | `evh studies [--goal G] [--period P]` |
 | a study's page | `evh study-status <study> [--trials]` |
-| the prompts page, a prompt's page, its changes | `evh prompts [<name>]`, `evh prompt-diff <a> <b>` |
+| the prompts page, a prompt's page, its changes | `evh prompts [<name>] [--period P]`, `evh prompt-diff <a> <b>` |
+| the arms page's study grouping and trial rows | `evh arms --by study` |
+| the arms page's quality chips | `evh arms --quality noninferior\|inconclusive\|below` |
 | the goal page's heldout looks | `evh goals --goal <id> --looks` |
 | the arm page's stages, prompts, build, failed items | `evh arms --arm <id>` (the same sections) |
 | the inspector's stages panel | `evh inspect … --stages --item <id>` |

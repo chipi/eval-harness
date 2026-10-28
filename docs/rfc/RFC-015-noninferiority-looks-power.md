@@ -10,7 +10,8 @@
   [RFC-004](RFC-004-experiment-rounds.md) (rounds)
 - **Related ADRs**: [ADR-0006](../adr/ADR-0006-goal-axes-and-strategies.md) (goal ties, superseded in part)
 - **Code**: `harness/scripts/stats.py` (new functions), `catalog_views.py` and `catalog_build.py` (goal
-  pages), `rounds.py`, `pair_test.py`, `family_test.py`, `rank_stability.py`, `holdout_significance.py`,
+  pages), `catalog_arms.py` and `catalog_views.py`'s `arms` (0.4.2's arms page: its quality chips read the 0.4.0 tie
+  rule, `dec["tied"]`, and "over a limit" is found by matching " limit " in a decision's reasons), `rounds.py`, `pair_test.py`, `family_test.py`, `rank_stability.py`, `holdout_significance.py`,
   `validate_tree.py` (margins, looks); new `harness/scripts/_looks.py` (counts looks from the records);
   `schemas/goal.schema.json` (`axes.<axis>.margin` without a default, `heldout_looks`); validation suite
   `harness/tests/test_stats_validity.py`
@@ -266,6 +267,12 @@ margin before release (the owner sets each; RFC-014's plan prints the goals with
   refusal at K + 1 without consent and the level continuing the series; prior use computed from runs and shown, not
   counted.
 - Goal-page tests in `test_catalog.py`: strategies under the new rule; an inconclusive arm never recommended.
+- Arms-page tests in `test_catalog.py`: the quality chips and `evh arms --quality noninferior|inconclusive|below`
+  follow the decision; "over a limit" comes from the limit check, not from a reason's wording.
+- **The inspector's memory** (`tests/test_inspector_budget.py`, the resources tier of `harness/docs/TESTING.md`):
+  Tango and the bootstrap-t run in `/api/compare`, with B up to 199,999 resamples. Any cache they keep is bounded as
+  0.4.1 bounded the paired test's (`stats._P_MAX = 4096`, `_SIGNS_MAX = 2`); the budget test runs with margins
+  declared, and the inspector stays under its 200 MB limit under `--warm` (prod's container has 256 MiB).
 
 ## Decisions (ADR candidates)
 

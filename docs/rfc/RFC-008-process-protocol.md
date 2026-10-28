@@ -112,6 +112,10 @@ running the system (`rescore`, the catalog) reads the file, and nothing is cache
   moves the instrument; `run-compare` names it ("the scorer is part of the system and changed with it"), and the
   wrapping recipe recommends `score:` in a separate file.
 - The system's code ref (PRD-008 FR4.4) is `identity.code_ref`.
+- **On the arms page.** 0.4.2's arms page names an arm's model from `params.model` (`catalog_arms.py`), which a process
+  config has none of. A process arm shows `process:<name>` and its declared version as its model; it counts as local,
+  since the harness bills no provider for it (its own spend is what its results report), and `data/models.yaml` does
+  not apply to it.
 
 ### The example and the conformance check
 

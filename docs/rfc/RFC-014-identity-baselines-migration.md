@@ -88,12 +88,18 @@ also has `migrated_from` (the 0.4.0 baseline id and its version-4 `fingerprint_h
 
 **Readers.** One function, `_common.baseline(goal, dataset) -> record | None` (and `baselines()` for all),
 replaces every direct read of `baselines/`: `rounds.py:86-95` (the baseline a round starts from: the
-round's goal and dataset), `validate_tree.py:143, 368, 1009` (schema and V6, now over baseline versions),
-`list_runs.py:34` (`runs-list --baselines` lists current baselines), `catalog_adapter.py:666-690`
+round's goal and dataset), `validate_tree.py:143, 369, 1010` (schema and V6, now over baseline versions),
+`list_runs.py:34` (`runs-list --baselines` lists current baselines), `catalog_adapter.py:682`
 (`baselines()` keeps its name and shape for the adapter protocol and gains `version` and `id`; it returns
 current versions), the harness Makefile's `run-promote` target. The catalog's "last baseline for a dataset"
-reads (`catalog_build.py:586, 664, 1239, 2236`, `catalog_views.py:119`, `catalog_serve.py:428-431`) filter by
-goal; a page without a goal (a dataset page) shows each goal's baseline on that dataset.
+reads (`catalog_build.py:815, 1641, 2748`, `catalog_views.py:176`, `catalog_serve.py:428-431`) filter by
+goal; a page without a goal (a dataset page) shows each goal's baseline on that dataset. Two readers 0.4.2 added
+list every baseline on a dataset whichever goal it belongs to, and filter by goal too: the goals page's "what
+happened in the period" (`catalog_build.period_goals`, `:567`) and the arms page's "promoted as the baseline" in
+what changed (`catalog_arms.py:325`); the home page's `04 recorded` (`catalog_build.py:933`) lists every
+promotion and names each one's goal. The goal page, `evh goals` and the glance (`catalog_build.py:1042, 1951`,
+`catalog_views.py:832`) already keep a goal's own baselines (and goal-less ones), so the arms page's role badges,
+which come through the glance, need only the version.
 
 ### Fingerprint version 5
 
@@ -128,9 +134,9 @@ fingerprint = {
 - **`run-compare`** (`compare_runs.py:68, 77-89`): differences under `machine` are reported as "different
   machine" and do not make the comparison uncontrolled on quality; they flag speed and cost axes.
   Differences under `host` still do.
-- **The conditions check** (`catalog_adapter.py:216-219`, `catalog_serve.py:561`): `machine.*` conditions
+- **The conditions check** (`catalog_adapter._flat_conditions`, `:220`; `catalog_serve.py:561`): `machine.*` conditions
   read `machine` (and `host` for platform and Python); latency across different `machine.label`s keeps its
-  warning. `catalog_build.py:505-507` and `site/figures.py:226-233` read `host.platform` and
+  warning. `catalog_build._machine` (`:726`, the arm page's machine, from the conditions' `machine.platform`) and `site/figures.py:226-233` read the platform and
   `machine.cpu_count`.
 
 ### Run ids
@@ -187,10 +193,10 @@ finished by running it again, and a second run on migrated data changes nothing.
 already points at the commit the migration started from; otherwise the script refuses with both commits.
 
 1. **Pre-flight** (read-only): the tree is clean for every path the plan touches; the installed harness is
-   0.5.0; the data, runs and goals directories resolve. `UPGRADING.md` says to run `evh validate` with 0.4.0
-   before moving the pin; the script does not embed 0.4.0's rules, and checks only what its steps rely on:
+   0.5.0; the data, runs and goals directories resolve. `UPGRADING.md` says to run `evh validate` with the release
+   the project pins (0.4.4 here) before moving the pin; the script does not embed 0.4.x's rules, and checks only what its steps rely on:
    the hashes (step 2), the shapes of the files it rewrites (baselines, goals, rounds, manifests) against their
-   0.4.0 schemas, and the baseline refusals (step 6).
+   0.4.4 schemas (0.4.2 added `models.schema.json`, which the script leaves alone), and the baseline refusals (step 6).
 2. **Hash check**: for every `metrics.json` (every runs directory), recompute the version-4 hash from the
    stored body (`_hash_of` over the body minus `hash`, with `imported` removed first, as `import_run.py:209`
    adds it after hashing). Never recompute item, reference or code digests: references are gitignored,
@@ -207,10 +213,10 @@ already points at the commit the migration started from; otherwise the script re
    for an imported run, whose `libraries` and `instrument.harness` move to `imported_by`); the version-4 hash
    moves to `hash_v4`; the version-5 hash is computed. Derived runs keep `hash: null` and get the same split.
 6. **Baselines per goal**: each `baselines/<dataset>_baseline.json` becomes
-   `baselines/<goal or _>/<dataset>/<version>.json` (its version id from the 0.4.0 `promoted_at`) with
+   `baselines/<goal or _>/<dataset>/<version>.json` (its version id from the recorded `promoted_at`) with
    `migrated_from`, the version-5 `fingerprint_hash` of its run
    (absent when the run's hash is null), `promoted_from` resolved to `run:runs/<run_id>` (the `runs/` copy,
-   as `catalog_adapter.py:675-676` already prefers); the old `<dataset>_baseline.json` files are removed.
+   as `catalog_adapter.py:690-692` already prefers); the old `<dataset>_baseline.json` files are removed.
    Refusals: a baseline id that is not `<dataset>_baseline`; two goals sharing one baseline; a goal-less
    baseline on a dataset a goal uses. None occurs in this repository's 7 baselines; the podcast project has
    none.
@@ -225,7 +231,9 @@ already points at the commit the migration started from; otherwise the script re
    inside it would move the digest of every reference made from a run and contradict every run scored
    against it.
 10. **Check**: `evh validate` with V17 and V18 passes; the catalog builds; the baselines it shows are the 7
-    baselines it showed before; every reference digest is unchanged.
+    baselines it showed before, on the goal and dataset pages, as the arms page's `baseline` badges (0.4.2) and as
+    the dated baseline events in the goals page's "what happened in the period" (0.4.2: each migrated version
+    keeps its `promoted_at`, so its day is unchanged); every reference digest is unchanged.
 
 It writes nothing unless the dry run was clean and `--yes` is given. This repository migrates first; the
 podcast project after its harness pin moves to 0.5.0. `UPGRADING.md` documents it; a later release removes

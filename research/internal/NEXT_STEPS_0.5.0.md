@@ -1,6 +1,7 @@
 # 0.5.0: where it stands and what comes next
 
-Written 2026-10-27, when the design was finished and paused for the owner's review. Branch `050`.
+Written 2026-10-27, when the design was finished and paused for the owner's review. Branch `050`. On 2026-10-28 the
+branch was rebased onto 0.4.4 and the design reconciled with what 0.4.1 to 0.4.4 shipped (below).
 
 ## Where it stands
 
@@ -22,6 +23,30 @@ How the design got here, in order: three PRD review rounds; two RFC reviewers (f
 vocabulary kept (baseline, dev, heldout, separated, ERROR, exit 3); revision 3 (a second simplification pass, all 14
 accepted); "a study is research, never search". The owner's decisions are recorded in each document's Status line and
 in the ADRs.
+
+### Reconciled with 0.4.1 to 0.4.4 (2026-10-28)
+
+An audit of every 0.5.0 document against the 0.4.1–0.4.4 changelog and code found the design silent on what 0.4.2
+added to the catalog, and a few statements 0.4.x made wrong. Folded in:
+
+- **The period** (ADR-0018): the studies and prompts pages carry it from their own builders (`period_studies`,
+  `period_prompts`), `evh studies` and `evh prompts` take `--period P`, every study event carries `at`, and a list
+  command's `--json` names the days it counted (RFC-013).
+- **The activity and arms pages**: trials as arms ("trial k of study s2", group by study, folded in what changed),
+  stage and process arms in the model column, quality chips on non-inferiority, `judge.cost_usd` billed as judges,
+  local / hosted about the provider, not the runner (UXS-001, RFC-007, RFC-008, RFC-010, RFC-015, PRD-010).
+- **The nav's groups**: Studies and Prompts go under Experiments (UXS-004).
+- **0.4.x's deployment rules**: no `style` attributes (the CSP), no new inspector API route, prompt publishing as a
+  flag (`evh catalog --publish prompts`) like `--head`, `--about` and `--repo`, not a `config.yaml` key (RFC-009,
+  RFC-013, UXS-002, UXS-004); `llms.txt` at both the docs root and the site root (RFC-016, UXS-005).
+- **Readers and references**: the two 0.4.2 baseline readers that ignore the goal (RFC-014, PRD-013),
+  `_common.reference_texts` (RFC-007), `data/models.yaml` in how to reproduce a baseline (RFC-012, PRD-011) and in
+  RFC-003's adapter protocol (`model_facts`), line references and counts moved by 0.4.x (RFC-013, RFC-014, PRD-012),
+  0.4.4's double-module fix as the case RFC-013's import design covers, the inspector's memory bound (RFC-015), the
+  migration starting from 0.4.4 (RFC-014, PRD-013), and the test tiers of `harness/docs/TESTING.md` (RFC-013).
+- **Contradictions inside the design** found on the way: PRD-001's "no trends" non-goal (now: no quality over time),
+  UXS-005's `consent` command (gone in revision 3), INFLUENCES' "a tie is an equivalence claim" (now
+  non-inferiority), UXS-001's link to a baselines page (there is none).
 
 ## In one paragraph
 
@@ -74,4 +99,5 @@ take their place behind one store contract.
   - the Umami probe rows of 2026-10-26 are still in the stats (deleting them needs the owner's approval);
   - `autoresearch/1022_gb10_tuning/run_labeled.sh:32` in podcast-scraper-eval-data has a hard-coded default
     `VLLM_API_KEY` in a tracked file (found, not acted on);
-  - the podcast project's harness pin move, pending from 0.4.0.
+  - the podcast project's harness pin move: its main pins `@v0.3.0` (origin, 2026-10-27; the local checkout pins
+    `0b2ca8b2`, a 0.4.0 branch commit of 2026-10-25, not a release); the target is v0.4.4, then 0.5.0.

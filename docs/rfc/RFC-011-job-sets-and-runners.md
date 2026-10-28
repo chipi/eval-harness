@@ -191,7 +191,8 @@ None. `sweep` keeps its command line.
   attempts; a repeat-2 job is two jobs; `parallel` is in `metrics.json`; `--wait` exit codes.
 - `harness/tests/test_phases.py`: a failing `before` fails the phase and skips its jobs, `after` on failure, `after` run by
   `jobs-stop` and by `--resume` after a SIGKILL, GPU time counted once for parallel jobs.
-- `harness/tests/test_runner_ssh.py` (CI, a container with sshd): pre-flight refusals (no host, missing variable, version
+- `harness/tests/test_runner_ssh.py` (CI, a container with sshd, in the integration tier of `harness/docs/TESTING.md`;
+  its workflow job is named when it is built): pre-flight refusals (no host, missing variable, version
   mismatch, a dirty tree, an unpushed commit); a set runs, runs come back and validate, the build is the local commit
   and the fingerprint equals a local run's; a changed file in the host's checkout is refused; a tampered materialized
   item fails its sha256; a dropped connection shows lost and reconciles.

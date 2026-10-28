@@ -99,9 +99,10 @@ client. The harness also ships three skills in the Agent Skills format, installe
   promotion, retiring an arm, an extra look, an override, a shared host) or a call would cross a budget, the tool is
   refused (`consent-required`) with the exact command the person runs in their own terminal, with `--confirm`. The
   person's run is the action and the consent, so the agent does not retry it. One path, and nothing stored in between.
-- **Budgets**: nothing is stored apart from the runs (RFC-017). The spend of a day is the sum of the cost the runs
-  record (`metrics.json`, and `outputs/_rows.jsonl` for a run in progress), plus the `--dry-run` estimates of the jobs
-  still queued or running. A call whose estimate would cross a limit needs consent. The child gets
+- **Budgets**: nothing is stored apart from the records (RFC-017). The spend of a day is what the catalog adapter's
+  `spend()` counts for it (the runs' cost, `metrics.json`, and the judges' verdicts under `data/judge-verdicts/`:
+  the number 0.4.2's activity page shows for that day), plus `outputs/_rows.jsonl` for a run in progress and the
+  `--dry-run` estimates of the jobs still queued or running. A call whose estimate would cross a limit needs consent. The child gets
   `EVAL_MAX_COST_USD` set to the budget left, so `experiment-run`'s own cost cap stops it at the limit even when the
   estimate was low; the job and study supervisors pass the same cap to every job they start. Two calls started at the
   same moment can both pass the check; the cost caps still stop each at what was left when it started. A shared
@@ -134,9 +135,11 @@ client. The harness also ships three skills in the Agent Skills format, installe
 
 ### llms.txt and the glossary
 
-- `site/mkdocs_hooks.py` writes `llms.txt` at the documentation root on build: the site's title and summary, then each
-  page with its title, URL and first sentence, grouped by the navigation's sections (llms.txt v2). The site root links
-  it.
+- `site/mkdocs_hooks.py` writes `llms.txt` at the documentation root on build (`/docs/llms.txt`: the docs are served
+  under `https://evals.humancopilot.eu/docs/`, `mkdocs.yml` `site_url`): the site's title and summary, then each page
+  with its title, URL and first sentence, grouped by the navigation's sections (llms.txt v2).
+- `site/build.py` writes `/llms.txt` at the site root, where agents look for it: the site's own pages first, then a
+  link to `/docs/llms.txt`; its `--check` checks it as it checks `robots.txt` and `sitemap.xml`.
 - `docs/GLOSSARY.md`: each harness term (arm, run, adapter, reference, gold, silver, goal, round, study, trial, sampler,
   baseline, look, separated, non-inferior, inconclusive) with its meaning and the word other tools use (Inspect,
   LangSmith, promptfoo, HELM, Optuna, MLflow), and where the meaning differs, how.
@@ -156,7 +159,8 @@ None. The server and skills are new; `UPGRADING.md` says how to add `evh mcp` to
 
 ## Alternatives Considered
 
-- **Run tools in-process.** Rejected: commands keep module-level state (the catalog's `API`, `HEAD`, `BRAND`), and a
+- **Run tools in-process.** Rejected: commands keep module-level state (the catalog's `API`, `HEAD`, `BRAND`,
+  `ABOUT`, `REPO`, set by its `main()`), and a
   child process gives a tool exactly the command's behaviour, refusals and exit codes.
 - **A hand-written MCP server.** Rejected by the owner earlier: the SDK tracks the protocol.
 - **Trust the client's name for the actor.** Rejected: the specification says not to.

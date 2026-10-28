@@ -29,7 +29,7 @@ commands.
   machine-readable output.
 - The harness refuses unsafe actions with a reason. Refusals go to stderr as `ERROR: …` with exit
   1 (`_common.die`); exit 2 already means "stopped by the cost cap" (`experiment_run.py:884`) and
-  "unknown command" (`cli.py:125`), and argparse uses 2 for usage errors.
+  "unknown command" (`cli.py:128`), and argparse uses 2 for usage errors.
 - The commands are declared as a script name and a one-line description (`cli.py`); each script
   builds its own arguments, so there is no single description of what a command takes.
 - The podcast project's loops were run by an agent following hand-written `program_*.md`
@@ -113,7 +113,7 @@ commands.
   refuses without it, with the exact command a person runs to give it (`--confirm`, in their own
   terminal); the record names who confirmed.
 - **FR2.6**: Every command's help names it as `evh <command>` (some scripts print their file name,
-  e.g. `usage: promote_baseline.py`), gives its purpose, and shows at least one example. Today 23
+  e.g. `usage: promote_baseline.py`), gives its purpose, and shows at least one example. At 0.4.0, 23
   of the 28 commands that build their own parser show only the first line of their docstring, so
   the examples written there never reach `--help`.
 

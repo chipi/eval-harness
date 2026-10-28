@@ -25,18 +25,22 @@ project's `config.yaml` becomes the one place its directories, runners and limit
 ## Problem Statement
 
 - `cli.py` maps a name to a script and a one-line help (`COMMANDS`); each script builds its parser inside
-  `main()`, so nothing describes a command's arguments outside running it. 23 of 28 parsers show only their
-  docstring's first line; several print `usage: promote_baseline.py`.
+  `main()`, so nothing describes a command's arguments outside running it. 23 of 28 parsers (counted at 0.4.0;
+  0.4.2 added `evh activity`) show only their docstring's first line; several print `usage: promote_baseline.py`.
 - No command has machine-readable output; scripts compute and print in the same loop.
 - `experiment-run` has 35 `print` calls, one to stderr: progress and results share stdout.
 - `die()` exits 1 for every refusal (`_common.py:465`), and 29 more sites raise `SystemExit("…")` directly (e.g.
   `_common.py:107, :356`); 1 also means "nothing measured" (`experiment_run.py:879`) and a failed `validate`; 2 means
-  the cost cap (`:884`), an unknown command (`cli.py:125`) and argparse's usage error.
-- `cli.py:131` runs each script through `runpy`, so a script's module state exists only while it runs; importing the
-  scripts to describe them would run module-level code a second time beside it.
+  the cost cap (`:884`), an unknown command (`cli.py:128`) and argparse's usage error.
+- `cli.py:135` runs each script through `runpy`, so a script's module state exists only while it runs; importing the
+  scripts to describe them would run module-level code a second time beside it. 0.4.4 met exactly this: run as
+  `__main__`, `catalog_build` was imported a second time by `catalog_arms` with the default options, so `arms.html`
+  lost `--brand`, `--link`, `--head` and `--api` (CHANGELOG 0.4.4, Fixed). The fix is an alias in
+  `catalog_build.py`'s `if __name__ == "__main__"` block that names the running module
+  `evaluation_harness.catalog_build`.
 - Records do not say who made them; an agent's work and a person's look the same.
 - The project root, data, runs and goals directories come from `EVAL_*` variables; `config.yaml` is read only
-  for `catalog.adapter` (`catalog_adapter.py:800`).
+  for `catalog.adapter` (`catalog_adapter.py:823`).
 - `schemas/` has no run record, fingerprint or prediction schema.
 - `requires-python = ">=3.9"` and `ruff.toml:8` `target-version = "py39"`; the official MCP SDK (RFC-016) requires
   3.10.
@@ -72,7 +76,10 @@ COMMANDS = [Command(
   `round-close`, `round-retire` and `rounds`, today through four-line shim scripts, which go).
 - `cli.py` imports the module (`importlib.import_module`) and calls `_command.main(command)`; `runpy` goes, so a
   module's state exists once whether the manifest is built or a command runs. A script still runs as a file
-  (`python scripts/x.py`, its `if __name__ == "__main__"` calls the same `main`) and through `make`.
+  (`python scripts/x.py`, its `if __name__ == "__main__"` calls the same `main`) and through `make`; the deployment
+  runs `catalog_build.py` that way (`infra/deploy/render.sh`). So `_command.main` makes 0.4.4's alias general: run as
+  `__main__`, a module is registered under its package name before anything imports it, and `catalog_build.py`'s own
+  alias goes.
 - `_command.main(command)` parses with `parser()`, adds the common options **unless the parser already defines them**
   (`--json`; `--dry-run` when the command writes or spends; `--actor`, `--on-behalf-of`, `--instruction`; `--confirm`
   when it declares consent kinds), calls `run`, and prints `render(result)` or the JSON. The scripts that define
@@ -99,6 +106,10 @@ COMMANDS = [Command(
 - Progress, notes and warnings go through `_common.say()` (stderr). Nothing else prints to stdout. A test runs each
   command on the example project and fails when its stdout is not exactly its rendered result.
 - No command waits for input; `--no-input` is accepted everywhere and changes nothing (there is nothing to disable).
+- **A result that depends on the day says which days.** Since 0.4.2 the list commands take `--period P` and count
+  from `date.today()` (`catalog_views.py`), so the same command gives a different answer tomorrow. Their output
+  schemas carry the period as `catalog_periods.bounds` computes it: `period: {key, since, until, prev: [since,
+  until]}` (`prev` absent for all time), so a saved result says what it counted and what its trends compare with.
 
 ### Exit codes (`_common.EXIT`)
 
@@ -119,7 +130,8 @@ COMMANDS = [Command(
 An unknown command becomes 2 (a usage error), which it already is. Ctrl-C keeps 130 and loses the traceback. The
 release notes list each change.
 
-**Converting the 0.4.0 exits.** Each of the 153 `die(` calls and the 29 raw `SystemExit("…")` sites becomes a refusal
+**Converting the 0.4.x exits.** Each of the 154 `die(` calls (153 at 0.4.0) and the raw `SystemExit("…")` sites
+(0.4.1–0.4.4 added eight: the option errors of `evh catalog` and `catalog-serve --hooks`) becomes a refusal
 (`refuse(code, …)`, exit 1, with a registry entry naming what is wrong: bad input, a missing file, a configuration
 error, a service that is not there) or, for a harness bug, an internal error (`die`, 70). The distinctions sysexits
 draws between kinds of failure are carried by the refusal's code, which a script reads from the JSON, not by more exit
@@ -179,7 +191,7 @@ come with the database provider (RFC-017).
 data_dir: data            # EVAL_DATA_DIR wins
 runs_dir: data/runs       # EVAL_RUNS_DIR wins
 goals_dir: data/goals     # EVAL_GOALS_DIR wins
-catalog: {adapter: tools/my_adapter.py:Adapter, publish: [prompts]}   # publish: what static pages may carry (RFC-009)
+catalog: {adapter: tools/my_adapter.py:Adapter}      # what the pages publish is a deployment's flag (`evh catalog --publish`, RFC-009)
 runners: {dgx: {type: ssh, host: dgx-llm-1, …}}      # RFC-011
 limits: evh-limits.yaml                               # RFC-016: tracked, so git records who changed it
 ```
@@ -238,6 +250,11 @@ pin moves.
   `unknown:`; a person's `--confirm` passes and an agent's is refused; the refusal carries the exact command,
   and nothing is stored between the refusal and the person's run.
 - `harness/tests/test_config.py`: precedence environment > config > default; `evh config --json` names the source.
+- **The tiers** (`harness/docs/TESTING.md`, since 0.4.2) hold for every 0.5.0 RFC: each test goes into the lowest tier
+  that catches what it guards. Each new checker (V17, V18, V19, `evidence-check`, `adapter-check`, `skills-check`)
+  gets its planted defects in `tests/test_checks_can_fail.py` and so runs in the required `guards` check; the
+  studies and prompts pages join `tests/test_catalog_real_browser.py`'s phone-width and menu checks; a list
+  command's `--period` output is compared with its page, as 0.4.2's are.
 
 ## Decisions (ADR candidates)
 

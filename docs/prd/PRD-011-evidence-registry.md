@@ -48,7 +48,8 @@ run or a report, because a production registry also records options that were re
   a moving `@current` pointer.
 - The comparison that justified a promotion is frozen when it is made, not recomputed later.
 - How to reproduce it reproduces the baseline's runs: config and params, prompt versions with hashes,
-  model identity, adapter and harness versions, dataset and reference with their hashes, stages.
+  model identity (with its weights and licence when `data/models.yaml` lists the model), adapter and harness
+  versions, dataset and reference with their hashes, stages.
 - `evh baselines --json` is a documented, versioned document a project's production code can read.
 - A project's own registry can cite baselines, rounds, runs or reports and check them, in CI or
   by hand.

@@ -76,8 +76,9 @@ when, by whom, why, what it replaced). `--all-versions` lists every version.
 
 From the baseline's run: config id and `params` (credentials removed, `identity_params`), prompts (`arm.prompts`: names,
 versions, hashes; RFC-009), the system's identity (`system_under_test.model`, declared code ref, accelerator), the adapter
-(id and hash), the harness (version, code hash), the dataset (id, `items_sha256`), the reference (id, tier, digest), and the
-stages (names, RFC-007).
+(id and hash), the harness (version, code hash), the dataset (id, `items_sha256`), the reference (id, tier, digest), the
+stages (names, RFC-007), and the model's `weights` (open or proprietary) and `licence` from 0.4.2's `data/models.yaml`
+when it lists the model (absent otherwise: not guessed).
 
 ### `--json` is the export
 

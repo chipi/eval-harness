@@ -76,7 +76,8 @@ Commit them, so the change has an author, then start the server again." `UPGRADI
   there.
 - **Too much output**: a result over 1 MB is replaced by a refusal, `output-too-large`, naming the
   `limit` and `offset` arguments that page it.
-- **Not tools**: `catalog-serve`, `mcp`, `consent`, `skills-install`, `init` (a person runs them).
+- **Not tools**: `catalog-serve`, `mcp`, `skills-install`, `init` (a person runs them). Consent is no command: the
+  person runs the refused command with `--confirm` (RFC-013).
 - A tool the limits disable is absent from the list.
 
 ## Reading records
@@ -156,10 +157,11 @@ The order an agent follows, as the `evh-run-a-study` skill and PRD-012's first u
 
 ## llms.txt and the glossary
 
-- `llms.txt` at the documentation root: the site's title and one-paragraph summary, then one section per
-  navigation group (Getting started, Guides, Reference, Design: PRD, UXS, RFC, ADR), each page as
-  `- [Title](url): its first sentence`.
-- `GLOSSARY.md` (in the docs' Reference section): one row per term: **term**, **in the harness**, **in
+- `llms.txt` at the documentation root (`/docs/llms.txt`) and at the site root (`/llms.txt`, the site's pages, then a
+  link to the documentation's): the site's title and one-paragraph summary, then one section per navigation group as
+  `mkdocs.yml` names them (Getting started, Tutorials, The harness, Architecture: overview, PRDs, UXS, RFCs, ADRs; The
+  experiments; Data & licences; Influences; Papers), each page as `- [Title](url): its first sentence`.
+- `GLOSSARY.md` (in the docs' The harness section, beside Concepts): one row per term: **term**, **in the harness**, **in
   other tools** (Inspect, LangSmith, promptfoo, HELM, Optuna, MLflow), **difference** ("a *trial* is
   Optuna's word; here a trial is also a set of runs with its own records").
 

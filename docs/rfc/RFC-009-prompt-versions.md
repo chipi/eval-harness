@@ -99,7 +99,7 @@ and the run record are made, so no per-run path enters `arm.params`; the warm-up
   versions). The overlay lives under the run's own temporary directory and is removed after the run; no tracked file is
   written, so the build stays clean.
 
-A 0.4.0 adapter that ignores these keys behaves as before. The wrapping recipe (RFC-007) shows both ways a system takes
+A 0.4.x adapter that ignores these keys behaves as before. The wrapping recipe (RFC-007) shows both ways a system takes
 the overlay: a subprocess gets `PROMPT_DIR=<overlay>` in its environment (the podcast runner); an in-process library is
 pointed at it and its template cache cleared (`set_prompt_dir(params["prompt_root"])`, which clears it, or
 `clear_cache()`), because a cached template would otherwise be served from the previous trial.
@@ -127,8 +127,12 @@ change to an unvaried file in the root still shows. The default `include` is eve
 
 A prompts page (every name, its versions, the baseline that uses it) and a page per name: the versions as a lineage list with notes and
 authors, the diff between consecutive versions, and per version the runs and their scores. Arm pages link the prompt
-versions they used. Every view has its command (above). Prompt text (the diffs) is written into the static pages only
-when the project publishes it (`catalog: {publish: [prompts]}` in `config.yaml`), since a project's prompts may be
+versions they used. Every view has its command (above). The prompts page is a listing page: it carries 0.4.2's period
+from its own builder (`period_prompts`, read by `evh prompts --period P` too); a prompt is new on its first version's
+`created_at` ([ADR-0018](../adr/ADR-0018-period-from-today.md)). A version's source path links through
+`evh catalog --repo URL` when given, else it is named. Prompt text (the diffs) is written into the static pages only
+when the deployment publishes it (`evh catalog --publish prompts`, a flag like 0.4.x's other publication choices,
+`--head`, `--about`, `--repo` and `catalog-serve --publish outputs,references`), since a project's prompts may be
 private and the pages may be published; otherwise the pages show hashes and sizes, and the diff is `evh prompt-diff`
 ([UXS-004](../uxs/UXS-004-studies-baselines-prompts.md#a-prompts-page)).
 

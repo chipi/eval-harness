@@ -24,7 +24,8 @@ and configs page and a page per arm, a goals page and a page per goal, a referen
 page per reference, a metrics page and a page per metric, and the shell of the inspector. Every
 page is read-only and carries counts and means only, so the pages can be published. The pages a
 home tile opens carry the same period and trends as the tile ([the period](#the-period-every-listing-page)).
-This spec describes the pages as built at 0.4.2, checked by building the catalog on this
+This spec describes the pages as built at 0.4.4 (0.4.2's pages, with 0.4.4's goal links and overview
+paragraph), checked by building the catalog on this
 repository's data (6 goals, 13 datasets, 313 arms, 181 configs, 15 references) and on a tutorial
 project with gold, silver and an open round.
 
@@ -187,8 +188,11 @@ show the same period, and the home tiles open those pages at the period picked.
 
 The whole project at a glance, for the period picked ([the period](#the-period-every-listing-page)).
 
-- Hero: kicker `catalog`, title "Every evaluation, at a glance", a dek saying every name is a
-  link, then the period bar and the **tiles**, in four subjects, one colour each (a band on
+- Hero: kicker `catalog`, title "Every evaluation, at a glance", a dek saying what the catalog is
+  (pages the harness builds from this project's committed runs; the inspector tests any arms against a
+  baseline, item by item) and that every name is a link; the deployment's own paragraph under it when
+  `evh catalog --about FILE` gives one (which project it shows, where its findings are); then the period
+  bar and the **tiles**, in four subjects, one colour each (a band on
   top, its trend badge, its line), named in a legend under them: **goals** (goals); **data**
   (datasets, references); **experiments** (configs, arms, metrics); **work and spend**
   (measured runs, billed in USD, tokens). The colour says what a tile is about and nothing
@@ -348,7 +352,9 @@ The page answers first, then explains, then shows the evidence.
    output contract, status. Then: weighs (the axes the goal measures, with limits shown in
    column headers), strategy (balanced, quality_first, or frugal — how the rule decides who
    ties with the quality leader), tie-break (the axes that break ties, in order; default: cost,
-   then speed), and guardrails (prose rules shown, never computed).
+   then speed), guardrails (prose rules shown, never computed), and **links** (the goal's
+   `links`: a web address opens; a project path links through `evh catalog --repo URL` when
+   given, else is named, as is a guardrail's source path).
 5. **One section per dataset of the goal**, titled with the dataset and its role:
    - the dataset (linked), its size, role and "made from" link; its notes; its references
      (with "written by" for silver);
@@ -558,12 +564,19 @@ names and the verdicts' metric open their pages.
 Draft until 0.5.0 is built; then they are folded into the sections above. New pages (studies, baselines,
 prompts) are in [UXS-004](UXS-004-studies-baselines-prompts.md), with the words and marks every page shares.
 
-- **Header**: the nav gains **Studies** and **Prompts** ([UXS-004](UXS-004-studies-baselines-prompts.md#the-header)); a
-  baseline is read on its goal's page.
-- **Baselines are per goal and dataset, with versions**: the home page's `baseline` column and the
-  datasets page show each goal's baseline; the dataset page's answer box becomes one box per goal that has
-  a baseline on the dataset ("baseline of <goal>, version n, promoted <date> by <actor>"). The word stays
-  `baseline` everywhere; the baseline links to its page.
+- **Header**: the nav gains **Studies** and **Prompts** under Experiments
+  ([UXS-004](UXS-004-studies-baselines-prompts.md#the-header)); a baseline is read on its goal's page.
+- **Baselines are per goal and dataset, with versions**: the home page's `baseline` column shows each goal's
+  baseline, and the datasets page's **baseline** column one line per goal ("<goal>: <arm>, version n"); the dataset
+  page's answer box becomes one box per goal that has a baseline on the dataset ("baseline of <goal>, version n,
+  promoted <date> by <actor>"). The word stays `baseline` everywhere; the baseline links to its goal's page, where
+  it is read (there is no baselines page).
+- **The home page**: `04 recorded` gains baseline versions with their actor ("baseline version 3 by agent:claude for
+  person:marko"; "rollback to version 2"), study starts and ends, confirmations ("confirmation: separated: better
+  (look 2)") and prompt versions. Studies and prompts get no tile: a study's spend is in **billed**, its trials in
+  **measured runs** and **arms**.
+- **The goals page**: **changes in period** and `02 what happened in the period` gain the same events, each dated by
+  its own record (a baseline version's `promoted_at`, a study event's `at`).
 - **The goal page**:
   - `01 the answer so far`: per dataset, the baseline's id and version, "promoted <date> by <actor>",
     the reason, its evidence in one line (the verdict chip and the look label, UXS-004), and
@@ -594,5 +607,24 @@ prompts) are in [UXS-004](UXS-004-studies-baselines-prompts.md), with the words 
   - **system**, for a process adapter: its declared name, version and code ref, and what was hashed
     ("files: build/libs/*.jar, 14 files" or "launcher only: not identified");
   - the actor of its runs ("run by agent:claude for person:marko").
-- **The metrics page**: stage metrics are listed under their stage ("asr · wer"); the harness's
-  reserved `judge.cost_usd` is listed with the bookkeeping metrics.
+- **The arms and configs page**:
+  - the role badges are per goal: "baseline of <goal>", and "over a limit" set from the goal's limit check, not
+    from a reason's wording;
+  - the **only** chips "ties the leader / below the leader" become **non-inferior to the leader / inconclusive /
+    below the leader** (RFC-015), and `evh arms --quality noninferior|inconclusive|below`;
+  - a study's trial is an arm: **how measured** reads "trial k of study s2", **group by** gains **study**
+    (`evh arms --by study`), and `03 what changed` folds a study's trials of one day into one line ("12 trials of
+    study s2"), as it folds re-measured arms;
+  - trial configs (`<study>-t<k>`) are listed in `02 configs` under their study, and counted once per study in the
+    configs tile;
+  - an arm with stages names each stage's model in **model · provider**; it is hosted when any stage's provider
+    bills per call, and its weights are open only when every stage's model's are. A process arm shows
+    `process:<name>` and its declared version as its model, and is local: the harness bills no provider for it;
+  - **local / hosted** is about the provider (billed per call or not), not the runner: an arm run over ssh on
+    another machine with a local model is local. The machine is in its conditions.
+- **The activity page**: `05 by kind` bills a scorer's reserved `judge.cost_usd` as **judges**, beside the verdicts
+  under `data/judge-verdicts/`; a study's trials are billed to their arms.
+- **The metrics page**: **group by** gains **stage** beside role ("asr · wer" under asr); the harness's reserved
+  `judge.cost_usd` is listed with the bookkeeping metrics.
+- **The checklist**: the period builders gain `period_studies` and `period_prompts`, and the commands `evh studies`,
+  `evh prompts` and `evh baselines`.

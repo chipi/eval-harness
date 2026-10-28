@@ -11,7 +11,10 @@
   `.json`), `import_run.py` (`--otlp`), `catalog_views.py` and `inspect.js` (the stage view),
   `validate_tree.py`; every reader of `outputs/<item>.txt` or `<ref>/<item>.txt` moves to `_outputs.py`: `rescore.py`,
   `judge_score.py`, `_references.py`, `reference_create.py`, `silver_calibrate.py`, `catalog_adapter.py`,
-  `validate_tree.py`; `schemas/prediction.schema.json`, `harness/docs/INTEGRATION.md`, `harness/examples/wrapping/`
+  `validate_tree.py`, and 0.4.2's `_common.reference_texts` with its users (`_labels.py`, hence `bootstrap-test`;
+  `harness/tools/extraction_report.py`, `retrieval_report.py`), keeping their refusal when a reference directory
+  holds only its `manifest.json`; `catalog_arms.py` (the arms page's model column);
+  `schemas/prediction.schema.json`, `harness/docs/INTEGRATION.md`, `harness/examples/wrapping/`
 
 ## Abstract
 
@@ -19,7 +22,7 @@ A result may carry **stages**, each shaped like an OpenTelemetry GenAI span (nam
 and model attributes) with the harness's own cost field. Stage outputs are stored beside the end output; stage scores
 become ordinary metrics named `<stage>.<metric>`, scored against a stage's own reference when the reference holds one.
 Outputs may be JSON. An adapter may ask for the whole item (its fields) instead of its text, and may run a **batch**
-of items at once. A recipe and an example show how to wrap an existing runner. Nothing changes for a 0.4.0 adapter.
+of items at once. A recipe and an example show how to wrap an existing runner. Nothing changes for a 0.4.x adapter.
 
 ## Problem Statement
 
@@ -30,7 +33,9 @@ of items at once. A recipe and an example show how to wrap an existing runner. N
 - An item cannot fail on its own: once `call_with_retries` gives up, the exception stops the whole run
   (`experiment_run.py:280-285`, `:749-751`). A pipeline that fails on one feed loses every feed.
 - Seven other modules read `outputs/<item>.txt` or `<ref>/<item>.txt` directly (listed under Code); `rescore` copies
-  `*.txt` only (`rescore.py:390`).
+  `*.txt` only (`rescore.py:390`). Since 0.4.2, `_common.reference_texts` lists a reference's items as
+  `root.glob("*.txt")`: with stage references named `<item_id>.<stage>.txt` it would read `<item>.asr` as an item id,
+  and it never finds a `.json` reference.
 
 ## Design
 
@@ -116,7 +121,7 @@ sort_keys=True)`).
 
 ### Item fields and batch mode
 
-- An adapter declares how it is called: `CALL_FORM = "text"` (default, 0.4.0: `call_system(text, params)`) or `"item"`
+- An adapter declares how it is called: `CALL_FORM = "text"` (default, as in 0.4.x: `call_system(text, params)`) or `"item"`
   (`call_system(item: Item, params)`, `Item(id, text, fields)`, the fields RFC-006 declares).
 - `BATCH = True` with `call_batch(items: list[Item], params) -> dict[str, Result]` (keyed by item id). The batch unit is
   `BATCH_KEY` (an item field, such as `feed`: one batch per distinct value, in dataset order) or `params["batch_size"]`
@@ -159,6 +164,15 @@ overlay (RFC-009). It also shows declaring the system's code ref (PRD-008 FR4.4)
 
 The inspector's item panel shows the stages of each arm side by side (name, output, time, cost, tokens, scores), a stage
 row highlighted where two arms' stage scores differ most; `evh inspect --stages --item ID [--json]` prints the same.
+The stages come in `/api/item`'s answer (no new API route); a public server withholds their outputs unless
+`--publish outputs`, as it does an arm's output.
+
+### On the arms page
+
+0.4.2's arms page reads one model per arm from `params.model` and `params.provider` (`catalog_arms.py`), and
+`data/models.yaml` is keyed by that model. An arm with stages lists each stage's `request_model` in **model ·
+provider**; it is hosted when any stage's provider bills per call, and its weights are open only when every stage's
+model is listed open in `models.yaml`.
 
 ### Validation
 
@@ -196,7 +210,7 @@ None: a run without stages has no new fields.
 1. Stages are span-shaped records on the result (OpenTelemetry GenAI names, a pinned conventions version, the harness's
    own cost field), stored beside outputs; stage scores are ordinary metrics named `<stage>.<metric>`.
 2. A reference may hold per-stage references, inside the reference digest.
-3. Adapters declare their call form (text, item) and whether they batch (by a key field, default one item); 0.4.0
+3. Adapters declare their call form (text, item) and whether they batch (by a key field, default one item); 0.4.x
    adapters are unchanged.
 4. An item can fail without stopping the run; failed items are recorded, counted and left out of means and tests.
 5. The end output file is written last and is the commit marker for resume.

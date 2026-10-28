@@ -55,6 +55,9 @@ items, and no protected heldout check.
   - `end`: the stop rule that fired, the summary;
   - `confirm`: a confirmation (below): the trial, the rule, the items used and excluded, the look's number and level,
     the verdict.
+  Every event carries `at` (UTC, ISO 8601, to the millisecond): the day the catalog's period counts it on, as 0.4.2
+  counts a dataset on `dataset_created` ([ADR-0018](../adr/ADR-0018-period-from-today.md)). A study is new on its
+  `start` event's day, active on any day with a `trial`.
   The study's state (running, waiting, stopped; the best so far; the money spent) is read from the log, never stored
   apart. It is the typed form of Karpathy's `results.tsv`: one line per thing that happened.
 - **A trial's config** is the baseline's config with the trial's changes, written in its `trial` line, not as a file.
@@ -212,6 +215,19 @@ directory to directory) are converted to this one by a short script in the proje
 The goal page's round section shows a study's trials as a table (k, change, hypothesis, outcome, the decisive score
 against the best so far, cost), the stop reason, its confirmations with their looks, and the summary; each trial links
 its runs and its prompt diff. Every view has its command.
+
+Trials are arms with configs `<study_id>-t<k>`, so they also land on 0.4.2's arms, configs and activity pages:
+
+- **arms page**: a trial's **how measured** reads "trial k of study s2"; **group by** gains **study**
+  (`evh arms --by study`); `03 what changed` folds a study's trials of one day into one line ("12 trials of study
+  s2"), as `FEED_FOLD` (`catalog_arms.py`) folds re-measured arms today, which it does only for arms whose `how` is
+  not "measured";
+- **configs**: trial configs are listed under their study in `02 configs`, and the configs tile counts them once per
+  study;
+- **activity page**: trials are billed to their arms; a scorer's reserved `judge.cost_usd` is billed as **judges**,
+  beside the verdicts under `data/judge-verdicts/` that `spend()` reads today;
+- the studies page ([UXS-004](../uxs/UXS-004-studies-baselines-prompts.md)) carries the period from its own builder
+  (`period_studies`, read by `evh studies --period P` too), as every listing page does.
 
 ## Deferred (after 0.5.0)
 

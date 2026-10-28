@@ -22,6 +22,10 @@ Jobs use. 0.5.0 ships the **local** runner (jobs in parallel, a lock per job set
 log, bring the run back, validate it here), with per-phase preparation commands for hosts whose GPU must be
 switched. The run directory is the contract, so every later runner only moves one.
 
+The catalog's **local / hosted** (0.4.2's arms page, `evh arms --where`) is about the provider, billed per call or
+not, and stays so: an arm with a local model run over ssh on another machine is local. Where a run ran is its
+machine, in its conditions.
+
 ## Background & Context
 
 - `experiment-run` resumes an interrupted run (0.4.0); `sweep` runs configs one after another and

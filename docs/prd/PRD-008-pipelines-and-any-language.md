@@ -54,7 +54,7 @@ harness keeping the scoring and the statistics.
   calls.
 - A system in any language plugs in through a documented protocol, with the same records, resume
   and inspector as a Python adapter, and is identified by what it declares, never by its wrapper.
-- A one-stage 0.4.0 adapter keeps working with no change to its code (its runs' fingerprints
+- A one-stage 0.4.x adapter keeps working with no change to its code (its runs' fingerprints
   move once, with the harness's own code, as on every release).
 
 ## Non-Goals
@@ -104,7 +104,7 @@ harness keeping the scoring and the statistics.
 - **FR1.4**: Every command that takes a metric takes a stage metric; a goal may decide on one.
 - **FR1.5**: `evh validate` notes a run whose items do not all have the same stages, and refuses
   a stage metric whose stage the run lacks.
-- **FR1.6**: A 0.4.0 adapter with no stages needs no change, and its records gain no fields.
+- **FR1.6**: A 0.4.x adapter with no stages needs no change, and its records gain no fields.
 - **FR1.7**: Stage records can also be imported as OpenTelemetry (OTLP JSON) traces, so a
   pipeline that already emits traces needs no second instrumentation; stage scores map to the
   conventions' evaluation event (`gen_ai.evaluation.result`) on import. Exporting them as OTLP is
@@ -124,7 +124,7 @@ harness keeping the scoring and the statistics.
 - **FR3.1**: An output (end or stage) may be JSON; scorers receive it parsed; the inspector shows
   it readably and diffs it by field; resume stores and reads it back exactly.
 - **FR3.2**: The adapter may receive an item's declared fields beside its text; an adapter says
-  which form it takes, and a 0.4.0 adapter keeps receiving the text only ([RFC-007](../rfc/RFC-007-stages-and-stage-references.md)).
+  which form it takes, and a 0.4.x adapter keeps receiving the text only ([RFC-007](../rfc/RFC-007-stages-and-stage-references.md)).
 - **FR3.3**: **Batch mode**: an adapter may take the whole dataset (or a batch) and return a
   result per item, for pipelines that work per feed or across items; cost and time are then
   apportioned as the adapter reports, resume works per batch, and the cost cap is checked before each
@@ -171,7 +171,7 @@ harness keeping the scoring and the statistics.
 - The podcast project's summary → insights → knowledge-graph stages (run today by its
   `run_experiment.py` tasks; its per-feed runner turns those stages off) run through the harness via
   the wrapping recipe, with per-stage scores (to be confirmed with that project).
-- Every 0.4.0 adapter runs and every 0.4.0 run validates (after the 0.5.0 migrations).
+- Every 0.4.x adapter runs and every 0.4.x run validates (after the 0.5.0 migrations).
 
 ## Related Documents
 

@@ -82,9 +82,10 @@ What is different, deliberately, and why:
   [*Always valid inference*](https://arxiv.org/abs/1512.04922); Ramdas et al.,
   [*Game-theoretic statistics and safe anytime-valid inference*](https://doi.org/10.1214/23-STS894)
   (Statistical Science, 2023).
-- **A tie is an equivalence claim** — Schuirmann, the two one-sided tests
-  ([1987](https://doi.org/10.1007/BF01068419)); Lakens,
-  [*Equivalence tests*](https://doi.org/10.1177/1948550617697177) (2017). For 0/1 measures, Tango's
+- **A tie is a non-inferiority claim against a declared margin** — one side of Schuirmann's two one-sided
+  tests ([1987](https://doi.org/10.1007/BF01068419)); Lakens,
+  [*Equivalence tests*](https://doi.org/10.1177/1948550617697177) (2017), on margins. The harness runs no
+  equivalence test: nothing decides on one (RFC-015). For 0/1 measures, Tango's
   score test for the difference of paired proportions
   ([Statistics in Medicine, 1998](https://doi.org/10.1002/%28SICI%291097-0258%2819980430%2917%3A8%3C891%3A%3AAID-SIM780%3E3.0.CO%3B2-B)).
 - **Each look at heldout items costs part of the level** — Tian and Ramdas,

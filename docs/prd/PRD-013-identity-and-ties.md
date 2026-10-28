@@ -33,7 +33,8 @@ project (the two projects known to use the harness), not a permanent command.
 - `run-promote` names a baseline `<dataset_id>_baseline` (`promote_baseline.py:141`). The name and the
   `baselines/` folder are read in `promote_baseline.py`, `rounds.py`, `validate_tree.py`,
   `catalog_adapter.py`, `list_runs.py`, `catalog_serve.py`, `_common.py` and the harness Makefile; several
-  catalog paths take "the last baseline for a dataset" without filtering by goal. This repository has 7
+  catalog paths take "the last baseline for a dataset" without filtering by goal, among them two that 0.4.2
+  added (the goals page's "what happened in the period" and the arms page's "what changed"). This repository has 7
   baselines, all with the default name, one without a goal (`smoke_v1`), two without a fingerprint hash
   (promoted from derived runs); the podcast project has none.
 - `_host_identity` (`_fingerprint.py:258-273`) records the host label, the platform and architecture, the
@@ -176,7 +177,7 @@ project (the two projects known to use the harness), not a permanent command.
   skill), migrates a project's committed data to the 0.5.0 format; `UPGRADING.md` documents it, and it is removed in a later release, staying in git
   history. It runs in this order:
   1. Pre-flight (read-only): a clean tree for the data it touches, the harness version, the directories in
-     effect, and the shapes of the files it rewrites; `evh validate` is run with 0.4.0 before the pin moves
+     effect, and the shapes of the files it rewrites; `evh validate` is run with the pinned release (0.4.4 here) before the pin moves
      (the upgrade guide says so). The script can be run again: it skips what is done.
   2. Every stored hash is checked against the version-4 rule from the stored body only (never by re-reading
      items, references or code, which may be absent or changed). Any mismatch other than a derived run's
@@ -196,7 +197,7 @@ project (the two projects known to use the harness), not a permanent command.
      reference's identity), and the manifest records the version that hash follows outside that record, so
      the reference's digest does not move.
   10. `evh validate` (with the hash recomputation of FR2.3) and a catalog build run after it; the pages show
-      the same baselines as before.
+      the same baselines as before, including the arms page's badges and the goals page's dated baseline events.
   It refuses only real ambiguity among baselines (a custom baseline id; two goals sharing one baseline; a
   goal-less baseline on a dataset a goal uses), never runs in general. This repository migrates first, then
   the podcast project after its pin moves to 0.5.0.

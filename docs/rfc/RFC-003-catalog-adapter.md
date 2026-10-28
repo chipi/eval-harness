@@ -61,7 +61,9 @@ Optional members, each read with `getattr` so an adapter without them still work
 `item_fields(dataset)`, `dataset_items(dataset)`, `metric_descriptions()`, `conditions(arm)`,
 `baselines()`, `arm_of(dataset, config_id)`, `reference_free(metric)`, `rounds()`, `datasets()`,
 `dataset_lineage(dataset)`, `dataset_created(dataset)` (when it was frozen; the period pages count it
-new from that day, else from its first run), `served_dirs`, `arm_runs(arm)` → `[{"run_id", "created_at", "items",
+new from that day, else from its first run), `model_facts()` → `{model: {"weights": "open"|"proprietary",
+"licence"}}` (0.4.2, from `data/models.yaml`; the arms page's weights filter, a model not listed is unknown),
+`served_dirs`, `arm_runs(arm)` → `[{"run_id", "created_at", "items",
 "cost_usd", "derived"}]`, `arm_config(arm)` → `{"config_id", "params" (credentials removed),
 "adapter"}`, `spend()` → `[{"at", "usd", "tokens", "kind": "arm"|"judge", "dataset", "what", "arm"}]`
 (usd or tokens None when unknown; measured runs and judging per set and day; `arm` names a

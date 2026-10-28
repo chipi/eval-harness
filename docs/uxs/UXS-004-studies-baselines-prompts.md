@@ -46,9 +46,13 @@ control that writes; showing prompt text on public pages unless the project publ
 
 ## The header
 
-The nav gains **Studies** and **Prompts**: Overview, Goals, Studies, Datasets, Prompts, References, Metrics,
-Inspector. Below 760px, as today, the ☰ menu holds them all. Search indexes studies (by id, goal and hypothesis) and
-prompt names; a baseline is found through its goal.
+The nav keeps 0.4.2's groups and gains **Studies** and **Prompts** under Experiments: Overview, Goals,
+Data ▾ (Datasets, References), Experiments ▾ (Arms, Configs, Studies, Prompts, Metrics), Activity, Inspector. On a
+phone the ☰ menu lists every page, a group's under its name ([UXS-001](UXS-001-catalog.md#the-shell-every-page)).
+Search indexes studies (by id, goal and hypothesis) and prompt names; a baseline is found through its goal.
+
+Both pages are listing pages: they carry the period ([UXS-001](UXS-001-catalog.md#the-period-every-listing-page)),
+from their own builders (`period_studies`, `period_prompts`), which their commands read too.
 
 ## Words and marks
 
@@ -115,8 +119,11 @@ the study's page.
   ("agent:claude", "grid", "command: optuna_sampler.py", "imported"),
   **trials** ("12: 3 kept, 8 dropped, 1 failed"), **status** (running, waiting for consent, stopped:
   <reason>, closed), **outcome** (its confirmation's chip and look label; "research: no evidence" when there
-  is none; "imported: cannot be confirmed"), **started**, **by**. Filterable, paged.
-- Command: `evh studies [--goal G]`.
+  is none; "imported: cannot be confirmed"), **started**, **by**, and in the period **trials in period** and
+  **spend in period**, with their trends. Filterable, paged.
+- The period bar in the hero, and over the table the **all / new in period / active in period** chips. A study is
+  new on the day of its `start` event, active on any day with a trial.
+- Command: `evh studies [--goal G] [--period P]`.
 
 ## A study's page
 
@@ -164,21 +171,26 @@ the study's page.
 - Hero: kicker `prompts`, "The prompt files the arms declare, each version a snapshot of its bytes. The
   prompts stay where the project keeps them; these are their versions."
 - `01 prompts`: **prompt** (the name, linked), **versions**, **used by the baseline** (`v3`, for each goal whose baseline uses it), **latest**
-  (version, date, by), **used by** (runs, and the best score on each goal that decides on one). Filterable.
-- Command: `evh prompts`.
+  (version, date, by), **used by** (runs, and the best score on each goal that decides on one), and in the period
+  **versions in period** and **runs in period**, with their trends. Filterable.
+- The period bar in the hero and the **all / new in period / active in period** chips. A prompt is new on its first
+  version's `created_at`, active on any day with a version or a run that used it.
+- Command: `evh prompts [--period P]`.
 
 ## A prompt's page
 
 - Hero: kicker `prompt`, the name, where it lives (the declared path), and the baselines that use one of its versions.
 - `01 versions`: one row per version, newest first: **version**, **created** (date, actor), **source**
-  (the path and commit it was recorded from, or the study and trial that proposed it), **parent** (when
+  (the path and commit it was recorded from, linked through `evh catalog --repo` when given, else named; or the study
+  and trial that proposed it), **parent** (when
   someone stated one; empty otherwise, not guessed), **note**, **size**, **sha256** (short), **used by**
   (runs, linked, each with its score on the goal's measure). Paged.
 - `02 changes`: the diff between each version and its parent (or the previous version, labelled
   "previous, not a stated parent"), unified, with added and removed lines in `--open` and `--local`
-  tints. **Only when the project publishes prompts** (`catalog: {publish: [prompts]}` in `config.yaml`):
-  prompts can be private, and the static pages may be published. Otherwise the section reads "Prompt text
-  is not published; see the diff with `evh prompt-diff <a> <b>` or in the local inspector."
+  tints. **Only when the deployment publishes prompts** (`evh catalog --publish prompts`, as
+  `catalog-serve --publish outputs,references` publishes text through the API): prompts can be private, and the
+  static pages may be published. Otherwise the section reads "Prompt text is not published; see the diff with
+  `evh prompt-diff <a> <b>`."
 - Command: `evh prompts <name>`, `evh prompt-diff <a> <b>`.
 
 ## Key states
@@ -196,4 +208,10 @@ the study's page.
 - A page that suggests a decision shows the command, never a control that makes it.
 - The same view is a command with the same numbers (`evh baselines`, `studies`, `study-status`,
   `prompts`), or the command gains it in the same change.
-- Prompt text appears only when the project publishes it.
+- Prompt text appears only when the deployment publishes it.
+- A page's period numbers come from its builder (`period_*`), never computed twice; a table that shows the period
+  keeps the new badge, the row chips and the trends' form (UXS-001).
+- Colours come from classes in `catalog.css`, never a `style` attribute: the deployment's content security policy
+  forbids them (`style-src 'self'`, since 0.4.1).
+- No page needs a new inspector API route; the inspector answers only `/api/health`, `/api/compare` and
+  `/api/item` (0.4.3).

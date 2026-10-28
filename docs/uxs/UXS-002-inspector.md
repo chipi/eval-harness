@@ -221,6 +221,10 @@ Draft until 0.5.0 is built; then they are folded into the sections above. Words 
   parent): the stage's output (text, or JSON formatted and folded beyond 40 lines), its time, cost and
   tokens, and its scores. The row where two arms' stage scores differ most is marked "largest
   difference". A stage reference, when there is one, is a first column. Structured (JSON) outputs are
-  compared field by field: a field that differs is marked in both columns.
+  compared field by field: a field that differs is marked in both columns, by a class, never a `style`
+  attribute (the deployment's content security policy forbids them, since 0.4.1). The stages arrive in
+  `/api/item`'s answer: no new route (the inspector answers only `/api/health`, `/api/compare` and
+  `/api/item`, 0.4.3). A public server withholds stage outputs as it withholds outputs, unless
+  `catalog-serve --publish outputs`; their times, costs, tokens and scores are always shown.
 - **Parity** additions: `evh inspect … --stages --item <id>` prints the stages panel; `--metric
   asr.wer` works as any metric.
