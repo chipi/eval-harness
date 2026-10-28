@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1536 1024" width="1536" height="1024">
+  <!-- 04 · Re-scoring for $0: "change the ruler, not the run". The same ice cube as 01 (the
+       outputs, frozen, never re-run) sits on the through-line; an old ruler lies set aside and a
+       new ruler is laid against the cube. Nothing is spent: no new calls, only a new measure.
+       Through-line at half height. -->
+  <rect width="1536" height="1024" fill="#f6f5f1"/>
+  <path d="M0 512H1536" stroke="#0b0b0b" stroke-width="7" stroke-linecap="round"/>
+  <!-- the ice cube from 01 -->
+  <path d="M560 254L620 220H880L820 254Z" fill="#eef1f2" stroke="#0b0b0b" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M820 254L880 220V478L820 512Z" fill="#e1e6e8" stroke="#0b0b0b" stroke-width="5" stroke-linejoin="round"/>
+  <rect x="560" y="254" width="260" height="258" fill="#f2f5f6" stroke="#0b0b0b" stroke-width="5"/>
+  <g fill="none" stroke="#0b0b0b" stroke-width="14" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M604 254H560V512H604"/><path d="M776 254H820V512H776"/>
+  </g>
+  <!-- the new ruler, laid against the cube, in the green wash -->
+  <rect x="900" y="230" width="70" height="282" fill="#8db14b" opacity="0.45" stroke="#0b0b0b" stroke-width="5"/>
+  <g stroke="#0b0b0b" stroke-width="4" stroke-linecap="round">
+    <path d="M900 260H930"/><path d="M900 290H918"/><path d="M900 320H930"/><path d="M900 350H918"/>
+    <path d="M900 380H930"/><path d="M900 410H918"/><path d="M900 440H930"/><path d="M900 470H918"/>
+  </g>
+  <!-- the old ruler, set aside on the line, faded -->
+  <rect x="210" y="482" width="282" height="30" fill="#fcfcfb" stroke="#7a7872" stroke-width="4"/>
+  <g stroke="#7a7872" stroke-width="3" stroke-linecap="round">
+    <path d="M240 482V496"/><path d="M270 482V490"/><path d="M300 482V496"/><path d="M330 482V490"/><path d="M360 482V496"/><path d="M390 482V490"/><path d="M420 482V496"/><path d="M450 482V490"/>
+  </g>
+</svg>

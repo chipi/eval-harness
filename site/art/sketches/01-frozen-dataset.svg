@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1536 1024" width="1536" height="1024">
+  <!-- 01 · A frozen dataset: the items are frozen in a block of ice, so nothing can change them
+       unnoticed; the block's sides are the logo's brackets and its hash is etched into the ice.
+       The run is the dot on the through-line under it, measured on exactly these items.
+       The through-line is at half height (y=512) in every sketch and runs off both edges. -->
+  <rect width="1536" height="1024" fill="#f6f5f1"/>
+
+  <!-- the through-line -->
+  <path d="M0 512H1536" stroke="#0b0b0b" stroke-width="7" stroke-linecap="round"/>
+
+  <!-- the ice block, sitting on the line: a pale wash, a lighter top face -->
+  <path d="M560 214L640 170H1000L920 214Z" fill="#eef1f2" stroke="#0b0b0b" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M920 214L1000 170V468L920 512Z" fill="#e1e6e8" stroke="#0b0b0b" stroke-width="5" stroke-linejoin="round"/>
+  <rect x="560" y="214" width="360" height="298" fill="#f2f5f6" opacity="0.9"/>
+
+  <!-- the items inside the ice: three cards, seen through it -->
+  <g fill="#fcfcfb" stroke="#4a4945" stroke-width="4" stroke-linejoin="round" opacity="0.85">
+    <rect x="618" y="262" width="214" height="150" rx="10" transform="rotate(-6 725 337)"/>
+    <rect x="636" y="282" width="214" height="150" rx="10" transform="rotate(3 743 357)"/>
+    <rect x="652" y="300" width="214" height="150" rx="10"/>
+  </g>
+  <g stroke="#7a7872" stroke-width="4" stroke-linecap="round">
+    <path d="M682 336H820"/><path d="M682 366H840"/><path d="M682 396H800"/>
+  </g>
+
+  <!-- the hash, etched into the ice face, with the one green as a wash behind it -->
+  <circle cx="854" cy="446" r="44" fill="#8db14b" opacity="0.45"/>
+  <g stroke="#0b0b0b" stroke-width="6" stroke-linecap="round">
+    <path d="M846 420L838 472"/><path d="M872 420L864 472"/><path d="M830 436H882"/><path d="M826 458H878"/>
+  </g>
+
+  <!-- frost: small crystals at the corners -->
+  <g stroke="#0b0b0b" stroke-width="3.5" stroke-linecap="round">
+    <path d="M588 236V264M574 250H602M578 240L598 260M598 240L578 260"/>
+    <path d="M968 220V244M956 232H980M960 224L976 240M976 224L960 240"/>
+  </g>
+
+  <!-- the block's sides are the brackets -->
+  <g fill="none" stroke="#0b0b0b" stroke-width="16" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M610 214H560V512H610"/>
+    <path d="M870 214H920V512H870"/>
+  </g>
+
+  <!-- the run: the dot on the line, measured on exactly these items -->
+  <circle cx="740" cy="512" r="28" fill="#0b0b0b"/>
+</svg>

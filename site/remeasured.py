@@ -324,7 +324,7 @@ def judging_page(H, f: dict) -> str:
     frontier_html = frontier_section(H, f, sm)
     body = f"""
 <section class="hero"><div class="wrap">
-  <div class="kicker"><b>Judging</b> · re-measured, not re-run</div>
+  <div class="kicker"><b>Re-measured</b> · not re-run · judges and corrected labels</div>
   <h1>Change the ruler, <em>not the run.</em></h1>
   <p class="dek">Every model output in these experiments is frozen, so when a better way to score them arrives the experiment can be measured again for the price of the scoring alone. We did it twice: a person corrected disputed labels, and SummEval-validated LLM judges re-scored the summaries. Both moved a headline result. Then one reader's blind check went the other way from the judges, and judges at {H.times(f["remeasure"]["summ_v2"]["billed_usd"] / fig["billed_usd"])} the price agreed with the first ones, not with the reader. On SummEval's expert ratings and on crowd ratings of 2022 LLM summaries, judges agree with people far better than the metric this leaderboard used, though not system by system; on this experiment's own outputs, nobody has yet shown which of the two to believe. That is the lesson: a judge is worth having, and worth checking.</p>
   <div class="facts">{facts_html}</div>
@@ -380,6 +380,7 @@ def judging_page(H, f: dict) -> str:
   <div class="cols"><div class="prose">
     <p>A re-measurement is written beside the original, never over it, and an experiment's primary metric changes only by a recorded decision with the old one kept. Both decisions here kept the original:</p>
     <p><strong>AG News and DBpedia</strong> keep the dataset's gold: anyone can repeat it, and the adjudication is one reader's, made while seeing the hosted answer. <strong>Summarisation</strong> keeps coverage: the judges' ranking has not been confirmed by people on these summaries, and the one check that exists went the other way.</p>
+    <p>Both re-measurements are in the catalog, each as its own group beside the primary: the judged arms on <a href="{H.CATALOG}{by["summarization"]["goal"]["goal_page"]}">the summarisation goal</a>, the corrected labels on <a href="{H.CATALOG}{by["ag-news"]["goal"]["goal_page"]}">the AG News goal</a>. The inspector tests either, arm against arm.</p>
     <p>It matters, in both directions. On the primary metrics a free model is first, or not separable from first, in {g["headline_now"]} of the {g["n_exp"]} experiments, and the dearest model is first in none. Taken at face value, the two re-measurements would make that {g["headline_remeasured"]} of {g["n_exp"]}, and put the dearest model, <code>{g["dearest"]}</code>, first in {g["dearest_first_remeasured"]} of {g["n_exp"]}: in AG News and summarisation it is first on the point estimate of both re-measured rankings, though unseparated from most of the field in AG News; DBpedia's top stays a crowd. One of them rests on one reader who saw the hosted answer, the other on a ranking one reader's check went against. That is how much a measurement decision can move a headline, and why the decision is recorded rather than made by whichever number came last.</p>
   </div>
   <div class="note"><b>What would settle it.</b> Not a larger, dearer judge: that was tried (§04). Judges checked on human ratings of LLM-written summaries: that was done too (§05); they track people better than one rater does on coherence and relevance, trail on faithfulness, and deviate from them system by system in both directions. What is left is people on this experiment's own outputs: several readers comparing full articles, not one reader on truncated ones. That is a re-measurement of the same frozen outputs.</div></div>
@@ -407,7 +408,7 @@ def judging_page(H, f: dict) -> str:
 </div></section>
 {H.author("judging")}"""
     return H.page(
-        "Change the ruler, not the run — judging · eval-harness",
+        "Change the ruler, not the run — re-measured · eval-harness",
         "What re-measuring frozen experiments with SummEval-validated LLM judges and corrected labels "
         "changed, why a judge beat the metric on SummEval, and why one reader's check kept coverage primary.",
         body,

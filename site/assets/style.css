@@ -65,6 +65,10 @@ a:hover { color: var(--accent); }
 .nav a:hover { color: var(--accent); }
 .nav a[aria-current="page"] { color: var(--ink); text-decoration: underline; text-decoration-color: var(--accent); text-decoration-thickness: 2px; text-underline-offset: 6px; }
 @media (max-width: 760px) { .nav .hide-sm { display: none; } }
+/* a tablet's bar holds every page link on one row ("Re-measured" is the longest) */
+@media (min-width: 761px) and (max-width: 1000px) { .bar .nav { gap: 14px; } }
+@media (min-width: 761px) and (max-width: 850px) { .bar .nav { gap: 9px; } }
+@media (min-width: 761px) and (max-width: 800px) { .bar .nav { gap: 8px; font-size: 12px; letter-spacing: 0; } }
 
 /* theme toggle */
 .theme { background: none; border: 1px solid var(--hair); color: var(--ink-2); width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-size: 14px; line-height: 1; }
@@ -97,6 +101,7 @@ h1, h2, h3 { font-family: var(--display); letter-spacing: -0.035em; margin: 0; }
 .sketch-key .lead-i { background: var(--ink); }
 .sketch-key .ring-i { background: transparent; border: 2px solid var(--ink); width: 12px; height: 12px; }
 .dek { font-size: clamp(18px, 2vw, 22px); line-height: 1.5; color: var(--ink-2); max-width: 60ch; margin: 0; }
+.dek-note { font-size: 15px; line-height: 1.5; color: var(--muted); max-width: 66ch; margin: 14px 0 0; }
 .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; margin-top: 72px; border-top: 1px solid var(--hair); }
 .stat { padding: 22px 20px 0 0; border-right: 1px solid var(--hair); margin-right: 20px; }
 .stat:last-child { border-right: 0; }
@@ -275,6 +280,7 @@ section[id] { scroll-margin-top: 72px; }
 .lc-where { font: 500 13px/1.5 var(--mono); color: var(--ink-2); margin-bottom: 14px; }
 .lc-where span { color: var(--muted); text-transform: uppercase; letter-spacing: .12em; font-size: 11px; margin-right: 6px; }
 .lc-more { display: inline-block; margin-top: 12px; font: 600 13px/1 var(--mono); text-decoration: none; color: var(--accent); }
+.lc-links { display: flex; flex-wrap: wrap; column-gap: 20px; }
 .lc-explorer.live .lc-panel { display: none; }
 .lc-explorer.live .lc-panel.on { display: block; border-top: 0; padding-top: 4px; position: sticky; top: 88px; }
 .lc-explorer.live .lc-panel.on .eyebrow { font-size: 14px; }
@@ -455,3 +461,5 @@ footer .wrap.foot { display: block; }
 @media (max-width: 760px) { .bar .nav { gap: 8px; } }
 @media (max-width: 374px) { .bar .nav { gap: 6px; } }
 .bar .nav a.hbtn { padding: 0; }
+/* the smallest phones (320 px): the bar stays on one row */
+@media (max-width: 359px) { .bar .wrap { gap: 4px; } .hbtn, .menu > summary.hbtn { width: 32px; height: 32px; } .bar .nav { gap: 4px; } .bar .sections { letter-spacing: 0; } .bar .sections a { padding: 8px 3px; } }

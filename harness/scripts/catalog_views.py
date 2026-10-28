@@ -821,6 +821,9 @@ def goals(argv) -> int:
                 subsequent_indent="             ",
             )
         )
+    for x in g.get("links") or []:
+        if x.get("url"):
+            print(f"  link       {x['note'] + ': ' if x.get('note') else ''}{x['url']}")
     print("\nthe answer so far:")
     for d in g.get("datasets") or []:
         ds = d.get("dataset_id", "")

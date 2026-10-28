@@ -201,6 +201,9 @@ footer code { padding: 0 4px; margin: 0; display: inline; letter-spacing: 0; }
 .hero.slim { padding: 36px 0 28px; }
 .hero.slim h1 { font-size: clamp(26px, 3.2vw, 38px); line-height: 1.1; letter-spacing: -0.02em; margin: 10px 0 12px; max-width: none; }
 .hero.slim .dek { font-size: 16px; max-width: 90ch; }
+.hero .about { margin-top: 14px; max-width: 90ch; padding: 4px 0 4px 16px; border-left: 2px solid var(--accent); color: var(--ink-2); font-size: 15px; }
+.hero .about p { margin: 0; }
+.hero .about p + p { margin-top: 8px; }
 .hero.slim .facts { margin-top: 22px; }
 .hero.slim .btns { margin-top: 18px; }
 .hero::before { opacity: .35; }

@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1536 1024" width="1536" height="1024">
+  <!-- 03 · A leaderboard that argues with itself: "the top is a crowd, not a podium". A podium
+       stands on the through-line (half height, y=512, off both edges); every contender is a dot,
+       and they are all squeezed onto the top step under one green wash, because the test cannot
+       separate them. The ringed dot, the dearest model, is just one of the crowd. The second and
+       third steps are empty. The top step's sides are the logo's brackets. -->
+  <rect width="1536" height="1024" fill="#f6f5f1"/>
+
+  <!-- the through-line: the floor the podium stands on -->
+  <path d="M0 512H1536" stroke="#0b0b0b" stroke-width="7" stroke-linecap="round"/>
+
+  <!-- the podium: second step left, first in the middle, third right -->
+  <g fill="#fcfcfb" stroke="#0b0b0b" stroke-width="6" stroke-linejoin="round">
+    <rect x="452" y="372" width="220" height="140"/>
+    <rect x="864" y="412" width="220" height="100"/>
+    <rect x="672" y="292" width="192" height="220"/>
+  </g>
+
+  <!-- the crowd on the top step, under the green wash -->
+  <rect x="640" y="168" width="256" height="128" rx="56" fill="#8db14b" opacity="0.45"/>
+  <g fill="#0b0b0b">
+    <circle cx="692" cy="266" r="22"/>
+    <circle cx="738" cy="252" r="22"/>
+    <circle cx="784" cy="266" r="22"/>
+    <circle cx="830" cy="250" r="22"/>
+    <circle cx="714" cy="210" r="22"/>
+    <circle cx="806" cy="208" r="22"/>
+  </g>
+  <!-- the dearest model: ringed, one of the crowd -->
+  <circle cx="784" cy="266" r="38" fill="none" stroke="#0b0b0b" stroke-width="5"/>
+
+  <!-- the top step's sides are the brackets -->
+  <g fill="none" stroke="#0b0b0b" stroke-width="16" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M712 160H660V512H712"/>
+    <path d="M824 160H876V512H824"/>
+  </g>
+</svg>

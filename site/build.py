@@ -49,6 +49,14 @@ ICON = {
     "search": _SVG + '<circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg>',
     "theme": _SVG
     + '<circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg>',
+    # GitHub's mark (Octicons mark-github, MIT), filled, at the other icons' size.
+    "github": '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="currentColor">'
+    '<path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49'
+    "-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82"
+    ".72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15"
+    "-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82"
+    " 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48"
+    ' 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>',
 }
 OUT = HERE / "public"
 #: The harness version the site describes, from the one place it is set.
@@ -600,9 +608,11 @@ def page(title: str, desc: str, body: str, depth: int = 0, here: str = "", card:
         + nav("use", f"{up}use.html", "Use it")
         + nav("method", f"{up}method.html", "Method")
         + nav("experiments", f"{up}experiments.html", "Experiments")
-        + nav("judging", f"{up}experiments/judging.html", "Judging")
-        + f'<a href="{REPO}">GitHub ↗</a>'
+        + nav("judging", f"{up}experiments/judging.html", "Re-measured")
     )
+    # GitHub: a line in the phone menu, an icon button beside search and the theme on the bar.
+    github_menu = f'<a href="{REPO}">GitHub ↗</a>'
+    github_btn = f'<a class="hbtn" href="{REPO}" aria-label="eval-harness on GitHub" title="GitHub">{ICON["github"]}</a>'
     # Harness · Catalog · Docs, the same switcher in all three, this one marked.
     sections = (
         f'<a href="{up}index.html" aria-current="page">Harness</a>'
@@ -635,8 +645,8 @@ def page(title: str, desc: str, body: str, depth: int = 0, here: str = "", card:
 <header class="bar"><div class="wrap">
   <a class="brand" href="{up}index.html" aria-label="eval-harness home"><img class="mark" src="{up}assets/icon.svg" alt="" width="28" height="28"><span>eval-harness</span></a>
   <nav class="sections" aria-label="Harness, catalog and docs">{sections}</nav>
-  <details class="menu"><summary class="hbtn" aria-label="Menu">{ICON["menu"]}</summary><nav class="menu-links">{links}</nav></details>
-  <nav class="nav">{links}<a class="hbtn search-btn" href="{up}docs/?q=" aria-label="Search the docs">{ICON["search"]}</a><button id="theme" class="theme hbtn" aria-label="Toggle light and dark">{ICON["theme"]}</button></nav>
+  <details class="menu"><summary class="hbtn" aria-label="Menu">{ICON["menu"]}</summary><nav class="menu-links">{links}{github_menu}</nav></details>
+  <nav class="nav">{links}{github_btn}<a class="hbtn search-btn" href="{up}docs/?q=" aria-label="Search the docs">{ICON["search"]}</a><button id="theme" class="theme hbtn" aria-label="Toggle light and dark">{ICON["theme"]}</button></nav>
 </div></header>
 <main>
 {body}
@@ -661,6 +671,7 @@ H = types.SimpleNamespace(
     REPO=REPO,
     VERSION=VERSION,
     author=author,
+    CATALOG=CATALOG,
 )
 
 
@@ -841,13 +852,25 @@ def home(f: dict) -> str:
             (
                 "A goal says what the evaluation is for: the measure that decides, limits on cost and "
                 "speed, how a tie is broken. Its rule recommends an arm and says why; a person promotes "
-                "the baseline. The catalog shows every goal, dataset and run."
+                "the baseline, the run later changes are measured against."
             ),
+        ),
+        (
+            "06",
+            "A catalog to look around in",
+            (
+                "The harness builds pages over your committed runs: every goal with what it recommends, "
+                "every dataset, arm, reference and metric, and an inspector that compares any arms item "
+                "by item. Every view is also an evh command."
+            ),
+            (CATALOG, "Ours, on the six worked examples"),
         ),
     ]
     idea_html = "".join(
-        f'<div class="habit-card"><span class="n">{n}</span><b>{e(t)}</b><span>{e(d)}</span></div>'
-        for n, t, d in ideas
+        f'<div class="habit-card"><span class="n">{n}</span><b>{e(t)}</b><span>{e(d)}'
+        + (f' <a href="{rest[0][0]}">{e(rest[0][1])} →</a>' if rest else "")
+        + "</span></div>"
+        for n, t, d, *rest in ideas
     )
     # Why it exists: the questions it was built to answer, each with what the experiments
     # found -- numbers computed, quoted prose checked by q(). How the harness answers them
@@ -873,8 +896,8 @@ def home(f: dict) -> str:
                 f"SciFact ran only the twelve cheapest hosted models); re-measured, against corrected labels "
                 f"and by LLM judges, it is first on the point estimate in {word(rc['dearest_first'])}, "
                 f"neither re-measurement confirmed. In {ties} of {len(exps)} "
-                "the leader could not be separated from other arms — at 100–280 items, which "
-                "is not the same as equal."
+                "the leader could not be separated from other arms (an arm is one system under test: "
+                "a model with its prompt and settings) — at 100–280 items, which is not the same as equal."
             ),
             "experiments.html",
             "The experiments",
@@ -925,6 +948,7 @@ def home(f: dict) -> str:
         f'<a href="{href}">{e(label)} →</a></div>'
         for i, (qn, found, href, label) in enumerate(why, 1)
     )
+    goal_links = " · ".join(f'<a href="{CATALOG}{x["goal"]["goal_page"]}">{e(x["bench"])}</a>' for x in exps)
     # Step 2: each benchmark as its own field, the same strips as the experiments page.
     benches = "".join(
         f'<a class="bench-row reveal" href="experiments/{x["slug"]}.html" aria-label="{e(x["bench"])}: '
@@ -935,32 +959,35 @@ def home(f: dict) -> str:
 <section class="hero hero-grid"><div class="wrap">
   <div class="kicker"><b>eval-harness</b> · open source · MIT · by {out(HUMAN, "hero", "Marko Dragoljevic", "byline")}</div>
   <h1>Is the ranking real, or <em>a lucky sample?</em></h1>
-  <p class="dek">A small, drop-in harness for evaluating AI systems on your own data. Freeze a dataset, run your system against it, and get the answer most leaderboards skip: whether one system is actually better than another, or only ahead on this sample. This is ongoing work: the harness and its method are the point, and the six experiments are worked examples of them, not a benchmark.</p>
-  <div class="btns"><a class="btn primary" href="use.html">Use it on your problem</a><a class="btn" href="experiments.html">See it on {hosted_n} LLMs</a><a class="btn" href="{REPO}">GitHub ↗</a></div>
+  <p class="dek">A small, drop-in harness for evaluating AI systems on your own data. Freeze a dataset, run your system against it, and get the answer most leaderboards skip: whether one system is actually better than another, or only ahead on this sample.</p>
+  <p class="dek-note">This is ongoing work: the harness and its method are the point, and the six experiments are worked examples of them, not a benchmark.</p>
+  <p class="dek-note">Three parts: this site, why the harness exists and what it found; <a href="{CATALOG}">the catalog</a>, the harness's own pages over every run behind it, with an inspector that re-tests any comparison; and <a href="docs/">the docs</a>, how to do the same on your own system.</p>
+  <div class="btns"><a class="btn primary" href="use.html">Use it on your problem</a><a class="btn" href="experiments.html">See it on {hosted_n} LLMs</a><a class="btn" href="{CATALOG}">Browse every run</a><a class="btn" href="{REPO}">GitHub ↗</a></div>
   {hero_sketch(exps)}
 </div></section>
 
 <section class="block" id="why"><div class="wrap">
-  <div class="eyebrow"><span class="num">01</span>Why it exists</div>
+  <div class="eyebrow"><span class="num">01</span>Why the harness exists</div>
   <h2>Four questions anyone building with AI ends up asking.</h2>
-  <p class="lede">There are dozens of models, a leaderboard for each, and none of them measured on your problem. This harness answers these on your own data; here is what it answered when pointed at 24 LLMs. How it does that is in <a href="method.html">the method</a>.</p>
+  <p class="lede">There are dozens of models, a leaderboard for each, and none of them measured on your problem. <a href="docs/GUIDE/">The harness</a> exists to answer these on your own data; below, what it answered when pointed at 24 LLMs. How it does that is in <a href="method.html">the method</a>.</p>
   <div class="why">{why_html}</div>
 </div></section>
 
 <section class="block" id="what"><div class="wrap">
-  <div class="eyebrow"><span class="num">02</span>What it does</div>
-  <h2>Five ideas, one adapter file.</h2>
-  <p class="lede">Most eval code answers \u201cwhich scored highest\u201d. That is the easy half; the hard half is whether the answer survives being asked again. The harness imports nothing domain-specific — everything about your system lives in one file, <code>adapter.py</code>, with two functions you write: <code>call_system()</code> and <code>score()</code>.</p>
+  <div class="eyebrow"><span class="num">02</span>What the harness does</div>
+  <h2>Six ideas, one adapter file.</h2>
+  <p class="lede">Most eval code answers \u201cwhich scored highest\u201d. That is the easy half; the hard half is whether the answer survives being asked again. <a href="docs/GUIDE/">The harness</a> imports nothing domain-specific — everything about your system lives in one file, <code>adapter.py</code>, with two functions you write: <code>call_system()</code> and <code>score()</code>.</p>
   <div class="habits">{idea_html}</div>
   <div class="cols" style="margin-top:48px">
-    <div class="prose"><h3 style="font-size:28px;line-height:1.15;margin-bottom:16px">Try the whole loop.</h3><p>Install the pinned release in a new folder; <code>evh init --tutorial</code> writes the project's folders and a six-ticket tutorial kit, and getting started takes it through the loop in about fifteen minutes — a dataset, arms, a reference from the best arm's run, a comparison, a choice — offline, no API key. Tutorials then add a local model, a hosted LLM with your own key, a frontier reference and judges, rounds, and the catalog. From a checkout of this repository, <code>make demo</code> runs the loop on bundled synthetic data in a minute.</p>
-      <div class="btns"><a class="btn primary" href="docs/GUIDE/">Getting started</a><a class="btn" href="docs/GUIDE/#where-to-go-next">The tutorials</a></div></div>
+    <div class="prose"><h3 style="font-size:28px;line-height:1.15;margin-bottom:16px">Try the whole loop.</h3><p>Install the pinned release in a new folder; <code>evh init --tutorial</code> writes the project's folders and a six-ticket tutorial kit, and getting started takes it through the loop in about fifteen minutes — a dataset, arms, a reference from the best arm's run, a comparison, a choice — offline, no API key. Tutorials then add a local model, a hosted LLM with your own key, a frontier reference and judges, and rounds. Last, look at it all: <code>evh catalog</code> builds the catalog of your own runs and <code>evh catalog-serve</code> opens it with the inspector (<a href="docs/tutorials/5-catalog-and-inspector/">tutorial 5</a>); <a href="{CATALOG}">ours</a> shows the six worked examples. From a checkout of this repository, <code>make demo</code> runs the loop on bundled synthetic data in a minute.</p>
+      <div class="btns"><a class="btn primary" href="docs/GUIDE/">Getting started</a><a class="btn" href="docs/GUIDE/#where-to-go-next">The tutorials</a><a class="btn" href="{CATALOG}">The catalog</a></div></div>
 <pre class="term"><span class="p">$ </span>pip install "evaluation-harness @ git+{REPO}@v{VERSION}#subdirectory=harness"
 <span class="p">$ </span>evh init --tutorial
 <span class="c"># the guide walks the tutorial from here; then, on your own system</span>
 <span class="p">$ </span>evh dataset-create --dataset-id my_v1 --source-dir data/sources
 <span class="p">$ </span>evh experiment-run --config data/configs/arm_a.yaml --repeat 3
 <span class="p">$ </span>evh leaderboard --dataset-id my_v1
+<span class="p">$ </span>evh catalog && evh catalog-serve
 <span class="c"># or, from a checkout: the bundled demo</span>
 <span class="p">$ </span>git clone {REPO}
 <span class="p">$ </span>cd eval-harness/harness
@@ -973,7 +1000,7 @@ def home(f: dict) -> str:
 <section class="block" id="proof"><div class="wrap">
   <div class="eyebrow"><span class="num">03</span>Worked examples · {hosted_n} LLMs</div>
   <h2>The most expensive model <em style="font-style:normal;color:var(--accent)">never won.</em></h2>
-  <p class="lede">These are examples of the harness and its method at work, not a leaderboard, and they are still being extended. To show the harness doing something real, it measured {hosted_n} hosted LLMs, proprietary and open-weight from small to frontier tiers, small fine-tuned models and baselines on {word(len(exps))} public benchmarks — {f["total_arms"]} runs, {money(f["total_billed"])} billed, every cost read off the provider's bill.{dearest_note(f)}</p>
+  <p class="lede">These are examples of the harness and its method at work, not a leaderboard, and they are still being extended. To show the harness doing something real, it measured {hosted_n} hosted LLMs, proprietary and open-weight from small to frontier tiers, small fine-tuned models and baselines on {word(len(exps))} public benchmarks — {f["total_arms"]} runs, {money(f["total_billed"])} billed, every cost read off the provider's bill.{dearest_note(f)} Each is also a goal in <a href="{CATALOG}">the catalog</a>, with every run, dataset and reference behind it.</p>
   <div class="stats">
     <div class="stat"><div class="n">{f["dearest_not_best_frontier"]}<small>/{f["frontier_exps"]}</small></div>{marks(f["dearest_not_best_frontier"], f["frontier_exps"])}<div class="l">experiments with frontier models where the dearest model was not the best (the same model each time; SciFact ran only the twelve cheapest hosted models)</div></div>
     <div class="stat"><div class="n">{ties}<small>/{len(exps)}</small></div>{marks(ties, len(exps))}<div class="l">leaderboards where the leader cannot be separated from others (at 100–280 items)</div></div>
@@ -981,7 +1008,8 @@ def home(f: dict) -> str:
     <div class="stat"><div class="n">{cal_ok}<small>/{cal_n}</small></div>{marks(cal_in, cal_n)}<div class="l">calibration checks that agree with the published numbers, {cal_in} inside their own interval</div></div>
   </div>
   <div class="chart benches" style="margin-top:48px">{legend(reading="higher score: further right →", baseline=False)}{benches}</div>
-  <div class="btns"><a class="btn primary" href="experiments.html">All the findings</a><a class="btn" href="experiments.html#reproduce">Reproduce them</a></div>
+  <p class="dek-note">In the catalog: {goal_links}.</p>
+  <div class="btns"><a class="btn primary" href="experiments.html">All the findings</a><a class="btn" href="{CATALOG}">Browse them in the catalog</a><a class="btn" href="experiments.html#reproduce">Reproduce them</a></div>
 </div></section>
 
 {method.landing_teaser(H, f, "04")}
@@ -1014,6 +1042,7 @@ def landing(f: dict) -> str:
         f'<figure class="reveal" style="margin-bottom:10px">{both(strip(x), strip(x, compact=True))}</figure>'
         for x in exps
     )
+    goal_links = " · ".join(f'<a href="{CATALOG}{x["goal"]["goal_page"]}">{e(x["bench"])}</a>' for x in exps)
     tie_rows = "".join(
         f'<tr><td class="exp"><a href="experiments/{x["slug"]}.html">{e(x["task"])} · {e(x["bench"])}</a></td>'
         f'<td class="num" data-label="first place">{e(x["top"]["arm"])}</td>'
@@ -1031,7 +1060,7 @@ def landing(f: dict) -> str:
         for x in exps
     ) + (
         '<a class="card reveal" style="grid-column:1/-1" href="experiments/judging.html"><div class="task">Re-measured, not re-run · across experiments</div>'
-        "<h3>Judging</h3><p>Three experiments scored again without re-running a model: validated LLM "
+        "<h3>Re-measured</h3><p>Three experiments scored again without re-running a model: validated LLM "
         "judges re-ranked summarisation, a person corrected AG News and DBpedia labels. Why a judge "
         "beat the metric on SummEval, and why one reader's check kept coverage primary.</p>"
         f'<div class="meta"><span>3 experiments · {money(f["remeasure"]["summ"]["billed_usd"] + f["remeasure"]["summ_v2"]["billed_usd"])} of judging, '
@@ -1130,6 +1159,7 @@ def landing(f: dict) -> str:
     <figure class="chart reveal">{both(slope(f["dailymail"]), slope(f["dailymail"], compact=True))}<figcaption>coverage of the five local summarisers on each slice. Dashed: BART trained on XSum.</figcaption></figure>
   </div>
   <p class="note" style="margin-top:48px"><b>No figure on this site is typed in by hand.</b> Every figure is recomputed from the committed runs each time the site is built, and every number the prose quotes must appear in the report it comes from, or the build fails. Behind the reports, a checker verifies {f["claims_checked"]} claims against the runs on every commit.</p>
+  <p class="note"><b>Or test it yourself, in your browser.</b> Every run behind these charts is in <a href="{CATALOG}">the catalog</a>, and its inspector re-runs any comparison on this site, item by item, with the same paired test. Each experiment's page opens it on every arm against its leader.</p>
 </div></section>
 
 <section class="block" id="experiments"><div class="wrap">
@@ -1137,12 +1167,13 @@ def landing(f: dict) -> str:
   <h2>{n_exp.capitalize()} benchmarks, one harness.</h2>
   <p class="lede">The same {hosted_n} hosted models — eight vendors, three price tiers each — on every task (the cheapest twelve on SciFact), beside the strongest free models each task allows.</p>
   <div class="cards">{cards}</div>
+  <p class="dek-note">Each is a goal in the catalog, with every run behind it: {goal_links}.</p>
 </div></section>
 
 <section class="block" id="reproduce"><div class="wrap">
   <div class="eyebrow"><span class="num">06</span>Reproduce it</div>
   <h2>Built to be checked — by you.</h2>
-  <p class="lede">The harness, every run, every model output and every analysis script are in the repository. Five levels of checking, each optional, each a few commands.</p>
+  <p class="lede">The harness, every run, every model output and every analysis script are in the repository. Before any of it, <a href="{CATALOG}">the catalog</a> shows every run and its inspector re-tests any comparison, with nothing installed. Then five levels of checking, each optional, each a few commands.</p>
   <div class="cols">
     <ol class="ladder">
       <li><span class="lvl">00</span><div><h3>Verify</h3><p>Every number in every report, recomputed from the committed predictions.</p></div><span class="cost">$0 · one command</span></li>
@@ -1582,6 +1613,38 @@ def remeasured_block(x: dict, f: dict, num: int) -> str:
     )
 
 
+def catalog_dataset(x: dict) -> str:
+    """The catalog's page for the experiment's dataset (every arm on it, with its own page)."""
+    require(
+        (figures.DATA / "datasets" / f"{x['dataset']}.json").is_file(),
+        f"{x['slug']}: the catalog has a page for dataset {x['dataset']}",
+    )
+    return f"d/{x['dataset']}.html"
+
+
+def catalog_inspect(x: dict) -> str:
+    """The inspector, opened on every arm of the experiment against its leader: the same Holm
+    family as the site's own test (a single pair would get only Holm's strictest step, and could
+    call "not separated" what the site, testing the whole field, separates)."""
+    keys = []
+    for a in x["arms"]:
+        cid = f"{x['prefix']}{a['arm']}{x['suffix']}"
+        require(
+            any(
+                (m := json.loads(p.read_text())).get("config_id") == cid
+                and m.get("dataset_id") == x["dataset"]
+                for p in (figures.DATA / x["base"]).glob(f"{cid}*/metrics.json")
+            ),
+            f"{x['slug']}: a committed run of {cid} on {x['dataset']} for the inspector link",
+        )
+        keys.append(f"{x['base']}/{x['dataset']}/{cid}")
+    base = f"{x['base']}/{x['dataset']}/{x['prefix']}{x['leader']}{x['suffix']}".replace("/", "%2F")
+    return f"inspect.html?runs={','.join(keys)}&amp;baseline={base}&amp;metric={x['metric']}"
+
+
+H.catalog_inspect = catalog_inspect
+
+
 def goal_note(x: dict) -> str:
     """What the experiment's goal decides, as the catalog computes it (figures.goal_decisions),
     linked to its goal page. The build stops if the site's leader or the report's pick disagrees
@@ -1663,11 +1726,11 @@ def experiment_page(x: dict, f: dict) -> str:
   <p class="dek">{e(CARD[x["slug"]])}</p>
   <p class="note"><b>The report's pick, as run here.</b> {e(PICK[x["slug"]])}</p>{goal_note(x)}{remeasured_note(x)}
   <div class="facts">{facts_html}</div>
-  <div class="btns"><a class="btn primary" href="{BLOB}/research/{x["report"]}">Read the full report</a><a class="btn" href="{BLOB}/docs/PROTOCOL.md">Protocol</a><a class="btn" href="../experiments.html#experiments">All experiments</a></div>
+  <div class="btns"><a class="btn primary" href="{BLOB}/research/{x["report"]}">Read the full report</a><a class="btn" href="{CATALOG}{x["goal"]["goal_page"]}">In the catalog</a><a class="btn" href="{BLOB}/docs/PROTOCOL.md">Protocol</a><a class="btn" href="../experiments.html#experiments">All experiments</a></div>
 </div></section>
 <section class="block" id="field"><div class="wrap"><div class="eyebrow"><span class="num">01</span>The field</div>
   <h2>Every system, one axis.</h2>
-  <div class="chart">{legend(reading="higher score: further right →", baseline=False)}{both(strip(x, title=False, height=80), strip(x, title=False, compact=True))}<figcaption>Each dot is one system, by {e(x["metric_label"])}. The ringed dot is the most expensive hosted model{" (of the twelve cheapest hosted models, the only ones run here)" if x["slug"] == "scifact" else ""}; the shaded band is the group the leader cannot be statistically separated from.{OFF_NOTE if off_scale([a for a in x["arms"] if a["kind"] != "baseline"])[1] else ""}</figcaption></div>
+  <div class="chart">{legend(reading="higher score: further right →", baseline=False)}{both(strip(x, title=False, height=80), strip(x, title=False, compact=True))}<figcaption>Each dot is one system, by {e(x["metric_label"])}. The ringed dot is the most expensive hosted model{" (of the twelve cheapest hosted models, the only ones run here)" if x["slug"] == "scifact" else ""}; the shaded band is the group the leader cannot be statistically separated from.{OFF_NOTE if off_scale([a for a in x["arms"] if a["kind"] != "baseline"])[1] else ""} Every system has its own page in <a href="{CATALOG}{catalog_dataset(x)}">the catalog</a>: its run, cost, speed and fingerprint.</figcaption></div>
 </div></section>
 <section class="block" id="cost"><div class="wrap"><div class="eyebrow"><span class="num">02</span>Cost</div>
   <h2>What the money bought.</h2>
@@ -1685,6 +1748,7 @@ def experiment_page(x: dict, f: dict) -> str:
   <h2>Check it yourself.</h2>
   <div class="cols">
     <div class="prose">
+      <p><strong>First, with nothing installed:</strong> <a href="{CATALOG}{catalog_inspect(x)}">test every arm against {e(x["leader"])}</a>, item by item, in the catalog's inspector, with the same paired test and Holm correction as this page; {e(x["dearest"]["arm"])}, the most expensive model, among them. <a href="{CATALOG}{x["goal"]["goal_page"]}">The goal page</a> has the rest: what the goal recommends, and why.</p>
       <p>The {free} free arms rerun on a laptop CPU for $0, pinned to the weights that were measured. The {x["n_hosted"]} hosted arms billed <strong>${x["billed_total"]:.2f}</strong> when measured and rerun with one OpenRouter key.</p>
       <p><code>make compare</code> writes a replication card: each rerun against its committed run, item by item, and every separation and tie on this page re-tested with your reruns in place.</p>
       <div class="btns"><a class="btn primary" href="../docs/REPRODUCE/">The guide</a><a class="btn" href="{REPO}/tree/main/examples/{x["example"]}">This example's code</a></div>
@@ -1811,10 +1875,36 @@ def check_crawl_files(out: Path) -> list:
     return problems
 
 
-def check_links(out: Path, goal_pages: set) -> list:
+#: Where a reader copies the install line from. Each pin must name the latest release, as the
+#: site's own install line does: the docs said @v0.4.1 while the site said @v0.4.3 (found
+#: reviewing the 0.4.4 render). UPGRADING and the CHANGELOG name old releases on purpose, and
+#: infra/README.md's cutover steps record the release they were run with.
+PIN_FILES = ("README.md", "harness/README.md", "docs/**/*.md", "harness/docs/*.md")
+PIN_EXEMPT = {"harness/docs/UPGRADING.md", "harness/CHANGELOG.md"}
+PIN = re.compile(r"eval-harness@v(\d+\.\d+\.\d+)#subdirectory=harness")
+
+
+def check_pins() -> list:
+    """Every install pin a reader can copy names the latest dated release in the changelog."""
+    latest = next(r["version"] for r in releases.releases(releases.CHANGELOG.read_text()) if r["date"])
+    problems = []
+    for pattern in PIN_FILES:
+        for p in sorted(ROOT.glob(pattern)):
+            rel = p.relative_to(ROOT).as_posix()
+            if rel in PIN_EXEMPT:
+                continue
+            for n, line in enumerate(p.read_text(encoding="utf-8").splitlines(), 1):
+                for v in PIN.findall(line):
+                    if v != latest:
+                        problems.append(f"{rel}:{n} pins v{v}; the latest release is v{latest}")
+    return problems
+
+
+def check_links(out: Path, catalog_pages: set) -> list:
     """What is broken among the built pages' links: a relative href or src naming no built file,
-    a #anchor its page does not have, a catalog link that is neither the catalog's home nor the
-    page of a goal it builds (goal_pages). The docs check their own (mkdocs build --strict)."""
+    a #anchor its page does not have, a catalog link that is neither the catalog's home nor a page
+    the site names and checks against the data (catalog_pages: goal and dataset pages, the
+    inspector links). The docs check their own (mkdocs build --strict)."""
     problems = []
     ids: dict = {}
     for page in sorted(out.rglob("*.html")):
@@ -1826,8 +1916,8 @@ def check_links(out: Path, goal_pages: set) -> list:
         for link in re.findall(r'(?:href|src)="([^"]+)"', text):
             if link.startswith(CATALOG):
                 rest = link[len(CATALOG) :]
-                if rest and rest not in goal_pages:
-                    problems.append(f"{page.relative_to(out)}: {link} is no goal page the catalog builds")
+                if rest and rest.replace("&amp;", "&") not in catalog_pages:
+                    problems.append(f"{page.relative_to(out)}: {link} is no catalog page the site checks")
                 continue
             if re.match(r"^[a-z]+:", link) or link.startswith("//"):
                 continue  # another site (or mailto:)
@@ -1915,11 +2005,22 @@ def main() -> int:
         print("FAIL  robots.txt / sitemap.xml:", *crawl, sep="\n  ")
         return 1
     print("ok    robots.txt and sitemap.xml present; every sitemap URL is a built page")
-    broken = check_links(OUT, {x["goal"]["goal_page"] for x in f["experiments"]})
+    broken = check_links(
+        OUT,
+        {x["goal"]["goal_page"] for x in f["experiments"]}
+        | {catalog_dataset(x) for x in f["experiments"]}
+        | {catalog_inspect(x).replace("&amp;", "&") for x in f["experiments"]}
+        | method.CATALOG_PAGES,
+    )
     if broken:
         print("FAIL  links:", *broken, sep="\n  ")
         return 1
-    print("ok    every link resolves: built files, their anchors, the catalog's goal pages")
+    print("ok    every link resolves: built files, their anchors, the catalog pages the site names")
+    pins = check_pins()
+    if pins:
+        print("FAIL  install pins:", *pins, sep="\n  ")
+        return 1
+    print("ok    every install pin in the docs names the latest release")
     print("ok    site/public matches a fresh build")
     return 0
 

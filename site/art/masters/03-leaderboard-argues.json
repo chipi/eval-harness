@@ -1,0 +1,15 @@
+{
+  "model_requested": "nano_banana_pro",
+  "model_reported": "nano_banana_2",
+  "aspect_ratio": "3:2",
+  "resolution": "2k",
+  "generated": "2026-10-28",
+  "chosen_by": "the owner, round 3",
+  "job_id": "b7d154b6-f4ba-4ade-b959-e7904c08ee2a",
+  "sketch": "site/art/sketches/03-leaderboard-argues.svg",
+  "references": [
+    "8110c8ef-4627-4835-b3e3-0ab0fcf7f92d (the sketch)",
+    "47e6c433-c167-4eb9-8aaa-3c5185f92182 (style anchor)"
+  ],
+  "prompt": "The first reference is the composition; the second reference is the approved style to match exactly (same brush-pen ink with visible brush movement, same light transparent watercolour, same quiet paper). Draw a three-step winners' podium standing on the long horizontal ink line: a tall middle step, a lower step on the left and a lower step on the right. Every contender is a solid round ink dot. All the dots are squeezed together onto the top step, crowded, a few teetering at its edges, under one soft light sap-green (#8db14b) watercolour wash; one dot in the crowd has a thin ink ring around it. The second and third steps are EMPTY. The top step's two sides are drawn as tall square brackets. The line is one perfectly straight, horizontal, unbroken ink stroke at exactly half the image's height that runs all the way off the left edge and off the right edge; the podium stands on it. Plain warm off-white paper (#f6f5f1), NO grid, no ruled lines, no margins. Near-black ink (#0b0b0b) and the one light green only. No words, no letters, no numbers, no medals, no people. No ink splatter. Spare and quiet, generous empty paper. Not photorealistic, not a flat vector chart, not clip art. Subject: the top of a leaderboard is a crowd, not a podium: the test cannot separate the leader from the others."
+}

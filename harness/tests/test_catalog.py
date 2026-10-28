@@ -131,6 +131,25 @@ try:
         head_pages
         and all('<meta name="deploy-tag" content="ours">\n</head>' in p.read_text() for p in head_pages),
     )
+    # --about: a deployment's paragraph on the overview only.
+    cb.ABOUT = '<p id="deploy-about">Our six experiments.</p>'
+    about_out = tmp / ".build" / "catalog-about"
+    cb.build(A, about_out)
+    cb.ABOUT = ""
+    check(
+        "--about: its HTML is on the overview, under the description, and on no other page",
+        '<div class="about"><p id="deploy-about">Our six experiments.</p></div>'
+        in (about_out / "index.html").read_text()
+        and not [
+            p.name
+            for p in about_out.rglob("*.html")
+            if p.name != "index.html" and "deploy-about" in p.read_text()
+        ],
+    )
+    check(
+        "build: without --about the overview has no about block",
+        'class="about"' not in (out / "index.html").read_text(),
+    )
     # --link: the parts of the publication, one switcher on every page, the catalog marked.
     parts_out = tmp / ".build" / "catalog-parts"
     cb.build(
@@ -992,6 +1011,55 @@ try:
         "evh catalog: builds into <project>/.build/catalog",
         proc.returncode == 0 and (env_root / ".build/catalog/index.html").is_file(),
         proc.stderr[-300:],
+    )
+    # The deployment's options reach EVERY page when the builder runs as a command (the module is
+    # __main__ then; arms.html was rendered by a second copy of it with the defaults: "eval
+    # catalog", no switcher, no --head, /api/, found reviewing the 0.4.4 render).
+    (env_root / "head.html").write_text('<meta name="deploy-tag" content="ours">\n')
+    (env_root / "about.html").write_text("<p>Ours.</p>\n")
+    proc = subprocess.run(
+        [
+            sys.executable,
+            str(HERE / "cli.py"),
+            "catalog",
+            "--out",
+            str(env_root / ".build/catalog-opts"),
+            "--link",
+            "Site=https://s.example/",
+            "--link",
+            "Catalog=.",
+            "--brand",
+            "deploy-brand",
+            "--api",
+            "/catalog/api/",
+            "--head",
+            str(env_root / "head.html"),
+            "--about",
+            str(env_root / "about.html"),
+        ],
+        cwd=env_root,
+        capture_output=True,
+        text=True,
+        env={"EVAL_HOME": str(env_root), "PATH": "/usr/bin:/bin"},
+    )
+    opt_pages = sorted((env_root / ".build/catalog-opts").rglob("*.html"))
+    missing = [
+        p.relative_to(env_root / ".build/catalog-opts").as_posix()
+        for p in opt_pages
+        if not all(
+            s in p.read_text()
+            for s in (
+                'class="sections"',
+                "<span>deploy-brand</span>",
+                'content="ours"',
+                'data-api="/catalog/api/"',
+            )
+        )
+    ]
+    check(
+        "evh catalog --link/--brand/--head/--api: every page carries them, arms.html included",
+        proc.returncode == 0 and "arms.html" in {p.name for p in opt_pages} and not missing,
+        missing or proc.stderr[-300:],
     )
 
     # a port another program holds: say so, never a traceback

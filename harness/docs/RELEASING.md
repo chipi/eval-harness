@@ -13,7 +13,7 @@ Pin a release tag:
 
 ```toml
 # pyproject.toml
-"evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.4.1#subdirectory=harness",
+"evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.4.4#subdirectory=harness",
 ```
 
 - **Pin a tag, never a branch.** A branch moves; a run recorded against it cannot be
@@ -39,7 +39,11 @@ Pin a release tag:
    and whether upgrading changes any result. The section is the release notes in three places:
    the GitHub Release (the workflow copies it), the docs site and the harness site's release
    notes page. Use absolute links: the GitHub Release cannot resolve relative ones.
-3. **Rebuild the validation reports that CI cannot.** The Goyal et al. annotations and the
+3. **Move every install pin to the new tag** (`@vX.Y.Z#subdirectory=harness`): the READMEs,
+   the getting-started guide, the tutorials and these docs. `make -C harness site-check` fails on a
+   pin that names an older release than the changelog's newest dated section, so dating the
+   section and moving the pins go in the same commit.
+4. **Rebuild the validation reports that CI cannot.** The Goyal et al. annotations and the
    Zhang et al. ratings are downloaded at run time and never committed, so CI checks each
    committed `data/judge-validation/<scorer>/<set>/report.json` only against its records (their
    hash, count, bill, unparsed and withheld counts) and the scorer's hash, not its figures.
@@ -48,12 +52,12 @@ Pin a release tag:
    `python tools/validate_judge_zhang.py --scorer <scorer> --no-calls` for each scorer that
    has the records; they recompute every figure for $0. Commit any change, and run `make ci`,
    which then recomputes the report's claims from the human data too.
-4. **Run the [newcomer scenario](SCENARIO.md)** on the release candidate: a fresh project, the
+5. **Run the [newcomer scenario](SCENARIO.md)** on the release candidate: a fresh project, the
    published docs only, two experiments with real models, under $1. Fix what blocks a newcomer;
    record the rest in its "Open" list.
-5. **Merge to `main`.** The `harness-package` workflow builds the package, installs it in
+6. **Merge to `main`.** The `harness-package` workflow builds the package, installs it in
    a clean venv, runs it outside the checkout, and checks the changelog section exists.
-6. **Tag and push:**
+7. **Tag and push:**
    ```bash
    git tag vX.Y.Z && git push origin vX.Y.Z
    ```

@@ -1,0 +1,16 @@
+{
+  "model_requested": "nano_banana_pro",
+  "model_reported": "nano_banana_2",
+  "aspect_ratio": "3:2",
+  "resolution": "2k",
+  "generated": "2026-10-28",
+  "chosen_by": "the owner, round 5",
+  "job_id": "72a304f2-dea0-4a1a-93a6-d9fabc2c2d4a",
+  "sketch": "site/art/sketches/06-catalog-drawer.svg",
+  "references": [
+    "57c91a28-57a3-44da-b7a9-c9ae52826a6a (the sketch)",
+    "47e6c433-c167-4eb9-8aaa-3c5185f92182 (style anchor: the ice cube)",
+    "860128ce-bc36-4adb-bec3-3d2b7b703626 (style anchor: 04)"
+  ],
+  "prompt": "The first reference is the composition; the second and third references are the approved style to match exactly: loose, sketchy, confident brush-pen ink with visible brush movement and a few loose construction strokes, light grey ink washes and white glints, a single soft light sap-green (#8db14b) watercolour accent. Draw a library card-catalog cabinet standing on the long horizontal ink line, SKETCHED loosely in ink only: no wood colour, no brown, no fill of its own, just ink lines and light grey wash, like the ice cube. One drawer is pulled open, its index cards standing up, the front card marked with a pair of square brackets; the open drawer's cards carry the soft sap-green wash: the only green. On top of the cabinet a row of small clear ice cubes like the reference cube. A magnifying glass, also ink only, leans against the cabinet on the right. The line is one straight, horizontal, unbroken ink stroke at half the image's height running off both edges; nothing below the line. Plain warm off-white paper (#f6f5f1), NO grid, no margins. No words, no letters, no numbers, no labels on the drawers. No ink splatter. Spare and quiet, generous empty paper. Not photorealistic, not a flat vector chart, not clip art. Subject: a catalog of every frozen dataset and every run, with a glass to inspect any two."
+}

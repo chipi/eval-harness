@@ -1,0 +1,15 @@
+{
+  "model_requested": "nano_banana_pro",
+  "model_reported": "nano_banana_2",
+  "aspect_ratio": "3:2",
+  "resolution": "2k",
+  "generated": "2026-10-28",
+  "chosen_by": "the owner, round 3",
+  "job_id": "1a4c6b63-e4a2-4dd3-8d78-1a3acdea7397",
+  "sketch": "site/art/sketches/01-frozen-dataset.svg",
+  "references": [
+    "4a723120-d12a-43fa-aecf-d396b5f43eb5 (the sketch)",
+    "47e6c433-c167-4eb9-8aaa-3c5185f92182 (style anchor)"
+  ],
+  "prompt": "The first reference is the composition; the second reference is the approved style to match exactly (same brush-pen ink, same light watercolour, same ice). Redraw the frozen dataset: a clear block of ice sitting ON the long horizontal ink line, frost crystals at its corners, cold glints on its faces, its two front edges drawn as tall square brackets, three index cards frozen inside, a hash mark etched into the ice face with a soft light sap-green (#8db14b) watercolour wash behind it. The solid ink dot sits EXACTLY ON the line, directly under the block, touching it; not below the line. The line is one perfectly straight, horizontal, unbroken ink stroke at exactly half the image's height that runs all the way off the left edge and off the right edge. Plain warm off-white paper (#f6f5f1), NO grid, no ruled lines, no margins. Near-black ink (#0b0b0b) and the one light green only. No words, no letters, no numbers (the hash mark is the only mark). No ink splatter. Spare and quiet, generous empty paper. Not photorealistic, not a flat vector chart, not clip art."
+}

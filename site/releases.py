@@ -74,6 +74,16 @@ def releases(text: str) -> list:
                 cur["blocks"].append(("p", para))
             else:
                 para.append(line.strip())
+    # Two releases merged into one (a heading lost when the next section was written above it)
+    # show as a release whose section headings repeat: 0.4.3 carried 0.4.2's whole section.
+    for r in out:
+        heads = [b[1] for b in r["blocks"] if b[0] == "h3"]
+        dup = sorted({h for h in heads if heads.count(h) > 1})
+        if dup:
+            raise SystemExit(
+                f"harness/CHANGELOG.md: {r['version']} has {', '.join(repr(h) for h in dup)} more than once: "
+                "is a release heading missing below it?"
+            )
     return out
 
 

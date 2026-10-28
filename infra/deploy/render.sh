@@ -89,7 +89,8 @@ PY
 EVAL_HOME="$OUT/inspector" python3 "$OUT/inspector/pkg/evaluation_harness/catalog_build.py" \
   --out "$OUT/sites/$SITE/public/catalog" \
   --link "Harness=https://$SITE/" --link "Catalog=." --link "Docs=https://$SITE/docs/" --brand eval-harness --api /catalog/api/ \
-  --head "$OUT/catalog-head.html"
+  --head "$OUT/catalog-head.html" --about "$ROOT/infra/catalog/about.html" \
+  --repo "https://github.com/${GITHUB_REPOSITORY:-chipi/eval-harness}/blob/main/"
 rm -rf "$OUT/inspector/examples" "$OUT/catalog-head.html"
 # The build above ran the package's code; its bytecode is not part of the release.
 find "$OUT/inspector/pkg" -name __pycache__ -type d -prune -exec rm -rf {} +

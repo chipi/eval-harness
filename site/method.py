@@ -21,6 +21,29 @@ GUIDE = "docs/GUIDE.md"
 TUTORIAL3 = "docs/tutorials/3-frontier-reference-and-judging.md"
 
 
+#: Where each lifecycle step is in this repository's catalog: (page, what it shows there).
+CATALOG_STEP = {
+    "dataset": ("datasets.html", "Every dataset, its versions and items"),
+    "references": ("references.html", "Every reference, who wrote it, what is scored against it"),
+    "arms": ("arms.html#configs", "Every config, across the datasets it ran on"),
+    "runs": ("arms.html", "Every arm, how it was measured, its cost and speed"),
+    "baseline": ("goals.html", "Every goal, its promoted baseline and its reason"),
+    "remeasure": ("arms.html", "Re-scored and judged arms beside the originals"),
+}
+#: Where each habit can be seen in this repository's catalog: (page, link text). "tested" opens
+#: the inspector on the summarisation field (H.catalog_inspect).
+CATALOG_HABIT = {
+    "experiment": ("goals.html", "each goal's arms, side by side"),
+    "data": ("datasets.html", "every dataset, frozen, with its versions"),
+    "gold": ("references.html", "every reference, gold and silver, and what is scored against it"),
+    "noise": ("arms.html", "every arm, the ones run more than once included"),
+    "tested": (None, "the summarisation field, every arm tested against its leader"),
+    "record": ("goals.html", "every goal's baseline, with the reason a person recorded"),
+}
+#: Every top-level catalog page the site may link to.
+CATALOG_PAGES = {p for p, _ in CATALOG_STEP.values()} | {p for p, _ in CATALOG_HABIT.values() if p}
+
+
 def doc_href(page: str, anchor: str) -> str:
     """The docs site's address for a section of one of the docs' markdown pages."""
     return f"docs/{page.removeprefix('docs/').removesuffix('.md')}/#{anchor}"
@@ -181,11 +204,17 @@ def lifecycle_panels(H) -> str:
     out = []
     for nid, label, sub, what, where, cmd, anchor in NODES:
         cmd_html = f'<pre class="term"><span class="p">$ </span>{H.e(cmd)}</pre>' if cmd else ""
+        ours = CATALOG_STEP.get(nid)
+        ours_html = (
+            f' <a class="lc-more" href="{H.CATALOG}{ours[0]}" title="{H.e(ours[1])}">Ours, in the catalog →</a>'
+            if ours
+            else ""
+        )
         out.append(
             f'<div class="lc-panel" id="lc-{nid}" data-node="{nid}">'
             f'<div class="eyebrow"><span class="num">{label}</span>{sub}</div>'
             f'<p>{what}</p><div class="lc-where"><span>lives in</span> <code>{where}</code></div>'
-            f'{cmd_html}<a class="lc-more" href="{doc_href(*anchor)}">In the guide →</a></div>'
+            f'{cmd_html}<div class="lc-links"><a class="lc-more" href="{doc_href(*anchor)}">In the guide →</a>{ours_html}</div></div>'
         )
     return "".join(out)
 
@@ -414,9 +443,12 @@ def method_page(H, f: dict) -> str:
     toc = "".join(
         f'<a href="#{c["id"]}"><span>{i:02d}</span>{H.e(c["title"])}</a>' for i, c in enumerate(chs, 1)
     )
+    by = {x["slug"]: x for x in f["experiments"]}
     body_ch = []
     for i, c in enumerate(chs, 1):
         cmd, out = c["tool"]
+        page, text = CATALOG_HABIT[c["id"]]
+        href = H.CATALOG + (page or H.catalog_inspect(by["summarization"]))
         body_ch.append(f"""
 <article class="chapter reveal" id="{c["id"]}" data-nodes="{c["nodes"]}">
   <div class="eyebrow"><span class="num">{i:02d}</span>{H.e(c["kicker"])}</div>
@@ -425,6 +457,7 @@ def method_page(H, f: dict) -> str:
   <div class="habit"><b>The habit</b>{H.e(c["habit"])}</div>
   <div class="tool"><span class="k">In the harness</span><pre class="term"><span class="p">$ </span>{H.e(cmd)}
 <span class="c">{H.e(out)}</span></pre></div>
+  <p class="yours"><b>In ours</b> <a href="{href}">{H.e(text)} →</a>, in the catalog.</p>
   <p class="yours"><b>In your project</b> {H.e(c["yours"])}</p>
 </article>""")
     body = f"""
@@ -729,7 +762,7 @@ def use_page(H, f: dict) -> str:
       <li>Billed cost and latency beside quality.</li>
       <li>Re-scoring from stored outputs for $0; validation for CI; baselines with reasons.</li>
       <li>A recommendation per goal, with its reasons, beside the baseline a person promoted.</li>
-      <li>A catalog of every goal, dataset, arm and run, and an inspector that tests arms against a baseline and shows one item's outputs.</li>
+      <li>A catalog of every goal, dataset, arm and run, and an inspector that tests arms against a baseline and shows one item's outputs (<a href="{H.CATALOG}">ours</a>).</li>
       <li>Optional LLM judges that re-measure stored outputs, refused until validated against people.</li>
     </ul></div>
     <div class="byo-col check"><h3>Start on Monday</h3><ul>
@@ -745,9 +778,10 @@ def use_page(H, f: dict) -> str:
 </div></section>
 
 <section class="block" id="doors"><div class="wrap">
-  <div class="eyebrow"><span class="num">05</span>Two doors</div>
-  <h2>Rerun ours, or build yours.</h2>
+  <div class="eyebrow"><span class="num">05</span>Three doors</div>
+  <h2>Look at ours, rerun ours, or build yours.</h2>
   <div class="cards doors">
+    <a class="card" href="{H.CATALOG}"><div class="task">Look at ours</div><h3>Every run, in the catalog.</h3><p>The six experiments as the harness shows them: every goal, dataset, arm and reference, and an inspector that tests any arms against a baseline, item by item. Nothing to install.</p><div class="meta"><span>evals.humancopilot.eu/catalog</span><b>The catalog →</b></div></a>
     <a class="card" href="docs/REPRODUCE/"><div class="task">Rerun ours</div><h3>Check every finding yourself.</h3><p>Five levels, from recomputing every number for $0 to rerunning every model with one key — with a replication card that re-tests every separation.</p><div class="meta"><span>make verify</span><b>Reproduce it →</b></div></a>
     <a class="card" href="docs/GUIDE/"><div class="task">Build yours</div><h3>Your first evaluation, end to end.</h3><p>Freeze a dataset, build a golden reference set, measure, compare honestly, promote a baseline — offline, with the real output of every step.</p><div class="meta"><span>harness/tutorial</span><b>The guide →</b></div></a>
   </div>

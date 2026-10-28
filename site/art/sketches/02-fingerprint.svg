@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1536 1024" width="1536" height="1024">
+  <!-- 02 · A fingerprint per run: one fingerprint, pressed in ink where the run sits on the
+       through-line (half height, off both edges), framed by the logo's brackets. Ink only, no
+       green: a wash on the print muddies it (owner, round 5). -->
+  <rect width="1536" height="1024" fill="#f6f5f1"/>
+  <path d="M0 512H1536" stroke="#0b0b0b" stroke-width="7" stroke-linecap="round"/>
+  <g fill="none" stroke="#0b0b0b" stroke-width="5" stroke-linecap="round">
+    <ellipse cx="768" cy="500" rx="92" ry="118"/>
+    <path d="M696 470C704 400 834 396 842 470C850 544 818 590 772 604"/>
+    <path d="M716 476C722 424 816 422 822 478C828 532 802 566 768 576"/>
+    <path d="M736 482C740 446 798 446 802 484C806 520 788 544 766 550"/>
+    <path d="M756 488C758 470 780 470 782 490C784 508 776 520 766 524"/>
+    <path d="M688 520C692 566 718 600 748 612"/>
+  </g>
+  <g fill="none" stroke="#0b0b0b" stroke-width="16" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M688 340H638V660H688"/><path d="M848 340H898V660H848"/>
+  </g>
+</svg>
