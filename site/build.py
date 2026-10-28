@@ -600,7 +600,7 @@ def page(title: str, desc: str, body: str, depth: int = 0, here: str = "", card:
         + nav("use", f"{up}use.html", "Use it")
         + nav("method", f"{up}method.html", "Method")
         + nav("experiments", f"{up}experiments.html", "Experiments")
-        + nav("judging", f"{up}experiments/judging.html", "Judging")
+        + nav("judging", f"{up}experiments/judging.html", "Re-measured")
         + f'<a href="{REPO}">GitHub ↗</a>'
     )
     # Harness · Catalog · Docs, the same switcher in all three, this one marked.
@@ -843,7 +843,7 @@ def home(f: dict) -> str:
             (
                 "A goal says what the evaluation is for: the measure that decides, limits on cost and "
                 "speed, how a tie is broken. Its rule recommends an arm and says why; a person promotes "
-                "the baseline."
+                "the baseline, the run later changes are measured against."
             ),
         ),
         (
@@ -887,8 +887,8 @@ def home(f: dict) -> str:
                 f"SciFact ran only the twelve cheapest hosted models); re-measured, against corrected labels "
                 f"and by LLM judges, it is first on the point estimate in {word(rc['dearest_first'])}, "
                 f"neither re-measurement confirmed. In {ties} of {len(exps)} "
-                "the leader could not be separated from other arms — at 100–280 items, which "
-                "is not the same as equal."
+                "the leader could not be separated from other arms (an arm is one system under test: "
+                "a model with its prompt and settings) — at 100–280 items, which is not the same as equal."
             ),
             "experiments.html",
             "The experiments",
@@ -1055,7 +1055,7 @@ def landing(f: dict) -> str:
         for x in exps
     ) + (
         '<a class="card reveal" style="grid-column:1/-1" href="experiments/judging.html"><div class="task">Re-measured, not re-run · across experiments</div>'
-        "<h3>Judging</h3><p>Three experiments scored again without re-running a model: validated LLM "
+        "<h3>Re-measured</h3><p>Three experiments scored again without re-running a model: validated LLM "
         "judges re-ranked summarisation, a person corrected AG News and DBpedia labels. Why a judge "
         "beat the metric on SummEval, and why one reader's check kept coverage primary.</p>"
         f'<div class="meta"><span>3 experiments · {money(f["remeasure"]["summ"]["billed_usd"] + f["remeasure"]["summ_v2"]["billed_usd"])} of judging, '

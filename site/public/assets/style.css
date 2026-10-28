@@ -65,6 +65,9 @@ a:hover { color: var(--accent); }
 .nav a:hover { color: var(--accent); }
 .nav a[aria-current="page"] { color: var(--ink); text-decoration: underline; text-decoration-color: var(--accent); text-decoration-thickness: 2px; text-underline-offset: 6px; }
 @media (max-width: 760px) { .nav .hide-sm { display: none; } }
+/* a tablet's bar holds every page link on one row ("Re-measured" is the longest) */
+@media (min-width: 761px) and (max-width: 1000px) { .bar .nav { gap: 14px; } }
+@media (min-width: 761px) and (max-width: 900px) { .bar .nav { gap: 7px; font-size: 12px; letter-spacing: 0; } .bar .sections a { padding: 8px 5px; } }
 
 /* theme toggle */
 .theme { background: none; border: 1px solid var(--hair); color: var(--ink-2); width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-size: 14px; line-height: 1; }

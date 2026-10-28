@@ -1,0 +1,15 @@
+{
+  "model_requested": "nano_banana_pro",
+  "model_reported": "nano_banana_2",
+  "aspect_ratio": "3:2",
+  "resolution": "2k",
+  "generated": "2026-10-28",
+  "chosen_by": "the owner, round 4",
+  "job_id": "860128ce-bc36-4adb-bec3-3d2b7b703626",
+  "sketch": "site/art/sketches/04-rescore.svg",
+  "references": [
+    "068f34f7-51ad-4794-8e8c-b17b75eb636f (the sketch)",
+    "47e6c433-c167-4eb9-8aaa-3c5185f92182 (style anchor)"
+  ],
+  "prompt": "The first reference is the composition; the second reference is the approved style to match exactly (same brush-pen ink with visible brush movement, same light transparent watercolour, same clear ice cube with frost at its corners and its front edges drawn as square brackets). Draw that same ice cube sitting on the long horizontal ink line; a new wooden ruler stands upright against the cube's right side, measuring it, washed in soft light sap-green (#8db14b) watercolour; an old ruler lies set aside flat on the line to the left, drawn fainter in grey ink. The cube is untouched: only the ruler changed. The line is one straight, horizontal, unbroken ink stroke at half the image's height running off both edges. Plain warm off-white paper (#f6f5f1), NO grid, no ruled lines, no margins. Near-black ink (#0b0b0b) and the one light green only. No words, no letters, no numbers on the rulers (tick marks only). No ink splatter. Spare and quiet, generous empty paper. Not photorealistic, not a flat vector chart, not clip art. Subject: change the ruler, not the run: re-score frozen outputs with a new measure for free."
+}

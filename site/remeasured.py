@@ -324,7 +324,7 @@ def judging_page(H, f: dict) -> str:
     frontier_html = frontier_section(H, f, sm)
     body = f"""
 <section class="hero"><div class="wrap">
-  <div class="kicker"><b>Judging</b> · re-measured, not re-run</div>
+  <div class="kicker"><b>Re-measured</b> · not re-run · judges and corrected labels</div>
   <h1>Change the ruler, <em>not the run.</em></h1>
   <p class="dek">Every model output in these experiments is frozen, so when a better way to score them arrives the experiment can be measured again for the price of the scoring alone. We did it twice: a person corrected disputed labels, and SummEval-validated LLM judges re-scored the summaries. Both moved a headline result. Then one reader's blind check went the other way from the judges, and judges at {H.times(f["remeasure"]["summ_v2"]["billed_usd"] / fig["billed_usd"])} the price agreed with the first ones, not with the reader. On SummEval's expert ratings and on crowd ratings of 2022 LLM summaries, judges agree with people far better than the metric this leaderboard used, though not system by system; on this experiment's own outputs, nobody has yet shown which of the two to believe. That is the lesson: a judge is worth having, and worth checking.</p>
   <div class="facts">{facts_html}</div>
@@ -408,7 +408,7 @@ def judging_page(H, f: dict) -> str:
 </div></section>
 {H.author("judging")}"""
     return H.page(
-        "Change the ruler, not the run — judging · eval-harness",
+        "Change the ruler, not the run — re-measured · eval-harness",
         "What re-measuring frozen experiments with SummEval-validated LLM judges and corrected labels "
         "changed, why a judge beat the metric on SummEval, and why one reader's check kept coverage primary.",
         body,

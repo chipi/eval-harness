@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1536 1024" width="1536" height="1024">
+  <!-- 05 · A goal that recommends: a compass lying above the through-line, its needle pointing
+       down at one dot among several; that dot carries a small flag. The goal decides what
+       "better" means (the measure, the limits on cost and speed), and its rule points at an arm
+       and says why. The compass bezel is framed by the logo's brackets. Through-line at half
+       height. -->
+  <rect width="1536" height="1024" fill="#f6f5f1"/>
+  <path d="M0 512H1536" stroke="#0b0b0b" stroke-width="7" stroke-linecap="round"/>
+  <!-- the field -->
+  <g fill="#0b0b0b">
+    <circle cx="420" cy="512" r="22"/><circle cx="560" cy="512" r="22"/><circle cx="690" cy="512" r="22"/>
+    <circle cx="930" cy="512" r="22"/><circle cx="1060" cy="512" r="22"/>
+    <circle cx="810" cy="512" r="28"/>
+  </g>
+  <!-- the flag on the recommended dot, in the green wash -->
+  <path d="M810 484V400" stroke="#0b0b0b" stroke-width="5" stroke-linecap="round"/>
+  <path d="M810 400L878 420L810 442Z" fill="#8db14b" opacity="0.7" stroke="#0b0b0b" stroke-width="4" stroke-linejoin="round"/>
+  <!-- the compass, its needle pointing at the flagged dot -->
+  <circle cx="810" cy="230" r="120" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="7"/>
+  <circle cx="810" cy="230" r="98" fill="none" stroke="#7a7872" stroke-width="3"/>
+  <path d="M810 230L792 210L810 330L828 210Z" fill="#0b0b0b"/>
+  <path d="M810 230L792 250L810 130L828 250Z" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="4" stroke-linejoin="round"/>
+  <circle cx="810" cy="230" r="10" fill="#0b0b0b"/>
+  <g fill="none" stroke="#0b0b0b" stroke-width="14" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M700 96H660V364H700"/><path d="M920 96H960V364H920"/>
+  </g>
+</svg>

@@ -781,7 +781,7 @@ def use_page(H, f: dict) -> str:
   <div class="eyebrow"><span class="num">05</span>Three doors</div>
   <h2>Look at ours, rerun ours, or build yours.</h2>
   <div class="cards doors">
-    <a class="card" href="{H.CATALOG}"><div class="task">Look at ours</div><h3>Every run, in the catalog.</h3><p>The six experiments as the harness shows them: every goal, dataset, arm and reference, and an inspector that tests any arms against a baseline, item by item. Nothing to install.</p><div class="meta"><span>evh catalog-serve</span><b>The catalog →</b></div></a>
+    <a class="card" href="{H.CATALOG}"><div class="task">Look at ours</div><h3>Every run, in the catalog.</h3><p>The six experiments as the harness shows them: every goal, dataset, arm and reference, and an inspector that tests any arms against a baseline, item by item. Nothing to install.</p><div class="meta"><span>evals.humancopilot.eu/catalog</span><b>The catalog →</b></div></a>
     <a class="card" href="docs/REPRODUCE/"><div class="task">Rerun ours</div><h3>Check every finding yourself.</h3><p>Five levels, from recomputing every number for $0 to rerunning every model with one key — with a replication card that re-tests every separation.</p><div class="meta"><span>make verify</span><b>Reproduce it →</b></div></a>
     <a class="card" href="docs/GUIDE/"><div class="task">Build yours</div><h3>Your first evaluation, end to end.</h3><p>Freeze a dataset, build a golden reference set, measure, compare honestly, promote a baseline — offline, with the real output of every step.</p><div class="meta"><span>harness/tutorial</span><b>The guide →</b></div></a>
   </div>
