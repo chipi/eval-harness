@@ -9,7 +9,11 @@ The version lives in `scripts/_version.py`; a release is the git tag `v<version>
 release workflow refuses a tag that disagrees with that file or has no section here. A change
 that can move a result is never a patch release without saying so under **Changed**.
 
-## 0.4.4 — unreleased
+## 0.4.4 — 2026-10-28
+
+The catalog says what it is and links out: `--about` puts a deployment's own paragraph on the
+overview, a goal's `links` are shown, and `--repo` turns project paths into links. The arms page
+now carries the deployment's options like every other page. No result moves.
 
 ### Added
 
