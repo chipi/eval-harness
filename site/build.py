@@ -841,13 +841,25 @@ def home(f: dict) -> str:
             (
                 "A goal says what the evaluation is for: the measure that decides, limits on cost and "
                 "speed, how a tie is broken. Its rule recommends an arm and says why; a person promotes "
-                "the baseline. The catalog shows every goal, dataset and run."
+                "the baseline."
             ),
+        ),
+        (
+            "06",
+            "A catalog to look around in",
+            (
+                "The harness builds pages over your committed runs: every goal with what it recommends, "
+                "every dataset, arm, reference and metric, and an inspector that compares any arms item "
+                "by item. Every view is also an evh command."
+            ),
+            (CATALOG, "Ours, on the six worked examples"),
         ),
     ]
     idea_html = "".join(
-        f'<div class="habit-card"><span class="n">{n}</span><b>{e(t)}</b><span>{e(d)}</span></div>'
-        for n, t, d in ideas
+        f'<div class="habit-card"><span class="n">{n}</span><b>{e(t)}</b><span>{e(d)}'
+        + (f' <a href="{rest[0][0]}">{e(rest[0][1])} →</a>' if rest else "")
+        + "</span></div>"
+        for n, t, d, *rest in ideas
     )
     # Why it exists: the questions it was built to answer, each with what the experiments
     # found -- numbers computed, quoted prose checked by q(). How the harness answers them
@@ -925,6 +937,9 @@ def home(f: dict) -> str:
         f'<a href="{href}">{e(label)} →</a></div>'
         for i, (qn, found, href, label) in enumerate(why, 1)
     )
+    goal_links = " · ".join(
+        f'<a href="{CATALOG}{x["goal"]["goal_page"]}">{e(x["bench"])}</a>' for x in exps
+    )
     # Step 2: each benchmark as its own field, the same strips as the experiments page.
     benches = "".join(
         f'<a class="bench-row reveal" href="experiments/{x["slug"]}.html" aria-label="{e(x["bench"])}: '
@@ -942,26 +957,27 @@ def home(f: dict) -> str:
 </div></section>
 
 <section class="block" id="why"><div class="wrap">
-  <div class="eyebrow"><span class="num">01</span>Why it exists</div>
+  <div class="eyebrow"><span class="num">01</span>Why the harness exists</div>
   <h2>Four questions anyone building with AI ends up asking.</h2>
-  <p class="lede">There are dozens of models, a leaderboard for each, and none of them measured on your problem. This harness answers these on your own data; here is what it answered when pointed at 24 LLMs. How it does that is in <a href="method.html">the method</a>.</p>
+  <p class="lede">There are dozens of models, a leaderboard for each, and none of them measured on your problem. <a href="docs/GUIDE/">The harness</a> exists to answer these on your own data; below, what it answered when pointed at 24 LLMs. How it does that is in <a href="method.html">the method</a>.</p>
   <div class="why">{why_html}</div>
 </div></section>
 
 <section class="block" id="what"><div class="wrap">
-  <div class="eyebrow"><span class="num">02</span>What it does</div>
-  <h2>Five ideas, one adapter file.</h2>
-  <p class="lede">Most eval code answers \u201cwhich scored highest\u201d. That is the easy half; the hard half is whether the answer survives being asked again. The harness imports nothing domain-specific — everything about your system lives in one file, <code>adapter.py</code>, with two functions you write: <code>call_system()</code> and <code>score()</code>.</p>
+  <div class="eyebrow"><span class="num">02</span>What the harness does</div>
+  <h2>Six ideas, one adapter file.</h2>
+  <p class="lede">Most eval code answers \u201cwhich scored highest\u201d. That is the easy half; the hard half is whether the answer survives being asked again. <a href="docs/GUIDE/">The harness</a> imports nothing domain-specific — everything about your system lives in one file, <code>adapter.py</code>, with two functions you write: <code>call_system()</code> and <code>score()</code>.</p>
   <div class="habits">{idea_html}</div>
   <div class="cols" style="margin-top:48px">
-    <div class="prose"><h3 style="font-size:28px;line-height:1.15;margin-bottom:16px">Try the whole loop.</h3><p>Install the pinned release in a new folder; <code>evh init --tutorial</code> writes the project's folders and a six-ticket tutorial kit, and getting started takes it through the loop in about fifteen minutes — a dataset, arms, a reference from the best arm's run, a comparison, a choice — offline, no API key. Tutorials then add a local model, a hosted LLM with your own key, a frontier reference and judges, rounds, and the catalog. From a checkout of this repository, <code>make demo</code> runs the loop on bundled synthetic data in a minute.</p>
-      <div class="btns"><a class="btn primary" href="docs/GUIDE/">Getting started</a><a class="btn" href="docs/GUIDE/#where-to-go-next">The tutorials</a></div></div>
+    <div class="prose"><h3 style="font-size:28px;line-height:1.15;margin-bottom:16px">Try the whole loop.</h3><p>Install the pinned release in a new folder; <code>evh init --tutorial</code> writes the project's folders and a six-ticket tutorial kit, and getting started takes it through the loop in about fifteen minutes — a dataset, arms, a reference from the best arm's run, a comparison, a choice — offline, no API key. Tutorials then add a local model, a hosted LLM with your own key, a frontier reference and judges, and rounds. Last, look at it all: <code>evh catalog</code> builds the catalog of your own runs and <code>evh catalog-serve</code> opens it with the inspector (<a href="docs/tutorials/5-catalog-and-inspector/">tutorial 5</a>); <a href="{CATALOG}">ours</a> shows the six worked examples. From a checkout of this repository, <code>make demo</code> runs the loop on bundled synthetic data in a minute.</p>
+      <div class="btns"><a class="btn primary" href="docs/GUIDE/">Getting started</a><a class="btn" href="docs/GUIDE/#where-to-go-next">The tutorials</a><a class="btn" href="{CATALOG}">The catalog</a></div></div>
 <pre class="term"><span class="p">$ </span>pip install "evaluation-harness @ git+{REPO}@v{VERSION}#subdirectory=harness"
 <span class="p">$ </span>evh init --tutorial
 <span class="c"># the guide walks the tutorial from here; then, on your own system</span>
 <span class="p">$ </span>evh dataset-create --dataset-id my_v1 --source-dir data/sources
 <span class="p">$ </span>evh experiment-run --config data/configs/arm_a.yaml --repeat 3
 <span class="p">$ </span>evh leaderboard --dataset-id my_v1
+<span class="p">$ </span>evh catalog && evh catalog-serve
 <span class="c"># or, from a checkout: the bundled demo</span>
 <span class="p">$ </span>git clone {REPO}
 <span class="p">$ </span>cd eval-harness/harness
@@ -974,7 +990,7 @@ def home(f: dict) -> str:
 <section class="block" id="proof"><div class="wrap">
   <div class="eyebrow"><span class="num">03</span>Worked examples · {hosted_n} LLMs</div>
   <h2>The most expensive model <em style="font-style:normal;color:var(--accent)">never won.</em></h2>
-  <p class="lede">These are examples of the harness and its method at work, not a leaderboard, and they are still being extended. To show the harness doing something real, it measured {hosted_n} hosted LLMs, proprietary and open-weight from small to frontier tiers, small fine-tuned models and baselines on {word(len(exps))} public benchmarks — {f["total_arms"]} runs, {money(f["total_billed"])} billed, every cost read off the provider's bill.{dearest_note(f)}</p>
+  <p class="lede">These are examples of the harness and its method at work, not a leaderboard, and they are still being extended. To show the harness doing something real, it measured {hosted_n} hosted LLMs, proprietary and open-weight from small to frontier tiers, small fine-tuned models and baselines on {word(len(exps))} public benchmarks — {f["total_arms"]} runs, {money(f["total_billed"])} billed, every cost read off the provider's bill.{dearest_note(f)} Each is also a goal in <a href="{CATALOG}">the catalog</a>, with every run, dataset and reference behind it.</p>
   <div class="stats">
     <div class="stat"><div class="n">{f["dearest_not_best_frontier"]}<small>/{f["frontier_exps"]}</small></div>{marks(f["dearest_not_best_frontier"], f["frontier_exps"])}<div class="l">experiments with frontier models where the dearest model was not the best (the same model each time; SciFact ran only the twelve cheapest hosted models)</div></div>
     <div class="stat"><div class="n">{ties}<small>/{len(exps)}</small></div>{marks(ties, len(exps))}<div class="l">leaderboards where the leader cannot be separated from others (at 100–280 items)</div></div>
@@ -982,7 +998,8 @@ def home(f: dict) -> str:
     <div class="stat"><div class="n">{cal_ok}<small>/{cal_n}</small></div>{marks(cal_in, cal_n)}<div class="l">calibration checks that agree with the published numbers, {cal_in} inside their own interval</div></div>
   </div>
   <div class="chart benches" style="margin-top:48px">{legend(reading="higher score: further right →", baseline=False)}{benches}</div>
-  <div class="btns"><a class="btn primary" href="experiments.html">All the findings</a><a class="btn" href="experiments.html#reproduce">Reproduce them</a></div>
+  <p class="dek-note">In the catalog: {goal_links}.</p>
+  <div class="btns"><a class="btn primary" href="experiments.html">All the findings</a><a class="btn" href="{CATALOG}">Browse them in the catalog</a><a class="btn" href="experiments.html#reproduce">Reproduce them</a></div>
 </div></section>
 
 {method.landing_teaser(H, f, "04")}
