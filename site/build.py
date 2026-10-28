@@ -672,7 +672,6 @@ H = types.SimpleNamespace(
     VERSION=VERSION,
     author=author,
     CATALOG=CATALOG,
-    catalog_inspect=lambda x: catalog_inspect(x),  # defined below; resolved when called
 )
 
 
@@ -1644,6 +1643,9 @@ def catalog_inspect(x: dict) -> str:
         keys.append(f"{x['base']}/{x['dataset']}/{cid}")
     base = f"{x['base']}/{x['dataset']}/{x['prefix']}{x['leader']}{x['suffix']}".replace("/", "%2F")
     return f"inspect.html?runs={','.join(keys)}&amp;baseline={base}&amp;metric={x['metric']}"
+
+
+H.catalog_inspect = catalog_inspect
 
 
 def goal_note(x: dict) -> str:
