@@ -954,7 +954,8 @@ def home(f: dict) -> str:
   <h1>Is the ranking real, or <em>a lucky sample?</em></h1>
   <p class="dek">A small, drop-in harness for evaluating AI systems on your own data. Freeze a dataset, run your system against it, and get the answer most leaderboards skip: whether one system is actually better than another, or only ahead on this sample.</p>
   <p class="dek-note">This is ongoing work: the harness and its method are the point, and the six experiments are worked examples of them, not a benchmark.</p>
-  <div class="btns"><a class="btn primary" href="use.html">Use it on your problem</a><a class="btn" href="experiments.html">See it on {hosted_n} LLMs</a><a class="btn" href="{REPO}">GitHub ↗</a></div>
+  <p class="dek-note">Three parts: this site, why the harness exists and what it found; <a href="{CATALOG}">the catalog</a>, the harness's own pages over every run behind it, with an inspector that re-tests any comparison; and <a href="docs/">the docs</a>, how to do the same on your own system.</p>
+  <div class="btns"><a class="btn primary" href="use.html">Use it on your problem</a><a class="btn" href="experiments.html">See it on {hosted_n} LLMs</a><a class="btn" href="{CATALOG}">Browse every run</a><a class="btn" href="{REPO}">GitHub ↗</a></div>
   {hero_sketch(exps)}
 </div></section>
 
