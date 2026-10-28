@@ -1,24 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1536 1024" width="1536" height="1024">
-  <!-- 02 · A fingerprint per run: every run leaves its fingerprint, pressed in ink onto the
-       through-line (half height, off both edges) where the run sits, and framed by the logo's
-       brackets as a specimen; the small ink pad it was pressed from lies beside it, the only
-       green. The print itself is ink only. -->
+  <!-- 02 · A fingerprint per run: one fingerprint, pressed in ink where the run sits on the
+       through-line (half height, off both edges), framed by the logo's brackets. Ink only, no
+       green: a wash on the print muddies it (owner, round 5). -->
   <rect width="1536" height="1024" fill="#f6f5f1"/>
   <path d="M0 512H1536" stroke="#0b0b0b" stroke-width="7" stroke-linecap="round"/>
-  <!-- the fingerprint, centred on the line, ink only -->
   <g fill="none" stroke="#0b0b0b" stroke-width="5" stroke-linecap="round">
-    <ellipse cx="740" cy="500" rx="92" ry="118"/>
-    <path d="M668 470C676 400 806 396 814 470C822 544 790 590 744 604"/>
-    <path d="M688 476C694 424 788 422 794 478C800 532 774 566 740 576"/>
-    <path d="M708 482C712 446 770 446 774 484C778 520 760 544 738 550"/>
-    <path d="M728 488C730 470 752 470 754 490C756 508 748 520 738 524"/>
-    <path d="M660 520C664 566 690 600 720 612"/>
+    <ellipse cx="768" cy="500" rx="92" ry="118"/>
+    <path d="M696 470C704 400 834 396 842 470C850 544 818 590 772 604"/>
+    <path d="M716 476C722 424 816 422 822 478C828 532 802 566 768 576"/>
+    <path d="M736 482C740 446 798 446 802 484C806 520 788 544 766 550"/>
+    <path d="M756 488C758 470 780 470 782 490C784 508 776 520 766 524"/>
+    <path d="M688 520C692 566 718 600 748 612"/>
   </g>
-  <!-- the brackets: the print kept as a specimen -->
   <g fill="none" stroke="#0b0b0b" stroke-width="16" stroke-linejoin="round" stroke-linecap="round">
-    <path d="M660 340H610V660H660"/><path d="M820 340H870V660H820"/>
+    <path d="M688 340H638V660H688"/><path d="M848 340H898V660H848"/>
   </g>
-  <!-- the ink pad, the one green -->
-  <rect x="980" y="440" width="210" height="72" rx="12" fill="#fcfcfb" stroke="#0b0b0b" stroke-width="6"/>
-  <rect x="998" y="452" width="174" height="44" rx="8" fill="#8db14b" opacity="0.55"/>
 </svg>

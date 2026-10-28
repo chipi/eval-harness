@@ -1,0 +1,16 @@
+{
+  "model_requested": "nano_banana_pro",
+  "model_reported": "nano_banana_2",
+  "aspect_ratio": "3:2",
+  "resolution": "2k",
+  "generated": "2026-10-28",
+  "chosen_by": "the owner, round 5",
+  "job_id": "ff0b2a0d-c0b4-4b3a-9091-d09c289ca5c8",
+  "sketch": "site/art/sketches/05-goal-compass.svg",
+  "references": [
+    "a78a4260-89cc-4ab2-88a4-7bcafe7f06a5 (the sketch)",
+    "47e6c433-c167-4eb9-8aaa-3c5185f92182 (style anchor: the ice cube)",
+    "860128ce-bc36-4adb-bec3-3d2b7b703626 (style anchor: 04)"
+  ],
+  "prompt": "The first reference is the composition; the second and third references are the approved style to match exactly: loose, confident brush-pen ink sketching with visible brush movement, light grey ink washes and white glints like the ice cube, a single soft light sap-green (#8db14b) watercolour accent. Draw a row of solid round ink dots on the long horizontal ink line. Above the line, a round compass seen from above, sketched in ink only with the same loose glinting strokes as the ice cube: ink bezel, grey wash glass, NO brass, NO gold, NO colour of its own, and NO letters on its face (no N, E, S, W), only tick marks. Its needle points STRAIGHT DOWN at one dot in the row, directly below it. The compass is framed by two tall square brackets. The dot the needle points at is slightly larger and carries a small pennant flag, the flag washed in the soft sap-green: the only green. The line is one straight, horizontal, unbroken ink stroke at half the image's height running off both edges; nothing below the line. Plain warm off-white paper (#f6f5f1), NO grid, no margins. No words, no letters, no numbers. No ink splatter. Spare and quiet, generous empty paper. Not photorealistic, not a flat vector chart, not clip art. Subject: a goal that points at the arm to choose."
+}
