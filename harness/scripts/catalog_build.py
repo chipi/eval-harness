@@ -27,7 +27,7 @@ if __name__ == "__main__":
     # with the defaults. arms.html was built by such a copy, as "eval catalog" with no switcher.
     _sys.modules["evaluation_harness.catalog_build"] = _sys.modules[__name__]
     if "evaluation_harness" in _sys.modules:  # imported already: its attribute names this module too
-        _sys.modules["evaluation_harness"].catalog_build = _sys.modules[__name__]
+        vars(_sys.modules["evaluation_harness"])["catalog_build"] = _sys.modules[__name__]
 
 import argparse
 import html
