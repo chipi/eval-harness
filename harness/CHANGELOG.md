@@ -19,6 +19,9 @@ that can move a result is never a patch release without saying so under **Change
 - **A goal's `links` on its page and in `evh goals --goal G`.** The field was in the goal
   schema but shown nowhere. A web address opens; a path in the project is named as text, because
   the static pages cannot know where the project is hosted.
+- **`evh catalog --repo URL`**: where the project's files can be read (e.g. a GitHub `blob/main/`
+  address). A project path in a goal's links, or at the start of a guardrail's source, then links
+  there. Without it, the path stays text.
 
 ### Changed
 

@@ -2128,22 +2128,26 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
     ]
     dl = "".join(f"<dt>{e(k)}</dt><dd>{e(v)}</dd>" for k, v in facts if v not in ("", None))
     # Rules in words no number checks: shown, never computed.
+    def source(s: str) -> str:
+        m = _PATH_HEAD.match(s)
+        return project_path(m.group(1)) + e(m.group(2)) if m else e(s)
+
     guard = "".join(
         f"<li><b>{e(x['name'])}</b>: {e(x['rule'])}"
-        + (f' <small class="muted">({e(x["source"])})</small>' if x.get("source") else "")
+        + (f' <small class="muted">({source(x["source"])})</small>' if x.get("source") else "")
         + "</li>"
         for x in crit.get("guardrails") or []
     )
     if guard:
         dl += f'<dt>guardrails</dt><dd><ul class="small">{guard}</ul></dd>'
     # The goal's own links (its report, a deployment's findings page): a web address opens; a path
-    # in the project is named, since the static pages cannot know where the project is hosted.
+    # in the project links to --repo when given, else it is named.
     see = "".join(
         "<li>"
         + (
             f'<a href="{e(x["url"])}">{e(x.get("note") or x["url"])}</a>'
             if str(x.get("url", "")).startswith(("https://", "http://"))
-            else f"{e(x.get('note') or '')}{': ' if x.get('note') else ''}<code>{e(x.get('url', ''))}</code>"
+            else f"{e(x.get('note') or '')}{': ' if x.get('note') else ''}{project_path(str(x.get('url', '')))}"
         )
         + "</li>"
         for x in g.get("links") or []
@@ -3206,11 +3210,22 @@ ABOUT = ""
 SECTIONS: tuple = ()
 #: The product's name beside the logo (--brand): the deployment's own, else "eval catalog".
 BRAND = "eval catalog"
+#: Where the project's files can be read (--repo), ending in "/": a project path in a goal's links
+#: or at the start of a guardrail's source becomes a link to it. None by default, and then a path
+#: is named as text, since the static pages cannot know where the project is hosted.
+REPO = ""
+#: A project path at the start of a guardrail's source ("research/REPORT.md, §3.4").
+_PATH_HEAD = re.compile(r"^((?:[\w.-]+/)+[\w.-]+\.\w+|[\w.-]+\.(?:md|json|yaml|yml|csv|txt))(.*)$", re.S)
+
+
+def project_path(text: str) -> str:
+    """A project path as a link when --repo says where the project is, else as code."""
+    return f'<a href="{e(REPO + text)}"><code>{e(text)}</code></a>' if REPO else f"<code>{e(text)}</code>"
 
 
 def main() -> int:
     """Build the catalog and write static pages to output directory."""
-    global API, HEAD, BRAND, ABOUT
+    global API, HEAD, BRAND, ABOUT, REPO
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--out", type=Path, default=ROOT / ".build" / "catalog")
     ap.add_argument(
@@ -3245,6 +3260,12 @@ def main() -> int:
         help="HTML shown on the overview, under its description: which project this catalog shows, "
         "and where its findings are (none by default)",
     )
+    ap.add_argument(
+        "--repo",
+        metavar="URL",
+        help="where the project's files can be read, e.g. https://github.com/o/r/blob/main/: a project "
+        "path in a goal's links or a guardrail's source links there (named as text by default)",
+    )
     args = ap.parse_args()
     if not args.api.startswith("/") or not args.api.endswith("/"):
         raise SystemExit(
@@ -3256,6 +3277,10 @@ def main() -> int:
         if not args.head.is_file():
             raise SystemExit(f"--head {args.head}: no such file")
         HEAD = args.head.read_text(encoding="utf-8").strip() + "\n"
+    if args.repo:
+        if not args.repo.startswith(("https://", "http://")):
+            raise SystemExit(f"--repo {args.repo!r}: expected https://..., where the project's files can be read")
+        REPO = args.repo if args.repo.endswith("/") else args.repo + "/"
     if args.about:
         if not args.about.is_file():
             raise SystemExit(f"--about {args.about}: no such file")

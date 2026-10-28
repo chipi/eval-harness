@@ -167,6 +167,15 @@ try:
         '<a href="https://findings.example/tickets.html">the findings</a>' in html
         and "the notes: <code>notes/TRIAGE.md</code>" in html,
     )
+    r = evh("catalog", "--repo", "https://code.example/o/r/blob/main", "--out", str(proj / ".build" / "catalog-repo"))
+    repo_html = (proj / ".build" / "catalog-repo" / "g" / "tickets_summary.html").read_text() if r.returncode == 0 else ""
+    check(
+        "evh catalog --repo: a project path in a goal's links is a link to the project's file",
+        '<a href="https://code.example/o/r/blob/main/notes/TRIAGE.md"><code>notes/TRIAGE.md</code></a>' in repo_html,
+        r.stderr[-300:],
+    )
+    r = evh("catalog", "--repo", "file:///etc/", "--out", str(proj / ".build" / "catalog-bad"))
+    check("evh catalog --repo: refuses anything but a web address", r.returncode != 0 and "--repo" in r.stderr)
     check(
         "catalog: the goal page lists the arm, marked as filed under the goal",
         "tickets_lead2_v1" in html and "filed" in html,
