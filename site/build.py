@@ -948,9 +948,7 @@ def home(f: dict) -> str:
         f'<a href="{href}">{e(label)} →</a></div>'
         for i, (qn, found, href, label) in enumerate(why, 1)
     )
-    goal_links = " · ".join(
-        f'<a href="{CATALOG}{x["goal"]["goal_page"]}">{e(x["bench"])}</a>' for x in exps
-    )
+    goal_links = " · ".join(f'<a href="{CATALOG}{x["goal"]["goal_page"]}">{e(x["bench"])}</a>' for x in exps)
     # Step 2: each benchmark as its own field, the same strips as the experiments page.
     benches = "".join(
         f'<a class="bench-row reveal" href="experiments/{x["slug"]}.html" aria-label="{e(x["bench"])}: '
@@ -1044,9 +1042,7 @@ def landing(f: dict) -> str:
         f'<figure class="reveal" style="margin-bottom:10px">{both(strip(x), strip(x, compact=True))}</figure>'
         for x in exps
     )
-    goal_links = " · ".join(
-        f'<a href="{CATALOG}{x["goal"]["goal_page"]}">{e(x["bench"])}</a>' for x in exps
-    )
+    goal_links = " · ".join(f'<a href="{CATALOG}{x["goal"]["goal_page"]}">{e(x["bench"])}</a>' for x in exps)
     tie_rows = "".join(
         f'<tr><td class="exp"><a href="experiments/{x["slug"]}.html">{e(x["task"])} · {e(x["bench"])}</a></td>'
         f'<td class="num" data-label="first place">{e(x["top"]["arm"])}</td>'
@@ -1635,7 +1631,8 @@ def catalog_inspect(x: dict) -> str:
         cid = f"{x['prefix']}{a['arm']}{x['suffix']}"
         require(
             any(
-                (m := json.loads(p.read_text())).get("config_id") == cid and m.get("dataset_id") == x["dataset"]
+                (m := json.loads(p.read_text())).get("config_id") == cid
+                and m.get("dataset_id") == x["dataset"]
                 for p in (figures.DATA / x["base"]).glob(f"{cid}*/metrics.json")
             ),
             f"{x['slug']}: a committed run of {cid} on {x['dataset']} for the inspector link",

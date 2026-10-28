@@ -140,7 +140,11 @@ try:
         "--about: its HTML is on the overview, under the description, and on no other page",
         '<div class="about"><p id="deploy-about">Our six experiments.</p></div>'
         in (about_out / "index.html").read_text()
-        and not [p.name for p in about_out.rglob("*.html") if p.name != "index.html" and "deploy-about" in p.read_text()],
+        and not [
+            p.name
+            for p in about_out.rglob("*.html")
+            if p.name != "index.html" and "deploy-about" in p.read_text()
+        ],
     )
     check(
         "build: without --about the overview has no about block",
@@ -1015,9 +1019,23 @@ try:
     (env_root / "about.html").write_text("<p>Ours.</p>\n")
     proc = subprocess.run(
         [
-            sys.executable, str(HERE / "cli.py"), "catalog", "--out", str(env_root / ".build/catalog-opts"),
-            "--link", "Site=https://s.example/", "--link", "Catalog=.", "--brand", "deploy-brand",
-            "--api", "/catalog/api/", "--head", str(env_root / "head.html"), "--about", str(env_root / "about.html"),
+            sys.executable,
+            str(HERE / "cli.py"),
+            "catalog",
+            "--out",
+            str(env_root / ".build/catalog-opts"),
+            "--link",
+            "Site=https://s.example/",
+            "--link",
+            "Catalog=.",
+            "--brand",
+            "deploy-brand",
+            "--api",
+            "/catalog/api/",
+            "--head",
+            str(env_root / "head.html"),
+            "--about",
+            str(env_root / "about.html"),
         ],
         cwd=env_root,
         capture_output=True,
@@ -1030,7 +1048,12 @@ try:
         for p in opt_pages
         if not all(
             s in p.read_text()
-            for s in ('class="sections"', "<span>deploy-brand</span>", 'content="ours"', 'data-api="/catalog/api/"')
+            for s in (
+                'class="sections"',
+                "<span>deploy-brand</span>",
+                'content="ours"',
+                'data-api="/catalog/api/"',
+            )
         )
     ]
     check(

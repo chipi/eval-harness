@@ -2127,6 +2127,7 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
         ("status", g.get("status", "")),
     ]
     dl = "".join(f"<dt>{e(k)}</dt><dd>{e(v)}</dd>" for k, v in facts if v not in ("", None))
+
     # Rules in words no number checks: shown, never computed.
     def source(s: str) -> str:
         m = _PATH_HEAD.match(s)
@@ -3279,7 +3280,9 @@ def main() -> int:
         HEAD = args.head.read_text(encoding="utf-8").strip() + "\n"
     if args.repo:
         if not args.repo.startswith(("https://", "http://")):
-            raise SystemExit(f"--repo {args.repo!r}: expected https://..., where the project's files can be read")
+            raise SystemExit(
+                f"--repo {args.repo!r}: expected https://..., where the project's files can be read"
+            )
         REPO = args.repo if args.repo.endswith("/") else args.repo + "/"
     if args.about:
         if not args.about.is_file():
