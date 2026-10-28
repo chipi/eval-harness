@@ -1,0 +1,40 @@
+{
+  "dataset_id": "tiny_v1",
+  "harness": "0.4.4",
+  "items": {
+    "kind": "text",
+    "n": 2,
+    "words": {
+      "histogram": [
+        [
+          42,
+          42,
+          2
+        ]
+      ],
+      "max": 42,
+      "median": 42,
+      "min": 42,
+      "p25": 42,
+      "p75": 42
+    }
+  },
+  "items_sha256": "93f4e56f730dfd2bce8b824ce73203e9de239352ad2fe4d88693bc4c83244a17",
+  "made_at": "2026-10-28T22:57:33Z",
+  "references": [],
+  "rows": [
+    {
+      "item_id": "item_01",
+      "reference": {},
+      "text": "Sample item 01.\n\nThis stands in for whatever your system consumes \u2014 a transcript, a\nticket, a document, a diff. The skeleton does not care what it is; it\ncares that the bytes are frozen and hashed, so two runs are comparable.\n",
+      "words": 42
+    },
+    {
+      "item_id": "item_02",
+      "reference": {},
+      "text": "Sample item 02.\n\nThis stands in for whatever your system consumes \u2014 a transcript, a\nticket, a document, a diff. The skeleton does not care what it is; it\ncares that the bytes are frozen and hashed, so two runs are comparable.\n",
+      "words": 42
+    }
+  ],
+  "source": null
+}

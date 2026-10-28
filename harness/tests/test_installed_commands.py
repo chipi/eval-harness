@@ -134,6 +134,8 @@ def main() -> int:
                 "already exists",
             ),
             ("dataset-materialize", ["--dataset-id", "tickets_v1"], "ok"),
+            ("dataset-profile", ["--dataset-id", "tickets_v1"], "ok:tickets_v1: 6 items"),
+            ("dataset-items", ["--dataset-id", "tickets_v1"], "ok:6 items"),
             (
                 "reference-create",
                 ["--dataset-id", "tickets_v1", "--config", "data/configs/tickets_author.yaml"],

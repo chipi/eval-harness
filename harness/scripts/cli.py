@@ -35,6 +35,14 @@ COMMANDS = {
     "env-check": ("env_check.py", "check the Python environment and keys"),
     "dataset-create": ("dataset_create.py", "freeze a dataset: item list + per-item sha256"),
     "dataset-materialize": ("materialize.py", "hash-checked working copy of a dataset"),
+    "dataset-profile": (
+        "dataset_profile.py",
+        "what is inside a dataset, without its text: items, lengths, the gold's shape, a link per item",
+    ),
+    "dataset-items": (
+        "dataset_items.py",
+        "a dataset's profile: its shape, then one row per item (--item for one)",
+    ),
     "reference-create": ("reference_create.py", "make references from a run (--from-run) or with a config"),
     "reference-manifest": (
         "reference_manifest.py",

@@ -70,7 +70,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2] / "harness"
 DATASET = "BeIR/scifact"
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "_shared"))
-from hf_rows import DEFAULT_DELAY  # noqa: E402
+from hf_rows import DEFAULT_DELAY, Sources  # noqa: E402
 from hf_rows import page as _rows_page  # noqa: E402 - the one retry/pacing schedule
 
 QRELS = "BeIR/scifact-qrels"
@@ -194,6 +194,7 @@ def main() -> int:
     print("queries: downloading")
     q_rows = _page_all(DATASET, "queries", "queries", args.delay, "queries")
     text_of = {str(r["_id"]): (r.get("text") or "").strip() for r in q_rows}
+    row_of = {str(r["_id"]): r for r in q_rows}
     test_ids = sorted(qid for qid in rel if text_of.get(qid))
     missing = [qid for qid in rel if not text_of.get(qid)]
     if missing:
@@ -219,13 +220,16 @@ def main() -> int:
     golds.mkdir(parents=True, exist_ok=True)
 
     n_rel = collections.Counter()
+    where = Sources(DATASET, "queries", "queries")
     for qid in chosen:
+        where.record(qid, row_of[qid])
         (sources / f"{qid}.txt").write_text(text_of[qid], encoding="utf-8")
         judged = sorted(rel[qid], key=lambda d: d["doc_id"])
         (golds / f"{qid}.txt").write_text(
             json.dumps(judged, ensure_ascii=False, separators=(",", ":")), encoding="utf-8"
         )
         n_rel[len(judged)] += 1
+    where.write(ROOT, dataset_id)
 
     in_corpus = {d["doc_id"] for d in docs}
     dangling = sum(1 for qid in chosen for d in rel[qid] if d["doc_id"] not in in_corpus)

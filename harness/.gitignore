@@ -121,6 +121,9 @@ data/references/silver/cnn_dailymail_*/*
 # downloading a third-party corpus and remembering to ignore it is the window in which it
 # gets committed to a public repo.
 data/sources/ag_news_*/
+# Each fetcher's map of item to source row (examples/_shared/hf_rows.Sources): what
+# `evh dataset-profile` reads; the committed record of it is the profile (data/profiles/).
+data/sources/*.rows.json
 data/references/gold/ag_news_*/*
 data/references/silver/ag_news_*/*
 

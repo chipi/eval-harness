@@ -73,7 +73,7 @@ ROOT = Path(__file__).resolve().parents[2] / "harness"
 DATASET = "fancyzhx/dbpedia_14"
 CONFIG = "dbpedia_14"
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "_shared"))
-from hf_rows import DEFAULT_DELAY  # noqa: E402
+from hf_rows import DEFAULT_DELAY, Sources  # noqa: E402
 from hf_rows import page as _rows_page  # noqa: E402 - the one retry/pacing schedule
 
 #: The dataset's own label order. Index IS the stored integer; do not reorder.
@@ -191,13 +191,16 @@ def main() -> int:
 
     sources.mkdir(parents=True, exist_ok=True)
     golds.mkdir(parents=True, exist_ok=True)
+    where = Sources(DATASET, CONFIG, "test")
     for row in rows:
         text = item_text(row)
         item = item_id(text)
+        where.record(item, row)
         (sources / f"{item}.txt").write_text(text, encoding="utf-8")
         # One word, no trailing newline: a reference differing from the answer by
         # whitespace is a scoring bug waiting to be blamed on the model.
         (golds / f"{item}.txt").write_text(LABELS[int(row["label"])], encoding="utf-8")
+    where.write(ROOT, dataset_id)
 
     got = collections.Counter(LABELS[int(r["label"])] for r in rows)
     words = sorted(len(item_text(r).split()) for r in rows)

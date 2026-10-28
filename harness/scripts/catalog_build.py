@@ -1682,7 +1682,13 @@ def render_dataset(A: Adapter, ds: str, v: dict, out: Path, nav: list) -> None:
             "filter arms",
         ),
     )
-    n = 1
+    n = 2
+    biggest: tuple[str, list[str]] = max(
+        ((m, members) for (m, _ref), members in groups.items() if len(members) >= 2),
+        key=lambda x: len(x[1]),
+        default=("", []),
+    )
+    body += block("02", "what's inside", render_inside(A, ds, biggest[1][:INSPECT_MAX], biggest[0]), "inside")
     if v.get("versions"):
         n += 1
         body += block(f"{n:02d}", "versions", v["versions"], "versions")
@@ -1702,6 +1708,106 @@ def _show(v, field: dict) -> str:
         return f"{secs // 3600}:{secs % 3600 // 60:02d}:{secs % 60:02d}"
     s = fmt(v) if isinstance(v, float) else str(v)
     return s + (f" {field['unit']}" if field.get("unit") else "")
+
+
+def _gold_line(r: dict) -> str:
+    """One gold reference's shape, in words."""
+    if r["shape"] == "labels":
+        n = sum(r["labels"].values()) or 1
+        cells = "".join(
+            f"<tr><td>{e(k)}</td><td>{v}</td><td>{v / n:.0%}</td></tr>"
+            for k, v in sorted(r["labels"].items(), key=lambda kv: (-kv[1], kv[0]))
+        )
+        return (
+            f"<p>{reference_link(r['id'], '../')}: {len(r['labels'])} labels</p>"
+            f'<div class="scroll-x"><table class="data"><thead><tr><th>label</th><th>items</th><th>share</th></tr>'
+            f"</thead><tbody>{cells}</tbody></table></div>"
+        )
+    if r["shape"] == "lists":
+        x = r["entries"]
+        what = f"a list per item, {x['min']}–{x['max']} entries, median {x['median']}"
+    elif r["shape"] == "record":
+        what = "a record per item: " + ", ".join(f"<code>{e(k)}</code>" for k in r["keys"])
+    elif r["shape"] == "text":
+        x = r["words"]
+        what = f"text, {x['min']}–{x['max']} words, median {x['median']}"
+    else:
+        what = e(r.get("note") or "not on the machine that wrote the profile")
+    return f"<p>{reference_link(r['id'], '../')}: {what}</p>"
+
+
+def render_inside(A: Adapter, ds: str, inspect_arms: list[str], metric: str) -> str:
+    """What is inside the dataset (data/profiles/<ds>.json): how many items and how long, the gold's
+    shape, then one row per item with its length, its gold and where it can be read at its source.
+    No item text unless the profile carries it, which `evh dataset-profile --with-text` allows only
+    for text git already tracks."""
+    from evaluation_harness import catalog_charts as ch  # noqa: PLC0415
+
+    fn = getattr(A, "dataset_profile", None)
+    p = fn(ds) if callable(fn) else None
+    if not p:
+        return (
+            f'<p class="muted">No profile yet. Where the dataset is materialized, '
+            f"<code>evh dataset-profile --dataset-id {e(ds)}</code> writes one: its {e(A.item_word)}s, how long "
+            f"they are, the gold's shape and where each can be read.</p>"
+        )
+    it, w = p["items"], p["items"].get("words") or {}
+    src = p.get("source")
+    lines = [
+        (
+            f"{it['n']} {e(A.item_word)}s, {e(it.get('kind', 'text'))}, {w.get('min', 0)}–{w.get('max', 0)} words "
+            f"(median {w.get('median', 0)}, middle half {w.get('p25', 0)}–{w.get('p75', 0)})."
+        )
+    ]
+    if src:
+        lines.append(
+            f'Source: <a href="{e(src["url"])}" rel="noopener">{e(src["name"])}</a>'
+            + (f" ({e(src['split'])} split)" if src.get("split") else "")
+            + f". The text stays there; each {e(A.item_word)} below links to its row."
+        )
+    if p.get("stale"):
+        lines.append(
+            f'<span class="note">The items changed since this profile was written: run '
+            f"<code>evh dataset-profile --dataset-id {e(ds)}</code> again.</span>"
+        )
+    head = "".join(f"<p>{x}</p>" for x in lines)
+    chart = (
+        ch.histogram(w["histogram"], f"{ds}: words per {A.item_word}", "words") if w.get("histogram") else ""
+    )
+    golds = "".join(_gold_line(r) for r in p.get("references") or [])
+    gold_ids = [r["id"] for r in p.get("references") or [] if r.get("shape") not in (None, "absent")]
+    has_text = any(r.get("text") for r in p["rows"])
+    rows = []
+    for r in p["rows"]:
+        k = r["item_id"]
+        links = [
+            f'<a href="{e(r["source_url"])}" rel="noopener">source ↗</a>' if r.get("source_url") else "",
+            f'<a href="{inspect_url(inspect_arms, "../", metric=metric, item=k)}">inspect</a>'
+            if len(inspect_arms) >= 2
+            else "",
+        ]
+        cells = [
+            f'<code class="small" title="{e(k)}">{e(k[:12])}</code>',
+            str(r["words"]),
+            "; ".join(e(r["reference"].get(g, "")) for g in gold_ids) or "—",
+            " · ".join(x for x in links if x) or "—",
+        ]
+        if has_text:
+            t = r.get("text") or ""
+            cells.insert(
+                1, f'<details><summary class="small">{e(t[:80])}…</summary>{e(t)}</details>' if t else "—"
+            )
+        rows.append(cells)
+    heads = [f"{e(A.item_word)}", *(["text"] if has_text else []), "words", "gold", "open"]
+    return (
+        head
+        + chart
+        + (f'<p class="eyebrow small">the gold</p>{golds}' if golds else "")
+        + table("inside-items", heads, rows, f"filter {A.item_word}s")
+        + '<p class="small muted">Each row is the profile <code>evh dataset-items --dataset-id '
+        + f"{e(ds)}</code> prints; <b>inspect</b> opens the {e(A.item_word)} in the inspector with the dataset's "
+        + "largest group of comparable arms, and its text where the inspector runs on a machine that has it.</p>"
+    )
 
 
 def render_fields(A: Adapter, ds: str) -> str:

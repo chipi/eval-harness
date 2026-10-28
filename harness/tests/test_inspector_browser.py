@@ -315,6 +315,13 @@ def drive(base: str, overview: str = "") -> None:
             page.locator("details.srcbox").count() == 1
             and "item itself" in page.locator("details.srcbox summary").inner_text(),
         )
+        ep = page.locator("tr.eprow").nth(2).get_attribute("data-ep")
+        page.goto(f"{base}inspect.html?runs={arms}&item={ep}")
+        page.wait_for_selector(".outgrid", timeout=15000)
+        check(
+            "inspector: ?item= (a dataset page's inspect link) opens that item",
+            page.locator("tr.eprow.on").get_attribute("data-ep") == ep,
+        )
 
         page.goto(base + "d/tickets_v1.html")
         ftable = page.locator("table#fields").inner_text()

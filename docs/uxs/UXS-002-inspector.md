@@ -45,6 +45,8 @@ with `evh inspect --round rN`); comparing arms across datasets.
 `inspect.html?runs=<arm>,<arm>,...&baseline=<arm>&metric=<name>&where=<field>:<value>&by=<field>`.
 Links from the catalog may also carry `family` and `threshold`, so a verdict reached from a
 goal page matches the one that page implied. Every control rewrites the URL and reloads.
+`&item=<id>` opens that item's view once the comparison has loaded (a dataset page's **inspect**
+link); an item the arms do not share says so instead.
 
 ## Choosing arms
 

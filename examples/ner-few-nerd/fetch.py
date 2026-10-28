@@ -84,7 +84,7 @@ ROOT = Path(__file__).resolve().parents[2] / "harness"
 DATASET = "DFKI-SLT/few-nerd"
 CONFIG = "supervised"
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "_shared"))
-from hf_rows import DEFAULT_DELAY  # noqa: E402
+from hf_rows import DEFAULT_DELAY, Sources  # noqa: E402
 from hf_rows import page as _rows_page  # noqa: E402 - the one retry/pacing schedule
 
 SPLIT_ROWS = 37648  # `supervised` test split; re-checked at fetch time
@@ -189,18 +189,21 @@ def main() -> int:
     golds.mkdir(parents=True, exist_ok=True)
     counts: collections.Counter = collections.Counter()
     empty = 0
+    where = Sources(DATASET, CONFIG, "test")
     for row in rows:
         text = " ".join(row["tokens"])
         ents = entities(row["tokens"], row["ner_tags"])
         counts.update(e["type"] for e in ents)
         empty += not ents
         item = item_id(text)
+        where.record(item, row)
         (sources / f"{item}.txt").write_text(text, encoding="utf-8")
         # A JSON array, not a word: the answer to this task is a SET. Sorted and
         # separator-normalised so the file is byte-stable for the dataset hash.
         (golds / f"{item}.txt").write_text(
             json.dumps(ents, ensure_ascii=False, separators=(",", ":")), encoding="utf-8"
         )
+    where.write(ROOT, dataset_id)
 
     n_ents = sum(counts.values())
     print(f"\n{len(rows)} sentence(s) written, seed {args.seed}")

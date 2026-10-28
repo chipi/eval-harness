@@ -40,6 +40,12 @@ against it is describing bytes that no longer exist.
 `evh dataset-materialize` re-verifies every hash and fails loudly rather than
 quietly measuring something else.
 
+What a dataset holds can be shown without its text, which its licence may not let you
+publish: `evh dataset-profile --dataset-id my_corpus_v1`, where it is materialized, writes
+`data/profiles/my_corpus_v1.json` (how many items and how long, the gold's labels or shape,
+each item's link to its source when one is recorded). Commit it, and the dataset's catalog
+page shows "what's inside"; `evh dataset-items` prints it.
+
 When data genuinely changes, that is a new version — `my_corpus_v2` — never an
 edit in place. The new version names the one it came from (`--from my_corpus_v1`) and records
 the items it adds, removes and changes, so "what changed between v1 and v2?" has an answer

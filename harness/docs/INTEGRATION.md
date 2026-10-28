@@ -322,6 +322,7 @@ evh init
 cp some/real/items/* data/sources/            # your data
 evh dataset-create --dataset-id pilot_v1 --limit 10
 evh dataset-materialize --dataset-id pilot_v1
+evh dataset-profile --dataset-id pilot_v1              # what is inside, for its catalog page
 
 $EDITOR adapter.py                            # call_system() -> your code
 git add -A && git commit -m "pilot_v1, adapter, arms"   # a run from a dirty tree cannot become a reference

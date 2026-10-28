@@ -152,6 +152,11 @@
       tr.onclick = () => drill(tr.dataset.ep, arms, d.baseline, label, ref, tr);
       tr.onkeydown = ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); tr.onclick(); } };
     });
+    // ?item=<id>: a dataset page's "inspect" link opens that item (when the arms share it).
+    const want = P.get('item');
+    const hit = want && [...app.querySelectorAll('tr.eprow')].find(tr => tr.dataset.ep === want);
+    if (hit) hit.onclick();
+    else if (want) document.getElementById('drill').innerHTML = `<p class="note">${esc(ITEM)} ${esc(want)} is not among the ${ITEMS} these arms share.</p>`;
   }
 
 

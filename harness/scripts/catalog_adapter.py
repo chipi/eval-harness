@@ -52,6 +52,7 @@ from evaluation_harness._common import (  # noqa: E402
     load_module,
 )
 from evaluation_harness._fields import fieldset_problems, load_fieldset  # noqa: E402 -- part of the adapter contract
+from evaluation_harness._fingerprint import items_digest  # noqa: E402
 from evaluation_harness._record import derived_with  # noqa: E402
 from evaluation_harness._runs import item_rows, lower_is_better_on, runs_on, score_of  # noqa: E402
 
@@ -196,6 +197,11 @@ class Adapter(Protocol):
     # Optional: when a dataset was frozen (ISO); the home page counts it new from that day, and
     # from its first run when this is absent or "".
     # def dataset_created(self, dataset: str) -> str: ...
+    # Optional: what is inside a dataset, without its text (`evh dataset-profile` writes it to
+    # data/profiles/<dataset>.json): {"items": {"n", "kind", "words"}, "references": [...],
+    # "rows": [{"item_id", "words", "reference", "source_url"?, "text"?}], "source", "items_sha256"},
+    # or None; the dataset page shows it.
+    # def dataset_profile(self, dataset: str) -> Optional[dict]: ...
     # Optional: an arm's runs, oldest first, [{"run_id", "created_at", "items", "cost_usd",
     # "derived"}] ("derived": "" for a measured run, else how it was made: rescore, judge,
     # reparse); the arm page lists them and the home page's activity counts them.
@@ -719,6 +725,16 @@ class HarnessAdapter:
         ds = _json(self.data_dir / "datasets" / f"{dataset}.json")
         got = ds.get("created_at") if isinstance(ds, dict) else None
         return got if isinstance(got, str) else ""
+
+    def dataset_profile(self, dataset: str) -> dict | None:
+        """data/profiles/<dataset>.json (`evh dataset-profile`), with "stale": True when the dataset's
+        items no longer match the version it was computed on; None without one."""
+        p = _json(self.data_dir / "profiles" / f"{dataset}.json")
+        if not isinstance(p, dict) or not p.get("rows"):
+            return None
+        ds = _json(self.data_dir / "datasets" / f"{dataset}.json")
+        now = items_digest(ds) if isinstance(ds, dict) else None
+        return dict(p, stale=bool(now and p.get("items_sha256") and now != p["items_sha256"]))
 
     # -- runs, configs and spend ---------------------------------------------------------
     def arm_runs(self, arm: str) -> list[dict]:

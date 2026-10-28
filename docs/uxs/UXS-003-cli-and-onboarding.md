@@ -96,6 +96,7 @@ answer. Where the page has a `make` target in a checkout, it runs the same scrip
 | any page's period (the chips): its in-period columns, new rows, trends | `--period P` on `evh datasets`, `goals`, `references`, `metrics`, `arms` | `ARGS='--period 30d'` |
 | the datasets page | `evh datasets` | `make datasets` |
 | a dataset page: arms with their cost and speed, baseline, versions, references | `evh datasets --dataset-id <id>` | `make datasets DATASET_ID=<id>` |
+| a dataset page's what's inside: items, words, the gold's shape, each item's row at its source | `evh dataset-items --dataset-id <id> [--item ID]` (written by `evh dataset-profile`) | `make dataset-items DATASET_ID=<id>` |
 | the goals page | `evh goals` | `make goals` |
 | a goal page: the answer so far, arms per dataset and group (a judge's group on its score), retired marks, one line per round | `evh goals --goal <id>` | `make goals GOAL=<id>` |
 | a goal page: its rounds and suggestions (each suggestion's copy button copies its command) | `evh rounds --goal <id> [--round rN]` | `make rounds GOAL=<id>` |

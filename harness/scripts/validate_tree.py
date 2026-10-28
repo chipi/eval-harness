@@ -146,6 +146,7 @@ def v1_schemas() -> None:
         ((DATA / "judging-sets").glob("*.json"), "judging-set.schema.json"),
         ((DATA / "judge-verdicts").glob("*/*/*/*.json"), "verdict.schema.json"),
         ([DATA / "models.yaml"], "models.schema.json"),
+        ((DATA / "profiles").glob("*.json"), "profile.schema.json"),
     ]
     bad = 0
     n = 0

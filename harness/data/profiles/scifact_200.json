@@ -1,0 +1,1713 @@
+{
+  "dataset_id": "scifact_200",
+  "harness": "0.4.4",
+  "items": {
+    "kind": "text",
+    "n": 200,
+    "words": {
+      "histogram": [
+        [
+          4,
+          6,
+          14
+        ],
+        [
+          7,
+          9,
+          50
+        ],
+        [
+          10,
+          12,
+          45
+        ],
+        [
+          13,
+          15,
+          46
+        ],
+        [
+          16,
+          18,
+          14
+        ],
+        [
+          19,
+          21,
+          18
+        ],
+        [
+          22,
+          24,
+          10
+        ],
+        [
+          25,
+          27,
+          2
+        ],
+        [
+          28,
+          30,
+          1
+        ]
+      ],
+      "max": 28,
+      "median": 12,
+      "min": 4,
+      "p25": 9,
+      "p75": 15
+    }
+  },
+  "items_sha256": "b97dfe735a78eb4978cde41e2ca9a0bff424de9e6a0a2bdada5d167e3423004d",
+  "made_at": "2026-10-28T22:57:15Z",
+  "references": [
+    {
+      "entries": {
+        "histogram": [
+          [
+            1,
+            1,
+            184
+          ],
+          [
+            2,
+            2,
+            9
+          ],
+          [
+            3,
+            3,
+            4
+          ],
+          [
+            4,
+            4,
+            2
+          ],
+          [
+            5,
+            5,
+            1
+          ]
+        ],
+        "max": 5,
+        "median": 1,
+        "min": 1,
+        "p25": 1,
+        "p75": 1
+      },
+      "id": "gold/scifact_200",
+      "items": 200,
+      "shape": "lists"
+    }
+  ],
+  "rows": [
+    {
+      "item_id": "100",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=828",
+      "words": 8
+    },
+    {
+      "item_id": "1012",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1023",
+      "words": 9
+    },
+    {
+      "item_id": "1014",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1024",
+      "words": 9
+    },
+    {
+      "item_id": "1020",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1026",
+      "words": 22
+    },
+    {
+      "item_id": "1021",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1027",
+      "words": 22
+    },
+    {
+      "item_id": "1024",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1028",
+      "words": 11
+    },
+    {
+      "item_id": "1029",
+      "reference": {
+        "gold/scifact_200": "3 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1029",
+      "words": 21
+    },
+    {
+      "item_id": "1041",
+      "reference": {
+        "gold/scifact_200": "2 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1030",
+      "words": 15
+    },
+    {
+      "item_id": "1049",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1031",
+      "words": 11
+    },
+    {
+      "item_id": "1088",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1034",
+      "words": 12
+    },
+    {
+      "item_id": "1099",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1036",
+      "words": 4
+    },
+    {
+      "item_id": "1104",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1038",
+      "words": 24
+    },
+    {
+      "item_id": "1107",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1039",
+      "words": 10
+    },
+    {
+      "item_id": "1110",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1040",
+      "words": 8
+    },
+    {
+      "item_id": "1121",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1041",
+      "words": 13
+    },
+    {
+      "item_id": "113",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=829",
+      "words": 13
+    },
+    {
+      "item_id": "1130",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1042",
+      "words": 17
+    },
+    {
+      "item_id": "1144",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1046",
+      "words": 17
+    },
+    {
+      "item_id": "115",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=830",
+      "words": 11
+    },
+    {
+      "item_id": "1163",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1049",
+      "words": 10
+    },
+    {
+      "item_id": "1175",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1050",
+      "words": 8
+    },
+    {
+      "item_id": "118",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=831",
+      "words": 12
+    },
+    {
+      "item_id": "1185",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1053",
+      "words": 28
+    },
+    {
+      "item_id": "1187",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1054",
+      "words": 23
+    },
+    {
+      "item_id": "1191",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1055",
+      "words": 11
+    },
+    {
+      "item_id": "1194",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1056",
+      "words": 21
+    },
+    {
+      "item_id": "1196",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1057",
+      "words": 12
+    },
+    {
+      "item_id": "1199",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1059",
+      "words": 18
+    },
+    {
+      "item_id": "1200",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1060",
+      "words": 21
+    },
+    {
+      "item_id": "1204",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1062",
+      "words": 14
+    },
+    {
+      "item_id": "1207",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1063",
+      "words": 20
+    },
+    {
+      "item_id": "1213",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1064",
+      "words": 13
+    },
+    {
+      "item_id": "1216",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1065",
+      "words": 11
+    },
+    {
+      "item_id": "1225",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1067",
+      "words": 8
+    },
+    {
+      "item_id": "124",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=832",
+      "words": 13
+    },
+    {
+      "item_id": "1245",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1071",
+      "words": 10
+    },
+    {
+      "item_id": "1259",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1072",
+      "words": 21
+    },
+    {
+      "item_id": "1262",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1073",
+      "words": 12
+    },
+    {
+      "item_id": "1266",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1074",
+      "words": 23
+    },
+    {
+      "item_id": "127",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=833",
+      "words": 10
+    },
+    {
+      "item_id": "1270",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1075",
+      "words": 14
+    },
+    {
+      "item_id": "1271",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1076",
+      "words": 21
+    },
+    {
+      "item_id": "1272",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1077",
+      "words": 12
+    },
+    {
+      "item_id": "1273",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1078",
+      "words": 11
+    },
+    {
+      "item_id": "1274",
+      "reference": {
+        "gold/scifact_200": "3 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1079",
+      "words": 25
+    },
+    {
+      "item_id": "1278",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1080",
+      "words": 15
+    },
+    {
+      "item_id": "1279",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1081",
+      "words": 12
+    },
+    {
+      "item_id": "128",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=834",
+      "words": 8
+    },
+    {
+      "item_id": "1280",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1082",
+      "words": 14
+    },
+    {
+      "item_id": "1281",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1083",
+      "words": 10
+    },
+    {
+      "item_id": "1282",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1084",
+      "words": 15
+    },
+    {
+      "item_id": "129",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=835",
+      "words": 15
+    },
+    {
+      "item_id": "1292",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1086",
+      "words": 10
+    },
+    {
+      "item_id": "1298",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1087",
+      "words": 23
+    },
+    {
+      "item_id": "13",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=812",
+      "words": 10
+    },
+    {
+      "item_id": "130",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=836",
+      "words": 15
+    },
+    {
+      "item_id": "1303",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1088",
+      "words": 7
+    },
+    {
+      "item_id": "1316",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1089",
+      "words": 10
+    },
+    {
+      "item_id": "1319",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1090",
+      "words": 10
+    },
+    {
+      "item_id": "132",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=837",
+      "words": 6
+    },
+    {
+      "item_id": "1320",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1091",
+      "words": 16
+    },
+    {
+      "item_id": "133",
+      "reference": {
+        "gold/scifact_200": "5 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=838",
+      "words": 19
+    },
+    {
+      "item_id": "1335",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1093",
+      "words": 9
+    },
+    {
+      "item_id": "1336",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1094",
+      "words": 8
+    },
+    {
+      "item_id": "1339",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1096",
+      "words": 13
+    },
+    {
+      "item_id": "1359",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1099",
+      "words": 20
+    },
+    {
+      "item_id": "1362",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1100",
+      "words": 8
+    },
+    {
+      "item_id": "137",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=839",
+      "words": 13
+    },
+    {
+      "item_id": "1379",
+      "reference": {
+        "gold/scifact_200": "4 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1104",
+      "words": 16
+    },
+    {
+      "item_id": "1385",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1106",
+      "words": 6
+    },
+    {
+      "item_id": "1389",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1107",
+      "words": 8
+    },
+    {
+      "item_id": "1395",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1108",
+      "words": 21
+    },
+    {
+      "item_id": "142",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=841",
+      "words": 20
+    },
+    {
+      "item_id": "143",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=842",
+      "words": 17
+    },
+    {
+      "item_id": "146",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=843",
+      "words": 18
+    },
+    {
+      "item_id": "148",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=844",
+      "words": 5
+    },
+    {
+      "item_id": "163",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=845",
+      "words": 9
+    },
+    {
+      "item_id": "179",
+      "reference": {
+        "gold/scifact_200": "4 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=847",
+      "words": 7
+    },
+    {
+      "item_id": "180",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=848",
+      "words": 19
+    },
+    {
+      "item_id": "185",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=850",
+      "words": 9
+    },
+    {
+      "item_id": "198",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=851",
+      "words": 5
+    },
+    {
+      "item_id": "212",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=853",
+      "words": 7
+    },
+    {
+      "item_id": "213",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=854",
+      "words": 14
+    },
+    {
+      "item_id": "216",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=855",
+      "words": 9
+    },
+    {
+      "item_id": "218",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=857",
+      "words": 8
+    },
+    {
+      "item_id": "219",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=858",
+      "words": 8
+    },
+    {
+      "item_id": "232",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=860",
+      "words": 12
+    },
+    {
+      "item_id": "236",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=862",
+      "words": 10
+    },
+    {
+      "item_id": "239",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=865",
+      "words": 8
+    },
+    {
+      "item_id": "248",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=866",
+      "words": 7
+    },
+    {
+      "item_id": "249",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=867",
+      "words": 7
+    },
+    {
+      "item_id": "269",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=870",
+      "words": 5
+    },
+    {
+      "item_id": "275",
+      "reference": {
+        "gold/scifact_200": "3 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=872",
+      "words": 14
+    },
+    {
+      "item_id": "294",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=874",
+      "words": 12
+    },
+    {
+      "item_id": "295",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=875",
+      "words": 18
+    },
+    {
+      "item_id": "303",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=878",
+      "words": 13
+    },
+    {
+      "item_id": "312",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=879",
+      "words": 14
+    },
+    {
+      "item_id": "324",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=881",
+      "words": 5
+    },
+    {
+      "item_id": "343",
+      "reference": {
+        "gold/scifact_200": "2 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=884",
+      "words": 15
+    },
+    {
+      "item_id": "350",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=885",
+      "words": 14
+    },
+    {
+      "item_id": "362",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=887",
+      "words": 24
+    },
+    {
+      "item_id": "380",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=888",
+      "words": 12
+    },
+    {
+      "item_id": "385",
+      "reference": {
+        "gold/scifact_200": "2 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=890",
+      "words": 13
+    },
+    {
+      "item_id": "386",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=891",
+      "words": 16
+    },
+    {
+      "item_id": "388",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=892",
+      "words": 9
+    },
+    {
+      "item_id": "399",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=893",
+      "words": 11
+    },
+    {
+      "item_id": "410",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=894",
+      "words": 9
+    },
+    {
+      "item_id": "411",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=895",
+      "words": 9
+    },
+    {
+      "item_id": "415",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=896",
+      "words": 13
+    },
+    {
+      "item_id": "421",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=897",
+      "words": 13
+    },
+    {
+      "item_id": "431",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=898",
+      "words": 12
+    },
+    {
+      "item_id": "436",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=899",
+      "words": 13
+    },
+    {
+      "item_id": "439",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=901",
+      "words": 13
+    },
+    {
+      "item_id": "440",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=902",
+      "words": 13
+    },
+    {
+      "item_id": "443",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=903",
+      "words": 9
+    },
+    {
+      "item_id": "475",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=905",
+      "words": 10
+    },
+    {
+      "item_id": "478",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=906",
+      "words": 24
+    },
+    {
+      "item_id": "48",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=815",
+      "words": 14
+    },
+    {
+      "item_id": "491",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=907",
+      "words": 14
+    },
+    {
+      "item_id": "50",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=817",
+      "words": 7
+    },
+    {
+      "item_id": "501",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=908",
+      "words": 7
+    },
+    {
+      "item_id": "502",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=909",
+      "words": 16
+    },
+    {
+      "item_id": "507",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=910",
+      "words": 15
+    },
+    {
+      "item_id": "51",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=818",
+      "words": 9
+    },
+    {
+      "item_id": "514",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=913",
+      "words": 19
+    },
+    {
+      "item_id": "517",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=915",
+      "words": 8
+    },
+    {
+      "item_id": "521",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=916",
+      "words": 25
+    },
+    {
+      "item_id": "527",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=918",
+      "words": 17
+    },
+    {
+      "item_id": "528",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=919",
+      "words": 24
+    },
+    {
+      "item_id": "53",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=819",
+      "words": 10
+    },
+    {
+      "item_id": "532",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=920",
+      "words": 7
+    },
+    {
+      "item_id": "533",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=921",
+      "words": 7
+    },
+    {
+      "item_id": "535",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=922",
+      "words": 9
+    },
+    {
+      "item_id": "539",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=924",
+      "words": 6
+    },
+    {
+      "item_id": "540",
+      "reference": {
+        "gold/scifact_200": "2 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=925",
+      "words": 8
+    },
+    {
+      "item_id": "544",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=926",
+      "words": 9
+    },
+    {
+      "item_id": "549",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=927",
+      "words": 7
+    },
+    {
+      "item_id": "552",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=929",
+      "words": 20
+    },
+    {
+      "item_id": "56",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=821",
+      "words": 15
+    },
+    {
+      "item_id": "560",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=931",
+      "words": 13
+    },
+    {
+      "item_id": "57",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=822",
+      "words": 15
+    },
+    {
+      "item_id": "577",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=934",
+      "words": 24
+    },
+    {
+      "item_id": "589",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=937",
+      "words": 21
+    },
+    {
+      "item_id": "597",
+      "reference": {
+        "gold/scifact_200": "3 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=939",
+      "words": 7
+    },
+    {
+      "item_id": "598",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=940",
+      "words": 21
+    },
+    {
+      "item_id": "619",
+      "reference": {
+        "gold/scifact_200": "2 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=942",
+      "words": 15
+    },
+    {
+      "item_id": "623",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=943",
+      "words": 13
+    },
+    {
+      "item_id": "637",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=946",
+      "words": 13
+    },
+    {
+      "item_id": "641",
+      "reference": {
+        "gold/scifact_200": "2 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=947",
+      "words": 9
+    },
+    {
+      "item_id": "649",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=949",
+      "words": 13
+    },
+    {
+      "item_id": "659",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=950",
+      "words": 7
+    },
+    {
+      "item_id": "660",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=951",
+      "words": 6
+    },
+    {
+      "item_id": "674",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=952",
+      "words": 11
+    },
+    {
+      "item_id": "690",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=954",
+      "words": 19
+    },
+    {
+      "item_id": "692",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=956",
+      "words": 10
+    },
+    {
+      "item_id": "693",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=957",
+      "words": 10
+    },
+    {
+      "item_id": "70",
+      "reference": {
+        "gold/scifact_200": "2 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=823",
+      "words": 6
+    },
+    {
+      "item_id": "700",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=958",
+      "words": 11
+    },
+    {
+      "item_id": "702",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=959",
+      "words": 12
+    },
+    {
+      "item_id": "715",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=960",
+      "words": 15
+    },
+    {
+      "item_id": "721",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=963",
+      "words": 13
+    },
+    {
+      "item_id": "723",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=964",
+      "words": 15
+    },
+    {
+      "item_id": "728",
+      "reference": {
+        "gold/scifact_200": "2 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=966",
+      "words": 12
+    },
+    {
+      "item_id": "729",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=967",
+      "words": 11
+    },
+    {
+      "item_id": "75",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=825",
+      "words": 15
+    },
+    {
+      "item_id": "759",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=972",
+      "words": 19
+    },
+    {
+      "item_id": "768",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=973",
+      "words": 11
+    },
+    {
+      "item_id": "775",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=975",
+      "words": 16
+    },
+    {
+      "item_id": "781",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=976",
+      "words": 14
+    },
+    {
+      "item_id": "783",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=977",
+      "words": 13
+    },
+    {
+      "item_id": "785",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=979",
+      "words": 15
+    },
+    {
+      "item_id": "800",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=981",
+      "words": 19
+    },
+    {
+      "item_id": "805",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=982",
+      "words": 7
+    },
+    {
+      "item_id": "808",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=983",
+      "words": 9
+    },
+    {
+      "item_id": "821",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=987",
+      "words": 8
+    },
+    {
+      "item_id": "831",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=990",
+      "words": 12
+    },
+    {
+      "item_id": "832",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=991",
+      "words": 6
+    },
+    {
+      "item_id": "834",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=992",
+      "words": 10
+    },
+    {
+      "item_id": "837",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=993",
+      "words": 8
+    },
+    {
+      "item_id": "839",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=994",
+      "words": 14
+    },
+    {
+      "item_id": "847",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=996",
+      "words": 18
+    },
+    {
+      "item_id": "859",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=998",
+      "words": 7
+    },
+    {
+      "item_id": "870",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=999",
+      "words": 4
+    },
+    {
+      "item_id": "879",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1001",
+      "words": 10
+    },
+    {
+      "item_id": "880",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1002",
+      "words": 8
+    },
+    {
+      "item_id": "882",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1003",
+      "words": 10
+    },
+    {
+      "item_id": "887",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1004",
+      "words": 12
+    },
+    {
+      "item_id": "903",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1005",
+      "words": 9
+    },
+    {
+      "item_id": "907",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1007",
+      "words": 17
+    },
+    {
+      "item_id": "911",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1008",
+      "words": 14
+    },
+    {
+      "item_id": "913",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1009",
+      "words": 6
+    },
+    {
+      "item_id": "914",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1010",
+      "words": 7
+    },
+    {
+      "item_id": "921",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1011",
+      "words": 10
+    },
+    {
+      "item_id": "922",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1012",
+      "words": 12
+    },
+    {
+      "item_id": "936",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1013",
+      "words": 7
+    },
+    {
+      "item_id": "956",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1014",
+      "words": 13
+    },
+    {
+      "item_id": "960",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1016",
+      "words": 5
+    },
+    {
+      "item_id": "967",
+      "reference": {
+        "gold/scifact_200": "2 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1017",
+      "words": 9
+    },
+    {
+      "item_id": "975",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1019",
+      "words": 9
+    },
+    {
+      "item_id": "993",
+      "reference": {
+        "gold/scifact_200": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/BeIR/scifact/viewer/queries/queries?row=1022",
+      "words": 10
+    }
+  ],
+  "source": {
+    "config": "queries",
+    "name": "BeIR/scifact",
+    "split": "queries",
+    "url": "https://huggingface.co/datasets/BeIR/scifact"
+  }
+}

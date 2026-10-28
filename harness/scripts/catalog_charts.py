@@ -120,6 +120,31 @@ def stacked_bars(
     )
 
 
+def histogram(bins: list[list[int]], label: str, unit: str, width: int = W) -> str:
+    """One bar per bin of [low, high, count], labelled with its range under it."""
+    h = 180
+    top = _nice(max((b[2] for b in bins), default=0))
+    plot_w = width - LEFT - RIGHT
+    bw = plot_w / max(len(bins), 1)
+    bars, ticks = [], []
+    for i, (lo, hi, n) in enumerate(bins):
+        y1 = TOP + (h - TOP - BOTTOM) * (1 - n / top)
+        span = f"{lo}" if lo == hi else f"{lo}–{hi}"
+        if n:
+            bars.append(
+                f'<rect x="{LEFT + bw * i + bw * 0.08:.1f}" y="{y1:.1f}" width="{bw * 0.84:.1f}" '
+                f'height="{max(h - BOTTOM - y1, 0.5):.1f}" fill="{colour(0)}"><title>{_e(span)} {_e(unit)}: '
+                f"{n}</title></rect>"
+            )
+        ticks.append(
+            f'<text x="{LEFT + bw * (i + 0.5):.1f}" y="{h - 8}" text-anchor="middle" class="tick">{_e(span)}</text>'
+        )
+    return (
+        f'<figure class="chart"><svg viewBox="0 0 {width} {h}" role="img" aria-label="{_e(label)}">'
+        f"{_axis(h, top, _num, width)}{''.join(bars)}{''.join(ticks)}</svg></figure>"
+    )
+
+
 def cumulative(days: list[str], series: dict[str, list[float]], label: str, fmt=None, width: int = W) -> str:
     """One line per series: its running total over the days."""
     fmt = fmt or _num

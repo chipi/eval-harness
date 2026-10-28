@@ -1,0 +1,250 @@
+{
+  "dataset_id": "ag_news_20",
+  "harness": "0.4.4",
+  "items": {
+    "kind": "text",
+    "n": 20,
+    "words": {
+      "histogram": [
+        [
+          24,
+          35,
+          6
+        ],
+        [
+          36,
+          47,
+          5
+        ],
+        [
+          48,
+          59,
+          4
+        ],
+        [
+          60,
+          71,
+          4
+        ],
+        [
+          72,
+          83,
+          0
+        ],
+        [
+          84,
+          95,
+          0
+        ],
+        [
+          96,
+          107,
+          0
+        ],
+        [
+          108,
+          119,
+          0
+        ],
+        [
+          120,
+          131,
+          0
+        ],
+        [
+          132,
+          143,
+          1
+        ]
+      ],
+      "max": 136,
+      "median": 47,
+      "min": 24,
+      "p25": 35,
+      "p75": 55
+    }
+  },
+  "items_sha256": "650e107428fff948dc40413a98109258be6d38959f10c8ea7da0218d5be96a0a",
+  "made_at": "2026-10-28T22:13:14Z",
+  "references": [
+    {
+      "id": "gold/ag_news_20",
+      "items": 20,
+      "labels": {
+        "Business": 5,
+        "Sci/Tech": 5,
+        "Sports": 5,
+        "World": 5
+      },
+      "shape": "labels"
+    }
+  ],
+  "rows": [
+    {
+      "item_id": "013ffb81b47fe45a66245a9c43144b83918bd594",
+      "reference": {
+        "gold/ag_news_20": "Business"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/ag_news/viewer/default/test?row=0",
+      "words": 25
+    },
+    {
+      "item_id": "0c47eb9eeb6c6b560fea2627fb2be4d9576384c8",
+      "reference": {
+        "gold/ag_news_20": "Sports"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/ag_news/viewer/default/test?row=27",
+      "words": 67
+    },
+    {
+      "item_id": "0e7de46882b2d57260c38d6e3a9cfbc8f3db34e5",
+      "reference": {
+        "gold/ag_news_20": "Sports"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/ag_news/viewer/default/test?row=29",
+      "words": 69
+    },
+    {
+      "item_id": "108a71f66723dc5db12a630544765268952485f6",
+      "reference": {
+        "gold/ag_news_20": "Sci/Tech"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/ag_news/viewer/default/test?row=5",
+      "words": 136
+    },
+    {
+      "item_id": "2510d175de8d09447896796f971e615a5dadbda8",
+      "reference": {
+        "gold/ag_news_20": "Sports"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/ag_news/viewer/default/test?row=28",
+      "words": 70
+    },
+    {
+      "item_id": "416fc273495b1a666fab41899ed00cdadec0e981",
+      "reference": {
+        "gold/ag_news_20": "World"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/ag_news/viewer/default/test?row=36",
+      "words": 24
+    },
+    {
+      "item_id": "655d89d95924f3e071c2b4d0d1dbf628f70e9fc3",
+      "reference": {
+        "gold/ag_news_20": "Sports"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/ag_news/viewer/default/test?row=26",
+      "words": 31
+    },
+    {
+      "item_id": "7e2d0886edefdb4c879eabfa49f6902b69e7f28f",
+      "reference": {
+        "gold/ag_news_20": "Sci/Tech"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/ag_news/viewer/default/test?row=2",
+      "words": 45
+    },
+    {
+      "item_id": "8df82604abfc6880c9ad9a0a9952aec73e55789e",
+      "reference": {
+        "gold/ag_news_20": "Business"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/ag_news/viewer/default/test?row=41",
+      "words": 41
+    },
+    {
+      "item_id": "a1164f3023b019b6d29d1bb4511e8f218c9c49d0",
+      "reference": {
+        "gold/ag_news_20": "Sci/Tech"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/ag_news/viewer/default/test?row=1",
+      "words": 48
+    },
+    {
+      "item_id": "a787b831978f9afcc5e3d608ea8c0b53b974c9a9",
+      "reference": {
+        "gold/ag_news_20": "World"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/ag_news/viewer/default/test?row=32",
+      "words": 44
+    },
+    {
+      "item_id": "afbd779348f07bb357865de366c640bab429ef33",
+      "reference": {
+        "gold/ag_news_20": "Business"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/ag_news/viewer/default/test?row=58",
+      "words": 30
+    },
+    {
+      "item_id": "bee7c037baed722fed36b3bb9cb286c6f0d789eb",
+      "reference": {
+        "gold/ag_news_20": "Business"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/ag_news/viewer/default/test?row=54",
+      "words": 47
+    },
+    {
+      "item_id": "c2d5dcb0c4694b0e8a0622a3905055fd6a255d80",
+      "reference": {
+        "gold/ag_news_20": "Sci/Tech"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/ag_news/viewer/default/test?row=4",
+      "words": 34
+    },
+    {
+      "item_id": "cbdcc8db3003bc44ee8cf30ac08f1637b7d3307e",
+      "reference": {
+        "gold/ag_news_20": "Sports"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/ag_news/viewer/default/test?row=30",
+      "words": 35
+    },
+    {
+      "item_id": "d2ddffdd6e90ebb323c5784a07778573629d5a87",
+      "reference": {
+        "gold/ag_news_20": "Sci/Tech"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/ag_news/viewer/default/test?row=3",
+      "words": 55
+    },
+    {
+      "item_id": "d8817a3ea9e175345ed7555fd97388f5158ffd88",
+      "reference": {
+        "gold/ag_news_20": "Business"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/ag_news/viewer/default/test?row=59",
+      "words": 46
+    },
+    {
+      "item_id": "e1d8311be5d9402c5219a651a210a522970b1636",
+      "reference": {
+        "gold/ag_news_20": "World"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/ag_news/viewer/default/test?row=33",
+      "words": 52
+    },
+    {
+      "item_id": "e35f3ecb1e02de9d43312d38f8a4fe1558647878",
+      "reference": {
+        "gold/ag_news_20": "World"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/ag_news/viewer/default/test?row=34",
+      "words": 55
+    },
+    {
+      "item_id": "eced564834dbc8ce1126e4d6e25d1c243c01fd7a",
+      "reference": {
+        "gold/ag_news_20": "World"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/ag_news/viewer/default/test?row=35",
+      "words": 64
+    }
+  ],
+  "source": {
+    "config": "default",
+    "name": "fancyzhx/ag_news",
+    "split": "test",
+    "url": "https://huggingface.co/datasets/fancyzhx/ag_news"
+  }
+}

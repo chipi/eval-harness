@@ -279,6 +279,22 @@ tiles open it.
   per item** (p50 and p95 latency in milliseconds, or "not recorded"), **runs** (repeats
   averaged), **scored against** (the reference, linked, or "judge `<scorer>`"), and an
   **inspect** button. Tinted per [row tints](#row-tints). Filterable.
+- `02 what's inside`, from the dataset's profile (`data/profiles/<id>.json`, written by
+  `evh dataset-profile` where the dataset is materialized and committed, so a catalog built anywhere
+  shows it; never the items' text, which may not be redistributable):
+  - one line: "200 items, text, 15–136 words (median 40, middle half 32–46)"; the source, linked,
+    when the profile names one ("The text stays there; each item below links to its row"); and "The
+    items changed since this profile was written", when its items digest is not the dataset's;
+  - a histogram of words per item;
+  - **the gold**: per gold reference its shape: labels in a table (**label**, **items**, **share**),
+    entries per item for a list (entities, ranked ids), the fields of a record (scores), or words
+    per reference for text; "not profiled" when its texts were not where the profile was written;
+  - the items, paged and filterable: **item** (the id, short, the full id in its title), **words**,
+    **gold** (the label, "3 entries", "57 words"), **open**: **source ↗** (its row at the source,
+    when the dataset or its fetcher recorded one) and **inspect** (the inspector on the dataset's
+    largest group of comparable arms, opened at this item). A **text** column only when the
+    profile carries text, which `--with-text` writes only for items git already tracks;
+  - without a profile: "No profile yet", and the command that writes one.
 - `versions`, when the dataset has lineage: "Made from `<parent>`: a added, r removed, c changed"
   with the item ids (the first 12 of each, then …), and "Made into `<child>`: …" for each later
   version, then "Runs on different versions measure different items, so they are never tested

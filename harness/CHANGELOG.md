@@ -9,6 +9,28 @@ The version lives in `scripts/_version.py`; a release is the git tag `v<version>
 release workflow refuses a tag that disagrees with that file or has no section here. A change
 that can move a result is never a patch release without saying so under **Changed**.
 
+## 0.4.5 — unreleased
+
+### Added
+
+- **What is inside a dataset, on its page and as a command.** `evh dataset-profile --dataset-id D`,
+  run where the dataset is materialized, writes `data/profiles/D.json` (`schemas/profile.schema.json`,
+  checked by validate V1): the number of items and their words, the shape of each gold reference
+  (labels and how many of each, entries per item, a record's fields, or words per reference), and
+  per item its length, its gold and, when known, where it can be read at its source. It never holds
+  item text, which a dataset's licence may not let you redistribute; `--with-text` adds it only for
+  items whose source files git already tracks. Commit the profile and the dataset page shows "what's
+  inside" wherever the catalog is built; `evh dataset-items --dataset-id D [--item ID]` prints the
+  same, and an item's text when it is materialized here.
+- **An item's link to its source** comes from the dataset: an item's `source_url`, or a
+  `data/sources/<dataset_id>.rows.json` that a fetch or import step writes (`{"source", "item_url",
+  "rows": {item_id: {"row", "sha256"}}}`), matched by the item's bytes, so an id that recurs in
+  another dataset never takes its link. This repository's Hugging Face fetchers write one, so each
+  item opens at its row in the dataset viewer.
+- **`inspect.html?…&item=ID`** opens that item once the comparison has loaded; a dataset page's
+  **inspect** link uses it.
+- Adapter: `dataset_profile(dataset)`, optional (RFC-003).
+
 ## 0.4.4 — 2026-10-28
 
 The catalog says what it is and links out: `--about` puts a deployment's own paragraph on the

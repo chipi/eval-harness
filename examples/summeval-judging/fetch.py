@@ -30,7 +30,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import shutil
 import sys
 from pathlib import Path
 
@@ -38,6 +37,7 @@ ROOT = Path(__file__).resolve().parents[2] / "harness"
 DATASET = "mteb/summeval"
 CONFIG, SPLIT = "default", "test"
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "_shared"))
+from hf_rows import Sources  # noqa: E402
 from hf_rows import page as _rows_page  # noqa: E402 - the one retry/pacing schedule
 
 DIMS = ("coherence", "consistency", "fluency", "relevance")
@@ -71,16 +71,20 @@ def main() -> int:
         n = len(r["machine_summaries"])
         if n != 16 or any(len(r[d]) != n for d in DIMS) or not r["human_summaries"]:
             sys.exit(f"row {r.get('id')}: incomplete ({n} summaries) -- refusing a partial item")
+    # Only the item files go: the gold's committed manifest.json (its checksums) stays.
     for d in (sources, golds):
-        if d.exists():
-            shutil.rmtree(d)
-        d.mkdir(parents=True)
+        for stale in d.glob("*.txt") if d.exists() else ():
+            stale.unlink()
+        d.mkdir(parents=True, exist_ok=True)
+    where = Sources(DATASET, CONFIG, SPLIT)
     for r in rows:
         item = str(r["id"])
+        where.record(item, r)
         src = {"article": r["text"], "summaries": r["machine_summaries"], "references": r["human_summaries"]}
         gold = {d: [round(float(v), 10) for v in r[d]] for d in DIMS}
         (sources / f"{item}.txt").write_text(json.dumps(src, ensure_ascii=False, indent=1), encoding="utf-8")
         (golds / f"{item}.txt").write_text(json.dumps(gold, indent=1), encoding="utf-8")
+    where.write(ROOT, args.dataset_id)
     refs = sum(len(r["human_summaries"]) for r in rows) / len(rows)
     print(
         f"{len(rows)} articles written ({DATASET}, {SPLIT}): 16 summaries each, "

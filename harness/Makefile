@@ -17,7 +17,7 @@ TIER ?= silver
 
 .PHONY: help demo init env-check install venv-init catalog catalog-serve \
         overview activity datasets arms references metrics goals inspect round-open round-retire round-close rounds \
-        dataset-create dataset-materialize reference-create \
+        dataset-create dataset-materialize dataset-profile dataset-items reference-create \
         holdout pair-test rank-stability \
         experiment-dry-run experiment-run sweep \
         runs-list baselines-list run-compare leaderboard run-promote \
@@ -165,6 +165,14 @@ dataset-create:
 
 dataset-materialize:
 	$(PYTHON) scripts/materialize.py --dataset-id $(DATASET_ID) $(ARGS)
+
+# What is inside a dataset, without its text (data/profiles/<id>.json): written where it is
+# materialized, committed, read by the dataset page and dataset-items.
+dataset-profile:
+	$(PYTHON) scripts/dataset_profile.py --dataset-id $(DATASET_ID) $(ARGS)
+
+dataset-items:
+	$(PYTHON) scripts/dataset_items.py --dataset-id $(DATASET_ID) $(ARGS)
 
 # Author ground truth with a model you trust. SILVER by default (model-generated);
 # TIER=gold once a human has reviewed it.

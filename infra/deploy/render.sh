@@ -10,8 +10,10 @@
 #   sites/evals.humancopilot.eu/catalog/public/   the catalog, built here by catalog_build.py
 #   inspector/pkg/                                the harness package, installed from its wheel
 #   inspector/hooks.py, inspector/vendor/         the observability layer and its SDKs (infra/inspector/)
-#   inspector/data/                               runs*, references, datasets, goals: what the
-#                                                 inspector reads (no corpora, no materialized text)
+#   inspector/data/                               runs*, references, datasets, goals, profiles,
+#                                                 models.yaml: what the catalog and inspector read
+#                                                 (no corpora, no materialized text;
+#                                                 harness/tests/test_render_data.py checks the list)
 #   nginx/  caddy/  observability/  deploy/  compose.yml  RELEASE
 #
 # Env:
@@ -66,9 +68,14 @@ python3 -m pip install --quiet --no-deps --no-compile --target "$OUT/inspector/v
   --only-binary=:all: --platform any --implementation py --python-version 3.12 \
   -r "$ROOT/infra/inspector/requirements.txt"
 cp -a "$ROOT/infra/inspector/hooks.py" "$OUT/inspector/hooks.py"
-for d in "$ROOT"/harness/data/runs* "$ROOT"/harness/data/{references,datasets,goals,baselines,rounds,configs,scorers,judging-sets,judge-verdicts}; do
+for d in "$ROOT"/harness/data/runs* "$ROOT"/harness/data/{references,datasets,goals,baselines,rounds,configs,scorers,judging-sets,judge-verdicts,profiles,fields}; do
   [ -d "$d" ] && cp -a "$d" "$OUT/inspector/data/"
 done
+# The data files the catalog reads beside the directories (0.4.2's models.yaml: the arms page's
+# weights; without it every model read as unknown on the deployed pages).
+if [ -f "$ROOT/harness/data/models.yaml" ]; then
+  cp -a "$ROOT/harness/data/models.yaml" "$OUT/inspector/data/"
+fi
 
 # The documentation, under /docs/ on the site (mkdocs.yml, site_url .../docs/).
 python3 -m mkdocs build --strict --quiet -f "$ROOT/mkdocs.yml" -d "$OUT/sites/$SITE/public/docs"
