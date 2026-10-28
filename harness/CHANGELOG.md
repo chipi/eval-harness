@@ -41,6 +41,7 @@ Upgrade if you run it where anyone else can reach it. No result moves.
 - **`--hooks` see one route for every unknown `/api/` path.** It is named `/api/other`, so
   someone asking for many made-up paths cannot create a metric series for each.
 
+## 0.4.2 — 2026-10-27
 
 A catalog that says what changed, and where: every count on the home page has a trend and opens a
 page that shows the rows behind it, for the same period. An activity page and an arms and configs
@@ -309,6 +310,156 @@ p 0.36, from the pre-fix run), and DBpedia's 56-item dev slice, over today's 28 
   gold/ag_news_200_adj1 for ag_news_200). This repository's gold references now have one.
 - **`round-retire --runs-dir`** retires one copy of a config (its runs in another runs directory,
   such as a re-timing on another machine) and leaves the arm in the project's runs directory in play.
+- **`evaluation_harness.stats`**. Standard library only, and the one place the paired test
+  lives:
+  - `exact_p` and `sign_flip_p`;
+  - `holm`, with a declared family larger than the p-values passed;
+  - `exact_ci`, an interval for the mean difference that agrees with the test: none at 5
+    items or fewer, where no shift can be rejected;
+  - `compare`, every arm against a baseline with verdicts in words;
+  - `compare_by`, the same test within each group of items, Holm-corrected over every group
+    and arm together;
+  - `ranks`, `pearson` and `spearman` (average ranks for ties; a constant input returns
+    `constant`, NaN unless you pass another), which the judging, rank-stability and
+    report-check scripts share instead of keeping their own copies.
+
+  It has its own test suite, `scripts/test_stats.py`, run by `make test`.
+- **The exact count is ~4x faster** (0.03 s at 30 items, was 0.11 s): the sign-pattern sums are
+  built by doubling a list instead of enumerating each pattern. The same sums, so the same p.
+  The exact interval bisects to ~1e-9 of its span, not ~1e-14: 1.4 s at 30 items, was 11 s.
+  It is shown to 3 decimals.
+- **`evh catalog` and `evh catalog-serve`** (`make catalog`, `make catalog-serve`).
+  - **The catalog:** static pages over a project's runs, by dataset, built into
+    `.build/catalog/`. Each dataset page lists every arm with its headline number, and links
+    to the inspector for one arm, or for all the arms on one metric scored against one
+    reference.
+  - **The run inspector:** a server on 127.0.0.1 that tests any arms on one dataset against
+    a baseline with `stats.py`, so it gives the same p as `pair-test` on the same pair. It
+    shows the verdicts, charts of the per-item scores and differences, and, for one item,
+    each arm's output beside the reference.
+  - **The same rules as everywhere else:**
+    - Arms on different `dataset_id`s are refused.
+    - On a metric scored against a reference, an arm scored against another reference than
+      the baseline's (silver against gold, say) is named and not tested against it; cost,
+      latency, tokens and length compare across references.
+    - The static pages carry counts and means only, never an item's text.
+    - The server answers only to a 127.0.0.1 Host. It serves only the catalog and the
+      data tree, and no dot-folder in either.
+  - **An adapter is the only project code needed.** `catalog_adapter.Adapter` lists the
+    questions both tools ask. The built-in `HarnessAdapter` reads the harness's own layout
+    (`runs*/`, `runs-judged/`, `references/`): an arm is one config on one dataset, its
+    repeats averaged per item. A project with another layout names its own adapter in
+    `config.yaml` (`catalog: {adapter: path/to/file.py:Class}`) or passes `--adapter`.
+
+  - **A public mode** (`evh catalog-serve --public HOST`), for a deployment behind a reverse
+    proxy that serves the static pages:
+    - it answers only the named host;
+    - each client gets `--rate` requests a minute;
+    - at most `--max-arms` arms in one comparison;
+    - two computations at once, every answer cached;
+    - errors never show the server's internals;
+    - `--warm` computes, at start, every comparison the built catalog links to.
+
+    `evh catalog --link LABEL=URL` adds the deployment's other sites to the nav.
+  - **CSP-clean:** no inline script or style. The theme script is a file, and the legend
+    colours are set from JS.
+
+  Tests: `tests/test_catalog.py` (54 assertions), run by `make test`.
+- **Goals: what an evaluation is for** (`data/goals/<goal_id>.yaml`, `schemas/goal.schema.json`).
+  - **What a goal says:** who uses the output, the decision it informs, the measure that
+    decides (and which direction is better), the output formats it accepts, its datasets
+    and their roles, and optionally `min_items`, the fewest items a winner may rest on.
+  - **Configs name their goal** (`goal:`) and may declare the `format` they ask for.
+    - `experiment-run` refuses an unknown goal before it runs.
+    - The run records both, outside the fingerprint: they change what a run answers, not
+      what it measured.
+    - `run-promote` carries both onto the baseline.
+  - **`validate` V14** fails:
+    - a goal that breaks its schema, or whose `goal_id` is not its file name;
+    - a config, run or baseline naming a goal that does not exist, or a format the goal
+      does not accept.
+
+    A dataset smaller than a goal's `min_items` gets a note.
+  - **Optional until a project opts in.** Set `required_from: YYYY-MM-DD` in
+    `data/goals/policy.yaml`, and every run created from then on must name a goal. A
+    project upgrading changes nothing until it sets the date.
+  - **In the catalog:** a goals page, and a page per goal. On each of the goal's datasets
+    it ranks the arms that record the goal's measure. An arm under `min_items` or in a format
+    the goal does not accept is flagged and never the leader. Each arm links to the
+    inspector, tested against the leader.
+  - **This repository's six experiments have goals** (`data/goals/`), and so does the
+    tutorial (`tutorial/goals/tickets_summary.yaml`). No date is set here, so nothing
+    already committed is held to one.
+
+  Tests: `tests/test_goals.py` (14 assertions), run by `make test`.
+- **Item fields** (`data/fields/<fieldset_id>.yaml`, `schemas/fieldset.schema.json`, ADR-0003).
+  The harness defines no field: a project declares its own in a field set, and any number of
+  its datasets name it.
+  - **Types:** text, number, integer, boolean, date, duration (seconds; `h:mm:ss` accepted),
+    url, and choice with its values; a field can be `required` and `public`.
+  - **`dataset-create --fieldset ID --fields FILE`** attaches values from a CSV or JSONL, one
+    row per `item_id`, and refuses an undeclared column, a mistyped value, a value outside a
+    choice, an unknown item and an empty required field. `--update-fields` corrects values on
+    an existing dataset.
+  - **Not the identity.** A run's fingerprint hashes item ids and bytes only, so a corrected
+    field invalidates no run; the dataset records `fields_sha256` beside them.
+  - **`validate` V15** fails a field set that breaks its schema, fields with no field set or an
+    unknown one, an undeclared or mistyped value, a missing required value, and a
+    `fields_sha256` that does not match (a hand edit).
+  - **In the catalog:** each field with its coverage, and a summary of its values only when it
+    is `public`. **In the inspector:** an item's fields beside its outputs; a filter on any
+    field; a breakdown by a choice or yes/no field, tested per group with `stats.compare_by`.
+    A public deployment answers with public fields only.
+  - The adapter protocol gains an optional `item_fields(dataset)`.
+- **Items fetched from a pinned URL.** `dataset-create --manifest FILE` takes one row per item:
+  `item_id`, `source_url` and `source_sha256` (empty: fetched and pinned now), and field
+  columns. `dataset-materialize` downloads each into `.cache/items/` and refuses bytes that
+  hash to anything else, as it refuses a changed file. A transient failure is retried like a
+  provider call; a host that needs a header gets it from `EVAL_FETCH_HEADERS` (that host only,
+  never on a redirect elsewhere, never written into a dataset). With `--update-fields`, an
+  empty cell clears a value.
+
+  Tests: `tests/test_fields.py` (47 assertions), run by `make test`; the catalog's in
+  `test_catalog.py`.
+- **`evh init [DIR] [--tutorial]`** starts a project: `data/sources`, `data/configs`,
+  `data/goals`, `data/fields` and a `.gitignore` for what the harness derives. `--tutorial`
+  copies the GUIDE's kit (tickets, their fields, gold, arms, a goal, a judge scorer and its
+  prompt, the judge panel's config) into `tutorial/`; the kit ships inside the package. It never overwrites a file.
+- **`make guide-check`** (part of `make check`) runs `docs/GUIDE.md` in a fresh project, as a
+  reader would, and fails when a quoted output no longer matches what the command prints.
+  Lines that the unseeded `lead2_noisy` arm moves are marked in the GUIDE and not compared.
+- **The tests that run `evh` install the real wheel** (`tools/_wheel.py`), built from
+  `pyproject.toml`, instead of copying folders. A file the package data leaves out now fails
+  them, where a copy would have included it.
+- **`make browser-check`** drives the catalog and the inspector in headless Chromium: a
+  tutorial project with fields, the main paths and the field controls, the phone-width layout,
+  and no console error. A development extra (`requirements-browser.txt`, `make
+  browser-install`), never a dependency of the package; CI runs it as its own job. The root
+  `make browser-check` also drives the public site, served with production's headers.
+- **`tests/test_installed_commands.py`** (in `make test`) runs every `evh` command in a
+  project that pins the package; a command without a case fails it.
+- **`tests/check_commands.py`** (in `make test`) checks every `make` target, `evh` command
+  and flag shown in the current docs still exists: 274 of them across 27 docs today.
+- **The deploy's health check** also asks the inspector the question readers send most, a
+  group of arms on one metric (`infra/deploy/probe_link.sh`), and rolls back without verdict
+  rows.
+- **Code-quality gates**, `make quality` at the repository root and a CI job of the same name:
+  ruff (lint and format), mypy, bandit, pip-audit, vulture, interrogate, codespell, shellcheck
+  and actionlint, with radon's complexity report. Tools pinned in `requirements-dev.txt`
+  (`make quality-install`), never a dependency of the package. What they found, and how ruff
+  compares with the black, isort and flake8 that podcast_scraper runs:
+  `research/internal/QUALITY_TOOLING_EXPERIMENT.md`. Every public function, class and method
+  has a docstring (interrogate at 100%, the bar podcast_scraper sets). Logic kept in two or
+  more copies (Spearman, Holm, the sign-flip test, module loading, the test scripts' `check()`,
+  cost sums, file hashing) now lives in one place each, and every report claim re-derives
+  unchanged; a test script that runs no check now fails.
+- **This repository's worked examples run on patched libraries** (Linux): transformers 5.20.2,
+  sentence-transformers 6.2.0, pillow 13.0.0, aiohttp 3.14.5, nltk 3.10.4, certifi 2026.10.19,
+  clearing 58 published advisories in their locks; few-nerd stays on transformers 4.55.4,
+  because span-marker has no transformers 5 release. `make audit-locks` audits every lock per
+  platform. Every local arm was re-run against the committed record: every published finding
+  holds, and all but four arms reproduce item for item (why, per arm, in the record).
+  Not part of the package.
 
 ### Changed
 - **A config with a key written into its params is refused** (`api_key`, `access_token`,
@@ -718,158 +869,6 @@ p 0.36, from the pre-fix run), and DBpedia's 56-item dev slice, over today's 28 
 - **Checks that could not fail, or did not run:** `self-test`'s cost-cap control turned any
   failure into a skip; `check_terminology` was failing and nothing ran it (it is in `make test`
   now); `make -C harness docs` was a no-op (eight targets were not `.PHONY`).
-
-### Added
-- **`evaluation_harness.stats`**. Standard library only, and the one place the paired test
-  lives:
-  - `exact_p` and `sign_flip_p`;
-  - `holm`, with a declared family larger than the p-values passed;
-  - `exact_ci`, an interval for the mean difference that agrees with the test: none at 5
-    items or fewer, where no shift can be rejected;
-  - `compare`, every arm against a baseline with verdicts in words;
-  - `compare_by`, the same test within each group of items, Holm-corrected over every group
-    and arm together;
-  - `ranks`, `pearson` and `spearman` (average ranks for ties; a constant input returns
-    `constant`, NaN unless you pass another), which the judging, rank-stability and
-    report-check scripts share instead of keeping their own copies.
-
-  It has its own test suite, `scripts/test_stats.py`, run by `make test`.
-- **The exact count is ~4x faster** (0.03 s at 30 items, was 0.11 s): the sign-pattern sums are
-  built by doubling a list instead of enumerating each pattern. The same sums, so the same p.
-  The exact interval bisects to ~1e-9 of its span, not ~1e-14: 1.4 s at 30 items, was 11 s.
-  It is shown to 3 decimals.
-- **`evh catalog` and `evh catalog-serve`** (`make catalog`, `make catalog-serve`).
-  - **The catalog:** static pages over a project's runs, by dataset, built into
-    `.build/catalog/`. Each dataset page lists every arm with its headline number, and links
-    to the inspector for one arm, or for all the arms on one metric scored against one
-    reference.
-  - **The run inspector:** a server on 127.0.0.1 that tests any arms on one dataset against
-    a baseline with `stats.py`, so it gives the same p as `pair-test` on the same pair. It
-    shows the verdicts, charts of the per-item scores and differences, and, for one item,
-    each arm's output beside the reference.
-  - **The same rules as everywhere else:**
-    - Arms on different `dataset_id`s are refused.
-    - On a metric scored against a reference, an arm scored against another reference than
-      the baseline's (silver against gold, say) is named and not tested against it; cost,
-      latency, tokens and length compare across references.
-    - The static pages carry counts and means only, never an item's text.
-    - The server answers only to a 127.0.0.1 Host. It serves only the catalog and the
-      data tree, and no dot-folder in either.
-  - **An adapter is the only project code needed.** `catalog_adapter.Adapter` lists the
-    questions both tools ask. The built-in `HarnessAdapter` reads the harness's own layout
-    (`runs*/`, `runs-judged/`, `references/`): an arm is one config on one dataset, its
-    repeats averaged per item. A project with another layout names its own adapter in
-    `config.yaml` (`catalog: {adapter: path/to/file.py:Class}`) or passes `--adapter`.
-
-  - **A public mode** (`evh catalog-serve --public HOST`), for a deployment behind a reverse
-    proxy that serves the static pages:
-    - it answers only the named host;
-    - each client gets `--rate` requests a minute;
-    - at most `--max-arms` arms in one comparison;
-    - two computations at once, every answer cached;
-    - errors never show the server's internals;
-    - `--warm` computes, at start, every comparison the built catalog links to.
-
-    `evh catalog --link LABEL=URL` adds the deployment's other sites to the nav.
-  - **CSP-clean:** no inline script or style. The theme script is a file, and the legend
-    colours are set from JS.
-
-  Tests: `tests/test_catalog.py` (54 assertions), run by `make test`.
-- **Goals: what an evaluation is for** (`data/goals/<goal_id>.yaml`, `schemas/goal.schema.json`).
-  - **What a goal says:** who uses the output, the decision it informs, the measure that
-    decides (and which direction is better), the output formats it accepts, its datasets
-    and their roles, and optionally `min_items`, the fewest items a winner may rest on.
-  - **Configs name their goal** (`goal:`) and may declare the `format` they ask for.
-    - `experiment-run` refuses an unknown goal before it runs.
-    - The run records both, outside the fingerprint: they change what a run answers, not
-      what it measured.
-    - `run-promote` carries both onto the baseline.
-  - **`validate` V14** fails:
-    - a goal that breaks its schema, or whose `goal_id` is not its file name;
-    - a config, run or baseline naming a goal that does not exist, or a format the goal
-      does not accept.
-
-    A dataset smaller than a goal's `min_items` gets a note.
-  - **Optional until a project opts in.** Set `required_from: YYYY-MM-DD` in
-    `data/goals/policy.yaml`, and every run created from then on must name a goal. A
-    project upgrading changes nothing until it sets the date.
-  - **In the catalog:** a goals page, and a page per goal. On each of the goal's datasets
-    it ranks the arms that record the goal's measure. An arm under `min_items` or in a format
-    the goal does not accept is flagged and never the leader. Each arm links to the
-    inspector, tested against the leader.
-  - **This repository's six experiments have goals** (`data/goals/`), and so does the
-    tutorial (`tutorial/goals/tickets_summary.yaml`). No date is set here, so nothing
-    already committed is held to one.
-
-  Tests: `tests/test_goals.py` (14 assertions), run by `make test`.
-- **Item fields** (`data/fields/<fieldset_id>.yaml`, `schemas/fieldset.schema.json`, ADR-0003).
-  The harness defines no field: a project declares its own in a field set, and any number of
-  its datasets name it.
-  - **Types:** text, number, integer, boolean, date, duration (seconds; `h:mm:ss` accepted),
-    url, and choice with its values; a field can be `required` and `public`.
-  - **`dataset-create --fieldset ID --fields FILE`** attaches values from a CSV or JSONL, one
-    row per `item_id`, and refuses an undeclared column, a mistyped value, a value outside a
-    choice, an unknown item and an empty required field. `--update-fields` corrects values on
-    an existing dataset.
-  - **Not the identity.** A run's fingerprint hashes item ids and bytes only, so a corrected
-    field invalidates no run; the dataset records `fields_sha256` beside them.
-  - **`validate` V15** fails a field set that breaks its schema, fields with no field set or an
-    unknown one, an undeclared or mistyped value, a missing required value, and a
-    `fields_sha256` that does not match (a hand edit).
-  - **In the catalog:** each field with its coverage, and a summary of its values only when it
-    is `public`. **In the inspector:** an item's fields beside its outputs; a filter on any
-    field; a breakdown by a choice or yes/no field, tested per group with `stats.compare_by`.
-    A public deployment answers with public fields only.
-  - The adapter protocol gains an optional `item_fields(dataset)`.
-- **Items fetched from a pinned URL.** `dataset-create --manifest FILE` takes one row per item:
-  `item_id`, `source_url` and `source_sha256` (empty: fetched and pinned now), and field
-  columns. `dataset-materialize` downloads each into `.cache/items/` and refuses bytes that
-  hash to anything else, as it refuses a changed file. A transient failure is retried like a
-  provider call; a host that needs a header gets it from `EVAL_FETCH_HEADERS` (that host only,
-  never on a redirect elsewhere, never written into a dataset). With `--update-fields`, an
-  empty cell clears a value.
-
-  Tests: `tests/test_fields.py` (47 assertions), run by `make test`; the catalog's in
-  `test_catalog.py`.
-- **`evh init [DIR] [--tutorial]`** starts a project: `data/sources`, `data/configs`,
-  `data/goals`, `data/fields` and a `.gitignore` for what the harness derives. `--tutorial`
-  copies the GUIDE's kit (tickets, their fields, gold, arms, a goal, a judge scorer and its
-  prompt, the judge panel's config) into `tutorial/`; the kit ships inside the package. It never overwrites a file.
-- **`make guide-check`** (part of `make check`) runs `docs/GUIDE.md` in a fresh project, as a
-  reader would, and fails when a quoted output no longer matches what the command prints.
-  Lines that the unseeded `lead2_noisy` arm moves are marked in the GUIDE and not compared.
-- **The tests that run `evh` install the real wheel** (`tools/_wheel.py`), built from
-  `pyproject.toml`, instead of copying folders. A file the package data leaves out now fails
-  them, where a copy would have included it.
-- **`make browser-check`** drives the catalog and the inspector in headless Chromium: a
-  tutorial project with fields, the main paths and the field controls, the phone-width layout,
-  and no console error. A development extra (`requirements-browser.txt`, `make
-  browser-install`), never a dependency of the package; CI runs it as its own job. The root
-  `make browser-check` also drives the public site, served with production's headers.
-- **`tests/test_installed_commands.py`** (in `make test`) runs every `evh` command in a
-  project that pins the package; a command without a case fails it.
-- **`tests/check_commands.py`** (in `make test`) checks every `make` target, `evh` command
-  and flag shown in the current docs still exists: 274 of them across 27 docs today.
-- **The deploy's health check** also asks the inspector the question readers send most, a
-  group of arms on one metric (`infra/deploy/probe_link.sh`), and rolls back without verdict
-  rows.
-- **Code-quality gates**, `make quality` at the repository root and a CI job of the same name:
-  ruff (lint and format), mypy, bandit, pip-audit, vulture, interrogate, codespell, shellcheck
-  and actionlint, with radon's complexity report. Tools pinned in `requirements-dev.txt`
-  (`make quality-install`), never a dependency of the package. What they found, and how ruff
-  compares with the black, isort and flake8 that podcast_scraper runs:
-  `research/internal/QUALITY_TOOLING_EXPERIMENT.md`. Every public function, class and method
-  has a docstring (interrogate at 100%, the bar podcast_scraper sets). Logic kept in two or
-  more copies (Spearman, Holm, the sign-flip test, module loading, the test scripts' `check()`,
-  cost sums, file hashing) now lives in one place each, and every report claim re-derives
-  unchanged; a test script that runs no check now fails.
-- **This repository's worked examples run on patched libraries** (Linux): transformers 5.20.2,
-  sentence-transformers 6.2.0, pillow 13.0.0, aiohttp 3.14.5, nltk 3.10.4, certifi 2026.10.19,
-  clearing 58 published advisories in their locks; few-nerd stays on transformers 4.55.4,
-  because span-marker has no transformers 5 release. `make audit-locks` audits every lock per
-  platform. Every local arm was re-run against the committed record: every published finding
-  holds, and all but four arms reproduce item for item (why, per arm, in the record).
-  Not part of the package.
 
 ## 0.3.0 — 2026-10-21
 
