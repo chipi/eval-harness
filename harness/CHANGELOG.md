@@ -25,6 +25,13 @@ that can move a result is never a patch release without saying so under **Change
 - **The overview says what the catalog is**: "pages the harness builds from this project's
   committed runs", and that the inspector tests any arms against a baseline, item by item.
 
+### Fixed
+
+- **`evh catalog` built the arms page without the deployment's options.** Run as a command, the
+  builder is `__main__`, and the arms page was rendered by a second copy of it with the
+  defaults. So `arms.html` said "eval catalog" whatever `--brand` was, and had no `--link`
+  switcher, no `--head` and the default `--api`. Every page now carries them.
+
 ## 0.4.3 — 2026-10-27
 
 A security fix to the inspector: `evh catalog-serve` no longer serves files through `/api/`.

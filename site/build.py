@@ -1866,6 +1866,31 @@ def check_crawl_files(out: Path) -> list:
     return problems
 
 
+#: Where a reader copies the install line from. Each pin must name the latest release, as the
+#: site's own install line does: the docs said @v0.4.1 while the site said @v0.4.3 (found
+#: reviewing the 0.4.4 render). UPGRADING and the CHANGELOG name old releases on purpose, and
+#: infra/README.md's cutover steps record the release they were run with.
+PIN_FILES = ("README.md", "harness/README.md", "docs/**/*.md", "harness/docs/*.md")
+PIN_EXEMPT = {"harness/docs/UPGRADING.md", "harness/CHANGELOG.md"}
+PIN = re.compile(r"eval-harness@v(\d+\.\d+\.\d+)#subdirectory=harness")
+
+
+def check_pins() -> list:
+    """Every install pin a reader can copy names the latest dated release in the changelog."""
+    latest = next(r["version"] for r in releases.releases(releases.CHANGELOG.read_text()) if r["date"])
+    problems = []
+    for pattern in PIN_FILES:
+        for p in sorted(ROOT.glob(pattern)):
+            rel = p.relative_to(ROOT).as_posix()
+            if rel in PIN_EXEMPT:
+                continue
+            for n, line in enumerate(p.read_text(encoding="utf-8").splitlines(), 1):
+                for v in PIN.findall(line):
+                    if v != latest:
+                        problems.append(f"{rel}:{n} pins v{v}; the latest release is v{latest}")
+    return problems
+
+
 def check_links(out: Path, catalog_pages: set) -> list:
     """What is broken among the built pages' links: a relative href or src naming no built file,
     a #anchor its page does not have, a catalog link that is neither the catalog's home nor a page
@@ -1982,6 +2007,11 @@ def main() -> int:
         print("FAIL  links:", *broken, sep="\n  ")
         return 1
     print("ok    every link resolves: built files, their anchors, the catalog pages the site names")
+    pins = check_pins()
+    if pins:
+        print("FAIL  install pins:", *pins, sep="\n  ")
+        return 1
+    print("ok    every install pin in the docs names the latest release")
     print("ok    site/public matches a fresh build")
     return 0
 

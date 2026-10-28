@@ -76,7 +76,7 @@ model provider you use is your choice, with your own key.
 
 ```bash
 cd your-project
-pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.4.1#subdirectory=harness"
+pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.4.3#subdirectory=harness"
 evh init
 evh dataset-create --dataset-id my_v1 --source-dir data/sources/my_v1
 evh dataset-materialize --dataset-id my_v1
