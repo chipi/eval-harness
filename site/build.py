@@ -1207,7 +1207,7 @@ def landing(f: dict) -> str:
   <div class="chart scroll-x reveal"><table class="data cards">
     <thead><tr><th>machine</th><th>what it is</th><th>runs on this site it measured</th><th>role</th></tr></thead>
     <tbody>{hw_rows}</tbody></table>
-    <figcaption>Hosted runs are API calls made from that machine; the model ran at the provider. Local runs ran on the machine's own CPU. The DGX Spark and the MacBook measured none of these runs. Captured {hw_date}: <a href="{BLOB}/docs/evidence/hardware.json">docs/evidence/hardware.json</a>.</figcaption></div>
+    <figcaption>Hosted runs are API calls made from that machine; the model ran at the provider. Local runs ran on the machine's own CPU. The DGX Spark and the MacBook are the workhorses for the runs of the operator's other projects; none of these runs was measured on them. Captured {hw_date}: <a href="{BLOB}/docs/evidence/hardware.json">docs/evidence/hardware.json</a>.</figcaption></div>
 </div></section>
 {author("experiments")}"""
     return page(

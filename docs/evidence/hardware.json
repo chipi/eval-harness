@@ -37,7 +37,7 @@
     {
       "id": "dgx_spark",
       "name": "NVIDIA DGX Spark",
-      "role": "owned, and serves local models in the homelab; no committed run here was measured on it",
+      "role": "the homelab's GPU: it serves local models and is the workhorse for the runs of the operator's other projects (the podcast pipeline's models among them); none of this site's committed runs was measured on it",
       "captured_output": {
         "cpu": "Cortex-X925", "threads": 20, "memory_kb": 127600812,
         "gpu": "NVIDIA GB10", "product": "NVIDIA_DGX_Spark", "os": "Ubuntu 24.04.4 LTS aarch64"
@@ -48,7 +48,7 @@
     {
       "id": "macbook_pro",
       "name": "MacBook Pro (M4 Pro)",
-      "role": "the laptop the work is driven from; no committed run here was measured on it",
+      "role": "the laptop the work is driven from, and a workhorse for the runs of the operator's other projects; none of this site's committed runs was measured on it",
       "captured_output": {
         "model": "Mac16,8", "cpu": "Apple M4 Pro", "cores": 14, "threads": 14,
         "memory_bytes": 51539607552, "arch": "arm64", "os": "macOS 15.7.3"
