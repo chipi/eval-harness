@@ -626,6 +626,7 @@ def test_example_scorer_suites_pass() -> None:
         ("test_serve_hooks.py", "catalog-serve --hooks: called, never breaking a request, off by default"),
         ("test_goals.py", "goals: config, run, baseline, V14, pages"),
         ("test_dataset_profile.py", "dataset profiles: what is inside, the gold's shape, links, the page"),
+        ("test_mcp_server.py", "evh mcp: the read commands as tools, through the SDK's own client"),
         ("test_axes.py", "a goal's axes and strategy: limits, the tie, the tie-break, the ratios"),
         (
             "test_references.py",

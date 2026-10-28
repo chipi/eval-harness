@@ -37,6 +37,7 @@ None.
 | [RFC-004](RFC-004-experiment-rounds.md) | Experiment rounds | [PRD-005](../prd/PRD-005-goals-and-rounds.md) | 0.4.0 | Round records, membership by `round:`, the four commands, the evidence and its suggestions |
 | [RFC-005](RFC-005-judge-scorers.md) | Judge scorers and the judging pass | [PRD-003](../prd/PRD-003-judging.md) | 0.3.0 | The scorer artifact, the validation gate, the listwise blind pass, its controls, judged runs |
 | [RFC-006](RFC-006-item-fields-and-url-items.md) | Item fields and items at a URL | [PRD-006](../prd/PRD-006-datasets-versions-fields.md) | 0.4.0 | Field sets and types, `fields_sha256` outside the identity, V15, filters and breakdowns, pinned downloads |
+| [RFC-018](RFC-018-read-only-mcp-server.md) | A read-only MCP server | 0.5.0's PRD-012 (branch `050`) | 0.4.5 | `evh mcp` on the official SDK; thirteen read commands as tools, each a child process; `--json` for the views; Python 3.10 |
 
 0.4.0 is not yet released: its RFCs describe the code as built, which ships with the release.
 

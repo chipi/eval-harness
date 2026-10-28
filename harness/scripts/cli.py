@@ -98,6 +98,10 @@ COMMANDS = {
     ),
     "catalog": ("catalog_build.py", "build the catalog: static pages over the runs, by dataset"),
     "catalog-serve": ("catalog_serve.py", "serve the catalog and the run inspector on 127.0.0.1"),
+    "mcp": (
+        "mcp_server.py",
+        "the project's read commands as MCP tools for an agent (stdio; none writes or spends)",
+    ),
     "validate": ("validate_tree.py", "schema and integrity checks over the data tree"),
     "self-test": (
         "self_check.py",

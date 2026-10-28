@@ -1,0 +1,138 @@
+#!/usr/bin/env python3
+"""Assertions for `evh mcp` (RFC-018), through the official SDK's own stdio client.
+
+    python tests/test_mcp_server.py
+
+In a throwaway project built from the tutorial ($0, offline): the server lists exactly the read
+commands, each annotated read-only, none taking --adapter or --json; a tool answers what the
+command prints, with its JSON as structured content; an unknown argument is refused before
+anything runs; a command's refusal comes back as an error with its message; and every evh command
+is either a tool or listed, with a reason, as not one.
+"""
+
+import json
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parents[1] / "scripts"
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+KIT = HERE.parent / "tutorial"
+from evaluation_harness._check import check, summary  # noqa: E402
+from evaluation_harness.cli import COMMANDS  # noqa: E402
+from evaluation_harness.mcp_server import NOT_TOOLS, READ_TOOLS  # noqa: E402
+
+try:
+    import anyio
+    from mcp import ClientSession
+    from mcp.client.stdio import StdioServerParameters, stdio_client
+except ImportError as exc:  # the package depends on mcp; a checkout's venv may predate it
+    print(f"  --   test_mcp_server skipped: {exc} (pip install -r requirements.txt)")
+    sys.exit(0)
+
+proj = Path(tempfile.mkdtemp(prefix="evh-mcp-"))
+env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-mcp")
+env.pop("EVAL_DATA_DIR", None)
+env.pop("EVAL_RUNS_DIR", None)
+
+
+def evh(*args):
+    return subprocess.run(
+        [sys.executable, str(HERE / "cli.py"), *args], cwd=proj, env=env, capture_output=True, text=True
+    )
+
+
+check(
+    "every evh command is a tool or not one, with a reason; none is both",
+    set(READ_TOOLS) | set(NOT_TOOLS) == set(COMMANDS) and not set(READ_TOOLS) & set(NOT_TOOLS),
+    f"neither: {sorted(set(COMMANDS) - set(READ_TOOLS) - set(NOT_TOOLS))}; "
+    f"unknown: {sorted((set(READ_TOOLS) | set(NOT_TOOLS)) - set(COMMANDS))}",
+)
+
+try:
+    data = proj / "data"
+    (data / "configs").mkdir(parents=True)
+    (data / "goals").mkdir()
+    shutil.copytree(KIT / "tickets", proj / "tutorial" / "tickets")
+    r = evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets")
+    r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "tickets_v1")
+    check("setup: the tutorial dataset", r.returncode == 0, r.stderr[-300:])
+    shutil.copytree(KIT / "gold", data / "references" / "gold" / "tickets_v1")
+    shutil.copy(KIT / "goals" / "tickets_summary.yaml", data / "goals")
+    cfg = (KIT / "configs" / "tickets_lead2.yaml").read_text()
+    (data / "configs" / "lead2.yaml").write_text(cfg + "goal: tickets_summary\n")
+    r = evh("experiment-run", "--config", str(data / "configs" / "lead2.yaml"))
+    check("setup: one run", r.returncode == 0, r.stderr[-300:])
+
+    async def session():
+        params = StdioServerParameters(
+            command=sys.executable, args=[str(HERE / "cli.py"), "mcp"], cwd=str(proj), env=env
+        )
+        async with stdio_client(params) as (rd, wr), ClientSession(rd, wr) as s:
+            await s.initialize()
+            tools = (await s.list_tools()).tools
+            by = {t.name: t for t in tools}
+            check("tools: exactly the read commands", sorted(by) == sorted(READ_TOOLS), sorted(by))
+            check(
+                "tools: each read-only, not destructive",
+                all(t.annotations.read_only_hint and not t.annotations.destructive_hint for t in tools),
+            )
+            check(
+                "tools: no schema takes --adapter or --json",
+                not any({"adapter", "json"} & set(t.input_schema.get("properties", {})) for t in tools),
+            )
+            check(
+                "tools: the schema comes from the command's parser (datasets: dataset-id, period)",
+                {"dataset-id", "period"} <= set(by["datasets"].input_schema["properties"]),
+                by["datasets"].input_schema,
+            )
+            res = await s.call_tool("datasets", {})
+            want = evh("datasets", "--json").stdout
+            check(
+                "datasets: the command's own answer, its JSON as structured content",
+                not res.is_error
+                and json.loads(res.content[0].text) == json.loads(want)
+                and (res.structured_content or {}).get("command") == "datasets",
+                res.content[0].text[:300],
+            )
+            rows = [r_ for b in res.structured_content["result"]["blocks"] for r_ in b.get("rows", [])]
+            check(
+                "datasets: its table's rows as data",
+                any(r_.get("dataset") == "tickets_v1" for r_ in rows),
+                rows,
+            )
+            res = await s.call_tool("datasets", {"dataset-id": "tickets_v1"})
+            check(
+                "datasets with an option: passed as the command line",
+                not res.is_error and "tickets_v1" in res.content[0].text,
+            )
+            res = await s.call_tool("datasets", {"bogus": 1})
+            check(
+                "an unknown argument is refused before anything runs",
+                res.is_error and "unknown argument" in res.content[0].text,
+                res.content[0].text,
+            )
+            res = await s.call_tool("goals", {"goal": "no_such_goal"})
+            check(
+                "a command's refusal is an error, with its message and exit code",
+                res.is_error and "no_such_goal" in res.content[0].text and "(exit 1)" in res.content[0].text,
+                res.content[0].text[:300],
+            )
+            res = await s.call_tool("validate", {})
+            check(
+                "validate: runs, its text as the answer",
+                "V1" in res.content[0].text,
+                res.content[0].text[:200],
+            )
+            res = await s.call_tool("run-promote", {})
+            check("a command that is not a tool is refused", res.is_error, res.content[0].text)
+
+    anyio.run(session)
+finally:
+    shutil.rmtree(proj, ignore_errors=True)
+
+sys.exit(summary())

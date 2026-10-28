@@ -5,7 +5,7 @@
 # pip-audit, radon, vulture, interrogate, codespell, shellcheck, actionlint) are the same as
 # there. Every rule turned off below says why; the rest is enforced in CI.
 
-target-version = "py39"   # requires-python = ">=3.9": never suggest syntax 3.9 cannot run
+target-version = "py39"   # stricter than requires-python ">=3.10" (RFC-018): py310 would flag frozen scorers
 line-length = 110         # the code was written to ~110; the formatter governs, not E501
 
 # FROZEN INSTRUMENT CODE. These files define how the experiments' committed runs were scored:

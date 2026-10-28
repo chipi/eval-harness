@@ -13,6 +13,18 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Added
 
+- **`evh mcp`: the project's read commands as MCP tools, for an agent** (stdio, the official SDK,
+  [RFC-018](https://github.com/chipi/eval-harness/blob/main/docs/rfc/RFC-018-read-only-mcp-server.md)). Thirteen
+  tools: `overview`, `datasets`, `dataset-items`, `arms`, `goals`, `references`, `metrics`, `activity`,
+  `search`, `inspect`, `rounds`, `runs-list`, `validate`. Each call runs the command as a child process, so a tool
+  answers what the command prints; each is annotated read-only; no tool writes, spends or runs a model. For Claude
+  Code, in the project: `claude mcp add evh -- evh mcp`.
+- **`--json` on the catalog's view commands** (`overview`, `datasets`, `arms`, `goals`, `references`, `metrics`,
+  `activity`, `search`, `inspect`): one object, `{"command", "version", "result": {"blocks": [...]}}`, each table as
+  columns and rows of values, every other line as text. It is collected from the same calls that print the text, so
+  the two cannot disagree. 0.5.0 gives each command its own result schema and retires this generic form: do not
+  build on `blocks`.
+
 - **What is inside a dataset, on its page and as a command.** `evh dataset-profile --dataset-id D`,
   run where the dataset is materialized, writes `data/profiles/D.json` (`schemas/profile.schema.json`,
   checked by validate V1): the number of items and their words, the shape of each gold reference
@@ -30,6 +42,14 @@ that can move a result is never a patch release without saying so under **Change
 - **`inspect.html?…&item=ID`** opens that item once the comparison has loaded; a dataset page's
   **inspect** link uses it.
 - Adapter: `dataset_profile(dataset)`, optional (RFC-003).
+
+### Changed
+
+- **Python 3.10 or later.** The official MCP SDK needs it, and every feature comes with one install, so the
+  package's floor moves from 3.9 to 3.10 (CI tests 3.10, 3.11 and 3.14). On 3.9, pin `v0.4.4`.
+- **A new dependency: `mcp>=2.3,<3`**, which brings `anyio`, `httpx2`, `mcp-types`, `opentelemetry-api`,
+  `pydantic>=2.12`, `pyjwt[crypto]`, `python-multipart`, `sse-starlette`, `starlette`, `typing-extensions`,
+  `typing-inspection` and `uvicorn`. No result moves.
 
 ## 0.4.4 — 2026-10-28
 

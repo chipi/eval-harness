@@ -298,13 +298,17 @@ def main_items(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="evh dataset-items", description=__doc__.split("\n\n")[0])
     ap.add_argument("--dataset-id", required=True)
     ap.add_argument("--item", help="one item: its id, or the start of it; its text when it is here")
-    ap.add_argument("--json", action="store_true", help="print the profile as JSON")
+    ap.add_argument(
+        "--json",
+        action="store_true",
+        help='the profile as JSON: {"command", "version", "result": <the profile>}',
+    )
     args = ap.parse_args(argv)
     p = load_profile(args.dataset_id)
     if args.json:
         if args.item:
             p = dict(p, rows=[r for r in p["rows"] if r["item_id"].startswith(args.item)])
-        print(json.dumps(p, indent=1))
+        print(json.dumps({"command": "dataset-items", "version": __version__, "result": p}, indent=1))
     else:
         print(render(p, args.item))
     return 0

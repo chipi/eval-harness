@@ -313,6 +313,25 @@ which references exist, what one arm wrote for one item.
 
 ---
 
+## For an agent: `evh mcp`
+
+`evh mcp` serves the project's read commands to an agent over MCP (stdio, the official SDK): the
+catalog's views (`overview`, `datasets`, `dataset-items`, `arms`, `goals`, `references`, `metrics`,
+`activity`, `search`), the inspector in the terminal (`inspect`), `rounds`, `runs-list` and
+`validate`. Add it to Claude Code in the project with
+
+```bash
+claude mcp add evh -- evh mcp
+```
+
+or to any MCP client as the command `evh mcp` (optionally `--project path/to/project`). Each call
+runs the command as a person would, with `--json` where the command has it, so the agent sees the
+same numbers you do. No tool writes, spends or runs a model: running arms, promoting a baseline
+and closing a round stay your commands. The design is
+[RFC-018](https://github.com/chipi/eval-harness/blob/main/docs/rfc/RFC-018-read-only-mcp-server.md).
+
+---
+
 ## The first hour, concretely
 
 ```bash
