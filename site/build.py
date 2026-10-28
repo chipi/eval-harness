@@ -1032,6 +1032,9 @@ def landing(f: dict) -> str:
         f'<figure class="reveal" style="margin-bottom:10px">{both(strip(x), strip(x, compact=True))}</figure>'
         for x in exps
     )
+    goal_links = " · ".join(
+        f'<a href="{CATALOG}{x["goal"]["goal_page"]}">{e(x["bench"])}</a>' for x in exps
+    )
     tie_rows = "".join(
         f'<tr><td class="exp"><a href="experiments/{x["slug"]}.html">{e(x["task"])} · {e(x["bench"])}</a></td>'
         f'<td class="num" data-label="first place">{e(x["top"]["arm"])}</td>'
@@ -1148,6 +1151,7 @@ def landing(f: dict) -> str:
     <figure class="chart reveal">{both(slope(f["dailymail"]), slope(f["dailymail"], compact=True))}<figcaption>coverage of the five local summarisers on each slice. Dashed: BART trained on XSum.</figcaption></figure>
   </div>
   <p class="note" style="margin-top:48px"><b>No figure on this site is typed in by hand.</b> Every figure is recomputed from the committed runs each time the site is built, and every number the prose quotes must appear in the report it comes from, or the build fails. Behind the reports, a checker verifies {f["claims_checked"]} claims against the runs on every commit.</p>
+  <p class="note"><b>Or test it yourself, in your browser.</b> Every run behind these charts is in <a href="{CATALOG}">the catalog</a>, and its inspector re-runs any comparison on this site, item by item, with the same paired test. Each experiment's page opens it on every arm against its leader.</p>
 </div></section>
 
 <section class="block" id="experiments"><div class="wrap">
@@ -1155,12 +1159,13 @@ def landing(f: dict) -> str:
   <h2>{n_exp.capitalize()} benchmarks, one harness.</h2>
   <p class="lede">The same {hosted_n} hosted models — eight vendors, three price tiers each — on every task (the cheapest twelve on SciFact), beside the strongest free models each task allows.</p>
   <div class="cards">{cards}</div>
+  <p class="dek-note">Each is a goal in the catalog, with every run behind it: {goal_links}.</p>
 </div></section>
 
 <section class="block" id="reproduce"><div class="wrap">
   <div class="eyebrow"><span class="num">06</span>Reproduce it</div>
   <h2>Built to be checked — by you.</h2>
-  <p class="lede">The harness, every run, every model output and every analysis script are in the repository. Five levels of checking, each optional, each a few commands.</p>
+  <p class="lede">The harness, every run, every model output and every analysis script are in the repository. Before any of it, <a href="{CATALOG}">the catalog</a> shows every run and its inspector re-tests any comparison, with nothing installed. Then five levels of checking, each optional, each a few commands.</p>
   <div class="cols">
     <ol class="ladder">
       <li><span class="lvl">00</span><div><h3>Verify</h3><p>Every number in every report, recomputed from the committed predictions.</p></div><span class="cost">$0 · one command</span></li>
@@ -1600,6 +1605,34 @@ def remeasured_block(x: dict, f: dict, num: int) -> str:
     )
 
 
+def catalog_dataset(x: dict) -> str:
+    """The catalog's page for the experiment's dataset (every arm on it, with its own page)."""
+    require(
+        (figures.DATA / "datasets" / f"{x['dataset']}.json").is_file(),
+        f"{x['slug']}: the catalog has a page for dataset {x['dataset']}",
+    )
+    return f"d/{x['dataset']}.html"
+
+
+def catalog_inspect(x: dict) -> str:
+    """The inspector, opened on every arm of the experiment against its leader: the same Holm
+    family as the site's own test (a single pair would get only Holm's strictest step, and could
+    call "not separated" what the site, testing the whole field, separates)."""
+    keys = []
+    for a in x["arms"]:
+        cid = f"{x['prefix']}{a['arm']}{x['suffix']}"
+        require(
+            any(
+                (m := json.loads(p.read_text())).get("config_id") == cid and m.get("dataset_id") == x["dataset"]
+                for p in (figures.DATA / x["base"]).glob(f"{cid}*/metrics.json")
+            ),
+            f"{x['slug']}: a committed run of {cid} on {x['dataset']} for the inspector link",
+        )
+        keys.append(f"{x['base']}/{x['dataset']}/{cid}")
+    base = f"{x['base']}/{x['dataset']}/{x['prefix']}{x['leader']}{x['suffix']}".replace("/", "%2F")
+    return f"inspect.html?runs={','.join(keys)}&amp;baseline={base}&amp;metric={x['metric']}"
+
+
 def goal_note(x: dict) -> str:
     """What the experiment's goal decides, as the catalog computes it (figures.goal_decisions),
     linked to its goal page. The build stops if the site's leader or the report's pick disagrees
@@ -1681,11 +1714,11 @@ def experiment_page(x: dict, f: dict) -> str:
   <p class="dek">{e(CARD[x["slug"]])}</p>
   <p class="note"><b>The report's pick, as run here.</b> {e(PICK[x["slug"]])}</p>{goal_note(x)}{remeasured_note(x)}
   <div class="facts">{facts_html}</div>
-  <div class="btns"><a class="btn primary" href="{BLOB}/research/{x["report"]}">Read the full report</a><a class="btn" href="{BLOB}/docs/PROTOCOL.md">Protocol</a><a class="btn" href="../experiments.html#experiments">All experiments</a></div>
+  <div class="btns"><a class="btn primary" href="{BLOB}/research/{x["report"]}">Read the full report</a><a class="btn" href="{CATALOG}{x["goal"]["goal_page"]}">In the catalog</a><a class="btn" href="{BLOB}/docs/PROTOCOL.md">Protocol</a><a class="btn" href="../experiments.html#experiments">All experiments</a></div>
 </div></section>
 <section class="block" id="field"><div class="wrap"><div class="eyebrow"><span class="num">01</span>The field</div>
   <h2>Every system, one axis.</h2>
-  <div class="chart">{legend(reading="higher score: further right →", baseline=False)}{both(strip(x, title=False, height=80), strip(x, title=False, compact=True))}<figcaption>Each dot is one system, by {e(x["metric_label"])}. The ringed dot is the most expensive hosted model{" (of the twelve cheapest hosted models, the only ones run here)" if x["slug"] == "scifact" else ""}; the shaded band is the group the leader cannot be statistically separated from.{OFF_NOTE if off_scale([a for a in x["arms"] if a["kind"] != "baseline"])[1] else ""}</figcaption></div>
+  <div class="chart">{legend(reading="higher score: further right →", baseline=False)}{both(strip(x, title=False, height=80), strip(x, title=False, compact=True))}<figcaption>Each dot is one system, by {e(x["metric_label"])}. The ringed dot is the most expensive hosted model{" (of the twelve cheapest hosted models, the only ones run here)" if x["slug"] == "scifact" else ""}; the shaded band is the group the leader cannot be statistically separated from.{OFF_NOTE if off_scale([a for a in x["arms"] if a["kind"] != "baseline"])[1] else ""} Every system has its own page in <a href="{CATALOG}{catalog_dataset(x)}">the catalog</a>: its run, cost, speed and fingerprint.</figcaption></div>
 </div></section>
 <section class="block" id="cost"><div class="wrap"><div class="eyebrow"><span class="num">02</span>Cost</div>
   <h2>What the money bought.</h2>
@@ -1703,6 +1736,7 @@ def experiment_page(x: dict, f: dict) -> str:
   <h2>Check it yourself.</h2>
   <div class="cols">
     <div class="prose">
+      <p><strong>First, with nothing installed:</strong> <a href="{CATALOG}{catalog_inspect(x)}">test every arm against {e(x["leader"])}</a>, item by item, in the catalog's inspector, with the same paired test and Holm correction as this page; {e(x["dearest"]["arm"])}, the most expensive model, among them. <a href="{CATALOG}{x["goal"]["goal_page"]}">The goal page</a> has the rest: what the goal recommends, and why.</p>
       <p>The {free} free arms rerun on a laptop CPU for $0, pinned to the weights that were measured. The {x["n_hosted"]} hosted arms billed <strong>${x["billed_total"]:.2f}</strong> when measured and rerun with one OpenRouter key.</p>
       <p><code>make compare</code> writes a replication card: each rerun against its committed run, item by item, and every separation and tie on this page re-tested with your reruns in place.</p>
       <div class="btns"><a class="btn primary" href="../docs/REPRODUCE/">The guide</a><a class="btn" href="{REPO}/tree/main/examples/{x["example"]}">This example's code</a></div>
@@ -1829,10 +1863,11 @@ def check_crawl_files(out: Path) -> list:
     return problems
 
 
-def check_links(out: Path, goal_pages: set) -> list:
+def check_links(out: Path, catalog_pages: set) -> list:
     """What is broken among the built pages' links: a relative href or src naming no built file,
-    a #anchor its page does not have, a catalog link that is neither the catalog's home nor the
-    page of a goal it builds (goal_pages). The docs check their own (mkdocs build --strict)."""
+    a #anchor its page does not have, a catalog link that is neither the catalog's home nor a page
+    the site names and checks against the data (catalog_pages: goal and dataset pages, the
+    inspector links). The docs check their own (mkdocs build --strict)."""
     problems = []
     ids: dict = {}
     for page in sorted(out.rglob("*.html")):
@@ -1844,8 +1879,8 @@ def check_links(out: Path, goal_pages: set) -> list:
         for link in re.findall(r'(?:href|src)="([^"]+)"', text):
             if link.startswith(CATALOG):
                 rest = link[len(CATALOG) :]
-                if rest and rest not in goal_pages:
-                    problems.append(f"{page.relative_to(out)}: {link} is no goal page the catalog builds")
+                if rest and rest.replace("&amp;", "&") not in catalog_pages:
+                    problems.append(f"{page.relative_to(out)}: {link} is no catalog page the site checks")
                 continue
             if re.match(r"^[a-z]+:", link) or link.startswith("//"):
                 continue  # another site (or mailto:)
@@ -1933,11 +1968,16 @@ def main() -> int:
         print("FAIL  robots.txt / sitemap.xml:", *crawl, sep="\n  ")
         return 1
     print("ok    robots.txt and sitemap.xml present; every sitemap URL is a built page")
-    broken = check_links(OUT, {x["goal"]["goal_page"] for x in f["experiments"]})
+    broken = check_links(
+        OUT,
+        {x["goal"]["goal_page"] for x in f["experiments"]}
+        | {catalog_dataset(x) for x in f["experiments"]}
+        | {catalog_inspect(x).replace("&amp;", "&") for x in f["experiments"]},
+    )
     if broken:
         print("FAIL  links:", *broken, sep="\n  ")
         return 1
-    print("ok    every link resolves: built files, their anchors, the catalog's goal pages")
+    print("ok    every link resolves: built files, their anchors, the catalog pages the site names")
     print("ok    site/public matches a fresh build")
     return 0
 
