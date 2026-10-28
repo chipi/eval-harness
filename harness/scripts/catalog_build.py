@@ -20,6 +20,14 @@ from pathlib import Path as _Path
 
 if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
+if __name__ == "__main__":
+    # Run as a command (evh catalog runs this file as __main__), this module IS
+    # evaluation_harness.catalog_build: the renderers that import it by name (catalog_arms) must
+    # see the options main() sets (--brand, --link, --head, --api, --about), not a second copy
+    # with the defaults. arms.html was built by such a copy, as "eval catalog" with no switcher.
+    _sys.modules["evaluation_harness.catalog_build"] = _sys.modules[__name__]
+    if "evaluation_harness" in _sys.modules:  # imported already: its attribute names this module too
+        _sys.modules["evaluation_harness"].catalog_build = _sys.modules[__name__]
 
 import argparse
 import html
