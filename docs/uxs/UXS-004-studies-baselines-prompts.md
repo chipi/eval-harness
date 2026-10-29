@@ -1,6 +1,6 @@
 # UXS-004: Studies, baselines and prompts
 
-- **Status**: Draft (0.5.0), revision 3 (2026-10-27): no baselines pages (the goal page shows each baseline); one
+- **Status**: Draft (0.7.0), revision 3 (2026-10-27): no baselines pages (the goal page shows each baseline); one
   kind of study, evidence from a confirmation; consent only by the person's own command. Revision 2: studies on one dev
   dataset with grid, command and agent samplers; baseline versions written once; prompt versions by content, without
   aliases
@@ -19,7 +19,7 @@
 
 ## Summary
 
-0.5.0 adds two kinds of page to the catalog, a **study** (an optimisation loop and what it found) and a **prompt**
+0.7.0 adds two kinds of page to the catalog, a **study** (an optimisation loop and what it found) and a **prompt**
 (the versions of a prompt file and where each was used), and a section to the goal page: each **baseline** (what the
 goal runs on a dataset now, the evidence for each change, and its history). Each is also a command. They use
 UXS-001's shell, tokens, tables and row tints unchanged.
@@ -94,7 +94,7 @@ There is no separate baselines page: a baseline belongs to a goal on a dataset, 
   side ("cost per item $0.0011 against $0.0024; speed p50 1,830 ms against 2,410 ms"); the round or study it came
   from, linked; for a study's winner, its confirmation; "first baseline: nothing to compare", "promoted in 0.4.0:
   evidence not recorded" or "not comparable: the reference differs" when that is the case. A muted line: "Frozen
-  when promoted on <date> with harness 0.5.0. `evh pair-test` recomputes it today; that is a new comparison, not this
+  when promoted on <date> with harness 0.7.0. `evh pair-test` recomputes it today; that is a new comparison, not this
   evidence."
 - **how to reproduce it**, folded: config id and params (credentials never shown, as on the arm page), prompts (each
   name, version and hash, linked to the prompt's page), the system (model, declared code ref, accelerator), the

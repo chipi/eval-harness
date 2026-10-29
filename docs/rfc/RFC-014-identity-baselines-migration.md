@@ -1,6 +1,6 @@
-# RFC-014: Identity in 0.5.0: baselines, fingerprint version 5, run ids, one grammar, the migration
+# RFC-014: Identity in 0.7.0: baselines, fingerprint version 5, run ids, one grammar, the migration
 
-- **Status**: Draft (0.5.0), revision 3 (2026-10-27): the grammar only for versioned things and runs (baseline,
+- **Status**: Draft (0.7.0), revision 3 (2026-10-27): the grammar only for versioned things and runs (baseline,
   prompt, study, trial, run); everything else keeps its plain 0.4.0 id. Revision 2 (2026-10-27): baselines as write-once versions with collision-free ids, no
   index, pointer or lock files ([RFC-017](RFC-017-record-store.md)); the grammar's versions are those ids
 - **Authors**: Marko Dragoljevic
@@ -193,7 +193,7 @@ finished by running it again, and a second run on migrated data changes nothing.
 already points at the commit the migration started from; otherwise the script refuses with both commits.
 
 1. **Pre-flight** (read-only): the tree is clean for every path the plan touches; the installed harness is
-   0.5.0; the data, runs and goals directories resolve. `UPGRADING.md` says to run `evh validate` with the release
+   0.7.0; the data, runs and goals directories resolve. `UPGRADING.md` says to run `evh validate` with the release
    the project pins (0.4.4 here) before moving the pin; the script does not embed 0.4.x's rules, and checks only what its steps rely on:
    the hashes (step 2), the shapes of the files it rewrites (baselines, goals, rounds, manifests) against their
    0.4.4 schemas (0.4.2 added `models.schema.json`, which the script leaves alone), and the baseline refusals (step 6).
@@ -205,7 +205,7 @@ already points at the commit the migration started from; otherwise the script re
 3. **Plan** (`--dry-run` stops here): every file and field to change; every refusal with the command that
    resolves it; the prior use it will record per heldout dataset (RFC-015); the margins it moves;
    the files a tag cannot restore.
-4. **Tag** `pre-0.5.0-migrate` in the repository; the plan lists what it does not cover: gitignored run
+4. **Tag** `pre-0.7.0-migrate` in the repository; the plan lists what it does not cover: gitignored run
    files (`data/runs/*/run.json`, `outputs/_rows.jsonl`), `materialized/`, `.cache/`, `.build/`, other
    repositories, the published site. The script refuses to touch a gitignored file.
 5. **Fingerprints** to version 5, from the stored body: `host` keeps `platform` and `python`, gains
@@ -223,8 +223,8 @@ already points at the commit the migration started from; otherwise the script re
 7. **Goals and rounds**: dataset roles are not renamed (`dev` and `heldout` stay). A declared
    `axes.<axis>.margin` stays where it is and is listed in the plan, because its meaning changes (RFC-015); rounds
    are not touched.
-8. **Heldout looks**: nothing to write. Looks are counted from decisions recorded from 0.5.0 on, and use before
-   0.5.0 is computed from the runs (RFC-015, the owner's decision); the plan prints both per heldout dataset.
+8. **Heldout looks**: nothing to write. Looks are counted from decisions recorded from 0.7.0 on, and use before
+   0.7.0 is computed from the runs (RFC-015, the owner's decision); the plan prints both per heldout dataset.
 9. **The silver reference manifests**: `from_run.fingerprint_hash` stays as recorded, and the manifest gains
    a top-level `from_run_fingerprint_version: 4`. It goes at the top level, not inside `from_run`: `from_run`
    is one of the `AUTHORSHIP` keys the reference digest hashes (`_fingerprint.py:378, 407-416`), so a field
@@ -236,7 +236,7 @@ already points at the commit the migration started from; otherwise the script re
     keeps its `promoted_at`, so its day is unchanged); every reference digest is unchanged.
 
 It writes nothing unless the dry run was clean and `--yes` is given. This repository migrates first; the
-podcast project after its harness pin moves to 0.5.0. `UPGRADING.md` documents it; a later release removes
+podcast project after its harness pin moves to 0.7.0. `UPGRADING.md` documents it; a later release removes
 it.
 
 ## Migration
@@ -289,6 +289,6 @@ distinct version-4 hashes to 135 distinct version-5 hashes, and 242 to 242.
 3. Run ids with milliseconds and a random suffix; creating a run never reuses a directory.
 4. One identifier grammar for versioned things and runs (baseline, prompt, study, trial, run); segments allow the
    existing run ids' upper case and dots; everything else keeps its plain id.
-5. The 0.5.0 migration is a one-time, re-runnable script, not a command; it trusts only stored bodies.
+5. The 0.7.0 migration is a one-time, re-runnable script, not a command; it trusts only stored bodies.
 6. Baselines are write-once versions with collision-free ids; the current one is the newest; no index, pointer
    or lock file ([RFC-017](RFC-017-record-store.md)).

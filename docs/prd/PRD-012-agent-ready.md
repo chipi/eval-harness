@@ -1,13 +1,13 @@
 # PRD-012: Agent-ready: every capability for people and agents alike
 
-- **Status**: Draft (0.5.0), revision 3 (2026-10-27): consent only by the person running the command; tools without
+- **Status**: Draft (0.7.0), revision 3 (2026-10-27): consent only by the person running the command; tools without
   resources; three skills; a smaller exit-code table. Revision 2: budgets read the spend the runs record
 - **Authors**: Marko Dragoljevic
 - **Related UX specs**: [UXS-003](../uxs/UXS-003-cli-and-onboarding.md) (the commands), a new UXS
   for the tools and skills
 - **Related RFCs**: [RFC-013](../rfc/RFC-013-machine-surface.md) (declarations, JSON, exit codes, refusals, the actor,
   the config), [RFC-016](../rfc/RFC-016-mcp-server-and-skills.md) (the MCP server, the skills, llms.txt, the glossary)
-- **Related PRDs**: every 0.5.0 PRD ([PRD-008](PRD-008-pipelines-and-any-language.md) to
+- **Related PRDs**: every 0.7.0 PRD ([PRD-008](PRD-008-pipelines-and-any-language.md) to
   [PRD-013](PRD-013-identity-and-ties.md)) is held to this one
 
 ## Summary
@@ -16,7 +16,7 @@ More and more evaluation work is done by an agent on someone's behalf: "run an o
 on this prompt", "is the new transcription stage better end to end". The harness must be as usable
 by that agent as by a person, and what the agent did must read, in the records and the catalog,
 as the work of a careful person, with who acted recorded. This PRD makes that the test for every
-0.5.0 feature and adds: a **command manifest** and **structured output** on every command, the
+0.7.0 feature and adds: a **command manifest** and **structured output** on every command, the
 CLI conventions machines rely on (results on stdout, messages on stderr, meaningful exit codes,
 refusals in a standard shape); an **MCP server** built on the official SDK and the protocol's own
 features (tools with annotations, long-running work, refusing decisions to the person); and
@@ -130,8 +130,8 @@ commands.
 
 - **FR4.1**: `evh mcp` starts an MCP server (stdio) for the project, built on the official MCP
   Python SDK, installed by default. It reads the project's `config.yaml` (FR10) as the CLI does.
-  0.4.5 already ships it read-only, with `--http` for a team or the public (RFC-018 on `main`);
-  0.5.0 extends that server, it does not replace it.
+  0.5.0 already ships it read-only, with `--http` for a team or the public (RFC-018 on `main`);
+  0.7.0 extends that server, it does not replace it.
 - **FR4.2**: Its tools are the manifest's commands. Each carries annotations from the manifest:
   read-only, destructive, idempotent, open-world (reaches outside the project, such as a provider);
   spending is the manifest's own flag, and annotations are hints, never what consent rests on. Results are
@@ -184,7 +184,7 @@ commands.
 
 ### FR8: The test for every feature
 
-- **FR8.1**: A 0.5.0 feature is done when a person can do it (CLI, catalog), an agent can do it
+- **FR8.1**: A 0.7.0 feature is done when a person can do it (CLI, catalog), an agent can do it
   (an MCP tool, a skill that covers it), and the catalog shows the same thing either way.
 - **FR8.2**: A scenario test runs the first user story with an agent end to end on the example
   project, with a dollar cap, before each release (not on every push), and checks the catalog

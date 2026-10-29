@@ -1,11 +1,11 @@
-# 0.5.0: where it stands and what comes next
+# 0.7.0: where it stands and what comes next
 
-Written 2026-10-27, when the design was finished and paused for the owner's review. Branch `050`. On 2026-10-28 the
+Written 2026-10-27, when the design was finished and paused for the owner's review. Branch `070`. On 2026-10-28 the
 branch was rebased onto 0.4.4 and the design reconciled with what 0.4.1 to 0.4.4 shipped (below).
 
 ## Where it stands
 
-The design is done; no 0.5.0 code is written.
+The design is done; no 0.7.0 code is written.
 
 - **PRDs** (what and why): [PRD-008](../../docs/prd/PRD-008-pipelines-and-any-language.md) to
   [PRD-013](../../docs/prd/PRD-013-identity-and-ties.md), with amendments to PRD-001 and PRD-005.
@@ -13,10 +13,10 @@ The design is done; no 0.5.0 code is written.
   [RFC-017](../../docs/rfc/RFC-017-record-store.md).
 - **ADRs** (the decisions): ADR-0007 to ADR-0017; ADR-0006's tie rule is superseded by ADR-0015.
 - **UXS** (what people and agents see): [UXS-004](../../docs/uxs/UXS-004-studies-baselines-prompts.md) and
-  [UXS-005](../../docs/uxs/UXS-005-agents.md) are new; UXS-001 to UXS-003 have "0.5.0 changes (draft)" sections.
+  [UXS-005](../../docs/uxs/UXS-005-agents.md) are new; UXS-001 to UXS-003 have "0.7.0 changes (draft)" sections.
 - **Mockups**: six screens on a design canvas, <https://claude.ai/artifact/RQ7cy7zf1kah4d6jb6eUE2> (private to the
-  owner); their sources are in [mockups-0.5.0/](mockups-0.5.0/) (one `.dc.html` per screen, `canvas.json` the layout).
-- **Statistics** behind RFC-015: [stats-0.5.0/](stats-0.5.0/README.md), every table reproducible from its script.
+  owner); their sources are in [mockups-0.7.0/](mockups-0.7.0/) (one `.dc.html` per screen, `canvas.json` the layout).
+- **Statistics** behind RFC-015: [stats-0.7.0/](stats-0.7.0/README.md), every table reproducible from its script.
 
 How the design got here, in order: three PRD review rounds; two RFC reviewers (fixes in e4f167f1); revision 2
 (records for teams: write-once records, collision-free ids, nothing derivable stored; scope cuts); the 0.4.0
@@ -26,7 +26,7 @@ in the ADRs.
 
 ### Reconciled with 0.4.1 to 0.4.4 (2026-10-28)
 
-An audit of every 0.5.0 document against the 0.4.1–0.4.4 changelog and code found the design silent on what 0.4.2
+An audit of every 0.7.0 document against the 0.4.1–0.4.4 changelog and code found the design silent on what 0.4.2
 added to the catalog, and a few statements 0.4.x made wrong. Folded in:
 
 - **The period** (ADR-0018): the studies and prompts pages carry it from their own builders (`period_studies`,
@@ -50,7 +50,7 @@ added to the catalog, and a few statements 0.4.x made wrong. Folded in:
 
 ## In one paragraph
 
-0.5.0 lets a project improve its real system: a pipeline with stages, prompts and settings, in any language. A
+0.7.0 lets a project improve its real system: a pipeline with stages, prompts and settings, in any language. A
 **study** is research after Karpathy's autoresearch: an agent, a grid or an optimiser proposes changes, each is run
 on dev items and kept or dropped, and everything is logged; only a **confirmation** on heldout items the study never
 saw is evidence, and a person promotes. **Baselines** keep their history and the evidence for each promotion.
@@ -62,14 +62,14 @@ take their place behind one store contract.
 
 ## Next steps
 
-0. **What 0.4.5 and 0.4.6 bring forward** (2026-10-29): 0.4.5 ships a read-only MCP server (`evh mcp`, stdio and
-   Streamable HTTP; RFC-018 on `main`) and its public deployment at `evals.humancopilot.eu/mcp`, so 0.5.0's RFC-013 and
+0. **What 0.5.0 and 0.6.0 bring forward** (2026-10-29): 0.5.0 ships a read-only MCP server (`evh mcp`, stdio and
+   Streamable HTTP; RFC-018 on `main`) and its public deployment at `evals.humancopilot.eu/mcp`, so 0.7.0's RFC-013 and
    RFC-016 extend a server that exists rather than introduce one; users and permissions on a shared server are a new
    design item in RFC-016 ("Users on a shared server"). Datasets from production (RFC-019) moved to `main`, aimed at
-   0.4.6, in review.
+   0.6.0, in review.
 1. **The owner reviews** the documents and the mockups. Comments go on the documents (or the canvas); decisions
    go into the ADRs.
-2. **A pull request** for `050` against `main`, once the review is done, so the design lands before the code.
+2. **A pull request** for `070` against `main`, once the review is done, so the design lands before the code.
 3. **Implementation**, in the order the RFCs depend on each other:
    1. RFC-013 (command declarations, `--json`, exit codes, refusals, actor, `config.yaml`, Python 3.10) and
       RFC-017 (the record store);
@@ -105,4 +105,4 @@ take their place behind one store contract.
   - `autoresearch/1022_gb10_tuning/run_labeled.sh:32` in podcast-scraper-eval-data has a hard-coded default
     `VLLM_API_KEY` in a tracked file (found, not acted on);
   - the podcast project's harness pin move: its main pins `@v0.3.0` (origin, 2026-10-27; the local checkout pins
-    `0b2ca8b2`, a 0.4.0 branch commit of 2026-10-25, not a release); the target is v0.4.4, then 0.5.0.
+    `0b2ca8b2`, a 0.4.0 branch commit of 2026-10-25, not a release); the target is v0.4.4, then 0.7.0.

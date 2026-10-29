@@ -1,4 +1,4 @@
-# ADR-0008 — Systems in any language through a JSON-RPC process (0.5.0)
+# ADR-0008 — Systems in any language through a JSON-RPC process (0.7.0)
 
 **Status:** Accepted (2026-10-26), design; not yet built. Revision 3 (2026-10-27): the metric declarations live in the adapter file. Revision 2:
 stdio only.

@@ -1,7 +1,7 @@
 """The final statistics review's check: type I error of the shifted sign-flip non-inferiority
 test on paired 0/1 differences at the margin, one-sided 2.5%.
 
-python research/internal/stats-0.5.0/signflip_binary.py
+python research/internal/stats-0.7.0/signflip_binary.py
 """
 
 import bisect

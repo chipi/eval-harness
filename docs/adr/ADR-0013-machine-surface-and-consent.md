@@ -1,4 +1,4 @@
-# ADR-0013 — One declaration per command; JSON, exit codes, refusals, actors, consent (0.5.0)
+# ADR-0013 — One declaration per command; JSON, exit codes, refusals, actors, consent (0.7.0)
 
 **Status:** Accepted (2026-10-26), design; not yet built. Revision 3 (2026-10-27): one consent path; a smaller exit-code table. Revision 2: no grant store: consent is the person's own command.
 **Date:** 2026-10-26

@@ -194,9 +194,9 @@ every catalog table. A row opens on click, Enter or Space.
 | the per-item table | `--items`: every item's score per arm, and each arm's Δ against the baseline |
 | the analysis charts | `--analysis`: the spread per arm and the difference from the baseline, per item, as numbers; `--x <metric>` adds each arm's mean on a second metric (the scatter) |
 
-## 0.5.0 changes (draft)
+## 0.7.0 changes (draft)
 
-Draft until 0.5.0 is built; then they are folded into the sections above. Words and chips are
+Draft until 0.7.0 is built; then they are folded into the sections above. Words and chips are
 [UXS-004](UXS-004-studies-baselines-prompts.md#words-and-marks)'s.
 
 - **Metric picker**: stage metrics appear grouped under their stage (`asr · wer`, `summary · rouge_l`),

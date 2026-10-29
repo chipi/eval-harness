@@ -2,7 +2,7 @@
 whose mean is exactly -margin: symmetric (normal) vs skewed (centred lognormal, both tails).
 One-sided 2.5%. Exact enumeration up to 30 items (stats._signed_sums), as runner/tango_sim.py.
 
-python research/internal/stats-0.5.0/signflip_continuous.py
+python research/internal/stats-0.7.0/signflip_continuous.py
 """
 
 import bisect

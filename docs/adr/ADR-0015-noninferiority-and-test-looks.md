@@ -1,4 +1,4 @@
-# ADR-0015 — Ties are non-inferiority; heldout datasets spend their level over looks (0.5.0)
+# ADR-0015 — Ties are non-inferiority; heldout datasets spend their level over looks (0.7.0)
 
 **Status:** Accepted (2026-10-26), design; not yet built. Revision 3 (2026-10-27): no equivalence claim; the MDE is the formula. Revision 2:
 continuous non-inferiority from 100 items at half the level; looks counted from decisions. Supersedes the tie rule of
@@ -6,7 +6,7 @@ continuous non-inferiority from 100 items at half the level; looks counted from 
 **Date:** 2026-10-26
 **Detail:** [PRD-013](../prd/PRD-013-identity-and-ties.md) FR3, FR5, FR6, FR9,
 [RFC-015](../rfc/RFC-015-noninferiority-looks-power.md) (tests, simulations, looks, power),
-[research/internal/stats-0.5.0](../../research/internal/stats-0.5.0/README.md) (the simulations)
+[research/internal/stats-0.7.0](../../research/internal/stats-0.7.0/README.md) (the simulations)
 
 ## Context
 
@@ -34,8 +34,8 @@ many arms on the same heldout items, which inflates errors in a way a fixed Holm
   labelled as not a look. Any subset of a heldout dataset spends the dataset's budget. Two decisions that
   took one look number (two machines, two branches) are reported by `validate`; a database store will
   prevent it.
-- **Use before 0.5.0 is shown, not counted** (the owner's choice): each heldout dataset starts at look 0,
-  with the number of configurations that used it before 0.5.0, computed from the runs, shown beside it.
+- **Use before 0.7.0 is shown, not counted** (the owner's choice): each heldout dataset starts at look 0,
+  with the number of configurations that used it before 0.7.0, computed from the runs, shown beside it.
 - **Power before spending**: the smallest attainable p (0/1) or the smallest provable margin (continuous)
   is compared with the next look's level before anything runs; a study that cannot produce evidence is
   refused unless the person overrides it.

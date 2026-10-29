@@ -3,7 +3,7 @@ bootstrap_rule_grid.py wrote. A rule is (threshold on g1, level factor when g1 i
 below it, minimum n for any continuous test). For each, per n and shape: the error at the margin (must stay at or
 below 0.025 within Monte Carlo error, about +-0.005 at 1000 simulations) and the power at no difference.
 
-python research/internal/stats-0.5.0/bootstrap_rule_eval.py OUT_n10.jsonl OUT_n20.jsonl ...
+python research/internal/stats-0.7.0/bootstrap_rule_eval.py OUT_n10.jsonl OUT_n20.jsonl ...
 """
 
 import json

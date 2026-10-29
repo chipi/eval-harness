@@ -1,6 +1,6 @@
 # PRD-010: Runners: where experiments run
 
-- **Status**: Draft (0.5.0), revision 3 (2026-10-27): phases are a `before` and an always-run `after`, marked `gpu`;
+- **Status**: Draft (0.7.0), revision 3 (2026-10-27): phases are a `before` and an always-run `after`, marked `gpu`;
   no labels, status check or state passed between them. Revision 2 (2026-10-27): the ssh host runs a git checkout of the pushed commit
 - **Authors**: Marko Dragoljevic
 - **Related UX specs**: [UXS-003](../uxs/UXS-003-cli-and-onboarding.md) (the commands)
@@ -17,7 +17,7 @@ later a container platform or CI. Today `experiment-run` and `sweep` run in the 
 after another, holding the terminal. This PRD adds **job sets** (arm × dataset × repeat, each a
 job) handed to a named **runner**, which runs them, detached, and brings back ordinary run
 directories. Jobs have the states, retries, timeouts and logs that Slurm, Kubernetes Jobs and Ray
-Jobs use. 0.5.0 ships the **local** runner (jobs in parallel, a lock per job set, resume) and a simple
+Jobs use. 0.7.0 ships the **local** runner (jobs in parallel, a lock per job set, resume) and a simple
 **ssh** runner (check out the project's pushed commit on a host, run the same command there, follow its
 log, bring the run back, validate it here), with per-phase preparation commands for hosts whose GPU must be
 switched. The run directory is the contract, so every later runner only moves one.
@@ -62,7 +62,7 @@ machine, in its conditions.
 ## Non-Goals
 
 - No scheduler or cluster manager: no priorities, quotas or multi-user queues.
-- No container, Kubernetes, cloud-batch or CI runner in 0.5.0; the interface admits them.
+- No container, Kubernetes, cloud-batch or CI runner in 0.7.0; the interface admits them.
 - Secrets never travel: a remote host uses its own keys and environment.
 - No GPU management of its own: preparing a host is a command the project names.
 

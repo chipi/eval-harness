@@ -1,6 +1,6 @@
 # PRD-011: The evidence registry
 
-- **Status**: Draft (0.5.0), revision 3 (2026-10-27): `evh baselines --json` is the export; baselines are read on
+- **Status**: Draft (0.7.0), revision 3 (2026-10-27): `evh baselines --json` is the export; baselines are read on
   their goal's page. Revision 2 (2026-10-27): baseline versions are write-once with collision-free ids,
   the newest current, no aliases ([RFC-017](../rfc/RFC-017-record-store.md))
 - **Authors**: Marko Dragoljevic

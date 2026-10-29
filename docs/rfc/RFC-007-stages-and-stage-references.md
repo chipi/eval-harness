@@ -1,6 +1,6 @@
 # RFC-007: Stages, stage references, structured outputs, item fields, batch mode, wrapping a runner
 
-- **Status**: Draft (0.5.0), revision 2 (2026-10-27): OTLP import only; export is deferred
+- **Status**: Draft (0.7.0), revision 2 (2026-10-27): OTLP import only; export is deferred
 - **Authors**: Marko Dragoljevic
 - **Related PRDs**: [PRD-008](../prd/PRD-008-pipelines-and-any-language.md) (FR1, FR2, FR3, FR5, FR6)
 - **Related RFCs**: RFC-008 (the process protocol carries the same result), RFC-013 (`--json`, schemas),

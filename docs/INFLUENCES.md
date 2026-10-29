@@ -42,9 +42,9 @@ so each line can be checked.
 - **Offline gains are not real gains** — Bernardi et al., *150 Successful Machine Learning
   Models* (KDD 2019, Booking.com).
 
-## The standards 0.5.0 follows
+## The standards 0.7.0 follows
 
-The 0.5.0 designs ([PRD-008 to PRD-013](prd/index.md)) take their vocabulary and their methods
+The 0.7.0 designs ([PRD-008 to PRD-013](prd/index.md)) take their vocabulary and their methods
 from these, so a reader who knows one of them recognises the flow. Each link was checked on
 2026-10-26.
 

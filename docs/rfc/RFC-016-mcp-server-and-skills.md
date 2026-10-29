@@ -1,6 +1,6 @@
 # RFC-016: The MCP server, the skills, llms.txt and the glossary
 
-- **Status**: Draft (0.5.0), revision 3 (2026-10-27): tools only (no resources); consent only by the person running
+- **Status**: Draft (0.7.0), revision 3 (2026-10-27): tools only (no resources); consent only by the person running
   the command (no elicitation); three skills. Revision 2: no grant store and no spend ledger; a budget is checked
   against the spend the runs record
 - **Authors**: Marko Dragoljevic
@@ -13,7 +13,7 @@
 
 ## Abstract
 
-`evh mcp` is an MCP server over stdio for one project (0.4.5 shipped its read-only start, with `--http` for a team
+`evh mcp` is an MCP server over stdio for one project (0.5.0 shipped its read-only start, with `--http` for a team
 or the public: RFC-018 on `main`, the last section here), built on the official Python SDK (`mcp` 2.3, protocol
 revision 2026-07-28). Its tools are the commands RFC-013 declares, generated from the manifest, each run as a child
 `evh <command> --json` so a tool behaves exactly as the command does. Long work returns a job id that the agent
@@ -35,7 +35,7 @@ client. The harness also ships three skills in the Agent Skills format, installe
   `sse-starlette`, `starlette`, `typing-extensions`, `typing-inspection`, `uvicorn` (and `pywin32` on Windows). The
   podcast project's environment already has `pydantic` 2.14.1 and `opentelemetry-api` 1.45.1, inside those bounds;
   `httpx2` is a separate distribution from the `httpx` it has. This is the footprint the owner accepted with "the
-  official SDK in 0.5.0"; the release notes list it.
+  official SDK in 0.7.0"; the release notes list it.
 
 ## Design
 
@@ -115,7 +115,7 @@ client. The harness also ships three skills in the Agent Skills format, installe
 
 - Shipped as package data under `evaluation_harness/skills/<name>/SKILL.md` (with `references/` where needed), in the
   Agent Skills format: front matter `name` (lowercase, matching its directory), `description` (what it does and when to
-  use it), `metadata: {harness-version: "0.5.0"}`; under 500 lines; it links the documentation pages it relies on.
+  use it), `metadata: {harness-version: "0.7.0"}`; under 500 lines; it links the documentation pages it relies on.
 - The set, three:
   - `evh-evaluate-and-compare`: a first evaluation (dataset, materialize, run, reference, compare, choose), reading a
     comparison (verdicts, looks, what not to conclude), rounds, pipelines and other languages (stages, batch mode, the
@@ -155,9 +155,9 @@ release, recorded in `RELEASING.md`, not in CI.
 
 ### Users on a shared server (to design; the owner's note, 2026-10-29)
 
-0.4.5 ships `evh mcp` early, read-only (RFC-018 on `main`): stdio, and `--http` for a team or the public, with no
+0.5.0 ships `evh mcp` early, read-only (RFC-018 on `main`): stdio, and `--http` for a team or the public, with no
 accounts, deployed at `evals.humancopilot.eu/mcp` without sign-in. A server many people reach needs users before it
-can offer anything but reads. To design here, before 0.5.0's writing tools go on a shared server:
+can offer anything but reads. To design here, before 0.7.0's writing tools go on a shared server:
 
 - **Who can read and who can write, through which tools**: an identity per caller (OAuth 2.1, which the protocol and
   the SDK define for HTTP), roles per project (reader, runner, decider), and the consent model above applied per user,
@@ -169,7 +169,7 @@ can offer anything but reads. To design here, before 0.5.0's writing tools go on
 ## Migration
 
 None. The server and skills are new; `UPGRADING.md` says how to add `evh mcp` to an agent's MCP configuration and run
-`evh skills-install`. 0.4.5's read-only server (RFC-018) is the start: its tools keep their names and answers; 0.5.0
+`evh skills-install`. 0.5.0's read-only server (RFC-018) is the start: its tools keep their names and answers; 0.7.0
 adds the declarations, the writing tools, consent and, once designed, users.
 
 ## Alternatives Considered

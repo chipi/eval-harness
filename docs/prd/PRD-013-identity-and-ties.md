@@ -1,6 +1,6 @@
 # PRD-013: Baselines per goal, the host beside the hash, non-inferiority, heldout looks, one grammar
 
-- **Status**: Draft (0.5.0), revision 3 (2026-10-27): the grammar only for versioned things and runs; no equivalence
+- **Status**: Draft (0.7.0), revision 3 (2026-10-27): the grammar only for versioned things and runs; no equivalence
   claim; the MDE is the formula. Revision 2 (2026-10-27): versions are collision-free ids, not numbers; looks are
   counted from decisions; continuous non-inferiority from 100 items at half the level
 - **Authors**: Marko Dragoljevic
@@ -16,7 +16,7 @@
 
 ## Summary
 
-The 0.5.0 reviews found things in 0.4.0 that the new work would build on and get wrong, and three review
+The 0.7.0 reviews found things in 0.4.0 that the new work would build on and get wrong, and three review
 rounds sharpened the fixes. A baseline belongs to a **dataset**; it should belong to a goal on a dataset.
 The **host** label is inside the fingerprint's hash, so the same arm on two machines reads as an
 uncontrolled comparison. A goal calls an arm **tied** with the leader on absence of evidence, against a
@@ -84,7 +84,7 @@ project (the two projects known to use the harness), not a permanent command.
 - **The team lead** with two goals on one dataset.
 - **The engineer** running the same arm on a GPU host and a laptop.
 - **Anyone reading a verdict.**
-- **A project on the harness** upgrading to 0.5.0.
+- **A project on the harness** upgrading to 0.7.0.
 
 ## User Stories
 
@@ -171,10 +171,10 @@ project (the two projects known to use the harness), not a permanent command.
   `baseline:_/smoke_v1/<version>`). A run is named with its runs directory (`run:runs-silver/<run_id>`), since
   derived copies share ids. Baselines are stored as `data/baselines/<goal>/<dataset>/<version>.json`, written
   once, with no index or pointer file (RFC-017).
-- **FR8: The 0.5.0 migration script.** A one-time release script, `harness/scripts/migrate_0_5_0.py`,
+- **FR8: The 0.7.0 migration script.** A one-time release script, `harness/scripts/migrate_0_5_0.py`,
   shipped in the package (a project that installs the harness has it) and run as
   `python -m evaluation_harness.migrate_0_5_0` (not an `evh` command: no manifest entry, MCP tool or
-  skill), migrates a project's committed data to the 0.5.0 format; `UPGRADING.md` documents it, and it is removed in a later release, staying in git
+  skill), migrates a project's committed data to the 0.7.0 format; `UPGRADING.md` documents it, and it is removed in a later release, staying in git
   history. It runs in this order:
   1. Pre-flight (read-only): a clean tree for the data it touches, the harness version, the directories in
      effect, and the shapes of the files it rewrites; `evh validate` is run with the pinned release (0.4.4 here) before the pin moves
@@ -183,8 +183,8 @@ project (the two projects known to use the harness), not a permanent command.
      items, references or code, which may be absent or changed). Any mismatch other than a derived run's
      null refuses the migration.
   3. `--dry-run` prints the plan: every file and field to change, every refusal with the command that
-     resolves it, each heldout dataset's use before 0.5.0 (shown, not counted), and the files a tag cannot restore.
-  4. A tag per repository (`pre-0.5.0-migrate`) records the starting point; the plan lists what it does not
+     resolves it, each heldout dataset's use before 0.7.0 (shown, not counted), and the files a tag cannot restore.
+  4. A tag per repository (`pre-0.7.0-migrate`) records the starting point; the plan lists what it does not
      cover (files git ignores, such as run files and caches; other repositories; the published site), and
      the migration refuses when those files would be touched.
   5. Fingerprints are restructured to version 5 from the stored body; the version-4 hash is kept beside the
@@ -192,7 +192,7 @@ project (the two projects known to use the harness), not a permanent command.
   6. Each per-dataset baseline becomes its goal's baseline on that dataset, version 1 (recording the old id and the version-5 fingerprint hash);
      the old `baselines/` folder is removed.
   7. Dataset roles are not renamed: `dev` and `heldout` stay.
-  8. Each heldout dataset's use before 0.5.0 is computed from the runs and shown beside its looks, not counted as looks (FR9.4); nothing is written for looks.
+  8. Each heldout dataset's use before 0.7.0 is computed from the runs and shown beside its looks, not counted as looks (FR9.4); nothing is written for looks.
   9. A silver reference's record of the run it came from keeps its version-4 hash (it is part of the
      reference's identity), and the manifest records the version that hash follows outside that record, so
      the reference's digest does not move.
@@ -200,7 +200,7 @@ project (the two projects known to use the harness), not a permanent command.
       the same baselines as before, including the arms page's badges and the goals page's dated baseline events.
   It refuses only real ambiguity among baselines (a custom baseline id; two goals sharing one baseline; a
   goal-less baseline on a dataset a goal uses), never runs in general. This repository migrates first, then
-  the podcast project after its pin moves to 0.5.0.
+  the podcast project after its pin moves to 0.7.0.
 - **FR9: Heldout looks are a budget.**
   - **FR9.1**: A **look** is a decision recorded on heldout items by a command that writes one: a confirmation
     (`study-confirm`), `run-promote`, `round-close --promote`. A recorded look with the same two
@@ -213,12 +213,12 @@ project (the two projects known to use the harness), not a permanent command.
     0.015%; several comparisons within one look share it by Holm. Past a protective limit of K looks (default
     10, declarable per goal) a look needs the person's consent; its level continues the series.
   - **FR9.4**: At migration no looks are counted (the owner's decision): each heldout dataset starts at look 0,
-    and the number of distinct configurations that had runs on it in the heldout role before 0.5.0 is computed
+    and the number of distinct configurations that had runs on it in the heldout role before 0.7.0 is computed
     and shown beside its looks.
   - **FR9.5**: Looks are counted from the recorded decisions, never stored apart; two decisions that took
     the same look number (on two machines, or two branches) are reported by `validate` after a merge.
   - **FR9.6**: Goal pages and `evh goals` show each heldout dataset's looks taken, the next look's level, the
-    protective limit and its use before 0.5.0.
+    protective limit and its use before 0.7.0.
 
 ## Success Criteria
 

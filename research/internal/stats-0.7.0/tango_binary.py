@@ -9,7 +9,7 @@ with q21 the restricted MLE: (sqrt(B^2 - 4AC) - B) / (2A),
   A = 2n, B = -x12 - x21 + (2n - x12 + x21)*d0, C = -x21*d0*(1 - d0).
 Reject H0: delta <= d0 when Z > 1.959964.
 
-python research/internal/stats-0.5.0/tango_binary.py
+python research/internal/stats-0.7.0/tango_binary.py
 """
 
 import bisect

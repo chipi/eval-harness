@@ -1,6 +1,6 @@
 # RFC-011: Job sets and runners: local and ssh
 
-- **Status**: Draft (0.5.0), revision 3 (2026-10-27): phases are a `before` and an always-run `after`, marked `gpu`
+- **Status**: Draft (0.7.0), revision 3 (2026-10-27): phases are a `before` and an always-run `after`, marked `gpu`
   for GPU time; no check command, no state passed between them, no labels. Revision 2 (2026-10-27): the ssh host checks out the pushed commit with git and rsync
   carries the ignored data; no manifest, delta sync or build file
 - **Authors**: Marko Dragoljevic
@@ -175,7 +175,7 @@ None. `sweep` keeps its command line.
 
 - **A queue service (Redis, Celery).** Rejected: a dependency and a service for a single-user tool.
 - **Kubernetes Jobs or Slurm now.** Deferred: the runner interface (start, status, logs, stop, bring back) admits them;
-  0.5.0 needs local and ssh.
+  0.7.0 needs local and ssh.
 - **Run remote jobs over one long ssh session.** Rejected: a dropped connection would kill them; a remote supervisor in its
   own session survives it.
 - **Copy the files with a manifest of hashes and send only the changes** (the first draft). Rejected in revision 2:

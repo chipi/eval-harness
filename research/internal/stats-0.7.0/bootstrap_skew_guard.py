@@ -3,7 +3,7 @@ differences is below -1 (a long tail of losses), test at half the level (1.25% i
 Type I at the margin (left skew, the failing case) and how often the guard fires; plus normal
 data, where the guard should rarely fire. Companion to runner/skew_sim2.py.
 
-python research/internal/stats-0.5.0/bootstrap_skew_guard.py
+python research/internal/stats-0.7.0/bootstrap_skew_guard.py
 """
 
 import math

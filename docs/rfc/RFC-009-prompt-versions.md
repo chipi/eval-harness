@@ -1,6 +1,6 @@
 # RFC-009: Prompt versions
 
-- **Status**: Draft (0.5.0), revision 3 (2026-10-27): paths are the paths the system reads (no `pkg:`); a name is
+- **Status**: Draft (0.7.0), revision 3 (2026-10-27): paths are the paths the system reads (no `pkg:`); a name is
   the root's name and the file's relative path as written. Revision 2 (2026-10-27): versions are content-addressed (no numbers, no index, no
   lock, no aliases), written through the record store ([RFC-017](RFC-017-record-store.md))
 - **Authors**: Marko Dragoljevic

@@ -559,9 +559,9 @@ names and the verdicts' metric open their pages.
 - A table that shows the period keeps the new badge, the row chips and the trends' form.
 - `make browser-check` and `harness/tests/test_catalog.py` pass.
 
-## 0.5.0 changes (draft)
+## 0.7.0 changes (draft)
 
-Draft until 0.5.0 is built; then they are folded into the sections above. New pages (studies, baselines,
+Draft until 0.7.0 is built; then they are folded into the sections above. New pages (studies, baselines,
 prompts) are in [UXS-004](UXS-004-studies-baselines-prompts.md), with the words and marks every page shares.
 
 - **Header**: the nav gains **Studies** and **Prompts** under Experiments
@@ -582,7 +582,7 @@ prompts) are in [UXS-004](UXS-004-studies-baselines-prompts.md), with the words 
     the reason, its evidence in one line (the verdict chip and the look label, UXS-004), and
     **inspect it** / **history** buttons. Without one: "No baseline yet", and the command.
   - **Heldout looks**, under the answer, one line per dataset in the `heldout` role: "heldout looks: 2 taken ·
-    next at 0.17% · limit 10 · used by 29 configurations before 0.5.0", linked to `evh goals --goal
+    next at 0.17% · limit 10 · used by 29 configurations before 0.7.0", linked to `evh goals --goal
     <id> --looks`. A dataset at its limit: "limit reached: the next look needs your consent".
   - **The decision box** uses non-inferiority (RFC-015): the reasons say "non-inferior to the leader
     (margin 0.01 on rouge_l; p 0.003, nominal · not a look)" or "inconclusive against the leader (too few

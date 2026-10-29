@@ -1,4 +1,4 @@
-# ADR-0009 — The harness versions declared prompt files (0.5.0)
+# ADR-0009 — The harness versions declared prompt files (0.7.0)
 
 **Status:** Accepted (2026-10-26), design; not yet built. Revision 3 (2026-10-27): paths are the ones the system reads (no `pkg:`), names as
 written. Revision 2: content-addressed versions, no numbers, index, lock or aliases. Amends [PRD-001](../prd/PRD-001-experiments-and-comparison.md)'s

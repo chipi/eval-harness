@@ -1,9 +1,9 @@
 # RFC-013: The machine surface: one declaration per command, JSON, exit codes, refusals, the actor, the project config
 
-- **Status**: Draft (0.5.0), revision 3 (2026-10-27): exit codes 0–7, 70, 75 and 130 only; consent only by the person
+- **Status**: Draft (0.7.0), revision 3 (2026-10-27): exit codes 0–7, 70, 75 and 130 only; consent only by the person
   running the command. Revision 2: no grant store
 - **Authors**: Marko Dragoljevic
-- **Related PRDs**: [PRD-012](../prd/PRD-012-agent-ready.md) (FR1, FR2, FR3, FR7, FR10), and every 0.5.0 PRD
+- **Related PRDs**: [PRD-012](../prd/PRD-012-agent-ready.md) (FR1, FR2, FR3, FR7, FR10), and every 0.7.0 PRD
   through PRD-012 FR8
 - **Related RFCs**: RFC-016 (the MCP server and skills, built on this), RFC-011 (long work detached as jobs),
   RFC-014 (identity)
@@ -19,7 +19,7 @@ writes, spends), whether it runs long, its output schema and its examples. From 
 computing its result from printing it, so `--json` prints the result and the table is drawn from the same
 data. Results go to stdout and everything else to stderr; exit codes are a documented table; refusals are RFC
 9457 problem details with a stable `type`; every record a command writes says who acted and for whom. The
-project's `config.yaml` becomes the one place its directories, runners and limits live. 0.5.0 requires Python
+project's `config.yaml` becomes the one place its directories, runners and limits live. 0.7.0 requires Python
 3.10 or later.
 
 ## Problem Statement
@@ -43,10 +43,10 @@ project's `config.yaml` becomes the one place its directories, runners and limit
   for `catalog.adapter` (`catalog_adapter.py:823`).
 - `schemas/` has no run record, fingerprint or prediction schema.
 - `requires-python = ">=3.9"` and `ruff.toml:8` `target-version = "py39"`; the official MCP SDK (RFC-016) requires
-  3.10. (0.4.5 moved the floor to 3.10 when it shipped the read-only server, RFC-018 on `main`; `ruff.toml` stays py39.)
-- 0.4.5's view commands take `--json` already, a generic `{"command", "version", "result": {"blocks": [...]}}`
+  3.10. (0.5.0 moved the floor to 3.10 when it shipped the read-only server, RFC-018 on `main`; `ruff.toml` stays py39.)
+- 0.5.0's view commands take `--json` already, a generic `{"command", "version", "result": {"blocks": [...]}}`
   collected from what they print (RFC-018). This RFC replaces `blocks` with each command's own result and schema;
-  0.4.5's release notes say not to build on it.
+  0.5.0's release notes say not to build on it.
 
 ## Design
 
@@ -225,7 +225,7 @@ release notes say so.
 No data migration. Scripts move to the declaration one by one; the manifest test lists the ones still missing, and the
 release needs none missing. Exit-code and refusal changes are listed in the release notes; the podcast project's scripts
 that read exit codes (`scripts/harness/import_*.py` calling `evh import-run`) are checked against the new table before its
-pin moves. A reader of 0.4.5's `--json` `blocks` (its MCP tools' structured content) moves to the command's own
+pin moves. A reader of 0.5.0's `--json` `blocks` (its MCP tools' structured content) moves to the command's own
 result; the tools keep their names.
 
 ## Alternatives Considered
@@ -254,7 +254,7 @@ result; the tools keep their names.
   `unknown:`; a person's `--confirm` passes and an agent's is refused; the refusal carries the exact command,
   and nothing is stored between the refusal and the person's run.
 - `harness/tests/test_config.py`: precedence environment > config > default; `evh config --json` names the source.
-- **The tiers** (`harness/docs/TESTING.md`, since 0.4.2) hold for every 0.5.0 RFC: each test goes into the lowest tier
+- **The tiers** (`harness/docs/TESTING.md`, since 0.4.2) hold for every 0.7.0 RFC: each test goes into the lowest tier
   that catches what it guards. Each new checker (V17, V18, V19, `evidence-check`, `adapter-check`, `skills-check`)
   gets its planted defects in `tests/test_checks_can_fail.py` and so runs in the required `guards` check; the
   studies and prompts pages join `tests/test_catalog_real_browser.py`'s phone-width and menu checks; a list

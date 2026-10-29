@@ -41,13 +41,13 @@ the [Runbook](../../harness/docs/RUNBOOK.md); the first evaluation, step by step
 
 ## Non-Goals
 
-- Not a model zoo or a prompt store: the user brings the system under test. (From 0.5.0 the
+- Not a model zoo or a prompt store: the user brings the system under test. (From 0.7.0 the
   harness versions the prompt files an arm declares, wherever they live:
   [PRD-009](PRD-009-prompts-and-optimisation.md).)
 - Not a dashboard of quality over time; each comparison is between frozen runs. (From 0.4.2 the catalog's trends
   count work and spend in a period against the period before; they compare no result,
   [ADR-0018](../adr/ADR-0018-period-from-today.md).)
-- No automatic choice of a winner: the harness reports tests, a person promotes. (From 0.5.0 an
+- No automatic choice of a winner: the harness reports tests, a person promotes. (From 0.7.0 an
   optimisation loop keeps or drops trials by its declared rule while it searches; that is search,
   not a choice of winner, and nothing is promoted automatically:
   [PRD-009](PRD-009-prompts-and-optimisation.md).)

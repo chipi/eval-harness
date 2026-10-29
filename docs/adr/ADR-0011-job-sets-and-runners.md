@@ -1,4 +1,4 @@
-# ADR-0011 — Long work runs as job sets, locally or over ssh (0.5.0)
+# ADR-0011 — Long work runs as job sets, locally or over ssh (0.7.0)
 
 **Status:** Accepted (2026-10-26), design; not yet built. Revision 3 (2026-10-27): phases are a before and an after only. Revision 2: the ssh host checks out the pushed commit with git; no manifest or build file.
 **Date:** 2026-10-26

@@ -4,7 +4,7 @@ a rejection is power), and record each simulation's skewness g1 and the bootstra
 B = 999). Rules (a skew threshold, a level for skewed data, a minimum n) are then scored on the same simulations by
 bootstrap_rule_eval.py, so the comparison between rules is not blurred by different random draws.
 
-python research/internal/stats-0.5.0/bootstrap_rule_grid.py N OUT.jsonl
+python research/internal/stats-0.7.0/bootstrap_rule_grid.py N OUT.jsonl
 """
 
 import json

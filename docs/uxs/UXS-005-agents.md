@@ -1,6 +1,6 @@
 # UXS-005: The harness for agents: tools, consent, skills, llms.txt
 
-- **Status**: Draft (0.5.0), revision 3 (2026-10-27): tools only (no resources); consent only by the person running
+- **Status**: Draft (0.7.0), revision 3 (2026-10-27): tools only (no resources); consent only by the person running
   the command (no elicitation); three skills; studies confirmed with `study-confirm`. Revision 2: no grants
 - **Authors**: Marko Dragoljevic
 - **Related PRDs**: [PRD-012](../prd/PRD-012-agent-ready.md)
@@ -38,7 +38,7 @@ agent's side and the person's; long work; the skills; `llms.txt` and the glossar
 study.
 
 **Non-goals:** a chat interface; the agent's own client UI (how a client renders a result is the
-client's); writing tools on a server others reach. 0.4.5's `--http` serves the read tools only, to a team
+client's); writing tools on a server others reach. 0.5.0's `--http` serves the read tools only, to a team
 or the public (RFC-018 on `main`); a remote server that writes waits for users and permissions (RFC-016).
 
 ## Starting the server
@@ -137,7 +137,7 @@ default). Each skill is a `SKILL.md` an agent loads when its description matches
 
 Every skill: says to prefer the MCP tools when the server is configured and the commands otherwise; says
 in its first lines when to stop and ask, whatever the project's own instructions say; links the
-documentation pages it relies on; is under 500 lines; carries `metadata: {harness-version: "0.5.0"}`.
+documentation pages it relies on; is under 500 lines; carries `metadata: {harness-version: "0.7.0"}`.
 
 ## The agent-driven study
 

@@ -1,6 +1,6 @@
-# RFC-015: The statistics of 0.5.0: non-inferiority, verdicts, heldout looks, power
+# RFC-015: The statistics of 0.7.0: non-inferiority, verdicts, heldout looks, power
 
-- **Status**: Draft (0.5.0), revision 3 (2026-10-27): no equivalence test (nothing decides on it); the minimum
+- **Status**: Draft (0.7.0), revision 3 (2026-10-27): no equivalence test (nothing decides on it); the minimum
   detectable effect is the formula, never simulated. Revision 2 (2026-10-27): continuous non-inferiority from 100 items at half the level
   (one rule instead of a skew guard); looks counted from recorded decisions, with no look files
 - **Authors**: Marko Dragoljevic
@@ -18,7 +18,7 @@
 
 ## Abstract
 
-0.5.0 asks three statistical questions the harness did not ask before: is a cheaper arm **not worse** than
+0.7.0 asks three statistical questions the harness did not ask before: is a cheaper arm **not worse** than
 the leader by more than a declared margin (non-inferiority); has a **heldout item set** been looked at too
 often; and **can** these items show anything at all. The 0.4.0 question, is one arm **better**, keeps its
 test (the paired sign-flip test with Holm), which is exact for it. Non-inferiority is a different question
@@ -35,7 +35,7 @@ attainable p and the minimum detectable effect are computed before anything is s
 - The obvious non-inferiority test, the sign-flip test applied to Δ + margin, assumes the paired differences
   are symmetric about −margin. Simulated at a true difference exactly at −margin, one-sided 2.5% (seeded
   scripts and their full output in
-  [research/internal/stats-0.5.0](../../research/internal/stats-0.5.0/README.md)):
+  [research/internal/stats-0.7.0](../../research/internal/stats-0.7.0/README.md)):
 
   | measure | items | shape | sign-flip error |
   | --- | --- | --- | --- |
@@ -89,7 +89,7 @@ attainable p and the minimum detectable effect are computed before anything is s
 - **Margins** are in the measure's units, declared by the goal per measure in the field 0.4.0 already has,
   `success_criteria.axes.<axis>.margin` (`axes.quality.margin` for the primary measure; a project axis for another
   measure) (PRD-013 FR3.1). What changes is its meaning and its default: in 0.4.0 it was a tie band defaulting to 2%
-  of the leader's mean; from 0.5.0 it is the non-inferiority margin and has no default. The migration (RFC-014) leaves
+  of the leader's mean; from 0.7.0 it is the non-inferiority margin and has no default. The migration (RFC-014) leaves
   declared values where they are and lists them, since their meaning changes. With no margin, no non-inferiority test
   runs, and `validate` notes the goal. The `non_inferior` direction of PRD-005's goal axes uses
   this test.
@@ -196,10 +196,10 @@ it is below 2.5%.
   prevent it without a centre; `validate` reports a **double-spent look** (two decisions with one number on one
   dataset), naming both, and every page shows it beside the dataset. The database provider will hand out the number in
   a transaction.
-- **History before 0.5.0** (the owner's decision): earlier use is not counted as looks; each heldout dataset starts at
-  look 0. How many distinct configurations had runs on it in the heldout role before 0.5.0 is computed from the runs
-  (their fingerprints name a harness before 0.5.0), and pages show it beside the looks ("used by 29 configurations
-  before 0.5.0; levels from 0.5.0 do not account for that").
+- **History before 0.7.0** (the owner's decision): earlier use is not counted as looks; each heldout dataset starts at
+  look 0. How many distinct configurations had runs on it in the heldout role before 0.7.0 is computed from the runs
+  (their fingerprints name a harness before 0.7.0), and pages show it beside the looks ("used by 29 configurations
+  before 0.7.0; levels from 0.7.0 do not account for that").
 - **Where it shows.** Goal pages and `evh goals` show per heldout dataset: looks taken, the next look's level, the protective
   limit, and the prior use; `evh goals --goal G --looks` lists every look of its heldout datasets (key, level, actor,
   what, verdict).

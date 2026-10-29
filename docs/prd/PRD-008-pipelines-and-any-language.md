@@ -1,6 +1,6 @@
 # PRD-008: Pipelines, stages, and systems in any language
 
-- **Status**: Draft (0.5.0), final review round, revision 2 (2026-10-27): stdio only (HTTP deferred), OTLP import only (export deferred)
+- **Status**: Draft (0.7.0), final review round, revision 2 (2026-10-27): stdio only (HTTP deferred), OTLP import only (export deferred)
 - **Authors**: Marko Dragoljevic
 - **Related UX specs**: [UXS-002](../uxs/UXS-002-inspector.md) (the inspector, to gain a stage view)
 - **Related RFCs**: [RFC-007](../rfc/RFC-007-stages-and-stage-references.md) (stages and stage references), [RFC-008](../rfc/RFC-008-process-protocol.md) (the process protocol)
@@ -171,7 +171,7 @@ harness keeping the scoring and the statistics.
 - The podcast project's summary → insights → knowledge-graph stages (run today by its
   `run_experiment.py` tasks; its per-feed runner turns those stages off) run through the harness via
   the wrapping recipe, with per-stage scores (to be confirmed with that project).
-- Every 0.4.x adapter runs and every 0.4.x run validates (after the 0.5.0 migrations).
+- Every 0.4.x adapter runs and every 0.4.x run validates (after the 0.7.0 migrations).
 
 ## Related Documents
 

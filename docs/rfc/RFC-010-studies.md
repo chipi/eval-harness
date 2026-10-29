@@ -1,6 +1,6 @@
 # RFC-010: Studies: research, trials, samplers, and the confirmation that is evidence
 
-- **Status**: Draft (0.5.0), revision 3 (2026-10-27): one kind of study (research); evidence is always a separate
+- **Status**: Draft (0.7.0), revision 3 (2026-10-27): one kind of study (research); evidence is always a separate
   confirmation (`study-confirm`); one dollar cap; no data-egress settings. Revision 2: one dev dataset, three samplers
   (grid, a command, the agent), a spec and one append-only event log ([RFC-017](RFC-017-record-store.md))
 - **Authors**: Marko Dragoljevic
@@ -229,7 +229,7 @@ Trials are arms with configs `<study_id>-t<k>`, so they also land on 0.4.2's arm
 - the studies page ([UXS-004](../uxs/UXS-004-studies-baselines-prompts.md)) carries the period from its own builder
   (`period_studies`, read by `evh studies --period P` too), as every listing page does.
 
-## Deferred (after 0.5.0)
+## Deferred (after 0.7.0)
 
 Several datasets per study (tracks), a built-in LLM sampler (the agent sampler covers the case, and a project can plug
 one in as a command), contested-judgement policies (dropping or falling back when judges disagree on too many items),

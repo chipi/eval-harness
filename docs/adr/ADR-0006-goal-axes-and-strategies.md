@@ -1,6 +1,6 @@
 # ADR-0006 — A goal weighs cost, quality and speed; a strategy picks (0.4.0)
 
-**Status:** Accepted (2026-10-25), as built. Its tie rule ("not separated, and within the margin") is superseded from 0.5.0 by [ADR-0015](ADR-0015-noninferiority-and-test-looks.md); the rest stands.
+**Status:** Accepted (2026-10-25), as built. Its tie rule ("not separated, and within the margin") is superseded from 0.7.0 by [ADR-0015](ADR-0015-noninferiority-and-test-looks.md); the rest stands.
 **Date:** 2026-10-25
 **Detail:** [PRD-005](../prd/PRD-005-goals-and-rounds.md) (requirements),
 [UXS-001](../uxs/UXS-001-catalog.md) (the goal page, the home page's glance),

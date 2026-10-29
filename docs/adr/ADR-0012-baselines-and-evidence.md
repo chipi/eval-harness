@@ -1,4 +1,4 @@
-# ADR-0012 — Baselines per goal, with the evidence frozen at promotion (0.5.0)
+# ADR-0012 — Baselines per goal, with the evidence frozen at promotion (0.7.0)
 
 **Status:** Accepted (2026-10-26), design; not yet built. Revision 3 (2026-10-27): `evh baselines --json` is the export; no baselines pages. Revision 2: write-once versions, the newest current; no index, pointer or lock.
 **Date:** 2026-10-26

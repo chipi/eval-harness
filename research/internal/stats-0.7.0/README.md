@@ -1,4 +1,4 @@
-# The 0.5.0 statistics simulations
+# The 0.7.0 statistics simulations
 
 The evidence behind [RFC-015](../../../docs/rfc/RFC-015-noninferiority-looks-power.md): which
 non-inferiority test holds its level for which measure. Every script is seeded and runs from the

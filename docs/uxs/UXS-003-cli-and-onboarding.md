@@ -150,9 +150,9 @@ evh round-close --goal tickets_summary --round r1 --conclusion "…" --promote <
 - `--promote` runs `run-promote` with the conclusion as the reason; if the promotion is refused,
   the round stays open.
 
-## 0.5.0 changes (draft)
+## 0.7.0 changes (draft)
 
-Draft until 0.5.0 is built; then they replace the sections above they name.
+Draft until 0.7.0 is built; then they replace the sections above they name.
 
 ### How a command speaks (replaces the section above)
 

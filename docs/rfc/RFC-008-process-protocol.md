@@ -1,6 +1,6 @@
 # RFC-008: The process protocol: systems in any language
 
-- **Status**: Draft (0.5.0), revision 3 (2026-10-27): the metric declarations live in the adapter file, not in
+- **Status**: Draft (0.7.0), revision 3 (2026-10-27): the metric declarations live in the adapter file, not in
   `initialize`, so nothing is cached. Revision 2: stdio only; the HTTP transport is deferred
 - **Authors**: Marko Dragoljevic
 - **Related PRDs**: [PRD-008](../prd/PRD-008-pipelines-and-any-language.md) (FR4)

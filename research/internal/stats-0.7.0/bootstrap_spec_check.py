@@ -9,7 +9,7 @@ halves the level, and with n < 50 makes the verdict inconclusive (not a rejectio
 B is 999 here, not RFC-015's 9999: at a level of 2.5% the p granularity of 0.001 does not change a decision
 that matters to the error rate, and 9999 would make the grid take hours in pure Python.
 
-python research/internal/stats-0.5.0/bootstrap_spec_check.py
+python research/internal/stats-0.7.0/bootstrap_spec_check.py
 """
 
 import math

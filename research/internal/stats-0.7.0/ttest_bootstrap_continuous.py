@@ -2,7 +2,7 @@
 (a) the paired t-test, (b) the studentized (bootstrap-t) bootstrap, one-sided 2.5%, under normal,
 right-skewed and left-skewed differences. Companion to runner/skew_sim.py (the shifted sign-flip).
 
-python research/internal/stats-0.5.0/ttest_bootstrap_continuous.py
+python research/internal/stats-0.7.0/ttest_bootstrap_continuous.py
 """
 
 import math

@@ -1,6 +1,6 @@
 # PRD-009: Prompt versions, and optimisation studies
 
-- **Status**: Draft (0.5.0), revision 3 (2026-10-27): one kind of study (research); evidence only from a confirmation;
+- **Status**: Draft (0.7.0), revision 3 (2026-10-27): one kind of study (research); evidence only from a confirmation;
   one dollar cap; no data-egress settings. Revision 2: one dev dataset, three samplers (grid, a command, the agent), no
   contested-judgement policies, Karpathy-only import; the rest deferred (FR6)
 - **Authors**: Marko Dragoljevic

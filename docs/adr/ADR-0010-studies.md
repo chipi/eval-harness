@@ -1,4 +1,4 @@
-# ADR-0010 — Studies: research by an ask/tell loop, and one test that is evidence (0.5.0)
+# ADR-0010 — Studies: research by an ask/tell loop, and one test that is evidence (0.7.0)
 
 **Status:** Accepted (2026-10-26), design; not yet built. Revision 3 (2026-10-27): one kind of study; evidence
 only from a confirmation. Revision 2: one dev dataset per study; grid, command and agent samplers; a spec and an event log. Several datasets per study, a built-in LLM sampler, contested-judgement policies and column-map imports are deferred.

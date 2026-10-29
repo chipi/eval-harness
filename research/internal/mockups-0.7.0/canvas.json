@@ -1,7 +1,7 @@
 {
   "v": 3,
   "createdOnFiles": {"v": 1, "at": "2026-10-27T12:00:00Z"},
-  "title": "Eval harness 0.5.0 mockups",
+  "title": "Eval harness 0.7.0 mockups",
   "launch": {"view": "canvas"},
   "pages": [],
   "boards": {
@@ -14,7 +14,7 @@
   },
   "order": ["Main.dc.html", "Study.dc.html", "Inspector.dc.html", "Arm.dc.html", "Prompt.dc.html", "Terminal.dc.html"],
   "notes": {
-    "title": {"x": 0, "y": -320, "text": "Eval harness 0.5.0: what the catalog, the inspector and the terminal look like (draft; numbers illustrative)", "kind": "title1", "maxW": 2640}
+    "title": {"x": 0, "y": -320, "text": "Eval harness 0.7.0: what the catalog, the inspector and the terminal look like (draft; numbers illustrative)", "kind": "title1", "maxW": 2640}
   },
   "designSystems": []
 }

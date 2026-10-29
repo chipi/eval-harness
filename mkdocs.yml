@@ -86,8 +86,8 @@ nav:
           - "RFC-011: Job sets and runners: local and ssh": rfc/RFC-011-job-sets-and-runners.md
           - "RFC-012: The evidence registry: baselines' evidence, the export, the check": rfc/RFC-012-evidence-registry.md
           - "RFC-013: The machine surface: declarations, JSON, exit codes, refusals, the actor, the config": rfc/RFC-013-machine-surface.md
-          - "RFC-014: Identity in 0.5.0: baselines, fingerprint v5, run ids, one grammar, the migration": rfc/RFC-014-identity-baselines-migration.md
-          - "RFC-015: The statistics of 0.5.0: non-inferiority, verdicts, test looks, power": rfc/RFC-015-noninferiority-looks-power.md
+          - "RFC-014: Identity in 0.7.0: baselines, fingerprint v5, run ids, one grammar, the migration": rfc/RFC-014-identity-baselines-migration.md
+          - "RFC-015: The statistics of 0.7.0: non-inferiority, verdicts, test looks, power": rfc/RFC-015-noninferiority-looks-power.md
           - "RFC-016: The MCP server, the skills, llms.txt and the glossary": rfc/RFC-016-mcp-server-and-skills.md
           - "RFC-017: The record store: records, ids and one store contract": rfc/RFC-017-record-store.md
       - Decisions (ADRs):
@@ -98,17 +98,17 @@ nav:
           - "ADR-0004: Experiment rounds, and a catalog that guides them (0.4.0)": adr/ADR-0004-experiment-rounds.md
           - "ADR-0005: One provider layer; credentials per role, never identity (0.4.0)": adr/ADR-0005-credentials-per-role.md
           - "ADR-0006: A goal weighs cost, quality and speed; a strategy picks (0.4.0)": adr/ADR-0006-goal-axes-and-strategies.md
-          - "ADR-0007: A result carries its stages; items fail alone (0.5.0)": adr/ADR-0007-stages-and-pipelines.md
-          - "ADR-0008: Systems in any language through a JSON-RPC process (0.5.0)": adr/ADR-0008-process-protocol.md
-          - "ADR-0009: The harness versions declared prompt files (0.5.0)": adr/ADR-0009-prompt-versions.md
-          - "ADR-0010: Studies: research by an ask/tell loop, and one test that is evidence (0.5.0)": adr/ADR-0010-studies.md
-          - "ADR-0011: Long work runs as job sets, locally or over ssh (0.5.0)": adr/ADR-0011-job-sets-and-runners.md
-          - "ADR-0012: Baselines per goal, with the evidence frozen at promotion (0.5.0)": adr/ADR-0012-baselines-and-evidence.md
-          - "ADR-0013: One declaration per command; JSON, exit codes, refusals, actors, consent (0.5.0)": adr/ADR-0013-machine-surface-and-consent.md
-          - "ADR-0014: Fingerprint version 5, run ids, one grammar, a one-time migration (0.5.0)": adr/ADR-0014-identity-v5-and-migration.md
-          - "ADR-0015: Ties are non-inferiority; test datasets spend their level over looks (0.5.0)": adr/ADR-0015-noninferiority-and-test-looks.md
-          - "ADR-0016: An MCP server, skills and llms.txt for agents (0.5.0)": adr/ADR-0016-mcp-server-and-skills.md
-          - "ADR-0017: Write-once records with collision-free ids, through one store contract (0.5.0)": adr/ADR-0017-record-store.md
+          - "ADR-0007: A result carries its stages; items fail alone (0.7.0)": adr/ADR-0007-stages-and-pipelines.md
+          - "ADR-0008: Systems in any language through a JSON-RPC process (0.7.0)": adr/ADR-0008-process-protocol.md
+          - "ADR-0009: The harness versions declared prompt files (0.7.0)": adr/ADR-0009-prompt-versions.md
+          - "ADR-0010: Studies: research by an ask/tell loop, and one test that is evidence (0.7.0)": adr/ADR-0010-studies.md
+          - "ADR-0011: Long work runs as job sets, locally or over ssh (0.7.0)": adr/ADR-0011-job-sets-and-runners.md
+          - "ADR-0012: Baselines per goal, with the evidence frozen at promotion (0.7.0)": adr/ADR-0012-baselines-and-evidence.md
+          - "ADR-0013: One declaration per command; JSON, exit codes, refusals, actors, consent (0.7.0)": adr/ADR-0013-machine-surface-and-consent.md
+          - "ADR-0014: Fingerprint version 5, run ids, one grammar, a one-time migration (0.7.0)": adr/ADR-0014-identity-v5-and-migration.md
+          - "ADR-0015: Ties are non-inferiority; test datasets spend their level over looks (0.7.0)": adr/ADR-0015-noninferiority-and-test-looks.md
+          - "ADR-0016: An MCP server, skills and llms.txt for agents (0.7.0)": adr/ADR-0016-mcp-server-and-skills.md
+          - "ADR-0017: Write-once records with collision-free ids, through one store contract (0.7.0)": adr/ADR-0017-record-store.md
           - "ADR-0018: The catalog's period is counted from today, in the browser (0.4.2)": adr/ADR-0018-period-from-today.md
   - The experiments:
       - Reproduce it: REPRODUCE.md

@@ -1,4 +1,4 @@
-# ADR-0014 — Fingerprint version 5, run ids, one grammar, a one-time migration (0.5.0)
+# ADR-0014 — Fingerprint version 5, run ids, one grammar, a one-time migration (0.7.0)
 
 **Status:** Accepted (2026-10-26), design; not yet built. Revision 3 (2026-10-27): the grammar only for versioned things and runs. Revision 2:
 versions are collision-free ids; records through the record store.

@@ -1,6 +1,6 @@
 # RFC-017: The record store: records, ids and one store contract
 
-- **Status**: Draft (0.5.0), revision 2 (2026-10-27): new in the simplification pass
+- **Status**: Draft (0.7.0), revision 2 (2026-10-27): new in the simplification pass
 - **Authors**: Marko Dragoljevic
 - **Related PRDs**: [PRD-011](../prd/PRD-011-evidence-registry.md), [PRD-012](../prd/PRD-012-agent-ready.md),
   [PRD-013](../prd/PRD-013-identity-and-ties.md)
@@ -8,11 +8,11 @@
   [RFC-012](RFC-012-evidence-registry.md) (evidence), [RFC-014](RFC-014-identity-baselines-migration.md)
   (baselines, ids), [RFC-015](RFC-015-noninferiority-looks-power.md) (looks)
 - **Code**: new `harness/scripts/_store.py` (the contract and the files provider); every command that writes a
-  0.5.0 record goes through it
+  0.7.0 record goes through it
 
 ## Abstract
 
-0.5.0 adds records: baseline versions, prompt versions, study trials, decisions on heldout data. Today each
+0.7.0 adds records: baseline versions, prompt versions, study trials, decisions on heldout data. Today each
 command writes its own files its own way. This RFC fixes how every new record is stored: a typed document with an
 id that can never collide, written through one small store contract. The files-in-git provider implements the
 contract with plain files that merge cleanly; a database provider, planned for team use, will implement the same
@@ -56,7 +56,7 @@ Runs, goals, configs, datasets, references and rounds keep their 0.4.0 files.
 - **Versions of a prompt**: the files in its directory, sorted by `created_at`.
 - **Heldout looks**: counted from the decisions recorded on a heldout dataset (baseline versions with evidence on
   it, studies' confirmations) (RFC-015).
-- **Use before 0.5.0**: counted from runs whose fingerprint names a harness before 0.5.0.
+- **Use before 0.7.0**: counted from runs whose fingerprint names a harness before 0.7.0.
 - **Spend**: summed from the runs' recorded cost.
 
 No index, pointer, ledger or count file exists for any of these.
@@ -77,7 +77,7 @@ class Store(Protocol):
 - **Files provider**: `create` writes a temporary file and links it into place (`os.link`, which fails if the
   target exists); `append` writes one line with `O_APPEND`, under 4 KB so a line is never interleaved;
   `list` reads a directory. No lock files.
-- **Database provider** (not in 0.5.0): `create` is an insert with a unique key, `append` an insert, `list` a query.
+- **Database provider** (not in 0.7.0): `create` is an insert with a unique key, `append` an insert, `list` a query.
   The commands do not change.
 
 ### After a merge (files provider)
@@ -98,7 +98,7 @@ These are the limits of a store without a centre; the database provider removes 
 - **Lock files and index files** (the first draft of RFC-009 and RFC-014). Rejected: they protect one machine
   against itself, conflict across clones, and duplicate what the records already say.
 - **Sequential version numbers.** Rejected: they collide across branches.
-- **The database now.** Deferred: 0.5.0 keeps files in git; the contract is what makes the database a provider
+- **The database now.** Deferred: 0.7.0 keeps files in git; the contract is what makes the database a provider
   rather than a rewrite.
 
 ## Testing
@@ -111,7 +111,7 @@ These are the limits of a store without a centre; the database provider removes 
 
 ## Decisions (ADR candidates)
 
-1. Every new 0.5.0 record is a write-once document with a collision-free id, written through one store contract
+1. Every new 0.7.0 record is a write-once document with a collision-free id, written through one store contract
    whose only concurrency primitive is create-if-absent.
 2. Nothing that can be derived from records is stored: no index, pointer, ledger or count files.
 3. On git, conflicts that git cannot see are reported by `validate` after a merge; a database provider removes them.

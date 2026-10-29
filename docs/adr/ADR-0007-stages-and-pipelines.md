@@ -1,4 +1,4 @@
-# ADR-0007 — A result carries its stages; items fail alone (0.5.0)
+# ADR-0007 — A result carries its stages; items fail alone (0.7.0)
 
 **Status:** Accepted (2026-10-26), design; not yet built. Revision 2 (2026-10-27): OTLP export deferred.
 **Date:** 2026-10-26

@@ -1,6 +1,6 @@
 # RFC-012: The evidence registry: baselines' evidence, `evh baselines --json`, the check
 
-- **Status**: Draft (0.5.0), revision 3 (2026-10-27): `evh baselines --json` is the export (no separate command or
+- **Status**: Draft (0.7.0), revision 3 (2026-10-27): `evh baselines --json` is the export (no separate command or
   schema); no baselines pages (the goal page shows them). Revision 2: baselines and looks per
   [RFC-017](RFC-017-record-store.md)
 - **Authors**: Marko Dragoljevic
@@ -49,7 +49,7 @@ replaced baseline, a missing round or a deleted report fails in CI.
   "round": "r3",
   "study": {"id": "study:news_summary_cnn/s2", "confirm": {"outcome": "better", "n": 180,
             "look": 1}},
-  "computed_with": {"harness_version": "0.5.0", "stats_sha256": "…"}
+  "computed_with": {"harness_version": "0.7.0", "stats_sha256": "…"}
 }
 ```
 
