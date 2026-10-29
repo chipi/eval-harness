@@ -153,11 +153,16 @@ def sign_flip_p(
         while len(_P) > _P_MAX:
             _P.popitem(last=False)
         return _P[key]
-    hits = sum(
-        1
-        for _ in range(permutations)
-        if abs(statistics.fmean(d if rng.random() < 0.5 else -d for d in deltas)) >= abs(obs)
-    )
+    # The shared stream: the signs fmean(d if rng.random() < 0.5 else -d ...) drew, from _draw,
+    # summed as above (fmean is fsum / n). The same p, and the same generator state after, so the
+    # next opponent's draws are unchanged too.
+    n, a = len(deltas), abs(obs)
+    neg = [-d for d in deltas]
+    hits = 0
+    for _ in range(permutations):
+        keep = _draw(rng, n)
+        if abs(math.fsum(chain(compress(deltas, keep), compress(neg, keep.translate(_FLIP)))) / n) >= a:
+            hits += 1
     return (hits + 1) / (permutations + 1)
 
 
@@ -232,6 +237,23 @@ def _store_p(key: tuple, p: float) -> None:
 _SIGNS: OrderedDict = OrderedDict()
 _SIGNS_MAX = 2
 _FLIP = bytes.maketrans(b"\x00\x01", b"\x01\x00")
+_TOP_BIT_CLEAR = bytes(int(b < 128) for b in range(256))
+
+
+def _draw(rng: random.Random, n: int) -> bytes:
+    """n signs from rng, exactly as n calls of `rng.random() < 0.5` draw them: 1 keeps an item's
+    sign, 0 flips it.
+
+    CPython's random() is (a >> 5, b >> 6) of two 32-bit Mersenne Twister words scaled by 2**-53,
+    so it is below 0.5 exactly when a's top bit is clear; getrandbits(64 * n) takes the same 2n
+    words in the same order (word i at bits 32i..32i+31), so byte 3 of every 8 is that top byte.
+    One call in C instead of n in Python (family_test's 116 million draws were ~7 s a family),
+    and the generator is left where the n calls leave it. A generator that defines its own
+    random() or getrandbits() is drawn the slow way."""
+    t = type(rng)
+    if t.random is random.Random.random and t.getrandbits is random.Random.getrandbits:
+        return rng.getrandbits(64 * n).to_bytes(8 * n, "little")[3::8].translate(_TOP_BIT_CLEAR)
+    return bytes(rng.random() < 0.5 for _ in range(n))
 
 
 def _signs(n: int, permutations: int, seed: int) -> list:
@@ -243,7 +265,7 @@ def _signs(n: int, permutations: int, seed: int) -> list:
         _SIGNS.move_to_end(key)
         return _SIGNS[key]
     rng = random.Random(seed)
-    _SIGNS[key] = [bytes(rng.random() < 0.5 for _ in range(n)) for _ in range(permutations)]
+    _SIGNS[key] = [_draw(rng, n) for _ in range(permutations)]
     while len(_SIGNS) > _SIGNS_MAX:
         _SIGNS.popitem(last=False)
     return _SIGNS[key]
