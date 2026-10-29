@@ -921,7 +921,9 @@ build on it.
 
 **The catalog's footer** names each page's command (`evh goals --goal G`); `evh catalog --mcp URL`
 adds the same as an MCP tool call, with the server and a "how to connect" link (`--mcp-howto URL`,
-the harness's INTEGRATION guide by default).
+the harness's INTEGRATION guide by default). Every page carries a share card (its title and its
+opening line as the description); `--card URL` adds the image a shared link shows. The pages stay
+`noindex`: a card is for a person pasting a link, not for a search engine.
 
 **`evh mcp --hooks`** gets, in `start`, `{"version", "tools", "public", "transport"}`, and in
 `request`, after each call, `{"tool", "args", "agent", "client", "exit", "ms", "bytes"}`, plus

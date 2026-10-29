@@ -277,6 +277,25 @@ try:
         and "how to connect" in d,
         d.split("<footer>")[-1][:600],
     )
+    home = (out / "index.html").read_text()
+    check(
+        "share card: a description and og:title/og:description on every page, still noindex, no image without --card",
+        '<meta name="description" content="' in home
+        and '<meta property="og:title" content="' in home
+        and '<meta name="robots" content="noindex, nofollow">' in home
+        and "og:image" not in home
+        and '<meta name="twitter:card" content="summary">' in home,
+        home[:900],
+    )
+    r = evh("catalog", "--out", str(out), "--card", "https://evals.example.test/assets/social.png")
+    d = (out / "d" / "topics.html").read_text()
+    check(
+        "share card: --card names the image, and the card is the large one",
+        r.returncode == 0
+        and '<meta property="og:image" content="https://evals.example.test/assets/social.png">' in d
+        and '<meta name="twitter:card" content="summary_large_image">' in d,
+        d[:900],
+    )
     r = evh("catalog", "--out", str(out), "--mcp", "javascript:alert(1)")
     check("--mcp: only an http(s) address", r.returncode != 0, r.stderr[-120:])
 finally:

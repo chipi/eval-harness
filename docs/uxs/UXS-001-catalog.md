@@ -121,6 +121,13 @@ tables 15px.
   arm hit opens the inspector on that arm. Command: `evh search <text>` (the same index and
   ranking, each hit with the command that shows it).
 
+### The head
+
+`noindex, nofollow` on every page: the catalog is a working view over runs, and the findings site
+is what search engines index. A share card all the same, for a person pasting a link: the page's
+title, its hero's dek as the description (200 characters at most), `og:*` and `twitter:card`, and
+an image only when the deployment names one (`evh catalog --card URL`).
+
 ### The footer
 
 When the page was built, by `evh catalog`, and that the pages carry counts and means only. Then
