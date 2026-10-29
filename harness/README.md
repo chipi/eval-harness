@@ -97,10 +97,12 @@ beside them, also optional:
 data/goals/          what each evaluation is for; configs name one with `goal:`
 data/rounds/         experiment rounds of a goal: evh round-open / rounds / round-close
 data/fields/         field sets: the typed facts a project's items carry (`--fieldset`)
+data/profiles/       evh dataset-profile   what is inside a dataset, for its page (no text by default)
 .build/catalog/      evh catalog / evh catalog-serve   pages over the runs, and the inspector
+(an agent)           evh mcp            the read commands as MCP tools
 ```
 
-`evh validate` checks the whole tree — fifteen integrity rules (V1–V15), exits non-zero,
+`evh validate` checks the whole tree — sixteen integrity rules (V1–V16), exits non-zero,
 so it can gate CI.
 
 ### The three inputs
@@ -264,7 +266,8 @@ how 18 arms of paid results were lost during this harness's own development.
 | --- | --- |
 | **[Getting started](../docs/GUIDE.md)** | the loop once, offline, in about fifteen minutes |
 | **[Tutorials](../docs/GUIDE.md#where-to-go-next)** | a local model against a baseline; a hosted LLM with your own key; a frontier reference, gold and judging; rounds and dataset versions; the catalog and the inspector |
-| **[INTEGRATION.md](docs/INTEGRATION.md)** | plugging in an existing system; getting ground truth when you have none |
+| **[INTEGRATION.md](docs/INTEGRATION.md)** | plugging in an existing system; getting ground truth when you have none; connecting an agent (`evh mcp`) |
+| **[CHANGELOG.md](CHANGELOG.md)** | what each release shipped, what can move a result |
 | **[RUNBOOK.md](docs/RUNBOOK.md)** | every command and flag, step by step, with the reasoning; environment variables and exit codes |
 | **[RELEASING.md](docs/RELEASING.md)** | pinning a release in your project, and cutting one: version, changelog, tag, GitHub Release |
 | **[SCENARIO.md](docs/SCENARIO.md)** | the newcomer scenario run before every release: two experiments, real models, under $1 |
@@ -312,7 +315,7 @@ bundled adapter a pinned project has is `evaluation_harness/adapter.py`.
 | `scripts/experiment_run.py` | run an arm → scores, cost, speed, provenance |
 | `scripts/compare_runs.py` | compare two runs, or refuse |
 | `scripts/promote_baseline.py` | run → baseline, or refuse |
-| `scripts/validate_tree.py` | fifteen integrity checks (V1–V15) |
+| `scripts/validate_tree.py` | sixteen integrity checks (V1–V16) |
 | `scripts/list_runs.py` | what runs and baselines exist |
 | `schemas/` | the contracts: dataset, metrics (a run), baseline, config (an arm), goal, field set, judge scorer, judging set, verdict |
 | `scripts/_fields.py`, `scripts/_fetch.py` | item fields (types, checks, the catalog's summary) and items fetched from a pinned URL (ADR-0003) |

@@ -50,7 +50,9 @@ consequence stay commands a person runs, until 0.5.0 brings the declarations, th
 - **The tools** are a fixed list in `mcp_server.READ_TOOLS`: the thirteen commands above. Not tools: anything that
   writes, spends or never returns (`experiment-run`, `sweep`, `judge`, `rescore`, `run-promote`, the round commands,
   `dataset-create`, `dataset-materialize`, `dataset-profile`, `reference-create`, `catalog`, `catalog-serve`, `init`,
-  `mcp`). A test fails when a command is in neither list, so a new command is decided, not forgotten.
+  `mcp`), and, not yet, the report and statistics commands (`leaderboard`, `pair-test`, `family-test`,
+  `bootstrap-test`, `holdout`, `rank-stability`, `run-compare`, `cost-report`), which read but are left for 0.5.0's
+  declarations. A test fails when a command is in neither list, so a new command is decided, not forgotten.
 - **Each tool's description** is the command's one line in `cli.COMMANDS`, then its parser's description. **Its input
   schema** is generated from its `argparse` parser: each option becomes a property (its type, `choices` as an `enum`, a
   flag as a boolean, `nargs` as an array, the help as the description, required when the parser requires it). The

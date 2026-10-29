@@ -490,6 +490,7 @@ def method_page(H, f: dict) -> str:
       <li>More, curated by Chip Huyen: <a href="https://huyenchip.com/mlops/">huyenchip.com/mlops</a></li>
     </ul>
   </div>
+  <p>The habits hold when an agent does the work, too: it can read every number they rest on, the goals and their tests, from the catalog over MCP, and the decisions stay a person's (<a href="index.html#mcp">ask it from your agent</a>).</p>
   <div class="btns"><a class="btn primary" href="use.html">Use it on your problem →</a><a class="btn" href="docs/GUIDE/">The step-by-step guide</a><a class="btn" href="experiments.html">The experiments</a></div>
 </div></section>
 <script>
@@ -713,7 +714,7 @@ def use_page(H, f: dict) -> str:
     )
     body = f"""
 <section class="hero"><div class="wrap">
-  <div class="kicker"><b>Use it</b> · on your problem · offline in twenty minutes</div>
+  <div class="kicker"><b>Use it</b> · on your problem · offline in fifteen minutes</div>
   <h1>Measure <em>your</em> problem.</h1>
   <p class="dek">You do not need our benchmarks. You need a decision to make, a few dozen real inputs, and an afternoon. Write one adapter for your system; the harness brings frozen data, fingerprints, noise, significance and cost — the habits, enforced.</p>
   <div class="btns"><a class="btn primary" href="docs/GUIDE/">Start the guide</a><a class="btn" href="#lifecycle">How it fits together</a><a class="btn" href="method.html">Why it works this way</a></div>

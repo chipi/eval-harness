@@ -19,8 +19,10 @@ Change the pin to `@v0.4.5`. No record, hash or p-value moves. Three things to c
   Deleting the file only makes the next call slower.
 
 A dataset id must now be a name (letters, digits, `.`, `_`, `-`): an id with `/` or `..` is
-refused by every command that reads or writes a dataset's file. Everything else is added and
-optional: `evh dataset-profile` and a committed `data/profiles/<id>.json` give a dataset page its
+refused by every command that reads or writes a dataset's file. An arm's params as a page or
+`evh arms --arm` shows them hide a URL's user and password and a nested credential-named key
+(`headers: {Authorization: …}`), so a page can differ from 0.4.4's where a config held one.
+Everything else is added and optional: `evh mcp`, `--json` on the views, `evh catalog --mcp`; `evh dataset-profile` and a committed `data/profiles/<id>.json` give a dataset page its
 "what's inside"; an adapter may answer `dataset_profile(dataset)`.
 
 ## From 0.4.3 to 0.4.4

@@ -24,7 +24,7 @@ and configs page and a page per arm, a goals page and a page per goal, a referen
 page per reference, a metrics page and a page per metric, and the shell of the inspector. Every
 page is read-only and carries counts and means only, so the pages can be published. The pages a
 home tile opens carry the same period and trends as the tile ([the period](#the-period-every-listing-page)).
-This spec describes the pages as built at 0.4.2, checked by building the catalog on this
+This spec describes the pages as built at 0.4.5 (0.4.5 added each dataset page's "what's inside" and the footer's commands), checked by building the catalog on this
 repository's data (6 goals, 13 datasets, 313 arms, 181 configs, 15 references) and on a tutorial
 project with gold, silver and an open round.
 
@@ -310,7 +310,8 @@ tiles open it.
     when the dataset or its fetcher recorded one) and **inspect** (the inspector on the dataset's
     largest group of comparable arms, its first 40, opened at this item; only when that group has
     at least two arms). A **text** column only when the
-    profile carries text, which `--with-text` writes only for items git already tracks;
+    profile carries text, which `--with-text` writes only when git has committed every item's file
+    (it is refused otherwise);
   - without a profile: "No profile yet", and the command that writes one.
 - `versions`, when the dataset has lineage: "Made from `<parent>`: a added, r removed, c changed"
   with the item ids (the first 12 of each, then …), and "Made into `<child>`: …" for each later

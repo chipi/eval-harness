@@ -52,8 +52,8 @@ that shows what is inside a dataset without republishing its text. [UPGRADING](d
   (labels and how many of each, entries per item, a record's fields, or words per reference), and
   per item its length, its gold and, when known, where it can be read at its source. A gold of labels
   (a few short values that repeat) is listed per item; any other gold is summarised, never listed. It
-  never holds item text, which a dataset's licence may not let you redistribute; `--with-text` adds it only for
-  items whose source files git already tracks. Commit the profile and the dataset page shows "what's
+  holds no item text, which a dataset's licence may not let you redistribute, unless written with
+  `--with-text`, which is refused unless git has committed every item's file (a project's own synthetic data). Commit the profile and the dataset page shows "what's
   inside" wherever the catalog is built; `evh dataset-items --dataset-id D [--item ID]` prints the
   same, and an item's text when it is materialized here.
 - **An item's link to its source** comes from the dataset: an item's `source_url`, or a

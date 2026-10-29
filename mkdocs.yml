@@ -131,6 +131,7 @@ extra:
     - { label: Harness, url: "https://evals.humancopilot.eu/" }
     - { label: Catalog, url: "https://evals.humancopilot.eu/catalog/" }
     - { label: Docs, url: "." }
+    - { label: MCP, url: "https://evals.humancopilot.eu/#mcp" }
   homepage: https://evals.humancopilot.eu/
   social:
     - icon: fontawesome/solid/compass

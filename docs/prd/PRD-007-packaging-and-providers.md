@@ -1,6 +1,6 @@
 # PRD-007: One install, your own keys
 
-- **Status**: Implemented (v0.4.0); installable since 0.2.0
+- **Status**: Implemented (v0.4.0); installable since 0.2.0; Python 3.10 and the MCP SDK from 0.4.5 (unreleased)
 - **Authors**: Marko Dragoljevic
 - **Related UX spec**: [UXS-003](../uxs/UXS-003-cli-and-onboarding.md) (the command line and the first evaluation)
 - **Related PRDs**: [PRD-001](PRD-001-experiments-and-comparison.md)
@@ -41,7 +41,7 @@ a walkthrough in the user's own project, not inside a checkout of this repositor
 
 ## Personas
 
-- **The newcomer** following the GUIDE, offline, in twenty minutes.
+- **The newcomer** following the GUIDE, offline, in fifteen minutes.
 - **The engineer integrating an existing system**, in any language, behind one Python function.
 - **The team** pinning a release in CI.
 

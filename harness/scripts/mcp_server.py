@@ -543,7 +543,8 @@ def main(argv: list[str] | None = None) -> int:
         "--http", action="store_true", help="serve Streamable HTTP instead of stdio (a shared server)"
     )
     ap.add_argument("--bind", default="127.0.0.1", help="--http: the address (default: 127.0.0.1)")
-    ap.add_argument("--port", type=int, default=8765, help="--http: the port (default: 8765)")
+    # Not 8765: catalog-serve takes it, and both may run on one machine.
+    ap.add_argument("--port", type=int, default=8766, help="--http: the port (default: 8766)")
     ap.add_argument("--path", default="/mcp", help="--http: the endpoint's path (default: /mcp)")
     ap.add_argument(
         "--allowed-host",
@@ -560,7 +561,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument(
         "--public",
         action="store_true",
-        help="no option that answers with an item's text or an arm's output (for a server anyone can reach)",
+        help="no option that answers with an item's text or an arm's output, and no validate tool "
+        "(for a server anyone can reach)",
     )
     ap.add_argument(
         "--timeout", type=float, default=TIMEOUT_S, help=f"seconds per call (default: {TIMEOUT_S})"

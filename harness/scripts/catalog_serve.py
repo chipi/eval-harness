@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Serve the catalog and the run inspector on this machine only (127.0.0.1).
+"""Serve the catalog and the run inspector: on this machine (127.0.0.1) by default, or --public behind a proxy.
 
     evh catalog-serve [--port 8765] [--adapter path/to/file.py:Class]
     make catalog-serve
@@ -947,9 +947,16 @@ class Handler(SimpleHTTPRequestHandler):
             super().log_message(fmt, *args)
 
 
+def _common_prog() -> str | None:
+    """`evh <command>` for --help (see _common.evh_prog)."""
+    from evaluation_harness._common import evh_prog  # noqa: PLC0415
+
+    return evh_prog()
+
+
 def main() -> int:
     """Start the catalog server on localhost or in public mode."""
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(prog=_common_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("--port", type=int, default=8765)
     ap.add_argument(
         "--adapter",

@@ -532,7 +532,7 @@ evh validate
 ```
 
 Sixteen checks (V1–V16): schema conformance (datasets, runs, baselines, configs, judge
-scorers, judging sets, verdicts), every run's `dataset_id` resolves, every run
+scorers, judging sets, verdicts, dataset profiles), every run's `dataset_id` resolves, every run
 identifies its build, materialized copies still match their hashes, no two
 configs reporting byte-identical scores and per-item results (two arms with different outputs
 that are both perfect are two measurements, not a copy), no baseline pointing at a
@@ -832,15 +832,16 @@ evh round-open --goal my_goal --dataset my_v1 --from r1 --change "what changed a
 evh catalog                                             # build static pages into .build/catalog/
 evh catalog-serve [--port 8765]                        # serve the catalog and inspector on 127.0.0.1
 evh catalog-serve --public catalog.example.com --publish outputs --client-header X-Real-IP  # public deployment
-evh dataset-profile --dataset-id my_v1                 # what is inside a dataset, for its page (no text)
+evh dataset-profile --dataset-id my_v1 [--with-text]   # what is inside a dataset, for its page (text: committed items only)
 evh dataset-items --dataset-id my_v1 [--item ID]       # the same in the terminal
 evh mcp                                                 # the read commands as MCP tools, over stdio
 evh mcp --http --bind 0.0.0.0 --allowed-host evals.team.example --public  # a shared MCP server
 ```
 
 **The catalog** is static pages over runs: one per dataset and goal, one per reference, a
-metrics page, and a search. Every page carries counts and means only; item text is the local
-inspector only. Build it offline with `evh catalog`, or together with the inspector. A dataset's
+metrics page, and a search. Every page carries counts and means only, and item text only where
+the repository already publishes it (a profile written `--with-text`, refused unless git has
+committed every item's file); otherwise item text is the local inspector's only. Build it offline with `evh catalog`, or together with the inspector. A dataset's
 page shows what is inside it once `evh dataset-profile` has written its profile where the
 dataset is materialized: the items' lengths, the gold's labels or shape, and each item's link to
 its source when one is recorded; commit `data/profiles/` and a catalog built anywhere shows it.
@@ -861,7 +862,7 @@ client is in [the integration guide](INTEGRATION.md#for-an-agent-evh-mcp).
   starts it with its own `PATH` and working directory, so give the full path to `evh` and
   `--project`.
 - **`--http`**: Streamable HTTP, stateless, JSON answers, at `--path` (default `/mcp`) on `--bind`
-  (default `127.0.0.1`) and `--port` (default `8765`). `<path>/health` answers `{"ok", "version",
+  (default `127.0.0.1`) and `--port` (default `8766`; `catalog-serve` has 8765). `<path>/health` answers `{"ok", "version",
   "tools", "public"}`. Beyond the loopback, `--allowed-host` is required: a request for another Host
   is answered 421 (DNS rebinding). `--allowed-origin` names the browser origins it accepts; an
   agent sends no Origin.
@@ -903,6 +904,28 @@ requests from an origin no one else can reach.
 file for any of the dataset's items, and warns when only some items have one. The run records
 `reference_coverage` (`{items_with_reference, items}`) and the leaderboard prints a NOTE for
 it: its quality columns are means over the items that have a reference.
+
+**Dataset profiles.** `evh dataset-profile --dataset-id D` writes `data/profiles/D.json`
+(`schemas/profile.schema.json`); `--with-text` adds each item's text and is refused unless git has
+committed every item's file; `--json` prints what it wrote, in the views' envelope. An item links
+to its source by its own `source_url`, else by `data/sources/<dataset_id>.rows.json` (`{"source":
+{"name", "url"}, "item_url": "...{row}...", "rows": {item_id: {"row", "sha256"}}}`), an entry
+counting only when its sha256 is the item's; only an http(s) address becomes a link. `evh
+dataset-items --dataset-id D [--item ID] [--json]` prints the profile.
+
+**`--json` on the views** (`overview`, `datasets`, `arms`, `goals`, `references`, `metrics`,
+`activity`, `search`, `inspect`): one object, `{"command", "version", "result": {"blocks": [...]}}`,
+each table as columns and rows. 0.5.0 gives each command its own result and retires `blocks`: do not
+build on it.
+
+**The catalog's footer** names each page's command (`evh goals --goal G`); `evh catalog --mcp URL`
+adds the same as an MCP tool call, with the server and a "how to connect" link (`--mcp-howto URL`,
+the harness's INTEGRATION guide by default).
+
+**`evh mcp --hooks`** gets, in `start`, `{"version", "tools", "public", "transport"}`, and in
+`request`, after each call, `{"tool", "args", "agent", "client", "exit", "ms", "bytes"}`, plus
+`"refused"` (`rate`, `rate_total`, `tool`, `arguments`, `busy`) or `"cached": true`. `tool` is
+`unknown` for a name the server does not have; `args` are argument names, never values.
 
 **In the terminal:** every view has a command. `evh overview [--period P]` for the home page,
 `evh activity` for the activity page, `evh arms` (`--by config`, `--configs`) for the arms page,

@@ -82,12 +82,14 @@ runs when it starts, so after a new run, stop it and start it again.
 | the inspector's analysis charts, as numbers: the spread per arm, the difference from the baseline, each arm's mean against a second metric | `--analysis`, `--analysis --x latency_ms` |
 | the inspector, one item: the item itself, its fields, each arm's output beside the reference | `--item t01_login` |
 
-**The same, from an agent.** Each command in the right-hand column is an MCP tool: `evh mcp`
+**The same, from an agent.** Each command in the right-hand column (but `dataset-profile`,
+which writes) is an MCP tool: `evh mcp`
 serves them, and the agent gets
 the same numbers you do: the command's own output, its JSON where it has one. In Claude Code, in
 this project, `claude mcp add evh -- evh mcp`; then ask it, say, *"which tickets summariser does
 the goal recommend, and is it separated from the baseline?"*, and it calls `goals` and `inspect`.
-No tool writes, spends or runs a model. Other clients, and a shared server for a team:
+No tool writes your project, spends or runs a model (the one file a call keeps is a cache of the
+goals' tests, in the ignored `.cache/`). Other clients, and a shared server for a team:
 [INTEGRATION](../../harness/docs/INTEGRATION.md#for-an-agent-evh-mcp).
 
 A goal's page, in the terminal:

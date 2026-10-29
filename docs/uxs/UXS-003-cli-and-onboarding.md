@@ -125,8 +125,10 @@ Every row has a command. Adding a view means adding its command in the same chan
 [RFC-018](../rfc/RFC-018-read-only-mcp-server.md)): every read command above is a tool with the
 command's own options as its arguments, answering what the command prints (with `--json` where
 the command has it). A new read command is either a tool or listed, with its reason, as not one
-(`mcp_server.NOT_TOOLS`); a test fails otherwise. Commands that write, spend or run a model are
-not tools in 0.4.5.
+(`mcp_server.NOT_TOOLS`); a test fails otherwise. Not tools in 0.4.5: the commands that write,
+spend or run a model, and, not yet, the report and statistics commands (`leaderboard`,
+`pair-test`, `family-test`, `bootstrap-test`, `holdout`, `rank-stability`, `run-compare`,
+`cost-report`).
 
 ## The round flow
 

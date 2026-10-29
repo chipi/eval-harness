@@ -1,6 +1,6 @@
 # PRD-004: The catalog and the run inspector
 
-- **Status**: Implemented (v0.4.0); FR6, the same views for an agent, in v0.4.5
+- **Status**: Implemented (v0.4.0); FR6, the same views for an agent: Implemented (0.4.5, unreleased)
 - **Authors**: Marko Dragoljevic
 - **Related UX specs**: [UXS-001](../uxs/UXS-001-catalog.md) (the catalog's pages),
   [UXS-002](../uxs/UXS-002-inspector.md) (the inspector), [UXS-003](../uxs/UXS-003-cli-and-onboarding.md) (the same views as commands)
@@ -87,8 +87,8 @@ adapter file ([ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md),
 - **FR1.2**: Pages: home (the dashboard, FR1.8), datasets and one per dataset, goals and one per
   goal, references and one per reference, one per arm, metrics and one per metric, and the
   inspector's shell ([UXS-001](../uxs/UXS-001-catalog.md)).
-- **FR1.3**: The pages carry counts and means only, never an item's text, an output or a
-  reference; a field's values appear only when the project marks the field `public`.
+- **FR1.3**: The pages carry counts and means only, never an output or a reference, and never an
+  item's text unless the repository already publishes it (a profile written `--with-text`, refused unless git has committed every item's file); a field's values appear only when the project marks the field `public`.
 - **FR1.4**: Every arm's row says what it is scored against; rows scored against silver, by a
   judge, or against the reference the arm wrote itself are tinted.
 - **FR1.5**: Long tables show 10 rows with "show 10 more" and "show all"; the filter and the sort
@@ -159,6 +159,14 @@ adapter file ([ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md),
 - **FR4.2**: New views and actions are added to both. A decision the pages suggest is shown as
   the command that makes it.
 
+### FR5: Any layout
+
+- **FR5.1**: On the harness's own layout (`data/runs*/`, `data/references/`, `data/datasets/`,
+  `data/goals/`) no code is needed.
+- **FR5.2**: With another layout, the project writes one adapter class and names it in
+  `config.yaml` (`catalog: {adapter: path/to/file.py:Class}`) or passes `--adapter`
+  ([RFC-003](../rfc/RFC-003-catalog-adapter.md)).
+
 ### FR6: The same views for an agent (v0.4.5)
 
 - **FR6.1**: `evh mcp` serves the read commands of FR4 (and `rounds`, `runs-list`, `validate`,
@@ -170,14 +178,6 @@ adapter file ([ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md),
 - **FR6.3**: `--http --public` serves them to anyone, as FR3 serves the API: no item text, Host
   checked, the load bounded per caller and in total. This repository's catalog answers at
   `https://evals.humancopilot.eu/mcp`.
-
-### FR5: Any layout
-
-- **FR5.1**: On the harness's own layout (`data/runs*/`, `data/references/`, `data/datasets/`,
-  `data/goals/`) no code is needed.
-- **FR5.2**: With another layout, the project writes one adapter class and names it in
-  `config.yaml` (`catalog: {adapter: path/to/file.py:Class}`) or passes `--adapter`
-  ([RFC-003](../rfc/RFC-003-catalog-adapter.md)).
 
 ## Success Criteria
 

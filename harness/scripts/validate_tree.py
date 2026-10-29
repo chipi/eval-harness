@@ -34,7 +34,7 @@ Each check exists because its absence let a real defect through somewhere:
 
 Exit 1 on any failure, so it can gate.
 
-    python scripts/validate_tree.py
+    evh validate
 """
 
 from __future__ import annotations

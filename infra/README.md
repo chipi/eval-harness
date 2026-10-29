@@ -23,10 +23,12 @@ infra/
   nginx/                 nginx.conf, one server block per host, the security headers
   caddy/                 evals.caddy, catalog.caddy, enabled.txt (which ones are live)
   sites/<host>.cfg       per-host public settings (the CSP report address)
-  observability/         evals.alloy: both containers' logs to VictoriaLogs (app=evals; service
-                         evals-web for nginx, evals-inspector for the inspector; `release` and,
-                         on nginx's error lines, `level` as structured metadata), and the
-                         inspector's /metrics scrape
+  inspector/             hooks.py (the inspector's observability)
+  catalog/               about.html (the overview's paragraph, --about)
+  observability/         evals.alloy: the three containers' logs to VictoriaLogs (app=evals; service
+                         evals-web for nginx, evals-inspector, evals-mcp; `release` and, on
+                         nginx's error lines, `level` as structured metadata), and the inspector's
+                         and the MCP server's /metrics scrapes
   deploy/                render.sh (CI), deploy.sh + install_vhosts.sh + install_alloy.sh (box)
 .github/workflows/deploy-prod.yml   render, upload, activate, probe
 .github/actions/prod-ssh-key/       the CI key and the pinned host key
@@ -147,7 +149,8 @@ p-value as `pair-test`; a browser passed both hosts with zero violations of the 
 
 1. **Environments → New environment `prod`.** Deployment branches: selected branches, `main`
    only. Required reviewers: none, unless you want a gate.
-2. **In `prod`, three secrets:**
+2. **In `prod`, these secrets** (and, optional, `EVALS_SENTRY_DSN_INSPECTOR` in `prod` and
+   `EVALS_SENTRY_DSN_MCP` at repository level, each a GlitchTip DSN):
    - `TS_OAUTH_CLIENT_ID` and `TS_OAUTH_SECRET`: a Tailscale OAuth client of this
      repository's own, with tag `tag:gha-deployer`.
    - `PROD_SSH_PRIVATE_KEY`: a new key used only by this workflow. Make it on your own
@@ -163,9 +166,9 @@ p-value as `pair-test`; a browser passed both hosts with zero violations of the 
 **The prod session, on the box:**
 - create `/srv/evals` (deploy:deploy 0755);
 - add the public key to deploy@ with a tailnet `from=`;
-- add `evals-nginx` and `evals-inspector` to podcast_scraper's `unscoped.alloy`, so their logs
-  don't ship twice;
-- record ports 8096 and 8097 in ADR-114.
+- add `evals-nginx`, `evals-inspector` and `evals-mcp` to podcast_scraper's `unscoped.alloy`, so
+  their logs don't ship twice;
+- record ports 8096, 8097 and 8098 in ADR-114.
 
 **GlitchTip (done 2026-10-22):** project `evals-web` (id 36) receives both hosts' CSP violation
 reports, through the shared `telemetry.humancopilot.eu` ingest vhost; `infra/sites/*.cfg` holds
@@ -187,7 +190,7 @@ always runs.
 
 | What | Evidence |
 |---|---|
-| `prod` environment: 3 secrets, 2 variables, `main` only | `gh secret list --env prod`, `gh variable list --env prod -R chipi/eval-harness` |
+| `prod` environment: 4 secrets, 2 variables, `main` only; `EVALS_SENTRY_DSN_MCP` at repository level | `gh secret list --env prod`, `gh variable list --env prod -R chipi/eval-harness` |
 | Deploy key in `deploy@`'s `authorized_keys` (tailnet-only `from=`), `/srv/evals`, ports 8096/8097, the Alloy split, the tailnet ACL | the prod session's report |
 | GlitchTip `evals-web` (36) and `infra/sites/*.cfg` | a probe report through `telemetry.humancopilot.eu` became an issue (then deleted) |
 | `main` protected: `verify`, `browser` and the three `rerun` jobs required | `gh api repos/chipi/eval-harness/branches/main/protection` |

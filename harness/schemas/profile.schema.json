@@ -71,7 +71,7 @@
           "words": {"type": "integer"},
           "reference": {"type": "object", "additionalProperties": {"type": "string"}},
           "source_url": {"type": "string", "description": "where the item can be read at its source"},
-          "text": {"type": "string", "description": "only with --with-text, for text git tracks"}
+          "text": {"type": "string", "description": "only with --with-text, which is refused unless git has committed every item's file"}
         }
       }
     }

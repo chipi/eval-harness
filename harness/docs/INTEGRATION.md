@@ -281,7 +281,8 @@ which references exist, what one arm wrote for one item.
   maps each page to its command.
 
   Item text is only ever returned by `item_view` and `reference_view`, and the static pages
-  never carry it, whatever the adapter. The local inspector shows all of it. A public deployment
+  never carry it, whatever the adapter, but for what the repository already publishes (a profile
+  written `evh dataset-profile --with-text`, refused unless git has committed every item's file). The local inspector shows all of it. A public deployment
   (`catalog-serve --public`) serves numbers, plus an arm's outputs or a reference's text only
   when it names them (`--publish outputs`, `--publish references`, or both), and never the item
   itself. An output can quote its input (an extractive arm returns the article's own sentences),
@@ -360,11 +361,12 @@ the catalog shows.
 **For a team**: serve a checkout of the project over HTTP behind the team's proxy:
 
 ```bash
-evh mcp --http --bind 0.0.0.0 --port 8765 --allowed-host evals.team.example [--public]
+evh mcp --http --bind 0.0.0.0 --port 8766 --allowed-host evals.team.example [--public]
 ```
 
 `--allowed-host` is required beyond the loopback (the server checks the Host against DNS
-rebinding); `--public` leaves out the options that answer with an item's text; `--rate` (per
+rebinding); `--public` leaves out the options that answer with an item's text, and the
+`validate` tool (12 tools); `--rate` (per
 caller), `--rate-total` (everyone together), `--concurrent` and `--timeout` bound the load, and a
 caller has one call running at a time; `--client-header` names the header your proxy sets for the
 caller's address (trust it only if nothing else can reach the port); `--hooks FILE` adds your error reporting, tracing

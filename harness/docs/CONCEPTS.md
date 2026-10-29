@@ -189,7 +189,8 @@ makes one. A closed round refuses new runs, so its evidence cannot grow after it
 
 ## An agent reads; a person decides
 
-An agent can look at everything you can: `evh mcp` serves the read commands as tools
+An agent can look at what the catalog shows: `evh mcp` serves its views as tools (the ranking
+and the statistics commands, `leaderboard`, `pair-test` and the like, are not tools yet)
 ([INTEGRATION](INTEGRATION.md#for-an-agent-evh-mcp)), and each call runs the command itself, so
 the agent's numbers are yours, refusals included. It cannot act on them. Running an arm spends
 money, promoting a baseline is a decision with a reason, closing a round fixes its evidence:

@@ -497,6 +497,19 @@ def reference_texts(root: Path, dataset_id: str, tier: str = "gold") -> list[Pat
     return files
 
 
+def evh_prog() -> str | None:
+    """`evh <command>` for the script running now, as `--help` should name it (None: argparse's
+    own, the script's file name, for a script that is no evh command)."""
+    import os  # noqa: PLC0415
+
+    try:
+        from evaluation_harness.cli import COMMANDS  # noqa: PLC0415
+    except ImportError:
+        return None
+    me = os.path.basename(sys.argv[0] if sys.argv else "")
+    return next((f"evh {name}" for name, (script, *_r) in COMMANDS.items() if script == me), None)
+
+
 def no_options(doc: str | None, *flags: str) -> Any:
     """The command line of a command that takes no arguments but `flags` (each an on/off
     switch): -h/--help prints `doc`, anything else is refused with exit 2. Seven commands
@@ -504,7 +517,9 @@ def no_options(doc: str | None, *flags: str) -> Any:
     ran the plain validation and said nothing."""
     import argparse  # noqa: PLC0415
 
-    ap = argparse.ArgumentParser(description=doc, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap = argparse.ArgumentParser(
+        prog=evh_prog(), description=doc, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     for flag in flags:
         ap.add_argument(flag, action="store_true")
     return ap.parse_args()

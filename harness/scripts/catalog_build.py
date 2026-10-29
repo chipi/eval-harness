@@ -8,8 +8,9 @@ Pages: the catalog's home (every dataset, with its arms and references), one pag
 (every arm on it, with its headline number, and an "inspect" link per arm and for all of
 them), and the inspector shell, which `evh catalog-serve` fills from the adapter.
 
-The output embeds counts and means only, never an item's text: outputs and references leave
-the data tree only through the local inspector server (ADR-0002). The page shell (`page`,
+The output embeds counts and means only, never an item's text (but what the repository already
+publishes: a profile written --with-text, refused unless git has committed every item's file):
+outputs and references leave the data tree only through the inspector server (ADR-0002). The page shell (`page`,
 `hero`, `block`, `table`) and the assets are the parts a project's own builder reuses.
 """
 
@@ -380,8 +381,9 @@ def page(
     brand_text = f"<span>{e(brand)}</span>"
     built = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     foot = footer or (
-        f"Built {built} by <code>evh catalog</code>. The pages carry counts and means "
-        f"only; {e(item)} text is fetched from the inspector when you open an {e(item)}."
+        f"Built {built} by <code>evh catalog</code>. The pages carry counts and means only, "
+        f"and an {e(item)}'s text only where the project publishes it; the inspector shows the rest "
+        f"where its server allows."
     )
     # noindex, deliberately: the catalog is a working view over runs, not a page to be found by a
     # search engine; the findings site is what is indexed.
@@ -3454,10 +3456,17 @@ def project_path(text: str) -> str:
     return f'<a href="{e(REPO + text)}"><code>{e(text)}</code></a>' if REPO else f"<code>{e(text)}</code>"
 
 
+def _common_prog() -> str | None:
+    """`evh <command>` for --help (see _common.evh_prog)."""
+    from evaluation_harness._common import evh_prog  # noqa: PLC0415
+
+    return evh_prog()
+
+
 def main() -> int:
     """Build the catalog and write static pages to output directory."""
     global API, HEAD, BRAND, ABOUT, REPO, MCP, MCP_HOWTO
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(prog=_common_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("--out", type=Path, default=ROOT / ".build" / "catalog")
     ap.add_argument(
         "--adapter",

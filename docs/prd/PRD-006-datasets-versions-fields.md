@@ -1,6 +1,6 @@
 # PRD-006: Datasets, versions and item fields
 
-- **Status**: Implemented (v0.4.0); frozen datasets since 0.1.0
+- **Status**: Implemented (v0.4.0); frozen datasets since 0.1.0; FR4, what is inside a dataset: Implemented (0.4.5, unreleased)
 - **Authors**: Marko Dragoljevic
 - **Related UX specs**: [UXS-001](../uxs/UXS-001-catalog.md) (dataset pages: versions, fields),
   [UXS-002](../uxs/UXS-002-inspector.md) (filter and break down by a field)
@@ -105,11 +105,27 @@ defines no field, a project declares its own
   checks the hash, and fails on a mismatch exactly as it fails on a changed file.
 - **FR3.3**: Only http(s) URLs are fetched; any other scheme is refused before anything is read.
 
+### FR4: What is inside a dataset (0.4.5)
+
+- **FR4.1**: A reader sees what a dataset holds without the dataset being republished: its item
+  count and lengths, each gold reference's shape (labels and their counts, entries per item, a
+  record's fields, words per reference), and per item its length, its gold when the gold is a
+  label, and a link to read it at its source. `evh dataset-profile` writes it where the dataset is
+  materialized (`data/profiles/<id>.json`); committed, every catalog built anywhere shows it.
+- **FR4.2**: No item text unless the repository already publishes it: `--with-text` is refused
+  unless git has committed every item's file. A gold that is not labels is summarised, never listed.
+- **FR4.3**: A link comes from the dataset, never a guess: an item's `source_url`, or a rows map a
+  fetch step writes, matched by the item's sha256 (an id alone may recur in another dataset). Only
+  http(s) links.
+- **FR4.4**: The same in the terminal (`evh dataset-items`) and for an agent (the MCP tool).
+
 ## Success Criteria
 
 - The tutorial's dataset carries fields (GUIDE steps 1 and 12), two of them public and one not.
 - `harness/tests/test_fields.py` passes, and the browser check drives a filter and a breakdown
   (`make browser-check`).
+- `harness/tests/test_dataset_profile.py` passes: shapes, links matched by sha256, the git guard on
+  `--with-text`, the page section, and every page's footer command.
 
 ## Related Documents
 

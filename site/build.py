@@ -613,10 +613,11 @@ def page(title: str, desc: str, body: str, depth: int = 0, here: str = "", card:
     # GitHub: a line in the phone menu, an icon button beside search and the theme on the bar.
     github_menu = f'<a href="{REPO}">GitHub ↗</a>'
     github_btn = f'<a class="hbtn" href="{REPO}" aria-label="eval-harness on GitHub" title="GitHub">{ICON["github"]}</a>'
-    # Harness · Catalog · Docs, the same switcher in all three, this one marked.
+    # Harness · Catalog · Docs · MCP, the same switcher in all three, this one marked (MCP is the
+    # home page's section on it: there is no page of its own to open).
     sections = (
         f'<a href="{up}index.html" aria-current="page">Harness</a>'
-        f'<a href="{CATALOG}">Catalog</a><a href="{up}docs/">Docs</a>'
+        f'<a href="{CATALOG}">Catalog</a><a href="{up}docs/">Docs</a><a href="{up}index.html#mcp">MCP</a>'
     )
 
     return f"""<!doctype html>
@@ -961,7 +962,7 @@ def home(f: dict) -> str:
   <h1>Is the ranking real, or <em>a lucky sample?</em></h1>
   <p class="dek">A small, drop-in harness for evaluating AI systems on your own data. Freeze a dataset, run your system against it, and get the answer most leaderboards skip: whether one system is actually better than another, or only ahead on this sample.</p>
   <p class="dek-note">This is ongoing work: the harness and its method are the point, and the six experiments are worked examples of them, not a benchmark.</p>
-  <p class="dek-note">Three parts: this site, why the harness exists and what it found; <a href="{CATALOG}">the catalog</a>, the harness's own pages over every run behind it, with an inspector that re-tests any comparison; and <a href="docs/">the docs</a>, how to do the same on your own system.</p>
+  <p class="dek-note">Three parts: this site, why the harness exists and what it found; <a href="{CATALOG}">the catalog</a>, the harness's own pages over every run behind it, with an inspector that re-tests any comparison; and <a href="docs/">the docs</a>, how to do the same on your own system. An agent can ask the catalog too, over MCP (<a href="#mcp">how</a>).</p>
   <div class="btns"><a class="btn primary" href="use.html">Use it on your problem</a><a class="btn" href="experiments.html">See it on {hosted_n} LLMs</a><a class="btn" href="{CATALOG}">Browse every run</a><a class="btn" href="{REPO}">GitHub ↗</a></div>
   {hero_sketch(exps)}
 </div></section>
@@ -1016,7 +1017,7 @@ def home(f: dict) -> str:
   <div class="eyebrow">For agents</div>
   <h2>Ask it from your agent.</h2>
   <div class="cols">
-    <div class="prose"><p>The harness is also an MCP server. <code>evh mcp</code> gives an agent the same read commands you use: datasets and what is inside them, goals and what they recommend, arms, references, metrics, activity, and the inspector's paired comparisons, each answering exactly what the command prints. Nothing it does writes, spends or runs a model.</p>
+    <div class="prose"><p>The harness is also an MCP server. <code>evh mcp</code> gives an agent the same read commands you use: datasets and what is inside them, goals and what they recommend, arms, references, metrics, activity, and the inspector's paired comparisons, each answering exactly what the command prints. Nothing it does writes your project, spends or runs a model (the one file it keeps is a cache of the goals' tests).</p>
     <p>On your machine it serves your own project; for a team, <code>evh mcp --http</code> serves one checkout to everyone. The worked examples above are served at <code>https://evals.humancopilot.eu/mcp</code>, read-only and without sign-in, for Claude, ChatGPT and the OpenAI API, Gemini, or any MCP client.</p>
       <div class="btns"><a class="btn primary" href="docs/harness/INTEGRATION/#for-an-agent-evh-mcp">Connect an agent</a><a class="btn" href="{BLOB}/docs/rfc/RFC-018-read-only-mcp-server.md">How it works</a></div></div>
 <pre class="term"><span class="c"># the worked examples, from Claude Code</span>
@@ -1484,8 +1485,8 @@ def not_found_page() -> str:
     body = f"""
 <section class="hero"><div class="wrap">
   <h1>Not here.</h1>
-  <p class="dek">That page does not exist, or it moved. The documentation now lives at its own
-  address, and the catalog of runs at another.</p>
+  <p class="dek">That page does not exist, or it moved. The documentation is at /docs/, and the
+  catalog of runs at /catalog/.</p>
   <div class="btns"><a class="btn primary" href="index.html">The harness</a><a class="btn" href="experiments.html">The experiments</a><a class="btn" href="docs/">Documentation</a><a class="btn" href="{CATALOG}">Catalog</a></div>
 </div></section>"""
     return page("Not found — eval-harness", "This page does not exist.", body)
@@ -1494,8 +1495,8 @@ def not_found_page() -> str:
 def privacy_page() -> str:
     """The family's standard privacy page (humancopilot.eu's wording), with this site's own
     facts: no cookies or forms; Umami, and Cloudflare Web Analytics because Cloudflare delivers
-    the site; the server's request logs, kept 30 days; the docs on GitHub Pages, which keeps its
-    own logs; and the theme choice kept in the browser."""
+    the site; the server's request logs, kept 30 days, which cover the docs at /docs/ too (a copy
+    is also on GitHub Pages, which keeps its own logs); and the theme choice kept in the browser."""
     gh = "https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement"
     umami = "https://umami.is/"
 
@@ -1519,7 +1520,7 @@ def privacy_page() -> str:
   <h2>The MCP server</h2>
   <p>When an agent calls a tool at <code>https://evals.humancopilot.eu/mcp</code>, the call is counted in the same Umami as an event: the tool's name, whether it answered, and how long it took. Umami is told the caller's IP address so it can count visitors and countries as it does for pages; it is not told the agent's own browser or client name, and never what the call asked for. The server's own log line for a call holds the tool, the names of its arguments, how it ended and its time: no address, no client name, no argument values. An error is reported to a self-hosted error tracker with the tool's name and where the code failed (no variables' values). The web server's request logs, above, cover these requests too.</p>
   <h2>Documentation</h2>
-  <p>The documentation is hosted on GitHub Pages. GitHub keeps its own request logs under its {ext(gh, "privacy statement", "github-privacy")}.</p>
+  <p>The documentation at <code>/docs/</code> is served by this site's own server, so the server logs above cover it. A copy is also published on GitHub Pages (<code>chipi.github.io/eval-harness</code>), and GitHub keeps its own request logs for it under its {ext(gh, "privacy statement", "github-privacy")}.</p>
   <h2>Your browser</h2>
   <p>The light/dark switch remembers your choice in your browser's local storage. It is not a cookie and is never sent anywhere.</p>
   <h2>Email</h2>
