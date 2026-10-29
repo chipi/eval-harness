@@ -270,7 +270,7 @@ how 18 arms of paid results were lost during this harness's own development.
 | **[CHANGELOG.md](CHANGELOG.md)** | what each release shipped, what can move a result |
 | **[RUNBOOK.md](docs/RUNBOOK.md)** | every command and flag, step by step, with the reasoning; environment variables and exit codes |
 | **[RELEASING.md](docs/RELEASING.md)** | pinning a release in your project, and cutting one: version, changelog, tag, GitHub Release |
-| **[SCENARIO.md](docs/SCENARIO.md)** | the newcomer scenario run before every release: two experiments, real models, under $1 |
+| **[SCENARIO.md](docs/SCENARIO.md)** | the newcomer scenario, a smoke test run when the newcomer's path changes: two experiments, real models, one CPU model, under $1 |
 | **[UPGRADING.md](docs/UPGRADING.md)** | from one release to the next (what can move a number), and for a copy of the harness taken before October 2026 |
 | **[CONCEPTS.md](docs/CONCEPTS.md)** | why each refusal exists, and the failure it prevents |
 

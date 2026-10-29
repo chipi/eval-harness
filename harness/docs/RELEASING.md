@@ -52,9 +52,12 @@ Pin a release tag:
    `python tools/validate_judge_zhang.py --scorer <scorer> --no-calls` for each scorer that
    has the records; they recompute every figure for $0. Commit any change, and run `make ci`,
    which then recomputes the report's claims from the human data too.
-5. **Run the [newcomer scenario](SCENARIO.md)** on the release candidate: a fresh project, the
-   published docs only, two experiments with real models, under $1. Fix what blocks a newcomer;
-   record the rest in its "Open" list.
+5. **Run the [newcomer scenario](SCENARIO.md)** on the release candidate **when the newcomer's path
+   changed** since its last recorded run: the install, getting started, the tutorials, or the
+   commands and files they use. It is a smoke test: a fresh project, the published docs only, two
+   experiments with real models and one CPU model (the fastest), under $1. Fix what blocks a
+   newcomer; record the rest in its "Open" list. When nothing on that path changed, skip it and
+   say so in the release PR.
 6. **Merge to `main`.** The `harness-package` workflow builds the package, installs it in
    a clean venv, runs it outside the checkout, and checks the changelog section exists.
 7. **Tag and push:**

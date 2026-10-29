@@ -2,11 +2,17 @@
 
 A person who has never used the harness pins a release candidate into an empty folder and,
 using only the published docs, runs two small experiments end to end: a summariser and a
-classifier, each with a small CPU model, cheap hosted LLMs, an expensive frontier model whose run
-becomes the reference, and LLM judges. They take the summariser through two experiment rounds
-and a new dataset version, then browse everything in the catalog and the inspector. It costs
-under $1 and takes about two hours. Run it before every release (RELEASING step 4), and keep the
-friction log.
+classifier, with no-model baselines, cheap hosted LLMs, an expensive frontier model whose run
+becomes the reference, and LLM judges, and one small CPU model, the fastest, for the summaries. They
+take the summariser through two experiment rounds and a new dataset version, then browse everything
+in the catalog and the inspector. It costs under $1 and keeps a friction log.
+
+**It is a smoke test of the newcomer's path, not a release ritual.** Run it when something a
+newcomer touches changed since the last recorded run: the install, getting started, the
+tutorials, or the commands and files those steps use (RELEASING step 5). When nothing on that path
+changed, skip it and say so in the release PR. One CPU model is enough to show that a local model
+runs through an adapter; more only lengthen the run (the first runs used three and took about two
+hours, most of it waiting on them).
 
 `make guide-check` already proves that getting started and the offline tutorials (3, 4 and 5)
 run as written. This covers what it cannot: real models, a project's own adapters, two tasks in
@@ -79,7 +85,7 @@ dataset, the references. Every config names its goal (`goal: …`).
   (`from evaluation_harness.adapter import PROVIDERS, Result`); `score()` returns `rouge_1`,
   `rouge_l` and `output_words`; `PRIMARY_METRIC = "rouge_l"`; `METRIC_DESCRIPTIONS`.
 - `adapters/intent.py` for the classifier, named by each intents config (`adapter:`): keyword
-  rules, zero-shot NLI (`pipeline("zero-shot-classification")`), and the hosted providers asked to
+  rules, and the hosted providers asked to
   answer `label: <intent>` / `reason: <one sentence>`; `score()` reads the label from the output
   and from the reference (gold is a bare label, silver is a model's two lines);
   `PRIMARY_METRIC = "accuracy"`.
@@ -87,7 +93,7 @@ dataset, the references. Every config names its goal (`goal: …`).
 | arm | summaries (`briefs_*`) | classifier (`intents_*`) |
 |---|---|---|
 | no model | `lead1` | `keywords` |
-| small model, CPU | `t5_small`, `flan_t5_small` | `nli_distilbert` (`typeform/distilbert-base-uncased-mnli`) |
+| small model, CPU (one, the fastest) | `t5_small` | — |
 | cheap hosted | `mistral_small` | `mistral_small`, `llama_scout` |
 | frontier | `opus` (an expensive model you would not run in production) | `opus` |
 
@@ -164,11 +170,10 @@ evidence ruled out, and close it with what it showed.
 
 ```bash
 evh round-open --goal brief_summary --dataset briefs_v1 \
-    --hypothesis "which of five systems, from no model to a frontier LLM, best summarises a brief in one sentence" \
-    --keep briefs_lead1_v1,briefs_t5_small_v1,briefs_flan_t5_small_v1,briefs_mistral_small_v1,briefs_opus_v1
+    --hypothesis "which of four systems, from no model to a frontier LLM, best summarises a brief in one sentence" \
+    --keep briefs_lead1_v1,briefs_t5_small_v1,briefs_mistral_small_v1,briefs_opus_v1
 git add data/rounds && git commit -qm "brief_summary r1: open"
 evh rounds --goal brief_summary                    # the evidence, and the suggested decisions
-evh round-retire --goal brief_summary --round r1 --arm briefs_flan_t5_small_v1 --reason "<what the test showed>"
 evh round-retire --goal brief_summary --round r1 --arm briefs_t5_small_v1 --reason "<what the test showed>"
 evh round-close --goal brief_summary --round r1 --conclusion "<what r1 showed, and what it decided>"
 git add data/rounds && git commit -qm "brief_summary r1: closed"
