@@ -213,6 +213,12 @@ exist.
 
 ---
 
+**Browse it, or ask it.** Every arm and run below is in the catalog, on the goal's page
+[`news_topic_ag`](https://evals.humancopilot.eu/catalog/g/news_topic_ag.html), with an inspector that tests any arms against the baseline item by
+item. An agent can ask the same over MCP, read-only and without sign-in: connect
+`https://evals.humancopilot.eu/mcp` ([how](../../harness/docs/INTEGRATION.md#for-an-agent-evh-mcp))
+and ask, say, "what does the `news_topic_ag` goal recommend, and is it separated from the baseline?".
+
 ## Results
 
 See [`../../research/`](../../research/).

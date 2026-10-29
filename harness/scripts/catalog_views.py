@@ -36,6 +36,7 @@ import sys
 import textwrap
 from datetime import date
 
+from evaluation_harness import _jsonout
 from evaluation_harness import catalog_build as cb
 from evaluation_harness import catalog_periods as cp
 from evaluation_harness import catalog_serve as cs
@@ -56,6 +57,8 @@ KINDS = {"t-silver": "silver", "t-judged": "judged", "t-author": "wrote its refe
 
 
 def _table(heads: list, rows: list) -> None:
+    if _jsonout.table(heads, rows):  # under --json: kept as data, not printed
+        return
     cells = [[str(c) for c in r] for r in rows]
     w = [max([len(h)] + [len(r[i]) for r in cells]) for i, h in enumerate(heads)]
     print("  " + "  ".join(h.ljust(w[i]) for i, h in enumerate(heads)).rstrip())
@@ -1318,5 +1321,19 @@ VIEWS = {
 
 
 def run(view: str) -> int:
-    """Entry point for the per-view scripts (`evh <view>` runs one each)."""
-    return VIEWS[view](sys.argv[1:])
+    """Entry point for the per-view scripts (`evh <view>` runs one each). `--json`: the same output
+    as one JSON object (`_jsonout`: its tables as data, its other lines as text)."""
+    argv, as_json = _jsonout.take_flag(sys.argv[1:])
+    if any(a in ("-h", "--help") for a in argv):  # --json is taken before the view's parser sees it
+        try:
+            return VIEWS[view](argv)
+        finally:
+            print(
+                '\n  --json                the same answer as one JSON object: {"command", "version", "result": '
+                '{"blocks": [...]}}, each table as columns and rows (0.7.0 replaces blocks)'
+            )
+    if not as_json:
+        return VIEWS[view](argv)
+    with _jsonout.collect(view):
+        rc = VIEWS[view](argv)
+    return rc

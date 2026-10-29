@@ -26,7 +26,10 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
 import bisect
+import hashlib
+import json
 import math
+import os
 import random
 import statistics
 from collections import OrderedDict
@@ -134,14 +137,19 @@ def sign_flip_p(
         if key in _P:
             _P.move_to_end(key)
             return _P[key]
-        n, a = len(deltas), abs(obs)
-        neg = [-d for d in deltas]
-        hits = sum(
-            1
-            for keep in _signs(n, permutations, seed)
-            if abs(math.fsum(chain(compress(deltas, keep), compress(neg, keep.translate(_FLIP)))) / n) >= a
-        )
-        _P[key] = (hits + 1) / (permutations + 1)
+        stored = _stored_p(key)
+        if stored is None:
+            n, a = len(deltas), abs(obs)
+            neg = [-d for d in deltas]
+            hits = sum(
+                1
+                for keep in _signs(n, permutations, seed)
+                if abs(math.fsum(chain(compress(deltas, keep), compress(neg, keep.translate(_FLIP)))) / n)
+                >= a
+            )
+            stored = (hits + 1) / (permutations + 1)
+            _store_p(key, stored)
+        _P[key] = stored
         while len(_P) > _P_MAX:
             _P.popitem(last=False)
         return _P[key]
@@ -160,6 +168,67 @@ def sign_flip_p(
 #: minutes. A dropped table is drawn again from the same seed, so a p never changes, only speed.
 _P: OrderedDict = OrderedDict()
 _P_MAX = 4096
+
+#: A file of estimated p's that outlives the process: `EVH_P_CACHE=<path>`, one JSON line per p,
+#: {"k": sha256 of the deltas (as float.hex), permutations and seed; "p": the p as float.hex}. Each
+#: `evh` command is a fresh process, so without it every `evh goals` (and every MCP call, RFC-018)
+#: drew the same ~500 tests again (about 50 s here). A stored p is the one the test computed, read
+#: back exactly; the file is read once, appended when writable, and only read when it is not (a
+#: deployment precomputes it). Unset: nothing is stored. A file that cannot be read is no cache.
+_DISK: dict | None = None
+#: Part of every key: a change to how a p is computed (the draw, the exact cut-off) is a new key,
+#: so a file written by the old code is never read as the new code's answer.
+_P_ALGO = f"sign-flip-1:exact<={EXACT_UP_TO}"
+
+
+def _disk_key(key: tuple) -> str:
+    deltas, permutations, seed = key
+    h = hashlib.sha256(f"{_P_ALGO}:{permutations}:{seed}:".encode())
+    h.update(",".join(float(d).hex() for d in deltas).encode())
+    return h.hexdigest()
+
+
+def _disk() -> dict:
+    global _DISK
+    if _DISK is None:
+        _DISK = {}
+        path = os.environ.get("EVH_P_CACHE")
+        if path and os.path.isfile(path):
+            try:
+                with open(path, encoding="utf-8") as fh:
+                    for line in fh:
+                        try:
+                            rec = json.loads(line)
+                            _DISK[rec["k"]] = float.fromhex(rec["p"])
+                        except (ValueError, KeyError, TypeError):
+                            continue  # a torn line from an interrupted writer
+            except (OSError, ValueError):  # unreadable, or not UTF-8: computed, not read
+                _DISK = {}
+    return _DISK
+
+
+def _stored_p(key: tuple) -> float | None:
+    if not os.environ.get("EVH_P_CACHE"):
+        return None
+    return _disk().get(_disk_key(key))
+
+
+def _store_p(key: tuple, p: float) -> None:
+    path = os.environ.get("EVH_P_CACHE")
+    if not path:
+        return
+    k = _disk_key(key)
+    _disk()[k] = p
+    try:
+        os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
+        with open(path, "a+b") as fh:  # one short line: an atomic append
+            # after a torn last line (a writer killed mid-line), start a new one
+            torn = fh.tell() > 0 and (fh.seek(-1, os.SEEK_END) or fh.read(1) != b"\n")
+            fh.write((b"\n" if torn else b"") + (json.dumps({"k": k, "p": p.hex()}) + "\n").encode())
+    except OSError:
+        pass  # read-only (a deployment's precomputed file): the p is still right, only not kept
+
+
 _SIGNS: OrderedDict = OrderedDict()
 _SIGNS_MAX = 2
 _FLIP = bytes.maketrans(b"\x00\x01", b"\x01\x00")

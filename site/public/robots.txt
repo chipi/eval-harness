@@ -1,5 +1,7 @@
 User-agent: *
 Allow: /
+Disallow: /mcp
+Disallow: /catalog/api/
 
 Sitemap: https://evals.humancopilot.eu/sitemap.xml
 Sitemap: https://evals.humancopilot.eu/docs/sitemap.xml

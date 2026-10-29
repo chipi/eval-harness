@@ -4,7 +4,8 @@ Tables answer the questions you thought to ask. To look around, the harness buil
 **catalog** (static pages over your runs) and serves an **inspector** beside it (a local server
 that tests any arms against a baseline, item by item, and shows one item's outputs side by side).
 **Everything they show is also an `evh` command**, computed by the same code, so the numbers
-match: the pages are a comfort, not the only way in.
+match: the pages are a comfort, not the only way in. And every one of those commands is also a
+tool an agent can call ([below the table in §3](#3-every-page-and-its-command)).
 
 This tutorial starts from the project [getting started](../GUIDE.md) leaves, offline, and
 `make guide-check` runs it as written. It first gives the tickets some **fields**, so the
@@ -65,6 +66,7 @@ runs when it starts, so after a new run, stop it and start it again.
 | the arms and configs page: every arm, grouped and filtered; every config with its rank on each goal | `evh arms --by config`, `evh arms --configs` |
 | the catalog's datasets page: every dataset, its items, arms and references | `evh datasets` |
 | a dataset page: its versions, references and every arm with its headline number | `evh datasets --dataset-id tickets_v1` |
+| a dataset page's "what's inside": its items, their lengths and gold, each item's link | `evh dataset-items --dataset-id tickets_v1` (after `evh dataset-profile --dataset-id tickets_v1`) |
 | an arm page: its metrics, runs, config, conditions, rounds | `evh arms --arm tickets_lead1_v1` |
 | a reference page: who wrote it, from which run, every arm scored against it | `evh references --reference-id silver/tickets_v1` |
 | the metrics page: what each metric measures, which way is better, where it is recorded | `evh metrics` |
@@ -79,6 +81,16 @@ runs when it starts, so after a new run, stop it and start it again.
 | the inspector's per-item table: every item's score per arm, and its Δ against the baseline | `--items` |
 | the inspector's analysis charts, as numbers: the spread per arm, the difference from the baseline, each arm's mean against a second metric | `--analysis`, `--analysis --x latency_ms` |
 | the inspector, one item: the item itself, its fields, each arm's output beside the reference | `--item t01_login` |
+
+**The same, from an agent.** Each command in the right-hand column (but `dataset-profile`,
+which writes) is an MCP tool: `evh mcp`
+serves them, and the agent gets
+the same numbers you do: the command's own output, its JSON where it has one. In Claude Code, in
+this project, `claude mcp add evh -- evh mcp`; then ask it, say, *"which tickets summariser does
+the goal recommend, and is it separated from the baseline?"*, and it calls `goals` and `inspect`.
+No tool writes your project, spends or runs a model (the one file a call keeps is a cache of the
+goals' tests, in the ignored `.cache/`). Other clients, and a shared server for a team:
+[INTEGRATION](../../harness/docs/INTEGRATION.md#for-an-agent-evh-mcp).
 
 A goal's page, in the terminal:
 

@@ -28,9 +28,9 @@ Each layer freezes what it produces, so the next one can be redone without redoi
 | **3. Scoring** | scores are arithmetic over stored outputs, so they can be redone | `rescore` ($0), `judge-score` (billed, optional) | an `--out` that is a directory it reads runs from; a judge that is not validated |
 | **4. Decisions** | paired tests, rankings, baselines with a reason | `pair-test`, `family-test`, `leaderboard`, `run-promote` | comparing runs on two different `dataset_id`s |
 | **5. Goals** | what an evaluation is for and the measure that decides | `goal:` on configs, validate V14 | a config or run naming a goal that does not exist |
-| **6. Looking** | the catalog (static pages) and the run inspector (a local server) | `catalog`, `catalog-serve` | item text in the static pages; mixed datasets in one comparison |
+| **6. Looking** | the catalog (static pages), the run inspector (a local server), and the same read commands as MCP tools for an agent | `catalog`, `catalog-serve`, `mcp` | item text in the static pages or a public server's answers; mixed datasets in one comparison |
 
-Under all of them, `validate` (V1–V15) checks the tree in CI and exits non-zero, and
+Under all of them, `validate` (V1–V16) checks the tree in CI and exits non-zero, and
 `self-test` checks the harness itself. The tests that run `evh` install the package from its
 real wheel, the GUIDE is run in a fresh project on every change (`guide-check`), and the
 catalog and the inspector are driven in headless Chromium (`browser-check`).
@@ -77,7 +77,7 @@ These came from a project that pins the harness and built them for itself. In 0.
 generic part moved into the harness; the project keeps one adapter.
 
 - **The catalog** builds static pages over a project's runs, by dataset: every arm with its
-  headline number. Counts and means only, never an item's text.
+  headline number. Counts and means only, never an item's text unless the repository already publishes it (a profile written `--with-text`, refused unless git has committed every item's file).
 - **The run inspector** is a server, on 127.0.0.1 by default, that tests chosen arms on one
   dataset against a baseline with the same paired test as the CLI, and shows one item's outputs
   beside its reference. It checks the Host header and serves only the catalog and the data
@@ -114,7 +114,8 @@ cache, and refused when the bytes there are not the pinned ones.
 |---|---|---|
 | `evals.humancopilot.eu` | the public site: the harness and its findings | prod VPS, nginx |
 | `evals.humancopilot.eu/catalog` | the harness deployed on these experiments: catalog, goal pages, run inspector | prod VPS, nginx and the inspector |
-| `evals.humancopilot.eu/docs` | these docs | GitHub Pages |
+| `evals.humancopilot.eu/mcp` | the same experiments for an agent: the read commands as MCP tools (Streamable HTTP, read-only, no sign-in) | prod VPS, the MCP server |
+| `evals.humancopilot.eu/docs` | these docs | prod VPS, nginx (and GitHub Pages) |
 
 Both sites on the VPS sit behind the box's shared Caddy edge, each container read-only with
 every capability dropped, under a content security policy with no inline script or style. A

@@ -1,0 +1,576 @@
+{
+  "dataset_id": "few_nerd_56",
+  "harness": "0.4.4",
+  "items": {
+    "kind": "text",
+    "n": 56,
+    "words": {
+      "histogram": [
+        [
+          5,
+          10,
+          6
+        ],
+        [
+          11,
+          16,
+          11
+        ],
+        [
+          17,
+          22,
+          6
+        ],
+        [
+          23,
+          28,
+          13
+        ],
+        [
+          29,
+          34,
+          9
+        ],
+        [
+          35,
+          40,
+          2
+        ],
+        [
+          41,
+          46,
+          4
+        ],
+        [
+          47,
+          52,
+          1
+        ],
+        [
+          53,
+          58,
+          3
+        ],
+        [
+          59,
+          64,
+          1
+        ]
+      ],
+      "max": 61,
+      "median": 24,
+      "min": 5,
+      "p25": 16,
+      "p75": 33
+    }
+  },
+  "items_sha256": "3765192eab097df4c4b73d37570d2d9f062bcf42bd53722926cf1b43e2caff4f",
+  "made_at": "2026-10-28T22:55:01Z",
+  "references": [
+    {
+      "entries": {
+        "histogram": [
+          [
+            0,
+            1,
+            16
+          ],
+          [
+            2,
+            3,
+            24
+          ],
+          [
+            4,
+            5,
+            10
+          ],
+          [
+            6,
+            7,
+            4
+          ],
+          [
+            8,
+            9,
+            1
+          ],
+          [
+            10,
+            11,
+            0
+          ],
+          [
+            12,
+            13,
+            1
+          ]
+        ],
+        "max": 13,
+        "median": 2,
+        "min": 0,
+        "p25": 1,
+        "p75": 4
+      },
+      "id": "gold/few_nerd_56",
+      "items": 56,
+      "shape": "lists"
+    }
+  ],
+  "rows": [
+    {
+      "item_id": "009e011601e770f9d190b7b26a6aa242e378c53e",
+      "reference": {
+        "gold/few_nerd_56": "2 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/DFKI-SLT/few-nerd/viewer/supervised/test?row=22927",
+      "words": 32
+    },
+    {
+      "item_id": "0d9666f7f3851197ffc18814ed3d4050465b9efd",
+      "reference": {
+        "gold/few_nerd_56": "0 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/DFKI-SLT/few-nerd/viewer/supervised/test?row=751",
+      "words": 23
+    },
+    {
+      "item_id": "0e88aabc5a047af7294c5c15c2d51fd6c98a96b8",
+      "reference": {
+        "gold/few_nerd_56": "0 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/DFKI-SLT/few-nerd/viewer/supervised/test?row=272",
+      "words": 17
+    },
+    {
+      "item_id": "0fd56d48992da28f626882e83495302b01319deb",
+      "reference": {
+        "gold/few_nerd_56": "0 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/DFKI-SLT/few-nerd/viewer/supervised/test?row=9236",
+      "words": 5
+    },
+    {
+      "item_id": "114599c4db489b0f873832a21b7df8f8d944e8af",
+      "reference": {
+        "gold/few_nerd_56": "2 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/DFKI-SLT/few-nerd/viewer/supervised/test?row=28474",
+      "words": 27
+    },
+    {
+      "item_id": "154350ae6e7f90df6f0edf536ca8b83b41e57a60",
+      "reference": {
+        "gold/few_nerd_56": "4 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/DFKI-SLT/few-nerd/viewer/supervised/test?row=31936",
+      "words": 33
+    },
+    {
+      "item_id": "18409857010793777da5218fcf4626b69913c2de",
+      "reference": {
+        "gold/few_nerd_56": "2 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/DFKI-SLT/few-nerd/viewer/supervised/test?row=17730",
+      "words": 11
+    },
+    {
+      "item_id": "1985ab09043befd8d5e80e7b6398e5af6789f95d",
+      "reference": {
+        "gold/few_nerd_56": "2 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/DFKI-SLT/few-nerd/viewer/supervised/test?row=19799",
+      "words": 16
+    },
+    {
+      "item_id": "1996f8ce65e3df5ba77bc3bf4c1684c9d8ad0ec3",
+      "reference": {
+        "gold/few_nerd_56": "5 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/DFKI-SLT/few-nerd/viewer/supervised/test?row=2364",
+      "words": 36
+    },
+    {
+      "item_id": "1e39a6ccdcf8f9d40f009ecf625126d6d8a50ac0",
+      "reference": {
+        "gold/few_nerd_56": "4 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/DFKI-SLT/few-nerd/viewer/supervised/test?row=850",
+      "words": 31
+    },
+    {
+      "item_id": "1f007e7e7bc7534262b3f652806e06085ef6680e",
+      "reference": {
+        "gold/few_nerd_56": "2 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/DFKI-SLT/few-nerd/viewer/supervised/test?row=27120",
+      "words": 36
+    },
+    {
+      "item_id": "225a2c68e43e791772f30e12b5f36d655d891275",
+      "reference": {
+        "gold/few_nerd_56": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/DFKI-SLT/few-nerd/viewer/supervised/test?row=16679",
+      "words": 8
+    },
+    {
+      "item_id": "259eccd9c0194511843a784ac0c71347f86dee73",
+      "reference": {
+        "gold/few_nerd_56": "5 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/DFKI-SLT/few-nerd/viewer/supervised/test?row=3204",
+      "words": 28
+    },
+    {
+      "item_id": "2708ce3cf54a82d4658e93fa85b7615051957b05",
+      "reference": {
+        "gold/few_nerd_56": "2 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/DFKI-SLT/few-nerd/viewer/supervised/test?row=5846",
+      "words": 16
+    },
+    {
+      "item_id": "2a41dc156fa9c473302aab9b08b9df50a48b1a17",
+      "reference": {
+        "gold/few_nerd_56": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/DFKI-SLT/few-nerd/viewer/supervised/test?row=27567",
+      "words": 11
+    },
+    {
+      "item_id": "3508a3a3b41ddfa7bf636418bc32c6df2e0d8fa2",
+      "reference": {
+        "gold/few_nerd_56": "3 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/DFKI-SLT/few-nerd/viewer/supervised/test?row=4403",
+      "words": 26
+    },
+    {
+      "item_id": "353f0f4641829c2db7247d0ae8f5ae6607cdd788",
+      "reference": {
+        "gold/few_nerd_56": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/DFKI-SLT/few-nerd/viewer/supervised/test?row=18339",
+      "words": 11
+    },
+    {
+      "item_id": "3abb3b9915ef5a29168f60581fd22adf4ddff41b",
+      "reference": {
+        "gold/few_nerd_56": "2 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/DFKI-SLT/few-nerd/viewer/supervised/test?row=9700",
+      "words": 24
+    },
+    {
+      "item_id": "45a806c770c2f5583be752ba7fb53294720a3455",
+      "reference": {
+        "gold/few_nerd_56": "13 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/DFKI-SLT/few-nerd/viewer/supervised/test?row=19450",
+      "words": 61
+    },
+    {
+      "item_id": "4a6a00d4b489a9f8b3b6a2d4864c3cc7742b7ff0",
+      "reference": {
+        "gold/few_nerd_56": "2 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/DFKI-SLT/few-nerd/viewer/supervised/test?row=6954",
+      "words": 23
+    },
+    {
+      "item_id": "4b6ab1b30460ff510dc50dcbb2c4bbf28624808c",
+      "reference": {
+        "gold/few_nerd_56": "4 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/DFKI-SLT/few-nerd/viewer/supervised/test?row=9801",
+      "words": 17
+    },
+    {
+      "item_id": "5418a048089c1e3dd2a6b55a76fdc1be0dcda2cc",
+      "reference": {
+        "gold/few_nerd_56": "4 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/DFKI-SLT/few-nerd/viewer/supervised/test?row=22048",
+      "words": 32
+    },
+    {
+      "item_id": "59ff807150bea3520b79d5f244d9b0fbd99b9903",
+      "reference": {
+        "gold/few_nerd_56": "3 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/DFKI-SLT/few-nerd/viewer/supervised/test?row=9258",
+      "words": 50
+    },
+    {
+      "item_id": "5a648df06391a1056b8e1e24039fb66100f12299",
+      "reference": {
+        "gold/few_nerd_56": "0 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/DFKI-SLT/few-nerd/viewer/supervised/test?row=20258",
+      "words": 22
+    },
+    {
+      "item_id": "61d02cfeea14b82e67aae574414f0233bfdcaa96",
+      "reference": {
+        "gold/few_nerd_56": "3 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/DFKI-SLT/few-nerd/viewer/supervised/test?row=9060",
+      "words": 18
+    },
+    {
+      "item_id": "63a55a54089cbac49cf3347380db21042c3baa32",
+      "reference": {
+        "gold/few_nerd_56": "6 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/DFKI-SLT/few-nerd/viewer/supervised/test?row=7525",
+      "words": 42
+    },
+    {
+      "item_id": "675c0e87cbd94c0da700fbed970ad6481fd73640",
+      "reference": {
+        "gold/few_nerd_56": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/DFKI-SLT/few-nerd/viewer/supervised/test?row=5442",
+      "words": 33
+    },
+    {
+      "item_id": "68495a46e487cff7f91e2c523beb435e1a86e756",
+      "reference": {
+        "gold/few_nerd_56": "4 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/DFKI-SLT/few-nerd/viewer/supervised/test?row=24779",
+      "words": 16
+    },
+    {
+      "item_id": "7134935983e3994382ea876009f43ddf7211a8c6",
+      "reference": {
+        "gold/few_nerd_56": "0 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/DFKI-SLT/few-nerd/viewer/supervised/test?row=5510",
+      "words": 26
+    },
+    {
+      "item_id": "756f937ac1ca2d6a4bddf0c69761179cd4d396e1",
+      "reference": {
+        "gold/few_nerd_56": "3 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/DFKI-SLT/few-nerd/viewer/supervised/test?row=34864",
+      "words": 24
+    },
+    {
+      "item_id": "7779c6667d6dccfca5b9ad8c2c79e47405387c91",
+      "reference": {
+        "gold/few_nerd_56": "2 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/DFKI-SLT/few-nerd/viewer/supervised/test?row=3557",
+      "words": 25
+    },
+    {
+      "item_id": "815027679a00c06614c6203c3bfe25883e8e68ae",
+      "reference": {
+        "gold/few_nerd_56": "2 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/DFKI-SLT/few-nerd/viewer/supervised/test?row=5736",
+      "words": 34
+    },
+    {
+      "item_id": "9e6f8f7c28a6f2e40b40c2f66fe43cf0d56db6d8",
+      "reference": {
+        "gold/few_nerd_56": "2 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/DFKI-SLT/few-nerd/viewer/supervised/test?row=32509",
+      "words": 15
+    },
+    {
+      "item_id": "ac3383156b9f6705d8fbf8f277d3100a8ddca4b7",
+      "reference": {
+        "gold/few_nerd_56": "4 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/DFKI-SLT/few-nerd/viewer/supervised/test?row=11665",
+      "words": 26
+    },
+    {
+      "item_id": "b0d96c600ed9808355d4df3bcc99d5177aa60356",
+      "reference": {
+        "gold/few_nerd_56": "6 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/DFKI-SLT/few-nerd/viewer/supervised/test?row=5278",
+      "words": 43
+    },
+    {
+      "item_id": "b1bd7568935c3cb349ffa7b713ddc334ecd3b818",
+      "reference": {
+        "gold/few_nerd_56": "2 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/DFKI-SLT/few-nerd/viewer/supervised/test?row=1422",
+      "words": 10
+    },
+    {
+      "item_id": "b1dfb240c31f357411592c268210f88afb49b2ac",
+      "reference": {
+        "gold/few_nerd_56": "3 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/DFKI-SLT/few-nerd/viewer/supervised/test?row=37563",
+      "words": 33
+    },
+    {
+      "item_id": "b2283442b299521b8cb1ae78fe915e811b731e4f",
+      "reference": {
+        "gold/few_nerd_56": "3 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/DFKI-SLT/few-nerd/viewer/supervised/test?row=2225",
+      "words": 31
+    },
+    {
+      "item_id": "b8bc97b4949dd6793b250c118ccdb64e30650e0c",
+      "reference": {
+        "gold/few_nerd_56": "3 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/DFKI-SLT/few-nerd/viewer/supervised/test?row=22120",
+      "words": 26
+    },
+    {
+      "item_id": "be34c5ea12401a0927f9440950cfe14be0b1efcc",
+      "reference": {
+        "gold/few_nerd_56": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/DFKI-SLT/few-nerd/viewer/supervised/test?row=21534",
+      "words": 10
+    },
+    {
+      "item_id": "c12a0d57262303a942beaa46804d43fdb2cc7656",
+      "reference": {
+        "gold/few_nerd_56": "6 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/DFKI-SLT/few-nerd/viewer/supervised/test?row=3078",
+      "words": 53
+    },
+    {
+      "item_id": "c463913bc49707f52aa516ca07ec8d498f086732",
+      "reference": {
+        "gold/few_nerd_56": "0 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/DFKI-SLT/few-nerd/viewer/supervised/test?row=6947",
+      "words": 43
+    },
+    {
+      "item_id": "c51442586d8e2de7f1bc474798ebd331ea54dfcf",
+      "reference": {
+        "gold/few_nerd_56": "4 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/DFKI-SLT/few-nerd/viewer/supervised/test?row=19910",
+      "words": 15
+    },
+    {
+      "item_id": "c652a25da2f99fcf76e47baa37ac3a77cd81b825",
+      "reference": {
+        "gold/few_nerd_56": "5 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/DFKI-SLT/few-nerd/viewer/supervised/test?row=2096",
+      "words": 54
+    },
+    {
+      "item_id": "c7d2d8aa9755b23cac3ba5e82ccef297c07803d0",
+      "reference": {
+        "gold/few_nerd_56": "3 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/DFKI-SLT/few-nerd/viewer/supervised/test?row=23264",
+      "words": 23
+    },
+    {
+      "item_id": "d2722531279279cfcc5aa168d94f55662e08f9be",
+      "reference": {
+        "gold/few_nerd_56": "2 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/DFKI-SLT/few-nerd/viewer/supervised/test?row=6836",
+      "words": 14
+    },
+    {
+      "item_id": "d2bb81825498d4e764924b8eccea20a34383c565",
+      "reference": {
+        "gold/few_nerd_56": "8 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/DFKI-SLT/few-nerd/viewer/supervised/test?row=7977",
+      "words": 41
+    },
+    {
+      "item_id": "d837cd062513d5a37cdfae916a6d72a9aabde409",
+      "reference": {
+        "gold/few_nerd_56": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/DFKI-SLT/few-nerd/viewer/supervised/test?row=16261",
+      "words": 21
+    },
+    {
+      "item_id": "d9d3911536f282bb47f8a61983ced37efeeba41a",
+      "reference": {
+        "gold/few_nerd_56": "0 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/DFKI-SLT/few-nerd/viewer/supervised/test?row=30169",
+      "words": 11
+    },
+    {
+      "item_id": "dcc5b5ca25ad1863d5dc38c576b032e3e518df8d",
+      "reference": {
+        "gold/few_nerd_56": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/DFKI-SLT/few-nerd/viewer/supervised/test?row=9231",
+      "words": 24
+    },
+    {
+      "item_id": "ee24c587d358fec21fd7a865f7c66236b543659b",
+      "reference": {
+        "gold/few_nerd_56": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/DFKI-SLT/few-nerd/viewer/supervised/test?row=5608",
+      "words": 7
+    },
+    {
+      "item_id": "ee90f2323bf712c8398a483c0d392c5b4d03018d",
+      "reference": {
+        "gold/few_nerd_56": "2 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/DFKI-SLT/few-nerd/viewer/supervised/test?row=27133",
+      "words": 12
+    },
+    {
+      "item_id": "efd76ea1d6ce0deb79751ed424c7b27e63129a0c",
+      "reference": {
+        "gold/few_nerd_56": "1 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/DFKI-SLT/few-nerd/viewer/supervised/test?row=13189",
+      "words": 10
+    },
+    {
+      "item_id": "f56f1708001a978f83ed07102fedb157649c2994",
+      "reference": {
+        "gold/few_nerd_56": "6 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/DFKI-SLT/few-nerd/viewer/supervised/test?row=36790",
+      "words": 53
+    },
+    {
+      "item_id": "f5708db0e15621c421011df8a4e084c7f007f772",
+      "reference": {
+        "gold/few_nerd_56": "3 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/DFKI-SLT/few-nerd/viewer/supervised/test?row=12626",
+      "words": 30
+    },
+    {
+      "item_id": "fac5fa7ae1d1b060459581f5084962c317db173f",
+      "reference": {
+        "gold/few_nerd_56": "2 entries"
+      },
+      "source_url": "https://huggingface.co/datasets/DFKI-SLT/few-nerd/viewer/supervised/test?row=20094",
+      "words": 17
+    }
+  ],
+  "source": {
+    "config": "supervised",
+    "name": "DFKI-SLT/few-nerd",
+    "split": "test",
+    "url": "https://huggingface.co/datasets/DFKI-SLT/few-nerd"
+  }
+}

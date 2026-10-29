@@ -134,6 +134,8 @@ def main() -> int:
                 "already exists",
             ),
             ("dataset-materialize", ["--dataset-id", "tickets_v1"], "ok"),
+            ("dataset-profile", ["--dataset-id", "tickets_v1"], "ok:tickets_v1: 6 items"),
+            ("dataset-items", ["--dataset-id", "tickets_v1"], "ok:6 items"),
             (
                 "reference-create",
                 ["--dataset-id", "tickets_v1", "--config", "data/configs/tickets_author.yaml"],
@@ -262,6 +264,8 @@ def main() -> int:
             ("round-close", ["--goal", "g", "--round", "r1", "--conclusion", "x y z"], "no round"),
             ("catalog", [], "ok"),
             ("catalog-serve", [], "ok"),  # started, its address read, stopped
+            # A stdio server: --help here; tests/test_mcp_server.py talks to it through the SDK.
+            ("mcp", ["--help"], "ok:the project's read commands as MCP tools"),
             ("validate", [], "ok"),
             ("self-test", [], "ok"),
         ]

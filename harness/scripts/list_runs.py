@@ -24,9 +24,16 @@ from evaluation_harness._common import (
 from evaluation_harness._runs import runs_on
 
 
+def _common_prog() -> str | None:
+    """`evh <command>` for --help (see _common.evh_prog)."""
+    from evaluation_harness._common import evh_prog  # noqa: PLC0415
+
+    return evh_prog()
+
+
 def main() -> int:
     """List the runs, or with --baselines the baselines."""
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(prog=_common_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("--baselines", action="store_true")
     args = ap.parse_args()
 

@@ -14,7 +14,7 @@ quiet project still showed its last burst of work. The owner asked for calendar 
 week, last month, this year) and for the count on every home tile to carry a trend and to open
 a page that shows the rows behind it, for the same period. A calendar period fixed at build time
 goes stale: a catalog built on Friday would still call Friday "today" on Monday. (The number
-this decision carries, ADR-0018, follows the 0.5.0 drafts on the `050` branch.)
+this decision carries, ADR-0018, follows the 0.7.0 drafts on the `070` branch.)
 
 ## Decision
 

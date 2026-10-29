@@ -69,6 +69,7 @@ ROOT = Path(__file__).resolve().parents[2] / "harness"
 DATASET = "fancyzhx/ag_news"
 CONFIG = "default"
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "_shared"))
+from hf_rows import Sources  # noqa: E402
 from hf_rows import page as _rows_page  # noqa: E402 - the one retry/pacing schedule
 
 #: The API caps a single request; page rather than assume one call is enough.
@@ -163,14 +164,17 @@ def main() -> int:
 
     sources.mkdir(parents=True, exist_ok=True)
     golds.mkdir(parents=True, exist_ok=True)
+    where = Sources(DATASET, CONFIG, args.split)
     for row in rows:
         text = str(row["text"])
         item = item_id(text)
+        where.record(item, row)
         (sources / f"{item}.txt").write_text(text, encoding="utf-8")
         # One word. The scorer compares against it exactly, so no trailing newline: a
         # reference that differs from the model's answer by whitespace is a scoring bug
         # waiting to be blamed on the model.
         (golds / f"{item}.txt").write_text(LABELS[int(row["label"])], encoding="utf-8")
+    where.write(ROOT, dataset_id)
 
     words = sorted(len(str(r["text"]).split()) for r in rows)
     print(f"{len(rows)} item(s) written, {per_class} per class")

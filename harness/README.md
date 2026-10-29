@@ -12,12 +12,13 @@ comparisons that **refuse** to mislead you.
 
 ```bash
 cd your-project
-pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.4.4#subdirectory=harness"
+pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.5.0#subdirectory=harness"
 evh init --tutorial    # the data folders, a .gitignore, and the tutorial kit
 evh --help             # the verbs, in the order you need them
 ```
 
-One install is everything: hosted-model clients, judges, the catalog and the inspector. It
+One install is everything: hosted-model clients, judges, the catalog, the inspector and `evh mcp`, the read
+commands as tools for an agent ([INTEGRATION](docs/INTEGRATION.md#for-an-agent-evh-mcp)). Python 3.10 or later. It
 imports nothing from your project until an arm names your adapter, and your project imports
 nothing from it.
 
@@ -96,10 +97,12 @@ beside them, also optional:
 data/goals/          what each evaluation is for; configs name one with `goal:`
 data/rounds/         experiment rounds of a goal: evh round-open / rounds / round-close
 data/fields/         field sets: the typed facts a project's items carry (`--fieldset`)
+data/profiles/       evh dataset-profile   what is inside a dataset, for its page (no text by default)
 .build/catalog/      evh catalog / evh catalog-serve   pages over the runs, and the inspector
+(an agent)           evh mcp            the read commands as MCP tools
 ```
 
-`evh validate` checks the whole tree — fifteen integrity rules (V1–V15), exits non-zero,
+`evh validate` checks the whole tree — sixteen integrity rules (V1–V16), exits non-zero,
 so it can gate CI.
 
 ### The three inputs
@@ -263,10 +266,11 @@ how 18 arms of paid results were lost during this harness's own development.
 | --- | --- |
 | **[Getting started](../docs/GUIDE.md)** | the loop once, offline, in about fifteen minutes |
 | **[Tutorials](../docs/GUIDE.md#where-to-go-next)** | a local model against a baseline; a hosted LLM with your own key; a frontier reference, gold and judging; rounds and dataset versions; the catalog and the inspector |
-| **[INTEGRATION.md](docs/INTEGRATION.md)** | plugging in an existing system; getting ground truth when you have none |
+| **[INTEGRATION.md](docs/INTEGRATION.md)** | plugging in an existing system; getting ground truth when you have none; connecting an agent (`evh mcp`) |
+| **[CHANGELOG.md](CHANGELOG.md)** | what each release shipped, what can move a result |
 | **[RUNBOOK.md](docs/RUNBOOK.md)** | every command and flag, step by step, with the reasoning; environment variables and exit codes |
 | **[RELEASING.md](docs/RELEASING.md)** | pinning a release in your project, and cutting one: version, changelog, tag, GitHub Release |
-| **[SCENARIO.md](docs/SCENARIO.md)** | the newcomer scenario run before every release: two experiments, real models, under $1 |
+| **[SCENARIO.md](docs/SCENARIO.md)** | the newcomer scenario, a smoke test run when the newcomer's path changes: two experiments, real models, one CPU model, under $1 |
 | **[UPGRADING.md](docs/UPGRADING.md)** | from one release to the next (what can move a number), and for a copy of the harness taken before October 2026 |
 | **[CONCEPTS.md](docs/CONCEPTS.md)** | why each refusal exists, and the failure it prevents |
 
@@ -311,7 +315,7 @@ bundled adapter a pinned project has is `evaluation_harness/adapter.py`.
 | `scripts/experiment_run.py` | run an arm → scores, cost, speed, provenance |
 | `scripts/compare_runs.py` | compare two runs, or refuse |
 | `scripts/promote_baseline.py` | run → baseline, or refuse |
-| `scripts/validate_tree.py` | fifteen integrity checks (V1–V15) |
+| `scripts/validate_tree.py` | sixteen integrity checks (V1–V16) |
 | `scripts/list_runs.py` | what runs and baselines exist |
 | `schemas/` | the contracts: dataset, metrics (a run), baseline, config (an arm), goal, field set, judge scorer, judging set, verdict |
 | `scripts/_fields.py`, `scripts/_fetch.py` | item fields (types, checks, the catalog's summary) and items fetched from a pinned URL (ADR-0003) |

@@ -27,8 +27,8 @@ These hold across all three specifications below; a change that breaks one needs
    command that asks the same adapter and computes with the same functions, so a number on a
    page is the number in the terminal. New surfaces add both. The table is in
    [UXS-003](UXS-003-cli-and-onboarding.md#the-parity-table).
-3. **No item text in static pages.** Outputs, references and the items themselves reach a
-   browser only through the local inspector server.
+3. **No item text in static pages**, unless the repository already publishes it (a profile written `--with-text`, refused unless git has committed every item's file). Outputs, references and the items
+   themselves otherwise reach a browser only through the local inspector server.
 4. **Say what a number is measured against.** Every row of arms names its reference or judge,
    and the tints in [UXS-001](UXS-001-catalog.md#row-tints) mark the ones not scored against gold.
 5. **Refuse, do not guess.** A comparison that cannot be made (two datasets, two references) is

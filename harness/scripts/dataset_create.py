@@ -41,6 +41,7 @@ from evaluation_harness._common import (
     DATASETS,
     ROOT,
     SOURCES,
+    dataset_id_ok,
     die,
     how,
     now,
@@ -286,7 +287,7 @@ def main() -> int:
     )
     args = ap.parse_args()
 
-    out = DATASETS / f"{args.dataset_id}.json"
+    out = DATASETS / f"{dataset_id_ok(args.dataset_id)}.json"
     previous = {}
     if out.exists():
         try:

@@ -70,6 +70,7 @@ from evaluation_harness._common import (
     RUNS,
     CostCapExceeded,
     classify_metrics,
+    dataset_id_ok,
     die,
     env_float,
     how,
@@ -1140,7 +1141,7 @@ def main() -> int:
         for p in problems:
             print(f"  - {p}")
 
-    ds_file = DATA / "datasets" / f"{args.dataset_id}.json"
+    ds_file = DATA / "datasets" / f"{dataset_id_ok(args.dataset_id)}.json"
     if not ds_file.is_file():
         die(f"no dataset {args.dataset_id}")
     ds = read_json(ds_file)

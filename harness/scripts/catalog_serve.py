@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Serve the catalog and the run inspector on this machine only (127.0.0.1).
+"""Serve the catalog and the run inspector: on this machine (127.0.0.1) by default, or --public behind a proxy.
 
     evh catalog-serve [--port 8765] [--adapter path/to/file.py:Class]
     make catalog-serve
@@ -565,6 +565,15 @@ def _conditions(arms: list, metric: str) -> dict | None:
     return {"fields": len(keys), "differ": differ, "warnings": warnings}
 
 
+#: An item id: the name of a file in a run's outputs/ or a reference, never a path.
+_ITEM_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,199}")
+
+
+def plain_item(item_id: str) -> bool:
+    """True for an item id that names a file and nothing else (no "/", no "..")."""
+    return bool(_ITEM_ID.fullmatch(item_id or "")) and ".." not in item_id
+
+
 def item(params: dict) -> dict:
     """Fetch one item's output from multiple arms and the reference."""
     arms = [a for a in params.get("arms", [""])[0].split(",") if a.strip()]
@@ -572,6 +581,8 @@ def item(params: dict) -> dict:
     refs = _known()[1]
     if not it or not arms or any(not _arms_known(a) for a in arms):
         return {"error": "need arms=<arm>,... known to the catalog and item=<item_id>"}
+    if not plain_item(it):  # an item is a file's name in a run, never a path: ../ would leave it
+        return {"error": "not an item id: letters, digits, '.', '_', '-'"}
     # PUBLIC MODE PUBLISHES TEXT ONLY WHEN TOLD (--publish outputs,references). An arm's output
     # can quote its input (an extractive arm returns the article's own sentences) and a reference
     # can be a dataset's licensed text, so a public server serves numbers unless the deployment
@@ -618,16 +629,32 @@ def item(params: dict) -> dict:
 
 #: Set by main(): the public mode's limits. max_arms applies locally too (a URL is not a query).
 LIMITS: dict = {"max_arms": 40, "rate": 0, "hosts": ()}
+#: Each answer kept as the bytes it is sent as, bounded by their total: a 40-arm comparison is
+#: ~1.8 MB, so a count bound (1024) let a hundred distinct questions take a 256 MiB container
+#: past its limit (an independent review, 2026-10-29). Least recently used out first.
 _CACHE: OrderedDict[str, tuple] = OrderedDict()
 _CACHE_MAX = 1024
+_CACHE_BYTES = 32 * 1024 * 1024
+#: The longest question answered: 40 arms by their ids fit in well under 4 KB.
+MAX_QUERY = 4096
+_cache_size = [0]
 _CACHE_LOCK = threading.Lock()
 _COMPUTE = threading.BoundedSemaphore(2)
 _HITS: defaultdict[str, list] = defaultdict(list)
 
 
+def cache_clear() -> None:
+    """Forget every answer (the tests; a server restarts instead)."""
+    with _CACHE_LOCK:
+        _CACHE.clear()
+        _cache_size[0] = 0
+
+
 def answer(path: str, query: str) -> tuple:
-    """(status, body) for one API request; every answer cached by its exact question (the data
-    under a running server does not change: restart it to see new runs)."""
+    """(status, the JSON body as bytes) for one API request; every answer cached by its exact
+    question (the data under a running server does not change: restart it to see new runs)."""
+    if len(query) > MAX_QUERY:
+        return 400, json.dumps({"error": f"the question is over {MAX_QUERY} characters"}).encode()
     key = f"{path}?{'&'.join(sorted(query.split('&')))}"
     with _CACHE_LOCK:
         if key in _CACHE:
@@ -641,12 +668,32 @@ def answer(path: str, query: str) -> tuple:
         except Exception as exc:  # noqa: BLE001 — report, don't kill the server
             body = {"error": "internal error" if LIMITS["hosts"] else f"{type(exc).__name__}: {exc}"}
             code = 500
-    if code != 500:
+    data = json.dumps(body).encode()
+    # Only answers are kept: a refusal (4xx) costs nothing to repeat, and keeping it let distinct
+    # junk questions fill the cache by their keys (an independent review, 2026-10-29).
+    if code == 200 and len(data) <= _CACHE_BYTES // 4:
         with _CACHE_LOCK:
-            _CACHE[key] = (code, body)
-            while len(_CACHE) > _CACHE_MAX:
-                _CACHE.popitem(last=False)
-    return code, body
+            if key not in _CACHE:
+                _CACHE[key] = (code, data)
+                _cache_size[0] += len(data)
+            while _CACHE and (len(_CACHE) > _CACHE_MAX or _cache_size[0] > _CACHE_BYTES):
+                _cache_size[0] -= len(_CACHE.popitem(last=False)[1][1])
+    return code, data
+
+
+def client_key(header: str | None, peer: str) -> str:
+    """Whom the rate counts: the named header when it holds an address (an IPv6 one by its /64),
+    else the connection's own. A header that is not an address (60 KB of text, a value rotated per
+    request) never becomes a key: keys are short and few."""
+    import ipaddress  # noqa: PLC0415
+
+    for v in (header, peer):
+        try:
+            ip = ipaddress.ip_address((v or "").strip()[:64])
+        except ValueError:
+            continue
+        return str(ipaddress.ip_network(f"{ip}/64", strict=False)) if ip.version == 6 else str(ip)
+    return peer[:64]
 
 
 def over_rate(client: str) -> bool:
@@ -671,9 +718,15 @@ def warm(build_dir: Path) -> int:
     for page in sorted(build_dir.rglob("*.html")):
         for href in re.findall(r'href="(?:\.\./)*inspect\.html\?([^"]+)"', page.read_text(encoding="utf-8")):
             links.add(href.replace("&amp;", "&"))
+    done = 0
     for q in sorted(links):
+        # Warm only what the cache keeps: past its bound each answer would evict an earlier one,
+        # and the work and the memory it peaks at would be for nothing.
+        if _cache_size[0] > _CACHE_BYTES * 3 // 4:
+            break
         answer("/api/compare", q)
-    return len(links)
+        done += 1
+    return done
 
 
 def served(build_dir: Path, data_dir: Path, also: tuple = ()) -> tuple:
@@ -742,18 +795,18 @@ def load_hooks(spec: str):
 
     A hook that raises is reported on stderr and never breaks the request."""
     import importlib  # noqa: PLC0415
-    import importlib.util  # noqa: PLC0415
 
     target, _, name = spec.partition(":")
     if target.endswith(".py"):
         path = Path(target).resolve()
         if not path.is_file():
             raise SystemExit(f"--hooks: no file {target}")
-        mod_spec = importlib.util.spec_from_file_location(f"evh_hooks_{path.stem}", path)
-        if mod_spec is None or mod_spec.loader is None:
-            raise SystemExit(f"--hooks: cannot load {target}")
-        mod = importlib.util.module_from_spec(mod_spec)
-        mod_spec.loader.exec_module(mod)
+        from evaluation_harness._common import ModuleNotLoadable, load_module  # noqa: PLC0415
+
+        try:
+            mod = load_module(path, f"evh_hooks_{path.stem}")
+        except ModuleNotLoadable as exc:
+            raise SystemExit(f"--hooks: cannot load {target}") from exc
     else:
         try:
             mod = importlib.import_module(target)
@@ -874,7 +927,7 @@ class Handler(SimpleHTTPRequestHandler):
             # anyone can send a new value per request and never hit the limit.
             hdr = LIMITS.get("client_header")
             client = self.headers.get(hdr) if (LIMITS["hosts"] and hdr) else None
-            if over_rate(client or self.client_address[0]):
+            if over_rate(client_key(client, self.client_address[0])):
                 return self._json(
                     429, {"error": f"more than {LIMITS['rate']} requests a minute; wait a moment"}
                 )
@@ -885,8 +938,8 @@ class Handler(SimpleHTTPRequestHandler):
             return
         super().do_GET()
 
-    def _json(self, code: int, body: dict) -> None:
-        data = json.dumps(body).encode()
+    def _json(self, code: int, body) -> None:
+        data = body if isinstance(body, bytes) else json.dumps(body).encode()
         self.send_response(code)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(data)))
@@ -900,9 +953,16 @@ class Handler(SimpleHTTPRequestHandler):
             super().log_message(fmt, *args)
 
 
+def _common_prog() -> str | None:
+    """`evh <command>` for --help (see _common.evh_prog)."""
+    from evaluation_harness._common import evh_prog  # noqa: PLC0415
+
+    return evh_prog()
+
+
 def main() -> int:
     """Start the catalog server on localhost or in public mode."""
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(prog=_common_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("--port", type=int, default=8765)
     ap.add_argument(
         "--adapter",

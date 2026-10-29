@@ -35,6 +35,14 @@ COMMANDS = {
     "env-check": ("env_check.py", "check the Python environment and keys"),
     "dataset-create": ("dataset_create.py", "freeze a dataset: item list + per-item sha256"),
     "dataset-materialize": ("materialize.py", "hash-checked working copy of a dataset"),
+    "dataset-profile": (
+        "dataset_profile.py",
+        "what is inside a dataset: items, lengths, the gold's shape, a link per item (text only with --with-text)",
+    ),
+    "dataset-items": (
+        "dataset_items.py",
+        "a dataset's profile: its shape, then one row per item (--item for one)",
+    ),
     "reference-create": ("reference_create.py", "make references from a run (--from-run) or with a config"),
     "reference-manifest": (
         "reference_manifest.py",
@@ -90,6 +98,10 @@ COMMANDS = {
     ),
     "catalog": ("catalog_build.py", "build the catalog: static pages over the runs, by dataset"),
     "catalog-serve": ("catalog_serve.py", "serve the catalog and the run inspector on 127.0.0.1"),
+    "mcp": (
+        "mcp_server.py",
+        "the project's read commands as MCP tools for an agent (stdio, or --http for a team; none writes the project or spends)",
+    ),
     "validate": ("validate_tree.py", "schema and integrity checks over the data tree"),
     "self-test": (
         "self_check.py",

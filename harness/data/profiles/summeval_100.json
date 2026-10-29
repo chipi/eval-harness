@@ -1,0 +1,890 @@
+{
+  "dataset_id": "summeval_100",
+  "harness": "0.4.4",
+  "items": {
+    "kind": "json",
+    "n": 100,
+    "words": {
+      "histogram": [
+        [
+          1276,
+          1382,
+          6
+        ],
+        [
+          1383,
+          1489,
+          7
+        ],
+        [
+          1490,
+          1596,
+          10
+        ],
+        [
+          1597,
+          1703,
+          17
+        ],
+        [
+          1704,
+          1810,
+          9
+        ],
+        [
+          1811,
+          1917,
+          14
+        ],
+        [
+          1918,
+          2024,
+          18
+        ],
+        [
+          2025,
+          2131,
+          12
+        ],
+        [
+          2132,
+          2238,
+          4
+        ],
+        [
+          2239,
+          2345,
+          3
+        ]
+      ],
+      "max": 2344,
+      "median": 1813,
+      "min": 1276,
+      "p25": 1620,
+      "p75": 2000
+    }
+  },
+  "items_sha256": "b59999b281b2cbe87c57e4af34cc475c01ba1d531c7b77cb93a136665119c613",
+  "made_at": "2026-10-28T22:57:16Z",
+  "references": [
+    {
+      "id": "gold/summeval_100",
+      "items": 100,
+      "keys": [
+        "coherence",
+        "consistency",
+        "fluency",
+        "relevance"
+      ],
+      "shape": "record"
+    }
+  ],
+  "rows": [
+    {
+      "item_id": "cnn-test-404f859482d47c127868964a9a39d1a7645dd2e9",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=0",
+      "words": 1714
+    },
+    {
+      "item_id": "cnn-test-4761dc6d8bdf56b9ada97104113dd1bcf4aed3f1",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=1",
+      "words": 1700
+    },
+    {
+      "item_id": "cnn-test-5139ccfabee55ddb83e7937f5802c0a67aee8975",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=2",
+      "words": 1581
+    },
+    {
+      "item_id": "cnn-test-88c2481234e763c9bbc68d0ab1be1d2375c1349a",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=3",
+      "words": 1536
+    },
+    {
+      "item_id": "cnn-test-a02e362c5b8f049848ce718b37b96117485461cf",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=4",
+      "words": 1362
+    },
+    {
+      "item_id": "cnn-test-b1c3fc03a2b74cf4c79844c1fe2fdce70a8a436e",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=5",
+      "words": 1779
+    },
+    {
+      "item_id": "cnn-test-b8b6e729fff27c4eef87887e61d3448de9c063f6",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=6",
+      "words": 1630
+    },
+    {
+      "item_id": "cnn-test-bcdb32ae644040a721da880fff9c1d502048cd8b",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=7",
+      "words": 1320
+    },
+    {
+      "item_id": "cnn-test-c05bda9b387ec8ae43803170b6f59b4b82505db9",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=8",
+      "words": 1620
+    },
+    {
+      "item_id": "cnn-test-d75b043ebefc3098aea84d92bb8bec0f509b1563",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=9",
+      "words": 1477
+    },
+    {
+      "item_id": "cnn-test-e2bccd4dec93c9bb7b327827dae004c2d494ec31",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=10",
+      "words": 1833
+    },
+    {
+      "item_id": "cnn-test-e49792c337d3f4c13e22f710efa44cf6a4e59aba",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=11",
+      "words": 1809
+    },
+    {
+      "item_id": "cnn-test-fbbafa743a8c2ecd2cedf65c6c61956b2db8ec5c",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=12",
+      "words": 1488
+    },
+    {
+      "item_id": "dm-test-02c955067d00f38b6978b805d5a8701a787f78ac",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=13",
+      "words": 1611
+    },
+    {
+      "item_id": "dm-test-03e271b4305517e02c9ead82d57327d32b99102e",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=14",
+      "words": 1807
+    },
+    {
+      "item_id": "dm-test-051db270afc32571a08c15124330efe89d80fea8",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=15",
+      "words": 2344
+    },
+    {
+      "item_id": "dm-test-0783c68a744df6afa009d16e72709f2b4d90dea1",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=16",
+      "words": 1541
+    },
+    {
+      "item_id": "dm-test-096e418a953af86df0d1560bec95bc7bfee2e34b",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=17",
+      "words": 1629
+    },
+    {
+      "item_id": "dm-test-0cd10ad50ceef529d96a255ed12ac9cd001ba9db",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=18",
+      "words": 2124
+    },
+    {
+      "item_id": "dm-test-0cdd7cdb5d99c36f25f1f4fa0e962d558f7ff07b",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=19",
+      "words": 1691
+    },
+    {
+      "item_id": "dm-test-0f0789390d67698283cc87b2e046b5c5cd77edb7",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=20",
+      "words": 1994
+    },
+    {
+      "item_id": "dm-test-130ff8f2dfb6ab67861d5924b0ff5acd63c7d8ce",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=21",
+      "words": 1420
+    },
+    {
+      "item_id": "dm-test-14c813567696f4e63a39993c09d4edb454036179",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=22",
+      "words": 1984
+    },
+    {
+      "item_id": "dm-test-155754e1f2bc83f6836af78703edd4d00f19f381",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=23",
+      "words": 1632
+    },
+    {
+      "item_id": "dm-test-1747dcd6a007ee97954b6b10cde549bf82f6a4eb",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=24",
+      "words": 1881
+    },
+    {
+      "item_id": "dm-test-1749a22e2b6facaa057213cb9b33261b319bbd2b",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=25",
+      "words": 1993
+    },
+    {
+      "item_id": "dm-test-18243373494a1722ddcd162ec67b63dd749633ab",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=26",
+      "words": 1931
+    },
+    {
+      "item_id": "dm-test-207df192edc1836250b69d1bc5b9e6a38206eb78",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=27",
+      "words": 2156
+    },
+    {
+      "item_id": "dm-test-2377095dda83df778e34304b7a09813808105d3b",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=28",
+      "words": 2051
+    },
+    {
+      "item_id": "dm-test-23e8c1d71474d239aa9ae37b9a05031b0054b8ce",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=29",
+      "words": 1455
+    },
+    {
+      "item_id": "dm-test-26e4e19d945cedcb489f28808c730658139c9415",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=30",
+      "words": 1636
+    },
+    {
+      "item_id": "dm-test-2a48112ddee712f2364f128076cb2db555a043b1",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=31",
+      "words": 1696
+    },
+    {
+      "item_id": "dm-test-2abe0f81f5b22c8a406165717e3bd7fce6fe47c6",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=32",
+      "words": 1604
+    },
+    {
+      "item_id": "dm-test-2c37d44d03ce2e91310339d884d33ee5aabf9abc",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=33",
+      "words": 2108
+    },
+    {
+      "item_id": "dm-test-2c6695b438980783754f7db28129ec2fbb3e6e21",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=34",
+      "words": 2138
+    },
+    {
+      "item_id": "dm-test-2cf8c2d1d2ceb1980249f77e703f9039e63799d0",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=35",
+      "words": 1540
+    },
+    {
+      "item_id": "dm-test-2cfc33d01364162579f46b2764914a03a29453ce",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=36",
+      "words": 1859
+    },
+    {
+      "item_id": "dm-test-2feca9acf532e33f1ab7442c442c8e19787d8d7b",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=37",
+      "words": 1813
+    },
+    {
+      "item_id": "dm-test-31114653cd606fd3f4b1035f98dedd71f8282cd2",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=38",
+      "words": 1874
+    },
+    {
+      "item_id": "dm-test-36352fd1c61fd0c593ee7b84cbe213aa9b444439",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=39",
+      "words": 1840
+    },
+    {
+      "item_id": "dm-test-3785743303ddb8b594be7c449a37458b99e83812",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=40",
+      "words": 1818
+    },
+    {
+      "item_id": "dm-test-3ba3bde4a1440134bb38ec22ba50db59986b544c",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=41",
+      "words": 1940
+    },
+    {
+      "item_id": "dm-test-4001b252a072ac149c70840b22299cc6cfab3bae",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=42",
+      "words": 1567
+    },
+    {
+      "item_id": "dm-test-46609841ffd23e9c22d1507edf7b176ecc4d834f",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=43",
+      "words": 1342
+    },
+    {
+      "item_id": "dm-test-4a593dc4c7e0b4d09bfdc66bb315c47b54eb15df",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=44",
+      "words": 1770
+    },
+    {
+      "item_id": "dm-test-4e0de0ec6d5b9df174f54d03158de8f30aac861f",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=45",
+      "words": 1881
+    },
+    {
+      "item_id": "dm-test-4f3b35b540ba05f0f82d71a694ec23dde4dc3e01",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=46",
+      "words": 2045
+    },
+    {
+      "item_id": "dm-test-4fb64a2298e18626db776fccf834be87388827e0",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=47",
+      "words": 1987
+    },
+    {
+      "item_id": "dm-test-54b857a66cbd8473d6732e5da52d48612e636a37",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=48",
+      "words": 1834
+    },
+    {
+      "item_id": "dm-test-5be0a9584b051175d9f4842a143b76385335d96a",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=49",
+      "words": 2050
+    },
+    {
+      "item_id": "dm-test-632cfdb03aacd90a34a470f6a70b47eee62ec5f0",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=50",
+      "words": 1388
+    },
+    {
+      "item_id": "dm-test-6372eff07fd3d6f578f90d6115e01747edccc095",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=51",
+      "words": 2017
+    },
+    {
+      "item_id": "dm-test-6721edf88c95f480a4db2c63649dbb03736aeadf",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=52",
+      "words": 1989
+    },
+    {
+      "item_id": "dm-test-6c1341bedf92a304318545fbf1aad88651de7909",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=53",
+      "words": 1647
+    },
+    {
+      "item_id": "dm-test-6f027d030f9ca86446dc893f1d10ced4c9a3561f",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=54",
+      "words": 1654
+    },
+    {
+      "item_id": "dm-test-7cba80e83b222801fed8d6f96e8c0aa381c54b28",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=55",
+      "words": 1500
+    },
+    {
+      "item_id": "dm-test-801763443e6c73e3857039f2223798b2b58bef19",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=56",
+      "words": 1549
+    },
+    {
+      "item_id": "dm-test-808a439a5d83fc47baaea934c8779a7ebc62470d",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=57",
+      "words": 1759
+    },
+    {
+      "item_id": "dm-test-81bd721b16cad47dfd8d24baca5b30b006291db2",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=58",
+      "words": 1972
+    },
+    {
+      "item_id": "dm-test-8764fb95bfad8ee849274873a92fb8d6b400eee2",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=59",
+      "words": 1669
+    },
+    {
+      "item_id": "dm-test-8847383b72167c3f3dd2161b5b091b580c8f4da7",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=60",
+      "words": 2092
+    },
+    {
+      "item_id": "dm-test-8b51a10370a1219137e231192e65b9cd52238ea6",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=61",
+      "words": 1811
+    },
+    {
+      "item_id": "dm-test-8b59fa7715418c4bcc0d50e3caeb239129de453e",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=62",
+      "words": 1470
+    },
+    {
+      "item_id": "dm-test-8bc8f134bc3ceaeec0df8f29e96e13d319717ab8",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=63",
+      "words": 1633
+    },
+    {
+      "item_id": "dm-test-8e6c8aec6808f66ed0342e128a4e146f3ecd627d",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=64",
+      "words": 2250
+    },
+    {
+      "item_id": "dm-test-97bbda7ec22a736cd174b51513c72a6372d13d35",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=65",
+      "words": 2000
+    },
+    {
+      "item_id": "dm-test-998cb27197db1fd299aff3322ac041ba4bf1148f",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=66",
+      "words": 1353
+    },
+    {
+      "item_id": "dm-test-9afda3cde191a883d8c166ceb5765eb53205d8f4",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=67",
+      "words": 2024
+    },
+    {
+      "item_id": "dm-test-9b1af0f993d78353ebd56a1b180e882e751527b3",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=68",
+      "words": 2008
+    },
+    {
+      "item_id": "dm-test-9b5a04b9879fe716a2dcd66dd331f99534603c16",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=69",
+      "words": 2012
+    },
+    {
+      "item_id": "dm-test-9beaaf73e4517d5bf1bc284f386485d571da96cf",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=70",
+      "words": 2008
+    },
+    {
+      "item_id": "dm-test-9d0fcbd873927674d12aafce4ae7754fd591d4e2",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=71",
+      "words": 1684
+    },
+    {
+      "item_id": "dm-test-a3b6201aca77b5bdaa5df02d6acee2be66233237",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=72",
+      "words": 2059
+    },
+    {
+      "item_id": "dm-test-b1f6faac3f406edca1e0cad8cce1319c83e62605",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=73",
+      "words": 2069
+    },
+    {
+      "item_id": "dm-test-b255397ee863bd8faf9def57c0f76769153d905e",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=74",
+      "words": 2167
+    },
+    {
+      "item_id": "dm-test-b5925c1a02fa9a8f6b1d5ad764c19a732deac0df",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=75",
+      "words": 1972
+    },
+    {
+      "item_id": "dm-test-b5bc2ae78441e4ac08fb01823d5fc0f1627c3166",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=76",
+      "words": 1879
+    },
+    {
+      "item_id": "dm-test-bd4684a0f5af5dd6ac88d2fb50f902bd7f10217b",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=77",
+      "words": 1431
+    },
+    {
+      "item_id": "dm-test-c16c9fa34ccae7e2b9e29c3988ccb74974c4b3c0",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=78",
+      "words": 1816
+    },
+    {
+      "item_id": "dm-test-c50d33e9749e7bb484d9b69c4f5fca35a3a50cb5",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=79",
+      "words": 1912
+    },
+    {
+      "item_id": "dm-test-c6667409fcdea2c89ba9f0d3a72c50e3967b4b1b",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=80",
+      "words": 1747
+    },
+    {
+      "item_id": "dm-test-cf4ba8f94f2dd5604eb8f8a4e655c10cf0996365",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=81",
+      "words": 1646
+    },
+    {
+      "item_id": "dm-test-d296270ab4a4cf20f2d9c1aae7514687806f2b35",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=82",
+      "words": 2106
+    },
+    {
+      "item_id": "dm-test-d3c9ce137ba24a69253508b3416630465c050ae4",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=83",
+      "words": 1784
+    },
+    {
+      "item_id": "dm-test-d680ebcdcd59fd5ee9b602a06bcd5230c212835b",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=84",
+      "words": 1996
+    },
+    {
+      "item_id": "dm-test-d83b82a9cd504218e604616be3f3c3928e3428b8",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=85",
+      "words": 1955
+    },
+    {
+      "item_id": "dm-test-d89de9c2a76f2665560becfe5d761a4fc62b9926",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=86",
+      "words": 1718
+    },
+    {
+      "item_id": "dm-test-dea0ed2e587495e516ac85056e21a2076a9a993c",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=87",
+      "words": 2322
+    },
+    {
+      "item_id": "dm-test-e06ff0eb7c4fa4416fda84a9a239b15480c5a9d9",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=88",
+      "words": 1586
+    },
+    {
+      "item_id": "dm-test-e428e25bbf8e06643154ce31b7c6fab64c81e857",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=89",
+      "words": 1493
+    },
+    {
+      "item_id": "dm-test-e43eef75de38d246db9d80216ca9f5487215a78b",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=90",
+      "words": 1493
+    },
+    {
+      "item_id": "dm-test-e470f0a87d7513bf880412524332047020422c3f",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=91",
+      "words": 2222
+    },
+    {
+      "item_id": "dm-test-e7d8b6617691ea00d4ddc5fe2b7cbd105ba9a57e",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=92",
+      "words": 2082
+    },
+    {
+      "item_id": "dm-test-e880fda4c25289f8325574246f0f8ed4ff5eb26b",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=93",
+      "words": 2006
+    },
+    {
+      "item_id": "dm-test-eeef09d26cf30c2124c0399b08eedc6321fe5d20",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=94",
+      "words": 1321
+    },
+    {
+      "item_id": "dm-test-f26d8400ae49b90d109c165d0f44b8f6ca253c08",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=95",
+      "words": 1879
+    },
+    {
+      "item_id": "dm-test-f37fd6e9b6cc18a7132568e307ef3b130931e809",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=96",
+      "words": 2107
+    },
+    {
+      "item_id": "dm-test-f468efac7b3c54f8c42c2c81dff108c52ebe0d7d",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=97",
+      "words": 1647
+    },
+    {
+      "item_id": "dm-test-f5fead94ee884800e84a212cc0edc78b11c4ba9f",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=98",
+      "words": 1276
+    },
+    {
+      "item_id": "dm-test-fadabe346fe95d33eee71299e6596754768f5246",
+      "reference": {
+        "gold/summeval_100": "4 fields"
+      },
+      "source_url": "https://huggingface.co/datasets/mteb/summeval/viewer/default/test?row=99",
+      "words": 2062
+    }
+  ],
+  "source": {
+    "config": "default",
+    "name": "mteb/summeval",
+    "split": "test",
+    "url": "https://huggingface.co/datasets/mteb/summeval"
+  }
+}

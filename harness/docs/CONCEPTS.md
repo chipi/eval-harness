@@ -40,6 +40,12 @@ against it is describing bytes that no longer exist.
 `evh dataset-materialize` re-verifies every hash and fails loudly rather than
 quietly measuring something else.
 
+What a dataset holds can be shown without its text, which its licence may not let you
+publish: `evh dataset-profile --dataset-id my_corpus_v1`, where it is materialized, writes
+`data/profiles/my_corpus_v1.json` (how many items and how long, the gold's labels or shape,
+each item's link to its source when one is recorded). Commit it, and the dataset's catalog
+page shows "what's inside"; `evh dataset-items` prints it.
+
 When data genuinely changes, that is a new version — `my_corpus_v2` — never an
 edit in place. The new version names the one it came from (`--from my_corpus_v1`) and records
 the items it adds, removes and changes, so "what changed between v1 and v2?" has an answer
@@ -178,6 +184,22 @@ optional round ([ADR-0004](../../docs/adr/ADR-0004-experiment-rounds.md)) record
 to learn, what changed, which arms it carried in and which it dropped and why, and what it
 concluded. `evh rounds` suggests the next decision from the evidence, as a command; it never
 makes one. A closed round refuses new runs, so its evidence cannot grow after its conclusion.
+
+---
+
+## An agent reads; a person decides
+
+An agent can look at what the catalog shows: `evh mcp` serves its views as tools (the ranking
+and the statistics commands, `leaderboard`, `pair-test` and the like, are not tools yet)
+([INTEGRATION](INTEGRATION.md#for-an-agent-evh-mcp)), and each call runs the command itself, so
+the agent's numbers are yours, refusals included. It cannot act on them. Running an arm spends
+money, promoting a baseline is a decision with a reason, closing a round fixes its evidence:
+each of those has a consequence someone must own, so they stay commands a person runs. An agent
+can prepare one and hand you the exact command. What an agent may also do, with whose consent,
+is 0.7.0's to design.
+
+A shared server answers anyone who can reach it, so `--public` holds back what a project may not
+redistribute (an item's text), and the rates bound what a script can cost the machine.
 
 ---
 

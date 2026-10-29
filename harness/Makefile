@@ -17,7 +17,8 @@ TIER ?= silver
 
 .PHONY: help demo init env-check install venv-init catalog catalog-serve \
         overview activity datasets arms references metrics goals inspect round-open round-retire round-close rounds \
-        dataset-create dataset-materialize reference-create \
+        dataset-create dataset-materialize dataset-profile dataset-items reference-create reference-manifest \
+        mcp search self-test \
         holdout pair-test rank-stability \
         experiment-dry-run experiment-run sweep \
         runs-list baselines-list run-compare leaderboard run-promote \
@@ -166,8 +167,24 @@ dataset-create:
 dataset-materialize:
 	$(PYTHON) scripts/materialize.py --dataset-id $(DATASET_ID) $(ARGS)
 
+# What is inside a dataset, without its text (data/profiles/<id>.json): written where it is
+# materialized, committed, read by the dataset page and dataset-items.
+dataset-profile:
+	$(PYTHON) scripts/dataset_profile.py --dataset-id $(DATASET_ID) $(ARGS)
+
+dataset-items:
+	$(PYTHON) scripts/dataset_items.py --dataset-id $(DATASET_ID) $(ARGS)
+
 # Author ground truth with a model you trust. SILVER by default (model-generated);
 # TIER=gold once a human has reviewed it.
+# The checksummed manifest of a reference a fetch script built.
+reference-manifest:
+	$(PYTHON) scripts/reference_manifest.py $(ARGS)
+
+# Does the installed harness work here? (in a checkout: the full test suite)
+self-test:
+	$(PYTHON) scripts/self_check.py $(ARGS)
+
 reference-create:
 	@test -n "$(RUN)$(CONFIG)" || { echo "RUN=<run_id whose outputs become the reference> or CONFIG=<config that authors it> is required"; exit 1; }
 	$(PYTHON) scripts/reference_create.py --dataset-id $(DATASET_ID) $(if $(RUN),--from-run $(RUN),--config $(CONFIG)) --tier $(TIER) $(ARGS)
@@ -291,13 +308,22 @@ validate:
 	$(PYTHON) scripts/validate_tree.py
 
 # THE CATALOG AND THE RUN INSPECTOR (ADR-0002): static pages over the runs, by dataset, into
-# .build/catalog/ (counts and means only, never an item's text); then a server on 127.0.0.1
+# .build/catalog/ (counts and means only; item text only where a profile publishes it); then a server on 127.0.0.1
 # that tests any arms on one dataset against a baseline with the same paired test as pair-test.
 catalog:
 	$(PYTHON) scripts/catalog_build.py $(ARGS)
 
 catalog-serve: catalog
 	$(PYTHON) scripts/catalog_serve.py $(ARGS)
+
+# The read commands as MCP tools, for an agent (RFC-018): stdio, or ARGS="--http ..." for a team.
+mcp:
+	$(PYTHON) scripts/mcp_server.py $(ARGS)
+
+# The catalog's search in the terminal: TEXT="words".
+search:
+	@test -n "$(TEXT)" || { echo "TEXT=<words> is required"; exit 1; }
+	$(PYTHON) scripts/view_search.py $(TEXT) $(ARGS)
 
 # The catalog's pages and the inspector's comparison in the terminal (scripts/catalog_views.py):
 # the same adapter and the same computation, so a number here is the number on the page.

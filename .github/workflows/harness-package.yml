@@ -21,11 +21,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     # The oldest Python pyproject.toml allows, the one developed on, and the newest: the package
-    # claims >=3.9, and only a run on 3.9 can show that is true.
+    # claims >=3.10, and only a run on 3.10 can show that is true.
     strategy:
       fail-fast: false
       matrix:
-        python: ["3.9", "3.11", "3.14"]
+        python: ["3.10", "3.11", "3.14"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

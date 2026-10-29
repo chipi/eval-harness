@@ -12,6 +12,7 @@ import functools
 import hashlib
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -349,9 +350,20 @@ def goal_policy() -> dict[str, Any]:
     return doc if isinstance(doc, dict) else {}
 
 
+#: A dataset id: a file name under data/, never a path (`../x` or `/etc/x` would read outside it).
+DATASET_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
+
+
+def dataset_id_ok(dataset_id: str) -> str:
+    """The id, or SystemExit when it is not a plain name (a path would leave data/)."""
+    if not DATASET_ID.fullmatch(dataset_id or "") or ".." in dataset_id:
+        raise SystemExit(f"not a dataset id: {dataset_id[:60]!r} (letters, digits, '.', '_', '-')")
+    return dataset_id
+
+
 def load_dataset(dataset_id: str) -> dict[str, Any]:
     """Load a dataset by id from data/datasets, or raise SystemExit."""
-    path = _paths()["DATASETS"] / f"{dataset_id}.json"
+    path = _paths()["DATASETS"] / f"{dataset_id_ok(dataset_id)}.json"
     if not path.is_file():
         raise SystemExit(
             f"no such dataset: {dataset_id}\n"
@@ -485,6 +497,19 @@ def reference_texts(root: Path, dataset_id: str, tier: str = "gold") -> list[Pat
     return files
 
 
+def evh_prog() -> str | None:
+    """`evh <command>` for the script running now, as `--help` should name it (None: argparse's
+    own, the script's file name, for a script that is no evh command)."""
+    import os  # noqa: PLC0415
+
+    try:
+        from evaluation_harness.cli import COMMANDS  # noqa: PLC0415
+    except ImportError:
+        return None
+    me = os.path.basename(sys.argv[0] if sys.argv else "")
+    return next((f"evh {name}" for name, (script, *_r) in COMMANDS.items() if script == me), None)
+
+
 def no_options(doc: str | None, *flags: str) -> Any:
     """The command line of a command that takes no arguments but `flags` (each an on/off
     switch): -h/--help prints `doc`, anything else is refused with exit 2. Seven commands
@@ -492,7 +517,9 @@ def no_options(doc: str | None, *flags: str) -> Any:
     ran the plain validation and said nothing."""
     import argparse  # noqa: PLC0415
 
-    ap = argparse.ArgumentParser(description=doc, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap = argparse.ArgumentParser(
+        prog=evh_prog(), description=doc, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     for flag in flags:
         ap.add_argument(flag, action="store_true")
     return ap.parse_args()

@@ -34,7 +34,7 @@ Each check exists because its absence let a real defect through somewhere:
 
 Exit 1 on any failure, so it can gate.
 
-    python scripts/validate_tree.py
+    evh validate
 """
 
 from __future__ import annotations
@@ -146,6 +146,7 @@ def v1_schemas() -> None:
         ((DATA / "judging-sets").glob("*.json"), "judging-set.schema.json"),
         ((DATA / "judge-verdicts").glob("*/*/*/*.json"), "verdict.schema.json"),
         ([DATA / "models.yaml"], "models.schema.json"),
+        ((DATA / "profiles").glob("*.json"), "profile.schema.json"),
     ]
     bad = 0
     n = 0

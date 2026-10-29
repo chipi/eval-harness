@@ -1,0 +1,303 @@
+{
+  "dataset_id": "cnn_dailymail_20",
+  "harness": "0.4.4",
+  "items": {
+    "kind": "text",
+    "n": 20,
+    "words": {
+      "histogram": [
+        [
+          111,
+          213,
+          3
+        ],
+        [
+          214,
+          316,
+          2
+        ],
+        [
+          317,
+          419,
+          4
+        ],
+        [
+          420,
+          522,
+          3
+        ],
+        [
+          523,
+          625,
+          1
+        ],
+        [
+          626,
+          728,
+          1
+        ],
+        [
+          729,
+          831,
+          3
+        ],
+        [
+          832,
+          934,
+          0
+        ],
+        [
+          935,
+          1037,
+          2
+        ],
+        [
+          1038,
+          1140,
+          1
+        ]
+      ],
+      "max": 1133,
+      "median": 465,
+      "min": 111,
+      "p25": 361,
+      "p75": 738
+    }
+  },
+  "items_sha256": "ea2e08a2214a375f00db936da844b4592fd2cd3f93d1f1460735231b7bb83f02",
+  "made_at": "2026-10-28T22:13:42Z",
+  "references": [
+    {
+      "id": "gold/cnn_dailymail_20",
+      "items": 20,
+      "shape": "text",
+      "words": {
+        "histogram": [
+          [
+            18,
+            21,
+            2
+          ],
+          [
+            22,
+            25,
+            1
+          ],
+          [
+            26,
+            29,
+            3
+          ],
+          [
+            30,
+            33,
+            2
+          ],
+          [
+            34,
+            37,
+            3
+          ],
+          [
+            38,
+            41,
+            1
+          ],
+          [
+            42,
+            45,
+            5
+          ],
+          [
+            46,
+            49,
+            1
+          ],
+          [
+            50,
+            53,
+            1
+          ],
+          [
+            54,
+            57,
+            1
+          ]
+        ],
+        "max": 56,
+        "median": 37,
+        "min": 18,
+        "p25": 29,
+        "p75": 44
+      }
+    }
+  ],
+  "rows": [
+    {
+      "item_id": "0d3c8c276d079c4c225f034c69aa024cdab7869d",
+      "reference": {
+        "gold/cnn_dailymail_20": "44 words"
+      },
+      "source_url": "https://huggingface.co/datasets/abisee/cnn_dailymail/viewer/1.0.0/test?row=7",
+      "words": 361
+    },
+    {
+      "item_id": "1b2cc634e2bfc6f2595260e7ed9b42f77ecbb0ce",
+      "reference": {
+        "gold/cnn_dailymail_20": "24 words"
+      },
+      "source_url": "https://huggingface.co/datasets/abisee/cnn_dailymail/viewer/1.0.0/test?row=5",
+      "words": 440
+    },
+    {
+      "item_id": "1dd00c89d71a5611797bb34da8a6eada8f058405",
+      "reference": {
+        "gold/cnn_dailymail_20": "45 words"
+      },
+      "source_url": "https://huggingface.co/datasets/abisee/cnn_dailymail/viewer/1.0.0/test?row=13",
+      "words": 954
+    },
+    {
+      "item_id": "203886369feea77bbc35715e6d7e518b751f57de",
+      "reference": {
+        "gold/cnn_dailymail_20": "32 words"
+      },
+      "source_url": "https://huggingface.co/datasets/abisee/cnn_dailymail/viewer/1.0.0/test?row=12",
+      "words": 465
+    },
+    {
+      "item_id": "230c522854991d053fe98a718b1defa077a8efef",
+      "reference": {
+        "gold/cnn_dailymail_20": "44 words"
+      },
+      "source_url": "https://huggingface.co/datasets/abisee/cnn_dailymail/viewer/1.0.0/test?row=1",
+      "words": 411
+    },
+    {
+      "item_id": "2bd8ada1de6a7b02f59430cc82045eb8d29cf033",
+      "reference": {
+        "gold/cnn_dailymail_20": "21 words"
+      },
+      "source_url": "https://huggingface.co/datasets/abisee/cnn_dailymail/viewer/1.0.0/test?row=9",
+      "words": 113
+    },
+    {
+      "item_id": "384175be1c8d41610fbeddbd9d9cb46e716e2529",
+      "reference": {
+        "gold/cnn_dailymail_20": "27 words"
+      },
+      "source_url": "https://huggingface.co/datasets/abisee/cnn_dailymail/viewer/1.0.0/test?row=11",
+      "words": 498
+    },
+    {
+      "item_id": "4495ba8f3a340d97a9df1476f8a35502bcce1f69",
+      "reference": {
+        "gold/cnn_dailymail_20": "38 words"
+      },
+      "source_url": "https://huggingface.co/datasets/abisee/cnn_dailymail/viewer/1.0.0/test?row=2",
+      "words": 704
+    },
+    {
+      "item_id": "469c6ac05092ca5997728c9dfc19f9ab6b936e40",
+      "reference": {
+        "gold/cnn_dailymail_20": "52 words"
+      },
+      "source_url": "https://huggingface.co/datasets/abisee/cnn_dailymail/viewer/1.0.0/test?row=17",
+      "words": 1133
+    },
+    {
+      "item_id": "6222f33c2c79b80be437335eeb3f488509e92cf5",
+      "reference": {
+        "gold/cnn_dailymail_20": "28 words"
+      },
+      "source_url": "https://huggingface.co/datasets/abisee/cnn_dailymail/viewer/1.0.0/test?row=8",
+      "words": 289
+    },
+    {
+      "item_id": "88e7dac40f3e6c159e4edc0747d0cc0f50886fbb",
+      "reference": {
+        "gold/cnn_dailymail_20": "29 words"
+      },
+      "source_url": "https://huggingface.co/datasets/abisee/cnn_dailymail/viewer/1.0.0/test?row=18",
+      "words": 805
+    },
+    {
+      "item_id": "a38e72fed88684ec8d60dd5856282e999dc8c0ca",
+      "reference": {
+        "gold/cnn_dailymail_20": "45 words"
+      },
+      "source_url": "https://huggingface.co/datasets/abisee/cnn_dailymail/viewer/1.0.0/test?row=3",
+      "words": 202
+    },
+    {
+      "item_id": "c222979bd1cfbc7d3ff821e9c738e3dbd29b14f4",
+      "reference": {
+        "gold/cnn_dailymail_20": "37 words"
+      },
+      "source_url": "https://huggingface.co/datasets/abisee/cnn_dailymail/viewer/1.0.0/test?row=16",
+      "words": 738
+    },
+    {
+      "item_id": "c27cf1b136cc270023de959e7ab24638021bc43f",
+      "reference": {
+        "gold/cnn_dailymail_20": "43 words"
+      },
+      "source_url": "https://huggingface.co/datasets/abisee/cnn_dailymail/viewer/1.0.0/test?row=4",
+      "words": 364
+    },
+    {
+      "item_id": "dc833f8b55e381011ce23f89ea909b9a141b5a66",
+      "reference": {
+        "gold/cnn_dailymail_20": "47 words"
+      },
+      "source_url": "https://huggingface.co/datasets/abisee/cnn_dailymail/viewer/1.0.0/test?row=15",
+      "words": 1028
+    },
+    {
+      "item_id": "e2706dce6cf26bc61b082438188fdb6e130d9e40",
+      "reference": {
+        "gold/cnn_dailymail_20": "56 words"
+      },
+      "source_url": "https://huggingface.co/datasets/abisee/cnn_dailymail/viewer/1.0.0/test?row=6",
+      "words": 773
+    },
+    {
+      "item_id": "ec4b5fef725b4cc81545689603ff84c8e19bd6dc",
+      "reference": {
+        "gold/cnn_dailymail_20": "35 words"
+      },
+      "source_url": "https://huggingface.co/datasets/abisee/cnn_dailymail/viewer/1.0.0/test?row=19",
+      "words": 389
+    },
+    {
+      "item_id": "ee17dfb574feca82ccac5689595e47483bd23f12",
+      "reference": {
+        "gold/cnn_dailymail_20": "33 words"
+      },
+      "source_url": "https://huggingface.co/datasets/abisee/cnn_dailymail/viewer/1.0.0/test?row=10",
+      "words": 111
+    },
+    {
+      "item_id": "eeafdc8b2d8130cabda5aafe352eab1198d0b9f8",
+      "reference": {
+        "gold/cnn_dailymail_20": "18 words"
+      },
+      "source_url": "https://huggingface.co/datasets/abisee/cnn_dailymail/viewer/1.0.0/test?row=14",
+      "words": 262
+    },
+    {
+      "item_id": "f001ec5c4704938247d27a44948eebb37ae98d01",
+      "reference": {
+        "gold/cnn_dailymail_20": "36 words"
+      },
+      "source_url": "https://huggingface.co/datasets/abisee/cnn_dailymail/viewer/1.0.0/test?row=0",
+      "words": 567
+    }
+  ],
+  "source": {
+    "config": "1.0.0",
+    "name": "abisee/cnn_dailymail",
+    "split": "test",
+    "url": "https://huggingface.co/datasets/abisee/cnn_dailymail"
+  }
+}

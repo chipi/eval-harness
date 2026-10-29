@@ -124,7 +124,7 @@ the [Runbook](../../harness/docs/RUNBOOK.md); the first evaluation, step by step
   (`--allow-dirty`, `--allow-unknown-build`).
 - **FR4.2**: The baseline records the run's reference tier, adapter and fingerprint hash, and
   `evh validate` (V6) fails a baseline that no longer matches its run.
-- **FR4.3**: `evh validate` checks the whole data tree (V1–V15) and exits non-zero, so CI can
+- **FR4.3**: `evh validate` checks the whole data tree (V1–V16) and exits non-zero, so CI can
   hold it.
 
 ## Success Criteria

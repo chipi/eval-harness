@@ -69,8 +69,8 @@ described from the machine itself:
 | Mac mini (2018) | Intel Core i7-8700B, 6 cores / 12 threads, 32 GB | the first five experiments: their local arms on its CPU, their hosted arms as API calls |
 | cloud runner | 4-core Linux (x86_64) containers; the operator's cloud coding sessions | the six local models that need torch 2.6 or later, SummEval's seven free scorers, and the one-machine BART re-timing |
 | GMKtec EVO-X3 | AMD Ryzen AI Max+ 395 (Strix Halo), 128 GB unified memory | SummEval's 24 hosted judges, as API calls, and its two UniEval arms on CPU. No open-weight LLM was run on any of these machines for the committed results |
-| NVIDIA DGX Spark | NVIDIA GB10, 128 GB unified memory | none of the committed runs |
-| MacBook Pro | Apple M4 Pro, 48 GB unified memory | none of the committed runs |
+| NVIDIA DGX Spark | NVIDIA GB10, 128 GB unified memory | none of the committed runs; the workhorse for the runs of the operator's other projects, where it serves the local models |
+| MacBook Pro | Apple M4 Pro, 48 GB unified memory | none of the committed runs; the laptop the work is driven from, and a workhorse for the operator's other projects |
 
 What it means for a number. **A hosted arm's quality and cost come from the provider**, not
 the machine that called it. **A local arm's outputs are expected to repeat on any CPU**, and

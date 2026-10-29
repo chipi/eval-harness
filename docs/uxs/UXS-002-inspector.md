@@ -28,7 +28,7 @@ Its state lives in the URL, so every link from the catalog opens a ready compari
   `evaluation_harness.stats`; `evh inspect` calls the same function.
 - **Refuse and say why.** Arms that cannot be tested against the baseline are set aside with a
   note, never tested anyway.
-- **Item text only here.** The static pages never carry it. A public deployment never returns the
+- **Item text only here.** The static pages never carry it, unless the repository already publishes it (a profile written `--with-text`, refused unless git has committed every item's file). A public deployment never returns the
   item itself, and shows an arm's output or a reference's text only when it publishes them
   (`catalog-serve --publish outputs,references`); otherwise the item view says which it withholds.
 
@@ -45,6 +45,8 @@ with `evh inspect --round rN`); comparing arms across datasets.
 `inspect.html?runs=<arm>,<arm>,...&baseline=<arm>&metric=<name>&where=<field>:<value>&by=<field>`.
 Links from the catalog may also carry `family` and `threshold`, so a verdict reached from a
 goal page matches the one that page implied. Every control rewrites the URL and reloads.
+`&item=<id>` opens that item's view once the comparison has loaded (a dataset page's **inspect**
+link); an item the arms do not share says so instead.
 
 ## Choosing arms
 
@@ -193,3 +195,7 @@ every catalog table. A row opens on click, Enter or Space.
 | the item view | `--item <item_id>`: fields, the item itself, the reference, each arm's output under `(run <run_id>)`, or `(run <run_id> · shown the latest of N repeats; the score is the mean of all N)` for a repeated arm |
 | the per-item table | `--items`: every item's score per arm, and each arm's Δ against the baseline |
 | the analysis charts | `--analysis`: the spread per arm and the difference from the baseline, per item, as numbers; `--x <metric>` adds each arm's mean on a second metric (the scatter) |
+
+For an agent, `evh inspect` is the MCP tool `inspect`, with the same options (`runs`, `baseline`,
+`metric`, `where`, `by`, `items`, `analysis`, `x`, `round`, `goal`, `from`, `no-rescore`, `item`). A public server (`evh mcp --public`, and
+this repository's at `/mcp`) leaves out `item`, as the public inspector serves no item text.

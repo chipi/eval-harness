@@ -1,6 +1,6 @@
 # PRD-007: One install, your own keys
 
-- **Status**: Implemented (v0.4.0); installable since 0.2.0
+- **Status**: Implemented (v0.4.0); installable since 0.2.0; Python 3.10 and the MCP SDK from v0.5.0
 - **Authors**: Marko Dragoljevic
 - **Related UX spec**: [UXS-003](../uxs/UXS-003-cli-and-onboarding.md) (the command line and the first evaluation)
 - **Related PRDs**: [PRD-001](PRD-001-experiments-and-comparison.md)
@@ -41,7 +41,7 @@ a walkthrough in the user's own project, not inside a checkout of this repositor
 
 ## Personas
 
-- **The newcomer** following the GUIDE, offline, in twenty minutes.
+- **The newcomer** following the GUIDE, offline, in fifteen minutes.
 - **The engineer integrating an existing system**, in any language, behind one Python function.
 - **The team** pinning a release in CI.
 
@@ -61,9 +61,9 @@ a walkthrough in the user's own project, not inside a checkout of this repositor
 
 ### FR1: The package
 
-- **FR1.1**: `pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.4.4#subdirectory=harness"`
-  installs the package and the `evh` command; Python 3.9 or later.
-- **FR1.2**: Its dependencies are `pyyaml`, `jsonschema`, `openai` and `anthropic`; there is no
+- **FR1.1**: `pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.5.0#subdirectory=harness"`
+  installs the package and the `evh` command; Python 3.10 or later (from 0.5.0, the MCP SDK's floor; 3.9 before).
+- **FR1.2**: Its dependencies are `pyyaml`, `jsonschema`, `openai`, `anthropic` and (from 0.5.0) `mcp`; there is no
   optional extra for any user feature (the `test` extra serves the self-test's corpus checks).
 - **FR1.3**: The package holds the harness's code, schemas, the catalog's assets and the
   tutorial kit, not this repository's tests or data.
@@ -100,7 +100,7 @@ a walkthrough in the user's own project, not inside a checkout of this repositor
 ## Success Criteria
 
 - The package's CI job (`.github/workflows/harness-package.yml`) installs the wheel on Python
-  3.9, 3.11 and 3.14 and runs `evh self-test`.
+  3.10, 3.11 and 3.14 and runs `evh self-test`.
 - `harness/tests/test_installed_commands.py` runs every `evh` command in a project that pins the
   package.
 

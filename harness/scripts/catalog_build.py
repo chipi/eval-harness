@@ -8,8 +8,9 @@ Pages: the catalog's home (every dataset, with its arms and references), one pag
 (every arm on it, with its headline number, and an "inspect" link per arm and for all of
 them), and the inspector shell, which `evh catalog-serve` fills from the adapter.
 
-The output embeds counts and means only, never an item's text: outputs and references leave
-the data tree only through the local inspector server (ADR-0002). The page shell (`page`,
+The output embeds counts and means only, never an item's text (but what the repository already
+publishes: a profile written --with-text, refused unless git has committed every item's file):
+outputs and references leave the data tree only through the inspector server (ADR-0002). The page shell (`page`,
 `hero`, `block`, `table`) and the assets are the parts a project's own builder reuses.
 """
 
@@ -331,8 +332,11 @@ def page(
     item: str = "item",
     serve: str = "evh catalog-serve",
     footer: str = "",
+    elsewhere: tuple = (),
 ) -> str:
-    """Build a complete HTML page with header, nav, body, and footer."""
+    """Build a complete HTML page with header, nav, body, and footer. `elsewhere`: the read
+    commands that answer what the page shows, ((command, {option: value}), ...), named in the
+    footer as the terminal command and, with --mcp, as the MCP tool."""
     up = "../" * depth
     brand = brand or BRAND
 
@@ -377,8 +381,9 @@ def page(
     brand_text = f"<span>{e(brand)}</span>"
     built = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     foot = footer or (
-        f"Built {built} by <code>evh catalog</code>. The pages carry counts and means "
-        f"only; {e(item)} text is fetched from the inspector when you open an {e(item)}."
+        f"Built {built} by <code>evh catalog</code>. The pages carry counts and means only, "
+        f"and an {e(item)}'s text only where the project publishes it; the inspector shows the rest "
+        f"where its server allows."
     )
     # noindex, deliberately: the catalog is a working view over runs, not a page to be found by a
     # search engine; the findings site is what is indexed.
@@ -409,7 +414,7 @@ def page(
 <main>
 {body}
 </main>
-<footer><div class="wrap"><p>{foot}</p></div></footer>
+<footer><div class="wrap"><p>{foot}</p>{elsewhere_line(elsewhere)}</div></footer>
 <script src="{up}search.js"></script>
 <script src="{up}assets/catalog.js"></script>
 {"".join(f'<script src="{up}{x}"></script>' for x in scripts)}
@@ -884,6 +889,7 @@ def render_datasets(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
             (*PERIOD_SCRIPTS("datasets"), "assets/group.js"),
             nav=nav,
             item=A.item_word,
+            elsewhere=(("datasets", {}),),
         ),
     )
 
@@ -1438,6 +1444,7 @@ def render_home(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
             (*PERIOD_SCRIPTS(), "home.js", "assets/overview.js"),
             nav=nav,
             item=A.item_word,
+            elsewhere=(("overview", {}),),
         ),
     )
 
@@ -1549,6 +1556,7 @@ def render_activity(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
             (*PERIOD_SCRIPTS("activity"), "home.js", "assets/overview.js"),
             nav=nav,
             item=A.item_word,
+            elsewhere=(("activity", {}),),
         ),
     )
 
@@ -1682,7 +1690,13 @@ def render_dataset(A: Adapter, ds: str, v: dict, out: Path, nav: list) -> None:
             "filter arms",
         ),
     )
-    n = 1
+    n = 2
+    biggest: tuple[str, list[str]] = max(
+        ((m, members) for (m, _ref), members in groups.items() if len(members) >= 2),
+        key=lambda x: len(x[1]),
+        default=("", []),
+    )
+    body += block("02", "what's inside", render_inside(A, ds, biggest[1][:INSPECT_MAX], biggest[0]), "inside")
     if v.get("versions"):
         n += 1
         body += block(f"{n:02d}", "versions", v["versions"], "versions")
@@ -1693,7 +1707,26 @@ def render_dataset(A: Adapter, ds: str, v: dict, out: Path, nav: list) -> None:
     if fields_html:
         n += 1
         body += block(f"{n:02d}", f"{A.item_word} fields", fields_html, "item-fields")
-    write(out, f"d/{slug(ds or 'none')}.html", page(ds or "dataset", body, 1, "", nav=nav, item=A.item_word))
+    prof = getattr(A, "dataset_profile", None)
+    write(
+        out,
+        f"d/{slug(ds or 'none')}.html",
+        page(
+            ds or "dataset",
+            body,
+            1,
+            "",
+            nav=nav,
+            item=A.item_word,
+            # dataset-items answers only once the dataset has a profile; it refuses otherwise
+            elsewhere=(
+                (("datasets", {"dataset-id": ds}),)
+                + ((("dataset-items", {"dataset-id": ds}),) if callable(prof) and prof(ds) else ())
+                if ds
+                else ()
+            ),
+        ),
+    )
 
 
 def _show(v, field: dict) -> str:
@@ -1702,6 +1735,123 @@ def _show(v, field: dict) -> str:
         return f"{secs // 3600}:{secs % 3600 // 60:02d}:{secs % 60:02d}"
     s = fmt(v) if isinstance(v, float) else str(v)
     return s + (f" {field['unit']}" if field.get("unit") else "")
+
+
+def _gold_line(r: dict) -> str:
+    """One gold reference's shape, in words."""
+    if r["shape"] == "labels":
+        n = sum(r["labels"].values()) or 1
+        cells = "".join(
+            f"<tr><td>{e(k)}</td><td>{v}</td><td>{v / n:.0%}</td></tr>"
+            for k, v in sorted(r["labels"].items(), key=lambda kv: (-kv[1], kv[0]))
+        )
+        return (
+            f"<p>{reference_link(r['id'], '../')}: {len(r['labels'])} labels</p>"
+            f'<div class="scroll-x"><table class="data"><thead><tr><th>label</th><th>items</th><th>share</th></tr>'
+            f"</thead><tbody>{cells}</tbody></table></div>"
+        )
+    if r["shape"] == "lists":
+        x = r["entries"]
+        what = f"a list per item, {x['min']}–{x['max']} entries, median {x['median']}"
+    elif r["shape"] == "record":
+        what = "a record per item: " + ", ".join(f"<code>{e(k)}</code>" for k in r["keys"])
+    elif r["shape"] == "text":
+        x = r["words"]
+        what = f"text, {x['min']}–{x['max']} words, median {x['median']}"
+    else:
+        what = e(r.get("note") or "not on the machine that wrote the profile")
+    return f"<p>{reference_link(r['id'], '../')}: {what}</p>"
+
+
+def _web(url) -> bool:
+    """An http(s) URL: a profile is project data, and a `javascript:` href would run on click."""
+    return isinstance(url, str) and url.lower().startswith(("https://", "http://"))
+
+
+def render_inside(A: Adapter, ds: str, inspect_arms: list[str], metric: str) -> str:
+    """What is inside the dataset (data/profiles/<ds>.json): how many items and how long, the gold's
+    shape, then one row per item with its length, its gold and where it can be read at its source.
+    No item text unless the profile carries it, which `evh dataset-profile --with-text` allows only
+    for text git already tracks."""
+    from evaluation_harness import catalog_charts as ch  # noqa: PLC0415
+
+    fn = getattr(A, "dataset_profile", None)
+    p = fn(ds) if callable(fn) else None
+    if not p:
+        return (
+            f'<p class="muted">No profile yet. Where the dataset is materialized, '
+            f"<code>evh dataset-profile --dataset-id {e(ds)}</code> writes one: its {e(A.item_word)}s, how long "
+            f"they are, the gold's shape and where each can be read.</p>"
+        )
+    it, w = p["items"], p["items"].get("words") or {}
+    src = p.get("source")
+    lines = [
+        (
+            f"{e(str(it['n']))} {e(A.item_word)}s, {e(it.get('kind', 'text'))}, "
+            f"{e(str(w.get('min', 0)))}–{e(str(w.get('max', 0)))} words (median {e(str(w.get('median', 0)))}, "
+            f"middle half {e(str(w.get('p25', 0)))}–{e(str(w.get('p75', 0)))})."
+        )
+    ]
+    if src:
+        name = e(src.get("name") or "the source")
+        lines.append(
+            (
+                f'Source: <a href="{e(src["url"])}" rel="noopener">{name}</a>'
+                if _web(src.get("url"))
+                else f"Source: {name}"
+            )
+            + (f" ({e(src['split'])} split)" if src.get("split") else "")
+            + (
+                f". The text stays there; each {e(A.item_word)} below links to its row."
+                if any(_web(r.get("source_url")) for r in p["rows"])
+                else "."
+            )
+        )
+    if p.get("stale"):
+        lines.append(
+            f'<span class="note">The items changed since this profile was written: run '
+            f"<code>evh dataset-profile --dataset-id {e(ds)}</code> again.</span>"
+        )
+    head = "".join(f"<p>{x}</p>" for x in lines)
+    chart = (
+        ch.histogram(w["histogram"], f"{ds}: words per {A.item_word}", "words") if w.get("histogram") else ""
+    )
+    golds = "".join(_gold_line(r) for r in p.get("references") or [])
+    gold_ids = [r["id"] for r in p.get("references") or [] if r.get("shape") not in (None, "absent")]
+    has_text = any(r.get("text") for r in p["rows"])
+    rows = []
+    for r in p["rows"]:
+        k = r["item_id"]
+        links = [
+            f'<a href="{e(r["source_url"])}" rel="noopener">source ↗</a>'
+            if _web(r.get("source_url"))
+            else "",
+            f'<a href="{inspect_url(inspect_arms, "../", metric=metric, item=k)}">inspect</a>'
+            if len(inspect_arms) >= 2
+            else "",
+        ]
+        cells = [
+            f'<code class="small" title="{e(k)}">{e(k[:12])}</code>',
+            e(str(r["words"])),
+            "; ".join(e(r["reference"].get(g, "")) for g in gold_ids) or "—",
+            " · ".join(x for x in links if x) or "—",
+        ]
+        if has_text:
+            t = r.get("text") or ""
+            cells.insert(
+                1, f'<details><summary class="small">{e(t[:80])}…</summary>{e(t)}</details>' if t else "—"
+            )
+        rows.append(cells)
+    heads = [f"{e(A.item_word)}", *(["text"] if has_text else []), "words", "gold", "open"]
+    return (
+        head
+        + chart
+        + (f'<p class="eyebrow small">the gold</p>{golds}' if golds else "")
+        + table("inside-items", heads, rows, f"filter {A.item_word}s")
+        + '<p class="small muted">Each row is the profile <code>evh dataset-items --dataset-id '
+        + f"{e(ds)}</code> prints; <b>inspect</b> opens the {e(A.item_word)} in the inspector with the dataset's "
+        + "largest group of comparable arms, and its text where the inspector runs on a machine that has it.</p>"
+    )
 
 
 def render_fields(A: Adapter, ds: str) -> str:
@@ -1924,7 +2074,18 @@ def render_goals(A: Adapter, by_ds: dict, out: Path, nav: list) -> int:
             ).replace('class="data sortable"', 'class="data sortable" data-period-feed', 1),
         )
     write(
-        out, "goals.html", page("Goals", body, 0, "goals", PERIOD_SCRIPTS("goals"), nav=nav, item=A.item_word)
+        out,
+        "goals.html",
+        page(
+            "Goals",
+            body,
+            0,
+            "goals",
+            PERIOD_SCRIPTS("goals"),
+            nav=nav,
+            item=A.item_word,
+            elsewhere=(("goals", {}),),
+        ),
     )
     return len(goals)
 
@@ -2272,7 +2433,15 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
     write(
         out,
         f"g/{slug(g['goal_id'])}.html",
-        page(g.get("title") or g["goal_id"], body, 1, "goals", nav=nav, item=A.item_word),
+        page(
+            g.get("title") or g["goal_id"],
+            body,
+            1,
+            "goals",
+            nav=nav,
+            item=A.item_word,
+            elsewhere=(("goals", {"goal": g["goal_id"]}),),
+        ),
     )
 
 
@@ -2639,6 +2808,7 @@ def render_metrics(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
             (*PERIOD_SCRIPTS("metrics"), "assets/group.js"),
             nav=nav,
             item=A.item_word,
+            elsewhere=(("metrics", {}),),
         ),
     )
 
@@ -2693,7 +2863,15 @@ def render_references(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
             write(
                 out,
                 reference_page(r["id"]),
-                page(r["id"], body, 1, "", nav=nav, item=A.item_word),
+                page(
+                    r["id"],
+                    body,
+                    1,
+                    "",
+                    nav=nav,
+                    item=A.item_word,
+                    elsewhere=(("references", {"reference-id": r["id"]}),),
+                ),
             )
 
 
@@ -2871,7 +3049,19 @@ def render_arm(A: Adapter, a: dict, ds: str, by_ds: dict, out: Path, nav: list) 
     notes = A.notes(a["arm"]) if callable(getattr(A, "notes", None)) else []
     if notes:
         body += block(f"{n:02d}", "notes", "<ul>" + "".join(f"<li>{e(x)}</li>" for x in notes) + "</ul>")
-    write(out, arm_page(a["arm"]), page(a["label"], body, 1, "datasets", nav=nav, item=A.item_word))
+    write(
+        out,
+        arm_page(a["arm"]),
+        page(
+            a["label"],
+            body,
+            1,
+            "datasets",
+            nav=nav,
+            item=A.item_word,
+            elsewhere=(("arms", {"arm": a["arm"]}),),
+        ),
+    )
 
 
 def cost_or_speed(A: Adapter, m: str) -> str | None:
@@ -2985,7 +3175,11 @@ def render_metric(A: Adapter, m: str, where: dict, by_ds: dict, project: dict, o
             + table(f"on{n}", ["arm", f"mean {e(m)}", f"{e(A.item_word)}s", "scored against"], rows),
         )
         n += 1
-    write(out, metric_page(m), page(m, body, 1, "metrics", nav=nav, item=A.item_word))
+    write(
+        out,
+        metric_page(m),
+        page(m, body, 1, "metrics", nav=nav, item=A.item_word, elsewhere=(("metrics", {"metric": m}),)),
+    )
 
 
 def render_reference_index(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
@@ -3052,7 +3246,16 @@ def render_reference_index(A: Adapter, by_ds: dict, out: Path, nav: list) -> Non
     write(
         out,
         "references.html",
-        page("References", body, 0, "references", PERIOD_SCRIPTS("references"), nav=nav, item=A.item_word),
+        page(
+            "References",
+            body,
+            0,
+            "references",
+            PERIOD_SCRIPTS("references"),
+            nav=nav,
+            item=A.item_word,
+            elsewhere=(("references", {}),),
+        ),
     )
 
 
@@ -3090,9 +3293,33 @@ def render_inspect(
             ("runs.js", "assets/inspect.js"),
             item=item,
             serve=serve,
+            elsewhere=(("inspect", {}),),
             **page_kw,
         ),
     )
+
+
+def elsewhere_line(cmds: tuple) -> str:
+    """The footer's "this page elsewhere": each command in the terminal and, when the deployment
+    names its MCP server (--mcp), the same as a tool call. The inspector's line is filled in by
+    inspect.js from the arms picked (an empty argument set here)."""
+    if not cmds:
+        return ""
+
+    def term(cmd: str, args: dict) -> str:
+        return " ".join(["evh", cmd, *(f"--{k} {v}" for k, v in args.items())])
+
+    terms = " · ".join(f"<code>{e(term(c, a))}</code>" for c, a in cmds)
+    line = f"This page in the terminal: <span data-elsewhere=term>{terms}</span>"
+    if MCP:
+        calls = " · ".join(
+            f"<code>{e(c)}</code>" + (f" with <code>{e(json.dumps(a))}</code>" if a else "") for c, a in cmds
+        )
+        line += (
+            f". From an agent: the tool <span data-elsewhere=mcp>{calls}</span> at <code>{e(MCP)}</code> "
+            f'(<a href="{e(MCP_HOWTO)}" rel="noopener">how to connect</a>)'
+        )
+    return f'<p class="small elsewhere" id="elsewhere" data-mcp="{e(MCP)}">{line}.</p>'
 
 
 def write_search(A: Adapter, by_ds: dict, out: Path) -> None:
@@ -3215,6 +3442,11 @@ BRAND = "eval catalog"
 #: or at the start of a guardrail's source becomes a link to it. None by default, and then a path
 #: is named as text, since the static pages cannot know where the project is hosted.
 REPO = ""
+#: The deployment's MCP server (--mcp URL): every page's footer then names its tool call beside its
+#: terminal command, and how to connect. None by default: a page names only its command.
+MCP = ""
+#: How to connect an agent to it: the harness's own guide (the package's docs, not a deployment's).
+MCP_HOWTO = "https://github.com/chipi/eval-harness/blob/main/harness/docs/INTEGRATION.md#for-an-agent-evh-mcp"
 #: A project path at the start of a guardrail's source ("research/REPORT.md, §3.4").
 _PATH_HEAD = re.compile(r"^((?:[\w.-]+/)+[\w.-]+\.\w+|[\w.-]+\.(?:md|json|yaml|yml|csv|txt))(.*)$", re.S)
 
@@ -3224,10 +3456,17 @@ def project_path(text: str) -> str:
     return f'<a href="{e(REPO + text)}"><code>{e(text)}</code></a>' if REPO else f"<code>{e(text)}</code>"
 
 
+def _common_prog() -> str | None:
+    """`evh <command>` for --help (see _common.evh_prog)."""
+    from evaluation_harness._common import evh_prog  # noqa: PLC0415
+
+    return evh_prog()
+
+
 def main() -> int:
     """Build the catalog and write static pages to output directory."""
-    global API, HEAD, BRAND, ABOUT, REPO
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    global API, HEAD, BRAND, ABOUT, REPO, MCP, MCP_HOWTO
+    ap = argparse.ArgumentParser(prog=_common_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("--out", type=Path, default=ROOT / ".build" / "catalog")
     ap.add_argument(
         "--adapter",
@@ -3267,7 +3506,23 @@ def main() -> int:
         help="where the project's files can be read, e.g. https://github.com/o/r/blob/main/: a project "
         "path in a goal's links or a guardrail's source links there (named as text by default)",
     )
+    ap.add_argument(
+        "--mcp",
+        metavar="URL",
+        help="the deployment's MCP server (evh mcp --http): every page's footer names its tool call beside "
+        "its terminal command (only the command by default)",
+    )
+    ap.add_argument(
+        "--mcp-howto",
+        metavar="URL",
+        help="--mcp: where to read how to connect an agent (default: the harness's INTEGRATION guide)",
+    )
     args = ap.parse_args()
+    for flag, url in (("--mcp", args.mcp), ("--mcp-howto", args.mcp_howto)):
+        if url and not url.startswith(("https://", "http://")):
+            raise SystemExit(f"{flag} {url!r}: expected https://...")
+    MCP = args.mcp or ""
+    MCP_HOWTO = args.mcp_howto or MCP_HOWTO
     if not args.api.startswith("/") or not args.api.endswith("/"):
         raise SystemExit(
             f"--api {args.api!r}: expected a path that starts and ends with /, e.g. /catalog/api/"

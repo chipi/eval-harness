@@ -5,7 +5,7 @@
 [![verify](https://github.com/chipi/eval-harness/actions/workflows/reproduce.yml/badge.svg?branch=main)](https://github.com/chipi/eval-harness/actions/workflows/reproduce.yml)
 [![site](https://github.com/chipi/eval-harness/actions/workflows/deploy-prod.yml/badge.svg?branch=main)](https://evals.humancopilot.eu/)
 [![docs](https://img.shields.io/badge/docs-evals.humancopilot.eu/docs-c8ff3d)](https://evals.humancopilot.eu/docs/)
-[![python](https://img.shields.io/badge/python-3.11%2B_(package_3.9%2B)-3776ab)](docs/REPRODUCE.md)
+[![python](https://img.shields.io/badge/python-3.11%2B_(package_3.10%2B)-3776ab)](docs/REPRODUCE.md)
 [![demo](https://img.shields.io/badge/demo-no%20API%20key-2ea44f)](#try-it-in-a-checkout)
 [![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
@@ -66,17 +66,18 @@ It was built to answer four questions anyone building with AI ends up asking:
 | **read what it found** | [**The experiments**](https://evals.humancopilot.eu/experiments.html): 24 LLMs, fine-tunes and baselines on six benchmarks, generated from the runs in this repository, so every number on it is checked |
 | **check it yourself** | [**Reproduce it**](docs/REPRODUCE.md): five levels, from recomputing every number ($0, one command) to rerunning every model with one OpenRouter key |
 | **browse the runs, test any two** | [**The catalog**](https://evals.humancopilot.eu/catalog/): every run of the six experiments, with the run inspector; `evh catalog-serve` gives you the same over your own runs |
+| **ask it from your agent** | `https://evals.humancopilot.eu/mcp`: the catalog's views as read-only MCP tools, for Claude, ChatGPT, the OpenAI API, Gemini or any MCP client, no sign-in; `evh mcp` serves your own project ([how to connect](harness/docs/INTEGRATION.md#for-an-agent-evh-mcp)) |
 | **read the full documentation** | [evals.humancopilot.eu/docs](https://evals.humancopilot.eu/docs/): guide, concepts, runbook, integration, architecture, protocol, reference |
 | **review or contribute** | [KNOWN_ISSUES](research/internal/KNOWN_ISSUES.md) (what is open), [CONTRIBUTING](CONTRIBUTING.md) |
 
 ## The loop, on your system
 
-One install is everything (hosted-model clients, judges, the catalog and the inspector); which
+One install is everything (hosted-model clients, judges, the catalog, the inspector and `evh mcp`); which
 model provider you use is your choice, with your own key.
 
 ```bash
 cd your-project
-pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.4.4#subdirectory=harness"
+pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.5.0#subdirectory=harness"
 evh init
 evh dataset-create --dataset-id my_v1 --source-dir data/sources/my_v1
 evh dataset-materialize --dataset-id my_v1
@@ -146,7 +147,7 @@ gold (checked by a person) or silver (written by a model). The refusals are the 
 ## Try it in a checkout
 
 You need `git`, `make` and Python ≥ 3.11 (the worked examples need it; the `evaluation-harness`
-package alone runs on 3.9).
+package alone runs on 3.10).
 
 ```bash
 git clone https://github.com/chipi/eval-harness && cd eval-harness/harness

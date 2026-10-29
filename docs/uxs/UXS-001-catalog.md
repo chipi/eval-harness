@@ -24,7 +24,7 @@ and configs page and a page per arm, a goals page and a page per goal, a referen
 page per reference, a metrics page and a page per metric, and the shell of the inspector. Every
 page is read-only and carries counts and means only, so the pages can be published. The pages a
 home tile opens carry the same period and trends as the tile ([the period](#the-period-every-listing-page)).
-This spec describes the pages as built at 0.4.2, checked by building the catalog on this
+This spec describes the pages as built at 0.5.0 (0.5.0 added each dataset page's "what's inside" and the footer's commands), checked by building the catalog on this
 repository's data (6 goals, 13 datasets, 313 arms, 181 configs, 15 references) and on a tutorial
 project with gold, silver and an open round.
 
@@ -36,7 +36,9 @@ project with gold, silver and an open round.
   against gold.
 - **Rank only like with like.** Arms are ranked within a group scored against the same thing;
   a mean is never presented as a verdict.
-- **Read-only.** A decision is shown as the command that makes it.
+- **Read-only.** A decision is shown as the command that makes it. Every page's command is also
+  an MCP tool for an agent (`evh mcp`, [RFC-018](../rfc/RFC-018-read-only-mcp-server.md)), read-only
+  the same way.
 - **Dense, quiet, both themes.** Tables carry the data; colour marks meaning, never decoration:
   a subject (goals, data, experiments, work and spend), a row's tint, a series. Never red or
   green for a direction: a count that went up is neither good nor bad.
@@ -119,6 +121,17 @@ tables 15px.
   arm hit opens the inspector on that arm. Command: `evh search <text>` (the same index and
   ranking, each hit with the command that shows it).
 
+### The footer
+
+When the page was built, by `evh catalog`, and that the pages carry counts and means only. Then
+**this page in the terminal**: the read command that answers what the page shows (`evh goals
+--goal G` on a goal page, `evh datasets --dataset-id D` and, once it has a profile, `evh
+dataset-items --dataset-id D` on a dataset page; the inspector's is the comparison picked, filled
+in as the arms change). With `evh catalog --mcp URL` the same line names it **from an agent**: the
+tool and its arguments as JSON, the server, and how to connect (`--mcp-howto`, the harness's
+INTEGRATION guide by default). A test runs every page's command and fails when one is not a read
+tool or refuses.
+
 ## Tables
 
 Every data table shares one behaviour:
@@ -188,7 +201,9 @@ show the same period, and the home tiles open those pages at the period picked.
 The whole project at a glance, for the period picked ([the period](#the-period-every-listing-page)).
 
 - Hero: kicker `catalog`, title "Every evaluation, at a glance", a dek saying every name is a
-  link, then the period bar and the **tiles**, in four subjects, one colour each (a band on
+  link; under it, the deployment's own paragraph when `evh catalog --about FILE` gives one
+  (this repository's says which project the catalog shows, where its findings are, and that an
+  agent can ask it over MCP at `https://evals.humancopilot.eu/mcp`); then the period bar and the **tiles**, in four subjects, one colour each (a band on
   top, its trend badge, its line), named in a legend under them: **goals** (goals); **data**
   (datasets, references); **experiments** (configs, arms, metrics); **work and spend**
   (measured runs, billed in USD, tokens). The colour says what a tile is about and nothing
@@ -279,6 +294,25 @@ tiles open it.
   per item** (p50 and p95 latency in milliseconds, or "not recorded"), **runs** (repeats
   averaged), **scored against** (the reference, linked, or "judge `<scorer>`"), and an
   **inspect** button. Tinted per [row tints](#row-tints). Filterable.
+- `02 what's inside`, from the dataset's profile (`data/profiles/<id>.json`, written by
+  `evh dataset-profile` where the dataset is materialized and committed, so a catalog built anywhere
+  shows it; never the items' text, which may not be redistributable):
+  - one line: "200 items, text, 15–136 words (median 40, middle half 32–46)"; the source, linked,
+    when the profile names one ("The text stays there; each item below links to its row", the second
+    half only when an item has a link; a link only to an `http(s)` address); and "The
+    items changed since this profile was written", when its items digest is not the dataset's;
+  - a histogram of words per item;
+  - **the gold**: per gold reference its shape: labels in a table (**label**, **items**, **share**),
+    entries per item for a list (entities, ranked ids), the fields of a record (scores), or words
+    per reference for text; "not profiled" when its texts were not where the profile was written;
+  - the items, paged and filterable: **item** (the id, short, the full id in its title), **words**,
+    **gold** (the label, "3 entries", "57 words"), **open**: **source ↗** (its row at the source,
+    when the dataset or its fetcher recorded one) and **inspect** (the inspector on the dataset's
+    largest group of comparable arms, its first 40, opened at this item; only when that group has
+    at least two arms). A **text** column only when the
+    profile carries text, which `--with-text` writes only when git has committed every item's file
+    (it is refused otherwise);
+  - without a profile: "No profile yet", and the command that writes one.
 - `versions`, when the dataset has lineage: "Made from `<parent>`: a added, r removed, c changed"
   with the item ids (the first 12 of each, then …), and "Made into `<child>`: …" for each later
   version, then "Runs on different versions measure different items, so they are never tested

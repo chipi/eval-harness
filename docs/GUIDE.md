@@ -49,7 +49,7 @@ everything: the hosted-model clients, the judges, the catalog. Nothing else to a
 ```bash
 mkdir my-evals && cd my-evals
 python3 -m venv .venv && . .venv/bin/activate
-pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.4.4#subdirectory=harness"
+pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.5.0#subdirectory=harness"
 ```
 
 Then the project's folders and the tutorial kit, under version control from the start:
@@ -370,3 +370,9 @@ And the references, for when you know what you are looking for:
 it returns, a catalog of your own layout), [RUNBOOK](../harness/docs/RUNBOOK.md) (every
 command, flag, environment variable and exit code), [CONCEPTS](../harness/docs/CONCEPTS.md)
 (why each refusal exists).
+
+And for an agent: the catalog's views you ran here (`evh runs-list`, `validate`, `goals`,
+`inspect`) are also tools; the ranking and the tests (`leaderboard`, `pair-test`, `family-test`)
+are not tools yet. `evh mcp` serves them to Claude, ChatGPT, the OpenAI API, Gemini or any MCP client, on your project or for a team; this repository's own
+experiments answer at `https://evals.humancopilot.eu/mcp`, without sign-in
+([INTEGRATION](../harness/docs/INTEGRATION.md#for-an-agent-evh-mcp)).

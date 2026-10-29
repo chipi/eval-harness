@@ -18,7 +18,7 @@ Every run behind them is in [the catalog](https://evals.humancopilot.eu/catalog/
 
 [<span class="n">03</span><b>Concepts</b><span class="d">The ideas it is built on: frozen datasets, fingerprints, gold and silver references, paired tests.</span>](../harness/docs/CONCEPTS.md)
 
-[<span class="n">04</span><b>Integration</b><span class="d">Drop the harness into another project: one adapter, two functions.</span>](../harness/docs/INTEGRATION.md)
+[<span class="n">04</span><b>Integration</b><span class="d">Drop the harness into another project: one adapter, two functions. And ask it from your agent: <code>evh mcp</code>.</span>](../harness/docs/INTEGRATION.md)
 
 [<span class="n">05</span><b>Runbook</b><span class="d">Every step and every verb: datasets, runs, the analysis scripts, and judge scorers.</span>](../harness/docs/RUNBOOK.md)
 
@@ -32,7 +32,7 @@ Every run behind them is in [the catalog](https://evals.humancopilot.eu/catalog/
 
 <div class="eh-cards" markdown>
 
-[<span class="n">08</span><b>The catalog</b><span class="d">The harness's catalog, live on the six experiments: every goal, dataset, arm and run, and an inspector that tests any arms against a baseline, item by item. Nothing to install.</span>](https://evals.humancopilot.eu/catalog/)
+[<span class="n">08</span><b>The catalog</b><span class="d">The harness's catalog, live on the six experiments: every goal, dataset (and what is inside it), arm and run, and an inspector that tests any arms against a baseline, item by item. Nothing to install; an agent can ask it too, over MCP at evals.humancopilot.eu/mcp.</span>](https://evals.humancopilot.eu/catalog/)
 
 [<span class="n">09</span><b>Reproduce it</b><span class="d">Rerun any experiment and check its findings, from recomputing every number for $0 to rerunning every model with one key, and adding your own.</span>](REPRODUCE.md)
 

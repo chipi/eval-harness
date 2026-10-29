@@ -53,7 +53,6 @@ from __future__ import annotations
 import argparse
 import random
 import re
-import shutil
 import sys
 from pathlib import Path
 
@@ -64,6 +63,7 @@ ROOT = Path(__file__).resolve().parents[2] / "harness"
 DATASET = "abisee/cnn_dailymail"
 CONFIG = "1.0.0"
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "_shared"))
+from hf_rows import Sources  # noqa: E402
 from hf_rows import page as _rows_page  # noqa: E402 - the one retry/pacing schedule
 
 #: The API caps a single request; ask in pages rather than assuming one call is enough.
@@ -162,18 +162,22 @@ def main() -> int:
 
     # --force REPLACES the slice. It used to write into the existing directories, so a
     # redraw left the previous draw's files beside the new ones (584 files after three
-    # draws of 200) and `dataset-create` would have frozen all of them.
+    # draws of 200) and `dataset-create` would have frozen all of them. Only the item files go:
+    # the gold's committed manifest.json (its checksums) stays, or every refetch deleted it.
     for d in (sources, golds):
-        if d.exists():
-            shutil.rmtree(d)
+        for stale in d.glob("*.txt") if d.exists() else ():
+            stale.unlink()
     sources.mkdir(parents=True, exist_ok=True)
     golds.mkdir(parents=True, exist_ok=True)
+    where = Sources(DATASET, CONFIG, args.split)
     for row in rows:
         # The dataset's own id, so an item is traceable back to the published row rather
         # than to our enumeration order.
         item = str(row["id"])
+        where.record(item, row)
         (sources / f"{item}.txt").write_text(row["article"], encoding="utf-8")
         (golds / f"{item}.txt").write_text(row["highlights"], encoding="utf-8")
+    where.write(ROOT, dataset_id)
 
     article_words = sum(len(r["article"].split()) for r in rows) / len(rows)
     summary_words = sum(len(r["highlights"].split()) for r in rows) / len(rows)

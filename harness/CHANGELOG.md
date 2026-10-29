@@ -9,6 +9,122 @@ The version lives in `scripts/_version.py`; a release is the git tag `v<version>
 release workflow refuses a tag that disagrees with that file or has no section here. A change
 that can move a result is never a patch release without saying so under **Changed**.
 
+## 0.5.0 — 2026-10-29
+
+Two things to know before upgrading: the package now needs **Python 3.10 or later**, and it depends on the
+official **MCP SDK** (`mcp>=2.3,<3`). On 3.9, stay on `v0.4.4`. What you get: `evh mcp`, the project's read
+commands as tools for any agent (stdio on your machine, or `--http` for a team or the public), and a dataset page
+that shows what is inside a dataset without republishing its text. [UPGRADING](docs/UPGRADING.md) has the steps.
+
+### Added
+
+- **`evh mcp`: the project's read commands as MCP tools, for an agent** (stdio, the official SDK,
+  [RFC-018](https://github.com/chipi/eval-harness/blob/main/docs/rfc/RFC-018-read-only-mcp-server.md)). Thirteen
+  tools: `overview`, `datasets`, `dataset-items`, `arms`, `goals`, `references`, `metrics`, `activity`,
+  `search`, `inspect`, `rounds`, `runs-list`, `validate`. Each call runs the command as a child process, so a tool
+  answers what the command prints; each is annotated read-only; no tool writes project data, spends or runs a
+  model (the one file a call writes is the p cache in the project's ignored `.cache/`, below). For Claude
+  Code, in the project: `claude mcp add evh -- evh mcp`.
+- **`evh mcp --http`: the same server for a team, or for anyone.** Streamable HTTP, stateless, JSON responses:
+  clients on every protocol revision since 2025-03-26 call tools without a session. The Host is checked against DNS
+  rebinding (`--allowed-host` is required to bind beyond the loopback); `--public` leaves out the options that
+  answer with an item's text, and the `validate` tool; `--rate`, `--concurrent` and `--timeout` bound the load; a
+  missing required argument is refused before anything runs; `--hooks` takes a deployment's error reporting,
+  tracing, metrics and analytics, in the inspector's shape. Each call is logged as one JSON line: the tool, its
+  arguments' names (never their values), how it ended, its time; never the caller's address or user agent.
+  `--rate` counts calls a minute per caller (an IPv6 caller by its /64), `--rate-total` for all callers together;
+  over HTTP a caller has one call running at a time.
+- **`EVH_P_CACHE`: the goals' paired tests kept on disk.** Every `evh` command is a fresh process, so a view that
+  shows the goals drew the same tests again each time (about 50 s on this repository's runs). With the variable
+  naming a file, each estimated p is stored and read back exactly; `evh mcp` sets it to the project's ignored
+  `.cache/`. `goals`, `overview` and `arms` answer in under two seconds after the first.
+- **This repository's MCP server, `https://evals.humancopilot.eu/mcp`** (the deployment, not the package): the six
+  worked examples for any agent, read-only, without sign-in.
+- **`--json` on the catalog's view commands** (`overview`, `datasets`, `arms`, `goals`, `references`, `metrics`,
+  `activity`, `search`, `inspect`): one object, `{"command", "version", "result": {"blocks": [...]}}`, each table as
+  columns and rows of values, every other line as text. It is collected from the same calls that print the text, so
+  the two cannot disagree. 0.7.0 gives each command its own result schema and retires this generic form: do not
+  build on `blocks`.
+
+- **What is inside a dataset, on its page and as a command.** `evh dataset-profile --dataset-id D`,
+  run where the dataset is materialized, writes `data/profiles/D.json` (`schemas/profile.schema.json`,
+  checked by validate V1): the number of items and their words, the shape of each gold reference
+  (labels and how many of each, entries per item, a record's fields, or words per reference), and
+  per item its length, its gold and, when known, where it can be read at its source. A gold of labels
+  (a few short values that repeat) is listed per item; any other gold is summarised, never listed. It
+  holds no item text, which a dataset's licence may not let you redistribute, unless written with
+  `--with-text`, which is refused unless git has committed every item's file (a project's own synthetic data). Commit the profile and the dataset page shows "what's
+  inside" wherever the catalog is built; `evh dataset-items --dataset-id D [--item ID]` prints the
+  same, and an item's text when it is materialized here.
+- **An item's link to its source** comes from the dataset: an item's `source_url`, or a
+  `data/sources/<dataset_id>.rows.json` that a fetch or import step writes (`{"source", "item_url",
+  "rows": {item_id: {"row", "sha256"}}}`), matched by the item's bytes, so an id that recurs in
+  another dataset never takes its link. This repository's Hugging Face fetchers write one, so each
+  item opens at its row in the dataset viewer.
+- **`inspect.html?…&item=ID`** opens that item once the comparison has loaded; a dataset page's
+  **inspect** link uses it.
+- Adapter: `dataset_profile(dataset)`, optional (RFC-003).
+- **Every catalog page names its command**, in its footer (`evh goals --goal G`, the inspector's from the arms
+  picked). **`evh catalog --mcp URL`** names the same as an MCP tool call, with the server and how to connect
+  (`--mcp-howto`); this repository's catalog passes its `/mcp`, and its header links to the site's MCP section.
+- **`evh dataset-profile --json` and `evh dataset-items --json`** print the profile inside the same envelope as
+  the views, `{"command", "version", "result": <the profile>}`; the Makefile targets `dataset-profile` and
+  `dataset-items`.
+
+### Changed
+
+- **Python 3.10 or later.** The official MCP SDK needs it, and every feature comes with one install, so the
+  package's floor moves from 3.9 to 3.10 (CI tests 3.10, 3.11 and 3.14). On 3.9, pin `v0.4.4`.
+- **A new dependency: `mcp>=2.3,<3`**, which brings `anyio`, `httpx2`, `mcp-types`, `opentelemetry-api`,
+  `pydantic>=2.12`, `pyjwt[crypto]`, `python-multipart`, `sse-starlette`, `starlette`, `typing-extensions`,
+  `typing-inspection` and `uvicorn`. No result moves.
+- **A dataset id is a name, never a path.** Every command that reads or writes `data/…/<id>.json` refuses an id
+  that is not letters, digits, `.`, `_` and `-` (or that holds `..`); before, `../x` read or wrote outside `data/`.
+- **A param shown on a catalog page or by `evh arms --arm`** hides a URL's user and password and a nested key
+  named like a credential (`headers: {Authorization: …}`), as it already hid a top-level `api_key`.
+
+### Security
+
+From two independent reviews before this release, each reproduced before it was fixed:
+
+- **The inspector served any `.txt` under its data tree** through `/api/item?item=../../…` (an item id was never
+  checked; on `main` since 0.4.0). An item id is now a file's name, refused otherwise, in the server and the adapter.
+- **The inspector's answers were cached by count, not size**: a hundred distinct 40-arm questions took a 256 MiB
+  container past its limit, and `--warm` alone did on this repository's data. The cache is bounded by the bytes it
+  keeps (32 MB), keeps no refusals, takes no question over 4 KB, and `--warm` stops when it is three quarters full;
+  the deployment's inspector has 384 MB (it peaked at 228 of 256 under load). Its rate key is an address, never a header's
+  text.
+- **`evh mcp --http`**: a few parallel 4 MiB bodies killed the server; held GETs and ping floods cost memory no rate
+  saw. Now `--max-body`, `--max-connections`, 8 open requests per caller, a 10 s deadline on a request's body
+  (eight callers holding slow bodies took every connection), `--request-rate`, GET is 405, refusals do not count toward
+  `--rate-total`, and `--public` answers are kept and their errors carry no paths. Values with NUL bytes or over 512
+  characters are refused.
+- **The deployment**: Caddy refuses a body over 64 KB on `/mcp` (and its `handle` line now adapts); nginx limits
+  each visitor (20 requests a second, a burst of 200, 32 connections); the deploy checks the inspector is up and
+  under 80% of its memory once `--warm` is done, and rolls back otherwise; the MCP hooks no longer export the
+  SDK's own spans; the containers'
+  `/tmp` caps files as well as bytes; `render.sh`'s check for reference texts in a release could pass with 1,657 of
+  them (a pipe's SIGPIPE) and refused the five tracked ones: it now compares against what git tracks; a deploy keeps
+  two releases (the live one and the rollback), prunes at its start as well as its end, and refuses to start short of
+  2 GB or 300,000 inodes; the upload hard-links unchanged files again (no file ever linked: each release took ~69k new
+  inodes).
+
+### Fixed
+
+- **The deployment's release ships `data/models.yaml`** (`render.sh`, and the item fields and profiles with it):
+  from 0.4.2 it was never copied, so the deployed arms page called every model's weights unknown.
+  `tests/test_render_data.py` fails when a part of `data/` the adapter reads is not copied.
+- **The CNN/DailyMail and SummEval fetchers deleted the committed gold `manifest.json`** on every refetch; they
+  now clear only the item files.
+- **`--hooks` files with a module-level `@dataclass`** failed to load (the module was not registered before it
+  ran); they load as any other module now.
+- **A page links only to `http(s)` URLs**: a `source_url` or rows map that held `javascript:…` was written into
+  an `href`.
+- **The p cache** reads an unreadable or non-UTF-8 file as no cache instead of failing the command, starts a new
+  line after a torn one, and keys each p by how it was computed.
+- **`evh dataset-profile --with-text`** counts a file as tracked only once it is committed, not when it is
+  merely staged.
+
 ## 0.4.4 — 2026-10-28
 
 The catalog says what it is and links out: `--about` puts a deployment's own paragraph on the

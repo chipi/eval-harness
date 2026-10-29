@@ -40,7 +40,8 @@ further. This page is the reference for each step.
 | baseline | `evh run-promote --run … --reason "…"` · `evh runs-list --baselines` |
 | what it is for | `data/goals/<goal_id>.yaml` (every field: [§4c](#4c-the-goal-file-field-by-field)), and `goal:` on each config |
 | rounds (optional) | `evh round-open` · `evh round-retire` · `evh round-close` · `evh rounds --goal …` |
-| browse and inspect | `evh catalog` · `evh catalog-serve` |
+| browse and inspect | `evh catalog` · `evh catalog-serve` · `evh dataset-profile` · `evh dataset-items` |
+| ask from an agent | `evh mcp` |
 | the same, in the terminal | `evh overview [--period P]` · `evh activity` · `evh datasets` · `evh arms` (`--by …`, `--configs`, `--arm …`) · `evh references` · `evh metrics --metric …` · `evh goals` · `evh search …` · `evh inspect --runs …` (`--items`, `--analysis`, `--item …`); every list takes `--period P` |
 | consistency | `evh validate` |
 | does the installed harness work here | `evh self-test` |
@@ -531,7 +532,7 @@ evh validate
 ```
 
 Sixteen checks (V1–V16): schema conformance (datasets, runs, baselines, configs, judge
-scorers, judging sets, verdicts), every run's `dataset_id` resolves, every run
+scorers, judging sets, verdicts, dataset profiles), every run's `dataset_id` resolves, every run
 identifies its build, materialized copies still match their hashes, no two
 configs reporting byte-identical scores and per-item results (two arms with different outputs
 that are both perfect are two measurements, not a copy), no baseline pointing at a
@@ -831,11 +832,62 @@ evh round-open --goal my_goal --dataset my_v1 --from r1 --change "what changed a
 evh catalog                                             # build static pages into .build/catalog/
 evh catalog-serve [--port 8765]                        # serve the catalog and inspector on 127.0.0.1
 evh catalog-serve --public catalog.example.com --publish outputs --client-header X-Real-IP  # public deployment
+evh dataset-profile --dataset-id my_v1 [--with-text]   # what is inside a dataset, for its page (text: committed items only)
+evh dataset-items --dataset-id my_v1 [--item ID]       # the same in the terminal
+evh mcp                                                 # the read commands as MCP tools, over stdio
+evh mcp --http --bind 0.0.0.0 --allowed-host evals.team.example --public  # a shared MCP server
 ```
 
 **The catalog** is static pages over runs: one per dataset and goal, one per reference, a
-metrics page, and a search. Every page carries counts and means only; item text is the local
-inspector only. Build it offline with `evh catalog`, or together with the inspector.
+metrics page, and a search. Every page carries counts and means only, and item text only where
+the repository already publishes it (a profile written `--with-text`, refused unless git has
+committed every item's file); otherwise item text is the local inspector's only. Build it offline with `evh catalog`, or together with the inspector. A dataset's
+page shows what is inside it once `evh dataset-profile` has written its profile where the
+dataset is materialized: the items' lengths, the gold's labels or shape, and each item's link to
+its source when one is recorded; commit `data/profiles/` and a catalog built anywhere shows it.
+
+**For an agent**, `evh mcp` serves the same read commands as MCP tools; how to connect each
+client is in [the integration guide](INTEGRATION.md#for-an-agent-evh-mcp).
+
+- **The tools** are `overview`, `datasets`, `dataset-items`, `arms`, `goals`, `references`,
+  `metrics`, `activity`, `search`, `inspect`, `rounds`, `runs-list` and `validate`. Each takes the
+  command's own options, named as on the command line (`dataset-id`, `period`). Each call runs
+  the command as a child process, with `--json` where it has one, so the answer is what you would
+  see. No tool writes project data, spends or runs a model. The one file a call writes is the p
+  cache, `<project>/.cache/evh-p.jsonl` (below, `EVH_P_CACHE`).
+- **Refused before anything runs:** an argument the tool does not have, a missing required one,
+  a value of the wrong kind (a list for a one-value option, a flag that is not `true`/`false`),
+  any value that starts with `-`, and a dataset id that is not a plain name.
+- **Stdio** (the default): the agent starts `evh mcp --project /path/to/project`. A desktop client
+  starts it with its own `PATH` and working directory, so give the full path to `evh` and
+  `--project`.
+- **`--http`**: Streamable HTTP, stateless, JSON answers, at `--path` (default `/mcp`) on `--bind`
+  (default `127.0.0.1`) and `--port` (default `8766`; `catalog-serve` has 8765). `<path>/health` answers `{"ok", "version",
+  "tools", "public"}`. Beyond the loopback, `--allowed-host` is required: a request for another Host
+  is answered 421 (DNS rebinding). `--allowed-origin` names the browser origins it accepts; an
+  agent sends no Origin.
+- **`--public`**, for a server anyone can reach: no option that answers with an item's text
+  (`inspect --item`, `dataset-items --item`), and no `validate`.
+- **Load:** `--concurrent N` commands at once (default 4; a call that waits 30 s for a slot is
+  refused, "busy"), `--timeout S` per call (default 300; the command is stopped, exit 124),
+  `--rate N` calls a minute per caller and `--rate-total N` for everyone together (default: no
+  limit), and over HTTP one call at a time per caller. Every call counts toward the caller's rate, a
+  refused one too; the total counts only calls that run a command, so a flood of refusals never
+  locks others out. An IPv6 caller is counted by its /64. Below the tools, the HTTP layer:
+  `--request-rate N` HTTP requests a minute per caller to the endpoint, every method (a tool call
+  is about three), `--max-body BYTES` (default 65536; larger is 413), `--max-connections N`
+  (default 64; more are 503), at most 8 requests open per caller (more are 429), a body due in
+  full within 10 s (else 408), and a GET on the endpoint is 405 (stateless: no stream to hold);
+  `/mcp/` is the endpoint too, never a redirect.
+  With `--public`, an answer is kept by its command line (16 MB of text in all, for an hour: a
+  view's default period moves with the date), since the data under the server never changes, and a refusal is told without server paths or a traceback.
+  A value with a NUL byte, or longer than 512 characters, is refused. `--client-header NAME` names the header your proxy sets for
+  the caller's address. Trust it only when nothing but the proxy reaches the port: a caller who
+  can set it can name itself anything (the total still holds).
+- **`--hooks FILE`**: the deployment's error reporting, tracing, metrics and analytics, in
+  `catalog-serve --hooks`' shape (`start`, `request` after each call, `error`, `routes`). A hook
+  gets the tool, its arguments' names, how it ended, its time, and the caller's address and user
+  agent. The log line on stderr, one JSON line per call, carries neither.
 
 **The run inspector** is a local server (`evh catalog-serve`) that tests chosen arms against a
 baseline with the same paired test as the command line, and shows outputs beside references.
@@ -853,6 +905,28 @@ requests from an origin no one else can reach.
 file for any of the dataset's items, and warns when only some items have one. The run records
 `reference_coverage` (`{items_with_reference, items}`) and the leaderboard prints a NOTE for
 it: its quality columns are means over the items that have a reference.
+
+**Dataset profiles.** `evh dataset-profile --dataset-id D` writes `data/profiles/D.json`
+(`schemas/profile.schema.json`); `--with-text` adds each item's text and is refused unless git has
+committed every item's file; `--json` prints what it wrote, in the views' envelope. An item links
+to its source by its own `source_url`, else by `data/sources/<dataset_id>.rows.json` (`{"source":
+{"name", "url"}, "item_url": "...{row}...", "rows": {item_id: {"row", "sha256"}}}`), an entry
+counting only when its sha256 is the item's; only an http(s) address becomes a link. `evh
+dataset-items --dataset-id D [--item ID] [--json]` prints the profile.
+
+**`--json` on the views** (`overview`, `datasets`, `arms`, `goals`, `references`, `metrics`,
+`activity`, `search`, `inspect`): one object, `{"command", "version", "result": {"blocks": [...]}}`,
+each table as columns and rows. 0.7.0 gives each command its own result and retires `blocks`: do not
+build on it.
+
+**The catalog's footer** names each page's command (`evh goals --goal G`); `evh catalog --mcp URL`
+adds the same as an MCP tool call, with the server and a "how to connect" link (`--mcp-howto URL`,
+the harness's INTEGRATION guide by default).
+
+**`evh mcp --hooks`** gets, in `start`, `{"version", "tools", "public", "transport"}`, and in
+`request`, after each call, `{"tool", "args", "agent", "client", "exit", "ms", "bytes"}`, plus
+`"refused"` (`rate`, `rate_total`, `tool`, `arguments`, `busy`) or `"cached": true`. `tool` is
+`unknown` for a name the server does not have; `args` are argument names, never values.
 
 **In the terminal:** every view has a command. `evh overview [--period P]` for the home page,
 `evh activity` for the activity page, `evh arms` (`--by config`, `--configs`) for the arms page,
@@ -902,6 +976,7 @@ notebook) reads no `.env`, and the project's paths are resolved on first use, so
 | `EVAL_MODELS_FILE` | the alias to upstream-model table judges are routed by |
 | `EVAL_FETCH_HEADERS` | JSON `{"host": {"Header": "value"}}` for URL items behind a login |
 | `EVAL_NO_CACHE` | `1`: `family-test` recomputes instead of replaying an identical earlier run |
+| `EVH_P_CACHE` | a file that keeps every estimated p of the paired test between processes (one JSON line each, read back exactly); `evh mcp` sets it to `<project>/.cache/evh-p.jsonl`. Unset by default: nothing is stored. A file that cannot be read is no cache; a read-only one is read and never written |
 | `OPENAI_API_KEY` (and `OPENAI_BASE_URL`) | `provider: openai`: OpenAI, or any OpenAI-compatible endpoint; an arm's `api_key_env` names another variable |
 | `OPENROUTER_API_KEY` | `provider: openrouter` (OpenRouter's address by default; an arm's `base_url` or `api_key_env` overrides it), and judges routed straight to OpenRouter |
 | `ANTHROPIC_API_KEY` | `provider: anthropic` |

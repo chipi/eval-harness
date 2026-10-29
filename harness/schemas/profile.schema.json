@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "profile",
+  "description": "What is inside a dataset, without its text: data/profiles/<dataset_id>.json, written by `evh dataset-profile` where the dataset is materialized. The dataset page's \"what's inside\" and `evh dataset-items` read it. `items_sha256` is the dataset version it describes; a profile of another version is shown as stale.",
+  "type": "object",
+  "required": ["dataset_id", "items_sha256", "made_at", "harness", "items", "references", "rows"],
+  "additionalProperties": false,
+  "$defs": {
+    "stats": {
+      "type": "object",
+      "properties": {
+        "min": {"type": "integer"}, "p25": {"type": "integer"}, "median": {"type": "integer"},
+        "p75": {"type": "integer"}, "max": {"type": "integer"},
+        "histogram": {
+          "type": "array",
+          "items": {"type": "array", "items": {"type": "integer"}, "minItems": 3, "maxItems": 3},
+          "description": "[low, high, count] per bin of equal width"
+        }
+      }
+    }
+  },
+  "properties": {
+    "dataset_id": {"type": "string"},
+    "items_sha256": {"type": ["string", "null"]},
+    "made_at": {"type": "string", "description": "UTC, when the profile was written"},
+    "harness": {"type": "string", "description": "the harness version that wrote it"},
+    "source": {
+      "type": ["object", "null"],
+      "description": "where the dataset comes from, when a fetcher or import step recorded it",
+      "properties": {
+        "name": {"type": "string"}, "url": {"type": "string"},
+        "config": {"type": "string"}, "split": {"type": "string"}
+      },
+      "required": ["name", "url"]
+    },
+    "items": {
+      "type": "object",
+      "required": ["n", "kind", "words"],
+      "properties": {
+        "n": {"type": "integer", "minimum": 0},
+        "kind": {"enum": ["text", "json"]},
+        "words": {"$ref": "#/$defs/stats"}
+      }
+    },
+    "references": {
+      "type": "array",
+      "description": "each gold reference of the dataset and its shape",
+      "items": {
+        "type": "object",
+        "required": ["id", "shape"],
+        "properties": {
+          "id": {"type": "string"},
+          "items": {"type": "integer"},
+          "shape": {"enum": ["labels", "lists", "record", "text", "absent"]},
+          "labels": {"type": "object", "additionalProperties": {"type": "integer"}},
+          "entries": {"$ref": "#/$defs/stats"},
+          "keys": {"type": "array", "items": {"type": "string"}},
+          "words": {"$ref": "#/$defs/stats"},
+          "note": {"type": "string"}
+        }
+      }
+    },
+    "rows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["item_id", "words", "reference"],
+        "additionalProperties": false,
+        "properties": {
+          "item_id": {"type": "string"},
+          "words": {"type": "integer"},
+          "reference": {"type": "object", "additionalProperties": {"type": "string"}},
+          "source_url": {"type": "string", "description": "where the item can be read at its source"},
+          "text": {"type": "string", "description": "only with --with-text, which is refused unless git has committed every item's file"}
+        }
+      }
+    }
+  }
+}

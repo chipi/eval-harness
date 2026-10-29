@@ -52,6 +52,7 @@ from evaluation_harness._common import (
     DATASETS,
     ROOT,
     RUNS,
+    dataset_id_ok,
     die,
     now,
     read_json,
@@ -118,7 +119,7 @@ def main() -> int:
     ap.add_argument("--run-id", help="default: <config-id>_<timestamp>")
     args = ap.parse_args()
 
-    ds_file = DATASETS / f"{args.dataset_id}.json"
+    ds_file = DATASETS / f"{dataset_id_ok(args.dataset_id)}.json"
     if not ds_file.is_file():
         die(
             f"dataset {args.dataset_id} is not frozen: {ds_file} does not exist. "

@@ -1,0 +1,548 @@
+{
+  "dataset_id": "dbpedia_56",
+  "harness": "0.4.4",
+  "items": {
+    "kind": "text",
+    "n": 56,
+    "words": {
+      "histogram": [
+        [
+          15,
+          22,
+          7
+        ],
+        [
+          23,
+          30,
+          7
+        ],
+        [
+          31,
+          38,
+          7
+        ],
+        [
+          39,
+          46,
+          4
+        ],
+        [
+          47,
+          54,
+          8
+        ],
+        [
+          55,
+          62,
+          7
+        ],
+        [
+          63,
+          70,
+          9
+        ],
+        [
+          71,
+          78,
+          3
+        ],
+        [
+          79,
+          86,
+          3
+        ],
+        [
+          87,
+          94,
+          1
+        ]
+      ],
+      "max": 88,
+      "median": 52,
+      "min": 15,
+      "p25": 32,
+      "p75": 64
+    }
+  },
+  "items_sha256": "6814a16071a79c9671c1e288ed7567660b07bc69dbeecb64b86efe3f926afcd3",
+  "made_at": "2026-10-28T22:36:07Z",
+  "references": [
+    {
+      "id": "gold/dbpedia_56",
+      "items": 56,
+      "labels": {
+        "Album": 4,
+        "Animal": 4,
+        "Artist": 4,
+        "Athlete": 4,
+        "Building": 4,
+        "Company": 4,
+        "EducationalInstitution": 4,
+        "Film": 4,
+        "MeanOfTransportation": 4,
+        "NaturalPlace": 4,
+        "OfficeHolder": 4,
+        "Plant": 4,
+        "Village": 4,
+        "WrittenWork": 4
+      },
+      "shape": "labels"
+    }
+  ],
+  "rows": [
+    {
+      "item_id": "012d6549a985df427220757e6880dd07e7112640",
+      "reference": {
+        "gold/dbpedia_56": "WrittenWork"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/dbpedia_14/viewer/dbpedia_14/test?row=67205",
+      "words": 78
+    },
+    {
+      "item_id": "041dde9431eea75208cbfefbe5dbc3ce2643962e",
+      "reference": {
+        "gold/dbpedia_56": "Animal"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/dbpedia_14/viewer/dbpedia_14/test?row=49401",
+      "words": 27
+    },
+    {
+      "item_id": "16062e4d00d856187a74ac1cca557abb9ae44e2f",
+      "reference": {
+        "gold/dbpedia_56": "Plant"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/dbpedia_14/viewer/dbpedia_14/test?row=51640",
+      "words": 34
+    },
+    {
+      "item_id": "16a663d1fa4d7bb0ad27bb253e3e4d2dc4ef1515",
+      "reference": {
+        "gold/dbpedia_56": "Building"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/dbpedia_14/viewer/dbpedia_14/test?row=33839",
+      "words": 59
+    },
+    {
+      "item_id": "178dc4e9c7993ec8485dbf0bbe7e42fc92c9f40b",
+      "reference": {
+        "gold/dbpedia_56": "Building"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/dbpedia_14/viewer/dbpedia_14/test?row=31961",
+      "words": 75
+    },
+    {
+      "item_id": "187748b7cb0ffbb684e80dbd66932cb7d52fbbf5",
+      "reference": {
+        "gold/dbpedia_56": "Animal"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/dbpedia_14/viewer/dbpedia_14/test?row=49300",
+      "words": 23
+    },
+    {
+      "item_id": "1c889e48a25ac977bb54f087b222a457d23cef88",
+      "reference": {
+        "gold/dbpedia_56": "Album"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/dbpedia_14/viewer/dbpedia_14/test?row=58690",
+      "words": 62
+    },
+    {
+      "item_id": "1d7da8efac6d14fbb1249da5e3c98a92f574b1ce",
+      "reference": {
+        "gold/dbpedia_56": "Plant"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/dbpedia_14/viewer/dbpedia_14/test?row=51211",
+      "words": 24
+    },
+    {
+      "item_id": "20d4629573284b986b59acbedcea9c7679bb9ac2",
+      "reference": {
+        "gold/dbpedia_56": "Album"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/dbpedia_14/viewer/dbpedia_14/test?row=59184",
+      "words": 60
+    },
+    {
+      "item_id": "21995c6d58828911bfad6cca95d07e167155e567",
+      "reference": {
+        "gold/dbpedia_56": "MeanOfTransportation"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/dbpedia_14/viewer/dbpedia_14/test?row=26329",
+      "words": 41
+    },
+    {
+      "item_id": "22f1d00f80f46867df2c5cef89002f8046f637e3",
+      "reference": {
+        "gold/dbpedia_56": "NaturalPlace"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/dbpedia_14/viewer/dbpedia_14/test?row=38683",
+      "words": 20
+    },
+    {
+      "item_id": "2e53cd0b6bd8f38d0b1b5867ee3854382ee09867",
+      "reference": {
+        "gold/dbpedia_56": "MeanOfTransportation"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/dbpedia_14/viewer/dbpedia_14/test?row=28682",
+      "words": 60
+    },
+    {
+      "item_id": "309346131a8d64ac3290fa9585d616654c96a47a",
+      "reference": {
+        "gold/dbpedia_56": "Athlete"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/dbpedia_14/viewer/dbpedia_14/test?row=17855",
+      "words": 51
+    },
+    {
+      "item_id": "3130d871fee1a468c37963bb0e4d704dd1808e23",
+      "reference": {
+        "gold/dbpedia_56": "EducationalInstitution"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/dbpedia_14/viewer/dbpedia_14/test?row=6125",
+      "words": 26
+    },
+    {
+      "item_id": "31e391afb7150dd236e7108013a0c81f2bb594e7",
+      "reference": {
+        "gold/dbpedia_56": "WrittenWork"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/dbpedia_14/viewer/dbpedia_14/test?row=67560",
+      "words": 71
+    },
+    {
+      "item_id": "35373bf11620a395fb59dc31d923094b2e97b8d6",
+      "reference": {
+        "gold/dbpedia_56": "Company"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/dbpedia_14/viewer/dbpedia_14/test?row=11",
+      "words": 34
+    },
+    {
+      "item_id": "3cc62ef27e25f97606ba8a3e2eb7d0d568938eae",
+      "reference": {
+        "gold/dbpedia_56": "Artist"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/dbpedia_14/viewer/dbpedia_14/test?row=13737",
+      "words": 63
+    },
+    {
+      "item_id": "3fe3a6eb6a01c366f639b42dcb949cda9a13e416",
+      "reference": {
+        "gold/dbpedia_56": "Film"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/dbpedia_14/viewer/dbpedia_14/test?row=64621",
+      "words": 19
+    },
+    {
+      "item_id": "43be8c164781f26ffa6373d09458acb7c5b289e1",
+      "reference": {
+        "gold/dbpedia_56": "Plant"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/dbpedia_14/viewer/dbpedia_14/test?row=53494",
+      "words": 20
+    },
+    {
+      "item_id": "452e565b1a6c401b7fc3a0a95d524cfa68627906",
+      "reference": {
+        "gold/dbpedia_56": "Athlete"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/dbpedia_14/viewer/dbpedia_14/test?row=19490",
+      "words": 44
+    },
+    {
+      "item_id": "45b6d86b39580d28e8ecf2f0559b89df4b68e8e5",
+      "reference": {
+        "gold/dbpedia_56": "Building"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/dbpedia_14/viewer/dbpedia_14/test?row=31488",
+      "words": 67
+    },
+    {
+      "item_id": "47b4346358ea9e560dc139e960512da9cb05fe44",
+      "reference": {
+        "gold/dbpedia_56": "Animal"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/dbpedia_14/viewer/dbpedia_14/test?row=45018",
+      "words": 20
+    },
+    {
+      "item_id": "48c79a6c1cc32f4f3d15b9b2e8d7c85e7eea5a8f",
+      "reference": {
+        "gold/dbpedia_56": "Artist"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/dbpedia_14/viewer/dbpedia_14/test?row=10937",
+      "words": 57
+    },
+    {
+      "item_id": "499c659a0f51fde1d312ef96b7703220a841852c",
+      "reference": {
+        "gold/dbpedia_56": "Plant"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/dbpedia_14/viewer/dbpedia_14/test?row=53875",
+      "words": 82
+    },
+    {
+      "item_id": "49e3bd456b14dff330e289ef35ab5c8d6138cdf8",
+      "reference": {
+        "gold/dbpedia_56": "Company"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/dbpedia_14/viewer/dbpedia_14/test?row=4364",
+      "words": 66
+    },
+    {
+      "item_id": "4c33b62cc482f9c0b15c927a6900adf501e87647",
+      "reference": {
+        "gold/dbpedia_56": "Film"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/dbpedia_14/viewer/dbpedia_14/test?row=62919",
+      "words": 54
+    },
+    {
+      "item_id": "4daa4d1813f1ef900ca79cef246d0b3b494c2e96",
+      "reference": {
+        "gold/dbpedia_56": "NaturalPlace"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/dbpedia_14/viewer/dbpedia_14/test?row=39784",
+      "words": 66
+    },
+    {
+      "item_id": "50f09117a7ed45d5a7e71c4a038aac6eeceb5b4e",
+      "reference": {
+        "gold/dbpedia_56": "Artist"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/dbpedia_14/viewer/dbpedia_14/test?row=12807",
+      "words": 85
+    },
+    {
+      "item_id": "5e3abfe48448f8263002d2da108d681616ecde62",
+      "reference": {
+        "gold/dbpedia_56": "MeanOfTransportation"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/dbpedia_14/viewer/dbpedia_14/test?row=29805",
+      "words": 36
+    },
+    {
+      "item_id": "5f92c86fda05a3e1e482d6bc38864369ed2938a1",
+      "reference": {
+        "gold/dbpedia_56": "Village"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/dbpedia_14/viewer/dbpedia_14/test?row=42864",
+      "words": 39
+    },
+    {
+      "item_id": "6080ed7c560aeafcd1e514ce9dab25dc611da31a",
+      "reference": {
+        "gold/dbpedia_56": "Company"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/dbpedia_14/viewer/dbpedia_14/test?row=4802",
+      "words": 32
+    },
+    {
+      "item_id": "6d423546f781e5fbc054491f46db965cb4d8f50c",
+      "reference": {
+        "gold/dbpedia_56": "OfficeHolder"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/dbpedia_14/viewer/dbpedia_14/test?row=24881",
+      "words": 36
+    },
+    {
+      "item_id": "712e5e8e7108979f1b27147f391c24186db7a34a",
+      "reference": {
+        "gold/dbpedia_56": "NaturalPlace"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/dbpedia_14/viewer/dbpedia_14/test?row=39814",
+      "words": 70
+    },
+    {
+      "item_id": "726a246737e41351404a8b0fc8bf3058a69963b7",
+      "reference": {
+        "gold/dbpedia_56": "Village"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/dbpedia_14/viewer/dbpedia_14/test?row=44277",
+      "words": 54
+    },
+    {
+      "item_id": "95b59cc9fbbcb7eda56eeb42fa25bd0917ed1096",
+      "reference": {
+        "gold/dbpedia_56": "EducationalInstitution"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/dbpedia_14/viewer/dbpedia_14/test?row=8411",
+      "words": 70
+    },
+    {
+      "item_id": "97682568ca868ab8d0034636a474f092246d1f10",
+      "reference": {
+        "gold/dbpedia_56": "Company"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/dbpedia_14/viewer/dbpedia_14/test?row=2421",
+      "words": 37
+    },
+    {
+      "item_id": "980decceae2749b35b3d4aa1500e6a4354b35996",
+      "reference": {
+        "gold/dbpedia_56": "Building"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/dbpedia_14/viewer/dbpedia_14/test?row=34802",
+      "words": 65
+    },
+    {
+      "item_id": "9caaf9520132be0e72b545f9985fa4aea1a2c8bb",
+      "reference": {
+        "gold/dbpedia_56": "Village"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/dbpedia_14/viewer/dbpedia_14/test?row=43876",
+      "words": 49
+    },
+    {
+      "item_id": "9e7ebe067f4e6c92bab2fb6f2e6729e31539ea44",
+      "reference": {
+        "gold/dbpedia_56": "WrittenWork"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/dbpedia_14/viewer/dbpedia_14/test?row=66787",
+      "words": 52
+    },
+    {
+      "item_id": "a4bc16f0f9b982dd96f087ce4c26a246a2c06e11",
+      "reference": {
+        "gold/dbpedia_56": "Album"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/dbpedia_14/viewer/dbpedia_14/test?row=57990",
+      "words": 54
+    },
+    {
+      "item_id": "ad160ba0023ef274b7e3591310f0a02c026527b2",
+      "reference": {
+        "gold/dbpedia_56": "Album"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/dbpedia_14/viewer/dbpedia_14/test?row=58666",
+      "words": 64
+    },
+    {
+      "item_id": "b23116ed3276520f74fd040fef204d57532aa7e5",
+      "reference": {
+        "gold/dbpedia_56": "Athlete"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/dbpedia_14/viewer/dbpedia_14/test?row=18429",
+      "words": 26
+    },
+    {
+      "item_id": "b841fd47ab33c0eb854670e6fc2d80db21f49086",
+      "reference": {
+        "gold/dbpedia_56": "OfficeHolder"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/dbpedia_14/viewer/dbpedia_14/test?row=20455",
+      "words": 45
+    },
+    {
+      "item_id": "bbed510bcde4f02aa9a59b2affcd7f0f07d43145",
+      "reference": {
+        "gold/dbpedia_56": "MeanOfTransportation"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/dbpedia_14/viewer/dbpedia_14/test?row=29359",
+      "words": 29
+    },
+    {
+      "item_id": "cc341509718d79849437a9f5434ad80f2f5a5a34",
+      "reference": {
+        "gold/dbpedia_56": "Animal"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/dbpedia_14/viewer/dbpedia_14/test?row=45683",
+      "words": 53
+    },
+    {
+      "item_id": "d09e9cf75708dbe4eaf41167ae19b75b45ad2b6a",
+      "reference": {
+        "gold/dbpedia_56": "EducationalInstitution"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/dbpedia_14/viewer/dbpedia_14/test?row=9192",
+      "words": 52
+    },
+    {
+      "item_id": "d71b5d944a5887afa4dd354151c9432aa80c471d",
+      "reference": {
+        "gold/dbpedia_56": "Film"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/dbpedia_14/viewer/dbpedia_14/test?row=63165",
+      "words": 28
+    },
+    {
+      "item_id": "da19e3bbb427ad686adc87d8727e4b6f54aec25b",
+      "reference": {
+        "gold/dbpedia_56": "Artist"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/dbpedia_14/viewer/dbpedia_14/test?row=14232",
+      "words": 16
+    },
+    {
+      "item_id": "e4307c92bda440abffe244c686ef3cf6f8cdecd0",
+      "reference": {
+        "gold/dbpedia_56": "EducationalInstitution"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/dbpedia_14/viewer/dbpedia_14/test?row=6409",
+      "words": 70
+    },
+    {
+      "item_id": "e826c63100eb7488d842602e1009f43383aad3c8",
+      "reference": {
+        "gold/dbpedia_56": "OfficeHolder"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/dbpedia_14/viewer/dbpedia_14/test?row=24805",
+      "words": 82
+    },
+    {
+      "item_id": "ed1139ca1487e49a05fd46012ea3a05befcce5fd",
+      "reference": {
+        "gold/dbpedia_56": "OfficeHolder"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/dbpedia_14/viewer/dbpedia_14/test?row=22066",
+      "words": 37
+    },
+    {
+      "item_id": "f15e5d3ea875bc7d78e9fc2997448d40c7fba563",
+      "reference": {
+        "gold/dbpedia_56": "Village"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/dbpedia_14/viewer/dbpedia_14/test?row=43049",
+      "words": 19
+    },
+    {
+      "item_id": "f96834776b6eafaa8fb5a8d60d888f97c5d5b756",
+      "reference": {
+        "gold/dbpedia_56": "WrittenWork"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/dbpedia_14/viewer/dbpedia_14/test?row=65845",
+      "words": 59
+    },
+    {
+      "item_id": "fe5097e1e4f6f790991691679f15ba9afcd3a42c",
+      "reference": {
+        "gold/dbpedia_56": "NaturalPlace"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/dbpedia_14/viewer/dbpedia_14/test?row=37921",
+      "words": 58
+    },
+    {
+      "item_id": "ff3050b29024a603ec9d1014e75b7924e195486f",
+      "reference": {
+        "gold/dbpedia_56": "Athlete"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/dbpedia_14/viewer/dbpedia_14/test?row=17431",
+      "words": 88
+    },
+    {
+      "item_id": "ffe3879bdb6c2d9d268103726254b945951b1611",
+      "reference": {
+        "gold/dbpedia_56": "Film"
+      },
+      "source_url": "https://huggingface.co/datasets/fancyzhx/dbpedia_14/viewer/dbpedia_14/test?row=62088",
+      "words": 15
+    }
+  ],
+  "source": {
+    "config": "dbpedia_14",
+    "name": "fancyzhx/dbpedia_14",
+    "split": "test",
+    "url": "https://huggingface.co/datasets/fancyzhx/dbpedia_14"
+  }
+}

@@ -1,6 +1,6 @@
 # PRD-004: The catalog and the run inspector
 
-- **Status**: Implemented (v0.4.0)
+- **Status**: Implemented (v0.4.0); FR6, the same views for an agent: Implemented (v0.5.0)
 - **Authors**: Marko Dragoljevic
 - **Related UX specs**: [UXS-001](../uxs/UXS-001-catalog.md) (the catalog's pages),
   [UXS-002](../uxs/UXS-002-inspector.md) (the inspector), [UXS-003](../uxs/UXS-003-cli-and-onboarding.md) (the same views as commands)
@@ -51,6 +51,8 @@ adapter file ([ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md),
 - **The reviewer or reader** of a published experiment, who wants to check a claim without
   installing anything (the public catalog).
 - **The terminal user** who wants the same answers without a browser.
+- **The agent** (Claude, ChatGPT, Gemini, any MCP client) that a person asks about the experiments,
+  and that needs the same numbers, refusals included, as data it can call for.
 
 ## User Stories
 
@@ -65,6 +67,9 @@ adapter file ([ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md),
 - _As a terminal user, I can get the inspector's comparison with
   `evh inspect --runs a,b`, and every page with `evh datasets`, `evh references`, `evh metrics`,
   `evh goals`, `evh arms` and `evh activity`._
+- _As a person working with an agent, I can ask it which arm a goal recommends and why, and it
+  answers from the same table and paired test the catalog shows, without being able to change
+  anything._
 - _As a maintainer of an evaluation, I can see what is new and what moved this week or this
   month on every page, and follow a count on the home page to the rows behind it._
 
@@ -82,8 +87,8 @@ adapter file ([ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md),
 - **FR1.2**: Pages: home (the dashboard, FR1.8), datasets and one per dataset, goals and one per
   goal, references and one per reference, one per arm, metrics and one per metric, and the
   inspector's shell ([UXS-001](../uxs/UXS-001-catalog.md)).
-- **FR1.3**: The pages carry counts and means only, never an item's text, an output or a
-  reference; a field's values appear only when the project marks the field `public`.
+- **FR1.3**: The pages carry counts and means only, never an output or a reference, and never an
+  item's text unless the repository already publishes it (a profile written `--with-text`, refused unless git has committed every item's file); a field's values appear only when the project marks the field `public`.
 - **FR1.4**: Every arm's row says what it is scored against; rows scored against silver, by a
   judge, or against the reference the arm wrote itself are tinted.
 - **FR1.5**: Long tables show 10 rows with "show 10 more" and "show all"; the filter and the sort
@@ -162,6 +167,18 @@ adapter file ([ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md),
   `config.yaml` (`catalog: {adapter: path/to/file.py:Class}`) or passes `--adapter`
   ([RFC-003](../rfc/RFC-003-catalog-adapter.md)).
 
+### FR6: The same views for an agent (v0.5.0)
+
+- **FR6.1**: `evh mcp` serves the read commands of FR4 (and `rounds`, `runs-list`, `validate`,
+  `dataset-items`) as MCP tools, each call the command itself, so FR4's parity holds for an agent
+  too ([RFC-018](../rfc/RFC-018-read-only-mcp-server.md)).
+- **FR6.2**: No tool writes project data, spends or runs a model: the non-goal "the pages never
+  write" holds for the tools. A command that writes is never a tool, and a test lists every
+  command as one or the other.
+- **FR6.3**: `--http --public` serves them to anyone, as FR3 serves the API: no item text, Host
+  checked, the load bounded per caller and in total. This repository's catalog answers at
+  `https://evals.humancopilot.eu/mcp`.
+
 ## Success Criteria
 
 - The inspector gives the same p as `pair-test` on the same pair (GUIDE step 12: lead2 against
@@ -169,9 +186,12 @@ adapter file ([ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md),
 - The catalog and the inspector pass the headless browser check (`make browser-check`) and the
   catalog tests (`harness/tests/test_catalog.py`).
 - Both deployed sites pass a content security policy with no inline script or style.
+- An MCP client gets the same JSON from `datasets` as `evh datasets --json` prints, and every tool is
+  annotated read-only (`harness/tests/test_mcp_server.py`, `test_mcp_http.py`).
 
 ## Related Documents
 
 - [UXS-001](../uxs/UXS-001-catalog.md), [UXS-002](../uxs/UXS-002-inspector.md), [UXS-003](../uxs/UXS-003-cli-and-onboarding.md).
-- [RFC-003](../rfc/RFC-003-catalog-adapter.md), [ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md).
+- [RFC-003](../rfc/RFC-003-catalog-adapter.md), [ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md),
+  [RFC-018](../rfc/RFC-018-read-only-mcp-server.md) (the MCP server).
 - [Integration: the catalog and the inspector](../../harness/docs/INTEGRATION.md#the-catalog-and-the-inspector).

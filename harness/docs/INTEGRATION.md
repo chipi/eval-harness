@@ -18,12 +18,13 @@ Pin it into your project, and start the project's folders:
 
 ```bash
 cd /path/to/your-project
-pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.4.4#subdirectory=harness"
+pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.5.0#subdirectory=harness"
 evh init         # data/sources, data/configs, data/goals, data/fields, a .gitignore
 ```
 
 That one install is everything: the hosted-model clients (`openai`, `anthropic`), the judges, the
-catalog and the inspector. There is no extra to add.
+catalog, the inspector and the MCP server for an agent ([below](#for-an-agent-evh-mcp)). There is
+no extra to add. It needs Python 3.10 or later.
 
 Keep `data/materialized/` out of git (derived; the `.gitignore` `evh init` writes already
 does this) and decide whether to commit runs: keep each run's `metrics.json`,
@@ -264,6 +265,7 @@ which references exist, what one arm wrote for one item.
   | what a row is scored against (optional keys) | `describe(arm)`: `"reference"`, `"judge"`, `"wrote_reference"`; `references()`: `"items"`, `"author"`, `"from_run"`, `"model"`, `"created_at"` |
   | what an arm was measured under (optional) | `conditions(arm)`: `{"machine.platform": …, "library.torch": …, "harness.version": …, "scorer.sha256": …, "data.items_sha256": …, "reference.sha256": …}`; the inspector lists what differs between the arms it compares, and warns when it is the scorer, the reference or, for latency, the machine |
   | dataset versions (optional) | `datasets()`: every dataset id, run or not; `dataset_lineage(dataset)`: `{"dataset_id", "added", "removed", "changed"}` or None; the dataset pages link versions both ways; `dataset_created(dataset)`: when it was frozen (ISO), the day the home page counts it new (else its first run) |
+  | what is inside a dataset (optional) | `dataset_profile(dataset)`: the profile `evh dataset-profile` writes (`schemas/profile.schema.json`: `dataset_id`, `items_sha256`, `items`, `references`, `rows`, and `source` when known), plus `"stale": True` when the items changed since; the dataset page's "what's inside" shows it. The harness's own adapter reads `data/profiles/<dataset>.json` |
   | rounds: a config's arm id (optional) | `arm_of(dataset, config_id)`: `evh rounds` and `inspect --round` use it; `runs/<dataset>/<config_id>` when absent |
   | arm page: runs and details (optional) | `arm_runs(arm)`: `[{"run_id", "created_at", "items", "cost_usd", "derived"}]`; `arm_config(arm)`: `{"config_id", "params" (credentials removed), "adapter"}`; an arm page shows them when present |
   | spend in USD and tokens (optional) | `spend()`: `[{"at", "usd", "tokens", "kind": "arm"\|"judge", "dataset", "what", "arm"}]` (usd or tokens None when unknown; measured runs and judging per set and day; `arm`, optional, names a measured run's arm); the home page's spend, the activity page and the arms page's spend columns, and `evh overview` and `evh activity` use it |
@@ -279,7 +281,8 @@ which references exist, what one arm wrote for one item.
   maps each page to its command.
 
   Item text is only ever returned by `item_view` and `reference_view`, and the static pages
-  never carry it, whatever the adapter. The local inspector shows all of it. A public deployment
+  never carry it, whatever the adapter, but for what the repository already publishes (a profile
+  written `evh dataset-profile --with-text`, refused unless git has committed every item's file). The local inspector shows all of it. A public deployment
   (`catalog-serve --public`) serves numbers, plus an arm's outputs or a reference's text only
   when it names them (`--publish outputs`, `--publish references`, or both), and never the item
   itself. An output can quote its input (an extractive arm returns the article's own sentences),
@@ -313,15 +316,76 @@ which references exist, what one arm wrote for one item.
 
 ---
 
+## For an agent: `evh mcp`
+
+`evh mcp` serves the project's read commands to an agent over MCP (the official SDK): the
+catalog's views (`overview`, `datasets`, `dataset-items`, `arms`, `goals`, `references`, `metrics`,
+`activity`, `search`), the inspector in the terminal (`inspect`), `rounds`, `runs-list` and
+`validate`. Each call runs the command as a person would, with `--json` where the command has it,
+so the agent sees the same numbers you do. No tool writes project data, spends or runs a model:
+running arms, promoting a baseline and closing a round stay your commands. (The one file a call
+writes is the goals' p cache in the project's ignored `.cache/`.) The design is
+[RFC-018](https://github.com/chipi/eval-harness/blob/main/docs/rfc/RFC-018-read-only-mcp-server.md).
+
+**On your machine, against your project** (stdio: the agent starts it):
+
+```bash
+claude mcp add evh -- evh mcp          # Claude Code, in the project
+```
+
+Any other MCP client takes the command `evh mcp --project /absolute/path/to/project`. A desktop
+client starts it from its own directory, not your project's, so give `--project`; and it starts it
+with its own `PATH`, so if `evh` is in a virtualenv, give the full path to that `evh`.
+
+**This repository's experiments, from anywhere**: `https://evals.humancopilot.eu/mcp` serves the
+six worked examples (Streamable HTTP, read-only, no sign-in; it answers what the site and the
+catalog publish, never an item's text):
+
+| client | how |
+| --- | --- |
+| Claude Code | `claude mcp add --transport http evals https://evals.humancopilot.eu/mcp` |
+| Claude (claude.ai, Desktop), Pro or Max | Customize → Connectors → + Add → Add custom connector, the URL above, no authentication |
+| Claude, Team or Enterprise | an owner: Organization settings → Connectors → Add → Custom → Web, the URL above; members then Connect it under Customize → Connectors |
+| ChatGPT (Pro, Team, Enterprise, Edu) | Settings → Connectors → Advanced settings: turn on Developer mode; then Create, the URL above, no authentication; in a chat, + → More → Developer mode, and turn the connector on |
+| OpenAI Responses API | `tools=[{"type": "mcp", "server_label": "evals", "server_url": "https://evals.humancopilot.eu/mcp", "require_approval": "never"}]` |
+| Gemini CLI | `gemini mcp add --transport http evals https://evals.humancopilot.eu/mcp`, or in `~/.gemini/settings.json`: `{"mcpServers": {"evals": {"httpUrl": "https://evals.humancopilot.eu/mcp"}}}` |
+
+The Claude, Gemini and OpenAI lines follow each vendor's own documentation (checked 2026-10-29);
+the ChatGPT line follows third-party guides, as OpenAI renames that menu often. The server speaks
+every protocol revision since 2025-03-26 without a session, which is what they send.
+
+Ask it, for example: *"Which arm leads on the news_topic_ag goal, and is the lead significant?"* The
+agent calls `goals` (and `arms` for the detail) and answers from the same table and paired test
+the catalog shows.
+
+**For a team**: serve a checkout of the project over HTTP behind the team's proxy:
+
+```bash
+evh mcp --http --bind 0.0.0.0 --port 8766 --allowed-host evals.team.example [--public]
+```
+
+`--allowed-host` is required beyond the loopback (the server checks the Host against DNS
+rebinding); `--public` leaves out the options that answer with an item's text, and the
+`validate` tool (12 tools); `--rate` (per
+caller), `--rate-total` (everyone together), `--concurrent` and `--timeout` bound the load, and a
+caller has one call running at a time; `--client-header` names the header your proxy sets for the
+caller's address (trust it only if nothing else can reach the port); `--hooks FILE` adds your error reporting, tracing
+and metrics. 0.5.0 has no accounts: put it behind what the team already uses (a VPN, an
+authenticating proxy). The goals' tests are kept in the project's `.cache/` so a call that shows
+them answers in seconds after the first.
+
+---
+
 ## The first hour, concretely
 
 ```bash
-cd your-project && pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.4.4#subdirectory=harness"
+cd your-project && pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.5.0#subdirectory=harness"
 evh init
 
 cp some/real/items/* data/sources/            # your data
 evh dataset-create --dataset-id pilot_v1 --limit 10
 evh dataset-materialize --dataset-id pilot_v1
+evh dataset-profile --dataset-id pilot_v1              # what is inside, for its catalog page
 
 $EDITOR adapter.py                            # call_system() -> your code
 git add -A && git commit -m "pilot_v1, adapter, arms"   # a run from a dirty tree cannot become a reference

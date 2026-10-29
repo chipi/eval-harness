@@ -19,16 +19,18 @@ dynamic = ["version"]
 description = "Is the ranking real, or a lucky sample? Frozen datasets, run fingerprints, paired significance tests."
 readme = "README.md"
 license = "MIT"
-requires-python = ">=3.9"
+# 3.10: the official MCP SDK's floor (`evh mcp`, RFC-018).
+requires-python = ">=3.10"
 # Everything works from one install: the bundled adapter's hosted providers and the LLM judges
 # call models through openai (any OpenAI-compatible endpoint: OpenAI, OpenRouter, a LiteLLM
 # proxy) and anthropic. They were an extra, `[llm]`, that only one RUNBOOK section named; a
-# newcomer's first hosted arm failed on the import.
+# newcomer's first hosted arm failed on the import. `mcp` is the official SDK `evh mcp` serves on.
 dependencies = [
     "pyyaml>=6.0",
     "jsonschema>=4.0",
     "openai>=1.0",
     "anthropic>=0.40",
+    "mcp>=2.3,<3",
 ]
 
 [project.optional-dependencies]
@@ -56,8 +58,7 @@ package-dir = {"evaluation_harness" = "scripts", "evaluation_harness.schemas" = 
 version = {attr = "evaluation_harness._version.__version__"}
 
 [tool.mypy]
-# 3.10, not the package's 3.9 floor: mypy 2.x no longer type-checks for 3.9. The 3.9 floor is
-# held by CI's package job, which installs the wheel on 3.9 and runs `evh self-test`.
+# The package's floor; CI's package job installs the wheel on 3.10 and runs `evh self-test`.
 python_version = "3.10"
 # The modules import each other as the package (`from evaluation_harness._common import …`);
 # in a checkout harness/evaluation_harness is a link to scripts/, so it is checked once, by that
