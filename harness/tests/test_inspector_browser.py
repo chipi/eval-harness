@@ -296,6 +296,12 @@ def drive(base: str, overview: str = "") -> None:
             and page.locator('p.eyebrow a[href="m/overlap_f1.html"]').count() == 1,
         )
         check("inspector: the charts are drawn", page.locator("figure.chart svg").count() >= 2)
+        foot = page.locator("[data-elsewhere=term]").inner_text()
+        check(
+            "inspector: the footer names the comparison picked as its command",
+            foot == f"evh inspect --runs {arms} --baseline runs/tickets_v1/tickets_lead1_v1",
+            foot,
+        )
         with page.expect_navigation():
             page.select_option("#baseline", "runs/tickets_v1/tickets_lead2_v1")
         page.wait_for_selector("#baseline")

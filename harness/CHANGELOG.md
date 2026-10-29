@@ -64,6 +64,9 @@ that shows what is inside a dataset without republishing its text. [UPGRADING](d
 - **`inspect.html?…&item=ID`** opens that item once the comparison has loaded; a dataset page's
   **inspect** link uses it.
 - Adapter: `dataset_profile(dataset)`, optional (RFC-003).
+- **Every catalog page names its command**, in its footer (`evh goals --goal G`, the inspector's from the arms
+  picked). **`evh catalog --mcp URL`** names the same as an MCP tool call, with the server and how to connect
+  (`--mcp-howto`); this repository's catalog passes its `/mcp`, and its header links to the site's MCP section.
 - **`evh dataset-profile --json` and `evh dataset-items --json`** print the profile inside the same envelope as
   the views, `{"command", "version", "result": <the profile>}`; the Makefile targets `dataset-profile` and
   `dataset-items`.

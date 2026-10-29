@@ -231,6 +231,54 @@ try:
         "page: without a profile, it says how to write one",
         "No profile yet" in ents and "dataset-profile" in ents,
     )
+
+    # Every page names the read command that answers it; with --mcp, the same as a tool call.
+    import html as _html
+    import re
+
+    from evaluation_harness.mcp_server import READ_TOOLS
+
+    term = re.compile(r"<span data-elsewhere=term>(.*?)</span>")
+    lines = {
+        f.relative_to(out).as_posix(): [
+            _html.unescape(c) for c in re.findall(r"<code>(.*?)</code>", m.group(1))
+        ]
+        for f in sorted(out.rglob("*.html"))
+        for m in [term.search(f.read_text())]
+        if m
+    }
+    check(
+        "every page: names its command in the footer (the home, the lists, each dataset)",
+        {"index.html", "datasets.html", "d/topics.html", "inspect.html"} <= set(lines),
+        sorted(lines),
+    )
+    bad = []
+    for where, cmds in lines.items():
+        for c in cmds:
+            words = c.split()
+            if words[:1] != ["evh"] or words[1] not in READ_TOOLS:
+                bad.append((where, c, "not a read tool"))
+            elif where != "inspect.html":  # the inspector's is filled in from the arms picked
+                r = evh(*words[1:])
+                if r.returncode != 0:
+                    bad.append((where, c, r.stderr[-120:]))
+    check("every page: its command is a read tool, and runs as named", not bad, bad[:5])
+    check(
+        "without --mcp: no tool call is named", "data-elsewhere=mcp" not in (out / "index.html").read_text()
+    )
+    r = evh("catalog", "--out", str(out), "--mcp", "https://evals.example.test/mcp")
+    d = (out / "d" / "topics.html").read_text()
+    check(
+        "--mcp: each page names its tool call, the server and how to connect",
+        r.returncode == 0
+        and "From an agent: the tool" in d
+        and "<code>datasets</code> with <code>{&quot;dataset-id&quot;: &quot;topics&quot;}</code>" in d
+        and "https://evals.example.test/mcp" in d
+        and "how to connect" in d,
+        d.split("<footer>")[-1][:600],
+    )
+    r = evh("catalog", "--out", str(out), "--mcp", "javascript:alert(1)")
+    check("--mcp: only an http(s) address", r.returncode != 0, r.stderr[-120:])
 finally:
     shutil.rmtree(proj, ignore_errors=True)
 

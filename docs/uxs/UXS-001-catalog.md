@@ -121,6 +121,17 @@ tables 15px.
   arm hit opens the inspector on that arm. Command: `evh search <text>` (the same index and
   ranking, each hit with the command that shows it).
 
+### The footer
+
+When the page was built, by `evh catalog`, and that the pages carry counts and means only. Then
+**this page in the terminal**: the read command that answers what the page shows (`evh goals
+--goal G` on a goal page, `evh datasets --dataset-id D` and, once it has a profile, `evh
+dataset-items --dataset-id D` on a dataset page; the inspector's is the comparison picked, filled
+in as the arms change). With `evh catalog --mcp URL` the same line names it **from an agent**: the
+tool and its arguments as JSON, the server, and how to connect (`--mcp-howto`, the harness's
+INTEGRATION guide by default). A test runs every page's command and fails when one is not a read
+tool or refuses.
+
 ## Tables
 
 Every data table shares one behaviour:

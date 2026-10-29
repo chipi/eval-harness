@@ -476,5 +476,6 @@ def render_arms(A, by_ds: dict, out, nav: list) -> None:
             (*cb.PERIOD_SCRIPTS("arms"), "assets/group.js", "assets/arms.js"),
             nav=nav,
             item=A.item_word,
+            elsewhere=(("arms", {}),),
         ),
     )

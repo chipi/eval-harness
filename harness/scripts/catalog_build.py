@@ -331,8 +331,11 @@ def page(
     item: str = "item",
     serve: str = "evh catalog-serve",
     footer: str = "",
+    elsewhere: tuple = (),
 ) -> str:
-    """Build a complete HTML page with header, nav, body, and footer."""
+    """Build a complete HTML page with header, nav, body, and footer. `elsewhere`: the read
+    commands that answer what the page shows, ((command, {option: value}), ...), named in the
+    footer as the terminal command and, with --mcp, as the MCP tool."""
     up = "../" * depth
     brand = brand or BRAND
 
@@ -409,7 +412,7 @@ def page(
 <main>
 {body}
 </main>
-<footer><div class="wrap"><p>{foot}</p></div></footer>
+<footer><div class="wrap"><p>{foot}</p>{elsewhere_line(elsewhere)}</div></footer>
 <script src="{up}search.js"></script>
 <script src="{up}assets/catalog.js"></script>
 {"".join(f'<script src="{up}{x}"></script>' for x in scripts)}
@@ -884,6 +887,7 @@ def render_datasets(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
             (*PERIOD_SCRIPTS("datasets"), "assets/group.js"),
             nav=nav,
             item=A.item_word,
+            elsewhere=(("datasets", {}),),
         ),
     )
 
@@ -1438,6 +1442,7 @@ def render_home(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
             (*PERIOD_SCRIPTS(), "home.js", "assets/overview.js"),
             nav=nav,
             item=A.item_word,
+            elsewhere=(("overview", {}),),
         ),
     )
 
@@ -1549,6 +1554,7 @@ def render_activity(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
             (*PERIOD_SCRIPTS("activity"), "home.js", "assets/overview.js"),
             nav=nav,
             item=A.item_word,
+            elsewhere=(("activity", {}),),
         ),
     )
 
@@ -1699,7 +1705,26 @@ def render_dataset(A: Adapter, ds: str, v: dict, out: Path, nav: list) -> None:
     if fields_html:
         n += 1
         body += block(f"{n:02d}", f"{A.item_word} fields", fields_html, "item-fields")
-    write(out, f"d/{slug(ds or 'none')}.html", page(ds or "dataset", body, 1, "", nav=nav, item=A.item_word))
+    prof = getattr(A, "dataset_profile", None)
+    write(
+        out,
+        f"d/{slug(ds or 'none')}.html",
+        page(
+            ds or "dataset",
+            body,
+            1,
+            "",
+            nav=nav,
+            item=A.item_word,
+            # dataset-items answers only once the dataset has a profile; it refuses otherwise
+            elsewhere=(
+                (("datasets", {"dataset-id": ds}),)
+                + ((("dataset-items", {"dataset-id": ds}),) if callable(prof) and prof(ds) else ())
+                if ds
+                else ()
+            ),
+        ),
+    )
 
 
 def _show(v, field: dict) -> str:
@@ -2047,7 +2072,18 @@ def render_goals(A: Adapter, by_ds: dict, out: Path, nav: list) -> int:
             ).replace('class="data sortable"', 'class="data sortable" data-period-feed', 1),
         )
     write(
-        out, "goals.html", page("Goals", body, 0, "goals", PERIOD_SCRIPTS("goals"), nav=nav, item=A.item_word)
+        out,
+        "goals.html",
+        page(
+            "Goals",
+            body,
+            0,
+            "goals",
+            PERIOD_SCRIPTS("goals"),
+            nav=nav,
+            item=A.item_word,
+            elsewhere=(("goals", {}),),
+        ),
     )
     return len(goals)
 
@@ -2395,7 +2431,15 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
     write(
         out,
         f"g/{slug(g['goal_id'])}.html",
-        page(g.get("title") or g["goal_id"], body, 1, "goals", nav=nav, item=A.item_word),
+        page(
+            g.get("title") or g["goal_id"],
+            body,
+            1,
+            "goals",
+            nav=nav,
+            item=A.item_word,
+            elsewhere=(("goals", {"goal": g["goal_id"]}),),
+        ),
     )
 
 
@@ -2762,6 +2806,7 @@ def render_metrics(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
             (*PERIOD_SCRIPTS("metrics"), "assets/group.js"),
             nav=nav,
             item=A.item_word,
+            elsewhere=(("metrics", {}),),
         ),
     )
 
@@ -2816,7 +2861,15 @@ def render_references(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
             write(
                 out,
                 reference_page(r["id"]),
-                page(r["id"], body, 1, "", nav=nav, item=A.item_word),
+                page(
+                    r["id"],
+                    body,
+                    1,
+                    "",
+                    nav=nav,
+                    item=A.item_word,
+                    elsewhere=(("references", {"reference-id": r["id"]}),),
+                ),
             )
 
 
@@ -2994,7 +3047,19 @@ def render_arm(A: Adapter, a: dict, ds: str, by_ds: dict, out: Path, nav: list) 
     notes = A.notes(a["arm"]) if callable(getattr(A, "notes", None)) else []
     if notes:
         body += block(f"{n:02d}", "notes", "<ul>" + "".join(f"<li>{e(x)}</li>" for x in notes) + "</ul>")
-    write(out, arm_page(a["arm"]), page(a["label"], body, 1, "datasets", nav=nav, item=A.item_word))
+    write(
+        out,
+        arm_page(a["arm"]),
+        page(
+            a["label"],
+            body,
+            1,
+            "datasets",
+            nav=nav,
+            item=A.item_word,
+            elsewhere=(("arms", {"arm": a["arm"]}),),
+        ),
+    )
 
 
 def cost_or_speed(A: Adapter, m: str) -> str | None:
@@ -3108,7 +3173,11 @@ def render_metric(A: Adapter, m: str, where: dict, by_ds: dict, project: dict, o
             + table(f"on{n}", ["arm", f"mean {e(m)}", f"{e(A.item_word)}s", "scored against"], rows),
         )
         n += 1
-    write(out, metric_page(m), page(m, body, 1, "metrics", nav=nav, item=A.item_word))
+    write(
+        out,
+        metric_page(m),
+        page(m, body, 1, "metrics", nav=nav, item=A.item_word, elsewhere=(("metrics", {"metric": m}),)),
+    )
 
 
 def render_reference_index(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
@@ -3175,7 +3244,16 @@ def render_reference_index(A: Adapter, by_ds: dict, out: Path, nav: list) -> Non
     write(
         out,
         "references.html",
-        page("References", body, 0, "references", PERIOD_SCRIPTS("references"), nav=nav, item=A.item_word),
+        page(
+            "References",
+            body,
+            0,
+            "references",
+            PERIOD_SCRIPTS("references"),
+            nav=nav,
+            item=A.item_word,
+            elsewhere=(("references", {}),),
+        ),
     )
 
 
@@ -3213,9 +3291,33 @@ def render_inspect(
             ("runs.js", "assets/inspect.js"),
             item=item,
             serve=serve,
+            elsewhere=(("inspect", {}),),
             **page_kw,
         ),
     )
+
+
+def elsewhere_line(cmds: tuple) -> str:
+    """The footer's "this page elsewhere": each command in the terminal and, when the deployment
+    names its MCP server (--mcp), the same as a tool call. The inspector's line is filled in by
+    inspect.js from the arms picked (an empty argument set here)."""
+    if not cmds:
+        return ""
+
+    def term(cmd: str, args: dict) -> str:
+        return " ".join(["evh", cmd, *(f"--{k} {v}" for k, v in args.items())])
+
+    terms = " · ".join(f"<code>{e(term(c, a))}</code>" for c, a in cmds)
+    line = f"This page in the terminal: <span data-elsewhere=term>{terms}</span>"
+    if MCP:
+        calls = " · ".join(
+            f"<code>{e(c)}</code>" + (f" with <code>{e(json.dumps(a))}</code>" if a else "") for c, a in cmds
+        )
+        line += (
+            f". From an agent: the tool <span data-elsewhere=mcp>{calls}</span> at <code>{e(MCP)}</code> "
+            f'(<a href="{e(MCP_HOWTO)}" rel="noopener">how to connect</a>)'
+        )
+    return f'<p class="small elsewhere" id="elsewhere" data-mcp="{e(MCP)}">{line}.</p>'
 
 
 def write_search(A: Adapter, by_ds: dict, out: Path) -> None:
@@ -3338,6 +3440,11 @@ BRAND = "eval catalog"
 #: or at the start of a guardrail's source becomes a link to it. None by default, and then a path
 #: is named as text, since the static pages cannot know where the project is hosted.
 REPO = ""
+#: The deployment's MCP server (--mcp URL): every page's footer then names its tool call beside its
+#: terminal command, and how to connect. None by default: a page names only its command.
+MCP = ""
+#: How to connect an agent to it: the harness's own guide (the package's docs, not a deployment's).
+MCP_HOWTO = "https://github.com/chipi/eval-harness/blob/main/harness/docs/INTEGRATION.md#for-an-agent-evh-mcp"
 #: A project path at the start of a guardrail's source ("research/REPORT.md, §3.4").
 _PATH_HEAD = re.compile(r"^((?:[\w.-]+/)+[\w.-]+\.\w+|[\w.-]+\.(?:md|json|yaml|yml|csv|txt))(.*)$", re.S)
 
@@ -3349,7 +3456,7 @@ def project_path(text: str) -> str:
 
 def main() -> int:
     """Build the catalog and write static pages to output directory."""
-    global API, HEAD, BRAND, ABOUT, REPO
+    global API, HEAD, BRAND, ABOUT, REPO, MCP, MCP_HOWTO
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--out", type=Path, default=ROOT / ".build" / "catalog")
     ap.add_argument(
@@ -3390,7 +3497,23 @@ def main() -> int:
         help="where the project's files can be read, e.g. https://github.com/o/r/blob/main/: a project "
         "path in a goal's links or a guardrail's source links there (named as text by default)",
     )
+    ap.add_argument(
+        "--mcp",
+        metavar="URL",
+        help="the deployment's MCP server (evh mcp --http): every page's footer names its tool call beside "
+        "its terminal command (only the command by default)",
+    )
+    ap.add_argument(
+        "--mcp-howto",
+        metavar="URL",
+        help="--mcp: where to read how to connect an agent (default: the harness's INTEGRATION guide)",
+    )
     args = ap.parse_args()
+    for flag, url in (("--mcp", args.mcp), ("--mcp-howto", args.mcp_howto)):
+        if url and not url.startswith(("https://", "http://")):
+            raise SystemExit(f"{flag} {url!r}: expected https://...")
+    MCP = args.mcp or ""
+    MCP_HOWTO = args.mcp_howto or MCP_HOWTO
     if not args.api.startswith("/") or not args.api.endswith("/"):
         raise SystemExit(
             f"--api {args.api!r}: expected a path that starts and ends with /, e.g. /catalog/api/"

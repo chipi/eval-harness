@@ -505,3 +505,5 @@ input.pick { width: 16px; height: 16px; accent-color: var(--accent); }
 [data-line] svg.rowline { margin-top: 4px; width: 84px; }
 #arms td:nth-child(5), #configs td:nth-child(2) { min-width: 16ch; }
 #arms td:nth-child(2) { min-width: 18ch; }
+/* The footer's "this page elsewhere": a long tool call wraps inside the footer, never past a phone's edge. */
+footer .elsewhere code { overflow-wrap: anywhere; }

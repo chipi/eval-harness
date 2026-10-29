@@ -17,6 +17,20 @@
   const short = a => a.replace(/^runs\//, '');
   const ARMS = window.RUNS || {};
 
+  // The footer's "this page elsewhere" (catalog_build.elsewhere_line): the comparison picked, as
+  // the inspect command and, when the deployment names its MCP server, as the tool call.
+  (function elsewhere() {
+    const t = document.querySelector('[data-elsewhere=term]'), m = document.querySelector('[data-elsewhere=mcp]');
+    const args = {};
+    for (const k of ['runs', 'baseline', 'metric', 'by']) if (P.get(k)) args[k] = P.get(k);
+    if (P.getAll('where').length) args.where = P.getAll('where');
+    if (P.get('rescore') === '0') args['no-rescore'] = true;
+    const opts = Object.entries(args).flatMap(([k, v]) =>
+      v === true ? [`--${k}`] : (Array.isArray(v) ? v : [v]).map(x => `--${k} ${x}`));
+    if (t) t.innerHTML = `<code>${esc(['evh inspect', ...opts].join(' '))}</code>`;
+    if (m) m.innerHTML = '<code>inspect</code>' + (opts.length ? ` with <code>${esc(JSON.stringify(args))}</code>` : '');
+  })();
+
   function picker() {
     const chips = runs().map(r => `<span class="chip pickchip">${esc(short(r))}<button data-rm="${esc(r)}" aria-label="remove">×</button></span>`).join('');
     // Only offer runs that can be compared with what is selected: same dataset_id, or none recorded.
