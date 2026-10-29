@@ -1,246 +1,305 @@
-# Plan: applying 0.6.0 to the triage fleet — the application plan
+# Plan: applying 0.6.0 to the triage fleet — the application plan, v2
 
-Status: draft for discussion, 2026-10-29. It applies the lane built in
-[PLAN_0.6.0.md](PLAN_0.6.0.md) (the engineering plan) to the homelab's triage fleet (signal-fleet, Fleet 2) on
-Orrery. **Two things are measured:**
-1. **the triage decisions**: the model step, billed;
-2. **the de-duplication**: the deterministic filing step, $0.
+**Status.** v2, 2026-10-29, after the second independent review (advisor, Fable 5), which said: "not ready to run
+as written". Every finding is folded in, tagged R2-…; v1 is in git history (`777b6cac`).
 
-Every number below was measured on 2026-10-29. Sources: the fleet's ledgers and stores, read by homelab;
-Langfuse's database (ClickHouse) on the mini; OpenRouter's public price list; the gateway's model list
-(`infra/litellm/config.yaml`). Section 6 lists what is still to be decided.
+**What it covers.** It applies the lane from [PLAN_0.6.0.md](PLAN_0.6.0.md) (the engineering plan) to the
+homelab's triage fleet (signal-fleet, Fleet 2) on Orrery. **Two things are measured**:
+1. the triage decisions: the model step, billed;
+2. the de-duplication: the deterministic filing step, $0.
+
+**Where the numbers come from.** Every number was measured on 2026-10-29, and the scripts are named in §7:
+- the fleet's ledgers and stores, read by homelab;
+- Langfuse's database on the mini;
+- OpenRouter's price list;
+- the gateway's model list (`infra/litellm/config.yaml`).
+
+§6 lists what is still to be decided.
 
 ## 1. The data we have
 
 ### 1.1 The decisions (dataset `orrery_triage_v1`)
 
-- **236 Orrery triage decisions**, 2026-07-25 → 2026-10-29: one per occurrence; recurrence rows are left out.
+- **236 Orrery triage decisions**, 2026-07-25 → 2026-10-29, one per occurrence.
   - By month: Jul 47, Aug 71, Sep 63, Oct 55.
-  - The fleet decided: dismiss 122, escalate 52, file 50, cleanup 12.
-  - All on one prompt (`mvp-1`, sha `c2ece738`). Models: `fleet-triage-pro` 228, `deepseek-v4-flash` 8.
-- Each item holds the signal and a **probe table** (every probe the model can ask for, answered as of the
-  decision's time), plus the fleet's decision, the outcome, and provenance.
-- Built by homelab from every store, as of each decision's time, and scrubbed by the fleet's `scrub.py`. 0
-  secrets: gitleaks reports "no leaks found". sha256 `cacaf75f…`, 1.39 MB.
+  - The fleet decided: dismiss 122, escalate 52 (22%), file 50, cleanup 12.
+  - One prompt throughout (`c2ece738`). Models: `fleet-triage-pro` 228, `deepseek-v4-flash` 8.
+- **172 distinct fingerprints.** 113 items share a fingerprint with another item, across 49 fingerprints
+  (R2-H). The independent version is `orrery_triage_v1_fp`: one item per fingerprint, the newest
+  (`dataset-from-capture --one-per fingerprint`), **172 items**.
+- **Each item** holds the signal, a probe table answered as of the decision's time, the fleet's decision, the
+  outcome, and provenance. The items were scrubbed by the fleet's `scrub.py`, and gitleaks found no leaks.
 
-| evidence level | items | period | what the probe table is |
+| evidence level | items | period | the probe table |
 |---|---|---|---|
-| exact | 33 | since 10-15 | the model's own probe answers, verbatim from Langfuse, plus the rest of the menu rebuilt |
-| full-rebuild | 6 | 10-08 → 10-15 | every store covers the decision |
-| no-traces | 17 | 09-30 → 10-07 | logs and metrics; no traces |
-| no-logs | 89 | 08-14 → 09-29 | metrics; no logs (VictoriaLogs keeps 30 days) |
-| ledger-only | 91 | 07-25 → 08-13 | the signal only. For 102 items in all, the GlitchTip issue no longer exists (projects recreated) |
+| exact | 33 | since 10-15 | the model's own answers, verbatim; the rest of the menu rebuilt |
+| full-rebuild | 6 | 10-08 → 10-15 | every store covers it |
+| no-traces | 17 | 09-30 → 10-07 | logs and metrics |
+| no-logs | 89 | 08-14 → 09-29 | metrics only |
+| ledger-only | 91 | 07-25 → 08-13 | the signal only (102 items have no GlitchTip issue left) |
 
-- Probe entries in all: 59 verbatim, 508 rebuilt, 743 unavailable, 236 static.
+**Where the data comes from (R2-E).** Homelab's build script read the stores (GlitchTip's and Langfuse's
+databases, VictoriaLogs, VictoriaMetrics, VictoriaTraces). It is not in any repository yet, so committing it in
+the fleet's repo and pinning its commit is a prerequisite (§5).
 
 ### 1.2 What a decision costs and takes today
 
-Measured from Langfuse, on the 140 production decisions since 2026-10-15, all on `deepseek-v4-pro`:
+From Langfuse, 140 production decisions since 2026-10-15, all on `deepseek-v4-pro`:
 
-| measure | mean | p95 |
-|---|---|---|
-| model turns per decision | 3.04 | 4 (max) |
-| input tokens per decision | 4,524 (2,018 uncached + 2,506 cache read) | — |
-| output tokens per decision | 2,020 | 3,745 |
-| cost per decision (billed) | $0.0070 | $0.0143 |
-| latency per decision | 34.3 s | 62.5 s |
+- **Turns:** 3.04 (max 4).
+- **Tokens:** 4,524 input (2,018 uncached + 2,506 cache read); 2,020 output (p95 3,745).
+- **Billed:** $0.0070 a decision (p95 $0.0143).
+- **Latency:** 34.3 s (p95 62.5 s).
 
 ### 1.3 The references
 
-**Hand labels.** 9 items carry a label carried over from the fleet's frozen fixtures, matched by fingerprint:
-- 5 cleanup and 4 dismiss;
-- no `file`, so they cannot measure a false dismissal.
+#### Hand labels
 
-**Outcome labels**, from what happened afterwards: counted on the real data with the mapping in §3.2.
+9 items: 5 cleanup and 4 dismiss, carried onto occurrences by fingerprint. There is no `file` label among them.
 
-| the fleet decided | outcome says `file` | outcome says `dismiss` | no label | total |
+#### Outcome labels, after review 2 (R2 Blocker 1)
+
+What v1 got wrong:
+- **45** of its 87 `file` labels rested on the fleet's **own escalation issues** (label
+  `triage-fleet/escalated`): an escalation the fleet opened and a person closed says that a person acted, not
+  that filing was right.
+- **8** rested on issues that **pre-dated** the decision.
+- **6** were filed **39–49 days later**, which contradicts the 14-day rule.
+- **60** were closed as "completed" in **three bulk sessions of about an hour each** (2026-08-27 23h: 13 issues;
+  10-01 06h: 11; 10-20 07h: 5). Completed is GitHub's default close reason.
+- Some reopens can be the fleet's own (`filing.py:736`), and the data records **no actor**. P1's github importer
+  now records one.
+
+The v2 mapping, first match wins:
+1. the fleet's escalation issue → no label;
+2. an issue that pre-dates the decision → no label;
+3. an issue filed within 14 days and closed as not planned → `not-file`;
+4. an issue filed within 14 days and closed as completed or duplicate, or reopened → `file`;
+5. a later `file` decision within 14 days → `file`;
+6. a file decision with no issue mapped → no label;
+7. not seen again, and at least 14 days old → `dismiss`;
+8. anything else → no label.
+
+| the fleet decided | `file` | `dismiss` | no label | total |
 |---|---|---|---|---|
-| dismiss | **21** | 85 | 16 | 122 |
-| escalate | 33 | 12 | 7 | 52 |
-| file | 30 | 0 | 20 | 50 |
-| cleanup | 3 | 3 | 6 | 12 |
-| **all** | **87** | **100** | **49** | 236 |
+| dismiss | **3** | 85 | 34 | 122 |
+| escalate | 0 | 12 | 40 | 52 |
+| file | 24 | 0 | 26 | 50 |
+| cleanup | 0 | 3 | 9 | 12 |
+| **all** | **27** | **100** | **109** | 236 |
 
-- **The 21 in bold are production's own false dismissals** by this measure: the fleet dismissed a signal whose
-  fingerprint was filed later. They are the most informative items: does a new arm catch what production
-  missed?
-- Why items have no label:
-  - 24 are younger than 14 days;
-  - 19 were seen again but never filed;
-  - 2 issues are still open with no close;
-  - 20 are file decisions with no issue mapped (a comment on an existing issue, or a rollup).
-- Labels by evidence level:
+Why 109 items carry no label:
+
+| reason | items |
+|---|---|
+| the issue is the fleet's own escalation | 45 |
+| seen again but not filed, or too young | 30 |
+| a file decision with no issue mapped | 18 |
+| the issue pre-dates the decision | 8 |
+| filed more than 14 days later | 6 |
+| the issue is still open | 2 |
+
+Labels by evidence level:
 
 | evidence level | file | dismiss | no label |
 |---|---|---|---|
-| exact | 6 | 0 | 27 |
+| exact | 2 | 0 | 31 |
 | full-rebuild | 0 | 5 | 1 |
-| no-traces | 3 | 11 | 3 |
-| no-logs | 50 | 31 | 8 |
-| ledger-only | 28 | 57 | 6 |
+| no-traces | 1 | 9 | 7 |
+| no-logs | 14 | 29 | 46 |
+| ledger-only | 10 | 57 | 24 |
 
-  **The most faithful items are the least labelled**: they are recent, so their outcome is not known yet.
+**What this means:**
+- **27 `file` labels, on 23 fingerprints**, of which **17 are on issues closed in a bulk hour.** The outcomes
+  alone can barely measure a false dismissal: production has 3 by this measure.
+- **85 of the 100 `dismiss` labels are on items that production itself dismissed.** "Nothing happened" echoes
+  production's choice back (the circularity).
+- The 33 exact items have **2** labels.
+- A 30-day window instead of 14 gives 85 `dismiss` labels, and still 27 `file`.
 
-### 1.4 The de-duplication data (dataset `fleet_dedup_v1`)
+#### The consequence
 
-- 100 scrubbed GlitchTip signals: the fleet's committed `reference-dedup/corpus.json`.
-- Its own eval measures the collapse ratio through pure functions (`normalized_key`, `low_signal`,
-  `operational_class`, `_is_test_signal`). No model; deterministic.
+**The outcome reference cannot decide v1.** It is kept as a second-named reference, for reading. The deciding
+reference is a person's, §3.
+
+### 1.4 The de-duplication data (`fleet_dedup_v1`)
+
+100 scrubbed signals, from the fleet's committed `reference-dedup/corpus.json`. The fleet's pure functions run
+over them; no model, deterministic.
 
 ## 2. What we measure, and how a run works
 
-1. **One item = one decision.** The adapter calls the fleet's own `investigate(signal, probe_table)`. The model
-   asks for probes and gets the table's answers; then it decides. The fleet's deterministic gates run as in
-   production.
-2. **Per item:**
-   - the disposition, `correct`, `false_dismiss` (the reference says file, the arm dismissed), `silent_drop`,
-     `escalated`;
-   - `table_miss`: counted, not scored;
-   - cost and latency.
-3. **Arms differ only in the model.** Same prompt (`c2ece738`), same gates, same tables. A prompt change later is
-   a new arm the same way.
-4. **Fair comparisons are arm against arm on the same items.** An arm against production's recorded decision
-   is not fair: production saw live evidence and the arm sees the rebuilt table. Production's recorded decision
-   is kept as an item field, for reading.
-5. **Reported on all items, and on the exact ones** (`--where evidence_level:exact`). The difference shows what
-   rebuilt evidence does.
+1. **The replay.** One item is one decision. The adapter calls `investigate(signal, probe_table)`; the model asks
+   for probes and gets the table's answers; the fleet's gates run as in production.
+2. **Per item:** the disposition, `correct`, `false_dismiss`, `silent_drop`, `escalated`, `table_miss` (counted,
+   not scored), cost and latency.
+3. **The arms differ only in the model.** Same prompt, gates and tables.
+4. **The fair comparison is arm against arm on the same items.** Against production's recorded decision it is
+   not fair: production saw live evidence. Production's recorded decision is kept as a field, for reading.
+5. **What v1 measures (R2-G).** 90% of the outcomes' `file` labels, and most items, have no logs or only the
+   signal. So v1 measures **judgement on thin evidence**, not production's own question. The first measurement
+   of that question is the monthly exact versions from the fleet's live per-decision capture (§4.4). Results are
+   always reported per evidence level.
+6. **Dependence (R2-H).** The deciding comparison runs on items with one per fingerprint, because the paired test
+   treats items as independent.
 
-## 3. References and the goal (to discuss: §6.1–6.3)
+## 3. References and the goal
 
 ### 3.1 The proposal
 
-- **Deciding**: the outcome reference.
-- **Primary measure**: `false_dismiss`, lower, limit 0. It is measured on the 87 `file` labels, which come from
-  issues people fixed, de-duplicated or reopened.
-- **Second limit**: `escalated` at most 0.05, the fleet's own escalate bar (EVAL.md).
-- **Shown beside them**: `correct` (all 187 labels), cost, latency.
-- **Strategy `frugal`**: the cheapest arm that meets both limits.
-- **Not deciding**: the hand-label reference, shown for reading.
+**The deciding reference.** It is `gold/orrery_triage_v1`: **the owner's labels on a chosen set** (§6.1).
+`experiment-run` scores against it directly (R2-A).
 
-### 3.2 The outcome mapping, as counted above
+**The goal** (R2 Blocker 2):
+- primary measure `false_dismiss`, lower, **no limit in v1**;
+- `escalated`, lower, shown and **not limited in v1**;
+- cost and latency shown.
 
-1. A filed issue closed as completed, as a duplicate, or reopened → `file`.
-2. Closed as not planned → `not-file`. No such issue exists yet, so this rule labels nothing in v1.
-3. No mapped issue, and the fingerprint filed later → `file`.
-4. A file decision with no mapped issue → no label.
-5. Not seen again within 14 days → `dismiss`.
-6. Anything else → no label.
+The limits from the fleet's EVAL.md (false-dismiss 0, escalate at most 5%) were met on 27 curated fixtures.
+Production on this stream escalates 22%, so every arm would fail them. In v2, the limits are set from the
+baseline's own numbers on these items, for example "no worse than production".
+
+**Second-named references, read only:**
+- `orrery_triage_v1_outcomes` (§1.3);
+- `orrery_triage_v1_hand` (the 9 fixture labels).
+
+Both are read through `rescore --reference-id`.
+
+### 3.2 The owner's labelling set (to confirm: §6.1)
+
+About 60 items, one per fingerprint, chosen so that the hard cases are in:
+
+| group | items | why |
+|---|---|---|
+| contested dismissals | 21 | production dismissed them, and the fingerprint came back as an escalation or a filing |
+| exact items | 33 | the only items where the replay sees what the model saw |
+| escalations | about 6 | so that `escalated` is judged and not only counted |
+
+The groups overlap, so the total is about 60. The sheet (P8's `label_sheet.py`) shows each item's signal, its
+probe answers in short, production's decision and the outcome; the owner writes `file`, `dismiss`, `escalate` or
+`cleanup`.
+
+**About 1–2 minutes an item, so 1–2 hours.** It is the fleet's own EVAL.md step: "operator labels the ground
+truth".
 
 ## 4. The arms, the runs, and the cost
 
 ### 4.1 The arms
 
-All of them are aliases the fleet's gateway already exposes: no new provider, no new key type.
+Gateway aliases, all verified to exist and to route as stated.
 
-| arm | gateway alias → model | list price, in / out per M tokens | cost per decision (list, with cache) |
-|---|---|---|---|
-| **baseline** | `fleet-triage-pro` → deepseek-v4-pro (production) | $1.600 / $3.200 | $0.01003 (billed today: $0.0070) |
-| A | `fleet-triage-flash` → deepseek-v4-flash | $0.091 / $0.182 | $0.00060 |
-| B | `homelab-kimi` → kimi-k2.6 | $0.650 / $3.410 | $0.00858 |
-| C | `homelab-glm` → glm-5.2 | $0.006 / $7.000 | $0.01416 |
-| D | `eval-claude-sonnet` → claude-sonnet-5 | $2.000 / $10.000 | $0.02474 |
-| E | `eval-claude-haiku` → claude-haiku-4.5 | $1.000 / $5.000 | $0.01237 |
-| F | `homelab-qwen37-flash` → qwen3.7-flash | $0.030 / $0.130 | $0.00034 |
-| G | `eval-qwen-flash` → qwen3.8-flash | $0.150 / $0.470 | $0.00129 |
-
-How the cost per decision is computed:
-- token counts from production (§1.2): 2,018 uncached input, 2,506 cached, 2,020 output;
-- each model's list price on OpenRouter, 2026-10-29.
-
-How far it can be off:
-- output length varies by model. A model that writes twice as much costs up to about 2× on output; at p95
-  output (3,745 tokens) the costs are about 1.7×;
-- production is billed 30% below list today, so list prices are the conservative side.
-
-### 4.2 The runs, in two stages
-
-The harness repeats an arm with `--repeat`. Each arm runs as its own process (`experiment-run` is sequential),
-so arms run side by side.
-
-| stage | what | calls | cost (list) | wall time |
+| arm | alias → model | billed key today | list in / out per M | per decision |
 |---|---|---|---|---|
-| 1. Screen | 8 arms × 236 items × 1 | 1,888 | **$17.02** | about 2.5 h (slower models longer) |
-| 2. Repeat finalists | baseline + 3 best × 236 × 2 more (k = 3 in all) | 1,888 | $7–29, by which arms | about 4.5 h |
-| **Total** | | 3,776 | **about $24–46** | about 7 h |
+| **baseline** | `fleet-triage-pro` → deepseek-v4-pro | fleet | $1.600 / $3.200 | $0.01370 |
+| A | `fleet-triage-flash` → deepseek-v4-flash | fleet | $0.091 / $0.182 | $0.00078 |
+| B | `homelab-kimi` → kimi-k2.6 | fleet | $0.650 / $3.410 | $0.00983 |
+| C | `homelab-glm` → glm-5.2 | fleet | $0.006 / $7.000 | $0.01417 |
+| D | `eval-claude-sonnet` → claude-sonnet-5 | **podcast** | $2.000 / $10.000 | $0.02925 |
+| E | `eval-claude-haiku` → claude-haiku-4.5 | **podcast** | $1.000 / $5.000 | $0.01462 |
+| F | `homelab-qwen37-flash` → qwen3.7-flash | fleet | $0.030 / $0.130 | $0.00040 |
+| G | `eval-qwen-flash` → qwen3.8-flash | **podcast** | $0.150 / $0.470 | $0.00163 |
 
-- Stage 2's range runs from the cheapest finalists (flash, kimi, qwen) to the dearest (sonnet, glm, haiku).
-- **For comparison, every arm at k = 3: $51.06.**
-- **A cap per arm** on the minted key, at 1.5× its estimate. A run that hits it stops; it never overspends.
-- `--dry-run` prices each arm first, with the gateway's prices.
+**How the per-decision figure is computed:** 4,524 input tokens at the **uncached** price plus 2,020 output
+tokens, which is how the adapter computes cost (R2-C). Production is billed below this ($0.0070 against $0.0137
+for the baseline), so these figures are an upper bound on price. Output length varies by model: at p95 output,
+costs are about 1.7×.
 
-### 4.3 De-duplication runs
+**Arms D, E and G bill the podcast project's OpenRouter key** (R2-B). They need aliases on the fleet's key, or
+on an eval key, first: a homelab-repo change (§5).
 
-100 signals × 2 arms (`alert_key_dedup_enabled` on and off). The reference is the current code's output,
-frozen as silver (a regression guard). $0, seconds.
+### 4.2 The runs
 
-### 4.4 Continuous use, after v1
+Each arm runs as its own `experiment-run` process, so the arms run side by side.
 
-The fleet now keeps each decision's probe answers as it decides; homelab's confirmation of the rollout is
-pending. So every new decision is an **exact** item.
+| step | what | calls | cost | wall time |
+|---|---|---|---|---|
+| 0. Smoke | 8 arms × 2 items (`orrery_triage_smoke`, a 2-item version) | 16 | $0.17 | minutes |
+| 1. Screen | 8 arms × 236 × 1 | 1,888 | **$19.91** | about 2.3 h (4.1 h at p95) |
+| 2. Finalists | baseline + 3 best × 236 × **2 fresh repeats** | 1,888 | $7.79–$33.86 | about 4.5 h |
+| **Total** | | 3,792 | **$27.87–$53.94** | about 7 h |
+
+- **The smoke step** catches a provider that rejects the fleet's call shape (`response_format: json_object`)
+  before any arm burns its retries on 236 items (R2-C).
+- **The winner's curse (R2-H).** The finalists are picked on stage 1, and **decided on stage 2's two fresh
+  repeats only**; stage 1 is never pooled into the decision.
+- Every arm at k = 3 would cost $59.74.
+- The runs cover all 236 items: the outcome rescore and the escalate rate read all of them. The decision reads
+  the labelled, one-per-fingerprint set.
+- **The cap**, two layers:
+  - one LiteLLM virtual key per arm, with `max_budget` at 1.5× its estimate;
+  - `EVAL_MAX_COST_USD` in the harness, per run.
+
+  `--dry-run` prices each arm from the config's `usd_per_mtok_in/out`, which are set from the table above
+  (r2-m2).
+- **Power, honestly (R2-H).** On about 60 labelled independent items, only large differences separate (on the
+  order of 15 points of `false_dismiss`). Arms within about 5 points will not separate, and the cheapest of the
+  tied wins. That is the intent of a frugal goal, and the page says so.
+
+### 4.3 De-duplication
+
+One arm, the fleet's current code, as a regression guard against a frozen silver reference (R2-D). It runs on the
+100 signals, costs $0 and takes seconds. When the fleet changes its dedup functions, the previous commit becomes
+the baseline arm.
+
+### 4.4 Continuous use
+
+**Every decision is now captured as the model saw it** (live since 2026-10-29 22:13 UTC), so every new decision
+is an exact item.
 
 Each month:
-- capture the new decisions (`--since-capture`) as the next version: about 55–70 Orrery decisions;
-- run the baseline and the current best arm at k = 3: about 70 × 3 × 2 × $0.012 ≈ **$5 a month**;
-- read the trend.
+- capture the new decisions (`--since-capture`), about 55–70 Orrery decisions;
+- run the baseline and the current best arm at k = 3: about $5 a month (baseline + kimi). The dearest pair
+  (baseline + sonnet) costs about $9.
 
-Adding the fleet's other projects (podcast, homelab) multiplies the item count. That is the step if Orrery's
-labels stay thin.
+**When a month's references exist (r2-m6).** A month's outcomes are complete only 14 days after it ends, so the
+month's outcome reference is made then. The owner labels a few hard cases from the month, or none.
 
-## 5. The order of work
+Adding podcast and homelab decisions multiplies the items, if Orrery's stay thin.
 
-1. The engineering plan's P1–P7 (no spend).
+## 5. The order of work, with the prerequisites
+
+1. The engineering plan's P1–P7 (no spend), and P4's fixture proof of the reference route.
 2. P8 and P9 with a stand-in model (no spend).
-3. Capture, dataset, both references; all committed before any billed call.
-4. Dedup runs ($0).
-5. Stage 1 ($17), read; stage 2 (finalists), read.
-6. The goal decided on the outcome reference.
-7. The example's README with the numbers; `experiments.json` registration.
-8. The first monthly version from the fleet's own captures, once some exist.
+3. **Prerequisites in the homelab repository** (R2-B, R2-C, R2-E), each with the owner's go there:
+   - commit and pin the build script;
+   - add aliases for D, E and G on the fleet's key, or on an eval key;
+   - mint one capped virtual key per arm, tagged `evh-eval`;
+   - exclude that tag in the fleet's own cost and ClickHouse measurements.
+4. Capture; then `orrery_triage_v1` (236), `orrery_triage_v1_fp` (172) and `orrery_triage_smoke` (2).
+5. **The owner labels the set (§3.2)**, which becomes `gold/orrery_triage_v1`. Then the outcome reference and the
+   hand reference, under their second names.
+6. Commit everything before any billed call (M3).
+7. Dedup ($0).
+8. Smoke ($0.17), stage 1 ($19.91), stage 2 (finalists), read.
+9. Then:
+   - the README with the numbers, by evidence level;
+   - `experiments.json`;
+   - the first monthly exact version once a month of captures exists.
 
 ## 6. To discuss before any billed run
 
-### 6.1 Which reference decides
+1. **The deciding reference.** Do you label about 60 items (§3.2, 1–2 h)? This is recommended by review 2, and the
+   recount backs it: 27 outcome `file` labels, 17 of them bulk-closed.
+2. **Escalations and cleanups.**
+   - In the v2 mapping no outcome labels an escalation `file`: its issue is the fleet's own.
+   - In your labelling set, a few escalations are judged by you.
+   - Keep that?
+3. **The window.** 14 days gives 100 `dismiss` labels; 30 days gives 85. These are for reading only now, since
+   they do not decide.
+4. **The arms and the budget.**
+   - 8 arms, $27.87–$53.94 in all, about 7 h, capped per arm.
+   - D, E and G need aliases off the podcast key.
+   - Drop any? The DGX's local Qwen3-30B could be added at $0, with a GPU mode switch.
+5. **The limits.** None in v1, and from production's own numbers in v2. Agreed?
+6. **What v1 measures.** Mostly judgement on thin evidence. The monthly exact versions answer production's
+   question. Is v1 worth running now, or only once a month of exact captures exists (about 60 items by the end
+   of November)?
 
-The outcome reference has 187 labels, but it is partly circular:
-- 85 of its 100 `dismiss` labels are on items production itself dismissed. "Nothing happened afterwards"
-  echoes production's own choice: an arm that dismisses as production did scores well on them;
-- the 87 `file` labels are sounder, since people fixed, de-duplicated or reopened those issues.
+## 7. How these numbers were made
 
-Hence the proposal: `false_dismiss` decides, `correct` is shown. Options:
-- **(a) Outcomes only**, as proposed.
-- **(b) The owner labels a sample**: EVAL.md's "operator labels the ground truth, ~20–30 cases". For example 60
-  items:
-  - all 21 of production's false dismissals;
-  - the 33 exact items;
-  - a few escalations.
-
-  About 1–2 h of the owner's time. It gives a person's gold where the outcomes are weakest.
-- **(c) A silver judge**: a strong model labels the items. Fast, but it brings a model's bias into the
-  reference.
-
-### 6.2 Escalations and cleanups
-
-They are labelled by their fingerprint's fate, like the rest: 33 of 52 escalations had their fingerprint filed
-later. So an arm that escalates is scored on them too. Keep that, or leave escalations and cleanups unlabelled
-("a person's call")?
-
-### 6.3 The 14-day rule
-
-A dismissal is right if the fingerprint is not seen again within 14 days. 14 is a guess. A longer window labels
-fewer items but makes each label more certain.
-
-### 6.4 The budget and the arms
-
-The proposal:
-- stage 1 on all 8 arms ($17);
-- stage 2 on the baseline and the 3 best ($7–29);
-- a cap of 1.5× each arm's estimate.
-
-Questions: drop or add an arm? The DGX's local Qwen3-30B is possible at $0, but it needs the GPU mode switched
-to it.
-
-### 6.5 Rebuilt evidence
-
-Only 33 items are exact; 91 are ledger-only, where the model sees only the signal. Results on those measure
-judgement with little evidence, which is a different question from production's. They are reported separately,
-by evidence level, never mixed silently.
+The scripts are in the session scratchpad. They are reproduced into `examples/triage-fleet/` when P8 lands:
+- `label_counts_v2.py`: the label tables, the bulk hours and the fingerprints;
+- `lf_tokens.sh` and `lf_cache.sh`: tokens, turns, cost and latency, from ClickHouse;
+- `or_prices.py`: the prices;
+- the inline cost computation above;
+- review 2's own recounts, in its `review2/` scripts.

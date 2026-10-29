@@ -1,61 +1,71 @@
-# Plan: 0.6.0, datasets from production (RFC-019) — the engineering plan
+# Plan: 0.6.0, datasets from production (RFC-019) — the engineering plan, v2
 
-Status: revised after an independent review (advisor, 2026-10-29: "not ready as written; ready after the
-fixes"); every mechanical finding is folded in, tagged with its review id (B1–B3 blockers, M1–M11 major,
-m1–m12 minor). **What we build.** How it is applied to the triage fleet (the data, the references, the arms,
-the runs, the cost, and the labelling question) is the separate application plan,
-[PLAN_0.6.0_FLEET.md](PLAN_0.6.0_FLEET.md). Branch `060` (PR #30 open, green). Governing design:
-[RFC-019](../../docs/rfc/RFC-019-datasets-from-production.md), second draft (`18bc9de2`), updated where this
-plan corrects it (P4's mapping and caveat, P8's references).
+## Status
+
+- **v2**, 2026-10-29: after two independent reviews (advisor, Fable 5).
+  - Review 1: B1–B3, M1–M11, m1–m12.
+  - Review 2: "ready to build after three changes": R2-A to R2-K, r2-m1 to r2-m8.
+  - Every finding is folded in, tagged with its id.
+- v1 is in git history: `777b6cac`.
+- **What we build.** How it is applied to the triage fleet is the application plan,
+  [PLAN_0.6.0_FLEET.md](PLAN_0.6.0_FLEET.md): the data, the references, the arms, the runs, the cost.
+- Branch: `060` (PR #30 open, green).
+- Design: [RFC-019](../../docs/rfc/RFC-019-datasets-from-production.md), second draft. It is brought in line
+  with this plan in P10, and every divergence is listed there.
 
 ## 1. Goal and what "done" means
 
-0.6.0 adds a **capture lane** beside the method: an importer reads a production system, `evh capture` keeps
-the records, `evh dataset-from-capture` makes a dataset version, `evh reference-from-outcomes` takes a reference
-from what happened afterwards, `evh dataset-split` makes dev and heldout. The lane ends in ordinary dataset and
-reference files, which the method (materialize, run, rescore, compare, goals, catalog) reads as it reads any
-other.
+0.6.0 adds a **capture lane** beside the method:
+
+- an importer reads a production system;
+- `evh capture` keeps the records;
+- `evh dataset-from-capture` makes a dataset version;
+- `evh reference-from-outcomes` takes a reference from what happened afterwards;
+- `evh dataset-split` makes dev and heldout.
+
+The lane ends in ordinary dataset and reference files. The method (materialize, run, rescore, compare, goals,
+catalog) reads them as it reads any other.
 
 Done (engineering) when:
 
 1. Every command of the lane works, with its tests, on fixtures, offline.
 2. The triage example's code (P8) and the de-duplication example's code (P9) run on the delivered data with a
-   stand-in model, with no billed call; the billed runs are the application plan's.
-3. `text: hidden` is enforced on every public surface, proved by a marker test.
-4. Nothing existing changes behaviour for data without the new optional fields. The whole current suite
-   (`make ci`, `make browser-check`, `make commands-check`, `make quality`) stays green unchanged, apart from
-   the new commands' own required cases.
-5. PR CI stays within the 0.6.0 goal (<= 8 min) and the release follows RELEASING.
+   stand-in model, with no billed call. The billed runs belong to the application plan.
+3. **The reference route is proven on a fixture catalog** (R2-A): the goal page decides on the reference the
+   goal names.
+4. `text: hidden` is enforced on every public surface, proved by a marker test.
+5. Nothing existing changes behaviour for data without the new optional fields. The whole current suite (`make
+   ci`, `make browser-check`, `make commands-check`, `make quality`) stays green. The only exceptions are the
+   new commands' own required cases and the one render test that P6 updates (R2-J).
+6. PR CI stays within the 0.6.0 goal (<= 8 min), and the release follows RELEASING.
 
 ## 2. Already done on 060
 
-- Part 1, in PR #30, CI green in 7 min 6 s: SEO, share cards, MCP in phone menus, Node 24 actions, MCP
-  observability, CI speed-up.
-- `1a6d2341`: `evh mcp --public` sees only public fields in `inspect` (the 0.5.0 hole). Tested and
-  mutation-checked; not pushed.
-- `18bc9de2`: RFC-019 second draft; strict docs build green. Not pushed.
-- The data, in the session scratchpad:
-  - Orrery's 236 decisions, built by homelab from every store as of each decision's time and scrubbed by the
-    fleet's `scrub.py`: `orrery-triage-items.jsonl`, sha256 `cacaf75f…`;
-  - per evidence level: exact 33, full-rebuild 6, no-traces 17, no-logs 89, ledger-only 91;
-  - the outcomes snapshot.
-- The fleet's per-decision probe capture: the owner said yes, and homelab was asked to roll it out. Its
-  confirmation is pending.
-- Drafted, uncommitted: `harness/scripts/_importers.py` and `harness/scripts/importers/*`. P1 below fixes them.
+- **Part 1**, in PR #30: CI green in 7 min 6 s.
+- **`1a6d2341`**: `evh mcp --public` sees only public fields in `inspect` (the 0.5.0 hole). Not pushed.
+- **`18bc9de2`**: RFC-019 second draft. **`777b6cac`**: plans v1. Neither pushed.
+- **Drafted, uncommitted**: `_importers.py` and `importers/*`. P1 fixes them.
+- **The fleet's per-decision probe capture is live** (homelab, 2026-10-29: deployed with the owner's go; first
+  file `20261029T221320Z__glitchtip_DELIVERY-4.json`).
 
 ## 3. Rules the plan keeps
 
-- **A lane, not a rewrite.** New commands. Existing files gain optional fields only, outside identity: a
-  dataset's `labels`, `made_from` and `text`; a reference manifest's `from_outcomes`. No existing command changes
-  its arguments or its output for data without them.
+- **A lane, not a rewrite.** New commands. Existing files gain optional fields only, outside identity:
+  - a dataset's `tags`, `made_from` and `text`;
+  - a reference manifest's `from_outcomes`.
+
+  No existing command changes its arguments or its output for data without them.
 - **Stateless.** Commands read and write the project's files. No server, no schedule.
-- **Core stays generic.** The importer mechanism is core. The four built-in importers live in
-  `evaluation_harness/importers/`, loaded only by `--importer NAME`. Fleet specifics live in
-  `examples/triage-fleet/`, including the fleet's own importer (B1).
-- **Everything works by default.** The built-in importers need only the standard library and `gh`; no new
-  dependency.
-- **Vocabulary kept.** New words: capture, importer, record, outcome.
-- **CLI parity.** Every new view has an `evh` command; the MCP read tools gain it.
+- **Core stays generic.**
+  - The importer mechanism is core.
+  - The built-in importers live in `evaluation_harness/importers/`, loaded only by `--importer NAME`.
+  - Fleet specifics live in the example.
+  - Reading the fleet's production stores is the fleet's own script, not the lane (R2-E).
+- **Everything works by default.** The standard library and `gh` only.
+- **Vocabulary.** The new words are capture, importer, record and outcome. A dataset's own descriptors reuse the
+  existing word **tags** (R2-K): the dataset-level form of `items[].tags` and `--tag`. This avoids `labels`,
+  which already means a reference's answers and GitHub's labels.
+- **CLI parity.** Every new view has an `evh` command, and the MCP read tools gain it.
 
 ## 4. Phases
 
@@ -64,281 +74,361 @@ phases it depends on are committed.
 
 ### P1. Importers (core) — depends on nothing
 
-- `_importers.py`:
-  - resolve `--importer`:
-    - a built-in name, through `importlib.import_module("evaluation_harness.importers." + name)` (m9);
-    - `<data>/importers/<name>.py:Importer`, the name checked like a dataset id so `../x` cannot leave
-      `data/` (m5);
-    - `path.py:Class`;
-  - the record shape and its `problems()`. Ids: `[A-Za-z0-9][A-Za-z0-9._:@+=-]{0,199}` (m5). Ids containing
-    `:` are valid file names on Linux and macOS; Windows is not supported for captures, and the docs say so;
-  - `normalise()`;
-  - **`record_sha256` over the canonical JSON of the whole normalised record** (body, fields, created_at,
-    source, labels, outcome), so an edited outcome is caught (M2);
-  - `body_sha256` separately, for the item's bytes.
-- Built-in importers, with the review's fixes:
-  - `jsonl` and `tsv`:
-    - the `_matches` precedence bug fixed, so a `None` cell now matches `where: {col: ""}` (M1);
-    - rows dropped for an unparsable time are counted and printed (m2);
-  - `github`:
-    - stops paging once `createdAt >= until`, since issues come in ascending creation order (m7);
-    - the GraphQL array variables (`key[]=value`) and `ClosedEvent.duplicateOf` were verified live by the
-      review;
-  - `langfuse`:
-    - refuses a host that is not `http(s)://` (closes the `file:` scheme; `# noqa: S310` after the check) (M1);
-    - `source.url` is the path only (`/project/<p>/traces/<id>`), so no internal host name is committed (m6);
-  - docstrings on every class and function, to the 100% interrogate floor (M1).
-- `evh importer-check NAME --query JSON [--limit N]`. It checks that:
-  - ids are unique and well-formed;
-  - every record is well-formed;
-  - `created_at` parses;
-  - both hashes are stable over two reads.
+**`_importers.py`:**
+- `resolve --importer`:
+  - built-ins through `importlib.import_module("evaluation_harness.importers." + name)` (m9);
+  - `<data>/importers/<name>.py:Importer`, the name checked like a dataset id (m5);
+  - `path.py:Class`.
+- Ids: `[A-Za-z0-9][A-Za-z0-9._:@+=-]{0,199}` (m5).
+- `normalise()`.
+- **`record_sha256` over the canonical JSON of the whole normalised record**, outcome included (M2).
+  `body_sha256` is kept apart, for the item's bytes.
+- Docstrings everywhere, to the 100% floor (M1).
 
-  PASS/FAIL lines; exit 1 on a failure.
-- Packaging: `evaluation_harness.importers` added to `pyproject.toml`.
-- Tests (`tests/test_importers.py`):
-  - `jsonl` and `tsv` on fixtures: mapping, where (including an empty cell), window, the dropped-row count;
-  - `github` against a stand-in `gh` (`EVH_GH`) replaying a recorded GraphQL answer: pagination, a duplicate,
-    a reopen, the early stop;
-  - `langfuse` against a local HTTP stand-in: a non-http host refused, the path-only url;
-  - `importer-check` red on a duplicate id, a bad id, an over-long id, a bad time, an unstable hash, and an
-    importer name that escapes `data/`.
+**`jsonl` and `tsv`:**
+- the `_matches` precedence bug fixed (M1, r2-m8);
+- dropped rows counted and printed (m2).
 
-  No network in CI.
-- A live check, once, read-only: `importer-check github` on chipi/orrery `triage-fleet/filed`, and `langfuse` on
-  the agents project, each reported with its output. This also verifies the Langfuse parameter names.
+**`github`:**
+- stops paging at `until` (m7);
+- **records `actor { login }` on every close and reopen event** (R2-I), so a mapping can tell a person from a
+  bot. Each outcome lists `close_events: [{at, reason, actor}]` and `reopen_events: [{at, actor}]`;
+- the array variables and `duplicateOf` were verified live in review 1.
+
+**`langfuse`:**
+- refuses a non-`http(s)` host, then `# noqa: S310` (M1);
+- writes `source.url` as a path only (m6).
+
+**`evh importer-check NAME --query JSON [--limit N]`:**
+- ids unique and well-formed, records well-formed, `created_at` parsed;
+- both hashes stable over two reads;
+- PASS/FAIL lines, exit 1 on a failure.
+
+**Packaging:** `evaluation_harness.importers` added to `pyproject.toml`.
+
+**Tests** (`tests/test_importers.py`), no network in CI:
+- `jsonl` and `tsv`: mapping, where (an empty cell too), window, dropped-row count;
+- `github` against a stand-in `gh` (`EVH_GH`): pagination, a duplicate, a reopen with its actor, the early stop;
+- `langfuse` against a local HTTP stand-in: a non-http host refused, the path-only url;
+- `importer-check` goes red on:
+  - a duplicate id;
+  - a bad id;
+  - an over-long id;
+  - a bad time;
+  - an unstable hash;
+  - an importer name that escapes `data/`.
+
+**A live check, once, read-only:**
+- `importer-check github` on chipi/orrery `triage-fleet/filed`;
+- `importer-check langfuse` on the agents project;
+- each reported with its output.
 
 ### P2. Captures — depends on P1
 
-- `evh capture --importer NAME --query JSON|@file --capture C [--since-capture C_prev] [--force]`.
-  - It writes `data/captures/<C>/capture.json`: the importer, its file's sha256, the query verbatim, its
-    window, when, the count, and per record its id, created_at, url, `sha256` and `body_sha256`.
-  - **No user name** (m4).
-  - It writes `data/captures/<C>/records/<id>.json`.
-  - A capture is never overwritten without `--force`.
-  - `--since-capture` sets `since` to the earlier capture's `until` (or its newest `created_at`), and **skips
-    records already in it, by id** (m3).
-- `evh capture-scrub C --command "python scrub.py --dir {records}"`.
-  - It runs the project's scrubber and re-hashes. `capture.json` keeps `sha256` (current) and
-    `sha256_before_scrub` per record; V17 checks `sha256` (M2).
-  - `scrubbed` records the command, the sha256 of each file it names, when, and how many records changed.
-  - A non-zero exit leaves the capture marked unscrubbed and says so.
-- `evh captures [C]`: every capture, or one: importer, window, count, scrubbed, datasets made from it.
-- `schemas/capture.schema.json`, and V17 in `validate`: a capture is valid and its records match `sha256`. It
-  passes with no captures.
-- **Dirty-tree rule (M3).** `_fingerprint.filter_dirt` ignores untracked paths only under `<data>/runs*`, so
-  untracked captures, sources or importers mark every run dirty, and a dirty run cannot be promoted or be a
-  reference's author. The lane's docs and RUNBOOK say: commit the capture, the sources and the dataset before
-  any billed run. `evh capture` prints the same reminder.
-- Tests: end to end on `jsonl`:
-  - capture, the files, the `--force` refusal;
-  - `--since-capture` skipping by id;
-  - scrub with a stand-in scrubber, the two hashes, a failed scrubber;
-  - V17 red on an edited outcome.
+**`evh capture --importer NAME --query JSON|@file --capture C [--since-capture C_prev] [--force]`** writes:
+- `data/captures/<C>/capture.json`:
+  - the importer and its file's sha256;
+  - the query verbatim, and its window;
+  - when, and the count;
+  - per record: id, created_at, url, `sha256`, `body_sha256`;
+  - no user name (m4);
+- `data/captures/<C>/records/<id>.json`.
+
+Its rules:
+- a capture is never overwritten without `--force`;
+- `--since-capture` sets `since` from the earlier capture and skips its records by id (m3);
+- it prints the commit-first reminder (M3).
+
+**`evh capture-scrub C --command "... {records}"`:**
+- runs the project's scrubber over the records;
+- re-hashes: `sha256` (current) and `sha256_before_scrub` (M2);
+- records the command, the sha256 of each file it names, when, and how many records changed;
+- marks the capture unscrubbed if the scrubber fails.
+
+**`evh captures [C]`**: every capture, or one.
+
+**`schemas/capture.schema.json`, and V17 in `validate`**: a capture is valid and its records match `sha256`. It
+passes with no captures.
+
+**Tests:** end to end on `jsonl`:
+- the files, and the `--force` refusal;
+- `--since-capture` skipping by id;
+- scrub with a stand-in scrubber, the two hashes, a failed scrubber;
+- V17 red on an edited outcome.
 
 ### P3. A dataset version from a capture — depends on P2
 
-- `evh dataset-from-capture C --dataset-id D [--from D_prev] [--where F:V ...] [--dedup exact|text] [--sample N
-  [--by F] --seed S] [--fieldset FS --field F ...] [--label k=v ...] [--description ...]`.
-  - `--field` is repeatable; `--fields FILE` keeps its meaning in `dataset-create` (m8).
-  - `--where` matches dotted paths into the record's fields.
-- What it writes:
-  - each kept record's **body** goes to `data/sources/<D>/<id>.<txt|json>`, through `body_bytes`. Only the
-    body: fields, outcome and source never enter an item's bytes (B1);
-  - the dataset is written through `dataset_create`'s functions (`_write`, `_lineage`, the field checks);
-  - `made_from: {capture, query, where, dedup, sample, seed}` and `labels` are recorded.
-- Fields become item fields only through a declared field set (RFC-006). Times are typed `date` as `YYYY-MM-DD`
-  (a `decision_date`), or `text` for a full timestamp (M5).
-- `--dedup text` folds case and whitespace. With `--from`, earlier items stay and new ones are added.
-- Schema: `dataset.schema.json` gains optional `labels` (a string map), `made_from` (an object, with an
-  optional `split`, m11) and `text` (`shown|hidden`, default shown).
-- The catalog and `evh datasets` show labels and origin; `evh datasets --label k=v` filters.
-- Tests:
-  - selection: where on a dotted field, both dedup modes, a seeded sample that repeats, stratified sampling;
-  - lineage on `--from`;
-  - materialize and a run on the result;
-  - labels round-trip; `datasets --label`;
-  - an item's bytes unchanged when only its outcome changes.
+**The command:** `evh dataset-from-capture C --dataset-id D [--from D_prev] [--where F:V ...]
+[--dedup exact|text] [--one-per F] [--sample N [--by F] --seed S] [--fieldset FS --field F ...] [--tag k=v ...]
+[--description ...]`.
+
+**Selection:**
+- `--where` matches dotted paths into the record's fields.
+- `--one-per F` keeps one record per value of a field: the newest by `created_at`, ties broken by id (R2-H).
+  The fleet's 236 decisions share 172 fingerprints, so a one-per-fingerprint version gives independent items
+  for the paired test. Selection only; the stats are unchanged.
+- `--field` is repeatable (m8).
+
+**What it writes:**
+- each kept record's **body** goes to `data/sources/<D>/<id>.<txt|json>`, through `body_bytes`. Only the body
+  (B1);
+- the dataset, through `dataset_create`'s functions (`_write`, `_lineage`, field checks);
+- `made_from: {capture, query, where, dedup, one_per, sample, seed}`, and the tags.
+
+**Fields:** only through a declared field set. Times are typed `date` (`YYYY-MM-DD`) or `text` (M5).
+
+**Schema:** `dataset.schema.json` gains optional `tags` (a string map, dataset-level), `made_from` (an object,
+with an optional `split`, m11) and `text` (`shown|hidden`).
+
+**Views:** the catalog and `evh datasets` show tags and origin; `evh datasets --tag k=v` filters.
+
+**Tests:**
+- where on a dotted field; both dedup modes; `--one-per` keeps the newest per value;
+- a seeded sample that repeats, and stratified sampling;
+- lineage;
+- materialize and a run on the result;
+- tags round-trip, and `--tag` filters;
+- an item's bytes unchanged when only its outcome changes;
+- **an id containing `:` through materialize, a run, the inspector (URL-encoded) and an MCP call** (r2-m4).
 
 ### P4. References from outcomes — depends on P3
 
-- `evh reference-from-outcomes --dataset-id D --capture C --map outcomes.yaml [--name NAME]`.
-  - **No `--as-of`** (M4): outcomes live in the capture, so the reference's default name is
-    `<D>_outcomes_<capture date>`, and newer outcomes mean a newer capture.
-- The mapping language (M4) is an ordered list of rules. Each rule has:
-  - `when: {dotted.path: value | [values]}`; a list in the record matches when any element does;
-  - an optional `min_age_days: N`, which needs the record's `created_at` to be at least N days before the
-    capture;
-  - and `label: <text>`, or `skip: true`.
+**The command:** `evh reference-from-outcomes --dataset-id D --capture C --map outcomes.yaml [--name NAME]`.
+- No `--as-of` (M4): outcomes live in the capture.
+- **The default name is `gold/<D>`**, the reference `experiment-run` scores against directly
+  (`experiment_run.py:189-198`). `--name` writes it under another name, read by `rescore --reference-id` (R2-A).
 
-  The first match wins; no match means no reference for that item.
-- The result is a gold reference under its own name (`gold/<NAME>/`, the second-reference route
-  `gold/ag_news_200_adj1` uses):
-  - its manifest carries `from_outcomes: {capture, mapping, mapping_sha256, matched, skipped, unmatched}`;
-  - **its own caveat**: "OUTCOME: what production recorded afterwards, as of <date>; not a person's label"
-    (M10). The tier stays gold, because people closed those issues; the RFC says why;
-  - `reference.schema.json` gains the optional `from_outcomes`. `authored_by` and its readers are unchanged.
-- Runs are scored against it with **`rescore --dataset-id D --reference-id gold/<NAME> --out
-  data/runs-outcomes`** (B2). `experiment-run` scores only against `gold/<D>` (`experiment_run.py:189-198`).
-  Coverage is recorded as today.
-- Tests:
-  - the language: nested paths, list "any", `min_age_days`, first match, skip, unmatched counted;
-  - the manifest and its caveat; V16 on it;
-  - a rescore against it, with coverage recorded.
+**The mapping language** (M4, R2-I): an ordered list of rules. Each rule has:
+
+| key | meaning |
+|---|---|
+| `when: {path: value or [values]}` | all must hold; a list in the record matches when any element does |
+| `unless: {path: value or [values]}` | none may hold. For example, `close_events[*].actor: <the fleet's login>` excludes the bot's own closes, and `labels: triage-fleet/escalated` excludes escalation issues |
+| `min_age_days: N` | the record is at least N days older than the capture |
+| `within_days: {from: path, to: path, max: N}` | two times in the record at most N days apart. For example, the decision and the issue's filing |
+| `label: <text>` or `skip: true` | what the rule gives |
+
+The first matching rule wins. A record that matches no rule gets no label.
+
+**The result** is a gold reference:
+- its manifest carries `from_outcomes: {capture, mapping, mapping_sha256, matched, skipped, unmatched}`;
+- **its own caveat** (M10): "OUTCOME: what production recorded afterwards, as of <capture date>; not a person's
+  label";
+- `reference.schema.json` gains the optional `from_outcomes`, and `authored_by` is unchanged.
+
+**A goal decides on `gold/<D>`.** Another reference on the same dataset (a second outcome version, hand labels)
+is second-named and read through `rescore --reference-id <name> --out data/runs-<name>`.
+
+**Proof first** (R2-A): before P4 lands, a fixture catalog with one run in `runs` and its rescore in
+`runs-<name>`. Read the goal page: it decides on `gold/<D>` only, and the rescore shows as its own base and does
+not join the decision group. If it does join, P4 adds the smallest fix in the goal's grouping, and §5 names it.
+
+**Tests:**
+- the language: nested paths, `any`, `unless`, `min_age_days`, `within_days`, first match, skip, unmatched
+  counted;
+- the manifest and caveat, and V16;
+- a run scored against it, coverage recorded, and the second-name route through rescore.
 
 ### P5. Splits — depends on P3
 
-- `evh dataset-split D --heldout 0.3 [--by hash|time] --seed S` writes `D_dev` and `D_heldout`.
-  - By hash of (item id, seed), stable across versions; by time, the newest share is heldout.
-  - Each records `made_from.split`, so the versions section says "a split of D", not "70% removed" (m11).
-- Tests: the proportion, stability across a grown version, the time split, the ids valid under the schema.
+**The command:** `evh dataset-split D --heldout 0.3 [--by hash|time] [--key F] --seed S` writes `D_dev` and
+`D_heldout`.
+
+- `--key F` splits by a field's value, so all items with one fingerprint land on one side (R2-H).
+- The default key is the item id.
+- Each half records `made_from.split` (m11).
+
+**Tests:**
+- the proportion;
+- stability across a grown version;
+- `--key`: no value on both sides;
+- the time split;
+- the ids valid under the schema.
 
 ### P6. `text: hidden` on every public surface — depends on P3
 
 - One function, `_visibility.text_shown(dataset_id, *, public) -> bool`.
-- The release's data copy moves from bash into a module, **`_release.py copy-data SRC DST`** (M9), which
-  applies `text_shown`, refuses untracked run outputs and keeps today's reference refusal. `render.sh` calls it.
-  The marker test calls it directly, so it runs in CI without the network.
-- The surfaces (code audit 2026-10-29) each ask the function:
-  - the catalog dataset page: profile text, per-item gold labels, URLs;
-  - inspector `/api/item`; `/api/compare` checked;
+- **`_release.py copy-data SRC DST`** (M9):
+  - applies `text_shown`;
+  - refuses untracked run outputs;
+  - keeps today's reference refusal.
+
+  `render.sh` calls it, and **`tests/test_render_data.py` is updated** (R2-J): it asserted the literal
+  `harness/data/runs*` in `render.sh` (`:33`), and now it reads the module's list.
+- The surfaces each ask the function:
+  - the catalog's dataset page;
+  - the inspector's `/api/item`, with `/api/compare` checked too;
   - MCP `dataset-items` and `inspect`;
   - `evh dataset-items` and `evh inspect` under `EVH_PUBLIC`;
   - the release copy.
 - A profile written `--with-text` is checked again when the catalog builds.
 - **The marker test** (`tests/test_hidden_text.py`), in-process (m10):
-  - a fixture project with a hidden dataset, with markers planted in its sources, outputs, reference texts,
-    judge reasons, field values and URLs;
-  - it builds the catalog, serves the inspector `--public --publish outputs,references` and MCP `--public`,
-    calls every route and tool, and runs `_release.copy-data`;
-  - it fails if a marker appears anywhere;
-  - its can-fail check removes one surface's call and requires the test to go red.
-- Scope note (m10): no 0.6.0 dataset sets the label, since the triage data is public. It is built small: one
-  function, one module, one test.
+  - plant markers;
+  - build the catalog, serve the inspector (`--public --publish outputs,references`) and MCP (`--public`);
+  - call every route and tool, and run `copy-data`;
+  - any marker that appears is a failure;
+  - removing one surface's call to the function must turn it red.
 
 ### P7. Views and MCP — depends on P2 to P5
 
-- The catalog's datasets page shows labels as groups and filters, origin, and a version's profile beside its
-  parent's.
-- MCP: `captures` joins the read tools. `capture`, `capture-scrub`, `dataset-from-capture`,
-  `reference-from-outcomes`, `dataset-split` and `importer-check` join NOT_TOOLS, with the reason that they
-  write; MCP write tools are 0.7.0.
-- **`test_installed_commands.py` needs a case per command (M8):** the seven new commands each get one.
-- `check_commands` covers every new command and flag. The browser checks cover the datasets page.
+- **The datasets page**: tags as groups and filters, origin, and a version's profile beside its parent's.
+- **MCP**: `captures` joins the read tools. The writing commands join NOT_TOOLS, with the reason: MCP write
+  tools are 0.7.0.
+- **`test_installed_commands.py`**: one case per new command (M8).
+- **`check_commands`** knows every new command and flag. The browser checks cover the datasets page.
 
-### P8. The triage example's code — depends on P3, P4, P6
+### P8. The triage example's code — depends on P3, P4 (r2-m7)
 
-What the application plan's runs need, built and tested without a billed call.
+The code the application plan's runs need, built and tested without a billed call.
 
-- **Its own importer, `examples/triage-fleet/importer.py`** (B1), about 30 lines. It yields:
-  - `id`;
-  - `body = {signal, probes}`: only what the model sees, so the reference never enters an item's bytes;
-  - `fields = {evidence_level, fleet_disposition, stage, model, fingerprint, decision_date}` (m12, M5);
-  - `created_at = fleet_decision.ts`;
-  - `outcome = row.outcome` plus `ground_truth`.
-- **`adapter.py`** calls `investigate(signal, probe_table=probes)` from the fleet checkout named by
-  `TRIAGE_FLEET_SRC`, at a recorded commit. It also (M6):
-  1. sets `SF_OBSERV_DISABLED=1` before the fleet's config is imported, and stubs `observ.new_trace_id` to
-     `None`, so no generation is written into the fleet's Langfuse project;
-  2. sets `config.TRIAGE_MODEL = params.model`, and `SF_OPENROUTER_URL` / `OPENROUTER_API_KEY` from the run's
-     environment;
-  3. computes cost from `_meta.usage` × the config's `usd_per_mtok_in/out` (the fleet's `RATES` know only its
-     own models);
-  4. declares `TRANSIENT_MARKERS = ("triager call failed",)`.
-- **The scorer** (m1), per item:
-  - `table_miss` (0/1) on every item; nothing else is scored on a miss;
-  - `escalated` on every scored item; it needs no reference;
-  - `correct`, `false_dismiss` and `silent_drop` only where the reference has a label;
-  - `cost_usd`, `latency_ms`, `n_probes`.
+**`examples/triage-fleet/importer.py`** (B1) reads the JSONL the fleet's own build script makes (R2-E: that
+script is committed in the fleet's repository, and its commit is recorded in the capture's query). It yields:
+- `id`;
+- `body = {signal, probes}`;
+- `fields = {evidence_level, fleet_disposition, fleet_model, stage, fingerprint, decision_date}` (m12, r2-m3,
+  M5);
+- `created_at = fleet_decision.ts`;
+- `outcome = row.outcome` plus `ground_truth`.
 
-  The reference text is a bare label or JSON `{disposition, correct_autonomous}` (M11).
-- **The goal file format** (B2): a primary measure with its direction and limit, an `escalated` axis with a
-  limit, cost and speed shown, and a strategy; the goal names the reference it is decided on. Which measure
-  and limits is the application plan's.
-- **Reference routes, as they are** (M11, B2):
-  - hand labels: files written as `gold/<D>/<item>.txt`, then `evh reference-manifest`;
-  - outcomes: `reference-from-outcomes` (P4);
-  - scoring a run against a second reference: `rescore --reference-id`.
-- Packaging for `reproduce.py` (M8):
-  - `examples/triage-fleet/pyproject.toml`;
-  - a `fetch.py` that verifies the `TRIAGE_FLEET_SRC` pin;
-  - the `experiments.json` entry only after the billed runs are committed, since `self_test` requires
-    committed runs and their leader;
-  - no reproduce-matrix entry: there is no no-key rerun.
-- Tests:
-  - the importer on the delivered JSONL: 236 records, the body free of `outcome` and `ground_truth`, an item's
-    bytes unchanged when its outcome changes;
-  - the adapter with a stubbed `_call`: no network, no Langfuse write (the stub asserts `trace_id is None`),
-    cost from usage, the disposition and metrics recorded, a table miss counted;
-  - the scorer on hand-made cases for each metric.
+**`adapter.py`** calls `investigate(signal, probe_table=probes)` from the `TRIAGE_FLEET_SRC` checkout at a
+recorded commit. It:
+1. sets `SF_OBSERV_DISABLED=1` before the fleet's config is imported, and stubs `observ.new_trace_id` to `None`
+   (M6). This keeps the fleet's own trace out of the run. **The gateway still logs every call to Langfuse**
+   (R2-C):
+   - the adapter adds `metadata: {tags: ["evh-eval", <run id>], trace_name: "evh-eval"}` to each call, through a
+     wrapper on the fleet's `post_json`;
+   - the eval key is tagged too (application plan).
 
-### P9. The de-duplication example's code — depends on P8 (corrected, B3)
+   So eval traffic can always be told apart from production's.
+2. sets `config.TRIAGE_MODEL = params.model`, and the gateway URL and key from the run's environment.
+3. computes cost from `_meta.usage` × the config's `usd_per_mtok_in/out` (the fleet's `RATES` know only its own
+   models). The usage carries no cached split (`triage.py:429-436`), so cost is computed at the uncached price,
+   and the application plan estimates the same way (R2-C).
+4. declares `TRANSIENT_MARKERS = ("triager call failed",)`.
 
-- The fleet has no replay mode for `file_or_update` or `ledger_lookup`, and its corpus holds 100 signals and no
-  expected issue. Its own eval uses pure functions: `filing.normalized_key`, `filing.low_signal`,
-  `triage.operational_class`, `sources._is_test_signal`.
-- The adapter returns `{operational, test, low_signal, norm_key}` from those functions.
-- The per-item metrics are `key_match` and `merged` (the item's norm_key is shared within the run).
-- Tests: on the fleet's 100 signals, offline, deterministic; two runs identical.
+**The call shape is the fleet's own** (`response_format: json_object`, `temperature: 0`). Whether every provider
+accepts it is the application plan's smoke step (R2-C).
+
+**The scorer** (m1), per item:
+- `table_miss` on every item; nothing else is scored on a miss;
+- `escalated` on every scored item;
+- `correct`, `false_dismiss` and `silent_drop` only where the reference has a label;
+- `cost_usd`, `latency_ms`, `n_probes`.
+
+The reference text is a bare label or JSON `{disposition, correct_autonomous}` (M11).
+
+**The goal file:** its primary measure, its axes (limits optional), and its strategy. It decides on `gold/<D>`
+(R2-A). Which reference that is, and the limits, are the application plan's decisions.
+
+**Reference routes:**
+- hand labels: files, then `evh reference-manifest`;
+- outcomes: P4;
+- second names: rescore.
+
+**Packaging** (M8):
+- `pyproject.toml`;
+- `fetch.py`, which verifies the `TRIAGE_FLEET_SRC` pin;
+- `experiments.json`, only after the billed runs;
+- no reproduce-matrix entry.
+
+**A labelling sheet**, `examples/triage-fleet/label_sheet.py`. It writes the owner's labelling file for a chosen
+set of items: id, signal summary, the probe answers in short, the fleet's decision and the outcome, plus an
+empty `disposition` column. It also reads the file back into `gold/<D>/<item>.txt` and its manifest. It is a
+file, not an interface (labelling interfaces are out of scope).
+
+**Tests:**
+- the importer on the delivered JSONL: 236 records; bodies free of `outcome` and `ground_truth`; bytes unchanged
+  when an outcome changes;
+- the adapter with a stubbed `_call`:
+  - no network;
+  - no Langfuse trace from the fleet (`trace_id is None`);
+  - the `evh-eval` tag on every call;
+  - cost from usage;
+  - metrics recorded;
+  - a table miss counted;
+- the scorer on hand-made cases;
+- the label sheet round-trip.
+
+### P9. The de-duplication example's code — depends on P3 (r2-m7)
+
+- **The adapter** returns `{operational, test, low_signal, norm_key}` from the fleet's pure functions
+  (`filing.normalized_key`, `filing.low_signal`, `triage.operational_class`, `sources._is_test_signal`) (B3).
+- **One arm, a regression guard** (R2-D). `alert_key_dedup_enabled()` is read only inside `ledger_lookup`, so
+  switching it changes nothing here. The axis worth comparing is **the fleet's code itself**: the pinned
+  previous commit against the current one, when the fleet changes its dedup functions.
+- **Metrics:** `key_match` and `merged`.
+- **Tests:** on the 100 signals, offline; two runs identical; a planted change to `normalized_key` shows up as
+  `key_match` < 1.
 
 ### P10. Docs — with each phase, finished before release
 
-- RFC-019 updated:
-  - accepted, with what was built;
-  - the outcome caveat and why outcomes are gold;
-  - the mapping language;
-  - `rescore` as the route;
-  - the project importer for the fleet.
-- A basic PRD (PRD-014, the lane for users); a UXS section for the datasets page.
-- GUIDE: one link to an advanced tutorial, "Datasets from production"; it is not in the getting-started path.
-- RUNBOOK: the commands, and the commit-before-billed-runs rule. CHANGELOG 0.6.0. The strict docs build.
-- `examples/triage-fleet/README.md`: the case, the references, the circularity, the numbers.
+**RFC-019** is updated, and **every divergence from the second draft is listed** (r2-m5). It is accepted with
+what was built:
+- importers by `<data>/importers/<name>.py` or `path:Class`, not `config.yaml`;
+- `as_of` dropped, since outcomes live in the capture;
+- escalations and cleanups labelled by rule, or not, as the application plan decides;
+- the fleet's v1 is the 236 decisions, not 12 fixtures;
+- "older decisions accepted as lost" was replaced by "everything kept, by evidence level";
+- `labels` became `tags`;
+- the mapping language;
+- the caveat;
+- the `gold/<D>` route;
+- reading production is the project's own script.
+
+**Other docs:**
+- a basic PRD-014 (the lane for users), and a UXS section for the datasets page;
+- the GUIDE links to an advanced tutorial;
+- the RUNBOOK gets the commands and the commit-first rule;
+- CHANGELOG 0.6.0, and the strict docs build;
+- the example's README.
 
 ### P11. Release
 
-- The full local gates. Then, with the owner's go, push 060 (PR #30 grows) and get CI green.
-- Merge, deploy within the 5-minute goal, tag, per RELEASING. No newcomer scenario: the newcomer path does not
-  change.
+- The full local gates.
+- With the owner's go: push 060, then CI green.
+- Merge, deploy within the 5-minute goal, tag, per RELEASING.
+- No newcomer scenario.
 
 ## 5. What changes in existing code (the whole list)
 
 - `pyproject.toml`: one package.
-- `cli.py`: new commands.
-- Schemas:
-  - `dataset.schema.json` and `reference.schema.json` gain optional fields;
-  - `capture.schema.json` is new.
+- `cli.py`: the new commands.
+- `schemas/dataset.schema.json`, `schemas/reference.schema.json`: optional fields. `schemas/capture.schema.json`
+  is new.
 - `validate_tree.py`: V17.
-- `catalog_build.py`, `catalog_views.py`, `view_datasets.py`: labels, origin, version profiles, `text: hidden`.
-- `catalog_serve.py`, `mcp_server.py`, `dataset_profile.py`: the visibility function on their text surfaces.
-- `infra/deploy/render.sh`: calls `_release.py copy-data` instead of its inline copy.
-- `tests/test_installed_commands.py`: a case per new command.
-- `dataset_create.py`: its writing functions reused. Any change is a refactor, with its tests unchanged.
-- Untouched: `experiment_run`, `rescore` (used as it is), the stats, compare, goals, rounds.
+- `catalog_build.py`, `catalog_views.py`, `view_datasets.py`: tags, origin, version profiles, `text: hidden`.
+- `catalog_serve.py`, `mcp_server.py`, `dataset_profile.py`: the visibility function.
+- `infra/deploy/render.sh`: calls `_release.py copy-data`.
+- `tests/test_render_data.py`: reads the module's list (R2-J).
+- `tests/test_installed_commands.py`: one case per new command.
+- `dataset_create.py`: its writing functions are reused. Any change is a refactor, with its tests unchanged.
+- **Only if P4's proof fails:** the smallest fix in the goal's grouping (`catalog_views.py` or
+  `catalog_adapter.py`), named here before it is made.
+- Untouched: `experiment_run`, `rescore`, the stats, compare, goals (unless the proof says otherwise), rounds.
 
 ## 6. Engineering assumptions (stated, not asked)
 
-- Outcome references are gold under their own name, with their own caveat (M10).
+- Outcome references are gold, with their own caveat (M10).
+- A dataset-level `tags`, not a new word (R2-K).
 - A licence does not set `text: hidden` by itself.
 - The fleet's code comes from a `TRIAGE_FLEET_SRC` checkout at a recorded commit.
-- Captures are not supported on Windows (ids contain `:`).
-- The importer mechanism gains no auto-generated field sets: a project declares its own.
+- Captures are not supported on Windows.
+- No auto-generated field sets.
 
 ## 7. Needs the owner
 
-Nothing for the engineering. The application's decisions (references, arms, budget) are in
-[PLAN_0.6.0_FLEET.md](PLAN_0.6.0_FLEET.md).
+Nothing for the engineering. The application's decisions are in [PLAN_0.6.0_FLEET.md](PLAN_0.6.0_FLEET.md) §6.
 
 ## 8. Engineering risks
 
-- **Dirty trees (M3).** An untracked capture, source or importer marks runs dirty, which blocks promotion and
-  the reference route. The lane prints the reminder; the docs say commit first.
-- **The adapter depends on another repository's code.** Pinning the commit makes a fleet change a visible
-  re-pin. The adapter's tests run against the pinned checkout.
-- **P6 touches the most existing code** for a label no 0.6.0 dataset sets. It is kept small: one function, one
-  module, one test.
-- **Size.** Eleven phases. Each lands as its own commit, with its tests, before the next one starts.
+- **Dirty trees** (M3): commit first. The lane reminds.
+- **The goal's grouping** (R2-A): proven on a fixture before P4 lands, not assumed.
+- **Another repository's code**: pinned, and re-pinned visibly.
+- **P6's reach**: kept to one function, one module and one test.
+- **Size**: eleven phases, each its own commit.
 
 ## 9. Not in scope
 
-A schedule, a server, write tools for agents (0.7.0), runners on another machine (0.7.0), a labelling interface,
-holding a project's private data, concurrency in `experiment-run`.
+A schedule, a server, write tools for agents (0.7.0), runners on another machine (0.7.0), a labelling interface
+(P8's sheet is a file), holding a project's private data, concurrency in `experiment-run`, a paired test at a
+cluster level (the `--one-per` version is the answer to dependence).
