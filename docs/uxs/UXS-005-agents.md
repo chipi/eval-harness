@@ -38,7 +38,8 @@ agent's side and the person's; long work; the skills; `llms.txt` and the glossar
 study.
 
 **Non-goals:** a chat interface; the agent's own client UI (how a client renders a result is the
-client's); hosting the server remotely (stdio only in 0.5.0).
+client's); writing tools on a server others reach. 0.4.5's `--http` serves the read tools only, to a team
+or the public (RFC-018 on `main`); a remote server that writes waits for users and permissions (RFC-016).
 
 ## Starting the server
 

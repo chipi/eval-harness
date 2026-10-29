@@ -13,7 +13,8 @@
 
 ## Abstract
 
-`evh mcp` is an MCP server over stdio for one project, built on the official Python SDK (`mcp` 2.3, protocol
+`evh mcp` is an MCP server over stdio for one project (0.4.5 shipped its read-only start, with `--http` for a team
+or the public: RFC-018 on `main`, the last section here), built on the official Python SDK (`mcp` 2.3, protocol
 revision 2026-07-28). Its tools are the commands RFC-013 declares, generated from the manifest, each run as a child
 `evh <command> --json` so a tool behaves exactly as the command does. Long work returns a job id that the agent
 follows with `jobs-status`, because the SDK does not yet implement the tasks extension. A decision with consequences

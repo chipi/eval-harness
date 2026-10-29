@@ -43,7 +43,10 @@ project's `config.yaml` becomes the one place its directories, runners and limit
   for `catalog.adapter` (`catalog_adapter.py:823`).
 - `schemas/` has no run record, fingerprint or prediction schema.
 - `requires-python = ">=3.9"` and `ruff.toml:8` `target-version = "py39"`; the official MCP SDK (RFC-016) requires
-  3.10.
+  3.10. (0.4.5 moved the floor to 3.10 when it shipped the read-only server, RFC-018 on `main`; `ruff.toml` stays py39.)
+- 0.4.5's view commands take `--json` already, a generic `{"command", "version", "result": {"blocks": [...]}}`
+  collected from what they print (RFC-018). This RFC replaces `blocks` with each command's own result and schema;
+  0.4.5's release notes say not to build on it.
 
 ## Design
 
@@ -222,7 +225,8 @@ release notes say so.
 No data migration. Scripts move to the declaration one by one; the manifest test lists the ones still missing, and the
 release needs none missing. Exit-code and refusal changes are listed in the release notes; the podcast project's scripts
 that read exit codes (`scripts/harness/import_*.py` calling `evh import-run`) are checked against the new table before its
-pin moves.
+pin moves. A reader of 0.4.5's `--json` `blocks` (its MCP tools' structured content) moves to the command's own
+result; the tools keep their names.
 
 ## Alternatives Considered
 

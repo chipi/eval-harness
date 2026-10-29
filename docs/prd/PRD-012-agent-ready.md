@@ -130,6 +130,8 @@ commands.
 
 - **FR4.1**: `evh mcp` starts an MCP server (stdio) for the project, built on the official MCP
   Python SDK, installed by default. It reads the project's `config.yaml` (FR10) as the CLI does.
+  0.4.5 already ships it read-only, with `--http` for a team or the public (RFC-018 on `main`);
+  0.5.0 extends that server, it does not replace it.
 - **FR4.2**: Its tools are the manifest's commands. Each carries annotations from the manifest:
   read-only, destructive, idempotent, open-world (reaches outside the project, such as a provider);
   spending is the manifest's own flag, and annotations are hints, never what consent rests on. Results are

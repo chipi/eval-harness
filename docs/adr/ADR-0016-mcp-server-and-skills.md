@@ -18,6 +18,11 @@ acting.
   owner's decision; it brings its own dependencies, listed in the release notes). Its tools are
   generated from the command declarations, each run as a child `evh … --json` with a timeout,
   killed on cancel, its output capped. Records are read through read tools; there are no resources.
+  0.4.5 shipped the read-only start early (RFC-018 on `main`): the read commands as tools, their
+  schemas taken from each command's parser, over stdio and `--http` (a team's server, or the public
+  one at `evals.humancopilot.eu/mcp`). 0.5.0 keeps those tools' names and answers, generates every
+  tool from the declarations instead, and adds the writing tools, consent and, before they reach a
+  shared server, users (RFC-016).
 - **Long work returns a job id** followed with `jobs-status`; MCP tasks when the SDK implements the
   extension.
 - **The server never decides who acts or consents**: the actor is fixed when it starts; actor and
