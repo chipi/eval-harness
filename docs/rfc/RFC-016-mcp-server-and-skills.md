@@ -152,10 +152,24 @@ PRD-012's first user story and a hard dollar cap, then checks the records: a stu
 actor; a refused promotion without consent; the goal page built. It needs the person's API key and is run before each
 release, recorded in `RELEASING.md`, not in CI.
 
+### Users on a shared server (to design; the owner's note, 2026-10-29)
+
+0.4.5 ships `evh mcp` early, read-only (RFC-018 on `main`): stdio, and `--http` for a team or the public, with no
+accounts, deployed at `evals.humancopilot.eu/mcp` without sign-in. A server many people reach needs users before it
+can offer anything but reads. To design here, before 0.5.0's writing tools go on a shared server:
+
+- **Who can read and who can write, through which tools**: an identity per caller (OAuth 2.1, which the protocol and
+  the SDK define for HTTP), roles per project (reader, runner, decider), and the consent model above applied per user,
+  so "the person running the command" is a known person on a shared server too.
+- Most probably more, as the owner expects: per-user budgets and rate limits, an audit of what each user did through
+  which tool (the actor on every record, RFC-013), which projects or datasets a user may see (private data beside
+  public), and how a team's server is run (one per project, or one for several).
+
 ## Migration
 
 None. The server and skills are new; `UPGRADING.md` says how to add `evh mcp` to an agent's MCP configuration and run
-`evh skills-install`.
+`evh skills-install`. 0.4.5's read-only server (RFC-018) is the start: its tools keep their names and answers; 0.5.0
+adds the declarations, the writing tools, consent and, once designed, users.
 
 ## Alternatives Considered
 

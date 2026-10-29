@@ -90,7 +90,6 @@ nav:
           - "RFC-015: The statistics of 0.5.0: non-inferiority, verdicts, test looks, power": rfc/RFC-015-noninferiority-looks-power.md
           - "RFC-016: The MCP server, the skills, llms.txt and the glossary": rfc/RFC-016-mcp-server-and-skills.md
           - "RFC-017: The record store: records, ids and one store contract": rfc/RFC-017-record-store.md
-          - "RFC-019: Datasets from production (draft for review)": rfc/RFC-019-datasets-from-production.md
       - Decisions (ADRs):
           - Index: adr/index.md
           - "ADR-0001: Judge scorers: re-measuring frozen outputs with a validated LLM judge": adr/ADR-0001-judge-scorers.md

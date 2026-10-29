@@ -62,6 +62,11 @@ take their place behind one store contract.
 
 ## Next steps
 
+0. **What 0.4.5 and 0.4.6 bring forward** (2026-10-29): 0.4.5 ships a read-only MCP server (`evh mcp`, stdio and
+   Streamable HTTP; RFC-018 on `main`) and its public deployment at `evals.humancopilot.eu/mcp`, so 0.5.0's RFC-013 and
+   RFC-016 extend a server that exists rather than introduce one; users and permissions on a shared server are a new
+   design item in RFC-016 ("Users on a shared server"). Datasets from production (RFC-019) moved to `main`, aimed at
+   0.4.6, in review.
 1. **The owner reviews** the documents and the mockups. Comments go on the documents (or the canvas); decisions
    go into the ADRs.
 2. **A pull request** for `050` against `main`, once the review is done, so the design lands before the code.
