@@ -17,6 +17,12 @@ that can move a result is never a patch release without saying so under **Change
   `twitter:card`, and with **`evh catalog --card URL`** the image a shared link shows. The pages stay
   `noindex`.
 
+### Changed
+
+- **CI runs once per merge, not twice**: a squash onto main whose tree is its pull request's head,
+  tested green and up to date with main, skips the workflows that already passed on it; the deploy
+  no longer waits ~13 minutes for a second run of the same files. Anything else runs them again.
+
 ### Fixed
 
 - **A command's own refusal through `evh mcp`** (exit 1, its `ERROR:` line, no traceback, such as a
