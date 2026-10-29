@@ -46,7 +46,7 @@ discovery.relabel "evals" {
 		replacement   = "inspector"
 	}
 	// The MCP server (0.4.5): one JSON line per tool call (tool, argument names, outcome, ms; never
-	// an argument's value or the caller's address).
+	// an argument's value, the caller's address or its user agent).
 	rule {
 		source_labels = ["__meta_docker_container_name"]
 		regex         = "/evals-mcp"

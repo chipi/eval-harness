@@ -1736,6 +1736,11 @@ def _gold_line(r: dict) -> str:
     return f"<p>{reference_link(r['id'], '../')}: {what}</p>"
 
 
+def _web(url) -> bool:
+    """An http(s) URL: a profile is project data, and a `javascript:` href would run on click."""
+    return isinstance(url, str) and url.lower().startswith(("https://", "http://"))
+
+
 def render_inside(A: Adapter, ds: str, inspect_arms: list[str], metric: str) -> str:
     """What is inside the dataset (data/profiles/<ds>.json): how many items and how long, the gold's
     shape, then one row per item with its length, its gold and where it can be read at its source.
@@ -1755,15 +1760,25 @@ def render_inside(A: Adapter, ds: str, inspect_arms: list[str], metric: str) -> 
     src = p.get("source")
     lines = [
         (
-            f"{it['n']} {e(A.item_word)}s, {e(it.get('kind', 'text'))}, {w.get('min', 0)}–{w.get('max', 0)} words "
-            f"(median {w.get('median', 0)}, middle half {w.get('p25', 0)}–{w.get('p75', 0)})."
+            f"{e(str(it['n']))} {e(A.item_word)}s, {e(it.get('kind', 'text'))}, "
+            f"{e(str(w.get('min', 0)))}–{e(str(w.get('max', 0)))} words (median {e(str(w.get('median', 0)))}, "
+            f"middle half {e(str(w.get('p25', 0)))}–{e(str(w.get('p75', 0)))})."
         )
     ]
     if src:
+        name = e(src.get("name") or "the source")
         lines.append(
-            f'Source: <a href="{e(src["url"])}" rel="noopener">{e(src["name"])}</a>'
+            (
+                f'Source: <a href="{e(src["url"])}" rel="noopener">{name}</a>'
+                if _web(src.get("url"))
+                else f"Source: {name}"
+            )
             + (f" ({e(src['split'])} split)" if src.get("split") else "")
-            + f". The text stays there; each {e(A.item_word)} below links to its row."
+            + (
+                f". The text stays there; each {e(A.item_word)} below links to its row."
+                if any(_web(r.get("source_url")) for r in p["rows"])
+                else "."
+            )
         )
     if p.get("stale"):
         lines.append(
@@ -1781,14 +1796,16 @@ def render_inside(A: Adapter, ds: str, inspect_arms: list[str], metric: str) -> 
     for r in p["rows"]:
         k = r["item_id"]
         links = [
-            f'<a href="{e(r["source_url"])}" rel="noopener">source ↗</a>' if r.get("source_url") else "",
+            f'<a href="{e(r["source_url"])}" rel="noopener">source ↗</a>'
+            if _web(r.get("source_url"))
+            else "",
             f'<a href="{inspect_url(inspect_arms, "../", metric=metric, item=k)}">inspect</a>'
             if len(inspect_arms) >= 2
             else "",
         ]
         cells = [
             f'<code class="small" title="{e(k)}">{e(k[:12])}</code>',
-            str(r["words"]),
+            e(str(r["words"])),
             "; ".join(e(r["reference"].get(g, "")) for g in gold_ids) or "—",
             " · ".join(x for x in links if x) or "—",
         ]

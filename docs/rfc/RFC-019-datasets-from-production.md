@@ -7,8 +7,8 @@
   0.5.0's PRD-012 (agents), 0.5.0's PRD-013 (dev and heldout,
   looks)
 - **Related RFCs**: [RFC-006](RFC-006-item-fields-and-url-items.md) (field sets, URL items),
-  0.5.0's RFC-013 (declarations, consent), 0.5.0's RFC-016 (MCP
-  tools), 0.5.0's RFC-017 (records; these three on branch `050`), [RFC-018](RFC-018-read-only-mcp-server.md) (the MCP server, 0.4.5) and 0.4.5's dataset
+  0.5.0's RFC-013 (declarations, consent), 0.5.0's RFC-015 (dev and heldout, test looks), 0.5.0's RFC-016 (MCP
+  tools), 0.5.0's RFC-017 (records; these four on branch `050`), [RFC-018](RFC-018-read-only-mcp-server.md) (the MCP server, 0.4.5) and 0.4.5's dataset
   profiles (`evh dataset-profile`)
 
 ## Abstract
@@ -46,7 +46,7 @@ the same through MCP tools and a skill; freezing a dataset made from production 
 
 - An importer is a class in the project (`importers/langfuse.py:Importer`, named in `config.yaml` or on the command
   line), with one method: `records(query) -> Iterator[Record]`. A `Record` is `{id, text | fields, created_at,
-  source: {system, project, url}, labels, outcome}`: `id` is the record's own id in its system (a trace id, an issue
+  source: {system, project, url, private}, labels, outcome}`: `id` is the record's own id in its system (a trace id, an issue
   number), `url` opens it there, `outcome` is what happened after (below, 6).
 - **In the harness: one importer, `jsonl`** (one record per line, the fields above). Anything can be exported to it.
 - **In `examples/importers/`**, maintained with this repository, not in the package: `langfuse` (traces and
@@ -72,8 +72,11 @@ the same through MCP tools and a skill; freezing a dataset made from production 
 - Before anything is frozen, `evh harvest-scrub H --rules scrub.yaml` applies the project's rules to every record:
   regular expressions and field drops (`email`, `phone`, an API key's shape, named fields), each replaced by a typed
   placeholder (`<EMAIL>`). The rules file and its hash are recorded; the scrubbed copy is what is frozen; the report
-  says how many of each were replaced. Without a rules file, freezing a harvest from a source marked `private` is
-  refused.
+  says how many of each were replaced. Without a rules file, freezing a harvest from a private source is refused.
+- **A private source** is one the project marks so where it names the importer (`config.yaml`:
+  `importers: {langfuse: {class: …, private: true}}`, or `--private` on the command line); the harvest records it,
+  and a dataset frozen from it takes `privacy: private` (5) unless the person sets `public` with `--confirm` (9).
+  Production sources default to private: an importer that does not say is treated as private.
 - What is not caught by rules is not claimed as caught: the report says "N replacements by these rules", never "no
   personal data".
 
@@ -90,7 +93,8 @@ the same through MCP tools and a skill; freezing a dataset made from production 
 
 - **Dataset labels**: `labels: {source, environment, purpose, owner, privacy}` in the dataset's file (outside its
   identity, as fields are: changing a label never changes a dataset's id). `privacy: public | private` decides what
-  the catalog may show (the 0.4.5 profile still never holds text; `private` also hides the source links).
+  the catalog may show: a `private` dataset's profile never holds text (`evh dataset-profile --with-text` is
+  refused for it, whatever git tracks) and its source links are left out, since they open production systems.
 - **Item fields** from the record (RFC-006 field sets): provenance (`trace_id`, `created_at`, `environment`,
   `stage`), and the project's own (`area`, `severity`). Public only by opt-in, as today.
 - The catalog's datasets page groups and filters on labels; `evh datasets --label environment=prod`.
@@ -104,32 +108,52 @@ the same through MCP tools and a skill; freezing a dataset made from production 
   - a ticket's resolution code.
 - An importer returns it as `outcome`; `evh reference-from-outcomes --dataset-id D --map outcomes.yaml` writes a gold
   reference (`authored_by: {kind: "outcome", source, mapping}`), the mapping (outcome → label) recorded and hashed.
+  **A schema change**: `reference.schema.json` has `authored_by` as a string or null (the config that wrote it);
+  it widens to also take this object, and every reader of `authored_by` learns the new shape.
 - An item whose outcome is not yet known (an issue still open) has no reference; the reference says how many items it
-  covers, and the coverage check (0.4.0) refuses a comparison that would silently drop them.
+  covers. Today (0.4.0) a run on partial references only warns and records `reference_coverage`, and refuses only
+  when no item has one. That is too weak for outcome references, which are partial by nature: this RFC proposes
+  that a comparison on a partly covered reference is made on the covered items only and says how many it left out
+  (open question 5).
 
 ### 7. Splits and growth
 
-- `evh dataset-split D --goal G --heldout 0.3 --seed S` assigns each item to dev or heldout by a hash of its id and
-  the seed, so a later version keeps every earlier item where it was, and new items fall in proportion. 0.5.0's test
-  looks (RFC-015) count against the heldout part.
-- **Drift is visible, not corrected**: each version's profile (0.4.5) shows its lengths and label balance; the
-  dataset page compares a version with the one it came from.
+- `evh dataset-split D --goal G --heldout 0.3 [--by hash|time] --seed S` assigns each item to dev or heldout: by
+  default by a hash of its id and the seed, so a later version keeps every earlier item where it was, and new items
+  fall in proportion; `--by time` puts the newest share in heldout (Alternatives).
+- **Where it is kept**: today dev and heldout are a goal's `role` for a whole dataset (`goal.schema.json`). The
+  split makes two datasets, `D.dev` and `D.heldout`, each a version of `D` with lineage, each given its role in
+  the goal as today; nothing new is needed to read them. (The other way, an item field `split` in `D`, keeps one
+  dataset but makes every comparison filter it: open question 6.) 0.5.0's test looks (RFC-015) count against the
+  heldout one.
+- **Drift is visible, not corrected**: each version's profile (0.4.5) shows its lengths and label balance. New
+  here: the dataset page puts a version's profile beside the one it came from (today its versions section shows
+  only the items added, removed and changed).
 
 ### 8. Continuous experimentation, by hand or by an agent (no schedule)
 
 A round, repeated when the person (or an agent, asked) chooses: harvest the last window, scrub, make the next version
-from it, run the baseline and the candidates on it (0.5.0's runners), compare against the baseline, and read the
+from it, run the baseline and the candidates on it (on this machine in 0.4.6; on another machine with 0.5.0's
+runners), compare against the baseline, and read the
 trends. Each step is a command; the catalog shows the versions, their profiles and the comparisons. A scheduler is
 out of scope here.
 
 ### 9. Agents
 
-- Read tools (0.4.5): `datasets`, `dataset-items`, and `harvests` (new: list harvests and their counts).
-- Write tools (0.5.0, RFC-013 declarations): `dataset-harvest`, `harvest-scrub`, `dataset-from-harvest`,
+- Read tools: `datasets` and `dataset-items` (0.4.5), and `harvests` (new in this RFC: list harvests and their
+  counts), added to the read-only server in 0.4.6.
+- Write tools wait for 0.5.0 (RFC-013 declarations, the actor and consent): `dataset-harvest`, `harvest-scrub`, `dataset-from-harvest`,
   `dataset-split`, `reference-from-outcomes`. **Freezing a dataset from a harvest of a `private` source needs the
   person's `--confirm`**: what production data becomes a committed dataset is a person's decision. An agent can
   prepare everything up to it and hand the person the exact command.
 - A skill, `evh-dataset-from-production`, walks an agent through the steps above.
+
+### What 0.4.6 ships, and what waits for 0.5.0
+
+- **0.4.6**: the commands (1 to 7), the `jsonl` importer and the examples' importers, the `harvests` read tool,
+  the schema change (6) and the dataset page's version comparison (7). Everything runs on the person's machine.
+- **0.5.0**: the write tools and their consent (9), runners on another machine (8), test looks against heldout
+  (7). Nothing in 0.4.6 depends on them; each adds to a command that already works by hand.
 
 ## Not in scope
 
@@ -154,6 +178,10 @@ out of scope here.
    the harness can verify against `harvest.json`?
 3. Should freezing a harvest of a `public` source also need the person's confirmation?
 4. Which first: the Langfuse importer for the podcast pipeline, or the GitHub importer for the triage fleet?
+5. A comparison on a partly covered reference: on the covered items only, saying how many were left out (proposed),
+   or refused below a coverage the goal names?
+6. A split as two datasets (proposed: every reader works unchanged) or as an item field in one (one dataset, but
+   every comparison filters it)?
 
 ## Testing (when built)
 

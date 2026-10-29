@@ -178,10 +178,23 @@ def argv_of(parser: argparse.ArgumentParser, arguments: dict) -> list[str]:
     for k, v in arguments.items():
         a = by[k]
         if isinstance(a, (argparse._StoreTrueAction, argparse._StoreFalseAction)):
+            if not isinstance(v, bool):
+                raise ValueError(f"{k}: true or false, not {type(v).__name__}")
             if v:
                 out.append(max(a.option_strings, key=len))
             continue
-        vals = [str(x) for x in v] if isinstance(v, list) else [str(v)]
+        many = a.nargs in ("*", "+") or isinstance(a, argparse._AppendAction)
+        if isinstance(v, list) and not many:
+            raise ValueError(f"{k}: one value, not a list")
+        vals = v if isinstance(v, list) else [v]
+        if any(isinstance(x, (bool, dict, list)) or x is None for x in vals):
+            raise ValueError(f"{k}: each value is a string or a number")
+        vals = [str(x) for x in vals]
+        # A value that starts with "-" would be read by the command as an option of its own (a
+        # positional `["x", "--adapter", "mod:fn"]` would load code the schema leaves out): refused.
+        bad = [x for x in vals if x.startswith("-")]
+        if bad:
+            raise ValueError(f"{k}: a value may not start with '-' ({bad[0][:40]!r})")
         if not a.option_strings:
             tail.extend(vals)
         elif isinstance(a, argparse._AppendAction):
@@ -189,7 +202,8 @@ def argv_of(parser: argparse.ArgumentParser, arguments: dict) -> list[str]:
                 out += [max(a.option_strings, key=len), x]
         else:
             out += [max(a.option_strings, key=len), *vals]
-    return out + tail
+    # Positionals after "--": whatever they hold, the command reads them as values, never options.
+    return out + (["--", *tail] if tail else [])
 
 
 def run_command(
@@ -197,7 +211,7 @@ def run_command(
 ) -> tuple[int, str, str]:
     """`evh <command> <argv>` in the project, in its own process group, stdin closed, with a timeout
     that kills the group."""
-    cmd = [sys.executable, str(HERE / "cli.py"), command, *argv, *(["--json"] if command in JSON else [])]
+    cmd = [sys.executable, str(HERE / "cli.py"), command, *(["--json"] if command in JSON else []), *argv]
     # The goals' tests are the slow part of a view (~50 s for this repository's runs); each call is a
     # fresh process, so they are kept on disk (stats.EVH_P_CACHE), in the project's ignored .cache/
     # unless the deployment names its own precomputed file.
@@ -233,6 +247,11 @@ PUBLIC_DROPPED = {"validate": "a public copy is not a whole project: validate fa
 def tools_for(public: bool) -> tuple:
     """The tools this server offers."""
     return tuple(c for c in READ_TOOLS if not (public and c in PUBLIC_DROPPED))
+
+
+#: What the log line leaves out of a call: who made it (its address, its user agent). The hooks
+#: get both (analytics count a visitor by them); a log is kept and read by more hands.
+PRIVATE = ("client", "agent")
 
 
 def _log(**fields) -> None:
@@ -275,7 +294,19 @@ def _client(ctx, header: str | None) -> tuple[str, str]:
     if req is None:
         return "", ""
     addr = (req.headers.get(header) if header else None) or (req.client.host if req.client else "")
-    return addr, req.headers.get("user-agent", "")
+    return addr[:64], req.headers.get("user-agent", "")[:120]
+
+
+def caller_key(addr: str) -> str:
+    """Whom the rate counts: an IPv4 address, or an IPv6 address's /64 (one host holds a whole
+    /64, and rotating within it must not reset the count)."""
+    import ipaddress  # noqa: PLC0415
+
+    try:
+        ip = ipaddress.ip_address(addr)
+    except ValueError:
+        return addr
+    return str(ipaddress.ip_network(f"{ip}/64", strict=False)) if ip.version == 6 else str(ip)
 
 
 def build_server(
@@ -285,14 +316,19 @@ def build_server(
     timeout: float = TIMEOUT_S,
     concurrent: int = 4,
     rate: int = 0,
+    rate_total: int = 0,
     client_header: str | None = None,
     hooks: Hooks | None = None,
 ):
     """The MCP server: its tools, and how a call runs. `public`: no option that answers with text;
     `concurrent`: how many commands run at once (a call that waits 30 s for a slot is refused);
-    `rate`: calls a minute per caller (0: no limit)."""
+    `rate`: calls a minute per caller, `rate_total`: from all callers together (0: no limit; nothing
+    in front of a public server throttles for it, and a caller who can rotate its address is still
+    held by the total)."""
     hooks = hooks or Hooks()
     recent: dict[str, list[float]] = {}
+    everyone: list[float] = []
+    inflight: dict[str, int] = {}
     import anyio  # noqa: PLC0415
     import mcp.types as types  # noqa: PLC0415
     from evaluation_harness._version import __version__  # noqa: PLC0415
@@ -324,7 +360,7 @@ def build_server(
 
     def refuse(text: str, info: dict) -> types.CallToolResult:
         """A call refused before it ran: logged (without the caller) and told to the hooks."""
-        _log(**{k: v for k, v in info.items() if k != "client"})
+        _log(**{k: v for k, v in info.items() if k not in PRIVATE})
         hooks("request", info)
         return types.CallToolResult(content=[types.TextContent(text=text)], is_error=True)
 
@@ -332,36 +368,65 @@ def build_server(
         """tools/call: the command, run as a child process."""
         name, arguments = params.name, params.arguments or {}
         client, agent = _client(ctx, client_header)
-        # What is recorded of a call: the tool, the names of its arguments (never their values),
-        # how it ended. The caller's address goes to the hooks (analytics derive a visitor from it)
-        # and never into the log line.
-        info: dict = {"tool": name, "args": sorted(arguments), "agent": agent[:200], "client": client}
+        key = caller_key(client)
+        # What is recorded of a call: the tool (a name the server does not have is "unknown": a
+        # client's string never becomes a metric label, an event or a log key), the names of its
+        # arguments (at most 16, never their values), how it ended. The caller's address goes to
+        # the hooks (analytics derive a visitor from it), and neither it nor the user agent into the log line.
+        known = name in parsers
+        args = [str(k)[:40] for k in sorted(arguments)[:16]] if known else []
+        info: dict = {"tool": name if known else "unknown", "args": args, "agent": agent, "client": client}
         try:
-            if name not in parsers:
-                return refuse(f"no tool {name!r}", {**info, "refused": "tool"})
-            try:
-                argv = argv_of(parsers[name], arguments)
-            except ValueError as exc:
-                return refuse(str(exc), {**info, "refused": "arguments"})
+            # The rate counts every call, refused ones too: refusals are the cheap way to flood.
             if rate:
                 now = time.monotonic()
-                seen = [t for t in recent.get(client, []) if now - t < 60]
+                seen = [t for t in recent.get(key, []) if now - t < 60]
                 if len(seen) >= rate:
                     return refuse(
                         f"more than {rate} calls a minute; wait a moment", {**info, "refused": "rate"}
                     )
-                recent[client] = [*seen, now]
-            t0 = time.monotonic()
-            with anyio.move_on_after(30) as waited:
-                await slots.acquire()
-            if waited.cancelled_caught:
-                return refuse("the server is busy: try again in a minute", {**info, "refused": "busy"})
+                recent[key] = [*seen, now]
+                if len(recent) > 4096:  # forget callers quiet for a minute
+                    for k in [k for k, ts in recent.items() if not ts or now - ts[-1] >= 60]:
+                        del recent[k]
+            if rate_total:
+                now = time.monotonic()
+                everyone[:] = [t for t in everyone if now - t < 60]
+                if len(everyone) >= rate_total:
+                    return refuse(
+                        "the server is answering as many calls as it takes a minute; try again shortly",
+                        {**info, "refused": "rate_total"},
+                    )
+                everyone.append(now)
+            if not known:
+                return refuse(f"no tool {name[:60]!r}", {**info, "refused": "tool"})
             try:
-                code, out, err = await anyio.to_thread.run_sync(run_command, project, name, argv, timeout)
+                argv = argv_of(parsers[name], arguments)
+            except ValueError as exc:
+                return refuse(str(exc), {**info, "refused": "arguments"})
+            if (
+                client and inflight.get(key, 0) >= 1
+            ):  # over HTTP: a local stdio client may run tools in parallel
+                return refuse(
+                    "one call at a time per caller: wait for the last to answer", {**info, "refused": "busy"}
+                )
+            inflight[key] = inflight.get(key, 0) + 1
+            try:
+                t0 = time.monotonic()
+                with anyio.move_on_after(30) as waited:
+                    await slots.acquire()
+                if waited.cancelled_caught:
+                    return refuse("the server is busy: try again in a minute", {**info, "refused": "busy"})
+                try:
+                    code, out, err = await anyio.to_thread.run_sync(run_command, project, name, argv, timeout)
+                finally:
+                    slots.release()
             finally:
-                slots.release()
+                inflight[key] -= 1
+                if not inflight[key]:
+                    del inflight[key]
             done = {**info, "exit": code, "ms": round((time.monotonic() - t0) * 1000), "bytes": len(out)}
-            _log(**{k: v for k, v in done.items() if k != "client"})
+            _log(**{k: v for k, v in done.items() if k not in PRIVATE})
             hooks("request", done)
         except Exception as exc:
             hooks("error", exc, info)
@@ -438,6 +503,12 @@ def main(argv: list[str] | None = None) -> int:
         "--rate", type=int, default=0, help="--http: calls a minute per caller (default: no limit)"
     )
     ap.add_argument(
+        "--rate-total",
+        type=int,
+        default=0,
+        help="--http: calls a minute from all callers together (default: no limit)",
+    )
+    ap.add_argument(
         "--client-header",
         help="--http: the header that names the caller, set by the proxy in front (e.g. CF-Connecting-IP)",
     )
@@ -465,6 +536,7 @@ def main(argv: list[str] | None = None) -> int:
         timeout=args.timeout,
         concurrent=args.concurrent,
         rate=args.rate,
+        rate_total=args.rate_total,
         client_header=args.client_header,
         hooks=hooks,
     )

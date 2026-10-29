@@ -1,6 +1,6 @@
 # RFC-018: A read-only MCP server in 0.4.5
 
-- **Status**: Accepted (0.4.5), 2026-10-29: the owner's go on "a small read-only MCP server in 0.4.5, Python 3.9
+- **Status**: In Progress (0.4.5), accepted 2026-10-29: the owner's go on "a small read-only MCP server in 0.4.5, Python 3.9
   dropped there"
 - **Authors**: Marko Dragoljevic
 - **Related RFCs**: 0.5.0's RFC-013 (one declaration per command, `--json`, exit codes) and RFC-016 (the MCP server,
@@ -21,7 +21,8 @@ machine that holds the project (a laptop, a workstation), or over **Streamable H
 read commands, the same commands a person runs: the catalog's views (`overview`, `datasets`, `dataset-items`, `arms`,
 `goals`, `references`, `metrics`, `activity`, `search`), the inspector in the terminal (`inspect`), `rounds`,
 `runs-list` and `validate`. Each call runs the command as a child process, so a tool answers exactly what the command
-prints. No tool writes, spends or runs a model: running arms, promoting, retiring, judging and everything with a
+prints. No tool writes project data, spends or runs a model (the one file a call writes is the goals' p cache
+in the project's ignored `.cache/`, below): running arms, promoting, retiring, judging and everything with a
 consequence stay commands a person runs, until 0.5.0 brings the declarations, the actor and consent they need.
 
 ## Problem Statement
@@ -59,14 +60,19 @@ consequence stay commands a person runs, until 0.5.0 brings the declarations, th
 - **Annotations**: every tool `readOnlyHint: true`, `destructiveHint: false`, `idempotentHint: true`,
   `openWorldHint: false` (no read command calls a provider).
 - **A call** runs the command as a child process (`evh`, the command, the tool's arguments as options, `--json` where it has one) in its own process group, in the project
-  root, with the server's environment, a timeout of 300 s and stdin closed. Cancelling the request or the timeout kills
-  the group. The arguments are built from the tool's input by the same parser actions (an option's own flag, repeated
-  for a list), so a call is a command line a person could type; a property the schema does not have is refused before
-  anything runs.
+  root, with the server's environment, a timeout of 300 s and stdin closed. The timeout kills the group (exit 124).
+  A request the client cancels does not stop the command: it runs to its end or its timeout, holding its slot.
+- **The arguments** are built from the tool's input by the same parser actions (an option's own flag, repeated for
+  a list), so a call is a command line a person could type. Refused before anything runs: a property the schema does
+  not have; a missing required one; a value of the wrong kind (a list for an option that takes one value, anything
+  but `true`/`false` for a flag, an object or null); and any value that starts with `-`, which the command would read
+  as an option of its own (`["x", "--adapter", "mod:fn"]` would reach an option the schema leaves out).
+  Positionals follow `--`. A dataset id is a name, never a path: every command refuses one with `/` or `..`
+  (`_common.dataset_id_ok`).
 - **The result**: stdout as the tool's text, and for a command with `--json` its JSON as `structuredContent`, both
   capped at 1 MB (beyond it the result is an error that names the command's own filters). A refusal (a non-zero exit)
-  is a result with `isError: true`, the command's stderr as its text and the exit code. The last 64 KB of stderr is
-  kept otherwise as the result's log.
+  is a result with `isError: true`, the last 64 KB of the command's stderr (or its stdout when stderr is empty) as
+  its text, and the exit code. A command's stderr on success is not returned.
 
 ### `--json` for the view commands (`_jsonout.py`)
 
@@ -84,7 +90,7 @@ consequence stay commands a person runs, until 0.5.0 brings the declarations, th
 ### Python 3.10
 
 `requires-python = ">=3.10"`, the package job's matrix `3.10`, `3.11`, `3.14`, the README's badge and PRD-007's floor.
-Nothing in the code needs 3.10 syntax for this change; the floor is the SDK's. `ruff.toml` keeps
+The floor is the SDK's; the new tests already use 3.10 syntax (`str | None` at run time). `ruff.toml` keeps
 `target-version = "py39"`: at py310 ruff raises 46 new findings (37 `zip()` without `strict=`), several in the
 examples' scorers, whose source is hashed into the committed runs' fingerprints; a stricter syntax target costs
 nothing.
@@ -103,27 +109,33 @@ nothing.
   left out of the schemas (`inspect --item`, `dataset-items --item`), and `validate` is not offered (a public copy of
   the data is not a whole project, so it would only report what was left out).
 - **Load**: `--concurrent N` commands at once (a call waiting 30 s for a slot is refused, "busy"), `--timeout` per
-  call, `--rate N` calls a minute per caller, the caller named by `--client-header` (the proxy's, e.g.
-  `CF-Connecting-IP`) or the connection.
+  call, `--rate N` calls a minute per caller and `--rate-total N` for all callers together, and over HTTP one call
+  running at a time per caller. The caller is named by `--client-header` (the proxy's, e.g. `CF-Connecting-IP`) or
+  the connection, an IPv6 address by its /64. Every call counts toward the rate, a refused one too. A header is
+  trusted as it comes: a caller that can reach the port past the proxy can name itself anything, which the total
+  still holds.
 - **Speed**: each call is a fresh process, and a view that shows the goals runs their paired tests (~500 here, ~50 s).
   `stats` keeps each estimated p on disk when `EVH_P_CACHE` names a file (the p read back exactly; a torn last line
   skipped); the server sets it to the project's ignored `.cache/evh-p.jsonl` unless the deployment names its own.
   `goals`, `overview` and `arms` went from ~52 s to ~1.6 s.
 - **Observability**, the deployment's (`--hooks`, the inspector's shape: `start`, `request` after every call,
   `error`, `routes` served beside the endpoint): a call is reported as its tool, its arguments' names (never their
-  values), how it ended, its time, and to the hooks only, the caller's address. One JSON line per call on stderr
-  carries the same without the address.
+  values), how it ended, its time, and to the hooks only, the caller's address and user agent. One JSON line per
+  call on stderr carries the same without either. A tool name the server does not have is reported as `unknown`.
 
 ### This repository's deployment (`infra/`)
 
 - `evals-mcp`, a third container beside nginx and the inspector: the same stock Python image, user, read-only mount and
   hardening, `--http --public --allowed-host evals.humancopilot.eu --client-header CF-Connecting-IP --rate 30
-  --concurrent 2 --timeout 60`, a hard `mem_limit` of 384m (the box has no swap and a nightly pipeline; prod's
+  --rate-total 120 --concurrent 2 --timeout 60`. The throttling is the server's own: Cloudflare proxies the host but
+  has no rate limit for it (the owner, 2026-10-29). Also a hard `mem_limit` of 384m (the box has no swap and a nightly pipeline; prod's
   sizing), 127.0.0.1:8098. Caddy sends `/mcp` and `/mcp/*` to it, nothing else (its `/metrics` stays on the loopback).
 - `render.sh` vendors the SDK and its dependencies, pinned (`infra/mcp/requirements.txt`, resolved for x86_64 musl),
   as wheels beside the package, and fills the p cache during the catalog build, so the release carries it read-only.
-- `deploy.sh` recreates it with the rest, checks `/mcp/health` and a real `goals` call within 30 s (which needs the
-  precomputed cache), and rolls it back with the release (removing it when the previous release had none).
+- `deploy.sh` recreates it with the rest, checks `/mcp/health` and a real `goals` call (up to 120 s; a warning past
+  30 s, which means the precomputed cache was not read), and rolls the release back when either does not answer
+  (removing the container when the previous release had none). The workflow then checks `/mcp/health` through the
+  public host.
 - `infra/mcp/hooks.py`: errors to GlitchTip (project `evals-mcp`, `EVALS_SENTRY_DSN_MCP`), a span per call to the
   homelab's traces (service `evals-mcp`), `/metrics` (calls per tool and outcome, latency, memory, Umami events), and
   one Umami event per call (`mcp:<tool>`) on the site's own website, sent to `UMAMI_SEND_URL` on the tailnet with the

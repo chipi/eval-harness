@@ -174,13 +174,16 @@ _P_MAX = 4096
 #: `evh` command is a fresh process, so without it every `evh goals` (and every MCP call, RFC-018)
 #: drew the same ~500 tests again (about 50 s here). A stored p is the one the test computed, read
 #: back exactly; the file is read once, appended when writable, and only read when it is not (a
-#: deployment precomputes it). Unset: nothing is stored.
+#: deployment precomputes it). Unset: nothing is stored. A file that cannot be read is no cache.
 _DISK: dict | None = None
+#: Part of every key: a change to how a p is computed (the draw, the exact cut-off) is a new key,
+#: so a file written by the old code is never read as the new code's answer.
+_P_ALGO = f"sign-flip-1:exact<={EXACT_UP_TO}"
 
 
 def _disk_key(key: tuple) -> str:
     deltas, permutations, seed = key
-    h = hashlib.sha256(f"{permutations}:{seed}:".encode())
+    h = hashlib.sha256(f"{_P_ALGO}:{permutations}:{seed}:".encode())
     h.update(",".join(float(d).hex() for d in deltas).encode())
     return h.hexdigest()
 
@@ -191,13 +194,16 @@ def _disk() -> dict:
         _DISK = {}
         path = os.environ.get("EVH_P_CACHE")
         if path and os.path.isfile(path):
-            with open(path, encoding="utf-8") as fh:
-                for line in fh:
-                    try:
-                        rec = json.loads(line)
-                        _DISK[rec["k"]] = float.fromhex(rec["p"])
-                    except (ValueError, KeyError, TypeError):
-                        continue  # a torn last line from an interrupted writer
+            try:
+                with open(path, encoding="utf-8") as fh:
+                    for line in fh:
+                        try:
+                            rec = json.loads(line)
+                            _DISK[rec["k"]] = float.fromhex(rec["p"])
+                        except (ValueError, KeyError, TypeError):
+                            continue  # a torn line from an interrupted writer
+            except (OSError, ValueError):  # unreadable, or not UTF-8: computed, not read
+                _DISK = {}
     return _DISK
 
 
@@ -215,8 +221,10 @@ def _store_p(key: tuple, p: float) -> None:
     _disk()[k] = p
     try:
         os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
-        with open(path, "a", encoding="utf-8") as fh:  # one short line: an atomic append
-            fh.write(json.dumps({"k": k, "p": p.hex()}) + "\n")
+        with open(path, "a+b") as fh:  # one short line: an atomic append
+            # after a torn last line (a writer killed mid-line), start a new one
+            torn = fh.tell() > 0 and (fh.seek(-1, os.SEEK_END) or fh.read(1) != b"\n")
+            fh.write((b"\n" if torn else b"") + (json.dumps({"k": k, "p": p.hex()}) + "\n").encode())
     except OSError:
         pass  # read-only (a deployment's precomputed file): the p is still right, only not kept
 

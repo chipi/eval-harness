@@ -45,6 +45,7 @@ from evaluation_harness._common import (
     REFERENCES,
     ROOT,
     adapter_search_dirs,
+    dataset_id_ok,
     die,
     how,
     read_json,
@@ -76,7 +77,7 @@ def _item_sources(dataset_id: str) -> dict[str, str]:
     the fallback `<item_id>.txt` fired every time, and on any dataset whose files are named
     otherwise the source text arrived as None: silently, because a scorer that wanted the
     source then measured nothing rather than failing."""
-    ds_file = DATASETS / f"{dataset_id}.json"
+    ds_file = DATASETS / f"{dataset_id_ok(dataset_id)}.json"
     items = read_json(ds_file).get("items") or [] if ds_file.is_file() else []
     return {it["item_id"]: it["source_path"] for it in items if it.get("item_id") and it.get("source_path")}
 

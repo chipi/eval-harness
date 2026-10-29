@@ -742,18 +742,18 @@ def load_hooks(spec: str):
 
     A hook that raises is reported on stderr and never breaks the request."""
     import importlib  # noqa: PLC0415
-    import importlib.util  # noqa: PLC0415
 
     target, _, name = spec.partition(":")
     if target.endswith(".py"):
         path = Path(target).resolve()
         if not path.is_file():
             raise SystemExit(f"--hooks: no file {target}")
-        mod_spec = importlib.util.spec_from_file_location(f"evh_hooks_{path.stem}", path)
-        if mod_spec is None or mod_spec.loader is None:
-            raise SystemExit(f"--hooks: cannot load {target}")
-        mod = importlib.util.module_from_spec(mod_spec)
-        mod_spec.loader.exec_module(mod)
+        from evaluation_harness._common import ModuleNotLoadable, load_module  # noqa: PLC0415
+
+        try:
+            mod = load_module(path, f"evh_hooks_{path.stem}")
+        except ModuleNotLoadable as exc:
+            raise SystemExit(f"--hooks: cannot load {target}") from exc
     else:
         try:
             mod = importlib.import_module(target)

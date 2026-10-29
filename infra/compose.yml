@@ -162,8 +162,13 @@ services:
       # The header Cloudflare sets, as for the inspector (only Cloudflare reaches 443).
       - --client-header
       - CF-Connecting-IP
+      # The throttling is the server's own: nothing in front of it rate-limits (Cloudflare only
+      # proxies). Per caller, and for everyone together: a caller who rotates the header it is
+      # named by (or reaches the box past Cloudflare) is still held by the total.
       - --rate
       - "30"
+      - --rate-total
+      - "120"
       # Two commands at once at most: each is a process of up to ~60 MB, inside mem_limit.
       - --concurrent
       - "2"

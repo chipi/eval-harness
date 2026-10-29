@@ -65,6 +65,7 @@ runs when it starts, so after a new run, stop it and start it again.
 | the arms and configs page: every arm, grouped and filtered; every config with its rank on each goal | `evh arms --by config`, `evh arms --configs` |
 | the catalog's datasets page: every dataset, its items, arms and references | `evh datasets` |
 | a dataset page: its versions, references and every arm with its headline number | `evh datasets --dataset-id tickets_v1` |
+| a dataset page's "what's inside": its items, their lengths and gold, each item's link | `evh dataset-items --dataset-id tickets_v1` (after `evh dataset-profile --dataset-id tickets_v1`) |
 | an arm page: its metrics, runs, config, conditions, rounds | `evh arms --arm tickets_lead1_v1` |
 | a reference page: who wrote it, from which run, every arm scored against it | `evh references --reference-id silver/tickets_v1` |
 | the metrics page: what each metric measures, which way is better, where it is recorded | `evh metrics` |

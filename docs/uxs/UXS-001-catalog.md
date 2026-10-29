@@ -283,7 +283,8 @@ tiles open it.
   `evh dataset-profile` where the dataset is materialized and committed, so a catalog built anywhere
   shows it; never the items' text, which may not be redistributable):
   - one line: "200 items, text, 15–136 words (median 40, middle half 32–46)"; the source, linked,
-    when the profile names one ("The text stays there; each item below links to its row"); and "The
+    when the profile names one ("The text stays there; each item below links to its row", the second
+    half only when an item has a link; a link only to an `http(s)` address); and "The
     items changed since this profile was written", when its items digest is not the dataset's;
   - a histogram of words per item;
   - **the gold**: per gold reference its shape: labels in a table (**label**, **items**, **share**),
@@ -292,7 +293,8 @@ tiles open it.
   - the items, paged and filterable: **item** (the id, short, the full id in its title), **words**,
     **gold** (the label, "3 entries", "57 words"), **open**: **source ↗** (its row at the source,
     when the dataset or its fetcher recorded one) and **inspect** (the inspector on the dataset's
-    largest group of comparable arms, opened at this item). A **text** column only when the
+    largest group of comparable arms, its first 40, opened at this item; only when that group has
+    at least two arms). A **text** column only when the
     profile carries text, which `--with-text` writes only for items git already tracks;
   - without a profile: "No profile yet", and the command that writes one.
 - `versions`, when the dataset has lineage: "Made from `<parent>`: a added, r removed, c changed"

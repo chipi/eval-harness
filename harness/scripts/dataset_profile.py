@@ -14,8 +14,9 @@ materialized and committed, so a catalog built anywhere shows it.
 
 Where an item can be read comes from the dataset itself, never guessed: an item fetched from a
 `source_url` links there; otherwise a fetcher may write `data/sources/<dataset_id>.rows.json`
-(`{"source": {"name", "url"}, "item_url": "...{row}...", "rows": {item_id: row}}`), as this
-repository's Hugging Face fetchers do. Without either, an item has no link.
+(`{"source": {"name", "url"}, "item_url": "...{row}...", "rows": {item_id: {"row", "sha256"}}}`),
+as this repository's Hugging Face fetchers do; an entry counts only when its sha256 is the item's.
+Only an http(s) address is a link. Without either, an item has no link.
 
 `--with-text` adds each item's text, and refuses unless every item's source file is tracked by
 git: it publishes only what the repository already does (a project's own synthetic data).
@@ -102,7 +103,13 @@ def reference_shape(texts: dict[str, str]) -> tuple[dict, dict[str, str]]:
         return {"shape": "record", "keys": keys}, {k: f"{len(v)} fields" for k, v in parsed.items()}
     plain = {k: (v if isinstance(v, str) else t) for (k, v), t in zip(parsed.items(), texts.values())}
     values = Counter(v.strip() for v in plain.values())
-    if len(values) <= MAX_LABELS and all(len(v.split()) <= MAX_LABEL_WORDS for v in values):
+    # Labels are few short values that repeat (a class per item); a short answer per item that
+    # rarely recurs is the item's gold, and is summarised as text, never listed.
+    if (
+        len(values) <= MAX_LABELS
+        and len(values) <= len(plain) / 2
+        and all(len(v.split()) <= MAX_LABEL_WORDS for v in values)
+    ):
         return {"shape": "labels", "labels": dict(sorted(values.items()))}, {
             k: v.strip() for k, v in plain.items()
         }
@@ -124,7 +131,7 @@ def source_links(dataset: dict) -> tuple[dict | None, dict[str, str]]:
     """The dataset's source and a URL per item: an item's own source_url, else a rows map entry
     whose sha256 is the item's frozen one (an id alone may recur in another dataset)."""
     items = dataset.get("items") or []
-    urls = {it["item_id"]: it["source_url"] for it in items if it.get("source_url")}
+    urls = {it["item_id"]: it["source_url"] for it in items if web(it.get("source_url"))}
     sha = {it["item_id"]: it.get("source_sha256") for it in items}
     source, best = None, 0
     for f in sorted(_common.SOURCES.glob("*.rows.json")):
@@ -137,18 +144,37 @@ def source_links(dataset: dict) -> tuple[dict | None, dict[str, str]]:
         if not rows:
             continue
         for item, row in rows.items():
-            urls.setdefault(item, doc["item_url"].replace("{row}", str(row)))
+            url = str(doc.get("item_url") or "").replace("{row}", str(row))
+            if web(url):
+                urls.setdefault(item, url)
         if len(rows) > best:
             best, source = len(rows), doc.get("source")
+    if source and not web(source.get("url")):
+        source = {k: v for k, v in source.items() if k != "url"}
     return source, urls
 
 
+def web(url) -> bool:
+    """An http(s) URL: the only kind a page links to (a `javascript:` one would run on click)."""
+    return isinstance(url, str) and url.lower().startswith(("https://", "http://"))
+
+
 def tracked(paths: list[Path]) -> list[Path]:
-    """The paths git does not track (all of them when this is not a git checkout)."""
+    """The paths git has not committed (all of them when this is not a git checkout): a file only
+    staged is not yet in the history anyone can read."""
     root = _common.ROOT
     try:
         out = subprocess.run(
-            ["git", "ls-files", "-z", "--", *[str(p.relative_to(root)) for p in paths]],
+            [
+                "git",
+                "ls-tree",
+                "-r",
+                "-z",
+                "--name-only",
+                "HEAD",
+                "--",
+                *[str(p.relative_to(root)) for p in paths],
+            ],
             cwd=root,
             capture_output=True,
             text=True,
@@ -270,7 +296,7 @@ def render(p: dict, item: str | None) -> str:
 
 def load_profile(dataset_id: str) -> dict:
     """data/profiles/<dataset_id>.json, or a refusal saying how to write it."""
-    f = _common.DATA / "profiles" / f"{dataset_id}.json"
+    f = _common.DATA / "profiles" / f"{_common.dataset_id_ok(dataset_id)}.json"
     if not f.is_file():
         die(
             f"no profile for {dataset_id} ({f}): write one with `evh dataset-profile --dataset-id {dataset_id}` "
@@ -283,13 +309,24 @@ def main_profile(argv: list[str] | None = None) -> int:
     """evh dataset-profile."""
     ap = argparse.ArgumentParser(prog="evh dataset-profile", description=__doc__.split("\n\n")[0])
     ap.add_argument("--dataset-id", required=True)
-    ap.add_argument("--with-text", action="store_true", help="add each item's text (only when git tracks it)")
-    ap.add_argument("--json", action="store_true", help="print the profile instead of a summary")
+    ap.add_argument(
+        "--with-text",
+        action="store_true",
+        help="add each item's text (only when git has committed every item's file)",
+    )
+    ap.add_argument(
+        "--json",
+        action="store_true",
+        help='the profile written, as JSON: {"command", "version", "result": <the profile>}',
+    )
     args = ap.parse_args(argv)
     p = profile(args.dataset_id, args.with_text)
-    out = _common.DATA / "profiles" / f"{args.dataset_id}.json"
+    out = _common.DATA / "profiles" / f"{_common.dataset_id_ok(args.dataset_id)}.json"
     write_json(out, p)
-    print(json.dumps(p, indent=1) if args.json else f"wrote {out}\n" + render(p, None).split("\n\n")[0])
+    if args.json:
+        print(json.dumps({"command": "dataset-profile", "version": __version__, "result": p}, indent=1))
+    else:
+        print(f"wrote {out}\n" + render(p, None).split("\n\n")[0])
     return 0
 
 
@@ -307,7 +344,14 @@ def main_items(argv: list[str] | None = None) -> int:
     p = load_profile(args.dataset_id)
     if args.json:
         if args.item:
-            p = dict(p, rows=[r for r in p["rows"] if r["item_id"].startswith(args.item)])
+            rows = [dict(r) for r in p["rows"] if r["item_id"].startswith(args.item)]
+            if not rows:
+                die(f"no item {args.item!r} in {p['dataset_id']}")
+            for r in rows:  # its text when it is here, as the printed form shows it
+                local = _common.item_path(p["dataset_id"], r["item_id"])
+                if local:
+                    r["text"] = local.read_text(encoding="utf-8", errors="replace")
+            p = dict(p, rows=rows)
         print(json.dumps({"command": "dataset-items", "version": __version__, "result": p}, indent=1))
     else:
         print(render(p, args.item))

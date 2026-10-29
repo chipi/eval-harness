@@ -104,25 +104,25 @@ echo "  current -> $REL (previous: ${prev:-none})"
 sleep 1
 for site in "$REL"/sites/*/; do
   host="$(basename "$site")"
-  code="$(curl -s -o /dev/null -w '%{http_code}' -H "Host: $host" "http://127.0.0.1:$PORT/")"
+  code="$(curl -s -o /dev/null -w '%{http_code}' -H "Host: $host" "http://127.0.0.1:$PORT/")" || code=000
   [ "$code" = 200 ] || rollback "health check failed: $host / returned $code"
-  code="$(curl -s -o /dev/null -w '%{http_code}' -H "Host: $host" "http://127.0.0.1:$PORT/no-such-page-$SHA")"
+  code="$(curl -s -o /dev/null -w '%{http_code}' -H "Host: $host" "http://127.0.0.1:$PORT/no-such-page-$SHA")" || code=000
   [ "$code" = 404 ] || rollback "health check failed: $host 404 page returned $code"
   echo "  $host ok"
 done
 # The catalog's pages and the docs, under /catalog/ and /docs/ on the site's host.
 for path in catalog docs; do
-  code="$(curl -s -o /dev/null -w '%{http_code}' -H "Host: $SITE_HOST" "http://127.0.0.1:$PORT/$path/")"
+  code="$(curl -s -o /dev/null -w '%{http_code}' -H "Host: $SITE_HOST" "http://127.0.0.1:$PORT/$path/")" || code=000
   [ "$code" = 200 ] || rollback "health check failed: $SITE_HOST/$path/ returned $code"
   echo "  $SITE_HOST/$path/ ok"
 done
-code="$(curl -s -o /dev/null -w '%{http_code}' -H "Host: $SITE_HOST" "http://127.0.0.1:$IPORT/api/health")"
+code="$(curl -s -o /dev/null -w '%{http_code}' -H "Host: $SITE_HOST" "http://127.0.0.1:$IPORT/api/health")" || code=000
 [ "$code" = 200 ] || rollback "health check failed: inspector /api/health returned $code"
 # A real question, one arm from a dataset page's own links: the inspector reads this release's
 # data. probe_link.sh holds the extraction, so it is tested off the box (make -C harness test).
 q="$(bash "$REL/deploy/probe_link.sh" "$REL/sites/$SITE_HOST/public/catalog/d" one)"
 if [ -n "$q" ]; then
-  body="$(curl -s -m 120 -H "Host: $SITE_HOST" "http://127.0.0.1:$IPORT/api/compare?$q")"
+  body="$(curl -s -m 120 -H "Host: $SITE_HOST" "http://127.0.0.1:$IPORT/api/compare?$q")" || body=""
   grep -q '"rows"' <<<"$body" || rollback "health check failed: the inspector did not answer a comparison (${body:0:200})"
 fi
 # And the question readers send most: a dataset page's group button, several arms on one
@@ -130,25 +130,29 @@ fi
 # error. probe_link.sh holds the extraction, so it is tested off the box (make -C harness test).
 q2="$(bash "$REL/deploy/probe_link.sh" "$REL/sites/$SITE_HOST/public/catalog/d")"
 if [ -n "$q2" ]; then
-  body="$(curl -s -m 180 -H "Host: $SITE_HOST" "http://127.0.0.1:$IPORT/api/compare?$q2")"
+  body="$(curl -s -m 180 -H "Host: $SITE_HOST" "http://127.0.0.1:$IPORT/api/compare?$q2")" || body=""
   if ! { grep -q '"rows": \[{' <<<"$body" && ! grep -q '"error"' <<<"$body"; }; then
     rollback "health check failed: the inspector did not test a group of arms (${body:0:200})"
   fi
 fi
 echo "  inspector ok"
 # The MCP server: its health, then a real tool call as a client sends it (stateless JSON-RPC over
-# HTTP, the protocol revision most clients speak). `goals` runs the goals' tests: within 30 s only
-# when the release's precomputed p cache is there (render.sh), about 50 s without it.
-code="$(curl -s -o /dev/null -w '%{http_code}' -H "Host: $SITE_HOST" "http://127.0.0.1:$MPORT/mcp/health")"
+# HTTP, the protocol revision most clients speak). `goals` runs the goals' tests: a few seconds with the
+# release's precomputed p cache (render.sh), about 50 s without it, so a slow answer is a warning, not a
+# rollback; no answer within 120 s is.
+code="$(curl -s -o /dev/null -w '%{http_code}' -H "Host: $SITE_HOST" "http://127.0.0.1:$MPORT/mcp/health")" || code=000
 [ "$code" = 200 ] || rollback "health check failed: MCP /mcp/health returned $code"
-body="$(curl -s -m 30 -X POST "http://127.0.0.1:$MPORT/mcp" -H "Host: $SITE_HOST" \
+t0=$(date +%s)
+body="$(curl -s -m 120 -X POST "http://127.0.0.1:$MPORT/mcp" -H "Host: $SITE_HOST" \
   -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream' \
   -H 'MCP-Protocol-Version: 2025-06-18' \
-  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"goals","arguments":{}}}')"
-if ! { grep -q '"result"' <<<"$body" && ! grep -q '"isError":true' <<<"$body"; }; then
-  rollback "health check failed: the MCP server did not answer goals within 30 s (${body:0:200})"
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"goals","arguments":{}}}')" || body=""
+secs=$(( $(date +%s) - t0 ))
+if ! { grep -q '"result"' <<<"$body" && ! grep -Eq '"isError": *true' <<<"$body"; }; then
+  rollback "health check failed: the MCP server did not answer goals within 120 s (${body:0:200})"
 fi
-echo "  mcp ok"
+[ "$secs" -le 30 ] || echo "::warning::the MCP server took ${secs} s to answer goals: is the release's p cache missing?"
+echo "  mcp ok (goals in ${secs} s)"
 
 # 6. Edge vhosts.
 bash "$REL/deploy/install_vhosts.sh" "$REL/caddy"

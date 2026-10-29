@@ -77,7 +77,7 @@ cp -a "$ROOT/infra/inspector/hooks.py" "$OUT/inspector/hooks.py"
 python3 -m pip install --quiet --no-deps --no-compile --target "$OUT/inspector/mcpvendor" \
   --only-binary=:all: --platform musllinux_1_2_x86_64 --platform musllinux_1_1_x86_64 \
   --implementation cp --python-version 3.12 \
-  --abi cp312 --abi abi3 --abi none -r "$ROOT/infra/mcp/requirements.txt"
+  --abi cp312 --abi abi3 --abi none --require-hashes -r "$ROOT/infra/mcp/requirements.txt"
 cp -a "$ROOT/infra/mcp/hooks.py" "$OUT/inspector/mcp_hooks.py"
 # Its Umami events go to the site's own website (the id is public, site/analytics.json); where to
 # send them (UMAMI_SEND_URL, on the tailnet) is in observability.env, rendered by the deploy.
@@ -170,4 +170,13 @@ sed -i "s#__RELEASE__#sha-${SHA:0:7}#g" "$OUT/compose.yml"
 if left="$(grep -rnoE --exclude='*.js' --exclude='*.map' '__[A-Z][A-Z0-9_]+__' "$OUT/nginx" "$OUT/caddy" "$OUT/sites" "$OUT/compose.yml" 2>/dev/null | grep -v '__pycache__')"; then
   echo "::error::unrendered tokens in the release:"; echo "$left"; exit 1
 fi
+# What a release must never carry, whatever the checkout it was rendered from holds: reference texts
+# (a gold reference is not committed; a working copy may have fetched it) and materialized items.
+# A fresh CI checkout has neither; a render on a developer's machine might.
+if leaked="$(find "$OUT/inspector/data/references" -name '*.txt' 2>/dev/null | head -3)" && [ -n "$leaked" ]; then
+  echo "::error::reference texts in the release (not public): $leaked"; exit 1
+fi
+[ ! -e "$OUT/inspector/data/materialized" ] || { echo "::error::materialized items in the release"; exit 1; }
+# The MCP server's precomputed goals' tests: without them each view takes ~50 s.
+[ -s "$OUT/inspector/cache/evh-p.jsonl" ] || { echo "::error::the p cache (inspector/cache/evh-p.jsonl) is missing or empty"; exit 1; }
 echo "rendered release $SHA into $OUT (nginx $PORT, inspector $IPORT, mcp $MPORT)"

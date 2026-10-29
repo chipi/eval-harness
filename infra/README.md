@@ -91,8 +91,10 @@ infra/
     or runs a model); `--public` leaves out the options that answer with an item's text and the
     `validate` tool (the release's copy of the data is not a whole project); it reads the read-only
     mount. No authentication: it answers what the site and the catalog already publish.
-  - **Load and speed:** `--rate 30` calls a minute per caller (`CF-Connecting-IP`, as for the
-    inspector), two commands at a time, 60 s each. Each call is a fresh `evh` process; the goals'
+  - **Load and speed:** the server throttles itself (Cloudflare only proxies): `--rate 30` calls a
+    minute per caller (`CF-Connecting-IP`, as for the inspector), `--rate-total 120` for everyone,
+    one call at a time per caller,
+    two commands at a time, 60 s each. Each call is a fresh `evh` process; the goals'
     paired tests, which a view would otherwise draw again (~50 s), come precomputed in
     `inspector/cache/evh-p.jsonl` (`render.sh` fills it during the catalog build; `EVH_P_CACHE`).
   - **Hardening:** as the inspector, with a hard 384 MB memory limit (the server and two commands;
@@ -103,7 +105,8 @@ infra/
     `/metrics` on the container's port only (Caddy forwards nothing but `/mcp`), and one Umami event
     per call (`mcp:<tool>`, on the site's website; `UMAMI_SEND_URL`, the homelab Umami on the
     tailnet, rendered like the traces endpoint). A call is logged as one JSON line: the tool, its
-    arguments' names (never their values), how it ended, its time; never the caller.
+    arguments' names (never their values), how it ended, its time; never the caller's address or
+    user agent (those go to the hooks only, for the Umami visitor count).
 
 ## What `deploy.sh` checks before a release counts as live
 

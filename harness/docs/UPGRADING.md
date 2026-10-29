@@ -5,6 +5,30 @@ change the pin, then check what it says can move. **If you copied `harness/` int
 repository** before October 2026, read the rest of this page first: your copy has
 correctness bugs, not just missing features.
 
+## From 0.4.4 to 0.4.5
+
+Change the pin to `@v0.4.5`. No record, hash or p-value moves. Three things to check first:
+
+- **Python 3.10 or later.** The package's floor moves from 3.9, because the official MCP SDK
+  needs 3.10. On 3.9, stay on `@v0.4.4`.
+- **One new dependency, `mcp>=2.3,<3`**, installed with the package like every other (it brings
+  `starlette`, `uvicorn`, `pydantic` and a few more; the CHANGELOG lists them). A lock file or a
+  vendored install changes.
+- **`evh mcp` writes one file: `<project>/.cache/evh-p.jsonl`**, the goals' paired tests kept
+  between calls (`EVH_P_CACHE`). Add `.cache/` to the project's `.gitignore` if it is not there.
+  Deleting the file only makes the next call slower.
+
+A dataset id must now be a name (letters, digits, `.`, `_`, `-`): an id with `/` or `..` is
+refused by every command that reads or writes a dataset's file. Everything else is added and
+optional: `evh dataset-profile` and a committed `data/profiles/<id>.json` give a dataset page its
+"what's inside"; an adapter may answer `dataset_profile(dataset)`.
+
+## From 0.4.3 to 0.4.4
+
+Change the pin to `@v0.4.4`. No record, hash or p-value moves. Added and optional: `evh catalog
+--about FILE` and `--repo URL`, and a goal's `links` are shown. A catalog built as a command now
+puts `--brand`, `--link`, `--head` and `--api` on the arms page too, where 0.4.3 left them out.
+
 ## From 0.4.2 to 0.4.3
 
 Change the pin to `@v0.4.3`. No record, hash or p-value moves. `evh catalog-serve` answers 404 to

@@ -62,8 +62,21 @@ try:
     (proj / "data").mkdir()
     dataset(
         "topics",
-        {"a": "the market fell today", "b": "the team won", "c": "a new chip ships", "d": "rates rose again"},
-        {"a": "Business", "b": "Sports", "c": "Sci/Tech", "d": "Business"},
+        {
+            "a": "the market fell today",
+            "b": "the team won",
+            "c": "a new chip ships",
+            "d": "rates rose again",
+            "e": "a faster laptop",
+            "f": "the cup final",
+        },
+        {"a": "Business", "b": "Sports", "c": "Sci/Tech", "d": "Business", "e": "Sci/Tech", "f": "Sports"},
+    )
+    # A short answer per item, none repeated: the items' gold, never listed as labels.
+    dataset(
+        "answers",
+        {"a": "capital of France", "b": "two plus two", "c": "largest ocean"},
+        {"a": "Paris", "b": "four", "c": "Pacific"},
     )
     dataset(
         "ents",
@@ -93,12 +106,12 @@ try:
     check("profile: written for a materialized dataset", r.returncode == 0, (r.stdout + r.stderr)[-300:])
     check(
         "profile: counts the items and their words",
-        p.get("items", {}).get("n") == 4 and p["items"]["words"]["max"] == 4,
+        p.get("items", {}).get("n") == 6 and p["items"]["words"]["max"] == 4,
     )
     gold = (p.get("references") or [{}])[0]
     check(
         "profile: a gold of few short values reads as labels, with their counts",
-        gold.get("shape") == "labels" and gold.get("labels") == {"Business": 2, "Sci/Tech": 1, "Sports": 1},
+        gold.get("shape") == "labels" and gold.get("labels") == {"Business": 2, "Sci/Tech": 2, "Sports": 2},
         json.dumps(gold),
     )
     check(
@@ -108,6 +121,13 @@ try:
             r_["source_url"] == f"https://example.org/acme/news?row={ids.index(r_['item_id'])}"
             for r_ in p["rows"]
         ),
+    )
+    evh("dataset-profile", "--dataset-id", "answers")
+    pa = (proj / "data" / "profiles" / "answers.json").read_text()
+    check(
+        "profile: short answers that do not repeat are summarised, never listed per item",
+        json.loads(pa)["references"][0]["shape"] == "text" and "Paris" not in pa and "Pacific" not in pa,
+        pa[:300],
     )
     check("profile: no text unless asked for", not any("text" in r_ for r_ in p.get("rows", [])))
 
@@ -132,7 +152,21 @@ try:
         (r.stdout + r.stderr)[-300:],
     )
     subprocess.run(["git", "init", "-q"], cwd=proj, check=True)
+    r = evh("dataset-profile", "--dataset-id", "topics", "--with-text")
+    check(
+        "--with-text: refused in a git checkout that does not track the files",
+        r.returncode != 0,
+        r.stdout[-200:],
+    )
     subprocess.run(["git", "add", "src/topics"], cwd=proj, check=True)
+    r = evh("dataset-profile", "--dataset-id", "topics", "--with-text")
+    check(
+        "--with-text: refused while the files are only staged, not committed",
+        r.returncode != 0,
+        r.stdout[-200:],
+    )
+    git = ["git", "-c", "user.name=t", "-c", "user.email=t@example.test", "-c", "commit.gpgsign=false"]
+    subprocess.run([*git, "commit", "-qm", "items"], cwd=proj, check=True)
     r = evh("dataset-profile", "--dataset-id", "topics", "--with-text")
     pt = json.loads((proj / "data" / "profiles" / "topics.json").read_text())
     check(
@@ -146,9 +180,9 @@ try:
     check(
         "dataset-items: prints the shape and a row per item",
         r.returncode == 0
-        and "4 items" in r.stdout
+        and "6 items" in r.stdout
         and "Business 2" in r.stdout
-        and r.stdout.count("example.org") >= 4,
+        and r.stdout.count("example.org") >= 6,
         r.stdout[-400:],
     )
     r = evh("dataset-items", "--dataset-id", "topics", "--item", ids[0][:10])
@@ -181,9 +215,9 @@ try:
     check(
         "page: what's inside, with the item count, the labels, a link per item and the source",
         "what&#x27;s inside" in page
-        and "4 items" in page
+        and "6 items" in page
         and "Sci/Tech" in page
-        and page.count("source ↗") == 4
+        and page.count("source ↗") == 6
         and "acme/news" in page,
     )
     check(

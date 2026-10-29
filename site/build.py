@@ -1516,6 +1516,8 @@ def privacy_page() -> str:
   <p>Cloudflare, which delivers this site, also measures visits and page speed with its Web Analytics. It sets no cookies either.</p>
   <h2>Server logs</h2>
   <p>The web server records requests (time, page, IP address, browser) to keep the site running and secure. That includes the catalog and its run inspector, which answer from the same server. Searchable logs are deleted after 30 days. Copies on the server are size-capped and overwritten as new requests come in. Logs are not shared.</p>
+  <h2>The MCP server</h2>
+  <p>When an agent calls a tool at <code>https://evals.humancopilot.eu/mcp</code>, the call is counted in the same Umami as an event: the tool's name, whether it answered, and how long it took. Umami is told the caller's IP address so it can count visitors and countries as it does for pages; it is not told the agent's own browser or client name, and never what the call asked for. The server's own log line for a call holds the tool, the names of its arguments, how it ended and its time: no address, no client name, no argument values. An error is reported to a self-hosted error tracker with the tool's name and where the code failed (no variables' values). The web server's request logs, above, cover these requests too.</p>
   <h2>Documentation</h2>
   <p>The documentation is hosted on GitHub Pages. GitHub keeps its own request logs under its {ext(gh, "privacy statement", "github-privacy")}.</p>
   <h2>Your browser</h2>

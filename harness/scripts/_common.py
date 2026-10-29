@@ -12,6 +12,7 @@ import functools
 import hashlib
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -349,9 +350,20 @@ def goal_policy() -> dict[str, Any]:
     return doc if isinstance(doc, dict) else {}
 
 
+#: A dataset id: a file name under data/, never a path (`../x` or `/etc/x` would read outside it).
+DATASET_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
+
+
+def dataset_id_ok(dataset_id: str) -> str:
+    """The id, or SystemExit when it is not a plain name (a path would leave data/)."""
+    if not DATASET_ID.fullmatch(dataset_id or "") or ".." in dataset_id:
+        raise SystemExit(f"not a dataset id: {dataset_id[:60]!r} (letters, digits, '.', '_', '-')")
+    return dataset_id
+
+
 def load_dataset(dataset_id: str) -> dict[str, Any]:
     """Load a dataset by id from data/datasets, or raise SystemExit."""
-    path = _paths()["DATASETS"] / f"{dataset_id}.json"
+    path = _paths()["DATASETS"] / f"{dataset_id_ok(dataset_id)}.json"
     if not path.is_file():
         raise SystemExit(
             f"no such dataset: {dataset_id}\n"

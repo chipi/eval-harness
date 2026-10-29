@@ -120,7 +120,23 @@ def shown_params(params: dict[str, Any]) -> dict[str, Any]:
     """`params` as a page or the CLI may show them: no `api_key_env`, and a literal credential
     replaced by "(hidden)"."""
     hidden = set(secret_params(params))
-    return {k: ("(hidden)" if k in hidden else v) for k, v in identity_params(params).items()}
+    return {k: ("(hidden)" if k in hidden else _shown(v)) for k, v in identity_params(params).items()}
+
+
+#: A URL that carries a credential in it: scheme://user:password@host.
+_URL_USERINFO = re.compile(r"^([a-z][a-z0-9+.-]*://)[^/@\s]+@", re.IGNORECASE)
+
+
+def _shown(v: Any) -> Any:
+    """A param's value as shown: a URL's user and password, and a nested secret-named key
+    (`headers: {Authorization: ...}`), replaced by "(hidden)"."""
+    if isinstance(v, str):
+        return _URL_USERINFO.sub(r"\1(hidden)@", v)
+    if isinstance(v, dict):
+        return {k: ("(hidden)" if _SECRET_NAME.search(str(k)) else _shown(x)) for k, x in v.items()}
+    if isinstance(v, list):
+        return [_shown(x) for x in v]
+    return v
 
 
 def identity_params(params: dict[str, Any]) -> dict[str, Any]:

@@ -66,12 +66,13 @@ It was built to answer four questions anyone building with AI ends up asking:
 | **read what it found** | [**The experiments**](https://evals.humancopilot.eu/experiments.html): 24 LLMs, fine-tunes and baselines on six benchmarks, generated from the runs in this repository, so every number on it is checked |
 | **check it yourself** | [**Reproduce it**](docs/REPRODUCE.md): five levels, from recomputing every number ($0, one command) to rerunning every model with one OpenRouter key |
 | **browse the runs, test any two** | [**The catalog**](https://evals.humancopilot.eu/catalog/): every run of the six experiments, with the run inspector; `evh catalog-serve` gives you the same over your own runs |
+| **ask it from your agent** | `https://evals.humancopilot.eu/mcp`: the catalog's views as read-only MCP tools, for Claude, ChatGPT, the OpenAI API, Gemini or any MCP client, no sign-in; `evh mcp` serves your own project ([how to connect](harness/docs/INTEGRATION.md#for-an-agent-evh-mcp)) |
 | **read the full documentation** | [evals.humancopilot.eu/docs](https://evals.humancopilot.eu/docs/): guide, concepts, runbook, integration, architecture, protocol, reference |
 | **review or contribute** | [KNOWN_ISSUES](research/internal/KNOWN_ISSUES.md) (what is open), [CONTRIBUTING](CONTRIBUTING.md) |
 
 ## The loop, on your system
 
-One install is everything (hosted-model clients, judges, the catalog and the inspector); which
+One install is everything (hosted-model clients, judges, the catalog, the inspector and `evh mcp`); which
 model provider you use is your choice, with your own key.
 
 ```bash

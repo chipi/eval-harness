@@ -79,6 +79,8 @@ def start(info: dict) -> None:
                 server_name=SERVICE,
                 traces_sample_rate=0.0,
                 default_integrations=False,
+                # A request's frames hold its parameters; GlitchTip gets the error, never their values.
+                include_local_variables=False,
             )
             _state["sentry"] = True
         except Exception as exc:  # noqa: BLE001

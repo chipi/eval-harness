@@ -31,8 +31,10 @@ try:
     from mcp import ClientSession
     from mcp.client.stdio import StdioServerParameters, stdio_client
 except ImportError as exc:  # the package depends on mcp; a checkout's venv may predate it
-    print(f"  --   test_mcp_server skipped: {exc} (pip install -r requirements.txt)")
-    sys.exit(0)
+    print(
+        f"  FAIL test_mcp_server: {exc}: mcp is a dependency of the package (pip install -r requirements.txt)"
+    )
+    sys.exit(1)
 
 proj = Path(tempfile.mkdtemp(prefix="evh-mcp-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-mcp")
@@ -130,6 +132,55 @@ try:
             )
             res = await s.call_tool("run-promote", {})
             check("a command that is not a tool is refused", res.is_error, res.content[0].text)
+            # Values are data, never a way past the schema (an independent review's two holes).
+            (proj / "outside.json").write_text('{"secret": "TOPSECRET"}')
+            for bad in ["../outside", str(proj / "outside"), "..", "a/b"]:
+                res = await s.call_tool("dataset-items", {"dataset-id": bad})
+                check(
+                    f"dataset-items: a path as the id is refused ({bad[:20]!r}), nothing outside data/ is read",
+                    res.is_error
+                    and "TOPSECRET" not in res.content[0].text
+                    and "not a dataset id" in res.content[0].text,
+                    res.content[0].text[:200],
+                )
+            for v in (["r1", "--item", "t01_login"], "--item"):
+                res = await s.call_tool("inspect", {"runs": v})
+                check(
+                    f"inspect: an option smuggled in a value is refused ({v!r})",
+                    res.is_error
+                    and (
+                        "may not start with '-'" in res.content[0].text or "not a list" in res.content[0].text
+                    ),
+                    res.content[0].text[:200],
+                )
+            res = await s.call_tool("datasets", {"dataset-id": ["tickets_v1", "x"]})
+            check(
+                "a list for an option that takes one value is refused",
+                res.is_error and "one value, not a list" in res.content[0].text,
+                res.content[0].text[:200],
+            )
+            flag = next(
+                (
+                    (t.name, k)
+                    for t in tools
+                    for k, v in t.input_schema["properties"].items()
+                    if v.get("type") == "boolean"
+                ),
+                None,
+            )
+            if flag:
+                res = await s.call_tool(flag[0], {flag[1]: "false"})
+                check(
+                    f"a flag given as the string 'false' is refused, not read as on ({flag[0]} {flag[1]})",
+                    res.is_error and "true or false" in res.content[0].text,
+                    res.content[0].text[:200],
+                )
+            res = await s.call_tool("search", {"text": ["tickets_v1"]})
+            check(
+                "search: its text after '--', read as words, the answer found",
+                not res.is_error and "tickets_v1" in res.content[0].text,
+                res.content[0].text[:200],
+            )
 
     anyio.run(session)
 finally:

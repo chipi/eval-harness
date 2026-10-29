@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import json
 import os
+import queue
 import threading
 import time
 import urllib.request
@@ -45,7 +46,10 @@ _count: dict = {}  # (tool, outcome) -> calls
 _hist: dict = {}  # tool -> [count per bucket..., +Inf count, sum of seconds]
 _errors = [0]
 _umami_sent = [0, 0]  # sent, failed
-_state: dict = {"tracer": None, "sentry": False, "umami": None, "started": time.time()}
+_state: dict = {"tracer": None, "sentry": False, "umami": None, "started": time.time(), "tools": frozenset()}
+#: Umami events waiting to be sent, by one worker thread: a bounded queue, so a slow or absent Umami
+#: never grows threads or memory (an event that does not fit is dropped and counted).
+_events: queue.Queue = queue.Queue(maxsize=256)
 
 
 def _settings() -> dict:
@@ -69,6 +73,8 @@ def _release() -> str:
 
 def start(info: dict) -> None:
     s, release = _settings(), _release()
+    # The tools this server offers: anything else a client names is counted as "unknown".
+    _state["tools"] = frozenset(info.get("tools") or ())
     if s.get("MCP_SENTRY_DSN"):
         try:
             import sentry_sdk  # noqa: PLC0415
@@ -80,6 +86,8 @@ def start(info: dict) -> None:
                 server_name=SERVICE,
                 traces_sample_rate=0.0,
                 default_integrations=False,
+                # A call's frames hold its arguments; GlitchTip gets the error, never their values.
+                include_local_variables=False,
             )
             _state["sentry"] = True
         except Exception as exc:  # noqa: BLE001
@@ -116,6 +124,7 @@ def start(info: dict) -> None:
     cfg = json.loads(umami.read_text()) if umami.is_file() else {}
     if s.get("UMAMI_SEND_URL", "").startswith("https://") and cfg.get("website_id"):
         _state["umami"] = {"send_url": s["UMAMI_SEND_URL"], "website_id": cfg["website_id"]}
+        threading.Thread(target=_umami_worker, daemon=True, name="umami").start()
     print(
         f"hooks: {release}; GlitchTip {'on' if _state['sentry'] else 'off'}, traces "
         f"{'on' if _state['tracer'] else 'off'}, Umami {'on' if _state['umami'] else 'off'}, /metrics on",
@@ -129,8 +138,14 @@ def _outcome(info: dict) -> str:
     return "ok" if info.get("exit") == 0 else "error"
 
 
+def _tool(info: dict) -> str:
+    """A tool name safe for a label, a span and an event: one the server offers, else "unknown"."""
+    t = str(info.get("tool") or "")
+    return t if t in _state["tools"] else "unknown"
+
+
 def request(info: dict) -> None:
-    tool, outcome, secs = info.get("tool", ""), _outcome(info), (info.get("ms") or 0) / 1000
+    tool, outcome, secs = _tool(info), _outcome(info), (info.get("ms") or 0) / 1000
     with _lock:
         _count[(tool, outcome)] = _count.get((tool, outcome), 0) + 1
         h = _hist.setdefault(tool, [0] * (len(BUCKETS) + 2))
@@ -145,20 +160,30 @@ def request(info: dict) -> None:
         span = tracer.start_span(f"mcp {tool}", start_time=end - int(secs * 1e9))
         span.set_attribute("mcp.tool", tool)
         span.set_attribute("mcp.outcome", outcome)
-        span.set_attribute("mcp.argument_names", ",".join(info.get("args") or []))
+        span.set_attribute("mcp.argument_names", ",".join(info.get("args") or [])[:400])
         if outcome == "error":
             from opentelemetry.trace import Status, StatusCode  # noqa: PLC0415
 
             span.set_status(Status(StatusCode.ERROR))
         span.end(end_time=end)
-    if _state["umami"] is not None:
-        threading.Thread(target=_umami, args=(info, outcome), daemon=True).start()
+    # Analytics count calls the server answered; a refused one (rate, busy, a bad argument) is not a
+    # visit, and sending it would let a flood through to the shared Umami.
+    if _state["umami"] is not None and not info.get("refused"):
+        try:
+            _events.put_nowait((tool, outcome, info.get("ms") or 0, str(info.get("client") or "")[:64]))
+        except queue.Full:
+            with _lock:
+                _umami_sent[1] += 1
 
 
-def _umami(info: dict, outcome: str) -> None:
+def _umami_worker() -> None:
+    while True:
+        _umami(*_events.get())
+
+
+def _umami(tool: str, outcome: str, ms: int, client: str) -> None:
     """One event on the site's Umami website, as its script would send it: POST /api/send."""
     cfg = _state["umami"]
-    tool = info.get("tool", "")
     body = {
         "type": "event",
         "payload": {
@@ -167,12 +192,12 @@ def _umami(info: dict, outcome: str) -> None:
             "url": f"/mcp/{tool}",
             "title": f"MCP {tool}",
             "name": f"mcp:{tool}",
-            "data": {"tool": tool, "outcome": outcome, "ms": info.get("ms") or 0},
+            "data": {"tool": tool, "outcome": outcome, "ms": ms},
         },
     }
     headers = {"Content-Type": "application/json", "User-Agent": UA}
-    if info.get("client"):
-        headers["X-Forwarded-For"] = info["client"]
+    if client:
+        headers["X-Forwarded-For"] = client
     req = urllib.request.Request(  # noqa: S310 -- an https URL the deploy rendered
         cfg["send_url"], data=json.dumps(body).encode(), headers=headers, method="POST"
     )
@@ -193,7 +218,7 @@ def error(exc: BaseException, info: dict) -> None:
         import sentry_sdk  # noqa: PLC0415
 
         with sentry_sdk.new_scope() as scope:
-            scope.set_tag("tool", info.get("tool", ""))
+            scope.set_tag("tool", _tool(info))
             sentry_sdk.capture_exception(exc)
 
 

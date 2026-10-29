@@ -15,7 +15,7 @@ each dataset's own page is what binds.*
 | **Gold and silver references** for the six experiments | **no**, only each gold reference's `manifest.json` (the checksum of every item) | rebuilt by `fetch.py`, byte for byte (seeded); `evh validate` checks the copy against the manifest |
 | **Run outputs** (`outputs/`, `predictions.jsonl`) | **yes**: what each system produced, and its scores | — |
 | **Scores, costs, fingerprints** (`metrics.json`) | yes | — |
-| **Dataset profiles** (`data/profiles/`): item counts and lengths, the gold's labels and their counts, each item's row number at its source | yes: **no text**, only what describes it, so a reader can see what a dataset holds and open any item at its source | — |
+| **Dataset profiles** (`data/profiles/`): item counts and lengths, the gold's shape, and per item its length, its gold **when the gold is a label** (a few short values that repeat, as AG News' classes; any other gold only as a count) and a link to its row in the source's viewer | yes: **no item text**, only what describes it, so a reader can see what a dataset holds and open any item at its source. A label per item is the one piece of a gold reference published, as in the source dataset itself | — |
 | **Demo and tutorial data** (`harness/data/sources`, `harness/tutorial/`) | yes: synthetic or invented, written for this repository | — |
 
 A dataset's identity travels as a hash (`items_sha256`, `corpus_sha256`), not as its

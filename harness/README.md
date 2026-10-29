@@ -17,7 +17,8 @@ evh init --tutorial    # the data folders, a .gitignore, and the tutorial kit
 evh --help             # the verbs, in the order you need them
 ```
 
-One install is everything: hosted-model clients, judges, the catalog and the inspector. It
+One install is everything: hosted-model clients, judges, the catalog, the inspector and `evh mcp`, the read
+commands as tools for an agent ([INTEGRATION](docs/INTEGRATION.md#for-an-agent-evh-mcp)). Python 3.10 or later. It
 imports nothing from your project until an arm names your adapter, and your project imports
 nothing from it.
 
