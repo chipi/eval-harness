@@ -9,12 +9,18 @@
 # a name that does not resolve here makes Caddy retry ACME and burn Let's Encrypt's budget.
 # __EVALS_PORT__ is rendered at deploy time (127.0.0.1:8096, the evals-nginx container), and
 # __INSPECTOR_PORT__ (127.0.0.1:8097, evals-inspector): the catalog lives under /catalog/ on this
-# host, and its API under /catalog/api/, which the inspector answers as /api/.
+# host, and its API under /catalog/api/, which the inspector answers as /api/. __MCP_PORT__
+# (127.0.0.1:8098, evals-mcp): the MCP server at /mcp.
 evals.humancopilot.eu {
 	import hardened
 	handle /catalog/api/* {
 		uri strip_prefix /catalog
 		reverse_proxy 127.0.0.1:__INSPECTOR_PORT__
+	}
+	# The MCP server: its endpoint and its health, nothing else (its /metrics stays on the loopback
+	# port, for the box's collector).
+	handle /mcp /mcp/* {
+		reverse_proxy 127.0.0.1:__MCP_PORT__
 	}
 	handle {
 		reverse_proxy 127.0.0.1:__EVALS_PORT__

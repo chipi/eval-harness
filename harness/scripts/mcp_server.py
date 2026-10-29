@@ -27,6 +27,7 @@ import runpy
 import signal
 import subprocess
 import sys
+import time
 from pathlib import Path
 from typing import Any
 
@@ -169,6 +170,9 @@ def argv_of(parser: argparse.ArgumentParser, arguments: dict) -> list[str]:
         raise ValueError(
             f"unknown argument(s): {', '.join(unknown)}; this tool takes {', '.join(sorted(by)) or 'none'}"
         )
+    missing = sorted(k for k, a in by.items() if (a.required or not a.option_strings) and k not in arguments)
+    if missing:
+        raise ValueError(f"missing argument(s): {', '.join(missing)}")
     out: list[str] = []
     tail: list[str] = []
     for k, v in arguments.items():
@@ -188,13 +192,21 @@ def argv_of(parser: argparse.ArgumentParser, arguments: dict) -> list[str]:
     return out + tail
 
 
-def run_command(project: Path, command: str, argv: list[str]) -> tuple[int, str, str]:
+def run_command(
+    project: Path, command: str, argv: list[str], timeout: float = TIMEOUT_S
+) -> tuple[int, str, str]:
     """`evh <command> <argv>` in the project, in its own process group, stdin closed, with a timeout
     that kills the group."""
     cmd = [sys.executable, str(HERE / "cli.py"), command, *argv, *(["--json"] if command in JSON else [])]
+    # The goals' tests are the slow part of a view (~50 s for this repository's runs); each call is a
+    # fresh process, so they are kept on disk (stats.EVH_P_CACHE), in the project's ignored .cache/
+    # unless the deployment names its own precomputed file.
+    env = dict(os.environ)
+    env.setdefault("EVH_P_CACHE", str(project / ".cache" / "evh-p.jsonl"))
     p = subprocess.Popen(
         cmd,
         cwd=project,
+        env=env,
         stdin=subprocess.DEVNULL,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -202,23 +214,97 @@ def run_command(project: Path, command: str, argv: list[str]) -> tuple[int, str,
         start_new_session=True,
     )
     try:
-        out, err = p.communicate(timeout=TIMEOUT_S)
+        out, err = p.communicate(timeout=timeout)
     except subprocess.TimeoutExpired:
         os.killpg(p.pid, signal.SIGKILL)
         out, err = p.communicate()
-        return 124, out, err + f"\n(stopped after {TIMEOUT_S} s)"
+        return 124, out, err + f"\n(stopped after {timeout:g} s)"
     return p.returncode, out, err
 
 
-def build_server(project: Path):
-    """The MCP server: its tools, and how a call runs."""
+#: In --public mode, the options that would answer with an item's text or an arm's output: a
+#: public server answers with numbers and ids only, as catalog-serve --public does without --publish.
+PUBLIC_HIDDEN = {"inspect": {"--item"}, "dataset-items": {"--item"}}
+#: In --public mode, the tools left out, and why: a public server serves a copy of the data, not a
+#: whole project (no corpora, no example code), so validate would only ever report what is not there.
+PUBLIC_DROPPED = {"validate": "a public copy is not a whole project: validate fails by design"}
+
+
+def tools_for(public: bool) -> tuple:
+    """The tools this server offers."""
+    return tuple(c for c in READ_TOOLS if not (public and c in PUBLIC_DROPPED))
+
+
+def _log(**fields) -> None:
+    """One JSON line per call on stderr (the deployment's log collector reads it)."""
+    print(
+        json.dumps({"at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), **fields}),
+        file=sys.stderr,
+        flush=True,
+    )
+
+
+class Hooks:
+    """A deployment's observability (`--hooks`, the inspector's shape: catalog_serve.load_hooks):
+    `start(info)`, `request(info)` after each call, `error(exc, info)`, and `routes` ({path:
+    fn(query) -> (status, content_type, body)}, served beside the endpoint, not under it). A hook
+    that raises is reported on stderr and never breaks the call it observes."""
+
+    def __init__(self, obj=None):
+        self.obj = obj
+
+    def __call__(self, name: str, *args) -> None:
+        fn = getattr(self.obj, name, None) if self.obj is not None else None
+        if callable(fn):
+            try:
+                fn(*args)
+            except Exception as exc:  # noqa: BLE001 -- a hook never breaks the call it observes
+                print(f"hooks.{name} failed: {type(exc).__name__}: {exc}", file=sys.stderr, flush=True)
+
+    def routes(self) -> dict:
+        """The hooks' own routes, {path: fn(query) -> (status, content_type, body)}."""
+        r = getattr(self.obj, "routes", None) if self.obj is not None else None
+        r = r() if callable(r) else r
+        return r if isinstance(r, dict) else {}
+
+
+def _client(ctx, header: str | None) -> tuple[str, str]:
+    """(the caller's address, its user agent) from the HTTP request; ("", "") over stdio. A header
+    names the caller only when the deployment says so (--client-header), behind a proxy that sets it."""
+    req = getattr(ctx, "request", None)
+    if req is None:
+        return "", ""
+    addr = (req.headers.get(header) if header else None) or (req.client.host if req.client else "")
+    return addr, req.headers.get("user-agent", "")
+
+
+def build_server(
+    project: Path,
+    *,
+    public: bool = False,
+    timeout: float = TIMEOUT_S,
+    concurrent: int = 4,
+    rate: int = 0,
+    client_header: str | None = None,
+    hooks: Hooks | None = None,
+):
+    """The MCP server: its tools, and how a call runs. `public`: no option that answers with text;
+    `concurrent`: how many commands run at once (a call that waits 30 s for a slot is refused);
+    `rate`: calls a minute per caller (0: no limit)."""
+    hooks = hooks or Hooks()
+    recent: dict[str, list[float]] = {}
     import anyio  # noqa: PLC0415
     import mcp.types as types  # noqa: PLC0415
     from evaluation_harness._version import __version__  # noqa: PLC0415
     from evaluation_harness.cli import COMMANDS  # noqa: PLC0415
     from mcp.server import Server  # noqa: PLC0415
 
-    parsers = {c: parser_of(c) for c in READ_TOOLS}
+    parsers = {c: parser_of(c) for c in tools_for(public)}
+    if public:
+        for c, flags in PUBLIC_HIDDEN.items():
+            p = parsers[c]
+            p._actions = [a for a in p._actions if not set(a.option_strings) & flags]
+    slots = anyio.CapacityLimiter(concurrent)
     tools = [
         types.Tool(
             name=c,
@@ -229,23 +315,57 @@ def build_server(project: Path):
                 read_only_hint=True, destructive_hint=False, idempotent_hint=True, open_world_hint=False
             ),
         )
-        for c in READ_TOOLS
+        for c in tools_for(public)
     ]
 
     async def list_tools(_ctx, _params) -> types.ListToolsResult:
         """tools/list: the read commands."""
         return types.ListToolsResult(tools=tools)
 
-    async def call_tool(_ctx, params) -> types.CallToolResult:
+    def refuse(text: str, info: dict) -> types.CallToolResult:
+        """A call refused before it ran: logged (without the caller) and told to the hooks."""
+        _log(**{k: v for k, v in info.items() if k != "client"})
+        hooks("request", info)
+        return types.CallToolResult(content=[types.TextContent(text=text)], is_error=True)
+
+    async def call_tool(ctx, params) -> types.CallToolResult:
         """tools/call: the command, run as a child process."""
         name, arguments = params.name, params.arguments or {}
-        if name not in parsers:
-            return types.CallToolResult(content=[types.TextContent(text=f"no tool {name!r}")], is_error=True)
+        client, agent = _client(ctx, client_header)
+        # What is recorded of a call: the tool, the names of its arguments (never their values),
+        # how it ended. The caller's address goes to the hooks (analytics derive a visitor from it)
+        # and never into the log line.
+        info: dict = {"tool": name, "args": sorted(arguments), "agent": agent[:200], "client": client}
         try:
-            argv = argv_of(parsers[name], arguments)
-        except ValueError as exc:
-            return types.CallToolResult(content=[types.TextContent(text=str(exc))], is_error=True)
-        code, out, err = await anyio.to_thread.run_sync(run_command, project, name, argv)
+            if name not in parsers:
+                return refuse(f"no tool {name!r}", {**info, "refused": "tool"})
+            try:
+                argv = argv_of(parsers[name], arguments)
+            except ValueError as exc:
+                return refuse(str(exc), {**info, "refused": "arguments"})
+            if rate:
+                now = time.monotonic()
+                seen = [t for t in recent.get(client, []) if now - t < 60]
+                if len(seen) >= rate:
+                    return refuse(
+                        f"more than {rate} calls a minute; wait a moment", {**info, "refused": "rate"}
+                    )
+                recent[client] = [*seen, now]
+            t0 = time.monotonic()
+            with anyio.move_on_after(30) as waited:
+                await slots.acquire()
+            if waited.cancelled_caught:
+                return refuse("the server is busy: try again in a minute", {**info, "refused": "busy"})
+            try:
+                code, out, err = await anyio.to_thread.run_sync(run_command, project, name, argv, timeout)
+            finally:
+                slots.release()
+            done = {**info, "exit": code, "ms": round((time.monotonic() - t0) * 1000), "bytes": len(out)}
+            _log(**{k: v for k, v in done.items() if k != "client"})
+            hooks("request", done)
+        except Exception as exc:
+            hooks("error", exc, info)
+            raise
         if code != 0:
             text = (err.strip() or out.strip() or f"exit {code}")[-65536:]
             return types.CallToolResult(
@@ -278,25 +398,145 @@ def build_server(project: Path):
     )
 
 
+LOOPBACK = ("127.0.0.1", "localhost", "::1")
+
+
 def main(argv: list[str] | None = None) -> int:
     """evh mcp."""
     ap = argparse.ArgumentParser(prog="evh mcp", description=__doc__.split("\n\n")[0])
     ap.add_argument(
         "--project", type=Path, default=Path.cwd(), help="the project (default: the working directory)"
     )
+    ap.add_argument(
+        "--http", action="store_true", help="serve Streamable HTTP instead of stdio (a shared server)"
+    )
+    ap.add_argument("--bind", default="127.0.0.1", help="--http: the address (default: 127.0.0.1)")
+    ap.add_argument("--port", type=int, default=8765, help="--http: the port (default: 8765)")
+    ap.add_argument("--path", default="/mcp", help="--http: the endpoint's path (default: /mcp)")
+    ap.add_argument(
+        "--allowed-host",
+        action="append",
+        default=[],
+        help="--http: a Host header the server answers (repeat); required to bind beyond the loopback",
+    )
+    ap.add_argument(
+        "--allowed-origin",
+        action="append",
+        default=[],
+        help="--http: a browser Origin the server accepts (repeat)",
+    )
+    ap.add_argument(
+        "--public",
+        action="store_true",
+        help="no option that answers with an item's text or an arm's output (for a server anyone can reach)",
+    )
+    ap.add_argument(
+        "--timeout", type=float, default=TIMEOUT_S, help=f"seconds per call (default: {TIMEOUT_S})"
+    )
+    ap.add_argument("--concurrent", type=int, default=4, help="commands run at once (default: 4)")
+    ap.add_argument(
+        "--rate", type=int, default=0, help="--http: calls a minute per caller (default: no limit)"
+    )
+    ap.add_argument(
+        "--client-header",
+        help="--http: the header that names the caller, set by the proxy in front (e.g. CF-Connecting-IP)",
+    )
+    ap.add_argument(
+        "--hooks",
+        help="a deployment's observability: path/to/file.py[:NAME] or module[:NAME] (start, request, error, routes)",
+    )
     args = ap.parse_args(argv)
     import anyio  # noqa: PLC0415
-    from mcp.server.stdio import stdio_server  # noqa: PLC0415
 
     project = args.project.resolve()
-    server = build_server(project)
+    if args.http and args.bind not in LOOPBACK and not args.allowed_host:
+        raise SystemExit(
+            f"--bind {args.bind} reaches beyond this machine: name the Host it answers with --allowed-host "
+            "(the server checks it against DNS rebinding)"
+        )
+    hooks = Hooks()
+    if args.hooks:
+        from evaluation_harness.catalog_serve import load_hooks  # noqa: PLC0415
 
-    async def serve() -> None:
-        """The stdio transport, until the client closes it."""
-        async with stdio_server() as (read, write):
-            await server.run(read, write, server.create_initialization_options())
+        hooks = Hooks(load_hooks(args.hooks))
+    server = build_server(
+        project,
+        public=args.public,
+        timeout=args.timeout,
+        concurrent=args.concurrent,
+        rate=args.rate,
+        client_header=args.client_header,
+        hooks=hooks,
+    )
+    from evaluation_harness._version import __version__  # noqa: PLC0415
 
-    anyio.run(serve)
+    hooks(
+        "start",
+        {
+            "version": __version__,
+            "tools": list(tools_for(args.public)),
+            "public": args.public,
+            "transport": "http" if args.http else "stdio",
+        },
+    )
+    args.hook_obj = hooks
+    if not args.http:
+        from mcp.server.stdio import stdio_server  # noqa: PLC0415
+
+        async def serve() -> None:
+            """The stdio transport, until the client closes it."""
+            async with stdio_server() as (read, write):
+                await server.run(read, write, server.create_initialization_options())
+
+        anyio.run(serve)
+        return 0
+    return serve_http(server, args)
+
+
+def serve_http(server, args) -> int:
+    """Streamable HTTP, stateless, JSON responses: every request stands alone, so any client and any
+    number of replicas serve it. `<path>/health` answers {"ok": true} for a load balancer."""
+    import uvicorn  # noqa: PLC0415
+    from evaluation_harness._version import __version__  # noqa: PLC0415
+    from mcp.server.transport_security import TransportSecuritySettings  # noqa: PLC0415
+    from starlette.requests import Request  # noqa: PLC0415
+    from starlette.responses import JSONResponse, Response  # noqa: PLC0415
+    from starlette.routing import Route  # noqa: PLC0415
+
+    security = None
+    if args.allowed_host:
+        security = TransportSecuritySettings(
+            enable_dns_rebinding_protection=True,
+            allowed_hosts=[*args.allowed_host, "127.0.0.1:*", "localhost:*"],
+            allowed_origins=args.allowed_origin,
+        )
+
+    async def health(_request: Request) -> JSONResponse:
+        """GET <path>/health."""
+        return JSONResponse(
+            {"ok": True, "version": __version__, "tools": len(tools_for(args.public)), "public": args.public}
+        )
+
+    def hook_route(fn):
+        async def handle(request: Request) -> Response:
+            """A route the hooks serve (e.g. /metrics), outside the MCP endpoint's path."""
+            status, ctype, body = fn(request.url.query)
+            return Response(body, status_code=status, media_type=ctype)
+
+        return handle
+
+    extra = [Route(f"{args.path.rstrip('/')}/health", health, methods=["GET"])]
+    extra += [Route(p, hook_route(fn), methods=["GET"]) for p, fn in args.hook_obj.routes().items()]
+    app = server.streamable_http_app(
+        streamable_http_path=args.path,
+        stateless_http=True,
+        json_response=True,
+        transport_security=security,
+        host=args.bind,
+        custom_starlette_routes=extra,
+    )
+    print(f"evh mcp: http://{args.bind}:{args.port}{args.path}", file=sys.stderr, flush=True)
+    uvicorn.run(app, host=args.bind, port=args.port, log_level="warning", proxy_headers=True)
     return 0
 
 

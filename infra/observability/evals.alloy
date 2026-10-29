@@ -1,4 +1,4 @@
-// evals.alloy — log rules for this repo's `evals-nginx` and `evals-inspector` containers, as a drop-in for the
+// evals.alloy — log rules for this repo's `evals-nginx`, `evals-inspector` and `evals-mcp` containers, as a drop-in for the
 // prod VPS's shared node Alloy (/opt/vps-observability/config.d/, podcast_scraper ADR-121).
 // Installed by infra/deploy/install_alloy.sh (copied from chipi/humancopilot.eu), which validates the WHOLE config.d set with this
 // file before installing and rolls back if Alloy refuses the reload.
@@ -22,7 +22,7 @@ discovery.relabel "evals" {
 	targets = discovery.docker.app.targets
 	rule {
 		source_labels = ["__meta_docker_container_name"]
-		regex         = "/evals-(nginx|inspector)"
+		regex         = "/evals-(nginx|inspector|mcp)"
 		action        = "keep"
 	}
 	rule {
@@ -44,6 +44,14 @@ discovery.relabel "evals" {
 		regex         = "/evals-inspector"
 		target_label  = "surface"
 		replacement   = "inspector"
+	}
+	// The MCP server (0.4.5): one JSON line per tool call (tool, argument names, outcome, ms; never
+	// an argument's value or the caller's address).
+	rule {
+		source_labels = ["__meta_docker_container_name"]
+		regex         = "/evals-mcp"
+		target_label  = "surface"
+		replacement   = "mcp"
 	}
 	// The deployed release (compose label `release: sha-<7>`); loki.process moves it into the
 	// `release` field and drops it as a stream label (LOG-STANDARD: one value per deploy, not a
@@ -147,6 +155,48 @@ prometheus.scrape "evals_inspector" {
 	targets         = discovery.relabel.evals_metrics.output
 	forward_to      = [prometheus.remote_write.sink.receiver]
 	job_name        = "evals-inspector"
+	metrics_path    = "/metrics"
+	scrape_interval = "60s"
+}
+
+// The MCP server's metrics (infra/mcp/hooks.py serves /metrics through `evh mcp --hooks`): calls
+// per tool and outcome, their latency, Umami events sent, its memory. Scraped like the inspector's;
+// Caddy forwards only /mcp to it, so /metrics is never public.
+discovery.relabel "evals_mcp_metrics" {
+	targets = discovery.docker.app.targets
+	rule {
+		source_labels = ["__meta_docker_container_name"]
+		regex         = "/evals-mcp"
+		action        = "keep"
+	}
+	rule {
+		source_labels = ["__meta_docker_network_ip_address"]
+		regex         = "(.+)"
+		target_label  = "__address__"
+		replacement   = "${1}:8080"
+	}
+	rule {
+		target_label = "instance"
+		replacement  = "prod-podcast"
+	}
+	rule {
+		target_label = "service"
+		replacement  = "evals-mcp"
+	}
+	rule {
+		target_label = "namespace"
+		replacement  = "evals"
+	}
+	rule {
+		target_label = "environment"
+		replacement  = "prod"
+	}
+}
+
+prometheus.scrape "evals_mcp" {
+	targets         = discovery.relabel.evals_mcp_metrics.output
+	forward_to      = [prometheus.remote_write.sink.receiver]
+	job_name        = "evals-mcp"
 	metrics_path    = "/metrics"
 	scrape_interval = "60s"
 }

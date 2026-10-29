@@ -19,7 +19,8 @@
 #   6. Install/remove our Caddy vhosts per caddy/enabled.txt (install_vhosts.sh).
 #   7. Keep the last 5 releases.
 #
-# Env: EVALS_PORT (default 8096), INSPECTOR_PORT (default 8097). DRY_RUN=true stops after step 2.
+# Env: EVALS_PORT (default 8096), INSPECTOR_PORT (default 8097), MCP_PORT (default 8098). DRY_RUN=true
+# stops after step 2.
 set -euo pipefail
 
 BASE=/srv/evals
@@ -27,18 +28,20 @@ REL="$(cd "$(dirname "$0")/.." && pwd)"
 SHA="$(cat "$REL/RELEASE")"
 PORT="${EVALS_PORT:-8096}"
 IPORT="${INSPECTOR_PORT:-8097}"
+MPORT="${MCP_PORT:-8098}"
 NGINX=evals-nginx
 INSPECTOR=evals-inspector
+MCP=evals-mcp
 SITE_HOST=evals.humancopilot.eu
 IMAGE="$(sed -n 's/^ *image: *\(nginxinc\/.*\)/\1/p;T;q' "$REL/compose.yml")"
 COMPOSE=(docker compose -p evals -f "$BASE/current/compose.yml")
-export EVALS_PORT="$PORT" INSPECTOR_PORT="$IPORT"
+export EVALS_PORT="$PORT" INSPECTOR_PORT="$IPORT" MCP_PORT="$MPORT"
 
 [ "$REL" = "$BASE/releases/$SHA" ] || { echo "::error::release dir $REL is not $BASE/releases/$SHA"; exit 1; }
-echo "== deploying evals release $SHA (nginx $PORT, inspector $IPORT)"
+echo "== deploying evals release $SHA (nginx $PORT, inspector $IPORT, mcp $MPORT)"
 
 # 1. Ports: free, or held by our own containers.
-for pair in "$PORT:$NGINX" "$IPORT:$INSPECTOR"; do
+for pair in "$PORT:$NGINX" "$IPORT:$INSPECTOR" "$MPORT:$MCP"; do
   p="${pair%%:*}"; want="${pair#*:}"
   holder="$(docker ps --filter "publish=$p" --format '{{.Names}}' || true)"
   if ss -ltnH "sport = :$p" | grep -q . && [ "$holder" != "$want" ]; then
@@ -71,6 +74,13 @@ rollback() {
     ln -sfn "$prev" "$BASE/current.new" && mv -T "$BASE/current.new" "$BASE/current"
     "${COMPOSE[@]}" up -d --wait --wait-timeout 90 --force-recreate inspector || echo "::error::compose up of $prev failed too"
     "${COMPOSE[@]}" up -d --wait --wait-timeout 60 --force-recreate nginx || true
+    # The MCP server (0.4.5): the previous release's, or none when it had none (an older release's
+    # compose.yml does not know it, so its container would be left serving this release's code).
+    if grep -q "container_name: $MCP" "$prev/compose.yml" 2>/dev/null; then
+      "${COMPOSE[@]}" up -d --wait --wait-timeout 90 --force-recreate mcp || true
+    else
+      docker rm -f "$MCP" >/dev/null 2>&1 || true
+    fi
     docker exec "$NGINX" nginx -c "$BASE/current/nginx/nginx.conf" -s reload || true
     echo "  rolled back: current -> $prev (containers and config)"
   else
@@ -85,6 +95,8 @@ ln -sfn "$REL" "$BASE/current.new" && mv -T "$BASE/current.new" "$BASE/current"
 "${COMPOSE[@]}" up -d --wait --wait-timeout 60 --force-recreate nginx || rollback "compose up of nginx ($SHA) failed"
 # The inspector keeps its code, data and caches in memory: recreate it on every release.
 "${COMPOSE[@]}" up -d --wait --wait-timeout 90 --force-recreate inspector || rollback "compose up of the inspector ($SHA) failed"
+# The MCP server reads the same release's data and package: recreated with it.
+"${COMPOSE[@]}" up -d --wait --wait-timeout 90 --force-recreate mcp || rollback "compose up of the MCP server ($SHA) failed"
 docker exec "$NGINX" nginx -c "$BASE/current/nginx/nginx.conf" -s reload || rollback "nginx reload of $SHA failed"
 echo "  current -> $REL (previous: ${prev:-none})"
 
@@ -124,6 +136,19 @@ if [ -n "$q2" ]; then
   fi
 fi
 echo "  inspector ok"
+# The MCP server: its health, then a real tool call as a client sends it (stateless JSON-RPC over
+# HTTP, the protocol revision most clients speak). `goals` runs the goals' tests: within 30 s only
+# when the release's precomputed p cache is there (render.sh), about 50 s without it.
+code="$(curl -s -o /dev/null -w '%{http_code}' -H "Host: $SITE_HOST" "http://127.0.0.1:$MPORT/mcp/health")"
+[ "$code" = 200 ] || rollback "health check failed: MCP /mcp/health returned $code"
+body="$(curl -s -m 30 -X POST "http://127.0.0.1:$MPORT/mcp" -H "Host: $SITE_HOST" \
+  -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream' \
+  -H 'MCP-Protocol-Version: 2025-06-18' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"goals","arguments":{}}}')"
+if ! { grep -q '"result"' <<<"$body" && ! grep -q '"isError":true' <<<"$body"; }; then
+  rollback "health check failed: the MCP server did not answer goals within 30 s (${body:0:200})"
+fi
+echo "  mcp ok"
 
 # 6. Edge vhosts.
 bash "$REL/deploy/install_vhosts.sh" "$REL/caddy"
@@ -134,4 +159,4 @@ find "$BASE/releases" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' | sort 
   while read -r old; do
     [ "$old" = "$cur" ] || rm -rf -- "$old"
   done
-echo "== release $SHA live on 127.0.0.1:$PORT (nginx) and 127.0.0.1:$IPORT (inspector)"
+echo "== release $SHA live on 127.0.0.1:$PORT (nginx), 127.0.0.1:$IPORT (inspector) and 127.0.0.1:$MPORT (mcp)"

@@ -1,7 +1,8 @@
 # The `evals` stack on the prod VPS: the harness site, the catalog, and the run inspector of
 # this repository's example experiments. Lives at /srv/evals/current/compose.yml on the box
 # (infra/deploy/deploy.sh). Shares nothing with the other tenants: own compose project, own
-# containers, own loopback ports (127.0.0.1:8096 nginx, 127.0.0.1:8097 inspector), own files.
+# containers, own loopback ports (127.0.0.1:8096 nginx, 127.0.0.1:8097 inspector, 127.0.0.1:8098 mcp),
+# own files.
 # The only public entry is the shared Caddy edge (infra/caddy/). Template: chipi/humancopilot.eu
 # infra/compose.yml (the prod session's hardening, unchanged).
 name: evals
@@ -115,6 +116,81 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  mcp:
+    # The harness's MCP server (evals.humancopilot.eu/mcp, RFC-018): the project's read commands as
+    # tools for any agent, over Streamable HTTP, stateless. Read-only by construction: its tools are
+    # the commands that only read (no tool writes, spends or runs a model), --public leaves out the
+    # options that answer with an item's text, and it reads the release's public copy of the data
+    # from the read-only mount. No authentication: anyone may read what the site and the catalog
+    # already publish. The same stock image and package as the inspector; the MCP SDK and its
+    # dependencies vendored beside it by render.sh (inspector/mcpvendor).
+    image: python:3.12.14-alpine3.23@sha256:d339953547bb5bc57eb5c1ff3224c40890ce56e494b13a52a574658e5a0f888a
+    container_name: evals-mcp
+    user: "65534:65534"
+    group_add: ["1001"]
+    working_dir: /srv/evals/current/inspector
+    environment:
+      EVAL_HOME: /srv/evals/current/inspector
+      EVAL_BUILD_REF: deployed
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTHONUNBUFFERED: "1"
+      PYTHONPATH: /srv/evals/current/inspector/pkg:/srv/evals/current/inspector/mcpvendor:/srv/evals/current/inspector/vendor
+      # The goals' tests, precomputed by render.sh: each tool call is a fresh process.
+      EVH_P_CACHE: /srv/evals/current/inspector/cache/evh-p.jsonl
+    labels:
+      telemetry.service: evals-mcp
+      telemetry.namespace: evals
+      telemetry.environment: prod
+      release: __RELEASE__
+    command:
+      - python
+      - /srv/evals/current/inspector/pkg/evaluation_harness/mcp_server.py
+      - --http
+      - --public
+      - --bind
+      - 0.0.0.0
+      - --port
+      - "8080"
+      - --allowed-host
+      - evals.humancopilot.eu
+      - --allowed-origin
+      - https://evals.humancopilot.eu
+      # The header Cloudflare sets, as for the inspector (only Cloudflare reaches 443).
+      - --client-header
+      - CF-Connecting-IP
+      - --rate
+      - "30"
+      # Two commands at once at most: each is a process of up to ~60 MB, inside mem_limit.
+      - --concurrent
+      - "2"
+      - --timeout
+      - "60"
+      - --hooks
+      - /srv/evals/current/inspector/mcp_hooks.py
+    ports:
+      - "127.0.0.1:${MCP_PORT:-8098}:8080"
+    volumes:
+      - /srv/evals:/srv/evals:ro
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,uid=65534,gid=65534,mode=0700
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    # A hard limit (the box has no swap and a nightly pipeline): the server and two commands.
+    mem_limit: 384m
+    cpus: 0.5
+    pids_limit: 64
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen(u.Request('http://127.0.0.1:8080/mcp/health', headers={'Host': 'evals.humancopilot.eu'}), timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
     logging:
       driver: json-file
       options: { max-size: "10m", max-file: "3" }

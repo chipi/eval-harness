@@ -627,6 +627,8 @@ def test_example_scorer_suites_pass() -> None:
         ("test_goals.py", "goals: config, run, baseline, V14, pages"),
         ("test_dataset_profile.py", "dataset profiles: what is inside, the gold's shape, links, the page"),
         ("test_mcp_server.py", "evh mcp: the read commands as tools, through the SDK's own client"),
+        ("test_p_cache.py", "the on-disk p cache: the same p, read back by a fresh process"),
+        ("test_mcp_http.py", "evh mcp --http: health, Host check, --public, --rate, hooks"),
         ("test_axes.py", "a goal's axes and strategy: limits, the tie, the tie-break, the ratios"),
         (
             "test_references.py",
