@@ -239,16 +239,20 @@ def public_error(text: str, project: Path) -> str:
 
 
 def run_command(
-    project: Path, command: str, argv: list[str], timeout: float = TIMEOUT_S
+    project: Path, command: str, argv: list[str], timeout: float = TIMEOUT_S, public: bool = False
 ) -> tuple[int, str, str]:
     """`evh <command> <argv>` in the project, in its own process group, stdin closed, with a timeout
-    that kills the group."""
+    that kills the group. `public`: the command runs as a public server's would (EVH_PUBLIC), so it
+    sees only the fields marked public."""
     cmd = [sys.executable, str(HERE / "cli.py"), command, *(["--json"] if command in JSON else []), *argv]
     # The goals' tests are the slow part of a view (~50 s for this repository's runs); each call is a
     # fresh process, so they are kept on disk (stats.EVH_P_CACHE), in the project's ignored .cache/
     # unless the deployment names its own precomputed file.
     env = dict(os.environ)
     env.setdefault("EVH_P_CACHE", str(project / ".cache" / "evh-p.jsonl"))
+    env.pop("EVH_PUBLIC", None)
+    if public:
+        env["EVH_PUBLIC"] = "1"
     p = subprocess.Popen(
         cmd,
         cwd=project,
@@ -483,7 +487,9 @@ def build_server(
                 if waited.cancelled_caught:
                     return refuse("the server is busy: try again in a minute", {**info, "refused": "busy"})
                 try:
-                    code, out, err = await anyio.to_thread.run_sync(run_command, project, name, argv, timeout)
+                    code, out, err = await anyio.to_thread.run_sync(
+                        run_command, project, name, argv, timeout, public
+                    )
                 finally:
                     slots.release()
             finally:

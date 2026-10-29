@@ -25,6 +25,11 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Fixed
 
+- **`evh mcp --public` sees only public fields in `inspect`.** The tool runs the command in its own
+  process, where the inspector's public rules were never set, so a `--where` or `--by` on a field not
+  marked public was accepted and its values could be read through the counts (0.5.0). A public
+  server now runs its commands as public (`EVH_PUBLIC`), and such a filter is refused by name. This
+  repository's own deployment declares no field sets, so it exposed nothing.
 - **A command's own refusal through `evh mcp`** (exit 1, its `ERROR:` line, no traceback, such as a
   dataset id that is a path) is told to `--hooks` as `refused: "command"`, not as an error: a
   deployment's metrics count it as refused and its analytics send no event for it.

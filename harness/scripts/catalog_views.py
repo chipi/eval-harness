@@ -31,6 +31,7 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
 import argparse
+import os
 import statistics
 import sys
 import textwrap
@@ -980,6 +981,10 @@ def inspect(argv) -> int:
     args = ap.parse_args(argv)
     A = load_catalog_adapter(args.adapter)
     cs.set_adapter(A)
+    if os.environ.get("EVH_PUBLIC"):
+        # Run for a public MCP server: the inspector's public rules, so a --where or --by on a
+        # field not marked public is refused instead of leaking its values through the counts.
+        cs.LIMITS["hosts"] = ("public",)
     round_leader = None
     if args.round:
         from evaluation_harness._rounds import arms_of, resolve  # noqa: PLC0415

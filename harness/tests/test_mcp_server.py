@@ -60,7 +60,19 @@ try:
     (data / "configs").mkdir(parents=True)
     (data / "goals").mkdir()
     shutil.copytree(KIT / "tickets", proj / "tutorial" / "tickets")
-    r = evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets")
+    # The tutorial's fields: area and plan are public, deadline is not.
+    shutil.copytree(KIT / "fields", data / "fields")
+    r = evh(
+        "dataset-create",
+        "--dataset-id",
+        "tickets_v1",
+        "--source-dir",
+        "tutorial/tickets",
+        "--fieldset",
+        "tickets",
+        "--fields",
+        str(KIT / "ticket_fields.csv"),
+    )
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "tickets_v1")
     check("setup: the tutorial dataset", r.returncode == 0, r.stderr[-300:])
     shutil.copytree(KIT / "gold", data / "references" / "gold" / "tickets_v1")
@@ -69,6 +81,38 @@ try:
     (data / "configs" / "lead2.yaml").write_text(cfg + "goal: tickets_summary\n")
     r = evh("experiment-run", "--config", str(data / "configs" / "lead2.yaml"))
     check("setup: one run", r.returncode == 0, r.stderr[-300:])
+
+    # A PUBLIC SERVER'S inspect SEES ONLY PUBLIC FIELDS. It runs in its own process, where the
+    # inspector's public rules were never set, so --where/--by on a field not marked public answered
+    # with its values through the counts (0.5.0). The command, run as the server runs it:
+    from evaluation_harness.mcp_server import run_command
+
+    os.environ.clear()
+    os.environ.update(env)  # run_command passes this process's environment on, as the server does
+
+    for argv, public, ok, label in (
+        (["--runs", "tickets_lead2_v1", "--by", "deadline"], True, False, "a hidden field (--by) is refused"),
+        (
+            ["--runs", "tickets_lead2_v1", "--where", "deadline:yes"],
+            True,
+            False,
+            "a hidden field (--where) is refused",
+        ),
+        (["--runs", "tickets_lead2_v1", "--by", "area"], True, True, "a public field still breaks it down"),
+        (
+            ["--runs", "tickets_lead2_v1", "--by", "deadline"],
+            False,
+            True,
+            "a local server still sees every field",
+        ),
+    ):
+        code, out_, err_ = run_command(proj, "inspect", argv, public=public)
+        said = out_ + err_
+        check(
+            f"inspect {'--public' if public else 'local'}: {label}",
+            (code == 0) == ok and (ok or ("deadline" in said and "True" not in out_ and "yes" not in out_)),
+            said[-300:],
+        )
 
     async def session():
         params = StdioServerParameters(
