@@ -1,33 +1,26 @@
-# Plan: 0.6.0, datasets from production (RFC-019)
+# Plan: 0.6.0, datasets from production (RFC-019) — the engineering plan
 
 Status: revised after an independent review (advisor, 2026-10-29: "not ready as written; ready after the
-fixes"); every finding is folded in below, tagged with its review id (B1–B3 blockers, M1–M11 major, m1–m12
-minor). Branch `060` (PR #30 open, green). Governing design:
-[RFC-019](../../docs/rfc/RFC-019-datasets-from-production.md), second draft (`18bc9de2`); the RFC is updated
-where this plan corrects it (P4's mapping and caveat, P8's references).
+fixes"); every mechanical finding is folded in, tagged with its review id (B1–B3 blockers, M1–M11 major,
+m1–m12 minor). **What we build.** How it is applied to the triage fleet (the data, the references, the arms,
+the runs, the cost, and the labelling question) is the separate application plan,
+[PLAN_0.6.0_FLEET.md](PLAN_0.6.0_FLEET.md). Branch `060` (PR #30 open, green). Governing design:
+[RFC-019](../../docs/rfc/RFC-019-datasets-from-production.md), second draft (`18bc9de2`), updated where this
+plan corrects it (P4's mapping and caveat, P8's references).
 
 ## 1. Goal and what "done" means
 
-0.6.0 adds a **capture lane** beside the method:
-- an importer reads a production system;
-- `evh capture` keeps the records;
-- `evh dataset-from-capture` makes a dataset version;
-- `evh reference-from-outcomes` takes a reference from what happened afterwards;
-- `evh dataset-split` makes dev and heldout.
+0.6.0 adds a **capture lane** beside the method: an importer reads a production system, `evh capture` keeps
+the records, `evh dataset-from-capture` makes a dataset version, `evh reference-from-outcomes` takes a reference
+from what happened afterwards, `evh dataset-split` makes dev and heldout. The lane ends in ordinary dataset and
+reference files, which the method (materialize, run, rescore, compare, goals, catalog) reads as it reads any
+other.
 
-The lane ends in ordinary dataset and reference files, which the method (materialize, run, rescore, compare,
-goals, catalog) reads as it reads any other.
+Done (engineering) when:
 
-Done when:
-
-1. **The triage case runs end to end in this repository**, as an example like the others:
-   - Orrery's 236 triage decisions are a dataset;
-   - an outcome reference on it decides the goal, beside a hand-label reference that does not;
-   - an adapter replays each decision through the fleet's own `investigate()`;
-   - arms (models) are compared with the paired test under a goal whose primary measure is `false_dismiss`
-     (lower, limit 0), with `escalated` limited to at most 0.05 and cost and speed shown;
-   - the catalog shows it all.
-2. The de-duplication dataset runs the same way, deterministically, with no model (P9, as corrected).
+1. Every command of the lane works, with its tests, on fixtures, offline.
+2. The triage example's code (P8) and the de-duplication example's code (P9) run on the delivered data with a
+   stand-in model, with no billed call; the billed runs are the application plan's.
 3. `text: hidden` is enforced on every public surface, proved by a marker test.
 4. Nothing existing changes behaviour for data without the new optional fields. The whole current suite
    (`make ci`, `make browser-check`, `make commands-check`, `make quality`) stays green unchanged, apart from
@@ -233,82 +226,60 @@ phases it depends on are committed.
 - **`test_installed_commands.py` needs a case per command (M8):** the seven new commands each get one.
 - `check_commands` covers every new command and flag. The browser checks cover the datasets page.
 
-### P8. The triage example — depends on P3, P4, P6
+### P8. The triage example's code — depends on P3, P4, P6
+
+What the application plan's runs need, built and tested without a billed call.
 
 - **Its own importer, `examples/triage-fleet/importer.py`** (B1), about 30 lines. It yields:
   - `id`;
-  - `body = {signal, probes}`;
+  - `body = {signal, probes}`: only what the model sees, so the reference never enters an item's bytes;
   - `fields = {evidence_level, fleet_disposition, stage, model, fingerprint, decision_date}` (m12, M5);
   - `created_at = fleet_decision.ts`;
   - `outcome = row.outcome` plus `ground_truth`.
-- `adapter.py` calls `investigate(signal, probe_table=probes)` from the fleet checkout named by
+- **`adapter.py`** calls `investigate(signal, probe_table=probes)` from the fleet checkout named by
   `TRIAGE_FLEET_SRC`, at a recorded commit. It also (M6):
   1. sets `SF_OBSERV_DISABLED=1` before the fleet's config is imported, and stubs `observ.new_trace_id` to
      `None`, so no generation is written into the fleet's Langfuse project;
   2. sets `config.TRIAGE_MODEL = params.model`, and `SF_OPENROUTER_URL` / `OPENROUTER_API_KEY` from the run's
-     environment (the gateway and the minted key);
-  3. computes cost from `_meta.usage` × the config's `usd_per_mtok_in/out`, because the fleet's `RATES` know
-     only its own models;
-  4. declares `TRANSIENT_MARKERS = ("triager call failed",)`, so a deferred call is retried.
+     environment;
+  3. computes cost from `_meta.usage` × the config's `usd_per_mtok_in/out` (the fleet's `RATES` know only its
+     own models);
+  4. declares `TRANSIENT_MARKERS = ("triager call failed",)`.
 - **The scorer** (m1), per item:
   - `table_miss` (0/1) on every item; nothing else is scored on a miss;
   - `escalated` on every scored item; it needs no reference;
   - `correct`, `false_dismiss` and `silent_drop` only where the reference has a label;
   - `cost_usd`, `latency_ms`, `n_probes`.
 
-  The reference text is a bare label or JSON `{disposition, correct_autonomous}`, the fleet's two labels (M11).
-- **The references** (B2, M11):
-  - **Outcome reference, deciding.** Made by `reference-from-outcomes` with this mapping:
-    - a filed issue closed as completed, a duplicate, or reopened: `file`;
-    - closed as not planned: `not-file`. It is dead in v1, since no issue is NOT_PLANNED, and the docs say so;
-    - a fingerprint that was later filed, whatever the fleet decided first: `file`;
-    - no recurrence for 14 days (`min_age_days: 14`): `dismiss`;
-    - otherwise no label.
-  - **Assumption (M4)**: escalations and cleanups are labelled by their fingerprint's fate like the rest (33 of
-    52 escalations and 3 of 12 cleanups had an issue filed). An arm that escalates is scored on them too, not
-    let off.
-  - **Hand-label reference, informative.** The 9 labels are written as `gold/orrery_triage_v1/<item>.txt`, then
-    `evh reference-manifest --reference-id gold/orrery_triage_v1` (the real route; `reference-create` has no
-    file route). The goal does not decide on it: it has no `file` label, so `false_dismiss` is always 0 against
-    it. The README says the labels were carried onto occurrences by fingerprint.
-- **The goal** (`goals/triage.yaml`, B2):
-  - primary measure `false_dismiss`, lower, limit 0;
-  - axis `escalated`, lower, limit 0.05;
-  - cost and speed shown; strategy `frugal`: the lowest false-dismiss within tolerance, at acceptable cost;
-  - decided on the `runs-outcomes` rescore;
-  - `correct` is not the primary measure, because of the circularity (§8).
-- **The arms** (M6): named as the fleet's gateway exposes them (`fleet-triage-pro` for production, 228 of 236
-  decisions; `fleet-triage-flash`). Other models (EVAL.md's sonnet, kimi, glm) only if the gateway has them,
-  verified before the key is minted.
-- **Runs (M7).** `experiment-run` is sequential: 236 × 34 s = 2.2 h a pass, 6.7 h an arm at k = 3. Five arms
-  run as five separate `experiment-run --repeat 3` processes, about 7 h of wall time.
-- **Budget.** A cap per arm on the key. The price per model is read from the gateway before the run. At the
-  measured $0.0070 a decision an arm costs about $5; a pricier model costs more, so each arm is costed with
-  `--dry-run` first.
-- **Commit before the first billed arm** (M3): the capture, the sources, the dataset and both references.
-- **`experiments.json` registration after the runs** (M8), since `self_test` requires committed runs with
-  their leader. It also needs:
+  The reference text is a bare label or JSON `{disposition, correct_autonomous}` (M11).
+- **The goal file format** (B2): a primary measure with its direction and limit, an `escalated` axis with a
+  limit, cost and speed shown, and a strategy; the goal names the reference it is decided on. Which measure
+  and limits is the application plan's.
+- **Reference routes, as they are** (M11, B2):
+  - hand labels: files written as `gold/<D>/<item>.txt`, then `evh reference-manifest`;
+  - outcomes: `reference-from-outcomes` (P4);
+  - scoring a run against a second reference: `rescore --reference-id`.
+- Packaging for `reproduce.py` (M8):
   - `examples/triage-fleet/pyproject.toml`;
-  - a `fetch.py` that verifies the `TRIAGE_FLEET_SRC` pin (`reproduce.py data` runs it);
-  - the reproduce matrix (`reproduce.yml`) entry, only if the example has a no-key rerun; it does not, so it
-    stays out.
-- Comparisons on all items, and with `--where evidence_level:exact` (the 33 exact items).
-- **v2 and later**: the fleet's own per-decision captures, once live, through the same project importer;
-  `--since-capture` makes "continuous" one command.
+  - a `fetch.py` that verifies the `TRIAGE_FLEET_SRC` pin;
+  - the `experiments.json` entry only after the billed runs are committed, since `self_test` requires
+    committed runs and their leader;
+  - no reproduce-matrix entry: there is no no-key rerun.
+- Tests:
+  - the importer on the delivered JSONL: 236 records, the body free of `outcome` and `ground_truth`, an item's
+    bytes unchanged when its outcome changes;
+  - the adapter with a stubbed `_call`: no network, no Langfuse write (the stub asserts `trace_id is None`),
+    cost from usage, the disposition and metrics recorded, a table miss counted;
+  - the scorer on hand-made cases for each metric.
 
-### P9. The de-duplication dataset — depends on P8 (corrected, B3)
+### P9. The de-duplication example's code — depends on P8 (corrected, B3)
 
-- The fleet has no replay mode for `file_or_update` or `ledger_lookup` (they post to GitHub and read the live
-  ledger). Its corpus `reference-dedup/corpus.json` holds 100 signals and no "issue it should land on". Its
-  own eval (`eval_dedup.py`) uses pure functions: `filing.normalized_key`, `filing.low_signal`,
+- The fleet has no replay mode for `file_or_update` or `ledger_lookup`, and its corpus holds 100 signals and no
+  expected issue. Its own eval uses pure functions: `filing.normalized_key`, `filing.low_signal`,
   `triage.operational_class`, `sources._is_test_signal`.
-- Items: the 100 signals.
-- Adapter output: `{operational, test, low_signal, norm_key}` from those functions.
-- Reference: the current fleet code's output, frozen as **silver** with `authored_by` the fleet commit: a
-  regression guard.
-- Per-item metrics: `key_match`, `merged` (the item's norm_key is shared within the run).
-- Arms: `alert_key_dedup_enabled()` on and off (`filing.py:96`), if that is the only variant; otherwise the
-  current code alone, as the baseline. $0.
+- The adapter returns `{operational, test, low_signal, norm_key}` from those functions.
+- The per-item metrics are `key_match` and `merged` (the item's norm_key is shared within the run).
+- Tests: on the fleet's 100 signals, offline, deterministic; two runs identical.
 
 ### P10. Docs — with each phase, finished before release
 
@@ -344,37 +315,28 @@ phases it depends on are committed.
 - `dataset_create.py`: its writing functions reused. Any change is a refactor, with its tests unchanged.
 - Untouched: `experiment_run`, `rescore` (used as it is), the stats, compare, goals, rounds.
 
-## 6. Assumptions (stated, not asked)
+## 6. Engineering assumptions (stated, not asked)
 
-- Outcome references are gold under their own name, with their own caveat.
-- A dismissal is right when its fingerprint is not seen again within 14 days.
-- Escalations and cleanups are labelled by their fingerprint's fate (M4).
+- Outcome references are gold under their own name, with their own caveat (M10).
 - A licence does not set `text: hidden` by itself.
 - The fleet's code comes from a `TRIAGE_FLEET_SRC` checkout at a recorded commit.
-- Replay runs use a LiteLLM virtual key minted for them, capped per arm, listing only the arms' models.
 - Captures are not supported on Windows (ids contain `:`).
+- The importer mechanism gains no auto-generated field sets: a project declares its own.
 
 ## 7. Needs the owner
 
-- **The replay budget.** About $5 per arm at the production model's measured price; five arms at most. The
-  exact figures come from `--dry-run` with the gateway's prices before any run, and a cap is set per arm.
+Nothing for the engineering. The application's decisions (references, arms, budget) are in
+[PLAN_0.6.0_FLEET.md](PLAN_0.6.0_FLEET.md).
 
-## 8. Risks
+## 8. Engineering risks
 
-- **Circularity in the outcome reference (B2).** About two thirds of its labels (113 of about 165) are "dismiss,
-  because nothing happened in 14 days": production's own decision echoed back. An arm that dismisses as
-  production did scores well on them. So `correct` is reported but does not decide; `false_dismiss` on the
-  `file` labels does, and those come from issues that people closed.
-- **Rebuilt evidence is not what the model saw.** Only the 33 exact items are. Results are reported on all items
-  and on the exact ones.
-- **Missing GlitchTip issues.** 102 items carry unavailable markers, so a replay sees less than the original.
-  The fleet's probe fallback makes table misses rare (m1). 107 items carry only the default-argument probes.
-- **Thin hand labels.** 9, with no `file` label among them; they inform and never decide.
-- **The adapter depends on the fleet's code.** A fleet change can break it; pinning the commit makes that a
-  visible re-pin.
-- **Run time.** About 7 h of wall time for five arms (M7).
-- **Dirty trees (M3).** An untracked capture or dataset marks runs dirty, which blocks promotion and the
-  reference route. Commit first.
+- **Dirty trees (M3).** An untracked capture, source or importer marks runs dirty, which blocks promotion and
+  the reference route. The lane prints the reminder; the docs say commit first.
+- **The adapter depends on another repository's code.** Pinning the commit makes a fleet change a visible
+  re-pin. The adapter's tests run against the pinned checkout.
+- **P6 touches the most existing code** for a label no 0.6.0 dataset sets. It is kept small: one function, one
+  module, one test.
+- **Size.** Eleven phases. Each lands as its own commit, with its tests, before the next one starts.
 
 ## 9. Not in scope
 
