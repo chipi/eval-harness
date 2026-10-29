@@ -463,3 +463,6 @@ footer .wrap.foot { display: block; }
 .bar .nav a.hbtn { padding: 0; }
 /* the smallest phones (320 px): the bar stays on one row */
 @media (max-width: 359px) { .bar .wrap { gap: 4px; } .hbtn, .menu > summary.hbtn { width: 32px; height: 32px; } .bar .nav { gap: 4px; } .bar .sections { letter-spacing: 0; } .bar .sections a { padding: 8px 3px; } }
+/* MCP, the switcher's fourth entry, leaves the bar on phones: four entries no longer fit 390 px beside
+   the search, GitHub and theme buttons (the home page's "For agents" section links it still). */
+@media (max-width: 560px) { .bar .sections a[href$="#mcp"] { display: none; } }

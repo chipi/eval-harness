@@ -192,3 +192,5 @@ body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; 
 .md-copyright { font: .6rem/1.4 var(--eh-mono); color: var(--eh-muted); }
 /* the smallest phones (320 px): the bar stays on one row */
 @media (max-width: 359px) { .md-header__inner.eh-bar { gap: 4px; } .eh-bar .hbtn { width: 32px; height: 32px; } .eh-bar > .md-search { margin-left: -4px; } .eh-bar .sections { letter-spacing: 0; } .eh-bar .sections a { padding: 8px 3px; } }
+/* MCP, the switcher's fourth entry, leaves the bar on phones, as on the site and the catalog. */
+@media (max-width: 560px) { .eh-bar .sections a[href$="#mcp"] { display: none; } }
