@@ -94,10 +94,13 @@ From two independent reviews before this release, each reproduced before it was 
   keeps (32 MB), and `--warm` stops when it is three quarters full. Its rate key is an address, never a header's
   text.
 - **`evh mcp --http`**: a few parallel 4 MiB bodies killed the server; held GETs and ping floods cost memory no rate
-  saw. Now `--max-body`, `--max-connections`, `--request-rate`, GET is 405, refusals do not count toward
+  saw. Now `--max-body`, `--max-connections`, 8 open requests per caller, `--request-rate`, GET is 405, refusals do not count toward
   `--rate-total`, and `--public` answers are kept and their errors carry no paths. Values with NUL bytes or over 512
   characters are refused.
-- **The deployment**: Caddy refuses a body over 64 KB on `/mcp` (and its `handle` line now adapts); the containers'
+- **The deployment**: Caddy refuses a body over 64 KB on `/mcp` (and its `handle` line now adapts); nginx limits
+  each visitor (20 requests a second, a burst of 200, 32 connections); the deploy checks the inspector is up and
+  under 80% of its memory once `--warm` is done, and rolls back otherwise; the MCP hooks no longer export the
+  SDK's own spans; the containers'
   `/tmp` caps files as well as bytes; `render.sh`'s check for reference texts in a release could pass with 1,657 of
   them (a pipe's SIGPIPE) and refused the five tracked ones: it now compares against what git tracks; a deploy keeps
   two releases (the live one and the rollback), prunes at its start as well as its end, and refuses to start short of

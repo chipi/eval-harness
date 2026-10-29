@@ -167,7 +167,19 @@ check(
     log[:3],
 )
 
-# --rate-total: everyone together, whoever they are.
+# --rate-total: everyone together, whoever they are. And a profile written --with-text: a public
+# server serves its rows, never their text.
+(tmp / "data" / "profiles").mkdir(parents=True, exist_ok=True)
+(tmp / "data" / "profiles" / "p.json").write_text(
+    json.dumps(
+        {
+            "dataset_id": "p",
+            "items": {"n": 1, "kind": "text", "words": {}},
+            "references": [],
+            "rows": [{"item_id": "a", "words": 2, "reference": {}, "text": "SECRET ITEM TEXT"}],
+        }
+    )
+)
 with socket.socket() as s:
     s.bind(("127.0.0.1", 0))
     port2 = s.getsockname()[1]
@@ -180,7 +192,7 @@ cmd2 = [
     str(port2),
     "--public",
     "--rate-total",
-    "2",
+    "3",
     "--request-rate",
     "14",
     "--max-body",
@@ -206,9 +218,17 @@ try:
             # Refusals first: they cost nothing and never count toward the total.
             for _ in range(3):
                 await s.call_tool("no-such-tool", {})
+            items = await s.call_tool("dataset-items", {"dataset-id": "p"})
+            check(
+                "--public: dataset-items serves a profile's rows, never their text",
+                not items.is_error
+                and '"item_id": "a"' in items.content[0].text
+                and "SECRET" not in items.content[0].text,
+                items.content[0].text[:200],
+            )
             res = [await s.call_tool("datasets", {"period": p}) for p in ("all", "30d", "week")]
             check(
-                "--rate-total 2: the third call in a minute is refused, from anyone",
+                "--rate-total 3: the fourth call that runs is refused, from anyone (refusals do not count)",
                 not res[0].is_error
                 and not res[1].is_error
                 and res[2].is_error
@@ -307,5 +327,44 @@ check(
     "the rate counts an IPv6 caller by its /64, an IPv4 caller by its address",
     caller_key("2001:db8:1:2::7") == caller_key("2001:db8:1:2:ffff::1") != caller_key("2001:db8:1:3::7")
     and caller_key("203.0.113.7") == "203.0.113.7",
+)
+from evaluation_harness.mcp_server import Gate  # noqa: E402
+
+
+async def held_open() -> list:
+    """Nine requests from one caller held open at once: the ninth is 429, a second caller's is not."""
+    release = anyio.Event()
+    statuses: list = []
+
+    async def app(scope, receive, send):
+        await release.wait()
+        await send({"type": "http.response.start", "status": 200, "headers": []})
+        await send({"type": "http.response.body", "body": b""})
+
+    gate = Gate(app, "/mcp", 0, None)
+
+    async def one(ip: str):
+        async def send(msg):
+            if msg["type"] == "http.response.start":
+                statuses.append((ip, msg["status"]))
+
+        scope = {"type": "http", "path": "/mcp", "method": "POST", "headers": [], "client": (ip, 1)}
+        await gate(scope, None, send)
+
+    async with anyio.create_task_group() as tg:
+        for _ in range(9):
+            tg.start_soon(one, "198.51.100.1")
+        tg.start_soon(one, "198.51.100.2")
+        await anyio.sleep(0.2)
+        release.set()
+    return statuses
+
+
+got = anyio.run(held_open)
+check(
+    f"a caller has at most {Gate.OPEN_PER_CALLER} requests open: the next is 429, another caller's is served",
+    sorted(st for ip, st in got if ip == "198.51.100.1") == [200] * Gate.OPEN_PER_CALLER + [429]
+    and ("198.51.100.2", 200) in got,
+    got,
 )
 sys.exit(summary())

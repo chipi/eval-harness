@@ -34,16 +34,18 @@ infra/
 
 ## The containers
 
-- **evals-nginx:** the template's nginx unchanged. It is unprivileged, read-only, has every
+- **evals-nginx:** the template's nginx, plus a per-visitor limit (20 requests a second, a burst of 200,
+  32 connections; the visitor by `X-Real-IP`, set by Caddy; nothing in front throttles). It is unprivileged, read-only, has every
   capability dropped, and is limited to 64 MB, half a CPU and 64 processes. It serves two hosts.
   Unknown hosts are closed (444). `/docs/` serves the documentation, with its own headers.
 - **evals-inspector:** the stock Python image (pinned by digest) running the release's copy of the package, installed from its wheel on the CI runner by
-  `render.sh`: `inspector/pkg/evaluation_harness/catalog_serve.py --public evals.humancopilot.eu --publish outputs --client-header CF-Connecting-IP` (the full command is in `compose.yml`).
+  `render.sh`: `inspector/pkg/evaluation_harness/catalog_serve.py --public evals.humancopilot.eu --publish outputs --client-header X-Real-IP` (the full command is in `compose.yml`).
   The `--publish outputs` flag exposes the arms' outputs (already public in the repo); the
-  `--client-header CF-Connecting-IP` rate-limits by the header Cloudflare sets. It names the
-  visitor only because every request comes through Cloudflare, and nothing in this repository
-  enforces that: nginx has no allowlist, and the edge's Caddy passes the header through as
-  sent. The origin lock is the hosting provider's firewall, owned by the box's infra
+  `--client-header X-Real-IP` rate-limits by the address Caddy resolved and set on every request
+  it forwards (`evals.caddy`: `header_up X-Real-IP {client_ip}`). The shared base takes
+  `CF-Connecting-IP` only from Cloudflare's ranges (`trusted_proxies`), and a client's own
+  `X-Real-IP` is overwritten, so the value holds even without the origin lock. The origin lock is
+  the hosting provider's firewall, owned by the box's infra
   repository (its ADR-118, `CLOUDFLARE_ORIGIN_LOCK`): port 443 accepts only Cloudflare's
   ranges, and port 80 only redirects. The prod session checked it on 2026-10-27: straight to the
   origin from a non-Cloudflare address, 443 timed out and 80 answered 308. Not checked: IPv6.
@@ -80,7 +82,7 @@ infra/
   - **Network:** without the settings it calls out to nothing; with them, to GlitchTip and
     VictoriaTraces only.
   - **What it answers:** only the catalog host, 60 requests a minute per client (identified by the
-    `CF-Connecting-IP` header), at most 40 arms per comparison, two computations at a time, every
+    `X-Real-IP` header Caddy sets), at most 40 arms per comparison, two computations at a time, every
     answer cached. At start it computes every comparison the catalog's own pages link to.
 - **evals-mcp (0.4.5):** the harness's MCP server, `evh mcp` (RFC-018), at `/mcp`: the read
   commands as tools for any agent, over Streamable HTTP, stateless. The same stock image, package
@@ -92,7 +94,7 @@ infra/
     `validate` tool (the release's copy of the data is not a whole project); it reads the read-only
     mount. No authentication: it answers what the site and the catalog already publish.
   - **Load and speed:** the server throttles itself (Cloudflare only proxies): `--rate 30` calls a
-    minute per caller (`CF-Connecting-IP`, as for the inspector), `--rate-total 120` for everyone,
+    minute per caller (`X-Real-IP`, as for the inspector), `--rate-total 120` for everyone,
     one call at a time per caller, `--request-rate 300` HTTP requests a minute per caller, a 64 KB body
     (Caddy and the server), 64 connections, GET on `/mcp` 405,
     two commands at a time, 60 s each. Each call is a fresh `evh` process; the goals'
@@ -124,7 +126,9 @@ infra/
    test` runs the same probe against the tutorial project). Both must come back with verdict
    rows. The MCP server answers `/mcp/health` and a real `goals` call (up to 120 s; a warning
    past 30 s, which means the precomputed p cache was not read: without it the call takes ~50 s).
-5. After the edge vhosts, it prunes again: the live release and the previous one stay, for a
+5. The inspector once `--warm` is done (its log line, up to 300 s): running, never restarted,
+   under 80% of its memory limit, else the release rolls back.
+6. After the edge vhosts, it prunes again: the live release and the previous one stay, for a
    rollback. A release is ~69k files; the upload hard-links those the live release already has
    (`rsync --checksum --link-dest`), so a release costs new inodes only for what changed.
 

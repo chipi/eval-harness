@@ -712,11 +712,16 @@ class Gate:
     """In front of the endpoint (ASGI): a GET on it is 405, since a stateless JSON server has no
     stream to open and every held GET cost ~85 KB; and with --request-rate, each caller's
     requests to it are counted, every method, before the SDK reads a byte of the body (ping and
-    tools/list floods never reach call_tool's rate)."""
+    tools/list floods never reach call_tool's rate). A caller has at most OPEN_PER_CALLER requests
+    open at once: --max-connections bounds them all, and without this one address holding slow
+    requests could take every connection."""
+
+    OPEN_PER_CALLER = 8
 
     def __init__(self, app, path: str, rate: int, header: str | None):
         self.app, self.path, self.rate, self.header = app, path.rstrip("/") or "/", rate, header
         self.seen: dict[str, list[float]] = {}
+        self.open: dict[str, int] = {}
 
     def _caller(self, scope) -> str:
         peer = (scope.get("client") or ("", 0))[0]
@@ -731,8 +736,11 @@ class Gate:
         if scope["type"] == "http" and scope["path"].rstrip("/") == self.path:
             if scope["method"] == "GET":
                 return await _plain(send, 405, b"this server answers POST only (stateless, JSON)")
+            key = self._caller(scope)
+            if self.open.get(key, 0) >= self.OPEN_PER_CALLER:
+                return await _plain(send, 429, b"too many requests open at once; wait for an answer")
             if self.rate:
-                now, key = time.monotonic(), self._caller(scope)
+                now = time.monotonic()
                 hits = [t for t in self.seen.get(key, []) if now - t < 60]
                 if len(hits) >= self.rate:
                     return await _plain(send, 429, b"too many requests a minute; wait a moment")
@@ -740,6 +748,13 @@ class Gate:
                 if len(self.seen) > 4096:
                     for k in [k for k, ts in self.seen.items() if now - ts[-1] >= 60]:
                         del self.seen[k]
+            self.open[key] = self.open.get(key, 0) + 1
+            try:
+                return await self.app(scope, receive, send)
+            finally:
+                self.open[key] -= 1
+                if not self.open[key]:
+                    del self.open[key]
         return await self.app(scope, receive, send)
 
 

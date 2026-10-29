@@ -83,10 +83,10 @@ services:
       - "8080"
       - --rate
       - "60"
-      # The header Cloudflare sets. It names the visitor because the provider's firewall lets only
-      # Cloudflare reach 443; nothing here enforces that (infra/README.md, evals-inspector).
+      # X-Real-IP: the visitor's address as Caddy resolved it (evals.caddy: CF-Connecting-IP, from
+      # Cloudflare's ranges only; Hetzner's firewall lets only Cloudflare reach :443).
       - --client-header
-      - CF-Connecting-IP
+      - X-Real-IP
       # The example runs' outputs are already public in the repository; their gold references
       # are not committed, and are not published.
       - --publish
@@ -160,9 +160,9 @@ services:
       - evals.humancopilot.eu
       - --allowed-origin
       - https://evals.humancopilot.eu
-      # The header Cloudflare sets, as for the inspector (only Cloudflare reaches 443).
+      # As for the inspector: the address Caddy resolved (evals.caddy).
       - --client-header
-      - CF-Connecting-IP
+      - X-Real-IP
       # The throttling is the server's own: nothing in front of it rate-limits (Cloudflare only
       # proxies). Per caller, and for everyone together: a caller who rotates the header it is
       # named by (or reaches the box past Cloudflare) is still held by the total.

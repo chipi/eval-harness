@@ -16,6 +16,7 @@
 #      its own Host header; the inspector answers /api/health and a real comparison.
 #      On any failure in 3 or 4: point `current` back at the previous release, `compose up` its
 #      compose.yml (undoes an image bump) and reload. Steps 2b and 6 have their own restore.
+#   5. The inspector after --warm: up, never restarted, under 80% of its memory limit.
 #   6. Install/remove our Caddy vhosts per caddy/enabled.txt (install_vhosts.sh).
 #   7. Keep two releases: the live one and the one a rollback returns to. Also at the start
 #      (0b), so a failed deploy or a dry run never leaves releases piling up (each holds ~69k
@@ -174,6 +175,18 @@ if ! { grep -q '"result"' <<<"$body" && ! grep -Eq '"isError": *true' <<<"$body"
 fi
 [ "$secs" -le 30 ] || echo "::warning::the MCP server took ${secs} s to answer goals: is the release's p cache missing?"
 echo "  mcp ok (goals in ${secs} s)"
+
+# 5. The inspector after its --warm: the health check above passes while warm still runs, and a
+# warm that outgrew the memory limit OOM-looped it with the deploy reported green (an independent
+# review, 2026-10-29). Wait for warm to finish (its log line), then it must be up, never restarted,
+# under 80% of its memory limit.
+for _ in $(seq 1 60); do docker logs "$INSPECTOR" 2>&1 | grep -q '^warm: ' && break; sleep 5; done
+docker logs "$INSPECTOR" 2>&1 | grep -q '^warm: ' || rollback "the inspector's --warm did not finish within 300 s"
+state="$(docker inspect -f '{{.State.Running}} {{.RestartCount}} {{.State.OOMKilled}}' "$INSPECTOR")"
+[ "$state" = "true 0 false" ] || rollback "the inspector restarted or was OOM-killed during warm (running, restarts, oom: $state)"
+mem="$(docker stats --no-stream --format '{{.MemPerc}}' "$INSPECTOR" | tr -d '%')"
+awk -v m="$mem" 'BEGIN { exit !(m < 80) }' || rollback "the inspector uses ${mem}% of its memory limit after warm"
+echo "  inspector steady after warm ($(docker logs "$INSPECTOR" 2>&1 | grep '^warm: ' | tail -1); memory ${mem}%)"
 
 # 6. Edge vhosts.
 bash "$REL/deploy/install_vhosts.sh" "$REL/caddy"

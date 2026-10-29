@@ -94,7 +94,6 @@ def start(info: dict) -> None:
             print(f"hooks: GlitchTip off: {type(exc).__name__}: {exc}", flush=True)
     if s.get("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT"):
         try:
-            from opentelemetry import trace  # noqa: PLC0415
             from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter  # noqa: PLC0415
             from opentelemetry.sdk.resources import Resource  # noqa: PLC0415
             from opentelemetry.sdk.trace import TracerProvider  # noqa: PLC0415
@@ -113,11 +112,13 @@ def start(info: dict) -> None:
             provider.add_span_processor(
                 BatchSpanProcessor(OTLPSpanExporter(endpoint=s["OTEL_EXPORTER_OTLP_TRACES_ENDPOINT"]))
             )
-            trace.set_tracer_provider(provider)
+            # Kept to these hooks, never the process's global provider: the MCP SDK opens its own span
+            # per request named by what the client sent (a tool name as long as the body), and a
+            # global provider exported them all, beside the one span per call made here.
             import atexit  # noqa: PLC0415
 
             atexit.register(provider.shutdown)
-            _state["tracer"] = trace.get_tracer(SERVICE)
+            _state["tracer"] = provider.get_tracer(SERVICE)
         except Exception as exc:  # noqa: BLE001
             print(f"hooks: traces off: {type(exc).__name__}: {exc}", flush=True)
     umami = HERE / "mcp_umami.json"

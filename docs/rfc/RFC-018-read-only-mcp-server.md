@@ -118,8 +118,10 @@ nothing.
 - **The HTTP layer** (after an independent security and load review, 2026-10-29): a body over `--max-body` (64 KB) is
   refused before it is read (Caddy refuses it first, at the edge); a GET on the endpoint is 405, since a stateless
   JSON server has no stream to hold and each held GET cost ~85 KB; `--request-rate` counts every request per caller
-  before the SDK reads it (ping and `tools/list` floods never reached the tools' rate); `--max-connections` (64) and a
-  5 s keep-alive bound the connections. With `--public` an answer is kept by its exact command line (32 MB), so a
+  before the SDK reads it (ping and `tools/list` floods never reached the tools' rate); `--max-connections` (64), at
+  most 8 open per caller, and a 5 s keep-alive bound the connections. The hooks keep their trace provider to
+  themselves: as the process's global one it also exported the SDK's own span per request, named by what the
+  client sent. With `--public` an answer is kept by its exact command line (32 MB), so a
   repeated heavy view costs nothing, and a refusal's text loses server paths and tracebacks.
 - **Speed**: each call is a fresh process, and a view that shows the goals runs their paired tests (~500 here, ~50 s).
   `stats` keeps each estimated p on disk when `EVH_P_CACHE` names a file (the p read back exactly; a torn last line
@@ -133,7 +135,8 @@ nothing.
 ### This repository's deployment (`infra/`)
 
 - `evals-mcp`, a third container beside nginx and the inspector: the same stock Python image, user, read-only mount and
-  hardening, `--http --public --allowed-host evals.humancopilot.eu --client-header CF-Connecting-IP --rate 30
+  hardening, `--http --public --allowed-host evals.humancopilot.eu --client-header X-Real-IP` (the address Caddy
+  resolved, from Cloudflare's ranges only) `--rate 30
   --rate-total 120 --request-rate 300 --max-body 65536 --max-connections 64 --concurrent 2 --timeout 60`, and a
   `/tmp` tmpfs capped at 4,096 files as well as 16 MB (`nr_inodes`). The throttling is the server's own: Cloudflare proxies the host but
   has no rate limit for it (the owner, 2026-10-29). Also a hard `mem_limit` of 384m (the box has no swap and a nightly pipeline; prod's
