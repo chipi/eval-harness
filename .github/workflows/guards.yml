@@ -31,7 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - name: Did a checker change?
@@ -50,7 +50,7 @@ jobs:
             echo "no checker or harness code changed since ${BASE:0:7}: nothing for the guard to prove"
             echo "run=false" >> "$GITHUB_OUTPUT"
           fi
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         if: steps.changed.outputs.run == 'true'
         with:
           python-version: "3.11"
