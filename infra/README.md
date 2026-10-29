@@ -86,7 +86,7 @@ infra/
   - **What it answers:** only the catalog host, 60 requests a minute per client (identified by the
     `X-Real-IP` header Caddy sets), at most 40 arms per comparison, two computations at a time, every
     answer cached. At start it computes every comparison the catalog's own pages link to.
-- **evals-mcp (0.4.5):** the harness's MCP server, `evh mcp` (RFC-018), at `/mcp`: the read
+- **evals-mcp (0.5.0):** the harness's MCP server, `evh mcp` (RFC-018), at `/mcp`: the read
   commands as tools for any agent, over Streamable HTTP, stateless. The same stock image, package
   and data as the inspector; the MCP SDK and its dependencies (`infra/mcp/requirements.txt`,
   pinned, compiled wheels for the box: x86_64 musl) vendored by `render.sh` into

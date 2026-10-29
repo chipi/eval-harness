@@ -8,7 +8,7 @@ An MCP client (Claude Code, Claude Desktop, any agent) starts this as a stdio se
 the commands a person reads the project with: the catalog's views, the inspector in the terminal,
 the rounds, the runs, validate. Each call runs the command as a child process (`evh <command> …`,
 with `--json` where the command has it), so a tool answers exactly what the command prints. No tool
-writes, spends or runs a model: those stay commands a person runs (0.5.0 adds them, with consent).
+writes, spends or runs a model: those stay commands a person runs (0.7.0 adds them, with consent).
 
 For Claude Code, in the project:  claude mcp add evh -- evh mcp
 """

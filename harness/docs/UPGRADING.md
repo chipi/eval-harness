@@ -5,9 +5,9 @@ change the pin, then check what it says can move. **If you copied `harness/` int
 repository** before October 2026, read the rest of this page first: your copy has
 correctness bugs, not just missing features.
 
-## From 0.4.4 to 0.4.5
+## From 0.4.4 to 0.5.0
 
-Change the pin to `@v0.4.5`. No record, hash or p-value moves. Three things to check first:
+Change the pin to `@v0.5.0`. No record, hash or p-value moves. Three things to check first:
 
 - **Python 3.10 or later.** The package's floor moves from 3.9, because the official MCP SDK
   needs 3.10. On 3.9, stay on `@v0.4.4`.

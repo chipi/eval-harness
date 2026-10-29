@@ -1,6 +1,6 @@
 # PRD-006: Datasets, versions and item fields
 
-- **Status**: Implemented (v0.4.0); frozen datasets since 0.1.0; FR4, what is inside a dataset: Implemented (0.4.5, unreleased)
+- **Status**: Implemented (v0.4.0); frozen datasets since 0.1.0; FR4, what is inside a dataset: Implemented (0.5.0, unreleased)
 - **Authors**: Marko Dragoljevic
 - **Related UX specs**: [UXS-001](../uxs/UXS-001-catalog.md) (dataset pages: versions, fields),
   [UXS-002](../uxs/UXS-002-inspector.md) (filter and break down by a field)
@@ -105,7 +105,7 @@ defines no field, a project declares its own
   checks the hash, and fails on a mismatch exactly as it fails on a changed file.
 - **FR3.3**: Only http(s) URLs are fetched; any other scheme is refused before anything is read.
 
-### FR4: What is inside a dataset (0.4.5)
+### FR4: What is inside a dataset (0.5.0)
 
 - **FR4.1**: A reader sees what a dataset holds without the dataset being republished: its item
   count and lengths, each gold reference's shape (labels and their counts, entries per item, a

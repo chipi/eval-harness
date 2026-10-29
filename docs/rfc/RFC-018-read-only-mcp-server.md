@@ -1,10 +1,9 @@
-# RFC-018: A read-only MCP server in 0.4.5
+# RFC-018: A read-only MCP server in 0.5.0
 
-- **Status**: In Progress (0.4.5), accepted 2026-10-29: the owner's go on "a small read-only MCP server in 0.4.5, Python 3.9
-  dropped there"
+- **Status**: In Progress (0.5.0), accepted 2026-10-29: a small read-only MCP server, with Python 3.9 dropped for it
 - **Authors**: Marko Dragoljevic
-- **Related RFCs**: 0.5.0's RFC-013 (one declaration per command, `--json`, exit codes) and RFC-016 (the MCP server,
-  skills, consent), on branch `050`: this is their first, read-only step, shipped early
+- **Related RFCs**: 0.7.0's RFC-013 (one declaration per command, `--json`, exit codes) and RFC-016 (the MCP server,
+  skills, consent), on branch `070`: this is their first, read-only step, shipped early
 - **Related UX specs**: [UXS-003](../uxs/UXS-003-cli-and-onboarding.md) (the commands the tools are)
 - **Code**: new `harness/scripts/mcp_server.py` (`evh mcp`), `harness/scripts/_jsonout.py` (`--json` for the view
   commands), `catalog_views.py`, `cli.py`, `stats.py` (`EVH_P_CACHE`); `harness/pyproject.toml` (`requires-python`,
@@ -23,22 +22,21 @@ read commands, the same commands a person runs: the catalog's views (`overview`,
 `runs-list` and `validate`. Each call runs the command as a child process, so a tool answers exactly what the command
 prints. No tool writes project data, spends or runs a model (the one file a call writes is the goals' p cache
 in the project's ignored `.cache/`, below): running arms, promoting, retiring, judging and everything with a
-consequence stay commands a person runs, until 0.5.0 brings the declarations, the actor and consent they need.
+consequence stay commands a person runs, until 0.7.0 brings the declarations, the actor and consent they need.
 
 ## Problem Statement
 
-- An agent can use the harness only through a shell: run the `evh` commands, read their tables. The owner asked for the MCP server
-  that 0.5.0 designs (RFC-016) to come forward, read-only first.
+- An agent can use the harness only through a shell: run the `evh` commands, read their tables. The MCP server that 0.7.0 designs (RFC-016)
+  comes forward here, read-only first.
 - The official SDK (`mcp` 2.3.0, PyPI 2026-10-29) requires Python 3.10; the package declares `>=3.9`
-  (`harness/pyproject.toml:22`) and CI tests 3.9 (`harness-package.yml:28`). The owner's rule is one install with
-  every feature (no extras), so the SDK becomes a dependency and 3.9 goes, in 0.4.5 instead of 0.5.0. The two projects
-  that use the harness run 3.11 or later (this repository's environments; the podcast project declares `>=3.10` and
-  runs 3.11.8).
+  (`harness/pyproject.toml:22`) and CI tests 3.9 (`harness-package.yml:28`). The project's rule is one install with
+  every feature (no extras), so the SDK becomes a dependency and 3.9 goes, in 0.5.0 instead of 0.7.0. The two projects
+  that use the harness run 3.11 or later (this repository's environments, and the one downstream project that pins it).
 - What the SDK brings (its 2.3.0 metadata): `anyio`, `httpx2`, `jsonschema` (already a dependency), `mcp-types`,
   `opentelemetry-api`, `pydantic>=2.12`, `pyjwt[crypto]`, `python-multipart`, `sse-starlette`, `starlette`,
-  `typing-extensions`, `typing-inspection`, `uvicorn`. This is the footprint RFC-016 recorded and the owner accepted.
+  `typing-extensions`, `typing-inspection`, `uvicorn`. This is the footprint RFC-016 recorded and accepted.
 - No command prints JSON today; the view commands compute and print in the same loop (`catalog_views.py`), which is
-  the refactor 0.5.0's RFC-013 does command by command, with a schema each.
+  the refactor 0.7.0's RFC-013 does command by command, with a schema each.
 
 ## Design
 
@@ -51,7 +49,7 @@ consequence stay commands a person runs, until 0.5.0 brings the declarations, th
   writes, spends or never returns (`experiment-run`, `sweep`, `judge`, `rescore`, `run-promote`, the round commands,
   `dataset-create`, `dataset-materialize`, `dataset-profile`, `reference-create`, `catalog`, `catalog-serve`, `init`,
   `mcp`), and, not yet, the report and statistics commands (`leaderboard`, `pair-test`, `family-test`,
-  `bootstrap-test`, `holdout`, `rank-stability`, `run-compare`, `cost-report`), which read but are left for 0.5.0's
+  `bootstrap-test`, `holdout`, `rank-stability`, `run-compare`, `cost-report`), which read but are left for 0.7.0's
   declarations. A test fails when a command is in neither list, so a new command is decided, not forgotten.
 - **Each tool's description** is the command's one line in `cli.COMMANDS`, then its parser's description. **Its input
   schema** is generated from its `argparse` parser: each option becomes a property (its type, `choices` as an `enum`, a
@@ -81,13 +79,13 @@ consequence stay commands a person runs, until 0.5.0 brings the declarations, th
 - The catalog's view commands (`catalog_views.py`) take `--json`. Under it, the same code runs and what it would print
   is collected: every table as `{"columns": [...], "rows": [{column: value}]}` with the values before they are turned
   into text, every other line as a string, in order; at the end one object is printed:
-  `{"command": "datasets", "version": "0.4.5", "result": {"blocks": [{"lines": [...]}, {"columns": …, "rows": …}]}}`.
+  `{"command": "datasets", "version": "0.5.0", "result": {"blocks": [{"lines": [...]}, {"columns": …, "rows": …}]}}`.
   It is the envelope RFC-013 names (`command`, `version`, `result`), and because it is the printing path, the JSON
   and the text cannot disagree.
 - `dataset-items --json` keeps the profile it already prints (inside the envelope). `rounds`, `runs-list` and
-  `validate` print text only in 0.4.5; their tools return the text.
-- **What 0.5.0 changes**: RFC-013 gives each command its own result and schema, computed before it is printed; the
-  generic `blocks` form goes then. 0.4.5's release notes say so, so nothing builds on its shape.
+  `validate` print text only in 0.5.0; their tools return the text.
+- **What 0.7.0 changes**: RFC-013 gives each command its own result and schema, computed before it is printed; the
+  generic `blocks` form goes then. 0.5.0's release notes say so, so nothing builds on its shape.
 
 ### Python 3.10
 
@@ -141,7 +139,7 @@ nothing.
   resolved, from Cloudflare's ranges only) `--rate 30
   --rate-total 120 --request-rate 300 --max-body 65536 --max-connections 64 --concurrent 2 --timeout 60`, and a
   `/tmp` tmpfs capped at 4,096 files as well as 16 MB (`nr_inodes`). The throttling is the server's own: Cloudflare proxies the host but
-  has no rate limit for it (the owner, 2026-10-29). Also a hard `mem_limit` of 384m (the box has no swap and a nightly pipeline; prod's
+  has no rate limit for it. Also a hard `mem_limit` of 384m (the box has no swap and a nightly pipeline; prod's
   sizing), 127.0.0.1:8098. Caddy sends `/mcp` and `/mcp/*` to it, nothing else (its `/metrics` stays on the loopback).
 - `render.sh` vendors the SDK and its dependencies, pinned (`infra/mcp/requirements.txt`, resolved for x86_64 musl),
   as wheels beside the package, and fills the p cache during the catalog build, so the release carries it read-only.
@@ -150,20 +148,20 @@ nothing.
   (removing the container when the previous release had none). The workflow then checks `/mcp/health` through the
   public host.
 - `infra/mcp/hooks.py`: errors to GlitchTip (project `evals-mcp`, `EVALS_SENTRY_DSN_MCP`), a span per call to the
-  homelab's traces (service `evals-mcp`), `/metrics` (calls per tool and outcome, latency, memory, Umami events), and
-  one Umami event per call (`mcp:<tool>`) on the site's own website, sent to `UMAMI_SEND_URL` on the tailnet with the
+  deployment's trace store (service `evals-mcp`), `/metrics` (calls per tool and outcome, latency, memory, Umami events), and
+  one Umami event per call (`mcp:<tool>`) on the site's own website, sent to `UMAMI_SEND_URL` over a private network with the
   caller's address and a browser-shaped user agent (Umami counts a visitor by address and user agent, and drops what
   looks like a bot). `evals.alloy` collects its log lines and scrapes its `/metrics`.
 - No authentication: everything it answers is already public on the site and in the catalog, and every tool reads.
-  Who may read and write through MCP is 0.5.0's (RFC-016, users and permissions).
+  Who may read and write through MCP is 0.7.0's (RFC-016, users and permissions).
 
 ### For a team
 
 The same command serves a team: `evh mcp --http --bind 0.0.0.0 --allowed-host evals.team.example` behind the team's
-proxy, on a checkout of the project (with or without `--public`, as the team's data allows). 0.4.5 has no accounts:
+proxy, on a checkout of the project (with or without `--public`, as the team's data allows). 0.5.0 has no accounts:
 put it behind what the team already uses (a VPN, an authenticating proxy).
 
-## Not in 0.4.5 (0.5.0, RFC-013 and RFC-016)
+## Not in 0.5.0 (0.7.0, RFC-013 and RFC-016)
 
 - Tools that write, spend or run: promotions, rounds, runs, judging, studies, jobs; consent; the actor on records; the
   limits file; long work as jobs.
@@ -175,10 +173,10 @@ put it behind what the team already uses (a VPN, an authenticating proxy).
 
 - **A tool per command with its output parsed from the text tables.** Rejected: a parser of our own tables would be a
   second rendering that drifts from the first.
-- **`mcp` as an extra (`pip install …[mcp]`).** Rejected by the owner's rule: everything works from one install.
+- **`mcp` as an extra (`pip install …[mcp]`).** Rejected by the project's rule: everything works from one install.
 - **The SDK's `MCPServer` (decorators per tool).** Rejected: the tools are generated from the parsers, a list known at
   start; the low-level `Server`'s two handlers take that list directly.
-- **Writing tools now, guarded by a confirm flag.** Rejected: consent is a person's (RFC-013), and 0.4.5 has no actor or
+- **Writing tools now, guarded by a confirm flag.** Rejected: consent is a person's (RFC-013), and 0.5.0 has no actor or
   consent model; a read-only server needs neither.
 
 ## Testing

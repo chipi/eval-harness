@@ -1330,7 +1330,7 @@ def run(view: str) -> int:
         finally:
             print(
                 '\n  --json                the same answer as one JSON object: {"command", "version", "result": '
-                '{"blocks": [...]}}, each table as columns and rows (0.5.0 replaces blocks)'
+                '{"blocks": [...]}}, each table as columns and rows (0.7.0 replaces blocks)'
             )
     if not as_json:
         return VIEWS[view](argv)

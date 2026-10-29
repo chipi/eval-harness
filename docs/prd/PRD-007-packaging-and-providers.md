@@ -1,6 +1,6 @@
 # PRD-007: One install, your own keys
 
-- **Status**: Implemented (v0.4.0); installable since 0.2.0; Python 3.10 and the MCP SDK from 0.4.5 (unreleased)
+- **Status**: Implemented (v0.4.0); installable since 0.2.0; Python 3.10 and the MCP SDK from 0.5.0 (unreleased)
 - **Authors**: Marko Dragoljevic
 - **Related UX spec**: [UXS-003](../uxs/UXS-003-cli-and-onboarding.md) (the command line and the first evaluation)
 - **Related PRDs**: [PRD-001](PRD-001-experiments-and-comparison.md)
@@ -62,8 +62,8 @@ a walkthrough in the user's own project, not inside a checkout of this repositor
 ### FR1: The package
 
 - **FR1.1**: `pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.4.4#subdirectory=harness"`
-  installs the package and the `evh` command; Python 3.10 or later (from 0.4.5, the MCP SDK's floor; 3.9 before).
-- **FR1.2**: Its dependencies are `pyyaml`, `jsonschema`, `openai`, `anthropic` and (from 0.4.5) `mcp`; there is no
+  installs the package and the `evh` command; Python 3.10 or later (from 0.5.0, the MCP SDK's floor; 3.9 before).
+- **FR1.2**: Its dependencies are `pyyaml`, `jsonschema`, `openai`, `anthropic` and (from 0.5.0) `mcp`; there is no
   optional extra for any user feature (the `test` extra serves the self-test's corpus checks).
 - **FR1.3**: The package holds the harness's code, schemas, the catalog's assets and the
   tutorial kit, not this repository's tests or data.

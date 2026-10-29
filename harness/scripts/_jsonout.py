@@ -3,12 +3,12 @@
     with collect("datasets") as out:      # under --json
         ...the command prints and draws its tables as always...
     # stdout then carries one object:
-    # {"command": "datasets", "version": "0.4.5", "result": {"blocks": [{"lines": [...]},
+    # {"command": "datasets", "version": "0.5.0", "result": {"blocks": [{"lines": [...]},
     #   {"columns": [...], "rows": [{column: value}, ...]}]}}
 
 A table's values are kept as they were before being turned into text, every other printed line as
 a string, in the order printed. Because the JSON is collected from the same calls that print the
-text, the two cannot disagree. 0.5.0 (RFC-013) gives each command its own result and schema and
+text, the two cannot disagree. 0.7.0 (RFC-013) gives each command its own result and schema and
 retires this generic form.
 """
 

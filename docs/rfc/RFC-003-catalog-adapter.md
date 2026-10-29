@@ -61,7 +61,7 @@ Optional members, each read with `getattr` so an adapter without them still work
 `item_fields(dataset)`, `dataset_items(dataset)`, `metric_descriptions()`, `conditions(arm)`,
 `baselines()`, `arm_of(dataset, config_id)`, `reference_free(metric)`, `rounds()`, `datasets()`,
 `dataset_lineage(dataset)`, `dataset_created(dataset)` (when it was frozen; the period pages count it
-new from that day, else from its first run), `dataset_profile(dataset)` (0.4.5: what is inside a dataset,
+new from that day, else from its first run), `dataset_profile(dataset)` (0.5.0: what is inside a dataset,
 without its text, from `data/profiles/<dataset>.json`; the dataset page's "what's inside", with `stale` when its
 items digest is not the dataset's), `served_dirs`, `arm_runs(arm)` → `[{"run_id", "created_at", "items",
 "cost_usd", "derived"}]`, `arm_config(arm)` → `{"config_id", "params" (credentials removed),

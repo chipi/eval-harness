@@ -96,7 +96,7 @@ rollback() {
     ln -sfn "$prev" "$BASE/current.new" && mv -T "$BASE/current.new" "$BASE/current"
     "${COMPOSE[@]}" up -d --wait --wait-timeout 90 --force-recreate inspector || echo "::error::compose up of $prev failed too"
     "${COMPOSE[@]}" up -d --wait --wait-timeout 60 --force-recreate nginx || true
-    # The MCP server (0.4.5): the previous release's, or none when it had none (an older release's
+    # The MCP server (0.5.0): the previous release's, or none when it had none (an older release's
     # compose.yml does not know it, so its container would be left serving this release's code).
     if grep -q "container_name: $MCP" "$prev/compose.yml" 2>/dev/null; then
       "${COMPOSE[@]}" up -d --wait --wait-timeout 90 --force-recreate mcp || true

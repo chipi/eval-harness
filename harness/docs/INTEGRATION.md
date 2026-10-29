@@ -370,7 +370,7 @@ rebinding); `--public` leaves out the options that answer with an item's text, a
 caller), `--rate-total` (everyone together), `--concurrent` and `--timeout` bound the load, and a
 caller has one call running at a time; `--client-header` names the header your proxy sets for the
 caller's address (trust it only if nothing else can reach the port); `--hooks FILE` adds your error reporting, tracing
-and metrics. 0.4.5 has no accounts: put it behind what the team already uses (a VPN, an
+and metrics. 0.5.0 has no accounts: put it behind what the team already uses (a VPN, an
 authenticating proxy). The goals' tests are kept in the project's `.cache/` so a call that shows
 them answers in seconds after the first.
 

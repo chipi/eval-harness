@@ -24,7 +24,7 @@ and configs page and a page per arm, a goals page and a page per goal, a referen
 page per reference, a metrics page and a page per metric, and the shell of the inspector. Every
 page is read-only and carries counts and means only, so the pages can be published. The pages a
 home tile opens carry the same period and trends as the tile ([the period](#the-period-every-listing-page)).
-This spec describes the pages as built at 0.4.5 (0.4.5 added each dataset page's "what's inside" and the footer's commands), checked by building the catalog on this
+This spec describes the pages as built at 0.5.0 (0.5.0 added each dataset page's "what's inside" and the footer's commands), checked by building the catalog on this
 repository's data (6 goals, 13 datasets, 313 arms, 181 configs, 15 references) and on a tutorial
 project with gold, silver and an open round.
 

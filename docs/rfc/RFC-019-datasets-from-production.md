@@ -1,14 +1,13 @@
 # RFC-019: Datasets from production: import, label, split, references from outcomes
 
-- **Status**: Draft for the owner's review (2026-10-29), aimed at 0.4.6 (the owner, 2026-10-29); scheduled
-  harvests are out of scope by the owner's word ("for now, not scheduled harvests")
+- **Status**: Draft for review (2026-10-29), aimed at 0.6.0; scheduled harvests are out of scope for now
 - **Authors**: Marko Dragoljevic
 - **Related PRDs**: [PRD-006](../prd/PRD-006-datasets-versions-fields.md) (versions, item fields),
-  0.5.0's PRD-012 (agents), 0.5.0's PRD-013 (dev and heldout,
+  0.7.0's PRD-012 (agents), 0.7.0's PRD-013 (dev and heldout,
   looks)
 - **Related RFCs**: [RFC-006](RFC-006-item-fields-and-url-items.md) (field sets, URL items),
-  0.5.0's RFC-013 (declarations, consent), 0.5.0's RFC-015 (dev and heldout, test looks), 0.5.0's RFC-016 (MCP
-  tools), 0.5.0's RFC-017 (records; these four on branch `050`), [RFC-018](RFC-018-read-only-mcp-server.md) (the MCP server, 0.4.5) and 0.4.5's dataset
+  0.7.0's RFC-013 (declarations, consent), 0.7.0's RFC-015 (dev and heldout, test looks), 0.7.0's RFC-016 (MCP
+  tools), 0.7.0's RFC-017 (records; these four on branch `070`), [RFC-018](RFC-018-read-only-mcp-server.md) (the MCP server, 0.5.0) and 0.5.0's dataset
   profiles (`evh dataset-profile`)
 
 ## Abstract
@@ -27,16 +26,14 @@ the same through MCP tools and a skill; freezing a dataset made from production 
 - Today a dataset is frozen from a directory of files (`dataset-create --source-dir`) or from pinned URLs (RFC-006).
   Records that live in a tracing system, a log store or an issue tracker reach a dataset only by a script each project
   writes, with no record of the query that chose them, no scrubbing, no sampling rule, and no link back to the record.
-- The owner's two cases (2026-10-28):
-  1. **The homelab's own production data**: the podcast pipeline's model calls are traced in Langfuse (`podcast-prod`,
-     `podcast-dev`; each trace one episode, each generation one pipeline stage), its errors in GlitchTip, its logs in
-     VictoriaLogs (handbook `agent-access.md`, sections 5–8). A dataset of real episodes and stages, kept current, is
-     what continuous improvement of that pipeline needs.
-  2. **The agentic fleets**: the triage fleet records one Langfuse trace per decision (project `agents`) and keeps
-     ledgers of what it decided and filed (`~/signal-fleet/results/*.tsv`, signal-fleet runbook); what happened next
-     to each filed issue is on GitHub. A dataset of its decisions, with the outcome as the reference, is how a change
+- Two cases this is designed for:
+  1. **A pipeline's own production data**: a pipeline whose model calls are traced in a tracing system (one trace
+     per unit of work, one generation per stage), its errors in an error tracker, its logs in a log store. A dataset
+     of real units and stages, kept current, is what continuous improvement of that pipeline needs.
+  2. **An agent fleet**: a triage agent that records one trace per decision and keeps a ledger of what it decided
+     and filed; what happened next to each filed issue is on GitHub. A dataset of its decisions, with the outcome as the reference, is how a change
      to the fleet is measured instead of guessed. Triage is the only fleet working today; bug fixing and ops come later.
-- Words: the owner wrote "test/dev/prod datasets". The harness already has **dev** and **heldout** as a dataset's
+- Words: "test/dev/prod datasets" is how such a request is often put. The harness already has **dev** and **heldout** as a dataset's
   role in a goal (vocabulary kept, 0.4.0). Here **environment** (`prod`, `staging`, `dev`: where the records came
   from) is a label, and dev/heldout stay the role. The RFC does not rename either.
 
@@ -52,7 +49,7 @@ the same through MCP tools and a skill; freezing a dataset made from production 
 - **In `examples/importers/`**, maintained with this repository, not in the package: `langfuse` (traces and
   generations through `/api/public/traces`, filtered by project, environment, name, time; a generation's input as the
   item, its output and scores as fields), `github_issues` (issues and their timeline through the REST API, for the
-  triage fleet), `victorialogs` (a LogsQL query). The core names no vendor (the owner's rule: the package offers hooks;
+  triage fleet), `victorialogs` (a LogsQL query). The core names no vendor (the project's rule: the package offers hooks;
   specifics live outside it).
 - `query` is the importer's own (a time window, a project, a filter); the harvest records it verbatim (2).
 
@@ -124,40 +121,40 @@ the same through MCP tools and a skill; freezing a dataset made from production 
 - **Where it is kept**: today dev and heldout are a goal's `role` for a whole dataset (`goal.schema.json`). The
   split makes two datasets, `D.dev` and `D.heldout`, each a version of `D` with lineage, each given its role in
   the goal as today; nothing new is needed to read them. (The other way, an item field `split` in `D`, keeps one
-  dataset but makes every comparison filter it: open question 6.) 0.5.0's test looks (RFC-015) count against the
+  dataset but makes every comparison filter it: open question 6.) 0.7.0's test looks (RFC-015) count against the
   heldout one.
-- **Drift is visible, not corrected**: each version's profile (0.4.5) shows its lengths and label balance. New
+- **Drift is visible, not corrected**: each version's profile (0.5.0) shows its lengths and label balance. New
   here: the dataset page puts a version's profile beside the one it came from (today its versions section shows
   only the items added, removed and changed).
 
 ### 8. Continuous experimentation, by hand or by an agent (no schedule)
 
 A round, repeated when the person (or an agent, asked) chooses: harvest the last window, scrub, make the next version
-from it, run the baseline and the candidates on it (on this machine in 0.4.6; on another machine with 0.5.0's
+from it, run the baseline and the candidates on it (on this machine in 0.6.0; on another machine with 0.7.0's
 runners), compare against the baseline, and read the
 trends. Each step is a command; the catalog shows the versions, their profiles and the comparisons. A scheduler is
 out of scope here.
 
 ### 9. Agents
 
-- Read tools: `datasets` and `dataset-items` (0.4.5), and `harvests` (new in this RFC: list harvests and their
-  counts), added to the read-only server in 0.4.6.
-- Write tools wait for 0.5.0 (RFC-013 declarations, the actor and consent): `dataset-harvest`, `harvest-scrub`, `dataset-from-harvest`,
+- Read tools: `datasets` and `dataset-items` (0.5.0), and `harvests` (new in this RFC: list harvests and their
+  counts), added to the read-only server in 0.6.0.
+- Write tools wait for 0.7.0 (RFC-013 declarations, the actor and consent): `dataset-harvest`, `harvest-scrub`, `dataset-from-harvest`,
   `dataset-split`, `reference-from-outcomes`. **Freezing a dataset from a harvest of a `private` source needs the
   person's `--confirm`**: what production data becomes a committed dataset is a person's decision. An agent can
   prepare everything up to it and hand the person the exact command.
 - A skill, `evh-dataset-from-production`, walks an agent through the steps above.
 
-### What 0.4.6 ships, and what waits for 0.5.0
+### What 0.6.0 ships, and what waits for 0.7.0
 
-- **0.4.6**: the commands (1 to 7), the `jsonl` importer and the examples' importers, the `harvests` read tool,
+- **0.6.0**: the commands (1 to 7), the `jsonl` importer and the examples' importers, the `harvests` read tool,
   the schema change (6) and the dataset page's version comparison (7). Everything runs on the person's machine.
-- **0.5.0**: the write tools and their consent (9), runners on another machine (8), test looks against heldout
-  (7). Nothing in 0.4.6 depends on them; each adds to a command that already works by hand.
+- **0.7.0**: the write tools and their consent (9), runners on another machine (8), test looks against heldout
+  (7). Nothing in 0.6.0 depends on them; each adds to a command that already works by hand.
 
 ## Not in scope
 
-- Scheduled or continuous harvests (the owner, 2026-10-28).
+- Scheduled or continuous harvests.
 - A labelling interface for people (references here come from outcomes, a model, or files).
 - Storing private records for a project: the harness records where they are and their hashes, never holds them.
 
@@ -177,7 +174,7 @@ out of scope here.
 2. Where do private records live: a gitignored directory only, or a named private store (a second repository, S3)
    the harness can verify against `harvest.json`?
 3. Should freezing a harvest of a `public` source also need the person's confirmation?
-4. Which first: the Langfuse importer for the podcast pipeline, or the GitHub importer for the triage fleet?
+4. Which first: the tracing importer for a pipeline, or the GitHub importer for an agent fleet?
 5. A comparison on a partly covered reference: on the covered items only, saying how many were left out (proposed),
    or refused below a coverage the goal names?
 6. A split as two datasets (proposed: every reader works unchanged) or as an item field in one (one dataset, but

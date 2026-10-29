@@ -1,6 +1,6 @@
 # PRD-004: The catalog and the run inspector
 
-- **Status**: Implemented (v0.4.0); FR6, the same views for an agent: Implemented (0.4.5, unreleased)
+- **Status**: Implemented (v0.4.0); FR6, the same views for an agent: Implemented (0.5.0, unreleased)
 - **Authors**: Marko Dragoljevic
 - **Related UX specs**: [UXS-001](../uxs/UXS-001-catalog.md) (the catalog's pages),
   [UXS-002](../uxs/UXS-002-inspector.md) (the inspector), [UXS-003](../uxs/UXS-003-cli-and-onboarding.md) (the same views as commands)
@@ -167,7 +167,7 @@ adapter file ([ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md),
   `config.yaml` (`catalog: {adapter: path/to/file.py:Class}`) or passes `--adapter`
   ([RFC-003](../rfc/RFC-003-catalog-adapter.md)).
 
-### FR6: The same views for an agent (v0.4.5)
+### FR6: The same views for an agent (v0.5.0)
 
 - **FR6.1**: `evh mcp` serves the read commands of FR4 (and `rounds`, `runs-list`, `validate`,
   `dataset-items`) as MCP tools, each call the command itself, so FR4's parity holds for an agent

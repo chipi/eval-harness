@@ -915,7 +915,7 @@ dataset-items --dataset-id D [--item ID] [--json]` prints the profile.
 
 **`--json` on the views** (`overview`, `datasets`, `arms`, `goals`, `references`, `metrics`,
 `activity`, `search`, `inspect`): one object, `{"command", "version", "result": {"blocks": [...]}}`,
-each table as columns and rows. 0.5.0 gives each command its own result and retires `blocks`: do not
+each table as columns and rows. 0.7.0 gives each command its own result and retires `blocks`: do not
 build on it.
 
 **The catalog's footer** names each page's command (`evh goals --goal G`); `evh catalog --mcp URL`

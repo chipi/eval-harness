@@ -196,7 +196,7 @@ the agent's numbers are yours, refusals included. It cannot act on them. Running
 money, promoting a baseline is a decision with a reason, closing a round fixes its evidence:
 each of those has a consequence someone must own, so they stay commands a person runs. An agent
 can prepare one and hand you the exact command. What an agent may also do, with whose consent,
-is 0.5.0's to design.
+is 0.7.0's to design.
 
 A shared server answers anyone who can reach it, so `--public` holds back what a project may not
 redistribute (an item's text), and the rates bound what a script can cost the machine.

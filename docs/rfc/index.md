@@ -27,8 +27,8 @@ Other statuses: **Rejected** and **Withdrawn**, each with the reason kept.
 
 | RFC | Title | Related PRD | Status | Description |
 | --- | ----- | ----------- | ------ | ----------- |
-| [RFC-018](RFC-018-read-only-mcp-server.md) | A read-only MCP server | [0.5.0's PRD-012](https://github.com/chipi/eval-harness/blob/050/docs/prd/PRD-012-agent-ready.md) (branch `050`) | In Progress (0.4.5) | `evh mcp` on the official SDK, stdio and Streamable HTTP; thirteen read commands as tools, each a child process; `--public`, rate, Host check; `--json` for the views; the goals' tests on disk; this repository's server at /mcp; Python 3.10 |
-| [RFC-019](RFC-019-datasets-from-production.md) | Datasets from production (draft for review) | [PRD-006](../prd/PRD-006-datasets-versions-fields.md) | Draft (aim 0.4.6) | Importers (jsonl in the core; Langfuse, GitHub issues, VictoriaLogs as examples); harvests kept private with committed hashes; scrub, select, version; labels; dev/heldout splits that keep earlier items in place; gold from production outcomes; no schedule |
+| [RFC-018](RFC-018-read-only-mcp-server.md) | A read-only MCP server | [0.7.0's PRD-012](https://github.com/chipi/eval-harness/blob/070/docs/prd/PRD-012-agent-ready.md) (branch `070`) | In Progress (0.5.0) | `evh mcp` on the official SDK, stdio and Streamable HTTP; thirteen read commands as tools, each a child process; `--public`, rate, Host check; `--json` for the views; the goals' tests on disk; this repository's server at /mcp; Python 3.10 |
+| [RFC-019](RFC-019-datasets-from-production.md) | Datasets from production (draft for review) | [PRD-006](../prd/PRD-006-datasets-versions-fields.md) | Draft (aim 0.6.0) | Importers (jsonl in the core; Langfuse, GitHub issues, VictoriaLogs as examples); harvests kept private with committed hashes; scrub, select, version; labels; dev/heldout splits that keep earlier items in place; gold from production outcomes; no schedule |
 
 ## Completed RFCs
 
