@@ -69,7 +69,9 @@ def main() -> int:
         # did not import at all, and catalog_adapter + judging loaded `_common` twice.
         import_probe = (
             "import sys, evaluation_harness.judging, evaluation_harness.catalog_adapter\n"
-            "print(sorted(m for m in sys.modules if m.rsplit('.', 1)[-1] == '_common'))\n"
+            # The harness's own: a bare `_common` or one under evaluation_harness. Python 3.14's stdlib
+            # has its own compression._common, which is not the harness's and was counted as a second.
+            "print(sorted(m for m in sys.modules if m == '_common' or m.startswith('evaluation_harness.') and m.endswith('._common')))\n"
         )
         r = subprocess.run(
             [sys.executable, "-c", import_probe],
