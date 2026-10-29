@@ -1,6 +1,6 @@
 # RFC-018: A read-only MCP server in 0.5.0
 
-- **Status**: In Progress (0.5.0), accepted 2026-10-29: a small read-only MCP server, with Python 3.9 dropped for it
+- **Status**: Completed (v0.5.0), 2026-10-29; accepted that day: a small read-only MCP server, with Python 3.9 dropped for it
 - **Authors**: Marko Dragoljevic
 - **Related RFCs**: 0.7.0's RFC-013 (one declaration per command, `--json`, exit codes) and RFC-016 (the MCP server,
   skills, consent), on branch `070`: this is their first, read-only step, shipped early

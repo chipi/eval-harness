@@ -9,7 +9,7 @@ The version lives in `scripts/_version.py`; a release is the git tag `v<version>
 release workflow refuses a tag that disagrees with that file or has no section here. A change
 that can move a result is never a patch release without saying so under **Changed**.
 
-## 0.5.0 — unreleased
+## 0.5.0 — 2026-10-29
 
 Two things to know before upgrading: the package now needs **Python 3.10 or later**, and it depends on the
 official **MCP SDK** (`mcp>=2.3,<3`). On 3.9, stay on `v0.4.4`. What you get: `evh mcp`, the project's read

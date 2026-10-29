@@ -1,6 +1,6 @@
 # PRD-006: Datasets, versions and item fields
 
-- **Status**: Implemented (v0.4.0); frozen datasets since 0.1.0; FR4, what is inside a dataset: Implemented (0.5.0, unreleased)
+- **Status**: Implemented (v0.4.0); frozen datasets since 0.1.0; FR4, what is inside a dataset: Implemented (v0.5.0)
 - **Authors**: Marko Dragoljevic
 - **Related UX specs**: [UXS-001](../uxs/UXS-001-catalog.md) (dataset pages: versions, fields),
   [UXS-002](../uxs/UXS-002-inspector.md) (filter and break down by a field)

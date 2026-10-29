@@ -27,7 +27,6 @@ Other statuses: **Rejected** and **Withdrawn**, each with the reason kept.
 
 | RFC | Title | Related PRD | Status | Description |
 | --- | ----- | ----------- | ------ | ----------- |
-| [RFC-018](RFC-018-read-only-mcp-server.md) | A read-only MCP server | [0.7.0's PRD-012](https://github.com/chipi/eval-harness/blob/070/docs/prd/PRD-012-agent-ready.md) (branch `070`) | In Progress (0.5.0) | `evh mcp` on the official SDK, stdio and Streamable HTTP; thirteen read commands as tools, each a child process; `--public`, rate, Host check; `--json` for the views; the goals' tests on disk; this repository's server at /mcp; Python 3.10 |
 | [RFC-019](RFC-019-datasets-from-production.md) | Datasets from production (draft for review) | [PRD-006](../prd/PRD-006-datasets-versions-fields.md) | Draft (aim 0.6.0) | Importers (jsonl in the core; Langfuse, GitHub issues, VictoriaLogs as examples); harvests kept private with committed hashes; scrub, select, version; labels; dev/heldout splits that keep earlier items in place; gold from production outcomes; no schedule |
 
 ## Completed RFCs
@@ -40,6 +39,7 @@ Other statuses: **Rejected** and **Withdrawn**, each with the reason kept.
 | [RFC-004](RFC-004-experiment-rounds.md) | Experiment rounds | [PRD-005](../prd/PRD-005-goals-and-rounds.md) | 0.4.0 | Round records, membership by `round:`, the four commands, the evidence and its suggestions |
 | [RFC-005](RFC-005-judge-scorers.md) | Judge scorers and the judging pass | [PRD-003](../prd/PRD-003-judging.md) | 0.3.0 | The scorer artifact, the validation gate, the listwise blind pass, its controls, judged runs |
 | [RFC-006](RFC-006-item-fields-and-url-items.md) | Item fields and items at a URL | [PRD-006](../prd/PRD-006-datasets-versions-fields.md) | 0.4.0 | Field sets and types, `fields_sha256` outside the identity, V15, filters and breakdowns, pinned downloads |
+| [RFC-018](RFC-018-read-only-mcp-server.md) | A read-only MCP server | [0.7.0's PRD-012](https://github.com/chipi/eval-harness/blob/070/docs/prd/PRD-012-agent-ready.md) (branch `070`) | 0.5.0 | `evh mcp` on the official SDK, stdio and Streamable HTTP; thirteen read commands as tools, each a child process; `--public`, rate, Host check; `--json` for the views; the goals' tests on disk; this repository's server at /mcp; Python 3.10 |
 
 ## Adding one
 

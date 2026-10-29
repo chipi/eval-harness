@@ -1,6 +1,6 @@
 # PRD-004: The catalog and the run inspector
 
-- **Status**: Implemented (v0.4.0); FR6, the same views for an agent: Implemented (0.5.0, unreleased)
+- **Status**: Implemented (v0.4.0); FR6, the same views for an agent: Implemented (v0.5.0)
 - **Authors**: Marko Dragoljevic
 - **Related UX specs**: [UXS-001](../uxs/UXS-001-catalog.md) (the catalog's pages),
   [UXS-002](../uxs/UXS-002-inspector.md) (the inspector), [UXS-003](../uxs/UXS-003-cli-and-onboarding.md) (the same views as commands)
