@@ -195,3 +195,7 @@ every catalog table. A row opens on click, Enter or Space.
 | the item view | `--item <item_id>`: fields, the item itself, the reference, each arm's output under `(run <run_id>)`, or `(run <run_id> · shown the latest of N repeats; the score is the mean of all N)` for a repeated arm |
 | the per-item table | `--items`: every item's score per arm, and each arm's Δ against the baseline |
 | the analysis charts | `--analysis`: the spread per arm and the difference from the baseline, per item, as numbers; `--x <metric>` adds each arm's mean on a second metric (the scatter) |
+
+For an agent, `evh inspect` is the MCP tool `inspect`, with the same options (`runs`, `baseline`,
+`metric`, `where`, `by`, `items`, `analysis`, `x`, `round`, `goal`, `from`, `no-rescore`, `item`). A public server (`evh mcp --public`, and
+this repository's at `/mcp`) leaves out `item`, as the public inspector serves no item text.

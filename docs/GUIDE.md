@@ -370,3 +370,8 @@ And the references, for when you know what you are looking for:
 it returns, a catalog of your own layout), [RUNBOOK](../harness/docs/RUNBOOK.md) (every
 command, flag, environment variable and exit code), [CONCEPTS](../harness/docs/CONCEPTS.md)
 (why each refusal exists).
+
+And for an agent: every read command you ran here is also a tool. `evh mcp` serves them to
+Claude, ChatGPT, Gemini or any MCP client, on your project or for a team; this repository's own
+experiments answer at `https://evals.humancopilot.eu/mcp`, without sign-in
+([INTEGRATION](../harness/docs/INTEGRATION.md#for-an-agent-evh-mcp)).

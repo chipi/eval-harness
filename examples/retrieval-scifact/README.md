@@ -148,6 +148,12 @@ part of the index cache key so a prefixed arm cannot silently reuse an unprefixe
 
 ---
 
+**Browse it, or ask it.** Every arm and run below is in the catalog, on the goal's page
+[`scientific_retrieval_scifact`](https://evals.humancopilot.eu/catalog/g/scientific_retrieval_scifact.html), with an inspector that tests any arms against the baseline item by
+item. An agent can ask the same over MCP, read-only and without sign-in: connect
+`https://evals.humancopilot.eu/mcp` ([how](../../harness/docs/INTEGRATION.md#for-an-agent-evh-mcp))
+and ask, say, "what does the `scientific_retrieval_scifact` goal recommend, and is it separated from the baseline?".
+
 ## Results
 
 Full write-up: [`../../research/REPORT_RETRIEVAL.md`](../../research/REPORT_RETRIEVAL.md).

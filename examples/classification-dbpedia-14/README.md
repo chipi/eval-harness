@@ -125,6 +125,12 @@ carry over to a saturated task; a $0 marginal inference cost does (training and 
 
 ---
 
+**Browse it, or ask it.** Every arm and run below is in the catalog, on the goal's page
+[`entity_topic_dbpedia`](https://evals.humancopilot.eu/catalog/g/entity_topic_dbpedia.html), with an inspector that tests any arms against the baseline item by
+item. An agent can ask the same over MCP, read-only and without sign-in: connect
+`https://evals.humancopilot.eu/mcp` ([how](../../harness/docs/INTEGRATION.md#for-an-agent-evh-mcp))
+and ask, say, "what does the `entity_topic_dbpedia` goal recommend, and is it separated from the baseline?".
+
 ## Results
 
 Full write-up: [`../../research/REPORT_CLASSIFICATION.md`](../../research/REPORT_CLASSIFICATION.md)

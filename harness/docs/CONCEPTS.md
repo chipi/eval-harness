@@ -187,6 +187,21 @@ makes one. A closed round refuses new runs, so its evidence cannot grow after it
 
 ---
 
+## An agent reads; a person decides
+
+An agent can look at everything you can: `evh mcp` serves the read commands as tools
+([INTEGRATION](INTEGRATION.md#for-an-agent-evh-mcp)), and each call runs the command itself, so
+the agent's numbers are yours, refusals included. It cannot act on them. Running an arm spends
+money, promoting a baseline is a decision with a reason, closing a round fixes its evidence:
+each of those has a consequence someone must own, so they stay commands a person runs. An agent
+can prepare one and hand you the exact command. What an agent may also do, with whose consent,
+is 0.5.0's to design.
+
+A shared server answers anyone who can reach it, so `--public` holds back what a project may not
+redistribute (an item's text), and the rates bound what a script can cost the machine.
+
+---
+
 ## Two arms cannot agree to full precision
 
 `evh validate` fails when two different configs report byte-identical scores and per-item results on

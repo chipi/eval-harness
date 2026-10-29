@@ -1175,7 +1175,7 @@ def landing(f: dict) -> str:
     <figure class="chart reveal">{both(slope(f["dailymail"]), slope(f["dailymail"], compact=True))}<figcaption>coverage of the five local summarisers on each slice. Dashed: BART trained on XSum.</figcaption></figure>
   </div>
   <p class="note" style="margin-top:48px"><b>No figure on this site is typed in by hand.</b> Every figure is recomputed from the committed runs each time the site is built, and every number the prose quotes must appear in the report it comes from, or the build fails. Behind the reports, a checker verifies {f["claims_checked"]} claims against the runs on every commit.</p>
-  <p class="note"><b>Or test it yourself, in your browser.</b> Every run behind these charts is in <a href="{CATALOG}">the catalog</a>, and its inspector re-runs any comparison on this site, item by item, with the same paired test. Each experiment's page opens it on every arm against its leader.</p>
+  <p class="note"><b>Or test it yourself, in your browser.</b> Every run behind these charts is in <a href="{CATALOG}">the catalog</a>, and its inspector re-runs any comparison on this site, item by item, with the same paired test. Each experiment's page opens it on every arm against its leader. <b>Or ask your agent:</b> the same views answer over MCP at <code>https://evals.humancopilot.eu/mcp</code>, read-only, no sign-in (<a href="docs/harness/INTEGRATION/#for-an-agent-evh-mcp">how to connect</a>).</p>
 </div></section>
 
 <section class="block" id="experiments"><div class="wrap">
@@ -1694,7 +1694,10 @@ def goal_note(x: dict) -> str:
     )
     return (
         f'<p class="note"><b>The goal\'s rule, in the catalog.</b> {e(g["goal_title"])} ({e(g["strategy"])}, on '
-        f'{e(g["measure"])}) {says}.{base} <a href="{CATALOG}{g["goal_page"]}">The goal page, with its reasons →</a></p>'
+        f'{e(g["measure"])}) {says}.{base} <a href="{CATALOG}{g["goal_page"]}">The goal page, with its reasons →</a> '
+        f"An agent gets the same answer from the MCP server: the tool <code>goals</code> with "
+        f"<code>goal: {e(Path(g['goal_page']).stem)}</code> at <code>https://evals.humancopilot.eu/mcp</code> "
+        f'(<a href="../docs/harness/INTEGRATION/#for-an-agent-evh-mcp">how to connect</a>).</p>'
     )
 
 
@@ -1839,9 +1842,13 @@ HEADLINE = {
 
 # ── crawl files ─────────────────────────────────────────────────────────────
 #: The docs site (MkDocs, built into /docs/) writes its own sitemap; robots.txt points
-#: to both. No AI-training rules: whether this open research opts out is undecided.
+#: to both. No AI-training rules: whether this open research opts out is undecided. The two
+#: endpoints that compute on each request (the MCP server, the inspector's API) are no pages to
+#: crawl: a crawler that follows robots.txt leaves them to the agents and pages that call them.
 ROBOTS = f"""User-agent: *
 Allow: /
+Disallow: /mcp
+Disallow: /catalog/api/
 
 Sitemap: {SITE}/sitemap.xml
 Sitemap: {SITE}/docs/sitemap.xml

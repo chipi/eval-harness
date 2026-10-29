@@ -1324,6 +1324,14 @@ def run(view: str) -> int:
     """Entry point for the per-view scripts (`evh <view>` runs one each). `--json`: the same output
     as one JSON object (`_jsonout`: its tables as data, its other lines as text)."""
     argv, as_json = _jsonout.take_flag(sys.argv[1:])
+    if any(a in ("-h", "--help") for a in argv):  # --json is taken before the view's parser sees it
+        try:
+            return VIEWS[view](argv)
+        finally:
+            print(
+                '\n  --json                the same answer as one JSON object: {"command", "version", "result": '
+                '{"blocks": [...]}}, each table as columns and rows (0.5.0 replaces blocks)'
+            )
     if not as_json:
         return VIEWS[view](argv)
     with _jsonout.collect(view):

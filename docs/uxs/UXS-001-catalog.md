@@ -36,7 +36,9 @@ project with gold, silver and an open round.
   against gold.
 - **Rank only like with like.** Arms are ranked within a group scored against the same thing;
   a mean is never presented as a verdict.
-- **Read-only.** A decision is shown as the command that makes it.
+- **Read-only.** A decision is shown as the command that makes it. Every page's command is also
+  an MCP tool for an agent (`evh mcp`, [RFC-018](../rfc/RFC-018-read-only-mcp-server.md)), read-only
+  the same way.
 - **Dense, quiet, both themes.** Tables carry the data; colour marks meaning, never decoration:
   a subject (goals, data, experiments, work and spend), a row's tint, a series. Never red or
   green for a direction: a count that went up is neither good nor bad.
@@ -188,7 +190,9 @@ show the same period, and the home tiles open those pages at the period picked.
 The whole project at a glance, for the period picked ([the period](#the-period-every-listing-page)).
 
 - Hero: kicker `catalog`, title "Every evaluation, at a glance", a dek saying every name is a
-  link, then the period bar and the **tiles**, in four subjects, one colour each (a band on
+  link; under it, the deployment's own paragraph when `evh catalog --about FILE` gives one
+  (this repository's says which project the catalog shows, where its findings are, and that an
+  agent can ask it over MCP at `https://evals.humancopilot.eu/mcp`); then the period bar and the **tiles**, in four subjects, one colour each (a band on
   top, its trend badge, its line), named in a legend under them: **goals** (goals); **data**
   (datasets, references); **experiments** (configs, arms, metrics); **work and spend**
   (measured runs, billed in USD, tokens). The colour says what a tile is about and nothing

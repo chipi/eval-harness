@@ -40,7 +40,8 @@ further. This page is the reference for each step.
 | baseline | `evh run-promote --run … --reason "…"` · `evh runs-list --baselines` |
 | what it is for | `data/goals/<goal_id>.yaml` (every field: [§4c](#4c-the-goal-file-field-by-field)), and `goal:` on each config |
 | rounds (optional) | `evh round-open` · `evh round-retire` · `evh round-close` · `evh rounds --goal …` |
-| browse and inspect | `evh catalog` · `evh catalog-serve` |
+| browse and inspect | `evh catalog` · `evh catalog-serve` · `evh dataset-profile` · `evh dataset-items` |
+| ask from an agent | `evh mcp` |
 | the same, in the terminal | `evh overview [--period P]` · `evh activity` · `evh datasets` · `evh arms` (`--by …`, `--configs`, `--arm …`) · `evh references` · `evh metrics --metric …` · `evh goals` · `evh search …` · `evh inspect --runs …` (`--items`, `--analysis`, `--item …`); every list takes `--period P` |
 | consistency | `evh validate` |
 | does the installed harness work here | `evh self-test` |
@@ -844,9 +845,39 @@ page shows what is inside it once `evh dataset-profile` has written its profile 
 dataset is materialized: the items' lengths, the gold's labels or shape, and each item's link to
 its source when one is recorded; commit `data/profiles/` and a catalog built anywhere shows it.
 
-**For an agent**, `evh mcp` serves the same read commands as MCP tools (stdio on your machine;
-`--http` for a team), each call the command itself; see
-[the integration guide](INTEGRATION.md#for-an-agent-evh-mcp).
+**For an agent**, `evh mcp` serves the same read commands as MCP tools; how to connect each
+client is in [the integration guide](INTEGRATION.md#for-an-agent-evh-mcp).
+
+- **The tools** are `overview`, `datasets`, `dataset-items`, `arms`, `goals`, `references`,
+  `metrics`, `activity`, `search`, `inspect`, `rounds`, `runs-list` and `validate`. Each takes the
+  command's own options, named as on the command line (`dataset-id`, `period`). Each call runs
+  the command as a child process, with `--json` where it has one, so the answer is what you would
+  see. No tool writes project data, spends or runs a model. The one file a call writes is the p
+  cache, `<project>/.cache/evh-p.jsonl` (below, `EVH_P_CACHE`).
+- **Refused before anything runs:** an argument the tool does not have, a missing required one,
+  a value of the wrong kind (a list for a one-value option, a flag that is not `true`/`false`),
+  any value that starts with `-`, and a dataset id that is not a plain name.
+- **Stdio** (the default): the agent starts `evh mcp --project /path/to/project`. A desktop client
+  starts it with its own `PATH` and working directory, so give the full path to `evh` and
+  `--project`.
+- **`--http`**: Streamable HTTP, stateless, JSON answers, at `--path` (default `/mcp`) on `--bind`
+  (default `127.0.0.1`) and `--port` (default `8765`). `<path>/health` answers `{"ok", "version",
+  "tools", "public"}`. Beyond the loopback, `--allowed-host` is required: a request for another Host
+  is answered 421 (DNS rebinding). `--allowed-origin` names the browser origins it accepts; an
+  agent sends no Origin.
+- **`--public`**, for a server anyone can reach: no option that answers with an item's text
+  (`inspect --item`, `dataset-items --item`), and no `validate`.
+- **Load:** `--concurrent N` commands at once (default 4; a call that waits 30 s for a slot is
+  refused, "busy"), `--timeout S` per call (default 300; the command is stopped, exit 124),
+  `--rate N` calls a minute per caller and `--rate-total N` for everyone together (default: no
+  limit), and over HTTP one call at a time per caller. Every call counts, a refused one too; an
+  IPv6 caller is counted by its /64. `--client-header NAME` names the header your proxy sets for
+  the caller's address. Trust it only when nothing but the proxy reaches the port: a caller who
+  can set it can name itself anything (the total still holds).
+- **`--hooks FILE`**: the deployment's error reporting, tracing, metrics and analytics, in
+  `catalog-serve --hooks`' shape (`start`, `request` after each call, `error`, `routes`). A hook
+  gets the tool, its arguments' names, how it ended, its time, and the caller's address and user
+  agent. The log line on stderr, one JSON line per call, carries neither.
 
 **The run inspector** is a local server (`evh catalog-serve`) that tests chosen arms against a
 baseline with the same paired test as the command line, and shows outputs beside references.
@@ -913,6 +944,7 @@ notebook) reads no `.env`, and the project's paths are resolved on first use, so
 | `EVAL_MODELS_FILE` | the alias to upstream-model table judges are routed by |
 | `EVAL_FETCH_HEADERS` | JSON `{"host": {"Header": "value"}}` for URL items behind a login |
 | `EVAL_NO_CACHE` | `1`: `family-test` recomputes instead of replaying an identical earlier run |
+| `EVH_P_CACHE` | a file that keeps every estimated p of the paired test between processes (one JSON line each, read back exactly); `evh mcp` sets it to `<project>/.cache/evh-p.jsonl`. Unset by default: nothing is stored. A file that cannot be read is no cache; a read-only one is read and never written |
 | `OPENAI_API_KEY` (and `OPENAI_BASE_URL`) | `provider: openai`: OpenAI, or any OpenAI-compatible endpoint; an arm's `api_key_env` names another variable |
 | `OPENROUTER_API_KEY` | `provider: openrouter` (OpenRouter's address by default; an arm's `base_url` or `api_key_env` overrides it), and judges routed straight to OpenRouter |
 | `ANTHROPIC_API_KEY` | `provider: anthropic` |
