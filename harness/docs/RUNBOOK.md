@@ -870,8 +870,15 @@ client is in [the integration guide](INTEGRATION.md#for-an-agent-evh-mcp).
 - **Load:** `--concurrent N` commands at once (default 4; a call that waits 30 s for a slot is
   refused, "busy"), `--timeout S` per call (default 300; the command is stopped, exit 124),
   `--rate N` calls a minute per caller and `--rate-total N` for everyone together (default: no
-  limit), and over HTTP one call at a time per caller. Every call counts, a refused one too; an
-  IPv6 caller is counted by its /64. `--client-header NAME` names the header your proxy sets for
+  limit), and over HTTP one call at a time per caller. Every call counts toward the caller's rate, a
+  refused one too; the total counts only calls that run a command, so a flood of refusals never
+  locks others out. An IPv6 caller is counted by its /64. Below the tools, the HTTP layer:
+  `--request-rate N` HTTP requests a minute per caller to the endpoint, every method (a tool call
+  is about three), `--max-body BYTES` (default 65536; larger is 413), `--max-connections N`
+  (default 64; more are 503), and a GET on the endpoint is 405 (stateless: no stream to hold).
+  With `--public`, an answer is kept by its exact command line (32 MB in all), since the data
+  under the server never changes, and a refusal is told without server paths or a traceback.
+  A value with a NUL byte, or longer than 512 characters, is refused. `--client-header NAME` names the header your proxy sets for
   the caller's address. Trust it only when nothing but the proxy reaches the port: a caller who
   can set it can name itself anything (the total still holds).
 - **`--hooks FILE`**: the deployment's error reporting, tracing, metrics and analytics, in

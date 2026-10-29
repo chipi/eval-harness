@@ -83,6 +83,27 @@ that shows what is inside a dataset without republishing its text. [UPGRADING](d
 - **A param shown on a catalog page or by `evh arms --arm`** hides a URL's user and password and a nested key
   named like a credential (`headers: {Authorization: …}`), as it already hid a top-level `api_key`.
 
+### Security
+
+From two independent reviews before this release, each reproduced before it was fixed:
+
+- **The inspector served any `.txt` under its data tree** through `/api/item?item=../../…` (an item id was never
+  checked; on `main` since 0.4.0). An item id is now a file's name, refused otherwise, in the server and the adapter.
+- **The inspector's answers were cached by count, not size**: a hundred distinct 40-arm questions took a 256 MiB
+  container past its limit, and `--warm` alone did on this repository's data. The cache is bounded by the bytes it
+  keeps (32 MB), and `--warm` stops when it is three quarters full. Its rate key is an address, never a header's
+  text.
+- **`evh mcp --http`**: a few parallel 4 MiB bodies killed the server; held GETs and ping floods cost memory no rate
+  saw. Now `--max-body`, `--max-connections`, `--request-rate`, GET is 405, refusals do not count toward
+  `--rate-total`, and `--public` answers are kept and their errors carry no paths. Values with NUL bytes or over 512
+  characters are refused.
+- **The deployment**: Caddy refuses a body over 64 KB on `/mcp` (and its `handle` line now adapts); the containers'
+  `/tmp` caps files as well as bytes; `render.sh`'s check for reference texts in a release could pass with 1,657 of
+  them (a pipe's SIGPIPE) and refused the five tracked ones: it now compares against what git tracks; a deploy keeps
+  two releases (the live one and the rollback), prunes at its start as well as its end, and refuses to start short of
+  2 GB or 300,000 inodes; the upload hard-links unchanged files again (no file ever linked: each release took ~69k new
+  inodes).
+
 ### Fixed
 
 - **The deployment's release ships `data/models.yaml`** (`render.sh`, and the item fields and profiles with it):

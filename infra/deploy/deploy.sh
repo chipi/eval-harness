@@ -17,7 +17,9 @@
 #      On any failure in 3 or 4: point `current` back at the previous release, `compose up` its
 #      compose.yml (undoes an image bump) and reload. Steps 2b and 6 have their own restore.
 #   6. Install/remove our Caddy vhosts per caddy/enabled.txt (install_vhosts.sh).
-#   7. Keep the last 5 releases.
+#   7. Keep two releases: the live one and the one a rollback returns to. Also at the start
+#      (0b), so a failed deploy or a dry run never leaves releases piling up (each holds ~69k
+#      files); and 0a refuses to start when /srv is short of space or inodes.
 #
 # Env: EVALS_PORT (default 8096), INSPECTOR_PORT (default 8097), MCP_PORT (default 8098). DRY_RUN=true
 # stops after step 2.
@@ -39,6 +41,25 @@ export EVALS_PORT="$PORT" INSPECTOR_PORT="$IPORT" MCP_PORT="$MPORT"
 
 [ "$REL" = "$BASE/releases/$SHA" ] || { echo "::error::release dir $REL is not $BASE/releases/$SHA"; exit 1; }
 echo "== deploying evals release $SHA (nginx $PORT, inspector $IPORT, mcp $MPORT)"
+
+# Delete every release but the ones named (absolute paths): never `current`'s, never this one.
+prune() {
+  local keep=("$@" "$(readlink -f "$BASE/current" 2>/dev/null || true)" "$REL") d k skip
+  for d in "$BASE"/releases/*/; do
+    d="${d%/}"; skip=
+    for k in "${keep[@]}"; do [ -n "$k" ] && [ "$(readlink -f "$d")" = "$(readlink -f "$k")" ] && skip=1; done
+    [ -n "$skip" ] || { echo "  pruned $(basename "$d")"; rm -rf -- "$d"; }
+  done
+}
+
+# 0a. Room: a release is ~400 MB and ~69k files (fewer, once unchanged files are hard-linked).
+free_kb="$(df --output=avail -k "$BASE" | tail -1 | tr -d ' ')"
+free_inodes="$(df --output=iavail "$BASE" | tail -1 | tr -d ' ')"
+[ "$free_kb" -ge 2097152 ] || { echo "::error::$BASE has $((free_kb / 1024)) MB free, under 2 GB: refusing to deploy"; exit 1; }
+[ "$free_inodes" -ge 300000 ] || { echo "::error::$BASE has $free_inodes free inodes, under 300,000: refusing to deploy"; exit 1; }
+echo "  room: $((free_kb / 1048576)) GB and $free_inodes inodes free"
+# 0b. Only the live release and this one stay: what an earlier failed deploy or dry run left goes.
+prune
 
 # 1. Ports: free, or held by our own containers.
 for pair in "$PORT:$NGINX" "$IPORT:$INSPECTOR" "$MPORT:$MCP"; do
@@ -157,10 +178,6 @@ echo "  mcp ok (goals in ${secs} s)"
 # 6. Edge vhosts.
 bash "$REL/deploy/install_vhosts.sh" "$REL/caddy"
 
-# 7. Prune: keep the 5 newest releases, never the current one.
-cur="$(readlink "$BASE/current")"
-find "$BASE/releases" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' | sort -rn | tail -n +6 | cut -d' ' -f2- |
-  while read -r old; do
-    [ "$old" = "$cur" ] || rm -rf -- "$old"
-  done
+# 7. Prune: keep the live release and the previous one (what a rollback returns to).
+prune "$prev"
 echo "== release $SHA live on 127.0.0.1:$PORT (nginx), 127.0.0.1:$IPORT (inspector) and 127.0.0.1:$MPORT (mcp)"

@@ -152,9 +152,12 @@ jobs:
           TARGET: deploy@${{ vars.PROD_TAILNET_FQDN }}
         run: |
           set -euo pipefail
-          # Hard-link every file the current release already has (most of the ~36,000 run
-          # files never change), so only what changed crosses the tailnet.
-          rsync -a --delete --mkpath --link-dest=/srv/evals/current/ \
+          # Hard-link every file the current release already has (most of the ~69,000 files never
+          # change), so only what changed crosses the tailnet and a release costs few new inodes.
+          # -a's attributes but the times (-t), compared by checksum (-c): a CI checkout gives every
+          # file a new mtime, so with -a no file ever matched and each release took ~69k new inodes
+          # (prod, 2026-10-29: 0 of 68,322 files linked). A changed file still arrives new.
+          rsync -rlpgoD --checksum --delete --mkpath --link-dest=/srv/evals/current/ \
             -e "ssh -i $SSH_PROD_IDENTITY -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o BatchMode=yes" \
             _release/ "$TARGET:/srv/evals/releases/$SHA/"
 

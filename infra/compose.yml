@@ -27,7 +27,7 @@ services:
       - /srv/evals:/srv/evals:ro
     read_only: true
     tmpfs:
-      - /tmp:size=16m,uid=101,gid=101,mode=0700
+      - /tmp:size=16m,nr_inodes=4096,uid=101,gid=101,mode=0700
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]
     mem_limit: 64m
@@ -103,7 +103,8 @@ services:
       - /srv/evals:/srv/evals:ro
     read_only: true
     tmpfs:
-      - /tmp:size=16m,uid=65534,gid=65534,mode=0700
+      # nr_inodes: size bounds bytes, not files (16 MB held 100,000 empty files at ~1 KB of memory each)
+      - /tmp:size=16m,nr_inodes=4096,uid=65534,gid=65534,mode=0700
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]
     mem_limit: 256m
@@ -169,6 +170,14 @@ services:
       - "30"
       - --rate-total
       - "120"
+      # Every HTTP request to /mcp, per caller, before the body is read: ping and tools/list
+      # floods never reach the tool calls' rate (a call is about three requests).
+      - --request-rate
+      - "300"
+      - --max-body
+      - "65536"
+      - --max-connections
+      - "64"
       # Two commands at once at most: each is a process of up to ~60 MB, inside mem_limit.
       - --concurrent
       - "2"
@@ -182,7 +191,8 @@ services:
       - /srv/evals:/srv/evals:ro
     read_only: true
     tmpfs:
-      - /tmp:size=16m,uid=65534,gid=65534,mode=0700
+      # nr_inodes: size bounds bytes, not files (16 MB held 100,000 empty files at ~1 KB of memory each)
+      - /tmp:size=16m,nr_inodes=4096,uid=65534,gid=65534,mode=0700
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]
     # A hard limit (the box has no swap and a nightly pipeline): the server and two commands.

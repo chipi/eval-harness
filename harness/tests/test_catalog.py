@@ -16,6 +16,7 @@ import sys
 import tempfile
 import threading
 import urllib.error
+import urllib.parse
 import urllib.request
 from functools import partial
 from http.server import ThreadingHTTPServer
@@ -651,7 +652,7 @@ try:
     # PUBLIC mode: the API only, to the named host, rate-limited, arms capped, answers cached
     cs.LIMITS.update(hosts=("catalog.example.org",), rate=5, max_arms=2)
     cs.Handler.prefixes = ()
-    cs._CACHE.clear()
+    cs.cache_clear()
     cs._HITS.clear()
     pub = ThreadingHTTPServer(("127.0.0.1", 0), partial(cs.Handler, directory=str(tmp)))
     port = pub.server_address[1]
@@ -671,10 +672,10 @@ try:
     st, body = get("/api/compare?runs=runs/ds1/arm_a,runs/ds1/arm_b", H)
     check("public: compares", st == 200 and json.loads(body)["metric"] == "acc", st)
     st, body = get("/api/compare?runs=runs/ds1/arm_a,runs/ds1/arm_b,runs/ds2/arm_c", H)
-    capped = next((v for k, v in cs._CACHE.items() if "arm_c" in k), (0, {}))
+    capped = next((v for k, v in cs._CACHE.items() if "arm_c" in k), (0, b""))
     check(
         "public: at most --max-arms arms in one comparison",
-        st == 400 and "at most 2" in capped[1].get("error", ""),
+        st == 400 and "at most 2" in json.loads(capped[1] or b"{}").get("error", ""),
         (st, capped),
     )
     key = next(k for k in cs._CACHE if "arm_b" in k)
@@ -693,8 +694,20 @@ try:
         and "does not publish outputs" in view.get("note", ""),
         body[:300],
     )
-    cs._CACHE.clear()
+    cs.cache_clear()
     cs.LIMITS["publish"] = ("outputs",)
+    hits = {k: list(v) for k, v in cs._HITS.items()}  # the public rate (5 a minute) is not what these test
+    for path_id in ("../../references/gold/ds1/i00", "..%2F..%2Fx", "a/b"):
+        st, body = get(f"/api/item?arms=runs/ds1/arm_a&item={path_id}", H)
+        check(
+            f"public: an item id that is a path is refused ({path_id})",
+            st == 400
+            and "not an item id"
+            in json.dumps(cs.item(urllib.parse.parse_qs(f"arms=runs/ds1/arm_a&item={path_id}"))),
+            (st, body[:120]),
+        )
+        cs._HITS.clear()
+    cs._HITS.update(hits)
     st, body = get(item_q, H)
     j = json.loads(body) if st == 200 else {}
     check(
@@ -705,7 +718,7 @@ try:
         body[:300],
     )
     cs.LIMITS["publish"] = ()
-    cs._CACHE.clear()
+    cs.cache_clear()
     codes = [get("/api/health", H)[0] for _ in range(2)] + [
         get("/api/item?arms=runs/ds1/arm_a&item=i00", H)[0] for _ in range(4)
     ]
@@ -731,7 +744,25 @@ try:
     )
     pub.shutdown()
     cs.LIMITS.update(hosts=(), rate=0, max_arms=40)
-    cs._CACHE.clear()
+    # The cache is bounded by the bytes it keeps, not only by its count.
+    cs.cache_clear()
+    keep = cs._CACHE_BYTES
+    cs._CACHE_BYTES = 4000
+    for i in range(20):
+        cs.answer("/api/compare", f"arms=runs/ds1/arm_a,runs/ds1/arm_b&metric=m&z={i}")
+    check(
+        "public: the cache keeps at most its byte bound",
+        cs._cache_size[0] <= 4000 and sum(len(v[1]) for v in cs._CACHE.values()) == cs._cache_size[0],
+        (cs._cache_size[0], len(cs._CACHE)),
+    )
+    cs._CACHE_BYTES = keep
+    check(
+        "public: the rate's key is an address (the header's when it is one), never the header's text",
+        cs.client_key("203.0.113.9", "10.0.0.1") == "203.0.113.9"
+        and cs.client_key("x" * 60000, "10.0.0.1") == "10.0.0.1"
+        and cs.client_key("2001:db8:1:2::7", "10.0.0.1") == cs.client_key("2001:db8:1:2::9", "10.0.0.1"),
+    )
+    cs.cache_clear()
     cs._HITS.clear()
 
     # Item fields (ADR-0003): a public choice field and a hidden text field on ds1.

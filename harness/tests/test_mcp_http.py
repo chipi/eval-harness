@@ -181,6 +181,10 @@ cmd2 = [
     "--public",
     "--rate-total",
     "2",
+    "--request-rate",
+    "14",
+    "--max-body",
+    "4096",
 ]
 srv2 = subprocess.Popen(cmd2, cwd=tmp, env=env, stderr=subprocess.DEVNULL, text=True, start_new_session=True)
 base = f"http://127.0.0.1:{port2}"
@@ -199,7 +203,10 @@ try:
             ClientSession(streams[0], streams[1]) as s,
         ):
             await s.initialize()
-            res = [await s.call_tool("datasets", {}) for _ in range(3)]
+            # Refusals first: they cost nothing and never count toward the total.
+            for _ in range(3):
+                await s.call_tool("no-such-tool", {})
+            res = [await s.call_tool("datasets", {"period": p}) for p in ("all", "30d", "week")]
             check(
                 "--rate-total 2: the third call in a minute is refused, from anyone",
                 not res[0].is_error
@@ -208,8 +215,39 @@ try:
                 and "as many calls" in res[2].content[0].text,
                 [r.content[0].text[:60] for r in res],
             )
+            again = await s.call_tool("datasets", {"period": "all"})
+            check(
+                "--public: a repeated call is answered from what was kept, and is not counted",
+                not again.is_error and again.content[0].text == res[0].content[0].text,
+                again.content[0].text[:80],
+            )
 
     anyio.run(total)
+
+    def post(body: bytes) -> int:
+        req = urllib.request.Request(  # noqa: S310 -- the test's own server
+            base + "/mcp",
+            data=body,
+            headers={"Content-Type": "application/json", "Accept": "application/json, text/event-stream"},
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=10) as r:  # noqa: S310  # nosec B310
+                return r.status
+        except urllib.error.HTTPError as e:
+            return e.code
+
+    check(
+        "GET on the endpoint is 405 (stateless: no stream to hold open)", get("/mcp")[0] == 405, get("/mcp")
+    )
+    big = b'{"jsonrpc":"2.0","id":1,"method":"ping","params":{"x":"' + b"a" * 8000 + b'"}}'
+    check("--max-body 4096: a larger body is refused (413) before it is read", post(big) == 413)
+    ping = b'{"jsonrpc":"2.0","id":1,"method":"ping"}'
+    codes = [post(ping) for _ in range(16)]
+    check(
+        "--request-rate 14: every request counts, ping too; past it, 429",
+        429 in codes and codes[0] != 429,
+        codes,
+    )
 finally:
     os.killpg(srv2.pid, 15)
     srv2.wait(timeout=10)

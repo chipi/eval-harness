@@ -23,11 +23,13 @@ import argparse
 import contextlib
 import json
 import os
+import re
 import runpy
 import signal
 import subprocess
 import sys
 import time
+from collections import OrderedDict
 from pathlib import Path
 from typing import Any
 
@@ -90,6 +92,15 @@ JSON |= {"dataset-items"}
 HIDDEN = {"--adapter", "--json", "--help"}
 TIMEOUT_S = 300
 MAX_OUT = 1_000_000
+#: A tool argument's bounds: no command takes a longer value (an id, a period, a search's words),
+#: and a megabyte of argument only reached the kernel's limit and an error naming the interpreter.
+MAX_VALUE = 512
+MAX_VALUES = 64
+#: The request body the HTTP endpoint reads (--max-body): a tool call is a few hundred bytes, and
+#: the SDK's 4 MiB default let a few parallel bodies take the container past its memory limit.
+MAX_BODY = 64 * 1024
+#: --public: the answers kept, by their total size (least recently used out first).
+ANSWERS_BYTES = 32 * 1024 * 1024
 
 
 class _Parser(Exception):
@@ -190,6 +201,10 @@ def argv_of(parser: argparse.ArgumentParser, arguments: dict) -> list[str]:
         if any(isinstance(x, (bool, dict, list)) or x is None for x in vals):
             raise ValueError(f"{k}: each value is a string or a number")
         vals = [str(x) for x in vals]
+        if any("\0" in x for x in vals):
+            raise ValueError(f"{k}: a value may not hold a NUL byte")
+        if len(vals) > MAX_VALUES or any(len(x) > MAX_VALUE for x in vals):
+            raise ValueError(f"{k}: at most {MAX_VALUES} values of {MAX_VALUE} characters")
         # A value that starts with "-" would be read by the command as an option of its own (a
         # positional `["x", "--adapter", "mod:fn"]` would load code the schema leaves out): refused.
         bad = [x for x in vals if x.startswith("-")]
@@ -204,6 +219,18 @@ def argv_of(parser: argparse.ArgumentParser, arguments: dict) -> list[str]:
             out += [max(a.option_strings, key=len), *vals]
     # Positionals after "--": whatever they hold, the command reads them as values, never options.
     return out + (["--", *tail] if tail else [])
+
+
+def public_error(text: str, project: Path) -> str:
+    """A command's refusal as a public caller is told it: its own message, with no server path and
+    no traceback (a crash is "internal error"; the log and the error tracker have the rest)."""
+    if "Traceback (most recent call last)" in text:
+        return "internal error: the command failed; it is reported to the server's maintainers"
+    lines = [ln for ln in text.splitlines() if ln.strip()]
+    msg = next((ln for ln in reversed(lines) if ln.startswith("ERROR")), lines[-1] if lines else "")
+    for root in sorted({str(project), str(project.resolve()), str(HERE.parent)}, key=len, reverse=True):
+        msg = msg.replace(root + "/", "").replace(root, ".")
+    return re.sub(r"/(?:[\w.-]+/)+", "", msg)[:2000]
 
 
 def run_command(
@@ -293,8 +320,20 @@ def _client(ctx, header: str | None) -> tuple[str, str]:
     req = getattr(ctx, "request", None)
     if req is None:
         return "", ""
-    addr = (req.headers.get(header) if header else None) or (req.client.host if req.client else "")
+    peer = req.client.host if req.client else ""
+    addr = ip_or_none(req.headers.get(header) if header else None) or peer
     return addr[:64], req.headers.get("user-agent", "")[:120]
+
+
+def ip_or_none(value: str | None) -> str | None:
+    """The value when it is an IP address, else None: a header that holds anything else (text,
+    a value made up per request) never names a caller."""
+    import ipaddress  # noqa: PLC0415
+
+    try:
+        return str(ipaddress.ip_address((value or "").strip()[:64]))
+    except ValueError:
+        return None
 
 
 def caller_key(addr: str) -> str:
@@ -328,6 +367,8 @@ def build_server(
     hooks = hooks or Hooks()
     recent: dict[str, list[float]] = {}
     everyone: list[float] = []
+    answers: OrderedDict = OrderedDict()  # (tool, argv) -> its result, --public only
+    answers_size = [0]
     inflight: dict[str, int] = {}
     import anyio  # noqa: PLC0415
     import mcp.types as types  # noqa: PLC0415
@@ -389,6 +430,24 @@ def build_server(
                 if len(recent) > 4096:  # forget callers quiet for a minute
                     for k in [k for k, ts in recent.items() if not ts or now - ts[-1] >= 60]:
                         del recent[k]
+            if not known:
+                return refuse(f"no tool {name[:60]!r}", {**info, "refused": "tool"})
+            try:
+                argv = argv_of(parsers[name], arguments)
+            except ValueError as exc:
+                return refuse(str(exc), {**info, "refused": "arguments"})
+            # M2: a public server reads a release that never changes under it, so an answer is
+            # kept by its exact command line: a repeated heavy view costs nothing the second time.
+            hit = answers.get((name, tuple(argv))) if public else None
+            if hit is not None:
+                answers.move_to_end((name, tuple(argv)))
+                _log(**{k: v for k, v in info.items() if k not in PRIVATE}, exit=0, cached=True)
+                hooks(
+                    "request", {**info, "exit": 0, "ms": 0, "bytes": len(hit.content[0].text), "cached": True}
+                )
+                return hit
+            # The total counts the calls that run a command: a flood of refusals (which costs
+            # nothing) is held by the caller's own rate and never locks everyone else out.
             if rate_total:
                 now = time.monotonic()
                 everyone[:] = [t for t in everyone if now - t < 60]
@@ -398,12 +457,6 @@ def build_server(
                         {**info, "refused": "rate_total"},
                     )
                 everyone.append(now)
-            if not known:
-                return refuse(f"no tool {name[:60]!r}", {**info, "refused": "tool"})
-            try:
-                argv = argv_of(parsers[name], arguments)
-            except ValueError as exc:
-                return refuse(str(exc), {**info, "refused": "arguments"})
             if (
                 client and inflight.get(key, 0) >= 1
             ):  # over HTTP: a local stdio client may run tools in parallel
@@ -433,6 +486,8 @@ def build_server(
             raise
         if code != 0:
             text = (err.strip() or out.strip() or f"exit {code}")[-65536:]
+            if public:
+                text = public_error(text, project)
             return types.CallToolResult(
                 content=[types.TextContent(text=f"{text}\n(exit {code})")], is_error=True
             )
@@ -451,7 +506,19 @@ def build_server(
                 structured = json.loads(out)
             except ValueError:
                 structured = None
-        return types.CallToolResult(content=[types.TextContent(text=out)], structured_content=structured)
+        if public and name == "dataset-items" and isinstance(structured, dict):
+            # L2: a profile written --with-text carries item text; a public server serves none.
+            for r in (structured.get("result") or {}).get("rows") or []:
+                r.pop("text", None)
+            out = json.dumps(structured, indent=1)
+        res = types.CallToolResult(content=[types.TextContent(text=out)], structured_content=structured)
+        if public:
+            answers[(name, tuple(argv))] = res
+            answers_size[0] += len(out)
+            while answers and answers_size[0] > ANSWERS_BYTES:
+                _, old = answers.popitem(last=False)
+                answers_size[0] -= len(old.content[0].text)
+        return res
 
     return Server(
         "evaluation-harness",
@@ -507,6 +574,25 @@ def main(argv: list[str] | None = None) -> int:
         type=int,
         default=0,
         help="--http: calls a minute from all callers together (default: no limit)",
+    )
+    ap.add_argument(
+        "--max-body",
+        type=int,
+        default=MAX_BODY,
+        help=f"--http: the largest request body read, in bytes (default: {MAX_BODY}); larger is answered 413",
+    )
+    ap.add_argument(
+        "--max-connections",
+        type=int,
+        default=64,
+        help="--http: connections served at once; more are answered 503 (default: 64)",
+    )
+    ap.add_argument(
+        "--request-rate",
+        type=int,
+        default=0,
+        help="--http: HTTP requests a minute per caller to the endpoint, every method (default: no limit); "
+        "a tool call is about three",
     )
     ap.add_argument(
         "--client-header",
@@ -606,10 +692,66 @@ def serve_http(server, args) -> int:
         transport_security=security,
         host=args.bind,
         custom_starlette_routes=extra,
+        max_request_body_size=args.max_body,
     )
+    app = Gate(app, args.path, args.request_rate, args.client_header)
     print(f"evh mcp: http://{args.bind}:{args.port}{args.path}", file=sys.stderr, flush=True)
-    uvicorn.run(app, host=args.bind, port=args.port, log_level="warning", proxy_headers=True)
+    uvicorn.run(
+        app,
+        host=args.bind,
+        port=args.port,
+        log_level="warning",
+        proxy_headers=True,
+        limit_concurrency=args.max_connections,
+        timeout_keep_alive=5,
+    )
     return 0
+
+
+class Gate:
+    """In front of the endpoint (ASGI): a GET on it is 405, since a stateless JSON server has no
+    stream to open and every held GET cost ~85 KB; and with --request-rate, each caller's
+    requests to it are counted, every method, before the SDK reads a byte of the body (ping and
+    tools/list floods never reach call_tool's rate)."""
+
+    def __init__(self, app, path: str, rate: int, header: str | None):
+        self.app, self.path, self.rate, self.header = app, path.rstrip("/") or "/", rate, header
+        self.seen: dict[str, list[float]] = {}
+
+    def _caller(self, scope) -> str:
+        peer = (scope.get("client") or ("", 0))[0]
+        if self.header:
+            want = self.header.lower().encode()
+            for k, v in scope.get("headers") or []:
+                if k == want:
+                    return caller_key(ip_or_none(v.decode("latin-1")) or peer)
+        return caller_key(peer)
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] == "http" and scope["path"].rstrip("/") == self.path:
+            if scope["method"] == "GET":
+                return await _plain(send, 405, b"this server answers POST only (stateless, JSON)")
+            if self.rate:
+                now, key = time.monotonic(), self._caller(scope)
+                hits = [t for t in self.seen.get(key, []) if now - t < 60]
+                if len(hits) >= self.rate:
+                    return await _plain(send, 429, b"too many requests a minute; wait a moment")
+                self.seen[key] = [*hits, now]
+                if len(self.seen) > 4096:
+                    for k in [k for k, ts in self.seen.items() if now - ts[-1] >= 60]:
+                        del self.seen[k]
+        return await self.app(scope, receive, send)
+
+
+async def _plain(send, status: int, body: bytes) -> None:
+    await send(
+        {
+            "type": "http.response.start",
+            "status": status,
+            "headers": [(b"content-type", b"text/plain"), (b"content-length", str(len(body)).encode())],
+        }
+    )
+    await send({"type": "http.response.body", "body": body})
 
 
 if __name__ == "__main__":

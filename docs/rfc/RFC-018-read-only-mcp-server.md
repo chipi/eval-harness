@@ -112,8 +112,15 @@ nothing.
   call, `--rate N` calls a minute per caller and `--rate-total N` for all callers together, and over HTTP one call
   running at a time per caller. The caller is named by `--client-header` (the proxy's, e.g. `CF-Connecting-IP`) or
   the connection, an IPv6 address by its /64. Every call counts toward the rate, a refused one too. A header is
-  trusted as it comes: a caller that can reach the port past the proxy can name itself anything, which the total
-  still holds.
+  trusted only when it holds an IP address (else the connection's own address names the caller); a caller that can
+  reach the port past the proxy can still name itself any address, which the total holds. The total counts only the
+  calls that run a command: refusals stay on the caller's own rate.
+- **The HTTP layer** (after an independent security and load review, 2026-10-29): a body over `--max-body` (64 KB) is
+  refused before it is read (Caddy refuses it first, at the edge); a GET on the endpoint is 405, since a stateless
+  JSON server has no stream to hold and each held GET cost ~85 KB; `--request-rate` counts every request per caller
+  before the SDK reads it (ping and `tools/list` floods never reached the tools' rate); `--max-connections` (64) and a
+  5 s keep-alive bound the connections. With `--public` an answer is kept by its exact command line (32 MB), so a
+  repeated heavy view costs nothing, and a refusal's text loses server paths and tracebacks.
 - **Speed**: each call is a fresh process, and a view that shows the goals runs their paired tests (~500 here, ~50 s).
   `stats` keeps each estimated p on disk when `EVH_P_CACHE` names a file (the p read back exactly; a torn last line
   skipped); the server sets it to the project's ignored `.cache/evh-p.jsonl` unless the deployment names its own.
@@ -127,7 +134,8 @@ nothing.
 
 - `evals-mcp`, a third container beside nginx and the inspector: the same stock Python image, user, read-only mount and
   hardening, `--http --public --allowed-host evals.humancopilot.eu --client-header CF-Connecting-IP --rate 30
-  --rate-total 120 --concurrent 2 --timeout 60`. The throttling is the server's own: Cloudflare proxies the host but
+  --rate-total 120 --request-rate 300 --max-body 65536 --max-connections 64 --concurrent 2 --timeout 60`, and a
+  `/tmp` tmpfs capped at 4,096 files as well as 16 MB (`nr_inodes`). The throttling is the server's own: Cloudflare proxies the host but
   has no rate limit for it (the owner, 2026-10-29). Also a hard `mem_limit` of 384m (the box has no swap and a nightly pipeline; prod's
   sizing), 127.0.0.1:8098. Caddy sends `/mcp` and `/mcp/*` to it, nothing else (its `/metrics` stays on the loopback).
 - `render.sh` vendors the SDK and its dependencies, pinned (`infra/mcp/requirements.txt`, resolved for x86_64 musl),

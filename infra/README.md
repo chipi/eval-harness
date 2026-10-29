@@ -93,7 +93,8 @@ infra/
     mount. No authentication: it answers what the site and the catalog already publish.
   - **Load and speed:** the server throttles itself (Cloudflare only proxies): `--rate 30` calls a
     minute per caller (`CF-Connecting-IP`, as for the inspector), `--rate-total 120` for everyone,
-    one call at a time per caller,
+    one call at a time per caller, `--request-rate 300` HTTP requests a minute per caller, a 64 KB body
+    (Caddy and the server), 64 connections, GET on `/mcp` 405,
     two commands at a time, 60 s each. Each call is a fresh `evh` process; the goals'
     paired tests, which a view would otherwise draw again (~50 s), come precomputed in
     `inspector/cache/evh-p.jsonl` (`render.sh` fills it during the catalog build; `EVH_P_CACHE`).
@@ -110,6 +111,8 @@ infra/
 
 ## What `deploy.sh` checks before a release counts as live
 
+0. Room on `/srv`: at least 2 GB and 300,000 inodes free, else it refuses. Then only the live
+   release and this one are kept: whatever an earlier failed deploy or dry run left is pruned.
 1. The three loopback ports are free or already held by our containers.
 2. `nginx -t` passes on the new release's config, in a throwaway container. **A dry run
    (`workflow_dispatch` with `dry_run`) stops here.**
@@ -119,8 +122,11 @@ infra/
    `/api/health` and two real comparisons taken from the catalog's own links: one arm, and
    the first group of arms on one metric (`deploy/probe_link.sh` picks it; `make -C harness
    test` runs the same probe against the tutorial project). Both must come back with verdict
-   rows. The MCP server answers `/mcp/health` and a real `goals` call within 30 s (which needs
-   the precomputed p cache: without it the call takes ~50 s).
+   rows. The MCP server answers `/mcp/health` and a real `goals` call (up to 120 s; a warning
+   past 30 s, which means the precomputed p cache was not read: without it the call takes ~50 s).
+5. After the edge vhosts, it prunes again: the live release and the previous one stay, for a
+   rollback. A release is ~69k files; the upload hard-links those the live release already has
+   (`rsync --checksum --link-dest`), so a release costs new inodes only for what changed.
 
 Any failure in 3 or 4 rolls back to the previous release: the symlink, the containers (the MCP
 server removed when the previous release had none) and

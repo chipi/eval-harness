@@ -175,6 +175,18 @@ try:
                     res.is_error and "true or false" in res.content[0].text,
                     res.content[0].text[:200],
                 )
+            res = await s.call_tool("datasets", {"dataset-id": "a\u0000b"})
+            check(
+                "a NUL byte in a value is refused before anything runs",
+                res.is_error and "NUL" in res.content[0].text,
+                res.content[0].text[:200],
+            )
+            res = await s.call_tool("datasets", {"dataset-id": "x" * 600})
+            check(
+                "an over-long value is refused before anything runs",
+                res.is_error and "characters" in res.content[0].text,
+                res.content[0].text[:200],
+            )
             res = await s.call_tool("search", {"text": ["tickets_v1"]})
             check(
                 "search: its text after '--', read as words, the answer found",
@@ -183,6 +195,20 @@ try:
             )
 
     anyio.run(session)
+    from evaluation_harness.mcp_server import public_error
+
+    tb = "Traceback (most recent call last):\n  File \"/srv/evals/releases/abc/pkg/x.py\", line 1\nKeyError: 'x'"
+    check(
+        "public: a crash is told as an internal error, no traceback or path",
+        "internal error" in public_error(tb, proj) and "/srv" not in public_error(tb, proj),
+    )
+    msg = f"ERROR: no profile for d ({proj}/data/profiles/d.json): write one"
+    check(
+        "public: a refusal keeps its message, without the server's paths",
+        public_error(msg, proj).startswith("ERROR: no profile for d")
+        and str(proj) not in public_error(msg, proj),
+        public_error(msg, proj),
+    )
 finally:
     shutil.rmtree(proj, ignore_errors=True)
 

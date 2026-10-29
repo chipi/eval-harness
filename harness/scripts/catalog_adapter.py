@@ -275,6 +275,11 @@ def _numeric(row: dict) -> dict:
     }
 
 
+def _plain_name(name: str) -> bool:
+    """A file's name and nothing else: an item id from a request never reaches outside its run."""
+    return bool(name) and "/" not in name and "\\" not in name and ".." not in name and "\0" not in name
+
+
 class HarnessAdapter:
     """The harness's own data tree. Arms are configs on a dataset, repeats averaged per item."""
 
@@ -568,6 +573,8 @@ class HarnessAdapter:
 
     def item_view(self, arm: str, item: str) -> dict:
         """Return one arm's output for one item."""
+        if not _plain_name(item):
+            return {"kind": "none", "note": "not an item id"}
         dirs = self._dirs(arm)
         for d in reversed(dirs):  # the latest repeat
             f = d / "outputs" / f"{item}.txt"
@@ -594,7 +601,7 @@ class HarnessAdapter:
     def reference_view(self, ref: str, item: str) -> dict:
         """Return one reference's text for one item."""
         r = next((x for x in self.references() if x["id"] == ref), None)
-        f = r["dir"] / f"{item}.txt" if r else None
+        f = r["dir"] / f"{item}.txt" if r and _plain_name(item) else None
         if f and f.is_file():
             return {"kind": "text", "text": f.read_text(encoding="utf-8", errors="replace")}
         return {"kind": "none"}

@@ -172,10 +172,16 @@ if left="$(grep -rnoE --exclude='*.js' --exclude='*.map' '__[A-Z][A-Z0-9_]+__' "
   echo "::error::unrendered tokens in the release:"; echo "$left"; exit 1
 fi
 # What a release must never carry, whatever the checkout it was rendered from holds: reference texts
-# (a gold reference is not committed; a working copy may have fetched it) and materialized items.
-# A fresh CI checkout has neither; a render on a developer's machine might.
-if leaked="$(find "$OUT/inspector/data/references" -name '*.txt' 2>/dev/null | head -3)" && [ -n "$leaked" ]; then
-  echo "::error::reference texts in the release (not public): $leaked"; exit 1
+# git does not track (a gold reference is not committed; a working copy may have fetched it) and
+# materialized items. The tracked ones (the synthetic smoke_v1 silver) are public already. The
+# list is built whole, never cut by `head` in the pipe: under pipefail that killed `find` with
+# SIGPIPE, the assignment failed, and the check passed with 1,657 texts in the release (an
+# independent review, 2026-10-29).
+tracked_refs="$(git -C "$ROOT" ls-files -- harness/data/references | sed 's#^harness/data/##' | sort)"
+leaked="$( (cd "$OUT/inspector/data" 2>/dev/null && find references -name '*.txt' | sort) | comm -23 - <(printf '%s\n' "$tracked_refs") || true)"
+if [ -n "$leaked" ]; then
+  echo "::error::$(wc -l <<<"$leaked") reference text(s) git does not track in the release (not public), e.g.:"
+  sed -n '1,3p' <<<"$leaked"; exit 1
 fi
 [ ! -e "$OUT/inspector/data/materialized" ] || { echo "::error::materialized items in the release"; exit 1; }
 # The MCP server's precomputed goals' tests: without them each view takes ~50 s.

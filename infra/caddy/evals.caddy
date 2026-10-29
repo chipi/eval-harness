@@ -18,8 +18,15 @@ evals.humancopilot.eu {
 		reverse_proxy 127.0.0.1:__INSPECTOR_PORT__
 	}
 	# The MCP server: its endpoint and its health, nothing else (its /metrics stays on the loopback
-	# port, for the box's collector).
-	handle /mcp /mcp/* {
+	# port, for the box's collector). A named matcher: `handle` takes one path, and `handle /mcp
+	# /mcp/*` fails `caddy adapt` (wrong argument count). A tool call is a few hundred bytes; a body
+	# over 64 KB is refused here, before the server reads it (an independent review, 2026-10-29:
+	# parallel 4 MiB bodies took the container past its memory limit).
+	@mcp path /mcp /mcp/*
+	handle @mcp {
+		request_body {
+			max_size 64KB
+		}
 		reverse_proxy 127.0.0.1:__MCP_PORT__
 	}
 	handle {
