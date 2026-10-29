@@ -121,6 +121,13 @@ answer. Where the page has a `make` target in a checkout, it runs the same scrip
 
 Every row has a command. Adding a view means adding its command in the same change.
 
+**For an agent, the same rows are MCP tools** (0.4.5, `evh mcp`,
+[RFC-018](../rfc/RFC-018-read-only-mcp-server.md)): every read command above is a tool with the
+command's own options as its arguments, answering what the command prints (with `--json` where
+the command has it). A new read command is either a tool or listed, with its reason, as not one
+(`mcp_server.NOT_TOOLS`); a test fails otherwise. Commands that write, spend or run a model are
+not tools in 0.4.5.
+
 ## The round flow
 
 Rounds are optional ([PRD-005](../prd/PRD-005-goals-and-rounds.md)). The commands, in the order

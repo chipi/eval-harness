@@ -32,7 +32,7 @@ Every run behind them is in [the catalog](https://evals.humancopilot.eu/catalog/
 
 <div class="eh-cards" markdown>
 
-[<span class="n">08</span><b>The catalog</b><span class="d">The harness's catalog, live on the six experiments: every goal, dataset, arm and run, and an inspector that tests any arms against a baseline, item by item. Nothing to install.</span>](https://evals.humancopilot.eu/catalog/)
+[<span class="n">08</span><b>The catalog</b><span class="d">The harness's catalog, live on the six experiments: every goal, dataset (and what is inside it), arm and run, and an inspector that tests any arms against a baseline, item by item. Nothing to install; an agent can ask it too, over MCP at evals.humancopilot.eu/mcp.</span>](https://evals.humancopilot.eu/catalog/)
 
 [<span class="n">09</span><b>Reproduce it</b><span class="d">Rerun any experiment and check its findings, from recomputing every number for $0 to rerunning every model with one key, and adding your own.</span>](REPRODUCE.md)
 

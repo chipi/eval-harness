@@ -7,12 +7,17 @@
   skills, consent), on branch `050`: this is their first, read-only step, shipped early
 - **Related UX specs**: [UXS-003](../uxs/UXS-003-cli-and-onboarding.md) (the commands the tools are)
 - **Code**: new `harness/scripts/mcp_server.py` (`evh mcp`), `harness/scripts/_jsonout.py` (`--json` for the view
-  commands), `catalog_views.py`, `cli.py`; `harness/pyproject.toml` (`requires-python`, the dependency),
-  `harness/requirements.txt`, `.github/workflows/harness-package.yml`; tests `harness/tests/test_mcp_server.py`
+  commands), `catalog_views.py`, `cli.py`, `stats.py` (`EVH_P_CACHE`); `harness/pyproject.toml` (`requires-python`,
+  the dependency), `harness/requirements.txt`, `.github/workflows/harness-package.yml`; the deployment in `infra/`
+  (`compose.yml` service `mcp`, `mcp/hooks.py`, `mcp/requirements.txt`, `caddy/evals.caddy`, `deploy/render.sh`,
+  `deploy/deploy.sh`, `observability/evals.alloy`); tests `harness/tests/test_mcp_server.py`, `test_mcp_http.py`,
+  `test_p_cache.py`
 
 ## Abstract
 
-`evh mcp` serves one project to an agent over MCP (stdio), on the official Python SDK. Its tools are the harness's
+`evh mcp` serves one project to an agent over MCP, on the official Python SDK: over **stdio** for an agent on the
+machine that holds the project (a laptop, a workstation), or over **Streamable HTTP** (`--http`) for a shared server
+(a team's, or this repository's public one at `https://evals.humancopilot.eu/mcp`). Its tools are the harness's
 read commands, the same commands a person runs: the catalog's views (`overview`, `datasets`, `dataset-items`, `arms`,
 `goals`, `references`, `metrics`, `activity`, `search`), the inspector in the terminal (`inspect`), `rounds`,
 `runs-list` and `validate`. Each call runs the command as a child process, so a tool answers exactly what the command
@@ -84,12 +89,62 @@ Nothing in the code needs 3.10 syntax for this change; the floor is the SDK's. `
 examples' scorers, whose source is hashed into the committed runs' fingerprints; a stricter syntax target costs
 nothing.
 
+### A shared server: `--http`
+
+- `evh mcp --http [--bind A] [--port P] [--path /mcp]` serves the same tools over Streamable HTTP on the SDK's own
+  app (Starlette, run by uvicorn), **stateless** with JSON responses: every request stands alone, so a client needs no
+  session, any number of replicas can serve it, and clients on every protocol revision since 2025-03-26 call tools
+  (checked with 2025-03-26, 2025-06-18, 2025-11-25 and 2026-07-28 requests). `<path>/health` answers
+  `{"ok", "version", "tools", "public"}`.
+- **The Host is checked** (DNS rebinding, the transport's own requirement): on the loopback only localhost names; a
+  bind beyond it is refused unless `--allowed-host` names the host it answers (repeatable); `--allowed-origin` names
+  the browser origins it accepts (a request without an Origin, which agents send, passes).
+- **`--public`**, for a server anyone can reach: the options that answer with an item's text or an arm's output are
+  left out of the schemas (`inspect --item`, `dataset-items --item`), and `validate` is not offered (a public copy of
+  the data is not a whole project, so it would only report what was left out).
+- **Load**: `--concurrent N` commands at once (a call waiting 30 s for a slot is refused, "busy"), `--timeout` per
+  call, `--rate N` calls a minute per caller, the caller named by `--client-header` (the proxy's, e.g.
+  `CF-Connecting-IP`) or the connection.
+- **Speed**: each call is a fresh process, and a view that shows the goals runs their paired tests (~500 here, ~50 s).
+  `stats` keeps each estimated p on disk when `EVH_P_CACHE` names a file (the p read back exactly; a torn last line
+  skipped); the server sets it to the project's ignored `.cache/evh-p.jsonl` unless the deployment names its own.
+  `goals`, `overview` and `arms` went from ~52 s to ~1.6 s.
+- **Observability**, the deployment's (`--hooks`, the inspector's shape: `start`, `request` after every call,
+  `error`, `routes` served beside the endpoint): a call is reported as its tool, its arguments' names (never their
+  values), how it ended, its time, and to the hooks only, the caller's address. One JSON line per call on stderr
+  carries the same without the address.
+
+### This repository's deployment (`infra/`)
+
+- `evals-mcp`, a third container beside nginx and the inspector: the same stock Python image, user, read-only mount and
+  hardening, `--http --public --allowed-host evals.humancopilot.eu --client-header CF-Connecting-IP --rate 30
+  --concurrent 2 --timeout 60`, a hard `mem_limit` of 384m (the box has no swap and a nightly pipeline; prod's
+  sizing), 127.0.0.1:8098. Caddy sends `/mcp` and `/mcp/*` to it, nothing else (its `/metrics` stays on the loopback).
+- `render.sh` vendors the SDK and its dependencies, pinned (`infra/mcp/requirements.txt`, resolved for x86_64 musl),
+  as wheels beside the package, and fills the p cache during the catalog build, so the release carries it read-only.
+- `deploy.sh` recreates it with the rest, checks `/mcp/health` and a real `goals` call within 30 s (which needs the
+  precomputed cache), and rolls it back with the release (removing it when the previous release had none).
+- `infra/mcp/hooks.py`: errors to GlitchTip (project `evals-mcp`, `EVALS_SENTRY_DSN_MCP`), a span per call to the
+  homelab's traces (service `evals-mcp`), `/metrics` (calls per tool and outcome, latency, memory, Umami events), and
+  one Umami event per call (`mcp:<tool>`) on the site's own website, sent to `UMAMI_SEND_URL` on the tailnet with the
+  caller's address and a browser-shaped user agent (Umami counts a visitor by address and user agent, and drops what
+  looks like a bot). `evals.alloy` collects its log lines and scrapes its `/metrics`.
+- No authentication: everything it answers is already public on the site and in the catalog, and every tool reads.
+  Who may read and write through MCP is 0.5.0's (RFC-016, users and permissions).
+
+### For a team
+
+The same command serves a team: `evh mcp --http --bind 0.0.0.0 --allowed-host evals.team.example` behind the team's
+proxy, on a checkout of the project (with or without `--public`, as the team's data allows). 0.4.5 has no accounts:
+put it behind what the team already uses (a VPN, an authenticating proxy).
+
 ## Not in 0.4.5 (0.5.0, RFC-013 and RFC-016)
 
 - Tools that write, spend or run: promotions, rounds, runs, judging, studies, jobs; consent; the actor on records; the
   limits file; long work as jobs.
 - Per-command result schemas and `outputSchema`; `--json` on every command; the exit-code table.
 - Skills, `llms.txt`, the glossary.
+- Users and permissions on a shared server: who may read, who may write, through which tools, and what each did.
 
 ## Alternatives considered
 
@@ -108,5 +163,12 @@ nothing.
   `datasets` returns the same text as `evh datasets` and a `structuredContent` whose tables hold its rows; a call with
   an unknown property is refused before it runs; a refusal (`goals` with an unknown goal) comes back as `isError` with
   the command's message; every command is in `READ_TOOLS` or in the list of commands that are not tools.
+- `harness/tests/test_mcp_http.py` (the SDK's streamable HTTP client): health; another Host refused (421);
+  `--public` hides the text options and `validate`; a missing required argument refused before it runs; `--rate 3`
+  refuses the fourth call; the hooks see each call (tool, argument names, never values; the caller) and serve their
+  route; a bind beyond the loopback without `--allowed-host` refused.
+- `harness/tests/test_p_cache.py`: a stored p is the computed one, read back by a fresh process, a torn line skipped.
 - `test_installed_commands.py`: `evh mcp --help` from the installed wheel.
 - The package job runs the suite on 3.10, 3.11 and 3.14.
+- The deployment, rehearsed before it ships: the rendered release in the pinned Alpine image on Docker, run as
+  `compose.yml` runs it (user 65534, read-only root, 384m): health 200, `goals` in 5 s, 55 MB resident.

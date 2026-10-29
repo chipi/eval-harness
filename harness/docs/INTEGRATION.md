@@ -315,20 +315,48 @@ which references exist, what one arm wrote for one item.
 
 ## For an agent: `evh mcp`
 
-`evh mcp` serves the project's read commands to an agent over MCP (stdio, the official SDK): the
+`evh mcp` serves the project's read commands to an agent over MCP (the official SDK): the
 catalog's views (`overview`, `datasets`, `dataset-items`, `arms`, `goals`, `references`, `metrics`,
 `activity`, `search`), the inspector in the terminal (`inspect`), `rounds`, `runs-list` and
-`validate`. Add it to Claude Code in the project with
+`validate`. Each call runs the command as a person would, with `--json` where the command has it,
+so the agent sees the same numbers you do. No tool writes, spends or runs a model: running arms,
+promoting a baseline and closing a round stay your commands. The design is
+[RFC-018](https://github.com/chipi/eval-harness/blob/main/docs/rfc/RFC-018-read-only-mcp-server.md).
+
+**On your machine, against your project** (stdio: the agent starts it):
 
 ```bash
-claude mcp add evh -- evh mcp
+claude mcp add evh -- evh mcp          # Claude Code, in the project
 ```
 
-or to any MCP client as the command `evh mcp` (optionally `--project path/to/project`). Each call
-runs the command as a person would, with `--json` where the command has it, so the agent sees the
-same numbers you do. No tool writes, spends or runs a model: running arms, promoting a baseline
-and closing a round stay your commands. The design is
-[RFC-018](https://github.com/chipi/eval-harness/blob/main/docs/rfc/RFC-018-read-only-mcp-server.md).
+Any other MCP client takes the command `evh mcp` (optionally `--project path/to/project`).
+
+**This repository's experiments, from anywhere**: `https://evals.humancopilot.eu/mcp` serves the
+six worked examples (Streamable HTTP, read-only, no sign-in; it answers what the site and the
+catalog publish, never an item's text):
+
+| client | how |
+| --- | --- |
+| Claude Code | `claude mcp add --transport http evals https://evals.humancopilot.eu/mcp` |
+| Claude (claude.ai, Desktop) | Settings → Connectors → Add custom connector, the URL above |
+| OpenAI Responses API | `tools=[{"type": "mcp", "server_label": "evals", "server_url": "https://evals.humancopilot.eu/mcp", "require_approval": "never"}]` |
+| Gemini CLI | `~/.gemini/settings.json`: `{"mcpServers": {"evals": {"httpUrl": "https://evals.humancopilot.eu/mcp"}}}` (`url` in newer versions) |
+
+Those lines follow each client's own documentation; the server speaks every protocol revision
+since 2025-03-26 without a session, which is what they send.
+
+**For a team**: serve a checkout of the project over HTTP behind the team's proxy:
+
+```bash
+evh mcp --http --bind 0.0.0.0 --port 8765 --allowed-host evals.team.example [--public]
+```
+
+`--allowed-host` is required beyond the loopback (the server checks the Host against DNS
+rebinding); `--public` leaves out the options that answer with an item's text; `--rate`,
+`--concurrent` and `--timeout` bound the load; `--hooks FILE` adds your error reporting, tracing
+and metrics. 0.4.5 has no accounts: put it behind what the team already uses (a VPN, an
+authenticating proxy). The goals' tests are kept in the project's `.cache/` so a call that shows
+them answers in seconds after the first.
 
 ---
 

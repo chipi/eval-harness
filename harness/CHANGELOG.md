@@ -19,6 +19,19 @@ that can move a result is never a patch release without saying so under **Change
   `search`, `inspect`, `rounds`, `runs-list`, `validate`. Each call runs the command as a child process, so a tool
   answers what the command prints; each is annotated read-only; no tool writes, spends or runs a model. For Claude
   Code, in the project: `claude mcp add evh -- evh mcp`.
+- **`evh mcp --http`: the same server for a team, or for anyone.** Streamable HTTP, stateless, JSON responses:
+  clients on every protocol revision since 2025-03-26 call tools without a session. The Host is checked against DNS
+  rebinding (`--allowed-host` is required to bind beyond the loopback); `--public` leaves out the options that
+  answer with an item's text, and the `validate` tool; `--rate`, `--concurrent` and `--timeout` bound the load; a
+  missing required argument is refused before anything runs; `--hooks` takes a deployment's error reporting,
+  tracing, metrics and analytics, in the inspector's shape. Each call is logged as one JSON line: the tool, its
+  arguments' names (never their values), how it ended, its time.
+- **`EVH_P_CACHE`: the goals' paired tests kept on disk.** Every `evh` command is a fresh process, so a view that
+  shows the goals drew the same tests again each time (about 50 s on this repository's runs). With the variable
+  naming a file, each estimated p is stored and read back exactly; `evh mcp` sets it to the project's ignored
+  `.cache/`. `goals`, `overview` and `arms` answer in under two seconds after the first.
+- **This repository's MCP server, `https://evals.humancopilot.eu/mcp`** (the deployment, not the package): the six
+  worked examples for any agent, read-only, without sign-in.
 - **`--json` on the catalog's view commands** (`overview`, `datasets`, `arms`, `goals`, `references`, `metrics`,
   `activity`, `search`, `inspect`): one object, `{"command", "version", "result": {"blocks": [...]}}`, each table as
   columns and rows of values, every other line as text. It is collected from the same calls that print the text, so

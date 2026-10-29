@@ -831,11 +831,22 @@ evh round-open --goal my_goal --dataset my_v1 --from r1 --change "what changed a
 evh catalog                                             # build static pages into .build/catalog/
 evh catalog-serve [--port 8765]                        # serve the catalog and inspector on 127.0.0.1
 evh catalog-serve --public catalog.example.com --publish outputs --client-header X-Real-IP  # public deployment
+evh dataset-profile --dataset-id my_v1                 # what is inside a dataset, for its page (no text)
+evh dataset-items --dataset-id my_v1 [--item ID]       # the same in the terminal
+evh mcp                                                 # the read commands as MCP tools, over stdio
+evh mcp --http --bind 0.0.0.0 --allowed-host evals.team.example --public  # a shared MCP server
 ```
 
 **The catalog** is static pages over runs: one per dataset and goal, one per reference, a
 metrics page, and a search. Every page carries counts and means only; item text is the local
-inspector only. Build it offline with `evh catalog`, or together with the inspector.
+inspector only. Build it offline with `evh catalog`, or together with the inspector. A dataset's
+page shows what is inside it once `evh dataset-profile` has written its profile where the
+dataset is materialized: the items' lengths, the gold's labels or shape, and each item's link to
+its source when one is recorded; commit `data/profiles/` and a catalog built anywhere shows it.
+
+**For an agent**, `evh mcp` serves the same read commands as MCP tools (stdio on your machine;
+`--http` for a team), each call the command itself; see
+[the integration guide](INTEGRATION.md#for-an-agent-evh-mcp).
 
 **The run inspector** is a local server (`evh catalog-serve`) that tests chosen arms against a
 baseline with the same paired test as the command line, and shows outputs beside references.

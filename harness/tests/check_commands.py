@@ -14,7 +14,7 @@ hit it. This checks, in every fenced block and inline code span of the current d
     ARGS="..." is one the script behind the target accepts.
 
 History is not checked: the research journal and the CHANGELOG describe commands as they
-were when written. Nor is a proposal: an ADR or RFC whose status is Proposed describes commands
+were when written. Nor is a proposal: an ADR or RFC whose status is Proposed or Draft describes commands
 that do not exist yet; it is checked once accepted. Exits 1 on any problem.
 """
 
@@ -182,8 +182,10 @@ def main() -> int:
         if doc in SKIP or not doc.is_file():
             continue
         text = doc.read_text(encoding="utf-8")
-        if re.search(r"^\*\*Status:\*\* Proposed", text, re.M):
-            continue  # a proposal names commands still to be built
+        # A proposal names commands still to be built: an ADR's `**Status:** Proposed`, an RFC's
+        # `- **Status**: Draft`.
+        if re.search(r"^(?:- )?\*\*Status(?::\*\*|\*\*:) (?:Proposed|Draft)", text, re.M):
+            continue
         for n, cmd in commands_in(text):
             if re.search(r"\b(evh|make)\s", cmd):
                 seen += 1

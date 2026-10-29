@@ -1,11 +1,12 @@
 # infra: this repository on the prod VPS
 
-Three addresses, one repository:
+Four addresses, one repository:
 
 | address | what | served by |
 |---|---|---|
 | `evals.humancopilot.eu` | the harness site: the harness and its findings (`site/public`, built by `make site`) | prod VPS: `evals-nginx` |
 | `evals.humancopilot.eu/catalog` | the harness deployed on these example experiments: the catalog, goal pages and run inspector | prod VPS: `evals-nginx` (pages) + `evals-inspector` (`/api/*`) |
+| `evals.humancopilot.eu/mcp` | the same experiments for an agent: the harness's read commands as MCP tools (Streamable HTTP, read-only, no sign-in) | prod VPS: `evals-mcp` |
 | `evals.humancopilot.eu/docs` | the documentation (mkdocs) | prod VPS: `evals-nginx` (built into each release by `render.sh`); the same docs are also on GitHub Pages, `chipi.github.io/eval-harness` (`.github/workflows/pages.yml`) |
 
 Everything on the VPS follows the box's tenant pattern, copied from chipi/humancopilot.eu
@@ -16,7 +17,9 @@ Everything on the VPS follows the box's tenant pattern, copied from chipi/humanc
 
 ```
 infra/
-  compose.yml            evals-nginx (127.0.0.1:8096), evals-inspector (127.0.0.1:8097)
+  compose.yml            evals-nginx (127.0.0.1:8096), evals-inspector (127.0.0.1:8097),
+                         evals-mcp (127.0.0.1:8098)
+  mcp/                   hooks.py (the MCP server's observability), requirements.txt (its SDK, pinned)
   nginx/                 nginx.conf, one server block per host, the security headers
   caddy/                 evals.caddy, catalog.caddy, enabled.txt (which ones are live)
   sites/<host>.cfg       per-host public settings (the CSP report address)
@@ -63,11 +66,13 @@ infra/
   - **Settings, never in the repository and never placed on the box by hand:**
     `/srv/evals/observability.env`, rendered by the deploy workflow on every deploy (as
     podcast_scraper renders its `.env`): `SENTRY_DSN` from the environment secret
-    `EVALS_SENTRY_DSN_INSPECTOR` (the GlitchTip project's DSN, through the tailnet's TLS node), and
-    `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` built from `vars.PROD_TAILNET_FQDN` (the tailnet's
-    VictoriaTraces node, `/insert/opentelemetry/v1/traces`), so no tailnet name is committed. Two
-    keys only, written through /dev/shm and moved into place; mode 640, `deploy:deploy`, which the
-    inspector reads through `group_add` 1001 in `compose.yml` and no other account on the box can.
+    `EVALS_SENTRY_DSN_INSPECTOR` (the GlitchTip project's DSN, through the tailnet's TLS node),
+    `MCP_SENTRY_DSN` from `EVALS_SENTRY_DSN_MCP` (the MCP server's project), and, built from
+    `vars.PROD_TAILNET_FQDN` so no tailnet name is committed, `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT`
+    (the tailnet's VictoriaTraces node, `/insert/opentelemetry/v1/traces`) and `UMAMI_SEND_URL`
+    (the homelab Umami's `/api/send`, for the MCP server's events). Those keys only, written
+    through /dev/shm and moved into place; mode 640, `deploy:deploy`, which the inspector and the
+    MCP server read through `group_add` 1001 in `compose.yml` and no other account on the box can.
     The workflow prints the mode, owner and key names, never a value. Without the secret,
     GlitchTip is off and the rest is on; without the file, or a key, that part is off and the
     inspector serves as before; the start line says which parts are on (`hooks: sha-…; GlitchTip
@@ -77,21 +82,45 @@ infra/
   - **What it answers:** only the catalog host, 60 requests a minute per client (identified by the
     `CF-Connecting-IP` header), at most 40 arms per comparison, two computations at a time, every
     answer cached. At start it computes every comparison the catalog's own pages link to.
+- **evals-mcp (0.4.5):** the harness's MCP server, `evh mcp` (RFC-018), at `/mcp`: the read
+  commands as tools for any agent, over Streamable HTTP, stateless. The same stock image, package
+  and data as the inspector; the MCP SDK and its dependencies (`infra/mcp/requirements.txt`,
+  pinned, compiled wheels for the box: x86_64 musl) vendored by `render.sh` into
+  `inspector/mcpvendor/`, found through `PYTHONPATH`.
+  - **Read-only by construction:** its tools are the commands that only read (none writes, spends
+    or runs a model); `--public` leaves out the options that answer with an item's text and the
+    `validate` tool (the release's copy of the data is not a whole project); it reads the read-only
+    mount. No authentication: it answers what the site and the catalog already publish.
+  - **Load and speed:** `--rate 30` calls a minute per caller (`CF-Connecting-IP`, as for the
+    inspector), two commands at a time, 60 s each. Each call is a fresh `evh` process; the goals'
+    paired tests, which a view would otherwise draw again (~50 s), come precomputed in
+    `inspector/cache/evh-p.jsonl` (`render.sh` fills it during the catalog build; `EVH_P_CACHE`).
+  - **Hardening:** as the inspector, with a hard 384 MB memory limit (the server and two commands;
+    the box has no swap and runs a nightly pipeline).
+  - **Observability:** `inspector/mcp_hooks.py` (from `infra/mcp/hooks.py`) as `--hooks`: errors
+    to GlitchTip project `evals-mcp` (`MCP_SENTRY_DSN` in `observability.env`, from the secret
+    `EVALS_SENTRY_DSN_MCP`), one span per tool call to VictoriaTraces (service `evals-mcp`),
+    `/metrics` on the container's port only (Caddy forwards nothing but `/mcp`), and one Umami event
+    per call (`mcp:<tool>`, on the site's website; `UMAMI_SEND_URL`, the homelab Umami on the
+    tailnet, rendered like the traces endpoint). A call is logged as one JSON line: the tool, its
+    arguments' names (never their values), how it ended, its time; never the caller.
 
 ## What `deploy.sh` checks before a release counts as live
 
-1. Both loopback ports are free or already held by our containers.
+1. The three loopback ports are free or already held by our containers.
 2. `nginx -t` passes on the new release's config, in a throwaway container. **A dry run
    (`workflow_dispatch` with `dry_run`) stops here.**
-3. The `current` symlink switches atomically. nginx comes up, and the inspector is recreated
-   so it loads the new code and data. nginx reloads.
+3. The `current` symlink switches atomically. nginx comes up, and the inspector and the MCP server are recreated
+   so they load the new code and data. nginx reloads.
 4. Each host answers 200 on `/` and 404 on a missing page. The inspector answers
    `/api/health` and two real comparisons taken from the catalog's own links: one arm, and
    the first group of arms on one metric (`deploy/probe_link.sh` picks it; `make -C harness
    test` runs the same probe against the tutorial project). Both must come back with verdict
-   rows.
+   rows. The MCP server answers `/mcp/health` and a real `goals` call within 30 s (which needs
+   the precomputed p cache: without it the call takes ~50 s).
 
-Any failure in 3 or 4 rolls back to the previous release: the symlink, the containers and
+Any failure in 3 or 4 rolls back to the previous release: the symlink, the containers (the MCP
+server removed when the previous release had none) and
 the config. Then the Alloy drop-in and the Caddy vhosts are installed, each validated with
 the whole shared set and restored on failure.
 

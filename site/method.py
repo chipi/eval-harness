@@ -762,7 +762,8 @@ def use_page(H, f: dict) -> str:
       <li>Billed cost and latency beside quality.</li>
       <li>Re-scoring from stored outputs for $0; validation for CI; baselines with reasons.</li>
       <li>A recommendation per goal, with its reasons, beside the baseline a person promoted.</li>
-      <li>A catalog of every goal, dataset, arm and run, and an inspector that tests arms against a baseline and shows one item's outputs (<a href="{H.CATALOG}">ours</a>).</li>
+      <li>A catalog of every goal, dataset (and what is inside it), arm and run, and an inspector that tests arms against a baseline and shows one item's outputs (<a href="{H.CATALOG}">ours</a>).</li>
+      <li>The same read commands as MCP tools for an agent: <code>evh mcp</code> on your machine or for a team (<a href="docs/harness/INTEGRATION/#for-an-agent-evh-mcp">how</a>).</li>
       <li>Optional LLM judges that re-measure stored outputs, refused until validated against people.</li>
     </ul></div>
     <div class="byo-col check"><h3>Start on Monday</h3><ul>
@@ -781,7 +782,7 @@ def use_page(H, f: dict) -> str:
   <div class="eyebrow"><span class="num">05</span>Three doors</div>
   <h2>Look at ours, rerun ours, or build yours.</h2>
   <div class="cards doors">
-    <a class="card" href="{H.CATALOG}"><div class="task">Look at ours</div><h3>Every run, in the catalog.</h3><p>The six experiments as the harness shows them: every goal, dataset, arm and reference, and an inspector that tests any arms against a baseline, item by item. Nothing to install.</p><div class="meta"><span>evals.humancopilot.eu/catalog</span><b>The catalog →</b></div></a>
+    <a class="card" href="{H.CATALOG}"><div class="task">Look at ours</div><h3>Every run, in the catalog.</h3><p>The six experiments as the harness shows them: every goal, dataset, arm and reference, and an inspector that tests any arms against a baseline, item by item. Nothing to install; your agent can ask it too, at <code>evals.humancopilot.eu/mcp</code>.</p><div class="meta"><span>evals.humancopilot.eu/catalog</span><b>The catalog →</b></div></a>
     <a class="card" href="docs/REPRODUCE/"><div class="task">Rerun ours</div><h3>Check every finding yourself.</h3><p>Five levels, from recomputing every number for $0 to rerunning every model with one key — with a replication card that re-tests every separation.</p><div class="meta"><span>make verify</span><b>Reproduce it →</b></div></a>
     <a class="card" href="docs/GUIDE/"><div class="task">Build yours</div><h3>Your first evaluation, end to end.</h3><p>Freeze a dataset, build a golden reference set, measure, compare honestly, promote a baseline — offline, with the real output of every step.</p><div class="meta"><span>harness/tutorial</span><b>The guide →</b></div></a>
   </div>

@@ -1012,6 +1012,22 @@ def home(f: dict) -> str:
   <div class="btns"><a class="btn primary" href="experiments.html">All the findings</a><a class="btn" href="{CATALOG}">Browse them in the catalog</a><a class="btn" href="experiments.html#reproduce">Reproduce them</a></div>
 </div></section>
 
+<section class="block" id="mcp"><div class="wrap">
+  <div class="eyebrow">For agents</div>
+  <h2>Ask it from your agent.</h2>
+  <div class="cols">
+    <div class="prose"><p>The harness is also an MCP server. <code>evh mcp</code> gives an agent the same read commands you use: datasets and what is inside them, goals and what they recommend, arms, references, metrics, activity, and the inspector's paired comparisons, each answering exactly what the command prints. Nothing it does writes, spends or runs a model.</p>
+    <p>On your machine it serves your own project; for a team, <code>evh mcp --http</code> serves one checkout to everyone. The worked examples above are served at <code>https://evals.humancopilot.eu/mcp</code>, read-only and without sign-in, for Claude, ChatGPT and the OpenAI API, Gemini, or any MCP client.</p>
+      <div class="btns"><a class="btn primary" href="docs/harness/INTEGRATION/#for-an-agent-evh-mcp">Connect an agent</a><a class="btn" href="{BLOB}/docs/rfc/RFC-018-read-only-mcp-server.md">How it works</a></div></div>
+<pre class="term"><span class="c"># the worked examples, from Claude Code</span>
+<span class="p">$ </span>claude mcp add --transport http evals https://evals.humancopilot.eu/mcp
+<span class="c"># your own project, on your machine</span>
+<span class="p">$ </span>claude mcp add evh -- evh mcp
+<span class="c"># a team's server</span>
+<span class="p">$ </span>evh mcp --http --bind 0.0.0.0 --allowed-host evals.team.example</pre>
+  </div>
+</div></section>
+
 {method.landing_teaser(H, f, "04")}
 <section class="block"><div class="wrap">
   <p class="note"><b>No figure on this site is typed in by hand.</b> Every figure is recomputed from the committed runs each time the site is built, and every number the prose quotes must appear in the report it comes from, or the build fails. Behind the reports, a checker verifies {f["claims_checked"]} claims against the runs on every commit.</p>
