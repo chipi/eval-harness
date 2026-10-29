@@ -927,7 +927,7 @@ opening line as the description); `--card URL` adds the image a shared link show
 
 **`evh mcp --hooks`** gets, in `start`, `{"version", "tools", "public", "transport"}`, and in
 `request`, after each call, `{"tool", "args", "agent", "client", "exit", "ms", "bytes"}`, plus
-`"refused"` (`rate`, `rate_total`, `tool`, `arguments`, `busy`) or `"cached": true`. `tool` is
+`"refused"` (`rate`, `rate_total`, `tool`, `arguments`, `busy`, or `command` for a command that ran and refused: exit 1, its `ERROR:` line) or `"cached": true`. `tool` is
 `unknown` for a name the server does not have; `args` are argument names, never values.
 
 **In the terminal:** every view has a command. `evh overview [--period P]` for the home page,

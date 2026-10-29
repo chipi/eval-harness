@@ -192,11 +192,13 @@ cmd2 = [
     str(port2),
     "--public",
     "--rate-total",
-    "3",
+    "4",
     "--request-rate",
-    "14",
+    "18",
     "--max-body",
     "4096",
+    "--hooks",
+    str(tmp / "hooks.py"),
 ]
 srv2 = subprocess.Popen(cmd2, cwd=tmp, env=env, stderr=subprocess.DEVNULL, text=True, start_new_session=True)
 base = f"http://127.0.0.1:{port2}"
@@ -226,9 +228,15 @@ try:
                 and "SECRET" not in items.content[0].text,
                 items.content[0].text[:200],
             )
+            bad = await s.call_tool(
+                "dataset-items", {"dataset-id": "a.b.x"}
+            )  # runs, and the command refuses it
+            check(
+                "a command's own refusal is an error to the caller", bad.is_error, bad.content[0].text[:120]
+            )
             res = [await s.call_tool("datasets", {"period": p}) for p in ("all", "30d", "week")]
             check(
-                "--rate-total 3: the fourth call that runs is refused, from anyone (refusals do not count)",
+                "--rate-total 4: the fifth call that runs is refused, from anyone (refusals do not count)",
                 not res[0].is_error
                 and not res[1].is_error
                 and res[2].is_error
@@ -243,6 +251,16 @@ try:
             )
 
     anyio.run(total)
+    told = [json.loads(ln) for ln in seen.read_text().splitlines() if ln.strip()]
+    mine = [
+        x for x in told if x.get("kind") == "request" and x.get("tool") == "dataset-items" and "exit" in x
+    ]
+    check(
+        "hooks: a command's own refusal is told as refused (no analytics event, not an error)",
+        any(x.get("exit") == 1 and x.get("refused") == "command" for x in mine)
+        and any(x.get("exit") == 0 and "refused" not in x for x in mine),
+        mine,
+    )
 
     def post(body: bytes) -> int:
         req = urllib.request.Request(  # noqa: S310 -- the test's own server
@@ -279,7 +297,7 @@ try:
     ping = b'{"jsonrpc":"2.0","id":1,"method":"ping"}'
     codes = [post(ping) for _ in range(16)]
     check(
-        "--request-rate 14: every request counts, ping too; past it, 429",
+        "--request-rate 18: every request counts, ping too; past it, 429",
         429 in codes and codes[0] != 429,
         codes,
     )

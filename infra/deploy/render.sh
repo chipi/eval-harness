@@ -79,6 +79,7 @@ python3 -m pip install --quiet --no-deps --no-compile --target "$OUT/inspector/m
   --implementation cp --python-version 3.12 \
   --abi cp312 --abi abi3 --abi none --require-hashes -r "$ROOT/infra/mcp/requirements.txt"
 cp -a "$ROOT/infra/mcp/hooks.py" "$OUT/inspector/mcp_hooks.py"
+cp -a "$ROOT/infra/mcp/probe_error.py" "$OUT/inspector/mcp_probe.py"   # GlitchTip error-path probe (infra/README)
 # Its Umami events go to the site's own website (the id is public, site/analytics.json); where to
 # send them (UMAMI_SEND_URL, on the tailnet) is in observability.env, rendered by the deploy.
 python3 - "$ROOT/site/analytics.json" > "$OUT/inspector/mcp_umami.json" <<'PY'

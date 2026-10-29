@@ -19,6 +19,9 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Fixed
 
+- **A command's own refusal through `evh mcp`** (exit 1, its `ERROR:` line, no traceback, such as a
+  dataset id that is a path) is told to `--hooks` as `refused: "command"`, not as an error: a
+  deployment's metrics count it as refused and its analytics send no event for it.
 - **The site's links to its home page** point at `/`, never `index.html` (analytics counted the two
   apart, search engines saw two addresses for one page), and each of its pages names its own address
   as `<link rel="canonical">` and `og:url`, checked by `site/build.py --check`.

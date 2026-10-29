@@ -109,7 +109,12 @@ infra/
     `EVALS_SENTRY_DSN_MCP`), one span per tool call to VictoriaTraces (service `evals-mcp`),
     `/metrics` on the container's port only (Caddy forwards nothing but `/mcp`), and one Umami event
     per call (`mcp:<tool>`, on the site's website; `UMAMI_SEND_URL`, the homelab Umami on the
-    tailnet, rendered like the traces endpoint). A call is logged as one JSON line: the tool, its
+    tailnet, rendered like the traces endpoint; a call the command itself refuses, exit 1 with its
+    `ERROR:` line, is outcome `refused:command` and sends no event). To prove the error path, run
+    `docker exec evals-mcp python /srv/evals/current/inspector/mcp_probe.py "homelab-probe evals-mcp
+    <UTC time>"` (`infra/mcp/probe_error.py`): one labelled exception through the server's own hooks,
+    its event id printed, to read back and delete. `evals.alloy` adds a `_msg` to each call line
+    (`mcp goals exit=0 12ms`), which VictoriaLogs needs. A call is logged as one JSON line: the tool, its
     arguments' names (never their values), how it ended, its time; never the caller's address or
     user agent (those go to the hooks only, for the Umami visitor count).
 

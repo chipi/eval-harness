@@ -94,6 +94,25 @@ loki.process "evals" {
 		}
 	}
 
+	// The MCP server's call lines are bare JSON, and VictoriaLogs shows a JSON line with no `_msg`
+	// as "missing _msg field" (homelab, 2026-10-29). Add one naming the call, as operator.alloy does
+	// for its events; every field of the line stays a field. Only the server's call lines (they start
+	// `{"at"`), never its startup line or a traceback.
+	stage.match {
+		selector = "{container=\"evals-mcp\"} |~ \"^\\\\{\\\"at\\\"\""
+
+		stage.json {
+			expressions = {mcp_tool = "tool", mcp_exit = "exit", mcp_ms = "ms", mcp_refused = "refused", mcp_cached = "cached"}
+		}
+		stage.template {
+			source   = "mcp_line"
+			template = "{{ TrimSuffix .Entry \"}\" }}, \"_msg\": \"mcp {{ .mcp_tool }}{{ with .mcp_refused }} refused={{ . }}{{ end }}{{ with .mcp_exit }} exit={{ . }}{{ end }}{{ with .mcp_ms }} {{ . }}ms{{ end }}{{ with .mcp_cached }} cached{{ end }}\"}"
+		}
+		stage.output {
+			source = "mcp_line"
+		}
+	}
+
 	stage.structured_metadata {
 		values = {level = "", release = ""}
 	}

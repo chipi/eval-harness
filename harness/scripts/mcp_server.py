@@ -491,6 +491,10 @@ def build_server(
                 if not inflight[key]:
                     del inflight[key]
             done = {**info, "exit": code, "ms": round((time.monotonic() - t0) * 1000), "bytes": len(out)}
+            # A command that refuses (exit 1, its ERROR: line, no traceback: a dataset id that is a
+            # path, a goal that does not exist) answered as designed; a crash is the error.
+            if code == 1 and "ERROR" in err and "Traceback" not in err:
+                done["refused"] = "command"
             _log(**{k: v for k, v in done.items() if k not in PRIVATE})
             hooks("request", done)
         except Exception as exc:
