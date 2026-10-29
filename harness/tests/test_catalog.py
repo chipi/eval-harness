@@ -672,7 +672,7 @@ try:
     st, body = get("/api/compare?runs=runs/ds1/arm_a,runs/ds1/arm_b", H)
     check("public: compares", st == 200 and json.loads(body)["metric"] == "acc", st)
     st, body = get("/api/compare?runs=runs/ds1/arm_a,runs/ds1/arm_b,runs/ds2/arm_c", H)
-    capped = next((v for k, v in cs._CACHE.items() if "arm_c" in k), (0, b""))
+    capped = cs.answer("/api/compare", "runs=runs/ds1/arm_a,runs/ds1/arm_b,runs/ds2/arm_c")
     check(
         "public: at most --max-arms arms in one comparison",
         st == 400 and "at most 2" in json.loads(capped[1] or b"{}").get("error", ""),
@@ -756,6 +756,12 @@ try:
         (cs._cache_size[0], len(cs._CACHE)),
     )
     cs._CACHE_BYTES = keep
+    cs.cache_clear()
+    for i in range(5):
+        cs.answer("/api/compare", f"runs=runs/nope/x{i}")
+    check("public: a refusal (4xx) is never kept in the cache", not cs._CACHE, len(cs._CACHE))
+    st_long, _b = cs.answer("/api/compare", "arms=x&junk=" + "a" * 5000)
+    check("public: a question over 4 KB is refused before anything is computed", st_long == 400)
     check(
         "public: the rate's key is an address (the header's when it is one), never the header's text",
         cs.client_key("203.0.113.9", "10.0.0.1") == "203.0.113.9"

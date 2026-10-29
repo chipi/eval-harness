@@ -53,14 +53,15 @@ prune() {
   done
 }
 
-# 0a. Room: a release is ~400 MB and ~69k files (fewer, once unchanged files are hard-linked).
+# 0a. Only the live release and this one stay: what an earlier failed deploy or dry run left goes,
+# before the room is measured, so a box short of room frees what a prune can.
+prune
+# 0b. Room: a release is ~400 MB and ~69k files (fewer, once unchanged files are hard-linked).
 free_kb="$(df --output=avail -k "$BASE" | tail -1 | tr -d ' ')"
 free_inodes="$(df --output=iavail "$BASE" | tail -1 | tr -d ' ')"
 [ "$free_kb" -ge 2097152 ] || { echo "::error::$BASE has $((free_kb / 1024)) MB free, under 2 GB: refusing to deploy"; exit 1; }
 [ "$free_inodes" -ge 300000 ] || { echo "::error::$BASE has $free_inodes free inodes, under 300,000: refusing to deploy"; exit 1; }
 echo "  room: $((free_kb / 1048576)) GB and $free_inodes inodes free"
-# 0b. Only the live release and this one stay: what an earlier failed deploy or dry run left goes.
-prune
 
 # 1. Ports: free, or held by our own containers.
 for pair in "$PORT:$NGINX" "$IPORT:$INSPECTOR" "$MPORT:$MCP"; do
@@ -89,7 +90,7 @@ bash "$REL/deploy/install_alloy.sh" "$REL/observability/evals.alloy"
 
 # 3. Switch. From here on any failure rolls back the WHOLE release: content, configs, and the
 # containers themselves (compose.yml of the previous release, so an image bump is undone too).
-prev="$(readlink "$BASE/current" 2>/dev/null || true)"
+prev="$(readlink -f "$BASE/current" 2>/dev/null || true)"
 rollback() {
   echo "::error::$1"
   if [ -n "$prev" ] && [ -d "$prev" ]; then
@@ -180,13 +181,16 @@ echo "  mcp ok (goals in ${secs} s)"
 # warm that outgrew the memory limit OOM-looped it with the deploy reported green (an independent
 # review, 2026-10-29). Wait for warm to finish (its log line), then it must be up, never restarted,
 # under 80% of its memory limit.
-for _ in $(seq 1 60); do docker logs "$INSPECTOR" 2>&1 | grep -q '^warm: ' && break; sleep 5; done
-docker logs "$INSPECTOR" 2>&1 | grep -q '^warm: ' || rollback "the inspector's --warm did not finish within 300 s"
+# The log is read whole into a variable: `docker logs | grep -q` under pipefail fails once grep
+# quits early on a log over the pipe's buffer.
+warmed() { local log; log="$(docker logs "$INSPECTOR" 2>&1 || true)"; grep -m1 '^warm: ' <<<"$log"; }
+for _ in $(seq 1 60); do [ -n "$(warmed)" ] && break; sleep 5; done
+[ -n "$(warmed)" ] || rollback "the inspector's --warm did not finish within 300 s"
 state="$(docker inspect -f '{{.State.Running}} {{.RestartCount}} {{.State.OOMKilled}}' "$INSPECTOR")"
 [ "$state" = "true 0 false" ] || rollback "the inspector restarted or was OOM-killed during warm (running, restarts, oom: $state)"
 mem="$(docker stats --no-stream --format '{{.MemPerc}}' "$INSPECTOR" | tr -d '%')"
 awk -v m="$mem" 'BEGIN { exit !(m < 80) }' || rollback "the inspector uses ${mem}% of its memory limit after warm"
-echo "  inspector steady after warm ($(docker logs "$INSPECTOR" 2>&1 | grep '^warm: ' | tail -1); memory ${mem}%)"
+echo "  inspector steady after warm ($(warmed); memory ${mem}%)"
 
 # 6. Edge vhosts.
 bash "$REL/deploy/install_vhosts.sh" "$REL/caddy"

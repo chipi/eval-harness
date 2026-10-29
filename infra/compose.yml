@@ -107,7 +107,9 @@ services:
       - /tmp:size=16m,nr_inodes=4096,uid=65534,gid=65534,mode=0700
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]
-    mem_limit: 256m
+    # 384m, not 256m: under 400+ distinct 40-arm questions the process peaked at 228 MiB of 256
+    # (the 32 MB cache plus allocator growth; an independent review, 2026-10-29).
+    mem_limit: 384m
     cpus: 0.5
     pids_limit: 64
     restart: unless-stopped

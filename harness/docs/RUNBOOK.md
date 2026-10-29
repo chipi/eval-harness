@@ -876,10 +876,11 @@ client is in [the integration guide](INTEGRATION.md#for-an-agent-evh-mcp).
   locks others out. An IPv6 caller is counted by its /64. Below the tools, the HTTP layer:
   `--request-rate N` HTTP requests a minute per caller to the endpoint, every method (a tool call
   is about three), `--max-body BYTES` (default 65536; larger is 413), `--max-connections N`
-  (default 64; more are 503), at most 8 requests open per caller (more are 429), and a GET on the
-  endpoint is 405 (stateless: no stream to hold).
-  With `--public`, an answer is kept by its exact command line (32 MB in all), since the data
-  under the server never changes, and a refusal is told without server paths or a traceback.
+  (default 64; more are 503), at most 8 requests open per caller (more are 429), a body due in
+  full within 10 s (else 408), and a GET on the endpoint is 405 (stateless: no stream to hold);
+  `/mcp/` is the endpoint too, never a redirect.
+  With `--public`, an answer is kept by its command line (16 MB of text in all, for an hour: a
+  view's default period moves with the date), since the data under the server never changes, and a refusal is told without server paths or a traceback.
   A value with a NUL byte, or longer than 512 characters, is refused. `--client-header NAME` names the header your proxy sets for
   the caller's address. Trust it only when nothing but the proxy reaches the port: a caller who
   can set it can name itself anything (the total still holds).

@@ -54,7 +54,7 @@ infra/
   - **Nothing is built or installed on the box.** The server's code, and the Sentry and
     OpenTelemetry SDKs its hooks use, come in the release, vendored by `render.sh` on the
     runner; it reads the release's copy of the runs from the read-only mount.
-  - **Hardening:** it runs as nobody, read-only, every capability dropped, limited to 256 MB,
+  - **Hardening:** it runs as nobody, read-only, every capability dropped, limited to 384 MB (256 MB until 0.5.0; it peaked at 228 MiB of 256 under 400 distinct questions),
     half a CPU and 64 processes.
   - **Observability (0.4.2), this deployment's layer, not the harness's:**
     `inspector/hooks.py` (from `infra/inspector/hooks.py`) is passed as `--hooks`, the
@@ -66,7 +66,7 @@ infra/
     forwards nothing but `/catalog/api/` to the inspector. The SDKs
     (`infra/inspector/requirements.txt`, pinned, pure-Python wheels) are vendored by `render.sh`
     into `inspector/vendor/` and found through `PYTHONPATH`; together they cost about 20 MB of the
-    256 MB (measured locally 2026-10-27: 27 MB idle without, 44 MB with).
+    384 MB (measured locally 2026-10-27: 27 MB idle without, 44 MB with).
   - **Settings, never in the repository and never placed on the box by hand:**
     `/srv/evals/observability.env`, rendered by the deploy workflow on every deploy (as
     podcast_scraper renders its `.env`): `SENTRY_DSN` from the environment secret

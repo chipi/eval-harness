@@ -635,6 +635,8 @@ LIMITS: dict = {"max_arms": 40, "rate": 0, "hosts": ()}
 _CACHE: OrderedDict[str, tuple] = OrderedDict()
 _CACHE_MAX = 1024
 _CACHE_BYTES = 32 * 1024 * 1024
+#: The longest question answered: 40 arms by their ids fit in well under 4 KB.
+MAX_QUERY = 4096
 _cache_size = [0]
 _CACHE_LOCK = threading.Lock()
 _COMPUTE = threading.BoundedSemaphore(2)
@@ -651,6 +653,8 @@ def cache_clear() -> None:
 def answer(path: str, query: str) -> tuple:
     """(status, the JSON body as bytes) for one API request; every answer cached by its exact
     question (the data under a running server does not change: restart it to see new runs)."""
+    if len(query) > MAX_QUERY:
+        return 400, json.dumps({"error": f"the question is over {MAX_QUERY} characters"}).encode()
     key = f"{path}?{'&'.join(sorted(query.split('&')))}"
     with _CACHE_LOCK:
         if key in _CACHE:
@@ -665,7 +669,9 @@ def answer(path: str, query: str) -> tuple:
             body = {"error": "internal error" if LIMITS["hosts"] else f"{type(exc).__name__}: {exc}"}
             code = 500
     data = json.dumps(body).encode()
-    if code != 500 and len(data) <= _CACHE_BYTES // 4:
+    # Only answers are kept: a refusal (4xx) costs nothing to repeat, and keeping it let distinct
+    # junk questions fill the cache by their keys (an independent review, 2026-10-29).
+    if code == 200 and len(data) <= _CACHE_BYTES // 4:
         with _CACHE_LOCK:
             if key not in _CACHE:
                 _CACHE[key] = (code, data)

@@ -91,10 +91,12 @@ From two independent reviews before this release, each reproduced before it was 
   checked; on `main` since 0.4.0). An item id is now a file's name, refused otherwise, in the server and the adapter.
 - **The inspector's answers were cached by count, not size**: a hundred distinct 40-arm questions took a 256 MiB
   container past its limit, and `--warm` alone did on this repository's data. The cache is bounded by the bytes it
-  keeps (32 MB), and `--warm` stops when it is three quarters full. Its rate key is an address, never a header's
+  keeps (32 MB), keeps no refusals, takes no question over 4 KB, and `--warm` stops when it is three quarters full;
+  the deployment's inspector has 384 MB (it peaked at 228 of 256 under load). Its rate key is an address, never a header's
   text.
 - **`evh mcp --http`**: a few parallel 4 MiB bodies killed the server; held GETs and ping floods cost memory no rate
-  saw. Now `--max-body`, `--max-connections`, 8 open requests per caller, `--request-rate`, GET is 405, refusals do not count toward
+  saw. Now `--max-body`, `--max-connections`, 8 open requests per caller, a 10 s deadline on a request's body
+  (eight callers holding slow bodies took every connection), `--request-rate`, GET is 405, refusals do not count toward
   `--rate-total`, and `--public` answers are kept and their errors carry no paths. Values with NUL bytes or over 512
   characters are refused.
 - **The deployment**: Caddy refuses a body over 64 KB on `/mcp` (and its `handle` line now adapts); nginx limits

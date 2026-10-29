@@ -259,6 +259,21 @@ try:
     check(
         "GET on the endpoint is 405 (stateless: no stream to hold open)", get("/mcp")[0] == 405, get("/mcp")
     )
+    slash = urllib.request.Request(  # noqa: S310 -- the test's own server
+        base + "/mcp/",
+        data=b'{"jsonrpc":"2.0","id":1,"method":"ping"}',
+        headers={"Content-Type": "application/json", "Accept": "application/json, text/event-stream"},
+    )
+    try:
+        with urllib.request.urlopen(slash, timeout=10) as r:  # noqa: S310  # nosec B310
+            slash_code, slash_url = r.status, r.geturl()
+    except urllib.error.HTTPError as e:
+        slash_code, slash_url = e.code, e.geturl()
+    check(
+        "/mcp/ is the endpoint itself, never a redirect",
+        slash_code == 200 and slash_url.endswith("/mcp/"),
+        (slash_code, slash_url),
+    )
     big = b'{"jsonrpc":"2.0","id":1,"method":"ping","params":{"x":"' + b"a" * 8000 + b'"}}'
     check("--max-body 4096: a larger body is refused (413) before it is read", post(big) == 413)
     ping = b'{"jsonrpc":"2.0","id":1,"method":"ping"}'
@@ -349,7 +364,11 @@ async def held_open() -> list:
                 statuses.append((ip, msg["status"]))
 
         scope = {"type": "http", "path": "/mcp", "method": "POST", "headers": [], "client": (ip, 1)}
-        await gate(scope, None, send)
+
+        async def receive():
+            return {"type": "http.request", "body": b"{}", "more_body": False}
+
+        await gate(scope, receive, send)
 
     async with anyio.create_task_group() as tg:
         for _ in range(9):
@@ -360,6 +379,49 @@ async def held_open() -> list:
     return statuses
 
 
+async def slow_body() -> int:
+    """A body that never finishes arriving is cut at the deadline: 408, the slot freed."""
+    statuses: list = []
+
+    async def app(scope, receive, send):
+        while (await receive()).get("more_body"):
+            pass
+        await send({"type": "http.response.start", "status": 200, "headers": []})
+        await send({"type": "http.response.body", "body": b""})
+
+    gate = Gate(app, "/mcp", 0, None)
+    gate.BODY_DEADLINE = 0.3
+    first = [True]
+
+    async def receive():
+        if first[0]:
+            first[0] = False
+            return {"type": "http.request", "body": b"{", "more_body": True}
+        await anyio.sleep(60)  # the rest never comes
+        return {"type": "http.disconnect"}
+
+    async def send(msg):
+        if msg["type"] == "http.response.start":
+            statuses.append(msg["status"])
+
+    scope = {"type": "http", "path": "/mcp", "method": "POST", "headers": [], "client": ("198.51.100.3", 1)}
+    with anyio.fail_after(5):
+        await gate(scope, receive, send)
+    return statuses[0] if statuses and not gate.open else -1
+
+
+check("a request whose body stalls is cut at the deadline: 408, its slot freed", anyio.run(slow_body) == 408)
+check(
+    "an IPv4-mapped IPv6 caller is counted by its IPv4, not a /64 shared with every other",
+    caller_key("::ffff:203.0.113.7") == "203.0.113.7" != caller_key("::ffff:203.0.113.8"),
+)
+from evaluation_harness.mcp_server import argv_of, parser_of  # noqa: E402
+
+ap = parser_of("arms")
+check(
+    "the same arguments in another order make the same command line (one cached answer, not two)",
+    argv_of(ap, {"period": "30d", "configs": True}) == argv_of(ap, {"configs": True, "period": "30d"}),
+)
 got = anyio.run(held_open)
 check(
     f"a caller has at most {Gate.OPEN_PER_CALLER} requests open: the next is 429, another caller's is served",

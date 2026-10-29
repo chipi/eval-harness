@@ -119,10 +119,11 @@ nothing.
   refused before it is read (Caddy refuses it first, at the edge); a GET on the endpoint is 405, since a stateless
   JSON server has no stream to hold and each held GET cost ~85 KB; `--request-rate` counts every request per caller
   before the SDK reads it (ping and `tools/list` floods never reached the tools' rate); `--max-connections` (64), at
-  most 8 open per caller, and a 5 s keep-alive bound the connections. The hooks keep their trace provider to
+  most 8 open per caller, a body due in full within 10 s (408; the gate reads it, then hands it to the SDK whole),
+  and a 5 s keep-alive bound the connections. The hooks keep their trace provider to
   themselves: as the process's global one it also exported the SDK's own span per request, named by what the
-  client sent. With `--public` an answer is kept by its exact command line (32 MB), so a
-  repeated heavy view costs nothing, and a refusal's text loses server paths and tracebacks.
+  client sent. With `--public` an answer is kept by its command line (arguments in sorted order; 16 MB of text, ~5x that
+  resident; an hour each), so a repeated heavy view costs nothing, and a refusal's text loses server paths and tracebacks.
 - **Speed**: each call is a fresh process, and a view that shows the goals runs their paired tests (~500 here, ~50 s).
   `stats` keeps each estimated p on disk when `EVH_P_CACHE` names a file (the p read back exactly; a torn last line
   skipped); the server sets it to the project's ignored `.cache/evh-p.jsonl` unless the deployment names its own.

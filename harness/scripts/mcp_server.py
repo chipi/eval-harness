@@ -100,7 +100,12 @@ MAX_VALUES = 64
 #: the SDK's 4 MiB default let a few parallel bodies take the container past its memory limit.
 MAX_BODY = 64 * 1024
 #: --public: the answers kept, by their total size (least recently used out first).
-ANSWERS_BYTES = 32 * 1024 * 1024
+#: Counted as the answers' text; resident memory measured ~5x that (the parsed structured content
+#: beside it), so 16 MB here is ~80 MB of the container's 384 (an independent review, 2026-10-29).
+ANSWERS_BYTES = 16 * 1024 * 1024
+#: An answer kept is dropped after an hour: a view's default period (the last 14 days) moves with
+#: the date, and a server runs for days.
+ANSWERS_TTL = 3600
 
 
 class _Parser(Exception):
@@ -186,7 +191,7 @@ def argv_of(parser: argparse.ArgumentParser, arguments: dict) -> list[str]:
         raise ValueError(f"missing argument(s): {', '.join(missing)}")
     out: list[str] = []
     tail: list[str] = []
-    for k, v in arguments.items():
+    for k, v in sorted(arguments.items()):
         a = by[k]
         if isinstance(a, (argparse._StoreTrueAction, argparse._StoreFalseAction)):
             if not isinstance(v, bool):
@@ -345,6 +350,8 @@ def caller_key(addr: str) -> str:
         ip = ipaddress.ip_address(addr)
     except ValueError:
         return addr
+    if ip.version == 6 and ip.ipv4_mapped:  # ::ffff:a.b.c.d is that IPv4 caller, not a /64 they share
+        return str(ip.ipv4_mapped)
     return str(ipaddress.ip_network(f"{ip}/64", strict=False)) if ip.version == 6 else str(ip)
 
 
@@ -438,7 +445,12 @@ def build_server(
                 return refuse(str(exc), {**info, "refused": "arguments"})
             # M2: a public server reads a release that never changes under it, so an answer is
             # kept by its exact command line: a repeated heavy view costs nothing the second time.
-            hit = answers.get((name, tuple(argv))) if public else None
+            kept = answers.get((name, tuple(argv))) if public else None
+            if kept is not None and time.monotonic() - kept[0] > ANSWERS_TTL:
+                answers.pop((name, tuple(argv)), None)
+                answers_size[0] -= len(kept[1].content[0].text)
+                kept = None
+            hit = kept[1] if kept is not None else None
             if hit is not None:
                 answers.move_to_end((name, tuple(argv)))
                 _log(**{k: v for k, v in info.items() if k not in PRIVATE}, exit=0, cached=True)
@@ -513,10 +525,11 @@ def build_server(
             out = json.dumps(structured, indent=1)
         res = types.CallToolResult(content=[types.TextContent(text=out)], structured_content=structured)
         if public:
-            answers[(name, tuple(argv))] = res
-            answers_size[0] += len(out)
+            if (name, tuple(argv)) not in answers:
+                answers[(name, tuple(argv))] = (time.monotonic(), res)
+                answers_size[0] += len(out)
             while answers and answers_size[0] > ANSWERS_BYTES:
-                _, old = answers.popitem(last=False)
+                _, (_t, old) = answers.popitem(last=False)
                 answers_size[0] -= len(old.content[0].text)
         return res
 
@@ -696,7 +709,7 @@ def serve_http(server, args) -> int:
         custom_starlette_routes=extra,
         max_request_body_size=args.max_body,
     )
-    app = Gate(app, args.path, args.request_rate, args.client_header)
+    app = Gate(app, args.path, args.request_rate, args.client_header, args.max_body)
     print(f"evh mcp: http://{args.bind}:{args.port}{args.path}", file=sys.stderr, flush=True)
     uvicorn.run(
         app,
@@ -719,9 +732,13 @@ class Gate:
     requests could take every connection."""
 
     OPEN_PER_CALLER = 8
+    #: Seconds a request's body may take to arrive: a request held open mid-body is never timed
+    #: out by uvicorn's keep-alive, and eight callers holding eight each took every connection.
+    BODY_DEADLINE = 10.0
 
-    def __init__(self, app, path: str, rate: int, header: str | None):
+    def __init__(self, app, path: str, rate: int, header: str | None, max_body: int = MAX_BODY):
         self.app, self.path, self.rate, self.header = app, path.rstrip("/") or "/", rate, header
+        self.max_body = max_body
         self.seen: dict[str, list[float]] = {}
         self.open: dict[str, int] = {}
 
@@ -736,6 +753,8 @@ class Gate:
 
     async def __call__(self, scope, receive, send):
         if scope["type"] == "http" and scope["path"].rstrip("/") == self.path:
+            # `/mcp/` is `/mcp`: the SDK's own answer was a 307 to an http:// address behind the proxy.
+            scope = dict(scope, path=self.path, raw_path=self.path.encode())
             if scope["method"] == "GET":
                 return await _plain(send, 405, b"this server answers POST only (stateless, JSON)")
             key = self._caller(scope)
@@ -752,12 +771,53 @@ class Gate:
                         del self.seen[k]
             self.open[key] = self.open.get(key, 0) + 1
             try:
-                return await self.app(scope, receive, send)
+                # The body is read here, whole, within the deadline and the size bound, and handed
+                # to the SDK in one piece: a stall is 408 and an oversize 413 from us, not a 500 from
+                # inside the SDK, and the SDK never waits on a slow client.
+                try:
+                    body = await _read_body(receive, self.BODY_DEADLINE, self.max_body)
+                except TimeoutError:
+                    return await _plain(send, 408, b"the request's body did not arrive in time")
+                if body is None:
+                    return await _plain(send, 413, b"the request's body is too large")
+                return await self.app(scope, _replay(body, receive), send)
             finally:
                 self.open[key] -= 1
                 if not self.open[key]:
                     del self.open[key]
         return await self.app(scope, receive, send)
+
+
+async def _read_body(receive, seconds: float, limit: int) -> bytes | None:
+    """The whole request body within `seconds` (TimeoutError past it); None when it is over `limit`."""
+    import anyio  # noqa: PLC0415
+
+    chunks, size = [], 0
+    with anyio.fail_after(seconds):
+        while True:
+            msg = await receive()
+            if msg["type"] == "http.disconnect":
+                raise TimeoutError
+            part = msg.get("body", b"")
+            size += len(part)
+            if size > limit:
+                return None
+            chunks.append(part)
+            if not msg.get("more_body"):
+                return b"".join(chunks)
+
+
+def _replay(body: bytes, receive):
+    """`receive` that first gives the body read, whole, then the client's own messages (a disconnect)."""
+    sent = [False]
+
+    async def wrapped():
+        if not sent[0]:
+            sent[0] = True
+            return {"type": "http.request", "body": body, "more_body": False}
+        return await receive()
+
+    return wrapped
 
 
 async def _plain(send, status: int, body: bytes) -> None:

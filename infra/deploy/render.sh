@@ -178,7 +178,7 @@ fi
 # SIGPIPE, the assignment failed, and the check passed with 1,657 texts in the release (an
 # independent review, 2026-10-29).
 tracked_refs="$(git -C "$ROOT" ls-files -- harness/data/references | sed 's#^harness/data/##' | sort)"
-leaked="$( (cd "$OUT/inspector/data" 2>/dev/null && find references -name '*.txt' | sort) | comm -23 - <(printf '%s\n' "$tracked_refs") || true)"
+leaked="$( (cd "$OUT/inspector/data" 2>/dev/null && find references -type f ! -name manifest.json | sort) | comm -23 - <(printf '%s\n' "$tracked_refs") || true)"
 if [ -n "$leaked" ]; then
   echo "::error::$(wc -l <<<"$leaked") reference text(s) git does not track in the release (not public), e.g.:"
   sed -n '1,3p' <<<"$leaked"; exit 1
