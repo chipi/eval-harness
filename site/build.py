@@ -550,7 +550,7 @@ def footer(up: str) -> str:
     return f"""<footer><div class="wrap foot">
   <div class="foot-grid">
     <div class="foot-brand">
-      <a class="brand" href="{up}index.html" aria-label="eval-harness home"><img class="mark" src="{up}assets/icon.svg" alt="" width="26" height="26"><span>eval-harness</span></a>
+      <a class="brand" href="{up or './'}" aria-label="eval-harness home"><img class="mark" src="{up}assets/icon.svg" alt="" width="26" height="26"><span>eval-harness</span></a>
       <p>Is the ranking real, or a lucky sample?<br>Every number here is recomputed from the committed runs on each build.</p>
     </div>
     <nav class="foot-col" aria-label="Personal projects">
@@ -604,7 +604,7 @@ def page(title: str, desc: str, body: str, depth: int = 0, here: str = "", card:
 
     # The site's own pages: the bar on wide screens, the ☰ menu on phones.
     links = (
-        nav("harness", f"{up}index.html", "Overview")
+        nav("harness", up or "./", "Overview")
         + nav("use", f"{up}use.html", "Use it")
         + nav("method", f"{up}method.html", "Method")
         + nav("experiments", f"{up}experiments.html", "Experiments")
@@ -616,8 +616,8 @@ def page(title: str, desc: str, body: str, depth: int = 0, here: str = "", card:
     # Harness · Catalog · Docs · MCP, the same switcher in all three, this one marked (MCP is the
     # home page's section on it: there is no page of its own to open).
     sections = (
-        f'<a href="{up}index.html" aria-current="page">Harness</a>'
-        f'<a href="{CATALOG}">Catalog</a><a href="{up}docs/">Docs</a><a href="{up}index.html#mcp">MCP</a>'
+        f'<a href="{up or "./"}" aria-current="page">Harness</a>'
+        f'<a href="{CATALOG}">Catalog</a><a href="{up}docs/">Docs</a><a href="{up or "./"}#mcp">MCP</a>'
     )
 
     return f"""<!doctype html>
@@ -644,7 +644,7 @@ def page(title: str, desc: str, body: str, depth: int = 0, here: str = "", card:
 </head>
 <body>
 <header class="bar"><div class="wrap">
-  <a class="brand" href="{up}index.html" aria-label="eval-harness home"><img class="mark" src="{up}assets/icon.svg" alt="" width="28" height="28"><span>eval-harness</span></a>
+  <a class="brand" href="{up or './'}" aria-label="eval-harness home"><img class="mark" src="{up}assets/icon.svg" alt="" width="28" height="28"><span>eval-harness</span></a>
   <nav class="sections" aria-label="Harness, catalog and docs">{sections}</nav>
   <details class="menu"><summary class="hbtn" aria-label="Menu">{ICON["menu"]}</summary><nav class="menu-links">{links}{github_menu}</nav></details>
   <nav class="nav">{links}{github_btn}<a class="hbtn search-btn" href="{up}docs/?q=" aria-label="Search the docs">{ICON["search"]}</a><button id="theme" class="theme hbtn" aria-label="Toggle light and dark">{ICON["theme"]}</button></nav>
@@ -1487,7 +1487,7 @@ def not_found_page() -> str:
   <h1>Not here.</h1>
   <p class="dek">That page does not exist, or it moved. The documentation is at /docs/, and the
   catalog of runs at /catalog/.</p>
-  <div class="btns"><a class="btn primary" href="index.html">The harness</a><a class="btn" href="experiments.html">The experiments</a><a class="btn" href="docs/">Documentation</a><a class="btn" href="{CATALOG}">Catalog</a></div>
+  <div class="btns"><a class="btn primary" href="./">The harness</a><a class="btn" href="experiments.html">The experiments</a><a class="btn" href="docs/">Documentation</a><a class="btn" href="{CATALOG}">Catalog</a></div>
 </div></section>"""
     return page("Not found — eval-harness", "This page does not exist.", body)
 
