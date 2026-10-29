@@ -296,6 +296,21 @@ try:
         and '<meta name="twitter:card" content="summary_large_image">' in d,
         d[:900],
     )
+    r = evh(
+        "catalog",
+        "--out",
+        str(out),
+        "--link",
+        "Site=https://evals.example.test/",
+        "--link",
+        "MCP=https://evals.example.test/#mcp",
+    )
+    menu = (out / "goals.html").read_text().split('class="menu-links"')[-1].split("</nav>")[0]
+    check(
+        "phone menu: an MCP section the bar hides on phones is in the menu",
+        r.returncode == 0 and 'class="menu-mcp" href="https://evals.example.test/#mcp"' in menu,
+        menu[-300:],
+    )
     r = evh("catalog", "--out", str(out), "--mcp", "javascript:alert(1)")
     check("--mcp: only an http(s) address", r.returncode != 0, r.stderr[-120:])
 finally:

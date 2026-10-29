@@ -365,6 +365,12 @@ def page(
         else link(*x)
         for x in nav
     )
+    # A part of the publication the bar hides on phones (an MCP section, catalog.css) goes in the menu.
+    flat += "".join(
+        f'<a class="menu-mcp" href="{e(href)}">Ask it from your agent (MCP)</a>'
+        for _label, href in SECTIONS
+        if href.endswith("#mcp")
+    )
     # The parts of the publication (--link), this catalog marked: the logo opens the first.
     here_href = f"{up}index.html"
     parts = [(label, here_href if href == "." else href, href == ".") for label, href in SECTIONS]

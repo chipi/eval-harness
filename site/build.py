@@ -612,6 +612,8 @@ def page(title: str, desc: str, body: str, depth: int = 0, here: str = "", card:
     )
     # GitHub: a line in the phone menu, an icon button beside search and the theme on the bar.
     github_menu = f'<a href="{REPO}">GitHub ↗</a>'
+    # The switcher's MCP entry leaves the bar below 560 px: the menu carries it there.
+    mcp_menu = f'<a class="menu-mcp" href="{up or "./"}#mcp">Ask it from your agent (MCP)</a>'
     github_btn = f'<a class="hbtn" href="{REPO}" aria-label="eval-harness on GitHub" title="GitHub">{ICON["github"]}</a>'
     # Harness · Catalog · Docs · MCP, the same switcher in all three, this one marked (MCP is the
     # home page's section on it: there is no page of its own to open).
@@ -646,7 +648,7 @@ def page(title: str, desc: str, body: str, depth: int = 0, here: str = "", card:
 <header class="bar"><div class="wrap">
   <a class="brand" href="{up or "./"}" aria-label="eval-harness home"><img class="mark" src="{up}assets/icon.svg" alt="" width="28" height="28"><span>eval-harness</span></a>
   <nav class="sections" aria-label="Harness, catalog and docs">{sections}</nav>
-  <details class="menu"><summary class="hbtn" aria-label="Menu">{ICON["menu"]}</summary><nav class="menu-links">{links}{github_menu}</nav></details>
+  <details class="menu"><summary class="hbtn" aria-label="Menu">{ICON["menu"]}</summary><nav class="menu-links">{links}{mcp_menu}{github_menu}</nav></details>
   <nav class="nav">{links}{github_btn}<a class="hbtn search-btn" href="{up}docs/?q=" aria-label="Search the docs">{ICON["search"]}</a><button id="theme" class="theme hbtn" aria-label="Toggle light and dark">{ICON["theme"]}</button></nav>
 </div></header>
 <main>
@@ -2055,7 +2057,9 @@ def main() -> int:
     if crawl:
         print("FAIL  robots.txt / sitemap.xml:", *crawl, sep="\n  ")
         return 1
-    print("ok    robots.txt and sitemap.xml present; every sitemap URL is a built page with itself as its canonical")
+    print(
+        "ok    robots.txt and sitemap.xml present; every sitemap URL is a built page with itself as its canonical"
+    )
     broken = check_links(
         OUT,
         {x["goal"]["goal_page"] for x in f["experiments"]}

@@ -31,6 +31,7 @@ nav:
   - Home: index.md
   - The harness ↗: https://evals.humancopilot.eu/
   - The experiments ↗: https://evals.humancopilot.eu/experiments.html
+  - Ask it from your agent (MCP) ↗: https://evals.humancopilot.eu/#mcp
   - Getting started: GUIDE.md
   - Tutorials:
       - 1 · A local model against a baseline: tutorials/1-local-model.md
