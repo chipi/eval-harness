@@ -91,6 +91,10 @@ model_list:
     litellm_params:
       model: openrouter/openai/gpt-5.4-mini
       api_key: os.environ/OPENROUTER_API_KEY
+  - model_name: eval-gpt-oss-120b
+    litellm_params:
+      model: openrouter/openai/gpt-oss-120b
+      api_key: os.environ/OPENROUTER_API_KEY
   - model_name: eval-kimi-k31-pro
     litellm_params:
       model: openrouter/moonshotai/kimi-k3.1-pro
