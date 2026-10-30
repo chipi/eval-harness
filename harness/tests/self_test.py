@@ -651,6 +651,10 @@ def test_example_scorer_suites_pass() -> None:
         ("test_split.py", "dataset-split: the share, stable across versions, groups kept whole, by time"),
         ("test_hidden_text.py", "text: hidden: none of a hidden dataset's text on any public surface"),
         (
+            "../examples/signal-fleet-dedup/test_dedup.py",
+            "the de-duplication example: its scorer; the fleet's functions where the fleet and the signals are here",
+        ),
+        (
             "../examples/triage-fleet/test_triage.py",
             "the triage example: its scorer, its importer on the fleet's export, the adapter if the fleet is here",
         ),

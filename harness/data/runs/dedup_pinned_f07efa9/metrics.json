@@ -1,0 +1,79 @@
+{
+  "adapter": "examples/signal-fleet-dedup/adapter.py",
+  "build": {
+    "dirty": false,
+    "ref": "4b3f8a8f5e26bee7342a9982b9289e601b7e8a92",
+    "source": "git"
+  },
+  "config_id": "dedup_guard_v1",
+  "created_at": "2026-10-30T14:30:04Z",
+  "dataset_id": "fleet_dedup_v1",
+  "fingerprint": {
+    "arm": {
+      "config_id": "dedup_guard_v1",
+      "params": {
+        "fleet_commit": "f07efa9"
+      }
+    },
+    "data": {
+      "dataset_id": "fleet_dedup_v1",
+      "items_sha256": "b751fc5f940e7ad27f2470029ce7a87409a6b9b832d2da9eaa961eb9363e6a92",
+      "n_items": 100,
+      "reference_id": null,
+      "reference_tier": null,
+      "references_sha256": null
+    },
+    "hash": "00ad72d4e1b3adcb029e0319d04f79109c022e500217ebfc6dde03c5ce3ba473",
+    "host": {
+      "cpu_count": 32,
+      "label": null,
+      "platform": "Linux/x86_64",
+      "processor": null,
+      "python": "3.14.7",
+      "release": "7.2.5-3-omarchy"
+    },
+    "instrument": {
+      "adapter": {
+        "id": "examples/signal-fleet-dedup/adapter.py",
+        "sha256": "8104cf634a23b4134744729d631aaef79571f8e0a076ae5fe691d1f039471ff3"
+      },
+      "harness": {
+        "code_sha256": "0ab386969208f46c7448153422d5a5ab07833d963869b69fc216a6cd28feb110",
+        "commit": "4b3f8a8f5e26",
+        "dirty": false,
+        "installed": false,
+        "version": "0.5.0"
+      }
+    },
+    "system_under_test": {
+      "libraries": {
+        "anthropic": "2.3.0",
+        "numpy": "2.5.4",
+        "openai": "3.41.0",
+        "rouge-score": "0.1.2"
+      },
+      "model": {
+        "identity_declared": false
+      }
+    },
+    "version": 4
+  },
+  "metric_directions": {
+    "class_match": "higher",
+    "key_match": "higher"
+  },
+  "metric_kinds": {
+    "resumed": "descriptive"
+  },
+  "n_items": 100,
+  "params": {
+    "fleet_commit": "f07efa9"
+  },
+  "primary_metric": "key_match",
+  "providers_seen": {},
+  "run_id": "dedup_pinned_f07efa9",
+  "scores": {
+    "latency_ms": 0.203899,
+    "resumed": 0.0
+  }
+}
