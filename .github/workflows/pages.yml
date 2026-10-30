@@ -47,8 +47,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
           cache: pip
@@ -69,9 +69,9 @@ jobs:
           n=$(grep -rlF --include='*.html' 'build: local' _site | wc -l)
           test "$n" -eq 0 || { echo "$n page(s) still say 'build: local'"; exit 1; }
           grep -rqF --include='*.html' "${sha:0:7}</a>" _site || { echo "no page names the commit"; exit 1; }
-      - uses: actions/configure-pages@v5
+      - uses: actions/configure-pages@v6
         if: github.event_name != 'pull_request'
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         if: github.event_name != 'pull_request'
         with:
           path: _site
@@ -87,7 +87,7 @@ jobs:
       page_url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
 
   # After the deploy: does Pages serve THIS commit's docs? The footer names the commit, so a
   # page that still names an older one means the publish did not land.

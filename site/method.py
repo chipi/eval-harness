@@ -490,7 +490,7 @@ def method_page(H, f: dict) -> str:
       <li>More, curated by Chip Huyen: <a href="https://huyenchip.com/mlops/">huyenchip.com/mlops</a></li>
     </ul>
   </div>
-  <p>The habits hold when an agent does the work, too: it can read every number they rest on, the goals and their tests, from the catalog over MCP, and the decisions stay a person's (<a href="index.html#mcp">ask it from your agent</a>).</p>
+  <p>The habits hold when an agent does the work, too: it can read every number they rest on, the goals and their tests, from the catalog over MCP, and the decisions stay a person's (<a href="./#mcp">ask it from your agent</a>).</p>
   <div class="btns"><a class="btn primary" href="use.html">Use it on your problem →</a><a class="btn" href="docs/GUIDE/">The step-by-step guide</a><a class="btn" href="experiments.html">The experiments</a></div>
 </div></section>
 <script>

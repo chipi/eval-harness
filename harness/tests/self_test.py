@@ -615,8 +615,15 @@ def test_example_scorer_suites_pass() -> None:
     Skipped rather than failed when the example venv is absent -- these import torch-free
     scorer modules, but the runner has to be a Python that can see them, and the harness's
     own interpreter may not be.
+
+    They run side by side, read in this order: each is its own process on its own temporary
+    files (the one shared write is the family-test cache, replaced atomically), and one after
+    another they took 83 s, half of it check_report_claims alone.
     """
-    for script, subject in (
+    import os  # noqa: PLC0415
+    from concurrent.futures import ThreadPoolExecutor  # noqa: PLC0415
+
+    suites = (
         ("test_extraction_scorer.py", "set scorer"),
         ("test_ner_parser.py", "NER JSON parser"),
         ("test_retrieval_scorer.py", "ranked-list scorer"),
@@ -675,15 +682,18 @@ def test_example_scorer_suites_pass() -> None:
         ("test_summeval_analysis.py", "SummEval split-half: a tied top is undecided"),
         ("check_commands.py", "documented commands: every make target, evh command and flag exists"),
         ("check_model_facts.py", "model facts vs the evidence capture"),
-    ):
-        path = ROOT / at(script)
+    )
+    present = [script for script, _ in suites if (ROOT / at(script)).is_file()]
+    with ThreadPoolExecutor(max_workers=os.cpu_count() or 4) as pool:
+        ran = dict(zip(present, pool.map(lambda script: run(at(script)), present)))
+    for script, subject in suites:
         # A MISSING CHECKER IS A FAILURE, NOT A SKIP. `continue` here meant deleting
         # test_retrieval_scorer.py removed it from `make ci` silently -- the suite went
         # on reporting all-green over one fewer check. Found by external review.
-        if not path.is_file():
+        if script not in ran:
             check(f"{subject}: its checker exists", False, f"{script} is missing")
             continue
-        r = run(at(script))
+        r = ran[script]
         out = (r.stdout or "") + (r.stderr or "")
         # THE SKIP IS FOR AN EXAMPLE'S DEPENDENCIES, NOT FOR ANY IMPORT ERROR. Matching
         # bare "ModuleNotFoundError" meant a typo'd import inside a checker read as
@@ -1647,9 +1657,17 @@ def test_v10_fails_when_a_derived_run_states_no_scorer() -> None:
     `rescored_with` from all 27 rescored runs left VALIDATION PASSED -- the check
     vanishing at exactly the moment its subject disappeared, which is what its own
     docstring said a check must never do. Found by external review, round 5.
+
+    V10 alone, in its own process (it loads the examples' adapters by path): the whole
+    validator, for this one check, was 14 s of every `make ci`.
     """
     import json as _json  # noqa: PLC0415
 
+    v10_only = (
+        "from evaluation_harness import validate_tree as v\n"
+        "v.v10_derived_runs_carry_the_current_scorer()\n"
+        "raise SystemExit(1 if v.problems else 0)"
+    )
     base = HERE.parent / "data" / "runs"
     mjs = sorted(base.glob("fn_*/metrics.json"))
     if not mjs:
@@ -1661,11 +1679,17 @@ def test_v10_fails_when_a_derived_run_states_no_scorer() -> None:
             m = _json.loads(before[f])
             m.pop("derived", None)
             f.write_text(_json.dumps(m, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-        r = run("scripts/validate_tree.py")
+        r = run("-c", v10_only)
         out = (r.stdout or "") + (r.stderr or "")
         check(
             "V10 fails when a derived run states no scorer at all",
-            r.returncode != 0 and "every run states its scorer" in out,
+            # On a FAIL line: the hash comparison after it fails too (nothing left to compare),
+            # so the exit code and the phrase alone held when this check passed the silent runs.
+            r.returncode != 0
+            and any(
+                ln.lstrip().startswith("FAIL V10") and "every run states its scorer" in ln
+                for ln in out.splitlines()
+            ),
             f"exit {r.returncode}",
         )
         check(
@@ -2104,9 +2128,13 @@ def test_v5_tells_a_tie_from_a_copy() -> None:
     Both directions are asserted here, because widening a check until it stops complaining
     is the failure mode this test exists to prevent: a tie must pass, and a real copy must
     still fail.
+
+    V5 itself on a runs directory, in this process: four whole validate_tree runs to read one
+    check took 55 s of every `make ci`.
     """
-    import os  # noqa: PLC0415
     import shutil  # noqa: PLC0415
+
+    from evaluation_harness import validate_tree as vt  # noqa: PLC0415
 
     scores = {"correct": 0.86, "parsed": 1.0}
     with tempfile.TemporaryDirectory() as tmp:
@@ -2135,25 +2163,14 @@ def test_v5_tells_a_tie_from_a_copy() -> None:
         # Same mean (2 of 4), DIFFERENT items right. Two measurements.
         make("arm_a", "model-a", [1, 1, 0, 0])
         make("arm_b", "model-b", [0, 0, 1, 1])
-        env = {**os.environ, "EVAL_RUNS_DIR": str(root)}
-        r = subprocess.run(
-            [PY, "scripts/validate_tree.py"], cwd=ROOT, env=env, capture_output=True, text=True
-        )
-        check(
-            "V5: same mean, different items -> not flagged",
-            "V5 no two configs" not in r.stdout or "FAIL V5" not in r.stdout,
-            r.stdout[-200:],
-        )
+        dupes = vt._v5_in(root)
+        check("V5: same mean, different items -> not flagged", not dupes, str(dupes)[:200])
 
         # A real copy: same mean AND the same items right, under different params.
         shutil.rmtree(root / "arm_b")
         make("arm_b", "model-b", [1, 1, 0, 0])
-        r = subprocess.run(
-            [PY, "scripts/validate_tree.py"], cwd=ROOT, env=env, capture_output=True, text=True
-        )
-        check(
-            "V5: same mean, same items, different params -> flagged", "FAIL V5" in r.stdout, r.stdout[-200:]
-        )
+        dupes = vt._v5_in(root)
+        check("V5: same mean, same items, different params -> flagged", len(dupes) == 1, str(dupes)[:200])
 
         # A saturated metric: both arms right on every item, so the items agree too. Different
         # outputs are two systems (the newcomer trial's two routers at 32/32); the same outputs
@@ -2164,20 +2181,12 @@ def test_v5_tells_a_tie_from_a_copy() -> None:
             (root / name / "outputs").mkdir()
             for i in range(4):
                 (root / name / "outputs" / f"i{i}.txt").write_text(text)
-        r = subprocess.run(
-            [PY, "scripts/validate_tree.py"], cwd=ROOT, env=env, capture_output=True, text=True
-        )
-        check(
-            "V5: all items right, different outputs -> not flagged",
-            "FAIL V5" not in r.stdout,
-            r.stdout[-200:],
-        )
+        dupes = vt._v5_in(root)
+        check("V5: all items right, different outputs -> not flagged", not dupes, str(dupes)[:200])
         for i in range(4):
             (root / "arm_b" / "outputs" / f"i{i}.txt").write_text("label: billing")
-        r = subprocess.run(
-            [PY, "scripts/validate_tree.py"], cwd=ROOT, env=env, capture_output=True, text=True
-        )
-        check("V5: all items right, the same outputs -> flagged", "FAIL V5" in r.stdout, r.stdout[-200:])
+        dupes = vt._v5_in(root)
+        check("V5: all items right, the same outputs -> flagged", len(dupes) == 1, str(dupes)[:200])
 
 
 def test_rescore_can_move_runs_onto_a_new_reference_set() -> None:

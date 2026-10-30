@@ -9,6 +9,29 @@ The version lives in `scripts/_version.py`; a release is the git tag `v<version>
 release workflow refuses a tag that disagrees with that file or has no section here. A change
 that can move a result is never a patch release without saying so under **Changed**.
 
+## 0.6.0 — unreleased
+
+### Added
+
+- **A share card on every catalog page**: its title and its opening line as `description`, `og:*` and
+  `twitter:card`, and with **`evh catalog --card URL`** the image a shared link shows. The pages stay
+  `noindex`.
+
+### Changed
+
+- **CI runs once per merge, not twice**: a squash onto main whose tree is its pull request's head,
+  tested green and up to date with main, skips the workflows that already passed on it; the deploy
+  no longer waits ~13 minutes for a second run of the same files. Anything else runs them again.
+
+### Fixed
+
+- **A command's own refusal through `evh mcp`** (exit 1, its `ERROR:` line, no traceback, such as a
+  dataset id that is a path) is told to `--hooks` as `refused: "command"`, not as an error: a
+  deployment's metrics count it as refused and its analytics send no event for it.
+- **The site's links to its home page** point at `/`, never `index.html` (analytics counted the two
+  apart, search engines saw two addresses for one page), and each of its pages names its own address
+  as `<link rel="canonical">` and `og:url`, checked by `site/build.py --check`.
+
 ## 0.5.0 — 2026-10-29
 
 Two things to know before upgrading: the package now needs **Python 3.10 or later**, and it depends on the

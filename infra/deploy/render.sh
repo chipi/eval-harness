@@ -79,6 +79,7 @@ python3 -m pip install --quiet --no-deps --no-compile --target "$OUT/inspector/m
   --implementation cp --python-version 3.12 \
   --abi cp312 --abi abi3 --abi none --require-hashes -r "$ROOT/infra/mcp/requirements.txt"
 cp -a "$ROOT/infra/mcp/hooks.py" "$OUT/inspector/mcp_hooks.py"
+cp -a "$ROOT/infra/mcp/probe_error.py" "$OUT/inspector/mcp_probe.py"   # GlitchTip error-path probe (infra/README)
 # Its Umami events go to the site's own website (the id is public, site/analytics.json); where to
 # send them (UMAMI_SEND_URL, on the tailnet) is in observability.env, rendered by the deploy.
 python3 - "$ROOT/site/analytics.json" > "$OUT/inspector/mcp_umami.json" <<'PY'
@@ -118,7 +119,7 @@ EVH_P_CACHE="$OUT/inspector/cache/evh-p.jsonl" \
   EVAL_HOME="$OUT/inspector" python3 "$OUT/inspector/pkg/evaluation_harness/catalog_build.py" \
   --out "$OUT/sites/$SITE/public/catalog" \
   --link "Harness=https://$SITE/" --link "Catalog=." --link "Docs=https://$SITE/docs/" --link "MCP=https://$SITE/#mcp" \
-  --mcp "https://$SITE/mcp" --mcp-howto "https://$SITE/docs/harness/INTEGRATION/#for-an-agent-evh-mcp" --brand eval-harness --api /catalog/api/ \
+  --mcp "https://$SITE/mcp" --card "https://$SITE/assets/social.png" --mcp-howto "https://$SITE/docs/harness/INTEGRATION/#for-an-agent-evh-mcp" --brand eval-harness --api /catalog/api/ \
   --head "$OUT/catalog-head.html" --about "$ROOT/infra/catalog/about.html" \
   --repo "https://github.com/${GITHUB_REPOSITORY:-chipi/eval-harness}/blob/main/"
 rm -rf "$OUT/inspector/examples" "$OUT/catalog-head.html"

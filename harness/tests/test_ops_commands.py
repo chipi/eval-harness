@@ -158,17 +158,25 @@ def test_self_check(tmp: Path) -> None:
     for k in ("EVAL_HOME", "EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD"):
         env.pop(k, None)
 
-    # self-test runs offline in a temp dir, so no cwd needed
+    # From an empty folder: `python -m` puts the working directory first on sys.path, and run from
+    # harness/ (as make commands-check does) it imported the checkout, not the wheel, whose self-test
+    # is the whole development suite: this test never tested the installed package, and ran every
+    # test again (about 5 minutes of CI's commands job).
+    bare = tmp / "bare"
+    bare.mkdir()
     r = subprocess.run(
         [sys.executable, "-m", "evaluation_harness", "self-test"],
+        cwd=bare,
         env=env,
         capture_output=True,
         text=True,
         timeout=900,
     )
     check(
-        "self-test: exit 0, runs the tutorial suite",
-        r.returncode == 0 and ("ok  " in r.stdout or "FAIL" not in r.stdout),
+        "self-test: exit 0, the installed package's check (the tutorial in a scratch folder), not the checkout's suite",
+        r.returncode == 0
+        and "the installed package, in a scratch folder" in r.stdout
+        and "harness self-tests" not in r.stdout,
         r.stdout[-500:],
     )
 

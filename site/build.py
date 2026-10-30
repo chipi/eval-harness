@@ -550,7 +550,7 @@ def footer(up: str) -> str:
     return f"""<footer><div class="wrap foot">
   <div class="foot-grid">
     <div class="foot-brand">
-      <a class="brand" href="{up}index.html" aria-label="eval-harness home"><img class="mark" src="{up}assets/icon.svg" alt="" width="26" height="26"><span>eval-harness</span></a>
+      <a class="brand" href="{up or "./"}" aria-label="eval-harness home"><img class="mark" src="{up}assets/icon.svg" alt="" width="26" height="26"><span>eval-harness</span></a>
       <p>Is the ranking real, or a lucky sample?<br>Every number here is recomputed from the committed runs on each build.</p>
     </div>
     <nav class="foot-col" aria-label="Personal projects">
@@ -604,7 +604,7 @@ def page(title: str, desc: str, body: str, depth: int = 0, here: str = "", card:
 
     # The site's own pages: the bar on wide screens, the ☰ menu on phones.
     links = (
-        nav("harness", f"{up}index.html", "Overview")
+        nav("harness", up or "./", "Overview")
         + nav("use", f"{up}use.html", "Use it")
         + nav("method", f"{up}method.html", "Method")
         + nav("experiments", f"{up}experiments.html", "Experiments")
@@ -612,12 +612,14 @@ def page(title: str, desc: str, body: str, depth: int = 0, here: str = "", card:
     )
     # GitHub: a line in the phone menu, an icon button beside search and the theme on the bar.
     github_menu = f'<a href="{REPO}">GitHub ↗</a>'
+    # The switcher's MCP entry leaves the bar below 560 px: the menu carries it there.
+    mcp_menu = f'<a class="menu-mcp" href="{up or "./"}#mcp">Ask it from your agent (MCP)</a>'
     github_btn = f'<a class="hbtn" href="{REPO}" aria-label="eval-harness on GitHub" title="GitHub">{ICON["github"]}</a>'
     # Harness · Catalog · Docs · MCP, the same switcher in all three, this one marked (MCP is the
     # home page's section on it: there is no page of its own to open).
     sections = (
-        f'<a href="{up}index.html" aria-current="page">Harness</a>'
-        f'<a href="{CATALOG}">Catalog</a><a href="{up}docs/">Docs</a><a href="{up}index.html#mcp">MCP</a>'
+        f'<a href="{up or "./"}" aria-current="page">Harness</a>'
+        f'<a href="{CATALOG}">Catalog</a><a href="{up}docs/">Docs</a><a href="{up or "./"}#mcp">MCP</a>'
     )
 
     return f"""<!doctype html>
@@ -644,9 +646,9 @@ def page(title: str, desc: str, body: str, depth: int = 0, here: str = "", card:
 </head>
 <body>
 <header class="bar"><div class="wrap">
-  <a class="brand" href="{up}index.html" aria-label="eval-harness home"><img class="mark" src="{up}assets/icon.svg" alt="" width="28" height="28"><span>eval-harness</span></a>
+  <a class="brand" href="{up or "./"}" aria-label="eval-harness home"><img class="mark" src="{up}assets/icon.svg" alt="" width="28" height="28"><span>eval-harness</span></a>
   <nav class="sections" aria-label="Harness, catalog and docs">{sections}</nav>
-  <details class="menu"><summary class="hbtn" aria-label="Menu">{ICON["menu"]}</summary><nav class="menu-links">{links}{github_menu}</nav></details>
+  <details class="menu"><summary class="hbtn" aria-label="Menu">{ICON["menu"]}</summary><nav class="menu-links">{links}{mcp_menu}{github_menu}</nav></details>
   <nav class="nav">{links}{github_btn}<a class="hbtn search-btn" href="{up}docs/?q=" aria-label="Search the docs">{ICON["search"]}</a><button id="theme" class="theme hbtn" aria-label="Toggle light and dark">{ICON["theme"]}</button></nav>
 </div></header>
 <main>
@@ -1487,7 +1489,7 @@ def not_found_page() -> str:
   <h1>Not here.</h1>
   <p class="dek">That page does not exist, or it moved. The documentation is at /docs/, and the
   catalog of runs at /catalog/.</p>
-  <div class="btns"><a class="btn primary" href="index.html">The harness</a><a class="btn" href="experiments.html">The experiments</a><a class="btn" href="docs/">Documentation</a><a class="btn" href="{CATALOG}">Catalog</a></div>
+  <div class="btns"><a class="btn primary" href="./">The harness</a><a class="btn" href="experiments.html">The experiments</a><a class="btn" href="docs/">Documentation</a><a class="btn" href="{CATALOG}">Catalog</a></div>
 </div></section>"""
     return page("Not found — eval-harness", "This page does not exist.", body)
 
@@ -1867,6 +1869,26 @@ def sitemap_urls(out: Path) -> list:
     return [f"{SITE}/" if p == "index.html" else f"{SITE}/{p}" for p in pages]
 
 
+def page_file(out: Path, url: str) -> Path | None:
+    """The built file behind a sitemap URL (the home page is `/`, its file index.html)."""
+    if url == f"{SITE}/":
+        return out / "index.html"
+    return out / url[len(SITE) + 1 :] if url.startswith(SITE + "/") else None
+
+
+def add_canonicals(out: Path) -> None:
+    """Each page's own address, once, in its head: `<link rel="canonical">` and `og:url`, from the
+    list the sitemap is written from, so the two cannot disagree. A search engine or a share card
+    then sees one address per page (the home page as `/`, never /index.html)."""
+    for url in sitemap_urls(out):
+        f = page_file(out, url)
+        html = f.read_text(encoding="utf-8")
+        tags = f'<link rel="canonical" href="{e(url)}">\n<meta property="og:url" content="{e(url)}">\n'
+        f.write_text(
+            html.replace('<meta name="description"', tags + '<meta name="description"', 1), encoding="utf-8"
+        )
+
+
 def sitemap_xml(urls: list) -> str:
     rows = "".join(f"  <url><loc>{e(u)}</loc></url>\n" for u in urls)
     return (
@@ -1895,9 +1917,13 @@ def check_crawl_files(out: Path) -> list:
     if not urls:
         problems.append("sitemap.xml lists no URLs")
     for u in urls:
-        rel = "index.html" if u == f"{SITE}/" else u[len(SITE) + 1 :] if u.startswith(SITE + "/") else None
-        if rel is None or not (out / rel).is_file():
+        f = page_file(out, u)
+        if f is None or not f.is_file():
             problems.append(f"sitemap URL with no page behind it: {u}")
+            continue
+        canon = re.findall(r'<link rel="canonical" href="([^"]+)">', f.read_text(encoding="utf-8"))
+        if canon != [u]:
+            problems.append(f"{u}: canonical should be itself, once (found {canon or 'none'})")
     return problems
 
 
@@ -1995,6 +2021,7 @@ def build(out: Path) -> dict:
     for x in f["experiments"]:
         (out / "experiments" / f"{x['slug']}.html").write_text(experiment_page(x, f), encoding="utf-8")
     (out / ".nojekyll").write_text("")
+    add_canonicals(out)
     (out / "sitemap.xml").write_text(sitemap_xml(sitemap_urls(out)), encoding="utf-8")
     (out / "robots.txt").write_text(ROBOTS, encoding="utf-8")
     point_docs(out)
@@ -2030,7 +2057,9 @@ def main() -> int:
     if crawl:
         print("FAIL  robots.txt / sitemap.xml:", *crawl, sep="\n  ")
         return 1
-    print("ok    robots.txt and sitemap.xml present; every sitemap URL is a built page")
+    print(
+        "ok    robots.txt and sitemap.xml present; every sitemap URL is a built page with itself as its canonical"
+    )
     broken = check_links(
         OUT,
         {x["goal"]["goal_page"] for x in f["experiments"]}

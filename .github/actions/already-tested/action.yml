@@ -1,0 +1,64 @@
+name: Already tested on its pull request
+description: |
+  On a push to main, says whether this workflow already passed on exactly this tree, on the pull
+  request this commit merged, so the push need not run it again. Anything else runs it.
+
+  Why: a pull request ran reproduce, quality, guards and harness-package; its squash onto main ran
+  all of them a second time on the same files (PR #29: verify 13 min, commands 12 min), and the
+  deploy waited for that second run.
+
+  `skip` is true only when all of these hold, each read from GitHub, never assumed:
+    1. the event is a push to main of one commit whose parent is main's previous tip;
+    2. that commit is the merge of a pull request, and its file tree is the PR head's tree;
+    3. main's previous tip is an ancestor of the PR head. The PR's run tested its head merged
+       with main at that time; main is linear, so that base is an ancestor of the head too and
+       the tested tree is the head's tree, which is this commit's;
+    4. this workflow's pull_request run on the PR head completed with success.
+  The jobs it guards are then skipped, and a run whose jobs are all skipped concludes success,
+  which is what the deploy and the release read.
+
+  The calling job needs `pull-requests: read` and `actions: read`.
+inputs:
+  workflow:
+    description: This workflow's name, as `gh run list --workflow` takes it.
+    required: true
+outputs:
+  skip:
+    description: "'true' when the pull request's run already passed on this exact tree."
+    value: ${{ steps.check.outputs.skip }}
+runs:
+  using: composite
+  steps:
+    - id: check
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        EVENT: ${{ github.event_name }}
+        REF: ${{ github.ref }}
+        BEFORE: ${{ github.event.before }}
+        WF: ${{ inputs.workflow }}
+      run: |
+        no() { echo "runs here: $1"; echo "skip=false" >> "$GITHUB_OUTPUT"; exit 0; }
+        [ "$EVENT" = push ] && [ "$REF" = refs/heads/main ] || no "not a push to main"
+        api() { gh api "repos/$GITHUB_REPOSITORY/$1" --jq "$2" 2>/dev/null; }
+        parents=$(api "commits/$GITHUB_SHA" '[.parents[].sha] | join(" ")') || no "commit not readable"
+        [ "$parents" = "$BEFORE" ] || no "more than one commit pushed, or not on main's previous tip"
+        pr=$(api "commits/$GITHUB_SHA/pulls" \
+          'first(.[] | select(.merged_at != null and .base.ref == "main") | "\(.number) \(.head.sha)") // empty')
+        [ -n "$pr" ] || no "no merged pull request for this commit"
+        read -r num head <<< "$pr"
+        tree=$(api "commits/$GITHUB_SHA" .commit.tree.sha)
+        [ -n "$tree" ] && [ "$tree" = "$(api "commits/$head" .commit.tree.sha)" ] \
+          || no "PR #$num's head ${head:0:7} has a different tree"
+        case "$(api "compare/$BEFORE...$head" .status)" in
+          ahead|identical) ;;
+          *) no "PR #$num was not up to date with main (${BEFORE:0:7} is not in its head)" ;;
+        esac
+        run=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow "$WF" --commit "$head" \
+          --event pull_request --limit 1 --json status,conclusion,url --jq '.[0] | "\(.status) \(.conclusion) \(.url)"')
+        case "$run" in
+          "completed success "*) ;;
+          *) no "$WF on PR #$num's head is not green: ${run:-no run}" ;;
+        esac
+        echo "skipped: $WF passed on PR #$num's head ${head:0:7}, the same tree as this commit (${run##* })"
+        echo "skip=true" >> "$GITHUB_OUTPUT"

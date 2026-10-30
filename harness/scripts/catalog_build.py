@@ -365,6 +365,12 @@ def page(
         else link(*x)
         for x in nav
     )
+    # A part of the publication the bar hides on phones (an MCP section, catalog.css) goes in the menu.
+    flat += "".join(
+        f'<a class="menu-mcp" href="{e(href)}">Ask it from your agent (MCP)</a>'
+        for _label, href in SECTIONS
+        if href.endswith("#mcp")
+    )
     # The parts of the publication (--link), this catalog marked: the logo opens the first.
     here_href = f"{up}index.html"
     parts = [(label, here_href if href == "." else href, href == ".") for label, href in SECTIONS]
@@ -394,6 +400,7 @@ def page(
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>{e(title)} · {e(brand)}</title>
+{share_card(title, brand, body)}
 <meta name="color-scheme" content="dark light">
 <script src="{up}assets/head.js"></script>
 <link rel="stylesheet" href="{up}assets/style.css">
@@ -3299,6 +3306,26 @@ def render_inspect(
     )
 
 
+def share_card(title: str, brand: str, body: str) -> str:
+    """What a shared link shows (the page stays noindex: a card is for a person pasting a link, not
+    for search): the page's title, its dek as the description, and, with --card URL, an image."""
+    m = re.search(r"<p class=\"?dek\"?>(.*?)</p>", body, re.S)
+    desc = re.sub(r"<[^>]+>", "", m.group(1)).strip() if m else ""
+    desc = " ".join(desc.split()) or f"{title}: from the project's committed runs, every number recomputed."
+    desc = desc if len(desc) <= 200 else desc[:197].rsplit(" ", 1)[0] + "…"
+    tags = [
+        f'<meta name="description" content="{e(desc)}">',
+        f'<meta property="og:title" content="{e(title)} · {e(brand)}">',
+        f'<meta property="og:description" content="{e(desc)}">',
+        '<meta property="og:type" content="website">',
+        f'<meta property="og:site_name" content="{e(brand)}">',
+        f'<meta name="twitter:card" content="{"summary_large_image" if CARD else "summary"}">',
+    ]
+    if CARD:
+        tags.append(f'<meta property="og:image" content="{e(CARD)}">')
+    return "\n".join(tags)
+
+
 def elsewhere_line(cmds: tuple) -> str:
     """The footer's "this page elsewhere": each command in the terminal and, when the deployment
     names its MCP server (--mcp), the same as a tool call. The inspector's line is filled in by
@@ -3445,6 +3472,9 @@ REPO = ""
 #: The deployment's MCP server (--mcp URL): every page's footer then names its tool call beside its
 #: terminal command, and how to connect. None by default: a page names only its command.
 MCP = ""
+#: The image a shared link's card shows (--card URL, 1200x630): a deployment's own. None by default,
+#: and then the card is title and description only.
+CARD = ""
 #: How to connect an agent to it: the harness's own guide (the package's docs, not a deployment's).
 MCP_HOWTO = "https://github.com/chipi/eval-harness/blob/main/harness/docs/INTEGRATION.md#for-an-agent-evh-mcp"
 #: A project path at the start of a guardrail's source ("research/REPORT.md, §3.4").
@@ -3465,7 +3495,7 @@ def _common_prog() -> str | None:
 
 def main() -> int:
     """Build the catalog and write static pages to output directory."""
-    global API, HEAD, BRAND, ABOUT, REPO, MCP, MCP_HOWTO
+    global API, HEAD, BRAND, ABOUT, REPO, MCP, MCP_HOWTO, CARD
     ap = argparse.ArgumentParser(prog=_common_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("--out", type=Path, default=ROOT / ".build" / "catalog")
     ap.add_argument(
@@ -3513,15 +3543,22 @@ def main() -> int:
         "its terminal command (only the command by default)",
     )
     ap.add_argument(
+        "--card",
+        metavar="URL",
+        help="the image a shared link's card shows (https://..., 1200x630; none by default): the pages stay "
+        "noindex, a card is for a person pasting a link",
+    )
+    ap.add_argument(
         "--mcp-howto",
         metavar="URL",
         help="--mcp: where to read how to connect an agent (default: the harness's INTEGRATION guide)",
     )
     args = ap.parse_args()
-    for flag, url in (("--mcp", args.mcp), ("--mcp-howto", args.mcp_howto)):
+    for flag, url in (("--mcp", args.mcp), ("--mcp-howto", args.mcp_howto), ("--card", args.card)):
         if url and not url.startswith(("https://", "http://")):
             raise SystemExit(f"{flag} {url!r}: expected https://...")
     MCP = args.mcp or ""
+    CARD = args.card or ""
     MCP_HOWTO = args.mcp_howto or MCP_HOWTO
     if not args.api.startswith("/") or not args.api.endswith("/"):
         raise SystemExit(

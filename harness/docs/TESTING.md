@@ -23,7 +23,12 @@ runs `make guard-check` only when a checker or the harness code it reads changed
 proves the checkers, and a change to the reports or the runs leaves them as they were (`make ci`
 still checks that every string it plants is in its file). A release does not re-run any of it; it
 requires CI on the tagged commit to be green on main (`.github/workflows/harness-release.yml`).
-Chromium and its system libraries come from the Actions cache (`.github/actions/install-playwright`).
+Nor does a merge, when nothing changed in between: on a push to main, each of reproduce, quality,
+guards and harness-package skips its jobs when it passed on the merged pull request's head, that
+head has the commit's file tree, and the pull request was up to date with main
+(`.github/actions/already-tested`, which prints which run it relied on). Anything else (a direct
+push, a pull request behind main, a red or missing run) runs the whole workflow again. The skipped
+run concludes success, which is what the deploy and the release read. Chromium and its system libraries come from the Actions cache (`.github/actions/install-playwright`).
 
 ## How a test earns its place
 
