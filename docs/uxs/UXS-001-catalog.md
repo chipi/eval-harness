@@ -275,12 +275,18 @@ tiles open it.
   `evh catalog` prints the same counts, and `evh datasets` has a `configs` column beside `arms`.
 - The period bar in the hero.
 - `01 datasets`: **group by** chips (no grouping, goal: a dataset under several goals is a group
-  named after all of them, one under none is "no goal"), the all / new / active chips, then one
+  named after all of them, one under none is "no goal"; then one chip per **tag key** any dataset
+  carries, a dataset without that key grouped as "no <key>"), the all / new / active chips, then one
   row per dataset, most arms first:
-  **dataset** ("from `<parent>`" under a version; the new badge), **items**, **arms**, **runs in
-  period** (with its trend), **runs per day** (a line), **spend in period**, **references**,
-  **goals**, **baseline** (the promoted arm), **last run**. Filterable.
-- Command: `evh datasets [--period P]`.
+  **dataset** ("from `<parent>`" under a version; under a dataset made from a capture, its origin:
+  "capture `<id>`, where …, one per …"; the new badge), **tags** (`key: value` chips, RFC-019),
+  **items**, **arms**, **runs in period** (with its trend), **runs per day** (a line), **spend in
+  period**, **references**, **goals**, **baseline** (the promoted arm), **last run**. Filterable:
+  the filter matches tags too.
+- A dataset marked `text: hidden` shows its counts and its rows' ids and lengths, never its text, on
+  this page and its own.
+- Command: `evh datasets [--period P] [--tag K=V …]`; the list has `made from` (a parent, or a
+  capture) and `tags` columns, and `--dataset-id` prints the tags and origin.
 
 ## The dataset page
 
