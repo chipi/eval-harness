@@ -1,0 +1,7 @@
+# The fleet's filing stage at the commit TRIAGE_FLEET_SRC holds, scored against the pinned commit's
+# own output (silver/fleet_dedup_v1_pinned): a regression guard for the de-duplication functions.
+config_id: dedup_guard_v1
+dataset_id: fleet_dedup_v1
+adapter: ../adapter.py
+params:
+  fleet_commit: f07efa9

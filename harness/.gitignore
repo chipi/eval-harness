@@ -308,3 +308,5 @@ data/sources/orrery_triage_*/
 data/sources/orrery_triage_v1.hf/
 # A capture's records are the captured content; capture.json (ids and hashes) is what git holds.
 data/captures/*/records/
+data/sources/fleet_dedup_*/
+data/sources/fleet_dedup_v1.hf/
