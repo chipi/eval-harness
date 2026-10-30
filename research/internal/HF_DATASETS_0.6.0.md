@@ -105,10 +105,11 @@ regressions. Tag `v1`.
 
 ## 3. How it is made (the steps, and who does each)
 
-1. **The owner decides:**
-   - the **account** (the connector is logged in as `chipi-nbgd`; an organisation is possible);
-   - the **licence**. CC-BY-4.0 is the common choice for a dataset that should be reused with credit;
-   - whether to **start private** and make it public after reading the card.
+1. **Decided by the owner (2026-10-30):**
+   - **account `chipi-nbgd`**;
+   - **licence CC-BY-4.0**;
+   - each repository **starts private**, and is made public after the owner reads the card and a sample;
+   - **a collection** under `chipi-nbgd` (section 7).
 2. **Rebuild** `decisions.jsonl` with the close comments and the better join (homelab, on the mini), and scrub it.
    **Write** `verdicts.jsonl` from the owner's verdicts and labels (the labelling sheet), plus the outcome and
    fixture labels, each marked with its `source`.
@@ -125,19 +126,29 @@ regressions. Tag `v1`.
 
      The v1 file as delivered (2026-10-30): **0 hits on all of them**. 266 IPs were already `<ip>`, and 300
      identifiers already fake.
-   - **One open item: browser user-agent strings.** 64 occurrences (15 distinct) in GlitchTip event details,
-     from Orrery's visitors. Proposal: reduce each to the browser family and major version ("Chrome 141"),
-     either as a rule in the fleet's scrubber (the fleet's repository) or as a pass in the build script. Owner's
-     call.
+   - **Browser user-agent strings: kept as they are** (owner, 2026-10-30).
+     - **Where they are:** 48 occurrences in 11 items, all in the `service_logs` probe answers (access-log lines),
+       with the visitors' IPs already `<ip>`. 14 distinct strings, mostly bots (ElevenLabs, MJ12, Ahrefs,
+       Semrush, Exa, OpenAI's search bot), and the rest the commonest browser strings.
+     - **Why they stay:** bot or person is the evidence the agent judges by, so reducing the strings would change
+       what the model reads at replay. The card says that log lines carry IP-free user-agents.
+     - **A scrubber bug** found on the way, for the rebuild: the fleet's IP rule also rewrites browser versions
+       (`Chrome/<ip>`). It is harmless for privacy but wrong evidence; a one-line fix in the fleet's `scrub.py`.
 
    Nothing is uploaded unless all three layers pass. The repository starts **private**.
-4. **Create the repository and upload.** **Check on first publish:**
-   - with the `huggingface_hub` Python package, `create_repo(repo_type="dataset")`, `upload_folder(...)`,
-     `create_tag("v1")`;
-   - it needs a Hugging Face token with write access. The owner runs `hf auth login` once, or gives a token in an
-     environment variable;
-   - the package goes into this worktree's own virtual environment, not a shared one, and is a development tool,
-     not a harness dependency.
+4. **Create the repository and upload: plain HTTP with the token, no package.** Tested end to end on
+   2026-10-30 on a throwaway private repository (`chipi-nbgd/evh-upload-test`):
+   - create: `POST /api/repos/create {"type": "dataset", "name": …, "private": true}` → 200;
+   - upload: `POST /api/datasets/<repo>/commit/main`, NDJSON (a header line, then one `file` line per file,
+     base64) → 200, with the commit id;
+   - tag: `POST /api/datasets/<repo>/tag/main {"tag": "v1"}` → 200;
+   - read back: `resolve/v1/<path>` → 200, with the sha256 equal to the uploaded bytes;
+   - delete: `DELETE /api/repos/delete` → 200, then 404.
+
+   **The token:** fine-grained `evh-datasets` on `chipi-nbgd`, saved in `~/.cache/huggingface/token` (mode 600,
+   outside every repository). Its scope is repository read and write, and collection read and write, under
+   `chipi-nbgd` only. The test script is `scratchpad/runner/hf_upload_test.py`; the publish script will be the
+   same calls, committed with the example.
 5. **Read it back.** Check the viewer shows both tables, download `resolve/v1/data/decisions.jsonl`, and compare
    its sha256 with the file we uploaded.
 6. **The owner reads the card and a sample**, then the repository is made public, if it started private.
@@ -174,3 +185,13 @@ regressions. Tag `v1`.
 - **A secret that got past the scrubber** would be public. Two defences: gitleaks runs on the files before upload,
   and the owner reads the card and a sample while the repository is still private.
 - **Hugging Face being down** stops a fresh fetch, not anything already fetched or committed.
+
+## 7. The collection
+
+Once both repositories are public: one collection under `chipi-nbgd`, **"eval-harness: datasets"**, holding:
+- `orrery-triage` and `signal-fleet-dedup`, each with a one-line note;
+- the six public datasets the existing experiments use (CNN/DailyMail, AG News, DBpedia-14, Few-NERD, SciFact,
+  SummEval), noted with the experiment each serves.
+
+Its description links to evals.humancopilot.eu. It is created last, because a collection is public and should
+not point at private repositories. The token's `collection.write` scope covers it.
