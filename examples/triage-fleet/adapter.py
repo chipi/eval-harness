@@ -47,6 +47,7 @@ METRIC_DIRECTIONS = {
     "silent_drop": "lower",
     "escalated": "lower",
     "table_miss": "lower",
+    "no_decision": "lower",
     "triage_cost": "lower",
     "triage_cost_p3": "lower",
     "triage_cost_p10": "lower",
@@ -158,6 +159,17 @@ def call_system(text: str, params: dict[str, Any]) -> Result:
     t0 = time.monotonic()
     _FLEET["model_disposition"] = None
     out = triage.investigate(item["signal"], probe_table=item["probes"])
+    no_decision = out is None
+    if no_decision:
+        # The fleet's own gap: investigate() falls off its loop and returns None when the model's reply is
+        # empty on the last turn (a reasoning model's answer cut off). Production would then fail on it. The
+        # replay records it as the fleet's own "no terminal decision": an escalation, counted as no_decision.
+        out = {
+            "disposition": "escalate",
+            "reason": "no terminal decision: the model's last reply was empty",
+            "question": "triager did not reach a disposition",
+            "_meta": {},
+        }
     out["model_disposition"] = _FLEET["model_disposition"] or out.get("disposition")
     ms = (time.monotonic() - t0) * 1000
     meta = out.get("_meta") or {}
@@ -174,6 +186,7 @@ def call_system(text: str, params: dict[str, Any]) -> Result:
         extra={
             "n_probes": float(meta.get("n_probes") or 0),
             "table_miss": float(bool(meta.get("table_miss"))),
+            "no_decision": float(no_decision),
         },
         meta={"model": meta.get("model"), "prompt_sha": meta.get("prompt_sha"), "gates": meta.get("gates")},
     )

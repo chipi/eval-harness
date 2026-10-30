@@ -79,6 +79,15 @@ fleet's production decisions showed. Every number below was measured; the comman
   stale-client errors on a weeks-old release (F3), 6 deploy chunk-skew errors from builds without the fix, and 1
   injected browser extension (F1).
 
+### F7. An empty reply on the last turn crashes the decision
+
+- `triage.investigate()` retries a turn whose reply is empty (`continue`). On the last turn there is no turn
+  left, the loop ends, and the function returns `None`; `triage()` returns it, and acting on it fails.
+- Seen in the replay with gpt-oss:20b on X3 (2026-10-30): a reasoning model whose answer was cut off. Production's
+  model rarely returns empty, which is why it has not shown up there. The replay records it as an escalation with
+  "no terminal decision" and counts it (`no_decision`).
+- Fix: after the loop, fall through to the existing "no terminal decision" escalation, as the non-JSON path does.
+
 ## 3. Suggestions for the fleet
 
 Each is a change the replay can measure before it ships: freeze the change, replay the 93 labelled decisions with
