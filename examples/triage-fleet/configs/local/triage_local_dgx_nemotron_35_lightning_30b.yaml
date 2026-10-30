@@ -8,6 +8,7 @@ params:
   provider: gateway
   model: "nemotron-3.5-lightning:30b"
   url: http://100.69.49.126:11434/v1/chat/completions
+  call_timeout_s: 600
   machine: dgx
   usd_per_mtok_in: 0
   usd_per_mtok_out: 0
