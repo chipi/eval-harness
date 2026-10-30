@@ -1,0 +1,79 @@
+{
+  "adapter": "examples/signal-fleet-dedup/adapter.py",
+  "build": {
+    "dirty": false,
+    "ref": "d67d421fb69a75a0fb94fdf315ac45b37dd309c0",
+    "source": "git"
+  },
+  "config_id": "dedup_pinned_f07efa9_v1",
+  "created_at": "2026-10-30T14:31:31Z",
+  "dataset_id": "fleet_dedup_v1",
+  "fingerprint": {
+    "arm": {
+      "config_id": "dedup_pinned_f07efa9_v1",
+      "params": {
+        "fleet_commit": "f07efa9"
+      }
+    },
+    "data": {
+      "dataset_id": "fleet_dedup_v1",
+      "items_sha256": "b751fc5f940e7ad27f2470029ce7a87409a6b9b832d2da9eaa961eb9363e6a92",
+      "n_items": 100,
+      "reference_id": null,
+      "reference_tier": null,
+      "references_sha256": null
+    },
+    "hash": "50ea2a8fd81d0a942ab057f471a1cfa7024a0aa611df42a47b212c6ce493c163",
+    "host": {
+      "cpu_count": 32,
+      "label": null,
+      "platform": "Linux/x86_64",
+      "processor": null,
+      "python": "3.14.7",
+      "release": "7.2.5-3-omarchy"
+    },
+    "instrument": {
+      "adapter": {
+        "id": "examples/signal-fleet-dedup/adapter.py",
+        "sha256": "8104cf634a23b4134744729d631aaef79571f8e0a076ae5fe691d1f039471ff3"
+      },
+      "harness": {
+        "code_sha256": "0ab386969208f46c7448153422d5a5ab07833d963869b69fc216a6cd28feb110",
+        "commit": "d67d421fb69a",
+        "dirty": false,
+        "installed": false,
+        "version": "0.5.0"
+      }
+    },
+    "system_under_test": {
+      "libraries": {
+        "anthropic": "2.3.0",
+        "numpy": "2.5.4",
+        "openai": "3.41.0",
+        "rouge-score": "0.1.2"
+      },
+      "model": {
+        "identity_declared": false
+      }
+    },
+    "version": 4
+  },
+  "metric_directions": {
+    "class_match": "higher",
+    "key_match": "higher"
+  },
+  "metric_kinds": {
+    "resumed": "descriptive"
+  },
+  "n_items": 100,
+  "params": {
+    "fleet_commit": "f07efa9"
+  },
+  "primary_metric": "key_match",
+  "providers_seen": {},
+  "run_id": "dedup_pinned_f07efa9_v1_20261030T143130Z",
+  "scores": {
+    "latency_ms": 0.17378,
+    "resumed": 0.0
+  }
+}
