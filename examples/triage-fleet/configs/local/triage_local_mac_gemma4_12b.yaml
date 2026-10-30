@@ -8,6 +8,7 @@ params:
   provider: gateway
   model: "gemma4:12b"
   url: http://127.0.0.1:11435/v1/chat/completions
+  call_timeout_s: 600
   machine: mac
   usd_per_mtok_in: 0
   usd_per_mtok_out: 0

@@ -19,6 +19,8 @@ params:
              (http://127.0.0.1:11434/v1/chat/completions); default SF_OPENROUTER_URL. A local server
              takes any key.
   machine    optional: where a self-hosted model runs (x3, dgx, mac), recorded with the run
+  call_timeout_s   optional: each model call's time limit, in place of the fleet's own 90 s (a self-hosted
+             model on slow hardware takes longer than production's budget; the run records the value)
   usd_per_mtok_in, usd_per_mtok_out   the model's prices, for cost (the fleet knows only its own)
   stub_disposition   with provider stub: the decision it always reaches (default dismiss)
 """
@@ -54,7 +56,12 @@ METRIC_DIRECTIONS = {
     "model_escalated": "lower",
 }
 #: The fleet's gates write their reason first; the decision the model made before a gate changed it.
-GATE_PREFIX = {"dismiss gate:": "dismiss", "edge gate:": "dismiss", "cleanup gate:": "cleanup", "intent gate:": "file"}
+GATE_PREFIX = {
+    "dismiss gate:": "dismiss",
+    "edge gate:": "dismiss",
+    "cleanup gate:": "cleanup",
+    "intent gate:": "file",
+}
 TRANSIENT_MARKERS = ("triager call failed",)
 DISPOSITIONS = ("file", "dismiss", "escalate", "cleanup")
 
@@ -69,8 +76,7 @@ def _fleet() -> Any:
     mvp = Path(src) / "mvp" if src else None
     if mvp is None or not (mvp / "triage.py").is_file():
         raise RuntimeError(
-            "TRIAGE_FLEET_SRC must name the fleet's signal-fleet folder (with mvp/triage.py); "
-            f"got {src!r}"
+            f"TRIAGE_FLEET_SRC must name the fleet's signal-fleet folder (with mvp/triage.py); got {src!r}"
         )
     os.environ["SF_OBSERV_DISABLED"] = "1"
     os.environ.setdefault("OPENROUTER_API_KEY", "unset")
@@ -82,7 +88,12 @@ def _fleet() -> Any:
     real_post = triage.post_json
 
     def tagged(url: str, body: dict, *a: Any, **k: Any) -> Any:
-        body = {**body, "metadata": {**(body.get("metadata") or {}), "tags": ["evh-eval"], "trace_name": "evh-eval"}}
+        body = {
+            **body,
+            "metadata": {**(body.get("metadata") or {}), "tags": ["evh-eval"], "trace_name": "evh-eval"},
+        }
+        if _FLEET.get("timeout"):  # an arm's call_timeout_s, over the fleet's own (90 s)
+            k["timeout"] = _FLEET["timeout"]
         return real_post(url, body, *a, **k)
 
     triage.post_json = tagged
@@ -114,8 +125,14 @@ def _stub_call(disposition: str):
         if disposition == "cleanup":
             decision["marker"] = "stub"
         if disposition == "file":
-            decision["file"] = {"work_type": "bug", "title": "stub", "symptom": "stub", "area": "stub",
-                                "evidence": ["stub"], "acceptance": []}
+            decision["file"] = {
+                "work_type": "bug",
+                "title": "stub",
+                "symptom": "stub",
+                "area": "stub",
+                "evidence": ["stub"],
+                "acceptance": [],
+            }
         return json.dumps(decision), {"prompt_tokens": 1000, "completion_tokens": 100}
 
     return call
@@ -135,6 +152,7 @@ def call_system(text: str, params: dict[str, Any]) -> Result:
         config.TRIAGE_MODEL = params["model"]
         _FLEET.setdefault("default_url", config.OPENROUTER_URL)
         config.OPENROUTER_URL = params.get("url") or _FLEET["default_url"]
+        _FLEET["timeout"] = params.get("call_timeout_s")
     else:
         raise ValueError(f"provider {provider!r}: gateway or stub")
     t0 = time.monotonic()
@@ -153,7 +171,10 @@ def call_system(text: str, params: dict[str, Any]) -> Result:
         tokens_out=tout,
         cost_usd=cost,
         latency_ms=ms,
-        extra={"n_probes": float(meta.get("n_probes") or 0), "table_miss": float(bool(meta.get("table_miss")))},
+        extra={
+            "n_probes": float(meta.get("n_probes") or 0),
+            "table_miss": float(bool(meta.get("table_miss"))),
+        },
         meta={"model": meta.get("model"), "prompt_sha": meta.get("prompt_sha"), "gates": meta.get("gates")},
     )
 
@@ -183,7 +204,9 @@ def score(output: str, reference: str | None) -> dict[str, float]:
     Unlabelled items carry no reference key at all, so they never count."""
     out = json.loads(output) or {}
     row = _score(out.get("disposition"), reference)
-    row.update({f"model_{k}": v for k, v in _score(model_disposition(out), reference).items() if k != "silent_drop"})
+    row.update(
+        {f"model_{k}": v for k, v in _score(model_disposition(out), reference).items() if k != "silent_drop"}
+    )
     if "false_dismiss" in row or "false_alarm" in row:
         # The combined cost (owner, 2026-10-30): a missed real problem costs MISS_PRICE false alarms.
         row["triage_cost"] = _cost(row, "", MISS_PRICE)
