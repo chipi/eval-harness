@@ -112,16 +112,35 @@ regressions. Tag `v1`.
 2. **Rebuild** `decisions.jsonl` with the close comments and the better join (homelab, on the mini), and scrub it.
    **Write** `verdicts.jsonl` from the owner's verdicts and labels (the labelling sheet), plus the outcome and
    fixture labels, each marked with its `source`.
-3. **Create the repository and upload.** **Check on first publish:**
+3. **Scrub, then check, before anything leaves the machine.** Three layers:
+   - **The fleet's scrubber** (`signal-fleet/mvp/scrub.py`), in two tiers:
+     - secrets are redacted, and the scrub fails if any remain;
+     - production identifiers are mapped to stable fake ones (`acme/orrery`, hosts, paths, commit shas).
+
+     It runs on both files, `verdicts.jsonl` included: the close comments name commits and repositories.
+   - **Our own check** of the scrubbed files:
+     - gitleaks;
+     - a pattern scan for IP addresses, emails, tailnet host names, home paths, real domains and repository
+       names, tokens, keys and JWTs, and the operator's host names.
+
+     The v1 file as delivered (2026-10-30): **0 hits on all of them**. 266 IPs were already `<ip>`, and 300
+     identifiers already fake.
+   - **One open item: browser user-agent strings.** 64 occurrences (15 distinct) in GlitchTip event details,
+     from Orrery's visitors. Proposal: reduce each to the browser family and major version ("Chrome 141"),
+     either as a rule in the fleet's scrubber (the fleet's repository) or as a pass in the build script. Owner's
+     call.
+
+   Nothing is uploaded unless all three layers pass. The repository starts **private**.
+4. **Create the repository and upload.** **Check on first publish:**
    - with the `huggingface_hub` Python package, `create_repo(repo_type="dataset")`, `upload_folder(...)`,
      `create_tag("v1")`;
    - it needs a Hugging Face token with write access. The owner runs `hf auth login` once, or gives a token in an
      environment variable;
    - the package goes into this worktree's own virtual environment, not a shared one, and is a development tool,
      not a harness dependency.
-4. **Read it back.** Check the viewer shows both tables, download `resolve/v1/data/decisions.jsonl`, and compare
+5. **Read it back.** Check the viewer shows both tables, download `resolve/v1/data/decisions.jsonl`, and compare
    its sha256 with the file we uploaded.
-5. **The owner reads the card**, then the repository is made public, if it started private.
+6. **The owner reads the card and a sample**, then the repository is made public, if it started private.
 
 ## 4. How this repository uses it
 
