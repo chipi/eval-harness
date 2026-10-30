@@ -49,7 +49,7 @@ mini.
 | `fleet_dedup_v1` | D7 | 100 | the dedup regression guard |
 | `orrery_triage_v2` and on | D8, monthly | about 60 a month, all exact | production's own question |
 
-## 3a. Where the triage data lives: Hugging Face (owner, 2026-10-30)
+## 3a. Where the triage data lives: Hugging Face (owner, 2026-10-30; the walk-through: [HF_DATASETS_0.6.0.md](HF_DATASETS_0.6.0.md))
 
 The raw items are kept the way every experiment here keeps them: **not in git, fetched and hash-checked**.
 
@@ -63,8 +63,7 @@ The raw items are kept the way every experiment here keeps them: **not in git, f
 
 | HF dataset | type | v1 | later versions |
 |---|---|---|---|
-| `orrery-triage-decisions` | **agent decisions captured from production, replayable**: per item the signal the triage agent received, the answers to every probe it could ask (as of the decision's time; exact, rebuilt or unavailable, marked per probe), and the decision production made. An evaluation set for a classifier-like agent step (dismiss, file, escalate, cleanup), not a training set | revision `v1`: the 236 Orrery decisions 2026-07-25 → 2026-10-29 (test signals removed), all evidence levels, scrubbed by the fleet's `scrub.py` | `v2`, `v3`, …: monthly, from the fleet's per-decision capture, all exact |
-| `orrery-triage-verdicts` (or a config of the same repository) | **a reference**: per item the label the evaluation is decided on, from the owner's verdicts on the issues and his labels on exact items; plus the outcome mapping's labels, marked as outcomes | revision `v1`, beside the decisions' `v1` | with each version |
+| `orrery-triage` (configs `decisions`, `verdicts`) | **agent decisions captured from production, replayable**: per item the signal the triage agent received, the answers to every probe it could ask (as of the decision's time; exact, rebuilt or unavailable, marked per probe), and the decision production made. An evaluation set for a classifier-like agent step (dismiss, file, escalate, cleanup), not a training set | revision `v1`: the 236 Orrery decisions 2026-07-25 → 2026-10-29 (test signals removed), all evidence levels, scrubbed by the fleet's `scrub.py` | `v2`, `v3`, …: monthly, from the fleet's per-decision capture, all exact |
 | `signal-fleet-dedup` | **signals for a deterministic stage**: scrubbed error signals, to replay through the fleet's de-duplication functions; no model | revision `v1`: the 100 signals of the fleet's `reference-dedup/corpus.json` | when the corpus grows |
 
 Each dataset card says:
