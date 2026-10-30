@@ -24,3 +24,10 @@ Updated 2026-10-30T17:18Z. Every finished run re-scored under the owner's rules 
 | 18 | phi4_14b | X3 (AMD) | 1 | **0.769** | 0.615 | 1.154 | 5.0 | 25.0 | 0.862 | 0.00000 | 16.9 | out |
 | 19 | mistral_large_4 | OpenRouter | 1 | **0.800** | 0.615 | 1.262 | 6.0 | 22.0 | 1.923 | 0.00687 | 17.3 | out |
 | 20 | llama4_scout | DGX (NVIDIA) | 1 | **1.262** | 0.923 | 2.108 | 11.0 | 27.0 | 1.569 | 0.00000 | 13.4 | out |
+
+## Skipped for now, to troubleshoot after the runs (owner, 2026-10-30)
+
+- **gemma4:12b** (all three machines). The Mac stopped at 0 of 65: the first decision timed out 8 times at 600 s
+  each. X3 stopped at 12 of 65 under the fleet's old 90 s limit. On a one-line question the same model on the Mac
+  answers in 15 s (81 tokens at about 39 tokens/s, thinking included), so the hang is specific to the triage prompt;
+  the cause is not known yet. The partial runs are kept, uncommitted, for the troubleshooting.
