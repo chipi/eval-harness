@@ -258,3 +258,14 @@ against.
   That is the closest thing to "the instrument agrees with the world" a production dataset has.
 
 **Nothing changes for the six experiments**, and `text: hidden` is not set: the data is public.
+
+## 8. After v1: the end-to-end loop (owner, 2026-10-30)
+
+The triage experiment is the harness's whole loop on one real system, in this order:
+
+1. **Compare** (0.6.0): the 10 arms on the owner-labelled decisions; cost, quality, speed; the podium. Both scores are
+   kept: as the fleet decided (after its gates) and as the model decided (before them).
+2. **Tune** (0.7.0, the harness's tuning part): the podium arms, and the fleet's brief and gates
+   ([TRIAGE_FLEET_LESSONS_0.6.0.md](TRIAGE_FLEET_LESSONS_0.6.0.md)), to separate them and improve on them.
+3. **Ship and monitor**: deploy the new fleet version, then check from production that it keeps doing what the
+   evaluation measured; the probe capture (live since 2026-10-29) makes each month an exact version.
