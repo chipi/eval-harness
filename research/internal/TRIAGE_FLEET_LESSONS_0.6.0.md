@@ -140,3 +140,6 @@ The dataset, labels and replay exist; a change to the prompt or a gate is one mo
 - The filing stage's own correctness (dedup, grouping): the dedup dataset `chipi-nbgd/signal-fleet-dedup` covers its
   normalisation functions, not this.
 - None of the suggestions has been tried; each needs its replay before it ships.
+- Hosted Llama 4 Scout (OpenRouter, 2026-10-30): not runnable as the fleet calls it. No endpoint supports
+  `response_format: json_object` (OpenRouter's routing removed all four), so Scout runs self-hosted only. A fleet
+  that needs JSON mode is tied to the providers that offer it: worth knowing before switching models.

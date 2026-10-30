@@ -1,0 +1,110 @@
+{
+  "adapter": "examples/triage-fleet/adapter.py",
+  "build": {
+    "dirty": false,
+    "ref": "045ce221b383a3dd047b5de8d2a0a9d3848338cb",
+    "source": "git"
+  },
+  "config_id": "triage_gpt_6_luna_v1",
+  "created_at": "2026-10-30T14:10:51Z",
+  "dataset_id": "orrery_triage_v1_labelled",
+  "fingerprint": {
+    "arm": {
+      "config_id": "triage_gpt_6_luna_v1",
+      "params": {
+        "model": "eval-gpt-6-luna",
+        "provider": "gateway",
+        "usd_per_mtok_in": 0.1,
+        "usd_per_mtok_out": 0.5
+      }
+    },
+    "data": {
+      "dataset_id": "orrery_triage_v1_labelled",
+      "items_sha256": "d428aca49adc8e762dcbbcad6c9a1dba1ac4e4e3315ff26025af975faba1176a",
+      "n_items": 65,
+      "reference_id": "gold/orrery_triage_v1_labelled",
+      "reference_tier": "gold",
+      "references_sha256": "f617ad3bb9bb9f5feb8ffe54e0ef1b9b05dfb316fac13f63a925f9d35fb191cd"
+    },
+    "hash": "9ca8cfe15c3bdb17151b3d096189be3c75242e1a2c426f156b65c55545fee80f",
+    "host": {
+      "cpu_count": 32,
+      "label": null,
+      "platform": "Linux/x86_64",
+      "processor": null,
+      "python": "3.14.7",
+      "release": "7.2.5-3-omarchy"
+    },
+    "instrument": {
+      "adapter": {
+        "id": "examples/triage-fleet/adapter.py",
+        "sha256": "9e899d6853cb4065ab07f1d44c08120d0a19ad282abdfdc0e95a3e63262cca81"
+      },
+      "harness": {
+        "code_sha256": "0ab386969208f46c7448153422d5a5ab07833d963869b69fc216a6cd28feb110",
+        "commit": "045ce221b383",
+        "dirty": false,
+        "installed": false,
+        "version": "0.5.0"
+      }
+    },
+    "system_under_test": {
+      "libraries": {
+        "anthropic": "2.3.0",
+        "numpy": "2.5.4",
+        "openai": "3.41.0",
+        "rouge-score": "0.1.2"
+      },
+      "model": {
+        "identity_declared": false
+      }
+    },
+    "version": 4
+  },
+  "goal": "triage_orrery",
+  "metric_directions": {
+    "escalated": "lower",
+    "false_alarm": "lower",
+    "false_dismiss": "lower",
+    "model_escalated": "lower",
+    "model_false_alarm": "lower",
+    "model_false_dismiss": "lower",
+    "silent_drop": "lower",
+    "table_miss": "lower"
+  },
+  "metric_kinds": {
+    "resumed": "descriptive"
+  },
+  "n_items": 65,
+  "params": {
+    "model": "eval-gpt-6-luna",
+    "provider": "gateway",
+    "usd_per_mtok_in": 0.1,
+    "usd_per_mtok_out": 0.5
+  },
+  "primary_metric": "false_dismiss",
+  "providers_seen": {},
+  "reference_tier": "gold",
+  "repeat_index": 1,
+  "run_id": "triage_gpt_6_luna_v1_20261030T135822Z_r1",
+  "scores": {
+    "correct": 0.630769,
+    "cost_usd": 0.000704,
+    "escalated": 0.215385,
+    "false_alarm": 0.645161,
+    "false_dismiss": 0.117647,
+    "latency_ms": 11472.150635,
+    "model_correct": 0.661538,
+    "model_escalated": 0.046154,
+    "model_false_alarm": 0.387097,
+    "model_false_dismiss": 0.205882,
+    "n_probes": 2.092308,
+    "resumed": 0.0,
+    "table_miss": 0.0,
+    "tokens_in": 4153.969231,
+    "tokens_out": 578.2,
+    "total_cost_usd": 0.0457923,
+    "total_tokens_in": 270008.0,
+    "total_tokens_out": 37583.0
+  }
+}
