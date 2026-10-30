@@ -73,9 +73,11 @@ fleet's production decisions showed. Every number below was measured; the comman
 
 ### F6. What production gets right and wrong against the labels
 
-- **Provisional** (first labelling pass, superseded by the re-labelling of 2026-10-30; to be re-measured): on the 93
-  decisions with an owner label, production was right on 59, raised **24 false alarms** (filed or escalated noise)
-  and made **10 false dismissals** (dismissed a problem later fixed).
+- On the 93 decisions with an owner label (final, 2026-10-30), production was right on 59, raised **24 false
+  alarms** (filed or escalated noise) and made **10 false dismissals** (dismissed a problem later fixed).
+- Of the 12 exact decisions where the labeller disagreed with production, the owner labelled all 12 `dismiss`: 5
+  stale-client errors on a weeks-old release (F3), 6 deploy chunk-skew errors from builds without the fix, and 1
+  injected browser extension (F1).
 
 ## 3. Suggestions for the fleet
 
