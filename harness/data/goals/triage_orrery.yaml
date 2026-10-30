@@ -12,9 +12,9 @@ success_criteria:
   # The combined cost (owner, 2026-10-30): a missed real problem costs 5 false alarms; triage_cost_p3 and
   # triage_cost_p10 show whether the ranking depends on the 5.
   primary: {measure: triage_cost, direction: lower}
-  # A ceiling on noise: no more false alarms than production made on these decisions (21 of 31 = 0.6774).
+  # A ceiling on noise: no more false alarms than production makes on these decisions: its mean over 4 passes, 85 of 124 = 21.25 of 31 = 0.6855.
   axes:
-    false_alarm: {direction: lower, limit: 0.6775, note: "no more false alarms than production (21 of 31 noise decisions, 0.6774)"}
+    false_alarm: {direction: lower, limit: 0.6855, note: "no more false alarms than production (its 4-pass mean: 21.25 of 31 noise decisions, 0.6855)"}
   min_items: 30   # triage_cost is scored on all 65 labelled decisions
   strategy: frugal
 datasets:
