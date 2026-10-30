@@ -1,0 +1,109 @@
+{
+  "adapter": "examples/triage-fleet/adapter.py",
+  "build": {
+    "dirty": false,
+    "ref": "927bc6d80bd0de0f9b2e0cb05025ee0a56787f8e",
+    "source": "git"
+  },
+  "config_id": "triage_gemini_35_flash_lite_v1",
+  "created_at": "2026-10-30T13:00:12Z",
+  "dataset_id": "orrery_triage_v1_labelled",
+  "fingerprint": {
+    "arm": {
+      "config_id": "triage_gemini_35_flash_lite_v1",
+      "params": {
+        "model": "eval-gemini-35-flash-lite",
+        "provider": "gateway",
+        "usd_per_mtok_in": 0.3,
+        "usd_per_mtok_out": 2.5
+      }
+    },
+    "data": {
+      "dataset_id": "orrery_triage_v1_labelled",
+      "items_sha256": "d428aca49adc8e762dcbbcad6c9a1dba1ac4e4e3315ff26025af975faba1176a",
+      "n_items": 65,
+      "reference_id": "gold/orrery_triage_v1_labelled",
+      "reference_tier": "gold",
+      "references_sha256": "f617ad3bb9bb9f5feb8ffe54e0ef1b9b05dfb316fac13f63a925f9d35fb191cd"
+    },
+    "hash": "bc3d86acfd4ab3151ad65c87018986f6b6f362f59b328ce5be1dc9f02af02a2b",
+    "host": {
+      "cpu_count": 32,
+      "label": null,
+      "platform": "Linux/x86_64",
+      "processor": null,
+      "python": "3.14.7",
+      "release": "7.2.5-3-omarchy"
+    },
+    "instrument": {
+      "adapter": {
+        "id": "examples/triage-fleet/adapter.py",
+        "sha256": "ed10c946cea7f30ffd339917d6aeaa7b896b3a7173ae6a06720f8f8c5494e5ae"
+      },
+      "harness": {
+        "code_sha256": "0ab386969208f46c7448153422d5a5ab07833d963869b69fc216a6cd28feb110",
+        "commit": "927bc6d80bd0",
+        "dirty": false,
+        "installed": false,
+        "version": "0.5.0"
+      }
+    },
+    "system_under_test": {
+      "libraries": {
+        "anthropic": "2.3.0",
+        "numpy": "2.5.4",
+        "openai": "3.41.0",
+        "rouge-score": "0.1.2"
+      },
+      "model": {
+        "identity_declared": false
+      }
+    },
+    "version": 4
+  },
+  "goal": "triage_orrery",
+  "metric_directions": {
+    "escalated": "lower",
+    "false_alarm": "lower",
+    "false_dismiss": "lower",
+    "model_escalated": "lower",
+    "model_false_alarm": "lower",
+    "model_false_dismiss": "lower",
+    "silent_drop": "lower",
+    "table_miss": "lower"
+  },
+  "metric_kinds": {
+    "resumed": "descriptive"
+  },
+  "n_items": 65,
+  "params": {
+    "model": "eval-gemini-35-flash-lite",
+    "provider": "gateway",
+    "usd_per_mtok_in": 0.3,
+    "usd_per_mtok_out": 2.5
+  },
+  "primary_metric": "false_dismiss",
+  "providers_seen": {},
+  "reference_tier": "gold",
+  "run_id": "triage_gemini_35_flash_lite_v1_20261030T125624Z",
+  "scores": {
+    "correct": 0.615385,
+    "cost_usd": 0.001368,
+    "escalated": 0.538462,
+    "false_alarm": 0.645161,
+    "false_dismiss": 0.088235,
+    "latency_ms": 3487.332678,
+    "model_correct": 0.507692,
+    "model_escalated": 0.0,
+    "model_false_alarm": 0.225806,
+    "model_false_dismiss": 0.735294,
+    "n_probes": 1.2,
+    "resumed": 0.0,
+    "table_miss": 0.0,
+    "tokens_in": 2929.630769,
+    "tokens_out": 195.538462,
+    "total_cost_usd": 0.0889028,
+    "total_tokens_in": 190426.0,
+    "total_tokens_out": 12710.0
+  }
+}

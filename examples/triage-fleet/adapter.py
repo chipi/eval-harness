@@ -14,7 +14,11 @@ params:
   provider   "gateway" (the fleet's model gateway, OpenAI-style; URL and key from the environment:
              SF_OPENROUTER_URL, OPENROUTER_API_KEY) or "stub" (no model: a fixed decision, offline,
              for wiring the path through)
-  model      the gateway alias, e.g. fleet-triage-pro
+  model      the gateway alias, e.g. fleet-triage-pro, or a local server's model tag (gpt-oss:20b)
+  url        optional: the chat-completions URL for this arm, e.g. a self-hosted Ollama
+             (http://127.0.0.1:11434/v1/chat/completions); default SF_OPENROUTER_URL. A local server
+             takes any key.
+  machine    optional: where a self-hosted model runs (x3, dgx, mac), recorded with the run
   usd_per_mtok_in, usd_per_mtok_out   the model's prices, for cost (the fleet knows only its own)
   stub_disposition   with provider stub: the decision it always reaches (default dismiss)
 """
@@ -122,6 +126,8 @@ def call_system(text: str, params: dict[str, Any]) -> Result:
     elif provider == "gateway":
         triage._call = _FLEET["real_call"]
         config.TRIAGE_MODEL = params["model"]
+        _FLEET.setdefault("default_url", config.OPENROUTER_URL)
+        config.OPENROUTER_URL = params.get("url") or _FLEET["default_url"]
     else:
         raise ValueError(f"provider {provider!r}: gateway or stub")
     t0 = time.monotonic()
