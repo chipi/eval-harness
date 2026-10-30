@@ -10,6 +10,7 @@ check going red on each kind of bad record; a capture's files and hashes; no ove
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -315,6 +316,27 @@ check(
 )
 rec_doc["outcome"] = {"verdict": "fixed"}  # put it back as it was
 rec_file.write_text(json.dumps(rec_doc))
+
+# ── V17: a capture whose records are not fetched is named, not failed; a partial one fails ─────
+recs_dir = rec_file.parent
+aside = proj / "records-aside"
+shutil.move(str(recs_dir), str(aside))
+r = evh("validate")
+check(
+    "V17: a capture with no record files (not fetched) is named, not failed",
+    "not fetched here" in out(r) and "c1" in out(r) and "FAIL V17" not in out(r),
+    out(r)[-400:],
+)
+recs_dir.mkdir()
+shutil.copy(aside / "a2.json", recs_dir / "a2.json")
+r = evh("validate")
+check(
+    "V17: a capture with some records missing still fails",
+    r.returncode != 0 and "FAIL V17" in out(r) and "record file missing" in out(r),
+    out(r)[-400:],
+)
+shutil.rmtree(recs_dir)
+shutil.move(str(aside), str(recs_dir))
 
 # ── capture-scrub ──────────────────────────────────────────────────────────────────────────
 (proj / "scrub.py").write_text(

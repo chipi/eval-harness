@@ -1166,7 +1166,9 @@ def v16_references() -> None:
 def v17_captures() -> None:
     """V17: every capture's records are the ones it recorded (RFC-019): each record file present,
     its id the one listed, and its hash the capture's `sha256` (the whole record, outcome included,
-    so an edited outcome is caught as surely as an edited body)."""
+    so an edited outcome is caught as surely as an edited body). A capture with no record file at all
+    is not fetched yet (records are content a project may keep out of git, restored by its fetcher):
+    named, not failed. One with some records and not others fails."""
     from evaluation_harness._importers import record_sha256  # noqa: PLC0415
 
     caps = sorted(CAPTURES.glob("*/capture.json")) if CAPTURES.is_dir() else []
@@ -1175,8 +1177,12 @@ def v17_captures() -> None:
         return
     bad: list[str] = []
     n = 0
+    unfetched = []
     for c in caps:
         doc = read_json(c)
+        if doc.get("records") and not any((c.parent / "records").glob("*.json")):
+            unfetched.append(c.parent.name)
+            continue
         for entry in doc.get("records") or []:
             n += 1
             rf = c.parent / "records" / f"{entry.get('id')}.json"
@@ -1192,8 +1198,10 @@ def v17_captures() -> None:
             )
     for b in bad[:10]:
         print(f"       {b}")
+    if unfetched:
+        print(f"  --   V17 captures not fetched here (no record files): {', '.join(unfetched)}")
     check(
-        f"V17 captures — {len(caps)} capture(s), {n} record(s) match their hashes",
+        f"V17 captures — {len(caps) - len(unfetched)} capture(s), {n} record(s) match their hashes",
         not bad,
         f"{len(bad)} problem(s)",
     )

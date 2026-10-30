@@ -1,0 +1,20 @@
+# The triage goal (copy to data/goals/triage_orrery.yaml). No limits in v1: production escalates
+# 22% of these decisions, so EVAL.md's 5% bar (set on curated fixtures) would fail every arm.
+goal_id: triage_orrery
+schema_version: "0.1"
+title: Triage decisions on Orrery's error signals
+statement: Decide for each error signal whether to file an issue, dismiss it, escalate it to a person, or clean it up, the way the person who later closed the issue would have wanted.
+status: active
+context:
+  audience: the operator of the triage fleet
+decision: Which model the triage agent runs.
+success_criteria:
+  primary: {measure: false_dismiss, direction: lower}
+  min_items: 30   # false_dismiss is scored on the 34 items labelled a real problem
+  strategy: frugal
+datasets:
+  - {dataset_id: orrery_triage_v1_labelled, role: dev, notes: "65 decisions the owner labelled, one per fingerprint, 2026-07-25 to 2026-10-29; mostly rebuilt evidence"}
+references:
+  - {reference_id: gold/orrery_triage_v1_labelled, tier: gold, format: label}
+measures:
+  - {id: false_dismiss, kind: metric, validity: unvalidated}

@@ -1,7 +1,7 @@
 # gemini-3.5-flash-lite: Google, small tier (its cheapest current model; 3x Haiku's price).
 # Arms differ only in the model: the fleet's prompt, probes and gates are the same for every arm.
 config_id: triage_gemini_35_flash_lite_v1
-dataset_id: orrery_triage_v1
+dataset_id: orrery_triage_v1_labelled
 adapter: ../adapter.py
 goal: triage_orrery
 params:

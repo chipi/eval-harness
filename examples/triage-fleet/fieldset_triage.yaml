@@ -40,3 +40,9 @@ fields:
     label: Decided on
     description: The day the fleet decided.
     public: true
+  - name: labelled
+    type: choice
+    values: ["yes", "no"]
+    label: Owner-labelled
+    description: "yes: the owner's label exists for this decision (verdicts.jsonl, source owner-*)."
+    public: true

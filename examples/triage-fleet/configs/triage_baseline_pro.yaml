@@ -1,7 +1,7 @@
 # Production's model with production's settings (fleet-triage-pro's), billed to the evals key. The baseline.
 # Arms differ only in the model: the fleet's prompt, probes and gates are the same for every arm.
 config_id: triage_baseline_pro_v1
-dataset_id: orrery_triage_v1
+dataset_id: orrery_triage_v1_labelled
 adapter: ../adapter.py
 goal: triage_orrery
 params:

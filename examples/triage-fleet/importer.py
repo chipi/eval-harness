@@ -8,7 +8,7 @@ is chipi-nbgd/orrery-triage on Hugging Face. This importer turns a line into a r
   id          the occurrence id
   body        {signal, probes}: exactly what the agent can see, nothing about what happened next
   fields      evidence_level, decision_kind, fleet_disposition, fleet_model, stage, fingerprint,
-              decision_date
+              decision_date, and `labelled` (yes/no: the owner labelled it, in the query's `verdicts` file)
   created_at  when the fleet decided
   outcome     FLAT fields the reference rules read (RFC-019 §5: the project computes them):
                 issue_number, issue_relation, issue_verdict (fixed / noise / duplicate / open /
@@ -21,7 +21,7 @@ one filed later on its fingerprint. Title-only matches never carry a verdict: on
 37 fingerprints.
 
     evh capture --importer examples/triage-fleet/importer.py:Importer \\
-        --query '{"path": "decisions.jsonl"}' --capture orrery_2026_10
+        --query '{"path": "decisions.jsonl", "verdicts": "verdicts.jsonl"}' --capture orrery_2026_10
 """
 
 from __future__ import annotations
@@ -168,6 +168,12 @@ class Importer:
             json.loads(x) for x in Path(query["path"]).read_text(encoding="utf-8").splitlines() if x.strip()
         ]
         verdicts = issue_verdicts(rows)  # a comment can name another issue: all of them first
+        owner = set()
+        if query.get("verdicts"):
+            for x in Path(query["verdicts"]).read_text(encoding="utf-8").splitlines():
+                v = json.loads(x) if x.strip() else {}
+                if str(v.get("source", "")).startswith("owner-"):
+                    owner.add(v["id"])
         for row in rows:
             fd = row.get("fleet_decision") or {}
             prov = row.get("provenance") or {}
@@ -183,6 +189,7 @@ class Importer:
                     "stage": fd.get("stage") or "",
                     "fingerprint": fd.get("fingerprint"),
                     "decision_date": str(ts)[:10] if ts else None,
+                    **({"labelled": "yes" if row["id"] in owner else "no"} if query.get("verdicts") else {}),
                 },
                 "created_at": ts,
                 "source": {"system": "signal-fleet"},

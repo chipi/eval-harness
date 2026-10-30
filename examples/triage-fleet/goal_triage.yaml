@@ -10,11 +10,11 @@ context:
 decision: Which model the triage agent runs.
 success_criteria:
   primary: {measure: false_dismiss, direction: lower}
-  min_items: 40
+  min_items: 30   # false_dismiss is scored on the 34 items labelled a real problem
   strategy: frugal
 datasets:
-  - {dataset_id: orrery_triage_v1, role: dev, notes: "236 decisions, 2026-07-25 to 2026-10-29; mostly rebuilt evidence"}
+  - {dataset_id: orrery_triage_v1_labelled, role: dev, notes: "65 decisions the owner labelled, one per fingerprint, 2026-07-25 to 2026-10-29; mostly rebuilt evidence"}
 references:
-  - {reference_id: gold/orrery_triage_v1, tier: gold, format: label}
+  - {reference_id: gold/orrery_triage_v1_labelled, tier: gold, format: label}
 measures:
   - {id: false_dismiss, kind: metric, validity: unvalidated}

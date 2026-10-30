@@ -301,3 +301,10 @@ data/external/
 # that run's outputs, rebuilt with `evh reference-create --from-run <run_id>` (the manifest
 # names the run).
 !data/references/silver/*/manifest.json
+
+# The triage fleet's decisions (examples/triage-fleet/fetch.py): published on Hugging Face
+# (chipi-nbgd/orrery-triage, CC-BY-4.0) and fetched by revision; git holds their ids and hashes.
+data/sources/orrery_triage_*/
+data/sources/orrery_triage_v1.hf/
+# A capture's records are the captured content; capture.json (ids and hashes) is what git holds.
+data/captures/*/records/

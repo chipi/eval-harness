@@ -1,6 +1,6 @@
 # A stand-in, no model and no network: always escalates. For wiring the path through.
 config_id: triage_stub_escalate_v1
-dataset_id: orrery_triage_v1
+dataset_id: orrery_triage_v1_labelled
 adapter: ../adapter.py
 goal: triage_orrery
 params:
