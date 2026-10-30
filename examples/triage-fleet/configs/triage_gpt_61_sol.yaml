@@ -1,0 +1,11 @@
+# gpt-6.1-sol: OpenAI, mid tier (priced as Sonnet).
+# Arms differ only in the model: the fleet's prompt, probes and gates are the same for every arm.
+config_id: triage_gpt_61_sol_v1
+dataset_id: orrery_triage_v1
+adapter: ../adapter.py
+goal: triage_orrery
+params:
+  provider: gateway
+  model: eval-gpt-61-sol
+  usd_per_mtok_in: 2.0
+  usd_per_mtok_out: 10.0
