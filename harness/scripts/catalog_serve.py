@@ -54,7 +54,7 @@ from urllib.parse import parse_qs, unquote, urlparse
 
 HERE = Path(__file__).resolve().parent
 
-from evaluation_harness import _fields, stats  # noqa: E402
+from evaluation_harness import _fields, _visibility, stats  # noqa: E402
 from evaluation_harness._common import ROOT, SPEED_KEYS  # noqa: E402
 from evaluation_harness.catalog_adapter import Adapter, item_fields, load_catalog_adapter  # noqa: E402
 
@@ -566,7 +566,7 @@ def _conditions(arms: list, metric: str) -> dict | None:
 
 
 #: An item id: the name of a file in a run's outputs/ or a reference, never a path.
-_ITEM_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,199}")
+_ITEM_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:@+=-]{0,199}")
 
 
 def plain_item(item_id: str) -> bool:
@@ -582,13 +582,17 @@ def item(params: dict) -> dict:
     if not it or not arms or any(not _arms_known(a) for a in arms):
         return {"error": "need arms=<arm>,... known to the catalog and item=<item_id>"}
     if not plain_item(it):  # an item is a file's name in a run, never a path: ../ would leave it
-        return {"error": "not an item id: letters, digits, '.', '_', '-'"}
+        return {"error": "not an item id: letters, digits and . _ : @ + = -"}
     # PUBLIC MODE PUBLISHES TEXT ONLY WHEN TOLD (--publish outputs,references). An arm's output
     # can quote its input (an extractive arm returns the article's own sentences) and a reference
     # can be a dataset's licensed text, so a public server serves numbers unless the deployment
     # has decided to publish them. The local inspector shows everything, on this machine.
     public = bool(LIMITS["hosts"])
     published = LIMITS.get("publish") or ()
+    dataset = A.describe(A.arms_of(arms[0])[0]).get("dataset", "")
+    if not _visibility.text_shown(dataset, public=public):
+        # `text: hidden` (RFC-019): nothing that comes from this dataset's text, whatever is published.
+        published = ()
     if public and "outputs" not in published:
         withheld = {
             "kind": "none",
@@ -602,6 +606,7 @@ def item(params: dict) -> dict:
         dict(f, value=values.get(it, {})[f["name"]])
         for f in _field_list(decl)
         if f["name"] in values.get(it, {})
+        and (_visibility.text_shown(dataset, public=public) or f["type"] not in ("text", "url"))
     ]
     ref = params.get("ref", [""])[0]
     if ref and ref not in refs:

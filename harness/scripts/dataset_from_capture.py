@@ -171,6 +171,9 @@ def main() -> int:
     ap.add_argument(
         "--field", action="append", default=[], help="a record field to keep as an item field (repeatable)"
     )
+    ap.add_argument(
+        "--hide-text", action="store_true", help="text: hidden: none of its text on any public surface"
+    )
     ap.add_argument("--description", default="")
     ap.add_argument("--force", action="store_true", help="overwrite an existing dataset nothing cites yet")
     args = ap.parse_args()
@@ -254,7 +257,11 @@ def main() -> int:
         args.description or f"{len(kept)} record(s) from capture {args.capture}",
         _relative_source_dir(src),
         lineage,
-        {"made_from": made_from, **({"tags": tags} if tags else {})},
+        {
+            "made_from": made_from,
+            **({"tags": tags} if tags else {}),
+            **({"text": "hidden"} if args.hide_text else {}),
+        },
     )
     print(
         f"{out.relative_to(DATASETS.parents[1])}  ({len(items)} item(s); {len(kept)} of {len(recs)} records kept)"

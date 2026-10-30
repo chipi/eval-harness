@@ -646,6 +646,7 @@ def test_example_scorer_suites_pass() -> None:
         ),
         ("test_importers.py", "tsv, github (events with their comments), langfuse: offline stand-ins"),
         ("test_split.py", "dataset-split: the share, stable across versions, groups kept whole, by time"),
+        ("test_hidden_text.py", "text: hidden: none of a hidden dataset's text on any public surface"),
         ("test_axes.py", "a goal's axes and strategy: limits, the tie, the tie-break, the ratios"),
         (
             "test_references.py",

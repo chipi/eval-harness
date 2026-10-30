@@ -29,6 +29,7 @@
     },
     "tags": {"type": "object", "additionalProperties": {"type": "string"}, "description": "What the dataset is, as key=value pairs a project chooses (source, environment, purpose, owner): shown and filtered on, never part of its identity. Items carry their own tags (a list) below."},
     "split": {"type": "object", "description": "This dataset is one side of a split (evh dataset-split, RFC-019): the parent, the share, the rule.", "required": ["from", "heldout", "by", "part"], "properties": {"from": {"type": "string"}, "heldout": {"type": "number"}, "by": {"enum": ["hash", "time"]}, "key": {"type": ["string", "null"]}, "seed": {"type": "integer"}, "part": {"enum": ["dev", "heldout"]}}},
+    "text": {"enum": ["shown", "hidden"], "description": "hidden: no text that comes from this dataset (items, outputs, reference texts and labels, judge reasons, source links, text and URL field values) appears on any public surface (RFC-019 §4). Default shown."},
     "made_from": {
       "type": "object",
       "description": "How the items were chosen when the dataset was made from a capture (evh dataset-from-capture, RFC-019): the capture, its query, and the selection rules.",

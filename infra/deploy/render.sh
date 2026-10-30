@@ -86,14 +86,9 @@ python3 - "$ROOT/site/analytics.json" > "$OUT/inspector/mcp_umami.json" <<'PY'
 import json, sys
 print(json.dumps({"website_id": json.load(open(sys.argv[1])).get("website_id") or ""}))
 PY
-for d in "$ROOT"/harness/data/runs* "$ROOT"/harness/data/{references,datasets,goals,baselines,rounds,configs,scorers,judging-sets,judge-verdicts,profiles,fields}; do
-  [ -d "$d" ] && cp -a "$d" "$OUT/inspector/data/"
-done
-# The data files the catalog reads beside the directories (0.4.2's models.yaml: the arms page's
-# weights; without it every model read as unknown on the deployed pages).
-if [ -f "$ROOT/harness/data/models.yaml" ]; then
-  cp -a "$ROOT/harness/data/models.yaml" "$OUT/inspector/data/"
-fi
+# The data the catalog and the inspector read, with nothing a `text: hidden` dataset's text gave
+# (RFC-019) and no text git does not track: _release.py refuses such a release before copying.
+python3 "$OUT/inspector/pkg/evaluation_harness/_release.py" copy-data "$ROOT/harness/data" "$OUT/inspector/data"
 
 # The documentation, under /docs/ on the site (mkdocs.yml, site_url .../docs/).
 python3 -m mkdocs build --strict --quiet -f "$ROOT/mkdocs.yml" -d "$OUT/sites/$SITE/public/docs"

@@ -43,7 +43,7 @@ from urllib.parse import quote
 
 HERE = Path(__file__).resolve().parent
 
-from evaluation_harness import _common, _fields  # noqa: E402
+from evaluation_harness import _common, _fields, _visibility  # noqa: E402
 from evaluation_harness._common import ROOT  # noqa: E402
 from evaluation_harness.axes import (  # noqa: E402
     STRATEGIES,
@@ -1790,6 +1790,13 @@ def render_inside(A: Adapter, ds: str, inspect_arms: list[str], metric: str) -> 
             f"<code>evh dataset-profile --dataset-id {e(ds)}</code> writes one: its {e(A.item_word)}s, how long "
             f"they are, the gold's shape and where each can be read.</p>"
         )
+    hide = _visibility.hidden(ds)
+    if hide:
+        p = _visibility.public_profile(p)
+    elif any(r.get("text") for r in p.get("rows") or []) and not _texts_tracked(ds):
+        # A profile written --with-text is checked again here: text whose source git no longer
+        # tracks is not shown, whatever the profile carries.
+        p = {**p, "rows": [{k: v for k, v in r.items() if k != "text"} for r in p["rows"]]}
     it, w = p["items"], p["items"].get("words") or {}
     src = p.get("source")
     lines = [
@@ -1818,6 +1825,11 @@ def render_inside(A: Adapter, ds: str, inspect_arms: list[str], metric: str) -> 
         lines.append(
             f'<span class="note">The items changed since this profile was written: run '
             f"<code>evh dataset-profile --dataset-id {e(ds)}</code> again.</span>"
+        )
+    if hide:
+        lines.append(
+            f"This dataset's text is kept off public pages (<code>text: hidden</code>): its {e(A.item_word)}s, "
+            "their labels and links are not shown, only their number and length."
         )
     head = "".join(f"<p>{x}</p>" for x in lines)
     chart = (
@@ -1858,6 +1870,20 @@ def render_inside(A: Adapter, ds: str, inspect_arms: list[str], metric: str) -> 
         + '<p class="small muted">Each row is the profile <code>evh dataset-items --dataset-id '
         + f"{e(ds)}</code> prints; <b>inspect</b> opens the {e(A.item_word)} in the inspector with the dataset's "
         + "largest group of comparable arms, and its text where the inspector runs on a machine that has it.</p>"
+    )
+
+
+def _texts_tracked(ds: str) -> bool:
+    """Whether git still tracks every item's source file (what --with-text required when written)."""
+    from evaluation_harness import dataset_profile  # noqa: PLC0415
+
+    try:
+        d = _common.load_dataset(ds)
+    except SystemExit:
+        return False
+    src = ROOT / d.get("source_dir", "data/sources")
+    return not dataset_profile.tracked(
+        [src / (it.get("source_path") or it["item_id"]) for it in d.get("items") or []]
     )
 
 
