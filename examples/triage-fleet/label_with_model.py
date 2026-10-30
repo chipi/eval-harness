@@ -88,7 +88,7 @@ def ask(url: str, key: str, model: str, user: str) -> tuple[dict, dict]:
     body = {
         "model": model,
         "messages": [{"role": "system", "content": SYSTEM}, {"role": "user", "content": user}],
-        "max_tokens": 1500,
+        "max_tokens": 4000,
         "temperature": 0,
         "metadata": {"tags": ["evh-eval", "evh-label"]},
     }
@@ -149,8 +149,10 @@ def main() -> int:
             done[d["id"]] = d
     out, tin, tout = [], 0, 0
     for i, s in enumerate(sheet, 1):
-        if s["id"] in done and done[s["id"]]["prompt_sha"] == prompt_sha:
-            info = done[s["id"]]
+        cached = done.get(s["id"])
+        # an answer that was cut off or unreadable is asked again; a readable one is never re-paid
+        if cached and cached["prompt_sha"] == prompt_sha and parse(cached["text"])["label"]:
+            info = cached
         else:
             _, info = ask(url, key, args.model, prompt_for(rows[s["id"]]))
             info = {"id": s["id"], "prompt_sha": prompt_sha, **info}

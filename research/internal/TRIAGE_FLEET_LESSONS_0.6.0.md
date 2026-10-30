@@ -48,11 +48,16 @@ fleet's production decisions showed. Every number below was measured; the comman
 - **Example:** 5 decisions on "Cannot read properties of undefined (reading 'universal')" in SvelteKit's client were
   filed as genuine defects; the labeller reads them as stale-client version skew around the fix of 2026-10-21.
 
-### F3. The model cannot see how old a release is
+### F3. The fleet knows how old the release is, and does not tell the model
 
-- `event_detail` carries the release as an id (`gha-<sha>`), and no probe maps a release to its deploy time or says
-  whether a fix shipped after it. "This event came from a build older than the fix" is therefore not knowable at
-  decision time, though it is the operator's most common reason for closing chunk-skew and fetch errors (#553, #554).
+- The GlitchTip issue the fleet fetches carries `firstRelease.dateCreated` and `lastRelease.dateCreated`
+  (`signal.raw`, on 131 of the 233 decisions). `triage._signal_intro` shows the model only `source`, `alertname`,
+  `labels` and `summary` (`triage.py:237`), and `event_detail` names the release only by id (`gha-<sha>`).
+- So "this event came from a build weeks older than the current one" is in the fleet's hands but not the model's,
+  though it is the operator's most common reason for closing chunk-skew and stale-client errors (#553, #554), and
+  the labeller's reason on 5 decisions (`ORRERY-PROD-1D/1O/1T/1U/1V`, release created 2026-09-16, events in late
+  October).
+- Not covered: whether a fix shipped after that release; no probe says so.
 
 ### F4. The model reads little of what is available
 
@@ -83,8 +88,9 @@ the baseline model, compare to production's recorded decisions (section 5).
    Expected effect: most of the 39 gate escalations. Risk: false dismissals of real client defects; measure both.
 2. **Name the noise classes in the brief**, as the operator closes them: stale clients and version skew after a
    deploy, injected/extension code, mirrored staging bundles, bots. Pair each with the evidence that shows it.
-3. **Add a release-age probe** (or put it into `event_detail`): the release's deploy time, whether it is the current
-   one, and fixes deployed since for this fingerprint. That makes the operator's commonest closing reason knowable.
+3. **Show the model the release's age** (F3): add `firstRelease`/`lastRelease` `dateCreated`, and the current
+   release, to the signal intro. The data is already fetched; this is a prompt-assembly change. Later, a probe for
+   fixes deployed since that release.
 4. **Make `event_detail` the default first look for GlitchTip signals**, or give it in the intro instead of as a
    probe, so the budget goes to corroboration.
 5. **Recheck the 1-in-20 escalation target** against the gate: the prompt asks for 5% while the gate produces 17% (39
@@ -100,7 +106,9 @@ the baseline model, compare to production's recorded decisions (section 5).
   the issue was open belong to the dedup stage, not the model.
 - **A labeller model sees more than the agent did.** Its brief must say what the agent could see, use hindsight only
   to establish what the signal was, and say whether the right call was knowable then. The first pass, without
-  those rules, labelled 10 decisions on information the model never had.
+  those rules, labelled 10 decisions on information the model never had. The second pass still showed the
+  labeller the whole stored signal (`signal.raw`) as "seen at decision"; the agent's prompt shows four of its
+  fields. "Seen at decision" must be built from the agent's own prompt assembly, not from the stored record.
 - **Probe retention decides what can be replayed.** Of the 1,528 probe answers in v1, 745 are `unavailable`
   (stores hold logs from 2026-09-30, traces from 2026-10-07). The per-decision probe capture deployed on 2026-10-29
   makes future months exact.
