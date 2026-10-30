@@ -1,0 +1,36 @@
+# The item fields of a triage decision (copy to data/fields/triage.yaml). Public: the fleet's data is.
+fieldset_id: triage
+description: What production decided about a signal, and how much of its evidence survives.
+fields:
+  - name: evidence_level
+    type: choice
+    values: [exact, full-rebuild, no-traces, no-logs, ledger-only]
+    label: Evidence
+    description: "exact: the probe answers the model saw; the rest rebuilt for the decision's time, or unavailable."
+    public: true
+  - name: fleet_disposition
+    type: choice
+    values: [file, dismiss, escalate, cleanup]
+    label: Production decided
+    description: What the fleet decided in production.
+    public: true
+  - name: fleet_model
+    type: text
+    label: Production model
+    description: The gateway alias production used.
+    public: true
+  - name: stage
+    type: text
+    label: Stage
+    description: The fleet's rollout stage for the decision (propose, shadow; empty for a test signal).
+    public: true
+  - name: fingerprint
+    type: text
+    label: Fingerprint
+    description: The signal's fingerprint; decisions on one fingerprint are related.
+    public: true
+  - name: decision_date
+    type: date
+    label: Decided on
+    description: The day the fleet decided.
+    public: true

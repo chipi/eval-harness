@@ -1,0 +1,11 @@
+# From what happened afterwards to a label (RFC-019 §5), over the fields importer.py computes.
+# First match wins; no match, no label. Shown beside the owner's verdicts, never deciding (ADR-0020).
+- {when: {test_signal: true}, skip: true}
+- {when: {is_config_followup: true}, skip: true}
+- {when: {issue_predates_decision: true}, skip: true}
+- {when: {issue_verdict: fixed}, label: file}
+- {when: {issue_verdict: noise}, label: dismiss}
+- {exists: [issue_number], skip: true}
+- {when: {later_file_within_14d: true}, label: file}
+- {when: {fleet_disposition: file}, skip: true}
+- {when: {seen_again: false}, min_age_days: 14, label: dismiss}

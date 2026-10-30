@@ -109,20 +109,20 @@ try:
     )
     ref = data / "references" / "silver" / "tickets_v1_outcomes"
     man = json.loads((ref / "manifest.json").read_text()) if (ref / "manifest.json").is_file() else {}
-    fo = man.get("from_outcomes") or {}
+    from_out = man.get("from_outcomes") or {}
     check(
         "the outcome reference: skipped items have no text, the rest their label",
         r.returncode == 0
         and sorted(p.stem for p in ref.glob("*.txt")) == sorted(i for n, i in enumerate(items) if n % 3 != 2)
-        and fo.get("matched") == 4
-        and fo.get("skipped") == 2
-        and fo.get("labels") == {"dismiss": 2, "file": 2},
-        said(r)[-300:] + json.dumps(fo),
+        and from_out.get("matched") == 4
+        and from_out.get("skipped") == 2
+        and from_out.get("labels") == {"dismiss": 2, "file": 2},
+        said(r)[-300:] + json.dumps(from_out),
     )
     check(
         "its manifest records the capture, the mapping's hash, and its own caveat",
-        fo.get("capture") == "oc"
-        and len(fo.get("mapping_sha256", "")) == 64
+        from_out.get("capture") == "oc"
+        and len(from_out.get("mapping_sha256", "")) == 64
         and man.get("caveat", "").startswith("OUTCOME:")
         and man.get("tier") == "silver",
         man,
