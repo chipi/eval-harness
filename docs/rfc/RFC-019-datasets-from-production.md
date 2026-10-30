@@ -1,216 +1,203 @@
 # RFC-019: Datasets from production: a lane beside the method
 
-- **Status**: Draft for review (2026-10-29, second draft), aimed at 0.6.0. Rewritten around one real case, a triage
-  fleet; scheduled captures and a server are out of scope
+- **Status**: Draft (third, 2026-10-30), being built for 0.6.0: brought in line with the engineering plan after
+  three independent reviews; accepted when the build lands. ADR-0020 (second references are silver) is the
+  owner's call.
 - **Authors**: Marko Dragoljevic
-- **Related PRDs**: [PRD-006](../prd/PRD-006-datasets-versions-fields.md) (versions, item fields),
-  0.7.0's PRD-012 (agents), 0.7.0's PRD-013 (dev and heldout, looks)
-- **Related RFCs**: [RFC-006](RFC-006-item-fields-and-url-items.md) (field sets, URL items),
-  [RFC-018](RFC-018-read-only-mcp-server.md) (the MCP server, 0.5.0) and 0.5.0's dataset profiles; on branch `070`:
-  0.7.0's RFC-013 (declarations, consent), RFC-015 (dev and heldout, test looks), RFC-016 (MCP tools)
+- **Related PRD**: [PRD-014](../prd/PRD-014-datasets-from-production.md); also
+  [PRD-006](../prd/PRD-006-datasets-versions-fields.md) (versions, item fields),
+  [PRD-002](../prd/PRD-002-references.md) (references)
+- **Related ADRs**: [ADR-0019](../adr/ADR-0019-capture-lane.md), [ADR-0020](../adr/ADR-0020-second-references-are-silver.md)
+- **Related RFCs**: [RFC-006](RFC-006-item-fields-and-url-items.md) (field sets),
+  [RFC-018](RFC-018-read-only-mcp-server.md) (the MCP server); on branch `070`: 0.7.0's RFC-013 (declarations,
+  consent), RFC-015 (dev and heldout, test looks), RFC-016 (MCP tools)
 
 ## Abstract
 
-A project improves a system by measuring it on what the system actually meets. This RFC adds a **lane** beside the
-method the harness already has: **capture** records from production systems with an **importer**, optionally scrub
-them, **select** items from a capture into a new **dataset version**, take a **reference from outcomes** that
-production recorded afterwards, and **split** a dataset into dev and heldout. The lane ends in the files the method
-already reads (a dataset file, a reference file); from there it is the method as it is: materialize, run, compare,
-goals. Every step is a command that reads files and writes files: no server, no state outside the project, no
-schedule. A dataset can also be labelled so that **no text derived from it** appears on any public surface.
+A project improves a system by measuring it on what the system actually meets. This RFC adds a **lane** beside
+the method:
+
+- **capture** records from production systems with an **importer**;
+- optionally **scrub** them with the project's own scrubber;
+- **select** items from a capture into a new **dataset version**;
+- take a **reference from outcomes**, what production recorded afterwards;
+- **split** a dataset into dev and heldout.
+
+The lane ends in the files the method already reads (a dataset file, a reference file), so materialize, run,
+compare and goals work as they are. Every step is a command that reads and writes files: no server, no state
+outside the project, no schedule. A dataset can also be labelled so that **no text derived from it** appears on
+any public surface.
 
 ## Problem
 
-- A dataset is frozen today from a directory of files (`dataset-create --source-dir`) or pinned URLs (RFC-006).
-  Records that live in a tracing system, a ledger file or an issue tracker reach a dataset only through a script each
-  project writes, with no record of what was read, which items were chosen and why, or a link back to the record.
-- The case this is designed on: **a triage fleet**. An agent reads signals from observability (error-tracker issues,
-  alerts), runs up to three probes against logs, metrics, traces and the source's state, and makes one decision per
-  signal occurrence: dismiss, file an issue, escalate to a person, or clean up. Deterministic code before it (gates)
-  and after it (filing and de-duplication against issues already open) shapes what reaches GitHub. Every decision is a
-  row in a ledger file; since recently, a trace in a tracing system; every filed issue has a fate on GitHub.
-  - It already has frozen **fixtures**: a signal, every probe answer it can ask for (the whole probe menu at default
-    arguments plus what the model asked), and a hand-set label. A replay through its own `investigate(signal,
-    probe_table=...)` measures the model's judgement, not drift in the stores.
-  - What it lacks is what the harness has: datasets in versions with lineage, references kept apart from items,
-    paired comparisons with their p, repeats, goals with limits (a false-dismiss rate of zero and an escalate rate
-    under 5% is a goal with two limits), and a catalog. And what neither has: a reference taken from **what
-    happened next** (the issue fixed, closed as a duplicate, closed as not planned, reopened; a dismissed signal filed
-    later).
-- Two datasets come from it: the **decisions** (one item per non-recurring occurrence, a model in the loop) and,
-  second, **de-duplication** (deterministic, no model: signals against the open issues as they stood).
+- A dataset is frozen from a directory of files or from pinned URLs (RFC-006). Records that live in a tracing
+  system, a ledger file or an issue tracker reach a dataset only through a script each project writes. Nothing
+  records what was read, which items were chosen and why, or links back to the record.
+- **The case this is designed on: a triage fleet.** An agent reads signals from observability (error-tracker
+  issues, alerts), runs up to three probes against logs, metrics, traces and the source's state, and makes one
+  decision per signal occurrence: dismiss, file an issue, escalate to a person, or clean up. Deterministic code
+  before it (gates) and after it (filing and de-duplication) shapes what reaches GitHub. What it leaves behind:
+  - every decision is a row in a ledger;
+  - every decision is now captured with the probe answers the model saw;
+  - every issue is closed by a person, with a comment that says what it was: fixed, or noise.
+  - It has hand-labelled frozen fixtures and a scorer of its own. What it lacks is what the harness has:
+    versions, references kept apart from items, paired tests, repeats, goals, a catalog.
+  - And what neither has: a reference taken from what happened next.
 
 ## Design
 
 ### 0. The lane and its boundary
 
-- New commands only, under one word, **capture** (below). A project that never uses them sees no change.
-- The lane writes ordinary harness files: a dataset (`data/datasets/<id>.json`, with lineage as versions have since
-  0.4.0) and a reference (`data/references/...`). A run, a comparison, a goal or a page reads them as it reads any
-  other.
-- What existing files gain is optional and outside identity: a dataset's `labels`, `made_from` and `text`, a
-  reference's `from_outcomes`. Absent, everything behaves as today. No existing command changes its arguments or its
-  output for data without them.
-- **Stateless**: every step reads files and writes files. "Continuous" is running a capture again: `--since last`
-  reads the window the previous capture recorded. A schedule (cron calling the same commands) and a server are later
-  questions, not this RFC.
+- **New commands only.** A project that never uses them sees no change.
+- **The lane writes ordinary files:** a dataset with lineage, and a reference. Runs, comparisons, goals and pages
+  read them like any other.
+- **What existing files gain is optional and outside identity:**
+  - a dataset's `tags` (the dataset-level form of `items[].tags`), `made_from` and `text`;
+  - a reference manifest's `from_outcomes`.
+- **Stateless.** "Continuous" is running a capture again: `--since-capture` continues from an earlier one. A
+  schedule and a server are later questions.
 
 ### 1. Importers
 
-- **The mechanism (core)**: an importer is a class with one method, `records(query) -> Iterator[Record]`. A
-  `Record` is `{id, body | fields, created_at, source: {system, url}, labels, outcome}`: `id` is the record's own id
-  in its system, `body` the item's content (text, or a JSON document such as a fixture), `outcome` what happened
-  after (5). An importer is named in `config.yaml` (`importers: {fleet: {class: importers/fleet.py:Importer}}`) or
-  with `--importer`. `evh importer-check NAME --query ...` is the contract test any importer passes: ids unique,
-  bodies hashed stably, `created_at` parsed.
-- **Built in**: `jsonl` and `tsv` (a file, one record per line or row; which columns are the id, the body, the date,
-  and a filter), `github` (issues and their timelines: repo, label, state, window; the outcome is the issue's fate)
-  and `langfuse` (traces and their generations: project, environment, name, window). Each built-in importer uses
-  the standard library and `gh` only; they live in `evaluation_harness/importers/`, which the core never imports.
-- **A project's importer** composes them. The fleet's joins three: its ledger (`tsv`), its frozen fixtures (`jsonl`
-  or a folder of JSON), and GitHub (the outcome of each filed issue). The joining is the project's logic and stays in
-  the project.
+- **The interface.** An importer is a class with `records(query) -> Iterator[Record]`. A record is
+  `{id, body, fields, created_at, source: {system, url}, labels, outcome}`.
+  - Ids are file-name safe, at most 200 characters. They may contain `:`, so captures are not supported on
+    Windows.
+- **Where an importer comes from:**
+  - a built-in name: `jsonl`, `tsv`, `github` or `langfuse`, in `evaluation_harness/importers/`, which the core
+    never imports. They use the standard library and `gh` only;
+  - `<data>/importers/<name>.py:Importer`;
+  - or `path.py:Class`.
+- **`github`** reads issues by GraphQL through `gh`, and records each close and reopen event with its actor
+  **and the comment beside it**. A fleet that writes with its owner's token can only be told from a person by
+  its text, and a person's close comment carries the verdict.
+- **`langfuse`** reads traces. Its keys come from the environment only, and it records a path-only URL.
+- **Reading a project's production stores is the project's own code** (the fleet's build script). The lane reads
+  what that code exports.
+- **`evh importer-check`** is the contract test: ids unique and well-formed, records well-formed, times parsed,
+  hashes stable.
 
 ### 2. Captures
 
-- `evh capture --importer fleet --query '{...}' --capture C` writes `data/captures/<C>/capture.json` (the importer,
-  its code hash, the query verbatim, the window, when, how many records, each record's id, url and body sha256) and
-  `data/captures/<C>/records/<id>.json`.
-- What is committed is the project's choice, as for any data: the harness neither commits nor refuses. A capture is
-  a candidate pool, never evidence: no run is scored on it and no page counts it.
-- **Scrub, optional**: `evh capture-scrub C --command 'python scrub.py'` runs the project's own scrubber over every
-  record and records the command, its hash and the count it reports. The fleet has one (secrets fail it; production
-  identifiers become stable synthetic ones). The harness claims nothing about what a scrubber missed.
+- **`evh capture --importer NAME --query JSON --capture C`** writes two things:
+  - `data/captures/<C>/capture.json`: the importer, its code's sha256, the query verbatim, the window, when, and
+    per record its id, link, `sha256` (the whole normalised record) and `body_sha256`;
+  - `records/<id>.json`.
+- It never overwrites without `--force`.
+- **`evh capture-scrub C --command "... {records}"`** runs the project's own scrubber, re-hashes, and records the
+  command and its files' hashes.
+- **`evh captures`** lists the captures. **V17** checks every record against its hash.
+- **Commit before running.** Untracked captures and sources mark runs dirty, so they are committed before any
+  billed run.
 
-### 3. Select: a dataset version from a capture
+### 3. A dataset version from a capture
 
-- `evh dataset-from-capture C --dataset-id D [--from D_prev] [--where F:V] [--dedup exact|text] [--sample N --by F
-  --seed S]` filters on fields, drops duplicates (exact body, or text with whitespace and case folded) and items
-  already in `--from`, and samples N, stratified by a field when given, seeded. Each item's body is written where
-  items' sources live, and the dataset records `made_from: {capture, query, filters, dedup, sample, seed}`.
-- `--from D_prev` makes it a new version with 0.4.0's lineage (added, removed, changed): a dataset grows by versions,
-  each earlier one frozen.
-- **Labels**: `labels: {source, environment, purpose, owner}`, free text, shown and filtered on in the catalog
-  (`evh datasets --label environment=prod`). Item fields (RFC-006) carry provenance per item (`occurrence_id`,
-  `created_at`, `stage`, `frozen_at`).
+- **The command:** `evh dataset-from-capture C --dataset-id D [--from D_prev] [--where F:V] [--dedup exact|text]
+  [--one-per F] [--sample N --by F --seed S] [--fieldset FS --field F] [--tag k=v]`.
+- **Only the body becomes the item**, written to `data/sources/<D>/`, so an outcome never enters an item's bytes.
+- **The dataset is written through `dataset-create`'s own functions** and records `made_from`.
+- **`--one-per F`** keeps one record per value of a field, which gives independent items when many records share
+  one fingerprint.
 
 ### 4. A dataset whose text is never shown publicly
 
-- `text: hidden` on a dataset: no text that comes from it reaches a public surface. Derived text counts: its items'
-  sources, every arm's outputs on it, its references' texts and per-item gold labels, judge reasons, adjudication
-  notes, its items' source URLs, and its text and URL field values. Counts, scores, ids and public-field totals stay.
-- The surfaces (from a reading of the code, 2026-10-29): the catalog's dataset page and profile, the inspector's
-  `/api/item` and `/api/compare`, the MCP tools (`dataset-items`, `inspect`), `evh dataset-items` and `evh inspect`
-  in a public setting, and a deployment's render. One function answers "may this text be shown publicly, given the
-  dataset it came from"; every surface asks it. A person's own local views show everything, as today.
-- **A test that fails when a surface is missed**: a fixture project with one hidden dataset whose items, outputs and
-  references carry a planted marker; it builds the catalog, serves the inspector and MCP publicly, renders a deploy
-  copy, and fails if the marker appears in any answer or file.
-- Two holes this closes in what exists: MCP `--public` runs `inspect` in its own process, where a `--where` or `--by`
-  on a non-public field is accepted (`catalog_views.py`, the in-process `cs.compare`), so hidden field values can be
-  read through counts; and a profile written `--with-text` is never checked again after it is written.
+- **`text: hidden`.** No text that comes from such a dataset reaches a public surface: its items' sources, every
+  arm's outputs on it, its references' texts and per-item labels, judge reasons, adjudication notes, source
+  URLs, and its text and URL field values.
+- **One function** answers "may this text be shown publicly". These surfaces ask it:
+  - the catalog;
+  - the inspector's API;
+  - the MCP tools;
+  - `evh dataset-items` and `evh inspect` under `EVH_PUBLIC`;
+  - and a deployment's data copy, which moves from `render.sh` into a Python module.
+- **A marker test** fails if any surface leaks.
+- **It also closes two holes.** The MCP `inspect --where/--by` hole on hidden fields was closed in 0.6.0's first
+  part. A profile written `--with-text` is now checked again whenever the catalog builds.
 
 ### 5. References from outcomes
 
-- What production recorded afterwards is a reference: for a triage decision, the fate of what it did. An importer
-  returns it as `outcome`; `evh reference-from-outcomes --dataset-id D --capture C --map outcomes.yaml` writes a
-  reference whose per-item label comes from the mapping (outcome -> label), and records `from_outcomes: {capture,
-  mapping, mapping_sha256, as_of}`. `authored_by` and every reader of it stay as they are.
-- **As of a date**: outcomes change (an issue reopens). The reference is made from the outcomes read at `as_of`;
-  reading them later makes a new reference, never an edited one.
-- **The fleet's mapping**, to be confirmed: a filed issue closed as completed is right; closed as not planned, a
-  false file; closed as a duplicate, a missed de-duplication; reopened, a case to read; a dismissal is wrong if the
-  same fingerprint is filed later and right if it does not recur within N days; escalate and cleanup are judged by a
-  person. An item whose outcome is not known yet (an open issue) has no reference; coverage is recorded as today
-  (0.4.0 warns and records `reference_coverage`; nothing here changes that).
-- A person's label outranks an outcome: the fleet's fixtures carry hand-set labels, which make a gold reference by
-  the existing route (`reference-create` from a file); an outcome reference is a second reference on the same
-  dataset, and the comparison between the two is itself informative.
+- **The command:** `evh reference-from-outcomes --dataset-id D --capture C --map outcomes.yaml [--name NAME]`.
+- **The mapping** is an ordered list of rules over the **flat outcome fields** the project's importer computes.
+  Each rule has `when`, `unless`, `exists`, `absent`, `range` (signed), `min_age_days`, and a `label` or `skip`.
+  The first match wins; no match leaves the item unlabelled. A real mapping's time arithmetic and list logic are
+  the project's own semantics, computed into fields, so the language stays small.
+- **The reference records** `from_outcomes: {capture, mapping, mapping_sha256, matched, skipped, unmatched}`, and
+  its own caveat: "OUTCOME: what production recorded afterwards, as of <capture date>; not a person's label".
+- **It never overwrites a reference.**
+- **Outcomes live in the capture.** Reading them again later makes a newer capture and a newer reference, never
+  an edit.
+- **Which reference decides** ([ADR-0020](../adr/ADR-0020-second-references-are-silver.md), proposed): a goal
+  decides on `gold/<D>`. Every other reference on the dataset is `silver/<name>`, with its caveat, and is read
+  through `rescore --reference-id`. The goal page then shows exactly one recommendation, and the others beside
+  it.
+- **Coverage is recorded as today.** A scorer leaves the key out on an unlabelled item.
 
 ### 6. Splits
 
-- `evh dataset-split D --heldout 0.3 [--by hash|time] --seed S` writes two ordinary datasets, `D_dev` and
-  `D_heldout`, each a version of `D` with lineage; a goal names them with the roles it has today. By hash of the
-  item id and seed (default), a later version keeps every earlier item on its side and new items fall in proportion;
-  by time, the newest share is heldout.
+- **The command:** `evh dataset-split D --heldout 0.3 [--by hash|time] [--key F] --seed S` writes `D_dev` and
+  `D_heldout`, ordinary datasets with lineage.
+- **By hash** of the key (item id by default, or a field, so one fingerprint never lands on both sides): stable
+  across versions.
+- **By time**: the newest share is heldout.
 
 ### 7. The catalog, the CLI and MCP
 
-- The datasets page groups and filters on labels and says where a dataset came from (its capture and selection).
-  A version's profile sits beside the one it came from (today the versions section lists items added, removed and
-  changed only).
-- `evh captures` lists captures and their counts, and the read-only MCP server gains the same tool (CLI parity).
-- Write tools for agents wait for 0.7.0 (RFC-013's declarations and consent).
+- **The datasets page** groups and filters on tags, says where a dataset came from, and puts a version's profile
+  beside its parent's.
+- **`evh captures`**, and the read-only MCP tool of the same name.
+- **The writing commands are not MCP tools** until 0.7.0's declarations and consent.
 
 ### 8. The triage fleet, end to end (the acceptance case)
 
-1. **The decisions dataset, v1**: the fleet's twelve frozen fixtures for one project (July), eight of them labelled
-   by hand. A project importer reads them; `dataset-from-capture` makes `triage_decisions`; the hand labels make a
-   gold reference.
-2. **An adapter** calls the fleet's `investigate(signal, probe_table=item["probes"])` with the arm's model and
-   prompt version, and records the disposition per item. Per-item metrics from the fleet's own scorer: false-dismiss,
-   silent-drop, escalate, autonomy-hit; a table miss counted as noise, not as the model's choice. Repeats (k=3) as the
-   harness has them.
-3. **A goal**: false-dismiss rate 0 and escalate rate at most 5% as limits, cost and latency beside quality.
-4. **v2 and after**: recent decisions frozen now (their probes read at freezing time, said in each item's
-   `frozen_at`), then, once the fleet keeps each decision's probe answers as it makes it, every decision exactly as
-   the model saw it. Their reference from outcomes (5).
-5. **The de-duplication dataset**: the fleet's frozen signals and the issues open at the time, the reference being
-   which issue each signal should land on; an adapter calls the filing stage; no model, so exact and cheap.
+The data, the references, the arms and the cost are in the application plan (`research/internal/PLAN_0.6.0_FLEET.md`).
 
-Where the fleet's code comes from for the adapter (a pinned checkout of its repository today, its own package when
-it is published) is the example's concern, not the harness's.
-
-### What 0.6.0 ships, and what waits
-
-- **0.6.0**: sections 0 to 7, and section 8's steps 1 to 3 and 5 as the example; step 4 as the data arrives.
-- **0.7.0**: write tools and consent, runners on another machine, test looks against heldout.
-- **Later**: a schedule, a server.
+1. **The decisions dataset.** The fleet's 236 Orrery decisions, each a signal plus the probe answers as of its
+   time, labelled by how much evidence survives (33 exact; 91 with only the signal).
+2. **The adapter** replays each decision through the fleet's own `investigate(signal, probe_table)`, with the arm's
+   model. It disables the fleet's own tracing and tags every call as an evaluation. The fleet's code comes from a
+   pinned checkout.
+3. **The references:**
+   - the owner's verdicts decide (`gold/`): the 42 issues, fixed or noise, as their close comments say;
+   - the outcome mapping and the old fixture labels are shown as `silver/`.
+4. **The goal.** `false_dismiss` is the primary measure, `false_alarm` and `escalated` are shown beside it, and
+   cost and speed weigh in. No limits in v1.
+5. **The de-duplication dataset**: the fleet's 100 signals through its pure dedup functions, no model, a
+   regression guard.
+6. **Continuous:** each month's decisions, captured exactly as the model saw them.
 
 ## Not in scope
 
-- Scheduled captures, a server, state outside the project's files.
-- A labelling interface for people.
-- Holding or protecting a project's data: what is committed and where records live is the project's decision.
+A schedule, a server, state outside the project's files, a labelling interface, holding a project's private data,
+write tools for agents (0.7.0).
 
 ## Alternatives considered
 
-- **One flow, not a lane** (the first draft): the capture steps woven into `dataset-create` and the reference
-  commands, partial references compared on covered items only, `authored_by` widened. Rejected: it changes what
-  exists for everyone, to serve a case only some projects have.
-- **The harness keeping records private** (the first draft: records never committed, freezing refused without
-  scrub rules). Rejected: what to commit is the project's decision; the harness offers a scrub step and the `text:
-  hidden` label, and enforces nothing else.
-- **Vendor importers only as examples.** Rejected for `github` and `langfuse`: one install should do everything
-  (no extras to find); they need nothing beyond the standard library and `gh`, and the core never imports them.
+- **One flow, not a lane** (the first draft). Rejected: it changes what exists for everyone.
+- **The harness keeping records private** (the first draft). Rejected: what to commit is the project's decision.
+- **Vendor importers only as examples.** Rejected for `github` and `langfuse`: one install does everything.
+- **GitHub's close reason as the outcome.** Rejected on the data: `COMPLETED` on 37 of 41 closes, whatever the
+  close comment said.
+- **A mapping language with paths, signed time windows and list quantifiers.** Rejected: the project computes
+  flat fields, and the language stays small.
 
-## Open questions
+## Changes from the second draft
 
-Decided (2026-10-29): the lane beside the method, stateless, no server; the word **capture**; a generic importer
-mechanism with `jsonl`, `tsv`, `github` and `langfuse`; the triage fleet as the case, its data public; decisions
-first, de-duplication second; a small recent subset, older decisions accepted as lost; one `text: hidden` label
-inherited by everything derived; the MCP `inspect --where/--by` hole fixed first in 0.6.0.
+The changes, listed in the engineering plan's P10:
 
-Open:
-
-1. `github` and `langfuse` importers shipped in the package (proposed) or in `examples/importers/`.
-2. Does a licence that forbids redistribution set `text: hidden` by itself?
-3. The outcome mapping: N days without recurrence for a right dismissal; escalate and cleanup judged by a person
-   only; the word for an outcome reference (gold is a person's, silver a model's; an outcome is neither).
-4. Labels for the four unlabelled fixtures, set by the owner.
-5. The fleet keeping each decision's probe answers (a change in the fleet's repository, the owner's go there).
-6. Freezing the recent decisions now (read-only on the fleet's host), knowing their evidence is read today, not as
-   the model saw it.
-7. The example in this repository (`examples/triage-fleet/`, data committed after the fleet's scrubber), and its
-   adapter's dependency on the fleet's code (a pinned checkout).
-8. The fleet's project only, or its other projects' fixtures too.
-9. The key and budget for replay runs: through the fleet's gateway alias or a key of their own.
+- importers come from `<data>/importers/` or `path:Class`, not `config.yaml`;
+- `as_of` was dropped, since outcomes live in the capture;
+- outcomes are read from the close comment, not the close reason;
+- the mapping runs over flat fields;
+- second references are `silver/`;
+- `labels` became `tags`;
+- the fleet's v1 is all 236 decisions, kept by evidence level, rather than 12 fixtures or "older decisions
+  accepted as lost";
+- the deciding reference is the owner's verdicts.
 
 ## Testing (when built)
 
-- `evh importer-check` on every built-in importer, against recorded responses (no network in CI).
-- The lane end to end on `jsonl`: capture, scrub (a stand-in scrubber), select (dedup, a seeded sample that repeats),
-  a version with lineage, a split that keeps earlier items in place, an outcome reference with its coverage and
-  `as_of`.
-- The hidden-text marker test across every public surface (4).
-- The triage example in `examples/`: the decisions dataset, its adapter on recorded fixtures, its goal.
+- **`evh importer-check`** on every built-in importer, against recorded responses (no network in CI).
+- **The lane end to end on `jsonl`.**
+- **The reference route:** exactly one recommendation on the goal page.
+- **The hidden-text marker test**, across every public surface.
+- **The triage example:** offline with a stand-in model, then with real models.

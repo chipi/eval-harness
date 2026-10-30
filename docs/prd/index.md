@@ -41,6 +41,7 @@ behaviour. The release notes ([CHANGELOG](../../harness/CHANGELOG.md)) say what 
 | [PRD-005](PRD-005-goals-and-rounds.md) | Goals, and experiment rounds | Implemented (v0.4.0) | [RFC-004](../rfc/RFC-004-experiment-rounds.md), [UXS-001](../uxs/UXS-001-catalog.md), [ADR-0004](../adr/ADR-0004-experiment-rounds.md) | What an evaluation is for and the measure that decides; optional rounds with a hypothesis, retirements and a conclusion |
 | [PRD-006](PRD-006-datasets-versions-fields.md) | Datasets, versions and item fields | Implemented (v0.4.0) | [RFC-006](../rfc/RFC-006-item-fields-and-url-items.md), [ADR-0003](../adr/ADR-0003-item-fields-and-url-items.md) | Versions with lineage, typed item fields outside the identity, items at a pinned URL |
 | [PRD-007](PRD-007-packaging-and-providers.md) | One install, your own keys | Implemented (v0.4.0) | [UXS-003](../uxs/UXS-003-cli-and-onboarding.md) | The `evh` package, the project's own data, the adapter seam, hosted providers with keys you bring |
+| [PRD-014](PRD-014-datasets-from-production.md) | Datasets from production | Draft (aim 0.6.0) | [RFC-019](../rfc/RFC-019-datasets-from-production.md), [ADR-0019](../adr/ADR-0019-capture-lane.md), [ADR-0020](../adr/ADR-0020-second-references-are-silver.md) | Importers, captures, datasets from a capture, references from outcomes, splits, text kept off public surfaces |
 
 ## Adding one
 

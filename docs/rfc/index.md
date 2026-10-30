@@ -27,7 +27,7 @@ Other statuses: **Rejected** and **Withdrawn**, each with the reason kept.
 
 | RFC | Title | Related PRD | Status | Description |
 | --- | ----- | ----------- | ------ | ----------- |
-| [RFC-019](RFC-019-datasets-from-production.md) | Datasets from production: a lane beside the method (draft for review) | [PRD-006](../prd/PRD-006-datasets-versions-fields.md) | Draft (aim 0.6.0) | A capture lane of new commands ending in ordinary datasets and references; importers (jsonl, tsv, github, langfuse built in); optional scrub; versions; references from outcomes as of a date; dev/heldout splits as two datasets; a `text: hidden` label on every public surface; stateless, no server; designed on a triage fleet |
+| [RFC-019](RFC-019-datasets-from-production.md) | Datasets from production: a lane beside the method | [PRD-014](../prd/PRD-014-datasets-from-production.md) | Draft (third; building, 0.6.0) | New commands end in ordinary datasets and references: importers (jsonl, tsv, github, langfuse built in), captures, datasets from a capture, references from outcomes over flat fields, splits; second references silver (ADR-0020, proposed); `text: hidden` on every public surface; stateless; designed on a triage fleet |
 
 ## Completed RFCs
 
