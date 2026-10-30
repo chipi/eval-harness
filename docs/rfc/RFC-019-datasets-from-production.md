@@ -235,5 +235,5 @@ What the build changed or added beyond the third draft, each in the code and its
   mutations of the guards each fail it.
 - **`examples/triage-fleet/test_triage.py`** and **`examples/signal-fleet-dedup/test_dedup.py`**, in `make ci`:
   the scorers, the importer on the fleet's export, the adapters through the fleet's own code where it is present.
-- **The triage example ran end to end**: 10 hosted arms on the 65 owner-labelled decisions, the finals, and the
-  open-weight models hosted and self-hosted; the results are in its runs and the goal page.
+- **The triage example ran end to end** with 10 hosted arms on the 65 owner-labelled decisions (the screen,
+  2026-10-30); the finals, the open-weight models' hosted twins and their self-hosted runs are added as they finish.
