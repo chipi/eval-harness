@@ -201,14 +201,17 @@ One arm: the fleet's current code, as a regression guard against frozen silver. 
        issue in the join);
    - aliases for D and E on the fleet's key, or an eval key;
    - one capped virtual key per arm, tagged `evh-eval`, which the fleet's own measurements exclude.
-3. **Rebuild the delivered file** with comments and the better join; capture; make `orrery_triage_v1` (test
-   signals out) and `orrery_triage_smoke`.
-4. **Your verdicts and labels (§3)**, which become `gold/orrery_triage_v1`; then the two silver references.
-5. Commit everything before any billed call.
-6. Dedup ($0).
-7. Smoke ($0.14), stage 1 ($9.41), stage 2.
-8. The README with the numbers by evidence level; `experiments.json`.
-9. The monthly versions.
+3. **Rebuild the delivered file** with the close comments and the better join (test signals out).
+4. **Your verdicts and labels (§3)**: they become `gold/orrery_triage_v1`. Then the two silver references.
+5. **Publish v1 on Hugging Face** (owner, 2026-10-30): the decisions, the verdicts and the dedup signals, each a
+   dataset repository with a card and a `v1` revision (DATA_INVENTORY §3a). Then `fetch.py` pins the revision
+   and checks the hashes, as the other experiments do. Then capture from it, and make `orrery_triage_v1` and
+   `orrery_triage_smoke`.
+6. Commit everything before any billed call.
+7. Dedup ($0).
+8. Smoke ($0.14), stage 1 ($9.41), stage 2.
+9. **The public read** (§7): the experiment's report, `experiments.json`, the catalog and site pages.
+10. The monthly versions: a new Hugging Face revision each month.
 
 ## 6. To decide
 
@@ -218,3 +221,40 @@ One arm: the fleet's current code, as a regression guard against frozen silver. 
 3. **`silver/` for the second references**, with a caveat saying what each one is (ADR-0020)? Silver means "a
    model wrote it" today.
 4. **v2's limits**: from production's own numbers, and the operator's escalate tolerance (EVAL.md §7) later?
+5. **The site (§7)**: does the triage experiment join the site's experiments page with its own report, or stay
+   in the catalog only for v1?
+6. **Hugging Face**: which account owns the dataset repositories (the connector is logged in as `chipi-nbgd`),
+   and the licence?
+
+## 7. What changes on the public site once it is deployed
+
+Everything committed here reaches evals.humancopilot.eu through the deploy, as the six experiments do today.
+
+**The catalog (`/catalog/`) shows it all, with no extra work.** Pages are built from the committed data:
+- the dataset pages for `orrery_triage_v1` and `fleet_dedup_v1`, with their tags (`source: triage fleet`,
+  `environment: prod`, `purpose`), where they came from (the capture, the selection, the Hugging Face
+  revision), their versions side by side as months are added, and their profiles (counts, lengths, the
+  verdicts' shape);
+- the references: `gold/orrery_triage_v1` (decides) and the two silver ones beside it, each with its caveat;
+- the arms (the five models), their runs, cost and latency;
+- the goal page: the recommendation on `false_dismiss`, with `false_alarm` and `escalated` beside it, cost and
+  speed;
+- per evidence level, through the inspector's breakdown by the `evidence_level` field (a public field).
+
+**The inspector and MCP serve it too.** Prod publishes arms' outputs (`--publish outputs`), so a reader can open
+an item and see each model's disposition and its reason beside the verdict, and an agent can ask the same
+through MCP (`goals`, `datasets`, `inspect`, `captures`). The items' text is not committed here: the profile
+links each item to its row on Hugging Face.
+
+**The site's experiments page is a choice (§6.5).** Every entry in `examples/experiments.json` with `site: true`
+needs a report (`research/REPORT_*.md`) whose numbers `check_report_claims` verifies, and a calibration row: a
+known baseline against its published number. A production dataset has no published number to calibrate
+against.
+- **For v1** (proposed): register it with `site: false`, so it is in the catalog, the reproduce tooling and MCP,
+  but not on the experiments page. Write `research/REPORT_TRIAGE.md` with checked claims.
+- **When the monthly exact versions exist:** it joins the site as the first production experiment. The
+  calibration row is replaced by a stated check: production's own recorded decisions, replayed through the
+  baseline arm, must agree with what production did on the exact items, within the model's measured noise.
+  That is the closest thing to "the instrument agrees with the world" a production dataset has.
+
+**Nothing changes for the six experiments**, and `text: hidden` is not set: the data is public.
