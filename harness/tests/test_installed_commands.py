@@ -243,6 +243,7 @@ def main() -> int:
                 "ok:record(s) from jsonl",
             ),
             ("capture-scrub", ["c1", "--command", "true {records}"], "ok:0 of"),
+            ("dataset-split", ["tickets_v1", "--heldout", "0.5", "--seed", "3"], "ok:tickets_v1_heldout"),
             ("captures", ["--capture", "c1"], "ok:c1:"),
             ("dataset-from-capture", ["c1", "--dataset-id", "captured_v1"], "ok:records kept"),
             # Installed and reading its arguments; the flow is tests/test_outcome_reference.py.

@@ -645,6 +645,7 @@ def test_example_scorer_suites_pass() -> None:
             "references from outcomes: the rules, never overwritten, one recommendation per goal",
         ),
         ("test_importers.py", "tsv, github (events with their comments), langfuse: offline stand-ins"),
+        ("test_split.py", "dataset-split: the share, stable across versions, groups kept whole, by time"),
         ("test_axes.py", "a goal's axes and strategy: limits, the tie, the tie-break, the ratios"),
         (
             "test_references.py",

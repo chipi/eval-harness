@@ -78,6 +78,7 @@ NOT_TOOLS = {
     "importer-check": "reads a production system, not the project",
     "capture": "reads a production system and writes",
     "dataset-from-capture": "writes",
+    "dataset-split": "writes",
     "capture-scrub": "runs a project's command and writes",
     "reference-from-outcomes": "writes",
     "run-compare": "a statistics command; not yet a tool",

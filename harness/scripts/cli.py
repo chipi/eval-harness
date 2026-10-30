@@ -78,6 +78,10 @@ COMMANDS = {
         "reference_from_outcomes.py",
         "a reference from what production recorded afterwards, by recorded rules",
     ),
+    "dataset-split": (
+        "dataset_split.py",
+        "split a dataset into <id>_dev and <id>_heldout, stable across versions",
+    ),
     "capture-scrub": (
         "capture_scrub.py",
         "run the project's own scrubber over a capture's records, and record it",
