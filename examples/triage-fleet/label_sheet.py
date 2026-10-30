@@ -22,70 +22,15 @@ from __future__ import annotations
 import argparse
 import csv
 import json
-import re
+import sys
 from collections import Counter, defaultdict
 from pathlib import Path
 
-FIXED = re.compile(
-    r"\bfixed (in|by)\b|since the fix|no [\w ]*event since|verified on prod: no |none since from fixed builds"
-    r"|^(handled|resolved)\b|now caught",
-    re.I,
-)
-#: "Duplicate of #557", "Same root cause as #447": the other issue's verdict, one or two hops away.
-SAME_AS = re.compile(r"(?:duplicate of|same root cause as) #(\d+)", re.I)
-NOISE = re.compile(r"\bnoise\b|not \w+ code|staging bundle|low-signal rollup|closing \(readiness", re.I)
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from importer import close_comments, proposed_verdict, reaches, resolved  # the same rules as the capture
+
 #: fixed: it should not have been dismissed (filing or escalating it were both right).
 LABEL_OF = {"fixed": "file/escalate", "noise": "dismiss"}
-
-
-def reaches(li: dict) -> bool:
-    """Whether an issue's verdict labels this decision: the decision that filed it, or an earlier one
-    on the same fingerprint (a missed problem). Not a decision made while it was open (production
-    was right not to file it again: outcomes.yaml skips those too), and not a match on the title
-    alone: one title ("Importing a module script failed") links up to 37 fingerprints."""
-    rel = li.get("relation")
-    return rel == "created_by_this_decision" or (
-        rel == "created_later" and li.get("matched_by") == "fingerprint"
-    )
-
-
-def close_comments(issue: dict) -> list[str]:
-    """The comments beside the issue's closes, the person's own first."""
-    cs = [
-        e["comment"]
-        for e in issue.get("close_reopen_events") or []
-        if e.get("type") == "closed" and (e.get("comment") or {}).get("text")
-    ]
-    return [c["text"] for c in cs if not c.get("fleet_comment")] + [
-        c["text"] for c in cs if c.get("fleet_comment")
-    ]
-
-
-def proposed_verdict(issue: dict) -> str:
-    """fixed, noise, duplicate, open or unknown, from the close comments (GitHub's close reason is
-    COMPLETED on nearly every close, so it says nothing)."""
-    if issue.get("state") == "OPEN":
-        return "open"
-    text = " ".join(close_comments(issue))
-    m = SAME_AS.search(text)
-    if m:
-        return f"same as #{m.group(1)}"
-    if FIXED.search(text):
-        return "fixed"
-    if NOISE.search(text):
-        return "noise"
-    return "duplicate" if issue.get("duplicate_of") else "unknown"
-
-
-def resolved(verdicts: dict[int, str], n: int) -> str:
-    """The verdict of issue n, following "same as #m" up to two hops."""
-    v = verdicts.get(n, "unknown")
-    for _ in range(2):
-        m = re.fullmatch(r"same as #(\d+)", v)
-        if not m:
-            break
-        v = verdicts.get(int(m.group(1)), "unknown")
-    return v
 
 
 def _short(s: object, n: int) -> str:

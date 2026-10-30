@@ -50,52 +50,108 @@ check(
 )
 
 # ── the importer ───────────────────────────────────────────────────────────────────────────
-row = {
-    "id": "glitchtip:X-1@2026-10-01T00:00:00Z",
-    "signal": {"summary": "TypeError"},
-    "probes": {"event_detail:{}": "stack"},
-    "fleet_decision": {
-        "ts": "2026-10-01T00:00:00Z",
-        "disposition": "dismiss",
-        "stage": "propose",
-        "model": "m",
-        "fingerprint": "glitchtip:X-1",
-    },
-    "provenance": {"evidence_level": "exact"},
-    "outcome": {
-        "filed_issue": {
-            "number": 7,
-            "filed_at": "2026-10-03T00:00:00Z",
-            "github": {"state": "CLOSED", "labels": [], "close_events": [{"comment": "Fixed in v0.8.0"}]},
+
+
+def issue(n, relation, matched_by="fingerprint", comment="", state="CLOSED", **kw):
+    ev = [{"type": "closed", "comment": {"text": comment, "fleet_comment": False}}] if comment else []
+    return {
+        "number": n,
+        "relation": relation,
+        "matched_by": matched_by,
+        "state": state,
+        "labels": [],
+        "close_reopen_events": ev,
+        **kw,
+    }
+
+
+def decision(i, disposition, linked, ts="2026-10-01T00:00:00Z", later=(), **kw):
+    return {
+        "id": f"orrery-X-{i}-{ts}",
+        "signal": {"summary": "TypeError"},
+        "probes": {"event_detail:{}": "stack"},
+        "fleet_decision": {
+            "ts": ts,
+            "disposition": disposition,
+            "stage": "propose",
+            "model": "m",
+            "fingerprint": f"glitchtip:X-{i}",
         },
-        "later_decisions_same_fingerprint": [{"disposition": "file", "ts": "2026-10-03T00:00:00Z"}],
-    },
-    "ground_truth": {"disposition": None},
-}
+        "provenance": {"evidence_level": "exact"},
+        "decision_kind": "model",
+        "is_test_signal": False,
+        "outcome": {"linked_issues": linked, "later_decisions_same_fingerprint": list(later)},
+        "ground_truth": {"disposition": None},
+        **kw,
+    }
+
+
+rows = [
+    # missed, then filed two days later on the same fingerprint, fixed
+    decision(
+        1,
+        "dismiss",
+        [issue(7, "created_later", comment="Fixed in v0.8.0", created_at="2026-10-03T00:00:00Z")],
+        later=[{"disposition": "file", "ts": "2026-10-03T00:00:00Z"}],
+    ),
+    # filed it, closed as the same as #7: takes #7's verdict
+    decision(2, "file", [issue(8, "created_by_this_decision", comment="Duplicate of #7 - same alert")]),
+    # only a title match on a noise issue: no verdict reaches it
+    decision(3, "dismiss", [issue(9, "created_later", matched_by="title", comment="external browser noise")]),
+    # decided while an issue on its fingerprint was open
+    decision(4, "dismiss", [issue(7, "existing_at_decision")]),
+    decision(5, "cleanup", [], is_test_signal=True),
+]
 with tempfile.TemporaryDirectory() as td:
     p = Path(td) / "x.jsonl"
-    p.write_text(json.dumps(row) + "\n")
-    recs = list(importer.Importer({}).records({"path": str(p)}))
-r0 = recs[0]
-check("importer: a well-formed record", not _importers.problems(r0), _importers.problems(r0))
-check("importer: the body is only what the agent sees", set(r0["body"]) == {"signal", "probes"})
-o = r0["outcome"]
+    p.write_text("".join(json.dumps(r) + "\n" for r in rows))
+    recs = {r["id"].split("-")[2]: r for r in importer.Importer({}).records({"path": str(p)})}
+r1 = recs["1"]
+check("importer: a well-formed record", not _importers.problems(r1), _importers.problems(r1))
+check("importer: the body is only what the agent sees", set(r1["body"]) == {"signal", "probes"})
+check("importer: decision_kind is a field", r1["fields"]["decision_kind"] == "model")
+o = r1["outcome"]
 check(
-    "importer: the verdict from the close comment; filing two days later",
-    o["issue_verdict"] == "fixed"
+    "importer: a missed problem: the later issue's verdict, filing two days later",
+    o["issue_number"] == 7
+    and o["issue_verdict"] == "fixed"
     and o["days_to_filing"] == 2.0
     and o["later_file_within_14d"]
     and not o["test_signal"],
     o,
 )
-noise = {
-    "state": "CLOSED",
-    "close_events": [{"comment": "Stale-candidate review: external browser noise, not orrery code"}],
-}
-check("importer: a noise close comment", importer.verdict_of(noise) == "noise")
+check("importer: 'Duplicate of #7' takes #7's verdict", recs["2"]["outcome"]["issue_verdict"] == "fixed")
+check(
+    "importer: a title-only match carries no verdict",
+    recs["3"]["outcome"]["issue_number"] is None and recs["3"]["outcome"]["issue_verdict"] is None,
+)
+check(
+    "importer: an issue open at the decision is recorded, not its verdict",
+    recs["4"]["outcome"]["issue_predates_decision"] and recs["4"]["outcome"]["issue_verdict"] is None,
+)
+check("importer: is_test_signal carried", recs["5"]["outcome"]["test_signal"] is True)
+check(
+    "importer: a noise close comment",
+    importer.proposed_verdict(
+        issue(1, "x", comment="Stale-candidate review: external browser noise, not orrery code")
+    )
+    == "noise",
+)
 check(
     "importer: a close with no comment is unknown, whatever its reason",
-    importer.verdict_of({"state": "CLOSED", "state_reason": "COMPLETED"}) == "unknown",
+    importer.proposed_verdict({"state": "CLOSED", "state_reason": "COMPLETED"}) == "unknown",
+)
+check(
+    "importer: the person's comment is read before the fleet's",
+    importer.close_comments(
+        {
+            "close_reopen_events": [
+                {"type": "closed", "comment": {"text": "fleet", "fleet_comment": True}},
+                {"type": "closed", "comment": {"text": "person", "fleet_comment": False}},
+            ]
+        }
+    )
+    == ["person", "fleet"],
 )
 
 # ── the adapter through the fleet's code (stand-in model) ──────────────────────────────────
@@ -103,7 +159,7 @@ if (
     os.environ.get("TRIAGE_FLEET_SRC")
     and (Path(os.environ["TRIAGE_FLEET_SRC"]) / "mvp" / "triage.py").is_file()
 ):
-    res = adapter.call_system(json.dumps(r0["body"]), {"provider": "stub", "stub_disposition": "escalate"})
+    res = adapter.call_system(json.dumps(r1["body"]), {"provider": "stub", "stub_disposition": "escalate"})
     got = json.loads(res.output)
     check("adapter: the fleet decides, through its gates", got.get("disposition") == "escalate", got)
     check(

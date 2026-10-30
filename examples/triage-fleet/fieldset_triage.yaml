@@ -8,6 +8,12 @@ fields:
     label: Evidence
     description: "exact: the probe answers the model saw; the rest rebuilt for the decision's time, or unavailable."
     public: true
+  - name: decision_kind
+    type: choice
+    values: [model, triager_failure]
+    label: Decided by
+    description: "model: the model decided; triager_failure: it never did (the 2026-08 authentication outage)."
+    public: true
   - name: fleet_disposition
     type: choice
     values: [file, dismiss, escalate, cleanup]

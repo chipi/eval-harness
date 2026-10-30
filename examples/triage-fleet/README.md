@@ -14,20 +14,24 @@ decision's time, and scores it against what the person who later closed the issu
 | `importer.py` | one record per decision from the fleet's export: the body is what the agent sees (`{signal, probes}`); the outcome fields are what the reference rules read |
 | `adapter.py` | replays a decision through the fleet's `investigate()`, with its tracing off and every call tagged `evh-eval`; `score()` gives `false_dismiss`, `false_alarm`, `escalated`, `correct`, `silent_drop` |
 | `outcomes.yaml` | the rules from an outcome to a label (shown beside the owner's verdicts, never deciding) |
-| `fieldset_triage.yaml` | the item fields: evidence level, what production decided, model, stage, fingerprint, date |
+| `fieldset_triage.yaml` | the item fields: evidence level, who decided (the model, or a failed triager), what production decided, model, stage, fingerprint, date |
 | `goal_triage.yaml` | the goal: `false_dismiss` decides, lower; no limits in v1 |
 | `configs/` | the arms; for now two stand-ins (`provider: stub`) |
+| `label_sheet.py` | the owner's labelling sheet: a verdict proposed per closed issue from its close comment, and the exact decisions no issue verdict reaches |
 | `test_triage.py` | the scorer's rules, the importer, and the adapter through the fleet's code |
 
 The fleet's code is not copied here: set `TRIAGE_FLEET_SRC` to the `signal-fleet` folder of the
 fleet's repository (at the commit the runs record).
 
+The decisions are published on Hugging Face as `chipi-nbgd/orrery-triage` (`data/decisions.jsonl`,
+tag `v1`, private until the owner has read it).
+
 ```bash
 evh capture --importer examples/triage-fleet/importer.py:Importer \
-    --query '{"path": "orrery-triage-items.jsonl"}' --capture orrery_2026_10
+    --query '{"path": "decisions.jsonl"}' --capture orrery_2026_10
 evh dataset-from-capture orrery_2026_10 --dataset-id orrery_triage_v1 --fieldset triage \
-    --field evidence_level --field fleet_disposition --field fleet_model --field stage \
-    --field fingerprint --field decision_date
+    --field evidence_level --field decision_kind --field fleet_disposition --field fleet_model \
+    --field stage --field fingerprint --field decision_date
 evh dataset-materialize --dataset-id orrery_triage_v1
 evh reference-from-outcomes --dataset-id orrery_triage_v1 --capture orrery_2026_10 \
     --map examples/triage-fleet/outcomes.yaml --name silver/orrery_triage_v1_outcomes

@@ -171,6 +171,28 @@ try:
         page.count("Recommended: tickets_") == 1 and "Shown, not recommended" in page,
         said(r)[-300:],
     )
+
+    # With no gold at all, an outcome reference still never decides: the goal recommends nothing.
+    shutil.move(str(data / "references" / "gold"), str(proj / "gold-aside"))
+    shutil.move(str(data / "runs"), str(proj / "runs-aside"))
+    r = evh("goals", "--goal", "tickets_summary")
+    check(
+        "NO GOLD: the outcome group is shown, and nothing is recommended",
+        r.returncode == 0
+        and "scored against silver/tickets_v1_outcomes" in r.stdout
+        and "shown, not recommended" in r.stdout
+        and "recommended:" not in r.stdout,
+        r.stdout[-1500:],
+    )
+    r = evh("catalog")
+    page = (
+        (proj / ".build" / "catalog" / "g" / "tickets_summary.html").read_text() if r.returncode == 0 else ""
+    )
+    check(
+        "NO GOLD: the catalog's goal page recommends nothing either",
+        "Shown, not recommended" in page and "Recommended: " not in page,
+        said(r)[-300:],
+    )
 finally:
     shutil.rmtree(proj, ignore_errors=True)
 

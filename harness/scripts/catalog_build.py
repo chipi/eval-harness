@@ -1060,7 +1060,19 @@ def glance(A: Adapter, by_ds: dict) -> list[dict]:
 
             plain = [x for x in ans["groups"] if not x["key"].startswith("judge ")]
             grp = next((x for x in plain if ref_tier(tiers, x["key"]) == "gold"), plain[0] if plain else None)
-            dec = group_decision(A, g, ds, grp["rows"], measure, retired_in) if grp else None
+            dec = (
+                group_decision(
+                    A,
+                    g,
+                    ds,
+                    grp["rows"],
+                    measure,
+                    retired_in,
+                    outcome=outcome_ref(v.get("refs", []), grp["key"]),
+                )
+                if grp
+                else None
+            )
             # The decision's leader: the best arm it may recommend, so never a retired or flagged one.
             leader = (
                 next((r for r in grp["rows"] if dec and r["arm"] == dec["leader"]), None) if grp else None
@@ -2398,7 +2410,14 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
                 rows = grp["rows"]
                 gm = rows[0].get("measure", measure) if rows else measure  # a judge's group: its score
                 dec = group_decision(
-                    A, g, ds, rows, gm, retired_in, gold_beside(tiers, ans["groups"], grp["key"])
+                    A,
+                    g,
+                    ds,
+                    rows,
+                    gm,
+                    retired_in,
+                    gold_beside(tiers, ans["groups"], grp["key"]),
+                    outcome=outcome_ref(v.get("refs", []), grp["key"]),
                 )
                 # The decision's leader, as the glance has it: never a retired or flagged arm, so the
                 # table, its "test vs leader" links and the decision box name the same arm.
@@ -2523,13 +2542,22 @@ def axis_ratios(dec: dict, arm: str, base: str) -> list[str]:
 
 
 def group_decision(
-    A: Adapter, g: dict, ds: str, rows: list, gm: str, retired_in: dict, gold: str | None = None
+    A: Adapter,
+    g: dict,
+    ds: str,
+    rows: list,
+    gm: str,
+    retired_in: dict,
+    gold: str | None = None,
+    outcome: bool = False,
 ) -> dict:
     """The goal's decision over one group of arms on one dataset (axes.decide): its axes, limits,
     the quality leader, the tie and the tie-break. A judge's group decides on the judge's score;
     an arm a round retired is shown, never recommended. `gold`: this group is scored against
     silver and that gold reference's group is on the same dataset, so gold decides and this group
-    only shows its leader; so does a group measured by unvalidated judges."""
+    only shows its leader; so does a group measured by unvalidated judges. `outcome`: this group is
+    scored against what production recorded afterwards (outcome_ref), which never decides, gold
+    beside it or not (ADR-0020)."""
     from evaluation_harness import axes  # noqa: PLC0415
 
     crit = g.get("success_criteria") or {}
@@ -2564,6 +2592,16 @@ def group_decision(
             + (f" ({role})" if role else "")
             + ": shown, not recommended.",
         ]
+    elif outcome and not gold:
+        dec["recommended"] = None
+        dec["shown_only"] = True
+        dec["why"] = [
+            *[w for w in dec["why"] if not w.startswith(("Recommended:", "Still tied"))],
+            (
+                "Scored against what production recorded afterwards, not a person's label: this group is "
+                f"shown, not recommended. The goal decides on gold/{ds}, which does not exist yet."
+            ),
+        ]
     elif gold:
         dec["recommended"] = None
         dec["shown_only"] = True
@@ -2586,6 +2624,12 @@ def group_decision(
             ),
         ]
     return dec
+
+
+def outcome_ref(refs: list, key: str) -> bool:
+    """Whether `key` is a reference made from outcomes (reference-from-outcomes: its caveat starts
+    "OUTCOME:"): shown beside the one a goal decides on, never deciding (ADR-0020)."""
+    return any(r["id"] == key and str(r.get("caveat") or "").startswith("OUTCOME:") for r in refs)
 
 
 def gold_beside(tiers: dict, groups: list, key: str) -> str | None:

@@ -852,7 +852,14 @@ def goals(argv) -> int:
             what = grp["key"]
             gm = (grp["rows"][0].get("measure") if grp["rows"] else None) or prim.get("measure", "")
             dec = cb.group_decision(
-                A, g, ds, grp["rows"], gm, retired_in, cb.gold_beside(tiers, ans["groups"], what)
+                A,
+                g,
+                ds,
+                grp["rows"],
+                gm,
+                retired_in,
+                cb.gold_beside(tiers, ans["groups"], what),
+                outcome=cb.outcome_ref((by_ds.get(ds) or {}).get("refs", []), what),
             )
             shown = cb.shown_axes(dec)
             leader = dec["leader"]  # the decision's: never a retired or flagged arm

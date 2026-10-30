@@ -33,7 +33,10 @@ sys.path.insert(1, str(HERE.parent / "tools"))  # the report checks some tests e
 
 def at(script: str) -> str:
     """A script's path from the harness root: the package's code is in scripts/, this
-    repository's tests in tests/ and its report and judge checks in tools/."""
+    repository's tests in tests/ and its report and judge checks in tools/; a path with a slash is
+    taken as it is (an example's own test, ../examples/<example>/test_x.py)."""
+    if "/" in script:
+        return script
     for d in ("scripts", "tests", "tools"):
         if (ROOT / d / script).is_file():
             return f"{d}/{script}"
@@ -647,6 +650,10 @@ def test_example_scorer_suites_pass() -> None:
         ("test_importers.py", "tsv, github (events with their comments), langfuse: offline stand-ins"),
         ("test_split.py", "dataset-split: the share, stable across versions, groups kept whole, by time"),
         ("test_hidden_text.py", "text: hidden: none of a hidden dataset's text on any public surface"),
+        (
+            "../examples/triage-fleet/test_triage.py",
+            "the triage example: its scorer, its importer on the fleet's export, the adapter if the fleet is here",
+        ),
         ("test_axes.py", "a goal's axes and strategy: limits, the tie, the tie-break, the ratios"),
         (
             "test_references.py",
