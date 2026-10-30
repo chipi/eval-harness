@@ -34,6 +34,9 @@ Updated 2026-10-30T17:35Z. Every finished run re-scored under the owner's rules 
   real problem, so the empty replies help its misses. Its own decisions score 1.431, against 0.554 for the whole
   step. The "no decision" column counts these; runs made before the column existed would have crashed instead, so
   their 0 is real.
+- **Mac speed, 17:11–17:38Z:** prod pulled two models on the Mac during that window, so the s / decision of
+  gpt-oss:20b (17:12–17:34Z, all of it) and the start of gemma4:31b may be slower than the Mac really is. The
+  repeats measure speed again.
 
 ## Skipped for now, to troubleshoot after the runs (owner, 2026-10-30)
 
