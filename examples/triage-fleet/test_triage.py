@@ -39,6 +39,13 @@ check(
 )
 check("not-file counts as dismiss", adapter.score(out("dismiss"), "not-file")["correct"] == 1.0)
 check(
+    "file-or-escalate: an escalation is correct, a dismissal is a false dismissal",
+    adapter.score(out("escalate"), "file-or-escalate")
+    == {"escalated": 1.0, "correct": 1.0, "false_dismiss": 0.0}
+    and adapter.score(out("file"), "file-or-escalate")["correct"] == 1.0
+    and adapter.score(out("dismiss"), "file-or-escalate")["false_dismiss"] == 1.0,
+)
+check(
     "JSON reference with correct_autonomous=escalate: a dismissal is a silent drop",
     adapter.score(out("dismiss"), json.dumps({"disposition": "escalate", "correct_autonomous": "escalate"}))[
         "silent_drop"

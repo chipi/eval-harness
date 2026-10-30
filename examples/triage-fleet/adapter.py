@@ -149,10 +149,12 @@ def score(output: str, reference: str | None) -> dict[str, float]:
     want, autonomous = _label(reference)
     if want == "not-file":
         want = "dismiss"
-    if want not in DISPOSITIONS:
+    # A real problem (its issue was fixed): filing it and escalating it are both right.
+    ok = ("file", "escalate") if want == "file-or-escalate" else (want,)
+    if want not in (*DISPOSITIONS, "file-or-escalate"):
         return row
-    row["correct"] = float(got == want)
-    if want in ("file", "escalate"):
+    row["correct"] = float(got in ok)
+    if want in ("file", "escalate", "file-or-escalate"):
         row["false_dismiss"] = float(got in ("dismiss", "cleanup"))
     if want in ("dismiss", "cleanup"):
         row["false_alarm"] = float(got in ("file", "escalate"))
