@@ -117,8 +117,8 @@ Their labels come from you (§3).
 3. **The arms differ only in the model.**
 4. **The comparison is arm against arm on the same items.** Production's recorded decision is a field, for
    reading.
-5. **What v1 measures:** judgement on mostly thin evidence. 78% of the labelled items have no logs or only the
-   signal. Results are reported per evidence level. The monthly exact versions (§4.4) measure production's own
+5. **What v1 measures:** judgement on mostly thin evidence. 151 of the 169 labelled items (89%) have no logs or
+   only the signal. Results are reported per evidence level. The monthly exact versions (§4.4) measure production's own
    question.
 6. **Independence:** the deciding gold covers one item per fingerprint.
 
