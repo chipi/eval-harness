@@ -27,6 +27,7 @@
         "changed": {"type": "array", "items": {"type": "string"}}
       }
     },
+    "tags": {"type": "object", "additionalProperties": {"type": "string"}, "description": "What the dataset is, as key=value pairs a project chooses (source, environment, purpose, owner): shown and filtered on, never part of its identity. Items carry their own tags (a list) below."},
     "made_from": {
       "type": "object",
       "description": "How the items were chosen when the dataset was made from a capture (evh dataset-from-capture, RFC-019): the capture, its query, and the selection rules.",
@@ -36,6 +37,7 @@
         "capture_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
         "query": {"type": "object"},
         "where": {"type": "array", "items": {"type": "string"}},
+        "one_per": {"type": ["string", "null"]},
         "dedup": {"enum": [null, "exact", "text"]},
         "sample": {"type": ["integer", "null"]},
         "by": {"type": ["string", "null"]},

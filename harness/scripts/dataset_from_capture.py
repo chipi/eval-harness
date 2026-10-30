@@ -82,13 +82,33 @@ def load_capture(capture_id: str) -> tuple[dict, list]:
     return doc, recs
 
 
+def _text(value) -> str:
+    """A field's value as --where compares it: missing or null is ""."""
+    return "" if value is None else str(value)
+
+
 def select(recs: list, args) -> list:
     """The records --where, --dedup and --sample keep, in capture order."""
     for w in args.where:
+        if "!=" in w:
+            name, want = w.split("!=", 1)
+            recs = [r for r in recs if _text(dig(r.get("fields") or {}, name)) != want]
+            continue
         name, sep, want = w.partition(":")
         if not sep:
-            die(f"--where {w!r}: FIELD:VALUE")
-        recs = [r for r in recs if str(dig(r.get("fields") or {}, name)) == want]
+            die(f"--where {w!r}: FIELD:VALUE or FIELD!=VALUE")
+        recs = [r for r in recs if _text(dig(r.get("fields") or {}, name)) == want]
+    if args.one_per:
+        # One record per value of a field, the newest (by created_at, then id): many records on one
+        # fingerprint are not independent items for the paired test.
+        best: dict = {}
+        for r in recs:
+            key = _text(dig(r.get("fields") or {}, args.one_per))
+            rank = (r.get("created_at") or "", r["id"])
+            if key not in best or rank > best[key][0]:
+                best[key] = (rank, r["id"])
+        keep = {rid for _, rid in best.values()}
+        recs = [r for r in recs if r["id"] in keep]
     if args.dedup:
         seen, kept = set(), []
         for r in recs:
@@ -130,7 +150,18 @@ def main() -> int:
     ap.add_argument("--dataset-id", required=True, help="lowercase_with_underscores")
     ap.add_argument("--from", dest="from_", metavar="DATASET_ID", help="the version this one grows from")
     ap.add_argument(
-        "--where", action="append", default=[], help="FIELD:VALUE, keep matching records (repeatable)"
+        "--where",
+        action="append",
+        default=[],
+        help='FIELD:VALUE keeps matching records, FIELD!=VALUE drops them (repeatable; missing is "")',
+    )
+    ap.add_argument("--one-per", metavar="FIELD", help="keep one record per value of this field, the newest")
+    ap.add_argument(
+        "--tag",
+        action="append",
+        default=[],
+        metavar="KEY=VALUE",
+        help="describe the dataset (source, environment, ...)",
     )
     ap.add_argument("--dedup", choices=("exact", "text"), help="drop records whose body repeats")
     ap.add_argument("--sample", type=int, help="keep N records, seeded")
@@ -149,6 +180,12 @@ def main() -> int:
         die(
             f"{out} already exists: a dataset is frozen. Make a new version (e.g. _v2), or --force if nothing cites it."
         )
+    tags = {}
+    for t in args.tag:
+        k, sep, v = t.partition("=")
+        if not sep or not k.strip():
+            die(f"--tag {t!r}: KEY=VALUE")
+        tags[k.strip()] = v.strip()
     fieldset = _fieldset(args.fieldset)
     if args.field and not fieldset:
         die("--field needs --fieldset: a field set declares what an item may carry")
@@ -199,6 +236,7 @@ def main() -> int:
         "capture_sha256": hashlib.sha256((CAPTURES / args.capture / "capture.json").read_bytes()).hexdigest(),
         "query": doc.get("query") or {},
         "where": list(args.where),
+        "one_per": args.one_per,
         "dedup": args.dedup,
         "sample": args.sample,
         "by": args.by,
@@ -216,7 +254,7 @@ def main() -> int:
         args.description or f"{len(kept)} record(s) from capture {args.capture}",
         _relative_source_dir(src),
         lineage,
-        {"made_from": made_from},
+        {"made_from": made_from, **({"tags": tags} if tags else {})},
     )
     print(
         f"{out.relative_to(DATASETS.parents[1])}  ({len(items)} item(s); {len(kept)} of {len(recs)} records kept)"

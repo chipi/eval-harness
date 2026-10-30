@@ -374,4 +374,39 @@ check(
 r = evh("captures", "--capture", "../x")
 check("captures: a path as the id is refused", r.returncode != 0)
 
+# ── --one-per, --where !=, --tag ───────────────────────────────────────────────────────────
+r = evh("dataset-from-capture", "m", "--dataset-id", "m_one", "--one-per", "kind")
+check(
+    "--one-per: one record per value of the field, the newest (by time, then id)",
+    r.returncode == 0
+    and sorted(it["item_id"] for it in ds("m_one")["items"]) == ["m7", "m8", "m_dup"]
+    and ds("m_one")["made_from"]["one_per"] == "kind",
+    out(r)[-300:],
+)
+r = evh("dataset-from-capture", "m", "--dataset-id", "m_not", "--where", "kind!=a", "--where", "kind!=b")
+check(
+    "--where FIELD!=VALUE drops the matching records",
+    r.returncode == 0 and {it["item_id"] for it in ds("m_not")["items"]} == {"m2", "m5", "m8", "m11"},
+    out(r)[-300:],
+)
+r = evh(
+    "dataset-from-capture",
+    "c1",
+    "--dataset-id",
+    "cap_tagged",
+    "--tag",
+    "source=fleet",
+    "--tag",
+    "environment=prod",
+)
+check(
+    "--tag: the dataset's own tags, outside its identity",
+    r.returncode == 0 and ds("cap_tagged").get("tags") == {"source": "fleet", "environment": "prod"},
+    out(r)[-300:],
+)
+r = evh("dataset-from-capture", "c1", "--dataset-id", "cap_badtag", "--tag", "noequals")
+check("--tag without KEY=VALUE is refused", r.returncode != 0 and "KEY=VALUE" in out(r))
+r = evh("validate")
+check("validate passes with tags and one_per (V1)", r.returncode == 0, out(r)[-300:])
+
 sys.exit(summary())
