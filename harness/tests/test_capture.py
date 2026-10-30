@@ -306,4 +306,72 @@ check(
     out(r)[-300:],
 )
 
+# ── V17: validate catches the edited record ────────────────────────────────────────────────
+r = evh("validate")
+check(
+    "V17: validate fails on a capture whose record was edited (its outcome only)",
+    r.returncode != 0 and "FAIL V17" in out(r) and "c1/a1" in out(r),
+    out(r)[-400:],
+)
+rec_doc["outcome"] = {"verdict": "fixed"}  # put it back as it was
+rec_file.write_text(json.dumps(rec_doc))
+
+# ── capture-scrub ──────────────────────────────────────────────────────────────────────────
+(proj / "scrub.py").write_text(
+    "import json, pathlib, sys\n"
+    "for f in pathlib.Path(sys.argv[1]).glob('*.json'):\n"
+    "    r = json.loads(f.read_text())\n"
+    "    if isinstance(r.get('body'), str) and 'Same' in r['body']:\n"
+    "        r['body'] = r['body'].replace('Same', '<redacted>')\n"
+    "        f.write_text(json.dumps(r))\n"
+    "print('scrubbed what it found')\n"
+)
+before = json.loads((proj / "data" / "captures" / "m" / "capture.json").read_text())
+r = evh("capture-scrub", "m", "--command", f"{sys.executable} scrub.py {{records}}")
+after = json.loads((proj / "data" / "captures" / "m" / "capture.json").read_text())
+changed = [e for e in after["records"] if "sha256_before_scrub" in e]
+check(
+    "capture-scrub: the records changed are re-hashed, their old hash kept, the command recorded",
+    r.returncode == 0
+    and len(changed) == 12
+    and all(
+        e["sha256_before_scrub"] == {b["id"]: b["sha256"] for b in before["records"]}[e["id"]]
+        for e in changed
+    )
+    and after.get("scrubbed", {}).get("records_changed") == 12
+    and "scrub.py" in after["scrubbed"].get("files_sha256", {})
+    and not any(k.startswith("/") for k in after["scrubbed"]["files_sha256"]),
+    out(r)[-300:],
+)
+r = evh("validate")
+check("capture-scrub: V17 passes on the scrubbed capture", r.returncode == 0, out(r)[-300:])
+(proj / "bad_scrub.py").write_text(
+    "import pathlib, sys\nfor f in pathlib.Path(sys.argv[1]).glob('*.json'):\n    f.write_text('not json')\n"
+)
+snap = {p.name: p.read_text() for p in (proj / "data" / "captures" / "m" / "records").iterdir()}
+r = evh("capture-scrub", "m", "--command", f"{sys.executable} bad_scrub.py {{records}}")
+check(
+    "capture-scrub: a scrubber that breaks the records is undone, nothing recorded",
+    r.returncode != 0
+    and "as they were" in out(r)
+    and snap == {p.name: p.read_text() for p in (proj / "data" / "captures" / "m" / "records").iterdir()},
+    out(r)[-300:],
+)
+r = evh("capture-scrub", "m", "--command", "true")
+check("capture-scrub: a command without {records} is refused", r.returncode != 0 and "{records}" in out(r))
+
+# ── evh captures ───────────────────────────────────────────────────────────────────────────
+r = evh("captures", "--json")
+caps = {c["capture"]: c for c in json.loads(r.stdout)["captures"]} if r.returncode == 0 else {}
+check(
+    "captures: each capture, its importer, scrubbed or not, and the datasets made from it",
+    set(caps) == {"c1", "c2", "m"}
+    and caps["m"]["scrubbed"]
+    and sorted(caps["c1"]["datasets"]) == ["cap_v1"]
+    and caps["c2"]["continues"] == "c1",
+    r.stdout[-400:],
+)
+r = evh("captures", "--capture", "../x")
+check("captures: a path as the id is refused", r.returncode != 0)
+
 sys.exit(summary())

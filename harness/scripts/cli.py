@@ -78,6 +78,11 @@ COMMANDS = {
         "reference_from_outcomes.py",
         "a reference from what production recorded afterwards, by recorded rules",
     ),
+    "capture-scrub": (
+        "capture_scrub.py",
+        "run the project's own scrubber over a capture's records, and record it",
+    ),
+    "captures": ("view_captures.py", "every capture, or one: what was read, when, the datasets made from it"),
     "dataset-from-capture": (
         "dataset_from_capture.py",
         "make a dataset version from a capture: choose records, freeze their bodies as items",

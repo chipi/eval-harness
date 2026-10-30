@@ -51,6 +51,7 @@ READ_TOOLS = (
     "rounds",
     "runs-list",
     "validate",
+    "captures",
 )
 NOT_TOOLS = {
     "init": "writes a project",
@@ -77,6 +78,7 @@ NOT_TOOLS = {
     "importer-check": "reads a production system, not the project",
     "capture": "reads a production system and writes",
     "dataset-from-capture": "writes",
+    "capture-scrub": "runs a project's command and writes",
     "reference-from-outcomes": "writes",
     "run-compare": "a statistics command; not yet a tool",
     "run-promote": "a decision: a person's",
@@ -90,7 +92,7 @@ NOT_TOOLS = {
 }
 #: The views that take --json (catalog_views via _jsonout; dataset-items its profile).
 JSON = {"overview", "datasets", "arms", "goals", "references", "metrics", "activity", "search", "inspect"}
-JSON |= {"dataset-items"}
+JSON |= {"dataset-items", "captures"}
 #: Left out of every schema: the server uses the project's own adapter (an agent must not load an
 #: arbitrary file), and sets --json itself.
 HIDDEN = {"--adapter", "--json", "--help"}

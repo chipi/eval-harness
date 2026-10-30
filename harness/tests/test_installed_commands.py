@@ -242,6 +242,8 @@ def main() -> int:
                 ],
                 "ok:record(s) from jsonl",
             ),
+            ("capture-scrub", ["c1", "--command", "true {records}"], "ok:0 of"),
+            ("captures", ["--capture", "c1"], "ok:c1:"),
             ("dataset-from-capture", ["c1", "--dataset-id", "captured_v1"], "ok:records kept"),
             # Installed and reading its arguments; the flow is tests/test_outcome_reference.py.
             (

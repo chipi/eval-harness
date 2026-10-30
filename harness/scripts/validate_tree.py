@@ -54,6 +54,7 @@ from pathlib import Path
 
 from evaluation_harness._common import (
     BASELINES,
+    CAPTURES,
     CONFIGS,
     DATA,
     DATASETS,
@@ -147,6 +148,7 @@ def v1_schemas() -> None:
         ((DATA / "judge-verdicts").glob("*/*/*/*.json"), "verdict.schema.json"),
         ([DATA / "models.yaml"], "models.schema.json"),
         ((DATA / "profiles").glob("*.json"), "profile.schema.json"),
+        (CAPTURES.glob("*/capture.json"), "capture.schema.json"),
     ]
     bad = 0
     n = 0
@@ -1161,6 +1163,42 @@ def v16_references() -> None:
     )
 
 
+def v17_captures() -> None:
+    """V17: every capture's records are the ones it recorded (RFC-019): each record file present,
+    its id the one listed, and its hash the capture's `sha256` (the whole record, outcome included,
+    so an edited outcome is caught as surely as an edited body)."""
+    from evaluation_harness._importers import record_sha256  # noqa: PLC0415
+
+    caps = sorted(CAPTURES.glob("*/capture.json")) if CAPTURES.is_dir() else []
+    if not caps:
+        print("  --   V17 captures (none)")
+        return
+    bad: list[str] = []
+    n = 0
+    for c in caps:
+        doc = read_json(c)
+        for entry in doc.get("records") or []:
+            n += 1
+            rf = c.parent / "records" / f"{entry.get('id')}.json"
+            if not rf.is_file():
+                bad.append(f"{c.parent.name}/{entry.get('id')}: record file missing")
+                continue
+            rec = read_json(rf)
+            if rec.get("id") != entry.get("id") or record_sha256(rec) != entry.get("sha256"):
+                bad.append(f"{c.parent.name}/{entry.get('id')}: does not match the hash the capture recorded")
+        if doc.get("n_records") != len(doc.get("records") or []):
+            bad.append(
+                f"{c.parent.name}: n_records {doc.get('n_records')} but {len(doc.get('records') or [])} listed"
+            )
+    for b in bad[:10]:
+        print(f"       {b}")
+    check(
+        f"V17 captures — {len(caps)} capture(s), {n} record(s) match their hashes",
+        not bad,
+        f"{len(bad)} problem(s)",
+    )
+
+
 def main() -> int:
     """Run all integrity checks over the eval tree; exit 1 if any fails."""
     # `--help` prints help. It used to fall through and run the whole validation, which
@@ -1188,6 +1226,7 @@ def main() -> int:
         v14_goals,
         v15_item_fields,
         v16_references,
+        v17_captures,
     ):
         fn()
     for n in notes:
