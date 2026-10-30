@@ -98,6 +98,12 @@ the baseline model, compare to production's recorded decisions (section 5).
 5. **Recheck the 1-in-20 escalation target** against the gate: the prompt asks for 5% while the gate produces 17% (39
    of 233) by itself.
 
+6. **Tell the model the trade-off it is scored on** (owner, 2026-10-30, for the tuning phase). The evaluation now
+   decides on a combined cost: a missed real problem costs 5 false alarms, and false alarms may not exceed
+   production's rate. The brief today says the opposite ("anything error-shaped is file-able", "escalate at most
+   ~1 in 20"). Writing the same trade-off into the brief aligns what the model optimises with what the operator
+   wants; it is the objective itself, not a trick on the test. Measure it like any other change: one arm.
+
 ## 4. What the evaluation process taught (reusable for any fleet)
 
 - **The operator's close comments are the verdicts.** GitHub's close reason is COMPLETED on nearly every close; the
@@ -111,6 +117,9 @@ the baseline model, compare to production's recorded decisions (section 5).
   those rules, labelled 10 decisions on information the model never had. The second pass still showed the
   labeller the whole stored signal (`signal.raw`) as "seen at decision"; the agent's prompt shows four of its
   fields. "Seen at decision" must be built from the agent's own prompt assembly, not from the stored record.
+- **A goal that counts only misses rewards an agent that flags everything.** v1 decided on false dismissals with no
+  limit on false alarms; llama3.1:8b, the smallest model run, missed none of 34 real problems by flagging 27 of 31
+  noise decisions. A goal for a triage step needs both sides: a ceiling on noise and a price for a miss.
 - **Probe retention decides what can be replayed.** Of the 1,528 probe answers in v1, 745 are `unavailable`
   (stores hold logs from 2026-09-30, traces from 2026-10-07). The per-decision probe capture deployed on 2026-10-29
   makes future months exact.
