@@ -36,9 +36,12 @@ def item_hashes(ref_dir: Path) -> dict[str, str]:
     return {f.stem: hashlib.sha256(f.read_bytes()).hexdigest() for f in sorted(ref_dir.glob("*.txt"))}
 
 
-def write_manifest(ref_dir: Path, tier: str, dataset_id: str, **extra: Any) -> dict[str, Any]:
+def write_manifest(
+    ref_dir: Path, tier: str, dataset_id: str, caveat: str | None = None, **extra: Any
+) -> dict[str, Any]:
     """Write the manifest of the reference texts in `ref_dir`, with `extra` fields (author,
-    model, cost, source, redistributed, created_at); return it."""
+    model, cost, source, redistributed, created_at); return it. `caveat` replaces the tier's own
+    when the reference is something the tier's words do not describe (an outcome reference)."""
     hashes = item_hashes(ref_dir)
     doc = {
         "dataset_id": dataset_id,
@@ -46,7 +49,7 @@ def write_manifest(ref_dir: Path, tier: str, dataset_id: str, **extra: Any) -> d
         **extra,
         "n_items": len(hashes),
         "items_sha256": hashes,
-        "caveat": CAVEATS[tier],
+        "caveat": caveat or CAVEATS[tier],
     }
     write_json(ref_dir / "manifest.json", doc)
     return doc

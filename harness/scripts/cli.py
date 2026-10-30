@@ -74,6 +74,10 @@ COMMANDS = {
         "check an importer: its records are well-formed, ids unique, two reads the same",
     ),
     "capture": ("capture.py", "keep a production system's records as a capture (data/captures/)"),
+    "reference-from-outcomes": (
+        "reference_from_outcomes.py",
+        "a reference from what production recorded afterwards, by recorded rules",
+    ),
     "dataset-from-capture": (
         "dataset_from_capture.py",
         "make a dataset version from a capture: choose records, freeze their bodies as items",

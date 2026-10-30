@@ -2545,7 +2545,8 @@ def group_decision(
             *[w for w in dec["why"] if not w.startswith(("Recommended:", "Still tied"))],
             (
                 f"Scored against silver, beside {gold}: gold decides on {ds}; this group is shown, not "
-                "recommended. Silver is a model's opinion, and its author's family ranks higher on it."
+                "recommended. Silver is not what the goal decides on: a model's opinion (its author's "
+                "family ranks higher on it) or what production recorded afterwards; its caveat says which."
             ),
         ]
     elif gm.endswith("_unvalidated"):

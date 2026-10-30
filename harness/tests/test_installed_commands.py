@@ -243,6 +243,12 @@ def main() -> int:
                 "ok:record(s) from jsonl",
             ),
             ("dataset-from-capture", ["c1", "--dataset-id", "captured_v1"], "ok:records kept"),
+            # Installed and reading its arguments; the flow is tests/test_outcome_reference.py.
+            (
+                "reference-from-outcomes",
+                ["--dataset-id", "captured_v1", "--capture", "c1", "--map", "no_such_map.yaml"],
+                "--map: no file",
+            ),
             ("run-compare", ["--baseline", base_id, "--candidate", run_id], "ok"),
             (
                 "run-promote",
