@@ -27,6 +27,23 @@
         "changed": {"type": "array", "items": {"type": "string"}}
       }
     },
+    "made_from": {
+      "type": "object",
+      "description": "How the items were chosen when the dataset was made from a capture (evh dataset-from-capture, RFC-019): the capture, its query, and the selection rules.",
+      "required": ["capture"],
+      "properties": {
+        "capture": {"type": "string"},
+        "capture_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "query": {"type": "object"},
+        "where": {"type": "array", "items": {"type": "string"}},
+        "dedup": {"enum": [null, "exact", "text"]},
+        "sample": {"type": ["integer", "null"]},
+        "by": {"type": ["string", "null"]},
+        "seed": {"type": ["integer", "null"]},
+        "records": {"type": "integer"},
+        "kept": {"type": "integer"}
+      }
+    },
     "items": {
       "type": "array",
       "minItems": 1,

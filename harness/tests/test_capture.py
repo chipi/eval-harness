@@ -188,4 +188,122 @@ check(
     out(r)[-200:],
 )
 
+# ── dataset-from-capture ────────────────────────────────────────────────────────────────────
+more = [{"id": f"m{i}", "body": f"Same  text {i % 3}", "kind": "abc"[i % 3]} for i in range(12)]
+more.append({"id": "m_dup", "body": "same text 0", "kind": "a"})
+(proj / "more.jsonl").write_text("".join(json.dumps(x) + "\n" for x in more))
+evh("capture", "--importer", "jsonl", "--query", json.dumps({"path": "more.jsonl"}), "--capture", "m")
+(proj / "data" / "fields").mkdir(exist_ok=True)
+(proj / "data" / "fields" / "kinds.yaml").write_text(
+    "fieldset_id: kinds\ndescription: test\nfields:\n"
+    "  - {name: kind, type: choice, values: [a, b, c, x, y, ''], label: Kind, description: a kind, public: true}\n"
+)
+ds_dir = proj / "data" / "datasets"
+
+
+def ds(name):
+    return json.loads((ds_dir / f"{name}.json").read_text())
+
+
+r = evh("dataset-from-capture", "c1", "--dataset-id", "cap_v1")
+d = ds("cap_v1") if r.returncode == 0 else {}
+src = proj / "data" / "sources" / "cap_v1"
+cap1 = json.loads((proj / "data" / "captures" / "c1" / "capture.json").read_text())
+check(
+    "from-capture: every record's body is an item, its hash the capture's body_sha256",
+    sorted(it["item_id"] for it in d.get("items", [])) == ["a1", "a2"]
+    and {it["item_id"]: it["source_sha256"] for it in d.get("items", [])}
+    == {x["id"]: x["body_sha256"] for x in cap1["records"]},
+    out(r)[-300:],
+)
+check(
+    "from-capture: only the body: the outcome is nowhere in the item's bytes",
+    src.is_dir() and all("fixed" not in p.read_text() for p in src.iterdir()),
+)
+check(
+    "from-capture: made_from records the capture, its hash and the rules",
+    d.get("made_from", {}).get("capture") == "c1"
+    and len(d["made_from"].get("capture_sha256", "")) == 64
+    and d["made_from"].get("records") == 2,
+    d.get("made_from"),
+)
+r = evh("dataset-materialize", "--dataset-id", "cap_v1")
+check("from-capture: the dataset materializes, hashes checked", r.returncode == 0, out(r)[-300:])
+r = evh("validate")
+check("from-capture: validate passes (V1 schema, V2, V4)", r.returncode == 0, out(r)[-400:])
+
+r = evh("dataset-from-capture", "m", "--dataset-id", "m_where", "--where", "kind:b")
+check(
+    "from-capture --where on a field",
+    r.returncode == 0 and {it["item_id"] for it in ds("m_where")["items"]} == {"m1", "m4", "m7", "m10"},
+    out(r)[-200:],
+)
+r = evh("dataset-from-capture", "m", "--dataset-id", "m_text", "--dedup", "text")
+check(
+    "from-capture --dedup text: case and whitespace folded, the first kept",
+    r.returncode == 0
+    and len(ds("m_text")["items"]) == 3
+    and "m_dup" not in {it["item_id"] for it in ds("m_text")["items"]},
+    out(r)[-200:],
+)
+r = evh("dataset-from-capture", "m", "--dataset-id", "m_exact", "--dedup", "exact")
+check(
+    "from-capture --dedup exact: only identical bodies",
+    r.returncode == 0 and len(ds("m_exact")["items"]) == 4,
+)
+r1 = evh("dataset-from-capture", "m", "--dataset-id", "m_s1", "--sample", "6", "--by", "kind", "--seed", "7")
+r2 = evh("dataset-from-capture", "m", "--dataset-id", "m_s2", "--sample", "6", "--by", "kind", "--seed", "7")
+s1 = [it["item_id"] for it in ds("m_s1")["items"]] if r1.returncode == 0 else []
+kinds = [next(x["kind"] for x in more if x["id"] == i) for i in s1]
+check(
+    "from-capture --sample --by --seed: 6 items, 2 per kind, the same draw again",
+    len(s1) == 6
+    and sorted(kinds) == ["a", "a", "b", "b", "c", "c"]
+    and s1 == [it["item_id"] for it in ds("m_s2")["items"]],
+    out(r1)[-200:] + str(kinds),
+)
+r = evh("dataset-from-capture", "m", "--dataset-id", "m_nos", "--sample", "3")
+check("from-capture --sample without --seed is refused", r.returncode != 0 and "--seed" in out(r))
+r = evh(
+    "dataset-from-capture",
+    "m",
+    "--dataset-id",
+    "m_f",
+    "--fieldset",
+    "kinds",
+    "--field",
+    "kind",
+    "--where",
+    "kind:a",
+)
+check(
+    "from-capture --fieldset --field: record fields become typed item fields",
+    r.returncode == 0 and all(it.get("fields") == {"kind": "a"} for it in ds("m_f")["items"]),
+    out(r)[-300:],
+)
+r = evh("dataset-from-capture", "c2", "--dataset-id", "cap_v2", "--from", "cap_v1")
+lin = ds("cap_v2").get("derived_from", {}) if r.returncode == 0 else {}
+check(
+    "from-capture --from: the earlier version's items stay, the new are added, lineage recorded",
+    sorted(it["item_id"] for it in ds("cap_v2")["items"]) == ["a1", "a2", "a3"]
+    and lin.get("dataset_id") == "cap_v1"
+    and lin.get("added") == ["a3"]
+    and lin.get("removed") == [],
+    out(r)[-300:],
+)
+r = evh("dataset-from-capture", "c1", "--dataset-id", "cap_v1")
+check(
+    "from-capture: a dataset is never overwritten without --force", r.returncode != 0 and "frozen" in out(r)
+)
+rec_file = proj / "data" / "captures" / "c1" / "records" / "a1.json"
+rec_doc = json.loads(rec_file.read_text())
+rec_doc["outcome"] = {"verdict": "noise"}
+rec_file.write_text(json.dumps(rec_doc))
+r = evh("dataset-from-capture", "c1", "--dataset-id", "cap_tampered")
+check(
+    "from-capture: a record edited since the capture is refused",
+    r.returncode != 0 and "does not match the hash" in out(r),
+    out(r)[-300:],
+)
+
 sys.exit(summary())

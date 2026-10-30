@@ -74,6 +74,10 @@ COMMANDS = {
         "check an importer: its records are well-formed, ids unique, two reads the same",
     ),
     "capture": ("capture.py", "keep a production system's records as a capture (data/captures/)"),
+    "dataset-from-capture": (
+        "dataset_from_capture.py",
+        "make a dataset version from a capture: choose records, freeze their bodies as items",
+    ),
     "run-compare": ("compare_runs.py", "diff two runs, fingerprint first"),
     "run-promote": ("promote_baseline.py", "promote a run to a baseline, with a reason"),
     "round-open": (
