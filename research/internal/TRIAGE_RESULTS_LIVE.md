@@ -49,6 +49,12 @@ Updated 2026-10-30T20:25Z. Every finished run re-scored under the owner's rules 
 - **gpt-oss:120b on the DGX** ran an older build (pulled 2026-06-05, model layer `6be6d66a`); the current build
   (`a5b03e4c`, on X3 since 2026-10-30) differs in its weights only. The owner chose a re-pull and a re-run
   (2026-10-30); this row is kept until then, and then leaves the set of record.
+- **Self-hosted runs are deterministic per machine, not across machines** (measured 2026-10-30). The fleet calls
+  the model at `temperature: 0` with JSON mode (`mvp/triage.py:255`). A second Bolt e4b pass on X3 matched the
+  first byte for byte: 65 of 65 raw outputs identical, 0 decisions different. Against the DGX and the Mac, all 65
+  raw outputs differ and 14 and 10 decisions differ. So a self-hosted row is one fixed draw, repeats on the same
+  machine add nothing, and the spread between machines (Bolt 0.523 / 0.600 / 0.754) is the run-to-run noise.
+  Hosted repeats do vary (the providers are not deterministic).
 - **Mac speed, 17:11–17:38Z:** prod pulled two models on the Mac during that window, so the s / decision of
   gpt-oss:20b (17:12–17:34Z, all of it) and the start of gemma4:31b may be slower than the Mac really is. The
   repeats measure speed again.
