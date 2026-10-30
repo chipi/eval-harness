@@ -1,0 +1,15 @@
+# qwen3:30b-a3b-instruct-2507-q4_K_M (Qwen3 30B-A3B Instruct 2507, the model podcast production serves in NVFP4 on the DGX's vLLM),
+# self-hosted with Ollama 0.40.13 on X3: AMD Ryzen AI Max+ 395, Radeon 8060S, 128 GB unified (ROCm).
+# The same weights run on each machine that fits them; arms differ only in the model and where it runs.
+config_id: triage_local_x3_qwen3_30b_a3b_v1
+dataset_id: orrery_triage_v1_labelled
+adapter: ../../adapter.py
+goal: triage_orrery
+params:
+  provider: gateway
+  model: "qwen3:30b-a3b-instruct-2507-q4_K_M"
+  url: http://127.0.0.1:11434/v1/chat/completions
+  call_timeout_s: 600
+  machine: x3
+  usd_per_mtok_in: 0
+  usd_per_mtok_out: 0

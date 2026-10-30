@@ -1,0 +1,12 @@
+# Qwen3 30B-A3B Instruct 2507, hosted (OpenRouter qwen/qwen3-30b-a3b-instruct-2507): the twin of the self-hosted
+# arms of the same model (Ollama GGUF, and the DGX's production vLLM in NVFP4).
+# Arms differ only in the model: the fleet's prompt, probes and gates are the same for every arm.
+config_id: triage_hosted_qwen3_30b_a3b_v1
+dataset_id: orrery_triage_v1_labelled
+adapter: ../adapter.py
+goal: triage_orrery
+params:
+  provider: gateway
+  model: eval-qwen3-30b-a3b
+  usd_per_mtok_in: 0.1
+  usd_per_mtok_out: 0.3

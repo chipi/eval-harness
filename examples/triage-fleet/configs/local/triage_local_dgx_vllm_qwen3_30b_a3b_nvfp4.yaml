@@ -1,0 +1,16 @@
+# NVFP4/Qwen3-30B-A3B-Instruct-2507-FP4 on the DGX's production vLLM (vllm-prod-vllm, :8003, max_model_len 65536):
+# the model podcast production serves, on its own stack. Shared production: run only in a window homelab agrees to,
+# never across the podcast nightly. The key is the run's OPENROUTER_API_KEY (the adapter's gateway key), set to the vLLM key
+# from the environment at run time, never stored here.
+config_id: triage_local_dgx_vllm_qwen3_30b_a3b_nvfp4_v1
+dataset_id: orrery_triage_v1_labelled
+adapter: ../../adapter.py
+goal: triage_orrery
+params:
+  provider: gateway
+  model: "NVFP4/Qwen3-30B-A3B-Instruct-2507-FP4"
+  url: http://100.69.49.126:8003/v1/chat/completions
+  call_timeout_s: 600
+  machine: dgx
+  usd_per_mtok_in: 0
+  usd_per_mtok_out: 0
