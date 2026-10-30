@@ -13,6 +13,34 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Added
 
+- **Datasets from production: the capture lane** (RFC-019, PRD-014, ADR-0019). A project keeps what a
+  production system did as a **capture**, then makes datasets and references from it:
+  - **`evh capture`** reads records through an **importer** (`--importer jsonl|tsv|github|langfuse`, or a
+    project's own `path.py:Class`) into `data/captures/<id>/`: each record's id, body, fields, time, source
+    and outcome, hashed one by one (`capture.json`); `--since-capture` continues from an earlier capture.
+    **`evh importer-check`** tests an importer against the contract; **`evh captures`** lists them.
+  - **`evh capture-scrub`** runs a project's own scrubber over a capture's records and re-hashes the ones
+    it changed, keeping their earlier hashes.
+  - **`evh dataset-from-capture`** freezes a selection (`--where`, `--dedup`, `--one-per`, `--sample`),
+    typed fields from a field set, and `--tag K=V` labels; only the body becomes the item.
+  - **`evh reference-from-outcomes`** turns what happened afterwards into labels by a small rule set
+    (`when`, `unless`, `exists`, `absent`, `range`, `min_age_days`). Such a reference is `silver/…` with
+    its own caveat, and **never decides a goal**: with gold beside it, or with no gold at all (ADR-0020).
+  - **`evh dataset-split`** makes `<D>_dev` and `<D>_heldout` by hash (stable across versions, a group
+    kept whole with `--key`) or by time.
+  - **V17** checks every capture's records against their hashes; a capture whose records a project keeps
+    out of git (fetched from where it publishes them) is named as not fetched, not failed.
+- **`text: hidden` on a dataset**: none of its text, nor anything derived from it, on any public surface:
+  the catalog's pages, the inspector and `evh mcp` in public mode, and a deployment's copy of the data
+  (`_release.py copy-data`, which also refuses a release carrying reference texts or run outputs git does
+  not track). `dataset-from-capture --hide-text` sets it.
+- **Dataset tags on the views**: the catalog's datasets page groups by each tag key and shows where a
+  dataset came from (a capture and its selection); **`evh datasets --tag K=V`** filters the same way.
+- **Two examples from a production fleet**: `examples/triage-fleet/` (an agent's real triage decisions,
+  replayed through its own code; the operator's verdicts as gold; the model's own decision scored beside
+  the fleet's, before and after its gates) and `examples/signal-fleet-dedup/` (a regression guard for the
+  fleet's de-duplication functions; no model). Their data is published on Hugging Face and fetched by a
+  pinned revision.
 - **A share card on every catalog page**: its title and its opening line as `description`, `og:*` and
   `twitter:card`, and with **`evh catalog --card URL`** the image a shared link shows. The pages stay
   `noindex`.
@@ -22,6 +50,11 @@ that can move a result is never a patch release without saying so under **Change
 - **CI runs once per merge, not twice**: a squash onto main whose tree is its pull request's head,
   tested green and up to date with main, skips the workflows that already passed on it; the deploy
   no longer waits ~13 minutes for a second run of the same files. Anything else runs them again.
+- **An item id may contain `:`, `@`, `+` and `=`** (a production record's id, e.g. a fingerprint and its
+  time), on the inspector's item view too; still never a path.
+- **A deployment copies its data through `_release.py copy-data`**, not a list in `render.sh`: the same
+  directories, plus each capture's `capture.json` (never its records), with the `text: hidden` rules
+  applied and the untracked-text refusal checked before anything is written.
 
 ### Fixed
 
