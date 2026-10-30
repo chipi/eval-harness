@@ -197,6 +197,9 @@ class Adapter(Protocol):
     # Optional: when a dataset was frozen (ISO); the home page counts it new from that day, and
     # from its first run when this is absent or "".
     # def dataset_created(self, dataset: str) -> str: ...
+    # Optional: a dataset's own labels and origin, {"tags": {key: value}, "origin": "..."}: the
+    # datasets page groups and filters by its tags (RFC-019) and says where it came from.
+    # def dataset_meta(self, dataset: str) -> dict: ...
     # Optional: what is inside a dataset, without its text (`evh dataset-profile` writes it to
     # data/profiles/<dataset>.json): {"items": {"n", "kind", "words"}, "references": [...],
     # "rows": [{"item_id", "words", "reference", "source_url"?, "text"?}], "source", "items_sha256"},
@@ -732,6 +735,28 @@ class HarnessAdapter:
         ds = _json(self.data_dir / "datasets" / f"{dataset}.json")
         got = ds.get("created_at") if isinstance(ds, dict) else None
         return got if isinstance(got, str) else ""
+
+    def dataset_meta(self, dataset: str) -> dict:
+        """The dataset's `tags`, and its origin in a few words: a capture it was made from (with the
+        selection), or the version it was derived from; {} when its file says neither."""
+        got = _json(self.data_dir / "datasets" / f"{dataset}.json")
+        if not isinstance(got, dict):
+            return {}
+        ds: dict = got
+        tags: dict = ds["tags"] if isinstance(ds.get("tags"), dict) else {}
+        mf: dict = ds["made_from"] if isinstance(ds.get("made_from"), dict) else {}
+        origin = ""
+        if mf.get("capture"):
+            bits = [f"capture {mf['capture']}"]
+            bits += [f"where {w}" for w in mf.get("where") or []]
+            if mf.get("one_per"):
+                bits.append(f"one per {mf['one_per']}")
+            if mf.get("sample"):
+                bits.append(f"a sample of {mf['sample']}")
+            origin = ", ".join(bits)
+        elif isinstance(ds.get("derived_from"), dict) and ds["derived_from"].get("dataset_id"):
+            origin = f"version of {ds['derived_from']['dataset_id']}"
+        return {"tags": {str(k): str(v) for k, v in tags.items()}, "origin": origin}
 
     def dataset_profile(self, dataset: str) -> dict | None:
         """data/profiles/<dataset>.json (`evh dataset-profile`), with "stale": True when the dataset's

@@ -131,10 +131,23 @@ def datasets(argv) -> int:
     """evh datasets: every dataset, or one with its versions, references and arms."""
     ap = argparse.ArgumentParser(prog="evh datasets", description="Every dataset, or one in full.")
     ap.add_argument("--dataset-id", help="one dataset: its versions, references and arms")
+    ap.add_argument(
+        "--tag", action="append", default=[], metavar="K=V", help="only datasets with this tag (repeatable)"
+    )
     _period_option(ap)
     ap.add_argument("--adapter", help="path/to/file.py:Class (default: the catalog's)")
     args = ap.parse_args(argv)
     A, by_ds = _adapter(args)
+    want = []
+    for t in args.tag:
+        k, sep, val = t.partition("=")
+        if not sep or not k:
+            die(f"--tag {t!r}: KEY=VALUE")
+        want.append((k, val))
+    if want:
+        by_ds = {
+            d: v for d, v in by_ds.items() if all((v.get("tags") or {}).get(k) == val for k, val in want)
+        }
     if not args.dataset_id:
         per, line = _period(A, by_ds, cb.period_datasets(A, by_ds), args.period)
         flows = ("runs", "usd")
@@ -147,12 +160,13 @@ def datasets(argv) -> int:
                 len(v["arms"]),
                 cb._n_configs({ds: v}),
                 ", ".join(r["id"] for r in v["refs"]) or "—",
-                (v.get("parent") or {}).get("dataset_id", ""),
+                (v.get("parent") or {}).get("dataset_id", "") or v.get("origin", ""),
+                " ".join(f"{k}={t}" for k, t in sorted((v.get("tags") or {}).items())),
                 *(_pcells(per[ds], flows) if per else []),
             ]
             for ds, v in sorted(by_ds.items())
         ]
-        heads = ["dataset", f"{A.item_word}s", "arms", "configs", "references", "made from"]
+        heads = ["dataset", f"{A.item_word}s", "arms", "configs", "references", "made from", "tags"]
         _table(heads + (["", *(PERIOD_HEADS[f] for f in flows)] if per else []), rows)
         return 0
     v = by_ds.get(args.dataset_id)
@@ -162,6 +176,10 @@ def datasets(argv) -> int:
         f"{args.dataset_id}: {v['items']} {A.item_word}s, {len(v['arms'])} arms from "
         f"{cb._n_configs({args.dataset_id: v})} configs (a config rescored against silver or by a judge is an arm of its own)\n"
     )
+    if v.get("tags"):
+        print("tags: " + ", ".join(f"{k}={t}" for k, t in sorted(v["tags"].items())))
+    if v.get("origin") and not v.get("parent"):
+        print(f"made from {v['origin']}")
     lin = v.get("parent")
     if lin:
         print(

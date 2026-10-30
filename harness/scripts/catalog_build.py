@@ -729,9 +729,12 @@ def collect(A: Adapter) -> dict:
     # project with its own layout keeps them. An adapter that cannot say falls back to the
     # most items any arm scored.
     size = getattr(A, "dataset_items", None)
+    meta = getattr(A, "dataset_meta", None)
     for ds, v in by_ds.items():
         n = size(ds) if callable(size) else None
         v["items"] = n if n is not None else max((a["n"] for a in v["arms"]), default=0)
+        m = (meta(ds) if callable(meta) else None) or {}
+        v["tags"], v["origin"] = m.get("tags") or {}, m.get("origin") or ""
     return by_ds
 
 
@@ -820,6 +823,8 @@ def render_datasets(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
     goals = _goals_of(A)
     w = window(A, by_ds)
     period_rows = period_datasets(A, by_ds)
+    # every tag key some dataset carries: each is a "group by" chip (RFC-019: tags group and filter)
+    tag_keys = sorted({k for v in by_ds.values() for k in (v.get("tags") or {})})
     rows = []
     for ds in sorted(by_ds, key=lambda d: (-len(by_ds[d]["arms"]), d)):
         v = by_ds[ds]
@@ -830,13 +835,18 @@ def render_datasets(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
         runs, usd = period_rows[ds]["runs"], period_rows[ds]["usd"]
         # A dataset under several goals is a group of its own, named after all of them.
         its_goals = " · ".join(g.get("title") or g["goal_id"] for g in goals.get(ds, [])) or "no goal"
+        tags = v.get("tags") or {}
         rows.append(
             {
                 "key": ds,
                 "made": period_rows[ds]["made"],
-                "data": {"goal": its_goals},
+                "data": {"goal": its_goals, **{f"tag-{k}": tags.get(k) or f"no {k}" for k in tag_keys}},
                 "cells": [
-                    dataset_link(ds) + (f"<br><small>from {dataset_link(parent)}</small>" if parent else ""),
+                    dataset_link(ds)
+                    + (f"<br><small>from {dataset_link(parent)}</small>" if parent else "")
+                    + (f"<br><small>{e(v['origin'])}</small>" if v.get("origin") and not parent else ""),
+                    " ".join(f'<span class="tag">{e(k)}: {e(t)}</span>' for k, t in sorted(tags.items()))
+                    or "—",
                     f'<span data-v="{v["items"]}">{v["items"]}</span>',
                     f'<span data-v="{len(v["arms"])}">{len(v["arms"])}</span>',
                     f'<span data-flow="runs">{len(runs)}</span>',
@@ -863,12 +873,13 @@ def render_datasets(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
     body += block(
         "01",
         "datasets",
-        group_chips("datasets", (("", "no grouping"), ("goal", "goal")))
+        group_chips("datasets", (("", "no grouping"), ("goal", "goal"), *((f"tag-{k}", k) for k in tag_keys)))
         + cp.row_chips("datasets", "datasets")
         + table(
             "datasets",
             [
                 "dataset",
+                "tags",
                 f"{e(A.item_word)}s",
                 "arms",
                 "runs in period",

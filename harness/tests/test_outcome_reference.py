@@ -172,6 +172,31 @@ try:
         said(r)[-300:],
     )
 
+    # The views: a dataset's tags group and filter, and its origin is named (RFC-019 P7).
+    dsf = data / "datasets" / "tickets_v1.json"
+    dsf.write_text(
+        json.dumps({**json.loads(dsf.read_text()), "tags": {"source": "support"}}, indent=2) + "\n"
+    )
+    r = evh("datasets", "--tag", "source=support")
+    check(
+        "evh datasets --tag: the datasets with that tag, with the tag shown",
+        r.returncode == 0 and "tickets_v1" in r.stdout and "source=support" in r.stdout,
+        said(r)[-600:],
+    )
+    r = evh("datasets", "--tag", "source=nothing")
+    check(
+        "evh datasets --tag no dataset has: none listed", r.returncode == 0 and "tickets_v1" not in r.stdout
+    )
+    r = evh("datasets", "--dataset-id", "tickets_v1")
+    check("evh datasets --dataset-id: its tags", "tags: source=support" in r.stdout, said(r)[:500])
+    r = evh("catalog")
+    page = (proj / ".build" / "catalog" / "datasets.html").read_text() if r.returncode == 0 else ""
+    check(
+        "the catalog's datasets page: a tags column and a group-by chip per tag key",
+        'data-group-by="tag-source"' in page and "source: support" in page,
+        said(r)[-300:],
+    )
+
     # With no gold at all, an outcome reference still never decides: the goal recommends nothing.
     shutil.move(str(data / "references" / "gold"), str(proj / "gold-aside"))
     shutil.move(str(data / "runs"), str(proj / "runs-aside"))
