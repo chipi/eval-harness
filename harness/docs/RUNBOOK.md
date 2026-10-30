@@ -45,6 +45,12 @@ further. This page is the reference for each step.
 | the same, in the terminal | `evh overview [--period P]` · `evh activity` · `evh datasets` · `evh arms` (`--by …`, `--configs`, `--arm …`) · `evh references` · `evh metrics --metric …` · `evh goals` · `evh search …` · `evh inspect --runs …` (`--items`, `--analysis`, `--item …`); every list takes `--period P` |
 | consistency | `evh validate` |
 | does the installed harness work here | `evh self-test` |
+| keep a production system's records | `evh capture --importer jsonl --query '{"path": "export.jsonl"}' --capture c1` · `evh captures` ([§15](#15-datasets-from-production-the-capture-lane)) |
+| test an importer | `evh importer-check path/to/importer.py:Importer --query …` |
+| scrub a capture | `evh capture-scrub c1 --command "python scrub.py {records}"` |
+| a dataset from a capture | `evh dataset-from-capture c1 --dataset-id … [--where F:V] [--one-per F] [--tag K=V]` |
+| labels from what happened afterwards | `evh reference-from-outcomes --dataset-id … --capture c1 --map rules.yaml --name silver/…` |
+| dev and heldout | `evh dataset-split … --heldout 0.3 --seed 7 [--key F]` |
 
 ---
 
@@ -937,6 +943,39 @@ opening line as the description); `--card URL` adds the image a shared link show
 `--analysis` for the charts, `--item <id>` for one item) for the inspector.
 
 ---
+
+## 15. Datasets from production: the capture lane
+
+A dataset can come from what a production system did: its decisions, requests or answers, and what
+happened afterwards. The lane is a layer beside the rest: nothing here runs in production, and a project
+that never captures sees none of it. Design: [RFC-019](../../docs/rfc/RFC-019-datasets-from-production.md),
+[ADR-0019](../../docs/adr/ADR-0019-capture-lane.md); a worked example on a real agent:
+`examples/triage-fleet/`.
+
+```bash
+evh capture --importer jsonl --query '{"path": "decisions.jsonl"}' --capture prod_2026_10   # or tsv, github, langfuse, path.py:Class
+evh captures --capture prod_2026_10                                    # what was read, when, the hashes
+evh capture-scrub prod_2026_10 --command "python scrub.py {records}"   # your scrubber; changed records re-hashed
+evh dataset-from-capture prod_2026_10 --dataset-id prod_v1 --one-per fingerprint --tag source=prod
+evh dataset-materialize --dataset-id prod_v1
+evh reference-from-outcomes --dataset-id prod_v1 --capture prod_2026_10 --map rules.yaml \
+    --name silver/prod_v1_outcomes                                     # shown beside gold, never deciding
+evh dataset-split prod_v1 --heldout 0.3 --seed 7 --key fingerprint     # prod_v1_dev, prod_v1_heldout
+```
+
+- **A capture** is `data/captures/<id>/capture.json` (each record's id and hashes) and `records/` (the
+  records). V17 checks them. A project may keep `records/` out of git and fetch them from where it
+  publishes them; a capture without its records is then named "not fetched", not failed.
+- **An importer** is a class with `records(query)` yielding `{id, body, fields, created_at, source,
+  outcome}`. The built-in ones read JSON lines, TSV, GitHub issues (with the comment beside each close)
+  and Langfuse traces. `evh importer-check` runs a new one against the contract.
+- **Only the body becomes the item.** Fields are typed by a field set (`--fieldset … --field …`); the
+  outcome stays in the capture, for references.
+- **An outcome reference is silver** (ADR-0020): what production recorded afterwards, mapped by a rule
+  set you commit. It can repeat what production decided, so a goal never decides on it, with or without
+  gold beside it. The deciding reference is a person's: `gold/<dataset>`.
+- **`text: hidden`** (`dataset-from-capture --hide-text`) keeps a dataset's text, and every text derived
+  from it, off every public surface, for data a project may measure but not publish.
 
 ## Exit codes
 
