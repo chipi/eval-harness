@@ -38,7 +38,12 @@ METRIC_DIRECTIONS = {
     "silent_drop": "lower",
     "escalated": "lower",
     "table_miss": "lower",
+    "model_false_dismiss": "lower",
+    "model_false_alarm": "lower",
+    "model_escalated": "lower",
 }
+#: The fleet's gates write their reason first; the decision the model made before a gate changed it.
+GATE_PREFIX = {"dismiss gate:": "dismiss", "edge gate:": "dismiss", "cleanup gate:": "cleanup", "intent gate:": "file"}
 TRANSIENT_MARKERS = ("triager call failed",)
 DISPOSITIONS = ("file", "dismiss", "escalate", "cleanup")
 
@@ -70,6 +75,14 @@ def _fleet() -> Any:
         return real_post(url, body, *a, **k)
 
     triage.post_json = tagged
+    real_gate = triage._gate
+
+    def gate(d: dict, *a: Any, **k: Any) -> Any:
+        # the model's own decision, before the fleet's deterministic gates may change it
+        _FLEET["model_disposition"] = d.get("disposition")
+        return real_gate(d, *a, **k)
+
+    triage._gate = gate
     _FLEET["triage"] = triage
     _FLEET["real_call"] = triage._call
     return triage
@@ -112,7 +125,9 @@ def call_system(text: str, params: dict[str, Any]) -> Result:
     else:
         raise ValueError(f"provider {provider!r}: gateway or stub")
     t0 = time.monotonic()
+    _FLEET["model_disposition"] = None
     out = triage.investigate(item["signal"], probe_table=item["probes"])
+    out["model_disposition"] = _FLEET["model_disposition"] or out.get("disposition")
     ms = (time.monotonic() - t0) * 1000
     meta = out.get("_meta") or {}
     usage = meta.get("usage") or {}
@@ -139,10 +154,27 @@ def _label(reference: str) -> tuple[str | None, str | None]:
     return text, None
 
 
+def model_disposition(out: dict) -> str | None:
+    """The model's own decision, before the fleet's gates: recorded by call_system, or read back from
+    the reason a gate wrote first (outputs from before it was recorded, and production's ledger)."""
+    if out.get("model_disposition"):
+        return out["model_disposition"]
+    reason = str(out.get("reason") or "")
+    return next((d for p, d in GATE_PREFIX.items() if reason.startswith(p)), out.get("disposition"))
+
+
 def score(output: str, reference: str | None) -> dict[str, float]:
-    """Per item: `escalated` always; with a reference, `correct`, `false_dismiss`, `false_alarm`,
-    `silent_drop`. Unlabelled items carry no reference key at all, so they never count."""
-    got = (json.loads(output) or {}).get("disposition")
+    """Per item, as the fleet decided (after its gates): `escalated` always; with a reference,
+    `correct`, `false_dismiss`, `false_alarm`, `silent_drop`. And the same as the model decided, before
+    the gates: `model_escalated`, `model_correct`, `model_false_dismiss`, `model_false_alarm`.
+    Unlabelled items carry no reference key at all, so they never count."""
+    out = json.loads(output) or {}
+    row = _score(out.get("disposition"), reference)
+    row.update({f"model_{k}": v for k, v in _score(model_disposition(out), reference).items() if k != "silent_drop"})
+    return row
+
+
+def _score(got: str | None, reference: str | None) -> dict[str, float]:
     row = {"escalated": float(got == "escalate")}
     if reference is None:
         return row

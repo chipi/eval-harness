@@ -1,0 +1,12 @@
+{
+  "caveat": "GOLD: human-authored or human-reviewed.",
+  "created_at": "2026-10-30T12:33:32Z",
+  "dataset_id": "orrery_triage_smoke",
+  "items_sha256": {
+    "orrery-ORRERY-DEV-2-2026-10-17T08:32:48Z": "dc3b1813dd4f72a77bda5d401811815b49da242c3fe9a0b72e7f136fbf7b6d7d",
+    "orrery-ORRERY-PROD-18-2026-10-16T16:03:49Z": "b09e710e641f0a4b8dfc942068ac368d86acf134b3a795db5d4b305bbcb8dc13"
+  },
+  "n_items": 2,
+  "source": "examples/triage-fleet/write_gold.py --source owner: the rows of source owner-issue-verdict, owner-item-label in chipi-nbgd/orrery-triage@v1 data/verdicts.jsonl (sha256 144c955dff750bcd58f70b9ddb2e483a7a520770b3e58191e3deed359c8e55c3)",
+  "tier": "gold"
+}

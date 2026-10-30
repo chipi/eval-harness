@@ -42,7 +42,7 @@ FILES = {
 OUT = ROOT / "data" / "sources" / "orrery_triage_v1.hf"
 #: The captures made from these files, and the datasets made from them.
 CAPTURES = ("orrery_2026_10",)
-DATASETS = ("orrery_triage_v1", "orrery_triage_v1_labelled")
+DATASETS = ("orrery_triage_v1", "orrery_triage_v1_labelled", "orrery_triage_smoke")
 
 
 def _token() -> str | None:

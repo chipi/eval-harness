@@ -27,20 +27,26 @@ def out(d):
 # ── the scorer ─────────────────────────────────────────────────────────────────────────────
 check(
     "no reference: only escalated, nothing else counted",
-    adapter.score(out("dismiss"), None) == {"escalated": 0.0},
+    adapter.score(out("dismiss"), None) == {"escalated": 0.0, "model_escalated": 0.0},
 )
 check(
     "label file, arm dismissed: a false dismissal, not a false alarm",
-    adapter.score(out("dismiss"), "file\n") == {"escalated": 0.0, "correct": 0.0, "false_dismiss": 1.0},
+    {k: v for k, v in adapter.score(out("dismiss"), "file\n").items() if not k.startswith("model_")}
+    == {"escalated": 0.0, "correct": 0.0, "false_dismiss": 1.0},
 )
 check(
     "label dismiss, arm escalated: a false alarm",
-    adapter.score(out("escalate"), "dismiss") == {"escalated": 1.0, "correct": 0.0, "false_alarm": 1.0},
+    {k: v for k, v in adapter.score(out("escalate"), "dismiss").items() if not k.startswith("model_")}
+    == {"escalated": 1.0, "correct": 0.0, "false_alarm": 1.0},
 )
 check("not-file counts as dismiss", adapter.score(out("dismiss"), "not-file")["correct"] == 1.0)
 check(
     "file-or-escalate: an escalation is correct, a dismissal is a false dismissal",
-    adapter.score(out("escalate"), "file-or-escalate")
+    {
+        k: v
+        for k, v in adapter.score(out("escalate"), "file-or-escalate").items()
+        if not k.startswith("model_")
+    }
     == {"escalated": 1.0, "correct": 1.0, "false_dismiss": 0.0}
     and adapter.score(out("file"), "file-or-escalate")["correct"] == 1.0
     and adapter.score(out("dismiss"), "file-or-escalate")["false_dismiss"] == 1.0,
@@ -53,8 +59,20 @@ check(
     == 1.0,
 )
 check(
-    "an unknown label scores nothing but escalated", adapter.score(out("file"), "maybe") == {"escalated": 0.0}
+    "an unknown label scores nothing but escalated",
+    adapter.score(out("file"), "maybe") == {"escalated": 0.0, "model_escalated": 0.0},
 )
+gated = json.dumps(
+    {"disposition": "escalate", "reason": "dismiss gate: no independent corroborating probe — x"}
+)
+s_g = adapter.score(gated, "dismiss")
+check(
+    "pre-gate: the model's dismissal a gate escalated is right for the model, a false alarm for the fleet",
+    s_g["false_alarm"] == 1.0 and s_g["model_correct"] == 1.0 and s_g["model_false_alarm"] == 0.0,
+    s_g,
+)
+rec = json.dumps({"disposition": "escalate", "model_disposition": "file", "reason": "intent gate: x"})
+check("pre-gate: a recorded model_disposition wins", adapter.score(rec, "file")["model_correct"] == 1.0)
 
 # ── the importer ───────────────────────────────────────────────────────────────────────────
 

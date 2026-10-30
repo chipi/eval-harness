@@ -1,0 +1,56 @@
+{
+  "created_at": "2026-10-30T12:33:32Z",
+  "dataset_id": "orrery_triage_smoke",
+  "description": "Two exact, owner-labelled decisions: the arms' smoke test.",
+  "fields_sha256": "29b424d62b19f14861359d4c2ff723365d7d1711d713b16a439cc71f28787766",
+  "fieldset": "triage",
+  "items": [
+    {
+      "fields": {
+        "evidence_level": "exact",
+        "fingerprint": "glitchtip:ORRERY-PROD-18",
+        "fleet_disposition": "escalate",
+        "labelled": "yes"
+      },
+      "item_id": "orrery-ORRERY-PROD-18-2026-10-16T16:03:49Z",
+      "source_path": "orrery-ORRERY-PROD-18-2026-10-16T16:03:49Z.json",
+      "source_sha256": "4b6181850ced65d9169696684b77881c76fffa70781ce6d1a658c82ed5a6b953"
+    },
+    {
+      "fields": {
+        "evidence_level": "exact",
+        "fingerprint": "glitchtip:ORRERY-DEV-2",
+        "fleet_disposition": "cleanup",
+        "labelled": "yes"
+      },
+      "item_id": "orrery-ORRERY-DEV-2-2026-10-17T08:32:48Z",
+      "source_path": "orrery-ORRERY-DEV-2-2026-10-17T08:32:48Z.json",
+      "source_sha256": "41f4cf6dc48e5291d93fc2f6c30804e64fa7638dfaf419c4d173ced1526727b3"
+    }
+  ],
+  "made_from": {
+    "by": null,
+    "capture": "orrery_2026_10",
+    "capture_sha256": "976182b7ce3fc931d84b084cc0915f63b13a5de6ff28f1c295445e923d1e0c17",
+    "dedup": null,
+    "kept": 2,
+    "one_per": "fingerprint",
+    "query": {
+      "path": "data/sources/orrery_triage_v1.hf/decisions.jsonl",
+      "verdicts": "data/sources/orrery_triage_v1.hf/verdicts.jsonl"
+    },
+    "records": 233,
+    "sample": 2,
+    "seed": 7,
+    "where": [
+      "labelled:yes",
+      "evidence_level:exact"
+    ]
+  },
+  "source_dir": "data/sources/orrery_triage_smoke",
+  "tags": {
+    "purpose": "smoke",
+    "source": "triage-fleet"
+  },
+  "version": "1.0"
+}
