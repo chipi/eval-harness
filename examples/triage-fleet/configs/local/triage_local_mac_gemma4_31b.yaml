@@ -1,4 +1,4 @@
-# gemma4:31b (Gemma, large tier), self-hosted with Ollama 0.40.13 on MacBook Pro: Apple M4 Pro, 48 GB unified (Metal).
+# gemma4:31b-it-q4_K_M, the GGUF build the other machines run under gemma4:31b (Gemma, large tier), self-hosted with Ollama 0.40.13 on MacBook Pro: Apple M4 Pro, 48 GB unified (Metal).
 # The same weights run on each machine that fits them; arms differ only in the model and where it runs.
 config_id: triage_local_mac_gemma4_31b_v1
 dataset_id: orrery_triage_v1_labelled
@@ -6,7 +6,7 @@ adapter: ../../adapter.py
 goal: triage_orrery
 params:
   provider: gateway
-  model: "gemma4:31b"
+  model: "gemma4:31b-it-q4_K_M"
   url: http://127.0.0.1:11435/v1/chat/completions
   call_timeout_s: 600
   machine: mac

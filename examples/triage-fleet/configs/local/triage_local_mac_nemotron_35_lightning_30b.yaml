@@ -1,4 +1,4 @@
-# nemotron-3.5-lightning:30b (Nemotron, small tier), self-hosted with Ollama 0.40.13 on MacBook Pro: Apple M4 Pro, 48 GB unified (Metal).
+# nemotron-3.5-lightning:30b-a3b-q4_K_M, the GGUF build the other machines run under nemotron-3.5-lightning:30b (Nemotron, small tier), self-hosted with Ollama 0.40.13 on MacBook Pro: Apple M4 Pro, 48 GB unified (Metal).
 # The same weights run on each machine that fits them; arms differ only in the model and where it runs.
 config_id: triage_local_mac_nemotron_35_lightning_30b_v1
 dataset_id: orrery_triage_v1_labelled
@@ -6,7 +6,7 @@ adapter: ../../adapter.py
 goal: triage_orrery
 params:
   provider: gateway
-  model: "nemotron-3.5-lightning:30b"
+  model: "nemotron-3.5-lightning:30b-a3b-q4_K_M"
   url: http://127.0.0.1:11435/v1/chat/completions
   call_timeout_s: 600
   machine: mac
