@@ -151,6 +151,8 @@ def _paths() -> dict[str, Path]:
         "ROUNDS": data / "rounds",
         # Items fetched from a source_url, by their sha256. Derived and gitignored, like materialized/.
         "ITEM_CACHE": root / ".cache" / "items",
+        # Captures from production systems (RFC-019): data/captures/<capture_id>/.
+        "CAPTURES": data / "captures",
     }
 
 
@@ -169,6 +171,7 @@ GOALS: Path
 FIELDS: Path
 ROUNDS: Path
 ITEM_CACHE: Path
+CAPTURES: Path
 
 
 def __getattr__(name: str) -> Path:

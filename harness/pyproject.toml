@@ -45,8 +45,8 @@ Homepage = "https://evals.humancopilot.eu/"
 Source = "https://github.com/chipi/eval-harness"
 
 [tool.setuptools]
-packages = ["evaluation_harness", "evaluation_harness.schemas", "evaluation_harness.catalog_assets", "evaluation_harness.tutorial"]
-package-dir = {"evaluation_harness" = "scripts", "evaluation_harness.schemas" = "schemas", "evaluation_harness.catalog_assets" = "catalog_assets", "evaluation_harness.tutorial" = "tutorial"}
+packages = ["evaluation_harness", "evaluation_harness.importers", "evaluation_harness.schemas", "evaluation_harness.catalog_assets", "evaluation_harness.tutorial"]
+package-dir = {"evaluation_harness" = "scripts", "evaluation_harness.importers" = "scripts/importers", "evaluation_harness.schemas" = "schemas", "evaluation_harness.catalog_assets" = "catalog_assets", "evaluation_harness.tutorial" = "tutorial"}
 
 [tool.setuptools.package-data]
 "evaluation_harness.schemas" = ["*.json"]

@@ -224,6 +224,24 @@ def main() -> int:
                 ],
                 "ok",
             ),
+            # The capture lane (RFC-019), on the same scores file read as records.
+            (
+                "importer-check",
+                ["jsonl", "--query", '{"path": "imported.jsonl", "id": "item_id"}'],
+                "ok:PASS",
+            ),
+            (
+                "capture",
+                [
+                    "--importer",
+                    "jsonl",
+                    "--query",
+                    '{"path": "imported.jsonl", "id": "item_id"}',
+                    "--capture",
+                    "c1",
+                ],
+                "ok:record(s) from jsonl",
+            ),
             ("run-compare", ["--baseline", base_id, "--candidate", run_id], "ok"),
             (
                 "run-promote",
