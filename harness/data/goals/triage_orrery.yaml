@@ -1,5 +1,5 @@
-# The triage goal (copy to data/goals/triage_orrery.yaml). No limits in v1: production escalates
-# 22% of these decisions, so EVAL.md's 5% bar (set on curated fixtures) would fail every arm.
+# The triage goal (copy to data/goals/triage_orrery.yaml). The combined cost decides; false alarms have a ceiling.
+# (EVAL.md's 5% escalation bar, set on curated fixtures, would fail every arm: production escalates 22%.)
 goal_id: triage_orrery
 schema_version: "0.1"
 title: Triage decisions on Orrery's error signals
@@ -9,12 +9,17 @@ context:
   audience: the operator of the triage fleet
 decision: Which model the triage agent runs.
 success_criteria:
-  primary: {measure: false_dismiss, direction: lower}
-  min_items: 30   # false_dismiss is scored on the 34 items labelled a real problem
+  # The combined cost (owner, 2026-10-30): a missed real problem costs 5 false alarms; triage_cost_p3 and
+  # triage_cost_p10 show whether the ranking depends on the 5.
+  primary: {measure: triage_cost, direction: lower}
+  # A ceiling on noise: no more false alarms than production made on these decisions (21 of 31 = 0.6774).
+  axes:
+    false_alarm: {direction: lower, limit: 0.6775, note: "no more false alarms than production (21 of 31 noise decisions, 0.6774)"}
+  min_items: 30   # triage_cost is scored on all 65 labelled decisions
   strategy: frugal
 datasets:
   - {dataset_id: orrery_triage_v1_labelled, role: dev, notes: "65 decisions the owner labelled, one per fingerprint, 2026-07-25 to 2026-10-29; mostly rebuilt evidence"}
 references:
   - {reference_id: gold/orrery_triage_v1_labelled, tier: gold, format: label}
 measures:
-  - {id: false_dismiss, kind: metric, validity: unvalidated}
+  - {id: triage_cost, kind: metric, validity: unvalidated}

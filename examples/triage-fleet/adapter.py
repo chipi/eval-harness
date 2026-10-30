@@ -35,13 +35,20 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "harness"))
 from evaluation_harness.adapter import Result  # noqa: E402
 
-PRIMARY_METRIC = "false_dismiss"
+PRIMARY_METRIC = "triage_cost"
+#: What one missed real problem costs, in false alarms (owner, 2026-10-30): 5 decides; 3 and 10 show whether
+#: the ranking depends on the number. A false alarm costs 1; a right decision 0.
+MISS_PRICE, MISS_PRICES_SHOWN = 5, (3, 10)
 METRIC_DIRECTIONS = {
     "false_dismiss": "lower",
     "false_alarm": "lower",
     "silent_drop": "lower",
     "escalated": "lower",
     "table_miss": "lower",
+    "triage_cost": "lower",
+    "triage_cost_p3": "lower",
+    "triage_cost_p10": "lower",
+    "model_triage_cost": "lower",
     "model_false_dismiss": "lower",
     "model_false_alarm": "lower",
     "model_escalated": "lower",
@@ -177,7 +184,18 @@ def score(output: str, reference: str | None) -> dict[str, float]:
     out = json.loads(output) or {}
     row = _score(out.get("disposition"), reference)
     row.update({f"model_{k}": v for k, v in _score(model_disposition(out), reference).items() if k != "silent_drop"})
+    if "false_dismiss" in row or "false_alarm" in row:
+        # The combined cost (owner, 2026-10-30): a missed real problem costs MISS_PRICE false alarms.
+        row["triage_cost"] = _cost(row, "", MISS_PRICE)
+        for p in MISS_PRICES_SHOWN:
+            row[f"triage_cost_p{p}"] = _cost(row, "", p)
+        row["model_triage_cost"] = _cost(row, "model_", MISS_PRICE)
     return row
+
+
+def _cost(row: dict, prefix: str, price: float) -> float:
+    """One decision's cost: `price` for a missed real problem, 1 for a false alarm, 0 when right."""
+    return price * row.get(f"{prefix}false_dismiss", 0.0) + row.get(f"{prefix}false_alarm", 0.0)
 
 
 def _score(got: str | None, reference: str | None) -> dict[str, float]:

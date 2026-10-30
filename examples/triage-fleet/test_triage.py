@@ -31,12 +31,20 @@ check(
 )
 check(
     "label file, arm dismissed: a false dismissal, not a false alarm",
-    {k: v for k, v in adapter.score(out("dismiss"), "file\n").items() if not k.startswith("model_")}
+    {
+        k: v
+        for k, v in adapter.score(out("dismiss"), "file\n").items()
+        if not k.startswith(("model_", "triage_cost"))
+    }
     == {"escalated": 0.0, "correct": 0.0, "false_dismiss": 1.0},
 )
 check(
     "label dismiss, arm escalated: a false alarm",
-    {k: v for k, v in adapter.score(out("escalate"), "dismiss").items() if not k.startswith("model_")}
+    {
+        k: v
+        for k, v in adapter.score(out("escalate"), "dismiss").items()
+        if not k.startswith(("model_", "triage_cost"))
+    }
     == {"escalated": 1.0, "correct": 0.0, "false_alarm": 1.0},
 )
 check("not-file counts as dismiss", adapter.score(out("dismiss"), "not-file")["correct"] == 1.0)
@@ -45,7 +53,7 @@ check(
     {
         k: v
         for k, v in adapter.score(out("escalate"), "file-or-escalate").items()
-        if not k.startswith("model_")
+        if not k.startswith(("model_", "triage_cost"))
     }
     == {"escalated": 1.0, "correct": 1.0, "false_dismiss": 0.0}
     and adapter.score(out("file"), "file-or-escalate")["correct"] == 1.0
@@ -62,6 +70,17 @@ check(
     "an unknown label scores nothing but escalated",
     adapter.score(out("file"), "maybe") == {"escalated": 0.0, "model_escalated": 0.0},
 )
+c_miss = adapter.score(out("dismiss"), "file-or-escalate")
+c_alarm = adapter.score(out("file"), "dismiss")
+c_right = adapter.score(out("dismiss"), "dismiss")
+check(
+    "the combined cost: a miss costs 5 (3 and 10 shown), a false alarm 1, a right decision 0",
+    (c_miss["triage_cost"], c_miss["triage_cost_p3"], c_miss["triage_cost_p10"]) == (5.0, 3.0, 10.0)
+    and c_alarm["triage_cost"] == 1.0
+    and c_right["triage_cost"] == 0.0,
+    (c_miss, c_alarm, c_right),
+)
+check("the combined cost: unlabelled, none", "triage_cost" not in adapter.score(out("file"), None))
 gated = json.dumps(
     {"disposition": "escalate", "reason": "dismiss gate: no independent corroborating probe — x"}
 )
