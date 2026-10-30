@@ -194,10 +194,46 @@ The changes, listed in the engineering plan's P10:
   accepted as lost";
 - the deciding reference is the owner's verdicts.
 
-## Testing (when built)
+## Changes while building (0.6.0)
 
-- **`evh importer-check`** on every built-in importer, against recorded responses (no network in CI).
-- **The lane end to end on `jsonl`.**
-- **The reference route:** exactly one recommendation on the goal page.
-- **The hidden-text marker test**, across every public surface.
-- **The triage example:** offline with a stand-in model, then with real models.
+What the build changed or added beyond the third draft, each in the code and its tests:
+
+- **The fleet's v1 is 233 decisions** (the 236 with the 3 test signals removed), published on Hugging Face
+  (`chipi-nbgd/orrery-triage@v1`, private until the owner reads it) and fetched by a sha256-pinned revision;
+  git holds the ids and hashes. A capture's records may be kept out of git: V17 names such a capture as not
+  fetched, and still fails one with some records missing.
+- **How the owner's verdicts reach a decision**: an issue's verdict labels the decision that filed it and earlier
+  decisions on the same fingerprint (a missed problem). It does not label decisions made while the issue was
+  open (finding duplicates is the filing stage's job) nor issues linked only by title (one generic title matched
+  37 fingerprints). A fixed issue gives `file-or-escalate`: filing and escalating were both right.
+- **The exact decisions no issue verdict reaches** were labelled with a labeller model's help: it proposed a
+  label with a reason, judging from what the agent could see and using hindsight only for what the signal was;
+  the owner decided every row where it disagreed with production. `verdicts.jsonl` records the source of every
+  label.
+- **An outcome reference never recommends**, with gold beside it or with no gold at all: the build had
+  recommended from it when no gold existed, against ADR-0020; fixed, with a test.
+- **`text: hidden` reaches the deployment's copy**: `_release.py copy-data` replaces `render.sh`'s copy list and
+  refuses a release carrying untracked reference texts or run outputs.
+- **Item ids** may contain `:`, `@`, `+` and `=` (a record's id is often a fingerprint and a time).
+- **Dataset tags on the views**: the datasets page groups by tag key and names a capture-made dataset's origin;
+  `evh datasets --tag` filters.
+- **The triage example scores the model's own decision beside the fleet's** (`model_*` metrics, before the
+  fleet's gates): its dismiss gate turned 39 of production's 49 escalations from dismissals, so the fleet's score
+  alone would measure the gate more than the model.
+
+## Testing (as built)
+
+- **`test_capture.py`**: importers, `importer-check` and `capture` (the contract, hashes, continuing),
+  `dataset-from-capture` (selection, fields, tags), `capture-scrub`, V17 (an edited record fails; records not
+  fetched are named; some missing fails).
+- **`test_importers.py`**: `tsv`, `github` (close events with their comments) and `langfuse`, on offline
+  stand-ins.
+- **`test_outcome_reference.py`**: the rule language, never overwritten, exactly one recommendation per goal, the
+  outcome group shown and not recommended, with gold and without; the datasets views' tags.
+- **`test_split.py`**: the share, stable across versions, groups kept whole, by time.
+- **`test_hidden_text.py`**: a shown and a hidden twin with their own marker words on every public surface; six
+  mutations of the guards each fail it.
+- **`examples/triage-fleet/test_triage.py`** and **`examples/signal-fleet-dedup/test_dedup.py`**, in `make ci`:
+  the scorers, the importer on the fleet's export, the adapters through the fleet's own code where it is present.
+- **The triage example ran end to end**: 10 hosted arms on the 65 owner-labelled decisions, the finals, and the
+  open-weight models hosted and self-hosted; the results are in its runs and the goal page.
