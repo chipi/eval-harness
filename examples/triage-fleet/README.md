@@ -1,40 +1,34 @@
 # Triage fleet: an agent's decisions, measured on what happened next
 
-**Status: the walking skeleton (0.6.0, in progress).** The path runs end to end on the fleet's 236
-Orrery decisions with a stand-in model, offline. Real models, the owner's verdicts, the data on
-Hugging Face and the numbers come next ([the application plan](../../research/internal/PLAN_0.6.0_FLEET.md)).
+A triage agent (the homelab's signal fleet) reads production error signals, asks up to three probes (the
+error's latest event, its history, logs, metrics, a trace, the app's data state), and decides: dismiss, file an
+issue, escalate to a person, or clean up. Its own deterministic gates may then change the decision (a dismissal
+without independent corroboration becomes an escalation). This example replays each real decision through the
+agent's own code, with another model, on the probe answers as of the decision's time, and scores it against
+what the operator later said it was.
 
-A triage agent reads error signals, asks up to three probes (logs, metrics, traces, the source's
-state), and decides: dismiss, file an issue, escalate to a person, or clean up. This example replays
-each real decision through the agent's own code, with another model, on the probe answers as of the
-decision's time, and scores it against what the person who later closed the issue said it was.
+**The data** is published on Hugging Face as `chipi-nbgd/orrery-triage` at revision `v1`: 233 Orrery decisions
+(2026-07-25 to 2026-10-29) and `verdicts.jsonl`, the labels with who gave each. Git holds the ids and hashes;
+`fetch.py` downloads the pinned revision and restores the rest.
 
 | file | what it is |
 |---|---|
-| `importer.py` | one record per decision from the fleet's export: the body is what the agent sees (`{signal, probes}`); the outcome fields are what the reference rules read |
-| `adapter.py` | replays a decision through the fleet's `investigate()`, with its tracing off and every call tagged `evh-eval`; `score()` gives `false_dismiss`, `false_alarm`, `escalated`, `correct`, `silent_drop` |
-| `outcomes.yaml` | the rules from an outcome to a label (shown beside the owner's verdicts, never deciding) |
-| `fieldset_triage.yaml` | the item fields: evidence level, who decided (the model, or a failed triager), what production decided, model, stage, fingerprint, date |
-| `goal_triage.yaml` | the goal: `false_dismiss` decides, lower; no limits in v1 |
-| `configs/` | the arms; for now two stand-ins (`provider: stub`) |
-| `label_sheet.py` | the owner's labelling sheet: a verdict proposed per closed issue from its close comment, and the exact decisions no issue verdict reaches |
-| `test_triage.py` | the scorer's rules, the importer, and the adapter through the fleet's code |
-
-The fleet's code is not copied here: set `TRIAGE_FLEET_SRC` to the `signal-fleet` folder of the
-fleet's repository (at the commit the runs record).
-
-The decisions are published on Hugging Face as `chipi-nbgd/orrery-triage` (`data/decisions.jsonl`,
-tag `v1`, private until the owner has read it).
+| `fetch.py` | downloads `v1` (each file sha256-pinned) and restores the capture's records and the datasets' items |
+| `importer.py` | one record per decision: the body is what the agent sees (`{signal, probes}`); fields (evidence level, who decided, what production decided, `labelled`); the outcome fields the rules read, with each issue's verdict from the operator's close comment |
+| `adapter.py` | replays a decision through the fleet's `investigate()`, tracing off, every call tagged `evh-eval`; an arm may name its own server (`url`, for a self-hosted Ollama). `score()` gives `false_dismiss`, `false_alarm`, `correct`, `escalated` as the fleet decided, and `model_*` the same for the model's own decision before the gates |
+| `label_sheet.py`, `label_with_model.py`, `write_verdicts.py`, `write_gold.py` | how the gold was made: a sheet of the operator's issue verdicts, a labeller model's proposal for each exact decision (answered by the operator where it disagreed), `verdicts.jsonl`, and `gold/<dataset>` from its owner rows |
+| `outcomes.yaml` | the rules from an outcome to a label: `silver/…_outcomes`, shown beside gold, never deciding |
+| `fieldset_triage.yaml`, `goal_triage.yaml` | the item fields; the goal (`false_dismiss` decides, lower; frugal) |
+| `configs/` | hosted arms (proprietary, and open-weight models' hosted twins); `configs/local/` the same open-weight models self-hosted (Ollama 0.40.13) on three machines |
+| `test_triage.py` | the scorer, the importer, the adapter through the fleet's code |
 
 ```bash
-evh capture --importer examples/triage-fleet/importer.py:Importer \
-    --query '{"path": "decisions.jsonl"}' --capture orrery_2026_10
-evh dataset-from-capture orrery_2026_10 --dataset-id orrery_triage_v1 --fieldset triage \
-    --field evidence_level --field decision_kind --field fleet_disposition --field fleet_model \
-    --field stage --field fingerprint --field decision_date
-evh dataset-materialize --dataset-id orrery_triage_v1
-evh reference-from-outcomes --dataset-id orrery_triage_v1 --capture orrery_2026_10 \
-    --map examples/triage-fleet/outcomes.yaml --name silver/orrery_triage_v1_outcomes
-TRIAGE_FLEET_SRC=/path/to/signal-fleet evh experiment-run --config <arm config>
+python examples/triage-fleet/fetch.py                       # needs the revision public, or a token
+evh dataset-materialize --dataset-id orrery_triage_v1_labelled
+TRIAGE_FLEET_SRC=/path/to/signal-fleet evh experiment-run --config examples/triage-fleet/configs/<arm>.yaml
 evh goals --goal triage_orrery
 ```
+
+The fleet's code is not copied here: `TRIAGE_FLEET_SRC` names the `signal-fleet` folder of its repository, at
+the commit the runs record. What the experiment taught about the fleet itself is in
+[TRIAGE_FLEET_LESSONS_0.6.0.md](../../research/internal/TRIAGE_FLEET_LESSONS_0.6.0.md).
