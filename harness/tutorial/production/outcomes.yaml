@@ -1,0 +1,5 @@
+# From what happened to a ticket afterwards to a label (evh reference-from-outcomes): first match wins.
+# A label from outcomes is silver: shown beside a person's gold, never deciding (ADR-0020).
+- {when: {resolution: duplicate}, skip: true}
+- {when: {resolution: fixed}, label: needs-engineering}
+- {when: {resolution: answered}, label: support-only}

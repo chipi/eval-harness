@@ -52,7 +52,7 @@ package-dir = {"evaluation_harness" = "scripts", "evaluation_harness.importers" 
 "evaluation_harness.schemas" = ["*.json"]
 "evaluation_harness.catalog_assets" = ["*.css", "*.js", "*.svg"]
 # The GUIDE's kit: `evh init --tutorial` copies it into a new project.
-"evaluation_harness.tutorial" = ["*.md", "*.txt", "*.csv", "judge_panel.yaml", "tickets/*.txt", "gold/*.txt", "configs/*.yaml", "goals/*.yaml", "fields/*.yaml", "scorers/*.yaml"]
+"evaluation_harness.tutorial" = ["*.md", "*.txt", "*.csv", "judge_panel.yaml", "tickets/*.txt", "gold/*.txt", "configs/*.yaml", "goals/*.yaml", "fields/*.yaml", "scorers/*.yaml", "production/*.jsonl", "production/*.yaml"]
 
 [tool.setuptools.dynamic]
 version = {attr = "evaluation_harness._version.__version__"}
