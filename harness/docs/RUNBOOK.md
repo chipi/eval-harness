@@ -989,7 +989,7 @@ defaults as much as the models. Settle them before the full run, on purpose, and
    that will run the arm, and against the registry, before the first run.
 2. **Smoke a few items.** Run three or so with the arm's own settings and measure every model call: time,
    tokens out, whether it reasoned, whether an answer came back, why it ended. The triage example's
-   `examples/triage-fleet/smoke.py` does this and flags what to revisit; a project's own adapter can do
+   `examples/triage-fleet/smoke.py` does this and flags what to revisit (RFC-020 proposes it for every arm as `evh arm-smoke`); a project's own adapter can do
    the same in a few lines by wrapping its model call.
 3. **Choose the settings on purpose.**
    - *Reasoning*: off (`reasoning_effort: none`) unless the task needs it; some models only offer low,
