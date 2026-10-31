@@ -75,10 +75,12 @@ def _dump(doc: dict[str, Any]) -> str:
 
 
 def run_files(data: Path) -> list[Path]:
+    """Every run's metrics.json under data/runs*/."""
     return sorted(p for d in data.glob("runs*") if d.is_dir() for p in d.rglob("metrics.json"))
 
 
 def main() -> int:
+    """Migrate, print the counts before and after; exit 0."""
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument(
         "--data-dir",

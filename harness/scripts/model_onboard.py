@@ -153,6 +153,7 @@ def probe_llm(rec: dict[str, Any], dep: dict[str, Any]) -> tuple[dict[str, Any],
 
 
 def main() -> int:
+    """Onboard one deployment (or an arm's model); exit 0 on ONBOARD PASS, 1 on ONBOARD CHECK."""
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("model_id")
     ap.add_argument(

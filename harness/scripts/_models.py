@@ -23,6 +23,7 @@ except ImportError:  # pragma: no cover
 
 
 def records_dir(data_dir: Path) -> Path:
+    """Where a project's model records live: data_dir/models/."""
     return data_dir / "models"
 
 
@@ -45,6 +46,7 @@ def by_alias(data_dir: Path) -> dict[str, dict[str, Any]]:
 
 
 def find(data_dir: Path, model_id: str) -> dict[str, Any] | None:
+    """The record with this id, or None when there is none."""
     f = records_dir(data_dir) / f"{model_id}.yaml"
     if yaml is None or not f.is_file():
         return None

@@ -141,6 +141,7 @@ def projection(items: list[dict[str, Any]], n_items: int) -> dict[str, Any]:
 
 
 def main() -> int:
+    """Smoke one arm; exit 0 on SMOKE PASS, 1 on SMOKE CHECK."""
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--config", type=Path, required=True)
     ap.add_argument("--items", type=int, default=3, help="how many of the dataset's first items (default 3)")

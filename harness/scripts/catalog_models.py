@@ -61,6 +61,7 @@ def smoke_of(rec: dict, config_id: str) -> str:
 
 
 def deployments_of(rec: dict) -> list[dict]:
+    """A record's deployments, skipping any entry that is not a mapping."""
     return [d for d in rec.get("deployments") or [] if isinstance(d, dict)]
 
 
@@ -84,10 +85,12 @@ def hosting(rec: dict) -> str:
 
 
 def identity(b: dict) -> str:
+    """A deployment's build identity: its digest, revision or file hash, or empty."""
     return b.get("digest") or b.get("revision") or b.get("file_hash") or ""
 
 
 def short(s: str, n: int = 12) -> str:
+    """A hash's first n characters, without a sha256: prefix."""
     return s.removeprefix("sha256:")[:n]
 
 
@@ -134,6 +137,7 @@ def settings_line(rec: dict) -> str:
 
 
 def day(s) -> str:
+    """The date part (YYYY-MM-DD) of an ISO time, or empty."""
     return str(s or "")[:10]
 
 
@@ -153,6 +157,7 @@ def first_day(rec: dict, arm_days: list[str]) -> str:
 
 
 def stale(b: dict, today: date | None = None) -> bool:
+    """Whether a deployment's build was last checked more than STALE_DAYS ago."""
     d = day(b.get("checked_at"))
     try:
         return date.fromisoformat(d) < (today or date.today()) - timedelta(days=STALE_DAYS)
@@ -250,6 +255,7 @@ def changes(rows: list[dict]) -> list[tuple]:
 
 
 def onboarding_cell(r: dict) -> str:
+    """The models table's onboarding cell: pass, check or not onboarded, with its date."""
     if r["status"] == "none":
         return '<span class="muted">not onboarded</span>'
     word = "pass" if r["status"] == "vetted" else "check"
@@ -258,6 +264,7 @@ def onboarding_cell(r: dict) -> str:
 
 
 def best_cell(r: dict) -> str:
+    """The models table's best-result cell: its best arm's place in each goal."""
     from evaluation_harness import catalog_build as cb  # noqa: PLC0415
 
     return (
