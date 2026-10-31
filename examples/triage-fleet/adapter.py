@@ -48,6 +48,7 @@ METRIC_DIRECTIONS = {
     "escalated": "lower",
     "table_miss": "lower",
     "no_decision": "lower",
+    "deferred": "lower",
     "triage_cost": "lower",
     "triage_cost_p3": "lower",
     "triage_cost_p10": "lower",
@@ -158,15 +159,31 @@ def call_system(text: str, params: dict[str, Any]) -> Result:
         raise ValueError(f"provider {provider!r}: gateway or stub")
     t0 = time.monotonic()
     _FLEET["model_disposition"] = None
-    out = triage.investigate(item["signal"], probe_table=item["probes"])
+    deferred = None
+    try:
+        out = triage.investigate(item["signal"], probe_table=item["probes"])
+    except triage.TriageDeferred as first:
+        # The fleet defers a failed model call to its next cycle. At temperature 0 some failures repeat
+        # exactly: Ollama's "token repeat limit reached" (ministral-3:14b on Metal), a reasoning loop that
+        # outlasts the call limit (gemma4:12b). Production would defer that signal every cycle. One more
+        # attempt tells a flake from that; the same failure twice is recorded as no decision (fleet gap F8).
+        try:
+            out = triage.investigate(item["signal"], probe_table=item["probes"])
+        except triage.TriageDeferred as again:
+            if str(again) != str(first):
+                raise
+            deferred, out = str(again), None
     no_decision = out is None
     if no_decision:
-        # The fleet's own gap: investigate() falls off its loop and returns None when the model's reply is
-        # empty on the last turn (a reasoning model's answer cut off). Production would then fail on it. The
-        # replay records it as the fleet's own "no terminal decision": an escalation, counted as no_decision.
+        # The fleet's own gap (F7): investigate() falls off its loop and returns None when the model's reply
+        # is empty on the last turn (a reasoning model's answer cut off). Production would then fail on it.
+        # The replay records it, and a repeated deferral, as the fleet's own "no terminal decision": an
+        # escalation, counted as no_decision.
         out = {
             "disposition": "escalate",
-            "reason": "no terminal decision: the model's last reply was empty",
+            "reason": f"no terminal decision: {deferred} (twice)"
+            if deferred
+            else "no terminal decision: the model's last reply was empty",
             "question": "triager did not reach a disposition",
             "_meta": {},
         }
@@ -187,6 +204,7 @@ def call_system(text: str, params: dict[str, Any]) -> Result:
             "n_probes": float(meta.get("n_probes") or 0),
             "table_miss": float(bool(meta.get("table_miss"))),
             "no_decision": float(no_decision),
+            "deferred": float(deferred is not None),
         },
         meta={"model": meta.get("model"), "prompt_sha": meta.get("prompt_sha"), "gates": meta.get("gates")},
     )

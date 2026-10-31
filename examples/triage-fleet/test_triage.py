@@ -210,6 +210,40 @@ if (
         "adapter: tokens recorded, cost unpriced without prices",
         res.tokens_in == 1000 and res.cost_usd is None,
     )
+
+    real_stub, calls = adapter._stub_call, {"n": 0}
+
+    def failing(_disposition, fail_first_only=False):
+        inner = real_stub("dismiss")
+
+        def call(messages, trace_id=None, step=None):
+            calls["n"] += 1
+            if fail_first_only and calls["n"] > 1:
+                return inner(messages, trace_id=trace_id, step=step)
+            raise RuntimeError("prediction aborted, token repeat limit reached")
+
+        return call
+
+    adapter._stub_call = failing
+    res = adapter.call_system(json.dumps(r1["body"]), {"provider": "stub"})
+    got = json.loads(res.output)
+    check(
+        "adapter: the same deferral twice is no decision (an escalation)",
+        got.get("disposition") == "escalate"
+        and res.extra["deferred"] == 1.0
+        and res.extra["no_decision"] == 1.0
+        and calls["n"] == 2,
+        (got, res.extra, calls),
+    )
+    calls["n"] = 0
+    adapter._stub_call = lambda d: failing(d, fail_first_only=True)
+    res = adapter.call_system(json.dumps(r1["body"]), {"provider": "stub"})
+    check(
+        "adapter: a deferral that clears on the next attempt is the model's decision",
+        res.extra["deferred"] == 0.0 and res.extra["no_decision"] == 0.0,
+        res.extra,
+    )
+    adapter._stub_call = real_stub
 else:
     print("  --   adapter through the fleet: skipped (TRIAGE_FLEET_SRC names no checkout)")
 
