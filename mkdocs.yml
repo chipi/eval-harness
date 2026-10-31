@@ -79,6 +79,7 @@ nav:
           - "RFC-019: Datasets from production, a lane beside the method (draft, 0.6.0)": rfc/RFC-019-datasets-from-production.md
           - "RFC-020: Onboarding models, once, for every experiment (draft, 0.6.0)": rfc/RFC-020-onboarding-a-model.md
           - "RFC-021: Fingerprint v5, the deployment, the settings and the runner (draft, 0.6.0)": rfc/RFC-021-fingerprint-v5.md
+          - "RFC-022: Scoring that evolves, previewed, re-scored or adopted by the next round (draft, 0.6.0)": rfc/RFC-022-scoring-that-evolves.md
       - Decisions (ADRs):
           - Index: adr/index.md
           - "ADR-0001: Judge scorers: re-measuring frozen outputs with a validated LLM judge": adr/ADR-0001-judge-scorers.md

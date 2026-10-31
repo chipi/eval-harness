@@ -231,8 +231,8 @@ def call_system(text: str, params: dict[str, Any]) -> Result:
     if no_decision:
         # The fleet's own gap (F7): investigate() falls off its loop and returns None when the model's reply
         # is empty on the last turn (a reasoning model's answer cut off). Production would then fail on it.
-        # The replay records it, and a repeated deferral, as the fleet's own "no terminal decision": an
-        # escalation, counted as no_decision.
+        # The replay records it, and a repeated deferral, as the fleet's own "no terminal decision", which
+        # score() counts as wrong on both sides (owner, 2026-10-31), never as the escalation it falls back to.
         out = {
             "disposition": "escalate",
             "reason": f"no terminal decision: {deferred} (twice)"
@@ -293,10 +293,16 @@ def score(output: str, reference: str | None) -> dict[str, float]:
     the gates: `model_escalated`, `model_correct`, `model_false_dismiss`, `model_false_alarm`.
     Unlabelled items carry no reference key at all, so they never count."""
     out = json.loads(output) or {}
-    row = _score(out.get("disposition"), reference)
-    row.update(
-        {f"model_{k}": v for k, v in _score(model_disposition(out), reference).items() if k != "silent_drop"}
-    )
+    if str(out.get("reason") or "").startswith(NO_DECISION):
+        # No decision (owner, 2026-10-31): a failure never helps. Production delivers nothing, so the
+        # fleet's fallback escalation is not credited: a miss on a real problem, a false alarm on noise.
+        row = _no_decision(reference)
+        row.update({f"model_{k}": v for k, v in row.items() if k != "silent_drop"})
+    else:
+        row = _score(out.get("disposition"), reference)
+        row.update(
+            {f"model_{k}": v for k, v in _score(model_disposition(out), reference).items() if k != "silent_drop"}
+        )
     if "false_dismiss" in row or "false_alarm" in row:
         # The combined cost (owner, 2026-10-30): a missed real problem costs MISS_PRICE false alarms.
         row["triage_cost"] = _cost(row, "", MISS_PRICE)
@@ -309,6 +315,28 @@ def score(output: str, reference: str | None) -> dict[str, float]:
 def _cost(row: dict, prefix: str, price: float) -> float:
     """One decision's cost: `price` for a missed real problem, 1 for a false alarm, 0 when right."""
     return price * row.get(f"{prefix}false_dismiss", 0.0) + row.get(f"{prefix}false_alarm", 0.0)
+
+
+#: How the replay's own fallback names a decision the fleet never reached (adapter.run).
+NO_DECISION = "no terminal decision"
+
+
+def _no_decision(reference: str | None) -> dict[str, float]:
+    """A decision never reached: wrong whatever the label, a miss when the problem was real and a false alarm
+    when it was noise; never escalated, since production delivered nothing."""
+    row = {"escalated": 0.0}
+    if reference is None:
+        return row
+    want, _ = _label(reference)
+    want = "dismiss" if want == "not-file" else want
+    if want not in (*DISPOSITIONS, "file-or-escalate"):
+        return row
+    row["correct"] = 0.0
+    if want in ("file", "escalate", "file-or-escalate"):
+        row["false_dismiss"] = 1.0
+    if want in ("dismiss", "cleanup"):
+        row["false_alarm"] = 1.0
+    return row
 
 
 def _score(got: str | None, reference: str | None) -> dict[str, float]:

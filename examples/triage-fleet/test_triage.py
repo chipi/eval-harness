@@ -70,6 +70,36 @@ check(
     "an unknown label scores nothing but escalated",
     adapter.score(out("file"), "maybe") == {"escalated": 0.0, "model_escalated": 0.0},
 )
+# A no-decision (the replay's fallback escalation) is wrong on both sides (owner, 2026-10-31).
+nd = json.dumps(
+    {"disposition": "escalate", "reason": "no terminal decision: the model's last reply was empty"}
+)
+nd_real, nd_noise = adapter.score(nd, "file-or-escalate"), adapter.score(nd, "dismiss")
+check(
+    "no decision on a real problem: a miss, not the escalation it falls back to, for the fleet and the model",
+    nd_real["false_dismiss"] == 1.0
+    and nd_real["correct"] == 0.0
+    and nd_real["escalated"] == 0.0
+    and nd_real["model_false_dismiss"] == 1.0
+    and nd_real["triage_cost"] == adapter.MISS_PRICE,
+    nd_real,
+)
+check(
+    "no decision on noise: a false alarm, and on cleanup too",
+    nd_noise["false_alarm"] == 1.0
+    and nd_noise["correct"] == 0.0
+    and nd_noise["model_false_alarm"] == 1.0
+    and nd_noise["triage_cost"] == 1.0
+    and adapter.score(nd, "cleanup")["false_alarm"] == 1.0,
+    nd_noise,
+)
+check(
+    "a real escalation (any other reason) still counts as one",
+    adapter.score(json.dumps({"disposition": "escalate", "reason": "needs a person"}), "file-or-escalate")[
+        "correct"
+    ]
+    == 1.0,
+)
 c_miss = adapter.score(out("dismiss"), "file-or-escalate")
 c_alarm = adapter.score(out("file"), "dismiss")
 c_right = adapter.score(out("dismiss"), "dismiss")
