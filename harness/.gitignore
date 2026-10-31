@@ -219,6 +219,17 @@ data/runs-triage-current/*/*
 !data/runs-triage-current/*/outputs/**
 data/runs-triage-current/*/outputs/_rows.jsonl
 
+# data/runs-repeats-triage-current/ — the triage repeats (data/runs-repeats) re-scored the same way. Apart from
+# runs-triage-current for the reason runs-repeats is apart from runs: a --repeat set beside the first pass of
+# the same config_id is two measurements every loader would have to choose between (V8).
+!data/runs-repeats-triage-current/
+data/runs-repeats-triage-current/*/*
+!data/runs-repeats-triage-current/*/metrics.json
+!data/runs-repeats-triage-current/*/predictions.jsonl
+!data/runs-repeats-triage-current/*/outputs
+!data/runs-repeats-triage-current/*/outputs/**
+data/runs-repeats-triage-current/*/outputs/_rows.jsonl
+
 # data/runs-silver/ — the CNN arms re-scored ($0) against silver/cnn_dailymail_200, the frontier
 # arm's summaries: a silver group beside gold on the goal page, where silver's family bias shows.
 # Their outputs are the same bytes as the measured runs' in data/runs.

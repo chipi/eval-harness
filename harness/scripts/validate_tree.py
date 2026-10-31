@@ -103,11 +103,16 @@ def policy() -> dict:
 
 
 def committed_dirs() -> list[str]:
-    """The run directories that back the project's claims: `committed` in validate.json,
-    else every git-tracked <data>/runs* directory holding a run."""
-    declared = policy().get("committed")
-    if declared:
-        return list(declared)
+    """The run directories that back the project's claims: those `committed` in validate.json names (with
+    their floors), then every other git-tracked <data>/runs* directory holding a run. A directory someone
+    re-allowed in .gitignore is checked whether or not they also listed it here: data/runs-triage-current's
+    65 runs were committed and never checked because the list was not edited too."""
+    declared = list(policy().get("committed") or [])
+    return declared + [d for d in tracked_run_dirs() if d not in declared]
+
+
+def tracked_run_dirs() -> list[str]:
+    """Every git-tracked <data>/runs* directory holding a run's metrics.json."""
     tracked = subprocess.run(
         ["git", "ls-files", data_rel(DATA)], cwd=ROOT, capture_output=True, text=True
     ).stdout.split()

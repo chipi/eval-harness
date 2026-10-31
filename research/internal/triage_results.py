@@ -28,11 +28,13 @@ HEADS = [
 
 
 def _count(means: dict, k: str) -> str:
-    """`k`'s count, from its rate and the items it is a rate of: "1 / 34"."""
+    """`k`'s count, from its rate and the items it is a rate of: "1 / 34", or "21.3 / 31" when it is a mean over
+    passes (rounded, a mean over the ceiling would read as one under it)."""
     if k not in means:
         return "—"
     rate, n = means[k]
-    return f"{round(rate * n)} / {n}"
+    count = rate * n
+    return f"{round(count)} / {n}" if abs(count - round(count)) < 1e-9 else f"{count:.1f} / {n}"
 
 
 def _num(means: dict, k: str, fmt: str, scale: float = 1.0) -> str:
@@ -65,6 +67,8 @@ def table() -> str:
         m = r["means"]
         model, where = _model_where(r["label"], r.get("machine") or "")
         model = model.replace("_noreason", " (reasoning off)")
+        if "repeats" in r["label"].split(" · ", 1)[-1]:
+            model += " (later passes)"
         lines.append(
             "| "
             + " | ".join(

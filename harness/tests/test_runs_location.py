@@ -105,4 +105,18 @@ check("supersede: a re-score against another reference is its own row", "superse
 check("supersede: a second measurement is its own row", "superseded_by" not in repeat)
 check("supersede: an arm with a run nobody re-scored stays", "superseded_by" not in half)
 
+# A directory re-allowed in .gitignore is checked even when validate.json's list was not edited too.
+saved = validate_tree.policy, validate_tree.tracked_run_dirs
+validate_tree.policy = lambda: {"committed": ["runs", "runs-repeats"]}
+validate_tree.tracked_run_dirs = lambda: ["runs", "runs-new-set", "runs-repeats"]
+try:
+    got = validate_tree.committed_dirs()
+finally:
+    validate_tree.policy, validate_tree.tracked_run_dirs = saved
+check(
+    "committed: the declared directories first, then every other tracked one",
+    got == ["runs", "runs-repeats", "runs-new-set"],
+    got,
+)
+
 sys.exit(summary())
