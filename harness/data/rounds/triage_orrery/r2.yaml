@@ -72,5 +72,13 @@ scoring:
   - runs-rescored/77adc97b06a8/runs
   - runs-rescored/77adc97b06a8/runs-repeats
   runs: 65
-status: open
+status: closed
 opened_at: '2026-10-31T13:23:23Z'
+closed_at: '2026-10-31T14:22:30Z'
+conclusion:
+  text: 'The owner''s rules of 2026-10-31, applied to round 1''s runs at $0: the gpt-oss:20b rows fall
+    from the top once a no-decision counts against them, the false-alarm gate rules out the arm that always
+    escalates and llama4_scout on the DGX, and the paired test still separates none of the other 54 from
+    the leader. Onboarding then showed 32 of round 1''s arms ran at the server''s default reasoning for
+    models that reason by default: round 3 re-runs 25 of them with the onboarded settings.'
+  promoted_run: null

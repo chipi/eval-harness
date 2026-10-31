@@ -100,6 +100,10 @@ def _fleet() -> Any:
         if _FLEET.get("timeout"):  # an arm's call_timeout_s, over the fleet's own (90 s)
             k["timeout"] = _FLEET["timeout"]
         body.update(_FLEET.get("body_extra") or {})  # an arm's reasoning_effort / max_tokens
+        if _FLEET.get("via_gateway") and "reasoning_effort" in body:
+            # The fleet's gateway is a LiteLLM proxy: most hosted model groups refuse reasoning_effort
+            # (UnsupportedParamsError) unless the request names it (found onboarding, 2026-10-31).
+            body["allowed_openai_params"] = ["reasoning_effort"]
         # Each call measured for `evh arm-smoke` (RFC-020): time, tokens, reasoning, how it ended.
         rec: dict[str, Any] = {}
         t0 = time.monotonic()
@@ -208,6 +212,7 @@ def call_system(text: str, params: dict[str, Any]) -> Result:
         config.OPENROUTER_URL = params.get("url") or _FLEET["default_url"]
         _FLEET["timeout"] = params.get("call_timeout_s")
         _FLEET["body_extra"] = {k: params[k] for k in ("reasoning_effort", "max_tokens") if k in params}
+        _FLEET["via_gateway"] = not params.get("url")  # no url of its own: the fleet's LiteLLM gateway
     else:
         raise ValueError(f"provider {provider!r}: gateway or stub")
     t0 = time.monotonic()
@@ -301,7 +306,11 @@ def score(output: str, reference: str | None) -> dict[str, float]:
     else:
         row = _score(out.get("disposition"), reference)
         row.update(
-            {f"model_{k}": v for k, v in _score(model_disposition(out), reference).items() if k != "silent_drop"}
+            {
+                f"model_{k}": v
+                for k, v in _score(model_disposition(out), reference).items()
+                if k != "silent_drop"
+            }
         )
     if "false_dismiss" in row or "false_alarm" in row:
         # The combined cost (owner, 2026-10-30): a missed real problem costs MISS_PRICE false alarms.

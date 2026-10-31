@@ -1,0 +1,142 @@
+round_id: r3
+goal: triage_orrery
+dataset_id: orrery_triage_v1_labelled
+from: r2
+hypothesis: Round 1's arms re-run as onboarding found they should be set up, and whether production's
+  model does better with reasoning off
+changes:
+- 25 arms re-run with their model records' settings (reasoning_effort none, or low where it cannot stop),
+  each smoked first; a 1024-token reply cap
+- 'a new candidate: production''s model with reasoning off'
+baseline: triage_baseline_pro_v1_20261030T132352Z
+carried:
+- triage_baseline_pro_v1
+- triage_gemini_35_flash_lite_v1
+- triage_gemini_4_argon_v1
+- triage_gpt_61_sol_v1
+- triage_haiku_55_v1
+- triage_hosted_mistral_medium_35_v1
+- triage_hosted_qwen3_30b_a3b_v1
+- triage_local_dgx_gemma4_12b_noreason_v1
+- triage_local_dgx_llama31_8b_v1
+- triage_local_dgx_llama4_scout_v1
+- triage_local_dgx_ministral_3_14b_v1
+- triage_local_dgx_mistral_medium_35_128b_v1
+- triage_local_dgx_phi4_14b_v1
+- triage_local_dgx_qwen3_30b_a3b_v1
+- triage_local_dgx_vllm_qwen3_30b_a3b_nvfp4_v1
+- triage_local_mac_gemma4_12b_noreason_v1
+- triage_local_mac_llama31_8b_v1
+- triage_local_mac_ministral_3_14b_v1
+- triage_local_mac_phi4_14b_v1
+- triage_local_mac_qwen3_30b_a3b_v1
+- triage_local_x3_llama31_8b_v1
+- triage_local_x3_ministral_3_14b_v1
+- triage_local_x3_phi4_14b_v1
+- triage_local_x3_qwen3_30b_a3b_v1
+- triage_sonnet_55_v1
+- triage_stub_dismiss_v1
+- triage_stub_escalate_v1
+status: open
+opened_at: '2026-10-31T14:22:30Z'
+retired:
+- config_id: triage_deepseek_41flash_v1
+  reason: run at the server's default reasoning for a model that reasons by default; re-run in this round
+    as _v2 with the model's onboarded settings
+  at: '2026-10-31T14:22:30Z'
+- config_id: triage_gpt_6_luna_v1
+  reason: run at the server's default reasoning for a model that reasons by default; re-run in this round
+    as _v2 with the model's onboarded settings
+  at: '2026-10-31T14:22:30Z'
+- config_id: triage_hosted_gemma4_31b_v1
+  reason: run at the server's default reasoning for a model that reasons by default; re-run in this round
+    as _v2 with the model's onboarded settings
+  at: '2026-10-31T14:22:30Z'
+- config_id: triage_hosted_gpt_oss_120b_v1
+  reason: run at the server's default reasoning for a model that reasons by default; re-run in this round
+    as _v2 with the model's onboarded settings
+  at: '2026-10-31T14:22:30Z'
+- config_id: triage_hosted_qwen35_122b_v1
+  reason: run at the server's default reasoning for a model that reasons by default; re-run in this round
+    as _v2 with the model's onboarded settings
+  at: '2026-10-31T14:22:30Z'
+- config_id: triage_kimi_k31_pro_v1
+  reason: run at the server's default reasoning for a model that reasons by default; re-run in this round
+    as _v2 with the model's onboarded settings
+  at: '2026-10-31T14:22:30Z'
+- config_id: triage_local_dgx_gemma4_31b_v1
+  reason: run at the server's default reasoning for a model that reasons by default; re-run in this round
+    as _v2 with the model's onboarded settings
+  at: '2026-10-31T14:22:30Z'
+- config_id: triage_local_dgx_gpt_oss_120b_v1
+  reason: run at the server's default reasoning for a model that reasons by default; re-run in this round
+    as _v2 with the model's onboarded settings
+  at: '2026-10-31T14:22:30Z'
+- config_id: triage_local_dgx_gpt_oss_20b_v1
+  reason: run at the server's default reasoning for a model that reasons by default; re-run in this round
+    as _v2 with the model's onboarded settings
+  at: '2026-10-31T14:22:30Z'
+- config_id: triage_local_dgx_nemotron_35_bolt_e4b_v1
+  reason: run at the server's default reasoning for a model that reasons by default; re-run in this round
+    as _v2 with the model's onboarded settings
+  at: '2026-10-31T14:22:30Z'
+- config_id: triage_local_dgx_nemotron_35_lightning_30b_v1
+  reason: run at the server's default reasoning for a model that reasons by default; re-run in this round
+    as _v2 with the model's onboarded settings
+  at: '2026-10-31T14:22:30Z'
+- config_id: triage_local_dgx_nemotron_35_super_120b_v1
+  reason: run at the server's default reasoning for a model that reasons by default; re-run in this round
+    as _v2 with the model's onboarded settings
+  at: '2026-10-31T14:22:30Z'
+- config_id: triage_local_dgx_qwen35_122b_v1
+  reason: run at the server's default reasoning for a model that reasons by default; re-run in this round
+    as _v2 with the model's onboarded settings
+  at: '2026-10-31T14:22:30Z'
+- config_id: triage_local_dgx_qwen38_27b_v1
+  reason: run at the server's default reasoning for a model that reasons by default; re-run in this round
+    as _v2 with the model's onboarded settings
+  at: '2026-10-31T14:22:30Z'
+- config_id: triage_local_mac_gemma4_31b_v1
+  reason: run at the server's default reasoning for a model that reasons by default; re-run in this round
+    as _v2 with the model's onboarded settings
+  at: '2026-10-31T14:22:30Z'
+- config_id: triage_local_mac_gpt_oss_20b_v1
+  reason: run at the server's default reasoning for a model that reasons by default; re-run in this round
+    as _v2 with the model's onboarded settings
+  at: '2026-10-31T14:22:30Z'
+- config_id: triage_local_mac_nemotron_35_bolt_e4b_v1
+  reason: run at the server's default reasoning for a model that reasons by default; re-run in this round
+    as _v2 with the model's onboarded settings
+  at: '2026-10-31T14:22:30Z'
+- config_id: triage_local_mac_nemotron_35_lightning_30b_v1
+  reason: run at the server's default reasoning for a model that reasons by default; re-run in this round
+    as _v2 with the model's onboarded settings
+  at: '2026-10-31T14:22:30Z'
+- config_id: triage_local_mac_qwen38_27b_v1
+  reason: run at the server's default reasoning for a model that reasons by default; re-run in this round
+    as _v2 with the model's onboarded settings
+  at: '2026-10-31T14:22:30Z'
+- config_id: triage_local_x3_gemma4_31b_v1
+  reason: run at the server's default reasoning for a model that reasons by default; re-run in this round
+    as _v2 with the model's onboarded settings
+  at: '2026-10-31T14:22:30Z'
+- config_id: triage_local_x3_gpt_oss_20b_v1
+  reason: run at the server's default reasoning for a model that reasons by default; re-run in this round
+    as _v2 with the model's onboarded settings
+  at: '2026-10-31T14:22:30Z'
+- config_id: triage_local_x3_nemotron_35_bolt_e4b_v1
+  reason: run at the server's default reasoning for a model that reasons by default; re-run in this round
+    as _v2 with the model's onboarded settings
+  at: '2026-10-31T14:22:30Z'
+- config_id: triage_local_x3_nemotron_35_lightning_30b_v1
+  reason: run at the server's default reasoning for a model that reasons by default; re-run in this round
+    as _v2 with the model's onboarded settings
+  at: '2026-10-31T14:22:30Z'
+- config_id: triage_local_x3_qwen38_27b_v1
+  reason: run at the server's default reasoning for a model that reasons by default; re-run in this round
+    as _v2 with the model's onboarded settings
+  at: '2026-10-31T14:22:30Z'
+- config_id: triage_mistral_large_4_v1
+  reason: run at the server's default reasoning for a model that reasons by default; re-run in this round
+    as _v2 with the model's onboarded settings
+  at: '2026-10-31T14:22:30Z'

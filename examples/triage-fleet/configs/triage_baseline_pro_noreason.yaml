@@ -1,0 +1,16 @@
+# Round 3: a new candidate: production's own model with reasoning off, the one change production could make
+# The record supplies reasoning_effort (its settings_why says why); the arm sets the task's own: a reply cap
+# (a triage decision is 64-414 tokens; 1024 bounds a runaway) and the call limit round 1 used.
+config_id: triage_baseline_pro_noreason_v1
+dataset_id: orrery_triage_v1_labelled
+adapter: ../adapter.py
+goal: triage_orrery
+round: r3
+model_record: fleet-triage-pro
+deployment: hosted
+params:
+  provider: gateway
+  model: eval-fleet-triage-pro
+  usd_per_mtok_in: 0.816
+  usd_per_mtok_out: 1.632
+  max_tokens: 1024

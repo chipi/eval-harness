@@ -323,6 +323,21 @@ if (
         seen and seen[-1].get("reasoning_effort") == "none" and seen[-1].get("max_tokens") == 512,
         seen[-1] if seen else None,
     )
+    check(
+        "adapter: an arm with its own url (an Ollama server) is not sent the LiteLLM opt-in",
+        "allowed_openai_params" not in seen[-1],
+        seen[-1],
+    )
+    adapter._FLEET["default_url"] = url  # the fleet's own gateway, as an arm with no url reaches it
+    adapter.call_system(
+        json.dumps(r1["body"]), {"provider": "gateway", "model": "m", "reasoning_effort": "none"}
+    )
+    check(
+        "adapter: through the fleet's LiteLLM gateway a reasoning setting is named in allowed_openai_params",
+        seen[-1].get("allowed_openai_params") == ["reasoning_effort"]
+        and seen[-1].get("reasoning_effort") == "none",
+        seen[-1],
+    )
     adapter.call_system(json.dumps(r1["body"]), {"provider": "gateway", "model": "m", "url": url})
     check(
         "adapter: an arm without them sends the fleet's request unchanged",
