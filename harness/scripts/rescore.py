@@ -564,6 +564,12 @@ def main() -> int:
         todo = runs_on(args.dataset_id, match=args.match)
     if not todo:
         die(f"no runs on {args.dataset_id!r}" + (f" matching {args.match!r}" if args.match else ""))
+    # Refused before anything is written, whatever the runs record (rescore_one checks each run again).
+    if args.out and any(d.parent.resolve() == args.out.resolve() for d, _m in todo):
+        die(
+            f"--out {args.out} is where the runs being rescored are read from; a rescore writes "
+            "new records beside them, so give it another directory (or none: the tool designates one)"
+        )
     print(f"rescoring {len(todo)} run(s)" + (f" -> {args.out}" if args.out else ""))
     if args.out:
         args.out.mkdir(parents=True, exist_ok=True)

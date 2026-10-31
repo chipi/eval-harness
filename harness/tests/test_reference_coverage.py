@@ -102,7 +102,8 @@ try:
     env["PYTHONPATH"] = str(HERE)
     r = evh("experiment-run", "--config", "data/configs/own.yaml", "--run-id", "own")
     r2 = evh("rescore", "--dataset-id", "tickets_v1", "--match", "own_v1")
-    resc = next((data / "runs-rescored").glob("own*/metrics.json"), None) if r2.returncode == 0 else None
+    # where the tool designates a re-score (RFC-022): runs-rescored/<scorer>/<source>/
+    resc = next((data / "runs-rescored").glob("*/runs/own*/metrics.json"), None) if r2.returncode == 0 else None
     mr = json.loads(resc.read_text()) if resc else {}
     check(
         "rescore keeps a project adapter's call-time extra, and reports nothing as dropped",

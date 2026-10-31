@@ -70,12 +70,12 @@ and its page then shows the scorer it was concluded under beside the one it is n
 
 The new round records `scorer` (the working tree's) and the `why` among its `changes`. Every carried arm whose runs
 were scored by another scorer is re-scored into §2's place before the round opens ($0), so the round compares like
-with like; the round's page and `evh round-status` list each carried arm's deciding measure under the old scorer
+with like; the round's page and `evh rounds` list each carried arm's deciding measure under the old scorer
 and the new.
 
 ### 6. Rounds read what the goal reads
 
-A round's evidence (`evh round-status`, its page) reads each arm through the same rule as the goal view: a measured
+A round's evidence (`evh rounds`, its page) reads each arm through the same rule as the goal view: a measured
 arm every run of which was re-scored against the same reference is read from its latest re-score.
 
 ### 7. A round says when its arms were judged by different scorers
