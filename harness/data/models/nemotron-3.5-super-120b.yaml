@@ -69,3 +69,109 @@ history:
   why: 'it reasoned by default on the onboarding probe (2026-10-31); off unless a
     task needs it (RUNBOOK §16): left at the server''s default, one model reasons
     at length and the next not at all'
+smokes:
+  triage_local_dgx_nemotron_35_super_120b_v2:
+    status: pass
+    at: '2026-10-31T15:34:03Z'
+    flags: []
+    report:
+      items:
+      - item: orrery-ORRERY-STAGING-14-2026-07-30T13:43:09Z
+        s: 31.95
+        output_chars: 1871
+        cost_usd: 0.0
+        scored: true
+        deterministic: true
+      - item: orrery-ORRERY-J-2026-08-06T21:52:38Z
+        s: 15.89
+        output_chars: 2063
+        cost_usd: 0.0
+        scored: true
+      - item: orrery-ORRERY-STAGING-13-2026-08-07T04:32:42Z
+        s: 16.32
+        output_chars: 1964
+        cost_usd: 0.0
+        scored: true
+      calls:
+      - tokens_out: 51
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 19.69
+      - tokens_out: 55
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 2.17
+      - tokens_out: 49
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 2.08
+      - tokens_out: 212
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 8.0
+      - tokens_out: 50
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 3.27
+      - tokens_out: 50
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 2.04
+      - tokens_out: 45
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 2.19
+      - tokens_out: 269
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 8.39
+      - tokens_out: 57
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 3.48
+      - tokens_out: 52
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 2.14
+      - tokens_out: 58
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 2.18
+      - tokens_out: 236
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 8.52
+      projection:
+        items: 65
+        minutes: 23.2
+        worst_minutes: 34.6
+        usd: 0.0
+      settings:
+        model: nemotron-3.5-super:120b
+        reasoning_effort: none
+        max_tokens: 1024
+        call_timeout_s: 600
