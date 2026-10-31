@@ -266,6 +266,8 @@ def drive(base: str, overview: str = "") -> None:
             "goal page: the open round opens in the inspector (evh inspect --round)",
             page.locator('a[title^="evh inspect --round r1"]').count() == 1,
         )
+        # Each round is a folded section: open the open one, as a reader does, to reach its suggestions.
+        page.click("details.roundcard.t-open > summary")
         btn = page.locator("button.copy").first
         cmd = btn.get_attribute("data-copy") if btn.count() else None
         if cmd:
