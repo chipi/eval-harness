@@ -244,6 +244,47 @@ if (
         res.extra,
     )
     adapter._stub_call = real_stub
+
+    import http.server
+    import threading
+
+    seen: list = []
+
+    class Fake(http.server.BaseHTTPRequestHandler):
+        def do_POST(self):
+            seen.append(json.loads(self.rfile.read(int(self.headers["Content-Length"]))))
+            reply = {"action": "decide", "disposition": "escalate", "reason": "r", "question": "q"}
+            data = json.dumps(
+                {"choices": [{"message": {"content": json.dumps(reply)}}], "usage": {}}
+            ).encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+
+        def log_message(self, *a):
+            pass
+
+    srv = http.server.HTTPServer(("127.0.0.1", 0), Fake)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    url = f"http://127.0.0.1:{srv.server_port}/v1/chat/completions"
+    adapter.call_system(
+        json.dumps(r1["body"]),
+        {"provider": "gateway", "model": "m", "url": url, "reasoning_effort": "none", "max_tokens": 512},
+    )
+    check(
+        "adapter: reasoning_effort and max_tokens reach the model call",
+        seen and seen[-1].get("reasoning_effort") == "none" and seen[-1].get("max_tokens") == 512,
+        seen[-1] if seen else None,
+    )
+    adapter.call_system(json.dumps(r1["body"]), {"provider": "gateway", "model": "m", "url": url})
+    check(
+        "adapter: an arm without them sends the fleet's request unchanged",
+        "reasoning_effort" not in seen[-1] and "max_tokens" not in seen[-1],
+        seen[-1],
+    )
+    srv.shutdown()
 else:
     print("  --   adapter through the fleet: skipped (TRIAGE_FLEET_SRC names no checkout)")
 

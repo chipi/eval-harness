@@ -21,6 +21,9 @@ params:
   machine    optional: where a self-hosted model runs (x3, dgx, mac), recorded with the run
   call_timeout_s   optional: each model call's time limit, in place of the fleet's own 90 s (a self-hosted
              model on slow hardware takes longer than production's budget; the run records the value)
+  reasoning_effort   optional: sent with every model call (e.g. "none": a reasoning model answers without
+             thinking first). The fleet sends none, so each model reasons at its server's default
+  max_tokens optional: a cap on each reply's tokens. The fleet sends none, so a reply is unbounded
   usd_per_mtok_in, usd_per_mtok_out   the model's prices, for cost (the fleet knows only its own)
   stub_disposition   with provider stub: the decision it always reaches (default dismiss)
 """
@@ -96,6 +99,7 @@ def _fleet() -> Any:
         }
         if _FLEET.get("timeout"):  # an arm's call_timeout_s, over the fleet's own (90 s)
             k["timeout"] = _FLEET["timeout"]
+        body.update(_FLEET.get("body_extra") or {})  # an arm's reasoning_effort / max_tokens
         return real_post(url, body, *a, **k)
 
     triage.post_json = tagged
@@ -155,6 +159,7 @@ def call_system(text: str, params: dict[str, Any]) -> Result:
         _FLEET.setdefault("default_url", config.OPENROUTER_URL)
         config.OPENROUTER_URL = params.get("url") or _FLEET["default_url"]
         _FLEET["timeout"] = params.get("call_timeout_s")
+        _FLEET["body_extra"] = {k: params[k] for k in ("reasoning_effort", "max_tokens") if k in params}
     else:
         raise ValueError(f"provider {provider!r}: gateway or stub")
     t0 = time.monotonic()
