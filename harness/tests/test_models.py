@@ -42,6 +42,32 @@ with tempfile.TemporaryDirectory() as td:
     check("by_alias finds the record", _models.by_alias(data)["org/span"]["model_id"] == "span")
     check("find by id", (_models.find(data, "gemma4-12b") or {}).get("kind") == "llm")
     check("a clean set has no problems", _models.problems(data) == [], _models.problems(data))
+    write(
+        data,
+        "set",
+        {
+            "model_id": "set",
+            "kind": "llm",
+            "aliases": ["set:1b"],
+            "settings": {"reasoning_effort": "none", "max_tokens": 1024},
+        },
+    )
+    got = _models.resolve({"config_id": "a", "model_record": "set", "params": {"max_tokens": 2048}}, data)
+    check(
+        "resolve: the record's settings under the config's params, the config wins, model from the alias",
+        got["params"] == {"reasoning_effort": "none", "max_tokens": 2048, "model": "set:1b"},
+        got,
+    )
+    check(
+        "resolve: a config naming no record is unchanged",
+        _models.resolve({"params": {"x": 1}}, data) == {"params": {"x": 1}},
+    )
+    try:
+        _models.resolve({"model_record": "nope"}, data)
+        raised = False
+    except ValueError:
+        raised = True
+    check("resolve: a record that does not exist is refused", raised)
     write(data, "other", {"model_id": "not-other", "kind": "llm", "aliases": ["gemma4:12b"]})
     probs = " | ".join(_models.problems(data))
     check("a file not named by its id is a problem", "is not the file's name" in probs, probs)

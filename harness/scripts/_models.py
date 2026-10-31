@@ -61,6 +61,23 @@ def facts(data_dir: Path) -> dict[str, dict[str, str]]:
     return out
 
 
+def resolve(cfg: dict[str, Any], data_dir: Path) -> dict[str, Any]:
+    """A config with the model record it names (`model_record: <id>`) applied: the record's settings
+    under the config's own params (the config wins), `model` from the record's first alias when the config
+    gives none, and `model_record` kept so the run records which record it ran with. A config naming no
+    record is returned as it is; one naming a record that does not exist raises ValueError."""
+    rid = cfg.get("model_record")
+    if not rid:
+        return cfg
+    rec = find(data_dir, rid)
+    if rec is None:
+        raise ValueError(f"model_record {rid!r}: no {records_dir(data_dir) / (rid + '.yaml')}")
+    params = {**(rec.get("settings") or {}), **(cfg.get("params") or {})}
+    if "model" not in params and rec.get("aliases"):
+        params["model"] = rec["aliases"][0]
+    return {**cfg, "params": params}
+
+
 def problems(data_dir: Path) -> list[str]:
     """What a record set gets wrong beyond its schema: a file named other than its id, an alias two records
     claim."""

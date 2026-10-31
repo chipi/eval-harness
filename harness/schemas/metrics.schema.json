@@ -86,6 +86,7 @@
     },
     "goal": {"type": "string", "description": "The goal this run answers, from its config: data/goals/<goal_id>.yaml (validate V14)."},
     "round": {"type": "string", "description": "The round of its goal this run belongs to, from its config (ADR-0004, optional)."},
+    "model_record": {"type": "string", "description": "The model record its config named (RFC-020, optional): data/models/<id>.yaml, whose settings it ran with."},
     "format": {"type": "string", "description": "The output format the config asked for; must be one the goal's output_contract accepts (validate V14)."},
     "repeat_index": {"type": "integer", "description": "Which repetition this is, when measuring an arm's own variance."}
   }
