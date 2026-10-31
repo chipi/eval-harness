@@ -329,3 +329,82 @@ smokes:
         reasoning_effort: low
         max_tokens: 1024
         call_timeout_s: 600
+  triage_local_dgx_gpt_oss_20b_v2:
+    status: check
+    at: '2026-10-31T16:00:34Z'
+    flags:
+    - 'determinism: item 1 twice gave different outputs (repeats will vary)'
+    report:
+      items:
+      - item: orrery-ORRERY-STAGING-14-2026-07-30T13:43:09Z
+        s: 11.16
+        output_chars: 916
+        cost_usd: 0.0
+        scored: true
+        deterministic: false
+      - item: orrery-ORRERY-J-2026-08-06T21:52:38Z
+        s: 3.9
+        output_chars: 863
+        cost_usd: 0.0
+        scored: true
+      - item: orrery-ORRERY-STAGING-13-2026-08-07T04:32:42Z
+        s: 4.24
+        output_chars: 868
+        cost_usd: 0.0
+        scored: true
+      calls:
+      - tokens_out: 81
+        reasoning_tokens: 0
+        reasoning_chars: 64
+        finish_reason: stop
+        answered: true
+        s: 7.31
+      - reply_from_tool_call: true
+        tokens_out: 115
+        reasoning_tokens: 0
+        reasoning_chars: 221
+        finish_reason: tool_calls
+        answered: true
+        s: 2.15
+      - tokens_out: 91
+        reasoning_tokens: 0
+        reasoning_chars: 68
+        finish_reason: stop
+        answered: true
+        s: 1.7
+      - reply_from_tool_call: true
+        tokens_out: 55
+        reasoning_tokens: 0
+        reasoning_chars: 33
+        finish_reason: tool_calls
+        answered: true
+        s: 1.04
+      - tokens_out: 160
+        reasoning_tokens: 0
+        reasoning_chars: 407
+        finish_reason: stop
+        answered: true
+        s: 2.87
+      - reply_from_tool_call: true
+        tokens_out: 76
+        reasoning_tokens: 0
+        reasoning_chars: 99
+        finish_reason: tool_calls
+        answered: true
+        s: 1.4
+      - tokens_out: 159
+        reasoning_tokens: 0
+        reasoning_chars: 349
+        finish_reason: stop
+        answered: true
+        s: 2.84
+      projection:
+        items: 65
+        minutes: 7.0
+        worst_minutes: 12.1
+        usd: 0.0
+      settings:
+        model: gpt-oss:20b
+        reasoning_effort: low
+        max_tokens: 1024
+        call_timeout_s: 600
