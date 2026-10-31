@@ -148,3 +148,81 @@ accepted:
   reasoning: 'it reasons whatever it is asked: with none and with low on every machine
     and the hosted route, which answers "Reasoning is mandatory" (onboarding, 2026-10-31);
     low is the least'
+smokes:
+  triage_hosted_gpt_oss_120b_v2:
+    status: check
+    at: '2026-10-31T14:25:05Z'
+    flags:
+    - 'determinism: item 1 twice gave different outputs (repeats will vary)'
+    - 'where it ran: the build is not pinned (no digest, revision or hash in the model
+      record''s deployment)'
+    report:
+      items:
+      - item: orrery-ORRERY-STAGING-14-2026-07-30T13:43:09Z
+        s: 2.8
+        output_chars: 901
+        cost_usd: 0.00045554999999999993
+        scored: true
+        deterministic: false
+      - item: orrery-ORRERY-J-2026-08-06T21:52:38Z
+        s: 2.59
+        output_chars: 1386
+        cost_usd: 0.0007213499999999999
+        scored: true
+      - item: orrery-ORRERY-STAGING-13-2026-08-07T04:32:42Z
+        s: 3.25
+        output_chars: 876
+        cost_usd: 0.0004912499999999999
+        scored: true
+      calls:
+      - tokens_out: 62
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 1.03
+      - tokens_out: 95
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 1.77
+      - tokens_out: 65
+        reasoning_tokens: 0
+        reasoning_chars: 77
+        finish_reason: stop
+        answered: true
+        s: 0.68
+      - tokens_out: 78
+        reasoning_tokens: 26
+        reasoning_chars: 115
+        finish_reason: stop
+        answered: true
+        s: 0.59
+      - tokens_out: 96
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 1.32
+      - tokens_out: 59
+        reasoning_tokens: 0
+        reasoning_chars: 77
+        finish_reason: stop
+        answered: true
+        s: 0.79
+      - tokens_out: 145
+        reasoning_tokens: 46
+        reasoning_chars: 182
+        finish_reason: stop
+        answered: true
+        s: 2.46
+      projection:
+        items: 65
+        minutes: 3.1
+        worst_minutes: 3.5
+        usd: 0.0361
+      settings:
+        model: eval-gpt-oss-120b
+        reasoning_effort: low
+        max_tokens: 1024

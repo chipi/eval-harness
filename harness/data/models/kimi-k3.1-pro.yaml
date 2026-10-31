@@ -56,3 +56,111 @@ history:
   why: 'it reasoned by default on the onboarding probe (2026-10-31); off unless a
     task needs it (RUNBOOK §16): left at the server''s default, one model reasons
     at length and the next not at all'
+smokes:
+  triage_kimi_k31_pro_v2:
+    status: check
+    at: '2026-10-31T14:27:13Z'
+    flags:
+    - 'determinism: item 1 twice gave different outputs (repeats will vary)'
+    - 'where it ran: the build is not pinned (no digest, revision or hash in the model
+      record''s deployment)'
+    report:
+      items:
+      - item: orrery-ORRERY-STAGING-14-2026-07-30T13:43:09Z
+        s: 26.66
+        output_chars: 1732
+        cost_usd: 0.014452
+        scored: true
+        deterministic: false
+      - item: orrery-ORRERY-J-2026-08-06T21:52:38Z
+        s: 22.03
+        output_chars: 1754
+        cost_usd: 0.01368
+        scored: true
+      - item: orrery-ORRERY-STAGING-13-2026-08-07T04:32:42Z
+        s: 26.95
+        output_chars: 1803
+        cost_usd: 0.014118
+        scored: true
+      calls:
+      - tokens_out: 63
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 4.47
+      - tokens_out: 61
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 5.04
+      - tokens_out: 84
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 8.51
+      - tokens_out: 174
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 8.63
+      - tokens_out: 50
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 4.73
+      - tokens_out: 44
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 4.44
+      - tokens_out: 60
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 4.55
+      - tokens_out: 130
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 8.31
+      - tokens_out: 50
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 5.53
+      - tokens_out: 51
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 4.48
+      - tokens_out: 66
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 6.44
+      - tokens_out: 173
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 10.5
+      projection:
+        items: 65
+        minutes: 27.3
+        worst_minutes: 29.2
+        usd: 0.9154
+      settings:
+        model: eval-kimi-k31-pro
+        reasoning_effort: none
+        max_tokens: 1024

@@ -56,3 +56,112 @@ history:
   why: 'it reasoned by default on the onboarding probe (2026-10-31); off unless a
     task needs it (RUNBOOK §16): left at the server''s default, one model reasons
     at length and the next not at all'
+smokes:
+  triage_deepseek_41flash_v2:
+    status: check
+    at: '2026-10-31T14:23:57Z'
+    flags:
+    - 'determinism: item 1 twice gave different outputs (repeats will vary)'
+    - 'where it ran: the build is not pinned (no digest, revision or hash in the model
+      record''s deployment)'
+    - 'long reply: 3 call(s) over 3x the arm''s median of 55 tokens (max 237)'
+    report:
+      items:
+      - item: orrery-ORRERY-STAGING-14-2026-07-30T13:43:09Z
+        s: 13.16
+        output_chars: 1743
+        cost_usd: 0.000396715
+        scored: true
+        deterministic: false
+      - item: orrery-ORRERY-J-2026-08-06T21:52:38Z
+        s: 5.22
+        output_chars: 2239
+        cost_usd: 0.00044877
+        scored: true
+      - item: orrery-ORRERY-STAGING-13-2026-08-07T04:32:42Z
+        s: 21.0
+        output_chars: 1810
+        cost_usd: 0.00041344499999999997
+        scored: true
+      calls:
+      - tokens_out: 49
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 1.33
+      - tokens_out: 52
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 2.49
+      - tokens_out: 55
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 8.28
+      - tokens_out: 176
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 1.06
+      - tokens_out: 53
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 1.38
+      - tokens_out: 62
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 0.93
+      - tokens_out: 68
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 1.47
+      - tokens_out: 237
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 1.44
+      - tokens_out: 51
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 0.69
+      - tokens_out: 54
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 0.74
+      - tokens_out: 55
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 0.55
+      - tokens_out: 197
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 19.02
+      projection:
+        items: 65
+        minutes: 14.2
+        worst_minutes: 22.8
+        usd: 0.0273
+      settings:
+        model: eval-deepseek-41flash
+        reasoning_effort: none
+        max_tokens: 1024

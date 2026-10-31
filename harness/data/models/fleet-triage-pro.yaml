@@ -56,3 +56,106 @@ history:
   why: 'it reasoned by default on the onboarding probe (2026-10-31); off unless a
     task needs it (RUNBOOK §16): left at the server''s default, one model reasons
     at length and the next not at all'
+smokes:
+  triage_baseline_pro_noreason_v1:
+    status: check
+    at: '2026-10-31T14:29:00Z'
+    flags:
+    - 'determinism: item 1 twice gave different outputs (repeats will vary)'
+    - 'where it ran: the build is not pinned (no digest, revision or hash in the model
+      record''s deployment)'
+    - 'long reply: 1 call(s) over 3x the arm''s median of 74 tokens (max 270)'
+    report:
+      items:
+      - item: orrery-ORRERY-STAGING-14-2026-07-30T13:43:09Z
+        s: 14.06
+        output_chars: 1568
+        cost_usd: 0.0047736
+        scored: true
+        deterministic: false
+      - item: orrery-ORRERY-J-2026-08-06T21:52:38Z
+        s: 8.23
+        output_chars: 1669
+        cost_usd: 0.0036622079999999997
+        scored: true
+      - item: orrery-ORRERY-STAGING-13-2026-08-07T04:32:42Z
+        s: 7.62
+        output_chars: 2170
+        cost_usd: 0.005060832
+        scored: true
+      calls:
+      - tokens_out: 64
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 3.61
+      - tokens_out: 63
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 2.39
+      - tokens_out: 75
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 3.74
+      - tokens_out: 151
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 4.32
+      - tokens_out: 63
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 2.87
+      - tokens_out: 74
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 2.58
+      - tokens_out: 189
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 2.78
+      - tokens_out: 61
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 1.29
+      - tokens_out: 64
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 1.37
+      - tokens_out: 74
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 1.96
+      - tokens_out: 270
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 2.99
+      projection:
+        items: 65
+        minutes: 10.8
+        worst_minutes: 15.2
+        usd: 0.2924
+      settings:
+        model: eval-fleet-triage-pro
+        reasoning_effort: none
+        max_tokens: 1024
