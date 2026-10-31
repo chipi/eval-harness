@@ -1,0 +1,5 @@
+model_id: eval-mistral-medium
+kind: llm
+aliases:
+- eval-mistral-medium
+weights: proprietary

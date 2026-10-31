@@ -46,8 +46,9 @@ COPIED_DIRS = (
     "profiles",
     "fields",
     "captures",
+    "models",
 )
-COPIED_FILES = ("models.yaml",)
+COPIED_FILES: tuple[str, ...] = ()
 #: What a hidden dataset's prediction rows keep of `_meta`: what describes the call (its cost, model,
 #: finish), never what the system answered or the parser made of it (`predicted`, `llm_raw`, ...).
 CALL_META = (

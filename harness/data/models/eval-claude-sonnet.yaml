@@ -1,0 +1,5 @@
+model_id: eval-claude-sonnet
+kind: llm
+aliases:
+- eval-claude-sonnet
+weights: proprietary

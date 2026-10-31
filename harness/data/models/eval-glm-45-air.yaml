@@ -1,0 +1,6 @@
+model_id: eval-glm-45-air
+kind: llm
+aliases:
+- eval-glm-45-air
+weights: open
+licence: MIT

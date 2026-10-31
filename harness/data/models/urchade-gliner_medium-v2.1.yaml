@@ -1,0 +1,6 @@
+model_id: urchade-gliner_medium-v2.1
+kind: ml
+aliases:
+- urchade/gliner_medium-v2.1
+weights: open
+licence: apache-2.0

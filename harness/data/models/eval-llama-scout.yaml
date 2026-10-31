@@ -1,0 +1,6 @@
+model_id: eval-llama-scout
+kind: llm
+aliases:
+- eval-llama-scout
+weights: open
+licence: Llama, gated

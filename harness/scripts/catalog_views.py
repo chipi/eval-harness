@@ -581,7 +581,7 @@ def arms(argv) -> int:
     ap.add_argument(
         "--weights",
         choices=("open", "proprietary"),
-        help="only arms whose model's weights are open, or proprietary (data/models.yaml)",
+        help="only arms whose model's weights are open, or proprietary (the model records, data/models/)",
     )
     ap.add_argument(
         "--quality",
@@ -610,7 +610,7 @@ def arms(argv) -> int:
         if not rows:
             why = []
             if args.weights:
-                why.append("an arm's weights come from data/models.yaml (the adapter's model_facts)")
+                why.append("an arm's weights come from the model records (data/models/, the adapter's model_facts)")
             if args.quality:
                 why.append("only arms a goal's decision weighs have a place against its quality leader")
             print("no arm matches" + (f": {'; '.join(why)}" if why else ""))

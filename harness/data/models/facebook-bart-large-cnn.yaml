@@ -1,0 +1,6 @@
+model_id: facebook-bart-large-cnn
+kind: ml
+aliases:
+- facebook/bart-large-cnn
+weights: open
+licence: MIT

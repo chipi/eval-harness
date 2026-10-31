@@ -1,0 +1,5 @@
+model_id: fabriceyhc-bert-base-uncased-ag_news
+kind: ml
+aliases:
+- fabriceyhc/bert-base-uncased-ag_news
+weights: open

@@ -653,12 +653,11 @@ class HarnessAdapter:
 
     @_memo
     def model_facts(self) -> dict[str, dict]:
-        """data/models.yaml's models (models.schema.json), {} without it."""
-        import yaml  # noqa: PLC0415
+        """Each model alias a run records, to its weights and licence, from the model records
+        (data/models/, model.schema.json); {} without them."""
+        from evaluation_harness import _models  # noqa: PLC0415
 
-        f = self.data_dir / "models.yaml"
-        doc = yaml.safe_load(f.read_text(encoding="utf-8")) if f.is_file() else None
-        return (doc or {}).get("models") or {} if isinstance(doc, dict) else {}
+        return _models.facts(self.data_dir)
 
     @_memo
     def rounds(self) -> list[dict]:

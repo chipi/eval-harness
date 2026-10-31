@@ -1,0 +1,5 @@
+model_id: eval-qwen-37plus
+kind: llm
+aliases:
+- eval-qwen-37plus
+weights: proprietary

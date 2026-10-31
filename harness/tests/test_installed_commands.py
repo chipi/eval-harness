@@ -271,7 +271,7 @@ def main() -> int:
             ("arms", ["--by", "config", "--period", "30d"], "ok:config tickets_lead2_v1"),
             ("arms", ["--configs"], "ok:rank on each goal"),
             ("arms", ["--quality", "ties"], "ok:no arm matches: only arms a goal's decision weighs"),
-            ("arms", ["--weights", "open"], "ok:no arm matches: an arm's weights come from data/models.yaml"),
+            ("arms", ["--weights", "open"], "ok:no arm matches: an arm's weights come from the model records (data/models/)"),
             ("arms", [], "ok:runs/tickets_v1/tickets_lead2_v1"),
             ("arms", ["--arm", "runs/tickets_v1/tickets_lead2_v1"], "ok:metrics:"),
             ("arms", ["--arm", "tickets_lead2_v1"], "ok:scored against"),

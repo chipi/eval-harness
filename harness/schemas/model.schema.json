@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "model",
+  "description": "A model record (RFC-020), optional: data/models/<model_id>.yaml. A model is onboarded once for the project and used by any experiment's arms: its build on every machine that runs it, what it can do, the settings chosen for it and the smoke behind them. `aliases` are the ids runs record for it (params.model); the arms page's weights filter and the catalog's Models page read the records.",
+  "type": "object",
+  "required": ["model_id", "kind", "aliases"],
+  "additionalProperties": false,
+  "properties": {
+    "model_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$", "description": "The record's id: its file's name."},
+    "kind": {"enum": ["llm", "ml", "baseline"]},
+    "name": {"type": "string", "description": "A display name, when the id is not enough."},
+    "aliases": {"type": "array", "minItems": 1, "items": {"type": "string"}, "description": "The ids runs record for this model (params.model): a gateway alias, an Ollama tag, a Hugging Face repo."},
+    "weights": {"enum": ["open", "proprietary"], "description": "open: the weights can be downloaded; proprietary: only its vendor serves it."},
+    "licence": {"type": "string", "description": "The licence of open weights, as its publisher states it."},
+    "builds": {
+      "type": "array",
+      "description": "One entry per place the model runs.",
+      "items": {
+        "type": "object",
+        "required": ["where"],
+        "additionalProperties": false,
+        "properties": {
+          "where": {"type": "string", "description": "A machine (x3, dgx, mac) or a host (openrouter, a gateway)."},
+          "server": {"type": "string", "description": "What serves it there, with its version: \"ollama 0.40.13\", \"vllm 26.05\"."},
+          "server_settings": {"type": "object", "description": "The server's settings that change the model's behaviour: context length, KV cache, flash attention."},
+          "device": {"type": "string"},
+          "tag": {"type": "string"},
+          "digest": {"type": "string"},
+          "revision": {"type": "string"},
+          "file_hash": {"type": "string"},
+          "quantization": {"type": "string"},
+          "provider_id": {"type": "string", "description": "A hosted model's id at its provider."},
+          "checked_at": {"type": "string", "description": "When the build there was last checked (ISO date or time)."}
+        }
+      }
+    },
+    "capabilities": {
+      "type": "object",
+      "description": "What the model can do, as measured.",
+      "additionalProperties": false,
+      "properties": {
+        "reasons": {"type": "boolean", "description": "It reasons before answering by default."},
+        "reasoning_off": {"type": ["string", "null"], "description": "The setting that turns reasoning off (\"reasoning_effort: none\"), or null when it cannot be turned off."},
+        "reasoning_levels": {"type": "array", "items": {"type": "string"}},
+        "json_mode": {"type": "boolean"},
+        "context_length": {"type": "integer"},
+        "deterministic": {"type": "boolean", "description": "The same request twice gave the same output on the machine it was checked on."},
+        "tokens_per_s": {"type": "number"},
+        "outputs": {"type": "string", "description": "An ML model's labels or output shape."}
+      }
+    },
+    "settings": {
+      "type": "object",
+      "description": "The settings chosen for it, passed to every arm that names the record (an arm may override them).",
+      "additionalProperties": {"type": ["string", "number", "boolean", "null"]}
+    },
+    "settings_why": {"type": "object", "additionalProperties": {"type": "string"}, "description": "One line per setting: why it was chosen."},
+    "onboarding": {"$ref": "#/$defs/smoke", "description": "The latest task-independent onboarding (evh model-onboard)."},
+    "smokes": {"type": "object", "additionalProperties": {"$ref": "#/$defs/smoke"}, "description": "The latest arm smoke (evh arm-smoke) of each arm that names the record, by config id."},
+    "history": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["at", "what"],
+        "additionalProperties": false,
+        "properties": {
+          "at": {"type": "string"},
+          "what": {"type": "string"},
+          "from": {},
+          "to": {},
+          "why": {"type": "string"}
+        }
+      }
+    },
+    "notes": {"type": "string"}
+  },
+  "$defs": {
+    "smoke": {
+      "type": "object",
+      "required": ["status", "at"],
+      "additionalProperties": false,
+      "properties": {
+        "status": {"enum": ["pass", "check"]},
+        "at": {"type": "string"},
+        "where": {"type": "string"},
+        "flags": {"type": "array", "items": {"type": "string"}},
+        "report": {"type": "object"}
+      }
+    }
+  }
+}

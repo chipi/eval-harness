@@ -146,7 +146,7 @@ def v1_schemas() -> None:
         ((DATA / "scorers").glob("*.yaml"), "scorer.schema.json"),
         ((DATA / "judging-sets").glob("*.json"), "judging-set.schema.json"),
         ((DATA / "judge-verdicts").glob("*/*/*/*.json"), "verdict.schema.json"),
-        ([DATA / "models.yaml"], "models.schema.json"),
+        ((DATA / "models").glob("*.yaml"), "model.schema.json"),
         ((DATA / "profiles").glob("*.json"), "profile.schema.json"),
         (CAPTURES.glob("*/capture.json"), "capture.schema.json"),
     ]
@@ -1207,6 +1207,28 @@ def v17_captures() -> None:
     )
 
 
+def v18_model_records() -> None:
+    """V18: the model records (RFC-020, optional; their schema is V1's): each file named by its id, no
+    alias claimed by two records, every config that names a record (`model_record:`) naming one that
+    exists."""
+    import yaml  # noqa: PLC0415
+    from evaluation_harness import _models  # noqa: PLC0415
+
+    recs = {r.get("model_id") for r in _models.load(DATA)}
+    if not recs and not (DATA / "models").is_dir():
+        print("  --   V18 model records (none)")
+        return
+    bad = _models.problems(DATA)
+    for c in sorted(CONFIGS.glob("*.yaml")):
+        cfg = yaml.safe_load(c.read_text(encoding="utf-8")) or {}
+        rid = cfg.get("model_record") if isinstance(cfg, dict) else None
+        if rid and rid not in recs:
+            bad.append(f"{c.name}: model_record {rid!r} has no data/models/{rid}.yaml")
+    for b in bad[:10]:
+        print(f"       {b}")
+    check(f"V18 model records — {len(recs)} record(s)", not bad, f"{len(bad)} problem(s)")
+
+
 def main() -> int:
     """Run all integrity checks over the eval tree; exit 1 if any fails."""
     # `--help` prints help. It used to fall through and run the whole validation, which
@@ -1235,6 +1257,7 @@ def main() -> int:
         v15_item_fields,
         v16_references,
         v17_captures,
+        v18_model_records,
     ):
         fn()
     for n in notes:

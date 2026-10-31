@@ -3,7 +3,7 @@
 
     python tests/test_render_data.py
 
-0.4.2 added data/models.yaml (the arms page's weights) and render.sh never copied it, so the
+0.4.2 added data/models.yaml (the arms page's weights; data/models/ since 0.6.0) and render.sh never copied it, so the
 deployed arms page called every model's weights unknown for two releases. This reads the names
 `catalog_adapter.py` opens under its data_dir and checks each against what _release.py copies
 (COPIED_DIRS, COPIED_FILES, every runs*), and that render.sh copies the data through it.

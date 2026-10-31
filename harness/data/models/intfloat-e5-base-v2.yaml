@@ -1,0 +1,6 @@
+model_id: intfloat-e5-base-v2
+kind: ml
+aliases:
+- intfloat/e5-base-v2
+weights: open
+licence: MIT

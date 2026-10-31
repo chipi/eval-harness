@@ -1,0 +1,5 @@
+model_id: mrm8488-bert-mini-finetuned-age_news-classification
+kind: ml
+aliases:
+- mrm8488/bert-mini-finetuned-age_news-classification
+weights: open
