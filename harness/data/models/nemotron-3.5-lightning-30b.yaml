@@ -382,3 +382,126 @@ smokes:
         reasoning_effort: none
         max_tokens: 1024
         call_timeout_s: 600
+  triage_local_dgx_nemotron_35_lightning_30b_v2:
+    status: pass
+    at: '2026-10-31T15:08:37Z'
+    flags: []
+    report:
+      items:
+      - item: orrery-ORRERY-STAGING-14-2026-07-30T13:43:09Z
+        s: 12.75
+        output_chars: 1771
+        cost_usd: 0.0
+        scored: true
+        deterministic: true
+      - item: orrery-ORRERY-J-2026-08-06T21:52:38Z
+        s: 5.41
+        output_chars: 1798
+        cost_usd: 0.0
+        scored: true
+      - item: orrery-ORRERY-STAGING-13-2026-08-07T04:32:42Z
+        s: 5.54
+        output_chars: 1689
+        cost_usd: 0.0
+        scored: true
+      calls:
+      - tokens_out: 38
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 8.28
+      - tokens_out: 38
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 0.65
+      - tokens_out: 44
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 0.7
+      - tokens_out: 56
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 0.8
+      - tokens_out: 165
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 2.32
+      - tokens_out: 45
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 1.1
+      - tokens_out: 44
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 0.73
+      - tokens_out: 55
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 0.89
+      - tokens_out: 54
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 0.77
+      - tokens_out: 134
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 1.91
+      - tokens_out: 45
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 1.08
+      - tokens_out: 47
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 0.74
+      - tokens_out: 56
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 0.85
+      - tokens_out: 54
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 0.74
+      - tokens_out: 148
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 2.12
+      projection:
+        items: 65
+        minutes: 8.6
+        worst_minutes: 13.8
+        usd: 0.0
+      settings:
+        model: nemotron-3.5-lightning:30b
+        reasoning_effort: none
+        max_tokens: 1024
+        call_timeout_s: 600
