@@ -11,7 +11,7 @@ VENV ?= .venv
 DATASET_ID ?= smoke_v1
 CONFIG ?= data/configs/demo.yaml
 REPEAT ?= 1
-OUT ?= data/runs-rescored
+OUT ?=
 NOISE ?=
 TIER ?= silver
 
@@ -54,8 +54,8 @@ help:
 	@echo "      the ceiling it prints, not against 1.0"
 	@echo ""
 	@echo "RE-MEASURE  (free — recomputes scores from stored outputs, no API calls)"
-	@echo "  make rescore DATASET_ID=my_v1 MATCH=_v2   after changing a metric"
-	@echo "  EVAL_RUNS_DIR=data/runs-rescored make leaderboard DATASET_ID=my_v1"
+	@echo "  make rescore DATASET_ID=my_v1 MATCH=_v2   after changing a metric (or GOAL=g ROUND=r1 WHY=\"...\")"
+	@echo "  EVAL_RUNS_DIR=data/runs-rescored/<scorer>/runs make leaderboard DATASET_ID=my_v1"
 	@echo ""
 	@echo "RE-MEASURE WITH A VALIDATED JUDGE  (BILLED and cost-capped; --dry-run first, it is free)"
 	@echo "  make judge-score DATASET_ID=my_v1 SCORER=<id> ARGS=--dry-run   calls, tokens, estimated cost"
@@ -220,10 +220,9 @@ silver-calibrate:
 	  $(if $(REF_MATCH),--ref-match $(REF_MATCH),) $(if $(ARM_MATCH),--arm-match $(ARM_MATCH),) \
 	  $(if $(METRIC),--metric $(METRIC),) $(if $(GROUP_BY),--group-by $(GROUP_BY),)
 
+# Without OUT the re-scores land where the tool designates (data/runs-rescored/<scorer>/<source>/, RFC-022).
 rescore:
-	$(PYTHON) scripts/rescore.py --dataset-id $(DATASET_ID) $(if $(MATCH),--match $(MATCH),) $(if $(REFERENCE),--reference-id $(REFERENCE),) --out $(OUT)
-	@echo ""
-	@echo "  EVAL_RUNS_DIR=$(OUT) make leaderboard DATASET_ID=$(DATASET_ID)"
+	$(PYTHON) scripts/rescore.py $(if $(ROUND),--goal $(GOAL) --round $(ROUND) --why "$(WHY)",--dataset-id $(DATASET_ID)) $(if $(MATCH),--match $(MATCH),) $(if $(REFERENCE),--reference-id $(REFERENCE),) $(if $(OUT),--out $(OUT),)
 
 # What each arm actually cost, from `_meta.usage.cost` rather than the price table in
 # its yaml. Added because RUNBOOK §7b documented this verb before it existed.

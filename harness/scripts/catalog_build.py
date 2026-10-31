@@ -726,6 +726,12 @@ def collect(A: Adapter) -> dict:
         for a in v["arms"]:
             if a["arm"] == b["arm"]:
                 a["baseline"] = b
+        # A baseline whose arm is read from its re-score is the re-score's (RFC-022): the goal reads that one.
+        for a in v["arms"]:
+            if a.get("baseline") and a.get("superseded_by"):
+                for t in v["arms"]:
+                    if t["arm"] == a["superseded_by"]:
+                        t["baseline"] = a["baseline"]
     _versions(A, by_ds)
     # The dataset's own size, from the ADAPTER: the harness's DATASETS path is not where a
     # project with its own layout keeps them. An adapter that cannot say falls back to the
@@ -2230,7 +2236,7 @@ def _answer(A: Adapter, g: dict, by_ds: dict, measure: str) -> str:
     return "".join(parts) or '<p class="muted">The goal names no dataset.</p>'
 
 
-def _rounds_block(A: Adapter, g: dict, measure: str, lower: bool) -> str:
+def _rounds_block(A: Adapter, g: dict, measure: str, lower: bool, by_ds: dict | None = None) -> str:
     """A goal's rounds (ADR-0004), newest first: what each set out to learn, what changed, its arms
     in play and those retired (with why), its best arm and how it compares with the previous
     round's best, its conclusion; for the open round, what the evidence suggests next, each as the
@@ -2240,6 +2246,15 @@ def _rounds_block(A: Adapter, g: dict, measure: str, lower: bool) -> str:
     if not rounds:
         return ""
     by_id = {r["round_id"]: r for r in rounds}
+    # As the goal reads them (RFC-022): an arm every run of which was re-scored is read from its latest re-score.
+    instead = {
+        a["arm"]: a["superseded_by"]
+        for v in (by_ds if by_ds is not None else collect(A)).values()
+        for a in v["arms"]
+        if a.get("superseded_by")
+    }
+    for r in rounds:
+        r["arms"] = [instead.get(a, a) for a in r.get("arms") or []]
 
     def best(r):
         means = {}
@@ -2293,6 +2308,13 @@ def _rounds_block(A: Adapter, g: dict, measure: str, lower: bool) -> str:
             for x in r.get("retired") or []
         ]
         lines += [f"<li>carried in unchanged: {_config_link(A, r, c)}</li>" for c in r.get("carried") or []]
+        # The scorer it is judged by, and each change of it (RFC-022): `evh rounds` prints the same lines.
+        lines += [f"<li>judged by <code>{e(r['scorer'])}</code></li>"] if r.get("scorer") else []
+        lines += [
+            f"<li>scoring {e(str(sc.get('at', ''))[:10])}: {e(sc.get('why', ''))} (<code>{e(sc.get('scorer', ''))}</code>, "
+            f"{int(sc.get('runs') or 0)} run(s) re-scored into {e(', '.join(sc.get('written') or []) or '—')})</li>"
+            for sc in r.get("scoring") or []
+        ]
         sugg = ""
         if r.get("status") == "open" and getattr(A, "data_dir", None) == _common.DATA:
             try:
@@ -2414,7 +2436,7 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
     body = hero("goal", e(g.get("title") or g["goal_id"]), e(g.get("statement", "")))
     body += block("01", "the answer so far", _answer(A, g, by_ds, measure))
     n = 2
-    rounds_html = _rounds_block(A, g, measure, prim.get("direction") == "lower")
+    rounds_html = _rounds_block(A, g, measure, prim.get("direction") == "lower", by_ds)
     if rounds_html:
         body += block(f"{n:02d}", "rounds", rounds_html, "rounds")
         n += 1
@@ -2626,9 +2648,10 @@ def group_decision(
         for r in rows
     }
     machines = {r["arm"]: r.get("machine", "") for r in rows}
-    dec = axes.decide(goal, arms, lambda m: "lower" if A.lower_is_better(m, ds) else None, machines) | {
-        "goal": goal
-    }
+    baseline = next((r["arm"] for r in rows if r.get("baseline")), None)
+    dec = axes.decide(
+        goal, arms, lambda m: "lower" if A.lower_is_better(m, ds) else None, machines, baseline=baseline
+    ) | {"goal": goal}
     if not decides_on(g, ds):
         # The goal never decides here (a dev slice, a generalization check): the leader stands, the
         # recommendation does not.
@@ -2801,8 +2824,9 @@ def tradeoff_charts(dec: dict, labels: dict, quality_name: str) -> str:
             quality_name,
             lower_x=ax["direction"] == "lower",
             higher_y=q["direction"] == "higher",
-            x_limit=ax.get("limit"),
-            y_limit=q.get("limit"),
+            # a number draws its line; the baseline limit is a paired test, not a line
+            x_limit=ax.get("limit") if isinstance(ax.get("limit"), (int, float)) else None,
+            y_limit=q.get("limit") if isinstance(q.get("limit"), (int, float)) else None,
             fmt_x=(lambda v: f"${v:.4f}") if ax["name"] == "cost" and ax["measure"] == "cost_usd" else None,
             width=HALF,
         )

@@ -29,6 +29,23 @@
       }
     },
     "budget_usd": {"type": "number", "minimum": 0, "description": "What the round may spend; its billed cost is shown against it."},
+    "scorer": {"type": "string", "description": "The scorer the round is judged by (RFC-022): 12 characters of its code's sha256, recorded by round-open --scoring."},
+    "scoring": {
+      "type": "array",
+      "description": "Each change of the scorer the round is read with (RFC-022): evh rescore --round, or round-open --scoring re-scoring the carried arms.",
+      "items": {
+        "type": "object",
+        "required": ["at", "scorer", "why"],
+        "additionalProperties": false,
+        "properties": {
+          "at": {"type": "string"},
+          "scorer": {"type": "string"},
+          "why": {"type": "string"},
+          "written": {"type": "array", "items": {"type": "string"}, "description": "The directories the re-scores were written to, relative to data/."},
+          "runs": {"type": "integer", "minimum": 0, "description": "How many runs were re-scored."}
+        }
+      }
+    },
     "status": {"enum": ["open", "closed"]},
     "opened_at": {"type": "string"},
     "closed_at": {"type": "string"},

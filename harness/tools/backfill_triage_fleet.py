@@ -27,7 +27,7 @@ import adapter  # noqa: E402
 from evaluation_harness import _fingerprint as fpmod  # noqa: E402
 
 DATA = HERE / "data"
-DIRS = ("runs", "runs-repeats", "runs-triage-current", "runs-repeats-triage-current")
+DIRS = ("runs", "runs-repeats", "runs-rescored/cd35dc1ffccc/runs", "runs-rescored/cd35dc1ffccc/runs-repeats")
 COMMIT, PROMPT_SHA = "f07efa9", "c2ece738"
 
 

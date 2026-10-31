@@ -105,14 +105,15 @@ def policy() -> dict:
 def committed_dirs() -> list[str]:
     """The run directories that back the project's claims: those `committed` in validate.json names (with
     their floors), then every other git-tracked <data>/runs* directory holding a run. A directory someone
-    re-allowed in .gitignore is checked whether or not they also listed it here: data/runs-triage-current's
+    re-allowed in .gitignore is checked whether or not they also listed it here: a re-scored set's
     runs were committed and never checked because the list was not edited too."""
     declared = list(policy().get("committed") or [])
     return declared + [d for d in tracked_run_dirs() if d not in declared]
 
 
 def tracked_run_dirs() -> list[str]:
-    """Every git-tracked <data>/runs* directory holding a run's metrics.json."""
+    """Every git-tracked <data>/runs* directory holding a run's metrics.json, and each
+    runs-rescored/<scorer>/<source> (RFC-022)."""
     tracked = subprocess.run(
         ["git", "ls-files", data_rel(DATA)], cwd=ROOT, capture_output=True, text=True
     ).stdout.split()
@@ -120,7 +121,9 @@ def tracked_run_dirs() -> list[str]:
     names = set()
     for f in tracked:
         parts = f[len(prefix) :].split("/") if f.startswith(prefix) else []
-        if len(parts) >= 3 and parts[0].startswith("runs") and parts[2] == "metrics.json":
+        if len(parts) >= 5 and parts[0] == "runs-rescored" and parts[4] == "metrics.json":
+            names.add("/".join(parts[:3]))
+        elif len(parts) >= 3 and parts[0].startswith("runs") and parts[2] == "metrics.json":
             names.add(parts[0])
     return sorted(names)
 
@@ -1284,6 +1287,34 @@ def note_uncommitted_runs() -> None:
             )
 
 
+def note_round_scorers() -> None:
+    """A note, never a failure (RFC-022): a round whose arms through one adapter were scored by more than one version
+    of it may compare them on different rules (the adapter's code is the scorer's identity, so an edit to its calling
+    code alone counts too: score-preview says whether the scores move). Arms with different adapters (a hosted LLM's
+    and a fine-tune's) are not that: each adapter is checked against itself."""
+    from evaluation_harness import _rounds  # noqa: PLC0415
+    from evaluation_harness import rescore as rs  # noqa: PLC0415
+
+    for rnd in _rounds.load_rounds():
+        by_adapter: dict[str, dict[str, set[str]]] = {}
+        for d, m in rs.measured_runs(rnd["dataset_id"], set(_rounds.arms_of(rnd))):
+            scorer, _from = rs.latest_scoring(d, m)
+            by_adapter.setdefault(m.get("adapter") or "?", {}).setdefault(scorer or "?", set()).add(
+                m["config_id"]
+            )
+        for adapter, seen in sorted(by_adapter.items()):
+            if len(seen) > 1:
+                parts = ", ".join(
+                    f"{k} ({len(v)} arm(s))" for k, v in sorted(seen.items(), key=lambda kv: -len(kv[1]))
+                )
+                notes.append(
+                    f"round {rnd['round_id']} of {rnd['goal']}: its arms through {adapter} were scored by {len(seen)} "
+                    f"versions of that adapter, {parts}. An edit to its calling code alone makes a new version too: "
+                    f"evh score-preview --goal {rnd['goal']} --round {rnd['round_id']} shows whether re-scoring moves "
+                    f'anything; evh rescore --goal {rnd["goal"]} --round {rnd["round_id"]} --why "..." puts them on one'
+                )
+
+
 def main() -> int:
     """Run all integrity checks over the eval tree; exit 1 if any fails."""
     # `--help` prints help. It used to fall through and run the whole validation, which
@@ -1314,6 +1345,7 @@ def main() -> int:
         v17_captures,
         v18_model_records,
         note_uncommitted_runs,
+        note_round_scorers,
     ):
         fn()
     for n in notes:

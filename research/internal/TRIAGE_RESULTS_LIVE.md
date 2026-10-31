@@ -23,8 +23,8 @@ Generated from the harness: the goal `triage_orrery` on `orrery_triage_v1_labell
 | 8 | haiku_55 | OpenRouter | 1 | **0.585** | 0.462 | 0.892 | 4 / 34 | 18 / 31 | 0.938 | — | 0.00100 | 7.6 | ok |
 | 9 | gemma4_12b (reasoning off) | DGX (NVIDIA) | 1 | **0.585** | 0.462 | 0.892 | 4 / 34 | 18 / 31 | 1.600 | 0 / 65 | 0.00000 | 5.7 | ok |
 | 10 | gemma4_12b (reasoning off) | Mac (M4 Pro) | 1 | **0.585** | 0.462 | 0.892 | 4 / 34 | 18 / 31 | 1.662 | 0 / 65 | 0.00000 | 9.2 | ok |
-| 11 | nemotron_35_bolt_e4b (later passes) | X3 (AMD) | 1 | **0.600** | 0.477 | 0.908 | 4 / 34 | 19 / 31 | 1.015 | 0 / 65 | 0.00000 | 21.3 | ok |
-| 12 | nemotron_35_bolt_e4b | X3 (AMD) | 1 | **0.600** | 0.477 | 0.908 | 4 / 34 | 19 / 31 | 1.015 | 0 / 65 | 0.00000 | 22.3 | ok |
+| 11 | nemotron_35_bolt_e4b | X3 (AMD) | 1 | **0.600** | 0.477 | 0.908 | 4 / 34 | 19 / 31 | 1.015 | 0 / 65 | 0.00000 | 22.3 | ok |
+| 12 | nemotron_35_bolt_e4b (later passes) | X3 (AMD) | 1 | **0.600** | 0.477 | 0.908 | 4 / 34 | 19 / 31 | 1.015 | 0 / 65 | 0.00000 | 21.3 | ok |
 | 13 | haiku_55 (later passes) | OpenRouter | 3 | **0.610** | 0.487 | 0.918 | 4 / 34 | 19.7 / 31 | 0.969 | — | 0.00102 | 7.5 | ok |
 | 14 | gpt_6_luna (later passes) | OpenRouter | 3 | **0.626** | 0.503 | 0.933 | 4 / 34 | 20.7 / 31 | 0.682 | — | 0.00068 | 11.6 | ok |
 | 15 | gpt_oss_120b | OpenRouter (open weights) | 1 | **0.677** | 0.523 | 1.062 | 5 / 34 | 19 / 31 | 1.646 | — | 0.00085 | 17.0 | ok |

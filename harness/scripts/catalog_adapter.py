@@ -12,6 +12,7 @@ Without one, HarnessAdapter reads the harness's own layout:
 
     <data>/runs*/<run_id>/{metrics.json, predictions.jsonl, outputs/<item_id>.txt}
     <data>/runs-judged/<scorer_id>/<run_id>/...        (evh judge-score, 0.3.0+)
+    <data>/runs-rescored/<scorer>/<source>/<run_id>/... (evh rescore, RFC-022)
     <data>/references/<tier>/<dataset_id>/<item_id>.txt
 
 An ARM is a string id the adapter chooses. HarnessAdapter's is `<runs dir>/<dataset_id>/<config_id>`:
@@ -309,16 +310,29 @@ def _plain_name(name: str) -> bool:
     return bool(name) and "/" not in name and "\\" not in name and ".." not in name and "\0" not in name
 
 
+def _dir_label(runs_dir: str) -> str:
+    """How an arm's runs directory reads beside its config: "silver", "repeats", "rescored cd35dc1f", "rescored
+    cd35dc1f, repeats" (runs-rescored/<scorer>/<source>, RFC-022)."""
+    parts = runs_dir.split("/")
+    if parts[0] == "runs-rescored" and len(parts) == 3:
+        src = parts[2].removeprefix("runs-")
+        return f"rescored {parts[1][:8]}" + ("" if parts[2] == "runs" else f", {src}")
+    return runs_dir.removeprefix("runs-")
+
+
 class HarnessAdapter:
     """The harness's own data tree. Arms are configs on a dataset, repeats averaged per item."""
 
     item_word = "item"
     can_rescore = False
 
-    def __init__(self, data_dir: Path | None = None):
+    def __init__(self, data_dir: Path | None = None, runs_root: Path | None = None):
         self.data_dir = Path(data_dir or _common.DATA)
         # The project's goals (EVAL_GOALS_DIR when set) unless a data directory is named.
         self.goals_dir = _common.GOALS if data_dir is None else self.data_dir / "goals"
+        # Where the runs* directories are read from: the data directory, or another one beside the project's
+        # references and goals (evh score-preview reads re-scores it made in a temporary directory, RFC-022).
+        self.runs_root = Path(runs_root) if runs_root else self.data_dir
 
     # -- arms ---------------------------------------------------------------------------
     @_memo
@@ -327,8 +341,10 @@ class HarnessAdapter:
         git ignores (a smoke pass, a sweep) is not read: the local catalog shows what a clone, CI and the published
         one show, never runs that exist on this disk only. Outside a git checkout every directory is read."""
         out: dict[str, list[Path]] = {}
-        bases = [p for p in sorted(self.data_dir.glob("runs*")) if p.is_dir() and p.name != "runs-judged"]
-        bases += sorted(p for p in (self.data_dir / "runs-judged").glob("*") if p.is_dir())
+        nested = ("runs-judged", "runs-rescored")
+        bases = [p for p in sorted(self.runs_root.glob("runs*")) if p.is_dir() and p.name not in nested]
+        bases += sorted(p for p in (self.runs_root / "runs-judged").glob("*") if p.is_dir())
+        bases += sorted(p for p in (self.runs_root / "runs-rescored").glob("*/*") if p.is_dir())
         bases = [p for p in bases if not _common.ignored_by_git(p)]
         refs: dict[Path, str] = {}
         made: dict[Path, str] = {}
@@ -338,7 +354,7 @@ class HarnessAdapter:
             for d, m in runs_on(runs_dir=base):
                 if not m.get("dataset_id"):
                     continue
-                rel = base.relative_to(self.data_dir).as_posix()
+                rel = base.relative_to(self.runs_root).as_posix()
                 arm = f"{rel}/{m['dataset_id']}/{m['config_id']}"
                 self._every.append((m["dataset_id"], d, m, arm))
                 out.setdefault(arm, []).append(d)
@@ -376,7 +392,7 @@ class HarnessAdapter:
         return [
             a
             for a, ds in self._index().items()
-            if any(d.relative_to(self.data_dir).as_posix() == path for d in ds)
+            if any(d.relative_to(self.runs_root).as_posix() == path for d in ds)
         ]
 
     def _dirs(self, arm: str) -> list[Path]:
@@ -392,7 +408,7 @@ class HarnessAdapter:
         runs_dir, _, dataset = base.rpartition("/")
         m = self._metrics(arm)
         n = len(self._dirs(arm))
-        label = rest + ("" if runs_dir == "runs" else f" · {runs_dir.removeprefix('runs-')}")
+        label = rest + ("" if runs_dir == "runs" else f" · {_dir_label(runs_dir)}")
         label += f" ×{n}" if n > 1 else ""
         judged = derived_with(m, "judge").get("scorer_id")
         primary = m.get("primary_metric") or ""

@@ -382,7 +382,9 @@ The page answers first, then explains, then shows the evidence.
      inspector with the previous best as baseline), **concluded** (the conclusion, or *open*).
      The open round's row carries the `--accent` tint (`t-open`);
    - one folded section per round (the open one unfolded) listing "changed: …", "retired
-     `<config>`: <reason>", "carried in unchanged: `<config>`", and, for the open round, the
+     `<config>`: <reason>", "carried in unchanged: `<config>`", "judged by `<scorer>`" and each
+     "scoring <date>: <why> (`<scorer>`, N run(s) re-scored into <dirs>)" (RFC-022; its arms read from
+     their re-scores, as the goal reads them), and, for the open round, the
      leader against the previous round's best, the baseline it started from and the arm that
      wrote a silver reference of the dataset ("against the arm that wrote silver/<id>
      (`<config>`): <verdict>, Δ, p"), then

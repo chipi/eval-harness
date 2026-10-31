@@ -388,7 +388,7 @@ ignored run is not committed, so a fresh clone, CI and the published catalog nev
 Two kinds of directory sit beside `data/runs` on purpose:
 
 - **throwaway** (`data/runs-smoke*`, `data/runs-tune*`): smoke passes and sweeps, never committed;
-- **derived sets** (`data/runs-repeats`, `data/runs-triage-current`, `data/runs-judged/<scorer>` …):
+- **derived sets** (`data/runs-repeats`, `data/runs-rescored/<scorer>/<source>`, `data/runs-judged/<scorer>` …):
   re-scored or repeated runs that keep the measured runs' `config_id`s, so they cannot share
   `data/runs` (V8). Each one has its own re-allow block in `.gitignore`.
 
@@ -398,13 +398,22 @@ directory that already holds finished runs. The catalog, `evh goals` and `evh ar
 the directories git keeps, so what you see locally is what a clone, CI and the published
 catalog see: a smoke pass in `data/runs-smoke*` never shows up as a result.
 
-**When the scorer changes after runs were measured**, re-score them (`evh rescore --out
-data/runs-<name>`, re-allowed in `.gitignore`) rather than keep two sets of numbers apart. A
-re-score with the current scorer stands in for the run it re-read: the goal pages, `evh goals`
-and the recommendation show one row per arm, read from the latest re-score against the same
-reference, and say how many arms they read that way. The measured run keeps its own page as
-the record of what was first scored, and says there, on the arms page and in `evh arms`, that
-the goals read its re-score.
+**When the scoring changes** (RFC-022), develop it, then apply it one of two ways:
+
+```bash
+evh score-preview --goal my_goal                                    # what it would move; writes nothing
+evh rescore --goal my_goal --round r1 --why "what changed, and why"  # re-score a round with it, $0
+evh round-open --goal my_goal --dataset my_v1 --from r1 --keep all \
+  --scoring "what changed, and why"                                  # or adopt it from the next round
+```
+
+Re-scores land in `data/runs-rescored/<scorer>/<source>/`, the place the tool designates, so a new scorer never
+needs a directory of its own (or a `.gitignore` block). A re-score stands in for the run it re-read: the goal
+pages, `evh goals`, the rounds and the recommendation read one row per arm, from its latest re-score against the
+same reference, and say how many arms they read that way. The measured run keeps its own page, and says there, on
+the arms page and in `evh arms` that the goals read its re-score. A round records the scorer it is judged by, and
+`evh rounds` shows it with each scoring change. A goal whose first round was run as plain runs gets one with
+`evh round-open --goal G --dataset D --adopt`.
 
 `experiment-run` warns, naming the items, when outputs stop at `max_tokens` (the provider's
 `finish_reason`, or tokens out reaching the cap): they are scored as if complete. The harness

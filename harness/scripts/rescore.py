@@ -7,13 +7,15 @@ the whole sweep — ~$1.45 and 80 minutes to answer "what would this look like u
 different measure". That is backwards, and it is why a scorer bug survived two sweeps:
 checking it would have cost another one.
 
-    make rescore DATASET_ID=my_v1 MATCH=_v2 OUT=data/runs-rescored
-    EVAL_RUNS_DIR=data/runs-rescored make leaderboard DATASET_ID=my_v1
+    evh rescore --dataset-id my_v1 [--match _v2]
+    evh rescore --goal my_goal --round r1 --why "what changed in the scoring, and why"
 
 Rescored runs are written to a SEPARATE directory, never over the originals. Two reasons:
 the originals are the record of what was actually measured and paid for, and a rescored
 run grouped under the same `config_id` as its source would average two different metrics
-into one row. Point the leaderboard at the new directory with EVAL_RUNS_DIR.
+into one row. Without --out the directory is the one the tool designates (RFC-022),
+data/runs-rescored/<scorer>/<source>/, which the catalog, the goals and the rounds read in
+place of the runs it re-read; EVAL_RUNS_DIR points the leaderboard at one of them.
 
 What is recomputed: everything `score()` returns. What is carried across untouched:
 latency, cost, token counts and the raw provider `_meta` — those are properties of the
@@ -48,6 +50,8 @@ from evaluation_harness._common import (
     dataset_id_ok,
     die,
     how,
+    ignored_by_git,
+    now,
     read_json,
     warn_if_ignored,
     write_json,
@@ -302,12 +306,220 @@ def _rescored_fingerprint(
     return fp
 
 
+#: Where a re-score lands when no --out names a place (RFC-022): data/runs-rescored/<scorer>/<source>/, the scorer
+#: by its code (12 characters of the adapter's sha256), the source the runs directory it read, so a repeat set
+#: never sits beside a first pass of the same config (V8).
+RESCORED = "runs-rescored"
+
+
+def designated_dir(scorer: str, source_dir: Path) -> Path:
+    """data/runs-rescored/<scorer>/<source>/ for runs read from `source_dir`."""
+    try:
+        rel = source_dir.resolve().relative_to(DATA.resolve()).as_posix()
+    except ValueError:
+        rel = source_dir.name
+    return DATA / RESCORED / scorer[:12] / rel
+
+
+def scorer_of(m: dict) -> str:
+    """The scorer that judged a run (RFC-022), 12 characters: a derived run's `derived.with.sha256`, a measured
+    run's instrument adapter `sha256` (RFC-021 hashes the instrument by its code); "" when it records neither."""
+    with_ = (m.get("derived") or {}).get("with") or {}
+    sha = with_.get("sha256") or (
+        ((m.get("fingerprint") or {}).get("instrument") or {}).get("adapter") or {}
+    ).get("sha256")
+    return str(sha or "")[:12]
+
+
+def latest_scoring(d: Path, m: dict) -> tuple[str, Path | None]:
+    """(the scorer the run is read with now, the re-score it is read from or None): its latest re-score in
+    data/runs-rescored, else the run's own scorer."""
+    found = [
+        (read_json(x).get("created_at") or "", x.parent)
+        for x in (DATA / RESCORED).glob(f"*/*/{d.name}/metrics.json")
+        if ((read_json(x).get("derived") or {}).get("from")) == d.name
+    ]
+    if not found:
+        return scorer_of(m), None
+    _at, latest = max(found)
+    return scorer_of(read_json(latest / "metrics.json")), latest
+
+
+def current_scorer(m: dict, adapters: dict[str, Any] | None = None) -> str:
+    """The scorer the run's adapter has now, in this tree (12 characters), or "" when it cannot be found."""
+    adapters = {} if adapters is None else adapters
+    spec = m.get("adapter")
+    if not spec:
+        return ""
+    if spec not in adapters:
+        found = load_recorded_adapter(spec)
+        if found is None:
+            return ""
+        adapters[spec] = found
+    return _sha(adapters[spec][3])[:12]
+
+
+def measured_runs(dataset_id: str, configs: set[str] | None = None) -> list[tuple[Path, dict]]:
+    """Every measured (not derived) run on the dataset, of the configs when named, in every runs directory git
+    keeps: what a round's or a goal's arms were first scored from."""
+    out: list[tuple[Path, dict]] = []
+    for base in sorted(DATA.glob("runs*")):
+        if not base.is_dir() or base.name in (RESCORED, "runs-judged") or ignored_by_git(base):
+            continue
+        for d, m in runs_on(dataset_id, runs_dir=base):
+            if m.get("derived") or (configs is not None and m.get("config_id") not in configs):
+                continue
+            out.append((d, m))
+    return out
+
+
+def rescore_one(
+    d: Path,
+    m: dict,
+    *,
+    out_dir: Path | None = None,
+    reference_id: str | None = None,
+    adapters: dict[str, Any] | None = None,
+    quiet: bool = False,
+) -> tuple[Path, dict] | None:
+    """Re-score one finished run into `out_dir` (default: designated_dir for the adapter it recorded), writing a
+    derived record beside a copy of its outputs; (the new run's directory, its metrics), or None when the run
+    records no adapter."""
+    adapters = {} if adapters is None else adapters
+    spec = m.get("adapter")
+    if not spec:
+        print(f"  SKIP {d.name}: the run records no adapter")
+        return None
+    if spec not in adapters:
+        # The id the run recorded, resolved under the project (and in a checkout the
+        # repository root, where the examples' ids start): _adapter.load_recorded_adapter,
+        # shared with silver-calibrate.
+        found = load_recorded_adapter(spec)
+        if found is None:
+            die(
+                f"adapter not found for {d.name}: {spec!r} is under none of "
+                f"{', '.join(str(x) for x in adapter_search_dirs())}"
+            )
+        adapters[spec] = found
+    _call, score, adapter_id, adapter_path, _warm, _fp = adapters[spec]
+    wants_source = score_wants_source(score)
+    out_dir = out_dir or designated_dir(_sha(adapter_path), d.parent)
+    # A rescored run is its own record, derived from the run it reads: written into that run's
+    # directory it would overwrite the measurement (it died copying a file onto itself).
+    if out_dir.resolve() == d.parent.resolve():
+        die(
+            f"--out {out_dir} is where the runs being rescored are read from; a rescore writes "
+            "new records beside them, so give it another directory (or none: the tool designates one)"
+        )
+    ref_dir, tier = _references_for(m, reference_id)
+    mat = MATERIALIZED / m["dataset_id"]
+    item_source = _item_sources(m["dataset_id"])
+
+    rows: list[dict[str, Any]] = []
+    refs_found = 0
+    recosted = 0
+    # Keys the ADAPTER attached at call time (Result.extra) rather than at score time:
+    # `truncated`, `reasoning_tokens`. Unrecoverable afterwards, so they ride along.
+    extra_keys = set(m.get("metric_kinds", {})) & {"truncated", "reasoning_tokens"}
+    extra_keys |= {"truncated", "reasoning_tokens"}
+    dropped: set = set()
+    for line in (d / "predictions.jsonl").read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        old = json.loads(line)
+        row, had_ref, recost = _rescore_row(
+            old, d, ref_dir, mat, item_source, score, wants_source, extra_keys
+        )
+        refs_found += had_ref
+        recosted += recost
+        # What the source scored per item and these rows no longer carry: the previous
+        # scorer's metrics. It added whichever key the carry loop above ended on, so 24
+        # NER runs recorded `untyped_tp` as dropped beside an `untyped_tp` score.
+        dropped |= {k for k in old if k != "item_id" and not k.startswith("_") and k not in row}
+        rows.append(row)
+
+    _check_references(d, m, ref_dir, rows, refs_found)
+
+    scores = aggregate_scores(rows)
+
+    run_dir = out_dir / d.name
+    (run_dir / "outputs").mkdir(parents=True, exist_ok=True)
+    for f in (d / "outputs").glob("*.txt"):
+        shutil.copy2(f, run_dir / "outputs" / f.name)
+    (run_dir / "predictions.jsonl").write_text(
+        "".join(json.dumps(r, sort_keys=True) + "\n" for r in rows), encoding="utf-8"
+    )
+    # Provenance of the RESCORE itself: which run it came from, and which scorer
+    # produced these numbers. Without this a rescored run is indistinguishable from
+    # a measured one, which is the whole risk of having this script at all.
+    provenance: dict = {"adapter": adapter_id, "sha256": _sha(adapter_path)}
+    # The adapter FILE's hash does not cover a scorer that lives in a shared module.
+    # An adapter may expose `scorer_id()` -- no params, no network -- naming the
+    # hashes that identify its scoring rule; without it, an extraction.py-only change
+    # is invisible here and a rescored run cannot say what measured it.
+    sid = getattr(sys.modules.get(getattr(score, "__module__", ""), None), "scorer_id", None)
+    if callable(sid):
+        provenance["scorer"] = sid()
+    new = derived_record(
+        m,
+        kind="rescore",
+        source_dir=d.name,
+        with_=provenance,
+        scores=scores,
+        n_items=len(rows),
+        metric_kinds=_kinds(adapter_path) or m.get("metric_kinds") or {},
+        primary_metric=_primary(adapter_path) or m.get("primary_metric"),
+        metric_descriptions=_descriptions(adapter_path) or m.get("metric_descriptions"),
+        metric_directions=_directions(adapter_path) or m.get("metric_directions"),
+        reference_tier=tier if reference_id else None,
+    )
+    if isinstance(new.get("fingerprint"), dict):
+        new["fingerprint"] = _rescored_fingerprint(
+            new["fingerprint"], adapter_id, adapter_path, reference_id, tier, d.name
+        )
+    if dropped:
+        new["rescore_dropped_metrics"] = sorted(dropped)
+    write_json(run_dir / "metrics.json", new)
+    if not quiet:
+        note = f", {recosted} re-costed from the bill" if recosted else ""
+        print(
+            f"  {d.name}  -> {len(rows)} item(s){note}  ({run_dir.parent.relative_to(DATA) if run_dir.parent.is_relative_to(DATA) else run_dir.parent})"
+        )
+    return run_dir, new
+
+
+def rescore_runs(
+    todo: list[tuple[Path, dict]],
+    *,
+    out: Path | None = None,
+    reference_id: str | None = None,
+    quiet: bool = False,
+) -> list[tuple[Path, dict]]:
+    """Re-score each run (rescore_one), warning once per directory written that git will not keep."""
+    adapters: dict[str, Any] = {}
+    done = []
+    warned: set[Path] = set()
+    for d, m in sorted(todo, key=lambda t: t[0].name):
+        got = rescore_one(d, m, out_dir=out, reference_id=reference_id, adapters=adapters, quiet=quiet)
+        if got is None:
+            continue
+        done.append(got)
+        if not quiet and got[0].parent not in warned:
+            warned.add(got[0].parent)
+            warn_if_ignored(got[0].parent)
+    return done
+
+
 def main() -> int:
     """Re-score finished runs from their stored outputs: no API calls, no money."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--dataset-id", required=True)
+    ap.add_argument("--dataset-id", help="the dataset whose runs to re-score (or --goal and --round)")
     ap.add_argument("--match", help="only runs whose config_id contains this substring")
-    ap.add_argument("--out", type=Path, default=DATA / "runs-rescored")
+    ap.add_argument(
+        "--out",
+        type=Path,
+        help="where to write (default: data/runs-rescored/<scorer>/<source>/, the place the tool designates)",
+    )
     ap.add_argument(
         "--reference-id",
         help="score against THIS reference set (e.g. gold/my_v1) instead of the "
@@ -319,126 +531,59 @@ def main() -> int:
         help="where to find the arm configs naming the adapter "
         "(default: alongside each run's recorded adapter path)",
     )
+    ap.add_argument("--goal", help="with --round: re-score that round's arms")
+    ap.add_argument(
+        "--round", dest="round_id", help="the round whose arms (its own and those it carried) to re-score"
+    )
+    ap.add_argument("--why", default="", help="with --round: why the scoring changed, recorded on the round")
     args = ap.parse_args()
     if args.reference_id and not (REFERENCES / args.reference_id).is_dir():
         die(f"no reference set at data/references/{args.reference_id}")
+    rnd = None
+    if args.round_id:
+        if not args.goal:
+            die("--round needs --goal")
+        if len(args.why.split()) < 3:
+            die("--round needs --why, a sentence: what changed in the scoring, and why?")
+        from evaluation_harness import _rounds  # noqa: PLC0415
 
-    todo = runs_on(args.dataset_id, match=args.match)
+        rnd = _rounds.find(args.goal, args.round_id)
+        if rnd is None:
+            die(f"no round {args.round_id} of {args.goal}")
+        args.dataset_id = rnd["dataset_id"]
+        todo = measured_runs(args.dataset_id, set(_rounds.arms_of(rnd)))
+    elif not args.dataset_id:
+        die("--dataset-id, or --goal with --round")
+    elif args.out is None:
+        todo = [
+            (d, m)
+            for d, m in measured_runs(args.dataset_id)
+            if not args.match or args.match in m["config_id"]
+        ]
+    else:
+        todo = runs_on(args.dataset_id, match=args.match)
     if not todo:
         die(f"no runs on {args.dataset_id!r}" + (f" matching {args.match!r}" if args.match else ""))
-    # A rescored run is its own record, derived from the run it reads: written into that run's
-    # directory it would overwrite the measurement (it died copying a file onto itself).
-    if any(d.parent.resolve() == args.out.resolve() for d, _m in todo):
-        die(
-            f"--out {args.out} is where the runs being rescored are read from; a rescore writes "
-            f"new records beside them, so give it another directory (the default is {DATA / 'runs-rescored'})"
+    print(f"rescoring {len(todo)} run(s)" + (f" -> {args.out}" if args.out else ""))
+    if args.out:
+        args.out.mkdir(parents=True, exist_ok=True)
+    done = rescore_runs(todo, out=args.out, reference_id=args.reference_id)
+    dirs = sorted(
+        {str(d.parent.relative_to(DATA)) if d.parent.is_relative_to(DATA) else str(d.parent) for d, _ in done}
+    )
+    print(f"\n{len(done)} run(s) rescored into {', '.join(dirs)}")
+    if rnd is not None and done:
+        from evaluation_harness import _rounds  # noqa: PLC0415
+
+        sha = (done[0][1].get("derived") or {}).get("with", {}).get("sha256", "")
+        rnd.setdefault("scoring", []).append(
+            {"at": now(), "scorer": sha[:12], "why": args.why, "written": dirs, "runs": len(done)}
         )
-
-    mat = MATERIALIZED / args.dataset_id
-    item_source = _item_sources(args.dataset_id)
-    print(f"rescoring {len(todo)} run(s) -> {args.out}")
-    args.out.mkdir(parents=True, exist_ok=True)
-    warn_if_ignored(args.out)
-
-    adapters: dict[str, Any] = {}
-    written = 0
-    for d, m in sorted(todo, key=lambda t: t[0].name):
-        spec = m.get("adapter")
-        if not spec:
-            print(f"  SKIP {d.name}: the run records no adapter")
-            continue
-        if spec not in adapters:
-            # The id the run recorded, resolved under the project (and in a checkout the
-            # repository root, where the examples' ids start): _adapter.load_recorded_adapter,
-            # shared with silver-calibrate.
-            found = load_recorded_adapter(spec)
-            if found is None:
-                die(
-                    f"adapter not found for {d.name}: {spec!r} is under none of "
-                    f"{', '.join(str(d) for d in adapter_search_dirs())}"
-                )
-            adapters[spec] = found
-        _call, score, adapter_id, adapter_path, _warm, _fp = adapters[spec]
-        wants_source = score_wants_source(score)
-
-        ref_dir, tier = _references_for(m, args.reference_id)
-
-        rows: list[dict[str, Any]] = []
-        refs_found = 0
-        recosted = 0
-        # Keys the ADAPTER attached at call time (Result.extra) rather than at score time:
-        # `truncated`, `reasoning_tokens`. Unrecoverable afterwards, so they ride along.
-        extra_keys = set(m.get("metric_kinds", {})) & {"truncated", "reasoning_tokens"}
-        extra_keys |= {"truncated", "reasoning_tokens"}
-        dropped: set = set()
-        for line in (d / "predictions.jsonl").read_text(encoding="utf-8").splitlines():
-            if not line.strip():
-                continue
-            old = json.loads(line)
-            row, had_ref, recost = _rescore_row(
-                old, d, ref_dir, mat, item_source, score, wants_source, extra_keys
-            )
-            refs_found += had_ref
-            recosted += recost
-            # What the source scored per item and these rows no longer carry: the previous
-            # scorer's metrics. It added whichever key the carry loop above ended on, so 24
-            # NER runs recorded `untyped_tp` as dropped beside an `untyped_tp` score.
-            dropped |= {k for k in old if k != "item_id" and not k.startswith("_") and k not in row}
-            rows.append(row)
-
-        _check_references(d, m, ref_dir, rows, refs_found)
-
-        scores = aggregate_scores(rows)
-
-        run_dir = args.out / d.name
-        (run_dir / "outputs").mkdir(parents=True, exist_ok=True)
-        for f in (d / "outputs").glob("*.txt"):
-            shutil.copy2(f, run_dir / "outputs" / f.name)
-        (run_dir / "predictions.jsonl").write_text(
-            "".join(json.dumps(r, sort_keys=True) + "\n" for r in rows), encoding="utf-8"
-        )
-        # Provenance of the RESCORE itself: which run it came from, and which scorer
-        # produced these numbers. Without this a rescored run is indistinguishable from
-        # a measured one, which is the whole risk of having this script at all.
-        provenance: dict = {"adapter": adapter_id, "sha256": _sha(adapter_path)}
-        # The adapter FILE's hash does not cover a scorer that lives in a shared module.
-        # An adapter may expose `scorer_id()` -- no params, no network -- naming the
-        # hashes that identify its scoring rule; without it, an extraction.py-only change
-        # is invisible here and a rescored run cannot say what measured it.
-        sid = getattr(sys.modules.get(getattr(score, "__module__", ""), None), "scorer_id", None)
-        if callable(sid):
-            provenance["scorer"] = sid()
-        new = derived_record(
-            m,
-            kind="rescore",
-            source_dir=d.name,
-            with_=provenance,
-            scores=scores,
-            n_items=len(rows),
-            metric_kinds=_kinds(adapter_path) or m.get("metric_kinds") or {},
-            primary_metric=_primary(adapter_path) or m.get("primary_metric"),
-            metric_descriptions=_descriptions(adapter_path) or m.get("metric_descriptions"),
-            metric_directions=_directions(adapter_path) or m.get("metric_directions"),
-            reference_tier=tier if args.reference_id else None,
-        )
-        if isinstance(new.get("fingerprint"), dict):
-            new["fingerprint"] = _rescored_fingerprint(
-                new["fingerprint"], adapter_id, adapter_path, args.reference_id, tier, d.name
-            )
-        if dropped:
-            new["rescore_dropped_metrics"] = sorted(dropped)
-        write_json(run_dir / "metrics.json", new)
-        written += 1
-        note = f", {recosted} re-costed from the bill" if recosted else ""
-        print(f"  {d.name}  -> {len(rows)} item(s){note}")
-
-    print(f"\n{written} run(s) rescored into {args.out}")
+        _rounds.save(rnd)
+        print(f"  round {rnd['round_id']} of {rnd['goal']} records the scoring: {args.why}")
     print(
-        f"  EVAL_RUNS_DIR={args.out} "
-        + how(
-            f"evh leaderboard --dataset-id {args.dataset_id}",
-            f"make leaderboard DATASET_ID={args.dataset_id}",
-        )
+        "  the goals, the rounds and the catalog read a re-score in place of the run it re-read; "
+        + how(f"evh goals --goal {rnd['goal']}" if rnd else "evh goals", "make catalog")
     )
     return 0
 

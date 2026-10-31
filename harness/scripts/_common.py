@@ -512,10 +512,20 @@ def load_module(path: Path, name: str) -> Any:
     runs, because a module-level @dataclass resolves its own module through sys.modules and an
     unregistered one makes that None. ModuleNotLoadable when there is no spec for the file;
     anything the module raises while running propagates."""
+    import importlib.machinery  # noqa: PLC0415
     import importlib.util  # noqa: PLC0415
     import sys  # noqa: PLC0415
 
-    spec = importlib.util.spec_from_file_location(name, path)
+    class _FromSource(importlib.machinery.SourceFileLoader):
+        # Compiled from the source every time, never from __pycache__: a .pyc is trusted while the source's
+        # mtime (whole seconds) and size match, so a scorer edited within the second to a same-length value
+        # (BONUS = 0.0 -> 0.5) ran its old code while the run recorded the new code's hash (RFC-022).
+        def get_code(self, fullname):
+            del fullname  # the loader passes it; the path is all this needs
+            return compile(self.get_data(self.path), self.path, "exec", dont_inherit=True)
+
+    loader = _FromSource(name, str(path)) if str(path).endswith(".py") else None
+    spec = importlib.util.spec_from_file_location(name, path, loader=loader)
     if spec is None or spec.loader is None:
         raise ModuleNotLoadable(f"cannot load {path}")
     mod = importlib.util.module_from_spec(spec)

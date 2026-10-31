@@ -287,6 +287,8 @@ def main() -> int:
             ("model-onboard", ["no_such_model"], "no model record 'no_such_model'"),
             ("arm-smoke", ["--config", "no_such.yaml"], "no config at no_such.yaml"),
             ("fingerprint-migrate", ["--dry-run"], "ok:after:"),
+            # Scoring that evolves (RFC-022): the flow is test_scoring_evolves.py.
+            ("score-preview", ["--goal", "no_such_goal"], "no goal 'no_such_goal'"),
             ("search", ["lead2"], "ok:evh inspect --runs runs/tickets_v1/tickets_lead2_v1"),
             ("search", ["no_such_thing"], "No match."),
             # lead2 against lead1 on gold: the p of tutorial 3 step 4 (3/32 = 0.09375, printed 0.0938; exact over 2^6)

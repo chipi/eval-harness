@@ -63,7 +63,11 @@ COMMANDS = {
     ),
     "sweep": ("sweep.py", "run several arms, then the leaderboard"),
     "runs-list": ("list_runs.py", "list runs (or baselines)"),
-    "rescore": ("rescore.py", "re-score stored outputs against references, for $0"),
+    "rescore": ("rescore.py", "re-score stored outputs, a round's or a dataset's, for $0"),
+    "score-preview": (
+        "score_preview.py",
+        "what the scorer in this tree would move in a goal's decision; writes nothing",
+    ),
     "judge": (
         "judge_panel.py",
         "the judge panel: promote finalists on a cheap metric, judge their stored outputs",

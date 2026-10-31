@@ -207,28 +207,16 @@ data/runs-adjudicated/*/*
 !data/runs-adjudicated/*/outputs/**
 data/runs-adjudicated/*/outputs/_rows.jsonl
 
-# data/runs-triage-current/ — every triage run re-scored ($0) with the triage adapter's current scorer.
-# The adapter's score() changed seven times while the experiment ran, so the runs in data/runs carry
-# seven scorings; these carry one, and the goal page and `evh goals` read them. Re-made with
-# `evh rescore --dataset-id orrery_triage_v1_labelled --match triage_ --out data/runs-triage-current`.
-!data/runs-triage-current/
-data/runs-triage-current/*/*
-!data/runs-triage-current/*/metrics.json
-!data/runs-triage-current/*/predictions.jsonl
-!data/runs-triage-current/*/outputs
-!data/runs-triage-current/*/outputs/**
-data/runs-triage-current/*/outputs/_rows.jsonl
-
-# data/runs-repeats-triage-current/ — the triage repeats (data/runs-repeats) re-scored the same way. Apart from
-# runs-triage-current for the reason runs-repeats is apart from runs: a --repeat set beside the first pass of
-# the same config_id is two measurements every loader would have to choose between (V8).
-!data/runs-repeats-triage-current/
-data/runs-repeats-triage-current/*/*
-!data/runs-repeats-triage-current/*/metrics.json
-!data/runs-repeats-triage-current/*/predictions.jsonl
-!data/runs-repeats-triage-current/*/outputs
-!data/runs-repeats-triage-current/*/outputs/**
-data/runs-repeats-triage-current/*/outputs/_rows.jsonl
+# data/runs-rescored/<scorer>/<source>/ — re-scores (evh rescore, RFC-022): the stored outputs read again by
+# another scorer, $0, the scorer by its code, the source the runs directory read. The one place the tool
+# designates, so a new scorer never needs a block of its own here.
+!data/runs-rescored/
+data/runs-rescored/*/*/*/*
+!data/runs-rescored/*/*/*/metrics.json
+!data/runs-rescored/*/*/*/predictions.jsonl
+!data/runs-rescored/*/*/*/outputs
+!data/runs-rescored/*/*/*/outputs/**
+data/runs-rescored/*/*/*/outputs/_rows.jsonl
 
 # data/runs-silver/ — the CNN arms re-scored ($0) against silver/cnn_dailymail_200, the frontier
 # arm's summaries: a silver group beside gold on the goal page, where silver's family bias shows.

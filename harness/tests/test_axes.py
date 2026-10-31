@@ -440,4 +440,41 @@ check(
     label_y(50.0, 210.0, 300.0, placed, 10, 200) == 50.0,
 )
 
+# A limit that is the baseline (RFC-022): out only when the paired test finds the arm worse than the baseline.
+BL = {
+    "success_criteria": {
+        "primary": {"measure": "q", "direction": "higher"},
+        "axes": {"noise": {"measure": "noise", "direction": "lower", "limit": "baseline"}},
+    }
+}
+base = arm("base", 0.5, noise=[1] * 2 + [0] * 10)
+arms_bl = {
+    "base": base,
+    "worse": arm("worse", 0.6, noise=[1] * 12),
+    "same": arm("same", 0.6, noise=[1] * 3 + [0] * 9),
+}
+d = axes.decide(BL, arms_bl, baseline="base")
+check(
+    "limit baseline: an arm the paired test finds worse than the baseline is out, with the reason",
+    "worse" in d["out"] and "worse than the baseline base" in "; ".join(d["out"]["worse"]),
+    d["out"],
+)
+check(
+    "limit baseline: an arm the paired test does not separate from the baseline stays in",
+    "same" not in d["out"]
+    and d["rows"]["same"]["noise"]["within"] is True
+    and d["rows"]["base"]["noise"]["within"],
+    d["out"],
+)
+d0 = axes.decide(BL, arms_bl)
+check(
+    "limit baseline: without a baseline no limit applies, and the decision says so",
+    not d0["out"] and any("has none promoted" in w for w in d0["why"]),
+    d0["why"],
+)
+check(
+    "limit baseline: the axis title says what the limit is",
+    "no worse than the baseline (paired test)" in axes.axis_title(axes.axes_of(BL)[-1]),
+)
+
 sys.exit(summary())

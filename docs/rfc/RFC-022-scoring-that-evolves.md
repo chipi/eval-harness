@@ -1,6 +1,6 @@
 # RFC-022: Scoring that evolves: preview it, re-score with it, or adopt it from the next round
 
-- **Status**: Draft (first, 2026-10-31), for 0.6.0 on the owner's go of 2026-10-31: "the user can use the harness
+- **Status**: Built for 0.6.0 (2026-10-31; see "As built"), on the owner's go of 2026-10-31: "the user can use the harness
   to develop new scoring and either rescore or apply it on the next round", "from the harness's perspective, with
   the triage fleet as the use case that validates it".
 - **Authors**: Marko Dragoljevic
@@ -124,6 +124,24 @@ promoted baseline the axis says so and applies no limit. `evh goals` and the goa
   `.gitignore` block in a strict repository, and a reader who knows which is current. Replaced by §2.
 - **A ceiling as a fixed count, fixed before the round.** Simple, but it does not follow the baseline as it changes,
   and round 1 showed how close arms sit to any fixed edge. Kept possible: a number still works as a limit.
+
+## As built (0.6.0)
+
+- **The scorer's identity is the adapter's code** (`_codeid`, by behaviour), so an edit to its calling code alone
+  counts as a new scorer too. That is the conservative side: a re-score is never skipped for a scoring change, and
+  `score-preview` says whether anything moved. `validate`'s note (§7) groups a round's arms **by adapter**: arms
+  with different adapters (a hosted LLM's and a fine-tune's) were never one scorer.
+- **`--keep all`** carries every arm of `--from` (the round's arms, as `evh rounds` lists them).
+- **§9's paired test** is the goal's own (`stats.compare`, Holm across the group's arms), the test that decides
+  ties, so the limit and the tie read the same evidence.
+- **A round's evidence notes how many arms it reads from a re-score**, and `evh rounds` prints the round's scorer
+  and each scoring change, as the goal page's round section lists them.
+- **Found while building:** adapters and hooks were imported through Python's bytecode cache, which trusts a `.pyc`
+  while the source's mtime (whole seconds) and size match; a scorer edited within the second to a value of the same
+  length ran its old code while the re-score recorded the new code's hash. `load_module` now compiles from the
+  source every time (a regression test in `test_scoring_evolves.py`).
+- `rescore --dataset-id` without `--out` re-scores the measured runs of every runs directory git keeps (not only
+  `data/runs`), each into its designated place.
 
 ## Testing
 

@@ -65,6 +65,23 @@ that can move a result is never a patch release without saying so under **Change
   - The catalog's **Models** page and a page per model, a smoke badge on the arms page, a models tile; **`evh
     models`** for the same (and over `evh mcp`). A model is *vetted* when an arm that names it passed its smoke;
     its onboarding alone makes it *onboarded*.
+- **Scoring that evolves** (RFC-022). A round records the scorer it is judged by, and a scoring change is a
+  step of its own:
+  - **`evh score-preview --goal G [--round rN]`** re-scores the goal's arms (or the round's) with the scorer in
+    the working tree, in a temporary directory, and prints each arm before and after and the decision before
+    and after; it writes nothing and spends nothing.
+  - **`evh rescore --goal G --round rN --why "…"`** re-scores a round's arms; the round records the change
+    (`scoring`: when, the scorer, why, where).
+  - **`evh round-open --from rN --keep all --scoring "…"`** opens the next round judged by the current scorer:
+    every carried arm another scorer judged is re-scored first ($0), each one's measure printed before and after.
+  - Re-scores land in **one place the tool designates**, `data/runs-rescored/<scorer>/<source>/`, read by the
+    catalog, the goals, the rounds and `validate`; `--out` still names any other. Rounds read an arm from its
+    re-score as the goals do, and `evh rounds` and the goal page show a round's scorer and scoring changes.
+  - **`evh round-open --adopt`** records a goal's first round from the arms already run for it.
+  - A goal axis's **`limit: baseline`**: an arm is out when the paired test finds it worse than the group's
+    baseline arm on that measure.
+  - `validate` notes a round whose arms one adapter scored in more than one version.
+  - `evh init`'s `.gitignore` ignores the throwaway `data/runs-smoke*/` and `data/runs-tune*/`.
 - **`call_timeout_s`, an arm's call limit, for the built-in providers**: the SDK client's timeout (its own
   default is 10 minutes). The RUNBOOK told arms to set a call limit only the triage adapter honoured.
 - **The triage example's adapter takes `reasoning_effort` and `max_tokens` per arm**, reports every model call
@@ -108,7 +125,7 @@ that can move a result is never a patch release without saying so under **Change
   as `<link rel="canonical">` and `og:url`, checked by `site/build.py --check`.
 - **`validate` checks every git-tracked runs directory**, those `committed` in validate.json with their floors
   and every other one: a directory re-allowed in `.gitignore` but not added to the list was never checked
-  (`data/runs-triage-current`, then 65 runs; 52 now, its 13 repeats in `data/runs-repeats-triage-current`).
+  (a set of 65 re-scored triage runs, before RFC-022 gave re-scores one place).
 - **The local catalog reads what is committed.** It read every `data/runs*` directory on disk, so a smoke
   pass in an ignored `runs-smoke*` showed as a result locally and was gone from a clone and the published
   catalog. Directories git ignores are no longer read (outside a git checkout everything is). A measured arm
@@ -132,6 +149,10 @@ that can move a result is never a patch release without saying so under **Change
   URL. The 130 triage runs are backfilled with the fleet they replayed (`tools/backfill_triage_fleet.py`:
   the fleet's code hash and commit `f07efa9`, the prompt's hash, each checked against what the runs'
   own items recorded) and re-sealed.
+- **A project module edited within the second is what runs.** Adapters and hooks were imported through
+  Python's bytecode cache, which trusts a `.pyc` while the source's modification time (whole seconds) and size
+  match: a scorer edited to a value of the same length (`BONUS = 0.0` to `0.5`) and re-scored at once ran the
+  old code while the re-score recorded the new code's hash. They are compiled from the source every time.
 - **A system that ran in the harness's own process, with no hook, is in process.** A deployment taken
   from the params was always `in_process: false`, so a local baseline (Lead-3, a keyword rule) kept its
   libraries on the runner instead of the deployment. `evh fingerprint-migrate` brings existing v5
