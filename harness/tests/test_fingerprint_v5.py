@@ -17,11 +17,10 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(HERE))
-sys.path.insert(0, str(HERE / "tools"))
-import migrate_fingerprint_v5 as mig  # noqa: E402
 import yaml  # noqa: E402
 from evaluation_harness import _fingerprint as fpmod  # noqa: E402
 from evaluation_harness import _models, compare_runs  # noqa: E402
+from evaluation_harness import fingerprint_migrate as mig  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 from evaluation_harness.catalog_adapter import _flat_conditions  # noqa: E402
 
@@ -230,6 +229,31 @@ for remote in (
         and isinstance(h["runner"]["libraries"], dict),
         h["deployment"],
     )
+
+
+def alias_hook(p):
+    return {
+        "id": "openrouter/anthropic/claude-x",
+        "revision_source": "api-model-string",
+        "prompt_sha256": p["prompt"],
+    }
+
+
+g1 = build({"model": "eval-x", "provider": "litellm", "prompt": "a" * 64}, model_hook=alias_hook)
+check(
+    "a hosted arm records its provider and the upstream id behind the alias",
+    g1["deployment"]["hosted"]
+    == {"provider": "litellm", "provider_id": "openrouter/anthropic/claude-x", "route": None},
+    g1["deployment"]["hosted"],
+)
+g2 = build({"model": "eval-x", "provider": "litellm", "prompt": "b" * 64}, model_hook=alias_hook)
+check(
+    "a declared prompt hash is a setting: a new prompt moves the settings' hash, not the deployment's",
+    g1["settings"]["declared"] == {"prompt_sha256": "a" * 64}
+    and g1["deployment_sha256"] == g2["deployment_sha256"]
+    and g1["settings_sha256"] != g2["settings_sha256"],
+    (g1["settings"], g2["settings"]),
+)
 check(
     "a served deployment keeps the client libraries on the runner",
     isinstance(fp["runner"]["libraries"], dict),
@@ -377,16 +401,16 @@ m_adapter = mig.migrate_fingerprint(
     )
 )
 check(
-    "migrate: an adapter-declared v4 identity is source adapter, in process, with v4's libraries",
+    "migrate: an adapter-declared v4 identity is source adapter, in process, with v4's libraries; its declared prompt hash is a setting",
     m_adapter["version"] == 5
     and m_adapter["deployment"]["source"] == "adapter"
     and m_adapter["deployment"]["in_process"] is True
     and m_adapter["deployment"]["libraries"] == {"openai": "3.1", "numpy": "2.0"}
     and m_adapter["deployment"]["weights"]["revision"] == "abc123"
-    and m_adapter["deployment"]["declared"] == {"prompt_sha256": "p" * 64}
+    and m_adapter["deployment"]["declared"] is None
     and m_adapter["runner"]["libraries"] is None
     and m_adapter["runner"]["platform"] == "Linux/x86_64"
-    and m_adapter["settings"] == {"num_beams": 4}
+    and m_adapter["settings"] == {"num_beams": 4, "declared": {"prompt_sha256": "p" * 64}}
     and "host" not in m_adapter
     and "system_under_test" not in m_adapter,
     m_adapter,
@@ -456,7 +480,7 @@ with tempfile.TemporaryDirectory() as td:
         )
         + "\n"
     )
-    cmd = [sys.executable, str(HERE / "tools" / "migrate_fingerprint_v5.py"), "--data-dir", str(data)]
+    cmd = [sys.executable, str(HERE / "scripts" / "fingerprint_migrate.py"), "--data-dir", str(data)]
     first = subprocess.run(cmd, capture_output=True, text=True)
     docs = {
         p.parent.name + "/" + p.parent.parent.name: json.loads(p.read_text())
@@ -734,5 +758,40 @@ try:
     )
 finally:
     shutil.rmtree(proj, ignore_errors=True)
+
+# the inspector's speed warning: a deployment that differs, and a runner that differs, say different things
+from evaluation_harness import catalog_serve  # noqa: E402
+
+
+class _Conds:
+    def __init__(self, by_arm):
+        self.by_arm = by_arm
+
+    def conditions(self, arm):
+        return self.by_arm[arm]
+
+
+catalog_serve.A = _Conds(
+    {
+        "a": {"deployment.machine": "dgx", "machine.platform": "Linux"},
+        "b": {"deployment.machine": "mac", "machine.platform": "Linux"},
+    }
+)
+w = " ".join(catalog_serve._conditions(["a", "b"], "latency_ms")["warnings"])
+check("inspector: latency across deployments is named as the deployment's", "across deployments" in w, w)
+catalog_serve.A = _Conds(
+    {
+        "a": {"deployment.machine": "dgx", "machine.platform": "Linux"},
+        "b": {"deployment.machine": "dgx", "machine.platform": "Darwin"},
+    }
+)
+w = " ".join(catalog_serve._conditions(["a", "b"], "latency_ms")["warnings"])
+check(
+    "inspector: latency from different runners is named as the runners'",
+    "different runners" in w and "deployments" not in w,
+    w,
+)
+w = " ".join(catalog_serve._conditions(["a", "b"], "correct")["warnings"])
+check("inspector: a quality measure from different runners carries no warning", w == "", w)
 
 sys.exit(summary())

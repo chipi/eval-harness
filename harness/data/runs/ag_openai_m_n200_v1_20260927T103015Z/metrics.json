@@ -35,15 +35,14 @@
         ],
         "labels_sha256": "c7a1ee508b78c0e92f28d159d340a6537ac31ff70ff566430fe2507da58464a3",
         "parser_sha256": "87f75633ea16670ab5a3169fe3125c91107f84959e79c56dd2f17c66a418246d",
-        "prompt_sha256": "ed3aeed55a5b5645151d03d7a518e932ed6da520c4b49bfdc85660dfbf562229",
         "provider": "litellm",
-        "provider_routing": null,
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0
+        "provider_routing": null
       },
-      "hosted": null,
+      "hosted": {
+        "provider": "litellm",
+        "provider_id": "openrouter/openai/gpt-5.5",
+        "route": null
+      },
       "id": "eval-gpt-55",
       "in_process": false,
       "libraries": null,
@@ -65,8 +64,8 @@
         "machine": null
       }
     },
-    "deployment_sha256": "fd646f5563161703269b7a95dd01ba71f15bec6a54a015babaab5cd6b4afb7f1",
-    "hash": "e21e436da8b10cc8944a529dde527168343f2923f8f986d277a3d7d2b448b4a7",
+    "deployment_sha256": "4d0e769720a35710e32074b34b9a637274b5c47d4471cac49cf058a26fd1d184",
+    "hash": "c0667fd0095aa8eb196a5e168f1ea58880d43672b87cb3bf1efa76979a603291",
     "instrument": {
       "adapter": {
         "id": "examples/classification-ag-news/adapter.py",
@@ -93,6 +92,13 @@
       "release": "24.6.0"
     },
     "settings": {
+      "declared": {
+        "prompt_sha256": "ed3aeed55a5b5645151d03d7a518e932ed6da520c4b49bfdc85660dfbf562229",
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0
+      },
       "family": "openai",
       "max_tokens": 200,
       "price_tier": "mid",
@@ -104,7 +110,7 @@
       "usd_per_mtok_in": 1.25,
       "usd_per_mtok_out": 10.0
     },
-    "settings_sha256": "90b8a6010b5590d440cd18fde2eb565762c50761426340dac9385b63989229eb",
+    "settings_sha256": "9f92a5f7067933f7323f0da5320800e8b9d5a59505cb9d00ebbca3d16ebbd819",
     "version": 5
   },
   "goal": "news_topic_ag",

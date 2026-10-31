@@ -35,15 +35,14 @@
         ],
         "labels_sha256": "c7a1ee508b78c0e92f28d159d340a6537ac31ff70ff566430fe2507da58464a3",
         "parser_sha256": "87f75633ea16670ab5a3169fe3125c91107f84959e79c56dd2f17c66a418246d",
-        "prompt_sha256": "ed3aeed55a5b5645151d03d7a518e932ed6da520c4b49bfdc85660dfbf562229",
         "provider": "litellm",
-        "provider_routing": null,
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0
+        "provider_routing": null
       },
-      "hosted": null,
+      "hosted": {
+        "provider": "litellm",
+        "provider_id": "openrouter/meta-llama/llama-4-maverick",
+        "route": null
+      },
       "id": "eval-llama-maverick",
       "in_process": false,
       "libraries": null,
@@ -65,8 +64,8 @@
         "machine": null
       }
     },
-    "deployment_sha256": "af04f6c604e7b9f3b7ebb44369c6a53f143649efc30fb78654dec89324dcc525",
-    "hash": "a84e58f716443a929547a33bc8af519c3c84bf5d56c189d8b9e7b5278008c53f",
+    "deployment_sha256": "d6e544287bed966d8141cf8d35dcefb048b8b56d169f0961bc4aa0d1c0214436",
+    "hash": "07d09b8f323343a576a64d0231787d17a681079597a8db47e5a5e24d22fb91f1",
     "instrument": {
       "adapter": {
         "id": "examples/classification-ag-news/adapter.py",
@@ -93,6 +92,13 @@
       "release": "24.6.0"
     },
     "settings": {
+      "declared": {
+        "prompt_sha256": "ed3aeed55a5b5645151d03d7a518e932ed6da520c4b49bfdc85660dfbf562229",
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0
+      },
       "family": "llama",
       "max_tokens": 200,
       "price_tier": "large",
@@ -104,7 +110,7 @@
       "usd_per_mtok_in": 0.18,
       "usd_per_mtok_out": 0.6
     },
-    "settings_sha256": "dfeb470fb2adbb0a7f3bde4fb587add897cdd64ea5f989acf129d834934fb686",
+    "settings_sha256": "02065394dae29e6c02b0c8a0298303394496660ccd106076a8a2bd05c9308515",
     "version": 5
   },
   "goal": "news_topic_ag",

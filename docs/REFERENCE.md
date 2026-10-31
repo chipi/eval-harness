@@ -200,12 +200,12 @@ price tier.
 > [`REPORT_SYNTHESIS.md` §0](../research/REPORT_SYNTHESIS.md) — **the best proprietary
 > arm was never separated from the best open-weight arm in any of the six experiments.**
 
-> **A hosted model has no verifiable identity.** The fingerprint records
-> `identity_declared: true` and `revision_source: unavailable` — we record the alias we
-> asked for, not proof of what answered. A provider can change weights behind a name
-> without notice. This is the single largest unverifiable assumption in the repo, and it
-> is why the local arms record a `revision` and a weight-file size and the hosted ones
-> cannot.
+> **A hosted model has no verifiable identity.** The fingerprint's deployment records the
+> provider and the upstream id the gateway resolved behind the alias (`deployment.hosted`),
+> with `weights.digest: null` and `revision_source: api-model-string` — what we asked for, not
+> proof of what answered. A provider can change weights behind a name without notice. This is
+> the single largest unverifiable assumption in the repo, and it is why the local arms record a
+> `revision` and a weight-file size and the hosted ones cannot.
 
 ### Local — downloaded weights, pinned by revision
 

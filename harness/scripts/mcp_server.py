@@ -65,6 +65,7 @@ NOT_TOOLS = {
     "experiment-run": "runs a system and may spend",
     "arm-smoke": "runs a system on a few items, may spend, and writes the model record",
     "model-onboard": "calls a model and writes the model record",
+    "fingerprint-migrate": "rewrites the committed runs' fingerprints",
     "sweep": "runs systems and may spend",
     "rescore": "writes runs",
     "judge": "calls models and spends",

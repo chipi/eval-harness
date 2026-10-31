@@ -45,15 +45,14 @@
         ],
         "labels_sha256": "d3a33437c1e2b2fe45fdb7a425b14796d89d31a0d8919d899149e27f5c6f899d",
         "parser_sha256": "6cc7cbce25ef74dbcdaa7f18763cfaaf8ea7b2a0e0cc0222e4d70f9b92cf2fc6",
-        "prompt_sha256": "758e514c7aab934f0ad0395805b4624b41946e99834b6a2ca0527e098e796db3",
         "provider": "litellm",
-        "provider_routing": null,
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0
+        "provider_routing": null
       },
-      "hosted": null,
+      "hosted": {
+        "provider": "litellm",
+        "provider_id": "openrouter/openai/gpt-6-sol",
+        "route": null
+      },
       "id": "eval-gpt-6sol",
       "in_process": false,
       "libraries": null,
@@ -75,8 +74,8 @@
         "machine": null
       }
     },
-    "deployment_sha256": "b5d74cefd8eac6f885b7b13f0394b691e9a7ebfecb78b98cf9e80e48351643ce",
-    "hash": "8822599164ac0edd9ebd31d38f0c544b441b1ab03837480ed3756aaa0d14eaba",
+    "deployment_sha256": "3384087b1287cee199f64b36e937156d7f623888a3fed51c85f069268eae529e",
+    "hash": "7a458cb8099ab4a84b541dfdf1417e9e3e99b5fe028e7f58d98e283b60f35550",
     "instrument": {
       "adapter": {
         "id": "examples/classification-dbpedia-14/adapter.py",
@@ -100,6 +99,13 @@
       "release": "24.6.0"
     },
     "settings": {
+      "declared": {
+        "prompt_sha256": "758e514c7aab934f0ad0395805b4624b41946e99834b6a2ca0527e098e796db3",
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0
+      },
       "family": "openai",
       "max_tokens": 200,
       "price_tier": "large",
@@ -111,7 +117,7 @@
       "usd_per_mtok_in": 2.5,
       "usd_per_mtok_out": 15.0
     },
-    "settings_sha256": "d261b3f3593d23159fd177e5d24278172b4c96097630b5c164d221950307ff08",
+    "settings_sha256": "fb0831facc46cca10eef01fc7ca696f07eeac64d7bc9c38098f0378e80d981da",
     "version": 5
   },
   "goal": "entity_topic_dbpedia",

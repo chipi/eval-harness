@@ -45,15 +45,14 @@
         ],
         "labels_sha256": "d3a33437c1e2b2fe45fdb7a425b14796d89d31a0d8919d899149e27f5c6f899d",
         "parser_sha256": "6cc7cbce25ef74dbcdaa7f18763cfaaf8ea7b2a0e0cc0222e4d70f9b92cf2fc6",
-        "prompt_sha256": "758e514c7aab934f0ad0395805b4624b41946e99834b6a2ca0527e098e796db3",
         "provider": "litellm",
-        "provider_routing": null,
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0
+        "provider_routing": null
       },
-      "hosted": null,
+      "hosted": {
+        "provider": "litellm",
+        "provider_id": "openrouter/anthropic/claude-haiku-4.5",
+        "route": null
+      },
       "id": "eval-claude-haiku",
       "in_process": false,
       "libraries": null,
@@ -75,8 +74,8 @@
         "machine": null
       }
     },
-    "deployment_sha256": "05449b0ad8eab0435786ae04d33340d5271c9afb95f0740c35da49a7039c09b0",
-    "hash": "1c0494ebe92c4d577bb38b994b0e208388e233ee05d0dd83570bcb92eef24c21",
+    "deployment_sha256": "7cbe03eba5a1e65bf20fa78fef49c1f647ebd9720007ca2eb8af429b1c850a22",
+    "hash": "1a3bf8f8f2f78974281dd9a0c77a488f0d257dfe37aa035f1fdb5fdf5790f9a8",
     "instrument": {
       "adapter": {
         "id": "examples/classification-dbpedia-14/adapter.py",
@@ -100,6 +99,13 @@
       "release": "24.6.0"
     },
     "settings": {
+      "declared": {
+        "prompt_sha256": "758e514c7aab934f0ad0395805b4624b41946e99834b6a2ca0527e098e796db3",
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0
+      },
       "family": "anthropic",
       "max_tokens": 200,
       "price_tier": "small",
@@ -111,7 +117,7 @@
       "usd_per_mtok_in": 1.0,
       "usd_per_mtok_out": 5.0
     },
-    "settings_sha256": "f9b1e1cf3d228c626d7bb1fe6faca59512f03c20f49f770556bc3dfd711799f3",
+    "settings_sha256": "e2ae96e6b939bdce7dd84da31e8e1a3b7089c39248a43bb82196a7f9afbac7dd",
     "version": 5
   },
   "goal": "entity_topic_dbpedia",

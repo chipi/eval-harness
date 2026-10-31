@@ -5,6 +5,24 @@ change the pin, then check what it says can move. **If you copied `harness/` int
 repository** before October 2026, read the rest of this page first: your copy has
 correctness bugs, not just missing features.
 
+## From 0.5.0 to 0.6.0
+
+Change the pin to `@v0.6.0`. Two formats change, and both are migrated by a script, never read in the old shape:
+
+- **Fingerprints are version 5** (RFC-021): `instrument`, `data`, `deployment`, `settings`, each hashed, and the
+  machine `evh` ran on as `runner`, outside the hash. A run made with 0.6.0 compares with a v4 run on no hash. Move
+  your committed runs once, from your project's root:
+  `evh fingerprint-migrate` (`--dry-run` counts first; it is idempotent and prints its counts; a
+  baseline's `fingerprint_hash` follows its run). Code that read `fingerprint.host` reads `fingerprint.runner`;
+  `fingerprint.system_under_test.model` is `fingerprint.deployment` (an adapter's `fingerprint(params)` hook keeps
+  its vocabulary; what it declares about the prompt is now `settings.declared`).
+- **`data/models.yaml` is replaced by `data/models/<model_id>.yaml`** (RFC-020): one record per model, its key in
+  the old file the record's alias. Write a record per entry (`model_id`, `kind`, `aliases`, `weights`,
+  `licence`) and delete the file; `validate` (V1, V18) checks them.
+
+Everything else is added and optional: `evh model-onboard`, `evh arm-smoke`, `evh models`, `model_record:` and
+`deployment:` in a config.
+
 ## From 0.4.4 to 0.5.0
 
 Change the pin to `@v0.5.0`. No record, hash or p-value moves. Three things to check first:

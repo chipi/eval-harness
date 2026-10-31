@@ -45,15 +45,14 @@
         ],
         "labels_sha256": "d3a33437c1e2b2fe45fdb7a425b14796d89d31a0d8919d899149e27f5c6f899d",
         "parser_sha256": "6cc7cbce25ef74dbcdaa7f18763cfaaf8ea7b2a0e0cc0222e4d70f9b92cf2fc6",
-        "prompt_sha256": "758e514c7aab934f0ad0395805b4624b41946e99834b6a2ca0527e098e796db3",
         "provider": "litellm",
-        "provider_routing": null,
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0
+        "provider_routing": null
       },
-      "hosted": null,
+      "hosted": {
+        "provider": "litellm",
+        "provider_id": "openrouter/google/gemma-3-27b-it",
+        "route": null
+      },
       "id": "eval-gemma-3-27b",
       "in_process": false,
       "libraries": null,
@@ -75,8 +74,8 @@
         "machine": null
       }
     },
-    "deployment_sha256": "05a354e628dec94bd6003b3388c5437d83fa7e495a649c77c2a4b0403b64ccea",
-    "hash": "91977c9d22927e8d6780d5cfc45a39118b8c70b4c3118e065eb501063bc3c600",
+    "deployment_sha256": "8778295c8838b26de2850ec0412ce636cb714f9e417122083cb45f62a0935805",
+    "hash": "63d16a6feb404d7b8dae1fb54bdcfff61dc541d4d3d2ae6df571427cc1c0bad6",
     "instrument": {
       "adapter": {
         "id": "examples/classification-dbpedia-14/adapter.py",
@@ -100,6 +99,13 @@
       "release": "24.6.0"
     },
     "settings": {
+      "declared": {
+        "prompt_sha256": "758e514c7aab934f0ad0395805b4624b41946e99834b6a2ca0527e098e796db3",
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0
+      },
       "family": "gemma",
       "max_tokens": 200,
       "price_tier": "small",
@@ -111,7 +117,7 @@
       "usd_per_mtok_in": 0.07,
       "usd_per_mtok_out": 0.15
     },
-    "settings_sha256": "55c432ec5ebe25d94710e4c7e246c79e1eb95cc2035a0bc33b82f44e9182316c",
+    "settings_sha256": "b9004f20db4562f8e4238c8b325f9d7c92157bbe94b225cdbd97b14ae1be65e6",
     "version": 5
   },
   "goal": "entity_topic_dbpedia",

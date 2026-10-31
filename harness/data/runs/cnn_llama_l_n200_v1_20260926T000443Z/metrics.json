@@ -27,14 +27,13 @@
         "endpoint": "http://127.0.0.1:4001",
         "id": "openrouter/meta-llama/llama-4-maverick",
         "id_source": "proxy-model-info",
-        "prompt_sha256": "d98ecfbd4054a47476257c2a48ab9f9fc8731098afe4bc1093c69e89c0cbe2f0",
-        "provider_routing": null,
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0
+        "provider_routing": null
       },
-      "hosted": null,
+      "hosted": {
+        "provider": "litellm",
+        "provider_id": "openrouter/meta-llama/llama-4-maverick",
+        "route": null
+      },
       "id": "eval-llama-maverick",
       "in_process": false,
       "libraries": null,
@@ -56,8 +55,8 @@
         "machine": null
       }
     },
-    "deployment_sha256": "0acf71daf3b677a78f48299582077ccc03fc57d493ff9bf9ac8cbdcbed756ce4",
-    "hash": "c98d687c20cd8c7f7f641dec238a3554c00e7910ecfeb01467b8e793e7c78b3d",
+    "deployment_sha256": "60f329128968ed20f54852c931ac50f719db3430a084c1d5a8d6f57c99245dc7",
+    "hash": "62ce57ab14aa728e93d3a107883b344a7f102503ec6dad78d37c0750495cc292",
     "instrument": {
       "adapter": {
         "id": "examples/summarization-cnn-dailymail/adapter.py",
@@ -83,6 +82,13 @@
       "release": "24.6.0"
     },
     "settings": {
+      "declared": {
+        "prompt_sha256": "d98ecfbd4054a47476257c2a48ab9f9fc8731098afe4bc1093c69e89c0cbe2f0",
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0
+      },
       "family": "llama",
       "max_tokens": 1200,
       "price_tier": "large",
@@ -94,7 +100,7 @@
       "usd_per_mtok_in": 0.18,
       "usd_per_mtok_out": 0.6
     },
-    "settings_sha256": "e79bc7c542d2322dae3b338ddd7021e2d6f17f38c0ebffc2f8f638207f66ead8",
+    "settings_sha256": "cd8b45a05fab252d0a4a447f2b1337d7bd4615cb33b6f03599c1ad714c486cc6",
     "version": 5
   },
   "goal": "news_summary_cnn",

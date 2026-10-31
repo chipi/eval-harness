@@ -50,18 +50,16 @@
           "person",
           "product"
         ],
-        "max_tokens": 600,
         "normalizer_sha256": "a7c22b054099a72f91d772754dcd49b748fa739340ea4f38f2934eb18950a942",
         "parser_sha256": "101110f889f26b800af7eacbd887bab82aef1556713b869ab27d86f78a605181",
-        "prompt_sha256": "6c6c79fa47400fd9353d788503373df0958fcce007c845eeb71353b0a237483b",
         "provider": "litellm",
-        "reasoning": {
-          "enabled": false
-        },
-        "scorer_sha256": "fa44fe291ad128ab1633f2e07aa84d2dcb06d2226a58b697b621992ef98c2d78",
-        "temperature": 0.0
+        "scorer_sha256": "fa44fe291ad128ab1633f2e07aa84d2dcb06d2226a58b697b621992ef98c2d78"
       },
-      "hosted": null,
+      "hosted": {
+        "provider": "litellm",
+        "provider_id": null,
+        "route": null
+      },
       "id": "eval-gpt-6sol",
       "in_process": false,
       "libraries": null,
@@ -83,7 +81,7 @@
         "machine": null
       }
     },
-    "deployment_sha256": "5b3a367b40397832a31fc48ba54c14894c9c9e753ec975713af93f0d7f7bfd9a",
+    "deployment_sha256": "8fe8b58d23b2bcc21e20c9eb3ef8ef455ecc7e9c884c0dabce25ca5863659347",
     "hash": null,
     "hash_invalid_because": "scores were recomputed by a different scorer than the one this fingerprint was built from; see derived.with",
     "instrument": {
@@ -114,6 +112,14 @@
       "release": "24.6.0"
     },
     "settings": {
+      "declared": {
+        "max_tokens": 600,
+        "prompt_sha256": "6c6c79fa47400fd9353d788503373df0958fcce007c845eeb71353b0a237483b",
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0
+      },
       "family": "openai",
       "max_tokens": 600,
       "price_tier": "large",
@@ -125,7 +131,7 @@
       "usd_per_mtok_in": 2.5,
       "usd_per_mtok_out": 15.0
     },
-    "settings_sha256": "fe9ae9967789a7e15d6bc830832acdbfb66598d0479cac73558cc59c124a86e7",
+    "settings_sha256": "6887c42aafdc391e54e4eea8d6cc67665a3bc3f0124201ee5ab414c3de076017",
     "version": 5
   },
   "goal": "entities_few_nerd",

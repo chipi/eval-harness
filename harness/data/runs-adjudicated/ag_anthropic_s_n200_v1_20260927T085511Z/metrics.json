@@ -47,15 +47,14 @@
         ],
         "labels_sha256": "c7a1ee508b78c0e92f28d159d340a6537ac31ff70ff566430fe2507da58464a3",
         "parser_sha256": "87f75633ea16670ab5a3169fe3125c91107f84959e79c56dd2f17c66a418246d",
-        "prompt_sha256": "ed3aeed55a5b5645151d03d7a518e932ed6da520c4b49bfdc85660dfbf562229",
         "provider": "litellm",
-        "provider_routing": null,
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0
+        "provider_routing": null
       },
-      "hosted": null,
+      "hosted": {
+        "provider": "litellm",
+        "provider_id": "openrouter/anthropic/claude-haiku-4.5",
+        "route": null
+      },
       "id": "eval-claude-haiku",
       "in_process": false,
       "libraries": null,
@@ -77,7 +76,7 @@
         "machine": null
       }
     },
-    "deployment_sha256": "f1fd64e5ea2c1c9ef35346411a17dee904ae8b5e91f56721156f5a1b48100150",
+    "deployment_sha256": "e857f906b58a9dd2bd3d71608f2fdf21c95e00eb33eb4ce9dedadb5aa386450b",
     "hash": null,
     "hash_invalid_because": "scores were recomputed by a different scorer than the one this fingerprint was built from; see derived.with",
     "instrument": {
@@ -106,6 +105,13 @@
       "release": "24.6.0"
     },
     "settings": {
+      "declared": {
+        "prompt_sha256": "ed3aeed55a5b5645151d03d7a518e932ed6da520c4b49bfdc85660dfbf562229",
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0
+      },
       "family": "anthropic",
       "max_tokens": 200,
       "price_tier": "small",
@@ -117,7 +123,7 @@
       "usd_per_mtok_in": 1.0,
       "usd_per_mtok_out": 5.0
     },
-    "settings_sha256": "f9b1e1cf3d228c626d7bb1fe6faca59512f03c20f49f770556bc3dfd711799f3",
+    "settings_sha256": "567a3f10bb964bc30dd3caf822c2498b679e0e1873ad09c390699e3b090baa56",
     "version": 5
   },
   "goal": "news_topic_ag",

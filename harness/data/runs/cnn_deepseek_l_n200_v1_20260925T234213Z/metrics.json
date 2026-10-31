@@ -27,14 +27,13 @@
         "endpoint": "http://127.0.0.1:4001",
         "id": "openrouter/deepseek/deepseek-v4-pro",
         "id_source": "proxy-model-info",
-        "prompt_sha256": "d98ecfbd4054a47476257c2a48ab9f9fc8731098afe4bc1093c69e89c0cbe2f0",
-        "provider_routing": null,
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0
+        "provider_routing": null
       },
-      "hosted": null,
+      "hosted": {
+        "provider": "litellm",
+        "provider_id": "openrouter/deepseek/deepseek-v4-pro",
+        "route": null
+      },
       "id": "eval-deepseek-pro",
       "in_process": false,
       "libraries": null,
@@ -56,8 +55,8 @@
         "machine": null
       }
     },
-    "deployment_sha256": "a63dda2dbe6d73e71c39dfea2b9405fe3a8a99b6a422dff70aca05c390111bc3",
-    "hash": "f8c07160d23a2baf3eda19512f7de180645e4c099bcd75606325402e5a43280a",
+    "deployment_sha256": "6b0a0aa692f7674781e18d67543473b6d56deac9e25f6c9aee67fc68a7678f1b",
+    "hash": "8c8e1f430b639656fbe52e7d746c9ace3bdf485df35673df5d2e257229400b3a",
     "instrument": {
       "adapter": {
         "id": "examples/summarization-cnn-dailymail/adapter.py",
@@ -83,6 +82,13 @@
       "release": "24.6.0"
     },
     "settings": {
+      "declared": {
+        "prompt_sha256": "d98ecfbd4054a47476257c2a48ab9f9fc8731098afe4bc1093c69e89c0cbe2f0",
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0
+      },
       "family": "deepseek",
       "max_tokens": 1200,
       "price_tier": "large",
@@ -94,7 +100,7 @@
       "usd_per_mtok_in": 0.28,
       "usd_per_mtok_out": 1.1
     },
-    "settings_sha256": "078675a9f2b3927ae3e9cfbd0eddc70fd70ae2728111630af4b2002ebf1481ca",
+    "settings_sha256": "ee988ca8f4b518dc8b84b07a897d732fbdc218f83c2727b3809b78d1b94a8f65",
     "version": 5
   },
   "goal": "news_summary_cnn",

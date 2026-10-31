@@ -39,14 +39,13 @@
         "endpoint": "http://127.0.0.1:4001",
         "id": "openrouter/qwen/qwen3-max",
         "id_source": "proxy-model-info",
-        "prompt_sha256": "d98ecfbd4054a47476257c2a48ab9f9fc8731098afe4bc1093c69e89c0cbe2f0",
-        "provider_routing": null,
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0
+        "provider_routing": null
       },
-      "hosted": null,
+      "hosted": {
+        "provider": "litellm",
+        "provider_id": "openrouter/qwen/qwen3-max",
+        "route": null
+      },
       "id": "eval-qwen-3max",
       "in_process": false,
       "libraries": null,
@@ -68,7 +67,7 @@
         "machine": null
       }
     },
-    "deployment_sha256": "00c62a13a55eed57170ec5aee2beb1196c89996eb7bbd5b864ba7896db341111",
+    "deployment_sha256": "726a3f25bc4a28824f7a57152fda4b6c6cb5333bce5566e334b0f6b6b5d55433",
     "hash": null,
     "hash_invalid_because": "scores were recomputed by a different scorer than the one this fingerprint was built from; see derived.with",
     "instrument": {
@@ -96,6 +95,13 @@
       "release": "24.6.0"
     },
     "settings": {
+      "declared": {
+        "prompt_sha256": "d98ecfbd4054a47476257c2a48ab9f9fc8731098afe4bc1093c69e89c0cbe2f0",
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0
+      },
       "family": "qwen",
       "max_tokens": 1200,
       "price_tier": "large",
@@ -107,7 +113,7 @@
       "usd_per_mtok_in": 0.4,
       "usd_per_mtok_out": 1.6
     },
-    "settings_sha256": "d93bef7a7c772c6ef11e87e5f1c950d8779d965fcedd34c335ce558c465bc790",
+    "settings_sha256": "5c5f755709990fb88c39abbac8a462d47065c879b8fa8454e39d4f640900de86",
     "version": 5
   },
   "goal": "news_summary_cnn",

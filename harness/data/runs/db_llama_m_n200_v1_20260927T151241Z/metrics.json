@@ -45,15 +45,14 @@
         ],
         "labels_sha256": "d3a33437c1e2b2fe45fdb7a425b14796d89d31a0d8919d899149e27f5c6f899d",
         "parser_sha256": "6cc7cbce25ef74dbcdaa7f18763cfaaf8ea7b2a0e0cc0222e4d70f9b92cf2fc6",
-        "prompt_sha256": "758e514c7aab934f0ad0395805b4624b41946e99834b6a2ca0527e098e796db3",
         "provider": "litellm",
-        "provider_routing": null,
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0
+        "provider_routing": null
       },
-      "hosted": null,
+      "hosted": {
+        "provider": "litellm",
+        "provider_id": "openrouter/meta-llama/llama-3.3-70b-instruct",
+        "route": null
+      },
       "id": "eval-llama-70b",
       "in_process": false,
       "libraries": null,
@@ -75,8 +74,8 @@
         "machine": null
       }
     },
-    "deployment_sha256": "00a1b50cee794d36b5a5fb5cb636de05bcd2803589c3df1d02ba85ae9b79dc89",
-    "hash": "39fd03cc952cafa0cb5728855dba0aba123b6288fb633a51107a93510e277245",
+    "deployment_sha256": "c1397007dc72f252696c8f211d54ff0c381428cbcbc47f512cd3bda7965c9641",
+    "hash": "736bf9c26438a8cf12d16d5bf204aae446ef1d84a8bf28772644a513380e0195",
     "instrument": {
       "adapter": {
         "id": "examples/classification-dbpedia-14/adapter.py",
@@ -100,6 +99,13 @@
       "release": "24.6.0"
     },
     "settings": {
+      "declared": {
+        "prompt_sha256": "758e514c7aab934f0ad0395805b4624b41946e99834b6a2ca0527e098e796db3",
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0
+      },
       "family": "llama",
       "max_tokens": 200,
       "price_tier": "mid",
@@ -111,7 +117,7 @@
       "usd_per_mtok_in": 0.12,
       "usd_per_mtok_out": 0.3
     },
-    "settings_sha256": "67cdbb985d800c28c0fa773f20aa52865eb2d670cf721c90f0015615242c8bed",
+    "settings_sha256": "11a72b998b7685ac7ffa9ef35076838aa7567f1a1240639c45d42490920fb981",
     "version": 5
   },
   "goal": "entity_topic_dbpedia",

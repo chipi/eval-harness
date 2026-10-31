@@ -69,14 +69,13 @@
         "endpoint": "http://127.0.0.1:4001",
         "id": "openrouter/openai/gpt-5.5",
         "id_source": "proxy-model-info",
-        "prompt_sha256": "d98ecfbd4054a47476257c2a48ab9f9fc8731098afe4bc1093c69e89c0cbe2f0",
-        "provider_routing": null,
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0
+        "provider_routing": null
       },
-      "hosted": null,
+      "hosted": {
+        "provider": "litellm",
+        "provider_id": "openrouter/openai/gpt-5.5",
+        "route": null
+      },
       "id": "eval-gpt-55",
       "in_process": false,
       "libraries": null,
@@ -98,7 +97,7 @@
         "machine": null
       }
     },
-    "deployment_sha256": "4fdd2eb4de4592e5de31678861b60162e6cf3c4ffd18ce602b469b40de92ba9c",
+    "deployment_sha256": "4ff298fbdf97407f9cd85d252ed7041997c9e796314268389d040d1bf0af4fe4",
     "hash": null,
     "hash_invalid_because": "scores were produced by a judge scorer, not the adapter this fingerprint was built from; see derived.with",
     "instrument": {
@@ -126,6 +125,13 @@
       "release": "24.6.0"
     },
     "settings": {
+      "declared": {
+        "prompt_sha256": "d98ecfbd4054a47476257c2a48ab9f9fc8731098afe4bc1093c69e89c0cbe2f0",
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0
+      },
       "family": "openai",
       "max_tokens": 1200,
       "price_tier": "mid",
@@ -137,7 +143,7 @@
       "usd_per_mtok_in": 1.25,
       "usd_per_mtok_out": 10.0
     },
-    "settings_sha256": "3d145565c6bb736d4783dba7198f4f2c8c8d8bb57a70ee7a799bac118aa2052d",
+    "settings_sha256": "01a5c45f9ef521af0db84e980b47a3b2dbaa9266f00866f37ea3790b208fb644",
     "version": 5
   },
   "goal": "news_summary_cnn",

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""One-time migration of every committed run's fingerprint from version 4 to version 5 (RFC-021).
+"""Migrate every committed run's fingerprint from version 4 to version 5 (RFC-021), once.
 
-    python tools/migrate_fingerprint_v5.py [--data-dir data] [--dry-run]
+    evh fingerprint-migrate [--data-dir data] [--dry-run]
 
 Rewrites only the `fingerprint` of each `<data>/runs*/**/metrics.json`, and the `fingerprint_hash` a
 baseline carries from its run (validate V6 compares the two):
@@ -20,17 +20,20 @@ nothing. Run outputs and predictions are not touched. Prints the counts before a
 
 from __future__ import annotations
 
+import sys as _sys
+from pathlib import Path as _Path
+
+if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
+
 import argparse
 import json
-import sys
 from collections import Counter
 from pathlib import Path
 from typing import Any
 
-HARNESS = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(HARNESS))
-from evaluation_harness import _fingerprint as fpmod  # noqa: E402
-from evaluation_harness._common import write_text_atomic  # noqa: E402
+from evaluation_harness import _fingerprint as fpmod
+from evaluation_harness._common import DATA, write_text_atomic
 
 DEPLOYMENT_PARTS = ("deployment", "settings", "runner")
 
@@ -63,6 +66,7 @@ def migrate_fingerprint(fp: dict[str, Any], params: dict[str, Any] | None = None
     for k, v in fp.items():
         if k not in {"version", "instrument", "data", "system_under_test", "host", "arm", "hash"}:
             out[k] = v
+    fpmod.split_declared(out["deployment"], out["settings"])
     return fpmod.seal(out, whole=fp.get("hash") is not None)
 
 
@@ -76,7 +80,7 @@ def run_files(data: Path) -> list[Path]:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    ap.add_argument("--data-dir", type=Path, default=HARNESS / "data")
+    ap.add_argument("--data-dir", type=Path, default=DATA, help="the project's data root (default: this project's, EVAL_DATA_DIR)")
     ap.add_argument("--dry-run", action="store_true", help="count what would change; write nothing")
     args = ap.parse_args()
     data = args.data_dir.resolve()

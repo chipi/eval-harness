@@ -45,15 +45,14 @@
         ],
         "labels_sha256": "d3a33437c1e2b2fe45fdb7a425b14796d89d31a0d8919d899149e27f5c6f899d",
         "parser_sha256": "6cc7cbce25ef74dbcdaa7f18763cfaaf8ea7b2a0e0cc0222e4d70f9b92cf2fc6",
-        "prompt_sha256": "758e514c7aab934f0ad0395805b4624b41946e99834b6a2ca0527e098e796db3",
         "provider": "litellm",
-        "provider_routing": null,
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0
+        "provider_routing": null
       },
-      "hosted": null,
+      "hosted": {
+        "provider": "litellm",
+        "provider_id": "openrouter/anthropic/claude-opus-5",
+        "route": null
+      },
       "id": "eval-opus-5",
       "in_process": false,
       "libraries": null,
@@ -75,8 +74,8 @@
         "machine": null
       }
     },
-    "deployment_sha256": "160c215085801e15e0e48721916bc29c01807d05de785bfda0804a3cf5232e68",
-    "hash": "939afa634448a58591d26e98980d30e14114c0f260ceebe910f5a9243067f1b6",
+    "deployment_sha256": "a2b5a469dfbbb2be8c44c69bcc8736f5ac8c9721f1bad0784b88b9ae30d416c1",
+    "hash": "4ea7d69d424e58187186384981bf35c0edec8bbe43182d10f7caeb8a0bf08d1f",
     "instrument": {
       "adapter": {
         "id": "examples/classification-dbpedia-14/adapter.py",
@@ -100,6 +99,13 @@
       "release": "24.6.0"
     },
     "settings": {
+      "declared": {
+        "prompt_sha256": "758e514c7aab934f0ad0395805b4624b41946e99834b6a2ca0527e098e796db3",
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0
+      },
       "family": "anthropic",
       "max_tokens": 200,
       "price_tier": "large",
@@ -111,7 +117,7 @@
       "usd_per_mtok_in": 5.0,
       "usd_per_mtok_out": 25.0
     },
-    "settings_sha256": "e20cca12a6da49e55f02fd8133593a40567ecf2d6bd01fd68c0327281d5d0f3d",
+    "settings_sha256": "7be0c5792cb98a241428c41231b4fe4e0a44ba7c908c77661c7dd47d3e41e741",
     "version": 5
   },
   "goal": "entity_topic_dbpedia",

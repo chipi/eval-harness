@@ -45,15 +45,14 @@
         ],
         "labels_sha256": "d3a33437c1e2b2fe45fdb7a425b14796d89d31a0d8919d899149e27f5c6f899d",
         "parser_sha256": "6cc7cbce25ef74dbcdaa7f18763cfaaf8ea7b2a0e0cc0222e4d70f9b92cf2fc6",
-        "prompt_sha256": "758e514c7aab934f0ad0395805b4624b41946e99834b6a2ca0527e098e796db3",
         "provider": "litellm",
-        "provider_routing": null,
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0
+        "provider_routing": null
       },
-      "hosted": null,
+      "hosted": {
+        "provider": "litellm",
+        "provider_id": "openrouter/z-ai/glm-4.5-air",
+        "route": null
+      },
       "id": "eval-glm-45-air",
       "in_process": false,
       "libraries": null,
@@ -75,8 +74,8 @@
         "machine": null
       }
     },
-    "deployment_sha256": "7c6fca6be148e075b5b1eec2b417e858d05f7c75e5dc50137a97e1fce301f319",
-    "hash": "fef21a4de863c12f8f9d1c9eb7558483da630e5592ee2caf0b246b747ef8cd27",
+    "deployment_sha256": "c0464d94c694b0dd35c1b21df612bc78ebf89dac2a6e0f00b0005637ee3d01a1",
+    "hash": "3e4834933951065d876f8b8be99779fc3696df40e3ce9450dd4e2af90b3fea6a",
     "instrument": {
       "adapter": {
         "id": "examples/classification-dbpedia-14/adapter.py",
@@ -100,6 +99,13 @@
       "release": "24.6.0"
     },
     "settings": {
+      "declared": {
+        "prompt_sha256": "758e514c7aab934f0ad0395805b4624b41946e99834b6a2ca0527e098e796db3",
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0
+      },
       "family": "glm",
       "max_tokens": 200,
       "price_tier": "small",
@@ -111,7 +117,7 @@
       "usd_per_mtok_in": 0.06,
       "usd_per_mtok_out": 0.22
     },
-    "settings_sha256": "a848ba94f6a1d8c424109f3bca96c4a5a45b19abe88209d98dd90995686c2775",
+    "settings_sha256": "61e8360963452897505e86b852fd64ded483847600bcd197bc64fd2d03c9283c",
     "version": 5
   },
   "goal": "entity_topic_dbpedia",

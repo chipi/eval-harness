@@ -50,17 +50,15 @@
           "person",
           "product"
         ],
-        "max_tokens": 600,
         "normalizer_sha256": "a7c22b054099a72f91d772754dcd49b748fa739340ea4f38f2934eb18950a942",
         "parser_sha256": "101110f889f26b800af7eacbd887bab82aef1556713b869ab27d86f78a605181",
-        "prompt_sha256": "6c6c79fa47400fd9353d788503373df0958fcce007c845eeb71353b0a237483b",
-        "provider": "litellm",
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0
+        "provider": "litellm"
       },
-      "hosted": null,
+      "hosted": {
+        "provider": "litellm",
+        "provider_id": null,
+        "route": null
+      },
       "id": "eval-opus-5",
       "in_process": false,
       "libraries": null,
@@ -82,7 +80,7 @@
         "machine": null
       }
     },
-    "deployment_sha256": "64171dff67623617fa3bfbc27c1710af0a1f2b8de3f3f6d2370b9641843be0ca",
+    "deployment_sha256": "f9c3d37355ddeefc0bd269e8676d2f51267dc4e3f20aa25f927f908e3b7d43a7",
     "hash": null,
     "hash_invalid_because": "scores were recomputed by a different scorer than the one this fingerprint was built from; see derived.with",
     "instrument": {
@@ -113,6 +111,14 @@
       "release": "24.6.0"
     },
     "settings": {
+      "declared": {
+        "max_tokens": 600,
+        "prompt_sha256": "6c6c79fa47400fd9353d788503373df0958fcce007c845eeb71353b0a237483b",
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0
+      },
       "family": "anthropic",
       "max_tokens": 600,
       "price_tier": "large",
@@ -124,7 +130,7 @@
       "usd_per_mtok_in": 5.0,
       "usd_per_mtok_out": 25.0
     },
-    "settings_sha256": "540b60b0640bcd81d55dd8f8cff9db2182a7a3b31e3836819e60a13100f9f751",
+    "settings_sha256": "308b22b89e4e83705d44b9eab5724db1ad198b6ca400ff9f2a5adc492e40370d",
     "version": 5
   },
   "goal": "entities_few_nerd",

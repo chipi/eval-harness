@@ -125,9 +125,12 @@ system lives in one file, `adapter.py`, with two functions, `call_system` and `s
 
 - **A frozen dataset.** Items are hashed; a run records `items_sha256`. Change the data
   and you get a different id, not a silently different number.
-- **A fingerprint per run.** The resolved upstream model id (not your gateway's alias),
-  the prompt's sha256, the adapter's sha256, library versions, whether the tree was dirty.
-  So "we varied one thing" is *checkable* rather than asserted.
+- **A fingerprint per run.** In four parts, each hashed: the instrument (the harness and the
+  adapter's code, whether the tree was dirty), the data (item and reference bytes), the
+  deployment (the resolved upstream model id, not your gateway's alias; the weights' digest and
+  the server and machine it ran on, where known) and the settings (how it was asked: the prompt,
+  reasoning, the reply cap). The machine `evh` ran on is recorded beside it, outside the hash. So
+  "we varied one thing" is *checkable* rather than asserted, and `run-compare` names what moved.
 - **A leaderboard that argues with itself.** Before printing an ordering it runs a
   Friedman permutation test and a Nemenyi critical difference over every pair at once, and
   says plainly when nothing is distinguishable.

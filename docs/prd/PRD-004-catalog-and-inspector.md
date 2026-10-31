@@ -136,7 +136,8 @@ adapter file ([ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md),
 - **FR2.4**: It reads only arms the adapter's `arms()` reaches and references `references()`
   lists.
 - **FR2.5**: It compares the arms' recorded conditions and warns when the scorer or the
-  reference bytes differ, or latency is compared across machines.
+  reference bytes differ, or latency is compared across deployments (where the model ran) or
+  measured from different runners (RFC-021).
 
 ### FR3: Public mode
 

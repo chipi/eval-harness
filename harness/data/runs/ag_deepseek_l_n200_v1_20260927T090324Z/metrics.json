@@ -35,15 +35,14 @@
         ],
         "labels_sha256": "c7a1ee508b78c0e92f28d159d340a6537ac31ff70ff566430fe2507da58464a3",
         "parser_sha256": "87f75633ea16670ab5a3169fe3125c91107f84959e79c56dd2f17c66a418246d",
-        "prompt_sha256": "ed3aeed55a5b5645151d03d7a518e932ed6da520c4b49bfdc85660dfbf562229",
         "provider": "litellm",
-        "provider_routing": null,
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0
+        "provider_routing": null
       },
-      "hosted": null,
+      "hosted": {
+        "provider": "litellm",
+        "provider_id": "openrouter/deepseek/deepseek-v4-pro",
+        "route": null
+      },
       "id": "eval-deepseek-pro",
       "in_process": false,
       "libraries": null,
@@ -65,8 +64,8 @@
         "machine": null
       }
     },
-    "deployment_sha256": "574c36c408ff65d8f78d6364242512a0fa5f5f7322d72f5ec342b0d09a123e48",
-    "hash": "29dc56d473d9903102d8055dc22ec6172d643c6365ee9a80682e385f483ace03",
+    "deployment_sha256": "66eba884198d332fef0581ad68d63b63315ff50369594afa71f1a6fbb5314ef3",
+    "hash": "86633d55b184ac88f27fb0487a45f4fa8a21ee457ab31ce682911b0e07053c6d",
     "instrument": {
       "adapter": {
         "id": "examples/classification-ag-news/adapter.py",
@@ -93,6 +92,13 @@
       "release": "24.6.0"
     },
     "settings": {
+      "declared": {
+        "prompt_sha256": "ed3aeed55a5b5645151d03d7a518e932ed6da520c4b49bfdc85660dfbf562229",
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0
+      },
       "family": "deepseek",
       "max_tokens": 200,
       "price_tier": "large",
@@ -104,7 +110,7 @@
       "usd_per_mtok_in": 0.28,
       "usd_per_mtok_out": 1.1
     },
-    "settings_sha256": "b182308b906f7836995e007f79e72f9a49484c251b2236b39d9cb95234322b6b",
+    "settings_sha256": "8387c0f2878520c70146a7162290f6c2640c544ab6a96e6b0e6951d8b8dd5da5",
     "version": 5
   },
   "goal": "news_topic_ag",

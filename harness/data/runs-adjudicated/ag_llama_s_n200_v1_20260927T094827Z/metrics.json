@@ -47,15 +47,14 @@
         ],
         "labels_sha256": "c7a1ee508b78c0e92f28d159d340a6537ac31ff70ff566430fe2507da58464a3",
         "parser_sha256": "87f75633ea16670ab5a3169fe3125c91107f84959e79c56dd2f17c66a418246d",
-        "prompt_sha256": "ed3aeed55a5b5645151d03d7a518e932ed6da520c4b49bfdc85660dfbf562229",
         "provider": "litellm",
-        "provider_routing": null,
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0
+        "provider_routing": null
       },
-      "hosted": null,
+      "hosted": {
+        "provider": "litellm",
+        "provider_id": "openrouter/meta-llama/llama-4-scout",
+        "route": null
+      },
       "id": "eval-llama-scout",
       "in_process": false,
       "libraries": null,
@@ -77,7 +76,7 @@
         "machine": null
       }
     },
-    "deployment_sha256": "d196eab0c2305efe0d458519b7085cbd5ae952a43f827be7477a0ba4f9707d8d",
+    "deployment_sha256": "22d711bf8336fa79aed9f636ff2bbbb3d592322d861bcc799b9ef3a0d604faf4",
     "hash": null,
     "hash_invalid_because": "scores were recomputed by a different scorer than the one this fingerprint was built from; see derived.with",
     "instrument": {
@@ -106,6 +105,13 @@
       "release": "24.6.0"
     },
     "settings": {
+      "declared": {
+        "prompt_sha256": "ed3aeed55a5b5645151d03d7a518e932ed6da520c4b49bfdc85660dfbf562229",
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0
+      },
       "family": "llama",
       "max_tokens": 200,
       "price_tier": "small",
@@ -117,7 +123,7 @@
       "usd_per_mtok_in": 0.08,
       "usd_per_mtok_out": 0.3
     },
-    "settings_sha256": "fabe301c47a5d8e785ffea6e01939b37f6af5b8fbf973db13e14efd52fc248db",
+    "settings_sha256": "bf6fd4762c4deee71bacccc6f953b95046cfeb38ae03282353263e897706d08a",
     "version": 5
   },
   "goal": "news_topic_ag",

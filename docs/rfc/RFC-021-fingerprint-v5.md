@@ -69,8 +69,15 @@ deployment:
 - **source: record**: the arm names a model record and a deployment (`model_record: gemma4-12b`,
   `deployment: dgx`); the fields come from the record's deployment entry, as last onboarded.
 - **source: adapter**: the adapter's `fingerprint(params)` hook (v4's vocabulary: `id`, `revision`,
-  `revision_source`, `device`, `precision`) is the in-process deployment; `in_process: true` and the runner's
-  libraries go in `libraries`.
+  `revision_source`, `device`, `precision`). It is **in process only when the arm calls nothing elsewhere** (no
+  `url` or `base_url`, and a provider that is neither a built-in hosted one nor `gateway`); then the runner's
+  libraries ran the model and go in `deployment.libraries`. Called elsewhere, they only sent the request and stay
+  `runner.libraries`, so a runner's upgrade never moves a hosted deployment's hash; a hosted one records
+  `hosted: {provider, provider_id: the upstream id the gateway resolved, route}`.
+- **What a hook declares about how it asked** (`prompt_sha256`, `system_prompt_sha256`, `temperature`,
+  `reasoning`, `reasoning_effort`, `max_tokens`) is a setting, kept as `settings.declared`: a new prompt moves the
+  settings' hash, not the deployment's. Whatever else it declares (weight files, the labels, a baseline's code
+  hash) stays `deployment.declared`.
 - **source: params**: neither: the deployment is what the params say (`model`, `url` or `base_url`, `machine`,
   `provider`), with `weights.digest: null`. Honest about the gap, as v4 was about a missing revision.
 
@@ -99,14 +106,19 @@ migration rewrites each committed run's `fingerprint`:
 
 - `instrument` and `data`: copied.
 - `runner`: v4's `host`, and v4's `system_under_test.libraries` when the deployment was not in-process.
-- `deployment`: from v4's `system_under_test.model` when the adapter declared one (`source: adapter`, in-process,
-  with v4's libraries); else from the run's params (`source: params`); for the triage runs whose builds were
-  verified on 2026-10-30/31, the digest is filled from the model records with `source: record`.
-- `settings`: the run's params minus deployment keys and credentials.
+- `deployment`: from v4's `system_under_test.model` when the adapter declared one (`source: adapter`, in process
+  by the rule above, with v4's libraries when it was); else from the run's params (`source: params`).
+- `settings`: the run's params minus deployment keys and credentials, plus what the hook declared about how it
+  asked.
 - The hashes are recomputed; `version: 5`.
 
-The migration is a script run once, its before / after counts committed beside it; derived runs (rescored, judged)
-are migrated with the run they derive from.
+The migration is `evh fingerprint-migrate` (`scripts/fingerprint_migrate.py`, packaged so a pinned project can run it), idempotent; this repository's counts are committed beside the tools
+(`migrate_fingerprint_v5.out.txt`: 344 tracked runs and 37 local ones, 304 from an adapter and 77 from params, 85 in
+process; 5 baselines' `fingerprint_hash` follow). Derived runs (rescored, judged) take their source run's
+deployment, settings and runner and keep `hash: null`. *Not done as first written:* filling the triage runs' digests
+from the model records (`source: record`): no committed run names a record yet, so none is `record`; the triage
+runs of round 2 will be. Two silver manifests keep their v4 `from_run.fingerprint_hash`: they sit inside the
+reference digest, and rewriting them would move every run scored against them.
 
 ## What changes
 

@@ -47,16 +47,10 @@
         "first_stage_doc_prefix": "",
         "first_stage_model": null,
         "first_stage_query_prefix": "",
-        "max_tokens": 700,
-        "prompt_sha256": "a81ef5d8b150e4c31bfbaee6bfd9f98b1d56dd27dfbdcc15511154f79066abbe",
         "provider": "rerank",
-        "reasoning": {
-          "enabled": false
-        },
         "rerank_k": 20,
         "scorer_sha256": "86a15248a8c36a0d13c41f5efe4f7e06134bfe84f0208066a2a2eebf3435d77f",
         "snippet_chars": 900,
-        "temperature": 0.0,
         "tokenizer_sha256": "4c9a8288e422f5165204b385f450ee91b6005919a3cb8b508c196850050ab8bf",
         "top_k": 100
       },
@@ -89,7 +83,7 @@
         "machine": null
       }
     },
-    "deployment_sha256": "e554cabd6a9eec0802528e430c16094f2ad8a1d3f859075b53706c9862ccf045",
+    "deployment_sha256": "2eb8481b7faf0c1ef610b9f76e6a20e538af3d1a8da27c3ae456fe419b9de83d",
     "hash": null,
     "hash_invalid_because": "rankings were rebuilt from stored LLM replies with a parser this fingerprint does not describe; see derived.with",
     "instrument": {
@@ -114,6 +108,14 @@
     },
     "settings": {
       "corpus_id": "scifact",
+      "declared": {
+        "max_tokens": 700,
+        "prompt_sha256": "a81ef5d8b150e4c31bfbaee6bfd9f98b1d56dd27dfbdcc15511154f79066abbe",
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0
+      },
       "family": "qwen",
       "max_tokens": 700,
       "price_tier": "small",
@@ -128,7 +130,7 @@
       "usd_per_mtok_in": 0.05,
       "usd_per_mtok_out": 0.2
     },
-    "settings_sha256": "f10770ad0eb6ec4ae1539d0d6570d380cd122ffc36bc9165404c01875307e99a",
+    "settings_sha256": "f675989c4c0aae6351a074f62848f774d3635c04aa93b8272936bd6c91f2c64a",
     "version": 5
   },
   "goal": "scientific_retrieval_scifact",

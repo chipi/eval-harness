@@ -29,20 +29,24 @@
         "id_source": "proxy-model-info",
         "inputs": "published",
         "original_release_sha256": "f0d4166e0cdeb439b387c4449634b067b7e9f721b9ef4c2b722f6b7550d3d6ab",
-        "prompt_sha256": "6c02d00929048d9c3fea511af40c3ddf90fdf1550afb7713d3f5f4d86e44f5ee",
         "provider_routing": {
           "allow_fallbacks": false,
           "order": [
             "coreweave/fp4"
           ]
         },
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0,
         "unieval_inputs_sha256": "b109068754e58722f7e50f1bef70cf121eb34c9015fc3486f51bc5b8e3e3ec81"
       },
-      "hosted": null,
+      "hosted": {
+        "provider": "litellm",
+        "provider_id": "openrouter/google/gemma-4-31b-it",
+        "route": {
+          "allow_fallbacks": false,
+          "order": [
+            "coreweave/fp4"
+          ]
+        }
+      },
       "id": "eval-gemma-31b",
       "in_process": false,
       "libraries": null,
@@ -64,8 +68,8 @@
         "machine": null
       }
     },
-    "deployment_sha256": "67f5a7218dadb00eaea20a9b9cecaefc09f95a45e357925c4132ec6b8e5c5a29",
-    "hash": "15ffeac47221542966ca74fa618230f36a92246d61c1d12ee971f93ac75fea4d",
+    "deployment_sha256": "90cf7be94c79b2205fe4b2a8583c2f01ede3822dcbf15c9482e6858c35646ff5",
+    "hash": "7d2020a5612693097538b5ed2856b318f43c3a29a93c1390b6e599ffb466f371",
     "instrument": {
       "adapter": {
         "id": "examples/summeval-judging/adapter.py",
@@ -93,6 +97,13 @@
       "release": "7.2.5-3-omarchy"
     },
     "settings": {
+      "declared": {
+        "prompt_sha256": "6c02d00929048d9c3fea511af40c3ddf90fdf1550afb7713d3f5f4d86e44f5ee",
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0
+      },
       "family": "gemma",
       "inputs": "published",
       "max_tokens": 1500,
@@ -105,7 +116,7 @@
       "usd_per_mtok_in": 0.1,
       "usd_per_mtok_out": 0.2
     },
-    "settings_sha256": "0d4af549f416e34a2edc3d0d90a259fbde99141f6da01c4d67004a94e500875a",
+    "settings_sha256": "22000758c8f0b9b6e4bab0c3ff0d0689fd7a8c0fd169db1eb261a937bf730bbf",
     "version": 5
   },
   "goal": "summary_judge_summeval",

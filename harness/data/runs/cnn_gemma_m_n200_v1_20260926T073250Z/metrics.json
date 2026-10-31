@@ -27,14 +27,13 @@
         "endpoint": "http://127.0.0.1:4001",
         "id": "openrouter/google/gemma-4-26b-a4b-it",
         "id_source": "proxy-model-info",
-        "prompt_sha256": "d98ecfbd4054a47476257c2a48ab9f9fc8731098afe4bc1093c69e89c0cbe2f0",
-        "provider_routing": null,
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0
+        "provider_routing": null
       },
-      "hosted": null,
+      "hosted": {
+        "provider": "litellm",
+        "provider_id": "openrouter/google/gemma-4-26b-a4b-it",
+        "route": null
+      },
       "id": "eval-gemma-26b",
       "in_process": false,
       "libraries": null,
@@ -56,8 +55,8 @@
         "machine": null
       }
     },
-    "deployment_sha256": "918fcf0e7f2e3f47a212eb2d7784721e74f356f2057505ff12964ad96e3bfb02",
-    "hash": "864994e20786d7f4f3d3885dd61ea013c924b2cf6969c00f4c5fd80fc9dccb3f",
+    "deployment_sha256": "a9f187a4f8e832eac5b39d4ff96b71fafc5926f420cab1abf95ed5d0b5bb1847",
+    "hash": "f84a60aa723848aa7afe218e33d3b63c195f6f0822388a4b9eea5a586e9b7f54",
     "instrument": {
       "adapter": {
         "id": "examples/summarization-cnn-dailymail/adapter.py",
@@ -83,6 +82,13 @@
       "release": "24.6.0"
     },
     "settings": {
+      "declared": {
+        "prompt_sha256": "d98ecfbd4054a47476257c2a48ab9f9fc8731098afe4bc1093c69e89c0cbe2f0",
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0
+      },
       "family": "gemma",
       "max_tokens": 1200,
       "price_tier": "mid",
@@ -94,7 +100,7 @@
       "usd_per_mtok_in": 0.07,
       "usd_per_mtok_out": 0.15
     },
-    "settings_sha256": "e289e35ed2cb678c8216a896e16e97a15ef06e20d283b4234a6958cf8f38019f",
+    "settings_sha256": "c017fe1725a4e761600458e03edab1917298b9f7604c68ff274626a6c82b9306",
     "version": 5
   },
   "goal": "news_summary_cnn",

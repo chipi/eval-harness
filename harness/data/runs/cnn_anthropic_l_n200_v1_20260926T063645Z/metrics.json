@@ -27,14 +27,13 @@
         "endpoint": "http://127.0.0.1:4001",
         "id": "openrouter/anthropic/claude-opus-5",
         "id_source": "proxy-model-info",
-        "prompt_sha256": "d98ecfbd4054a47476257c2a48ab9f9fc8731098afe4bc1093c69e89c0cbe2f0",
-        "provider_routing": null,
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0
+        "provider_routing": null
       },
-      "hosted": null,
+      "hosted": {
+        "provider": "litellm",
+        "provider_id": "openrouter/anthropic/claude-opus-5",
+        "route": null
+      },
       "id": "eval-opus-5",
       "in_process": false,
       "libraries": null,
@@ -56,8 +55,8 @@
         "machine": null
       }
     },
-    "deployment_sha256": "d5f8159fad14bb88afcdee6bf8898ed10d3bd3b4865265d8d81abd9b8a9304b5",
-    "hash": "57d434a4cd04f8d0200a4386d29ff9768e199a8439e9804abdf395d2dd0bf723",
+    "deployment_sha256": "d0c5b6463c271fd7ee396866141eea495d45a824fc10e804b5380012bf8abbc8",
+    "hash": "5d8b6e1868acc5aa6f9c2f99240ae403261206123990d5a57fea663c5efb4513",
     "instrument": {
       "adapter": {
         "id": "examples/summarization-cnn-dailymail/adapter.py",
@@ -83,6 +82,13 @@
       "release": "24.6.0"
     },
     "settings": {
+      "declared": {
+        "prompt_sha256": "d98ecfbd4054a47476257c2a48ab9f9fc8731098afe4bc1093c69e89c0cbe2f0",
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0
+      },
       "family": "anthropic",
       "max_tokens": 1200,
       "price_tier": "large",
@@ -94,7 +100,7 @@
       "usd_per_mtok_in": 5.0,
       "usd_per_mtok_out": 25.0
     },
-    "settings_sha256": "ca54a1332d8c0ab90b162d662daefe73b4fb922c1e232595044507469b12fd8e",
+    "settings_sha256": "5a4705d972ed4989d52e4cf99c62b25d51c85318faa99a1e30a3aac8f8107bac",
     "version": 5
   },
   "goal": "news_summary_cnn",

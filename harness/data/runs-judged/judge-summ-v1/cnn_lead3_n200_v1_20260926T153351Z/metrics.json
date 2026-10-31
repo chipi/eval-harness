@@ -68,10 +68,7 @@
         "alias": null,
         "endpoint": "http://127.0.0.1:4001",
         "id_source": "alias-unresolved",
-        "prompt_sha256": "d98ecfbd4054a47476257c2a48ab9f9fc8731098afe4bc1093c69e89c0cbe2f0",
-        "provider_routing": null,
-        "reasoning": null,
-        "temperature": null
+        "provider_routing": null
       },
       "hosted": null,
       "id": null,
@@ -101,7 +98,7 @@
         "machine": null
       }
     },
-    "deployment_sha256": "bb18b291de575908385b1ff3df0a958361719247a7e413831677165b83c3db60",
+    "deployment_sha256": "32a8768cb7c36bc745dba9ef625fa55a80267e749f263ab17c6bd02f68680c51",
     "hash": null,
     "hash_invalid_because": "scores were produced by a judge scorer, not the adapter this fingerprint was built from; see derived.with",
     "instrument": {
@@ -125,11 +122,16 @@
       "release": "24.6.0"
     },
     "settings": {
+      "declared": {
+        "prompt_sha256": "d98ecfbd4054a47476257c2a48ab9f9fc8731098afe4bc1093c69e89c0cbe2f0",
+        "reasoning": null,
+        "temperature": null
+      },
       "family": "lead",
       "price_tier": "free",
       "sentences": 3
     },
-    "settings_sha256": "0af6a1d3ee86a854c33ef93c88f26c2991ac4393cb79fcc31c2ce16b139823fe",
+    "settings_sha256": "9157a0daaa715b9b934336073a818304990b5db1416c7cc63c24d9ae1915357a",
     "version": 5
   },
   "goal": "news_summary_cnn",

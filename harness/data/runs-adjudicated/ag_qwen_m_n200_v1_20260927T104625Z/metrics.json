@@ -47,15 +47,14 @@
         ],
         "labels_sha256": "c7a1ee508b78c0e92f28d159d340a6537ac31ff70ff566430fe2507da58464a3",
         "parser_sha256": "87f75633ea16670ab5a3169fe3125c91107f84959e79c56dd2f17c66a418246d",
-        "prompt_sha256": "ed3aeed55a5b5645151d03d7a518e932ed6da520c4b49bfdc85660dfbf562229",
         "provider": "litellm",
-        "provider_routing": null,
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0
+        "provider_routing": null
       },
-      "hosted": null,
+      "hosted": {
+        "provider": "litellm",
+        "provider_id": "openrouter/qwen/qwen3.7-plus",
+        "route": null
+      },
       "id": "eval-qwen-37plus",
       "in_process": false,
       "libraries": null,
@@ -77,7 +76,7 @@
         "machine": null
       }
     },
-    "deployment_sha256": "2fb3616c8d7fc714d539477d4435c7438719265af76bdc8aa1d0d8928c18a5d0",
+    "deployment_sha256": "00a83f56bed01a653f66967a7d3eec395bcc94c890d940dd749889e7f54bc21d",
     "hash": null,
     "hash_invalid_because": "scores were recomputed by a different scorer than the one this fingerprint was built from; see derived.with",
     "instrument": {
@@ -106,6 +105,13 @@
       "release": "24.6.0"
     },
     "settings": {
+      "declared": {
+        "prompt_sha256": "ed3aeed55a5b5645151d03d7a518e932ed6da520c4b49bfdc85660dfbf562229",
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0
+      },
       "family": "qwen",
       "max_tokens": 200,
       "price_tier": "mid",
@@ -117,7 +123,7 @@
       "usd_per_mtok_in": 0.2,
       "usd_per_mtok_out": 0.8
     },
-    "settings_sha256": "01bd7646092f823b1e3b17957396ae3bda6a0caeb6204d0e8b84311390a459ca",
+    "settings_sha256": "050b3af7f17978e4e2268c18ac0ecce9f0b284d046495b6b5f77bf62796d3e59",
     "version": 5
   },
   "goal": "news_topic_ag",

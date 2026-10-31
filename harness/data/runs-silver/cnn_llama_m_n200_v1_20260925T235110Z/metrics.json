@@ -39,14 +39,13 @@
         "endpoint": "http://127.0.0.1:4001",
         "id": "openrouter/meta-llama/llama-3.3-70b-instruct",
         "id_source": "proxy-model-info",
-        "prompt_sha256": "d98ecfbd4054a47476257c2a48ab9f9fc8731098afe4bc1093c69e89c0cbe2f0",
-        "provider_routing": null,
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0
+        "provider_routing": null
       },
-      "hosted": null,
+      "hosted": {
+        "provider": "litellm",
+        "provider_id": "openrouter/meta-llama/llama-3.3-70b-instruct",
+        "route": null
+      },
       "id": "eval-llama-70b",
       "in_process": false,
       "libraries": null,
@@ -68,7 +67,7 @@
         "machine": null
       }
     },
-    "deployment_sha256": "d6549f1f51d63a3be4692a0fdbfcf6ce38a75ce71b108018fd8c98d54710c0a2",
+    "deployment_sha256": "29948243fba677810e86a7158fdffeaa1462ea0e1f6484f32061bc04449f03d1",
     "hash": null,
     "hash_invalid_because": "scores were recomputed by a different scorer than the one this fingerprint was built from; see derived.with",
     "instrument": {
@@ -96,6 +95,13 @@
       "release": "24.6.0"
     },
     "settings": {
+      "declared": {
+        "prompt_sha256": "d98ecfbd4054a47476257c2a48ab9f9fc8731098afe4bc1093c69e89c0cbe2f0",
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0
+      },
       "family": "llama",
       "max_tokens": 1200,
       "price_tier": "mid",
@@ -107,7 +113,7 @@
       "usd_per_mtok_in": 0.12,
       "usd_per_mtok_out": 0.3
     },
-    "settings_sha256": "cd2fe7d228c2b9c467962833e7d33db9adead63bcc8f1280c84c5fd0ec5492f0",
+    "settings_sha256": "8f0ae01f7679f399efe67917504b19a4d71be6133645cd003f03f344bd8adf04",
     "version": 5
   },
   "goal": "news_summary_cnn",

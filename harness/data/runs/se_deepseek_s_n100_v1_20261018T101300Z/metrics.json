@@ -27,14 +27,13 @@
         "endpoint": "http://homelab:4001",
         "id": "openrouter/deepseek/deepseek-v4-flash",
         "id_source": "proxy-model-info",
-        "prompt_sha256": "6c02d00929048d9c3fea511af40c3ddf90fdf1550afb7713d3f5f4d86e44f5ee",
-        "provider_routing": null,
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0
+        "provider_routing": null
       },
-      "hosted": null,
+      "hosted": {
+        "provider": "litellm",
+        "provider_id": "openrouter/deepseek/deepseek-v4-flash",
+        "route": null
+      },
       "id": "eval-deepseek-flash",
       "in_process": false,
       "libraries": null,
@@ -56,8 +55,8 @@
         "machine": null
       }
     },
-    "deployment_sha256": "729886b6da9283bef0e6d88f39943028a608d4d0900faa4749824af5fe185d6f",
-    "hash": "28122291a3ddf8c91254a77788f2e42b137b6ad42119088d15d9ce53590659a8",
+    "deployment_sha256": "7a71553c29cbe620b6e13c79a2c0160e0c920542f6de879db8234c6054733c43",
+    "hash": "d745318208370c6763a2bf1669d230513d9af6778d283b24d9b5e18ee4ed8e18",
     "instrument": {
       "adapter": {
         "id": "examples/summeval-judging/adapter.py",
@@ -85,6 +84,13 @@
       "release": "7.2.5-3-omarchy"
     },
     "settings": {
+      "declared": {
+        "prompt_sha256": "6c02d00929048d9c3fea511af40c3ddf90fdf1550afb7713d3f5f4d86e44f5ee",
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0
+      },
       "family": "deepseek",
       "max_tokens": 1500,
       "price_tier": "small",
@@ -96,7 +102,7 @@
       "usd_per_mtok_in": 0.1,
       "usd_per_mtok_out": 0.4
     },
-    "settings_sha256": "4fca3a31dafc773361ce809c238255afa65d44ec968b6ee5482d80a382bdfa55",
+    "settings_sha256": "9ab058611dec939c5d1a16cc9ef695513f69f0687e568289ca642c21f7f2147f",
     "version": 5
   },
   "goal": "summary_judge_summeval",

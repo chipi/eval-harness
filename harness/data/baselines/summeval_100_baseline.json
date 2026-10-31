@@ -7,7 +7,7 @@
     "source": "git"
   },
   "dataset_id": "summeval_100",
-  "fingerprint_hash": "c622c351ad0846d27ca0392f0f279c7a8813402cef976f02f9257f598f3b59b7",
+  "fingerprint_hash": "644e49052156efcb288fc7668e3247a133502476a670e843c2d353943f9c7be8",
   "goal": "summary_judge_summeval",
   "promoted_at": "2026-10-25T14:08:24Z",
   "promoted_from": "se_gemma_l_n100_v1_20261018T094137Z",

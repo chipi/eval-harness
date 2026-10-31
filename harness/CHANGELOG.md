@@ -44,8 +44,39 @@ that can move a result is never a patch release without saying so under **Change
 - **A share card on every catalog page**: its title and its opening line as `description`, `og:*` and
   `twitter:card`, and with **`evh catalog --card URL`** the image a shared link shows. The pages stay
   `noindex`.
+- **Onboarding models, once, for every experiment** (RFC-020). A project keeps a **model record** per model,
+  `data/models/<model_id>.yaml`: its aliases, weights and licence, what it can do, the settings chosen for it
+  (`reasoning_effort`, `max_tokens`, the call limit; device, precision for an ML model) with why, its history,
+  and its **deployments** (each place and build it runs: machine or host, server and version, digest, revision
+  or hash, the route for a hosted one), each onboarded on its own.
+  - **`evh model-onboard <id> --deployment <d>`** probes an LLM through the deployment's endpoint: the digest the
+    server reports, whether it reasons at the default and with the record's settings, JSON, determinism, speed,
+    limits; an ML model or a baseline through an arm (`--config`). `ONBOARD PASS` or `ONBOARD CHECK`.
+  - **`evh arm-smoke --config <arm>`** runs any arm on a few items before its full run and writes no run: runs,
+    valid output for the scorer, a projection of the full run's time and cost, build pinned, determinism; for an
+    LLM every model call (reasoning, slow, long, cut off, no answer, from a provider's `_meta` or an adapter's
+    `meta["calls"]`). `SMOKE PASS` or `SMOKE CHECK`, written into the record.
+  - An arm names a record and a deployment (**`model_record:`**, **`deployment:`**): the record's settings go under
+    its params; the run records both. **V18** checks the records; `validate` notes an arm never smoked, a
+    reasoning model with no `max_tokens`, a tag that is a different build on two deployments.
+  - The catalog's **Models** page and a page per model, a smoke badge on the arms page, a models tile; **`evh
+    models`** for the same (and over `evh mcp`).
+- **The triage example's adapter takes `reasoning_effort` and `max_tokens` per arm**, reports every model call
+  for `arm-smoke`, and records a call that fails the same way twice at temperature 0 as the fleet's own "no
+  terminal decision" (`no_decision`, `deferred`).
 
 ### Changed
+
+- **Fingerprint v5** (RFC-021): what each part identifies. `instrument` (the harness and the adapter's code),
+  `data`, `deployment` (the system under test as it executed: from the arm's model record and deployment, the
+  adapter's hook, or the params; the weights, the server, where it ran; in process only when the arm calls
+  nothing elsewhere) and `settings` (how it was asked: the params that change behaviour, and what a hook declares
+  about its prompt), each hashed, and `hash` over the four. The machine `evh` ran on is `runner`, recorded outside
+  the hash: the same deployment run from two machines is the same measurement. `evh run-compare` names the part
+  that moved; the inspector's speed warning tells a deployment that differs from a runner that does. Every
+  committed run is migrated by **`evh fingerprint-migrate`** (idempotent, `--dry-run`); v4 fingerprints are not kept.
+- **`data/models.yaml` is replaced by the model records** (`data/models/`): its 41 entries are migrated one record
+  each, and the arms page's open / proprietary filter reads the records.
 
 - **CI runs once per merge, not twice**: a squash onto main whose tree is its pull request's head,
   tested green and up to date with main, skips the workflows that already passed on it; the deploy

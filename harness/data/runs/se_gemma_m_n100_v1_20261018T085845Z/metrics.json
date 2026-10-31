@@ -27,14 +27,13 @@
         "endpoint": "http://homelab:4001",
         "id": "openrouter/google/gemma-4-26b-a4b-it",
         "id_source": "proxy-model-info",
-        "prompt_sha256": "6c02d00929048d9c3fea511af40c3ddf90fdf1550afb7713d3f5f4d86e44f5ee",
-        "provider_routing": null,
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0
+        "provider_routing": null
       },
-      "hosted": null,
+      "hosted": {
+        "provider": "litellm",
+        "provider_id": "openrouter/google/gemma-4-26b-a4b-it",
+        "route": null
+      },
       "id": "eval-gemma-26b",
       "in_process": false,
       "libraries": null,
@@ -56,8 +55,8 @@
         "machine": null
       }
     },
-    "deployment_sha256": "4ecb3f2695758e02b4ff992896992dea2087cb111877069573a3aa9d1eb384c2",
-    "hash": "c819854f80d0a5af9e5d06399f775ad34998aadae7c99df4f77726720befcc48",
+    "deployment_sha256": "24e5d06abe3ee0fec785551806becf1633d0be9cba6397b61b630101e38799c7",
+    "hash": "81ef02aad89a55758cd0ff6978da625201789f8a1c598854789d140e363c7ddd",
     "instrument": {
       "adapter": {
         "id": "examples/summeval-judging/adapter.py",
@@ -85,6 +84,13 @@
       "release": "7.2.5-3-omarchy"
     },
     "settings": {
+      "declared": {
+        "prompt_sha256": "6c02d00929048d9c3fea511af40c3ddf90fdf1550afb7713d3f5f4d86e44f5ee",
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0
+      },
       "family": "gemma",
       "max_tokens": 1500,
       "price_tier": "mid",
@@ -96,7 +102,7 @@
       "usd_per_mtok_in": 0.07,
       "usd_per_mtok_out": 0.15
     },
-    "settings_sha256": "8069772869e2b700bec2ecb0c8661e5ae252e95eac8516da7d1c2029b3f552ce",
+    "settings_sha256": "8a773349ffa02085c44b5ec45c03c8a0a2a423d0d73db3e6cff5fe9b79ace8d7",
     "version": 5
   },
   "goal": "summary_judge_summeval",

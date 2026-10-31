@@ -308,7 +308,7 @@ def validation_problems(
                 f"judge {j['id']!r}: run {r['run']} used prompt file "
                 f"{rec.get('prompt_file')!r}, the scorer uses {Path(sc['prompt']['file']).name!r}"
             )
-        ran = (((m.get("fingerprint") or {}).get("deployment") or {}).get("declared") or {}).get(
+        ran = (((m.get("fingerprint") or {}).get("settings") or {}).get("declared") or {}).get(
             "prompt_sha256"
         )
         if not ran:

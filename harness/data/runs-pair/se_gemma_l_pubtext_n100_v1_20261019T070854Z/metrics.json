@@ -29,15 +29,14 @@
         "id_source": "proxy-model-info",
         "inputs": "published",
         "original_release_sha256": "f0d4166e0cdeb439b387c4449634b067b7e9f721b9ef4c2b722f6b7550d3d6ab",
-        "prompt_sha256": "6c02d00929048d9c3fea511af40c3ddf90fdf1550afb7713d3f5f4d86e44f5ee",
         "provider_routing": null,
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0,
         "unieval_inputs_sha256": "b109068754e58722f7e50f1bef70cf121eb34c9015fc3486f51bc5b8e3e3ec81"
       },
-      "hosted": null,
+      "hosted": {
+        "provider": "litellm",
+        "provider_id": "openrouter/google/gemma-4-31b-it",
+        "route": null
+      },
       "id": "eval-gemma-31b",
       "in_process": false,
       "libraries": null,
@@ -59,8 +58,8 @@
         "machine": null
       }
     },
-    "deployment_sha256": "1f1e3d73e9f465394fc841d3805f2821643a1cf01886388ec5e65d22a4997bbe",
-    "hash": "8133e0abd163410c5c1de101f899a4b370f93155c700670070de936ac811257e",
+    "deployment_sha256": "35bb1bde645760c098c1ec7d676e8fae445230dbd25ad051834baa6ee0820d71",
+    "hash": "e0001ee548d89264ab9b57ff6e7a625b9bb91c2195b9371682a3867d491308e4",
     "instrument": {
       "adapter": {
         "id": "examples/summeval-judging/adapter.py",
@@ -88,6 +87,13 @@
       "release": "7.2.5-3-omarchy"
     },
     "settings": {
+      "declared": {
+        "prompt_sha256": "6c02d00929048d9c3fea511af40c3ddf90fdf1550afb7713d3f5f4d86e44f5ee",
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0
+      },
       "family": "gemma",
       "inputs": "published",
       "max_tokens": 1500,
@@ -100,7 +106,7 @@
       "usd_per_mtok_in": 0.1,
       "usd_per_mtok_out": 0.2
     },
-    "settings_sha256": "0d4af549f416e34a2edc3d0d90a259fbde99141f6da01c4d67004a94e500875a",
+    "settings_sha256": "22000758c8f0b9b6e4bab0c3ff0d0689fd7a8c0fd169db1eb261a937bf730bbf",
     "version": 5
   },
   "goal": "summary_judge_summeval",

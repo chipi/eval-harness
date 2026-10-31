@@ -35,15 +35,14 @@
         ],
         "labels_sha256": "c7a1ee508b78c0e92f28d159d340a6537ac31ff70ff566430fe2507da58464a3",
         "parser_sha256": "87f75633ea16670ab5a3169fe3125c91107f84959e79c56dd2f17c66a418246d",
-        "prompt_sha256": "ed3aeed55a5b5645151d03d7a518e932ed6da520c4b49bfdc85660dfbf562229",
         "provider": "litellm",
-        "provider_routing": null,
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0
+        "provider_routing": null
       },
-      "hosted": null,
+      "hosted": {
+        "provider": "litellm",
+        "provider_id": "openrouter/google/gemma-4-26b-a4b-it",
+        "route": null
+      },
       "id": "eval-gemma-26b",
       "in_process": false,
       "libraries": null,
@@ -65,8 +64,8 @@
         "machine": null
       }
     },
-    "deployment_sha256": "9b4544d6d4e801274869d1c9a5132539cfa1de5e155dc4454df735d87c9a6744",
-    "hash": "f8156927b981ab976686d2054660d8a6d714dbbf5b617f728fbd6d9fd687301a",
+    "deployment_sha256": "25d84577b7d741c46e870f374a7f026bdb7abead6c257d0aae1a06f4dfa3a0c8",
+    "hash": "c86767006fb653b47fdda8d7a250edff142cf6a9c713a1515e364807cc86693a",
     "instrument": {
       "adapter": {
         "id": "examples/classification-ag-news/adapter.py",
@@ -93,6 +92,13 @@
       "release": "24.6.0"
     },
     "settings": {
+      "declared": {
+        "prompt_sha256": "ed3aeed55a5b5645151d03d7a518e932ed6da520c4b49bfdc85660dfbf562229",
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0
+      },
       "family": "gemma",
       "max_tokens": 200,
       "price_tier": "mid",
@@ -104,7 +110,7 @@
       "usd_per_mtok_in": 0.07,
       "usd_per_mtok_out": 0.15
     },
-    "settings_sha256": "8e01a31dbfb7db38d5074550b0ed753bfabf9707e2221e9086f15869c34703b6",
+    "settings_sha256": "f57810306a12c641ce81a2f7e8c1ec4e6fed66a2a1a4afcfcbd31c33cf72a531",
     "version": 5
   },
   "goal": "news_topic_ag",

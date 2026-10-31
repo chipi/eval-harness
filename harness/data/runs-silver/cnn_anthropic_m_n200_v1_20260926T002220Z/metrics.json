@@ -39,14 +39,13 @@
         "endpoint": "http://127.0.0.1:4001",
         "id": "openrouter/anthropic/claude-sonnet-5",
         "id_source": "proxy-model-info",
-        "prompt_sha256": "d98ecfbd4054a47476257c2a48ab9f9fc8731098afe4bc1093c69e89c0cbe2f0",
-        "provider_routing": null,
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0
+        "provider_routing": null
       },
-      "hosted": null,
+      "hosted": {
+        "provider": "litellm",
+        "provider_id": "openrouter/anthropic/claude-sonnet-5",
+        "route": null
+      },
       "id": "eval-claude-sonnet",
       "in_process": false,
       "libraries": null,
@@ -68,7 +67,7 @@
         "machine": null
       }
     },
-    "deployment_sha256": "41ed06589f32f7d8776a75b35af90d6ed6ba63be80cd89e478b402e717d0b48a",
+    "deployment_sha256": "c45fbfa2c604d9ce40b1ceef58007def7d5c5f16a08b9e36a10b658f39c5cb80",
     "hash": null,
     "hash_invalid_because": "scores were recomputed by a different scorer than the one this fingerprint was built from; see derived.with",
     "instrument": {
@@ -96,6 +95,13 @@
       "release": "24.6.0"
     },
     "settings": {
+      "declared": {
+        "prompt_sha256": "d98ecfbd4054a47476257c2a48ab9f9fc8731098afe4bc1093c69e89c0cbe2f0",
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0
+      },
       "family": "anthropic",
       "max_tokens": 1200,
       "price_tier": "mid",
@@ -107,7 +113,7 @@
       "usd_per_mtok_in": 3.0,
       "usd_per_mtok_out": 15.0
     },
-    "settings_sha256": "6057c3f8b2bbe853899d21d11e1e59ff07a1c98efb835db46e045e7e2a30e5c2",
+    "settings_sha256": "e401fcecf200924b1c564d8e73cab5aa4c256ecd6df402f23b09a576011d949c",
     "version": 5
   },
   "goal": "news_summary_cnn",

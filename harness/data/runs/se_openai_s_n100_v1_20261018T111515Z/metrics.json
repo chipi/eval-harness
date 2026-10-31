@@ -27,14 +27,13 @@
         "endpoint": "http://homelab:4001",
         "id": "openrouter/openai/gpt-5.4-mini",
         "id_source": "proxy-model-info",
-        "prompt_sha256": "6c02d00929048d9c3fea511af40c3ddf90fdf1550afb7713d3f5f4d86e44f5ee",
-        "provider_routing": null,
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0
+        "provider_routing": null
       },
-      "hosted": null,
+      "hosted": {
+        "provider": "litellm",
+        "provider_id": "openrouter/openai/gpt-5.4-mini",
+        "route": null
+      },
       "id": "eval-gpt-mini",
       "in_process": false,
       "libraries": null,
@@ -56,8 +55,8 @@
         "machine": null
       }
     },
-    "deployment_sha256": "bd69a26834a48fa4b47eabffa672c5ea3a22c6bd7c62371cf13ec8ab572d1d0f",
-    "hash": "2610e6c0b559afc5ea702315e91f9f78b6646c674a0b1e63692e8bcda225fa78",
+    "deployment_sha256": "1b1bab0ce265d67516b24b4898a64d921099a732a9130665d09626b91677e1c7",
+    "hash": "4a03f56cb1267d94014e3661549bf82c20ac3d885db2e70b6b1b2b00789efdec",
     "instrument": {
       "adapter": {
         "id": "examples/summeval-judging/adapter.py",
@@ -85,6 +84,13 @@
       "release": "7.2.5-3-omarchy"
     },
     "settings": {
+      "declared": {
+        "prompt_sha256": "6c02d00929048d9c3fea511af40c3ddf90fdf1550afb7713d3f5f4d86e44f5ee",
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0
+      },
       "family": "openai",
       "max_tokens": 1500,
       "price_tier": "small",
@@ -96,7 +102,7 @@
       "usd_per_mtok_in": 0.25,
       "usd_per_mtok_out": 2.0
     },
-    "settings_sha256": "a5b79bffad5701f9dfe600218edfdb334d98400c69fa746fdfcda3746380ca46",
+    "settings_sha256": "5ec35a8628960780381ac85b1f8ab1b22e2a1ce36064f5c39a4a8aac4aff65ac",
     "version": 5
   },
   "goal": "summary_judge_summeval",

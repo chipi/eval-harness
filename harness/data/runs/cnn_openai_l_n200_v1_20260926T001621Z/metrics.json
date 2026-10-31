@@ -27,14 +27,13 @@
         "endpoint": "http://127.0.0.1:4001",
         "id": "openrouter/openai/gpt-6-sol",
         "id_source": "proxy-model-info",
-        "prompt_sha256": "d98ecfbd4054a47476257c2a48ab9f9fc8731098afe4bc1093c69e89c0cbe2f0",
-        "provider_routing": null,
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0
+        "provider_routing": null
       },
-      "hosted": null,
+      "hosted": {
+        "provider": "litellm",
+        "provider_id": "openrouter/openai/gpt-6-sol",
+        "route": null
+      },
       "id": "eval-gpt-6sol",
       "in_process": false,
       "libraries": null,
@@ -56,8 +55,8 @@
         "machine": null
       }
     },
-    "deployment_sha256": "638e056b3ddbe747aa87e8fe2b428dcc141f28836037bdd73faa38065831c670",
-    "hash": "a756791f758d71506bb6380c2873a03067125c9c8b0b7184d90e5d86435c96ae",
+    "deployment_sha256": "0b7e459f42d253e0611d4d93570fd59d914572eb59c0ac24ddfff170e7f31e05",
+    "hash": "dc424b9a84a1f67996f47402a014a020f96b525a0af559987b9a4e2dd515c084",
     "instrument": {
       "adapter": {
         "id": "examples/summarization-cnn-dailymail/adapter.py",
@@ -83,6 +82,13 @@
       "release": "24.6.0"
     },
     "settings": {
+      "declared": {
+        "prompt_sha256": "d98ecfbd4054a47476257c2a48ab9f9fc8731098afe4bc1093c69e89c0cbe2f0",
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0
+      },
       "family": "openai",
       "max_tokens": 1200,
       "price_tier": "large",
@@ -94,7 +100,7 @@
       "usd_per_mtok_in": 2.5,
       "usd_per_mtok_out": 15.0
     },
-    "settings_sha256": "65eb27320959784032d7cca8463ccde40a5b789f70899310f0d8260fff67a431",
+    "settings_sha256": "526d8b6877c405e078dde0bf14d78907ff8edf0b641b4f4fc0ca520869ec42e9",
     "version": 5
   },
   "goal": "news_summary_cnn",

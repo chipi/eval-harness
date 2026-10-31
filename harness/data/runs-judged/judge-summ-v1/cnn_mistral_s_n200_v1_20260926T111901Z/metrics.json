@@ -69,14 +69,13 @@
         "endpoint": "http://127.0.0.1:4001",
         "id": "openrouter/mistralai/mistral-small-3.2-24b-instruct",
         "id_source": "proxy-model-info",
-        "prompt_sha256": "d98ecfbd4054a47476257c2a48ab9f9fc8731098afe4bc1093c69e89c0cbe2f0",
-        "provider_routing": null,
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0
+        "provider_routing": null
       },
-      "hosted": null,
+      "hosted": {
+        "provider": "litellm",
+        "provider_id": "openrouter/mistralai/mistral-small-3.2-24b-instruct",
+        "route": null
+      },
       "id": "eval-mistral-small",
       "in_process": false,
       "libraries": null,
@@ -98,7 +97,7 @@
         "machine": null
       }
     },
-    "deployment_sha256": "ce116cc4dd6b0fe872216973959b8074a09204a5fccf5650027744ec95fe2557",
+    "deployment_sha256": "575be7265401604cafa07ef71353994382c5f44dee25abd9e17139bb7848032a",
     "hash": null,
     "hash_invalid_because": "scores were produced by a judge scorer, not the adapter this fingerprint was built from; see derived.with",
     "instrument": {
@@ -126,6 +125,13 @@
       "release": "24.6.0"
     },
     "settings": {
+      "declared": {
+        "prompt_sha256": "d98ecfbd4054a47476257c2a48ab9f9fc8731098afe4bc1093c69e89c0cbe2f0",
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0
+      },
       "family": "mistral",
       "max_tokens": 1200,
       "price_tier": "small",
@@ -137,7 +143,7 @@
       "usd_per_mtok_in": 0.05,
       "usd_per_mtok_out": 0.15
     },
-    "settings_sha256": "23075771ab62b27a81d4debdc6976f8d11cbde5e32617bae6a6ad51b3e02e479",
+    "settings_sha256": "e1b4f22bc31acdebc70de46f5cf1447a795f9c0557964231546c76aa29e8d5b8",
     "version": 5
   },
   "goal": "news_summary_cnn",

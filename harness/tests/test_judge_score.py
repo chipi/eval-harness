@@ -731,13 +731,13 @@ with tempfile.TemporaryDirectory() as tmp:
         shutil.copytree(real_runs / r_["run"], rd / r_["run"])
     mf = rd / real["validation"]["runs"][0]["run"] / "metrics.json"
     mj_ = json.loads(mf.read_text())
-    mj_["fingerprint"]["deployment"]["declared"]["prompt_sha256"] = "0" * 64
+    mj_["fingerprint"]["settings"]["declared"]["prompt_sha256"] = "0" * 64
     mf.write_text(json.dumps(mj_))
     check(
         "gate: a validation run that used a different prompt: refused",
         any("used prompt" in p for p in js.validation_problems(real, rd)),
     )
-    del mj_["fingerprint"]["deployment"]["declared"]["prompt_sha256"]
+    del mj_["fingerprint"]["settings"]["declared"]["prompt_sha256"]
     mf.write_text(json.dumps(mj_))
     check(
         "gate: a validation run that recorded no prompt sha: refused",

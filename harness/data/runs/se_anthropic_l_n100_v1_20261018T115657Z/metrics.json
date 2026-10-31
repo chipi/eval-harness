@@ -27,14 +27,13 @@
         "endpoint": "http://homelab:4001",
         "id": "openrouter/anthropic/claude-opus-5",
         "id_source": "proxy-model-info",
-        "prompt_sha256": "6c02d00929048d9c3fea511af40c3ddf90fdf1550afb7713d3f5f4d86e44f5ee",
-        "provider_routing": null,
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0
+        "provider_routing": null
       },
-      "hosted": null,
+      "hosted": {
+        "provider": "litellm",
+        "provider_id": "openrouter/anthropic/claude-opus-5",
+        "route": null
+      },
       "id": "eval-opus-5",
       "in_process": false,
       "libraries": null,
@@ -56,8 +55,8 @@
         "machine": null
       }
     },
-    "deployment_sha256": "5ad11886e8460e9609f71602be183827479b8a09b3e7930596d0db019828f4ba",
-    "hash": "e166dc8c6f6a700babddfc73597e8fd87fb3a44bf63ca9571a43c3400b2c7c3b",
+    "deployment_sha256": "97134eb4571725aa66cc5243982cfbbfab87421eb8237a4bbeb5ae1f58e1ddb6",
+    "hash": "468be110ca16dc7acf69acd6a228c38d0d2e520673e84c55f6083cf3687ca540",
     "instrument": {
       "adapter": {
         "id": "examples/summeval-judging/adapter.py",
@@ -85,6 +84,13 @@
       "release": "7.2.5-3-omarchy"
     },
     "settings": {
+      "declared": {
+        "prompt_sha256": "6c02d00929048d9c3fea511af40c3ddf90fdf1550afb7713d3f5f4d86e44f5ee",
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0
+      },
       "family": "anthropic",
       "max_tokens": 1500,
       "price_tier": "large",
@@ -96,7 +102,7 @@
       "usd_per_mtok_in": 5.0,
       "usd_per_mtok_out": 25.0
     },
-    "settings_sha256": "d9f070d58577ea668a054d80f4055a989d65e3fe35e340c096ce569581ff7f93",
+    "settings_sha256": "1080583be6445f66b5a6d2cf10652295e9aa084ce3478e45151257387d621844",
     "version": 5
   },
   "goal": "summary_judge_summeval",

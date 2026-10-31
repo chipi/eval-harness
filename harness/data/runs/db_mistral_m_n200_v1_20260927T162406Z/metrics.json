@@ -45,15 +45,14 @@
         ],
         "labels_sha256": "d3a33437c1e2b2fe45fdb7a425b14796d89d31a0d8919d899149e27f5c6f899d",
         "parser_sha256": "6cc7cbce25ef74dbcdaa7f18763cfaaf8ea7b2a0e0cc0222e4d70f9b92cf2fc6",
-        "prompt_sha256": "758e514c7aab934f0ad0395805b4624b41946e99834b6a2ca0527e098e796db3",
         "provider": "litellm",
-        "provider_routing": null,
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0
+        "provider_routing": null
       },
-      "hosted": null,
+      "hosted": {
+        "provider": "litellm",
+        "provider_id": "openrouter/mistralai/mistral-medium-3.1",
+        "route": null
+      },
       "id": "eval-mistral-medium",
       "in_process": false,
       "libraries": null,
@@ -75,8 +74,8 @@
         "machine": null
       }
     },
-    "deployment_sha256": "ab259ac928f028f0638c2be5eaa5f9d6fd63a15aa5dedadcaeff8da66b76d891",
-    "hash": "0bcb8eda7767385fe03930d3b44700421d4dd01ddbf5f11094c7714a61467c96",
+    "deployment_sha256": "36df2a4889b229af5ad03d6ed0fe4ae9b6205c749f31f313d0cd19a0a4dd89ad",
+    "hash": "44a6e274729f71eaf6ea7cfa5d0fe9eaffa9cbac4fe1ea145ff3ed606091233b",
     "instrument": {
       "adapter": {
         "id": "examples/classification-dbpedia-14/adapter.py",
@@ -100,6 +99,13 @@
       "release": "24.6.0"
     },
     "settings": {
+      "declared": {
+        "prompt_sha256": "758e514c7aab934f0ad0395805b4624b41946e99834b6a2ca0527e098e796db3",
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0
+      },
       "family": "mistral",
       "max_tokens": 200,
       "price_tier": "mid",
@@ -111,7 +117,7 @@
       "usd_per_mtok_in": 0.4,
       "usd_per_mtok_out": 2.0
     },
-    "settings_sha256": "f65409ce0a1c734c958ab39366faa3382cfaca38965de684f190ddbca943910d",
+    "settings_sha256": "d04bfe6bc813c35a71bcbd35884bdbc388fad81543144a77d3cf3f8ff4bdf59b",
     "version": 5
   },
   "goal": "entity_topic_dbpedia",

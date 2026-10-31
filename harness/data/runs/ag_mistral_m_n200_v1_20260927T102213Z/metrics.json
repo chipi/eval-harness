@@ -35,15 +35,14 @@
         ],
         "labels_sha256": "c7a1ee508b78c0e92f28d159d340a6537ac31ff70ff566430fe2507da58464a3",
         "parser_sha256": "87f75633ea16670ab5a3169fe3125c91107f84959e79c56dd2f17c66a418246d",
-        "prompt_sha256": "ed3aeed55a5b5645151d03d7a518e932ed6da520c4b49bfdc85660dfbf562229",
         "provider": "litellm",
-        "provider_routing": null,
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0
+        "provider_routing": null
       },
-      "hosted": null,
+      "hosted": {
+        "provider": "litellm",
+        "provider_id": "openrouter/mistralai/mistral-medium-3.1",
+        "route": null
+      },
       "id": "eval-mistral-medium",
       "in_process": false,
       "libraries": null,
@@ -65,8 +64,8 @@
         "machine": null
       }
     },
-    "deployment_sha256": "dc79572c43478000bd82eb24f75889a6aa6271c5bc0dceba22afa99768e85452",
-    "hash": "2d2e0c6a83290140b26941b465373eb808cfa5ecee959247ed0a77678dd9db52",
+    "deployment_sha256": "4be15615d9ea260908996d4b7fb216455873ab9b20165498e727dd9839774d6a",
+    "hash": "6c009e16e2666ee9c7d923e283bdc4e006a1605f16cf6a67a59105150a0d030f",
     "instrument": {
       "adapter": {
         "id": "examples/classification-ag-news/adapter.py",
@@ -93,6 +92,13 @@
       "release": "24.6.0"
     },
     "settings": {
+      "declared": {
+        "prompt_sha256": "ed3aeed55a5b5645151d03d7a518e932ed6da520c4b49bfdc85660dfbf562229",
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0
+      },
       "family": "mistral",
       "max_tokens": 200,
       "price_tier": "mid",
@@ -104,7 +110,7 @@
       "usd_per_mtok_in": 0.4,
       "usd_per_mtok_out": 2.0
     },
-    "settings_sha256": "f65409ce0a1c734c958ab39366faa3382cfaca38965de684f190ddbca943910d",
+    "settings_sha256": "c492315a56d4db6fce48bc72e7aef3810a685e88fb86fecefabb9e285444754b",
     "version": 5
   },
   "goal": "news_topic_ag",

@@ -35,15 +35,14 @@
         ],
         "labels_sha256": "c7a1ee508b78c0e92f28d159d340a6537ac31ff70ff566430fe2507da58464a3",
         "parser_sha256": "87f75633ea16670ab5a3169fe3125c91107f84959e79c56dd2f17c66a418246d",
-        "prompt_sha256": "ed3aeed55a5b5645151d03d7a518e932ed6da520c4b49bfdc85660dfbf562229",
         "provider": "litellm",
-        "provider_routing": null,
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0
+        "provider_routing": null
       },
-      "hosted": null,
+      "hosted": {
+        "provider": "litellm",
+        "provider_id": "openrouter/qwen/qwen3.8-flash",
+        "route": null
+      },
       "id": "eval-qwen-flash",
       "in_process": false,
       "libraries": null,
@@ -65,8 +64,8 @@
         "machine": null
       }
     },
-    "deployment_sha256": "0abe2d6c3220d242a21cbb5d683b9a1f3ae3d8dae152be6960843f608aab9524",
-    "hash": "898386454c0719e1b56f1ba3d4fa8daf46ea2b9a100de6a99c6c583c93eb2a52",
+    "deployment_sha256": "c5f2261d2fdf275c1440ae4cb7535f99c2ff9fa3de76717d4de583f333e10db2",
+    "hash": "818888a621f30b89c5da4bb8fffce928c56875d8c6ac9ba62fe59b541e0c74f3",
     "instrument": {
       "adapter": {
         "id": "examples/classification-ag-news/adapter.py",
@@ -93,6 +92,13 @@
       "release": "24.6.0"
     },
     "settings": {
+      "declared": {
+        "prompt_sha256": "ed3aeed55a5b5645151d03d7a518e932ed6da520c4b49bfdc85660dfbf562229",
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0
+      },
       "family": "qwen",
       "max_tokens": 200,
       "price_tier": "small",
@@ -104,7 +110,7 @@
       "usd_per_mtok_in": 0.05,
       "usd_per_mtok_out": 0.2
     },
-    "settings_sha256": "e1354166a0dec93998b4be60fbb4c7b56cb2093ae2f26c56b7e1e2b3a28a997a",
+    "settings_sha256": "4cfcd2de15fb8ad2da1d833acd48584fa28047fe513402dee301fec6db966639",
     "version": 5
   },
   "goal": "news_topic_ag",

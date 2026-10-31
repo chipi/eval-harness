@@ -27,14 +27,13 @@
         "endpoint": "http://homelab:4001",
         "id": "openrouter/mistralai/mistral-medium-3.1",
         "id_source": "proxy-model-info",
-        "prompt_sha256": "6c02d00929048d9c3fea511af40c3ddf90fdf1550afb7713d3f5f4d86e44f5ee",
-        "provider_routing": null,
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0
+        "provider_routing": null
       },
-      "hosted": null,
+      "hosted": {
+        "provider": "litellm",
+        "provider_id": "openrouter/mistralai/mistral-medium-3.1",
+        "route": null
+      },
       "id": "eval-mistral-medium",
       "in_process": false,
       "libraries": null,
@@ -56,8 +55,8 @@
         "machine": null
       }
     },
-    "deployment_sha256": "8c70894bbca2ced6e640181f44b0471b03aa7ec7eea2fd0680a335486bb237a4",
-    "hash": "9009da05b6766c240529d18ddfe135cfd68c573ba05f7f1109830d6810c78adb",
+    "deployment_sha256": "9db1b5acaa3f324604092af1a39acefdba12f537a78f10afaa6ffff820a3c0fd",
+    "hash": "a319d7c11d877f0b74828f82c3ebe18238561a796d711c6f5902f43cd96e016f",
     "instrument": {
       "adapter": {
         "id": "examples/summeval-judging/adapter.py",
@@ -85,6 +84,13 @@
       "release": "7.2.5-3-omarchy"
     },
     "settings": {
+      "declared": {
+        "prompt_sha256": "6c02d00929048d9c3fea511af40c3ddf90fdf1550afb7713d3f5f4d86e44f5ee",
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0
+      },
       "family": "mistral",
       "max_tokens": 1500,
       "price_tier": "mid",
@@ -96,7 +102,7 @@
       "usd_per_mtok_in": 0.4,
       "usd_per_mtok_out": 2.0
     },
-    "settings_sha256": "f3b4bc374162946cd50231419628f5bcf89a61102c7c33e9cfa954b3379e1c53",
+    "settings_sha256": "3d21fac1c7979258850d1d91eef68ffdf403c1dc5fc2085faa8b5b8a8bc55465",
     "version": 5
   },
   "goal": "summary_judge_summeval",

@@ -39,14 +39,13 @@
         "endpoint": "http://127.0.0.1:4001",
         "id": "openrouter/z-ai/glm-4.6",
         "id_source": "proxy-model-info",
-        "prompt_sha256": "d98ecfbd4054a47476257c2a48ab9f9fc8731098afe4bc1093c69e89c0cbe2f0",
-        "provider_routing": null,
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0
+        "provider_routing": null
       },
-      "hosted": null,
+      "hosted": {
+        "provider": "litellm",
+        "provider_id": "openrouter/z-ai/glm-4.6",
+        "route": null
+      },
       "id": "eval-glm-46",
       "in_process": false,
       "libraries": null,
@@ -68,7 +67,7 @@
         "machine": null
       }
     },
-    "deployment_sha256": "337bf46feac9f991518dd516d6d81a8abf82f5465073b5ad353298e77a2fbcb3",
+    "deployment_sha256": "6e0e19e7ba2097bfbc1dfc2131a49392603f3fe59a585484a286d4f17a724c0a",
     "hash": null,
     "hash_invalid_because": "scores were recomputed by a different scorer than the one this fingerprint was built from; see derived.with",
     "instrument": {
@@ -96,6 +95,13 @@
       "release": "24.6.0"
     },
     "settings": {
+      "declared": {
+        "prompt_sha256": "d98ecfbd4054a47476257c2a48ab9f9fc8731098afe4bc1093c69e89c0cbe2f0",
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0
+      },
       "family": "glm",
       "max_tokens": 1200,
       "price_tier": "mid",
@@ -107,7 +113,7 @@
       "usd_per_mtok_in": 0.15,
       "usd_per_mtok_out": 0.6
     },
-    "settings_sha256": "72116d15191dd696a5da912d569650a6c9dca2e8c64ddf7aeb753f11e038a4f2",
+    "settings_sha256": "7b9aa8ff658be43ca3c512bc942fb7906359865d602fb7e83b0c7e4ea0356da1",
     "version": 5
   },
   "goal": "news_summary_cnn",

@@ -982,7 +982,14 @@ evh dataset-split prod_v1 --heldout 0.3 --seed 7 --key fingerprint     # prod_v1
 An arm is a model *and how it is called*. Servers and providers choose defaults for what an arm leaves
 unset — whether the model reasons first, how long a reply may run, which build of the weights a tag
 names — and those defaults differ from model to model. An arm that leaves them unset compares the
-defaults as much as the models. Settle them before the full run, on purpose, and write them down.
+defaults as much as the models. Settle them before the full run, on purpose, and write them down
+(RFC-020, RFC-021).
+
+```bash
+evh model-onboard gemma4-12b --deployment mac   # once per deployment: build, reasoning, JSON, determinism
+evh arm-smoke --config configs/my_arm.yaml       # once per arm, on its own task, before its full run
+evh models                                       # what is onboarded, vetted, and where it runs
+```
 
 1. **Pin the build, per deployment.** Record the tag and its digest in the model record
    (`data/models/<model>.yaml`) as one entry of `deployments`, one per place the model runs (`mac`, `dgx`,
@@ -1007,9 +1014,9 @@ defaults as much as the models. Settle them before the full run, on purpose, and
      fast model only makes its failures slow.
    - *The server's own settings*: context length, quantization, KV cache — the same everywhere the arm
      runs.
-4. **Write them down** in the model record, beside the configs (the triage example keeps `MODELS.md`):
-   each deployment's build, the settings and the smoke that chose them, so the next person runs the same arm
-   the same way.
+4. **Write them down** in the model record: each deployment's build, the settings with one line of why
+   (`settings_why`), each change in `history`, and the smokes that chose them, so the next person runs the
+   same arm the same way. The catalog's Models page shows them.
 5. **Know what a repeat measures.** A self-hosted model at temperature 0 gives the same output on the same
    machine every time: a second pass there adds nothing. The spread comes from other machines and other
    builds; a hosted model's repeats do vary.
@@ -1049,7 +1056,7 @@ notebook) reads no `.env`, and the project's paths are resolved on first use, so
 | `EVAL_MAX_COST_USD` | per-run ceiling on billed spend; the run stops, keeps its results, resumes |
 | `EVAL_MAX_RETRIES`, `EVAL_RETRY_MAX_DELAY` | retries around every provider call |
 | `EVAL_BUILD_REF` | the identity of the system under test (default: the git SHA) |
-| `EVAL_HOST_LABEL` | a name for this machine, so latency is comparable across runs |
+| `EVAL_HOST_LABEL` | a name for this machine, the runner (fingerprint v5's `runner.label`, outside its hash): latency of a model run in process, and the network part of a remote one, is comparable across runs only from the same runner |
 | `EVAL_FINGERPRINT_WEIGHTS` | `1`: hash a local model's weight files into the fingerprint |
 | `EVAL_MODELS_FILE` | the alias to upstream-model table judges are routed by |
 | `EVAL_FETCH_HEADERS` | JSON `{"host": {"Header": "value"}}` for URL items behind a login |

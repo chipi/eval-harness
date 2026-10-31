@@ -35,15 +35,14 @@
         ],
         "labels_sha256": "c7a1ee508b78c0e92f28d159d340a6537ac31ff70ff566430fe2507da58464a3",
         "parser_sha256": "87f75633ea16670ab5a3169fe3125c91107f84959e79c56dd2f17c66a418246d",
-        "prompt_sha256": "ed3aeed55a5b5645151d03d7a518e932ed6da520c4b49bfdc85660dfbf562229",
         "provider": "litellm",
-        "provider_routing": null,
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0
+        "provider_routing": null
       },
-      "hosted": null,
+      "hosted": {
+        "provider": "litellm",
+        "provider_id": "openrouter/anthropic/claude-sonnet-5",
+        "route": null
+      },
       "id": "eval-claude-sonnet",
       "in_process": false,
       "libraries": null,
@@ -65,8 +64,8 @@
         "machine": null
       }
     },
-    "deployment_sha256": "f43112b12b3e1ce97be002f46340cc0427a5058e75ed3b9c83e9fcd21861d2a5",
-    "hash": "a3a32eac095799d6c285278c8d2bf8541aa755299926a7faf94a28e411e4b8f4",
+    "deployment_sha256": "98a702da8e7da45f7b6ee4caebc99e15adc2084e69f67288816a8b273aea3545",
+    "hash": "5cc942b19541aa713bc463c50a52acf3819894d16ab6064ada970d8df1b2f1d3",
     "instrument": {
       "adapter": {
         "id": "examples/classification-ag-news/adapter.py",
@@ -93,6 +92,13 @@
       "release": "24.6.0"
     },
     "settings": {
+      "declared": {
+        "prompt_sha256": "ed3aeed55a5b5645151d03d7a518e932ed6da520c4b49bfdc85660dfbf562229",
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0
+      },
       "family": "anthropic",
       "max_tokens": 200,
       "price_tier": "mid",
@@ -104,7 +110,7 @@
       "usd_per_mtok_in": 3.0,
       "usd_per_mtok_out": 15.0
     },
-    "settings_sha256": "bd24755eb29ef9ce6fa485aa54445c637d429b863721027c19e25d566962ff28",
+    "settings_sha256": "58ae4bc564e1854f46c9d187cfc47abbd7e860209b990ff62487b6faf6d71fe1",
     "version": 5
   },
   "goal": "news_topic_ag",

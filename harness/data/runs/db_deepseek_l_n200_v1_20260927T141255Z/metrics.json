@@ -45,15 +45,14 @@
         ],
         "labels_sha256": "d3a33437c1e2b2fe45fdb7a425b14796d89d31a0d8919d899149e27f5c6f899d",
         "parser_sha256": "6cc7cbce25ef74dbcdaa7f18763cfaaf8ea7b2a0e0cc0222e4d70f9b92cf2fc6",
-        "prompt_sha256": "758e514c7aab934f0ad0395805b4624b41946e99834b6a2ca0527e098e796db3",
         "provider": "litellm",
-        "provider_routing": null,
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0
+        "provider_routing": null
       },
-      "hosted": null,
+      "hosted": {
+        "provider": "litellm",
+        "provider_id": "openrouter/deepseek/deepseek-v4-pro",
+        "route": null
+      },
       "id": "eval-deepseek-pro",
       "in_process": false,
       "libraries": null,
@@ -75,8 +74,8 @@
         "machine": null
       }
     },
-    "deployment_sha256": "3c24e27032ef7783ff63d9befc5fc82803625133a116fbe25997865e8d75e952",
-    "hash": "43e75499a6d24e9cd38d3550b46ea92a25f36f559948f64f1c0be9b2cf235e6d",
+    "deployment_sha256": "caf2de09f4ecf0a12aed885d94df502ee94aa532a8acfe815dc8cfe941117b8a",
+    "hash": "fc7bde1ef38da3dc9204f90afa95a5e082d48bffc6e5e5fb39bf9494f46f57cb",
     "instrument": {
       "adapter": {
         "id": "examples/classification-dbpedia-14/adapter.py",
@@ -100,6 +99,13 @@
       "release": "24.6.0"
     },
     "settings": {
+      "declared": {
+        "prompt_sha256": "758e514c7aab934f0ad0395805b4624b41946e99834b6a2ca0527e098e796db3",
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0
+      },
       "family": "deepseek",
       "max_tokens": 200,
       "price_tier": "large",
@@ -111,7 +117,7 @@
       "usd_per_mtok_in": 0.28,
       "usd_per_mtok_out": 1.1
     },
-    "settings_sha256": "b182308b906f7836995e007f79e72f9a49484c251b2236b39d9cb95234322b6b",
+    "settings_sha256": "0c82624fa98a240ee3b7753ea297ff1ebc85660c1349c7b97517d35864e906b5",
     "version": 5
   },
   "goal": "entity_topic_dbpedia",

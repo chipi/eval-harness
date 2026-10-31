@@ -45,15 +45,14 @@
         ],
         "labels_sha256": "d3a33437c1e2b2fe45fdb7a425b14796d89d31a0d8919d899149e27f5c6f899d",
         "parser_sha256": "6cc7cbce25ef74dbcdaa7f18763cfaaf8ea7b2a0e0cc0222e4d70f9b92cf2fc6",
-        "prompt_sha256": "758e514c7aab934f0ad0395805b4624b41946e99834b6a2ca0527e098e796db3",
         "provider": "litellm",
-        "provider_routing": null,
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0
+        "provider_routing": null
       },
-      "hosted": null,
+      "hosted": {
+        "provider": "litellm",
+        "provider_id": "openrouter/qwen/qwen3.7-plus",
+        "route": null
+      },
       "id": "eval-qwen-37plus",
       "in_process": false,
       "libraries": null,
@@ -75,8 +74,8 @@
         "machine": null
       }
     },
-    "deployment_sha256": "c002a7c7aba6f3fe7f9e40ae2be33c42f3b8172257ab51964a3f2591b9f4db90",
-    "hash": "4911fa4e20da6d9a7f1362d358def6723abd09ee0d60ba56146f76b026f5948c",
+    "deployment_sha256": "92a8f251783c802100924ef63d56b22e07db3526328b4f7fd75baff89d5ca91f",
+    "hash": "700b27524996d8c592fd12525b59886ba140cf7ca6f7b3cfebe65fbb26293d8b",
     "instrument": {
       "adapter": {
         "id": "examples/classification-dbpedia-14/adapter.py",
@@ -100,6 +99,13 @@
       "release": "24.6.0"
     },
     "settings": {
+      "declared": {
+        "prompt_sha256": "758e514c7aab934f0ad0395805b4624b41946e99834b6a2ca0527e098e796db3",
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0
+      },
       "family": "qwen",
       "max_tokens": 200,
       "price_tier": "mid",
@@ -111,7 +117,7 @@
       "usd_per_mtok_in": 0.2,
       "usd_per_mtok_out": 0.8
     },
-    "settings_sha256": "01bd7646092f823b1e3b17957396ae3bda6a0caeb6204d0e8b84311390a459ca",
+    "settings_sha256": "6ed25a09b5d1ff0c35a4cde7e7acd888f2ed90a22df962589f070d4bb5b5200b",
     "version": 5
   },
   "goal": "entity_topic_dbpedia",

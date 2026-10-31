@@ -47,15 +47,14 @@
         ],
         "labels_sha256": "c7a1ee508b78c0e92f28d159d340a6537ac31ff70ff566430fe2507da58464a3",
         "parser_sha256": "87f75633ea16670ab5a3169fe3125c91107f84959e79c56dd2f17c66a418246d",
-        "prompt_sha256": "ed3aeed55a5b5645151d03d7a518e932ed6da520c4b49bfdc85660dfbf562229",
         "provider": "litellm",
-        "provider_routing": null,
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0
+        "provider_routing": null
       },
-      "hosted": null,
+      "hosted": {
+        "provider": "litellm",
+        "provider_id": "openrouter/openai/gpt-6-sol",
+        "route": null
+      },
       "id": "eval-gpt-6sol",
       "in_process": false,
       "libraries": null,
@@ -77,7 +76,7 @@
         "machine": null
       }
     },
-    "deployment_sha256": "66fa1b6951ccdbe9bcc1578a4de9a61d9a2e7d96e4ed819bef296961264d962f",
+    "deployment_sha256": "9a8466d70948073e45832beaf9df3ce8d6690c5376860ee18115976d83a79feb",
     "hash": null,
     "hash_invalid_because": "scores were recomputed by a different scorer than the one this fingerprint was built from; see derived.with",
     "instrument": {
@@ -106,6 +105,13 @@
       "release": "24.6.0"
     },
     "settings": {
+      "declared": {
+        "prompt_sha256": "ed3aeed55a5b5645151d03d7a518e932ed6da520c4b49bfdc85660dfbf562229",
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0
+      },
       "family": "openai",
       "max_tokens": 200,
       "price_tier": "large",
@@ -117,7 +123,7 @@
       "usd_per_mtok_in": 2.5,
       "usd_per_mtok_out": 15.0
     },
-    "settings_sha256": "d261b3f3593d23159fd177e5d24278172b4c96097630b5c164d221950307ff08",
+    "settings_sha256": "1e36c63e23cf23a5ab74d0552a4adcc559886e4597f518c4eb10307980d44949",
     "version": 5
   },
   "goal": "news_topic_ag",

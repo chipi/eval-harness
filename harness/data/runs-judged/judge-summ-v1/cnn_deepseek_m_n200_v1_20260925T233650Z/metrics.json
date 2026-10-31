@@ -69,14 +69,13 @@
         "endpoint": "http://127.0.0.1:4001",
         "id": "openrouter/deepseek/deepseek-v4.1-flash",
         "id_source": "proxy-model-info",
-        "prompt_sha256": "d98ecfbd4054a47476257c2a48ab9f9fc8731098afe4bc1093c69e89c0cbe2f0",
-        "provider_routing": null,
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0
+        "provider_routing": null
       },
-      "hosted": null,
+      "hosted": {
+        "provider": "litellm",
+        "provider_id": "openrouter/deepseek/deepseek-v4.1-flash",
+        "route": null
+      },
       "id": "eval-deepseek-41flash",
       "in_process": false,
       "libraries": null,
@@ -98,7 +97,7 @@
         "machine": null
       }
     },
-    "deployment_sha256": "e7d5880a60d65689a36ecf424d56c85fd6279cda07cd5bd76a06770a53356b0a",
+    "deployment_sha256": "91f1b88f24d409aac5d6005907a43ed5378a8d530e7a1bfe10c301aa08977cdf",
     "hash": null,
     "hash_invalid_because": "scores were produced by a judge scorer, not the adapter this fingerprint was built from; see derived.with",
     "instrument": {
@@ -126,6 +125,13 @@
       "release": "24.6.0"
     },
     "settings": {
+      "declared": {
+        "prompt_sha256": "d98ecfbd4054a47476257c2a48ab9f9fc8731098afe4bc1093c69e89c0cbe2f0",
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0
+      },
       "family": "deepseek",
       "max_tokens": 1200,
       "price_tier": "mid",
@@ -137,7 +143,7 @@
       "usd_per_mtok_in": 0.15,
       "usd_per_mtok_out": 0.5
     },
-    "settings_sha256": "279066694f3e4114945533f28367828f6430e91e501b008b8e6477f2bc1f9d03",
+    "settings_sha256": "7fb73838bf08a4145868b8b5dd3dff90e36f00b6dda93a38f8fcc894eb4f4155",
     "version": 5
   },
   "goal": "news_summary_cnn",

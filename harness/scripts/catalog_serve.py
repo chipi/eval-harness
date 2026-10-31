@@ -558,12 +558,17 @@ def _conditions(arms: list, metric: str) -> dict | None:
         )
     if "data.items_sha256" in names:
         warnings.append("Measured on different item bytes.")
-    if any(n.startswith(("machine.", "deployment.")) for n in names) and (
-        metric in SPEED_KEYS or "latency" in metric
-    ):
-        warnings.append(
-            f"{metric} compared across machines: the difference may be the machine's, not the arm's."
-        )
+    if metric in SPEED_KEYS or "latency" in metric:
+        if any(n.startswith("deployment.") for n in names):
+            warnings.append(
+                f"{metric} compared across deployments (where the model ran): the difference may be the "
+                "machine's or the server's, not the arm's."
+            )
+        elif any(n.startswith("machine.") for n in names):
+            warnings.append(
+                f"{metric} measured from different runners: a model called over the network includes each "
+                "runner's network time, and one run in process includes its machine."
+            )
     return {"fields": len(keys), "differ": differ, "warnings": warnings}
 
 

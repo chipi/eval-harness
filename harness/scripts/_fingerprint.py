@@ -337,6 +337,28 @@ def settings_of(params: dict[str, Any] | None) -> dict[str, Any]:
     return {k: v for k, v in identity_params(dict(params or {})).items() if k not in DEPLOYMENT_KEYS}
 
 
+#: What an adapter's hook may declare about HOW the system was asked, not which system it is: settings.
+DECLARED_SETTINGS = (
+    "prompt_sha256",
+    "system_prompt_sha256",
+    "temperature",
+    "reasoning",
+    "reasoning_effort",
+    "max_tokens",
+)
+
+
+def split_declared(deployment: dict[str, Any], settings: dict[str, Any]) -> None:
+    """Move what the hook declared about how it asked (a prompt hash, a temperature, reasoning) from the
+    deployment to the settings, under `declared`, so a prompt change moves the settings' hash, not the
+    deployment's."""
+    extra = deployment.get("declared") or {}
+    moved = {k: extra.pop(k) for k in DECLARED_SETTINGS if k in extra}
+    if moved:
+        settings["declared"] = moved
+    deployment["declared"] = extra or None
+
+
 def _runner_identity(libraries: dict[str, str] | None) -> dict[str, Any]:
     """Where `evh` ran: the host, and the client libraries it called the system with (None when the
     model ran in this process: then they are the deployment's)."""
@@ -432,6 +454,16 @@ def _adapter_deployment(
     hosted model, a gateway, a server) they only sent the request, so they stay the runner's."""
     in_process = not is_remote(params)
     model = params.get("model") or declared.get("id")
+    provider = params.get("provider") or declared.get("provider")
+    hosted = (
+        {
+            "provider": provider,
+            "provider_id": declared.get("id") if declared.get("id") not in (None, model) else None,
+            "route": params.get("provider_routing") or declared.get("provider_routing"),
+        }
+        if provider in REMOTE_PROVIDERS and not (params.get("url") or params.get("base_url"))
+        else None
+    )
     return {
         "id": _derived_id(model, params.get("machine")),
         "model": model,
@@ -443,8 +475,8 @@ def _adapter_deployment(
         ),
         "server": None,
         "where": {"machine": params.get("machine"), "backend": None, "device": declared.get("device")},
-        "hosted": None,
-        "provider": params.get("provider"),
+        "hosted": hosted,
+        "provider": provider,
         "in_process": in_process,
         "libraries": libraries if in_process else None,
         "declared": _declared_extra(declared, model),
@@ -592,6 +624,7 @@ def build_fingerprint(
         "runner": _runner_identity(None if deployment["in_process"] else libraries),
         "arm": {"config_id": config_id},
     }
+    split_declared(fp["deployment"], fp["settings"])
     return seal(fp)
 
 

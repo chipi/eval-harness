@@ -27,14 +27,13 @@
         "endpoint": "http://homelab:4001",
         "id": "openrouter/qwen/qwen3.7-plus",
         "id_source": "proxy-model-info",
-        "prompt_sha256": "6c02d00929048d9c3fea511af40c3ddf90fdf1550afb7713d3f5f4d86e44f5ee",
-        "provider_routing": null,
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0
+        "provider_routing": null
       },
-      "hosted": null,
+      "hosted": {
+        "provider": "litellm",
+        "provider_id": "openrouter/qwen/qwen3.7-plus",
+        "route": null
+      },
       "id": "eval-qwen-37plus",
       "in_process": false,
       "libraries": null,
@@ -56,8 +55,8 @@
         "machine": null
       }
     },
-    "deployment_sha256": "6ab6960a877bc4ce4c35765f017ce75d1333a112f78625e81c7569bb32bfc29e",
-    "hash": "fad57ca97f12277f689cfd5e41b233b9037337b35f23b437dfa05282d5bd4999",
+    "deployment_sha256": "ff53b2e346ca91f4cfd1abf5cf03e67f7051894f3020b456fb6cbfa55fc43bbd",
+    "hash": "2725efbe1209ed3a74e8cf87da8db8055744e1a70bc2c5cc205de4c7f8f34b2e",
     "instrument": {
       "adapter": {
         "id": "examples/summeval-judging/adapter.py",
@@ -85,6 +84,13 @@
       "release": "7.2.5-3-omarchy"
     },
     "settings": {
+      "declared": {
+        "prompt_sha256": "6c02d00929048d9c3fea511af40c3ddf90fdf1550afb7713d3f5f4d86e44f5ee",
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0
+      },
       "family": "qwen",
       "max_tokens": 1500,
       "price_tier": "mid",
@@ -96,7 +102,7 @@
       "usd_per_mtok_in": 0.2,
       "usd_per_mtok_out": 0.8
     },
-    "settings_sha256": "2624d3bda23caf3abff7c809f4dc873332838535df4a62e3000a54272df9d806",
+    "settings_sha256": "610b43c7064243519ac608f2a1549283cfdb7ba57e1b61ca8c920353fc765f37",
     "version": 5
   },
   "goal": "summary_judge_summeval",

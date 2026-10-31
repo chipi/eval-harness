@@ -55,7 +55,11 @@ COMMANDS = {
     ),
     "model-onboard": (
         "model_onboard.py",
-        "onboard a model once: probe a build, write what was found into its record",
+        "onboard a model once: probe a deployment, write what was found into its record",
+    ),
+    "fingerprint-migrate": (
+        "fingerprint_migrate.py",
+        "migrate the committed runs' fingerprints to version 5, once (idempotent)",
     ),
     "sweep": ("sweep.py", "run several arms, then the leaderboard"),
     "runs-list": ("list_runs.py", "list runs (or baselines)"),

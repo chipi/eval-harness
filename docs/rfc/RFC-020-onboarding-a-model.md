@@ -56,17 +56,18 @@ the build and the output distribution printed, shows before the run.
 
 One file per model the project uses, with the fields that apply to its kind (`llm`, `ml`, `baseline`):
 
-- **build**, per place it runs: the tag and digest (Ollama, a registry), the revision (Hugging Face), or a file
-  hash; the quantization or precision; for a hosted model, the provider id and the route.
-- **where**: each machine or host, with its server and server settings (version, context length, KV cache) or
-  its device; and the build found there when last checked.
+- **deployments** (RFC-021), one per place and way it runs, each with an `id` (`mac`, `dgx`,
+  `openrouter-nebius`): where (the machine or host), the server and its settings (version, context length, KV
+  cache) or the device and backend, the build there (the tag and digest, the revision, or a file hash; the
+  quantization or precision), for a hosted model the provider id and the route it is pinned to, the endpoint to
+  probe it through, when it was last checked, and **its own onboarding**: the same weights behave differently on
+  different hardware, so each deployment is vetted on its own.
 - **capabilities**, measured: for an LLM whether it reasons and whether reasoning can be turned off (and how:
   `reasoning_effort: none`, or only low / medium / high), JSON mode, context length; for an ML model its labels
   or output shape.
 - **settings**, chosen: for an LLM `reasoning_effort`, `max_tokens`, the call limit, temperature; for an ML model
   device, precision, batch size. With one line on why each was chosen.
-- **onboarding smoke**: its report, date and machine (below).
-- **history**: each change of build or settings, with its date and the smoke behind it.
+- **history**: each change of build or settings, with its date and why.
 
 `validate` checks the schema, and that every arm naming a record exists in `data/models/`.
 
@@ -76,10 +77,11 @@ records (`weights`, `licence`, and `aliases`: the ids runs record for the model,
 `gemma4:31b` alike), the file and its schema go, and the weights filter reads the records. No second file and no
 shim: the committed data is migrated (0.6.0's rule for formats nobody depends on yet).
 
-### 2. Onboarding: `evh model-onboard <model_id> [--where ...]`
+### 2. Onboarding: `evh model-onboard <model_id> --deployment <id>`
 
-Task-independent, once per model and machine, and again when the build changes. It probes the model with a few
-fixed requests of its kind and writes the result into the record:
+Task-independent, once per deployment, and again when its build changes. It probes the model through that
+deployment's endpoint with a few fixed requests of its kind and writes the result into the deployment (an ML
+model or a baseline is onboarded through an arm that runs it, `--config <arm.yaml>`):
 
 | probe | what it records, and flags |
 |---|---|
@@ -92,11 +94,12 @@ fixed requests of its kind and writes the result into the record:
 
 `ONBOARD PASS` or `ONBOARD CHECK` with the flags. A hosted model is onboarded the same way, through its gateway.
 
-### 3. An arm uses a record: `model: <model_id>`
+### 3. An arm uses a record: `model_record: <model_id>` and `deployment: <id>`
 
-An arm's config names the record instead of repeating it; its `params` inherit the record's settings and
-override only what the task needs (a task's longer replies, its call limit). The run records the record's id and
-the build it ran on, so a result can always be traced to how the model was set up.
+An arm's config names the record instead of repeating it, and the deployment it runs on; its `params` inherit
+the record's settings and override only what the task needs (a task's longer replies, its call limit). The run
+records `model_record` and `deployment_id`, and its fingerprint's deployment part comes from that deployment
+(RFC-021), so a result can always be traced to the build and the machine it ran on.
 
 ### 4. `evh arm-smoke --config <arm> [--items 3]`
 
@@ -135,21 +138,25 @@ smoked.
 
 ### 5. The catalog: a Models page, and a page per model (UXS-001)
 
-- **Models** (`models.html`): one row per record: the model and its kind, the build (marked when machines
-  differ), where it runs, the chosen settings, the onboarding smoke (pass / check / none, its date and flags),
-  the arms and goals that use it, and their best result. Filters: kind, where, smoke status, "differs from its
-  record".
-- **A model's page**: the build on each machine, matched or not; the onboarding report in full; the settings'
-  history (gemma4:12b: "default reasoning → reasoning off, 2026-10-31", with the smoke and the result before and
-  after); its arms, each with its arm smoke.
-- **The arms page** gets a badge per arm: its model record, and "smoked" or "not smoked".
-- **CLI parity**: `evh models` lists the same; `evh models --model <id>` shows one.
+- **Models** (`models.html`): one row per record: the model and its kind, its deployments' builds (marked when
+  the same tag is a different build on two deployments), where it runs, the chosen settings, the onboarding
+  (vetted when every deployment passed, to check when any flagged, not onboarded otherwise), the arms and goals
+  that use it, and their best result. Filters: kind, self-hosted / hosted, open / proprietary, onboarding status,
+  builds differ.
+- **A model's page**: each deployment with its build, its server or device, whether it matches, and its own
+  onboarding report; the settings' history (`at`, `what`, `from`, `to`, `why`); its arms, each with its arm smoke.
+- **The arms page** gets a badge per arm that has a record: its record and deployment, and "smoked", "smoke:
+  check" or "not smoked".
+- **CLI parity**: `evh models [--kind] [--where] [--status]` lists the same; `evh models --model <id>` shows one.
+
+*Not built as first written:* the settings history has no "smoke / result before and after" columns (a history
+entry links to neither); an arm whose model has no record is not a row on the Models page.
 
 ### 6. Validation, advisory
 
-`validate` warns, never fails: an arm whose settings or build differ from its record; a reasoning model's arm with
-no `max_tokens`; an arm never smoked; a record whose machines' builds differ. A project that keeps no records sees
-no warnings.
+`validate` notes, never fails: an arm never smoked; a reasoning model's arm with no `max_tokens`; a tag that is a
+different build on two deployments. A project that keeps no records sees no notes. (*Not built:* a note for an arm
+whose settings differ from its record's: an arm overriding a record is allowed, and the run records both.)
 
 ### 7. Repeats
 

@@ -47,15 +47,14 @@
         ],
         "labels_sha256": "c7a1ee508b78c0e92f28d159d340a6537ac31ff70ff566430fe2507da58464a3",
         "parser_sha256": "87f75633ea16670ab5a3169fe3125c91107f84959e79c56dd2f17c66a418246d",
-        "prompt_sha256": "ed3aeed55a5b5645151d03d7a518e932ed6da520c4b49bfdc85660dfbf562229",
         "provider": "litellm",
-        "provider_routing": null,
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0
+        "provider_routing": null
       },
-      "hosted": null,
+      "hosted": {
+        "provider": "litellm",
+        "provider_id": "openrouter/google/gemma-4-31b-it",
+        "route": null
+      },
       "id": "eval-gemma-31b",
       "in_process": false,
       "libraries": null,
@@ -77,7 +76,7 @@
         "machine": null
       }
     },
-    "deployment_sha256": "2766ac4f3f89f3fe1f8d03e9777ca1b9cd937fe803ae33dc6acdd4cf891612b6",
+    "deployment_sha256": "918a5a57ddce64509f218bc3c6ac4d2137760816db56c29efcb21bb987b137fa",
     "hash": null,
     "hash_invalid_because": "scores were recomputed by a different scorer than the one this fingerprint was built from; see derived.with",
     "instrument": {
@@ -106,6 +105,13 @@
       "release": "24.6.0"
     },
     "settings": {
+      "declared": {
+        "prompt_sha256": "ed3aeed55a5b5645151d03d7a518e932ed6da520c4b49bfdc85660dfbf562229",
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0
+      },
       "family": "gemma",
       "max_tokens": 200,
       "price_tier": "large",
@@ -117,7 +123,7 @@
       "usd_per_mtok_in": 0.1,
       "usd_per_mtok_out": 0.2
     },
-    "settings_sha256": "4ee181f9a5121eadd55713d0236ec8e1daf48b8a0b2f0b906c770907a2bda209",
+    "settings_sha256": "9300ee5366d4995b615b3744c2461741c45fb31d12b2f046ba5696a060f27fdd",
     "version": 5
   },
   "goal": "news_topic_ag",
