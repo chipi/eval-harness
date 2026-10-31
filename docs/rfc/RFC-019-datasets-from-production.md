@@ -159,11 +159,21 @@ The data, the references, the arms and the cost are in the application plan (`re
 3. **The references:**
    - the owner's verdicts decide (`gold/`): the 42 issues, fixed or noise, as their close comments say;
    - the outcome mapping and the old fixture labels are shown as `silver/`.
-4. **The goal.** `false_dismiss` is the primary measure, `false_alarm` and `escalated` are shown beside it, and
-   cost and speed weigh in. No limits in v1.
+4. **The goal.** As first written, `false_dismiss` was the primary measure with no limits. As run (owner,
+   2026-10-30): `triage_cost` decides (a missed real problem costs 5 false alarms; `_p3` and `_p10` beside it),
+   with a ceiling on `false_alarm` at production's 4-pass mean (21.25 of 31); cost and speed break ties.
 5. **The de-duplication dataset**: the fleet's 100 signals through its pure dedup functions, no model, a
    regression guard.
 6. **Continuous:** each month's decisions, captured exactly as the model saw them.
+
+**What round 1 showed, and did not** (2026-10-31; the numbers in `research/internal/TRIAGE_RESULTS_LIVE.md`, its
+table generated from the harness). The lane works end to end: capture, dataset, gold, every arm replayed, scored
+and compared in the catalog. The comparison decides nothing yet: on 65 decisions the paired test separates no arm
+under the ceiling from the leader (`evh goals` names all 39 as tied, the always-dismiss stub among them). The
+ceiling was set after the results and sits within one or two false alarms of 18 rows. 20 of the 65 gold labels are
+production's own decision, accepted by the owner after a model of the Anthropic family agreed with it. A no-decision
+replay scores as an escalation, a path production does not have. How large the gold must be, and how a no-decision
+is scored, are settled by the owner before round 2.
 
 ## Not in scope
 
