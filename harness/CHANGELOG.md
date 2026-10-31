@@ -108,12 +108,17 @@ that can move a result is never a patch release without saying so under **Change
   as `<link rel="canonical">` and `og:url`, checked by `site/build.py --check`.
 - **`validate` checks every git-tracked runs directory**, those `committed` in validate.json with their floors
   and every other one: a directory re-allowed in `.gitignore` but not added to the list was never checked
-  (`data/runs-triage-current`, 65 runs).
+  (`data/runs-triage-current`, then 65 runs; 52 now, its 13 repeats in `data/runs-repeats-triage-current`).
+- **The local catalog reads what is committed.** It read every `data/runs*` directory on disk, so a smoke
+  pass in an ignored `runs-smoke*` showed as a result locally and was gone from a clone and the published
+  catalog. Directories git ignores are no longer read (outside a git checkout everything is). A measured arm
+  the goals read from its re-score says so on its page, on the arms page and in `evh arms`.
 - **Runs written where git does not keep them are named.** `EVAL_RUNS_DIR` pointed at any
   `data/runs-*` directory that `.gitignore` does not re-allow wrote runs that were never committed
   and that no catalog showed, without a word: 35 self-hosted triage runs sat in `data/runs-local`
   that way. `experiment-run` and `rescore` now print a `WARNING` when they write to such a directory
-  (throwaway `runs-smoke*` and `runs-tune*` stay silent), and `evh validate` notes one that holds
+  (throwaway `runs-smoke*` and `runs-tune*` stay silent), or outside the project's data, where nothing
+  reads them, and `evh validate` notes one that holds
   finished runs. The RUNBOOK's scratch example is `data/runs-smoke`, the throwaway name git already
   ignores.
 - **One row per arm when a scorer changed.** A goal listed an arm twice when its runs had been

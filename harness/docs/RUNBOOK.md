@@ -393,14 +393,18 @@ Two kinds of directory sit beside `data/runs` on purpose:
   `data/runs` (V8). Each one has its own re-allow block in `.gitignore`.
 
 `experiment-run` and `rescore` print a `WARNING` when they write to a directory git ignores
-that is neither, and `evh validate` notes any such directory that already holds finished runs.
+that is neither, or to one outside the project's data, and `evh validate` notes any ignored
+directory that already holds finished runs. The catalog, `evh goals` and `evh arms` read only
+the directories git keeps, so what you see locally is what a clone, CI and the published
+catalog see: a smoke pass in `data/runs-smoke*` never shows up as a result.
 
 **When the scorer changes after runs were measured**, re-score them (`evh rescore --out
 data/runs-<name>`, re-allowed in `.gitignore`) rather than keep two sets of numbers apart. A
 re-score with the current scorer stands in for the run it re-read: the goal pages, `evh goals`
 and the recommendation show one row per arm, read from the latest re-score against the same
 reference, and say how many arms they read that way. The measured run keeps its own page as
-the record of what was first scored.
+the record of what was first scored, and says there, on the arms page and in `evh arms`, that
+the goals read its re-score.
 
 `experiment-run` warns, naming the items, when outputs stop at `max_tokens` (the provider's
 `finish_reason`, or tokens out reaching the cap): they are scored as if complete. The harness
@@ -1039,7 +1043,7 @@ evh models                                       # what is onboarded, vetted (an
      whose own default is 10 minutes): a few times the slowest normal call, not the slowest model's. A
      generous limit on a fast model only makes its failures slow.
    - *The server's own settings*: context length, quantization, KV cache — the same everywhere the arm
-     runs.
+     runs. They are the deployment's: its `server_settings` in the record, not the record's `settings`.
 4. **Write them down**, each where it holds. In the model record: each deployment's build, the settings
    that hold whatever the task (reasoning; an ML model's device and precision) with one line of why
    (`settings_why`), and each change in `history`. In the arm: the task's own (its reply cap, its call

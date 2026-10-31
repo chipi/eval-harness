@@ -40,12 +40,12 @@ Measured on the triage experiment, 2026-10-30/31:
 
 | part | identifies | fields | in the hash |
 |---|---|---|---|
-| `instrument` | what measured | `harness` and `adapter` as in v4 (code by behaviour, `_codeid`) | yes |
+| `instrument` | what measured | `harness` and `adapter` as in v4 (code by behaviour, `_codeid`) | yes, by its code only: `harness.code_sha256` and `adapter.sha256`; the commit, a dirty tree and the version are recorded beside it |
 | `data` | what it measured on | as in v4: `dataset_id`, `items_sha256`, `n_items`, `reference_id`, `reference_tier`, `references_sha256` | yes |
 | `deployment` | the system under test as it executed | below | yes |
-| `settings` | how the system was asked | the arm's params that change behaviour: everything in `params` that is neither a deployment key nor a credential (`reasoning_effort`, `max_tokens`, `temperature`, a prompt, a call limit, a task option) | yes |
+| `settings` | how the system was asked | the arm's params that change behaviour: everything in `params` that is neither a deployment key, a label nor a credential (`reasoning_effort`, `max_tokens`, `temperature`, a call limit, a task option), and under `declared` what the adapter's hook says about how it asked (a prompt's hash) | yes |
 | `runner` | where `evh` ran | v4's `host` (label, platform, release, processor, cpu count, python) and the runner's client libraries | **no**: recorded as conditions |
-| `arm` | the config | `config_id` | no (a name) |
+| `arm` | the config | `config_id`, and `labels`: the params that describe the arm without changing what runs (prices `usd_per_mtok_*`, `price_tier`, `family`, `label`, `notes`) | no (a name and its labels) |
 
 `hash` is the sha256 over the four hashed parts' own hashes (`instrument_sha256`, `data_sha256`,
 `deployment_sha256`, `settings_sha256`, each also recorded), so "did anything move" stays one comparison and "what
@@ -108,8 +108,8 @@ migration rewrites each committed run's `fingerprint`:
 - `runner`: v4's `host`, and v4's `system_under_test.libraries` when the deployment was not in-process.
 - `deployment`: from v4's `system_under_test.model` when the adapter declared one (`source: adapter`, in process
   by the rule above, with v4's libraries when it was); else from the run's params (`source: params`).
-- `settings`: the run's params minus deployment keys and credentials, plus what the hook declared about how it
-  asked.
+- `settings`: the run's params minus deployment keys, labels and credentials, plus what the hook declared about
+  how it asked; the labels go to `arm.labels`.
 - The hashes are recomputed; `version: 5`.
 
 The migration is `evh fingerprint-migrate` (`scripts/fingerprint_migrate.py`, packaged so a pinned project can run it), idempotent; this repository's counts are committed beside the tools

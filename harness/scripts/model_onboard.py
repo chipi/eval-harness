@@ -103,7 +103,10 @@ def probe_llm(rec: dict[str, Any], dep: dict[str, Any]) -> tuple[dict[str, Any],
             and not found.startswith(dep["digest"])
             and not dep["digest"].startswith(found)
         ):
-            flags.append(f"build: {dep['id']} serves {found[:12]}, the record says {dep['digest'][:12]}")
+            flags.append(
+                f"build: {dep['id']} serves {found[:12]}, not the {dep['digest'][:12]} the record had: it now records the "
+                "build served and its history the one replaced; smoke its arms again"
+            )
 
     default, s_default = _call({**base, "max_tokens": 4096})
     report["default"] = {

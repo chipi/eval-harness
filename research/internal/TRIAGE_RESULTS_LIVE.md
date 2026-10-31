@@ -82,9 +82,15 @@ Generated from the harness: the goal `triage_orrery` on `orrery_triage_v1_labell
 - **The ceiling sits on a knife edge, and was set after the results** (table 234d7730 at 17:56, ceiling d4d34a31 at
   18:18, 2026-10-30). At 21.25 of 31, 8 rows are in with less than one false alarm to spare (21, or 20.7), and 10
   are out by two or fewer; production's own later passes are out of the ceiling made from them (21.3 against 21.25), its first pass in.
+  A repeat set is its own row, so the edge splits arms: gpt_6_luna's first pass is out (23) and its later three in
+  (20.7); baseline_pro the other way round.
 - **No decision counts as an escalation, in all three gpt-oss:20b rows** (X3 16 of 65, DGX 15, Mac 18): its last
   reply was empty (fleet bug F7) and the replay records the fleet's own fallback. An escalation counts as catching
-  a real problem: of those items, 9 (X3), 7 (DGX) and 7 (Mac) were real problems, scored correct on 9, 7 and 6.
+  a real problem: of those items, 9 (X3), 7 (DGX) and 7 (Mac) were real problems, scored correct on 9, 7 and 6;
+  the other 7, 8 and 11 were noise (dismiss or cleanup), each scored a false alarm. One X3 item
+  (`orrery-ORRERY-STAGING-14-2026-07-30T13:43:09Z`) has no no-decision status at all: it was resumed from an older
+  pass that did not record it, so X3's count is 16 of 64, and a rule that re-scores no-decisions cannot classify it
+  from the committed data.
   Production has no such path (its `investigate()` returns nothing and acting on it fails), so these rows score a
   behaviour production does not have. The models' own decisions score 0.969, 1.277 and 1.431.
 - **gpt-oss:20b on the Mac** ranks high, but 18 of its 65 decisions are not the model's: its last reply was empty

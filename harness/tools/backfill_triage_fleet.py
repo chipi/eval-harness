@@ -7,8 +7,9 @@ f07efa9 (the runner scripts' TRIAGE_FLEET_SRC), whose four modules match `git sh
 byte for byte, and every decided item recorded the fleet's own prompt hash c2ece738 (sha1[:8] of the same
 system prompt the hook hashes with sha256). This rebuilds each run's deployment with the run-time code
 (_fingerprint.deployment_of, the real hook against that checkout), moves the prompt hash to the settings,
-and re-seals: each run's deployment is then the one it would record today. It refuses a change
-to where the model was served, by whom, or which model it was.
+and re-seals: each run's deployment is then the one it would record today. It refuses a change to the
+server, the machine, the provider, or a model the run already named; what follows from the params and the
+hook (its source, a hosted route's fill, `revision_source`) may change.
 
     TRIAGE_FLEET_SRC=<checkout of f07efa9>/signal-fleet .venv/bin/python tools/backfill_triage_fleet.py [--apply]
 """
@@ -26,7 +27,7 @@ import adapter  # noqa: E402
 from evaluation_harness import _fingerprint as fpmod  # noqa: E402
 
 DATA = HERE / "data"
-DIRS = ("runs", "runs-repeats", "runs-triage-current")
+DIRS = ("runs", "runs-repeats", "runs-triage-current", "runs-repeats-triage-current")
 COMMIT, PROMPT_SHA = "f07efa9", "c2ece738"
 
 
@@ -50,8 +51,8 @@ def backfill(m: dict) -> dict:
     dep = fpmod.deployment_of(params=params, cfg=cfg, data_dir=DATA, hook=adapter.fingerprint, libraries=libs)
     settings = dict(fp.get("settings") or {})
     fpmod.split_declared(dep, settings)
-    # What the hook decides may change (who declared it, the fleet, a stub's in-process model); where the
-    # model was served and by whom may not, and a model the run already named may not be renamed.
+    # What the hook decides may change (who declared it, the fleet, a stub's in-process model); the server,
+    # the machine and the provider may not, and a model the run already named may not be renamed.
     fixed = ["server", "where", "provider"] + (["model"] if old.get("model") else [])
     moved = [k for k in fixed if old.get(k) != dep.get(k)]
     if moved:

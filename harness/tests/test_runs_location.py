@@ -43,10 +43,10 @@ with tempfile.TemporaryDirectory() as tmp:
         _common.ignored_by_git(Path(tempfile.gettempdir())) is False,
     )
 
-    def warned(d: str) -> str:
+    def warned(d) -> str:
         buf = io.StringIO()
         with contextlib.redirect_stdout(buf):
-            _common.warn_if_ignored(data / d)
+            _common.warn_if_ignored(data / d if isinstance(d, str) else d, data)
         return buf.getvalue()
 
     check("warn: data/runs is silent", warned("runs") == "")
@@ -57,6 +57,24 @@ with tempfile.TemporaryDirectory() as tmp:
         "warn: an ignored results directory warns, and says where runs go",
         "WARNING" in out and "data/runs" in out,
         out,
+    )
+    away = warned(Path(tempfile.gettempdir()) / "elsewhere-runs")
+    check(
+        "warn: a runs directory outside the project's data warns that nothing reads it",
+        "WARNING" in away and "outside the project's data" in away,
+        away,
+    )
+
+    from evaluation_harness.catalog_adapter import HarnessAdapter
+
+    for d in ("runs", "runs-derived", "runs-local", "runs-smoke-x"):
+        m = data / d / "arm_v1_20261031T000000Z" / "metrics.json"
+        m.write_text(json.dumps({"dataset_id": "x", "config_id": "arm_v1", "created_at": "2026-10-31"}))
+    seen = {a.split("/")[0] for a in HarnessAdapter(data).arms()}
+    check(
+        "catalog: reads the directories git keeps, never one it ignores (it shows what a clone and the release show)",
+        seen == {"runs", "runs-derived"},
+        seen,
     )
 
     old = validate_tree.DATA
@@ -104,6 +122,35 @@ check("supersede: the latest re-score stands", "superseded_by" not in later)
 check("supersede: a re-score against another reference is its own row", "superseded_by" not in silver)
 check("supersede: a second measurement is its own row", "superseded_by" not in repeat)
 check("supersede: an arm with a run nobody re-scored stays", "superseded_by" not in half)
+
+# A measured arm whose run was re-scored says so on the arms page and in `evh arms`, beside the goals' choice.
+with tempfile.TemporaryDirectory() as tmp:
+    data = Path(tmp) / "data"
+    ref = {"fingerprint": {"data": {"reference_id": "gold/x"}}}
+    for d, extra in (("runs", {}), ("runs-current", {"derived": {"kind": "rescore", "from": "a_v1_T1"}})):
+        rdir = data / d / "a_v1_T1"
+        rdir.mkdir(parents=True)
+        meta: dict = {
+            "dataset_id": "x",
+            "config_id": "a_v1",
+            "run_id": "a_v1_T1",
+            "created_at": "2026-10-31",
+            **ref,
+            **extra,
+        }
+        (rdir / "metrics.json").write_text(json.dumps(meta))
+        (rdir / "predictions.jsonl").write_text(json.dumps({"item_id": "i1", "acc": 1.0}) + "\n")
+    from evaluation_harness import catalog_arms
+    from evaluation_harness.catalog_adapter import HarnessAdapter
+
+    A = HarnessAdapter(data)
+    rows = {r["arm"]: r for r in catalog_arms.arm_rows(A, catalog_build.collect(A))}
+    check(
+        "arms: a measured arm re-scored against the same reference names the arm the goals read",
+        rows["runs/x/a_v1"]["superseded_by"] == "runs-current/x/a_v1"
+        and not rows["runs-current/x/a_v1"]["superseded_by"],
+        rows,
+    )
 
 # A directory re-allowed in .gitignore is checked even when validate.json's list was not edited too.
 saved = validate_tree.policy, validate_tree.tracked_run_dirs

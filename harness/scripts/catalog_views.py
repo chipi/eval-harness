@@ -666,7 +666,9 @@ def arms(argv) -> int:
                 [
                     [
                         r["arm"],
-                        r["how"] + (f" ({r['moved']:+.3f} vs measured)" if r["moved"] is not None else ""),
+                        r["how"]
+                        + (f" ({r['moved']:+.3f} vs measured)" if r["moved"] is not None else "")
+                        + ("; the goals read its re-score" if r["superseded_by"] else ""),
                         r["dataset"],
                         r["model"] or "—",
                         (r["provider"] or "—") + (" (local)" if r["local"] else ""),
@@ -708,6 +710,8 @@ def arms(argv) -> int:
         print(
             "  note            wrote the reference it is scored against: its row measures agreement with itself"
         )
+    if a.get("superseded_by"):
+        print(f"  re-scored       the goals read its re-score, {a['superseded_by']}")
     sc = A.scores(a["arm"])
     cs = [(ax, cell_of(ax, sc)) for ax in builtin_axes()]
     if any(c["n"] or (c.get("tokens") or {}).get("n") for _, c in cs):

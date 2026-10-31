@@ -32,5 +32,6 @@ evh goals --goal triage_orrery
 ```
 
 The fleet's code is not copied here: `TRIAGE_FLEET_SRC` names the `signal-fleet` folder of its repository, at
-the commit the runs record. What the experiment taught about the fleet itself is in
+the commit the runs record. Each run's fingerprint carries the fleet's code hash and prompt hash; set
+`TRIAGE_FLEET_COMMIT=<sha>` (or `fleet_commit` in an arm's params) for it to carry the commit too. What the experiment taught about the fleet itself is in
 [TRIAGE_FLEET_LESSONS_0.6.0.md](../../research/internal/TRIAGE_FLEET_LESSONS_0.6.0.md).

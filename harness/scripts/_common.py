@@ -231,17 +231,27 @@ def ignored_by_git(path: Path) -> bool:
 THROWAWAY_RUNS = ("runs-smoke", "runs-tune")
 
 
-def warn_if_ignored(runs_dir: Path) -> None:
-    """Say, loudly, when runs are about to land where git will not keep them. Silent for the throwaway
-    directories (runs-smoke*, runs-tune*), where not keeping them is the intent."""
-    if Path(runs_dir).name.startswith(THROWAWAY_RUNS) or not ignored_by_git(runs_dir):
+def warn_if_ignored(runs_dir: Path, data_dir: Path | None = None) -> None:
+    """Say, loudly, when runs are about to land where they will not be kept or read: a directory git ignores, or
+    one outside the project's data (`data_dir`, default the project's). Silent for the throwaway directories
+    (runs-smoke*, runs-tune*), where not keeping them is the intent."""
+    runs_dir = Path(runs_dir)
+    if runs_dir.name.startswith(THROWAWAY_RUNS):
         return
+    where = Path(data_dir) if data_dir else _paths()["DATA"]
+    outside = not runs_dir.resolve().is_relative_to(where.resolve())
+    if not outside and not ignored_by_git(runs_dir):
+        return
+    why = (
+        f"is outside the project's data ({where}): no catalog, goal or validate reads it"
+        if outside
+        else "is ignored by git: its runs are not committed, so no clone, CI run or catalog (this one included) has them"
+    )
     print(
-        f"  WARNING: {runs_dir} is ignored by git: the runs written there are not committed, and a published "
-        "catalog will not show them. Measured runs go in data/runs (the default: leave EVAL_RUNS_DIR unset). "
+        f"  WARNING: {runs_dir} {why}. Measured runs go in data/runs (the default: leave EVAL_RUNS_DIR unset). "
         "A derived set (re-scored, re-judged) keeps the measured runs' config_ids, so it needs its own "
-        "directory: re-allow it in .gitignore beside the others under '--- re-allowed'. Throwaway passes go "
-        "in data/runs-smoke*."
+        "data/runs-<name> directory, re-allowed in .gitignore beside the others under '--- re-allowed'. Throwaway "
+        "passes go in data/runs-smoke*."
     )
 
 

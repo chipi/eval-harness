@@ -143,9 +143,10 @@ FLEET_MODULES = ("triage.py", "probes.py", "guards.py", "config.py")
 
 
 def fingerprint(params: dict[str, Any]) -> dict[str, Any]:
-    """What the replay is, for the run's fingerprint: the fleet's code by content (and its commit when the
-    checkout says or TRIAGE_FLEET_COMMIT names it), and the sha256 of the system prompt it sends, which the
-    harness keeps as a setting. The model is the deployment's, not declared here."""
+    """What the replay is, for the run's fingerprint: the fleet's code by content, its commit when
+    TRIAGE_FLEET_COMMIT or the arm's `fleet_commit` names it (the checkout's git is not read: a pinned checkout
+    is often an extracted archive), and the sha256 of the system prompt it sends, which the harness keeps as a
+    setting. The model is the deployment's, not declared here."""
     import hashlib  # noqa: PLC0415
 
     triage = _fleet()

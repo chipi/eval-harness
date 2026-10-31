@@ -503,7 +503,9 @@ tile opens it grouped by config (`arms.html?group=config`).
     limit it breaks), not eligible (left out for another reason)), **how measured** (measured;
     rescored against `<reference>`; judged by `<scorer>`; re-parsed; run again (`<runs dir>`);
     under a derived arm, how its deciding measure moved from the config's measured arm, "0.712 →
-    0.745 (+0.033) vs measured", when both are on the same measure: a judge scores its own),
+    0.745 (+0.033) vs measured", when both are on the same measure: a judge scores its own; under
+    a measured arm every run of which was re-scored against the same reference, "the goals read
+    its re-score", and `evh arms` says the same),
     **dataset**, **model · provider** (provider muted, "· local" for a local
     one), **deciding measure** (the goal's measure and the arm's mean on it, else its own
     headline), **repeats**, **cost / item**, **latency**, **runs in period** (with its line),
@@ -529,7 +531,8 @@ tile opens it grouped by config (`arms.html?group=config`).
 - Hero: kicker `arm`, the arm's label (with the baseline tag when promoted), "One config on
   `<dataset>`, scored one way; its repeats averaged per item.", then its facts: **dataset**,
   **scored against** (the reference, or the judge), **goal**, **runs**, **headline** (its primary
-  metric and mean), **last run**, and when it applies "wrote the reference it is scored against".
+  metric and mean), **last run**, and when it applies "wrote the reference it is scored against",
+  and **re-scored** ("the goals read its re-score", linked; `evh arms --arm` prints the same line).
   Buttons: **Inspect it**, **Against the baseline** (when the dataset's baseline is scored the
   same way), **With the N arms scored the same way**.
 - `01 metrics`: every metric it records, the headline first: **metric**, **mean**, **items**,

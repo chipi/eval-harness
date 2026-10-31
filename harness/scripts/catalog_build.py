@@ -3049,6 +3049,13 @@ def render_arm(A: Adapter, a: dict, ds: str, by_ds: dict, out: Path, nav: list) 
         facts.append(
             ("note", "wrote the reference it is scored against: its row measures agreement with itself")
         )
+    if a.get("superseded_by"):
+        facts.append(
+            (
+                "re-scored",
+                f"the goals read its re-score, {arm_link(a['superseded_by'], a['superseded_by'], '../')}",
+            )
+        )
     dl = "".join(f"<dt>{e(k)}</dt><dd>{x}</dd>" for k, x in facts if x)
     base = (v.get("baselines") or [None])[-1]
     btns = [f'<a class="btn" href="{inspect_url([a["arm"]], "../")}">Inspect it</a>']

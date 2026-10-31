@@ -106,7 +106,7 @@ def committed_dirs() -> list[str]:
     """The run directories that back the project's claims: those `committed` in validate.json names (with
     their floors), then every other git-tracked <data>/runs* directory holding a run. A directory someone
     re-allowed in .gitignore is checked whether or not they also listed it here: data/runs-triage-current's
-    65 runs were committed and never checked because the list was not edited too."""
+    runs were committed and never checked because the list was not edited too."""
     declared = list(policy().get("committed") or [])
     return declared + [d for d in tracked_run_dirs() if d not in declared]
 

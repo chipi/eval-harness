@@ -147,6 +147,7 @@ def arm_rows(A, by_ds: dict) -> list[dict]:
                     "last": max(dated, default="")[:10],
                     "source": None,
                     "moved": None,
+                    "superseded_by": a.get("superseded_by") or "",
                 }
             )
     measured = {(r["dataset"], r["config"]): r for r in out if r["how"] == "measured"}
@@ -272,6 +273,11 @@ def render_arms(A, by_ds: dict, out, nav: list, rows: list[dict] | None = None) 
                         f'<br><small class="muted nowrap">{cb.fmt(r["value"] - r["moved"])} → {cb.fmt(r["value"])} '
                         f"({r['moved']:+.3f}) vs measured</small>"
                         if r["moved"] is not None
+                        else ""
+                    )
+                    + (
+                        '<br><small class="muted">the goals read its re-score</small>'
+                        if r["superseded_by"]
                         else ""
                     ),
                     cb.dataset_link(r["dataset"]),

@@ -323,10 +323,13 @@ class HarnessAdapter:
     # -- arms ---------------------------------------------------------------------------
     @_memo
     def _index(self) -> dict[str, list[Path]]:
-        """{arm id: [run dirs]}, from every runs* directory and runs-judged/<scorer>/."""
+        """{arm id: [run dirs]}, from every runs* directory and runs-judged/<scorer>/ that git keeps. A directory
+        git ignores (a smoke pass, a sweep) is not read: the local catalog shows what a clone, CI and the published
+        one show, never runs that exist on this disk only. Outside a git checkout every directory is read."""
         out: dict[str, list[Path]] = {}
         bases = [p for p in sorted(self.data_dir.glob("runs*")) if p.is_dir() and p.name != "runs-judged"]
         bases += sorted(p for p in (self.data_dir / "runs-judged").glob("*") if p.is_dir())
+        bases = [p for p in bases if not _common.ignored_by_git(p)]
         refs: dict[Path, str] = {}
         made: dict[Path, str] = {}
         # Every run seen, before any is set aside below: what was billed counts them all.
