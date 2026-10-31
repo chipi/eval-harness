@@ -229,7 +229,11 @@ def decide(
             )
             continue
         series = {x: (arms[x]["scores"].get(ax["measure"]) or {}).get("values") or {} for x in arms}
-        cmp = stats.compare(series, baseline, higher_is_better=ax["direction"] == "higher")
+        # A limit gates each arm on its own, as a number does (owner, 2026-10-31): p < ALPHA against the baseline,
+        # not corrected across the arms. Holm stays where the decision claims one arm beats the others (the tie).
+        cmp = stats.compare(
+            series, baseline, higher_is_better=ax["direction"] == "higher", threshold=stats.ALPHA
+        )
         for r in cmp.get("rows") or []:
             worse = r.get("verdict") == "separated: worse"
             rows[r["arm"]][ax["name"]]["within"] = not worse

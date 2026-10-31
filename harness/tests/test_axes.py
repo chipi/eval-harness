@@ -472,6 +472,16 @@ check(
     not d0["out"] and any("has none promoted" in w for w in d0["why"]),
     d0["why"],
 )
+# Each arm on its own (owner, 2026-10-31): one arm worse at p = 2/64 among ten others is out, which Holm across the
+# eleven would not rule out (its first threshold is 0.05 / 11).
+many = {"base": arm("base", 0.5, noise=[0] * 12), "worse": arm("worse", 0.6, noise=[1] * 6 + [0] * 6)}
+many |= {f"f{k}": arm(f"f{k}", 0.6, noise=[1] + [0] * 11) for k in range(10)}
+dm = axes.decide(BL, many, baseline="base")
+check(
+    "limit baseline: each arm is gated on its own, not corrected across the group",
+    "worse" in dm["out"] and not any(k.startswith("f") for k in dm["out"]),
+    dm["out"],
+)
 check(
     "limit baseline: the axis title says what the limit is",
     "no worse than the baseline (paired test)" in axes.axis_title(axes.axes_of(BL)[-1]),

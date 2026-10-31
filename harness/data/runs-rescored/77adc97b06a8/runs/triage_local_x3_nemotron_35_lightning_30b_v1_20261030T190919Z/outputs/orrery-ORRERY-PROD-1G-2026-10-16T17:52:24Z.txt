@@ -1,0 +1,1 @@
+{"_probe_trace": [], "certainty": "high", "disposition": "cleanup", "marker": "(delete me)", "model_disposition": "cleanup", "reason": "Signal contains explicit '(delete me)' marker in summary, indicating it is a test/synthetic artifact left behind. This is a concrete noise marker that can be cleaned up at the source."}

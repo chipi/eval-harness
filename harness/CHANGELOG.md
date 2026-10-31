@@ -149,6 +149,9 @@ that can move a result is never a patch release without saying so under **Change
   URL. The 130 triage runs are backfilled with the fleet they replayed (`tools/backfill_triage_fleet.py`:
   the fleet's code hash and commit `f07efa9`, the prompt's hash, each checked against what the runs'
   own items recorded) and re-sealed.
+- **A round with more than 40 arms is compared.** Its evidence asked the inspector for one comparison of every
+  arm, which refuses past 40, and the refusal left the rows empty without a word (the triage round, 52 arms). Past
+  the inspector's limit the round runs the same paired test on the scores directly; a refusal becomes a note.
 - **A project module edited within the second is what runs.** Adapters and hooks were imported through
   Python's bytecode cache, which trusts a `.pyc` while the source's modification time (whole seconds) and size
   match: a scorer edited to a value of the same length (`BONUS = 0.0` to `0.5`) and re-scored at once ran the

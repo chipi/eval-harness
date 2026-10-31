@@ -432,7 +432,17 @@ def evidence(goal: str, rnd: dict) -> dict:
         else None
     )
     if len(arms) > 1:
-        d = cs.compare({"runs": [",".join(arms)], "baseline": [leader], "metric": [metric]})
+        from evaluation_harness import stats  # noqa: PLC0415
+
+        if len(arms) <= cs.LIMITS["max_arms"]:
+            d = cs.compare({"runs": [",".join(arms)], "baseline": [leader], "metric": [metric]})
+        else:
+            # More arms than the inspector compares in one request: the same paired test, Holm across them,
+            # read from the scores directly. The request's refusal used to leave the rows empty, without a word.
+            series = {a: (A.scores(a).get(metric) or {}).get("values") or {} for a in arms}
+            d = stats.compare(series, leader, higher_is_better=not lower)
+        if d.get("error"):
+            out["notes"].append(f"no comparison: {d['error']}")
         out["rows"] = d.get("rows") or []
         out["notes"] += [
             w

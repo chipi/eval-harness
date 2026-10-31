@@ -93,7 +93,7 @@ when the goal already has a round.
 ### 9. A limit against the baseline
 
 A goal's axis may set `limit: baseline` instead of a number: an arm is within it when the paired test does not find
-it worse than the goal's baseline arm on that measure (one-sided, p < 0.05, the goal's paired test). Without a
+it worse than the goal's baseline arm on that measure (the goal's paired test, p < 0.05, each arm on its own). Without a
 promoted baseline the axis says so and applies no limit. `evh goals` and the goal page show "no worse than
 <baseline> (paired test)" as the limit.
 
@@ -132,8 +132,10 @@ promoted baseline the axis says so and applies no limit. `evh goals` and the goa
   `score-preview` says whether anything moved. `validate`'s note (§7) groups a round's arms **by adapter**: arms
   with different adapters (a hosted LLM's and a fine-tune's) were never one scorer.
 - **`--keep all`** carries every arm of `--from` (the round's arms, as `evh rounds` lists them).
-- **§9's paired test** is the goal's own (`stats.compare`, Holm across the group's arms), the test that decides
-  ties, so the limit and the tie read the same evidence.
+- **§9's paired test gates each arm on its own** (owner, 2026-10-31): p < 0.05 against the baseline, not corrected
+  across the arms, as a numeric limit gates each arm. Built first with Holm across the group, it ruled out nothing in
+  the triage round (56 arms, 31 noise items), not even the arm that escalates everything; per arm it rules out two.
+  Holm stays where the decision claims one arm beats the others (the tie).
 - **A round's evidence notes how many arms it reads from a re-score**, and `evh rounds` prints the round's scorer
   and each scoring change, as the goal page's round section lists them.
 - **Found while building:** adapters and hooks were imported through Python's bytecode cache, which trusts a `.pyc`

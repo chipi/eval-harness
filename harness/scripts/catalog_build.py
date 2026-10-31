@@ -2051,7 +2051,10 @@ def _goal_rows(goal: dict, by_ds: dict) -> list:
         ds = d.get("dataset_id", "")
         rows = []
         arms = (by_ds.get(ds) or {}).get("arms", [])
-        moved = [a for a in arms if a.get("superseded_by")]
+        # the measured arms read through a re-score (an older re-score superseded by a newer one is not another)
+        moved = [
+            a for a in arms if a.get("superseded_by") and not any(r.get("derived") for r in a["run_list"])
+        ]
         notes = d.get("notes", "")
         if moved:
             notes = (notes.rstrip(". ") + ". " if notes else "") + (

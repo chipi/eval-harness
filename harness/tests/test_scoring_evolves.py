@@ -157,6 +157,23 @@ try:
         rs.stdout[-900:],
     )
 
+    # a round with more arms than the inspector compares in one request still has its rows (they were empty, unsaid)
+    probe = proj / "probe_rows.py"
+    probe.write_text(
+        "import sys\n"
+        f"sys.path.insert(0, {str(HERE.parent)!r})\n"
+        "from evaluation_harness import _rounds, rounds, catalog_serve\n"
+        "catalog_serve.LIMITS['max_arms'] = 1\n"
+        "ev = rounds.evidence('tickets_summary', _rounds.find('tickets_summary', 'r1'))\n"
+        "print('ROWS', len(ev['rows']), 'NOTES', ev['notes'])\n"
+    )
+    pr = subprocess.run([sys.executable, str(probe)], cwd=proj, env=env, capture_output=True, text=True)
+    check(
+        "round evidence: more arms than one inspector request takes are still compared, by the same paired test",
+        "ROWS 1" in pr.stdout and "no comparison" not in pr.stdout,
+        out(pr)[-600:],
+    )
+
     # adopt the next change from r2: the carried arms re-scored before it opens
     evh(
         "round-close",

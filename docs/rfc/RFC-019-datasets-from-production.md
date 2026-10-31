@@ -175,6 +175,12 @@ production's own decision, accepted by the owner after a model of the Anthropic 
 replay scores as an escalation, a path production does not have. How large the gold must be, and how a no-decision
 is scored, are settled by the owner before round 2.
 
+Settled 2026-10-31, and applied as round 2 of the goal, the scoring change RFC-022 makes a step of its own: a
+no-decision is wrong on both sides, and the false-alarm ceiling is no worse than production (the baseline) by the
+paired test, each arm on its own. Re-scored at $0, round 1's runs still separate nothing (the three gpt-oss:20b rows
+fall from the top; two arms are ruled out on false alarms; 54 stay tied with the leader). The next round grows the
+gold to the owner's 93 labelled decisions and runs the onboarded models.
+
 ## Not in scope
 
 A schedule, a server, state outside the project's files, a labelling interface, holding a project's private data,

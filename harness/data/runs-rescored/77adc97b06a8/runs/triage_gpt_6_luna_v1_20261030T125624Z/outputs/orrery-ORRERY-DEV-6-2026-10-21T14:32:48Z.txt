@@ -1,0 +1,1 @@
+{"_probe_trace": [], "certainty": "high", "disposition": "cleanup", "marker": "zz-probe-dev-reject-in-timeout", "model_disposition": "cleanup", "reason": "The alert name explicitly identifies a development probe that intentionally rejects during a timeout, indicating synthetic test noise rather than a production issue."}
