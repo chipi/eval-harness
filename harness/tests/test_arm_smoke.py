@@ -105,6 +105,28 @@ check(
     ),
 )
 
+# with a reply cap, long is half the cap: a fleet's short probe calls beside its answers made every answer look long
+fleet = [{**normal, "tokens_out": n} for n in (20, 20, 20, 20, 300, 350)]
+check(
+    "flags: with a reply cap, answers under half the cap are not long, however short the other calls",
+    not any(
+        "long reply" in f
+        for f in arm_smoke.flags_for(clean_items, fleet, {"reasoning_effort": "none", "max_tokens": 1024})
+    ),
+)
+check(
+    "flags: without a cap, the same calls are long against their median (the rule the cap replaces)",
+    any("long reply" in f for f in arm_smoke.flags_for(clean_items, fleet, {"reasoning_effort": "none"})),
+)
+over = arm_smoke.flags_for(
+    clean_items, [*fleet, {**normal, "tokens_out": 700}], {"reasoning_effort": "none", "max_tokens": 1024}
+)
+check(
+    "flags: with a reply cap, a reply over half of it is long, naming the cap",
+    any("long reply" in f and "1024" in f and "700" in f for f in over),
+    over,
+)
+
 # a hosted deployment's route
 served = [{"s": 1.0, "tokens_out": 50, "finish_reason": "stop", "answered": True, "upstream": "novita"}]
 check(

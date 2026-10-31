@@ -66,11 +66,15 @@ def update_record(data_dir: Path, model_id: str, change: Any) -> dict[str, Any]:
     return doc
 
 
-def split_accepted(rec: dict[str, Any] | None, flags: list[str]) -> tuple[list[str], list[str]]:
-    """(flags still to look at, flags the record accepts): a flag whose kind (the word before its colon,
-    "reasoning", "format") the record's `accepted` names is a known property of the model a person accepted, with
-    why (gpt-oss cannot stop reasoning), not a setting still to fix. Accepted flags are reported, never hidden."""
-    kinds = set((rec or {}).get("accepted") or {})
+def split_accepted(
+    rec: dict[str, Any] | None, flags: list[str], deployment: str | None = None
+) -> tuple[list[str], list[str]]:
+    """(flags still to look at, flags accepted): a flag whose kind (the words before its colon, "reasoning",
+    "where it ran") the record's `accepted` names, or the named deployment's, is a known property a person
+    accepted, with why: of the model (gpt-oss cannot stop reasoning) or of one deployment (a hosted gateway has no
+    build to pin, and its repeats vary). Accepted flags are reported, never hidden."""
+    dep = deployment_of(rec or {}, deployment) if deployment else None
+    kinds = set((rec or {}).get("accepted") or {}) | set((dep or {}).get("accepted") or {})
     left = [f for f in flags if f.split(":", 1)[0] not in kinds]
     return left, [f for f in flags if f.split(":", 1)[0] in kinds]
 

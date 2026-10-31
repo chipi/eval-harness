@@ -195,4 +195,24 @@ with tempfile.TemporaryDirectory() as td:
         got,
     )
 
+acc_rec = {
+    "accepted": {"reasoning": "it cannot stop"},
+    "deployments": [
+        {"id": "hosted", "accepted": {"where it ran": "a gateway has no build to pin"}},
+        {"id": "x3"},
+    ],
+}
+acc_flags = ["reasoning: 3 calls", "where it ran: not pinned", "determinism: differs"]
+check(
+    "split_accepted: the record's kinds, and the named deployment's, are accepted; the rest are left",
+    _models.split_accepted(acc_rec, acc_flags, "hosted")
+    == (["determinism: differs"], ["reasoning: 3 calls", "where it ran: not pinned"]),
+)
+check(
+    "split_accepted: another deployment's acceptance does not carry over",
+    _models.split_accepted(acc_rec, acc_flags, "x3")
+    == (["where it ran: not pinned", "determinism: differs"], ["reasoning: 3 calls"])
+    and _models.split_accepted(acc_rec, acc_flags)[1] == ["reasoning: 3 calls"],
+)
+
 sys.exit(summary())

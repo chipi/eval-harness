@@ -116,7 +116,14 @@ def flags_for(items: list[dict[str, Any]], calls: list[dict[str, Any]], params: 
                     f"slow call: {len(slow)} call(s) over half the {limit:.0f} s limit (max {max(c['s'] for c in slow):.1f} s)"
                 )
         sizes = sorted(c["tokens_out"] for c in calls if c.get("tokens_out"))
-        if len(sizes) >= LONG_MIN_CALLS:
+        cap = params.get("max_tokens")
+        if cap:
+            # With a reply cap, a reply is long when it passes half the cap: an adapter that makes short probe calls
+            # beside its answer (the triage fleet) made every answer 3x the median.
+            long = [n for n in sizes if n > int(cap) / 2]
+            if long:
+                out.append(f"long reply: {len(long)} call(s) over half the {cap}-token cap (max {max(long)})")
+        elif len(sizes) >= LONG_MIN_CALLS:
             median = (
                 sizes[len(sizes) // 2]
                 if len(sizes) % 2
@@ -258,13 +265,18 @@ def main() -> int:
         )
     if items and items[0].get("deterministic") is True:
         print("  determinism: item 1 twice gave the same output: repeats on this machine will be identical")
-    flags, accepted = _models.split_accepted(rec, flags_for(items, calls, params_for_flags))
+    flags, accepted = _models.split_accepted(
+        rec, flags_for(items, calls, params_for_flags), cfg.get("deployment")
+    )
     status = "pass" if not flags else "check"
     print("SMOKE PASS" if not flags else "SMOKE CHECK")
     for f in flags:
         print(f"  - {f}")
     for f in accepted:
-        print(f"  accepted: {f} ({((rec or {}).get('accepted') or {}).get(f.split(':', 1)[0], '')})")
+        kind = f.split(":", 1)[0]
+        dep = _models.deployment_of(rec or {}, cfg.get("deployment") or "") or {}
+        why = ((rec or {}).get("accepted") or {}).get(kind) or (dep.get("accepted") or {}).get(kind, "")
+        print(f"  accepted: {f} ({why})")
     if rec is not None and not args.no_record:
         smoke = {
             "status": status,

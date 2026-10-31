@@ -263,7 +263,7 @@ def main() -> int:
         elif dep is None:
             dep = {"id": "local", "where": "local"}
             deployments.append(dep)
-    flags, accepted = _models.split_accepted(rec, flags)
+    flags, accepted = _models.split_accepted(rec, flags, dep["id"])
     status = "pass" if not flags else "check"
     dep["onboarding"] = {"status": status, "at": now(), "where": where, "flags": flags, "report": report}
     if accepted:

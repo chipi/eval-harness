@@ -119,6 +119,11 @@ deployments:
       json_valid: true
     accepted:
     - 'reasoning: it still reasons with the record''s settings'
+  accepted:
+    where it ran: a hosted gateway serves the provider's current build; there is no
+      digest, revision or hash to pin
+    determinism: a hosted provider batches requests, so temperature 0 does not repeat
+      exactly; repeats measure it
 capabilities:
   reasons: true
   json_mode: true

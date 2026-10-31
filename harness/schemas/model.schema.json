@@ -40,7 +40,8 @@
             "properties": {"provider": {"type": "string"}, "base_url": {"type": "string"}, "model": {"type": "string"}, "api_key_env": {"type": "string"}}
           },
           "checked_at": {"type": "string", "description": "When the deployment was last checked (ISO date or time)."},
-          "onboarding": {"$ref": "#/$defs/smoke", "description": "The latest task-independent onboarding of this deployment (evh model-onboard)."}
+          "onboarding": {"$ref": "#/$defs/smoke", "description": "The latest task-independent onboarding of this deployment (evh model-onboard)."},
+          "accepted": {"type": "object", "additionalProperties": {"type": "string"}, "description": "Flag kinds accepted as this deployment's own nature, each with why (a hosted gateway: no build to pin, repeats vary); the record's `accepted` holds the model's."}
         }
       }
     },
