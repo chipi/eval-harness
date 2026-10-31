@@ -167,6 +167,34 @@ def _timed(call_system: Any) -> Any:
     return call
 
 
+UNREACHABLE = (
+    "Connection refused",
+    "No route to host",
+    "Network is unreachable",
+    "Name or service not known",
+    "nodename nor servname",
+    "Temporary failure in name resolution",
+)
+
+
+class ServerUnreachable(RuntimeError):
+    """An item's every model call failed because the server could not be reached."""
+
+
+def _unreachable(res: Any) -> str | None:
+    """The error, when every call an adapter reports (`meta["calls"]`) failed reaching its server.
+
+    An adapter that turns a failed call into an answer (the triage fleet defers it, and the replay
+    records "no terminal decision") wrote a complete-looking run when a tunnel dropped: 54 and 65
+    refused items scored as the model's no-decisions (2026-10-31). A model's own failure, the same
+    way twice at temperature 0, is still a measurement; only a server that is not there stops."""
+    calls = (getattr(res, "meta", None) or {}).get("calls") or []
+    errors = [str(c.get("error") or "") for c in calls if isinstance(c, dict)]
+    if errors and all(any(m in e for m in UNREACHABLE) for e in errors):
+        return errors[-1][:160]
+    return None
+
+
 def _say_stopped(run_dir: Path, n_items: int, config: Any, exc: BaseException) -> None:
     """What a run that stopped mid-pass left, and the two ways on: resume it, or delete it.
     A crash used to end in the adapter's traceback alone, the run directory stayed with no
@@ -286,6 +314,10 @@ def one_pass(
             )
             if res.cost_usd:
                 spent += res.cost_usd
+            unreachable = _unreachable(res)
+            if unreachable:
+                # Before the output is written, so `--resume` calls this item again.
+                raise ServerUnreachable(f"item {item['item_id']}: every model call failed: {unreachable}")
         outputs[item["item_id"]] = res.output
         if live_dir is not None and not resumed:
             # Atomic: `--resume` treats the presence of this file as proof the item is
@@ -772,6 +804,8 @@ def main() -> int:
             )
         except BaseException as exc:
             _say_stopped(run_dir, len(ds.get("items") or []), args.config, exc)
+            if isinstance(exc, ServerUnreachable):
+                sys.exit(1)  # said above in full; a traceback adds nothing
             raise
         run_dir.mkdir(parents=True, exist_ok=True)
         write_text_atomic(

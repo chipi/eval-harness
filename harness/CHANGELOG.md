@@ -172,6 +172,12 @@ that can move a result is never a patch release without saying so under **Change
   from the params was always `in_process: false`, so a local baseline (Lead-3, a keyword rule) kept its
   libraries on the runner instead of the deployment. `evh fingerprint-migrate` brings existing v5
   fingerprints to the rule when it has the run's params (11 runs here, one baseline's hash).
+- **A run stops when its server cannot be reached.** An adapter that turns a failed model call into an
+  answer (the triage replay records it as the fleet's "no terminal decision") wrote a complete-looking run
+  when a tunnel dropped: 54 and 65 refused items scored as the model's own failures. When every call an
+  item reports (`meta["calls"]`) failed reaching its server (connection refused, no route, a name that does
+  not resolve), `experiment-run` stops there with `STOPPED`, that item unwritten, and `--resume` calls it
+  again. A model's own failure is still a measurement.
 
 ## 0.5.0 — 2026-10-29
 
