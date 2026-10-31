@@ -722,6 +722,18 @@ def main() -> int:
 
     capped = False
     per_repeat: list[dict[str, float]] = []
+    if args.repeat > 1 and cfg.get("model_record") and cfg.get("deployment"):
+        rec = _models.find(DATA, cfg["model_record"]) or {}
+        dep = _models.deployment_of(rec, cfg["deployment"]) or {}
+        # Determinism is a deployment's, not a model's: the same weights differ between machines.
+        same = (((dep.get("onboarding") or {}).get("report") or {}).get("deterministic")) is True
+        if same and float((cfg.get("params") or {}).get("temperature") or 0) == 0:
+            where = f" on {cfg['deployment']}"
+            print(
+                f"  NOTE: {cfg['model_record']} gave the same output twice{where} when it was onboarded, and this arm "
+                f"runs at temperature 0: expect its {args.repeat} passes to be identical. The spread comes from "
+                "other deployments (machines, builds) or a temperature above 0."
+            )
     for i in range(args.repeat):
         run_id = base_id if args.repeat == 1 else f"{base_id}_r{i + 1}"
         run_dir = RUNS / run_id

@@ -753,6 +753,29 @@ try:
         m.get("model_record") == "gem" and m.get("deployment_id") == "dgx",
         {k: m.get(k) for k in ("model_record", "deployment_id")},
     )
+    rec = yaml.safe_load((proj / "data" / "models" / "gem.yaml").read_text())
+    r = evh(
+        "experiment-run", "--config", config("rep0", "model_record: gem\ndeployment: dgx\n"), "--repeat", "2"
+    )
+    check(
+        "experiment-run --repeat: no note while the deployment's own onboarding has not found it deterministic",
+        r.returncode == 0 and "expect its" not in r.stdout,
+        r.stdout[-300:],
+    )
+    rec["deployments"][0]["onboarding"] = {
+        "status": "pass",
+        "at": "2026-10-31",
+        "report": {"deterministic": True},
+    }
+    (proj / "data" / "models" / "gem.yaml").write_text(yaml.safe_dump(rec))
+    r = evh(
+        "experiment-run", "--config", config("rep", "model_record: gem\ndeployment: dgx\n"), "--repeat", "2"
+    )
+    check(
+        "experiment-run --repeat: a model onboarded as deterministic, at temperature 0, is said to give identical passes",
+        r.returncode == 0 and "expect its 2 passes to be identical" in r.stdout and "on dgx" in r.stdout,
+        r.stdout[-400:],
+    )
     r = evh("experiment-run", "--config", config("plain", ""))
     run_dir = next((proj / "data" / "runs").glob("plain_v1_*"), None)
     m2 = json.loads((run_dir / "metrics.json").read_text()) if run_dir else {}
