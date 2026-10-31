@@ -786,6 +786,21 @@ try:
         and "deployment_id" not in m2,
         (r.stdout + r.stderr)[-300:],
     )
+    (proj / "data" / "models" / "lead.yaml").write_text(
+        yaml.safe_dump({"model_id": "lead", "kind": "baseline", "aliases": ["lead-5"]})
+    )
+    r = evh("model-onboard", "lead", "--config", config("lead", ""))
+    lead = yaml.safe_load((proj / "data" / "models" / "lead.yaml").read_text())
+    dep = (lead.get("deployments") or [{}])[0]
+    check(
+        "model-onboard --config: a baseline (or an ML model) is onboarded through an arm that runs it, end to end",
+        r.returncode == 0
+        and "ONBOARD PASS" in r.stdout
+        and dep.get("id") == "local"
+        and (dep.get("onboarding") or {}).get("status") == "pass"
+        and "SMOKE PASS" in ((dep.get("onboarding") or {}).get("report") or {}).get("smoke", ""),
+        (r.stdout + r.stderr)[-600:],
+    )
     r = evh("experiment-run", "--config", config("typo", "model_record: gem\ndeployment: x3\n"))
     check(
         "experiment-run: a deployment the record lacks is refused before anything runs",
