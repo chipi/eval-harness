@@ -1,0 +1,1 @@
+{"_probe_trace": [], "certainty": "high", "disposition": "cleanup", "marker": "sourcemap probe (delete me)", "model_disposition": "cleanup", "reason": "The signal explicitly identifies itself as a sourcemap test probe marked for deletion; remove the synthetic noise at its source."}

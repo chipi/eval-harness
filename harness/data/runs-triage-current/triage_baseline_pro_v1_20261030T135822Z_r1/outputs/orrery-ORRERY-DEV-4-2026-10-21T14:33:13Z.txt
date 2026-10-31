@@ -1,0 +1,1 @@
+{"_probe_trace": [], "certainty": "high", "disposition": "cleanup", "marker": "zz-probe-dev-reject-in-script", "model_disposition": "cleanup", "reason": "The alert name itself is an explicit synthetic/test marker ('zz-probe-dev-reject-in-script'). It is a deliberate probe error in the dev environment, not a production signal. Cleanup removes this noise at the source."}
