@@ -1,0 +1,1 @@
+{"_probe_trace": [], "certainty": "high", "disposition": "cleanup", "marker": "(delete me)", "model_disposition": "cleanup", "reason": "The alert summary explicitly contains a 'delete me' marker, indicating this is a test or synthetic probe that is no longer needed."}
