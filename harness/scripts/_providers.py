@@ -158,6 +158,8 @@ def _either(name: str, role: str) -> str:
 
 #: Ollama's port: a server there takes any key, on this machine or another one on the network.
 OLLAMA_PORT = 11434
+#: The key sent to such a server: the OpenAI client wants one present, and it bills nothing.
+NO_KEY = "not-needed"
 
 
 def keyless(base: str | None) -> bool:
@@ -191,7 +193,7 @@ def route(params: dict[str, Any], role: str) -> Route:
     if provider == "openai" and not key and keyless(base):
         # A local server, or Ollama anywhere, takes any key and the client only wants one present: asking a
         # newcomer for OPENAI_API_KEY to reach their own Ollama was a step with no purpose (owner, 2026-10-31).
-        key_var, key = "(none: a local server)", "not-needed"
+        key_var, key = "(none: a local server)", NO_KEY
     # An address given with the suffix already (a LiteLLM proxy written as http://host:4000/v1, as its own docs
     # show it) keeps one: appending again sent every call to /v1/v1, which the proxy answers 404.
     if base and spec.base_suffix and not base.rstrip("/").endswith(spec.base_suffix):

@@ -96,8 +96,17 @@ def main() -> int:
                     print(f"  {'':11} {'reachable?':20} {url}  {_probe(url)}")
     for role, label in (("arm", "arms"), ("judge", "judges")):
         print(f"  {label} can call: {', '.join(ready[role]) or 'none'}")
-    any_key = bool(ready["arm"] or ready["judge"])
-    if not any_key:
+    # A local server (or Ollama's port) is called with no key: it bills nothing, so it is no reason for a cap.
+    local = {
+        (role, name)
+        for role in ready
+        for name in ready[role]
+        if _providers.route({"provider": name, "model": "-"}, role).key == _providers.NO_KEY
+    }
+    if local:
+        print(f"  {', '.join(sorted({n for _r, n in local}))}: a local server, called with no key")
+    any_key = any((role, name) not in local for role in ready for name in ready[role])
+    if not any_key and not local:
         print("\n  No usable credential. `provider: echo` (arms) and `provider: fake` (judges) work")
         print("  offline: that proves the plumbing, not a model.")
 

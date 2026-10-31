@@ -393,7 +393,7 @@ check(
     _providers.problems({**local, "base_url": "http://127.0.0.1:11434/v1"}, "arm") == []
     and _providers.problems({**local, "base_url": "http://localhost:8000/v1"}, "arm") == []
     and _providers.problems({**local, "base_url": "http://100.69.49.126:11434/v1"}, "arm") == []
-    and _providers.route({**local, "base_url": "http://127.0.0.1:11434/v1"}, "arm").key == "not-needed",
+    and _providers.route({**local, "base_url": "http://127.0.0.1:11434/v1"}, "arm").key == _providers.NO_KEY,
 )
 check(
     "openai: any other address still needs the key, and says so",
@@ -409,4 +409,41 @@ check(
     _providers.route({**local, "base_url": "http://127.0.0.1:11434/v1"}, "arm").key == "sk-real",
 )
 clear()
+
+# env-check: a local server bills nothing, so it is no reason to demand a spending cap.
+import subprocess  # noqa: E402
+
+with tempfile.TemporaryDirectory() as proj:
+    base_env = {
+        k: v
+        for k, v in os.environ.items()
+        if not k.startswith("EVAL_") and k not in VARS and not k.startswith("EVAL_JUDGE_")
+    }
+    script = str(Path(__file__).resolve().parents[1] / "scripts" / "env_check.py")
+    ran = subprocess.run(
+        [sys.executable, script],
+        env=dict(base_env, EVAL_HOME=proj, OPENAI_BASE_URL="http://127.0.0.1:11434/v1"),
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    check(
+        "env-check: a local server is callable with no key, said so, and asks for no spending cap",
+        ran.returncode == 0
+        and "openai: a local server, called with no key" in ran.stdout
+        and "A provider key is set" not in ran.stdout,
+        ran.stdout[-600:] + ran.stderr[-300:],
+    )
+    keyed = subprocess.run(
+        [sys.executable, script],
+        env=dict(base_env, EVAL_HOME=proj, OPENAI_API_KEY="sk-real-key-1234567890"),
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    check(
+        "env-check: a real key with no cap still fails, as before",
+        keyed.returncode == 1 and "A provider key is set" in keyed.stdout,
+        keyed.stdout[-400:],
+    )
 sys.exit(summary())
