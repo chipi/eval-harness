@@ -248,6 +248,18 @@ def _flat_conditions(fp: dict) -> dict[str, str]:
     server = dep.get("server") or {}
     if server.get("name"):
         out["deployment.server"] = " ".join(x for x in (server["name"], server.get("version")) if x)
+    for k in ("model", "source"):
+        if dep.get(k):
+            out[f"deployment.{k}"] = str(dep[k])
+    weights = dep.get("weights") or {}
+    build = weights.get("digest") or weights.get("revision") or weights.get("file_hash")
+    if build:
+        out["deployment.build"] = str(build)
+    if weights.get("quantization") or weights.get("precision"):
+        out["deployment.quantization"] = str(weights.get("quantization") or weights.get("precision"))
+    hosted = dep.get("hosted") or {}
+    if hosted.get("provider_id"):
+        out["deployment.upstream"] = str(hosted["provider_id"])
     inst = fp.get("instrument") or {}
     harness = inst.get("harness") or {}
     for k in ("version", "code_sha256"):

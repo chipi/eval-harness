@@ -640,6 +640,28 @@ check(
     and "machine.libraries" not in c_served,
     c_served,
 )
+c_hosted = _flat_conditions(g1)
+check(
+    "conditions: the deployment's model, where its facts came from, and a hosted one's upstream id",
+    c_hosted.get("deployment.model") == "eval-x"
+    and c_hosted.get("deployment.source") == "adapter"
+    and c_hosted.get("deployment.upstream") == "openrouter/anthropic/claude-x",
+    c_hosted,
+)
+c_built = _flat_conditions(
+    {
+        **on_dgx,
+        "deployment": {
+            **on_dgx["deployment"],
+            "weights": {"digest": "6114515d63c1", "quantization": "Q4_K_M"},
+        },
+    }
+)
+check(
+    "conditions: the build and its quantization, when the deployment knows them",
+    c_built.get("deployment.build") == "6114515d63c1" and c_built.get("deployment.quantization") == "Q4_K_M",
+    c_built,
+)
 c_in = _flat_conditions(in_proc)
 check(
     "conditions: an in-process model's libraries are the deployment's",
