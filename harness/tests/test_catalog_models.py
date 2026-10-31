@@ -273,7 +273,7 @@ with tempfile.TemporaryDirectory() as td:
         "differs" in gem
         and "reasoning off" in gem
         and "pass" in gem
-        and '<span class="muted">dgx</span>' in gem
+        and re.search(r'<span class="muted" title="[^"]*">dgx</span>', gem)
         and 'data-differs="yes"' in gem
         and 'data-where="self-hosted"' in gem
         and 'data-status="vetted"' in gem,
@@ -313,8 +313,8 @@ with tempfile.TemporaryDirectory() as td:
     )
     check(
         "models page: what changed lists the onboardings and the settings change",
-        "onboarded mac: vetted" in models
-        and "onboarded dgx: vetted" in models
+        "mac onboarding: pass" in models
+        and "dgx onboarding: pass" in models
         and "reasoning_effort (server default) → none (it looped)" in models,
     )
     page = (out / "models" / "gem.html").read_text()
@@ -341,6 +341,31 @@ with tempfile.TemporaryDirectory() as td:
     check(
         "model page: each arm's smoke from the record's smokes, and the settings the arm sets",
         "max_tokens 2048" in page and "slow" in page and "pass" in page,
+    )
+    check(
+        "model page: one collapsible block per deployment holding its build and its own onboarding, no second section",
+        page.count('<details class="rounddetail" id="dep-') == 2
+        and 'id="dep-mac"' in page
+        and 'id="dep-dgx"' in page
+        and "deployments and their onboarding" in page
+        and ">onboarding</" not in page.replace("<dt>onboarding</dt>", ""),
+        (
+            page.count('<details class="rounddetail" id="dep-'),
+            [x for x in ("dep-mac", "dep-dgx", "deployments and their onboarding") if x not in page],
+            page[page.find(">onboarding</") - 120 : page.find(">onboarding</") + 20]
+            if ">onboarding</" in page
+            else "",
+        ),
+    )
+    check(
+        "model page: the arms table names each arm's deployment",
+        ">deployment<" in page[page.find("modelarms") :],
+    )
+    gem_row = models[models.find('href="models/gem.html"') :][:3000]
+    check(
+        "models page: the best-result cell is one place, with a count of the others linked to the model's page",
+        "#1 of" in gem_row and gem_row.count("#1 of") + gem_row.count("#2 of") == 1,
+        gem_row[-800:],
     )
     bare = (out / "models" / "bare.html").read_text()
     check(

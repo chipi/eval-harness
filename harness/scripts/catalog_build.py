@@ -877,7 +877,12 @@ def render_datasets(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
                     dataset_link(ds)
                     + (f"<br><small>from {dataset_link(parent)}</small>" if parent else "")
                     + (f"<br><small>{e(v['origin'])}</small>" if v.get("origin") and not parent else ""),
-                    " ".join(f'<span class="tag">{e(k)}: {e(t)}</span>' for k, t in sorted(tags.items()))
+                    # A chip per tag: run together as text, five tags and a Hugging Face pin made one tall
+                    # unreadable cell (owner, 2026-10-31).
+                    "".join(
+                        f'<span class="tag" title="{e(k)}: {e(t)}"><b>{e(k)}</b> {e(t)}</span>'
+                        for k, t in sorted(tags.items())
+                    )
                     or "—",
                     f'<span data-v="{v["items"]}">{v["items"]}</span>',
                     f'<span data-v="{len(v["arms"])}">{len(v["arms"])}</span>',
@@ -2209,13 +2214,45 @@ def _answer(A: Adapter, g: dict, by_ds: dict, measure: str) -> str:
     """The goal's answer so far: on each of its datasets, the promoted baseline and why, or that
     nothing has been decided, with the command that decides it."""
     parts = []
+    # A round closed after the baseline was promoted says what is known now, so it leads; the promotion's reason
+    # is why that run was kept, and can name a plan a later round replaced (the triage gold "grows to 93").
+    fn = getattr(A, "rounds", None)
+    closed = sorted(
+        (
+            r
+            for r in (fn() if callable(fn) else [])
+            if r.get("goal") == g["goal_id"]
+            and r.get("status") == "closed"
+            and (r.get("conclusion") or {}).get("text")
+        ),
+        key=lambda r: str(r.get("closed_at") or ""),
+    )
+    latest = closed[-1] if closed else None
     for d in g.get("datasets") or []:
         ds = d.get("dataset_id", "")
         v = by_ds.get(ds) or {}
         bl = [b for b in v.get("baselines", []) if not b.get("goal") or b.get("goal") == g["goal_id"]]
         label = {a["arm"]: a["label"] for a in v.get("arms", [])}
         head = dataset_link(ds, "../")
-        if bl:
+        if bl and latest and str(latest.get("closed_at") or "") > str(bl[-1].get("promoted_at") or ""):
+            b = bl[-1]
+            arm = label.get(b.get("arm") or "", b["run"])
+            who = arm_link(b["arm"], arm, "../") if b.get("arm") else e(arm)
+            parts.append(
+                f'<div class="answer"><p class="small muted">{head} · round {e(latest["round_id"])} concluded '
+                f"{e(_when(str(latest.get('closed_at') or '')))}</p>"
+                f"<p>{e(latest['conclusion']['text'])}</p>"
+                f'<p class="small">baseline: <b>{who}</b>, promoted {e(_when(b["promoted_at"]))}'
+                + (f" · scored against {e(b['tier'])}" if b.get("tier") else "")
+                + f'</p><details class="inline small"><summary>why it was promoted</summary>{e(b["reason"])}</details>'
+                + (
+                    f'<p><a class="btn small" href="{inspect_url([b["arm"]], "../", metric=measure)}">inspect it</a></p>'
+                    if b.get("arm")
+                    else ""
+                )
+                + "</div>"
+            )
+        elif bl:
             b = bl[-1]
             arm = label.get(b.get("arm") or "", b["run"])
             who = arm_link(b["arm"], arm, "../") if b.get("arm") else e(arm)
@@ -2237,6 +2274,15 @@ def _answer(A: Adapter, g: dict, by_ds: dict, measure: str) -> str:
                 '<code>evh run-promote --run &lt;run_id&gt; --reason "…"</code></p></div>'
             )
     return "".join(parts) or '<p class="muted">The goal names no dataset.</p>'
+
+
+def _fold(text: str, at: int = 200) -> str:
+    """A suggestion as one line: past `at` characters (45 tied arms named one by one), its opening words up to
+    the list, with the whole text folded under them."""
+    if len(text) <= at:
+        return e(text)
+    head = text[: text.find(" (")] if " (" in text[:at] else text[:80] + "…"
+    return f'<details class="inline"><summary>{e(head)}</summary><small>{e(text)}</small></details>'
 
 
 def _rounds_block(A: Adapter, g: dict, measure: str, lower: bool, by_ds: dict | None = None) -> str:
@@ -2286,11 +2332,17 @@ def _rounds_block(A: Adapter, g: dict, measure: str, lower: bool, by_ds: dict | 
             {
                 "cls": "" if r.get("status") == "closed" else "t-open",
                 "cells": [
-                    f"<b>{e(r['round_id'])}</b>"
-                    + (f" <small>from {e(r['from'])}</small>" if r.get("from") else ""),
-                    e(r.get("status", "")),
-                    e(r.get("hypothesis", "") or "—"),
-                    f'<span data-v="{len(r.get("arms") or [])}">{len(r.get("arms") or [])}</span>'
+                    f"<b>{e(r['round_id'])}</b> <small>{e(r.get('status', ''))}</small>"
+                    + (f"<br><small>from {e(r['from'])}</small>" if r.get("from") else ""),
+                    # The conclusion leads, with room to be read: last, in a narrow column, a round's answer ran
+                    # thirty lines down the page (owner, 2026-10-31).
+                    '<div class="concl">'
+                    + (e(concl) or ("<i>open</i>" if r.get("status") == "open" else "—"))
+                    + "</div>",
+                    '<div class="hyp">' + e(r.get("hypothesis", "") or "—") + "</div>",
+                    # Arms, best and the comparison in one narrow cell: three columns of mostly "—" took the width
+                    # the conclusion needs (owner, 2026-10-31).
+                    f'<div class="armsbest"><span data-v="{len(r.get("arms") or [])}">{len(r.get("arms") or [])} arms</span>'
                     + (f" <small>({len(r.get('retired') or [])} retired)</small>" if r.get("retired") else "")
                     # The round's arms in the inspector, against its leader: `evh inspect --round`.
                     + (
@@ -2298,19 +2350,38 @@ def _rounds_block(A: Adapter, g: dict, measure: str, lower: bool, by_ds: dict | 
                         f'href="{inspect_url((r.get("arms") or [])[:INSPECT_MAX], "../", baseline=arm, metric=measure)}">inspect</a>'
                         if arm and len(r.get("arms") or []) > 1
                         else ""
-                    ),
-                    (f"{arm_link(arm, label, '../')} <small>{fmt(mean)}</small>" if arm else "—"),
-                    vs,
-                    e(concl) or ("<i>open</i>" if r.get("status") == "open" else "—"),
+                    )
+                    + (
+                        f"<br><small>best</small> {arm_link(arm, label, '../')} <small>{fmt(mean)}</small>"
+                        if arm
+                        else ""
+                    )
+                    + (f"<br>{vs}" if vs != "—" else "")
+                    + "</div>",
                 ],
             }
         )
         lines = [f"<li>changed: {e(c)}</li>" for c in r.get("changes") or []]
+        # Retirements grouped by their reason, the carried arms behind one line: an arm a line made round 3's panel
+        # fifty-four lines of the same two sentences (owner, 2026-10-31).
+        by_reason: dict = {}
+        for x in r.get("retired") or []:
+            by_reason.setdefault(x["reason"], []).append(x["config_id"])
         lines += [
-            f"<li>retired {_config_link(A, r, x['config_id'])}: {e(x['reason'])}</li>"
-            for x in r.get("retired") or []
+            f"<li>retired {len(cs)}: {e(why)}<br><small>{', '.join(_config_link(A, r, c) for c in cs)}</small></li>"
+            for why, cs in by_reason.items()
         ]
-        lines += [f"<li>carried in unchanged: {_config_link(A, r, c)}</li>" for c in r.get("carried") or []]
+        carried = r.get("carried") or []
+        lines += (
+            [
+                (
+                    f'<li><details class="inline"><summary>carried in unchanged: {len(carried)}</summary>'
+                    f"<small>{', '.join(_config_link(A, r, c) for c in carried)}</small></details></li>"
+                )
+            ]
+            if carried
+            else []
+        )
         # The scorer it is judged by, and each change of it (RFC-022): `evh rounds` prints the same lines.
         lines += [f"<li>judged by <code>{e(r['scorer'])}</code></li>"] if r.get("scorer") else []
         lines += [
@@ -2330,7 +2401,7 @@ def _rounds_block(A: Adapter, g: dict, measure: str, lower: bool, by_ds: dict | 
                     for v in ev["against"]
                 ]
                 sugg = "".join(
-                    f"<li>{e(what)}"
+                    f"<li>{_fold(what)}"
                     + (
                         f'<br><code class="cmd">{e(cmd)}</code> <button type="button" class="btn small copy" data-copy="{e(cmd)}">copy</button>'
                         if cmd
@@ -2341,41 +2412,49 @@ def _rounds_block(A: Adapter, g: dict, measure: str, lower: bool, by_ds: dict | 
                 ) + "".join(f'<li class="muted">{e(n)}</li>' for n in ev["notes"])
             except SystemExit:
                 sugg = ""
-        if lines or sugg:
-            details.append(
-                f'<details class="rounddetail"{" open" if r.get("status") == "open" else ""}><summary>{e(r["round_id"])}'
-                f" · {e(r.get('status', ''))}</summary><ul>{''.join(lines)}</ul>"
-                + (
-                    f'<p class="small"><b>suggested next</b>, each as the command that does it (the catalog only reads):</p><ul class="suggest">{sugg}</ul>'
-                    if sugg
-                    else ""
-                )
-                + "</details>"
+        # One section per round: its header is the row the rounds table had, its body the detail that sat in a
+        # second list below the table; one place per round, folded until opened (owner, 2026-10-31).
+        cells = rows[-1]["cells"]
+        counts = " · ".join(
+            x
+            for x in (
+                f"{len(r.get('changes') or [])} change(s)" if r.get("changes") else "",
+                f"{len(r.get('retired') or [])} retired" if r.get("retired") else "",
+                f"{len(carried)} carried" if carried else "",
+                f"judged by {e(str(r['scorer'])[:12])}" if r.get("scorer") else "",
+                "suggested next" if sugg else "",
             )
+            if x
+        )
+        body = (f"<ul>{''.join(lines)}</ul>" if lines else "") + (
+            f'<p class="small"><b>suggested next</b>, each as the command that does it (the catalog only reads):</p><ul class="suggest">{sugg}</ul>'
+            if sugg
+            else ""
+        )
+        details.append(
+            f'<details class="roundcard {rows[-1]["cls"]}" id="round-{e(r["round_id"])}">'
+            f'<summary><div class="rc-round">{cells[0]}</div><div class="rc-concl">{cells[1]}</div>'
+            f'<div class="rc-hyp">{cells[2]}</div><div class="rc-arms">{cells[3]}'
+            + (f'<br><small class="muted">{counts}</small>' if counts else "")
+            + "</div></summary>"
+            + (f'<div class="rc-body">{body}</div>' if body else "")
+            + "</details>"
+        )
     return (
         '<p class="small muted">Rounds are optional: each one sets out to learn something, changes a few '
         "arms, drops what lost and says why, and ends in a conclusion. Decisions are made with "
         "<code>evh round-open</code>, <code>round-retire</code> and <code>round-close</code>; "
-        "<code>evh rounds</code> says the same as this page.</p>"
-        + table(
-            "rounds",
-            [
-                "round",
-                "status",
-                "set out to learn",
-                "arms in play",
-                f"best on {e(measure)}",
-                "against the previous round",
-                "concluded",
-            ],
-            rows,
-        )
+        "<code>evh rounds</code> says the same as this page. Open a round for what changed, what was "
+        "retired and why, and what to do next.</p>"
+        '<div class="roundcards"><div class="rc-head" aria-hidden="true"><div>round</div>'
+        f"<div>concluded</div><div>set out to learn</div><div>arms · best on {e(measure)}</div></div>"
         + "".join(details)
+        + "</div>"
     )
 
 
 def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
-    """One goal: its answer so far (the promoted baselines) first, then what it is for, then on
+    """One goal: what it is for, its answer so far (the promoted baselines), how it got there (its rounds), then on
     each of its datasets the arms that record its measure, grouped by what they are scored
     against, a leader chosen within each group."""
     crit = g.get("success_criteria") or {}
@@ -2437,14 +2516,15 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
     if see:
         dl += f'<dt>links</dt><dd><ul class="small">{see}</ul></dd>'
     body = hero("goal", e(g.get("title") or g["goal_id"]), e(g.get("statement", "")))
-    body += block("01", "the answer so far", _answer(A, g, by_ds, measure))
-    n = 2
+    # What the goal is for, then the answer so far, then how it was reached (its rounds): the page explains the
+    # goal before it concludes (owner, 2026-10-31).
+    body += block("01", "what it is for", f'<dl class="kv">{dl}</dl>')
+    body += block("02", "the answer so far", _answer(A, g, by_ds, measure))
+    n = 3
     rounds_html = _rounds_block(A, g, measure, prim.get("direction") == "lower", by_ds)
     if rounds_html:
-        body += block(f"{n:02d}", "rounds", rounds_html, "rounds")
+        body += block(f"{n:02d}", "how we got here: rounds", rounds_html, "rounds")
         n += 1
-    body += block(f"{n:02d}", "what it is for", f'<dl class="kv">{dl}</dl>')
-    n += 1
     retired_in = retired_in_of(A, g)
     for ans in goal_answers(g, by_ds):
         ds, v = ans["dataset"], by_ds.get(ans["dataset"]) or {}

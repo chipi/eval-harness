@@ -199,8 +199,8 @@ try:
     )
     answer = html.find("the answer so far")
     check(
-        "catalog: the goal page leads with the answer, the promoted baseline and its reason, before what it is for",
-        0 <= answer < html.find("what it is for") and "lead2 answers the triage goal on six tickets" in html,
+        "catalog: the goal page explains what it is for first, then the answer: the promoted baseline and its reason",
+        0 <= html.find("what it is for") < answer and "lead2 answers the triage goal on six tickets" in html,
     )
     check(
         "catalog: the goal page groups its arms by what they are scored against, with the baseline tagged",

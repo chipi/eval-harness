@@ -281,7 +281,7 @@ tiles open it.
   carries, a dataset without that key grouped as "no <key>"), the all / new / active chips, then one
   row per dataset, most arms first:
   **dataset** ("from `<parent>`" under a version; under a dataset made from a capture, its origin:
-  "capture `<id>`, where …, one per …"; the new badge), **tags** (`key: value` chips, RFC-019),
+  "capture `<id>`, where …, one per …"; the new badge), **tags** (one chip per tag, one per line, the key muted, the value cut at a width with the whole tag on hover; RFC-019),
   **items**, **arms**, **runs in period** (with its trend), **runs per day** (a line), **spend in
   period**, **references**, **goals**, **baseline** (the promoted arm), **last run**. Filterable:
   the filter matches tags too.
@@ -362,44 +362,51 @@ tiles open it.
 
 ## The goal page
 
-The page answers first, then explains, then shows the evidence.
+The page explains the goal, then answers, then shows how it got there and the evidence (owner, 2026-10-31).
 
 1. **Hero:** kicker `goal`, the goal's title, its statement.
-2. `01 the answer so far`: one answer box per dataset of the goal, linked to its dataset page.
-   With a baseline promoted for this goal: "baseline promoted <date> · scored against <tier>",
-   the arm in bold, the reason, and an **inspect it** button. Without one: "No decision yet. When
-   the tests separate an arm worth keeping, promote its run with the reason they give:
-   `evh run-promote --run <run_id> --reason "…"`".
-3. `02 rounds`, only when the goal has rounds ([PRD-005](../prd/PRD-005-goals-and-rounds.md)):
-   - a note: rounds are optional; decisions are made with `evh round-open`, `round-retire` and
-     `round-close`; `evh rounds` says the same as the page;
-   - a table, newest round first: **round** ("from rN" under it), **status**, **set out to
-     learn** (the hypothesis), **arms in play** ("(k retired)", and an **inspect** button when the
-     round has a leader and two or more arms: it opens the inspector on the round's arms, at most
-     40, against its leader, on the goal's measure; its tooltip is `evh inspect --round rN --goal
-     <id>`), **best on <measure>** (the arm
-     and its mean), **against the previous round** (a **vs rN's best** button opening the
-     inspector with the previous best as baseline), **concluded** (the conclusion, or *open*).
-     The open round's row carries the `--accent` tint (`t-open`);
-   - one folded section per round (the open one unfolded) listing "changed: …", "retired
-     `<config>`: <reason>", "carried in unchanged: `<config>`", "judged by `<scorer>`" and each
-     "scoring <date>: <why> (`<scorer>`, N run(s) re-scored into <dirs>)" (RFC-022; its arms read from
-     their re-scores, as the goal reads them), and, for the open round, the
-     leader against the previous round's best, the baseline it started from and the arm that
-     wrote a silver reference of the dataset ("against the arm that wrote silver/<id>
-     (`<config>`): <verdict>, Δ, p"), then
-     **suggested next, each as the command that does it (the catalog only reads)**: each
-     suggestion with its command in a code chip that selects whole on one click and a **copy**
-     button beside it (it reads "copied" for a moment, or "selected" with the chip selected where
-     the browser refuses the clipboard), and notes such as the spend against the budget, the
-     cost per item, and the reference the round is read against with the arms not compared
-     (scored against another).
-4. `what it is for`: decision, audience, decides ("<measure>, higher is better" or "no
+2. `01 what it is for`: decision, audience, decides ("<measure>, higher is better" or "no
    significant drop against the baseline" for `non_inferior`, with its threshold), min items,
-   output contract, status. Then: weighs (the axes the goal measures, with limits shown in
-   column headers), strategy (balanced, quality_first, or frugal — how the rule decides who
-   ties with the quality leader), tie-break (the axes that break ties, in order; default: cost,
-   then speed), and guardrails (prose rules shown, never computed).
+   output contract, status. Then: weighs (the axes the goal measures, with limits shown in column
+   headers), strategy (balanced, quality_first, or frugal — how the rule decides who ties with the
+   quality leader), tie-break (the axes that break ties, in order; default: cost, then speed), and
+   guardrails (prose rules shown, never computed).
+3. `02 the answer so far`: one answer box per dataset of the goal, linked to its dataset page.
+   When a round closed after the baseline was promoted, it leads: "round rN concluded <date>" and
+   the conclusion, then "baseline: <arm>, promoted <date> · scored against <tier>" with the
+   promotion's reason folded under **why it was promoted** (a reason can name a plan a later round
+   replaced), and an **inspect it** button. Otherwise, with a baseline: "baseline promoted <date> ·
+   scored against <tier>", the arm in bold, the reason, and **inspect it**. Without one: "No
+   decision yet. When the tests separate an arm worth keeping, promote its run with the reason they
+   give: `evh run-promote --run <run_id> --reason "…"`".
+4. `03 how we got here: rounds`, only when the goal has rounds
+   ([PRD-005](../prd/PRD-005-goals-and-rounds.md)):
+   - a note: rounds are optional; decisions are made with `evh round-open`, `round-retire` and
+     `round-close`; `evh rounds` says the same as the page; open a round for what changed, what was
+     retired and why, and what to do next;
+   - one line of column names (round · concluded · set out to learn · arms · best on <measure>),
+     then **one folded section per round**, newest first, folded even when open. Its header is the
+     round's row: **round** (its status, "from rN" under it), **concluded** (the conclusion, or
+     *open*; the widest column), **set out to learn** (the hypothesis), and **arms · best**: "N arms
+     (k retired)", an **inspect** button when the round has a leader and two or more arms (the
+     inspector on the round's arms, at most 40, against its leader, on the goal's measure; its
+     tooltip is `evh inspect --round rN --goal <id>`), "best" with the arm and its mean, a **vs rN's
+     best** button when the best changed, and a line counting what is inside ("k change(s) · k
+     retired · k carried · judged by <scorer> · suggested next"). The open round carries the
+     `--accent` edge (`t-open`). Under 760 px the header stacks into one column;
+   - inside: "changed: …"; the retirements grouped by reason ("retired k: <reason>" with the
+     configs under it); "carried in unchanged: k" folded over its configs; "judged by `<scorer>`"
+     and each "scoring <date>: <why> (`<scorer>`, N run(s) re-scored into <dirs>)" (RFC-022; its
+     arms read from their re-scores, as the goal reads them); and, for the open round, the leader
+     against the previous round's best, the baseline it started from and the arm that wrote a
+     silver reference of the dataset ("against the arm that wrote silver/<id> (`<config>`):
+     <verdict>, Δ, p"), then **suggested next, each as the command that does it (the catalog only
+     reads)**: each suggestion with its command in a code chip that selects whole on one click and a
+     **copy** button beside it (it reads "copied" for a moment, or "selected" with the chip selected
+     where the browser refuses the clipboard); a suggestion past 200 characters (a list of tied
+     arms) folds behind its opening words. Then notes such as the spend against the budget, the
+     cost per item, and the reference the round is read against with the arms not compared (scored
+     against another).
 5. **One section per dataset of the goal**, titled with the dataset and its role:
    - the dataset (linked), its size, role and "made from" link; its notes; its references
      (with "written by" for silver);
@@ -574,14 +581,18 @@ is used. A models tile on the home page opens it, beside arms.
     server, a device or a place) and none with a provider id; hosted is a record with a deployment that has a
     provider id (or the hosted backend); a record with no deployments is neither. Builds differ is the same tag
     with a different digest, revision or hash in two deployments.
-  - the table: **model** (linked; its kind under it), **build** (tag and digest, revision or hash, shortened;
-    a "differs" badge when a deployment's build is not the record's), **where** (each deployment's machine or
-    host, muted when it was last checked more than 30 days ago), **settings** (for an LLM "reasoning off"; for an
-    ML model "cpu · fp32 · batch 1"; "defaults" when none is chosen), **onboarding** (the record's, from its
-    deployments': pass / probed / check / "not onboarded", the latest date, the flags on hover), **arms** (count, linked to the arms page filtered
-    to them by the record's id: `arms.html?q=<id>`), **goals**, **best result** (its best arm's place in each
-    goal, "#8 of 52"). Filterable.
-- `02 what changed in the period`: **when**, **model**, **what** (a deployment onboarded, with its id and the verdict;
+  - the table, one line per cell (owner, 2026-10-31), vetted records first, then onboarded, to check and not
+    onboarded: **model** (linked; its kind under it), **build** (the first deployment's tag, "+k" for the others,
+    all of them on hover; a "differs" badge when a deployment's build is not the record's), **where** (the
+    deployments' ids, "x3, dgx, hosted", each one's machine or host on hover, muted when it was last checked more
+    than 30 days ago), **settings** (for an LLM "reasoning off"; for an ML model "cpu · fp32 · batch 1";
+    "defaults" when none is chosen), **onboarding** (the record's, from its deployments': pass / probed / check /
+    "not onboarded", the latest date, the flags on hover), **arms** (count, linked to the arms page filtered to
+    them by the record's id: `arms.html?q=<id>`), **goals** (the one goal, or "N goals" with the first named and
+    "+k" linking to the model's page; every goal's name kept for the filter), **best result** (its best place in
+    any goal by share of the field, "#3 of 35" and the goal, with "+k more" linking to the model's page).
+    Filterable.
+- `02 what changed in the period`: **when**, **model**, **what** (a deployment's onboarding, "<id> onboarding: pass";
   each entry of the record's history, "reasoning_effort (server default) → none (why)"), only the period's.
   A record's history is free text, so a build change shows only when its `history` says so.
 - Command: `evh models [--kind llm|ml|baseline] [--where self-hosted|hosted] [--status vetted|onboarded|check|none]`.
@@ -592,20 +603,28 @@ is used. A models tile on the home page opens it, beside arms.
 
 - Hero: kicker `model`, the model's name and kind, then its facts: **weights** and **licence**, **aliases**
   (the ids runs record for it), **settings** (each with its one line of why), **onboarding** (vetted, onboarded,
-  to check or not onboarded, from its deployments' and its arms' smokes, and the latest date). A button back to the models page.
-- `01 deployments`: one row per place it runs (RFC-021): **deployment** (its id, which an arm names with
-  `deployment:`), **where** (machine or host, and its backend), **server or device** (with its settings:
-  version, context length; or device and precision), **build** (tag, provider id, digest, revision, hash,
-  quantization, in full), **matches the record** (yes, or what differs: the first deployment of a tag is the
-  record's), **checked** (date, muted when more than 30 days old), **onboarding** (that deployment's: pass or
-  check, date, flags on hover).
-- `02 onboarding`: each deployment's own latest onboarding report: its id, verdict, date and machine, each probe
-  of the report with its measurement and the flags that name it, the other flags; then what the model can do
-  (its capabilities, the record's). For an LLM the report's default and chosen calls carry the time, tokens
-  out, whether it reasoned and how it ended. A deployment never onboarded says so, with the command
-  (`evh model-onboard <id> --deployment <id>`); a record with no deployment says so too.
-- `03 settings history`: **when**, **what changed** (from, to), **why**, newest first.
-- `04 arms`: every arm that uses it, by `model_record` or by an alias: **arm** (linked), **goal**, **its settings**
+  to check or not onboarded, from its deployments' and its arms' smokes, and the latest date), **best result
+  per goal** ("#3 of 35" and the goal, best first: the list the models page's cell points to). A button back
+  to the models page.
+- `01 deployments and their onboarding`: one folded section per place it runs (RFC-021), folded unless its
+  onboarding did not pass. Its header: the deployment's id (an arm names it with `deployment:`), where it runs,
+  its server or device, its tag, "onboarding pass <date>" (or not onboarded), its speed in tokens/s, and the
+  count of its flags and of the flags it accepts. Inside: **where** (machine or host, and its backend),
+  **server or device** (with its settings), **build** (tag, provider id, digest, revision, hash, quantization, in
+  full), **matches the record** (yes, or what differs: the first deployment of a tag is the record's), **checked**
+  (date, "stale" past 30 days), **onboarded on**; then that deployment's latest onboarding report, each probe with
+  its measurement and the flags that name it, the other flags, and **Accepted**: the flags it accepts, each with
+  why (the record's `accepted`, and the deployment's own). For an LLM the report's default and chosen calls carry
+  the time, tokens out, whether it reasoned and how it ended. A deployment never onboarded says so, with the
+  command (`evh model-onboard <id> --deployment <id>`). Under the sections, what the model can do across its
+  deployments (its capabilities). A record with no deployment says so: "No deployment is recorded for this
+  model. Not onboarded yet: `evh model-onboard <id>`". A deployment table beside a separate onboarding section
+  described the same deployments twice (owner, 2026-10-31).
+- `02 settings history`: **when**, **what changed** (from, to), **why**, newest first.
+- `03 arms`: every arm that uses it, by `model_record` or by an alias, one row per arm the goals read (an arm a
+  re-score stands in for shows as the re-score, as on the goal pages): **arm** (linked), **deployment** (the one
+  its config names, else the machine a self-hosted arm ran on, else the hosted deployment; linked to its
+  section above), **goal**, **its settings**
   (the record settings it overrides, then the task's own: its reply cap, call limit, temperature; `evh models
   --model` shows the same column), **arm smoke** (pass / check / none, date, flags
   on hover), **result** (the deciding measure).

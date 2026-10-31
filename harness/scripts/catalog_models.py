@@ -259,7 +259,7 @@ def changes(rows: list[dict]) -> list[tuple]:
                     (
                         day(onb["at"]),
                         r["id"],
-                        f"onboarded {d['id']}: {STATUS_WORDS[STATUS.get(onb.get('status', ''), 'none')]}",
+                        f"{d['id']} onboarding: {onb.get('status', '?')}",
                     )
                 )
         for h in rec.get("history") or []:
@@ -284,14 +284,34 @@ def onboarding_cell(r: dict) -> str:
 
 
 def best_cell(r: dict) -> str:
-    """The models table's best-result cell: its best arm's place in each goal."""
+    """The models table's best-result cell: its best place in any goal (by share of the field), and how many
+    other goals it placed in, linked to the model's page, which lists them all. A list per row made a model used
+    in eight goals eight lines tall (owner, 2026-10-31)."""
     from evaluation_harness import catalog_build as cb  # noqa: PLC0415
 
+    if not r["best"]:
+        return "—"
+    g, _ds, i, n = min(r["best"], key=lambda t: (t[2] / max(t[3], 1), t[2]))
+    more = len(r["best"]) - 1
+    return f'<span class="nowrap">#{i} of {n}</span> {cb.goal_link(g)}' + (
+        f'<br><small><a class="muted" href="{model_page(r["id"])}">+{more} more</a></small>' if more else ""
+    )
+
+
+def goals_cell(r: dict) -> str:
+    """The models table's goals cell: how many goals, the first named; every name kept for the table's filter."""
+    from evaluation_harness import catalog_build as cb  # noqa: PLC0415
+
+    goals = r["goals"]
+    if not goals:
+        return "—"
+    if len(goals) == 1:
+        return cb.goal_link(goals[0])
+    names = " ".join(e(g.get("title") or g.get("goal_id") or "") for g in goals)
     return (
-        "<br>".join(
-            f'{cb.goal_link(g)} <span class="nowrap">#{i} of {n}</span>' for g, _ds, i, n in r["best"]
-        )
-        or "—"
+        f'<span data-v="{len(goals)}">{len(goals)} goals</span><br><small>{cb.goal_link(goals[0])} '
+        f'<a class="muted" href="{model_page(r["id"])}">+{len(goals) - 1}</a></small>'
+        f"<span hidden>{names}</span>"
     )
 
 
@@ -301,12 +321,19 @@ def render_models(A, by_ds: dict, out, nav: list, arms_rows: list[dict] | None =
     from evaluation_harness import catalog_periods as cp  # noqa: PLC0415
 
     w = cb.window(A, by_ds)
-    rows = model_rows(A, by_ds, arms_rows)
+    # Vetted first, then onboarded, to check, and not onboarded last: forty records carried over from models.yaml
+    # and never onboarded made the page read as mostly unfinished.
+    order = {"vetted": 0, "onboarded": 1, "check": 2, "none": 3}
+    rows = sorted(
+        model_rows(A, by_ds, arms_rows), key=lambda r: (order.get(r["status"], 4), r["name"].lower())
+    )
     today = date.today()
     trs = []
     for r in rows:
-        where = "<br>".join(
-            f'<span class="muted">{e(b["where"])}</span>' if stale(b, today) else e(b["where"])
+        # One line per cell (owner, 2026-10-31): the deployments by their short ids, where each runs on hover.
+        where = ", ".join(
+            f'<span{" class=" + chr(34) + "muted" + chr(34) if stale(b, today) else ""} title="{e(b["where"])}">'
+            f"{e(b['id'])}</span>"
             for b in r["deployments"]
         )
         trs.append(
@@ -321,7 +348,16 @@ def render_models(A, by_ds: dict, out, nav: list, arms_rows: list[dict] | None =
                 },
                 "cells": [
                     model_link(r["id"], r["name"]) + f'<br><small class="muted">{e(r["kind"])}</small>',
-                    ("<br>".join(f"<code>{e(b)}</code>" for b in r["build"]) or "—")
+                    (
+                        f'<code title="{e(", ".join(r["build"]))}">{e(r["build"][0])}</code>'
+                        + (
+                            f' <small class="muted">+{len(r["build"]) - 1}</small>'
+                            if len(r["build"]) > 1
+                            else ""
+                        )
+                        if r["build"]
+                        else "—"
+                    )
                     + (
                         ' <span class="role" title="a machine\'s build is not the record\'s">differs</span>'
                         if r["differs"]
@@ -333,7 +369,7 @@ def render_models(A, by_ds: dict, out, nav: list, arms_rows: list[dict] | None =
                     f'<a href="arms.html?q={e(r["id"])}"><span data-v="{len(r["arms"])}">{len(r["arms"])}</span></a>'
                     if r["arms"]
                     else '<span data-v="0">0</span>',
-                    "<br>".join(cb.goal_link(g) for g in r["goals"]) or "—",
+                    goals_cell(r),
                     best_cell(r),
                 ],
             }
@@ -465,6 +501,13 @@ def render_model(A, r: dict, out, nav: list) -> None:
             if r["status"] != "none"
             else "not onboarded: <code>evh model-onboard</code>",
         ),
+        (
+            "best result per goal",
+            "<br>".join(
+                f'<span class="nowrap">#{i} of {n}</span> {cb.goal_link(g, "../")}'
+                for g, _ds, i, n in sorted(r["best"], key=lambda t: (t[2] / max(t[3], 1), t[2]))
+            ),
+        ),
     ]
     dl = "".join(f"<dt>{k}</dt><dd>{x}</dd>" for k, x in facts if x)
     body = cb.hero(
@@ -473,63 +516,13 @@ def render_model(A, r: dict, out, nav: list) -> None:
         "A model record: onboarded once for the project and used by any experiment's arms.",
         f'<dl class="kv">{dl}</dl><p class="btns"><a class="btn" href="../models.html">Every model</a></p>',
     )
-    if r["deployments"]:
-        brs = []
-        for b, diff in zip(r["deployments"], r["diffs"], strict=True):
-            run = " ".join(
-                x
-                for x in (
-                    e(b.get("server") or b.get("device") or b.get("backend") or "—"),
-                    f'<small class="muted">{e(kv(b["server_settings"]))}</small>'
-                    if b.get("server_settings")
-                    else "",
-                )
-                if x
-            )
-            ident = "<br>".join(
-                f"<code>{e(b[k])}</code>"
-                for k in ("tag", "provider_id", "digest", "revision", "file_hash", "quantization")
-                if b.get(k)
-            )
-            brs.append(
-                [
-                    f"<code>{e(b['id'])}</code>",
-                    e(b["where"])
-                    + (f' <small class="muted">{e(b["backend"])}</small>' if b.get("backend") else ""),
-                    run,
-                    ident or "—",
-                    f"differs: {e(diff)}" if diff else "yes",
-                    f'<span data-v="{e(day(b.get("checked_at")))}"'
-                    + (' class="muted"' if stale(b) else "")
-                    + f">{e(day(b.get('checked_at'))) or '—'}</span>",
-                    smoke_text(b.get("onboarding") or {}),
-                ]
-            )
-        deployments = cb.table(
-            "deployments",
-            [
-                "deployment",
-                "where",
-                "server or device",
-                "build",
-                "matches the record",
-                "checked",
-                "onboarding",
-            ],
-            brs,
-        )
-    else:
-        deployments = '<p class="muted">No deployment is recorded for this model.</p>'
-    body += cb.block("01", "deployments", deployments)
+    # One section, one block per deployment: where it runs and its build in the summary line, and inside, the
+    # build's identity and that deployment's own onboarding. A deployment table beside a separate onboarding
+    # section described the same three deployments twice, and three probe tables read as one long list
+    # (owner, 2026-10-31).
     inner = ""
-    for dep in r["deployments"]:
-        onb = dep.get("onboarding") or {}
-        if not onb:
-            inner += (
-                f'<p class="muted"><code>{e(dep["id"])}</code> not onboarded yet: '
-                f"<code>evh model-onboard {e(r['id'])} --deployment {e(dep['id'])}</code>.</p>"
-            )
-            continue
+    for b, diff in zip(r["deployments"], r["diffs"], strict=True):
+        onb = b.get("onboarding") or {}
         rep = onb.get("report") or {}
         flags = list(onb.get("flags") or [])
         used: set = set()
@@ -546,22 +539,86 @@ def render_model(A, r: dict, out, nav: list) -> None:
                 ]
             )
         rest = [f for f in flags if f not in used]
-        inner += (
-            f'<p class="small"><code>{e(dep["id"])}</code> {smoke_text(onb)}'
-            + (f" on {e(onb['where'])}" if onb.get("where") else "")
-            + "</p>"
-            + (
-                cb.table(f"probes-{cb.slug(dep['id'])}", ["probe", "measurement", "flag"], probes)
+        whys = {**(rec.get("accepted") or {}), **(b.get("accepted") or {})}
+        accepted = [f"{x} ({whys.get(x.split(':', 1)[0], '')})" for x in onb.get("accepted") or []]
+        if not accepted:
+            accepted = [f"{k}: {w}" for k, w in (b.get("accepted") or {}).items()]
+        speed = rep.get("tokens_per_s") if isinstance(rep.get("tokens_per_s"), (int, float)) else None
+        server = b.get("server") or b.get("device") or b.get("backend") or ""
+        tag = b.get("tag") or b.get("provider_id") or ""
+        head = " · ".join(
+            x
+            for x in (
+                f"<code>{e(b['id'])}</code>",
+                e(b.get("where") or ""),
+                e(server),
+                f"<code>{e(tag)}</code>" if tag else "",
+                ("onboarding " + smoke_text(onb)) if onb else '<span class="muted">not onboarded</span>',
+                f"{speed} tokens/s" if speed else "",
+                f"{len(flags)} flag(s)" if flags else "",
+                f"{len(accepted)} accepted" if accepted else "",
+                f"build differs: {e(diff)}" if diff else "",
+            )
+            if x
+        )
+        facts = [
+            (
+                "where",
+                e(b.get("where") or "")
+                + (f' <small class="muted">{e(b["backend"])}</small>' if b.get("backend") else ""),
+            ),
+            (
+                "server or device",
+                e(server)
+                + (
+                    f' <small class="muted">{e(kv(b["server_settings"]))}</small>'
+                    if b.get("server_settings")
+                    else ""
+                ),
+            ),
+            (
+                "build",
+                "<br>".join(
+                    f"<code>{e(b[k])}</code>"
+                    for k in ("tag", "provider_id", "digest", "revision", "file_hash", "quantization")
+                    if b.get(k)
+                ),
+            ),
+            ("matches the record", f"differs: {e(diff)}" if diff else "yes"),
+            (
+                "checked",
+                e(day(b.get("checked_at"))) + (' <small class="muted">stale</small>' if stale(b) else ""),
+            ),
+            ("onboarded on", e(onb.get("where") or "") if onb else ""),
+        ]
+        body_dep = '<dl class="kv">' + "".join(f"<dt>{k}</dt><dd>{x}</dd>" for k, x in facts if x) + "</dl>"
+        if onb:
+            body_dep += (
+                cb.table(f"probes-{cb.slug(b['id'])}", ["probe", "measurement", "flag"], probes)
                 if probes
                 else ""
             )
-            + (f'<p class="small">Other flags: {e("; ".join(rest))}</p>' if rest else "")
+            body_dep += f'<p class="small">Other flags: {e("; ".join(rest))}</p>' if rest else ""
+            body_dep += f'<p class="small">Accepted: {e("; ".join(accepted))}</p>' if accepted else ""
+        else:
+            body_dep += (
+                f'<p class="muted">Not onboarded yet: '
+                f"<code>evh model-onboard {e(r['id'])} --deployment {e(b['id'])}</code>.</p>"
+            )
+        inner += (
+            f'<details class="rounddetail" id="dep-{cb.slug(b["id"])}"'
+            f"{' open' if onb.get('status') != 'pass' else ''}><summary>{head}</summary>{body_dep}</details>"
         )
     if rec.get("capabilities"):
-        inner += f'<p class="small muted">What it can do: {e(kv(rec["capabilities"]))}</p>'
+        inner += (
+            f'<p class="small muted">What it can do, across its deployments: {e(kv(rec["capabilities"]))}</p>'
+        )
     if not r["deployments"]:
-        inner = f'<p class="muted">Not onboarded yet: <code>evh model-onboard {e(r["id"])}</code>.</p>'
-    body += cb.block("02", "onboarding", inner)
+        inner = (
+            '<p class="muted">No deployment is recorded for this model. Not onboarded yet: '
+            f"<code>evh model-onboard {e(r['id'])}</code>.</p>"
+        )
+    body += cb.block("01", "deployments and their onboarding", inner)
     hist = [
         [
             f'<span data-v="{e(day(h.get("at")))}">{e(day(h.get("at")))}</span>',
@@ -575,22 +632,41 @@ def render_model(A, r: dict, out, nav: list) -> None:
         for h in sorted(rec.get("history") or [], key=lambda h: str(h.get("at")), reverse=True)
     ]
     body += cb.block(
-        "03",
+        "02",
         "settings history",
         cb.table("history", ["when", "what changed", "why"], hist)
         if hist
         else '<p class="muted">No change of settings or build is recorded.</p>',
     )
     cfg_fn = getattr(A, "arm_config", None)
+    dep_ids = {d["id"] for d in r["deployments"]}
     ars = []
-    for a in r["arms"]:
-        params = ((cfg_fn(a["arm"]) if callable(cfg_fn) else {}) or {}).get("params") or {}
+    # An arm a re-score stands in for is the re-score's row here too, as on the goal pages: one row per arm the
+    # goals read, not one per set of scores.
+    for a in [x for x in r["arms"] if not x.get("superseded_by")]:
+        cfg = (cfg_fn(a["arm"]) if callable(cfg_fn) else {}) or {}
+        params = cfg.get("params") or {}
         over = arm_settings(rec, params)
         sm = (rec.get("smokes") or {}).get(a["config"])
+        # The arm's deployment: named in its config (`deployment:`), else the machine a self-hosted arm ran on,
+        # else the record's hosted deployment for an arm that called a gateway.
+        dep = (
+            a.get("deployment")
+            or cfg.get("deployment")
+            or (params.get("machine") if params.get("url") else None)
+        )
+        if not dep and "hosted" in dep_ids and not params.get("url"):
+            dep = "hosted"
+        dep_cell = (
+            f'<a href="#dep-{cb.slug(str(dep))}"><code>{e(dep)}</code></a>'
+            if dep in dep_ids
+            else (f"<code>{e(dep)}</code>" if dep else "—")
+        )
         ars.append(
             [
                 cb.arm_link(a["arm"], a["label"], "../")
                 + f'<br><small class="muted">{e(a["dataset"])}</small>',
+                dep_cell,
                 cb.goal_link(a["goal"], "../") if a["goal"] else "—",
                 e(", ".join(over)) or "—",
                 smoke_text(sm or {}),
@@ -600,9 +676,9 @@ def render_model(A, r: dict, out, nav: list) -> None:
             ]
         )
     body += cb.block(
-        "04",
+        "03",
         "arms",
-        cb.table("modelarms", ["arm", "goal", "its settings", "arm smoke", "result"], ars)
+        cb.table("modelarms", ["arm", "deployment", "goal", "its settings", "arm smoke", "result"], ars)
         if ars
         else '<p class="muted">No arm uses this model yet: name it with <code>model_record</code> in a config.</p>',
     )
